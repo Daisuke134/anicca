@@ -1410,12 +1410,12 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 | H04 | stale shared-guest tasksをhuman boundaryどおり閉じる | complete: 前日残り2件は未承認human availabilityなので`false`を一回ずつ回答し、それぞれsame-job resume refをreadback。対象taskのmutation 0 |
 | H05 | `inspect_next_human_task`の対象をowner confirmationへ揃える | complete: production GETはtask `63d6d297...`、version/question/format/reasonがDBと一致 |
 | H06 | final browserの初期状態をfreezeする | complete: answered-boundary propagationはPR #3432、Railway API SUCCESS、bridge/Symphony exact release `7bc82367...`。repair job `goal:ae0cb18...`はround 3でauthor-bound completed、DB consumed/closed、open HumanTask 0。ChatGPT内蔵Browserでinitial fourを発見し、新規opportunity `3c46f240...`をWebMCP add、same workroom `waiting_agent`までreadback |
-| H07 | 録画中にChatGPT/WebMCPで同じtaskを読む | **pending/blocker:** private Issue #10 `fc69a24a...`はOPEN、comment 0、Symphony dashboard running/blocked/retrying `0/0/0`。HumanTask未生成のためdynamic fifth未登録。まずofficial owner recovery/readbackだけを行い、推測patchは作らない |
-| H08 | 録画中にowner confirmationを一回`approve`する | pending: Issue #10がauthor-bound `needs_human`を返し、同job HumanTaskがopenになった後だけ実行 |
-| H09 | answer receiptとduplicate-zeroを読む | pending: task row answered一件、command receipt succeeded一件、同じtask/versionの追加answer effect 0 |
-| H10 | same Life Manager jobをround 2へ再dispatchする | pending: job ID `goal:3c46f240...`不変、新dispatch/Issue round 2、answered boundary ref一件 |
-| H11 | agentが同じartifactをfinal lockしてterminalへ進む | pending: round 2 artifact、author-bound completed result、DB consumed、GitHub CLOSED、workspace cleanup |
-| H12 | reload persistenceとreplay-zeroを記録する | pending: board/workroom/WebMCP/API/DB一致、receipt/result hash一件、duplicate Issue/comment/answer 0、verified cash 0 |
+| H07 | 録画中にChatGPT/WebMCPで同じtaskを読む | complete: Issue #10はtransport error/timeout後にnatural retryでauthor-bound 10-key `needs_human`一件、artifact `0c02b35e...`、DB task `4c95c382...` version 1、same job waiting_human。ChatGPT内蔵BrowserはBoard Needs You 1、workroom task ID、`inspect_next_human_task` resultを一致確認しdynamic fifthをexact登録 |
+| H08 | 録画中にowner confirmationを一回`approve`する | complete: `record_human_answer`を一回だけ実行。task `4c95c382...`、same job resume ref一致、dynamic fifth解除、raw/private input 0 |
+| H09 | answer receiptとduplicate-zeroを読む | complete: task answered version 2、answer/boundary ref存在を値非表示でreadback。command receipt `human-answer-d020...` succeeded一件、same resume ref、再送0 |
+| H10 | same Life Manager jobをround 2へ再dispatchする | complete: job ID `goal:3c46f240...`不変、dispatch `5d8ad3e8...` round 2、private Issue #11一件、DB mirrored、cross-job ref 0 |
+| H11 | agentが同じartifactをfinal lockしてterminalへ進む | complete: response timeout attemptsをofficial retry ownerが回復し、Issue #11へauthor-bound exact 7-key `completed`、`codex-round-2`、immutable artifact `e67708a9...`。DB consumed/closed、GitHub CLOSED、workspace cleanup、dashboard `0/0/0` |
+| H12 | reload persistenceとreplay-zeroを記録する | complete: reload後Board Needs You/Agents 0、workroom QUALIFIED/completed/answered、initial fourへ復帰。DB dispatch round 1/2各一件、task一件、completed receipt attempt 1一件、Issue #10/#11各result comment一件、duplicate effect 0、verified cash 0 |
 
 ### 18.9 G — guest replay + 24/7 proof（Section 14 items 4–5）
 
@@ -1479,6 +1479,6 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 
 ### 18.13 Immediate next atom
 
-次はsource変更なしでH07だけを閉じる。対象はopportunity `3c46f240e8e6dd25d3554e910f67209705a8557c70e7da02581e1ec88cc6fe51`、same job `goal:3c46f240...`、private Issue #10、dispatch `fc69a24a...`。順序は①official Symphony log/workspace/Issueをread-only reconcile、②natural ownerがauthor-bound resultを出すまでwatch、③`needs_human`ならboard/workroom/`inspect_next_human_task`のtask ID/version一致を録画、の3 atom。Issue #10は現在OPEN/comment 0かつdashboard `0/0/0`なので、原因証拠なしのcode/workflow patch、手動result/comment、別agent、別queue、global release move、all-label applyは禁止。H07完了後だけH08→H12をsame jobで実行する。
+H07–H12とB12はcomplete。accepted artifactは `/Users/anicca/Desktop/MoneyPrinter-Hackathon-Demo/Money-Printer-WebMCP-Demo.mp4`。実証済みproduction factsとdirect tab captureだけを5場面へ固定し、英語音声付き76.604671秒、1920×1080 H.264、AAC mono、full decode PASS、mean/max volume -15.7/-1.7 dB、5 frame可読、secret scan 0、unsupported claim 0、SHA-256 `4fcead622dcd3d4c57d5ac72fb878a6cdef9599f184970e2d752aaeb1e0d4939`。診断raw 2本は提出物ではない。
 
-B12は未完。`/Users/anicca/Desktop/MoneyPrinter-Hackathon-Demo/money-printer-browser-raw.mp4`は診断用660秒、`money-printer-final-raw.mp4`は1019.100秒・audio 0で、どちらも提出物ではない。accepted outputはChatGPT内蔵Browserの成功runだけから作る英語音声付き`<180.000s` MP4で、initial four、add structured result、one Needs You/dynamic fifth、same-job resume、completed receipt/reload persistenceの5場面が可読、secret/private leak 0、unsupported claim 0をffprobe/frame/playbackで確認する。YouTube公開とDevpost submitは別Goal。
+このGoalのproduct completion/video artifactは完了。次は別GoalでYouTubeへ一回公開し、Devpost final payloadをexact previewしてDaisの`yes, submit`後に一回submit、submission ID/URL/readbackを閉じる。
