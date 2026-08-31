@@ -35,7 +35,7 @@ Screenshot is saved to $CP1_SHOT (default /tmp/cp1_shot.png), viewport-relative
 so the (x,y) in the state readout map directly to `click <x> <y>`.
 """
 import fcntl
-import json, os, signal, sys, time, urllib.request
+import json, os, re, signal, sys, time, urllib.request
 from urllib.parse import parse_qsl, quote, urlsplit
 from playwright.sync_api import sync_playwright
 
@@ -189,6 +189,8 @@ def _redact_url_for_output(value):
         host = str(parts.hostname or "").lower()
         if parts.scheme not in {"http", "https"} or not host:
             return "<redacted-url>"
+        if host == "api.capafy.ai" and re.fullmatch(r"/E[1-9][0-9]{18}", parts.path):
+            return "https://api.capafy.ai/<redacted-short-link>"
         authority = host
         if parts.port is not None and not (
             (parts.scheme == "http" and parts.port == 80)
@@ -221,6 +223,15 @@ def _toast_for_output(state):
         "priceSvg": safe_state.get("priceSvg"),
         "url": safe_state.get("url"),
     }
+
+
+def _require_safe_edit_url(url):
+    """Validate an edit URL before selecting, attaching to, or navigating a page."""
+    from save_review_url import _is_edit_url
+
+    if not isinstance(url, str) or not _is_edit_url(url):
+        raise RuntimeError("CP1 open requires a safe Capafy edit URL")
+    return url
 
 
 def get_page(br, prefer_capafy=True, create_ctx=None):
@@ -299,10 +310,9 @@ def _raw_create_capafy_target(cdp, url):
     no Capafy tab used to fail before it could navigate.  `/json/new` creates a
     separate tab instead of repurposing one of the daily driver's tabs.
     """
-    from drive_checkpoint2 import _is_capafy_target_url, _validate_cdp_base
+    from drive_checkpoint2 import _validate_cdp_base
     cdp = _validate_cdp_base(cdp)
-    if not _is_capafy_target_url(url):
-        raise RuntimeError("CP1 raw open requires a Capafy createAgent URL")
+    _require_safe_edit_url(url)
     request = urllib.request.Request(
         f"{cdp}/json/new?{quote(url, safe='')}", method="PUT"
     )
@@ -329,6 +339,7 @@ def _raw_page_from_target(target):
 
 def _raw_open_page(cdp, url):
     """Return a Capafy page for `open`, creating a dedicated one if required."""
+    _require_safe_edit_url(url)
     try:
         return _raw_capafy_page(cdp, url)
     except RuntimeError as exc:
@@ -419,11 +430,14 @@ def _raw_upload(pg, idx, path):
 
 def raw_main(cmd):
     """Bounded raw-CDP fallback for every CP1 primitive except file upload."""
-    target_hint = sys.argv[2] if cmd == "open" else os.environ.get("CP1_TARGET_TOKEN", "")
+    if cmd == "open":
+        url = _require_safe_edit_url(sys.argv[2])
+        target_hint = url
+    else:
+        target_hint = os.environ.get("CP1_TARGET_TOKEN", "")
     pg = _raw_open_page(CDP, target_hint) if cmd == "open" else _raw_capafy_page(CDP, target_hint)
     try:
         if cmd == "open":
-            url = sys.argv[2]
             pg.call("Page.navigate", {"url": url})
             deadline = time.monotonic() + 35
             while time.monotonic() < deadline:
@@ -481,6 +495,12 @@ def main():
     if len(sys.argv) < 2:
         print("usage: cp1_agent.py <cmd> ..."); sys.exit(2)
     cmd = sys.argv[1]
+    if cmd == "open":
+        try:
+            _require_safe_edit_url(sys.argv[2])
+        except (IndexError, RuntimeError) as exc:
+            print(json.dumps({"error": str(exc)}, ensure_ascii=False))
+            raise SystemExit(1)
     try:
         lock = _acquire_cdp_lock()
     except Cp1Busy as e:
@@ -509,6 +529,7 @@ def main():
     old_term = signal.signal(signal.SIGTERM, _terminate)
     pw = None
     try:
+        open_url = _require_safe_edit_url(sys.argv[2]) if cmd == "open" else None
         pw = sync_playwright().start()
         try:
             br = pw.chromium.connect_over_cdp(CDP, timeout=CONNECT_TIMEOUT_MS)
@@ -526,7 +547,7 @@ def main():
             return
 
         if cmd == "open":
-            url = sys.argv[2]
+            url = open_url
         # reuse an existing capafy tab if present; otherwise create a BRAND-NEW tab.
         # NEVER hijack a daily-driver tab (its watchdog restores the original URL,
         # so a hijacked tab silently reverts). A fresh new_page persists.
