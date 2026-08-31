@@ -95,18 +95,24 @@ def qualified_queue_ids(
         MachineWorkdayCredentialStore(Path(credential_path)) if credential_path else None
     )
     try:
+        rows = (
+            *ledger.pending_materials_ready_applications(),
+            *ledger.retryable_applications(),
+        )
         return tuple(
-            str(row["application_id"])
-            for row in ledger.pending_materials_ready_applications()
-            if (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
-            in allowed_hosts
-            and (
-                credentials is None
-                or credentials.account_status(str(row["canonical_url"]))
-                != "recovery_requested"
-            )
-            and ledger.workday_fit_qualified(
-                str(row["application_id"]), policy_version
+            dict.fromkeys(
+                str(row["application_id"])
+                for row in rows
+                if (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
+                in allowed_hosts
+                and (
+                    credentials is None
+                    or credentials.account_status(str(row["canonical_url"]))
+                    != "recovery_requested"
+                )
+                and ledger.workday_fit_qualified(
+                    str(row["application_id"]), policy_version
+                )
             )
         )
     finally:

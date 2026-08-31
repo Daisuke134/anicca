@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from urllib.error import HTTPError, URLError
 
 import job_search_loop.workday_search_loop as workday_search_loop
@@ -602,6 +602,26 @@ class WorkdayQualificationTests(unittest.TestCase):
                 )
 
             self.assertEqual(queued, ())
+
+    def test_retryable_not_submitted_row_is_queued_before_fresh_qualification(self):
+        row = {
+            "application_id": "retryable-application",
+            "company": "Danaher",
+            "title": "Business Account Manager",
+            "canonical_url": "https://danaher.wd1.myworkdayjobs.com/job/role",
+        }
+        ledger = Mock()
+        ledger.pending_materials_ready_applications.return_value = []
+        ledger.retryable_applications.return_value = [row]
+        ledger.workday_fit_qualified.return_value = True
+        with patch.object(workday_search_loop, "Ledger", return_value=ledger):
+            queued = qualified_queue_ids(
+                Path("/ledger.sqlite3"),
+                {"danaher.wd1.myworkdayjobs.com"},
+                policy_version="test",
+            )
+
+        self.assertEqual(queued, ("retryable-application",))
 
     def test_duplicate_registry_source_is_fetched_once(self):
         sources = (

@@ -113,6 +113,25 @@ queue with zero remaining queued rows, which forces the existing fresh qualifica
 path. No Ledger transition, Submit intent, scheduler, provider judgment, or new state
 store is added. Main merge, release, production seed and natural wake proof remain.
 
+Natural wake `daily-20260831-193136` reaches Danaher Review and records a definite
+rendered-validation `not_submitted` intent with Telegram `46201`; Ledger correctly
+exposes that row through `retryable_applications()`. Wake `daily-20260831-194728`
+then exposes a third queue boundary mismatch: `qualified_queue_ids()` reads only
+pending `materials_ready` rows, so the runnable retryable Danaher row does not produce
+`queued_existing` and the owner begins another full fresh-qualification pass before
+the browser supervisor can reopen it. The active atom must combine pending
+materials-ready and retryable applications in the existing queue order, apply the
+same fit/tenant recovery filters and dedupe by application ID, then enter the browser
+immediately. No new retry policy or external effect is added.
+
+The retryable-priority repair is implemented in the same
+`qualified_queue_ids()` function by combining pending materials-ready and Ledger
+retryable rows before the existing host, recovery-state and fit filters, then
+deduplicating application IDs without changing order. RED returned an empty queue for
+a retryable Danaher row; GREEN returns that exact application ID. Qualification tests
+pass 44/44 and the full Job Hunter suite passes 437/437. Main release and natural
+reopen proof remain.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
