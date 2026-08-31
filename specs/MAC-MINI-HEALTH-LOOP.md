@@ -107,7 +107,7 @@ lsof -n | grep <対象>
 | フォルダ | origin | 種類 | 判定 |
 |---|---|---|---|
 | `~/Projects/life-manager-main` | `life-manager.git` | **release の生成元（正本）** | `selfbuild` の `LM_SELFBUILD_REPO` がここを指す。**残す** |
-| **`~/Projects/life-manager`** | **`life-manager-v0.git`（archived）** | **死んだ repo のクローン** | push が 403 で拒否される。**ここに書いたものは永久に共有されない。中身を救出して削除する** |
+| ~~`~/Projects/life-manager`~~ | `life-manager-v0.git`（archived） | 死んだ repo のクローン | **2026-08-31 削除済み**。push が 403 で拒否され、ここに書いたものは共有されなかった |
 | **`~/anicca`** | **`life-manager.git`** | **同じ repo の別クローン 3.5GB** | **集約対象。下記** |
 | `~/anicca-project` | `anicca-products.git` | 別 repo | 別途判断 |
 | `~/profitable-claude` | `profitable-claude.git` | 別 repo | 別途判断 |
@@ -152,7 +152,11 @@ lsof -n | grep <対象>
 
 したがって `~/anicca` に残る価値は**実行時 state のみ**。
 
-- [ ] **A-bis-0**: `~/Projects/life-manager`（v0 の archived クローン）の中身を確認し、救うべきものを `life-manager-main` へ移してから削除する
+- [x] **A-bis-0**: 完了（2026-08-31）。`~/Projects/life-manager` を削除した。判断の根拠:
+  - 未 push だった21コミットは全てこのセッションの spec / scripts で、`docs/mac-mini-health-20260831` ブランチ経由で正本へ移送済み
+  - v0 固有のコード（41ファイル・2MB、音声通話や旅行の skill）は GitHub 上の archived repo に残っており、ローカルの複製を消しても失われない
+  - v0 の最終コミットは `docs: redirect archived v0 to canonical repository (#12)`。**repo 自身が既に「正本はこちら」と宣言して閉じている**
+  - 削除前に `com.anicca.claude-remote-control` の `WorkingDirectory` がここを指していたので `life-manager-main` へ向け直し、再読込して `state = running` を確認した。その後 plist 参照はゼロ
 - [x] **A-bis-1**: 完了。コードもテストも `origin/main` に揃っており、移行するものは無い
 - [x] **A-bis-2**: 完了。未コミット195件は全て evidence / intel / log の実行時データ。唯一のコード変更は差分ゼロ
 - [ ] **A-bis-3**: loop の参照先を張り替える。**参照の内訳を実測した（2026-08-31）**:
