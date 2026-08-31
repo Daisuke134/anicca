@@ -5,6 +5,7 @@ const { EXCLUDED_KINDS, normaliseEntry, usdMicrosForEntry } = require("./earning
 const COLUMNS = { found: new Set(["DISCOVERED", "QUALIFYING", "QUALIFIED", "CLAIMED"]), working: new Set(["WORKING", "READY_FOR_EFFECT", "QA_ACCEPTED"]), needs_you: new Set(["NEEDS_HUMAN"]), waiting: new Set(["EFFECT_UNCERTAIN", "SUBMITTED", "WON", "CONTRACTED", "PAYMENT_PENDING"]), done: new Set(["INELIGIBLE", "EXPIRED", "LOST", "DELIVERED"]), paid: new Set(["PAID_SETTLED", "REVENUE_RECORDED"]) };
 const NAMES = Object.freeze(Object.keys(COLUMNS));
 const MONEY = /^\d+$/;
+const ACTIVE_JOB_STATUSES = new Set(["running", "waiting_agent", "reconciling"]);
 
 function fail(message) { throw new Error(message); }
 
@@ -78,12 +79,19 @@ function projectMoneyPrinter(input = {}) {
   let running = 0; let working = 0;
   const openTasksByJob = new Map();
   const opportunitiesById = new Map();
+  const activeJobs = new Set();
   for (const row of data.opportunities) {
     const opportunityId = String(row.opportunity_id == null ? "" : row.opportunity_id).trim();
     if (opportunityId) {
       if (opportunitiesById.has(opportunityId)) fail("money printer human task opportunity relation invalid");
       opportunitiesById.set(opportunityId, row);
     }
+  }
+  for (const row of data.runtimeJobs) {
+    const status = String(row.status || "").trim().toLowerCase();
+    const jobId = typeof row.job_id === "string" ? row.job_id.trim() : "";
+    if (ACTIVE_JOB_STATUSES.has(status) && /^goal:[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(jobId)
+      && opportunitiesById.has(jobId.slice(5))) activeJobs.add(jobId);
   }
   for (const row of data.humanTasks) {
     const status = String(row.status || "").trim().toLowerCase();
@@ -110,15 +118,16 @@ function projectMoneyPrinter(input = {}) {
     const valueMinor = money(rawValue, "opportunity value", true);
     const code = rawValue == null ? null : currency(row.currency, "opportunity");
     const card = Object.freeze({ opportunity_ref: ref(row.opportunity_ref || row.opportunity_id || row.external_id || row.id, "opportunity", tenantId, "opportunity"), title: String(row.title || "Opportunity").trim() || "Opportunity", status, value_minor: valueMinor, currency: code, source_url: link(row.source_url ?? row.url, "opportunity source") });
-    const ownerTask = openTasksByJob.get(`goal:${String(row.opportunity_id == null ? "" : row.opportunity_id).trim()}`);
-    columns[ownerTask ? "needs_you" : column].push(card);
+    const jobId = `goal:${String(row.opportunity_id == null ? "" : row.opportunity_id).trim()}`;
+    const ownerTask = openTasksByJob.get(jobId);
+    columns[ownerTask ? "needs_you" : activeJobs.has(jobId) ? "working" : column].push(card);
     if (code) addMoney(opportunityValue, code, valueMinor);
     if (["WORKING", "READY_FOR_EFFECT", "QA_ACCEPTED"].includes(status)) working += 1;
     activity.push(Object.freeze({ kind: "opportunity", ref: card.opportunity_ref, status, observed_at: observed(row, observedAt) }));
   }
   for (const row of data.runtimeJobs) {
     const status = String(row.status || "").trim().toLowerCase();
-    if (status === "running") running += 1;
+    if (ACTIVE_JOB_STATUSES.has(status)) running += 1;
     activity.push(Object.freeze({ kind: "work", ref: ref(row.job_ref || row.job_id || row.id, "runtime-job", tenantId, "runtime job"), status, observed_at: observed(row, observedAt) }));
   }
   for (const row of data.humanTasks) {
