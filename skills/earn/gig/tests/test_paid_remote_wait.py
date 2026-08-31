@@ -639,6 +639,13 @@ def test_decision_prompt_keeps_live_system_revisions_remote_and_url_only(tmp_pat
     assert "explicitly asks for source files, an archive, or a download" in prompt
 
 
+def test_targeted_browser_readbacks_admit_one_hidden_context_at_a_time():
+    paid = load("paid_direct")
+
+    assert paid.PAID_MAX_PARALLEL_READBACKS == 1
+    assert paid.PAID_MAX_PARALLEL_PROJECTS > 1
+
+
 def test_current_remote_wait_is_fresh(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)
