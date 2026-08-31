@@ -359,6 +359,9 @@ function renderPanelPage(options = {}) {
     .money-card { width: 100%; margin: 8px 0 0; padding: 10px; border: 1px solid transparent; border-left: 3px solid var(--accent); background: var(--paper-bright); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
     .money-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     .money-card p { margin: 4px 0 0; color: var(--ink-soft); font-size: .7rem; }
+    .money-human-task { margin-top: 14px; padding: 14px; border: 1px solid var(--accent); }
+    .money-human-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .money-browser-takeover { width: 100%; height: min(58vh, 520px); margin-top: 12px; border: 1px solid var(--line-dark); }
     .money-webmcp-status { margin: 14px 0 0; color: var(--ink-soft); font-size: .78rem; }
 
     .section-head {
@@ -1215,6 +1218,43 @@ function renderPanelPage(options = {}) {
       return '<div class="money-workroom" data-money-workroom-content><p class="section-kicker">Selected workroom</p><h3>' + escapeHtml(data.title) + '</h3><p class="money-workroom-status">' + escapeHtml(data.status) + '</p><ul class="money-activity">' + activity + '</ul></div>';
     }
 
+    function validMoneyHumanTask(task) {
+      return displayExactKeys(task, ["task_id", "version", "question", "required_format", "reason_code", "browser_takeover_available"])
+        && /^[0-9a-f]{64}$/.test(task.task_id) && Number.isInteger(task.version) && task.version > 0
+        && displaySafeText(task.question, false) && displaySafeText(task.reason_code, false)
+        && typeof task.browser_takeover_available === "boolean";
+    }
+
+    function renderMoneyHumanTask(task) {
+      if (task === null) return '<p class="empty">No human action required.</p>';
+      if (!validMoneyHumanTask(task)) throw new Error("invalid human task payload");
+      const browser = task.browser_takeover_available
+        ? '<iframe class="money-browser-takeover" title="Secure provider browser" src="/api/panel/money-printer/browser" sandbox="allow-scripts allow-same-origin" allow="clipboard-read; clipboard-write"></iframe>' : '';
+      const actions = task.reason_code === "provider_interview"
+        ? '<div class="money-human-actions"><button type="button" data-money-human-answer="approve" data-task-id="' + task.task_id + '" data-task-version="' + task.version + '">I completed it</button><button type="button" data-money-human-answer="request_changes" data-task-id="' + task.task_id + '" data-task-version="' + task.version + '">Cannot complete</button></div>' : '';
+      return '<aside class="money-human-task"><p class="section-kicker">Needs You</p><h3>' + escapeHtml(task.question) + '</h3>' + browser + actions + '</aside>';
+    }
+
+    async function loadMoneyHumanTask() {
+      const target = document.querySelector("[data-money-human-task]");
+      if (!target) return;
+      const response = await fetch("/api/panel/money-printer/human-task/next", { credentials: "same-origin", headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("human task unavailable");
+      const value = await response.json();
+      if (!displayExactKeys(value, ["task"])) throw new Error("human task unavailable");
+      target.innerHTML = renderMoneyHumanTask(value.task);
+    }
+
+    async function answerMoneyHumanTask(button) {
+      const response = await fetch("/api/panel/money-printer/human-task/answer", {
+        method: "POST", credentials: "same-origin",
+        headers: { "content-type": "application/json", "x-lm-csrf": controlCsrf || "${String(options.csrf || "")}", "idempotency-key": (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-human") },
+        body: JSON.stringify({ task_id: button.dataset.taskId, version: Number(button.dataset.taskVersion), answer: button.dataset.moneyHumanAnswer }),
+      });
+      if (!response.ok) throw new Error("human answer unavailable");
+      await loadPanelSection("money-printer");
+    }
+
     let moneyWorkroomRequestSequence = 0;
     async function loadMoneyWorkroom(button) {
       const requestSequence = ++moneyWorkroomRequestSequence;
@@ -1266,7 +1306,7 @@ function renderPanelPage(options = {}) {
         }).join("");
         return '<section class="money-lane"><h3>' + escapeHtml(moneyLaneLabels[lane]) + '</h3>' + (cards || '<p class="empty">No work</p>') + '</section>';
       }).join("");
-      return '<div class="money-metrics">' + metrics + '</div><div class="money-board">' + lanes + '</div><div class="money-workroom" data-money-workroom><p class="empty">Select an opportunity to inspect its workroom.</p></div>';
+      return '<div class="money-metrics">' + metrics + '</div><div class="money-board">' + lanes + '</div><div data-money-human-task><p class="loading">Checking human tasks…</p></div><div class="money-workroom" data-money-workroom><p class="empty">Select an opportunity to inspect its workroom.</p></div>';
     }
 
     const renderers = Object.freeze({ "money-printer": renderMoneyPrinter, timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
@@ -1281,6 +1321,7 @@ function renderPanelPage(options = {}) {
       const data = await response.json();
       if (displayContainsSensitiveValue(data)) throw new Error(name + " unavailable");
       markLoaded(name, renderers[name](data));
+      if (name === "money-printer") await loadMoneyHumanTask();
     }
 
     let moneyPrinterRefresh = Promise.resolve();
@@ -1346,6 +1387,8 @@ function renderPanelPage(options = {}) {
     }
 
     document.addEventListener("click", function (event) {
+      const humanAnswer = event.target.closest("button[data-money-human-answer]");
+      if (humanAnswer) { answerMoneyHumanTask(humanAnswer).catch(function () {}); return; }
       const moneyCard = event.target.closest("button[data-money-opportunity-id]");
       if (moneyCard) { loadMoneyWorkroom(moneyCard); return; }
       const button = event.target.closest("button[data-action]");

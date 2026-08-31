@@ -426,10 +426,17 @@ function safeHumanTask(task, scope) {
   };
 }
 
-async function readNextHumanTask(scope, store) {
+async function readNextHumanTask(scope, store, browserHandoffReader) {
   const reader = store && (store.readNext || store.next || store.readNextHumanTask);
   if (typeof reader !== "function") throw humanTaskError("human_task_unavailable", 502);
-  return safeHumanTask(await reader.call(store, scope), scope);
+  const task = safeHumanTask(await reader.call(store, scope), scope);
+  if (!task) return null;
+  let available = false;
+  if (task.reason_code === "provider_interview" && typeof browserHandoffReader === "function") {
+    const handoff = await browserHandoffReader(scope.uid);
+    available = Boolean(handoff && handoff.expired === false);
+  }
+  return { ...task, browser_takeover_available: available };
 }
 
 function humanTaskErrorResponse(error) {
@@ -869,7 +876,7 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     if (humanTaskNextEndpoint) {
       if (req.method !== "GET") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "GET" }); return; }
       try {
-        sendJson(res, 200, { task: await readNextHumanTask(scope, humanTaskStore) });
+        sendJson(res, 200, { task: await readNextHumanTask(scope, humanTaskStore, opts.browserHandoffReader) });
       } catch (error) {
         const failure = humanTaskErrorResponse(error);
         sendJson(res, failure.status, failure.body);
@@ -887,9 +894,14 @@ async function handlePanelApiRequest(req, res, opts = {}) {
     try {
       const body = await readJson(req);
       if (!body || typeof body !== "object" || Array.isArray(body)
-        || Object.keys(body).some((name) => !["task_id", "version", "answer_ref"].includes(name))) {
+        || Object.keys(body).some((name) => !["task_id", "version", "answer_ref", "answer"].includes(name))) {
         throw humanTaskError("invalid_json", 400);
       }
+      const answerRef = typeof body.answer_ref === "string"
+        ? body.answer_ref
+        : ["approve", "request_changes"].includes(body.answer)
+          ? `vault-answer://${scope.uid}/${body.answer}` : null;
+      if (!answerRef) throw humanTaskError("invalid_json", 400);
       const receipt = await claimMutationReceipt(scope, key, "money-printer.human-task.answer", body, commandStore);
       if (receipt.replay) { sendJson(res, 200, receipt.replay); return; }
       claimedReceipt = receipt.claimed ? receipt : null;
@@ -897,7 +909,7 @@ async function handlePanelApiRequest(req, res, opts = {}) {
         scope,
         taskId: body.task_id,
         version: body.version,
-        answerRef: body.answer_ref,
+        answerRef,
       }, humanTaskStore);
       await commandStore.finishReceipt(scope, key, { requestHash: receipt.requestHash, commandType: "money-printer.human-task.answer", status: "succeeded", result });
       claimedReceipt = null;

@@ -125,6 +125,7 @@ function panelApiOptions(path, options, getRuntimeStore = getMoneyPrinterRuntime
     runtimeStore,
     opportunityStore: runtimeStore,
     humanTaskStore: runtimeStore,
+    browserHandoffReader: readBrowserHandoff,
     moneyPrinterSource: getMoneyPrinterSource,
   };
 }

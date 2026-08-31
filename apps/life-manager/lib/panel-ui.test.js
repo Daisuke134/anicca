@@ -327,6 +327,10 @@ test("Money Printer panel renders one six-lane control room", () => {
   const html = renderPanelPage();
   assert.match(html, /data-panel-section="money-printer"/);
   assert.match(html, /\/api\/panel\/money-printer/);
+  assert.match(html, /data-money-human-task/);
+  assert.match(html, /\/api\/panel\/money-printer\/browser/);
+  assert.match(html, /I completed it/);
+  assert.match(html, /Cannot complete/);
   for (const label of ["Paid & verified", "Agents working", "Needs You", "Opportunity value", "Found", "Working", "Waiting", "Done", "Paid"]) {
     assert.match(html, new RegExp(label));
   }
