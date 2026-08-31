@@ -227,8 +227,6 @@ function createGhIssueClient(options = {}) {
       const stdout = run([
         "api",
         `repos/${ISSUE_REPO}/issues/${issueNumber}/comments?per_page=100`,
-        "--paginate",
-        "--slurp",
       ], "issue comments failed");
       let parsed;
       try { parsed = JSON.parse(String(stdout || "")); } catch { fail("issue comments failed"); }

@@ -805,12 +805,12 @@ test("foreign or stale callback readback is rejected without leaking private dat
   }
 });
 
-test("comments adapter uses the fixed issue endpoint, pagination, projection, and safe flattened rows", () => {
+test("comments adapter uses one bounded gh-2.23-compatible page and safe projected rows", () => {
   const calls = [];
   const issueClient = createGhIssueClient({
     execFileSync(command, args, options) {
       calls.push({ command, args, options });
-      return JSON.stringify([[rawCommentRow(7)], [rawCommentRow(8, "status update", "octocat")]]);
+      return JSON.stringify([rawCommentRow(7), rawCommentRow(8, "status update", "octocat")]);
     },
   });
 
@@ -823,8 +823,6 @@ test("comments adapter uses the fixed issue endpoint, pagination, projection, an
   assert.deepEqual(calls[0].args, [
     "api",
     "repos/Daisuke134/life-manager-workrooms/issues/42/comments?per_page=100",
-    "--paginate",
-    "--slurp",
   ]);
   assert.equal(calls[0].args.includes("-R"), false);
   assert.equal(calls[0].args.includes("--repo"), false);
