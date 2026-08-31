@@ -6282,7 +6282,17 @@ effect-capable `application-lane-agent`だけを使う。1 wake内と1日の応�
 - ASACは公式login formまで到達した。stored credentialは通らず、公式surfaceに自動password-resetはなくcontact routeだけがある。
 - YCはWinter 2027 open batchとemail one-time-code/login-link stepを公式画面で確認した。application form自体にはまだ到達していない。
 - 最新runはowned targetをrun evidenceへ保存し、別shell actionから復元してASAC公式page、9月13日締切、login URL、募集要領を再読した。
+- 後続runはASAC recovery requestとYC checkpointの後も停止せず、新規HF0 acceleratorを発見して公式applicationの2ページ目まで進め、durable cursorを`resume_hf0_application_second_page`へ更新した。
+- owner指定founder videoは`https://www.youtube.com/watch?v=BR7wq92s8hE`、title `Life Manager`、duration 120秒、availability unlistedとして検証し、private founder profileの`facts[]`へ保存した。
 - この復旧後の新規`submitted_verified`はまだ0件であり、loop復旧とapplication outcomeを混同しない。
+
+#### Remaining TODO（順序不変）
+
+1. HF0 applicationの2ページ目を同じdurable cursorから再開し、公式submission receiptまたは具体的human checkpointまで完了する。
+2. founder videoがrequiredで、公式上限が120秒以上の候補ではprofile factのURLまたは検証済みdownload fileを使用する。120秒未満ならその候補だけcheckpointし、次候補へ進む。
+3. configured候補がblocked、duplicate、ineligibleでもpassを終了せず、公式Web/Xから未処理candidateを発見してqueueへ追加する。
+4. 復旧後最初の新規`submitted_verified`をcompletion PNG、Telegram photo message ID、application dossier付きで作る。
+5. 以後の自然wakeでも同一cohort replay 0を保ち、openでeligibleな新規候補がある限り件数上限なしで処理する。
 
 #### Test Matrix
 
@@ -6302,7 +6312,8 @@ effect-capable `application-lane-agent`だけを使う。1 wake内と1日の応�
 
 #### User GUI Task
 
-現時点でDaisが行う作業は1件だけである。TelegramでFundraiserからYC認証の通知が届いた時、
+現時点でDaisが先に行う作業はない。loopはYC/ASACで待たず、HF0と新規候補を継続する。
+TelegramでFundraiserからYC認証の通知が届いた時だけ、
 Mac上の既存YC/Gmail画面で認証を直接完了する。one-time codeやlogin linkをTelegram、chat、repoへ転記しない。
 要求前にYC動画を撮影しない。
 ASACのcontact/recovery、program探索、form入力、証拠保存はloopが継続する。
