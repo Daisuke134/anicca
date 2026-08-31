@@ -1384,3 +1384,44 @@ Life Manager本体に触る前に、Life Managerと無関係な外側から回�
 
 各stepは「削除した」ではなく、**削除後に `df -k /System/Volumes/Data` を再測し、
 稼働中loopが次のkickstartで正常起動すること**を確認して初めて完了とする。
+
+### 2026-08-31 — general agent 移行先との関係（削除対象からの除外根拠）
+
+`~/Projects/life-manager-eliza-migration` (1.3G) は**削除対象ではない**。
+これは `Daisuke134/life-manager-eliza` = elizaOS fork であり、Life Manager を
+niche loop 群から general agent へ移行させる作業場所である。
+
+測定した事実:
+
+- ローカル `migration/eliza-docs` は 3 commit、`origin/migration/eliza-docs` は **85 commit**。
+  ローカルは 82 commit 遅れた陳腐化コピーであり、正本は GitHub 側にある。
+- `git log --branches --not --remotes` が示した1件 `61174b277` も
+  `refs/heads/feat/elz-c09-goal-reflection` として origin に存在する。**未push作業はゼロ**。
+- ローカルに elz-c03〜c09 の branch が39本あるが、いずれも origin/migration/eliza-docs より
+  behind であり、内容は remote に含まれている。origin には elz 系 head が15本ある。
+- `plugins/plugin-life-manager/src/index.ts` は現在 service 登録と health provider/action だけの
+  スケルトンである。実capabilityの移植は未着手。
+- general agent の設計正本は eliza側 `docs/legacy-life-manager/superpowers/plans/` の8本
+  (2026-08-28)。goal-work-item、capability-manifest、bounded-specialist-runtime、
+  application-effect-kernel、first-application-canary、dependency-retirement、
+  clean-release、oss-manifest。niche loop は bounded specialist として general runtime 配下へ入る。
+
+### 掃除と移行は別トラックではない
+
+GA-13A `dependency-retirement` は `tier2-agent-diagnose` の `~/profitable-claude`
+checkout 依存を切る作業であり、これはそのまま host reclaim である。
+現状 PR #3018 は merge 済み、sparse release `20260829T000118-cc94f70e` が current、
+developer-checkout 参照は0だが、plan は **natural target-SHA terminal event が pending** と
+記録している。したがって `~/profitable-claude` (2.1G) は
+**その natural pass を確認するまで削除してはならない**。
+`citizens-diff-monitor` の `~/.hermes/state/citizens.json` 依存も未解決である。
+
+### 掃除の完了は収益再開を意味しない
+
+実測: `ebook`/`heygen` を含む launchd label はゼロ。`~/anicca-monk-factory` (3.1G) は
+launchd 参照ゼロ、最終更新 2026-07-20、`accounts/` は `anicca-test-001`〜`005` のみで休眠。
+稼働中の IG 投稿は `ai.anicca.life-manager-anicca-*-instagram` 系7本だが、
+`larry-ja` / `en-affirmation` / `main` の最終終了ステータスは 1、
+`capafy-ig-marketing-daily` は 2 で、いずれも失敗している。
+「掃除が終われば ebook と monk 動画で稼ぎ始める」は現在の配線では成立しない。
+掃除タスクとは別に、投稿loopの修復と ebook/monk の配線が要る。
