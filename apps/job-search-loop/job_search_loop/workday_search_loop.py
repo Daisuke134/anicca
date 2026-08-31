@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 
 from .agent_runner import AgentRunner, wrap_untrusted
 from .application_reporting import deliver_fit_decision
+from .ats import detect_provider
 from .ledger import Ledger
 from .state import canonical_url, is_excluded_employer, same_application_surface
 from .workday_discovery import _fetch_jobs, discover_one
@@ -103,7 +104,8 @@ def qualified_queue_ids(
             dict.fromkeys(
                 str(row["application_id"])
                 for row, retryable in rows
-                if (
+                if detect_provider(str(row["canonical_url"])) == "workday"
+                and (
                     retryable
                     or (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
                     in allowed_hosts

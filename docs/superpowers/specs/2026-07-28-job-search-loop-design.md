@@ -158,6 +158,12 @@ the browser receives an empty queue. The active atom applies the existing
 retryables remain owned by their own browser provider path and cannot abort Workday
 discovery.
 
+The provider-filter repair applies the existing `detect_provider()` contract before
+the retryable host bypass and every Workday credential/fit access. RED returned both
+Ashby and Danaher from the Workday queue; GREEN returns only Danaher. Qualification
+tests pass 45/45 and the full Job Hunter suite passes 438/438. Main release and
+natural retryable reopen proof remain.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable

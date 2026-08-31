@@ -623,6 +623,35 @@ class WorkdayQualificationTests(unittest.TestCase):
 
         self.assertEqual(queued, ("retryable-application",))
 
+    def test_non_workday_retryable_cannot_abort_workday_queue(self):
+        ledger = Mock()
+        ledger.pending_materials_ready_applications.return_value = []
+        ledger.retryable_applications.return_value = [
+            {
+                "application_id": "ashby-retry",
+                "company": "Ashby Company",
+                "title": "Role",
+                "canonical_url": "https://jobs.ashbyhq.com/example/role",
+            },
+            {
+                "application_id": "workday-retry",
+                "company": "Danaher",
+                "title": "Business Account Manager",
+                "canonical_url": "https://danaher.wd1.myworkdayjobs.com/job/role",
+            },
+        ]
+        ledger.workday_fit_qualified.return_value = True
+        with patch.object(
+            workday_search_loop, "Ledger", return_value=ledger
+        ), patch.dict(
+            os.environ, {"JOB_SEARCH_MACHINE_CREDENTIALS": ""}
+        ):
+            queued = qualified_queue_ids(
+                Path("/ledger.sqlite3"), set(), policy_version="test"
+            )
+
+        self.assertEqual(queued, ("workday-retry",))
+
     def test_duplicate_registry_source_is_fetched_once(self):
         sources = (
             {"company": "A", "host": "a.wd1.myworkdayjobs.com", "tenant": "a", "site": "Careers", "search_text": "one"},
