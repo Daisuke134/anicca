@@ -299,6 +299,7 @@ class LmLoopApplyTest(unittest.TestCase):
             "EnvironmentVariables": {
                 "CUSTOM": "kept",
                 "CODEX_HOME": "/tmp/legacy-codex-home",
+                "LIFE_MANAGER_REPO": "/old/missing/release",
                 "LIFE_MANAGER_RELEASE_SHA": "old",
             },
             "WorkingDirectory": "/var/tmp/example",
@@ -319,6 +320,7 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(installed["EnvironmentVariables"]["CUSTOM"], "kept")
         self.assertNotIn("CODEX_HOME", installed["EnvironmentVariables"])
+        self.assertEqual(installed["EnvironmentVariables"]["LIFE_MANAGER_REPO"], str(self.root.resolve()))
         self.assertEqual(installed["EnvironmentVariables"]["LIFE_MANAGER_RELEASE_SHA"], SHA)
         self.assertEqual(installed["WorkingDirectory"], "/var/tmp/example")
         self.assertEqual(installed["ProcessType"], "Interactive")

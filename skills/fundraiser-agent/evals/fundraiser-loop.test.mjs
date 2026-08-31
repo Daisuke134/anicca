@@ -406,7 +406,7 @@ test("outbound email preflight rejects rendered spam defects", () => {
   assert.equal(result.stdout, valid);
 });
 
-test("production queue enforces founder geography, format, priority, and YC hold", () => {
+test("production queue advances current ASAC and YC work without replaying closed cohorts", () => {
   const fundraising = productionOpportunities;
   assert.deepEqual(fundraising.geographies, [
     "Tokyo, Japan",
@@ -421,23 +421,16 @@ test("production queue enforces founder geography, format, priority, and YC hold
     "Y Combinator",
   ]);
   assert.deepEqual(fundraising.priority_queue.map((item) => item.action), [
-    "retry_when_provider_password_validator_changes",
+    "inactive_deadline_passed",
     "terminal_ledger_owned",
-    "retry_when_password_recovery_arrives",
-    "hold_do_not_submit",
+    "apply_now_account_recovery",
+    "apply_now_founder_video_checkpoint",
   ]);
-  assert.match(fundraising.priority_queue[0].reason, /password-reset\/account-recovery/);
-  assert.match(fundraising.priority_queue[0].reason, /official free new-customer registration route/);
-  assert.match(fundraising.priority_queue[0].reason, /Do not preserve no-registration as a human checkpoint/);
-  assert.match(fundraising.priority_queue[1].reason, /candidate\.travel_authorizations\[\]/);
-  assert.match(fundraising.priority_queue[1].reason, /X\/Twitter credential record/);
-  assert.match(fundraising.priority_queue[1].reason, /candidate\.citizenship/);
-  assert.match(fundraising.priority_queue[1].reason, /ESTA travel authorization is not a U\.S\. visa/);
-  assert.match(fundraising.priority_queue[1].reason, /private profile facts\[\]/);
-  assert.match(fundraising.priority_queue[1].reason, /do not checkpoint this already-established fact/);
-  assert.match(fundraising.priority_queue[2].reason, /candidate\.name_kana/);
-  assert.match(fundraising.priority_queue[2].reason, /never serialize the JSON object/);
-  assert.equal(fundraising.priority_queue.find((item) => item.program === "Y Combinator")?.action, "hold_do_not_submit");
+  assert.match(fundraising.priority_queue[0].reason, /deadline has passed/);
+  assert.match(fundraising.priority_queue[1].reason, /terminal receipt/);
+  assert.match(fundraising.priority_queue[2].reason, /September 13, 2026/);
+  assert.match(fundraising.priority_queue[3].reason, /founder video/);
+  assert.match(fundraising.priority_queue[3].reason, /continue discovering and applying/);
   assert.match(dailyPrompt, /Reject Kenya and every other geography/);
   assert.match(dailyPrompt, /Never submit a `hold_do_not_submit` program/);
   assert.match(dailyPrompt, /Ordinary privacy-policy and data-processing consent/);
