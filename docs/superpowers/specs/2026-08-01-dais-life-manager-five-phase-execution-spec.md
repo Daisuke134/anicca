@@ -6263,7 +6263,7 @@ effect-capable `application-lane-agent`だけを使う。1 wake内と1日の応�
 2. 自然wakeがledger-firstで開始し、current `apply_now`候補後もWeb/X discoveryを継続する。
 3. owned browser target IDをrun evidenceへ保持し、別shell actionでも同一tabを再利用する。
 4. successは公式completion/readback、PNG、Telegram photo message ID、application dossierが揃った時だけ成立する。
-5. founder video、voice、KYC、本人出席など人間専用物は当該候補だけcheckpointし、他候補を止めない。
+5. 欠落する通常fieldはagentが根拠付きで推論して続行する。KYC、署名、銀行、存在しない固有識別子が必須なら当該候補だけrejectし、他候補を止めない。
 6. Telegram、browser navigation、agent claim、exit 0だけをapplication successとして数えない。
 
 #### As-Is / To-Be
@@ -6312,11 +6312,9 @@ effect-capable `application-lane-agent`だけを使う。1 wake内と1日の応�
 
 #### User GUI Task
 
-現時点でDaisが先に行う作業はない。loopはYC/ASACで待たず、HF0と新規候補を継続する。
-TelegramでFundraiserからYC認証の通知が届いた時だけ、
-Mac上の既存YC/Gmail画面で認証を直接完了する。one-time codeやlogin linkをTelegram、chat、repoへ転記しない。
-要求前にYC動画を撮影しない。
-ASACのcontact/recovery、program探索、form入力、証拠保存はloopが継続する。
+Daisが行う先行作業はない。通常fieldはagentが推論し、YC/ASAC/HF0で待たず新規候補を継続する。
+one-time codeやlogin linkをTelegram、chat、repoへ転記しない。認証、contact/recovery、program探索、
+form入力、動画利用、証拠保存はloopが行い、完了不能な候補はrejectして次へ進む。
 
 #### Execution Steps
 
