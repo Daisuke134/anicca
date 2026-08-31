@@ -1448,7 +1448,7 @@ test("Add to Calendar with optional management verification and no active form i
   assert.equal(receipt.handoffReason, null);
 });
 
-test("Add to Calendar does not confirm while a registration form is still active", async () => {
+test("an active registration form remains a structured human handoff", async () => {
   const { driver } = fixture({
     receipt: {
       confirmed: false,
@@ -1466,7 +1466,8 @@ test("Add to Calendar does not confirm while a registration form is still active
   });
   const receipt = await driver.readProviderReceipt(session);
   assert.equal(receipt.confirmed, false);
-  assert.equal(receipt.handoffRequired, false);
+  assert.equal(receipt.handoffRequired, true);
+  assert.equal(receipt.handoffReason, "registration");
 });
 
 test("active provider OTP form remains a structured 2FA handoff", async () => {
