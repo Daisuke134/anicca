@@ -237,6 +237,22 @@ no clicked or confirmed phase. It does not increment the fence, allocate a new
 slot, or reopen terminal/ambiguous work. Acceptance is the same natural row
 reaching browser-fence acquisition and one final click.
 
+Main release `20260831T232628-f5b3f345` is loaded by all five Job Hunter
+owners. Natural wake `daily-20260831-232748` queues the two stranded Danaher
+rows with zero fit calls. It resumes the Clinical Sales final Review on existing
+fence 2 and finalizes with exit 0; provider readback is definitively
+`not_submitted` with `rendered_validation_rejection` and Telegram message
+`46518`, so no Gmail submission is claimed. The same wake then continues to
+Business Account Manager, uploads the resume, corrects the current work start
+date to April 2025, keeps the current-work flag, answers the required employer
+questions, and remains live before the final terms/Review gate. Current rolling
+proof is 5 distinct Gmail-confirmed submissions in 24 hours against target 48.
+The active order remains: finish this Business Account Manager row to provider
+terminal evidence; reconcile Gmail and Ledger; diagnose the exact rendered
+validation fields for definite `not_submitted` rows; then drain the remaining
+eligible queue before fresh discovery. Cadence remains 1,800 seconds and is not
+the completion claim.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
