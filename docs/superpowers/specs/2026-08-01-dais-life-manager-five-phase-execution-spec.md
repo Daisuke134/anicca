@@ -5087,19 +5087,19 @@ application kitは2回連続生成で同一、skill validatorもpassした。YC 
 bindされ、未確認founder videoをexpected blockerとして保持し`submit_allowed: false`である。監査証拠は
 `docs/evidence/fundraising/2026-08-02-startup-context-audit.json`。O1C-00は完了し、現在地をO1B-25へ戻す。
 
-- [ ] O1C-01 repository-owned startup contextを全funder applicationのcompany facts正本として接続
+- [x] O1C-01 repository-owned startup contextを全funder applicationのcompany facts正本として接続
 - [ ] O1C-02 funder/accelerator registryを再構築
 - [ ] O1C-03 MUFG運営/CVC deny gateとpartner確認を実装
-- [ ] O1C-04 YC descriptionを制約内へ修正
-- [ ] O1C-05 58秒founder videoを検証してupload
+- [ ] O1C-04 YC Winter 2027 formへemail認証後に到達し、descriptionの実制約をreadbackして修正
+- [ ] O1C-05 official YC formがfounder videoをrequiredと示した時だけ、現行仕様に合う動画を撮影・検証してupload
 - [ ] O1C-06 founder profileを完了
-- [ ] O1C-07 YC Fall 2026へ実提出
+- [ ] O1C-07 YC Winter 2027へ実提出
 - [ ] O1C-08 完了画面、確認mail、ledger、Telegramを照合
 - [ ] O1C-09 cold outreachを1日3〜5通で再開
 - [ ] O1C-10 follow-up最大2回を自動実行
 - [ ] O1C-11 Gmail reply/rejection/meetingを型付きstatusへ反映
 - [ ] O1C-12 meetingをCalendarへ登録し面談資料を生成
-- [ ] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
+- [x] O1C-13 全form送信を既存CloakBrowser daily-driverで行い、新browserを起動しない
 - [ ] O1C-14 公式program pageを毎日探索し、固定list外の新規募集をregistryへ追加
 - [ ] O1C-15 deadline、location、solo可否、terms、eligibilityを提出当日に再検証
 - [ ] O1C-16 会社facts、traction、MRR、deck、videoのfreshness gateを実装
@@ -5108,9 +5108,9 @@ bindされ、未確認founder videoをexpected blockerとして保持し`submit_
 - [ ] O1C-19 accelerator以外のVC/angelはthesis一致時だけ1日3〜5件へpersonalized outreach
 - [ ] O1C-20 採択・面談の結果を次のpitchとtarget rankingへ反映する週次reflection
 - [ ] O1C-21 旧`apply-to-yc`のfield/video/progress知識を後継YC providerへ移植
-- [ ] O1C-22 古いSummer application IDがFall 2026へ継続可能かYC home実画面で確認
-- [ ] O1C-23 `yc-w26.json`のbatch、deadline、amount、URLをcurrent official factsへ更新
-- [ ] O1C-24 YC操作を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行
+- [ ] O1C-22 email認証後のYC homeで、旧applicationがWinter 2027へ継続可能か実画面確認
+- [ ] O1C-23 YC program configのbatch、deadline、amount、URLをWinter 2027のcurrent official factsへ更新
+- [x] O1C-24 YC操作を別Chrome `9223`から既存CloakBrowser daily-driver `:9222`へ移行
 - [ ] O1C-25 current company facts、founder profile、58秒動画、demo、progressをpreviewで全確認
 - [ ] O1C-26 Submitを一度だけ実行し、完了画面とconfirmation mailを取得
 - [ ] O1C-27 YC reply/interviewを毎日追跡し、Calendarと面談準備へ接続
@@ -6174,6 +6174,12 @@ Job Hunterはofferと給与、CFOは可視性・費用削減・資金配分、Cr
 
 ## 12. 2026-08-01時点の資金調達queue
 
+この表は履歴であり、現在の応募queueではない。現行の機械可読queueは
+`.agents/fundraising-opportunities.json`、提出履歴は
+`~/.local/state/life-manager/fundraiser/application-receipts.jsonl`を正本とする。
+現行priorityは、応募期限が9月13日のASAC第4期プレシード・第23期シードと、
+公式画面でopenを確認したYC Winter 2027である。
+
 固定listを永続的な正本にはしない。以下は**今日のbootstrap queue**であり、毎日公式pageから
 再取得する。締切、terms、eligibilityが変わったprogramを古いJSONのまま提出しない。
 
@@ -6195,7 +6201,11 @@ valuation上昇が必要である。
 ## 13. Fundraising agentの連続loop
 
 ```text
-毎日06:30 DISCOVER
+毎分wake（run lockで非重複）
+  ledger / dossier / current priority queueを先に読む
+        │
+        ▼
+DISCOVER
   公式accelerator/VC/grant page・newsletter・既知registryを取得
         │
         ▼
@@ -6205,7 +6215,8 @@ QUALIFY（agent判断）
         ├─不適合 → 理由付きskip + 次回再確認日
         ▼
 PREPARE
-  application-kitの事実 + 最新traction + deck + 58秒video + program別回答
+  application-kitの事実 + 最新traction + deck + program別回答
+  videoは公式formがrequiredと実読できた候補だけhuman checkpoint
         │
         ▼
 VERIFY（deterministic gate）
@@ -6236,6 +6247,74 @@ localでは`gog`を使う。すでにOAuthとCLIがあり、launchdからJSONで
 Gmail MCPは対話調査には使えても、停止中のaccept watcherのように定期workerが「MCPで読め」と
 表示するだけでは実行にならない。Web版では同じmail interfaceをtenant別Google OAuth/Gmail APIへ
 差し替え、localの個人tokenを他userへ流用しない。
+
+### 13.1 現行Fundraiser contract
+
+#### Overview
+
+`fundraiser`はLife Managerの`earn/application` loopである。launchd labelは
+`ai.anicca.fundraiser`、cadenceは60秒、既存daily-driver `:9222`と
+effect-capable `application-lane-agent`だけを使う。1 wake内と1日の応募件数に
+任意上限を設けず、同一program/cohort/accountのterminal receiptだけをreplay barrierにする。
+
+#### Acceptance Criteria
+
+1. loaded `ProgramArguments`、`LIFE_MANAGER_REPO`、release SHAが同じexisting immutable releaseを指す。
+2. 自然wakeがledger-firstで開始し、current `apply_now`候補後もWeb/X discoveryを継続する。
+3. owned browser target IDをrun evidenceへ保持し、別shell actionでも同一tabを再利用する。
+4. successは公式completion/readback、PNG、Telegram photo message ID、application dossierが揃った時だけ成立する。
+5. founder video、voice、KYC、本人出席など人間専用物は当該候補だけcheckpointし、他候補を止めない。
+6. Telegram、browser navigation、agent claim、exit 0だけをapplication successとして数えない。
+
+#### As-Is / To-Be
+
+| As-Is | To-Be |
+|---|---|
+| 消滅済みrelease rootで毎分exit 2 | current immutable release rootへ必ず上書き |
+| read-only intent planner | filesystem/CDP/receiptを扱うapplication lane |
+| CDP targetがshell間で消失 | owned target IDをrun evidenceから復元 |
+| YC Fall 2026を想定 | official readback済みのYC Winter 2027をcurrent batchにする |
+| videoを応募前の一律blockerにする | official formでrequiredを確認した時だけDaisへ依頼 |
+
+#### Current Readback
+
+- runtimeはrelease `42106085490c0c5ac584e310dc3faba346deacb1`、60秒cadence、last exit 0で連続稼働する。
+- ASACは公式login formまで到達した。stored credentialは通らず、公式surfaceに自動password-resetはなくcontact routeだけがある。
+- YCはWinter 2027 open batchとemail one-time-code/login-link stepを公式画面で確認した。application form自体にはまだ到達していない。
+- 最新runはowned targetをrun evidenceへ保存し、別shell actionから復元してASAC公式page、9月13日締切、login URL、募集要領を再読した。
+- この復旧後の新規`submitted_verified`はまだ0件であり、loop復旧とapplication outcomeを混同しない。
+
+#### Test Matrix
+
+| # | To-Be | Test / evidence | Cover |
+|---:|---|---|---|
+| 1 | release root一致 | `runtime.loop.tests.test_lm_loop_apply` + loaded plist readback | OK |
+| 2 | effect-capable route | fundraiser contract test + natural agent-runner event | OK |
+| 3 | owned tab継続 | default-tab open/eval/close + natural ASAC cross-shell readback | OK |
+| 4 | replay-zero receipt | fundraiser recorder eval | OK |
+| 5 | human checkpoint非停止 | fundraiser continuous-pass eval | OK |
+
+#### Boundaries
+
+- 同一cohortへの重複応募、事実の捏造、未承認のequity/payment/relocation/publicity commitmentは行わない。
+- Daisに汎用browser操作、credential入力、program探索を依頼しない。
+- founder videoはrequired formと公式仕様を読めるまで撮影を依頼しない。
+
+#### User GUI Task
+
+現時点でDaisが行う作業は1件だけである。TelegramでFundraiserからYCのfresh one-time codeまたは
+login linkを要求された時、そのfresh値だけをTelegramへ返す。要求前にYC動画を撮影しない。
+ASACのcontact/recovery、program探索、form入力、証拠保存はloopが継続する。
+
+#### Execution Steps
+
+`main → immutable release → LIFE_MANAGER_APPLY_TARGET=fundraiser lm-loop apply → natural wake →
+official provider readback → receipt/Telegram`の順を維持する。
+
+| Item | Value |
+|---|---|
+| UI変更 | なし |
+| 結論 | Maestro: 不要（理由: macOS launchd/browser loopと外部provider readbackの変更であり、iOS UI変更ではない） |
 
 ## 14. Telegramに今日届くべき実例
 
