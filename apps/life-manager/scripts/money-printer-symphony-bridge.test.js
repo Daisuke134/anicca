@@ -34,6 +34,7 @@ function packet(overrides = {}) {
     dispatch_id: DISPATCH_ID,
     job_id: JOB_ID,
     round: 1,
+    answered_human_boundaries: [],
     opportunity_ref: `opportunity://${encodeURIComponent(TENANT)}/${encodeURIComponent(OPPORTUNITY_ID)}`,
     job_ref: `runtime-job://${encodeURIComponent(TENANT)}/${encodeURIComponent(JOB_ID)}`,
     title: "A bounded opportunity",
@@ -69,6 +70,7 @@ function dispatch(overrides = {}) {
     job_id: JOB_ID,
     round: 1,
     status: "claimed",
+    answered_human_boundaries: [],
     ...overrides,
   };
 }
@@ -210,6 +212,7 @@ test("claimed dispatch produces one safe packet after exactly two guest/workroom
       currency: "USD",
       workroom_status: "WORKING",
       result_protocol: "LM_RESULT_V1",
+      answered_human_boundaries: [],
     },
   };
   assert.deepEqual(result, expected);
@@ -224,6 +227,65 @@ test("claimed dispatch produces one safe packet after exactly two guest/workroom
   assert.doesNotMatch(JSON.stringify(result), /private|secret|session/);
 });
 
+test("round2 claim freezes answered boundary references into the private issue packet", async () => {
+  const answered = {
+    reason_code: "provider/interview",
+    answer_ref: `vault-answer://${TENANT}/approve`,
+    human_boundary_ref: `human-boundary://sha256/${"a".repeat(64)}`,
+  };
+  const result = await claimMoneyPrinterWorkPacket(config(), {
+    fetchImpl: fakeFetch([
+      response(200, { dispatch: dispatch({ round: 2, answered_human_boundaries: [answered] }) }),
+      response(200, "<private html>", { "set-cookie": COOKIE }),
+      response(200, workroom()),
+    ]),
+  });
+
+  assert.deepEqual(result.packet.answered_human_boundaries, [answered]);
+  assert.equal(Object.isFrozen(result.packet), true);
+  assert.equal(Object.isFrozen(result.packet.answered_human_boundaries), true);
+  assert.equal(Object.isFrozen(result.packet.answered_human_boundaries[0]), true);
+  const issue = buildMoneyPrinterIssue(result.packet);
+  assert.match(issue.body, /answered_human_boundaries/);
+  assert.match(issue.body, /vault-answer:\/\/tenant-a\/approve/);
+  assert.doesNotMatch(issue.body, /private_answer|secret|raw answer/i);
+
+  for (const invalidBoundary of [
+    { ...answered, answer_ref: `vault-answer://${FOREIGN_TENANT}/approve` },
+    { ...answered, human_boundary_ref: "human-boundary://sha256/not-a-sha" },
+    { ...answered, private_answer: "must not leak" },
+  ]) {
+    await assert.rejects(
+      claimMoneyPrinterWorkPacket(config(), {
+        fetchImpl: fakeFetch([response(200, {
+          dispatch: dispatch({ round: 2, answered_human_boundaries: [invalidBoundary] }),
+        })]),
+      }),
+      /dispatch|boundary|scope|invalid/i,
+    );
+  }
+});
+
+test("claim rejects non-empty round1 and empty round2 boundaries before guest access", async () => {
+  const answered = {
+    reason_code: "provider/interview",
+    answer_ref: `vault-answer://${TENANT}/approve`,
+    human_boundary_ref: `human-boundary://sha256/${"a".repeat(64)}`,
+  };
+  for (const [round, boundaries] of [[1, [answered]], [2, []]]) {
+    const calls = [];
+    await assert.rejects(
+      claimMoneyPrinterWorkPacket(config(), {
+        fetchImpl: fakeFetch([response(200, {
+          dispatch: dispatch({ round, answered_human_boundaries: boundaries }),
+        })], calls),
+      }),
+      /boundary|dispatch|scope|invalid/i,
+    );
+    assert.equal(calls.length, 1);
+  }
+});
+
 test("durable recovery claims preserve only status and issue ref while rebuilding the safe packet", async () => {
   for (const status of ["mirrored", "result_ready", "consumed"]) {
     const calls = [];
@@ -235,6 +297,7 @@ test("durable recovery claims preserve only status and issue ref while rebuildin
           job_id: JOB_ID,
           round: 1,
           status,
+          answered_human_boundaries: [],
           issue_ref: ISSUE_REF,
         } }),
         response(200, "<private html>", { "set-cookie": COOKIE }),
@@ -365,7 +428,7 @@ test("issue builder includes only the frozen public packet, full marker, and one
   assert.deepEqual(bodyFields, [
     "protocol", "tenant_id", "dispatch_id", "job_id", "round", "opportunity_ref",
     "job_ref", "title", "source_url", "value_minor", "currency", "workroom_status",
-    "result_protocol",
+    "result_protocol", "answered_human_boundaries",
   ]);
   assert.doesNotMatch(issue.body, /bearer|cookie|private|activity|pii|raw error|authorization|token|secret/i);
   assert.doesNotMatch(issue.body, new RegExp(SECRET));
@@ -1418,6 +1481,7 @@ test("main recovers a mirrored dispatch on the next invocation and performs resu
         job_id: JOB_ID,
         round: 1,
         status: "mirrored",
+        answered_human_boundaries: [],
         issue_ref: ISSUE_REF,
       } }),
       response(200, "<private html>", { "set-cookie": COOKIE }),
@@ -1473,6 +1537,7 @@ test("consumed recovery completes after a close failure without duplicate issue 
           job_id: JOB_ID,
           round: 1,
           status: "result_ready",
+          answered_human_boundaries: [],
           issue_ref: ISSUE_REF,
         } }),
         response(200, "<private html>", { "set-cookie": COOKIE }),
@@ -1501,6 +1566,7 @@ test("consumed recovery completes after a close failure without duplicate issue 
         job_id: JOB_ID,
         round: 1,
         status: "consumed",
+        answered_human_boundaries: [],
         issue_ref: ISSUE_REF,
       } }),
       response(200, "<private html>", { "set-cookie": COOKIE }),
