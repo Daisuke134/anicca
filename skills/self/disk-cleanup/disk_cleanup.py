@@ -538,6 +538,29 @@ class HostDiskGovernor:
         return frozenset(roots)
 
     @staticmethod
+    def _whole_tree_is_the_unit(path: Path, item: dict) -> bool:
+        """Classes where scanning the inside proves nothing about whether to keep it.
+
+        A release is an export of the repository, so it always contains source and a
+        descendant scan would preserve every generation forever. What makes an old
+        release safe to drop is that nothing references it, which is already checked.
+        """
+        if _is_code_sign_clone(path):
+            return True
+        return item.get("owner") == "release-retention" and item.get("discovery") == "allowlisted"
+
+    @staticmethod
+    def _remove_tree(path: Path) -> None:
+        """Releases are exported `chmod -R a-w`, and unlinking needs the write bit on the parent."""
+        for directory, _dirnames, _filenames in os.walk(path):
+            current = Path(directory)
+            try:
+                current.chmod(current.stat().st_mode | stat.S_IWUSR)
+            except OSError:
+                pass
+        shutil.rmtree(path)
+
+    @staticmethod
     def _receipt_reserve_valid(path: Path) -> bool:
         try:
             info = path.lstat()
@@ -721,7 +744,7 @@ class HostDiskGovernor:
                 preserve(state)
                 continue
             descendant_state = (
-                None if _is_code_sign_clone(path)
+                None if self._whole_tree_is_the_unit(path, item)
                 else self._protected_descendant(path, deadline=deadline)
             )
             if descendant_state is not None:
@@ -742,7 +765,7 @@ class HostDiskGovernor:
                 preserve("probe-budget-exhausted")
                 continue
             descendant_state = (
-                None if _is_code_sign_clone(path)
+                None if self._whole_tree_is_the_unit(path, item)
                 else self._protected_descendant(path, deadline=deadline)
             )
             if descendant_state is not None:
@@ -765,7 +788,7 @@ class HostDiskGovernor:
                 continue
             try:
                 if path.is_dir():
-                    shutil.rmtree(path)
+                    self._remove_tree(path)
                 else:
                     path.unlink()
             except OSError:
