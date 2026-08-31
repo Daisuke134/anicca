@@ -195,13 +195,13 @@ function renderPanelOnboardingPage(options = {}) {
 
 function renderPanelPage(options = {}) {
   const guest = options.guest === true;
-  const guestBanner = guest ? '<p class="guest-banner" data-guest-banner role="status">Judge guest — external effects disabled</p>' : "";
+  const guestBanner = guest ? '<p class="guest-banner" data-guest-banner role="status">Judge guest — isolated workroom</p>' : "";
   const mastheadNote = guest
-    ? "This isolated judge view shows the same Money Printer state without external effects."
+    ? "Add a paid opportunity and follow its cloud Money Printer workroom."
     : "今日はここまで整っています。予定、電話、つながっている context を、ひと目で確認できます。";
-  const statusLabel = guest ? "JUDGE GUEST / EFFECTS DISABLED" : "PERSONAL CONTROL CENTER";
+  const statusLabel = guest ? "JUDGE GUEST / ISOLATED WORKROOM" : "PERSONAL CONTROL CENTER";
   const mirrorNote = guest
-    ? '<p class="mirror-note"><strong>Judge view</strong><span>Money Printer state is isolated; external effects are disabled.</span></p>'
+    ? '<p class="mirror-note"><strong>Judge view</strong><span>This isolated guest workroom uses the real cloud agent and keeps other users private.</span></p>'
     : '<p class="mirror-note"><strong>あなたの状態と接続だけを表示しています。</strong><span>対応している設定はここでも Telegram でも同じように変更できます。</span></p>';
   const logoutMarkup = guest ? "" : '<form action="/panel/logout" method="post"><button class="control-action" type="submit">Logout</button></form>';
   const logoutScript = guest ? "" : `    const logout = document.querySelector('form[action="/panel/logout"]');
@@ -1297,6 +1297,7 @@ function renderPanelPage(options = {}) {
 
     function renderMoneyPrinter(data) {
       validateMoneyPrinterData(data);
+      const intake = '<form class="money-intake" data-money-opportunity-form><label>Opportunity URL<input name="source_url" type="url" required placeholder="https://…"></label><label>Title<input name="title" required maxlength="300"></label><label>What should the agent do?<input name="goal_statement" required maxlength="2000"></label><label>Value in minor units<input name="value_minor" inputmode="numeric" pattern="[0-9]+" required></label><label>Currency<input name="currency" value="USD" pattern="[A-Z]{3}" maxlength="3" required></label><button class="control-action" type="submit">Add opportunity</button><p data-money-opportunity-status aria-live="polite"></p></form>';
       const metrics = [["Paid & verified", formatMoneyMap(data.metrics.paid_verified)], ["Agents working", data.metrics.agents_working], ["Needs You", data.metrics.needs_you], ["Opportunity value", formatMoneyMap(data.metrics.opportunity_value)]]
         .map(function (item) { return '<article class="money-metric"><span>' + escapeHtml(item[0]) + '</span><strong>' + escapeHtml(item[1]) + '</strong></article>'; }).join("");
       const lanes = Object.keys(moneyLaneLabels).map(function (lane) {
@@ -1306,7 +1307,7 @@ function renderPanelPage(options = {}) {
         }).join("");
         return '<section class="money-lane"><h3>' + escapeHtml(moneyLaneLabels[lane]) + '</h3>' + (cards || '<p class="empty">No work</p>') + '</section>';
       }).join("");
-      return '<div class="money-metrics">' + metrics + '</div><div class="money-board">' + lanes + '</div><div data-money-human-task><p class="loading">Checking human tasks…</p></div><div class="money-workroom" data-money-workroom><p class="empty">Select an opportunity to inspect its workroom.</p></div>';
+      return intake + '<div class="money-metrics">' + metrics + '</div><div class="money-board">' + lanes + '</div><div data-money-human-task><p class="loading">Checking human tasks…</p></div><div class="money-workroom" data-money-workroom><p class="empty">Select an opportunity to inspect its workroom.</p></div>';
     }
 
     const renderers = Object.freeze({ "money-printer": renderMoneyPrinter, timeline: renderTimeline, scores: renderScores, ledger: renderLedger, gates: renderGates, settings: renderSettings, "control-center": renderControlCenter });
@@ -1346,6 +1347,27 @@ function renderPanelPage(options = {}) {
       const status = document.querySelector("[data-money-webmcp-status]");
       if (status) status.textContent = detail.tool + " · " + detail.status;
     });
+
+    async function submitMoneyOpportunity(form) {
+      const field = function (name) { const input = form.elements.namedItem(name); return String(input && input.value || "").trim(); };
+      const body = { source_url: field("source_url"), title: field("title"), goal_statement: field("goal_statement"), value_minor: field("value_minor"), currency: field("currency") };
+      const button = form.querySelector('button[type="submit"]');
+      const status = form.querySelector("[data-money-opportunity-status]");
+      button.disabled = true;
+      status.textContent = "Adding…";
+      try {
+        const response = await fetch("/api/panel/money-printer/opportunity", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json", "x-lm-csrf": controlCsrf || "${String(options.csrf || "")}", "idempotency-key": (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-opportunity") }, body: JSON.stringify(body) });
+        const result = await response.json().catch(function () { return {}; });
+        if (!response.ok || !/^[0-9a-f]{64}$/.test(String(result.opportunity_id || "")) || typeof result.job_ref !== "string" || typeof result.status !== "string") throw new Error("add failed");
+        form.reset();
+        await loadPanelSection("money-printer");
+        status.textContent = "Opportunity added";
+      } catch {
+        status.textContent = "Could not add opportunity";
+      } finally {
+        button.disabled = false;
+      }
+    }
 
     function commandForAction(action, button) {
       switch (action) {
@@ -1393,6 +1415,12 @@ function renderPanelPage(options = {}) {
       if (moneyCard) { loadMoneyWorkroom(moneyCard); return; }
       const button = event.target.closest("button[data-action]");
       if (button) runControlAction(button);
+    });
+    document.addEventListener("submit", function (event) {
+      const form = event.target.closest("form[data-money-opportunity-form]");
+      if (!form) return;
+      event.preventDefault();
+      submitMoneyOpportunity(form);
     });
 ${logoutScript}
     document.addEventListener("change", function (event) {
