@@ -2924,3 +2924,10 @@ browser profileは作らない。
 **DONE EVIDENCE:** focused Application tests 24、installer tests 2、Python/shell syntaxがPASS。production acceptanceはmain merge、immutable release、
 Work Sync→Application→Telegram ownerの順に再実行し、公式proposal IDを持つApplicationReceiptまたは全fresh候補の正直なdecision、次wake重複0、
 Telegram provider ACKで閉じる。
+
+**PRODUCTION RESULT:** main release `78c06d7d8558f184c03e79dce493d6011de35a95`のApplication ownerはprofile preflightを通過し、
+10 queryの重複排除和集合40件を観測して`duplicate_project / submitted false / exit 0`を返した。旧standard wakeの観測2件から被覆は回復した。
+同じreleaseのWork Syncはsource complete、公式proposal current 40、ApplicationReceipt 41、reply/contract/payment 0を返す。新規応募が無いので
+応募Telegramは存在しない。report ownerは新snapshotをenqueue 1 / attempt 1まで進めたが、OpenClaw CLIのstate-migration warningがJSONの前に
+出る現行envelopeをwhole-string `json.loads`して`provider_response_invalid / delivery_uncertain`になった。過去uncertain eventは再送せず、既存
+agent-runnerのstrict parse→`JSONDecoder.raw_decode` salvageをreporterへ再利用して次の新snapshotからprovider message IDを受理する。
