@@ -174,6 +174,7 @@ function fixture(fixtureOptions = {}) {
     readBrowserAuthSession,
     upsertBrowserAuthSession,
     invalidateBrowserAuthSession,
+    now: fixtureOptions.now,
   });
   return { driver, calls, authCalls, getOptions: () => options };
 }
@@ -226,6 +227,20 @@ test("Stagehand reasons over a Railway-private Steel session and discovers the t
   assert.match(tasks[1], /exactly one/i);
   assert.doesNotMatch(tasks.join("\n"), /fresh-events\.example/i, "the target comes from discovery, never configuration");
   assert.doesNotMatch(JSON.stringify(action), /browser-owner@example\.test/i, "the identity never enters durable results");
+});
+
+test("expired held session releases the exact Steel slot once", async () => {
+  let now = 1_788_300_000_000;
+  const { driver, calls } = fixture({ now: () => now });
+  const session = await driver.openSession();
+  await driver.discoverAndAct(session, { goal: "Find and register", locale: "en" });
+  assert.equal(driver.hasHeldSession(), true);
+  assert.equal(await driver.releaseExpiredSessions(), 0);
+  now += 10 * 60 * 1000 + 1;
+  assert.equal(await driver.releaseExpiredSessions(), 1);
+  assert.equal(driver.hasHeldSession(), false);
+  assert.equal(calls.filter(([name, id]) => name === "release" && id === session.id).length, 1);
+  assert.equal(await driver.releaseExpiredSessions(), 0);
 });
 
 test("a listing/search page is never accepted as the selected provider action page", async () => {
