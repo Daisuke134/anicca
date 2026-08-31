@@ -202,6 +202,19 @@ failed follow-up observation remain terminal runtime failures. Acceptance is a
 natural retry that advances beyond this page without a second click and reaches
 the provider terminal outcome.
 
+Natural wake `daily-20260831-222545` on release
+`20260831T222330-42c397aa` advances through final Review without the prior CDP
+failure, then the finalizer rejects fence 2 because the fence file for the same
+intent records consumed fence 1. Ledger correctly reopens a definite
+`not_submitted` attempt by incrementing the fence while retaining the intent ID;
+the browser fence incorrectly treats the old consumed generation as permanent.
+The active atom permits replacement only when the durable Ledger row is
+`submit_claimed` at a strictly newer fence. The same fence remains one-shot,
+older fences remain stale, `submit_unknown` and submitted rows never reopen, and
+the final click remains fenced. Acceptance is a natural Danaher retry that
+acquires fence 3, calls the final click at most once, and reaches provider and
+Gmail terminal evidence.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable

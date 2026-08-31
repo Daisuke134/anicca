@@ -67,15 +67,17 @@ class SubmissionFence:
         if not 1 <= ttl_seconds <= 300:
             raise ValueError("submission fence TTL must be 1..300 seconds")
         with self._locked(intent_id) as path:
-            if path.exists():
-                existing = json.loads(path.read_text(encoding="utf-8"))
-                if existing.get("consumed_at") or datetime.fromisoformat(
-                    existing["expires_at"]
-                ) > _now():
-                    raise RuntimeError("submission fence is already active or consumed")
             row = self._intent(intent_id)
             if str(row["status"]) != "submit_claimed" or int(row["fence"]) != fence:
                 raise RuntimeError("submission intent is stale or terminal")
+            if path.exists():
+                existing = json.loads(path.read_text(encoding="utf-8"))
+                same_or_newer_generation = int(existing.get("fence", 0)) >= fence
+                if same_or_newer_generation and (
+                    existing.get("consumed_at")
+                    or datetime.fromisoformat(existing["expires_at"]) > _now()
+                ):
+                    raise RuntimeError("submission fence is already active or consumed")
             if str(row["application_id"]) != review.application_id:
                 raise RuntimeError("submission application identity mismatch")
             if canonical_url(str(row["canonical_url"])) != review.canonical_url:
