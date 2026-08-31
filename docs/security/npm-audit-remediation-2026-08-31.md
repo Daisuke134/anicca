@@ -70,4 +70,13 @@ The npm guidance permits `npm audit fix` for compatible updates and recommends e
 | protobufjs | Only 7.6.4 → 7.6.6 | Inngest 40/40 and committed Automation Hub core 9/9 |
 | undici (introduced after baseline) | New direct dependency locked at patched 7.29.0 | undici dispatcher smoke and vault/secret provider 12/12 |
 
-The full Automation Hub and Panel verification must be rerun against the final integration commit. During remediation, those source files were being edited independently; their unfinished working-tree failures were not attributed to lockfile-only changes.
+Final integration verification was run from a clean archive of the committed tree so independently edited, unfinished working-tree files could not affect the result:
+
+- Automation Hub release suite: **126/126 passed**.
+- Automation Hub plus the committed Panel API integration coverage: **130/130 passed**.
+- Panel API/UI/auth/control-center/delegation/zero-link suite: **148/148 passed**.
+- Panel score suite: **14/14 passed**.
+- Automation Hub Panel API/UI focused suite: **6/6 passed**.
+- Panel privacy evaluation: passed (`api=177`, `browser=63`, `recipes=19`, `channels=9`, deterministic judge).
+- Inngest and Stagehand dependency-path regression suite: **95/95 passed**.
+- Production audit gate: `npm audit --omit=dev --audit-level=high` exited 0; the complete audit contains only the documented 17 Low findings.
