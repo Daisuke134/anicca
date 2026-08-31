@@ -2940,3 +2940,9 @@ agent-runnerのstrict parse→`JSONDecoder.raw_decode` salvageをreporterへ再�
 **TRANSPORT PARITY:** Coconala Apply/Paidは`openclaw gateway call send`ではなく、`OpenClawTelegramTransport`の
 `openclaw message send --channel telegram --target ... --message ... --json`をproductionで使う。Lancersも同じCLI contractへ揃え、独自gateway RPCを
 廃止する。既存Lancers outboxのsend-started/delivery-uncertain fenceは維持し、provider message IDはtop-levelまたは`payload`から取得する。
+
+**LIVE EVIDENCE:** main release `381e45d58aa16680a34a0d5cf1746ab4ac0efe3e`のWork Syncはsource complete、Application ownerは
+profile preflightの一時Timeout後に次wakeで自動回復し、45件を網羅して案件`5594595`を`duplicate_project`として重複送信0、exit 0で閉じた。
+Reporter ownerはApplication wake sequence `923`をevent keyへ固定し、Coconalaと同じ`openclaw message send`で
+`enqueued 1 / attempted 1 / delivered 1 / delivery_uncertain 0 / exit 0`、provider message ID `46424`を取得した。次Application wakeは
+同じdecisionでも一度報告し、同じwakeのReporter replayはevent keyで送信0にする。
