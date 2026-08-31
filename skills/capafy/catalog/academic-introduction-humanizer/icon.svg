@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Academic introduction editor icon">
+  <rect width="512" height="512" rx="104" fill="#172554"/>
+  <path d="M132 104h184l64 64v240H132z" fill="#f8fafc"/>
+  <path d="M316 104v68h64" fill="#f59e0b"/>
+  <path d="M182 226h150M182 278h118M182 330h92" stroke="#172554" stroke-width="20" stroke-linecap="round"/>
+  <path d="M332 346l26 26 54-66" fill="none" stroke="#f59e0b" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

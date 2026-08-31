@@ -310,7 +310,7 @@ def test_targeted_thread_reaches_official_readback(tmp_path):
         argv for argv in recorded
         if "--mode" in argv
         and argv[argv.index("--mode") + 1] in {
-            "direct-thread-only", "direct-inbox-head-only",
+            "direct-thread-only", "direct-thread-head-only",
         }
     ]
     assert collect
@@ -1427,6 +1427,56 @@ def test_targeted_preflight_uses_exact_thread_head_not_inbox_list(tmp_path, monk
     command = calls[0][1]
     assert command[command.index("--mode") + 1] == "direct-thread-head-only"
     assert command[command.index("--talkroom-id") + 1] == "123"
+
+
+def test_stale_list_head_never_opens_semantic_thread(tmp_path, monkeypatch):
+    """List A matching the action must not mask exact-thread head B."""
+    args = _targeted_args(tmp_path, SNAPSHOT_PATH)
+    action_id, inbox_event_key = _seed_inbox_action(args)
+    calls = []
+
+    def fake_run(step, command):
+        calls.append((step, command))
+        mode = command[command.index("--mode") + 1]
+        output_path = Path(command[command.index("--output") + 1])
+        if mode == "direct-inbox-head-only":
+            identity = "b" * 64
+            collector_mode = mode
+            source = "direct_inbox"
+        elif mode == "direct-thread-head-only":
+            identity = "c" * 64
+            collector_mode = mode
+            source = "direct_thread"
+        else:
+            raise AssertionError("semantic direct-thread collection must not run on stale head")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps({
+            "collector_mode": collector_mode, "head_only": True,
+            "read_only": True, "semantic_ssot": False,
+            "source_receipt": {"source": source},
+            "inquiries": [{
+                "talkroom_id": "123",
+                "talkroom_url": "https://coconala.com/mypage/direct_message/123",
+                "last_message_identity_sha256": identity,
+                "last_message_side": "buyer",
+                "buyer_sent_at": "2026-08-19T00:01:00+00:00",
+                "reply_required": True,
+            }],
+        }), encoding="utf-8")
+
+    monkeypatch.setattr(detector, "_run", fake_run)
+    result = detector.run_targeted_thread(
+        args, action_id=action_id, inbox_event_key=inbox_event_key,
+        thread_id="123", evidence=tmp_path / "evidence", run_id="run-stale-exact",
+    )
+
+    assert result["status"] == "pending"
+    assert "targeted_inbox_identity_changed" in result["errors"]
+    modes = [
+        command[command.index("--mode") + 1]
+        for _step, command in calls
+    ]
+    assert modes == ["direct-thread-head-only"]
 
 
 def test_direct_thread_only_owns_exact_url_and_emits_one_semantic_inquiry(

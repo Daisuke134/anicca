@@ -35,7 +35,7 @@ Screenshot is saved to $CP1_SHOT (default /tmp/cp1_shot.png), viewport-relative
 so the (x,y) in the state readout map directly to `click <x> <y>`.
 """
 import fcntl
-import json, os, signal, sys, time, urllib.request
+import json, os, signal, sys, time, urllib.parse, urllib.request
 from playwright.sync_api import sync_playwright
 
 SHOT = os.environ.get("CP1_SHOT", "/tmp/cp1_shot.png")
@@ -240,6 +240,24 @@ def _raw_capafy_page(cdp, target_hint=""):
     raise RuntimeError("no responsive Capafy CDP page: " + "; ".join(failures[-3:]))
 
 
+def _raw_new_page(cdp, url):
+    """Create a dedicated browser tab for CP1 when no Capafy page exists.
+
+    This is browser plumbing, not a publishing decision: the caller supplied the
+    exact review URL.  Raw CDP normally attaches to an existing page, but the
+    first CP1 command necessarily has no such page on a clean browser.
+    """
+    endpoint = cdp.rstrip("/") + "/json/new?" + urllib.parse.quote(url, safe=":/?=&%")
+    request = urllib.request.Request(endpoint, method="PUT")
+    with urllib.request.urlopen(request, timeout=8) as response:
+        target = json.loads(response.read())
+    ws_url = target.get("webSocketDebuggerUrl") if isinstance(target, dict) else ""
+    if not ws_url:
+        raise RuntimeError("CP1 raw page creation returned no websocket target")
+    from drive_checkpoint2 import _RawPage
+    return _RawPage(ws_url, call_timeout=4, connect_timeout=4)
+
+
 def _raw_click(pg, coords):
     if not isinstance(coords, dict) or not {"x", "y"} <= coords.keys():
         raise RuntimeError("CP1 target coordinates unavailable")
@@ -321,7 +339,15 @@ def _raw_upload(pg, idx, path):
 def raw_main(cmd):
     """Bounded raw-CDP fallback for every CP1 primitive except file upload."""
     target_hint = sys.argv[2] if cmd == "open" else os.environ.get("CP1_TARGET_TOKEN", "")
-    pg = _raw_capafy_page(CDP, target_hint)
+    if cmd == "open":
+        try:
+            pg = _raw_capafy_page(CDP, target_hint)
+        except RuntimeError as exc:
+            if "no existing Capafy createAgent page target" not in str(exc):
+                raise
+            pg = _raw_new_page(CDP, sys.argv[2])
+    else:
+        pg = _raw_capafy_page(CDP, target_hint)
     try:
         if cmd == "open":
             url = sys.argv[2]

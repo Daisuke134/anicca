@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Scholarship essay voice editor icon">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#172554"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#g)"/>
+  <path d="M143 112h170l56 56v214a30 30 0 0 1-30 30H143a30 30 0 0 1-30-30V142a30 30 0 0 1 30-30Z" fill="#f8fafc"/>
+  <path d="M313 112v58h56" fill="#99f6e4"/>
+  <path d="M165 226h180M165 278h142M165 330h102" stroke="#0f766e" stroke-width="20" stroke-linecap="round"/>
+  <path d="m325 347 42-42 27 27-42 42-36 10 9-37Z" fill="#f59e0b"/>
+</svg>

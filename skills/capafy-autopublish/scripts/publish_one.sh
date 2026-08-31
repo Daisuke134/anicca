@@ -47,9 +47,9 @@ step "[1] publish-init"
 cd "$PUB" || die "cd PUB"
 TITLE="$(grep -A1 '^## Title' "$LISTING" | tail -1)"
 cat > "$PUB/.temp/sel_one.json" <<JSON
-{"title":"${TITLE//\"/}","description":"${TITLE//\"/}","skills":[{"path":".openclaw/skills/$SKILL_NAME","name":"$SKILL_NAME","purpose":"$SKILL_NAME"}],"plugins":[],"crons":[]}
+{"title":"${TITLE//\"/}","description":"${TITLE//\"/}","skills":[{"path":".agents/skills/$SKILL_NAME","name":"$SKILL_NAME","purpose":"$SKILL_NAME"}],"plugins":[],"crons":[]}
 JSON
-ID="$(python3 packager.py publish-init --env openclaw --runtime-dir "$WS" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$PUB/.temp/sel_one.json" 2>&1 | python3 -c "import json,sys
+ID="$(python3 packager.py publish-init --env codex --runtime-dir "$HOME" --skill-dir "$WS/skills/$SKILL_NAME" --selections-file "$PUB/.temp/sel_one.json" 2>&1 | python3 -c "import json,sys
 try: print(json.loads(sys.stdin.read()).get('agent_id',''))
 except: print('')")"
 [ -n "$ID" ] || die "publish-init returned no agent_id (cap full? = 5 unlisted max)"

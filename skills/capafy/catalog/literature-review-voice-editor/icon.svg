@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Literature review editor icon">
+  <rect width="512" height="512" rx="96" fill="#17324d"/>
+  <path d="M130 104h188c35 0 64 29 64 64v216c0 14-11 25-25 25H169c-22 0-39-17-39-39V129c0-14 11-25 25-25z" fill="#f6f1e6"/>
+  <path d="M181 190h150M181 238h150M181 286h92" stroke="#17324d" stroke-width="20" stroke-linecap="round"/>
+  <path d="M292 336l69-69 31 31-69 69-45 14z" fill="#ed9a48"/>
+  <path d="M361 267l15-15c9-9 24-9 33 0l6 6c9 9 9 24 0 33l-15 15z" fill="#80c7b7"/>
+</svg>

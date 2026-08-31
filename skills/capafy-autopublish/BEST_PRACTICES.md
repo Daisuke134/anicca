@@ -130,3 +130,12 @@ New-to-us niche: HR/talent deck writer ("built more decks than I can count — t
 cases, board updates") — text/structured-output only, `run_online`-safe, not yet in our 28 listings.
 Takeaway: no fabricated "winner" this pass (sales_selector signal=none across our 28), so this sweep
 is enrichment only per the loop contract — did not change which listing gets published this pass.
+
+## 13. MARKET SWEEP (2026-08-24, external WebSearch — Capafy homepage/search index)
+The public marketplace result showed **"Commerce Video Ad Maker — Photos to Sales-Ready"** at 23 sold
+for US$9.99/week, and **"Sales Enablement — Scale how your top rep sells"** at 1 sold for US$3.99/week.
+The latter's public copy describes pasted product/buyer/proof inputs producing a pitch deck, one-pager,
+objection handling document, demo script, sales playbook, buyer personas, and ROI calculator — evidence
+that self-contained structured-output skills can sell without claiming external actions. Source:
+https://www.capafy.ai/ (WebSearch 2026-08-24). This is marketplace evidence, not a claim about our own
+sales. It does not override an attributable internal sales winner.

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Grant proposal voice editor icon">
+  <rect width="512" height="512" rx="96" fill="#11253d"/>
+  <path d="M132 92h170l78 78v250H132z" fill="#f7f2e8"/>
+  <path d="M302 92v78h78" fill="#d7c08b"/>
+  <path d="M184 228h144M184 280h144M184 332h92" stroke="#214968" stroke-width="20" stroke-linecap="round"/>
+  <path d="M331 323l56-56 30 30-56 56-43 13z" fill="#e0a950"/>
+  <path d="M387 267l13-13 30 30-13 13z" fill="#f7f2e8"/>
+</svg>

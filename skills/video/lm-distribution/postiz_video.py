@@ -5,16 +5,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import hashlib
-import ipaddress
 import json
 import mimetypes
 import os
 from pathlib import Path
 import re
-import socket
 import subprocess
 import time
 import urllib.error
@@ -25,56 +22,10 @@ import uuid
 
 BASE_URL = "https://api.postiz.com/public/v1"
 PUBLIC_POST_DETAILS_URL = "https://api.postiz.com/public/posts"
-POSTIZ_API_HOST = "api.postiz.com"
 
 
 class PostizError(RuntimeError):
     pass
-
-
-def validate_resolve_ip(value: str | None) -> str | None:
-    """Validate the opt-in Postiz IPv4 endpoint override."""
-    if value is None:
-        return None
-    if not isinstance(value, str) or not value or value != value.strip():
-        raise PostizError("LM_POSTIZ_RESOLVE_IP must be a public IPv4 address")
-    try:
-        address = ipaddress.ip_address(value)
-    except ValueError as exc:
-        raise PostizError("LM_POSTIZ_RESOLVE_IP must be a public IPv4 address") from exc
-    if (
-        not isinstance(address, ipaddress.IPv4Address)
-        or not address.is_global
-        or address.is_private
-        or address.is_loopback
-        or address.is_link_local
-        or address.is_multicast
-        or address.is_reserved
-        or address.is_unspecified
-    ):
-        raise PostizError("LM_POSTIZ_RESOLVE_IP must be a public IPv4 address")
-    return str(address)
-
-
-@contextmanager
-def postiz_resolve_override(resolve_ip: str | None):
-    """Temporarily resolve only Postiz's API hostname to one IPv4 literal."""
-    address = validate_resolve_ip(resolve_ip)
-    if address is None:
-        yield
-        return
-    original = socket.getaddrinfo
-
-    def resolve(host, port, family=0, type=0, proto=0, flags=0):
-        if host != POSTIZ_API_HOST or family not in (0, socket.AF_UNSPEC, socket.AF_INET):
-            return original(host, port, family, type, proto, flags)
-        return original(address, port, family, type, proto, flags)
-
-    socket.getaddrinfo = resolve
-    try:
-        yield
-    finally:
-        socket.getaddrinfo = original
 
 
 def build_payload(
@@ -82,25 +33,11 @@ def build_payload(
     integration: str,
     caption: str,
     title: str,
-    upload_id: str | None = None,
-    upload_path: str | None = None,
-    now_iso: str = "",
+    upload_id: str,
+    upload_path: str,
+    now_iso: str,
     platform: str = "tiktok",
-    upload_ids: list[str] | None = None,
-    upload_paths: list[str] | None = None,
 ) -> dict:
-    if (upload_ids is None) != (upload_paths is None):
-        raise PostizError("Postiz upload ids/paths must be supplied together")
-    if upload_ids is not None:
-        if len(upload_ids) != len(upload_paths) or not upload_ids:
-            raise PostizError("Postiz carousel uploads are invalid")
-        uploads = [{"id": item_id, "path": item_path} for item_id, item_path in zip(upload_ids, upload_paths)]
-    else:
-        uploads = [{"id": upload_id, "path": upload_path}]
-    if platform == "instagram" and upload_ids is not None and len(uploads) < 2:
-        raise PostizError("Instagram carousel requires at least two images")
-    if platform != "instagram" and upload_ids is not None:
-        raise PostizError("carousel images are Instagram-only")
     if platform == "youtube":
         settings = {
             "__type": "youtube",
@@ -141,7 +78,7 @@ def build_payload(
         "posts": [
             {
                 "integration": {"id": integration},
-                "value": [{"content": caption, "image": uploads}],
+                "value": [{"content": caption, "image": [{"id": upload_id, "path": upload_path}]}],
                 "settings": settings,
             }
         ],
@@ -167,14 +104,6 @@ def _valid_public_url(platform: str, value: str | None) -> bool:
             value or "",
         ))
     return False
-
-
-def _valid_instagram_carousel_url(value: str | None) -> bool:
-    """A native photo carousel is a direct Instagram post, never a Reel/profile URL."""
-    return bool(re.fullmatch(
-        r"https://www\.instagram\.com/p/(?=[A-Za-z0-9_-]*[A-Za-z_-])[A-Za-z0-9_-]+/?",
-        value or "",
-    ))
 
 
 def find_post(response, post_id: str, platform: str = "tiktok") -> dict:
@@ -430,18 +359,18 @@ def read_post_error(post_id: str, api_key: str) -> str | None:
     return reason.strip() if isinstance(reason, str) and reason.strip() else None
 
 
-def upload_media(media: Path, api_key: str, *, default_suffix: str, default_mime: str) -> tuple[str, str]:
+def upload_video(video: Path, api_key: str) -> tuple[str, str]:
     boundary = "----life-manager-" + uuid.uuid4().hex
-    filename = media.name.replace('"', "")
+    filename = video.name.replace('"', "")
     if not Path(filename).suffix:
-        filename = f"{filename}{default_suffix}"
-    mime = mimetypes.guess_type(filename)[0] or default_mime
+        filename = f"{filename}.mp4"
+    mime = mimetypes.guess_type(filename)[0] or "video/mp4"
     head = (
         f"--{boundary}\r\n"
         f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'
         f"Content-Type: {mime}\r\n\r\n"
     ).encode()
-    body = head + media.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
+    body = head + video.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
     request = urllib.request.Request(
         f"{BASE_URL}/upload",
         data=body,
@@ -457,18 +386,6 @@ def upload_media(media: Path, api_key: str, *, default_suffix: str, default_mime
     if not isinstance(upload_id, str) or not upload_id or not isinstance(upload_path, str) or not upload_path:
         raise PostizError("Postiz upload response is missing id/path")
     return upload_id, upload_path
-
-
-def upload_video(video: Path, api_key: str) -> tuple[str, str]:
-    return upload_media(video, api_key, default_suffix=".mp4", default_mime="video/mp4")
-
-
-def upload_image(image: Path, api_key: str) -> tuple[str, str]:
-    if not image.is_file() or image.stat().st_size == 0:
-        raise PostizError("carousel image is missing or empty")
-    if not image.read_bytes().startswith(b"\xff\xd8\xff"):
-        raise PostizError("carousel image is not JPEG")
-    return upload_media(image, api_key, default_suffix=".jpg", default_mime="image/jpeg")
 
 
 def create_post(payload: dict, api_key: str) -> str:
@@ -526,66 +443,23 @@ def is_reconciled_state(state: dict, platform: str = "tiktok") -> bool:
     )
 
 
-def read_caption(caption_file: Path, *, carousel: bool = False) -> str:
-    raw = caption_file.read_text(encoding="utf-8")
-    if not raw.strip():
-        raise PostizError("caption is empty")
-    return raw if carousel else raw.strip()
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--video", type=Path, required=True)
+    parser.add_argument("--caption-file", type=Path, required=True)
+    parser.add_argument("--integration", required=True)
+    parser.add_argument("--title", default="Life Manager")
+    parser.add_argument("--platform", choices=("instagram", "tiktok", "youtube"), default="tiktok")
+    args = parser.parse_args()
 
-
-def _publish(args, api_key: str, caption: str) -> int:
-    if args.image:
-        if args.platform != "instagram":
-            raise PostizError("carousel images are Instagram-only")
-        if len(args.image) < 2:
-            raise PostizError("Instagram carousel requires at least two images")
-        for image in args.image:
-            if not image.is_file() or image.stat().st_size == 0:
-                raise PostizError("carousel image is missing or empty")
-            if not image.read_bytes().startswith(b"\xff\xd8\xff"):
-                raise PostizError("carousel image is not JPEG")
-
-        upload_ids = []
-        upload_paths = []
-        for image in args.image:
-            upload_id, upload_path = upload_image(image, api_key)
-            upload_ids.append(upload_id)
-            upload_paths.append(upload_path)
-        payload = build_payload(
-            integration=args.integration,
-            caption=caption,
-            title="Life Manager",
-            upload_id="",
-            upload_path="",
-            upload_ids=upload_ids,
-            upload_paths=upload_paths,
-            now_iso=datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
-            platform="instagram",
-        )
-        post_id = create_post(payload, api_key)
-        state = {"state": "QUEUE", "post_url": None}
-        for _ in range(18):
-            time.sleep(10)
-            state = read_publish_state(post_id, api_key, "instagram")
-            if state["state"] == "PUBLISHED" and _valid_instagram_carousel_url(state.get("post_url")):
-                break
-            if state["state"] == "ERROR":
-                break
-        result = {
-            "post_id": post_id,
-            **state,
-            "reconciled": state.get("state") == "PUBLISHED"
-            and _valid_instagram_carousel_url(state.get("post_url")),
-        }
-        print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))
-        if state["state"] != "PUBLISHED" or not _valid_instagram_carousel_url(state.get("post_url")):
-            reason = state.get("error")
-            suffix = f": {reason}" if isinstance(reason, str) and reason else ""
-            raise PostizError(f"Postiz terminal state is {state['state']}{suffix}")
-        return 0
-
+    api_key = os.environ.get("POSTIZ_API_KEY", "")
+    if not api_key:
+        raise PostizError("POSTIZ_API_KEY is unavailable")
     if not args.video.is_file() or args.video.stat().st_size == 0:
         raise PostizError("video is missing or empty")
+    caption = args.caption_file.read_text(encoding="utf-8").strip()
+    if not caption:
+        raise PostizError("caption is empty")
 
     title = args.title
     if args.platform == "youtube" and title == "Life Manager":
@@ -649,31 +523,6 @@ def _publish(args, api_key: str, caption: str) -> int:
         suffix = f": {reason}" if isinstance(reason, str) and reason else ""
         raise PostizError(f"Postiz terminal state is {state['state']}{suffix}")
     return 0
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--video", type=Path)
-    parser.add_argument("--image", type=Path, action="append", default=[])
-    parser.add_argument("--caption-file", type=Path, required=True)
-    parser.add_argument("--integration", required=True)
-    parser.add_argument("--title", default="Life Manager")
-    parser.add_argument("--platform", choices=("instagram", "tiktok", "youtube"), default="tiktok")
-    args = parser.parse_args()
-
-    api_key = os.environ.get("POSTIZ_API_KEY", "")
-    if not api_key:
-        raise PostizError("POSTIZ_API_KEY is unavailable")
-    caption = read_caption(args.caption_file, carousel=bool(args.image))
-
-    if args.video is None and not args.image:
-        raise PostizError("video or carousel images are required")
-    if args.video is not None and args.image:
-        raise PostizError("video and carousel images are mutually exclusive")
-
-    resolve_ip = validate_resolve_ip(os.environ.get("LM_POSTIZ_RESOLVE_IP"))
-    with postiz_resolve_override(resolve_ip):
-        return _publish(args, api_key, caption)
 
 
 if __name__ == "__main__":

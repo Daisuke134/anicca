@@ -28,10 +28,24 @@ config.json: {
 }
 Prints SAVED on success (card-done), else NOT-SAVED + the price-tab svg color.
 """
-import json, os, sys, time
+import json, os, sys, time, urllib.request
 from playwright.sync_api import sync_playwright
 
-CDP = "http://localhost:9222"
+def detect_cdp():
+    """Use the active daily-driver, which may move from 9222 to 9223."""
+    for port in (9222, 9223):
+        base = f"http://localhost:{port}"
+        try:
+            with urllib.request.urlopen(f"{base}/json/list", timeout=2) as response:
+                targets = json.load(response)
+            if any("capafy.ai" in str(t.get("url", "")) for t in targets):
+                return base
+        except Exception:
+            continue
+    return "http://localhost:9222"
+
+
+CDP = detect_cdp()
 
 
 def coords(pg, text, exact=True, top_max=900):
