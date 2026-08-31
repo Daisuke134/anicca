@@ -37,6 +37,11 @@ class TerraDefaultTest(unittest.TestCase):
                 if name == "affiliate-escalation-agent":
                     expected = [{"provider": "codex", "model": "gpt-5.6-sol",
                                  "effort": "high", "profile_alias": "acct2"}]
+                if name == "browser-lane-agent":
+                    expected = [
+                        {"provider": "codex", "model": "gpt-5.6-terra",
+                         "effort": "high", "profile_alias": "acct2"},
+                    ]
                 if name in {"storefront-proposal-agent", "browser-lane-agent", "escalation-agent"}:
                     expected.append(
                         {"provider": "claude", "model": "claude-sonnet-5"}

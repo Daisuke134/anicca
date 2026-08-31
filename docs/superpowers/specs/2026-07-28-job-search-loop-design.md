@@ -164,6 +164,23 @@ Ashby and Danaher from the Workday queue; GREEN returns only Danaher. Qualificat
 tests pass 45/45 and the full Job Hunter suite passes 438/438. Main release and
 natural retryable reopen proof remain.
 
+Two final-release wakes reopen Danaher immediately with zero fresh-fit calls and zero
+runtime failures, but Terra medium returns `transport_failed` before Submit after
+substantial successful form work: `daily-20260831-203159` after required-field
+correction and `daily-20260831-211315` after retry navigation/upload. This repeated
+model-judgment failure activates the bounded browser-only escalation. The
+`browser-lane-agent` candidate moves from Terra medium to Terra high and declares the
+existing explicit-escalation route; timeout remains 1,800 seconds and Claude remains
+the unavailable-launch fallback. No other task class, provider, cadence or effect
+fence changes. One to three natural wakes must prove the same Danaher retry reaches a
+provider terminal outcome instead of voluntary transport failure.
+
+The browser-only escalation is implemented in the production runner config as
+`terra-high-bounded`, Terra high, with the existing explicit-escalation declaration
+and Claude fallback unchanged. The runner suite passes 44/44 and the OSS source
+manifest verifies after binding the new config digest. Main release and natural
+Danaher retry proof remain.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
