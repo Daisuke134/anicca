@@ -1194,6 +1194,20 @@ def run() -> int:
         runtime_capabilities: dict[str, Any] = {}
         sandbox_preflight: dict[str, Any] = {}
         candidate_prompt = prompt
+        if provider in CLAUDE_PROVIDERS:
+            # Codex is handed the output schema through --output-schema, so it answers in the
+            # required shape. The claude CLI has no equivalent flag, so without this the model
+            # guesses the envelope, schema validation fails, and the runner correctly refuses to
+            # select a schema-invalid answer -- the fallback exists but can never be chosen.
+            # Measured 2026-08-31: attempt-03 returned is_error=false with a well-formed decision
+            # that was discarded because it was not wrapped in the schema's envelope.
+            candidate_prompt = (
+                f"{prompt}\n\n"
+                "OUTPUT CONTRACT: reply with one JSON document and nothing else. No prose, no "
+                "code fence. It must validate against this JSON Schema exactly, including the "
+                "top-level envelope:\n"
+                f"{json.dumps(schema, ensure_ascii=False)}\n"
+            )
         openclaw_workdir: str | None = None
         try:
             required_capabilities, model_capabilities = candidate_capabilities(provider_config, effective_candidate)
@@ -1223,7 +1237,7 @@ def run() -> int:
                         stderr=stderr,
                         timeout=timeout_seconds,
                         cwd=parsed.workdir,
-                        input_bytes=prompt.encode("utf-8") if parsed.prompt_stdin else None,
+                        input_bytes=candidate_prompt.encode("utf-8") if parsed.prompt_stdin else None,
                         stdin=None if parsed.prompt_stdin else subprocess.DEVNULL,
                         env=provider_process_env(
                             provider, provider_config, task_class=parsed.task_class,
