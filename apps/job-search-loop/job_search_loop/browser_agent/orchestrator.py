@@ -206,6 +206,8 @@ def invoke_runner(
             str(runner),
             "--task-class",
             "browser-lane-agent",
+            "--escalation-reason",
+            "repeated browser form completion abandoned before provider terminal outcome",
             "--timeout-seconds",
             str(remaining_seconds),
             "--prompt-file",

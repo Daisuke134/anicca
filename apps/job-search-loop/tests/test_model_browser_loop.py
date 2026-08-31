@@ -804,6 +804,8 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                 "/runtime/agent_runner.py",
                 "--task-class",
                 "browser-lane-agent",
+                "--escalation-reason",
+                "repeated browser form completion abandoned before provider terminal outcome",
                 "--timeout-seconds",
                 "900",
                 "--prompt-file",
@@ -877,8 +879,14 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             )
 
         self.assertEqual(returncode, 0)
-        self.assertEqual(run.call_args_list[0].args[0][5], "900")
-        self.assertEqual(run.call_args_list[1].args[0][5], "300")
+        first_command = run.call_args_list[0].args[0]
+        second_command = run.call_args_list[1].args[0]
+        self.assertEqual(
+            first_command[first_command.index("--timeout-seconds") + 1], "900"
+        )
+        self.assertEqual(
+            second_command[second_command.index("--timeout-seconds") + 1], "300"
+        )
 
     def test_every_eligible_workday_row_reaches_the_mandatory_model_lane(self):
         daily = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
