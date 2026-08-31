@@ -157,6 +157,26 @@ bounded semantic retry while restoring the invariant that one owner wake cannot
 consume two complete 1,800-second browser budgets. Main release and natural wake
 readback remain.
 
+Wakes `daily-20260831-195643` and `daily-20260831-200450` expose the remaining
+provider-start blocker. Codex exits rc127 with `Operation not permitted`, classified
+`transient_unavailable`, before any runtime command or browser observation. The model
+still writes a fresh transport-failure result, and `codex_failover_action()` treats
+any fresh result as work, so the configured Claude browser candidate is never tried.
+The active atom may bypass that stop only for `transient_unavailable` with
+`attempt_started_work=false`; a command start, quota/auth/timeout failure, valid
+application result, or any uncertain effect keeps the existing no-fallback fence.
+One existing-owner wake must prove Codex launch failure safely reaches the configured
+non-Codex browser candidate without duplicating an ATS action.
+
+The unavailable-fallback atom is implemented in
+`runtime/agent-runner/agent_runner.py`: runtime command start still stops every
+fallback, and a fresh result still stops quota/auth/timeout/validation failures, but
+`transient_unavailable` with no started work may continue to the already-configured
+non-Codex candidate. RED reproduced rc127 plus a fresh transport envelope ending with
+status 1 and no Claude call; GREEN calls Claude exactly once and returns success.
+Codex failover tests pass 17/17, all runner tests pass 44/44, and the full Job Hunter
+suite passes 437/437. Main release and natural fallback readback remain.
+
 The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
 longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
 qualifies Regeneron application
