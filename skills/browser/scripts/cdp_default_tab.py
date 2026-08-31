@@ -24,6 +24,7 @@ import urllib.request
 from urllib.parse import urlparse
 
 import target_ownership
+import cdp
 
 try:
     import websockets
@@ -65,7 +66,7 @@ def open_tab(url, background=False, owner=None):
     params = {"url": url}
     if background:
         params["background"] = background
-    res = asyncio.run(_call("Target.createTarget", params))
+    res = cdp._browser_call("Target.createTarget", params)
     tid = res["targetId"]
     target_ownership.claim_target(tid, owner)
     return {
@@ -119,7 +120,7 @@ def close_tab(target_id, owner=None):
         raise PermissionError(
             f"target {target_id} is owned by {actual_owner or 'nobody'}, not {owner}"
         )
-    asyncio.run(_call("Target.closeTarget", {"targetId": target_id}))
+    cdp._browser_call("Target.closeTarget", {"targetId": target_id})
     target_ownership.release_target(target_id, owner)
     return {"ok": True, "closed": target_id, "owner": owner}
 
