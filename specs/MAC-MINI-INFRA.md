@@ -36,6 +36,62 @@
 
 このセッションで消せるものは全て消した。残っているのは ①触れないシステム領域 ②不可侵指定 ③稼働 loop が今使っているもの ④収益の記録、の4種類だけ。「Life Manager 以外の未使用物」は Adobe・Colima・未使用アプリ6本・未使用 Homebrew 式14個・未使用グローバル npm 8式・孤児 worktree 39個・孤児 state 5個を全て回収済みで、**残りゼロ**。
 
+### 2026-08-31 追記 — 上の「残りゼロ」は誤りだった
+
+この日、空きは再び 3.34GiB（99%）まで落ちた。「もう掃除できるものは残っていない」という上の結論は、
+**世代を持つ資産に上限が無い**ことを見落としている。掃除の残量ではなく、積む速度が問題である。
+
+同日の実測で回収したもの:
+
+| 回収 | 量 | 何だったか |
+|---|---|---|
+| `~/loops/releases` の未参照 release 2本 | 2.4GB | plist・symlink・`protected-releases.json` のどこからも参照されていなかった |
+| `~/Library/Caches/com.openai.codex` の Sparkle Installation | 1.9GB | 適用済み staged update。595MB の zip と展開済みディレクトリ。開いているファイル 0 |
+| 幽霊 worktree 登録 37件 + 実体のある merged worktree 6本 | 0.8GB | 登録 61 → 18。branch は 656 → 656 で不変 |
+| `~/Projects/life-manager-8i-cutover` | 93MB | 2026-07-24 で止まった重複 clone。最終差分は `rollback/8i-cutover-final-diff-20260831.patch` に退避 |
+
+反証された記述が2つある:
+
+1. **「`~/loops` の release は watchdog が自動で2個まで刈る」** — 実際には 5本あり、うち2本が未参照のまま残っていた。watchdog は刈っていない。
+2. **「もう掃除できるものは残っていない」** — 上記4件で計 5.2GB を回収した。
+
+### 積む速度に上限を付ける（retention policy 4本）
+
+回収量を増やすのではなく、**世代を持つ資産すべてに上限を定義する**。これが無い限り手動掃除は永久に終わらない。
+
+| 積むもの | 現状 | 必要な上限 |
+|---|---|---|
+| `~/loops/releases` | 1.2GB × 無制限 | `current` と pinned + 直近 N 世代のみ |
+| アプリ updater cache | 1.9GB 放置されていた | 適用済み staged update は即失効 |
+| `~/gig/projects` の中間版 | 同一成果物が 3 世代（LBJ_Proposal12 が v1/v98/v107 で各 204MB） | 案件クローズ後、最終納品版と evidence 以外を失効 |
+| git worktree 登録 | 幽霊 37 件が滞留していた | 実体が消えた登録を自動 prune |
+
+`git gc` は対象外である。`git count-objects -vH` の実測では
+`anicca-project` / `life-manager-main` / `anicca` の3リポジトリとも
+loose object 0・garbage 0・prune-packable 0 で完全に packed であり、
+回収できる無駄は最大 5MiB しかない。**容量は git の無駄ではなく世代管理の不在で積んでいる。**
+
+### 古い checkout が「間違った場所で作業する」原因になっている
+
+2026-08-31 実測。`Daisuke134/life-manager` の checkout は 21 箇所あり、
+`origin/main` からの距離は次のとおり:
+
+| behind | 箇所 | 状態 |
+|---|---|---|
+| **7695** | `~/lm-loops-core`、`.worktrees/connector-core-recovery`、`~/Projects/.worktrees/life-manager/cfo-local-organ-20260802`、`.worktrees/five-phase-autonomous`、`.worktrees/outbound-engine`、`~/Projects/.worktrees/life-manager/atomic-9d-decouple`、同 `atomic-11b-care-candidates-v2` | 7本すべて未commit差分あり。7〜8月で放棄 |
+| 1845 | `~/Projects/life-manager-main`（正本） | 作業中 |
+| 214 | `~/.local/state/life-manager/source/capafy-life-manager` | 未commit 335 ファイル |
+| 0〜213 | その他 12 箇所 | |
+
+`git worktree add` は分岐時点の main を保持するため、放置した worktree は
+**時間とともに単調に古くなる**。7695 commit 遅れの checkout でセッションを開けば、
+そこで見えるコードは 1 か月前の姿であり、そこを直しても正本には届かない。
+これが「間違ったブランチ・古いリモートで作業していた」の機械的な原因である。
+
+対策は worktree にも上限を付けることに帰着する。
+**behind が閾値を超えた、または最終commitから N 日経過した worktree は、
+未commit差分を patch として退避したうえで自動的に畳む。**
+
 ### 用語
 
 **Spotlight index・システム予約 25GB**: macOS がファイル検索のために全ファイルの索引を作って `/System/Volumes/Data/.Spotlight-V100` に置いている分と、APFS がファイルシステムの管理情報用に確保している分。`df` が「使用中」と数えるのに `du` ではどのディレクトリにも現れない。**削除する手段が存在しない**（無効化すればファイル検索が壊れる）。
