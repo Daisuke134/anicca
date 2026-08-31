@@ -190,6 +190,18 @@ fallback, cadence, queue, or effect fences. Acceptance is a natural wake whose
 runner selects Terra high and proceeds beyond argument validation on the same
 Danaher row.
 
+Release `20260831T214835-e527445a` proves the explicit-escalation repair in the
+next natural wake, `daily-20260831-215141`: the runner selects Terra high, opens
+the Danaher application, uploads the resume, fills source and phone type, and
+reaches the work-history page. Its next-page click sends `mouseReleased`, then
+the CDP response times out. Because the input event was already sent, retrying
+the click would risk a duplicate transition. The active atom treats only this
+post-send release-response timeout as an at-most-once delivered click and
+continues with a fresh observation; earlier mouse-move/press failures and any
+failed follow-up observation remain terminal runtime failures. Acceptance is a
+natural retry that advances beyond this page without a second click and reaches
+the provider terminal outcome.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
