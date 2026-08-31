@@ -21,6 +21,38 @@ evidence ledger, and human-readable reporting contract. Life
 Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
 without a receipt.
 
+## Built-in loop catalog
+
+Life Manager is shipped as one general-agent core plus specialist loops. These are
+the main user-facing loop families; helper, healthcheck, browser-owner, reporting,
+and reconciliation loops support them behind the same control plane.
+
+| Capability | Canonical loop IDs | What it does |
+|---|---|---|
+| Connector | `life-manager-connector-native` | Finds eligible events, applies, verifies registration, and reports Calendar/Telegram receipts |
+| Fundraising | `fundraiser` | Continuously discovers new accelerators, fellowships, grants, and public investor intakes and applies without an arbitrary daily cap |
+| Job Hunter | `job-search-daily`, `job-search-browser`, `job-search-inbox`, `job-search-mercor` | Discovers and submits qualified job applications, then reconciles confirmation and reply mail |
+| Gig / Coconala | `hf-gig-apply-direct`, `hf-gig-paid-direct`, `gig-outcome-watch` | Applies, negotiates, tracks paid work, and separates attempts from provider-verified outcomes |
+| Money Printer | `money-printer-symphony`, `money-printer-symphony-bridge` | Moves public opportunities through the durable workroom and human-resume boundary |
+| Writer | `writer-opportunity-discovery`, `writer-opportunity-response`, `writer-money-sync`, `writer-report` | Finds paid writing work, responds, and records publisher/payment receipts |
+| Affiliate | `affiliate-loop`, `affiliate-source-refresh`, `affiliate-browser` | Finds and publishes attributable affiliate opportunities through the owned browser path |
+| CFO | `life-manager-cfo-hourly` | Reconciles verified financial data and sends evidence-backed financial briefings |
+| Agent Economy | `agent-economy-loop` | Tracks agent revenue, compute cost, and self-funding without mixing owner funds |
+
+The complete lifecycle registry is [`config/loop-registry.json`](config/loop-registry.json).
+List every loop and inspect its live state through the canonical interfaces:
+
+```bash
+jq -r '.loops | keys[]' config/loop-registry.json
+./bin/lm-loop status all
+./bin/lm-loop doctor
+```
+
+Being present in the registry proves that a loop is part of Life Manager; it does
+not prove the loop is healthy or that an external effect succeeded. Health comes
+from the latest terminal event, and business success comes only from the official
+provider receipt.
+
 ## The general agent we are building
 
 Life Manager is not a collection of website-specific bots. We are building one durable general agent that can
