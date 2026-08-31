@@ -1596,6 +1596,90 @@ Note `dev` deploys only to a Netlify preview, so delivery files must reach `main
   Verified: gate FAILed before mining, monk-wisdom went 68 → 173 cards, the launchd
   run rotated to honne-relationship (79 → 179) and exited 0.
 
+### 3.2.3 Current control-plane and three-post portfolio contract
+
+This section is the current operational override for two questions only:
+whether one loop repair can reload an unrelated loop, and whether every
+assigned TikTok, Instagram, and YouTube destination posts three times per day.
+It does not authorize an all-label apply or a broad OpenClaw rollback.
+
+The source/runtime ownership chain is:
+
+```text
+GitHub Daisuke134/life-manager main
+  -> /Users/anicca/Projects/life-manager-main (development checkout)
+  -> /Users/anicca/loops/releases/<timestamp>-<git-sha> (immutable build)
+  -> ~/Library/LaunchAgents/<exact-label>.plist (one loaded owner)
+  -> ~/.local/state/life-manager/<loop-id> plus durable publication receipts
+```
+
+The read-only host inventory contains 183 Anicca/Gig LaunchAgents. Of those,
+158 load `20260831T204728-439dc71d`, ten load one of five other immutable
+Life Manager releases, and fifteen directly load an external Python, Node,
+shell, Go, router, or observability binary. Therefore `loops/current`, the
+repository checkout, and every loaded job are not one interchangeable folder.
+A loaded job keeps its exact immutable `ProgramArguments` until that exact
+label is deliberately applied. Global `current` alone is not deployment proof.
+
+Every change MUST use one named `LIFE_MANAGER_APPLY_TARGET`. Before and after
+the apply, the operator MUST record the target label's plist path, immutable
+release, Git SHA, entrypoint, state root, runs, and last exit, and MUST prove
+that every sibling label retained the same plist mtime and `ProgramArguments`.
+Targetless/all-label apply is prohibited. A release is eligible only when it
+is built from canonical `origin/main`, passes `lm-loop doctor`, contains all
+tracked Git blobs and modes, and has enough capacity to finish atomically.
+Rollback means reselecting the target label's exact prior immutable release;
+it never means reverting the whole OpenClaw repository or moving all labels.
+
+The machine-readable posting map is `config/marketing-destinations.json`.
+Section 8.8.1 is its human-readable contract. Historical OpenClaw commit
+`5a2e6093` (`state/POSTIZ_ACCOUNT_MAP.md`) and refresh commit `d86afe75` are
+recovery evidence only; production MUST NOT read the OpenClaw map, assets,
+credentials, cron, or working tree. The old map is reused to recover proven
+handle/integration/creative relationships, not as a second live SSOT.
+
+All thirteen current TikTok/Instagram target labels load the same immutable
+release `20260831T204728-439dc71d` and already have exactly three JST calendar
+slots per day in their plists and in `config/marketing-destinations.json`.
+The schedule definition is present, but publication is not healthy: ten labels
+have `runs=0` / never exited; EN Card Instagram, EN Slideshow TikTok, and Honne
+JA each have one run with exit 1. A plist or calendar is not a post receipt.
+The current required volume is 39 verified TikTok/Instagram publications per
+day. The three connected YouTube integrations remain held at 0/day and have no
+installed posting owner; they are now in scope for classification, one-canary
+verification, and a later ramp to three posts/day each. No YouTube lane may
+borrow Honne identity or reuse a creative without an exact product/account map.
+
+Acceptance requires, for each destination independently: expected slots equal
+three, provider `PUBLISHED` rows equal three, three direct native URLs bind the
+intended handle and exact content, missed and duplicate counts equal zero,
+Telegram is naturally deduplicated, and same-slot replay creates zero provider
+or message effects. A failure in one destination MUST leave every other label
+loaded and scheduled from its prior immutable release.
+
+The fixed execution order for this focused recovery is:
+
+1. Freeze the source/release/label/state inventory and enforce exact-target
+   apply plus sibling non-mutation evidence.
+2. Reconcile the OpenClaw historical map against the live Postiz registry and
+   `config/marketing-destinations.json`; one handle has one product, locale,
+   renderer, media form, approved pack, integration, and native owner.
+3. Continue the existing MKT-09 order at MKT-09R9-11 / Order 24F6; classify
+   `@anicca_buddha` only, then close each remaining held integration one at a
+   time through classify -> pack -> API canary -> native readback -> Telegram
+   -> replay zero.
+4. Repair the existing shared Life Manager/Postiz execution path at the first
+   common failing boundary. Do not create a second scheduler or copy all of
+   OpenClaw. Compare the last known working OpenClaw entrypoint and exact Git
+   history, then copy only the missing behavior into the shared LM owner.
+5. Ramp one verified destination from one canary/day to three/day. Proceed to
+   the next destination only after natural expected=published, missed=0,
+   duplicate=0, direct-native readback, and replay-zero evidence.
+6. Classify and canary the three existing YouTube integrations, install their
+   exact Life Manager owners, then use the same one-to-three/day gate.
+7. Close 2h/24h/72h/7d metrics, ASC/RevenueCat/product attribution, and
+   daily/weekly Telegram reports before retiring legacy OpenClaw ownership.
+
 **Incident I-1 implementation.** Life Manager now has a separate
 `marketing-liveness` process, independent of the marketing scheduler it
 observes. It evaluates only explicitly `production-armed` lanes, walks the
