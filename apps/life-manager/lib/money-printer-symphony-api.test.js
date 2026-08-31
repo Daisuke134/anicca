@@ -492,6 +492,14 @@ test("result needs_human consumes one existing task and exposes only its safe id
   const store = {
     async recordSymphonyResult(input) { calls.push(["record", input]); return resultDispatch; },
     async consumeSymphonyHumanTask(input) { calls.push(["consume", input]); return task; },
+    async readOpportunity(input) {
+      calls.push(["opportunity", input]);
+      return { uid: TENANT, opportunity_id: "a".repeat(64), source_url: "https://work.mercor.com/explore" };
+    },
+    async enqueueBrowserJob(input) {
+      calls.push(["browser", input]);
+      return { created: true, job: { id: "browser-1", uid: TENANT, telegram_message_id: DISPATCH_ID } };
+    },
   };
   const result = await call("/api/internal/money-printer/symphony/result", {
     tenant_id: TENANT, dispatch_id: DISPATCH_ID,
@@ -504,7 +512,26 @@ test("result needs_human consumes one existing task and exposes only its safe id
     status: "consumed", result_ref: RESULT_REF, result_hash: RESULT_HASH,
     task_id: task.task_id, task_status: "open", version: 1,
   });
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 4);
+  assert.deepEqual(calls[2], ["opportunity", {
+    uid: TENANT,
+    opportunity_id: "a".repeat(64),
+    goal_ref: `intent-entry://${TENANT}/${"a".repeat(64)}`,
+  }]);
+  assert.deepEqual(calls[3], ["browser", {
+    uid: TENANT,
+    chatId: "money-printer",
+    messageId: DISPATCH_ID,
+    updateId: JOB_ID,
+    rawPrompt: "Open the provider page and prepare the provider interview. Stop at the human-only step.",
+    classification: {
+      goal: "Open https://work.mercor.com/explore and prepare the provider interview. Stop at login, OTP, CAPTCHA, KYC, camera, microphone, or personal-experience questions.",
+      actionKind: "provider_interview_handoff",
+      locale: "en",
+      requiresLogin: true,
+      principalKind: "user_provided",
+    },
+  }]);
 });
 
 test("result rejects wrong repository, author, tenant and stale store readback without consuming", async () => {
@@ -583,6 +610,12 @@ test("duplicate needs_human callback reconciles safely without a second HumanTas
     async consumeSymphonyHumanTask() {
       humanConsumeCalls += 1;
       return task;
+    },
+    async readOpportunity() {
+      return { uid: TENANT, opportunity_id: "a".repeat(64), source_url: "https://work.mercor.com/explore" };
+    },
+    async enqueueBrowserJob() {
+      return { created: false, job: { id: "browser-1", uid: TENANT, telegram_message_id: DISPATCH_ID } };
     },
   };
   const body = {
