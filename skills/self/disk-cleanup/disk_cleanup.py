@@ -507,6 +507,17 @@ class HostDiskGovernor:
         return frozenset(roots)
 
     @staticmethod
+    def _remove_tree(path: Path) -> None:
+        """Releases are exported `chmod -R a-w`, and unlinking needs the write bit on the parent."""
+        for directory, _dirnames, _filenames in os.walk(path):
+            current = Path(directory)
+            try:
+                current.chmod(current.stat().st_mode | stat.S_IWUSR)
+            except OSError:
+                pass
+        shutil.rmtree(path)
+
+    @staticmethod
     def _receipt_reserve_valid(path: Path) -> bool:
         try:
             info = path.lstat()
@@ -689,10 +700,14 @@ class HostDiskGovernor:
                 result["errors"] += state == "probe-error"
                 preserve(state)
                 continue
-            exact_cache = item.get("owner") in {
-                "browser", "codex-runtime-cache", "whisper-model-cache",
+            # Classes where the whole tree is the unit of proof. A release is an
+            # export of the repository, so it always contains source and scanning
+            # inside would preserve every generation forever; what makes an old one
+            # safe to drop is that nothing references it, checked during discovery.
+            whole_tree_is_the_unit = item.get("owner") in {
+                "browser", "codex-runtime-cache", "whisper-model-cache", "release-retention",
             }
-            descendant_state = None if exact_cache else self._protected_descendant(path, deadline=deadline)
+            descendant_state = None if whole_tree_is_the_unit else self._protected_descendant(path, deadline=deadline)
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
                 preserve(descendant_state)
@@ -710,7 +725,7 @@ class HostDiskGovernor:
             if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
                 preserve("probe-budget-exhausted")
                 continue
-            descendant_state = None if exact_cache else self._protected_descendant(path, deadline=deadline)
+            descendant_state = None if whole_tree_is_the_unit else self._protected_descendant(path, deadline=deadline)
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
                 preserve(descendant_state)
@@ -731,7 +746,7 @@ class HostDiskGovernor:
                 continue
             try:
                 if path.is_dir():
-                    shutil.rmtree(path)
+                    self._remove_tree(path)
                 else:
                     path.unlink()
             except OSError:

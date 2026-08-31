@@ -500,6 +500,31 @@ def test_release_retention_keeps_referenced_and_newest_generations(tmp_path: Pat
         assert (releases / name).exists()
 
 
+def test_read_only_release_export_is_still_reclaimable(tmp_path: Path) -> None:
+    releases = tmp_path / "loops" / "releases"
+    releases.mkdir(parents=True)
+    stale = releases / "20260828T010101-aaaaaaaa"
+    (stale / "bin").mkdir(parents=True)
+    (stale / "bin" / "loop.sh").write_bytes(b"x" * 8)
+    for name in ("20260830T010101-cccccccc", "20260831T010101-dddddddd"):
+        (releases / name).mkdir()
+    # cut-loop-release.sh exports releases chmod -R a-w
+    for directory in (stale / "bin", stale):
+        directory.chmod(0o555)
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    candidates = [item for item in governor.discover_candidates() if item["owner"] == "release-retention"]
+    result = governor.sweep(candidates)
+
+    assert not stale.exists()
+    assert result["errors"] == 0
+
+
 def test_release_named_only_by_a_launchd_plist_is_preserved(tmp_path: Path) -> None:
     releases = tmp_path / "loops" / "releases"
     releases.mkdir(parents=True)
