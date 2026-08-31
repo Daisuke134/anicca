@@ -261,13 +261,22 @@ function createProductionCalendarReader(options = {}) {
     async readCalendarGaps() {
       const observed = exactNow(now());
       const firstDay = localDay(observed, timeZone);
-      const inventory = await inspectBusyInventory({
+      const request = {
         calendar,
         timeMin: zonedSlotInstant(firstDay, "00:00", timeZone),
         timeMax: zonedSlotInstant(addCalendarDays(firstDay, 28), "00:00", timeZone),
         now: observed.toISOString(),
         timeZone,
-      });
+      };
+      let inventory;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          inventory = await inspectBusyInventory(request);
+          break;
+        } catch (error) {
+          if (attempt === 1) throw error;
+        }
+      }
       if (!isVerifiedBusyInventory(inventory) || !Array.isArray(inventory.busy_intervals)) invalid();
       return inventory.busy_intervals;
     },
