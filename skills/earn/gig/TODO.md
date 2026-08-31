@@ -357,6 +357,47 @@ official contract, fee, payout, and bank receipts advance it.
 
 ### Stage 2 — close the current Paid liabilities concurrently
 
+Paid is the sole customer-work owner for every item in this stage. A foreground Codex session,
+manual browser action, separate account owner, ad-hoc script, or second scheduler must never create
+or send customer work. Paid itself must consume the latest official buyer event, perform the actual
+work, fresh-review the exact outcome, send it once through the typed Coconala effect, obtain exact-room
+official readback, and then replay with every effect zero. A progress reply, local draft, PID, exit zero,
+Telegram message, or model claim is not delivery. Formal delivery remains off unless the exact room
+contains explicit buyer-authored approval for the already reviewed scope.
+
+The current natural-owner acceptance queue, processed concurrently without changing the numbered
+liability order below, is:
+
+- [ ] Ryu0820119 `18211957`: invalidate semantic decision v17, which incorrectly selected a local
+  archive even though the project already has an authenticated, post-effect-verified Netlify target
+  and official deployment/readback receipts. The Paid model must use the cumulative buyer contract
+  plus those receipts to revise the live site, verify the requested animation and page changes on the
+  public site, and send the verified HTTPS review URL with no ZIP attachment. A source/archive is sent
+  only when the buyer explicitly requests one. Reconcile the two already-read-back URL messages and
+  produce no third URL message. Formal delivery stays off because the room is in returned/revision state.
+- [ ] usa `18214856`: invalidate the stale `await_buyer` decision that asks about seller-owned NOTE or
+  BingX access already present in the private credential/account SSOT and project history. Paid must use
+  the authorized accounts, create and publish the contracted article with the required affiliate placement,
+  verify the live article URL, submit that URL once, obtain exact-room readback, and replay zero. It must
+  never ask the buyer again for an account, skill, login availability, or fact already in compiled context.
+- [ ] 逃げ因子 `18211838`: replace progress-only research with the contracted reproducible horse-racing
+  report covering the agreed date range, bet types, overall, class, and racecourse breakdowns. Paid must
+  bind the specified source records to official results/payouts, fresh-review the complete report, submit
+  the buyer-usable artifact once with formal delivery off, read it back, and replay zero.
+- [ ] snow990 `18218780`: retrieve the buyer-provided Firestorage TIFF through the existing authenticated
+  browser/download path, produce the requested JPG with the shutter opened, dusk-reference perspective,
+  and bright visible entrance, fresh-review the actual image, submit it once with formal delivery off,
+  read it back, and replay zero. A missing local copy is a resumable input-retrieval transition, not a
+  reason to stop at a text reply.
+
+Shared repair acceptance: update the model-facing Paid decision contract at the common semantic boundary,
+not with buyer names, categories, keyword routing, or per-room branches. Existing verified live targets and
+official receipts must be part of compiled decision context. The model chooses live URL, file, or talkroom
+answer from the complete required outcome; deterministic code owns only identity, authorization, fencing,
+checkpointing, exact payload/artifact hashes, official readback, and dedupe. Release only from public main
+as one immutable Paid release, activate only `ai.anicca.hf-gig-paid-direct`, and require a natural aggregate
+with `failed=0` followed by a second natural replay with zero duplicate effects.
+
 3. [ ] byusco `18171890`: invalidate the stale note-only decision, consume the latest request,
    publish the reviewed article to the agreed anicca AI blog through the installed owner, read
    back the public URL, report and formally deliver it, obtain buyer completion, and replay with
