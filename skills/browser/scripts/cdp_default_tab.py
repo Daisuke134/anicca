@@ -21,7 +21,7 @@ import json
 import os
 import sys
 import urllib.request
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import target_ownership
 import cdp
@@ -62,17 +62,16 @@ async def _call(method, params=None):
 
 def open_tab(url, background=False, owner=None):
     owner = target_ownership.require_owner(owner)
-    # No browserContextId => the default (persistent, authenticated) context.
-    params = {"url": url}
-    if background:
-        params["background"] = background
-    res = cdp._browser_call("Target.createTarget", params)
-    tid = res["targetId"]
+    request = urllib.request.Request(
+        f"{_cdp_base()}/json/new?{quote(url, safe='')}", method="PUT",
+    )
+    res = json.loads(urllib.request.urlopen(request, timeout=8).read())
+    tid = res["id"]
     target_ownership.claim_target(tid, owner)
     return {
         "ok": True,
         "target_id": tid,
-        "ws": _page_ws(tid),
+        "ws": res["webSocketDebuggerUrl"],
         "context": "default",
         "background": background,
         "owner": owner,
