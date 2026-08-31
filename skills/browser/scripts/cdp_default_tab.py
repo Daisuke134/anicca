@@ -110,7 +110,20 @@ async def _serve_hidden_tab(url, owner=None):
                 None, sys.stdin.buffer.read
             )
         finally:
-            target_ownership.release_target(target_id, owner)
+            try:
+                await ws.send(json.dumps({
+                    "id": 2,
+                    "method": "Target.closeTarget",
+                    "params": {"targetId": target_id},
+                }))
+                while True:
+                    close = json.loads(await ws.recv())
+                    if close.get("id") == 2:
+                        if "error" in close:
+                            raise RuntimeError(f"Target.closeTarget: {close['error']}")
+                        break
+            finally:
+                target_ownership.release_target(target_id, owner)
 
 
 def close_tab(target_id, owner=None):
