@@ -133,12 +133,64 @@ class LancersApplicationIntentTests(unittest.TestCase):
 
 
 class LancersAdapterJudgmentTests(unittest.TestCase):
-    """The adapter must be unable to prefer one listing over another.
+    """Ranking belongs to the model, so the adapter must not express a preference.
 
-    Ranking belongs to the model. Rather than hunt for scoring code, deny the
-    adapter every source a judgment could come from: a model, the network, a
-    subprocess, randomness, or the wall clock.
+    Two separate things are checked. The pass-through test denies the failure
+    mode itself: a listing may only be dropped for being malformed, never for
+    being unattractive, and the order it arrived in survives. The import scan
+    denies the nondeterminism that would let a preference hide.
     """
+
+    def _card(self, external_id, **overrides):
+        card = {
+            "id": str(external_id),
+            "title": "案件",
+            "description": "説明文。",
+            "url": f"https://www.lancers.jp/work/detail/{external_id}",
+            "category": "web_marketing",
+            "budget_type": "fixed",
+            "budget_min": 1000,
+            "budget_max": 1000,
+            "currency": "JPY",
+            "buyer_external_id": "buyer-1",
+        }
+        card.update(overrides)
+        return card
+
+    def test_no_listing_is_dropped_or_moved_for_being_unattractive(self):
+        adapter = _load()
+
+        # A spread wide enough that any threshold, allowlist, or sort would show.
+        cards = [
+            self._card(8001, budget_min=1, budget_max=1),
+            self._card(8002, budget_min=9_000_000, budget_max=9_000_000, category="システム開発"),
+            self._card(8003, budget_type="range", budget_min=500, budget_max=800_000, category="タスク・作業"),
+            self._card(8004, category="モニター・アンケート・質問", title="ア"),
+            self._card(8005, budget_min=250, budget_max=250, description="短い。"),
+        ]
+
+        normalized, rejected = adapter.normalize_projects(cards, observed_at="2026-08-31T00:00:00Z")
+
+        self.assertEqual(rejected, [])
+        self.assertEqual(
+            [row["external_id"] for row in normalized],
+            ["8001", "8002", "8003", "8004", "8005"],
+        )
+
+    def test_rejection_is_only_ever_a_validation_failure(self):
+        adapter = _load()
+
+        cards = [
+            self._card(8101),
+            self._card(8102, url="https://example.com/work/detail/8102"),
+            self._card(8103, budget_min=5_000_000, budget_max=5_000_000),
+        ]
+
+        normalized, rejected = adapter.normalize_projects(cards, observed_at="2026-08-31T00:00:00Z")
+
+        # Only the malformed URL is refused; the outlier budgets both survive.
+        self.assertEqual(rejected, ["1:project_url_invalid"])
+        self.assertEqual([row["external_id"] for row in normalized], ["8101", "8103"])
 
     FORBIDDEN_MODULES = {
         "random", "secrets", "subprocess", "socket", "requests", "httpx",
