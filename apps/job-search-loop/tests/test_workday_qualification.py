@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 import json
 import io
+import os
 import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -556,6 +557,51 @@ class WorkdayQualificationTests(unittest.TestCase):
                 ),
                 (),
             )
+
+    def test_recovery_requested_row_does_not_block_fresh_qualification(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger_path = root / "ledger.sqlite3"
+            url = "https://cloudera.wd5.myworkdayjobs.com/External_Career/job/role"
+            ledger = Ledger(ledger_path)
+            application_id = ledger.add_application("Cloudera", "Applied AI Specialist", url)
+            ledger.transition(application_id, "qualified")
+            ledger.transition(application_id, "materials_ready")
+            ledger.record_workday_fit_decision(
+                application_id, "qualified", "a" * 64, policy_version="test"
+            )
+            ledger.close()
+            credentials = root / "credentials.json"
+            credentials.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "credentials": [
+                            {
+                                "service": "workday:cloudera.wd5.myworkdayjobs.com",
+                                "username": "candidate@example.com",
+                                "email": "candidate@example.com",
+                                "password": "Strong-Workday-Password-9!",
+                                "account_status": "recovery_requested",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            os.chmod(credentials, 0o600)
+
+            with patch.dict(
+                os.environ,
+                {"JOB_SEARCH_MACHINE_CREDENTIALS": str(credentials)},
+            ):
+                queued = qualified_queue_ids(
+                    ledger_path,
+                    {"cloudera.wd5.myworkdayjobs.com"},
+                    policy_version="test",
+                )
+
+            self.assertEqual(queued, ())
 
     def test_duplicate_registry_source_is_fetched_once(self):
         sources = (
