@@ -541,8 +541,45 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
                 outcomes.append(orchestrator.validate_pass_result(root))
             self.assertEqual(
                 outcomes,
-                ["overlapping_runtime_commands", "overlapping_runtime_commands"],
+                [
+                    "runtime_command_after_nonzero_completion",
+                    "runtime_command_after_nonzero_completion",
+                ],
             )
+
+    def test_validator_accepts_event_overlap_when_runtime_commands_both_succeed(self):
+        from job_search_loop.browser_agent import orchestrator
+
+        command = "/bin/zsh -lc '/opt/homebrew/bin/python3 -m job_search_loop.browser_agent.runtime "
+        event = lambda kind, item_id, command, **fields: {"type": f"item.{kind}", "item": {"id": item_id, "type": "command_execution", "command": command, **fields}}
+        click = command + "click --label Continue --role button --stable-id ref:e1'"
+        wait = command + "wait --milliseconds 6000'"
+        events = [
+            event("started", "click-1", click),
+            event("started", "wait-1", wait),
+            event("completed", "click-1", click, exit_code=0, aggregated_output=json.dumps({"status": "acted"})),
+            event("completed", "wait-1", wait, exit_code=0, aggregated_output=json.dumps({"status": "acted"})),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_queue_complete_observe_fixture(root, ())
+            (root / "result.json").write_text(
+                json.dumps(
+                    {
+                        "status": "queue_complete",
+                        "submitted": [],
+                        "submit_unknown": [],
+                        "blocked": ["Cloudera: checkpointed for email recovery"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "stdout.log").write_text(
+                "".join(json.dumps(item) + "\n" for item in events),
+                encoding="utf-8",
+            )
+
+            self.assertIsNone(orchestrator.validate_pass_result(root))
 
     def test_validator_rejects_runtime_start_after_nonzero_completion(self):
         from job_search_loop.browser_agent import orchestrator

@@ -113,8 +113,6 @@ def validate_pass_result(evidence_dir: Path) -> str | None:
         command_parts = _runtime_command_parts(command)
         canonical_runtime = (len(command_parts) >= 4 and Path(command_parts[0]).name in {"python", "python3", "python3.14"} and command_parts[1:3] == ["-m", "job_search_loop.browser_agent.runtime"])
         if event_type == "item.started" and canonical_runtime and item_id:
-            if active_runtime_ids:
-                return "overlapping_runtime_commands"
             if real_nonzero_runtime_completion:
                 return "runtime_command_after_nonzero_completion"
             active_runtime_ids.add(item_id)
