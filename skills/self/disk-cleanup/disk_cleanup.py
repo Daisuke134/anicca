@@ -751,13 +751,20 @@ class HostDiskGovernor:
             if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
                 preserve("probe-budget-exhausted")
                 continue
-            before = _bytes(path, deadline=deadline, clock=self.clock)
-            if before is None:
-                preserve("probe-budget-exhausted")
-                continue
-            if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
-                preserve("probe-budget-exhausted")
-                continue
+            if item.get("owner") == "release-retention":
+                # Walking a 1.2GiB release to size it costs the whole budget, and the
+                # total would be wrong anyway: releases are APFS clones, so a per-item
+                # sum counts shared blocks that freeing one copy does not return.
+                # free_before/free_after on the receipt is the honest figure.
+                before = 0
+            else:
+                before = _bytes(path, deadline=deadline, clock=self.clock)
+                if before is None:
+                    preserve("probe-budget-exhausted")
+                    continue
+                if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
+                    preserve("probe-budget-exhausted")
+                    continue
             descendant_state = None if whole_tree_is_the_unit else self._protected_descendant(path, deadline=deadline)
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
