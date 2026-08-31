@@ -7,7 +7,12 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 const { makeSteelCdpClient, STEEL_BASE_URL, READ_FORM_EXPRESSION } = require("./steel-cdp-client.js");
-const { steelCastUrl } = require("../server.js");
+const {
+  browserCastPublicUrl,
+  createBrowserCastTicket,
+  steelCastUrl,
+  verifyBrowserCastTicket,
+} = require("../server.js");
 
 function fakeFetch(handler) {
   const calls = [];
@@ -37,7 +42,7 @@ test("createSession posts /v1/sessions and returns the CDP websocket url", async
 
 test("interactive debugger copies Steel HTML but replaces its private cast URL", async () => {
   const privateUrl = "ws://steel-browser.railway.internal:8080/v1/sessions/cast";
-  const publicUrl = "wss://aniccaai.com/api/panel/money-printer/browser/cast";
+  const publicUrl = `wss://life-call-production.up.railway.app/api/panel/money-printer/browser/cast?ticket=payload.${"s".repeat(43)}`;
   const source = `<iframe></iframe><script>const ws=${JSON.stringify(privateUrl)}</script>`;
   let calls = 0;
   const client = makeSteelCdpClient({
@@ -51,6 +56,28 @@ test("interactive debugger copies Steel HTML but replaces its private cast URL",
   const html = await client.getInteractiveDebugger("steel-1", publicUrl);
   assert.match(html, new RegExp(publicUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.doesNotMatch(html, /railway\.internal|ws:\/\//i);
+});
+
+test("browser cast ticket is short-lived, scoped, tamper-evident, and Railway-only", () => {
+  const now = 1_788_300_000_000;
+  const secret = "s".repeat(64);
+  const input = {
+    uid: `webmcp-guest-${"a".repeat(24)}`,
+    browserJobId: "11111111-1111-4111-8111-111111111111",
+    expiresAt: now + 120_000,
+  };
+  const ticket = createBrowserCastTicket(input, secret);
+  assert.match(ticket, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/);
+  assert.deepEqual(verifyBrowserCastTicket(ticket, secret, now), input);
+  const tampered = `${ticket.slice(0, -1)}${ticket.endsWith("x") ? "y" : "x"}`;
+  assert.equal(verifyBrowserCastTicket(tampered, secret, now), null);
+  assert.equal(verifyBrowserCastTicket(ticket, "x".repeat(64), now), null);
+  assert.deepEqual(verifyBrowserCastTicket(ticket, secret, now + 120_001), { expired: true });
+  assert.equal(
+    browserCastPublicUrl(ticket, { RAILWAY_PUBLIC_DOMAIN: "life-call-production.up.railway.app" }),
+    `wss://life-call-production.up.railway.app/api/panel/money-printer/browser/cast?ticket=${encodeURIComponent(ticket)}`,
+  );
+  assert.throws(() => browserCastPublicUrl(ticket, { RAILWAY_PUBLIC_DOMAIN: "aniccaai.com" }), /domain/i);
 });
 
 test("takeover proxy binds the private Steel cast to its owned session", () => {

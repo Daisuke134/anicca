@@ -172,11 +172,52 @@ const LM_LATE_APPROVAL_CALLBACK_SECRET = process.env.LM_LATE_APPROVAL_CALLBACK_S
 const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
 const BROWSER_TAKEOVER_PATH = "/api/panel/money-printer/browser";
 const BROWSER_CAST_PATH = `${BROWSER_TAKEOVER_PATH}/cast`;
+const BROWSER_CAST_TTL_MS = 2 * 60 * 1000;
+const BROWSER_CAST_SECRET = process.env.LM_BROWSER_SESSION_KEY || "";
 const browserTakeoverSteel = makeSteelCdpClient();
 function steelCastUrl(sessionId) {
   const id = String(sessionId || "");
   if (!/^[A-Za-z0-9._-]{1,200}$/.test(id)) throw new Error("Steel cast session invalid");
   return `ws://steel-browser.railway.internal:8080/v1/sessions/cast?sessionId=${encodeURIComponent(id)}`;
+}
+function createBrowserCastTicket(value, secret = BROWSER_CAST_SECRET) {
+  const uid = String(value && value.uid || "");
+  const browserJobId = String(value && value.browserJobId || "");
+  const expiresAt = Number(value && value.expiresAt);
+  if (!/^[a-z0-9][a-z0-9._-]{0,199}$/.test(uid)
+    || !/^[A-Za-z0-9._-]{1,200}$/.test(browserJobId)
+    || !Number.isSafeInteger(expiresAt)
+    || typeof secret !== "string" || secret.length < 32) {
+    throw new Error("browser cast ticket invalid");
+  }
+  const payload = Buffer.from(`v1\n${uid}\n${browserJobId}\n${expiresAt}`, "utf8").toString("base64url");
+  const signature = crypto.createHmac("sha256", secret).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+function verifyBrowserCastTicket(ticket, secret = BROWSER_CAST_SECRET, now = Date.now()) {
+  const match = typeof ticket === "string" ? ticket.match(/^([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]{43})$/) : null;
+  if (!match || typeof secret !== "string" || secret.length < 32 || !Number.isFinite(now)) return null;
+  const expected = crypto.createHmac("sha256", secret).update(match[1]).digest("base64url");
+  const actualBytes = Buffer.from(match[2]), expectedBytes = Buffer.from(expected);
+  if (actualBytes.length !== expectedBytes.length || !crypto.timingSafeEqual(actualBytes, expectedBytes)) return null;
+  let parts;
+  try { parts = Buffer.from(match[1], "base64url").toString("utf8").split("\n"); } catch { return null; }
+  if (parts.length !== 4 || parts[0] !== "v1"
+    || !/^[a-z0-9][a-z0-9._-]{0,199}$/.test(parts[1])
+    || !/^[A-Za-z0-9._-]{1,200}$/.test(parts[2])
+    || !/^[0-9]{13}$/.test(parts[3])) return null;
+  const expiresAt = Number(parts[3]);
+  if (!Number.isSafeInteger(expiresAt) || expiresAt > now + BROWSER_CAST_TTL_MS) return null;
+  if (expiresAt <= now) return { expired: true };
+  return { uid: parts[1], browserJobId: parts[2], expiresAt };
+}
+function browserCastPublicUrl(ticket, env = process.env) {
+  const domain = String(env && env.RAILWAY_PUBLIC_DOMAIN || "").trim().toLowerCase();
+  if (!/^[a-z0-9-]+\.up\.railway\.app$/.test(domain)
+    || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(String(ticket || ""))) {
+    throw new Error("browser cast public domain invalid");
+  }
+  return `wss://${domain}${BROWSER_CAST_PATH}?ticket=${encodeURIComponent(ticket)}`;
 }
 // The panel is served by this life-call HTTP service, not by the /lm onboarding site.
 // Railway supplies RAILWAY_PUBLIC_DOMAIN; LM_PANEL_BASE_URL is the explicit override for custom domains.
@@ -197,6 +238,20 @@ async function browserTakeover(req) {
   if (handoff.expired) return { status: 410, scope };
   await browserTakeoverSteel.assertLiveSession(handoff.session_id);
   return { status: 200, scope, handoff };
+}
+
+async function browserTakeoverTicket(req) {
+  let ticket;
+  try { ticket = new URL(req.url || BROWSER_CAST_PATH, "https://life-call.invalid").searchParams.get("ticket"); }
+  catch { return { status: 401 }; }
+  const claim = verifyBrowserCastTicket(ticket);
+  if (!claim) return { status: 401 };
+  if (claim.expired) return { status: 410 };
+  const handoff = await readBrowserHandoff(claim.uid);
+  if (!handoff) return { status: 410 };
+  if (handoff.browser_job_id !== claim.browserJobId) return { status: 404 };
+  await browserTakeoverSteel.assertLiveSession(handoff.session_id);
+  return { status: 200, handoff };
 }
 
 function rejectUpgrade(socket, status) {
@@ -374,10 +429,16 @@ const server = http.createServer((req, res) => {
     }
     browserTakeover(req).then(async (state) => {
       if (state.status !== 200) { res.writeHead(state.status, { "cache-control": "no-store" }); res.end(); return; }
-      const publicOrigin = new URL(PUBLIC_BASE);
+      const ticket = createBrowserCastTicket({
+        uid: state.scope.uid,
+        browserJobId: state.handoff.browser_job_id,
+        expiresAt: Date.now() + BROWSER_CAST_TTL_MS,
+      });
+      const publicCastUrl = browserCastPublicUrl(ticket);
+      const publicOrigin = new URL(publicCastUrl);
       const html = await browserTakeoverSteel.getInteractiveDebugger(
         state.handoff.session_id,
-        `wss://${publicOrigin.host}${BROWSER_CAST_PATH}`,
+        publicCastUrl,
       );
       const renewed = panelScopeCookie(state.scope);
       res.writeHead(200, {
@@ -1099,7 +1160,7 @@ const browserTakeoverWss = new WebSocket.Server({ noServer: true, maxPayload: 8 
 
 server.on("upgrade", (req, socket, head) => {
   if (String(req.url || "").split("?", 1)[0] !== BROWSER_CAST_PATH) return;
-  browserTakeover(req).then((state) => {
+  browserTakeoverTicket(req).then((state) => {
     if (state.status !== 200) { rejectUpgrade(socket, state.status); return; }
     browserTakeoverWss.handleUpgrade(req, socket, head, (client) => {
       const upstream = new WebSocket(steelCastUrl(state.handoff.session_id), { maxPayload: 8 * 1024 * 1024 });
@@ -1281,4 +1342,4 @@ if (require.main === module) {
 // redeploy trigger 010026
 
 // Export pure helpers for unit tests (FIND-005).
-module.exports = { buildTag, inngestServeAllowed, panelApiOptions, panelOriginForPath, steelCastUrl, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
+module.exports = { browserCastPublicUrl, buildTag, createBrowserCastTicket, inngestServeAllowed, panelApiOptions, panelOriginForPath, steelCastUrl, testCallAllowed, verifyBrowserCastTicket, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
