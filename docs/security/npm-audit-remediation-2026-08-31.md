@@ -70,9 +70,9 @@ The npm guidance permits `npm audit fix` for compatible updates and recommends e
 
 Final integration verification was run from a clean archive of the committed tree so independently edited, unfinished working-tree files could not affect the result:
 
-- Automation Hub release suite: **126/126 passed**.
+- Automation Hub release suite: **128/128 passed** (the required 126-test suite plus two release integration-contract tests).
 - Automation Hub plus the committed Panel API integration coverage: **130/130 passed**.
-- Panel API/UI/auth/control-center/delegation/zero-link suite: **148/148 passed**.
+- Panel API/UI/auth/control-center/delegation/zero-link suite: **150/150 passed**.
 - Panel score suite: **14/14 passed**.
 - Automation Hub Panel API/UI focused suite: **6/6 passed**.
 - Panel privacy evaluation: passed (`api=177`, `browser=63`, `recipes=19`, `channels=9`, deterministic judge).
