@@ -577,6 +577,38 @@ test("Task 5B human-task API returns one safe tenant task and replays one answer
   assert.deepEqual(browserCompletions, [{ uid: "tenant-a", answer: "approve" }]);
 });
 
+test("Task 5B request_changes resumes the same job before a browser handoff exists", async () => {
+  const fixture = makeFixture();
+  const task = {
+    uid: "tenant-a", task_id: "a".repeat(64), version: 1, question: "Complete provider work.",
+    required_format: { type: "confirmation", values: ["approve", "request_changes"] },
+    reason_code: "provider_interview", resume_ref: "runtime-job://tenant-a/job-1", status: "open",
+  };
+  const answers = [];
+  const humanTaskStore = {
+    async answerOnce(answer) {
+      answers.push(answer);
+      return { ...task, status: "answered", version: 2, answer_ref: answer.answerRef };
+    },
+  };
+  await withApiServer(fixture, async (base) => {
+    const result = await humanTaskRequest(base, "money-printer/human-task/answer", {
+      body: { task_id: task.task_id, version: 1, answer: "request_changes" },
+    });
+    assert.equal(result.response.status, 200);
+    assert.deepEqual(result.body, { task_id: task.task_id, resume_ref: task.resume_ref });
+  }, {
+    panelOrigin: "https://panel.example", commandStore: receiptCommandStore(), humanTaskStore,
+    browserHandoffReader: async () => null,
+    completeBrowserHandoff: async () => { throw new Error("must not require a missing handoff"); },
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+  });
+  assert.deepEqual(answers, [{
+    uid: "tenant-a", taskId: task.task_id, version: 1,
+    answerRef: "vault-answer://tenant-a/request_changes",
+  }]);
+});
+
 test("Task 5B human-task answer rejects missing origin, CSRF, content type, and idempotency before the store", async () => {
   const fixture = makeFixture();
   let writes = 0;
