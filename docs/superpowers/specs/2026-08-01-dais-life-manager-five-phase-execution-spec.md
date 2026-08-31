@@ -6302,8 +6302,9 @@ effect-capable `application-lane-agent`だけを使う。1 wake内と1日の応�
 
 #### User GUI Task
 
-現時点でDaisが行う作業は1件だけである。TelegramでFundraiserからYCのfresh one-time codeまたは
-login linkを要求された時、そのfresh値だけをTelegramへ返す。要求前にYC動画を撮影しない。
+現時点でDaisが行う作業は1件だけである。TelegramでFundraiserからYC認証の通知が届いた時、
+Mac上の既存YC/Gmail画面で認証を直接完了する。one-time codeやlogin linkをTelegram、chat、repoへ転記しない。
+要求前にYC動画を撮影しない。
 ASACのcontact/recovery、program探索、form入力、証拠保存はloopが継続する。
 
 #### Execution Steps
