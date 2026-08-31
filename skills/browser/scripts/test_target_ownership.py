@@ -4,8 +4,11 @@ The production browser is shared by several loops. A loop may only close targets
 that it registered under its own owner name; unowned and foreign targets are
 never garbage-collected.
 """
+import asyncio
+import json
 import os
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -65,3 +68,37 @@ def test_default_tab_close_refuses_target_owned_by_another_loop(
         default_tab.close_tab("foreign", owner="gig-pass")
 
     assert calls == []
+
+
+def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    sent = []
+
+    class FakeWebSocket:
+        async def send(self, payload):
+            sent.append(json.loads(payload))
+
+        async def recv(self):
+            request_id = sent[-1]["id"]
+            if request_id == 1:
+                return json.dumps({"id": 1, "result": {"targetId": "hidden-1"}})
+            return json.dumps({"id": 2, "result": {"success": True}})
+
+    class FakeConnection:
+        async def __aenter__(self):
+            return FakeWebSocket()
+
+        async def __aexit__(self, *_args):
+            return None
+
+    monkeypatch.setattr(default_tab.websockets, "connect", lambda *_args, **_kwargs: FakeConnection())
+    monkeypatch.setattr(
+        default_tab.sys, "stdin", SimpleNamespace(buffer=SimpleNamespace(read=lambda: b"")),
+    )
+
+    asyncio.run(default_tab._serve_hidden_tab("https://coconala.com", owner="paid"))
+
+    assert [row["method"] for row in sent] == ["Target.createTarget", "Target.closeTarget"]
+    assert sent[-1]["params"] == {"targetId": "hidden-1"}
+    assert ownership.owner_for_target("hidden-1") is None
