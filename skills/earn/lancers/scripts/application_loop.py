@@ -131,6 +131,42 @@ def _discovery_query(value: object) -> str:
     except (TypeError, ValueError, OverflowError, OSError):
         return DEFAULT_DISCOVERY_QUERY
 
+def _run_exhaustive_discovery(timeout: float) -> Mapping[str, object]:
+    """Union every query so one wake can see the whole reachable board, not one keyword of it.
+
+    The default path deliberately stops at the first query that still has unclaimed rows, which
+    keeps a 20s tick cheap but means the other queries' candidates are never even considered --
+    'apply to every eligible candidate' cannot be true under it. Coconala solves the same problem
+    with a separate exhaustive lane on its own hour-long budget rather than by widening the fast
+    tick, so this is opt-in and the caller supplies the larger timeout. A query that fails for its
+    own reason aborts the union, because a partial board must not be reported as the board.
+    """
+    merged: dict[str, Mapping[str, object]] = {}
+    last: Mapping[str, object] = {"ok": False, "error": "no_normalized_opportunities", "opportunities": []}
+    seen_ok = False
+    for query in DISCOVERY_QUERIES:
+        last = status.run_discovery(query=query, limit=MAX_OPPORTUNITIES, timeout=timeout)
+        if last.get("ok") is not True:
+            if last.get("error") != "no_normalized_opportunities":
+                return last
+            continue
+        seen_ok = True
+        opportunities = last.get("opportunities")
+        if not isinstance(opportunities, Sequence) or isinstance(opportunities, (str, bytes, bytearray)):
+            return last
+        for row in opportunities:
+            if not isinstance(row, Mapping):
+                return last
+            external_id = row.get("external_id")
+            if isinstance(external_id, str) and external_id and external_id not in merged:
+                merged[external_id] = row
+    if not seen_ok:
+        return last
+    union = {key: value for key, value in last.items() if key != "error"}
+    union["ok"] = True
+    union["opportunities"] = list(merged.values())
+    return union
+
 def _run_default_discovery(tick_value: object, timeout: float, state_path: Path) -> Mapping[str, object]:
     first = _discovery_query(tick_value)
     start = DISCOVERY_QUERIES.index(first)
@@ -514,7 +550,7 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     final = verified[-1] if verified else ApplicationLoopResult(True, reason="provider_terminal_blocked", project_id=blocked[-1] if blocked else None)
     return _batch_summary(final, observed_count, len(eligible), verified, blocked, ok=True, submitted=any(item.submitted for item in verified))
 
-def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[Path] = None, discoverer: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, safety_verifier: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, clock: Optional[Callable[[], object]] = None, discovery: Optional[Callable[..., Mapping[str, object]]] = None, now: Optional[Callable[[], object]] = None, evidence_dir: Optional[Path] = None, output_stream: Optional[TextIO] = None, query: Optional[str] = None, timeout: float = 20.0) -> dict[str, object]:
+def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[Path] = None, discoverer: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, safety_verifier: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, clock: Optional[Callable[[], object]] = None, discovery: Optional[Callable[..., Mapping[str, object]]] = None, now: Optional[Callable[[], object]] = None, evidence_dir: Optional[Path] = None, output_stream: Optional[TextIO] = None, query: Optional[str] = None, timeout: float = 20.0) -> dict[str, object]:
     try:
         pending = application_tick.read_pending_descriptor(Path(state_path))
     except Exception:
@@ -550,7 +586,7 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
                     turn_evidence = evidence / f"turn-{turn + 1}"
                     turn_evidence.mkdir(mode=0o700, exist_ok=False)
                 try:
-                    observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else _run_default_discovery(tick_value, timeout, Path(state_path))
+                    observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else (_run_exhaustive_discovery(timeout) if exhaustive else _run_default_discovery(tick_value, timeout, Path(state_path)))
                 except Exception: observed = None
                 if observed is None or not isinstance(observed, Mapping): result = ApplicationLoopResult(False, error="discovery_failed")
                 else:
