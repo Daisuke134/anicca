@@ -89,6 +89,13 @@ def build_apply_plan(registry: dict, release_root: Path, release_sha: str) -> li
             raise ValueError(f"{loop_id}: missing entrypoint {entry['entrypoint']}")
         if not os.access(executable, os.X_OK):
             raise ValueError(f"{loop_id}: entrypoint is not executable {entry['entrypoint']}")
+        if loop_id == "life-manager-connector-native":
+            dependencies = ("playwright-core", "jsqr")
+            missing = [name for name in dependencies if not (
+                release_root / "apps/life-manager/node_modules" / name / "package.json"
+            ).is_file()]
+            if missing:
+                raise ValueError("life-manager-connector-native: Connector runtime dependencies missing")
         plan.append({
             "loop_id": loop_id,
             "label": entry["label"],

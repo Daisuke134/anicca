@@ -76,6 +76,10 @@ class CleanUserInstallTest(unittest.TestCase):
             with tarfile.open(archive) as handle:
                 handle.extractall(release)
             (release / "RELEASE.json").write_text(json.dumps({"sha": sha}))
+            for dependency in ("playwright-core", "jsqr"):
+                package = release / "apps/life-manager/node_modules" / dependency / "package.json"
+                package.parent.mkdir(parents=True)
+                package.write_text("{}\n")
             registry = json.loads((release / "config/loop-registry.json").read_text())
             plan = build_apply_plan(registry, release, sha)
             agents = root / "home/Library/LaunchAgents"

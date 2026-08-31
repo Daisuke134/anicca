@@ -257,6 +257,29 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertEqual(result[0]["loaded_arguments"], calls[0]["expected_arguments"])
 
+    def test_connector_release_requires_locked_browser_dependencies(self):
+        value = registry("skills/connector/run.sh")
+        value["loops"]["life-manager-connector-native"] = value["loops"].pop("example")
+        value["loops"]["life-manager-connector-native"]["label"] = (
+            "ai.anicca.life-manager-connector-native"
+        )
+        (self.root / "skills/connector").mkdir(parents=True)
+        (self.root / "skills/connector/run.sh").write_text("#!/bin/sh\nexit 0\n")
+        (self.root / "skills/connector/run.sh").chmod(0o755)
+        calls = []
+
+        with self.assertRaisesRegex(ValueError, "Connector runtime dependencies missing"):
+            apply_registry(value, self.root, SHA, calls.append)
+        self.assertEqual(calls, [])
+
+        for dependency in ("playwright-core", "jsqr"):
+            package = self.root / "apps/life-manager/node_modules" / dependency / "package.json"
+            package.parent.mkdir(parents=True)
+            package.write_text("{}\n")
+
+        apply_registry(value, self.root, SHA, calls.append)
+        self.assertEqual([item["loop_id"] for item in calls], ["life-manager-connector-native"])
+
     def test_targeted_apply_ignores_unrelated_missing_entrypoint(self):
         calls = []
         installer = lambda item: calls.append(item) or item
