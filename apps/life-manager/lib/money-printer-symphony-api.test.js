@@ -123,13 +123,13 @@ async function call(path, body, options = {}, store = {}) {
   return { status: capture.res.statusCode, headers: capture.res.headers, body: JSON.parse(capture.res.body) };
 }
 
-test("valid claim returns a safe dispatch and calls the tenant-scoped store once", async () => {
+test("valid claim lets the store select one tenant and returns only that safe dispatch", async () => {
   const calls = [];
   const store = {
-    async claimSymphony(input) { calls.push(["claim", input]); return dispatch(); },
+    async claimSymphonyNext(input) { calls.push(["claim", input]); return dispatch(); },
   };
 
-  const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, store);
+  const result = await call("/api/internal/money-printer/symphony/claim", {}, {}, store);
 
   assert.equal(result.status, 200);
   assert.deepEqual(result.body, {
@@ -142,7 +142,7 @@ test("valid claim returns a safe dispatch and calls the tenant-scoped store once
       answered_human_boundaries: [],
     },
   });
-  assert.deepEqual(calls, [["claim", { uid: TENANT }]]);
+  assert.deepEqual(calls, [["claim", {}]]);
   assert.equal(result.body.dispatch.result_payload, undefined);
   assert.equal(result.body.dispatch.failure_code, undefined);
 });
@@ -159,8 +159,8 @@ test("round2 claim propagates same-job answered boundaries and rejects malformed
   };
   const row = { ...dispatch(), round: 2 };
   const calls = [];
-  const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
-    async claimSymphony() { return row; },
+  const result = await call("/api/internal/money-printer/symphony/claim", {}, {}, {
+    async claimSymphonyNext() { return row; },
     async readAnsweredForJob(input) { calls.push(input); return [answered]; },
   });
 
@@ -186,8 +186,8 @@ test("round2 claim propagates same-job answered boundaries and rejects malformed
     { ...answered, human_boundary_ref: "human-boundary://sha256/not-a-sha" },
     { ...answered, private_answer: "must not leak" },
   ]) {
-    const invalidResult = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
-      async claimSymphony() { return row; },
+    const invalidResult = await call("/api/internal/money-printer/symphony/claim", {}, {}, {
+      async claimSymphonyNext() { return row; },
       async readAnsweredForJob() { return [invalidAnswered]; },
     });
     assert.equal(invalidResult.status, 409);
@@ -207,8 +207,8 @@ test("claim rejects non-empty round1 and empty round2 answered-boundary arrays",
   };
   for (const [round, rows] of [[1, [answered]], [2, []]]) {
     let readCalls = 0;
-    const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
-      async claimSymphony() { return { ...dispatch(), round }; },
+    const result = await call("/api/internal/money-printer/symphony/claim", {}, {}, {
+      async claimSymphonyNext() { return { ...dispatch(), round }; },
       async readAnsweredForJob() { readCalls += 1; return rows; },
     });
     assert.equal(result.status, 409);
@@ -220,8 +220,8 @@ test("claim rejects non-empty round1 and empty round2 answered-boundary arrays",
 test("claim recovery projects only base identifiers and durable issue ref", async () => {
   for (const status of ["mirrored", "result_ready", "consumed"]) {
     const row = recoveryDispatch(status);
-    const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
-      async claimSymphony() { return row; },
+    const result = await call("/api/internal/money-printer/symphony/claim", {}, {}, {
+      async claimSymphonyNext() { return row; },
     });
     assert.equal(result.status, 200);
     assert.deepEqual(result.body.dispatch, {
@@ -240,24 +240,23 @@ test("claim recovery projects only base identifiers and durable issue ref", asyn
   }
 });
 
-test("claim recovery rejects incoherent or foreign rows without exposing private fields", async () => {
+test("claim recovery rejects incoherent rows without exposing private fields", async () => {
   for (const row of [
-    recoveryDispatch("mirrored", { tenant_id: FOREIGN_TENANT }),
     recoveryDispatch("mirrored", { result_ref: RESULT_REF }),
     recoveryDispatch("result_ready", { result_payload: null }),
     recoveryDispatch("result_ready", { issue_closed_at: "2026-08-31T00:00:00.000Z" }),
     recoveryDispatch("consumed", { issue_closed_at: "2026-08-31T00:00:00.000Z" }),
   ]) {
-    const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
-      async claimSymphony() { return row; },
+    const result = await call("/api/internal/money-printer/symphony/claim", {}, {}, {
+      async claimSymphonyNext() { return row; },
     });
     assert.equal(result.status, 409);
     assert.deepEqual(result.body, { error: "conflict" });
     assert.doesNotMatch(JSON.stringify(result.body), /private|secret/i);
   }
 
-  const safeExtra = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
-    async claimSymphony() { return { ...recoveryDispatch("consumed"), private_payload: SECRET }; },
+  const safeExtra = await call("/api/internal/money-printer/symphony/claim", {}, {}, {
+    async claimSymphonyNext() { return { ...recoveryDispatch("consumed"), private_payload: SECRET }; },
   });
   assert.equal(safeExtra.status, 200);
   assert.doesNotMatch(JSON.stringify(safeExtra.body), new RegExp(SECRET));
@@ -288,7 +287,7 @@ test("missing or wrong bearer is rejected before runtime store acquisition", asy
 
 test("missing or invalid configured secret fails closed without touching the store", async () => {
   for (const secret of [undefined, "short", "x".repeat(257), "bad secret"]) {
-    const req = request("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT });
+    const req = request("/api/internal/money-printer/symphony/claim", {});
     const capture = responseCapture();
     let acquired = 0;
     const handled = handleMoneyPrinterSymphonyApiRequest(req, capture.res, {
@@ -557,8 +556,8 @@ test("result rejects wrong repository, author, tenant and stale store readback w
 });
 
 test("unexpected store failures return a generic 500 without reflecting the raw error", async () => {
-  const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
-    async claimSymphony() { throw new Error("database password and raw connection failure"); },
+  const result = await call("/api/internal/money-printer/symphony/claim", {}, {}, {
+    async claimSymphonyNext() { throw new Error("database password and raw connection failure"); },
   });
   assert.equal(result.status, 500);
   assert.deepEqual(result.body, { error: "internal_error" });

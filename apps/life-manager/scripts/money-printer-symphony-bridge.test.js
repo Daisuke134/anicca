@@ -182,7 +182,7 @@ test("idle claim returns frozen idle state and makes no guest request", async ()
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, `${BASE}/api/internal/money-printer/symphony/claim`);
   assert.equal(calls[0].init.method, "POST");
-  assert.deepEqual(JSON.parse(calls[0].init.body), { tenant_id: TENANT });
+  assert.deepEqual(JSON.parse(calls[0].init.body), {});
   assert.equal(calls[0].init.headers.authorization, `Bearer ${SECRET}`);
 });
 
@@ -313,9 +313,8 @@ test("durable recovery claims preserve only status and issue ref while rebuildin
   }
 });
 
-test("claim parser rejects foreign, wrong-status, extra, and missing recovery fields before guest access", async () => {
+test("claim parser rejects wrong-status, extra, and missing recovery fields before guest access", async () => {
   for (const dispatchRow of [
-    { tenant_id: FOREIGN_TENANT, dispatch_id: DISPATCH_ID, job_id: JOB_ID, round: 1, status: "claimed" },
     { tenant_id: TENANT, dispatch_id: DISPATCH_ID, job_id: JOB_ID, round: 1, status: "failed" },
     { tenant_id: TENANT, dispatch_id: DISPATCH_ID, job_id: JOB_ID, round: 1, status: "mirrored", issue_ref: ISSUE_REF, extra: SECRET },
     { tenant_id: TENANT, dispatch_id: DISPATCH_ID, job_id: JOB_ID, round: 1, status: "consumed" },
@@ -331,9 +330,8 @@ test("claim parser rejects foreign, wrong-status, extra, and missing recovery fi
   }
 });
 
-test("foreign or malformed claimed dispatch stops before either guest GET", async () => {
+test("malformed claimed dispatch stops before either guest GET", async () => {
   for (const invalidDispatch of [
-    dispatch({ tenant_id: FOREIGN_TENANT }),
     dispatch({ dispatch_id: "not-a-dispatch" }),
     dispatch({ job_id: "goal:not-a-64-hex-id" }),
     dispatch({ round: 0 }),

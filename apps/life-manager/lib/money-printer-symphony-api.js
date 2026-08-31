@@ -115,8 +115,8 @@ function contentType(req) {
 }
 
 function validateClaim(body) {
-  if (!exactObject(body, ["tenant_id"]) || typeof body.tenant_id !== "string" || !TENANT_RE.test(body.tenant_id)) invalid();
-  return { uid: body.tenant_id };
+  if (!exactObject(body, [])) invalid();
+  return {};
 }
 
 function validateIssue(body) {
@@ -226,7 +226,9 @@ function answeredHumanBoundaries(rows, expected) {
 }
 
 async function safeClaimWithAnswered(row, uid, store) {
-  const safe = safeClaim(row, uid);
+  const expectedUid = uid || row && row.tenant_id;
+  if (row !== null && (typeof expectedUid !== "string" || !TENANT_RE.test(expectedUid))) conflict();
+  const safe = safeClaim(row, expectedUid);
   if (safe === null) return null;
   const rows = typeof store.readAnsweredForJob === "function"
     ? await store.readAnsweredForJob({ uid: safe.tenant_id, job_id: safe.job_id })
@@ -356,8 +358,8 @@ async function processRequest(action, req, res, dependencies) {
         : action === "result" ? validateResult(body) : validateClose(body);
     const store = storeFor(dependencies && dependencies.getRuntimeStore);
     if (action === "claim") {
-      const row = await store.claimSymphony(input);
-      jsonResponse(res, 200, { dispatch: await safeClaimWithAnswered(row, input.uid, store) });
+      const row = await store.claimSymphonyNext(input);
+      jsonResponse(res, 200, { dispatch: await safeClaimWithAnswered(row, null, store) });
       return;
     }
     if (action === "issue") {

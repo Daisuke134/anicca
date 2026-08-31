@@ -67,6 +67,15 @@ test("R03 Symphony claim atomically moves one queued general-agent job", async (
   assert.equal(await empty.claimSymphony({ uid: TENANT }), null);
   const foreign = createMoneyPrinterRuntimeStore({ query: async () => ({ rows: [{ ...dispatch, tenant_id: "tenant-b" }] }) });
   await assert.rejects(foreign.claimSymphony({ uid: TENANT }), /readback/i);
+
+  const globalCalls = [];
+  const global = createMoneyPrinterRuntimeStore({ query: async (sql, values) => {
+    globalCalls.push({ sql, values });
+    return globalCalls.length === 1 ? { rows: [{ tenant_id: TENANT }] } : { rows: [dispatch] };
+  } });
+  assert.deepEqual(await global.claimSymphonyNext(), dispatch);
+  assert.match(globalCalls[0].sql, /GROUP BY jobs\.tenant_id[\s\S]*ORDER BY min\(jobs\.available_at\)/i);
+  assert.deepEqual(globalCalls[1].values, [TENANT]);
 });
 
 test("R11 Symphony claim recovers the oldest claimed dispatch before selecting queued work", () => {
