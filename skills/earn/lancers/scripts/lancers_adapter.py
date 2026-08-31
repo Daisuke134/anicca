@@ -410,4 +410,4 @@ def normalize_contract_receipt(source: Mapping[str, object], *, observed_at: str
     return receipt
 
 
-__all__ = ["LancersProjectError", "normalize_contract_receipt", "normalize_project", "normalize_projects"]
+__all__ = ["LancersProjectError", "normalize_application_intent", "normalize_contract_receipt", "normalize_project", "normalize_projects"]
