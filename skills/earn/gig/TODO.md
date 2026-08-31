@@ -4634,9 +4634,11 @@ each lane needs its own official marketplace effect/readback and a replay with z
 The loaded Paid release `7ab5a318` is a descendant of both fixes. A natural Paid pass sent and read
 back one bounded reply for `18211838`, but the buyer's accumulated requirement now calls for the
 actual revised horse-racing report, so that reply is progress rather than delivery completion. The
-newest top-level receipt is an `orders_observation` failure caused by a transient authenticated-page
-`RemoteDisconnected`; it observed zero rooms and cannot supersede the preceding nine-room census.
-The next complete natural pass must replace it before any aggregate health claim.
+transient authenticated-page `RemoteDisconnected` receipt was superseded by a later complete natural
+pass: 9 rooms observed, 6 actionable, `effect=0`, `readback=5`, and 4 failures. `18211957` is now
+officially reconciled as completed/deduplicated with no resend. The remaining failures are
+`18128025=remote_resume`, `18180857=remote_builder`, and the two file outputs
+`18211838=file_builder` and `18218780=file_builder`; this is the current aggregate baseline.
 
 1. **Paid / delivery first.** The latest production aggregate observed 9 rooms, 7 actionable,
    `effect=0`, `readback=4`, and 5 failures: `18128025=remote_resume`, `18180857=remote_builder`,
