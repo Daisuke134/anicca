@@ -186,6 +186,27 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(second.fence, first.fence + 1)
         self.assertEqual(self.ledger.current_state(self.application_id), "submit_claimed")
         self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 1)
+        self.assertEqual(
+            self.ledger.retryable_applications(),
+            [
+                {
+                    "application_id": self.application_id,
+                    "company": "Example",
+                    "title": "AI Engineer",
+                    "canonical_url": "https://jobs.example.com/42",
+                    "intent_id": second.intent_id,
+                    "fence": second.fence,
+                }
+            ],
+        )
+        self.ledger.connection.execute(
+            """
+            INSERT INTO submission_click_phases
+              (intent_id, fence, phase, updated_at)
+            VALUES (?, ?, 'clicked', '2026-07-29T00:00:00+00:00')
+            """,
+            (second.intent_id, second.fence),
+        )
         self.assertEqual(self.ledger.retryable_applications(), [])
 
         with self.assertRaises(FenceError):

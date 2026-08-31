@@ -215,6 +215,18 @@ the final click remains fenced. Acceptance is a natural Danaher retry that
 acquires fence 3, calls the final click at most once, and reaches provider and
 Gmail terminal evidence.
 
+After the fence-generation repair is released, the next wake shows the queue
+boundary still excludes the stranded current attempts. Production contains four
+rows (Replit, Sierra, and two Danaher roles) whose application and intent states
+are `submit_claimed` at fence 2, whose prior browser fence is consumed fence 1,
+and whose current fence has no click phase. The active atom queues a
+`submit_claimed` row only when its current fence has no recorded click phase.
+The final browser fence remains authoritative: a consumed current-generation
+fence still refuses another click. These resumable rows run before fresh
+discovery so a pre-click crash cannot permanently strand Review-ready work.
+Acceptance is a natural wake that selects the four resumable rows without fit
+calls and lets Danaher acquire its current fence and finalize once.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
