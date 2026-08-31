@@ -96,6 +96,21 @@ queue with zero remaining queued rows, which forces the existing fresh qualifica
 path. No Ledger transition, Submit intent, scheduler, provider judgment, or new state
 store is added. Main merge, release, production seed and natural wake proof remain.
 
+Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
+and the Cloudera tenant is durably `recovery_requested`. Natural wake
+`daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
+applications (S&P Global, AVEVA and two Danaher rows), zero fit-model calls, and no
+Cloudera or Hitachi recovery-waiting row at either queue boundary. S&P advances to a
+new-account visible-challenge checkpoint with Telegram `46134`; the same wake then
+continues to AVEVA. This closes the repeated Cloudera/reset and queue-starvation
+defect with Submit effects zero for Cloudera. The wake exposes the next independent
+throughput blocker: after AVEVA sign-in, the semantic retry starts a second model
+attempt whose stdout remains empty from `18:42:45 JST`. Do not shorten cadence to five
+minutes while one eligible wake can still spend its 1,800-second bound in silent
+provider negotiation. The next atom must bound/fail over that no-output model start,
+then prove at least one fresh Gmail-confirmed submission in one to three natural
+wakes; the rolling 48/24h KPI remains open.
+
 The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
 longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
 qualifies Regeneron application
