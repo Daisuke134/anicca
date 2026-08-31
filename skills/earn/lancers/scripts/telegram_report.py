@@ -271,6 +271,17 @@ def read_last_json(path: Path) -> Optional[Mapping[str, object]]:
     return None
 
 
+def read_application_wake(path: Path) -> tuple[Optional[Mapping[str, object]], int]:
+    try: lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError): return None, 0
+    values = []
+    for line in lines:
+        try: value = json.loads(line)
+        except (TypeError, ValueError): continue
+        if isinstance(value, Mapping): values.append(value)
+    return (values[-1], len(values)) if values else (None, 0)
+
+
 def _int(value: object) -> Optional[int]:
     return value if type(value) is int and value >= 0 else None
 
@@ -372,6 +383,8 @@ def build_snapshot(*, application: object, pending_count: object, cumulative_ver
     app = application if isinstance(application, Mapping) else {}
     stages = {key: _int(app.get(key)) for key in ("observed_count", "eligible_count", "verified_count")}
     stages["submitted"] = (0 if isinstance(app, Mapping) and app.get("submitted") is False else 1) if isinstance(app, Mapping) and isinstance(app.get("submitted"), bool) else None
+    stages["reason"] = app.get("reason") if isinstance(app.get("reason"), str) else None
+    stages["project_id"] = app.get("project_id") if isinstance(app.get("project_id"), str) else None
     reason = app.get("error") or app.get("reason")
     app_ok = isinstance(application, Mapping) and all(value is not None for value in stages.values())
     pending, verified = _int(pending_count), _int(cumulative_verified)
@@ -439,9 +452,16 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
         "storefront_readback_failed": "出品状態を公式画面で確認できませんでした。変更せず、次回もう一度確認します。",
         "listing_readback_mismatch": "出品変更後の公式状態が一致しませんでした。追加変更せず、次回もう一度確認します。",
     }.get(blocker, "公式確認を完了できない項目がありました。外部操作を増やさず、次回もう一度確認します。") if blocker else "新しい案件と公式応募結果を次回も確認します。"
+    project_id = app.get("project_id") if isinstance(app.get("project_id"), str) else None
+    decision = {
+        "duplicate_project": f"案件{project_id}は既に判断済みだったため重複応募せず、次の新着確認へ進みます。" if project_id else "確認した案件は既に判断済みだったため重複応募せず、次の新着確認へ進みます。",
+        "no_eligible_project": "今回確認した案件には正直に完遂できる新規候補がなく、応募せず次の新着確認へ進みます。",
+        "daily_quota_reached": "本日の安全な応募上限に達したため送信せず、次回も新着と公式結果を確認します。",
+    }.get(app.get("reason"))
     return (f"[Lancers][応募・出品] {icon} {headline}\n"
             f"応募: 公開案件は{count(app.get('observed_count'))}確認し、適合候補は{count(app.get('eligible_count'))}、{sent_text}。"
             f"公式確認は{count(verified)}、累計{count(snapshot.get('cumulative_verified'))}、確認待ちは{count(pending)}です。\n"
+            + (f"判断: {decision}\n" if decision else "") +
             f"出品: {states}。需要: {funnel}。\n"
             f"{pipeline_line}\n{sales_line}{sales_next}\n"
             f"{revenue}\n"
@@ -466,7 +486,9 @@ def _jst_day(value: object) -> str:
 
 
 def enqueue_snapshot(database: Path, snapshot: Mapping[str, object], now: object) -> bool:
-    key = f"lancers:human:v1:{_jst_day(now)}:{semantic_hash(snapshot)}"
+    wake = snapshot.get("application_wake_sequence")
+    wake_key = str(wake) if type(wake) is int and wake > 0 else "unknown"
+    key = f"lancers:human:v2:{_jst_day(now)}:{wake_key}:{semantic_hash(snapshot)}"
     try:
         return bool(outbox.enqueue(Path(database), key, render_snapshot(snapshot), _timestamp(now) or "unknown"))
     except outbox.IdempotencyConflict:
@@ -479,6 +501,9 @@ def _provider_id(value: object) -> Optional[str]:
     elif isinstance(value, Mapping):
         payload = value
         value = payload.get("messageId", payload.get("message_id", payload.get("id")))
+        if value is None and isinstance(payload.get("payload"), Mapping):
+            nested = payload["payload"]
+            value = nested.get("messageId", nested.get("message_id", nested.get("id")))
         if value is None and isinstance(payload.get("result"), Mapping):
             result = payload["result"]
             value = result.get("messageId", result.get("message_id", result.get("id")))
@@ -558,7 +583,7 @@ def _source_error(error: BaseException) -> str:
 
 def collect_snapshot(*, application_log: Path, state_path: Path, ledger_database: Path, storefront: object = None, storefront_log: Path = STOREFRONT_LOG, now: object = None, ledger_events: object = None) -> dict[str, object]:
     del storefront_log
-    observed = read_last_json(application_log)
+    observed, wake_sequence = read_application_wake(application_log)
     source_time = _source_timestamp(observed)
     events = ledger_events
     if events is None:
@@ -573,14 +598,12 @@ def collect_snapshot(*, application_log: Path, state_path: Path, ledger_database
         except Exception as error:
             storefront = {"error": _source_error(error)}
     if isinstance(storefront, Mapping): storefront = dict(storefront) | {"demand": _listing_demand(Path(state_path).with_name("listing.json"))}
-    return build_snapshot(application=observed, pending_count=_pending_count(Path(state_path)), cumulative_verified=verified, storefront=storefront, sales=_sales_snapshot(Path(state_path).with_name("contracts.json")), source_observed_at=source_time, official_readback_observed_at=official)
+    return build_snapshot(application=observed, pending_count=_pending_count(Path(state_path)), cumulative_verified=verified, storefront=storefront, sales=_sales_snapshot(Path(state_path).with_name("contracts.json")), source_observed_at=source_time, official_readback_observed_at=official) | {"application_wake_sequence": wake_sequence}
 
 
 def _default_notifier(message: str) -> SendResult:
     try:
-        idempotency_key = "lancers-report:" + hashlib.sha256(message.encode("utf-8")).hexdigest()
-        params = json.dumps({"channel": "telegram", "to": TARGET, "message": message, "idempotencyKey": idempotency_key}, ensure_ascii=False, separators=(",", ":"))
-        completed = subprocess.run(["openclaw", "gateway", "call", "send", "--timeout", "60000", "--params", params, "--json"], capture_output=True, text=True, timeout=70, check=False)
+        completed = subprocess.run(["openclaw", "message", "send", "--channel", "telegram", "--target", TARGET, "--message", message, "--json"], stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False)
         payload = _provider_payload(completed.stdout) if completed.returncode == 0 else {}
         return SendResult(True, _provider_id(payload), "receipt_missing")
     except OSError:
