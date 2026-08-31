@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import os
 from collections.abc import Awaitable, Callable, Iterable
+from pathlib import Path
 from typing import Any
 
 from ..ats import detect_provider
 from ..ledger import WORKDAY_FIT_POLICY_VERSION
 from ..state import canonical_url
 from .contracts import QueueRowReceiptV1
+from .workday_account import MachineWorkdayCredentialStore
 
 
 RowProcessor = Callable[[dict[str, Any]], Awaitable[str]]
@@ -46,11 +48,23 @@ class RowQueueSupervisor:
             *ledger.pending_materials_ready_applications(),
             *ledger.retryable_applications(),
         )
+        credential_path = os.environ.get("JOB_SEARCH_MACHINE_CREDENTIALS")
+        credentials = (
+            MachineWorkdayCredentialStore(Path(credential_path))
+            if credential_path
+            else None
+        )
         seen: set[str] = set()
         rows: list[dict[str, Any]] = []
         for row in ordered:
             identity = canonical_url(str(row["canonical_url"]))
             if provider and detect_provider(identity) != provider:
+                continue
+            if (
+                credentials is not None
+                and detect_provider(identity) == "workday"
+                and credentials.account_status(identity) == "recovery_requested"
+            ):
                 continue
             if (
                 detect_provider(identity) == "workday"

@@ -119,7 +119,10 @@ PAID_DECISION_FIELDS = frozenset((
 ))
 
 class Failure(RuntimeError):
-    def __init__(self, step: str): self.step = step
+    def __init__(self, step: str, detail: str = ""):
+        super().__init__(detail or step)
+        self.step = step
+        self.detail = detail
 
 def _load(path: Path) -> Any: return json.loads(path.read_text(encoding="utf-8"))
 
@@ -3197,9 +3200,12 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
             resumed = blocked_bundle
             blocked_recheck_finding = (_text(review_state.get("finding"))
                                        or "The prior fresh reviewer could not authorize this exact artifact.")
-    source_census = _prepare_source_census(args, root, requirements_sha256, code_root)
-    bound = _file_immutable_inputs(root, context)
-    requirements_before = _requirements_snapshot(root)
+    try:
+        source_census = _prepare_source_census(args, root, requirements_sha256, code_root)
+        bound = _file_immutable_inputs(root, context)
+        requirements_before = _requirements_snapshot(root)
+    except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
+        raise Failure("file_builder", "source_census_or_input_binding") from error
     builder_prompt = base / "file" / "builder.prompt.txt"
     builder_prompt.parent.mkdir(parents=True, exist_ok=True)
     owner_instructions = (
@@ -3283,9 +3289,12 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
                           f"this finding: {finding}" if finding else "")
             builder_prompt.write_text(owner_instructions + correction, encoding="utf-8")
             owner_evidence = root / "evidence" / "agent-PAID_FILE_OWNER"
-            owner_started = _run_isolated_file_owner(
-                args, root, context, owner_instructions + correction, owner_evidence,
-            )
+            try:
+                owner_started = _run_isolated_file_owner(
+                    args, root, context, owner_instructions + correction, owner_evidence,
+                )
+            except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
+                raise Failure("file_builder", "isolated_file_owner") from error
             _normalize_acceptance_delta(root)
             manifest, snapshots = _file_bundle_snapshots(root)
             for key in ("manifest", "artifact", "acceptance"):
@@ -4390,7 +4399,7 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             "failed_step": error.step if isinstance(error, Failure) else "remote_resume",
             "diagnostic_stage": diagnostic_stage,
             "error_type": type(error).__name__,
-            "error_detail": str(error)[:500],
+            "error_detail": (error.detail if isinstance(error, Failure) else str(error))[:500],
             "cause_type": type(cause).__name__ if cause is not None else None,
             "cause_detail": str(cause)[:500] if cause is not None else None,
             "effect": 0, "readback": 0,

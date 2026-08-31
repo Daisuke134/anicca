@@ -32,6 +32,14 @@ def write_json(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def test_paid_failure_preserves_machine_readable_step_and_diagnostic_detail() -> None:
+    paid = load("paid_direct")
+    error = paid.Failure("file_builder", "isolated_file_owner")
+    assert error.step == "file_builder"
+    assert error.detail == "isolated_file_owner"
+    assert str(error) == "isolated_file_owner"
+
+
 def blocked_project(tmp_path: Path) -> tuple[Path, str, str]:
     root = tmp_path / "project"
     feedback = "a" * 64

@@ -305,6 +305,70 @@ def normalize_projects(
     return normalized, rejected
 
 
+def normalize_application_intent(
+    opportunity: Mapping[str, object],
+    *,
+    proposal_text: object,
+    proposed_amount_minor: object,
+    created_at: str,
+) -> Dict[str, object]:
+    """Bind one already-authored proposal to one Opportunity as a sealed intent.
+
+    The text and the amount arrive as arguments because choosing them is the
+    model's work, not the adapter's. The idempotency key is keyed on the
+    opportunity alone, so a second attempt at the same listing collides with the
+    first however the text is rewritten.
+    """
+
+    if not isinstance(opportunity, Mapping):
+        _fail("intent_opportunity_not_mapping")
+    if opportunity.get("record_type") != "opportunity" or opportunity.get("platform") != "lancers":
+        _fail("intent_opportunity_invalid")
+    created = _observed_at(created_at)
+    external_id = _external_id(opportunity.get("external_id", _MISSING))
+    currency = _currency(opportunity.get("currency", _MISSING), required=True)
+    text = _text(proposal_text, "intent_proposal_text_invalid")
+    if not text.strip():
+        _fail("intent_proposal_text_invalid")
+    if (
+        isinstance(proposed_amount_minor, bool)
+        or not isinstance(proposed_amount_minor, int)
+        or proposed_amount_minor <= 0
+        or proposed_amount_minor > _MAX_SAFE_INTEGER
+    ):
+        _fail("intent_amount_invalid")
+    content = json.dumps(
+        {
+            "platform": "lancers",
+            "opportunity_external_id": external_id,
+            "proposal_text": text,
+            "proposed_amount_minor": proposed_amount_minor,
+            "currency": currency,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    result: Dict[str, object] = {
+        "schema_version": 1,
+        "record_type": "application_intent",
+        "platform": "lancers",
+        "opportunity_external_id": external_id,
+        "proposal_text": text,
+        "proposed_amount_minor": proposed_amount_minor,
+        "currency": currency,
+        "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest(),
+        "idempotency_key": f"lancers:application_intent:{external_id}:v1",
+        "created_at": created,
+    }
+    contracts = _load_contracts()
+    try:
+        contracts.parse_contract(result)
+    except contracts.ContractValidationError:
+        _fail("intent_contract_invalid")
+    return result
+
+
 def normalize_contract_receipt(source: Mapping[str, object], *, observed_at: str) -> Dict[str, object]:
     """Map one officially funded working project to the shared contract receipt."""
 
@@ -346,4 +410,4 @@ def normalize_contract_receipt(source: Mapping[str, object], *, observed_at: str
     return receipt
 
 
-__all__ = ["LancersProjectError", "normalize_contract_receipt", "normalize_project", "normalize_projects"]
+__all__ = ["LancersProjectError", "normalize_application_intent", "normalize_contract_receipt", "normalize_project", "normalize_projects"]
