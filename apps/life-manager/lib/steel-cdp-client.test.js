@@ -56,7 +56,7 @@ test("interactive debugger copies Steel HTML but replaces its private cast URL",
 test("takeover proxy binds the private Steel cast to its owned session", () => {
   assert.equal(
     steelCastUrl("steel-1"),
-    "ws://steel-browser.railway.internal:8080/v1/sessions/steel-1/cast",
+    "ws://steel-browser.railway.internal:8080/v1/sessions/cast?sessionId=steel-1",
   );
   for (const invalid of ["", "../foreign", "steel/foreign", "a?token=secret"]) {
     assert.throws(() => steelCastUrl(invalid), /session/i);

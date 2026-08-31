@@ -176,7 +176,7 @@ const browserTakeoverSteel = makeSteelCdpClient();
 function steelCastUrl(sessionId) {
   const id = String(sessionId || "");
   if (!/^[A-Za-z0-9._-]{1,200}$/.test(id)) throw new Error("Steel cast session invalid");
-  return `ws://steel-browser.railway.internal:8080/v1/sessions/${encodeURIComponent(id)}/cast`;
+  return `ws://steel-browser.railway.internal:8080/v1/sessions/cast?sessionId=${encodeURIComponent(id)}`;
 }
 // The panel is served by this life-call HTTP service, not by the /lm onboarding site.
 // Railway supplies RAILWAY_PUBLIC_DOMAIN; LM_PANEL_BASE_URL is the explicit override for custom domains.
