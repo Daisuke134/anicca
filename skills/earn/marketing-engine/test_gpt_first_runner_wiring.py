@@ -85,6 +85,8 @@ class GptFirstRunnerWiringTest(unittest.TestCase):
             args = json.loads(args_file.read_text(encoding="utf-8"))
             self.assertEqual(args[args.index("--task-class") + 1], "application-intent-planner")
             self.assertEqual(args[args.index("--escalation-reason") + 1], "authorized fundraiser application")
+            self.assertIn("--prompt-stdin", args)
+            self.assertNotIn("--prompt-file", args)
             self.assertEqual(args[args.index("--loop") + 1], "capafy")
             self.assertNotIn("--model", args)
             self.assertFalse(any("sonnet" in arg or arg.startswith("gpt-") for arg in args))

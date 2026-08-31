@@ -69,16 +69,18 @@ FINAL CONTRACT: after completing the bounded work, return only JSON that satisfi
 EOF
 
 RUNNER_STDOUT="$EVIDENCE_DIR/runner.stdout.log"
+PROMPT_ARGS=(--prompt-file "$PROMPT_FILE")
+[ "$TASK_CLASS" = "application-intent-planner" ] && PROMPT_ARGS=(--prompt-stdin)
 set +e
 /usr/bin/python3 "$RUNNER" \
   --task-class "$TASK_CLASS" \
   --escalation-reason "$ESCALATION_REASON" \
-  --prompt-file "$PROMPT_FILE" \
+  "${PROMPT_ARGS[@]}" \
   --schema "$SCHEMA" \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label "$TASK_LABEL" \
   --loop "$LOOP" \
-  --workdir "$WORKDIR" >"$RUNNER_STDOUT"
+  --workdir "$WORKDIR" <"$PROMPT_FILE" >"$RUNNER_STDOUT"
 RC=$?
 set -e
 
