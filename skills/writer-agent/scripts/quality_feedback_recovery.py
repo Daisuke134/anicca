@@ -17,9 +17,9 @@ from typing import Any
 from article_generation_state import ledger_has_public_effect
 
 
-# Provider/research retries are separate from the five quality assessments.
+# Provider/research retries are separate from the single quality assessment.
 # A transient transport outage must not consume the quality iteration budget.
-# Recovery/provider retries are separate from the five quality assessments.
+# Recovery/provider retries are separate from the single quality assessment.
 # A bounded terminal block caused by local infrastructure must be reopenable
 # without deleting its receipts or consuming a quality iteration.
 MAX_INVOCATIONS = 20
@@ -277,7 +277,7 @@ def _feedback_for_terminal(gates: Path, run_id: str) -> dict[str, Any] | None:
             quality.get("action") == "force_publish_advisory"
             and (
                 quality.get("quality_advisory") is not True
-                or quality.get("force_publish_after_iterations") != 5
+                or quality.get("force_publish_after_iterations") != 1
             )
         )
         or quality.get("publication_policy") != "continuous"
@@ -306,12 +306,24 @@ def _feedback_for_terminal(gates: Path, run_id: str) -> dict[str, Any] | None:
 
 
 def _publication_handoff_ready(run_dir: Path) -> bool:
-    quality = _read_json(run_dir / "gates/quality-self-heal.json")
+    gates = run_dir / "gates"
+    quality = _read_json(gates / "quality-self-heal.json")
     if quality is None:
+        return False
+    attempt = quality.get("attempt")
+    attempt_path = gates / f"quality-self-heal-attempt-{attempt}.json"
+    if (
+        not isinstance(attempt, int)
+        or isinstance(attempt, bool)
+        or attempt < 1
+        or attempt_path.is_symlink()
+        or _read_json(attempt_path) != quality
+        or quality.get("receipt_sha256") != _receipt_hash(quality)
+    ):
         return False
     force = (
         quality.get("action") == "force_publish_advisory"
-        and quality.get("force_publish_after_iterations") == 5
+        and quality.get("force_publish_after_iterations") == 1
         and quality.get("quality_advisory") is True
     )
     if force:
@@ -348,7 +360,12 @@ def _publication_handoff_ready(run_dir: Path) -> bool:
             or receipt.get("article_sha256") != _sha256(draft)
         ):
             return False
-    return validate_consumption(run_dir).get("status") == "PASS"
+    initial_ready = bool(
+        quality.get("action") == "ready_to_freeze"
+        and quality.get("quality_feedback_consumption_sha256") is None
+        and quality.get("feedback_invocation_sha256") is None
+    )
+    return force or initial_ready or validate_consumption(run_dir).get("status") == "PASS"
 
 
 def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
@@ -378,14 +395,10 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
             "force_publish_advisory",
         }
         and (
-            quality.get("action") != "ready_to_freeze"
-            or quality.get("quality_advisory") is True
-        )
-        and (
             quality.get("action") != "force_publish_advisory"
             or (
                 quality.get("quality_advisory") is True
-                and quality.get("force_publish_after_iterations") == 5
+                and quality.get("force_publish_after_iterations") == 1
             )
         )
     )
@@ -404,6 +417,15 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
 
     state_path = gates / STATE_NAME
     state = _read_json(state_path)
+    if state is None and _publication_handoff_ready(run_dir):
+        return {
+            "status": "READY",
+            "reason": "terminal-quality-publication-handoff",
+            "run_id": run_dir.name,
+            "run_dir": str(run_dir),
+            "attempts": 0,
+            "publication_attempts": 0,
+        }
     if state is not None:
         prompt = Path(str(state.get("prompt_path", "")))
         attempts = int(state.get("attempts", 0))
@@ -549,7 +571,7 @@ Hard boundaries:
 - The recovery wrapper records a signed invocation receipt for this quality iteration; do not reuse a previous prompt, feedback plan, or draft bytes.
 - Run quality_self_heal.py assess. A missing or incomplete consumption receipt must remain block_freeze.
 - Run `python3 {script} verify --run-dir "$ARTICLE_RUN_DIR"` and require status=PASS.
-- Repeat this recovery on the same run no more than five total quality iterations. Before iteration five, do not stage or publish. After iteration five, assess may return force_publish_advisory; that permits publication only when identity/safety/conscience, CTA, media, duplicate, and platform guards pass. If assess returns ready_to_freeze, every language record must be ready=true. In either case, verify must return PASS before reading ORIGINAL_PROMPT and continuing STEP 4.8 through STEP 20. Note remains ¥500 and both Substack posts remain paid-only. Require authenticated and public readback.
+- Run one quality assessment. Editorial/reader failure immediately returns force_publish_advisory and must not delay shipment; identity/safety/conscience, CTA, media, duplicate, and platform guards still block. If assess returns ready_to_freeze, every language record must be ready=true. In either case, verify must return PASS before reading ORIGINAL_PROMPT and continuing STEP 4.8 through STEP 20. Note remains ¥500 and both Substack posts remain paid-only. Require authenticated and public readback.
 """
 
 
@@ -567,7 +589,7 @@ EN_SHA256={hashes["en"]}
 
 Hard boundaries:
 - Do not rewrite either frozen draft, research again, create another run, or choose another topic.
-- Recheck both draft hashes, quality-self-heal action=ready_to_freeze or a valid five-iteration force_publish_advisory receipt, and quality-feedback verification PASS before any side effect.
+- Recheck both draft hashes and quality-self-heal action. A valid initial ready_to_freeze or single-evaluation force_publish_advisory receipt goes directly to publication without quality-feedback verification; only ready_to_freeze produced after feedback recovery still requires quality-feedback verification PASS before any side effect.
 - Read ORIGINAL_PROMPT and execute only STEP 4.8 through STEP 20 for this same run.
 - Reconcile existing publication and ledger receipts before every publish action. Never duplicate a remote post.
 - Note remains ¥500 and both Substack posts remain paid-only.
@@ -589,11 +611,23 @@ def prepare_publication_handoff(
     state_path = run_dir / "gates" / STATE_NAME
     state = _read_json(state_path)
     if state is None:
-        raise QualityFeedbackRecoveryError("feedback-recovery-state-missing")
-    prompt_path = (
-        run_dir
-        / "gates/quality-feedback-recovery/epoch-1/publication-handoff.txt"
-    )
+        state = {
+            "version": 1,
+            "status": "terminal-ready-not-published",
+            "run_id": run_dir.name,
+            "attempts": 0,
+            "publication_attempts": 0,
+            "route_sha256": _sha256(run_dir / "gates/topic-route.json"),
+        }
+    recovery_root = run_dir / "gates/quality-feedback-recovery"
+    if recovery_root.exists() and (
+        recovery_root.is_symlink() or not recovery_root.is_dir()
+    ):
+        raise QualityFeedbackRecoveryError("publication-handoff-root-invalid")
+    prompt_path = recovery_root / "epoch-1/publication-handoff.txt"
+    prompt_path.parent.mkdir(parents=True, exist_ok=True)
+    if prompt_path.parent.is_symlink():
+        raise QualityFeedbackRecoveryError("publication-handoff-directory-invalid")
     prompt_text = _publication_handoff_prompt(run_dir, ledger)
     if prompt_path.exists():
         if not prompt_path.is_file() or prompt_path.read_text(encoding="utf-8") != prompt_text:
@@ -885,7 +919,7 @@ def record_result(
         )
         and (
             quality.get("action") != "force_publish_advisory"
-            or quality.get("force_publish_after_iterations") == 5
+            or quality.get("force_publish_after_iterations") == 1
         )
         and validate_consumption(run_dir).get("status") == "PASS"
     ):
