@@ -175,10 +175,20 @@ const BROWSER_CAST_PATH = `${BROWSER_TAKEOVER_PATH}/cast`;
 const BROWSER_CAST_TTL_MS = 2 * 60 * 1000;
 const BROWSER_CAST_SECRET = process.env.LM_BROWSER_SESSION_KEY || "";
 const browserTakeoverSteel = makeSteelCdpClient();
-function steelCastUrl(sessionId) {
+function steelCastUrl(sessionId, viewer = {}) {
   const id = String(sessionId || "");
   if (!/^[A-Za-z0-9._-]{1,200}$/.test(id)) throw new Error("Steel cast session invalid");
-  return `ws://steel-browser.railway.internal:8080/v1/sessions/cast?sessionId=${encodeURIComponent(id)}`;
+  const entries = Object.entries(viewer || {}).filter(([, value]) => value != null && value !== "");
+  if (entries.length > 1) throw new Error("Steel cast session invalid");
+  const query = new URLSearchParams({ sessionId: id });
+  if (entries.length === 1) {
+    const [name, value] = entries[0];
+    if (name === "tabInfo" && value === "true") query.set(name, value);
+    else if (name === "pageId" && /^[A-Za-z0-9._-]{1,200}$/.test(value)) query.set(name, value);
+    else if (name === "pageIndex" && /^(?:0|[1-9][0-9]{0,2})$/.test(value)) query.set(name, value);
+    else throw new Error("Steel cast session invalid");
+  }
+  return `ws://steel-browser.railway.internal:8080/v1/sessions/cast?${query.toString()}`;
 }
 function createBrowserCastTicket(value, secret = BROWSER_CAST_SECRET) {
   const uid = String(value && value.uid || "");
@@ -217,7 +227,7 @@ function browserCastPublicUrl(ticket, env = process.env) {
     || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(String(ticket || ""))) {
     throw new Error("browser cast public domain invalid");
   }
-  return `wss://${domain}${BROWSER_CAST_PATH}?ticket=${encodeURIComponent(ticket)}`;
+  return `wss://${domain}${BROWSER_CAST_PATH}/${encodeURIComponent(ticket)}`;
 }
 // The panel is served by this life-call HTTP service, not by the /lm onboarding site.
 // Railway supplies RAILWAY_PUBLIC_DOMAIN; LM_PANEL_BASE_URL is the explicit override for custom domains.
@@ -241,9 +251,21 @@ async function browserTakeover(req) {
 }
 
 async function browserTakeoverTicket(req) {
-  let ticket;
-  try { ticket = new URL(req.url || BROWSER_CAST_PATH, "https://life-call.invalid").searchParams.get("ticket"); }
+  let parsed, ticket;
+  try {
+    parsed = new URL(req.url || BROWSER_CAST_PATH, "https://life-call.invalid");
+    const prefix = `${BROWSER_CAST_PATH}/`;
+    if (!parsed.pathname.startsWith(prefix)) return { status: 401 };
+    ticket = decodeURIComponent(parsed.pathname.slice(prefix.length));
+  }
   catch { return { status: 401 }; }
+  if (!ticket || ticket.includes("/")) return { status: 401 };
+  const viewer = {};
+  for (const [name, value] of parsed.searchParams) {
+    if (Object.prototype.hasOwnProperty.call(viewer, name)) return { status: 401 };
+    viewer[name] = value;
+  }
+  try { steelCastUrl("probe", viewer); } catch { return { status: 401 }; }
   const claim = verifyBrowserCastTicket(ticket);
   if (!claim) return { status: 401 };
   if (claim.expired) return { status: 410 };
@@ -251,7 +273,7 @@ async function browserTakeoverTicket(req) {
   if (!handoff) return { status: 410 };
   if (handoff.browser_job_id !== claim.browserJobId) return { status: 404 };
   await browserTakeoverSteel.assertLiveSession(handoff.session_id);
-  return { status: 200, handoff };
+  return { status: 200, handoff, viewer };
 }
 
 function rejectUpgrade(socket, status) {
@@ -1159,11 +1181,11 @@ const wss = new WebSocket.Server({ server, path: "/ws" });
 const browserTakeoverWss = new WebSocket.Server({ noServer: true, maxPayload: 8 * 1024 * 1024 });
 
 server.on("upgrade", (req, socket, head) => {
-  if (String(req.url || "").split("?", 1)[0] !== BROWSER_CAST_PATH) return;
+  if (!String(req.url || "").split("?", 1)[0].startsWith(`${BROWSER_CAST_PATH}/`)) return;
   browserTakeoverTicket(req).then((state) => {
     if (state.status !== 200) { rejectUpgrade(socket, state.status); return; }
     browserTakeoverWss.handleUpgrade(req, socket, head, (client) => {
-      const upstream = new WebSocket(steelCastUrl(state.handoff.session_id), { maxPayload: 8 * 1024 * 1024 });
+      const upstream = new WebSocket(steelCastUrl(state.handoff.session_id, state.viewer), { maxPayload: 8 * 1024 * 1024 });
       client.on("message", (data, binary) => { if (upstream.readyState === WebSocket.OPEN) upstream.send(data, { binary }); });
       upstream.on("message", (data, binary) => { if (client.readyState === WebSocket.OPEN) client.send(data, { binary }); });
       const close = () => {

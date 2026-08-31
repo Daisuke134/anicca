@@ -42,7 +42,7 @@ test("createSession posts /v1/sessions and returns the CDP websocket url", async
 
 test("interactive debugger copies Steel HTML but replaces its private cast URL", async () => {
   const privateUrl = "ws://steel-browser.railway.internal:8080/v1/sessions/cast";
-  const publicUrl = `wss://life-call-production.up.railway.app/api/panel/money-printer/browser/cast?ticket=payload.${"s".repeat(43)}`;
+  const publicUrl = `wss://life-call-production.up.railway.app/api/panel/money-printer/browser/cast/payload.${"s".repeat(43)}`;
   const source = `<iframe></iframe><script>const ws=${JSON.stringify(privateUrl)}</script>`;
   let calls = 0;
   const client = makeSteelCdpClient({
@@ -75,7 +75,7 @@ test("browser cast ticket is short-lived, scoped, tamper-evident, and Railway-on
   assert.deepEqual(verifyBrowserCastTicket(ticket, secret, now + 120_001), { expired: true });
   assert.equal(
     browserCastPublicUrl(ticket, { RAILWAY_PUBLIC_DOMAIN: "life-call-production.up.railway.app" }),
-    `wss://life-call-production.up.railway.app/api/panel/money-printer/browser/cast?ticket=${encodeURIComponent(ticket)}`,
+    `wss://life-call-production.up.railway.app/api/panel/money-printer/browser/cast/${encodeURIComponent(ticket)}`,
   );
   assert.throws(() => browserCastPublicUrl(ticket, { RAILWAY_PUBLIC_DOMAIN: "aniccaai.com" }), /domain/i);
 });
@@ -85,9 +85,18 @@ test("takeover proxy binds the private Steel cast to its owned session", () => {
     steelCastUrl("steel-1"),
     "ws://steel-browser.railway.internal:8080/v1/sessions/cast?sessionId=steel-1",
   );
+  assert.equal(
+    steelCastUrl("steel-1", { tabInfo: "true" }),
+    "ws://steel-browser.railway.internal:8080/v1/sessions/cast?sessionId=steel-1&tabInfo=true",
+  );
+  assert.equal(
+    steelCastUrl("steel-1", { pageId: "ABC123" }),
+    "ws://steel-browser.railway.internal:8080/v1/sessions/cast?sessionId=steel-1&pageId=ABC123",
+  );
   for (const invalid of ["", "../foreign", "steel/foreign", "a?token=secret"]) {
     assert.throws(() => steelCastUrl(invalid), /session/i);
   }
+  assert.throws(() => steelCastUrl("steel-1", { pageId: "../foreign" }), /session/i);
 });
 
 test("createRawSession leaves the private Steel CDP endpoint unattached for Stagehand", async () => {
