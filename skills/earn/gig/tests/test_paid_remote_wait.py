@@ -51,6 +51,22 @@ def test_paid_subprocess_failure_preserves_bounded_stderr() -> None:
     assert "source census startup failed" in caught.value.detail
 
 
+def test_isolated_paid_runner_preserves_runtime_package_layout(tmp_path: Path) -> None:
+    paid = load("paid_direct")
+    runner = Path(__file__).resolve().parents[4] / "runtime" / "agent-runner" / "agent_runner.py"
+    schema = Path(__file__).resolve().parents[1] / "schemas" / "gig_step_result.schema.json"
+    isolated_runner, isolated_schema = paid._stage_isolated_agent_runtime(
+        runner, schema, tmp_path / "isolated",
+    )
+    assert isolated_runner == tmp_path / "isolated/runtime/agent-runner/agent_runner.py"
+    assert isolated_schema.is_file()
+    completed = __import__("subprocess").run(
+        [sys.executable, str(isolated_runner), "--help"],
+        capture_output=True, text=True, timeout=10,
+    )
+    assert completed.returncode == 0, completed.stderr
+
+
 def test_failed_paid_workspace_with_runner_evidence_is_preserved(tmp_path: Path) -> None:
     paid = load("paid_direct")
     root = tmp_path / "projects" / "123"

@@ -2059,6 +2059,32 @@ def _source_census_visual_inputs(
     return images, rows
 
 
+def _stage_isolated_agent_runtime(
+    runner_source: Path, schema_source: Path, isolated: Path,
+) -> tuple[Path, Path]:
+    """Recreate the runner's repository-relative imports inside its isolated workspace."""
+    runtime_root = isolated / "runtime"
+    runner_dir = runtime_root / "agent-runner"
+    loop_dir = runtime_root / "loop"
+    schema_dir = isolated / "schemas"
+    runner_dir.mkdir(parents=True, exist_ok=True)
+    loop_dir.mkdir(parents=True, exist_ok=True)
+    schema_dir.mkdir(parents=True, exist_ok=True)
+    isolated_runner = runner_dir / runner_source.name
+    shutil.copyfile(runner_source, isolated_runner)
+    for sibling in ("token_budget.py", "config.json"):
+        source = runner_source.parent / sibling
+        if source.is_file():
+            shutil.copyfile(source, runner_dir / sibling)
+    loop_source = runner_source.parent.parent / "loop"
+    for source in loop_source.glob("*.py"):
+        if source.is_file() and not source.is_symlink():
+            shutil.copyfile(source, loop_dir / source.name)
+    isolated_schema = schema_dir / schema_source.name
+    shutil.copyfile(schema_source, isolated_schema)
+    return isolated_runner, isolated_schema
+
+
 def _prepare_source_census(args, root: Path, requirements_sha256: str, code_root: Path) -> Path | None:
     sources = _source_census_inputs(root)
     if not sources:
@@ -2125,17 +2151,10 @@ def _prepare_source_census(args, root: Path, requirements_sha256: str, code_root
         _write(coverage_manifest, {"version": 1, "sources": coverage_sources})
         visual_manifest = isolated / "visual-manifest.json"
         _write(visual_manifest, {"version": 1, "visual_sources": expected_visuals})
-        runtime = isolated / "controller-runtime"
-        runtime.mkdir()
         runner_source = Path(args.agent_runner).resolve()
-        isolated_runner = runtime / runner_source.name
-        shutil.copyfile(runner_source, isolated_runner)
-        for sibling in ("token_budget.py", "config.json"):
-            source = runner_source.parent / sibling
-            if source.is_file():
-                shutil.copyfile(source, runtime / sibling)
-        isolated_schema = runtime / "gig_step_result.schema.json"
-        shutil.copyfile(args.runner_schema, isolated_schema)
+        isolated_runner, isolated_schema = _stage_isolated_agent_runtime(
+            runner_source, args.runner_schema, isolated,
+        )
         census = isolated / "source-census.json"
         prompt = isolated / "prompt.txt"
         prompt.write_text(
