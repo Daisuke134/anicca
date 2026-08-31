@@ -304,12 +304,12 @@
       "total": 17
     },
     "dependencies": {
-      "prod": 421,
+      "prod": 420,
       "dev": 0,
       "optional": 30,
       "peer": 0,
       "peerOptional": 0,
-      "total": 450
+      "total": 449
     }
   }
 }

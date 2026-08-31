@@ -7,8 +7,7 @@
 - Remediated result: Critical 0, High 0, Moderate 0, Low 17.
 - Baseline evidence: [`audits/npm-audit-2026-08-31-baseline.json`](audits/npm-audit-2026-08-31-baseline.json).
 - Final evidence: [`audits/npm-audit-2026-08-31-final.json`](audits/npm-audit-2026-08-31-final.json).
-- The final lock metadata reports 421 production dependencies and no development dependencies. Every package in the 24-finding baseline was transitive; no baseline direct dependency was itself reported vulnerable.
-- During remediation, concurrent Automation Hub work introduced direct `undici` 7.16.0 and immediately produced a new High alert. It was updated within major 7 to the patched 7.29.0 in `2cd0532263` before the final snapshot.
+- The final lock metadata reports 420 production dependencies and no development dependencies. Every package in the 24-finding baseline was transitive; no baseline direct dependency was itself reported vulnerable.
 
 The npm guidance permits `npm audit fix` for compatible updates and recommends examining the dependency path when a parent must be updated. It also warns that some findings require manual review. Source: [npm security audit documentation](https://docs.npmjs.com/auditing-package-dependencies-for-security-vulnerabilities/) — “Run the `npm audit fix` subcommand to automatically install compatible updates.” No `--force` operation was used.
 
@@ -18,13 +17,13 @@ The npm guidance permits `npm audit fix` for compatible updates and recommends e
 
 | Package | Severity | Scope | Directness | Introducing parent/path | Runtime classification | Resolution |
 | --- | --- | --- | --- | --- | --- | --- |
-| `@opentelemetry/auto-instrumentations-node` | High | Prod | Transitive | `inngest` | Reachable: `server.js` loads `inngest/node` and mounts `/api/inngest` | Updated 0.77.0 → 0.80.0 in `a770323d9c` |
-| `@opentelemetry/propagator-jaeger` | High | Prod | Transitive | `inngest` → auto-instrumentations → sdk-node | Config-dependent reachable: malformed Jaeger header is relevant only when the Jaeger propagator is enabled | Updated 2.8.0 → 2.11.0 in `a770323d9c` |
-| `@opentelemetry/sdk-node` | High | Prod | Transitive | `inngest` → auto-instrumentations | Reachable through the Inngest instrumentation chain | Updated 0.219.0 → 0.222.0 in `a770323d9c` |
-| `brace-expansion` | High | Prod | Transitive | `inngest` → OTel GCP detector → `gcp-metadata` → `rimraf` → `glob` → `minimatch` | Currently unused vulnerable path: Mr.bot does not pass request data to this internal glob chain | Updated 2.1.1 → 2.1.4 in `a770323d9c` |
-| `fast-uri` | High | Prod | Transitive | MCP SDK → `ajv`; Stagehand also shares the MCP SDK | Reachable: Automation Hub connects to server-discovered remote MCP endpoints; authorization still uses native `URL`, exact origin/path checks, DNS checks, manual redirects, and a timeout | Updated 3.1.4 → 3.1.6 in `f45e4e2753` |
-| `hono` | Moderate | Prod | Transitive | MCP SDK / optional Inngest adapter | Currently unused vulnerable path: Mr.bot uses the MCP client and `inngest/node`, not Hono CORS, memo, proxy, or language middleware | Updated 4.12.32 → 4.13.5 in `d2d72f02d4` |
-| `protobufjs` | Moderate | Prod | Transitive | Stagehand → Google GenAI; Inngest → OTel gRPC | Currently unused vulnerable path: Mr.bot never accepts or parses user-supplied `.proto` source | Updated 7.6.4 → 7.6.6 in `7e5c5a4d90` |
+| `@opentelemetry/auto-instrumentations-node` | High | Prod | Transitive | `inngest` | Reachable: `server.js` loads `inngest/node` and mounts `/api/inngest` | Updated 0.77.0 → 0.80.0 in `7a20f26d82` |
+| `@opentelemetry/propagator-jaeger` | High | Prod | Transitive | `inngest` → auto-instrumentations → sdk-node | Config-dependent reachable: malformed Jaeger header is relevant only when the Jaeger propagator is enabled | Updated 2.8.0 → 2.11.0 in `7a20f26d82` |
+| `@opentelemetry/sdk-node` | High | Prod | Transitive | `inngest` → auto-instrumentations | Reachable through the Inngest instrumentation chain | Updated 0.219.0 → 0.222.0 in `7a20f26d82` |
+| `brace-expansion` | High | Prod | Transitive | `inngest` → OTel GCP detector → `gcp-metadata` → `rimraf` → `glob` → `minimatch` | Currently unused vulnerable path: Mr.bot does not pass request data to this internal glob chain | Updated 2.1.1 → 2.1.4 in `7a20f26d82` |
+| `fast-uri` | High | Prod | Transitive | MCP SDK → `ajv`; Stagehand also shares the MCP SDK | Reachable: Automation Hub connects to server-discovered remote MCP endpoints; authorization still uses native `URL`, exact origin/path checks, DNS checks, manual redirects, and a timeout | Updated 3.1.4 → 3.1.6 in `6fa483508f` |
+| `hono` | Moderate | Prod | Transitive | MCP SDK / optional Inngest adapter | Currently unused vulnerable path: Mr.bot uses the MCP client and `inngest/node`, not Hono CORS, memo, proxy, or language middleware | Updated 4.12.32 → 4.13.5 in `67d5b12162` |
+| `protobufjs` | Moderate | Prod | Transitive | Stagehand → Google GenAI; Inngest → OTel gRPC | Currently unused vulnerable path: Mr.bot never accepts or parses user-supplied `.proto` source | Updated 7.6.4 → 7.6.6 in `c676883c16` |
 | `@ai-sdk/amazon-bedrock` | Low | Prod optional | Transitive | Stagehand | Currently unused; the production Stagehand model is Google Gemini | No compatible fix; see exception AI-2026-08-31 |
 | `@ai-sdk/anthropic` | Low | Prod optional | Transitive | Stagehand / Bedrock / Google Vertex | Currently unused directly; the production Stagehand model is Google Gemini | No compatible fix; see exception AI-2026-08-31 |
 | `@ai-sdk/azure` | Low | Prod optional | Transitive | Stagehand | Currently unused | No compatible fix; see exception AI-2026-08-31 |
@@ -68,7 +67,6 @@ The npm guidance permits `npm audit fix` for compatible updates and recommends e
 | fast-uri | Only 3.1.4 → 3.1.6 | Committed Automation Hub source 16/16 |
 | hono | Only 4.12.32 → 4.13.5 | Inngest 58/58 and committed Automation Hub 16/16 |
 | protobufjs | Only 7.6.4 → 7.6.6 | Inngest 40/40 and committed Automation Hub core 9/9 |
-| undici (introduced after baseline) | New direct dependency locked at patched 7.29.0 | undici dispatcher smoke and vault/secret provider 12/12 |
 
 Final integration verification was run from a clean archive of the committed tree so independently edited, unfinished working-tree files could not affect the result:
 
