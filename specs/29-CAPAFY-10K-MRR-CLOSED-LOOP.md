@@ -491,7 +491,7 @@ Current production truth:
 - Natural ownerはinventory repair後にsame-Agent `7686597754` resumeへ到達したが、platformの新しいofficial short edit linkをlocal strict validatorがrejectしたためCP1前に停止した。refresh GET以外の新規submission effectは確認されず、URL本文はlog/specへ保存していない。short-link repair後もR0.2をactiveに保ち、次の自然wakeだけをproofに使う。
 - Short-link repairとtemporary fixture scrubのmilestoneはTelegram message ID `45543`で確認した。公式subscription MRRは引き続き`$0`で、repair、listing count、historical one-time sale、pending balanceをMRRへ加算しない。
 - CP1 shared-navigation validationとshort-path output redactionのmilestoneはTelegram message ID `45775`で確認した。temporary URL本文はspec/Telegram/current treeへ保存せず、公式subscription MRRは`$0`、manual daily retryは0のまま次の自然wakeを待つ。
-- R0.2.1 exact prepare envelopeはPR `#3449` / merge `1b85036d24f56ca2584800731e5e2c868b663e2a`でmainへ統合し、immutable release `/Users/anicca/loops/releases/20260831T182612-1b85036d`をdaily event `bfb0917c4817d678caeee1d3`、healthcheck event `a0d7a99ac3d72779e0ab874b`でtargeted applyした。loaded argvは両方とも同release。manual daily kickstart 0、公式subscription MRR `$0`。次の唯一のACTIVE atomはR0.2.3自然terminal/readback/replay-zeroである。
+- R0.2.1 exact prepare envelopeはPR `#3449` / merge `1b85036d24f56ca2584800731e5e2c868b663e2a`でmainへ統合し、immutable release `/Users/anicca/loops/releases/20260831T182612-1b85036d`をdaily event `bfb0917c4817d678caeee1d3`、healthcheck event `a0d7a99ac3d72779e0ab874b`でtargeted applyした。loaded argvは両方とも同release。milestone Telegram message IDは`46138`。manual daily kickstart 0、公式subscription MRR `$0`。次の唯一のACTIVE atomはR0.2.3自然terminal/readback/replay-zeroである。
 
 | ID | atomic action | done evidence | state |
 |---|---|---|---|
