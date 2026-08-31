@@ -73,6 +73,17 @@ test("projection routes one open human task to its opportunity card", () => {
   });
 });
 
+test("projection routes a Symphony waiting_agent job to Working", () => {
+  const view = projectMoneyPrinter(fixture({
+    runtimeJobs: [{ tenant_id: TENANT, job_id: "goal:opportunity-1", status: "waiting_agent", updated_at: OBSERVED_AT }],
+  }));
+
+  assert.equal(view.columns.found.length, 0);
+  assert.equal(view.columns.working.length, 1);
+  assert.equal(view.columns.working[0].opportunity_ref, `opportunity://${TENANT}/opportunity-1`);
+  assert.equal(view.metrics.agents_working, 1);
+});
+
 test("projection rejects every human task without a same-opportunity goal relation", () => {
   for (const jobId of ["goal:missing-opportunity", "https://public.example/job"]) {
     assert.throws(() => projectMoneyPrinter(fixture({
