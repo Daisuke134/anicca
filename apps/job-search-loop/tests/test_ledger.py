@@ -7,6 +7,8 @@ import unittest
 from pathlib import Path
 
 from job_search_loop.ledger import FenceError, Ledger
+from job_search_loop.browser_agent.contracts import FinalReviewReceiptV1
+from job_search_loop.browser_agent.submission_fence import SubmissionFence
 
 
 def _complete_verified(ledger, intent_id, fence, outcome):
@@ -207,6 +209,36 @@ class LedgerTests(unittest.TestCase):
             [(row["fence"], row["status"]) for row in self.ledger.submission_attempts(self.application_id)],
             [(1, "not_submitted"), (2, "submitted")],
         )
+
+    def test_reopened_attempt_replaces_only_the_consumed_older_browser_fence(self):
+        self._ready()
+        first = self._claim(
+            self.ledger, self.application_id, "2026-07-28", "hash-before"
+        )
+        review = FinalReviewReceiptV1(
+            1,
+            "row-run",
+            self.application_id,
+            "https://jobs.example.com/42",
+            self.resume_sha256,
+            "a" * 64,
+            True,
+            True,
+            "b" * 64,
+        )
+        fence = SubmissionFence(self.ledger, Path(self.tempdir.name) / "browser")
+        first_lease = fence.acquire(first.intent_id, first.fence, review)
+        fence.consume(first_lease, review.observation_sha256)
+        self.ledger.complete_submission(
+            first.intent_id, first.fence, "not_submitted"
+        )
+
+        second = self._claim(
+            self.ledger, self.application_id, "2026-07-29", "hash-after"
+        )
+        second_lease = fence.acquire(second.intent_id, second.fence, review)
+
+        self.assertEqual(second_lease.fence, first.fence + 1)
 
     def test_stale_fence_cannot_complete(self):
         self._ready()
