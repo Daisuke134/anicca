@@ -155,8 +155,19 @@ lsof -n | grep <対象>
 - [ ] **A-bis-0**: `~/Projects/life-manager`（v0 の archived クローン）の中身を確認し、救うべきものを `life-manager-main` へ移してから削除する
 - [x] **A-bis-1**: 完了。コードもテストも `origin/main` に揃っており、移行するものは無い
 - [x] **A-bis-2**: 完了。未コミット195件は全て evidence / intel / log の実行時データ。唯一のコード変更は差分ゼロ
-- [ ] **A-bis-3**: 44個の loop の参照先を `~/anicca/skills/earn/x402-sell` から release 内のパスへ張り替える
-- [ ] **A-bis-4**: `~/anicca/skills/earn/state`（4MB）の移設先を決める
+- [ ] **A-bis-3**: loop の参照先を張り替える。**参照の内訳を実測した（2026-08-31）**:
+
+  | 用途 | 件数 | 張り替え先 |
+  |---|---|---|
+  | ログ出力先 `x402-sell/logs/launchd.{out,err}.log` | 22 | `~/.local/state/life-manager/<loop>/logs/`（他の loop と同じ規約） |
+  | 実行パス `x402-sell` | 22 | `~/loops/current/skills/earn/x402-sell` |
+  | `WorkingDirectory` が `~/anicca` 配下 | 11 | 同上 |
+  | `marketing-engine` のスクリプト3本 + `sol-funding-daemon.sh` | 4 | `~/loops/current/skills/earn/` 配下 |
+
+  **release 内には同じコードが既にある**ことを確認済み（`~/loops/releases/<latest>/skills/earn/x402-sell/acquisition-controller.mjs` の存在を実測）。`~/loops/current` は最新 release を指すシンボリックリンクなので、ここを指せば release が切り替わっても追従する。
+
+  張り替えは1本ずつ行い、各 loop で `loop-guard.sh` の save/diff を挟む。22本を一括で書き換えると、失敗したときにどれが原因か切り分けられない。
+- [ ] **A-bis-4**: 実行時 state の移設。`~/anicca` にしか無い23ファイル（`attempts-0x....jsonl`、`llm-resale-spend-0x....json`、`events.jsonl` 等のウォレット別取引記録）と `skills/earn/state`（4MB）を `~/.local/state/life-manager/` 配下へ移す。**これらは再生成できない実績データなので、移設を確認してから削除する**
 - [ ] **A-bis-5**: 全て済んだら `~/anicca` を削除（**3.5GB 回収**）
 
 ### B. ヘルス loop の実装
