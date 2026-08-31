@@ -1,6 +1,7 @@
 "use strict";
 
 const { timingSafeEqual } = require("node:crypto");
+const { enqueueBrowserJob } = require("./browser-job-store.js");
 
 const MAX_BODY_BYTES = 32 * 1024;
 const SECRET_RE = /^[A-Za-z0-9_-]{32,256}$/;
@@ -288,6 +289,40 @@ function storeFor(getRuntimeStore) {
   return store;
 }
 
+async function ensureProviderInterviewBrowser(store, input, jobId) {
+  if (input.payload.status !== "needs_human" || input.payload.reason_code !== "provider_interview") return;
+  const opportunityId = String(jobId).slice("goal:".length);
+  if (!DISPATCH_RE.test(opportunityId) || typeof store.readOpportunity !== "function") conflict();
+  const opportunity = await store.readOpportunity({
+    uid: input.uid,
+    opportunity_id: opportunityId,
+    goal_ref: `intent-entry://${input.uid}/${opportunityId}`,
+  });
+  let source;
+  try { source = new URL(opportunity && opportunity.source_url); } catch { conflict(); }
+  if (source.protocol !== "https:" || source.username || source.password) conflict();
+  source.search = ""; source.hash = "";
+  const enqueue = typeof store.enqueueBrowserJob === "function"
+    ? store.enqueueBrowserJob.bind(store)
+    : enqueueBrowserJob;
+  const queued = await enqueue({
+    uid: input.uid,
+    chatId: "money-printer",
+    messageId: input.dispatchId,
+    updateId: jobId,
+    rawPrompt: "Open the provider page and prepare the provider interview. Stop at the human-only step.",
+    classification: {
+      goal: `Open ${source.toString()} and prepare the provider interview. Stop at login, OTP, CAPTCHA, KYC, camera, microphone, or personal-experience questions.`,
+      actionKind: "provider_interview_handoff",
+      locale: "en",
+      requiresLogin: true,
+      principalKind: "user_provided",
+    },
+  });
+  if (!queued || !queued.job || queued.job.uid !== input.uid
+    || queued.job.telegram_message_id !== input.dispatchId) conflict();
+}
+
 function classify(error) {
   if (error instanceof RequestError) return error.status;
   const message = String(error && error.message || "");
@@ -338,6 +373,7 @@ async function processRequest(action, req, res, dependencies) {
     const row = await store.recordSymphonyResult(input);
     const ready = safeResult(row, input, ["result_ready", "consumed"]);
     if (ready.status === "consumed") {
+      await ensureProviderInterviewBrowser(store, input, ready.job_id);
       jsonResponse(res, 200, {
         tenant_id: ready.tenant_id,
         dispatch_id: ready.dispatch_id,
@@ -364,6 +400,7 @@ async function processRequest(action, req, res, dependencies) {
     const task = safeTask(await store.consumeSymphonyHumanTask({ uid: input.uid, dispatchId: input.dispatchId }), {
       uid: input.uid, jobId: ready.job_id,
     });
+    await ensureProviderInterviewBrowser(store, input, ready.job_id);
     jsonResponse(res, 200, {
       tenant_id: ready.tenant_id,
       dispatch_id: ready.dispatch_id,
