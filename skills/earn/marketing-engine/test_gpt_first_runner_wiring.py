@@ -47,7 +47,7 @@ class GptFirstRunnerWiringTest(unittest.TestCase):
                 self.assertNotRegex(text, r"command -v claude|\$CLAUDE|claude\s+-p|--model\s+sonnet")
                 self.assertNotRegex(text, r"codex\s+exec|gpt-5(?:\.|-)" )
 
-    def test_shared_runner_passes_task_class_only_and_records_contract_evidence(self):
+    def test_shared_runner_forwards_application_intent_escalation(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             args_file = root / "args.json"
@@ -71,7 +71,8 @@ class GptFirstRunnerWiringTest(unittest.TestCase):
             env.update({"AGENT_RUNNER_BIN": str(fake_runner), "ARGS_FILE": str(args_file)})
             proc = subprocess.run(
                 [
-                    "bash", str(RUN_AGENT), "--task-class", "tool-agent",
+                    "bash", str(RUN_AGENT), "--task-class", "application-intent-planner",
+                    "--escalation-reason", "authorized fundraiser application",
                     "--evidence-dir", str(evidence), "--task-label", "capafy-fixture",
                     "--loop", "capafy",
                 ],
@@ -82,7 +83,8 @@ class GptFirstRunnerWiringTest(unittest.TestCase):
             )
             self.assertEqual(proc.returncode, 0, proc.stderr)
             args = json.loads(args_file.read_text(encoding="utf-8"))
-            self.assertEqual(args[args.index("--task-class") + 1], "tool-agent")
+            self.assertEqual(args[args.index("--task-class") + 1], "application-intent-planner")
+            self.assertEqual(args[args.index("--escalation-reason") + 1], "authorized fundraiser application")
             self.assertEqual(args[args.index("--loop") + 1], "capafy")
             self.assertNotIn("--model", args)
             self.assertFalse(any("sonnet" in arg or arg.startswith("gpt-") for arg in args))
