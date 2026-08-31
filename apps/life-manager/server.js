@@ -1177,11 +1177,16 @@ const server = http.createServer((req, res) => {
   res.end("not found");
 });
 
-const wss = new WebSocket.Server({ server, path: "/ws" });
+const wss = new WebSocket.Server({ noServer: true });
 const browserTakeoverWss = new WebSocket.Server({ noServer: true, maxPayload: 8 * 1024 * 1024 });
 
 server.on("upgrade", (req, socket, head) => {
-  if (!String(req.url || "").split("?", 1)[0].startsWith(`${BROWSER_CAST_PATH}/`)) return;
+  const upgradePath = String(req.url || "").split("?", 1)[0];
+  if (upgradePath === "/ws") {
+    wss.handleUpgrade(req, socket, head, (client) => wss.emit("connection", client, req));
+    return;
+  }
+  if (!upgradePath.startsWith(`${BROWSER_CAST_PATH}/`)) { socket.destroy(); return; }
   browserTakeoverTicket(req).then((state) => {
     if (state.status !== 200) { rejectUpgrade(socket, state.status); return; }
     browserTakeoverWss.handleUpgrade(req, socket, head, (client) => {

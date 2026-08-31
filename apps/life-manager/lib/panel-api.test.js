@@ -467,6 +467,13 @@ test("Task 8A server uses public origin only for proxied Money Printer APIs", ()
   assert.equal(panelOriginForPath("/api/panel/timeline"), "");
 });
 
+test("Task 8A server routes both WebSocket paths through one upgrade listener", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../server.js"), "utf8");
+  assert.match(source, /const wss = new WebSocket\.Server\(\{ noServer: true \}\)/);
+  assert.match(source, /if \(upgradePath === "\/ws"\)[\s\S]*wss\.handleUpgrade/);
+  assert.match(source, /if \(!upgradePath\.startsWith\(`\$\{BROWSER_CAST_PATH\}\/`\)\)/);
+});
+
 test("Task 8A Panel routes opportunity and human domain actions through runtimeStore", async () => {
   const fixture = makeFixture();
   const task = {
