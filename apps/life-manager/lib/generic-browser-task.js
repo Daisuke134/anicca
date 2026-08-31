@@ -215,7 +215,7 @@ async function runGenericBrowserTask(job, deps) {
     });
   }
 
-  if (session && session.id) {
+  if (session && session.id && !result.provider_receipt.handoff_required) {
     try {
       const release = await deps.releaseSession(session.id, {
         providerReceipt: result.provider_receipt,

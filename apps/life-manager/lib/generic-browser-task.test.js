@@ -138,6 +138,7 @@ test("the durable action kind reaches the cloud driver without entering a trace 
 });
 
 test("a login or challenge page becomes handoff_required, never completed", async () => {
+  let releases = 0;
   const { deps } = fixture({
     readProviderReceipt: async () => ({
       confirmed: false,
@@ -147,11 +148,17 @@ test("a login or challenge page becomes handoff_required, never completed", asyn
       handoffRequired: true,
       handoffReason: "login",
     }),
+    releaseSession: async () => {
+      releases += 1;
+      return { released: true };
+    },
   });
   const result = await runGenericBrowserTask(JOB, deps);
   assert.equal(result.status, "handoff_required");
   assert.equal(result.provider_receipt.handoff_required, true);
   assert.equal(result.provider_receipt.handoff_reason, "login");
+  assert.equal(result.steel_released, false);
+  assert.equal(releases, 0);
 });
 
 test("a timeout after browser execution starts is possibly_completed and releases Steel", async () => {
@@ -253,7 +260,7 @@ test("a pre-action failure is an honest failure and every opened Steel session i
   assert.equal(releases, 1);
 });
 
-test("an expired login context is invalidated, reported honestly, and Steel is released", async () => {
+test("a login handoff keeps the live Steel session for the human and delays auth mutation", async () => {
   let telegramMessage = "";
   let releases = 0;
   const { deps, events } = fixture({
@@ -270,26 +277,7 @@ test("an expired login context is invalidated, reported honestly, and Steel is r
     },
     releaseSession: async (_id, options) => {
       releases += 1;
-      assert.deepEqual(options, {
-        providerReceipt: {
-          confirmed: false,
-          status: "login required",
-          confirmation_id: null,
-          current_url: "https://auth.example/login",
-          handoff_required: true,
-          handoff_reason: "login",
-        },
-      });
-      return {
-        released: true,
-        origin: "https://auth.example",
-        principal_kind: "user_provided",
-        auth_context_loaded: true,
-        auth_context_saved: false,
-        auth_context_invalidated: true,
-        context_sha256: null,
-        key_version: null,
-      };
+      return { released: true, options };
     },
   });
 
@@ -298,19 +286,9 @@ test("an expired login context is invalidated, reported honestly, and Steel is r
   assert.equal(result.status, "handoff_required");
   assert.equal(result.provider_receipt.handoff_reason, "login");
   assert.match(telegramMessage, /needs a human-only step \(login\)/i);
-  assert.equal(releases, 1);
-  assert.equal(result.steel_released, true);
-  assert.deepEqual(
-    events.find((event) => event.stage === "auth_context_invalidated"),
-    {
-      stage: "auth_context_invalidated",
-      meta: {
-        origin: "https://auth.example",
-        principal_kind: "user_provided",
-        invalidated: true,
-      },
-    },
-  );
+  assert.equal(releases, 0);
+  assert.equal(result.steel_released, false);
+  assert.equal(events.some((event) => event.stage === "auth_context_invalidated"), false);
 });
 
 test("an auth context save failure preserves provider outcome and release without leaking its error", async () => {
