@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Risk Register Action Planner</title>
+  <desc id="desc">A dark blue risk register card with an amber alert marker and a check mark.</desc>
+  <rect width="512" height="512" rx="96" fill="#102A43"/>
+  <rect x="108" y="96" width="296" height="320" rx="24" fill="#EAF2F8"/>
+  <rect x="148" y="150" width="124" height="24" rx="12" fill="#486581"/>
+  <rect x="148" y="210" width="204" height="18" rx="9" fill="#9FB3C8"/>
+  <rect x="148" y="254" width="168" height="18" rx="9" fill="#9FB3C8"/>
+  <rect x="148" y="298" width="196" height="18" rx="9" fill="#9FB3C8"/>
+  <circle cx="358" cy="154" r="42" fill="#F0B429"/>
+  <path d="M358 130v29M358 178h.01" stroke="#102A43" stroke-width="15" stroke-linecap="round"/>
+  <circle cx="174" cy="362" r="26" fill="#2F855A"/>
+  <path d="m161 362 9 9 19-22" fill="none" stroke="#FFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="220" y="350" width="132" height="20" rx="10" fill="#2F855A"/>
+</svg>
