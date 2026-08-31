@@ -145,6 +145,16 @@ class Ledger:
                 completed_at TEXT,
                 PRIMARY KEY (intent_id, fence)
             );
+            CREATE TABLE IF NOT EXISTS submission_click_phases (
+                intent_id TEXT NOT NULL,
+                fence INTEGER NOT NULL,
+                phase TEXT NOT NULL CHECK (phase IN
+                    ('pre_click', 'clicked', 'confirmed')),
+                updated_at TEXT NOT NULL,
+                PRIMARY KEY (intent_id, fence),
+                FOREIGN KEY (intent_id, fence)
+                    REFERENCES submission_attempts(intent_id, fence)
+            );
             CREATE TABLE IF NOT EXISTS submission_confirmations (
                 message_id TEXT PRIMARY KEY,
                 thread_id TEXT NOT NULL,
@@ -1379,8 +1389,20 @@ class Ledger:
               submit_intents.fence
             FROM submit_intents
             JOIN applications ON applications.id = submit_intents.application_id
-            WHERE submit_intents.status = 'not_submitted'
-              AND applications.current_state = 'not_submitted'
+            WHERE (
+                    submit_intents.status = 'not_submitted'
+                AND applications.current_state = 'not_submitted'
+              ) OR (
+                    submit_intents.status = 'submit_claimed'
+                AND applications.current_state = 'submit_claimed'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM submission_click_phases
+                    WHERE submission_click_phases.intent_id = submit_intents.intent_id
+                      AND submission_click_phases.fence = submit_intents.fence
+                      AND submission_click_phases.phase IN ('clicked', 'confirmed')
+                )
+              )
             ORDER BY submit_intents.completed_at, submit_intents.rowid
             """
         ).fetchall()
