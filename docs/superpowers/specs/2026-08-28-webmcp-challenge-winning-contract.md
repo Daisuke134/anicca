@@ -463,6 +463,30 @@ WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応
 | Mercor | canonical owner live trace。高単価AI project/job source | camera/microphone AI interview、本人の経験回答。Interview中のAI代答は禁止 | current public listing→fit判断→Symphony workroom→provider-required interviewの`Needs You`→same-job resume。2〜4週間の選考結果は必須にしない |
 | Open Web / arbitrary URL | X、Web、GitHub、mail、search、User入力、任意marketplace URLからopportunityを受けるgeneral lane | claim、public delivery authority、payout setup、provider-specific ceremony | ModelがURL、requirements、environment feedbackから次のtoolsを選ぶ。mechanical effectに必要な時だけthin adapterを追加する |
 
+#### 8.3A-1 Runtime placement decision — one Life Manager、not one giant process
+
+Mercorのbrowser/auth/effect ownerは既存MacローカルLife Managerで実行する。CloudへMercor browserや二つ目のapplication agentを作らない。RailwayはMoney Printerのtyped ingest、Postgres、owner Panel、judge WebMCP projectionだけを持つ。LancersとMercorは同じ`bin/lm-loop` control planeとMoney Printer stateへ収束するが、browser profile、CDP port、provider lease、effect fenceは分離する。`same loop`は同じbusiness control planeを意味し、一個のprocess/profileへ混ぜることを意味しない。
+
+```mermaid
+flowchart LR
+  MP[Money Printer WebMCP / owner Panel] <--> API[Railway API + PostgreSQL]
+  API <--> SYNC[typed provider-event sync]
+  SYNC <--> LM[Mac local bin/lm-loop]
+  LM --> MB[existing Mercor owner · CDP 9334]
+  LM --> MA[existing model-led Mercor pass]
+  LM --> LB[existing Lancers owners]
+  API --> TG[existing Telegram panel link]
+```
+
+Hard decisions:
+
+- 新`mercor-agent`、新browser profile、新launchd label、新cloud browserは作らない
+- Mercor effectは`apps/job-search-loop/scripts/run-mercor.sh`だけが所有する
+- Lancersは別agentのactive workを侵害せず、既存receiptをread-only projectionする
+- Human notificationは既存Telegram + authenticated Panel linkを使う。新email senderは作らない
+- Mercor interview、camera、microphone、本人経験回答、KYCはHumanTask。Agentが代答しない
+- 人間回答後も応募成功を仮定せず、次のnatural Mercor passがprovider official stateを再読する
+
 Rejected for primary proof: Opire public APIの56 recordsをGitHub一次証拠で照合すると、33 closed、7 missing/deleted、openは16だけだった。Open案件も大半が競争済みまたは大規模で、唯一の低競争候補はstale listing、22 competing PRs、payout uncertaintyを持っていた。Algoraはopen bounty 0。OnlyDustはservice終了。X discoveryはproduct capabilityに残すが、live searchはdaily-driverにlogged-in X tabがなく現在blockedであり、Lancers primary E2Eの提出gateにはしない。
 
 General-agent invariant:
@@ -700,8 +724,8 @@ Current `lm-loop status all`、現行entrypoints、focused tests、既存gig ker
 | TaskMarket ledger | installed loop latest terminal pass、isolated focused tests 6/6 pass | award/work receipt shape、Base verification、self-award rejection、duplicate-safe earnings projection | primary demo sourceにはまだ固定しない |
 | x402 observers | acquisition、inflow、sale observerのlatest terminal pass、isolated focused tests 11/11 pass | on-chain receipt verification、sale/work ledger、external-buyer/self-pay boundary | seller/service processesは複数fail中。demoのlive earning pathに依存しない |
 | Affiliate/X | source refresh/composition pass、browser ownersと一部posting loopsはfail | recurring source cadence、source/effect separation、X session ownership pattern | X Repostをpaid-opportunity scoutと誤認しない。新しいread-only opportunity prompt/adapterが必要 |
-| Lancers | application/browser/storefront/work-syncは現在fail。Repoにはapplication loop/tickとmarketplace coreがある | Primary live sourceとしてbrowser/auth/application readbackを修復し、generic contractへ接続 | repairとofficial readback前にworking sourceと主張しない |
-| Mercor / Job Hunter assets | profile、Mercor reference、ATS/application receipt contractsあり。既存local Workday ownerはpause | public role inventory、fit判断、application-step state、human interview task | 既存Workday ownerは再開しない。Mercor interviewの本人回答をagentに代行させない |
+| Lancers | browserと30分application ownerはlive。Marketplace ledgerにofficial `application_verified` 40件、proposal current 39、open 7、selecting 13。一方、contract/working/payment/balanceは全0。別agentがactive repair中 | existing official application receiptsとreplay-zeroをMoney Printerへread-only projection | Lancers code/TODO/orderをこのMercor sliceで変更しない。Applicationをrevenueへ昇格しない |
+| Mercor / Job Hunter assets | dedicated browser ownerはCDP 9334でrunning、provider passは30分cadence。しかしlatest passはowned Mercor tab 0でblocked、`submitted=[]`、earnings capture failed。最後のofficial earnings readbackは$0、payment history 0 | existing `run-mercor.sh`、model prompt、submit fence、human gate、work store、earnings syncを修復・接続する | 新executorを作らない。Workday daily ownerやCDP 9222へMercorを混ぜず、AI interviewを代行しない |
 | Opire audit | UIは79 availableと表示するがpublic API二pageは56 records。GitHub照合で33 closed、7 missing/deleted、16 open | generic bounty intakeのnegative example、stale-source reconciliation requirement | Primary sourceにしない。Open案件も競争・scope・payout uncertaintyが高い |
 
 Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panelで38/38 pass。Earnings、TaskMarket、x402はlocked `@noble/hashes` / `@noble/curves`だけを隔離tempへinstallして31/31 passし、合計69/69 pass。最初のfull `npm ci`はdisk headroom不足で中断したため、生成されたworktree node_modulesだけを削除した。Ledger logicの不確実性は解消したが、submission releaseのclean install前にdisk headroom確保とexact runtime import smokeを必須とする。
@@ -1481,4 +1505,75 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 
 H07–H12とB12はcomplete。accepted artifactは `/Users/anicca/Desktop/MoneyPrinter-Hackathon-Demo/Money-Printer-WebMCP-Demo.mp4`。実証済みproduction factsとdirect tab captureだけを5場面へ固定し、英語音声付き76.604671秒、1920×1080 H.264、AAC mono、full decode PASS、mean/max volume -15.7/-1.7 dB、5 frame可読、secret scan 0、unsupported claim 0、SHA-256 `4fcead622dcd3d4c57d5ac72fb878a6cdef9599f184970e2d752aaeb1e0d4939`。診断raw 2本は提出物ではない。
 
-このGoalのproduct completion/video artifactは完了。次は別GoalでYouTubeへ一回公開し、Devpost final payloadをexact previewしてDaisの`yes, submit`後に一回submit、submission ID/URL/readbackを閉じる。
+このGoalのproduct completion/video artifactは完了。Daisが明示的に順序を変更したため、次はM01からMercor-primary product proofを作る。YouTube公開とDevpost final submitはM13後に行う。
+
+### 18.14 M — Mercor-primary local-owner unification
+
+#### Overview
+
+Money Printerのhackathon primary storyを、既存のlocal Mercor loopが高価値求人を発見・応募し、本人にしかできないinterview/KYC/assessmentだけをauthenticated Money Printer `Needs You`へ渡し、同じjobが次の自然wakeで再開するproductへ固定する。Mercorのbrowser、login、provider mutation、official readbackはMac上の既存Life Manager ownerだけが担う。CloudはMoney Printer UI/API/Postgres、redacted judge evidence、既存Telegramからのowner linkだけを担う。
+
+Lancersは別担当が修復中なのでcode、runtime、TODO順序を変更しない。既存のverified application receiptだけをsupporting evidenceとしてread-only表示できるが、Mercor primary E2Eの代替にはしない。
+
+#### Acceptance criteria
+
+- 新しいMercor agent、browser profile、launchd label、cloud browser、email senderを作らない。既存`job-search-mercor-browser`と`job-search-mercor`が唯一のprovider effect ownerである。
+- Mercor専用profile/CDP `9334`は他providerと分離したまま、起動時にofficial Explore pageを所有し、自然30分wakeで既存の最大12 candidate / 4 page / time budgetを継続する。lifetime application count capは追加しない。
+- Local Mercorのtyped terminal resultだけをprovider-neutral eventへ投影し、raw DOM、screenshot、cookie、credential、resume、private answer、PIIをcloudへ送らない。
+- `discovered`、`inspected`、`submitted`、`needs_human`、`payment`を同一視しない。公式Mercor application receiptが無ければ応募済みにせず、公式payment receiptが無ければverified cashは0のままにする。
+- Modelが返したtyped `needs_human`だけを既存HumanTaskへ決定論的に写像する。keyword classifierやprovider固有eligibility ruleをcoreへ追加しない。
+- Ownerは既存Telegram通知のauthenticated Panel linkからtaskを開き、provider URLで本人操作を行い、`completed`または`cannot_complete`を一度回答できる。emailは作らない。
+- Cloud/UIは回答をprovider successとして確定しない。次のlocal natural wakeがexact task/versionを取り込み、同じMercor work itemを再開し、official provider stateをreadbackして初めてterminal receiptを作る。
+- Guest judgeはredacted state transitionとreceipt evidenceだけを見られ、owner task、private answer、provider sessionへアクセスできない。
+- Live E2Eはowned Explore listingから始まり、real Needs You、Telegram message ID、authenticated owner action、same-item resume、official application readback、replay-zeroまで一続きで証明する。selection、contract、paymentは外部結果なのでreceipt無しでDoneにしない。
+
+#### As-Is / To-Be
+
+| Surface | As-Is measured | To-Be |
+|---|---|---|
+| Mercor browser | `job-search-mercor-browser`はrunningだが初期URLが`about:blank`。最新passは`owned_mercor_browser_context_missing`、`submitted=[]` | 同じownerが`https://work.mercor.com/explore`を開き、auth済みowned tabを保持 |
+| Mercor apply | 既存model-led pass、submit fence、human gate、earnings syncは存在するがowned tab欠落で開始不能 | 同じpassを修復し、ready listingを既存budget内で最大化、human-only actionで止める |
+| Money Printer | Railway runtime DBとSupabase earningsだけを読み、local Mercor terminal/gateを受け取らない | bounded provider eventを既存Opportunity/RuntimeJob/HumanTask/Receiptへ投影 |
+| Human handoff | Mercor Telegram summaryはあるがMoney Printer上のactionable owner taskがない | 既存Telegram + authenticated Panel card + provider deep linkを再利用 |
+| Revenue truth | 最終official Mercor snapshotは`$0.00`、payment history empty、payment methodなし | Application/contract/paymentを別receiptにし、verified cashはofficial paymentだけ |
+| Lancers | verified application eventsは40件、official contracts/paymentsは0 | runtime/codeは触らず、supporting read-only receiptだけを許可 |
+
+#### Atomic TODO — immutable order
+
+| Atom | Exact patch | Focused verification / done |
+|---|---|---|
+| M00 | source changeなし。Mercor/Lancers labels、loaded argv、latest terminal、ledger、earningsをfreeze | current failureとmoney truthを同一timestampでreadback |
+| M01 | `apps/job-search-loop/scripts/run-browser.sh:86-160`と既存focused argv testだけ。Mercor ownerのinitial URLを`https://work.mercor.com/explore`、daily ownerは`about:blank`のまま | 1 production + 1 test、推定5–15 LOC。profile/CDP/flags差分0、focused test pass |
+| M02 | source changeなし。`job-search-mercor-browser` exact labelだけをtarget release/applyし、sibling/currentを動かさない | CDP 9334にauth済み`work.mercor.com` owned tab一件、recovery/restore/CAPTCHAならhard stop |
+| M03 | source changeなし。既存`job-search-mercor`を自然wakeで実行し、自前executorを作らない | live listings inspected、ready distinct listingを既存12/4/time budget内でsubmit、human-only listingはtyped `needs_human` |
+| M04 | create `apps/job-search-loop/job_search_loop/mercor_money_printer_sync.py` + focused test。`apps/job-search-loop/scripts/run-mercor.sh:30-53`の既存finalizeへ一回hook | exact terminal/local gate/work/earnings refからbounded provider event。raw/private fields 0、unknown responseはreadback reconcile、blind resend 0 |
+| M05 | create `apps/life-manager/lib/money-printer-provider-api.js` + focused test。`apps/life-manager/server.js:282-296`近傍へinternal routeを一つregister | 既存Money Printer secret/HTTPSを再利用。serverがtenantをbindしpayloadのforeign tenant拒否、event ID/hash idempotent、secret echo 0 |
+| M06 | create `apps/life-manager/migrations/2026-08-31-lm-provider-events.sql`。modify `apps/life-manager/lib/money-printer-runtime-store.js:323-516` + focused test | append-only provider eventを既存Opportunity/RuntimeJob/HumanTask/Receiptへ写像。parallel business schemaなし、duplicate event effect 0 |
+| M07 | M04/M06内の最小mappingだけ。modelのtyped `needs_human`からstable provider work ID、public URL、instruction、reason、required formatをexisting HumanTaskへ保存 | deterministic bookkeepingのみ。legacy keyword identity logicの拡張0、同一work/task重複0 |
+| M08 | `apps/life-manager/lib/panel-ui.js:1211-1269` + focused testだけ。owner action card、provider link、`I completed it` / `Cannot complete`を既存answer APIへ接続 | authenticated ownerだけmutation可、guestはredacted read-only、new email sender 0、Telegram message ID + panel link readback |
+| M09 | M04の同じsyncへanswered refs pullを追加し、既存local human gateをexact task/versionでresolve | 次の自然Mercor wakeだけがsame work itemを再開。cloud/UIからprovider submit 0、stale/foreign answer fail-closed |
+| M10 | source changeはM04/M06のreceipt mappingだけ。既存Mercor work/earnings syncをauthoritative readbackにする | application receipt、contract state、payment receiptを別々に表示。payment無しならverified cash `$0.00` |
+| M11 | source changeなし。owned Exploreからone real listing E2E | inspect→prepare→real Needs You→Telegram→owner Panel→human provider action→answer→same-item resume→official application receipt |
+| M12 | source changeなし。process/browser restartと同一event replay | provider mutation 1、application receipt 1、HumanTask 1、duplicate/restart追加effect 0 |
+| M13 | このspecのevidence fieldsと既存76.6秒video script/assetsだけを更新 | Mercor primary story、Lancers supporting receipt、verified cash truthをChromeとChatGPT内蔵Browserで確認後、`<180s` video→YouTube→Devpost preview→Daisのexact `yes, submit` |
+
+#### Focused test matrix
+
+| Case | Required proof |
+|---|---|
+| Mercor initial URL | MercorだけExplore、daily ownerはblank、CDP/profile isolation不変 |
+| Terminal projection | exact local terminal/gate refsからallowlisted provider eventだけを生成 |
+| Tenant/privacy boundary | foreign tenant、raw DOM、cookie、resume、private answer、oversizeはeffect前reject |
+| Replay | same event ID/hashはone row/one state transition、different replayはconflict |
+| HumanTask | typed `needs_human`一件がowner card一件。guestにはtask/answer/provider sessionを出さない |
+| Answer resume | exact task/versionだけlocal gateを解き、same work IDを次の自然wakeへ渡す |
+| Money truth | applicationだけでcashを増やさず、official payment receiptだけがverified cashを増やす |
+| Live browser E2E | Chromeでprovider official state、ChatGPT内蔵BrowserでMoney Printer/WebMCP stateを同一work IDで照合 |
+
+#### Boundaries and E2E judgment
+
+- Lancers code、runtime、active TODO、browser profileには触らない。
+- Mercor provider sessionをcloudへ移さず、cloud browser、second executor、second Mercor profileを作らない。
+- AIはinterview、voice、KYC、identity verification、CAPTCHAを代行しない。
+- Telegram deliveryはhuman notification evidenceであり、application/contract/payment evidenceではない。
+- Web productなのでMaestroは使わない。Chromeはofficial Mercor readback、ChatGPT内蔵BrowserはMoney Printer/WebMCP discovery/action/readbackに使い、双方が同じstable work IDとreceipt chainを示して初めてE2E PASSとする。
