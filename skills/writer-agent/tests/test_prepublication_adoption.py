@@ -580,6 +580,37 @@ class PrepublicationAdoptionTest(unittest.TestCase):
                 for path, (bytes_before, inode_before) in before.items():
                     self.assertEqual(path.read_bytes(), bytes_before)
                     self.assertEqual(path.stat().st_ino, inode_before)
+
+    def test_orphaned_owner_prompt_recovery_resumes_same_attempt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run, _run_id, _prompt, ledger, _old = self.owner_recovery_fixture(Path(tmp))
+            repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+            gates = run / "gates"
+            state_path = gates / "quality-repair-state.json"
+            owner_path = gates / "quality-repair-owner-recovery.json"
+            owner = json.loads(owner_path.read_text(encoding="utf-8"))
+            dead_pid = 999999
+            owner["owner_pid"] = dead_pid
+            owner["receipt_sha256"] = repair._receipt_hash(owner)
+            owner_path.write_text(json.dumps(owner) + "\n", encoding="utf-8")
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state.update({"status": "invoking", "owner_pid": dead_pid,
+                          "started_at": "2026-08-31T00:00:00+00:00",
+                          "owner_recovery_receipt_sha256": hashlib.sha256(owner_path.read_bytes()).hexdigest()})
+            state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+            prompt = Path(state["prompt_path"])
+            before = {path: (path.read_bytes(), path.stat().st_ino) for path in (
+                gates / "quality-repair-source-recovery.json", owner_path, prompt)}
+            decision = repair.plan(run, ledger)
+            self.assertEqual(decision["reason"], "orphaned-owner-prompt-recovery")
+            self.assertEqual(decision["attempts"], 2)
+            self.assertEqual(decision["orphaned_owner_pid"], dead_pid)
+            resumed = repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+            self.assertEqual(resumed["attempts"], 2)
+            self.assertEqual(resumed["owner_pid"], os.getpid())
+            for path, (body, inode) in before.items():
+                self.assertEqual(path.read_bytes(), body)
+                self.assertEqual(path.stat().st_ino, inode)
     def test_terminal_incomplete_editorial_repair_source_evidence_is_fail_closed(self):
         cases = {
             "wrong error": lambda run, evidence: (

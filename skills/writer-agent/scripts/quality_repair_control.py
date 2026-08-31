@@ -737,7 +737,7 @@ def _tracked_active_editorial_repair_source_defect(
 
 
 def _tracked_repair_owner_prompt_source_defect(
-    run_dir: Path, gates: Path, repair_state: dict[str, Any]
+    run_dir: Path, gates: Path, repair_state: dict[str, Any], *, allow_current_editorial: bool = False
 ) -> dict[str, Any] | None:
     if not (
         repair_state.get("version") == 1
@@ -836,7 +836,7 @@ def _tracked_repair_owner_prompt_source_defect(
             and editorial.get("requested_reasoning_effort") == "high"
             and isinstance(editorial.get("article_sha256"), str)
             and re.fullmatch(r"[0-9a-f]{64}", editorial["article_sha256"])
-            and editorial["article_sha256"] != article_hash
+            and (allow_current_editorial or editorial["article_sha256"] != article_hash)
             and reader
             and _valid_reader_terminal(reader, lang, article_hash)
         ):
@@ -911,6 +911,58 @@ def _quality_self_heal_orphan_occurrence_source() -> Path | None:
     except OSError:
         return None
     return source
+
+
+def _orphaned_owner_prompt_recovery_evidence(
+    run_dir: Path, gates: Path, state: dict[str, Any]
+) -> bool:
+    if not (
+        state.get("status") == "invoking"
+        and state.get("version") == 1
+        and state.get("run_id") == run_dir.name
+        and state.get("repair_epoch") == REPAIR_EPOCH
+        and state.get("attempts") == MAX_REPAIR_ATTEMPTS
+        and state.get("quality_action") == "evaluate_reroute"
+        and state.get("source_defect") == "reader-terminal-receipt"
+    ):
+        return False
+    first_path = gates / "quality-repair-source-recovery.json"
+    owner_path = gates / "quality-repair-owner-recovery.json"
+    first = _regular_json(first_path)
+    owner = _regular_json(owner_path)
+    prompt = gates / "quality-repair" / f"epoch-{REPAIR_EPOCH}" / "prompts" / "owner-recovery-1.txt"
+    if not (first and owner and prompt.is_file() and not prompt.is_symlink()):
+        return False
+    validation_state = dict(state)
+    validation_state["status"] = "terminal-incomplete"
+    validation_state["owner_pid"] = first.get("owner_pid")
+    full = _tracked_repair_owner_prompt_source_defect(
+        run_dir, gates, validation_state, allow_current_editorial=True
+    )
+    if full is None or full.get("phase") != "state-bound":
+        return False
+    if not (
+        first.get("schema") == "writer.quality-repair-source-recovery"
+        and first.get("version") == 1 and first.get("run_id") == run_dir.name
+        and first.get("reason") == SOURCE_RECOVERY_REASON and first.get("recovery_attempt") == 1
+        and first.get("receipt_sha256") == _receipt_hash(first)
+        and state.get("source_recovery_receipt_sha256") == _sha256(first_path)
+        and owner.get("schema") == "writer.quality-repair-owner-recovery"
+        and owner.get("version") == 1 and owner.get("run_id") == run_dir.name
+        and owner.get("reason") == OWNER_RECOVERY_REASON and owner.get("recovery_attempt") == 1
+        and owner.get("receipt_sha256") == _receipt_hash(owner)
+        and owner.get("source_recovery_receipt_sha256") == _sha256(first_path)
+        and owner.get("owner_pid") == state.get("owner_pid")
+        and isinstance(owner.get("owner_pid"), int) and owner.get("owner_pid") > 0
+        and state.get("owner_recovery_receipt_sha256") == _sha256(owner_path)
+        and state.get("prompt_path") == str(prompt)
+        and state.get("prompt_sha256") == _sha256(prompt)
+        and owner.get("new_prompt_path") == str(prompt)
+        and owner.get("new_prompt_sha256") == _sha256(prompt)
+        and OWNER_PROMPT_PROHIBITION in prompt.read_text(encoding="utf-8")
+    ):
+        return False
+    return _quality_self_heal_orphan_occurrence_source() is not None
 
 
 def _tracked_topic_router_reroute_source_defect(
@@ -1067,22 +1119,30 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
                 or recovery_path.is_symlink()
                 or "source_recovery_receipt_sha256" in repair_state
             ):
-                return _refused(
-                    "quality-repair-source-recovery-already-recorded"
-                )
+                return _refused("quality-repair-source-recovery-already-recorded")
             recovery_evidence = _tracked_active_editorial_repair_source_defect(
                 run_dir, gates, repair_state
             )
             if recovery_evidence is not None:
+                return {"status":"READY","reason":SOURCE_RECOVERY_REASON,"run_id":run_id,"run_dir":str(run_dir),"repair_epoch":REPAIR_EPOCH,"attempts":attempts,"prompt_path":str(prompt_path),"prompt_sha256":repair_state["prompt_sha256"]}
+        if repair_state.get("status") == "invoking":
+            age = _age_seconds(repair_state.get("started_at"))
+            if (
+                _orphaned_owner_prompt_recovery_evidence(run_dir, gates, repair_state)
+                and not _owner_is_alive(repair_state.get("owner_pid"))
+                and age is not None
+                and age >= 60
+            ):
                 return {
                     "status": "READY",
-                    "reason": SOURCE_RECOVERY_REASON,
+                    "reason": "orphaned-owner-prompt-recovery",
                     "run_id": run_id,
                     "run_dir": str(run_dir),
                     "repair_epoch": REPAIR_EPOCH,
                     "attempts": attempts,
-                    "prompt_path": str(prompt_path),
+                    "prompt_path": repair_state["prompt_path"],
                     "prompt_sha256": repair_state["prompt_sha256"],
+                    "orphaned_owner_pid": repair_state.get("owner_pid"),
                 }
         if _terminal_quality_block(run_dir, ledger) is not None:
             return {
@@ -1511,6 +1571,7 @@ def mark_invoking(
             "orphaned-quality-repair",
             SOURCE_RECOVERY_REASON,
             OWNER_RECOVERY_REASON,
+            "orphaned-owner-prompt-recovery",
         }
     ):
         raise QualityRepairError(str(decision.get("reason", "not-prepared")))
@@ -1547,8 +1608,9 @@ def mark_invoking(
         state["route_sha256"] = _sha256(route)
     source_recovery = decision.get("reason") == SOURCE_RECOVERY_REASON
     owner_recovery = decision.get("reason") == OWNER_RECOVERY_REASON
+    owner_orphan_recovery = decision.get("reason") == "orphaned-owner-prompt-recovery"
     attempts = int(state.get("attempts", 0))
-    if not source_recovery and not owner_recovery:
+    if not source_recovery and not owner_recovery and not owner_orphan_recovery:
         attempts += 1
         if attempts > MAX_REPAIR_ATTEMPTS:
             raise QualityRepairError("quality-repair-attempt-limit")

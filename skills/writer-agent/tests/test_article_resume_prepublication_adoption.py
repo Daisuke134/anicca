@@ -125,6 +125,16 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         f"   print(json.dumps({{'status':'READY','reason':'tracked-repair-owner-prompt-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
         "  elif shape == 'owner-recovery-wrong-state':\n"
         f"   print(json.dumps({{'status':'READY','reason':'tracked-repair-owner-prompt-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'owner-orphan':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'orphaned-owner-prompt-recovery','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(owner_recovery_prompt)!r},'prompt_sha256':{hashlib.sha256(owner_recovery_prompt.read_bytes()).hexdigest()!r},'orphaned_owner_pid':1234}}))\n"
+        "  elif shape == 'owner-orphan-missing':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'orphaned-owner-prompt-recovery','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(owner_recovery_prompt)!r},'prompt_sha256':{hashlib.sha256(owner_recovery_prompt.read_bytes()).hexdigest()!r}}}))\n"
+        "  elif shape == 'owner-orphan-mismatch':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'orphaned-owner-prompt-recovery','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(owner_recovery_prompt)!r},'prompt_sha256':{hashlib.sha256(owner_recovery_prompt.read_bytes()).hexdigest()!r},'orphaned_owner_pid':9999}}))\n"
+        "  elif shape == 'cross-source-extra':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(owner_recovery_prompt)!r},'prompt_sha256':{hashlib.sha256(owner_recovery_prompt.read_bytes()).hexdigest()!r},'orphaned_owner_pid':1234}}))\n"
+        "  elif shape == 'cross-owner-invoking':\n"
+        f"   print(json.dumps({{'status':'READY','reason':'tracked-repair-owner-prompt-source-defect','run_id':{target_id!r},'run_dir':{str(target)!r},'repair_epoch':1,'attempts':2,'prompt_path':{str(owner_recovery_prompt)!r},'prompt_sha256':{hashlib.sha256(owner_recovery_prompt.read_bytes()).hexdigest()!r}}}))\n"
         "  elif shape == 'source-recovery-wrong-run':\n"
         f"   print(json.dumps({{'status':'READY','reason':'tracked-active-editorial-repair-source-defect','run_id':'other-run','run_dir':{str(target)!r},'repair_epoch':1,'attempts':1,'prompt_path':{str(repair_prompt)!r},'prompt_sha256':{hashlib.sha256(repair_prompt.read_bytes()).hexdigest()!r}}}))\n"
         "  elif shape == 'source-recovery-malformed':\n"
@@ -151,7 +161,7 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         "elif command == 'begin': open(os.environ['CALLS'], 'a').write('quality-begin\\n'); "
         f"print(json.dumps({{'status':'prepared','run_id':{target_id!r},'prompt_path':{str(repair_prompt)!r}}}))\n"
         "elif command == 'invoke': open(os.environ['CALLS'], 'a').write('quality-invoke\\n'); "
-        f"print(json.dumps({{'status':'invoking','run_id':{target_id!r},'prompt_path':({str(owner_recovery_prompt)!r} if os.environ.get('QUALITY_PLAN_SHAPE') == 'owner-recovery' else {str(repair_prompt)!r})}}))\n"
+        f"print(json.dumps({{'status':'invoking','run_id':{target_id!r},'prompt_path':({str(owner_recovery_prompt)!r} if os.environ.get('QUALITY_PLAN_SHAPE') in ('owner-recovery','owner-orphan') else {str(repair_prompt)!r})}}))\n"
         "elif command == 'terminalize': open(os.environ['CALLS'], 'a').write('quality-terminalize\\n'); "
         "print(json.dumps({'status':'ok'}))\n"
         "else: "
@@ -405,6 +415,43 @@ def test_cross_day_adoption_precedes_both_quality_plans_and_never_starts_daily(
         )
         assert invalid_owner_recovery.returncode == 1
         assert calls.read_text().splitlines() == ["quality-plan"]
+    _write(repair_state, json.dumps(prepared_state))
+
+    orphan_state = dict(prepared_state)
+    orphan_state.update({"status":"invoking","attempts":2,"quality_action":"evaluate_reroute","source_defect":"reader-terminal-receipt","owner_pid":1234,"source_recovery_receipt_sha256":"b" * 64,"owner_recovery_receipt_sha256":"a" * 64,"prompt_path":str(owner_recovery_prompt),"prompt_sha256":hashlib.sha256(owner_recovery_prompt.read_bytes()).hexdigest()})
+    _write(repair_state, json.dumps(orphan_state))
+    calls.unlink()
+    orphan = subprocess.run(command, env={**env,"ADOPTION_FAIL":"1","QUALITY_PLAN_SHAPE":"owner-orphan"}, capture_output=True,text=True,check=False)
+    assert orphan.returncode == 0, orphan.stderr
+    assert calls.read_text().splitlines() == ["quality-plan","quality-feedback","quality-invoke","model-runner"]
+    assert (tmp_path / "prompts").read_text().splitlines()[-1] == str(owner_recovery_prompt)
+    calls.unlink()
+    invalid_orphan = subprocess.run(command, env={**env,"ADOPTION_FAIL":"1","QUALITY_PLAN_SHAPE":"owner-orphan-missing"}, capture_output=True,text=True,check=False)
+    assert invalid_orphan.returncode == 1
+    assert calls.read_text().splitlines() == ["quality-plan"]
+    calls.unlink()
+    cross = subprocess.run(command, env={**env,"ADOPTION_FAIL":"1","QUALITY_PLAN_SHAPE":"owner-orphan-mismatch"}, capture_output=True,text=True,check=False)
+    assert cross.returncode == 1
+    assert calls.read_text().splitlines() == ["quality-plan"]
+    missing_receipt = dict(orphan_state)
+    missing_receipt.pop("owner_recovery_receipt_sha256")
+    _write(repair_state, json.dumps(missing_receipt))
+    calls.unlink()
+    cross = subprocess.run(command, env={**env,"ADOPTION_FAIL":"1","QUALITY_PLAN_SHAPE":"owner-orphan"}, capture_output=True,text=True,check=False)
+    assert cross.returncode == 1
+    assert calls.read_text().splitlines() == ["quality-plan"]
+    for shape in ("cross-source-extra", "cross-owner-invoking"):
+        calls.unlink()
+        cross = subprocess.run(command, env={**env,"ADOPTION_FAIL":"1","QUALITY_PLAN_SHAPE":shape}, capture_output=True,text=True,check=False)
+        assert cross.returncode == 1
+        assert calls.read_text().splitlines() == ["quality-plan"]
+    terminal_orphan = dict(orphan_state)
+    terminal_orphan["status"] = "terminal-incomplete"
+    _write(repair_state, json.dumps(terminal_orphan))
+    calls.unlink()
+    cross = subprocess.run(command, env={**env,"ADOPTION_FAIL":"1","QUALITY_PLAN_SHAPE":"owner-orphan"}, capture_output=True,text=True,check=False)
+    assert cross.returncode == 1
+    assert calls.read_text().splitlines() == ["quality-plan"]
     _write(repair_state, json.dumps(prepared_state))
 
     # A terminal-blocked refusal is allowed only with controller rc=1.
