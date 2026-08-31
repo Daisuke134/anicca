@@ -325,8 +325,8 @@ For every queued candidate until the execution window ends:
    installed supported route cannot solve is an unsolved CAPTCHA checkpoint. The
    installed CapSolver route is
    `python3 skills/fundraiser-agent/runtime/solve-recaptcha-v2.py --website-url
-   "$CURRENT_URL" --website-key "$SITE_KEY" --target-id "$TARGET_ID"`; it reads the owner credential from
-   `~/.openclaw/.env` without printing it. Capture the site key from the rendered
+   "$CURRENT_URL" --website-key "$SITE_KEY" --target-id "$TARGET_ID"`; it reads the configured owner credential
+   without printing it. Capture the site key from the rendered
    reCAPTCHA iframe `k` query parameter and call that exact command once. The helper
    solves and injects the token into every `textarea[name="g-recaptcha-response"]`,
    dispatches `input` and `change`, resolves the rendered `data-callback` name,
