@@ -174,6 +174,8 @@ value = plistlib.loads(Path(template).read_bytes())
 arguments = [python_bin, loop_path, "--json"]
 if mode == "reconcile-only":
     arguments.append("--reconcile-only")
+else:
+    arguments.append("--exhaustive")
 arguments.extend(("--state-path", state_path))
 value["ProgramArguments"] = arguments
 value["WorkingDirectory"] = working_dir

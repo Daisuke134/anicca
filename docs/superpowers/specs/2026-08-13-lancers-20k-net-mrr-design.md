@@ -2897,7 +2897,30 @@ ownerの明示指示により、Application、Storefront、Negotiate、Paidの�
 公式POSTは302、公開profile avatarをreadbackし、mypageの「プロフィール写真を登録」は消え、completionは80%から90%へ進んだ。
 残る10%は「電話確認を認証」だけであるため、公式100%とは報告せず、**運用必須profile complete**とする。
 
-**SYSTEM CONTRACT:** canonical avatarは`skills/gig-work/profile/avatar.jpg`に置く。既存Storefront ownerは公式mypageの写真未登録checkを
+**SYSTEM CONTRACT:** canonical avatarは`skills/gig-work/profile/avatar.jpg`に置く。Application ownerは各production wakeの最初に公式mypageの写真未登録checkを
 read-only確認し、未登録時だけ同assetを既存profile formへ渡す。写真登録済みならeffect 0。新skill、scheduler、DB、browser profileは作らない。
 
+**LOOP EVIDENCE:** PR `#3526`のmain merge `4b2878ce3389901d9dbf862bbaec13baf02e3dfe`を25-file immutable Lancers releaseへ
+installし、同じSHAのlaunchd Storefront ownerをkickstartした。browser reload直後のfirst runは`account_unavailable / exit 1`、同じbrowser ownerが
+`/mypage` login readyへ到達した後のnext runは`exit 0 / profile_completion_percent 90 / profile_photo_aligned true /
+profile_effect_count 0 / portfolio_effect_count 0 / status_effect_count 0`を返した。したがってprofile維持のproduction actorはloopであり、
+初回reload readiness raceは未修正のself-heal gapとして残す。写真、listing、portfolioのblind repeatは0である。
+
 **NEXT DIRECT ACTION:** 表の次atomであるFirst-review application canaryへ進む。電話確認、追加generic listing、profile frameworkは前倒ししない。
+
+### 18.47 Apply coverage and dependency recovery
+
+**CURRENT OBSERVATION:** main merge `4b2878ce3…`へのreload後、Application ownerはfresh capacityがなく
+`capacity_source_unavailable`で探索前に停止した。browser ready後にWork Sync ownerをkickstartすると公式source complete、proposal current 40、
+ApplicationReceipt 41、active contract 0、payment 0を回復した。続くApplication ownerはexit 0だが、最初のqueryで既claim 2件だけを見て
+`duplicate_project / submitted false`で終了した。Telegramが応募を配信しない直接理由は新しいApplicationReceiptが無いこと、同一snapshotは
+state-change dedupeでenqueue 0になることである。
+
+**DECISION:** Eliza migration checkoutをproduction ownerにせず、main由来launchd ownerを唯一のruntimeにする。Eliza migrationで作った
+provider-neutral Goal/effect/readback kernelはmainへ統合して使う。profile completionはStorefrontからApplicationのfirst preflightへ移す。
+既存`--exhaustive`実装をnormal Application plistへ接続し、10 queryの重複排除和集合を一つのbounded wakeで判断する。新loop、planner、DB、
+browser profileは作らない。
+
+**DONE EVIDENCE:** focused Application tests 24、installer tests 2、Python/shell syntaxがPASS。production acceptanceはmain merge、immutable release、
+Work Sync→Application→Telegram ownerの順に再実行し、公式proposal IDを持つApplicationReceiptまたは全fresh候補の正直なdecision、次wake重複0、
+Telegram provider ACKで閉じる。

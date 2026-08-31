@@ -16,6 +16,7 @@ SKILLS = SKILLS_ROOT
 REPO = SKILLS_ROOT.parent
 STATUS_PATH = HERE / "status.py"
 APPLICATION_TICK_PATH = HERE / "application_tick.py"
+PROFILE_OWNER_PATH = HERE / "storefront_offer.py"
 AGENT_RUNNER = REPO / "runtime" / "agent-runner" / "agent_runner.py"
 AGENT_RUNNER_PATH = AGENT_RUNNER
 PLANNER_SCHEMA = SKILLS_ROOT / "gig-work" / "schemas" / "application_decisions.schema.json"
@@ -65,6 +66,11 @@ def _load(name: str, path: Path) -> Any:
 
 status = _load("_anicca_lancers_application_loop_status", STATUS_PATH)
 application_tick = _load("_anicca_lancers_application_loop_tick", APPLICATION_TICK_PATH)
+
+def _profile_preflight(state_path: Path) -> Mapping[str, object]:
+    owner = _load("_anicca_lancers_application_profile_owner", PROFILE_OWNER_PATH)
+    result = owner.ensure_profile(PRODUCT_PATH, state_path)
+    return result if isinstance(result, Mapping) else {"ok": False, "error": "profile_preflight_failed"}
 
 @dataclass(frozen=True)
 class ApplicationLoopResult:
@@ -130,6 +136,69 @@ def _discovery_query(value: object) -> str:
         return DISCOVERY_QUERIES[slot]
     except (TypeError, ValueError, OverflowError, OSError):
         return DEFAULT_DISCOVERY_QUERY
+
+def _observed_after(candidate: Mapping[str, object], incumbent: Mapping[str, object]) -> bool:
+    """True when candidate carries a strictly later `observed_at` than incumbent."""
+    def parsed(row: Mapping[str, object]) -> Optional[datetime]:
+        value = row.get("observed_at")
+        if not isinstance(value, str):
+            return None
+        try:
+            moment = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return moment if moment.tzinfo is not None else None
+    later, earlier = parsed(candidate), parsed(incumbent)
+    return later is not None and earlier is not None and later > earlier
+
+def _run_exhaustive_discovery(timeout: float) -> Mapping[str, object]:
+    """Union every query so one wake can see the whole reachable board, not one keyword of it.
+
+    The default path deliberately stops at the first query that still has unclaimed rows, which
+    keeps a 20s tick cheap but means the other queries' candidates are never even considered --
+    'apply to every eligible candidate' cannot be true under it. Coconala solves the same problem
+    with a separate exhaustive lane on its own hour-long budget rather than by widening the fast
+    tick, so this is opt-in and the caller supplies the per-request timeout (the provider caps a
+    single request at 60s; the exhaustive budget is that times the number of queries).
+
+    Known limits, both inherited from the default path and both silent today:
+    a query whose cards all fail to normalize reports `no_normalized_opportunities`, which is
+    indistinguishable here from an empty board, so that query contributes nothing without a flag;
+    and only a provider error that is not `no_normalized_opportunities` aborts the union. When two
+    queries return the same `external_id` the later `observed_at` wins, so a duplicate cannot pin
+    a stale copy; rows whose timestamps are missing or naive keep the incumbent.
+    """
+    merged: dict[str, Mapping[str, object]] = {}
+    last: Mapping[str, object] = {"ok": False, "error": "no_normalized_opportunities", "opportunities": []}
+    seen_ok = False
+    for query in DISCOVERY_QUERIES:
+        last = status.run_discovery(query=query, limit=MAX_OPPORTUNITIES, timeout=timeout)
+        if last.get("ok") is not True:
+            if last.get("error") != "no_normalized_opportunities":
+                return last
+            continue
+        seen_ok = True
+        opportunities = last.get("opportunities")
+        if not isinstance(opportunities, Sequence) or isinstance(opportunities, (str, bytes, bytearray)):
+            return last
+        for row in opportunities:
+            if not isinstance(row, Mapping):
+                return last
+            external_id = row.get("external_id")
+            if not isinstance(external_id, str) or not external_id:
+                continue
+            seen = merged.get(external_id)
+            # The same listing surfaces under several queries. Keeping whichever query ran first
+            # would pin a stale copy of a row that another query observed later, so prefer the
+            # later observation and fall back to the incumbent when the timestamps are unusable.
+            if seen is None or _observed_after(row, seen):
+                merged[external_id] = row
+    if not seen_ok:
+        return last
+    union = {key: value for key, value in last.items() if key != "error"}
+    union["ok"] = True
+    union["opportunities"] = list(merged.values())
+    return union
 
 def _run_default_discovery(tick_value: object, timeout: float, state_path: Path) -> Mapping[str, object]:
     first = _discovery_query(tick_value)
@@ -514,7 +583,7 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     final = verified[-1] if verified else ApplicationLoopResult(True, reason="provider_terminal_blocked", project_id=blocked[-1] if blocked else None)
     return _batch_summary(final, observed_count, len(eligible), verified, blocked, ok=True, submitted=any(item.submitted for item in verified))
 
-def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[Path] = None, discoverer: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, safety_verifier: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, clock: Optional[Callable[[], object]] = None, discovery: Optional[Callable[..., Mapping[str, object]]] = None, now: Optional[Callable[[], object]] = None, evidence_dir: Optional[Path] = None, output_stream: Optional[TextIO] = None, query: Optional[str] = None, timeout: float = 20.0) -> dict[str, object]:
+def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[Path] = None, discoverer: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, safety_verifier: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, clock: Optional[Callable[[], object]] = None, discovery: Optional[Callable[..., Mapping[str, object]]] = None, now: Optional[Callable[[], object]] = None, evidence_dir: Optional[Path] = None, output_stream: Optional[TextIO] = None, query: Optional[str] = None, timeout: float = 20.0) -> dict[str, object]:
     try:
         pending = application_tick.read_pending_descriptor(Path(state_path))
     except Exception:
@@ -550,7 +619,7 @@ def run_loop(*, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[P
                     turn_evidence = evidence / f"turn-{turn + 1}"
                     turn_evidence.mkdir(mode=0o700, exist_ok=False)
                 try:
-                    observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else _run_default_discovery(tick_value, timeout, Path(state_path))
+                    observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else (_run_exhaustive_discovery(timeout) if exhaustive else _run_default_discovery(tick_value, timeout, Path(state_path)))
                 except Exception: observed = None
                 if observed is None or not isinstance(observed, Mapping): result = ApplicationLoopResult(False, error="discovery_failed")
                 else:
@@ -587,9 +656,15 @@ run_application_loop = run_loop
 run_once = run_loop
 
 def main(argv: Optional[Sequence[str]] = None, *, discovery: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, now: Optional[Callable[[], object]] = None, clock: Optional[Callable[[], object]] = None, stdout: Optional[TextIO] = None) -> int:
-    parser = argparse.ArgumentParser(allow_abbrev=False); parser.add_argument("--json", action="store_true", required=True); parser.add_argument("--reconcile-only", action="store_true"); parser.add_argument("--state-path", default=str(DEFAULT_STATE_PATH)); args = parser.parse_args(list(argv) if argv is not None else None)
+    parser = argparse.ArgumentParser(allow_abbrev=False); parser.add_argument("--json", action="store_true", required=True); parser.add_argument("--reconcile-only", action="store_true"); parser.add_argument("--state-path", default=str(DEFAULT_STATE_PATH)); parser.add_argument("--exhaustive", action="store_true", help="union every discovery query instead of stopping at the first fruitful one"); parser.add_argument("--discovery-timeout", type=float, default=20.0, help="seconds per discovery request (provider bound: 0 < t <= 60). The exhaustive budget is this multiplied by the number of queries, not a larger single request."); args = parser.parse_args(list(argv) if argv is not None else None)
     output_stream = sys.stdout if stdout is None else stdout
-    result = run_reconcile_only(Path(args.state_path), output_stream=output_stream) if args.reconcile_only else run_loop(discoverer=discovery, planner=planner, submitter=submitter, clock=clock or now, state_path=Path(args.state_path), output_stream=output_stream)
+    if not args.reconcile_only and discovery is None and planner is None and submitter is None and now is None and clock is None:
+        profile = _profile_preflight(Path(args.state_path))
+        if profile.get("ok") is not True:
+            result = ApplicationLoopResult(False, error="profile_preflight_failed").to_dict()
+            print(json.dumps(result, ensure_ascii=False, separators=(",", ":")), file=output_stream, flush=True)
+            return 1
+    result = run_reconcile_only(Path(args.state_path), output_stream=output_stream) if args.reconcile_only else run_loop(discoverer=discovery, planner=planner, submitter=submitter, clock=clock or now, state_path=Path(args.state_path), output_stream=output_stream, exhaustive=args.exhaustive, timeout=args.discovery_timeout)
     return 0 if result["ok"] else 1
 
 __all__ = ["AGENT_RUNNER", "AGENT_RUNNER_PATH", "ApplicationLoopResult", "DEFAULT_EVIDENCE_DIR", "DEFAULT_EVIDENCE_ROOT", "DEFAULT_STATE_PATH", "PLANNER_SCHEMA", "SCHEMA_PATH", "application_tick", "build_planner_prompt", "invoke_planner", "main", "run_application_loop", "run_loop", "run_once", "run_reconcile_only", "status", "validate_decisions"]

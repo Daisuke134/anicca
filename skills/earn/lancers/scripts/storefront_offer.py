@@ -343,6 +343,27 @@ def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path, key: s
     return observed | {"portfolio_effect_count": 1}
 
 
+def ensure_profile(product_path: Path, state_path: Path) -> dict[str, Any]:
+    tick = browser = page = None; logged_in = False; result: dict[str, Any] = {"ok": False, "error": "profile_unavailable"}
+    try:
+        product, _image, avatar = _product(product_path); tick = _load("lancers_profile_tick", HERE / "application_tick.py")
+        with tick.account_lock(state_path.with_name("work-sync.json")):
+            browser = tick._default_browser_factory(tick.CDP_URL); page = tick._new_owned_page(browser)
+            if not tick._production_account_ready(page): raise OfferError("account_unavailable")
+            logged_in = True; result = {"ok": True, "logged_in": True} | _profile(page, product, avatar, True)
+    except OfferError as error: result = {"ok": False, "logged_in": logged_in, "error": str(error)}
+    except Exception as error:
+        print(f"profile_owner:{type(error).__name__}", file=sys.stderr)
+        result = {"ok": False, "logged_in": logged_in, "error": "account_lock_busy" if "LockBusy" in type(error).__name__ else "profile_unavailable"}
+    finally:
+        try:
+            closed = page is None or bool(tick._close_owned_page(page))
+            if browser is not None: tick._stop_playwright_runtime(getattr(browser, "_anicca_playwright_runtime", None))
+        except Exception: closed = False
+        if not closed: result = {"ok": False, "logged_in": logged_in, "error": "cleanup_failed"}
+    return result
+
+
 def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
     tick = browser = page = None; logged_in = False; result: dict[str, Any] = {"ok": False, "error": "offer_unavailable"}
     try:
@@ -359,9 +380,6 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
                     result[key + "_url"] = portfolio["portfolio_url"]
                     if portfolio["portfolio_effect_count"]:
                         result["action"] = "portfolio_created"; break
-                else:
-                    profile = _profile(page, product, avatar, True); result |= profile
-                    if profile["profile_effect_count"]: result["action"] = "profile_updated"
             if result.get("ok") is True and result.get("aligned") is True:
                 result["demand"] = _demand(page, product["listing_external_id"])
                 if apply: _write_receipt(Path(state_path), product, result["demand"])
