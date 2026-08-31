@@ -326,14 +326,23 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
   return Object.freeze({
     async claimSymphonyNext() {
       const candidates = (await query(`
-        SELECT jobs.tenant_id
-        FROM public.lm_runtime_jobs jobs
-        WHERE jobs.status = 'queued' AND jobs.capability = 'general-agent.work'
-          AND jobs.available_at <= clock_timestamp()
-          AND (SELECT count(*) FROM public.lm_symphony_dispatches dispatches
-            WHERE dispatches.tenant_id = jobs.tenant_id AND dispatches.issue_closed_at IS NULL) < 2
-        GROUP BY jobs.tenant_id
-        ORDER BY min(jobs.available_at), jobs.tenant_id
+        WITH candidates AS (
+          SELECT dispatches.tenant_id, min(dispatches.claimed_at) AS ready_at, 0 AS priority
+          FROM public.lm_symphony_dispatches dispatches
+          WHERE dispatches.status IN ('claimed', 'mirrored', 'result_ready', 'consumed')
+            AND dispatches.issue_closed_at IS NULL
+          GROUP BY dispatches.tenant_id
+          UNION ALL
+          SELECT jobs.tenant_id, min(jobs.available_at) AS ready_at, 1 AS priority
+          FROM public.lm_runtime_jobs jobs
+          WHERE jobs.status = 'queued' AND jobs.capability = 'general-agent.work'
+            AND jobs.available_at <= clock_timestamp()
+            AND (SELECT count(*) FROM public.lm_symphony_dispatches dispatches
+              WHERE dispatches.tenant_id = jobs.tenant_id AND dispatches.issue_closed_at IS NULL) < 2
+          GROUP BY jobs.tenant_id
+        )
+        SELECT tenant_id FROM candidates
+        ORDER BY priority, ready_at, tenant_id
         LIMIT 1
       `)).rows;
       if (candidates.length === 0) return null;

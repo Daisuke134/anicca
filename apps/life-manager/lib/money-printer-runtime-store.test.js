@@ -74,7 +74,7 @@ test("R03 Symphony claim atomically moves one queued general-agent job", async (
     return globalCalls.length === 1 ? { rows: [{ tenant_id: TENANT }] } : { rows: [dispatch] };
   } });
   assert.deepEqual(await global.claimSymphonyNext(), dispatch);
-  assert.match(globalCalls[0].sql, /GROUP BY jobs\.tenant_id[\s\S]*ORDER BY min\(jobs\.available_at\)/i);
+  assert.match(globalCalls[0].sql, /FROM public\.lm_symphony_dispatches dispatches[\s\S]*status IN \('claimed', 'mirrored', 'result_ready', 'consumed'\)[\s\S]*UNION ALL[\s\S]*FROM public\.lm_runtime_jobs jobs[\s\S]*ORDER BY priority, ready_at, tenant_id/i);
   assert.deepEqual(globalCalls[1].values, [TENANT]);
 });
 
