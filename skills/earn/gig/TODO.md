@@ -4623,6 +4623,42 @@ protected and are not cleanup candidates.
   though Chii is deduplicated/effect 0; Storefront is failed as above. Resolve each current
   buyer-level failure, then require a fresh aggregate Paid pass with `failed=0` and fresh official
   Storefront pass.
+
+### 2026-08-31 four-lane incident cursor — delivery, estimates, listings, then applications
+
+This cursor is the active order. Registration, launchd liveness and exit zero do not close it;
+each lane needs its own official marketplace effect/readback and a replay with zero duplicates.
+
+1. **Paid / delivery first.** The latest production aggregate observed 9 rooms, 7 actionable,
+   `effect=0`, `readback=4`, and 5 failures: `18128025=remote_resume`, `18180857=remote_builder`,
+   `18211957=remote_builder`, `18211838=file_builder`, and `18218780=file_builder`. Repair the
+   shared resume/build boundary so every buyer-level failure owns an exact next transition and the
+   next natural wake resumes it. Before asking a buyer for an account, tool or skill, compile the
+   private credential SSOT, installed capabilities and existing project receipts into the Paid
+   context. Missing a named skill is never a capability failure. Require fresh aggregate
+   `failed=0`, useful buyer-visible artifacts where scope is accepted, exact-room readback, and
+   replay-zero. Formal delivery remains a separate explicit buyer-authority gate.
+2. **Negotiate / reply and estimate second.** A new profile estimate request `5242505` was visible
+   officially as `要提案` with an 8,000 yen budget and 2026-09-02 proposal deadline, but the natural
+   lane did not submit it or send the needed reply. Add a focused failing fixture from this exact
+   consultation shape, trace collection through durable action creation, and put deadline-bearing
+   estimate consultations ahead of the full historical audit. Acceptance is one natural estimate
+   send plus exact official readback, every current actionable message terminal or retry-owned,
+   and a second wake with zero duplicate reply/estimate.
+3. **Storefront / listing third.** Preserve the official 14-service inventory and analytics
+   readback, then repair the current official contract failure. For every listing with zero
+   purchases, the natural owner must choose and apply one evidence-backed edit, read the edited
+   service back officially, retain attribution, and replay with no duplicate edit. Inventory-only
+   `effect=0` is health evidence, not Storefront success or sales proof.
+4. **Apply fourth.** Preserve the working `--all-eligible` path and the last official application
+   readback. Continue full eligible-set accounting and replay-zero, but do not spend this incident
+   slice changing filters or submission logic unless a fresh official Apply failure appears.
+5. **Four-lane release gate.** Publish only pushed public main into one immutable release, apply the
+   four exact labels through `lm-loop`, read back loaded argv/release/state for each, then observe
+   natural Paid, Negotiate, Storefront and Apply terminals from that SHA. Close only when Paid has
+   `failed=0`, Negotiate has zero unowned actionable items, Storefront has a verified listing
+   effect or a truthful no-op reason, Apply has complete accounting, and all four replay to zero
+   duplicate external effects.
 - [ ] Restore the explicit Job Hunter pause boundary. Current process readback again shows
   `job-search-daily` and Mercor browser roots alive without `MacAppCodeSignClone`; stop the owners,
   prevent release reconciliation from re-enabling user-paused labels, and verify they stay absent
