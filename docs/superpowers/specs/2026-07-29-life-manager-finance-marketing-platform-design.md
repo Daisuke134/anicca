@@ -2427,7 +2427,7 @@ and mutable state/credentials/ledgers live under
 ├── .openclaw/                        live gateway/ask/peer runtime owner
 ├── anicca-project/                   loaded Codex progress reporter owner
 ├── profitable-claude/                legacy source still referenced by installed plist and scan
-├── gig/                              separate legacy/evidence checkout
+├── gig/                              Coconala runtime/state/private bundle and secondary release root
 ├── lm-loops-core/                    separate development worktree
 ├── life-manager-repo-v0-retire/      retained v0 migration/evidence checkout
 ├── Projects/life-manager-{8i-cutover,eliza-migration,eliza-worktrees,symphony-workspaces}/
@@ -2448,6 +2448,21 @@ gate is: loaded references zero, production dependency scan zero, clean-user
 install pass, immutable-release natural cycles pass, official effects and
 replay-zero pass, and protected state/session/evidence backup readback passes.
 Until every gate is true, no listed folder is disposable as a set.
+
+Current read-only production matrix separates installed state from outcome proof:
+
+| Surface | Loaded generation / launchd | Latest terminal or effect evidence | Verdict |
+|---|---|---|---|
+| Marketing 13 destinations | all 13 labels load `20260831T192828-7ab5a318`; each runs 0 / never exited | latest events are install-only with `effect_status=unknown`; manifest 13 `default-off`, armed 0, holds 17; latest receipts are generated artifacts, not Postiz/native publications | **UNPROVEN / OFF** |
+| Capafy daily | `ai.anicca.capafy-loop-daily` loads authoritative `20260831T193835-aced5c6b`; runs 0 / never exited | natural daily terminal absent | **PENDING NATURAL TERMINAL** |
+| Capafy healthcheck | same `aced5c6b`; runs 4 / last exit 0 | repeated deterministic health terminal pass | **PASS for health only** |
+| Connector | `ai.anicca.life-manager-connector-native` loads `7ab5a318`; runs 1 / last exit 2 | latest global event `entrypoint_exit_2`; no completed Calendar/Telegram/bundle chain | **FAIL** |
+| Coconala Apply / Browser / Reply | `hf-gig-*` owners load `7ab5a318`; Apply last exit 0, Reply last exit 0, Browser long-running | no single current four-lane official terminal/replay manifest; process liveness is not marketplace completion | **PARTIAL / UNPROVEN** |
+| Coconala Paid / Storefront | same `7ab5a318`; Paid last exit 1, Storefront last exit 1 | current owner terminals are nonzero; official outstanding project closure/replay remains open in `skills/earn/gig/TODO.md` | **FAIL** |
+| Codex account routing | current agent-runner config orders `acct1` before `acct2`; durable model events show `profile_alias=acct1` successes and no `acct2` event | Account 1 use is proven, but no same-run `acct2 depleted → acct1 selected` receipt exists | **FAILOVER UNPROVEN** |
+| Legacy independence | production legacy scanner reports 52 violations across 711 files | `.openclaw`, legacy anicca roots, and `profitable-claude` remain named by runtime paths | **NOT SELF-CONTAINED** |
+
+The loaded Coconala owners are especially not independent yet. Apply, Browser, Reply, Paid, Daily Report, and Storefront plists still use `.openclaw` for logs or mutable state, use `/Users/anicca/gig` for runtime/private state, and most point `LIFE_MANAGER_REPO` at `/Users/anicca/gig/releases/life-manager/current` instead of the canonical checkout/release selector. Paid also retains `profitable-claude` and `.openclaw` inside its sandbox-deny boundary. These references name active consumers, so neither `.openclaw`, `gig`, nor `profitable-claude` is deletable.
 
 The recovery baseline from immutable release `efe75bfc…fc20b` reports 232
 inventory rows: 166 managed, 44 retired, 81 managed rows whose latest terminal
