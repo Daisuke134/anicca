@@ -840,8 +840,9 @@ async function handlePanelApiRequest(req, res, opts = {}) {
           huggingFaceToken: opts.huggingFaceToken || process.env.HF_TOKEN,
         });
         sendJson(res, 200, { ...model, csrf: scope.csrf || csrfToken(session) });
-      } catch {
-        sendJson(res, 503, { error: "automation_hub_unavailable" });
+      } catch (error) {
+        if (error && error.message === "automation_scope_rejected") sendJson(res, 403, { error: "automation_scope_rejected" });
+        else sendJson(res, 503, { error: "automation_hub_unavailable" });
       }
       return;
     }
@@ -874,7 +875,7 @@ async function handlePanelApiRequest(req, res, opts = {}) {
       if (claimedReceipt) {
         try { await commandStore.finishReceipt(scope, key, { requestHash: claimedReceipt.requestHash, commandType: claimedReceipt.action, status: "failed", result: null }); } catch { /* pending keeps retries blocked */ }
       }
-      const known = ["invalid_automation_mutation", "invalid_catalog_id", "tool_not_selectable", "automation_configuration_required", "mcp_connection_failed", "unsafe_mcp_endpoint", "automation_revision_conflict", "idempotency_conflict", "idempotency_in_progress", "idempotency_failed"];
+      const known = ["invalid_automation_mutation", "invalid_catalog_id", "tool_not_selectable", "automation_configuration_required", "mcp_auth_failed", "mcp_rate_limited", "mcp_connection_failed", "mcp_dns_failed", "unsafe_mcp_endpoint", "automation_revision_conflict", "automation_scope_rejected", "idempotency_conflict", "idempotency_in_progress", "idempotency_failed"];
       const status = error && error.status || (String(error && error.message).includes("revision") ? 409 : 502);
       sendJson(res, status, { error: known.includes(error && error.message) ? error.message : status === 409 ? "automation_revision_conflict" : "automation_hub_unavailable" });
     }

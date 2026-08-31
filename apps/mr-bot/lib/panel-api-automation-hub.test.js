@@ -57,6 +57,62 @@ test("Automation Hub GET is tenant scoped and returns public catalog plus CSRF",
   assert.deepEqual(scopes, [{ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }]);
 });
 
+test("Automation Hub saves one remote Registry MCP, increments revision, replays safely, and reads it back", async () => {
+  let writes = 0;
+  let stack = null;
+  const tool = { catalog_id: "mcp-registry:io.example/remote@1.0.0", source: "mcp-registry", name: "Remote", description: "", connection_kind: "remote_mcp", endpoint: "https://mcp.example/mcp", source_url: "https://example.com", version: "1.0.0", required_secrets: [] };
+  const automationStore = {
+    async readStack(scope) {
+      assert.equal(scope.uid, "tenant-a");
+      assert.equal(scope.chatId, "101");
+      return stack;
+    },
+    async replaceStack(scope, value) {
+      writes += 1;
+      assert.equal(scope.uid, "tenant-a");
+      assert.equal(scope.chatId, "101");
+      assert.equal(value.revision, 0);
+      stack = { id: "default", name: value.name, desired_state: "off", observed_state: "stopped", revision: 1, last_error_code: null, tools: value.tools };
+      return stack;
+    },
+  };
+  await withServer({
+    automationStore,
+    automationCatalog: async ({ query }) => ({ query, sources: [{ id: "mcp-registry", label: "Official MCP Registry", status: "ready", detail: "候補を取得済み" }], items: [tool] }),
+    automationToolResolver: async (ids) => {
+      assert.deepEqual(ids, [tool.catalog_id]);
+      return [tool];
+    },
+  }, async (base) => {
+    const body = { action: "replace", name: "Public weather", catalog_ids: [tool.catalog_id], revision: 0 };
+    const saved = await request(base, { method: "POST", body });
+    assert.equal(saved.response.status, 200);
+    assert.equal(saved.body.revision, 1);
+    assert.deepEqual(saved.body.tools.map((item) => item.catalog_id), [tool.catalog_id]);
+
+    const replay = await request(base, { method: "POST", body });
+    assert.deepEqual(replay.body, saved.body);
+    assert.equal(writes, 1);
+
+    const readback = await request(base);
+    assert.equal(readback.response.status, 200);
+    assert.equal(readback.body.stack.name, "Public weather");
+    assert.equal(readback.body.stack.revision, 1);
+    assert.deepEqual(readback.body.stack.tools.map((item) => item.catalog_id), [tool.catalog_id]);
+  });
+});
+
+test("Automation Hub rejects cross-tenant reads at the API boundary", async () => {
+  await withServer({
+    automationStore: { async readStack() { throw Object.assign(new Error("automation_scope_rejected"), { status: 403 }); } },
+    automationCatalog: async ({ query }) => ({ query, sources: [], items: [] }),
+  }, async (base) => {
+    const result = await request(base);
+    assert.equal(result.response.status, 403);
+    assert.deepEqual(result.body, { error: "automation_scope_rejected" });
+  });
+});
+
 test("Automation Hub toggle uses CSRF, exact origin, revision, and idempotent replay", async () => {
   const toggles = [];
   const automationStore = {
@@ -90,19 +146,22 @@ test("Automation Hub rejects unknown body fields before mutation", async () => {
   assert.equal(writes, 0);
 });
 
-test("Automation Hub keeps OFF when MCP initialize or tools/list cannot be verified", async () => {
+test("Automation Hub keeps OFF and preserves known MCP verification failures", async () => {
   let writes = 0;
+  const failures = ["mcp_connection_failed", "mcp_auth_failed", "mcp_rate_limited"];
   const automationStore = {
     async readStack() { return { id: "default", revision: 3, tools: [{ catalog_id: "mcp-registry:io.example/remote@1.0.0", source: "mcp-registry", endpoint: "https://mcp.example/mcp", required_secrets: [] }] }; },
     async toggleStack() { writes += 1; },
   };
   await withServer({
     automationStore,
-    automationStackVerifier: async () => { throw Object.assign(new Error("mcp_connection_failed"), { status: 409 }); },
+    automationStackVerifier: async () => { throw Object.assign(new Error(failures.shift()), { status: 409 }); },
   }, async (base) => {
-    const result = await request(base, { method: "POST", body: { action: "toggle", enabled: true, revision: 3 }, headers: { "idempotency-key": "automation-fail-01" } });
-    assert.equal(result.response.status, 409);
-    assert.deepEqual(result.body, { error: "mcp_connection_failed" });
+    for (const [index, error] of ["mcp_connection_failed", "mcp_auth_failed", "mcp_rate_limited"].entries()) {
+      const result = await request(base, { method: "POST", body: { action: "toggle", enabled: true, revision: 3 }, headers: { "idempotency-key": `automation-fail-0${index + 1}` } });
+      assert.equal(result.response.status, 409);
+      assert.deepEqual(result.body, { error });
+    }
   });
   assert.equal(writes, 0);
 });

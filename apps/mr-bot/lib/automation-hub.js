@@ -2,6 +2,7 @@
 
 const net = require("node:net");
 const dns = require("node:dns").promises;
+const { Agent: UndiciAgent, fetch: undiciFetch } = require("undici");
 
 const MCP_REGISTRY = "https://registry.modelcontextprotocol.io/v0.1/servers";
 const HUGGING_FACE_SPACES = "https://huggingface.co/api/spaces";
@@ -9,6 +10,20 @@ const PRODUCT_HUNT_GRAPHQL = "https://api.producthunt.com/v2/api/graphql";
 const MAX_TOOLS = 12;
 const DISCOVERY_TTL_MS = 60_000;
 const discoveryCache = new Map();
+const nonPublicIps = new net.BlockList();
+
+for (const [network, prefix, family] of [
+  ["0.0.0.0", 8, "ipv4"], ["10.0.0.0", 8, "ipv4"], ["100.64.0.0", 10, "ipv4"],
+  ["127.0.0.0", 8, "ipv4"], ["169.254.0.0", 16, "ipv4"], ["172.16.0.0", 12, "ipv4"],
+  ["192.0.0.0", 24, "ipv4"], ["192.0.2.0", 24, "ipv4"], ["192.31.196.0", 24, "ipv4"],
+  ["192.52.193.0", 24, "ipv4"], ["192.88.99.0", 24, "ipv4"], ["192.168.0.0", 16, "ipv4"],
+  ["192.175.48.0", 24, "ipv4"], ["198.18.0.0", 15, "ipv4"], ["198.51.100.0", 24, "ipv4"],
+  ["203.0.113.0", 24, "ipv4"], ["224.0.0.0", 4, "ipv4"], ["240.0.0.0", 4, "ipv4"],
+  ["::", 128, "ipv6"], ["::1", 128, "ipv6"], ["64:ff9b::", 96, "ipv6"],
+  ["64:ff9b:1::", 48, "ipv6"], ["100::", 64, "ipv6"], ["2001:10::", 28, "ipv6"],
+  ["2001:db8::", 32, "ipv6"], ["2002::", 16, "ipv6"], ["3fff::", 20, "ipv6"],
+  ["5f00::", 16, "ipv6"], ["fc00::", 7, "ipv6"], ["fe80::", 10, "ipv6"], ["ff00::", 8, "ipv6"],
+]) nonPublicIps.addSubnet(network, prefix, family);
 
 function hubError(message, status = 400) {
   return Object.assign(new Error(message), { status });
@@ -24,32 +39,19 @@ function cleanQuery(value) {
 }
 
 function isPrivateIp(hostname) {
-  if (net.isIP(hostname) === 4) {
-    const octets = hostname.split(".").map(Number);
-    return octets[0] === 10 || octets[0] === 127 || octets[0] === 0
-      || (octets[0] === 100 && octets[1] >= 64 && octets[1] <= 127)
-      || (octets[0] === 169 && octets[1] === 254)
-      || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31)
-      || (octets[0] === 192 && (octets[1] === 0 || octets[1] === 168))
-      || (octets[0] === 198 && [18, 19, 51].includes(octets[1]))
-      || (octets[0] === 203 && octets[1] === 0 && octets[2] === 113)
-      || octets[0] >= 224;
-  }
-  if (net.isIP(hostname) === 6) {
-    const host = hostname.toLowerCase();
-    return host === "::1" || host === "::" || host.startsWith("fc") || host.startsWith("fd")
-      || host.startsWith("fe8") || host.startsWith("fe9") || host.startsWith("fea") || host.startsWith("feb")
-      || host.startsWith("2001:db8:") || host.startsWith("::ffff:127.") || host.startsWith("::ffff:10.") || host.startsWith("::ffff:192.168.");
-  }
-  return false;
+  const address = String(hostname || "").replace(/^\[|\]$/g, "");
+  const version = net.isIP(address);
+  return Boolean(version) && (version === 6 && address.toLowerCase().startsWith("::ffff:")
+    || nonPublicIps.check(address, version === 4 ? "ipv4" : "ipv6"));
 }
 
 function isPublicHttpsUrl(value) {
   try {
     const url = new URL(String(value || ""));
     const hostname = url.hostname.toLowerCase();
+    const domain = hostname.replace(/^\[|\]$/g, "").replace(/\.+$/, "");
     return url.protocol === "https:" && !url.username && !url.password && Boolean(hostname)
-      && hostname !== "localhost" && !hostname.endsWith(".localhost") && !hostname.endsWith(".local")
+      && domain !== "localhost" && !domain.endsWith(".localhost") && !domain.endsWith(".local")
       && !isPrivateIp(hostname);
   } catch {
     return false;
@@ -61,7 +63,7 @@ function source(id, label, status, detail) {
 }
 
 async function fetchJson(fetchImpl, url, init = {}) {
-  const response = await fetchImpl(url, { ...init, signal: init.signal || AbortSignal.timeout(5000) });
+  const response = await fetchImpl(url, { ...init, redirect: "manual", signal: init.signal || AbortSignal.timeout(5000) });
   if (!response.ok) throw new Error(`provider_${response.status}`);
   return response.json();
 }
@@ -228,12 +230,17 @@ async function resolveHuggingFace(catalogId, opts) {
 async function resolveAutomationTools(catalogIds, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   if (!Array.isArray(catalogIds) || catalogIds.length < 1 || catalogIds.length > MAX_TOOLS || new Set(catalogIds).size !== catalogIds.length) throw hubError("invalid_automation_mutation");
-  return Promise.all(catalogIds.map((raw) => {
+  const tools = await Promise.all(catalogIds.map((raw) => {
     const id = cleanText(raw, 280);
     if (id.startsWith("mcp-registry:")) return resolveRegistry(id, { ...options, fetchImpl });
     if (id.startsWith("hugging-face:")) return resolveHuggingFace(id, { ...options, fetchImpl });
     throw hubError("tool_not_selectable", 409);
   }));
+  await Promise.all(tools.map(async (tool) => {
+    if (!tool || !isPublicHttpsUrl(tool.endpoint)) throw hubError("unsafe_mcp_endpoint", 409);
+    await assertPublicDns(new URL(tool.endpoint), options);
+  }));
+  return tools;
 }
 
 async function tenantHeaders(scope, tool, options) {
@@ -250,23 +257,60 @@ async function assertPublicDns(endpoint, options) {
   const lookup = options.lookup || ((hostname) => dns.lookup(hostname, { all: true, verbatim: true }));
   let records;
   try { records = await lookup(endpoint.hostname); }
-  catch { throw hubError("mcp_connection_failed", 409); }
+  catch { throw hubError("mcp_dns_failed", 409); }
   const list = Array.isArray(records) ? records : [records];
   if (!list.length || list.some((record) => !record || !net.isIP(record.address) || isPrivateIp(record.address))) throw hubError("unsafe_mcp_endpoint", 409);
+  return list.map((record) => ({ address: record.address, family: net.isIP(record.address) }));
+}
+
+function pinnedDispatcher(hostname, records) {
+  let offset = 0;
+  return new UndiciAgent({
+    connect: {
+      lookup(requestedHostname, lookupOptions, callback) {
+        const expected = String(hostname).toLowerCase().replace(/\.+$/, "");
+        const requested = String(requestedHostname).toLowerCase().replace(/\.+$/, "");
+        if (requested !== expected) {
+          callback(new Error("unsafe_mcp_endpoint"));
+          return;
+        }
+        const family = Number(lookupOptions && lookupOptions.family) || 0;
+        const candidates = records.filter((record) => !family || record.family === family);
+        if (!candidates.length) {
+          callback(Object.assign(new Error("ENOTFOUND"), { code: "ENOTFOUND" }));
+          return;
+        }
+        if (lookupOptions && lookupOptions.all) {
+          callback(null, candidates);
+          return;
+        }
+        const record = candidates[offset++ % candidates.length];
+        callback(null, record.address, record.family);
+      },
+    },
+  });
 }
 
 async function verifyAutomationTool(scope, tool, options) {
   if (!tool || !isPublicHttpsUrl(tool.endpoint)) throw hubError("unsafe_mcp_endpoint", 409);
   const endpoint = new URL(tool.endpoint);
-  await assertPublicDns(endpoint, options);
+  const records = await assertPublicDns(endpoint, options);
   const requestHeaders = await tenantHeaders(scope, tool, options);
-  const fetchImpl = options.fetchImpl || fetch;
+  const dispatcher = typeof options.dispatcherFactory === "function"
+    ? options.dispatcherFactory(endpoint.hostname, records)
+    : pinnedDispatcher(endpoint.hostname, records);
+  const fetchImpl = options.fetchImpl || undiciFetch;
   const guardedFetch = async (input, init = {}) => {
     const target = new URL(typeof input === "string" || input instanceof URL ? input : input.url);
-    if (target.origin !== endpoint.origin || target.pathname !== endpoint.pathname) throw hubError("unsafe_mcp_endpoint", 409);
+    if (target.origin !== endpoint.origin || target.pathname !== endpoint.pathname || target.search !== endpoint.search) throw hubError("unsafe_mcp_endpoint", 409);
     const timeout = AbortSignal.timeout(options.timeoutMs || 5000);
     const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
-    return fetchImpl(input, { ...init, redirect: "manual", signal });
+    const response = await fetchImpl(input, { ...init, redirect: "manual", signal, dispatcher });
+    if (response.status === 401 || response.status === 403) throw hubError("mcp_auth_failed", 409);
+    if (response.status === 429) throw hubError("mcp_rate_limited", 409);
+    if (response.status >= 300 && response.status < 400) throw hubError("unsafe_mcp_endpoint", 409);
+    if (response.status >= 500) throw hubError("mcp_connection_failed", 409);
+    return response;
   };
   let client;
   try {
@@ -288,6 +332,9 @@ async function verifyAutomationTool(scope, tool, options) {
   } finally {
     if (client && typeof client.close === "function") {
       try { await client.close(); } catch { /* connection result already decides the gate */ }
+    }
+    if (dispatcher && typeof dispatcher.close === "function") {
+      try { await dispatcher.close(); } catch { /* the request gate is already closed */ }
     }
   }
 }
@@ -355,15 +402,31 @@ function createSupabaseAutomationStore(options = {}) {
   const base = String(options.supaUrl || "").replace(/\/$/, "");
   const fetchImpl = options.fetchImpl || fetch;
   async function request(url, init = {}) {
-    return fetchJson(fetchImpl, `${base}/rest/v1/${url}`, { ...init, headers: { ...supabaseHeaders(options.supaKey), ...(init.headers || {}) } });
+    let response;
+    try {
+      response = await fetchImpl(`${base}/rest/v1/${url}`, {
+        ...init,
+        redirect: "manual",
+        signal: init.signal || AbortSignal.timeout(5000),
+        headers: { ...supabaseHeaders(options.supaKey), ...(init.headers || {}) },
+      });
+    } catch {
+      throw hubError("automation_unavailable", 503);
+    }
+    let body = null;
+    try { body = await response.json(); } catch { /* handled below */ }
+    if (!response.ok) {
+      const message = cleanText(body && (body.message || body.error), 300).toLowerCase();
+      if (message.includes("automation revision conflict")) throw hubError("automation_revision_conflict", 409);
+      if (message.includes("scope mismatch")) throw hubError("automation_scope_rejected", 403);
+      throw hubError("automation_unavailable", 503);
+    }
+    return body;
   }
   async function readStack(scope) {
-    const query = new URLSearchParams({ uid: `eq.${scope.uid}`, stack_id: "eq.default", select: "stack_id,name,desired_state,observed_state,revision,last_error_code", limit: "1" });
-    const rows = await request(`lm_automation_stacks?${query}`);
-    if (!Array.isArray(rows) || !rows[0]) return null;
-    const toolQuery = new URLSearchParams({ uid: `eq.${scope.uid}`, stack_id: "eq.default", select: "catalog_id,source,name,description,connection_kind,endpoint,source_url,version,required_secrets,position", order: "position.asc" });
-    const tools = await request(`lm_automation_stack_tools?${toolQuery}`);
-    return { id: rows[0].stack_id, name: rows[0].name, desired_state: rows[0].desired_state, observed_state: rows[0].observed_state, revision: Number(rows[0].revision), last_error_code: rows[0].last_error_code, tools: Array.isArray(tools) ? tools.map(({ position, ...tool }) => tool) : [] };
+    const row = await rpc("read_lm_automation_stack", { p_uid: scope.uid, p_chat_id: scope.chatId });
+    if (row == null) return null;
+    return { ...row, revision: Number(row.revision), tools: Array.isArray(row.tools) ? row.tools : [] };
   }
   async function rpc(name, body) {
     return request(`rpc/${name}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });

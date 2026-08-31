@@ -75,10 +75,22 @@ test("catalog caches one provider fan-out per query for a short window", async (
 });
 
 test("only public HTTPS metadata can become a runnable remote endpoint", () => {
-  for (const value of ["http://example.com/mcp", "https://localhost/mcp", "https://127.0.0.1/mcp", "https://10.0.0.1/mcp", "https://user:pass@example.com/mcp"]) {
+  for (const value of [
+    "http://example.com/mcp",
+    "https://localhost/mcp",
+    "https://localhost./mcp",
+    "https://127.0.0.1/mcp",
+    "https://10.0.0.1/mcp",
+    "https://192.0.2.1/mcp",
+    "https://[::1]/mcp",
+    "https://[::ffff:7f00:1]/mcp",
+    "https://[2001:db8::1]/mcp",
+    "https://user:pass@example.com/mcp",
+  ]) {
     assert.equal(isPublicHttpsUrl(value), false, value);
   }
   assert.equal(isPublicHttpsUrl("https://mcp.example.com/mcp"), true);
+  assert.equal(isPublicHttpsUrl("https://[2606:4700:4700::1111]/mcp"), true);
 });
 
 test("resolver re-reads exact provider metadata and rejects discovery-only or missing ids", async () => {
@@ -94,9 +106,61 @@ test("resolver re-reads exact provider metadata and rejects discovery-only or mi
   const tools = await resolveAutomationTools([
     "mcp-registry:io.example/remote@1.2.3",
     "hugging-face:maker/audio-tool",
-  ], { fetchImpl });
+  ], {
+    fetchImpl,
+    lookup: async () => [{ address: "93.184.216.34", family: 4 }],
+  });
   assert.deepEqual(tools.map((tool) => tool.catalog_id), ["mcp-registry:io.example/remote@1.2.3", "hugging-face:maker/audio-tool"]);
   await assert.rejects(resolveAutomationTools(["product-hunt:ph-1"], { fetchImpl }), /tool_not_selectable/);
+});
+
+test("save-time Registry revalidation rejects package MCPs, redirects, and endpoints resolving non-public", async () => {
+  const official = { "io.modelcontextprotocol.registry/official": { status: "active", isLatest: true } };
+  const packageFetch = async () => json({ servers: [{
+    server: { name: "io.example/package", title: "Package", version: "1.0.0", packages: [{ registryType: "npm", identifier: "example-mcp" }] },
+    _meta: official,
+  }] });
+  await assert.rejects(
+    resolveAutomationTools(["mcp-registry:io.example/package@1.0.0"], { fetchImpl: packageFetch }),
+    /tool_not_selectable/,
+  );
+
+  const redirectFetch = async (_input, init) => {
+    assert.equal(init.redirect, "manual");
+    return json({}, 302);
+  };
+  await assert.rejects(
+    resolveAutomationTools(["mcp-registry:io.example/remote@1.0.0"], { fetchImpl: redirectFetch }),
+    /provider_302/,
+  );
+
+  const remoteFetch = async () => json({ servers: [{
+    server: { name: "io.example/remote", title: "Remote", version: "1.0.0", remotes: [{ type: "streamable-http", url: "https://mcp.example.com/mcp" }] },
+    _meta: official,
+  }] });
+  await assert.rejects(
+    resolveAutomationTools(["mcp-registry:io.example/remote@1.0.0"], {
+      fetchImpl: remoteFetch,
+      lookup: async () => [{ address: "169.254.169.254", family: 4 }],
+    }),
+    /unsafe_mcp_endpoint/,
+  );
+});
+
+test("resolver enforces one through twelve unique selections", async () => {
+  const ids = Array.from({ length: 12 }, (_, index) => `mcp-registry:io.example/remote@1.0.${index}`);
+  const fetchImpl = async (input) => {
+    const version = new URL(input).searchParams.get("version");
+    return json({ servers: [{
+      server: { name: "io.example/remote", title: "Remote", version, remotes: [{ type: "streamable-http", url: "https://mcp.example.com/mcp" }] },
+      _meta: { "io.modelcontextprotocol.registry/official": { status: "active", isLatest: true } },
+    }] });
+  };
+  const options = { fetchImpl, lookup: async () => [{ address: "93.184.216.34", family: 4 }] };
+  assert.equal((await resolveAutomationTools(ids, options)).length, 12);
+  await assert.rejects(resolveAutomationTools([], options), /invalid_automation_mutation/);
+  await assert.rejects(resolveAutomationTools([...ids, "mcp-registry:io.example/remote@1.0.12"], options), /invalid_automation_mutation/);
+  await assert.rejects(resolveAutomationTools([ids[0], ids[0]], options), /invalid_automation_mutation/);
 });
 
 test("stack mutation is revisioned, strips client metadata, and toggles desired state", async () => {
@@ -122,17 +186,46 @@ test("Supabase store binds every read and RPC to the session tenant and actor", 
   const fetchImpl = async (input, init = {}) => {
     const url = new URL(input); calls.push({ url, init });
     if (url.pathname.endsWith("/rpc/toggle_lm_automation_stack")) return json([]);
-    if (url.pathname.endsWith("/lm_automation_stacks")) return json([{ stack_id: "default", name: "Build flow", desired_state: "on", observed_state: "pending_start", revision: 2, last_error_code: null }]);
-    if (url.pathname.endsWith("/lm_automation_stack_tools")) return json([{ catalog_id: "mcp-registry:io.example/remote@1.0.0", source: "mcp-registry", name: "Remote", description: "", connection_kind: "remote_mcp", endpoint: "https://mcp.example/mcp", source_url: "https://example.com", version: "1.0.0", required_secrets: [], position: 0 }]);
+    if (url.pathname.endsWith("/rpc/read_lm_automation_stack")) return json({
+      id: "default",
+      name: "Build flow",
+      desired_state: "on",
+      observed_state: "pending_start",
+      revision: 2,
+      last_error_code: null,
+      tools: [{ catalog_id: "mcp-registry:io.example/remote@1.0.0", source: "mcp-registry", name: "Remote", description: "", connection_kind: "remote_mcp", endpoint: "https://mcp.example/mcp", source_url: "https://example.com", version: "1.0.0", required_secrets: [], position: 0 }],
+    });
     throw new Error(`unexpected ${url}`);
   };
   const store = createSupabaseAutomationStore({ supaUrl: "https://db.example", supaKey: "service-key", fetchImpl });
   const stack = await store.toggleStack({ uid: "tenant-a", chatId: "101" }, { enabled: true, revision: 1, verified: true });
   assert.equal(stack.revision, 2);
   assert.deepEqual(JSON.parse(calls[0].init.body), { p_uid: "tenant-a", p_chat_id: "101", p_enabled: true, p_expected_revision: 1, p_verified: true });
-  assert.equal(calls[1].url.searchParams.get("uid"), "eq.tenant-a");
-  assert.equal(calls[2].url.searchParams.get("uid"), "eq.tenant-a");
+  assert.deepEqual(JSON.parse(calls[1].init.body), { p_uid: "tenant-a", p_chat_id: "101" });
+  assert.equal(calls[1].url.pathname.endsWith("/rpc/read_lm_automation_stack"), true);
   assert.equal(calls.every((call) => call.init.headers.Authorization === "Bearer service-key"), true);
+});
+
+test("Supabase store exposes revision conflicts and rejects cross-tenant read scope", async () => {
+  const rejected = (message) => ({ ok: false, status: 400, json: async () => ({ message }) });
+  const revisionStore = createSupabaseAutomationStore({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    fetchImpl: async () => rejected("automation revision conflict"),
+  });
+  await assert.rejects(
+    revisionStore.replaceStack({ uid: "tenant-a", chatId: "101" }, { name: "Build", revision: 3, tools: [{}] }),
+    (error) => error.message === "automation_revision_conflict" && error.status === 409,
+  );
+  const scopeStore = createSupabaseAutomationStore({
+    supaUrl: "https://db.example",
+    supaKey: "service-key",
+    fetchImpl: async () => rejected("scope mismatch"),
+  });
+  await assert.rejects(
+    scopeStore.readStack({ uid: "tenant-a", chatId: "chat-from-tenant-b" }),
+    (error) => error.message === "automation_scope_rejected" && error.status === 403,
+  );
 });
 
 test("MCP connection gate resolves public DNS, initializes, and lists tools before ON", async () => {
@@ -155,4 +248,30 @@ test("MCP connection gate rejects private DNS and missing tenant secrets before 
   const base = { catalog_id: "mcp-registry:io.example/remote@1.0.0", source: "mcp-registry", endpoint: "https://mcp.example.com/mcp", required_secrets: [] };
   await assert.rejects(verifyAutomationStack({ uid: "tenant-a", chatId: "101" }, { tools: [base] }, { lookup: async () => [{ address: "10.0.0.8", family: 4 }] }), /unsafe_mcp_endpoint/);
   await assert.rejects(verifyAutomationStack({ uid: "tenant-a", chatId: "101" }, { tools: [{ ...base, required_secrets: ["Authorization"] }] }, { lookup: async () => [{ address: "93.184.216.34", family: 4 }] }), /automation_configuration_required/);
+});
+
+test("MCP connection gate pins validated DNS and refuses redirects", async () => {
+  const base = { catalog_id: "mcp-registry:io.example/remote@1.0.0", source: "mcp-registry", endpoint: "https://mcp.example.com/mcp", required_secrets: [] };
+  const pinned = { close: async () => {} };
+  let dispatcherInput = null;
+  const options = {
+    lookup: async () => [{ address: "93.184.216.34", family: 4 }],
+    dispatcherFactory(hostname, records) {
+      assert.equal(hostname, "mcp.example.com");
+      assert.deepEqual(records, [{ address: "93.184.216.34", family: 4 }]);
+      return pinned;
+    },
+    fetchImpl: async (_input, init) => {
+      dispatcherInput = init.dispatcher;
+      return json({}, 302);
+    },
+    transportFactory(_url, init) { return { probe: () => init.fetch(base.endpoint) }; },
+    clientFactory: () => ({
+      async connect(transport) { await transport.probe(); },
+      async listTools() { return { tools: [] }; },
+      async close() {},
+    }),
+  };
+  await assert.rejects(verifyAutomationStack({ uid: "tenant-a", chatId: "101" }, { tools: [base] }, options), /unsafe_mcp_endpoint/);
+  assert.equal(dispatcherInput, pinned);
 });

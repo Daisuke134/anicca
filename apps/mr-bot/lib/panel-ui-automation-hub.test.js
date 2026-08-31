@@ -15,6 +15,10 @@ test("signed-in panel exposes a searchable Automation Hub with one master switch
   assert.match(html, /function validateAutomationHubData/);
   assert.match(html, /function renderAutomationHub/);
   assert.match(html, /idempotency-key/);
+  assert.match(html, /await loadPanelSection\("automation-hub", automationHubData\.query\)/);
+  assert.match(html, /automation_revision_conflict/);
+  assert.match(html, /const selected = new Set\(stack\.tools\.map/);
+  assert.match(html, /const checked = selected\.has\(tool\.catalog_id\)/);
   assert.doesNotMatch(html, /localStorage|sessionStorage/);
   for (const match of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) assert.doesNotThrow(() => new vm.Script(match[1]));
 });
