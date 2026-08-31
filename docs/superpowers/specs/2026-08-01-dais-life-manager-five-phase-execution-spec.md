@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 25 `ELZ-L03`で、historical GA-10 fixture parityの既存contractを調査し、現在activeなL03だけを最小単位へ分解する。Phase C（Seq 14〜22）とELZ-L01〜L02は完了済み。
+次の一件はAtomic program ledger Seq 26 `ELZ-L04`で、fresh authorized applicationの既存contractを調査し、現在activeなL04だけを最小単位へ分解する。Phase C（Seq 14〜22）とELZ-L01〜L03は完了済み。L04は実Lancersへ新規応募を一件送る最初のatomであり、送信前にauthorizationとsealed intentを閉じる。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -764,8 +764,13 @@ Goalへread-only帰属し、同じPGlite pathを別processで開いてbyte-stabl
 - [x] **L02-03** 実案件でadapterを実証しreceiptを書く — legacy repo PR #3444、merge `93fae399…`。`status.py discovery`で実Lancers案件3件を取得（normalized 3 / detail_failed 0）、各案件から同一入力で二回intentを組んで完全一致、idempotency key 3件とも相異、金額はinteger minor units 5000/5000/20000 JPY。**判断ゼロの機械的証明**は当初import走査だけだったが、fresh adversarial reviewがP1として「非決定性は否定するが、名指しの失敗モード（選別・順位付け）を否定していない」と指摘。`normalize_projects`へ予算1〜9,000,000 minorとcategoryの広い分布を通し、全件が到着順で素通りすること・棄却は構造不正のみであることを要求するtest 2件を追加して解消。`if budget_min_minor < 5000: continue`というstdlibのみのしきい値を注入すると新test 2件が落ち、**旧import走査は同じ注入でOKのまま通る**ことを実測し、どちらが本当に失敗モードを否定しているかを一次証拠で確定。canonical private `lancers-adapter-receipt.json` mode 0600 status=`PASS`。focused 9/9、suite baselineは8 failuresのまま不変、marketplace write 0・応募送信 0。次はL02-04
 - [x] **L02-04** ELZ-L02をDONEにしELZ-L03だけをNEXTへ更新する — canonical `lancers-adapter-receipt.json` status=`PASS`、merge `93fae399…`、review P0 0 / P1 解消済み、marketplace effect 0を再読出し。Atomic program ledger Seq 24をDONE、Seq 25 L03だけを`IN_PROGRESS — NEXT`へ更新。以後Lancers L03→L25順序は不変。次はELZ-L03
 
-Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はL03がactiveであり、Phase Cのgeneral-agent基盤は
-完了、Lancersは読み取り専用のpreflightとOpportunity/ApplicationIntent adapterまで到達した。新規応募・契約・受領金・銀行着金はPhase Lで一つずつ実証する。
+- [x] **L03-01** GA-10 fixture再生のreuse mapを固定する — fork `7949acef1`の`effect-receipt-kernel.ts` SHA256と、private `~/.local/state/anicca/lancers/general-agent/ga10/`の記録6件を固定。historical chainは`absent`(verified 32) → execute 1 → `present`(33) → replay(execute 0、ledger_inserted false、33のまま)。C08は合成fixtureとrepo外runnerで証明されており実GA-10を通した実績が無いことをgapとして特定。kernel改変・live call・effect_key再導出・proposal本文とaccount URLのcommitを棄却。private `lancers-fixture-reuse-map.json` mode 0600、code変更0。次はL03-02
+- [x] **L03-02** 冗長化fixtureとreplay testをforkへcommitする — `__fixtures__/ga10-lancers-27861812.json`（id・effect_key・opaque input refs・readback state・count・content_sha256を保持し、proposal本文とaccount URLを除去）と`effect-receipt-kernel.ga10-replay.test.ts`を追加。kernelは1行も変更しない。C08とL01初回のようなrepo外runnerではなく**commitされたtest**を証拠とする。次はL03-03
+- [x] **L03-03** 実GA-10 chainをkernelへ通し同一terminal stateを実証する — fork PR #44、merge `03d97b88…`。fresh legはexecute 1・`effect_started: true`・receipt `applied`でcommit idが実proposal `27861812`、replay legはexecute **0**・`replayed: true`・receipt `noop`となり、記録済み`replay-zero.json`と一致。**provider call 0は構造で担保**: replay legの`executeOnce`は計数せず例外を投げるため再送はtest失敗になり、入力は全てcommitされたfixtureからの読み出しでtest/kernelともにI/Oを行わない。mutation 2件（replay pre-readbackを`absent`へ→`expected 1 to be +0`、commit idを偽IDへ→`expected '99999999' to be '27861812'`）で当該testがdecorationでないことを実測。typecheck exit 0、plugin suite 17/17。fresh adversarial reviewがP0「atomが名指しする`lancers-fixture-receipt.json`未作成。testが通るだけではatomは閉じない」を指摘し受領書を作成して解消、P2「countsのtestがfixture定数同士の比較でkernel回帰を検出できない」もkernel駆動へ書き換えて解消。canonical private `lancers-fixture-receipt.json` mode 0600 status=`PASS`。次はL03-04
+- [x] **L03-04** ELZ-L03をDONEにしELZ-L04だけをNEXTへ更新する — canonical `lancers-fixture-receipt.json` status=`PASS`、fork merge `03d97b88…`、review P0/P2解消・open 0、provider call 0を再読出し。Atomic program ledger Seq 25をDONE、Seq 26 L04だけを`IN_PROGRESS — NEXT`へ更新。以後Lancers L04→L25順序は不変。次はELZ-L04
+
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はL04がactiveであり、Phase Cのgeneral-agent基盤は
+完了、Lancersは読み取り専用のpreflight、Opportunity/ApplicationIntent adapter、GA-10 fixtureのreplay-zero再現まで到達した。新規応募・契約・受領金・銀行着金はPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
 
@@ -805,8 +810,8 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 |---:|---|---|---|
 | 23 | ELZ-L01 fresh auth and read-only inventory | **DONE** | canonical private `lancers-preflight-receipt.json` mode 0600 status=`PASS`。legacy merge `a7ad25ec…`、committed `--preflight`で7 surfaceを2回read、inventory sha256一致。`read_only_inventory`から`_post_reply`到達不能をAST call graph testで機械的に証明し、二通りの注入で当該testが落ちることを実測。focused 11/11、review P0/P1 0、provider/model/payment effect 0 |
 | 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | **DONE** | canonical private `lancers-adapter-receipt.json` mode 0600 status=`PASS`。legacy merge `93fae399…`。実案件3件でtransport/stable entity/fee-currency(integer minor units)/readbackを実証し、`normalize_application_intent`がopportunity固定のidempotency keyでintentを封印。subjective judgment 0は「予算1〜9,000,000 minorの分布が到着順で全件素通りし、棄却は構造不正のみ」で機械的に証明。stdlibのみのしきい値注入で当該testが落ちることを実測（旧import走査は同じ注入を見逃した）。focused 9/9、review P0 0 / P1解消、marketplace write 0 |
-| 25 | ELZ-L03 historical GA-10 fixture parity | **IN_PROGRESS — NEXT** | Proposal `27861812`のfixtureをprovider call 0で同じterminal stateへ再生する`lancers-fixture-receipt.json` |
-| 26 | ELZ-L04 fresh authorized application | TODO | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
+| 25 | ELZ-L03 historical GA-10 fixture parity | **DONE** | canonical private `lancers-fixture-receipt.json` mode 0600 status=`PASS`。fork merge `03d97b88…`。記録済みGA-10 chain（absent/32 → execute 1 → present/33 → replay execute 0/33）をC08 kernelへ通し同一terminal stateを再現。provider call 0はreplay legの`executeOnce`が例外を投げる構造で担保し、mutation 2件でtestがdecorationでないことを実測。typecheck exit 0、plugin suite 17/17、review open 0 |
+| 26 | ELZ-L04 fresh authorized application | **IN_PROGRESS — NEXT** | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
 | 27 | ELZ-L05 application replay and ack-loss reconcile | TODO | same intentのexecute 0、ledger insert 0、unknown時blind retry 0の`application-replay-receipt.json` |
 | 28 | ELZ-L06 provider admission boundary | TODO | Lancersだけをactive money providerにし、Upwork/Coconala/unknown provider effect 0の`provider-admission-receipt.json` |
 | 29 | ELZ-L07 one money wake owner | TODO | 一wake/一lease/heartbeat/next tick/clean releaseを一ownerで証明する`money-wake-receipt.json` |
