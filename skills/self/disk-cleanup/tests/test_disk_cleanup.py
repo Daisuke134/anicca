@@ -391,6 +391,62 @@ def test_open_codex_sparkle_installation_generation_is_preserved(tmp_path: Path)
     assert result["preserved_reasons"] == {"open": 1}
 
 
+def test_release_retention_keeps_referenced_and_newest_generations(tmp_path: Path) -> None:
+    releases = tmp_path / "loops" / "releases"
+    releases.mkdir(parents=True)
+    names = [
+        "20260828T010101-aaaaaaaa",  # oldest, unreferenced -> reclaimable
+        "20260829T010101-bbbbbbbb",  # referenced by the protected list
+        "20260830T010101-cccccccc",  # newest two are kept regardless
+        "20260831T010101-dddddddd",
+    ]
+    for name in names:
+        generation = releases / name
+        generation.mkdir()
+        (generation / "payload").write_bytes(b"x" * 16)
+    (tmp_path / "loops" / "current").symlink_to(releases / names[3])
+    protected = tmp_path / ".local/state/life-manager/protected-releases.json"
+    protected.parent.mkdir(parents=True)
+    protected.write_text(json.dumps([str(releases / names[1])]), encoding="utf-8")
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    candidates = [item for item in governor.discover_candidates() if item["owner"] == "release-retention"]
+    governor.sweep(candidates)
+
+    assert not (releases / names[0]).exists()
+    for name in names[1:]:
+        assert (releases / name).exists()
+
+
+def test_release_named_only_by_a_launchd_plist_is_preserved(tmp_path: Path) -> None:
+    releases = tmp_path / "loops" / "releases"
+    releases.mkdir(parents=True)
+    launched = "20260828T010101-aaaaaaaa"
+    for name in (launched, "20260830T010101-cccccccc", "20260831T010101-dddddddd"):
+        (releases / name).mkdir()
+    agents = tmp_path / "Library/LaunchAgents"
+    agents.mkdir(parents=True)
+    (agents / "ai.anicca.example.plist").write_text(
+        f"<string>{releases / launched}/bin/loop.sh</string>", encoding="utf-8"
+    )
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    candidates = [item for item in governor.discover_candidates() if item["owner"] == "release-retention"]
+    governor.sweep(candidates)
+
+    assert (releases / launched).exists()
+
+
 def test_lsof_stderr_is_probe_error(monkeypatch) -> None:
     class Result:
         returncode = 1

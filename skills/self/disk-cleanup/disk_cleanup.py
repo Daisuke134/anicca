@@ -38,6 +38,10 @@ CANONICAL_LABEL = "ai.anicca.life-manager-disk-cleanup"
 THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSURE"), (3 * GiB, "CRITICAL"))
 RECEIPT_RESERVE_BYTES = 1024 * 1024
 RECEIPT_PAYLOAD_MAX_BYTES = 64 * 1024
+# A release is ~1.2GiB, so unbounded generations fill the disk on their own.
+# Keep the newest two beyond whatever a symlink or the protected list still needs.
+RELEASE_RETENTION = 2
+RELEASE_NAME_PATTERN = re.compile(r"\d{8}T\d{6}-[0-9a-f]{8}")
 SOURCE_SUFFIXES = {
     ".c", ".cc", ".cpp", ".go", ".h", ".hpp", ".java", ".js", ".jsx",
     ".kt", ".kts", ".m", ".md", ".mm", ".py", ".rb", ".rs", ".sh", ".swift",
@@ -476,7 +480,62 @@ class HostDiskGovernor:
                 resolved.parent == installation
                 and re.fullmatch(r"[A-Za-z0-9]{6,64}", resolved.name) is not None
             )
+        if item.get("class") == "regenerable_output" and item.get("owner") == "release-retention":
+            try:
+                releases = (self.home / "loops" / "releases").resolve()
+            except OSError:
+                return False
+            return (
+                resolved.parent == releases
+                and RELEASE_NAME_PATTERN.fullmatch(resolved.name) is not None
+            )
         return False
+
+    def _referenced_releases(self) -> frozenset[Path] | None:
+        """Resolve every release something still points at, or None if unprovable."""
+        roots: set[Path] = set()
+        loops = self.home / "loops"
+        try:
+            for entry in loops.iterdir():
+                if entry.is_symlink():
+                    roots.add(entry.resolve())
+        except OSError:
+            return None
+        releases = loops / "releases"
+        # A loop that was applied to an immutable release names it by absolute path,
+        # so a release with no symlink can still be what 158 agents actually launch.
+        agents = self.home / "Library/LaunchAgents"
+        try:
+            if agents.is_dir():
+                for plist in agents.glob("*.plist"):
+                    try:
+                        text = plist.read_text(encoding="utf-8", errors="ignore")
+                    except OSError:
+                        return None
+                    for name in RELEASE_NAME_PATTERN.findall(text):
+                        roots.add((releases / name).resolve())
+        except OSError:
+            return None
+        pins = releases / ".pins"
+        try:
+            if pins.is_dir():
+                for pin in pins.iterdir():
+                    roots.add(pin.resolve() if pin.is_symlink() else (releases / pin.name).resolve())
+        except OSError:
+            return None
+        protected = self.home / ".local/state/life-manager/protected-releases.json"
+        try:
+            if protected.is_file():
+                entries = json.loads(protected.read_text(encoding="utf-8"))
+                if not isinstance(entries, list):
+                    return None
+                for raw in entries:
+                    if not isinstance(raw, str):
+                        return None
+                    roots.add(Path(raw).resolve())
+        except (OSError, ValueError):
+            return None
+        return frozenset(roots)
 
     @staticmethod
     def _receipt_reserve_valid(path: Path) -> bool:
@@ -734,6 +793,37 @@ class HostDiskGovernor:
         a deletion candidate merely because it is large.
         """
         candidates: list[dict] = []
+        releases = self.home / "loops" / "releases"
+        referenced = self._referenced_releases()
+        if referenced is not None and releases.is_dir() and not releases.is_symlink():
+            try:
+                generations = sorted(
+                    (
+                        child
+                        for child in releases.iterdir()
+                        if child.is_dir()
+                        and not child.is_symlink()
+                        and RELEASE_NAME_PATTERN.fullmatch(child.name) is not None
+                    ),
+                    key=lambda child: child.name,
+                    reverse=True,
+                )
+            except OSError:
+                generations = []
+            for child in generations[RELEASE_RETENTION:]:
+                try:
+                    if child.resolve() in referenced:
+                        continue
+                except OSError:
+                    continue
+                candidates.append(
+                    {
+                        "path": child,
+                        "class": "regenerable_output",
+                        "owner": "release-retention",
+                        "discovery": "allowlisted",
+                    }
+                )
         sparkle_installation = (
             self.home
             / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
