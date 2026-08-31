@@ -259,10 +259,10 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /pressure_required_kib=\$PRESSURE_FREE_KIB/);
   assert.match(runtimeScript, /disk-pressure\.block/);
   assert.match(runtimeScript, /disk-cleanup/);
-  assert.match(runtimeScript, /disk-cleanup[\s\S]*?<\/dev\/null >\/dev\/null 2>&1 &/);
+  assert.match(runtimeScript, /"\$LOOP_CLI" restart life-manager-disk-cleanup/);
   assert.match(runtimeScript, /exit 75/);
   assert.match(runtimeScript, /cdp_healthy/);
-  assert.match(runtimeScript, /ai\.anicca\.cdp-daily-driver-owner/);
+  assert.match(runtimeScript, /"\$LOOP_CLI" restart life-manager-daily-driver/);
   assert.match(runtimeScript, /json\/version/);
   assert.match(runtimeScript, /retry the same candidate observation once/);
   assert.match(dailyPrompt, /every visible question paired with the final rendered answer/);
@@ -285,10 +285,9 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /cdp\.py filllabel/);
   assert.match(dailyPrompt, /cdp\.py typelabel/);
   assert.match(dailyPrompt, /absolute path/);
-  assert.match(runtimeScript, /--task-class application-intent-planner/);
-  assert.match(runtimeScript, /--escalation-reason/);
-  assert.match(runtimeScript, /AGENT_RUNNER_MODEL="gpt-5\.6-luna"/);
-  assert.equal(runnerConfig.task_classes["application-intent-planner"].timeout_seconds, 3600);
+  assert.match(runtimeScript, /--task-class application-lane-agent/);
+  assert.doesNotMatch(runtimeScript, /--escalation-reason/);
+  assert.equal(runnerConfig.task_classes["application-lane-agent"].timeout_seconds, 3600);
   assert.doesNotMatch(contract, /at most one/i);
   assert.doesNotMatch(contract, /per user-local day/i);
 });

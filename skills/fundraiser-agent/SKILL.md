@@ -1,12 +1,12 @@
 ---
 name: fundraiser-agent
 description: >-
-  Continuous Life Manager fundraising through the existing Luna application
+  Continuous Life Manager fundraising through the existing application
   behavior. Every minute it discovers live Web/X opportunities, applies to
   as many eligible programs as possible, and records authoritative readback.
 metadata:
   owner: life-manager
-  model: luna
+  model: application-lane-agent
   side_effect_owner: existing-browser-worker
   private_data: startup-context-and-scoped-founder-profile
 ---
@@ -21,12 +21,12 @@ application maximum, and the pass continues after the first submitted applicatio
 
 This is an instruction layer, not a scheduler, browser driver, provider adapter,
 form compiler, or application script. Reuse the existing Life Manager scheduler,
-Luna route, browser worker, runtime jobs, effect claims, receipts, and Telegram
+  application route, browser worker, runtime jobs, effect claims, receipts, and Telegram
 reporting path.
 
 ## Required shared context
 
-- Use the existing `application-intent-planner` Luna route. Do not create another
+- Use the existing `application-lane-agent` route. Do not create another
   planner or invoke another model.
 - Read `.agents/startup-context.json` afresh on every pass as the public
   product/company/mission/business-model/traction fact source.

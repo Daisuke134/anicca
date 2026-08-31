@@ -26,7 +26,7 @@ cdp_healthy() {
   curl -fsS --max-time 2 http://127.0.0.1:9222/json/version >/dev/null 2>&1
 }
 
-# A Luna browser pass temporarily needs close to 1 GiB. Starting below this floor
+# An application browser pass temporarily needs close to 1 GiB. Starting below this floor
 # repeatedly ended with ENOSPC before the runner could persist its summary or proof.
 # Keep launchd enabled, ask the existing disk owner to reclaim only classified
 # regenerable artifacts, and let the next scheduled wake retry naturally.
@@ -125,8 +125,7 @@ chmod 600 "$RUNTIME_PROMPT"
 echo "=== fundraiser $RUN_ID start ===" >>"$LOG"
 set +e
 cat "$RUNTIME_PROMPT" | "$RUN_AGENT" \
-  --task-class application-intent-planner \
-  --escalation-reason "Fundraiser skill requires the existing Luna application-intent route for autonomous application judgment" \
+  --task-class application-lane-agent \
   --schema "$SCHEMA" \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label fundraiser-continuous \
