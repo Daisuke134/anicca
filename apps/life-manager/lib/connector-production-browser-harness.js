@@ -62,6 +62,8 @@ const KOKUCHPRO_ENTRY_READY_TIMEOUT_MS = 2_000;
 const KOKUCHPRO_ENTRY_POLL_INTERVAL_MS = 50;
 const KOKUCHPRO_ENTRY_TOKEN = /^kokuchpro_entry_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/;
 const KOKUCHPRO_SEAT_TOKEN = /^kokuchpro_seat_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/, KOKUCHPRO_FINAL_TOKEN = /^kokuchpro_final_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/;
+const KOKUCHPRO_SPINNER_NAME = /^data\[Entry\]\[seat[1-9][0-9]*\]$/;
+const KOKUCHPRO_SPINNER_CLASSES = Object.freeze(["form-control", "spinner", "ui-spinner-input"]);
 
 function invalid() {
   throw new Error("Connector production Browser Harness invalid");
@@ -892,16 +894,30 @@ function inspectKokuchProEntry(elements, context = {}) {
   try { forms.flatMap(controlsOf).forEach((element) => { if (element?.dataset) delete element.dataset.lmConnectorControl; }); } catch { return []; }
   const entryAction = canonicalUrl + "entry/", entryForms = forms.filter((form) => attr(form, "action") === entryAction && attr(form, "method").toUpperCase() === "POST"); if (entryForms.length !== 1) return [];
   const controls = controlsOf(entryForms[0]), identity = [["EntryEmail", "data[Entry][email]"], ["EntryName", "data[Entry][name]"], ["EntryNamePublish", "data[Entry][name_publish]"]].map(([id, name]) => controls.filter((element) => tag(element) === "input" && attr(element, "type").toLowerCase() === "hidden" && attr(element, "id") === id && attr(element, "name") === name));
-  const methods = controls.filter((element) => tag(element) === "input" && attr(element, "name") === "_method"), message = controls.filter((element) => attr(element, "id") === "EntryMessage" || attr(element, "name") === "data[Entry][message]"), seats = controls.filter((element) => tag(element) === "input" && attr(element, "type").toLowerCase() === "radio" && attr(element, "name") === "data[Entry][seat]"), finals = controls.filter((element) => tag(element) === "button" && attr(element, "id") === "entry_submit_button" && attr(element, "type").toLowerCase() === "submit");
-  if (methods.length !== 1 || attr(methods[0], "type").toLowerCase() !== "hidden" || attr(methods[0], "value") !== "POST" || identity.some((fields) => fields.length !== 1 || !String(attr(fields[0], "value")).trim()) || message.length > 1 || (message.length === 1 && (tag(message[0]) !== "textarea" || attr(message[0], "id") !== "EntryMessage" || attr(message[0], "name") !== "data[Entry][message]")) || seats.length !== 1 || finals.length !== 1) return [];
-  const seat = seats[0], final = finals[0], seatLabels = Array.from(seat.labels || []), seatLabelElement = seatLabels.length === 1 ? seatLabels[0] : null;
+  const methods = controls.filter((element) => tag(element) === "input" && attr(element, "name") === "_method"), message = controls.filter((element) => attr(element, "id") === "EntryMessage" || attr(element, "name") === "data[Entry][message]"), radioSeats = controls.filter((element) => tag(element) === "input" && attr(element, "type").toLowerCase() === "radio" && attr(element, "name") === "data[Entry][seat]"), finals = controls.filter((element) => tag(element) === "button" && attr(element, "id") === "entry_submit_button" && attr(element, "type").toLowerCase() === "submit"), spinnerName = /^data\[Entry\]\[seat[1-9][0-9]*\]$/;
+  const valueOf = (element) => { try { return element && element.value != null ? String(element.value) : attr(element, "value"); } catch { return ""; } };
+  const spinnerSeats = controls.filter((element) => tag(element) === "input" && spinnerName.test(attr(element, "name")));
+  const spinnerClasses = ["form-control", "spinner", "ui-spinner-input"];
+  const spinnerShape = (element) => {
+    if (!element || attr(element, "type").toLowerCase() !== "text" || attr(element, "class").trim().split(/\s+/).length !== spinnerClasses.length) return false;
+    const classes = attr(element, "class").trim().split(/\s+/);
+    if (new Set(classes).size !== spinnerClasses.length || !spinnerClasses.every((name) => classes.includes(name))) return false;
+    const max = attr(element, "data-spinner-max");
+    return attr(element, "data-spinner-min") === "0" && /^[1-9][0-9]*$/.test(max) && Number.isSafeInteger(Number(max)) && Number(max) > 0 && ["0", "1"].includes(valueOf(element));
+  };
+  if (methods.length !== 1 || attr(methods[0], "type").toLowerCase() !== "hidden" || attr(methods[0], "value") !== "POST" || identity.some((fields) => fields.length !== 1 || !String(attr(fields[0], "value")).trim()) || message.length > 1 || (message.length === 1 && (tag(message[0]) !== "textarea" || attr(message[0], "id") !== "EntryMessage" || attr(message[0], "name") !== "data[Entry][message]")) || (radioSeats.length !== 1 && spinnerSeats.length !== 1) || (radioSeats.length === 1 && spinnerSeats.length === 1) || (spinnerSeats.length === 1 && !spinnerShape(spinnerSeats[0])) || finals.length !== 1) return [];
+  const spinner = spinnerSeats[0], seat = radioSeats[0] || spinner, final = finals[0], seatLabels = Array.from(radioSeats[0]?.labels || []), seatLabelElement = seatLabels.length === 1 ? seatLabels[0] : null;
   const seatLabel = text(seatLabelElement); const labelOwnsSeat = Boolean(seatLabelElement && (seatLabelElement.control === seat || seatLabelElement.contains?.(seat)));
-  if (!seatLabel || !labelOwnsSeat || !visible(seatLabelElement) || !seatLabelElement.dataset || seat.isConnected !== true || seat.disabled === true || attr(seat, "aria-disabled").toLowerCase() === "true" || attr(seat, "aria-enabled").toLowerCase() === "false" || final.isConnected !== true || final.disabled === true || attr(final, "aria-disabled").toLowerCase() === "true" || attr(final, "aria-enabled").toLowerCase() === "false" || !visible(final) || text(final) !== "申込む" || !final.dataset) return [];
+  const radioReady = !radioSeats.length || Boolean(seatLabel && labelOwnsSeat && visible(seatLabelElement) && seatLabelElement.dataset && seat.isConnected === true && seat.disabled !== true && attr(seat, "aria-disabled").toLowerCase() !== "true" && attr(seat, "aria-enabled").toLowerCase() !== "false");
+  const spinnerReady = !spinnerSeats.length || Boolean(visible(spinner) && spinner.isConnected === true && spinner.disabled !== true && attr(spinner, "aria-disabled").toLowerCase() !== "true" && attr(spinner, "aria-enabled").toLowerCase() !== "false");
+  if (!radioReady || !spinnerReady || final.isConnected !== true || final.disabled === true || attr(final, "aria-disabled").toLowerCase() === "true" || attr(final, "aria-enabled").toLowerCase() === "false" || !visible(final) || text(final) !== "申込む" || !final.dataset) return [];
   if (controls.some((element) => element !== methods[0] && !identity.flat().includes(element) && !message.includes(element) && element !== seat && element !== final && visible(element) && ["input", "textarea", "select", "button"].includes(tag(element)))) return [];
-  try { seatLabelElement.dataset.lmConnectorControl = seatToken; final.dataset.lmConnectorControl = finalToken; }
-  catch { try { delete seatLabelElement.dataset.lmConnectorControl; delete final.dataset.lmConnectorControl; } catch {} return []; }
+  try { (spinner ? spinner : seatLabelElement).dataset.lmConnectorControl = seatToken; final.dataset.lmConnectorControl = finalToken; }
+  catch { try { delete (spinner ? spinner : seatLabelElement).dataset.lmConnectorControl; delete final.dataset.lmConnectorControl; } catch {} return []; }
   return [
-    { control: seatToken, kind: "radio", label: seatLabel, required: true, completed: seat.checked === true, submittable: false },
+    spinner
+      ? { control: seatToken, kind: "input", label: "参加人数", required: true, completed: valueOf(spinner) === "1", submittable: false }
+      : { control: seatToken, kind: "radio", label: seatLabel, required: true, completed: seat.checked === true, submittable: false },
     { control: finalToken, kind: "button", label: "申込む", required: false, completed: false, submittable: true },
   ];
 }
@@ -1315,54 +1331,105 @@ async function readKokuchProEntryHandle(handle, context = {}) {
         }
         try { const rect = value?.getBoundingClientRect?.(); return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0); } catch { return false; }
       };
-      if (!element || !["button", "label"].includes(tag(element))) return null;
+      if (!element || !["button", "input", "label"].includes(tag(element))) return null;
       const labelSeat = tag(element) === "label" ? (element.control || element.querySelector?.('input[type="radio"][name="data[Entry][seat]"]')) : null;
       const form = labelSeat?.form || element.form || element.closest?.("form");
       const controls = form?.elements != null ? Array.from(form.elements) : Array.from(form?.querySelectorAll?.("input, textarea, select, button") || []);
+      const pageForms = (() => { try { const values = Array.from(element.ownerDocument?.querySelectorAll?.("form") || []); return values.length ? values : [form]; } catch { return [form]; } })();
+      const entryForms = pageForms.filter((value) => attr(value, "action") === `${String(expected?.canonicalUrl || "")}entry/` && attr(value, "method").toUpperCase() === "POST");
       const methodFields = controls.filter((value) => tag(value) === "input" && attr(value, "name") === "_method");
       const identities = [
         ["EntryEmail", "data[Entry][email]"], ["EntryName", "data[Entry][name]"], ["EntryNamePublish", "data[Entry][name_publish]"],
       ].map(([id, name]) => controls.filter((value) => tag(value) === "input" && attr(value, "type").toLowerCase() === "hidden" && attr(value, "id") === id && attr(value, "name") === name));
-      const seats = controls.filter((value) => tag(value) === "input" && attr(value, "type").toLowerCase() === "radio" && attr(value, "name") === "data[Entry][seat]");
-      const seat = seats.length === 1 ? seats[0] : null;
-      const seatLabels = seat ? Array.from(seat.labels || []) : []; const seatLabel = seatLabels.length === 1 ? seatLabels[0] : null;
-      const seatLabelVisible = Boolean(seatLabel && (seatLabel.control === seat || seatLabel.contains?.(seat)) && visible(seatLabel));
+      const messages = controls.filter((value) => attr(value, "id") === "EntryMessage" || attr(value, "name") === "data[Entry][message]");
+      const spinnerName = /^data\[Entry\]\[seat[1-9][0-9]*\]$/;
+      const valueOf = (value) => { try { return value && value.value != null ? String(value.value) : attr(value, "value"); } catch { return ""; } };
+      const spinnerClasses = ["form-control", "spinner", "ui-spinner-input"];
+      const radioSeats = controls.filter((value) => tag(value) === "input" && attr(value, "type").toLowerCase() === "radio" && attr(value, "name") === "data[Entry][seat]");
+      const spinnerSeats = controls.filter((value) => tag(value) === "input" && spinnerName.test(attr(value, "name")));
+      const spinner = spinnerSeats.length === 1 ? spinnerSeats[0] : null;
+      const spinnerClassValid = Boolean(spinner && attr(spinner, "type").toLowerCase() === "text" && attr(spinner, "class").trim().split(/\s+/).length === spinnerClasses.length && new Set(attr(spinner, "class").trim().split(/\s+/)).size === spinnerClasses.length && spinnerClasses.every((name) => attr(spinner, "class").trim().split(/\s+/).includes(name)));
+      const spinnerMax = attr(spinner, "data-spinner-max");
+      const spinnerShapeValid = Boolean(spinnerClassValid && attr(spinner, "data-spinner-min") === "0" && /^[1-9][0-9]*$/.test(spinnerMax) && Number.isSafeInteger(Number(spinnerMax)) && Number(spinnerMax) > 0 && ["0", "1"].includes(valueOf(spinner)));
+      const seatVariant = radioSeats.length === 1 && spinnerSeats.length === 0 ? "radio" : spinnerSeats.length === 1 && radioSeats.length === 0 && spinnerShapeValid ? "spinner" : "";
+      const seat = labelSeat || (seatVariant === "radio" ? radioSeats[0] : seatVariant === "spinner" ? spinner : null);
+      const seatLabels = radioSeats.length === 1 ? Array.from(radioSeats[0].labels || []) : []; const seatLabel = seatLabels.length === 1 ? seatLabels[0] : null;
+      const seatLabelVisible = Boolean(seatLabel && (seatLabel.control === radioSeats[0] || seatLabel.contains?.(radioSeats[0])) && visible(seatLabel));
+      const seatValue = seatVariant === "spinner" ? valueOf(spinner) : "";
+      const seatChecked = seatVariant === "radio" ? radioSeats[0].checked === true : seatVariant === "spinner" ? seatValue === "1" : false;
+      const seatVisible = Boolean(seat && visible(seat));
+      const seatEnabled = Boolean(seat && seat.disabled !== true && attr(seat, "aria-disabled").toLowerCase() !== "true" && attr(seat, "aria-enabled").toLowerCase() !== "false");
       const identityReady = identities.every((fields) => fields.length === 1 && Boolean(String(attr(fields[0], "value")).trim()));
+      const messageValid = messages.length <= 1 && (messages.length === 0 || (tag(messages[0]) === "textarea" && attr(messages[0], "id") === "EntryMessage" && attr(messages[0], "name") === "data[Entry][message]"));
+      const finals = controls.filter((value) => tag(value) === "button" && attr(value, "id") === "entry_submit_button" && attr(value, "type").toLowerCase() === "submit");
+      const final = finals.length === 1 ? finals[0] : null;
+      const finalVisible = Boolean(final && visible(final));
+      const finalEnabled = Boolean(final && final.disabled !== true && attr(final, "aria-disabled").toLowerCase() !== "true" && attr(final, "aria-enabled").toLowerCase() !== "false");
+      const finalValid = Boolean(final && final.isConnected === true && finalVisible && finalEnabled && text(final) === "申込む" && final.dataset);
+      const seatControl = radioSeats.length === 1 ? seatLabel : spinner;
+      const extraVisibleActionable = controls.some((value) => value !== methodFields[0] && !identities.flat().includes(value) && !messages.includes(value) && value !== radioSeats[0] && value !== spinner && value !== final && visible(value) && ["input", "textarea", "select", "button"].includes(tag(value)));
       return {
         tag: tag(element), type: attr(labelSeat || element, "type").toLowerCase(), id: attr(element, "id"), name: attr(labelSeat || element, "name"), label: text(element),
-        formAction: attr(form, "action"), formMethod: attr(form, "method").toUpperCase(),
-        methodType: attr(methodFields[0], "type").toLowerCase(), methodName: attr(methodFields[0], "name"), methodValue: attr(methodFields[0], "value"),
-        identityReady, seatCount: seats.length, seatChecked: seat ? seat.checked === true : false, seatLabelVisible,
+        formAction: attr(form, "action"), formMethod: attr(form, "method").toUpperCase(), entryFormCount: entryForms.length,
+        methodCount: methodFields.length, methodType: attr(methodFields[0], "type").toLowerCase(), methodName: attr(methodFields[0], "name"), methodValue: attr(methodFields[0], "value"),
+        identityReady, identityShapeValid: identityReady, messageCount: messages.length, messageValid,
+        seatCount: radioSeats.length + spinnerSeats.length, seatVariant, seatChecked, seatLabelVisible, seatVisible, seatEnabled,
+        seatToken: String(seatControl?.dataset?.lmConnectorControl || ""),
+        spinnerShapeValid, spinnerValue: seatValue, spinnerClass: spinner ? attr(spinner, "class") : "", spinnerMin: spinner ? attr(spinner, "data-spinner-min") : "", spinnerMax: spinner ? spinnerMax : "",
+        finalCount: finals.length, finalId: attr(final, "id"), finalType: attr(final, "type").toLowerCase(), finalLabel: text(final), finalVisible, finalEnabled, finalConnected: final?.isConnected === true, finalValid, finalToken: String(final?.dataset?.lmConnectorControl || ""), extraVisibleActionable,
         token: String(element.dataset?.lmConnectorControl || ""), visible: visible(element),
         enabled: (labelSeat || element).disabled !== true && attr(labelSeat || element, "aria-disabled").toLowerCase() !== "true" && attr(labelSeat || element, "aria-enabled").toLowerCase() !== "false",
-        connected: element.isConnected === true && (!labelSeat || labelSeat.isConnected === true), ticketId: String(expected?.ticketId || ""), expectedToken: String(expected?.token || ""),
+        connected: element.isConnected === true && (!labelSeat || labelSeat.isConnected === true) && (!seat || seat.isConnected === true), ticketId: String(expected?.ticketId || ""), expectedToken: String(expected?.token || ""),
       };
     }, context);
   } catch { return null; }
 }
 
-function validKokuchProEntryHandleState(state, { canonicalUrl, ticketId, token } = {}) {
-  return Boolean(state && state.tag === "button" && state.type === "submit" && state.label === "申込む"
+function validKokuchProFormContract(state, { canonicalUrl, seatToken, finalToken } = {}) {
+  return Boolean(state
+    && state.formAction === `${canonicalUrl}entry/` && state.formMethod === "POST" && state.entryFormCount === 1
+    && state.methodCount === 1 && state.methodType === "hidden" && state.methodName === "_method" && state.methodValue === "POST"
+    && state.identityReady === true && state.identityShapeValid === true
+    && state.messageCount >= 0 && state.messageCount <= 1 && state.messageValid === true
+    && state.seatCount === 1 && ["radio", "spinner"].includes(state.seatVariant) && state.seatToken === seatToken
+    && state.finalCount === 1 && state.finalId === "entry_submit_button" && state.finalType === "submit" && state.finalLabel === "申込む"
+    && state.finalVisible === true && state.finalEnabled === true && state.finalConnected === true && state.finalValid === true && state.finalToken === finalToken
+    && state.extraVisibleActionable === false);
+}
+
+function validKokuchProEntryHandleState(state, { canonicalUrl, ticketId, token, seatToken } = {}) {
+  return Boolean(validKokuchProFormContract(state, { canonicalUrl, seatToken, finalToken: token })
+    && state.tag === "button" && state.type === "submit" && state.label === "申込む"
     && state.id === "entry_submit_button"
-    && state.formAction === `${canonicalUrl}entry/` && state.formMethod === "POST"
-    && state.methodType === "hidden" && state.methodName === "_method" && state.methodValue === "POST"
-    && state.identityReady === true && state.seatCount === 1 && state.seatChecked === true
+    && state.seatChecked === true
+    && (state.seatVariant !== "spinner" || state.spinnerShapeValid === true && state.spinnerValue === "1" && state.seatVisible === true && state.seatEnabled === true)
     && state.token === token && state.visible === true && state.enabled === true && state.connected === true);
 }
 
 function validKokuchProSeatControl(control, binding, token) {
   return Boolean(control && binding && token === kokuchProSeatToken(binding) && control.control === token && control.kind === "radio" && control.required === true && control.completed === false && control.submittable === false);
 }
+function validKokuchProSpinnerControl(control, binding, token) {
+  return Boolean(control && binding && token === kokuchProSeatToken(binding) && control.control === token && control.kind === "input" && control.label === "参加人数" && control.required === true && control.completed === false && control.submittable === false);
+}
 function validKokuchProFinalControl(control, binding, token) {
   return Boolean(control && binding && token === kokuchProFinalToken(binding) && control.control === token && control.kind === "button" && control.label === "申込む" && control.required === false && control.completed === false && control.submittable === true);
 }
 
-function validKokuchProSeatHandleState(state, { canonicalUrl, token, checked = false } = {}) {
-  return Boolean(state && state.tag === "label" && state.type === "radio" && state.name === "data[Entry][seat]"
-    && state.formAction === `${canonicalUrl}entry/` && state.formMethod === "POST"
-    && state.methodType === "hidden" && state.methodName === "_method" && state.methodValue === "POST"
-    && state.identityReady === true && state.seatCount === 1 && state.seatChecked === checked && state.seatLabelVisible === true
+function validKokuchProSeatHandleState(state, { canonicalUrl, token, finalToken, checked = false } = {}) {
+  return Boolean(validKokuchProFormContract(state, { canonicalUrl, seatToken: token, finalToken })
+    && state.tag === "label" && state.type === "radio" && state.name === "data[Entry][seat]"
+    && state.seatVariant === "radio" && state.seatChecked === checked && state.seatLabelVisible === true
     && state.token === token && state.expectedToken === token && state.enabled === true && state.connected === true);
+}
+
+function validKokuchProSpinnerHandleState(state, { canonicalUrl, token, finalToken, value = "0" } = {}) {
+  const classes = String(state?.spinnerClass || "").trim().split(/\s+/);
+  const exactClasses = classes.length === KOKUCHPRO_SPINNER_CLASSES.length && new Set(classes).size === KOKUCHPRO_SPINNER_CLASSES.length && KOKUCHPRO_SPINNER_CLASSES.every((name) => classes.includes(name));
+  return Boolean(validKokuchProFormContract(state, { canonicalUrl, seatToken: token, finalToken })
+    && state.tag === "input" && state.type === "text" && KOKUCHPRO_SPINNER_NAME.test(state.name)
+    && state.seatVariant === "spinner" && exactClasses && state.spinnerShapeValid === true && state.spinnerMin === "0" && /^[1-9][0-9]*$/.test(state.spinnerMax) && Number.isSafeInteger(Number(state.spinnerMax)) && Number(state.spinnerMax) > 0 && state.spinnerValue === value
+    && state.seatVisible === true && state.seatEnabled === true && state.token === token && state.expectedToken === token && state.visible === true && state.enabled === true && state.connected === true);
 }
 
 async function operateKokuchProEntryRoute(input, token) {
@@ -1377,8 +1444,10 @@ async function operateKokuchProEntryRoute(input, token) {
 async function operateKokuchProEntry(input, target, token, beforeDispatch) {
   const binding = candidateKokuchProBinding(input.candidate), action = input.action || {}, control = input.control;
   const seat = validKokuchProSeatControl(control, binding, token);
+  const spinner = validKokuchProSpinnerControl(control, binding, token);
   const final = validKokuchProFinalControl(control, binding, token);
-  if (!seat && !final) return Object.freeze({ status: "failed" });
+  if (!seat && !spinner && !final) return Object.freeze({ status: "failed" });
+  if (spinner && (action.purpose !== "fill" || action.method !== "ax_fill" || input.value !== "1")) return Object.freeze({ status: "failed" });
   const href = () => { try { return String(input.page && typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } };
   const sameCandidate = () => { const current = candidateKokuchProBinding(input.candidate); return Boolean(current && current.eventRef === binding.eventRef && current.canonicalUrl === binding.canonicalUrl && current.eventKey === binding.eventKey && current.occurrenceId === binding.occurrenceId && current.ticketId === binding.ticketId); };
   if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
@@ -1388,7 +1457,8 @@ async function operateKokuchProEntry(input, target, token, beforeDispatch) {
   if (!formsLocator || typeof formsLocator.evaluateAll !== "function") return Object.freeze({ status: "failed" });
   const controls = await inspectKokuchProEntryWhenReady(target, formsLocator, { href: href(), canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, seatToken: kokuchProSeatToken(binding), finalToken: kokuchProFinalToken(binding) }, { signal: input.signal, sleep: input.sleep });
   const selected = Array.isArray(controls) ? controls.find((item) => item.control === token) : null;
-  if ((seat ? !validKokuchProSeatControl(selected, binding, token) : !validKokuchProFinalControl(selected, binding, token)) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
+  const selectedValid = seat ? validKokuchProSeatControl(selected, binding, token) : spinner ? validKokuchProSpinnerControl(selected, binding, token) : validKokuchProFinalControl(selected, binding, token);
+  if (!selectedValid || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
   let locator, count;
   try { locator = target.locator(`[data-lm-connector-control="${token}"]`); count = await locator?.count?.(); } catch { return Object.freeze({ status: "failed" }); }
   if (count !== 1 || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
@@ -1398,8 +1468,23 @@ async function operateKokuchProEntry(input, target, token, beforeDispatch) {
     else if (typeof locator.elementHandle === "function") { const handle = await locator.elementHandle(); if (handle) handles = [handle]; }
   } catch { return Object.freeze({ status: "failed" }); }
   if (handles.length !== 1) return Object.freeze({ status: "failed" });
+  if (spinner) {
+    const handleContext = { canonicalUrl: binding.canonicalUrl, token, finalToken: kokuchProFinalToken(binding) };
+    const initial = await readKokuchProEntryHandle(handles[0], handleContext);
+    if (!validKokuchProSpinnerHandleState(initial, { ...handleContext, value: "0" }) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
+    const stableSpinner = (state) => Boolean(state && state.name === initial.name && state.spinnerClass === initial.spinnerClass && state.spinnerMin === initial.spinnerMin && state.spinnerMax === initial.spinnerMax);
+    let reboundCount; try { reboundCount = await locator.count(); } catch { return Object.freeze({ status: "failed" }); }
+    if (reboundCount !== 1) return Object.freeze({ status: "failed" });
+    const rebound = await readKokuchProEntryHandle(handles[0], handleContext);
+    if (!validKokuchProSpinnerHandleState(rebound, { ...handleContext, value: "0" }) || !stableSpinner(rebound) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
+    if (typeof handles[0].fill !== "function") return Object.freeze({ status: "failed" });
+    try { await handles[0].fill("1"); } catch { return Object.freeze({ status: "failed" }); }
+    const completed = await readKokuchProEntryHandle(handles[0], handleContext);
+    if (!validKokuchProSpinnerHandleState(completed, { ...handleContext, value: "1" }) || !stableSpinner(completed) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
+    return Object.freeze({ status: "success" });
+  }
   if (seat) {
-    const handleContext = { canonicalUrl: binding.canonicalUrl, token };
+    const handleContext = { canonicalUrl: binding.canonicalUrl, token, finalToken: kokuchProFinalToken(binding) };
     const initial = await readKokuchProEntryHandle(handles[0], handleContext);
     if (!validKokuchProSeatHandleState(initial, handleContext) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate() || input.value !== true) return Object.freeze({ status: "failed" });
     let reboundCount; try { reboundCount = await locator.count(); } catch { return Object.freeze({ status: "failed" }); }
@@ -1412,7 +1497,7 @@ async function operateKokuchProEntry(input, target, token, beforeDispatch) {
     if (!validKokuchProSeatHandleState(completed, { ...handleContext, checked: true }) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
     return Object.freeze({ status: "success" });
   }
-  const handleContext = { canonicalUrl: binding.canonicalUrl, ticketId: binding.ticketId, token };
+  const handleContext = { canonicalUrl: binding.canonicalUrl, ticketId: binding.ticketId, token, seatToken: kokuchProSeatToken(binding) };
   const initial = await readKokuchProEntryHandle(handles[0], handleContext);
   if (!validKokuchProEntryHandleState(initial, handleContext) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
   if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
@@ -1584,7 +1669,7 @@ function nativeConnpassControl(provider, state, controls) {
 }
 function nativeKokuchProControl(provider, controls) {
   if (provider !== "kokuchpro" || !Array.isArray(controls)) return null;
-  const pendingSeat = controls.filter((control) => KOKUCHPRO_SEAT_TOKEN.test(String(control?.control || "")) && control.kind === "radio" && control.required === true && control.completed === false && control.submittable === false);
+  const pendingSeat = controls.filter((control) => KOKUCHPRO_SEAT_TOKEN.test(String(control?.control || "")) && ((control.kind === "radio") || (control.kind === "input" && control.label === "参加人数")) && control.required === true && control.completed === false && control.submittable === false);
   if (pendingSeat.length === 1) return pendingSeat[0].control;
   const route = controls.filter((control) => KOKUCHPRO_ENTRY_TOKEN.test(String(control?.control || "")) && control.kind === "link" && control.label === "申込む" && control.required === false && control.completed === false && control.submittable === false);
   if (route.length === 1 && controls.length === 1) return route[0].control;
@@ -1669,7 +1754,9 @@ function createPrivateValueResolver(options = {}) {
     const control = safeControl(input.control);
     if (input && input.provider === "kokuchpro") {
       const binding = candidateKokuchProBinding(input.candidate);
-      return binding && kokuchProSeatToken(binding) === control.control && control.kind === "radio" && control.required === true && control.completed === false && control.submittable === false && input.action?.purpose === "fill" && input.action?.method === "ax_check" ? true : null;
+      if (!binding || kokuchProSeatToken(binding) !== control.control || control.required !== true || control.completed !== false || control.submittable !== false || input.action?.purpose !== "fill") return null;
+      if (control.kind === "radio" && input.action?.method === "ax_check") return true;
+      return control.kind === "input" && control.label === "参加人数" && input.action?.method === "ax_fill" ? "1" : null;
     }
     const label = normalizedLabel(control.label); const question = normalizedLabel(control.question);
     if (input.provider === "eventbrite") {

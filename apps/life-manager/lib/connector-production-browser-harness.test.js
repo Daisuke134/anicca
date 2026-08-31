@@ -3331,7 +3331,7 @@ test("TECH PLAY harness rejects an invalid injected postcondition sleep", () => 
 const KOKUCHPRO_EVENT_KEY = "33301feefecb914218e7c2318d9de99e", KOKUCHPRO_CANONICAL_URL = `https://www.kokuchpro.com/event/${KOKUCHPRO_EVENT_KEY}/`, KOKUCHPRO_ENTRY_URL = `${KOKUCHPRO_CANONICAL_URL}entry/`, KOKUCHPRO_TICKET_ID = "1", KOKUCHPRO_ENTRY_TOKEN = `kokuchpro_entry_${KOKUCHPRO_EVENT_KEY}`;
 function kokuchProCandidate(overrides = {}) { return { provider: "kokuchpro", event_ref: `kokuchpro-event://event/${KOKUCHPRO_EVENT_KEY}`, canonical_url: KOKUCHPRO_CANONICAL_URL, ticket_id: KOKUCHPRO_TICKET_ID, ...overrides }; }
 
-function makeKokuchProMultiStepPage({ candidate = kokuchProCandidate(), duplicateCanonical = false, duplicateFinal = false, malformedFinal = false, transientInspectCalls = [], onSleep } = {}) {
+function makeKokuchProMultiStepPage({ candidate = kokuchProCandidate(), duplicateCanonical = false, duplicateFinal = false, malformedFinal = false, transientInspectCalls = [], onSleep, onInspect } = {}) {
   const entryUrl = `${candidate.canonical_url}entry/`; let href = candidate.canonical_url; const events = []; const clicks = []; let beforeDispatchCalls = 0; let inspectCalls = 0; let sleepCalls = 0;
   const document = { defaultView: { getComputedStyle() { return {}; } } };
   const makeElement = (tagName, properties = {}) => {
@@ -3381,10 +3381,10 @@ function makeKokuchProMultiStepPage({ candidate = kokuchProCandidate(), duplicat
     },
     locator(selector) {
       const token = tokenOf(selector);
-      if (!token) return { async evaluateAll(callback, context) { inspectCalls += 1; if (transientInspectCalls.includes(inspectCalls)) return []; return Function("return (" + callback.toString() + ")")()(currentForms(), context); } };
+      if (!token) return { async evaluateAll(callback, context) { inspectCalls += 1; if (transientInspectCalls.includes(inspectCalls)) return []; const result = Function("return (" + callback.toString() + ")")()(currentForms(), context); onInspect?.(inspectCalls); return result; } };
       return {
         async count() { return matching(token).length; },
-        async elementHandles() { const elements = matching(token); if (elements.length !== 1) return []; const [element] = elements; return [{ async evaluate(callback, context) { return callback(element, context); }, async click() { element.clicked = true; if (element === seatLabel) { seat.checked = true; events.push(["check", token]); return; } clicks.push(element); events.push(["click", token]); if (element === final) href = KOKUCHPRO_ENTRY_URL; } }]; },
+        async elementHandles() { const elements = matching(token); if (elements.length !== 1) return []; const [element] = elements; return [{ async evaluate(callback, context) { if (element === seat) { element.evaluateCalls = (element.evaluateCalls || 0) + 1; element.mutateOnEvaluate?.(element.evaluateCalls); } return callback(element, context); }, async fill(value) { if (elements.length !== 1) throw new Error("ambiguous control"); element.value = element.fillValue === undefined ? value : element.fillValue; events.push(["fill", token]); }, async click() { element.clicked = true; if (element === seatLabel) { seat.checked = true; events.push(["check", token]); return; } clicks.push(element); events.push(["click", token]); if (element === final) href = KOKUCHPRO_ENTRY_URL; } }]; },
         async click() { const elements = matching(token); if (elements.length !== 1) throw new Error("ambiguous control"); elements[0].clicked = true; clicks.push(elements[0]); events.push(["click", token]); },
         async check() { const elements = matching(token); if (elements.length !== 1) throw new Error("ambiguous control"); elements[0].checked = true; events.push(["check", token]); },
       };
@@ -3392,6 +3392,21 @@ function makeKokuchProMultiStepPage({ candidate = kokuchProCandidate(), duplicat
   };
   const sleep = async () => { sleepCalls += 1; await onSleep?.(); };
   return { page, candidate, form, canonicalForm, seat, final, clicks, events, sleep, entryUrl, setHref(value) { href = value; }, get inspectCalls() { return inspectCalls; }, get sleepCalls() { return sleepCalls; }, get beforeDispatchCalls() { return beforeDispatchCalls; }, beforeDispatch() { beforeDispatchCalls += 1; } };
+}
+
+function makeKokuchProSpinnerPage({ spinnerMax = "2", ...options } = {}) {
+  const fixture = makeKokuchProMultiStepPage(options);
+  Object.assign(fixture.seat, {
+    type: "text",
+    name: "data[Entry][seat4637229]",
+    value: "0",
+    class: "form-control spinner ui-spinner-input",
+    className: "form-control spinner ui-spinner-input",
+    labels: [],
+  });
+  fixture.seat["data-spinner-min"] = "0";
+  fixture.seat["data-spinner-max"] = spinnerMax;
+  return fixture;
 }
 
 test("KokuchPro canonical route navigates by GET, checks one seat locally, then clicks one pinned final", async () => {
@@ -3437,6 +3452,86 @@ test("KokuchPro entry inspector polls the exact browser-realm form without expos
   const controls = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep });
   assert.equal(controls.length, 2); assert.equal(controls[0].kind, "radio"); assert.equal(controls[0].completed, false); assert.equal(controls[1].kind, "button");
   assert.equal(fixture.inspectCalls, 2); assert.equal(fixture.sleepCalls, 1); assert.doesNotMatch(JSON.stringify(controls), /hidden-email|hidden-name|4631739/);
+});
+
+test("KokuchPro live spinner form fills one seat with ax_fill before one final submit", async () => {
+  const fixture = makeKokuchProSpinnerPage(); let agentCalls = 0; let readbacks = 0;
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", extensionProvider: "kokuchpro", async runAgentRunner() { agentCalls += 1; throw new Error("KokuchPro spinner flow must stay native"); } });
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    extensionProvider: "kokuchpro",
+    extensionWorkflow: { async readProviderState() { readbacks += 1; return fixture.clicks.includes(fixture.final) ? { status: "registered", receipt_id: "kokuchpro-spinner-1" } : { status: "absent" }; } },
+    inspectControls: inspectPageControls, proposeAction: proposer,
+    operateControl: (input) => operatePageControl({ ...input, beforeDispatch() { fixture.beforeDispatch(); input.beforeDispatch?.(); } }),
+    resolveValue: createPrivateValueResolver({ async readPeatixProfile() { throw new Error("KokuchPro must not read private profiles"); }, async readFormProfile() { throw new Error("KokuchPro must not read private profiles"); } }),
+  });
+  const result = await harness.runFallback({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/KOKUCHPROSPINNER1", maxSteps: 3, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "completed"); assert.equal(result.provider_state.status, "registered"); assert.equal(agentCalls, 0); assert.equal(readbacks, 4);
+  assert.deepEqual(fixture.events.map(([name]) => name), ["goto", "fill", "click"]); assert.equal(fixture.seat.value, "1"); assert.equal(fixture.beforeDispatchCalls, 1); assert.equal(fixture.clicks.length, 1); assert.equal(fixture.clicks[0], fixture.final);
+  assert.doesNotMatch(JSON.stringify(result), /seat4637229|hidden-email|hidden-name/);
+});
+
+test("KokuchPro spinner inspector rejects every measured-shape deviation", async () => {
+  const variants = [
+    ["wrong-name", (fixture) => { fixture.seat.name = "data[Entry][seat]"; }],
+    ["wrong-type", (fixture) => { fixture.seat.type = "number"; }],
+    ["wrong-class", (fixture) => { fixture.seat.class = "form-control spinner ui-spinner-input extra"; fixture.seat.className = fixture.seat.class; }],
+    ["wrong-min", (fixture) => { fixture.seat["data-spinner-min"] = "1"; }],
+    ["zero-max", (fixture) => { fixture.seat["data-spinner-max"] = "0"; }],
+    ["noninteger-max", (fixture) => { fixture.seat["data-spinner-max"] = "2.5"; }],
+    ["unsafe-max", (fixture) => { fixture.seat["data-spinner-max"] = "9007199254740992"; }],
+    ["wrong-value", (fixture) => { fixture.seat.value = "2"; }],
+    ["duplicate-spinner", (fixture) => { const duplicate = { ...fixture.seat, dataset: {}, form: fixture.form, parentElement: fixture.form }; fixture.form.elements.push(duplicate); }],
+    ["mixed-radio-spinner", (fixture) => { const radio = { ...fixture.seat, type: "radio", name: "data[Entry][seat]", dataset: {}, form: fixture.form, parentElement: fixture.form }; fixture.form.elements.push(radio); }],
+    ["extra-visible-input", (fixture) => { const extra = { ...fixture.seat, name: "unrelated", dataset: {}, form: fixture.form, parentElement: fixture.form }; fixture.form.elements.push(extra); }],
+  ];
+  for (const [name, mutate] of variants) {
+    const fixture = makeKokuchProSpinnerPage(); await fixture.page.goto(fixture.entryUrl); mutate(fixture);
+    assert.deepEqual(await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep }), [], name);
+  }
+});
+
+test("KokuchPro spinner action pins the input, rejects drift, and never dispatches before final submit", async () => {
+  for (const [name, configure, expectedFills] of [
+    ["wrong-value", (fixture) => {}, 0],
+    ["value-not-one", (fixture) => { fixture.seat.fillValue = "0"; }, 1],
+    ["rebound-drift", (fixture) => { fixture.seat.mutateOnEvaluate = (count) => { if (count === 2) fixture.seat.name = "data[Entry][seat999999]"; }; }, 0],
+  ]) {
+    const fixture = makeKokuchProSpinnerPage(); await fixture.page.goto(fixture.entryUrl); configure(fixture);
+    const controls = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep }); let beforeDispatchCalls = 0;
+    const result = await operatePageControl({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, control: controls[0], action: { purpose: "fill", method: "ax_fill", control: controls[0].control }, value: name === "wrong-value" ? "2" : "1", beforeDispatch: () => { beforeDispatchCalls += 1; }, sleep: fixture.sleep });
+    assert.equal(result.status, "failed", name); assert.equal(fixture.events.filter(([event]) => event === "fill").length, expectedFills, `${name}-fills`); assert.equal(beforeDispatchCalls, 0, `${name}-before-dispatch`); assert.equal(fixture.clicks.length, 0, `${name}-clicks`);
+  }
+});
+
+test("KokuchPro entry handle reads reject form mutations after the initial inspect", async () => {
+  const mutations = [
+    ["second-method", (fixture) => { const duplicate = { ...fixture.form.elements[0], dataset: {}, form: fixture.form, parentElement: fixture.form }; fixture.form.elements.push(duplicate); }],
+    ["second-final", (fixture) => { const duplicate = { ...fixture.final, dataset: {}, form: fixture.form, parentElement: fixture.form }; fixture.form.elements.push(duplicate); }],
+    ["extra-visible-input", (fixture) => { const extra = { ...fixture.seat, dataset: {}, name: "extra", form: fixture.form, parentElement: fixture.form }; extra.getAttribute = (name) => extra[name] == null ? "" : extra[name]; fixture.form.elements.push(extra); }],
+  ];
+  for (const [name, mutate] of mutations) {
+    let fixture; fixture = makeKokuchProSpinnerPage({ onInspect: (calls) => { if (calls === 2) mutate(fixture); } }); await fixture.page.goto(fixture.entryUrl);
+    const controls = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep }); let beforeDispatchCalls = 0;
+    const seatResult = await operatePageControl({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, control: controls[0], action: { purpose: "fill", method: "ax_fill", control: controls[0].control }, value: "1", beforeDispatch: () => { beforeDispatchCalls += 1; }, sleep: fixture.sleep });
+    assert.equal(seatResult.status, "failed", `${name}-seat`); assert.equal(beforeDispatchCalls, 0, `${name}-seat-before-dispatch`); assert.equal(fixture.events.filter(([event]) => event === "fill").length, 0, `${name}-seat-fill`); assert.equal(fixture.clicks.length, 0, `${name}-seat-click`);
+  }
+  for (const [name, mutate] of mutations) {
+    let fixture; fixture = makeKokuchProSpinnerPage({ onInspect: (calls) => { if (calls === 2) mutate(fixture); } }); fixture.seat.value = "1"; await fixture.page.goto(fixture.entryUrl);
+    const controls = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep }); let beforeDispatchCalls = 0;
+    const finalResult = await operatePageControl({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, control: controls[1], action: { purpose: "submit", method: "ax_click", control: controls[1].control }, beforeDispatch: () => { beforeDispatchCalls += 1; }, sleep: fixture.sleep });
+    assert.equal(finalResult.status, "failed", `${name}-final`); assert.equal(beforeDispatchCalls, 0, `${name}-final-before-dispatch`); assert.equal(fixture.clicks.length, 0, `${name}-final-click`);
+  }
+});
+
+test("KokuchPro spinner accepts organizer maxima one and three while always filling one", async () => {
+  for (const spinnerMax of ["1", "3"]) {
+    const fixture = makeKokuchProSpinnerPage({ spinnerMax }); await fixture.page.goto(fixture.entryUrl);
+    const controls = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep });
+    assert.equal(controls[0].kind, "input", `max-${spinnerMax}-kind`); assert.equal(controls[0].completed, false, `max-${spinnerMax}-incomplete`);
+    const result = await operatePageControl({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, control: controls[0], action: { purpose: "fill", method: "ax_fill", control: controls[0].control }, value: "1", sleep: fixture.sleep });
+    assert.deepEqual(result, { status: "success" }, `max-${spinnerMax}-result`); assert.equal(fixture.seat.value, "1", `max-${spinnerMax}-value`);
+  }
 });
 
 test("KokuchPro readiness ignores hidden submits, rejects unrelated submits, and bounds timeout and abort", async () => {
