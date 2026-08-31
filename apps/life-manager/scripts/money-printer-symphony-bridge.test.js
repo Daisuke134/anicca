@@ -71,6 +71,7 @@ function dispatch(overrides = {}) {
     round: 1,
     status: "claimed",
     answered_human_boundaries: [],
+    workroom: claimWorkroom(),
     ...overrides,
   };
 }
@@ -87,6 +88,11 @@ function workroom(overrides = {}) {
     activity: [{ kind: "private", secret: SECRET }],
     ...overrides,
   };
+}
+
+function claimWorkroom(overrides = {}) {
+  const { activity, ...row } = workroom(overrides);
+  return row;
 }
 
 function fakeFetch(steps, calls = []) {
@@ -186,13 +192,11 @@ test("idle claim returns frozen idle state and makes no guest request", async ()
   assert.equal(calls[0].init.headers.authorization, `Bearer ${SECRET}`);
 });
 
-test("claimed dispatch produces one safe packet after exactly two guest/workroom GETs", async () => {
+test("claimed dispatch produces one safe packet from its tenant-scoped claim response", async () => {
   const calls = [];
   const result = await claimMoneyPrinterWorkPacket(config(), {
     fetchImpl: fakeFetch([
       response(200, { dispatch: dispatch() }),
-      response(200, "<private html>", { "set-cookie": COOKIE }),
-      response(200, workroom()),
     ], calls),
   });
 
@@ -218,12 +222,7 @@ test("claimed dispatch produces one safe packet after exactly two guest/workroom
   assert.deepEqual(result, expected);
   assert.equal(Object.isFrozen(result), true);
   assert.equal(Object.isFrozen(result.packet), true);
-  assert.equal(calls.length, 3);
-  assert.equal(calls[1].url, `${BASE}/money-printer`);
-  assert.equal(calls[1].init.method, "GET");
-  assert.equal(calls[2].url, `${BASE}/api/panel/money-printer/workroom?opportunity_id=${OPPORTUNITY_ID}`);
-  assert.equal(calls[2].init.method, "GET");
-  assert.equal(calls[2].init.headers.Cookie, COOKIE);
+  assert.equal(calls.length, 1);
   assert.doesNotMatch(JSON.stringify(result), /private|secret|session/);
 });
 
@@ -298,10 +297,9 @@ test("durable recovery claims preserve only status and issue ref while rebuildin
           round: 1,
           status,
           answered_human_boundaries: [],
+          workroom: claimWorkroom(),
           issue_ref: ISSUE_REF,
         } }),
-        response(200, "<private html>", { "set-cookie": COOKIE }),
-        response(200, workroom()),
       ], calls),
     });
     assert.equal(result.status, status);
@@ -309,7 +307,7 @@ test("durable recovery claims preserve only status and issue ref while rebuildin
     assert.equal(Object.isFrozen(result), true);
     assert.equal(Object.isFrozen(result.packet), true);
     assert.equal(result.packet.dispatch_id, DISPATCH_ID);
-    assert.equal(calls.length, 3);
+    assert.equal(calls.length, 1);
   }
 });
 
@@ -348,18 +346,16 @@ test("malformed claimed dispatch stops before either guest GET", async () => {
   }
 });
 
-test("missing guest cookie is a generic failure and prevents workroom access", async () => {
+test("missing tenant-scoped workroom is rejected before any downstream access", async () => {
   const calls = [];
+  const { workroom: omitted, ...withoutWorkroom } = dispatch();
   await assert.rejects(
     claimMoneyPrinterWorkPacket(config(), {
-      fetchImpl: fakeFetch([
-        response(200, { dispatch: dispatch() }),
-        response(200, "<private html>"),
-      ], calls),
+      fetchImpl: fakeFetch([response(200, { dispatch: withoutWorkroom })], calls),
     }),
-    /cookie|guest/i,
+    /dispatch|scope|workroom/i,
   );
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 1);
 });
 
 test("foreign or mixed workroom is rejected after claim without returning its fields", async () => {
@@ -370,15 +366,13 @@ test("foreign or mixed workroom is rejected after claim without returning its fi
     const calls = [];
     await assert.rejects(
       claimMoneyPrinterWorkPacket(config(), {
-        fetchImpl: fakeFetch([
-          response(200, { dispatch: dispatch() }),
-          response(200, "<private html>", { "set-cookie": COOKIE }),
-          response(200, invalidWorkroom),
-        ], calls),
+        fetchImpl: fakeFetch([response(200, {
+          dispatch: dispatch({ workroom: claimWorkroom(invalidWorkroom) }),
+        })], calls),
       }),
       /workroom|scope|opportunity/i,
     );
-    assert.equal(calls.length, 3);
+    assert.equal(calls.length, 1);
   }
 });
 
@@ -1414,8 +1408,6 @@ test("main returns idle without touching GitHub and composes a claimed pending c
     },
     fetchImpl: fakeFetch([
       response(200, { dispatch: dispatch() }),
-      response(200, "<private html>", { "set-cookie": COOKIE }),
-      response(200, workroom()),
       response(200, mirroredIssue()),
     ], calls),
   });
@@ -1424,7 +1416,7 @@ test("main returns idle without touching GitHub and composes a claimed pending c
   assert.equal(createCalls, 1);
   assert.equal(stateCalls, 0);
   assert.equal(closeCalls, 0);
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 2);
   assert.doesNotMatch(JSON.stringify(composed), new RegExp(SECRET));
 });
 
@@ -1458,8 +1450,6 @@ test("main recovers a mirrored dispatch on the next invocation and performs resu
     issueClient,
     fetchImpl: fakeFetch([
       response(200, { dispatch: dispatch() }),
-      response(200, "<private html>", { "set-cookie": COOKIE }),
-      response(200, workroom()),
       response(200, mirroredIssue()),
     ], firstCalls),
   });
@@ -1468,7 +1458,7 @@ test("main recovers a mirrored dispatch on the next invocation and performs resu
   assert.equal(createCalls, 1);
   assert.equal(stateCalls, 0);
   assert.equal(closeCalls, 0);
-  assert.equal(firstCalls.length, 4);
+  assert.equal(firstCalls.length, 2);
 
   const second = await main(env, {
     issueClient,
@@ -1480,10 +1470,9 @@ test("main recovers a mirrored dispatch on the next invocation and performs resu
         round: 1,
         status: "mirrored",
         answered_human_boundaries: [],
+        workroom: claimWorkroom(),
         issue_ref: ISSUE_REF,
       } }),
-      response(200, "<private html>", { "set-cookie": COOKIE }),
-      response(200, workroom()),
       response(200, consumedResult(parseResultComments(packet(), ISSUE_REF, [commentRow(208)]))),
       response(200, closedAck(parseResultComments(packet(), ISSUE_REF, [commentRow(208)]))),
     ], secondCalls),
@@ -1495,11 +1484,9 @@ test("main recovers a mirrored dispatch on the next invocation and performs resu
   assert.equal(commentCalls, 2);
   assert.equal(stateCalls, 2);
   assert.equal(closeCalls, 1);
-  assert.equal(secondCalls.length, 5);
+  assert.equal(secondCalls.length, 3);
   assert.deepEqual(secondCalls.map((call) => call.url), [
     `${BASE}/api/internal/money-printer/symphony/claim`,
-    `${BASE}/money-printer`,
-    `${BASE}/api/panel/money-printer/workroom?opportunity_id=${OPPORTUNITY_ID}`,
     `${BASE}/api/internal/money-printer/symphony/result`,
     `${BASE}/api/internal/money-printer/symphony/close`,
   ]);
@@ -1536,16 +1523,15 @@ test("consumed recovery completes after a close failure without duplicate issue 
           round: 1,
           status: "result_ready",
           answered_human_boundaries: [],
+          workroom: claimWorkroom(),
           issue_ref: ISSUE_REF,
         } }),
-        response(200, "<private html>", { "set-cookie": COOKIE }),
-        response(200, workroom()),
         response(200, consumedResult(parsed)),
       ], firstCalls),
     }),
     (error) => error instanceof Error && error.message === "issue close failed" && !error.message.includes(SECRET),
   );
-  assert.equal(firstCalls.length, 4);
+  assert.equal(firstCalls.length, 2);
   assert.equal(states, 1);
   assert.equal(closes, 1);
 
@@ -1565,16 +1551,15 @@ test("consumed recovery completes after a close failure without duplicate issue 
         round: 1,
         status: "consumed",
         answered_human_boundaries: [],
+        workroom: claimWorkroom(),
         issue_ref: ISSUE_REF,
       } }),
-      response(200, "<private html>", { "set-cookie": COOKIE }),
-      response(200, workroom()),
       response(200, consumedResult(parsed)),
       response(200, closedAck(parsed)),
     ], secondCalls),
   });
   assert.equal(recovered.status, "closed");
-  assert.equal(secondCalls.length, 5);
+  assert.equal(secondCalls.length, 3);
   assert.equal(comments, 2);
   assert.equal(states, 2);
   assert.equal(closes, 1);

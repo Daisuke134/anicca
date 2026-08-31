@@ -15,6 +15,35 @@ const RESULT_HASH = "e".repeat(64);
 const ISSUE_REF = "github-issue://Daisuke134/life-manager-workrooms/1";
 const RESULT_REF = "github-comment://Daisuke134/life-manager-workrooms/1/2";
 
+function opportunity(overrides = {}) {
+  const opportunityId = JOB_ID.slice("goal:".length);
+  return {
+    uid: TENANT,
+    opportunity_id: opportunityId,
+    source_url: "https://work.mercor.com/jobs/example",
+    title: "Marketing Expert",
+    goal_statement: "Apply through the existing workroom.",
+    value_minor: "6000",
+    currency: "USD",
+    status: "QUALIFIED",
+    goal_ref: `intent-entry://${TENANT}/${opportunityId}`,
+    observed_at: "2026-08-31T00:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function safeWorkroom() {
+  return {
+    opportunity_id: JOB_ID.slice("goal:".length),
+    title: "Marketing Expert",
+    source_url: "https://work.mercor.com/jobs/example",
+    value_minor: "6000",
+    currency: "USD",
+    status: "QUALIFIED",
+    job_ref: `runtime-job://${encodeURIComponent(TENANT)}/${encodeURIComponent(JOB_ID)}`,
+  };
+}
+
 function dispatch(status = "claimed", tenantId = TENANT) {
   return {
     tenant_id: tenantId,
@@ -115,7 +144,7 @@ async function call(path, body, options = {}, store = {}) {
   const capture = responseCapture();
   const handled = handleMoneyPrinterSymphonyApiRequest(req, capture.res, {
     secret: SECRET,
-    getRuntimeStore: () => store,
+    getRuntimeStore: () => ({ async readOpportunity() { return opportunity(); }, ...store }),
   });
   assert.notEqual(handled, false, "exact Symphony route must be handled");
   await handled;
@@ -127,6 +156,7 @@ test("valid claim lets the store select one tenant and returns only that safe di
   const calls = [];
   const store = {
     async claimSymphonyNext(input) { calls.push(["claim", input]); return dispatch(); },
+    async readOpportunity() { return opportunity(); },
   };
 
   const result = await call("/api/internal/money-printer/symphony/claim", {}, {}, store);
@@ -140,6 +170,7 @@ test("valid claim lets the store select one tenant and returns only that safe di
       round: 1,
       status: "claimed",
       answered_human_boundaries: [],
+      workroom: safeWorkroom(),
     },
   });
   assert.deepEqual(calls, [["claim", {}]]);
@@ -176,6 +207,7 @@ test("round2 claim propagates same-job answered boundaries and rejects malformed
       answer_ref: `vault-answer://${TENANT}/approve`,
       human_boundary_ref: `human-boundary://sha256/${"a".repeat(64)}`,
     }],
+    workroom: safeWorkroom(),
   });
   assert.deepEqual(calls, [{ uid: TENANT, job_id: JOB_ID }]);
   assert.doesNotMatch(JSON.stringify(result.body), /updated_at|private|secret/i);
@@ -232,6 +264,7 @@ test("claim recovery projects only base identifiers and durable issue ref", asyn
       status,
       issue_ref: ISSUE_REF,
       answered_human_boundaries: [],
+      workroom: safeWorkroom(),
     });
     assert.equal(result.body.result_ref, undefined);
     assert.equal(result.body.result_hash, undefined);
