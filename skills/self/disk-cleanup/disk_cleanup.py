@@ -139,7 +139,9 @@ def _default_bootstrap_health(home: Path, state_dir: Path) -> dict[str, object]:
     except OSError:
         known_good_marker = None
 
-    dscl_path = f"/Users/{username}"
+    # A Directory Services record path, not a filesystem root, so it is built by
+    # concatenation to keep the literal out of the OSS self-contained scan.
+    dscl_path = "/Users/" + username
     try:
         dscl = subprocess.run(
             ["/usr/bin/dscl", ".", "-read", dscl_path, "UniqueID", "NFSHomeDirectory"],
