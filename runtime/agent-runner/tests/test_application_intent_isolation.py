@@ -70,6 +70,12 @@ class ApplicationIntentIsolationTest(unittest.TestCase):
             "candidates": [
                 {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high"},
                 {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
+                # Both Codex entries draw on one subscription quota, so an exhausted account
+                # took the whole money lane down on 2026-08-31 (limit until Sep 6) while
+                # composition-agent and browser-lane-agent survived on their claude fallback.
+                # claude-direct, not claude: the claude provider injects ~/.cli-proxy-api-key,
+                # which overrides the working subscription login and answers 401.
+                {"provider": "claude-direct", "model": "claude-sonnet-5"},
             ],
         })
 

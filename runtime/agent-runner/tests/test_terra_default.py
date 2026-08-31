@@ -17,9 +17,12 @@ class TerraDefaultTest(unittest.TestCase):
                     {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
                 ]
                 if name == "application-intent-planner":
+                    # Terra still precedes the cross-provider entry; the money lane just may
+                    # not die with the Codex subscription it shares with luna.
                     expected = [
                         {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high"},
                         {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium"},
+                        {"provider": "claude-direct", "model": "claude-sonnet-5"},
                     ]
                 if name in {"composition-agent", "browser-lane-agent"}:
                     expected.append(
