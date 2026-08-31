@@ -19,4 +19,4 @@ curl -fsSL "$base/apps/life-manager/scripts/money-printer-symphony-bridge.js" -o
 curl -fsSL "$base/ops/symphony/WORKFLOW.money-printer.md" -o /app/WORKFLOW.md
 
 (while :; do node /app/bridge.js || true; sleep 5; done) &
-exec symphony /app/WORKFLOW.md --logs-root /data/logs
+exec symphony --i-understand-that-this-will-be-running-without-the-usual-guardrails --logs-root /data/logs /app/WORKFLOW.md
