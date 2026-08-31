@@ -617,7 +617,7 @@ class WorkdayQualificationTests(unittest.TestCase):
         with patch.object(workday_search_loop, "Ledger", return_value=ledger):
             queued = qualified_queue_ids(
                 Path("/ledger.sqlite3"),
-                {"danaher.wd1.myworkdayjobs.com"},
+                set(),
                 policy_version="test",
             )
 

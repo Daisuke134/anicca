@@ -96,15 +96,18 @@ def qualified_queue_ids(
     )
     try:
         rows = (
-            *ledger.pending_materials_ready_applications(),
-            *ledger.retryable_applications(),
+            *((row, False) for row in ledger.pending_materials_ready_applications()),
+            *((row, True) for row in ledger.retryable_applications()),
         )
         return tuple(
             dict.fromkeys(
                 str(row["application_id"])
-                for row in rows
-                if (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
-                in allowed_hosts
+                for row, retryable in rows
+                if (
+                    retryable
+                    or (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
+                    in allowed_hosts
+                )
                 and (
                     credentials is None
                     or credentials.account_status(str(row["canonical_url"]))

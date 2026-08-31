@@ -141,6 +141,14 @@ that gate for Ledger retryable rows; provider, fit, recovery-state and ID-dedupe
 checks still apply. A retry never reopens a different canonical application or an
 uncertain prior Submit.
 
+The retryable host-gate repair tags pending and retryable inputs before the existing
+filters. Pending first attempts still require membership in fresh-source
+`allowed_hosts`; an exact Ledger retryable row bypasses only that host test, then must
+still pass provider, current fit policy, recovery state and ID dedupe. RED used an
+empty allowed-host set and lost the retryable Danaher row; GREEN returns its exact ID.
+Qualification tests pass 44/44 and the full Job Hunter suite passes 437/437. Main
+release and natural reopen proof remain.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
