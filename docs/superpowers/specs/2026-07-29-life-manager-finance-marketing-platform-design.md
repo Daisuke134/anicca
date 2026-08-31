@@ -1603,6 +1603,13 @@ whether one loop repair can reload an unrelated loop, and whether every
 assigned TikTok, Instagram, and YouTube destination posts three times per day.
 It does not authorize an all-label apply or a broad OpenClaw rollback.
 
+**Owner boundary:** this workstream owns only Life Manager mobile-app marketing:
+the destination map, Larry/ReelClaw/slideshow assets and routing, Postiz/native
+publication, marketing launchd owners, metrics, Telegram, and replay evidence.
+Capafy, Connector, Coconala/Gig, Writer, Job Search, and every other business
+loop remain separate owner workstreams. Their code, plist, release selection,
+state, and schedule MUST NOT be changed by this workstream.
+
 The source/runtime ownership chain is:
 
 ```text
@@ -1657,28 +1664,31 @@ Telegram is naturally deduplicated, and same-slot replay creates zero provider
 or message effects. A failure in one destination MUST leave every other label
 loaded and scheduled from its prior immutable release.
 
-The fixed execution order for this focused recovery is:
+The fixed execution order and durable checklist for this focused recovery is:
 
-1. Freeze the source/release/label/state inventory and enforce exact-target
+1. [x] Freeze the source/release/label/state inventory and enforce exact-target
    apply plus sibling non-mutation evidence.
-2. Reconcile the OpenClaw historical map against the live Postiz registry and
-   `config/marketing-destinations.json`; one handle has one product, locale,
-   renderer, media form, approved pack, integration, and native owner.
-3. Continue the existing MKT-09 order at MKT-09R9-11 / Order 24F6; classify
-   `@anicca_buddha` only, then close each remaining held integration one at a
-   time through classify -> pack -> API canary -> native readback -> Telegram
-   -> replay zero.
-4. Repair the existing shared Life Manager/Postiz execution path at the first
-   common failing boundary. Do not create a second scheduler or copy all of
-   OpenClaw. Compare the last known working OpenClaw entrypoint and exact Git
-   history, then copy only the missing behavior into the shared LM owner.
-5. Ramp one verified destination from one canary/day to three/day. Proceed to
-   the next destination only after natural expected=published, missed=0,
-   duplicate=0, direct-native readback, and replay-zero evidence.
-6. Classify and canary the three existing YouTube integrations, install their
-   exact Life Manager owners, then use the same one-to-three/day gate.
-7. Close 2h/24h/72h/7d metrics, ASC/RevenueCat/product attribution, and
-   daily/weekly Telegram reports before retiring legacy OpenClaw ownership.
+2. [x] Reconcile the OpenClaw historical map against the live Postiz registry
+   and `config/marketing-destinations.json`; one handle has one product,
+   locale, renderer, media form, approved pack, integration, and native owner.
+3. [x] Finish MKT-09 classification, pack, canary, native-readback, Telegram,
+   metric-registration, and replay-zero gates; `@anicca_buddha` is a truthful
+   mixed-account hold, not a guessed Anicca renderer lane.
+4. [ ] **ACTIVE — MKT-10R6:** repair the existing shared Life Manager/Postiz
+   production-slot boundary, arm exactly one approved destination, and prove
+   one natural scheduled wake through exact Postiz/native account, content,
+   caption and slot readback, natural Telegram, metrics registration, and
+   replay-zero. Every sibling marketing lane and every non-marketing label
+   remains byte-for-byte unchanged.
+5. [ ] **MKT-10R7:** restore the thirteen verified TikTok/Instagram owners one
+   destination at a time from one canary/day to three/day. Advance only when
+   natural expected=published, missed=0, duplicate=0, direct-native readback,
+   and replay-zero pass for the current destination.
+6. [ ] Classify and canary the three existing YouTube integrations, install
+   their exact Life Manager owners, then use the same one-to-three/day gate.
+7. [ ] Close MKT-11 2h/24h/72h/7d metrics and ASC/RevenueCat/product
+   attribution, MKT-12 bounded hook learning, and MKT-13 daily/weekly Telegram
+   reports before retiring legacy OpenClaw ownership.
 
 **Incident I-1 implementation.** Life Manager now has a separate
 `marketing-liveness` process, independent of the marketing scheduler it
@@ -2478,14 +2488,14 @@ MKT-11, MKT-12, and MKT-13 stay blocked until MKT-10R7 closes.
 | MKT-10R3 | **done —** repair the control-plane drift fail-closed | PR `#3332` merged at `01dc472e…`. The R3 closure snapshot recorded all 13 destination labels at `20260831T004335-01dc472e` with exact loop ids; later `2026-08-31 01:00:24 JST` readback recorded 12 at descendant `20260831T005035-fc39c2a6` and Honne JA at `01dc472e…`. Each loaded argv pins one existing immutable main-derived release containing R4; installed labels need not equal the moving global selector. R3 install events created no publication. Manifest `4992c334…fc33` is 13/13 `default-off`, armed 0, with 17 holds; fence is closed |
 | MKT-10R4 | **done implementation/review/release; live proof belongs to R6 —** revalidate Larry assets and account routing | `@anicca.jp` is fixed to Postiz TikTok `cmp9sdev5012voh0y58qs45xc`, renderer/job format `larry`, form `affirmation-carousel`, and immutable pack `63e2b1b8…3664`. Six ordered 1010×1080 sunset JPEGs contain no person/ReelClaw media. The released adapter rejects invalid dimensions before secret/provider access; both Python transport and JS provider/receipt/reconcile paths reject a bare TikTok `/video/` URL and accept only exact `PUBLISHED` photo proof with matching integration, caption SHA, title, `DIRECT_POST`, and strict `p_pub_url~v2.<digits>`. Ordinary TikTok video and Instagram `/p/` routes remain intact. Focused Node 51/51 and transport 24/24 pass; fresh read-only verdict is `ship`; all eight CI checks pass. Native publication, Telegram, metrics registration, and replay-zero remain R6, so this is not yet a working-loop claim |
 | MKT-10R5 | **done read-only routing closure —** Revalidate ReelClaw/Honne/Anicca video routing | all 13 approved pack objects exist at their exact SHA refs. Every video pack readback matches its destination product, locale, format/form family; destination selection binds job-product + locale + platform + integration + format + form and rejects Honne/Card/integration cross-family substitutions. Focused destination/manifest/ledger suite passes 45/45 with provider writes 0. Mixed historical feeds remain quarantined |
-| MKT-10R6 | **active; current installed generation has no natural canary —** prove the production slot contract one destination at a time through the natural owner | Historical run `18d0d1af1dbee290-64914` proved the missing `--slot` failure before provider access. Current readback is different: all 13 marketing labels now load main-derived release `20260831T192828-7ab5a318`, each has runs `0` / never exited, and each latest event is install-only with `effect_status=unknown`. Live manifest `4992c334…fc33` remains 13/13 `default-off`, armed 0, with 17 holds. Latest marketing receipts are generation artifacts (`status=ready`), not Postiz/native publication receipts. Therefore no current destination is working or misposting from this generation; current publication liveness is unproven. R6 MUST derive/pass the exact scheduled slot, arm only one approved lane, preserve every other lane/hold at 0/day, and obtain exact integration/native handle/form/content/caption/slot provider readback, natural Telegram, metrics registration, and replay-zero before advancing |
-| MKT-10R7 | Restore target cadence and prove liveness | every retained TikTok and Instagram destination produces its exact expected slots with correct native content; missing/wrong/duplicate posts alert naturally; only then MKT-11 resumes |
+| MKT-10R6 | **active; current installed generation has no successful natural canary —** prove the production slot contract one destination at a time through the natural owner | Historical run `18d0d1af1dbee290-64914` proved the missing `--slot` failure before provider access. Current read-only host refresh shows all 13 marketing labels loading main-derived release `20260831T204728-439dc71d`: ten remain runs `0` / never exited, while EN Card Instagram, EN Slideshow TikTok, and Honne JA each reached runs `1` / exit `1`. None has a current provider/native publication receipt. Live manifest `4992c334…fc33` remains 13/13 `default-off`, armed 0, with 17 holds. Latest marketing receipts are generation artifacts (`status=ready`), not Postiz/native publication receipts. Therefore no current destination is proven working or misposting from this generation. R6 MUST derive/pass the exact scheduled slot, arm only one approved lane, preserve every other lane/hold at 0/day, and obtain exact integration/native handle/form/content/caption/slot provider readback, natural Telegram, metrics registration, and replay-zero before advancing |
+| MKT-10R7 | Restore target cadence and prove liveness | every retained TikTok and Instagram destination produces three exact expected slots with correct native content; then the three existing YouTube integrations are classified, canaried, installed as exact Life Manager owners, and ramped through the same one-to-three/day gate; missing/wrong/duplicate posts alert naturally; only then MKT-11 resumes |
 
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
 2. **Acceptance criteria:** one and only one approved destination is `production-armed`; its natural wake binds the exact configured JST calendar instant to `--slot`, reaches the matching Postiz integration, records a direct native publication receipt with correct media lineage, sends one natural Telegram receipt, registers the metrics owner, and an immediate replay creates zero provider effects and zero duplicate Telegram messages. Every other target and every hold remains 0/day.
-3. **As-Is / To-Be:** As-Is is 13 loaded labels at `7ab5a318…`, runs 0 / never exited, install-only unknown effects, manifest armed 0, and no current publication provider receipt. To-Be is one natural terminal success for the active lane with independent provider/account readback and replay-zero; no global mass-arm is allowed.
+3. **As-Is / To-Be:** As-Is is 13 loaded labels at `439dc71d…`; ten have never exited and three have one exit-1 run, manifest armed 0, and no current publication provider receipt. To-Be is one natural terminal success for the active lane with independent provider/account readback and replay-zero; no global mass-arm is allowed.
 4. **Test matrix:** focused tests MUST cover exact slot derivation at each configured calendar boundary, rejection of an absent/off-schedule/mismatched slot, one-lane-only manifest gating, and replay-zero. Natural E2E MUST cover the active destination's Postiz row, native account/content readback, Telegram receipt, and metrics registration.
 5. **Boundaries:** no direct Codex publication, no off-schedule substitute executor, no retry after unknown effect, no OpenClaw/Larry legacy cron restoration, no simultaneous multi-account canary, no targetless/all-label apply, no mutation of the held Capafy daily/healthcheck jobs, and no MKT-11/MKT-12/MKT-13 work before R7.
 6. **Execution:** focused RED/GREEN on the production boot/CLI boundary; merge to main; build one verified immutable release; apply only the active destination label; wait for its next exact natural slot; verify terminal/provider/Telegram/metrics/replay evidence; then repeat destination-by-destination in contract order.
