@@ -1033,6 +1033,7 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 | surface | current measured behavior | required behavior |
 |---|---|---|
 | schedule | production currentは`20260831T193835-aced5c6b` / SHA `aced5c6b…`、Connector labelとdaily-driver labelはfull release `20260831T192828-7ab5a318` / SHA `7ab5a318…`。`7ab5a318`はPR #3452/#3457を祖先に含む。native Connector owner exact 1、`StartInterval=3600`、別session applyでtimer reset後の自然wakeは未発生 | manual kickstartと途中reloadを使わず、最初の自然wakeでevidence recovery、その後2回でreplay-zeroを証明する |
+| cross-loop control plane | Capafy daily/healthcheckをrelease `1b85036d…`へexact-target applyした後、両plistのmtimeが`18:41:38–39 JST`に再変化しlaunchd run counterが0へresetした。loaded argvは同じ`1b85036d…`のためcode rollbackではなくcontrol-plane reloadである | Capafyがこのinstalled generationの自然daily terminalを取得しexplicit cleared messageを送るまで、global `loops/current`を動かさずall-label applyを禁止する。必要なapplyはexact `LIFE_MANAGER_APPLY_TARGET`だけで、Capafy labels/currentを保持する |
 | release completeness | 同一SHAの最初のrelease `20260831T153415-7255b4bb`はproduction依存`playwright-core`を欠き、Calendar read後のbrowser rail生成でexit 2。後続full releaseは3 dependency tree、154,232 entries、789,376,561 bytesを保持し、runtime requireを通る | apply前に全Git blob/mode、locked runtime dependency、required-module importを検証し、不完全releaseをloadedにしない |
 | browser owner | `127.0.0.1:9222`は`job-search-daily`、`[::1]:9222`は宣言済み`daily-driver`。PR #3452でproduction rail/target controller/leaseはIPv6 daily-driver exactへ固定し、wrong-profile IPv4を拒否した。Connector全696/696、isolated live targetはpage `1→2→1`、lease 0、provider effect 0 | 最初の自然wakeでloaded release自身がIPv6 targetを所有・cleanupし、job-search/Gig profile非干渉をreadbackする |
 | horizon | Calendar、Luma、connpassのactive primary pathはJST day 0〜27の28日 | 28日境界を維持 |
@@ -1131,13 +1132,21 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 2. **Acceptance criteria:** main由来full immutable releaseがrequired runtime importを通し、宣言済みdaily-driver profileのlistener exact 1へ接続し、natural wakeでprovider official readback、Calendar exact 1、PNG/receipt、Telegram positive IDs、durable bundleを閉じる。その後の自然wake 2回はprovider Submit 0、Calendar duplicate 0、bundle reuse exact 1、owned page/lock cleanupを証明する。
 3. **As-Is / To-Be:** As-IsはKokuchPro official registration `present`、duplicate Submit 0、provider receipt/PNG present、official Calendar 0、Telegram evidence receipt 0、bundle 0、直近wake exit 1である。さらにIPv4 `127.0.0.1:9222`は`job-search-daily`、IPv6 `[::1]:9222`は宣言済み`daily-driver`が同時listenし、Connectorの固定IPv4 endpointはwrong profileへ接続する。08:05ZのLuma owned target leaseもowner終了後に残存する。To-Beは既存provider effectを再実行せず、browser ownerを宣言済みprofile exact 1へ戻し、公式reaperでstale leaseを閉じ、evidenceだけをreconcileした後、自然hourly ownerがhealthy terminalとreplay-zeroを残す状態である。
 4. **Test matrix:** release completenessはmissing `playwright-core`をapply前に拒否、browser ownershipはdual-listener/wrong-profileを拒否、KokuchProはradioとspinner双方を保持しmixed/duplicate/mutated formを拒否、evidence recoveryはCalendar present/readback transient/replayを検証する。live acceptanceはnatural launchd/provider/Calendar/Telegram/bundle readbackで行う。
-5. **Boundaries:** provider登録を再実行しない。effect unknownをabsenceへ変換しない。Codexが直接Calendar/Telegram/bundleを捏造しない。別profile、別scheduler、legacy OpenClaw cron、all-label applyを回避策にしない。
-6. **Execution order:** current global orderの`CG-28 → CG-44 → CG-45 → CG-47 → CG-48 → CG-51`を維持する。CG-51内ではrelease completeness → browser owner → existing Calendar/evidence reconcile → natural terminal → replay-zero → final readbackの順で閉じる。
+5. **Boundaries:** provider登録を再実行しない。effect unknownをabsenceへ変換しない。Codexが直接Calendar/Telegram/bundleを捏造しない。別profile、別scheduler、legacy OpenClaw cron、all-label applyを回避策にしない。Capafy R0.2.3のexplicit cleared message前はglobal current移動とtargetless/all-label applyを実行しない。
+6. **Execution order:** current global orderの`CG-28 → CG-44 → CG-45 → CG-47 → CG-48 → CG-51`を維持する。CG-51内ではrelease completeness → browser owner → existing Calendar/evidence reconcile → natural terminal → replay-zero → final readbackの順で閉じる。cross-loop holdはこの順序を変更せず、自然ownerの観測だけを許可するcontrol-plane gateである。
 
 | E2E item | Value |
 |---|---|
 | UI change | none |
 | Judgment | Maestro not required。official launchd、provider、Google Calendar、Telegram、durable bundleのreadbackが必要 |
+
+##### Global control-plane hold — Capafy R0.2.3 coordination
+
+- **State:** Capafy daily/healthcheckのloaded code SHAは維持されているが、外部reloadでrun counterが0へ戻ったため自然terminalは未証明。
+- **Hold:** global `/Users/anicca/loops/current`移動、release cut後のtargetless apply、all-label restart/reconcileを0にする。
+- **Allowed:** read-only監査、既存scheduleの自然wake、Capafy以外を含む将来のexact-target apply。ただしCapafy labels/currentを変えない。
+- **Release condition:** Capafy taskからinstalled generationの自然daily terminal取得後にexplicit quiet/cleared messageを受け取ること。時間経過やprocess不在だけで解除しない。
+- **Success boundary:** hold遵守はCapafy business outcome、Connector completion、Marketing publicationの成功証拠ではない。
 
 ##### Immediate recovery checklist — CG-44 / CG-45 / CG-51 substeps
 
