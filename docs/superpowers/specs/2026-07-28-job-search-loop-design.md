@@ -4,14 +4,49 @@
 **Current verified status:** `ai.anicca.job-search-daily` is installed with
 `StartInterval=1800`; this is a 30-minute loop, not an hourly loop. The five existing
 Job Hunter owners load main-derived immutable release
-`20260831T024355-8fa4fc39`, source SHA
-`8fa4fc39e91aa8272352fc75a272484966f00fc8`: browser, daily, inbox, learning and
+`20260831T070607-6466fea3`, source SHA
+`6466fea309ce3df48b32975bf61a5ade4f4f1fb3`: browser, daily, inbox, learning and
 health. Same-context preflight returned `status=pass` and
 `mutation_allowed=true`, and loaded-domain readback proves exact-release
 `ProgramArguments`. The HPE `Thank you for your online submission` message now
 reconciles exactly once to its submit intent and Ledger `submitted`; immediate replay
 reconciles zero additional confirmations. Telegram sent the exact application
 outcome and receipt acknowledgements.
+
+The current production snapshot is mixed rather than fully healthy. All five loaded
+owners point to release `6466fea309ce3df48b32975bf61a5ade4f4f1fb3`, that SHA is
+an ancestor of current `origin/main`, and `lm-loop doctor` returns `ok=true`. Browser
+is loaded-running with last exit 0; inbox and learning are loaded-idle with last exit
+0. Daily is loaded-idle with last exit 2, and health is loaded-idle with last exit 1
+because it observes the daily failure. The rolling 24-hour Gmail-confirmed distinct
+count is 6, leaving deficit 42; six exact HPE confirmation receipts back that count.
+This proves the overall application loop is making real progress, but the latest
+daily owner result is not healthy merely because its inner model attempt exits 0.
+
+The Cloudera `Applied AI Specialist` notification is a truthful safe checkpoint, not
+an application receipt and not a user-action request. Exact Ledger row
+`5330c927f08fb3408205bab2b0a7d7916d0a0e578c0a79b79d5086ed73b17a1d`
+remains `materials_ready` with zero Submit intents and zero submission
+confirmations. Wake `daily-20260831-155635` signs in, opens Forgot Password, requests
+recovery, records `email_recovery`, and sends Telegram checkpoint `45966`; it never
+executes Submit. The inner pass returns `queue_complete` in 187 seconds with every
+runtime command exit 0. The outer causal validator nevertheless writes
+`semantic-validation.json` with `overlapping_runtime_commands`, because model event
+`item_9` starts `wait` before `item_8` reports completion for the recovery click.
+The existing runtime lease does not prevent that event-order overlap, so the canonical
+owner exits 2. The same Cloudera row has accumulated 194 persisted browser steps and
+repeated recovery checkpoints without a new Cloudera account-mail receipt.
+
+The active repair atom is therefore not manual password reset or blind reapplication.
+Recovery request state must become durable and cooldown-gated: after one visible
+reset acknowledgement, later wakes must wait for a new authoritative Gmail account
+event or an explicit account-state change before requesting another reset. The row
+must remain pre-Submit and the same wake must continue other eligible queue work.
+Runtime/orchestrator causality must also make the click-then-wait sequence strictly
+serial at the model event boundary so a successful checkpoint cannot leave the
+canonical owner at exit 2. Release proof requires one to three natural wakes with no
+duplicate reset request, no `overlapping_runtime_commands`, daily/health last exit 0,
+and unchanged zero Submit effects for Cloudera until account recovery actually lands.
 
 The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
 longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
@@ -2688,7 +2723,7 @@ not start merely because their design is already written:
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Existing-owner run `094943` uses release `374c2c744`, writes no non-Workday evidence, performs only `observe → queue_complete`, and creates zero non-Workday effects. |
 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist closes with grounded fit decision, exact Review/Submit UI, Gog receipt `1a031c8ef3be0dbd`, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0. |
-| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `no_voluntary_skip_v5_pending_live` | Release `ad73011e` proves v5 rejects Kyndryl's explicit Senior title, continues same-wake, qualifies Cloudera `Applied AI Specialist` in Tokyo, starts its browser flow, and checkpoints a real password-reset request with submit intent zero. Gmail has not delivered the generic Workday reset message yet. V5 preserves no-voluntary-skip for adequate non-senior roles while explicit senior-level titles cause same-wake continuation; ambiguous titles are judged from full responsibilities. Deterministic code never implements a title regex or fit score. Existing no-intent older-policy decisions are reconsidered once and only current-policy qualified rows enter browser. Every deficit wake also seeks one new adequate qualification even when another row is waiting for account email or checkpoint recovery; existing queue order stays first, so external waiting cannot reduce the wake to skip-only work. The browser performs tenant create-or-reuse, complete form fill and one-shot Submit. Completion requires a non-senior adequate application with the exact Workday completion screenshot and employer Gmail receipt together, then Ledger `submitted`, Telegram ACK and immediate replay duplicate 0. The rolling target is at least 48 distinct Gmail-confirmed submissions per 24 hours. |
+| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `cloudera_recovery_causality_blocked` | Release `6466fea3` keeps the rolling loop productive at 6 distinct Gmail-confirmed submissions / 24 hours, but Cloudera `Applied AI Specialist` remains `materials_ready` with intent 0 and confirmation 0. Wake `daily-20260831-155635` truthfully checkpoints `email_recovery` and sends Telegram `45966`, then the outer validator rejects its click/wait event order as `overlapping_runtime_commands`; canonical daily exits 2 and health exits 1. The row has 194 persisted browser steps from repeated recovery attempts without a new account-mail receipt. The next unchanged-order atom durably cooldown-gates recovery after one acknowledgement until a new Gmail/account-state event, preserves zero Submit effects, continues other eligible rows, and makes model command completion strictly serial. Completion requires one to three natural wakes with duplicate reset requests 0, validator failures 0, daily/health exit 0, plus the existing Gmail/Ledger/Telegram/replay-zero application gate. The rolling target remains at least 48 distinct Gmail-confirmed submissions per 24 hours. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Prior evidence is diagnostic only. Start from zero after Workday and require a fit-qualified job, authoritative provider completion, Ledger, Telegram, and next-wake duplicate 0. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Prior evidence is diagnostic only. Start from zero after Ashby under the same authoritative gate. |
 | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Prior discovery is diagnostic only. Start from zero after Greenhouse under the same authoritative gate. |
