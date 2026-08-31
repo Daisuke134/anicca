@@ -77,6 +77,14 @@ authoritative account-mail transition or visible successful sign-in makes Cloude
 runnable again. Main-derived release, exact private-state seed and natural-owner
 readback remain the pending gate.
 
+The account-mail transition itself must update the same queue state. After the inbox
+owner visibly completes a trusted Workday `password_reset`, it must atomically move
+that exact tenant from `recovery_requested` back to `create_submitted`; only then may
+the next daily wake attempt the stored credential and promote a visibly successful
+session to `signed_in`. Activation mail and failed/unknown reset navigation must not
+change the tenant state. Without this transition, the new queue filters would defer a
+successfully reset tenant forever.
+
 The discovery-side queue repair is implemented in
 `workday_search_loop.qualified_queue_ids()`. It reuses the existing private machine
 credential SSOT and omits a row from the current wake only when its exact Workday
