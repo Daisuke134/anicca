@@ -2900,4 +2900,10 @@ ownerの明示指示により、Application、Storefront、Negotiate、Paidの�
 **SYSTEM CONTRACT:** canonical avatarは`skills/gig-work/profile/avatar.jpg`に置く。既存Storefront ownerは公式mypageの写真未登録checkを
 read-only確認し、未登録時だけ同assetを既存profile formへ渡す。写真登録済みならeffect 0。新skill、scheduler、DB、browser profileは作らない。
 
+**LOOP EVIDENCE:** PR `#3526`のmain merge `4b2878ce3389901d9dbf862bbaec13baf02e3dfe`を25-file immutable Lancers releaseへ
+installし、同じSHAのlaunchd Storefront ownerをkickstartした。browser reload直後のfirst runは`account_unavailable / exit 1`、同じbrowser ownerが
+`/mypage` login readyへ到達した後のnext runは`exit 0 / profile_completion_percent 90 / profile_photo_aligned true /
+profile_effect_count 0 / portfolio_effect_count 0 / status_effect_count 0`を返した。したがってprofile維持のproduction actorはloopであり、
+初回reload readiness raceは未修正のself-heal gapとして残す。写真、listing、portfolioのblind repeatは0である。
+
 **NEXT DIRECT ACTION:** 表の次atomであるFirst-review application canaryへ進む。電話確認、追加generic listing、profile frameworkは前倒ししない。
