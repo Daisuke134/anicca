@@ -14,6 +14,7 @@ from urllib.parse import parse_qsl, urlsplit
 
 
 CAPAFY_HOST = "capafy.ai"
+SHORT_REVIEW_HOST = "api.capafy.ai"
 CREATE_AGENT_PATH = "/developer/createAgent"
 
 
@@ -29,13 +30,20 @@ def _is_edit_url(url: str) -> bool:
         return False
     if (
         parts.scheme != "https"
-        or parts.netloc.lower() != CAPAFY_HOST
-        or parts.path != CREATE_AGENT_PATH
         or parts.fragment
         or not url
         or url != url.strip()
         or any(char.isspace() for char in url)
     ):
+        return False
+    if (
+        parts.netloc == SHORT_REVIEW_HOST
+        and re.fullmatch(r"/E[1-9][0-9]{18}", parts.path) is not None
+        and not parts.query
+        and url == f"https://{SHORT_REVIEW_HOST}{parts.path}"
+    ):
+        return True
+    if parts.netloc.lower() != CAPAFY_HOST or parts.path != CREATE_AGENT_PATH:
         return False
     try:
         query = parse_qsl(parts.query, keep_blank_values=True, strict_parsing=True)
