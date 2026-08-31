@@ -84,6 +84,7 @@ test("only public HTTPS metadata can become a runnable remote endpoint", () => {
     "https://192.0.2.1/mcp",
     "https://[::1]/mcp",
     "https://[::ffff:7f00:1]/mcp",
+    "https://[2001::1]/mcp",
     "https://[2001:db8::1]/mcp",
     "https://user:pass@example.com/mcp",
   ]) {
@@ -145,6 +146,19 @@ test("save-time Registry revalidation rejects package MCPs, redirects, and endpo
     }),
     /unsafe_mcp_endpoint/,
   );
+
+  const publicIpv6Fetch = async () => json({ servers: [{
+    server: { name: "io.example/ipv6", title: "IPv6", version: "1.0.0", remotes: [{ type: "streamable-http", url: "https://[2606:4700:4700::1111]/mcp" }] },
+    _meta: official,
+  }] });
+  const [publicIpv6] = await resolveAutomationTools(["mcp-registry:io.example/ipv6@1.0.0"], {
+    fetchImpl: publicIpv6Fetch,
+    lookup: async (hostname) => {
+      assert.equal(hostname, "2606:4700:4700::1111");
+      return [{ address: hostname, family: 6 }];
+    },
+  });
+  assert.equal(publicIpv6.endpoint, "https://[2606:4700:4700::1111]/mcp");
 });
 
 test("resolver enforces one through twelve unique selections", async () => {
@@ -161,6 +175,28 @@ test("resolver enforces one through twelve unique selections", async () => {
   await assert.rejects(resolveAutomationTools([], options), /invalid_automation_mutation/);
   await assert.rejects(resolveAutomationTools([...ids, "mcp-registry:io.example/remote@1.0.12"], options), /invalid_automation_mutation/);
   await assert.rejects(resolveAutomationTools([ids[0], ids[0]], options), /invalid_automation_mutation/);
+});
+
+test("cached discovery never bypasses Registry revalidation on save", async () => {
+  const cache = new Map();
+  const item = {
+    server: { name: "io.example/cached", title: "Cached", version: "1.0.0", remotes: [{ type: "streamable-http", url: "https://mcp.example.com/mcp" }] },
+    _meta: { "io.modelcontextprotocol.registry/official": { status: "active", isLatest: true } },
+  };
+  await discoverAutomationCatalog({
+    query: "cached",
+    cache,
+    fetchImpl: async (input) => json(new URL(input).hostname === "registry.modelcontextprotocol.io" ? { servers: [item] } : []),
+  });
+  assert.equal(cache.size, 1);
+  await assert.rejects(
+    resolveAutomationTools(["mcp-registry:io.example/cached@1.0.0"], {
+      cache,
+      fetchImpl: async () => { throw new Error("registry unavailable"); },
+      lookup: async () => [{ address: "93.184.216.34", family: 4 }],
+    }),
+    /registry unavailable/,
+  );
 });
 
 test("stack mutation is revisioned, strips client metadata, and toggles desired state", async () => {

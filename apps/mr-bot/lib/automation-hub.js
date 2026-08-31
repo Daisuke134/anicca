@@ -20,7 +20,7 @@ for (const [network, prefix, family] of [
   ["192.175.48.0", 24, "ipv4"], ["198.18.0.0", 15, "ipv4"], ["198.51.100.0", 24, "ipv4"],
   ["203.0.113.0", 24, "ipv4"], ["224.0.0.0", 4, "ipv4"], ["240.0.0.0", 4, "ipv4"],
   ["::", 128, "ipv6"], ["::1", 128, "ipv6"], ["64:ff9b::", 96, "ipv6"],
-  ["64:ff9b:1::", 48, "ipv6"], ["100::", 64, "ipv6"], ["2001:10::", 28, "ipv6"],
+  ["64:ff9b:1::", 48, "ipv6"], ["100::", 64, "ipv6"], ["2001::", 23, "ipv6"],
   ["2001:db8::", 32, "ipv6"], ["2002::", 16, "ipv6"], ["3fff::", 20, "ipv6"],
   ["5f00::", 16, "ipv6"], ["fc00::", 7, "ipv6"], ["fe80::", 10, "ipv6"], ["ff00::", 8, "ipv6"],
 ]) nonPublicIps.addSubnet(network, prefix, family);
@@ -255,8 +255,9 @@ async function tenantHeaders(scope, tool, options) {
 
 async function assertPublicDns(endpoint, options) {
   const lookup = options.lookup || ((hostname) => dns.lookup(hostname, { all: true, verbatim: true }));
+  const hostname = endpoint.hostname.replace(/^\[|\]$/g, "");
   let records;
-  try { records = await lookup(endpoint.hostname); }
+  try { records = await lookup(hostname); }
   catch { throw hubError("mcp_dns_failed", 409); }
   const list = Array.isArray(records) ? records : [records];
   if (!list.length || list.some((record) => !record || !net.isIP(record.address) || isPrivateIp(record.address))) throw hubError("unsafe_mcp_endpoint", 409);
@@ -297,8 +298,8 @@ async function verifyAutomationTool(scope, tool, options) {
   const records = await assertPublicDns(endpoint, options);
   const requestHeaders = await tenantHeaders(scope, tool, options);
   const dispatcher = typeof options.dispatcherFactory === "function"
-    ? options.dispatcherFactory(endpoint.hostname, records)
-    : pinnedDispatcher(endpoint.hostname, records);
+    ? options.dispatcherFactory(endpoint.hostname.replace(/^\[|\]$/g, ""), records)
+    : pinnedDispatcher(endpoint.hostname.replace(/^\[|\]$/g, ""), records);
   const fetchImpl = options.fetchImpl || undiciFetch;
   const guardedFetch = async (input, init = {}) => {
     const target = new URL(typeof input === "string" || input instanceof URL ? input : input.url);
