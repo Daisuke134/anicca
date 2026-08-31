@@ -292,11 +292,21 @@ function makeStagehandSteelDriver(options = {}) {
   const upsertBrowserAuthSession = options.upsertBrowserAuthSession || defaultUpsertBrowserAuthSession;
   const invalidateBrowserAuthSession =
     options.invalidateBrowserAuthSession || defaultInvalidateBrowserAuthSession;
+  const now = typeof options.now === "function" ? options.now : Date.now;
   const sessions = new Map();
   const authSessions = new Map();
 
   return {
     hasHeldSession() { return sessions.size > 0; },
+    async releaseExpiredSessions() {
+      let released = 0;
+      for (const [id, open] of [...sessions]) {
+        if (!open || !Number.isFinite(open.heldAt) || open.heldAt + 10 * 60 * 1000 > now()) continue;
+        await this.releaseSession(id, { providerReceipt: { handoffReason: "expired" } });
+        released += 1;
+      }
+      return released;
+    },
     async readHeldReceipt(sessionId) {
       const id = String(sessionId || "");
       if (!sessions.has(id)) throw new Error("Stagehand handoff session unavailable");
@@ -371,7 +381,7 @@ function makeStagehandSteelDriver(options = {}) {
       });
       await stagehand.init();
       const page = await stagehand.context.awaitActivePage();
-      sessions.set(String(session.id), { stagehand, page });
+      sessions.set(String(session.id), { stagehand, page, heldAt: now() });
       await page.goto(SEARCH_URL);
       const explicitUrl = explicitPublicHttpsUrl(goal);
       const readOnlyAuth = Boolean(

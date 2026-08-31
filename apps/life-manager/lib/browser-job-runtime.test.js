@@ -235,3 +235,22 @@ test("one held Steel session blocks another claim and completes through the same
   assert.equal(completed.release.released, true);
   assert.equal(releases, 1);
 });
+
+test("an expired held Steel session is released before the next durable claim", async () => {
+  let held = true;
+  let cleanups = 0;
+  let claims = 0;
+  const driver = {
+    hasHeldSession: () => held,
+    async releaseExpiredSessions() { cleanups += 1; held = false; return 1; },
+  };
+
+  const result = await runNextBrowserJob({
+    driver,
+    claimJob: async () => { claims += 1; return null; },
+  });
+
+  assert.deepEqual(result, { status: "idle" });
+  assert.equal(cleanups, 1);
+  assert.equal(claims, 1);
+});

@@ -26,7 +26,10 @@ function driverFor(deps) {
 async function runNextBrowserJob(deps = {}) {
   const heldDriver = deps.driver || (!deps.makeDriver && defaultDriver);
   if (heldDriver && typeof heldDriver.hasHeldSession === "function" && heldDriver.hasHeldSession()) {
-    return { status: "handoff_waiting" };
+    if (typeof heldDriver.releaseExpiredSessions === "function") {
+      await heldDriver.releaseExpiredSessions();
+    }
+    if (heldDriver.hasHeldSession()) return { status: "handoff_waiting" };
   }
   const claim = deps.claimJob || (() => claimBrowserJob(deps));
   const job = await claim();
