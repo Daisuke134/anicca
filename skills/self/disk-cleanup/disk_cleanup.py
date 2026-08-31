@@ -11,6 +11,7 @@ import argparse
 from contextlib import contextmanager, suppress
 import errno
 import fcntl
+from functools import lru_cache
 import json
 import math
 import os
@@ -92,7 +93,47 @@ def _bytes(
     return total
 
 
+def _is_code_sign_clone(path: Path) -> bool:
+    return (
+        path.name.startswith("code_sign_clone.")
+        and path.parent.name in {
+            "com.google.Chrome.code_sign_clone",
+            "org.chromium.Chromium.code_sign_clone",
+        }
+    )
+
+
+@lru_cache(maxsize=1)
+def _open_code_sign_clones() -> frozenset[Path] | None:
+    """Return real open clone roots; APFS clone inodes make `lsof +D` lie."""
+    try:
+        result = subprocess.run(
+            ["/usr/sbin/lsof", "-nP", "-Fn"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0 or result.stderr.strip():
+        return None
+    roots: set[Path] = set()
+    for line in result.stdout.splitlines():
+        if not line.startswith("n") or "code_sign_clone." not in line:
+            continue
+        match = re.match(r"^n(.*/code_sign_clone\.[^/]+)(?:/|$)", line)
+        if match:
+            roots.add(Path(match.group(1)).resolve())
+    return frozenset(roots)
+
+
 def _default_lsof(path: Path) -> str:
+    if _is_code_sign_clone(path):
+        open_clones = _open_code_sign_clones()
+        if open_clones is None:
+            return "probe-error"
+        return "open" if path.resolve() in open_clones else "confirmed-closed"
     try:
         result = subprocess.run(
             ["/usr/sbin/lsof", "-nP", "+D", str(path)],
@@ -426,6 +467,15 @@ class HostDiskGovernor:
                 in {"com.google.Chrome.code_sign_clone", "org.chromium.Chromium.code_sign_clone"}
                 and resolved.name.startswith("code_sign_clone.")
             )
+        if item.get("class") == "regenerable_output" and item.get("owner") == "codex-app-updater":
+            installation = (
+                self.home
+                / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
+            ).resolve()
+            return (
+                resolved.parent == installation
+                and re.fullmatch(r"[A-Za-z0-9]{6,64}", resolved.name) is not None
+            )
         return False
 
     @staticmethod
@@ -611,7 +661,10 @@ class HostDiskGovernor:
                 result["errors"] += state == "probe-error"
                 preserve(state)
                 continue
-            descendant_state = self._protected_descendant(path, deadline=deadline)
+            descendant_state = (
+                None if _is_code_sign_clone(path)
+                else self._protected_descendant(path, deadline=deadline)
+            )
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
                 preserve(descendant_state)
@@ -629,7 +682,10 @@ class HostDiskGovernor:
             if deadline is not None and self.clock() + POST_SWEEP_RESERVE_SECONDS >= deadline:
                 preserve("probe-budget-exhausted")
                 continue
-            descendant_state = self._protected_descendant(path, deadline=deadline)
+            descendant_state = (
+                None if _is_code_sign_clone(path)
+                else self._protected_descendant(path, deadline=deadline)
+            )
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
                 preserve(descendant_state)
@@ -678,6 +734,25 @@ class HostDiskGovernor:
         a deletion candidate merely because it is large.
         """
         candidates: list[dict] = []
+        sparkle_installation = (
+            self.home
+            / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
+        )
+        if sparkle_installation.is_dir() and not sparkle_installation.is_symlink():
+            for child in sorted(sparkle_installation.iterdir()):
+                if (
+                    child.is_dir()
+                    and not child.is_symlink()
+                    and re.fullmatch(r"[A-Za-z0-9]{6,64}", child.name) is not None
+                ):
+                    candidates.append(
+                        {
+                            "path": child,
+                            "class": "regenerable_output",
+                            "owner": "codex-app-updater",
+                            "discovery": "allowlisted",
+                        }
+                    )
         temporary = Path(tempfile.gettempdir())
         temp_parent = temporary.parent
         clone_root = temp_parent / "X"

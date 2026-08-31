@@ -332,6 +332,65 @@ def test_unknown_artifact_is_preserved_and_reported(tmp_path: Path, monkeypatch)
     assert receipt["protected_deletions"] == 0
 
 
+def test_discovery_selects_only_codex_sparkle_installation_generations(tmp_path: Path) -> None:
+    installation = (
+        tmp_path / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
+    )
+    generation = installation / "fBQSwumuD"
+    generation.mkdir(parents=True)
+    (generation / "ChatGPT.zip").write_bytes(b"x" * 32)
+    launcher = installation.parent / "Launcher/QSYUe7BMl"
+    launcher.mkdir(parents=True)
+    (tmp_path / "Library/Caches/com.openai.codex/Cache.db").write_bytes(b"db")
+    governor = HostDiskGovernor(home=tmp_path, state_dir=tmp_path / "state")
+
+    candidates = governor.discover_candidates()
+
+    assert [Path(item["path"]) for item in candidates if item["owner"] == "codex-app-updater"] == [generation]
+    assert all(Path(item["path"]) != launcher for item in candidates)
+
+
+def test_closed_codex_sparkle_installation_generation_is_reclaimed(tmp_path: Path) -> None:
+    generation = (
+        tmp_path
+        / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation/fBQSwumuD"
+    )
+    generation.mkdir(parents=True)
+    (generation / "ChatGPT.zip").write_bytes(b"x" * 32)
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "confirmed-closed",
+        usage=lambda: (0, 1),
+    )
+
+    candidates = [item for item in governor.discover_candidates() if item["owner"] == "codex-app-updater"]
+    result = governor.sweep(candidates)
+
+    assert result["reclaimed"] == 32
+    assert not generation.exists()
+
+
+def test_open_codex_sparkle_installation_generation_is_preserved(tmp_path: Path) -> None:
+    generation = (
+        tmp_path
+        / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation/fBQSwumuD"
+    )
+    generation.mkdir(parents=True)
+    governor = HostDiskGovernor(
+        home=tmp_path,
+        state_dir=tmp_path / "state",
+        lsof=lambda _path: "open",
+        usage=lambda: (0, 1),
+    )
+
+    candidates = [item for item in governor.discover_candidates() if item["owner"] == "codex-app-updater"]
+    result = governor.sweep(candidates)
+
+    assert generation.exists()
+    assert result["preserved_reasons"] == {"open": 1}
+
+
 def test_lsof_stderr_is_probe_error(monkeypatch) -> None:
     class Result:
         returncode = 1
