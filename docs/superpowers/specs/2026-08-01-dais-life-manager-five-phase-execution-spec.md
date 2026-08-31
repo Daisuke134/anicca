@@ -1032,7 +1032,7 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 | surface | current measured behavior | required behavior |
 |---|---|---|
-| schedule | production currentとConnector labelはfull release `20260831T184945-c78c003f` / SHA `c78c003f…`、daily-driver labelは`6466fea3…`。`c78c003f`はPR #3452/#3457を祖先に含む。native Connector owner exact 1、`StartInterval=3600`、apply後の自然wakeは未発生 | manual kickstartと途中reloadを使わず、最初の自然wakeでevidence recovery、その後2回でreplay-zeroを証明する |
+| schedule | production currentは`20260831T193835-aced5c6b` / SHA `aced5c6b…`、Connector labelとdaily-driver labelはfull release `20260831T192828-7ab5a318` / SHA `7ab5a318…`。`7ab5a318`はPR #3452/#3457を祖先に含む。native Connector owner exact 1、`StartInterval=3600`、別session applyでtimer reset後の自然wakeは未発生 | manual kickstartと途中reloadを使わず、最初の自然wakeでevidence recovery、その後2回でreplay-zeroを証明する |
 | release completeness | 同一SHAの最初のrelease `20260831T153415-7255b4bb`はproduction依存`playwright-core`を欠き、Calendar read後のbrowser rail生成でexit 2。後続full releaseは3 dependency tree、154,232 entries、789,376,561 bytesを保持し、runtime requireを通る | apply前に全Git blob/mode、locked runtime dependency、required-module importを検証し、不完全releaseをloadedにしない |
 | browser owner | `127.0.0.1:9222`は`job-search-daily`、`[::1]:9222`は宣言済み`daily-driver`。PR #3452でproduction rail/target controller/leaseはIPv6 daily-driver exactへ固定し、wrong-profile IPv4を拒否した。Connector全696/696、isolated live targetはpage `1→2→1`、lease 0、provider effect 0 | 最初の自然wakeでloaded release自身がIPv6 targetを所有・cleanupし、job-search/Gig profile非干渉をreadbackする |
 | horizon | Calendar、Luma、connpassのactive primary pathはJST day 0〜27の28日 | 28日境界を維持 |
@@ -1143,7 +1143,7 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 このchecklistはglobal CG cursorを並べ替えない。`CG-28 → CG-44 → CG-45 → CG-47 → CG-48 → CG-51`のうち、現在観測中のCG-44/45/51を機械的に閉じる下位手順である。
 
-- [x] **IR-01** PR #3433/#3434を含むimmutable Connector release `b224ba46…`をloaded argvでreadbackし、focused/Connector全testとlive read-only participant inventoryをPASSする。
+- [x] **IR-01** PR #3433/#3434/#3452/#3457を含むimmutable Connector release `7ab5a318…`をloaded argvでreadbackし、focused/Connector全testとlive read-only participant/IPv6 target proofをPASSする。
 - [x] **IR-02** 自然wake `wake-f64e4ab26c1879c34ba68a97`で再Submit 0、official `registered`、provider receipt `370bb9be…`、PNG SHA `9c9cdc7a…`を同一checkpointへ保存する。
 - [x] **IR-03** Calendar failure後にofficial Google Calendarをidempotencyとtitle/canonical URLの両方で読み、対象0件、Telegram evidence receipt 0件、bundle 0件を確認する。
 - [x] **IR-04** PR #3452で`127.0.0.1:9222`の`job-search-daily`をproduction owner/fenceから拒否し、Connectorを`[::1]:9222`の`browser-profile://cloakbrowser/daily-driver` exactへ接続する。Connector全696/696、isolated live target page `1→2→1`、lease 0、provider effect 0を確認する。新browser/profile/schedulerは作らない。
