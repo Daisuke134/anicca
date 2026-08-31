@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 24 `ELZ-L02`で、Opportunity/ApplicationIntent adapterの既存contractを調査し、現在activeなL02だけを最小単位へ分解する。Phase C（Seq 14〜22）とELZ-L01は完了済み。
+次の一件はAtomic program ledger Seq 25 `ELZ-L03`で、historical GA-10 fixture parityの既存contractを調査し、現在activeなL03だけを最小単位へ分解する。Phase C（Seq 14〜22）とELZ-L01〜L02は完了済み。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -759,8 +759,13 @@ Goalへread-only帰属し、同じPGlite pathを別processで開いてbyte-stabl
 - [x] **L01-03** 実Lancersで二回同値readを実証する — Eliza fork外のlegacy repo PR #3430、merge `a7ad25ec…`。committed command `work_sync.py --json --preflight`で実アカウントを2回read、inventory sha256一致、`identical: true`。7 surface実測値: logged_in true、board 2、unread 0、required_reply 0、application_board 0、contract_candidate 0、incoming_offer 0、proposal current 38 / receipt 39 / selecting 16 / open 7、finance残高0円・入金履歴0。canonical private `lancers-preflight-receipt.json` mode 0600 status=`PASS`。fresh adversarial review P0/P1 0、P2 2件（AST属性呼び出しの盲点、lock file未開示）を解消し残3件をknown_gapsへ記録。model/marketplace/payment effect 0。次はL01-04
 - [x] **L01-04** ELZ-L01をDONEにしELZ-L02だけをNEXTへ更新する — canonical `lancers-preflight-receipt.json` status=`PASS`、merge `a7ad25ec…`、review open 0、provider effect 0を再読出し。Atomic program ledger Seq 23をDONE、Seq 24 L02だけを`IN_PROGRESS — NEXT`へ更新。以後Lancers L02→L25順序は不変。次はELZ-L02
 
-Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はL02がactiveであり、Phase Cのgeneral-agent基盤は
-完了、Lancersは読み取り専用のpreflightまで到達した。新規応募・契約・受領金・銀行着金はPhase Lで一つずつ実証する。
+- [x] **L02-01** Opportunity/ApplicationIntent adapterのreuse mapを固定する — `origin/main` `9abb13bb5`の`lancers_adapter.py` / `contracts.py` / `opportunity.schema.json` / `test_lancers_adapter.py`をSHA256固定。atomの4要件のうちtransport（`status.py discovery`）・stable entity（`normalize_project`＋14必須項目のopportunity schema）・fee/currency（`_budget`/`_minor_units`/`_currency`、JPY exponent 0のinteger minor units）・readback（`normalize_contract_receipt`、escrow_confirmed以外はfail closed）が既存で揃うことを確認。唯一の欠落は「共有`ApplicationIntent`契約（`contracts.py:93`）は存在するのにLancers側に組み立てる関数が無い」ことで、`git grep`が0件であることを一次証拠とした。新schema file・Opportunity用新table・adapter内での本文/金額の選択・ranking/filteringを棄却。private `lancers-adapter-reuse-map.json` mode 0600、code変更0。次はL02-02
+- [x] **L02-02** `normalize_application_intent`と判断ゼロのassertionを実装する — 既存4 normalizerを一切変更せず1関数だけ追加。`proposal_text`と`proposed_amount_minor`は引数のまま（選ぶのはmodelの仕事）、`idempotency_key`は`lancers:application_intent:{opportunity_external_id}:v1`でopportunityだけに従い、本文を書き換えても二重応募を買えない。`content_sha256`はplatform/opportunity/text/amount/currencyのcanonical JSONから導出。`event.schema.json $defs/ApplicationIntent`（10必須・additionalProperties false）で検証。既存2 testは不変。次はL02-03
+- [x] **L02-03** 実案件でadapterを実証しreceiptを書く — legacy repo PR #3444、merge `93fae399…`。`status.py discovery`で実Lancers案件3件を取得（normalized 3 / detail_failed 0）、各案件から同一入力で二回intentを組んで完全一致、idempotency key 3件とも相異、金額はinteger minor units 5000/5000/20000 JPY。**判断ゼロの機械的証明**は当初import走査だけだったが、fresh adversarial reviewがP1として「非決定性は否定するが、名指しの失敗モード（選別・順位付け）を否定していない」と指摘。`normalize_projects`へ予算1〜9,000,000 minorとcategoryの広い分布を通し、全件が到着順で素通りすること・棄却は構造不正のみであることを要求するtest 2件を追加して解消。`if budget_min_minor < 5000: continue`というstdlibのみのしきい値を注入すると新test 2件が落ち、**旧import走査は同じ注入でOKのまま通る**ことを実測し、どちらが本当に失敗モードを否定しているかを一次証拠で確定。canonical private `lancers-adapter-receipt.json` mode 0600 status=`PASS`。focused 9/9、suite baselineは8 failuresのまま不変、marketplace write 0・応募送信 0。次はL02-04
+- [x] **L02-04** ELZ-L02をDONEにしELZ-L03だけをNEXTへ更新する — canonical `lancers-adapter-receipt.json` status=`PASS`、merge `93fae399…`、review P0 0 / P1 解消済み、marketplace effect 0を再読出し。Atomic program ledger Seq 24をDONE、Seq 25 L03だけを`IN_PROGRESS — NEXT`へ更新。以後Lancers L03→L25順序は不変。次はELZ-L03
+
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はL03がactiveであり、Phase Cのgeneral-agent基盤は
+完了、Lancersは読み取り専用のpreflightとOpportunity/ApplicationIntent adapterまで到達した。新規応募・契約・受領金・銀行着金はPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
 
@@ -799,8 +804,8 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
 | 23 | ELZ-L01 fresh auth and read-only inventory | **DONE** | canonical private `lancers-preflight-receipt.json` mode 0600 status=`PASS`。legacy merge `a7ad25ec…`、committed `--preflight`で7 surfaceを2回read、inventory sha256一致。`read_only_inventory`から`_post_reply`到達不能をAST call graph testで機械的に証明し、二通りの注入で当該testが落ちることを実測。focused 11/11、review P0/P1 0、provider/model/payment effect 0 |
-| 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | **IN_PROGRESS — NEXT** | transport、stable entity、fee/currency、readbackだけを持ち、subjective judgment 0の`lancers-adapter-receipt.json` |
-| 25 | ELZ-L03 historical GA-10 fixture parity | TODO | Proposal `27861812`のfixtureをprovider call 0で同じterminal stateへ再生する`lancers-fixture-receipt.json` |
+| 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | **DONE** | canonical private `lancers-adapter-receipt.json` mode 0600 status=`PASS`。legacy merge `93fae399…`。実案件3件でtransport/stable entity/fee-currency(integer minor units)/readbackを実証し、`normalize_application_intent`がopportunity固定のidempotency keyでintentを封印。subjective judgment 0は「予算1〜9,000,000 minorの分布が到着順で全件素通りし、棄却は構造不正のみ」で機械的に証明。stdlibのみのしきい値注入で当該testが落ちることを実測（旧import走査は同じ注入を見逃した）。focused 9/9、review P0 0 / P1解消、marketplace write 0 |
+| 25 | ELZ-L03 historical GA-10 fixture parity | **IN_PROGRESS — NEXT** | Proposal `27861812`のfixtureをprovider call 0で同じterminal stateへ再生する`lancers-fixture-receipt.json` |
 | 26 | ELZ-L04 fresh authorized application | TODO | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
 | 27 | ELZ-L05 application replay and ack-loss reconcile | TODO | same intentのexecute 0、ledger insert 0、unknown時blind retry 0の`application-replay-receipt.json` |
 | 28 | ELZ-L06 provider admission boundary | TODO | Lancersだけをactive money providerにし、Upwork/Coconala/unknown provider effect 0の`provider-admission-receipt.json` |
