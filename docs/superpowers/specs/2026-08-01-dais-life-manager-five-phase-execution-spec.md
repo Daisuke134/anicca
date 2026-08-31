@@ -234,7 +234,7 @@ membership、role、invite、RLS、tenant FK、per-tenant secret、per-tenant co
 |---|---|
 | product / repo | **Life Manager**。最終公開正本は`Daisuke134/life-manager`一つ |
 | foundation | ElizaOS `29bed1bb394a2c0c7c0df6dc12babbe28667efbe`を完全fork。`AgentRuntime`を唯一の中核loopにする |
-| repo transition | `life-manager-eliza` forkを隔離検証し、acceptance後に旧repoを`life-manager-legacy`へrename/archive、新forkを`life-manager`へrename。repo削除0 |
+| repo transition | 最終public remoteとlocal checkoutは`Daisuke134/life-manager` / `~/Projects/life-manager`の各1つ。`life-manager-eliza`はcutover rollback期間だけread-only archiveとし、full-history bundle SHAを保存後、確認password付きretirementでremote/localを削除する。恒久`life-manager-legacy` repoは作らない |
 | local order | upstream boot → general plugin → Lancers application → contract/delivery/banked → self-heal → self-improve → stable OSS |
 | cloud order | stable local OSS後にidentity、tenant DB/vault/browser/wallet/queue/billing隔離を実装し、最後にWeb SaaSを公開 |
 | local DB | PGlite。`PGLITE_DATA_DIR`を明示し、同じpathのstop/restart readbackを必須にする |
@@ -243,6 +243,79 @@ membership、role、invite、RLS、tenant FK、per-tenant secret、per-tenant co
 | browser | localは既存authenticated CloakBrowserをEliza tool境界から利用。cloudはper-tenant profile/container/networkを分離 |
 | judgment | goal分解、候補選択、profit/risk、未知UI、proposal、graph変更はmodelが判断。regex/keyword/provider branchに判断権を持たせない |
 | deterministic core | arithmetic、tenant boundary、immutable intent、dedupe、lease、receipt、ledger、billing、secret redactionだけ |
+
+##### Final monorepo folder tree
+
+このtreeだけをactive sourceとして許可する。ElizaOSとLife Managerを同じrootへ置くが、同じ責務の実装を二つ残さない。
+
+```text
+life-manager/
+├── apps/                         # ElizaのWeb/API/desktop/mobile product shells
+├── packages/                     # Eliza AgentRuntime・core・SDK・cloud packages
+├── plugins/
+│   └── plugin-life-manager/      # Goal→WorkItem→Effect→Receiptのgeneral manager
+├── skills/
+│   ├── earn/                     # marketplace等の反復可能recipeとprovider ACI
+│   ├── loop-development/         # Life Manager loop lifecycleの唯一の開発skill
+│   └── ...                       # currentなskillだけ。archive/duplicate copy禁止
+├── runtime/
+│   ├── loop/                     # trigger・registry・immutable release・installed-edge readback
+│   └── agent-runner/             # Eliza model pathへcutoverするまでの一時互換境界
+├── config/
+│   └── loop-registry.json        # 全scheduled laneの唯一のlifecycle registry
+├── services/                     # 独立deployされる実serviceだけ
+├── docs/
+│   ├── superpowers/specs/        # 現行判断の正本
+│   ├── runbooks/                 # operator手順
+│   └── migration/                # hash manifest・cutover・rollback receiptだけ
+├── scripts/                      # build/import/releaseの薄いoperator commands
+├── pnpm-workspace.yaml
+└── package.json
+```
+
+`node_modules`、build output、browser profile、credential、runtime state、ledger、receipt、session、evidenceはtracked treeに置かない。
+private mutable dataはrepo外のLife Manager state rootへ置き、immutable releaseはpushed main commitからだけ作る。
+
+##### Keep / move / delete contract
+
+| class | final action |
+|---|---|
+| Eliza `packages/`、`apps/`、`plugins/plugin-life-manager/` | **KEEP**。final AgentRuntimeとgeneral manager |
+| Life Manager `skills/`、`runtime/loop/`、`config/loop-registry.json`、必要な`services/` | unique bytesだけ**MOVE ONCE**。import manifestでsource commit、target path、SHA-256を固定 |
+| Coconala/Lancers provider code | general judgmentをcoreへ戻し、provider discovery/transport/readback ACIだけ**KEEP** |
+| duplicate agent runner、provider別brain/ledger/scheduler、個別installer、中央集約business reporter | owner parity後に**DELETE** |
+| `docs/legacy-life-manager/**`のsource/spec複製 | current判断を正本へ吸収し、migration receipt以外を**DELETE**。historyはGitで読む |
+| tracked `node_modules`、cache、render、log、screenshot、temporary evidence | **DELETE / ignore**。runtime dependencyにしない |
+| obsolete branch、worktree、local checkout | merged/receipt/rollback確認後に**DELETE**。active worktreeやunmerged branchは対象外 |
+| `Daisuke134/life-manager-eliza` remote | cutover中はread-only archive、rollback期限後にfull-history bundleを照合して**DELETE** |
+
+lower-level agentはrepo名、folder名、mtimeから正本を推測しない。root `AGENTS.md`、workspace manifest、module-boundary rule、
+`config/loop-registry.json`だけをmachine-readable authorityとし、forbidden legacy root/importをCIで拒否する。
+
+##### One-repo migration TODO — order is fixed inside the existing F4→F6 cutover
+
+この表は上のlocal orderを変更しない。Lancers contract→delivery→banked（F4）を閉じるまではsource inventoryとread-only importだけを進め、
+production writerのcutoverやrepo削除を前倒ししない。
+
+| order | TODO | receipt / done condition |
+|---:|---|---|
+| MR-0 | 両repoの全tracked path、runtime label、state root、remote branchを`KEEP / MOVE / DELETE / EXTERNAL_STATE`へ分類 | 未分類0、各MOVEにsource commit/target/SHA、各DELETEにownerとrollback |
+| MR-1 | Eliza forkの最新accepted commitからfinal workspaceを作り、上記folder treeとworkspace manifestを固定 | root install、AgentRuntime boot、`plugin-life-manager` load、restart readback |
+| MR-2 | Life Managerのunique `skills/runtime/config/services`だけをimport manifest経由で一回吸収 | hash一致、missing required behavior 0、duplicate path/content 0、外部checkout import 0 |
+| MR-3 | Nx相当のproject tag/dependency constraintsとlegacy-root scanをCIへ接続 | forbidden cross-boundary import 0、developer-local root 0、duplicate runner/registry 0 |
+| MR-4 | Coconala/LancersのApply、Storefront、Negotiate、Paidをlaneごとにread-only shadow→single-writer canary | 各lane owner exact 1、lane-local Telegram、official receipt、replay effect 0 |
+| MR-5 | F4後にmain由来immutable releaseをcutoverし、全installed argv/state pathをreadback | old writer 0、new writer 1、natural scheduled pass、rollback receipt |
+| MR-6 | legacy source、個別installer、中央reporter、duplicate docs/runnerをfinal treeから削除 | `rg` legacy runtime refs 0、workspace graph orphan 0、build/release/run分離PASS |
+| MR-7 | 旧local checkoutを削除し、old remoteをread-only archiveへ切替 | local canonical checkout 1、writable remote 1、README redirect、rollback bundle SHA |
+| MR-8 | rollback期限後、Daisの確認passwordを受けて`life-manager-eliza` remote/archive bundle以外の旧sourceを削除 | GitHub repo一覧にactive Life Manager 1、local project folder 1、restore drill PASS |
+
+一次根拠:
+
+- Nx Enforce Module Boundaries: https://nx.dev/features/enforce-module-boundaries — project tagsとdependency constraintsでimport graphを自動強制する。
+- Turborepo Structuring a repository: https://turborepo.com/docs/crafting-your-repository/structuring-a-repository — workspace rootを`apps`と`packages`へ分け、各packageが自分のconfigを持つ。
+- GitHub Archiving repositories: https://docs.github.com/en/repositories/archiving-a-github-repository/archiving-repositories — archiveはrepoをread-onlyにする。
+- Twelve-Factor Build, release, run: https://12factor.net/build-release-run — build/release/runを厳密に分離し、releaseをunique・immutableにする。
+- Azure Strangler Fig: https://learn.microsoft.com/en-us/azure/architecture/patterns/strangler-fig — 機能を段階置換し、全責務移行後にlegacyをdecommissionする。
 | effect safety | authorization → immutable intent → presend reconcile → at most one effect → official readback → canonical receipt。unknownは再送0 |
 | learning | user-private、tenant-private、redacted global candidateを分離し、offline eval→canary→promotion→rollbackで昇格 |
 | legacy | credential、browser profile、ledger、receipt、customer project、dirty worktree、稼働ownerをreplacement natural pass前に削除・移動しない |
@@ -267,13 +340,13 @@ membership、role、invite、RLS、tenant FK、per-tenant secret、per-tenant co
 
 ```mermaid
 flowchart LR
-    OLD["Current life-manager<br/>untouched legacy source"] --> FORK["life-manager-eliza<br/>official ElizaOS fork"]
-    FORK --> LOCALPASS["Local general-money OSS acceptance"]
-    LOCALPASS --> TENANTPASS["Two-tenant isolation acceptance"]
-    TENANTPASS --> ARCHIVE["old repo → life-manager-legacy<br/>archive + successor readback"]
-    ARCHIVE --> FINAL["fork → life-manager<br/>public default main"]
-    FINAL --> CUTOVER["one owner at a time<br/>shadow → canary → cutover"]
-    CUTOVER -- regression --> ROLLBACK["exact legacy release rollback"]
+    OLD["Current life-manager<br/>unique skills/runtime/config"] --> IMPORT["hash-manifest import<br/>MOVE ONCE"]
+    FORK["life-manager-eliza<br/>ElizaOS foundation"] --> FINAL["final life-manager monorepo<br/>one active remote + folder"]
+    IMPORT --> FINAL
+    FINAL --> CUTOVER["one lane at a time<br/>read-only shadow → single writer"]
+    CUTOVER -- regression --> ROLLBACK["exact immutable release rollback"]
+    CUTOVER --> RETIRE["old local checkout delete<br/>remote temporary read-only archive"]
+    RETIRE --> DELETE["rollback期限後<br/>確認passwordで旧remote削除"]
 ```
 
 #### Overview / Why
@@ -793,7 +866,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 |---:|---|---|---|
 | 1 | ELZ-F01 legacy baseline inventory | DONE | private receipt=`~/.local/state/life-manager/migration/elz-f/fork-baseline-receipt.json` mode 0600。legacy HEAD `d71d6360…`、origin snapshot `2be59f28…`、dirty/refs/worktrees SHA-256、free `6003720` KiB、Node `v25.6.1`、Bun `1.3.9`、mutations 0。採取後のrefs前進はsnapshot concernとして保持 |
 | 2 | ELZ-F02 official GitHub fork | DONE | `Daisuke134/life-manager-eliza`はparent=`elizaOS/eliza`のpublic fork。local clone=`/Users/anicca/Projects/life-manager-eliza-migration`、branch=`migration/eliza-pinned`、HEAD=`29bed1bb3…`、origin/eliza-upstream exact、submodule 2件未初期化、legacy dirty hash不変。private `fork-source-receipt.json` mode 0600、mutationsはfork/cloneのみ。disk free約2.1GiB concernはF04/F05へ継承 |
-| 3 | ELZ-F03 target topology and keep/retire map | DONE | private `fork-topology-receipt.json` mode 0600。current=`life-manager`、migration=`life-manager-eliza`、final=`life-manager`、archive=`life-manager-legacy`、upstream=`eliza-upstream`、gate=`ELZ-O05+ELZ-T11`。old repo untouched until gate=true、repo delete/force-push main/bulk restart=0。disk concernはF04/F06へ継承 |
+| 3 | ELZ-F03 target topology and keep/retire map | DONE — final retirement ruleは`Final monorepo folder tree`/MR-0〜MR-8が上書き | private `fork-topology-receipt.json` mode 0600。current=`life-manager`、migration=`life-manager-eliza`、final=`life-manager`、upstream=`eliza-upstream`。旧`life-manager-legacy`恒久archive案は廃止し、migration remoteはrollback中だけread-only、MR-8で確認password後に削除する |
 | 4 | ELZ-F04 pinned runtime toolchain | DONE | private `toolchain-receipt.json` mode 0600。official Node/Bun checksum OK、project-local Node `v24.15.0` / Bun `1.3.14`、system Node `v25.6.1` / Bun `1.3.9`前後同一、profile/cleanup mutation 0。free `2268928→1954692` KiB、低disk concernはF05/F06へ継承 |
 | 5 | ELZ-F05 recursive submodule | DONE | private `submodule-receipt.json` mode 0600。`llama.cpp`=`6543d907…`、`electrobun`=`f1f38ce5…`、2件ともshallow exact SHA、uninitialized/tracked diff 0、legacy dirty hash不変。free `1734716→1475560` KiB、cleanup 0。disk concernはF06へ継承 |
 | 6 | ELZ-F06 frozen install and server build | DONE | private `toolchain-build-receipt.json` mode 0600。fixed source `29bed1bb3…`、lock SHA `1976283d…`不変、tracked diff 0。`build:server` 55/55、focused upstream 4 files・32/32 tests、各exit 0。先行ENOSPC/install不足は最終成功で解消し、full suite/CI/runtime effect 0 |
@@ -906,7 +979,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
 | 80 | ELZ-G01 legacy repo backup and metadata | TODO | bundle/refs/worktrees/dirty manifestとGitHub issue/PR/release inventoryの`legacy-repo-receipt.json` |
-| 81 | ELZ-G02 repository rename/archive transaction | TODO | gate=`ELZ-O05+ELZ-T11`。old→`life-manager-legacy` archived、新fork→`life-manager` public/unarchived、successor URLの`repo-transition-receipt.json` |
+| 81 | ELZ-G02 one-repository cutover transaction | TODO | gate=`ELZ-O05+ELZ-T11`かつMR-0〜MR-6。final workspace→`life-manager` public/unarchived、旧local checkout削除、migration remoteはrollback期間だけread-only。MR-8でfull-history bundle SHA/restore後、確認passwordを受けて旧remoteを削除し`repo-transition-receipt.json`を残す |
 | 82 | ELZ-G03 final remotes and fork lineage | TODO | `origin`=final Life Manager、`eliza-upstream`=elizaOS、default main、fork indicator、redirectの`repo-lineage-receipt.json` |
 | 83 | ELZ-R03 one-owner canary | TODO | 一ownerだけ新releaseへ切替え、official receipt/replay-zeroの`legacy-canary-receipt.json` |
 | 84 | ELZ-R04 old owner cutover | TODO | replacement natural pass後にexact旧ownerだけ退役する`legacy-cutover-receipt.json` |
