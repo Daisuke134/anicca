@@ -18,6 +18,26 @@ from job_search_loop.runtime import main as compatibility_runtime_main
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_click_observes_after_mouse_release_response_timeout_without_retry(self):
+        page = DirectCDPPage("ws://example", "target")
+        page.resolve_target = AsyncMock(return_value={"x": 10.0, "y": 20.0})
+        page.call = AsyncMock(side_effect=({}, {}, TimeoutError("release response")))
+        page.evaluate = AsyncMock(return_value="about:blank")
+
+        with patch(
+            "job_search_loop.browser_agent.direct_cdp.asyncio.sleep",
+            new=AsyncMock(),
+        ):
+            await page.click_target(
+                {"label": "Next", "role": "button", "stable_id": "next"}
+            )
+
+        self.assertEqual(page.call.await_count, 3)
+        self.assertEqual(
+            page.call.await_args_list[-1].args[1]["type"], "mouseReleased"
+        )
+        page.evaluate.assert_awaited_once_with("() => location.href")
+
     async def test_email_recovery_checkpoint_persists_tenant_recovery_state(self):
         from job_search_loop.browser_agent import runtime
 
