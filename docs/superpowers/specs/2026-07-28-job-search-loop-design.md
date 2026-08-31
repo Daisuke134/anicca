@@ -77,11 +77,20 @@ authoritative account-mail transition or visible successful sign-in makes Cloude
 runnable again. Main-derived release, exact private-state seed and natural-owner
 readback remain the pending gate.
 
-The queue repair is implemented only in `workday_search_loop.qualified_queue_ids()`.
-It reuses the existing private machine credential SSOT and omits a row from the
-current wake only when its exact Workday tenant state is `recovery_requested`; every
-other fit-qualified row keeps the prior ordering and behavior. The focused
-qualification suite passes 43/43, the full Job Hunter suite passes 433/433, and an
+The discovery-side queue repair is implemented in
+`workday_search_loop.qualified_queue_ids()`. It reuses the existing private machine
+credential SSOT and omits a row from the current wake only when its exact Workday
+tenant state is `recovery_requested`; every other fit-qualified row keeps the prior
+ordering and behavior. First production wake `daily-20260831-175301` proves fresh
+qualification runs and yields seven new qualified rows, but then exposes the second
+queue entrance: `RowQueueSupervisor.collect()` appends every Ledger retryable row and
+reintroduces Cloudera after the seven preferred IDs. The same exact tenant-state
+filter must apply at browser collection so recovery-waiting rows cannot enter through
+either source. That second filter is now implemented in
+`RowQueueSupervisor.collect()` using the same exact machine credential state; a RED
+fixture reproduced `cloudera-recovery` before `fresh-company`, and GREEN returns only
+`fresh-company`. Model-browser tests pass 24/24 and the full Job Hunter suite passes
+434/434. The discovery-side qualification suite also passes 43/43, and an
 exact production Ledger plus private-SSOT copy removes Cloudera from the runnable
 queue with zero remaining queued rows, which forces the existing fresh qualification
 path. No Ledger transition, Submit intent, scheduler, provider judgment, or new state
