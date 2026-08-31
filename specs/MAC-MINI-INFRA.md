@@ -575,3 +575,74 @@ Dais 承認のうえ削除した。合計 1.7GB、実測で avail 4659MiB → 69
 （`/Applications/Utilities/Adobe Creative Cloud/.../Adobe Crash Processor` など）。
 `lsof` 上で削除済みファイルを掴んではいない（deleted handle 0）ので容量は握っていないが、
 Creative Cloud 本体を消したはずなのに常駐が残っている状態であり、別途整理が要る。
+
+## 2026-08-31 既存 OSS 掃除ツールの調査（再調査不要。ここに結論がある）
+
+OSS 公開時に「誰の Mac でも容量が尽きない」を成立させるため、既存実装を調べて自分の実装と突き合わせた。
+
+### 調べた対象
+
+| ★ | repo | 性質 |
+|---|---|---|
+| 2818 | `mac-cleanup/mac-cleanup-sh` | 古典。**deprecated** |
+| 2374 | `mac-cleanup/mac-cleanup-py` | 上の後継。Python |
+| 1339 | `caezium/burrow` | 掃除 + app 管理 + ディスク解析 |
+| 458 | `2ykwang/mac-cleanup-go` | TUI |
+| 34 | `himynameisben/macos-disk-cleanup` | **agent 用 skill**。Claude Code / Codex 向け。今回の主参照 |
+
+`himynameisben/macos-disk-cleanup` を `/var/tmp` へ shallow clone して読んだ（1MB）。
+構成は `SKILL.md` + `references/{gotchas.md,locations.md}` + `scripts/disk_scan.sh`。
+
+### 我々の設計と一致していた点
+
+削除を **SAFE / CONFIRM / DANGER** の3段に分け、
+「自動再生成される cache か、ユーザ唯一の副本か」を答えられないなら消さない、という原則。
+これは我々の fail-closed governor（allowlist されたクラス以外は preserve）と同じ結論に独立して到達している。
+
+特に **gotcha #9「削除後すぐ `df` に反映されない。段階ごとに前後差分で帰属せよ、最後に総量を測るな」**は、
+我々が APFS clone で独立に発見した事実（release 2本削除で 0.4GB、4本まとめて 7.1GB）と同じ結論である。
+receipt の `free_before` / `free_after` を正とする現行設計は正しい。
+
+### 我々が既に満たしている罠
+
+| 罠 | 我々の対応 |
+|---|---|
+| #1 container 内 symlink が `du` を嘘つきにする（`Data/*/*` の glob が symlink を貫通して `~/Downloads` を「app のデータ」と誤報告する） | `_bytes` は `followlinks=False` かつ symlink dir を除外。sweep は `path.is_symlink()` を preserve |
+| #2 sparse file は `ls` でなく `du` で測る | receipt reserve の sparse 判定に専用テストあり |
+| #8 `set -e` と `rm -rf` の併用を避け、exit code でなく再測定で検証 | 削除後に `path.exists()` を readback し、失敗は `remove_failed` で preserve |
+| #10 エラー메시지 が安全機構の上書き（`--force`）を誘導してくる | 全経路 fail-closed。probe 失敗は必ず preserve |
+
+### 我々に無いもの＝カタログの広さ
+
+現行 governor が知っている回収クラスは
+`cfo-` 一時ディレクトリ / Chrome code_sign_clone / Sparkle Installation /
+`~/.cache/codex-runtimes` / `~/.cache/whisper` / release 世代のみ。
+OSS 側は**パッケージマネージャと開発ツールの cache を網羅**している。
+
+SAFE 分類（自動再生成、典型サイズ）:
+`~/Library/pnpm/store` 5–20G（`pnpm store prune`）/ `~/.gradle/caches` 2–10G /
+`~/go/pkg/mod` 2–10G（`go clean -modcache`）/ `~/.npm/_cacache` 1–5G /
+`~/.cargo/registry/cache` 1–5G / `~/.cache/uv` 1–5G / `~/Library/Caches/Homebrew` 1–5G /
+`~/Library/Caches/pip` 0.5–2G / `~/Library/Caches/ms-playwright` 1–3G /
+`~/Library/Caches/pnpm` 1–3G / `~/Library/Caches/org.swift.swiftpm` 0.3–1G /
+`~/Library/Developer/Xcode/iOS DeviceSupport` **iOS バージョンごとに 5G** /
+`~/Library/Developer/Xcode/DerivedData` 1–20G / `*-updater` `*.ShipIt` 0.3–2G。
+CONFIRM 分類: Simulator runtime **バージョンごとに 8G**、Chrome の `OptGuideOnDeviceModel` 4G。
+
+### この Mac での実測（2026-08-31）
+
+上記カタログのうち 20MB を超えて存在したのは **`~/.npm/_cacache` 171MB のみ**。
+pnpm store も gradle も Xcode DeviceSupport も DerivedData も存在しない。
+
+**したがってこの Mac の逼迫は package cache 由来ではなく、release 生成と git object の蓄積である**
+という既存の結論が、OSS カタログとの突き合わせでも裏づけられた。
+ただし OSS 利用者の Mac では上記が主因になりうるので、
+governor の回収クラスにカタログを取り込む価値は独立して存在する。
+
+### 採用方針
+
+1. 上の SAFE カタログを allowlist クラスとして governor に追加する。判定は既存の
+   「exact path + owner」方式をそのまま使えるため、discovery に表を1つ足すだけで済む。
+2. `pnpm store prune` や `go clean -modcache` のように**専用コマンドが存在するものは
+   `rm -rf` せずそのコマンドを使う**。参照されている分を残せる。
+3. CONFIRM 相当（Simulator runtime 等）は自動削除の対象にしない。fail-closed を崩さない。
