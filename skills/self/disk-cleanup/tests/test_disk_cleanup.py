@@ -468,6 +468,28 @@ def test_closed_browser_clone_with_source_named_dependency_is_reclaimed(
     assert result["reclaimed"] == 32
 
 
+def test_release_probe_uses_one_global_lsof_instead_of_walking_the_tree(tmp_path: Path, monkeypatch) -> None:
+    release = tmp_path / "loops/releases/20260828T010101-aaaaaaaa"
+    release.mkdir(parents=True)
+    calls: list[list[str]] = []
+
+    class Result:
+        returncode = 0
+        stdout = f"p123\nn{release}/bin/loop.sh\n"
+        stderr = ""
+
+    def record(argv, **_kwargs):
+        calls.append(argv)
+        return Result()
+
+    monkeypatch.setattr(disk_cleanup.subprocess, "run", record)
+    disk_cleanup._open_paths.cache_clear()
+
+    assert disk_cleanup._default_lsof(release) == "open"
+    assert calls == [["/usr/sbin/lsof", "-nP", "-Fn"]]
+    disk_cleanup._open_paths.cache_clear()
+
+
 def test_release_retention_keeps_referenced_and_newest_generations(tmp_path: Path) -> None:
     releases = tmp_path / "loops" / "releases"
     releases.mkdir(parents=True)
