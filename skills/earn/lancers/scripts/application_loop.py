@@ -138,8 +138,15 @@ def _run_exhaustive_discovery(timeout: float) -> Mapping[str, object]:
     keeps a 20s tick cheap but means the other queries' candidates are never even considered --
     'apply to every eligible candidate' cannot be true under it. Coconala solves the same problem
     with a separate exhaustive lane on its own hour-long budget rather than by widening the fast
-    tick, so this is opt-in and the caller supplies the larger timeout. A query that fails for its
-    own reason aborts the union, because a partial board must not be reported as the board.
+    tick, so this is opt-in and the caller supplies the per-request timeout (the provider caps a
+    single request at 60s; the exhaustive budget is that times the number of queries).
+
+    Known limits, both inherited from the default path and both silent today:
+    a query whose cards all fail to normalize reports `no_normalized_opportunities`, which is
+    indistinguishable here from an empty board, so that query contributes nothing without a flag;
+    and when two queries return the same `external_id` the first one seen wins, so a fresher row
+    for an already-seen id is dropped. Only a provider error that is not
+    `no_normalized_opportunities` aborts the union.
     """
     merged: dict[str, Mapping[str, object]] = {}
     last: Mapping[str, object] = {"ok": False, "error": "no_normalized_opportunities", "opportunities": []}
