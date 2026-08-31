@@ -200,6 +200,19 @@ payment, relocation, exclusivity, publicity, or any separately binding program
 commitment. Keep founder-attested and provider-verified
 claims distinguishable, and never rename revenue as MRR/ARR without period proof.
 
+Missing exact context is not a human checkpoint. For every ordinary non-binding
+application field, infer the most probable truthful answer from the whole profile,
+startup context, repository, prior applications, and absence of contrary evidence,
+then continue. Record the answer as `inferred` with its evidence in the application
+dossier. Canonical examples: sole ownership plus no named cofounder means answer
+`No` to cofounders; no recorded outside financing means answer `No` to prior
+capital; use the profile's current country/city for location. Assuming the best
+supported answer is allowed; fabricating a unique identifier or claiming observed
+provider success is not. Never ask a human for an ordinary missing answer. When a
+required field would need an invented person, credential, legal registration
+number, bank detail, KYC attestation, or signature, reject only that candidate and
+continue immediately to the next candidate and live discovery.
+
 ## Discovery queue
 
 1. Process every configured `apply_now` priority target as required above,
@@ -329,10 +342,11 @@ For every queued candidate until the execution window ends:
    subject:<subject>` readback. Then open that exact message in the authenticated
    Gmail Sent UI and preserve its rendered provider screen as the completion PNG.
    A draft, compose UI, API result, or text-only Sent search is not verified evidence.
-4. Resolve ordinary missing answers by reasonable inference. A human-only video,
-   voice, attendance, physical-presence, KYC, binding-terms, banking, funds
-   movement, or unsolved CAPTCHA requirement checkpoints only this candidate; it
-   does not terminate discovery or other applications.
+4. Resolve ordinary missing answers by reasonable inference and never ask a human.
+   Use the verified reusable founder video when its official duration contract fits.
+   A voice, physical-presence, KYC, binding-terms, banking, funds movement, or
+   unsolved CAPTCHA requirement rejects only this candidate; it does not terminate
+   discovery or other applications.
    A visible ordinary reCAPTCHA checkbox is not yet an unsolved CAPTCHA: scroll its
    rendered iframe into view, click the checkbox center once with a trusted browser
    interaction, and observe again. Only an ensuing image/audio challenge that the
