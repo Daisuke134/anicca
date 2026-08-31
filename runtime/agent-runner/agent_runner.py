@@ -322,6 +322,36 @@ def extract_provider_usage(provider: str, stdout_text: str, model: str | None = 
     return usage
 
 
+def claude_json_document(payload: str) -> str:
+    """Return the single JSON document inside a Claude answer, or the answer unchanged.
+
+    Callers json.loads() the result file, so anything the model puts around the object is a
+    parse error that reads as a runner failure even though the answer was correct. Measured
+    2026-08-31 on the Lancers planner: the model reasoned in prose, wrote "JSON出す。", then
+    emitted the object, and json.loads reported `Extra data: line 1 column 3`.
+
+    Only a whole document is accepted. If what is found does not span to the end of the
+    remaining text, the original string is returned untouched rather than silently keeping the
+    first of several objects -- a truncated or multi-answer reply must fail loudly upstream.
+    """
+    text = payload.strip()
+    fenced = OPENCLAW_JSON_FENCE.fullmatch(text)
+    if fenced and "```" not in fenced.group("body"):
+        text = fenced.group("body").strip()
+    start = min((i for i in (text.find("{"), text.find("[")) if i != -1), default=-1)
+    if start == -1:
+        return payload
+    try:
+        _, end = json.JSONDecoder().raw_decode(text, start)
+    except ValueError:
+        return payload
+    # A closing fence may trail the object when the model wrote prose before opening the fence,
+    # so the whole string was never a fence match. Backticks are not a second answer.
+    if text[end:].strip().strip("`").strip():
+        return payload
+    return text[start:end]
+
+
 def extract_claude_payload(stdout_path: Path, result_path: Path) -> str:
     """Unwrap Claude's JSON output envelope while tolerating legacy plain output."""
     text = stdout_path.read_text(encoding="utf-8", errors="replace")
@@ -333,13 +363,7 @@ def extract_claude_payload(stdout_path: Path, result_path: Path) -> str:
     if isinstance(wrapper, dict) and wrapper.get("type") == "result" and "result" in wrapper:
         payload = wrapper["result"]
         if isinstance(payload, str):
-            # Claude answers a schema-constrained task with the object inside a ```json fence.
-            # Callers json.loads() this file, so an un-stripped fence reads as a runner failure
-            # even though the model answered correctly. Unwrap only a whole-string fence, and
-            # only when nothing else is fenced, so partial or multi-block output stays verbatim.
-            fenced = OPENCLAW_JSON_FENCE.fullmatch(payload.strip())
-            if fenced and "```" not in fenced.group("body"):
-                payload = fenced.group("body")
+            payload = claude_json_document(payload)
         result_path.write_text(
             payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False),
             encoding="utf-8",
