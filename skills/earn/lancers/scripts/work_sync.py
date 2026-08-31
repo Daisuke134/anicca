@@ -425,6 +425,44 @@ def read_only_inventory(*, state_path: Path = DEFAULT_STATE_PATH, browser_factor
     return result
 
 
+def preflight(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional[Callable[[str], Any]] = None) -> dict[str, Any]:
+    """ELZ-L01: two read-only passes must observe the same inventory."""
+    reads: list[dict[str, Any]] = []
+    for index in (1, 2):
+        inventory = read_only_inventory(state_path=state_path, browser_factory=browser_factory)
+        if not inventory.get("ok"):
+            return {"ok": False, "atom": "ELZ-L01", "status": "FAIL", "failed_read": index, "error": inventory.get("error"), "logged_in": inventory.get("logged_in", False)}
+        reads.append(inventory)
+    digests = [_digest(read) for read in reads]
+    identical = digests[0] == digests[1]
+    return {
+        "ok": identical,
+        "atom": "ELZ-L01",
+        "status": "PASS" if identical else "FAIL",
+        "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "identical": identical,
+        "inventory_sha256": digests,
+        "reads": [
+            {
+                "index": index + 1,
+                "logged_in": read["logged_in"],
+                "source_complete": read["source_complete"],
+                "board_count": read["board_count"],
+                "unread_count": read["unread_count"],
+                "required_reply_count": read["required_reply_count"],
+                "application_board_count": read["application_board_count"],
+                "contract_candidate_count": read["contract_candidate_count"],
+                "incoming_monthly_offer_count": read["incoming_monthly_offer_count"],
+                "proposal_pipeline": read["proposal_pipeline"],
+                "finance": read["finance"],
+            }
+            for index, read in enumerate(reads)
+        ],
+        "provider_effect": 0,
+        "provider_effect_proof": "read_only_inventory reaches no write path; asserted by test_read_only_inventory_cannot_reach_the_reply_post",
+    }
+
+
 def _cleanup(page: Any, browser: Any) -> bool:
     try: page_ok = page is None or bool(application_tick._close_owned_page(page))
     except Exception: page_ok = False
@@ -522,8 +560,12 @@ def main(argv: Optional[Sequence[str]] = None, *, output_stream: Any = None, bro
     parser.add_argument("--json", action="store_true", required=True)
     parser.add_argument("--state-path", default=str(DEFAULT_STATE_PATH))
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--preflight", action="store_true", help="ELZ-L01: read the inventory twice, write nothing")
     args = parser.parse_args(argv)
-    result = run_tick(state_path=Path(args.state_path), browser_factory=browser_factory) if args.worker else _watchdog(worker_command or [sys.executable, str(Path(__file__).resolve()), "--worker", "--json", "--state-path", args.state_path], timeout)
+    if args.preflight:
+        result = preflight(state_path=Path(args.state_path), browser_factory=browser_factory)
+    else:
+        result = run_tick(state_path=Path(args.state_path), browser_factory=browser_factory) if args.worker else _watchdog(worker_command or [sys.executable, str(Path(__file__).resolve()), "--worker", "--json", "--state-path", args.state_path], timeout)
     output = output_stream or sys.stdout
     output.write(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n")
     output.flush()
