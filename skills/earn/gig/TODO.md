@@ -4640,6 +4640,22 @@ officially reconciled as completed/deduplicated with no resend. The remaining fa
 `18128025=remote_resume`, `18180857=remote_builder`, and the two file outputs
 `18211838=file_builder` and `18218780=file_builder`; this is the current aggregate baseline.
 
+**Current verdict: Paid lane is FAIL, not partially complete.** It has not produced the contracted
+horse-racing report, architectural JPG, completed TikTok DM/Sheet campaign, requested cancellation,
+or article publication. The latest release with the isolated-runner packaging fix reached order
+collection but all nine targeted talkroom readbacks failed with `server rejected WebSocket
+connection: HTTP 500` while Storefront held the only active `:9223` browser context lease. Process
+liveness, one progress attachment, local artifacts and partial readback do not change this verdict.
+
+**Immediate P0 before any more Paid semantic or artifact work:** make shared-browser admission
+durable. Paid must acquire an owned browser context lease or durably queue until the current owner
+releases it; it must not fan out nine hidden WebSocket connections while Storefront, Apply or
+Negotiate owns the context. A lease-busy pass is `pending` with a retry time, not nine failed rooms.
+Restart the browser only when the exact owner/lease census proves no active user, then require one
+complete nine-room targeted readback before resuming builders. Acceptance is: no HTTP 500, all nine
+rooms classified from fresh official DOM, no sibling interruption, and replay-zero for the readback
+pass. Do not claim Paid working before this P0 and the buyer outcomes below are complete.
+
 1. **Paid / delivery first.** The latest production aggregate observed 9 rooms, 7 actionable,
    `effect=0`, `readback=4`, and 5 failures: `18128025=remote_resume`, `18180857=remote_builder`,
    `18211957=remote_builder`, `18211838=file_builder`, and `18218780=file_builder`. Repair the
