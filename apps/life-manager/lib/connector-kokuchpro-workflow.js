@@ -6,6 +6,7 @@ const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const TIME_ZONE = "Asia/Tokyo";
 const LISTING_BASE = "https://www.kokuchpro.com/s/area-%E6%9D%B1%E4%BA%AC%E9%83%BD/charge-0/";
 const EVENT_URL = /^https:\/\/www\.kokuchpro\.com\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?\/$/;
+const REGISTERED_ENTRY_URL = /^https:\/\/www\.kokuchpro\.com\/entry\/[0-9a-f]{32}\/$/;
 const EVENT_RAW_PER_CARD = 100;
 const EVENT_RAW_TOTAL = 4_000;
 const ISO_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:?\d{2})$/;
@@ -309,9 +310,10 @@ async function defaultReadProviderState(page, selected) {
     const links = facts.registration_links;
     const forms = facts.entry_forms;
     const loginForms = facts.login_forms;
-    const registered = Array.isArray(links) && links.filter((link) => (
-      link && link.href === entryUrl && link.text === "申込情報を確認する" && link.visible === true
-    )).length === 1
+    const registered = Array.isArray(links) && (links.length === 1 || links.length === 2)
+      && links.every((link) => link && REGISTERED_ENTRY_URL.test(String(link.href || ""))
+        && link.text === "申込情報を確認する" && link.visible === true)
+      && new Set(links.map((link) => link.href)).size === 1
       && Array.isArray(forms) && !forms.some((form) => form && form.method === "POST")
       && facts.password_count === 0 && Array.isArray(loginForms) && loginForms.length === 0;
     if (registered) return "registered";
