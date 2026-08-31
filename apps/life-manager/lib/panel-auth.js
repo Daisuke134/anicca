@@ -13,7 +13,7 @@ const PANEL_CHALLENGE_COOKIE = "__Host-lm_panel_challenge";
 const OPAQUE_TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 const DEVICE_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const DEVICE_CODE_RE = /^[2-9A-HJ-NP-Z]{8}$/;
-const MONEY_PRINTER_GUEST_UID = "webmcp-judge";
+const MONEY_PRINTER_GUEST_PREFIX = "webmcp-guest-";
 const MONEY_PRINTER_GUEST_NAME = "WebMCP Judge Guest";
 const MONEY_PRINTER_GUEST_CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
 
@@ -165,7 +165,9 @@ function moneyPrinterGuestHeaders(extra = {}) {
 }
 
 function moneyPrinterGuestIdentity(opts = {}) {
-  const uid = String(opts.guestUid || MONEY_PRINTER_GUEST_UID);
+  const uid = opts.guestUid
+    ? String(opts.guestUid)
+    : `${MONEY_PRINTER_GUEST_PREFIX}${(opts.randomBytes || crypto.randomBytes)(12).toString("hex")}`;
   const chatId = String(opts.guestChatId || uid);
   if (!uid || !chatId) throw new Error("money printer guest identity unavailable");
   return { uid, chatId };
@@ -205,15 +207,18 @@ async function handleMoneyPrinterGuestRequest(req, res, opts = {}) {
     return;
   }
 
-  const identity = moneyPrinterGuestIdentity(opts);
   const current = cookieValue(req.headers.cookie, PANEL_COOKIE) || cookieValue(req.headers.cookie, "lm_panel_session");
   const scope = current ? await sessionScope(current, opts) : null;
-  if (scope && scope.uid === identity.uid && scope.chatId === identity.chatId) {
+  const configuredUid = opts.guestUid ? String(opts.guestUid) : null;
+  const reusable = scope && scope.chatId === scope.uid
+    && (configuredUid ? scope.uid === configuredUid : scope.uid.startsWith(MONEY_PRINTER_GUEST_PREFIX));
+  if (reusable) {
     res.writeHead(200, moneyPrinterGuestHeaders(panelScopeCookie(scope) ? { "Set-Cookie": panelScopeCookie(scope) } : {}));
     res.end(renderPanelPage({ csrf: scope.csrf || csrfToken(current), guest: true }));
     return;
   }
 
+  const identity = moneyPrinterGuestIdentity(opts);
   await upsertMoneyPrinterGuest(identity, opts);
   const session = await createPanelSession({ uid: identity.uid, chatId: identity.chatId }, opts);
   const createdScope = await sessionScope(session, opts);
