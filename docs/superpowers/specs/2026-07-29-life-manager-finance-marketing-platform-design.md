@@ -2394,8 +2394,22 @@ MKT-11, MKT-12, and MKT-13 stay blocked until MKT-10R7 closes.
 | MKT-10R3 | **done —** repair the control-plane drift fail-closed | PR `#3332` merged at `01dc472e…`. The R3 closure snapshot recorded all 13 destination labels at `20260831T004335-01dc472e` with exact loop ids; later `2026-08-31 01:00:24 JST` readback recorded 12 at descendant `20260831T005035-fc39c2a6` and Honne JA at `01dc472e…`. Each loaded argv pins one existing immutable main-derived release containing R4; installed labels need not equal the moving global selector. R3 install events created no publication. Manifest `4992c334…fc33` is 13/13 `default-off`, armed 0, with 17 holds; fence is closed |
 | MKT-10R4 | **done implementation/review/release; live proof belongs to R6 —** revalidate Larry assets and account routing | `@anicca.jp` is fixed to Postiz TikTok `cmp9sdev5012voh0y58qs45xc`, renderer/job format `larry`, form `affirmation-carousel`, and immutable pack `63e2b1b8…3664`. Six ordered 1010×1080 sunset JPEGs contain no person/ReelClaw media. The released adapter rejects invalid dimensions before secret/provider access; both Python transport and JS provider/receipt/reconcile paths reject a bare TikTok `/video/` URL and accept only exact `PUBLISHED` photo proof with matching integration, caption SHA, title, `DIRECT_POST`, and strict `p_pub_url~v2.<digits>`. Ordinary TikTok video and Instagram `/p/` routes remain intact. Focused Node 51/51 and transport 24/24 pass; fresh read-only verdict is `ship`; all eight CI checks pass. Native publication, Telegram, metrics registration, and replay-zero remain R6, so this is not yet a working-loop claim |
 | MKT-10R5 | **done read-only routing closure —** Revalidate ReelClaw/Honne/Anicca video routing | all 13 approved pack objects exist at their exact SHA refs. Every video pack readback matches its destination product, locale, format/form family; destination selection binds job-product + locale + platform + integration + format + form and rejects Honne/Card/integration cross-family substitutions. Focused destination/manifest/ledger suite passes 45/45 with provider writes 0. Mixed historical feeds remain quarantined |
-| MKT-10R6 | **active; next natural slot `2026-08-31 08:00 JST` —** Run canaries one destination at a time through the natural owner | first target is loaded owner `ai.anicca.life-manager-anicca-main-tiktok`; before 08:00 its production scheduler has no due slot, so no off-schedule executor is substituted. At/after the slot, require exact integration plus native handle/form/content/caption/slot readback, natural Telegram, metrics-owner registration, and replay-zero; provider-only success is insufficient. Parallel work continues on account failover and other failed loops |
+| MKT-10R6 | **active; natural canary failed before provider access —** repair the production slot contract, then rerun one destination at a time through the natural owner | At `2026-08-31 16:00 JST`, loaded owner `ai.anicca.life-manager-anicca-main-tiktok` started run `18d0d1af1dbee290-64914` from main-derived release `20260831T070607-6466fea3` and terminated `exit 1` in 4.28 seconds. Its boot invokes `anicca-larry-ja-canary.js run-ja-main-tiktok-production` without the CLI-required `--slot <exact ISO instant>`, producing only the usage error before Postiz, Telegram, or metrics ownership. The live manifest is 13/13 `default-off`, armed 0. All 13 loaded marketing labels point to that release and all 13 have latest exit `1`; therefore loaded labels, generated media, and historical receipts do not prove present liveness. Repair MUST derive and pass exactly the launchd calendar slot, arm only the one approved lane, preserve all other lanes and holds at 0/day, then require exact integration/native handle/form/content/caption/slot provider readback, natural Telegram, metrics registration, and replay-zero before advancing |
 | MKT-10R7 | Restore target cadence and prove liveness | every retained TikTok and Instagram destination produces its exact expected slots with correct native content; missing/wrong/duplicate posts alert naturally; only then MKT-11 resumes |
+
+#### MKT-10R6 production-slot repair contract
+
+1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
+2. **Acceptance criteria:** one and only one approved destination is `production-armed`; its natural wake binds the exact configured JST calendar instant to `--slot`, reaches the matching Postiz integration, records a direct native publication receipt with correct media lineage, sends one natural Telegram receipt, registers the metrics owner, and an immediate replay creates zero provider effects and zero duplicate Telegram messages. Every other target and every hold remains 0/day.
+3. **As-Is / To-Be:** As-Is is 13 loaded labels, 13 latest exits `1`, manifest armed 0, and no current provider receipt. To-Be is one natural terminal success for the active lane with independent provider/account readback and replay-zero; no global mass-arm is allowed.
+4. **Test matrix:** focused tests MUST cover exact slot derivation at each configured calendar boundary, rejection of an absent/off-schedule/mismatched slot, one-lane-only manifest gating, and replay-zero. Natural E2E MUST cover the active destination's Postiz row, native account/content readback, Telegram receipt, and metrics registration.
+5. **Boundaries:** no direct Codex publication, no off-schedule substitute executor, no retry after unknown effect, no OpenClaw/Larry legacy cron restoration, no simultaneous multi-account canary, and no MKT-11/MKT-12/MKT-13 work before R7.
+6. **Execution:** focused RED/GREEN on the production boot/CLI boundary; merge to main; build one verified immutable release; apply only the active destination label; wait for its next exact natural slot; verify terminal/provider/Telegram/metrics/replay evidence; then repeat destination-by-destination in contract order.
+
+| E2E item | Value |
+|---|---|
+| UI change | none |
+| Judgment | Maestro not required; real launchd plus Postiz/native/Telegram/metrics readback is required because the failure is a production scheduler-to-provider contract |
 
 ### 12.2.1 Local folder and deletion boundary
 
@@ -2410,19 +2424,26 @@ and mutable state/credentials/ledgers live under
 ├── Projects/life-manager-main/       canonical Git checkout; source and spec
 ├── loops/current -> immutable release production selector
 ├── .local/state/life-manager/        private state, objects, ledgers, receipts
-├── .openclaw/                        still-live gateway/ask/peer runtime owner
-├── anicca-project/                   still-live Codex progress reporter owner
-├── profitable-claude/                legacy source/evidence still named by scan
-├── gig/                              separate large legacy/evidence checkout
-└── lm-loops-core/                    separate development worktree
+├── .openclaw/                        live gateway/ask/peer runtime owner
+├── anicca-project/                   loaded Codex progress reporter owner
+├── profitable-claude/                legacy source still referenced by installed plist and scan
+├── gig/                              separate legacy/evidence checkout
+├── lm-loops-core/                    separate development worktree
+├── life-manager-repo-v0-retire/      retained v0 migration/evidence checkout
+├── Projects/life-manager-{8i-cutover,eliza-migration,eliza-worktrees,symphony-workspaces}/
+│                                      retained migration/workspace roots
+└── reelclaw-ja-20260317-1330/        retained generated legacy media/evidence
 ```
 
 Deletion is not authorized or safe. Current loaded LaunchAgents still execute
 `.openclaw` for `ai.openclaw.anicca-ask`, `ai.openclaw.gateway`, and
 `com.anicca.peer-api`, and execute `anicca-project` for
-`com.anicca.codex-progress-reporter`. The production legacy-path scanner also
-reports 52 violations, including active marketing defaults that read
-`.openclaw` state/env and a Profitable Claude marketing command. The deletion
+`com.anicca.codex-progress-reporter`. The installed but currently unloaded
+`ai.anicca.freelancer-bid-watch.plist` still names `profitable-claude`.
+The production legacy-path scanner still reports 52 violations across 711
+files, including marketing defaults that read `.openclaw` state/env and a
+Profitable Claude marketing command. Cleaning directory contents does not
+close these executable references or their protected state/evidence. The deletion
 gate is: loaded references zero, production dependency scan zero, clean-user
 install pass, immutable-release natural cycles pass, official effects and
 replay-zero pass, and protected state/session/evidence backup readback passes.
