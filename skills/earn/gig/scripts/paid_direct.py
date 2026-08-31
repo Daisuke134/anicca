@@ -153,7 +153,7 @@ def _has_resumption_marker(workspace: Path) -> bool:
 
 def _has_runner_diagnostic(workspace: Path) -> bool:
     return any(path.is_file() and not path.is_symlink()
-               for path in workspace.glob("**/evidence/summary.json"))
+               for path in workspace.glob("**/evidence/**/*"))
 
 
 @contextmanager

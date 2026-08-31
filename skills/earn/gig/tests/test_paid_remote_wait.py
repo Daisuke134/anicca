@@ -48,10 +48,12 @@ def test_failed_paid_workspace_with_runner_evidence_is_preserved(tmp_path: Path)
     with pytest.raises(RuntimeError, match="boom"):
         with paid._project_workspace(root, "paid-source-census-") as raw:
             workspace = Path(raw)
-            write_json(workspace / "evidence" / "summary.json", {"status": "failed"})
+            evidence = workspace / "evidence" / "attempt-01.stderr.log"
+            evidence.parent.mkdir(parents=True)
+            evidence.write_text("runner failed before summary\n", encoding="utf-8")
             raise RuntimeError("boom")
     assert workspace is not None and workspace.is_dir()
-    assert (workspace / "evidence" / "summary.json").is_file()
+    assert (workspace / "evidence" / "attempt-01.stderr.log").is_file()
 
 
 def blocked_project(tmp_path: Path) -> tuple[Path, str, str]:
