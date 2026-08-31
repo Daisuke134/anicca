@@ -27,33 +27,15 @@ def entry(label="ai.anicca.example"):
 
 
 class MacosLoopRegistryTest(unittest.TestCase):
-    def test_money_printer_symphony_is_one_managed_keepalive_loop(self):
+    def test_money_printer_symphony_is_retired_after_cloud_cutover(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
-        self.assertEqual(registry["loops"].get("money-printer-symphony"), {
-            "label": "ai.anicca.life-manager-money-printer-symphony",
-            "domain": "earn",
-            "entrypoint": "runtime/loop/entry_dispatch.py",
-            "cadence": {"keep_alive": True},
-            "effect_class": "none",
-            "state_root": "~/.local/state/life-manager/money-printer-symphony",
-            "log_root": "~/.local/state/life-manager/money-printer-symphony/logs",
-            "cleanup": {"max_runs": 100, "max_age_days": 14},
-            "provider_route": "deterministic",
-        })
+        self.assertNotIn("money-printer-symphony", registry["loops"])
+        self.assertIn("ai.anicca.life-manager-money-printer-symphony", registry["retired_labels"])
 
-    def test_money_printer_symphony_bridge_is_one_managed_interval_loop(self):
+    def test_money_printer_symphony_bridge_is_retired_after_cloud_cutover(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
-        self.assertEqual(registry["loops"].get("money-printer-symphony-bridge"), {
-            "label": "ai.anicca.life-manager-money-printer-symphony-bridge",
-            "domain": "earn",
-            "entrypoint": "runtime/loop/entry_dispatch.py",
-            "cadence": {"start_interval_seconds": 5},
-            "effect_class": "none",
-            "state_root": "~/.local/state/life-manager/money-printer-symphony-bridge",
-            "log_root": "~/.local/state/life-manager/money-printer-symphony-bridge/logs",
-            "cleanup": {"max_runs": 100, "max_age_days": 14},
-            "provider_route": "deterministic",
-        })
+        self.assertNotIn("money-printer-symphony-bridge", registry["loops"])
+        self.assertIn("ai.anicca.life-manager-money-printer-symphony-bridge", registry["retired_labels"])
 
     def test_registry_rejects_missing_and_secret_fields(self):
         missing = {"schema_version": 2, "loops": {"example": entry()}}
