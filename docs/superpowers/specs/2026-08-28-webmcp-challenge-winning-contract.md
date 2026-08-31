@@ -1562,7 +1562,7 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 | C08 | complete。Existing runtime storeがoldest eligible tenantをread-only selectし、existing `claim_lm_symphony_job(tenant)`を呼ぶ。API claim bodyは`{}`、bridgeはreturned packet tenantを既存scope validationへ渡す | new migration/RPC 0、focused 96/96、production query pass、cloud claim 200 `dispatch:null`。Payload tenant selector 0 |
 | C09 | complete。Official Symphony v0.0.2 checksum + Codex 0.151.0をexisting Railway projectへdeployし、bridge/WORKFLOWはmain `d5e747256706e12250aa939e56e24938ffae1b87`から取得 | deployment `02dc4544...` SUCCESS、replica 1/1、volume READY、public URL 0、bridge idle、Agents 0/2。Local Symphony/bridgeは`lm-loop stop` bootout 0、launchctl unloaded、PID absent |
 | C10 | cloud owner Mercor E2E。DaisがDashboard takeover内でMercor login/human-only stepを一度行う | listing→Symphony→cloud browser→real Needs You→same job→official application readback、effect 1、receipt 1、verified cash honest |
-| C11 | zero-login judge E2Eをfresh sessionでChromeとChatGPT in-app browserから各一周 | judge-entered real URL、cloud execution、human task、answer、resume、receipt、reload、replay-zero。Dais Mac/Telegram/private state 0 |
+| C11 | prep code-complete / E2E-open。Fixed shared guestを廃止し、existing Panel sessionの初回だけrandom `webmcp-guest-<24hex>` tenantを作りrepeat cookieはsame scopeをreuse | new signup/auth/table 0、focused 23/23。次にChromeとChatGPT in-app browserで各一周し、real URL→cloud execution→human task→resume→receipt→replay-zeroを閉じる |
 | C12 | four-criteria evidence matrix、existing demoをnew cloud E2Eへ再録、clean clone、SHA freeze、YouTube、Devpost | 4 criteria各5/5 evidence、`<180s` audio video、live/repo/deploy SHA一致、exact submission preview後だけsubmit |
 
 #### Test matrix

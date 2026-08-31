@@ -337,12 +337,9 @@ function ctxFromReq(req) {
 const server = http.createServer((req, res) => {
   const path = (req.url || "").split("?")[0];
   if (path === "/money-printer") {
-    const guestUid = process.env.LM_WEBMCP_GUEST_UID || "webmcp-judge";
     handleMoneyPrinterGuestRequest(req, res, {
       supaUrl: SUPA_URL,
       supaKey: SUPA_KEY,
-      guestUid,
-      guestChatId: process.env.LM_WEBMCP_GUEST_CHAT_ID || guestUid,
     }).catch((error) => {
       console.error("[money-printer-guest] request failed", error.message);
       if (!res.headersSent) res.writeHead(500, { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", "referrer-policy": "no-referrer", "x-content-type-options": "nosniff" });
