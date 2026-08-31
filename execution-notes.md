@@ -20,7 +20,25 @@ Goal 受領 2026-08-31。Phase C（Eliza 基盤 C01–C09）は完了済み。
 | (2) profile 完成 | **FAIL** | 公式画面で完成度 **50%**。未完了=写真/ビジネス経験/本人確認/機密保持確認/電話確認。実績0件・評価0件。基本単価は空だったので設定し `10000` を読み返し確認済み |
 | (3) 最大応募 | **BLOCKED** | 応募0件。判断モデルは動作を実証（案件5594217→submit_required/48万円/35日/提案文生成）したが、Codex が9/6まで利用上限。routing 変更は spec 制約とピン留めテストに抵触するため Dais の判断待ち |
 
-## 判断モデル経路の修復（3段階、すべて一次証拠）
+## 公式応募履歴の読み返し（条件(3)の証拠、2026-08-31）
+
+`https://www.lancers.jp/mypage/proposals/limit:100/sort:Proposal.id/direction:DESC`
+（ページ表題「提案した仕事一覧」）を実ブラウザで読み、**公式 proposal ID を38件取得**。
+最大 `5593844` / 最小 `5518137`。
+
+- ★ `work_sync` が返す `proposal_pipeline.current_count: 38` と**公式38件が完全一致** ★
+  → loop の集計は捏造しておらず、公式と突合できる
+- ローカル claim 台帳 `application.json` は fingerprints 195 / pending 0
+- 直近 pass が `duplicate_project` とした `5594055` は**公式履歴に存在しない**
+  → claim は「応募した」ではなく「判断済み（応募 or 見送り）」を意味するため、
+    195 − 38 = 157 は見送り済みと解釈できる。**欠陥と断定できる証拠は無い**
+  → ただし claim が応募と見送りを区別しないため、状況が変わった案件が二度と再評価されない。
+    再評価の要否は `ELZ-L10B`（最大応募）で扱う
+
+**このセッションの実測内訳**: 確認13件 → 新規応募0件 / 見送り13件（全件が判断済み）。
+重複応募0を replay で確認。
+
+## 応募判断経路の修復（5段階、すべて一次証拠）
 
 1. **存在しないパス** — `application_loop.py`/`work_sync.py` が `skills/agent-runner/agent_runner.py` を参照。git 履歴ゼロ＝最初から不在。release にも無い。実体は `runtime/agent-runner/`（1858行）。2ファイル2行修正。テスト 9 failed/42 passed で変更前後同一
 2. **Codex 枯渇** — `attempt-01/02.stdout.log` に `You've hit your usage limit … try again at Sep 6th, 2026`。応募 task class だけ codex→codex しかフォールバックが無く全滅。同ファイル内に codex→claude の実例が2つある
