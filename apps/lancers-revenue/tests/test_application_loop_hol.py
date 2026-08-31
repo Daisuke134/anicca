@@ -951,3 +951,37 @@ class ExhaustiveDiscoveryTests(unittest.TestCase):
         self.assertIs(
             application_loop.run_loop.__kwdefaults__["exhaustive"], False,
         )
+
+    def test_exhaustive_keeps_the_later_observation_of_a_duplicate(self):
+        application_loop = _load_deployed_loop()
+        queries = list(application_loop.DISCOVERY_QUERIES)
+        responses = {q: {"ok": True, "error": None, "opportunities": []} for q in queries}
+        responses[queries[0]]["opportunities"] = [
+            {"external_id": "42", "title": "stale", "observed_at": "2026-08-31T09:00:00+00:00"},
+        ]
+        responses[queries[1]]["opportunities"] = [
+            {"external_id": "42", "title": "fresh", "observed_at": "2026-08-31T10:00:00+00:00"},
+        ]
+
+        with patch.object(application_loop.status, "run_discovery",
+                          side_effect=lambda **kw: responses[kw["query"]]):
+            result = application_loop._run_exhaustive_discovery(20.0)
+
+        rows = [r for r in result["opportunities"] if r["external_id"] == "42"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["title"], "fresh")
+
+    def test_exhaustive_keeps_incumbent_when_timestamps_are_unusable(self):
+        application_loop = _load_deployed_loop()
+        queries = list(application_loop.DISCOVERY_QUERIES)
+        responses = {q: {"ok": True, "error": None, "opportunities": []} for q in queries}
+        responses[queries[0]]["opportunities"] = [{"external_id": "7", "title": "first"}]
+        responses[queries[1]]["opportunities"] = [{"external_id": "7", "title": "second"}]
+
+        with patch.object(application_loop.status, "run_discovery",
+                          side_effect=lambda **kw: responses[kw["query"]]):
+            result = application_loop._run_exhaustive_discovery(20.0)
+
+        rows = [r for r in result["opportunities"] if r["external_id"] == "7"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["title"], "first")

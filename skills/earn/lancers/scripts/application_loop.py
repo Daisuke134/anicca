@@ -131,6 +131,20 @@ def _discovery_query(value: object) -> str:
     except (TypeError, ValueError, OverflowError, OSError):
         return DEFAULT_DISCOVERY_QUERY
 
+def _observed_after(candidate: Mapping[str, object], incumbent: Mapping[str, object]) -> bool:
+    """True when candidate carries a strictly later `observed_at` than incumbent."""
+    def parsed(row: Mapping[str, object]) -> Optional[datetime]:
+        value = row.get("observed_at")
+        if not isinstance(value, str):
+            return None
+        try:
+            moment = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return moment if moment.tzinfo is not None else None
+    later, earlier = parsed(candidate), parsed(incumbent)
+    return later is not None and earlier is not None and later > earlier
+
 def _run_exhaustive_discovery(timeout: float) -> Mapping[str, object]:
     """Union every query so one wake can see the whole reachable board, not one keyword of it.
 
@@ -144,9 +158,9 @@ def _run_exhaustive_discovery(timeout: float) -> Mapping[str, object]:
     Known limits, both inherited from the default path and both silent today:
     a query whose cards all fail to normalize reports `no_normalized_opportunities`, which is
     indistinguishable here from an empty board, so that query contributes nothing without a flag;
-    and when two queries return the same `external_id` the first one seen wins, so a fresher row
-    for an already-seen id is dropped. Only a provider error that is not
-    `no_normalized_opportunities` aborts the union.
+    and only a provider error that is not `no_normalized_opportunities` aborts the union. When two
+    queries return the same `external_id` the later `observed_at` wins, so a duplicate cannot pin
+    a stale copy; rows whose timestamps are missing or naive keep the incumbent.
     """
     merged: dict[str, Mapping[str, object]] = {}
     last: Mapping[str, object] = {"ok": False, "error": "no_normalized_opportunities", "opportunities": []}
@@ -165,7 +179,13 @@ def _run_exhaustive_discovery(timeout: float) -> Mapping[str, object]:
             if not isinstance(row, Mapping):
                 return last
             external_id = row.get("external_id")
-            if isinstance(external_id, str) and external_id and external_id not in merged:
+            if not isinstance(external_id, str) or not external_id:
+                continue
+            seen = merged.get(external_id)
+            # The same listing surfaces under several queries. Keeping whichever query ran first
+            # would pin a stale copy of a row that another query observed later, so prefer the
+            # later observation and fall back to the incumbent when the timestamps are unusable.
+            if seen is None or _observed_after(row, seen):
                 merged[external_id] = row
     if not seen_ok:
         return last
