@@ -4629,6 +4629,15 @@ protected and are not cleanup candidates.
 This cursor is the active order. Registration, launchd liveness and exit zero do not close it;
 each lane needs its own official marketplace effect/readback and a replay with zero duplicates.
 
+**Current readback after the incident audit.** Public main contains Paid failure-boundary reporting
+(`c78c003f`) and preservation of runner evidence even before `summary.json` exists (`aba82967`).
+The loaded Paid release `7ab5a318` is a descendant of both fixes. A natural Paid pass sent and read
+back one bounded reply for `18211838`, but the buyer's accumulated requirement now calls for the
+actual revised horse-racing report, so that reply is progress rather than delivery completion. The
+newest top-level receipt is an `orders_observation` failure caused by a transient authenticated-page
+`RemoteDisconnected`; it observed zero rooms and cannot supersede the preceding nine-room census.
+The next complete natural pass must replace it before any aggregate health claim.
+
 1. **Paid / delivery first.** The latest production aggregate observed 9 rooms, 7 actionable,
    `effect=0`, `readback=4`, and 5 failures: `18128025=remote_resume`, `18180857=remote_builder`,
    `18211957=remote_builder`, `18211838=file_builder`, and `18218780=file_builder`. Repair the
@@ -4638,13 +4647,38 @@ each lane needs its own official marketplace effect/readback and a replay with z
    context. Missing a named skill is never a capability failure. Require fresh aggregate
    `failed=0`, useful buyer-visible artifacts where scope is accepted, exact-room readback, and
    replay-zero. Formal delivery remains a separate explicit buyer-authority gate.
+   The current buyer-level queue is:
+   - `18218780` (`snow990`): file mode; produce the edited architectural JPG from the supplied TIF.
+     It and `18211838` currently stop at the shared source-census/input-binding boundary. Preserve
+     the new pre-summary runner logs, repair the exact census failure, then submit each actual
+     buyer-visible artifact with formal delivery off for review and prove exact-room readback.
+   - `18211838` (`逃げ因子`): file mode; produce the revised horse-racing report with the requested
+     overall, class and racecourse breakdowns. A scope reply was officially read back, but it does
+     not satisfy the contracted report output.
+   - `18180857` (`Chii`): remote mode; seller-owned `@anicca.jp` identity is official, but TikTok
+     Messages exposed no readable conversation/reply DOM. The natural owner correctly made no DM,
+     Sheet or Coconala effect. Replace project-authored inbox scripts with one repository-owned,
+     tested TikTok inbox/readback adapter; resume the 300 verified unique DM/Sheet-pair obligation
+     only after it returns an unambiguous official conversation state.
+   - `18128025` (`na_l5`): the latest buyer request is transaction cancellation, not another BUYMA
+     artifact. Add one code-owned Coconala cancellation-request adapter with exact-room confirmation
+     and replay-zero; do not route cancellation through `remote_resume` or fabricate delivery.
+   - `18211957` (`Ryu0820119`): a formal delivery already exists. Paid must only reconcile its
+     official acceptance/return state and must not send another artifact or formal effect unless a
+     distinct buyer-authored revision arrives.
+   - `18214856` (`usa`): remains awaiting buyer after the qualification question. Before any later
+     account question or article work, compile the private credential SSOT, installed publication
+     skills and existing account receipts; an existing seller-owned account must be used rather
+     than asked for again.
 2. **Negotiate / reply and estimate second.** A new profile estimate request `5242505` was visible
    officially as `要提案` with an 8,000 yen budget and 2026-09-02 proposal deadline, but the natural
    lane did not submit it or send the needed reply. Add a focused failing fixture from this exact
    consultation shape, trace collection through durable action creation, and put deadline-bearing
-   estimate consultations ahead of the full historical audit. Acceptance is one natural estimate
-   send plus exact official readback, every current actionable message terminal or retry-owned,
-   and a second wake with zero duplicate reply/estimate.
+   estimate consultations ahead of the full historical audit. The estimate was later submitted
+   manually, so the loop must reconcile it as already delivered and never retry it. Acceptance is
+   the next new natural estimate consultation sent by Negotiate with exact official readback, every
+   current actionable message terminal or retry-owned, and a second wake with zero duplicate
+   reply/estimate.
 3. **Storefront / listing third.** Preserve the official 14-service inventory and analytics
    readback, then repair the current official contract failure. For every listing with zero
    purchases, the natural owner must choose and apply one evidence-backed edit, read the edited
