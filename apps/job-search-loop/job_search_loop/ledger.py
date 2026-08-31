@@ -1658,6 +1658,38 @@ class Ledger:
                 and str(existing["status"]) == "not_submitted"
                 and current_state == "not_submitted"
             )
+            resuming = (
+                existing is not None
+                and str(existing["status"]) == "submit_claimed"
+                and current_state == "submit_claimed"
+                and self.connection.execute(
+                    """
+                    SELECT 1 FROM submission_click_phases
+                    WHERE intent_id = ? AND fence = ?
+                      AND phase IN ('clicked', 'confirmed')
+                    """,
+                    (str(existing["intent_id"]), int(existing["fence"])),
+                ).fetchone()
+                is None
+            )
+            if resuming:
+                if (
+                    str(existing["payload_hash"]) != payload_hash
+                    or str(existing["resume_sha256"]) != resume_sha256
+                ):
+                    return None
+                return SubmitIntent(
+                    str(existing["intent_id"]),
+                    application_id,
+                    int(existing["fence"]),
+                    str(existing["payload_hash"]),
+                    str(existing["resume_path"]),
+                    str(existing["resume_sha256"]),
+                    str(existing["ats_snapshot_path"]),
+                    str(existing["ats_snapshot_sha256"]),
+                    str(existing["japan_day"]),
+                    int(existing["slot"]),
+                )
             if existing is not None and not reopening:
                 return None
             if existing is None and current_state != "materials_ready":
