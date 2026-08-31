@@ -34,8 +34,8 @@
 ### Task 1: Implement the Peatix discovery-only workflow
 
 **Files:**
-- Create: `apps/life-manager/lib/connector-peatix-workflow.js`
-- Create: `apps/life-manager/lib/connector-peatix-workflow.test.js`
+- Create: `apps/mr-bot/lib/connector-peatix-workflow.js`
+- Create: `apps/mr-bot/lib/connector-peatix-workflow.test.js`
 
 **Exported interface:**
 
@@ -88,7 +88,7 @@ Using a fake page with `goto` and `evaluate`, assert the default flow:
 - [ ] **Step 4: Run the new test and verify RED**
 
 ```bash
-node --test apps/life-manager/lib/connector-peatix-workflow.test.js
+node --test apps/mr-bot/lib/connector-peatix-workflow.test.js
 ```
 
 Expected: FAIL because `connector-peatix-workflow.js` does not exist.
@@ -111,7 +111,7 @@ Do not export reader internals, persist public JSON, or add direct-action/readba
 - [ ] **Step 6: Run focused GREEN**
 
 ```bash
-node --test apps/life-manager/lib/connector-peatix-workflow.test.js
+node --test apps/mr-bot/lib/connector-peatix-workflow.test.js
 ```
 
 Expected: all tests pass with zero failures.
@@ -120,10 +120,10 @@ Expected: all tests pass with zero failures.
 
 ```bash
 node --test \
-  apps/life-manager/lib/connector-peatix-workflow.test.js \
-  apps/life-manager/lib/connector-connpass-workflow.test.js \
-  apps/life-manager/lib/connector-luma-workflow.test.js \
-  apps/life-manager/lib/connector-minimal-runner.test.js
+  apps/mr-bot/lib/connector-peatix-workflow.test.js \
+  apps/mr-bot/lib/connector-connpass-workflow.test.js \
+  apps/mr-bot/lib/connector-luma-workflow.test.js \
+  apps/mr-bot/lib/connector-minimal-runner.test.js
 ```
 
 Expected: all tests pass, production provider order tests remain unchanged, and no test performs an external write.
@@ -131,8 +131,8 @@ Expected: all tests pass, production provider order tests remain unchanged, and 
 - [ ] **Step 8: Commit the Luna-owned implementation**
 
 ```bash
-git add apps/life-manager/lib/connector-peatix-workflow.js \
-  apps/life-manager/lib/connector-peatix-workflow.test.js
+git add apps/mr-bot/lib/connector-peatix-workflow.js \
+  apps/mr-bot/lib/connector-peatix-workflow.test.js
 git commit -m "feat(connector): add Peatix public discovery"
 ```
 

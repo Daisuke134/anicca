@@ -252,7 +252,7 @@ def _token(repo_root: Path) -> str:
         if os.environ.get(key):
             return str(os.environ[key])
     candidates = (
-        Path.home() / ".local/state/life-manager/credentials/capafy-publisher.json",
+        Path.home() / ".local/state/mr-bot/credentials/capafy-publisher.json",
         repo_root / "skills/capafy-autopublish/vendor/capafy-publisher/config.json",
     )
     for path in candidates:
@@ -325,7 +325,7 @@ def _atomic_write(path: Path, receipt: dict) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fixture-dir", type=Path)
-    parser.add_argument("--output", type=Path, default=Path.home() / ".local/state/life-manager/state/capafy-hourly-reconcile.json")
+    parser.add_argument("--output", type=Path, default=Path.home() / ".local/state/mr-bot/state/capafy-hourly-reconcile.json")
     parser.add_argument("--observed-at")
     args = parser.parse_args(argv)
     observed = dt.datetime.now(dt.timezone.utc)

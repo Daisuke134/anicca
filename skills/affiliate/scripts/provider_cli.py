@@ -638,7 +638,7 @@ def main():
     parser.add_argument("--cdp-port", required=True, type=int)
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--receipt", required=True, type=Path)
-    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/mr-bot/affiliate"))
     parser.add_argument(
         "--private-markdown", type=Path,
         default=Path("~/.config/anicca/affiliate-credentials.md"),

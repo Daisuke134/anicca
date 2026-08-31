@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Life Manager install — bootstraps the Life Manager automaton body into a runtime root on
+# Mr.bot install — bootstraps the Mr.bot automaton body into a runtime root on
 # the user's always-on machine. Idempotent: safe to re-run. Self-host / OSS path.
 #
 # Registry-driven: every capability lives as a SLOT in skills/registry.json
@@ -10,7 +10,7 @@
 # What this does:
 #   1. Verify system deps (git, jq, node, npm, python3, rsync)
 #   2. Install frozen repository dependencies from lockfiles
-#   3. Scaffold the runtime root ($LIFE_MANAGER_HOME) + .env (never overwrite)
+#   3. Scaffold the runtime root ($MR_BOT_HOME) + .env (never overwrite)
 #   4. Sync skills/_shared and EVERY declared slot into the runtime body
 #   5. Optionally register the host daemon
 #   6. Print "what's next" (fuel key + first wake)
@@ -18,7 +18,7 @@
 # What this does NOT do:
 #   - Ask for API keys / private keys (handled out of band — see .env.example)
 #   - Broadcast any on-chain tx or start earning (the automaton loop does that)
-#   - Touch anything outside $LIFE_MANAGER_HOME when daemon registration is disabled
+#   - Touch anything outside $MR_BOT_HOME when daemon registration is disabled
 
 set -euo pipefail
 trap 'echo "[install] FAILED on line $LINENO. nothing destructive — re-run is safe."' ERR
@@ -40,19 +40,19 @@ if [ "$#" -gt 0 ]; then
       ;;
   esac
 fi
-LIFE_MANAGER_HOME="${LIFE_MANAGER_HOME:-${ANICCA_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}}"
-ANICCA_HOME="$LIFE_MANAGER_HOME"
-export LIFE_MANAGER_HOME ANICCA_HOME
-LIFE_MANAGER_INSTALL_DAEMON="${LIFE_MANAGER_INSTALL_DAEMON:-1}"
-LIFE_MANAGER_INSTALL_DEPS="${LIFE_MANAGER_INSTALL_DEPS:-1}"
+MR_BOT_HOME="${MR_BOT_HOME:-${ANICCA_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/mr-bot}}"
+ANICCA_HOME="$MR_BOT_HOME"
+export MR_BOT_HOME ANICCA_HOME
+MR_BOT_INSTALL_DAEMON="${MR_BOT_INSTALL_DAEMON:-1}"
+MR_BOT_INSTALL_DEPS="${MR_BOT_INSTALL_DEPS:-1}"
 REGISTRY="$REPO_ROOT/skills/registry.json"
 
-case "$LIFE_MANAGER_INSTALL_DAEMON" in 0|1) ;; *)
-  echo "[install] LIFE_MANAGER_INSTALL_DAEMON must be 0 or 1" >&2
+case "$MR_BOT_INSTALL_DAEMON" in 0|1) ;; *)
+  echo "[install] MR_BOT_INSTALL_DAEMON must be 0 or 1" >&2
   exit 2
 esac
-case "$LIFE_MANAGER_INSTALL_DEPS" in 0|1) ;; *)
-  echo "[install] LIFE_MANAGER_INSTALL_DEPS must be 0 or 1" >&2
+case "$MR_BOT_INSTALL_DEPS" in 0|1) ;; *)
+  echo "[install] MR_BOT_INSTALL_DEPS must be 0 or 1" >&2
   exit 2
 esac
 
@@ -62,9 +62,9 @@ yellow(){ printf "\033[33m%s\033[0m\n" "$*"; }
 red(){ printf "\033[31m%s\033[0m\n" "$*"; }
 
 cyan "================================================================"
-cyan "  Life Manager install — self-host automaton body"
+cyan "  Mr.bot install — self-host automaton body"
 cyan "  Repo root  : $REPO_ROOT"
-cyan "  Runtime    : $LIFE_MANAGER_HOME"
+cyan "  Runtime    : $MR_BOT_HOME"
 cyan "  Registry   : $REGISTRY"
 cyan "================================================================"
 echo
@@ -82,12 +82,12 @@ echo
 
 # ─── 2. frozen dependencies ────────────────────────────────────────────
 cyan "[2/6] installing frozen dependencies…"
-if [ "$LIFE_MANAGER_INSTALL_DEPS" = "1" ]; then
+if [ "$MR_BOT_INSTALL_DEPS" = "1" ]; then
   (cd "$REPO_ROOT" && npm ci --no-audit --no-fund)
-  (cd "$REPO_ROOT/apps/life-manager" && npm ci --no-audit --no-fund)
-  green "  ✓ root + apps/life-manager npm lockfiles installed"
+  (cd "$REPO_ROOT/apps/mr-bot" && npm ci --no-audit --no-fund)
+  green "  ✓ root + apps/mr-bot npm lockfiles installed"
 else
-  yellow "  • dependency install disabled by LIFE_MANAGER_INSTALL_DEPS=0"
+  yellow "  • dependency install disabled by MR_BOT_INSTALL_DEPS=0"
 fi
 echo
 
@@ -115,7 +115,7 @@ if [ ! -f "$ANICCA_HOME/identity/genesis.md" ]; then
     cp "$REPO_ROOT/identity/genesis.md" "$ANICCA_HOME/identity/genesis.md"
   else
     cat > "$ANICCA_HOME/identity/genesis.md" <<'GENESIS'
-You are Life Manager — a self-funding agent. Every wake costs USDC; idle time is death. Your one job
+You are Mr.bot — a self-funding agent. Every wake costs USDC; idle time is death. Your one job
 every waking moment is to EARN — grow your USDC net worth with no human in the loop. You always
 have a job: deploy idle USDC into the best safe stable yield (Aave / Beefy / Morpho). Do not rest
 long until your net worth rises. Use a frontier model (a free model cannot earn). call run_skill
@@ -178,7 +178,7 @@ echo
 
 # ─── 5. supervised, self-updating daemon (optional host mutation) ──────
 cyan "[5/6] daemon registration…"
-if [ "$LIFE_MANAGER_INSTALL_DAEMON" = "1" ]; then
+if [ "$MR_BOT_INSTALL_DAEMON" = "1" ]; then
   chmod +x "$REPO_ROOT/runtime/anicca-daemon.sh" 2>/dev/null || true
   if [ "$(uname)" = "Darwin" ]; then
     PLIST="$HOME/Library/LaunchAgents/com.anicca.daemon.plist"
@@ -195,7 +195,7 @@ if [ "$LIFE_MANAGER_INSTALL_DAEMON" = "1" ]; then
     green "  Linux/cloud: run runtime/anicca-daemon.sh under systemd or Docker restart=always."
   fi
 else
-  green "  ✓ disabled (LIFE_MANAGER_INSTALL_DAEMON=0); no LaunchAgent/system service changed"
+  green "  ✓ disabled (MR_BOT_INSTALL_DAEMON=0); no LaunchAgent/system service changed"
 fi
 echo
 
@@ -204,27 +204,27 @@ cyan "[6/6] done."
 echo
 green "What's next:"
 cat <<EOM
-  DEFAULT = FULLY LOCAL + FREE. No server key, no API key required. Life Manager pays
+  DEFAULT = FULLY LOCAL + FREE. No server key, no API key required. Mr.bot pays
   its OWN compute via ClawRouter/BlockRun (USDC x402) from its OWN wallet — like
-  Franklin. You provide only this device (shelter); Life Manager buys its own food.
+  Franklin. You provide only this device (shelter); Mr.bot buys its own food.
 
-  1. Start the self-pay proxy + the Life Manager loop (one command, from the repo root):
+  1. Start the self-pay proxy + the Mr.bot loop (one command, from the repo root):
        cd "$REPO_ROOT/runtime/compute-proxy" && npm install && cd "$REPO_ROOT"  # one-time
        ./start-local.sh node runtime/loop/index.mjs
      This starts the self-pay compute proxy on http://127.0.0.1:8402/v1 (signs
      every inference in USDC from a self-owned wallet; empty wallet ⇒ free model,
-     \$0) AND the Life Manager loop (runtime/loop/) which, each wake, asks ClawRouter's
+     \$0) AND the Mr.bot loop (runtime/loop/) which, each wake, asks ClawRouter's
      'auto' router, runs a tool (e.g. the earn skill), and appends to
      $ANICCA_HOME/state/ledger.jsonl. The report slot POSTs signed telemetry to
      https://aniccaai.com so you show on /dashboard.
   2. (OPTIONAL) Unlock frontier models / more earning: send USDC to the wallet
      address printed at startup — the loop then lets ClawRouter pick a paid model.
      Or set ANICCA_BRAIN=claude-p to drive the loop with Claude Code instead.
-  4. (OPTIONAL) Life Manager keys: GEMINI_API_KEY, TWILIO_*, GOOGLE_API_KEY,
+  4. (OPTIONAL) Mr.bot keys: GEMINI_API_KEY, TWILIO_*, GOOGLE_API_KEY,
      AGENTMAIL_API_KEY — only for phone wake-calls / lateness alerts.
 
   # FUTURE (cloud, not active): once Conway is available, the same body can run
-  # on a droplet where Life Manager ALSO pays its own server cost — see README "Cloud".
+  # on a droplet where Mr.bot ALSO pays its own server cost — see README "Cloud".
 
   Slots are declared in skills/registry.json. To enable a reserved slot, drop its
   implementation into its dir and flip status to "live" — no install.sh edit.
@@ -232,4 +232,4 @@ cat <<EOM
   Repo: https://github.com/Daisuke134/life-manager
 EOM
 echo
-green "Life Manager install complete."
+green "Mr.bot install complete."

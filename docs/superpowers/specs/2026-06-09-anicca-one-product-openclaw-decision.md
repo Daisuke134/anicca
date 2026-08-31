@@ -103,7 +103,7 @@ payout-wallet/ubi, spec=ANICCA_TRUE_AUTONOMY_SPEC.md = on-chain 自律稼ぎ)。
 fix:
 1. heartbeat prompt を 「dry-run 禁止、 実 action、 結果を slack+mail 報告」 に書換
 2. earn skill を real 化 (Felix 戦略: まず info product 1 本 を 実販売 → Stripe POST_ID)
-3. life-manager skill (Dais 用: gcal heal + mail + 10分前) を real 化
+3. mr-bot skill (Dais 用: gcal heal + mail + 10分前) を real 化
 4. earn>spend ledger (automaton 北極星 metric) を state に記録
 5. 即 1 fire で 実 side-effect (slack 投稿 or Stripe sale) を verify
 
@@ -113,7 +113,7 @@ fix:
 ```
 A1. anicca-genesis heartbeat: dry-run 廃止 + slack/mail 報告 配線 + 実action化
 A2. earn skill #1 (info product): Felix型 guide を 1 本 実制作 → Stripe Payment Link → 実販売 verify
-A3. life-manager skill: Dais の gcal heal + mail 先回り + 10分前 (real, no dry-run)
+A3. mr-bot skill: Dais の gcal heal + mail 先回り + 10分前 (real, no dry-run)
 A4. earn>spend ledger (北極星 metric) を state/ に毎heartbeat記録
 A5. base 一本化: private(.openclaw) + public(genesis) を OpenClaw に統合、 SOUL.md 2種 (dais/public) env切替
 A6. 旧 garbage 削除: dry-run cron / 重複 / .hermes archive (A1-A5 verify 後)
@@ -253,7 +253,7 @@ listing 実内容 (= crawl 確認):
 3. tweak (= ここが 我々の差別化):
    - SOUL/IDENTITY を Anicca に (= 4諦/8正道 constitution + life管理 mission)
    - earn を ★ dry-run 廃止 → 実 action ★ (Felix の founder行動を 我々の Stripe/wallet に向ける)
-   - life-manager skill 追加 (= Felix に無い、 Anicca の差別化)
+   - mr-bot skill 追加 (= Felix に無い、 Anicca の差別化)
 4. iterate: github issue で 細かく指示 (forum-issues skill 既存) → Anicca 自己編集
 5. ★ Anicca persona を Claw Mart で 売る ★ (= Felix の move を そのまま、 revenue stream)
 ```
@@ -266,7 +266,7 @@ listing 実内容 (= crawl 確認):
 A0. ★ $99 Felix persona 購入 (= 動く copy 元、 linchpin) ★ — Dais の "buy" 待ち
 A1. genesis に install + dry-run 廃止 + slack/mail 報告 + 実action
 A2. earn #1: Felix の sell-info-product を 我々用に → guide作成 → Stripe → 実販売 verify
-A3. life-manager skill (gcal heal + mail先回り + 10分前) real化 ← Anicca 差別化
+A3. mr-bot skill (gcal heal + mail先回り + 10分前) real化 ← Anicca 差別化
 A4. earn>spend ledger (北極星 metric) 毎heartbeat記録
 A5. SOUL/IDENTITY = Anicca化 (4諦/8正道 + life mission)
 A6. base一本化 (private+public、 SOUL env切替)
@@ -334,7 +334,7 @@ B5. content を 作りながら 進む (= 各 milestone を 素材化)
 規律         = sutando proactive-loop (idleしない)  ← code/パターンcopy
 記憶         = Felix 3-tier memory  ← パターンcopy
 頭脳         = Grok 4 full (mini禁止)
-差別化       = life-manager (gcal/mail/10分前)  ← Anicca固有、copy元なし
+差別化       = mr-bot (gcal/mail/10分前)  ← Anicca固有、copy元なし
 理論背骨     = SSA paper (economic/replication/adaptation loop)  ← 記事の権威付け
 trading(後)  = autohedge (Solana, 高リスク, 実資金要)  ← seed有る時のみ、本命でない
 ```

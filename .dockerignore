@@ -1,8 +1,8 @@
 *
 !apps/
 apps/*
-!apps/life-manager/
-!apps/life-manager/**
+!apps/mr-bot/
+!apps/mr-bot/**
 !skills/
 skills/*
 !skills/video/

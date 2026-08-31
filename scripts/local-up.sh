@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# One command to run Life Manager on your own machine.
+# One command to run Mr.bot on your own machine.
 #
-#   git clone https://github.com/Daisuke134/life-manager && cd life-manager
+#   git clone https://github.com/Daisuke134/life-manager && cd mr-bot
 #   ./scripts/local-up.sh
 #
 # It creates the local env file if you don't have one (generating a password for the
@@ -13,7 +13,7 @@
 # Subcommands: up (default) | down | status | logs | loops-init | loops-up | loops-status | loops-down
 #
 # Overrides, mainly for testing an isolated copy next to a running one:
-#   LM_LOCAL_PROJECT   compose project name       (default: life-manager-local)
+#   LM_LOCAL_PROJECT   compose project name       (default: mr-bot-local)
 #   LM_LOCAL_API_PORT / LM_LOCAL_WORKER_HEALTH_PORT / LM_LOCAL_MINIO_PORT / LM_LOCAL_MINIO_CONSOLE_PORT
 #   LM_LOCAL_NO_BUILD=1  reuse the existing runtime image instead of rebuilding
 
@@ -24,9 +24,9 @@ REPO="$(cd "$HERE/.." && pwd)"
 COMPOSE_FILE="$REPO/deploy/local/compose.yaml"
 ENV_FILE="$REPO/deploy/local/.env"
 ENV_EXAMPLE="$REPO/deploy/local/.env.example"
-PROJECT="${LM_LOCAL_PROJECT:-life-manager-local}"
+PROJECT="${LM_LOCAL_PROJECT:-mr-bot-local}"
 READY_TIMEOUT_SECONDS="${LM_LOCAL_READY_TIMEOUT:-300}"
-LOOP_PROFILE_FILE="${LM_LOCAL_LOOP_PROFILE_FILE:-$HOME/.config/life-manager/loops}"
+LOOP_PROFILE_FILE="${LM_LOCAL_LOOP_PROFILE_FILE:-$HOME/.config/mr-bot/loops}"
 CREDENTIALS_FILE="${LM_CREDENTIALS_FILE:-$HOME/.local/share/anicca/credentials.json}"
 
 say() { printf '%s\n' "$*"; }
@@ -82,7 +82,7 @@ ensure_full_loop_release() {
   current_sha="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("sha", ""))' "$HOME/loops/current/RELEASE.json" 2>/dev/null || true)"
   current_paths="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("release_paths") or "")' "$HOME/loops/current/RELEASE.json" 2>/dev/null || true)"
   if [ "$current_sha" != "$main_sha" ] || { [ -n "$current_paths" ] && [ "$current_paths" != "ALL" ]; }; then
-    LIFE_MANAGER_SOURCE_REPO="$REPO" LOOPS_RELEASE_PATHS= bash "$REPO/bin/cut-loop-release.sh" origin/main
+    MR_BOT_SOURCE_REPO="$REPO" LOOPS_RELEASE_PATHS= bash "$REPO/bin/cut-loop-release.sh" origin/main
   fi
 }
 
@@ -128,7 +128,7 @@ cmd_up() {
     compose build api || die "the runtime image did not build."
   fi
 
-  say "starting Life Manager (project: $PROJECT) -- first run builds the image and can take a few minutes"
+  say "starting Mr.bot (project: $PROJECT) -- first run builds the image and can take a few minutes"
   if ! compose up "${up_args[@]}"; then
     report_unhealthy
     die "the stack did not come up healthy. The output above says which part."
@@ -143,13 +143,13 @@ cmd_up() {
   console_port="${LM_LOCAL_MINIO_CONSOLE_PORT:-${console_port:-19001}}"
 
   say ""
-  say "Life Manager is running."
+  say "Mr.bot is running."
   say "  API             http://localhost:${api_port}"
   say "  worker health   http://localhost:${worker_port}"
   say "  object store    http://localhost:${console_port}  (console)"
   say ""
   say "Your data stays in this stack's postgres and object store. Nothing is sent anywhere by running it."
-  say "To talk to it from Telegram, add your own bot token as a secret reference -- see apps/life-manager/.env.example."
+  say "To talk to it from Telegram, add your own bot token as a secret reference -- see apps/mr-bot/.env.example."
   say ""
   say "  ./scripts/local-up.sh status    what is running"
   say "  ./scripts/local-up.sh logs      follow the logs"
@@ -201,7 +201,7 @@ cmd_loops_up() {
   fi
   ensure_full_loop_release
   for loop in "$@"; do
-    LIFE_MANAGER_APPLY_TARGET="$loop" "$HOME/loops/current/bin/lm-loop" apply
+    MR_BOT_APPLY_TARGET="$loop" "$HOME/loops/current/bin/lm-loop" apply
     "$HOME/loops/current/bin/lm-loop" start "$loop"
   done
   mkdir -p "$(dirname "$LOOP_PROFILE_FILE")"

@@ -24,10 +24,10 @@ sys.path.insert(0, os.path.join(SELF_IMPROVE_DIR, "lib"))
 from weekly_compare import beats_previous_week  # noqa: E402
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 
 LEDGER_PATH_FOR_LOOP = {
-    "clip": lambda: os.environ.get("EARN_LEDGER") or os.path.expanduser("~/.local/state/life-manager/state/clip-earn-ledger.jsonl"),
+    "clip": lambda: os.environ.get("EARN_LEDGER") or os.path.expanduser("~/.local/state/mr-bot/state/clip-earn-ledger.jsonl"),
     "affiliate": lambda: os.environ.get("AFFILIATE_METRICS_PATH") or os.path.expanduser("~/.cloak/affiliate-metrics.jsonl"),
     "video": lambda: os.environ.get("EARN_VIDEO_METRICS_PATH") or os.path.expanduser(
         f"~/.cloak/earn-video-metrics-{os.environ.get('EARN_VIDEO_HANDLE', 'money_blueprintdaily')}.jsonl"),

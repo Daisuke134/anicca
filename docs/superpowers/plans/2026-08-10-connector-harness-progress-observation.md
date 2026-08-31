@@ -10,8 +10,8 @@
 
 **Files:**
 
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 ## Contracts
 

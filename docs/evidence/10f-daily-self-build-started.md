@@ -24,7 +24,7 @@ The bounded daily runner adds:
 | Auto-created PR | [#1094](https://github.com/Daisuke134/life-manager/pull/1094), OPEN |
 | Daily receipt | `outcome=pr_open`, `reason=pr_created`, `duration_ms=147499` |
 | Telegram report | real message id `3390` |
-| launchd | `ai.anicca.life-manager-dev`, `04:10`, program=`.../life-manager-dev-daily.js` |
+| launchd | `ai.anicca.mr-bot-dev`, `04:10`, program=`.../mr-bot-dev-daily.js` |
 
 The fresh worker observes RED before implementation, commits the minimal controlled-health
 regression fix, and the caller independently passes the full test/eval/privacy gates before

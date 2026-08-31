@@ -23,23 +23,23 @@
 ### Task 1: Generalize the minimal evidence chain for Peatix
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-minimal-evidence.js`
-- Modify: `apps/life-manager/lib/connector-minimal-evidence.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-evidence.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-evidence.test.js`
 
 - [ ] Write RED tests for a Peatix registered candidate producing an exact provider receipt, Calendar create+readback, full-page PNG/artifact SHA, dynamic Telegram message/photo, immutable `provider:"peatix"` bundle, and no private fields.
 - [ ] Add negative tests for cross-event URL, pending Peatix state, wrong receipt provider, Calendar mismatch, and nonpositive Telegram IDs; assert no bundle success.
 - [ ] Preserve the existing Luma test unchanged and assert its output remains Luma.
-- [ ] Run RED: `node --test apps/life-manager/lib/connector-minimal-evidence.test.js`.
+- [ ] Run RED: `node --test apps/mr-bot/lib/connector-minimal-evidence.test.js`.
 - [ ] Import/create the Peatix store, add exact provider descriptor selection, and replace hard-coded Luma strings only where provider-dependent.
 - [ ] Run GREEN:
 
 ```bash
 node --test \
-  apps/life-manager/lib/connector-minimal-evidence.test.js \
-  apps/life-manager/lib/peatix-evidence-store.test.js \
-  apps/life-manager/lib/luma-evidence-store.test.js \
-  apps/life-manager/lib/connector-minimal-production.test.js \
-  apps/life-manager/lib/connector-minimal-runner.test.js
+  apps/mr-bot/lib/connector-minimal-evidence.test.js \
+  apps/mr-bot/lib/peatix-evidence-store.test.js \
+  apps/mr-bot/lib/luma-evidence-store.test.js \
+  apps/mr-bot/lib/connector-minimal-production.test.js \
+  apps/mr-bot/lib/connector-minimal-runner.test.js
 ```
 
 - [ ] Run `node --check` and `git diff --check`.

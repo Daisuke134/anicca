@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Modify exactly `apps/life-manager/lib/transport/calendar-gog.js` and `apps/life-manager/lib/transport/transport-gog.test.js`.
+- Modify exactly `apps/mr-bot/lib/transport/calendar-gog.js` and `apps/mr-bot/lib/transport/transport-gog.test.js`.
 - Production soft target: +8–15 LOC. Test soft target: +35–60 LOC. No new file, dependency, helper abstraction, state, or schema.
 - Use strict TDD: the exact Doorkeeper create case and rejection table fail before the minimum production branch is added.
 - Accept only exact `https://<lowercase-group>.doorkeeper.jp/events/<positive integer>` where group labels are lowercase ASCII letters/digits/hyphens, start/end alphanumeric, length 1–63, and group is not `www`.
@@ -25,8 +25,8 @@
 ### Task 1: Add strict Doorkeeper canonical URL handling to gog Calendar
 
 **Files:**
-- Modify: `apps/life-manager/lib/transport/calendar-gog.js`
-- Test: `apps/life-manager/lib/transport/transport-gog.test.js`
+- Modify: `apps/mr-bot/lib/transport/calendar-gog.js`
+- Test: `apps/mr-bot/lib/transport/transport-gog.test.js`
 
 **Interfaces:**
 - Consumes: `createConnectorEvent({canonicalUrl:"https://tokyo-builders.doorkeeper.jp/events/101", ...})`.
@@ -60,7 +60,7 @@ Assert every variant rejects with `connector calendar invalid` and injected `run
 - [ ] **Step 2: Run focused tests and verify RED**
 
 ```bash
-node --test apps/life-manager/lib/transport/transport-gog.test.js
+node --test apps/mr-bot/lib/transport/transport-gog.test.js
 ```
 
 Expected: only the newly added Doorkeeper acceptance is RED because the current fallback reaches Peatix rejection; all existing transport tests stay green. If the rejection table is already green, temporarily remove the planned exact raw-equality or group-boundary guard after implementation, prove the named negative test fails, then restore it and record that reversible mutation.
@@ -72,8 +72,8 @@ Inside `connectorCanonicalUrl`, after Meetup and before the final Peatix fallbac
 - [ ] **Step 4: Verify GREEN and adjacent evidence chain**
 
 ```bash
-node --test apps/life-manager/lib/transport/transport-gog.test.js apps/life-manager/lib/connector-minimal-evidence.test.js
-node --check apps/life-manager/lib/transport/calendar-gog.js
+node --test apps/mr-bot/lib/transport/transport-gog.test.js apps/mr-bot/lib/connector-minimal-evidence.test.js
+node --check apps/mr-bot/lib/transport/calendar-gog.js
 git diff --check
 ```
 

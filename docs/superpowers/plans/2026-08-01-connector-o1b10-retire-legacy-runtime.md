@@ -4,7 +4,7 @@
 
 > Status: 完了。次はO1B-11 connpass API key申請。
 
-**Goal:** `profitable-claude`の旧Connector fill-gapsと旧Telegram日報を停止し、正本`life-manager`のevents pack、durable worker、Guardianだけを実行系として残す。
+**Goal:** `profitable-claude`の旧Connector fill-gapsと旧Telegram日報を停止し、正本`mr-bot`のevents pack、durable worker、Guardianだけを実行系として残す。
 
 **Architecture:** 旧code repositoryは削除せずreference-only archiveとして残す。固定allowlistの2 launchd labelだけをbootout + disableし、plistをowner-only state archiveへ移動する。正規Guardianや他loopには触れない。操作はidempotentかつmanifest/checksum付きで、必要なら`launchctl enable`とplist復元で戻せる。
 
@@ -13,7 +13,7 @@
 - 対象は`ai.anicca.connector-fill-gaps`と`ai.anicca.connector-daily-report`だけ。
 - `ai.anicca.outbound-runtime-healthcheck`、Docker worker、PostgreSQL、runtime volumeは停止・削除しない。
 - `/Users/operator/profitable-claude`のdirty worktreeを編集・commitしない。
-- 旧plistを永久削除せず、`~/.local/state/life-manager/retired-launchd/o1b10/`へ移動する。
+- 旧plistを永久削除せず、`~/.local/state/mr-bot/retired-launchd/o1b10/`へ移動する。
 - disabled state、archive、checksum、正規Guardian healthを実測する。
 - 正本specを各checkpointで更新し、commit/pushする。
 

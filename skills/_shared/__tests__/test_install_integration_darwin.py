@@ -194,7 +194,7 @@ def test_rendered_plist_contains_literal_absolute_paths(probe_slot):
     # Must reference the canonical anicca repo
     repo_root = Path(__file__).resolve().parents[3]
     assert f"{repo_root}/skills/_shared/proactive-loop.sh" in body
-    assert str(Path.home() / f".local/state/life-manager/logs/{probe_slot}-proactive.out") in body
+    assert str(Path.home() / f".local/state/mr-bot/logs/{probe_slot}-proactive.out") in body
 
 
 # ─── PROP-E1: load-identity check for any sibling job at all times ─

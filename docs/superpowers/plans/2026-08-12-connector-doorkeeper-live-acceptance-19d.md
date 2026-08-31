@@ -4,7 +4,7 @@
 
 **Goal:** Exercise the pushed Doorkeeper evidence-store, minimal-evidence, and Calendar-transport chain through one real production wake, accepting either a complete real `applied_bundle` or a truthful no-effect audit when no Calendar-free candidate exists.
 
-**Architecture:** Trigger exact label `ai.anicca.life-manager-connector-native` once with `launchctl kickstart`. The existing official `skills/connector/run.sh` owns the one browser rail, provider sequence, readback, Calendar, PNG, Telegram, durable state, cleanup, and terminal report. Observe append-only state and process lifecycle only.
+**Architecture:** Trigger exact label `ai.anicca.mr-bot-connector-native` once with `launchctl kickstart`. The existing official `skills/connector/run.sh` owns the one browser rail, provider sequence, readback, Calendar, PNG, Telegram, durable state, cleanup, and terminal report. Observe append-only state and process lifecycle only.
 
 **Tech Stack:** launchd, canonical Connector entrypoint, shared CDP `:9222`, gog Calendar, Telegram delivery, JSONL durable state.
 
@@ -20,7 +20,7 @@
 ## Execution
 
 1. Recheck pushed/clean, process 0, lock absent, label not running, and no concurrent owner.
-2. Run exact one `launchctl kickstart gui/$(id -u)/ai.anicca.life-manager-connector-native` without `-k`.
+2. Run exact one `launchctl kickstart gui/$(id -u)/ai.anicca.mr-bot-connector-native` without `-k`.
 3. Watch the same label/process/state until terminal exit, with a hard observation bound of 12 minutes. Do not trigger a second wake.
 4. Compare append-only counts and inspect the new wake/report/delivery/provider audits/bundle, then recheck process 0, lock absent, owned target cleanup, unrelated CDP page preservation, and legacy labels unloaded.
 

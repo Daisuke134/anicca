@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "scope": "life-manager",
+  "scope": "mr-bot",
   "timeout_seconds": 900,
   "providers": {
     "codex": {
@@ -17,7 +17,7 @@
     },
     "openclaw": {
       "executable": "openclaw",
-      "agent": "life-manager",
+      "agent": "mr-bot",
       "capabilities": {"structured_json": true, "tools": true, "browser": true},
       "model_capabilities": {
         "openai/gpt-5.4": {"tool_write": true}

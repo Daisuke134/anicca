@@ -8,7 +8,7 @@
 
 **Tech Stack:** Bash and pytest.
 
-**Spec:** `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md` (GA-13).
+**Spec:** `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md` (GA-13).
 
 ## Global Constraints
 

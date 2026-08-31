@@ -22,8 +22,8 @@ Close the first live Peatix application boundary observed in `wake-d6050c563e395
 
 Files owned by Luna:
 
-1. `apps/life-manager/lib/peatix-browser-provider.test.js`
-2. `apps/life-manager/lib/peatix-browser-provider.js`
+1. `apps/mr-bot/lib/peatix-browser-provider.test.js`
+2. `apps/mr-bot/lib/peatix-browser-provider.js`
 
 Soft target: 2 implementation files; production +15–25 LOC; tests +20–35 LOC.
 
@@ -37,7 +37,7 @@ Add one private helper that starts an exact `page.waitForURL` before clicking, w
 
 ### Verify
 
-- `node --test apps/life-manager/lib/peatix-browser-provider.test.js`
+- `node --test apps/mr-bot/lib/peatix-browser-provider.test.js`
 - Adjacent Peatix workflow, production factory/harness, minimal runner, and native entrypoint tests.
 - `node --check` for modified JavaScript.
 - `git diff --check`.

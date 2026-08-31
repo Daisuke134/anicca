@@ -29,7 +29,7 @@ def test_shared_launchd_path_resolves_user_installed_agent_tools(monkeypatch):
     manifest, table = gig_release.settings(Path("/release"))
     job = next(
         row for row in manifest["jobs"]
-        if row["label"] == "ai.anicca.life-manager-upwork-free-loop"
+        if row["label"] == "ai.anicca.mr-bot-upwork-free-loop"
     )
 
     environment = gig_release.plist_for(job, table)["EnvironmentVariables"]
@@ -83,7 +83,7 @@ def test_gc_inspects_loaded_disk_cleanup_owner_while_idle(tmp_path, monkeypatch)
         "loaded_program",
         lambda label: (
             ["/usr/bin/python3", str(tmp_path / cleanup_sha / "disk_cleanup.py")]
-            if label == "ai.anicca.life-manager-disk-cleanup"
+            if label == "ai.anicca.mr-bot-disk-cleanup"
             else []
         ),
     )
@@ -182,7 +182,7 @@ def test_default_activation_never_restarts_a_busy_continuous_lane():
 
 
 def test_upwork_browser_running_fence_uses_process_fallback(monkeypatch):
-    label = "ai.anicca.life-manager-upwork-browser"
+    label = "ai.anicca.mr-bot-upwork-browser"
     ps_output = [""]
 
     def run(command, **_kwargs):

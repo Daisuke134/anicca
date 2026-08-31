@@ -22,7 +22,7 @@ setup(){
   FAKE_HOME="$(mktemp -d)"
   FAKE_BIN="$(mktemp -d)"
   mkdir -p "$FAKE_HOME/.openclaw/state" "$FAKE_HOME/.openclaw/logs" \
-           "$FAKE_SELF/reddit-loop/state" "$FAKE_SELF/life-manager-loop/state"
+           "$FAKE_SELF/reddit-loop/state" "$FAKE_SELF/mr-bot-loop/state"
 
   cat > "$FAKE_SELF/verify-loops.sh" <<'EOF'
 #!/usr/bin/env bash

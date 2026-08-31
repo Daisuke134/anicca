@@ -13,7 +13,7 @@ Trigger and observe the newly loaded single daily production owner once, without
 
 ## Execute
 
-- Use only `launchctl kickstart gui/<uid>/ai.anicca.life-manager-connector-native`. Do not call `skills/connector/run.sh`, Node entrypoints, browser scripts, or another executor directly.
+- Use only `launchctl kickstart gui/<uid>/ai.anicca.mr-bot-connector-native`. Do not call `skills/connector/run.sh`, Node entrypoints, browser scripts, or another executor directly.
 - Observe launchd state/runs, append-only report/delivery/action counts, one Connector-owned target lease, and process/lock lifecycle. Never stop or restart the browser.
 - Do not kick a second time. Let the bounded wake reach its own terminal status.
 

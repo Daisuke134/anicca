@@ -20,7 +20,7 @@ set -uo pipefail
 URL_FILE="$HOME/.openclaw/state/anicca_phone_url.txt"
 HEALTH="http://localhost:3100/health"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-LOOP_CLI="${LIFE_MANAGER_LOOP_CLI:-$ROOT/bin/lm-loop}"
+LOOP_CLI="${MR_BOT_LOOP_CLI:-$ROOT/bin/lm-loop}"
 SLEEP_SECONDS="${TUNNEL_WATCH_SLEEP_SECONDS:-30}"
 
 while true; do

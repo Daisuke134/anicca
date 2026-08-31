@@ -82,7 +82,7 @@ def postiz_publish(text: str, mode: str, source_url: str | None) -> str:
         POSTIZ_API,
         data=json.dumps(payload, ensure_ascii=False).encode(),
         headers={"Authorization": api_key, "Content-Type": "application/json",
-                 "User-Agent": "life-manager-x-repost/1"},
+                 "User-Agent": "mr-bot-x-repost/1"},
         method="POST",
     )
     with urlopen(request, timeout=30) as response:
@@ -111,7 +111,7 @@ def postiz_published_url(
     })
     request = Request(
         f"{POSTIZ_API}?{query}",
-        headers={"Authorization": api_key, "User-Agent": "life-manager-x-repost/1"},
+        headers={"Authorization": api_key, "User-Agent": "mr-bot-x-repost/1"},
     )
     with urlopen(request, timeout=30) as response:
         value = json.load(response)

@@ -42,11 +42,11 @@ with open(VERIFY_LOOPS_AUDIT_SH, encoding="utf-8") as f:
 # previously only 3 of these were listed, hiding affiliate's #994/bounty's #995 diagnoses). ---
 CANONICAL_10 = [
     "clip-loop", "affiliate-loop", "video-loop", "gig-loop", "bounty-loop",
-    "pm-earner-loop", "founder-loop", "capafy-loop", "reddit-loop", "life-manager-loop",
+    "pm-earner-loop", "founder-loop", "capafy-loop", "reddit-loop", "mr-bot-loop",
 ]
 
 m = re.search(
-    r'for L in ([\w\- ]+); do r="\$HOME/\.local/state/life-manager/state/\.self-fix-\$L\.result"',
+    r'for L in ([\w\- ]+); do r="\$HOME/\.local/state/mr-bot/state/\.self-fix-\$L\.result"',
     verify_loops_src,
 )
 chk("verify-loops.sh: self-fix marker loop line found (script structure unchanged)",

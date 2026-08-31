@@ -51,7 +51,7 @@ def sha256(path: Path) -> str:
 
 
 GUARD_RELATIVE = Path(
-    "gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
+    "gig/releases/mr-bot/current/skills/earn/gig/scripts/gig_disk_guard.py"
 )
 
 
@@ -90,8 +90,8 @@ class RepositoryOwnershipTests(unittest.TestCase):
         self.assertIn("description:", text)
         self.assertIn("MIGRATION_ONLY", text)
         self.assertIn("MACOS_LOCAL_ONLY", text)
-        self.assertIn("LIFE_MANAGER_STATE_HOME", text)
-        self.assertIn("LIFE_MANAGER_DATA_HOME", text)
+        self.assertIn("MR_BOT_STATE_HOME", text)
+        self.assertIn("MR_BOT_DATA_HOME", text)
 
         active_files = (
             path
@@ -136,12 +136,12 @@ class RepositoryOwnershipTests(unittest.TestCase):
 
     @unittest.skipUnless(
         canonical_guard_ready(),
-        "canonical Life Manager guard is unavailable; success integration is not hermetic here",
+        "canonical Mr.bot guard is unavailable; success integration is not hermetic here",
     )
     def test_install_release_is_atomic_and_does_not_touch_launch_agents(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             temporary_root = Path(temporary)
-            fixture_root = temporary_root / "life-manager"
+            fixture_root = temporary_root / "mr-bot"
             fixture_skill = fixture_root / "skills" / "affiliate"
             fixture_skill.parent.mkdir(parents=True)
             shutil.copytree(
@@ -188,9 +188,9 @@ class RepositoryOwnershipTests(unittest.TestCase):
             environment.update(
                 {
                     "HOME": str(home),
-                    "LIFE_MANAGER_DATA_HOME": str(data_home),
-                    "LIFE_MANAGER_STATE_HOME": str(state_home),
-                    "LIFE_MANAGER_RELEASE_SHA": commit,
+                    "MR_BOT_DATA_HOME": str(data_home),
+                    "MR_BOT_STATE_HOME": str(state_home),
+                    "MR_BOT_RELEASE_SHA": commit,
                     "AFFILIATE_INSTALL_LAUNCHD": "0",
                     "AFFILIATE_CANONICAL_HOME": str(Path.home()),
                 }
@@ -231,7 +231,7 @@ class RepositoryOwnershipTests(unittest.TestCase):
             self.assertEqual(receipt_data["disk_guard_sha256"], guard_hash)
             self.assertEqual(
                 receipt_data["external_dependencies"],
-                [{"name": "life-manager-disk-guard", "path": str(guard), "sha256": guard_hash}],
+                [{"name": "mr-bot-disk-guard", "path": str(guard), "sha256": guard_hash}],
             )
             self.assertEqual(
                 receipt_data["deferred_launchd_owners"],
@@ -270,12 +270,12 @@ class RepositoryOwnershipTests(unittest.TestCase):
 
     @unittest.skipIf(
         canonical_guard_ready(),
-        "canonical Life Manager guard exists; missing-dependency branch is CI-only",
+        "canonical Mr.bot guard exists; missing-dependency branch is CI-only",
     )
     def test_install_release_fails_closed_when_canonical_guard_is_absent(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             temporary_root = Path(temporary)
-            fixture_root = temporary_root / "life-manager"
+            fixture_root = temporary_root / "mr-bot"
             fixture_skill = fixture_root / "skills" / "affiliate"
             fixture_skill.parent.mkdir(parents=True)
             shutil.copytree(
@@ -305,9 +305,9 @@ class RepositoryOwnershipTests(unittest.TestCase):
             environment.update(
                 {
                     "HOME": str(home),
-                    "LIFE_MANAGER_DATA_HOME": str(data_home),
-                    "LIFE_MANAGER_STATE_HOME": str(state_home),
-                    "LIFE_MANAGER_RELEASE_SHA": commit,
+                    "MR_BOT_DATA_HOME": str(data_home),
+                    "MR_BOT_STATE_HOME": str(state_home),
+                    "MR_BOT_RELEASE_SHA": commit,
                     "AFFILIATE_INSTALL_LAUNCHD": "0",
                     "AFFILIATE_CANONICAL_HOME": str(Path.home()),
                 }
@@ -320,7 +320,7 @@ class RepositoryOwnershipTests(unittest.TestCase):
                 text=True,
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Life Manager disk guard is unavailable", result.stderr)
+            self.assertIn("Mr.bot disk guard is unavailable", result.stderr)
             self.assertFalse((data_home / "affiliate" / "current").exists())
             self.assertFalse((data_home / "affiliate" / "releases").exists())
 

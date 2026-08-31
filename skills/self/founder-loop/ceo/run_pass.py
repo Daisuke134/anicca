@@ -53,7 +53,7 @@ import weekly_report  # noqa: E402
 from ledger_metrics import load_ledger_rows  # noqa: E402
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[4]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[4]))
 
 
 def _state_dir() -> str:

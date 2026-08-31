@@ -13,7 +13,7 @@ from job_search_loop.agent_runner import (
 
 
 class AgentRunnerTests(unittest.TestCase):
-    def test_default_runner_is_the_canonical_life_manager_runtime(self):
+    def test_default_runner_is_the_canonical_mr_bot_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
             runner = AgentRunner(evidence_root=Path(directory) / "evidence")
             repo_root = Path(__file__).resolve().parents[3]
@@ -122,7 +122,7 @@ class AgentRunnerTests(unittest.TestCase):
             completed = type("Completed", (), {
                 "returncode": 75,
                 "stdout": "",
-                "stderr": "LIFE_MANAGER_PROVIDER_LEASE_BUSY\nprovider lease busy\n",
+                "stderr": "MR_BOT_PROVIDER_LEASE_BUSY\nprovider lease busy\n",
             })()
             with patch("subprocess.run", return_value=completed):
                 with self.assertRaises(PassAlreadyRunning):

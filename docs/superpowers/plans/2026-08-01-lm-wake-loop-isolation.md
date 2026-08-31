@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-01-lm-daily-organ-design.md` §3 row 1c and §3.1 (method A).
 
-**Working directory:** `/Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager`
+**Working directory:** `/Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot`
 
 ---
 
@@ -19,7 +19,7 @@
 `node_modules` is deleted at random by `~/scripts/disk-sentinel.sh` whenever free disk drops under 10 GB (it treats `node_modules` as rebuildable). If any test run dies with `Cannot find module 'canonicalize'`, that is the cause — it is NOT a code defect. Always run tests as one chained command:
 
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test <files>
 ```
@@ -107,7 +107,7 @@ test("publishing again replaces the entry and restarts its freshness", () => {
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test lib/event-cache.test.js
 ```
@@ -161,7 +161,7 @@ module.exports = { putEvents, getEvents, clearEvents, EVENT_CACHE_TTL_MS };
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test lib/event-cache.test.js
 ```
@@ -171,7 +171,7 @@ Expected: `pass 5`, `fail 0`.
 
 ```bash
 cd /Users/operator/anicca/.worktrees/spec-two-loops
-git add apps/life-manager/lib/event-cache.js apps/life-manager/lib/event-cache.test.js
+git add apps/mr-bot/lib/event-cache.js apps/mr-bot/lib/event-cache.test.js
 git commit -m "feat(daily): hand the calendar from the wake tick to the organ tick"
 ```
 
@@ -245,7 +245,7 @@ test("runOrgan times the failure path too, so a slow throw is visible", async ()
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test lib/organ-run.test.js
 ```
@@ -285,7 +285,7 @@ module.exports = { runOrgan };
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test lib/organ-run.test.js
 ```
@@ -295,7 +295,7 @@ Expected: `pass 3`, `fail 0`.
 
 ```bash
 cd /Users/operator/anicca/.worktrees/spec-two-loops
-git add apps/life-manager/lib/organ-run.js apps/life-manager/lib/organ-run.test.js
+git add apps/mr-bot/lib/organ-run.js apps/mr-bot/lib/organ-run.test.js
 git commit -m "feat(daily): measure how long each organ takes, not just whether it threw"
 ```
 
@@ -320,7 +320,7 @@ Keeping `wakeUserOnce` as the composition is what preserves the Inngest per-user
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager && sed -n '343,590p' scheduler.js
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot && sed -n '343,590p' scheduler.js
 ```
 Expected: the whole of `wakeUserOnce`, ending just before `forEachUserSafe`.
 
@@ -328,7 +328,7 @@ Expected: the whole of `wakeUserOnce`, ending just before `forEachUserSafe`.
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test test/wake-catchup.test.js test/wake-miss-record.test.js lib/wake-miss.test.js lib/slash-command.test.js
 ```
@@ -442,7 +442,7 @@ In `module.exports`, next to `wakeUserOnce, travelUserOnce, askUserOnce,` add:
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test test/wake-catchup.test.js test/wake-miss-record.test.js lib/wake-miss.test.js lib/slash-command.test.js
 ```
@@ -454,7 +454,7 @@ If a test fails because an organ's stub is no longer called, that is a real regr
 
 ```bash
 cd /Users/operator/anicca/.worktrees/spec-two-loops
-git add apps/life-manager/scheduler.js
+git add apps/mr-bot/scheduler.js
 git commit -m "refactor(daily): separate the dial from the organs that can be late"
 ```
 
@@ -546,7 +546,7 @@ to:
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node -e 'const s=require("./scheduler.js"); console.log(typeof s.startWakeLoop, typeof s.wakeTick, typeof s.wakeCallOnce, typeof s.organsUserOnce, s.WAKE_USER_TIMEOUT_MS)'
 ```
@@ -556,7 +556,7 @@ Expected: `function function function function 20000`.
 
 ```bash
 cd /Users/operator/anicca/.worktrees/spec-two-loops
-git add apps/life-manager/scheduler.js
+git add apps/mr-bot/scheduler.js
 git commit -m "feat(daily): give the wake call its own tick and its own deadline"
 ```
 
@@ -698,7 +698,7 @@ test("one user blowing the wake budget does not stop the next user's dial", asyn
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test test/wake-loop-isolation.test.js
 ```
@@ -712,7 +712,7 @@ Tasks 3 and 4 are the implementation. If a test here fails, fix `scheduler.js`, 
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test test/wake-loop-isolation.test.js test/wake-catchup.test.js test/wake-miss-record.test.js \
        lib/wake-miss.test.js lib/event-cache.test.js lib/organ-run.test.js lib/slash-command.test.js
@@ -723,7 +723,7 @@ Expected: `fail 0`, with at least 68 passing (55 baseline + 5 cache + 3 timing +
 
 ```bash
 cd /Users/operator/anicca/.worktrees/spec-two-loops
-git add apps/life-manager/test/wake-loop-isolation.test.js
+git add apps/mr-bot/test/wake-loop-isolation.test.js
 git commit -m "test(daily): pin that a stalled organ cannot reach the dial"
 ```
 
@@ -739,7 +739,7 @@ git commit -m "test(daily): pin that a stalled organ cannot reach the dial"
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager && cat lib/maybe-start-loops.test.js
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot && cat lib/maybe-start-loops.test.js
 ```
 
 - [ ] **Step 2: Add a failing assertion**
@@ -756,7 +756,7 @@ assert.equal(started.wake, 1, "the dedicated wake loop must start in production,
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test lib/maybe-start-loops.test.js
 ```
@@ -789,7 +789,7 @@ In `server.js`, find the `maybeStartLoops(process.env, { startScheduler, startTr
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test lib/maybe-start-loops.test.js && node -e 'require("./server.js")' 2>&1 | head -5
 ```
@@ -799,7 +799,7 @@ Expected: `fail 0` for the test. The `server.js` load is a syntax/wiring check �
 
 ```bash
 cd /Users/operator/anicca/.worktrees/spec-two-loops
-git add apps/life-manager/lib/maybe-start-loops.js apps/life-manager/lib/maybe-start-loops.test.js apps/life-manager/server.js
+git add apps/mr-bot/lib/maybe-start-loops.js apps/mr-bot/lib/maybe-start-loops.test.js apps/mr-bot/server.js
 git commit -m "feat(daily): start the dedicated wake loop in production"
 ```
 
@@ -814,7 +814,7 @@ git commit -m "feat(daily): start the dedicated wake loop in production"
 
 Run:
 ```bash
-cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/life-manager \
+cd /Users/operator/anicca/.worktrees/spec-two-loops/apps/mr-bot \
   && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1 \
   && node --test test/wake-loop-isolation.test.js test/wake-catchup.test.js test/wake-miss-record.test.js \
        lib/wake-miss.test.js lib/event-cache.test.js lib/organ-run.test.js lib/slash-command.test.js \

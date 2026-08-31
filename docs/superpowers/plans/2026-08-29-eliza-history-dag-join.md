@@ -2,22 +2,22 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Keep the fixed ElizaOS root tree unchanged while making the Phase F-closeout Life Manager commit a direct second parent in the migration fork.
+**Goal:** Keep the fixed ElizaOS root tree unchanged while making the Phase F-closeout Mr.bot commit a direct second parent in the migration fork.
 
 **Architecture:** Use Git's built-in `ours` merge strategy on a new migration branch. Fetch the legacy repository with `blob:none`, join the exact fixed commits, verify the tree and parent order, push only the new branch, and store one private receipt.
 
 **Tech Stack:** Git, POSIX shell, `jq`, `shasum`.
 
-**Spec:** `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+**Spec:** `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 ## Global Constraints
 
 - Eliza source commit is exactly `29bed1bb394a2c0c7c0df6dc12babbe28667efbe`.
 - Phase F-closeout legacy commit is exactly `c9bea215b87755434704a5d16dd8c0a55aff1981`.
-- Migration repository is `/Users/anicca/Projects/life-manager-eliza-migration`.
+- Migration repository is `/Users/anicca/Projects/mr-bot-eliza-migration`.
 - Push only new branch `migration/eliza-history` to `Daisuke134/life-manager-eliza`.
 - Root tree before and after the join must be byte-identical.
-- The join commit must have exactly two parents: Eliza first, legacy Life Manager second.
+- The join commit must have exactly two parents: Eliza first, legacy Mr.bot second.
 - Do not modify either repository's `main`, force-push, delete a repository, import files, install dependencies, run CI, or touch runtime/provider/browser/credential/loop state.
 - Verification is Git invariants plus one bounded adversarial review. No unit test or full suite is added for a history-only atom.
 
@@ -26,9 +26,9 @@
 ### Task 1: Join the fixed legacy history without changing the Eliza tree
 
 **Files:**
-- Create outside repo: `/Users/anicca/.local/state/life-manager/migration/elz-f/history-join-receipt.json`
-- Create outside repo: `/Users/anicca/Projects/life-manager-main/.worktrees/elz-f11-plan/.superpowers/sdd/2026-08-29-eliza-history-dag-join/task-1-report.md`
-- Modify Git history only: branch `migration/eliza-history` in `/Users/anicca/Projects/life-manager-eliza-migration`
+- Create outside repo: `/Users/anicca/.local/state/mr-bot/migration/elz-f/history-join-receipt.json`
+- Create outside repo: `/Users/anicca/Projects/mr-bot-main/.worktrees/elz-f11-plan/.superpowers/sdd/2026-08-29-eliza-history-dag-join/task-1-report.md`
+- Modify Git history only: branch `migration/eliza-history` in `/Users/anicca/Projects/mr-bot-eliza-migration`
 
 **Interfaces:**
 - Consumes: fixed Eliza commit `29bed1bb394a2c0c7c0df6dc12babbe28667efbe` and fixed legacy commit `c9bea215b87755434704a5d16dd8c0a55aff1981`.
@@ -37,7 +37,7 @@
 - [ ] **Step 1: Fail closed on branch, worktree, disk, and remote drift**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
+cd /Users/anicca/Projects/mr-bot-eliza-migration
 ELIZA_SHA=29bed1bb394a2c0c7c0df6dc12babbe28667efbe
 LEGACY_SHA=c9bea215b87755434704a5d16dd8c0a55aff1981
 test "$(git rev-parse HEAD)" = "$ELIZA_SHA"
@@ -55,18 +55,18 @@ Expected: every check exits `0`; there is at least 1 GiB free; neither target br
 - [ ] **Step 2: Fetch only the legacy commit graph and create the join branch**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
+cd /Users/anicca/Projects/mr-bot-eliza-migration
 ELIZA_SHA=29bed1bb394a2c0c7c0df6dc12babbe28667efbe
 LEGACY_SHA=c9bea215b87755434704a5d16dd8c0a55aff1981
 git fetch --filter=blob:none --no-tags \
   https://github.com/Daisuke134/life-manager.git \
-  refs/heads/main:refs/remotes/legacy-life-manager/main
+  refs/heads/main:refs/remotes/legacy-mr-bot/main
 git cat-file -e "$LEGACY_SHA^{commit}"
-git merge-base --is-ancestor "$LEGACY_SHA" refs/remotes/legacy-life-manager/main
+git merge-base --is-ancestor "$LEGACY_SHA" refs/remotes/legacy-mr-bot/main
 git switch -c migration/eliza-history "$ELIZA_SHA"
 git merge -s ours --no-ff --allow-unrelated-histories \
   "$LEGACY_SHA" \
-  -m "chore: join legacy Life Manager history"
+  -m "chore: join legacy Mr.bot history"
 ```
 
 Expected: merge exits `0` and creates one commit; it does not check out legacy blobs into the Eliza tree.
@@ -74,7 +74,7 @@ Expected: merge exits `0` and creates one commit; it does not check out legacy b
 - [ ] **Step 3: Prove exact tree and direct parent order before push**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
+cd /Users/anicca/Projects/mr-bot-eliza-migration
 ELIZA_SHA=29bed1bb394a2c0c7c0df6dc12babbe28667efbe
 LEGACY_SHA=c9bea215b87755434704a5d16dd8c0a55aff1981
 JOIN_SHA=$(git rev-parse HEAD)
@@ -95,7 +95,7 @@ Expected: all commands exit `0`; `JOIN_TREE` equals `ELIZA_TREE`; the two parent
 - [ ] **Step 4: Push only the new branch and verify official readback**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
+cd /Users/anicca/Projects/mr-bot-eliza-migration
 JOIN_SHA=$(git rev-parse HEAD)
 git push -u origin migration/eliza-history
 REMOTE_JOIN_SHA=$(git ls-remote origin refs/heads/migration/eliza-history | awk '{print $1}')
@@ -108,7 +108,7 @@ Expected: the new remote branch equals the local join commit; migration fork `ma
 - [ ] **Step 5: Write and verify the private receipt**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
+cd /Users/anicca/Projects/mr-bot-eliza-migration
 ELIZA_SHA=29bed1bb394a2c0c7c0df6dc12babbe28667efbe
 LEGACY_SHA=c9bea215b87755434704a5d16dd8c0a55aff1981
 JOIN_SHA=$(git rev-parse HEAD)
@@ -128,15 +128,15 @@ jq -n \
     join_sha:$join,root_tree_before:$before,root_tree_after:$after,parent_count:2,
     root_tree_changed:false,remote_branch:"migration/eliza-history",remote_readback_sha:$remote,
     force_pushes:0,main_mutations:0,repository_deletions:0,file_imports:0
-  }' > /Users/anicca/.local/state/life-manager/migration/elz-f/history-join-receipt.json
-chmod 600 /Users/anicca/.local/state/life-manager/migration/elz-f/history-join-receipt.json
+  }' > /Users/anicca/.local/state/mr-bot/migration/elz-f/history-join-receipt.json
+chmod 600 /Users/anicca/.local/state/mr-bot/migration/elz-f/history-join-receipt.json
 jq -e '
   .atom=="ELZ-F11" and .status=="passed" and .source_sha=="29bed1bb394a2c0c7c0df6dc12babbe28667efbe" and
   .legacy_second_parent=="c9bea215b87755434704a5d16dd8c0a55aff1981" and .parent_count==2 and
   .root_tree_changed==false and .join_sha==.remote_readback_sha and .force_pushes==0 and
   .main_mutations==0 and .repository_deletions==0 and .file_imports==0
-' /Users/anicca/.local/state/life-manager/migration/elz-f/history-join-receipt.json
-test "$(stat -f '%Lp' /Users/anicca/.local/state/life-manager/migration/elz-f/history-join-receipt.json)" = 600
+' /Users/anicca/.local/state/mr-bot/migration/elz-f/history-join-receipt.json
+test "$(stat -f '%Lp' /Users/anicca/.local/state/mr-bot/migration/elz-f/history-join-receipt.json)" = 600
 ```
 
 Expected: receipt predicate exits `0`; receipt mode is `0600`.

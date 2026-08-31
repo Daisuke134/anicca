@@ -3,7 +3,7 @@
   "objective": "O1B-21 same-day candidate continuation",
   "observed_at": "2026-08-02",
   "implementation": {
-    "single_state_machine": "apps/life-manager/lib/luma-candidate-loop.js",
+    "single_state_machine": "apps/mr-bot/lib/luma-candidate-loop.js",
     "events_pack_entrypoint": "runSameDayCandidates",
     "verified_success_only": true,
     "same_day_continue_statuses": [

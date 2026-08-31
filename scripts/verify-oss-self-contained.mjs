@@ -12,8 +12,8 @@ import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const REQUIRED_SOURCES = [
-  "life-manager",
-  "life-manager-v0",
+  "mr-bot",
+  "mr-bot-v0",
   "anicca.ai",
   "anicca-products",
   "profitable-claude",
@@ -22,7 +22,7 @@ const REQUIRED_SOURCES = [
 ];
 
 const ACTIVE_ROOTS = [
-  "apps/life-manager",
+  "apps/mr-bot",
   "runtime",
   "scripts",
   "services",
@@ -77,8 +77,8 @@ function isVerifiedVendorPath(path) {
 }
 
 const LEGACY_LITERAL_FIXTURES = new Set([
-  "apps/life-manager/lib/runtime-paths.test.js",
-  "apps/life-manager/scripts/inventory-legacy-jobs.test.js",
+  "apps/mr-bot/lib/runtime-paths.test.js",
+  "apps/mr-bot/scripts/inventory-legacy-jobs.test.js",
   "runtime/loop/tests/fixtures/macos-loop-jobs.json",
   "skills/earn/hl-trade/tests/test_reconcile.py",
 ]);
@@ -113,7 +113,7 @@ function sourceRootViolation(text) {
     /(?:~|\$HOME)\/anicca-project(?=[/}\s"'`]|$)/u,
     /(?:~|\$HOME)\/\.openclaw(?=[/}\s"'`]|$)/u,
     /Path\.home\(\)\s*\/\s*["']\.openclaw["']/u,
-    /\/opt\/life-manager(?=[/}\s"'`]|$)/u,
+    /\/opt\/mr-bot(?=[/}\s"'`]|$)/u,
   ];
   return forbidden.some((pattern) => pattern.test(text));
 }

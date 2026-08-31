@@ -23,8 +23,8 @@
 	<key>ThrottleInterval</key>
 	<integer>60</integer>
 	<key>StandardOutPath</key>
-	<string>__LIFE_MANAGER_HOME__/logs/earning-health-allslots-launchd.out.log</string>
+	<string>__MR_BOT_HOME__/logs/earning-health-allslots-launchd.out.log</string>
 	<key>StandardErrorPath</key>
-	<string>__LIFE_MANAGER_HOME__/logs/earning-health-allslots-launchd.err.log</string>
+	<string>__MR_BOT_HOME__/logs/earning-health-allslots-launchd.err.log</string>
 </dict>
 </plist>

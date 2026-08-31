@@ -3,8 +3,8 @@
 
 A lane never runs from a working tree: a git checkout changes under a job that
 is mid-pass, so every lane runs from an immutable copy under
-``~/gig/releases/life-manager/<sha>``.  The launchd definitions use the stable
-``~/gig/releases/life-manager/current`` path; publishing atomically moves that
+``~/gig/releases/mr-bot/<sha>``.  The launchd definitions use the stable
+``~/gig/releases/mr-bot/current`` path; publishing atomically moves that
 symlink after the immutable release has been built.
 
 The jobs themselves are data -- ``config/launchd-jobs.json`` -- rendered against
@@ -48,12 +48,12 @@ OVERRIDES = Path(
     os.environ.get("GIG_INSTALL_OVERRIDES", Path.home() / ".config/anicca/gig/install.json")
 )
 LAUNCH_AGENTS = Path.home() / "Library" / "LaunchAgents"
-RELEASE_ROOT = Path.home() / "gig" / "releases" / "life-manager"
+RELEASE_ROOT = Path.home() / "gig" / "releases" / "mr-bot"
 CURRENT_RELEASE = RELEASE_ROOT / "current"
 PIN_PATTERN = re.compile(r"(?P<pid>[1-9][0-9]*)-(?P<sha>[0-9a-f]{40})")
 PUBLISH_LOCK = RELEASE_ROOT / ".publish.lock"
 LAUNCHD_PREFLIGHT = REPO_ROOT / "skills" / "_shared" / "lib" / "launchd_preflight.py"
-LAUNCHD_PREFLIGHT_RECEIPT = Path.home() / ".local/state/life-manager/launchd-control-plane-preflight.json"
+LAUNCHD_PREFLIGHT_RECEIPT = Path.home() / ".local/state/mr-bot/launchd-control-plane-preflight.json"
 # The Coconala bootstrap owns exactly these four business lanes. Browser and
 # release-watcher activation are explicit; unrelated product jobs must never be
 # pulled in merely because they share the repository manifest.
@@ -67,7 +67,7 @@ COCONALA_BUSINESS_LANES = {
 # their loaded argv is inspected explicitly.
 DEFAULT_EXCLUDED = {
     "ai.anicca.hf-gig-browser",
-    "ai.anicca.life-manager-disk-cleanup",
+    "ai.anicca.mr-bot-disk-cleanup",
 }
 # Negotiate is a durable supervisor rather than a periodic one-shot pass.  Waiting for
 # ``is_running`` would therefore postpone every source release forever; its outbox is the
@@ -75,7 +75,7 @@ DEFAULT_EXCLUDED = {
 CONTINUOUS_RELOADABLE = {"ai.anicca.hf-gig-reply-detector"}
 PLACEHOLDER = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
 JOB_PROCESS_MARKERS = {
-    "ai.anicca.life-manager-upwork-browser": "--remote-debugging-port=9233",
+    "ai.anicca.mr-bot-upwork-browser": "--remote-debugging-port=9233",
     "ai.anicca.hf-gig-browser": "--remote-debugging-port=9223",
     "ai.anicca.hf-gig-apply-direct": "application_direct.py",
     "ai.anicca.hf-gig-storefront-direct": "storefront_direct.py",

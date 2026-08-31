@@ -18,23 +18,23 @@ def test_capafy_supply_owner_wakes_hourly_without_duplicate_schedule() -> None:
 def test_daily_separates_immutable_execution_from_writable_public_source() -> None:
     script = DAILY.read_text(encoding="utf-8")
 
-    assert 'LIFE_MANAGER_RELEASE_ROOT=' in script
-    assert 'LIFE_MANAGER_SOURCE_REPO=' in script
-    assert '[ -w "$LIFE_MANAGER_SOURCE_REPO" ]' in script
-    assert 'CAPAFY_CATALOG_DIR="$LIFE_MANAGER_SOURCE_REPO/skills/capafy/catalog"' in script
-    assert 'python3 "$LIFE_MANAGER_RELEASE_ROOT/skills/capafy-autopublish/scripts/inventory_status.py"' in script
-    assert 'inside $LIFE_MANAGER_SOURCE_REPO/skills/capafy/catalog/<new-slug>/' in script
+    assert 'MR_BOT_RELEASE_ROOT=' in script
+    assert 'MR_BOT_SOURCE_REPO=' in script
+    assert '[ -w "$MR_BOT_SOURCE_REPO" ]' in script
+    assert 'CAPAFY_CATALOG_DIR="$MR_BOT_SOURCE_REPO/skills/capafy/catalog"' in script
+    assert 'python3 "$MR_BOT_RELEASE_ROOT/skills/capafy-autopublish/scripts/inventory_status.py"' in script
+    assert 'inside $MR_BOT_SOURCE_REPO/skills/capafy/catalog/<new-slug>/' in script
 
 
 def test_every_healthy_terminal_refreshes_the_healthcheck_marker() -> None:
     script = DAILY.read_text(encoding="utf-8")
 
-    assert 'HEALTHY_MARKER="$HOME/.local/state/life-manager/state/capafy-autopublish/.capafy-healthy-pass"' in script
+    assert 'HEALTHY_MARKER="$HOME/.local/state/mr-bot/state/capafy-autopublish/.capafy-healthy-pass"' in script
     assert script.count("mark_healthy || exit 2") == 3
 
 
 def test_selfheal_request_preempts_cap_full_offline_build() -> None:
     script = DAILY.read_text(encoding="utf-8")
 
-    assert 'SELFHEAL_REQUEST="$HOME/.local/state/life-manager/state/capafy-loop-selfheal-request.json"' in script
+    assert 'SELFHEAL_REQUEST="$HOME/.local/state/mr-bot/state/capafy-loop-selfheal-request.json"' in script
     assert 'if [ "$VERDICT" = "CAP_FULL" ] && [ ! -f "$SELFHEAL_REQUEST" ]; then' in script

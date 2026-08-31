@@ -10,7 +10,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTALLER = join(REPO_ROOT, "install.sh");
 
 function run(args) {
-  const root = mkdtempSync(join(tmpdir(), "life-manager-coconala-dispatch-"));
+  const root = mkdtempSync(join(tmpdir(), "mr-bot-coconala-dispatch-"));
   const home = join(root, "home");
   const runtime = join(root, "runtime");
   const result = spawnSync("bash", [INSTALLER, ...args], {
@@ -19,9 +19,9 @@ function run(args) {
     env: {
       ...process.env,
       HOME: home,
-      LIFE_MANAGER_HOME: runtime,
-      LIFE_MANAGER_INSTALL_DAEMON: "0",
-      LIFE_MANAGER_INSTALL_DEPS: "0",
+      MR_BOT_HOME: runtime,
+      MR_BOT_INSTALL_DAEMON: "0",
+      MR_BOT_INSTALL_DEPS: "0",
     },
     timeout: 120_000,
   });

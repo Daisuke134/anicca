@@ -12,7 +12,7 @@ SCRIPT_FILE="${1:?script_file required — the agent writes the fresh script fir
 LANG_CODE="${2:-en}"
 DRAFT_ONLY="${DRAFT_ONLY:-1}"
 export PATH="$HOME/.local/bin:$PATH"
-_AH="${ANICCA_HOME:-}"; set -a; [ -f "$HOME/.hermes/.env" ] && . "$HOME/.hermes/.env"; [ -f "$HOME/.local/state/life-manager/.env" ] && . "$HOME/.local/state/life-manager/.env"; [ -n "$_AH" ] && ANICCA_HOME="$_AH"; unset _AH; set +a   # for edge-tts proxy / gog keyring only
+_AH="${ANICCA_HOME:-}"; set -a; [ -f "$HOME/.hermes/.env" ] && . "$HOME/.hermes/.env"; [ -f "$HOME/.local/state/mr-bot/.env" ] && . "$HOME/.local/state/mr-bot/.env"; [ -n "$_AH" ] && ANICCA_HOME="$_AH"; unset _AH; set +a   # for edge-tts proxy / gog keyring only
 : "${GOG_KEYRING_PASSWORD:?GOG_KEYRING_PASSWORD is required}"
 export GOG_KEYRING_PASSWORD
 SK="$HOME/.claude/skills/faceless-money-factory"; S="$SK/scripts"

@@ -24,7 +24,7 @@ from ledger_metrics import evaluate_stage1_generic  # noqa: E402
 # Kept small and additive so it never dominates the existing view/earn weights -- it nudges
 # scoring, it does not override it.
 QUALITY_PENALTY_PER_ROW = 50.0
-DEFAULT_METRICS_PATH = os.path.expanduser("~/.local/state/life-manager/state/clip-metrics.jsonl")
+DEFAULT_METRICS_PATH = os.path.expanduser("~/.local/state/mr-bot/state/clip-metrics.jsonl")
 
 
 def _count_below_floor(metrics_path):

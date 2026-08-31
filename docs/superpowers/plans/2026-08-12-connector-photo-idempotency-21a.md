@@ -6,8 +6,8 @@
 
 **Ponytail scope:** exact 2 files, no new service, queue, database, receipt format, or retry loop.
 
-- `apps/life-manager/lib/outbound-guardian.js`: require a numeric Telegram target and safe idempotency key, call `openclaw gateway call send` with the private local media path, caption, `forceDocument: true`, and the caller key; hide stderr/private values on failure.
-- `apps/life-manager/lib/outbound-guardian.test.js`: RED/GREEN for exact Gateway params, stable-key replay contract, validation-before-spawn, positive message ID, private-file mode/removal, and sanitized failures.
+- `apps/mr-bot/lib/outbound-guardian.js`: require a numeric Telegram target and safe idempotency key, call `openclaw gateway call send` with the private local media path, caption, `forceDocument: true`, and the caller key; hide stderr/private values on failure.
+- `apps/mr-bot/lib/outbound-guardian.test.js`: RED/GREEN for exact Gateway params, stable-key replay contract, validation-before-spawn, positive message ID, private-file mode/removal, and sanitized failures.
 
 **Estimated production change:** 12–24 LOC. **Estimated test change:** 45–80 LOC.
 

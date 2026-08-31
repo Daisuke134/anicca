@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render one daily Life Manager vertical video from the canonical creative bank."""
+"""Render one daily Mr.bot vertical video from the canonical creative bank."""
 
 import argparse
 import fcntl
@@ -97,7 +97,7 @@ Style: Small,Noto Sans CJK JP,38,&H00E2E8F0,&H000000FF,&H0011161F,&HA0000000,1,0
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 1,0:00:00.00,0:00:05.00,Label,,0,0,0,,BEFORE LIFE MANAGER • {row['id']}
+Dialogue: 1,0:00:00.00,0:00:05.00,Label,,0,0,0,,BEFORE MR.BOT • {row['id']}
 Dialogue: 1,0:00:00.20,0:00:05.00,Main,,0,0,0,,{ass_text(row['pain'])}
 Dialogue: 1,0:00:15.00,0:00:26.00,Small,,0,0,0,,{ass_text(row['moment'], 28)}
 Dialogue: 2,0:00:31.00,{end},Main,,0,0,0,,{ass_text(row['punchline'])}
@@ -221,11 +221,11 @@ def render(args, row, output):
 
 
 def default_video_root():
-    # Defaults live beneath the portable Life Manager data root (LM_DATA_DIR,
-    # falling back to <home>/.local/state/life-manager), never a legacy root.
+    # Defaults live beneath the portable Mr.bot data root (LM_DATA_DIR,
+    # falling back to <home>/.local/state/mr-bot), never a legacy root.
     # The <data root>/state/lm-video layout is the single convention shared with
-    # skills/life-manager/life-manager-daily.sh and the dev-loop state dir.
-    data_root = Path(os.environ.get("LM_DATA_DIR") or Path.home() / ".local/state/life-manager")
+    # skills/mr-bot/mr-bot-daily.sh and the dev-loop state dir.
+    data_root = Path(os.environ.get("LM_DATA_DIR") or Path.home() / ".local/state/mr-bot")
     return data_root / "state" / "lm-video"
 
 
@@ -256,7 +256,7 @@ def guard_unmigrated_legacy_state(args):
         if not new_path.exists() and legacy_path.exists():
             raise SystemExit(
                 f"unmigrated legacy state: {label} is missing at {new_path} but still exists at "
-                f"{legacy_path}; run apps/life-manager/scripts/migrate-legacy-state.sh "
+                f"{legacy_path}; run apps/mr-bot/scripts/migrate-legacy-state.sh "
                 "(copy-only, the legacy store stays intact) and re-run"
             )
 

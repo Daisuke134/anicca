@@ -56,7 +56,7 @@ After delivery, only the existing TaskMarket label was kicked. It returned:
 
 `runs=7 / tasks_seen=4 / pending=4 / recorded=0 / exit=0 / stderr empty`
 
-No pre-existing Life Manager loop was stopped. A later award must pass the
+No pre-existing Mr.bot loop was stopped. A later award must pass the
 external-requester, owned-worker, exact-award, finalized-Base-receipt, and
 exactly-once gates before the ledger can advance.
 

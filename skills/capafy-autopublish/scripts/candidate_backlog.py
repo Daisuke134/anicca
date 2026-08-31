@@ -13,11 +13,11 @@ import sys
 from pathlib import Path
 
 
-STATE_HOME = Path(os.environ.get("LIFE_MANAGER_STATE_HOME", Path.home() / ".local/state/life-manager")).expanduser()
+STATE_HOME = Path(os.environ.get("MR_BOT_STATE_HOME", Path.home() / ".local/state/mr-bot")).expanduser()
 DEFAULT_FEATURES = STATE_HOME / "features"
 DEFAULT_ICONS = STATE_HOME / "assets/capafy/icons"
 DEFAULT_OUTPUT = STATE_HOME / "state/capafy-candidate-backlog.json"
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 DEFAULT_CATALOG = REPO_ROOT / "skills/capafy/catalog"
 TERMINAL_PLATFORM_STATES = {"online", "approved"}
 RETRY_PLATFORM_STATES = {"review_rejected"}

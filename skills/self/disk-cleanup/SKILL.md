@@ -1,12 +1,12 @@
 ---
-name: life-manager-disk-cleanup
-description: Host-wide, fail-closed disk capacity governor for Life Manager.
+name: mr-bot-disk-cleanup
+description: Host-wide, fail-closed disk capacity governor for Mr.bot.
 ---
 
-# Life Manager disk cleanup
+# Mr.bot disk cleanup
 
 This skill owns the local host capacity pass. It is intentionally not a
-Life-Manager-directory cleaner: it measures the Mac and only removes an
+Mr.bot-directory cleaner: it measures the Mac and only removes an
 allow-listed regenerable artifact after an open-path probe confirms
 `confirmed-closed`.
 
@@ -41,7 +41,7 @@ skills/self/disk-cleanup/install-launchd.sh
 ```
 
 The installer renders the user-specific plist, validates it with `plutil`, and
-registers `ai.anicca.life-manager-disk-cleanup` at a 300-second interval. If
+registers `ai.anicca.mr-bot-disk-cleanup` at a 300-second interval. If
 the macOS launchd user domain is temporarily unavailable, the existing
 emergency guard invokes `disk_cleanup.py` as its single fallback owner. The
 legacy hourly label is only a compatibility trigger: the guard's

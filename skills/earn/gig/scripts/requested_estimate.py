@@ -669,7 +669,7 @@ class SemanticJudge:
                     "--prompt-stdin", "--schema", str(self.schema),
                     "--evidence-dir", str(run_evidence),
                     "--task-label", "gig-reply-semantic", "--loop",
-                    os.environ.get("LIFE_MANAGER_LOOP_ID", "hf-gig-reply-detector"),
+                    os.environ.get("MR_BOT_LOOP_ID", "hf-gig-reply-detector"),
                     "--workdir", str(self.workdir), "--timeout-seconds", str(self.timeout_seconds),
                 ],
                 input=prompt + (correction or ""), text=True, capture_output=True,

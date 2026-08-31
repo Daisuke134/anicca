@@ -23,8 +23,8 @@ After all parent-resolvable required fields are complete, expose only the actual
 
 Files owned by Luna:
 
-1. `apps/life-manager/lib/connector-production-browser-harness.test.js`
-2. `apps/life-manager/lib/connector-production-browser-harness.js`
+1. `apps/mr-bot/lib/connector-production-browser-harness.test.js`
+2. `apps/mr-bot/lib/connector-production-browser-harness.js`
 
 Soft target: 2 files; production +20–35 LOC; tests +35–55 LOC.
 

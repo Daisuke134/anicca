@@ -23,8 +23,8 @@ Persist and validate one provider ticket/PNG pointer so a recreated evidence cha
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-minimal-evidence.test.js`
-2. `apps/life-manager/lib/connector-minimal-evidence.js`
+1. `apps/mr-bot/lib/connector-minimal-evidence.test.js`
+2. `apps/mr-bot/lib/connector-minimal-evidence.js`
 
 Soft target: 2 files; production +65–110 LOC; tests +65–95 LOC. Broad flow rewrite is forbidden; preserve the current evidence/Calendar/Telegram/bundle sequence and add only the pointer branch.
 

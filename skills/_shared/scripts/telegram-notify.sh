@@ -3,7 +3,7 @@
 # For launchd / out-of-band scripts that do not have a channel delivery field.
 #
 # Usage (source then call):
-#   source "$LIFE_MANAGER_REPO/skills/_shared/scripts/telegram-notify.sh"
+#   source "$MR_BOT_REPO/skills/_shared/scripts/telegram-notify.sh"
 #   telegram_notify "text here"
 
 telegram_notify() {

@@ -11,7 +11,7 @@
   <array>
     <string>/bin/bash</string>
     <string>-c</string>
-    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/craft-train.sh; /Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/craft-train-notify.sh</string>
+    <string>/Users/anicca/Projects/mr-bot-main/skills/writer-agent/scripts/craft-train.sh; /Users/anicca/Projects/mr-bot-main/skills/writer-agent/scripts/craft-train-notify.sh</string>
   </array>
 
   <key>StartCalendarInterval</key>
@@ -28,15 +28,15 @@
   <key>EnvironmentVariables</key>
   <dict>
     <key>ARTICLE_SKILL_DIR</key>
-    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent</string>
+    <string>/Users/anicca/Projects/mr-bot-main/skills/writer-agent</string>
     <key>ARTICLE_STATE_DIR</key>
-    <string>/Users/anicca/.local/state/life-manager/writer</string>
+    <string>/Users/anicca/.local/state/mr-bot/writer</string>
     <key>CRAFT_MD</key>
-    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/reference/CRAFT.md</string>
+    <string>/Users/anicca/Projects/mr-bot-main/skills/writer-agent/reference/CRAFT.md</string>
     <key>CRAFT_TRAIN_JSONL</key>
-    <string>/Users/anicca/.local/state/life-manager/writer/craft-train.jsonl</string>
+    <string>/Users/anicca/.local/state/mr-bot/writer/craft-train.jsonl</string>
     <key>CRAFT_TRAIN_RUNS_ROOT</key>
-    <string>/Users/anicca/.local/state/life-manager/writer/runs</string>
+    <string>/Users/anicca/.local/state/mr-bot/writer/runs</string>
     <key>PATH</key>
     <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     <key>HOME</key>

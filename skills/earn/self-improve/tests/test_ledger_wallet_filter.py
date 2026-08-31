@@ -14,7 +14,7 @@ single missing attribute fails only that test, not the whole file's collection.
 
 Money-safety: every fixture in this file is a synthetic, hand-built ledger written under
 pytest's own `tmp_path`. No test reads or writes any path under
-`/home/life-manager/.anicca-founder/`, `/home/life-manager/.blockrun/`, or any other live instance home.
+`/home/mr-bot/.anicca-founder/`, `/home/mr-bot/.blockrun/`, or any other live instance home.
 """
 import json
 import os

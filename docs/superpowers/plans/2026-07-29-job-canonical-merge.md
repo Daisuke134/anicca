@@ -31,7 +31,7 @@ existing CloakBrowser/Chrome CDP, `gog`, Telegram HTTP transport, unittest.
   Telegram event during cutover verification.
 - Keep the legacy source checkouts intact as rollback inputs until the
   canonical forced daily and inbox passes both succeed.
-- No cloud service, Life Manager UI, or paid-user workflow is introduced.
+- No cloud service, Mr.bot UI, or paid-user workflow is introduced.
 
 ---
 
@@ -49,7 +49,7 @@ existing CloakBrowser/Chrome CDP, `gog`, Telegram HTTP transport, unittest.
   `d86adf4d5f1422b28f6675ac7ffa08f3b9c7e987`.
 - [x] Preserve and run the legacy baseline: 107 tests pass in 4.916 seconds.
 - [x] Add behavior tests that install plists into a temporary home and assert
-  both programs resolve inside a Life Manager checkout.
+  both programs resolve inside a Mr.bot checkout.
 - [x] Add a behavior test that resolves each shell entrypoint's shared runtime
   contract and proves
   the runner/workdir arguments and proves neither legacy checkout is required.

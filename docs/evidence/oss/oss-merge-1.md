@@ -10,7 +10,7 @@ Canonical `main` is self-contained at merge commit
 | Fresh remote clone | shallow clone of canonical `main` at exact commit `8d47689d3…`; clean before and after |
 | Root install | `npm ci` PASS |
 | OSS boundary | 11/11 contract tests and `npm run verify:oss` PASS; seven required source classes present; Gitlinks, external source roots, duplicate runner, unclassified manifest drift 0 |
-| Isolated installer | `LIFE_MANAGER_HOME=<temp>/runtime LIFE_MANAGER_INSTALL_DAEMON=0 ./install.sh` PASS; `.env` created/preserved; LaunchAgents 0 |
+| Isolated installer | `MR_BOT_HOME=<temp>/runtime MR_BOT_INSTALL_DAEMON=0 ./install.sh` PASS; `.env` created/preserved; LaunchAgents 0 |
 | App install/test | app `npm ci` PASS; fresh-clone `npm test` 647/647; panel score 14/14 |
 | Deterministic evals | calendar 21/21, late 12/12, context 12/12, score 27/27, intent 18/18, mental 15/15, physical 19/19, relations 10/10 |
 | Panel privacy eval | api 177, browser 63, recipes 19, channels 9 |
@@ -33,4 +33,4 @@ current cursor.
 
 The two historical RevenueCat credentials recorded in
 `docs/evidence/oss/oss-security-baseline-1.md` remain an external Anicca iOS/API
-incident. RevenueCat is not a Life Manager connector or completion gate.
+incident. RevenueCat is not a Mr.bot connector or completion gate.

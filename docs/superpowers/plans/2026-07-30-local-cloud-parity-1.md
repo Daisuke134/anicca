@@ -6,18 +6,18 @@
 > local-only/cloud-only実装、別repo copy、Mac browser dependency 0"。
 > 順序の根拠は §0.4.6c。§0.4.6a MUST 6（Mac loopをparity完了前に止めない）は本planでも不変。
 
-**Goal:** the same canonical commit boots the same Life Manager engine locally on a clean VM and in
+**Goal:** the same canonical commit boots the same Mr.bot engine locally on a clean VM and in
 the multi-tenant cloud, and both report the same git SHA through the same endpoint.
 
-**Tech Stack:** Node.js, `node:test`, existing `apps/life-manager` server, Railway.
+**Tech Stack:** Node.js, `node:test`, existing `apps/mr-bot` server, Railway.
 
 ## Measured current state (2026-07-30, verified on canonical `a67e2f782`)
 
 | # | Gap | Evidence |
 |---:|---|---|
-| G1 | `/health` returns a hardcoded `build: "lm27-voicemail-v1"`; no git SHA is exposed, so local and cloud SHAs cannot be compared at all | `apps/life-manager/server.js:257-261` |
-| G2 | The Steel base URL is a hardcoded Railway-private hostname, so the browser rail cannot run anywhere but Railway | `apps/life-manager/lib/steel-cdp-client.js:27` |
-| G3 | The documented clean-VM path boots `runtime/loop/index.mjs` (the earning automaton), not the Life Manager product; `apps/life-manager` has no documented local boot | `README.md:27-30`, `apps/life-manager/package.json` `start` exists but is undocumented |
+| G1 | `/health` returns a hardcoded `build: "lm27-voicemail-v1"`; no git SHA is exposed, so local and cloud SHAs cannot be compared at all | `apps/mr-bot/server.js:257-261` |
+| G2 | The Steel base URL is a hardcoded Railway-private hostname, so the browser rail cannot run anywhere but Railway | `apps/mr-bot/lib/steel-cdp-client.js:27` |
+| G3 | The documented clean-VM path boots `runtime/loop/index.mjs` (the earning automaton), not the Mr.bot product; `apps/mr-bot` has no documented local boot | `README.md:27-30`, `apps/mr-bot/package.json` `start` exists but is undocumented |
 | G4 | `scripts/verify-fresh-clone.sh` runs install + unit/eval only; it never starts `server.js`, never makes a request, never compares against the deployed SHA | `scripts/verify-fresh-clone.sh:39-56` |
 | G5 | No parity evidence artifact exists | `docs/evidence/` contains none |
 
@@ -38,9 +38,9 @@ as `041f59c29957f2131fb4802b6e9bf54fcf5e027b`, so the cloud side can report a re
 ### Task 1: Report the real build identity at `/health`
 
 **Files:**
-- Modify: `apps/life-manager/server.js`
-- Create: `apps/life-manager/lib/build-identity.js`
-- Test: `apps/life-manager/lib/build-identity.test.js`
+- Modify: `apps/mr-bot/server.js`
+- Create: `apps/mr-bot/lib/build-identity.js`
+- Test: `apps/mr-bot/lib/build-identity.test.js`
 
 **Interfaces:**
 - Consumes: `RAILWAY_GIT_COMMIT_SHA` when present, else a `LM_BUILD_SHA` override, else the resolved
@@ -56,7 +56,7 @@ contains no key whose value matches any other environment variable (secret-leak 
 - [ ] **Step 2: Run and verify RED**
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/build-identity.test.js
 ```
 
@@ -68,7 +68,7 @@ object. Keep the existing `ok`, `service`, `ws` keys so nothing that reads `/hea
 - [ ] **Step 4: Verify GREEN and no regression**
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/build-identity.test.js
 npm test
 ```
@@ -76,15 +76,15 @@ npm test
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/life-manager/server.js apps/life-manager/lib/build-identity.js apps/life-manager/lib/build-identity.test.js
+git add apps/mr-bot/server.js apps/mr-bot/lib/build-identity.js apps/mr-bot/lib/build-identity.test.js
 git commit -m "feat(health): report the real build identity"
 ```
 
 ### Task 2: Make the Steel base URL configurable without changing the default
 
 **Files:**
-- Modify: `apps/life-manager/lib/steel-cdp-client.js`
-- Test: `apps/life-manager/lib/steel-cdp-client.test.js`
+- Modify: `apps/mr-bot/lib/steel-cdp-client.js`
+- Test: `apps/mr-bot/lib/steel-cdp-client.test.js`
 
 **Interfaces:**
 - Consumes: optional `LM_STEEL_BASE_URL`
@@ -99,7 +99,7 @@ the `.railway.internal` Host-header rewrite still applies only to `.railway.inte
 - [ ] **Step 2: Run and verify RED**
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/steel-cdp-client.test.js lib/cdp-connection.test.js
 ```
 
@@ -110,7 +110,7 @@ Read the override in `makeSteelCdpClient`'s default, validate it, keep the const
 - [ ] **Step 4: Verify GREEN**
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/steel-cdp-client.test.js lib/cdp-connection.test.js
 npm run test:browser-auth
 ```
@@ -118,15 +118,15 @@ npm run test:browser-auth
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/life-manager/lib/steel-cdp-client.js apps/life-manager/lib/steel-cdp-client.test.js
+git add apps/mr-bot/lib/steel-cdp-client.js apps/mr-bot/lib/steel-cdp-client.test.js
 git commit -m "feat(browser): allow a non-Railway steel base url"
 ```
 
-### Task 3: Give the Life Manager app a documented clean-VM local boot
+### Task 3: Give the Mr.bot app a documented clean-VM local boot
 
 **Files:**
-- Create: `apps/life-manager/README.md`
-- Modify: `apps/life-manager/.env.example`
+- Create: `apps/mr-bot/README.md`
+- Modify: `apps/mr-bot/.env.example`
 
 **Interfaces:**
 - Consumes: a minimal env set
@@ -149,8 +149,8 @@ otherwise inactive.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add apps/life-manager/README.md apps/life-manager/.env.example
-git commit -m "docs(life-manager): document the local boot path"
+git add apps/mr-bot/README.md apps/mr-bot/.env.example
+git commit -m "docs(mr-bot): document the local boot path"
 ```
 
 ### Task 4: Parity harness — same commit, same engine, both sides

@@ -272,7 +272,7 @@ raise SystemExit(0)
             self.assertEqual(result.stdout, "agent key")
             self.assertFalse(marker.exists())
 
-    def test_runtime_paths_resolve_inside_life_manager_and_xdg(self):
+    def test_runtime_paths_resolve_inside_mr_bot_and_xdg(self):
         with tempfile.TemporaryDirectory() as tmp:
             private_root = Path(tmp)
             env = {

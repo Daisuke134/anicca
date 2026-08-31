@@ -24,9 +24,9 @@ Let an already-registered Peatix candidate re-enter the evidence path when the o
 
 Luna owns only:
 
-1. `apps/life-manager/lib/google-calendar-busy-inventory.js`
-2. `apps/life-manager/lib/connector-peatix-workflow.js`
-3. `apps/life-manager/lib/connector-peatix-workflow.test.js`
+1. `apps/mr-bot/lib/google-calendar-busy-inventory.js`
+2. `apps/mr-bot/lib/connector-peatix-workflow.js`
+3. `apps/mr-bot/lib/connector-peatix-workflow.test.js`
 
 Soft target: 3 files; production +12–24 LOC; tests +25–45 LOC.
 

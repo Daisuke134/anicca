@@ -2,21 +2,21 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Import only the audited public Life Manager architecture/spec/evidence documents into the joined Eliza fork under one namespace.
+**Goal:** Import only the audited public Mr.bot architecture/spec/evidence documents into the joined Eliza fork under one namespace.
 
-**Architecture:** Extract an explicit 21-file allowlist from the fixed legacy commit into a temporary directory, run the repository's existing PII scanner plus gitleaks and TruffleHog, then copy only passing Markdown files into `docs/legacy-life-manager/`. Commit a hash manifest on a new branch and write one private receipt.
+**Architecture:** Extract an explicit 21-file allowlist from the fixed legacy commit into a temporary directory, run the repository's existing PII scanner plus gitleaks and TruffleHog, then copy only passing Markdown files into `docs/legacy-mr-bot/`. Commit a hash manifest on a new branch and write one private receipt.
 
 **Tech Stack:** Git, POSIX shell, Python 3 existing scanner, gitleaks, TruffleHog, `jq`, `shasum`.
 
-**Spec:** `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+**Spec:** `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 ## Global Constraints
 
 - Joined source commit is exactly `152ad359358fa1456ff92e84ecef3bae91122862`.
 - Legacy document source is exactly `c9bea215b87755434704a5d16dd8c0a55aff1981`.
-- Migration repository is `/Users/anicca/Projects/life-manager-eliza-migration`.
+- Migration repository is `/Users/anicca/Projects/mr-bot-eliza-migration`.
 - Create and push only new branch `migration/eliza-docs`.
-- Import exactly the 21 named Markdown files and one generated manifest under `docs/legacy-life-manager/`.
+- Import exactly the 21 named Markdown files and one generated manifest under `docs/legacy-mr-bot/`.
 - PII shape, gitleaks, TruffleHog verified credential, credential/state path, non-Markdown source, and out-of-namespace findings must all be zero.
 - Do not import code, runtime state, JSONL, credentials, cookies, sessions, `.env`, legacy allowlists, or dirty working-tree content.
 - Do not modify either repository's `main`, force-push, delete a repository, install dependencies, run CI, or touch runtime/model/provider/browser/credential/loop state.
@@ -27,10 +27,10 @@
 ### Task 1: Import the audited public docs and bind them to a manifest
 
 **Files:**
-- Create in migration fork: `docs/legacy-life-manager/import-manifest.json`
-- Create in migration fork: the 21 manifest targets under `docs/legacy-life-manager/`
-- Create outside repo: `/Users/anicca/.local/state/life-manager/migration/elz-f/history-import-receipt.json`
-- Create outside repo: `/Users/anicca/Projects/life-manager-main/.worktrees/elz-f12-plan/.superpowers/sdd/2026-08-29-eliza-allowlisted-doc-import/task-1-report.md`
+- Create in migration fork: `docs/legacy-mr-bot/import-manifest.json`
+- Create in migration fork: the 21 manifest targets under `docs/legacy-mr-bot/`
+- Create outside repo: `/Users/anicca/.local/state/mr-bot/migration/elz-f/history-import-receipt.json`
+- Create outside repo: `/Users/anicca/Projects/mr-bot-main/.worktrees/elz-f12-plan/.superpowers/sdd/2026-08-29-eliza-allowlisted-doc-import/task-1-report.md`
 
 **Interfaces:**
 - Consumes: joined branch commit `152ad359358fa1456ff92e84ecef3bae91122862` and legacy second parent `c9bea215b87755434704a5d16dd8c0a55aff1981`.
@@ -40,7 +40,7 @@
 
 ```bash
 set -e
-cd /Users/anicca/Projects/life-manager-eliza-migration
+cd /Users/anicca/Projects/mr-bot-eliza-migration
 JOIN_SHA=152ad359358fa1456ff92e84ecef3bae91122862
 LEGACY_SHA=c9bea215b87755434704a5d16dd8c0a55aff1981
 test "$(git rev-parse HEAD)" = "$JOIN_SHA"
@@ -51,14 +51,14 @@ test -z "$(git ls-remote --heads origin refs/heads/migration/eliza-docs)"
 test "$(git ls-remote origin refs/heads/migration/eliza-history | awk '{print $1}')" = "$JOIN_SHA"
 FREE_KIB_BEFORE=$(df -Pk /Users/anicca | awk 'END {print $4}')
 test "$FREE_KIB_BEFORE" -ge 1048576
-STAGE=/Users/anicca/.local/state/life-manager/migration/elz-f/f12-import-stage
+STAGE=/Users/anicca/.local/state/mr-bot/migration/elz-f/f12-import-stage
 test ! -e "$STAGE"
 mkdir -m 700 "$STAGE"
 mkdir -p "$STAGE/source"
 printf '%s\n' "$FREE_KIB_BEFORE" > "$STAGE/free-kib-before.txt"
 printf '%s\n' \
-  'docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md' \
-  'docs/superpowers/specs/2026-08-24-life-manager-oss-onboarding-design.md' \
+  'docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md' \
+  'docs/superpowers/specs/2026-08-24-mr-bot-oss-onboarding-design.md' \
   'docs/superpowers/specs/2026-06-30-gig-self-improving-multiapply-loop-design.md' \
   'docs/superpowers/specs/2026-07-01-outer-improvement-loop-design.md' \
   'docs/superpowers/specs/2026-07-01-proactive-loop-architecture-and-cleanup-design.md' \
@@ -76,7 +76,7 @@ printf '%s\n' \
   'docs/superpowers/plans/2026-08-29-eliza-local-foundation.md' \
   'docs/evidence/oss/oss-merge-1.md' \
   'docs/evidence/oss/oss-security-baseline-1.md' \
-  'docs/evidence/repository/2026-07-29-life-manager-v0-retirement.md' \
+  'docs/evidence/repository/2026-07-29-mr-bot-v0-retirement.md' \
   'docs/evidence/repository/2026-07-29-x402-source-consolidation.md' \
   > "$STAGE/allowlist.txt"
 test "$(wc -l < "$STAGE/allowlist.txt" | tr -d ' ')" = 21
@@ -90,8 +90,8 @@ Expected: every gate exits `0`; the allowlist is 21 unique Markdown paths and co
 - [ ] **Step 2: Extract the exact committed files and scanner inputs**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
-STAGE=/Users/anicca/.local/state/life-manager/migration/elz-f/f12-import-stage
+cd /Users/anicca/Projects/mr-bot-eliza-migration
+STAGE=/Users/anicca/.local/state/mr-bot/migration/elz-f/f12-import-stage
 LEGACY_SHA=c9bea215b87755434704a5d16dd8c0a55aff1981
 git archive "$LEGACY_SHA" \
   $(tr '\n' ' ' < "$STAGE/allowlist.txt") \
@@ -109,8 +109,8 @@ Expected: all 21 source files and the two staging-only scanner inputs come from 
 - [ ] **Step 3: Run the three focused pre-import scans**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
-STAGE=/Users/anicca/.local/state/life-manager/migration/elz-f/f12-import-stage
+cd /Users/anicca/Projects/mr-bot-eliza-migration
+STAGE=/Users/anicca/.local/state/mr-bot/migration/elz-f/f12-import-stage
 python3 "$STAGE/source/scripts/security/pii_shape_scan.py" \
   --allowlist "$STAGE/no-allowlist" \
   $(sed "s#^#$STAGE/source/#" "$STAGE/allowlist.txt") \
@@ -130,12 +130,12 @@ Expected: PII and gitleaks exit `0`; TruffleHog emits zero verified credential r
 - [ ] **Step 4: Create the branch and copy only allowlisted files into the namespace**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
-STAGE=/Users/anicca/.local/state/life-manager/migration/elz-f/f12-import-stage
+cd /Users/anicca/Projects/mr-bot-eliza-migration
+STAGE=/Users/anicca/.local/state/mr-bot/migration/elz-f/f12-import-stage
 JOIN_SHA=152ad359358fa1456ff92e84ecef3bae91122862
 LEGACY_SHA=c9bea215b87755434704a5d16dd8c0a55aff1981
 git switch -c migration/eliza-docs "$JOIN_SHA"
-NAMESPACE=docs/legacy-life-manager
+NAMESPACE=docs/legacy-mr-bot
 mkdir -p "$NAMESPACE"
 : > "$STAGE/entries.jsonl"
 while IFS= read -r source_path; do
@@ -165,9 +165,9 @@ Expected: exactly 21 source-derived Markdown files plus one generated JSON manif
 - [ ] **Step 5: Verify every hash and scan the final namespace**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
-STAGE=/Users/anicca/.local/state/life-manager/migration/elz-f/f12-import-stage
-NAMESPACE=docs/legacy-life-manager
+cd /Users/anicca/Projects/mr-bot-eliza-migration
+STAGE=/Users/anicca/.local/state/mr-bot/migration/elz-f/f12-import-stage
+NAMESPACE=docs/legacy-mr-bot
 jq -c '.entries[]' "$NAMESPACE/import-manifest.json" | while IFS= read -r entry; do
   target_path=$(printf '%s' "$entry" | jq -r .target_path)
   expected_sha=$(printf '%s' "$entry" | jq -r .sha256)
@@ -199,13 +199,13 @@ Expected: all hashes match; file counts are exact; all three post-import scans p
 - [ ] **Step 6: Commit, push the new branch, and verify remote readback**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
+cd /Users/anicca/Projects/mr-bot-eliza-migration
 JOIN_SHA=152ad359358fa1456ff92e84ecef3bae91122862
-git add -f docs/legacy-life-manager
+git add -f docs/legacy-mr-bot
 git -c core.whitespace=-trailing-space diff --cached --check
 test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = 22
-! git diff --cached --name-only | rg -v '^docs/legacy-life-manager/'
-git commit -m "docs: import allowlisted Life Manager history"
+! git diff --cached --name-only | rg -v '^docs/legacy-mr-bot/'
+git commit -m "docs: import allowlisted Mr.bot history"
 IMPORT_SHA=$(git rev-parse HEAD)
 git push -u origin migration/eliza-docs
 REMOTE_IMPORT_SHA=$(git ls-remote origin refs/heads/migration/eliza-docs | awk '{print $1}')
@@ -220,11 +220,11 @@ Expected: the source-preserving cached check ignores only the two audited legacy
 - [ ] **Step 7: Write the private receipt and remove only the temporary staging directory**
 
 ```bash
-cd /Users/anicca/Projects/life-manager-eliza-migration
-STAGE=/Users/anicca/.local/state/life-manager/migration/elz-f/f12-import-stage
+cd /Users/anicca/Projects/mr-bot-eliza-migration
+STAGE=/Users/anicca/.local/state/mr-bot/migration/elz-f/f12-import-stage
 JOIN_SHA=152ad359358fa1456ff92e84ecef3bae91122862
 LEGACY_SHA=c9bea215b87755434704a5d16dd8c0a55aff1981
-NAMESPACE=docs/legacy-life-manager
+NAMESPACE=docs/legacy-mr-bot
 IMPORT_SHA=$(git rev-parse HEAD)
 REMOTE_IMPORT_SHA=$(git ls-remote origin refs/heads/migration/eliza-docs | awk '{print $1}')
 MANIFEST_SHA=$(shasum -a 256 "$NAMESPACE/import-manifest.json" | awk '{print $1}')
@@ -242,21 +242,21 @@ jq -n \
   --argjson free_after "$FREE_KIB_AFTER" \
   '{
     atom:"ELZ-F12",status:"passed",join_sha:$join,legacy_source_sha:$legacy,
-    import_sha:$imported,remote_readback_sha:$remote,namespace:"docs/legacy-life-manager",
+    import_sha:$imported,remote_readback_sha:$remote,namespace:"docs/legacy-mr-bot",
     imported_markdown_files:21,manifest_files:1,manifest_sha256:$manifest,inventory_sha256:$inventory,
     pii_findings:0,gitleaks_findings:0,trufflehog_verified_findings:0,credential_state_paths:0,
     non_markdown_source_files:0,out_of_namespace_changes:0,dirty_code_imports:0,
     force_pushes:0,main_mutations:0,free_kib_before:$free_before,free_kib_after:$free_after
-  }' > /Users/anicca/.local/state/life-manager/migration/elz-f/history-import-receipt.json
-chmod 600 /Users/anicca/.local/state/life-manager/migration/elz-f/history-import-receipt.json
+  }' > /Users/anicca/.local/state/mr-bot/migration/elz-f/history-import-receipt.json
+chmod 600 /Users/anicca/.local/state/mr-bot/migration/elz-f/history-import-receipt.json
 jq -e '
   .atom=="ELZ-F12" and .status=="passed" and .join_sha=="152ad359358fa1456ff92e84ecef3bae91122862" and
   .legacy_source_sha=="c9bea215b87755434704a5d16dd8c0a55aff1981" and .import_sha==.remote_readback_sha and
   .imported_markdown_files==21 and .manifest_files==1 and .pii_findings==0 and .gitleaks_findings==0 and
   .trufflehog_verified_findings==0 and .credential_state_paths==0 and .non_markdown_source_files==0 and
   .out_of_namespace_changes==0 and .dirty_code_imports==0 and .force_pushes==0 and .main_mutations==0
-' /Users/anicca/.local/state/life-manager/migration/elz-f/history-import-receipt.json
-test "$(stat -f '%Lp' /Users/anicca/.local/state/life-manager/migration/elz-f/history-import-receipt.json)" = 600
+' /Users/anicca/.local/state/mr-bot/migration/elz-f/history-import-receipt.json
+test "$(stat -f '%Lp' /Users/anicca/.local/state/mr-bot/migration/elz-f/history-import-receipt.json)" = 600
 test "$(realpath "$STAGE")" = "$STAGE"
 find "$STAGE" -mindepth 1 -depth -delete
 rmdir "$STAGE"

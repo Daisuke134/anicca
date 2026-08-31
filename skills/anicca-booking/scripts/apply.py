@@ -16,10 +16,10 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 STATE_HOME = Path(os.environ.get(
-    "LIFE_MANAGER_STATE_HOME",
-    Path.home() / ".local/state/life-manager",
+    "MR_BOT_STATE_HOME",
+    Path.home() / ".local/state/mr-bot",
 )).expanduser()
 sys.path.insert(0, str(REPO_ROOT / "skills/_shared"))
 import anicca_profile as prof  # noqa: E402

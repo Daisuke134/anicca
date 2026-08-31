@@ -19,14 +19,14 @@ SPEC.loader.exec_module(GUARD)
 
 
 def test_publication_guard_refuses_below_coconala_floor(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
+    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/mr-bot/writer/state.json")
     monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=FLOOR_BYTES - 1))
     with pytest.raises(GUARD.InvariantError, match="disk_headroom_low"):
         GUARD.assert_disk_headroom()
 
 
 def test_publication_guard_allows_at_floor(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
+    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/mr-bot/writer/state.json")
     monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=FLOOR_BYTES))
     GUARD.assert_disk_headroom()
 
@@ -65,7 +65,7 @@ def test_publication_guard_checks_publication_state_filesystem(
     seen: list[Path] = []
     monkeypatch.setenv(
         "ARTICLE_PUBLICATION_STATE",
-        "/var/lib/life-manager/writer/runs/active/gates/publication-state.json",
+        "/var/lib/mr-bot/writer/runs/active/gates/publication-state.json",
     )
     monkeypatch.delenv("ARTICLE_STATE_DIR", raising=False)
     monkeypatch.setattr(
@@ -76,7 +76,7 @@ def test_publication_guard_checks_publication_state_filesystem(
 
     GUARD.assert_disk_headroom()
 
-    assert seen == [Path("/var/lib/life-manager/writer/runs/active/gates")]
+    assert seen == [Path("/var/lib/mr-bot/writer/runs/active/gates")]
 
 
 def test_publication_guard_requires_managed_state_path(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -91,7 +91,7 @@ def test_publication_guard_rejects_floor_below_canonical_or_invalid(
     monkeypatch: pytest.MonkeyPatch,
     value: str,
 ) -> None:
-    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
+    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/mr-bot/writer/state.json")
     monkeypatch.setenv("ARTICLE_DISK_MIN_FREE_BYTES", value)
     monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=10**12))
     with pytest.raises(GUARD.InvariantError, match="disk_headroom_configuration_invalid"):
@@ -103,7 +103,7 @@ def test_publication_guard_rejects_gig_floor_below_canonical(
     monkeypatch: pytest.MonkeyPatch,
     value: str,
 ) -> None:
-    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
+    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/mr-bot/writer/state.json")
     monkeypatch.delenv("ARTICLE_DISK_MIN_FREE_BYTES", raising=False)
     monkeypatch.setenv("GIG_DISK_HEADROOM_KIB", value)
     monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=10**12))
@@ -113,7 +113,7 @@ def test_publication_guard_rejects_gig_floor_below_canonical(
 
 def test_preflight_disk_gate_runs_before_store_creation(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ARTICLE_AUTOPUBLISH", "1")
-    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/life-manager/writer/state.json")
+    monkeypatch.setenv("ARTICLE_PUBLICATION_STATE", "/var/lib/mr-bot/writer/state.json")
     monkeypatch.setattr(GUARD.shutil, "disk_usage", lambda _path: SimpleNamespace(free=FLOOR_BYTES - 1))
     store_created = False
 

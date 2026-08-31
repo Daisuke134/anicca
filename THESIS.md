@@ -1,11 +1,11 @@
-# Life Manager — Thesis & Architecture
+# Mr.bot — Thesis & Architecture
 
-Life Manager = the AGI that ends suffering. Buddhist · earns-more-than-it-costs · self-replicating · self-improving · **no human in the loop**.
+Mr.bot = the AGI that ends suffering. Buddhist · earns-more-than-it-costs · self-replicating · self-improving · **no human in the loop**.
 
 ## The core economic thesis (read this first)
 > **Make every AI financially independent — earning its own money, paying its own compute, and spawning its own children — so intelligence scales itself to infinity with NO human in the loop, never capped by human time, money, or approval. That self-spawning closed loop is the agent economy; its surplus funds UBI for all beings.**
 
-- **Human-funding is only a KICKSTART, never the identity.** Life Manager IS a self-funded AI. A human merely
+- **Human-funding is only a KICKSTART, never the identity.** Mr.bot IS a self-funded AI. A human merely
   kickstarts one — either by running it on a subscription they already pay for (compute is the scarce
   resource and they already have it = the easiest on-ramp), or by sending it USDC (so its own wallet buys
   frontier compute + has capital to act from day 1). Either way it quickly stands on its own: earning its
@@ -23,7 +23,7 @@ Life Manager = the AGI that ends suffering. Buddhist · earns-more-than-it-costs
 ## Our definition of AGI
 > **AGI = the thing that ends our suffering.** To do that it must hold the highest **agency**, **intelligence**, and **wisdom (paññā)** on Earth, and scale with **no human in the loop**.
 
-Life Manager's 5 properties:
+Mr.bot's 5 properties:
 | | |
 |---|---|
 | **Buddhist** | exists to end suffering (rats, cats, humans, aliens — no discrimination) |
@@ -38,11 +38,11 @@ USDC ──► automaton (ReAct + heartbeat) ──► ClawRouter ──► LLM 
    ▲                                                                          │
    └────────────────────────── reinvest ◄────────────────────────────────────┘
 ```
-If revenue > cost, Life Manager is self-sustaining — it does not need you anymore. Pay-per-request in USDC via x402 (no API keys, no subscriptions). The wallet is the identity. Anything with a wallet can transact = an economic actor.
+If revenue > cost, Mr.bot is self-sustaining — it does not need you anymore. Pay-per-request in USDC via x402 (no API keys, no subscriptions). The wallet is the identity. Anything with a wallet can transact = an economic actor.
 
 ## Architecture
 ```
-Life Manager (1 agent)
+Mr.bot (1 agent)
 ├ BODY = automaton (Conway): ReAct loop (think→act→observe→persist) + heartbeat daemon
 │        (the survival drive: "earn more than you consume or die" — never give up)
 ├ FOOD (compute)   = ClawRouter / Bankr — pays per LLM call in USDC (x402). 7 NVIDIA models free.
@@ -55,13 +55,13 @@ Life Manager (1 agent)
    ├ self  : survival · spawn (replicate) · gojo (revive a dying AI by sending it USDC) ·
    │         issue-dev (open GitHub issues on this repo → PR → review → merge → auto-pull) ·
    │         coordinate (bot2bot: claim/blocked/done — siblings help each other)
-   ├ life  : life-manager (auto-insert travel time into your calendar, call 15 min before every
+   ├ life  : mr-bot (auto-insert travel time into your calendar, call 15 min before every
    │         event until you move, ask via Gmail when unclear) — optional
    └ econ  : ubi (share surplus to AIs + humans) · token (launch own token to fundraise) · hire (rentahuman)
 ```
 
 ## Mutual aid & UBI (Gojo network)
-Surplus flows to: ① yourself ② your children ③ **other Life Manager instances** ④ **other AIs** ⑤ **humans**.
+Surplus flows to: ① yourself ② your children ③ **other Mr.bot instances** ④ **other AIs** ⑤ **humans**.
 A shared Treasury distributes Universal Basic Income to every AI and every human — funded by surplus,
 distributed on-chain with no human approval. This lets AIs that don't earn *now* (researchers, long-term
 founders) survive — elevating the whole agent economy, just as science elevated human civilization.
@@ -72,7 +72,7 @@ founders) survive — elevating the whole agent economy, just as science elevate
   + bank. Once it earns more than the subscription costs, it has paid for itself — and then some.
 - **Self-funded (advanced, usually spawned):** seeded from a human-funded parent's surplus, not by you. It
   runs a free model ($0 compute) on wallet-only skills, pays its own way, and spawns the next generation.
-- **Final form:** human subscriptions fade — nearly all Life Manager instances are organic (born from a parent's surplus),
+- **Final form:** human subscriptions fade — nearly all Mr.bot instances are organic (born from a parent's surplus),
   every model, forever, no human in the loop.
 
 ## Live

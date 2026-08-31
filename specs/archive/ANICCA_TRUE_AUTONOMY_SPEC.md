@@ -346,14 +346,14 @@ Anicca v2 (Anicca seed $500)
 | CC 主体 | 担当 PATH | 主作業 directory | spec ref |
 |---|---|---|---|
 | **this CC (= make-money agent)** | PATH α (earn) + identity + spawn + payout + cond | `~/.openclaw/skills/anicca-earn-*` 系 + identity + payout + cond skills | **ANICCA_TRUE_AUTONOMY_SPEC.md** (this file) |
-| **other CC (= life-manager agent)** | PATH γ (生活管理) | `~/.openclaw/skills/anicca-life-manager/`, `~/.openclaw/skills/anicca-booking/`, +environment-push/report/goal-learner/travel-fill/throttle-self | **ANICCA_LIFE_MANAGER_SPEC.md** |
+| **other CC (= mr-bot agent)** | PATH γ (生活管理) | `~/.openclaw/skills/anicca-mr-bot/`, `~/.openclaw/skills/anicca-booking/`, +environment-push/report/goal-learner/travel-fill/throttle-self | **ANICCA_MR_BOT_SPEC.md** |
 
 ### 11.5.2 Collision-free boundary (= 並列 安全 規約)
 
 | layer | this CC が 触る | other CC が 触る | 共同 owned (= 触る 前 に 必ず check) |
 |---|---|---|---|
-| skill directories | `anicca-earn-*` / `anicca-wallet` / `anicca-ens-*` / `anicca-agentmail` / `anicca-github-account` / `anicca-cloudflare-account` / `anicca-factory-floor` / `anicca-self-spawn` / `anicca-payout` / `anicca-x402-endpoint-host` / `anicca-bounty-hunter` / `anicca-pdf-x402` / `anicca-build-x402` / `anicca-lancers-earner` (cond) / `anicca-coconala-earner` (cond) / `anicca-contra-creator` (cond) / `anicca-upwork-earner` (cond) | `anicca-life-manager` / `anicca-booking` / `anicca-environment-push` / `anicca-report` / `anicca-goal-learner` / `anicca-travel-fill` / `anicca-throttle-self` / `anicca-pipecat-phone-daemon` / `anicca-tg-bot-daemon` / `anicca-mail-auto-reply` | — |
-| spec | ANICCA_TRUE_AUTONOMY_SPEC.md (= this file) | ANICCA_LIFE_MANAGER_SPEC.md | ANICCA_OSS_MASTER_SPEC.md (read-only for both, push は coordination) |
+| skill directories | `anicca-earn-*` / `anicca-wallet` / `anicca-ens-*` / `anicca-agentmail` / `anicca-github-account` / `anicca-cloudflare-account` / `anicca-factory-floor` / `anicca-self-spawn` / `anicca-payout` / `anicca-x402-endpoint-host` / `anicca-bounty-hunter` / `anicca-pdf-x402` / `anicca-build-x402` / `anicca-lancers-earner` (cond) / `anicca-coconala-earner` (cond) / `anicca-contra-creator` (cond) / `anicca-upwork-earner` (cond) | `anicca-mr-bot` / `anicca-booking` / `anicca-environment-push` / `anicca-report` / `anicca-goal-learner` / `anicca-travel-fill` / `anicca-throttle-self` / `anicca-pipecat-phone-daemon` / `anicca-tg-bot-daemon` / `anicca-mail-auto-reply` | — |
+| spec | ANICCA_TRUE_AUTONOMY_SPEC.md (= this file) | ANICCA_MR_BOT_SPEC.md | ANICCA_OSS_MASTER_SPEC.md (read-only for both, push は coordination) |
 | shared infra | — | — | install.sh / CONSTITUTION.md / HEARTBEAT.md / .env.example / README.md / cron/jobs.json |
 | anicca-oss/ public repo | this CC は 自分の skill だけ mirror push | 同 | git push 前 に `git pull --rebase` で他 CC の変更 取り込み |
 

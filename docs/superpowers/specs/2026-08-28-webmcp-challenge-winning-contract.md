@@ -3,11 +3,11 @@
 **Status:** Implementation and live verification in progress — official contract、production、public repository、Devpost draftを再計測し、残作業をpatch-level atomへ固定  
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Submission deadline:** September 3, 2026 1:00 PM PT / **September 4, 2026 05:00 JST**  
-**Product name:** `Life Manager`
+**Product name:** `Mr.bot`
 **Primary objective:** WebMCP Challenge top 10に入り、賞金・ChatGPT Pro・Codex Micro等を獲得する  
-**Long-term objective:** Life Managerが継続的に収益機会を発見し、応募・実行・納品・着金確認まで閉じるentrepreneur agentになる
+**Long-term objective:** Mr.botが継続的に収益機会を発見し、応募・実行・納品・着金確認まで閉じるentrepreneur agentになる
 
-**中心主張:** Life Managerは、Web上のbounty、gig、hackathon等の有償機会を発見し、実作業、応募・納品、公式receipt確認まで進めるopen-source Money Printerである。Agentが99%を実行し、本人性、権限、口座、現実世界の作業など人間にしかできない1%だけを`Needs You`へ出す。人間が一件を返すと同じworkroomから自動再開する。WebMCPは、人とagentが同じopportunity、work、human task、money proofを共同操作するinterfaceである。
+**中心主張:** Mr.botは、Web上のbounty、gig、hackathon等の有償機会を発見し、実作業、応募・納品、公式receipt確認まで進めるopen-source Money Printerである。Agentが99%を実行し、本人性、権限、口座、現実世界の作業など人間にしかできない1%だけを`Needs You`へ出す。人間が一件を返すと同じworkroomから自動再開する。WebMCPは、人とagentが同じopportunity、work、human task、money proofを共同操作するinterfaceである。
 
 ---
 
@@ -17,10 +17,10 @@
 
 1. **不変層:** WebMCPとは何か、公式ルール、提出物、審査構造、失格条件
 2. **戦略層:** 審査4軸を満たすための勝利条件、judge experience、競合基準
-3. **可変層:** Life ManagerのWork boardとcanonical demo
-4. **長期層:** hackathon後もLife Managerが機会を探し、収益へ変えるloop
+3. **可変層:** Mr.botのWork boardとcanonical demo
+4. **長期層:** hackathon後もMr.botが機会を探し、収益へ変えるloop
 
-Visual identityと最初のopportunity sourceは変更できる。製品名は`Life Manager`で固定する。公式要件、WebMCPの技術境界、審査証拠、外部作用の安全境界は変更しない。公式ページと本specが衝突した場合は、最新の公式ルールを再取得し、本specを置換する。
+Visual identityと最初のopportunity sourceは変更できる。製品名は`Mr.bot`で固定する。公式要件、WebMCPの技術境界、審査証拠、外部作用の安全境界は変更しない。公式ページと本specが衝突した場合は、最新の公式ルールを再取得し、本specを置換する。
 
 ## 1. Goal / Done
 
@@ -41,7 +41,7 @@ Hackathon Submittedは、Section 3のofficial pass/failとSection 14のofficial 
 
 ### 1.3 Long-term Done
 
-Life Managerのentrepreneur loopは、単なる発見数や応募数では完了しない。状態の正本はSection 11.1に置く。`PAID_SETTLED`にはprovider、bank、Stripe、on-chain等の公式receiptが必要である。応募、view、offer、rate、pending balance、agentの`completed`は収益ではない。
+Mr.botのentrepreneur loopは、単なる発見数や応募数では完了しない。状態の正本はSection 11.1に置く。`PAID_SETTLED`にはprovider、bank、Stripe、on-chain等の公式receiptが必要である。応募、view、offer、rate、pending balance、agentの`completed`は収益ではない。
 
 ---
 
@@ -89,9 +89,9 @@ await document.modelContext.registerTool({
 | session | 現在のlive page / browser session | open pageから独立できる |
 | 主用途 | shared visual artifact、browser-local action | background search、cron、API、長時間処理 |
 | page close | toolが利用不能になり得る | 継続可能 |
-| Life Managerでの役割 | visible collaboration/control plane | 24/7 opportunity discovery/execution plane |
+| Mr.botでの役割 | visible collaboration/control plane | 24/7 opportunity discovery/execution plane |
 
-WebMCPを24/7 schedulerだと説明しない。Life Managerは両方を使う。
+WebMCPを24/7 schedulerだと説明しない。Mr.botは両方を使う。
 
 ### 2.3 現在のChatGPT Site tools制約
 
@@ -215,12 +215,12 @@ Current official readbackはdeadline、Top 10、live URL、public repo、audio�
 
 | Field | Final value / creation gate | Current status | Final gate |
 |---|---|---|---|
-| Project name | `Life Manager` | fixed | Devpost readback matches |
+| Project name | `Mr.bot` | fixed | Devpost readback matches |
 | Tagline | `An open-source, 24/7 AI money printer that finds paid opportunities, does the work, and asks you only for the human 1%.` | fixed draft | authenticated form review |
 | Live URL | `https://aniccaai.com/money-printer` | live: HTTP 200、zero-login guest、`tools=(self)`、no-store | immutable deploy SHA + isolated guest E2E + client-side `registerTool()` discovery |
 | Public repository | `https://github.com/Daisuke134/life-manager` | public | challenge source/instructions + clean clone verified |
 | OSS license | `https://github.com/Daisuke134/life-manager/blob/main/LICENSE` | GitHub detects MIT | license visible in submitted repo |
-| Demo video title | `Life Manager — The Agent That Finishes Work With You` | reserved copy | final E2E edit complete |
+| Demo video title | `Mr.bot — The Agent That Finishes Work With You` | reserved copy | final E2E edit complete |
 | Public YouTube URL | created by the final verified upload | not created | public URL + duration/audio readback |
 | Devpost entry URL | `https://devpost.com/software/life-manager-uny729` | public draft、not submitted | every required field + `submitted_at` readback |
 | Testing instructions | isolated guest `https://aniccaai.com/money-printer` + one WebMCP prompt + final録画で通した一つのclient経路 | planned | single clean-browser judge replay |
@@ -294,7 +294,7 @@ Pitchの中心を、検証可能な共同作業に置く。
 
 Devpost galleryは調査時点で未公開。GitHub exact phrase searchでは公開候補repoが少なくとも59件あった。valid submissions数と競合数は未確定だが、公開build activityはすでに大きい。
 
-| Competitor | Strongest evidence | Life Managerが超える点 |
+| Competitor | Strongest evidence | Mr.botが超える点 |
 |---|---|---|
 | SpendMCP | x402、policy、dynamic 9→10 tools、idempotency、delivery receipt、143 tests | 購入だけでなく、機会発見→workroom→成果→入金まで閉じる |
 | ONE | 4 independent sites、stale intent、slot loss recovery、exact-resource approval | 一目標の購入から、任意の短期・長期workを継続実行するgeneral runtimeへ広げる |
@@ -414,9 +414,9 @@ Ambitionはfeature数ではない。「open Web上の仕事を、人とagentが�
 
 ### 7.6 Product replacement gate
 
-Visual surfaceは変更可能である。Life Managerの中核architectureを置き換えるのは、一次証拠で次をすべて満たす場合だけにする。
+Visual surfaceは変更可能である。Mr.botの中核architectureを置き換えるのは、一次証拠で次をすべて満たす場合だけにする。
 
-- 4軸internal rubricが現Life Manager案以上
+- 4軸internal rubricが現Mr.bot案以上
 - 20秒以内のmagic momentが明確
 - 90秒以内のjudge pathを実装可能
 - humanとagentが同じshared artifactを変更する
@@ -425,15 +425,15 @@ Visual surfaceは変更可能である。Life Managerの中核architectureを置
 
 ---
 
-## 8. Recommended product — Life Manager
+## 8. Recommended product — Mr.bot
 
 ### 8.1 One sentence
 
-**Life Manager is an open-source, 24/7 AI money printer that continuously finds paid opportunities, does the work, submits or delivers it, and asks you only for the human 1% it cannot or should not perform.**
+**Mr.bot is an open-source, 24/7 AI money printer that continuously finds paid opportunities, does the work, submits or delivers it, and asks you only for the human 1% it cannot or should not perform.**
 
 ### 8.2 Product boundary
 
-今回提出するLife Managerは、bounty、gig、hackathon、paid task等の収益機会を一つのgeneral earning runtimeで進めるMoney Printerである。X、Web、GitHub、Devpost、marketplaces、mail等から公開・許可済みのopportunityを発見し、実作業、応募・納品、結果確認、着金確認まで追う。応募数、offer、agentの`done`を収益とは呼ばず、official receiptがある結果だけを表示する。
+今回提出するMr.botは、bounty、gig、hackathon、paid task等の収益機会を一つのgeneral earning runtimeで進めるMoney Printerである。X、Web、GitHub、Devpost、marketplaces、mail等から公開・許可済みのopportunityを発見し、実作業、応募・納品、結果確認、着金確認まで追う。応募数、offer、agentの`done`を収益とは呼ばず、official receiptがある結果だけを表示する。
 
 既存Mercor、Lancers、gig、TaskMarket等のcodeは、general runtimeが再利用できるtools、browser state、evidence、historyとして段階的に吸収する。Core orchestratorはprovider名でexecutorを固定せず、Modelが現在のopportunityとenvironment feedbackを読み、利用可能なtoolsから次の行動を選ぶ。Coconalaはsubmission source、UI、demo、product storyに含めない。そこで実証済みのprovider-neutral isolation、effect fence、resume、receipt patternsだけを内部実装として再利用する。
 
@@ -451,7 +451,7 @@ Canonical flowは七段だけである。
 6. 人間の回答後、同じworkroomとagent threadから自動再開し、一度だけ応募・納品する
 7. Providerのofficial readback、cost、verified moneyをDashboardへ記録する
 
-WebMCPの主役は、対応agentと人間が同じMoney Printer Dashboardを共有する点である。Agentはtyped toolsでopportunity、workroom、human task、artifact、receiptを読み書きし、人は`Needs You`だけを処理する。WebMCPを24/7 background schedulerとは説明しない。Background continuationはLife Manager runtimeが担う。
+WebMCPの主役は、対応agentと人間が同じMoney Printer Dashboardを共有する点である。Agentはtyped toolsでopportunity、workroom、human task、artifact、receiptを読み書きし、人は`Needs You`だけを処理する。WebMCPを24/7 background schedulerとは説明しない。Background continuationはMr.bot runtimeが担う。
 
 WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応募は通常の開発・提出processで行う。Primary live traceはMercorのsame-job human boundaryで閉じ、Lancers application receipt、generic bounty intake、複数source、複数cycle、複数opportunity、dedupe、restart recoveryを同じDashboardに表示する。Lancersの契約獲得、Mercorの選考結果、cash settlementは外部都合のため今回のDone条件にしない。
 
@@ -469,7 +469,7 @@ Submitted productのdefault runtimeはcloudで完結する。Judge/userはDais�
 
 新sandbox frameworkは導入しない。既存`lm_browser_jobs`、tenant-bound encrypted `lm_browser_auth_sessions`、`stagehand-steel-driver.js`、Railway-private Steel session/debug streamを再利用する。Userごとのprovider identityは同じSteel processの同時profileではなく、exact tenant-bound encrypted contextとして保存し、job claim時だけfresh private sessionへrestore、終了時に再sealしてsessionをreleaseする。Current OSS Steelのone-session limitはhackathonのbounded queueで直列化し、実測需要が出るまでKubernetes、AIO Sandbox、OpenHands、別browser vendorを追加しない。
 
-Official Symphonyをwork orchestratorとして最大利用する。Symphonyがclaim、per-work-item workspace、Codex turn、retry/backoff、human handoff後のsame-job continuation、restart reconciliationを担う。Life Managerはmulti-tenant auth、Opportunity、HumanTask、provider effect fence、official receipt、money truthを担う。Symphony公式SPECが範囲外とするrich multi-tenant UIとstrong sandboxをSymphonyへfork実装せず、既存Money Printer UIとRailway-private browser runtimeを接続する。
+Official Symphonyをwork orchestratorとして最大利用する。Symphonyがclaim、per-work-item workspace、Codex turn、retry/backoff、human handoff後のsame-job continuation、restart reconciliationを担う。Mr.botはmulti-tenant auth、Opportunity、HumanTask、provider effect fence、official receipt、money truthを担う。Symphony公式SPECが範囲外とするrich multi-tenant UIとstrong sandboxをSymphonyへfork実装せず、既存Money Printer UIとRailway-private browser runtimeを接続する。
 
 ```mermaid
 flowchart LR
@@ -528,7 +528,7 @@ Primary sources:
 ### 8.4 Visual surface
 
 ```text
-┌──────────────────── Life Manager / Money Printer ────────────────────┐
+┌──────────────────── Mr.bot / Money Printer ────────────────────┐
 │ Paid & verified │ Agents working │ Needs You │ Opportunity value     │
 ├─────────────────┴────────────────┴───────────┴───────────────────────┤
 │ Found │ Working │ Needs You │ Waiting │ Done │ Paid                  │
@@ -545,7 +545,7 @@ Primary sources:
 
 Telegramは重要なstate changeをpushする。Web pageは全体状況、workroom、人間task、proof、moneyを確認・操作する。両者は同じstate、action、ledgerを参照する。
 
-Life Manager workerはWebMCP toolsと同じdomain state-transition functionsを使う。内部の細かな`READY_FOR_EFFECT`、`QA_ACCEPTED`、`SUBMITTED`等は保持するが、人間UIでは`Found → Working → Needs You → Waiting → Done → Paid`の六列へ投影する。Background workerのcall自体はpage-local WebMCP invocationではないが、WebMCP-visible stateを通らないhidden work、hidden task、hidden effectを禁止する。WebMCP agent、人間UI、background workerの全操作が同じboard、workroom、artifact、human task、receiptへ収束する。
+Mr.bot workerはWebMCP toolsと同じdomain state-transition functionsを使う。内部の細かな`READY_FOR_EFFECT`、`QA_ACCEPTED`、`SUBMITTED`等は保持するが、人間UIでは`Found → Working → Needs You → Waiting → Done → Paid`の六列へ投影する。Background workerのcall自体はpage-local WebMCP invocationではないが、WebMCP-visible stateを通らないhidden work、hidden task、hidden effectを禁止する。WebMCP agent、人間UI、background workerの全操作が同じboard、workroom、artifact、human task、receiptへ収束する。
 
 人間は全列をreadできる。通常のwrite操作はChatGPT conversationまたは`Needs You` cardから、一件の回答、選択、file upload、本人操作完了を返すことに限定する。回答後はcardをagentへ戻し、同じworkroomを自動再開する。緊急停止のため全体`Pause`だけは常時表示する。
 
@@ -558,7 +558,7 @@ Task: Approve the final public delivery
 Why you: This consequential submission requires your authority
 Agent prepared: completed artifact, requirement coverage, risks, and provider destination
 Required action: [Approve] [Request changes]
-Resume: Life Manager submits once and continues receipt reconciliation after approval
+Resume: Mr.bot submits once and continues receipt reconciliation after approval
 State: waiting_for_human
 ```
 
@@ -576,7 +576,7 @@ Minimal-human invariant:
 
 ### 8.6 WebMCP tools
 
-WebMCPはbackground runtimeではないが、Life Manager全体のagent-native control surfaceである。人間と対応agentが同じboard、workroom、artifact、human taskを読み書きし、background runtimeの全状態とeffectもこのsurfaceへ投影する。
+WebMCPはbackground runtimeではないが、Mr.bot全体のagent-native control surfaceである。人間と対応agentが同じboard、workroom、artifact、human taskを読み書きし、background runtimeの全状態とeffectもこのsurfaceへ投影する。
 
 - **Task 4:** `inspect_money_printer` — opportunities、running、blocked、human tasks、verified moneyを読む。現時点で実在するtenant-bound GETだけを最初に登録する
 - **Task 5:** `inspect_next_human_task`、`record_human_answer` — exact human taskを読み、本人の明示入力refを一度だけ記録してsame workroomをresumeする
@@ -627,20 +627,20 @@ Agent promptは目的、証拠基準、authority boundary、canonical examples�
 
 OpenAI Symphony commit `8001b52e3062495a16e520e4ceaf8f9de868c4d0`のSPECとreference implementationを比較した。Symphonyはissue trackerをpollし、issueごとのisolated workspaceを作り、repo-owned `WORKFLOW.md`をprompt/config contractとしてCodexを継続実行する。Orchestratorはsingle authoritative runtime state、claim、bounded concurrency、retry、reconciliationを持つ。Agent turnが正常終了してもissueがactiveなら同じworkspace/threadでcontinuationする。一時失敗はexponential backoffする。Human handoffはworkflow/agentが`Human Review`等のstateへ移し、orchestratorがeligibilityとstateを再照合する。Dashboardはrunning、retrying、blocked、last event、tokens、workspace、runtimeを表示する。
 
-Life Managerはこの構造を次のようにadaptする。
+Mr.botはこの構造を次のようにadaptする。
 
-| Symphony | Life Manager |
+| Symphony | Mr.bot |
 |---|---|
 | Issue tracker | Opportunity inbox |
 | Issue | Paid opportunity / work item |
-| WORKFLOW.md | Work contract + Life Manager policy |
+| WORKFLOW.md | Work contract + Mr.bot policy |
 | Code workspace | Isolated workroom |
 | Coding agent | General earning agent |
 | PR / CI proof | Application / artifact / delivery / payment proof |
 | Human Review | Exact human task |
 | Done | Verified terminal outcome |
 
-Symphonyはarchitecture referenceだけで終わらせず、公式repoを実際にinstallしてLife Managerのagent orchestratorとして使う。ただし、Symphonyのcoding-only assumption、tracker、PR-centric completionをMoney Printerのbusiness truthへ昇格させない。
+Symphonyはarchitecture referenceだけで終わらせず、公式repoを実際にinstallしてMr.botのagent orchestratorとして使う。ただし、Symphonyのcoding-only assumption、tracker、PR-centric completionをMoney Printerのbusiness truthへ昇格させない。
 
 #### 9.4A Install spikeの実測
 
@@ -652,15 +652,15 @@ Symphonyはarchitecture referenceだけで終わらせず、公式repoを実際�
 - 初回の`codex.command`はenv assignmentを実行ファイル名として解釈してexit 126になった。`env CODEX_HOME=... codex app-server`へ1行修正すると、restartなしのworkflow reloadで成功した
 - 公式referenceはengineering previewで、guardrail acknowledgementを要求する。dependency installには複数のsecurity advisoryがあるため、現状のdashboardをpublic Internetへ直接公開しない
 
-#### 9.4B Life Managerでの責任分界
+#### 9.4B Mr.botでの責任分界
 
 | Owner | 正本にするもの |
 |---|---|
 | Symphony | bounded parallel Codex sessions、per-work-item workspace、continuation、retry/backoff、runtime observability |
-| Life Manager | opportunity、qualification、tenant、HumanTask、authority、effect fence、official receipt、verified received money |
-| WebMCP Dashboard | 人とagentが共有する上記Life Manager stateの表示・操作。Symphonyの内部trackerを直接編集するUIにはしない |
+| Mr.bot | opportunity、qualification、tenant、HumanTask、authority、effect fence、official receipt、verified received money |
+| WebMCP Dashboard | 人とagentが共有する上記Mr.bot stateの表示・操作。Symphonyの内部trackerを直接編集するUIにはしない |
 
-Hackathon中の最小接続は、Life Manager work itemをprivate GitHub Issueへmirrorし、official GitHub tracker adapterでSymphonyへdispatchする。Agentの結果はLife Manager API/toolを通して同じworkroomへ戻す。GitHub Issueのcloseだけでは`Done`や収益にしない。公式receiptをLife Managerが照合した時だけterminal outcomeまたはverified moneyへ進める。直接Postgres tracker adapter、public Symphony dashboard、multi-tenant control planeはspike後の実需要が出るまで作らない。
+Hackathon中の最小接続は、Mr.bot work itemをprivate GitHub Issueへmirrorし、official GitHub tracker adapterでSymphonyへdispatchする。Agentの結果はMr.bot API/toolを通して同じworkroomへ戻す。GitHub Issueのcloseだけでは`Done`や収益にしない。公式receiptをMr.botが照合した時だけterminal outcomeまたはverified moneyへ進める。直接Postgres tracker adapter、public Symphony dashboard、multi-tenant control planeはspike後の実需要が出るまで作らない。
 
 ---
 
@@ -707,9 +707,9 @@ Workroomのisolationはopportunity、tenant、credential、effectの交差を防
 
 製品を短期task専用にしない。短いopportunityでorchestrator、continuation、human handoff、effect、proofを先に実証し、その同じcontractで長い仕事へ進む。
 
-### 10.4 Existing Life Manager assets
+### 10.4 Existing Mr.bot assets
 
-現行repoにはbrowser ownership、leases、agent runner、private state、human gates、Telegram ACK、effect fences、provider readback、earnings ledgerがある。Life Managerはこれらをcopyせず再利用する。ただし各capabilityの`live / partial / planned`を再測定し、未完のshared money contractや未着金を完成済みと表示しない。
+現行repoにはbrowser ownership、leases、agent runner、private state、human gates、Telegram ACK、effect fences、provider readback、earnings ledgerがある。Mr.botはこれらをcopyせず再利用する。ただし各capabilityの`live / partial / planned`を再測定し、未完のshared money contractや未着金を完成済みと表示しない。
 
 Telegramは重要なstate changeをpushする。Web dashboardは全体状況、workroom、人間task、proof、moneyを確認・操作する。WebMCPは同じdashboard stateをagentへ公開する。
 
@@ -725,7 +725,7 @@ Current `lm-loop status all`、現行entrypoints、focused tests、既存gig ker
 | Shared agent runner | current production provider routeで使用、bounded evidence/cost/provider abstractionあり | provider-neutral model turns、task class、usage/evidence、model failover boundary | loop内でprovider credentialやAPIを直接選ばない |
 | Human ask/reply | callback visibility tests pass。既存calendar flowでmodel-led resolve→ask→replyを実装済み | `Needs You` dedupe、exact question、answer acknowledgement、known factならaskしない原則 | calendar-specific question copyを再利用しない |
 | Effect reconciler | focused tests pass | present/absent/unknown readback、unknown時no-resend、bounded dead-letter | unknown external effectのblind retry |
-| Existing Panel | panel API/auth/ledger focused tests pass | session/tenant auth、cost/financial projection、safe UI validation、control actions | 現行Life Manager panelを別dashboardとしてforkしない |
+| Existing Panel | panel API/auth/ledger focused tests pass | session/tenant auth、cost/financial projection、safe UI validation、control actions | 現行Mr.bot panelを別dashboardとしてforkしない |
 | Earnings runtime | isolated focused tests 14/14 pass | exact atomic/minor-unit money、entry-key dedupe、private-key rejection、database/read failure honesty、monthly report | provider receiptなしのrowを収益に昇格しない |
 | TaskMarket ledger | installed loop latest terminal pass、isolated focused tests 6/6 pass | award/work receipt shape、Base verification、self-award rejection、duplicate-safe earnings projection | primary demo sourceにはまだ固定しない |
 | x402 observers | acquisition、inflow、sale observerのlatest terminal pass、isolated focused tests 11/11 pass | on-chain receipt verification、sale/work ledger、external-buyer/self-pay boundary | seller/service processesは複数fail中。demoのlive earning pathに依存しない |
@@ -743,7 +743,7 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 - **Minimal human loop:** model-led resolve、semantic dedupe、question、reply acknowledgementの既存contractがある。ただし現行実装はcalendar系に限定され、generic `HumanTask`とoriginal job resumeは未実装
 - **External-effect safety:** application fence、effect keys、official readback、unknown quarantine、replay-zero patternsがある
 - **Money truth:** earnings、TaskMarket、x402でapplication/activityとverified receiptを分けるledger contractがある
-- **UI/auth base:** existing Life Manager Panelのsession、tenant、financial projection、control actionを拡張できる
+- **UI/auth base:** existing Mr.bot Panelのsession、tenant、financial projection、control actionを拡張できる
 
 #### 10.4C Remaining uncertainties and decisions
 
@@ -756,7 +756,7 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 7. **Current production failures:** Lancers current ownersはfail中なので、repair→read-only inventory→one fenced application→official readbackの順で復旧する。Affiliate browser、x402 sellers等のfailをMoney Printer全体の失敗と混同しない
 8. **Real outcome timing:** Lancers acceptance、Mercor selection、cash settlementは外部依存。Primary proofはLancers official application readbackまでを必須とし、提出copyでは実際に得たterminalだけを主張する
 9. **Current live proof:** Lancers application ownerとMercor hourly ownerは停止中で、保持browser pageも`about:blank`である。process、CDP、cookie、過去rowはauthenticated inventory、current application、24/7 cycleの証拠にしない
-10. **Deployment source:** `https://aniccaai.com/lm`は既存Life Manager onboarding、Telegram連携、Google認証の正規routeなので上書きしない。Hackathon control roomは`https://aniccaai.com/money-printer`へ配備する。現時点では未deployなので、正規Netlify build入口、required headers、deployed SHAを先に固定する
+10. **Deployment source:** `https://aniccaai.com/lm`は既存Mr.bot onboarding、Telegram連携、Google認証の正規routeなので上書きしない。Hackathon control roomは`https://aniccaai.com/money-printer`へ配備する。現時点では未deployなので、正規Netlify build入口、required headers、deployed SHAを先に固定する
 
 #### 10.4D Current execution checkpoint
 
@@ -765,9 +765,9 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 | Implementation branch | `feat/webmcp-money-printer`をcurrent `origin/main`からlocked worktreeとして作成し、WebMCP spec/plan/draft/mockupを統合、remoteへpush済み | Production editsはこのworktreeだけで行う |
 | Official challenge | Devpost pluginでrules、required fields、4 criteria、deadlineをlive取得。Project `1404362`は存在し、Hackathon entryの`submitted_at`はnull | Final deploy/video後にfieldsを更新し、explicit final confirmation後だけsubmit |
 | Public route | `/lm`は既存onboardingとして保全。Money Printer canonical URLは`https://aniccaai.com/money-printer` | Devpost live URLは実deploy readback後だけ更新 |
-| Dependencies | Data volume free 11 GiB。Life Manager clean `npm ci`はnetwork待ちで進展せず中断。既存locked dependency runtimeでgeneral-agent focused baseline 27/27 pass | Network回復後にclean installを再実行。未installをfeature failureと数えない |
+| Dependencies | Data volume free 11 GiB。Mr.bot clean `npm ci`はnetwork待ちで進展せず中断。既存locked dependency runtimeでgeneral-agent focused baseline 27/27 pass | Network回復後にclean installを再実行。未installをfeature failureと数えない |
 | Lancers | Focused suiteは2 pass / 1 fail。Failureは現実装が全card detailをenrichするのに、testが旧budget-qualified-only期待を保持するdrift。別locked Lancers application ownerが存在し、isolated Codex app-serverではlaunchctl readback不可 | 別ownerを侵害せず、current product contractとowner resultを照合してからtest/codeを一方だけ修正。live auth/application claimはblockedのまま |
-| Netlify source | `aniccaai.com` production sourceは`/Users/anicca/anicca-project`の`anicca-products` remoteとsite ID `d67537f0-21bd-477e-ac1a-323f7ec6d5cd`。shared checkoutはdirty | Dedicated website worktreeを作り、Life Manager public sourceと同じ `/money-printer` pageを同期する |
+| Netlify source | `aniccaai.com` production sourceは`/Users/anicca/anicca-project`の`anicca-products` remoteとsite ID `d67537f0-21bd-477e-ac1a-323f7ec6d5cd`。shared checkoutはdirty | Dedicated website worktreeを作り、Mr.bot public sourceと同じ `/money-printer` pageを同期する |
 | Task 2 | `money-printer-projection.js`をfocused TDDで実装。RED `MODULE_NOT_FOUND`、GREEN 2/2、parent rerun 2/2、commit `ec321cd1b` | Task 3で同じprojectionをtenant-bound Panel API/UIへ接続する |
 | Task 3 | Tenant-bound `GET /api/panel/money-printer`と六列Panel sectionをfocused TDDで実装。RED 2 failures、GREEN projection+Panel 58/58、commit `7b82045eb` | Empty/fake server sourceは作らない。Task 5/7でdurable human task/opportunity sourceを実dataへ接続する |
 | Task 4 | Top-level `inspect_money_printer` Site toolを実装。RED module missing、Luna GREEN 27/27、parent rerun 27/27、credential/CSRFなし、commit `9a68c5f9d` | Task 5で実human-task endpointが完成した後だけread/write toolsを追加する |
@@ -782,13 +782,13 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 
 ### 10.5 One product, one mode
 
-Hackathonで提供するmodeは一つだけである。Primary experienceは、Userが`https://aniccaai.com/money-printer`を開き、「Turn on my Money Printer」と頼むflowである。Site tools accessがある場合はChatGPT desktopのin-app browserがpage toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。WebMCP自体にLife Manager API keyは不要だが、ChatGPT Site toolsのavailabilityはrollout、account、plan、model、workspaceに依存する。通常browser UIはChatGPT/Codex契約なしで使える。別product、別judge system、別local/cloud modeを作らない。
+Hackathonで提供するmodeは一つだけである。Primary experienceは、Userが`https://aniccaai.com/money-printer`を開き、「Turn on my Money Printer」と頼むflowである。Site tools accessがある場合はChatGPT desktopのin-app browserがpage toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。WebMCP自体にMr.bot API keyは不要だが、ChatGPT Site toolsのavailabilityはrollout、account、plan、model、workspaceに依存する。通常browser UIはChatGPT/Codex契約なしで使える。別product、別judge system、別local/cloud modeを作らない。
 
-Life Managerのagent runtimeは同じcloud productの一部としてworkroomを24/7進める。Pageを閉じるとWebMCP toolsは一時的に利用不能になるが、workroomとscoutは同じdurable state上で継続する。Userがpageを再び開くと、対応agentは最新stateと未回答`Needs You`を再発見する。Judgeは支払い、Life Manager API key、private owner credentialなしのisolated guest tenantで試せる。Guest sessionの生成方式は実装とclean-browser E2Eで固定し、zero-loginという語はその実証前に使わない。Normal browser UIはfallbackとして同じ機能を持つが、primary demoとproduct storyはChatGPT in-app browserに置く。
+Mr.botのagent runtimeは同じcloud productの一部としてworkroomを24/7進める。Pageを閉じるとWebMCP toolsは一時的に利用不能になるが、workroomとscoutは同じdurable state上で継続する。Userがpageを再び開くと、対応agentは最新stateと未回答`Needs You`を再発見する。Judgeは支払い、Mr.bot API key、private owner credentialなしのisolated guest tenantで試せる。Guest sessionの生成方式は実装とclean-browser E2Eで固定し、zero-loginという語はその実証前に使わない。Normal browser UIはfallbackとして同じ機能を持つが、primary demoとproduct storyはChatGPT in-app browserに置く。
 
 Canonical first-use UX:
 
-1. UserがChatGPT in-app browserでLife Managerを開く
+1. UserがChatGPT in-app browserでMr.botを開く
 2. 「Turn on my Money Printer. Ask only when you genuinely need me」と頼む
 3. WebMCP agentが既存profileとcurrent constraintsをinspectする
 4. 稼働に不可欠で未取得の情報だけを一問ずつ`Needs You`で聞く
@@ -824,7 +824,7 @@ Testing clients:
 
 ```mermaid
 flowchart LR
-    H[Human / WebMCP client] --> UI[Netlify: Life Manager Dashboard]
+    H[Human / WebMCP client] --> UI[Netlify: Mr.bot Dashboard]
     UI --> API[Existing Railway Node API / Orchestrator]
     API --> ID[(Supabase identity, session, verified earnings)]
     API --> DB[(Railway Postgres opportunity, runtime job, human task, receipt)]
@@ -838,7 +838,7 @@ flowchart LR
 
 - **Netlify:** 既存`/lm`を保全し、`/money-printer`にresponsive Dashboardとtop-level `document.modelContext.registerTool()`を配信する
 - **Browser security:** Netlifyは`Origin-Agent-Cluster: ?1`と`Permissions-Policy: tools=(self)`を返す。iframe/declarative registrationへ依存せず、clean browserのresponse headersとtool discoveryをreadbackする
-- **Railway:** 既存Life Manager Node serviceをAPI、claim、continuation、retry、reconciliationのorchestratorとして再利用する
+- **Railway:** 既存Mr.bot Node serviceをAPI、claim、continuation、retry、reconciliationのorchestratorとして再利用する
 - **Durable stores:** Supabaseは既存identity/session/verified earnings、Railway Postgresはopportunity、runtime job、human task、effect fence、receiptを持つ。Life-call APIだけがtenant identityでjoinし、同じbusiness stateを二重保存しない
 - **Agent runner:** provider-neutralなtaskを受け、modelがenvironment feedbackから次のtoolを選ぶ。provider別hardcoded workflowをcoreへ作らない
 - **Tools/adapters:** 既存browser ownership、GitHub/Web/code/media、effect fence、official readback、earnings ledgerを再利用する
@@ -928,8 +928,8 @@ Effect開始後に結果が不明なら`EFFECT_UNCERTAIN`へ進み、別account�
 ### 12.1 Judge path
 
 - landing pageにone-sentence value
-- ChatGPT in-app browserで`Try Life Manager`を開き、同じproduction productのguest accountへ入る
-- Life Manager側のAPI key、wallet、private credentialは不要
+- ChatGPT in-app browserで`Try Mr.bot`を開き、同じproduction productのguest accountへ入る
+- Mr.bot側のAPI key、wallet、private credentialは不要
 - primary judge pathはzero-login live URL + video + README
 - WebMCP E2Eは最終録画で通した一つの主催者対応clientだけを記載する
 - copyable prompt 1つ: `Turn on my Money Printer. Do everything you can autonomously and ask me only when you genuinely need human input.`
@@ -946,10 +946,10 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 | 0:00–0:15 | AIで稼ぐ個別事例はあるが、公開・再現可能なend-to-end agent systemがない問題 |
 | 0:15–0:30 | Money Printer Dashboard: opportunities、workrooms、Needs You、verified money |
 | 0:30–0:48 | 対応agentがWebMCP toolsを発見し、real public bounty/gigを追加 |
-| 0:48–1:15 | Life Managerがqualifyし、persistent workroomで実artifactを作る |
+| 0:48–1:15 | Mr.botがqualifyし、persistent workroomで実artifactを作る |
 | 1:15–1:35 | 本当に必要な権限境界だけが`Needs You`へ移る |
 | 1:35–1:52 | 人間がphoneで完成物とdestinationを確認し、一件だけapproveする |
-| 1:52–2:15 | Life Managerが同じworkroomから再開し、一度だけsubmit/deliverする |
+| 1:52–2:15 | Mr.botが同じworkroomから再開し、一度だけsubmit/deliverする |
 | 2:15–2:30 | `Actual Owner Run — read-only`でofficial readback、cost、duplicate 0を表示 |
 | 2:30–2:45 | WebMCP tool call logと同じUI stateが更新された証拠を表示 |
 | 2:45–2:58 | agentが99%、人間がhuman-only 1%を担当し、verified moneyまで追うと説明 |
@@ -963,16 +963,16 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 | Time | Recorded screen | Narration |
 |---:|---|---|
 | 0:00–0:15 | Title + scattered posts/prompts about earning with AI | “People share countless ways to make money with Claude, Codex, and AI through bounties, gigs, apps, and online work. What is missing is a public, reproducible agent system that actually runs the whole process.” |
-| 0:15–0:30 | Full Money Printer Dashboard | “Life Manager is that system. It finds paid opportunities, does the work, submits or delivers it, and tracks the result on one board.” |
+| 0:15–0:30 | Full Money Printer Dashboard | “Mr.bot is that system. It finds paid opportunities, does the work, submits or delivers it, and tracks the result on one board.” |
 | 0:30–0:45 | recorded WebMCP Site tools drawer | “The page exposes WebMCP tools, so my WebMCP agent reads and changes the same state I see instead of guessing at buttons.” |
-| 0:45–1:00 | WebMCP agent adds one live public bounty/gig | “I add one real paid opportunity. Life Manager checks its reward, deadline, eligibility, required work, cost, and risk, then opens an isolated workroom.” |
+| 0:45–1:00 | WebMCP agent adds one live public bounty/gig | “I add one real paid opportunity. Mr.bot checks its reward, deadline, eligibility, required work, cost, and risk, then opens an isolated workroom.” |
 | 1:00–1:20 | Worker events and real artifact appear | “The earning agent uses its browser and work tools to complete the task without me supervising every turn.” |
 | 1:20–1:40 | Card moves to Needs You with completed packet | “Only when it reaches a boundary that genuinely requires my authority does it create one prepared human task.” |
 | 1:40–1:55 | iPhone: review and approve one exact action | “On my phone, I review the finished work and approve the exact public delivery. I do not reconstruct context or manage the agent.” |
 | 1:55–2:15 | Mac: same workroom resumes and submits once | “The same workroom resumes automatically and delivers the work exactly once.” |
 | 2:15–2:32 | `Actual Owner Run — read-only`; provider receipt and duplicate 0 | “The provider readback proves what was submitted or delivered. Applications and model claims are not counted as money.” |
 | 2:32–2:45 | WebMCP call log beside matching visible state | “Every WebMCP call changes the same state I can see, so the agent and I share one source of truth.” |
-| 2:45–2:56 | Dashboard with active, Needs You, receipts, verified money | “The agent does the ninety-nine percent it can do. I provide the human one percent, and Life Manager keeps working until the outcome is verified.” |
+| 2:45–2:56 | Dashboard with active, Needs You, receipts, verified money | “The agent does the ninety-nine percent it can do. I provide the human one percent, and Mr.bot keeps working until the outcome is verified.” |
 
 Recording assets:
 
@@ -990,23 +990,23 @@ Recording assets:
 
 ### Project summary
 
-**Life Manager is an open-source, 24/7 AI money printer that continuously discovers paid opportunities, does the work, submits or delivers it, and tracks the verified outcome. Its agent handles the routine ninety-nine percent and asks a person only for the one percent that genuinely requires human identity, authority, judgment, payment information, or real-world action.**
+**Mr.bot is an open-source, 24/7 AI money printer that continuously discovers paid opportunities, does the work, submits or delivers it, and tracks the verified outcome. Its agent handles the routine ninety-nine percent and asks a person only for the one percent that genuinely requires human identity, authority, judgment, payment information, or real-world action.**
 
 ### Why this use case is a strong fit for WebMCP
 
-Money Printer runs autonomously across many turns, but real earning work still contains moments when a person and an agent must share exact context: approving a consequential public delivery, providing identity-bound or payout information, making a genuine taste decision, or performing a physical action. WebMCP turns Life Manager's live Dashboard into a shared control surface. A compatible agent can inspect opportunities, open a workroom, revise a visible artifact, record one human answer, resume the work, and verify provider receipts through typed site tools instead of guessing at dashboard controls.
+Money Printer runs autonomously across many turns, but real earning work still contains moments when a person and an agent must share exact context: approving a consequential public delivery, providing identity-bound or payout information, making a genuine taste decision, or performing a physical action. WebMCP turns Mr.bot's live Dashboard into a shared control surface. A compatible agent can inspect opportunities, open a workroom, revise a visible artifact, record one human answer, resume the work, and verify provider receipts through typed site tools instead of guessing at dashboard controls.
 
 Every WebMCP action updates the same versioned state that the person sees. The page therefore becomes the shared control plane for an autonomous agent rather than a passive monitoring dashboard.
 
 ### How it creates a better user experience
 
-Without WebMCP, an agent must infer Life Manager's interface from pixels and DOM controls, while the person has to translate state between the Dashboard, chat, and external opportunity sites. With WebMCP, the agent uses typed tools to read and update the same visible workroom the person sees. The person receives one prepared `Needs You` card instead of supervising every turn, supplies the missing approval, identity, payout detail, or real-world action, and the earning agent resumes from the exact same state. This removes repeated navigation and context reconstruction, makes every handoff visible, and lets both sides verify the same delivery and payment evidence.
+Without WebMCP, an agent must infer Mr.bot's interface from pixels and DOM controls, while the person has to translate state between the Dashboard, chat, and external opportunity sites. With WebMCP, the agent uses typed tools to read and update the same visible workroom the person sees. The person receives one prepared `Needs You` card instead of supervising every turn, supplies the missing approval, identity, payout detail, or real-world action, and the earning agent resumes from the exact same state. This removes repeated navigation and context reconstruction, makes every handoff visible, and lets both sides verify the same delivery and payment evidence.
 
 ### What people and agents can do together that was difficult before
 
 People share many isolated ways to use Claude, Codex, and other AI systems to make money through bounties, gigs, apps, content, and online work. What has been missing is a public, reproducible end-to-end agent system that continuously discovers those opportunities, evaluates them, performs the work, pauses only at a genuine human boundary, resumes after the answer, submits or delivers once, and follows the result to an official receipt.
 
-Life Manager lets people and agents divide real earning work according to what each does best. The agent handles discovery, qualification, research, planning, creation, execution, recovery, submission, and receipt reconciliation. The person contributes only identity, authority, judgment, payment information, or physical action when one of those is truly required. Both work from the same visible workroom, so the handoff is not a context-losing message; it is part of the durable work state. Together they can pursue short bounties and multi-day opportunities with minimal human involvement while keeping human control at the moments that must remain human.
+Mr.bot lets people and agents divide real earning work according to what each does best. The agent handles discovery, qualification, research, planning, creation, execution, recovery, submission, and receipt reconciliation. The person contributes only identity, authority, judgment, payment information, or physical action when one of those is truly required. Both work from the same visible workroom, so the handoff is not a context-losing message; it is part of the durable work state. Together they can pursue short bounties and multi-day opportunities with minimal human involvement while keeping human control at the moments that must remain human.
 
 ### How WebMCP was implemented
 
@@ -1014,7 +1014,7 @@ The top-level page registers focused tools with `document.modelContext.registerT
 
 ### Impact and future
 
-The initial product is a general entrepreneur agent that continuously searches X, the Web, GitHub, mail, Lancers, Mercor, and arbitrary marketplace URLs for paid opportunities. Its primary proof follows one Lancers project from public listing through qualification, proposal preparation, one genuine human boundary, a fenced application, and official readback. Mercor demonstrates high-value roles and a provider-required human interview boundary. The same agent can inspect an unfamiliar marketplace URL and explain the work, tools, and missing mechanical adapter without a provider-specific routing branch. Life Manager remains free and unrestricted to judges throughout the judging period and records revenue only when an official receipt confirms that money was received.
+The initial product is a general entrepreneur agent that continuously searches X, the Web, GitHub, mail, Lancers, Mercor, and arbitrary marketplace URLs for paid opportunities. Its primary proof follows one Lancers project from public listing through qualification, proposal preparation, one genuine human boundary, a fenced application, and official readback. Mercor demonstrates high-value roles and a provider-required human interview boundary. The same agent can inspect an unfamiliar marketplace URL and explain the work, tools, and missing mechanical adapter without a provider-specific routing branch. Mr.bot remains free and unrestricted to judges throughout the judging period and records revenue only when an official receipt confirms that money was received.
 
 ---
 
@@ -1024,7 +1024,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 
 | Surface | Verified state | Next gate |
 |---|---|---|
-| Life Manager code | Money Printer本体、judge guest、Railway worker、recurring scout、HumanTask pause/resume contract、WebMCP initial four + dynamic fifthをpublic mainへmerge済み。Current mainは`f592bc31b2d6730143f46ba9d1e7e82c69fcd324`、Money Printer/Panel/server pathsはproduction build `5c9a8f9f3bc80550e040da560cbc2cd8703d3c50`との差分0。後続marketing-only app changesは未deploy | live answer/resume、browser WebMCP E2E、Symphony product integrationを閉じる |
+| Mr.bot code | Money Printer本体、judge guest、Railway worker、recurring scout、HumanTask pause/resume contract、WebMCP initial four + dynamic fifthをpublic mainへmerge済み。Current mainは`f592bc31b2d6730143f46ba9d1e7e82c69fcd324`、Money Printer/Panel/server pathsはproduction build `5c9a8f9f3bc80550e040da560cbc2cd8703d3c50`との差分0。後続marketing-only app changesは未deploy | live answer/resume、browser WebMCP E2E、Symphony product integrationを閉じる |
 | Railway API | `life-call`と`money-printer-worker`はbuild `5c9a8f9f3bc80550e040da560cbc2cd8703d3c50`でSUCCESS、`/health` 200。fresh guest sessionのnext-human-taskは200でopen task一件 | task answer、stale version、same-key replay、same-job resume、official receiptを閉じる |
 | Judge guest | zero-login boardはFound 19、Working 0、metric `Needs You=1`、Paid 0、verified cash 0。initial WebMCP tools four、open task取得後のdynamic fifth実装あり | **known defect:** `Needs You` columnが0件でmetric 1と不一致。projection/source/workroom/UIをB09–B12で直し、clean browserでprivate data 0とsame domain functionsを証明する |
 | Netlify | PR #400/401、deploy run `33254381157`はSUCCESS。`https://aniccaai.com/money-printer` page/API 200、`Origin-Agent-Cluster:?1`、`Permissions-Policy:tools=(self)`、no-store、zero-login sessionをreadback | race-free Symphony接続後、final single recordingでtool discoveryとvisible write/resumeを証明する |
@@ -1051,7 +1051,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 
 1. [pass] 実際に不足した作業容量をowner-aware cleanupで回復し、Mac restartなしで`df`、swap、owner argv、browser identityをreadbackする。固定GB thresholdは今後使わない
 2. clean browserでzero-login、private data 0、WebMCP tool discoveryを実測する
-3. Canonical owner E2E候補`https://work.mercor.com/jobs/list_AAABoCqIQBg7fzkgOZ9DB76e/business-development-contractor`をsame-jobとしてLife Managerからprivate GitHub IssueへmirrorしてSymphonyへdispatchし、同じworkroomへのresult callback、provider-required interviewの`Needs You`作成→human answer→resume→receiptを閉じ、stale revisionとsafe recoveryも同じ画面で示す。Hidden eligibilityまたはprovider closureが判明した場合はexternal effect前にfail closedし、同じselection rubricでcurrent eligible opportunityを一件だけ差し替える
+3. Canonical owner E2E候補`https://work.mercor.com/jobs/list_AAABoCqIQBg7fzkgOZ9DB76e/business-development-contractor`をsame-jobとしてMr.botからprivate GitHub IssueへmirrorしてSymphonyへdispatchし、同じworkroomへのresult callback、provider-required interviewの`Needs You`作成→human answer→resume→receiptを閉じ、stale revisionとsafe recoveryも同じ画面で示す。Hidden eligibilityまたはprovider closureが判明した場合はexternal effect前にfail closedし、同じselection rubricでcurrent eligible opportunityを一件だけ差し替える
 4. [pass: workroom isolation] two live workroomsを同時readし、各activity refが自分のopportunity IDだけを含みcross-contamination 0を確認。次にclient-only resetまたはfresh guest sessionでjudgeが60秒以内に再現できることを示す。Resetはserver receipts/jobsを削除しない
 5. 同一production releaseから16:00Z、00:00Z、08:00Zの3 natural scout cyclesをreadbackし、source duplicate最大1を確認する
 6. public repoをclean cloneし、locked install、focused tests、secret/PII scanを通してimmutable release tagとdeploy SHAを固定する
@@ -1113,7 +1113,7 @@ The initial product is a general entrepreneur agent that continuously searches X
 
 ### Devpost
 
-- [ ] Devpost project name matches the canonical `Life Manager` name
+- [ ] Devpost project name matches the canonical `Mr.bot` name
 - [ ] English one-line summary
 - [ ] English four-part description
 - [ ] screenshots
@@ -1172,7 +1172,7 @@ Anicca/Finite GardenはDaisの哲学とvisual originalityに合う。しかし�
 
 ### 自分が間違うとしたら最有力の筋
 
-Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好み、Life Managerを業務dashboardと判断する可能性がある。対策は実演である。20秒以内にagentがworkroomを開始し、`Needs You`、continuation、failure recovery、real proof、verified moneyを同じ画面で見せる。
+Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好み、Mr.botを業務dashboardと判断する可能性がある。対策は実演である。20秒以内にagentがworkroomを開始し、`Needs You`、continuation、failure recovery、real proof、verified moneyを同じ画面で見せる。
 
 ---
 
@@ -1192,7 +1192,7 @@ Judgesがeconomic autonomyより安全で楽しいcreative collaborationを好�
 10. Mercor public inventory/application stepsを投影し、provider-required interviewをhuman taskへ出す
 11. [code-completed/live-open] X/Web discoveryと任意URL ingestを接続し、Modelが未知marketplaceのrequirements、available tools、missing mechanical adapterを説明できることを実証する
 12. [completed] existing runtime job store/reconcilerでretry/backoff、controlled failure、restart recoveryを実測する
-    - [spike-completed / product-open] Official Symphonyをinstallしprivate GitHub fixtureでisolated Codex E2Eを完了。Life Manager work item mirrorとresult callbackは未接続
+    - [spike-completed / product-open] Official Symphonyをinstallしprivate GitHub fixtureでisolated Codex E2Eを完了。Mr.bot work item mirrorとresult callbackは未接続
 13. [code-completed/live-open] state-dependent tool registration + visible activity log
 14. single-client recorded WebMCP E2E、polish/accessibility、isolated guest/reset、clean judge replay
 15. public repo/license/judge guide/post-August-25 diff、deploy/repo SHA一致
@@ -1229,7 +1229,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U18 | Multiple agentsでcontext/effectが交差する | live-resolved for workroom projection | two production workroomsを同じguest sessionから同時GETし、各2 activity refsが自分のopportunity IDだけを含み、cross-contamination falseをreadback。external effect concurrencyはjudge tenantでdeny | shared mutable customer stateを検出したらparallel effectを止める |
 | U19 | Revenueを盛って表示する | code-verified / UI live-open | Verified external incomeだけを通貨別mapで集計し、JPY/USD等を混算しない。Application/Paymentは別receiptのまま | cash receiptなしならverified money empty/0を表示 |
 | U20 | Real external receiptが締切までに得られない | resolved for application proof | Lancers official application ID `27863414`、official log、append-only ledger sequence 37、matching content hash | acceptance/delivery/cashは得られたterminalだけ表示し、applicationを売上にしない |
-| U21 | Existing projectの新規WebMCP差分が不明 | partial pass | README `Hackathon changes`とdated commitsは公開済み。次にsubmitted tag diffを固定 | prior Life Manager機能をHackathon成果として数えない |
+| U21 | Existing projectの新規WebMCP差分が不明 | partial pass | README `Hackathon changes`とdated commitsは公開済み。次にsubmitted tag diffを固定 | prior Mr.bot機能をHackathon成果として数えない |
 | U22 | Public repoがclean installできない | repo/license/docs pass / clean clone pending | public MIT repo、README quick start、judge guide、architecture/tool tableをreadback。次にclean clone、locked install、focused tests、secret/PII scan | scan/import failureならsubmit readinessは`not ready` |
 | U23 | Videoで四基準が伝わらない | open | under 3:00、audio、first working action <15s、tool call、Needs You、resume、receipt | 未実装claimをscriptから削る |
 | U24 | Devpost最終送信漏れ | draft exists / not submitted | project 1404362、live URL、repo、video、custom fields、explicit `yes, submit`、`submitted_at` readback | internal deadline September 3 12:00 JST、official deadline September 4 05:00 JST |
@@ -1239,7 +1239,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | U28 | Application receiptを売上と誤認する | design-closed / UI live-open | `ApplicationReceipt`、`ContractReceipt`、`DeliveryReceipt`、`PaymentReceipt`を別型・別columnで表示し、cash receipt不在時はverified money 0 | application/proposal/pendingをrevenueへ昇格しない |
 | U29 | Judgeがclean environmentで再現できない | live-open | fresh browserからone URL、one prompt、tool discovery、reset、visible state、Chrome fallbackを60秒以内に再現 | private credentialや既存sessionが必要ならnot ready |
 | U31 | Symphonyを読んだだけで実runtimeに使っていない | spike-resolved / R01–R12、A01–A09、S01–S08 complete | official commitをinstall/buildしprivate Issue→isolated Codex→commit/push→comment→closeを実E2E。Bridgeはprivate claim、Issue mirror、author-bound result、DB consume、GitHub CLOSED、durable close ackを一周にし、mirrored/result_ready/consumedのprocess restart recoveryとduplicate terminal effect 0を152/152関連test + fresh `SHIP`で確認。Productionは`issue_closed_at`、constraint、claim/ack function body hash、service_role grant true、anon/auth false、unclosed row 0をcatalog readback。Workflowはofficial schema/GitHub adapter、bridge result parser、ChatGPT loginとfresh reviewを通過 | S09–S12でofficial runtimeを常駐接続する。Symphony内部state、Issue close、agent claimをmoney truthにしない |
-| U32 | Official Symphony previewをそのまま公開運用できるか | rejected for public exposure | engineering-preview warning、dependency advisories、1 timing test failureを記録 | trusted local/private orchestratorとして使い、public WebMCP UI/APIはLife Managerだけを公開する |
+| U32 | Official Symphony previewをそのまま公開運用できるか | rejected for public exposure | engineering-preview warning、dependency advisories、1 timing test failureを記録 | trusted local/private orchestratorとして使い、public WebMCP UI/APIはMr.botだけを公開する |
 | U30 | Judge guestの初回WebMCP writeがCSRFで拒否される | root cause fixed / deploy pending | 初回GET後の`add_opportunity`がfamily-bound CSRFで200、同じidempotency keyのreplayも同じ200、write 1をproduction readback | 新session作成後にfamilyをresolveできなければbroken tokenを描画せずfail closed |
 
 ---
@@ -1252,14 +1252,14 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 | Decision | Fixed answer | Evidence |
 |---|---|---|
-| Product | Life Manager Money Printer一つだけ。別judge app、別mode、WebMCP専用productを作らない | canonical URL `/money-printer` |
+| Product | Mr.bot Money Printer一つだけ。別judge app、別mode、WebMCP専用productを作らない | canonical URL `/money-printer` |
 | Public UI | Netlify `https://aniccaai.com/money-printer` | fresh HTTP 200、no-store、`tools=(self)`、guest cookie |
 | Backend truth | Railway PostgresのOpportunity、runtime job、HumanTask、receipt、verified money | production DB readback |
 | Agent fleet | official OpenAI Symphony pinned artifactをcloudで常駐。Mac mini runtimeはmigration evidenceでありjudge/new-user dependencyではない | official SPEC + existing private spike E2E commit `4e1c346f...` |
 | Tracker | 新規private repo `Daisuke134/life-manager-workrooms`、label `money-printer` | execution atom S01で作成・private readback |
 | Bridge | cloud bridgeがserver-selected next tenant/jobをclaimし、private GitHub Issueを作成、result commentをsame jobへcallback | request payloadにtenant selectorを置かず、GitHub tokenはbridge serviceだけに置く |
 | Race prevention | bridge cutover時、Railway workerのcapabilitiesから`general-agent.work`を外し`money-printer.scout`だけを残す | queued workをGemini workerとSymphonyが二重claimしない |
-| Persistent identity | Life Managerの`tenant_id + job_id`がworkroom正本。Symphony round/Issueはdispatch attemptであり、human answer後もsame jobを再queueする | Issue closeをDoneにしない |
+| Persistent identity | Mr.botの`tenant_id + job_id`がworkroom正本。Symphony round/Issueはdispatch attemptであり、human answer後もsame jobを再queueする | Issue closeをDoneにしない |
 | Human boundary | 既知profile、research、form fill、artifact生成、通常応募はagent。本人interview、CAPTCHA/3DS、未保存private fact、法的同意、physical actionだけ`Needs You` | forced demo permission taskを棄却 |
 | Cloud browser | existing Railway-private Steel + Stagehand、`lm_browser_jobs`、tenant-bound encrypted auth contextを一経路だけ使う | current production code、private-only URL checks、auth isolation tests |
 | Human takeover | authenticated Money Printer sessionがowned active browser jobのshort-lived interactive streamだけをproxyする | raw Steel/CDP/context/cookie非露出、foreign tenant 404、expiry後410 |
@@ -1273,7 +1273,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 
 ### 18.2 Evidence contract
 
-- Private raw evidence root: `~/.local/state/life-manager/evidence/webmcp-challenge/`
+- Private raw evidence root: `~/.local/state/mr-bot/evidence/webmcp-challenge/`
 - Public redacted evidence root: `docs/evidence/webmcp/`
 - 各atomは`<atom-id>.json`または`<atom-id>.png`を一つ残し、`observed_at`、source、release SHA、resultを含める
 - Credential、cookie、token、private answer、raw PIIはprivate rootにも複製せず、既存credential/vault referenceだけを記録する
@@ -1289,42 +1289,42 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 
 | Patch atom | File and current anchor | Exact diff | Focused RED → GREEN | Live readback |
 |---|---|---|---|---|
-| B09a | `apps/life-manager/lib/money-printer-runtime-store.js:241-269` `readRuntimeSnapshot` | HumanTask SELECTへ`job_id,reason_code,version`を追加する。private answer、question、context payloadはboard snapshotへ追加しない | `money-printer-runtime-store.test.js:22-58`へopen task owner relation一件。旧codeでは`job_id`欠落でRED、exact tenant jobでGREEN | `/api/panel/money-printer`にprivate field 0 |
-| B09b | `apps/life-manager/lib/money-printer-source.js:129-137` `mapHumanTask` | safe fieldsとして`job_id,reason_code,version`だけをtenant-bound mappingへ残す | `money-printer-source.test.js:27-69`でrelation保持、`answer_ref/question/context_refs`非露出 | guest payload privacy scan 0 |
-| B09c | `apps/life-manager/lib/money-printer-projection.js:64-121` `projectMoneyPrinter` | open HumanTaskを`job_id=goal:<opportunity_id>`でOpportunityへjoinし、そのcardを`needs_you`へ一度だけrouteする。HumanTask activityへtenant-scoped `job_ref`を付け、`metrics.needs_you`を`columns.needs_you.length`と同じcanonical countにする。orphan/cross-tenant/duplicate owner relationはfail closed | `money-printer-projection.test.js:48-89`後へ「open task一件→Needs You card一件、metric 1、Foundから除外、duplicate card 0」。旧codeでmetric 1/column 0のREDを固定 | board metric=column count、current open taskが一card |
-| B09d | `apps/life-manager/lib/panel-api.js:364-400` `workroom` | selected opportunityのjobに属するHumanTaskだけをprojectionへ渡し、returned activityにsafe `job_ref`を残す。現行`humanTasks: []`を除去する | `panel-api.test.js:352-403`へsame-job taskあり / foreign-job taskなし | `inspect_workroom`にsame task activity一件、cross-workroom 0 |
-| B10 | `apps/life-manager/lib/panel-ui.js:702-704,1128-1174` | cardをbutton/link化し、同じsection内にselected workroom title、status、safe activity、artifact/receipt refsをrenderする。GETはexisting `/api/panel/money-printer/workroom?opportunity_id=`だけ。external actionは追加しない | `panel-ui.test.js:285-327`へselect→workroom renderとHTML escaping一件 | judgeがone clickでworkroomとactivityを視認 |
-| B11 | `apps/life-manager/lib/money-printer-webmcp.js:63-105,147-184,187-242` + `panel-ui.js:1165-1200` | 各tool executeの開始/成功/失敗をcredential-free custom eventで通知し、UIに直近callのtool name/statusだけを表示する。input/result/raw errorはlogしない | `money-printer-webmcp.test.js:1-205`と`panel-ui.test.js:380-424`へcall activity一件、secret echo 0 | Site tool callとvisible activityが同時更新 |
+| B09a | `apps/mr-bot/lib/money-printer-runtime-store.js:241-269` `readRuntimeSnapshot` | HumanTask SELECTへ`job_id,reason_code,version`を追加する。private answer、question、context payloadはboard snapshotへ追加しない | `money-printer-runtime-store.test.js:22-58`へopen task owner relation一件。旧codeでは`job_id`欠落でRED、exact tenant jobでGREEN | `/api/panel/money-printer`にprivate field 0 |
+| B09b | `apps/mr-bot/lib/money-printer-source.js:129-137` `mapHumanTask` | safe fieldsとして`job_id,reason_code,version`だけをtenant-bound mappingへ残す | `money-printer-source.test.js:27-69`でrelation保持、`answer_ref/question/context_refs`非露出 | guest payload privacy scan 0 |
+| B09c | `apps/mr-bot/lib/money-printer-projection.js:64-121` `projectMoneyPrinter` | open HumanTaskを`job_id=goal:<opportunity_id>`でOpportunityへjoinし、そのcardを`needs_you`へ一度だけrouteする。HumanTask activityへtenant-scoped `job_ref`を付け、`metrics.needs_you`を`columns.needs_you.length`と同じcanonical countにする。orphan/cross-tenant/duplicate owner relationはfail closed | `money-printer-projection.test.js:48-89`後へ「open task一件→Needs You card一件、metric 1、Foundから除外、duplicate card 0」。旧codeでmetric 1/column 0のREDを固定 | board metric=column count、current open taskが一card |
+| B09d | `apps/mr-bot/lib/panel-api.js:364-400` `workroom` | selected opportunityのjobに属するHumanTaskだけをprojectionへ渡し、returned activityにsafe `job_ref`を残す。現行`humanTasks: []`を除去する | `panel-api.test.js:352-403`へsame-job taskあり / foreign-job taskなし | `inspect_workroom`にsame task activity一件、cross-workroom 0 |
+| B10 | `apps/mr-bot/lib/panel-ui.js:702-704,1128-1174` | cardをbutton/link化し、同じsection内にselected workroom title、status、safe activity、artifact/receipt refsをrenderする。GETはexisting `/api/panel/money-printer/workroom?opportunity_id=`だけ。external actionは追加しない | `panel-ui.test.js:285-327`へselect→workroom renderとHTML escaping一件 | judgeがone clickでworkroomとactivityを視認 |
+| B11 | `apps/mr-bot/lib/money-printer-webmcp.js:63-105,147-184,187-242` + `panel-ui.js:1165-1200` | 各tool executeの開始/成功/失敗をcredential-free custom eventで通知し、UIに直近callのtool name/statusだけを表示する。input/result/raw errorはlogしない | `money-printer-webmcp.test.js:1-205`と`panel-ui.test.js:380-424`へcall activity一件、secret echo 0 | Site tool callとvisible activityが同時更新 |
 | B12 | source変更なし | B02–B11をfresh cookie/clientで再実行し、initial four、dynamic fifth、board/workroom/call logの一致を束縛 | focused checks全GREEN | `browser-client-evidence.json` complete |
 
 #### R patch map — same-job Symphony persistence
 
 | Patch atom | File and current anchor | Exact diff | Focused RED → GREEN | Live readback |
 |---|---|---|---|---|
-| R01–R08 | create `apps/life-manager/migrations/2026-08-30-lm-symphony-dispatches.sql:1` | `waiting_agent` state、HumanTask terminal `cancelled_policy`、`lm_symphony_dispatches`、one-open-dispatch unique index、claim/issue/result/complete/policy-cancel RPCを一migrationへ入れる。全RPCはtenant+job+dispatchをlockし、same payload replayは同row、different payloadはconflict。HumanTask answer/cancelはsame jobをqueuedへ戻しold dispatchを再利用しない | `apps/life-manager/test/postgres/runtime-job-protocol.integration.sh`へconcurrent claim winner 1、duplicate issue/result 0、cross-tenant 0、task delete 0 | Railway schema/RPC catalog + transaction readback |
-| R03–R08 adapter | `apps/life-manager/lib/money-printer-runtime-store.js:128-275` | migration RPCごとにthin parameterized methodを一つ追加し、one-row exact scope/status/hashをread backする。business transitionをJSへ複製しない | `money-printer-runtime-store.test.js:22-228`へclaim→issue→result→same-job resume一本 | APIがraw SQLでなくstore methodだけを使用 |
+| R01–R08 | create `apps/mr-bot/migrations/2026-08-30-lm-symphony-dispatches.sql:1` | `waiting_agent` state、HumanTask terminal `cancelled_policy`、`lm_symphony_dispatches`、one-open-dispatch unique index、claim/issue/result/complete/policy-cancel RPCを一migrationへ入れる。全RPCはtenant+job+dispatchをlockし、same payload replayは同row、different payloadはconflict。HumanTask answer/cancelはsame jobをqueuedへ戻しold dispatchを再利用しない | `apps/mr-bot/test/postgres/runtime-job-protocol.integration.sh`へconcurrent claim winner 1、duplicate issue/result 0、cross-tenant 0、task delete 0 | Railway schema/RPC catalog + transaction readback |
+| R03–R08 adapter | `apps/mr-bot/lib/money-printer-runtime-store.js:128-275` | migration RPCごとにthin parameterized methodを一つ追加し、one-row exact scope/status/hashをread backする。business transitionをJSへ複製しない | `money-printer-runtime-store.test.js:22-228`へclaim→issue→result→same-job resume一本 | APIがraw SQLでなくstore methodだけを使用 |
 
 #### A patch map — private bridge boundary
 
 | Patch atom | File and current anchor | Exact diff | Focused RED → GREEN | Live readback |
 |---|---|---|---|---|
-| A03–A08 | create `apps/life-manager/lib/money-printer-symphony-api.js:1` | constant-time bearer auth、32 KiB JSON limit、strict `claim` / `issue` / `result` schemas、expected repo/author、dispatch/job scope、idempotent store callsを実装。responseはpublic refs/status/hashだけ | create `money-printer-symphony-api.test.js:1`。401、stale dispatch、foreign tenant、duplicate callback、secret echo 0 | internal routeはvalid bridgeだけ200 |
-| A03–A05 wiring | `apps/life-manager/server.js:51-110,265-323` | handler import、shared runtime store注入、`/api/internal/money-printer/symphony/{claim,issue,result}` exact routeをPanel routeより前へ追加する。secretは`LM_SYMPHONY_BRIDGE_SECRET` envから読む | existing server/panel tests + new handler test。missing secretはstartup/route fail closed | Railway health 200、unauthorized 401、authorized strict response |
+| A03–A08 | create `apps/mr-bot/lib/money-printer-symphony-api.js:1` | constant-time bearer auth、32 KiB JSON limit、strict `claim` / `issue` / `result` schemas、expected repo/author、dispatch/job scope、idempotent store callsを実装。responseはpublic refs/status/hashだけ | create `money-printer-symphony-api.test.js:1`。401、stale dispatch、foreign tenant、duplicate callback、secret echo 0 | internal routeはvalid bridgeだけ200 |
+| A03–A05 wiring | `apps/mr-bot/server.js:51-110,265-323` | handler import、shared runtime store注入、`/api/internal/money-printer/symphony/{claim,issue,result}` exact routeをPanel routeより前へ追加する。secretは`LM_SYMPHONY_BRIDGE_SECRET` envから読む | existing server/panel tests + new handler test。missing secretはstartup/route fail closed | Railway health 200、unauthorized 401、authorized strict response |
 
 #### S patch map — local bridge and official Symphony
 
 | Patch atom | File and current anchor | Exact diff | Focused RED → GREEN | Live readback |
 |---|---|---|---|---|
-| S03–S07 | create `apps/life-manager/scripts/money-printer-symphony-bridge.js:1` | claim→GitHub issue reconcile/create→author-bound `LM_RESULT_V1` parse→callback→DB readbackの一周だけを実装。unknown create/resultは再送せずreconcileし、token/bodyをstdoutへ出さない | create sibling `.test.js:1`。present/absent/unknown、wrong author、duplicate commentを各必要最小限 | one dispatch=one issue=result hash一件 |
+| S03–S07 | create `apps/mr-bot/scripts/money-printer-symphony-bridge.js:1` | claim→GitHub issue reconcile/create→author-bound `LM_RESULT_V1` parse→callback→DB readbackの一周だけを実装。unknown create/resultは再送せずreconcileし、token/bodyをstdoutへ出さない | create sibling `.test.js:1`。present/absent/unknown、wrong author、duplicate commentを各必要最小限 | one dispatch=one issue=result hash一件 |
 | S08 | create `ops/symphony/WORKFLOW.money-printer.md:1` | official Symphony pinned commit、private repo/label、max agents 2、workspace isolation、Codex command、allowed result schema、人間へ丸投げ禁止を固定 | schema exampleをbridge parser fixtureでGREEN | two isolated Symphony workspaces |
-| S09–S10 | create `launchd/ai.anicca.life-manager-money-printer-symphony.plist.template:1` + installer only if existing launchd convention requires it | immutable release argv、private localhost dashboard、KeepAlive/throttle、stdout/stderr private paths。source checkoutを直接指さない | plist parse + loaded argv exact match | GUI owner one process、public listen 0 |
+| S09–S10 | create `launchd/ai.anicca.mr-bot-money-printer-symphony.plist.template:1` + installer only if existing launchd convention requires it | immutable release argv、private localhost dashboard、KeepAlive/throttle、stdout/stderr private paths。source checkoutを直接指さない | plist parse + loaded argv exact match | GUI owner one process、public listen 0 |
 | S11 | Railway service variables only; source changeなし | worker capability envから`general-agent.work`だけを除き`money-printer.scout`を残す | configuration readback | cloud claim 0、scout health/cycle継続 |
 
 #### H patch map — genuine human boundary and same-job resume
 
 | Patch atom | File and current anchor | Exact diff | Focused RED → GREEN | Live readback |
 |---|---|---|---|---|
-| H05 policy | `apps/life-manager/lib/money-printer-specialist.js:13-33,140-153,222-253,288-318` | resultへ`ineligible`を追加し、prompt/schemaへ「core workを別human specialistへ渡す必要がある→ineligible」のpositive/negative pairを固定する。`blocked`はmodelがidentity、provider interview、CAPTCHA/3DS、未保存private fact、legal authority、physical actionをhuman-onlyと判断した時だけ返す。reason-code keyword allowlistは作らない | `money-printer-specialist.test.js`へcore-work handoff→ineligible、provider interview→blockedの二経路。旧prompt/resultで前者がblockedになるRED | bad task新規生成0、genuine provider boundaryのみopen |
+| H05 policy | `apps/mr-bot/lib/money-printer-specialist.js:13-33,140-153,222-253,288-318` | resultへ`ineligible`を追加し、prompt/schemaへ「core workを別human specialistへ渡す必要がある→ineligible」のpositive/negative pairを固定する。`blocked`はmodelがidentity、provider interview、CAPTCHA/3DS、未保存private fact、legal authority、physical actionをhuman-onlyと判断した時だけ返す。reason-code keyword allowlistは作らない | `money-printer-specialist.test.js`へcore-work handoff→ineligible、provider interview→blockedの二経路。旧prompt/resultで前者がblockedになるRED | bad task新規生成0、genuine provider boundaryのみopen |
 | H06 persistence | `2026-08-30-lm-symphony-dispatches.sql:1`のblocked/completed RPC | Symphony `needs_human`はprepared public refs付きone taskへ変換、`ineligible`はtask 0 + immutable qualification receipt。既存の誤ったopen taskは削除せず`cancelled_policy` + receiptで閉じsame jobをrequeueする。answerはexisting `answer_lm_human_task` semanticsでsame job queued | Postgres integrationでtask count、same job ID、attempt非消費、cancel/delete 0 | DB task/job/dispatch一致 |
 | H07 WebMCP | `money-printer-webmcp.js:175-185,187-242` | initial four登録後に`requestNextTask()`を一回safe probeし、open taskがあればdynamic fifthをpage load時から登録する。401/502はinitial fourを壊さずvisible unavailableにする | `money-printer-webmcp.test.js`へopen/none/unavailable三状態、duplicate registration 0 | fresh pageでtask存在時exact five |
 | H08–H12 | source変更なし | owner workroomでone answer→stale conflict→same-key replay→same job再dispatch→provider readbackを順に実行 | live evidenceのみ | task row 1、new effect 1、replay effect 0 |
@@ -1333,7 +1333,7 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 
 | Patch atom | File and current anchor | Exact diff / artifact | Completion check |
 |---|---|---|---|
-| G01–G02 | `apps/life-manager/lib/panel-ui.js:702-704,1178-1200` + `panel-ui.test.js:285-424` | client-only Reset buttonを追加し、selected workroom/form/call logだけclearしてboardをrefetchする。DELETE endpoint、DB mutation、receipt deletionを作らない | before/after server counts同一、fresh board 200 |
+| G01–G02 | `apps/mr-bot/lib/panel-ui.js:702-704,1178-1200` + `panel-ui.test.js:285-424` | client-only Reset buttonを追加し、selected workroom/form/call logだけclearしてboardをrefetchする。DELETE endpoint、DB mutation、receipt deletionを作らない | before/after server counts同一、fresh board 200 |
 | G03–G09 | source変更なし | guest add/dispatch/artifact/task/resume、two-workroom isolation、page close、three scheduler receipt、reopenをlive実行 | 60秒judge replay、three same-release cycles、duplicate最大1 |
 | F01–F07 | `README.md`、`docs/webmcp-judge-guide.md`、`docs/evidence/webmcp/`だけを必要時更新 | clean clone、locked install、focused checks、secret/PII/license scan後、Netlify/Railway/repoをone SHAへdeploy/tagする。実装fileはfreeze中に変更しない | immutable tag `webmcp-challenge-final`とthree SHA一致 |
 | V01–V12 | create final media under private evidence/work directory; public repoにはlicense-safe selected assetsだけ | 165秒script、five proof shots、audio、caption、thumbnail、public YouTube。未実装claimを収録しない | `<180.000s`、audio stream、public playback |
@@ -1376,7 +1376,7 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 
 ### 18.5 R — race-free Symphony persistence（Section 14 item 3, slice 1）
 
-**Files:** create `apps/life-manager/migrations/2026-08-30-lm-symphony-dispatches.sql`; modify `apps/life-manager/lib/money-printer-runtime-store.js`; focused tests `apps/life-manager/lib/money-printer-runtime-store.test.js` and `apps/life-manager/test/postgres/symphony-dispatch.integration.js` only。
+**Files:** create `apps/mr-bot/migrations/2026-08-30-lm-symphony-dispatches.sql`; modify `apps/mr-bot/lib/money-printer-runtime-store.js`; focused tests `apps/mr-bot/lib/money-printer-runtime-store.test.js` and `apps/mr-bot/test/postgres/symphony-dispatch.integration.js` only。
 
 | Atom | One action | Exact completion evidence |
 |---|---|---|
@@ -1397,7 +1397,7 @@ R01–R12はcomplete。R11–R12はunit 21/21、isolated PostgreSQL 18、fresh a
 
 ### 18.6 A — authenticated internal bridge API（Section 14 item 3, slice 2）
 
-**Files:** create `apps/life-manager/lib/money-printer-symphony-api.js` and its focused test; modify `apps/life-manager/server.js` only for three internal routes。
+**Files:** create `apps/mr-bot/lib/money-printer-symphony-api.js` and its focused test; modify `apps/mr-bot/server.js` only for three internal routes。
 
 | Atom | One action | Exact completion evidence |
 |---|---|---|
@@ -1415,7 +1415,7 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 
 ### 18.7 S — local bridge + official Symphony（Section 14 item 3, slice 3）
 
-**Files:** create `apps/life-manager/scripts/money-printer-symphony-bridge.js` and focused test; create `ops/symphony/WORKFLOW.money-printer.md`; register bridge and Symphony through `config/loop-registry.json` + `bin/lm-loop` only if S03–S08 prove both resident processes are required。Raw plist/installerは禁止。Official Symphony source itselfはforkしない。
+**Files:** create `apps/mr-bot/scripts/money-printer-symphony-bridge.js` and focused test; create `ops/symphony/WORKFLOW.money-printer.md`; register bridge and Symphony through `config/loop-registry.json` + `bin/lm-loop` only if S03–S08 prove both resident processes are required。Raw plist/installerは禁止。Official Symphony source itselfはforkしない。
 
 | Atom | One action | Exact completion evidence |
 |---|---|---|
@@ -1445,13 +1445,13 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 | H07 | 録画中にChatGPT/WebMCPで同じtaskを読む | complete: Issue #10はtransport error/timeout後にnatural retryでauthor-bound 10-key `needs_human`一件、artifact `0c02b35e...`、DB task `4c95c382...` version 1、same job waiting_human。ChatGPT内蔵BrowserはBoard Needs You 1、workroom task ID、`inspect_next_human_task` resultを一致確認しdynamic fifthをexact登録 |
 | H08 | 録画中にowner confirmationを一回`approve`する | complete: `record_human_answer`を一回だけ実行。task `4c95c382...`、same job resume ref一致、dynamic fifth解除、raw/private input 0 |
 | H09 | answer receiptとduplicate-zeroを読む | complete: task answered version 2、answer/boundary ref存在を値非表示でreadback。command receipt `human-answer-d020...` succeeded一件、same resume ref、再送0 |
-| H10 | same Life Manager jobをround 2へ再dispatchする | complete: job ID `goal:3c46f240...`不変、dispatch `5d8ad3e8...` round 2、private Issue #11一件、DB mirrored、cross-job ref 0 |
+| H10 | same Mr.bot jobをround 2へ再dispatchする | complete: job ID `goal:3c46f240...`不変、dispatch `5d8ad3e8...` round 2、private Issue #11一件、DB mirrored、cross-job ref 0 |
 | H11 | agentが同じartifactをfinal lockしてterminalへ進む | complete: response timeout attemptsをofficial retry ownerが回復し、Issue #11へauthor-bound exact 7-key `completed`、`codex-round-2`、immutable artifact `e67708a9...`。DB consumed/closed、GitHub CLOSED、workspace cleanup、dashboard `0/0/0` |
 | H12 | reload persistenceとreplay-zeroを記録する | complete: reload後Board Needs You/Agents 0、workroom QUALIFIED/completed/answered、initial fourへ復帰。DB dispatch round 1/2各一件、task一件、completed receipt attempt 1一件、Issue #10/#11各result comment一件、duplicate effect 0、verified cash 0 |
 
 ### 18.9 G — guest replay + 24/7 proof（Section 14 items 4–5）
 
-**Files:** reset controlが未実装なら`apps/life-manager/lib/panel-ui.js`とfocused `apps/life-manager/lib/panel-ui.test.js`だけを変更する。Resetはselected workroom、open form、client activity viewをclearしてserver stateをrefetchし、Opportunity、job、HumanTask、receiptを削除しない。
+**Files:** reset controlが未実装なら`apps/mr-bot/lib/panel-ui.js`とfocused `apps/mr-bot/lib/panel-ui.test.js`だけを変更する。Resetはselected workroom、open form、client activity viewをclearしてserver stateをrefetchし、Opportunity、job、HumanTask、receiptを削除しない。
 
 | Atom | One action | Exact completion evidence |
 |---|---|---|
@@ -1519,7 +1519,7 @@ H07–H12とB12はcomplete。accepted artifactは `/Users/anicca/Desktop/MoneyPr
 
 #### Overview
 
-Money PrinterをDaisのMac miniなしでjudge/userがend-to-end実行できるcloud Web productへ完成させる。Public WebMCP Dashboard、Life Manager API/Postgres、existing Railway-private Steel browser runtime、official Symphonyを一つのstate machineへ接続する。Symphonyがworkを進め、browser actionが必要な時はexisting cloud browser queueへtyped requestを出し、本人操作が必要な時だけDashboard内にinteractive `Needs You`を出す。人間の完了後はsame Life Manager jobをSymphonyが再開し、provider official readbackをreceiptへ固定する。
+Money PrinterをDaisのMac miniなしでjudge/userがend-to-end実行できるcloud Web productへ完成させる。Public WebMCP Dashboard、Mr.bot API/Postgres、existing Railway-private Steel browser runtime、official Symphonyを一つのstate machineへ接続する。Symphonyがworkを進め、browser actionが必要な時はexisting cloud browser queueへtyped requestを出し、本人操作が必要な時だけDashboard内にinteractive `Needs You`を出す。人間の完了後はsame Mr.bot jobをSymphonyが再開し、provider official readbackをreceiptへ固定する。
 
 Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceである。Product boundaryはMercor専用品ではなく、userが入力した任意のpublic paid-opportunity URLを同じworkroom contractで処理するMoney Printerである。
 

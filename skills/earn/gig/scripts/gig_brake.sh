@@ -162,7 +162,7 @@ gig_brake_alarm_if_due() {
   gig_brake_notify "🛑 GIG LOOP HELD (not earning) — $consumer refused to run.
 $(gig_brake_describe)
 brake: $GIG_BRAKE_FILE
-release: bash $HOME/life-manager/skills/earn/gig/scripts/gig_brake.sh release --owner $GIG_BRAKE_OWNER"
+release: bash $HOME/mr-bot/skills/earn/gig/scripts/gig_brake.sh release --owner $GIG_BRAKE_OWNER"
 }
 
 # Expiry is the owner's own term coming due, not an unrelated controller clearing

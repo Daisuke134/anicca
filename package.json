@@ -1,5 +1,5 @@
 {
-  "name": "life-manager",
+  "name": "mr-bot",
   "private": true,
   "scripts": {
     "audit:startup-context": "node scripts/startup-context/audit.mjs",

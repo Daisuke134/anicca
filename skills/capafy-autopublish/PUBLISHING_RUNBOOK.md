@@ -6,19 +6,19 @@ publish-remote-status.
 
 ## Canonical LLM config (copy the winners = Claude Sonnet 4.6)
 - CP1 Primary Model (display) = **Claude Sonnet 4.6**
-- CP2 LLM Config: Base URL **https://openrouter.ai/api/v1** · Model **anthropic/claude-sonnet-4.6** (dot 4.6) · API Format **openai-responses** (Capafy default) · Key **CAPAFY_HOST_OPENROUTER_KEY** ($LIFE_MANAGER_STATE_HOME/.env)
+- CP2 LLM Config: Base URL **https://openrouter.ai/api/v1** · Model **anthropic/claude-sonnet-4.6** (dot 4.6) · API Format **openai-responses** (Capafy default) · Key **CAPAFY_HOST_OPENROUTER_KEY** ($MR_BOT_STATE_HOME/.env)
 - Direct Anthropic FAILS (no /responses). OpenRouter speaks /responses + serves Claude. Verified.
 
 ## Flow (one listing)
 1. **Research winner live**: `capafy-user` GET `/agent/agent/agents/<id>` with `X-Access-Token` header → copy pricing (cycle/price/cap) + categoryId + structure. Words = original (anti-plagiarism), facts = verbatim. The paid-only policy below overrides any winner free-trial field.
 2. **Build skill**: pure-LLM, self-contained, NO local deps/secrets. Add `test/case1.md`. grep-verify clean.
 3. **Write LISTING.md**: title ≤50 chars, shortDescription, **welcomeMessage**, detailedDescription (emoji sections + table).
-4. **Copy skill to clean-WS** `$LIFE_MANAGER_STATE_HOME/work/capafy/skills/<skill>` (LEAK GUARD — never publish from live `$LIFE_MANAGER_STATE_HOME/work`).
+4. **Copy skill to clean-WS** `$MR_BOT_STATE_HOME/work/capafy/skills/<skill>` (LEAK GUARD — never publish from live `$MR_BOT_STATE_HOME/work`).
 5. **Prepare and initialize** with `scripts/publish_prepare.sh <skill-dir> <LISTING.md> <icon>`.
    The wrapper runs lint and clean-WS copy, then mandatory Phase A
    `publish-init` **without selections** using the same `--env`, `--runtime-dir`,
    and `--skill-dir` that will be used for selection submission. It then runs
-   `publish-init --selections-file "$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"`.
+   `publish-init --selections-file "$MR_BOT_STATE_HOME/state/capafy-autopublish/sel_one.json"`.
    Existing-Agent retries preserve the selected `agent_id`; new Agents are created
    in a bootstrap directory and then moved to repo-external
    `.../runtime/capafy-publisher/work/agents/<agent-id>`. Never create a duplicate Agent.

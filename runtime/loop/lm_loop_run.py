@@ -85,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
         manifest = json.loads((release_root / "RELEASE.json").read_text())
         if not isinstance(manifest.get("sha"), str) or len(manifest["sha"]) != 40:
             raise ValueError("invalid release manifest SHA")
-        active = {value for value in os.environ.get("LIFE_MANAGER_ACTIVE_RUN_IDS", "").split(",") if value}
+        active = {value for value in os.environ.get("MR_BOT_ACTIVE_RUN_IDS", "").split(",") if value}
         command, cleanup = prepare_loop_run(
             registry, loop_id, release_root, active_run_ids=active, now=time.time())
         entry = registry["loops"][loop_id]
@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
                               "release_sha": manifest["sha"], **cleanup})
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(f"lm-loop-run: {error}", file=sys.stderr); return 78
-    run_id = os.environ.get("LIFE_MANAGER_RUN_ID") or f"{time.time_ns():x}-{os.getpid()}"
+    run_id = os.environ.get("MR_BOT_RUN_ID") or f"{time.time_ns():x}-{os.getpid()}"
     event_path = Path(os.path.expanduser(entry["state_root"])) / "events.jsonl"
     try:
         append_runtime_event(event_path, build_runtime_start_event(
@@ -105,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError) as error:
         print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
     return_code = _run_entrypoint(
-        command, env={**os.environ, "LIFE_MANAGER_RELEASE_ROOT": str(release_root)})
+        command, env={**os.environ, "MR_BOT_RELEASE_ROOT": str(release_root)})
     try:
         event = build_runtime_event(
             loop_id=loop_id, domain=entry["domain"], run_id=run_id,

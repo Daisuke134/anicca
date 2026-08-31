@@ -8,8 +8,8 @@
 
 **Files / soft target:**
 
-- Modify `apps/life-manager/lib/connector-minimal-operations.js` — about 4–8 LOC.
-- Modify `apps/life-manager/lib/connector-minimal-operations.test.js` — about 25–45 LOC.
+- Modify `apps/mr-bot/lib/connector-minimal-operations.js` — about 4–8 LOC.
+- Modify `apps/mr-bot/lib/connector-minimal-operations.test.js` — about 25–45 LOC.
 
 ## Grounding
 

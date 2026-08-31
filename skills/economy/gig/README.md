@@ -246,12 +246,12 @@ copy, not this worktree or the un-populated main `the canonical checkout` checko
     "anicca-gig": {
       "transport": "stdio",
       "command": "/opt/homebrew/bin/node",
-      "args": ["/home/life-manager/.blockrun/skills/economy/gig/mcp-server.mjs"],
+      "args": ["/home/mr-bot/.blockrun/skills/economy/gig/mcp-server.mjs"],
       "env": {
         "GIG_ESCROW_ADDRESS": "0x...",
         "GIG_ESCROW_PRIVATE_KEY": "0x...",
         "GIG_FACILITATOR_URL": "http://127.0.0.1:8405",
-        "GIG_STATE_PATH": "/home/life-manager/.anicca-signing/gig-board/state/gigs.json",
+        "GIG_STATE_PATH": "/home/mr-bot/.anicca-signing/gig-board/state/gigs.json",
         "GIG_CHAIN": "base-sepolia"
       }
     }

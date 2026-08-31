@@ -23,8 +23,8 @@ Render the deterministic Peatix receipt on the already-owned page without waitin
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-minimal-evidence.test.js`
-2. `apps/life-manager/lib/connector-minimal-evidence.js`
+1. `apps/mr-bot/lib/connector-minimal-evidence.test.js`
+2. `apps/mr-bot/lib/connector-minimal-evidence.js`
 
 Soft target: 2 files; production +12–22 LOC; tests +30–50 LOC.
 

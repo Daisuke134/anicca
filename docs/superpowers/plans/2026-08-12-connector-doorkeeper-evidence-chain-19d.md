@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Modify exactly `apps/life-manager/lib/connector-minimal-evidence.js` and `apps/life-manager/lib/connector-minimal-evidence.test.js`.
+- Modify exactly `apps/mr-bot/lib/connector-minimal-evidence.js` and `apps/mr-bot/lib/connector-minimal-evidence.test.js`.
 - Production soft target: +25–40 LOC. Test soft target: +65–95 LOC. No new file, class, schema, dependency, or generic abstraction.
 - Use strict TDD: new Doorkeeper behavior must fail before production wiring and pass after the minimum change.
 - Accept only `doorkeeper-event://event/<positive integer>` paired with exact `https://<lowercase-group>.doorkeeper.jp/events/<same positive integer>`; reject `www`, uppercase, credentials, port, query, fragment, trailing slash, and mismatched IDs.
@@ -26,8 +26,8 @@
 ### Task 1: Add Doorkeeper to the minimal evidence provider map
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-minimal-evidence.js`
-- Test: `apps/life-manager/lib/connector-minimal-evidence.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-evidence.js`
+- Test: `apps/mr-bot/lib/connector-minimal-evidence.test.js`
 
 **Interfaces:**
 - Consumes: `createDoorkeeperEvidenceStore(options)` from `connpass-evidence-store.js` and the existing current-page capture/checkpoint pipeline.
@@ -123,7 +123,7 @@ test("Doorkeeper identity, registered state, and current page URL fail closed be
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/connector-minimal-evidence.test.js
 ```
 
@@ -174,7 +174,7 @@ The implementation must screenshot the current official page and validate the fi
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/connector-minimal-evidence.test.js lib/connpass-evidence-store.test.js
 node --check lib/connector-minimal-evidence.js
 git diff --check

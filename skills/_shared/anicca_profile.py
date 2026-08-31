@@ -36,8 +36,8 @@ def anicca_home():
     return Path(os.environ.get(
         "ANICCA_HOME",
         os.environ.get(
-            "LIFE_MANAGER_STATE_HOME",
-            str(Path.home() / ".local/state/life-manager"),
+            "MR_BOT_STATE_HOME",
+            str(Path.home() / ".local/state/mr-bot"),
         ),
     )).expanduser()
 

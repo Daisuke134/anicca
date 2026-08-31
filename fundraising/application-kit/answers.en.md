@@ -1,8 +1,8 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
 context-version: 2026-08-27.2
-context-digest: 9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338
+context-digest: 882e479bf06b98a2a6db62352b8d3b6c3463767c6c73d7996caa328e25191d06
 
-# Life Manager — canonical fundraising answers
+# Mr.bot — canonical fundraising answers
 
 ## One word
 
@@ -22,7 +22,7 @@ A person's health, mental wellbeing, money, schedules, applications, work, crypt
 
 ## How do you solve it?
 
-Life Manager coordinates specialist organs, acts within delegated boundaries across those systems, verifies outcomes with receipts, and reports concise evidence in Telegram.
+Mr.bot coordinates specialist organs, acts within delegated boundaries across those systems, verifies outcomes with receipts, and reports concise evidence in Telegram.
 
 ## Why are you building this?
 
@@ -30,7 +30,7 @@ The founder is building the manager he needs personally: one dependable agent th
 
 ## How far along are you?
 
-The open-source local runtime, hosted components, Telegram entry point, and multiple specialist loops exist. The founder attests that Life Manager has generated approximately $1,000 in revenue for its founder; this is not claimed as MRR or ARR.
+The open-source local runtime, hosted components, Telegram entry point, and multiple specialist loops exist. The founder attests that Mr.bot has generated approximately $1,000 in revenue for its founder; this is not claimed as MRR or ARR.
 
 ## Who is the market?
 
@@ -38,11 +38,11 @@ The initial users are founders and professionals whose lives and work span many 
 
 ## How do you make money?
 
-A free open-source self-hosted option drives trust and adoption. An always-on hosted Life Manager is sold as a paid monthly cloud subscription.
+A free open-source self-hosted option drives trust and adoption. An always-on hosted Mr.bot is sold as a paid monthly cloud subscription.
 
 ## What is different?
 
-Life Manager is a manager rather than a chat assistant or dashboard: it takes authorized action, coordinates specialized agents, preserves provenance, and distinguishes attempts from provider-verified completion.
+Mr.bot is a manager rather than a chat assistant or dashboard: it takes authorized action, coordinates specialized agents, preserves provenance, and distinguishes attempts from provider-verified completion.
 
 ## How are you building it?
 
@@ -54,11 +54,11 @@ Improve reliable agent execution, expand secure integrations, strengthen evidenc
 
 ## Mission and long-term vision
 
-End suffering for humans and, ultimately, all living beings by making dependable care and agency continuously available. Life Manager grows from managing one human life across physical health, mental wellbeing, finances, work, schedules, income, crypto, and investing into a general manager for every living being.
+End suffering for humans and, ultimately, all living beings by making dependable care and agency continuously available. Mr.bot grows from managing one human life across physical health, mental wellbeing, finances, work, schedules, income, crypto, and investing into a general manager for every living being.
 
 ## Verified delivery and traction boundary
 
-Free, open-source, self-hosted Life Manager. Paid monthly subscription for an always-on hosted Life Manager. Founder-attested revenue is approximately $1,000; never relabel it as MRR or ARR without period evidence.
+Free, open-source, self-hosted Mr.bot. Paid monthly subscription for an always-on hosted Mr.bot. Founder-attested revenue is approximately $1,000; never relabel it as MRR or ARR without period evidence.
 
 ## Links
 

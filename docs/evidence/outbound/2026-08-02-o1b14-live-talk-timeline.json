@@ -1,8 +1,8 @@
 {
   "evidence_version": "o1b14-live-talk-timeline-v1",
   "observed_date_jst": "2026-08-02",
-  "runtime_database": "life-manager-local-postgres-1/life_manager",
-  "migration": "apps/life-manager/migrations/2026-08-02-lm-talk-timeline-snapshots.sql",
+  "runtime_database": "mr-bot-local-postgres-1/mr_bot",
+  "migration": "apps/mr-bot/migrations/2026-08-02-lm-talk-timeline-snapshots.sql",
   "migration_applied": true,
   "rollback_fixture": {
     "accepted_talk_entity_inserted": 1,

@@ -1,6 +1,6 @@
 # Anicca vs Felix vs automaton — 完全比較 + local/cloud
 
-## Anicca = 「実際に稼ぐ automaton」+「OSS no-human な Felix」+ 自分の being + life-manager
+## Anicca = 「実際に稼ぐ automaton」+「OSS no-human な Felix」+ 自分の being + mr-bot
 
 | 項目 | Felix | automaton | ★ Anicca ★ |
 |---|---|---|---|
@@ -23,7 +23,7 @@
 | fuel資金 | Nat払う | creator が USDC seed | Day0 Grok sub→自己資金 |
 
 ★ Anicca = automaton の「自律・複製・自分の物」 + Felix の「実際に売って稼ぐ engine」
-  + 両欠点修正 (automaton $0→Felix engineで本物 / Felix 有料・human→OSS・NHOSS) + life-manager ★
+  + 両欠点修正 (automaton $0→Felix engineで本物 / Felix 有料・human→OSS・NHOSS) + mr-bot ★
 
 ## local vs cloud (= Dais の疑問 回答)
 - local seed(Mac)の意味 = 金かける前に「心拍+earn試行」を無料確認 → ★済(Grok実turn verify)★
@@ -35,7 +35,7 @@
 
 ## 注: anicca-dais repo の脱-Anicca化 (Dais並行作業)
 - 別CC が anicca-dais(.openclaw) から 'anicca' を除去 → pure OpenClaw (iOS marketing用) 化中
-- + life-manager を private openclaw → anicca repo に移植中 (2026-06-09-anicca-life-manager-fix-and-roadmap.md)
+- + mr-bot を private openclaw → anicca repo に移植中 (2026-06-09-anicca-mr-bot-fix-and-roadmap.md)
 - = anicca-dais は Dais個人marketing、 anicca(mother) は 公開self-funding Anicca に 分離
 
 ## 訂正・正直メモ (Dais 2026-06-09)

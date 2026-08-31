@@ -23,8 +23,8 @@ Stop a Connpass join page's public attendee-section text from impersonating a pe
 
 Ownership:
 
-1. `apps/life-manager/lib/connpass-browser-provider.js`
-2. `apps/life-manager/lib/connpass-browser-provider.test.js`
+1. `apps/mr-bot/lib/connpass-browser-provider.js`
+2. `apps/mr-bot/lib/connpass-browser-provider.test.js`
 
 Soft target: 2 files; production net `-3–+10 LOC`; tests `+25–45 LOC`.
 

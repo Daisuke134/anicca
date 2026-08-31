@@ -1,4 +1,4 @@
-# Life Manager Connector
+# Mr.bot Connector
 
 Connector maintains a rolling 28-day view of a user's real calendar and runs one bounded pass every hour. It ranks Tokyo events in this order: YC hackathons, open lightning-talk opportunities, AI, crypto, startup. It applies only to verified strong or moderate matches.
 
@@ -6,7 +6,7 @@ Luma is the primary actionable source. connpass discovery uses only the official
 
 ## Public profile
 
-Copy `examples/public-profile.json` to `apps/life-manager/config/connector/<tenant-id>.json`, then replace the public references with references owned by your local installation. Keep secrets and personal identity data outside the repository.
+Copy `examples/public-profile.json` to `apps/mr-bot/config/connector/<tenant-id>.json`, then replace the public references with references owned by your local installation. Keep secrets and personal identity data outside the repository.
 
 ## Install on macOS
 
@@ -15,15 +15,15 @@ Requirements are Node.js, `gog`, a running user-owned CloakBrowser daily-driver 
 Render first; the renderer never changes launchd:
 
 ```sh
-mkdir -p "$HOME/.local/state/life-manager/rendered-launchd" "$HOME/Library/LaunchAgents"
+mkdir -p "$HOME/.local/state/mr-bot/rendered-launchd" "$HOME/Library/LaunchAgents"
 bash skills/connector/render-launchd.sh \
-  --output-dir "$HOME/.local/state/life-manager/rendered-launchd" \
+  --output-dir "$HOME/.local/state/mr-bot/rendered-launchd" \
   --repo-root "$(pwd -P)" \
-  --life-manager-home "$HOME/.local/state/life-manager" \
-  --connector-env-file "$HOME/.local/state/life-manager/.env"
-cp "$HOME/.local/state/life-manager/rendered-launchd/ai.anicca.life-manager-connector-native.plist" \
-  "$HOME/Library/LaunchAgents/ai.anicca.life-manager-connector-native.plist"
-bin/launchctl-safe bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/ai.anicca.life-manager-connector-native.plist"
+  --mr-bot-home "$HOME/.local/state/mr-bot" \
+  --connector-env-file "$HOME/.local/state/mr-bot/.env"
+cp "$HOME/.local/state/mr-bot/rendered-launchd/ai.anicca.mr-bot-connector-native.plist" \
+  "$HOME/Library/LaunchAgents/ai.anicca.mr-bot-connector-native.plist"
+bin/launchctl-safe bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/ai.anicca.mr-bot-connector-native.plist"
 ```
 
 The installed plist owns exactly one label and uses `StartInterval=3600`. Use only `bin/launchctl-safe` for live launchd operations.
@@ -31,8 +31,8 @@ The installed plist owns exactly one label and uses `StartInterval=3600`. Use on
 ## Uninstall
 
 ```sh
-bin/launchctl-safe bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/ai.anicca.life-manager-connector-native.plist"
-rm "$HOME/Library/LaunchAgents/ai.anicca.life-manager-connector-native.plist"
+bin/launchctl-safe bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/ai.anicca.mr-bot-connector-native.plist"
+rm "$HOME/Library/LaunchAgents/ai.anicca.mr-bot-connector-native.plist"
 ```
 
 Uninstall removes the exact launchd plist only. Runtime state and receipts remain local for audit and are never part of the open-source package.

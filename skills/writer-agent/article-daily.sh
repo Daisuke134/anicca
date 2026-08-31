@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # article-daily.sh — DETERMINISTIC daily trigger for Writer Agent
-# (Dais 2026-07-12: same root cause as capafy/life-manager on 2026-07-12 — a self-registered
+# (Dais 2026-07-12: same root cause as capafy/mr-bot on 2026-07-12 — a self-registered
 # self-registered recurring-scheduler tool call never verifiably fires on its own; process-alive
-# != daily output. Fix = the proven connector/capafy/life-manager pattern: launchd
+# != daily output. Fix = the proven connector/capafy/mr-bot pattern: launchd
 # StartCalendarInterval calls one bounded foreground model pass directly. NO timeout wraps the call —
-# capafy died at rc=124 mid-publish, life-manager died at rc=124 having posted nothing; this
+# capafy died at rc=124 mid-publish, mr-bot died at rc=124 having posted nothing; this
 # loop runs until the work is done. This file never asks the agent to self-register a
 # scheduler — launchd is the ONLY scheduler.
 # Reporting uses `openclaw message send --channel telegram` — the built-in local push-notify
@@ -33,7 +33,7 @@ fi
 PUBLICATION_PAUSE_SNAPSHOT="absent"
 echo "article-daily: publication pause current=absent at=$(date -u '+%FT%TZ') file=$PUBLICATION_PAUSE_FILE" >>"$LOG"
 if [ "${ARTICLE_OWNER_FENCE_ACTIVE:-0}" != "1" ]; then
-  OWNER_FENCE_DIR="${ARTICLE_OWNER_FENCE_DIR:-$HOME/.local/state/life-manager/writer/owner-fence}"
+  OWNER_FENCE_DIR="${ARTICLE_OWNER_FENCE_DIR:-$HOME/.local/state/mr-bot/writer/owner-fence}"
   export ARTICLE_OWNER_FENCE_DIR
   exec python3 "$ARTICLE_ROOT/scripts/writer_owner_fence.py" run \
     --fence-dir "$OWNER_FENCE_DIR" --owner article-daily \
@@ -568,7 +568,7 @@ python3 "$ARTICLE_ROOT/scripts/strategy_runtime.py" \
 # zero hits, before this line existed. Runs exactly once, inside the lock this script already
 # holds, so it can never race the 5-min ai.anicca.article-healthcheck poller, which
 # deliberately does not touch the browser at all for this same reason.
-BROWSER_GUARD="${LIFE_MANAGER_REPO:-$(cd "$ARTICLE_ROOT/../.." && pwd)}/skills/browser/ensure_browser.sh"
+BROWSER_GUARD="${MR_BOT_REPO:-$(cd "$ARTICLE_ROOT/../.." && pwd)}/skills/browser/ensure_browser.sh"
 if [ -x "$BROWSER_GUARD" ]; then
   BROWSER_STATUS="$(
     CLOAK_CDP_BASE_URL="${WRITER_CDP_URL:-http://127.0.0.1:9222}" \
@@ -902,7 +902,7 @@ STEP 10 (FINISH -- HONEST DELIVERY): completion requires identity safety clear, 
 # TELEGRAM_TARGET_ID is overridden from the default set above.
 PROMPT="${PROMPT//8547730585/$TELEGRAM_TARGET_ID}"
 # The archived prompt text names the former standalone craft tree for compatibility with old
-# runs. Resolve those instructions to the immutable Life Manager release before the model sees
+# runs. Resolve those instructions to the immutable Mr.bot release before the model sees
 # them, so a fresh run never reads outside ARTICLE_ROOT.
 LEGACY_WRITING_CRAFT_ROOT="$HOME/$(printf 'profitable-%s' 'claude')/skills/writing-craft"
 LEGACY_WRITING_CRAFT_LITERAL_ROOT='~/profitable-claude/skills/writing-craft'
@@ -1004,7 +1004,7 @@ writer_capacity_preflight() {
       ;;
   esac
   if [ "$free_kib" -lt "$required_kib" ]; then
-    echo "=== article-daily provider gate BLOCK: free=${free_kib}KiB below Life Manager ${required_kib}KiB floor ===" >>"$LOG"
+    echo "=== article-daily provider gate BLOCK: free=${free_kib}KiB below Mr.bot ${required_kib}KiB floor ===" >>"$LOG"
     return 78
   fi
   if [ ! -d "$control_dir" ] || [ ! -r "$control_dir" ] || [ ! -x "$control_dir" ]; then

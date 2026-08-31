@@ -5,22 +5,22 @@
 #
 #   bash send-telegram.sh "<message text>" [chat_id]
 #
-# Uses TELEGRAM_BOT_TOKEN from the Life Manager state env. The chat id must be passed explicitly or
+# Uses TELEGRAM_BOT_TOKEN from the Mr.bot state env. The chat id must be passed explicitly or
 # configured as TELEGRAM_ALERT_CHAT_ID; OSS source never embeds a user's destination.
 set -uo pipefail
 MSG="${1:?usage: send-telegram.sh \"<message>\" [chat_id]}"
 
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
 ENV_FILES=()
-if [ -n "${LIFE_MANAGER_ENV_FILE:-}" ]; then
-  ENV_FILES+=("$LIFE_MANAGER_ENV_FILE")
+if [ -n "${MR_BOT_ENV_FILE:-}" ]; then
+  ENV_FILES+=("$MR_BOT_ENV_FILE")
 else
-  ENV_FILES+=("$LIFE_MANAGER_STATE_HOME/.env" "$HOME/.openclaw/.env")
+  ENV_FILES+=("$MR_BOT_STATE_HOME/.env" "$HOME/.openclaw/.env")
 fi
 for ENV_FILE in "${ENV_FILES[@]}"; do
   if [ -f "$ENV_FILE" ]; then
     set -a; . "$ENV_FILE" 2>/dev/null; set +a
-    # The Life Manager state file may intentionally contain only LM_* names;
+    # The Mr.bot state file may intentionally contain only LM_* names;
     # continue to the OpenClaw compatibility env until the sender token exists.
     [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && break
   fi

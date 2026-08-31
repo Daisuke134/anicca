@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 変更は`apps/life-manager/lib/connector-minimal-operations.js`とmatching testの2 filesだけ。production約15〜30 LOC、test約25〜50 LOC。
+- 変更は`apps/mr-bot/lib/connector-minimal-operations.js`とmatching testの2 filesだけ。production約15〜30 LOC、test約25〜50 LOC。
 - Doorkeeper input keysはexact `discovered_count`, `within_window_count`, `eligible_count`, `calendar_free_count`, `selected_count`。
 - 全countはinteger 0〜500、`selected <= calendar_free <= eligible <= within_window <= discovered`。
 - persisted rowはschema version、wake ID、exact recorded time、上記5 aggregate countsだけ。URL、event ref、title、profile、ticket、auth、private Calendar dataは0。
@@ -23,8 +23,8 @@
 ### Task 1: Persist Doorkeeper aggregate audits
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-minimal-operations.js`
-- Modify: `apps/life-manager/lib/connector-minimal-operations.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-operations.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-operations.test.js`
 
 - [x] **Step 1: Write RED tests**
 
@@ -38,7 +38,7 @@
 - [x] **Step 2: Run RED**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-minimal-operations.test.js
   ```
 
@@ -51,7 +51,7 @@
 - [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-minimal-operations.test.js
   node --test lib/connector-minimal-production.test.js lib/connector-doorkeeper-workflow.test.js
   node --check lib/connector-minimal-operations.js

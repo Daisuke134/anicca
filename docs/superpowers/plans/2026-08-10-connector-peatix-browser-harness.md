@@ -10,10 +10,10 @@
 
 **Files:**
 
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
-- Modify: `apps/life-manager/lib/connector-minimal-production.js`
-- Modify: `apps/life-manager/lib/connector-minimal-production.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-production.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-production.test.js`
 
 ## Contracts
 
@@ -41,8 +41,8 @@
 
 ```bash
 node --test \
-  apps/life-manager/lib/connector-production-browser-harness.test.js \
-  apps/life-manager/lib/connector-minimal-production.test.js
+  apps/mr-bot/lib/connector-production-browser-harness.test.js \
+  apps/mr-bot/lib/connector-minimal-production.test.js
 ```
 
 5. Run the adjacent provider/router/native focused suite and syntax checks. Report RED evidence, GREEN counts, exact changed LOC, and any residual live limitation to Sol. Do not commit or push; Sol owns verification, SSOT, commit, and push.

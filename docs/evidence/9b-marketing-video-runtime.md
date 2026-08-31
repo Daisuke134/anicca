@@ -24,7 +24,7 @@
 ## TDD and verification
 
 - RED 1: generator test errors because `daily-lm-video/generate.py` is absent.
-- RED 2: runtime test returns 127 because `life-manager-daily.sh` is absent.
+- RED 2: runtime test returns 127 because `mr-bot-daily.sh` is absent.
 - GREEN: generator tests `5/5`; runtime/launchd tests `6/6`.
 - Regression found in controlled launchd method 1: Luna invokes the daily wrapper recursively.
   Corrective RED covers prompt contract and `LM_DAILY_ACTIVE`; GREEN blocks recursion with exit 73.
@@ -32,9 +32,9 @@
   route instead of terminating. The process is stopped before public/provider mutation.
 - Corrective method 3 separates the 9b generation gate from 9c distribution. The prompt receives
   exact bank/state/output paths, forbids broad search and mutation, and terminates after validation.
-- Life Manager full test command exits 0 with fail 0.
+- Mr.bot full test command exits 0 with fail 0.
 - `npm run eval` remains 100% across calendar, late, context, score, intent, mental, and physical.
-- Secret scan: gitleaks reports no leaks in `skills/life-manager` and `skills/video`.
+- Secret scan: gitleaks reports no leaks in `skills/mr-bot` and `skills/video`.
 - PR security-gate baseline audit:
   - The latest accepted `main` security run
     ([30069163816](https://github.com/Daisuke134/life-manager/actions/runs/30069163816))
@@ -43,13 +43,13 @@
   - Its Python job also fails because the workflow labels the run “pure-stdlib” but invokes
     pre-existing pytest/hypothesis suites without installing either dependency.
   - The 9b changed paths remain clean under a changed-path gitleaks scan, and all 9b tests plus the
-    canonical Life Manager test/eval commands pass. The broken repository-wide baseline is not
+    canonical Mr.bot test/eval commands pass. The broken repository-wide baseline is not
     reclassified as evidence for or against 9b and no test or detector is weakened.
 
 ## Real provider and launchd evidence
 
 - Fresh provider probe: `gpt-5.6-luna` returns `LM_LUNA_PROVIDER_OK`, exit 0.
-- launchd label: `ai.anicca.life-manager-daily`.
+- launchd label: `ai.anicca.mr-bot-daily`.
 - launchd cadence: hour 10, minute 15.
 - Controlled method 3: run count `0→1`, last exit code `0`.
 - Corrective readback run: run count `1→2`, last exit code `0`.

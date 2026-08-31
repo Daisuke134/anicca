@@ -16,11 +16,11 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/note-publish/daily-run.sh</string>
+    <string>/Users/anicca/Projects/mr-bot-main/skills/writer-agent/scripts/note-publish/daily-run.sh</string>
   </array>
 
   <key>WorkingDirectory</key>
-  <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/note-publish</string>
+  <string>/Users/anicca/Projects/mr-bot-main/skills/writer-agent/scripts/note-publish</string>
 
   <key>EnvironmentVariables</key>
   <dict>

@@ -4,12 +4,12 @@
 
 ## Canonical state
 
-- Repo: `/Users/operator/Projects/life-manager-main`
-- Audit/spec worktree: `/Users/operator/Projects/life-manager-main/.worktrees/connector-status-20260816`
+- Repo: `/Users/operator/Projects/mr-bot-main`
+- Audit/spec worktree: `/Users/operator/Projects/mr-bot-main/.worktrees/connector-status-20260816`
 - Branch: `docs/connector-status-20260816`
 - Audited base: `5a9f390b2eca09643697f90d45ac9ac7507fc0a4`
 - Reconciled spec commit: `204044ed16b68df394fa0f8f8fdf4d97a870a36b`
-- SSOT: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- SSOT: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 - Current ordered work: section `0.2.1 Active remaining TODO SSOT`
 - Ideal architecture: section `0.2.2 Connector ideal loop — start to finish`
 

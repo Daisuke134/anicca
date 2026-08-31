@@ -20,8 +20,8 @@ Make a before-deadline candidate navigation timeout a bounded safe candidate fai
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-minimal-runner.test.js`
-2. `apps/life-manager/lib/connector-minimal-runner.js`
+1. `apps/mr-bot/lib/connector-minimal-runner.test.js`
+2. `apps/mr-bot/lib/connector-minimal-runner.js`
 
 Soft target: 2 files; production +10–18 LOC; tests +35–55 LOC.
 

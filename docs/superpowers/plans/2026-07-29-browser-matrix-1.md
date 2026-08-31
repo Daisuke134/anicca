@@ -7,7 +7,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Prove that the canonical Life Manager production planner/executor can complete booking, inquiry/message, and application actions on three unrelated live providers without site adapters or a Mac browser — by doing three real errands for Dais, not by acting on purpose-built test targets.
+**Goal:** Prove that the canonical Mr.bot production planner/executor can complete booking, inquiry/message, and application actions on three unrelated live providers without site adapters or a Mac browser — by doing three real errands for Dais, not by acting on purpose-built test targets.
 
 **Architecture:** Keep one generic Stagehand/Steel executor and pass provider URLs and goals only at runtime. Generalize the classifier's low-risk communication policy and the independent provider-result vocabulary, then drive three durable production jobs through the existing Supabase queue, Railway-private Steel, Telegram receipt, and explicit Steel release. Drive real errands on services Dais (or the agent) already owns, so every side effect is a real outcome in Dais's life as well as evidence. Do not build synthetic test targets; the only thing off-limits is practice traffic to unrelated third parties.
 
@@ -28,8 +28,8 @@
 ### Task 1: Accept explicit non-binding communication without weakening money/KYC gates
 
 **Files:**
-- Modify: `apps/life-manager/lib/browser-task-classifier.js`
-- Test: `apps/life-manager/lib/browser-task-classifier.test.js`
+- Modify: `apps/mr-bot/lib/browser-task-classifier.js`
+- Test: `apps/mr-bot/lib/browser-task-classifier.test.js`
 
 **Interfaces:**
 - Consumes: `classifyBrowserTask(text, deps)`
@@ -46,7 +46,7 @@ Add decisions for `inquiry` and `application` with `reversible=false`,
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/browser-task-classifier.test.js
 ```
 
@@ -83,15 +83,15 @@ Run the Step 2 command. Expected: all classifier tests pass.
 - [x] **Step 5: Commit**
 
 ```bash
-git add apps/life-manager/lib/browser-task-classifier.js apps/life-manager/lib/browser-task-classifier.test.js
+git add apps/mr-bot/lib/browser-task-classifier.js apps/mr-bot/lib/browser-task-classifier.test.js
 git commit -m "feat(browser): classify non-binding communication actions"
 ```
 
 ### Task 2: Generalize independent provider completion readback
 
 **Files:**
-- Modify: `apps/life-manager/lib/stagehand-steel-driver.js`
-- Test: `apps/life-manager/lib/stagehand-steel-driver.test.js`
+- Modify: `apps/mr-bot/lib/stagehand-steel-driver.js`
+- Test: `apps/mr-bot/lib/stagehand-steel-driver.test.js`
 - Modify: `docs/manifests/oss-merge-1-sources.json`
 
 **Interfaces:**
@@ -121,7 +121,7 @@ For each, assert `confirmed=true`. Add negated/pending variants (`not submitted`
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/stagehand-steel-driver.test.js
 ```
 
@@ -148,7 +148,7 @@ never infer success from the action narration.
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/stagehand-steel-driver.test.js scripts/browser-auth-luma-bootstrap.test.js scripts/browser-auth-production-e2e.test.js
 ```
 
@@ -167,16 +167,16 @@ npm run test:oss
 - [x] **Step 6: Commit**
 
 ```bash
-git add apps/life-manager/lib/stagehand-steel-driver.js apps/life-manager/lib/stagehand-steel-driver.test.js docs/manifests/oss-merge-1-sources.json
+git add apps/mr-bot/lib/stagehand-steel-driver.js apps/mr-bot/lib/stagehand-steel-driver.test.js docs/manifests/oss-merge-1-sources.json
 git commit -m "feat(browser): verify booking message and application receipts"
 ```
 
 ### Task 3: Add a secret-free durable production matrix harness
 
 **Files:**
-- Create: `apps/life-manager/scripts/browser-matrix-production-e2e.js`
-- Create: `apps/life-manager/scripts/browser-matrix-production-e2e.test.js`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/scripts/browser-matrix-production-e2e.js`
+- Create: `apps/mr-bot/scripts/browser-matrix-production-e2e.test.js`
+- Modify: `apps/mr-bot/package.json`
 
 **Interfaces:**
 - Consumes: three runtime-only `BROWSER_MATRIX_*_URL` values, controlled goals,
@@ -207,7 +207,7 @@ URL, `possibly_completed`, or a raw email/credential field fails closed.
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test scripts/browser-matrix-production-e2e.test.js
 ```
 
@@ -227,7 +227,7 @@ used for Task 4 live acceptance.
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test scripts/browser-matrix-production-e2e.test.js
 npm run test:browser-auth
 ```
@@ -235,7 +235,7 @@ npm run test:browser-auth
 - [x] **Step 5: Commit**
 
 ```bash
-git add apps/life-manager/scripts/browser-matrix-production-e2e.js apps/life-manager/scripts/browser-matrix-production-e2e.test.js apps/life-manager/package.json
+git add apps/mr-bot/scripts/browser-matrix-production-e2e.js apps/mr-bot/scripts/browser-matrix-production-e2e.test.js apps/mr-bot/package.json
 git commit -m "test(browser): add durable production action matrix"
 ```
 

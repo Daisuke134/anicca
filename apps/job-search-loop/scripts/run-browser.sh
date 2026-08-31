@@ -31,8 +31,8 @@ unset GIG_IGNORE_DISK_PRESSURE_BLOCK \
   GIG_IGNORE_DISK_WRITERS_STOP \
   DISK_CONTROL_STATE_DIR \
   OPENCLAW_STATE_DIR \
-  LIFE_MANAGER_HOST_STATE_DIR
-if [[ "${LIFE_MANAGER_LOOP_ID:-}" == "job-search-mercor-browser" ]]; then
+  MR_BOT_HOST_STATE_DIR
+if [[ "${MR_BOT_LOOP_ID:-}" == "job-search-mercor-browser" ]]; then
   if [[ -n "${JOB_SEARCH_BROWSER_STATE_NAME+x}" && "$JOB_SEARCH_BROWSER_STATE_NAME" != "mercor-browser" ]]; then
     print -u2 "job-search browser: Mercor loop requires mercor-browser state"
     exit 2
@@ -53,9 +53,9 @@ fi
 GIG_DISK_HEADROOM_KIB=524288
 GIG_HOST_STATE_DIR="$CANONICAL_HOME/.openclaw/state"
 if [[ "$BROWSER_STATE_NAME" == "job-search-browser" ]]; then
-  GIG_STATE_DIR="$CANONICAL_HOME/.local/state/life-manager/job-search-browser"
+  GIG_STATE_DIR="$CANONICAL_HOME/.local/state/mr-bot/job-search-browser"
 else
-  GIG_STATE_DIR="$CANONICAL_HOME/.local/state/life-manager/$BROWSER_STATE_NAME"
+  GIG_STATE_DIR="$CANONICAL_HOME/.local/state/mr-bot/$BROWSER_STATE_NAME"
 fi
 export GIG_DISK_HEADROOM_KIB GIG_HOST_STATE_DIR GIG_STATE_DIR
 

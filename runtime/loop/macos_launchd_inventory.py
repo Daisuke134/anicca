@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only inventory of Life Manager candidates in the macOS launchd domain."""
+"""Read-only inventory of Mr.bot candidates in the macOS launchd domain."""
 
 from __future__ import annotations
 
@@ -16,27 +16,27 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LM_ROOTS = (
-    "/Projects/life-manager-main/",
-    "/gig/releases/life-manager/",
-    "/loops/life-manager/releases/",
+    "/Projects/mr-bot-main/",
+    "/gig/releases/mr-bot/",
+    "/loops/mr-bot/releases/",
     "/loops/releases/",
     "/loops/current/",
     "/loops/x-social-current/",
     "/loops/connector/releases/",
     "/loops/browser/releases/",
-    "/.local/share/life-manager/releases/",
+    "/.local/share/mr-bot/releases/",
     "/.local/share/anicca/job-search/releases/",
     "/.local/lib/anicca/lancers/releases/",
 )
 
 
 def classify_owner(prior_owner: str | None, command: str) -> str:
-    if prior_owner in {"life-manager", "life-manager-runtime", "life-manager-migration"}:
-        return "life-manager"
+    if prior_owner in {"mr-bot", "mr-bot-runtime", "mr-bot-migration"}:
+        return "mr-bot"
     if prior_owner == "system":
         return "external"
     if any(root in command for root in LM_ROOTS):
-        return "life-manager"
+        return "mr-bot"
     return "ambiguous"
 
 
@@ -55,7 +55,7 @@ def extract_release(command: str) -> str | None:
     match = re.search(r"/releases/[^/]*-([0-9a-f]{8,40})(?:/|$)", command)
     if match:
         return match.group(1)
-    if "/Projects/life-manager-main/" in command:
+    if "/Projects/mr-bot-main/" in command:
         return "mutable-checkout"
     return None
 
@@ -132,8 +132,8 @@ def collect() -> dict:
             "label": label,
             "installed": True,
             "owner": owner,
-            "domain": domain_for(label, old.get("target_adapter")) if owner == "life-manager" else None,
-            "effect_class": effect_for(label, old.get("effect_class")) if owner == "life-manager" else None,
+            "domain": domain_for(label, old.get("target_adapter")) if owner == "mr-bot" else None,
+            "effect_class": effect_for(label, old.get("effect_class")) if owner == "mr-bot" else None,
             "launchd_state": runtime_state(disabled.get(label, False), loaded.get(label)),
             "last_exit": loaded.get(label, {}).get("last_exit"),
             "release": extract_release(command),
@@ -147,8 +147,8 @@ def collect() -> dict:
             "label": label,
             "installed": False,
             "owner": owner,
-            "domain": domain_for(label, old.get("target_adapter")) if owner == "life-manager" else None,
-            "effect_class": effect_for(label, old.get("effect_class")) if owner == "life-manager" else None,
+            "domain": domain_for(label, old.get("target_adapter")) if owner == "mr-bot" else None,
+            "effect_class": effect_for(label, old.get("effect_class")) if owner == "mr-bot" else None,
             "launchd_state": runtime_state(disabled.get(label, False), loaded.get(label)),
             "last_exit": loaded.get(label, {}).get("last_exit"),
             "release": None,
@@ -166,7 +166,7 @@ def collect() -> dict:
             "installed": sum(row["installed"] for row in values),
             "owners": dict(Counter(row["owner"] for row in values)),
             "states": dict(Counter(row["launchd_state"] for row in values)),
-            "unmanaged_life_manager": sum(row["owner"] == "life-manager" for row in values),
+            "unmanaged_mr_bot": sum(row["owner"] == "mr-bot" for row in values),
             "ambiguous": sum(row["owner"] == "ambiguous" for row in values),
         },
         "labels": values,

@@ -19,8 +19,8 @@
     <key>RunAtLoad</key>
     <false/>
     <key>StandardErrorPath</key>
-    <string>__LIFE_MANAGER_HOME__/logs/cadence-deadline-check-launchd.err.log</string>
+    <string>__MR_BOT_HOME__/logs/cadence-deadline-check-launchd.err.log</string>
     <key>StandardOutPath</key>
-    <string>__LIFE_MANAGER_HOME__/logs/cadence-deadline-check-launchd.out.log</string>
+    <string>__MR_BOT_HOME__/logs/cadence-deadline-check-launchd.out.log</string>
 </dict>
 </plist>

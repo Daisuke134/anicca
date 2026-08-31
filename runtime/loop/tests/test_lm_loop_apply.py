@@ -22,8 +22,8 @@ def registry(entrypoint="bin/example.sh"):
     return {"schema_version": 2, "loops": {"example": {
         "label": "ai.anicca.example", "domain": "system", "entrypoint": entrypoint,
         "cadence": {"start_interval_seconds": 60}, "effect_class": "none",
-        "state_root": "~/.local/state/life-manager/example",
-        "log_root": "~/.local/state/life-manager/example/logs",
+        "state_root": "~/.local/state/mr-bot/example",
+        "log_root": "~/.local/state/mr-bot/example/logs",
         "cleanup": {"max_runs": 10, "max_age_days": 7},
         "provider_route": "deterministic",
     }}}
@@ -38,7 +38,7 @@ def two_loop_registry():
 def money_printer_registry(
     entrypoint="bin/example.sh",
     loop_id="money-printer-symphony-bridge",
-    label="ai.anicca.life-manager-money-printer-symphony-bridge",
+    label="ai.anicca.mr-bot-money-printer-symphony-bridge",
 ):
     value = registry(entrypoint)
     value["loops"][loop_id] = value["loops"].pop("example")
@@ -136,7 +136,7 @@ class LmLoopApplyTest(unittest.TestCase):
             str(self.root.resolve() / "bin/lm-loop-run"), "example", str(self.root.resolve())])
         self.assertEqual(value["StartInterval"], 60)
         self.assertNotIn("Umask", value)
-        self.assertEqual(value["EnvironmentVariables"]["LIFE_MANAGER_RELEASE_SHA"], SHA)
+        self.assertEqual(value["EnvironmentVariables"]["MR_BOT_RELEASE_SHA"], SHA)
 
     def test_generic_install_does_not_secure_launchd_log_files(self):
         log_root = self.root / ".local/state/test-log-root"
@@ -175,13 +175,13 @@ class LmLoopApplyTest(unittest.TestCase):
         cases = (
             (
                 "money-printer-symphony-bridge",
-                "ai.anicca.life-manager-money-printer-symphony-bridge",
+                "ai.anicca.mr-bot-money-printer-symphony-bridge",
                 "money-printer-log-root",
                 "installed-money-printer.plist",
             ),
             (
                 "money-printer-symphony",
-                "ai.anicca.life-manager-money-printer-symphony",
+                "ai.anicca.mr-bot-money-printer-symphony",
                 "money-printer-symphony-log-root",
                 "installed-money-printer-symphony.plist",
             ),
@@ -259,9 +259,9 @@ class LmLoopApplyTest(unittest.TestCase):
 
     def test_connector_release_requires_locked_browser_dependencies(self):
         value = registry("skills/connector/run.sh")
-        value["loops"]["life-manager-connector-native"] = value["loops"].pop("example")
-        value["loops"]["life-manager-connector-native"]["label"] = (
-            "ai.anicca.life-manager-connector-native"
+        value["loops"]["mr-bot-connector-native"] = value["loops"].pop("example")
+        value["loops"]["mr-bot-connector-native"]["label"] = (
+            "ai.anicca.mr-bot-connector-native"
         )
         (self.root / "skills/connector").mkdir(parents=True)
         (self.root / "skills/connector/run.sh").write_text("#!/bin/sh\nexit 0\n")
@@ -273,12 +273,12 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(calls, [])
 
         for dependency in ("playwright-core", "jsqr"):
-            package = self.root / "apps/life-manager/node_modules" / dependency / "package.json"
+            package = self.root / "apps/mr-bot/node_modules" / dependency / "package.json"
             package.parent.mkdir(parents=True)
             package.write_text("{}\n")
 
         apply_registry(value, self.root, SHA, calls.append)
-        self.assertEqual([item["loop_id"] for item in calls], ["life-manager-connector-native"])
+        self.assertEqual([item["loop_id"] for item in calls], ["mr-bot-connector-native"])
 
     def test_targeted_apply_ignores_unrelated_missing_entrypoint(self):
         calls = []
@@ -322,8 +322,8 @@ class LmLoopApplyTest(unittest.TestCase):
             "EnvironmentVariables": {
                 "CUSTOM": "kept",
                 "CODEX_HOME": "/tmp/legacy-codex-home",
-                "LIFE_MANAGER_REPO": "/old/missing/release",
-                "LIFE_MANAGER_RELEASE_SHA": "old",
+                "MR_BOT_REPO": "/old/missing/release",
+                "MR_BOT_RELEASE_SHA": "old",
             },
             "WorkingDirectory": "/var/tmp/example",
             "ProcessType": "Interactive",
@@ -343,8 +343,8 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(installed["EnvironmentVariables"]["CUSTOM"], "kept")
         self.assertNotIn("CODEX_HOME", installed["EnvironmentVariables"])
-        self.assertEqual(installed["EnvironmentVariables"]["LIFE_MANAGER_REPO"], str(self.root.resolve()))
-        self.assertEqual(installed["EnvironmentVariables"]["LIFE_MANAGER_RELEASE_SHA"], SHA)
+        self.assertEqual(installed["EnvironmentVariables"]["MR_BOT_REPO"], str(self.root.resolve()))
+        self.assertEqual(installed["EnvironmentVariables"]["MR_BOT_RELEASE_SHA"], SHA)
         self.assertEqual(installed["WorkingDirectory"], "/var/tmp/example")
         self.assertEqual(installed["ProcessType"], "Interactive")
         self.assertTrue(installed["RunAtLoad"])

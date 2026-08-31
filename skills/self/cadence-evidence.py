@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cadence import cadence_met, streak  # noqa: E402
 
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[2]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[2]))
 CONTRACTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cadence-contracts.json")
 STREAK_WINDOW_DAYS = 14  # how far back streak() looks; matches this codebase's other rolling-window conventions
 
@@ -115,7 +115,7 @@ def _event_dates_from_ts_rows(rows, ts_field="ts"):
 # ---------------------------------------------------------------------------
 
 def _clip_ledger_path():
-    return os.environ.get("EARN_LEDGER") or os.path.expanduser("~/.local/state/life-manager/state/clip-earn-ledger.jsonl")
+    return os.environ.get("EARN_LEDGER") or os.path.expanduser("~/.local/state/mr-bot/state/clip-earn-ledger.jsonl")
 
 
 def _video_metrics_path():

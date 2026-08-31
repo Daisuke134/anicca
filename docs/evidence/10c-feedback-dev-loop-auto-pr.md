@@ -15,7 +15,7 @@ The first launchd run exposes a false-green in the inherited runner invocation: 
 
 A new failing runtime contract requires:
 
-- canonical `Daisuke134/life-manager`, `origin/main`, and `apps/life-manager` only;
+- canonical `Daisuke134/life-manager`, `origin/main`, and `apps/mr-bot` only;
 - runner loop identity;
 - nonzero fresh-agent exit to stop before tests or PR creation;
 - full app tests and every eval before PR creation;
@@ -27,7 +27,7 @@ Corrective GREEN is `3/3`, and the second launchd run records fresh-agent exit `
 
 | Surface | Readback |
 |---|---|
-| launchd | `ai.anicca.life-manager-dev`, run count `1→2`, last exit `0` |
+| launchd | `ai.anicca.mr-bot-dev`, run count `1→2`, last exit `0` |
 | Issue | #1085 open and selected by exact `lm:type:self-heal` contract |
 | Fresh agent | exit `0`, result status `ok`, commit `9c93bf36…` |
 | PR | #1087 open from `atomic/10c-feedback-auto-pr` to `main` before final merge |

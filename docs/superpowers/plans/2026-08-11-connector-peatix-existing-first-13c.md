@@ -22,8 +22,8 @@ Stable-partition Peatix's already Calendar-covered same-event candidate before u
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-peatix-workflow.test.js`
-2. `apps/life-manager/lib/connector-peatix-workflow.js`
+1. `apps/mr-bot/lib/connector-peatix-workflow.test.js`
+2. `apps/mr-bot/lib/connector-peatix-workflow.js`
 
 Soft target: 2 files; production +10–25 LOC; tests +35–70 LOC.
 

@@ -82,7 +82,7 @@ class PostizVideoTests(unittest.TestCase):
         payload = postiz_video.build_payload(
             integration="cmp9txjdp01c8oh0yb6dhlarr",
             caption="Exact caption\n#line",
-            title="Life Manager",
+            title="Mr.bot",
             upload_id="upload-1",
             upload_path="https://uploads.example/video.mp4",
             now_iso="2026-07-24T00:00:00.000Z",
@@ -99,7 +99,7 @@ class PostizVideoTests(unittest.TestCase):
         payload = postiz_video.build_payload(
             integration="cmq3sq7mc000eqp0y7azfm8yk",
             caption="メンタルが勝手に安定する\n口癖５選",
-            title="Life Manager",
+            title="Mr.bot",
             upload_ids=["upload-1", "upload-2", "upload-3"],
             upload_paths=["https://uploads.example/1.jpg", "https://uploads.example/2.jpg", "https://uploads.example/3.jpg"],
             now_iso="2026-08-26T07:30:00.000Z",

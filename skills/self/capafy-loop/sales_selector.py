@@ -8,15 +8,15 @@ There is NO reliable marketplace-wide ranking endpoint (POST /agent/agents/searc
 So this ranks OUR listings. When we have zero sales signal it says so honestly (no fabrication) and
 tells the build loop to fall back to BEST_PRACTICES marketplace-winner research.
 
-Output: ~/.local/state/life-manager/state/capafy-sales-ranking.json + a human summary printed to stdout.
+Output: ~/.local/state/mr-bot/state/capafy-sales-ranking.json + a human summary printed to stdout.
 The build loop reads the JSON in STEP2 to prioritize the winning category for the next listing.
 """
 import json, os, subprocess, sys
 from pathlib import Path
 
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 CAPAFY_HTTP = str(REPO_ROOT / "skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py")
-STATE_HOME = Path(os.environ.get("LIFE_MANAGER_STATE_HOME", Path.home() / ".local/state/life-manager"))
+STATE_HOME = Path(os.environ.get("MR_BOT_STATE_HOME", Path.home() / ".local/state/mr-bot"))
 OUT = STATE_HOME / "state/capafy-sales-ranking.json"
 COMPANY_RECEIPT = STATE_HOME / "state/capafy-hourly-reconcile.json"
 

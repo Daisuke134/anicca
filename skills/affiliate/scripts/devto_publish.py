@@ -53,7 +53,7 @@ def _request(url, key, method="GET", payload=None):
     data = json.dumps(payload).encode() if payload is not None else None
     request = urllib.request.Request(url, data=data, method=method, headers={
         "api-key": key, "Content-Type": "application/json",
-        "User-Agent": "life-manager-affiliate/1",
+        "User-Agent": "mr-bot-affiliate/1",
     })
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
@@ -78,7 +78,7 @@ def _existing(key, marker):
 
 
 def _public_readback(url, title):
-    request = urllib.request.Request(url, headers={"User-Agent": "life-manager-affiliate/1"})
+    request = urllib.request.Request(url, headers={"User-Agent": "mr-bot-affiliate/1"})
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             html = response.read().decode("utf-8", errors="replace")
@@ -270,7 +270,7 @@ def publish(state, plan_id):
 def main():
     parser = argparse.ArgumentParser(prog="affiliate distribution")
     parser.add_argument("command", choices=("publish-devto", "publish-substack"))
-    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/mr-bot/affiliate"))
     parser.add_argument("--plan", required=True)
     args = parser.parse_args()
     if args.command == "publish-substack":

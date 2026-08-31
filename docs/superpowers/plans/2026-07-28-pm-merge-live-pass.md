@@ -145,7 +145,7 @@ Trigger the same launchd loop again. Require no new merge transaction, no additi
 
 - [x] **Step 6: Update the single source of truth**
 
-Move `PM-MERGE-1` to the completed baseline, advance the current cursor to `S21-MAC-OFF`, replace pre-merge balances with verified post-merge values, and record the transaction hash and receipt evidence in the Life Manager spec.
+Move `PM-MERGE-1` to the completed baseline, advance the current cursor to `S21-MAC-OFF`, replace pre-merge balances with verified post-merge values, and record the transaction hash and receipt evidence in the Mr.bot spec.
 
 - [x] **Step 7: Verify, commit, and push**
 

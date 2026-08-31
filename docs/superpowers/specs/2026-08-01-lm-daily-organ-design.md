@@ -1,11 +1,11 @@
-# Life Manager — DAILY organ 設計・残作業・UX（handover 可能な形で）
+# Mr.bot — DAILY organ 設計・残作業・UX（handover 可能な形で）
 
 **Date**: 2026-08-01 · **Updated**: 2026-08-02 · **Status**: launch 済み製品の daily 完成作業中
 · **Repo**: canonical `Daisuke134/life-manager`
 · **Active daily branch**: `origin/feature/lm-departure-nudge`（re-review → merge → deploy 待ち）
-· **App**: `apps/life-manager/`
+· **App**: `apps/mr-bot/`
 
-**親 spec**: `2026-07-29-life-manager-finance-marketing-platform-design.md`（platform 全体・§7.4 Telegram
+**親 spec**: `2026-07-29-mr-bot-finance-marketing-platform-design.md`（platform 全体・§7.4 Telegram
 UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行の順序**であって daily 機能の順序ではない。
 **daily の順序はこのファイルが正本**。
 
@@ -17,11 +17,11 @@ UI/UX・§10.2 Today・§12 Order 表）。あの Order 表は **runtime 移行�
 |---|---|
 | これは何の製品か | **Telegram で完結する生活エージェント**。出発時刻を知らせ、家を出てから着くまで案内し、遅れる時は宛先と本文を提示して本人の1タップ承認後だけ相手へ連絡する。ユーザーが日常で持つ必要があるのは **スマホ1台だけ** |
 | 誰が使うか | Dais（本人）→ 友人・家族 → 一般ユーザー。これは private beta ではなく **launch 済みの実製品**。daily の完成度を上げながら実利用者を増やす。全員 **Telegram の中だけ**で日常利用が完結する |
-| コードはどこか | `apps/life-manager/`。`scheduler.js`（60秒 tick・呼び出し）· `lib/wake-filter.js`（鳴らす予定の選別・出発時刻の解決）· `lib/travel.js`（`[Travel]` block 生成）· `lib/late-notice.js`（遅刻連絡）· `lib/slash-command.js`（Telegram コマンド router） |
-| **本番はどこで動くか** | ★ **Railway の `life-call` service** ★（`railway logs -s life-call`、link は `~/anicca-project` から）。ローカル compose（`life-manager-local-*` コンテナ）は **credential を持たない空の器**で、本番ではない（§1 参照）。全体図と folder tree = **§8** |
+| コードはどこか | `apps/mr-bot/`。`scheduler.js`（60秒 tick・呼び出し）· `lib/wake-filter.js`（鳴らす予定の選別・出発時刻の解決）· `lib/travel.js`（`[Travel]` block 生成）· `lib/late-notice.js`（遅刻連絡）· `lib/slash-command.js`（Telegram コマンド router） |
+| **本番はどこで動くか** | ★ **Railway の `life-call` service** ★（`railway logs -s life-call`、link は `~/anicca-project` から）。ローカル compose（`mr-bot-local-*` コンテナ）は **credential を持たない空の器**で、本番ではない（§1 参照）。全体図と folder tree = **§8** |
 | データはどこか | Supabase。`lm_users` `lm_wake_log` `lm_travel_log` `lm_ask_log` `lm_user_locations` |
 | 状態の見方（★実行可能★） | `set -a; . ~/.openclaw/.env; set +a` の後 `curl -s "$SUPABASE_URL/rest/v1/<table>?select=*&order=…&limit=3" -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"`。**鍵を stdout に出さない** |
-| ★間違えやすい点★ | canonical は **`Daisuke134/life-manager`**。`anicca-project`(=anicca-products) の LM spec は写しで正本ではない。`~/.openclaw/skills/anicca-life-manager/` は OSS/BYOK 単身版であって本番ではない |
+| ★間違えやすい点★ | canonical は **`Daisuke134/life-manager`**。`anicca-project`(=anicca-products) の LM spec は写しで正本ではない。`~/.openclaw/skills/anicca-mr-bot/` は OSS/BYOK 単身版であって本番ではない |
 | 触ってはいけない | writer loop・記事・SNS・収益 loop（別 agent 担当）。physical / mental organ（親 spec Order 36、daily 出荷後） |
 
 ---
@@ -163,7 +163,7 @@ Telnyx は「届いた」と解釈して**二度と送ってこない**。落ち
 
 ### 3.0 2026-08-02 最新 checkpoint（これより古い行と矛盾したらこちらが勝つ）
 
-**製品の位置づけ**: private beta / beta ではない。Life Manager は既に launch 済みで、登録・Google
+**製品の位置づけ**: private beta / beta ではない。Mr.bot は既に launch 済みで、登録・Google
 Calendar 接続後に実利用できる。ここでいう「出荷」は新製品の公開ではなく、**launch 済み製品が約束している
 daily journey を完成させ、友人・家族を含む利用者へ通常どおり案内・promotion できる状態にすること**。
 
@@ -203,10 +203,10 @@ daily journey を完成させ、友人・家族を含む利用者へ通常どお
 | 本番 build | `https://life-call-production.up.railway.app/health` → 200 `{"ok":true,"service":"life-call","build":"lm2a-webhook-retry-v1"}` = commit `c6ce45fdb`（08-02） | curl |
 | `origin/main` HEAD | `c849fecda`（08-06、connector 系）。daily 差分ではない | git |
 | 出発連投 branch | `origin/feature/lm-departure-nudge` `923a412fd` は **main の祖先ではない**（`git merge-base --is-ancestor` → NO）= 2c は未 merge・未 deploy | git |
-| QR 導線 | `aniccaai.com/life-manager` → 200、body に `LifeManagerBotbot?start=lp`。`/start` → `onboardLink()` → `aniccaai.com/lm?tg=<chatId>` | curl + `lib/telegram.js:123-126` |
+| QR 導線 | `aniccaai.com/mr-bot` → 200、body に `LifeManagerBotbot?start=lp`。`/start` → `onboardLink()` → `aniccaai.com/lm?tg=<chatId>` | curl + `lib/telegram.js:123-126` |
 | Telegram | webhook mode、`last_error_date: null`、`@LifeManagerBotbot`。`telegram_chat_id` で multi-tenant 解決 | getWebhookInfo / getMe |
 | 利用者 | `lm_users` = **3行**（すべて 06-18〜06-25 の検証行）= 他人が登録を完走した実績は**まだ0** | PostgREST `Content-Range: 0-2/3` |
-| local 依存 | DAILY 実行経路（`server.js` / `scheduler.js` / `lib/*`）に `/Users/operator` · `~/.openclaw` · `launchctl` · `osascript` の参照 **0**。`~/Library/LaunchAgents` の `life-manager-*` は Dais 個人の earn / connector job で、新規 user の daily 経路には乗らない | grep + plist 実物 |
+| local 依存 | DAILY 実行経路（`server.js` / `scheduler.js` / `lib/*`）に `/Users/operator` · `~/.openclaw` · `launchctl` · `osascript` の参照 **0**。`~/Library/LaunchAgents` の `mr-bot-*` は Dais 個人の earn / connector job で、新規 user の daily 経路には乗らない | grep + plist 実物 |
 
 **この実測から出る結論**:
 
@@ -433,7 +433,7 @@ panel、context-graph）は `timeMax` が違うので別キーのまま。1d が
 ```
 
 **日常利用でユーザーが用意する物 = スマホ1台と Telegram。** 初回だけ Google Calendar OAuth のため
-browserを開く。別のLife Managerアプリ・地図アプリ・乗換アプリ・カレンダーを開く習慣は不要。
+browserを開く。別のMr.botアプリ・地図アプリ・乗換アプリ・カレンダーを開く習慣は不要。
 
 daily journey の必須入力は **名前・言語・自宅・Google Calendar**。**Telegram Live Location と電話は任意**。
 任意permissionを渡さない人にもcore journeyを届け、渡した人には精度/channelを追加する。
@@ -533,7 +533,7 @@ timestampはevent別 `nudge_plan`、経路/承認の再通知条件もuser polic
 
 ### 5.2.1 ★出発の押し切りは Telegram の連投で行う（電話ではない）★ — Dais 2026-08-01
 
-**Dais verbatim**: "No meaning in rusuden no meaning. We must stop. Life manager can just message him on
+**Dais verbatim**: "No meaning in rusuden no meaning. We must stop. Mr.bot can just message him on
 telegram. that is much better. 連投もそこら辺いいしね。逆に better yes i think. posted a lot to telegram to
 send me message is much better since it would hit me to actually leave to the place more!!"
 
@@ -600,7 +600,7 @@ wake 呼び出しは「記録してから切る」、test 呼び出しは「記�
 ### 5.3.1 遅刻連絡の権限境界（#5）
 
 §3.0.1のrecipient resolverがCalendar organizer/attendees、接続済みGmail、許可済みContacts、公開Web evidenceを
-event contextに対して検索する。ただしLife Managerは他人も遅れているか、既に口頭で合意したか、本人だけが知る
+event contextに対して検索する。ただしMr.botは他人も遅れているか、既に口頭で合意したか、本人だけが知る
 私的contextを推測できない。したがって card に **送信先の氏名・メールアドレス・source/evidence・送る本文全文・
 根拠となるETA** を表示し、操作は `[送る] [送らない]` の1判断に固定する。
 
@@ -680,18 +680,18 @@ daily が閉じたら、同じ「チャットで完結・外部actionの承認�
 ### 8.1 repo の正体
 
 `Daisuke134/life-manager`（repo ID 1248111245）は **anicca を改名・統合した monorepo**。
-散らばっていた物を1つに寄せる先がここ。旧 `life-manager-v0`（ID 1273052304）は archive 済み・redirect のみ。
+散らばっていた物を1つに寄せる先がここ。旧 `mr-bot-v0`（ID 1273052304）は archive 済み・redirect のみ。
 
 | 中に入っている物 | 場所 |
 |---|---|
-| Life Manager 本体（API・panel・Telegram・reports・scheduler） | `apps/life-manager/` |
+| Mr.bot 本体（API・panel・Telegram・reports・scheduler） | `apps/mr-bot/` |
 | web（landing / `/lm` 登録画面） | `apps/landing/`（`app/` + `netlify/` functions） |
 | 求人 loop | `apps/job-search-loop/` |
 | provider/transport 境界 | `adapters/` |
 | 可搬 scheduler / worker runtime | `runtime/` |
 | 常駐サービス（x402 endpoint 等） | `services/` |
 | 汎用能力（**製品の credential を持たない**） | `skills/` |
-| 配置定義 | `deploy/local/compose.yaml`（ローカル一式）· `apps/life-manager/railway.toml`（本番） |
+| 配置定義 | `deploy/local/compose.yaml`（ローカル一式）· `apps/mr-bot/railway.toml`（本番） |
 | 仕様の正本 | `docs/superpowers/specs/` · 実行スライス = `docs/superpowers/plans/` |
 | Anicca 側の身元・状態 | `identity/` · `state/` · `control-room/` · `templates/` |
 
@@ -708,7 +708,7 @@ marketing-engine / product-packs …）は**目標形**で、現状は既存慣�
                             ▼                                 ▼
         ┌──────────────────────────────────┐      ┌──────────────────────────┐
         │  Railway  service = life-call    │      │  Netlify  apps/landing   │
-        │  = apps/life-manager             │      │  aniccaai.com/lm         │
+        │  = apps/mr-bot             │      │  aniccaai.com/lm         │
         │   server.js  … /telegram /ws /api│      │   Google login → OAuth   │
         │   scheduler.js 60s tick          │◀─────│   → Stripe               │
         │     ├ wake   T-10 / T-5 の呼び出し│      └──────────────────────────┘
@@ -743,8 +743,8 @@ marketing-engine / product-packs …）は**目標形**で、現状は既存慣�
 ```text
  今                                   目標
  Railway life-call（単一 service）  →  Railway 上に API / scheduler / worker pool を分離
- Supabase                           →  Life Manager 所有の managed Postgres（tenant 分離・quota）
- launchd + OpenClaw の残り          →  すべて Life Manager の job（Order 15 で OpenClaw-free）
+ Supabase                           →  Mr.bot 所有の managed Postgres（tenant 分離・quota）
+ launchd + OpenClaw の残り          →  すべて Mr.bot の job（Order 15 で OpenClaw-free）
  単一テナント運用                   →  月額の multi-tenant（Order 25）・1,000 tenant 検証（Order 26）
 ```
 

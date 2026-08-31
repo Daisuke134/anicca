@@ -10,7 +10,7 @@
 
 ## Ownership and contracts
 
-- Modify only `apps/life-manager/lib/connector-minimal-production.js` and `apps/life-manager/lib/connector-minimal-production.test.js`.
+- Modify only `apps/mr-bot/lib/connector-minimal-production.js` and `apps/mr-bot/lib/connector-minimal-production.test.js`.
 - Import `createEventbriteScriptFirstWorkflow`; add workflow version `eventbrite_registration_v1`.
 - `createProductionProviderRouter` accepts an optional Eventbrite workflow, validates the same three methods, and routes discovery/cache/direct/fallback/readback/save-repair metadata with provider `eventbrite` and the Eventbrite version.
 - `createMinimalProductionDependencies` creates the default Eventbrite workflow with the shared `now`. Until the next audit-persistence slice, its `onDiscoveryAudit` uses `operations.recordEventbriteDiscoveryAudit || (() => {})`.

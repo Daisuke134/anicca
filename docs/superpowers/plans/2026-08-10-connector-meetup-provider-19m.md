@@ -36,7 +36,7 @@ Meetupをruntimeの次providerとして追加し、実account/sessionで無料�
 
 ### 19M-A RED/GREEN: discovery and parent readback
 
-Ownership: new `apps/life-manager/lib/connector-meetup-workflow.js` and new matching test only.
+Ownership: new `apps/mr-bot/lib/connector-meetup-workflow.js` and new matching test only.
 
 RED first:
 

@@ -108,7 +108,7 @@ For a `needs_human` result only, POST to
 
 Before releasing the dispatch, finish the pushed-artifact, result-comment, and needs-human-label
 readbacks, then GET `/repos/Daisuke134/life-manager-workrooms/issues/{{ issue.id }}` and prove the
-issue is OPEN. Never close the issue; the bridge records the callback in the Life Manager ledger
+issue is OPEN. Never close the issue; the bridge records the callback in the Mr.bot ledger
 and closes it after provider state readback. The final tracker operation must be DELETE
 `/repos/Daisuke134/life-manager-workrooms/issues/{{ issue.id }}/labels/money-printer`. Its 200
 label-array response must prove `money-printer` is absent and `needs-human` is present exactly when

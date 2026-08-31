@@ -338,7 +338,7 @@ def write_daily_snapshot(posted_path: Path, records: list, profile: dict,
             if isinstance(value, int):
                 bucket[key] += value
     snapshot = {
-        "schema": "life-manager.x-growth-daily.v1",
+        "schema": "mr-bot.x-growth-daily.v1",
         "sampled_at": sampled_at.isoformat(),
         "window_days": 30,
         "published_post_count": published,

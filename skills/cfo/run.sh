@@ -16,8 +16,8 @@ export CEO_STATE_DIR="$STATE_DIR"
 source "$REPO_ROOT/lib/registry-enforce.sh"
 registry_enforce_or_exit cfo-hourly
 
-APP_DIR="${LIFE_MANAGER_APP_DIR:-$REPO_ROOT/apps/life-manager}"
-ENV_FILE="${LIFE_MANAGER_ENV_FILE:-$HOME/.local/state/life-manager/.env}"
+APP_DIR="${MR_BOT_APP_DIR:-$REPO_ROOT/apps/mr-bot}"
+ENV_FILE="${MR_BOT_ENV_FILE:-$HOME/.local/state/mr-bot/.env}"
 NODE_BIN="${NODE_BIN:-$(command -v node || true)}"
 
 if [[ -z "$NODE_BIN" || ! -x "$NODE_BIN" || ! -f "$APP_DIR/scripts/cfo-hourly-local.js" ]]; then

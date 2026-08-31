@@ -1,4 +1,4 @@
-# macOS Life Manager Loop Control Plane
+# macOS Mr.bot Loop Control Plane
 
 **Status:** Account auto complete — global current invariant, full-fleet OSS E2E, and security backlog remain
 **TODO ID:** `MACOS-LOOP-CONTROL-PLANE-1`  
@@ -7,14 +7,14 @@
 
 ## 1. Overview
 
-Life Manager will operate hundreds of loops across physical life, mental life,
+Mr.bot will operate hundreds of loops across physical life, mental life,
 financial life, trading, bounties, marketplaces, mobile-app revenue, marketing,
 and system maintenance. Today those loops are installed, released, started,
 observed, and cleaned through several independent manifests, plist families,
 scripts, release roots, and log formats. That fragmentation makes runtime truth
 hard to read and makes a new loop easy to install incorrectly.
 
-`MACOS-LOOP-CONTROL-PLANE-1` makes the Life Manager repository the single source
+`MACOS-LOOP-CONTROL-PLANE-1` makes the Mr.bot repository the single source
 for every macOS loop. `config/loop-registry.json` becomes the only operational
 registry. One CLI renders launchd jobs from it, applies an immutable repository
 release, and provides the same lifecycle and observability commands for every
@@ -28,7 +28,7 @@ release selector, monitor, or global cleanup policy.
 
 ```mermaid
 flowchart TD
-    Repo[Life Manager repository\ncanonical source] --> Release[Immutable release\nexact main commit]
+    Repo[Mr.bot repository\ncanonical source] --> Release[Immutable release\nexact main commit]
     Registry[config/loop-registry.json\nall loop definitions] --> CLI[bin/lm-loop]
     Release --> CLI
     CLI --> Plists[Generated LaunchAgents]
@@ -58,7 +58,7 @@ flowchart TD
 
 ## 2. Acceptance Criteria
 
-1. `config/loop-registry.json` contains every Life Manager-owned macOS launchd
+1. `config/loop-registry.json` contains every Mr.bot-owned macOS launchd
    label. No second manifest is authoritative for installation or lifecycle.
 2. Every registry entry has exactly one stable loop ID, launchd label, domain,
    repository-relative entrypoint, cadence, effect class, state root, log root,
@@ -98,7 +98,7 @@ flowchart TD
     after its generated plist, immutable entrypoint, state path, and loaded
     arguments pass readback; failure retains the prior loaded job.
 13. After a Mac reboot, enabled loops return through launchd, `doctor` reports no
-    unmanaged Life Manager labels, and a natural scheduled pass emits a uniform
+    unmanaged Mr.bot labels, and a natural scheduled pass emits a uniform
     event from the installed release.
 14. Every loop change follows `skills/loop-development/SKILL.md`: one locked
     worktree, one registry owner, repository-contained source, state outside the
@@ -130,8 +130,8 @@ bin/lm-loop watch [<loop-id|all>]
       "entrypoint": "skills/fundraiser-agent/runtime/run.sh",
       "cadence": {"start_interval_seconds": 60},
       "effect_class": "application",
-      "state_root": "~/.local/state/life-manager/fundraiser",
-      "log_root": "~/.local/state/life-manager/fundraiser/logs",
+      "state_root": "~/.local/state/mr-bot/fundraiser",
+      "log_root": "~/.local/state/mr-bot/fundraiser/logs",
       "cleanup": {"max_runs": 100, "max_age_days": 14},
       "provider_route": "shared-agent-runner"
     }
@@ -158,7 +158,7 @@ Allowed values are closed and versioned with the registry schema:
 |---|---|---|
 | Registry | `config/loop-registry.json`, Gig manifest, job-search plists, and independent plist families | `config/loop-registry.json` only |
 | Install | Per-loop installers and direct plist edits | `bin/lm-loop apply` |
-| Runtime source | Several release roots and some working-tree paths | One exact immutable Life Manager commit per applied generation |
+| Runtime source | Several release roots and some working-tree paths | One exact immutable Mr.bot commit per applied generation |
 | Lifecycle | Raw `launchctl`, individual scripts, label knowledge | `lm-loop start/stop/restart` by loop ID |
 | Observation | PID, logs, ledgers, and provider receipts inspected separately | Uniform event envelope plus official effect evidence |
 | Provider/profile | Per-loop `CODEX_HOME`, auth file, or runner config | One shared provider/profile router |
@@ -170,7 +170,7 @@ Allowed values are closed and versioned with the registry schema:
 
 | # | To-Be | Test name | Cover |
 |---:|---|---|---|
-| 1 | One authoritative registry | `test_registry_covers_all_life_manager_launchagents` | OK |
+| 1 | One authoritative registry | `test_registry_covers_all_mr_bot_launchagents` | OK |
 | 2 | Complete validated entry | `test_registry_rejects_missing_or_secret_fields` | OK |
 | 3 | Atomic apply and loaded readback | `test_apply_is_atomic_and_reads_loaded_arguments` | OK |
 | 4 | One lifecycle interface | `test_lifecycle_all_collects_every_label_result` | OK |
@@ -217,7 +217,7 @@ Allowed values are closed and versioned with the registry schema:
 
 | Order | TODO | Done evidence |
 |---:|---|---|
-| 1 | ✅ Inventory every installed `ai.anicca.*` Life Manager label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 208 classified Life Manager-owned, 14 disabled/unloaded installed ambiguous, loaded/disabled-only rows retained |
+| 1 | ✅ Inventory every installed `ai.anicca.*` Mr.bot label and classify owner/domain/effect/state/release | `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-inventory.{md,json}`; 226 installed labels, 208 classified Mr.bot-owned, 14 disabled/unloaded installed ambiguous, loaded/disabled-only rows retained |
 | 2 | ✅ Upgrade `config/loop-registry.json` to schema v2 and import all active definitions without changing launchd | 169/169 active classified labels, one external and two retired labels; fixture SHA-256 `35e3b1ae25ed87a815772b14c00c4a87e7e38a87e125bba98f1c04661b9b6c49`; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-schema-v2.md` |
 | 3 | ✅ Implement `bin/lm-loop doctor/status/watch` as read-only commands | five focused tests; live 172-row status/watch; runtime/effect truth separated; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-readonly-cli.md` |
 | 4 | ✅ Implement plist generation and fail-closed `apply` using `launchctl-safe` | five focused tests; production invalid generation zero mutation; isolated exact loaded argv readback and cleanup; `docs/evidence/runtime/2026-08-28-macos-loop-control-plane-atomic-apply.md` |
@@ -235,7 +235,7 @@ Implementation commands are standardized by this spec:
 
 ```bash
 python3 -m unittest discover -s runtime/loop/tests -p 'test_*.py'
-node --test apps/life-manager/lib/loop-adapter-registry.test.js
+node --test apps/mr-bot/lib/loop-adapter-registry.test.js
 bin/lm-loop doctor
 bin/lm-loop apply
 bin/lm-loop status all
@@ -248,7 +248,7 @@ stores; this control-plane slice never creates or copies credentials.
 ### TODO 7 execution state
 
 Account rotation and per-caller provider overrides are removed. Gig, Job
-Search, Connector, Life Manager daily, Lancers portable releases, and all X
+Search, Connector, Mr.bot daily, Lancers portable releases, and all X
 model calls use the canonical runner with one explicit `acct2` profile. The
 duplicate Gig runner is removed after token-budget/history/context parity is
 moved. Writer opportunity discovery/response use the shared adapter, while the
@@ -350,7 +350,7 @@ recreator. Completed items are not part of the remaining queue.
 1. ✅ Implement Account 1 to Account 2 pre-effect fallback in the shared runner.
    PR #2983 is merged; controlled real readback proves both primary success and
    quota-triggered fallback success.
-2. ✅ Finish loop-owned Account auto rollout. `life-manager-dev` now cuts pushed
+2. ✅ Finish loop-owned Account auto rollout. `mr-bot-dev` now cuts pushed
    main into a complete immutable release and reconciles only
    `shared-agent-runner` rows that are `loaded-idle`; `loaded-running` rows are
    reported and untouched. PRs #3010, #3012, and #3015 are merged. A real owner
@@ -437,7 +437,7 @@ both read 0 without `npm audit fix --force` or compatibility regression.
 The read-only capture joins installed plist text with loaded and disabled
 launchd readback. It records the complete 266-label union, including 40 labels
 without an installed plist, rather than treating plist presence as runtime
-truth. The installed set contains 208 classified Life Manager-owned labels. The
+truth. The installed set contains 208 classified Mr.bot-owned labels. The
 169 loaded jobs are represented by schema-v2 entries; 39 disabled jobs remain
 migration inventory. Fourteen installed disabled/unloaded labels and 29
 loaded/disabled-only labels remain explicitly ambiguous. Unknown releases,

@@ -5,7 +5,7 @@ set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 # Load runtime credentials exactly like article-daily.sh so remote reconciles
 # (e.g. publication_remote.devto) never fail closed on a missing API key.
-WRITER_RUNTIME_HOME="${LIFE_MANAGER_STATE_ROOT:-${LIFE_MANAGER_HOME:-$HOME/.local/state/life-manager}}"
+WRITER_RUNTIME_HOME="${MR_BOT_STATE_ROOT:-${MR_BOT_HOME:-$HOME/.local/state/mr-bot}}"
 set -a; . "$WRITER_RUNTIME_HOME/.env" 2>/dev/null; set +a
 
 ARTICLE_ROOT="${ARTICLE_ROOT:-${ARTICLE_SKILL_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)}}"
@@ -61,7 +61,7 @@ if [ -f "$PUBLICATION_PAUSE_FILE" ]; then
   exit 0
 fi
 if [ "${ARTICLE_OWNER_FENCE_ACTIVE:-0}" != "1" ]; then
-  OWNER_FENCE_DIR="${ARTICLE_OWNER_FENCE_DIR:-$HOME/.local/state/life-manager/writer/owner-fence}"
+  OWNER_FENCE_DIR="${ARTICLE_OWNER_FENCE_DIR:-$HOME/.local/state/mr-bot/writer/owner-fence}"
   export ARTICLE_OWNER_FENCE_DIR
   exec python3 "$ARTICLE_ROOT/scripts/writer_owner_fence.py" run \
     --fence-dir "$OWNER_FENCE_DIR" --owner article-resume \
@@ -871,7 +871,7 @@ case "$RUN_ID" in daily-????-??-??|????????-??????) ;; *) echo "article-resume: 
 # preflight by accident.
 if [ "$FIRST_INITIALIZATION" = "x-article/ja" ] || [ "$FIRST_INITIALIZATION" = "x-article/en" ] \
   || [ "$(printf '%s' "$PLAN" | jq -r '.eligible_pairs[0] // empty')" = "x-article/ja" ]; then
-  BROWSER_GUARD="${LIFE_MANAGER_REPO:-$(cd "$ARTICLE_ROOT/../.." && pwd)}/skills/browser/ensure_browser.sh"
+  BROWSER_GUARD="${MR_BOT_REPO:-$(cd "$ARTICLE_ROOT/../.." && pwd)}/skills/browser/ensure_browser.sh"
   if [ ! -x "$BROWSER_GUARD" ]; then
     echo "article-resume: X browser guard missing at $BROWSER_GUARD" >>"$LOG"
     exit 1

@@ -15,7 +15,7 @@
     {
       "id": "product",
       "url": "https://aniccaai.com/lm",
-      "title": "Life Manager — Proactive general agent for your life",
+      "title": "Mr.bot — Proactive general agent for your life",
       "context_version_matches": true,
       "context_digest_matches": true,
       "organs": ["Daily", "Physical / Mental", "Financial"],
@@ -29,7 +29,7 @@
     {
       "id": "root_en",
       "url": "https://aniccaai.com/en",
-      "title": "Anicca — Life Manager, a proactive general agent",
+      "title": "Anicca — Mr.bot, a proactive general agent",
       "mission_company_to_product_relation_visible": true,
       "organs": ["Body", "Mind", "Money"],
       "product_url": "/lm",
@@ -39,7 +39,7 @@
     {
       "id": "root_ja",
       "url": "https://aniccaai.com/ja",
-      "title": "Anicca — Life Manager、人生を管理するproactive general agent",
+      "title": "Anicca — Mr.bot、人生を管理するproactive general agent",
       "mission_company_to_product_relation_visible": true,
       "organs": ["身体", "心", "お金"],
       "product_url": "/lm",
@@ -59,7 +59,7 @@
     {
       "id": "telegram",
       "url": "https://t.me/LifeManagerBotbot?start=lp",
-      "title": "Cloud Life Manager",
+      "title": "Cloud Mr.bot",
       "bot": "@LifeManagerBotbot",
       "identity_matches": true
     }

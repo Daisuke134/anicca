@@ -146,7 +146,7 @@ def inspect_codex_cli(entry):
             Path.home()
             / ".local"
             / "state"
-            / "life-manager"
+            / "mr-bot"
             / "affiliate"
             / "machine"
             / "codex-version-home"

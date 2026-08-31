@@ -6,7 +6,7 @@ if [ "${AGENT_ECONOMY_RETIRE_LEGACY:-0}" != "1" ]; then
   exit 2
 fi
 
-REPO="${LIFE_MANAGER_REPO:-$(cd "$(dirname "$0")/../.." && pwd -P)}"
+REPO="${MR_BOT_REPO:-$(cd "$(dirname "$0")/../.." && pwd -P)}"
 SAFE="$REPO/bin/launchctl-safe"
 [ -x "$SAFE" ] || { echo "agent-economy: launchctl-safe missing at $SAFE" >&2; exit 2; }
 "$SAFE" preflight >/dev/null

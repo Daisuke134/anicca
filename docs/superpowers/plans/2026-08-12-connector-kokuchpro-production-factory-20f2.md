@@ -8,8 +8,8 @@
 
 **Ponytail size gate:**
 
-- Modify `apps/life-manager/lib/connector-minimal-production.js` — about 25–45 production LOC.
-- Modify `apps/life-manager/lib/connector-minimal-production.test.js` — about 90–140 focused LOC.
+- Modify `apps/mr-bot/lib/connector-minimal-production.js` — about 25–45 production LOC.
+- Modify `apps/mr-bot/lib/connector-minimal-production.test.js` — about 90–140 focused LOC.
 - Exact two files. If production exceeds 60 LOC, reduce scope before continuing.
 
 ## Task 1 — TDD default factory routing

@@ -63,7 +63,7 @@
     "category": "AI・システム開発・運用",
     "subcategory": "AI自動化・エージェント開発",
     "industry": "IT・通信・インターネット",
-    "description": "MIT公開のLife Managerで、API連携、scheduled job、worker、Postgres、object storage、Telegram reporting、外部サービスの公式readbackを一つのrepositoryに実装しました。外部actionは実行前のintent、公式IDでのdedupe、実行後のreadbackを通し、失敗時はblind resendを避ける構成です。掲載画像は、scheduled workflow・制作・reportingを一つの流れで管理する設計を視覚化したものです。これは自主制作の公開source codeを示す制作例であり、未達の顧客実績や売上効果を示すものではありません。",
+    "description": "MIT公開のMr.botで、API連携、scheduled job、worker、Postgres、object storage、Telegram reporting、外部サービスの公式readbackを一つのrepositoryに実装しました。外部actionは実行前のintent、公式IDでのdedupe、実行後のreadbackを通し、失敗時はblind resendを避ける構成です。掲載画像は、scheduled workflow・制作・reportingを一つの流れで管理する設計を視覚化したものです。これは自主制作の公開source codeを示す制作例であり、未達の顧客実績や売上効果を示すものではありません。",
     "duration_value": 1,
     "duration_unit": "ヶ月",
     "reference_price_jpy": 180000,
@@ -74,7 +74,7 @@
   "seller_profile": {
     "public_path": "/profile/keiodaisuke",
     "subtitle": "AI・API自動化とSNS運用を、設計・実装・制作まで支援します",
-    "description": "小規模チームや個人事業の方に向けて、AI・APIを使った業務自動化と、SNS運用の設計・制作を支援しています。\n\nソフトウェア領域では、Python、API連携、scheduler、worker、Postgres、object storage、Telegram reporting、外部サービスの公式readbackを組み合わせた自動運用システムを設計・実装します。実装例として、MITライセンスのオープンソース「Life Manager」をGitHubで公開しています。リポジトリ名は「Daisuke134/life-manager」です。\n\nSNS領域では、月次テーマ、投稿企画、本文案、画像方向性、投稿カレンダー、改善レポートを納品します。アカウントのパスワード共有や直接投稿は不要です。\n\nご相談内容を確認し、対応範囲、納品物、価格、納期を明確にしてから進めます。未確認の実績や成果は主張しません。メッセージとLancers上の納品で完結できる案件を中心に対応します。"
+    "description": "小規模チームや個人事業の方に向けて、AI・APIを使った業務自動化と、SNS運用の設計・制作を支援しています。\n\nソフトウェア領域では、Python、API連携、scheduler、worker、Postgres、object storage、Telegram reporting、外部サービスの公式readbackを組み合わせた自動運用システムを設計・実装します。実装例として、MITライセンスのオープンソース「Mr.bot」をGitHubで公開しています。リポジトリ名は「Daisuke134/life-manager」です。\n\nSNS領域では、月次テーマ、投稿企画、本文案、画像方向性、投稿カレンダー、改善レポートを納品します。アカウントのパスワード共有や直接投稿は不要です。\n\nご相談内容を確認し、対応範囲、納品物、価格、納期を明確にしてから進めます。未確認の実績や成果は主張しません。メッセージとLancers上の納品で完結できる案件を中心に対応します。"
   },
   "profile_avatar_path": "../../../gig-work/profile/avatar.jpg",
   "profile_avatar_sha256": "ff0cca485f9a8f00f66db4f881c72a5deb6b2c8eee9521e5db05a9612c39177d",

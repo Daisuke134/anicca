@@ -20,7 +20,7 @@ from typing import Any
 
 
 JST = timezone(timedelta(hours=9))
-SOURCE = "life-manager/gig"
+SOURCE = "mr-bot/gig"
 PASS_TYPE = "com.anicca.gig.report.pass.v1"
 WORK_EVENT_KINDS = {
     "application", "delivery", "reply", "contract", "payment", "incident", "recovery"

@@ -79,7 +79,7 @@ git commit -m "fix(capafy): route Codex through account 2"
 
 - [x] **Step 1: Write the failing stale-marker plus quota test**
 
-Create a temporary Life Manager state tree, a stale healthy marker, a failed summary with only `transient_quota` attempts, and a fake `launchctl` that records calls. Assert exit `0`, zero `kickstart`, and a future `next_eligible_at`.
+Create a temporary Mr.bot state tree, a stale healthy marker, a failed summary with only `transient_quota` attempts, and a fake `launchctl` that records calls. Assert exit `0`, zero `kickstart`, and a future `next_eligible_at`.
 
 - [x] **Step 2: Run the test and verify RED**
 
@@ -103,7 +103,7 @@ bash -n skills/self/capafy-loop/capafy-loop-healthcheck.sh
 
 - [x] **Step 5: Install and read back one production owner transition**
 
-Use `bin/launchctl-safe` for the exact Capafy labels. Verify the hourly owner uses the pushed Life Manager source, the provider receipt selects Codex account 2 direct, no Capafy/Instagram write occurs during recovery, and three consecutive five-minute healthchecks add zero kickstarts.
+Use `bin/launchctl-safe` for the exact Capafy labels. Verify the hourly owner uses the pushed Mr.bot source, the provider receipt selects Codex account 2 direct, no Capafy/Instagram write occurs during recovery, and three consecutive five-minute healthchecks add zero kickstarts.
 
 - [x] **Step 6: Synchronize the spec and push**
 

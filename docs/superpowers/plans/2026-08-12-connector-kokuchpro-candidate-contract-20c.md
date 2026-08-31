@@ -8,8 +8,8 @@
 
 **Files / soft target:**
 
-- Create `apps/life-manager/lib/connector-kokuchpro-workflow.js` — about 70–100 LOC.
-- Create `apps/life-manager/lib/connector-kokuchpro-workflow.test.js` — about 90–140 LOC.
+- Create `apps/mr-bot/lib/connector-kokuchpro-workflow.js` — about 70–100 LOC.
+- Create `apps/mr-bot/lib/connector-kokuchpro-workflow.test.js` — about 90–140 LOC.
 
 ## Grounding
 
@@ -22,8 +22,8 @@
 
 **Files:**
 
-- Create: `apps/life-manager/lib/connector-kokuchpro-workflow.js`
-- Create: `apps/life-manager/lib/connector-kokuchpro-workflow.test.js`
+- Create: `apps/mr-bot/lib/connector-kokuchpro-workflow.js`
+- Create: `apps/mr-bot/lib/connector-kokuchpro-workflow.test.js`
 
 - [x] **Step 1: Write RED pure contract tests**
 
@@ -32,7 +32,7 @@
 - [x] **Step 2: Run RED**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-kokuchpro-workflow.test.js
   ```
 
@@ -45,7 +45,7 @@
 - [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-kokuchpro-workflow.test.js lib/connector-techplay-workflow.test.js lib/connector-peatix-workflow.test.js
   node --check lib/connector-kokuchpro-workflow.js
   git diff --check

@@ -1,5 +1,5 @@
 {
-  "source": "/Users/anicca/.local/state/life-manager/features/capafy-o13-user-interview-synthesizer/test/case1.md",
+  "source": "/Users/anicca/.local/state/mr-bot/features/capafy-o13-user-interview-synthesizer/test/case1.md",
   "source_sha256": "c0fd5392757349d25ef580b39198136a3fe6251c57dd159a4cee1a83ebb2605e",
   "product": "Team expense-management app",
   "decision": "Prioritize receipt capture or approval rules",

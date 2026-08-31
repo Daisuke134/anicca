@@ -21,9 +21,9 @@
 ### Task 1: Source-bound transition observation
 
 **Files:**
-- Create: `apps/life-manager/lib/talk-application-transition.js`
-- Create: `apps/life-manager/lib/talk-application-transition.test.js`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/lib/talk-application-transition.js`
+- Create: `apps/mr-bot/lib/talk-application-transition.test.js`
+- Modify: `apps/mr-bot/package.json`
 
 **Interfaces:**
 - Consumes: `{currentState,observedAt,now,sourceText,sourceRefs}`とGemini decision
@@ -50,17 +50,17 @@ Expected: 全件PASS。
 - [x] **Step 5: commitする**
 
 ```bash
-git add apps/life-manager/lib/talk-application-transition.js apps/life-manager/lib/talk-application-transition.test.js apps/life-manager/package.json
+git add apps/mr-bot/lib/talk-application-transition.js apps/mr-bot/lib/talk-application-transition.test.js apps/mr-bot/package.json
 git commit -m "feat(connector): validate talk application transitions"
 ```
 
 ### Task 2: Immutable transition store and migration
 
 **Files:**
-- Create: `apps/life-manager/lib/talk-application-transition-store.js`
-- Create: `apps/life-manager/lib/talk-application-transition-store.test.js`
-- Create: `apps/life-manager/migrations/2026-08-02-lm-talk-application-transitions.sql`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/lib/talk-application-transition-store.js`
+- Create: `apps/mr-bot/lib/talk-application-transition-store.test.js`
+- Create: `apps/mr-bot/migrations/2026-08-02-lm-talk-application-transitions.sql`
+- Modify: `apps/mr-bot/package.json`
 
 **Interfaces:**
 - Consumes: verified transition、`tenantId`、`participationId`
@@ -87,7 +87,7 @@ Expected: 全件PASS。
 - [x] **Step 5: commitする**
 
 ```bash
-git add apps/life-manager/lib/talk-application-transition-store.js apps/life-manager/lib/talk-application-transition-store.test.js apps/life-manager/migrations/2026-08-02-lm-talk-application-transitions.sql apps/life-manager/package.json
+git add apps/mr-bot/lib/talk-application-transition-store.js apps/mr-bot/lib/talk-application-transition-store.test.js apps/mr-bot/migrations/2026-08-02-lm-talk-application-transitions.sql apps/mr-bot/package.json
 git commit -m "feat(connector): persist talk application transitions"
 ```
 
@@ -95,7 +95,7 @@ git commit -m "feat(connector): persist talk application transitions"
 
 **Files:**
 - Create: `docs/evidence/outbound/2026-08-02-o1b15-live-talk-transition-ledger.json`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 **Interfaces:**
 - Consumes: production migration/store contract
@@ -103,7 +103,7 @@ git commit -m "feat(connector): persist talk application transitions"
 
 - [x] **Step 1: migrationを実runtime DBへ適用する**
 
-Run: `docker exec -i life-manager-local-postgres-1 psql -v ON_ERROR_STOP=1 -U life_manager -d life_manager < apps/life-manager/migrations/2026-08-02-lm-talk-application-transitions.sql`
+Run: `docker exec -i mr-bot-local-postgres-1 psql -v ON_ERROR_STOP=1 -U mr_bot -d mr_bot < apps/mr-bot/migrations/2026-08-02-lm-talk-application-transitions.sql`
 
 - [x] **Step 2: transaction fixtureを実行する**
 

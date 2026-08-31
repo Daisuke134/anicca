@@ -2,14 +2,14 @@
 
 ## Verdict
 
-**VERIFIED for the Life Manager repository boundary.** The distributable tree
+**VERIFIED for the Mr.bot repository boundary.** The distributable tree
 and all six PR gates are clean. Every
 historical finding has been classified without placing a raw credential in this
 file. Firecrawl, Vibecode, Exa, Anthropic, ElevenLabs, Slack, Google Cloud, and
 Sourcegraph no longer leave a known active historical credential.
 
 An external Anicca iOS/API incident remains open: two historical RevenueCat
-secret keys still authenticate. RevenueCat is not a Life Manager connector,
+secret keys still authenticate. RevenueCat is not a Mr.bot connector,
 metric source, implementation cursor, or repository-retirement gate. The facts
 and required external-owner remediation remain visible below.
 
@@ -99,7 +99,7 @@ authenticated `vibecode-cli user` command used for the before/after proof:
 
 ## External Anicca iOS/API incident close condition
 
-The Life Manager repository baseline is already verified. The external incident
+The Mr.bot repository baseline is already verified. The external incident
 closes only after all rows below pass:
 
 | Order | Required proof | Current |

@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
+MR_BOT_REPO="${MR_BOT_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$MR_BOT_REPO" ] || { echo "MR_BOT_REPO could not be resolved" >&2; exit 2; }
+export MR_BOT_REPO
 
-RUN_AGENT="$LIFE_MANAGER_REPO/skills/earn/marketing-engine/run_agent.sh"
+RUN_AGENT="$MR_BOT_REPO/skills/earn/marketing-engine/run_agent.sh"
 if [ "${AGENT_WIRING_PROBE_ONLY:-0}" = "1" ]; then
   printf '{"task_class":"high-value-agent","runner":"%s"}\n' "$RUN_AGENT"
   exit 0
 fi
 
 # The browser is shared with the other money loops: heal it, restore the logins, collect stray tabs.
-bash "$LIFE_MANAGER_REPO/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
+bash "$MR_BOT_REPO/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 # self-fix.sh — TRUE autonomous self-heal launcher (no human, no "file issue and wait"). When a loop hits a
@@ -40,8 +40,8 @@ if [ "${1:-}" = "--should-continue" ]; then sf_should_continue "${2:-}" "${3:-}"
 # anti-fake verifier reads. Idempotent: strip a trailing -loop then re-add it.
 LOOP="${1:?loop name}"; LOOP="${LOOP%-loop}-loop"; BLOCKER="${2:?blocker+hint}"
 SOCK="/tmp/anicca-selffix-$LOOP-tmux.sock"; SESSION="anicca-selffix-$LOOP"
-STATE="$HOME/.local/state/life-manager/state"; mkdir -p "$STATE"
-LOG="$HOME/.local/state/life-manager/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
+STATE="$HOME/.local/state/mr-bot/state"; mkdir -p "$STATE"
+LOG="$HOME/.local/state/mr-bot/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
 RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here (FIND-003)
 STARTMARK="$STATE/.self-fix-$LOOP.started"    # epoch when the current fixer was spawned (FIND-005 stale-guard)
 # FIND-028 test seam: print the normalized identity + derived paths and exit BEFORE any tmux/side-effect.
@@ -91,13 +91,13 @@ if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && [ -f "$RESULT" ] &
   fi
 fi
 
-# FIND-033 (life-manager-loop 3-day outage, 2026-07-10): a near-full disk stops swap from growing, which
+# FIND-033 (mr-bot-loop 3-day outage, 2026-07-10): a near-full disk stops swap from growing, which
 # surfaces as fork() failures for every fresh spawn — including this fixer's own tmux/claude spawn below.
 # Without this, self-fix keeps respawning fixers that die before they can even diagnose anything (observed:
 # 40+ spawns over 24h, none completed). Reclaim only 100%-regenerable package-manager caches; see
 # hc_reclaim_disk_if_low in healthcheck-lib.sh for the full rationale and the excluded (approval-needed) paths.
 # shellcheck source=healthcheck-lib.sh
-. "$LIFE_MANAGER_REPO/skills/self/healthcheck-lib.sh" 2>/dev/null && hc_reclaim_disk_if_low
+. "$MR_BOT_REPO/skills/self/healthcheck-lib.sh" 2>/dev/null && hc_reclaim_disk_if_low
 
 # FIND-003/004: the fixer MUST verify a real side-effect, commit in the CORRECT repo (the one the edited file lives
 # in — discovered via git rev-parse, NOT guessed), and write a result marker the caller/healthcheck can check.
@@ -108,7 +108,7 @@ DO, in order:
 (1) Reproduce the failure yourself and find the ROOT cause (read the actual code + run it + watch where it breaks).
 (2) Fix the code. If the root cause is a brittle DOM-coordinate/selector script that broke on a UI change, do NOT just re-tune coordinates: rebuild the failing step as two-layer agentic (a thin script opens the page, then YOU look at real screenshots and decide each click/type, looping until the real success signal appears).
 (3) VERIFY with a REAL side-effect — an actually-published skill URL you then curl and see live / a real posted comment URL / the tool actually succeeding once end-to-end. A patch that only compiles is NOT done. No dry runs, no fake success, no 'should work'.
-(4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: the Capafy publish pipeline lives under $HOME/.local/state/life-manager (remote = anicca-dais, PRIVATE) — commit those there, NOT to anicca-products. The loop harness lives under $LIFE_MANAGER_REPO (remote = anicca, public). Never commit $HOME/.local/state/life-manager runtime state or secrets.
+(4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: the Capafy publish pipeline lives under $HOME/.local/state/mr-bot (remote = anicca-dais, PRIVATE) — commit those there, NOT to anicca-products. The loop harness lives under $MR_BOT_REPO (remote = anicca, public). Never commit $HOME/.local/state/mr-bot runtime state or secrets.
 (5) Write the outcome to ${RESULT} as a single line: 'SUCCESS <utc> <one-line real evidence, e.g. published URL>' or 'FAIL <utc> <why + what is still blocked>'. If the fix resolved a selfheal-request json, rm it.
 If after honest effort the fix is genuinely impossible (e.g. an external service is down), write FAIL with a precise diagnosis to ${RESULT} and invoke self/issue-dev — still never ask a human. Report what you fixed + the real evidence at the end."
 TASK="${TASK} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"

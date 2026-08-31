@@ -3,7 +3,7 @@
 Ordered. Each item says what was measured, not what is suspected. Anything without
 evidence does not belong on this list.
 
-The four lanes run from `~/gig/releases/life-manager/<sha>/`, cut from `main` by
+The four lanes run from `~/gig/releases/mr-bot/<sha>/`, cut from `main` by
 `gig_release.py`. See `README.md` for how the whole thing is installed.
 
 Current lane names are **Apply, Reply, Storefront, Paid**. `Reply` owns buyer-message
@@ -325,7 +325,7 @@ The shared model runner now retains only the newest three rotated generations in
 project-owned `evidence/agent-*/history/` directory. Production cleanup removed 1,115 old
 runner generations (356,708,106 bytes) without touching current results, customer artifacts,
 delivery/source, state, JSONL ledgers, or Codex/Claude sessions. The host-wide fail-closed
-`ai.anicca.life-manager-disk-cleanup` owner is enabled again at its 300-second interval; its
+`ai.anicca.mr-bot-disk-cleanup` owner is enabled again at its 300-second interval; its
 48 protection tests pass. A closed Sparkle installation cache, not a Paid video build, held
 about 2 GiB and was removed after an open-file readback returned empty. Paid replay then kept
 all 43 observed agent histories at three generations or fewer while free space recovered to
@@ -443,7 +443,7 @@ Latest verified recovery state:
    with three immutable screenshot assets. Use the account-owned site's existing
    `skills/affiliate/scripts/owned_publish.py` from one clean isolated site worktree: commit only
    the three image paths, then let that adapter stage/commit/push the article JSON and obtain
-   `https://aniccaai.com/blog/casican-review` readback. Do not clone Life Manager, install web
+   `https://aniccaai.com/blog/casican-review` readback. Do not clone Mr.bot, install web
    dependencies, run a site build, or create another publisher.
    Production owner has now published the three immutable images and article to
    `https://aniccaai.com/blog/casican-review`: image commit `1e3c638e21828f74b949fd3433faed38d36e0ad8`,
@@ -737,7 +737,7 @@ repository-wide migration is not part of this Coconala session.
    responses and `0700/0600` modes.
 4. [x] Add one future shared onboarding web UI. It is not opened by the Coconala bootstrap.
    The loopback-only stdlib server renders a private control surface, uses
-   a per-process CSRF token and never serves logs. The generic Life Manager bootstrap may
+   a per-process CSRF token and never serves logs. The generic Mr.bot bootstrap may
    use it; Coconala does not. Real HTTP checks pass for HTML, graph API and forbidden
    tokenless mutation.
 5. [x] Render integration cards with prerequisites, owner time, official ceremonies,
@@ -781,7 +781,7 @@ repository-wide migration is not part of this Coconala session.
 **1. Overview.** A third-party first run on the old release falsely treated the unloaded dedicated
 browser as busy, timed out waiting for CDP 9223, selected unrelated shared-manifest jobs, and could
 report a verified initial Paid delivery as zero. Main `12e506ce8` fixes those three code defects.
-Re-running the idempotent public bootstrap MUST fast-forward the existing `~/life-manager` checkout
+Re-running the idempotent public bootstrap MUST fast-forward the existing `~/mr-bot` checkout
 and resume the same private browser/profile/state; it MUST NOT require deletion or a fresh account.
 
 **2. Acceptance criteria.** The friend's checkout resolves to `12e506ce8` or a descendant; preflight
@@ -951,7 +951,7 @@ Atomic remaining work for Reply latency:
     zero scoped gitleaks findings. This is package evidence,
     not a substitute for the three live pilots below.
     A clean-Mac one-line bootstrap now uses macOS curl, installs Homebrew/Git only
-    when missing, clones or fast-forwards `~/life-manager`, and enters the same Coconala
+    when missing, clones or fast-forwards `~/mr-bot`, and enters the same Coconala
     installer. It refuses an existing non-Git target without deleting or replacing it;
     shell syntax, ShellCheck and the refusal path pass.
     Atomic implementation order (design SSOT:
@@ -991,7 +991,7 @@ Atomic remaining work for Reply latency:
        compile success, exact record/status readback and byte-identical repeated record.
     4. [ ] Show one prerequisite screen, then launch the dedicated CloakBrowser profile
        `~/.cloak/profiles/gig-daily-driver` on the official Coconala setup surface. Do not
-       collect duplicate identity/bank facts in Life Manager. `start` is implemented using
+       collect duplicate identity/bank facts in Mr.bot. `start` is implemented using
        the existing browser launchd job, CDP readiness readback and official signup tab;
        shell syntax and immutable browser plist dry-render pass. Live execution is deferred
        to the first clean pilot because this Mac already has a production owner on that
@@ -1256,14 +1256,14 @@ not this operator's Telegram identity.
 
 The public command is `./install.sh coconala`. One interactive setup session completes all required
 owner work before starting the loops. It never asks the owner to duplicate official identity/bank
-facts in Life Manager, describe skills, choose categories, write listings, set prices, approve
+facts in Mr.bot, describe skills, choose categories, write listings, set prices, approve
 applications, approve replies, approve estimates, or approve deliveries.
 
 1. Inspect the device and install or configure the declared runtime, model route, browser, four lane
    jobs and release watcher; then show every official prerequisite on one screen.
 2. Open the official Coconala setup surface. The owner creates or recovers the account and completes
    email, SMS, seller information, required consents, eKYC and the matching domestic bank account in
-   one uninterrupted official-site session. Life Manager never creates a second account or stores a
+   one uninterrupted official-site session. Mr.bot never creates a second account or stores a
    second copy of documents, OTPs, passwords or bank details.
 3. After the owner reports `finished` once, read back that account/session, seller information,
    SMS, eKYC and payout account are accepted by the official site. Invoice registration remains
@@ -1483,7 +1483,7 @@ The order to the end is:
    SHA `bcba782a4`; Reply's nested Codex work uses Account 2. Storefront is not closed: after a real
    disk-pressure stop and loop-owned sentinel release, its natural pass still failed because nested
    proposal agents emitted runtime events under legacy alias `gig-storefront`, which is absent from
-   the managed registry. The shared runner fix must prefer `LIFE_MANAGER_LOOP_ID` over a nested
+   the managed registry. The shared runner fix must prefer `MR_BOT_LOOP_ID` over a nested
    caller's legacy `--loop` label, then be released and proved by two successive natural Storefront
    passes with official 14-service readback and replay effect zero. Process presence is never proof.
 7. **Anyone-device acceptance is still open.** Current immutable public-package onboarding tests
@@ -1558,7 +1558,7 @@ editorial guidance, not a deterministic length gate: safety-critical facts and a
 option may remain when relevant.
 
 **Shared resource resolver and Manledge recovery.** Official X DOM confirms the registered `x:anicca` browser
-identity is authenticated as `@selawmqt` at `https://x.com/selawmqt`. Life Manager previously split capabilities,
+identity is authenticated as `@selawmqt` at `https://x.com/selawmqt`. Mr.bot previously split capabilities,
 browser sessions and credentials across unrelated registries, so Paid could see only its gig browser and asked the
 buyer to create an account that already existed. The shared `skills/_shared/resource_resolver.py` now joins the OSS
 skill registry, local browser-identity registry and the single local credential SSOT without returning secret
@@ -1586,11 +1586,11 @@ and then rerun under the shared resolver release so discovery and adaptive fallb
 project-specific prompt knowledge.
 
 The remaining architectural defect was that shared discovery was opt-in: every agent received only an instruction
-to call the resolver if it independently realized that a reusable resource might exist. Life Manager now compiles a
+to call the resolver if it independently realized that a reusable resource might exist. Mr.bot now compiles a
 non-secret capability manifest at every agent start and places the same live skill catalogue, account references
 and browser-identity references in every loop owner's initial context. The owner selects from that common plane and
 then calls `resolve` for the exact service/action; only the selected adapter may dereference a secret locally. This
-is the reusable Life Manager contract, not a Coconala or Manledge rule. Shared does not mean one giant mutable
+is the reusable Mr.bot contract, not a Coconala or Manledge rule. Shared does not mean one giant mutable
 prompt: proposal/DM/talkroom/customer files and browser effect ownership remain isolated per project, while stable
 seller facts, skills and resource references are shared. The next immutable release must naturally prove that a
 fresh owner sees this manifest without being reminded by Codex, resolves the existing resource, performs the real
@@ -2111,7 +2111,7 @@ secret-value scans return zero matches in remaining derived project files and tr
 `18062411` decision run from immutable release `f7755b48e` read back three restricted metadata rows, zero exposed
 credential paths, a mode-600 sandbox profile and zero secret matches in model stdout. The credential reached a
 third-party model before this boundary existed, so the smallest remaining legal owner action is for the buyer or
-authorized account owner to rotate that external account credential before it is used again; Life Manager must
+authorized account owner to rotate that external account credential before it is used again; Mr.bot must
 not request, copy or store the replacement in prompt/log/repo/Telegram.
 
 **Structured contract-diff readback.** The next natural run from `280267229` produced no customer effect and
@@ -2217,7 +2217,7 @@ closed; buyer approval remains a later external event and formal delivery remain
 
 #### Coconala-first completion contract — authoritative
 
-**1. Overview.** Coconala is the first production proof of the shared Life Manager Economic Harness. No App
+**1. Overview.** Coconala is the first production proof of the shared Mr.bot Economic Harness. No App
 Store, ebook, trading, Upwork, Lancers, CloudWorks or self-generated business loop may advance the development
 cursor while purchased Coconala clients are waiting for context-correct work. Independent already-loaded lanes
 continue normal safe operation, but architecture work serves the current Paid incident first. The purpose is
@@ -2344,7 +2344,7 @@ upstream license notice if source is copied; otherwise copy the behavior into th
 
 The two requested repositories were cloned and read at the commits above. `graph-engineering` contains a
 packaged skill and reference workflows rather than an executable graph store or scheduler, so it is design
-authority only. `loop-engineering` contains executable TypeScript tools, but Life Manager copies only the
+authority only. `loop-engineering` contains executable TypeScript tools, but Mr.bot copies only the
 three bounded mechanics named above; installing its CLI/fleet/worktree/swarm stack would duplicate launchd,
 the current owner and existing state. Neither repository is vendored, symlinked or added as a dependency.
 Primary code evidence: `graph-engineering/references/task-graphs.md` states, “Draw an arrow only when a job
@@ -2374,7 +2374,7 @@ contracts are created/versioned from buyer events and accepted lineage, then ref
 silently regenerated on every pass. This is the smallest copy/tweak of the cloned code: no new workflow engine,
 graph database, error taxonomy, framework dependency or room-specific branch.
 
-**Life Manager economic harness — accepted foundation.** Coconala is the first proving adapter, not the
+**Mr.bot economic harness — accepted foundation.** Coconala is the first proving adapter, not the
 architecture boundary. One shared economic kernel owns goals, evidence and capital/risk constraints. A lane is
 a durable goal stream; a marketplace is a mechanical adapter; a skill is a capability with an observable
 contract; a graph is a rebuildable projection of facts. Telegram is the control/report channel, not marketplace
@@ -2667,7 +2667,7 @@ flowchart TB
     gross revenue, fees, refunds, receivable and cash. Authentication/KYC/irreversible owner-money actions remain
     explicit minimum legal owner gates.
 18. [ ] Run secret/customer-data/license audit, remove private artifacts from the distributable package, retain
-    copied-code notices, prove empty-HOME install and publish the complete Life Manager package under MIT.
+    copied-code notices, prove empty-HOME install and publish the complete Mr.bot package under MIT.
 19. [ ] Only after Coconala OSS completion, add App Store product-building/release/growth as a capability bundle
     and marketplace adapter using the same goal/context/effect/readback/revenue contracts; App Store review,
     proceeds and bank arrival are the official outcomes.
@@ -3339,7 +3339,7 @@ definition. GitHub's deployment concurrency contract permits only one writer for
 group. Apply those established patterns here; do not keep reloading SHA-specific job definitions.
 
 **Acceptance criteria.** All business-lane launchd definitions point through one stable `current`
-path, never to `~/gig/releases/life-manager/<sha>/...`. A validated deployment atomically changes one
+path, never to `~/gig/releases/mr-bot/<sha>/...`. A validated deployment atomically changes one
 `current` pointer after verifying that its target is inside the release root and has the expected
 lane code. Only the release controller (the watcher or an explicit activation using the same code)
 may publish the pointer, under one deployment lock. Publishing does not bootout,
@@ -3351,7 +3351,7 @@ the desired SHA, and no old SHA may respawn afterward.
 **As-is → to-be.** As-is is `launchd plist -> immutable SHA entrypoint`, which couples job ownership
 to deployment and creates two competing truths (disk plist versus launchd's loaded definition).
 To-be is `fixed launchd plist -> atomic current pointer -> immutable SHA entrypoint`.
-There is one repository (`life-manager` main), one release publisher, one active pointer and bounded
+There is one repository (`mr-bot` main), one release publisher, one active pointer and bounded
 rollback releases; old checkouts and branches are not runtime owners.
 
 **Verification matrix.** Successful publish: next natural wake records the new desired/resolved SHA.
@@ -3397,8 +3397,8 @@ definition and A0 acceptance is closed.
   Ollama, crawl4ai, Xcode/Simulator, Adobe, Codex/Claude, credentials, state, memory, dirty worktrees
   and customer artifacts.
 - [x] Identify the current reclaim source: closed public-audit clones under `/private/tmp`
-  (`life-manager-public-accept.*`, `life-manager-oss-rewrite.*`,
-  `life-manager-rewrite-verify.*` and small acceptance HOME clones) occupy about 4.6 GiB; `lsof`
+  (`mr-bot-public-accept.*`, `mr-bot-oss-rewrite.*`,
+  `mr-bot-rewrite-verify.*` and small acceptance HOME clones) occupy about 4.6 GiB; `lsof`
   reports zero open files for each measured directory.
 - [x] Remove only the exact closed `/private/tmp` audit clones and their temporary HOME trees. Some
   immutable copies required adding owner-write permission inside those exact temp roots before
@@ -3624,7 +3624,7 @@ Apply recovery is proven, close Negotiate in the following atomic order:
   reply send, or counterparty-specific Telegram content; the effect fence must independently deny
   any stale or manually queued action for the same identities.
 - [ ] Recover and kick only the existing `ai.anicca.hf-gig-reply-detector` owner, then prove its
-  loaded immutable Life Manager release remains alive across a child failure and resumes 30-second
+  loaded immutable Mr.bot release remains alive across a child failure and resumes 30-second
   discovery without a manual foreground executor.
 - [ ] Census every pre-purchase inbox source and assign every buyer-authored actionable message to
   exactly one durable action identity. Drain the existing non-policy backlog oldest-first; each

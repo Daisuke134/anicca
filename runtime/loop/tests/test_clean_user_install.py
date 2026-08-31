@@ -26,7 +26,7 @@ class CleanUserInstallTest(unittest.TestCase):
                 [
                     "git", "archive", "--format=tar", "-o", str(archive), tree,
                     "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
-                    "apps/life-manager/.env.example",
+                    "apps/mr-bot/.env.example",
                     "skills/earn/gig/config/provider-capability.example.json",
                 ],
                 cwd=ROOT, check=True)
@@ -39,7 +39,7 @@ class CleanUserInstallTest(unittest.TestCase):
             self.assertEqual(manifest["capability"], "marketplace.application")
             self.assertEqual(manifest["effect"]["replay"], "zero")
 
-            env_lines = (release / "apps/life-manager/.env.example").read_text().splitlines()
+            env_lines = (release / "apps/mr-bot/.env.example").read_text().splitlines()
             refs = [line.split("=", 1)[1] for line in env_lines
                     if line and not line.startswith("#") and line.split("=", 1)[0].endswith("_REF")]
             self.assertTrue(refs)
@@ -77,7 +77,7 @@ class CleanUserInstallTest(unittest.TestCase):
                 handle.extractall(release)
             (release / "RELEASE.json").write_text(json.dumps({"sha": sha}))
             for dependency in ("playwright-core", "jsqr"):
-                package = release / "apps/life-manager/node_modules" / dependency / "package.json"
+                package = release / "apps/mr-bot/node_modules" / dependency / "package.json"
                 package.parent.mkdir(parents=True)
                 package.write_text("{}\n")
             registry = json.loads((release / "config/loop-registry.json").read_text())

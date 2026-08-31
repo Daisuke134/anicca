@@ -9,9 +9,9 @@
 ### Task 1: Generalize the existing bounded browser step loop
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-browser-harness-adapter.js`
-- Modify: `apps/life-manager/lib/connector-browser-harness-adapter.test.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js` (preserve the event-only expected-state fence)
+- Modify: `apps/mr-bot/lib/connector-browser-harness-adapter.js`
+- Modify: `apps/mr-bot/lib/connector-browser-harness-adapter.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js` (preserve the event-only expected-state fence)
 
 1. Add failing tests for a generic `application_present` expected state, per-step heartbeat, parent cancellation, and a hard elapsed-time boundary.
 2. Preserve the existing maximum ten actions and allowlist.
@@ -22,8 +22,8 @@
 ### Task 2: Make the existing local agent-runner bridge cancellable and budgeted
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-luna-judgment.js`
-- Modify: `apps/life-manager/lib/connector-luna-judgment.test.js`
+- Modify: `apps/mr-bot/lib/connector-luna-judgment.js`
+- Modify: `apps/mr-bot/lib/connector-luna-judgment.test.js`
 
 1. Add failing tests showing the bridge passes an explicit runner timeout, read-only mode, token-budget environment, and abort signal.
 2. Replace the production synchronous child call with an awaited child process. Keep the existing injected synchronous test seam.
@@ -33,8 +33,8 @@
 ### Task 3: Wire bounds into the existing action proposer
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 1. Add a failing assertion that each decision call receives the step signal and one explicit token budget.
 2. Pass the adapter signal, read-only mode, timeout, and per-step token scope to `runLocalAgentRunner`.

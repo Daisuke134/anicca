@@ -9,7 +9,7 @@
 # gap. Root cause: an in-session model/tmux process is not a real
 # OS/gateway scheduler — CronCreate jobs are session-scoped, in-memory, and gone once the session
 # ends or (per the tool's own docs) simply never a durable trigger to begin with. This is the exact
-# bug already found+fixed for capafy-loop (commit 41938abe) and life-manager/connector before it;
+# bug already found+fixed for capafy-loop (commit 41938abe) and mr-bot/connector before it;
 # same fix here: copy the proven connector_fill_gaps.sh / capafy-loop-daily.sh pattern — a launchd
 # StartCalendarInterval job calls THIS script directly, once a day, bounded + timeout-guarded, no
 # reliance on the LLM self-scheduling itself.

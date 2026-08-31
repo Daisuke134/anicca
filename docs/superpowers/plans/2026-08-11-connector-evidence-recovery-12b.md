@@ -23,9 +23,9 @@ Persist and validate the successful Telegram message and photo receipts so a rec
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-minimal-evidence.test.js`
-2. `apps/life-manager/lib/connector-minimal-evidence.js`
-3. `apps/life-manager/lib/connector-minimal-runner.test.js` (one composed pre-readback integration only; runner production is unchanged)
+1. `apps/mr-bot/lib/connector-minimal-evidence.test.js`
+2. `apps/mr-bot/lib/connector-minimal-evidence.js`
+3. `apps/mr-bot/lib/connector-minimal-runner.test.js` (one composed pre-readback integration only; runner production is unchanged)
 
 Revised soft target after fresh review: 3 files; evidence production +70–120 LOC; evidence tests +90–130 LOC; runner integration test +35–70 LOC. Reuse the existing checkpoint validation and helpers; no broad evidence-chain rewrite and no runner production change.
 

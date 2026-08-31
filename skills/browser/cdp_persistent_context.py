@@ -14,12 +14,12 @@ from pathlib import Path
 
 
 _GUARD_RELATIVE = Path(
-    "gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
+    "gig/releases/mr-bot/current/skills/earn/gig/scripts/gig_disk_guard.py"
 )
 _READABLE = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
 _REMOVED_ENV = (
     "GIG_IGNORE_DISK_WRITERS_STOP",
-    "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR", "LIFE_MANAGER_HOST_STATE_DIR",
+    "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR", "MR_BOT_HOST_STATE_DIR",
 )
 
 
@@ -53,7 +53,7 @@ def _disk_preflight(home: Path | None = None) -> bool:
                 "GIG_DISK_HEADROOM_KIB": str(required_kib),
                 "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
                 "GIG_HOST_STATE_DIR": str(home / ".openclaw/state"),
-                "GIG_STATE_DIR": str(home / ".local/state/life-manager/browser-provision"),
+                "GIG_STATE_DIR": str(home / ".local/state/mr-bot/browser-provision"),
             }
         )
         for key in _REMOVED_ENV:
@@ -95,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
             "--disable-features=MacAppCodeSignClone",
             "--disk-cache-size=67108864",
             "--media-cache-size=33554432",
-            f"--disk-cache-dir={_canonical_home() / '.cache' / 'life-manager-daily-driver'}",
+            f"--disk-cache-dir={_canonical_home() / '.cache' / 'mr-bot-daily-driver'}",
         ],
     )
     stopping = False

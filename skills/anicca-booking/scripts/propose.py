@@ -14,7 +14,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 sys.path.insert(0, str(REPO_ROOT / "skills/_shared"))
 import anicca_profile as prof  # noqa: E402
 

@@ -8,8 +8,8 @@
 
 **Ponytail size gate:**
 
-- Modify `apps/life-manager/lib/connector-production-browser-harness.js` — about 12–25 production LOC.
-- Modify `apps/life-manager/lib/connector-production-browser-harness.test.js` — about 45–80 test LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.js` — about 12–25 production LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.test.js` — about 45–80 test LOC.
 - Exact two files; no adapter module change, new abstraction/dependency, provider wiring, private value, cache, evidence, Calendar, native order, or schedule effect.
 
 ## Task 1 — TDD terminal auth safety

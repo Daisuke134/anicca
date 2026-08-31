@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
+MR_BOT_REPO="${MR_BOT_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$MR_BOT_REPO" ] || { echo "MR_BOT_REPO could not be resolved" >&2; exit 2; }
+export MR_BOT_REPO
 # healthcheck-lib.sh — ONE shared supervisor used by every loop's healthcheck (FIND-011). Detects, in order:
 # (a) DEAD session, (b) STUCK-asking-a-human interactive prompt (FIND-001), (c) STALE liveness heartbeat, (d)
 # running-but-producing-NOTHING output staleness (FIND-009). Recovers by restart w/ backoff; on give-up it calls
@@ -13,12 +13,12 @@ export LIFE_MANAGER_REPO
 #
 # ★ REQ-LV-104 scope note ★ — this shared hc_run() (incl. its OUT_STALE_HRS artifact-age check in
 # step (d)) is sourced ONLY by capafy-loop-healthcheck.sh / reddit-loop-healthcheck.sh /
-# life-manager-loop-healthcheck.sh (verified via grep, 2026-07-08). The 7 Cadence Contract loops
+# mr-bot-loop-healthcheck.sh (verified via grep, 2026-07-08). The 7 Cadence Contract loops
 # (clip/affiliate/video/gig/bounty/pm-earner/founder-loop) each run their OWN standalone
 # *-healthcheck.sh (e.g. video-healthcheck.sh) that does NOT call this file — their "is today's
 # contract met" judgment lives in cadence.py/cadence-evidence.py via verify-loops(-audit).sh
 # instead. This is intentional, not an integration gap: REQ-LV-104 explicitly keeps the old
-# fresh()/stale_hrs()-style artifact-age judgment for capafy/reddit/life-manager only.
+# fresh()/stale_hrs()-style artifact-age judgment for capafy/reddit/mr-bot only.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 set -uo pipefail
 
@@ -50,7 +50,7 @@ hc_is_stuck_pane() {
 # THIS before any DEAD/STALE judgment: a genuinely-completed-pass marker touched within the last
 # max_age_min minutes means the loop is healthy right now, regardless of what a bare
 # session-liveness check alone would conclude. Pure/testable (no side effects), shared here (not
-# duplicated per-caller) so every standalone healthcheck.sh -- capafy/reddit/life-manager-loop via
+# duplicated per-caller) so every standalone healthcheck.sh -- capafy/reddit/mr-bot-loop via
 # hc_run() today, and any future once-daily-cron loop's own healthcheck.sh (e.g. connector-style) --
 # has ONE place to get this right instead of re-deriving it.
 hc_last_pass_recent() {
@@ -61,7 +61,7 @@ hc_last_pass_recent() {
   [ "$age_min" -lt "$max_age_min" ]
 }
 
-# FIND-033 (life-manager-loop 3-day outage, 2026-07-10): a near-full data volume stops macOS growing its
+# FIND-033 (mr-bot-loop 3-day outage, 2026-07-10): a near-full data volume stops macOS growing its
 # swapfile, which surfaces as intermittent fork() failures ("Resource temporarily unavailable") for EVERY
 # new process on the box — including this script's own tmux/pkill calls (seen directly in launchd's error
 # log) and every fresh `claude` spawn. A loop that is already DEAD needs a FRESH spawn every cycle, so it
@@ -92,7 +92,7 @@ hc_reclaim_disk_if_low() {
 # its parent session died, so these accumulate forever (observed: 291 live daemons, some >20h stale, vs ~9 real
 # claude sessions). Left unchecked this exhausts kern.maxprocperuid, so ANY new fork() — incl. this loop's own
 # `tmux new-session` — starts failing with "fork: Resource temporarily unavailable", which LOOKS like a capafy/
-# reddit/life-manager-loop bug (session never comes up → DEAD) but is actually a whole-machine resource leak.
+# reddit/mr-bot-loop bug (session never comes up → DEAD) but is actually a whole-machine resource leak.
 # Safe to kill: a guard is orphaned if its target session's transcript (~/.claude/projects/*/<slug-prefix>*.jsonl)
 # has not been touched in HC_COZEMPIC_STALE_SEC — an idle session has nothing left to checkpoint anyway. Rate-
 # limited to once per 4min system-wide (shared marker) since 3 loops source this file and would otherwise redo it.
@@ -161,8 +161,8 @@ hc_run() {
   local LOOP="$HC_LOOP" SOCK="$HC_SOCK" SESSION="$HC_SESSION" HB="$HC_HB" START="$HC_START"
   local STALE_MIN="$HC_STALE_MIN" CLI="$HC_CLI" OUTPUT="${HC_OUTPUT:-}" OUT_STALE_HRS="${HC_OUTPUT_STALE_HRS:-30}"
   local SELFFIX_HINT="${HC_SELFFIX_HINT:-loop produces no real output}"
-  local STATE="$HOME/.local/state/life-manager/state"; mkdir -p "$STATE"
-  local LOG="$HOME/.local/state/life-manager/logs/$LOOP-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
+  local STATE="$HOME/.local/state/mr-bot/state"; mkdir -p "$STATE"
+  local LOG="$HOME/.local/state/mr-bot/logs/$LOOP-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
   local RESTART_LOG="$STATE/.$LOOP-restart-log"
   local now; now=$(date +%s)
 
@@ -189,7 +189,7 @@ hc_run() {
 
   _selffix() {  # FIND-006: give-up → actually spawn the Opus fixer, not a dead note
     echo "$(date '+%F %T') give-up → self-fix.sh $LOOP" >> "$LOG"
-    bash "$LIFE_MANAGER_REPO/skills/self/self-fix.sh" "$LOOP" "$1" >> "$LOG" 2>&1 || echo "$(date '+%F %T') self-fix launch failed" >> "$LOG"
+    bash "$MR_BOT_REPO/skills/self/self-fix.sh" "$LOOP" "$1" >> "$LOG" 2>&1 || echo "$(date '+%F %T') self-fix launch failed" >> "$LOG"
   }
   _restart() {  # backoff: >=5 restarts/60min → escalate to self-fix instead of thrashing
     local reason="$1" count=0 ts

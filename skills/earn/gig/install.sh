@@ -159,7 +159,7 @@ if [ "${1:-}" = "start" ]; then
     >/dev/null
   cat <<'GUIDE'
 
-Coconala setup is open in the dedicated Life Manager browser.
+Coconala setup is open in the dedicated Mr.bot browser.
 Complete all of these on the official site in that same browser/profile:
   1. Create or recover the Coconala account and verify email
   2. Complete SMS verification
@@ -167,8 +167,8 @@ Complete all of these on the official site in that same browser/profile:
   4. Complete smartphone eKYC and wait for approval
   5. Register the matching domestic bank account
 
-Do not send Life Manager your password, OTP, identity document, face image, or bank data.
-When every item is complete, return to Life Manager and click Resume.
+Do not send Mr.bot your password, OTP, identity document, face image, or bank data.
+When every item is complete, return to Mr.bot and click Resume.
 Recovery-only terminal command: ./install.sh coconala finished
 GUIDE
   exit 0
@@ -205,7 +205,7 @@ raise SystemExit(0 if any(row.get("email")==want and "gmail" in (row.get("servic
     --account "$gog_account" >/dev/null
   nonce="$(printf '%s:%s' "$gog_account" "$(date +%s)" | shasum -a 256 | cut -c1-24)"
   sent="$(gog --account "$gog_account" gmail send --to="$gog_account" \
-    --subject="[Life Manager] Coconala ready $nonce" \
+    --subject="[Mr.bot] Coconala ready $nonce" \
     --body="Coconala email reports are connected. receipt:$nonce" --json --no-input)"
   printf '%s' "$sent" | "$venv/bin/python" -c '
 import json,sys

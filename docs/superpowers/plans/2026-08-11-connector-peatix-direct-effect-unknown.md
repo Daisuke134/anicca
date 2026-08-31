@@ -19,7 +19,7 @@ Peatix direct final click後の`peatix_readback_unavailable`を通常fallback可
 
 ## TDD slice
 
-Ownershipは`apps/life-manager/lib/connector-minimal-runner.js`とmatching testの2 filesだけ。Production soft target 5–10 LOC、test 25–45 LOC。
+Ownershipは`apps/mr-bot/lib/connector-minimal-runner.js`とmatching testの2 filesだけ。Production soft target 5–10 LOC、test 25–45 LOC。
 
 RED:
 

@@ -1,6 +1,6 @@
 # uGig NIGHTCELL 7 hex-cover application
 
-This is a real external-work attempt for an existing human buyer. Life Manager
+This is a real external-work attempt for an existing human buyer. Mr.bot
 created and integrated an original game-ready tactical asset before applying.
 The application is pending, so verified external revenue remains `$0.00`.
 
@@ -44,7 +44,7 @@ asset, not a concept-only image:
 | Real in-engine E2E | Babylon.js build rendered 10/10 Chrome views with 0 page errors |
 | Download budget | 7.21 MB total against the 9 MB guard |
 
-The application is included in Life Manager's five-minute uGig observer as
+The application is included in Mr.bot's five-minute uGig observer as
 category `art`. Buyer acceptance plus the public proof gate can create one
 capped invoice; an invoice or application status alone is not revenue. Only an
 independently verified wallet receipt may advance 13c.

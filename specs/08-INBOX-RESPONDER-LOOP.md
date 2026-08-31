@@ -289,7 +289,7 @@ parallelize cleanly.
   inbox. No new UI work in v1.
 - **Not Telegram/WhatsApp gateway.** Hermes already does that via
   `slack-bridge` and adapters. Stays orthogonal.
-- **Not a replacement for `anicca-life-manager`** (calls, wake events,
+- **Not a replacement for `anicca-mr-bot`** (calls, wake events,
   lateness guard). That's a separate orchestration plane — physical world,
   not inbox.
 - **Not multi-tenant SaaS.** This is single-Anicca-instance. The NHOSS

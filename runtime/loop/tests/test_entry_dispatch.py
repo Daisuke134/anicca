@@ -38,7 +38,7 @@ class EntryDispatchTest(unittest.TestCase):
                     str(home / '.local/share/mise/installs/erlang/28.5/bin/escript'),
                     str(artifact),
                     '--i-understand-that-this-will-be-running-without-the-usual-guardrails',
-                    '--logs-root', str(home / '.local/state/life-manager/money-printer-symphony/runtime-logs'),
+                    '--logs-root', str(home / '.local/state/mr-bot/money-printer-symphony/runtime-logs'),
                     '--port', '4000',
                     str(workflow),
                 ])
@@ -95,7 +95,7 @@ class EntryDispatchTest(unittest.TestCase):
             credentials.write_text(json.dumps({
                 'version': 1,
                 'credentials': [
-                    {'service': 'life-manager-symphony-bridge', 'token': token},
+                    {'service': 'mr-bot-symphony-bridge', 'token': token},
                     {'service': 'openai-symphony-github', 'token': github_token},
                 ],
             }))
@@ -107,7 +107,7 @@ class EntryDispatchTest(unittest.TestCase):
                 self.fail('money printer bridge dispatch is missing')
             self.assertEqual(command, [
                 '/opt/homebrew/bin/node',
-                '/release/apps/life-manager/scripts/money-printer-symphony-bridge.js',
+                '/release/apps/mr-bot/scripts/money-printer-symphony-bridge.js',
             ])
             environment_for = getattr(entry_dispatch, 'environment_for', None)
             self.assertTrue(callable(environment_for), 'secure bridge environment loader is missing')
@@ -142,8 +142,8 @@ class EntryDispatchTest(unittest.TestCase):
             self.assertEqual(Path(command[0]),expected)
             self.assertEqual(command[1],str(root/'skills/affiliate/scripts/local_browser.py'))
 
-    def test_life_manager_daily_driver_uses_release_dispatch_with_exact_argv(self):
-        command = command_for('life-manager-daily-driver', Path('/release'), Path('/home'))
+    def test_mr_bot_daily_driver_uses_release_dispatch_with_exact_argv(self):
+        command = command_for('mr-bot-daily-driver', Path('/release'), Path('/home'))
         self.assertEqual(command, [
             '/home/.openclaw/skills/_shared/venv-cloak/bin/python',
             '/release/skills/browser/cdp_persistent_context.py',
@@ -158,7 +158,7 @@ class EntryDispatchTest(unittest.TestCase):
     def test_marketing_owner_state_is_outside_release(self):
         root=Path('/release'); command=command_for('marketing-owner-weekly',root,Path('/home'))
         self.assertEqual(command[:4],[sys.executable,str(root/'skills/earn/marketing-engine/report/owner_report_cli.py'),'sweep','--kind'])
-        self.assertEqual(command[-1],'/home/.local/state/life-manager/marketing-engine')
+        self.assertEqual(command[-1],'/home/.local/state/mr-bot/marketing-engine')
 
     def test_unknown_loop_fails_closed(self):
         with self.assertRaisesRegex(ValueError,'no dispatch command'):
@@ -195,7 +195,7 @@ class EntryDispatchTest(unittest.TestCase):
         ):
             command=command_for(loop_id,root,home)
             joined=' '.join(command)
-            self.assertIn('/home/.local/state/life-manager/writer',joined)
+            self.assertIn('/home/.local/state/mr-bot/writer',joined)
             self.assertNotIn('/release/skills/writer-agent/state',joined)
 
     def test_lancers_browser_disables_code_sign_clone(self):

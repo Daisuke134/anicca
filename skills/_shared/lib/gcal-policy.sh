@@ -20,17 +20,17 @@
 # stdout last line: GCAL_POLICY_RESULT: {"main_id":"...","travel_out_id":"...","travel_back_id":"..."}
 set -uo pipefail
 SCRIPT="$(basename "$0")"
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
-SHARED="$LIFE_MANAGER_REPO/skills/_shared/lib"
-STATE_DIR="$LIFE_MANAGER_STATE_HOME/state/gcal-policy"
+MR_BOT_REPO="${MR_BOT_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$MR_BOT_REPO" ] || { echo "MR_BOT_REPO could not be resolved" >&2; exit 2; }
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
+SHARED="$MR_BOT_REPO/skills/_shared/lib"
+STATE_DIR="$MR_BOT_STATE_HOME/state/gcal-policy"
 mkdir -p "$STATE_DIR"
 STATE_FILE="$STATE_DIR/applied.json"
 [ -f "$STATE_FILE" ] || echo "{}" > "$STATE_FILE"
 
 # Load per-user env; credentials never live in the repository.
-[ -f "$LIFE_MANAGER_STATE_HOME/.env" ] && set -a && source "$LIFE_MANAGER_STATE_HOME/.env" && set +a
+[ -f "$MR_BOT_STATE_HOME/.env" ] && set -a && source "$MR_BOT_STATE_HOME/.env" && set +a
 : "${GOG_ACCOUNT:?GOG_ACCOUNT is required}"
 : "${GOG_KEYRING_PASSWORD:?GOG_KEYRING_PASSWORD is required}"
 export GOG_ACCOUNT GOG_KEYRING_PASSWORD

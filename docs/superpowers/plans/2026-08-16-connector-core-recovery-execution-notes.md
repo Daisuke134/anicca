@@ -11,7 +11,7 @@ Target resolution (read-only, before any change):
 |---|---|---|
 | `...-connector-native-healthcheck` | `.worktrees/connector-native-completion/skills/connector/healthcheck.sh` | worktree absent (`ls` → No such file or directory) → `EX_CONFIG` 78 |
 | `...-connector-healer-shadow` | same deleted worktree, `healer-shadow.sh` | `EX_CONFIG` 78 |
-| `...-connector-host-bridge` | `apps/life-manager/scripts/connector-host-bridge-boot.sh` | retired; running PID 805 on `127.0.0.1:18793` |
+| `...-connector-host-bridge` | `apps/mr-bot/scripts/connector-host-bridge-boot.sh` | retired; running PID 805 on `127.0.0.1:18793` |
 | `...-connector-native` | `skills/connector/run.sh` | official entrypoint, keep loaded |
 
 Dependency check before unload: `grep -rn "18793\|host-bridge\|hostBridge"` over `skills/connector/`,
@@ -23,10 +23,10 @@ no browser or OS service stopped.
 
 Readback after the change:
 
-- `launchctl list | grep -i connector` → `-  0  ai.anicca.life-manager-connector-native` only. Zero `EX_CONFIG` 78 rows.
+- `launchctl list | grep -i connector` → `-  0  ai.anicca.mr-bot-connector-native` only. Zero `EX_CONFIG` 78 rows.
 - `18793` listener → none. PID 805 gone.
 - `~/Library/LaunchAgents` still holds all 7 connector plist files (4 active-named + 3 previously retired/disabled).
-- `~/.local/state/life-manager/connector-native` still holds 27 entries.
+- `~/.local/state/mr-bot/connector-native` still holds 27 entries.
 - Listening ports in the `9xxx` range: `9223`, `9324`, `9326`, `9327`. Gig-owned `9223` untouched;
   Connector `9222` still has no listener, which is exactly `C-CORE-02`.
 
@@ -62,7 +62,7 @@ Readback through the sanctioned entry point `~/.config/ai/bin/browser-guard.sh`:
 Measured gaps recorded, not fixed here:
 
 1. Connector pins `CONNECTOR_CDP_ENDPOINT = "http://127.0.0.1:9222"` in
-   `apps/life-manager/lib/connector-browser-target-controller.js` and rejects any other endpoint,
+   `apps/mr-bot/lib/connector-browser-target-controller.js` and rejects any other endpoint,
    and it never takes a `browser-guard` lease. So the "dedicated Connector browser" is in fact the
    shared `interactive:dais` daily-driver, and a human session can drive the same browser during a wake.
 2. The daily-driver watchdog can report `RELAUNCH FAILED` without leaving a diagnosable log.
@@ -248,7 +248,7 @@ the same path `gog-luma-code-reader.js` exists for. Without this the loop can ne
 **2. Nineteen `[Travel]` blocks written by the removed travel feature were still in the calendar and
 were blocking candidates.** They are contract violations by definition — Connector must not write
 travel. Removed all of them; the list of ids, times and titles is kept at
-`~/.local/state/life-manager/connector-native/removed-travel-blocks-20260817.txt`. Luma's Calendar-free
+`~/.local/state/mr-bot/connector-native/removed-travel-blocks-20260817.txt`. Luma's Calendar-free
 count went from 0 to 2 immediately.
 
 **3. `page.setContent()` hangs on this browser over CDP.** Measured directly against the live
@@ -283,7 +283,7 @@ blocks were caught. It imports no submit path, so it cannot register anything.
 
 The unforced 09:00 JST wake ran on its own: `2026-08-17T00:01:32Z`, status `applied_bundle`,
 `consecutive_failure_count 0`, wake report delivered to Telegram with provider id `21820`.
-`launchctl list` shows only `ai.anicca.life-manager-connector-native` for Connector, and the label's
+`launchctl list` shows only `ai.anicca.mr-bot-connector-native` for Connector, and the label's
 `last exit code` is now `0` rather than the earlier non-zero circuit exits.
 
 ## Bookings the loop completed by itself — 2026-08-17
@@ -359,19 +359,19 @@ Live result: `applied_bundle`, bundle 23.
 Dais asked for the Connector to run like the gig lanes: three times a day rather than once. The native
 plist now carries three `StartCalendarInterval` entries, 09:00, 17:00 and 01:00 JST. The previous
 single-entry plist is kept at
-`~/.local/state/life-manager/connector-native/plist-backup-daily-20260817.plist`, and the label was
+`~/.local/state/mr-bot/connector-native/plist-backup-daily-20260817.plist`, and the label was
 reloaded and read back, showing all three intervals registered with launchd.
 
-## Life Manager travel blocks vs Connector gating — fixed 2026-08-17
+## Mr.bot travel blocks vs Connector gating — fixed 2026-08-17
 
 Dais corrected an earlier reading in these notes. The `[Travel]` entries are **not** leftovers from the
-removed Connector travel feature; the Life Manager **web app** writes them around each booked event, and
+removed Connector travel feature; the Mr.bot **web app** writes them around each booked event, and
 that is its job. A live sample proves the author:
 
 ```
 summary     : [Travel] 🚆 新宿区南元町15-27→KOPI KALYAN Tokyo（コピカリアン トーキョー）
 created     : 2026-08-16T16:48:05Z          (after the manual cleanup)
-description : Auto-inserted by Life Manager — adjust if the route is wrong.
+description : Auto-inserted by Mr.bot — adjust if the route is wrong.
 ```
 
 So deleting them was treating a symptom. The real defect was on the Connector side: it counted those
@@ -393,9 +393,9 @@ more; every remaining rejection is a genuine event (`SPARK JAPAN`, `One Day with
 block, and Connector's own earlier bookings). `calendar_free` is still 0 for Luma right now, which is now
 an honest result rather than a self-inflicted one.
 
-Side finding worth keeping: because those inserts are still arriving, the Life Manager web app is alive.
+Side finding worth keeping: because those inserts are still arriving, the Mr.bot web app is alive.
 Dais reports its departure calls and route messages stopped, and the caller lives in
-`apps/life-manager/server.js`, which does not run locally. That is a separate track from Connector.
+`apps/mr-bot/server.js`, which does not run locally. That is a separate track from Connector.
 
 ## Connpass fresh applications — 2026-08-17, two causes fixed, one lane left open
 

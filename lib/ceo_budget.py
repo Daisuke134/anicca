@@ -15,7 +15,7 @@ from registry_write_gate import atomic_write_registry, append_jsonl
 # config/loop-registry.json itself is absent/corrupt (never as a judgment call, just the
 # spec-fixed default loop set).
 CANONICAL_LOOPS = [
-    "bounty", "affiliate", "gig", "life-manager", "explorer",
+    "bounty", "affiliate", "gig", "mr-bot", "explorer",
     "capafy", "article", "pm", "hl",
 ]
 

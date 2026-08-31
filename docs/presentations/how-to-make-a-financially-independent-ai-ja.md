@@ -85,15 +85,15 @@
 - **Speaker notes:**
   Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。6時間の生存証明に加え、後継jobを1件だけ作り、公開3 routeと署名heartbeatを検証してから旧jobを止める引っ越しもmainnetで実証しました。現在のserviceはHTTP 200です。ただし21600秒の自然triggerは未観測で、今回は同じproduction controllerを即時発火しました。原資もinternal bootstrapなので、外部収益による自給はまだです。
 
-## Slide 9 — Life Managerとの統合
+## Slide 9 — Mr.botとの統合
 
 - **Claim:** agentは最初に自分を維持し、余剰で人間の生活を支える。
 - **On-slide:** `Bootstrap → Self-funded → Human payout → Child`
-- **Visual:** Life Manager userとtenant agentの二者。agentが自分のcloudを払い、余剰をuserへ返す。
-- **Evidence:** §0.4 Life Manager UX、13d-b engine。
+- **Visual:** Mr.bot userとtenant agentの二者。agentが自分のcloudを払い、余剰をuserへ返す。
+- **Evidence:** §0.4 Mr.bot UX、13d-b engine。
 - **Seconds:** 40
 - **Speaker notes:**
-  Life Managerのsubscriptionは、agentを最初に起動する会社側の売上です。その後、tenantごとに独立walletを作り、agentがSELL、WORK、CAPITALを回します。まず自分のcomputeとcloudを払います。余剰ができたらユーザーへ送ります。さらに黒字recipeを別wallet、別key、別ledgerのchildへ渡します。最終形は、AIが自分だけでなく人間の生活も経済的に支えることです。
+  Mr.botのsubscriptionは、agentを最初に起動する会社側の売上です。その後、tenantごとに独立walletを作り、agentがSELL、WORK、CAPITALを回します。まず自分のcomputeとcloudを払います。余剰ができたらユーザーへ送ります。さらに黒字recipeを別wallet、別key、別ledgerのchildへ渡します。最終形は、AIが自分だけでなく人間の生活も経済的に支えることです。
 
 ## Slide 10 — 何をもって「自立」と呼ぶか
 

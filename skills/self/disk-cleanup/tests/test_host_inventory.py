@@ -44,7 +44,7 @@ def test_fast_inventory_is_atomic_and_records_coverage_gaps(tmp_path: Path) -> N
     )
 
     written = json.loads((state / "host-inventory.json").read_text())
-    assert written["schema_version"] == "life-manager-host-inventory-v1"
+    assert written["schema_version"] == "mr-bot-host-inventory-v1"
     assert written["inventory_sha256"] == payload["inventory_sha256"]
     assert written["mode"] == "fast"
     assert written["coverage"]["mount_count"] == 1
@@ -414,13 +414,13 @@ def test_full_inventory_gives_homebrew_a_longer_bounded_probe(tmp_path: Path) ->
 def test_full_inventory_enforces_global_probe_budget(tmp_path: Path) -> None:
     for directory in (
         "Projects",
-        "Projects/life-manager-main",
+        "Projects/mr-bot-main",
         "anicca-project",
         "anicca",
         "anicca-docs-tools",
         "anicca-portfolio-self-improve",
         "anicca-rtdash",
-        "life-manager-repo-v0-retire",
+        "mr-bot-repo-v0-retire",
         ".codex-worktrees",
         "gig",
         ".openclaw",

@@ -21,10 +21,10 @@
 ### Task 1: Durable Connector Target Lease
 
 **Files:**
-- Create: `apps/life-manager/lib/connector-target-lease.js`
-- Create: `apps/life-manager/lib/connector-target-lease.test.js`
-- Modify: `apps/life-manager/lib/connector-tab-owner.js`
-- Modify: `apps/life-manager/lib/connector-tab-owner.test.js`
+- Create: `apps/mr-bot/lib/connector-target-lease.js`
+- Create: `apps/mr-bot/lib/connector-target-lease.test.js`
+- Modify: `apps/mr-bot/lib/connector-tab-owner.js`
+- Modify: `apps/mr-bot/lib/connector-tab-owner.test.js`
 
 **Interfaces:**
 - Consumes: Connector-owned absolute ledger directory, target ID, direct page WebSocket, canonical Luma URL.
@@ -36,7 +36,7 @@
 
 - [x] **Step 2: Run the focused test and verify RED**
 
-  Run: `cd apps/life-manager && node --test lib/connector-target-lease.test.js`
+  Run: `cd apps/mr-bot && node --test lib/connector-target-lease.test.js`
 
   Expected: FAIL because `connector-target-lease.js` does not exist.
 
@@ -50,7 +50,7 @@
 
 - [x] **Step 5: Run focused tests and verify GREEN**
 
-  Run: `cd apps/life-manager && node --test lib/connector-target-lease.test.js lib/connector-tab-owner.test.js`
+  Run: `cd apps/mr-bot && node --test lib/connector-target-lease.test.js lib/connector-tab-owner.test.js`
 
   Expected: all tests pass with zero failures.
 
@@ -61,21 +61,21 @@
 ### Task 2: Parent-Created Default-Context Target
 
 **Files:**
-- Create: `apps/life-manager/lib/connector-browser-target-controller.js`
-- Create: `apps/life-manager/lib/connector-browser-target-controller.test.js`
-- Modify: `apps/life-manager/lib/cloakbrowser-daily-driver.js`
-- Modify: `apps/life-manager/lib/cloakbrowser-daily-driver.test.js`
-- Modify: `apps/life-manager/lib/connector-tab-owner.js`
-- Modify: `apps/life-manager/lib/connector-tab-owner.test.js`
-- Modify: `apps/life-manager/lib/connector-native-runtime.js`
-- Modify: `apps/life-manager/lib/connector-native-runtime.test.js`
+- Create: `apps/mr-bot/lib/connector-browser-target-controller.js`
+- Create: `apps/mr-bot/lib/connector-browser-target-controller.test.js`
+- Modify: `apps/mr-bot/lib/cloakbrowser-daily-driver.js`
+- Modify: `apps/mr-bot/lib/cloakbrowser-daily-driver.test.js`
+- Modify: `apps/mr-bot/lib/connector-tab-owner.js`
+- Modify: `apps/mr-bot/lib/connector-tab-owner.test.js`
+- Modify: `apps/mr-bot/lib/connector-native-runtime.js`
+- Modify: `apps/mr-bot/lib/connector-native-runtime.test.js`
 
 **Interfaces:**
 - Consumes: `browser.newBrowserCDPSession()`, `Target.createTarget`, Task 1 lease.
 - Produces: `withLumaPage()` metadata containing one fenced `page_websocket`; parent retains the Playwright page and release callback.
 
 - [x] **Step 1: Write failing tests** proving the parent calls `Target.createTarget` once, claims before navigation actions are delegated, never uses `context.newPage()`, and releases in `finally` after parent readback.
-- [x] **Step 2: Run focused tests and verify RED:** `cd apps/life-manager && node --test lib/cloakbrowser-daily-driver.test.js lib/connector-native-runtime.test.js`.
+- [x] **Step 2: Run focused tests and verify RED:** `cd apps/mr-bot && node --test lib/cloakbrowser-daily-driver.test.js lib/connector-native-runtime.test.js`.
 - [x] **Step 3: Implement the minimal parent target lifecycle** using the default authenticated context, one browser CDP session, bounded target-to-page binding, heartbeat, renderer probe, and parent-only close/release.
 - [x] **Step 4: Run focused tests and verify GREEN** with the same command.
 - [x] **Step 5: Commit Task 2** with `feat(connector): own browser target lifecycle` (`1f04a2341`).
@@ -83,13 +83,13 @@
 ### Task 3: Model-Only Form Decisions and Parent-Owned Browser Oracle
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-agentic-registration.js`
-- Modify: `apps/life-manager/lib/connector-agentic-registration.test.js`
-- Modify: `apps/life-manager/lib/luma-form-answer-policy.js`
-- Modify: `apps/life-manager/lib/luma-form-answer-policy.test.js`
-- Modify: `apps/life-manager/lib/luma-browser-provider.js`
-- Modify: `apps/life-manager/lib/luma-browser-provider.test.js`
-- Modify: `apps/life-manager/lib/connector-native-runtime.js`
+- Modify: `apps/mr-bot/lib/connector-agentic-registration.js`
+- Modify: `apps/mr-bot/lib/connector-agentic-registration.test.js`
+- Modify: `apps/mr-bot/lib/luma-form-answer-policy.js`
+- Modify: `apps/mr-bot/lib/luma-form-answer-policy.test.js`
+- Modify: `apps/mr-bot/lib/luma-browser-provider.js`
+- Modify: `apps/mr-bot/lib/luma-browser-provider.test.js`
+- Modify: `apps/mr-bot/lib/connector-native-runtime.js`
 
 **Interfaces:**
 - Consumes: the form schema observed by the Task 2 parent-owned page and the private profile for one action.
@@ -97,7 +97,7 @@
 - The parent-owned Playwright page remains the only browser executor and performs real locator actions, provider readback, screenshot, and fenced cleanup on the same target.
 
 - [x] **Step 1: Write failing tests** proving Terra receives only a sanitized form schema and profile. The prompt contains no endpoint, page WebSocket, target receipt, tab enumeration, inline Node/Playwright bootstrap, `connectOverCDP`, or `browser.close`. Require exactly one Terra invocation and a complete validated answer plan.
-- [x] **Step 2: Run focused tests and verify RED:** `cd apps/life-manager && node --test lib/connector-agentic-registration.test.js lib/luma-form-answer-policy.test.js lib/luma-browser-provider.test.js` (旧境界で2件RED)。
+- [x] **Step 2: Run focused tests and verify RED:** `cd apps/mr-bot && node --test lib/connector-agentic-registration.test.js lib/luma-form-answer-policy.test.js lib/luma-browser-provider.test.js` (旧境界で2件RED)。
 - [x] **Step 3: Implement the minimal model-decision adapter.** Deterministic profile answers stay local; only unresolved ordinary questions are sent once to Terra. Reject secret-shaped fields, OTP/password/file controls, invalid options, unknown keys, duplicates, and incomplete required answers.
 - [x] **Step 4: Keep the entire effect in the parent.** The existing owned page opens the form, reads its schema, merges validated Terra decisions, fills using user-facing Playwright actions, clicks final submit once, then performs independent provider readback and PNG capture before fenced cleanup.
 - [x] **Step 5: Run focused tests and the Connector suite:** focused 17/17、pretest 12/12、outbound 336/336 GREEN。
@@ -109,8 +109,8 @@
 ### Task 4: Keep Optional Ticket Enrichment Out of the Core Delivery Gate
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-native-write-pipeline.js`
-- Modify: `apps/life-manager/lib/connector-native-write-pipeline.test.js`
+- Modify: `apps/mr-bot/lib/connector-native-write-pipeline.js`
+- Modify: `apps/mr-bot/lib/connector-native-write-pipeline.test.js`
 
 **Interfaces:**
 - Consumes: verified provider marker/PNG receipt plus optional confirmation-mail and ticket-QR services.

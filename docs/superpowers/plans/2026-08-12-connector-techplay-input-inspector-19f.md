@@ -19,7 +19,7 @@
 
 ## Global Constraints
 
-- Luna owns exactly `apps/life-manager/lib/connector-production-browser-harness.js` and `apps/life-manager/lib/connector-production-browser-harness.test.js`. Other files are out of scope.
+- Luna owns exactly `apps/mr-bot/lib/connector-production-browser-harness.js` and `apps/mr-bot/lib/connector-production-browser-harness.test.js`. Other files are out of scope.
 - Production target about 70–100 LOC; test target about 110–170 LOC. Confirm-page inspection is removed to keep the active item inside the production soft target.
 - Strict TDD with focused RED caused only by absent TECH PLAY inspection.
 - Candidate binding must be exact `techplay-event://event/<positive ID>`, `https://techplay.jp/event/<same ID>`, and positive-string `ticket_id`.
@@ -33,8 +33,8 @@
 ### Task 1: Add TECH PLAY input-page inspection only
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 - [x] Add failing real-DOM-shaped tests for empty/partially/fully completed input, seven default opt-outs, and exact ticket binding.
 - [x] Add negative tests for wrong URL/event/ticket, duplicate ticket/CTA/ID/name, unknown checked checkbox, missing required marker/label, hidden/disabled/opacity/ancestor-hidden/zero-size controls, too many nodes, private-value non-exposure, and page drift.

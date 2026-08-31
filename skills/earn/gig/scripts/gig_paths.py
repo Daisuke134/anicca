@@ -6,13 +6,13 @@ from pathlib import Path
 
 GIG_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = GIG_DIR.parents[2]
-LIFE_MANAGER_HOME = Path(
+MR_BOT_HOME = Path(
     os.environ.get(
-        "LIFE_MANAGER_HOME",
+        "MR_BOT_HOME",
         os.environ.get(
             "ANICCA_HOME",
             Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
-            / "life-manager",
+            / "mr-bot",
         ),
     )
 )
@@ -21,6 +21,6 @@ LIFE_MANAGER_HOME = Path(
 RUNNER_DIR = REPO_ROOT / "runtime/agent-runner"
 BROWSER_DIR = Path(os.environ.get("GIG_BROWSER_DIR", REPO_ROOT / "skills/browser"))
 STATE_DIR = Path(os.environ.get("GIG_STATE_DIR", Path.home() / "gig"))
-HOST_STATE_DIR = Path(os.environ.get("GIG_HOST_STATE_DIR", LIFE_MANAGER_HOME / "state"))
-LOG_DIR = Path(os.environ.get("GIG_LOG_DIR", LIFE_MANAGER_HOME / "logs"))
-ENV_FILE = Path(os.environ.get("GIG_ENV_FILE", LIFE_MANAGER_HOME / ".env"))
+HOST_STATE_DIR = Path(os.environ.get("GIG_HOST_STATE_DIR", MR_BOT_HOME / "state"))
+LOG_DIR = Path(os.environ.get("GIG_LOG_DIR", MR_BOT_HOME / "logs"))
+ENV_FILE = Path(os.environ.get("GIG_ENV_FILE", MR_BOT_HOME / ".env"))

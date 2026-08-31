@@ -6,8 +6,8 @@
 
 **Ponytail scope:** exact 2 new test-only files, production LOC 0.
 
-- `apps/life-manager/lib/connector-minimal-restart-child.js`: bounded child fixture using one fixed Peatix candidate, real runner/evidence chain, durable 0600 JSON ledgers, and allowlisted crash stages. It never prints candidate/private values.
-- `apps/life-manager/lib/connector-minimal-restart.test.js`: parent sequence that spawns a new `process.execPath` child at each stage and checks exit/status plus durable totals.
+- `apps/mr-bot/lib/connector-minimal-restart-child.js`: bounded child fixture using one fixed Peatix candidate, real runner/evidence chain, durable 0600 JSON ledgers, and allowlisted crash stages. It never prints candidate/private values.
+- `apps/mr-bot/lib/connector-minimal-restart.test.js`: parent sequence that spawns a new `process.execPath` child at each stage and checks exit/status plus durable totals.
 
 Implementation is closed in three additions to the same two test-only files: 21C1 proves provider readback plus evidence checkpoint, 21C2 adds Calendar plus message/photo effects, and 21C3 adds the blocked bundle boundary and final reused rerun. Each addition is independently RED/GREEN/reviewed before the next; the full acceptance below remains unchanged.
 

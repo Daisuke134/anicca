@@ -11,9 +11,9 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
-const { createLumaScriptFirstWorkflow } = require("../../apps/life-manager/lib/connector-luma-workflow.js");
-const { createConnpassScriptFirstWorkflow } = require("../../apps/life-manager/lib/connector-connpass-workflow.js");
-const { createProductionCalendarReader } = require("../../apps/life-manager/lib/connector-minimal-production.js");
+const { createLumaScriptFirstWorkflow } = require("../../apps/mr-bot/lib/connector-luma-workflow.js");
+const { createConnpassScriptFirstWorkflow } = require("../../apps/mr-bot/lib/connector-connpass-workflow.js");
+const { createProductionCalendarReader } = require("../../apps/mr-bot/lib/connector-minimal-production.js");
 
 const TOKYO_TZ = "Asia/Tokyo";
 const BROWSER_GUARD_BIN = path.join(os.homedir(), ".config", "ai", "bin", "browser-guard.sh");
@@ -63,7 +63,7 @@ function formatTokyoRange(startsAtIso, endsAtIso) {
 }
 
 // Mirrors defaultCalendarFree()'s overlap condition in
-// apps/life-manager/lib/{connector-luma-workflow,connector-connpass-workflow}.js
+// apps/mr-bot/lib/{connector-luma-workflow,connector-connpass-workflow}.js
 // byte-for-byte (that predicate is not exported, and is itself already
 // duplicated verbatim across those two files). Used only as the discover
 // CLI's isCalendarFree override, so filtering stays identical to production
@@ -224,9 +224,9 @@ async function main(argv, { stdout = process.stdout } = {}) {
 
   let page = null;
   try {
-    // playwright-core lives only in apps/life-manager/node_modules; resolve
+    // playwright-core lives only in apps/mr-bot/node_modules; resolve
     // it via that relative path rather than adding a dependency here.
-    const { chromium } = require("../../apps/life-manager/node_modules/playwright-core");
+    const { chromium } = require("../../apps/mr-bot/node_modules/playwright-core");
     const browser = await chromium.connectOverCDP(baseUrl);
     const contexts = browser.contexts();
     if (!Array.isArray(contexts) || contexts.length !== 1) invalid("Connector discover browser context unavailable");

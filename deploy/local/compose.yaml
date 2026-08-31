@@ -1,20 +1,20 @@
-name: life-manager-local
+name: mr-bot-local
 
 x-runtime-environment: &runtime-environment
   LM_MODE: local
-  LM_RUNTIME_DATABASE_URL: postgresql://life_manager:life_manager_local@postgres:5432/life_manager
-  LM_DATA_DIR: /var/lib/life-manager/data
-  LM_CACHE_DIR: /var/lib/life-manager/cache
-  LM_OBJECT_DIR: /var/lib/life-manager/objects
-  LM_RECEIPT_DIR: /var/lib/life-manager/receipts
-  LM_LOG_DIR: /var/lib/life-manager/logs
+  LM_RUNTIME_DATABASE_URL: postgresql://mr_bot:mr_bot_local@postgres:5432/mr_bot
+  LM_DATA_DIR: /var/lib/mr-bot/data
+  LM_CACHE_DIR: /var/lib/mr-bot/cache
+  LM_OBJECT_DIR: /var/lib/mr-bot/objects
+  LM_RECEIPT_DIR: /var/lib/mr-bot/receipts
+  LM_LOG_DIR: /var/lib/mr-bot/logs
   MINIO_ENDPOINT: http://object-store:9000
-  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-life_manager_local}
-  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-life_manager_local_only}
+  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-mr_bot_local}
+  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-mr_bot_local_only}
 
 x-runtime-build: &runtime-build
   context: ../..
-  dockerfile: apps/life-manager/Dockerfile.runtime
+  dockerfile: apps/mr-bot/Dockerfile.runtime
 
 x-runtime-dependencies: &runtime-dependencies
   postgres:
@@ -30,13 +30,13 @@ services:
   postgres:
     image: postgres:18-alpine
     environment:
-      POSTGRES_DB: life_manager
-      POSTGRES_USER: life_manager
-      POSTGRES_PASSWORD: life_manager_local
+      POSTGRES_DB: mr_bot
+      POSTGRES_USER: mr_bot
+      POSTGRES_PASSWORD: mr_bot_local
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U life_manager -d life_manager"]
+      test: ["CMD-SHELL", "pg_isready -U mr_bot -d mr_bot"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -46,8 +46,8 @@ services:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-life_manager_local}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-life_manager_local_only}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-mr_bot_local}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-mr_bot_local_only}
     ports:
       - "${LM_LOCAL_MINIO_PORT:-19000}:9000"
       - "${LM_LOCAL_MINIO_CONSOLE_PORT:-19001}:9001"
@@ -63,9 +63,9 @@ services:
   migrate:
     image: postgres:18-alpine
     environment:
-      DATABASE_URL: postgresql://life_manager:life_manager_local@postgres:5432/life_manager
+      DATABASE_URL: postgresql://mr_bot:mr_bot_local@postgres:5432/mr_bot
     volumes:
-      - ../../apps/life-manager/migrations:/migrations:ro
+      - ../../apps/mr-bot/migrations:/migrations:ro
     command:
       - sh
       - -ec
@@ -79,25 +79,25 @@ services:
     restart: "no"
 
   runtime-init:
-    image: life-manager-local-runtime:dev
+    image: mr-bot-local-runtime:dev
     pull_policy: never
     user: root
     command:
       - sh
       - -ec
       - >
-        mkdir -p /var/lib/life-manager/data /var/lib/life-manager/cache
-        /var/lib/life-manager/receipts /var/lib/life-manager/logs;
-        chown -R node:node /var/lib/life-manager
+        mkdir -p /var/lib/mr-bot/data /var/lib/mr-bot/cache
+        /var/lib/mr-bot/receipts /var/lib/mr-bot/logs;
+        chown -R node:node /var/lib/mr-bot
     volumes:
-      - runtime-data:/var/lib/life-manager
+      - runtime-data:/var/lib/mr-bot
     depends_on:
       migrate:
         condition: service_completed_successfully
     restart: "no"
 
   api:
-    image: life-manager-local-runtime:dev
+    image: mr-bot-local-runtime:dev
     build: *runtime-build
     environment:
       <<: *runtime-environment
@@ -107,7 +107,7 @@ services:
     ports:
       - "${LM_LOCAL_API_PORT:-18788}:8788"
     volumes:
-      - runtime-data:/var/lib/life-manager
+      - runtime-data:/var/lib/mr-bot
     depends_on: *runtime-dependencies
     healthcheck:
       test:
@@ -121,7 +121,7 @@ services:
     restart: unless-stopped
 
   scheduler:
-    image: life-manager-local-runtime:dev
+    image: mr-bot-local-runtime:dev
     pull_policy: never
     command: ["node", "scripts/runtime-up.js", "internal-scheduler"]
     environment:
@@ -159,7 +159,7 @@ services:
       LIFE_RUN_LOOPS: "true"
       PORT: "8788"
     volumes:
-      - runtime-data:/var/lib/life-manager
+      - runtime-data:/var/lib/mr-bot
     depends_on: *runtime-dependencies
     healthcheck:
       test:
@@ -173,7 +173,7 @@ services:
     restart: unless-stopped
 
   marketing-liveness:
-    image: life-manager-local-runtime:dev
+    image: mr-bot-local-runtime:dev
     pull_policy: never
     command: ["node", "scripts/runtime-up.js", "internal-liveness"]
     environment:
@@ -188,7 +188,7 @@ services:
     ports:
       - "${LM_LOCAL_LIVENESS_HEALTH_PORT:-18791}:8791"
     volumes:
-      - runtime-data:/var/lib/life-manager
+      - runtime-data:/var/lib/mr-bot
     depends_on: *runtime-dependencies
     healthcheck:
       test:
@@ -202,7 +202,7 @@ services:
     restart: unless-stopped
 
   worker:
-    image: life-manager-local-runtime:dev
+    image: mr-bot-local-runtime:dev
     build: *runtime-build
     pull_policy: never
     command: ["node", "scripts/runtime-up.js", "internal-worker"]
@@ -232,7 +232,7 @@ services:
     ports:
       - "${LM_LOCAL_WORKER_HEALTH_PORT:-18790}:8790"
     volumes:
-      - runtime-data:/var/lib/life-manager
+      - runtime-data:/var/lib/mr-bot
     depends_on: *runtime-dependencies
     healthcheck:
       test:

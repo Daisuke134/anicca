@@ -17,7 +17,7 @@
 
 ## Global Constraints
 
-- Luna owns exactly `apps/life-manager/lib/connector-production-browser-harness.js` and matching test. Other files are out of scope.
+- Luna owns exactly `apps/mr-bot/lib/connector-production-browser-harness.js` and matching test. Other files are out of scope.
 - Production target about 20–40 LOC; test target about 60–100 LOC.
 - Strict TDD. Existing input inspector and all provider behavior must remain unchanged.
 - Require exact candidate `techplay-event://event/<ID>`, canonical `https://techplay.jp/event/<same ID>`, positive-string ticket ID, and current `https://techplay.jp/event/join/<same ID>/confirm` with no query/fragment/credentials/port.
@@ -30,8 +30,8 @@
 ### Task 1: Add exact confirm-page inspection
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 - [x] Add RED tests for exact confirm success and wrong URL/event, duplicate/wrong-type/hidden/disabled/ancestor-hidden/opacity/zero-size final, residual answer/ticket/checkbox, duplicate ID, page drift, 151 nodes, and privacy-safe output.
 - [x] Implement the minimum confirm projection reusing the shipped TECH PLAY visibility logic.

@@ -1,12 +1,12 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
 context-version: 2026-08-27.2
-context-digest: 9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338
+context-digest: 882e479bf06b98a2a6db62352b8d3b6c3463767c6c73d7996caa328e25191d06
 
-# Life Manager — 資金調達応募の正本回答
+# Mr.bot — 資金調達応募の正本回答
 
 ## 何を作っていますか
 
-Life Managerは、身体・心・お金と現実のfollow-throughを管理し、委任範囲で行動して、証拠付きの結果をTelegramへ返すproactive general agentです。
+Mr.botは、身体・心・お金と現実のfollow-throughを管理し、委任範囲で行動して、証拠付きの結果をTelegramへ返すproactive general agentです。
 
 ## 何をしますか
 
@@ -14,11 +14,11 @@ Daily Organは予定と応募を進め、Physical / Mental Organは生活習慣�
 
 ## Missionと長期vision
 
-End suffering for humans and, ultimately, all living beings by making dependable care and agency continuously available. Life Manager grows from managing one human life across physical health, mental wellbeing, finances, work, schedules, income, crypto, and investing into a general manager for every living being.
+End suffering for humans and, ultimately, all living beings by making dependable care and agency continuously available. Mr.bot grows from managing one human life across physical health, mental wellbeing, finances, work, schedules, income, crypto, and investing into a general manager for every living being.
 
 ## なぜ今ですか
 
-modelは推論とtool利用ができる一方、userの目標はCalendar、form、金融口座、dashboardの間で止まります。Life Managerは一つの証拠台帳とmanager体験でそれらを接続します。
+modelは推論とtool利用ができる一方、userの目標はCalendar、form、金融口座、dashboardの間で止まります。Mr.botは一つの証拠台帳とmanager体験でそれらを接続します。
 
 ## 何が違いますか
 
@@ -26,11 +26,11 @@ modelは推論とtool利用ができる一方、userの目標はCalendar、form�
 
 ## 現在地
 
-repositoryとTelegram入口は公開されています。local / cloud componentと複数の専門loopはrepositoryに存在します。founder証言では、Life Managerはfounderへapproximately $1,000の収益を生み出しています。期間証拠なしにMRRやARRとは呼びません。
+repositoryとTelegram入口は公開されています。local / cloud componentと複数の専門loopはrepositoryに存在します。founder証言では、Mr.botはfounderへapproximately $1,000の収益を生み出しています。期間証拠なしにMRRやARRとは呼びません。
 
 ## Business model
 
-Free, open-source, self-hosted Life Manager. Paid monthly subscription for an always-on hosted Life Manager.
+Free, open-source, self-hosted Mr.bot. Paid monthly subscription for an always-on hosted Mr.bot.
 
 ## 導線
 

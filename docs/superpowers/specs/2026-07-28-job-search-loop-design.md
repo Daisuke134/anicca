@@ -493,16 +493,16 @@ only after authoritative Gog mail; then continue with the next unseen identity.
 Company prestige or membership in the registry is never evidence of fit. An
 unpublished salary is `compensation_unverified`, never an invented pass.
 
-#### Life Manager open-source product boundary
+#### Mr.bot open-source product boundary
 
-Job Hunter first runs as Dais's installed 24/7 Life Manager loop. Only after that
+Job Hunter first runs as Dais's installed 24/7 Mr.bot loop. Only after that
 exact 30-minute loop reliably discovers, judges, applies, verifies and reports on
 Dais's Mac is the same implementation exposed through the Coconala-style Terminal
 bootstrap. The repository contains no Dais profile, resume, mailbox content, browser
 vault, Telegram destination or credential.
 
 ```text
-Life Manager
+Mr.bot
   -> Connector layer: browser, Gmail, Telegram, Calendar, ATS sources
   -> Job Hunter loop: discover, rank, apply, verify, follow up, interview, offer
 ```
@@ -612,7 +612,7 @@ focused ATS suite is green, and the new Workday preflight is wired into the exis
 launchd owner in commit `04989df62`. Ashby remains the primary discovery lane;
 Workday is a model-driven browser lane with deterministic safety checks. The catch-up
 correction report was acknowledged by Telegram as message `27323`. Guardian and the
-Life Manager Career surface remain in progress. The subsequent Ashby-first run
+Mr.bot Career surface remain in progress. The subsequent Ashby-first run
 `daily-20260821-181731` confirms the same boundary: Ashby fast path was `no_work`,
 Workday was `parked / ashby_first_gate`, and the Codex discovery fallback timed out
 after the bounded 300 seconds with no fresh result and no Ledger mutation. This is a
@@ -690,7 +690,7 @@ deterministic preflight runs first, then hands each eligible row to the model
 agent and retains the same row-local evidence.
 
 **Done when:** `Daisuke134/life-manager` is the only versioned source and the
-Job Hunter is an installable open-source Life Manager skill plus resident loop. The
+Job Hunter is an installable open-source Mr.bot skill plus resident loop. The
 resident system can discover, qualify, tailor and submit eligible
 applications on the configured recurring cadence without a product-imposed daily
 count cap; reconcile every later Gmail message; manage scheduling, assessments,
@@ -726,7 +726,7 @@ Workday account + application E2E
   → repeated Workday submissions + Telegram outcome on every wake
   → only then Ashby E2E on the same agent contract
   → Greenhouse → Lever → provider-neutral ATS
-  → Life Manager open-source skill/loop packaging
+  → Mr.bot open-source skill/loop packaging
   → inbox → interview → assessment → offer → USD 10K/month salary → started outcome
 ```
 
@@ -791,7 +791,7 @@ Workday account + application E2E
     directly or creates a second executor.
 16. The Job Hunter ships inside `Daisuke134/life-manager` as an open-source skill and
     resident loop with the same install, state, credential, release, launchd,
-    Telegram, and `summary.v2` conventions as the other Life Manager loops.
+    Telegram, and `summary.v2` conventions as the other Mr.bot loops.
 17. The lifecycle does not stop at an application or offer. It tracks compensation,
     negotiation, acceptance, and start evidence until one started role proves gross
     base salary of at least USD 10,000 per month equivalent; variable compensation is
@@ -812,7 +812,7 @@ Workday account + application E2E
 | Expansion | Each ATS invites another scripted filler | One model loop; adapters contain only discovery and stable safety/evidence hints |
 | Reporting | Fast-path summary can omit the actual model outcome | Company, role, outcome, evidence class, and next action receive a Telegram ACK |
 | Development cadence | Validation waits for a natural hourly wake or bypasses launchd with a local command | The active immutable release is repeatedly exercised through the existing launchd owner's kickstart/readback cycle |
-| Product location | Job Search exists as a standalone runtime plus later Career surface | Job Hunter is an open-source Life Manager skill and resident loop using the common lifecycle contracts |
+| Product location | Job Search exists as a standalone runtime plus later Career surface | Job Hunter is an open-source Mr.bot skill and resident loop using the common lifecycle contracts |
 | Economic outcome | Pipeline health ends at application/offer/start counts | The final outcome gate is authoritative started employment at USD 10,000/month gross base salary equivalent |
 
 #### Test matrix
@@ -838,7 +838,7 @@ accepted as a substitute for the framework.
 | 12 | Workday contract ports unchanged to Ashby | `test_ashby_reuses_model_row_contract` | OK |
 | 13 | Submission does not stop a wake with remaining eligible rows | `test_verified_submission_continues_same_wake_queue` | OK |
 | 14 | Development uses only launchd kickstart/readback | `test_development_trigger_reuses_existing_owner` | OK |
-| 15 | Life Manager skill/install owns the Job Hunter loop | `test_job_hunter_skill_installs_canonical_resident_loop` | OK |
+| 15 | Mr.bot skill/install owns the Job Hunter loop | `test_job_hunter_skill_installs_canonical_resident_loop` | OK |
 | 16 | Started salary gate uses authoritative gross base compensation | `test_salary_goal_requires_started_10k_month_base_evidence` | OK |
 
 | E2E item | Value |
@@ -1068,7 +1068,7 @@ This is the remaining implementation-order SSOT. Only the first
 | 48bp | Let Luna recover when a provider option disappears | `implementation_done_live_gate` | Live run `daily-20260823-032744` discovered Salesforce `JR334569` as `AI Native Delivery Consultant`, handed exact row `add61f0f...75c` to Luna, reused the stored tenant credential, uploaded the resume, and reached Personal Information. A stale prompt then forced the NVIDIA-learned `Website → Workday.com` path even though the fresh Salesforce observation exposed `Job Board` and no `Website`; target resolution failed before submit. The tenant-specific answer is removed. `runtime choose` now converts only a vanished/ambiguous observed option into exit-zero `action_rejected` with a fresh observation, so Luna continues from visible controls. The row remains `materials_ready`, no submit fence was consumed, and a checkpoint resume is safe. |
 | 48bq | Reject an invented model transport failure and drain the queue first | `implementation_done_live_gate` | Resume run `daily-20260823-033554` successfully reopened the exact Salesforce source picker and returned `Job Board not checked` after every runtime command exited zero, but Luna nevertheless emitted `transport_failed` without another command. The prompt now prohibits that terminal result unless an actual runtime command exits nonzero. Discovery also returns `queue_present` without contacting providers whenever an eligible Workday row already exists, preventing a new row on each recovery wake from growing an unbounded backlog. Twelve focused checks pass. Resume the safe pre-submit checkpoint. |
 | 48br | Resume the Workday checkpoint after host disk capacity recovers | `external_blocked_live_gate` | Release `8ddb0bba47eec17ca1f55fdfe60e66184eb67418` live-proved `queue_present`, resumed Salesforce `JR334569`, selected the actually visible `Job Board`, completed the former-employment answer, country, and phone type, then failed before `Save and Continue` because opening the Ledger raised `sqlite3.OperationalError: unable to open database file`. Data-volume free space measured 326 MiB then 290 MiB; independent `PRAGMA quick_check` remains `ok`. The canonical disk-cleanup control-plane preflight passed, but its existing launchd owner remains `spawn scheduled`; emergency guard last exited 3. No submit fence was consumed. Do not retry until free capacity and a fresh Ledger open are stable, then kickstart the existing Job Hunter owner and resume this checkpoint. |
-| 48bs | Gate every scheduled Job Hunter wake before any disk write | `implementation_done_release_gate` | Host free space continued falling below 200 MiB. The canonical cleanup owner could not create its lock/receipt (`ENOSPC`), and emergency guard was occupied in `colima status`; no safe reclaimable target was reported. `run-daily.sh` now runs the shared Life Manager producer preflight before creating the run directory, opening Ledger, sending Telegram, or invoking Luna. It honors `disk-pressure.block`/`disk-writers.stop`, requires 512 MiB, and exits 75 with the checkpoint untouched. Thirteen focused checks pass. Release this small guard change without starting the model while pressure remains. |
+| 48bs | Gate every scheduled Job Hunter wake before any disk write | `implementation_done_release_gate` | Host free space continued falling below 200 MiB. The canonical cleanup owner could not create its lock/receipt (`ENOSPC`), and emergency guard was occupied in `colima status`; no safe reclaimable target was reported. `run-daily.sh` now runs the shared Mr.bot producer preflight before creating the run directory, opening Ledger, sending Telegram, or invoking Luna. It honors `disk-pressure.block`/`disk-writers.stop`, requires 512 MiB, and exits 75 with the checkpoint untouched. Thirteen focused checks pass. Release this small guard change without starting the model while pressure remains. |
 | 48bt | Resume the existing 30-minute Workday owner and close one complete application loop | `live_proven` | Release `120b779219a65f9418df3abe04163ba446db1c05` passed checksum and ran through the installed `StartInterval=1800` owner. Run `daily-20260823-110429` discovered NVIDIA `JR2008309` (Solutions Architect, AI for Science and HPC), handed the exact row to Luna/xhigh through the sole CloakBrowser CDP owner, reused the tenant credential, uploaded the routed resume, answered the visible NVIDIA source/former-employment/gender/terms controls, reached Review, and consumed one submit fence. The fresh screenshot visibly says `Application Submitted` and Candidate Home says `Application Received`. Inbox run `inbox-20260823-111827` reconciled authoritative receipt `1a02c66d77d269c2`; Ledger is `submitted`. Telegram ACKs are `29697` for the exact resume and `29698` for the receipt-bound submitted outcome. No retry or second executor occurred. |
 | 48bu | Remove the intermittent OpenClaw CLI hop from Job Hunter Telegram delivery | `live_proven` | The NVIDIA loop closed, but the pre-receipt outcome intermittently timed out through the OpenClaw CLI and remained fenced as `send_started`. Release `7ea4da7d6c72e89161dd6865901adb1675377ef6` restores the repository's previously proven job-search-specific Telegram Bot API transport from commit `482e41aa4`: private token/chat lookup, direct `sendMessage`/`sendDocument`, positive provider `message_id`, and the same durable outbox fence. It preserves both `sent` and `send_started` without a network call, so existing uncertain rows remain untouched and are never retried. Seventeen focused checks pass; live direct delivery returned provider message ID `29706`. The next owner wake `daily-20260823-112426` excluded submitted JR2008309, discovered new NVIDIA JR2008507, and handed it to the mandatory model lane. |
 | 48bv | Isolate and verify the Job Hunter Codex automation identity | `live_proven` | RED proved the shared automation home; release `f2a749bc8` isolated it, then the installer-selected alias bound acct2 without copying credential bytes. Natural wake `daily-20260824-021627` runs Luna/xhigh for 250 seconds through real NVIDIA Workday UI with both auth symlinks resolving to acct2, no auth-target mismatch, no primary quota rejection, and no second owner. |
@@ -1152,13 +1152,13 @@ This is the remaining implementation-order SSOT. Only the first
 | 60 | Park every non-Workday provider | `live_proven` | The installed daily owner invokes the sole browser orchestrator with `--active-provider workday`. Current production runs create Workday source/snapshot/fit/browser evidence and zero Ashby/Greenhouse/Lever/generic navigation, intent, fence or Submit effects. Those providers remain broken/unverified and are not part of the active loop. |
 | 61 | Finish Workday useful-job selection and realtime reporting | `live_proven` | The Workday form/application engine remains complete under row 59. Runs `daily-20260824-195253` and `daily-20260824-202347` prove dynamic 3,971-job snapshots, cross-company ranking, 24 model fit decisions, same-company selection only after full comparison, natural loop-owned fit/start/final Telegram `32135`–`32213`, one completed application with Gog/Ledger, and next-wake old-row duplicate zero. |
 | 61a | Rebuild Ashby, Greenhouse, Lever, then generic from zero | `broken_unverified_pending_after_61` | Each provider separately requires one fit-qualified fresh job, authoritative provider completion, Ledger, Telegram, and next-wake duplicate 0; historical `submit_unknown` and interaction evidence does not count. |
-| 62 | Add the proven Job Hunter loop to open-source Life Manager | `live_proven_workday_initial_release` | Dais's installed 30-minute Workday loop is production-proven and the exact Workday-only implementation is published on public `main` at `c4e9b3970`. The Coconala-style Terminal bootstrap is live; there is no second executor, browser, onboarding UI, cross-device matrix or speculative portability layer. |
+| 62 | Add the proven Job Hunter loop to open-source Mr.bot | `live_proven_workday_initial_release` | Dais's installed 30-minute Workday loop is production-proven and the exact Workday-only implementation is published on public `main` at `c4e9b3970`. The Coconala-style Terminal bootstrap is live; there is no second executor, browser, onboarding UI, cross-device matrix or speculative portability layer. |
 | 62A | Remove private candidate and machine assumptions | `live_proven` | Resume routing and Candidate Memory load a private version-1 material manifest with generic `engineering`, `technical_business` and `japanese` variants, reject absolute/root-escaping/missing paths, and deduplicate identical resume files. Guided profile setup collects a required default resume plus optional business/Japanese variants; portable install copies them under generic private filenames, writes a mode-0600 manifest, and records only its private path. A single resume safely supplies all variants. Recruiter and interview signatures use the private candidate name. Browser lease/session paths resolve only from the installed repository connector. The unused Dais-specific resume renderer and scripts are removed because OSS imports finalized resumes. Production scans over runtime/scripts/prompts/README return zero Daisuke/成田 names, fixed resume names or `/Users/anicca` paths. Full regression passes 289/289, clean extracted-artifact install passes, and shell syntax passes. Release `28cb2fee6`, launchd run `180221`, loads Dais's private manifest, reads three resume sources and rebuilds Candidate Memory with 79 concepts and a fresh content hash, proving existing Dais context remains intact without runtime filename assumptions. The active OSS item is guided connector setup 62B. |
-| 62B | Add Job Hunter to the proven Life Manager OSS bootstrap pattern | `in_progress_after_62A` | Use the same simple Terminal pattern as the Coconala loop; there is no local onboarding UI or integration-card graph. One public command obtains or fast-forwards Life Manager and dispatches directly to Job Hunter. The first run installs only missing dependencies, records resume plus job preferences, starts only its dedicated CloakBrowser and prints the full official checklist. Running the exact same command again verifies Gmail/Telegram readiness and activates the resident loops. |
+| 62B | Add Job Hunter to the proven Mr.bot OSS bootstrap pattern | `in_progress_after_62A` | Use the same simple Terminal pattern as the Coconala loop; there is no local onboarding UI or integration-card graph. One public command obtains or fast-forwards Mr.bot and dispatches directly to Job Hunter. The first run installs only missing dependencies, records resume plus job preferences, starts only its dedicated CloakBrowser and prints the full official checklist. Running the exact same command again verifies Gmail/Telegram readiness and activates the resident loops. |
 | 62B1 | Add the Job Hunter root dispatch and public bootstrap | `pending_actionable` | Add `scripts/bootstrap-job-hunter.sh` with the same safe checkout behavior as `bootstrap-coconala.sh`, and dispatch `install.sh job-hunter` to the existing Job Hunter installer. Reuse Homebrew/Git/Codex/CloakBrowser preparation from the Coconala implementation rather than creating another dependency manager. A non-Git target fails before mutation and rerun is safe. |
-| 62B2 | Reuse the two-run dedicated-browser onboarding | `pending_after_62B1` | First run creates or resumes the private Job Hunter profile, imports the finalized resume, collects only job preferences missing from the shared Life Manager profile, opens the dedicated CloakBrowser on the required official login surface, and shows the complete owner checklist once. Passwords, OTPs, identity documents and bank/legal values stay on official pages. The same command rerun attaches to the same profile and resumes at the first missing gate. |
-| 62B3 | Reuse shared Life Manager connections and verify readiness | `pending_after_62B2` | Consume the existing Life Manager identity, Google/Gmail connection and Telegram destination rather than collecting duplicates. Read back resume manifest, job preferences, browser `/json/version`, Gmail identity and mailbox search, Telegram provider message ID, writable private state and exact launchd definitions. Missing readiness opens or names the exact existing setup step and starts no application effect. |
-| 62B4 | Activate the existing 30-minute Workday owners and fix public docs | `pending_after_62B3` | After readiness, activate the existing browser, Workday acquisition, inbox and follow-through owners with official launchd definition readback. Update the existing Job Hunter skill/CLI/registry from stale hourly and one-candidate language to the production 30-minute autonomous Workday contract. The public README presents Job Hunter beneath Life Manager, beside the proven Coconala loop, with one command and the same-command rerun instruction. |
+| 62B2 | Reuse the two-run dedicated-browser onboarding | `pending_after_62B1` | First run creates or resumes the private Job Hunter profile, imports the finalized resume, collects only job preferences missing from the shared Mr.bot profile, opens the dedicated CloakBrowser on the required official login surface, and shows the complete owner checklist once. Passwords, OTPs, identity documents and bank/legal values stay on official pages. The same command rerun attaches to the same profile and resumes at the first missing gate. |
+| 62B3 | Reuse shared Mr.bot connections and verify readiness | `pending_after_62B2` | Consume the existing Mr.bot identity, Google/Gmail connection and Telegram destination rather than collecting duplicates. Read back resume manifest, job preferences, browser `/json/version`, Gmail identity and mailbox search, Telegram provider message ID, writable private state and exact launchd definitions. Missing readiness opens or names the exact existing setup step and starts no application effect. |
+| 62B4 | Activate the existing 30-minute Workday owners and fix public docs | `pending_after_62B3` | After readiness, activate the existing browser, Workday acquisition, inbox and follow-through owners with official launchd definition readback. Update the existing Job Hunter skill/CLI/registry from stale hourly and one-candidate language to the production 30-minute autonomous Workday contract. The public README presents Job Hunter beneath Mr.bot, beside the proven Coconala loop, with one command and the same-command rerun instruction. |
 | 62C | Open-source the proven Dais-device loop through one command | `live_proven` | Public main `c4e9b3970` contains the proven Workday loop, Job Hunter skill/registry, private Terminal installer and `/scripts/bootstrap-job-hunter.sh`. Raw GitHub bootstrap SHA-256 `246a1111d56e2865f19586d7bcc649a542bac1183ea244745c128e79861c9c4a` exactly matches main and passes shell syntax. Main integration passes Job Hunter 299/299, dispatch 3/3 and scoped PII clean while retaining the Coconala installer. |
 | 63 | Close inbox, interview, assessment, offer, acceptance, and start lineage | `pending_after_62` | Every external event remains bound to one application with evidence, Telegram reporting, scheduling, preparation, and final-action fences. |
 | 64 | Prove the USD 10,000/month salary outcome and recurring soak | `pending_after_63` | One accepted and started role has authoritative gross base salary of at least USD 10,000 monthly equivalent, while the full application and follow-through loop remains healthy 24/7. |
@@ -1191,9 +1191,9 @@ reference and is copied then adapted, not redesigned.
 | `JH-OSS-01` `completed` | Make one public command enter Job Hunter | `scripts/bootstrap-job-hunter.sh`, `install.sh`, `test/install-job-hunter-dispatch.test.mjs` | The bootstrap copies Coconala's safe checkout behavior and root `install.sh job-hunter` dispatches to the fail-closed existing installer. A non-Git target is rejected before mutation; existing Git checkouts use fetch plus fast-forward only. | Shell syntax passes and focused checks pass 3/3: missing profile reaches Job Hunter then stops before generic runtime state, unknown product stops before generic effects, and a non-Git target remains byte-present after rejection. |
 | `JH-OSS-02` `implementation_done_live_gate` | Reuse the repository CloakBrowser owner | `apps/job-search-loop/scripts/run-browser.sh`, `apps/job-search-loop/launchd/ai.anicca.job-search-browser.plist`, `apps/job-search-loop/scripts/install-launchd.sh` | Release source now keeps CloakBrowser and the existing Job Hunter profile/CDP contract, resolves the checked-out repository guard instead of `$HOME/gig`, restores the previously proven dedicated browser launchd definition, installs it with the other owners, and includes the guard in the immutable Job Hunter archive. No ordinary Chrome or second owner is introduced. | Focused and clean-artifact checks pass 21/21. Archive `f07c60415e43b01f4b065466eb0928ab31852714` checksum is OK and contains the guard, browser plist and runner. Existing production owner `ai.anicca.job-search-browser` is running as PID `74749` on CloakBrowser 145, profile `~/.cloak/profiles/job-search-daily` mode 0700 and CDP `:9222`. Live release/restart remains open because canonical cleanup finished with only 304 MiB free, below the required 512 MiB; restarting now would correctly fail closed and unnecessarily remove the healthy owner. Activate after capacity recovers, then prove the same profile/session and unrelated-target preservation. |
 | `JH-OSS-03` `implementation_done_live_gate` | Implement the same-command Terminal onboarding | `scripts/bootstrap-job-hunter.sh`, `apps/job-search-loop/scripts/install-oss.sh`, `apps/job-search-loop/job_search_loop/profile_setup.py` | The public bootstrap dispatches directly to Job Hunter; no local UI, card graph or AppleScript launcher exists. `start/status/finished/outcomes/stop/uninstall` reuse the existing private profile/install receipt. First setup collects finalized resumes, target role families, locations, salary floor/target and excluded employers, then installs only the browser owner. The same public command rerun selects `finished`, verifies connectors and only then starts application owners. | Dispatch checks pass 3/3; profile/release/launchd checks pass 25/25, including clean artifact and browser-only owner zero daily owner. Live first-run remains after disk headroom recovers; current preflight truthfully returns `blocked` with every prerequisite true except `disk_headroom`. |
-| `JH-OSS-04` `live_proven` | Reuse Life Manager identity, Gmail and Telegram | `apps/job-search-loop/job_search_loop/connector_preflight.py`, `apps/job-search-loop/scripts/install-oss.sh` | The existing private Job Hunter profile supplies the application email; the existing authenticated `gog` account performs a bounded Gmail search; the existing Job Hunter direct Telegram transport resolves its established private destination and sends through the fenced outbox. No duplicate OAuth, bot token or chat-id store is created. Both connectors must pass before `finished` installs application owners. | Focused connector/transport/runtime checks pass 19/19. Real connector preflight returns Gmail `ready` and Telegram `ready` with provider message ID `32007`; the secret-free receipt is mode 0600 at the existing state root. A Gmail failure calls Telegram zero times, and an uncertain Telegram send writes no ready receipt. |
+| `JH-OSS-04` `live_proven` | Reuse Mr.bot identity, Gmail and Telegram | `apps/job-search-loop/job_search_loop/connector_preflight.py`, `apps/job-search-loop/scripts/install-oss.sh` | The existing private Job Hunter profile supplies the application email; the existing authenticated `gog` account performs a bounded Gmail search; the existing Job Hunter direct Telegram transport resolves its established private destination and sends through the fenced outbox. No duplicate OAuth, bot token or chat-id store is created. Both connectors must pass before `finished` installs application owners. | Focused connector/transport/runtime checks pass 19/19. Real connector preflight returns Gmail `ready` and Telegram `ready` with provider message ID `32007`; the secret-free receipt is mode 0600 at the existing state root. A Gmail failure calls Telegram zero times, and an uncertain Telegram send writes no ready receipt. |
 | `JH-OSS-05` `implementation_done_live_gate` | Activate and prove the resident owners | `apps/job-search-loop/scripts/install-launchd.sh`, `apps/job-search-loop/launchd/ai.anicca.job-search-daily.plist`, `apps/job-search-loop/scripts/healthcheck.sh` | `finished` activates browser/acquisition/inbox/learning/health only after machine, Gmail and Telegram readiness. Daily remains `StartInterval=1800`. Browser-only onboarding starts zero application owners. Daily now resolves the release-owned disk guard, health accepts exit 75 only as explicit capacity wait, validates current Workday/wake-report evidence instead of retired Ashby files, and sends failures through direct fenced Telegram rather than OpenClaw. | Focused resident/connector/transport checks pass 27/27. Release `e8f43747416eaa5b25594b80ad21d084ac952a58` checksum is OK. Installed labels exist, but current pre-release daily/health last exits are 1 from ENOSPC and the host has 347 MiB free, below the 512 MiB activation floor. Do not switch/restart until capacity recovers; then activate this immutable release, require one owner per label, installed argv/cadence match, daily exit 0 or explicit 75 wait, and health exit 0. |
-| `JH-OSS-06` `completed` | Publish the truthful Life Manager UX | `README.md`, `apps/job-search-loop/README.md`, `skills/job-hunter/SKILL.md` | README presents the one Job Hunter Terminal command, first official-browser session and exact same-command rerun. It documents finalized-resume and preference onboarding, Gmail/Telegram gates, 30-minute Workday-only behavior, human-only boundaries, disabled non-Workday ATS lanes and the still-open Dais-device production gate. The public skill contains no candidate-specific employer, school, achievement or resume-order rule. Public launchd install no longer clones the legacy `ai-job-search` repository. | Dispatch 3/3 and focused runtime/docs-adjacent checks 20/20 pass. Candidate-specific scan over public Job Hunter skill/README is zero; the only `Daisuke134` strings are public GitHub repository URLs. No local onboarding UI, private paths or JSON editing are part of normal onboarding, and no claim exceeds receipts. |
+| `JH-OSS-06` `completed` | Publish the truthful Mr.bot UX | `README.md`, `apps/job-search-loop/README.md`, `skills/job-hunter/SKILL.md` | README presents the one Job Hunter Terminal command, first official-browser session and exact same-command rerun. It documents finalized-resume and preference onboarding, Gmail/Telegram gates, 30-minute Workday-only behavior, human-only boundaries, disabled non-Workday ATS lanes and the still-open Dais-device production gate. The public skill contains no candidate-specific employer, school, achievement or resume-order rule. Public launchd install no longer clones the legacy `ai-job-search` repository. | Dispatch 3/3 and focused runtime/docs-adjacent checks 20/20 pass. Candidate-specific scan over public Job Hunter skill/README is zero; the only `Daisuke134` strings are public GitHub repository URLs. No local onboarding UI, private paths or JSON editing are part of normal onboarding, and no claim exceeds receipts. |
 | `JH-OSS-07` `live_proven` | Close Dais-device 24/7 production acceptance, then publish | the installed Dais loop, evidence and existing OSS bootstrap only | Runs `daily-20260824-195253` and `inbox-20260824-202149` prove the 1,800-second owner, dynamic 3,971-job snapshot, 24 cross-company decisions, natural loop-owned Telegram `32135`–`32186`, one fenced Submit, Gog `1a03380b8540c135`, Ledger `submitted`, and resume delivery. Next wake `daily-20260824-202347` keeps that row at one intent, chooses a different canonical job, and sends fit/start/final TG `32206`/`32207`/`32212`/`32213`. Inbox run `inbox-20260824-205254` binds the second authoritative Gog receipt `1a033949ea0080b1`, moves that different canonical row to `submitted`, and sends resume/final TG `32220`/`32221`, proving recurring receipt closure without reopening the first row. Health is restored healthy with false alerts zero. Public main `c4e9b3970` and raw bootstrap readback close publication. | Workday-only initial OSS release is complete and two consecutive distinct applications have authoritative Gmail/Ledger/Telegram closure. |
 | `JH-E2E-01` | Continue beyond application to a landed job | existing `run-inbox.sh` and the recruiter/interview/assessment/offer modules named by row 63 | After `JH-OSS-07`, close one external stage at a time: recruiter reply, interview scheduling/prep, assessment tracking, offer comparison/negotiation, explicit human offer acceptance, and start confirmation. Reuse the same application identity and Telegram timeline throughout. | Each stage has authoritative provider/Gmail/Calendar evidence, replay zero and a natural Telegram receipt; final Done is accepted offer plus confirmed start, not application count. |
 
@@ -1830,7 +1830,7 @@ compensation, work authorization, or quantitative impact.
 | `atr_research` | Conducted and presented mind-wandering research at ATR | user statement + existing resumes |
 | `agent_club` | Founded a weekly lab/graduate-school session on Claude Code, Codex, Cursor, and AI-agent research workflows | user statement |
 | `anicca_consumer` | Built Swift/iOS consumer products and worked on consumer growth; Anicca reached USD 100 MRR | user statement; metric is candidate-asserted |
-| `life_manager` | Builds Life Manager, a consumer agent for financial, physical, and mental health workflows | user statement + public product page |
+| `mr_bot` | Builds Mr.bot, a consumer agent for financial, physical, and mental health workflows | user statement + public product page |
 | `a10_marketing` | Managed a JPY 20M campaign budget, reduced CPA by 10%, and achieved record paid acquisition | existing English resume |
 | `languages` | TOEFL iBT 96, Duolingo English Test 140, Spanish DELE B1 | existing English resume |
 
@@ -1879,7 +1879,7 @@ launchd
 
 immutable evidence → materialized SQLite state → verifier → summary.v2
        ↑                                                    ↓
-       └──────── strategy generation / rollback ─ Life Manager Career
+       └──────── strategy generation / rollback ─ Mr.bot Career
 ```
 
 ### 4.1 Repository and runtime split
@@ -1892,7 +1892,7 @@ immutable evidence → materialized SQLite state → verifier → summary.v2
 | Private runtime state | `~/.local/state/anicca/job-search` | ledger, traces, evidence, locks, outbox |
 | Private materials | `~/.local/share/anicca/job-search/materials` | master resume, tailored resumes, cover letters, prep packs |
 | Current local projection | private `summary.v1.json` | application counts and Ashby/Workday proof progress |
-| Life Manager bridge | versioned `summary.v2.json` schema | read-only career timeline, action queue, learning and operational health; no browser side-effect ownership |
+| Mr.bot bridge | versioned `summary.v2.json` schema | read-only career timeline, action queue, learning and operational health; no browser side-effect ownership |
 
 ### 4.2 Model routing
 
@@ -2100,7 +2100,7 @@ Every terminal daily path refreshes
 have at least one current `submitted` application. `submit_unknown` is reported but
 never counts as confirmed. Order 10 therefore remains `in_progress` while external
 real-application evidence is missing, but the remaining gap is now machine-readable
-for the local loop and the future Life Manager Career organ.
+for the local loop and the future Mr.bot Career organ.
 
 10I merged in PR #1346 (`96adde721`, CI `30460492034`) with 168 job-loop
 and 9 runner tests. The existing launchd daily run advanced 9→10 and exited 0;
@@ -2583,11 +2583,11 @@ Telegram is the phase-1 proactive interface:
 | Operational health | only after bounded recovery fails or an uncertain side effect needs attention; include failure class, last good receipt and next automatic retry/reconciliation |
 
 Every event uses a stable content-addressed outbox key. A changed same-day result may
-send one correction; an identical run remains silent. Life Manager consumes the same
+send one correction; an identical run remains silent. Mr.bot consumes the same
 event stream and `summary.v2`, so Telegram and the local dashboard cannot disagree.
 
 Job Hunting messages have no harness prefix. `Codex:::`, `Claude:::`,
-`Life Manager:::`, and every other triple-colon prefix are prohibited on this
+`Mr.bot:::`, and every other triple-colon prefix are prohibited on this
 product surface. The visible first line is the feature identity, for example:
 
 ```text
@@ -2637,7 +2637,7 @@ The default English resume is one ATS-friendly page, single column, text-first:
 1. Headline: Applied AI / Agent Engineer bridging regulated enterprise deployment and
    consumer AI products.
 2. MUIT experience with scoped Agentforce, Databricks, CRM, and RM-agent bullets.
-3. Anicca/Life Manager product and growth experience.
+3. Anicca/Mr.bot product and growth experience.
 4. NAIST/ATR research and weekly agent-practice community leadership.
 5. Selected public communication: ICLR 2026 MUIT report link.
 6. Education, languages, and selected earlier growth work.
@@ -2652,7 +2652,7 @@ product ownership, customer adoption, GTM/growth, and public communication. It m
 not invent formal PM, sales quota, people-management, or revenue ownership.
 
 The Japanese variant is a one-page Japanese 職務経歴書 with fourteen grounded points
-covering MUIT/MUFG, Databricks, Agentforce, Anicca/Life Manager, NAIST/ATR,
+covering MUIT/MUFG, Databricks, Agentforce, Anicca/Mr.bot, NAIST/ATR,
 agent-community leadership, ICLR communication, growth, education, and languages.
 The complete official posting text, not a person's name or presumed nationality,
 determines language: primarily Japanese postings use the Japanese PDF; English
@@ -2773,7 +2773,7 @@ The resident learning driver:
 8. otherwise records `inconclusive` and keeps the baseline;
 9. immediately rolls back a candidate generation after any verified safety
    violation or three consecutive candidate-only deterministic execution failures;
-10. emits one hashed decision receipt and a Telegram/Life Manager learning report.
+10. emits one hashed decision receipt and a Telegram/Mr.bot learning report.
 
 Promotion atomically advances one active-generation pointer. Previous generations,
 assignments and receipts remain immutable, so a rollback is a pointer change rather
@@ -2787,7 +2787,7 @@ probability of a truthful, suitable offer and helps the user make the final deci
 Eligibility remains lexicographic: truth, legal feasibility and hard exclusions are
 checked before any score optimization.
 
-Among eligible roles, Life Manager evaluates one evidence-backed whole-life utility:
+Among eligible roles, Mr.bot evaluates one evidence-backed whole-life utility:
 
 | Organ | Job evidence used |
 |---|---|
@@ -2798,14 +2798,14 @@ Among eligible roles, Life Manager evaluates one evidence-backed whole-life util
 
 Unknowns remain visible unknowns. The system never diagnoses health, infers stress or
 culture from stereotypes, or trades away a hard constraint for a high aggregate
-score. After a user starts a role, optional 30/60/90-day Life Manager check-ins may
+score. After a user starts a role, optional 30/60/90-day Mr.bot check-ins may
 compare the predicted utility with lived financial, physical and mental outcomes;
 those observations improve future preference weights only with explicit user
 consent.
 
-### 8.5 Local Life Manager experience
+### 8.5 Local Mr.bot experience
 
-Locally, the loop owns side effects and Life Manager is the truthful read/control
+Locally, the loop owns side effects and Mr.bot is the truthful read/control
 surface:
 
 ```text
@@ -2823,7 +2823,7 @@ summary.v2
   └─ Health: last good runs, integrity, recovery and low-noise alerts
 ```
 
-The user may pause, resume or change goals from Life Manager, but does not need to
+The user may pause, resume or change goals from Mr.bot, but does not need to
 operate the loop. Telegram remains the proactive channel until the local Career
 surface is complete.
 
@@ -2887,8 +2887,8 @@ closed loop to pass real E2E verification, not merely unit tests or a polished U
 
 | Phase | Included |
 |---|---|
-| 1 — open-source Life Manager Job Hunter loop | installable skill plus resident acquisition, follow-through, learning and guardian drivers; full outcome attribution; Telegram; verified `summary.v2` |
-| 2 — local Life Manager Career | consume `summary.v2`, show timeline/decisions/learning/health and expose pause/resume/goal controls without browser ownership |
+| 1 — open-source Mr.bot Job Hunter loop | installable skill plus resident acquisition, follow-through, learning and guardian drivers; full outcome attribution; Telegram; verified `summary.v2` |
+| 2 — local Mr.bot Career | consume `summary.v2`, show timeline/decisions/learning/health and expose pause/resume/goal controls without browser ownership |
 | 3 — paid cloud | tenant-isolated managed drivers, encrypted state/materials, scoped OAuth, budgets, export and revocation |
 | 4 — whole-life coordination | evidence-backed Career inputs to Financial, Physical and Mental planning with separate consent boundaries |
 
@@ -2897,7 +2897,7 @@ clean-home open-source installation, resident launchd loop, and salary-outcome
 ledger. Acquisition and follow-through are live; model-owned application, guardian,
 lifecycle closure, skill packaging, salary closure and `summary.v2` are the remaining
 local work. Phase 2 starts only after these local verification gates pass. Career
-is a coordinating Life Manager surface, not permission to merge private health and
+is a coordinating Mr.bot surface, not permission to merge private health and
 employment evidence into one unrestricted data pool.
 
 ### 11.1 Ordered expansion backlog
@@ -2932,7 +2932,7 @@ must accumulate in the live loop:
 
 | Order | Deliverable | Status | Completion evidence |
 |---:|---|---|---|
-| 0 | `JOB-CANONICAL-MERGE-1`: make Life Manager the only versioned source and preserve the live local loop | `completed` | PR #1273; 114 job-loop + 7 runner tests; all five CI checks passed in run `30444708546`; both canonical LaunchAgents last exit 0; 08:30 JST/900s schedules; three SQLite integrity checks `ok`; application and Telegram counts unchanged through cutover |
+| 0 | `JOB-CANONICAL-MERGE-1`: make Mr.bot the only versioned source and preserve the live local loop | `completed` | PR #1273; 114 job-loop + 7 runner tests; all five CI checks passed in run `30444708546`; both canonical LaunchAgents last exit 0; 08:30 JST/900s schedules; three SQLite integrity checks `ok`; application and Telegram counts unchanged through cutover |
 | 1 | Technical-business resume bundle | `completed` | 53 tests; private A4 one-page PDF; ATS extraction and visual inspection; role-based resume routing |
 | 3 | Recruiter question auto-reply | `completed` | 68 tests; approved-answer and fail-closed policy; at-most-once outbox; real two-message same-thread Gmail round trip with private evidence |
 | 4 | Interview slot selection and confirmation | `completed` | 79 tests; explicit timezone/source validation; real busy-slot skip, private Calendar event, same-thread Gmail reply and retry-idempotency E2E; all test artifacts cleaned |
@@ -2954,7 +2954,7 @@ must accumulate in the live loop:
 | 10T | `JOB-GENERIC-ATS-MODEL-10T` | `pending_after_10S` | An unknown supported ATS form completes without a new fixed workflow |
 | 11 | Closed-loop Dream Job objective, self-improvement and self-healing | `in_progress` | 11A completed in PR #1364 (final CI `30473862095`). 11B adds immutable attribution and outcomes. 11C implements the resident weekly learning driver, deterministic two-arm assignment, held-out replay, Wilson promotion, immediate rollback, compare-and-swap pointer and hashed Telegram report; its real first pass remained truthfully inconclusive at 0/0 resolved with replay violations=0 and ACK `4530`, without changing the five application states. Guardian, lifecycle closure and `summary.v2` remain in 11D–11F |
 | 12 | Portable local OSS distribution | `completed` | 12A merged in PR #1296; 12B merged in PR #1302 (`a58f1838`, CI `30449915191`): guided interactive/JSON profile authoring with placeholder/overwrite/legal-inference fences; reproducible 105-entry merge-commit tar.gz + SHA-256 `f334202a`; extracted-artifact clean-HOME install; 149 job-loop + 7 runner tests; canonical health exit 0 and both SQLite integrity checks `ok` without scheduler reinstall |
-| 13 | Life Manager Career surface and paid multi-tenant service | `pending` | 13A packages the proven local Job Hunter as a public Life Manager loop with skill, resident scheduler, clean setup, connector interfaces and Career surface around `summary.v2`; 13B integrates Daily Manager and CFO consumers without transferring career consent or secrets; 13C moves proven semantics to isolated cloud tenants. General staff coordination is last. |
+| 13 | Mr.bot Career surface and paid multi-tenant service | `pending` | 13A packages the proven local Job Hunter as a public Mr.bot loop with skill, resident scheduler, clean setup, connector interfaces and Career surface around `summary.v2`; 13B integrates Daily Manager and CFO consumers without transferring career consent or secrets; 13C moves proven semantics to isolated cloud tenants. General staff coordination is last. |
 | 14 | Verified USD 10K/month salary outcome | `pending_after_lifecycle` | One accepted and started role has authoritative gross base compensation of at least USD 10,000/month equivalent; annualization and FX evidence are durable, while bonus/equity remain separate |
 
 ### 11.2 Autonomy closure increments
@@ -2965,7 +2965,7 @@ not start merely because their design is already written:
 
 | Increment | Status | Done when |
 |---|---|---|
-| `JOB-AUTONOMY-CONTRACT-11A` | `completed` | PR #1364 / final CI `30473862095`; this specification states current truth, four resident drivers, verifier boundary, Telegram/Life Manager UX, human-only boundaries, local→cloud contract and the complete dependency order |
+| `JOB-AUTONOMY-CONTRACT-11A` | `completed` | PR #1364 / final CI `30473862095`; this specification states current truth, four resident drivers, verifier boundary, Telegram/Mr.bot UX, human-only boundaries, local→cloud contract and the complete dependency order |
 | `JOB-OUTCOME-ATTRIBUTION-11B` | `completed` | PR #1374 / merge `683ba9562` / final CI `30502556044`; immutable content-addressed generations and DB-enforced immutable assignments/outcomes persist; one external receipt may prove multiple stages only for its bound application; negative silence requires a versioned observation policy; Gmail submission confirmation is attributed; 191 job-loop and 11 runner tests pass; the redacted CLI migrated the live 5-row ledger with unchanged state counts, zero unassigned rows and integrity `ok`; projection rebuild is deterministic |
 | `JOB-LEARNING-PASS-11C` | `completed` | PR #1376 / merge `1bdbc67d3` / final CI `30507559728`; health-status follow-up PR #1377 / merge `fd26398cc`. 203 job-loop + 11 runner tests pass. Sunday 09:15 JST launchd and persistent systemd drivers replay eight safety cases, deterministically assign future canonical job keys, evaluate authoritative interview outcomes, atomically promote/close/rollback with pointer-race fencing, and send one content-addressed Telegram report. The live ledger stayed integrity `ok` with unchanged 2 submitted / 1 submit-unknown / 2 not-submitted counts; its first 0/0-sample decision was correctly inconclusive, receipt `175d3b7be5db06f88dbdc9aaf9428dfbda3fe65245a497a1f377b6271255564c`, Telegram ACK `4530`; canonical LaunchAgent reached runs=4 / last exit=0 and the three-driver healthcheck reports learning `status=success` with both SQLite integrity checks `ok` |
 | `JOB-LEDGER-EVENT-10N` | `completed` | The production fix and focused ledger suite write event then projection atomically; Cognition was repaired and reopened successfully with integrity `ok` and zero mismatches. |
@@ -2981,9 +2981,9 @@ not start merely because their design is already written:
 | `JOB-GUARDIAN-PASS-11D` | `pending_after_10T` | A deterministic scheduled guardian checks launchd/timer freshness, DB integrity, provider/browser health and leases; repairs only pre-side-effect failures; deduplicates alerts and persists remediation |
 | `JOB-LIFECYCLE-CLOSE-11E` | `pending_after_11D` | Follow-up cadence, every interview round, offers, negotiation support and accepted/declined/started outcomes are durable; only final identity/judgment actions require the user |
 | `JOB-CAREER-SUMMARY-11F` | `pending_after_11E` | Versioned `summary.v2` exposes Today, Pipeline, Interviews, Decisions, Learning and Health; its counts are rebuilt from the same events and match Telegram receipts |
-| `JOB-LIFE-MANAGER-SKILL-11G` | `pending_after_11F` | Job Hunter is an installable open-source Life Manager loop with `SKILL.md`, resident scheduler and explicit browser/Gmail/Telegram/Calendar connector boundaries. A clean-home public-repo install, upgrade and real fresh-job E2E reproduce scheduler, Ledger, summary and receipt-backed application behavior without private data. Daily Manager and CFO consume its versioned outputs afterward; general staff coordination is last. |
+| `JOB-MR.BOT-SKILL-11G` | `pending_after_11F` | Job Hunter is an installable open-source Mr.bot loop with `SKILL.md`, resident scheduler and explicit browser/Gmail/Telegram/Calendar connector boundaries. A clean-home public-repo install, upgrade and real fresh-job E2E reproduce scheduler, Ledger, summary and receipt-backed application behavior without private data. Daily Manager and CFO consume its versioned outputs afterward; general staff coordination is last. |
 | `JOB-SALARY-OUTCOME-11H` | `pending_after_11G_and_live_started_role` | Authoritative offer/acceptance/start evidence proves at least USD 10,000/month gross base salary equivalent with FX/date/annualization; bonus and equity remain separate |
-| `LIFE-CAREER-LOCAL-13A` | `pending_after_11G` | The local Life Manager Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
+| `LIFE-CAREER-LOCAL-13A` | `pending_after_11G` | The local Mr.bot Career surface reads `summary.v2`, shows the full timeline and provides pause/resume/goal controls without browser ownership |
 | `LIFE-CAREER-CLOUD-13B` | `pending_after_local_e2e` | Per-tenant queues, encrypted state/materials, scoped OAuth, budgets and export/revocation reproduce the verified local semantics |
 | `LIFE-WHOLE-HEALTH-13C` | `pending_after_13B` | Career evidence informs Financial, Physical and Mental planning with explicit consent, visible unknowns and no medical or employment guarantee |
 
@@ -3044,7 +3044,7 @@ all resident loops, describe Job Hunting from resume onboarding through applicat
 interviews, offers and confirmed start, and compare relevant open-source job-search
 repositories by authoritative submit, receipt reconciliation, lifecycle follow-up,
 human-only boundaries and continuous local ownership. Do not publish a comparison
-claim before its source and the matching Life Manager production evidence exist.
+claim before its source and the matching Mr.bot production evidence exist.
 
 ## 12. Verification
 
@@ -3103,8 +3103,8 @@ Completion requires:
     company/role Telegram ACKs must all agree. 10Q separately proves Ashby using the
     unchanged 10P contract; 10R, 10S, and 10T then prove Greenhouse, Lever, and a
     provider-neutral ATS respectively.
-18. `JOB-LIFE-MANAGER-SKILL-11G` proves that a clean machine can install the public
-    Life Manager Job Hunter skill/loop, add resume plus application email locally,
+18. `JOB-MR.BOT-SKILL-11G` proves that a clean machine can install the public
+    Mr.bot Job Hunter skill/loop, add resume plus application email locally,
     create the canonical launchd owner, upgrade without losing state, and reproduce
     the verified local semantics without private data in the open-source artifact.
 19. `JOB-SALARY-OUTCOME-11H` closes only when authoritative offer, acceptance and

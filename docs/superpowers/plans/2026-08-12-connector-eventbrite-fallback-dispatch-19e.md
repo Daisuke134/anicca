@@ -10,7 +10,7 @@
 
 ## Constraints
 
-- Modify only `apps/life-manager/lib/connector-production-browser-harness.js` and matching test.
+- Modify only `apps/mr-bot/lib/connector-production-browser-harness.js` and matching test.
 - Eventbrite exact candidate/current URL、same-event child frame、既存control/readback contractを変更しない。
 - RED must prove current `runFallback({provider:"eventbrite"})` rejects before Eventbrite workflow dispatch.
 - GREEN success must use Eventbrite workflow readback, never Luma readback, and return `completed` with bounded repaired actions.

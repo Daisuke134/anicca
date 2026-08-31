@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 正本は`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`。
+- 正本は`docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`。
 - 実装順はO1A→O1B→O1C→Order 2→3A→3B→4→5→Webから変更しない。
 - 成功は`E1 AND E2 AND E3`のみ。DOM文字列、callerのboolean、自作テキストで成功を宣言しない。
 - E1は`provider-receipt://`、`gmail-message://`、`ticket://`のrepository外referenceだけを受ける。
@@ -25,10 +25,10 @@
 ### Task 1: Shared E1/E2/E3 gate
 
 **Files:**
-- Create: `apps/life-manager/lib/outbound-evidence.js`
-- Create: `apps/life-manager/lib/outbound-evidence.test.js`
-- Modify: `apps/life-manager/package.json`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Create: `apps/mr-bot/lib/outbound-evidence.js`
+- Create: `apps/mr-bot/lib/outbound-evidence.test.js`
+- Modify: `apps/mr-bot/package.json`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 **Interfaces:**
 - Consumes: `verifyOutboundEvidence(input, dependencies)` with `tenantId`、`attemptRef`、`externalReceiptRef`、`artifactRef`、`canonicalUrl`

@@ -10,8 +10,8 @@ import { fileURLToPath } from "node:url";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const VERIFIER = join(REPO_ROOT, "scripts", "verify-oss-self-contained.mjs");
 const REQUIRED_SOURCES = [
-  "life-manager",
-  "life-manager-v0",
+  "mr-bot",
+  "mr-bot-v0",
   "anicca.ai",
   "anicca-products",
   "profitable-claude",
@@ -34,7 +34,7 @@ function write(root, relativePath, content = "") {
 }
 
 function createFixture() {
-  const root = mkdtempSync(join(tmpdir(), "life-manager-oss-contract-"));
+  const root = mkdtempSync(join(tmpdir(), "mr-bot-oss-contract-"));
   git(root, "init", "-q");
   git(root, "config", "user.email", "fixture@example.com");
   git(root, "config", "user.name", "Fixture");
@@ -49,11 +49,11 @@ function createFixture() {
         id,
         repository: `https://example.com/${id}.git`,
         commit: "0".repeat(40),
-        disposition: id === "life-manager" ? "canonical" : "inspected",
+        disposition: id === "mr-bot" ? "canonical" : "inspected",
       })),
     }, null, 2)}\n`,
   );
-  write(root, "apps/life-manager/index.js", "export const portable = true;\n");
+  write(root, "apps/mr-bot/index.js", "export const portable = true;\n");
   write(root, "runtime/README.md", "Runtime source only.\n");
   git(root, "add", ".");
   git(root, "commit", "-qm", "fixture");
@@ -136,28 +136,28 @@ test("gitlinks and symlinks escaping the checkout fail with closed codes", () =>
 test("active local-source paths and generated runtime copies fail without echoing contents", () => {
   const root = createFixture();
   const privateLiteral = "/Users/example/private-source-with-token-shaped-value";
-  write(root, "apps/life-manager/private.js", `export const source = "${privateLiteral}";\n`);
+  write(root, "apps/mr-bot/private.js", `export const source = "${privateLiteral}";\n`);
   write(
     root,
-    "apps/life-manager/legacy.js",
+    "apps/mr-bot/legacy.js",
     'export const source = "$HOME/anicca/skills/legacy-runner.js";\n',
   );
   write(
     root,
-    "apps/life-manager/fixed.js",
-    'export const source = "/opt/life-manager/skills/fixed-runner.js";\n',
+    "apps/mr-bot/fixed.js",
+    'export const source = "/opt/mr-bot/skills/fixed-runner.js";\n',
   );
   write(
     root,
     "runtime/wrapped.sh",
-    'REPO="${LIFE_MANAGER_REPO:-$HOME/anicca}"\n',
+    'REPO="${MR_BOT_REPO:-$HOME/anicca}"\n',
   );
   write(
     root,
     "runtime/fixed-env.sh",
-    'REPO="${LIFE_MANAGER_REPO:-/opt/life-manager}"\n',
+    'REPO="${MR_BOT_REPO:-/opt/mr-bot}"\n',
   );
-  write(root, "apps/life-manager/state/session.json", '{"runtime":true}\n');
+  write(root, "apps/mr-bot/state/session.json", '{"runtime":true}\n');
   git(root, "add", ".");
 
   const result = verify(root);
@@ -166,10 +166,10 @@ test("active local-source paths and generated runtime copies fail without echoin
   assert.deepEqual(
     result.payload.violations.map(({ code, path }) => [code, path]),
     [
-      ["forbidden_source_root", "apps/life-manager/fixed.js"],
-      ["forbidden_source_root", "apps/life-manager/legacy.js"],
-      ["forbidden_source_root", "apps/life-manager/private.js"],
-      ["runtime_copy", "apps/life-manager/state/session.json"],
+      ["forbidden_source_root", "apps/mr-bot/fixed.js"],
+      ["forbidden_source_root", "apps/mr-bot/legacy.js"],
+      ["forbidden_source_root", "apps/mr-bot/private.js"],
+      ["runtime_copy", "apps/mr-bot/state/session.json"],
       ["forbidden_source_root", "runtime/fixed-env.sh"],
       ["forbidden_source_root", "runtime/wrapped.sh"],
     ],
@@ -206,7 +206,7 @@ test("explicit verifier fixtures do not count as runtime dependencies", () => {
   const root = createFixture();
   write(
     root,
-    "apps/life-manager/lib/runtime-paths.test.js",
+    "apps/mr-bot/lib/runtime-paths.test.js",
     [
       'const forbidden = "/Users/operator/.openclaw/state";',
       'const personal = "openclaw message send --target 123456789";',
@@ -268,7 +268,7 @@ test("source provenance is closed over every inspected repository and local sour
     "docs/manifests/oss-merge-1-sources.json",
     `${JSON.stringify({
       version: 1,
-      sources: [{ id: "life-manager", repository: "https://example.com/life-manager.git",
+      sources: [{ id: "mr-bot", repository: "https://example.com/mr-bot.git",
         commit: "0".repeat(40), disposition: "canonical" }],
     })}\n`,
   );
@@ -283,8 +283,8 @@ test("source provenance is closed over every inspected repository and local sour
       ["manifest_source_missing", "anicca-dais"],
       ["manifest_source_missing", "anicca-products"],
       ["manifest_source_missing", "anicca.ai"],
-      ["manifest_source_missing", "life-manager-v0"],
       ["manifest_source_missing", "local-source-folders"],
+      ["manifest_source_missing", "mr-bot-v0"],
       ["manifest_source_missing", "profitable-claude"],
     ],
   );
@@ -300,7 +300,7 @@ test("absorbed source mappings fail closed when the canonical target hash drifts
   source.disposition = "absorbed";
   source.absorbed_files = [{
     source: "upstream/portable.js",
-    target: "apps/life-manager/index.js",
+    target: "apps/mr-bot/index.js",
     sha256: "0".repeat(64),
   }];
   write(root, manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -311,14 +311,14 @@ test("absorbed source mappings fail closed when the canonical target hash drifts
   assert.equal(result.status, 1);
   assert.deepEqual(
     result.payload.violations.map(({ code, path }) => [code, path]),
-    [["manifest_hash_mismatch", "apps/life-manager/index.js"]],
+    [["manifest_hash_mismatch", "apps/mr-bot/index.js"]],
   );
 });
 
 test("fresh-clone verification defaults to canonical main, never a feature branch", () => {
   const source = readFileSync(join(REPO_ROOT, "scripts", "verify-fresh-clone.sh"), "utf8");
-  assert.match(source, /LIFE_MANAGER_VERIFY_REF:-main/u);
-  assert.doesNotMatch(source, /LIFE_MANAGER_VERIFY_REF:-feature\//u);
+  assert.match(source, /MR_BOT_VERIFY_REF:-main/u);
+  assert.doesNotMatch(source, /MR_BOT_VERIFY_REF:-feature\//u);
 });
 
 test("declared third-party runtime adapters may document their own runtime home", () => {

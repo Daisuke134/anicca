@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 正本は`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`。
+- 正本は`docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`。
 - 実装順はO1A→O1B→O1C→Order 2→3A→3B→4→5→Webから変更しない。
 - 新しいqueue、browser、secret storeを作らない。
 - job payloadにはsecret、氏名、メール、電話、cookieを保存せず、repository外のreferenceだけを保存する。
@@ -22,13 +22,13 @@
 ### Task 1: Event application job contract
 
 **Files:**
-- Create: `apps/life-manager/lib/outbound-event-job.js`
-- Create: `apps/life-manager/lib/outbound-event-job.test.js`
-- Modify: `apps/life-manager/package.json`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Create: `apps/mr-bot/lib/outbound-event-job.js`
+- Create: `apps/mr-bot/lib/outbound-event-job.test.js`
+- Modify: `apps/mr-bot/package.json`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 **Interfaces:**
-- Consumes: `buildRuntimeJob(input)`と`enqueueJob(input, opts)` from `apps/life-manager/lib/runtime-job-store.js`
+- Consumes: `buildRuntimeJob(input)`と`enqueueJob(input, opts)` from `apps/mr-bot/lib/runtime-job-store.js`
 - Produces: `buildEventApplicationJob(input)`、`enqueueEventApplication(input, opts)`、`CAPABILITY="outbound.event.apply"`、`LOOP_ID="outbound.events"`
 
 - [x] **Step 1: failing contract testを書く**

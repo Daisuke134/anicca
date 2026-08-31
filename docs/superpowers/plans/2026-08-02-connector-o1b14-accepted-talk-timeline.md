@@ -21,9 +21,9 @@
 ### Task 1: Timeline decisionとvalidator
 
 **Files:**
-- Create: `apps/life-manager/lib/accepted-talk-timeline.js`
-- Create: `apps/life-manager/lib/accepted-talk-timeline.test.js`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/lib/accepted-talk-timeline.js`
+- Create: `apps/mr-bot/lib/accepted-talk-timeline.test.js`
+- Modify: `apps/mr-bot/package.json`
 
 **Interfaces:**
 - Consumes: `{acceptedAt,eventStartAt,eventEndAt,ticketRef,sourceRefs,sourceText,now}`
@@ -50,16 +50,16 @@ Expected: 全件PASS。
 - [x] **Step 5: commitする**
 
 ```bash
-git add apps/life-manager/lib/accepted-talk-timeline.js apps/life-manager/lib/accepted-talk-timeline.test.js apps/life-manager/package.json
+git add apps/mr-bot/lib/accepted-talk-timeline.js apps/mr-bot/lib/accepted-talk-timeline.test.js apps/mr-bot/package.json
 git commit -m "feat(connector): validate accepted talk timeline"
 ```
 
 ### Task 2: Immutable PostgreSQL snapshot store
 
 **Files:**
-- Create: `apps/life-manager/migrations/2026-08-02-lm-talk-timeline-snapshots.sql`
-- Create: `apps/life-manager/lib/accepted-talk-timeline-store.js`
-- Create: `apps/life-manager/lib/accepted-talk-timeline-store.test.js`
+- Create: `apps/mr-bot/migrations/2026-08-02-lm-talk-timeline-snapshots.sql`
+- Create: `apps/mr-bot/lib/accepted-talk-timeline-store.js`
+- Create: `apps/mr-bot/lib/accepted-talk-timeline-store.test.js`
 
 **Interfaces:**
 - Consumes: validated timeline object、`tenantId`、`participationId`
@@ -86,7 +86,7 @@ Expected: 全件PASS。
 - [x] **Step 5: commitする**
 
 ```bash
-git add apps/life-manager/migrations/2026-08-02-lm-talk-timeline-snapshots.sql apps/life-manager/lib/accepted-talk-timeline-store.js apps/life-manager/lib/accepted-talk-timeline-store.test.js
+git add apps/mr-bot/migrations/2026-08-02-lm-talk-timeline-snapshots.sql apps/mr-bot/lib/accepted-talk-timeline-store.js apps/mr-bot/lib/accepted-talk-timeline-store.test.js
 git commit -m "feat(connector): persist immutable talk timelines"
 ```
 
@@ -94,7 +94,7 @@ git commit -m "feat(connector): persist immutable talk timelines"
 
 **Files:**
 - Create: `docs/evidence/outbound/2026-08-02-o1b14-live-talk-timeline.json`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 **Interfaces:**
 - Consumes: production migrationとstore
@@ -102,7 +102,7 @@ git commit -m "feat(connector): persist immutable talk timelines"
 
 - [x] **Step 1: migrationを実runtime DBへ適用する**
 
-固定container `life-manager-local-postgres-1`へ`psql -v ON_ERROR_STOP=1`で適用する。
+固定container `mr-bot-local-postgres-1`へ`psql -v ON_ERROR_STOP=1`で適用する。
 
 - [x] **Step 2: transaction fixtureを実行する**
 

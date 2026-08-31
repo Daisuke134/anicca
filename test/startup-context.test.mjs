@@ -24,17 +24,17 @@ function clone(value) {
   return structuredClone(value);
 }
 
-test("canonical startup context is valid and names Life Manager as the product", async () => {
+test("canonical startup context is valid and names Mr.bot as the product", async () => {
   const context = await loadStartupContext(contextPath);
 
-  assert.equal(context.product.name, "Life Manager");
+  assert.equal(context.product.name, "Mr.bot");
   assert.equal(context.company.legal_name, "Anicca");
   assert.notEqual(context.product.name, context.company.legal_name);
   assert.match(context.product.mission, /end suffering/i);
   assert.match(context.product.mission, /all living beings/i);
   assert.deepEqual(context.delivery, {
-    local: "Free, open-source, self-hosted Life Manager.",
-    cloud: "Paid monthly subscription for an always-on hosted Life Manager.",
+    local: "Free, open-source, self-hosted Mr.bot.",
+    cloud: "Paid monthly subscription for an always-on hosted Mr.bot.",
   });
   assert.equal(context.traction.founder_attested_revenue.display, "approximately $1,000");
   assert.equal(context.traction.founder_attested_revenue.source, "founder_attested");
@@ -95,7 +95,7 @@ test("validator rejects claims without evidence", async () => {
   context.claims.push({
     id: "unsupported-growth",
     topic: "growth",
-    statement: "Life Manager guarantees investment returns.",
+    statement: "Mr.bot guarantees investment returns.",
     source: "none",
     status: "unsupported",
     as_of: "2026-08-27T00:20:00+09:00",
@@ -160,7 +160,7 @@ test("audit reads back every verified canonical link", async () => {
   const fetchImpl = async (url) => {
     requested.push(url);
     return new Response(
-      `Life Manager ${context.context_version} ${contextDigest(context)}`,
+      `Mr.bot ${context.context_version} ${contextDigest(context)}`,
       { status: 200 },
     );
   };
@@ -184,7 +184,7 @@ test("audit rejects a public product page bound to an old startup context", asyn
   const context = clone(await loadStartupContext(contextPath));
   const result = await auditStartupContext(context, {
     now: new Date("2026-08-02T13:00:00+09:00"),
-    fetchImpl: async () => new Response("Life Manager 2026-08-01.1 stale-digest", { status: 200 }),
+    fetchImpl: async () => new Response("Mr.bot 2026-08-01.1 stale-digest", { status: 200 }),
   });
 
   assert.equal(result.ok, false);
@@ -202,7 +202,7 @@ test("audit rejects a 200 page that does not contain the expected product identi
   assert.match(result.errors.join("\n"), /expected text/i);
 });
 
-test("English README first view explains the Life Manager product experience", async () => {
+test("English README first view explains the Mr.bot product experience", async () => {
   const readme = (await readFile(new URL("../README.md", import.meta.url), "utf8")).slice(0, 4_000);
 
   assert.match(readme, /body, mind, and money/i);
@@ -213,7 +213,7 @@ test("English README first view explains the Life Manager product experience", a
   assert.doesNotMatch(readme, /Live Dashboard/);
 });
 
-test("Japanese README first view explains the Life Manager product experience", async () => {
+test("Japanese README first view explains the Mr.bot product experience", async () => {
   const readme = (await readFile(new URL("../README.ja.md", import.meta.url), "utf8")).slice(0, 4_000);
 
   assert.match(readme, /身体/);
@@ -237,7 +237,7 @@ test("both public READMEs are bound to the canonical startup context", async () 
 
 test("application kit is deterministic and bound to the canonical context digest", async () => {
   const context = await loadStartupContext(contextPath);
-  const directory = await mkdtemp(join(tmpdir(), "life-manager-kit-"));
+  const directory = await mkdtemp(join(tmpdir(), "mr-bot-kit-"));
 
   try {
     const first = await buildApplicationKit({ context, outputDirectory: directory });
@@ -261,9 +261,9 @@ test("application kit is deterministic and bound to the canonical context digest
   }
 });
 
-test("generated application kit describes Life Manager without unverified media", async () => {
+test("generated application kit describes Mr.bot without unverified media", async () => {
   const context = await loadStartupContext(contextPath);
-  const directory = await mkdtemp(join(tmpdir(), "life-manager-kit-"));
+  const directory = await mkdtemp(join(tmpdir(), "mr-bot-kit-"));
 
   try {
     await buildApplicationKit({ context, outputDirectory: directory });
@@ -302,8 +302,8 @@ test("public artifact validator blocks legacy product values, PII, and placehold
   assert.match(validatePublicArtifact(`${metadata}Repository: https://github.com/Daisuke134/anicca-oss`, context).join("\n"), /forbidden/i);
   assert.match(validatePublicArtifact(`${metadata}Contact: private-person@example.com`, context).join("\n"), /email/i);
   assert.match(validatePublicArtifact(`${metadata}Answer: {{traction}}`, context).join("\n"), /placeholder/i);
-  assert.match(validatePublicArtifact(`${metadata}Life Manager is an AGI.`, context).join("\n"), /achieved-agi/);
-  assert.match(validatePublicArtifact(`${metadata}Life Manager has 10,000 users.`, context).join("\n"), /numeric-users/);
-  assert.match(validatePublicArtifact(`${metadata}Life Manager was accepted to Example Accelerator.`, context).join("\n"), /unverified-application-outcome/);
-  assert.deepEqual(validatePublicArtifact(`${metadata}Product: Life Manager`, context), []);
+  assert.match(validatePublicArtifact(`${metadata}Mr.bot is an AGI.`, context).join("\n"), /achieved-agi/);
+  assert.match(validatePublicArtifact(`${metadata}Mr.bot has 10,000 users.`, context).join("\n"), /numeric-users/);
+  assert.match(validatePublicArtifact(`${metadata}Mr.bot was accepted to Example Accelerator.`, context).join("\n"), /unverified-application-outcome/);
+  assert.deepEqual(validatePublicArtifact(`${metadata}Product: Mr.bot`, context), []);
 });

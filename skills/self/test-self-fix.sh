@@ -11,7 +11,7 @@ S="$(SELF_FIX_DRYRUN=1 bash "$SF" capafy hint 2>&1)"; L="$(SELF_FIX_DRYRUN=1 bas
 a "short 'capafy' → LOOP=capafy-loop" "$S" 'LOOP=capafy-loop'
 a "short → RESULT .self-fix-capafy-loop.result" "$S" '.self-fix-capafy-loop.result'
 eq "short==long identical" "$S" "$L"
-a "life-manager → life-manager-loop" "$(SELF_FIX_DRYRUN=1 bash "$SF" life-manager h 2>&1)" 'LOOP=life-manager-loop'
+a "mr-bot → mr-bot-loop" "$(SELF_FIX_DRYRUN=1 bash "$SF" mr-bot h 2>&1)" 'LOOP=mr-bot-loop'
 
 echo "(B) FIND-029/030 hang fingerprint — frozen pane (only timer/tokens advance) = SAME hash; real progress = DIFF"
 BODY='⏺ Running browser step

@@ -74,7 +74,7 @@ def probe(runner: Runner = subprocess.run) -> dict:
         errors.append("gui_domain_unreadable")
 
     return {
-        "schema": "life-manager.launchd-control-plane-preflight.v1",
+        "schema": "mr-bot.launchd-control-plane-preflight.v1",
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "status": "pass" if not errors else "blocked_control_plane",
         "mutation_allowed": not errors,
@@ -103,7 +103,7 @@ def main() -> int:
     parser.add_argument(
         "--receipt",
         type=Path,
-        default=Path.home() / ".local/state/life-manager/launchd-control-plane-preflight.json",
+        default=Path.home() / ".local/state/mr-bot/launchd-control-plane-preflight.json",
     )
     args = parser.parse_args()
     payload = probe()

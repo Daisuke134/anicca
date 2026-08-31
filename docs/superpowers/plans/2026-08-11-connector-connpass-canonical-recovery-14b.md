@@ -22,8 +22,8 @@ Recover a parent-verified Connpass registration after the provider leaves the ow
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-minimal-runner.test.js`
-2. `apps/life-manager/lib/connector-minimal-runner.js`
+1. `apps/mr-bot/lib/connector-minimal-runner.test.js`
+2. `apps/mr-bot/lib/connector-minimal-runner.js`
 
 Soft target: 2 files; production `+10–20 LOC`; tests `+30–55 LOC`.
 

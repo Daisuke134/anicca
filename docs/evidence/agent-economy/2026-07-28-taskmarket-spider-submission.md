@@ -2,7 +2,7 @@
 
 ## Claim boundary
 
-This evidence proves that Life Manager found a live, colony-external funded job,
+This evidence proves that Mr.bot found a live, colony-external funded job,
 built its deliverable, verified it in a real browser, and submitted the exact
 artifact on Base. It does **not** prove external income. The requester has not
 selected a winner, so verified external revenue remains `$0.00` and the

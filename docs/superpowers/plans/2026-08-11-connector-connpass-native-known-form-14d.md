@@ -24,8 +24,8 @@ Complete the measured Connpass join form without depending on an unavailable mod
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-production-browser-harness.test.js`
-2. `apps/life-manager/lib/connector-production-browser-harness.js`
+1. `apps/mr-bot/lib/connector-production-browser-harness.test.js`
+2. `apps/mr-bot/lib/connector-production-browser-harness.js`
 
 Soft target: 2 files; production `+30–55 LOC`; tests `+45–75 LOC`.
 

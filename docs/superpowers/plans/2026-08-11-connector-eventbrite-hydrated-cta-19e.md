@@ -12,7 +12,7 @@
 
 ## TDD task
 
-- Modify only `apps/life-manager/lib/connector-eventbrite-workflow.js` and matching test.
+- Modify only `apps/mr-bot/lib/connector-eventbrite-workflow.js` and matching test.
 - RED: hydrated `Reserve a spot` detail must be eligible and hydrated absent readback must return `absent`; current code rejects both.
 - GREEN: one exact helper/predicate accepts `Get tickets|Reserve a spot`; duplicate visible variants, unknown labels, unsafe/body-money markers remain fail-closed.
 - Run Eventbrite focused, production/operations adjacent, syntax, diff, exact two-file scope. Commit without amend and push. No browser/live/state effect during implementation.

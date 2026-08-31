@@ -198,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
     default_root = Path(os.environ.get("GIG_STATE_DIR", str(Path.home() / "gig")))
     host_state = Path(os.environ.get(
         "GIG_HOST_STATE_DIR",
-        str(Path.home() / ".local" / "state" / "life-manager" / "state"),
+        str(Path.home() / ".local" / "state" / "mr-bot" / "state"),
     ))
     parser.add_argument("--report", type=Path, default=None, help="override: score this report instead of the newest")
     parser.add_argument("--evidence-root", type=Path, default=default_root / "evidence")

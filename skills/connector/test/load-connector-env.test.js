@@ -54,9 +54,9 @@ test("fails closed for blank/control values, oversized files, and directories", 
 
 test("official entrypoint uses the portable state-home default while retaining an explicit env override", () => {
   const source = fs.readFileSync(ENTRYPOINT, "utf8");
-  assert.match(source, /LIFE_MANAGER_STATE_HOME=.*XDG_STATE_HOME/);
-  assert.match(source, /LM_CONNECTOR_SHARED_ENV_FILE=.*LIFE_MANAGER_STATE_HOME\/\.env/);
-  assert.match(source, /LM_CONNECTOR_STATE_DIR:-\$LIFE_MANAGER_STATE_HOME\/connector-native/);
+  assert.match(source, /MR_BOT_STATE_HOME=.*XDG_STATE_HOME/);
+  assert.match(source, /LM_CONNECTOR_SHARED_ENV_FILE=.*MR_BOT_STATE_HOME\/\.env/);
+  assert.match(source, /LM_CONNECTOR_STATE_DIR:-\$MR_BOT_STATE_HOME\/connector-native/);
   assert.match(source, /LM_CONNECTOR_SHARED_ENV_FILE=\"\$\{LM_CONNECTOR_SHARED_ENV_FILE:-/);
   assert.doesNotMatch(source, /\.openclaw\/\.env/);
 });
@@ -70,7 +70,7 @@ test("official entrypoint fails before native wake when the rendered env file is
       env: {
         ...process.env,
         HOME: directory,
-        LIFE_MANAGER_STATE_HOME: stateHome,
+        MR_BOT_STATE_HOME: stateHome,
         LM_CONNECTOR_SHARED_ENV_FILE: path.join(directory, "missing.env"),
         LM_CONNECTOR_STATE_DIR: path.join(directory, "connector-state"),
         NODE_BIN: process.execPath,

@@ -64,7 +64,7 @@ def test_existing_account_with_day_zero_stops_before_dry_or_live_work(tmp_path: 
         ["bash", str(marketing / IG_ENTRYPOINT.name)],
         env=os.environ | {
             "HOME": str(tmp_path / "home"),
-            "LIFE_MANAGER_REPO": str(repo),
+            "MR_BOT_REPO": str(repo),
             "CAPAFY_IG_ACCOUNTS_FILE": str(accounts),
         },
         text=True,

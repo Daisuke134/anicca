@@ -8,8 +8,8 @@
 
 **Files / soft target:**
 
-- Modify `apps/life-manager/lib/connpass-evidence-store.js` — about 8–12 LOC.
-- Modify `apps/life-manager/lib/connpass-evidence-store.test.js` — about 35–60 LOC.
+- Modify `apps/mr-bot/lib/connpass-evidence-store.js` — about 8–12 LOC.
+- Modify `apps/mr-bot/lib/connpass-evidence-store.test.js` — about 35–60 LOC.
 
 ## Grounding
 

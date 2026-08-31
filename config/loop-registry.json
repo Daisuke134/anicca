@@ -36,9 +36,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-browser",
-      "log_root": "~/.local/state/life-manager/affiliate-browser/logs",
+      "log_root": "~/.local/state/mr-bot/affiliate-browser/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/affiliate-browser"
+      "state_root": "~/.local/state/mr-bot/affiliate-browser"
     },
     "affiliate-composition": {
       "cadence": {
@@ -52,9 +52,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-composition",
-      "log_root": "~/.local/state/life-manager/affiliate-composition/logs",
+      "log_root": "~/.local/state/mr-bot/affiliate-composition/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/affiliate-composition"
+      "state_root": "~/.local/state/mr-bot/affiliate-composition"
     },
     "affiliate-impact-browser": {
       "cadence": {
@@ -68,9 +68,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-impact-browser",
-      "log_root": "~/.local/state/life-manager/affiliate-impact-browser/logs",
+      "log_root": "~/.local/state/mr-bot/affiliate-impact-browser/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/affiliate-impact-browser"
+      "state_root": "~/.local/state/mr-bot/affiliate-impact-browser"
     },
     "affiliate-loop": {
       "cadence": {
@@ -84,9 +84,9 @@
       "effect_class": "publish",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-loop",
-      "log_root": "~/.local/state/life-manager/affiliate-loop/logs",
+      "log_root": "~/.local/state/mr-bot/affiliate-loop/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/affiliate-loop"
+      "state_root": "~/.local/state/mr-bot/affiliate-loop"
     },
     "affiliate-source-refresh": {
       "cadence": {
@@ -100,9 +100,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-source-refresh",
-      "log_root": "~/.local/state/life-manager/affiliate-source-refresh/logs",
+      "log_root": "~/.local/state/mr-bot/affiliate-source-refresh/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/affiliate-source-refresh"
+      "state_root": "~/.local/state/mr-bot/affiliate-source-refresh"
     },
     "affiliate-x-browser": {
       "cadence": {
@@ -116,9 +116,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.affiliate-x-browser",
-      "log_root": "~/.local/state/life-manager/affiliate-x-browser/logs",
+      "log_root": "~/.local/state/mr-bot/affiliate-x-browser/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/affiliate-x-browser"
+      "state_root": "~/.local/state/mr-bot/affiliate-x-browser"
     },
     "agent-economy-loop": {
       "cadence": {
@@ -395,9 +395,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/capafy-marketing/capafy-goal-monitor.sh",
       "label": "ai.anicca.capafy-goal-monitor",
-      "log_root": "~/.local/state/life-manager/logs",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
     "capafy-goal-monitor-daily-close": {
       "cadence": {
@@ -414,9 +414,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/capafy-marketing/capafy-goal-monitor.sh",
       "label": "ai.anicca.capafy-goal-monitor-daily-close",
-      "log_root": "~/.local/state/life-manager/logs",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
     "capafy-goal-monitor-hourly": {
       "cadence": {
@@ -432,9 +432,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/capafy-marketing/capafy-goal-monitor.sh",
       "label": "ai.anicca.capafy-goal-monitor-hourly",
-      "log_root": "~/.local/state/life-manager/logs",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
     "capafy-ig-account-manager": {
       "cadence": {
@@ -448,9 +448,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/capafy-marketing/capafy-ig-account-manager.sh",
       "label": "ai.anicca.capafy-ig-account-manager",
-      "log_root": "~/.local/state/life-manager/logs",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
     "capafy-ig-marketing-daily": {
       "cadence": {
@@ -464,9 +464,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh",
       "label": "ai.anicca.capafy-ig-marketing-daily",
-      "log_root": "~/.local/state/life-manager/logs",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
     "capafy-loop-daily": {
       "cadence": {
@@ -480,9 +480,9 @@
       "effect_class": "none",
       "entrypoint": "skills/self/capafy-loop/capafy-loop-daily.sh",
       "label": "ai.anicca.capafy-loop-daily",
-      "log_root": "~/.local/state/life-manager/logs",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
     "capafy-loop-healthcheck": {
       "cadence": {
@@ -496,9 +496,9 @@
       "effect_class": "none",
       "entrypoint": "skills/self/capafy-loop/capafy-loop-healthcheck.sh",
       "label": "ai.anicca.capafy-loop-healthcheck",
-      "log_root": "~/.local/state/life-manager/logs",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
     "capafy-outcome-monitor": {
       "cadence": {
@@ -512,9 +512,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/capafy-marketing/capafy-outcome-monitor.sh",
       "label": "ai.anicca.capafy-outcome-monitor",
-      "log_root": "~/.local/state/life-manager/logs",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
     "ceo-runner": {
       "cadence": {
@@ -611,9 +611,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/reports/daily-nl-report.sh",
       "label": "ai.anicca.daily-nl-report",
-      "log_root": "~/.local/state/life-manager/daily-nl-report/logs",
+      "log_root": "~/.local/state/mr-bot/daily-nl-report/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/daily-nl-report"
+      "state_root": "~/.local/state/mr-bot/daily-nl-report"
     },
     "earn-watch": {
       "cadence": {
@@ -627,9 +627,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/earn/earn-watch.sh",
       "label": "ai.anicca.earn-watch",
-      "log_root": "~/.local/state/life-manager/earn-watch/logs",
+      "log_root": "~/.local/state/mr-bot/earn-watch/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/earn-watch"
+      "state_root": "~/.local/state/mr-bot/earn-watch"
     },
     "earning-health-allslots": {
       "cadence": {
@@ -662,9 +662,9 @@
       "effect_class": "none",
       "entrypoint": "bin/effect-watch.py",
       "label": "ai.anicca.effect-watch",
-      "log_root": "~/.local/state/life-manager/effect-watch/logs",
+      "log_root": "~/.local/state/mr-bot/effect-watch/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/effect-watch"
+      "state_root": "~/.local/state/mr-bot/effect-watch"
     },
     "f7-silence-check": {
       "cadence": {
@@ -744,9 +744,9 @@
       "effect_class": "none",
       "entrypoint": "bin/fuel-watch.py",
       "label": "ai.anicca.fuel-watch",
-      "log_root": "~/.local/state/life-manager/fuel-watch/logs",
+      "log_root": "~/.local/state/mr-bot/fuel-watch/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/fuel-watch"
+      "state_root": "~/.local/state/mr-bot/fuel-watch"
     },
     "fundraiser": {
       "cadence": {
@@ -760,9 +760,9 @@
       "effect_class": "application",
       "entrypoint": "skills/fundraiser-agent/runtime/run.sh",
       "label": "ai.anicca.fundraiser",
-      "log_root": "~/.local/state/life-manager/fundraiser/logs",
+      "log_root": "~/.local/state/mr-bot/fundraiser/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/fundraiser"
+      "state_root": "~/.local/state/mr-bot/fundraiser"
     },
     "gig-outcome-watch": {
       "cadence": {
@@ -776,9 +776,9 @@
       "effect_class": "none",
       "entrypoint": "tools/gig-outcome-watch/notify.sh",
       "label": "ai.anicca.gig-outcome-watch",
-      "log_root": "~/.local/state/life-manager/gig-outcome-watch/logs",
+      "log_root": "~/.local/state/mr-bot/gig-outcome-watch/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/gig-outcome-watch"
+      "state_root": "~/.local/state/mr-bot/gig-outcome-watch"
     },
     "hf-bounty-daily": {
       "cadence": {
@@ -1093,9 +1093,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/legacy/lancers-revenue-browser/run.sh",
       "label": "ai.anicca.lancers-revenue-browser",
-      "log_root": "~/.local/state/life-manager/lancers-revenue-browser/logs",
+      "log_root": "~/.local/state/mr-bot/lancers-revenue-browser/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/lancers-revenue-browser"
+      "state_root": "~/.local/state/mr-bot/lancers-revenue-browser"
     },
     "lancers-revenue-storefront": {
       "cadence": {
@@ -1155,13 +1155,13 @@
       },
       "domain": "physical",
       "effect_class": "none",
-      "entrypoint": "skills/anicca-life-manager/scripts/run.sh",
+      "entrypoint": "skills/anicca-mr-bot/scripts/run.sh",
       "label": "ai.anicca.lateness-heartbeat",
-      "log_root": "~/.local/state/life-manager/lateness-heartbeat/logs",
+      "log_root": "~/.local/state/mr-bot/lateness-heartbeat/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/lateness-heartbeat"
+      "state_root": "~/.local/state/mr-bot/lateness-heartbeat"
     },
-    "life-manager-anicca-en-affirmation-instagram": {
+    "mr-bot-anicca-en-affirmation-instagram": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1184,13 +1184,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-en-affirmation-instagram-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-en-affirmation-instagram",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-en-affirmation-instagram-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-en-affirmation-instagram",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-en-card-instagram": {
+    "mr-bot-anicca-en-card-instagram": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1213,13 +1213,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-en-card-instagram-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-en-card-instagram",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-en-card-instagram-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-en-card-instagram",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-en-slideshow-tiktok": {
+    "mr-bot-anicca-en-slideshow-tiktok": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1242,13 +1242,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-en-slideshow-tiktok-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-en-slideshow-tiktok",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-en-slideshow-tiktok-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-en-slideshow-tiktok",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-en-widget-instagram": {
+    "mr-bot-anicca-en-widget-instagram": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1271,13 +1271,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-en-widget-instagram-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-en-widget-instagram",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-en-widget-instagram-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-en-widget-instagram",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-he": {
+    "mr-bot-anicca-he": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1300,13 +1300,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-he-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-he",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-he-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-he",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-ja-widget-instagram": {
+    "mr-bot-anicca-ja-widget-instagram": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1329,13 +1329,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-ja-widget-instagram-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-ja-widget-instagram",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-ja-widget-instagram-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-ja-widget-instagram",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-jp4": {
+    "mr-bot-anicca-jp4": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1358,13 +1358,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-jp4-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-jp4",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-jp4-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-jp4",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-larry-ja-instagram": {
+    "mr-bot-anicca-larry-ja-instagram": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1387,13 +1387,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-larry-ja-instagram-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-larry-ja-instagram",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-larry-ja-instagram-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-larry-ja-instagram",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-main-instagram": {
+    "mr-bot-anicca-main-instagram": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1416,13 +1416,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-main-instagram-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-main-instagram",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-main-instagram-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-main-instagram",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-main-tiktok": {
+    "mr-bot-anicca-main-tiktok": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1445,13 +1445,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-main-tiktok-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-main-tiktok",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-main-tiktok-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-main-tiktok",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-anicca-obou-instagram": {
+    "mr-bot-anicca-obou-instagram": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1474,13 +1474,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/anicca-obou-instagram-production-boot.sh",
-      "label": "ai.anicca.life-manager-anicca-obou-instagram",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/anicca-obou-instagram-production-boot.sh",
+      "label": "ai.anicca.mr-bot-anicca-obou-instagram",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-cfo-hourly": {
+    "mr-bot-cfo-hourly": {
       "cadence": {
         "start_interval_seconds": 3600
       },
@@ -1491,12 +1491,12 @@
       "domain": "financial",
       "effect_class": "message",
       "entrypoint": "skills/cfo/run.sh",
-      "label": "ai.anicca.life-manager-cfo-hourly",
-      "log_root": "~/.local/state/life-manager/life-manager-cfo-hourly/logs",
+      "label": "ai.anicca.mr-bot-cfo-hourly",
+      "log_root": "~/.local/state/mr-bot/mr-bot-cfo-hourly/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/life-manager-cfo-hourly"
+      "state_root": "~/.local/state/mr-bot/mr-bot-cfo-hourly"
     },
-    "life-manager-connector-native": {
+    "mr-bot-connector-native": {
       "cadence": {
         "start_interval_seconds": 3600
       },
@@ -1507,12 +1507,12 @@
       "domain": "system",
       "effect_class": "none",
       "entrypoint": "skills/connector/run.sh",
-      "label": "ai.anicca.life-manager-connector-native",
-      "log_root": "~/.local/state/life-manager/logs",
+      "label": "ai.anicca.mr-bot-connector-native",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-daily": {
+    "mr-bot-daily": {
       "cadence": {
         "calendar_interval": {
           "Hour": 10,
@@ -1525,13 +1525,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "skills/life-manager/life-manager-daily.sh",
-      "label": "ai.anicca.life-manager-daily",
+      "entrypoint": "skills/mr-bot/mr-bot-daily.sh",
+      "label": "ai.anicca.mr-bot-daily",
       "log_root": "~/.openclaw/logs",
       "provider_route": "deterministic",
       "state_root": "~/.openclaw"
     },
-    "life-manager-daily-driver": {
+    "mr-bot-daily-driver": {
       "cadence": {
         "keep_alive": true
       },
@@ -1542,12 +1542,12 @@
       "domain": "system",
       "effect_class": "none",
       "entrypoint": "runtime/loop/entry_dispatch.py",
-      "label": "ai.anicca.life-manager-daily-driver",
-      "log_root": "~/.local/state/life-manager/logs",
+      "label": "ai.anicca.mr-bot-daily-driver",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-dev": {
+    "mr-bot-dev": {
       "cadence": {
         "calendar_interval": {
           "Hour": 4,
@@ -1560,13 +1560,13 @@
       },
       "domain": "system",
       "effect_class": "none",
-      "entrypoint": "apps/life-manager/scripts/life-manager-dev-daily.js",
-      "label": "ai.anicca.life-manager-dev",
+      "entrypoint": "apps/mr-bot/scripts/mr-bot-dev-daily.js",
+      "label": "ai.anicca.mr-bot-dev",
       "log_root": "~/.openclaw/logs",
       "provider_route": "deterministic",
       "state_root": "~/.openclaw"
     },
-    "life-manager-disk-cleanup": {
+    "mr-bot-disk-cleanup": {
       "cadence": {
         "start_interval_seconds": 300
       },
@@ -1577,12 +1577,12 @@
       "domain": "system",
       "effect_class": "none",
       "entrypoint": "runtime/loop/central_cleanup.py",
-      "label": "ai.anicca.life-manager-disk-cleanup",
-      "log_root": "~/.local/state/life-manager/life-manager-disk-cleanup/logs",
+      "label": "ai.anicca.mr-bot-disk-cleanup",
+      "log_root": "~/.local/state/mr-bot/mr-bot-disk-cleanup/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/life-manager-disk-cleanup"
+      "state_root": "~/.local/state/mr-bot/mr-bot-disk-cleanup"
     },
-    "life-manager-financial-report": {
+    "mr-bot-financial-report": {
       "cadence": {
         "start_interval_seconds": 300
       },
@@ -1592,13 +1592,13 @@
       },
       "domain": "financial",
       "effect_class": "message",
-      "entrypoint": "apps/life-manager/scripts/financial-report-boot.sh",
-      "label": "ai.anicca.life-manager-financial-report",
+      "entrypoint": "apps/mr-bot/scripts/financial-report-boot.sh",
+      "label": "ai.anicca.mr-bot-financial-report",
       "log_root": "~/.anicca/logs",
       "provider_route": "deterministic",
       "state_root": "~/.anicca"
     },
-    "life-manager-honne-en": {
+    "mr-bot-honne-en": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1621,13 +1621,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/honne-en-production-boot.sh",
-      "label": "ai.anicca.life-manager-honne-en",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/honne-en-production-boot.sh",
+      "label": "ai.anicca.mr-bot-honne-en",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-honne-ja": {
+    "mr-bot-honne-ja": {
       "cadence": {
         "calendar_interval": [
           {
@@ -1650,13 +1650,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/honne-ja-production-boot.sh",
-      "label": "ai.anicca.life-manager-honne-ja",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/honne-ja-production-boot.sh",
+      "label": "ai.anicca.mr-bot-honne-ja",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-instagram-metrics": {
+    "mr-bot-instagram-metrics": {
       "cadence": {
         "start_interval_seconds": 1800
       },
@@ -1666,13 +1666,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/instagram-metrics-production-boot.sh",
-      "label": "ai.anicca.life-manager-instagram-metrics",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/instagram-metrics-production-boot.sh",
+      "label": "ai.anicca.mr-bot-instagram-metrics",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-payout": {
+    "mr-bot-payout": {
       "cadence": {
         "start_interval_seconds": 300
       },
@@ -1682,13 +1682,13 @@
       },
       "domain": "financial",
       "effect_class": "money",
-      "entrypoint": "apps/life-manager/scripts/payout-boot.sh",
-      "label": "ai.anicca.life-manager-payout",
+      "entrypoint": "apps/mr-bot/scripts/payout-boot.sh",
+      "label": "ai.anicca.mr-bot-payout",
       "log_root": "~/.anicca/logs",
       "provider_route": "deterministic",
       "state_root": "~/.anicca"
     },
-    "life-manager-selfbuild": {
+    "mr-bot-selfbuild": {
       "cadence": {
         "calendar_interval": {
           "Hour": 4,
@@ -1701,13 +1701,13 @@
       },
       "domain": "system",
       "effect_class": "none",
-      "entrypoint": "skills/life-manager/self-build-daily.sh",
-      "label": "ai.anicca.life-manager-selfbuild",
+      "entrypoint": "skills/mr-bot/self-build-daily.sh",
+      "label": "ai.anicca.mr-bot-selfbuild",
       "log_root": "~/.openclaw/logs",
       "provider_route": "deterministic",
       "state_root": "~/.openclaw"
     },
-    "life-manager-taskmarket-ledger": {
+    "mr-bot-taskmarket-ledger": {
       "cadence": {
         "start_interval_seconds": 300
       },
@@ -1717,13 +1717,13 @@
       },
       "domain": "financial",
       "effect_class": "none",
-      "entrypoint": "apps/life-manager/scripts/taskmarket-work-ledger-boot.sh",
-      "label": "ai.anicca.life-manager-taskmarket-ledger",
+      "entrypoint": "apps/mr-bot/scripts/taskmarket-work-ledger-boot.sh",
+      "label": "ai.anicca.mr-bot-taskmarket-ledger",
       "log_root": "~/.openclaw/logs",
       "provider_route": "deterministic",
       "state_root": "~/.openclaw"
     },
-    "life-manager-tiktok-metrics": {
+    "mr-bot-tiktok-metrics": {
       "cadence": {
         "start_interval_seconds": 1800
       },
@@ -1733,13 +1733,13 @@
       },
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "apps/life-manager/scripts/tiktok-metrics-production-boot.sh",
-      "label": "ai.anicca.life-manager-tiktok-metrics",
-      "log_root": "~/.local/state/life-manager/logs",
+      "entrypoint": "apps/mr-bot/scripts/tiktok-metrics-production-boot.sh",
+      "label": "ai.anicca.mr-bot-tiktok-metrics",
+      "log_root": "~/.local/state/mr-bot/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager"
+      "state_root": "~/.local/state/mr-bot"
     },
-    "life-manager-ugig-invoice-observer": {
+    "mr-bot-ugig-invoice-observer": {
       "cadence": {
         "start_interval_seconds": 300
       },
@@ -1749,13 +1749,13 @@
       },
       "domain": "earn",
       "effect_class": "none",
-      "entrypoint": "apps/life-manager/scripts/ugig-invoice-observer-boot.sh",
-      "label": "ai.anicca.life-manager-ugig-invoice-observer",
+      "entrypoint": "apps/mr-bot/scripts/ugig-invoice-observer-boot.sh",
+      "label": "ai.anicca.mr-bot-ugig-invoice-observer",
       "log_root": "~/.openclaw/logs",
       "provider_route": "deterministic",
       "state_root": "~/.openclaw"
     },
-    "life-manager-x402-ledger": {
+    "mr-bot-x402-ledger": {
       "cadence": {
         "start_interval_seconds": 300
       },
@@ -1765,8 +1765,8 @@
       },
       "domain": "financial",
       "effect_class": "none",
-      "entrypoint": "apps/life-manager/scripts/x402-sale-ledger-boot.sh",
-      "label": "ai.anicca.life-manager-x402-ledger",
+      "entrypoint": "apps/mr-bot/scripts/x402-sale-ledger-boot.sh",
+      "label": "ai.anicca.mr-bot-x402-ledger",
       "log_root": "~/.anicca/logs",
       "provider_route": "deterministic",
       "state_root": "~/.anicca"
@@ -1781,7 +1781,7 @@
       },
       "domain": "system",
       "effect_class": "none",
-      "entrypoint": "skills/life-manager-video/run-store-recordings.sh",
+      "entrypoint": "skills/mr-bot-video/run-store-recordings.sh",
       "label": "ai.anicca.lm-recording-store",
       "log_root": "~/.openclaw/logs",
       "provider_route": "shared-agent-runner",
@@ -1802,9 +1802,9 @@
       "effect_class": "message",
       "entrypoint": "skills/earn/marketing-engine/report/daily_report.py",
       "label": "ai.anicca.marketing-daily-report",
-      "log_root": "~/.local/state/life-manager/marketing-daily-report/logs",
+      "log_root": "~/.local/state/mr-bot/marketing-daily-report/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/marketing-daily-report"
+      "state_root": "~/.local/state/mr-bot/marketing-daily-report"
     },
     "marketing-dashboard": {
       "cadence": {
@@ -1853,9 +1853,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-metrics-daily",
-      "log_root": "~/.local/state/life-manager/marketing-metrics-daily/logs",
+      "log_root": "~/.local/state/mr-bot/marketing-metrics-daily/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/marketing-metrics-daily"
+      "state_root": "~/.local/state/mr-bot/marketing-metrics-daily"
     },
     "marketing-mine-daily": {
       "cadence": {
@@ -1872,9 +1872,9 @@
       "effect_class": "publish",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-mine-daily",
-      "log_root": "~/.local/state/life-manager/marketing-mine-daily/logs",
+      "log_root": "~/.local/state/mr-bot/marketing-mine-daily/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/marketing-mine-daily"
+      "state_root": "~/.local/state/mr-bot/marketing-mine-daily"
     },
     "marketing-owner-daily": {
       "cadence": {
@@ -1891,9 +1891,9 @@
       "effect_class": "publish",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-owner-daily",
-      "log_root": "~/.local/state/life-manager/marketing-owner-daily/logs",
+      "log_root": "~/.local/state/mr-bot/marketing-owner-daily/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/marketing-owner-daily"
+      "state_root": "~/.local/state/mr-bot/marketing-owner-daily"
     },
     "marketing-owner-events": {
       "cadence": {
@@ -1907,9 +1907,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-owner-events",
-      "log_root": "~/.local/state/life-manager/marketing-owner-events/logs",
+      "log_root": "~/.local/state/mr-bot/marketing-owner-events/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/marketing-owner-events"
+      "state_root": "~/.local/state/mr-bot/marketing-owner-events"
     },
     "marketing-owner-weekly": {
       "cadence": {
@@ -1927,9 +1927,9 @@
       "effect_class": "publish",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-owner-weekly",
-      "log_root": "~/.local/state/life-manager/marketing-owner-weekly/logs",
+      "log_root": "~/.local/state/mr-bot/marketing-owner-weekly/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/marketing-owner-weekly"
+      "state_root": "~/.local/state/mr-bot/marketing-owner-weekly"
     },
     "marketing-score-daily": {
       "cadence": {
@@ -1946,9 +1946,9 @@
       "effect_class": "none",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-score-daily",
-      "log_root": "~/.local/state/life-manager/marketing-score-daily/logs",
+      "log_root": "~/.local/state/mr-bot/marketing-score-daily/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/marketing-score-daily"
+      "state_root": "~/.local/state/mr-bot/marketing-score-daily"
     },
     "marketing-weekly-review": {
       "cadence": {
@@ -1966,9 +1966,9 @@
       "effect_class": "message",
       "entrypoint": "runtime/loop/entry_dispatch.py",
       "label": "ai.anicca.marketing-weekly-review",
-      "log_root": "~/.local/state/life-manager/marketing-weekly-review/logs",
+      "log_root": "~/.local/state/mr-bot/marketing-weekly-review/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/marketing-weekly-review"
+      "state_root": "~/.local/state/mr-bot/marketing-weekly-review"
     },
     "mcp-claude-p": {
       "cadence": {
@@ -2033,9 +2033,9 @@
       "effect_class": "none",
       "entrypoint": "skills/anicca-monkey-watchdog/scripts/run.sh",
       "label": "ai.anicca.monkey-watchdog",
-      "log_root": "~/.local/state/life-manager/monkey-watchdog/logs",
+      "log_root": "~/.local/state/mr-bot/monkey-watchdog/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/monkey-watchdog"
+      "state_root": "~/.local/state/mr-bot/monkey-watchdog"
     },
     "openclaw-conformity-monkey": {
       "cadence": {
@@ -2120,9 +2120,9 @@
       "effect_class": "message",
       "entrypoint": "services/sutando-phone/start.sh",
       "label": "ai.anicca.phone-conversation",
-      "log_root": "~/.local/state/life-manager/phone-conversation/logs",
+      "log_root": "~/.local/state/mr-bot/phone-conversation/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/phone-conversation"
+      "state_root": "~/.local/state/mr-bot/phone-conversation"
     },
     "phone-tunnel": {
       "cadence": {
@@ -2136,9 +2136,9 @@
       "effect_class": "none",
       "entrypoint": "services/sutando-phone/tunnel.sh",
       "label": "ai.anicca.phone-tunnel",
-      "log_root": "~/.local/state/life-manager/phone-tunnel/logs",
+      "log_root": "~/.local/state/mr-bot/phone-tunnel/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/phone-tunnel"
+      "state_root": "~/.local/state/mr-bot/phone-tunnel"
     },
     "phone-tunnel-watcher": {
       "cadence": {
@@ -2152,9 +2152,9 @@
       "effect_class": "none",
       "entrypoint": "services/sutando-phone/tunnel-watcher.sh",
       "label": "ai.anicca.phone-tunnel-watcher",
-      "log_root": "~/.local/state/life-manager/phone-tunnel-watcher/logs",
+      "log_root": "~/.local/state/mr-bot/phone-tunnel-watcher/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/phone-tunnel-watcher"
+      "state_root": "~/.local/state/mr-bot/phone-tunnel-watcher"
     },
     "pipecat-phone": {
       "cadence": {
@@ -2168,9 +2168,9 @@
       "effect_class": "message",
       "entrypoint": "skills/anicca-phone/outbound/run.sh",
       "label": "ai.anicca.pipecat-phone",
-      "log_root": "~/.local/state/life-manager/pipecat-phone/logs",
+      "log_root": "~/.local/state/mr-bot/pipecat-phone/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/pipecat-phone"
+      "state_root": "~/.local/state/mr-bot/pipecat-phone"
     },
     "pm-decision-loop": {
       "cadence": {
@@ -2184,9 +2184,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/polymarket-trade/run_decision_loop.sh",
       "label": "ai.anicca.pm-decision-loop",
-      "log_root": "~/.local/state/life-manager/pm-decision-loop/logs",
+      "log_root": "~/.local/state/mr-bot/pm-decision-loop/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/pm-decision-loop"
+      "state_root": "~/.local/state/mr-bot/pm-decision-loop"
     },
     "pm-live-trade": {
       "cadence": {
@@ -2200,9 +2200,9 @@
       "effect_class": "trade",
       "entrypoint": "skills/earn/polymarket-trade/run.sh",
       "label": "ai.anicca.pm-live-trade",
-      "log_root": "~/.local/state/life-manager/pm-live-trade/logs",
+      "log_root": "~/.local/state/mr-bot/pm-live-trade/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/pm-live-trade"
+      "state_root": "~/.local/state/mr-bot/pm-live-trade"
     },
     "realtime-guide": {
       "cadence": {
@@ -2214,11 +2214,11 @@
       },
       "domain": "mental",
       "effect_class": "none",
-      "entrypoint": "skills/anicca-life-manager/scripts/realtime_guide.py",
+      "entrypoint": "skills/anicca-mr-bot/scripts/realtime_guide.py",
       "label": "ai.anicca.realtime-guide",
-      "log_root": "~/.local/state/life-manager/realtime-guide/logs",
+      "log_root": "~/.local/state/mr-bot/realtime-guide/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/realtime-guide"
+      "state_root": "~/.local/state/mr-bot/realtime-guide"
     },
     "reinvest": {
       "cadence": {
@@ -2232,9 +2232,9 @@
       "effect_class": "money",
       "entrypoint": "runtime/earn/reinvest.sh",
       "label": "ai.anicca.reinvest",
-      "log_root": "~/.local/state/life-manager/reinvest/logs",
+      "log_root": "~/.local/state/mr-bot/reinvest/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/reinvest"
+      "state_root": "~/.local/state/mr-bot/reinvest"
     },
     "sbi-usdc-monitor": {
       "cadence": {
@@ -2250,9 +2250,9 @@
       "effect_class": "none",
       "entrypoint": "skills/sbi-usdc-monitor/scripts/run.sh",
       "label": "ai.anicca.sbi-usdc-monitor",
-      "log_root": "~/.local/state/life-manager/sbi-usdc-monitor/logs",
+      "log_root": "~/.local/state/mr-bot/sbi-usdc-monitor/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/sbi-usdc-monitor"
+      "state_root": "~/.local/state/mr-bot/sbi-usdc-monitor"
     },
     "self-improve-evolve": {
       "cadence": {
@@ -2298,9 +2298,9 @@
       "effect_class": "message",
       "entrypoint": "services/slack-bridge/slack-bridge.py",
       "label": "ai.anicca.slack-bridge",
-      "log_root": "~/.local/state/life-manager/slack-bridge/logs",
+      "log_root": "~/.local/state/mr-bot/slack-bridge/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/slack-bridge"
+      "state_root": "~/.local/state/mr-bot/slack-bridge"
     },
     "stripe-revenue-listener": {
       "cadence": {
@@ -2314,9 +2314,9 @@
       "effect_class": "none",
       "entrypoint": "skills/stripe-revenue-listener/scripts/listen.sh",
       "label": "ai.anicca.stripe-revenue-listener",
-      "log_root": "~/.local/state/life-manager/stripe-revenue-listener/logs",
+      "log_root": "~/.local/state/mr-bot/stripe-revenue-listener/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/stripe-revenue-listener"
+      "state_root": "~/.local/state/mr-bot/stripe-revenue-listener"
     },
     "stripe-revenue-poller": {
       "cadence": {
@@ -2330,9 +2330,9 @@
       "effect_class": "none",
       "entrypoint": "skills/stripe-revenue-poller/scripts/poll.sh",
       "label": "ai.anicca.stripe-revenue-poller",
-      "log_root": "~/.local/state/life-manager/stripe-revenue-poller/logs",
+      "log_root": "~/.local/state/mr-bot/stripe-revenue-poller/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/stripe-revenue-poller"
+      "state_root": "~/.local/state/mr-bot/stripe-revenue-poller"
     },
     "telegram-bot": {
       "cadence": {
@@ -2344,11 +2344,11 @@
       },
       "domain": "system",
       "effect_class": "message",
-      "entrypoint": "skills/anicca-life-manager/scripts/telegram_bot.py",
+      "entrypoint": "skills/anicca-mr-bot/scripts/telegram_bot.py",
       "label": "ai.anicca.telegram-bot",
-      "log_root": "~/.local/state/life-manager/telegram-bot/logs",
+      "log_root": "~/.local/state/mr-bot/telegram-bot/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/telegram-bot"
+      "state_root": "~/.local/state/mr-bot/telegram-bot"
     },
     "the402-provider": {
       "cadence": {
@@ -2394,9 +2394,9 @@
       "effect_class": "none",
       "entrypoint": "skills/anicca-core/scripts/tier2-agent-diagnose.sh",
       "label": "ai.anicca.tier2-agent-diagnose",
-      "log_root": "~/.local/state/life-manager/tier2-agent-diagnose/logs",
+      "log_root": "~/.local/state/mr-bot/tier2-agent-diagnose/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/tier2-agent-diagnose"
+      "state_root": "~/.local/state/mr-bot/tier2-agent-diagnose"
     },
     "token-daily-report": {
       "cadence": {
@@ -2413,9 +2413,9 @@
       "effect_class": "none",
       "entrypoint": "skills/self/token-daily-report.sh",
       "label": "ai.anicca.token-daily-report",
-      "log_root": "~/.local/state/life-manager/token-daily-report/logs",
+      "log_root": "~/.local/state/mr-bot/token-daily-report/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/token-daily-report"
+      "state_root": "~/.local/state/mr-bot/token-daily-report"
     },
     "verify-loops-audit": {
       "cadence": {
@@ -2464,9 +2464,9 @@
       "effect_class": "none",
       "entrypoint": "skills/anicca-core/scripts/watchdog.sh",
       "label": "ai.anicca.watchdog",
-      "log_root": "~/.local/state/life-manager/watchdog/logs",
+      "log_root": "~/.local/state/mr-bot/watchdog/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/watchdog"
+      "state_root": "~/.local/state/mr-bot/watchdog"
     },
     "writer-claim-loop": {
       "cadence": {
@@ -2813,9 +2813,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/x402-sell/watch-inflow.sh",
       "label": "ai.anicca.x402-inflow-watch",
-      "log_root": "~/.local/state/life-manager/x402-inflow-watch/logs",
+      "log_root": "~/.local/state/mr-bot/x402-inflow-watch/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/x402-inflow-watch"
+      "state_root": "~/.local/state/mr-bot/x402-inflow-watch"
     },
     "x402-inflow-watch-claude-p": {
       "cadence": {
@@ -2836,9 +2836,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/x402-sell/watch-inflow.sh",
       "label": "ai.anicca.x402-inflow-watch-claude-p",
-      "log_root": "~/.local/state/life-manager/x402-inflow-watch-claude-p/logs",
+      "log_root": "~/.local/state/mr-bot/x402-inflow-watch-claude-p/logs",
       "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/x402-inflow-watch-claude-p"
+      "state_root": "~/.local/state/mr-bot/x402-inflow-watch-claude-p"
     },
     "x402-inflow-watch-franklin1": {
       "cadence": {
@@ -2859,9 +2859,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/x402-sell/watch-inflow.sh",
       "label": "ai.anicca.x402-inflow-watch-franklin1",
-      "log_root": "~/.local/state/life-manager/x402-inflow-watch-franklin1/logs",
+      "log_root": "~/.local/state/mr-bot/x402-inflow-watch-franklin1/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/x402-inflow-watch-franklin1"
+      "state_root": "~/.local/state/mr-bot/x402-inflow-watch-franklin1"
     },
     "x402-inflow-watch-franklin2": {
       "cadence": {
@@ -2882,9 +2882,9 @@
       "effect_class": "none",
       "entrypoint": "skills/earn/x402-sell/watch-inflow.sh",
       "label": "ai.anicca.x402-inflow-watch-franklin2",
-      "log_root": "~/.local/state/life-manager/x402-inflow-watch-franklin2/logs",
+      "log_root": "~/.local/state/mr-bot/x402-inflow-watch-franklin2/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/x402-inflow-watch-franklin2"
+      "state_root": "~/.local/state/mr-bot/x402-inflow-watch-franklin2"
     },
     "x402-monitor": {
       "cadence": {
@@ -2898,9 +2898,9 @@
       "effect_class": "none",
       "entrypoint": "services/x402-endpoint/monitor.sh",
       "label": "ai.anicca.x402-monitor",
-      "log_root": "~/.local/state/life-manager/x402-monitor/logs",
+      "log_root": "~/.local/state/mr-bot/x402-monitor/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/x402-monitor"
+      "state_root": "~/.local/state/mr-bot/x402-monitor"
     },
     "x402-research-serve": {
       "cadence": {
@@ -2946,9 +2946,9 @@
       "effect_class": "money",
       "entrypoint": "skills/earn/x402-sell/seller-boot-v2.sh",
       "label": "ai.anicca.x402-seller-8404",
-      "log_root": "~/.local/state/life-manager/x402-seller-8404/logs",
+      "log_root": "~/.local/state/mr-bot/x402-seller-8404/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/x402-seller-8404"
+      "state_root": "~/.local/state/mr-bot/x402-seller-8404"
     },
     "x402-settlement-recorder": {
       "cadence": {
@@ -2978,9 +2978,9 @@
       "effect_class": "none",
       "entrypoint": "services/x402-endpoint/tunnel.sh",
       "label": "ai.anicca.x402-tunnel",
-      "log_root": "~/.local/state/life-manager/x402-tunnel/logs",
+      "log_root": "~/.local/state/mr-bot/x402-tunnel/logs",
       "provider_route": "deterministic",
-      "state_root": "~/.local/state/life-manager/x402-tunnel"
+      "state_root": "~/.local/state/mr-bot/x402-tunnel"
     }
   },
   "retired_labels": [
@@ -3004,13 +3004,13 @@
     "ai.anicca.larry-jp-sunset-reel-replace-1",
     "ai.anicca.larry-library-filler",
     "ai.anicca.larry-strategy-updater",
-    "ai.anicca.life-manager-connector-healer-shadow",
-    "ai.anicca.life-manager-connector-host-bridge",
-    "ai.anicca.life-manager-connector-native-healthcheck",
-    "ai.anicca.life-manager-money-printer-symphony",
-    "ai.anicca.life-manager-money-printer-symphony-bridge",
-    "ai.anicca.life-manager-upwork-browser",
-    "ai.anicca.life-manager-upwork-free-loop",
+    "ai.anicca.mr-bot-connector-healer-shadow",
+    "ai.anicca.mr-bot-connector-host-bridge",
+    "ai.anicca.mr-bot-connector-native-healthcheck",
+    "ai.anicca.mr-bot-money-printer-symphony",
+    "ai.anicca.mr-bot-money-printer-symphony-bridge",
+    "ai.anicca.mr-bot-upwork-browser",
+    "ai.anicca.mr-bot-upwork-free-loop",
     "ai.anicca.reelclaw-en-card-1",
     "ai.anicca.reelclaw-en-card-2",
     "ai.anicca.reelclaw-en-card-3",

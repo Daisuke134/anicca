@@ -17,7 +17,7 @@
 
 ## Global Constraints
 
-- Luna owns exactly `apps/life-manager/lib/connector-techplay-workflow.js` and `apps/life-manager/lib/connector-techplay-workflow.test.js`. Other files are out of scope.
+- Luna owns exactly `apps/mr-bot/lib/connector-techplay-workflow.js` and `apps/mr-bot/lib/connector-techplay-workflow.test.js`. Other files are out of scope.
 - Production target about 160–220 LOC; test target about 180–260 LOC. The provider boundary exceeds the 100 LOC soft target, so action, readback, evidence, Calendar transport, router, harness, native order, and launchd changes are explicitly removed.
 - Strict TDD: tests first, focused RED caused by the missing workflow, then minimum GREEN implementation.
 - Exact identity: `techplay-event://event/<positive integer>` and `https://techplay.jp/event/<same ID>` only. Reject query, fragment, trailing slash, credentials, port, uppercase raw host, alternate/subdomain hosts, mismatched payload ID/current URL, duplicate IDs, and more than 50 RSS rows.
@@ -30,11 +30,11 @@
 ### Task 1: Add strict TECH PLAY read-only discovery
 
 **Files:**
-- Create: `apps/life-manager/lib/connector-techplay-workflow.js`
-- Create: `apps/life-manager/lib/connector-techplay-workflow.test.js`
+- Create: `apps/mr-bot/lib/connector-techplay-workflow.js`
+- Create: `apps/mr-bot/lib/connector-techplay-workflow.test.js`
 
 - [x] Write failing tests for happy discovery, exact-coverage ordering, identity rejection, paid/external/online/closed/full/ambiguous/explicit school-age-only row skipping, timed Calendar conflict, aggregate audit, bounded dedup, and stage errors. Verify direct action fails safely and readback stays unavailable.
-- [x] Run `node --test apps/life-manager/lib/connector-techplay-workflow.test.js`; RED must be caused by the missing workflow/factory.
+- [x] Run `node --test apps/mr-bot/lib/connector-techplay-workflow.test.js`; RED must be caused by the missing workflow/factory.
 - [x] Export `createTechPlayDiscoveryWorkflow(options)` with only the minimum default RSS/detail readers and normalization described above.
 - [x] Run focused tests, adjacent Eventbrite/Doorkeeper tests, `node --check`, and `git diff --check`.
 - [x] Temporarily remove one canonical raw-equality or unique-free-ticket guard, prove its named negative test fails, restore it, and rerun GREEN.

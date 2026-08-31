@@ -37,10 +37,10 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
         "ProgramArguments": [loop_runner, loop_id, str(release_root)],
         "ProcessType": "Background",
         "EnvironmentVariables": {
-            "LIFE_MANAGER_LOOP_ID": loop_id,
-            "LIFE_MANAGER_REPO": str(release_root),
-            "LIFE_MANAGER_RELEASE_SHA": release_sha,
-            "LIFE_MANAGER_STATE_ROOT": os.path.expanduser(entry["state_root"]),
+            "MR_BOT_LOOP_ID": loop_id,
+            "MR_BOT_REPO": str(release_root),
+            "MR_BOT_RELEASE_SHA": release_sha,
+            "MR_BOT_STATE_ROOT": os.path.expanduser(entry["state_root"]),
         },
         "StandardOutPath": str(Path(log_root) / "launchd.out.log"),
         "StandardErrorPath": str(Path(log_root) / "launchd.err.log"),
@@ -62,7 +62,7 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
         writer_root = str(release_root / "skills/writer-agent")
         value["EnvironmentVariables"].update({
             "ARTICLE_ROOT": writer_root, "ARTICLE_SKILL_DIR": writer_root,
-            "LIFE_MANAGER_REPO": str(release_root),
+            "MR_BOT_REPO": str(release_root),
         })
     return plistlib.dumps(value, fmt=plistlib.FMT_XML, sort_keys=True)
 
@@ -89,13 +89,13 @@ def build_apply_plan(registry: dict, release_root: Path, release_sha: str) -> li
             raise ValueError(f"{loop_id}: missing entrypoint {entry['entrypoint']}")
         if not os.access(executable, os.X_OK):
             raise ValueError(f"{loop_id}: entrypoint is not executable {entry['entrypoint']}")
-        if loop_id == "life-manager-connector-native":
+        if loop_id == "mr-bot-connector-native":
             dependencies = ("playwright-core", "jsqr")
             missing = [name for name in dependencies if not (
-                release_root / "apps/life-manager/node_modules" / name / "package.json"
+                release_root / "apps/mr-bot/node_modules" / name / "package.json"
             ).is_file()]
             if missing:
-                raise ValueError("life-manager-connector-native: Connector runtime dependencies missing")
+                raise ValueError("mr-bot-connector-native: Connector runtime dependencies missing")
         plan.append({
             "loop_id": loop_id,
             "label": entry["label"],
@@ -155,7 +155,7 @@ def _preserve_operational_attributes(new_bytes: bytes, old_bytes: bytes | None) 
 
 def _secure_log_paths(plist_bytes: bytes) -> None:
     plist = plistlib.loads(plist_bytes)
-    state_root = Path(plist["EnvironmentVariables"]["LIFE_MANAGER_STATE_ROOT"])
+    state_root = Path(plist["EnvironmentVariables"]["MR_BOT_STATE_ROOT"])
     state_root.mkdir(parents=True, exist_ok=True, mode=0o700)
     state_root.chmod(0o700)
     paths = {plist["StandardOutPath"], plist["StandardErrorPath"]}

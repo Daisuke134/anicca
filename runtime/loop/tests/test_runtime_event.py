@@ -43,8 +43,8 @@ class RuntimeEventTest(unittest.TestCase):
     def test_disk_cleanup_loop_id_is_not_mistaken_for_api_key(self):
         event = {
             **BASE,
-            "loop_id": "life-manager-disk-cleanup",
-            "evidence_refs": ["lm-loop://life-manager-disk-cleanup/install/summary.json"],
+            "loop_id": "mr-bot-disk-cleanup",
+            "evidence_refs": ["lm-loop://mr-bot-disk-cleanup/install/summary.json"],
         }
         self.assertEqual(validate_runtime_event(event), event)
 

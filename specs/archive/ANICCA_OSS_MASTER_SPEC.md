@@ -212,7 +212,7 @@ state: state/active_call_loop.json で race 防止
 ~/anicca-oss/
 ├── skills/
 │   ├── ===== Core (Day 1 install default) =====
-│   ├── anicca-life-manager/       PATH γ — gcal+call+mail
+│   ├── anicca-mr-bot/       PATH γ — gcal+call+mail
 │   ├── anicca-booking/            PATH γ — LT/job apply (3-gate)
 │   ├── anicca-environment-push/   PATH γ — JETRO 平日 / Startup Hub 土日
 │   ├── anicca-report/             PATH γ — 毎日 18:00 振り返り
@@ -253,7 +253,7 @@ state: state/active_call_loop.json で race 防止
 ├── LICENSE                        MIT
 └── docs/
     ├── ANICCA_OSS_MASTER_SPEC.md  this file
-    ├── ANICCA_LIFE_MANAGER_SPEC.md (既存)
+    ├── ANICCA_MR_BOT_SPEC.md (既存)
     └── ANICCA_TRUE_AUTONOMY_SPEC.md (既存)
 ```
 
@@ -264,7 +264,7 @@ state: state/active_call_loop.json で race 防止
 ```
                   ┌──────────────────────────┐
                   │  Anicca AI services      │
-                  │  (life-manager, booking, │
+                  │  (mr-bot, booking, │
                   │   各 OSS skill)           │
                   └────────────┬─────────────┘
                                │ 受領 UBI token
@@ -358,7 +358,7 @@ XMTP で agent-to-agent 通信
 
 ### Phase B (今夜-明日) — Local Anicca core verify
 
-- T100-T105: E2E test life-manager + booking + renraku + wake + RELENTLESS
+- T100-T105: E2E test mr-bot + booking + renraku + wake + RELENTLESS
 - bug fix loop (動き切るまで 次 進まない、 HARD RULE: JOB'S NOT FINISHED)
 - 5min cron が 24h 安定 走る = pass
 
@@ -808,7 +808,7 @@ ai.anicca.watchdog              5min
 
 ## 10.G-0. Phase 1 完成 spec (= 2026-06-01 夜 build、 wake call 動く 状態)
 
-### 10.G-0.1 Core 2 skill (= anicca-life-manager の 完全 動作 に 必須)
+### 10.G-0.1 Core 2 skill (= anicca-mr-bot の 完全 動作 に 必須)
 
 #### `anicca-travel-fill` (= 新規、 spec § §10.G-0.4)
 gcal next 7 days を scan、 場所 違う 隣接 event 間 に 🚆 移動 block を
@@ -907,26 +907,26 @@ API: gog calendar update primary <event_id> --location <addr>
 
 - 既 自分の OpenClaw or Hermes or Claude-P heartbeat 動かしてる
 - 自分の CONSTITUTION / SOUL / persona 持ってる (= 上書き したくない)
-- Anicca の `anicca-life-manager` だけ 欲しい、 or `anicca-earn-x402` だけ 欲しい
+- Anicca の `anicca-mr-bot` だけ 欲しい、 or `anicca-earn-x402` だけ 欲しい
 - = **skill marketplace pattern** (= CrewAI plugin / Cursor MCP に 近い)
 
 ### 10.G.2 install path
 
 ```bash
 # OpenClaw user
-$ openclaw skill install github.com/Daisuke134/anicca-oss#skills/anicca-life-manager
-   → ~/.openclaw/skills/anicca-life-manager/ に clone
-   → ~/.openclaw/skills/anicca-life-manager/.env.example を 読んで 必要 key を ask
+$ openclaw skill install github.com/Daisuke134/anicca-oss#skills/anicca-mr-bot
+   → ~/.openclaw/skills/anicca-mr-bot/ に clone
+   → ~/.openclaw/skills/anicca-mr-bot/.env.example を 読んで 必要 key を ask
    → ~/.openclaw/.env に append
    → HEARTBEAT.md / CONSTITUTION は user の もの を 維持 (= 触らない)
    → cron 登録 (skill/cron.toml を 読む)
 
 # Hermes user
-$ hermes skill install github.com/Daisuke134/anicca-oss#skills/anicca-life-manager
+$ hermes skill install github.com/Daisuke134/anicca-oss#skills/anicca-mr-bot
    → 同 (= Hermes 側 が skill loader 提供)
 
 # Claude-P user
-$ ~/.openclaw/skills/anicca-life-manager/install-as-claude-p.sh
+$ ~/.openclaw/skills/anicca-mr-bot/install-as-claude-p.sh
    → launchd plist 登録 + heartbeat 内 で `claude -p < skill.md` invoke
 ```
 
@@ -934,7 +934,7 @@ $ ~/.openclaw/skills/anicca-life-manager/install-as-claude-p.sh
 
 | Skill | 機能 | 依存 key |
 |---|---|---|
-| `anicca-life-manager` | gcal+call+mail (= PATH γ core) | Twilio / Gemini / Google / Telegram |
+| `anicca-mr-bot` | gcal+call+mail (= PATH γ core) | Twilio / Gemini / Google / Telegram |
 | `anicca-booking` | LT/job apply (3-gate) | Gemini / Google / connpass scraping |
 | `anicca-environment-push` | 場所 推定 → JETRO 平日 等 | Google / Telegram |
 | `anicca-report` | 毎日 18:00 Gmail / Slack 報告 | Gmail (gog) |
@@ -954,7 +954,7 @@ $ ~/.openclaw/skills/anicca-life-manager/install-as-claude-p.sh
 - 各 skill は **完全 standalone**: SKILL.md + scripts/ + .env.example + cron.toml + README.md
 - user の CONSTITUTION / SOUL / persona は 触らない
 - user が 別 Anicca-like 人格 を 持って いる場合 mannequin として 動く (= 自前 persona 主張 しない)
-- skill 個別 uninstall: `openclaw skill uninstall anicca-life-manager` で 完全 clean
+- skill 個別 uninstall: `openclaw skill uninstall anicca-mr-bot` で 完全 clean
 
 ---
 
@@ -1422,7 +1422,7 @@ Already running Hermes / OpenClaw / Claude-P?
 
 You don't need the whole distro. Install just the skills you want:
 
-  openclaw skill install anicca-life-manager
+  openclaw skill install anicca-mr-bot
   openclaw skill install anicca-earn-x402
 
 Skill marketplace pattern. Your CONSTITUTION stays yours.
@@ -1495,7 +1495,7 @@ github.com/Daisuke134/anicca-oss
    │    ├─ daemon.py
    │    ├─ config.py                       (= Pydantic Settings)
    │    └─ skills/
-   │         ├─ life_manager/              ← 今 ~/.openclaw/skills/anicca-life-manager/
+   │         ├─ mr_bot/              ← 今 ~/.openclaw/skills/anicca-mr-bot/
    │         ├─ phone/                     ← 今 ~/anicca-oss-pipecat/skills/anicca-phone/
    │         ├─ booking/
    │         └─ earn_x402/
@@ -1579,7 +1579,7 @@ ANICCA_INSTANCE=kimi     anicca-daemon  # → ~/.anicca/instances/kimi/
 |---|---|---|
 | Aider `pyproject.toml:25` | `[project.scripts] aider = "aider.main:main"` | `pyproject.toml` |
 | Aider `main.py:370,1185` | `Path.home() / ".aider"` constants | `src/anicca/config.py` |
-| Morning Sync `services/google_calendar.py reminder_loop()` | `while True: time.sleep(30)` poll | `src/anicca/skills/life_manager/daemon.py` 内 (= cron 5min を 30s に も 変えれる) |
+| Morning Sync `services/google_calendar.py reminder_loop()` | `while True: time.sleep(30)` poll | `src/anicca/skills/mr_bot/daemon.py` 内 (= cron 5min を 30s に も 変えれる) |
 | Calendar Bot `app/utils/google.py` | `InstalledAppFlow → token.pkl` Google OAuth | `src/anicca/auth/google.py` (= 将来 gog CLI 廃止 時) |
 | openclaw-telegram-call-addon `index.js:8-10` | `PIPECAT_CALL_URL` + `PIPECAT_CALL_SECRET` env | `config.example.yaml` |
 | Vapi Assistant `src/services/call_service.py` | `requests.post({api_url}/call, json={...})` 構造 | `place_lateness_call()` refactor 形 |
@@ -1622,21 +1622,21 @@ S1 (= 明日 以降、 wake call が 24h 安定 verify した 後)
   □ rollback: rm -rf ~/git/anicca-oss/  (= 何も 触って ない、 安全)
 
 S2 (= S1 後)
-  □ 現 ~/.openclaw/skills/anicca-life-manager/  →
-       ~/git/anicca-oss/src/anicca/skills/life_manager/  に git mv
-  □ ~/.openclaw/skills/anicca-life-manager  →  symlink only に 残す
-    ln -sf ~/git/anicca-oss/src/anicca/skills/life_manager/ \
-            ~/.openclaw/skills/anicca-life-manager
+  □ 現 ~/.openclaw/skills/anicca-mr-bot/  →
+       ~/git/anicca-oss/src/anicca/skills/mr_bot/  に git mv
+  □ ~/.openclaw/skills/anicca-mr-bot  →  symlink only に 残す
+    ln -sf ~/git/anicca-oss/src/anicca/skills/mr_bot/ \
+            ~/.openclaw/skills/anicca-mr-bot
   □ cron 触らず (= 既存 path 経由 で symlink 越し 動く こと verify)
   □ rollback: rm symlink、 git mv 戻す
 
 S3 (= S2 で 24h 安定 verify 後)
-  □ cron message を ~/git/anicca-oss/src/anicca/skills/life_manager/scripts/
+  □ cron message を ~/git/anicca-oss/src/anicca/skills/mr_bot/scripts/
     run.sh に 直 path 変更 (= symlink 経由 廃止)
   □ rollback: cron edit で 元 path に 戻す
 
 S4 (= cron 直 path で 1 週間 安定 後)
-  □ ~/.openclaw/skills/anicca-life-manager/ symlink 削除
+  □ ~/.openclaw/skills/anicca-mr-bot/ symlink 削除
   □ ~/.openclaw/skills/lateness-guard/ 削除 (= 旧 完全 撤去)
 
 S5 (= Anicca #2 #3 起動)
@@ -1663,7 +1663,7 @@ Dais が他 agent (other Claude Code sessions) と 並列 work してる場合�
 
 ## 12. 関連 specs
 
-- `ANICCA_LIFE_MANAGER_SPEC.md` (v0.8、 2900+ 行) — PATH γ 詳細
+- `ANICCA_MR_BOT_SPEC.md` (v0.8、 2900+ 行) — PATH γ 詳細
 - `ANICCA_TRUE_AUTONOMY_SPEC.md` — on-chain only path
 - `ANICCA_USEFUL_CONTENT_SPEC.md` — content factory
 - `CONTENT_FACTORY_SPEC.md` — slideshow factory

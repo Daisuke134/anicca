@@ -6,7 +6,7 @@
 
 **Goal:** connpass公式v2 APIの個人・非商用利用を正直な用途で申請し、key受領まではconnpassへの全自動accessをcodeで禁止する。
 
-**Architecture:** connpassはLumaでcoverageできない日のread-only discovery候補に限定する。公式v2 APIはGET discoveryだけで参加申込みendpointを持たず、現行connpass規約は公式API以外の自動crawler/scraper等を禁止するため、Life Managerはconnpass browser自動申込みを行わない。ローカル個人keyを将来の商用Webへ転用せず、Web版は企業契約または別の許諾済みsourceを使う。
+**Architecture:** connpassはLumaでcoverageできない日のread-only discovery候補に限定する。公式v2 APIはGET discoveryだけで参加申込みendpointを持たず、現行connpass規約は公式API以外の自動crawler/scraper等を禁止するため、Mr.botはconnpass browser自動申込みを行わない。ローカル個人keyを将来の商用Webへ転用せず、Web版は企業契約または別の許諾済みsourceを使う。
 
 ## Verified official facts (2026-08-01)
 

@@ -3,7 +3,7 @@
   "observed_at": "2026-08-01T20:40:14Z",
   "commit": "c472d6c68f3d1a7b7b9fcbe76c5b94cde885fd39",
   "launchd": {
-    "label": "ai.anicca.life-manager-connector-host-bridge",
+    "label": "ai.anicca.mr-bot-connector-host-bridge",
     "state": "running",
     "listener": "127.0.0.1:18793"
   },

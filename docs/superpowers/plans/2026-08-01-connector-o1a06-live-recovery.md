@@ -24,8 +24,8 @@
 ### Task 1: Telegram incident contract
 
 **Files:**
-- Modify: `apps/life-manager/lib/outbound-guardian.test.js`
-- Modify: `apps/life-manager/lib/outbound-guardian.js`
+- Modify: `apps/mr-bot/lib/outbound-guardian.test.js`
+- Modify: `apps/mr-bot/lib/outbound-guardian.js`
 
 **Interfaces:**
 - Consumes: `runOutboundGuardian(options)`、既存health verdict。
@@ -89,7 +89,7 @@
 
 **Files:**
 - Create: `docs/evidence/outbound/2026-08-01-o1a06-live-recovery.json`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 **Interfaces:**
 - Consumes: installed launchd job、running local worker、Telegram target。
@@ -105,7 +105,7 @@
 
 - [x] **Step 3: Force one real stop**
 
-  Stop exactly `life-manager-local-worker-1`, immediately run Guardian, and capture the unhealthy verdict and alert message ID。
+  Stop exactly `mr-bot-local-worker-1`, immediately run Guardian, and capture the unhealthy verdict and alert message ID。
 
 - [x] **Step 4: Verify autonomous recovery**
 

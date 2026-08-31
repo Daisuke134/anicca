@@ -4,7 +4,7 @@
 > claim 13c complete until a production `lm_agent_earnings` row is read back and
 > the report is generated from that row plus a fresh Polygon balance.
 
-**Goal:** Connect one completed Polymarket CAPITAL cycle to Life Manager's
+**Goal:** Connect one completed Polymarket CAPITAL cycle to Mr.bot's
 append-only earnings ledger without counting recovered principal as revenue.
 
 **Architecture:** A pure adapter validates a six-decimal USD cycle envelope and
@@ -22,10 +22,10 @@ accounting but gains a separate exact atomic balance representation for pUSD.
 
 **Files:**
 
-- Modify: `apps/life-manager/lib/earnings-ledger.js`
-- Modify: `apps/life-manager/lib/earnings-ledger.test.js`
-- Modify: `apps/life-manager/lib/earnings-runtime.js`
-- Modify: `apps/life-manager/lib/earnings-runtime.test.js`
+- Modify: `apps/mr-bot/lib/earnings-ledger.js`
+- Modify: `apps/mr-bot/lib/earnings-ledger.test.js`
+- Modify: `apps/mr-bot/lib/earnings-runtime.js`
+- Modify: `apps/mr-bot/lib/earnings-runtime.test.js`
 
 ### Step 1: Write failing ledger tests
 
@@ -41,7 +41,7 @@ Add tests proving:
 Run:
 
 ```bash
-node --test apps/life-manager/lib/earnings-ledger.test.js
+node --test apps/mr-bot/lib/earnings-ledger.test.js
 ```
 
 Expected: new tests fail because atomic balance options are not implemented.
@@ -79,8 +79,8 @@ the exact representation to `rollUpMonth`.
 Run:
 
 ```bash
-node --test apps/life-manager/lib/earnings-ledger.test.js \
-  apps/life-manager/lib/earnings-runtime.test.js
+node --test apps/mr-bot/lib/earnings-ledger.test.js \
+  apps/mr-bot/lib/earnings-runtime.test.js
 ```
 
 Expected: PASS.
@@ -89,10 +89,10 @@ Expected: PASS.
 
 ```bash
 git fetch origin
-git add apps/life-manager/lib/earnings-ledger.js \
-  apps/life-manager/lib/earnings-ledger.test.js \
-  apps/life-manager/lib/earnings-runtime.js \
-  apps/life-manager/lib/earnings-runtime.test.js
+git add apps/mr-bot/lib/earnings-ledger.js \
+  apps/mr-bot/lib/earnings-ledger.test.js \
+  apps/mr-bot/lib/earnings-runtime.js \
+  apps/mr-bot/lib/earnings-runtime.test.js
 git commit -m "feat: report exact atomic agent balances"
 git push
 ```
@@ -101,8 +101,8 @@ git push
 
 **Files:**
 
-- Create: `apps/life-manager/lib/polymarket-cycle.js`
-- Create: `apps/life-manager/lib/polymarket-cycle.test.js`
+- Create: `apps/mr-bot/lib/polymarket-cycle.js`
+- Create: `apps/mr-bot/lib/polymarket-cycle.test.js`
 
 ### Step 1: Write failing pure adapter tests
 
@@ -126,7 +126,7 @@ Also prove rejection before any write for:
 Run:
 
 ```bash
-node --test apps/life-manager/lib/polymarket-cycle.test.js
+node --test apps/mr-bot/lib/polymarket-cycle.test.js
 ```
 
 Expected: FAIL because the module does not exist.
@@ -157,7 +157,7 @@ the rows by passing them through `normaliseEntry`.
 Run:
 
 ```bash
-node --test apps/life-manager/lib/polymarket-cycle.test.js
+node --test apps/mr-bot/lib/polymarket-cycle.test.js
 ```
 
 Expected: PASS.
@@ -168,8 +168,8 @@ Then fetch, commit, and push the two files.
 
 **Files:**
 
-- Modify: `apps/life-manager/lib/polymarket-cycle.js`
-- Modify: `apps/life-manager/lib/polymarket-cycle.test.js`
+- Modify: `apps/mr-bot/lib/polymarket-cycle.js`
+- Modify: `apps/mr-bot/lib/polymarket-cycle.test.js`
 
 ### Step 1: Write failing runtime tests
 
@@ -202,8 +202,8 @@ and push.
 **Files:**
 
 - Create: `docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json`
-- Create: `apps/life-manager/scripts/record-polymarket-cycle.js`
-- Create: `apps/life-manager/scripts/record-polymarket-cycle.test.js`
+- Create: `apps/mr-bot/scripts/record-polymarket-cycle.js`
+- Create: `apps/mr-bot/scripts/record-polymarket-cycle.test.js`
 
 ### Step 1: Commit the immutable public evidence envelope
 
@@ -270,7 +270,7 @@ Record only booleans and public values in logs/evidence.
 Run:
 
 ```bash
-node apps/life-manager/scripts/record-polymarket-cycle.js \
+node apps/mr-bot/scripts/record-polymarket-cycle.js \
   --evidence docs/evidence/agent-economy/2026-07-27-polymarket-tatiana-cycle.json \
   --month 2026-07
 ```
@@ -299,11 +299,11 @@ FIN-LIVE truthfully open. Set the next cursor to 13c-SELL.
 Run:
 
 ```bash
-node --test apps/life-manager/lib/earnings-ledger.test.js \
-  apps/life-manager/lib/earnings-runtime.test.js \
-  apps/life-manager/lib/earnings-migration.test.js \
-  apps/life-manager/lib/polymarket-cycle.test.js \
-  apps/life-manager/scripts/record-polymarket-cycle.test.js
+node --test apps/mr-bot/lib/earnings-ledger.test.js \
+  apps/mr-bot/lib/earnings-runtime.test.js \
+  apps/mr-bot/lib/earnings-migration.test.js \
+  apps/mr-bot/lib/polymarket-cycle.test.js \
+  apps/mr-bot/scripts/record-polymarket-cycle.test.js
 git diff --check
 git status --short
 ```

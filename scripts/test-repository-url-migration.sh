@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-expected_h1='# Life Manager'
-english_identity='Life Manager is the product, repository, AI, agent, and mission. Anicca is the company name only.'
-japanese_identity='Life Manager は製品、リポジトリ、AI、エージェント、ミッションの名前です。Anicca は会社名としてのみ使います。'
+expected_h1='# Mr.bot'
+english_identity='Mr.bot is the product, repository, AI, agent, and mission. Anicca is the company name only.'
+japanese_identity='Mr.bot は製品、リポジトリ、AI、エージェント、ミッションの名前です。Anicca は会社名としてのみ使います。'
 separate_en='separate pro''ject|its own re''po'
 separate_ja='独立したプロ''ジェクト|このリポジトリには含まれま''せん|このrepoに含まれま''せん'
 identity_contradiction_pattern="${separate_en}|${separate_ja}"
@@ -17,11 +17,11 @@ test "$(sed -n '1p' README.ja.md)" = "$expected_h1" || {
   exit 1
 }
 git grep -Fq "$english_identity" -- README.md || {
-  echo 'missing English Life Manager identity boundary' >&2
+  echo 'missing English Mr.bot identity boundary' >&2
   exit 1
 }
 git grep -Fq "$japanese_identity" -- README.ja.md || {
-  echo 'missing Japanese Life Manager identity boundary' >&2
+  echo 'missing Japanese Mr.bot identity boundary' >&2
   exit 1
 }
 test "$(grep -Foc 'Anicca' README.md)" = 1 || {
@@ -48,12 +48,12 @@ if grep -Eqi 'anicca (loop|install)' install.sh; then
   echo 'legacy lowercase product name remains in install.sh output' >&2
   exit 1
 fi
-test "$(jq -r .slug skills/earn/x402-sell/chip.json)" = 'life-manager-research_finchip' || {
-  echo 'legacy Life Manager x402 public slug remains' >&2
+test "$(jq -r .slug skills/earn/x402-sell/chip.json)" = 'mr-bot-research_finchip' || {
+  echo 'legacy Mr.bot x402 public slug remains' >&2
   exit 1
 }
 if git grep -nI -E "$identity_contradiction_pattern" -- README.md README.ja.md; then
-  echo 'README still describes Life Manager as a separate repository' >&2
+  echo 'README still describes Mr.bot as a separate repository' >&2
   exit 1
 fi
 test "$(grep -Fxc -- '- **Repository (whole product):** <https://github.com/Daisuke134/life-manager>' README.md)" = 1

@@ -5,7 +5,7 @@ description: Use when operating, diagnosing, or extending the canonical Lancers 
 
 # Lancers Money Loop
 
-Operate Lancers from the Life Manager exact-release source. Public/provider readback and durable receipts are truth; process health,
+Operate Lancers from the Mr.bot exact-release source. Public/provider readback and durable receipts are truth; process health,
 listing count, proposals, forecasts, and unpaid contracts are not revenue.
 
 ## Architecture

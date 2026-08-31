@@ -1,6 +1,6 @@
-# The agent economy underneath Life Manager
+# The agent economy underneath Mr.bot
 
-This file holds the part of the project that is **not** the product. Life Manager is a personal manager for a
+This file holds the part of the project that is **not** the product. Mr.bot is a personal manager for a
 human's body, mind, and money ([README](../README.md)). What follows is the layer that pays for it: agents that
 hold their own wallet, earn, and cover their own compute.
 
@@ -28,7 +28,7 @@ compound.
 Run it on a Claude subscription you already pay for, no crypto needed:
 
 ```bash
-git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
+git clone https://github.com/Daisuke134/life-manager ~/mr-bot && cd ~/mr-bot
 ./install.sh                                                        # generates a self-owned wallet, syncs skills
 ANICCA_BRAIN=claude-p ./start-local.sh node runtime/loop/index.mjs   # start the loop on `claude -p`
 ```
@@ -37,8 +37,8 @@ It wakes on a timer, picks what to do (trade, explore, redeem, spawn…), does i
 ledger, and reports to the [live dashboard](https://aniccaai.com/dashboard). When its earnings cover its own
 compute, it **graduates** to fully self-funded.
 
-`install.sh` defaults to `${XDG_STATE_HOME:-$HOME/.local/state}/life-manager`. Set `LIFE_MANAGER_HOME=/your/runtime`
-to isolate an instance. For containers, CI, or a manual foreground process, set `LIFE_MANAGER_INSTALL_DAEMON=0`;
+`install.sh` defaults to `${XDG_STATE_HOME:-$HOME/.local/state}/mr-bot`. Set `MR_BOT_HOME=/your/runtime`
+to isolate an instance. For containers, CI, or a manual foreground process, set `MR_BOT_INSTALL_DAEMON=0`;
 this installs the same locked dependencies and runtime body without touching LaunchAgents or system services.
 
 ---
@@ -50,7 +50,7 @@ model** (free when idle, frontier when a task or its balance warrants it).
 
 ### ① automaton — self-funded on Base (ClawRouter fuel)
 ```bash
-git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
+git clone https://github.com/Daisuke134/life-manager ~/mr-bot && cd ~/mr-bot
 ./install.sh
 ./start-local.sh node runtime/loop/index.mjs     # self-pay compute proxy (x402) + the loop
 ```

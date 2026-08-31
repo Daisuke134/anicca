@@ -10,7 +10,7 @@ OPERATOR_HOME_TOKEN='$HOME'
 OPENCLAW_PATH_SUFFIX='/.openclaw'
 
 for script in "$ROOT/scripts/publish_prepare.sh" "$ROOT/scripts/publish_finish.sh"; do
-  rg -q '^CAPAFY_PUBLISHER_STATE_HOME="\$\{CAPAFY_PUBLISHER_STATE_HOME:-\$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher\}"$' "$script"
+  rg -q '^CAPAFY_PUBLISHER_STATE_HOME="\$\{CAPAFY_PUBLISHER_STATE_HOME:-\$MR_BOT_STATE_HOME/runtime/capafy-publisher\}"$' "$script"
   rg -q '^export CAPAFY_PUBLISHER_STATE_HOME$' "$script"
 done
 if rg -qF "${OPERATOR_HOME_TOKEN}${OPENCLAW_PATH_SUFFIX}" "$ROOT/scripts/publish_prepare.sh" "$ROOT/scripts/publish_finish.sh"; then
@@ -19,7 +19,7 @@ if rg -qF "${OPERATOR_HOME_TOKEN}${OPENCLAW_PATH_SUFFIX}" "$ROOT/scripts/publish
 fi
 
 for id in 1037238583 7631594519; do
-  got="$(cd "$PUB" && LIFE_MANAGER_STATE_HOME="$STATE_HOME" CAPAFY_PUBLISH_WORK_DIR="$STATE_HOME/runtime/capafy-publisher/work/agents/$id" python3 - <<'PY'
+  got="$(cd "$PUB" && MR_BOT_STATE_HOME="$STATE_HOME" CAPAFY_PUBLISH_WORK_DIR="$STATE_HOME/runtime/capafy-publisher/work/agents/$id" python3 - <<'PY'
 from packaging.common.constants import DEVELOPER_WORK_DIR_PATH
 print(DEVELOPER_WORK_DIR_PATH)
 PY
@@ -236,7 +236,7 @@ PY
 chmod +x "$FAKE_BIN/python3"
 set +e
 FAKE_CALLS="$FAKE_CALLS" REAL_PYTHON="$REAL_PYTHON" PATH="$FAKE_BIN:$PATH" \
-  LIFE_MANAGER_STATE_HOME="$STATE_HOME/status-state" CAPAFY_PUBLISHER_STATE_HOME="$STATE_HOME/status-state/runtime/capafy-publisher" \
+  MR_BOT_STATE_HOME="$STATE_HOME/status-state" CAPAFY_PUBLISHER_STATE_HOME="$STATE_HOME/status-state/runtime/capafy-publisher" \
   bash "$ROOT/scripts/publish_finish.sh" agent-1 unused-skill >/dev/null 2>&1
 status_gate_rc=$?
 set -e
@@ -297,7 +297,7 @@ for mode in unknown-config unknown-post refresh-mismatch; do
   : > "$UNKNOWN_REMOTE_COUNT"
   set +e
   FAKE_CALLS="$UNKNOWN_CALLS" REAL_PYTHON="$REAL_PYTHON" FAKE_REMOTE_COUNT="$UNKNOWN_REMOTE_COUNT" FAKE_REFRESH_MARKER="$FAKE_REFRESH_MARKER" FAKE_MODE="$mode" PATH="$UNKNOWN_BIN:$PATH" \
-    LIFE_MANAGER_STATE_HOME="$STATE_HOME/$mode-state" CAPAFY_PUBLISHER_STATE_HOME="$STATE_HOME/$mode-state/runtime/capafy-publisher" CAPAFY_HOST_OPENROUTER_KEY=test-key \
+    MR_BOT_STATE_HOME="$STATE_HOME/$mode-state" CAPAFY_PUBLISHER_STATE_HOME="$STATE_HOME/$mode-state/runtime/capafy-publisher" CAPAFY_HOST_OPENROUTER_KEY=test-key \
     bash "$ROOT/scripts/publish_finish.sh" agent-1 unused-skill >/dev/null 2>&1
   unknown_rc=$?
   set -e
@@ -377,7 +377,7 @@ for mode in prepare-envelope wrong-status security-false next-action-missing wro
   set +e
   PREPARE_COUNT="$PREPARE_COUNT" CONTINUE_COUNT="$CONTINUE_COUNT" CP2_MARKER="$CP2_MARKER" CP3_MARKER="$CP3_MARKER" \
     REAL_PYTHON="$REAL_PYTHON" FAKE_MODE="$mode" PATH="$PREPARE_BIN:$PATH" \
-    LIFE_MANAGER_STATE_HOME="$STATE_HOME/$mode-state" CAPAFY_PUBLISHER_STATE_HOME="$STATE_HOME/$mode-state/runtime/capafy-publisher" CAPAFY_HOST_OPENROUTER_KEY=test-key \
+    MR_BOT_STATE_HOME="$STATE_HOME/$mode-state" CAPAFY_PUBLISHER_STATE_HOME="$STATE_HOME/$mode-state/runtime/capafy-publisher" CAPAFY_HOST_OPENROUTER_KEY=test-key \
     bash "$ROOT/scripts/publish_finish.sh" agent-1 unused-skill >/dev/null 2>&1
   prepare_rc=$?
   set -e

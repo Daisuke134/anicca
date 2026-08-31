@@ -24,7 +24,7 @@ FINAL_REASON="mercor_result_missing"
 
 mkdir -p "$MERCOR_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/evidence" "$JOB_SEARCH_STATE_ROOT/logs" "$EVIDENCE"
 chmod 700 "$JOB_SEARCH_STATE_ROOT" "$MERCOR_STATE_ROOT" "$JOB_SEARCH_STATE_ROOT/evidence" "$JOB_SEARCH_STATE_ROOT/logs" "$EVIDENCE"
-export LIFE_MANAGER_PROVIDER_LEASE_PATH="$MERCOR_STATE_ROOT/.pass.lock"
+export MR_BOT_PROVIDER_LEASE_PATH="$MERCOR_STATE_ROOT/.pass.lock"
 export PYTHONPATH="$JOB_SEARCH_APP_ROOT"
 
 finalize() {
@@ -84,7 +84,7 @@ set +e
   --run-id "$RUN_ID" 2>"$PASS_STDERR"
 PASS_RC=$?
 set -e
-if [[ "$PASS_RC" -eq 75 ]] && grep -Fqx "LIFE_MANAGER_PROVIDER_LEASE_BUSY" "$PASS_STDERR"; then
+if [[ "$PASS_RC" -eq 75 ]] && grep -Fqx "MR_BOT_PROVIDER_LEASE_BUSY" "$PASS_STDERR"; then
   FINAL_REASON="mercor_pass_already_running"
   exit 0
 fi

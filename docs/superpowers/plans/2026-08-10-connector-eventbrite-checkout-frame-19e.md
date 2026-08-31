@@ -13,8 +13,8 @@ Eventbriteのstrict eligible candidateだけについて、canonical detail page
 
 ## Owned files
 
-1. `apps/life-manager/lib/connector-production-browser-harness.js`
-2. `apps/life-manager/lib/connector-production-browser-harness.test.js`
+1. `apps/mr-bot/lib/connector-production-browser-harness.js`
+2. `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 ## RED
 

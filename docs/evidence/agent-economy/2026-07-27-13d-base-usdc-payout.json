@@ -59,7 +59,7 @@
     "credential_value_scan": "0 hits"
   },
   "production": {
-    "launchd_label": "ai.anicca.life-manager-payout",
+    "launchd_label": "ai.anicca.mr-bot-payout",
     "interval_seconds": 300,
     "runs_observed": 2,
     "last_exit_code": 0,

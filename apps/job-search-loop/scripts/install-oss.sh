@@ -207,9 +207,9 @@ start_setup() {
   record_state browser_ready
   cat <<'GUIDE'
 
-Job Hunter setup is open in the dedicated Life Manager browser.
+Job Hunter setup is open in the dedicated Mr.bot browser.
 Complete Google login only on the official page. Workday tenant accounts are created or
-reused later by the loop for each fit-qualified job; do not send Life Manager a password,
+reused later by the loop for each fit-qualified job; do not send Mr.bot a password,
 OTP, identity document, or private legal value.
 
 When Google is ready, return to Terminal and run the same public command again.

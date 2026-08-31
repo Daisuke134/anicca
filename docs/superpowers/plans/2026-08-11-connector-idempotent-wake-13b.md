@@ -23,8 +23,8 @@ Teach the minimal runner to treat a validated `reused` bundle as an already-comp
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-minimal-runner.test.js`
-2. `apps/life-manager/lib/connector-minimal-runner.js`
+1. `apps/mr-bot/lib/connector-minimal-runner.test.js`
+2. `apps/mr-bot/lib/connector-minimal-runner.js`
 
 Soft target: 2 files; production +15–35 LOC; tests +70–120 LOC.
 

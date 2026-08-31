@@ -19,7 +19,7 @@ set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPO_ROOT="$(cd "${LIFE_MANAGER_SOURCE_REPO:-$SCRIPT_ROOT}" && pwd)"
+REPO_ROOT="$(cd "${MR_BOT_SOURCE_REPO:-$SCRIPT_ROOT}" && pwd)"
 LOOPS_ROOT="${LOOPS_ROOT:-$HOME/loops}"
 RELEASES="$LOOPS_ROOT/releases"
 CURRENT="$LOOPS_ROOT/current"
@@ -33,7 +33,7 @@ die() { echo "cut-loop-release: $*" >&2; exit 1; }
 
 prune_releases_after() {
   local keep="$1"
-  LIFE_MANAGER_RELEASE_KEEP="$keep" \
+  MR_BOT_RELEASE_KEEP="$keep" \
     python3 "$SCRIPT_ROOT/runtime/loop/central_cleanup.py" --release-gc-only >/dev/null || \
     die "safe release pruning failed"
 }
@@ -99,7 +99,7 @@ if [ "$ARCHIVE_RC" -ne 0 ]; then
   die "export of $SHORT failed"
 fi
 
-for package_dir in "$DEST" "$DEST/runtime/agentmail" "$DEST/apps/life-manager"; do
+for package_dir in "$DEST" "$DEST/runtime/agentmail" "$DEST/apps/mr-bot"; do
   [ -f "$package_dir/package.json" ] && [ -f "$package_dir/package-lock.json" ] || continue
   [ -n "$NPM_BIN" ] || die "npm is required to build locked runtime dependencies"
   (cd "$package_dir" && "$NPM_BIN" ci --omit=dev --ignore-scripts) || \

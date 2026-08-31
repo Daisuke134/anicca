@@ -28,8 +28,8 @@
 ### Task 1: Route Doorkeeper through the production factory
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-minimal-production.js`
-- Modify: `apps/life-manager/lib/connector-minimal-production.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-production.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-production.test.js`
 
 - [x] **Step 1: Write RED routing tests**
 
@@ -44,7 +44,7 @@
 - [x] **Step 2: Run RED**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-minimal-production.test.js
   ```
 
@@ -64,7 +64,7 @@
 - [x] **Step 4: Run GREEN and focused adjacent checks**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-minimal-production.test.js
   node --test lib/connector-doorkeeper-workflow.test.js lib/connector-minimal-runner.test.js
   node --check lib/connector-minimal-production.js

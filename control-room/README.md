@@ -194,7 +194,7 @@ Per HARD RULE #0.12 (verify-before-completion 5-step gate):
 | x402 endpoint live | `curl https://<cloudflared>/research` → HTTP 402 + invoice JSON |
 | Constitution hash | `shasum -a 256 CONSTITUTION.md` == recorded `CONSTITUTION.sha256` |
 | Self-pay 100% | OpenRouter dashboard shows USDC topup from anicca wallet, operator CC = $0 |
-| NHOSS scope intact | `hermes skill list` does NOT contain `life-manager` / `phone` / `travel-fill` / `report` / `payout-wise` / `payout-stripe` |
+| NHOSS scope intact | `hermes skill list` does NOT contain `mr-bot` / `phone` / `travel-fill` / `report` / `payout-wise` / `payout-stripe` |
 
 ---
 

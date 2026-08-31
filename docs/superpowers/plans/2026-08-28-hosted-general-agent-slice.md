@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node.js built-ins, existing `goal-work-item.js`, `runtime-job-store.js`, `secret-provider.js`, loop adapter registry, Node test runner.
 
-**Spec:** `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md` (GA-11), reusing `docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md` for hosted tenant and payment authority.
+**Spec:** `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md` (GA-11), reusing `docs/superpowers/specs/2026-08-26-mr-bot-cloud-on-time-core-design.md` for hosted tenant and payment authority.
 
 ## Global Constraints
 
@@ -23,8 +23,8 @@
 ### Task 1: Hosted tenant ingress
 
 **Files:**
-- Create: `apps/life-manager/lib/hosted-goal-ingress.js`
-- Test: `apps/life-manager/lib/hosted-goal-ingress.test.js`
+- Create: `apps/mr-bot/lib/hosted-goal-ingress.js`
+- Test: `apps/mr-bot/lib/hosted-goal-ingress.test.js`
 
 **Interfaces:**
 - Consumes: `buildGoalWorkItem(goal, nowMs)`, injected `loadTenant(tenantId)`, `secretProvider.health()`, and `enqueueJob(input)`.
@@ -39,7 +39,7 @@ Test a paid same-tenant row with healthy `{mode:"cloud", provider:"vault"}` heal
 Run:
 
 ```bash
-node --test apps/life-manager/lib/hosted-goal-ingress.test.js
+node --test apps/mr-bot/lib/hosted-goal-ingress.test.js
 ```
 
 Expected: FAIL because `hosted-goal-ingress.js` does not exist.
@@ -68,16 +68,16 @@ Return only safe identities and `created`.
 
 ```bash
 node --test \
-  apps/life-manager/lib/hosted-goal-ingress.test.js \
-  apps/life-manager/lib/goal-work-item.test.js \
-  apps/life-manager/lib/secret-provider.test.js \
-  apps/life-manager/lib/runtime-job-store.test.js
+  apps/mr-bot/lib/hosted-goal-ingress.test.js \
+  apps/mr-bot/lib/goal-work-item.test.js \
+  apps/mr-bot/lib/secret-provider.test.js \
+  apps/mr-bot/lib/runtime-job-store.test.js
 ```
 
 - [x] **Step 5: Commit and push Task 1** (`212dadf68`)
 
 ```bash
-git add apps/life-manager/lib/hosted-goal-ingress.js apps/life-manager/lib/hosted-goal-ingress.test.js
+git add apps/mr-bot/lib/hosted-goal-ingress.js apps/mr-bot/lib/hosted-goal-ingress.test.js
 git commit -m "feat: enqueue hosted tenant goals"
 git push origin docs/general-agent-simple-scope-20260828
 ```

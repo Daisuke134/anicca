@@ -16,7 +16,7 @@ The fix changes only the test expectation to match `skillName`'s documented
 lowercase normalization. It does not pretend the existing product behavior is a
 new feature.
 
-The delivered application is included in Life Manager's production uGig
+The delivered application is included in Mr.bot's production uGig
 observer. The observer will not create an invoice until the external buyer
 accepts the application and PR #61 is merged. An invoice or application status
 alone does not count as revenue; 13c advances only after independently verified

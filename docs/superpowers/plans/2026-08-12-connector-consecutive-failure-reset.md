@@ -12,7 +12,7 @@
 
 ## Constraints
 
-- Modify only `apps/life-manager/lib/connector-minimal-runner.js` and matching test.
+- Modify only `apps/mr-bot/lib/connector-minimal-runner.js` and matching test.
 - RED must prove failed candidate→verified reused bundle→failed candidate is not treated as consecutive 2。
 - Existing three provider/candidate failures in a row, including cross-provider failures separated only by successful discovery, still circuit before a fourth candidate outcome。
 - Do not reset on navigation/readback/action-level success when the candidate outcome is still failure。

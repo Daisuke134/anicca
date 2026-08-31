@@ -16,7 +16,7 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 AUTO = HERE.parent
 PUBLISHER = AUTO / "vendor/capafy-publisher"
-DEFAULT_QUEUE = Path.home() / ".local/state/life-manager/state/capafy-rejection-repair-queue.json"
+DEFAULT_QUEUE = Path.home() / ".local/state/mr-bot/state/capafy-rejection-repair-queue.json"
 REASON_KEYS = {
     "rejectreason",
     "rejectionreason",

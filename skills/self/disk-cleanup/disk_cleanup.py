@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail-closed, host-wide disk governor for Life Manager.
+"""Fail-closed, host-wide disk governor for Mr.bot.
 
 The governor only removes explicitly classified, closed, regenerable artifacts.
 Unknown paths, sessions, state, credentials, source, and probe failures remain.
@@ -36,7 +36,7 @@ GOVERNOR_BUDGET_SECONDS = 90
 LSOF_TIMEOUT_SECONDS = 15
 POST_SWEEP_RESERVE_SECONDS = 30
 HEALTH_CHECK_TIMEOUT_SECONDS = 5
-CANONICAL_LABEL = "ai.anicca.life-manager-disk-cleanup"
+CANONICAL_LABEL = "ai.anicca.mr-bot-disk-cleanup"
 THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSURE"), (3 * GiB, "CRITICAL"))
 RECEIPT_RESERVE_BYTES = 1024 * 1024
 RECEIPT_PAYLOAD_MAX_BYTES = 64 * 1024
@@ -258,7 +258,7 @@ class HostDiskGovernor:
     ) -> None:
         self.home = (home or Path.home()).resolve()
         self.state_dir = (state_dir or self.home / ".openclaw/state").resolve()
-        self.lock_dir = self.state_dir / ".life-manager-disk-cleanup.lock"
+        self.lock_dir = self.state_dir / ".mr-bot-disk-cleanup.lock"
         self._lock_fd: int | None = None
         self.full_inventory_marker = self.state_dir / "host-inventory-full.at"
         self.lsof = lsof
@@ -525,7 +525,7 @@ class HostDiskGovernor:
                     roots.add(pin.resolve() if pin.is_symlink() else (releases / pin.name).resolve())
         except OSError:
             return None
-        protected = self.home / ".local/state/life-manager/protected-releases.json"
+        protected = self.home / ".local/state/mr-bot/protected-releases.json"
         try:
             if protected.is_file():
                 entries = json.loads(protected.read_text(encoding="utf-8"))
@@ -663,7 +663,7 @@ class HostDiskGovernor:
             if isinstance(previous, dict) and previous.get("canary_path") == payload.get("canary_path"):
                 initial = previous.get("initial", previous)
                 envelope = {
-                    "schema_version": "life-manager-canary-receipt-v1",
+                    "schema_version": "mr-bot-canary-receipt-v1",
                     "phase": "replay",
                     "canary_path": payload.get("canary_path"),
                     "initial": initial,
@@ -673,7 +673,7 @@ class HostDiskGovernor:
                 return
         if payload.get("removed") is True:
             payload = {
-                "schema_version": "life-manager-canary-receipt-v1",
+                "schema_version": "mr-bot-canary-receipt-v1",
                 "phase": "initial",
                 "canary_path": payload.get("canary_path"),
                 "initial": payload,

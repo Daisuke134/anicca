@@ -18,7 +18,7 @@
       "ai.anicca.x402-acquisition-controller": "last_exit_0",
       "ai.anicca.x402-sale-observer": "last_exit_0",
       "ai.anicca.x402-settlement-recorder": "last_exit_0",
-      "ai.anicca.life-manager-x402-ledger": "last_exit_0"
+      "ai.anicca.mr-bot-x402-ledger": "last_exit_0"
     },
     "marketplace": {
       "historical_real_bids": 2,
@@ -35,7 +35,7 @@
       "verified": 0,
       "recorded": 0
     },
-    "life_manager_bridge": {
+    "mr_bot_bridge": {
       "ledgers_seen": 0,
       "lines_seen": 0,
       "sale_recorded": 0,
@@ -52,7 +52,7 @@
     "full_suite": {
       "passed": 657,
       "failed": 1,
-      "known_unrelated_failure": "host-state test expects ai.anicca.life-manager-dev unloaded while the real job is loaded"
+      "known_unrelated_failure": "host-state test expects ai.anicca.mr-bot-dev unloaded while the real job is loaded"
     },
     "shell_syntax": "pass",
     "javascript_syntax": "pass",

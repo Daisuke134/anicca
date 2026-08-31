@@ -9,7 +9,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/opt/homebrew/bin/python3</string>
-    <string>__ANICCA_HOME__/skills/anicca-life-manager/scripts/telegram_bot.py</string>
+    <string>__ANICCA_HOME__/skills/anicca-mr-bot/scripts/telegram_bot.py</string>
   </array>
 
   <key>RunAtLoad</key>

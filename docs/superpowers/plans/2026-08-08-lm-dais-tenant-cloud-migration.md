@@ -6,7 +6,7 @@
 
 **Architecture:** Railway に `Dockerfile.runtime` ベースの worker サービスを新設 → Telegram token を1手順で切替 → E2E PASS 後にローカル撤去。コード変更はほぼゼロ、作業の本体は配線・env 移植・実測検証。
 
-**Tech Stack:** Railway CLI / Docker (colima) / launchctl / life-manager repo (`scripts/runtime-up.js`)
+**Tech Stack:** Railway CLI / Docker (colima) / launchctl / mr-bot repo (`scripts/runtime-up.js`)
 
 **Spec:** `docs/superpowers/specs/2026-08-08-lm-dais-tenant-cloud-migration-design.md`
 
@@ -26,7 +26,7 @@ Expected: Avail が 8Gi 以上。8Gi 未満なら STOP して報告。
 - [ ] **Step 2: image を save**
 
 ```bash
-docker save life-manager-local-runtime:dev -o /Users/operator/lm-runtime-image-backup.tar
+docker save mr-bot-local-runtime:dev -o /Users/operator/lm-runtime-image-backup.tar
 ```
 
 - [ ] **Step 3: tar の実在と中身を検証**
@@ -49,8 +49,8 @@ mkdir -p /Users/operator/.lm-migration && chmod 700 /Users/operator/.lm-migratio
 - [ ] **Step 2: env を file 直結で書き出す（値を画面に出さない）**
 
 ```bash
-docker inspect life-manager-local-worker-1 --format '{{range .Config.Env}}{{println .}}{{end}}' > /Users/operator/.lm-migration/worker.env
-docker inspect life-manager-local-api-1 --format '{{range .Config.Env}}{{println .}}{{end}}' > /Users/operator/.lm-migration/api.env
+docker inspect mr-bot-local-worker-1 --format '{{range .Config.Env}}{{println .}}{{end}}' > /Users/operator/.lm-migration/worker.env
+docker inspect mr-bot-local-api-1 --format '{{range .Config.Env}}{{println .}}{{end}}' > /Users/operator/.lm-migration/api.env
 chmod 600 /Users/operator/.lm-migration/*.env
 ```
 
@@ -83,7 +83,7 @@ Expected: LM の既存プロジェクトが見える。プロジェクト名・�
 `railway-recon.md` に以下を記録:
 - 既存 web app サービスのビルド方式（GitHub 連携 or CLI up）
 - どの環境（production/staging）に足すか → production
-- `Dockerfile.runtime` がプロジェクト root にあること: `ls /Users/operator/Projects/life-manager-main/Dockerfile.runtime`
+- `Dockerfile.runtime` がプロジェクト root にあること: `ls /Users/operator/Projects/mr-bot-main/Dockerfile.runtime`
 
 ### Task 4: worker ジョブ種の監査（browser 依存ゲート）
 
@@ -98,8 +98,8 @@ grep -o '^LM_WORKER_CAPABILITIES=.*' /Users/operator/.lm-migration/worker.env | 
 - [ ] **Step 2: internal-worker の実装でローカル依存を探す**
 
 ```bash
-grep -rn "cloak\|CDP\|9222\|playwright\|puppeteer\|localhost\|127.0.0.1" /Users/operator/Projects/life-manager-main/apps/life-manager/scripts/runtime-up.js | head -20
-grep -rln "cloak\|launch_persistent_context\|:9222" /Users/operator/Projects/life-manager-main/apps/life-manager/lib/ | head -10
+grep -rn "cloak\|CDP\|9222\|playwright\|puppeteer\|localhost\|127.0.0.1" /Users/operator/Projects/mr-bot-main/apps/mr-bot/scripts/runtime-up.js | head -20
+grep -rln "cloak\|launch_persistent_context\|:9222" /Users/operator/Projects/mr-bot-main/apps/mr-bot/lib/ | head -10
 ```
 
 Expected: ヒットゼロ、または health/自ポート系のみ。
@@ -113,7 +113,7 @@ Expected: ヒットゼロ、または health/自ポート系のみ。
 - [ ] **Step 1: サービス作成**
 
 ```bash
-cd /Users/operator/Projects/life-manager-main
+cd /Users/operator/Projects/mr-bot-main
 railway add --service lm-internal-worker
 ```
 
@@ -164,7 +164,7 @@ Expected: worker 起動ログ、クラッシュループなし。health endpoint
 ```bash
 set -a; source /Users/operator/.lm-migration/worker.env; set +a
 railway variables --service lm-internal-worker --set "LM_TELEGRAM_BOT_TOKEN=$LM_TELEGRAM_BOT_TOKEN" && \
-docker stop life-manager-local-worker-1 life-manager-local-api-1
+docker stop mr-bot-local-worker-1 mr-bot-local-api-1
 ```
 
 （Railway は変数変更で自動再デプロイ。local stop を同一コマンド行で直結し、token の二重消費時間を最小化する。）
@@ -184,7 +184,7 @@ Expected: ログに loop 完走 + Supabase の対象テーブルに新 timestamp
 
 ```bash
 railway variables --service lm-internal-worker --set "LM_TELEGRAM_BOT_TOKEN=" && \
-docker start life-manager-local-api-1 life-manager-local-worker-1
+docker start mr-bot-local-api-1 mr-bot-local-worker-1
 ```
 
 rollback したら原因を直してから Step 1 に戻る。
@@ -212,7 +212,7 @@ rm /Users/operator/Library/LaunchAgents/ai.anicca.outbound-runtime-healthcheck.p
 - [ ] **Step 3: コンテナと VM を削除**
 
 ```bash
-docker rm -f life-manager-local-worker-1 life-manager-local-api-1
+docker rm -f mr-bot-local-worker-1 mr-bot-local-api-1
 colima stop && colima delete -f
 ```
 

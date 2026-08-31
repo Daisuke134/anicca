@@ -1,6 +1,6 @@
 {
   "context_version": "2026-08-27.2",
-  "context_digest": "9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338",
+  "context_digest": "882e479bf06b98a2a6db62352b8d3b6c3463767c6c73d7996caa328e25191d06",
   "assets": [
     {
       "type": "product",
@@ -22,7 +22,7 @@
     {
       "type": "dashboard",
       "status": "legacy",
-      "reason": "HTTP 200, but the page title is Anicca Dashboard and the body is not verified as the Life Manager product dashboard. Do not attach."
+      "reason": "HTTP 200, but the page title is Anicca Dashboard and the body is not verified as the Mr.bot product dashboard. Do not attach."
     },
     {
       "type": "demo_video",

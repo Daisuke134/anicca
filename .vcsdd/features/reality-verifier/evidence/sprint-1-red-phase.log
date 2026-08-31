@@ -52,7 +52,7 @@ confirms the RED phase for REQ-008's spawn wrapper.
   ok short 'capafy' -> LOOP=capafy-loop
   ok short -> RESULT .self-fix-capafy-loop.result
   ok short==long identical
-  ok life-manager -> life-manager-loop
+  ok mr-bot -> mr-bot-loop
 (B) FIND-029/030 hang fingerprint
   ok frozen body, only timer/tokens changed -> SAME fingerprint (hang detectable)
   ok real new text -> DIFFERENT fingerprint (progress)

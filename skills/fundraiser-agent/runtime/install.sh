@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
-STATE_ROOT="$HOME/.local/state/life-manager/fundraiser"
+STATE_ROOT="$HOME/.local/state/mr-bot/fundraiser"
 LABEL="ai.anicca.fundraiser"
 TARGET="$HOME/Library/LaunchAgents/$LABEL.plist"
 mkdir -p "$STATE_ROOT" "$HOME/Library/LaunchAgents"

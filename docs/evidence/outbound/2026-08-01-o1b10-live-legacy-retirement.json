@@ -1,5 +1,5 @@
 {
-  "schema_version": "life-manager.connector.legacy-retirement-live.v1",
+  "schema_version": "mr-bot.connector.legacy-retirement-live.v1",
   "observed_at": "2026-08-01T15:50:20.000Z",
   "repository": "Daisuke134/life-manager",
   "branch": "main",

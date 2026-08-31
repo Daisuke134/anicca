@@ -24,7 +24,7 @@ cost-low, risk-low, and asks no approval question.
 | RFC Message-ID | `<CAFe2jSZ67NfG8FML7qkRPpkKxzO9XAJim8i1Hc8GN=6-9dO-BQ@mail.gmail.com>` |
 | Gmail readback | exact provider id; labels include `SENT` and `INBOX` |
 | Calendar post-report | event `fd7rvh2u2sbqa0e4q4vl6vo0rs`, `status=confirmed` |
-| Calendar idempotency marker | private property `life_manager_action=10i` |
+| Calendar idempotency marker | private property `mr_bot_action=10i` |
 | Telegram post-report | real message id `3392` |
 | Approval questions | `0` |
 
@@ -51,7 +51,7 @@ provider-side marker guard is RED `4/5` → GREEN `9/9`; a real rerun returns
 
 - Google Calendar, [Extended properties](https://developers.google.com/workspace/calendar/api/guides/extended-properties):
   “Extended properties make it easy to store application-specific data for an event.” The private
-  `life_manager_action=10i` marker is the provider-side duplicate guard.
+  `mr_bot_action=10i` marker is the provider-side duplicate guard.
 - Gmail API, [Sending email](https://developers.google.com/workspace/gmail/api/guides/sending):
   “You can send it directly using the messages.send method.” The result is not accepted until the
   sent message is read back with its RFC Message-ID.

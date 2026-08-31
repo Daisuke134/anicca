@@ -9,11 +9,11 @@ from datetime import date
 from pathlib import Path
 from urllib import request
 
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[4]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[4]))
 CAPAFY_HTTP = str(REPO_ROOT / "skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py")
 DEFAULT_STATS_URL = "https://capafy-skills-daily.netlify.app/go-stats"
-OUTPUT_FILE = Path(os.path.expanduser("~/.local/state/life-manager/state/capafy-attribution.jsonl"))
-POSTS_FILE = Path(os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-ledger.jsonl"))
+OUTPUT_FILE = Path(os.path.expanduser("~/.local/state/mr-bot/state/capafy-attribution.jsonl"))
+POSTS_FILE = Path(os.path.expanduser("~/.local/state/mr-bot/state/capafy-marketing-ig-ledger.jsonl"))
 
 
 def _find_agent_list(value):

@@ -63,7 +63,7 @@ S6. 収益の一部 → BI/募金 (実 送金 1件、 黒字後)
 S7. GithubIssue 協力 (instance間で issue 立て合い、 実 1往復)
 S8. クラウド: aniccaai.com/install / ローカル: github clone 両方 動く
 ```
-### life-manager (copy 2) の 完全体験 TODO
+### mr-bot (copy 2) の 完全体験 TODO
 ```
 L1. Telegram連携: 名前/電話/位置/calendar onboarding (実 1人=Dais)
 L2. 位置 常時把握 → 次目的地 route 検索 (Google Maps) → 10分前 算出

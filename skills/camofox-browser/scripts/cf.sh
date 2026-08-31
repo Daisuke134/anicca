@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Thin wrapper for camofox API. Sources userId/sessionKey from env (defaults: anicca/default).
 # Usage:
-#   source $LIFE_MANAGER_REPO/skills/camofox-browser/scripts/cf.sh
+#   source $MR_BOT_REPO/skills/camofox-browser/scripts/cf.sh
 #   TAB=$(cf_open_tab "https://example.com")
 #   cf_snapshot "$TAB"
 #   cf_click "$TAB" e2

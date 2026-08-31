@@ -4,7 +4,7 @@
 
 `BROWSER-AUTH-1` is done.
 
-The deployed Life Manager authenticated to the real Luma provider from Railway
+The deployed Mr.bot authenticated to the real Luma provider from Railway
 private Steel, stored the resulting browser context encrypted and tenant-bound,
 restored it into fresh Steel sessions and fresh application instances, executed
 authenticated production queue jobs, read back a protected provider action, and

@@ -31,8 +31,8 @@ cat >"$TMP_PLIST" <<PLIST
   <key>ProgramArguments</key>
   <array>
     <string>$PYTHON_BIN</string><string>$WORKER</string>
-    <string>--state-dir</string><string>$HOME/.local/state/life-manager/writer</string>
-    <string>--db</string><string>$HOME/.local/state/life-manager/writer/money.sqlite3</string>
+    <string>--state-dir</string><string>$HOME/.local/state/mr-bot/writer</string>
+    <string>--db</string><string>$HOME/.local/state/mr-bot/writer/money.sqlite3</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>

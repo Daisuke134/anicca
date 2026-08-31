@@ -8,8 +8,8 @@
 
 **Ponytail size gate:**
 
-- Modify `apps/life-manager/lib/connector-kokuchpro-workflow.js` — about 25–45 production LOC.
-- Modify `apps/life-manager/lib/connector-kokuchpro-workflow.test.js` — about 55–90 test LOC.
+- Modify `apps/mr-bot/lib/connector-kokuchpro-workflow.js` — about 25–45 production LOC.
+- Modify `apps/mr-bot/lib/connector-kokuchpro-workflow.test.js` — about 55–90 test LOC.
 - Exact two files; no new module, abstraction, dependency, credential path, or external effect.
 
 ## Task 1 — TDD the exact auth boundary

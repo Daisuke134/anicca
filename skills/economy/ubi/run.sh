@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
+MR_BOT_REPO="${MR_BOT_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$MR_BOT_REPO" ] || { echo "MR_BOT_REPO could not be resolved" >&2; exit 2; }
+export MR_BOT_REPO
 # economy/ubi/run.sh — Channel B (colony spec §5.2/§5.3): computes + LOGS a UBI-contribute plan and a
 # gojo (mutual-aid) rescue plan from REAL data, but NEVER executes a transfer itself. The gate logic
 # lives in ubi.js (contribute/distributeAI, pure + unit-tested); this script only gathers real inputs,
@@ -15,7 +15,7 @@ export LIFE_MANAGER_REPO
 #     (already fixed+verified, Task #1) for monthly realized revenue — no new on-chain code invented.
 #   - other colony instances' balances: same telemetry.json files, to find anyone below the §5.2
 #     survival floor ($0.50).
-# Output: $LIFE_MANAGER_REPO/skills/economy/ubi/state/{contribute,gojo}-log.jsonl (one line per run, ALWAYS
+# Output: $MR_BOT_REPO/skills/economy/ubi/state/{contribute,gojo}-log.jsonl (one line per run, ALWAYS
 # written, whether the decision was to act or to no-op — fail-closed decisions are logged too).
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

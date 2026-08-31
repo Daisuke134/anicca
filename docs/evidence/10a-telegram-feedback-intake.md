@@ -45,7 +45,7 @@ tuple, but only its 128-bit hexadecimal reference is stored.
 ## Verification
 
 - Focused module, migration, production HTTP webhook, and existing callback contracts: `8/8` PASS.
-- Full Life Manager `npm test`: exit `0`, fail `0`.
+- Full Mr.bot `npm test`: exit `0`, fail `0`.
 - Every eval: `21/21 + 12/12 + 12/12 + 27/27 + 18/18 + 15/15 + 12/12`, all 100%.
 - Panel privacy eval: PASS.
 - Migration preflight: table count `1` inside a transaction and `0` after rollback; applied

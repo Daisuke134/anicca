@@ -39,9 +39,9 @@ TELEGRAM_SEND_TIMEOUT="${X_REPOST_TELEGRAM_SEND_TIMEOUT:-30}"
 HUMANIZER_SKILL="${X_REPOST_HUMANIZER:-$HOME/.openclaw/skills/jp-humanizer-pro/SKILL.md}"
 GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 ENSURE_BROWSER="$HOME/anicca/skills/browser/ensure_provision_browser.sh"
-AFFILIATE_PROPOSAL="${AFFILIATE_REPOST_PROPOSAL_PATH:-$HOME/.local/state/life-manager/affiliate/repost-proposals/latest.json}"
+AFFILIATE_PROPOSAL="${AFFILIATE_REPOST_PROPOSAL_PATH:-$HOME/.local/state/mr-bot/affiliate/repost-proposals/latest.json}"
 AFFILIATE_CONSUMED="$STATE/affiliate-proposals-consumed.jsonl"
-AFFILIATE_JOB_QUEUE="${AFFILIATE_X_DISTRIBUTION_QUEUE:-$HOME/.local/state/life-manager/affiliate/x-distribution-jobs.jsonl}"
+AFFILIATE_JOB_QUEUE="${AFFILIATE_X_DISTRIBUTION_QUEUE:-$HOME/.local/state/mr-bot/affiliate/x-distribution-jobs.jsonl}"
 AFFILIATE_JOB_CLAIMS="$STATE/affiliate-x-distribution-job-claims.jsonl"
 AFFILIATE_JOB_PAYLOADS="$STATE/affiliate-x-distribution-payloads"
 AFFILIATE_JOB_RESULTS="$STATE/affiliate-x-distribution-job-results.jsonl"
@@ -159,7 +159,7 @@ ask_model() {
     "$PY" "$AGENT_RUNNER" --task-class composition-agent \
       --prompt-stdin --schema "$MODEL_SCHEMA" \
       --evidence-dir "$run_dir" --task-label "$LOOP_NAME" \
-      --loop "${LIFE_MANAGER_LOOP_ID:-$LOOP_NAME}" \
+      --loop "${MR_BOT_LOOP_ID:-$LOOP_NAME}" \
       --workdir "$SKILL" --timeout-seconds "${X_REPOST_MODEL_TIMEOUT:-600}" \
       <"$prompt_file" >"$EV/model.stdout" 2>"$EV/model.err"
   rc=$?

@@ -6,8 +6,8 @@ Preserve TECH PLAY's verified 15-step review/final flow while ensuring every gen
 
 ## Ponytail scope
 
-- Production: `apps/life-manager/lib/connector-minimal-production.js`, one routing clamp, estimated 2–6 LOC.
-- Tests: `apps/life-manager/lib/connector-minimal-production.test.js`, one normal-provider and one TECH PLAY routing assertion, estimated 20–40 LOC.
+- Production: `apps/mr-bot/lib/connector-minimal-production.js`, one routing clamp, estimated 2–6 LOC.
+- Tests: `apps/mr-bot/lib/connector-minimal-production.test.js`, one normal-provider and one TECH PLAY routing assertion, estimated 20–40 LOC.
 - Do not change the runner's single wake budget, provider order, Harness validators, TECH PLAY final-effect semantics, or circuit thresholds.
 
 ## TDD and verification

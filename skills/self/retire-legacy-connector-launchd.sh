@@ -8,10 +8,10 @@ LABELS=(
 SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
 LAUNCH_AGENTS_DIR="${LM_LAUNCH_AGENTS_DIR:-$HOME/Library/LaunchAgents}"
-ARCHIVE_DIR="${LM_RETIRED_LAUNCHD_DIR:-$HOME/.local/state/life-manager/retired-launchd/o1b10}"
+ARCHIVE_DIR="${LM_RETIRED_LAUNCHD_DIR:-$HOME/.local/state/mr-bot/retired-launchd/o1b10}"
 LAUNCHCTL_BIN="${LM_LAUNCHCTL_BIN:-/bin/launchctl}"
 LAUNCH_DOMAIN="${LM_LAUNCH_DOMAIN:-gui/$(id -u)}"
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}"
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/mr-bot}"
 FALLBACK_DIR="${LM_LEGACY_CONNECTOR_PLIST_FALLBACK_DIR:-$SCRIPT_DIR/legacy-launchd-archive}"
 
 safe_absolute_dir() {
@@ -30,7 +30,7 @@ safe_absolute_dir "$ARCHIVE_DIR" || {
   printf '%s\n' 'Legacy Connector retirement path invalid' >&2
   exit 2
 }
-safe_absolute_dir "$LIFE_MANAGER_STATE_HOME" || {
+safe_absolute_dir "$MR_BOT_STATE_HOME" || {
   printf '%s\n' 'Legacy Connector state home invalid' >&2
   exit 2
 }
@@ -66,10 +66,10 @@ render_fallback_plist() {
   temp_plist="$(mktemp "${TMPDIR:-/tmp}/connector-legacy-plist.XXXXXX")" || return 1
   trap 'rm -f "$temp_plist"' RETURN
   repo_root_escaped="$(printf '%s' "$REPO_ROOT" | xml_escape | escape_sed_replacement)"
-  state_home_escaped="$(printf '%s' "$LIFE_MANAGER_STATE_HOME" | xml_escape | escape_sed_replacement)"
+  state_home_escaped="$(printf '%s' "$MR_BOT_STATE_HOME" | xml_escape | escape_sed_replacement)"
   sed \
     -e "s|__REPO_ROOT__|$repo_root_escaped|g" \
-    -e "s|__LIFE_MANAGER_HOME__|$state_home_escaped|g" \
+    -e "s|__MR_BOT_HOME__|$state_home_escaped|g" \
     "$source_plist" > "$temp_plist" || return 1
   if grep -Eq '__[A-Z][A-Z0-9_]*__' "$temp_plist"; then
     printf '%s\n' "Legacy Connector plist placeholder unresolved: $source_plist" >&2
@@ -141,7 +141,7 @@ jq -n \
   --arg sha_one "$first_sha" \
   --arg sha_two "$second_sha" \
   '{
-    schema_version: "life-manager.connector.legacy-launchd-retirement.v1",
+    schema_version: "mr-bot.connector.legacy-launchd-retirement.v1",
     status: $status,
     launch_domain: $domain,
     archive_dir: $archive_dir,

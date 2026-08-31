@@ -20,7 +20,7 @@ Peatixのticket Next後にattendee formを省略してsame-event confirmへ直�
 
 ## TDD slice
 
-Ownershipは`apps/life-manager/lib/peatix-browser-provider.js`とmatching testの2 filesだけ。Production soft target 15–35 LOC、test 35–65 LOC。
+Ownershipは`apps/mr-bot/lib/peatix-browser-provider.js`とmatching testの2 filesだけ。Production soft target 15–35 LOC、test 35–65 LOC。
 
 RED:
 

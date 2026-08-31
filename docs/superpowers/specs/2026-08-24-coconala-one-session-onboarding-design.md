@@ -5,7 +5,7 @@
 A non-technical owner starts with a Mac and a ChatGPT/Codex subscription. The installer
 shows the official Coconala prerequisites and opens the registration surface. The owner
 completes the entire account, SMS, seller, eKYC, consent, and bank setup directly on the
-official site in one uninterrupted session. Life Manager then verifies that setup and
+official site in one uninterrupted session. Mr.bot then verifies that setup and
 starts the four existing Coconala lanes without ongoing approval prompts.
 
 Coconala is the first and only onboarding implementation in this slice. Upwork,
@@ -28,7 +28,7 @@ The public start is:
 If Codex is not authenticated, the installer runs `codex login` first and waits for
 the CLI's own successful authentication readback.
 
-Terminal is the only Life Manager onboarding surface for Coconala. The flow does not
+Terminal is the only Mr.bot onboarding surface for Coconala. The flow does not
 open or require a local web UI and does not ask for language, timezone, skills,
 categories, prices, or notification-channel preference.
 
@@ -56,7 +56,7 @@ launchd, create local files, approve applications, approve replies, approve esti
 or approve deliveries.
 
 The registered Coconala email remains Coconala's official marketplace notification
-address. Life Manager reports reuse the repository's existing `gog` Gmail transport and
+address. Mr.bot reports reuse the repository's existing `gog` Gmail transport and
 go to the authenticated Google account, which is also the recommended Coconala signup
 address. If Gmail OAuth already exists, setup asks nothing. Otherwise it asks for the
 Google address once and performs one `gog auth add` ceremony. A nonce-bound setup message
@@ -70,17 +70,17 @@ The root installer dispatches `coconala` to one package-owned onboarding control
 controller checks prerequisites, runs `codex login` when required, launches the dedicated
 CloakBrowser with profile `~/.cloak/profiles/gig-daily-driver`, shows the full official
 setup checklist once, and waits for the owner to report completion. It never asks the
-owner to duplicate official identity or bank facts in Life Manager.
+owner to duplicate official identity or bank facts in Mr.bot.
 
 The owner performs the entire Coconala setup in that dedicated browser, not Safari or a
 separate Chrome profile. After completion, the controller attaches to the same running
 browser over CDP. The authenticated cookies remain in that profile, so the owner never
-hands a password to Life Manager and the agent never performs a second login.
+hands a password to Mr.bot and the agent never performs a second login.
 
 After activation, launchd keeps that dedicated browser and all four business lanes alive
 while the Mac is running. Browser restarts reuse the same profile and its private session
 vault; they do not create another account or ask for setup again. A marketplace-expired
-session is the only normal exception: Life Manager opens the official login recovery page
+session is the only normal exception: Mr.bot opens the official login recovery page
 in the same profile, verifies the restored session, and resumes the lanes. “Always on”
 means supervised restart and verified session reuse, not a promise that a third-party
 login cookie can never expire.
@@ -115,7 +115,7 @@ flowchart TD
 
 Identity documents, face images, SMS codes, bank account values, passwords, and session
 tokens never enter Git, model prompts, logs, Telegram, email reports, or test fixtures.
-Sensitive fields are entered only on official Coconala/eKYC surfaces. Life Manager does
+Sensitive fields are entered only on official Coconala/eKYC surfaces. Mr.bot does
 not collect or persist a second copy. The mode-0600 onboarding receipt contains only
 official state names and hashes, not raw identity data.
 
@@ -132,7 +132,7 @@ blocker; it does not start the money loops early.
 
 The initial official setup is one owner-controlled session, not a sequence of alternating
 agent prompts. Authentication expiry opens the same official recovery surface and resumes
-after readback; Life Manager never creates another account.
+after readback; Mr.bot never creates another account.
 
 ## Activation gate
 

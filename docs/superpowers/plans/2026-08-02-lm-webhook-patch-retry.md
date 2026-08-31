@@ -27,8 +27,8 @@
 
 | file | 役割 | 変更 |
 |---|---|---|
-| `apps/life-manager/server.js` | `/telnyx-events` の応答コード | 変更（`:325-328` 付近） |
-| `apps/life-manager/test/telnyx-events-retry-http-contract.test.js` | 実 HTTP + 実 Ed25519 署名で応答コードを固定 | 新規 |
+| `apps/mr-bot/server.js` | `/telnyx-events` の応答コード | 変更（`:325-328` 付近） |
+| `apps/mr-bot/test/telnyx-events-retry-http-contract.test.js` | 実 HTTP + 実 Ed25519 署名で応答コードを固定 | 新規 |
 | `docs/superpowers/specs/2026-08-01-lm-daily-organ-design.md` | 正本 spec | 変更（row 2a を DONE + 再送仕様の引用を §1.3 か §5.2.1 に残す） |
 
 ---
@@ -36,8 +36,8 @@
 ### Task 1: 一時的な失敗だけが 5xx を返す
 
 **Files:**
-- Modify: `apps/life-manager/server.js`（`/telnyx-events` の末尾、`outcome` を組み立てている箇所）
-- Test: `apps/life-manager/test/telnyx-events-retry-http-contract.test.js`（新規）
+- Modify: `apps/mr-bot/server.js`（`/telnyx-events` の末尾、`outcome` を組み立てている箇所）
+- Test: `apps/mr-bot/test/telnyx-events-retry-http-contract.test.js`（新規）
 
 既存の `test/testcall-amd-hangup-http-contract.test.js` が同じことをやっている（`http.createServer` を差し替えて実 `server.js` を require し、実 Ed25519 鍵で署名した body を投げる）。**その file を読んで、同じ骨格で書くこと。** 署名・鍵・envelope の組み立てを自分で発明しない。
 
@@ -104,7 +104,7 @@ test("a test call answers 200 even when the hangup fails", async () => {
 
 - [x] **Step 2: 落ちることを確認**
 
-Run: `cd apps/life-manager && node --test test/telnyx-events-retry-http-contract.test.js`
+Run: `cd apps/mr-bot && node --test test/telnyx-events-retry-http-contract.test.js`
 Expected: ケース1と2が FAIL（`expected 5xx, got 200`）。3・4・5 は PASS（現状の挙動）。
 
 - [x] **Step 3: 最小実装**
@@ -154,14 +154,14 @@ Expected: ケース1と2が FAIL（`expected 5xx, got 200`）。3・4・5 は PA
 
 - [x] **Step 4: 通ることを確認**
 
-Run: `cd apps/life-manager && node --test test/telnyx-events-retry-http-contract.test.js test/testcall-amd-hangup-http-contract.test.js test/testcall-amd-hangup.test.js lib/late-notice.test.js`
+Run: `cd apps/mr-bot && node --test test/telnyx-events-retry-http-contract.test.js test/testcall-amd-hangup-http-contract.test.js test/testcall-amd-hangup.test.js lib/late-notice.test.js`
 Expected: すべて PASS、`fail 0`
 
 - [x] **Step 5: commit**
 
 ```bash
-git add apps/life-manager/server.js apps/life-manager/test/telnyx-events-retry-http-contract.test.js
-git commit -m "fix(life-manager): let Telnyx resend a detection we failed to record"
+git add apps/mr-bot/server.js apps/mr-bot/test/telnyx-events-retry-http-contract.test.js
+git commit -m "fix(mr-bot): let Telnyx resend a detection we failed to record"
 ```
 
 ---
@@ -169,7 +169,7 @@ git commit -m "fix(life-manager): let Telnyx resend a detection we failed to rec
 ### Task 2: 再送が安全であることをテストで固定する
 
 **Files:**
-- Test: `apps/life-manager/test/telnyx-events-retry-http-contract.test.js`（追記）
+- Test: `apps/mr-bot/test/telnyx-events-retry-http-contract.test.js`（追記）
 
 再送は同一 payload で来る。この plan は「再処理しても壊れない」に依存しているので、依存を明文化する。
 
@@ -200,14 +200,14 @@ test("the same event delivered twice records once and never rewrites answered_at
 
 - [x] **Step 2: 落ちるか確認**
 
-Run: `cd apps/life-manager && node --test test/telnyx-events-retry-http-contract.test.js`
+Run: `cd apps/mr-bot && node --test test/telnyx-events-retry-http-contract.test.js`
 Expected: このテストは既存実装で **通る可能性が高い**（ラッチは既にある）。通った場合は「characterization test = 番人」だと明記し、`markAnswered` から `filter: "&answered_at=is.null"` を一時的に外して**赤くなることを実測**してから戻す。赤くならないなら、その assertion は無意味なので書き直すこと。
 
 - [x] **Step 3: commit**
 
 ```bash
-git add apps/life-manager/test/telnyx-events-retry-http-contract.test.js
-git commit -m "test(life-manager): pin that a resent detection is safe to process twice"
+git add apps/mr-bot/test/telnyx-events-retry-http-contract.test.js
+git commit -m "test(mr-bot): pin that a resent detection is safe to process twice"
 ```
 
 ---
@@ -229,7 +229,7 @@ git commit -m "test(life-manager): pin that a resent detection is safe to proces
 
 ```bash
 git add docs/superpowers/specs/2026-08-01-lm-daily-organ-design.md
-git commit -m "docs(life-manager): record the webhook retry contract and the 2a decision"
+git commit -m "docs(mr-bot): record the webhook retry contract and the 2a decision"
 ```
 
 ---

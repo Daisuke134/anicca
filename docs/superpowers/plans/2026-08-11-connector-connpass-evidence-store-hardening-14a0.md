@@ -21,8 +21,8 @@ Make the reused Connpass evidence store self-authenticating before the minimal a
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connpass-evidence-store.test.js`
-2. `apps/life-manager/lib/connpass-evidence-store.js`
+1. `apps/mr-bot/lib/connpass-evidence-store.test.js`
+2. `apps/mr-bot/lib/connpass-evidence-store.js`
 
 Soft target: 2 files; production `+15–30 LOC`; tests `+25–45 LOC`.
 

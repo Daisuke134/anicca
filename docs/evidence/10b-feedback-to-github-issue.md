@@ -7,7 +7,7 @@
 - The issue body contains the privacy-safe summary, regression-test acceptance criteria, and the deterministic hidden marker derived from the HMAC `source_ref`.
 - A second worker pass returns `{"status":"no-op"}`. GitHub readback finds exactly one issue with that marker.
 - The existing D0 picker selects issue `#1085`; no new picker or developer loop is created.
-- `ai.anicca.life-manager-dev` remains the single daily launchd job at 04:10. Its installed program path is the canonical `apps/life-manager/scripts/life-manager-dev-d0.sh`, which runs the issue worker before delegating to the existing D0.
+- `ai.anicca.mr-bot-dev` remains the single daily launchd job at 04:10. Its installed program path is the canonical `apps/mr-bot/scripts/mr-bot-dev-d0.sh`, which runs the issue worker before delegating to the existing D0.
 
 ## TDD and verification
 
@@ -26,7 +26,7 @@
 | GitHub | issue `1085`, state `OPEN`, label `lm:type:self-heal`, marker present |
 | Idempotency | second worker pass `no-op`; exact-marker issue count `1` |
 | Existing D0 | `pick-issue.sh` selects `#1085` |
-| launchd | label `ai.anicca.life-manager-dev`, daily `04:10`, canonical wrapper installed |
+| launchd | label `ai.anicca.mr-bot-dev`, daily `04:10`, canonical wrapper installed |
 
 No raw Telegram text, chat/user identity, contact data, credential, database URL, or token is committed.
 

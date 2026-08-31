@@ -1,6 +1,6 @@
 # Connector Provider Page Reset Implementation Plan
 
-> **For Luna:** Use Superpowers test-driven-development. Own only `apps/life-manager/lib/connector-minimal-runner.js` and `apps/life-manager/lib/connector-minimal-runner.test.js`. You are not alone in the codebase; preserve and accommodate all other edits.
+> **For Luna:** Use Superpowers test-driven-development. Own only `apps/mr-bot/lib/connector-minimal-runner.js` and `apps/mr-bot/lib/connector-minimal-runner.test.js`. You are not alone in the codebase; preserve and accommodate all other edits.
 
 **Goal:** Prevent a long-running provider discovery from poisoning the next provider while preserving one Connector-owned browser session, target, and page.
 

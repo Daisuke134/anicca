@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # founder-tunnel.sh — KeepAlive launchd: a cloudflared quick tunnel for the FOUNDER seller (:8410), persisting the
-# live public URL to the founder's OWN state file (NOT the shared $HOME/.local/state/life-manager one) so the loop + the listing read it.
+# live public URL to the founder's OWN state file (NOT the shared $HOME/.local/state/mr-bot one) so the loop + the listing read it.
 set -u
 PORT=8410
 URL_FILE="$HOME/.anicca-founder/state/seller-url.txt"

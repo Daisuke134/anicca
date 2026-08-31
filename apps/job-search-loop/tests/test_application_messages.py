@@ -17,7 +17,7 @@ class ApplicationMessageTests(unittest.TestCase):
             "muit_rm_summary",
             "mufg",
             "anicca_consumer",
-            "life_manager",
+            "mr_bot",
             "a10_marketing",
             "agent_club",
             "iclr",
@@ -68,7 +68,7 @@ class ApplicationMessageTests(unittest.TestCase):
                 "muit_agent_crm",
                 "mufg",
                 "anicca_consumer",
-                "life_manager",
+                "mr_bot",
             ),
             "gtm": (
                 "mufg",

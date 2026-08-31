@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "release_sha": "c84cee65d464c7f0c24e6af548d27cf9b28a3eba",
-  "launchd_label": "ai.anicca.life-manager-connector-native",
+  "launchd_label": "ai.anicca.mr-bot-connector-native",
   "kickstart_count": 1,
   "launchd_run_count": 1,
   "launchd_exit_code": 0,

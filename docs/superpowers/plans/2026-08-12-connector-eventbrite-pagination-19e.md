@@ -12,7 +12,7 @@
 
 ## Constraints
 
-- Modify only `apps/life-manager/lib/connector-eventbrite-workflow.js` and matching test.
+- Modify only `apps/mr-bot/lib/connector-eventbrite-workflow.js` and matching test.
 - Use one supplied owned page; create/close page、context、browser 0。
 - Navigate exact bounded list `[LIST_URL, LIST_URL?page=2, LIST_URL?page=3]` in order; no page 4 and no inferred link click。
 - Any navigation URL drift、goto/evaluate error、non-array page result fails the entire discovery with existing safe listing code; partial page rows are not returned。

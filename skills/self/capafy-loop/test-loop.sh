@@ -20,11 +20,11 @@ a "healthy→no-req"  "$(run "$ACC" "$P0" "$T0" 0)"                             
 # while daily_loop.sh has just completed a healthy pass.
 state_home_case(){
   local T F S SH R
-  T="$(mktemp -d)"; F="$T/fx"; S="$T/state"; SH="$T/life-manager-state"; R="$T/req.json"
+  T="$(mktemp -d)"; F="$T/fx"; S="$T/state"; SH="$T/mr-bot-state"; R="$T/req.json"
   mkdir -p "$F" "$S" "$SH/state/capafy-autopublish"
   printf '%s' "$ACC" >"$F/cap_acct.json"; printf '%s' "$P0" >"$F/cap_payout.json"; printf '%s' "$T0" >"$F/cap_trend.json"
   touch "$SH/state/capafy-autopublish/daily_loop.log"
-  CAPAFY_TEST=1 CAPAFY_FIXTURE="$F" CAPAFY_DIR="$T" CAPAFY_REQ="$R" LIFE_MANAGER_STATE_HOME="$SH" bash "$LOOP" >/dev/null 2>&1
+  CAPAFY_TEST=1 CAPAFY_FIXTURE="$F" CAPAFY_DIR="$T" CAPAFY_REQ="$R" MR_BOT_STATE_HOME="$SH" bash "$LOOP" >/dev/null 2>&1
   cat "$S/STATE.md"; rm -rf "$T"
 }
 a "state-home-log→healthy" "$(state_home_case)" '^heal_first: all healthy'

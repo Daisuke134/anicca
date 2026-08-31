@@ -19,14 +19,14 @@
 ### Task 1: Add the Peatix aggregate audit sink
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-minimal-operations.js`
-- Modify: `apps/life-manager/lib/connector-minimal-operations.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-operations.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-operations.test.js`
 
 - [ ] Write a failing test that records one valid five-count Peatix row, verifies exact wake lineage/timestamp, JSONL append, mode 0600, and absence of private/provider detail fields.
 - [ ] Assert invalid ordering/counts use the existing closed validation and do not append.
-- [ ] Run RED: `node --test apps/life-manager/lib/connector-minimal-operations.test.js`.
+- [ ] Run RED: `node --test apps/mr-bot/lib/connector-minimal-operations.test.js`.
 - [ ] Add the one file constant, one method using `safeDiscoveryAudit`, and one exported dependency key.
-- [ ] Run GREEN plus `node --test apps/life-manager/lib/connector-minimal-operations.test.js apps/life-manager/lib/connector-minimal-production.test.js`.
+- [ ] Run GREEN plus `node --test apps/mr-bot/lib/connector-minimal-operations.test.js apps/mr-bot/lib/connector-minimal-production.test.js`.
 - [ ] Run `node --check` and `git diff --check`.
 - [ ] Commit `feat(connector): persist Peatix discovery audit` and push `feature/connector-native-completion`.
 

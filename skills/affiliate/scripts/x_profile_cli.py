@@ -271,10 +271,10 @@ def main():
     parser.add_argument("--locale", default="en")
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--cdp-port", type=int, default=9326)
-    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/mr-bot/affiliate"))
     parser.add_argument(
         "--receipt", type=Path,
-        default=Path("~/.local/state/life-manager/affiliate/x-profile-en.json"),
+        default=Path("~/.local/state/mr-bot/affiliate/x-profile-en.json"),
     )
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]

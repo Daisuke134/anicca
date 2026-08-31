@@ -2,7 +2,7 @@
 
 ## Goal
 
-`done="The402 の公募仕事による外部 USDC 着金だけが x402_work として Life Manager の既存 earnings ledger に一度だけ記帳され、直接購入は x402_sale のまま、曖昧な provenance は記帳されない"`
+`done="The402 の公募仕事による外部 USDC 着金だけが x402_work として Mr.bot の既存 earnings ledger に一度だけ記帳され、直接購入は x402_sale のまま、曖昧な provenance は記帳されない"`
 
 ## Observed production state
 

@@ -108,7 +108,7 @@ class _Article(HTMLParser):
 
 
 def _owned_html(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "life-manager-affiliate/1"})
+    request = urllib.request.Request(url, headers={"User-Agent": "mr-bot-affiliate/1"})
     with urllib.request.urlopen(request, timeout=30) as response:
         parser = _Article()
         parser.feed(response.read().decode("utf-8", errors="replace"))
@@ -119,7 +119,7 @@ def _owned_html(url):
 
 
 def _public_html(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "life-manager-affiliate/1"})
+    request = urllib.request.Request(url, headers={"User-Agent": "mr-bot-affiliate/1"})
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             return response.read().decode("utf-8", errors="replace") if response.status == 200 else ""

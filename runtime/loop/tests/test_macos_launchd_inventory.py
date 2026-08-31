@@ -4,11 +4,11 @@ from runtime.loop.macos_launchd_inventory import classify_owner, extract_release
 
 
 class MacosLaunchdInventoryTest(unittest.TestCase):
-    def test_owner_requires_existing_classification_or_life_manager_runtime_path(self):
-        self.assertEqual(classify_owner("life-manager", "/usr/bin/true"), "life-manager")
+    def test_owner_requires_existing_classification_or_mr_bot_runtime_path(self):
+        self.assertEqual(classify_owner("mr-bot", "/usr/bin/true"), "mr-bot")
         self.assertEqual(
-            classify_owner(None, "/Users/me/.local/share/life-manager/releases/abc/run.sh"),
-            "life-manager",
+            classify_owner(None, "/Users/me/.local/share/mr-bot/releases/abc/run.sh"),
+            "mr-bot",
         )
         self.assertEqual(classify_owner(None, "/usr/bin/true"), "ambiguous")
 
@@ -20,11 +20,11 @@ class MacosLaunchdInventoryTest(unittest.TestCase):
 
     def test_release_extracts_sha_and_marks_mutable_checkout(self):
         self.assertEqual(
-            extract_release("/Users/me/.local/share/life-manager/releases/" + "a" * 40 + "/run.sh"),
+            extract_release("/Users/me/.local/share/mr-bot/releases/" + "a" * 40 + "/run.sh"),
             "a" * 40,
         )
         self.assertEqual(
-            extract_release("/Users/me/Projects/life-manager-main/apps/run.sh"),
+            extract_release("/Users/me/Projects/mr-bot-main/apps/run.sh"),
             "mutable-checkout",
         )
         self.assertIsNone(extract_release("/usr/bin/true"))

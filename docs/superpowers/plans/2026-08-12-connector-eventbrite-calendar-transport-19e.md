@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Modify exactly `apps/life-manager/lib/transport/calendar-gog.js` and `apps/life-manager/lib/transport/transport-gog.test.js`.
+- Modify exactly `apps/mr-bot/lib/transport/calendar-gog.js` and `apps/mr-bot/lib/transport/transport-gog.test.js`.
 - Production soft target: +8–16 LOC. Test soft target: +45–75 LOC. No new file, dependency, helper abstraction, state, or schema.
 - Use strict TDD: both accepted Eventbrite URL forms fail before the minimum branch is added.
 - Accept exact `https://www.eventbrite.com/e/<slug>-tickets-<positive ID>` and exact `https://www.eventbrite.com/e/<positive ID>`, using the same slug grammar as `connector-eventbrite-workflow.js`.
@@ -25,8 +25,8 @@
 ### Task 1: Add strict Eventbrite canonical URL handling to gog Calendar
 
 **Files:**
-- Modify: `apps/life-manager/lib/transport/calendar-gog.js`
-- Test: `apps/life-manager/lib/transport/transport-gog.test.js`
+- Modify: `apps/mr-bot/lib/transport/calendar-gog.js`
+- Test: `apps/mr-bot/lib/transport/transport-gog.test.js`
 
 - [ ] **Step 1: Write failing accepted/rejected URL tests**
 
@@ -46,7 +46,7 @@ Add a rejection table with at least HTTP, root host, wrong subdomain, uppercase 
 - [ ] **Step 2: Verify RED**
 
 ```bash
-node --test apps/life-manager/lib/transport/transport-gog.test.js
+node --test apps/mr-bot/lib/transport/transport-gog.test.js
 ```
 
 Expected: existing tests stay green and the new accepted Eventbrite test fails at the Peatix fallback; the rejection table may already pass for an unknown provider.
@@ -58,8 +58,8 @@ After Doorkeeper and before final Peatix fallback, match exact `www.eventbrite.c
 - [ ] **Step 4: Verify GREEN and guard sensitivity**
 
 ```bash
-node --test apps/life-manager/lib/transport/transport-gog.test.js apps/life-manager/lib/connector-minimal-evidence.test.js
-node --check apps/life-manager/lib/transport/calendar-gog.js
+node --test apps/mr-bot/lib/transport/transport-gog.test.js apps/mr-bot/lib/connector-minimal-evidence.test.js
+node --check apps/mr-bot/lib/transport/calendar-gog.js
 git diff --check
 ```
 

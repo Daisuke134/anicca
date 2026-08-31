@@ -25,7 +25,7 @@ secret-like text不在を検証する。runtimeは明示pathからだけ読み�
 - 東京の対面eventで毎日人に会うことが最優先。
 - AI、crypto、startup、founder、VC、product、finance、英語は順位を上げる例であり除外条件ではない。
 - 予想外の人・分野とのserendipityを残す。
-- Life Managerのuser、協力者、採用、投資、登壇、事業機会へつながる可能性を評価する。
+- Mr.botのuser、協力者、採用、投資、登壇、事業機会へつながる可能性を評価する。
 - 自動支出は0円。無料候補だけを応募jobへ送る。
 
 ## State machine

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The daily Life Manager marketing loop: pick tomorrow's creative, speak it, render it.
+"""The daily Mr.bot marketing loop: pick tomorrow's creative, speak it, render it.
 
 What this replaces: the previous runtime bolted one fixed call recording onto every video, so the
 voice was Dais talking to his own assistant and the subject could never change. Here the voice is
@@ -79,7 +79,7 @@ def narration_script(creative: dict, language: str) -> str:
     """Turn the three bank beats into prose a voice can read.
 
     The shape is always the same promise: name the problem the viewer already has, show the exact
-    moment Life Manager takes it over, then say what is different afterwards.
+    moment Mr.bot takes it over, then say what is different afterwards.
     """
     if language not in LANGUAGES:
         raise ValueError(f"unsupported narration language {language!r}")
@@ -88,13 +88,13 @@ def narration_script(creative: dict, language: str) -> str:
         return (
             f"Here is something you already do: {pain}. "
             f"Nobody hands you that time back, and no reminder app has ever solved it. "
-            f"Life Manager does the part you were doing by hand — {moment}. "
+            f"Mr.bot does the part you were doing by hand — {moment}. "
             f"So the day starts differently: {punchline}."
         )
     return (
         f"{pain}。"
         f"その時間は誰も返してくれないし、通知アプリでは解決しない。"
-        f"Life Manager が、あなたが手でやっていた部分を引き取る。{moment}。"
+        f"Mr.bot が、あなたが手でやっていた部分を引き取る。{moment}。"
         f"だから一日はこう始まる。{punchline}。"
     )
 
@@ -128,12 +128,12 @@ def main() -> int:
     import uuid
 
     here = Path(__file__).resolve().parent
-    parser = argparse.ArgumentParser(description="Plan today's Life Manager marketing render.")
+    parser = argparse.ArgumentParser(description="Plan today's Mr.bot marketing render.")
     parser.add_argument("--bank", type=Path, default=here / "creative-bank.jsonl")
     parser.add_argument(
         "--ledger",
         type=Path,
-        default=Path(os.environ.get("LM_DAILY_RUN_LEDGER", "~/.life-manager/state/daily-run-ledger.jsonl")).expanduser(),
+        default=Path(os.environ.get("LM_DAILY_RUN_LEDGER", "~/.mr-bot/state/daily-run-ledger.jsonl")).expanduser(),
     )
     parser.add_argument("--language", choices=LANGUAGES, default="en")
     args = parser.parse_args()

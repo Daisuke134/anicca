@@ -19,14 +19,14 @@ def executable(path: Path, body: str) -> Path:
     return path
 
 
-class LifeManagerTikTokAccountRouteTests(unittest.TestCase):
+class MrBotTikTokAccountRouteTests(unittest.TestCase):
     def test_default_daily_route_publishes_to_the_retired_video_loops_account(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             video = root / "creative.mp4"
             video.write_bytes(b"account-route-video")
             caption = root / "caption.txt"
-            caption.write_text("Life Manager account route", encoding="utf-8")
+            caption.write_text("Mr.bot account route", encoding="utf-8")
             approvals = root / "approvals.jsonl"
             approvals.write_text(
                 json.dumps(

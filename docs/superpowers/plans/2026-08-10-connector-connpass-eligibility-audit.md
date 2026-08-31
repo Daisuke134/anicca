@@ -24,12 +24,12 @@
 ### Task 1: Persist Connpass gate counts from the official production workflow
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-connpass-workflow.js`
-- Modify: `apps/life-manager/lib/connector-connpass-workflow.test.js`
-- Modify: `apps/life-manager/lib/connector-minimal-operations.js`
-- Modify: `apps/life-manager/lib/connector-minimal-operations.test.js`
-- Modify: `apps/life-manager/lib/connector-minimal-production.js`
-- Modify: `apps/life-manager/lib/connector-minimal-production.test.js`
+- Modify: `apps/mr-bot/lib/connector-connpass-workflow.js`
+- Modify: `apps/mr-bot/lib/connector-connpass-workflow.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-operations.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-operations.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-production.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-production.test.js`
 
 **Interfaces:**
 - Consumes: `createConnpassScriptFirstWorkflow(options)` and `createMinimalProductionOperations(options)`.
@@ -58,7 +58,7 @@ The production change this test catches is removal or mis-ordering of a Connpass
 Run:
 
 ```bash
-node --test apps/life-manager/lib/connector-connpass-workflow.test.js
+node --test apps/mr-bot/lib/connector-connpass-workflow.test.js
 ```
 
 Expected: FAIL because `createConnpassScriptFirstWorkflow` does not yet invoke `onDiscoveryAudit`.
@@ -104,7 +104,7 @@ Use exact file `connpass-discovery-audits.jsonl`. The production break this catc
 Run:
 
 ```bash
-node --test apps/life-manager/lib/connector-minimal-operations.test.js
+node --test apps/mr-bot/lib/connector-minimal-operations.test.js
 ```
 
 Expected: FAIL because `recordConnpassDiscoveryAudit` does not exist.
@@ -138,7 +138,7 @@ The production break this catches is a working workflow callback that is never c
 Run:
 
 ```bash
-node --test apps/life-manager/lib/connector-minimal-production.test.js
+node --test apps/mr-bot/lib/connector-minimal-production.test.js
 ```
 
 Expected: FAIL because the factory does not pass `operations.recordConnpassDiscoveryAudit` into the Connpass workflow.
@@ -162,10 +162,10 @@ Run:
 
 ```bash
 node --test \
-  apps/life-manager/lib/connector-connpass-workflow.test.js \
-  apps/life-manager/lib/connector-minimal-operations.test.js \
-  apps/life-manager/lib/connector-minimal-production.test.js \
-  apps/life-manager/lib/connector-minimal-runner.test.js
+  apps/mr-bot/lib/connector-connpass-workflow.test.js \
+  apps/mr-bot/lib/connector-minimal-operations.test.js \
+  apps/mr-bot/lib/connector-minimal-production.test.js \
+  apps/mr-bot/lib/connector-minimal-runner.test.js
 ```
 
 Expected: all tests pass, zero failures, pristine output.
@@ -173,12 +173,12 @@ Expected: all tests pass, zero failures, pristine output.
 - [ ] **Step 13: Commit implementation**
 
 ```bash
-git add apps/life-manager/lib/connector-connpass-workflow.js \
-  apps/life-manager/lib/connector-connpass-workflow.test.js \
-  apps/life-manager/lib/connector-minimal-operations.js \
-  apps/life-manager/lib/connector-minimal-operations.test.js \
-  apps/life-manager/lib/connector-minimal-production.js \
-  apps/life-manager/lib/connector-minimal-production.test.js
+git add apps/mr-bot/lib/connector-connpass-workflow.js \
+  apps/mr-bot/lib/connector-connpass-workflow.test.js \
+  apps/mr-bot/lib/connector-minimal-operations.js \
+  apps/mr-bot/lib/connector-minimal-operations.test.js \
+  apps/mr-bot/lib/connector-minimal-production.js \
+  apps/mr-bot/lib/connector-minimal-production.test.js
 git commit -m "feat(connector): persist Connpass eligibility audit"
 ```
 

@@ -37,7 +37,7 @@
   "durable_artifact": {
     "ticket_receipt_ref": "ticket://dais-local/afae319eb76e063e83c58ca409002521eb550f559c6a5d17c6bdddeb8c1fdc7f",
     "artifact_ref": "object://sha256/5a10d00d85bc6a0e6e16c94e65c757b6b5e95d3817d33f4b8e2362673d60a7ca",
-    "stored_in_runtime_volume": "life-manager-local_runtime-data",
+    "stored_in_runtime_volume": "mr-bot-local_runtime-data",
     "receipt_read_back": true,
     "artifact_read_back": true,
     "artifact_hash_reverified": true,

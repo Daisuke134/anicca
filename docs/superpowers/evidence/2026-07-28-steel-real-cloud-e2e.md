@@ -75,7 +75,7 @@ Verification summary:
 |---|---|
 | focused Steel/booking/smoke tests | 99/99 PASS |
 | deterministic evals | 134/134 PASS |
-| full Life Manager suite | 659/660 PASS; sole failure is the pre-existing host-state assertion that expects the actually-loaded `ai.anicca.life-manager-dev` job to be unloaded |
+| full Mr.bot suite | 659/660 PASS; sole failure is the pre-existing host-state assertion that expects the actually-loaded `ai.anicca.mr-bot-dev` job to be unloaded |
 | scoped gitleaks (`canonical/main..feature`) | 4 commits, no leaks |
 | TruffleHog PR check | PASS |
 

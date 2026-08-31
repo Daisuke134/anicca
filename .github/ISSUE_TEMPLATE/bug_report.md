@@ -27,7 +27,7 @@ Steps to reproduce the behaviour:
 
 ```
 paste the relevant lines from
-~/.openclaw/skills/anicca-life-manager/state/run.log
+~/.openclaw/skills/anicca-mr-bot/state/run.log
 or wherever the error appears
 ```
 

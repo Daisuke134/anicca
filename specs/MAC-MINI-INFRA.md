@@ -30,11 +30,11 @@
 
 ### 60GB は物理的に不可能
 
-触れない 25GB ＋ 不可侵 25GB（`.cloak` `monk-factory` `rtdash`）＝ **50GB は最初から動かせない**。残り 178GB のうち Life Manager の稼働に必要なものを引くと、60GB の空きを作るには稼働システムを削るしかない。**現実的な上限は 25〜30GB。**
+触れない 25GB ＋ 不可侵 25GB（`.cloak` `monk-factory` `rtdash`）＝ **50GB は最初から動かせない**。残り 178GB のうち Mr.bot の稼働に必要なものを引くと、60GB の空きを作るには稼働システムを削るしかない。**現実的な上限は 25〜30GB。**
 
 ### もう掃除できるものは残っていない
 
-このセッションで消せるものは全て消した。残っているのは ①触れないシステム領域 ②不可侵指定 ③稼働 loop が今使っているもの ④収益の記録、の4種類だけ。「Life Manager 以外の未使用物」は Adobe・Colima・未使用アプリ6本・未使用 Homebrew 式14個・未使用グローバル npm 8式・孤児 worktree 39個・孤児 state 5個を全て回収済みで、**残りゼロ**。
+このセッションで消せるものは全て消した。残っているのは ①触れないシステム領域 ②不可侵指定 ③稼働 loop が今使っているもの ④収益の記録、の4種類だけ。「Mr.bot 以外の未使用物」は Adobe・Colima・未使用アプリ6本・未使用 Homebrew 式14個・未使用グローバル npm 8式・孤児 worktree 39個・孤児 state 5個を全て回収済みで、**残りゼロ**。
 
 ### 2026-08-31 追記 — 上の「残りゼロ」は誤りだった
 
@@ -48,7 +48,7 @@
 | `~/loops/releases` の未参照 release 2本 | 2.4GB | plist・symlink・`protected-releases.json` のどこからも参照されていなかった |
 | `~/Library/Caches/com.openai.codex` の Sparkle Installation | 1.9GB | 適用済み staged update。595MB の zip と展開済みディレクトリ。開いているファイル 0 |
 | 幽霊 worktree 登録 37件 + 実体のある merged worktree 6本 | 0.8GB | 登録 61 → 18。branch は 656 → 656 で不変 |
-| `~/Projects/life-manager-8i-cutover` | 93MB | 2026-07-24 で止まった重複 clone。最終差分は `rollback/8i-cutover-final-diff-20260831.patch` に退避 |
+| `~/Projects/mr-bot-8i-cutover` | 93MB | 2026-07-24 で止まった重複 clone。最終差分は `rollback/8i-cutover-final-diff-20260831.patch` に退避 |
 
 反証された記述が2つある:
 
@@ -67,7 +67,7 @@
 | git worktree 登録 | 幽霊 37 件が滞留していた | 実体が消えた登録を自動 prune |
 
 `git gc` は対象外である。`git count-objects -vH` の実測では
-`anicca-project` / `life-manager-main` / `anicca` の3リポジトリとも
+`anicca-project` / `mr-bot-main` / `anicca` の3リポジトリとも
 loose object 0・garbage 0・prune-packable 0 で完全に packed であり、
 回収できる無駄は最大 5MiB しかない。**容量は git の無駄ではなく世代管理の不在で積んでいる。**
 
@@ -78,9 +78,9 @@ loose object 0・garbage 0・prune-packable 0 で完全に packed であり、
 
 | behind | 箇所 | 状態 |
 |---|---|---|
-| **7695** | `~/lm-loops-core`、`.worktrees/connector-core-recovery`、`~/Projects/.worktrees/life-manager/cfo-local-organ-20260802`、`.worktrees/five-phase-autonomous`、`.worktrees/outbound-engine`、`~/Projects/.worktrees/life-manager/atomic-9d-decouple`、同 `atomic-11b-care-candidates-v2` | 7本すべて未commit差分あり。7〜8月で放棄 |
-| 1845 | `~/Projects/life-manager-main`（正本） | 作業中 |
-| 214 | `~/.local/state/life-manager/source/capafy-life-manager` | 未commit 335 ファイル |
+| **7695** | `~/lm-loops-core`、`.worktrees/connector-core-recovery`、`~/Projects/.worktrees/mr-bot/cfo-local-organ-20260802`、`.worktrees/five-phase-autonomous`、`.worktrees/outbound-engine`、`~/Projects/.worktrees/mr-bot/atomic-9d-decouple`、同 `atomic-11b-care-candidates-v2` | 7本すべて未commit差分あり。7〜8月で放棄 |
+| 1845 | `~/Projects/mr-bot-main`（正本） | 作業中 |
+| 214 | `~/.local/state/mr-bot/source/capafy-mr-bot` | 未commit 335 ファイル |
 | 0〜213 | その他 12 箇所 | |
 
 `git worktree add` は分岐時点の main を保持するため、放置した worktree は
@@ -120,7 +120,7 @@ loose object 0・garbage 0・prune-packable 0 で完全に packed であり、
 | 1.9G | `skills` — `.backups` 0.6G、`_shared` 0.2G、`4.7-slideshow-factory` 0.2G |
 | 0.7G | `state` / 0.7G `agents` / 0.65G `media` |
 
-Life Manager への移行が進めば `workspace/runs` と `skills/.backups` は回収候補になる。現時点では稼働中の gateway が使用中。
+Mr.bot への移行が進めば `workspace/runs` と `skills/.backups` は回収候補になる。現時点では稼働中の gateway が使用中。
 
 ### 二度と満杯にならない仕組み
 
@@ -136,8 +136,8 @@ Dais は iOS の Claude app から Mac Mini のセッションに入って作業
 |---|---|
 | launchd label | `com.anicca.claude-remote-control` |
 | plist | `~/Library/LaunchAgents/com.anicca.claude-remote-control.plist` |
-| コマンド | `~/.local/bin/claude remote-control --name life-manager` |
-| cwd | `~/Projects/life-manager` |
+| コマンド | `~/.local/bin/claude remote-control --name mr-bot` |
+| cwd | `~/Projects/mr-bot` |
 | 再起動時 | `RunAtLoad` = true |
 | プロセス死 | `KeepAlive` = true（`ThrottleInterval` 15秒） |
 | stderr log | `~/Library/Logs/claude-remote-control.err.log` |
@@ -186,7 +186,7 @@ claude auth status
 
 削除対象は再生成可能なものだけ: npm/pip/uv/Homebrew キャッシュ、Xcode DerivedData、`~/.cache/anicca-*`、3日以上前の `/private/tmp/claude-501`、200MB超のログを truncate。
 
-さらに **release GC を組み込んだ**（2026-08-31）。最新 release の `runtime/loop/central_cleanup.py --release-gc-only` を `LIFE_MANAGER_RELEASE_KEEP=2` で呼び、`<release>.gc-trash.<pid>` の残骸も消す。この GC は loaded な agent が参照する release とプロセスが開いている release を自分で保護するので、保持数を下げても loop を取り残さない。強制発火テストで `preserved_releases: 3, protected_release_count: 2` を確認済み。
+さらに **release GC を組み込んだ**（2026-08-31）。最新 release の `runtime/loop/central_cleanup.py --release-gc-only` を `MR_BOT_RELEASE_KEEP=2` で呼び、`<release>.gc-trash.<pid>` の残骸も消す。この GC は loaded な agent が参照する release とプロセスが開いている release を自分で保護するので、保持数を下げても loop を取り残さない。強制発火テストで `preserved_releases: 3, protected_release_count: 2` を確認済み。
 
 **絶対に触らない**: `~/.cloak` / `~/anicca-rtdash` / `~/anicca-monk-factory` / `**/memory/` / `**/state/*.jsonl` / `~/.config/ai/` / セッション transcript。
 
@@ -224,13 +224,13 @@ claude auth status
 | `/Applications/Grok Bot.app` `Koharu.app` | 0.4GB | 参照0 |
 | グローバル npm 7式（`@clawnch` `@moonpay` `@storacha` `@virtuals-protocol` `@colbymchenry` `@nosana` `conway-terminal`） | 2.6GB | 実コマンド名で再検証し参照0。`clawrouter` `taskmarket` は稼働中のため保護 |
 | `~/loops/connector/releases` の未参照5個 | 1.4GB | plist参照0・lsof0。`current` が指す1個は保持し実在を確認 |
-| `life-manager-main/.worktrees` の39個 | 2.6GB | 44個中、plist参照0・未コミット0・lsof0 のもののみ。dirty 4個と使用中1個は保持 |
+| `mr-bot-main/.worktrees` の39個 | 2.6GB | 44個中、plist参照0・未コミット0・lsof0 のもののみ。dirty 4個と使用中1個は保持 |
 
 **副作用**: `premiere-pro` MCP plugin は動かなくなった（Premiere 本体が無いため）。
 
 ### 削除を中止したもの（現役だった）
 
-**「使ってなさそう」という見た目で判断すると Life Manager の loop を壊す。**必ず ①どの plist が参照してるか ②その agent の `runs` カウント を実測する。
+**「使ってなさそう」という見た目で判断すると Mr.bot の loop を壊す。**必ず ①どの plist が参照してるか ②その agent の `runs` カウント を実測する。
 
 | 対象 | 中止理由 |
 |---|---|
@@ -261,7 +261,7 @@ claude auth status
 |---|---|---|
 | 19G | `~/.cloak` | **不可侵**（CloakBrowser、稼働中） |
 | 11G | `~/.openclaw` | 現役（Telegram gateway） |
-| 11G | `~/Projects` | 現役（Life Manager 含む） |
+| 11G | `~/Projects` | 現役（Mr.bot 含む） |
 | 10G | `~/.local` | 現役（CLI ツール群、claude binary も） |
 | 10G | `~/loops` | 要調査 |
 | 9G | `~/gig` | 要調査 |
@@ -285,7 +285,7 @@ claude auth status
 | 6.9G | `/opt/homebrew/lib/node_modules` | グローバル npm。`@clawnch` 1.1G、`@blockrun` 0.9G、`@moonpay` 0.3G ほか。未検証 |
 | 3.8G | `~/Library` | `Application Support` 2.2G、`Python` 0.9G |
 | 3.5G | `/private/var/folders` | システムキャッシュ。一括削除は classifier が拒否 |
-| 2.7G | 副次 release ツリー | `loops/connector` `loops/life-manager` `.local/share/*/releases` |
+| 2.7G | 副次 release ツリー | `loops/connector` `loops/mr-bot` `.local/share/*/releases` |
 
 ### Homebrew `/opt` 19GB の上位
 
@@ -303,7 +303,7 @@ claude auth status
 | 264M | pandoc | ドキュメント変換 |
 | 258M | go / 238M semgrep / 177M opencv | |
 
-proj / vtk / opencv / boost は地理・画像処理系の依存。Life Manager とは無関係の可能性が高い。
+proj / vtk / opencv / boost は地理・画像処理系の依存。Mr.bot とは無関係の可能性が高い。
 
 ---
 
@@ -323,7 +323,7 @@ proj / vtk / opencv / boost は地理・画像処理系の依存。Life Manager 
 
 ```mermaid
 flowchart LR
-    A["Tier 1<br/>Life Manager と無関係<br/>アプリ・言語処理系・VM"] --> B["Tier 2<br/>死んだ実験<br/>稼働 loop から参照ゼロ"]
+    A["Tier 1<br/>Mr.bot と無関係<br/>アプリ・言語処理系・VM"] --> B["Tier 2<br/>死んだ実験<br/>稼働 loop から参照ゼロ"]
     A --> C["Tier 3<br/>中核の再生成可能物<br/>node_modules 等"]
     B --> C
     C --> D["Tier 4<br/>中核の実体<br/>原則 触らない"]
@@ -331,7 +331,7 @@ flowchart LR
 
 | Tier | 対象 | 扱い |
 |---|---|---|
-| **1** | Life Manager と一切関係ないもの。使わないアプリ、未使用の言語処理系・VM・SDK、ダウンロード物、古いバックアップ | **最優先。ここを徹底的に削る** |
+| **1** | Mr.bot と一切関係ないもの。使わないアプリ、未使用の言語処理系・VM・SDK、ダウンロード物、古いバックアップ | **最優先。ここを徹底的に削る** |
 | **2** | 死んだ実験・過去プロジェクトで、稼働 loop から参照ゼロのもの | Tier 1 を出し切ってから |
 | **3** | 中核（`~/anicca` `~/gig` `~/loops` `~/Projects`）**の中の**再生成可能物 | Tier 1・2 で足りない時だけ。**稼働 loop が今使っていないことを確認してから** |
 | **4** | 中核の実体（コード・state・設定） | **触らない** |
@@ -375,7 +375,7 @@ brew uses --installed <formula>
 | 源 | 増加 |
 |---|---|
 | `~/loops/releases` に新 release | 数分ごとに 1.2GB（00:26 00:35 00:42 00:44 00:48 に5個） |
-| `~/Projects/life-manager-main` | 5.2GB → 7.0GB |
+| `~/Projects/mr-bot-main` | 5.2GB → 7.0GB |
 | `~/Projects/.worktrees` の `node_modules` | 削除したものが再インストールで復活 |
 | `/private/var/folders` | 1.7GB → 3.5GB |
 
@@ -398,7 +398,7 @@ brew uses --installed <formula>
 
 実測した生成頻度（`RELEASE.json` の `cut_at`、2026-08-31）: 05:13 → 05:49 → 05:59 → 06:08 → 06:19 → 06:28 → 06:49 → 07:06。**10〜20分ごとに 1.2GB**。9個保持で常時 11GB を占有する。
 
-生成元は `bin/cut-loop-release.sh`、その唯一の呼び出し元は `bin/reconcile-agent-runner-release.sh`。`ai.anicca.life-manager-selfbuild` は毎日 04:10 のカレンダー実行で `runs = 0` なので**別の主体**が呼んでいる。全 loop の plist が最新 SHA へ書き換わり続けている（最終 08:26）ことから、loop 群を再インストールする仕組みが release を切っていると見られる。この主体はまだ特定できていない。
+生成元は `bin/cut-loop-release.sh`、その唯一の呼び出し元は `bin/reconcile-agent-runner-release.sh`。`ai.anicca.mr-bot-selfbuild` は毎日 04:10 のカレンダー実行で `runs = 0` なので**別の主体**が呼んでいる。全 loop の plist が最新 SHA へ書き換わり続けている（最終 08:26）ことから、loop 群を再インストールする仕組みが release を切っていると見られる。この主体はまだ特定できていない。
 
 GC 自体は正常に動く。削除途中の残骸 `<release>.gc-trash.<pid>` が 1.1GB 残っていたので回収した。
 
@@ -440,7 +440,7 @@ GC 自体は正常に動く。削除途中の残骸 `<release>.gc-trash.<pid>` �
 
 ## 8. 次の一手（Tier 順）
 
-### Tier 1 — Life Manager と無関係（未着手、ここから）
+### Tier 1 — Mr.bot と無関係（未着手、ここから）
 - `/Applications` の残り（Xcode 4G は iOS ビルドに必要か要確認、Chrome 2G は CloakBrowser と重複、ChatGPT.app 2G、Openscreen / Koharu / Maestro / LibreOffice / quarto 各1G）
 - `/opt` Homebrew の残り 17G — `brew leaves` を全件出して loop 呼び出しゼロのものを削る
 - `~/Library` `~/Downloads` `~/Documents` `~/Movies` の未計測分
@@ -521,7 +521,7 @@ GC 自体は正常に動く。削除途中の残骸 `<release>.gc-trash.<pid>` �
 50MB 超の zip/mp4/mov だけで 8ファイル 1804MB。
 **回収余地は同一成果物の複数世代**だが納品証跡なので機械削除は不可。
 
-### `~/.local/state/life-manager` 2.5GB の正体
+### `~/.local/state/mr-bot` 2.5GB の正体
 
 `migration` 584MB（うち `elz-f` 507MB は eliza 移行 state、別セッション所管）、
 `writer` 497MB、`state` 286MB、`objects/sha256` 209MB、`evidence` 199MB、
@@ -531,7 +531,7 @@ GC 自体は正常に動く。削除途中の残骸 `<release>.gc-trash.<pid>` �
 ### 消してはいけないもの（確定）
 
 `~/.cloak` / `~/anicca-monk-factory` / `~/anicca-rtdash` /
-`~/Projects/life-manager-eliza-migration`（general agent 移行先、別セッション作業中）/
+`~/Projects/mr-bot-eliza-migration`（general agent 移行先、別セッション作業中）/
 `~/profitable-claude`（GA-13A の natural pass 前）/ `**/state/*.jsonl`
 
 ### 真の増加源は release 生成であって放置ファイルではない

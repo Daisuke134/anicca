@@ -1,8 +1,8 @@
-# Life Manager Money Printer — 60-second judge guide
+# Mr.bot Money Printer — 60-second judge guide
 
 Live app: <https://aniccaai.com/money-printer>
 
-No login, payment, API key, or private Life Manager account is required. The judge tenant is isolated from owner
+No login, payment, API key, or private Mr.bot account is required. The judge tenant is isolated from owner
 credentials and external-effect authority. It may change only its internal opportunity/workroom state.
 
 ## Primary path — ChatGPT in-app browser

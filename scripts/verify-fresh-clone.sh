@@ -2,15 +2,15 @@
 # Prove the canonical branch works from a shallow fresh clone with no sibling checkout.
 set -euo pipefail
 
-SOURCE_REPO="${LIFE_MANAGER_VERIFY_REPO:-https://github.com/Daisuke134/life-manager.git}"
-REF="${LIFE_MANAGER_VERIFY_REF:-main}"
-VERIFY_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/life-manager-fresh-clone.XXXXXX")"
+SOURCE_REPO="${MR_BOT_VERIFY_REPO:-https://github.com/Daisuke134/life-manager.git}"
+REF="${MR_BOT_VERIFY_REF:-main}"
+VERIFY_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/mr-bot-fresh-clone.XXXXXX")"
 CLONE="$VERIFY_ROOT/checkout"
 RUNTIME="$VERIFY_ROOT/runtime"
 LOG="$VERIFY_ROOT/verify.log"
 
 cleanup() {
-  if [ "${LIFE_MANAGER_KEEP_VERIFY_DIR:-0}" = "1" ]; then
+  if [ "${MR_BOT_KEEP_VERIFY_DIR:-0}" = "1" ]; then
     printf 'fresh-clone directory retained: %s\n' "$VERIFY_ROOT"
   else
     chmod -R u+w "$VERIFY_ROOT" 2>/dev/null || true
@@ -29,7 +29,7 @@ COMMIT="$(git -C "$CLONE" rev-parse HEAD)"
 BEFORE="$(git -C "$CLONE" status --porcelain --untracked-files=all)"
 [ -z "$BEFORE" ] || { printf 'fresh clone is dirty before verification\n' >&2; exit 1; }
 
-unset ANICCA_HOME LIFE_MANAGER_REPO PROFITABLE_CLAUDE_ROOT OPENCLAW_HOME
+unset ANICCA_HOME MR_BOT_REPO PROFITABLE_CLAUDE_ROOT OPENCLAW_HOME
 export HOME="$VERIFY_ROOT/home"
 export npm_config_cache="$VERIFY_ROOT/npm-cache"
 mkdir -p "$HOME"
@@ -37,13 +37,13 @@ mkdir -p "$HOME"
 run npm --prefix "$CLONE" ci --no-audit --no-fund
 run npm --prefix "$CLONE" run verify:oss
 run env \
-  LIFE_MANAGER_HOME="$RUNTIME" \
-  LIFE_MANAGER_INSTALL_DAEMON=0 \
+  MR_BOT_HOME="$RUNTIME" \
+  MR_BOT_INSTALL_DAEMON=0 \
   bash "$CLONE/install.sh"
-run npm --prefix "$CLONE/apps/life-manager" ci --no-audit --no-fund
-run npm --prefix "$CLONE/apps/life-manager" test
-run npm --prefix "$CLONE/apps/life-manager" run eval
-run npm --prefix "$CLONE/apps/life-manager" run eval:panel-privacy
+run npm --prefix "$CLONE/apps/mr-bot" ci --no-audit --no-fund
+run npm --prefix "$CLONE/apps/mr-bot" test
+run npm --prefix "$CLONE/apps/mr-bot" run eval
+run npm --prefix "$CLONE/apps/mr-bot" run eval:panel-privacy
 
 AFTER="$(git -C "$CLONE" status --porcelain --untracked-files=all)"
 [ -z "$AFTER" ] || {

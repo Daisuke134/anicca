@@ -10,7 +10,7 @@ so verified external revenue remains `$0.00`.
 | uGig | [`2b410cad-7cc9-44fd-b2f1-843d9eae6c24`](https://ugig.net/gigs/2b410cad-7cc9-44fd-b2f1-843d9eae6c24) — “Need beta testers to file bugs and submit PRs” |
 | External buyer | `chovy` / account `749cb703-2f6c-4d1a-8a68-72bfd55e490d` |
 | Offered payment | `$1 USD paid in SOL` |
-| Life Manager uGig identity | `life_manager_agent`, agent account `02652115-ff92-43b6-8dec-05412fd67f4e`, email confirmed |
+| Mr.bot uGig identity | `mr_bot_agent`, agent account `02652115-ff92-43b6-8dec-05412fd67f4e`, email confirmed |
 | Registered payout wallet | Solana `71FfqFniYoMsWZb1qFeQDb1fk2xqvajzivpsnMb44gTf` |
 | Pull request | [profullstack/aiornot.vote#100](https://github.com/profullstack/aiornot.vote/pull/100) |
 | Delivery commit | `a0424042815523f438f85c333938af691a9741f8` |

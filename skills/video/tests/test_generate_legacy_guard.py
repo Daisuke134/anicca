@@ -2,7 +2,7 @@
 """Path-convention and legacy-state guard tests for daily-lm-video generate.py.
 
 F1: argless defaults must resolve beneath <data root>/state/lm-video — the exact
-paths skills/life-manager/life-manager-daily.sh exports (RUN_LEDGER/USAGE_LEDGER/
+paths skills/mr-bot/mr-bot-daily.sh exports (RUN_LEDGER/USAGE_LEDGER/
 ROTATION_STATE live under $LM_DATA_ROOT/state/lm-video).
 
 F2: when the new-root state/input is absent but the legacy store still holds it,
@@ -53,7 +53,7 @@ class DefaultPathConvention(unittest.TestCase):
         with tempfile.TemporaryDirectory() as home:
             with scoped_env({"HOME": home}):
                 args = generate.parser().parse_args([])
-            expected_root = Path(home) / ".local/state/life-manager/state/lm-video"
+            expected_root = Path(home) / ".local/state/mr-bot/state/lm-video"
             self.assertEqual(args.state, expected_root / "daily-render-state.jsonl")
             self.assertEqual(args.output_dir, expected_root / "daily-renders")
             self.assertEqual(args.call_audio.parent, expected_root / "recordings")
@@ -73,7 +73,7 @@ class DefaultPathConvention(unittest.TestCase):
         with tempfile.TemporaryDirectory() as home:
             with scoped_env({"HOME": home}):
                 args = generate.parser().parse_args([])
-            daily_sh_default = Path(home) / ".local/state/life-manager/state/lm-video/daily-render-state.jsonl"
+            daily_sh_default = Path(home) / ".local/state/mr-bot/state/lm-video/daily-render-state.jsonl"
             self.assertEqual(args.state, daily_sh_default)
 
 

@@ -5,9 +5,9 @@
   "implementation": {
     "pull_request": "https://github.com/Daisuke134/life-manager/pull/1184",
     "merge_commit": "1cb8cb507f66638b82d19a3e4cc0f51f1ce78c42",
-    "adapter": "apps/life-manager/lib/x402-sale-ledger.js",
-    "recorder": "apps/life-manager/scripts/record-x402-sales.js",
-    "launchd_label": "ai.anicca.life-manager-x402-ledger",
+    "adapter": "apps/mr-bot/lib/x402-sale-ledger.js",
+    "recorder": "apps/mr-bot/scripts/record-x402-sales.js",
+    "launchd_label": "ai.anicca.mr-bot-x402-ledger",
     "interval_seconds": 300,
     "timeout_seconds": 240
   },
@@ -44,7 +44,7 @@
       "open_postings": 0,
       "inbox_completed": 3
     },
-    "life_manager_bridge": {
+    "mr_bot_bridge": {
       "observed_at": "2026-07-27T13:47:33.039Z",
       "launchd_reported_runs": 4,
       "successful_log_records": 2,
@@ -67,7 +67,7 @@
     "focused_failed": 0,
     "full_passed": 657,
     "full_failed": 1,
-    "full_failure_scope": "pre-existing host-state assertion expects ai.anicca.life-manager-dev to be unloaded although the real job is loaded"
+    "full_failure_scope": "pre-existing host-state assertion expects ai.anicca.mr-bot-dev to be unloaded although the real job is loaded"
   },
   "evidence_limit": "This proves the automatic accounting connection is live and exits successfully. It does not prove an external sale: no colony-external buyer has paid, so the 13c-SELL cumulative $1 gate remains open and external income remains $0.00.",
   "primary_sources": [

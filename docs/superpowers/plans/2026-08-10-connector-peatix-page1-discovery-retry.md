@@ -30,8 +30,8 @@
 ### Task 1: Add one bounded same-page page-1 retry
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-peatix-workflow.test.js`
-- Modify: `apps/life-manager/lib/connector-peatix-workflow.js`
+- Modify: `apps/mr-bot/lib/connector-peatix-workflow.test.js`
+- Modify: `apps/mr-bot/lib/connector-peatix-workflow.js`
 
 - [x] **Step 1: Add focused failing recovery tests**
 
@@ -44,7 +44,7 @@ Assert a second page-1 navigation/read failure surfaces the same safe code after
 - [x] **Step 3: Run focused RED**
 
 ```bash
-node --test apps/life-manager/lib/connector-peatix-workflow.test.js
+node --test apps/mr-bot/lib/connector-peatix-workflow.test.js
 ```
 
 Expected: recovery tests fail because production attempts page 1 only once.
@@ -56,12 +56,12 @@ Move only the current waiter→goto→response→rows transaction into a private
 - [x] **Step 5: Run focused and required integration GREEN**
 
 ```bash
-node --test apps/life-manager/lib/connector-peatix-workflow.test.js \
-  apps/life-manager/lib/connector-minimal-production.test.js \
-  apps/life-manager/lib/connector-minimal-runner.test.js \
+node --test apps/mr-bot/lib/connector-peatix-workflow.test.js \
+  apps/mr-bot/lib/connector-minimal-production.test.js \
+  apps/mr-bot/lib/connector-minimal-runner.test.js \
   skills/connector/test/native-entrypoint.test.js \
   skills/connector/test/minimal-production-contract.test.js
-node --check apps/life-manager/lib/connector-peatix-workflow.js
+node --check apps/mr-bot/lib/connector-peatix-workflow.js
 git diff --check
 ```
 

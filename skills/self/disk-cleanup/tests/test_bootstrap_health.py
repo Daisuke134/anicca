@@ -21,7 +21,7 @@ def test_default_bootstrap_health_does_not_skip_alternate_home_on_macos(
         if argv[0].endswith("/dscl"):
             output = f"UniqueID: {os.getuid()}\nNFSHomeDirectory: {tmp_path}\n"
         else:
-            output = "service = ai.anicca.life-manager-disk-cleanup\n"
+            output = "service = ai.anicca.mr-bot-disk-cleanup\n"
         return subprocess.CompletedProcess(argv, 0, output, "")
 
     monkeypatch.setattr(disk_cleanup.subprocess, "run", fake_run)
@@ -33,7 +33,7 @@ def test_default_bootstrap_health_does_not_skip_alternate_home_on_macos(
     assert calls[1] == [
         "/bin/launchctl",
         "print",
-        f"gui/{os.getuid()}/ai.anicca.life-manager-disk-cleanup",
+        f"gui/{os.getuid()}/ai.anicca.mr-bot-disk-cleanup",
     ]
 
 
@@ -63,7 +63,7 @@ def test_cleanup_label_load_readback_is_required(tmp_path: Path, monkeypatch) ->
     target = [
         "/bin/launchctl",
         "print",
-        f"gui/{os.getuid()}/ai.anicca.life-manager-disk-cleanup",
+        f"gui/{os.getuid()}/ai.anicca.mr-bot-disk-cleanup",
     ]
     assert missing["status"] == "failure"
     assert missing["error_code"] == "launchctl-113"

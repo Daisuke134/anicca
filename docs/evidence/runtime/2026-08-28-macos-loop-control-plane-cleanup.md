@@ -47,7 +47,7 @@ only the old unreferenced release, reclaimed 2,097,203 bytes, retained current,
 loaded-protected, and newest releases, and recorded `protected_deletions=0`.
 
 Production readback remains separated from source completion: the existing
-`ai.anicca.life-manager-disk-cleanup` job is running its prior Gig-release
+`ai.anicca.mr-bot-disk-cleanup` job is running its prior Gig-release
 entrypoint with last exit 0. TODO 9 performs its one-label cutover; this slice
 does not restart or replace it.
 

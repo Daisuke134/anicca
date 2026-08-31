@@ -1,5 +1,5 @@
 {
-  "evidence_type": "life_manager_startup_context_regression_gate",
+  "evidence_type": "mr_bot_startup_context_regression_gate",
   "verified_at": "2026-08-02T05:17:14+09:00",
   "source_commit": "0d0f4d4d414ef37518c6980dcf9133f0b34fb9d8",
   "context_version": "2026-08-02.1",
@@ -25,7 +25,7 @@
       "status": "pass",
       "requirements": [
         "HTTP 200",
-        "response body contains Life Manager"
+        "response body contains Mr.bot"
       ],
       "verified": [
         "product",

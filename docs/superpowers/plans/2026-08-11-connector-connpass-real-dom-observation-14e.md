@@ -29,8 +29,8 @@ Normalize the actual Connpass join-page DOM into the existing sanitized Browser 
 
 Ownership:
 
-1. `apps/life-manager/lib/connector-production-browser-harness.js`
-2. `apps/life-manager/lib/connector-production-browser-harness.test.js`
+1. `apps/mr-bot/lib/connector-production-browser-harness.js`
+2. `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 Soft target: 2 files; production net `-10–+30 LOC`; tests `+35–70 LOC`.
 

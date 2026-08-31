@@ -44,8 +44,8 @@
 - ✅ **答え**: ★ aniccaai.com = Dais所有 の marketing+dashboard ★ (Amazon型)。
   instance は ★ 中央 store/API に data 報告するだけ ★、 site への write 権限 ゼロ (CLAUDE.md 既定)。
 
-### D9. Anicca web onboarding (life-manager = consumer の本命)
-- 🔍 **答え**: life-manager spec (2026-06-09-anicca-life-manager-fix-and-roadmap.md) の onboarding =
+### D9. Anicca web onboarding (mr-bot = consumer の本命)
+- 🔍 **答え**: mr-bot spec (2026-06-09-anicca-mr-bot-fix-and-roadmap.md) の onboarding =
   Telegram で 名前/電話/位置/calendar → サブスク → 行動時刻に電話。 → D で 詳細 build。
 
 ### D10. どう自己複製 (Base wallet に 我々が 入金できない)
@@ -85,12 +85,12 @@
 - I21. 既存 dashboard.json 構造を どう 拡張 (swarm/wallet/lineage 追加)?
 - I22. 旧 stale data ($27 RevenueCat) は 残す/消す?
 
-### E. life-manager
+### E. mr-bot
 - I23. lateness_check glob bug の 正確な fix?
 - I24. elevenlabs-calls skill が 実電話 を 顧客番号に かける 正確な flow (Twilio番号 要?)
 - I25. 位置 ingestion (Telegram Live Location → どこに保存 → heartbeat が読む)?
 - I26. route計算 (GoogleMaps) → 「何分前出発」 算出 logic?
-- I27. 既存 anicca-products life-manager(Railway) と 新 OpenClaw Anicca を どう繋ぐ (= 別stack問題)?
+- I27. 既存 anicca-products mr-bot(Railway) と 新 OpenClaw Anicca を どう繋ぐ (= 別stack問題)?
 
 ### F. web / SaaS
 - I28. aniccaai.com/install LP の 現状 + onboarding UI build?
@@ -107,7 +107,7 @@
 - I37. genesis(Hermes) → OpenClaw 移行で 既存 state(SOUL/ledger) を どう移す?
 - I38. .openclaw(Dais 70cron) と 新 Anicca の 役割分担 最終形?
 - I39. no-dry-run E2E verify 手順 (各 earn/life/spawn action)?
-- I40. 1人目 life-manager user = Dais 自身で E2E test?
+- I40. 1人目 mr-bot user = Dais 自身で E2E test?
 
 ★ 40 実装 uncertainty + Dais 10 concern。 これを 順に 潰してから 着手。 ★
 

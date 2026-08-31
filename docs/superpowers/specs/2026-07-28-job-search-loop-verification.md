@@ -27,7 +27,7 @@ Private application IDs, contact data, form payloads, and screenshots stay under
 ## Verification commands
 
 ```bash
-cd /path/to/life-manager/apps/job-search-loop
+cd /path/to/mr-bot/apps/job-search-loop
 python3 -m unittest discover -s tests -v
 zsh -n scripts/run-daily.sh scripts/run-inbox.sh scripts/healthcheck.sh
 plutil -lint launchd/*.plist
@@ -45,11 +45,11 @@ fresh daily/inbox evidence.
 | Legacy behavior baseline | 107 tests pass in 4.916 seconds from legacy commit `d86adf4d5f1422b28f6675ac7ffa08f3b9c7e987` |
 | Canonical job runtime | 114 tests pass after adding live-cutover regression coverage |
 | Canonical model runner | 7 tests pass |
-| Path behavior | Temporary XDG roots and launchd destination resolve only inside the Life Manager checkout |
+| Path behavior | Temporary XDG roots and launchd destination resolve only inside the Mr.bot checkout |
 | Private env behavior | The loader reads only the requested key and does not execute unrelated dotenv lines |
 | Runner configuration | Four job-loop task classes; no personal account, absolute user path, candidate profile, or gig route |
 | Legacy source scan | No legacy checkout or private Gmail path in `apps/job-search-loop` or `runtime/agent-runner` |
-| Live cutover | Both installed programs resolve under the Life Manager checkout; daily is 08:30 JST, inbox is 900 seconds, both last exit codes are 0 |
+| Live cutover | Both installed programs resolve under the Mr.bot checkout; daily is 08:30 JST, inbox is 900 seconds, both last exit codes are 0 |
 
 The first canonical bootstrap found one scheduler-ordering defect without creating
 an application side effect: the daily runner returned `EX_TEMPFAIL` after its

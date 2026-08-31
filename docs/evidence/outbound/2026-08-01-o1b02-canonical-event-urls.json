@@ -5,8 +5,8 @@
   "claim": "Canonical event URLs preserve connpass group subdomains, reject one-shot registration result URLs, and all ten sampled live URLs returned HEAD 200 without redirect.",
   "claim_boundary": "This proves reusable URL construction and reachability only. It does not claim that any event registration was submitted or confirmed.",
   "implementations": {
-    "life_manager_canonical_contract": "2bc12eb1a",
-    "life_manager_legacy_audit": "ba3f71d62",
+    "mr_bot_canonical_contract": "2bc12eb1a",
+    "mr_bot_legacy_audit": "ba3f71d62",
     "profitable_claude_calendar_fix": "d75c19f",
     "profitable_claude_connpass_fix": "c901bab"
   },
@@ -89,11 +89,11 @@
   "verification": {
     "live_urls_passed": 10,
     "live_urls_total": 10,
-    "life_manager_outbound_tests": {
+    "mr_bot_outbound_tests": {
       "passed": 38,
       "failed": 0
     },
-    "life_manager_runtime_tests": {
+    "mr_bot_runtime_tests": {
       "passed": 31,
       "failed": 0
     },

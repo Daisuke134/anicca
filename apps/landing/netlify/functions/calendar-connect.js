@@ -65,7 +65,7 @@ exports.handler = async (event) => {
   // Two callers, two stable ids:
   //   ?token=<owntracks_token> → Anicca Alarm (/install); Composio user_id = subscriber phone
   //     resolved from subscriber_profiles, and we mark that table.
-  //   ?uid=<lm_user_id>        → Life Manager (/lm); Composio user_id = uid itself (the lm_users
+  //   ?uid=<lm_user_id>        → Mr.bot (/lm); Composio user_id = uid itself (the lm_users
   //     primary key), and we mark lm_users. No subscriber row exists for /lm users, so this branch
   //     must NOT go through subscriber_profiles (that path 404s for a raw uid).
   const isLm = !token && !!uid;

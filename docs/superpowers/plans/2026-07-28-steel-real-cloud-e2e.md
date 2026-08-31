@@ -4,7 +4,7 @@
 
 **Goal:** Prove with a reusable command that production `life-call` can drive the private Railway `steel-browser` through a real CDP session, read a real page, and release the session.
 
-**Architecture:** Add one dependency-injected smoke runner beside the existing Life Manager scripts. Unit tests pin orchestration and cleanup; the production verification runs the same script inside the deployed `life-call` container so `steel-browser.railway.internal` is reached over Railway private networking.
+**Architecture:** Add one dependency-injected smoke runner beside the existing Mr.bot scripts. Unit tests pin orchestration and cleanup; the production verification runs the same script inside the deployed `life-call` container so `steel-browser.railway.internal` is reached over Railway private networking.
 
 **Tech Stack:** Node.js 20+, built-in `node:test`, existing `makeSteelCdpClient`, Railway CLI/SSH.
 
@@ -22,9 +22,9 @@
 ### Task 1: Reusable Steel cloud smoke runner
 
 **Files:**
-- Create: `apps/life-manager/scripts/steel-cloud-smoke.js`
-- Create: `apps/life-manager/scripts/steel-cloud-smoke.test.js`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/scripts/steel-cloud-smoke.js`
+- Create: `apps/mr-bot/scripts/steel-cloud-smoke.test.js`
+- Modify: `apps/mr-bot/package.json`
 - Modify: `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`
 - Create: `docs/superpowers/evidence/2026-07-28-steel-real-cloud-e2e.md`
 
@@ -54,7 +54,7 @@ Add a failure-path test where `readConfirmation()` throws and assert that `relea
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test scripts/steel-cloud-smoke.test.js
 ```
 
@@ -79,7 +79,7 @@ Return structural evidence containing timestamps, target/final URL, session id, 
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test scripts/steel-cloud-smoke.test.js lib/steel-cdp-client.test.js lib/cdp-connection.test.js lib/care-booking-executor.test.js lib/care-booking-wiring.test.js lib/care-daily-runtime.test.js
 ```
 
@@ -110,4 +110,4 @@ Update the live `11c+11d` row and the detailed `11c` row to distinguish:
 - Steel infrastructure/CDP smoke: verified.
 - Real provider booking receipt: still event-gated until an actionable care detection exists.
 
-Run the full Life Manager test suite, inspect the final diff, commit, push to `canonical`, merge through the repository's normal PR path, verify Railway production SHA/status, and rerun `npm run smoke:steel-cloud` inside production.
+Run the full Mr.bot test suite, inspect the final diff, commit, push to `canonical`, merge through the repository's normal PR path, verify Railway production SHA/status, and rerun `npm run smoke:steel-cloud` inside production.

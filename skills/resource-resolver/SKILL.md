@@ -1,6 +1,6 @@
 ---
 name: resource-resolver
-description: Resolve reusable Life Manager skills, accounts, authenticated browser sessions, and non-secret credential references before signup or reimplementation.
+description: Resolve reusable Mr.bot skills, accounts, authenticated browser sessions, and non-secret credential references before signup or reimplementation.
 ---
 
 # Resource resolver

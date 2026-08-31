@@ -32,8 +32,8 @@
 ### Task 1: Prioritize current wake and bound backlog recovery
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-minimal-operations.test.js`
-- Modify: `apps/life-manager/lib/connector-minimal-operations.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-operations.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-operations.js`
 
 - [x] **Step 1: Add a focused failing current-first test**
 
@@ -46,7 +46,7 @@ Seed two historical pending reports and assert only one is attempted after curre
 - [x] **Step 3: Run focused RED**
 
 ```bash
-node --test apps/life-manager/lib/connector-minimal-operations.test.js
+node --test apps/mr-bot/lib/connector-minimal-operations.test.js
 ```
 
 Expected: current-first/bounded assertions fail because production iterates all pending reports oldest-first and propagates historical failure.
@@ -58,12 +58,12 @@ Create a private helper that sends one validated report and appends its delivery
 - [x] **Step 5: Run focused and required integration GREEN**
 
 ```bash
-node --test apps/life-manager/lib/connector-minimal-operations.test.js \
-  apps/life-manager/lib/connector-minimal-runner.test.js \
-  apps/life-manager/lib/connector-minimal-production.test.js \
+node --test apps/mr-bot/lib/connector-minimal-operations.test.js \
+  apps/mr-bot/lib/connector-minimal-runner.test.js \
+  apps/mr-bot/lib/connector-minimal-production.test.js \
   skills/connector/test/native-entrypoint.test.js \
   skills/connector/test/minimal-production-contract.test.js
-node --check apps/life-manager/lib/connector-minimal-operations.js
+node --check apps/mr-bot/lib/connector-minimal-operations.js
 git diff --check
 ```
 

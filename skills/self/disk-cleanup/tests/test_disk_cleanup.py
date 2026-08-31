@@ -504,7 +504,7 @@ def test_release_retention_keeps_referenced_and_newest_generations(tmp_path: Pat
         generation.mkdir()
         (generation / "payload").write_bytes(b"x" * 16)
     (tmp_path / "loops" / "current").symlink_to(releases / names[3])
-    protected = tmp_path / ".local/state/life-manager/protected-releases.json"
+    protected = tmp_path / ".local/state/mr-bot/protected-releases.json"
     protected.parent.mkdir(parents=True)
     protected.write_text(json.dumps([str(releases / names[1])]), encoding="utf-8")
     governor = HostDiskGovernor(
@@ -628,7 +628,7 @@ def test_lock_is_atomic(tmp_path: Path) -> None:
 def test_lock_is_regular_persistent_mode0600_and_precreated_file_is_reused(tmp_path: Path) -> None:
     state = tmp_path / "state"
     state.mkdir()
-    lock_path = state / ".life-manager-disk-cleanup.lock"
+    lock_path = state / ".mr-bot-disk-cleanup.lock"
     lock_path.write_bytes(b"")
     lock_path.chmod(0o600)
     governor = HostDiskGovernor(home=tmp_path, state_dir=state)
@@ -648,7 +648,7 @@ def test_precreated_regular_lock_never_mkdirs_lock_path_under_enospc(
 ) -> None:
     state = tmp_path / "state"
     state.mkdir()
-    lock_path = state / ".life-manager-disk-cleanup.lock"
+    lock_path = state / ".mr-bot-disk-cleanup.lock"
     lock_path.write_bytes(b"")
     lock_path.chmod(0o600)
     reserve = state / ".receipt-reserve"
@@ -678,7 +678,7 @@ def test_lock_never_truncates_or_writes_and_preserves_receipt_reserve(
 ) -> None:
     state = tmp_path / "state"
     state.mkdir()
-    lock_path = state / ".life-manager-disk-cleanup.lock"
+    lock_path = state / ".mr-bot-disk-cleanup.lock"
     lock_path.write_bytes(b"")
     lock_path.chmod(0o600)
     reserve = state / ".receipt-reserve"
@@ -779,7 +779,7 @@ def test_new_lock_fchmod_failure_closes_fd_and_preserves_reserve(
 def test_lock_path_unexpected_types_fail_closed_without_deletion(tmp_path: Path) -> None:
     state = tmp_path / "state"
     state.mkdir()
-    lock_path = state / ".life-manager-disk-cleanup.lock"
+    lock_path = state / ".mr-bot-disk-cleanup.lock"
     for kind in ("directory", "symlink"):
         if kind == "directory":
             lock_path.mkdir()
@@ -805,7 +805,7 @@ def test_legacy_directory_active_stale_invalid_and_extra_are_preserved(
 ) -> None:
     state = tmp_path / "state"
     state.mkdir()
-    lock_path = state / ".life-manager-disk-cleanup.lock"
+    lock_path = state / ".mr-bot-disk-cleanup.lock"
 
     for contents in (
         {"pid": str(os.getpid())},
@@ -825,7 +825,7 @@ def test_legacy_directory_active_stale_invalid_and_extra_are_preserved(
 
 
 def test_launchd_is_five_minutes_and_single_owner() -> None:
-    plist = Path(__file__).parents[1] / "launchd" / "ai.anicca.life-manager-disk-cleanup.plist"
+    plist = Path(__file__).parents[1] / "launchd" / "ai.anicca.mr-bot-disk-cleanup.plist"
     text = plist.read_text()
     assert "<integer>300</integer>" in text
     assert "disk_cleanup.py" in text
@@ -1008,7 +1008,7 @@ def test_gui_bootstrap_health_failure_is_observation_only(
         assert argv == [
             "/bin/launchctl",
             "print",
-            f"gui/{os.getuid()}/ai.anicca.life-manager-disk-cleanup",
+            f"gui/{os.getuid()}/ai.anicca.mr-bot-disk-cleanup",
         ]
         return subprocess.CompletedProcess(argv, launchctl_status, "", "Reentrancy avoided")
 
@@ -1049,7 +1049,7 @@ def test_gui_bootstrap_health_failure_is_observation_only(
     assert receipt["reason"] == "gui-bootstrap-health-failure"
     assert receipt["health"]["error_code"] == f"launchctl-{launchctl_status}"
     assert receipt["health"]["domain"] == f"gui/{os.getuid()}"
-    assert receipt["health"]["label"] == "ai.anicca.life-manager-disk-cleanup"
+    assert receipt["health"]["label"] == "ai.anicca.mr-bot-disk-cleanup"
     assert receipt["evaluated"] == 0
     assert receipt["reclaimed"] == 0
     assert receipt["protected_deletions"] == 0
@@ -1104,7 +1104,7 @@ def test_exact_canary_reclaims_one_regenerable_path_and_replay_is_noop(
     tmp_path: Path, monkeypatch
 ) -> None:
     temp_root = tmp_path / "tmp"
-    canary = temp_root / "cfo-life-manager-canary"
+    canary = temp_root / "cfo-mr-bot-canary"
     canary.mkdir(parents=True)
     (canary / "payload").write_bytes(b"canary" * 1024)
     monkeypatch.setattr(disk_cleanup.tempfile, "gettempdir", lambda: str(temp_root))

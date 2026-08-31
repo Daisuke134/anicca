@@ -5,7 +5,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 
 CDP="${CLOAK_CDP_BASE_URL:-http://127.0.0.1:9222}"
 CDP_PORT="${CDP_DAILY_DRIVER_PORT:-${CDP##*:}}"
-LOG="${CDP_GUARD_LOG:-${LIFE_MANAGER_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}/logs/cdp-daily-driver-guard.log}"
+LOG="${CDP_GUARD_LOG:-${MR_BOT_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/mr-bot}/logs/cdp-daily-driver-guard.log}"
 GUARD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../earn/gig/scripts/cdp_daily_driver_guard.sh"
 export CDP_DAILY_DRIVER_PORT="$CDP_PORT"
 export SESSION_VAULT_PORT="${SESSION_VAULT_PORT:-$CDP_PORT}"

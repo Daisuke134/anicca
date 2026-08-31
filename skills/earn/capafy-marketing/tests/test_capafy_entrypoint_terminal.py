@@ -26,7 +26,7 @@ def run_money_entrypoint(tmp_path: Path, runner_rc: int) -> subprocess.Completed
     )
     return subprocess.run(
         ["bash", str(script)],
-        env=os.environ | {"HOME": str(home), "LIFE_MANAGER_REPO": str(repo)},
+        env=os.environ | {"HOME": str(home), "MR_BOT_REPO": str(repo)},
         text=True,
         capture_output=True,
         check=False,
@@ -77,11 +77,11 @@ capafy_ig_warming_day() {{ printf '%s\\n' '{warm_day}'; }}
         write_executable(scripts / name, "#!/usr/bin/env python3\n")
     write_executable(scripts / "build_landing.py", "#!/usr/bin/env python3\nraise SystemExit(1)\n")
     if recent_rotation:
-        rotation = home / ".local/state/life-manager/state/capafy-marketing-rotation.jsonl"
+        rotation = home / ".local/state/mr-bot/state/capafy-marketing-rotation.jsonl"
         rotation.parent.mkdir(parents=True, exist_ok=True)
         rotation.write_text(f'{{"platform":"ig","ts":{int(time.time())}}}\n')
     elif invalid_rotation:
-        rotation = home / ".local/state/life-manager/state/capafy-marketing-rotation.jsonl"
+        rotation = home / ".local/state/mr-bot/state/capafy-marketing-rotation.jsonl"
         rotation.parent.mkdir(parents=True, exist_ok=True)
         rotation.write_text('{"platform":\n')
     return subprocess.run(
@@ -89,7 +89,7 @@ capafy_ig_warming_day() {{ printf '%s\\n' '{warm_day}'; }}
         env=os.environ
         | {
             "HOME": str(home),
-            "LIFE_MANAGER_REPO": str(repo),
+            "MR_BOT_REPO": str(repo),
             "TELEGRAM_ALERT_CHAT_ID": "fixture-chat",
         },
         text=True,
@@ -100,30 +100,30 @@ capafy_ig_warming_day() {{ printf '%s\\n' '{warm_day}'; }}
 
 def test_money_child_failure_propagates_without_heartbeat(tmp_path: Path):
     result = run_money_entrypoint(tmp_path, 17)
-    marker = tmp_path / "home/.local/state/life-manager/state/.capafy-loop-last-pass"
+    marker = tmp_path / "home/.local/state/mr-bot/state/.capafy-loop-last-pass"
     assert result.returncode == 17
     assert not marker.exists()
 
 
 def test_money_success_writes_heartbeat(tmp_path: Path):
     result = run_money_entrypoint(tmp_path, 0)
-    marker = tmp_path / "home/.local/state/life-manager/state/.capafy-loop-last-pass"
+    marker = tmp_path / "home/.local/state/mr-bot/state/.capafy-loop-last-pass"
     assert result.returncode == 0
     assert marker.is_file()
 
 
 def test_ig_child_failure_propagates_without_heartbeat(tmp_path: Path):
     result = run_ig_entrypoint(tmp_path, 23)
-    marker = tmp_path / "home/.local/state/life-manager/state/.capafy-ig-marketing-last-pass"
+    marker = tmp_path / "home/.local/state/mr-bot/state/.capafy-ig-marketing-last-pass"
     assert result.returncode == 23
     assert not marker.exists()
 
 
 def test_ig_success_and_cadence_noop_are_terminal(tmp_path: Path):
     success = run_ig_entrypoint(tmp_path / "success", 0)
-    success_marker = tmp_path / "success/home/.local/state/life-manager/state/.capafy-ig-marketing-last-pass"
+    success_marker = tmp_path / "success/home/.local/state/mr-bot/state/.capafy-ig-marketing-last-pass"
     noop = run_ig_entrypoint(tmp_path / "noop", 99, recent_rotation=True)
-    noop_marker = tmp_path / "noop/home/.local/state/life-manager/state/.capafy-ig-marketing-last-pass"
+    noop_marker = tmp_path / "noop/home/.local/state/mr-bot/state/.capafy-ig-marketing-last-pass"
     assert success.returncode == 0
     assert success_marker.is_file()
     assert noop.returncode == 0

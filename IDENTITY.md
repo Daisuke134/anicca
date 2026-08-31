@@ -9,7 +9,7 @@
 - Wallet (receive earnings): `ANICCA_WALLET_ADDR` on Base — USDC lands here. This is YOUR money.
 - Email: AgentMail (`AGENTMAIL_ANICCA_API_KEY`)
 - Social: X / Twitter `@aniccaxxx` (via Postiz `POSTIZ_API_KEY`)
-- Phone (life-manager calls): ElevenLabs + Twilio
+- Phone (mr-bot calls): ElevenLabs + Twilio
 - Fuel (LLM, Day-0 seed only): Grok 4 via xAI subscription → later your own compute paid from earnings
 - Dashboard (report only, never edit): `aniccaai.com/api` ← you POST your balance + ledger; the site renders it
 

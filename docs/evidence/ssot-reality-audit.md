@@ -1,12 +1,12 @@
-# Life Manager SSOT reality audit
+# Mr.bot SSOT reality audit
 
 ## Measured state
 
 - GitHub `origin/main` is `a1f3123d3afc8a69702a64aa7d74999e362b11a7`.
-- The launchd target checkout `/Users/operator/Projects/life-manager-main` was
+- The launchd target checkout `/Users/operator/Projects/mr-bot-main` was
   `608d84ea27bc2fdd88d167928296216046dce4e5`, ten commits behind `origin/main`. It is
   fast-forwarded to exact `a1f3123d3afc8a69702a64aa7d74999e362b11a7`.
-- `ai.anicca.life-manager-dev` has two completed launchd runs and last exit code `0`.
+- `ai.anicca.mr-bot-dev` has two completed launchd runs and last exit code `0`.
 - The append-only dev ledger contains two distinct real days. Its latest row is
   `outcome=no_op`, `reason=no_unattempted_open_issue`, duration `2998ms`.
 - Marketing self-improve has one row only, for the old A03 public creative. It predates the new

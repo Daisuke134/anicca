@@ -19,7 +19,7 @@ EXPECTED = {
 }
 
 
-def test_all_capafy_launchd_templates_resolve_to_existing_life_manager_sources(tmp_path):
+def test_all_capafy_launchd_templates_resolve_to_existing_mr_bot_sources(tmp_path):
     state_home = tmp_path / "state"
     subprocess.run(
         [
@@ -29,7 +29,7 @@ def test_all_capafy_launchd_templates_resolve_to_existing_life_manager_sources(t
             str(tmp_path),
             "--repo-root",
             str(ROOT),
-            "--life-manager-home",
+            "--mr-bot-home",
             str(state_home),
         ],
         check=True,

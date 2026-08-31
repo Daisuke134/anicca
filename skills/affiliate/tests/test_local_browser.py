@@ -17,7 +17,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 GUARD_RELATIVE = Path(
-    "gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
+    "gig/releases/mr-bot/current/skills/earn/gig/scripts/gig_disk_guard.py"
 )
 STUB = """\
 import json
@@ -29,7 +29,7 @@ capture = Path(os.environ["STUB_CAPTURE"])
 keys = (
     "HOME", "GIG_DISK_HEADROOM_KIB", "GIG_HOST_STATE_DIR", "GIG_STATE_DIR",
     "GIG_IGNORE_DISK_PRESSURE_BLOCK", "GIG_IGNORE_DISK_WRITERS_STOP",
-    "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR", "LIFE_MANAGER_HOST_STATE_DIR",
+    "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR", "MR_BOT_HOST_STATE_DIR",
 )
 host_state = Path(os.environ["GIG_HOST_STATE_DIR"])
 reason = None
@@ -81,7 +81,7 @@ class LocalBrowserPreflightTest(unittest.TestCase):
                 "GIG_IGNORE_DISK_WRITERS_STOP": "true",
                 "DISK_CONTROL_STATE_DIR": "/hostile/control",
                 "OPENCLAW_STATE_DIR": "/hostile/openclaw",
-                "LIFE_MANAGER_HOST_STATE_DIR": "/hostile/life-manager",
+                "MR_BOT_HOST_STATE_DIR": "/hostile/mr-bot",
                 "STUB_CAPTURE": str(capture),
                 "STUB_RESULT": "0",
             }
@@ -96,11 +96,11 @@ class LocalBrowserPreflightTest(unittest.TestCase):
             self.assertEqual(child_env["GIG_DISK_HEADROOM_KIB"], "524288")
             self.assertEqual(child_env["GIG_HOST_STATE_DIR"], str(home / ".openclaw/state"))
             self.assertEqual(child_env["GIG_STATE_DIR"],
-                             str(home / ".local/state/life-manager/affiliate"))
+                             str(home / ".local/state/mr-bot/affiliate"))
             for key in (
                 "GIG_IGNORE_DISK_PRESSURE_BLOCK", "GIG_IGNORE_DISK_WRITERS_STOP",
                 "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR",
-                "LIFE_MANAGER_HOST_STATE_DIR",
+                "MR_BOT_HOST_STATE_DIR",
             ):
                 self.assertNotIn(key, child_env)
 
@@ -123,14 +123,14 @@ class LocalBrowserPreflightTest(unittest.TestCase):
                              str(home / ".openclaw/state"))
 
     def test_consumer_passes_each_flag_path_to_guard_boundary(self) -> None:
-        # Policy semantics belong to Life Manager's guard suite; this stub only
+        # Policy semantics belong to Mr.bot's guard suite; this stub only
         # verifies the Affiliate consumer's canonical path/env composition.
         for flag, reason in (("disk-writers.stop", "disk_writers_stop"),
                               ("disk-pressure.block", "disk_pressure_block")):
             with self.subTest(flag=flag), tempfile.TemporaryDirectory() as temporary:
                 home = Path(temporary) / "home"
                 host_state = home / ".openclaw/state"
-                lane_state = home / ".local/state/life-manager/affiliate"
+                lane_state = home / ".local/state/mr-bot/affiliate"
                 host_state.mkdir(parents=True)
                 lane_state.mkdir(parents=True)
                 (host_state / flag).write_text("blocked\n", encoding="utf-8")

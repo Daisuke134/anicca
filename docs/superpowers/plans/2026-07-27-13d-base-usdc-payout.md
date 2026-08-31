@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Send only verified, reserve-surplus Base USDC from one Life Manager agent wallet to that tenant's registered wallet, then record and report the exact confirmed transfer.
+**Goal:** Send only verified, reserve-surplus Base USDC from one Mr.bot agent wallet to that tenant's registered wallet, then record and report the exact confirmed transfer.
 
 **Architecture:** A pure policy computes the maximum safe payout from verified ledger rows and the measured on-chain balance. A separate EIP-3009 boundary signs, verifies, settles, and independently checks the Base receipt. The runtime remains tenant-scoped, records `financial_user_transfer` only after exact receipt verification, and sends Telegram only after the append-only ledger accepts the receipt.
 
@@ -25,8 +25,8 @@
 ### Task 1: Reserve-aware payout policy
 
 **Files:**
-- Create: `apps/life-manager/lib/payout-policy.test.js`
-- Create: `apps/life-manager/lib/payout-policy.js`
+- Create: `apps/mr-bot/lib/payout-policy.test.js`
+- Create: `apps/mr-bot/lib/payout-policy.js`
 
 **Interfaces:**
 - Consumes: `{ rows, walletAddress, onchainUsdcAtomic, reserveAtomic?, maxPayoutAtomic? }`
@@ -63,7 +63,7 @@ test("bootstrap deposits never create payout capacity", () => {
 });
 ```
 
-- [ ] **Step 2: Run `node --test apps/life-manager/lib/payout-policy.test.js` and verify failure is `MODULE_NOT_FOUND`**
+- [ ] **Step 2: Run `node --test apps/mr-bot/lib/payout-policy.test.js` and verify failure is `MODULE_NOT_FOUND`**
 
 - [ ] **Step 3: Implement integer-only normalization, wallet scoping, closed kind handling, reserve floor, and min-cap arithmetic**
 
@@ -81,8 +81,8 @@ function computePayout(input) {
 ### Task 2: EIP-3009 settlement and exact receipt verification
 
 **Files:**
-- Create: `apps/life-manager/lib/base-usdc-payout.test.js`
-- Create: `apps/life-manager/lib/base-usdc-payout.js`
+- Create: `apps/mr-bot/lib/base-usdc-payout.test.js`
+- Create: `apps/mr-bot/lib/base-usdc-payout.js`
 
 **Interfaces:**
 - Consumes: `settleBaseUsdc({ privateKey, walletAddress, destination, amountAtomic, facilitatorUrl, rpcUrl, nowMs?, fetchImpl? })`
@@ -125,9 +125,9 @@ const domain = {
 ### Task 3: Tenant-scoped payout runtime and append-only receipt
 
 **Files:**
-- Create: `apps/life-manager/lib/payout-runtime.test.js`
-- Create: `apps/life-manager/lib/payout-runtime.js`
-- Modify: `apps/life-manager/lib/earnings-runtime.js`
+- Create: `apps/mr-bot/lib/payout-runtime.test.js`
+- Create: `apps/mr-bot/lib/payout-runtime.js`
+- Modify: `apps/mr-bot/lib/earnings-runtime.js`
 
 **Interfaces:**
 - Consumes: `runPayout({ uid, wallet, reserveAtomic?, maxPayoutAtomic? }, deps)`
@@ -165,14 +165,14 @@ assert.deepEqual(events, [
 ### Task 4: Production CLI, verification, and evidence
 
 **Files:**
-- Create: `apps/life-manager/scripts/run-agent-payout.js`
-- Create: `apps/life-manager/scripts/run-agent-payout.test.js`
+- Create: `apps/mr-bot/scripts/run-agent-payout.js`
+- Create: `apps/mr-bot/scripts/run-agent-payout.test.js`
 - Create: `docs/evidence/agent-economy/2026-07-27-13d-base-usdc-payout.json`
-- Modify: `docs/superpowers/specs/2026-05-20-life-manager-one-repo.md`
+- Modify: `docs/superpowers/specs/2026-05-20-mr-bot-one-repo.md`
 - Modify: `docs/handoff.md`
 
 **Interfaces:**
-- CLI: `node apps/life-manager/scripts/run-agent-payout.js --uid <tenant-uid>`
+- CLI: `node apps/mr-bot/scripts/run-agent-payout.js --uid <tenant-uid>`
 - Output: one secret-free JSON object with measured counts/status; never a private key, full destination, Supabase credential, or Telegram token
 
 - [ ] **Step 1: Write failing CLI tests for mandatory UID, zero-balance no-op, and secret-free output**
@@ -187,18 +187,18 @@ Run:
 
 ```bash
 node --test \
-  apps/life-manager/lib/agent-wallet.test.js \
-  apps/life-manager/lib/earnings-ledger.test.js \
-  apps/life-manager/lib/earnings-runtime.test.js \
-  apps/life-manager/lib/payout-question.test.js \
-  apps/life-manager/lib/payout-address-intake.test.js \
-  apps/life-manager/lib/payout-policy.test.js \
-  apps/life-manager/lib/base-usdc-payout.test.js \
-  apps/life-manager/lib/payout-runtime.test.js \
-  apps/life-manager/scripts/run-agent-payout.test.js
+  apps/mr-bot/lib/agent-wallet.test.js \
+  apps/mr-bot/lib/earnings-ledger.test.js \
+  apps/mr-bot/lib/earnings-runtime.test.js \
+  apps/mr-bot/lib/payout-question.test.js \
+  apps/mr-bot/lib/payout-address-intake.test.js \
+  apps/mr-bot/lib/payout-policy.test.js \
+  apps/mr-bot/lib/base-usdc-payout.test.js \
+  apps/mr-bot/lib/payout-runtime.test.js \
+  apps/mr-bot/scripts/run-agent-payout.test.js
 ```
 
-- [ ] **Step 5: Run the full `node --test apps/life-manager/lib/*.test.js` suite and distinguish pre-existing baseline failures from new failures**
+- [ ] **Step 5: Run the full `node --test apps/mr-bot/lib/*.test.js` suite and distinguish pre-existing baseline failures from new failures**
 
 - [ ] **Step 6: Inspect the diff for secrets and run the production CLI for the exact tenant without printing UID or destination**
 

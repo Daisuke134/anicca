@@ -30,8 +30,8 @@
 ### Task 1: Extend the Peatix workflow with exact ticket/action/readback
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-peatix-workflow.js`
-- Modify: `apps/life-manager/lib/connector-peatix-workflow.test.js`
+- Modify: `apps/mr-bot/lib/connector-peatix-workflow.js`
+- Modify: `apps/mr-bot/lib/connector-peatix-workflow.test.js`
 
 - [ ] **Step 1: Write failing ticket identity tests**
 
@@ -44,7 +44,7 @@ Inject `submitOnPage`, `readStateOnPage`, and `readAttendeeProfile`. Assert the 
 - [ ] **Step 3: Run focused RED**
 
 ```bash
-node --test apps/life-manager/lib/connector-peatix-workflow.test.js
+node --test apps/mr-bot/lib/connector-peatix-workflow.test.js
 ```
 
 Expected: new assertions fail because candidates omit ticket identity and the workflow exposes discovery only.
@@ -56,14 +56,14 @@ Import the two reviewed provider functions, retain the existing factory/export n
 - [ ] **Step 5: Run focused and provider regression GREEN**
 
 ```bash
-node --test apps/life-manager/lib/connector-peatix-workflow.test.js
+node --test apps/mr-bot/lib/connector-peatix-workflow.test.js
 
 node --test \
-  apps/life-manager/lib/peatix-browser-provider.test.js \
-  apps/life-manager/lib/connector-peatix-workflow.test.js \
-  apps/life-manager/lib/connector-connpass-workflow.test.js \
-  apps/life-manager/lib/connector-luma-workflow.test.js \
-  apps/life-manager/lib/connector-minimal-runner.test.js
+  apps/mr-bot/lib/peatix-browser-provider.test.js \
+  apps/mr-bot/lib/connector-peatix-workflow.test.js \
+  apps/mr-bot/lib/connector-connpass-workflow.test.js \
+  apps/mr-bot/lib/connector-luma-workflow.test.js \
+  apps/mr-bot/lib/connector-minimal-runner.test.js
 ```
 
 Expected: all pass, zero failures, no external access.
@@ -71,8 +71,8 @@ Expected: all pass, zero failures, no external access.
 - [ ] **Step 6: Commit and push Luna-owned files**
 
 ```bash
-git add apps/life-manager/lib/connector-peatix-workflow.js \
-  apps/life-manager/lib/connector-peatix-workflow.test.js
+git add apps/mr-bot/lib/connector-peatix-workflow.js \
+  apps/mr-bot/lib/connector-peatix-workflow.test.js
 git commit -m "feat(connector): connect Peatix submit workflow"
 git push origin feature/connector-native-completion
 ```

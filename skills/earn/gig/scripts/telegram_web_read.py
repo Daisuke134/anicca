@@ -5,7 +5,7 @@ Three attempts on 2026-08-06 concluded this was impossible. Each was wrong, and 
 wrong for the same reason -- a refusal from one entrance was read as a wall:
 
   openclaw message read   Unsupported Telegram action: read   (the gateway owns that token)
-  getUpdates              Conflict: webhook is active         (Life Manager owns that one)
+  getUpdates              Conflict: webhook is active         (Mr.bot owns that one)
   cookie inspection       0 rows for telegram                 (the session lives in IndexedDB)
 
 The daily-driver profile is logged in. So the text is readable with no token at all, and

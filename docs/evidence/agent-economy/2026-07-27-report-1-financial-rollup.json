@@ -14,7 +14,7 @@
     "tenant_binding": "lm_users.agent_wallet_address",
     "delivery_receipts": "lm_financial_report_receipts",
     "shared_projection": "financial-report-snapshot",
-    "scheduler": "ai.anicca.life-manager-financial-report",
+    "scheduler": "ai.anicca.mr-bot-financial-report",
     "interval_seconds": 300,
     "dedup_key": [
       "uid",
@@ -39,12 +39,12 @@
       "fail": 0,
       "red_observed": "the same nested JSON value with reordered object keys produced different hashes before the fix"
     },
-    "full_life_manager_suite": {
+    "full_mr_bot_suite": {
       "tests": 658,
       "pass": 657,
       "fail": 1,
       "new_failures": 0,
-      "pre_existing_host_state_failure": "self-build-daily-runtime expects ai.anicca.life-manager-dev to be unloaded, but the production launchd job is loaded"
+      "pre_existing_host_state_failure": "self-build-daily-runtime expects ai.anicca.mr-bot-dev to be unloaded, but the production launchd job is loaded"
     },
     "syntax_and_diff_check": "pass",
     "changed_path_secret_scan": "0 hits",
@@ -60,7 +60,7 @@
       "all_time_est_usd": "1.0374884833333333"
     },
     "launchd": {
-      "label": "ai.anicca.life-manager-financial-report",
+      "label": "ai.anicca.mr-bot-financial-report",
       "runs_observed": 4,
       "last_exit_code": 0,
       "normal_tick_result": "not_due"

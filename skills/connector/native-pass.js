@@ -7,13 +7,13 @@ const os = require("node:os");
 const path = require("node:path");
 
 const { createMinimalProductionDependencies } = require(
-  "../../apps/life-manager/lib/connector-minimal-production.js",
+  "../../apps/mr-bot/lib/connector-minimal-production.js",
 );
 const { runMinimalConnectorWake } = require(
-  "../../apps/life-manager/lib/connector-minimal-runner.js",
+  "../../apps/mr-bot/lib/connector-minimal-runner.js",
 );
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
-const { readConnectorProfile } = require("../../apps/life-manager/lib/connector-profile.js");
+const { readConnectorProfile } = require("../../apps/mr-bot/lib/connector-profile.js");
 
 const DEFAULT_PROVIDERS = Object.freeze(["luma", "connpass", "kokuchpro", "meetup", "doorkeeper", "eventbrite", "techplay"]);
 
@@ -138,7 +138,7 @@ function productionConfig(options, stateDir, ownerToken) {
   const tenantId = requiredText(env.LM_CONNECTOR_TENANT_ID, "dais-local");
   const profile = readConnectorProfile({
     tenantId,
-    path: path.join(report.repoRoot, "apps", "life-manager", "config", "connector", `${tenantId}.json`),
+    path: path.join(report.repoRoot, "apps", "mr-bot", "config", "connector", `${tenantId}.json`),
   });
   return Object.freeze({
     ...report,

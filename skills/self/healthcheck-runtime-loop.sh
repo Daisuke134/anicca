@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # healthcheck-runtime-loop.sh — #7 H4 self-heal for the launchd-managed runtime/loop instances.
-# healthcheck-lib.sh already covers the openclaw-style tmux loops (capafy/reddit/life-manager); this
+# healthcheck-lib.sh already covers the openclaw-style tmux loops (capafy/reddit/mr-bot); this
 # is the missing sibling for the three canonical Anicca-colony instances (spec §19/§25), which run
 # `runtime/loop/index.mjs` directly under launchd (no tmux session to inspect):
 #   anicca-a3cdd4 — com.anicca.daemon      (KeepAlive, body ~/.anicca)
@@ -28,7 +28,7 @@
 set -uo pipefail
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOG="$HOME/.local/state/life-manager/logs/healthcheck-runtime-loop.log"; mkdir -p "$(dirname "$LOG")"
+LOG="$HOME/.local/state/mr-bot/logs/healthcheck-runtime-loop.log"; mkdir -p "$(dirname "$LOG")"
 now=$(date +%s)
 
 # grep -q would SIGPIPE launchctl under pipefail → spurious empty result (same fix as colony-status.sh).

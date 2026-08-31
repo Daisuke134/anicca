@@ -281,7 +281,7 @@ case "$PHASE" in
     [[ -n "$NOTE_STAGE1_OK" ]] && SNIPPET="${SNIPPET} [stage1_ok=${NOTE_STAGE1_OK} stage2_ok=${NOTE_STAGE2_OK} stage2_embedded=${NOTE_STAGE2_EMBEDDED:-n/a} reused=${NOTE_REUSED:-n/a}]"
     ah_record "article-${CHANNEL}" "$PLATFORM" "$ACCOUNT" "$TITLE" "$STRUCT_TYPE" "$PATTERN_ID" "$SNIPPET" "draft"
 
-    # Archive meta in the external Life Manager state root.  The release tree is
+    # Archive meta in the external Mr.bot state root.  The release tree is
     # immutable; falling back to `$SKILL_DIR/state` is only valid for standalone
     # manual invocations that did not provide ARTICLE_STATE_DIR.
     STATE_DIR="${ARTICLE_STATE_DIR:-$SKILL_DIR/state}"

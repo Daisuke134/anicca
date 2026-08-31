@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "scope": "life-manager-affiliate",
+  "scope": "mr-bot-affiliate",
   "timeout_seconds": 900,
   "providers": {
     "codex": {

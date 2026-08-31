@@ -1,12 +1,12 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
 context-version: 2026-08-27.2
-context-digest: 9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338
+context-digest: 882e479bf06b98a2a6db62352b8d3b6c3463767c6c73d7996caa328e25191d06
 
-# Life Manager fundraising application kit
+# Mr.bot fundraising application kit
 
 This directory is generated from the repository-owned startup context. Adapt semantic answers to each program's official questions, but never change product facts, links, evidence, or claims without updating and validating the source context.
 
-- Product: Life Manager
+- Product: Mr.bot
 - Product page: https://aniccaai.com/lm
 - Repository: https://github.com/Daisuke134/life-manager
 - Telegram: https://t.me/LifeManagerBotbot?start=lp

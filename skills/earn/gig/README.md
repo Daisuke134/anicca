@@ -25,7 +25,7 @@ OSS products yet, even where internal components exist.
    ```
 
    It installs Homebrew/Git only when missing, creates or fast-forwards
-   `~/life-manager`, and starts the Coconala setup directly in Terminal. It never deletes
+   `~/mr-bot`, and starts the Coconala setup directly in Terminal. It never deletes
    or replaces a non-Git directory.
 2. The installer runs `codex login` when the CLI is not authenticated. It does not ask
    for language, timezone, skills, categories, prices, or a notification channel.
@@ -33,9 +33,9 @@ OSS products yet, even where internal components exist.
    `~/.cloak/profiles/gig-daily-driver` and shows the whole checklist once.
 4. In that browser, the owner completes account or login, email, SMS, seller
    information, required consents, smartphone eKYC, and bank registration.
-5. The owner returns to Terminal and runs the same command once. Life Manager attaches
+5. The owner returns to Terminal and runs the same command once. Mr.bot attaches
    to the same browser session, receives no password, and verifies every official state.
-6. Life Manager starts Browser, Apply, Reply, Storefront, Paid, and Release Watcher.
+6. Mr.bot starts Browser, Apply, Reply, Storefront, Paid, and Release Watcher.
 7. Storefront imports existing listings or creates the first truthful listing when the
    official count is zero; the other lanes then operate without ordinary approval gates.
 
@@ -45,9 +45,8 @@ restarts. If Coconala expires the login, the flow reopens the official login pag
 same profile, verifies recovery, and resumes; it never creates a replacement account.
 
 That is the complete normal setup. Do not create a listing manually, install Python
-packages, edit JSON, configure launchd, or give Life Manager a Coconala password.
-Terminal is the setup and status surface. Official Coconala email remains active. Life
-Manager reports use the existing `gog` Gmail transport after Google OAuth and a real
+packages, edit JSON, configure launchd, or give Mr.bot a Coconala password.
+Terminal is the setup and status surface. Official Coconala email remains active. Mr.bot reports use the existing `gog` Gmail transport after Google OAuth and a real
 send/inbox readback; SMTP and Telegram are not part of the public default.
 Using that same Gmail address for Coconala signup avoids entering two addresses. If an
 authenticated Gmail account already exists in `gog`, setup asks no email question.
@@ -201,7 +200,7 @@ cash target and no income amount is guaranteed.
 
 Owner status and official outcome receipts are available in Terminal with
 `./install.sh coconala outcomes`. Coconala continues sending its own account and buyer
-mail to the registered address. Life Manager email reports require a configured outbound
+mail to the registered address. Mr.bot email reports require a configured outbound
 `gog` Gmail account; their absence never blocks the four lanes.
 
 The semantic reply lane is tool-less. If the machine has a local CLI proxy, put
@@ -223,8 +222,8 @@ uninstall; a normal owner should not need them.
 ### 1. Get the code
 
 ```bash
-git clone https://github.com/Daisuke134/life-manager.git ~/life-manager
-cd ~/life-manager
+git clone https://github.com/Daisuke134/life-manager.git ~/mr-bot
+cd ~/mr-bot
 ```
 
 ### 2. Tell it about your machine
@@ -332,8 +331,8 @@ python3 skills/earn/gig/scripts/gig_release.py activate
 ```
 
 This cuts an immutable release of the current commit under
-`~/gig/releases/life-manager/<sha>/`, atomically publishes it as
-`~/gig/releases/life-manager/current`, writes the four launchd jobs through that
+`~/gig/releases/mr-bot/<sha>/`, atomically publishes it as
+`~/gig/releases/mr-bot/current`, writes the four launchd jobs through that
 stable path, loads them, and reads their arguments back from `launchctl`. The
 one-time load installs a stable definition; later releases move only `current`.
 
@@ -383,7 +382,7 @@ no lane reads a credential from its environment.
 | `GIG_STATE_DIR` | `~/gig` | Everything the loop remembers: ledgers, evidence, order workspaces, locks. |
 | `GIG_LOG_DIR` | `~/gig/logs` | launchd stdout/stderr for each job. |
 | `GIG_BRAKE_DIR` | `~/gig/state` | Where an operator brake file stops a lane. See below. |
-| `LIFE_MANAGER_HOME` | `~/.local/state/life-manager` | Shared state directory for this repo's loops. |
+| `MR_BOT_HOME` | `~/.local/state/mr-bot` | Shared state directory for this repo's loops. |
 | `CDP_PORT` | `9223` | The debugging port the shared browser listens on. |
 | `CDP_DAILY_DRIVER_PROFILE` | `~/.cloak/profiles/gig-daily-driver` | The Chromium profile that holds your login. |
 | `SESSION_VAULT_DIR` | `~/.cloak/vault/gig-daily-driver` | Cookie snapshots used to restore the session after a restart. |

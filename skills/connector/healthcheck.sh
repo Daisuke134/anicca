@@ -6,18 +6,18 @@ umask 077
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd -P)"
-[ -f "$REPO_ROOT/apps/life-manager/scripts/lib/load-env-file.sh" ] || {
+[ -f "$REPO_ROOT/apps/mr-bot/scripts/lib/load-env-file.sh" ] || {
   printf 'Connector native health unavailable\n' >&2
   exit 2
 }
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
 # shellcheck source=/dev/null
-source "$REPO_ROOT/apps/life-manager/scripts/lib/load-env-file.sh"
-LM_CONNECTOR_ENV_FILE="${LM_CONNECTOR_ENV_FILE:-$HOME/.local/state/life-manager/.env}"
+source "$REPO_ROOT/apps/mr-bot/scripts/lib/load-env-file.sh"
+LM_CONNECTOR_ENV_FILE="${LM_CONNECTOR_ENV_FILE:-$HOME/.local/state/mr-bot/.env}"
 lm_load_env_file "$LM_CONNECTOR_ENV_FILE" || exit 2
 
-STATE_DIR="${LM_CONNECTOR_STATE_DIR:-$HOME/.local/state/life-manager/connector-native}"
+STATE_DIR="${LM_CONNECTOR_STATE_DIR:-$HOME/.local/state/mr-bot/connector-native}"
 case "$STATE_DIR" in
   /*) ;;
   *) printf 'Connector native health unavailable\n' >&2; exit 2 ;;

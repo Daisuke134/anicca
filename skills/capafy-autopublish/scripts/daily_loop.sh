@@ -6,13 +6,13 @@
 set -uo pipefail
 
 AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$AUTO" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
-CAPAFY_STATE_DIR="${CAPAFY_STATE_DIR:-$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish}"
-export LIFE_MANAGER_REPO LIFE_MANAGER_STATE_HOME CAPAFY_STATE_DIR
+MR_BOT_REPO="${MR_BOT_REPO:-$(git -C "$AUTO" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$MR_BOT_REPO" ] || { echo "MR_BOT_REPO could not be resolved" >&2; exit 2; }
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
+CAPAFY_STATE_DIR="${CAPAFY_STATE_DIR:-$MR_BOT_STATE_HOME/state/capafy-autopublish}"
+export MR_BOT_REPO MR_BOT_STATE_HOME CAPAFY_STATE_DIR
 LOG="$CAPAFY_STATE_DIR/daily_loop.log"
-RUN_AGENT="${CAPAFY_RUN_AGENT:-$LIFE_MANAGER_REPO/skills/earn/marketing-engine/run_agent.sh}"
+RUN_AGENT="${CAPAFY_RUN_AGENT:-$MR_BOT_REPO/skills/earn/marketing-engine/run_agent.sh}"
 # HEALTHY-PASS MARKER (self-fix-capafy-loop, 2026-07-08): touched whenever the loop reaches a
 # HEALTHY terminal state — either it published something OR it correctly determined there is
 # nothing to publish (inventory drained / cap full). The healthcheck watches THIS file's mtime,
@@ -52,7 +52,7 @@ else
 fi
 
 # load env (keys) for the child
-set -a; . "$LIFE_MANAGER_STATE_HOME/.env" 2>/dev/null; set +a
+set -a; . "$MR_BOT_STATE_HOME/.env" 2>/dev/null; set +a
 
 echo "=== $TS daily_loop start ===" >> "$LOG"
 
@@ -101,13 +101,13 @@ PRE_ONLINE="$(printf '%s' "$INV" | tail -1 | python3 -c 'import json,sys; print(
 PROMPT="Follow this runbook exactly and do ONE iteration, terse output: $(cat "$AUTO/DAILY_LOOP.md")
 AUTHORITATIVE INVENTORY ACTION: $(printf '%s' "$INV" | tail -1)
 Execute exactly that action/item. Do not select or substitute another item from stale ledger or rejection history."
-EVIDENCE_DIR="$LIFE_MANAGER_STATE_HOME/state/agent-runner-evidence/capafy-drainer/$(date +%s)-$$"
+EVIDENCE_DIR="$MR_BOT_STATE_HOME/state/agent-runner-evidence/capafy-drainer/$(date +%s)-$$"
 printf '%s\n' "$PROMPT" | timeout 1200 env -u ANTHROPIC_API_KEY "$RUN_AGENT" \
   --task-class application-lane-agent \
   --evidence-dir "$EVIDENCE_DIR" \
   --task-label capafy-drainer \
   --loop capafy \
-  --workdir "$LIFE_MANAGER_REPO" >> "$LOG" 2>&1
+  --workdir "$MR_BOT_REPO" >> "$LOG" 2>&1
 RC=$?
 
 # Post-run truth: did a listing actually go live (online_count increased), not just "did the

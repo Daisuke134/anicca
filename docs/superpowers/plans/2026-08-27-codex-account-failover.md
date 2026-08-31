@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make every shared Life Manager Codex execution start with account 1 and retry account 2 only for pre-effect machine-readable quota/auth failure.
+**Goal:** Make every shared Mr.bot Codex execution start with account 1 and retry account 2 only for pre-effect machine-readable quota/auth failure.
 
 **Architecture:** Expand each configured Codex candidate into account-scoped candidates inside the canonical runner. Each account gets its own automation home and auth source; existing provider fallback order remains unchanged after account 2. Do not add account 3, a daemon, a database, or per-loop routing.
 

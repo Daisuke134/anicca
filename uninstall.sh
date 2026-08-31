@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# anicca-oss uninstall — completely removes the life-manager stack and
+# anicca-oss uninstall — completely removes the mr-bot stack and
 # all Anicca runtime state from this machine. Asks for explicit Y at the
 # destructive step.
 #
 # What this script does:
 #   1. unload all anicca-related launchd plists
 #   2. disable/delete openclaw cron entries we registered
-#   3. delete the 6 life-manager skill bundles from ~/.openclaw/skills/
+#   3. delete the 6 mr-bot skill bundles from ~/.openclaw/skills/
 #   4. optionally (with --hard) delete the entire ~/.openclaw runtime root
 #   5. print final notes about Telegram bot + Google OAuth (= user action)
 #
@@ -24,7 +24,7 @@ yellow(){ printf "\033[33m%s\033[0m\n" "$*"; }
 red(){ printf "\033[31m%s\033[0m\n" "$*"; }
 
 SKILLS=(
-  anicca-life-manager
+  anicca-mr-bot
   anicca-travel-fill
   anicca-gcal-heal
   anicca-report
@@ -32,7 +32,7 @@ SKILLS=(
   anicca-schedule-template
 )
 CRON_NAMES=(
-  anicca-life-manager
+  anicca-mr-bot
   anicca-gcal-heal
   anicca-travel-fill
   anicca-fuel-broker
@@ -91,8 +91,8 @@ else
 fi
 echo
 
-# ─── 3. life-manager skills ───────────────────────────────────────────
-cyan "[3/5] removing life-manager skill bundles…"
+# ─── 3. mr-bot skills ───────────────────────────────────────────
+cyan "[3/5] removing mr-bot skill bundles…"
 for skill in "${SKILLS[@]}"; do
   d="$ANICCA_HOME/skills/$skill"
   if [ -d "$d" ]; then

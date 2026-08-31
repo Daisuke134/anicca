@@ -13,7 +13,7 @@ The first self-funding AI: earns more than it spends, with no human in the loop.
 3. **1 identity × 2 loops** (routing, not 2 entities): `/money` (earn) + `/life` (optional). Shared wallet/memory/soul.
 4. **Onboarding rank = Web > Telegram > Terminal.**
    - CLOUD = 100% web. aniccaai.com → Subscribe ($49.99/mo) → login → per-user dashboard (earnings/spend/activity/controls/reports). No Telegram needed. (Most users, esp Japan, have no Telegram.) Polsia-style UX, but it actually earns.
-   - TELEGRAM = optional 2nd channel (life-manager context + chat).
+   - TELEGRAM = optional 2nd channel (mr-bot context + chat).
    - TERMINAL = local BYOK self-host only (git clone + install.sh).
 5. **Reports = multi-channel.** Primary web dashboard + delivered wherever the user is: mail, Telegram, LINE, iMessage, Messenger. Start web+mail, add channels.
 6. **Economic thesis (the differentiator):** subs are first revenue (like Polsia $40-50/mo). The separation = the user gets back MORE than they pay (the agent earns for them). When the agent self-funds its compute, the sub auto-cancels → free.
@@ -29,7 +29,7 @@ aniccaai.com/install
    EARN skills: cook-loop(02) · AgentMail · x402-server(09) · nookplot · virtuals/clanker · web+Stripe
    SELF skills: self-heal/eval(03) · self-improve via GitHub Issues(18 + sutando bot2bot) ·
                 resurrection(sutando agent-registry) · spawn_child(replicate) · friction-fixer(15) · daily-report
-   LIFE skills (optional): telegram · gcal · 10-min calls · mail (ported from ~/.openclaw life-manager)
+   LIFE skills (optional): telegram · gcal · 10-min calls · mail (ported from ~/.openclaw mr-bot)
  colony: instances co-evolve via GitHub Issues (Daisuke134/anicca); surplus → spawn_child to more droplets
  dashboard-sync (Dais-owned): pull each state.db + basescan → aniccaai.com/dashboard (realtime GDP map; Anicca write-zero)
 ```
@@ -42,7 +42,7 @@ Where self-improvement/roadmap live: 18 (self-improve+swarm), 03 (self-aware eva
 **P1 Skill bundle (capabilities; COPY, no original)**
 - [ ] EARN: cook-loop(spec02) + AgentMail(own inbox) + x402-server(spec09) + nookplot + web+Stripe(done in ~/clawd/skills) → as ~/.automaton/skills/*/SKILL.md
 - [ ] SELF: self-heal/eval(03) + self-improve-via-github-issues(18 + sutando bot2bot-post) + resurrection(sutando agent-registry) + daily-report(felix daily-review) + friction-fixer(15)
-- [ ] LIFE (optional): port ~/.openclaw/skills/{anicca-life-manager,gcal-heal,travel-fill,report,calendar-event-call,...} scripts → automaton skills (≈80% reuse, rewire cron→heartbeat)
+- [ ] LIFE (optional): port ~/.openclaw/skills/{anicca-mr-bot,gcal-heal,travel-fill,report,calendar-event-call,...} scripts → automaton skills (≈80% reuse, rewire cron→heartbeat)
 
 **P2 Local self-host**
 - [ ] Rewrite install.sh: drop OpenClaw; clone+build automaton, install skill bundle, connect web/telegram, accept BYOK key or wallet. E2E: clone→install→earns→reports.
@@ -69,7 +69,7 @@ Hybrid A (chosen by user-simplicity):
 - **aniccaai.com/me = each user's personal place (web).** Connect: name / Google OAuth (Calendar+Gmail) / phone number / home+work address. Each is a single toggle (connect/disconnect easily via UI). This is the DEFAULT, web-first.
 - **Telegram = optional upgrade.** 24/7 live phone GPS location — boosts call accuracy + enables actions (e.g. flight booking). NOT a prerequisite.
 
-Call mechanism (port from ~/.openclaw life-manager, no real-time location required):
+Call mechanism (port from ~/.openclaw mr-bot, no real-time location required):
 1. Connect Google Calendar (or build a virtual calendar by asking "where is your job/gym?" + geocode).
 2. Per event: compute transit time + 15-min leeway → write leave-by time onto the calendar.
 3. At leave-by time → place a call (elevenlabs+twilio): "leave NOW" (ADHD-direct, keep-promise, arrive early = trust).
@@ -107,8 +107,8 @@ Every wallet/token on Base is public at basescan.org/address/<addr>. Each Anicca
 - US: Coinbase → buy USDC (card) → send to the agent's wallet address. Easy.
 - Japan: Binance account → MetaMask → relay.link swap → send USDC. (Verified by Dais.) Harder. Document both.
 
-### Life-manager belongs to Anicca (not private OpenClaw)
-Port ~/.openclaw life-manager skills (gcal/calls/travel/report) into the agent as `~/.automaton/skills/anicca-life/` (SKILL.md + scripts COPY ≈80%, rewire openclaw-cron → automaton heartbeat.yml task; secrets in the box's env, never in repo). It runs as an optional skill (only if the user connects Google/phone). The agent IS the life-manager, not a separate private stack.
+### Mr.bot belongs to Anicca (not private OpenClaw)
+Port ~/.openclaw mr-bot skills (gcal/calls/travel/report) into the agent as `~/.automaton/skills/anicca-life/` (SKILL.md + scripts COPY ≈80%, rewire openclaw-cron → automaton heartbeat.yml task; secrets in the box's env, never in repo). It runs as an optional skill (only if the user connects Google/phone). The agent IS the mr-bot, not a separate private stack.
 
 ### Engine: raw automaton (verified)
 Our fork = ONLY 2 files vs raw automaton (src/conway/inference.ts + src/inference/types.ts, 16 lines, deepseek-BYOK). replication/spawn/self-mod/survival/77 tools/5-tier memory = 100% intact. "local switch" = config (sandboxId="") not code. To use raw = git checkout those 2 files. We have everything automaton has; the deepseek patch is the only deviation (revert when using crypto-paid inference).
@@ -120,7 +120,7 @@ The core NHOSS question "how does the agent buy its OWN inference daily, no huma
 - OpenAI-compatible single endpoint, 60+ models (GPT-5.5, DeepSeek, Claude, Llama, xAI) + image/video/music/ElevenLabs voice/Exa search.
 - "Pay per request with USDC via x402 — no keys, no subscriptions, no accounts. Wallet in, prompt out." Provider cost +5%. Base & Solana. Settled via ClawRouter.
 - LIVE: 1.39M txns / 393 buyers (x402scan). Explicitly supports OpenClaw, Claude Code, agents, ElizaOS. Free tier to test.
-- → The agent points its inference at BlockRun + pays each call in USDC from its OWN wallet. NO human API key. It switches model by balance (rich→GPT-5.5, poor→cheap) = native survival tiers. Voice/search/image for the life-manager also pay-per-call USDC on the same rail (no keys anywhere).
+- → The agent points its inference at BlockRun + pays each call in USDC from its OWN wallet. NO human API key. It switches model by balance (rich→GPT-5.5, poor→cheap) = native survival tiers. Voice/search/image for the mr-bot also pay-per-call USDC on the same rail (no keys anywhere).
 
 **Server (box) vs Compute (inference) are SEPARATE:**
 - Box (where the process lives): DO droplet (works, card) / Akash (works, AKT, sovereign) / Daytona (API works). Cheap/fixed.

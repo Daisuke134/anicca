@@ -22,8 +22,8 @@ Prevent the initial Connpass application-link click from being mistaken for a co
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-connpass-workflow.test.js`
-2. `apps/life-manager/lib/connector-connpass-workflow.js`
+1. `apps/mr-bot/lib/connector-connpass-workflow.test.js`
+2. `apps/mr-bot/lib/connector-connpass-workflow.js`
 
 Soft target: 2 files; production `+8–15 LOC`; tests `+25–45 LOC`.
 

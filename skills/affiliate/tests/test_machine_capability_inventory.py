@@ -185,7 +185,7 @@ class MachineCapabilityInventoryTests(unittest.TestCase):
             source = {
                 "HOME": str(owner_home),
                 "PATH": "/untrusted/bin:/usr/bin",
-                "LIFE_MANAGER_STATE_HOME": str(root / "state"),
+                "MR_BOT_STATE_HOME": str(root / "state"),
                 "AGENT_RUNNER_CONFIG": str(root / "runner.json"),
                 "AFFILIATE_CODEX_CAPABILITY_RECEIPT": str(root / "pin.json"),
                 "ANICCA_BUDGET_SCOPE_ID": "affiliate-campaign",

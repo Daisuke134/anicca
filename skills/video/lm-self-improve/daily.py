@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One honest daily measurement/decision row for the Life Manager marketing loop."""
+"""One honest daily measurement/decision row for the Mr.bot marketing loop."""
 
 from __future__ import annotations
 
@@ -21,16 +21,16 @@ class SelfImproveError(RuntimeError):
 
 def _lm_video_state_root() -> Path:
     """Portable lm-video state root: LM_DATA_DIR when set (absolute only,
-    mirroring resolveDataRoot in apps/life-manager/lib/runtime-paths.js and
+    mirroring resolveDataRoot in apps/mr-bot/lib/runtime-paths.js and
     default_video_root in skills/video/daily-lm-video/generate.py), else
-    <home>/.local/state/life-manager."""
+    <home>/.local/state/mr-bot."""
     override = os.environ.get("LM_DATA_DIR", "").strip()
     if override:
         if not Path(override).is_absolute():
             raise SystemExit("LM_DATA_DIR must be an absolute path")
         data_root = Path(override)
     else:
-        data_root = Path.home() / ".local/state/life-manager"
+        data_root = Path.home() / ".local/state/mr-bot"
     return data_root / "state" / "lm-video"
 
 

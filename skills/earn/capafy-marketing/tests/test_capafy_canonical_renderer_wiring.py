@@ -10,7 +10,7 @@ class ApprovedHyperFramesWiringTest(unittest.TestCase):
     def test_step3_uses_approved_hyperframes_and_andrew_voice(self):
         source = SCRIPT.read_text(encoding="utf-8")
         self.assertIn("--task-class marketing-agent", source)
-        self.assertIn("$LIFE_MANAGER_REPO/skills/video/hyperframes/capafy-o13-review/", source)
+        self.assertIn("$MR_BOT_REPO/skills/video/hyperframes/capafy-o13-review/", source)
         self.assertIn("hyperframes@0.8.8 render", source)
         self.assertIn("never background the render", source)
         self.assertIn("identical across two probes at least 2 seconds apart", source)
@@ -31,7 +31,7 @@ class ApprovedHyperFramesWiringTest(unittest.TestCase):
         source = SCRIPT.read_text(encoding="utf-8")
         profile_writer = SCRIPT.parent / "scripts/setup_profile.py"
 
-        self.assertIn("$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/setup_profile.py", source)
+        self.assertIn("$MR_BOT_REPO/skills/earn/capafy-marketing/scripts/setup_profile.py", source)
         self.assertNotIn("~/.agents/skills/ig-account-create", source)
         self.assertTrue(profile_writer.is_file())
 
@@ -42,7 +42,7 @@ class ApprovedHyperFramesWiringTest(unittest.TestCase):
         self.assertIn("evidence-ready listing selection failed", source)
         self.assertIn("live pass produced no verified native Reel", source)
         self.assertIn("Do not reject a valid tier1 session merely because", source)
-        self.assertIn("/opt/homebrew/bin/python3 $LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py", source)
+        self.assertIn("/opt/homebrew/bin/python3 $MR_BOT_REPO/skills/earn/marketing-engine/poster.py", source)
         self.assertNotIn("~/.cache/instagrapi-venv/bin/python", source)
         self.assertNotIn("use session_owner=instagrapi from the supplied Capafy state", source)
         self.assertIn("--commit-agent-id", source)

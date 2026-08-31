@@ -1,6 +1,6 @@
 {
   "$schema": "earning-health-registry v2",
-  "description": "One registry for required earning slots, their evidence probes, the existing trace-barren self-heal loop, and the four Life Manager portfolio rails. Every slot is instrumented. A healthy zero-demand rail remains operational; frozen and not-live are explicit states rather than instrumentation gaps.",
+  "description": "One registry for required earning slots, their evidence probes, the existing trace-barren self-heal loop, and the four Mr.bot portfolio rails. Every slot is instrumented. A healthy zero-demand rail remains operational; frozen and not-live are explicit states rather than instrumentation gaps.",
   "slots": [
     {
       "id": "earn/sol-trade",

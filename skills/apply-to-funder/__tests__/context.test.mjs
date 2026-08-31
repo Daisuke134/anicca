@@ -27,7 +27,7 @@ test("funder config contains program evidence and no duplicated company facts", 
   assert.equal("company" in funder, false);
 });
 
-test("preview is bound to canonical Life Manager context and cannot submit directly", async () => {
+test("preview is bound to canonical Mr.bot context and cannot submit directly", async () => {
   const { context, funder } = await fixture();
   const preview = await compileFunderPreview({
     context,
@@ -35,7 +35,7 @@ test("preview is bound to canonical Life Manager context and cannot submit direc
     now: new Date("2026-08-02T14:00:00+09:00"),
   });
 
-  assert.equal(preview.product.name, "Life Manager");
+  assert.equal(preview.product.name, "Mr.bot");
   assert.equal(preview.product.homepage, context.links.product.url);
   assert.equal(preview.product.repository, context.links.repository.url);
   assert.equal(preview.context_version, context.context_version);

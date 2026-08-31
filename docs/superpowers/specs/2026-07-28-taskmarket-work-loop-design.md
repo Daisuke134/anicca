@@ -10,7 +10,7 @@ closes the chain:
 `poll → select → buy frontier image generation with x402 → build files → submit → read back → record cost`.
 
 An award is not claimed as income here. The existing
-`ai.anicca.life-manager-taskmarket-ledger` remains the only award/payment
+`ai.anicca.mr-bot-taskmarket-ledger` remains the only award/payment
 observer and writes income only after an external finalized Base USDC payment.
 
 ## Observed boundary
@@ -124,7 +124,7 @@ Every pass appends one wake-correlated row to `EARN_LEDGER`:
 
 - poll/no eligible task: `earn_usdc=0`, `cost_usdc=0`;
 - generated and submitted: `earn_usdc=0`, `cost_usdc=<quoted amount>`;
-- external award: never written by this slot; the existing Life Manager
+- external award: never written by this slot; the existing Mr.bot
   TaskMarket ledger owns that transition.
 
 ## Failure handling

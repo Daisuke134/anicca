@@ -23,8 +23,8 @@ Allow the already-supported Peatix canonical event identity through the existing
 
 Luna owns only:
 
-1. `apps/life-manager/lib/transport/transport-gog.test.js`
-2. `apps/life-manager/lib/transport/calendar-gog.js`
+1. `apps/mr-bot/lib/transport/transport-gog.test.js`
+2. `apps/mr-bot/lib/transport/calendar-gog.js`
 
 Soft target: 2 files; production +8–18 LOC; tests +20–35 LOC.
 

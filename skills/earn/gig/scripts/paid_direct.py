@@ -178,7 +178,7 @@ def _project_workspace(root: Path, prefix: str, *, resume: bool = False) -> Iter
 
 def _text(value: Any) -> str: return str(value or "").strip()
 
-def _runner_loop_id() -> str: return _text(os.environ.get("LIFE_MANAGER_LOOP_ID")) or "gig"
+def _runner_loop_id() -> str: return _text(os.environ.get("MR_BOT_LOOP_ID")) or "gig"
 
 def _comparison_key(value: str) -> str: return " ".join(value.split())
 

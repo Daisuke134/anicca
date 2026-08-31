@@ -1,4 +1,4 @@
-# 13c-SELL: verified x402 sale → Life Manager ledger
+# 13c-SELL: verified x402 sale → Mr.bot ledger
 
 ## Goal
 
@@ -38,7 +38,7 @@ x402 settlement-recorder
 external-inflows-<payTo>.jsonl   ← sale evidence SSOT
         │
         ▼
-Life Manager x402 bridge
+Mr.bot x402 bridge
   - strict row schema
   - owned-wallet and self-wallet checks again
   - fresh Base receipt re-verification
@@ -78,7 +78,7 @@ extension is deliberately specified.
 | `lib/x402-sale-ledger.js` | Pure validation/mapping plus idempotent runtime write |
 | `scripts/record-x402-sales.js` | Read JSONL, re-verify every candidate against Base, write eligible rows, report counters |
 | `scripts/x402-sale-ledger-boot.sh` | Load runtime environment and execute the bridge |
-| `launchd/ai.anicca.life-manager-x402-ledger.plist` | Run every five minutes and survive login/reboot |
+| `launchd/ai.anicca.mr-bot-x402-ledger.plist` | Run every five minutes and survive login/reboot |
 
 ## Failure behavior
 

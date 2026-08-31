@@ -22,7 +22,7 @@ setup(){
   mkdir -p "$FAKE_HOME/.openclaw/state" "$FAKE_HOME/.openclaw/logs" \
            "$FAKE_HOME/.openclaw/skills/capafy-autopublish/state" \
            "$FAKE_HOME/.openclaw/skills/capafy-autopublish/scripts" \
-           "$FAKE_SELF/reddit-loop/state" "$FAKE_SELF/life-manager-loop/state"
+           "$FAKE_SELF/reddit-loop/state" "$FAKE_SELF/mr-bot-loop/state"
   cat > "$FAKE_SELF/verify-loops.sh" <<'EOF'
 #!/usr/bin/env bash
 echo "stub verify-loops output"

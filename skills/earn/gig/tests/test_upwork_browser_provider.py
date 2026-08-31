@@ -878,7 +878,7 @@ def test_launchd_job_is_zero_spend_and_runs_every_five_minutes(monkeypatch):
     manifest = json.loads((SCRIPTS.parent / "config" / "launchd-jobs.json").read_text())
     jobs = manifest["jobs"]
     labels = [item["label"] for item in jobs]
-    dedicated_label = "ai.anicca.life-manager-upwork-browser"
+    dedicated_label = "ai.anicca.mr-bot-upwork-browser"
     assert dedicated_label in labels
     assert dedicated_label not in gig_release.DEFAULT_EXCLUDED
     browser_index = labels.index(dedicated_label)

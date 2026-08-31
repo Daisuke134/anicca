@@ -46,7 +46,7 @@ monitoring/deferred work.
       Then complete CP1 if `is_confirmed_skills` is not already true, and continue with
       `publish_finish.sh`. Never point CP3 at the stale rejected package.
    b. Else the next canonical `skills/capafy/catalog/*/{SKILL.md,LISTING.md,icon.svg}` (legacy
-      `$LIFE_MANAGER_STATE_HOME/features/capafy-*` remains readable during migration) whose title
+      `$MR_BOT_STATE_HOME/features/capafy-*` remains readable during migration) whose title
       is not online, in-flight, or rejected under an existing Agent ID.
    If neither → STOP, report "inventory empty (all items online); bottleneck = need NEW
    inventory — the interactive Opus session must add a fresh proven-niche listing".
@@ -83,6 +83,6 @@ monitoring/deferred work.
 
 ## Notes
 - Browser = CloakBrowser daily-driver (CDP :9222), already running. Never close it.
-- Keys: CAPAFY_HOST_OPENROUTER_KEY / CAPAFY_HOST_OPENAI_KEY in $LIFE_MANAGER_STATE_HOME/.env.
+- Keys: CAPAFY_HOST_OPENROUTER_KEY / CAPAFY_HOST_OPENAI_KEY in $MR_BOT_STATE_HOME/.env.
 - Model for THIS run = Sonnet (cheap). The published skill's own runtime LLM = OpenRouter Claude (buyer-funded via cap).
 - Keep total work tiny: 1 listing, ≤ ~15 tool calls. This protects the Claude subscription quota.

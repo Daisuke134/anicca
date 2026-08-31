@@ -85,7 +85,7 @@ from lib.refill_plan import (  # noqa: E402
 from lib.relay_swap import build_sign_submit_solana_tx  # noqa: E402
 from lib.solana_rpc import spl_token_balance_units  # noqa: E402
 
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 LEDGER_PATH = str(REPO_ROOT / "skills/earn/state/funding-ledger.jsonl")
 CITIZENS_PATH = os.environ.get(
     "FRANKLIN_REFILL_CITIZENS_PATH", os.path.expanduser("~/.hermes/state/citizens.json")

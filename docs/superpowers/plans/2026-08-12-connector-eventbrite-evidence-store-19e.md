@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Modify exactly `apps/life-manager/lib/connpass-evidence-store.js` and `apps/life-manager/lib/connpass-evidence-store.test.js`.
+- Modify exactly `apps/mr-bot/lib/connpass-evidence-store.js` and `apps/mr-bot/lib/connpass-evidence-store.test.js`.
 - Production soft target: +8–12 LOC. Test soft target: +40–70 LOC. No new file, dependency, schema, class, or generic refactor.
 - Use strict TDD: import the new factory and add the two tests before production export/wrapper.
 - Event identity is exact `eventbrite-event://event/<positive integer>`; receipt identity is exact `provider-receipt://eventbrite/<64 lowercase hex>`.
@@ -25,8 +25,8 @@
 ### Task 1: Add the Eventbrite evidence-store wrapper
 
 **Files:**
-- Modify: `apps/life-manager/lib/connpass-evidence-store.js`
-- Test: `apps/life-manager/lib/connpass-evidence-store.test.js`
+- Modify: `apps/mr-bot/lib/connpass-evidence-store.js`
+- Test: `apps/mr-bot/lib/connpass-evidence-store.test.js`
 
 **Interfaces:**
 - Produces: `createEventbriteEvidenceStore({dataDir})` with the unchanged `record`, `readExternalReceipt`, and `readArtifact` interface.
@@ -41,7 +41,7 @@ Import `createEventbriteEvidenceStore`. Add:
 - [ ] **Step 2: Run focused tests and verify RED**
 
 ```bash
-node --test apps/life-manager/lib/connpass-evidence-store.test.js
+node --test apps/mr-bot/lib/connpass-evidence-store.test.js
 ```
 
 Expected: the existing six tests pass and the two new tests fail because the new factory is absent.
@@ -66,8 +66,8 @@ Export it beside the other three wrappers. Do not change `createBrowserProviderE
 - [ ] **Step 4: Verify GREEN and adjacent chain**
 
 ```bash
-node --test apps/life-manager/lib/connpass-evidence-store.test.js apps/life-manager/lib/connector-minimal-evidence.test.js
-node --check apps/life-manager/lib/connpass-evidence-store.js
+node --test apps/mr-bot/lib/connpass-evidence-store.test.js apps/mr-bot/lib/connector-minimal-evidence.test.js
+node --check apps/mr-bot/lib/connpass-evidence-store.js
 git diff --check
 ```
 

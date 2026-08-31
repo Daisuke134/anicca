@@ -28,7 +28,7 @@ def test_rotated_tunnel_restarts_phone_through_lm_loop(tmp_path):
             **os.environ,
             "HOME": str(home),
             "PATH": f"{bin_dir}:{os.environ['PATH']}",
-            "LIFE_MANAGER_LOOP_CLI": str(cli),
+            "MR_BOT_LOOP_CLI": str(cli),
             "TUNNEL_WATCH_ONCE": "1",
             "TUNNEL_WATCH_SLEEP_SECONDS": "0",
             "BASH_FUNC_launchctl%%": f'() {{ touch "{raw}"; }}',

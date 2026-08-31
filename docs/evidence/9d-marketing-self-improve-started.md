@@ -2,14 +2,14 @@
 
 ## Result
 
-The permanent `ai.anicca.life-manager-daily` route now measures the exact Instagram/TikTok
+The permanent `ai.anicca.mr-bot-daily` route now measures the exact Instagram/TikTok
 creative pair after deterministic distribution and appends one closed, idempotent metrics row per
 real JST date. It reaches `done` only after seven consecutive distinct real dates; gaps reset the
 streak and neither backfill nor simulation is accepted.
 
 The controlled launchd run finishes with exit `0` through
 `codex/gpt-5.6-luna/medium`, attempt `1`. The job is restored to the canonical
-`/Users/operator/Projects/life-manager-main/...` path after the controlled worktree run.
+`/Users/operator/Projects/mr-bot-main/...` path after the controlled worktree run.
 
 ## Real Day 1 readback
 

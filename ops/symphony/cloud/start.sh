@@ -15,7 +15,7 @@ mkdir -p "$CODEX_HOME" "$SYMPHONY_WORKSPACE_ROOT" /data/logs /app
 printf '%s' "$CODEX_AUTH_JSON" > "$CODEX_HOME/auth.json"
 
 base="https://raw.githubusercontent.com/Daisuke134/life-manager/$LM_RELEASE_SHA"
-curl -fsSL "$base/apps/life-manager/scripts/money-printer-symphony-bridge.js" -o /app/bridge.js
+curl -fsSL "$base/apps/mr-bot/scripts/money-printer-symphony-bridge.js" -o /app/bridge.js
 curl -fsSL "$base/ops/symphony/WORKFLOW.money-printer.md" -o /app/WORKFLOW.md
 
 (while :; do node /app/bridge.js || true; sleep 5; done) &

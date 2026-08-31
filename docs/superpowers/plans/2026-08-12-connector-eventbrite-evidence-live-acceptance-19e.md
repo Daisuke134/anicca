@@ -2,7 +2,7 @@
 
 **Goal:** Exercise the pushed Eventbrite evidence-store, minimal-evidence, and Calendar-transport adapters through one canonical production wake without weakening candidate safety.
 
-**Executor:** Existing loaded `ai.anicca.life-manager-connector-native` only. Trigger once with `launchctl kickstart`; do not invoke provider/browser scripts or a second executor manually.
+**Executor:** Existing loaded `ai.anicca.mr-bot-connector-native` only. Trigger once with `launchctl kickstart`; do not invoke provider/browser scripts or a second executor manually.
 
 ## Baseline
 

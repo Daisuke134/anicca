@@ -2,13 +2,13 @@
 
 ## Verified runtime state
 
-- launchd label `ai.anicca.life-manager-dev`: unloaded
-- `life-manager-dev-daily.js` process count: zero
+- launchd label `ai.anicca.mr-bot-dev`: unloaded
+- `mr-bot-dev-daily.js` process count: zero
 - active plist: absent
 - disabled plist:
-  `/Users/operator/Library/LaunchAgents/ai.anicca.life-manager-dev.plist.disabled`
+  `/Users/operator/Library/LaunchAgents/ai.anicca.mr-bot-dev.plist.disabled`
 - pause marker:
-  `/Users/operator/.openclaw/state/life-manager-dev/PAUSED_UNTIL_FINAL_PHASE`
+  `/Users/operator/.openclaw/state/mr-bot-dev/PAUSED_UNTIL_FINAL_PHASE`
 - preserved append-only progress: real Day 2/7
 
 ## Resume boundary

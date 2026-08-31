@@ -1,22 +1,22 @@
 ---
 name: affiliate
-description: Builds, runs, and migrates the Life Manager Affiliate Agent across macOS devices.
+description: Builds, runs, and migrates the Mr.bot Affiliate Agent across macOS devices.
 ---
 
-# Life Manager Affiliate Skill
+# Mr.bot Affiliate Skill
 
 status: `LOCAL_RUNTIME_READY`
 legacy_migration: `MIGRATION_ONLY`
 execution: `MACOS_LOCAL_ONLY`
 
-The canonical source is this `skills/affiliate` directory in the Life Manager
+The canonical source is this `skills/affiliate` directory in the Mr.bot
 repository. `legacy/` contains byte-preserved evidence only; archived files are
 never executed by this skill.
 
 Mutable state lives at
-`${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}/affiliate`.
+`${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}/affiliate`.
 Installed data lives at
-`${LIFE_MANAGER_DATA_HOME:-$HOME/.local/share/life-manager}/affiliate`.
+`${MR_BOT_DATA_HOME:-$HOME/.local/share/mr-bot}/affiliate`.
 
 The runtime follows the proven Coconala boundary: an immutable release, mutable
 append-only receipts outside Git, an isolated browser profile, and launchd-owned
@@ -100,7 +100,7 @@ Impact device verification is also a provider command, not an owner task:
 ```bash
 skills/affiliate/affiliate provider verify-device \
   --provider hubspot-impact --cdp-port 9327 \
-  --receipt ~/.local/state/life-manager/affiliate/providers/hubspot-impact-device.json
+  --receipt ~/.local/state/mr-bot/affiliate/providers/hubspot-impact-device.json
 ```
 
 It reads only inbound messages from the playbook-bound sender in the local
@@ -118,10 +118,10 @@ python3 -c 'import secrets; print("A!" + secrets.token_urlsafe(36))' | \
   --id hubspot-impact --label Impact --verification SAVED_BEFORE_SUBMIT
 skills/affiliate/affiliate provider reset-password \
   --provider hubspot-impact --cdp-port 9327 \
-  --receipt ~/.local/state/life-manager/affiliate/providers/hubspot-impact-password-reset.json
+  --receipt ~/.local/state/mr-bot/affiliate/providers/hubspot-impact-password-reset.json
 skills/affiliate/affiliate provider resume \
   --provider hubspot-impact --cdp-port 9327 \
-  --receipt ~/.local/state/life-manager/affiliate/providers/hubspot-impact.json
+  --receipt ~/.local/state/mr-bot/affiliate/providers/hubspot-impact.json
 ```
 
 `reset-password` requires the exact official reset page, exactly two password
@@ -142,7 +142,7 @@ skills/affiliate/affiliate loop placement --placement article-1 --locale en
 `ai.anicca.affiliate-composition` consumes at most one due credential-free
 source bundle per wake and writes a sealed terminal composition receipt.
 `ai.anicca.affiliate-loop` wakes every 10 minutes. Receipts live under
-`~/.local/state/life-manager/affiliate`; provider passwords and the executable
+`~/.local/state/mr-bot/affiliate`; provider passwords and the executable
 ElevenLabs link remain only in the mode-0600 private Markdown. The current wake
 polls the rendered ElevenLabs login state, records only a deterministic provider
 transition ID, and requires `AUTHENTICATED` before publication readiness. It
@@ -209,7 +209,7 @@ artifact:
 ```bash
 skills/affiliate/affiliate content build-x
 skills/affiliate/affiliate x post publish \
-  --content ~/.local/state/life-manager/affiliate/x-content/elevenlabs-en-1.txt \
+  --content ~/.local/state/mr-bot/affiliate/x-content/elevenlabs-en-1.txt \
   --placement elevenlabs-en-1
 ```
 
@@ -295,7 +295,7 @@ skills/affiliate/affiliate owned publish \
   --slug elevenagents-for-customer-support --landing-root "$CLEAN_PRODUCTION_WORKTREE"
 skills/affiliate/affiliate content build-x-agents
 skills/affiliate/affiliate x post publish \
-  --content ~/.local/state/life-manager/affiliate/x-content/elevenagents-en-1.txt \
+  --content ~/.local/state/mr-bot/affiliate/x-content/elevenagents-en-1.txt \
   --placement elevenagents-en-1
 ```
 

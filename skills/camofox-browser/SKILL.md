@@ -21,14 +21,14 @@ Logs: `/tmp/camofox.log`
 ## Start (lazy, idempotent)
 
 ```bash
-bash $LIFE_MANAGER_REPO/skills/camofox-browser/scripts/start.sh
+bash $MR_BOT_REPO/skills/camofox-browser/scripts/start.sh
 # starts only if not running, prints health, exits
 ```
 
 ## Stop
 
 ```bash
-bash $LIFE_MANAGER_REPO/skills/camofox-browser/scripts/stop.sh
+bash $MR_BOT_REPO/skills/camofox-browser/scripts/stop.sh
 ```
 
 ## Standard call pattern
@@ -72,7 +72,7 @@ curl -sS "http://localhost:9377/tabs/$TAB_ID/screenshot?userId=$USER_ID&sessionK
 curl -sS -X DELETE "http://localhost:9377/tabs/$TAB_ID?userId=$USER_ID&sessionKey=$SESSION_KEY"
 ```
 
-Use `bash $LIFE_MANAGER_REPO/skills/camofox-browser/scripts/cf.sh` as a thin wrapper (loads `userId`/`sessionKey`, sets `TAB_ID` env).
+Use `bash $MR_BOT_REPO/skills/camofox-browser/scripts/cf.sh` as a thin wrapper (loads `userId`/`sessionKey`, sets `TAB_ID` env).
 
 ## Google OAuth login pattern (verified 2026-05-08)
 

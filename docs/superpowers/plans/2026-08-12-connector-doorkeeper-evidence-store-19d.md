@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Modify exactly `apps/life-manager/lib/connpass-evidence-store.js` and `apps/life-manager/lib/connpass-evidence-store.test.js`.
+- Modify exactly `apps/mr-bot/lib/connpass-evidence-store.js` and `apps/mr-bot/lib/connpass-evidence-store.test.js`.
 - Production soft target: +8–12 LOC. Test soft target: +40–70 LOC. No refactor of the existing generic store.
 - Use strict TDD: add the behavioral tests, run them and observe the expected RED, then add the minimal production wrapper.
 - Accept only `doorkeeper-event://event/<positive integer>` and `provider-receipt://doorkeeper/<64 lowercase hex>`.
@@ -23,8 +23,8 @@
 ### Task 1: Export the exact Doorkeeper evidence-store wrapper
 
 **Files:**
-- Modify: `apps/life-manager/lib/connpass-evidence-store.js`
-- Test: `apps/life-manager/lib/connpass-evidence-store.test.js`
+- Modify: `apps/mr-bot/lib/connpass-evidence-store.js`
+- Test: `apps/mr-bot/lib/connpass-evidence-store.test.js`
 
 **Interfaces:**
 - Consumes: private `createBrowserProviderEvidenceStore(options)` in `connpass-evidence-store.js`.
@@ -97,7 +97,7 @@ test("Doorkeeper wrapper rejects wrong event identity and receipt tuple tamperin
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/connpass-evidence-store.test.js
 ```
 
@@ -125,7 +125,7 @@ Export it with the two existing public factories. Do not change `createBrowserPr
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/connpass-evidence-store.test.js lib/connector-minimal-evidence.test.js
 node --check lib/connpass-evidence-store.js
 git diff --check

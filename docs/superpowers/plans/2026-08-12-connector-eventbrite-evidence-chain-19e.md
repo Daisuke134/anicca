@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Modify exactly `apps/life-manager/lib/connector-minimal-evidence.js` and `apps/life-manager/lib/connector-minimal-evidence.test.js`.
+- Modify exactly `apps/mr-bot/lib/connector-minimal-evidence.js` and `apps/mr-bot/lib/connector-minimal-evidence.test.js`.
 - Production soft target: +28–45 LOC. Test soft target: +75–110 LOC. No new file, dependency, schema, class, or generic abstraction.
 - Use strict TDD: new Eventbrite chain behavior must fail before production wiring and pass after the minimum change.
 - Accept exact `eventbrite-event://event/<positive ID>` paired with either exact `https://www.eventbrite.com/e/<slug>-tickets-<same ID>` or exact `https://www.eventbrite.com/e/<same ID>`. Match the existing workflow slug grammar; reject HTTP, non-www/wrong host, uppercase raw host, credentials, port, query, fragment, trailing slash, invalid/zero/mismatched ID, and extra paths.
@@ -26,8 +26,8 @@
 ### Task 1: Add Eventbrite to the minimal evidence provider map
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-minimal-evidence.js`
-- Test: `apps/life-manager/lib/connector-minimal-evidence.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-evidence.js`
+- Test: `apps/mr-bot/lib/connector-minimal-evidence.test.js`
 
 **Interfaces:**
 - Consumes: `createEventbriteEvidenceStore(options)` and `completeEvidence({provider:"eventbrite", candidate, page, providerState:{status:"registered"}})`.
@@ -46,7 +46,7 @@ Add:
 - [ ] **Step 2: Run focused tests and verify RED**
 
 ```bash
-node --test apps/life-manager/lib/connector-minimal-evidence.test.js
+node --test apps/mr-bot/lib/connector-minimal-evidence.test.js
 ```
 
 Expected: existing tests remain green; new positive Eventbrite cases fail at the missing provider contract. If the rejection table already passes because the provider is absent, perform the reversible canonical-guard mutation in Step 4.
@@ -62,8 +62,8 @@ Expected: existing tests remain green; new positive Eventbrite cases fail at the
 - [ ] **Step 4: Verify GREEN, mutation sensitivity, and adjacent stores**
 
 ```bash
-node --test apps/life-manager/lib/connector-minimal-evidence.test.js apps/life-manager/lib/connpass-evidence-store.test.js
-node --check apps/life-manager/lib/connector-minimal-evidence.js
+node --test apps/mr-bot/lib/connector-minimal-evidence.test.js apps/mr-bot/lib/connpass-evidence-store.test.js
+node --check apps/mr-bot/lib/connector-minimal-evidence.js
 git diff --check
 ```
 

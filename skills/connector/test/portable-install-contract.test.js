@@ -7,12 +7,12 @@ const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
-const { readConnectorProfile } = require("../../../apps/life-manager/lib/connector-profile.js");
+const { readConnectorProfile } = require("../../../apps/mr-bot/lib/connector-profile.js");
 const { runNativePass } = require("../native-pass.js");
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
 const SKILL_ROOT = path.join(REPO_ROOT, "skills", "connector");
-const LABEL = "ai.anicca.life-manager-connector-native.plist";
+const LABEL = "ai.anicca.mr-bot-connector-native.plist";
 
 test("public Connector package installs, renders, runs one no-effect wake, and uninstalls in an isolated home", async () => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "connector-public-home-"));
@@ -24,7 +24,7 @@ test("public Connector package installs, renders, runs one no-effect wake, and u
     assert.equal(profile.timezone, "Asia/Tokyo");
     assert.match(profile.preferences, /YC.*lightning-talk.*AI.*crypto.*startup/i);
 
-    const stateHome = path.join(home, ".local", "state", "life-manager");
+    const stateHome = path.join(home, ".local", "state", "mr-bot");
     const rendered = path.join(stateHome, "rendered-launchd");
     const envFile = path.join(stateHome, ".env");
     const launchAgents = path.join(home, "Library", "LaunchAgents");
@@ -37,7 +37,7 @@ test("public Connector package installs, renders, runs one no-effect wake, and u
       path.join(SKILL_ROOT, "render-launchd.sh"),
       "--output-dir", rendered,
       "--repo-root", REPO_ROOT,
-      "--life-manager-home", stateHome,
+      "--mr-bot-home", stateHome,
       "--connector-env-file", envFile,
     ], { encoding: "utf8", env: { ...process.env, HOME: home } });
     assert.equal(render.status, 0, render.stderr);
@@ -70,7 +70,7 @@ test("public Connector package installs, renders, runs one no-effect wake, and u
 
     const publicFiles = ["README.md", "SKILL.md", "WORKER-CONTRACT.md", "examples/public-profile.json"];
     const source = publicFiles.map((file) => fs.readFileSync(path.join(SKILL_ROOT, file), "utf8")).join("\n");
-    assert.doesNotMatch(source, /\/Users\/|\.local\/state\/life-manager\/connector-native|connpass-action-boundary-deliveries|telegram_provider_id/);
+    assert.doesNotMatch(source, /\/Users\/|\.local\/state\/mr-bot\/connector-native|connpass-action-boundary-deliveries|telegram_provider_id/);
     assert.equal(fs.readdirSync(path.join(SKILL_ROOT, "examples")).join(","), "public-profile.json");
   } finally {
     fs.rmSync(home, { recursive: true, force: true });

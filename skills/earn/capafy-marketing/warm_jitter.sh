@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
+MR_BOT_REPO="${MR_BOT_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$MR_BOT_REPO" ] || { echo "MR_BOT_REPO could not be resolved" >&2; exit 2; }
+export MR_BOT_REPO
 # warm_jitter.sh — human-like timing: sleep a random 0-3h before running the warmup, so the daily
 # warmup does NOT fire at the exact same clock time every day. launchd fires this at a base time;
 # the random sleep spreads the actual run across a window.
@@ -16,4 +16,4 @@ if [ -z "$IG_HANDLE" ]; then
   exit 0
 fi
 sleep $(( RANDOM % 10800 ))   # 0..10800s = 0..3h jitter
-exec /opt/homebrew/bin/python3 "$LIFE_MANAGER_REPO/skills/earn/marketing-engine/warmer.py" "$ACCOUNTS_FILE"
+exec /opt/homebrew/bin/python3 "$MR_BOT_REPO/skills/earn/marketing-engine/warmer.py" "$ACCOUNTS_FILE"

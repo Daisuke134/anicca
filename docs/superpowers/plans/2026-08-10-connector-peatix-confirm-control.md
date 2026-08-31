@@ -23,11 +23,11 @@ After the bounded parent completes the Peatix organizer form, wait for the exact
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-production-browser-harness.test.js`
-2. `apps/life-manager/lib/connector-production-browser-harness.js`
-3. `apps/life-manager/lib/connector-minimal-production.test.js` — update the one default-inspector selector fixture from the old selector to the new selector; no behavior change.
-4. `apps/life-manager/lib/connector-minimal-runner.test.js` — one regression proving ambiguous final effect stops before the next candidate.
-5. `apps/life-manager/lib/connector-minimal-runner.js` — recognize only the exact bounded fallback `effect_unknown` result and immediately finish the wake `circuit_open / effect_unknown`.
+1. `apps/mr-bot/lib/connector-production-browser-harness.test.js`
+2. `apps/mr-bot/lib/connector-production-browser-harness.js`
+3. `apps/mr-bot/lib/connector-minimal-production.test.js` — update the one default-inspector selector fixture from the old selector to the new selector; no behavior change.
+4. `apps/mr-bot/lib/connector-minimal-runner.test.js` — one regression proving ambiguous final effect stops before the next candidate.
+5. `apps/mr-bot/lib/connector-minimal-runner.js` — recognize only the exact bounded fallback `effect_unknown` result and immediately finish the wake `circuit_open / effect_unknown`.
 
 Soft target: 5 files; no new module/service/state; Harness production/tests contain the strict DOM and settlement contract; runner production is one exact early-stop branch with one regression; adjacent fixture remains +1/-1 line.
 

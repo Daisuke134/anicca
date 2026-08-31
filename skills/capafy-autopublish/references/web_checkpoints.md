@@ -9,7 +9,7 @@ token=config.json::access_token / camofox :9377 / Capafyは Google login cookie 
 4. "Confirm Submit" → "Agent Card Saved"
 
 ## configure後 leak gate
-publish_chain.sh configure --deep-scan → `leak_scan.sh <staging>` (fail-closed)。staging = `$LIFE_MANAGER_REPO/skills/capafy-publisher/.temp/staging`
+publish_chain.sh configure --deep-scan → `leak_scan.sh <staging>` (fail-closed)。staging = `$MR_BOT_REPO/skills/capafy-publisher/.temp/staging`
 
 ## CP2 (page=credential・subscription時のみ・Downloadはskip)
 LLM Config に Anthropic API key host(proxy-hosted)。settings由来の不要 generic config は "Unselect this key from hosting"。"Confirm & Save Keys"

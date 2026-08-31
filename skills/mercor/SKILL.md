@@ -1,11 +1,11 @@
 ---
 name: mercor
-description: "Mercor provider lane for Life Manager: safe Google/Gmail authentication, resume/profile maintenance, grounded applications, and verified earnings. Use for Mercor jobs, assessments, applications, and the Life Manager job loop."
+description: "Mercor provider lane for Mr.bot: safe Google/Gmail authentication, resume/profile maintenance, grounded applications, and verified earnings. Use for Mercor jobs, assessments, applications, and the Mr.bot job loop."
 ---
 
 # Mercor
 
-Mercor is a global provider lane of Life Manager's existing Job Hunter system. It is not limited to Japanese jobs: route Japanese, English, bilingual, business, AI-agent, research, data/CRM, product, and other grounded role families through the same fact gate. Use this skill for provider policy and routing; `apps/job-search-loop/` remains the sole owner of browser and application side effects.
+Mercor is a global provider lane of Mr.bot's existing Job Hunter system. It is not limited to Japanese jobs: route Japanese, English, bilingual, business, AI-agent, research, data/CRM, product, and other grounded role families through the same fact gate. Use this skill for provider policy and routing; `apps/job-search-loop/` remains the sole owner of browser and application side effects.
 
 ## Canonical owners
 
@@ -13,7 +13,7 @@ Mercor is a global provider lane of Life Manager's existing Job Hunter system. I
 - Browser/application runtime: `apps/job-search-loop/`
 - Cadence: `loops/job-hunter/`
 - Private Mercor state: `~/.local/state/anicca/job-search/mercor/`
-- Integration spec: `docs/superpowers/specs/2026-08-22-mercor-life-manager-consolidation.md`
+- Integration spec: `docs/superpowers/specs/2026-08-22-mercor-mr-bot-consolidation.md`
 
 ## Authentication hard stops
 

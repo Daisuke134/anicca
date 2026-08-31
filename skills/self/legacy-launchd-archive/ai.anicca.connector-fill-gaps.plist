@@ -10,9 +10,9 @@
     <string>__REPO_ROOT__/skills/connector/connector_fill_gaps.sh</string>
   </array>
   <key>StandardErrorPath</key>
-  <string>__LIFE_MANAGER_HOME__/logs/connector-fill-gaps.err</string>
+  <string>__MR_BOT_HOME__/logs/connector-fill-gaps.err</string>
   <key>StandardOutPath</key>
-  <string>__LIFE_MANAGER_HOME__/logs/connector-fill-gaps.out</string>
+  <string>__MR_BOT_HOME__/logs/connector-fill-gaps.out</string>
   <key>StartCalendarInterval</key>
   <dict>
     <key>Hour</key>

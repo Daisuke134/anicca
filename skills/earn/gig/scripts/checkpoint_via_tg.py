@@ -28,7 +28,7 @@ Send reuses the EXACT production Telegram path this repo already runs daily
 Reading is the harder half. Three read paths were tried by earlier work in this repo and
 each was a real wall, not a naming problem (see telegram_web_read.py's docstring):
 ``openclaw message read`` refuses (the gateway itself owns getUpdates on that token) and
-``getUpdates`` conflicts with Life Manager's webhook on the other token. The one path that
+``getUpdates`` conflicts with Mr.bot's webhook on the other token. The one path that
 works -- reading the already-logged-in Telegram Web tab over CDP -- is a SHARED browser
 (``interactive:dais`` in ~/.config/ai/registry/browsers.toml, owner=main-session) gated by
 browser-guard.sh precisely because two uncoordinated leases on it already broke a session

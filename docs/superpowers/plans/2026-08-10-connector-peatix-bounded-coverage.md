@@ -37,8 +37,8 @@
 ### Task 1: Use the measured search response and scan five bounded pages
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-peatix-workflow.js`
-- Modify: `apps/life-manager/lib/connector-peatix-workflow.test.js`
+- Modify: `apps/mr-bot/lib/connector-peatix-workflow.js`
+- Modify: `apps/mr-bot/lib/connector-peatix-workflow.test.js`
 
 - [ ] **Step 1: Write the failing response-before-navigation test**
 
@@ -89,7 +89,7 @@ Cover wrong payload page, more than 20 events, missing `json_data.events`, inval
 - [ ] **Step 5: Run focused test and verify RED**
 
 ```bash
-node --test apps/life-manager/lib/connector-peatix-workflow.test.js
+node --test apps/mr-bot/lib/connector-peatix-workflow.test.js
 ```
 
 Expected: failures because the current default reader has no `waitForResponse`, no date/page loop, and still reads DOM cards.
@@ -109,13 +109,13 @@ Delete `SEARCH_RESULT_SELECTOR`, `waitForSelector`, and search DOM evaluation. K
 - [ ] **Step 7: Run focused and provider regression GREEN**
 
 ```bash
-node --test apps/life-manager/lib/connector-peatix-workflow.test.js
+node --test apps/mr-bot/lib/connector-peatix-workflow.test.js
 
 node --test \
-  apps/life-manager/lib/connector-peatix-workflow.test.js \
-  apps/life-manager/lib/connector-connpass-workflow.test.js \
-  apps/life-manager/lib/connector-luma-workflow.test.js \
-  apps/life-manager/lib/connector-minimal-runner.test.js
+  apps/mr-bot/lib/connector-peatix-workflow.test.js \
+  apps/mr-bot/lib/connector-connpass-workflow.test.js \
+  apps/mr-bot/lib/connector-luma-workflow.test.js \
+  apps/mr-bot/lib/connector-minimal-runner.test.js
 ```
 
 Expected: all pass, zero failures, no external access from tests.
@@ -123,8 +123,8 @@ Expected: all pass, zero failures, no external access from tests.
 - [ ] **Step 8: Commit and push the Luna-owned fix**
 
 ```bash
-git add apps/life-manager/lib/connector-peatix-workflow.js \
-  apps/life-manager/lib/connector-peatix-workflow.test.js
+git add apps/mr-bot/lib/connector-peatix-workflow.js \
+  apps/mr-bot/lib/connector-peatix-workflow.test.js
 git commit -m "fix(connector): use bounded Peatix search responses"
 git push origin feature/connector-native-completion
 ```

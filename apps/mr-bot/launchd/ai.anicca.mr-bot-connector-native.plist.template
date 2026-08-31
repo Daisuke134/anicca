@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.anicca.mr-bot-connector-native</string>
+  <key>ProgramArguments</key><array><string>/bin/bash</string><string>__REPO_ROOT__/skills/connector/run.sh</string></array>
+  <key>WorkingDirectory</key><string>__REPO_ROOT__</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>LM_CONNECTOR_SHARED_ENV_FILE</key><string>__CONNECTOR_ENV_FILE__</string>
+    <key>MR_BOT_STATE_HOME</key><string>__MR_BOT_HOME__</string>
+  </dict>
+  <key>StartInterval</key><integer>3600</integer>
+  <key>ThrottleInterval</key><integer>60</integer>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>__MR_BOT_HOME__/logs/connector-native.out.log</string>
+  <key>StandardErrorPath</key><string>__MR_BOT_HOME__/logs/connector-native.err.log</string>
+</dict></plist>

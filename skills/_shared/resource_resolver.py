@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resolve reusable Life Manager skills, accounts, sessions, and credential refs.
+"""Resolve reusable Mr.bot skills, accounts, sessions, and credential refs.
 
 The output is deliberately non-secret. Adapters consume credential material directly
 from the local credential SSOT; models receive only references and public identity.
@@ -16,8 +16,8 @@ from typing import Any
 
 
 HERE = Path(__file__).resolve().parent
-REPO = Path(os.environ.get("LIFE_MANAGER_REPO") or HERE.parents[1]).resolve()
-REGISTRY = Path(os.environ.get("LIFE_MANAGER_SKILL_REGISTRY") or REPO / "skills/registry.json")
+REPO = Path(os.environ.get("MR_BOT_REPO") or HERE.parents[1]).resolve()
+REGISTRY = Path(os.environ.get("MR_BOT_SKILL_REGISTRY") or REPO / "skills/registry.json")
 CREDENTIALS = Path(os.environ.get("ANICCA_CREDENTIALS_FILE") or Path.home() / ".local/share/anicca/credentials.json")
 BROWSERS = Path(os.environ.get("AI_BROWSER_REGISTRY") or Path.home() / ".config/ai/registry/browsers.toml")
 SKILLS_ROOT = REPO / "skills"

@@ -31,12 +31,12 @@ Hermes core の "heartbeat" (`chat_completion_helpers.py:2320 _HEARTBEAT_INTERVA
 source: repo 確認:
 - `~/anicca` = `anicca` (mother hub、 OSS framework/spec)
 - `~/.openclaw` = `anicca-dais` (private、 157 cron)
-- `~/anicca-project` = `anicca-products` (life-manager spec + iOS/web)
+- `~/anicca-project` = `anicca-products` (mr-bot spec + iOS/web)
 - `~/.hermes` = ★ NOT git ★ = ★ live runtime (= genesis の体) ★、 anicca-genesis repo に sync
 **結論**: build 対象 = ★ `~/.hermes` を 直編集 (= live runtime) ★。 SOUL/skills/cron は ここ。 spec/設計 は `~/anicca`。 安全 file は anicca-genesis に push。
 
-### ✅ UB5 — life-manager (anicca-products) と genesis (Hermes) は 同 agent か → 🔍 要 life-manager code 確認 (次 batch)
-暫定: life-manager spec は `anicca-products` branch、 voice=sutando、 host=Daytona。 genesis=Hermes earn。 = ★ 現状 別 stack ★。 統合方針: 2 loop=1 Hermes runtime に 寄せる か、 life=Daytona/genesis=Hermes 別 のまま 連携か → UB5 は 次 batch で life-manager 実体読んで 確定。
+### ✅ UB5 — mr-bot (anicca-products) と genesis (Hermes) は 同 agent か → 🔍 要 mr-bot code 確認 (次 batch)
+暫定: mr-bot spec は `anicca-products` branch、 voice=sutando、 host=Daytona。 genesis=Hermes earn。 = ★ 現状 別 stack ★。 統合方針: 2 loop=1 Hermes runtime に 寄せる か、 life=Daytona/genesis=Hermes 別 のまま 連携か → UB5 は 次 batch で mr-bot 実体読んで 確定。
 
 ### 🔍 UB6 — 3-tier memory + Ralph loop の OSS copy元 → 次 batch (mem0/letta/ralph 調査)
 
@@ -71,9 +71,9 @@ echo "written"; wc -l /Users/operator/anicca/docs/superpowers/specs/2026-06-09-a
 
 ## BATCH 2 解決
 
-### ✅ UB5 — life-manager と genesis は 別 stack (= 統合 判断要)
+### ✅ UB5 — mr-bot と genesis は 別 stack (= 統合 判断要)
 source: `anicca-products` branch tree:
-- life-manager = `apps/alarm-backend/scheduler/lateness_check.py` + `saas_lateness.py` + `apps/api/src/routes/ops/heartbeat.js` (= Python scheduler + Node API on Railway)
+- mr-bot = `apps/alarm-backend/scheduler/lateness_check.py` + `saas_lateness.py` + `apps/api/src/routes/ops/heartbeat.js` (= Python scheduler + Node API on Railway)
 - genesis earn = `~/.hermes` (Hermes runtime)
 **結論**: ★ 現状 2 つの 別 system ★。 life = anicca-products/Railway(alarm-backend)、 earn = Hermes/genesis。
 ⚠️ **Dais 判断 (UB5-D)**: (a) 2つを 1 Hermes runtime に 統合する か、 (b) life=Railway / earn=Hermes 別のまま 連携 か。 → 推奨 = (b) 別のまま (= life は 既に動いてる Railway を 壊さない、 earn は genesis で 新規)。 後で 1 base 統合は P6。
@@ -108,11 +108,11 @@ source: genesis jobs.json = anicca-earn-lancers / payout-ubi / forum-issues / se
 - U73/140-D: JP税/法務主体 (autonomous earn の 確定申告/インボイス) → Dais
 - U85/143-D: AI が product 売る ToS/liability の 許容範囲 → Dais
 - U118/42-D: 自動解約 treasury 閾値 (月いくら稼げたら user 無料化)
-- U144-D: 「no human in loop」vs「user承認(返信案)」の 線引き (life-manager は user承認あり=矛盾しない、 earn は no-human)
+- U144-D: 「no human in loop」vs「user承認(返信案)」の 線引き (mr-bot は user承認あり=矛盾しない、 earn は no-human)
 
 ## 残 factual (= 次 batch で 潰す)
 - 🔍 U16 sutando Monitor の Hermes 等価 / U59 cron per-job model override / U17 tasks-queue
-- 🔍 U94/95 life-manager glob bug fix 状態 / U33 Twilio番号 / U100 calendar scope
+- 🔍 U94/95 mr-bot glob bug fix 状態 / U33 Twilio番号 / U100 calendar scope
 - 🔍 U113/114 aniccaai.com/install LP + @anicca_bot 状態 / U40 Stripe sub product
 - 🔍 U21 product 制作 quality gate / U28 guide 誰が書く
 - 🔍 U136-139 security (injection/spend上限/post上限/ban)
@@ -175,14 +175,14 @@ source: genesis jobs.json = anicca-earn-lancers / payout-ubi / forum-issues / se
 |---|---|---|
 | 2 U70 Stripe | Dais sk_live流用 | ❌撤回 → ★Anicca自身の on-chain/x402 rails (Daisの鍵禁止)★ |
 | 3 U79 product | 我々が topic指定 | ❌撤回 → ★Anicca が 自分で 決める (prompt しない)★ |
-| 7 U50 1人目user | Dais | ❌撤回 → ★genesis は no-user で 自分の存在を稼ぐ。 life-manager users は別★ |
+| 7 U50 1人目user | Dais | ❌撤回 → ★genesis は no-user で 自分の存在を稼ぐ。 mr-bot users は別★ |
 | 8 U73/140 税/法務 | Dais名義 | → on-chain(no-KYC、 00-MASTER)、 法人化は Anicca が自分で(後) |
 | 9 U85/143 ToS | Dais許容 | → Anicca が constitution Law I(never harm)内で 自己判断 |
-| 1 UB5 life+earn | — | life-manager(users有)と genesis(no-human earn)は 別。 維持 |
+| 1 UB5 life+earn | — | mr-bot(users有)と genesis(no-human earn)は 別。 維持 |
 | 4 U109 cloud | DigitalOcean | Anicca が 自分の wallet で 自分の compute を 買う(automaton tier)。 当面 genesis=Mac mini |
 | 5/6 cron | — | dry-run/original earn 削除、 self-improve残す |
 | 10 treasury | — | Anicca が ledger で 自己判断 |
-| 11 no-human線引き | — | ★ earn=完全no-human / life-manager=返信案のみuser承認(これは顧客、 operatorでない)★ |
+| 11 no-human線引き | — | ★ earn=完全no-human / mr-bot=返信案のみuser承認(これは顧客、 operatorでない)★ |
 
 ### = ★ Dais 判断 0 項。 全部 Anicca の自律 or NHOSS で 自動決定 ★
 我々がやるのは: ① 機械(architecture) を copy で組む ② Anicca自身の identity を 配線

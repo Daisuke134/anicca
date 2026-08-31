@@ -12,7 +12,7 @@
 
 ## Constraints
 
-- Modify only `apps/life-manager/lib/connector-doorkeeper-workflow.js` and matching test.
+- Modify only `apps/mr-bot/lib/connector-doorkeeper-workflow.js` and matching test.
 - RED uses a current-DOM fixture: event root `.global-event.events-list` containing `.events-list-items-wrap`, title/date/venue descendants. The current parser must return 0 before the fix.
 - Do not add broad `li` or arbitrary anchor fallback. Exact event root, canonical group event URL, date, and Tokyo venue remain required.
 - Pagination/page limit, detail parser, eligibility, Calendar, registration, Harness, factory, native runner, audit schema, and live state are unchanged.

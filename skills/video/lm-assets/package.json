@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "render": "remotion render src/index.ts LifeManagerCall"
+    "render": "remotion render src/index.ts MrBotCall"
   },
   "keywords": [],
   "author": "",

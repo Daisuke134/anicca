@@ -12,8 +12,8 @@
 
 ## Ownership
 
-- `apps/life-manager/lib/connector-production-browser-harness.js`
-- `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- `apps/mr-bot/lib/connector-production-browser-harness.js`
+- `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 ## Exact contract
 

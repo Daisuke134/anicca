@@ -73,7 +73,7 @@ class NextCreativeTests(unittest.TestCase):
 class NarrationTests(unittest.TestCase):
     def test_english_narration_follows_problem_then_solution_then_payoff(self):
         script = daily_pipeline.narration_script(BANK[0], "en")
-        self.assertIn("Life Manager", script)
+        self.assertIn("Mr.bot", script)
         # The narration is prose for a voice, not the raw bank fields read out.
         self.assertNotIn("pain:", script)
         self.assertNotIn("punchline:", script)
@@ -81,7 +81,7 @@ class NarrationTests(unittest.TestCase):
 
     def test_japanese_narration_is_japanese_and_carries_the_same_beats(self):
         script = daily_pipeline.narration_script(BANK[0], "ja")
-        self.assertIn("Life Manager", script)
+        self.assertIn("Mr.bot", script)
         self.assertIn("アラーム3回スヌーズ", script)
 
     def test_each_creative_produces_a_different_narration(self):

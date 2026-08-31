@@ -1,11 +1,11 @@
 ---
 name: loop-development
-description: Develop, fix, deploy, migrate, or retire macOS Life Manager loops without modifying another loop's code, state, browser, launchd job, provider profile, or production release. Use for changes to loop entrypoints, config/loop-registry.json, launchd cadence, runtime events, releases, healthchecks, or cleanup.
+description: Develop, fix, deploy, migrate, or retire macOS Mr.bot loops without modifying another loop's code, state, browser, launchd job, provider profile, or production release. Use for changes to loop entrypoints, config/loop-registry.json, launchd cadence, runtime events, releases, healthchecks, or cleanup.
 ---
 
-# Life Manager Loop Development
+# Mr.bot Loop Development
 
-Life Manager has one code source: GitHub `main`; one lifecycle registry:
+Mr.bot has one code source: GitHub `main`; one lifecycle registry:
 `config/loop-registry.json`; and one operator interface: `bin/lm-loop`. A loop
 owns business effects, not its plist, release selector, provider route, sibling
 restart, global monitor, or shared cleanup.
@@ -60,7 +60,7 @@ locked worktree -> focused test -> merged main -> immutable release -> lm-loop a
 
    ```bash
    python3 -m unittest discover -s runtime/loop/tests -p 'test_*.py'
-   node --test apps/life-manager/lib/loop-adapter-registry.test.js
+   node --test apps/mr-bot/lib/loop-adapter-registry.test.js
    ~/loops/current/bin/lm-loop doctor
    ```
 

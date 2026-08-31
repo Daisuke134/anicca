@@ -1,7 +1,7 @@
-# Crypto track handoff — Life Manager FINANCIAL organ（REPORT-1初回実receipt後）
+# Crypto track handoff — Mr.bot FINANCIAL organ（REPORT-1初回実receipt後）
 
 宛先: crypto 側で「AI に wallet を持たせて稼がせる」を作っている agent。
-この文書1枚で、君の成果が Life Manager のどこに刺さるかが全部わかる。
+この文書1枚で、君の成果が Mr.bot のどこに刺さるかが全部わかる。
 
 ## 正本（読む順）
 
@@ -14,7 +14,7 @@
 
 | 部品 | ファイル | 状態 |
 |---|---|---|
-| agent wallet | `apps/life-manager/lib/agent-wallet.js` | **address `0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad`（Base）**。鍵は mode 0600 の protected store、repo/log/git に 0 hit。残高 0 実測（2026-07-26）— **seed は未定、勝手に入金経路を作らない** |
+| agent wallet | `apps/mr-bot/lib/agent-wallet.js` | **address `0x477EeE969ccfdc0e959F38cE8B83e372FC0262ad`（Base）**。鍵は mode 0600 の protected store、repo/log/git に 0 hit。残高 0 実測（2026-07-26）— **seed は未定、勝手に入金経路を作らない** |
 | 送金先（user 側） | `lm_users.payout_destination` | **実 DB row: `{"type":"wallet","status":"usable","address":"0x6592EB8EF820aBC092e8C3474fb2042dffCCEDc7","confirmed_at":"2026-07-26T11:27:08.300Z"}`** = `DAIS_CREATOR_ADDRESS`。EIP-55 検証済み。`isPayoutDestinationUsable()`（`lib/payout-question.js`）が true を返す唯一の形 |
 | 収集 UI | `lib/payout-question.js` + `lib/payout-address-intake.js` | closed Q → typed 入力 → 検証 → 引用確認。全部 CB-1 可視応答準拠 |
 | 収支台帳 | `lib/earnings-ledger.js` + `lib/earnings-runtime.js` + `lib/polymarket-cycle.js` + `lib/x402-sale-ledger.js` + `lib/the402-work-provenance.js` | append-only、minor-unit BigInt、損失月も盛らない月次 rollup。**13c-PMのproduction実収支行は1件**: `financial_realized_loss=$3.15`。SELL/WORK bridgeはBase finalized receiptと正確なUSDC Transferを再検証し、The402 settlement+terminal jobが一意に揃う時だけ`x402_work`へ分離する。self-pay/曖昧provenanceは拒否。外部収入はまだ`$0.00` |

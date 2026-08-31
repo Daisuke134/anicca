@@ -5,7 +5,7 @@ drive_checkpoint2.py — Capafy CP2 (credential hosting) automation.
 Sets the LLM Config to the CANONICAL recipe (verified 2026-06-25):
   Base URL = https://openrouter.ai/api/v1
   Model    = anthropic/claude-sonnet-4.6   (real Claude Sonnet 4.6 = what all winners use)
-  API Key  = $CAPAFY_HOST_OPENROUTER_KEY   (Life Manager state env)
+  API Key  = $CAPAFY_HOST_OPENROUTER_KEY   (Mr.bot state env)
   Format   = openai-responses (Capafy default; OpenRouter /responses verified working)
 Deletes the blockrun (127.0.0.1 localhost) card which always fails verification.
 Clicks "キーを確認して保存" and waits for the "キー確認済み" success toast.
@@ -655,11 +655,11 @@ def main():
     cp2 = _resolve_cp2_url(sys.argv[1])
     key = os.environ.get("CAPAFY_HOST_OPENROUTER_KEY", "").strip()
     if not key:
-        # fallback: read from the per-user Life Manager state env
+        # fallback: read from the per-user Mr.bot state env
         try:
             state_home = os.environ.get(
-                "LIFE_MANAGER_STATE_HOME",
-                os.path.expanduser("~/.local/state/life-manager"),
+                "MR_BOT_STATE_HOME",
+                os.path.expanduser("~/.local/state/mr-bot"),
             )
             for ln in open(os.path.join(state_home, ".env")):
                 if ln.startswith("CAPAFY_HOST_OPENROUTER_KEY="):

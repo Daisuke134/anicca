@@ -20,13 +20,13 @@
 ### Task 1: Add the Peatix evidence store
 
 **Files:**
-- Create: `apps/life-manager/lib/peatix-evidence-store.js`
-- Create: `apps/life-manager/lib/peatix-evidence-store.test.js`
+- Create: `apps/mr-bot/lib/peatix-evidence-store.js`
+- Create: `apps/mr-bot/lib/peatix-evidence-store.test.js`
 
 - [ ] Write RED tests for deterministic record/read receipt/read PNG, exact Peatix refs, tenant isolation, immutable collision behavior, invalid event refs, invalid PNG, and private identity absence.
-- [ ] Run RED: `node --test apps/life-manager/lib/peatix-evidence-store.test.js`.
+- [ ] Run RED: `node --test apps/mr-bot/lib/peatix-evidence-store.test.js`.
 - [ ] Implement the minimum Peatix-specific store using the existing content-addressed layout and atomic write behavior.
-- [ ] Run GREEN: `node --test apps/life-manager/lib/peatix-evidence-store.test.js apps/life-manager/lib/connpass-evidence-store.test.js apps/life-manager/lib/luma-evidence-store.test.js`.
+- [ ] Run GREEN: `node --test apps/mr-bot/lib/peatix-evidence-store.test.js apps/mr-bot/lib/connpass-evidence-store.test.js apps/mr-bot/lib/luma-evidence-store.test.js`.
 - [ ] Run `node --check` and `git diff --check`.
 - [ ] Commit `feat(connector): add Peatix evidence store` and push `feature/connector-native-completion`.
 

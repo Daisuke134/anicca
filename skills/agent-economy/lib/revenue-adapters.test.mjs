@@ -18,7 +18,7 @@ import {
 import * as AdapterModule from "./revenue-adapters.mjs";
 import { runTaskMarketPass } from "../../earn/taskmarket/taskmarket-work.mjs";
 
-const RECIPIENT = "acct_life_manager_instance_01";
+const RECIPIENT = "acct_mr_bot_instance_01";
 const PAYER = "customer_external_01";
 const EVM_PAYER = "0x1111111111111111111111111111111111111111";
 const EVM_RECIPIENT = "0x2222222222222222222222222222222222222222";

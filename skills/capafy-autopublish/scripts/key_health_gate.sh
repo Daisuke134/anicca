@@ -27,8 +27,8 @@ set -uo pipefail
 MIN="${1:-2.00}"
 # Warn while still passing but getting low, so user tops up BEFORE an outage.
 ALERT_CUSHION="${CAPAFY_FUNDING_ALERT_USD:-5.00}"
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
-STATE_DIR="$LIFE_MANAGER_STATE_HOME/state"
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
+STATE_DIR="$MR_BOT_STATE_HOME/state"
 mkdir -p "$STATE_DIR" 2>/dev/null || true
 
 # alert_user <remaining> <reason> — one telegram/day max (dedup marker keyed by date).
@@ -44,7 +44,7 @@ alert_user() {
 }
 KEY="${CAPAFY_HOST_OPENROUTER_KEY:-}"
 if [ -z "$KEY" ]; then
-  KEY="$(grep '^CAPAFY_HOST_OPENROUTER_KEY=' "$LIFE_MANAGER_STATE_HOME/.env" 2>/dev/null | cut -d= -f2-)"
+  KEY="$(grep '^CAPAFY_HOST_OPENROUTER_KEY=' "$MR_BOT_STATE_HOME/.env" 2>/dev/null | cut -d= -f2-)"
 fi
 if [ -z "$KEY" ]; then
   echo "KEY_HEALTH=FAIL reason=CAPAFY_HOST_OPENROUTER_KEY missing"; exit 1

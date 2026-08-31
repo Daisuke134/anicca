@@ -29,8 +29,8 @@ Allow the bounded parent to click Peatix's measured registration submit control 
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-production-browser-harness.test.js`
-2. `apps/life-manager/lib/connector-production-browser-harness.js`
+1. `apps/mr-bot/lib/connector-production-browser-harness.test.js`
+2. `apps/mr-bot/lib/connector-production-browser-harness.js`
 
 Soft target: 2 files; production +8–18 LOC; tests +25–45 LOC.
 

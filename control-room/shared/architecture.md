@@ -154,7 +154,7 @@ $0.30/x402 invoice price. Container-per-role makes the math impossible.
 | 1 CDP smart wallet per instance, N instances per CDP signup | `anicca-wallet-x402` skill on first boot | mixed signing keys, KYC re-derivation |
 | Constitution SHA-256 == genesis hash on every tick | `constitution` profile + `anicca-constitution-guard` skill | Pañcasīla violation gate fails open |
 | Self-pay 100% via OpenRouter USDC topup | `anicca-fuel-broker` skill + spec 07 § 4 routing matrix | operator CC charged, NHOSS violated |
-| Personal companion skills (life-manager / phone / etc.) NEVER in anicca-oss | spec 07 § 9 + `shared/security.md` | PII leak into public OSS |
+| Personal companion skills (mr-bot / phone / etc.) NEVER in anicca-oss | spec 07 § 9 + `shared/security.md` | PII leak into public OSS |
 
 ---
 

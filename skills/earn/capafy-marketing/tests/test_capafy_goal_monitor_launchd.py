@@ -38,7 +38,7 @@ def test_probe_resolves_release_root_without_git(tmp_path: Path) -> None:
             "CAPAFY_GOAL_MONITOR_PROBE_ONLY": "1",
         }
     )
-    env.pop("LIFE_MANAGER_REPO", None)
+    env.pop("MR_BOT_REPO", None)
     result = subprocess.run(
         ["bash", str(marketing / MONITOR.name)],
         env=env,
@@ -69,7 +69,7 @@ def test_probe_fails_closed_when_release_root_lacks_account_state_helper(tmp_pat
             "CAPAFY_GOAL_MONITOR_PROBE_ONLY": "1",
         }
     )
-    env.pop("LIFE_MANAGER_REPO", None)
+    env.pop("MR_BOT_REPO", None)
     env.pop("CAPAFY_ACCOUNT_STATE_HELPER", None)
     result = subprocess.run(
         ["bash", str(marketing / MONITOR.name)],
@@ -125,7 +125,7 @@ def run_monitor(
     safe.chmod(0o755)
     env = os.environ | {
         "HOME": str(tmp_path / "home"),
-        "LIFE_MANAGER_REPO": str(repo),
+        "MR_BOT_REPO": str(repo),
         "CAPAFY_LAUNCHCTL_SAFE": str(safe),
         "CAPAFY_LAUNCHCTL_DOMAIN": "gui/501",
         "STATE": str(state),
@@ -231,7 +231,7 @@ def _goal_monitor_fixture(tmp_path: Path) -> dict[str, Path]:
 
     home = tmp_path / "home"
     (home / ".local/bin").mkdir(parents=True)
-    (home / ".local/state/life-manager/logs").mkdir(parents=True)
+    (home / ".local/state/mr-bot/logs").mkdir(parents=True)
     accounts = home / ".cloak/accounts.json"
     accounts.parent.mkdir(parents=True, exist_ok=True)
     accounts.write_text("[]\n", encoding="utf-8")
@@ -279,8 +279,8 @@ def _run_full_goal_monitor(tmp_path: Path, *, headless: bool) -> tuple[subproces
     fixture = _goal_monitor_fixture(tmp_path)
     env = os.environ | {
         "HOME": str(fixture["home"]),
-        "LIFE_MANAGER_REPO": str(fixture["repo"]),
-        "LIFE_MANAGER_STATE_HOME": str(fixture["state_home"]),
+        "MR_BOT_REPO": str(fixture["repo"]),
+        "MR_BOT_STATE_HOME": str(fixture["state_home"]),
         "CAPAFY_ACCOUNT_STATE_HELPER": str(fixture["helper"]),
         "CAPAFY_FIXTURE_ACCOUNTS": str(fixture["accounts"]),
         "CAPAFY_LAUNCHCTL_SAFE": str(fixture["safe"]),

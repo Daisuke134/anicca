@@ -62,7 +62,7 @@ post-merge `main` run both passed the exact five security jobs.
 | Paid-route gate | all eight POST routes and `GET /funding-rates` returned HTTP 402 without payment |
 | Settlement observer | HTTP 200; three bounded public records; external funding-rate sale tx `0x1181e8c15039a9d83fb4b9b7c047178d9a652c84fe8bb2e6eba743d9d6233779` present exactly once |
 | Ledger regression | `x402-sale-ledger` plus production observer tests 22/22 PASS |
-| Real ledger loop | existing `ai.anicca.life-manager-x402-ledger` run count 403→404, exit 0; `recorded=0`, `duplicates=1`, `chain_rejected=0` |
+| Real ledger loop | existing `ai.anicca.mr-bot-x402-ledger` run count 403→404, exit 0; `recorded=0`, `duplicates=1`, `chain_rejected=0` |
 | Old source dependency | Railway source, trigger, root, config, and latest deployment contain no `Daisuke134/anicca.ai` dependency |
 | Observed downtime | zero: 251 consecutive `/health` samples from `2026-07-29T11:42:13Z` through `11:47:01Z` were HTTP 200; non-200 = 0 |
 

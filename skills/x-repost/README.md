@@ -1,6 +1,6 @@
-# Life Manager X growth loops
+# Mr.bot X growth loops
 
-Life Manager ships three independent macOS launchd owners. Each wake finds current public
+Mr.bot ships three independent macOS launchd owners. Each wake finds current public
 information, creates at most one grounded post, reads the official X permalink back, records the
 effect in a durable ledger, and exits.
 

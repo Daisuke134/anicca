@@ -1,9 +1,9 @@
 # Third-Party Notices
 
-Life Manager is distributed under the repository's [MIT License](LICENSE). The
+Mr.bot is distributed under the repository's [MIT License](LICENSE). The
 general-agent architecture also studies the following open-source projects.
 
-| Project | License | Source | Use in Life Manager |
+| Project | License | Source | Use in Mr.bot |
 |---|---|---|---|
 | DeepAgentsJS | MIT | https://github.com/langchain-ai/deepagentsjs | Design reference for bounded specialists and durable agent state |
 | browser-use | MIT | https://github.com/browser-use/browser-use | Design reference for the model-owned browser tool loop |

@@ -38,8 +38,8 @@ from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATE_HOME = Path(os.environ.get(
-    "LIFE_MANAGER_STATE_HOME",
-    Path.home() / ".local/state/life-manager",
+    "MR_BOT_STATE_HOME",
+    Path.home() / ".local/state/mr-bot",
 )).expanduser()
 LEDGER = str(STATE_HOME / "state/capafy-earn-ledger.jsonl")
 CONFIG = os.environ.get(

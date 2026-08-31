@@ -1,9 +1,9 @@
 # BROWSER-AUTH-1 Design
 
 **Status:** approved by the user's “Yes, let’s do it one by one” after the ordered
-Life Manager browser roadmap was presented.
+Mr.bot browser roadmap was presented.
 
-**Goal:** Life Manager restores an authorized browser session in Railway-private
+**Goal:** Mr.bot restores an authorized browser session in Railway-private
 Steel after a `life-call` restart without mixing tenants or persisting raw
 passwords, and fails closed to an honest re-authentication handoff when that
 session is absent, corrupt, expired, or rejected by the provider.
@@ -20,7 +20,7 @@ The accepted credential contract is session-first:
 2. raw username/password/OTP values are never written to the repository, job,
    trace, receipt, or session table;
 3. Steel exports the resulting browser `sessionContext`;
-4. Life Manager encrypts that context under a Railway runtime key and binds it
+4. Mr.bot encrypts that context under a Railway runtime key and binds it
    to one `uid + origin + principal_kind`;
 5. a later cloud job decrypts and injects only the exact matching context into a
    fresh Steel session.
@@ -35,18 +35,18 @@ and never reads the auth-session table.
 
 Steel's current OSS `SessionService` resolves `persist: true` to one fixed
 `user-data-dir`. That is convenient for a single actor but is not a tenant
-boundary. Sharing it would allow cookies and local storage from one Life Manager
+boundary. Sharing it would allow cookies and local storage from one Mr.bot
 tenant to enter another tenant's browser.
 
 ### Selected: encrypted `sessionContext` round-trip
 
-Steel already exposes both halves needed by Life Manager:
+Steel already exposes both halves needed by Mr.bot:
 
 - `GET /v1/sessions/:sessionId/context` exports cookies, localStorage,
   sessionStorage, and IndexedDB;
 - `POST /v1/sessions` accepts the same `sessionContext` object.
 
-Life Manager therefore remains the tenant-aware owner of encrypted state while
+Mr.bot therefore remains the tenant-aware owner of encrypted state while
 Steel remains an ephemeral Chromium worker.
 
 ## Components

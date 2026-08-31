@@ -8,10 +8,10 @@ mutation and issue closure remain zero.**
 
 | file | role |
 |---|---|
-| `apps/life-manager/lib/dev-merge-guard.js` | the pipeline + every gate decision, deps-injected |
-| `apps/life-manager/scripts/dev-merge-guard.js` | CLI entry (`--pr`, `--review-cmd`, `--ledger`, `--dry-run`) |
-| `apps/life-manager/lib/dev-merge-guard.test.js` | 56 tests: gates, edge cases, rollback, ledger chain, lock, self-deny |
-| `apps/life-manager/lib/dev-merge-guard-runtime.test.js` | 5 tests: CLI wiring, no schedule enabled |
+| `apps/mr-bot/lib/dev-merge-guard.js` | the pipeline + every gate decision, deps-injected |
+| `apps/mr-bot/scripts/dev-merge-guard.js` | CLI entry (`--pr`, `--review-cmd`, `--ledger`, `--dry-run`) |
+| `apps/mr-bot/lib/dev-merge-guard.test.js` | 56 tests: gates, edge cases, rollback, ledger chain, lock, self-deny |
+| `apps/mr-bot/lib/dev-merge-guard-runtime.test.js` | 5 tests: CLI wiring, no schedule enabled |
 
 Stages run in order and the **first** failure is a hard stop with an honest verdict. **Review and
 the tripwire come before the test suite**, because the suite executes the PR's own code:
@@ -28,15 +28,15 @@ the tripwire come before the test suite**, because the suite executes the PR's o
 The whole run holds an O_EXCL lockfile next to the ledger (stale after 30 min); a second concurrent
 runner exits `locked` and writes no row.
 
-Path rules: allow `apps/life-manager/{lib,test,scripts}/**`; deny `.github/**`, any `migration(s)/`
+Path rules: allow `apps/mr-bot/{lib,test,scripts}/**`; deny `.github/**`, any `migration(s)/`
 segment, any `.env*`, `docs/superpowers/specs/**` (Dais-owned), `skills/**`, everything else.
-`apps/life-manager/package.json` is **conditional**, resolved by parsing the file at both refs:
+`apps/mr-bot/package.json` is **conditional**, resolved by parsing the file at both refs:
 `dependencies` must be byte-identical, `devDependencies` additive only, and only the
 `test`/`pretest` script lines may change. A runtime dep add, a dep version bump, a devDep removal
 or bump, a new `postinstall`, or any other manifest field change all refuse. A manifest that cannot
 be read at **either** ref refuses (`package_json:unreadable`) rather than comparing two empties.
 
-**The guard cannot be modified by what it guards.** `apps/life-manager/{lib,scripts}/dev-merge-guard*`
+**The guard cannot be modified by what it guards.** `apps/mr-bot/{lib,scripts}/dev-merge-guard*`
 and whatever file `--review-cmd` resolves to (by realpath, at runtime) are denied at eligibility,
 so the two-PR takeover — PR 1 weakens the gate, PR 2 walks through it — dies at stage one. Changes
 to the guard require a human-merged PR.
@@ -84,7 +84,7 @@ stderr is functionally `/dev/null`, and "a revert PR is waiting for a human" has
 
 ## Ledger
 
-Appended to `$LM_DEV_GUARD_LEDGER`, default `~/.life-manager/state/dev-guard-runs.jsonl`, mode 0600.
+Appended to `$LM_DEV_GUARD_LEDGER`, default `~/.mr-bot/state/dev-guard-runs.jsonl`, mode 0600.
 This file is 10f's Day-N evidence source. One row per run, `schema_version: 2`, 20 fields:
 `schema_version, run_id, pr, started_at, finished_at, duration_ms, verdict, stopped_at_stage,
 stop_reason, stages_passed, stages_failed, stages, merge_sha, deploy_id, health, rollback,

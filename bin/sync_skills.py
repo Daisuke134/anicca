@@ -5,9 +5,9 @@ repo's vendor destination, via `git archive` into a staging dir first (so a fail
 source path is absent at the pinned commit -- never leaves a partial vendor tree behind).
 
 Destination layout (a fixed, name-keyed lookup -- not a judgment call):
-  - The Life Manager skill directories (Phase A action skills plus the planning-only
+  - The Mr.bot skill directories (Phase A action skills plus the planning-only
     `dig` skill) land at
-    <VENDOR_ROOT>/skills/life-manager/vendor/<name>/ (directory copy).
+    <VENDOR_ROOT>/skills/mr-bot/vendor/<name>/ (directory copy).
   - Every other entry (single-file sources, e.g. ytdlp-parse-shared-lib, or a test fixture skill)
     lands at <VENDOR_ROOT>/lib/vendor/<name>/<basename(source_path)> (file copy).
 

@@ -6,7 +6,7 @@
 
 **Goal:** O1B-04で実証したDaisのLuma email-code認証復旧を再利用可能な正規componentにし、既存CloakBrowser daily-driver、Luma discovery、`outbound.event.apply`を一つのConnector events packとして接続する。
 
-**Architecture:** 第二browser、第二queue、第二schedulerを作らない。正本`life-manager`だけがpackを所有し、既存`:9222` shared contextを使う。各passは最初に認証状態をread-only確認し、login切れの場合だけ同じpageでemail codeを要求し、既存`gog` Gmail OAuthからrequest後の新着codeを取得して入力する。認証確認後だけ既存discover/inspect/applyへ戻る。code、cookie、mail本文、account tokenは保存・出力しない。
+**Architecture:** 第二browser、第二queue、第二schedulerを作らない。正本`mr-bot`だけがpackを所有し、既存`:9222` shared contextを使う。各passは最初に認証状態をread-only確認し、login切れの場合だけ同じpageでemail codeを要求し、既存`gog` Gmail OAuthからrequest後の新着codeを取得して入力する。認証確認後だけ既存discover/inspect/applyへ戻る。code、cookie、mail本文、account tokenは保存・出力しない。
 
 ## Constraints
 

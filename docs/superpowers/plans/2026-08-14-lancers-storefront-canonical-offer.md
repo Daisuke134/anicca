@@ -3,7 +3,7 @@
 ## Goal
 
 公式canonical listing `1338228`だけを、3.2/3.3の月次SNS content operations offerへ安全に揃え、同じ操作を
-Life Managerのcanonical Lancers skillから再実行・検証できる状態にする。売上は保存件数ではなく、公式
+Mr.botのcanonical Lancers skillから再実行・検証できる状態にする。売上は保存件数ではなく、公式
 `検索表示 → 閲覧 → 相談 → native monthly contract → PaymentReceipt`で判定する。
 
 ## Ponytail boundary

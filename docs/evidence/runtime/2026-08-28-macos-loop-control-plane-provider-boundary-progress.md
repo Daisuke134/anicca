@@ -1,7 +1,7 @@
 # macOS Loop Control Plane — TODO 7 provider boundary
 
 This slice removes the prohibited Codex subscription-account rotation and
-consolidates the active Gig, Job Search, Connector, Life Manager daily, and X
+consolidates the active Gig, Job Search, Connector, Mr.bot daily, and X
 callers on `runtime/agent-runner/agent_runner.py`.
 
 ## Closed in this slice
@@ -14,7 +14,7 @@ callers on `runtime/agent-runner/agent_runner.py`.
 - The duplicate `skills/earn/gig/agent-runner` is removed. Token-budget,
   bounded-history, and context-packet utilities needed for parity move to the
   canonical runtime boundary.
-- Gig launchd definitions, helper defaults, Job Search, Connector, Life Manager
+- Gig launchd definitions, helper defaults, Job Search, Connector, Mr.bot
   daily, X repost/tweeter/digest, and portable Lancers releases reference the
   canonical runner.
 - X model calls preserve their downstream deterministic JSON/effect gates and

@@ -34,9 +34,9 @@
 node --test \
   skills/connector/test/load-connector-env.test.js \
   skills/connector/test/native-entrypoint.test.js \
-  apps/life-manager/lib/connector-minimal-production.test.js \
-  apps/life-manager/lib/connector-minimal-runner.test.js \
-  apps/life-manager/lib/connector-minimal-evidence.test.js
+  apps/mr-bot/lib/connector-minimal-production.test.js \
+  apps/mr-bot/lib/connector-minimal-runner.test.js \
+  apps/mr-bot/lib/connector-minimal-evidence.test.js
 ```
 
 - [ ] Run `node --check`, `bash -n skills/connector/run.sh`, and `git diff --check`.

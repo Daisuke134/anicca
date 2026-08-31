@@ -20,7 +20,7 @@ Meetupより前のPeatixで実測した`peatix_kana_control_unavailable`三連�
 
 ## TDD slice
 
-Ownership: `apps/life-manager/lib/peatix-browser-provider.js`とmatching testの2 filesだけ。Production soft target 15–30 LOC、test 50–90 LOC。
+Ownership: `apps/mr-bot/lib/peatix-browser-provider.js`とmatching testの2 filesだけ。Production soft target 15–30 LOC、test 50–90 LOC。
 
 RED first:
 

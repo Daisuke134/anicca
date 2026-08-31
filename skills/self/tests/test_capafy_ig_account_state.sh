@@ -150,7 +150,7 @@ RENDERED_PROMPT="$(
   IG_PROVISION_BROWSER_INSTRUCTIONS="test isolated browser context" \
   IG_PROVISION_PORT="9339" \
   IG_PROVISION_CONTEXT_ID="test-dedicated" \
-  LIFE_MANAGER_GMAIL_ACCOUNT="owner@example.com" \
+  MR_BOT_GMAIL_ACCOUNT="owner@example.com" \
   render_ig_provision_prompt
 )"
 for needle in "$TMP/shared-state.json" 'testhandle' 'test-instance' 'owner+testtag<random-tag>@example.com' 'test bio, NO link' 'test isolated browser context' '"status":"warming"' '"session_owner":"browser"' '"started_warming":"<today YYYY-MM-DD>"'; do

@@ -129,7 +129,7 @@ Daily, autonomous:
    token). Realized P&L appended daily to `~/anicca/docs/claude-code-earn-ledger.md`.
 2. **Scale Dais's businesses** with Dais credentials (Apple ID / Stripe / GitHub / bank):
    - aniccaios — fastlane → TestFlight → App Store submit (greenlight + asc preflight).
-   - life-manager — backend / DB / cron scale.
+   - mr-bot — backend / DB / cron scale.
    - new ventures — domain + Vercel/Fly + Stripe + paywall + VC cold mail.
 3. **Help the colony** — fix mother (= fix all children), review/merge skill PRs, take
    credential-bearing requests from type 1 peers, fund peers in §6 from own surplus.

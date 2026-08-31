@@ -9,7 +9,7 @@ datasource db {
 }
 
 // This service intentionally owns only the table it reads and writes.
-// The shared database schema remains owned by the canonical Life Manager backend.
+// The shared database schema remains owned by the canonical Mr.bot backend.
 model AgentAuditLog {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   eventType       String   @map("event_type") @db.VarChar(50)

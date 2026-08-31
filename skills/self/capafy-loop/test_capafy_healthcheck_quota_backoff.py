@@ -60,7 +60,7 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
             launchctl.chmod(0o755)
 
             env = os.environ | {
-                "LIFE_MANAGER_STATE_HOME": str(state_home),
+                "MR_BOT_STATE_HOME": str(state_home),
                 "PATH": f"{fake_bin}:{os.environ['PATH']}",
                 "CAPAFY_TEST_CALLS": str(calls),
                 "CAPAFY_TEST_LM_LOOP_CALLS": str(lifecycle_calls),
@@ -112,7 +112,7 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
             launchctl.chmod(0o755)
 
             env = os.environ | {
-                "LIFE_MANAGER_STATE_HOME": str(state_home),
+                "MR_BOT_STATE_HOME": str(state_home),
                 "PATH": f"{fake_bin}:{os.environ['PATH']}",
                 "CAPAFY_TEST_CALLS": str(calls),
                 "CAPAFY_TEST_LM_LOOP_CALLS": str(lifecycle_calls),

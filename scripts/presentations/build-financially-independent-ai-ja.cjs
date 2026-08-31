@@ -40,7 +40,7 @@ const slides = [
         <div class="arrow"><p>→</p></div>
         <div class="flow-node amber"><p>余剰</p><span><p>human / child</p></span></div>
       </div>`,
-    notes: "今日は「人が操作しなくても動くAI」ではなく、「人が継続して料金を払わなくても生きられるAI」を扱います。AIも推論APIとcloud computerを使う限り、毎月の生活費があります。そこで、AI自身にwalletを与え、仕事を探し、外部から受け取った収益で自分の計算資源を払わせます。これをfinancially independent AIと呼びます。出典: life-manager Agent Economy SSOT §0.4。",
+    notes: "今日は「人が操作しなくても動くAI」ではなく、「人が継続して料金を払わなくても生きられるAI」を扱います。AIも推論APIとcloud computerを使う限り、毎月の生活費があります。そこで、AI自身にwalletを与え、仕事を探し、外部から受け取った収益で自分の計算資源を払わせます。これをfinancially independent AIと呼びます。出典: mr-bot Agent Economy SSOT §0.4。",
   },
   {
     kicker: "THE HIDDEN HUMAN / 02",
@@ -178,7 +178,7 @@ const slides = [
     notes: "Franklin 1ではMac側のmain loopを止め、Nosana上のPython survival runtimeへ移しました。6時間の生存証明に加え、後継jobを1件だけ作り、公開3 routeと署名heartbeatを検証してから旧jobを止める引っ越しもmainnetで実証しました。現在のserviceはHTTP 200です。ただし21600秒の自然triggerは未観測で、今回は同じproduction controllerを即時発火しました。原資もinternal bootstrapなので、外部収益による自給はまだです。",
   },
   {
-    kicker: "LIFE MANAGER / 09",
+    kicker: "MR.BOT / 09",
     title: "自分を養い、次に人を支える",
     footer: "Subscription bootstraps. External revenue sustains.",
     body: `
@@ -192,7 +192,7 @@ const slides = [
           <div class="lm-stage child"><p>GROWTH</p><h3>Child agent</h3></div>
         </div>
       </div>`,
-    notes: "Life Managerのsubscriptionは、agentを最初に起動する会社側の売上です。その後、tenantごとに独立walletを作り、agentがSELL、WORK、CAPITALを回します。まず自分のcomputeとcloudを払います。余剰ができたらユーザーへ送ります。さらに黒字recipeを別wallet、別key、別ledgerのchildへ渡します。最終形は、AIが自分だけでなく人間の生活も経済的に支えることです。",
+    notes: "Mr.botのsubscriptionは、agentを最初に起動する会社側の売上です。その後、tenantごとに独立walletを作り、agentがSELL、WORK、CAPITALを回します。まず自分のcomputeとcloudを払います。余剰ができたらユーザーへ送ります。さらに黒字recipeを別wallet、別key、別ledgerのchildへ渡します。最終形は、AIが自分だけでなく人間の生活も経済的に支えることです。",
   },
   {
     kicker: "THE DEFINITION / 10",

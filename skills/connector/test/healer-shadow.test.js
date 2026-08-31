@@ -55,7 +55,7 @@ test("Healer converts one privacy-safe incident into one isolated Terra Superpow
           return { status: 0, stdout: `${"b".repeat(40)}\trefs/heads/healer/connector-aaaaaaaaaaaa-r1\n` };
         }
         if (command === "git" && args.includes("status")) {
-          return { status: 0, stdout: "?? apps/life-manager/node_modules\n" };
+          return { status: 0, stdout: "?? apps/mr-bot/node_modules\n" };
         }
         return { status: 0, stdout: command === "codex" ? '{"type":"thread.started","thread_id":"thread-1"}\n' : "" };
       },
@@ -75,7 +75,7 @@ test("Healer converts one privacy-safe incident into one isolated Terra Superpow
     assert.equal("LM_CONNECTOR_TELEGRAM_TARGET" in codex.options.env, false);
     assert.equal("GOG_KEYRING_PASSWORD" in codex.options.env, false);
     assert.equal("GOOGLE_API_KEY_DIRECTIONS" in codex.options.env, false);
-    assert.equal(fs.lstatSync(path.join(result.worktree, "apps/life-manager/node_modules")).isSymbolicLink(), true);
+    assert.equal(fs.lstatSync(path.join(result.worktree, "apps/mr-bot/node_modules")).isSymbolicLink(), true);
     assert.equal(calls.some((call) => call.command === "git" && call.args.includes("status")), true);
     assert.equal(calls.some((call) => call.command === "git" && call.args.includes("ls-remote")), true);
     assert.equal(calls.some((call) => call.command === "gitleaks" && call.args.includes("--redact")), true);
@@ -185,8 +185,8 @@ test("Healer parent commits and pushes a Terra change while excluding only the d
         if (command === "git" && args.includes("status")) {
           statusCalls += 1;
           return { status: 0, stdout: statusCalls === 1
-            ? " M skills/connector/lib/healer-fixture.js\n?? apps/life-manager/node_modules\n"
-            : "?? apps/life-manager/node_modules\n" };
+            ? " M skills/connector/lib/healer-fixture.js\n?? apps/mr-bot/node_modules\n"
+            : "?? apps/mr-bot/node_modules\n" };
         }
         if (command === "git" && args.includes("rev-parse")) {
           return { status: 0, stdout: `${healedCommit}\n` };
@@ -200,7 +200,7 @@ test("Healer parent commits and pushes a Terra change while excluding only the d
 
     assert.equal(result.status, "revision_created");
     assert.equal(calls.some((call) => call.command === "git" && call.args.includes("add")
-      && call.args.includes(":(exclude)apps/life-manager/node_modules")), true);
+      && call.args.includes(":(exclude)apps/mr-bot/node_modules")), true);
     assert.equal(calls.some((call) => call.command === "git" && call.args.includes("commit")), true);
     assert.equal(calls.some((call) => call.command === "git" && call.args.includes("push")), true);
   } finally {

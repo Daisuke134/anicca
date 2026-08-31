@@ -63,10 +63,10 @@ No deletion — decay only affects retrieval priority.
 - Don't run destructive commands unless explicitly asked.
 - Never claim you lack access — try it first, report errors after.
 - On macOS, every `launchctl` mutation MUST go through `bin/launchctl-safe`; exit 75 means stop without changing plists, locks, jobs, or OS services and follow `docs/runbooks/launchd-control-plane-recovery.md`.
-- Before creating, changing, migrating, debugging, or retiring a Life Manager loop, MUST read and follow `skills/loop-development/SKILL.md`.
+- Before creating, changing, migrating, debugging, or retiring a Mr.bot loop, MUST read and follow `skills/loop-development/SKILL.md`.
 
-## Life Manager Cloud development
-- Use `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md` for product UX, `docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md` for current MUST/DO NOT, `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md` for the active checklist, and the matching `.superpowers/sdd/.../progress.md` for measured state.
+## Mr.bot Cloud development
+- Use `docs/superpowers/specs/2026-08-28-mr-bot-cloud-telegram-product-ux-design.md` for product UX, `docs/superpowers/specs/2026-08-26-mr-bot-cloud-on-time-core-design.md` for current MUST/DO NOT, `docs/superpowers/plans/2026-08-28-mr-bot-cloud-on-time-core-finish.md` for the active checklist, and the matching `.superpowers/sdd/.../progress.md` for measured state.
 - Work one active TODO at a time: Ponytail full → Superpowers spec/plan → TDD implementation → fresh read-only review → provider readback/replay-zero → primary updates progress.
 
 ## Access

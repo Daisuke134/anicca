@@ -17,13 +17,13 @@ from pathlib import Path
 
 CDP = str(Path(__file__).resolve().parents[3] / "browser/scripts/cdp.py")
 PY = "/opt/homebrew/bin/python3"
-IGLEDGER = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-ledger.jsonl")
-METRICS = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-ig-metrics.jsonl")
+IGLEDGER = os.path.expanduser("~/.local/state/mr-bot/state/capafy-marketing-ig-ledger.jsonl")
+METRICS = os.path.expanduser("~/.local/state/mr-bot/state/capafy-marketing-ig-metrics.jsonl")
 POSTER = Path(__file__).resolve().parents[2] / "marketing-engine/poster.py"
 ACCOUNTS = os.path.expanduser("~/.cloak/clip-accounts-capafy.json")
 REACH_MARKER = os.environ.get(
     "CAPAFY_IG_REACH_MARKER",
-    os.path.expanduser("~/.local/state/life-manager/state/.capafy-ig-reach-healthy"),
+    os.path.expanduser("~/.local/state/mr-bot/state/.capafy-ig-reach-healthy"),
 )
 CURRENT_HANDLE = os.environ.get("CAPAFY_IG_HANDLE", "")
 

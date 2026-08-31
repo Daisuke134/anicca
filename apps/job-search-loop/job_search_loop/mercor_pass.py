@@ -196,7 +196,7 @@ def main(argv: list[str] | None = None) -> int:
             run_id=args.run_id,
         )
     except PassAlreadyRunning:
-        print("LIFE_MANAGER_PROVIDER_LEASE_BUSY", file=sys.stderr)
+        print("MR_BOT_PROVIDER_LEASE_BUSY", file=sys.stderr)
         return 75
     try:
         validate_evidence_paths(result, args.evidence_dir.parent)

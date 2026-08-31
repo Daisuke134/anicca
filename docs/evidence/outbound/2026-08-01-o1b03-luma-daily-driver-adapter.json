@@ -7,7 +7,7 @@
   "branch": "main",
   "implementation_commit": "23f7cc5fe75f92a1d0dd397bf2769460877300da",
   "target": {
-    "worker_container": "life-manager-local-worker-1",
+    "worker_container": "mr-bot-local-worker-1",
     "health_url": "http://127.0.0.1:18790/health",
     "adapter_id": "outbound-luma-rsvp",
     "capability": "outbound.event.apply",
@@ -28,7 +28,7 @@
       "deploy/local/compose.yaml",
       "deploy/local/compose.connector.yaml"
     ],
-    "runtime_volume": "life-manager-local_runtime-data:/var/lib/life-manager",
+    "runtime_volume": "mr-bot-local_runtime-data:/var/lib/mr-bot",
     "deleted_volumes": false,
     "deleted_databases": false,
     "preserved_honne_shadow_capability": true

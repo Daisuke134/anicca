@@ -1,14 +1,14 @@
 # Local financial report job proof
 
 This evidence closes the bounded Task 5 implementation slice in
-`2026-07-29-openclaw-to-life-manager-portable-runtime.md`. It does not authorize
+`2026-07-29-openclaw-to-mr-bot-portable-runtime.md`. It does not authorize
 disabling the legacy launchd report. Scheduler cutover still requires the
 seven-expected-run gate.
 
 ## Proven path
 
 ```text
-Life Manager scheduler owner
+Mr.bot scheduler owner
   → PostgreSQL runtime job
   → report.financial.telegram worker
   → existing financial snapshot and renderer

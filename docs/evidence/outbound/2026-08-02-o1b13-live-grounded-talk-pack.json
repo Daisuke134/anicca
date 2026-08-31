@@ -21,16 +21,16 @@
     "evidence://connector/o1b12"
   ],
   "pack": {
-    "title": "Life Manager Connector: Codexで開発したイベント参加自動化フローの実践",
-    "abstract": "Life ManagerのConnectorは、イベント探索から参加登録、カレンダー連携、QRコード管理、Telegram通知までを一貫して自動化する機能です。本発表では、このConnectorがどのようにCodexを活用してテスト駆動開発され、実際のLumaイベントで参加登録、カレンダー照合、QR検証、Telegram報告を成功させたか、その実践と成果をデモを交えてご紹介します。",
-    "application_reason": "Codex Meetup Tokyo #2の参加者の皆様は、AIを活用した開発やCodexエコシステムに高い関心をお持ちと理解しております。Life ManagerのConnectorは、その開発過程でCodexを積極的に利用し、ジョブの定義、証拠検証、ブラウザ統合、エンティティ分離といった主要機能をテスト駆動で実装しました。本LTでは、Codexが実際のプロダクト開発においてどのように貢献したか、具体的な事例とデモを通じてご紹介することで、参加者の皆様に新たな知見やインスピレーションを提供できると確信しております。特に「作ったもの紹介タイム」の趣旨にも合致すると考えます。",
-    "product_demo_summary": "Life ManagerのConnectorは、Lumaイベントへの参加登録プロセスを自動化します。デモでは、実際のLumaイベントへの登録から、プロバイダーのスクリーンショット取得、Google Calendarへの自動登録と往復移動枠の照合、登録確認メールの照合、イベント公式QRコードの検証と保存、そしてイベント情報とQRコードのTelegramへの自動通知までの一連の流れを実演します。これにより、ユーザーがイベント参加で直面する煩雑なタスクをLife Managerがどのように効率化するかを示します。",
+    "title": "Mr.bot Connector: Codexで開発したイベント参加自動化フローの実践",
+    "abstract": "Mr.botのConnectorは、イベント探索から参加登録、カレンダー連携、QRコード管理、Telegram通知までを一貫して自動化する機能です。本発表では、このConnectorがどのようにCodexを活用してテスト駆動開発され、実際のLumaイベントで参加登録、カレンダー照合、QR検証、Telegram報告を成功させたか、その実践と成果をデモを交えてご紹介します。",
+    "application_reason": "Codex Meetup Tokyo #2の参加者の皆様は、AIを活用した開発やCodexエコシステムに高い関心をお持ちと理解しております。Mr.botのConnectorは、その開発過程でCodexを積極的に利用し、ジョブの定義、証拠検証、ブラウザ統合、エンティティ分離といった主要機能をテスト駆動で実装しました。本LTでは、Codexが実際のプロダクト開発においてどのように貢献したか、具体的な事例とデモを通じてご紹介することで、参加者の皆様に新たな知見やインスピレーションを提供できると確信しております。特に「作ったもの紹介タイム」の趣旨にも合致すると考えます。",
+    "product_demo_summary": "Mr.botのConnectorは、Lumaイベントへの参加登録プロセスを自動化します。デモでは、実際のLumaイベントへの登録から、プロバイダーのスクリーンショット取得、Google Calendarへの自動登録と往復移動枠の照合、登録確認メールの照合、イベント公式QRコードの検証と保存、そしてイベント情報とQRコードのTelegramへの自動通知までの一連の流れを実演します。これにより、ユーザーがイベント参加で直面する煩雑なタスクをMr.botがどのように効率化するかを示します。",
     "outline": [
       {
         "start_second": 0,
         "end_second": 45,
-        "heading": "Life Manager Connectorとは？",
-        "content": "イベント参加の煩雑さを解消するLife ManagerのConnector機能を紹介します。イベント探索から登録、確認、カレンダー、QR、Telegram報告までを一つの流れで処理する自動化のコンセプトを説明します。",
+        "heading": "Mr.bot Connectorとは？",
+        "content": "イベント参加の煩雑さを解消するMr.botのConnector機能を紹介します。イベント探索から登録、確認、カレンダー、QR、Telegram報告までを一つの流れで処理する自動化のコンセプトを説明します。",
         "evidence_refs": ["evidence://connector/product"]
       },
       {
@@ -58,7 +58,7 @@
         "start_second": 240,
         "end_second": 300,
         "heading": "高度なイベント管理とまとめ",
-        "content": "既存の認証済みCloakBrowserセッションを再利用し、Luma Tokyoのイベントインベントリを読み取った事例や、同じ実イベントの一般参加とLT応募を別エンティティとしてDBに保存した機能を紹介します。最後に、Life Manager Connectorが提供する価値と今後の展望をまとめます。",
+        "content": "既存の認証済みCloakBrowserセッションを再利用し、Luma Tokyoのイベントインベントリを読み取った事例や、同じ実イベントの一般参加とLT応募を別エンティティとしてDBに保存した機能を紹介します。最後に、Mr.bot Connectorが提供する価値と今後の展望をまとめます。",
         "evidence_refs": ["evidence://connector/o1b09", "evidence://connector/o1b12"]
       }
     ]

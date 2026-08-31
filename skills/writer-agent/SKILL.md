@@ -31,7 +31,7 @@ metadata:
 This is the one canonical Writer Agent pipeline. Subject is not restricted by
 an AI-entity allowlist or any other niche allowlist. A valid topic must instead
 name one concrete reader, reader job, useful outcome, and evidence plan. The
-Writer may cover software, business, products built by Life Manager, paid
+Writer may cover software, business, products built by Mr.bot, paid
 assignments for publishers or companies, and any other subject for which it can
 make verified claims and serve the reader better than an internal process diary.
 

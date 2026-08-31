@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Install the pinned optional Camofox fallback into the Life Manager cache.
+# Install the pinned optional Camofox fallback into the Mr.bot cache.
 set -euo pipefail
 
 COMMIT="8b5b0959adfadadae38ecce9d7eed706ab102bf1"
 ARCHIVE_SHA256="7cf8ad48696b676e066d85bf98895fea58d033daf6cfda2a3727b63464a08830"
 ARCHIVE_URL="https://codeload.github.com/jo-inc/camofox-browser/tar.gz/$COMMIT"
-CACHE_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/life-manager/camofox-browser"
+CACHE_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/mr-bot/camofox-browser"
 FINAL_ROOT="$CACHE_ROOT/$COMMIT"
 
 sha256_file() {

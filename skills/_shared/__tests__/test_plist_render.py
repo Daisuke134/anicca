@@ -47,8 +47,8 @@ class TestRenderPlist:
         out = render_plist(
             slot="gig",
             anicca_home=CANONICAL_ANICCA_HOME,
-            log_dir="/tmp/life-manager/logs",
-            plist_path="/home/life-manager/Library/LaunchAgents/ai.anicca.gig-proactive.plist",
+            log_dir="/tmp/mr-bot/logs",
+            plist_path="/home/mr-bot/Library/LaunchAgents/ai.anicca.gig-proactive.plist",
         )
         # REQ-A2a: Label, StartInterval, RunAtLoad
         assert "<string>ai.anicca.gig-proactive</string>" in out
@@ -59,16 +59,16 @@ class TestRenderPlist:
         assert f"<string>{CANONICAL_ANICCA_HOME}/skills/_shared/proactive-loop.sh</string>" in out
         assert "<string>gig</string>" in out
         # REQ-A3: literal absolute paths, NOT $HOME tokens
-        assert "<string>/tmp/life-manager/logs/gig-proactive.out</string>" in out
-        assert "<string>/tmp/life-manager/logs/gig-proactive.err</string>" in out
+        assert "<string>/tmp/mr-bot/logs/gig-proactive.out</string>" in out
+        assert "<string>/tmp/mr-bot/logs/gig-proactive.err</string>" in out
 
     def test_render_NEVER_emits_HOME_token(self):
         # PROP-A1: $HOME does not expand in launchd plists.
         out = render_plist(
             slot="gig",
             anicca_home=CANONICAL_ANICCA_HOME,
-            log_dir="/tmp/life-manager/logs",
-            plist_path="/home/life-manager/Library/LaunchAgents/ai.anicca.gig-proactive.plist",
+            log_dir="/tmp/mr-bot/logs",
+            plist_path="/home/mr-bot/Library/LaunchAgents/ai.anicca.gig-proactive.plist",
         )
         assert "$HOME" not in out
         assert "${HOME}" not in out
@@ -80,8 +80,8 @@ class TestRenderPlist:
             render_plist(
                 slot="gig; rm -rf /",
                 anicca_home=CANONICAL_ANICCA_HOME,
-                log_dir="/tmp/life-manager/logs",
-                plist_path="/home/life-manager/Library/LaunchAgents/x.plist",
+                log_dir="/tmp/mr-bot/logs",
+                plist_path="/home/mr-bot/Library/LaunchAgents/x.plist",
             )
 
     def test_render_is_deterministic_for_same_inputs(self):
@@ -89,15 +89,15 @@ class TestRenderPlist:
         kwargs = dict(
             slot="clip",
             anicca_home=CANONICAL_ANICCA_HOME,
-            log_dir="/tmp/life-manager/logs",
-            plist_path="/home/life-manager/Library/LaunchAgents/ai.anicca.clip-proactive.plist",
+            log_dir="/tmp/mr-bot/logs",
+            plist_path="/home/mr-bot/Library/LaunchAgents/ai.anicca.clip-proactive.plist",
         )
         assert render_plist(**kwargs) == render_plist(**kwargs)
 
     def test_render_differs_when_slot_differs(self):
         kwargs = dict(
             anicca_home=CANONICAL_ANICCA_HOME,
-            log_dir="/tmp/life-manager/logs",
+            log_dir="/tmp/mr-bot/logs",
         )
         a = render_plist(slot="gig", plist_path="/x/a.plist", **kwargs)
         b = render_plist(slot="clip", plist_path="/x/b.plist", **kwargs)
@@ -128,25 +128,25 @@ class TestParseLoadedPlistPath:
         sample = """
 ai.anicca.gig-proactive = {
 	active count = 0
-	path = /home/life-manager/Library/LaunchAgents/ai.anicca.gig-proactive.plist
+	path = /home/mr-bot/Library/LaunchAgents/ai.anicca.gig-proactive.plist
 	state = waiting
 }
 """.strip()
         assert parse_loaded_plist_path(sample) == \
-            "/home/life-manager/Library/LaunchAgents/ai.anicca.gig-proactive.plist"
+            "/home/mr-bot/Library/LaunchAgents/ai.anicca.gig-proactive.plist"
 
     def test_returns_none_when_no_path_line(self):
         sample = "ai.anicca.x = { active count = 0 }"
         assert parse_loaded_plist_path(sample) is None
 
     def test_handles_path_with_spaces(self):
-        sample = "\tpath = /home/life-manager/My Folder/ai.anicca.gig-proactive.plist"
+        sample = "\tpath = /home/mr-bot/My Folder/ai.anicca.gig-proactive.plist"
         assert parse_loaded_plist_path(sample) == \
-            "/home/life-manager/My Folder/ai.anicca.gig-proactive.plist"
+            "/home/mr-bot/My Folder/ai.anicca.gig-proactive.plist"
 
     def test_trims_trailing_whitespace(self):
-        sample = "\tpath = /home/life-manager/x.plist   \n"
-        assert parse_loaded_plist_path(sample) == "/home/life-manager/x.plist"
+        sample = "\tpath = /home/mr-bot/x.plist   \n"
+        assert parse_loaded_plist_path(sample) == "/home/mr-bot/x.plist"
 
 
 # ─── REQ-A2 pin: canonical anicca home constant ────────────────────

@@ -1,6 +1,6 @@
 # Third-party source: x402-rs
 
-Life Manager does not vendor or submodule the x402-rs source tree. The
+Mr.bot does not vendor or submodule the x402-rs source tree. The
 facilitator fetcher uses exactly this public source:
 
 | Field | Pinned value |
@@ -16,7 +16,7 @@ archive members, retains upstream `LICENSE`, records a deterministic source
 tree digest, and builds with Cargo's locked dependency graph. Its cache is:
 
 ```text
-${XDG_CACHE_HOME:-$HOME/.cache}/life-manager/x402-rs/<commit>/
+${XDG_CACHE_HOME:-$HOME/.cache}/mr-bot/x402-rs/<commit>/
 ├── source.tar.gz
 ├── archive.sha256
 ├── commit

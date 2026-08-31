@@ -40,8 +40,8 @@ def run_bridge(tmp_path: Path, **kwargs) -> tuple[subprocess.CompletedProcess, P
         lock.mkdir(parents=True)
         (lock / "owner.pid").write_text("999999", encoding="utf-8")
     env = os.environ | {
-        "LIFE_MANAGER_REPO": str(repo),
-        "LIFE_MANAGER_STATE_HOME": str(state_home),
+        "MR_BOT_REPO": str(repo),
+        "MR_BOT_STATE_HOME": str(state_home),
         "CAPAFY_HEADLESS_ONCE": "1",
         "CAPAFY_HEADLESS_NOW": "1000",
         "CAPAFY_HEADLESS_AQUA_PROBE": kwargs.pop("probe", "false"),
@@ -56,8 +56,8 @@ def test_due_and_nondue_jobs_use_durable_timestamps(tmp_path: Path) -> None:
     second = subprocess.run(
         ["bash", str(BRIDGE), "run"],
         env=os.environ | {
-            "LIFE_MANAGER_REPO": str(tmp_path / "repo"),
-            "LIFE_MANAGER_STATE_HOME": str(tmp_path / "state-home"),
+            "MR_BOT_REPO": str(tmp_path / "repo"),
+            "MR_BOT_STATE_HOME": str(tmp_path / "state-home"),
             "CAPAFY_HEADLESS_ONCE": "1", "CAPAFY_HEADLESS_NOW": "1000",
             "CAPAFY_HEADLESS_AQUA_PROBE": "false", "CAPAFY_HEADLESS_HOST_AQUA_PROBE": "false", "CAPAFY_TEST_CALLS": str(calls),
         }, text=True, capture_output=True, check=False,
@@ -72,7 +72,7 @@ def test_two_ticks_release_job_locks_and_keep_hourly_jobs_nondue(tmp_path: Path)
     result = subprocess.run(
         ["bash", str(BRIDGE), "run"],
         env=os.environ | {
-            "LIFE_MANAGER_REPO": str(repo), "LIFE_MANAGER_STATE_HOME": str(state_home),
+            "MR_BOT_REPO": str(repo), "MR_BOT_STATE_HOME": str(state_home),
             "CAPAFY_HEADLESS_MAX_TICKS": "2", "CAPAFY_HEADLESS_NOW": "1000",
             "CAPAFY_HEADLESS_AQUA_PROBE": "false", "CAPAFY_HEADLESS_HOST_AQUA_PROBE": "false",
             "CAPAFY_HEADLESS_INTERVAL": "1", "CAPAFY_TEST_CALLS": str(calls),
@@ -132,7 +132,7 @@ def test_single_instance_lock_and_no_capacity_gate_text(tmp_path: Path) -> None:
     repo, calls = setup_repo(tmp_path, sleep_outcome=True)
     state_home = tmp_path / "state-home"
     env = os.environ | {
-        "LIFE_MANAGER_REPO": str(repo), "LIFE_MANAGER_STATE_HOME": str(state_home),
+        "MR_BOT_REPO": str(repo), "MR_BOT_STATE_HOME": str(state_home),
         "CAPAFY_HEADLESS_ONCE": "1", "CAPAFY_HEADLESS_AQUA_PROBE": "false",
         "CAPAFY_HEADLESS_HOST_AQUA_PROBE": "false",
         "CAPAFY_TEST_CALLS": str(calls),
@@ -159,7 +159,7 @@ def test_recent_ownerless_lock_is_busy_but_aged_ownerless_is_reclaimed(tmp_path:
     lock = state_home / "state/capafy-headless-bridge/lock"
     lock.mkdir(parents=True)
     env = os.environ | {
-        "LIFE_MANAGER_REPO": str(repo), "LIFE_MANAGER_STATE_HOME": str(state_home),
+        "MR_BOT_REPO": str(repo), "MR_BOT_STATE_HOME": str(state_home),
         "CAPAFY_HEADLESS_ONCE": "1", "CAPAFY_HEADLESS_NOW": "1000",
         "CAPAFY_HEADLESS_AQUA_PROBE": "false", "CAPAFY_HEADLESS_HOST_AQUA_PROBE": "false",
         "CAPAFY_TEST_CALLS": str(calls),

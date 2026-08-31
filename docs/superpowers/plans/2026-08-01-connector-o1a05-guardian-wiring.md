@@ -4,7 +4,7 @@
 
 ## 目的
 
-既存Life Manager runtime worker上の`outbound.event.apply`を、既存Guardianと`self-fix.sh`へ接続する。
+既存Mr.bot runtime worker上の`outbound.event.apply`を、既存Guardianと`self-fix.sh`へ接続する。
 新しいqueue、worker、tmux loop、独自heartbeatは作らない。
 
 ## 実装契約
@@ -18,14 +18,14 @@
 
 ## 変更対象
 
-- Create: `apps/life-manager/lib/outbound-guardian.js`
-- Create: `apps/life-manager/lib/outbound-guardian.test.js`
+- Create: `apps/mr-bot/lib/outbound-guardian.js`
+- Create: `apps/mr-bot/lib/outbound-guardian.test.js`
 - Create: `skills/self/outbound-runtime-healthcheck.sh`
 - Create: `skills/self/launchd/ai.anicca.outbound-runtime-healthcheck.plist`
 - Create: `skills/self/install-outbound-runtime-healthcheck-launchd.sh`
 - Modify: `deploy/local/compose.yaml`
-- Modify: `apps/life-manager/package.json`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Modify: `apps/mr-bot/package.json`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 ## 検証
 

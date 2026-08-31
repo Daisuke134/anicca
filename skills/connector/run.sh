@@ -6,17 +6,17 @@ umask 077
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd -P)"
-[ -f "$REPO_ROOT/apps/life-manager/lib/connector-minimal-production.js" ] || {
+[ -f "$REPO_ROOT/apps/mr-bot/lib/connector-minimal-production.js" ] || {
   printf 'Connector native repository unavailable\n' >&2
   exit 2
 }
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:${PATH:-}"
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/life-manager}"
-LM_CONNECTOR_SHARED_ENV_FILE="${LM_CONNECTOR_SHARED_ENV_FILE:-$LIFE_MANAGER_STATE_HOME/.env}"
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/mr-bot}"
+LM_CONNECTOR_SHARED_ENV_FILE="${LM_CONNECTOR_SHARED_ENV_FILE:-$MR_BOT_STATE_HOME/.env}"
 export LM_CONNECTOR_SHARED_ENV_FILE
 
-STATE_DIR="${LM_CONNECTOR_STATE_DIR:-$LIFE_MANAGER_STATE_HOME/connector-native}"
+STATE_DIR="${LM_CONNECTOR_STATE_DIR:-$MR_BOT_STATE_HOME/connector-native}"
 case "$STATE_DIR" in
   /*) ;;
   *) printf 'Connector native state directory unavailable\n' >&2; exit 2 ;;

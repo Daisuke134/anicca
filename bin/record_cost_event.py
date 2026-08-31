@@ -12,7 +12,7 @@ import time
 # REQ-CEO-001's 9 canonical loop keys -- used ONLY as a bootstrap fallback when
 # config/loop-registry.json itself is absent/unreadable (a fixed spec constant, not a judgment).
 CANONICAL_LOOPS = {
-    "bounty", "affiliate", "gig", "life-manager", "explorer",
+    "bounty", "affiliate", "gig", "mr-bot", "explorer",
     "capafy", "article", "pm", "hl",
 }
 

@@ -29,7 +29,7 @@ Eventbriteの実attendee formで要求されたgiven name / family nameを、既
 1. RED: valid two-token identityからgiven/familyが生成されるtest、legal-name mismatchとambiguous/nonmatching preferredがfail closedになる最小regressionを追加して旧実装のfailを確認する。
 2. GREEN: 同じprivate profile読取を拡張し、契約を満たす最小実装だけを書く。
 3. `node --test skills/connector/test/native-entrypoint.test.js`。
-4. `node --test apps/life-manager/lib/connector-production-browser-harness.test.js apps/life-manager/lib/connector-minimal-production.test.js`で隣接回帰。
+4. `node --test apps/mr-bot/lib/connector-production-browser-harness.test.js apps/mr-bot/lib/connector-minimal-production.test.js`で隣接回帰。
 5. syntax、`git diff --check`、exact 2-file scope、secret pattern absence、worktree cleanを確認する。
 
 ## Deferred

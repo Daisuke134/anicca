@@ -14,8 +14,8 @@
 	<key>RunAtLoad</key>
 	<true/>
 	<key>StandardOutPath</key>
-	<string>__LIFE_MANAGER_HOME__/logs/founder-loop-cadence.out.log</string>
+	<string>__MR_BOT_HOME__/logs/founder-loop-cadence.out.log</string>
 	<key>StandardErrorPath</key>
-	<string>__LIFE_MANAGER_HOME__/logs/founder-loop-cadence.err.log</string>
+	<string>__MR_BOT_HOME__/logs/founder-loop-cadence.err.log</string>
 </dict>
 </plist>

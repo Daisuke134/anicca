@@ -7,7 +7,7 @@ frozen by 11b remains `otakibashi-sora`; no fallback provider is tried.
 
 The public DigiKar flow reaches a real selectable initial-visit slot. Selecting one opens the
 patient verification page, which requires the patient's mobile number, acceptance of the
-provider terms, and an SMS verification code before the reservation can continue. Life Manager
+provider terms, and an SMS verification code before the reservation can continue. Mr.bot
 does not have the patient's SMS receive channel, so it does not submit a phone number, invent a
 code, bypass verification, or claim a booking.
 

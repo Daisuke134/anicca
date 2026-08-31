@@ -30,7 +30,7 @@ cat >"$TMP_PLIST" <<PLIST
   <key>ProgramArguments</key><array><string>/bin/bash</string><string>$WORKER</string></array>
   <key>EnvironmentVariables</key><dict>
     <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
-    <key>ARTICLE_STATE_DIR</key><string>$HOME/.local/state/life-manager/writer</string>
+    <key>ARTICLE_STATE_DIR</key><string>$HOME/.local/state/mr-bot/writer</string>
   </dict>
   <key>StartInterval</key><integer>3600</integer>
   <key>RunAtLoad</key><true/>

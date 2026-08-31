@@ -1,4 +1,4 @@
-# Life Manager: Dais テナントのクラウド移行（ローカル colima worker 撤去）
+# Mr.bot: Dais テナントのクラウド移行（ローカル colima worker 撤去）
 
 日付: 2026-08-08
 状態: DESIGN
@@ -7,18 +7,18 @@
 
 ## 1. 問題（実測済みの現状）
 
-Dais 個人の Life Manager テナントだけが、この Mac mini 上のローカル Docker
+Dais 個人の Mr.bot テナントだけが、この Mac mini 上のローカル Docker
 （colima VM 6.2G）で動いている。他ユーザーは Railway のクラウドで動く。
 
 実測した構成（2026-08-08）:
 
 | 要素 | 実測値 |
 |---|---|
-| コンテナ | `life-manager-local-worker-1` / `life-manager-local-api-1`（image: `life-manager-local-runtime:dev`、Up 5 days、healthy） |
+| コンテナ | `mr-bot-local-worker-1` / `mr-bot-local-api-1`（image: `mr-bot-local-runtime:dev`、Up 5 days、healthy） |
 | worker の役割 | `node scripts/runtime-up.js internal-worker`。env に `LM_TELEGRAM_BOT_TOKEN` / `LM_INSTAGRAM_*` / `LM_TIKTOK_*` / `LM_POSTIZ_API_KEY` / `SUPABASE_URL` / `LM_RUNTIME_TENANT_ID` |
 | 蘇生装置 | `ai.anicca.colima-autostart.plist`（launchd、RunAtLoad + 300s、`~/scripts/colima-autostart.sh` が `colima start`）+ コンテナ側 `restart=unless-stopped` |
 | 監視 | `ai.anicca.outbound-runtime-healthcheck.plist`（2分ごと、`http://127.0.0.1:18790/health`、実体は `outbound-guardian.js`） |
-| 起動元 compose | `~/anicca-project/.worktrees/openclaw-life-manager-daily-task6b-20260729/deploy/local` — **既に削除済み**。コンテナは image の慣性だけで生きているゾンビ構成（rebuild 定義がディスク上に無い） |
+| 起動元 compose | `~/anicca-project/.worktrees/openclaw-mr-bot-daily-task6b-20260729/deploy/local` — **既に削除済み**。コンテナは image の慣性だけで生きているゾンビ構成（rebuild 定義がディスク上に無い） |
 
 ### 何が悪いか
 
@@ -65,7 +65,7 @@ Mac mini: LM 実行体なし（colima 削除・plist 削除）
 **鉄則: クラウドで動いた証拠を見てから、ローカルを止める。逆順は禁止。**
 
 #### Phase 0 — 保全と調査（読み取りのみ + 保険）
-1. `docker save life-manager-local-runtime:dev -o /Users/operator/lm-runtime-image-backup.tar` — rebuild 不能なので撤去前の唯一の復元手段を確保する（Phase 3 完了 + 30 日後に削除してよい）。
+1. `docker save mr-bot-local-runtime:dev -o /Users/operator/lm-runtime-image-backup.tar` — rebuild 不能なので撤去前の唯一の復元手段を確保する（Phase 3 完了 + 30 日後に削除してよい）。
 2. worker / api コンテナの env を **file 直結**で退避（stdout に通さない。secrets を含む）。
 3. Railway 既存プロジェクトのサービス構成・env・デプロイ方法を確認。
 4. Supabase 側の Dais テナント（`LM_RUNTIME_TENANT_ID`）設定を確認。
@@ -77,7 +77,7 @@ Mac mini: LM 実行体なし（colima 削除・plist 削除）
 4. 完了条件: health endpoint が 200 を返す（Telegram 以外の機能で疎通確認）。
 
 #### Phase 2 — 切替 + E2E
-1. 1手順で: cloud worker に `LM_TELEGRAM_BOT_TOKEN` を設定して再起動 → 直後に `docker stop life-manager-local-worker-1 life-manager-local-api-1`。
+1. 1手順で: cloud worker に `LM_TELEGRAM_BOT_TOKEN` を設定して再起動 → 直後に `docker stop mr-bot-local-worker-1 mr-bot-local-api-1`。
    - 根拠: Telegram bot token は 1 トークンにつき消費者 1 つ（getUpdates/webhook の排他）。並走させると取り合いで両方壊れる。
 2. E2E 検証（全部 PASS するまで Phase 3 に進まない）:
    - Telegram: 実メッセージ送信 → LM からの応答受信を実観測

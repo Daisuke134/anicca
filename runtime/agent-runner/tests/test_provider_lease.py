@@ -124,7 +124,7 @@ class ProviderLeaseTest(unittest.TestCase):
             **os.environ,
             "AGENT_RUNNER_CONFIG": str(config),
             "ANICCA_USAGE_LEDGER": str(self.root / "usage.jsonl"),
-            "LIFE_MANAGER_PROVIDER_LEASE_PATH": str(lock_path),
+            "MR_BOT_PROVIDER_LEASE_PATH": str(lock_path),
         }
         result = subprocess.run([
             sys.executable, str(RUNNER), "--task-class", "tool-agent",
@@ -133,7 +133,7 @@ class ProviderLeaseTest(unittest.TestCase):
             "--loop", "job-search", "--workdir", str(self.root),
         ], env=env, capture_output=True, text=True)
         self.assertEqual(result.returncode, 75, result.stderr)
-        self.assertEqual(result.stderr, "LIFE_MANAGER_PROVIDER_LEASE_BUSY\n")
+        self.assertEqual(result.stderr, "MR_BOT_PROVIDER_LEASE_BUSY\n")
         self.assertFalse(marker.exists(), "contended lease launched a provider")
 
 

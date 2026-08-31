@@ -3476,7 +3476,7 @@ def _invoke_isolated_planner_once(
         "--schema", str(schema),
         "--evidence-dir", str(planner_evidence),
         "--task-label", "gig-B2-planner",
-        "--loop", os.environ.get("LIFE_MANAGER_LOOP_ID", "hf-gig-apply-direct"),
+        "--loop", os.environ.get("MR_BOT_LOOP_ID", "hf-gig-apply-direct"),
         "--workdir", str(workdir),
         "--timeout-seconds", str(timeout_seconds),
         # This one call decides whether to apply and writes the proposal the client reads, so it

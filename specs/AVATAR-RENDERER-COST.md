@@ -154,7 +154,7 @@ blockers = {
 
 ElevenLabs も代替経路として記録されているが、`_alt_path` に「**HeyGen Premium Credits Pack がないと `audio_asset_id` 経路が使えない**」と注記されている。
 
-**投稿 loop も既に3本ある。ただし実質動いていない**（`life-manager-anicca-obou-instagram` と `-main-tiktok` は `runs = 0`、`-en-slideshow-tiktok` は `runs = 1` の exit=1 でログすら無い）。作り直すのではなく、動かない原因を特定するのが先。
+**投稿 loop も既に3本ある。ただし実質動いていない**（`mr-bot-anicca-obou-instagram` と `-main-tiktok` は `runs = 0`、`-en-slideshow-tiktok` は `runs = 1` の exit=1 でログすら無い）。作り直すのではなく、動かない原因を特定するのが先。
 
 ## 4. 判断に必要でまだ持っていない情報
 

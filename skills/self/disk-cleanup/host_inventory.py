@@ -1,4 +1,4 @@
-"""Bounded, read-only host inventory for the Life Manager disk governor."""
+"""Bounded, read-only host inventory for the Mr.bot disk governor."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 
-SCHEMA_VERSION = "life-manager-host-inventory-v1"
+SCHEMA_VERSION = "mr-bot-host-inventory-v1"
 # Full census is hourly and runs behind the governor's outer 120-second bound.
 # A 3-second probe systematically missed otherwise bounded repository roots
 # (measured 5–9s on the Mac mini), leaving their size unattributed. Ten seconds
@@ -29,13 +29,13 @@ MAX_CHILDREN_PER_ROOT = 512
 ROOT_FAMILIES = (
     ("user-home", "{home}"),
     ("repository-worktree", "{home}/Projects"),
-    ("repository-worktree", "{home}/Projects/life-manager-main"),
+    ("repository-worktree", "{home}/Projects/mr-bot-main"),
     ("repository-worktree", "{home}/anicca-project"),
     ("repository-worktree", "{home}/anicca"),
     ("repository-worktree", "{home}/anicca-docs-tools"),
     ("repository-worktree", "{home}/anicca-portfolio-self-improve"),
     ("repository-worktree", "{home}/anicca-rtdash"),
-    ("repository-worktree", "{home}/life-manager-repo-v0-retire"),
+    ("repository-worktree", "{home}/mr-bot-repo-v0-retire"),
     ("repository-worktree", "{home}/.codex-worktrees"),
     ("gig-deliverable", "{home}/gig"),
     ("agent-runtime", "{home}/.openclaw"),

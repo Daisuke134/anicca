@@ -12,7 +12,7 @@
   ],
   "target": {
     "launchd_label": "ai.anicca.outbound-runtime-healthcheck",
-    "worker_container": "life-manager-local-worker-1",
+    "worker_container": "mr-bot-local-worker-1",
     "health_url": "http://127.0.0.1:18790/health",
     "required_capability": "outbound.event.apply"
   },

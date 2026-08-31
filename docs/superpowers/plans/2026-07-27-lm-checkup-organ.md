@@ -13,8 +13,8 @@
 ### Task 1: Long-period history contract
 
 **Files:**
-- Modify: `apps/life-manager/lib/events-history.test.js`
-- Modify: `apps/life-manager/lib/events.js`
+- Modify: `apps/mr-bot/lib/events-history.test.js`
+- Modify: `apps/mr-bot/lib/events.js`
 
 1. Write a failing test that default history spans at least 10 years.
 2. Write a failing test that the complete-read cap is 10,000 events.
@@ -25,9 +25,9 @@
 ### Task 2: Checkup classification
 
 **Files:**
-- Modify: `apps/life-manager/lib/care-daily-runtime.test.js`
-- Modify: `apps/life-manager/lib/care-classification-real-history.test.js`
-- Modify: `apps/life-manager/lib/care-daily-runtime.js`
+- Modify: `apps/mr-bot/lib/care-daily-runtime.test.js`
+- Modify: `apps/mr-bot/lib/care-classification-real-history.test.js`
+- Modify: `apps/mr-bot/lib/care-daily-runtime.js`
 
 1. Write failing tests for gastric, colorectal, and brain titles.
 2. Pin specificity: `胃内視鏡 クリニック` must be gastric only; `大腸内視鏡 クリニック` colorectal only.
@@ -39,10 +39,10 @@
 ### Task 3: Candidate search and aftercare vocabulary
 
 **Files:**
-- Modify: `apps/life-manager/lib/care-candidate-search.test.js`
-- Modify: `apps/life-manager/lib/care-candidate-search.js`
-- Modify: `apps/life-manager/lib/care-aftercare.test.js`
-- Modify: `apps/life-manager/lib/i18n.js`
+- Modify: `apps/mr-bot/lib/care-candidate-search.test.js`
+- Modify: `apps/mr-bot/lib/care-candidate-search.js`
+- Modify: `apps/mr-bot/lib/care-aftercare.test.js`
+- Modify: `apps/mr-bot/lib/i18n.js`
 
 1. Write failing table-driven tests proving each category uses only its bound query.
 2. Write failing report tests proving each new care type has a human Japanese label.
@@ -53,8 +53,8 @@
 ### Task 4: Detector and integration evidence
 
 **Files:**
-- Modify: `apps/life-manager/eval/phy-cases.jsonl`
-- Modify: `apps/life-manager/lib/care-daily-runtime.test.js`
+- Modify: `apps/mr-bot/eval/phy-cases.jsonl`
+- Modify: `apps/mr-bot/lib/care-daily-runtime.test.js`
 
 1. Add deterministic eval cases for a stable annual gastric cadence and stable biennial colorectal cadence.
 2. Add no-history / one-visit brain-dock cases that remain silent.

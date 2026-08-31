@@ -404,7 +404,7 @@ def build_x_tts_api(state):
 def main():
     parser = argparse.ArgumentParser(prog="affiliate content")
     parser.add_argument("command", choices=("build", "build-agents", "build-tts-api", "build-foundation", "build-x", "build-x-agents", "build-x-tts-api", "policy", "policy-agents", "policy-tts-api"))
-    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/mr-bot/affiliate"))
     parser.add_argument("--private-markdown", type=Path, default=Path("~/.config/anicca/affiliate-credentials.md"))
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]

@@ -154,7 +154,7 @@ class DailyLmVideoTest(unittest.TestCase):
             )
             rendered = output.read_text(encoding="utf-8")
             self.assertIn("Noto Sans CJK JP", rendered)
-            dockerfile = (HERE.parents[2] / "apps/life-manager/Dockerfile.runtime").read_text(
+            dockerfile = (HERE.parents[2] / "apps/mr-bot/Dockerfile.runtime").read_text(
                 encoding="utf-8",
             )
             self.assertIn("fontconfig", dockerfile)

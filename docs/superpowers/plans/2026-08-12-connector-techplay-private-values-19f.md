@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Luna owns exactly `apps/life-manager/lib/connector-production-browser-harness.js` and matching test. Other files are out of scope.
+- Luna owns exactly `apps/mr-bot/lib/connector-production-browser-harness.js` and matching test. Other files are out of scope.
 - Production target about 25–45 LOC; test target about 70–110 LOC.
 - Strict TDD; all existing providers and resolver behavior remain unchanged.
 - TECH PLAY resolution accepts only incomplete required, non-submittable controls whose token matches the shipped `techplay_answer_*` grammar.
@@ -25,8 +25,8 @@
 ### Task 1: Add exact TECH PLAY parent-only values
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 - [x] Add RED tests for all four scalar mappings, two exact radio choices, wrong/cross question, malformed controls, DOB and clock boundaries, private-reader nonaccess on rejection, and no private output in inspection/runner paths.
 - [x] Implement the minimum provider-specific resolver before the generic provider-neutral branch.

@@ -33,7 +33,7 @@
   "durable_receipt": {
     "kind": "confirmation_mail",
     "external_receipt_ref": "gmail-message://dais-local/263a9f924804d2d62855ec9f5a2a3a261eb94cce60bcc28e9b54769e4a65bef0",
-    "stored_in_runtime_volume": "life-manager-local_runtime-data",
+    "stored_in_runtime_volume": "mr-bot-local_runtime-data",
     "read_back": true,
     "cross_tenant_read_rejected": true,
     "immutable": true

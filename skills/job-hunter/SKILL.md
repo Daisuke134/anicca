@@ -1,7 +1,7 @@
 ---
 name: job-hunter
 description: >-
-  End-to-end Life Manager Job Hunter loop with a resume-first onboarding contract.
+  End-to-end Mr.bot Job Hunter loop with a resume-first onboarding contract.
   Use when a user supplies a finalized resume, career facts, job preferences, a job
   description, or asks to automate job hunting. It builds private candidate context,
   discovers and judges jobs, applies through the resident loop, and follows Gmail,
@@ -15,7 +15,7 @@ metadata:
 
 # Job Hunter
 
-Job Hunter is the resume and application intelligence layer for Life Manager. It
+Job Hunter is the resume and application intelligence layer for Mr.bot. It
 starts with a short human onboarding pass, turns the candidate's documents and
 answers into a private evidence ledger, and then lets the resident loop operate on
 approved material without asking the same questions again.
@@ -25,7 +25,7 @@ ATS/PDF verification, approval state, and natural-language progress reports. The
 versioned `apps/job-search-loop/` owns browser and application side effects. Do not
 create a second executor in this skill.
 
-## Life Manager CLI and loop ownership
+## Mr.bot CLI and loop ownership
 
 `skills/job-hunter/job-hunter-cli.sh` is the user-facing dispatcher and
 `loops/job-hunter/registry.yaml` plus `loops/job-hunter/loop.toml` are the scheduler

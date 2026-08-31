@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish one exact Life Manager creative contract through Postiz."""
+"""Publish one exact Mr.bot creative contract through Postiz."""
 
 from __future__ import annotations
 
@@ -100,9 +100,9 @@ def render_caption(bank: Path, creative_id: str, output: Path) -> Path:
         f"{fields[0]}\n\n"
         f"{fields[1]}\n\n"
         f"{fields[2]}\n\n"
-        "Life Manager が、予定に合わせて先回りします。\n"
-        "aniccaai.com/life-manager\n\n"
-        "#LifeManager #AIAssistant #CalendarAutomation\n"
+        "Mr.bot が、予定に合わせて先回りします。\n"
+        "aniccaai.com/mr-bot\n\n"
+        "#MrBot #AIAssistant #CalendarAutomation\n"
     )
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -165,7 +165,7 @@ def _approved(path: Path, creative_id: str, video_hash: str, caption_hash: str) 
 
     Two shapes exist. A per-video receipt names one creative AND the digests of the exact video and
     caption that were shown for approval, so re-cutting the video or rewriting the caption silently
-    invalidates it. A standing receipt (`scope: "standing"`) or the Life Manager approval object
+    invalidates it. A standing receipt (`scope: "standing"`) or the Mr.bot approval object
     (`approval_mode: "standing_policy_no_additional_gate"`) records the 2026-07-26 Dais ruling that
     removed the preview gate: the daily pipeline's own renders are authorised from then on without a
     per-video receipt. Anything unreadable, unparseable or unmatched is not an approval.
@@ -499,16 +499,16 @@ def distribute(config: DistributionConfig) -> dict:
 
 def _lm_video_state_root() -> Path:
     """Portable lm-video state root: LM_DATA_DIR when set (absolute only,
-    mirroring resolveDataRoot in apps/life-manager/lib/runtime-paths.js and
+    mirroring resolveDataRoot in apps/mr-bot/lib/runtime-paths.js and
     default_video_root in skills/video/daily-lm-video/generate.py), else
-    <home>/.local/state/life-manager."""
+    <home>/.local/state/mr-bot."""
     override = os.environ.get("LM_DATA_DIR", "").strip()
     if override:
         if not Path(override).is_absolute():
             raise SystemExit("LM_DATA_DIR must be an absolute path")
         data_root = Path(override)
     else:
-        data_root = Path.home() / ".local/state/life-manager"
+        data_root = Path.home() / ".local/state/mr-bot"
     return data_root / "state" / "lm-video"
 
 
@@ -566,7 +566,7 @@ def main() -> int:
         default=Path(
             os.environ.get(
                 "LM_INSTAGRAM_ACCOUNTS",
-                "~/.cloak/life-manager-instagram-accounts.json",
+                "~/.cloak/mr-bot-instagram-accounts.json",
             )
         ).expanduser(),
     )

@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 正本は`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`。
+- 正本は`docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`。
 - 実装順はO1A→O1B→O1C→Order 2→3A→3B→4→5→Webから変更しない。
 - 新しいqueue、browser、secret store、runtimeを作らない。
 - コードはlease更新と状態遷移だけを扱い、イベント評価・候補選択・終了判断をhardcodeしない。
@@ -23,10 +23,10 @@
 ### Task 1: Worker lease heartbeat
 
 **Files:**
-- Create: `apps/life-manager/lib/runtime-lease-heartbeat.js`
-- Create: `apps/life-manager/lib/runtime-lease-heartbeat.test.js`
-- Modify: `apps/life-manager/scripts/runtime-up.js`
-- Modify: `apps/life-manager/scripts/runtime-up.test.js`
+- Create: `apps/mr-bot/lib/runtime-lease-heartbeat.js`
+- Create: `apps/mr-bot/lib/runtime-lease-heartbeat.test.js`
+- Modify: `apps/mr-bot/scripts/runtime-up.js`
+- Modify: `apps/mr-bot/scripts/runtime-up.test.js`
 
 **Interfaces:**
 - Consumes: `heartbeatJob({tenantId, jobId, attempt, workerId, leaseSeconds}, storeOptions)`
@@ -58,9 +58,9 @@
 ### Task 2: Connector PostgreSQL lifecycle proof
 
 **Files:**
-- Modify: `apps/life-manager/test/postgres/runtime-job-protocol.integration.sh`
-- Modify: `apps/life-manager/package.json`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Modify: `apps/mr-bot/test/postgres/runtime-job-protocol.integration.sh`
+- Modify: `apps/mr-bot/package.json`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 **Interfaces:**
 - Consumes: `outbound.event.apply` job contract and existing SQL functions `claim_lm_runtime_jobs`、`heartbeat_lm_runtime_job`、`fail_lm_runtime_job`

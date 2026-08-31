@@ -23,8 +23,8 @@ Read back one exact existing applied bundle for the current provider event, reva
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-minimal-evidence.test.js`
-2. `apps/life-manager/lib/connector-minimal-evidence.js`
+1. `apps/mr-bot/lib/connector-minimal-evidence.test.js`
+2. `apps/mr-bot/lib/connector-minimal-evidence.js`
 
 Soft target: 2 files; production +70–120 LOC; tests +70–120 LOC. No runner production/test edit.
 

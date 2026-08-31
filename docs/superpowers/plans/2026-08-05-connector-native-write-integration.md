@@ -9,8 +9,8 @@
 ## Task 1: Runtime composition contract
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-native-runtime.js`
-- Test: `apps/life-manager/lib/connector-native-runtime.test.js`
+- Modify: `apps/mr-bot/lib/connector-native-runtime.js`
+- Test: `apps/mr-bot/lib/connector-native-runtime.test.js`
 
 - [x] Add a failing test proving the configured pass reads a verified profile, invokes Luna exactly once, gates the selected date, and passes one inventory-backed candidate to the write pipeline.
 - [ ] Add failing tests proving no candidate, failed Luna judgment, failed Calendar gate, or failed spend gate never invokes the write pipeline.

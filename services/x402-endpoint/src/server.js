@@ -75,7 +75,7 @@ export async function createApp({ x402InitializeTimeoutMs = 15000 } = {}) {
   });
 
   // Public, read-only settlement feed. It contains only on-chain/public receipt
-  // fields and lets the independent Life Manager verifier re-check finalized
+  // fields and lets the independent Mr.bot verifier re-check finalized
   // Base receipts before any revenue is recorded.
   app.get('/settlements', async (req, res) => {
     try {

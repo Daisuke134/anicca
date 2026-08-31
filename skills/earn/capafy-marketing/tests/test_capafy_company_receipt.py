@@ -127,11 +127,11 @@ def test_provider_without_message_id_is_quarantined_and_not_retried(tmp_path: Pa
     assert replay == first
 
 
-def test_direct_sender_returns_message_id_once_and_uses_life_manager_env(tmp_path: Path, monkeypatch) -> None:
-    state_home = tmp_path / "life-manager"
+def test_direct_sender_returns_message_id_once_and_uses_mr_bot_env(tmp_path: Path, monkeypatch) -> None:
+    state_home = tmp_path / "mr-bot"
     state_home.mkdir()
     (state_home / ".env").write_text("TELEGRAM_BOT_TOKEN=fixture-token\n", encoding="utf-8")
-    monkeypatch.setenv("LIFE_MANAGER_STATE_HOME", str(state_home))
+    monkeypatch.setenv("MR_BOT_STATE_HOME", str(state_home))
     monkeypatch.setenv("CAPAFY_TELEGRAM_TARGET", "fixture-chat")
     module = load_module()
     calls = []
@@ -160,9 +160,9 @@ def test_direct_sender_returns_message_id_once_and_uses_life_manager_env(tmp_pat
 def test_direct_transport_or_provider_error_quarantines_once_and_replay_does_not_retry(
     tmp_path: Path, monkeypatch, error_kind: str
 ) -> None:
-    state_home = tmp_path / "life-manager"
+    state_home = tmp_path / "mr-bot"
     state_home.mkdir()
-    monkeypatch.setenv("LIFE_MANAGER_STATE_HOME", str(state_home))
+    monkeypatch.setenv("MR_BOT_STATE_HOME", str(state_home))
     monkeypatch.setenv("TELEGRAM_ALERT_CHAT_ID", "fixture-chat")
     module = load_module()
     calls = 0

@@ -240,7 +240,7 @@ and a cost row with `earn_usdc=0`.
 - [ ] **Step 5: Re-trigger award observer**
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/ai.anicca.life-manager-taskmarket-ledger
+launchctl kickstart -k gui/$(id -u)/ai.anicca.mr-bot-taskmarket-ledger
 ```
 
 Require exit 0 and `recorded=0` unless an actual external award occurred.

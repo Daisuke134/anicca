@@ -30,7 +30,7 @@ DISCOVERY_QUERIES = (
     "B2Bマーケティング", "AI活用", "システム開発", "ChatGPT", "月額",
 )
 PUBLIC_SOFTWARE_PROOF = {
-    "source_url": "https://github.com/Daisuke134/life-manager", "title": "Life Manager", "license": "MIT",
+    "source_url": "https://github.com/Daisuke134/life-manager", "title": "Mr.bot", "license": "MIT",
     "description": "API、scheduler、worker、Postgres、object store、Telegram reporting、公式readback付き外部action loopを同一repositoryで実装したMIT公開のpersonal managerです。",
 }
 PLANNER_TASK_CLASS = "application-intent-planner"

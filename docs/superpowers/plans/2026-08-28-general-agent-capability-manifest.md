@@ -110,4 +110,4 @@ git push
 ### Primary-only closeout
 
 After fresh Step 4 evidence, the primary agent changes only the GA-03 row in
-`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md` from `TODO` to `DONE`, records the commit and focused test count, and marks the five plan checkboxes complete. It does not begin GA-04 in the same commit.
+`docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md` from `TODO` to `DONE`, records the commit and focused test count, and marks the five plan checkboxes complete. It does not begin GA-04 in the same commit.

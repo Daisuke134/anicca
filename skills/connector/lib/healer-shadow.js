@@ -114,8 +114,8 @@ function appendRevision(file, input) {
 }
 
 function prepareWorktreeDependencies(repoRoot, worktree) {
-  const target = path.join(repoRoot, "apps/life-manager/node_modules");
-  const link = path.join(worktree, "apps/life-manager/node_modules");
+  const target = path.join(repoRoot, "apps/mr-bot/node_modules");
+  const link = path.join(worktree, "apps/mr-bot/node_modules");
   let targetStat;
   try { targetStat = fs.lstatSync(target); } catch { invalid(); }
   if (!targetStat.isDirectory() || targetStat.isSymbolicLink()) invalid();
@@ -130,15 +130,15 @@ function prepareWorktreeDependencies(repoRoot, worktree) {
 }
 
 function cleanWorktreeStatus(repoRoot, worktree, source) {
-  const target = path.join(repoRoot, "apps/life-manager/node_modules");
-  const link = path.join(worktree, "apps/life-manager/node_modules");
+  const target = path.join(repoRoot, "apps/mr-bot/node_modules");
+  const link = path.join(worktree, "apps/mr-bot/node_modules");
   let safeLink = false;
   try {
     safeLink = fs.lstatSync(link).isSymbolicLink()
       && fs.realpathSync(link) === fs.realpathSync(target);
   } catch { safeLink = false; }
   return String(source || "").split(/\r?\n/).filter(Boolean).filter((line) => (
-    !(safeLink && line === "?? apps/life-manager/node_modules")
+    !(safeLink && line === "?? apps/mr-bot/node_modules")
   ));
 }
 
@@ -224,7 +224,7 @@ async function runHealerShadow(options = {}) {
     ? cleanWorktreeStatus(repoRoot, worktree, preCommitStatus.stdout) : ["status_failed"];
   if (candidateRows.length > 0) {
     const staged = await execute("git", [
-      "-C", worktree, "add", "-A", "--", ".", ":(exclude)apps/life-manager/node_modules",
+      "-C", worktree, "add", "-A", "--", ".", ":(exclude)apps/mr-bot/node_modules",
     ], { cwd: worktree, env: healerEnvironment(options.env) });
     const committed = staged && staged.status === 0
       ? await execute("git", [

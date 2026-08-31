@@ -8,8 +8,8 @@ from runtime.loop.lm_loop_lifecycle import lifecycle, lifecycle_one
 REGISTRY = {"schema_version": 2, "loops": {
     key: {"label": f"ai.anicca.{key}", "domain": "system", "entrypoint": f"bin/{key}.sh",
           "cadence": {"run_at_load": True}, "effect_class": "none",
-          "state_root": f"~/.local/state/life-manager/{key}",
-          "log_root": f"~/.local/state/life-manager/{key}/logs",
+          "state_root": f"~/.local/state/mr-bot/{key}",
+          "log_root": f"~/.local/state/mr-bot/{key}/logs",
           "cleanup": {"max_runs": 10, "max_age_days": 7},
           "provider_route": "deterministic"}
     for key in ("a", "b", "c")

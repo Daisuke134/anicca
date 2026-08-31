@@ -1,8 +1,8 @@
 {
   "evidence_version": "o1b15-live-talk-transition-ledger-v1",
   "observed_date_jst": "2026-08-02",
-  "runtime_database": "life-manager-local-postgres-1/life_manager",
-  "migration": "apps/life-manager/migrations/2026-08-02-lm-talk-application-transitions.sql",
+  "runtime_database": "mr-bot-local-postgres-1/mr_bot",
+  "migration": "apps/mr-bot/migrations/2026-08-02-lm-talk-application-transitions.sql",
   "migration_applied": true,
   "rollback_fixture": {
     "states_exercised": [

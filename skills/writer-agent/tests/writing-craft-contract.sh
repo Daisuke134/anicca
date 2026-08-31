@@ -6,7 +6,7 @@
 # directly against the committed files.
 set -uo pipefail
 
-ROOT="${LIFE_MANAGER_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+ROOT="${MR_BOT_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 CRAFT_DIR="$ROOT/skills/writer-agent/reference"
 CRAFT_MD="$CRAFT_DIR/CRAFT.md"
 X_POST="${WRITING_CRAFT_X_POST:-$CRAFT_DIR/formats/x-post.md}"

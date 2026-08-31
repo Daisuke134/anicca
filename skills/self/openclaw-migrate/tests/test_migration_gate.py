@@ -37,7 +37,7 @@ chk("has_verification_tool=None -> NOT eligible (missing/undetermined must not d
 
 valid_migrate = {
     "disposition": "migrate",
-    "owner": "life-manager",
+    "owner": "mr-bot",
     "target_adapter": "marketing.publish",
     "effect_class": "publish",
     "verify_command": "node verify-publication.js",
@@ -54,7 +54,7 @@ chk("migrate without verification -> invalid",
 chk("retire may omit target adapter but still needs verification and rollback -> valid",
     job_disposition_valid({
         "disposition": "retire",
-        "owner": "life-manager",
+        "owner": "mr-bot",
         "target_adapter": "",
         "effect_class": "maintenance",
         "verify_command": "node verify-job-absent.js",

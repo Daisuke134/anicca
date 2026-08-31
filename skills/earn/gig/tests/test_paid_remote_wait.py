@@ -1138,7 +1138,7 @@ def test_run_bounded_does_not_wait_for_grandchild_inherited_pipe():
 
 def test_runner_loop_id_uses_managed_control_plane_identity(monkeypatch):
     paid = load("paid_direct")
-    monkeypatch.setenv("LIFE_MANAGER_LOOP_ID", "hf-gig-paid-direct")
+    monkeypatch.setenv("MR_BOT_LOOP_ID", "hf-gig-paid-direct")
     assert paid._runner_loop_id() == "hf-gig-paid-direct"
 
 

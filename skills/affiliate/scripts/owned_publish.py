@@ -70,7 +70,7 @@ def public_row(artifact):
 
 
 def _read_public_markup(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "Life-Manager-Affiliate/1.0"})
+    request = urllib.request.Request(url, headers={"User-Agent": "Mr.bot-Affiliate/1.0"})
     try:
         with urllib.request.urlopen(request, timeout=12) as response:
             return response.read(), "urllib"
@@ -101,7 +101,7 @@ def _read_public_markup(url):
                     curl, "--fail", "--silent", "--show-error", "--location",
                     "--max-time", "12", "--connect-timeout", "5", "--proto",
                     "=https", "--resolve", f"{parsed.hostname}:{port}:{candidate}",
-                    "-A", "Life-Manager-Affiliate/1.0", url,
+                    "-A", "Mr.bot-Affiliate/1.0", url,
                 ],
                 capture_output=True, timeout=20, check=False,
             )
@@ -254,7 +254,7 @@ def main():
     parser.add_argument("--remote", default="origin")
     parser.add_argument("--branch", default="main")
     parser.add_argument("--base-url", default="https://aniccaai.com")
-    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/mr-bot/affiliate"))
     args = parser.parse_args()
     result = publish(args)
     print(json.dumps({key: result.get(key) for key in ("slug", "state", "commit", "public_url", "rendered_sha256")}, sort_keys=True, separators=(",", ":")))

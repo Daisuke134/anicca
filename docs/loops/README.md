@@ -46,7 +46,7 @@ the repo portable to another Mac.
 | Core ported here | budget check reports `enforcement=active`; the gate resolves x-repost and writes cadence `0 */1 * * *` |
 | Jobs generated from declarations | the three generated x-repost jobs matched the hand-written ones on every key, and `--diff` now reports all three `unchanged` |
 | A job swap proves itself | `lm-loop apply` validates one exact release, swaps one label at a time, reads argv back, and restores on failure |
-| x-repost fully migrated | release `20260819T100138-39bfb418` is cut from life-manager, `provenance: ancestor-of-origin-main`; healthcheck runs from it and reports OK |
+| x-repost fully migrated | release `20260819T100138-39bfb418` is cut from mr-bot, `provenance: ancestor-of-origin-main`; healthcheck runs from it and reports OK |
 
 ## What is not done
 
@@ -54,7 +54,7 @@ the repo portable to another Mac.
   scheduled job's code; it happened to x-repost on 2026-08-17.
 - **170 of 241 launchd jobs are in no registry**, so the budget ceiling and the pause switch do not
   reach them. 62 are disabled and 2 have invalid plists.
-- **Three of the four gig lanes are served from life-manager releases and one from
+- **Three of the four gig lanes are served from mr-bot releases and one from
   profitable-claude.** Neither `main` holds all four. That owner has not been consulted.
 - **No `install.sh`, no `loops` CLI.** The four commands above are still typed individually.
 - **Never installed on another Mac.** Until that is tried, "portable" is a claim about the code,

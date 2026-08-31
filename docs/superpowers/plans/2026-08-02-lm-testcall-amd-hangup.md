@@ -16,12 +16,12 @@
 
 | file | 役割 | 変更 |
 |---|---|---|
-| `apps/life-manager/lib/telnyx-webhook.js` | client_state の符号化・復号 + Telnyx 署名検証 | 変更（`encodeTestCallClientState` / `decodeCallClientState` を追加） |
-| `apps/life-manager/lib/telnyx-webhook.test.js` | 上記の単体テスト | 新規 |
-| `apps/life-manager/lib/dial.js` | Telnyx への発信・hangup | 変更（`placeCall` / `amdDialOptions` が `clientState` を受ける） |
-| `apps/life-manager/lib/dial.test.js` | `amdDialOptions` の単体テスト | 新規 |
-| `apps/life-manager/server.js` | HTTP 経路（`/test-call` と `/telnyx-events`） | 変更 |
-| `apps/life-manager/test/testcall-amd-hangup.test.js` | webhook の test 分岐の contract テスト | 新規 |
+| `apps/mr-bot/lib/telnyx-webhook.js` | client_state の符号化・復号 + Telnyx 署名検証 | 変更（`encodeTestCallClientState` / `decodeCallClientState` を追加） |
+| `apps/mr-bot/lib/telnyx-webhook.test.js` | 上記の単体テスト | 新規 |
+| `apps/mr-bot/lib/dial.js` | Telnyx への発信・hangup | 変更（`placeCall` / `amdDialOptions` が `clientState` を受ける） |
+| `apps/mr-bot/lib/dial.test.js` | `amdDialOptions` の単体テスト | 新規 |
+| `apps/mr-bot/server.js` | HTTP 経路（`/test-call` と `/telnyx-events`） | 変更 |
+| `apps/mr-bot/test/testcall-amd-hangup.test.js` | webhook の test 分岐の contract テスト | 新規 |
 | `docs/superpowers/specs/2026-08-01-lm-daily-organ-design.md` | 正本 spec | 変更（row 2d を DONE + §5.2.1 に設計を追記） |
 
 ---
@@ -29,8 +29,8 @@
 ### Task 1: client_state が「種類」を持つ
 
 **Files:**
-- Modify: `apps/life-manager/lib/telnyx-webhook.js`
-- Test: `apps/life-manager/lib/telnyx-webhook.test.js`（新規）
+- Modify: `apps/mr-bot/lib/telnyx-webhook.js`
+- Test: `apps/mr-bot/lib/telnyx-webhook.test.js`（新規）
 
 - [ ] **Step 1: 落ちるテストを書く**
 
@@ -73,7 +73,7 @@ test("encodeTestCallClientState requires a uid", () => {
 
 - [ ] **Step 2: 落ちることを確認**
 
-Run: `cd apps/life-manager && node --test lib/telnyx-webhook.test.js`
+Run: `cd apps/mr-bot && node --test lib/telnyx-webhook.test.js`
 Expected: FAIL（`encodeTestCallClientState is not a function`）
 
 - [ ] **Step 3: 最小実装**
@@ -108,14 +108,14 @@ function decodeCallClientState(value) {
 
 - [ ] **Step 4: 通ることを確認**
 
-Run: `cd apps/life-manager && node --test lib/telnyx-webhook.test.js`
+Run: `cd apps/mr-bot && node --test lib/telnyx-webhook.test.js`
 Expected: PASS（5 tests）
 
 - [ ] **Step 5: commit**
 
 ```bash
-git add apps/life-manager/lib/telnyx-webhook.js apps/life-manager/lib/telnyx-webhook.test.js
-git commit -m "feat(life-manager): client_state carries the kind of call it belongs to"
+git add apps/mr-bot/lib/telnyx-webhook.js apps/mr-bot/lib/telnyx-webhook.test.js
+git commit -m "feat(mr-bot): client_state carries the kind of call it belongs to"
 ```
 
 ---
@@ -123,8 +123,8 @@ git commit -m "feat(life-manager): client_state carries the kind of call it belo
 ### Task 2: 発信側が client_state を明示できる
 
 **Files:**
-- Modify: `apps/life-manager/lib/dial.js`
-- Test: `apps/life-manager/lib/dial.test.js`（新規）
+- Modify: `apps/mr-bot/lib/dial.js`
+- Test: `apps/mr-bot/lib/dial.test.js`（新規）
 
 - [ ] **Step 1: 落ちるテストを書く**
 
@@ -164,7 +164,7 @@ test("LM_AMD=off disables AMD even with an explicit client_state", () => {
 
 - [ ] **Step 2: 落ちることを確認**
 
-Run: `cd apps/life-manager && node --test lib/dial.test.js`
+Run: `cd apps/mr-bot && node --test lib/dial.test.js`
 Expected: FAIL（「an explicit client_state wins over the url」が `client_state` undefined で落ちる）
 
 - [ ] **Step 3: 最小実装**
@@ -201,14 +201,14 @@ async function placeCall({ to, streamUrl, clientState }) {
 
 - [ ] **Step 4: 通ることを確認**
 
-Run: `cd apps/life-manager && node --test lib/dial.test.js test/scheduler.test.js`
+Run: `cd apps/mr-bot && node --test lib/dial.test.js test/scheduler.test.js`
 Expected: PASS（dial 4 tests + scheduler の既存 test）
 
 - [ ] **Step 5: commit**
 
 ```bash
-git add apps/life-manager/lib/dial.js apps/life-manager/lib/dial.test.js
-git commit -m "feat(life-manager): let a caller pass an explicit client_state to placeCall"
+git add apps/mr-bot/lib/dial.js apps/mr-bot/lib/dial.test.js
+git commit -m "feat(mr-bot): let a caller pass an explicit client_state to placeCall"
 ```
 
 ---
@@ -216,9 +216,9 @@ git commit -m "feat(life-manager): let a caller pass an explicit client_state to
 ### Task 3: webhook が test 呼び出しの留守電を切る
 
 **Files:**
-- Modify: `apps/life-manager/server.js:288-333`（`/telnyx-events`）
-- Modify: `apps/life-manager/lib/late-notice.js`（決定を1か所に置く）
-- Test: `apps/life-manager/test/testcall-amd-hangup.test.js`（新規）
+- Modify: `apps/mr-bot/server.js:288-333`（`/telnyx-events`）
+- Modify: `apps/mr-bot/lib/late-notice.js`（決定を1か所に置く）
+- Test: `apps/mr-bot/test/testcall-amd-hangup.test.js`（新規）
 
 **設計の要点（守ること）:**
 1. test 呼び出しは **Supabase に触らない**。対応する `lm_wake_log` 行が無いので、書けば毎回 `matched=0` のエラー行が出る。
@@ -295,7 +295,7 @@ test("a failed hangup is reported, never thrown", async () => {
 
 - [ ] **Step 2: 落ちることを確認**
 
-Run: `cd apps/life-manager && node --test test/testcall-amd-hangup.test.js`
+Run: `cd apps/mr-bot && node --test test/testcall-amd-hangup.test.js`
 Expected: FAIL（`applyTestCallDetection is not a function`）
 
 - [ ] **Step 3: 最小実装**
@@ -322,14 +322,14 @@ async function applyTestCallDetection(opts = {}) {
 
 - [ ] **Step 4: 通ることを確認**
 
-Run: `cd apps/life-manager && node --test test/testcall-amd-hangup.test.js lib/late-notice.test.js`
+Run: `cd apps/mr-bot && node --test test/testcall-amd-hangup.test.js lib/late-notice.test.js`
 Expected: PASS（新規 5 tests + late-notice の既存 test 全部）
 
 - [ ] **Step 5: commit**
 
 ```bash
-git add apps/life-manager/lib/late-notice.js apps/life-manager/test/testcall-amd-hangup.test.js
-git commit -m "feat(life-manager): hang up on a test call that reached voicemail"
+git add apps/mr-bot/lib/late-notice.js apps/mr-bot/test/testcall-amd-hangup.test.js
+git commit -m "feat(mr-bot): hang up on a test call that reached voicemail"
 ```
 
 ---
@@ -337,7 +337,7 @@ git commit -m "feat(life-manager): hang up on a test call that reached voicemail
 ### Task 4: 経路をつなぐ（server.js）
 
 **Files:**
-- Modify: `apps/life-manager/server.js:42`（require）, `:288-294`（webhook の分岐）, `:388`（`/test-call` の placeCall）
+- Modify: `apps/mr-bot/server.js:42`（require）, `:288-294`（webhook の分岐）, `:388`（`/test-call` の placeCall）
 
 - [ ] **Step 1: `/test-call` が test 用 client_state を積む**
 
@@ -391,14 +391,14 @@ const { decodeCallClientState, encodeTestCallClientState, verifyTelnyxSignature 
 
 - [ ] **Step 3: 構文と全 suite**
 
-Run: `cd apps/life-manager && node --check server.js && node --test lib/*.test.js test/*.test.js`
+Run: `cd apps/mr-bot && node --check server.js && node --test lib/*.test.js test/*.test.js`
 Expected: `node --check` 無出力、`node --test` は `fail 0`。★既知の baseline★ = `lib/panel-corrective-red.test.js` の1件は本変更と無関係に落ちる（spec 文書の文字列 assertion）。落ちた場合は `git stash` して同じ1件が落ちることを確認し、その事実を報告に書く。
 
 - [ ] **Step 4: commit**
 
 ```bash
-git add apps/life-manager/server.js
-git commit -m "fix(life-manager): route test calls through the voicemail hangup path"
+git add apps/mr-bot/server.js
+git commit -m "fix(mr-bot): route test calls through the voicemail hangup path"
 ```
 
 ---
@@ -420,7 +420,7 @@ git commit -m "fix(life-manager): route test calls through the voicemail hangup 
 
 ```bash
 git add docs/superpowers/specs/2026-08-01-lm-daily-organ-design.md
-git commit -m "docs(life-manager): record the 2d test-call hangup design and result"
+git commit -m "docs(mr-bot): record the 2d test-call hangup design and result"
 ```
 
 ---

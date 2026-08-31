@@ -1,6 +1,6 @@
 # Connector Gateway Report Send Implementation Plan
 
-> **For Luna:** Use Superpowers test-driven-development. Own only `apps/life-manager/lib/outbound-guardian.js`, `outbound-guardian.test.js`, `connector-minimal-operations.js`, and `connector-minimal-operations.test.js`. You are not alone in the codebase; preserve all other edits. Do not commit or push.
+> **For Luna:** Use Superpowers test-driven-development. Own only `apps/mr-bot/lib/outbound-guardian.js`, `outbound-guardian.test.js`, `connector-minimal-operations.js`, and `connector-minimal-operations.test.js`. You are not alone in the codebase; preserve all other edits. Do not commit or push.
 
 **Goal:** Deliver every-wake Connector reports through the existing OpenClaw Gateway without the message CLI's fixed 10-second timeout, while making a retry for the same wake idempotent.
 

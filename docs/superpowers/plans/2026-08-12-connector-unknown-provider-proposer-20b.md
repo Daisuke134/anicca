@@ -8,8 +8,8 @@
 
 **Files / soft target:**
 
-- Modify `apps/life-manager/lib/connector-production-browser-harness.js` — about 4–10 LOC.
-- Modify `apps/life-manager/lib/connector-production-browser-harness.test.js` — about 30–60 LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.js` — about 4–10 LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.test.js` — about 30–60 LOC.
 
 ## Grounding
 
@@ -22,8 +22,8 @@
 
 **Files:**
 
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 - [x] **Step 1: Write RED proposer tests**
 
@@ -32,7 +32,7 @@
 - [x] **Step 2: Run RED**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-production-browser-harness.test.js
   ```
 
@@ -43,7 +43,7 @@
 - [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-production-browser-harness.test.js lib/connector-browser-harness-adapter.test.js
   node --check lib/connector-production-browser-harness.js
   git diff --check

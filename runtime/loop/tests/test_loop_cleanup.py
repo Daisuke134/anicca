@@ -150,8 +150,8 @@ class LoopCleanupTest(unittest.TestCase):
             entry = root / "bin/job.sh"; entry.parent.mkdir()
             observed = home / "release-root.txt"
             entry.write_text(
-                f'#!/bin/sh\nprintf "%s\\n%s" "$LIFE_MANAGER_RELEASE_ROOT" '
-                f'"$LIFE_MANAGER_REPO" > "{observed}"\n')
+                f'#!/bin/sh\nprintf "%s\\n%s" "$MR_BOT_RELEASE_ROOT" '
+                f'"$MR_BOT_REPO" > "{observed}"\n')
             entry.chmod(0o755)
             registry = {"schema_version": 2, "loops": {"job": {
                 "label": "ai.anicca.job", "domain": "system", "entrypoint": "bin/job.sh",
@@ -165,8 +165,8 @@ class LoopCleanupTest(unittest.TestCase):
             environment = {
                 **os.environ,
                 "HOME": str(home),
-                "LIFE_MANAGER_RELEASE_ROOT": "",
-                "LIFE_MANAGER_REPO": "source-sentinel",
+                "MR_BOT_RELEASE_ROOT": "",
+                "MR_BOT_REPO": "source-sentinel",
             }
             result = subprocess.run(
                 [sys.executable, "-m", "runtime.loop.lm_loop_run", "job", str(root)],

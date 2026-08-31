@@ -191,7 +191,7 @@ def render(args):
     manifest = {
         "schema_version": 1,
         "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "renderer": "life-manager-canonical-ffmpeg",
+        "renderer": "mr-bot-canonical-ffmpeg",
         "artifact": str(args.output.resolve()),
         "artifact_sha256": f"sha256:{digest}",
         "contact_sheet": str(contact_sheet.resolve()),

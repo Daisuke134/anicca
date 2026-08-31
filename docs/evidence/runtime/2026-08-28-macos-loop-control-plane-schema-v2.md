@@ -1,7 +1,7 @@
 # macOS Loop Control Plane — TODO 2 schema v2
 
 `config/loop-registry.json` is upgraded to schema v2 and contains all 169
-installed, loaded, classified Life Manager jobs. The registry preserves the
+installed, loaded, classified Mr.bot jobs. The registry preserves the
 pre-existing stable IDs `x-repost` and `x-tweeter`; other IDs are stable
 label-derived identifiers. No launchd lifecycle command is executed in this
 slice.

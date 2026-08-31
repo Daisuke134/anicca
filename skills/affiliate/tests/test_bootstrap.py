@@ -57,12 +57,12 @@ class BootstrapInstallRedTests(unittest.TestCase):
         environment.update(
             {
                 "HOME": str(home),
-                "LIFE_MANAGER_DATA_HOME": str(data_home),
-                "LIFE_MANAGER_STATE_HOME": str(state_home),
+                "MR_BOT_DATA_HOME": str(data_home),
+                "MR_BOT_STATE_HOME": str(state_home),
             }
         )
         if manifest is not None:
-            environment["LIFE_MANAGER_BOOTSTRAP_MANIFEST"] = str(manifest)
+            environment["MR_BOT_BOOTSTRAP_MANIFEST"] = str(manifest)
         return environment
 
     def test_unsupported_os_fails_closed_without_mutating_state(self) -> None:

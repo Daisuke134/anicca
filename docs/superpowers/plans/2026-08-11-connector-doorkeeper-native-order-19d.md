@@ -32,7 +32,7 @@
 - [x] **Step 2: Run RED**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test ../../skills/connector/test/native-entrypoint.test.js
   ```
 
@@ -45,7 +45,7 @@
 - [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test ../../skills/connector/test/native-entrypoint.test.js
   node --test lib/connector-minimal-production.test.js lib/connector-minimal-runner.test.js
   node --check ../../skills/connector/native-pass.js

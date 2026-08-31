@@ -5,7 +5,7 @@ description: Fill a rolling 28-day calendar with verified Tokyo events, prioriti
 
 # Connector
 
-Use this skill when a user wants Life Manager to discover, rank, register, calendar, and report relevant events.
+Use this skill when a user wants Mr.bot to discover, rank, register, calendar, and report relevant events.
 
 Read [README.md](README.md) before installation and [WORKER-CONTRACT.md](WORKER-CONTRACT.md) before changing runtime behavior. Keep one hourly native owner. Prefer YC hackathons, open lightning talks, AI, crypto, then startup events. Luma is actionable; connpass remains a read-only official-API source followed by a Telegram action handoff unless explicit provider permission is recorded.
 

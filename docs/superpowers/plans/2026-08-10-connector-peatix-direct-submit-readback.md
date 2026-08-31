@@ -33,8 +33,8 @@
 ### Task 1: Add the direct Peatix browser provider
 
 **Files:**
-- Create: `apps/life-manager/lib/peatix-browser-provider.js`
-- Create: `apps/life-manager/lib/peatix-browser-provider.test.js`
+- Create: `apps/mr-bot/lib/peatix-browser-provider.js`
+- Create: `apps/mr-bot/lib/peatix-browser-provider.test.js`
 
 - [ ] **Step 1: Write failing validation and idempotency tests**
 
@@ -55,7 +55,7 @@ Cover exact same-event completion/ticket marker as `registered`, unchanged exact
 - [ ] **Step 5: Run focused RED**
 
 ```bash
-node --test apps/life-manager/lib/peatix-browser-provider.test.js
+node --test apps/mr-bot/lib/peatix-browser-provider.test.js
 ```
 
 Expected: module-not-found or missing exported functions; no network and no external write.
@@ -67,7 +67,7 @@ Export only `submitPeatixOnPage` and `readPeatixRegistrationStateOnPage`. Keep c
 - [ ] **Step 7: Run focused GREEN**
 
 ```bash
-node --test apps/life-manager/lib/peatix-browser-provider.test.js
+node --test apps/mr-bot/lib/peatix-browser-provider.test.js
 ```
 
 Expected: all pass, zero failures, no external access.
@@ -75,8 +75,8 @@ Expected: all pass, zero failures, no external access.
 - [ ] **Step 8: Commit and push Luna-owned files**
 
 ```bash
-git add apps/life-manager/lib/peatix-browser-provider.js \
-  apps/life-manager/lib/peatix-browser-provider.test.js
+git add apps/mr-bot/lib/peatix-browser-provider.js \
+  apps/mr-bot/lib/peatix-browser-provider.test.js
 git commit -m "feat(connector): add Peatix direct browser provider"
 git push origin feature/connector-native-completion
 ```

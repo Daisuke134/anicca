@@ -28,9 +28,9 @@ def main(argv: list[str] | None = None) -> int:
     runner = Path(os.environ.get("AGENT_RUNNER_BIN", DEFAULT_RUNNER))
     state = Path(os.environ.get(
         "WRITER_SHARED_RUNNER_STATE",
-        Path.home() / ".local/state/life-manager/writer/agent-runner-evidence"))
+        Path.home() / ".local/state/mr-bot/writer/agent-runner-evidence"))
     evidence = state / f"{args.mode}-{uuid.uuid4().hex}"
-    loop_id = os.environ.get("LIFE_MANAGER_LOOP_ID", "writer")
+    loop_id = os.environ.get("MR_BOT_LOOP_ID", "writer")
     role = os.environ.get("ARTICLE_MODEL_ROLE", "terra")
     schema_path = Path(os.environ.get("ARTICLE_CODEX_OUTPUT_SCHEMA", SCHEMA))
     task_class = "high-value-agent" if args.mode == "agent" else "composition-agent"

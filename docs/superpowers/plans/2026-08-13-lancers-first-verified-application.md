@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Life Manager の canonical main からだけ Lancers acquisition loop を配備し、既存の不確実な2応募を再送せず公式readbackしながら、別の利益性ある案件1件を一度だけ応募して公式 proposal ID と `ApplicationReceipt` 1件まで閉じる。
+**Goal:** Mr.bot の canonical main からだけ Lancers acquisition loop を配備し、既存の不確実な2応募を再送せず公式readbackしながら、別の利益性ある案件1件を一度だけ応募して公式 proposal ID と `ApplicationReceipt` 1件まで閉じる。
 
 **Architecture:** entity の状態は直線だが、実行はlane単位である。このsliceは acquisition lane だけを実装し、既存JSON stateとmarketplace ledgerを再利用する。canonical sourceからcommit SHA固定releaseを組み立て、最初は全pending対象のreconcile-onlyで起動し、その検証後だけ通常discovery/submit modeへ切り替える。
 
@@ -16,7 +16,7 @@
 - Review budget: このsliceのfresh adversarial reviewは既に `fba8a3d83` に対して1/1を使用済み。追加reviewerを起動しない。同じLunaが3件のFIX_FIRSTを直し、primaryが機械検証する。
 - application launchd `ai.anicca.lancers-revenue-application` はTask 5までdisabled/unloadedのままにする。
 - `5585496` と `5586112` はreadback-only quarantineであり、submitterを呼ばず、claim/pendingを消さない。ただし公式proposal IDとtermsが一致した場合は既存transaction contractどおりreceipt化してよい。
-- source、schema、tests、launchd template、installer、spec、planの正本はLife Manager mainだけに置く。
+- source、schema、tests、launchd template、installer、spec、planの正本はMr.bot mainだけに置く。
 - credential、CDP session、`~/.local/state/anicca/lancers/application.json`、terminal state、SQLite ledger、planner evidenceは移動・削除・repo追加しない。
 - launchdはworktree、feature branch、mutable untracked sourceを実行しない。exact main SHA release pathだけを実行する。
 - 外部submitはintent永続化後に一度だけ行い、公式readback前にverified/receiptを作らない。
@@ -69,7 +69,7 @@
 
 **Interfaces:**
 - Consumes: deployed source under `/Users/operator/.local/lib/anicca/lancers/skills/`; immutable state path remains external。
-- Produces: `application_loop.run_loop(...) -> dict[str, object]` and the same relative dependency layout, now tracked in Life Manager。
+- Produces: `application_loop.run_loop(...) -> dict[str, object]` and the same relative dependency layout, now tracked in Mr.bot。
 
 - [ ] **Step 1: Preserve the current review-fix tests and point them at canonical source**
 

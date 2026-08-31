@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Convert one active explicit Life Manager goal into one immutable, reference-only runtime WorkItem without adding a graph engine or causing an external effect.
+**Goal:** Convert one active explicit Mr.bot goal into one immutable, reference-only runtime WorkItem without adding a graph engine or causing an external effect.
 
 **Architecture:** Reuse `intent-graph.js` to validate that the supplied goal is active and explicit, then reuse `runtime-job-store.js` to produce the canonical job shape. The adapter carries only an opaque goal reference; it never copies the goal statement, chooses a provider, ranks opportunities, or executes an application.
 
@@ -22,17 +22,17 @@
 ### Task 1: Map one active explicit goal to the existing runtime job contract
 
 **Files:**
-- Create: `apps/life-manager/lib/goal-work-item.js`
-- Test: `apps/life-manager/lib/goal-work-item.test.js`
+- Create: `apps/mr-bot/lib/goal-work-item.js`
+- Test: `apps/mr-bot/lib/goal-work-item.test.js`
 
 **Interfaces:**
 - Consumes: one existing `IntentEntry` accepted by `buildGraph([goal])`, plus `nowMs: number`.
 - Produces: `buildGoalWorkItem(goal, nowMs) -> Readonly<RuntimeJob>` using the existing `buildRuntimeJob(...)` return shape.
-- Constants: `LOOP_ID = "life-manager.manager"`, `CAPABILITY = "general-agent.work"`.
+- Constants: `LOOP_ID = "mr-bot.manager"`, `CAPABILITY = "general-agent.work"`.
 
 - [x] **Step 1: Write the failing contract test**
 
-Create `apps/life-manager/lib/goal-work-item.test.js`:
+Create `apps/mr-bot/lib/goal-work-item.test.js`:
 
 ```js
 "use strict";
@@ -68,7 +68,7 @@ test("one active explicit goal becomes one reference-only effect-free WorkItem",
   assert.deepEqual(workItem, {
     job_id: "goal:goal-1",
     tenant_id: "tenant-1",
-    loop_id: "life-manager.manager",
+    loop_id: "mr-bot.manager",
     capability: "general-agent.work",
     effect_class: "none",
     effect_key: null,
@@ -97,14 +97,14 @@ test("inactive or non-goal entries cannot become WorkItems", () => {
 Run:
 
 ```bash
-node --test apps/life-manager/lib/goal-work-item.test.js
+node --test apps/mr-bot/lib/goal-work-item.test.js
 ```
 
 Expected: FAIL because `goal-work-item.js` does not exist.
 
 - [x] **Step 3: Implement the minimum pure adapter**
 
-Create `apps/life-manager/lib/goal-work-item.js`:
+Create `apps/mr-bot/lib/goal-work-item.js`:
 
 ```js
 "use strict";
@@ -112,7 +112,7 @@ Create `apps/life-manager/lib/goal-work-item.js`:
 const { buildGraph, effectiveEntries } = require("./intent-graph.js");
 const { buildRuntimeJob } = require("./runtime-job-store.js");
 
-const LOOP_ID = "life-manager.manager";
+const LOOP_ID = "mr-bot.manager";
 const CAPABILITY = "general-agent.work";
 
 function buildGoalWorkItem(goal, nowMs) {
@@ -145,9 +145,9 @@ Run:
 
 ```bash
 node --test \
-  apps/life-manager/lib/goal-work-item.test.js \
-  apps/life-manager/lib/intent-graph.test.js \
-  apps/life-manager/lib/runtime-job-store.test.js
+  apps/mr-bot/lib/goal-work-item.test.js \
+  apps/mr-bot/lib/intent-graph.test.js \
+  apps/mr-bot/lib/runtime-job-store.test.js
 git diff --check
 ```
 
@@ -156,31 +156,31 @@ Expected: all Node tests PASS, failures 0, and `git diff --check` exits 0.
 - [x] **Step 5: Commit and push the code slice**
 
 ```bash
-git add apps/life-manager/lib/goal-work-item.js \
-  apps/life-manager/lib/goal-work-item.test.js
-git commit -m "feat(life-manager): map goals to work items"
+git add apps/mr-bot/lib/goal-work-item.js \
+  apps/mr-bot/lib/goal-work-item.test.js
+git commit -m "feat(mr-bot): map goals to work items"
 git push
 ```
 
 ### Primary-only closeout
 
 After Step 4 evidence is fresh, the primary agent changes only the GA-02 row in
-`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md` from `TODO` to `DONE` and records the focused test count. It does not begin GA-03 in the same slice.
+`docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md` from `TODO` to `DONE` and records the focused test count. It does not begin GA-03 in the same slice.
 
 Run:
 
 ```bash
 git diff --check
 node --test \
-  apps/life-manager/lib/goal-work-item.test.js \
-  apps/life-manager/lib/intent-graph.test.js \
-  apps/life-manager/lib/runtime-job-store.test.js
+  apps/mr-bot/lib/goal-work-item.test.js \
+  apps/mr-bot/lib/intent-graph.test.js \
+  apps/mr-bot/lib/runtime-job-store.test.js
 ```
 
 Then commit and push the measured state update:
 
 ```bash
-git add docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md
-git commit -m "docs(life-manager): close goal work item"
+git add docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md
+git commit -m "docs(mr-bot): close goal work item"
 git push
 ```

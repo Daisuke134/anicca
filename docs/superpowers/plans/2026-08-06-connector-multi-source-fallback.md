@@ -4,16 +4,16 @@
 
 **Goal:** Keep applying to Calendar-compatible events across providers until one verified registration with usable admission evidence is delivered.
 
-**Architecture:** Life Manager owns one ordered provider registry and one durable provider cursor. Provider adapters implement the same discovery, registration, effect-readback, screenshot, and ticket/QR contract. Ranking changes order only; Calendar/travel, provider availability, and existing spend caps remain safety gates. A candidate or provider failure advances the cursor rather than ending the pass.
+**Architecture:** Mr.bot owns one ordered provider registry and one durable provider cursor. Provider adapters implement the same discovery, registration, effect-readback, screenshot, and ticket/QR contract. Ranking changes order only; Calendar/travel, provider availability, and existing spend caps remain safety gates. A candidate or provider failure advances the cursor rather than ending the pass.
 
 **Provider order:** Luma → Connpass → Peatix → Meetup → Doorkeeper → Eventbrite.
 
 ## Task 1: Closed Provider Capability Registry
 
 **Files:**
-- Create: `apps/life-manager/lib/event-provider-registry.js`
-- Create: `apps/life-manager/lib/event-provider-registry.test.js`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/lib/event-provider-registry.js`
+- Create: `apps/mr-bot/lib/event-provider-registry.test.js`
+- Modify: `apps/mr-bot/package.json`
 
 **Contract:**
 - Every provider declares exactly `discovery`, `registration`, `effect_readback`, `screenshot_evidence`, and `ticket_or_qr`.
@@ -30,8 +30,8 @@
 ## Task 2A: Durable Provider Cursor Contract
 
 **Files:**
-- Create: `apps/life-manager/lib/event-provider-cursor.js`
-- Create: `apps/life-manager/lib/event-provider-cursor.test.js`
+- Create: `apps/mr-bot/lib/event-provider-cursor.js`
+- Create: `apps/mr-bot/lib/event-provider-cursor.test.js`
 
 **Completion:** A mode-0600 atomic cursor stores only date, provider, candidate index, generation, and observed time. Exact transitions advance candidate, then provider, then date; unknown effect cannot advance. Forged/stale cursors and provider-order drift fail closed.
 
@@ -43,8 +43,8 @@
 ## Task 2B1: Same-Pass Runtime State Transition
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-native-runtime.js`
-- Modify: `apps/life-manager/lib/connector-native-runtime.test.js`
+- Modify: `apps/mr-bot/lib/connector-native-runtime.js`
+- Modify: `apps/mr-bot/lib/connector-native-runtime.test.js`
 
 **Completion:** The runtime accepts only a verified Task 2A provider cursor. Known no-effect advances the candidate, Luma exhaustion advances to Connpass, and unknown effect cannot advance before readback reconciliation. It emits the next bounded provider cursor without storing page text or identity. Actual Connpass discovery remains Task 3.
 
@@ -58,7 +58,7 @@ The slice is 127 changed lines across its two declared files because the existin
 ## Task 2B2: Native-Pass Provider Cursor Persistence
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-native-runtime.js`
+- Modify: `apps/mr-bot/lib/connector-native-runtime.js`
 - Modify: `skills/connector/native-pass.js`
 - Modify: `skills/connector/test/native-entrypoint.test.js`
 
@@ -78,10 +78,10 @@ Progress 145 permanently supersedes this transport. It is retained only as commi
 ## Task 3B: Provider-Neutral Calendar and Travel Gate
 
 **Files:**
-- Modify: `apps/life-manager/lib/calendar-candidate-gate.js`
-- Modify: `apps/life-manager/lib/calendar-candidate-gate.test.js`
-- Modify: `apps/life-manager/lib/connector-native-runtime.js`
-- Modify: `apps/life-manager/lib/connector-native-runtime.test.js`
+- Modify: `apps/mr-bot/lib/calendar-candidate-gate.js`
+- Modify: `apps/mr-bot/lib/calendar-candidate-gate.test.js`
+- Modify: `apps/mr-bot/lib/connector-native-runtime.js`
+- Modify: `apps/mr-bot/lib/connector-native-runtime.test.js`
 
 **Completion:** Verified Connpass discovery candidates pass through the same direct-conflict, all-day, inbound-route, outbound-route, and expanded-window checks as Luma without forging Luma provenance. Only eligible candidates are handed to the still-read-only Connpass adapter boundary; zero eligible candidates advances the provider cursor and coverage remains open.
 
@@ -99,10 +99,10 @@ Dais confirms he has obtained direct permission from each listed event site for 
 ## Task 4A: Provider-Neutral Parent-Owned Browser Rail
 
 **Files:**
-- Modify: `apps/life-manager/lib/cloakbrowser-daily-driver.js`
-- Modify: `apps/life-manager/lib/cloakbrowser-daily-driver.test.js`
-- Modify: `apps/life-manager/lib/connector-tab-owner.js`
-- Modify: `apps/life-manager/lib/connector-tab-owner.test.js`
+- Modify: `apps/mr-bot/lib/cloakbrowser-daily-driver.js`
+- Modify: `apps/mr-bot/lib/cloakbrowser-daily-driver.test.js`
+- Modify: `apps/mr-bot/lib/connector-tab-owner.js`
+- Modify: `apps/mr-bot/lib/connector-tab-owner.test.js`
 
 **Completion:** The existing `createTarget → claimExact → probe → heartbeat → goto → parent task/readback → release` lifecycle accepts only the fixed provider/host mapping for Luma, Connpass, Peatix, Meetup, Doorkeeper, and Eventbrite. `withLumaPage` remains a compatibility wrapper. Endpoint stays exactly Connector `:9222`; Gig `:9223` and arbitrary origins remain rejected.
 
@@ -116,9 +116,9 @@ This slice changes 103 lines across the four declared files because both the liv
 ## Task 4B1: Connpass Parent Readback and Submit Adapter
 
 **Files:**
-- Create: `apps/life-manager/lib/connpass-browser-provider.js`
-- Create: `apps/life-manager/lib/connpass-browser-provider.test.js`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/lib/connpass-browser-provider.js`
+- Create: `apps/mr-bot/lib/connpass-browser-provider.test.js`
+- Modify: `apps/mr-bot/package.json`
 
 **Completion:** The adapter uses only `dailyDriver.withEventPage("connpass", ...)`, recognizes absent/login-required/registered/pending markers by parent readback, performs only exact approved registration controls, distinguishes known-no-effect from unknown effect, and captures a full-page PNG only after parent readback proves registration or pending approval.
 

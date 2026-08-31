@@ -24,17 +24,17 @@
 ### Task 1: Freeze one marketplace application effect identity
 
 **Files:**
-- Create: `apps/life-manager/lib/marketplace-application-job.js`
-- Test: `apps/life-manager/lib/marketplace-application-effect.test.js`
+- Create: `apps/mr-bot/lib/marketplace-application-job.js`
+- Test: `apps/mr-bot/lib/marketplace-application-effect.test.js`
 
 **Interfaces:**
 - Consumes: canonical GA-02 Goal WorkItem plus `capabilityRef`, `opportunityRef`, `intentRef`, and `authorizationRef`.
 - Produces: `buildMarketplaceApplicationJob(input) -> Readonly<RuntimeJob>` and `marketplaceApplicationContract(job) -> Readonly<ApplicationEffectContract>`.
-- Constants: `LOOP_ID = "life-manager.manager"`, `CAPABILITY = "marketplace.application"`.
+- Constants: `LOOP_ID = "mr-bot.manager"`, `CAPABILITY = "marketplace.application"`.
 
 - [x] **Step 1: Write the failing effect-identity tests**
 
-Create `apps/life-manager/lib/marketplace-application-effect.test.js`:
+Create `apps/mr-bot/lib/marketplace-application-effect.test.js`:
 
 ```js
 "use strict";
@@ -50,7 +50,7 @@ function goalWorkItem() {
   return {
     job_id: "goal:goal-1",
     tenant_id: "tenant-1",
-    loop_id: "life-manager.manager",
+    loop_id: "mr-bot.manager",
     capability: "general-agent.work",
     effect_class: "none",
     effect_key: null,
@@ -117,14 +117,14 @@ test("noncanonical parent or unbound references are rejected", () => {
 Run:
 
 ```bash
-node --test apps/life-manager/lib/marketplace-application-effect.test.js
+node --test apps/mr-bot/lib/marketplace-application-effect.test.js
 ```
 
 Expected: FAIL because `marketplace-application-job.js` does not exist.
 
 - [x] **Step 3: Implement the minimum job builder and contract reader**
 
-Create `apps/life-manager/lib/marketplace-application-job.js`:
+Create `apps/mr-bot/lib/marketplace-application-job.js`:
 
 ```js
 "use strict";
@@ -133,7 +133,7 @@ const { createHash } = require("node:crypto");
 const { isDeepStrictEqual } = require("node:util");
 const { buildRuntimeJob } = require("./runtime-job-store.js");
 
-const LOOP_ID = "life-manager.manager";
+const LOOP_ID = "mr-bot.manager";
 const CAPABILITY = "marketplace.application";
 const HASH = /^[0-9a-f]{64}$/;
 
@@ -265,9 +265,9 @@ Run:
 
 ```bash
 node --test \
-  apps/life-manager/lib/marketplace-application-effect.test.js \
-  apps/life-manager/lib/goal-work-item.test.js \
-  apps/life-manager/lib/runtime-job-store.test.js
+  apps/mr-bot/lib/marketplace-application-effect.test.js \
+  apps/mr-bot/lib/goal-work-item.test.js \
+  apps/mr-bot/lib/runtime-job-store.test.js
 git diff --check
 ```
 
@@ -276,17 +276,17 @@ Expected: all tests PASS and `git diff --check` exits 0.
 - [x] **Step 5: Commit and push Task 1**
 
 ```bash
-git add apps/life-manager/lib/marketplace-application-job.js \
-  apps/life-manager/lib/marketplace-application-effect.test.js
-git commit -m "feat(life-manager): freeze application effects"
+git add apps/mr-bot/lib/marketplace-application-job.js \
+  apps/mr-bot/lib/marketplace-application-effect.test.js
+git commit -m "feat(mr-bot): freeze application effects"
 git push
 ```
 
 ### Task 2: Execute once and complete only from official post-readback
 
 **Files:**
-- Create: `apps/life-manager/lib/marketplace-application-effect.js`
-- Modify: `apps/life-manager/lib/marketplace-application-effect.test.js`
+- Create: `apps/mr-bot/lib/marketplace-application-effect.js`
+- Modify: `apps/mr-bot/lib/marketplace-application-effect.test.js`
 
 **Interfaces:**
 - Consumes: canonical application job and dependencies `inspectApplication`, `executeOnce`, and `verifyReceipt`.
@@ -294,7 +294,7 @@ git push
 
 - [x] **Step 1: Add failing execution and replay tests**
 
-Append to `apps/life-manager/lib/marketplace-application-effect.test.js`:
+Append to `apps/mr-bot/lib/marketplace-application-effect.test.js`:
 
 ```js
 const {
@@ -359,14 +359,14 @@ test("post-readback failure is unknown after exactly one execution", async () =>
 Run:
 
 ```bash
-node --test apps/life-manager/lib/marketplace-application-effect.test.js
+node --test apps/mr-bot/lib/marketplace-application-effect.test.js
 ```
 
 Expected: FAIL because `marketplace-application-effect.js` does not exist.
 
 - [x] **Step 3: Implement the minimum pre/execute/post kernel**
 
-Create `apps/life-manager/lib/marketplace-application-effect.js`:
+Create `apps/mr-bot/lib/marketplace-application-effect.js`:
 
 ```js
 "use strict";
@@ -474,10 +474,10 @@ Run:
 
 ```bash
 node --test \
-  apps/life-manager/lib/marketplace-application-effect.test.js \
-  apps/life-manager/lib/goal-work-item.test.js \
-  apps/life-manager/lib/runtime-job-store.test.js \
-  apps/life-manager/lib/effect-reconciler.test.js
+  apps/mr-bot/lib/marketplace-application-effect.test.js \
+  apps/mr-bot/lib/goal-work-item.test.js \
+  apps/mr-bot/lib/runtime-job-store.test.js \
+  apps/mr-bot/lib/effect-reconciler.test.js
 git diff --check
 ```
 
@@ -486,12 +486,12 @@ Expected: all tests PASS and `git diff --check` exits 0.
 - [x] **Step 5: Commit and push Task 2**
 
 ```bash
-git add apps/life-manager/lib/marketplace-application-effect.js \
-  apps/life-manager/lib/marketplace-application-effect.test.js
-git commit -m "feat(life-manager): fence application execution"
+git add apps/mr-bot/lib/marketplace-application-effect.js \
+  apps/mr-bot/lib/marketplace-application-effect.test.js
+git commit -m "feat(mr-bot): fence application execution"
 git push
 ```
 
 ### Primary-only closeout
 
-After both tasks have fresh green evidence, the primary agent marks the plan checkboxes complete and changes only the GA-04 row in `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md` from `TODO` to `DONE`, recording both commits and the focused test count. It does not start GA-05 in the same commit.
+After both tasks have fresh green evidence, the primary agent marks the plan checkboxes complete and changes only the GA-04 row in `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md` from `TODO` to `DONE`, recording both commits and the focused test count. It does not start GA-05 in the same commit.

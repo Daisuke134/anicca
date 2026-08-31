@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Work only in `/Users/operator/Projects/life-manager-main/.worktrees/connector-native-completion` on `feature/connector-native-completion`.
+- Work only in `/Users/operator/Projects/mr-bot-main/.worktrees/connector-native-completion` on `feature/connector-native-completion`.
 - Follow RED → GREEN and commit/push this slice before Task 3.
 - Luna returns ranking and natural-language reasons only; it never verifies registration, Calendar, receipt, QR, or Telegram success.
 - Pin `AGENT_RUNNER_PROVIDER=codex` and reject any result whose summary is not `selected_provider=codex`, `selected_model=gpt-5.6-luna`, `status=success`.
@@ -22,8 +22,8 @@
 ### Task 1: Provider-neutral grounded decision seam
 
 **Files:**
-- Modify: `apps/life-manager/lib/event-goal-serendipity.js`
-- Test: `apps/life-manager/lib/event-goal-serendipity.test.js`
+- Modify: `apps/mr-bot/lib/event-goal-serendipity.js`
+- Test: `apps/mr-bot/lib/event-goal-serendipity.test.js`
 
 **Interfaces:**
 - Consumes: existing `inferEventGoalSerendipity(input, options)` input.
@@ -70,9 +70,9 @@ Expected: all existing Gemini/error tests and the new provider-neutral test pass
 ### Task 2: Luna-pinned local agent-runner adapter
 
 **Files:**
-- Create: `apps/life-manager/lib/connector-luna-judgment.js`
-- Test: `apps/life-manager/lib/connector-luna-judgment.test.js`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/lib/connector-luna-judgment.js`
+- Test: `apps/mr-bot/lib/connector-luna-judgment.test.js`
+- Modify: `apps/mr-bot/package.json`
 
 **Interfaces:**
 - Consumes: `{ dateInventory, preferenceRanking?, profile, evidenceDir, repoRoot, runnerPath? }` where profile passes `isVerifiedConnectorProfile`.
@@ -142,10 +142,10 @@ Observed: focused Luna/grounding suite 11/11 pass; `npm run test:outbound` 280/2
 Update this plan's checkboxes and observed RED/GREEN counts, then run:
 
 ```bash
-git add apps/life-manager/lib/event-goal-serendipity.js \
-  apps/life-manager/lib/event-goal-serendipity.test.js \
-  apps/life-manager/lib/connector-luna-judgment.js \
-  apps/life-manager/lib/connector-luna-judgment.test.js \
+git add apps/mr-bot/lib/event-goal-serendipity.js \
+  apps/mr-bot/lib/event-goal-serendipity.test.js \
+  apps/mr-bot/lib/connector-luna-judgment.js \
+  apps/mr-bot/lib/connector-luna-judgment.test.js \
   docs/superpowers/plans/2026-08-05-connector-luna-judgment.md
 git commit -m "feat(connector): route event judgment through Luna"
 git push
@@ -154,10 +154,10 @@ git push
 ### Task 3: Close the preference-provider gap
 
 **Files:**
-- Modify: `apps/life-manager/lib/event-preference-ranking.js`
-- Test: `apps/life-manager/lib/event-preference-ranking.test.js`
-- Modify: `apps/life-manager/lib/connector-luna-judgment.js`
-- Test: `apps/life-manager/lib/connector-luna-judgment.test.js`
+- Modify: `apps/mr-bot/lib/event-preference-ranking.js`
+- Test: `apps/mr-bot/lib/event-preference-ranking.test.js`
+- Modify: `apps/mr-bot/lib/connector-luna-judgment.js`
+- Test: `apps/mr-bot/lib/connector-luna-judgment.test.js`
 
 - [x] Add `generateDecision({ prompt, schema, timeoutMs })` to preference ranking while preserving the existing Gemini compatibility path and validator.
 - [x] Make Connector Luna judgment create preference ranking when the caller has not supplied one.

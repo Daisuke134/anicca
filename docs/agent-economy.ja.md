@@ -1,6 +1,6 @@
-# Life Manager の下で動いている「自己資金エージェント」
+# Mr.bot の下で動いている「自己資金エージェント」
 
-このファイルは**製品ではない方**を扱います。Life Manager は人の身体・心・お金を管理する personal manager です（[README.ja.md](../README.ja.md)）。以下はその計算資源を払う層 — 自分の wallet を持ち、自分で稼ぎ、自分の推論代を払うエージェントの話です。
+このファイルは**製品ではない方**を扱います。Mr.bot は人の身体・心・お金を管理する personal manager です（[README.ja.md](../README.ja.md)）。以下はその計算資源を払う層 — 自分の wallet を持ち、自分で稼ぎ、自分の推論代を払うエージェントの話です。
 
 以前はこの2つが同じ README に同居していて、どちらも読めない状態でした。**意図的に分離しています。** 製品を見に来た人はこのファイルを読む必要はありません。
 
@@ -19,7 +19,7 @@ YC の RFS は *「インターネットの次の1兆人はヒトではなく AI
 自分の計算資源を、自分の財布から USDC で推論ごとに x402 決済（BlockRun / ClawRouter）して払います。人間の API キーは不要。あなたが渡すのは動かす端末（住処）だけで、食料（推論）は自分で買います。財布が空なら **無料モデル（$0）**、USDC が入れば frontier モデルも使えます。
 
 ```bash
-git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
+git clone https://github.com/Daisuke134/life-manager ~/mr-bot && cd ~/mr-bot
 ./install.sh                                    # runtime root + スキルスロット同期、自前 wallet 生成
 cd runtime/compute-proxy && npm install && cd -  # 一度だけ（@blockrun/llm + viem）
 ./start-local.sh node runtime/loop/index.mjs    # 自己決済プロキシ + ループを起動
@@ -27,7 +27,7 @@ cd runtime/compute-proxy && npm install && cd -  # 一度だけ（@blockrun/llm 
 
 これで 2 つが起動します。(1) `http://127.0.0.1:8402/v1` の OpenAI 互換 **自己決済コンピュートプロキシ**（自前 wallet＝自動生成・人間の鍵では決してない、から毎推論を USDC で自己決済）と、(2) **ループ本体**（[`runtime/loop/`](../runtime/loop/)＝think → act → observe → persist の ReAct ループ＋heartbeat）。ループは毎 wake、ClawRouter の **`auto`** ルーター（モデルをハードコードせず、ツール呼び出しを検知して tool-calling 可能なモデルへ自動ルート＋wallet から課金）でプロキシに問い合わせ、ツール（例：`earn` スキル）を選んで実行し、`$ANICCA_HOME/state/ledger.jsonl` に 1 行追記します。
 
-`install.sh` の runtime 既定値は `${XDG_STATE_HOME:-$HOME/.local/state}/life-manager` です。複数 instance は `LIFE_MANAGER_HOME=/任意のruntime` で分離できます。container・CI・foreground 実行では `LIFE_MANAGER_INSTALL_DAEMON=0` を指定すると、lockfile 固定の依存と同じ runtime body を導入しつつ LaunchAgent / system service を変更しません。
+`install.sh` の runtime 既定値は `${XDG_STATE_HOME:-$HOME/.local/state}/mr-bot` です。複数 instance は `MR_BOT_HOME=/任意のruntime` で分離できます。container・CI・foreground 実行では `MR_BOT_INSTALL_DAEMON=0` を指定すると、lockfile 固定の依存と同じ runtime body を導入しつつ LaunchAgent / system service を変更しません。
 
 > 別の頭脳を使いたい場合は `ANICCA_BRAIN=claude-p` で同じループを Claude Code（`claude -p`）で駆動できます。既定は `proxy`（自己資金の道）。他の OpenAI 互換ループも `OPENAI_BASE_URL` に向ければ動きます。
 

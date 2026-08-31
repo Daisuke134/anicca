@@ -263,7 +263,7 @@ export async function auditStartupContext(
           const response = await fetchImpl(url, {
             method: "GET",
             redirect: "follow",
-            headers: { "user-agent": "life-manager-startup-context-audit/1.0" },
+            headers: { "user-agent": "mr-bot-startup-context-audit/1.0" },
           });
           const body = await response.text();
           const expectedText = context.links[key].expected_text;

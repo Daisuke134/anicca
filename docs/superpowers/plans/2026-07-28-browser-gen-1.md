@@ -34,12 +34,12 @@
 
 **Files:**
 
-- Create: `apps/life-manager/lib/browser-task-classifier.test.js`
-- Create: `apps/life-manager/lib/browser-job-store.test.js`
-- Create: `apps/life-manager/lib/generic-browser-task.test.js`
-- Create: `apps/life-manager/lib/stagehand-steel-driver.test.js`
-- Create: `apps/life-manager/test/browser-task-telegram-http-contract.test.js`
-- Create: `apps/life-manager/lib/browser-job-migration.test.js`
+- Create: `apps/mr-bot/lib/browser-task-classifier.test.js`
+- Create: `apps/mr-bot/lib/browser-job-store.test.js`
+- Create: `apps/mr-bot/lib/generic-browser-task.test.js`
+- Create: `apps/mr-bot/lib/stagehand-steel-driver.test.js`
+- Create: `apps/mr-bot/test/browser-task-telegram-http-contract.test.js`
+- Create: `apps/mr-bot/lib/browser-job-migration.test.js`
 
 - [ ] Write a classifier test that accepts an ordinary natural-language delegated browser action without a slash command and rejects conversation, feedback, settings commands, financial outflow, KYC, and ambiguous requests.
 - [ ] Write queue tests proving Telegram message idempotency, tenant binding, strict prompt hashing, no raw credential persistence, and one concurrency-safe job claim.
@@ -54,10 +54,10 @@
 
 **Files:**
 
-- Create: `apps/life-manager/lib/browser-task-classifier.js`
-- Create: `apps/life-manager/lib/browser-job-store.js`
-- Create: `apps/life-manager/migrations/2026-07-28-lm-browser-jobs.sql`
-- Modify: `apps/life-manager/server.js`
+- Create: `apps/mr-bot/lib/browser-task-classifier.js`
+- Create: `apps/mr-bot/lib/browser-job-store.js`
+- Create: `apps/mr-bot/migrations/2026-07-28-lm-browser-jobs.sql`
+- Modify: `apps/mr-bot/server.js`
 
 - [ ] Implement a Gemini JSON-schema classifier whose output is validated and fail-closed.
 - [ ] Convert only `explicit_request + reversible + zero_cost + browser_required` into a queue request.
@@ -71,10 +71,10 @@
 
 **Files:**
 
-- Create: `apps/life-manager/lib/stagehand-steel-driver.js`
-- Modify: `apps/life-manager/lib/steel-cdp-client.js`
-- Modify: `apps/life-manager/package.json`
-- Modify: `apps/life-manager/package-lock.json`
+- Create: `apps/mr-bot/lib/stagehand-steel-driver.js`
+- Modify: `apps/mr-bot/lib/steel-cdp-client.js`
+- Modify: `apps/mr-bot/package.json`
+- Modify: `apps/mr-bot/package-lock.json`
 
 - [ ] Add pinned Stagehand v3 and Zod dependencies.
 - [ ] Expose a Steel session lifecycle that returns the raw private websocket endpoint without creating the old deterministic CDP connection twice.
@@ -88,10 +88,10 @@
 
 **Files:**
 
-- Create: `apps/life-manager/lib/generic-browser-task.js`
-- Create: `apps/life-manager/lib/browser-job-runtime.js`
-- Create: `apps/life-manager/lib/browser-job-runtime.test.js`
-- Modify: `apps/life-manager/server.js`
+- Create: `apps/mr-bot/lib/generic-browser-task.js`
+- Create: `apps/mr-bot/lib/browser-job-runtime.js`
+- Create: `apps/mr-bot/lib/browser-job-runtime.test.js`
+- Modify: `apps/mr-bot/server.js`
 
 - [ ] Implement one-job execution with ordered trace stages: `claimed → discovery → selected → action_started → action_observed → provider_readback → telegram_sent → steel_released`.
 - [ ] Persist every stage with timestamps and bounded non-secret metadata.
@@ -104,7 +104,7 @@
 
 **Files:**
 
-- Modify: `apps/life-manager/package.json`
+- Modify: `apps/mr-bot/package.json`
 - Modify: `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`
 
 - [ ] Run the focused browser suite.
@@ -117,7 +117,7 @@
 
 **Files:**
 
-- Create: `apps/life-manager/scripts/browser-gen-production-e2e.js`
+- Create: `apps/mr-bot/scripts/browser-gen-production-e2e.js`
 - Create: `docs/evidence/browser/2026-07-28-browser-gen-1.json`
 - Modify: `docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`
 

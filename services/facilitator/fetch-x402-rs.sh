@@ -197,7 +197,7 @@ build_x402_binary() {
 }
 
 main() {
-  local cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/life-manager/x402-rs"
+  local cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/mr-bot/x402-rs"
   local source_root
   source_root="$(fetch_verified_tree \
     "$X402_RS_ARCHIVE_URL" \

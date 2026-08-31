@@ -32,7 +32,7 @@ cat >"$TMP_PLIST" <<PLIST
   <array>
     <string>$PYTHON_BIN</string><string>$WORKER</string>
     <string>--skill-dir</string><string>$SCRIPT_DIR/..</string>
-    <string>--state-dir</string><string>$HOME/.local/state/life-manager/writer</string>
+    <string>--state-dir</string><string>$HOME/.local/state/mr-bot/writer</string>
   </array>
   <key>EnvironmentVariables</key>
   <dict>
@@ -41,7 +41,7 @@ cat >"$TMP_PLIST" <<PLIST
     <key>ARTICLE_CODEX_PROVIDER_ENV_KEY</key><string>CLIPROXY_API_KEY</string>
     <key>ARTICLE_CODEX_PROVIDER_API_KEY_SOURCE</key><string>cliproxyapi</string>
     <key>ARTICLE_SKILL_DIR</key><string>$SCRIPT_DIR/..</string>
-    <key>ARTICLE_STATE_DIR</key><string>$HOME/.local/state/life-manager/writer</string>
+    <key>ARTICLE_STATE_DIR</key><string>$HOME/.local/state/mr-bot/writer</string>
     <key>PATH</key><string>$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
   <key>StartInterval</key><integer>900</integer>

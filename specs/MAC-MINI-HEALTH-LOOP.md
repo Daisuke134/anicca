@@ -1,6 +1,6 @@
 # Mac Mini ヘルス loop — 設計と TODO
 
-**目的**: Life Manager が自分の走っているマシンの健康状態を常に把握し、誰がどこで動かしても勝手に壊れない状態を保つ。OSS として公開できる形にする。
+**目的**: Mr.bot が自分の走っているマシンの健康状態を常に把握し、誰がどこで動かしても勝手に壊れない状態を保つ。OSS として公開できる形にする。
 **作成**: 2026-08-31
 
 ---
@@ -36,7 +36,7 @@ flowchart TD
 
 毎回ゼロから `du` を回すと10分でもタイムアウトする（`~/Library` で実測）。だから:
 
-- 大分類だけを定期計測し、結果を `~/.local/state/life-manager/disk-health/inventory.json` に貯める
+- 大分類だけを定期計測し、結果を `~/.local/state/mr-bot/disk-health/inventory.json` に貯める
 - **前回との差分**を持つ。「増え続けている場所」が分かることが本質。総量より増加率が重要
 - 触れない領域（Spotlight index、システム予約 25GB）を最初から除外して、実際に動かせる容量だけを見る
 
@@ -80,7 +80,7 @@ lsof -n | grep <対象>
 |---|---|---|
 | ディスク watchdog | `~/.local/bin/disk-watchdog.sh` / `scripts/disk-watchdog.sh` | **稼働中**。15分ごと、空き25GB を下回ると発動 |
 | launchd 登録 | `~/Library/LaunchAgents/com.anicca.disk-watchdog.plist` | **稼働中**（`runs = 47` 実測） |
-| release GC 組み込み | 同 watchdog 内 | **稼働中**。`LIFE_MANAGER_RELEASE_KEEP=2` で呼び、`<release>.gc-trash.<pid>` の残骸も掃除 |
+| release GC 組み込み | 同 watchdog 内 | **稼働中**。`MR_BOT_RELEASE_KEEP=2` で呼び、`<release>.gc-trash.<pid>` の残骸も掃除 |
 | loop 安全網 | `~/.local/bin/loop-guard.sh` / `scripts/loop-guard.sh` | **稼働中**。3条件で自己テスト済み |
 | 台帳 | `specs/MAC-MINI-INFRA.md` | 現況・削除履歴・判定手順 |
 
@@ -93,22 +93,22 @@ lsof -n | grep <対象>
 ### A. ディスク掃除の続き（まだ終わっていない）
 
 - [ ] **A1**: `~/.cloak/profiles` の未参照27個（1.9GB）を判定する。`gig-upwork` 1.1GB が最大。ログイン済みセッションを含むので、消すと再ログインが要る。**Upwork をもう使わないかを確認してから**
-- [ ] **A2**: `~/.openclaw/skills/.backups` 0.6GB と `workspace/runs` 0.8GB — Life Manager への移行が済んだ範囲を判定して回収
+- [ ] **A2**: `~/.openclaw/skills/.backups` 0.6GB と `workspace/runs` 0.8GB — Mr.bot への移行が済んだ範囲を判定して回収
 - [ ] **A3**: `~/.openclaw/.git` 2.9GB の `git gc`。前面実行は10分でタイムアウトしたので、`nohup` で完走させて結果を測る
-- [ ] **A4**: `~/.local/state/life-manager` の孤児 state 39個（残り約0.9GB）を3条件で判定
+- [ ] **A4**: `~/.local/state/mr-bot` の孤児 state 39個（残り約0.9GB）を3条件で判定
 - [ ] **A5**: 各ディレクトリの中を1階層深く見る。ディレクトリ単位では「稼働中」でも、中の個別ファイルには未使用のものがある
 
-### A-bis. 集約（最終的に life-manager 1フォルダにする）
+### A-bis. 集約（最終的に mr-bot 1フォルダにする）
 
-**方針（Dais 2026-08-31）**: 最終的に必要なのは `life-manager` repo のフォルダだけ。他は全て集約して消す前提で進める。
+**方針（Dais 2026-08-31）**: 最終的に必要なのは `mr-bot` repo のフォルダだけ。他は全て集約して消す前提で進める。
 
 各フォルダの git origin を実測した結果、種類が3つに分かれた:
 
 | フォルダ | origin | 種類 | 判定 |
 |---|---|---|---|
-| `~/Projects/life-manager-main` | `life-manager.git` | **release の生成元（正本）** | `selfbuild` の `LM_SELFBUILD_REPO` がここを指す。**残す** |
-| ~~`~/Projects/life-manager`~~ | `life-manager-v0.git`（archived） | 死んだ repo のクローン | **2026-08-31 削除済み**。push が 403 で拒否され、ここに書いたものは共有されなかった |
-| **`~/anicca`** | **`life-manager.git`** | **同じ repo の別クローン 3.5GB** | **集約対象。下記** |
+| `~/Projects/mr-bot-main` | `mr-bot.git` | **release の生成元（正本）** | `selfbuild` の `LM_SELFBUILD_REPO` がここを指す。**残す** |
+| ~~`~/Projects/mr-bot`~~ | `mr-bot-v0.git`（archived） | 死んだ repo のクローン | **2026-08-31 削除済み**。push が 403 で拒否され、ここに書いたものは共有されなかった |
+| **`~/anicca`** | **`mr-bot.git`** | **同じ repo の別クローン 3.5GB** | **集約対象。下記** |
 | `~/anicca-project` | `anicca-products.git` | 別 repo | 別途判断 |
 | `~/profitable-claude` | `profitable-claude.git` | 別 repo | 別途判断 |
 | `~/.openclaw` | `anicca-dais.git` | 別 repo | 別途判断 |
@@ -122,17 +122,17 @@ lsof -n | grep <対象>
 
 | クローン | origin | 生きているか |
 |---|---|---|
-| **`~/Projects/life-manager-main`** | `life-manager.git` | **✅ 正本。`selfbuild` の `LM_SELFBUILD_REPO` がここを指し、ここから release が切られる** |
-| `~/anicca` | `life-manager.git` | 同じ repo の別クローン |
-| `~/Projects/life-manager` | **`life-manager-v0.git`** | ❌ **archived**。`git push` が `403 This repository was archived so it is read-only` を返す |
+| **`~/Projects/mr-bot-main`** | `mr-bot.git` | **✅ 正本。`selfbuild` の `LM_SELFBUILD_REPO` がここを指し、ここから release が切られる** |
+| `~/anicca` | `mr-bot.git` | 同じ repo の別クローン |
+| `~/Projects/mr-bot` | **`mr-bot-v0.git`** | ❌ **archived**。`git push` が `403 This repository was archived so it is read-only` を返す |
 
-**★ `~/Projects/life-manager` は死んだ repo（v0）のクローン。★** ディレクトリ名が短いので正本に見えるが違う。2026-08-31 のこのセッションで書いた spec は最初ここに置かれ、20コミットが push できないまま溜まっていた。`life-manager-main` 側の worktree へ移して初めて共有された。
+**★ `~/Projects/mr-bot` は死んだ repo（v0）のクローン。★** ディレクトリ名が短いので正本に見えるが違う。2026-08-31 のこのセッションで書いた spec は最初ここに置かれ、20コミットが push できないまま溜まっていた。`mr-bot-main` 側の worktree へ移して初めて共有された。
 
-**今後 spec やコードを書く時は必ず `~/Projects/life-manager-main`（またはその worktree）で作業する。**
+**今後 spec やコードを書く時は必ず `~/Projects/mr-bot-main`（またはその worktree）で作業する。**
 
 #### `~/anicca` の集約（3.5GB、最優先）
 
-**同じ `life-manager.git` のクローン**で、ブランチ `feature/dist1-mcp-launchd`、未コミット195件、unpushed 0。
+**同じ `mr-bot.git` のクローン**で、ブランチ `feature/dist1-mcp-launchd`、未コミット195件、unpushed 0。
 
 44個の loop が `~/anicca/skills/earn/x402-sell` を参照している（他に `marketing-engine` 3件、`sol-funding-daemon.sh` 1件）。
 
@@ -146,24 +146,24 @@ lsof -n | grep <対象>
 
 **その23ファイルは全て実行時データだった。** `attempts-0x....jsonl`（ウォレット別の試行記録）、`llm-resale-spend-0x....json`（支出記録）、`events.jsonl`、`market-scout.json` など。拡張子が `.jsonl` / `.json` / `.log` でないものはゼロ件。
 
-**コードの移行は完了している。** 一度は「本番コード17本が `~/anicca` にしか無い」と判定したが、それは `life-manager-main` の作業ブランチ（`feat/lancers-session-self-recovery-20260831`）と比較していたための誤り。`origin/main` には `acquisition-controller.mjs` `sale-observer.mjs` `experiment-tick.mjs` `store-activate.mjs` `the402-worker-daemon.mjs` `image-server.mjs` を含む97本の `.mjs` と、テスト36本が揃っている。**比較対象はチェックアウト中のブランチではなく `origin/main`。**
+**コードの移行は完了している。** 一度は「本番コード17本が `~/anicca` にしか無い」と判定したが、それは `mr-bot-main` の作業ブランチ（`feat/lancers-session-self-recovery-20260831`）と比較していたための誤り。`origin/main` には `acquisition-controller.mjs` `sale-observer.mjs` `experiment-tick.mjs` `store-activate.mjs` `the402-worker-daemon.mjs` `image-server.mjs` を含む97本の `.mjs` と、テスト36本が揃っている。**比較対象はチェックアウト中のブランチではなく `origin/main`。**
 
-未コミット195件の内訳も実測した: 165件が未追跡で、うち159件は `marketing-engine/evidence`。変更29件も `intel/*.jsonl` と `evidence/metrics/*` が大半。**コード変更は `cdp_daily_driver_keepalive.py` の1件だけで、`life-manager-main` 側との `diff` はゼロ行**（完全に同一）。
+未コミット195件の内訳も実測した: 165件が未追跡で、うち159件は `marketing-engine/evidence`。変更29件も `intel/*.jsonl` と `evidence/metrics/*` が大半。**コード変更は `cdp_daily_driver_keepalive.py` の1件だけで、`mr-bot-main` 側との `diff` はゼロ行**（完全に同一）。
 
 したがって `~/anicca` に残る価値は**実行時 state のみ**。
 
-- [x] **A-bis-0**: 完了（2026-08-31）。`~/Projects/life-manager` を削除した。判断の根拠:
+- [x] **A-bis-0**: 完了（2026-08-31）。`~/Projects/mr-bot` を削除した。判断の根拠:
   - 未 push だった21コミットは全てこのセッションの spec / scripts で、`docs/mac-mini-health-20260831` ブランチ経由で正本へ移送済み
   - v0 固有のコード（41ファイル・2MB、音声通話や旅行の skill）は GitHub 上の archived repo に残っており、ローカルの複製を消しても失われない
   - v0 の最終コミットは `docs: redirect archived v0 to canonical repository (#12)`。**repo 自身が既に「正本はこちら」と宣言して閉じている**
-  - 削除前に `com.anicca.claude-remote-control` の `WorkingDirectory` がここを指していたので `life-manager-main` へ向け直し、再読込して `state = running` を確認した。その後 plist 参照はゼロ
+  - 削除前に `com.anicca.claude-remote-control` の `WorkingDirectory` がここを指していたので `mr-bot-main` へ向け直し、再読込して `state = running` を確認した。その後 plist 参照はゼロ
 - [x] **A-bis-1**: 完了。コードもテストも `origin/main` に揃っており、移行するものは無い
 - [x] **A-bis-2**: 完了。未コミット195件は全て evidence / intel / log の実行時データ。唯一のコード変更は差分ゼロ
 - [ ] **A-bis-3**: loop の参照先を張り替える。**参照の内訳を実測した（2026-08-31）**:
 
   | 用途 | 件数 | 張り替え先 |
   |---|---|---|
-  | ログ出力先 `x402-sell/logs/launchd.{out,err}.log` | 22 | `~/.local/state/life-manager/<loop>/logs/`（他の loop と同じ規約） |
+  | ログ出力先 `x402-sell/logs/launchd.{out,err}.log` | 22 | `~/.local/state/mr-bot/<loop>/logs/`（他の loop と同じ規約） |
   | 実行パス `x402-sell` | 22 | `~/loops/current/skills/earn/x402-sell` |
   | `WorkingDirectory` が `~/anicca` 配下 | 11 | 同上 |
   | `marketing-engine` のスクリプト3本 + `sol-funding-daemon.sh` | 4 | `~/loops/current/skills/earn/` 配下 |
@@ -171,7 +171,7 @@ lsof -n | grep <対象>
   **release 内には同じコードが既にある**ことを確認済み（`~/loops/releases/<latest>/skills/earn/x402-sell/acquisition-controller.mjs` の存在を実測）。`~/loops/current` は最新 release を指すシンボリックリンクなので、ここを指せば release が切り替わっても追従する。
 
   張り替えは1本ずつ行い、各 loop で `loop-guard.sh` の save/diff を挟む。22本を一括で書き換えると、失敗したときにどれが原因か切り分けられない。
-- [ ] **A-bis-4**: 実行時 state の移設。`~/anicca` にしか無い23ファイル（`attempts-0x....jsonl`、`llm-resale-spend-0x....json`、`events.jsonl` 等のウォレット別取引記録）と `skills/earn/state`（4MB）を `~/.local/state/life-manager/` 配下へ移す。**これらは再生成できない実績データなので、移設を確認してから削除する**
+- [ ] **A-bis-4**: 実行時 state の移設。`~/anicca` にしか無い23ファイル（`attempts-0x....jsonl`、`llm-resale-spend-0x....json`、`events.jsonl` 等のウォレット別取引記録）と `skills/earn/state`（4MB）を `~/.local/state/mr-bot/` 配下へ移す。**これらは再生成できない実績データなので、移設を確認してから削除する**
 - [ ] **A-bis-5**: 全て済んだら `~/anicca` を削除（**3.5GB 回収**）
 
 ### B. ヘルス loop の実装
@@ -188,9 +188,9 @@ lsof -n | grep <対象>
 
 | loop | runs | 状態 |
 |---|---|---|
-| `life-manager-anicca-obou-instagram` | 0 | 一度も走っていない |
-| `life-manager-anicca-main-tiktok` | 0 | 一度も走っていない |
-| `life-manager-anicca-en-slideshow-tiktok` | 1 | exit=1、ログディレクトリすら無い |
+| `mr-bot-anicca-obou-instagram` | 0 | 一度も走っていない |
+| `mr-bot-anicca-main-tiktok` | 0 | 一度も走っていない |
+| `mr-bot-anicca-en-slideshow-tiktok` | 1 | exit=1、ログディレクトリすら無い |
 
 資産は揃っている（`~/anicca-monk-factory/personas.json`）:
 

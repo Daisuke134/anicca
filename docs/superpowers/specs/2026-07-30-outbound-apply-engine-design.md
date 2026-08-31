@@ -1,9 +1,9 @@
 # Outbound Apply Engine — 設計 SSOT (2026-07-30)
 
 status: ACTIVE / 実装未着手 (P0 から番号順)
-owner: Life Manager (canonical runtime = `/Users/operator/Projects/life-manager-main`)
+owner: Mr.bot (canonical runtime = `/Users/operator/Projects/mr-bot-main`)
 親trackとphase順序の専用正本:
-`2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+`2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 この文書はevents / funders / jobs内部の実装順だけを所有する。CFO、crypto、
 fiat/NISAを含むtrack全体の順序は親trackを上書きしない。
@@ -15,7 +15,7 @@ fiat/NISAを含むtrack全体の順序は親trackを上書きしない。
 
 ## 1. Goal
 
-Life Manager が **人間をループに入れずに「外に応募し続ける」** 単一エンジンを持つ。
+Mr.bot が **人間をループに入れずに「外に応募し続ける」** 単一エンジンを持つ。
 対象は3つ、しかし **エージェントは3つではない。config が3つ**。
 
 | pack | 何に応募するか | 個人固有の config |
@@ -74,11 +74,11 @@ worktree `anicca-project/.worktrees/job-profile-targets`。focused test 18/18 PA
 
 | 資産 | パス | 用途 |
 |---|---|---|
-| 雛形ループ (cloud まで通っている唯一の型) | `apps/life-manager/scripts/financial-report-boot.sh` → `lib/financial-report-runtime.js` → `lib/telegram.js` → `migrations/*.sql` → `*.test.js` → `scripts/install-financial-report-launchd.sh` | P0 はこれを丸ごと複製 |
-| Telegram 送信 (cloud portable、chat_id は DB 由来) | `apps/life-manager/lib/telegram.js:19-20`、tenant 解決 `financial-report-runtime.js:49-50` (`lm_users.telegram_chat_id`) | 全 pack の報告 |
+| 雛形ループ (cloud まで通っている唯一の型) | `apps/mr-bot/scripts/financial-report-boot.sh` → `lib/financial-report-runtime.js` → `lib/telegram.js` → `migrations/*.sql` → `*.test.js` → `scripts/install-financial-report-launchd.sh` | P0 はこれを丸ごと複製 |
+| Telegram 送信 (cloud portable、chat_id は DB 由来) | `apps/mr-bot/lib/telegram.js:19-20`、tenant 解決 `financial-report-runtime.js:49-50` (`lm_users.telegram_chat_id`) | 全 pack の報告 |
 | Guardian / 死活監視 | `skills/self/healthcheck-runtime-loop.sh:50-54` (DEAD/STALE/OK)、`skills/self/self-fix.sh` | 「12日間死んでいた」の再発防止 |
 | 自己改善の手本 | `~/.openclaw/skills/ai-entity-article-writer/scripts/self-improve.sh:352-416` (measure→learn→apply→keep/revert、`state/playbook.json`、7日未満は学習しない `:380`) | P4 の設計元 |
-| eval harness | `apps/life-manager/eval/*.js` + `*.jsonl`、`npm run eval` | pack の qualify 判定を eval 化 |
+| eval harness | `apps/mr-bot/eval/*.js` + `*.jsonl`、`npm run eval` | pack の qualify 判定を eval 化 |
 | 証拠ゲート | `skills/connector/.../evidence_gate.py` (PNG magic-number + ≥5000 byte) | E2 に流用 |
 
 ---
@@ -110,13 +110,13 @@ DISCOVER → QUALIFY → ACT → EVIDENCE GATE → TRACK → LEARN
 |---|---|---|
 | エンジン | `runtime/loop/outbound/` | 親 `runtime/loop/` は実在 (31 entries) |
 | 冪等 / receipt | `runtime/loop/outbound/receipt.mjs` (将来 `packages/job-protocol` に切り出す) | 新規 |
-| provider I/O | `apps/life-manager/lib/providers/{luma,connpass,gmail,cloakbrowser}.js` | 新規、既存 lib/ の下 |
-| config pack | `skills/life-manager/outbound/{events,funders,jobs}/` | 新規、`skills/` は実在 |
-| 製品 entrypoint + test + eval | `apps/life-manager/{scripts,lib,test,eval}/` | 実在 |
+| provider I/O | `apps/mr-bot/lib/providers/{luma,connpass,gmail,cloakbrowser}.js` | 新規、既存 lib/ の下 |
+| config pack | `skills/mr-bot/outbound/{events,funders,jobs}/` | 新規、`skills/` は実在 |
+| 製品 entrypoint + test + eval | `apps/mr-bot/{scripts,lib,test,eval}/` | 実在 |
 | durable state | Supabase (既存 `lm_users` に `telegram_chat_id` あり)。ローカル scratch は `~/.openclaw/state/outbound/` | 実在 |
 | spec | 本ファイル。証跡は `docs/evidence/outbound/` | 実在 |
 
-雛形の実体 (実測): `apps/life-manager/scripts/financial-report-boot.sh` (7行) は
+雛形の実体 (実測): `apps/mr-bot/scripts/financial-report-boot.sh` (7行) は
 `node ../lib/report-job-adapter.js enqueue` を呼ぶ薄い wrapper。
 本体は `lib/financial-report-runtime.js` (495行)。`lib/telegram.js` (158行) に
 **`sendPhoto` は既に実装済** (`telegram.js:29`、FormData + Blob image/png)。
@@ -273,7 +273,7 @@ Cold outbound の型 (実測 BP):
 | a16z speedrun | 解決: **rolling で今も受付中**。SR008 = 2027年1-4月 SF、審査4-6週、採択率<0.4%、ソロ創業者可 |
 | YC の AI 生成応募に関する公式見解 | **存在を確認できなかった**。「YC が AI 応募を禁止」は未検証として扱う |
 | Incubate Fund / Genesia 4号の LP に MUFG がいるか | 非公開で判定不能。**§7.1 の線引きにより無関係になった** |
-| `apps/life-manager` の真のテスト数 | `npm install` (#3b) 後に判明。現状は `tldts` 欠落で即死 |
+| `apps/mr-bot` の真のテスト数 | `npm install` (#3b) 後に判明。現状は `tldts` 欠落で即死 |
 | VC 連絡先のオープンデータセット | 見つからず (OpenVC 等はゲート付き商用)。プログラム的一括取得は未検証 |
 
 ## 11. 決定ログ (2026-07-31 の不確実性掃討)
@@ -285,4 +285,4 @@ Cold outbound の型 (実測 BP):
 | D3 | **MUFG 除外は「運営/CVC」のみ。LP に過ぎない先は応募可** | 除外対象 = MUCAP / MUIP / MUFG 冠プログラム。LP は応募者情報への可視性が無い。この線で 1stRound (partner list grep 0 hit) と HAX Tokyo (SOSV/住友商事/SCSK) はクリーン |
 | D4 | **YC は Fall 2026 に late で今すぐ出す** | 18項目記入済 + 面接8-9月 + 「we are still accepting late applications」。待つ理由がゼロ |
 | D5 | **エンジンは feature branch → PR で main へ** | `Daisuke134/life-manager` は branch protection ゼロ・test CI ゼロ (`sec-scan.yml` のみ)。直 push は危険 |
-| D6 | **新ディレクトリを増やさない** | `packages/*` と `adapters/{providers,state}` は実在しない。実在する `runtime/loop/` と `apps/life-manager/lib/` の下に置く |
+| D6 | **新ディレクトリを増やさない** | `packages/*` と `adapters/{providers,state}` は実在しない。実在する `runtime/loop/` と `apps/mr-bot/lib/` の下に置く |

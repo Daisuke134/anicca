@@ -29,7 +29,7 @@ class JapaneseDiceLoopContractTests(unittest.TestCase):
         self.assertIn("英語sourceは自然な日本語の付加価値へ翻訳", text)
         self.assertIn("アカウント固有設定の関心領域", text)
         self.assertIn('registry_enforce_or_exit "$LOOP_NAME"', text)
-        self.assertIn('--loop "${LIFE_MANAGER_LOOP_ID:-$LOOP_NAME}"', text)
+        self.assertIn('--loop "${MR_BOT_LOOP_ID:-$LOOP_NAME}"', text)
 
     def test_launchd_contract_is_half_hourly_and_offset(self):
         loop = tomllib.loads((ROOT / "loops/x-repost-ja/loop.toml").read_text())

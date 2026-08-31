@@ -15,14 +15,14 @@ def _find_skill_root(start: Path) -> Path:
 
 
 _SKILL_ROOT = _find_skill_root(Path(__file__).resolve())
-_life_manager_state_home = os.environ.get("LIFE_MANAGER_STATE_HOME", "").strip()
-LIFE_MANAGER_STATE_HOME = Path(
-    _life_manager_state_home or "~/.local/state/life-manager"
+_mr_bot_state_home = os.environ.get("MR_BOT_STATE_HOME", "").strip()
+MR_BOT_STATE_HOME = Path(
+    _mr_bot_state_home or "~/.local/state/mr-bot"
 ).expanduser()
 _publisher_state_dir = os.environ.get("CAPAFY_PUBLISHER_STATE_HOME", "").strip()
 PUBLISHER_STATE_DIR = Path(
     _publisher_state_dir
-    or LIFE_MANAGER_STATE_HOME / "runtime" / "capafy-publisher"
+    or MR_BOT_STATE_HOME / "runtime" / "capafy-publisher"
 ).expanduser()
 SKILL_CONFIG_PATH = PUBLISHER_STATE_DIR / "config.json"
 _work_dir_override = os.environ.get("CAPAFY_PUBLISH_WORK_DIR", "").strip()
@@ -106,7 +106,7 @@ __all__ = [
     "DSN_VALUE_PATTERN",
     "ENV_REF_PATTERN",
     "GOOGLE_OFFICIAL_URL",
-    "LIFE_MANAGER_STATE_HOME",
+    "MR_BOT_STATE_HOME",
     "WORKSPACE_DOCUMENTS_MANIFEST_NAME",
     "OPENAI_OFFICIAL_URL_V1",
     "PII_PATTERNS",

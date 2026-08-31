@@ -104,7 +104,7 @@ AGENT_ENV = os.path.expanduser(
         "PM_TRADE_AGENT_ENV", "~/.anicca-founder/agents/polymarket-agent/.env"
     )
 )
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 LEDGER_RECORD_JS = str(REPO_ROOT / "skills/earn/lib/record.mjs")
 LEDGER_PATH = str(REPO_ROOT / "skills/earn/state/earn-ledger.jsonl")
 EARN_GUARD_JS = str(REPO_ROOT / "skills/_shared/lib/earn-guard.mjs")

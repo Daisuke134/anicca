@@ -37,7 +37,7 @@ let metadata;
 try { metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8')); } catch { process.exit(2); }
 const real = (value) => fs.realpathSync.native(value);
 if (!metadata || typeof metadata !== 'object') process.exit(3);
-if (metadata.namespace !== 'life-manager') process.exit(4);
+if (metadata.namespace !== 'mr-bot') process.exit(4);
 if (real(String(metadata.release_root || '')) !== real(releaseRoot)) process.exit(5);
 if (metadata.release_id !== path.basename(releasePath)) process.exit(6);
 if (!/^[0-9a-f]{40}$/.test(String(metadata.sha || ''))) process.exit(7);

@@ -3,18 +3,18 @@
 > **Routing:** Ponytail full first, then Superpowers TDD. Sol owns this plan, review, deployment, and live Telegram
 > evidence. Luna alone writes production code and tests.
 
-**Goal:** Port only the reviewed CFO detail-button receiver to the current production Life Manager package so the
+**Goal:** Port only the reviewed CFO detail-button receiver to the current production Mr.bot package so the
 already-delivered Telegram report buttons work, while the Moneytree/report/hourly loop stays local.
 
 **Why this port is required:** The reviewed local CFO branch contains `apps/life-call`, but Railway production is
-measured at `canonical/main:apps/life-manager` on service `life-call`. The two branch histories have no merge base.
-Deploying the local branch would replace the current Life Manager package, so it is forbidden. This plan adds one
+measured at `canonical/main:apps/mr-bot` on service `life-call`. The two branch histories have no merge base.
+Deploying the local branch would replace the current Mr.bot package, so it is forbidden. This plan adds one
 small bridge to current main instead.
 
 ```mermaid
 flowchart LR
     L[Local CFO\nMoneytree + report] --> TG[Telegram report]
-    TG -->|cfo button tap| W[Current production webhook\napps/life-manager]
+    TG -->|cfo button tap| W[Current production webhook\napps/mr-bot]
     W --> I[Existing chat to UID lookup]
     I --> S[Exact immutable snapshot\nUID + date + revision]
     S --> E[Edit same message]
@@ -35,9 +35,9 @@ Binance, advice, and changes to existing ask/Gmail/discovery/payout/diet callbac
 ### Task 1: Handle current CFO detail buttons in production
 
 **Files:**
-- Create: `apps/life-manager/lib/cfo-telegram-callback.js`
-- Modify: `apps/life-manager/server.js`
-- Modify: `apps/life-manager/test/telegram-callback-http-contract.test.js`
+- Create: `apps/mr-bot/lib/cfo-telegram-callback.js`
+- Modify: `apps/mr-bot/server.js`
+- Modify: `apps/mr-bot/test/telegram-callback-http-contract.test.js`
 
 - [x] **Step 1 — RED**
 
@@ -89,5 +89,5 @@ new message appears, and Railway logs contain no raw financial/provider failure.
 
 ## Definition of done
 
-The existing real CFO report's detail button works in Telegram through the current production Life Manager webhook.
+The existing real CFO report's detail button works in Telegram through the current production Mr.bot webhook.
 Local Moneytree/report generation remains local and production receives only the immutable snapshot callback read.

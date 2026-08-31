@@ -30,8 +30,8 @@
 ### Task 1: Fill and validate the measured confirm identity controls
 
 **Files:**
-- Modify: `apps/life-manager/lib/peatix-browser-provider.test.js`
-- Modify: `apps/life-manager/lib/peatix-browser-provider.js`
+- Modify: `apps/mr-bot/lib/peatix-browser-provider.test.js`
+- Modify: `apps/mr-bot/lib/peatix-browser-provider.js`
 
 - [x] **Step 1: Add focused failing measured-flow coverage**
 
@@ -44,7 +44,7 @@ Cover missing/invalid Kana profile, missing/duplicate/hidden confirm control, se
 - [x] **Step 3: Run focused RED**
 
 ```bash
-node --test apps/life-manager/lib/peatix-browser-provider.test.js
+node --test apps/mr-bot/lib/peatix-browser-provider.test.js
 ```
 
 Expected: the new exact fill/validation assertions fail because production ignores Kana profile fields and clicks before filling them.
@@ -56,12 +56,12 @@ Extend the private profile validator, fill the two exact scoped controls once, a
 - [x] **Step 5: Run focused and required integration GREEN**
 
 ```bash
-node --test apps/life-manager/lib/peatix-browser-provider.test.js \
-  apps/life-manager/lib/connector-peatix-workflow.test.js \
-  apps/life-manager/lib/connector-minimal-production.test.js \
+node --test apps/mr-bot/lib/peatix-browser-provider.test.js \
+  apps/mr-bot/lib/connector-peatix-workflow.test.js \
+  apps/mr-bot/lib/connector-minimal-production.test.js \
   skills/connector/test/native-entrypoint.test.js \
   skills/connector/test/minimal-production-contract.test.js
-node --check apps/life-manager/lib/peatix-browser-provider.js
+node --check apps/mr-bot/lib/peatix-browser-provider.js
 git diff --check
 ```
 

@@ -21,7 +21,7 @@ only an unbudgeted planning estimate.
 | Decision | Source | Core quote |
 |---|---|---|
 | Treat the live overshoot as the regression fixture | [`2026-07-29-order10i-live-summary.json`](../../evidence/job-search-loop/2026-07-29-order10i-live-summary.json) | “Admission used a reservation smaller than the possible provider-reported charge” |
-| Fix the amount supplied to admission, not truthful settlement | [Life Manager token budget ledger](https://github.com/Daisuke134/life-manager/blob/1192807c7b6a2db1f6c1f7fe1d2cfd81df3905c8/runtime/agent-runner/token_budget.py) | `daily_consumed + reservation_tokens > daily_limit` |
+| Fix the amount supplied to admission, not truthful settlement | [Mr.bot token budget ledger](https://github.com/Daisuke134/life-manager/blob/1192807c7b6a2db1f6c1f7fe1d2cfd81df3905c8/runtime/agent-runner/token_budget.py) | `daily_consumed + reservation_tokens > daily_limit` |
 | Reserve before executing an agent-owned financial side effect | [AlgoPay SDK](https://github.com/Algodev-Studio/algopay-sdk/blob/fd95a38b156ad1fcb6eda31c02896dd66498503a/python/src/algopay/client.py) | `reservation_tokens = await guards_chain.reserve(context)` |
 | A reservation secures the amount before capture | [Stripe manual capture](https://docs.stripe.com/payments/place-a-hold-on-a-payment-method) | “決済のオーソリにより、顧客の支払い方法で金額が確保されて保証されます。” |
 

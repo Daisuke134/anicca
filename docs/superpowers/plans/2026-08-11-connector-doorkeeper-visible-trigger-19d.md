@@ -12,7 +12,7 @@
 
 ## Constraints and task
 
-- Modify only `apps/life-manager/lib/connector-doorkeeper-workflow.js` and matching test.
+- Modify only `apps/mr-bot/lib/connector-doorkeeper-workflow.js` and matching test.
 - RED fixture has one visible trigger and one hidden final submit with the same label; eligible candidate must currently be rejected.
 - GREEN filters exact submit-label controls by `visible === true` before requiring exactly one.
 - Duplicate visible triggers still fail closed; hidden control alone still fails; unavailable/payment/JSON-LD/calendar contracts remain unchanged.

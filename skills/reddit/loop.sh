@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# reddit-loop/loop.sh — ONE no-human wake of the Reddit demand-gen loop (feeds life-manager-loop). This is NOT
+# reddit-loop/loop.sh — ONE no-human wake of the Reddit demand-gen loop (feeds mr-bot-loop). This is NOT
 # revenue; it measures the DEMAND engine's health/progress honestly. Anti-fake: a signup/post counts only if a real
 # marker (posts.jsonl / attributed-signups.jsonl) exists; karma comes from the account ledger; nothing is invented.
 # Seams: RD_TEST=1 + RD_ACCOUNTS=<file> + RD_DIR + RD_REQ.
@@ -68,7 +68,7 @@ else STATUS="ACT — post ONE more honest DISCLOSED contribution / answer genuin
 if [ -n "$HEAL" ]; then mkdir -p "$(dirname "$REQ")"; printf '{"loop":"reddit","ts":"%s","heal":"%s"}\n' "$(date -u +%FT%TZ)" "${HEAL//\"/}" > "$REQ"; else rm -f "$REQ" 2>/dev/null||true; fi
 TMP="$STATE_MD.tmp.$$"
 {
-  echo "# Reddit demand-gen loop — STATE (feeds life-manager-loop; HONEST DISCLOSED participation, NOT covert/broadcast)"
+  echo "# Reddit demand-gen loop — STATE (feeds mr-bot-loop; HONEST DISCLOSED participation, NOT covert/broadcast)"
   echo "goal: drive REAL LM signups via transparent builder participation. A post/signup counts ONLY if logged with a real URL."
   echo "last_wake_utc: $(date -u +%FT%TZ)"
   echo "heal_first: ${HEAL:-account present ✓, camofox ✓}"
@@ -84,7 +84,7 @@ TMP="$STATE_MD.tmp.$$"
 } > "$TMP" && mv "$TMP" "$STATE_MD"
 echo "[reddit-loop] accounts=$N_ACCT karma=$KARMA posts=$NPOST($POST_FRESH) signups=$SIGNUPS | heal=${HEAL:-none} | $STATUS"
 
-# Liveness heartbeat (FIND-032, ported from life-manager-loop): touch it HERE, in the deterministic MEASURE
+# Liveness heartbeat (FIND-032, ported from mr-bot-loop): touch it HERE, in the deterministic MEASURE
 # core (runs first on every pass — startup + daily cron — via STEP1, completes in ~2s, cannot derail).
 # Previously the reddit heartbeat was touched ONLY at the very end of the open-ended STARTUP/cron pass
 # ("FINALLY touch"), AFTER STEP2 ACT — and Reddit ACT routinely stalls (fresh top-level posts auto-removed

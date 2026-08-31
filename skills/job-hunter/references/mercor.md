@@ -1,6 +1,6 @@
 # Mercor provider reference
 
-Mercor is a provider of the Life Manager Job Hunter loop, not a separate application executor. The canonical integration spec is `docs/superpowers/specs/2026-08-22-mercor-life-manager-consolidation.md`; the side-effect owner is `apps/job-search-loop/`.
+Mercor is a provider of the Mr.bot Job Hunter loop, not a separate application executor. The canonical integration spec is `docs/superpowers/specs/2026-08-22-mercor-mr-bot-consolidation.md`; the side-effect owner is `apps/job-search-loop/`.
 
 Mercor is global rather than Japanese-only. Locale selects the approved resume/material variant; discovery remains open to every role family that the verified fact bank supports.
 

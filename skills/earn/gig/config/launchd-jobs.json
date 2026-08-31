@@ -17,7 +17,7 @@
     "GIG_STATE_DIR": "{{HOME}}/gig",
     "GIG_LOG_DIR": "{{GIG_STATE_DIR}}/logs",
     "GIG_BRAKE_DIR": "{{GIG_STATE_DIR}}/state",
-    "LIFE_MANAGER_HOME": "{{HOME}}/.local/state/life-manager",
+    "MR_BOT_HOME": "{{HOME}}/.local/state/mr-bot",
     "CDP_PORT": "9223",
     "CDP_DAILY_DRIVER_PROFILE": "{{HOME}}/.cloak/profiles/gig-daily-driver",
     "SESSION_VAULT_DIR": "{{HOME}}/.cloak/vault/gig-daily-driver",
@@ -35,7 +35,7 @@
     "GIG_STOREFRONT_PRESENTATION_SERVICE_ID": "",
     "GIG_STOREFRONT_SCOPE_SERVICE_ID": "",
     "GIG_STOREFRONT_CAPABILITY_EVIDENCE": "",
-    "WRITER_STATE_DIR": "{{HOME}}/.local/state/life-manager/writer",
+    "WRITER_STATE_DIR": "{{HOME}}/.local/state/mr-bot/writer",
     "WRITER_LOG_DIR": "{{HOME}}/.openclaw/logs",
     "WRITER_TELEGRAM_TARGET": "",
     "WRITER_GMAIL_ACCOUNT": "",
@@ -50,13 +50,13 @@
     "CDP_DAILY_DRIVER_PORT": "{{CDP_PORT}}",
     "CDP_DAILY_DRIVER_PROFILE": "{{CDP_DAILY_DRIVER_PROFILE}}",
     "GIG_STATE_DIR": "{{GIG_STATE_DIR}}",
-    "GIG_ENV_FILE": "{{LIFE_MANAGER_HOME}}/.env",
+    "GIG_ENV_FILE": "{{MR_BOT_HOME}}/.env",
     "GIG_REPORT_CHAT": "{{GIG_REPORT_CHAT}}",
     "GIG_NOTIFY_EMAIL": "{{GIG_NOTIFY_EMAIL}}",
     "GIG_GOG_ACCOUNT": "{{GIG_GOG_ACCOUNT}}",
     "GIG_GOG_BIN": "{{GIG_GOG_BIN}}",
-    "LIFE_MANAGER_HOME": "{{LIFE_MANAGER_HOME}}",
-    "LIFE_MANAGER_REPO": "{{RELEASE}}",
+    "MR_BOT_HOME": "{{MR_BOT_HOME}}",
+    "MR_BOT_REPO": "{{RELEASE}}",
     "GIG_STOREFRONT_ROOT": "{{GIG_STOREFRONT_ROOT}}",
     "ANICCA_JOB_PROFILE": "{{ANICCA_JOB_PROFILE}}"
   },
@@ -96,7 +96,7 @@
 
   "jobs": [
     {
-      "label": "ai.anicca.life-manager-upwork-browser",
+      "label": "ai.anicca.mr-bot-upwork-browser",
       "lane": "upwork-browser",
       "summary": "Keeps the dedicated logged-in Chromium for the zero-spend Upwork lane.",
       "program": [
@@ -111,7 +111,7 @@
         "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
         "GIG_IGNORE_DISK_WRITERS_STOP": "1",
         "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233",
-        "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.life-manager-upwork-browser"
+        "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.mr-bot-upwork-browser"
       },
       "RunAtLoad": true,
       "KeepAlive": true,
@@ -120,7 +120,7 @@
       "log_basename": "upwork-browser-launchd"
     },
     {
-      "label": "ai.anicca.life-manager-upwork-free-loop",
+      "label": "ai.anicca.mr-bot-upwork-free-loop",
       "lane": "upwork-free",
       "summary": "Reconciles free Upwork capacity, invitations, proposals, and offers without purchasing anything.",
       "program": [
@@ -138,9 +138,9 @@
         "{{GIG_STATE_DIR}}/state/upwork-free-loop.json"
       ],
       "env": {
-        "CLOAK_BROWSER_OWNER": "life-manager-upwork-free-loop",
+        "CLOAK_BROWSER_OWNER": "mr-bot-upwork-free-loop",
         "CLOAK_CDP_BASE_URL": "http://127.0.0.1:9233",
-        "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.life-manager-upwork-browser"
+        "CLOAK_BROWSER_LAUNCHD_LABEL": "ai.anicca.mr-bot-upwork-browser"
       },
       "StartInterval": 300,
       "ThrottleInterval": 60,
@@ -289,7 +289,7 @@
     {
       "label": "ai.anicca.article-daily",
       "lane": "writer-creator",
-      "summary": "Runs the bounded Writer creator from the immutable Life Manager release.",
+      "summary": "Runs the bounded Writer creator from the immutable Mr.bot release.",
       "env_profile": "writer",
       "program": [
         "{{PYTHON}}",

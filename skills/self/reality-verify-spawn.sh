@@ -64,11 +64,11 @@ case "$REQUIRED_COUNT" in ''|*[!0-9]*) REQUIRED_COUNT=1 ;; esac
 # REQ-008 edge case: normalize "capafy" and "capafy-loop" to the same "capafy-loop" form.
 LOOP="${LOOP_RAW%-loop}-loop"
 
-STATE="$HOME/.local/state/life-manager/state"
+STATE="$HOME/.local/state/mr-bot/state"
 mkdir -p "$STATE" 2>/dev/null || true
 TS="$(date +%s%3N 2>/dev/null || date +%s000)"
 RESULT="$STATE/.reality-verify-$LOOP-$TS.json"
-LOG="$HOME/.local/state/life-manager/logs/reality-verify-$LOOP.log"
+LOG="$HOME/.local/state/mr-bot/logs/reality-verify-$LOOP.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
 
 # Default claimed-urls to the primary artifact-or-public-url when it looks like a real URL and

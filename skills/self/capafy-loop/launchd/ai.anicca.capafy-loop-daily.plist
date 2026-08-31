@@ -12,9 +12,9 @@
 	<key>WorkingDirectory</key>
 	<string>__REPO_ROOT__</string>
 	<key>StandardErrorPath</key>
-	<string>__LIFE_MANAGER_HOME__/logs/capafy-loop-daily.err</string>
+	<string>__MR_BOT_HOME__/logs/capafy-loop-daily.err</string>
 	<key>StandardOutPath</key>
-	<string>__LIFE_MANAGER_HOME__/logs/capafy-loop-daily.out</string>
+	<string>__MR_BOT_HOME__/logs/capafy-loop-daily.out</string>
 	<key>StartInterval</key>
 	<integer>3600</integer>
 	<key>ThrottleInterval</key>

@@ -8,8 +8,8 @@
 
 **Files / soft target:**
 
-- Modify `apps/life-manager/lib/connector-production-browser-harness.js` — about 45–75 production LOC.
-- Modify `apps/life-manager/lib/connector-production-browser-harness.test.js` — about 90–150 regression LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.js` — about 45–75 production LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.test.js` — about 90–150 regression LOC.
 - No new runtime module, service, state, selector registry, or dependency.
 
 ## Required contracts

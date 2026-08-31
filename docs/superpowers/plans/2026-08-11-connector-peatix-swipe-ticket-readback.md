@@ -20,7 +20,7 @@ PeatixのQR型ではないswipe ticket pageをsame-event registration proofと�
 
 ## TDD slice
 
-Ownershipは`apps/life-manager/lib/peatix-browser-provider.js`とmatching testの2 filesだけ。Production soft target 25–45 LOC、test 60–100 LOC。
+Ownershipは`apps/mr-bot/lib/peatix-browser-provider.js`とmatching testの2 filesだけ。Production soft target 25–45 LOC、test 60–100 LOC。
 
 RED:
 

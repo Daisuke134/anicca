@@ -9,8 +9,8 @@ every 15 min, 24h/day. During the operator's quiet hours (`profile.alarm.quietHo
 ..`quietHoursEnd`, currently `23:30–05:30` JST) the meeting scanner has no reason to
 run — it just burns a DeepSeek call + a `gog calendar` round-trip each fire (~24/night).
 
-**Fix:** `$LIFE_MANAGER_REPO/skills/anicca-meeting-attendant/scripts/check-and-spawn.sh` now
-sources the canonical guard `$LIFE_MANAGER_REPO/skills/_shared/quiet-hours-guard.sh`
+**Fix:** `$MR_BOT_REPO/skills/anicca-meeting-attendant/scripts/check-and-spawn.sh` now
+sources the canonical guard `$MR_BOT_REPO/skills/_shared/quiet-hours-guard.sh`
 immediately after `set -euo pipefail`, before env-load and the `gog` call. The guard
 reads the live profile window and `exit 0` silently when `datetime.now()` (host TZ =
 Asia/Tokyo) falls inside it. No new quiet-hours logic was added — single source of truth.
@@ -39,7 +39,7 @@ first_error, decision, ts`).
 
 **0 crons disabled.** No genuinely-dead cron exists: every error is transient
 (provider cooldown, restart, timeout) and almost all are on the `cron-protect.txt`
-list (income / content / safety / life-manager core). Disabling per the
+list (income / content / safety / mr-bot core). Disabling per the
 "only if confirmed truly dead, else leave for human review" rule = disable nothing.
 The 64-error count is dominated by the documented multi-provider cooldown cascade —
 a budget/fuel problem to fix in the model-router, not by culling crons.

@@ -39,7 +39,7 @@
 - [x] Run the lock fixture, Writer focused tests, and `bash -n skills/writer-agent/article-daily.sh`.
 - [x] Save `lm-loop doctor all` and `lm-loop status all` before snapshots with every label, release, argv, state root, and terminal receipt.
 - [x] Commit, push, open a PR, obtain fresh read-only review, merge, and cut a main-derived immutable release.
-- [x] Apply `article-daily`, `article-resume`, and `article-healthcheck` one at a time with `LIFE_MANAGER_APPLY_TARGET`; read back each exact release SHA, argv, state root, and terminal receipt before applying the next label.
+- [x] Apply `article-daily`, `article-resume`, and `article-healthcheck` one at a time with `MR_BOT_APPLY_TARGET`; read back each exact release SHA, argv, state root, and terminal receipt before applying the next label.
 - [x] Save the same all-loop after snapshots and fail the task unless only those three Writer labels changed and every sibling release, state root, and plist/argv is unchanged. Accept a sibling receipt change only as a valid natural terminal advancement from the same owner with no new failure or duplicate effect.
 
 ### Task 2: Prove one complete headline-backed article run

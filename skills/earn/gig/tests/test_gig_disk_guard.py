@@ -15,7 +15,7 @@ GIG_ROOT = Path(__file__).resolve().parents[1]
 GUARD_PATH = GIG_ROOT / "scripts" / "gig_disk_guard.py"
 GIG_BROWSER_PATH = GIG_ROOT / "scripts" / "launch_gig_browser.sh"
 MANIFEST_PATH = GIG_ROOT / "config" / "launchd-jobs.json"
-SELF_BUILD_PATH = GIG_ROOT.parents[1] / "life-manager" / "self-build-daily.sh"
+SELF_BUILD_PATH = GIG_ROOT.parents[1] / "mr-bot" / "self-build-daily.sh"
 WRITER_DAILY_PATH = GIG_ROOT.parents[1] / "writer-agent" / "article-daily.sh"
 
 
@@ -26,7 +26,7 @@ def _isolated_host_control_state(tmp_path, monkeypatch):
     monkeypatch.delenv("GIG_HOST_STATE_DIR", raising=False)
     monkeypatch.delenv("DISK_CONTROL_STATE_DIR", raising=False)
     monkeypatch.delenv("OPENCLAW_STATE_DIR", raising=False)
-    monkeypatch.delenv("LIFE_MANAGER_HOST_STATE_DIR", raising=False)
+    monkeypatch.delenv("MR_BOT_HOST_STATE_DIR", raising=False)
     (tmp_path / ".openclaw" / "state").mkdir(parents=True)
 
 
@@ -124,7 +124,7 @@ def test_disk_measurement_exception_fails_closed_without_exec(tmp_path, monkeypa
         ("disk-pressure.block", "disk_pressure_block", "free=7.5GiB\n"),
     ),
 )
-def test_life_manager_producer_flags_block_child_before_exec(
+def test_mr_bot_producer_flags_block_child_before_exec(
     tmp_path, monkeypatch, capsys, flag_name, reason, payload,
 ):
     guard = _load_guard()
@@ -144,7 +144,7 @@ def test_life_manager_producer_flags_block_child_before_exec(
 
     receipt = json.loads(capsys.readouterr().out)
     assert receipt["reason"] == reason
-    assert receipt["gate"] == "life-manager-producer-preflight"
+    assert receipt["gate"] == "mr-bot-producer-preflight"
     assert receipt["flag_path"] == str(host_state / flag_name)
     assert receipt["effect"] == 0
     assert receipt["readback"] == 0
@@ -231,7 +231,7 @@ def test_missing_host_control_state_fails_closed_before_exec(tmp_path, monkeypat
 
     receipt = json.loads(capsys.readouterr().out)
     assert receipt["reason"] == "disk_policy_unavailable"
-    assert receipt["gate"] == "life-manager-producer-preflight"
+    assert receipt["gate"] == "mr-bot-producer-preflight"
     assert receipt["flag_path"] == str(host_state)
 
 
@@ -362,7 +362,7 @@ def test_browser_script_preflights_before_profile_and_chromium_with_fixed_policy
     assert 'GIG_HOST_STATE_DIR="$HOME/.openclaw/state"' in script
     assert 'GIG_STATE_DIR="$HOME/gig"' in script
     assert "unset GIG_IGNORE_DISK_PRESSURE_BLOCK GIG_IGNORE_DISK_WRITERS_STOP" in script
-    assert "unset DISK_CONTROL_STATE_DIR OPENCLAW_STATE_DIR LIFE_MANAGER_HOST_STATE_DIR" in script
+    assert "unset DISK_CONTROL_STATE_DIR OPENCLAW_STATE_DIR MR_BOT_HOST_STATE_DIR" in script
     assert "export GIG_DISK_HEADROOM_KIB GIG_HOST_STATE_DIR GIG_STATE_DIR" in script
     assert '"$DISK_GUARD" /usr/bin/true' in script
 
@@ -372,11 +372,11 @@ def test_self_build_uses_shared_guard_before_dependency_and_node_effects():
 
     assert "GIG_DISK_HEADROOM_KIB=524288" in script
     assert "GIG_HOST_STATE_DIR=" in script
-    assert 'readonly LM_SELFBUILD_CANONICAL_HOST_STATE="$LIFE_MANAGER_STATE_HOME/state"' in script
+    assert 'readonly LM_SELFBUILD_CANONICAL_HOST_STATE="$MR_BOT_STATE_HOME/state"' in script
     assert "GIG_STATE_DIR=" in script
     assert script.count('/usr/bin/python3 "$DISK_GUARD" /usr/bin/true') == 2
     assert "unset GIG_IGNORE_DISK_PRESSURE_BLOCK GIG_IGNORE_DISK_WRITERS_STOP" in script
-    assert "unset DISK_CONTROL_STATE_DIR OPENCLAW_STATE_DIR LIFE_MANAGER_HOST_STATE_DIR" in script
+    assert "unset DISK_CONTROL_STATE_DIR OPENCLAW_STATE_DIR MR_BOT_HOST_STATE_DIR" in script
     assert script.count("/usr/bin/true") == 2
     first_guard = script.index("/usr/bin/true")
     npm_effect = script.index("npm ci")
@@ -426,16 +426,16 @@ def test_self_build_stop_flag_blocks_npm_and_node_effects(tmp_path, flag_name, r
         "GIG_HOST_STATE_DIR=" + str(hostile_state) + "\n"
         "DISK_CONTROL_STATE_DIR=" + str(hostile_state) + "\n"
         "OPENCLAW_STATE_DIR=" + str(hostile_state) + "\n"
-        "LIFE_MANAGER_HOST_STATE_DIR=" + str(hostile_state) + "\n"
+        "MR_BOT_HOST_STATE_DIR=" + str(hostile_state) + "\n"
         "GIG_STATE_DIR=" + str(hostile_state) + "\n"
-        "LIFE_MANAGER_STATE_HOME=" + str(hostile_life) + "\n"
+        "MR_BOT_STATE_HOME=" + str(hostile_life) + "\n"
         "REPO_ROOT=" + str(tmp_path / "hostile-repo") + "\n"
         "DISK_GUARD=" + str(tmp_path / "hostile-guard.py") + "\n"
         "DAILY_CLI=" + str(tmp_path / "hostile-cli.js") + "\n",
         encoding="utf-8",
     )
     (repo / "skills" / "earn" / "gig" / "scripts").mkdir(parents=True)
-    (repo / "apps" / "life-manager" / "scripts").mkdir(parents=True)
+    (repo / "apps" / "mr-bot" / "scripts").mkdir(parents=True)
     guard_source = GUARD_PATH.read_text(encoding="utf-8")
     guard_source = guard_source.replace(
         "from __future__ import annotations\n",
@@ -450,7 +450,7 @@ def test_self_build_stop_flag_blocks_npm_and_node_effects(tmp_path, flag_name, r
     (repo / "skills" / "earn" / "gig" / "scripts" / "gig_disk_guard.py").write_text(
         guard_source, encoding="utf-8",
     )
-    (repo / "apps" / "life-manager" / "scripts" / "self-build-daily.js").write_text(
+    (repo / "apps" / "mr-bot" / "scripts" / "self-build-daily.js").write_text(
         "process.exit(0);\n", encoding="utf-8",
     )
     bin_dir.mkdir()
@@ -474,12 +474,12 @@ def test_self_build_stop_flag_blocks_npm_and_node_effects(tmp_path, flag_name, r
         "GIG_DISK_HEADROOM_KIB": "0",
         "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
         "GIG_IGNORE_DISK_WRITERS_STOP": "1",
-        "LIFE_MANAGER_ENV_FILE": str(env_file),
+        "MR_BOT_ENV_FILE": str(env_file),
         "LM_SELFBUILD_LOG": str(explicit_log),
         "GIG_HOST_STATE_DIR": str(hostile_state),
         "DISK_CONTROL_STATE_DIR": str(hostile_state),
         "OPENCLAW_STATE_DIR": str(hostile_state),
-        "LIFE_MANAGER_HOST_STATE_DIR": str(hostile_state),
+        "MR_BOT_HOST_STATE_DIR": str(hostile_state),
         "GIG_STATE_DIR": str(hostile_state),
         "GUARD_CALL_COUNT": str(tmp_path / "guard-calls"),
     })
@@ -496,7 +496,7 @@ def test_self_build_stop_flag_blocks_npm_and_node_effects(tmp_path, flag_name, r
     assert explicit_log.is_file()
     assert (tmp_path / "guard-calls").read_text(encoding="utf-8") == "1"
     receipt = json.loads(
-        (home / ".local" / "state" / "life-manager" / "state" / "disk-headroom.json")
+        (home / ".local" / "state" / "mr-bot" / "state" / "disk-headroom.json")
         .read_text(encoding="utf-8")
     )
     assert receipt["required_bytes"] == 536870912
@@ -537,7 +537,7 @@ def test_browser_stop_flag_blocks_before_profile_or_chromium(tmp_path, flag_name
         "GIG_HOST_STATE_DIR": str(hostile_state),
         "DISK_CONTROL_STATE_DIR": str(hostile_state),
         "OPENCLAW_STATE_DIR": str(hostile_state),
-        "LIFE_MANAGER_HOST_STATE_DIR": str(hostile_state),
+        "MR_BOT_HOST_STATE_DIR": str(hostile_state),
         "GIG_STATE_DIR": str(hostile_state),
         "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
         "GIG_IGNORE_DISK_WRITERS_STOP": "1",
@@ -594,7 +594,7 @@ def test_negotiate_ignores_preventive_flags_but_keeps_a_real_disk_floor():
     assert environment["GIG_DISK_HEADROOM_KIB"] == "524288"
 
 
-def test_writer_lanes_render_from_immutable_release_and_life_manager_state():
+def test_writer_lanes_render_from_immutable_release_and_mr_bot_state():
     import importlib.util
 
     release_path = Path("/release")
@@ -613,7 +613,7 @@ def test_writer_lanes_render_from_immutable_release_and_life_manager_state():
             "/release/skills/writer-agent"
         )
         assert rendered["EnvironmentVariables"]["ARTICLE_STATE_DIR"] == (
-            str(Path.home() / ".local/state/life-manager/writer")
+            str(Path.home() / ".local/state/mr-bot/writer")
         )
         assert rendered["EnvironmentVariables"]["GIG_DISK_HEADROOM_KIB"] == "524288"
         assert rendered["ProgramArguments"][1].endswith(

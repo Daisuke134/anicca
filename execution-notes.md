@@ -97,19 +97,19 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 ## 8i REPO-CONSOLIDATE — execution log (in progress)
 
 **Source:** Daisuke134/anicca-products @ `540b7a428e8e259e47acaa715812802fdb19f947`, path `apps/life-call/`
-**Target:** Daisuke134/life-manager (id 1248111245), path `apps/life-manager/`
-**Branch:** `claude/life-manager-e2e-handover-qkp2q6`
+**Target:** Daisuke134/life-manager (id 1248111245), path `apps/mr-bot/`
+**Branch:** `claude/mr-bot-e2e-handover-qkp2q6`
 
 ### Completed gates
 - [x] Read-only source access obtained (add_repo, shallow clone at /workspace/anicca-products)
 - [x] Source manifest: 184 tracked files under apps/life-call (183 migrated, .vcsdd/ metadata excluded)
-- [x] Snapshot copy apps/life-call -> apps/life-manager (183 files) + canonical spec -> docs/superpowers/specs/
+- [x] Snapshot copy apps/life-call -> apps/mr-bot (183 files) + canonical spec -> docs/superpowers/specs/
 - [x] Byte-equivalence proven: 0 diffs across all 183 files (docs/manifests/8i-life-call-source-manifest.txt, sha256 per file)
 - [x] Secret/PII scan: clean (only synthetic fixture phones, no keys/real PII)
 
 ### Remaining gates (blockers noted)
 - [x] Focused tests on migrated lib/** (all green)
-- [x] Full Life Manager test suite: 633 TAP pass / 0 fail (reviewer-measured; earlier 606 was a count-method imprecision)
+- [x] Full Mr.bot test suite: 633 TAP pass / 0 fail (reviewer-measured; earlier 606 was a count-method imprecision)
 - [x] Every eval suite: calendar 21/21, late 12/12, context 12/12, score 27/27, panel-privacy pass
 - [x] Production build smoke: server.js/scheduler.js syntax OK; nixpacks entrypoints valid
 - [x] Fresh-context adversarial review from detached candidate commit 8752cf35: VERDICT APPROVE, 0 blockers, 7 notes (manifest 183/183 sha256 verified vs source AND target; exactly 1 differing line = documented path rename; boot with empty env verified; history-safety PASS)
@@ -137,12 +137,12 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - care-detector.js personal-cadence + explicit-goal detection, no fixed cycle (0-1 visits never flag), no diagnosis fields; phy-cases.jsonl 12/12 (100%); contract 4/4; full suite fail 0. Spec §10 updated (row stays pending, L2 recorded).
 
 ## 8i REPO-CONSOLIDATE — DONE (2026-07-24, production cutover complete)
-- Cutover executed on the Mac-side agent with Railway access: service re-pointed to life-manager/apps/life-manager, active deployment 6806b0d4 = commit a7ac84d4 (exact main), /health 200 build lm27-voicemail-v1, zero-downtime 358/358, real TG message id 217, authenticated /panel all sections 200.
+- Cutover executed on the Mac-side agent with Railway access: service re-pointed to mr-bot/apps/mr-bot, active deployment 6806b0d4 = commit a7ac84d4 (exact main), /health 200 build lm27-voicemail-v1, zero-downtime 358/358, real TG message id 217, authenticated /panel all sections 200.
 - Independently verified from cloud session: anicca-products archived=true via GitHub API readback; evidence report in docs/evidence/8i-cutover-report.md (PR #1077); merge containment of a7ac84d4 in origin/main.
 - §10: 8i done. Pending count 24.
 
 ## 9b MKT-b / M-2 — done
-- Existing `ai.anicca.life-manager-daily` label, 10:15 cadence, rotation, account, and shared
+- Existing `ai.anicca.mr-bot-daily` label, 10:15 cadence, rotation, account, and shared
   agent-runner remain in place. The slideshow/card creative contract is replaced by the canonical
   16-row local FFmpeg video renderer.
 - TDD: missing generator/runtime RED, then generator `5/5` and runtime/launchd `6/6` GREEN.
@@ -234,7 +234,7 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
   GitHub readback is OPEN with `lm:type:self-heal`; DB readback is `issued` with the exact URL.
 - A second pass is `no-op`, the exact marker exists on one issue only, and the existing D0 picker
   selects `#1085`.
-- The single `ai.anicca.life-manager-dev` 04:10 launchd job points to the canonical wrapper, which
+- The single `ai.anicca.mr-bot-dev` 04:10 launchd job points to the canonical wrapper, which
   runs issue generation before delegating to the existing D0.
 - Focused tests are `7/7`; full tests exit 0; all evals remain 100%; changed-path secret/PII scans
   are clean.
@@ -242,7 +242,7 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 
 ## 10c DEV-c — done (real fresh-agent PR)
 - The existing launchd D0 now targets only canonical `Daisuke134/life-manager`, `origin/main`, and
-  `apps/life-manager`. It uses the shared fresh-agent runner and performs full tests/evals before
+  `apps/mr-bot`. It uses the shared fresh-agent runner and performs full tests/evals before
   creating a PR; it contains no merge or deploy action.
 - Run 1 exposes a missing required runner loop argument: fresh agent exits 2 and PR #1087 initially
   contains only D0 infrastructure. The PR is not merged. Corrective TDD makes a nonzero agent exit
@@ -289,7 +289,7 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Real Day 1 selects issue #1090, fresh agent commit `b649393c…`, independently passes full
   test/eval/privacy, opens real PR #1094, appends `pr_created/147499ms`, and sends real Telegram
   message id `3390`.
-- `ai.anicca.life-manager-dev` is loaded at 04:10 with the canonical daily runner. Focused tests are
+- `ai.anicca.mr-bot-dev` is loaded at 04:10 with the canonical daily runner. Focused tests are
   `7/7`; all full gates pass.
 - Six distinct real days remain. The loop owns readiness calculation; fixtures, duplicate same-day
   runs, simulation, and backfill cannot complete the row. Pending remains 18; next is independent
@@ -340,7 +340,7 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - The 11b provider remains frozen as `otakibashi-sora`; no fallback provider is attempted.
 - The logged-out DigiKar flow reaches outpatient, initial visit, and a real available slot. The
   selected slot redirects to patient verification requiring a mobile number and SMS code.
-- Life Manager has no SMS receive channel, so phone-number submission, code guessing, bypass,
+- Mr.bot has no SMS receive channel, so phone-number submission, code guessing, bypass,
   and false booking claims are all zero. Booking id remains `null`.
 - Real Telegram message id `3394` honestly reports the measured boundary, unchanged provider, and
   unconfirmed reservation without asking a question.
@@ -370,10 +370,10 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Evidence: `docs/evidence/ssot-reality-audit.md`.
 
 ## DEV automation paused until final phase
-- `ai.anicca.life-manager-dev` is booted out; no `life-manager-dev-daily.js` process remains.
+- `ai.anicca.mr-bot-dev` is booted out; no `mr-bot-dev-daily.js` process remains.
 - The active LaunchAgent plist is moved to
-  `/Users/operator/Library/LaunchAgents/ai.anicca.life-manager-dev.plist.disabled`.
-- Pause marker: `~/.openclaw/state/life-manager-dev/PAUSED_UNTIL_FINAL_PHASE`.
+  `/Users/operator/Library/LaunchAgents/ai.anicca.mr-bot-dev.plist.disabled`.
+- Pause marker: `~/.openclaw/state/mr-bot-dev/PAUSED_UNTIL_FINAL_PHASE`.
 - Day 1/Day 2 append-only evidence remains intact. No paused dates count toward the 7-day gate.
 - Execution order ends with 10e, then 10f. Current work remains 9c preview-first.
 
@@ -479,7 +479,7 @@ ready for the next buyer that reaches 検収 stage. Cron 52b154a2 next
 - Dais chose to move on to 9d rather than wait, so 9c stays `pending` and must be reopened before the
   final phase. Do not let a later pass mistake it for finished.
 - Reopening needs one decision only Dais can make: appeal the suspension himself, or name which of the
-  already-connected Instagram accounts is the Life Manager one. Implementation is ready to follow either
+  already-connected Instagram accounts is the Mr.bot one. Implementation is ready to follow either
   way — a real Reel path (`post_reel.py` does not exist yet), then distribution through the gate and a
   logged-out URL readback.
 

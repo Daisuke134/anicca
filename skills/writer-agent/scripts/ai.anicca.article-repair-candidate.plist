@@ -13,7 +13,7 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/article-repair-candidate.sh</string>
+    <string>/Users/anicca/Projects/mr-bot-main/skills/writer-agent/scripts/article-repair-candidate.sh</string>
   </array>
   <!-- No ARTICLE_AUTOPUBLISH. The one switch that authorises publication is
        deliberately absent from this worker's environment. -->

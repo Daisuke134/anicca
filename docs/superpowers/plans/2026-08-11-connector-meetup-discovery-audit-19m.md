@@ -20,8 +20,8 @@ Persist the existing privacy-safe five-count Meetup discovery audit so an offici
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-minimal-operations.test.js`
-2. `apps/life-manager/lib/connector-minimal-operations.js`
+1. `apps/mr-bot/lib/connector-minimal-operations.test.js`
+2. `apps/mr-bot/lib/connector-minimal-operations.js`
 
 Soft target: 2 files; production +4–8 LOC; tests +30–45 LOC.
 

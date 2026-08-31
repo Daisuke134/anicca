@@ -17,7 +17,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 GUARD_RELATIVE = Path(
-    "gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
+    "gig/releases/mr-bot/current/skills/earn/gig/scripts/gig_disk_guard.py"
 )
 STUB = """\
 import json
@@ -29,7 +29,7 @@ capture = Path(os.environ["STUB_CAPTURE"])
 keys = (
     "HOME", "GIG_DISK_HEADROOM_KIB", "GIG_HOST_STATE_DIR", "GIG_STATE_DIR",
     "GIG_IGNORE_DISK_PRESSURE_BLOCK", "GIG_IGNORE_DISK_WRITERS_STOP",
-    "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR", "LIFE_MANAGER_HOST_STATE_DIR",
+    "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR", "MR_BOT_HOST_STATE_DIR",
 )
 host_state = Path(os.environ["GIG_HOST_STATE_DIR"])
 reason = None
@@ -101,7 +101,7 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
                 "GIG_IGNORE_DISK_WRITERS_STOP": "true",
                 "DISK_CONTROL_STATE_DIR": "/hostile/control",
                 "OPENCLAW_STATE_DIR": "/hostile/openclaw",
-                "LIFE_MANAGER_HOST_STATE_DIR": "/hostile/life-manager",
+                "MR_BOT_HOST_STATE_DIR": "/hostile/mr-bot",
                 "STUB_CAPTURE": str(capture),
             }
             with patch.dict(os.environ, environment, clear=False):
@@ -115,12 +115,12 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
             self.assertEqual(child_env["GIG_DISK_HEADROOM_KIB"], "524288")
             self.assertEqual(child_env["GIG_HOST_STATE_DIR"], str(home / ".openclaw/state"))
             self.assertEqual(child_env["GIG_STATE_DIR"],
-                             str(home / ".local/state/life-manager/browser-provision"))
+                             str(home / ".local/state/mr-bot/browser-provision"))
             self.assertEqual(child_env["GIG_IGNORE_DISK_PRESSURE_BLOCK"], "1")
             for key in (
                 "GIG_IGNORE_DISK_WRITERS_STOP",
                 "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR",
-                "LIFE_MANAGER_HOST_STATE_DIR",
+                "MR_BOT_HOST_STATE_DIR",
             ):
                 self.assertNotIn(key, child_env)
 
@@ -139,7 +139,7 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
             with patch.dict(os.environ, {"STUB_CAPTURE": str(capture)}, clear=False):
                 self.assertFalse(MODULE._disk_preflight(home))
             receipt = json.loads(
-                (home / ".local/state/life-manager/browser-provision/state/disk-headroom.json").read_text()
+                (home / ".local/state/mr-bot/browser-provision/state/disk-headroom.json").read_text()
             )
             self.assertEqual(receipt["reason"], "disk_writers_stop")
             self.assertEqual(receipt["effect"], 0)

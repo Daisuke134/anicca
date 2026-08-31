@@ -65,7 +65,7 @@ Honest reframes that PASS: "from your input + model knowledge", "outputs self-co
 - welcomeMessage: 👋 + one-line "I do X" + an "Example:" line (build_config extracts the test input from it).
 
 ## 8. LISTING FILE SHAPE (so build_config.py can parse it)
-`$LIFE_MANAGER_STATE_HOME/features/capafy-<name>/LISTING.md`:
+`$MR_BOT_STATE_HOME/features/capafy-<name>/LISTING.md`:
 - header line: `Primary Model: Claude Sonnet 4.6 · category: <JP> ... tags: a, b, c`
 - a pricing table: `| cycle | price | cap | trial |` rows (trial = "No Free Trial" only)
 - `## Title` / `## shortDescription` / `## welcomeMessage` / `## detailedDescription`

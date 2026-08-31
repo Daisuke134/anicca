@@ -9,9 +9,9 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const script = new URL("../scripts/startup-context/export-openclaw.mjs", import.meta.url);
 
-test("OpenClaw export writes only the allowlisted current Life Manager kit", async () => {
-  const root = await mkdtemp(join(tmpdir(), "life-manager-export-"));
-  const target = join(root, "life-manager-current");
+test("OpenClaw export writes only the allowlisted current Mr.bot kit", async () => {
+  const root = await mkdtemp(join(tmpdir(), "mr-bot-export-"));
+  const target = join(root, "mr-bot-current");
 
   try {
     await execFileAsync(process.execPath, [script.pathname, "--target", target]);
@@ -27,8 +27,8 @@ test("OpenClaw export writes only the allowlisted current Life Manager kit", asy
 });
 
 test("OpenClaw export refuses submitted history targets", async () => {
-  const root = await mkdtemp(join(tmpdir(), "life-manager-export-"));
-  const target = join(root, "submitted", "life-manager-current");
+  const root = await mkdtemp(join(tmpdir(), "mr-bot-export-"));
+  const target = join(root, "submitted", "mr-bot-current");
 
   try {
     await assert.rejects(

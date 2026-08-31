@@ -10,7 +10,7 @@
 
 ## Constraints
 
-- Modify only `apps/life-manager/lib/connector-minimal-production.js` and matching test.
+- Modify only `apps/mr-bot/lib/connector-minimal-production.js` and matching test.
 - RED must prove the default factory-created Harness—not an injected Harness—uses the factory Doorkeeper workflow for fallback readback.
 - No browser rail/session/target creation in the test; inject page/control transport boundaries only.
 - Existing Luma/Connpass/Peatix/Meetup injection and provider order stay unchanged.

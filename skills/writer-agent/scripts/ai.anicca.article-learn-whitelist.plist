@@ -20,15 +20,15 @@
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent/scripts/learn-whitelist.sh</string>
+    <string>/Users/anicca/Projects/mr-bot-main/skills/writer-agent/scripts/learn-whitelist.sh</string>
   </array>
 
   <key>EnvironmentVariables</key>
   <dict>
     <key>ARTICLE_SKILL_DIR</key>
-    <string>/Users/anicca/Projects/life-manager-main/skills/writer-agent</string>
+    <string>/Users/anicca/Projects/mr-bot-main/skills/writer-agent</string>
     <key>ARTICLE_STATE_DIR</key>
-    <string>/Users/anicca/.local/state/life-manager/writer</string>
+    <string>/Users/anicca/.local/state/mr-bot/writer</string>
     <key>ARTICLE_SOURCE_BRANCH</key>
     <string>codex/writer-e1-incident-red</string>
   </dict>

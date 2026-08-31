@@ -25,7 +25,7 @@ from telegram_outbox import enqueue, claim_next, list_items, mark_delivered, mar
 from skills._shared.telegram import TelegramClient, TelegramDeliveryUnknown, TelegramError  # noqa: E402
 
 
-STATE_HOME = Path(os.environ.get("LIFE_MANAGER_STATE_HOME", Path.home() / ".local/state/life-manager")).expanduser()
+STATE_HOME = Path(os.environ.get("MR_BOT_STATE_HOME", Path.home() / ".local/state/mr-bot")).expanduser()
 OPENCLAW_STATE = Path.home() / ".openclaw/state"
 DEFAULT_OUTBOX = STATE_HOME / "state/capafy-telegram-outbox.sqlite"
 DEFAULT_RECEIPTS = STATE_HOME / "state/capafy-company-receipts"

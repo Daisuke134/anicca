@@ -43,7 +43,7 @@ chk("gig.source references listings.jsonl", "listings.jsonl" in gig.get("source"
 UNCHANGED_BASELINE = {
     "clip": {
         "kind": "row-exists", "cadence": "1/day", "unit": "reel", "boundary_tz": "Asia/Tokyo",
-        "source": "CLIP_LEDGER ($EARN_LEDGER or ~/.local/state/life-manager/state/clip-earn-ledger.jsonl)",
+        "source": "CLIP_LEDGER ($EARN_LEDGER or ~/.local/state/mr-bot/state/clip-earn-ledger.jsonl)",
     },
     "affiliate": {
         "kind": "row-exists", "cadence": "1/day", "unit": "reel", "boundary_tz": "Asia/Tokyo",

@@ -27,23 +27,23 @@
 ### Task 1: Wire Peatix into the production factory/router
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-minimal-production.js`
-- Modify: `apps/life-manager/lib/connector-minimal-production.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-production.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-production.test.js`
 
 - [ ] Write RED tests for Peatix default discovery/audit and same-page cache/direct/readback routing with `peatix_registration_v1`.
 - [ ] Assert discovery never reads the attendee profile; direct action reads it exactly once; private values do not enter cache/audit results.
 - [ ] Assert Luma/Connpass router tests remain unchanged and unknown provider still rejects.
-- [ ] Run RED: `node --test apps/life-manager/lib/connector-minimal-production.test.js`.
+- [ ] Run RED: `node --test apps/mr-bot/lib/connector-minimal-production.test.js`.
 - [ ] Import/create one Peatix workflow, add the third selected route/version, and wire the Peatix audit/profile callbacks with the minimum diff.
 - [ ] Run GREEN:
 
 ```bash
 node --test \
-  apps/life-manager/lib/connector-minimal-production.test.js \
-  apps/life-manager/lib/connector-minimal-operations.test.js \
-  apps/life-manager/lib/connector-peatix-workflow.test.js \
-  apps/life-manager/lib/peatix-browser-provider.test.js \
-  apps/life-manager/lib/connector-minimal-runner.test.js
+  apps/mr-bot/lib/connector-minimal-production.test.js \
+  apps/mr-bot/lib/connector-minimal-operations.test.js \
+  apps/mr-bot/lib/connector-peatix-workflow.test.js \
+  apps/mr-bot/lib/peatix-browser-provider.test.js \
+  apps/mr-bot/lib/connector-minimal-runner.test.js
 ```
 
 - [ ] Run `node --check` and `git diff --check`.

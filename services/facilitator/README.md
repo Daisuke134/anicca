@@ -22,7 +22,7 @@ cd services/facilitator
 1. `~/.anicca-signing/x402-facilitator/.env`（gitignore、chmod 600、repo 外）から
    `FACILITATOR_PRIVATE_KEY` を読む。無ければエラーで止まる。
 2. `fetch-x402-rs.sh` が固定commit archiveのSHA-256と展開treeを検証し、
-   `${XDG_CACHE_HOME:-$HOME/.cache}/life-manager/x402-rs/` で
+   `${XDG_CACHE_HOME:-$HOME/.cache}/mr-bot/x402-rs/` で
    `cargo build --package x402-facilitator --features chain-eip155,chain-solana --release --locked`
    を実行する。検証済みcacheはnetworkなしで再利用する。
 3. `config.json` を渡して起動（デフォルト `127.0.0.1:8405`）。`/health` が200を返すまで待つ。

@@ -8,8 +8,8 @@
 
 **Files / soft target:**
 
-- Modify `apps/life-manager/lib/connector-production-browser-harness.js` — about 12–30 LOC.
-- Modify `apps/life-manager/lib/connector-production-browser-harness.test.js` — about 45–85 LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.js` — about 12–30 LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.test.js` — about 45–85 LOC.
 
 ## Contract
 

@@ -1,14 +1,14 @@
 # macOS Loop Control Plane — TODO 9 source consolidation
 
 Before any production label migration, all 169 managed registry entrypoints are
-present and executable in the Life Manager main tree. No compatibility wrapper
+present and executable in the Mr.bot main tree. No compatibility wrapper
 executes a mutable external source checkout.
 
 Source provenance used for exact behavior recovery:
 
-- Life Manager history: Fundraiser `48c54b529`, Agent Economy `63a294643`, Gig
+- Mr.bot history: Fundraiser `48c54b529`, Agent Economy `63a294643`, Gig
   daily `f1209ea69`, and current repository-owned loop sources.
-- Life Manager sibling checkout `50c853764300035e93338586b9846c16e2af3a40`:
+- Mr.bot sibling checkout `50c853764300035e93338586b9846c16e2af3a40`:
   tracked marketing, x402, and Polymarket sources, imported without overwriting
   newer current files.
 - Agentmail worktree `cda40e2bcd289c5907c89eb0aa5e71639282d3f6`.
@@ -16,7 +16,7 @@ Source provenance used for exact behavior recovery:
   bounded tracked bounty, Reddit, CEO, and legacy marketing package.
 - Anicha `7730e9cd340530f62b527e1e169263edeb10d3d3`:
   citizen refill entrypoint, shelter/funding dependencies, installer, and tests.
-- Installed immutable Life Manager/CFO/Affiliate releases and small installed
+- Installed immutable Mr.bot/CFO/Affiliate releases and small installed
   code-only skills. Logs, evidence, state, credentials, caches, and bytecode are
   excluded.
 

@@ -10,7 +10,7 @@
 
 - Modify: `runtime/loop/tests/test_clean_user_install.py`
 - Add: `THIRD_PARTY_NOTICES.md`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 ## Task 1: Reproducible public archive
 

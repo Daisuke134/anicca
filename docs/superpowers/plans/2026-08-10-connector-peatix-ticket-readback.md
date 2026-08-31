@@ -22,8 +22,8 @@ Recognize the measured Peatix post-registration ticket state by exact event iden
 
 Luna owns only:
 
-1. `apps/life-manager/lib/peatix-browser-provider.test.js`
-2. `apps/life-manager/lib/peatix-browser-provider.js`
+1. `apps/mr-bot/lib/peatix-browser-provider.test.js`
+2. `apps/mr-bot/lib/peatix-browser-provider.js`
 
 Soft target: 2 files; production +15–25 LOC; tests +35–55 LOC.
 

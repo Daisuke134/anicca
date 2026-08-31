@@ -30,10 +30,10 @@ import json, os, subprocess, sys, datetime
 from pathlib import Path
 
 # Source stays in the repository; auth and mutable ledger state live in the user state root.
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 STATE_HOME = Path(os.environ.get(
-    "LIFE_MANAGER_STATE_HOME",
-    Path.home() / ".local/state/life-manager",
+    "MR_BOT_STATE_HOME",
+    Path.home() / ".local/state/mr-bot",
 )).expanduser()
 AUTO = os.environ.get("CAPAFY_AUTO") or str(REPO_ROOT / "skills/capafy-autopublish")
 PUB = os.path.join(AUTO, "vendor", "capafy-publisher")

@@ -6,11 +6,11 @@
 
 **Architecture:** `skills/connector/run.sh` owns process lifecycle only: resolve the canonical repository, load an existing secret environment without echoing it, acquire a process-scoped stale-safe lock, update private heartbeat state, invoke one direct `runNativeConnectorPass`, and release only its own lock. `WORKER-CONTRACT.md` is documentation-only; the runtime reuses existing local Luma and `gog` modules while deterministic helpers own locking, timestamps, state, health, and rendering. launchd templates are render-only contracts whose rendered paths remain under the canonical repository.
 
-**Tech Stack:** Bash 3.2-compatible entrypoints; Node.js built-ins for atomic state and testable lifecycle logic; existing `apps/life-manager/lib/*` Connector modules; launchd XML templates; `node --test`.
+**Tech Stack:** Bash 3.2-compatible entrypoints; Node.js built-ins for atomic state and testable lifecycle logic; existing `apps/mr-bot/lib/*` Connector modules; launchd XML templates; `node --test`.
 
 ## Global Constraints
 
-- Canonical execution owner is Life Manager local; no external agent runner or executable override participates in the pass.
+- Canonical execution owner is Mr.bot local; no external agent runner or executable override participates in the pass.
 - The daily-driver endpoint is `http://127.0.0.1:9222`; do not start, kill, or sweep its browser process or pre-existing tabs.
 - The direct runtime may close only pages it created under the Connector owner lease.
 - Calendar inventory uses installed `gog` across all calendars; a static availability file is not an input.
@@ -30,8 +30,8 @@
 - `skills/connector/WORKER-CONTRACT.md` — documentation-only reference for existing local module boundaries; it is not loaded or executed by native-pass.
 - `skills/connector/test/native-state.test.js` — lifecycle behavior tests using an isolated temporary state directory.
 - `skills/connector/test/native-entrypoint.test.js` — direct-runtime result, continuation, healthcheck, and template-rendering contract tests.
-- `apps/life-manager/launchd/ai.anicca.life-manager-connector-native.plist.template` — canonical native scheduled pass template.
-- `apps/life-manager/launchd/ai.anicca.life-manager-connector-native-healthcheck.plist.template` — canonical native healthcheck template.
+- `apps/mr-bot/launchd/ai.anicca.mr-bot-connector-native.plist.template` — canonical native scheduled pass template.
+- `apps/mr-bot/launchd/ai.anicca.mr-bot-connector-native-healthcheck.plist.template` — canonical native healthcheck template.
 
 ---
 
@@ -130,13 +130,13 @@ Expected: direct-runtime and lifecycle-state tests pass; no live browser, Calend
 
 - Create: `skills/connector/healthcheck.sh`
 - Create: `skills/connector/render-launchd.sh`
-- Create: `apps/life-manager/launchd/ai.anicca.life-manager-connector-native.plist.template`
-- Create: `apps/life-manager/launchd/ai.anicca.life-manager-connector-native-healthcheck.plist.template`
+- Create: `apps/mr-bot/launchd/ai.anicca.mr-bot-connector-native.plist.template`
+- Create: `apps/mr-bot/launchd/ai.anicca.mr-bot-connector-native-healthcheck.plist.template`
 - Test: `skills/connector/test/native-entrypoint.test.js`
 
 **Interfaces:**
 
-- Consumes: `--output-dir`, `--repo-root`, and `--life-manager-home` for template rendering; healthcheck consumes the state directory and a read-only `:9222` probe.
+- Consumes: `--output-dir`, `--repo-root`, and `--mr-bot-home` for template rendering; healthcheck consumes the state directory and a read-only `:9222` probe.
 - Produces: two plists whose program and working-directory paths are canonical after rendering; a health exit status based on state freshness, `gog` availability, and browser endpoint reachability.
 - Neither script invokes `launchctl` or changes browser state.
 
@@ -144,8 +144,8 @@ Expected: direct-runtime and lifecycle-state tests pass; no live browser, Calend
 
 ```js
 test("rendered native templates contain canonical paths and no legacy runtime dependency", () => {
-  renderTemplates({ outputDir, repoRoot, lifeManagerHome });
-  assert.match(readNativeTemplate(), /\/Users\/anicca\/Projects\/life-manager-main\/skills\/connector\/run\.sh/);
+  renderTemplates({ outputDir, repoRoot, mrBotHome });
+  assert.match(readNativeTemplate(), /\/Users\/anicca\/Projects\/mr-bot-main\/skills\/connector\/run\.sh/);
   assert.doesNotMatch(readNativeTemplate(), forbiddenRuntimePattern);
 });
 
@@ -170,7 +170,7 @@ Render placeholders using exact path values and refuse the live LaunchAgents dir
 
 Run: `node --test skills/connector/test/native-entrypoint.test.js`
 
-Run: `rg -n 'docker|host\.docker\.internal|connector-host-bridge|profitable-claude' skills/connector apps/life-manager/launchd/ai.anicca.life-manager-connector-native*.plist.template`
+Run: `rg -n 'docker|host\.docker\.internal|connector-host-bridge|profitable-claude' skills/connector apps/mr-bot/launchd/ai.anicca.mr-bot-connector-native*.plist.template`
 
 Expected: tests pass; the static scan finds no runtime dependency in the new native path.
 
@@ -178,8 +178,8 @@ Expected: tests pass; the static scan finds no runtime dependency in the new nat
 
 **Files:**
 
-- Create: `apps/life-manager/lib/connector-native-runtime.js`
-- Test: `apps/life-manager/lib/connector-native-runtime.test.js`
+- Create: `apps/mr-bot/lib/connector-native-runtime.js`
+- Test: `apps/mr-bot/lib/connector-native-runtime.test.js`
 - Modify: `skills/connector/native-pass.js`
 
 **Interfaces:**
@@ -197,14 +197,14 @@ test("a direct native pass reads all calendars and keeps open coverage open", as
 });
 ```
 
-Evidence: `apps/life-manager/lib/connector-native-runtime.test.js` covers shared daily-driver construction,
+Evidence: `apps/mr-bot/lib/connector-native-runtime.test.js` covers shared daily-driver construction,
 read-only auth, complete Luma inventory, all-calendar `gog` busy inventory, coverage continuation, and a
 secret-free projection. Registration, receipt verification, Calendar write/sync, and Telegram delivery are not
 consumed by this slice and remain the next live boundary.
 
 - [x] **Step 2: Run RED**
 
-Run: `node --test apps/life-manager/lib/connector-native-runtime.test.js`
+Run: `node --test apps/mr-bot/lib/connector-native-runtime.test.js`
 
 Observed RED: the busy-calendar assertion addressed the calendar slot instead of its `(calendar, options)` test
 double argument, and the native-pass regression showed that a public executable env override bypassed direct
@@ -221,9 +221,9 @@ continuation and exit nonzero.
 
 - [x] **Step 4: Run GREEN**
 
-Run: `node --test apps/life-manager/lib/connector-native-runtime.test.js`
+Run: `node --test apps/mr-bot/lib/connector-native-runtime.test.js`
 
-Evidence: `node --test apps/life-manager/lib/connector-native-runtime.test.js` passes 2/2; focused native-pass
+Evidence: `node --test apps/mr-bot/lib/connector-native-runtime.test.js` passes 2/2; focused native-pass
 tests pass with env-override regression coverage; no external write boundary is invoked and `open=21` remains
 `incomplete` with `refresh_inventory` continuation.
 
@@ -231,10 +231,10 @@ tests pass with env-override regression coverage; no external write boundary is 
 
 **Files:**
 
-- Create: `apps/life-manager/lib/connector-native-write-pipeline.js`
-- Test: `apps/life-manager/lib/connector-native-write-pipeline.test.js`
-- Modify: `apps/life-manager/lib/connector-coverage-telegram.js`
-- Test: `apps/life-manager/lib/connector-coverage-telegram.test.js`
+- Create: `apps/mr-bot/lib/connector-native-write-pipeline.js`
+- Test: `apps/mr-bot/lib/connector-native-write-pipeline.test.js`
+- Modify: `apps/mr-bot/lib/connector-coverage-telegram.js`
+- Test: `apps/mr-bot/lib/connector-coverage-telegram.test.js`
 
 **Interfaces:**
 

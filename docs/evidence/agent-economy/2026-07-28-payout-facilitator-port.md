@@ -1,10 +1,10 @@
-# Life Manager payout facilitator dedicated-port repair
+# Mr.bot payout facilitator dedicated-port repair
 
 ## Failure reproduced
 
-Life Manager reserves loopback port `8406` for the production payout facilitator. `services/facilitator/start.sh` exported `PORT=8406`, but both checked-in facilitator configs contained `"port": 8405`. The x402-rs binary treats the config value as authoritative, started on `8405`, and made the wrapper's `8406/health` readiness check fail after 15 seconds.
+Mr.bot reserves loopback port `8406` for the production payout facilitator. `services/facilitator/start.sh` exported `PORT=8406`, but both checked-in facilitator configs contained `"port": 8405`. The x402-rs binary treats the config value as authoritative, started on `8405`, and made the wrapper's `8406/health` readiness check fail after 15 seconds.
 
-This was observed with the real release binary and Base mainnet config before any Life Manager user payout existed. No existing launchd loop was stopped.
+This was observed with the real release binary and Base mainnet config before any Mr.bot user payout existed. No existing launchd loop was stopped.
 
 ## RED → GREEN
 
@@ -21,7 +21,7 @@ The wrapper now validates the requested port and writes a mode-`0600` per-port r
 
 The repaired wrapper started the real release binary on `127.0.0.1:8406` with the Base mainnet config. Both `/health` and `/supported` advertised x402 v2 `exact` on `eip155:8453`. The temporary verification process was then stopped by exact PID; no persistent loop was changed.
 
-The same real facilitator binary separately verified and settled the agent-owned bootstrap transfer `0x65034f070374f7dd6ce624717dfaad909b93f663ebe2deddc3925bf8b2ef8741` on Base, proving the release binary's mainnet settlement path. That transfer is not a Life Manager user payout and is not external revenue.
+The same real facilitator binary separately verified and settled the agent-owned bootstrap transfer `0x65034f070374f7dd6ce624717dfaad909b93f663ebe2deddc3925bf8b2ef8741` on Base, proving the release binary's mainnet settlement path. That transfer is not a Mr.bot user payout and is not external revenue.
 
 Focused verification:
 

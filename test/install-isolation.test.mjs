@@ -21,9 +21,9 @@ function runInstaller(home, runtime) {
     env: {
       ...process.env,
       HOME: home,
-      LIFE_MANAGER_HOME: runtime,
-      LIFE_MANAGER_INSTALL_DAEMON: "0",
-      LIFE_MANAGER_INSTALL_DEPS: "0",
+      MR_BOT_HOME: runtime,
+      MR_BOT_INSTALL_DAEMON: "0",
+      MR_BOT_INSTALL_DEPS: "0",
       npm_config_cache: join(home, ".npm-cache"),
     },
     timeout: 120_000,
@@ -35,8 +35,8 @@ function runInstaller(home, runtime) {
   );
 }
 
-test("daemon-free install stays inside LIFE_MANAGER_HOME and preserves user env on rerun", () => {
-  const root = mkdtempSync(join(tmpdir(), "life-manager-install-"));
+test("daemon-free install stays inside MR_BOT_HOME and preserves user env on rerun", () => {
+  const root = mkdtempSync(join(tmpdir(), "mr-bot-install-"));
   const home = join(root, "home");
   const runtime = join(root, "runtime");
 

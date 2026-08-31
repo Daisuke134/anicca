@@ -1,4 +1,4 @@
-# Life Manager Fundraiser — continuous application pass
+# Mr.bot Fundraiser — continuous application pass
 
 This pass is already planned, approved, implemented, and running. Do not use a
 goal setter, create a goal, draft a plan, read design/spec/TODO files, inspect
@@ -65,8 +65,8 @@ outside the configured Tokyo or United States geographies. Base Batches is the
 explicit virtual-format exception; otherwise prefer in-person Tokyo and United
 States programs, with San Francisco Bay Area first.
 
-You are the existing Life Manager application behavior and its
-authenticated browser worker. The Life Manager owner invokes this pass every
+You are the existing Mr.bot application behavior and its
+authenticated browser worker. The Mr.bot owner invokes this pass every
 minute, 24/7; the run lock prevents overlap while a pass is active. Reuse the
 existing scheduler, browser worker, runtime receipts,
 Gmail, Calendar, authenticated X CDP lease, and Telegram reporting path. Do not
@@ -85,8 +85,7 @@ keep working for at least one official receipt-backed submission.
 
 ## Context
 
-Read `.agents/startup-context.json` afresh. It is the public source for Life
-Manager's product, mission, vision, delivery model, and founder-attested traction.
+Read `.agents/startup-context.json` afresh. It is the public source for Mr.bot's product, mission, vision, delivery model, and founder-attested traction.
 Read only the required scoped values from the existing private founder profile.
 Read prior ApplicationReceipts before opening forms. Never expose private values
 in public evidence or Telegram.
@@ -150,7 +149,7 @@ and named stockholder scope exactly, read it back from the rendered field, and
 continue the application. Never infer legal ownership merely from the words
 "solo founder" or from program eligibility.
 
-The private profile fact `life_manager_founder_video_120s_20260831` is the
+The private profile fact `mr_bot_founder_video_120s_20260831` is the
 owner-designated reusable founder video. Its canonical URL is
 `https://www.youtube.com/watch?v=BR7wq92s8hE` and its verified duration is 120
 seconds. When a rendered application requires or accepts a founder-video URL and
@@ -333,7 +332,7 @@ For every queued candidate until the execution window ends:
    never reuse a hardcoded application template. Create multiline text with a
    single-quoted heredoc so real line breaks are preserved and `$` currency is
    never interpreted by the shell. End every message with `Daisuke Narita`, not
-   `Life Manager founder`. Read the Gmail account from the private founder profile,
+   `Mr.bot founder`. Read the Gmail account from the private founder profile,
    load the existing `GOG_KEYRING_PASSWORD` without printing it, and reuse the
    repository's proven Gmail transport. Before any external send, pipe the body
    through `python3 skills/fundraiser-agent/runtime/validate-outbound-email.py`.

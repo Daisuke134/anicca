@@ -106,7 +106,7 @@ class AgentRunner:
         )
         if (
             completed.returncode == 75
-            and "LIFE_MANAGER_PROVIDER_LEASE_BUSY" in completed.stderr.splitlines()
+            and "MR_BOT_PROVIDER_LEASE_BUSY" in completed.stderr.splitlines()
         ):
             raise PassAlreadyRunning()
         if completed.returncode != 0:

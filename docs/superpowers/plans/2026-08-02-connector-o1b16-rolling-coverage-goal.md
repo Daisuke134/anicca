@@ -22,9 +22,9 @@
 ### Task 1: Pure rolling coverage snapshot
 
 **Files:**
-- Create: `apps/life-manager/lib/rolling-event-coverage.js`
-- Create: `apps/life-manager/lib/rolling-event-coverage.test.js`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/lib/rolling-event-coverage.js`
+- Create: `apps/mr-bot/lib/rolling-event-coverage.test.js`
+- Modify: `apps/mr-bot/package.json`
 
 **Interfaces:**
 - Consumes: `{tenantId,timeZone,now,resolvedDays}`
@@ -51,17 +51,17 @@ Expected: 全件PASS。
 - [x] **Step 5: commitする**
 
 ```bash
-git add apps/life-manager/lib/rolling-event-coverage.js apps/life-manager/lib/rolling-event-coverage.test.js apps/life-manager/package.json
+git add apps/mr-bot/lib/rolling-event-coverage.js apps/mr-bot/lib/rolling-event-coverage.test.js apps/mr-bot/package.json
 git commit -m "feat(connector): build rolling event coverage"
 ```
 
 ### Task 2: Immutable snapshot store
 
 **Files:**
-- Create: `apps/life-manager/lib/rolling-event-coverage-store.js`
-- Create: `apps/life-manager/lib/rolling-event-coverage-store.test.js`
-- Create: `apps/life-manager/migrations/2026-08-02-lm-event-coverage-snapshots.sql`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/lib/rolling-event-coverage-store.js`
+- Create: `apps/mr-bot/lib/rolling-event-coverage-store.test.js`
+- Create: `apps/mr-bot/migrations/2026-08-02-lm-event-coverage-snapshots.sql`
+- Modify: `apps/mr-bot/package.json`
 
 **Interfaces:**
 - Consumes: in-process verified coverage snapshot
@@ -88,7 +88,7 @@ Expected: 全件PASS。
 - [x] **Step 5: commitする**
 
 ```bash
-git add apps/life-manager/lib/rolling-event-coverage-store.js apps/life-manager/lib/rolling-event-coverage-store.test.js apps/life-manager/migrations/2026-08-02-lm-event-coverage-snapshots.sql apps/life-manager/package.json
+git add apps/mr-bot/lib/rolling-event-coverage-store.js apps/mr-bot/lib/rolling-event-coverage-store.test.js apps/mr-bot/migrations/2026-08-02-lm-event-coverage-snapshots.sql apps/mr-bot/package.json
 git commit -m "feat(connector): persist rolling event coverage"
 ```
 
@@ -96,7 +96,7 @@ git commit -m "feat(connector): persist rolling event coverage"
 
 **Files:**
 - Create: `docs/evidence/outbound/2026-08-02-o1b16-live-rolling-coverage.json`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 **Interfaces:**
 - Consumes: current `gog` OAuth、production migration/store contract
@@ -104,7 +104,7 @@ git commit -m "feat(connector): persist rolling event coverage"
 
 - [x] **Step 1: migrationを実runtime DBへ適用する**
 
-Run migration against fixed `life-manager-local-postgres-1/life_manager` with `ON_ERROR_STOP=1`。
+Run migration against fixed `mr-bot-local-postgres-1/mr_bot` with `ON_ERROR_STOP=1`。
 
 - [x] **Step 2: Google Calendarをread-only取得する**
 

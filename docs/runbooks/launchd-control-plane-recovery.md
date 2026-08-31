@@ -1,6 +1,6 @@
 # launchd control-plane recovery
 
-Life Managerのlaunchd変更は必ず次の入口を使う。
+Mr.botのlaunchd変更は必ず次の入口を使う。
 
 ```bash
 bin/launchctl-safe preflight
@@ -10,7 +10,7 @@ bin/launchctl-safe kickstart gui/$(id -u)/LABEL
 
 preflightはUID、username、Directory Services、Aqua manager、manager UID/PID、`gui/$UID`を
 read-onlyで確認する。正常時はexit 0、異常時はexit 75で
-`~/.local/state/life-manager/launchd-control-plane-preflight.json`へexact resultを保存する。
+`~/.local/state/mr-bot/launchd-control-plane-preflight.json`へexact resultを保存する。
 
 exit 75では次を行わない。
 

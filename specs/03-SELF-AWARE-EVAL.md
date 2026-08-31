@@ -193,7 +193,7 @@ task and L4 on another simultaneously.
 │   L1 — TASK (= the actual cron / skill / job)                                │
 │     ▸ runs                                                                  │
 │     ▸ on error, raises a `task_failed` event into `wake_events`              │
-│     ▸ examples: anicca-life-manager phone call, anicca-x402-server response, │
+│     ▸ examples: anicca-mr-bot phone call, anicca-x402-server response, │
 │       anicca-push-amazon-gift redemption, anicca-cook-loop SHIP step         │
 │                                                                             │
 │         ↓ task_failed                                                       │
@@ -522,7 +522,7 @@ first live install.
 | [`02-IMITATE-AND-COOK.md`](./02-IMITATE-AND-COOK.md) | Cook loop. This spec's `anicca-suite` is the MEASURE step's backbone; ADJUST decisions consult `anicca-judge` scores. |
 | `archive/SELF_HEALING_SPEC.md` | Predecessor. Defined L1 + L2 cleanly. This spec is the L3 + L4 + L5 it was missing. |
 | `archive/ANICCA_TRUE_AUTONOMY_SPEC.md` | The Day-0-to-365 plan. This spec is the quality gate every action in that plan must pass through. |
-| `archive/ANICCA_OSS_MASTER_SPEC.md` | Earlier consolidation attempt. Sections about life-manager are explicitly NOT canonical anymore (life-manager moved to `~/.openclaw`, see `00-MASTER` § 8.1). |
+| `archive/ANICCA_OSS_MASTER_SPEC.md` | Earlier consolidation attempt. Sections about mr-bot are explicitly NOT canonical anymore (mr-bot moved to `~/.openclaw`, see `00-MASTER` § 8.1). |
 | Anthropic, "Building Effective Agents" — Evaluator-Optimizer workflow | The canonical academic / Anthropic-blessed pattern for 2-LLM gen+critique loop. |
 | Hermes (`hermes-agent.nousresearch.com`) | The implementation we mirror in skill form. |
 | DeepEval 4.0 (`github.com/confident-ai/deepeval`) | Judge primitive (GEval class @ `metrics/g_eval/g_eval.py`). |

@@ -7,21 +7,21 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 CANONICAL_REPO_ROOT="$(cd "$HERE/../.." && pwd -P)"
 OUTPUT_DIR=""
 REPO_ROOT=""
-LIFE_MANAGER_HOME=""
+MR_BOT_HOME=""
 CONNECTOR_ENV_FILE=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --output-dir) OUTPUT_DIR="${2:-}"; shift 2 ;;
     --repo-root) REPO_ROOT="${2:-}"; shift 2 ;;
-    --life-manager-home) LIFE_MANAGER_HOME="${2:-}"; shift 2 ;;
+    --mr-bot-home) MR_BOT_HOME="${2:-}"; shift 2 ;;
     --connector-env-file) CONNECTOR_ENV_FILE="${2:-}"; shift 2 ;;
     *) printf 'Connector native renderer argument invalid\n' >&2; exit 2 ;;
   esac
 done
 
 case "$OUTPUT_DIR" in /*) ;; *) printf 'Connector native renderer output invalid\n' >&2; exit 2 ;; esac
-case "$LIFE_MANAGER_HOME" in /*) ;; *) printf 'Connector native renderer home invalid\n' >&2; exit 2 ;; esac
+case "$MR_BOT_HOME" in /*) ;; *) printf 'Connector native renderer home invalid\n' >&2; exit 2 ;; esac
 case "$CONNECTOR_ENV_FILE" in /*) ;; *) printf 'Connector native renderer env file invalid\n' >&2; exit 2 ;; esac
 [ -n "$REPO_ROOT" ] && [ "$REPO_ROOT" = "$CANONICAL_REPO_ROOT" ] || {
   printf 'Connector native renderer repository invalid\n' >&2
@@ -54,7 +54,7 @@ OUTPUT_DIR="$(normalize_absolute "$OUTPUT_DIR")" || {
   printf 'Connector native renderer output invalid\n' >&2
   exit 2
 }
-LIFE_MANAGER_HOME="$(normalize_absolute "$LIFE_MANAGER_HOME")" || {
+MR_BOT_HOME="$(normalize_absolute "$MR_BOT_HOME")" || {
   printf 'Connector native renderer home invalid\n' >&2
   exit 2
 }
@@ -84,11 +84,11 @@ render() {
   template="$1"
   output="$2"
   repo_root_escaped="$(printf '%s' "$REPO_ROOT" | sed 's/[&|\\]/\\&/g')"
-  life_manager_home_escaped="$(printf '%s' "$LIFE_MANAGER_HOME" | sed 's/[&|\\]/\\&/g')"
+  mr_bot_home_escaped="$(printf '%s' "$MR_BOT_HOME" | sed 's/[&|\\]/\\&/g')"
   connector_env_file_escaped="$(printf '%s' "$CONNECTOR_ENV_FILE" | sed 's/[&|\\]/\\&/g')"
   sed \
     -e "s|__REPO_ROOT__|$repo_root_escaped|g" \
-    -e "s|__LIFE_MANAGER_HOME__|$life_manager_home_escaped|g" \
+    -e "s|__MR_BOT_HOME__|$mr_bot_home_escaped|g" \
     -e "s|__CONNECTOR_ENV_FILE__|$connector_env_file_escaped|g" \
     "$template" > "$output"
   if grep -Eq '__[A-Z][A-Z0-9_]*__' "$output"; then
@@ -101,6 +101,6 @@ render() {
   }
 }
 
-TEMPLATES="$REPO_ROOT/apps/life-manager/launchd"
-render "$TEMPLATES/ai.anicca.life-manager-connector-native.plist.template" \
-  "$OUTPUT_DIR/ai.anicca.life-manager-connector-native.plist"
+TEMPLATES="$REPO_ROOT/apps/mr-bot/launchd"
+render "$TEMPLATES/ai.anicca.mr-bot-connector-native.plist.template" \
+  "$OUTPUT_DIR/ai.anicca.mr-bot-connector-native.plist"

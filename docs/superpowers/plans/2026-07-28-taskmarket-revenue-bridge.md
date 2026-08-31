@@ -4,7 +4,7 @@
 
 ## Goal
 
-Convert only a real, external TaskMarket award into one append-only Life Manager
+Convert only a real, external TaskMarket award into one append-only Mr.bot
 earnings row. An open task, a submission, a pitch, an API-only award claim, a
 self-award, or a non-final Base receipt must write zero rows.
 

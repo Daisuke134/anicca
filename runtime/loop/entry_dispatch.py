@@ -55,7 +55,7 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             str(artifact),
             "--i-understand-that-this-will-be-running-without-the-usual-guardrails",
             "--logs-root",
-            str(home / ".local/state/life-manager/money-printer-symphony/runtime-logs"),
+            str(home / ".local/state/mr-bot/money-printer-symphony/runtime-logs"),
             "--port", "4000",
             str(root / "ops/symphony/WORKFLOW.money-printer.md"),
         ]
@@ -63,7 +63,7 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     affiliate_browser = root / "skills/affiliate/scripts/local_browser.py"
     scheduled = root / "skills/earn/marketing-engine/report/scheduled_runner.py"
     writer = root / "skills/writer-agent/scripts"
-    writer_state = home / ".local/state/life-manager/writer"
+    writer_state = home / ".local/state/mr-bot/writer"
     lancers = root / "skills/earn/lancers/scripts"
     lancers_state = home / ".local/state/anicca/lancers"
     python = sys.executable
@@ -71,12 +71,12 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     fixed = {
         "money-printer-symphony-bridge": [
             "/opt/homebrew/bin/node",
-            str(root / "apps/life-manager/scripts/money-printer-symphony-bridge.js"),
+            str(root / "apps/mr-bot/scripts/money-printer-symphony-bridge.js"),
         ],
         "affiliate-browser": [cloak_python, str(affiliate_browser)],
         "affiliate-impact-browser": [cloak_python, str(affiliate_browser)],
         "affiliate-x-browser": [cloak_python, str(affiliate_browser)],
-        "life-manager-daily-driver": [
+        "mr-bot-daily-driver": [
             cloak_python, str(root / "skills/browser/cdp_persistent_context.py"),
             "--profile", str(home / ".cloak/profiles/daily-driver"),
             "--port", "9222",
@@ -168,7 +168,7 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         kind = "product_daily" if loop_id.endswith("daily") else "portfolio_weekly"
         return [python, str(root / "skills/earn/marketing-engine/report/owner_report_cli.py"),
                 "sweep", "--kind", kind, "--state-root",
-                str(home / ".local/state/life-manager/marketing-engine")]
+                str(home / ".local/state/mr-bot/marketing-engine")]
     if loop_id not in fixed:
         raise ValueError(f"no dispatch command for loop: {loop_id}")
     return fixed[loop_id]
@@ -214,7 +214,7 @@ def environment_for(loop_id: str, home: Path, base: dict[str, str]) -> dict[str,
         payload = json.loads(credentials.read_text(encoding="utf-8"))
         bridge_rows = [row for row in payload.get("credentials", [])
                        if isinstance(row, dict)
-                       and row.get("service") == "life-manager-symphony-bridge"]
+                       and row.get("service") == "mr-bot-symphony-bridge"]
         github_rows = [row for row in payload.get("credentials", [])
                        if isinstance(row, dict)
                        and row.get("service") == "openai-symphony-github"]
@@ -238,7 +238,7 @@ def environment_for(loop_id: str, home: Path, base: dict[str, str]) -> dict[str,
 
 
 def main() -> int:
-    loop_id = os.environ.get("LIFE_MANAGER_LOOP_ID", "")
+    loop_id = os.environ.get("MR_BOT_LOOP_ID", "")
     root = Path(__file__).resolve().parents[2]
     try:
         home = Path.home()

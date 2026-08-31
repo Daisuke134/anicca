@@ -18,7 +18,7 @@
 
 ## Global Constraints
 
-- Luna owns exactly `apps/life-manager/lib/connector-techplay-workflow.js` and `apps/life-manager/lib/connector-techplay-workflow.test.js`. Other files are out of scope.
+- Luna owns exactly `apps/mr-bot/lib/connector-techplay-workflow.js` and `apps/mr-bot/lib/connector-techplay-workflow.test.js`. Other files are out of scope.
 - Production target about 45–75 LOC; test target about 70–110 LOC. Browser controls, private values, final click, production routing, evidence, Calendar transport, schedule, and live state are explicitly removed.
 - Strict TDD: add focused failing tests first; RED must show the current `unavailable` stub is insufficient. Implement minimum GREEN.
 - Exact binding remains `techplay-event://event/<positive ID>`, `https://techplay.jp/event/<same ID>`, and candidate `ticket_id` positive string.
@@ -30,8 +30,8 @@
 ### Task 1: Add strict canonical parent readback
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-techplay-workflow.js`
-- Modify: `apps/life-manager/lib/connector-techplay-workflow.test.js`
+- Modify: `apps/mr-bot/lib/connector-techplay-workflow.js`
+- Modify: `apps/mr-bot/lib/connector-techplay-workflow.test.js`
 
 - [x] Add failing tests for exact registered, exact absent, join/confirm not-success, wrong ticket/event/current/response URL, duplicate tickets, malformed `is_joined`, closed/hidden action, navigation/read failures, and pre/post page drift.
 - [x] Run focused tests and record RED caused only by the current readback stub.

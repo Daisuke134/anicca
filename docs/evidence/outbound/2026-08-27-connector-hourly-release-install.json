@@ -12,7 +12,7 @@
     "passed": 53,
     "failed": 0
   },
-  "launchd_label": "ai.anicca.life-manager-connector-native",
+  "launchd_label": "ai.anicca.mr-bot-connector-native",
   "start_interval_seconds": 3600,
   "loaded_native_owner_count": 1,
   "loaded_legacy_owner_count": 0,
@@ -23,8 +23,8 @@
   "legacy_labels_disabled": [
     "ai.anicca.connector-fill-gaps",
     "ai.anicca.connector-daily-report",
-    "ai.anicca.life-manager-connector-healer-shadow",
-    "ai.anicca.life-manager-connector-host-bridge",
-    "ai.anicca.life-manager-connector-native-healthcheck"
+    "ai.anicca.mr-bot-connector-healer-shadow",
+    "ai.anicca.mr-bot-connector-host-bridge",
+    "ai.anicca.mr-bot-connector-native-healthcheck"
   ]
 }

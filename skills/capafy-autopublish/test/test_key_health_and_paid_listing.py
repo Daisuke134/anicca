@@ -62,7 +62,7 @@ exit 0
                     "FAKE_KEY_RESPONSE": json.dumps(key_response),
                     "FAKE_CURL_CALLS": str(calls),
                     "FAKE_OPENCLAW_CALLS": str(alert_calls),
-                    "LIFE_MANAGER_STATE_HOME": str(root / "state"),
+                    "MR_BOT_STATE_HOME": str(root / "state"),
                 }
             )
             if enable_alert:

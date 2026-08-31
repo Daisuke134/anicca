@@ -248,7 +248,7 @@ async function deriveSolanaAddress(env) {
 
 // Franklin's own body always runs with ANICCA_HOME literally === $HOME/.blockrun (the same real
 // deployment topology wallet-address-solana.test.mjs's own live test verifies against
-// /home/life-manager/.blockrun). This is a CHEAP, structural fast-path — not a substitute for the real
+// /home/mr-bot/.blockrun). This is a CHEAP, structural fast-path — not a substitute for the real
 // crypto derivation below (which still always runs whenever this holds) — that lets every OTHER
 // instance in the fleet (automaton, any future instance) whose ANICCA_HOME is structurally NOT
 // $HOME/.blockrun skip the (real, subprocess-spawning) identity derivation entirely on every wake,

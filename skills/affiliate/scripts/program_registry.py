@@ -610,7 +610,7 @@ def main():
     parser.add_argument("--field")
     parser.add_argument("--placement")
     parser.add_argument("--credential-ref")
-    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/mr-bot/affiliate"))
     parser.add_argument("--cdp-port", type=int, default=9324)
     parser.add_argument("--profile", type=Path, default=Path("~/.config/anicca/job-search/profile.json"))
     parser.add_argument(

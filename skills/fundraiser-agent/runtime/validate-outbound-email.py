@@ -16,7 +16,7 @@ if re.search(r"<\s*(?:founder|sender|name|email|company|insert|your)[^>]*>", bod
     errors.append("unresolved_placeholder")
 if re.search(r"(?<![\d$])(?:USD\s*)?,\d{3}(?:\D|$)", body):
     errors.append("malformed_currency")
-if "Life Manager founder" in body:
+if "Mr.bot founder" in body:
     errors.append("wrong_signature")
 if not re.search(r"(?:^|\n)(?:Best|Best regards|Sincerely),?\nDaisuke Narita\s*$", body):
     errors.append("missing_daisuke_signature")

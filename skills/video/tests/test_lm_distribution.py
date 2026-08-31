@@ -365,7 +365,7 @@ class DistributionTests(unittest.TestCase):
         self.assertIn("時計を見る仕事", text)
         self.assertIn("T-10 / T-5 の2段階 call", text)
         self.assertIn("頭から消える", text)
-        self.assertIn("aniccaai.com/life-manager", text)
+        self.assertIn("aniccaai.com/mr-bot", text)
         self.assertEqual(output.stat().st_mode & 0o777, 0o600)
 
 

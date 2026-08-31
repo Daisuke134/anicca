@@ -49,10 +49,10 @@ the returned provider message id after success.
 
 **Files**
 
-- Create: `apps/life-manager/lib/financial-report-snapshot.js`
-- Create: `apps/life-manager/lib/financial-report-snapshot.test.js`
-- Modify: `apps/life-manager/lib/payout-policy.js`
-- Modify: `apps/life-manager/lib/payout-policy.test.js`
+- Create: `apps/mr-bot/lib/financial-report-snapshot.js`
+- Create: `apps/mr-bot/lib/financial-report-snapshot.test.js`
+- Modify: `apps/mr-bot/lib/payout-policy.js`
+- Modify: `apps/mr-bot/lib/payout-policy.test.js`
 
 Write failing tests for timezone half-open periods, seed exclusion, exact
 micro-dollar cost arithmetic, negative net, rail grouping, self-funded
@@ -62,8 +62,8 @@ honesty, and payout/API-cost alignment. Implement only enough to pass.
 
 **Files**
 
-- Create: `apps/life-manager/migrations/2026-07-27-lm-financial-reports.sql`
-- Create: `apps/life-manager/lib/financial-report-migration.test.js`
+- Create: `apps/mr-bot/migrations/2026-07-27-lm-financial-reports.sql`
+- Create: `apps/mr-bot/lib/financial-report-migration.test.js`
 
 Add nullable `lm_users.agent_wallet_address`, a unique partial index, and
 `lm_financial_report_receipts` with a unique period key, RLS, service-role
@@ -73,10 +73,10 @@ grants, and no public access.
 
 **Files**
 
-- Create: `apps/life-manager/lib/financial-report-runtime.js`
-- Create: `apps/life-manager/lib/financial-report-runtime.test.js`
-- Create: `apps/life-manager/scripts/run-financial-reports.js`
-- Create: `apps/life-manager/scripts/run-financial-reports.test.js`
+- Create: `apps/mr-bot/lib/financial-report-runtime.js`
+- Create: `apps/mr-bot/lib/financial-report-runtime.test.js`
+- Create: `apps/mr-bot/scripts/run-financial-reports.js`
+- Create: `apps/mr-bot/scripts/run-financial-reports.test.js`
 
 Read the tenant binding, preferences, ledger rows, cost rows, and Base balance.
 Build daily and weekly snapshots through the pure module. Render factual
@@ -87,10 +87,10 @@ and persist the provider id.
 
 **Files**
 
-- Modify: `apps/life-manager/lib/panel-api.js`
-- Modify: `apps/life-manager/lib/panel-api.test.js`
-- Modify: `apps/life-manager/lib/panel-presentation.js`
-- Modify: `apps/life-manager/lib/panel-ui.js`
+- Modify: `apps/mr-bot/lib/panel-api.js`
+- Modify: `apps/mr-bot/lib/panel-api.test.js`
+- Modify: `apps/mr-bot/lib/panel-presentation.js`
+- Modify: `apps/mr-bot/lib/panel-ui.js`
 - Modify: corresponding panel tests
 
 Replace the nonexistent `lm_financial_ledger` read with the real wallet-bound
@@ -101,9 +101,9 @@ same snapshot ids and integer values rendered by Telegram.
 
 **Files**
 
-- Create: `apps/life-manager/launchd/ai.anicca.life-manager-financial-report.plist.template`
-- Create: `apps/life-manager/scripts/financial-report-boot.sh`
-- Create: `apps/life-manager/scripts/install-financial-report-launchd.sh`
+- Create: `apps/mr-bot/launchd/ai.anicca.mr-bot-financial-report.plist.template`
+- Create: `apps/mr-bot/scripts/financial-report-boot.sh`
+- Create: `apps/mr-bot/scripts/install-financial-report-launchd.sh`
 - Add launchd contract tests
 
 Install one bounded five-minute tick. No second executor and no in-memory
@@ -111,7 +111,7 @@ schedule authority.
 
 ## Task 6: Verification and production alignment
 
-Run focused tests, the existing FIN/panel suite, full Life Manager tests, and
+Run focused tests, the existing FIN/panel suite, full Mr.bot tests, and
 changed-path secret scans. Apply the additive migration, bind the production
 tenant to the existing public agent wallet, install/kickstart the launchd job,
 read back the first real Telegram provider receipt and authenticated panel

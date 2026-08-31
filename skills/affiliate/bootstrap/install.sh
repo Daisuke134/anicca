@@ -284,14 +284,14 @@ def write_receipt(path, payload):
 
 
 def main(default_manifest):
-    manifest_path = Path(os.environ.get("LIFE_MANAGER_BOOTSTRAP_MANIFEST", default_manifest))
+    manifest_path = Path(os.environ.get("MR_BOT_BOOTSTRAP_MANIFEST", default_manifest))
     entries = read_manifest(manifest_path)
     if len([entry for entry in entries if entry["name"] == "cpython-runtime"]) != 1:
         raise BootstrapError("exactly one cpython-runtime is required")
     manifest_hash = digest(manifest_path)
     home = Path(os.environ.get("HOME", str(Path.home())))
-    data_home = Path(os.environ.get("LIFE_MANAGER_DATA_HOME", home / ".local/share/life-manager"))
-    state_home = Path(os.environ.get("LIFE_MANAGER_STATE_HOME", home / ".local/state/life-manager"))
+    data_home = Path(os.environ.get("MR_BOT_DATA_HOME", home / ".local/share/mr-bot"))
+    state_home = Path(os.environ.get("MR_BOT_STATE_HOME", home / ".local/state/mr-bot"))
     receipt = state_home / "affiliate" / "bootstrap" / "machine-capability.json"
 
     if receipt.exists():

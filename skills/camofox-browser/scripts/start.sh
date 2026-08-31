@@ -10,11 +10,11 @@
 # whenever the wrapper is up but the browser inside it is not.
 set -uo pipefail
 
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
+MR_BOT_REPO="${MR_BOT_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$MR_BOT_REPO" ] || { echo "MR_BOT_REPO could not be resolved" >&2; exit 2; }
 CAMOFOX_DIR="${CAMOFOX_DIR:-}"
 if [ -z "$CAMOFOX_DIR" ]; then
-  CAMOFOX_DIR="$(bash "$LIFE_MANAGER_REPO/skills/camofox-browser/fetch.sh")"
+  CAMOFOX_DIR="$(bash "$MR_BOT_REPO/skills/camofox-browser/fetch.sh")"
 fi
 LOG="/tmp/camofox.log"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

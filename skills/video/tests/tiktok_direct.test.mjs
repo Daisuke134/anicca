@@ -71,13 +71,13 @@ test("logged-out readback requires exact post id and matching caption", () => {
     stdout: JSON.stringify({
       id: "123",
       webpage_url: "https://www.tiktok.com/@life/video/123",
-      description: "Exact caption\n#LifeManager",
+      description: "Exact caption\n#MrBot",
     }),
   });
   assert.equal(
     loggedOutReadback(
       "https://www.tiktok.com/@life/video/123",
-      "Exact caption\n#LifeManager",
+      "Exact caption\n#MrBot",
       runner,
     ),
     true,
@@ -85,7 +85,7 @@ test("logged-out readback requires exact post id and matching caption", () => {
   assert.equal(
     loggedOutReadback(
       "https://www.tiktok.com/@life/video/999",
-      "Exact caption\n#LifeManager",
+      "Exact caption\n#MrBot",
       runner,
     ),
     false,

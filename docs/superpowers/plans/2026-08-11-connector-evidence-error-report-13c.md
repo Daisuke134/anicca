@@ -21,8 +21,8 @@ Convert a thrown evidence-completion error into one safe terminal wake report so
 
 Luna owns only:
 
-1. `apps/life-manager/lib/connector-minimal-runner.test.js`
-2. `apps/life-manager/lib/connector-minimal-runner.js`
+1. `apps/mr-bot/lib/connector-minimal-runner.test.js`
+2. `apps/mr-bot/lib/connector-minimal-runner.js`
 
 Soft target: 2 files; production +5–12 LOC; tests +30–60 LOC.
 

@@ -28,7 +28,7 @@ def send_email_if_configured(
     completed = run(
         [os.environ.get("GIG_GOG_BIN", "/opt/homebrew/bin/gog"), "--account", account,
          "gmail", "send", f"--to={target}",
-         "--subject=[Life Manager] Coconala update", f"--body={message}\n\nreceipt:{digest}",
+         "--subject=[Mr.bot] Coconala update", f"--body={message}\n\nreceipt:{digest}",
          "--json", "--no-input"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60, check=False,
     )

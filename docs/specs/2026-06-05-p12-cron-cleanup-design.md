@@ -48,7 +48,7 @@ meetings simply won't auto-spawn a recall bot — acceptable per task ("AND no o
 3. Write one JSONL row per cron to `~/.hermes/state/cron-triage.jsonl`:
    `{id,name,category,first_error,decision,ts}`.
 4. Disable `category==dead` (≤10 this pass) via `openclaw cron disable <id>`, EXCEPT the
-   protected list (life-manager core / income / safety — see task brief). Never disable a cron
+   protected list (mr-bot core / income / safety — see task brief). Never disable a cron
    I haven't read logs for.
 5. Slack #metrics summary + commit script `scripts/cron-cleanup-report.sh` + README + `state/.keep`
    to the worktree.

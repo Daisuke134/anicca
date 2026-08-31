@@ -41,8 +41,8 @@
 ### Task 1: Doorkeeper public discovery and parent readback
 
 **Files:**
-- Create: `apps/life-manager/lib/connector-doorkeeper-workflow.js`
-- Create: `apps/life-manager/lib/connector-doorkeeper-workflow.test.js`
+- Create: `apps/mr-bot/lib/connector-doorkeeper-workflow.js`
+- Create: `apps/mr-bot/lib/connector-doorkeeper-workflow.test.js`
 
 **Interfaces:**
 - Produces: `createDoorkeeperScriptFirstWorkflow(options = {})`
@@ -137,7 +137,7 @@
   Run:
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-doorkeeper-workflow.test.js
   ```
 
@@ -225,7 +225,7 @@
   Run:
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-doorkeeper-workflow.test.js
   node --test lib/connector-meetup-workflow.test.js lib/connector-peatix-workflow.test.js lib/connector-connpass-workflow.test.js
   node --check lib/connector-doorkeeper-workflow.js
@@ -246,7 +246,7 @@
 - [x] **Step 8: Commit the reviewed task**
 
   ```bash
-  git add apps/life-manager/lib/connector-doorkeeper-workflow.js apps/life-manager/lib/connector-doorkeeper-workflow.test.js
+  git add apps/mr-bot/lib/connector-doorkeeper-workflow.js apps/mr-bot/lib/connector-doorkeeper-workflow.test.js
   git commit -m "feat(connector): add Doorkeeper discovery workflow"
   ```
 

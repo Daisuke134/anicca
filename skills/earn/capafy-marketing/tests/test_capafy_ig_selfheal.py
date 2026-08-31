@@ -56,7 +56,7 @@ def run_selfheal(
     )
     safe.chmod(0o755)
     env = os.environ | {
-        "HOME": str(home), "LIFE_MANAGER_REPO": str(repo),
+        "HOME": str(home), "MR_BOT_REPO": str(repo),
         "CAPAFY_LAUNCHCTL_SAFE": str(safe), "CAPAFY_LAUNCHCTL_DOMAIN": "gui/501",
         "STATE": str(state),
     }
@@ -153,7 +153,7 @@ def _real_ig_probe_fixture(tmp_path: Path) -> dict[str, Path]:
     )
 
     home = tmp_path / "home"
-    (home / ".local/state/life-manager/logs").mkdir(parents=True)
+    (home / ".local/state/mr-bot/logs").mkdir(parents=True)
     accounts = home / ".cloak/accounts.json"
     accounts.parent.mkdir(parents=True, exist_ok=True)
     accounts.write_text("[]\n", encoding="utf-8")
@@ -181,7 +181,7 @@ def _run_real_ig_probe(tmp_path: Path, *, headless: bool) -> tuple[subprocess.Co
     fixture = _real_ig_probe_fixture(tmp_path)
     env = os.environ | {
         "HOME": str(fixture["home"]),
-        "LIFE_MANAGER_REPO": str(fixture["repo"]),
+        "MR_BOT_REPO": str(fixture["repo"]),
         "CAPAFY_FIXTURE_ACCOUNTS": str(fixture["accounts"]),
         "CAPAFY_LAUNCHCTL_SAFE": str(fixture["safe"]),
         "CAPAFY_LAUNCHCTL_DOMAIN": "gui/501",

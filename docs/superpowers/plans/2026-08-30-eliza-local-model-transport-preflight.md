@@ -1,12 +1,12 @@
 # Eliza Native Codex SDK Transport Preflight Plan
 
-**Goal:** Eliza既存`@elizaos/plugin-cli-inference`を使い、Life Manager runtimeからCodex subscriptionの`gpt-5.6-luna` structured planner callを一回通す。
+**Goal:** Eliza既存`@elizaos/plugin-cli-inference`を使い、Mr.bot runtimeからCodex subscriptionの`gpt-5.6-luna` structured planner callを一回通す。
 
 **Architecture:** Eliza fixed source `bd24601e…`の`plugin-cli-inference` / `codex-sdk` backendをそのまま使う。新しいrunner、model provider、adapterは作らない。
 
-**Tech Stack:** Eliza AgentRuntime、`@elizaos/plugin-cli-inference`、`@openai/codex-sdk`、system Codex CLI `0.151.0`、`@elizaos/plugin-life-manager`。
+**Tech Stack:** Eliza AgentRuntime、`@elizaos/plugin-cli-inference`、`@openai/codex-sdk`、system Codex CLI `0.151.0`、`@elizaos/plugin-mr-bot`。
 
-**Spec:** `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+**Spec:** `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 ## Upstream evidence
 
@@ -25,14 +25,14 @@
 - `ELIZA_CLI_CODEX_BIN=/Users/anicca/.local/bin/codex`
 - `ELIZA_PLANNER_NATIVE_TOOLS=0`
 - `ELIZA_CLI_CLAUDE_ALL_TIERS=1`。名称はupstream互換のまま使い、独自renameしない
-- `CODEX_HOME`は現行Life Managerのsubscription profileを指す。credential値は読出し、複製、log、receipt保存しない
+- `CODEX_HOME`は現行Mr.botのsubscription profileを指す。credential値は読出し、複製、log、receipt保存しない
 - C02のmodel callはexactly 1回。retry、fallback、Terra escalation、marketplace effectは0
 - GPT-OSS、local open-weight model、OpenAI API key、ClawRouter、Hermes、独自Codex adapterは0
 
 ## Atomic TODO
 
-- [x] `C02-01` upstream Codex SDK code pathをprivate evidenceへ保存する — `~/.local/state/life-manager/migration/elz-c/c02/codex-sdk-code-path-evidence.json` mode 0600、source/file SHA再計算一致、model/effect 0
-- [x] `C02-02` upstream host inclusionをprivate evidenceへ保存する — `~/.local/state/life-manager/migration/elz-c/c02/codex-sdk-host-inclusion-evidence.json` mode 0600、6 file SHA再計算一致、Local Node auto-enable/Cloud inclusion PASS、runtime/model/effect 0
+- [x] `C02-01` upstream Codex SDK code pathをprivate evidenceへ保存する — `~/.local/state/mr-bot/migration/elz-c/c02/codex-sdk-code-path-evidence.json` mode 0600、source/file SHA再計算一致、model/effect 0
+- [x] `C02-02` upstream host inclusionをprivate evidenceへ保存する — `~/.local/state/mr-bot/migration/elz-c/c02/codex-sdk-host-inclusion-evidence.json` mode 0600、6 file SHA再計算一致、Local Node auto-enable/Cloud inclusion PASS、runtime/model/effect 0
 - [x] `C02-03` isolated runtimeへ`ELIZA_CHAT_VIA_CLI`を設定する — private env exact 1行、backend=`codex-sdk`、mode 0600、SHA readback一致、model/runtime/effect 0
 - [x] `C02-04` isolated runtimeへLuna modelを設定する — private env exact 2行、`ELIZA_CLI_CODEX_MODEL=gpt-5.6-luna`、mode 0600、SHA readback一致、planner/runtime/model call/effect 0
 - [x] `C02-05` isolated runtimeへLuna planner modelを設定する — private env exact 3行、planner=`gpt-5.6-luna`、mode 0600、SHA readback一致、effort/runtime/model call/effect 0
@@ -42,9 +42,9 @@
 - [x] `C02-09` isolated runtimeへall-tiers modeを設定する — private env exact 7行、upstream all-tiers flag、mode 0600、SHA readback一致、registration/runtime/model call/effect 0
 - [x] `C02-10` 全text tier registrationを読む — fixed source SHA一致、6 text tier宣言/all-tiers配線をprivate evidenceへ保存、ACTION_PLANNER/runtime/model call/effect 0
 - [x] `C02-11` ACTION_PLANNER registrationを読む — fixed 2-file SHA一致、planner宣言/gate/Codex SDK route/native outputSchemaをprivate evidenceへ保存、runtime/model call/effect 0
-- [x] `C02-12` Life ManagerとCLI inferenceを同じruntimeで起動する — RAM closureで2 plugin各1・7 model types登録、private evidence mode 0600、model call/effect 0
+- [x] `C02-12` Mr.botとCLI inferenceを同じruntimeで起動する — RAM closureで2 plugin各1・7 model types登録、private evidence mode 0600、model call/effect 0
 - [x] `C02-13` Luna planner callを一回実行する — session/turn/model/effort/raw response hash一致、call 1/retry 0/effect 0。post-call DB log failureを記録し、同一session readbackへ進む
-- [x] `C02-14` structured action resultを読む — 同一session/turnをplugin自身のnormalizeRouteで`LIFE_MANAGER_HEALTH/{}`へ再読出し、hash一致、追加model call/effect 0
+- [x] `C02-14` structured action resultを読む — 同一session/turnをplugin自身のnormalizeRouteで`MR_BOT_HEALTH/{}`へ再読出し、hash一致、追加model call/effect 0
 - [x] `C02-15` private receiptを保存する — canonical v2 mode 0600、Codex SDK/Luna call 1/retry 0/structured result/effect 0、post-call DB log failureを含む`pending_review`
 - [x] `C02-16` adversarial reviewを一回行う — exactly 1 fresh review、FIX_FIRST。唯一のP1はpost-handler未初期化adapter loggingにより`runtime.useModel()`がreturnしないこと
 - [x] `C02-16-F1` initialized adapterで`runtime.useModel()` returnを成立させ、全call countをreceiptへ記録する — final return/exit 0、historical 1＋final 1、retry/effect 0
@@ -55,4 +55,4 @@
 
 ## 完了条件
 
-同じEliza runtimeに`plugin-life-manager`と既存`plugin-cli-inference`が各一つあり、`runtime.useModel(ModelType.ACTION_PLANNER, ...)`がsystem Codex経由のLuna structured resultを一回返す。pluginの存在、auth fileの存在、mock、dry runだけでは完了にしない。
+同じEliza runtimeに`plugin-mr-bot`と既存`plugin-cli-inference`が各一つあり、`runtime.useModel(ModelType.ACTION_PLANNER, ...)`がsystem Codex経由のLuna structured resultを一回返す。pluginの存在、auth fileの存在、mock、dry runだけでは完了にしない。

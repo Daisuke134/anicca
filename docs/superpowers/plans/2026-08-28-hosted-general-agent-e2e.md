@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node test runner and existing hosted ingress, adapter, runtime worker, cloud secret provider.
 
-**Spec:** `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md` (GA-11).
+**Spec:** `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md` (GA-11).
 
 ## Global Constraints
 
@@ -19,8 +19,8 @@
 ### Task 1: One-tenant queue-to-receipt contract
 
 **Files:**
-- Modify: `apps/life-manager/lib/hosted-goal-ingress.test.js`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Modify: `apps/mr-bot/lib/hosted-goal-ingress.test.js`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 - [x] **Step 1:** Add a test that calls ingress, runs the queued job through `executeCapabilityJob` plus `createGeneralAgentWorkLoopAdapter`, invokes the scheduled heartbeat inside the specialist, and asserts the call order `heartbeat → clear → complete` with one safe receipt.
 - [x] **Step 2:** Call ingress with the same goal again, assert `created=false`, worker execution remains one, and receipt count remains one.

@@ -299,7 +299,7 @@ Day 1  16:23  No response yet.
 
 Day 2  10:00  Applicant emails back: "Can we do tomorrow 18:00?"
               → inbox_watcher → reply-decide → action=reply, "yes"; also opens a
-                gcal event via anicca-life-manager.
+                gcal event via anicca-mr-bot.
               → outbound mail sent. Calendar booked.
               → current_step="interview scheduled", next_action_at=Day-3 19:00 (post-interview)
 

@@ -1206,7 +1206,7 @@ def main():
     )
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--cdp-port", type=int, default=9324)
-    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/mr-bot/affiliate"))
     args = parser.parse_args()
     if args.command == "observe":
         result = observe(args)

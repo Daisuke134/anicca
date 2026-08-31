@@ -91,7 +91,7 @@ Google Calendar (10y, complete cursor walk)
 |---|---|
 | 医療ガイドラインを個人へ自動適用 | 年齢・症状・既往歴・医師判断がなく unsafe |
 | 検査結果、診断、病名の推論 | care detector の既存 no-diagnosis contract |
-| 検査方法の推奨 | Life Manager は本人の過去行動を再現するだけ |
+| 検査方法の推奨 | Mr.bot は本人の過去行動を再現するだけ |
 | phone booking | §9.5 の absolute prohibition |
 | browser implementation rewrite | H3 は既存 Steel path の category adapter |
 

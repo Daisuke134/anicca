@@ -27,7 +27,7 @@ class CutLoopReleaseTest(unittest.TestCase):
                     **os.environ,
                     "LOOPS_ROOT": str(root / "loops"),
                     "LOOPS_KEEP_RELEASES": "1",
-                    "LIFE_MANAGER_LAUNCH_AGENTS_DIR": str(agents),
+                    "MR_BOT_LAUNCH_AGENTS_DIR": str(agents),
                     "NPM_BIN": str(npm),
                 },
                 capture_output=True,
@@ -40,7 +40,7 @@ class CutLoopReleaseTest(unittest.TestCase):
             self.assertEqual(len(recorded), 3)
             self.assertTrue(recorded[0].endswith("|ci --omit=dev --ignore-scripts"))
             self.assertIn("/runtime/agentmail|ci --omit=dev --ignore-scripts", recorded[1])
-            self.assertIn("/apps/life-manager|ci --omit=dev --ignore-scripts", recorded[2])
+            self.assertIn("/apps/mr-bot|ci --omit=dev --ignore-scripts", recorded[2])
 
 
 if __name__ == "__main__":

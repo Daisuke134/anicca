@@ -101,7 +101,7 @@ def resolve_outbound(url):
     if parsed.hostname != "t.co":
         return ""
     try:
-        request = Request(url, method="HEAD", headers={"User-Agent": "Life-Manager-Affiliate/1.0"})
+        request = Request(url, method="HEAD", headers={"User-Agent": "Mr.bot-Affiliate/1.0"})
         with urlopen(request, timeout=12) as response:
             return response.geturl()
     except OSError:
@@ -153,7 +153,7 @@ def find_exact_public_markup(markup, text, handle):
 def public_profile_readback(handle, text):
     request = Request(
         f"https://x.com/{handle}",
-        headers={"User-Agent": "Life-Manager-Affiliate/1.0"},
+        headers={"User-Agent": "Mr.bot-Affiliate/1.0"},
     )
     try:
         with urlopen(request, timeout=12) as response:
@@ -287,7 +287,7 @@ def main():
     parser.add_argument("--cdp-port", type=int, default=9326)
     parser.add_argument(
         "--state", type=Path,
-        default=Path("~/.local/state/life-manager/affiliate"),
+        default=Path("~/.local/state/mr-bot/affiliate"),
     )
     args = parser.parse_args()
     print(json.dumps(publish(args), sort_keys=True, separators=(",", ":")))

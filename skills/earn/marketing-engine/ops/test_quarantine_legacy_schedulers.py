@@ -98,7 +98,7 @@ class QuarantineTest(unittest.TestCase):
         self.assertIn(["launchctl", "bootstrap", f"gui/{os.getuid()}", str(root / "one")], runner.commands)
 
     def test_rejects_unreviewed_target_family(self):
-        snapshot = {"host_uid": os.getuid(), "records": [{"runtime": "launchd", "id": "ai.anicca.life-manager", "enabled": True, "disposition": "retire"}]}
+        snapshot = {"host_uid": os.getuid(), "records": [{"runtime": "launchd", "id": "ai.anicca.mr-bot", "enabled": True, "disposition": "retire"}]}
         with self.assertRaisesRegex(module.QuarantineError, "outside reviewed families"):
             module.quarantine(snapshot, True, FakeRunner())
 

@@ -47,11 +47,11 @@ PROPOSAL_FACT_IDS = frozenset({
     "atr_research",
     "agent_club",
     "anicca_consumer",
-    "life_manager",
+    "mr_bot",
     "a10_marketing",
     "education",
     "languages",
-    "life_manager_open_source_operations_20260805",
+    "mr_bot_open_source_operations_20260805",
     "async_operating_practices_20260805",
     "agent_reliability_engineering_20260805",
 })

@@ -25,7 +25,7 @@ healthcheck 3本も`6ab86c33…`からterminal passを出している。X実験�
 
 ## コードはmain 1本、worktreeは作業中だけ使う
 
-Life Managerのコード正本は、GitHub `Daisuke134/life-manager` の `main` 1本とする。
+Mr.botのコード正本は、GitHub `Daisuke134/life-manager` の `main` 1本とする。
 各loopに永続branchや専用worktreeを持たせない。本番loopはbranchもworktreeも直接実行せず、
 `main`の1 commitから作った同じimmutable releaseを実行する。
 
@@ -213,7 +213,7 @@ Diceはempathy、Englishは計測済みarmではoriginal/empathyが最高であ�
 - Chinese sourceの1出所timeout後も残りの出所へ進める
 - DuckDuckGoがCAPTCHAでもBingへ切り替えられる
 - 同じslotの再wakeでledger行数が増えないことを確認した
-- Life Managerの公開mainへ実装、テスト、READMEを統合した
+- Mr.botの公開mainへ実装、テスト、READMEを統合した
 
 ## release削除事故は修正し、rolling main releaseへ統一した
 
@@ -224,7 +224,7 @@ Diceはempathy、Englishは計測済みarmではoriginal/empathyが最高であ�
 
 pass 3本は`d9021490…`、healthcheck 3本は`6ab86c33…`で、各installed SHAとevent SHAが一致する。
 production plistのworktree参照は0である。一方、現在の`~/loops/current`はsparse releaseであり、
-Life Manager全体の`lm-loop doctor`は未収録entrypointをmissingとして報告する。loaded X jobには
+Mr.bot全体の`lm-loop doctor`は未収録entrypointをmissingとして報告する。loaded X jobには
 影響しないが、全体control-planeのcanonical currentとしては別途修復が必要である。
 
 ## 残TODO — この順番で閉じる

@@ -15,9 +15,9 @@ LISTING="${3:-}"
 
 AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
-CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
-CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher}"
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
+CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$MR_BOT_STATE_HOME/runtime/capafy-publisher-home}"
+CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$MR_BOT_STATE_HOME/runtime/capafy-publisher}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 
 # Keep package state bound to the selected agent even when a previous retry
@@ -30,7 +30,7 @@ export CAPAFY_PUBLISH_WORK_DIR="$CAPAFY_PUBLISHER_STATE_HOME/work/agents/$ID"
 
 # Direct recovery and launchd must resolve credentials from the same repo-external
 # SSOT. Load them before the key-health gate; values stay process-local.
-for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
+for ENV_FILE in "$MR_BOT_STATE_HOME/.env"; do
   if [ -f "$ENV_FILE" ]; then
     set -a; . "$ENV_FILE" 2>/dev/null; set +a
   fi
@@ -192,7 +192,7 @@ except Exception: print('')")"
 
   if [ "$CONFIG_STATE" = "0" ]; then
     step "[5] CP2 key host (drive_checkpoint2.py, final review page)"
-    export CAPAFY_HOST_OPENROUTER_KEY="${CAPAFY_HOST_OPENROUTER_KEY:-$(grep '^CAPAFY_HOST_OPENROUTER_KEY=' "$LIFE_MANAGER_STATE_HOME/.env" 2>/dev/null | cut -d= -f2-)}"
+    export CAPAFY_HOST_OPENROUTER_KEY="${CAPAFY_HOST_OPENROUTER_KEY:-$(grep '^CAPAFY_HOST_OPENROUTER_KEY=' "$MR_BOT_STATE_HOME/.env" 2>/dev/null | cut -d= -f2-)}"
     CP2="$PUBLISH_REVIEW_URL"
     timeout 150 "$VENV" "$AUTO/scripts/drive_checkpoint2.py" "$CP2" 2>&1 | grep -vE "Deprecation|warnings.warn" | tail -4
     # AUTHORITATIVE gate = server is_confirmed_config_keys, POLLED. drive_checkpoint2 can
@@ -253,7 +253,7 @@ sys.exit(0 if (st==1 and cfg==1 and sk==1 and pkg==1) else 1)
 " || die "FINAL VERIFY failed (status/cfg not 1) for agent $ID"
 
 step "[8] ledger"
-LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/published.jsonl"
+LEDGER="$MR_BOT_STATE_HOME/state/capafy-autopublish/published.jsonl"
 mkdir -p "$(dirname "$LEDGER")"
 python3 - "$ID" "$SKILL_NAME" "$LISTING" "$LEDGER" <<'PY'
 import json,sys

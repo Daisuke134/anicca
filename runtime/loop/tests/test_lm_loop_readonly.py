@@ -11,8 +11,8 @@ from runtime.loop.lm_loop import _last_event, _release_from_plist, doctor_report
 REGISTRY = {"schema_version": 2, "loops": {"example": {
     "label": "ai.anicca.example", "domain": "earn", "entrypoint": "bin/example.sh",
     "cadence": {"start_interval_seconds": 60}, "effect_class": "application",
-    "state_root": "~/.local/state/life-manager/example",
-    "log_root": "~/.local/state/life-manager/example/logs",
+    "state_root": "~/.local/state/mr-bot/example",
+    "log_root": "~/.local/state/mr-bot/example/logs",
     "cleanup": {"max_runs": 10, "max_age_days": 7},
     "provider_route": "shared-agent-runner",
 }}}
@@ -101,7 +101,7 @@ class LmLoopReadonlyTest(unittest.TestCase):
             path = Path(directory) / "job.plist"
             path.write_bytes(plistlib.dumps({
                 "ProgramArguments": ["/loops/releases/20260828T000000-12345678/bin/lm-loop-run"],
-                "EnvironmentVariables": {"LIFE_MANAGER_RELEASE_SHA": "a" * 40},
+                "EnvironmentVariables": {"MR_BOT_RELEASE_SHA": "a" * 40},
             }))
             self.assertEqual(_release_from_plist(path), "a" * 40)
 

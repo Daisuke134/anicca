@@ -40,7 +40,7 @@ OPENCLAW_THINKING_VALUES = frozenset(("off", "minimal", "low", "medium", "high",
 # explicit escalation route. Naming only "high" here let "xhigh" and "max" past the gate.
 RESTRICTED_EFFORTS = frozenset(("high", "xhigh", "max"))
 OPENCLAW_JSON_FENCE = re.compile(r"\A```json\r?\n(?P<body>.*?)\r?\n```\Z", re.DOTALL)
-DEFAULT_USAGE_LEDGER = Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "agent-usage.jsonl"
+DEFAULT_USAGE_LEDGER = Path.home() / ".local" / "state" / "mr-bot" / "telemetry" / "agent-usage.jsonl"
 CLAUDE_PROVIDERS = {"claude", "claude-direct"}
 CODEX_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset(("uniqueItems", "allOf", "if", "then", "else"))
 # Smallest prompt that could plausibly express a bounded task. Kept low on
@@ -56,7 +56,7 @@ DEFAULT_HISTORY_GENERATIONS = 3
 DEFAULT_EVIDENCE_MIN_FREE_BYTES = 512 * 1024 * 1024
 DEFAULT_EVIDENCE_MAX_BYTES = 256 * 1024 * 1024
 PROVIDER_LEASE_BUSY = 75
-PROVIDER_LEASE_BUSY_LINE = "LIFE_MANAGER_PROVIDER_LEASE_BUSY"
+PROVIDER_LEASE_BUSY_LINE = "MR_BOT_PROVIDER_LEASE_BUSY"
 
 # OpenAI Standard tier, short context, USD per 1M tokens: (input, cached_input, output).
 # Source: https://developers.openai.com/api/docs/pricing (fetched 2026-07-25).
@@ -74,7 +74,7 @@ TOOLLESS_CODEX_DISABLED_FEATURES = ("shell_tool", "code_mode_host", "unified_exe
 
 def runtime_event_loop_id(requested_loop_id: str) -> str:
     """Bind nested agent evidence to its managed parent loop when available."""
-    return os.environ.get("LIFE_MANAGER_LOOP_ID", "").strip() or requested_loop_id
+    return os.environ.get("MR_BOT_LOOP_ID", "").strip() or requested_loop_id
 
 
 def emit_runtime_event(*, loop_id: str, evidence_dir: Path,
@@ -1489,7 +1489,7 @@ def run() -> int:
             os.environ.get("ANICCA_BUDGET_DAILY_SCOPE", "").strip() or parsed.loop)
         budget_ledger = TokenBudgetLedger(Path(os.environ.get(
             "ANICCA_TOKEN_BUDGET_LEDGER",
-            Path.home() / ".local/state/life-manager/telemetry/token-budget.jsonl")))
+            Path.home() / ".local/state/mr-bot/telemetry/token-budget.jsonl")))
         budget_day = budget_day_for(
             datetime.now(timezone.utc),
             os.environ.get("ANICCA_BUDGET_DAY_TZ", "").strip() or "Asia/Tokyo")
@@ -1502,7 +1502,7 @@ def run() -> int:
 
     try:
         lease_fd = acquire_provider_lease(
-            os.environ.get("LIFE_MANAGER_PROVIDER_LEASE_PATH", "").strip()
+            os.environ.get("MR_BOT_PROVIDER_LEASE_PATH", "").strip()
         )
     except ProviderLeaseBusy:
         print(PROVIDER_LEASE_BUSY_LINE, file=sys.stderr)
@@ -1826,10 +1826,10 @@ def run() -> int:
         "evidence_reclamation": retention,
     }
     runtime_event_failed = False
-    release_sha = os.environ.get("LIFE_MANAGER_RELEASE_SHA", "").strip()
+    release_sha = os.environ.get("MR_BOT_RELEASE_SHA", "").strip()
     if release_sha:
         registry_path = Path(os.environ.get(
-            "LIFE_MANAGER_REGISTRY", REPO_ROOT / "config" / "loop-registry.json"))
+            "MR_BOT_REGISTRY", REPO_ROOT / "config" / "loop-registry.json"))
         try:
             event = emit_runtime_event(
                 loop_id=runtime_event_loop_id(parsed.loop),

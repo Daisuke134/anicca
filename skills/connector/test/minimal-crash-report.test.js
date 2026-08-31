@@ -44,7 +44,7 @@ test("process crash reports through minimal operations without restarting the Co
 test("production-like crash report sends directly, persists claim and delivery, and replays zero times", async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-minimal-crash-production-"));
   const stateDir = path.join(directory, "state");
-  const sharedEnvFile = path.join(directory, "life-manager.env");
+  const sharedEnvFile = path.join(directory, "mr-bot.env");
   fs.writeFileSync(sharedEnvFile, "TELEGRAM_BOT_TOKEN=fixture-telegram-token\n", { mode: 0o600 });
   const originalFetch = globalThis.fetch;
   const originalTimeout = AbortSignal.timeout;

@@ -2,7 +2,7 @@
 
 ## 目的
 
-実際に動いたLife Manager Connectorの証拠だけを使い、応募先eventの本文に適合する発表タイトル、
+実際に動いたMr.bot Connectorの証拠だけを使い、応募先eventの本文に適合する発表タイトル、
 5分outline、応募理由、product demo概要をagent生成する。未実装機能、架空の数字、収益保証を含めない。
 
 ## 入力

@@ -4,7 +4,7 @@
 
 `done="cloud runtime が本人の実interaction履歴から相手ごとの安定 cadence を測り、いつもの間隔を超えた1人だけを、出典を偽らず・罪悪感を煽らず・第三者PIIを保存せずに提案する"`
 
-H5 は personal CRM でも「友達スコア」でもない。実際に繰り返された1対1の時間が途切れたときだけ、Life Manager が小さな余白を提案する organ である。
+H5 は personal CRM でも「友達スコア」でもない。実際に繰り返された1対1の時間が途切れたときだけ、Mr.bot が小さな余白を提案する organ である。
 
 ## Evidence
 

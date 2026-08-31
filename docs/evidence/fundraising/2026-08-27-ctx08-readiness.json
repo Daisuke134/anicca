@@ -27,7 +27,7 @@
     "run_count": 273,
     "last_exit": 75,
     "interval_seconds": 60,
-    "worktree": "/Users/anicca/Projects/life-manager-main/.worktrees/fundraiser-agent-task0-20260826",
+    "worktree": "/Users/anicca/Projects/mr-bot-main/.worktrees/fundraiser-agent-task0-20260826",
     "commit": "663b40216fe61c04a958fbfbd38b93d91dd0a1c0",
     "context_version": "2026-08-27.2",
     "context_digest": "9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338",
@@ -88,7 +88,7 @@
       }
     },
     "disk_cleanup_owner_probe": {
-      "label": "ai.anicca.life-manager-disk-cleanup",
+      "label": "ai.anicca.mr-bot-disk-cleanup",
       "run_count": 124,
       "last_exit": 0,
       "evaluated": 0,

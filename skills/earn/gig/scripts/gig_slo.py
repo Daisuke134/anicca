@@ -31,7 +31,7 @@ HERMES_AUDIT_LANES = ("paid", "reply", "apply", "storefront")
 
 def _default_host_state_dir() -> Path:
     return Path(os.environ.get(
-        "GIG_HOST_STATE_DIR", str(Path.home() / ".local" / "state" / "life-manager" / "state")
+        "GIG_HOST_STATE_DIR", str(Path.home() / ".local" / "state" / "mr-bot" / "state")
     ))
 
 

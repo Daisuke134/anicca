@@ -113,9 +113,9 @@ echo "[verify] ❌ FAIL · expected $COUNT_MIN-$COUNT_MAX hits, got $HIT_COUNT" 
 echo "[verify] log: $FAIL_LOG" >&2
 
 # 8. Slack #metrics post (best-effort)
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
-if [ -n "${SLACK_BOT_TOKEN:-}" ] || [ -f "$LIFE_MANAGER_STATE_HOME/.env" ]; then
-  set -a; source "$LIFE_MANAGER_STATE_HOME/.env" 2>/dev/null; set +a
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
+if [ -n "${SLACK_BOT_TOKEN:-}" ] || [ -f "$MR_BOT_STATE_HOME/.env" ]; then
+  set -a; source "$MR_BOT_STATE_HOME/.env" 2>/dev/null; set +a
   python3 - "${SLACK_BOT_TOKEN:-}" "$URL" "$REGEX" "$HIT_COUNT" "$COUNT_MIN" "$COUNT_MAX" "$FAIL_LOG" <<'PYALERT' 2>/dev/null || true
 import os, sys, json, urllib.request
 tok, url, regex, hits, mn, mx, log = sys.argv[1:8]

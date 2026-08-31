@@ -105,7 +105,7 @@
       "full_tests_passed": 221,
       "full_tests_failed": 0
     },
-    "life_manager_ledger": {
+    "mr_bot_ledger": {
       "commit": "54e68aa5d",
       "focused_tests_passed": 52,
       "focused_tests_failed": 0
@@ -129,7 +129,7 @@
       "verified_external_revenue": false,
       "rejection_reason": "payer is a colony self wallet"
     },
-    "life_manager_bridge": {
+    "mr_bot_bridge": {
       "observed_at": "2026-07-28T07:50:33.752+09:00",
       "ledgers_seen": 0,
       "recorded": 0,

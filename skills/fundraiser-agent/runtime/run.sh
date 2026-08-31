@@ -1,9 +1,9 @@
 #!/bin/bash
 set -uo pipefail
 
-REPO_ROOT="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+REPO_ROOT="${MR_BOT_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
 [ -n "$REPO_ROOT" ] || { echo "fundraiser: repository unavailable" >&2; exit 2; }
-STATE_ROOT="${FUNDRAISER_STATE_ROOT:-$HOME/.local/state/life-manager/fundraiser}"
+STATE_ROOT="${FUNDRAISER_STATE_ROOT:-$HOME/.local/state/mr-bot/fundraiser}"
 LOCK_DIR="$STATE_ROOT/run.lock"
 LOG="$STATE_ROOT/fundraiser.log"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
@@ -13,7 +13,7 @@ PROMPT="$REPO_ROOT/skills/fundraiser-agent/prompts/daily.md"
 SCHEMA="$REPO_ROOT/skills/fundraiser-agent/runtime/pass-result.schema.json"
 SENDER="$REPO_ROOT/skills/_shared/send-telegram.sh"
 PHOTO_SENDER="$REPO_ROOT/skills/_shared/send-telegram-photo.sh"
-LOOP_CLI="${LIFE_MANAGER_LOOP_CLI:-$REPO_ROOT/bin/lm-loop}"
+LOOP_CLI="${MR_BOT_LOOP_CLI:-$REPO_ROOT/bin/lm-loop}"
 MIN_FREE_KIB=$((1536 * 1024))
 PRESSURE_FREE_KIB=$((2 * 1024 * 1024))
 
@@ -35,13 +35,13 @@ if [ -z "$FREE_KIB" ] || ! [[ "$FREE_KIB" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 if [ "$FREE_KIB" -lt "$PRESSURE_FREE_KIB" ]; then
-  "$LOOP_CLI" restart life-manager-disk-cleanup >/dev/null 2>&1 || true
+  "$LOOP_CLI" restart mr-bot-disk-cleanup >/dev/null 2>&1 || true
   echo "fundraiser: deferred disk policy available_kib=$FREE_KIB required_kib=$PRESSURE_FREE_KIB" >>"$LOG"
   exit 75
 fi
 
 if ! cdp_healthy; then
-  "$LOOP_CLI" restart life-manager-daily-driver >/dev/null 2>&1 || true
+  "$LOOP_CLI" restart mr-bot-daily-driver >/dev/null 2>&1 || true
   CDP_READY=false
   for _ in 1 2 3 4 5 6 7 8 9 10; do
     if cdp_healthy; then
@@ -65,7 +65,7 @@ fi
 trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
 
 export PATH="/opt/homebrew/bin:$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
-export LIFE_MANAGER_REPO="$REPO_ROOT"
+export MR_BOT_REPO="$REPO_ROOT"
 export FUNDRAISER_RUN_ID="$RUN_ID"
 export FUNDRAISER_STATE_ROOT="$STATE_ROOT"
 export FUNDRAISER_EVIDENCE_DIR="$EVIDENCE_DIR"
@@ -107,7 +107,7 @@ RUNTIME_PROMPT="$EVIDENCE_DIR/runtime-prompt.md"
 - Work in \`$REPO_ROOT\`; use the existing authenticated Chrome CDP endpoint \`http://127.0.0.1:9222\`.
 - Search both the live Web and rendered authenticated X UI. X is discovery only; verify on the official program website before applying.
 - Use existing browser helpers under \`skills/browser/\`; do not launch or kill a browser.
-- If \`127.0.0.1:9222\` becomes connection-refused during this pass, do not record a candidate failure yet. Execute \`$LOOP_CLI restart life-manager-daily-driver\`, wait up to 20 seconds for \`curl -fsS --max-time 2 http://127.0.0.1:9222/json/version\` to succeed, reacquire a fresh fundraiser lease, and retry the same candidate observation once. Only checkpoint the transport if that exact managed recovery fails. Never launch or kill Chromium directly.
+- If \`127.0.0.1:9222\` becomes connection-refused during this pass, do not record a candidate failure yet. Execute \`$LOOP_CLI restart mr-bot-daily-driver\`, wait up to 20 seconds for \`curl -fsS --max-time 2 http://127.0.0.1:9222/json/version\` to succeed, reacquire a fresh fundraiser lease, and retry the same candidate observation once. Only checkpoint the transport if that exact managed recovery fails. Never launch or kill Chromium directly.
 - Read private founder values only from \`~/.config/anicca/job-search/profile.json\` and \`~/.local/share/anicca/credentials.json\`; never print or report their values.
 - Never append a \`submitted_verified\` row directly. Before Submit, create a mode-600 draft JSON containing organization, program, cohort_window, account, official_url, contact {method,destination}, every rendered question and actual answer in question_answers, attachment names, the exact non-secret claims/source paths used in context_used, context_version \`$FUNDRAISER_CONTEXT_VERSION\`, and context_digest \`$FUNDRAISER_CONTEXT_DIGEST\`. Run \`python3 "$REPO_ROOT/skills/fundraiser-agent/runtime/record-application.py" --prepare --draft <draft> --ledger "$STATE_ROOT/application-receipts.jsonl" --applications-dir "$STATE_ROOT/applications" --expected-context-version "$FUNDRAISER_CONTEXT_VERSION" --expected-context-digest "$FUNDRAISER_CONTEXT_DIGEST"\` and require its prepared application_digest before claiming the final effect. This pre-submit gate rejects prior terminal applications even when cohort dates or URL spelling drift. After official screenshot and Telegram photo delivery, add submitted_at and evidence {completion_png,telegram_photo_message_id,provider_readback} without changing the prepared fields; then run \`python3 "$REPO_ROOT/skills/fundraiser-agent/runtime/record-application.py" --draft <draft> --ledger "$STATE_ROOT/application-receipts.jsonl" --applications-dir "$STATE_ROOT/applications" --run-id "$RUN_ID" --expected-context-version "$FUNDRAISER_CONTEXT_VERSION" --expected-context-digest "$FUNDRAISER_CONTEXT_DIGEST"\`. Only its successful output establishes \`submitted_verified\`. Use direct compact rows only for non-success terminal states.
 - Write the durable next discovery cursor atomically to \`$STATE_ROOT/cursor.json\`.

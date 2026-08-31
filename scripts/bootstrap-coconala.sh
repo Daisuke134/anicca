@@ -2,7 +2,7 @@
 set -euo pipefail
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-TARGET="${LIFE_MANAGER_CHECKOUT:-$HOME/life-manager}"
+TARGET="${MR_BOT_CHECKOUT:-$HOME/mr-bot}"
 
 if [ -e "$TARGET" ] && [ ! -d "$TARGET/.git" ]; then
   echo "[coconala] $TARGET exists but is not a Git checkout; move it and retry" >&2
@@ -23,5 +23,5 @@ else
   git clone --depth 1 --branch main https://github.com/Daisuke134/life-manager.git "$TARGET"
 fi
 
-export LIFE_MANAGER_CHECKOUT="$TARGET"
+export MR_BOT_CHECKOUT="$TARGET"
 exec "$TARGET/install.sh" coconala

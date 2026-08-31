@@ -21,13 +21,13 @@ if [[ -n "$(git -C "$REPO_ROOT" status --porcelain=v1 --untracked-files=all)" ]]
 fi
 
 HEAD_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
-REQUESTED_SHA="${LIFE_MANAGER_RELEASE_SHA:-$HEAD_SHA}"
+REQUESTED_SHA="${MR_BOT_RELEASE_SHA:-$HEAD_SHA}"
 [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || die "release SHA must be a 40-character lowercase git SHA"
 [[ "$REQUESTED_SHA" == "$HEAD_SHA" ]] || die "release SHA must equal canonical checkout HEAD"
 
 HOME_ROOT="${HOME:?HOME must be set}"
-DATA_HOME="${LIFE_MANAGER_DATA_HOME:-$HOME_ROOT/.local/share/life-manager}"
-STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME_ROOT/.local/state/life-manager}"
+DATA_HOME="${MR_BOT_DATA_HOME:-$HOME_ROOT/.local/share/mr-bot}"
+STATE_HOME="${MR_BOT_STATE_HOME:-$HOME_ROOT/.local/state/mr-bot}"
 
 if [[ -n "${AFFILIATE_CANONICAL_HOME:-}" ]]; then
   CANONICAL_HOME="$AFFILIATE_CANONICAL_HOME"
@@ -37,23 +37,23 @@ else
 fi
 [[ "$CANONICAL_HOME" = /* && -d "$CANONICAL_HOME" ]] \
   || die "canonical OS home is invalid"
-GUARD_PATH="$CANONICAL_HOME/gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
+GUARD_PATH="$CANONICAL_HOME/gig/releases/mr-bot/current/skills/earn/gig/scripts/gig_disk_guard.py"
 [[ -f "$GUARD_PATH" && ! -L "$GUARD_PATH" && -r "$GUARD_PATH" ]] \
-  || die "Life Manager disk guard is unavailable at $GUARD_PATH"
-GUARD_COMPILE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/life-manager-disk-guard.XXXXXX")" \
-  || die "Life Manager disk guard compile staging failed"
+  || die "Mr.bot disk guard is unavailable at $GUARD_PATH"
+GUARD_COMPILE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/mr-bot-disk-guard.XXXXXX")" \
+  || die "Mr.bot disk guard compile staging failed"
 GUARD_COMPILE_PATH="$GUARD_COMPILE_DIR/gig_disk_guard.py"
 if ! cp "$GUARD_PATH" "$GUARD_COMPILE_PATH" \
   || ! /usr/bin/python3 -I -m py_compile "$GUARD_COMPILE_PATH"; then
   rm -rf "$GUARD_COMPILE_DIR"
-  die "Life Manager disk guard failed py_compile"
+  die "Mr.bot disk guard failed py_compile"
 fi
 rm -rf "$GUARD_COMPILE_DIR"
 GUARD_COMPILE_DIR=""
 GUARD_SHA256="$(/usr/bin/shasum -a 256 "$GUARD_PATH" | /usr/bin/awk '{print $1}')" \
-  || die "Life Manager disk guard sha256 failed"
+  || die "Mr.bot disk guard sha256 failed"
 [[ "$GUARD_SHA256" =~ ^[[:xdigit:]]{64}$ ]] \
-  || die "Life Manager disk guard sha256 is invalid"
+  || die "Mr.bot disk guard sha256 is invalid"
 
 AFFILIATE_DATA="$DATA_HOME/affiliate"
 RELEASES="$AFFILIATE_DATA/releases"
@@ -128,7 +128,7 @@ fi
 /usr/bin/plutil -insert external_dependencies -array "$RECEIPT_STAGE"
 /usr/bin/plutil -insert external_dependencies.0 -dictionary "$RECEIPT_STAGE"
 /usr/bin/plutil -insert external_dependencies.0.name -string \
-  "life-manager-disk-guard" "$RECEIPT_STAGE"
+  "mr-bot-disk-guard" "$RECEIPT_STAGE"
 /usr/bin/plutil -insert external_dependencies.0.path -string \
   "$GUARD_PATH" "$RECEIPT_STAGE"
 /usr/bin/plutil -insert external_dependencies.0.sha256 -string \
@@ -167,7 +167,7 @@ PROFILE_ROOT="$HOME_ROOT/.cloak/profiles/affiliate"
   --receipt "$AFFILIATE_STATE/browser-profiles.json"
 
 LAUNCH_AGENTS="$HOME_ROOT/Library/LaunchAgents"
-LOG_DIR="$HOME_ROOT/.local/state/life-manager/affiliate/logs"
+LOG_DIR="$HOME_ROOT/.local/state/mr-bot/affiliate/logs"
 mkdir -p "$LAUNCH_AGENTS" "$LOG_DIR"
 BROWSER_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-browser.plist"
 IMPACT_BROWSER_PLIST="$LAUNCH_AGENTS/ai.anicca.affiliate-impact-browser.plist"

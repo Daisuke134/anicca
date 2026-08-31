@@ -125,7 +125,7 @@ class MercorPassContractTests(unittest.TestCase):
             / "docs"
             / "superpowers"
             / "specs"
-            / "2026-08-22-mercor-life-manager-consolidation.md"
+            / "2026-08-22-mercor-mr-bot-consolidation.md"
         ).read_text()
         self.assertIn("existing 30-minute Job Hunter acquisition loop", spec)
         self.assertIn("submit every grounded ready listing", spec)
@@ -202,7 +202,7 @@ class MercorPassContractTests(unittest.TestCase):
     def test_shell_maps_only_identified_busy_to_already_running(self):
         busy, busy_call = self._run_shell_with_pass_rc(
             pass_rc=75,
-            pass_stderr="LIFE_MANAGER_PROVIDER_LEASE_BUSY\n",
+            pass_stderr="MR_BOT_PROVIDER_LEASE_BUSY\n",
         )
         self.assertEqual(busy.returncode, 0, busy.stderr)
         self.assertEqual(

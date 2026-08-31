@@ -1,4 +1,4 @@
-# Life Manager scheduler declaration. The canonical application side effects remain
+# Mr.bot scheduler declaration. The canonical application side effects remain
 # in apps/job-search-loop; this declaration only supplies cadence and entrypoints.
 name      = "job-hunter"
 state_dir = "~/.local/state/anicca/job-search"

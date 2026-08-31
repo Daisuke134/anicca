@@ -6,8 +6,8 @@
 
 **Ponytail scope:** exact 2 files.
 
-- `apps/life-manager/lib/connector-minimal-evidence.js`: add one `idempotencyKey` option to the existing `sendPhoto` call.
-- `apps/life-manager/lib/connector-minimal-evidence.test.js`: RED/GREEN the exact deterministic key, distinct message/photo namespaces, no URL/private value in the key, and unchanged checkpoint/bundle behavior.
+- `apps/mr-bot/lib/connector-minimal-evidence.js`: add one `idempotencyKey` option to the existing `sendPhoto` call.
+- `apps/mr-bot/lib/connector-minimal-evidence.test.js`: RED/GREEN the exact deterministic key, distinct message/photo namespaces, no URL/private value in the key, and unchanged checkpoint/bundle behavior.
 
 **Estimated production change:** 1–3 LOC. **Estimated test change:** 15–35 LOC.
 

@@ -8,8 +8,8 @@
 
 **Files / soft target:**
 
-- Modify `apps/life-manager/lib/connector-production-browser-harness.js` — about 40–70 LOC.
-- Modify `apps/life-manager/lib/connector-production-browser-harness.test.js` — about 90–140 LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.js` — about 40–70 LOC.
+- Modify `apps/mr-bot/lib/connector-production-browser-harness.test.js` — about 90–140 LOC.
 
 **Authenticated diagnosis:** The exact 30-second `domcontentloaded` URL wait resolves at `/confirm`, but the first immediate confirm inspection can transiently return zero controls while hydration completes; the next read-only inspection exposes the unique final control. Reuse the existing TECH PLAY postcheck budget (20 attempts, 19 sleeps × 25 ms = 475 ms) for confirm observation only. Do not repeat the review click, any input mutation, private resolution, or proposer call.
 

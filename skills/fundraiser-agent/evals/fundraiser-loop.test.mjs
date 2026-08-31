@@ -15,7 +15,7 @@ const emailValidator = new URL("../runtime/validate-outbound-email.py", import.m
 const applicationRecorder = new URL("../runtime/record-application.py", import.meta.url);
 const startupContext = Object.freeze({
   product: Object.freeze({
-    name: "Life Manager",
+    name: "Mr.bot",
     one_liner: "A personal manager that acts within delegated boundaries and reports evidence.",
     mission: "End suffering for humans and all living beings.",
   }),
@@ -27,7 +27,7 @@ const startupContext = Object.freeze({
     repository: Object.freeze({ url: "https://github.com/Daisuke134/life-manager", status: "verified" }),
   }),
   claims: Object.freeze([
-    Object.freeze({ id: "public-repository", statement: "Life Manager is developed in a public repository." }),
+    Object.freeze({ id: "public-repository", statement: "Mr.bot is developed in a public repository." }),
   ]),
 });
 
@@ -263,10 +263,10 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(runtimeScript, /required_kib=\$PRESSURE_FREE_KIB/);
   assert.doesNotMatch(runtimeScript, /\.openclaw/);
   assert.match(runtimeScript, /disk-cleanup/);
-  assert.match(runtimeScript, /"\$LOOP_CLI" restart life-manager-disk-cleanup/);
+  assert.match(runtimeScript, /"\$LOOP_CLI" restart mr-bot-disk-cleanup/);
   assert.match(runtimeScript, /exit 75/);
   assert.match(runtimeScript, /cdp_healthy/);
-  assert.match(runtimeScript, /"\$LOOP_CLI" restart life-manager-daily-driver/);
+  assert.match(runtimeScript, /"\$LOOP_CLI" restart mr-bot-daily-driver/);
   assert.match(runtimeScript, /json\/version/);
   assert.match(runtimeScript, /retry the same candidate observation once/);
   assert.match(dailyPrompt, /every visible question paired with the final rendered answer/);
@@ -309,7 +309,7 @@ test("verified application recorder writes a full dossier and rejects exact repl
     organization: "Example VC", program: "Accelerator", cohort_window: "Cohort 1",
     account: "account:test", official_url: "https://example.test/apply",
     contact: { method: "web_form", destination: "https://example.test/apply" },
-    question_answers: [{ question: "What are you building?", answer: "Life Manager" }],
+    question_answers: [{ question: "What are you building?", answer: "Mr.bot" }],
     attachments: [],
     context_used: { "product.name": ".agents/startup-context.json" },
     context_version: contextVersion,
@@ -333,7 +333,7 @@ test("verified application recorder writes a full dossier and rejects exact repl
   const tampered = spawnSync("python3", args, { encoding: "utf8" });
   assert.notEqual(tampered.status, 0);
   assert.match(tampered.stderr, /application_digest does not match/);
-  prepared.question_answers[0].answer = "Life Manager";
+  prepared.question_answers[0].answer = "Mr.bot";
   await writeFile(draft, JSON.stringify(prepared));
   const first = spawnSync("python3", args, { encoding: "utf8" });
   assert.equal(first.status, 0, first.stderr);
@@ -344,7 +344,7 @@ test("verified application recorder writes a full dossier and rejects exact repl
   assert.equal(row.application_digest, prepared.application_digest);
   assert.match(row.application_record_sha256, /^[a-f0-9]{64}$/);
   const dossier = JSON.parse(await readFile(row.application_record_path, "utf8"));
-  assert.equal(dossier.question_answers[0].answer, "Life Manager");
+  assert.equal(dossier.question_answers[0].answer, "Mr.bot");
   const replay = spawnSync("python3", args, { encoding: "utf8" });
   assert.notEqual(replay.status, 0);
   assert.match(replay.stderr, /duplicate terminal application/);
@@ -369,7 +369,7 @@ test("application prepare rejects a prior terminal cohort despite date wording d
     account: "account:test",
     official_url: "https://sfstartuplabs.com/apply",
     contact: { method: "web_form", destination: "https://sfstartuplabs.com/apply" },
-    question_answers: [{ question: "What are you building?", answer: "Life Manager" }],
+    question_answers: [{ question: "What are you building?", answer: "Mr.bot" }],
     attachments: [],
     context_used: { "product.name": ".agents/startup-context.json" },
     context_version: contextVersion,
@@ -403,7 +403,7 @@ test("outbound email preflight rejects rendered spam defects", () => {
     assert.notEqual(result.status, 0, body);
   }
 
-  const valid = "Hello team,\n\nI am sharing Life Manager for your current accelerator.\n\nBest,\nDaisuke Narita";
+  const valid = "Hello team,\n\nI am sharing Mr.bot for your current accelerator.\n\nBest,\nDaisuke Narita";
   const result = spawnSync("python3", [emailValidator.pathname], { input: valid, encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, valid);

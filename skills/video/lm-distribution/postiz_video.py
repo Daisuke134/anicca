@@ -286,12 +286,12 @@ def find_existing_post(
         )
         # Caption equality cannot identify a publication effect: scheduled lanes
         # legitimately reuse copy for different video bytes. Postiz's normal list
-        # response does not carry this Life Manager digest, so it fails closed and
+        # response does not carry this Mr.bot digest, so it fails closed and
         # the exact creative/video/caption local ledger remains the only reuse path.
         if (
             integration_id != integration
             or _normalized(str(row.get("content") or "")) != _normalized(caption)
-            or row.get("lifeManagerVideoSha256") != video_sha256
+            or row.get("mrBotVideoSha256") != video_sha256
         ):
             continue
         post_id = row.get("id")
@@ -494,7 +494,7 @@ def read_post_error(post_id: str, api_key: str) -> str | None:
 
 
 def upload_media(media: Path, api_key: str, *, default_suffix: str, default_mime: str) -> tuple[str, str]:
-    boundary = "----life-manager-" + uuid.uuid4().hex
+    boundary = "----mr-bot-" + uuid.uuid4().hex
     filename = media.name.replace('"', "")
     if not Path(filename).suffix:
         filename = f"{filename}{default_suffix}"
@@ -692,7 +692,7 @@ def _publish(args, api_key: str, caption: str) -> int:
         raise PostizError("video is missing or empty")
 
     title = args.title
-    if args.platform == "youtube" and title == "Life Manager":
+    if args.platform == "youtube" and title == "Mr.bot":
         title = next((line.strip() for line in caption.splitlines() if line.strip()), title)
     title = title[:100]
     if len(title) < 2:
@@ -740,7 +740,7 @@ def _publish(args, api_key: str, caption: str) -> int:
         if state["state"] == "ERROR":
             break
     # Postiz's PUBLISHED state plus an exact /video/<id> URL is the provider
-    # readback required by Life Manager; preserve that provenance in the
+    # readback required by Mr.bot; preserve that provenance in the
     # publication receipt instead of silently downgrading it to false.
     result = {
         "post_id": post_id,
@@ -761,7 +761,7 @@ def main() -> int:
     parser.add_argument("--image", type=Path, action="append", default=[])
     parser.add_argument("--caption-file", type=Path, required=True)
     parser.add_argument("--integration", required=True)
-    parser.add_argument("--title", default="Life Manager")
+    parser.add_argument("--title", default="Mr.bot")
     parser.add_argument("--platform", choices=("instagram", "tiktok", "youtube"), default="tiktok")
     args = parser.parse_args()
 

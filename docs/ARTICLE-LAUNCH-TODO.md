@@ -7,7 +7,7 @@
 修復計画である。`canary`は「最初の記事」ではなく「今回の修復を反映した最初のproduction検証記事」を意味する。
 過去記事を初回扱いせず、既存topic/publication ledgerとの重複0を必須にする。
 新規媒体ごとのplatform adapter、固定selector、XPath、DOM script、API wrapper、固定step workflowは作らない。
-各device上のLife Manager自身がprovider-neutral Browser ACIで公式画面を毎step observeし、見えているcontrolをモデルが
+各device上のMr.bot自身がprovider-neutral Browser ACIで公式画面を毎step observeし、見えているcontrolをモデルが
 判断してsignup、login、profile、publish、earnings、payout readbackまで操作する。UI変更時は再observeして判断し直す。
 決定論コードはcredential SSOT、browser lease、intent/effect fence、receipt、dedupe、金額計算だけを担う。
 
@@ -16,7 +16,7 @@
       exit 0にせずterminal failure receiptへ残す。完了: PR #2952、21 lock cases PASS、production legacy lock回収。
 - [x] W1a `lm-loop doctor all`と`lm-loop status all`で全loopのlabel、release、argv、state root、terminal receiptをbefore保存する。
 - [x] W1b current `origin/main`からWriter修復を含むimmutable releaseを作る。完了release=`edcc3577`。
-- [x] W1c `LIFE_MANAGER_APPLY_TARGET=article-daily`だけをapplyし、release SHA、argv、state root、terminal receiptをreadbackする。
+- [x] W1c `MR_BOT_APPLY_TARGET=article-daily`だけをapplyし、release SHA、argv、state root、terminal receiptをreadbackする。
 - [x] W1d 同じreleaseから`article-resume`だけをtarget applyして同じ項目をreadbackする。
 - [x] W1e 同じreleaseから`article-healthcheck`だけをtarget applyして同じ項目をreadbackする。
 - [x] W1f `lm-loop doctor all`と`lm-loop status all`をafter保存し、W1aとの差分がWriter 3 labelだけで、
@@ -29,13 +29,13 @@
       production完了: run `20260828-083954`はprovider rc=1後もgeneration stateとpromptを保持し、prunerは
       古いterminal `daily-2026-08-18`だけを削除した。
 - [x] W1i Writer helper sourceをloaded immutable releaseへ統一する。現在のplistはProgramArgumentsがloops releaseでも
-      `ARTICLE_ROOT/ARTICLE_SKILL_DIR/LIFE_MANAGER_REPO`をgig releaseへ向けるため、pruner等が別SHAを読む。
+      `ARTICLE_ROOT/ARTICLE_SKILL_DIR/MR_BOT_REPO`をgig releaseへ向けるため、pruner等が別SHAを読む。
       daily/resume/healthcheckに加え、money/discovery/response/reportを含む全Writer ownerのenvとargvを同じmain由来
       release SHAへ一致させ、他loop env変更0をreadbackする。完了: PR #2962/#2965、14 Writer labelのargv/rootが
       sparse immutable release `40065a10`へ一致。general currentは元full releaseへ復元。
 - [x] W1j concurrent apply後の3 label driftをreconcileする。3 labelのowner idleを確認してsparse immutable
       release `40065a10`へtarget applyし、全14 Writer labelのargv、release SHA、`ARTICLE_ROOT`、
-      `ARTICLE_SKILL_DIR`、`LIFE_MANAGER_REPO`が同じreleaseへ一致することをplistからreadbackした。
+      `ARTICLE_SKILL_DIR`、`MR_BOT_REPO`が同じreleaseへ一致することをplistからreadbackした。
 - [x] W1h `article-daily.sh`のinner rc=1をruntime terminal PASSへ変換しない。外部作用0を保持したまま、exact
       release/run/error classをterminal failure eventへ記録し、launchd process resultとbusiness effectを分離する。
       完了: PR #2985で末尾を`exit "$RC"`へ変更し、productionの非zero wakeが`entrypoint_exit_75/78`を持つ
@@ -110,10 +110,10 @@
       payout identity、税務・本人確認、現行AI/originality規則を公式画面でreadbackする。HubPagesは広告/Amazon、Kompasianaは
       GoPay rewardを直接収益lane候補とする。現在、Substackはaccount、session設定、公開実績あり。ただしfreshな公式
       logged-in画面のreadbackは未取得なのでW3〜W5で再確認する。HubPagesとKompasianaは
-      credential SSOT、login session、公式account receiptがなく未作成である。W7aで各deviceのLife ManagerがBrowser ACIを使い、
+      credential SSOT、login session、公式account receiptがなく未作成である。W7aで各deviceのMr.botがBrowser ACIを使い、
       公式UIを目で見て両accountを作成し、credential SSOT保存、新規session login、profile/eligibility/payout identityの
       公式画面readbackまで完了する。未適格または受取不能ならdiscovery laneへ降格する。
-- [ ] W7b HubPages ENとKompasiana IDを、platform固有adapterなしでLife Manager Browser ACIへ接続する。モデル自身が
+- [ ] W7b HubPages ENとKompasiana IDを、platform固有adapterなしでMr.bot Browser ACIへ接続する。モデル自身が
       毎action後の公式UIを再observeし、native記事の投稿、live URL、owner、headline、earnings、payoutを目視判断する。
       deterministic boundaryはeffect fence、receipt、replay-zero、money joinだけに限定する。各記事は別topic、
       別reader job、各言語native執筆とし、自動翻訳・近似複製だけの配信を禁止する。Mediumはprimarily AI-generated記事を
@@ -132,13 +132,13 @@
 - [ ] W15 editorial/self-owned purchase/fee/refund/payoutをartifact/runへjoinする。
 - [ ] W16 最初のreceived writing paymentを公式readbackする。view、like、pending、availableはrevenue 0/unknownのままにする。
 - [ ] W17 3 slotを7 calendar days連続観測し、全21 scheduled source runsのterminal、headline readback、payment attribution、
-      Telegram receipt、duplicate=0を保持する。このreceiptが揃うまで「Life Managerは毎日3本公開verified」と宣言しない。
+      Telegram receipt、duplicate=0を保持する。このreceiptが揃うまで「Mr.botは毎日3本公開verified」と宣言しない。
 - [ ] W18 14日42本の言語・媒体別received revenue、conversion、engagement、refund、制作costを比較する。入金0でも実験を
       開始するが、継続判断はreceived moneyを最優先する。品質または記事当たりexpected net revenueが悪化したlaneだけを
       停止し、勝っているlaneの頻度は維持または次の一変数実験で増やす。
-- [ ] W19 OSS packageを別tenant・別deviceへinstallし、platform adapterや事前accountに依存せず、device-local Life Managerが
+- [ ] W19 OSS packageを別tenant・別deviceへinstallし、platform adapterや事前accountに依存せず、device-local Mr.botが
       Browser ACIでsignupから開始できることと、credential/state/receipt交差0を証明する。
-- [ ] W20 W19 tenantのLife Managerが公式UIをobserveし、account signup/login、実provider draft、headline、publication、
+- [ ] W20 W19 tenantのMr.botが公式UIをobserveし、account signup/login、実provider draft、headline、publication、
       earnings/payout、money ledgerまでを同じagent loopで完了する。2回目wakeでreplay-zeroを証明する。
       「誰でも必ず儲かる」とは表示しない。
 - [ ] W21 完全なcalendar monthのunique net received writing payoutsを受領日ECB rateのFX receiptでUSD換算し、

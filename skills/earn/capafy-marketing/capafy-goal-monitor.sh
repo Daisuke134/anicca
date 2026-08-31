@@ -2,17 +2,17 @@
 # Sealed releases do not contain .git; derive the root from this script and validate
 # the repository files this entrypoint needs before continuing.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd -P)" || SCRIPT_DIR=""
-DEFAULT_LIFE_MANAGER_REPO=""
+DEFAULT_MR_BOT_REPO=""
 if [ -n "$SCRIPT_DIR" ]; then
-  DEFAULT_LIFE_MANAGER_REPO="$(cd "$SCRIPT_DIR/../../.." 2>/dev/null && pwd -P)" || DEFAULT_LIFE_MANAGER_REPO=""
+  DEFAULT_MR_BOT_REPO="$(cd "$SCRIPT_DIR/../../.." 2>/dev/null && pwd -P)" || DEFAULT_MR_BOT_REPO=""
 fi
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$DEFAULT_LIFE_MANAGER_REPO}"
-if [ -z "$LIFE_MANAGER_REPO" ] || [ ! -d "$LIFE_MANAGER_REPO" ] \
-  || [ ! -f "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/capafy-goal-monitor.sh" ]; then
-  echo "LIFE_MANAGER_REPO could not be resolved" >&2
+MR_BOT_REPO="${MR_BOT_REPO:-$DEFAULT_MR_BOT_REPO}"
+if [ -z "$MR_BOT_REPO" ] || [ ! -d "$MR_BOT_REPO" ] \
+  || [ ! -f "$MR_BOT_REPO/skills/earn/capafy-marketing/capafy-goal-monitor.sh" ]; then
+  echo "MR_BOT_REPO could not be resolved" >&2
   exit 2
 fi
-export LIFE_MANAGER_REPO
+export MR_BOT_REPO
 # capafy-goal-monitor.sh — daily AUTONOMOUS audit of goal (a)-(d) + idempotent auto go-live.
 #
 # This is the "zero parent intervention" implementation: instead of a human tracking the
@@ -26,20 +26,20 @@ export LIFE_MANAGER_REPO
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"
 set -uo pipefail
 PY=/opt/homebrew/bin/python3
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
-for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
+for ENV_FILE in "$MR_BOT_STATE_HOME/.env"; do
   [ -f "$ENV_FILE" ] || continue
   set -a; . "$ENV_FILE" 2>/dev/null; set +a
 done
-STATE="$LIFE_MANAGER_STATE_HOME/state/capafy-goal-monitor.json"
+STATE="$MR_BOT_STATE_HOME/state/capafy-goal-monitor.json"
 mkdir -p "$(dirname "$STATE")"
 
-DAILY_TERMINAL_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-daily-terminals.jsonl"
-DAILY_TERMINAL_TOOL="$LIFE_MANAGER_REPO/skills/self/capafy-loop/capafy_daily_terminal.py"
-EARN_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-hourly-reconcile.json"
-KEY_GATE="$LIFE_MANAGER_REPO/skills/capafy-autopublish/scripts/key_health_gate.sh"
-IG_SCRIPT="$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
-ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/account_state.sh}"
+DAILY_TERMINAL_LEDGER="$MR_BOT_STATE_HOME/state/capafy-daily-terminals.jsonl"
+DAILY_TERMINAL_TOOL="$MR_BOT_REPO/skills/self/capafy-loop/capafy_daily_terminal.py"
+EARN_LEDGER="$MR_BOT_STATE_HOME/state/capafy-hourly-reconcile.json"
+KEY_GATE="$MR_BOT_REPO/skills/capafy-autopublish/scripts/key_health_gate.sh"
+IG_SCRIPT="$MR_BOT_REPO/skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh"
+ACCOUNT_STATE_HELPER="${CAPAFY_ACCOUNT_STATE_HELPER:-$MR_BOT_REPO/skills/earn/capafy-marketing/account_state.sh}"
 if [ ! -f "$ACCOUNT_STATE_HELPER" ]; then
   echo "CAPAFY_ACCOUNT_STATE_HELPER could not be resolved: $ACCOUNT_STATE_HELPER" >&2
   exit 2
@@ -70,13 +70,13 @@ ACCOUNT_DAY="$(capafy_ig_warming_day "$IG_STARTED_WARMING")"
 WARMUP="$HOME/.cloak/ig-warmup-${IG_HANDLE:-no-active-account}.json"
 IG_PLIST="$HOME/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist"
 IG_LABEL="ai.anicca.capafy-ig-marketing-daily"
-LAUNCHCTL_SAFE="${CAPAFY_LAUNCHCTL_SAFE:-$LIFE_MANAGER_REPO/bin/launchctl-safe}"
+LAUNCHCTL_SAFE="${CAPAFY_LAUNCHCTL_SAFE:-$MR_BOT_REPO/bin/launchctl-safe}"
 LAUNCHCTL_DOMAIN="${CAPAFY_LAUNCHCTL_DOMAIN:-gui/$(id -u)}"
 IG_UNLOAD_POLL_ATTEMPTS="${CAPAFY_IG_UNLOAD_POLL_ATTEMPTS:-50}"
 IG_UNLOAD_POLL_SLEEP="${CAPAFY_IG_UNLOAD_POLL_SLEEP:-0.2}"
 INSTA_PY="$HOME/.cache/instagrapi-venv/bin/python"
-INSTA_POSTER="$LIFE_MANAGER_REPO/skills/earn/marketing-engine/poster.py"
-COOKED_MARKER="$HOME/.local/state/life-manager/state/.capafy-ig-account-cooked"
+INSTA_POSTER="$MR_BOT_REPO/skills/earn/marketing-engine/poster.py"
+COOKED_MARKER="$HOME/.local/state/mr-bot/state/.capafy-ig-account-cooked"
 # Dais decision 2026-07-18: don't wait a full 7d — early NON-COMMERCIAL test post at day>=3 to
 # MEASURE reach (the only real shadowban test), then go commercial only if reach is healthy.
 WARMUP_DAYS_REQUIRED=3
@@ -97,8 +97,8 @@ write_ig_plist() {
   <key>EnvironmentVariables</key><dict><key>HOME</key><string>$HOME</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
   <key>StartInterval</key><integer>3600</integer>
   <key>RunAtLoad</key><false/>
-  <key>StandardOutPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.out</string>
-  <key>StandardErrorPath</key><string>$HOME/.local/state/life-manager/logs/capafy-ig-marketing-daily.err</string>
+  <key>StandardOutPath</key><string>$HOME/.local/state/mr-bot/logs/capafy-ig-marketing-daily.out</string>
+  <key>StandardErrorPath</key><string>$HOME/.local/state/mr-bot/logs/capafy-ig-marketing-daily.err</string>
 </dict></plist>
 PLIST
 }
@@ -165,7 +165,7 @@ elif [ ! -x "$INSTA_PY" ]; then
   VERIFY_JSON='{"ok":false,"error":"instagrapi venv missing"}'
   VERIFY_RC=2
 else
-  VERIFY_JSON="$(CDP_PORT="$IG_PORT" "$INSTA_PY" "$INSTA_POSTER" --handle "$IG_HANDLE" --port "$IG_PORT" --accounts-path "$ACCOUNTS_FILE" --verify-only 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor.err.log")"
+  VERIFY_JSON="$(CDP_PORT="$IG_PORT" "$INSTA_PY" "$INSTA_POSTER" --handle "$IG_HANDLE" --port "$IG_PORT" --accounts-path "$ACCOUNTS_FILE" --verify-only 2>>"$HOME/.local/state/mr-bot/logs/capafy-goal-monitor.err.log")"
   VERIFY_RC=$?
 fi
 ACCOUNT_COOKED="$($PY - "$VERIFY_JSON" <<'PY' 2>/dev/null
@@ -306,13 +306,13 @@ REPORT_KIND="${CAPAFY_REPORT_KIND:-morning}"
 # joins candidate/slot/post/revenue under one run_id, and dedupes through the
 # durable Telegram outbox. Never fall through to the legacy sender on this path.
 if [ "$REPORT_KIND" = "hourly" ]; then
-  "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_web_token_refresh.py" \
-    >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err" || true
-  "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_hourly_reconcile.py" \
-    >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err"
+  "$PY" "$MR_BOT_REPO/skills/earn/capafy-marketing/scripts/capafy_web_token_refresh.py" \
+    >>"$HOME/.local/state/mr-bot/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/mr-bot/logs/capafy-goal-monitor-hourly.err" || true
+  "$PY" "$MR_BOT_REPO/skills/earn/capafy-marketing/scripts/capafy_hourly_reconcile.py" \
+    >>"$HOME/.local/state/mr-bot/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/mr-bot/logs/capafy-goal-monitor-hourly.err"
   RECONCILE_RC=$?
-  "$PY" "$LIFE_MANAGER_REPO/skills/earn/capafy-marketing/scripts/capafy_company_receipt.py" deliver \
-    >>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/life-manager/logs/capafy-goal-monitor-hourly.err"
+  "$PY" "$MR_BOT_REPO/skills/earn/capafy-marketing/scripts/capafy_company_receipt.py" deliver \
+    >>"$HOME/.local/state/mr-bot/logs/capafy-goal-monitor-hourly.out" 2>>"$HOME/.local/state/mr-bot/logs/capafy-goal-monitor-hourly.err"
   UNIFIED_RC=$?
   cat /tmp/capafy_goal_monitor.json 2>/dev/null
   [ "$RECONCILE_RC" -eq 0 ] || exit "$RECONCILE_RC"

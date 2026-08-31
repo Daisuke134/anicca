@@ -10,7 +10,7 @@
 
 ## TDD contract
 
-- Modify only `apps/life-manager/lib/connector-minimal-operations.js` and matching test.
+- Modify only `apps/mr-bot/lib/connector-minimal-operations.js` and matching test.
 - RED asserts `recordEventbriteDiscoveryAudit` exists and appends exactly one row to `eventbrite-discovery-audits.jsonl`.
 - Exact persisted keys: schema version, wake ID, recorded timestamp, and `discovered_count`, `within_window_count`, `eligible_count`, `calendar_free_count`, `selected_count`.
 - File mode is `0600`. Reject missing/extra keys, private URL/title/email fields, non-integers, negative/>500 values, and monotonic violations without appending.

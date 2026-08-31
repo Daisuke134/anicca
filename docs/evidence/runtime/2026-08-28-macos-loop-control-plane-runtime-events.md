@@ -20,7 +20,7 @@ are unchanged and remain authoritative.
 ## Shared runner boundary
 
 `runtime/agent-runner/agent_runner.py` emits one final `report` event when a
-migrated job provides `LIFE_MANAGER_RELEASE_SHA`. It resolves domain,
+migrated job provides `MR_BOT_RELEASE_SHA`. It resolves domain,
 effect class, and state root from the schema-v2 registry. The run ID is a hash
 of the evidence directory, so private filesystem paths never enter the event.
 Pre-migration invocations without a release SHA retain their prior behavior.

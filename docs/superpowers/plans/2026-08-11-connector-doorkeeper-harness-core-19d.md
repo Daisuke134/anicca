@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 変更は`apps/life-manager/lib/connector-production-browser-harness.js`とmatching testの2 filesだけ。production約25〜50 LOC、test約40〜80 LOC。
+- 変更は`apps/mr-bot/lib/connector-production-browser-harness.js`とmatching testの2 filesだけ。production約25〜50 LOC、test約40〜80 LOC。
 - exact provider `doorkeeper`、event ref `doorkeeper-event://event/<positive-id>`、canonical current page `https://<lowercase-group>.doorkeeper.jp/events/<same-id>`。
 - final controlはvisible observation内のsingle `button`, exact label `申し込む`, `submittable: true`だけ。
 - click前にcandidate/current URL/control/readProviderStateが曖昧ならaction 0でfail closed。
@@ -24,8 +24,8 @@
 ### Task 1: Add Doorkeeper final-effect safety to Browser Harness
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 - [x] **Step 1: Write RED behavior tests**
 
@@ -40,7 +40,7 @@
 - [x] **Step 2: Run RED**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-production-browser-harness.test.js
   ```
 
@@ -53,7 +53,7 @@
 - [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-production-browser-harness.test.js
   node --test lib/connector-browser-harness-adapter.test.js lib/connector-doorkeeper-workflow.test.js lib/connector-minimal-production.test.js
   node --check lib/connector-production-browser-harness.js

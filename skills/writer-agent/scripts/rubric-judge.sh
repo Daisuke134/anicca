@@ -89,7 +89,7 @@ if [ -n "${ARTICLE_GATES_LOG:-}" ]; then
 elif [ -n "${ARTICLE_RUN_DIR:-}" ]; then
   GATES_LOG="$ARTICLE_RUN_DIR/gates/article-gates.log"
 else
-  GATES_LOG="${ARTICLE_STATE_DIR:-$HOME/.local/state/life-manager/writer}/logs/article-gates.log"
+  GATES_LOG="${ARTICLE_STATE_DIR:-$HOME/.local/state/mr-bot/writer}/logs/article-gates.log"
 fi
 log_gate_verdict() {
   mkdir -p "$(dirname "$GATES_LOG")" 2>/dev/null || return 0

@@ -10,7 +10,7 @@ import os
 from pathlib import Path
 
 
-STATE_HOME = Path(os.environ.get("LIFE_MANAGER_STATE_HOME", Path.home() / ".local/state/life-manager"))
+STATE_HOME = Path(os.environ.get("MR_BOT_STATE_HOME", Path.home() / ".local/state/mr-bot"))
 DEFAULT_LEDGER = STATE_HOME / "state/capafy-daily-terminals.jsonl"
 RESULT_STATUSES = {"success": 0, "no_op": 0, "failure": 1}
 

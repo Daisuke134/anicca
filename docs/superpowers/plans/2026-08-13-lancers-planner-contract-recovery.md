@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan as one bounded task. The primary owns this plan, acceptance, review, deployment, and SSOT state.
 
-**Goal:** Make the canonical Lancers acquisition owner return a truthful complete planning result, independently veto unsafe candidates, submit at most one verified qualified application, and deploy all three owners from one exact Life Manager main SHA.
+**Goal:** Make the canonical Lancers acquisition owner return a truthful complete planning result, independently veto unsafe candidates, submit at most one verified qualified application, and deploy all three owners from one exact Mr.bot main SHA.
 
 **Architecture:** Keep the existing 30-minute acquisition owner, agent-runner, static schema, state, ledger, and one-submit bound. Derive an ephemeral per-tick strict schema from the canonical schema, use Luna for all decisions, use the existing Terra `diagnostic-agent` route only when the top candidate needs an independent safety decision, and keep deterministic code limited to structure, grounding, arithmetic, dedupe, and official readback. Extend the existing installer into the single production activation entrypoint through an explicit required activation mode; do not create another deploy script, service, database, queue, or schema SSOT.
 

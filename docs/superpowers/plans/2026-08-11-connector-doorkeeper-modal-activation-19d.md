@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 変更は`apps/life-manager/lib/connector-production-browser-harness.js`とmatching testの2 filesだけ。production約20〜40 LOC、test約40〜80 LOC。
+- 変更は`apps/mr-bot/lib/connector-production-browser-harness.js`とmatching testの2 filesだけ。production約20〜40 LOC、test約40〜80 LOC。
 - trigger actionはprovider exact `doorkeeper`、valid candidate binding、current URL exact candidate canonical、one control `kind: link`, label exact `申し込む`, submittable false、observation内同条件count 1だけ。
 - triggerは既存`ax_click`を使うが外部registration submitではない。signatureはmodal trigger固有で、final `form-submit`と衝突させない。
 - same page/pathでtriggerの成功mutationは一度だけ。再選択はDOM action 0。final submit guard/max1と30秒registered-only readbackは維持する。
@@ -24,8 +24,8 @@
 ### Task 1: Activate the exact modal trigger without consuming final submit
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 - [x] **Step 1: Write RED action-flow tests**
 
@@ -40,7 +40,7 @@
 - [x] **Step 2: Run RED**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-production-browser-harness.test.js
   ```
 
@@ -51,7 +51,7 @@
 - [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-production-browser-harness.test.js
   node --test lib/connector-browser-harness-adapter.test.js lib/connector-doorkeeper-workflow.test.js lib/connector-minimal-production.test.js
   node --check lib/connector-production-browser-harness.js

@@ -57,7 +57,7 @@ def test_isolated_install_is_private_read_only_and_never_writes_checkout(tmp_pat
         "HOME": str(home),
         "UPWORK_PASSWORD": "SECRET-MUST-NOT-LEAK",
         "CUSTOMER_MESSAGE": "CUSTOMER-DATA-MUST-NOT-LEAK",
-        "LIFE_MANAGER_INSTALL_DAEMON": "0",
+        "MR_BOT_INSTALL_DAEMON": "0",
     }
 
     result = subprocess.run(

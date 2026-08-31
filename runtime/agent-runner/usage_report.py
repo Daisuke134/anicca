@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render Life Manager per-loop usage from the append-only runner ledger."""
+"""Render Mr.bot per-loop usage from the append-only runner ledger."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ DEFAULT_LEDGER = (
     Path.home()
     / ".local"
     / "state"
-    / "life-manager"
+    / "mr-bot"
     / "telemetry"
     / "agent-usage.jsonl"
 )

@@ -41,7 +41,7 @@ from lib.solana_cli import spl_transfer  # noqa: E402
 from lib.solana_rpc import confirmed_success, spl_token_balance_units  # noqa: E402
 
 CONFIG = json.load(open(os.path.join(HERE, "config.json")))
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 LEDGER_PATH = str(REPO_ROOT / "skills/earn/state/funding-ledger.jsonl")
 FOUNDER_SOLANA_WALLET_JSON = os.environ.get(
     "FOUNDER_SOLANA_WALLET_JSON", os.path.expanduser("~/.anicca-founder/solana-wallet.json")

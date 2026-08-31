@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mr.bot — Money Printer</title>
+  <style>
+    :root{--ink:#10120f;--paper:#eeeade;--panel:#171a16;--line:#353a31;--muted:#9ba18f;--lime:#c8ff4d;--amber:#ffca52;--blue:#8fc9ff;--red:#ff756b;--white:#f8f5eb}
+    *{box-sizing:border-box} body{margin:0;background:var(--ink);color:var(--white);font:14px/1.45 "Avenir Next","Gill Sans",sans-serif;overflow-x:hidden}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.16;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E")}
+    button{font:inherit}.shell{min-height:100vh;padding:18px}.topbar{display:flex;align-items:center;gap:18px;padding:4px 2px 18px;border-bottom:1px solid var(--line)}
+    .brand{font:700 25px/1 Georgia,serif;letter-spacing:-.6px}.brand i{color:var(--lime);font-style:normal}.mode{font:700 10px/1 monospace;letter-spacing:1.8px;color:var(--muted);text-transform:uppercase}
+    .power{margin-left:auto;border:1px solid #52613b;background:#1c2516;color:var(--lime);padding:9px 13px;border-radius:99px;font-weight:800;box-shadow:0 0 22px #c8ff4d16}.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--lime);margin-right:7px;box-shadow:0 0 10px var(--lime)}
+    .metrics{display:grid;grid-template-columns:1.2fr repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:14px}.metric{background:var(--panel);padding:16px 18px;min-height:88px}.metric.hero{background:var(--lime);color:var(--ink)}
+    .label{font:700 9px/1.2 monospace;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}.hero .label{color:#44551a}.value{margin-top:9px;font:700 27px/1 Georgia,serif}.sub{margin-top:6px;color:var(--muted);font-size:11px}.hero .sub{color:#44551a}
+    .workspace{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;margin-top:14px}.board-wrap{min-width:0}.section-head{display:flex;align-items:center;margin:0 0 9px}.section-head h2{font:700 12px/1 monospace;letter-spacing:1.8px;text-transform:uppercase;margin:0}.section-head span{margin-left:auto;color:var(--muted);font-size:11px}
+    .board{display:grid;grid-template-columns:repeat(5,minmax(180px,1fr));gap:8px;overflow-x:auto;padding-bottom:6px}.lane{background:#141713;border:1px solid var(--line);border-radius:5px;min-height:480px;padding:9px}.lane-title{display:flex;align-items:center;padding:4px 2px 11px;font:700 10px/1 monospace;letter-spacing:1.2px;text-transform:uppercase}.count{margin-left:auto;background:#2a2f27;color:var(--muted);border-radius:20px;padding:4px 7px}
+    .card{position:relative;background:#20241e;border:1px solid #3a4035;padding:13px;margin-bottom:8px;border-radius:4px;cursor:pointer;transition:.18s transform,.18s border-color,.18s background}.card:hover{transform:translateY(-2px);border-color:#707866;background:#252a23}.card.selected{border-color:var(--lime);box-shadow:0 0 0 1px var(--lime) inset}.card.needs{border-color:#795f29;background:#282316}.card.paid{border-color:#496d2a}.eyebrow{display:flex;gap:6px;align-items:center;font:700 9px/1 monospace;text-transform:uppercase;color:var(--muted)}.source{color:var(--blue)}.reward{margin-left:auto;color:var(--lime)}
+    .card h3{font:700 16px/1.2 Georgia,serif;margin:11px 0 8px}.card p{font-size:11px;color:var(--muted);margin:0}.progress{height:3px;background:#33382f;margin:13px 0 8px}.progress i{display:block;height:100%;background:var(--lime)}.agent{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted)}.avatar{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#343b2d;color:var(--lime);font:bold 9px monospace}
+    .human-badge{display:inline-flex;margin-top:11px;padding:6px 8px;background:var(--amber);color:#1d190f;font:800 9px/1 monospace;text-transform:uppercase;letter-spacing:.8px}
+    .side{background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column;min-height:520px}.side-tabs{display:flex;border-bottom:1px solid var(--line)}.tab{flex:1;border:0;background:transparent;color:var(--muted);padding:12px 4px;font:700 9px monospace;text-transform:uppercase;letter-spacing:1px}.tab.active{color:var(--lime);box-shadow:inset 0 -2px var(--lime)}
+    .chat{padding:15px;display:flex;flex-direction:column;gap:11px;flex:1}.bubble{max-width:91%;padding:10px 11px;border:1px solid var(--line);font-size:12px}.bubble.user{align-self:flex-end;background:var(--paper);color:var(--ink);border-color:var(--paper)}.bubble.ai{align-self:flex-start;background:#20241e}.tool{border-left:2px solid var(--lime);padding:8px 10px;background:#151814;font:10px/1.5 monospace;color:var(--muted)}.tool b{color:var(--lime)}
+    .composer{display:flex;gap:7px;border-top:1px solid var(--line);padding:11px}.composer input{min-width:0;flex:1;background:#10120f;border:1px solid var(--line);color:var(--white);padding:10px}.composer button,.primary,.ghost{border:0;padding:10px 13px;font-weight:800;cursor:pointer}.composer button,.primary{background:var(--lime);color:var(--ink)}.ghost{background:transparent;color:var(--white);border:1px solid var(--line)}
+    .drawer{display:none;position:fixed;inset:0;background:#080908b8;z-index:10;padding:24px;align-items:center;justify-content:center}.drawer.open{display:flex}.modal{width:min(620px,100%);background:var(--paper);color:var(--ink);border:1px solid #fff;padding:24px;box-shadow:18px 18px 0 #000}.modal-top{display:flex;gap:12px;align-items:start}.modal h2{font:700 27px/1.05 Georgia,serif;margin:4px 0 10px}.close{margin-left:auto;border:0;background:none;font-size:24px;cursor:pointer}.why{background:#ded8c7;padding:12px;border-left:4px solid #a66b00}.checklist{list-style:none;padding:0;margin:16px 0}.checklist li{padding:7px 0;border-bottom:1px solid #c8c1ae}.checklist li:before{content:"✓";color:#4f6c16;font-weight:900;margin-right:8px}.actions{display:flex;gap:9px;margin-top:18px}.actions button{flex:1}.toast{position:fixed;right:20px;bottom:20px;background:var(--lime);color:var(--ink);padding:13px 17px;font-weight:800;transform:translateY(120px);transition:.25s;z-index:20}.toast.show{transform:none}
+    @media(max-width:980px){.metrics{grid-template-columns:repeat(2,1fr)}.metric.hero{grid-column:span 2}.workspace{grid-template-columns:1fr}.side{min-height:400px}.board{grid-template-columns:repeat(5,220px)}}
+    @media(max-width:560px){.shell{padding:11px}.brand{font-size:20px}.mode{display:none}.metrics{grid-template-columns:1fr 1fr}.metric{padding:13px}.value{font-size:21px}.workspace{display:flex;flex-direction:column}.side{order:-1;min-height:300px}.board{grid-template-columns:repeat(5,190px)}.modal{padding:18px}.actions{flex-direction:column}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <header class="topbar"><div class="brand">Mr.bot <i>/ Money Printer</i></div><div class="mode">Agent-native control room</div><button class="power"><span class="dot"></span>24/7 RUNNING</button></header>
+  <section class="metrics">
+    <article class="metric hero"><div class="label">Paid & verified</div><div class="value">$75.00</div><div class="sub">Only money confirmed by official receipts</div></article>
+    <article class="metric"><div class="label">Agents working</div><div class="value" id="agents">4</div><div class="sub">Across 3 isolated workrooms</div></article>
+    <article class="metric"><div class="label">Needs you</div><div class="value" id="needsCount">1</div><div class="sub">About 30 seconds</div></article>
+    <article class="metric"><div class="label">Opportunity value</div><div class="value">$1,150</div><div class="sub">Not counted as revenue</div></article>
+    <article class="metric"><div class="label">Scout cycles</div><div class="value">18</div><div class="sub">X + GitHub · last 24h</div></article>
+  </section>
+
+  <section class="workspace">
+    <div class="board-wrap">
+      <div class="section-head"><h2>Live work</h2><span>Agents move cards automatically</span></div>
+      <div class="board">
+        <div class="lane"><div class="lane-title">Found <span class="count">2</span></div>
+          <article class="card"><div class="eyebrow"><span class="source">X</span><span class="reward">$80</span></div><h3>Research micro-bounty</h3><p>Eligibility and expected value being checked.</p><div class="progress"><i style="width:22%"></i></div><div class="agent"><span class="avatar">S1</span>Scout evaluating</div></article>
+          <article class="card"><div class="eyebrow"><span class="source">GitHub</span><span class="reward">$150</span></div><h3>Docs automation task</h3><p>Deadline tomorrow · source deduped.</p></article>
+        </div>
+        <div class="lane"><div class="lane-title">Working <span class="count">2</span></div>
+          <article class="card selected" data-detail="work"><div class="eyebrow"><span class="source">GitHub</span><span class="reward">$500</span></div><h3>Fix export bug</h3><p>Tests written. Agent implementing the root-cause fix.</p><div class="progress"><i style="width:68%"></i></div><div class="agent"><span class="avatar">A2</span>Agent A2 · coding</div></article>
+          <article class="card"><div class="eyebrow"><span class="source">Gig</span><span class="reward">$300</span></div><h3>Dataset quality audit</h3><p>Validating 1,200 rows and writing findings.</p><div class="progress"><i style="width:46%"></i></div><div class="agent"><span class="avatar">A3</span>Agent A3 · analysis</div></article>
+        </div>
+        <div class="lane"><div class="lane-title">Needs you <span class="count" id="laneCount">1</span></div>
+          <article class="card needs" id="humanCard" data-detail="human"><div class="eyebrow"><span>30 sec</span><span class="reward">$500</span></div><h3>Approve final delivery</h3><p>Code, tests, docs, and requirement check are complete.</p><span class="human-badge">Human authority required</span></article>
+        </div>
+        <div class="lane"><div class="lane-title">Waiting <span class="count" id="waitingCount">1</span></div>
+          <article class="card"><div class="eyebrow"><span class="source">Provider</span><span class="reward">$120</span></div><h3>Design system audit</h3><p>Delivered once. Waiting for official result.</p><div class="agent"><span class="avatar">R1</span>Receipt reconciler</div></article>
+        </div>
+        <div class="lane"><div class="lane-title">Paid <span class="count">2</span></div>
+          <article class="card paid"><div class="eyebrow"><span>Receipt #1842</span><span class="reward">$50</span></div><h3>API research brief</h3><p>Payment settled and independently verified.</p></article>
+          <article class="card paid"><div class="eyebrow"><span>Receipt #1817</span><span class="reward">$25</span></div><h3>Documentation fix</h3><p>Payment settled and independently verified.</p></article>
+        </div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="side-tabs"><button class="tab active">ChatGPT</button><button class="tab">Site tools</button><button class="tab">Activity</button></div>
+      <div class="chat" id="chat">
+        <div class="bubble user">What needs me right now?</div>
+        <div class="tool"><b>inspect_next_human_task</b><br>1 task · authority boundary</div>
+        <div class="bubble ai">One finished delivery needs your approval. Everything else is still running.</div>
+        <div class="bubble ai"><strong>Approve final delivery</strong><br>Agent completed the code, tests, docs, and requirement check.<br><br><button class="primary" onclick="openHuman()">Review the 30-second task</button></div>
+      </div>
+      <form class="composer" onsubmit="ask(event)"><input id="prompt" aria-label="Ask Mr.bot" placeholder="Ask Mr.bot…"><button>Send</button></form>
+    </aside>
+  </section>
+</main>
+
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="taskTitle">
+  <section class="modal"><div class="modal-top"><div><div class="label" style="color:#726b5d">Needs You · 30 seconds</div><h2 id="taskTitle">Approve final public delivery</h2></div><button class="close" onclick="closeHuman()" aria-label="Close">×</button></div>
+    <div class="why"><strong>Why you?</strong><br>This public submission requires your authority. The agent cannot approve itself.</div>
+    <ul class="checklist"><li>Implementation complete</li><li>14 focused tests pass</li><li>Documentation updated</li><li>Requirements covered</li><li>Destination verified: GitHub issue #123</li></ul>
+    <p><strong>After approval:</strong> the same workroom resumes, submits exactly once, and waits for the provider receipt.</p>
+    <div class="actions"><button class="ghost" onclick="closeHuman()">Request changes</button><button class="primary" onclick="approve()">Approve & resume agent</button></div>
+  </section>
+</div>
+<div class="toast" id="toast">Approved · Agent A2 resumed</div>
+
+<script>
+  const drawer=document.querySelector('#drawer'),humanCard=document.querySelector('#humanCard');
+  function openHuman(){drawer.classList.add('open')}
+  function closeHuman(){drawer.classList.remove('open')}
+  function approve(){closeHuman();humanCard.innerHTML='<div class="eyebrow"><span class="source">WebMCP</span><span class="reward">RESUMED</span></div><h3>Submitting delivery</h3><p>Same workroom resumed. Effect fence armed.</p><div class="progress"><i style="width:86%"></i></div><div class="agent"><span class="avatar">A2</span>Agent A2 · delivering once</div>';humanCard.className='card selected';document.querySelector('#needsCount').textContent='0';document.querySelector('#laneCount').textContent='0';document.querySelector('#agents').textContent='5';document.querySelector('#toast').classList.add('show');setTimeout(()=>document.querySelector('#toast').classList.remove('show'),2400);document.querySelector('#chat').insertAdjacentHTML('beforeend','<div class="tool"><b>record_human_answer</b><br>approved · task closed</div><div class="bubble ai">Approved. The same agent resumed automatically. You do not need to do anything else.</div>')}
+  function ask(e){e.preventDefault();const input=document.querySelector('#prompt');if(!input.value.trim())return;document.querySelector('#chat').insertAdjacentHTML('beforeend',`<div class="bubble user">${input.value.replace(/[<>]/g,'')}</div><div class="bubble ai">I’ll keep working and show only the next thing that genuinely needs you.</div>`);input.value=''}
+  document.querySelectorAll('[data-detail="human"]').forEach(x=>x.addEventListener('click',openHuman));drawer.addEventListener('click',e=>{if(e.target===drawer)closeHuman()});
+</script>
+</body>
+</html>

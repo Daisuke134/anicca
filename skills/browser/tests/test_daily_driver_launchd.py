@@ -20,12 +20,12 @@ class DailyDriverLaunchdTests(unittest.TestCase):
             output = home / "rendered"
             result = subprocess.run([
                 "bash", str(RENDER), "--output-dir", str(output), "--repo-root", str(ROOT),
-                "--life-manager-home", str(home / "state"), "--cloak-python", str(python),
+                "--mr-bot-home", str(home / "state"), "--cloak-python", str(python),
                 "--profile", str(profile),
             ], env={"HOME": str(home), "PATH": "/usr/bin:/bin"}, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
-            plist = plistlib.loads((output / "ai.anicca.life-manager-daily-driver.plist").read_bytes())
-            self.assertEqual(plist["Label"], "ai.anicca.life-manager-daily-driver")
+            plist = plistlib.loads((output / "ai.anicca.mr-bot-daily-driver.plist").read_bytes())
+            self.assertEqual(plist["Label"], "ai.anicca.mr-bot-daily-driver")
             self.assertTrue(plist["KeepAlive"])
             self.assertEqual(plist["EnvironmentVariables"]["BROWSER_DISK_HEADROOM_KIB"], "262144")
             self.assertEqual(plist["ProgramArguments"], [str(python), str(ROOT / "skills/browser/cdp_persistent_context.py"), "--profile", str(profile), "--port", "9222"])

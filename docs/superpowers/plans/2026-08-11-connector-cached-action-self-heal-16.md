@@ -13,7 +13,7 @@ Prove the existing production cache/router/runner path repairs one stale selecto
 
 ## TDD slice
 
-Luna owns only `apps/life-manager/lib/connector-minimal-production.test.js`.
+Luna owns only `apps/mr-bot/lib/connector-minimal-production.test.js`.
 
 ### RED
 

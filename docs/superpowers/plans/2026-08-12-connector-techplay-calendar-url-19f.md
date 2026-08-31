@@ -8,8 +8,8 @@
 
 **Files / soft target:**
 
-- Modify `apps/life-manager/lib/transport/calendar-gog.js` — about 7–12 LOC.
-- Modify `apps/life-manager/lib/transport/transport-gog.test.js` — about 30–55 LOC.
+- Modify `apps/mr-bot/lib/transport/calendar-gog.js` — about 7–12 LOC.
+- Modify `apps/mr-bot/lib/transport/transport-gog.test.js` — about 30–55 LOC.
 
 ## Grounding
 

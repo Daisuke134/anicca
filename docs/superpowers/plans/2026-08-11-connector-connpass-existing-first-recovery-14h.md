@@ -23,8 +23,8 @@ Return an exact in-window Connpass event whose public detail says `registered` b
 
 Ownership:
 
-1. `apps/life-manager/lib/connector-connpass-workflow.js`
-2. `apps/life-manager/lib/connector-connpass-workflow.test.js`
+1. `apps/mr-bot/lib/connector-connpass-workflow.js`
+2. `apps/mr-bot/lib/connector-connpass-workflow.test.js`
 
 Soft target: 2 files; production net `+4–15 LOC`; tests `+25–50 LOC`.
 

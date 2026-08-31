@@ -56,7 +56,7 @@ def _emit(obj: dict) -> None:
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[3]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[3]))
 POLYMARKET_TRADE_DIR = str(REPO_ROOT / "skills/earn/polymarket-trade")
 sys.path.insert(0, HERE)
 sys.path.insert(0, POLYMARKET_TRADE_DIR)  # reuse client_for/is_registered/relayer_auth, no dup

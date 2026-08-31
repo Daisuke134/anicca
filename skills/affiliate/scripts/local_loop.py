@@ -969,7 +969,7 @@ def observe_owned_visits(state):
     token = _private_env_value("NETLIFY_AUTH_TOKEN")
     request = urllib.request.Request(
         "https://api.netlify.com/api/v1/sites?per_page=100",
-        headers={"Authorization": f"Bearer {token}", "User-Agent": "life-manager-affiliate/1"},
+        headers={"Authorization": f"Bearer {token}", "User-Agent": "mr-bot-affiliate/1"},
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         sites = json.load(response)
@@ -2645,7 +2645,7 @@ def owner_event(state, wake_event, sent_event_ids=None):
         else "ElevenLabs / PartnerStack"
     )
     body = "\n".join((
-        "Life Manager Affiliate::: Affiliate loop report",
+        "Mr.bot Affiliate::: Affiliate loop report",
         f"実行: {kind}",
         f"公開先: {selected['public_url'] or '未紐付け'}",
         *((f"記事: {selected['article_url']}",) if selected.get("article_url") else ()),
@@ -2885,7 +2885,7 @@ def daily_summary_event(state, wake_event, now=None):
             "Agentは現在の実測値を収集し、次に実行可能なcampaignを1件だけ進めます。"
         )
     body = "\n".join((
-        "Life Manager Affiliate::: 今日の運用報告です。",
+        "Mr.bot Affiliate::: 今日の運用報告です。",
         f"{report_date}は、Affiliate loopが{receipt['wake_count_today']}回動きました。",
         f"現在、owned記事は{owned_live}本、X投稿は{x_live}件が公開状態です。",
         (
@@ -5348,7 +5348,7 @@ def placement(args):
 def main():
     parser = argparse.ArgumentParser(prog="affiliate loop")
     parser.add_argument("command", choices=("wake", "placement"))
-    parser.add_argument("--state", type=Path, default=Path("~/.local/state/life-manager/affiliate"))
+    parser.add_argument("--state", type=Path, default=Path("~/.local/state/mr-bot/affiliate"))
     parser.add_argument("--private-markdown", type=Path, default=Path("~/.config/anicca/affiliate-credentials.md"))
     parser.add_argument("--cdp-port", type=int, default=9324)
     parser.add_argument("--x-cdp-port", type=int, default=9326)

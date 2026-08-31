@@ -39,7 +39,7 @@
   inspecting/waiting for its own PID, launchd state, or evidence.
 - Targeted final tests: distribution `8/8`, Postiz `6/6`, IG credential `3/3`, daily runtime/launchd
   `7/7`.
-- After `npm ci`, the complete Life Manager test chain reports fail 0. Calendar, late, context,
+- After `npm ci`, the complete Mr.bot test chain reports fail 0. Calendar, late, context,
   score, intent, mental, and physical evals all report 100%.
 
 ## Exact creative contract
@@ -78,7 +78,7 @@
 
 ## Real launchd readback
 
-- Label/cadence remain `ai.anicca.life-manager-daily` at 10:15.
+- Label/cadence remain `ai.anicca.mr-bot-daily` at 10:15.
 - Corrective controlled pass: launchd run count `1→2`, final state `not running`, exit `0`.
 - Distribution ledger row count stays `3→3` during the corrective pass, proving that neither
   platform is reposted.

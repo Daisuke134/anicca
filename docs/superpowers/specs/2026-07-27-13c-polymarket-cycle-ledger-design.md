@@ -2,7 +2,7 @@
 
 ## Goal
 
-Close 13c-PM with one real, completed Polymarket cycle in Life Manager's existing
+Close 13c-PM with one real, completed Polymarket cycle in Mr.bot's existing
 `lm_agent_earnings` ledger. The record must preserve deployed capital, recovered
 capital, fees, and realized P&L without calling returned principal revenue, and the
 existing monthly report must render the live six-decimal pUSD balance without
@@ -138,9 +138,9 @@ wallet. It never reads or transports a private key.
 
 ## Explicit limits
 
-- This proves one real CAPITAL cycle is accountably connected to Life Manager.
+- This proves one real CAPITAL cycle is accountably connected to Mr.bot.
 - It does not make the PM wallet a tenant's canonical Base wallet.
 - It does not prove external SELL/WORK revenue; verified external revenue remains
   `$0.00`.
-- It does not unlock 13d-b, because the Life Manager tenant wallet remains unfunded.
+- It does not unlock 13d-b, because the Mr.bot tenant wallet remains unfunded.
 - It does not change trading strategy, risk caps, or launchd cadence.

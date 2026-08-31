@@ -116,7 +116,7 @@ silently count them healthy.
   `cd0b62364792f53e8687db53bc2c2c0261c9cf17`: atomic job-state writes,
   terminal status, cleanup inventory, and best-effort rollback. Adopted atomic
   receipts/status/rollback concepts; rejected its direct plist write and
-  `launchctl load/unload` pattern because Life Manager requires one owner and
+  `launchctl load/unload` pattern because Mr.bot requires one owner and
   loaded-argv verification.
 
 ## Permanent development contract

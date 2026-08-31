@@ -10,7 +10,7 @@
 
 ## Constraints
 
-- Modify only `apps/life-manager/lib/connector-minimal-production.js` and matching test.
+- Modify only `apps/mr-bot/lib/connector-minimal-production.js` and matching test.
 - RED must prove the default factory-created Harness—not an injected Harness—receives the factory Eventbrite workflow and uses its `readProviderState` after a safe mocked final action.
 - Browser session/target、実Eventbrite、Calendar、evidence、Telegram、schedule作用は0。
 - Luma/Connpass/Peatix/Meetup/Doorkeeper wiringとprovider orderは不変。

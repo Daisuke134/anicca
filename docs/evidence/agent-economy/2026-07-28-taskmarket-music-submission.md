@@ -64,7 +64,7 @@ After submission, another stale worktree installer had replaced the same
 TaskMarket label with a nonexistent `taskmarket-award-ledger-boot.sh`, producing
 exit `127`. The exact broken label alone was reloaded from merged canonical main.
 The next run returned exit `0`, stderr empty, and
-`tasks_seen=3 / pending=3 / recorded=0`. All six pre-existing Life Manager
+`tasks_seen=3 / pending=3 / recorded=0`. All six pre-existing Mr.bot
 labels remained loaded throughout.
 
 Primary sources:

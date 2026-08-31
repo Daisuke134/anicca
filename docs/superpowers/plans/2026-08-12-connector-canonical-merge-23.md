@@ -12,7 +12,7 @@ Merge the reviewed Connector completion branch into canonical `main` without tou
 
 ## Goal → Loop → Verify → State
 
-1. Create `/Users/operator/Projects/life-manager-main/.worktrees/connector-canonical-integration` on a new integration branch at fresh `origin/main`. Merge `origin/feature/connector-native-completion` with a merge commit.
+1. Create `/Users/operator/Projects/mr-bot-main/.worktrees/connector-canonical-integration` on a new integration branch at fresh `origin/main`. Merge `origin/feature/connector-native-completion` with a merge commit.
 2. Luna owns only the four conflicted files. It resolves the three code/test files and historical plan to the feature-side accepted content, stages them, and runs the focused native write/Telegram tests. It must not alter any other auto-merged file.
 3. Sol verifies zero unmerged paths, full Connector restart/evidence/runner/native/entrypoint regressions, the canonical late-approval tests touched by upstream, syntax, `git diff --check`, secret scan, and a fresh read-only Sol review. Commit the merge and push integration branch.
 4. Open a PR from the integration branch to `main`, verify required checks, and merge non-force. Confirm `origin/main` contains both prior canonical HEAD and feature HEAD. Keep the user's existing dirty main checkout untouched.

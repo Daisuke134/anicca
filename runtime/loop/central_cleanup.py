@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Central owner for shared immutable Life Manager release garbage collection."""
+"""Central owner for shared immutable Mr.bot release garbage collection."""
 
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ def release_gc(releases: Path, current: Path, agents: Path, keep: int) -> dict:
     """Collect releases while pinning every generation referenced by launchd."""
     protected = loaded_release_roots(agents, releases) | open_release_roots(releases)
     protected_file = Path(os.environ.get(
-        "LIFE_MANAGER_PROTECTED_RELEASES", "~/.local/state/life-manager/protected-releases.json")).expanduser()
+        "MR_BOT_PROTECTED_RELEASES", "~/.local/state/mr-bot/protected-releases.json")).expanduser()
     try:
         values = json.loads(protected_file.read_text())
         if isinstance(values, list):
@@ -90,11 +90,11 @@ def main() -> int:
     releases = loops_root / "releases"
     current = loops_root / "current"
     agents = Path(os.environ.get(
-        "LIFE_MANAGER_LAUNCH_AGENTS_DIR", "~/Library/LaunchAgents")).expanduser()
+        "MR_BOT_LAUNCH_AGENTS_DIR", "~/Library/LaunchAgents")).expanduser()
     if sys.argv[1:] == ["--release-gc-only"]:
         try:
             result = release_gc(releases, current, agents,
-                                keep=int(os.environ.get("LIFE_MANAGER_RELEASE_KEEP", "5")))
+                                keep=int(os.environ.get("MR_BOT_RELEASE_KEEP", "5")))
         except (OSError, ValueError) as error:
             print(json.dumps({"ok": False, "error": str(error)}, sort_keys=True)); return 1
         result["ok"] = result["errors"] == 0
@@ -110,7 +110,7 @@ def main() -> int:
         host_ok, host_result = False, {"error": str(error)}
     try:
         result = release_gc(releases, current, agents,
-                            keep=int(os.environ.get("LIFE_MANAGER_RELEASE_KEEP", "5")))
+                            keep=int(os.environ.get("MR_BOT_RELEASE_KEEP", "5")))
     except (OSError, ValueError) as error:
         print(json.dumps({"ok": False, "error": str(error)}, sort_keys=True)); return 1
     result.update({"ok": result["errors"] == 0 and host_ok,

@@ -19,8 +19,8 @@ def entry(label="ai.anicca.example"):
         "entrypoint": "bin/example.sh",
         "cadence": {"run_at_load": True},
         "effect_class": "none",
-        "state_root": "~/.local/state/life-manager/example",
-        "log_root": "~/.local/state/life-manager/example/logs",
+        "state_root": "~/.local/state/mr-bot/example",
+        "log_root": "~/.local/state/mr-bot/example/logs",
         "cleanup": {"max_runs": 10, "max_age_days": 7},
         "provider_route": "deterministic",
     }
@@ -30,12 +30,12 @@ class MacosLoopRegistryTest(unittest.TestCase):
     def test_money_printer_symphony_is_retired_after_cloud_cutover(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         self.assertNotIn("money-printer-symphony", registry["loops"])
-        self.assertIn("ai.anicca.life-manager-money-printer-symphony", registry["retired_labels"])
+        self.assertIn("ai.anicca.mr-bot-money-printer-symphony", registry["retired_labels"])
 
     def test_money_printer_symphony_bridge_is_retired_after_cloud_cutover(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         self.assertNotIn("money-printer-symphony-bridge", registry["loops"])
-        self.assertIn("ai.anicca.life-manager-money-printer-symphony-bridge", registry["retired_labels"])
+        self.assertIn("ai.anicca.mr-bot-money-printer-symphony-bridge", registry["retired_labels"])
 
     def test_registry_rejects_missing_and_secret_fields(self):
         missing = {"schema_version": 2, "loops": {"example": entry()}}
@@ -67,14 +67,14 @@ class MacosLoopRegistryTest(unittest.TestCase):
         validate_registry(registry)
         expected = {
             row["label"] for row in inventory["labels"]
-            if row["installed"] and row["owner"] == "life-manager"
+            if row["installed"] and row["owner"] == "mr-bot"
             and row["launchd_state"].startswith("loaded")
         }
         expected -= set(registry.get("retired_labels", []))
         self.assertTrue(expected.issubset({row["label"] for row in registry["loops"].values()}))
         self.assertEqual(registry["loops"]["pm-live-trade"]["effect_class"], "trade")
-        self.assertEqual(registry["loops"]["life-manager-payout"]["effect_class"], "money")
-        self.assertEqual(registry["loops"]["life-manager-honne-ja"]["effect_class"], "publish")
+        self.assertEqual(registry["loops"]["mr-bot-payout"]["effect_class"], "money")
+        self.assertEqual(registry["loops"]["mr-bot-honne-ja"]["effect_class"], "publish")
         self.assertEqual(registry["loops"]["agentmail-replier"]["domain"], "earn")
         self.assertEqual(registry["loops"]["phone-conversation"]["domain"], "physical")
         self.assertEqual(registry["loops"]["x-repost"]["label"], "ai.anicca.x-repost-pass")
@@ -114,8 +114,8 @@ class MacosLoopRegistryTest(unittest.TestCase):
             loop_id = f"scale-{index:03d}"
             row = copy.deepcopy(base)
             row["label"] = f"ai.anicca.{loop_id}"
-            row["state_root"] = f"~/.local/state/life-manager/{loop_id}"
-            row["log_root"] = f"~/.local/state/life-manager/{loop_id}/logs"
+            row["state_root"] = f"~/.local/state/mr-bot/{loop_id}"
+            row["log_root"] = f"~/.local/state/mr-bot/{loop_id}/logs"
             loops[loop_id] = row
         registry = {"schema_version": 2, "loops": loops}
 

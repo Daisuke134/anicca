@@ -14,7 +14,7 @@
     "raw_event_fields_emitted": false
   },
   "runtime_snapshot": {
-    "database": "life-manager-local-postgres-1/life_manager",
+    "database": "mr-bot-local-postgres-1/mr_bot",
     "saved": true,
     "current_view_rows": 1,
     "window_start_date": "2026-08-02",

@@ -71,7 +71,7 @@ replacementは成立していない。したがって、過去のheartbeat 130+�
 
 | Readback | Fresh value |
 |---|---|
-| Life Manager production monthly ledger | gross `$0.00` / net `$0.00` / counted rows `0` |
+| Mr.bot production monthly ledger | gross `$0.00` / net `$0.00` / counted rows `0` |
 | x402 ledger loop | run `122` / last exit `0`; latest `recorded=0` |
 | TaskMarket ledger loop | run `79` / last exit `0`; `tasks_seen=15 / pending=15 / recorded=0` |
 | payout loop | run `124` / last exit `0`; `no_verified_surplus` / reserve `35 USDC` |

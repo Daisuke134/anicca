@@ -19,7 +19,7 @@ CloakBrowser/browser-harness ACI, JSON Schema, SQLite, pytest with plugin autolo
 Gig release and launchd-safe control plane.
 
 **Specs:**
-`docs/superpowers/specs/2026-08-22-life-manager-gig-economy-loop-design.md` and
+`docs/superpowers/specs/2026-08-22-mr-bot-gig-economy-loop-design.md` and
 `docs/superpowers/specs/2026-08-13-lancers-20k-net-mrr-design.md` §18.
 
 ## Global Constraints
@@ -47,7 +47,7 @@ Gig release and launchd-safe control plane.
 - `Pending`, `Available`, estimated balance and application price are not cash. Only official payout
   `received`, joined to fee/cost/refund evidence, enters verified revenue.
 - Preserve the existing common-policy work in Tasks 63 and 64 of
-  `docs/superpowers/plans/2026-08-22-life-manager-gig-economy-loop.md`; this plan supplies the Lancers
+  `docs/superpowers/plans/2026-08-22-mr-bot-gig-economy-loop.md`; this plan supplies the Lancers
   vertical proof rather than duplicating those tasks.
 
 ---
@@ -237,7 +237,7 @@ git add skills/earn/gig/config/markets/lancers.json \
   skills/earn/gig/fixtures/redacted/lancers/inventory.json \
   skills/earn/gig/tests/test_market_inventory.py \
   docs/superpowers/specs/2026-08-13-lancers-20k-net-mrr-design.md \
-  docs/superpowers/specs/2026-08-22-life-manager-gig-economy-loop-design.md
+  docs/superpowers/specs/2026-08-22-mr-bot-gig-economy-loop-design.md
 git commit -m "feat(gig): read Lancers common inventory"
 git push
 ```

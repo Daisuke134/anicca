@@ -102,7 +102,7 @@ openclaw cron run <job-id>   # think→build→sell試行→slack/mail報告 を
 
 # mother repo  ~/anicca (= github.com/Daisuke134/anicca、 OSS)
 ├ AGENTS.md SOUL.md IDENTITY.md HEARTBEAT.md BOOTSTRAP.md TOOLS.md README.md  ← Felix Anicca化
-├ skills/  (Felix 13 + life-manager)
+├ skills/  (Felix 13 + mr-bot)
 ├ install.sh  (local self-host)
 ├ docs/superpowers/specs/  (上記6本)
 └ _archive_2026-06-09/  (旧81 skills + CONSTITUTION + 00-MASTER)
@@ -116,7 +116,7 @@ openclaw cron run <job-id>   # think→build→sell試行→slack/mail報告 を
 # web  ~/anicca-project (= anicca-products、 aniccaai.com)
 ├ apps/landing/  (/install LP, /dashboard)
 ├ apps/api/  (Stripe webhook → 顧客 OpenClaw instance spawn)
-└ apps/alarm-backend/  (life-manager: lateness_check)
+└ apps/alarm-backend/  (mr-bot: lateness_check)
 
 # private(retire予定)  ~/.openclaw  (Dais 157cron)
 ```

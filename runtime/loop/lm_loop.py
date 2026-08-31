@@ -54,7 +54,7 @@ def status_rows(registry: dict, *, loaded: dict, disabled: dict, events: dict,
         event = events.get(loop_id) or {}
         rows.append({
             "classification": "managed",
-            "owner": "life-manager",
+            "owner": "mr-bot",
             "desired_mode": "continuous" if "keep_alive" in entry["cadence"] else "scheduled",
             "loop_id": loop_id,
             "label": label,
@@ -184,7 +184,7 @@ def _release_from_plist(path: Path) -> str | None:
     except Exception:
         return None
     release_sha = str((plist.get("EnvironmentVariables") or {}).get(
-        "LIFE_MANAGER_RELEASE_SHA") or "")
+        "MR_BOT_RELEASE_SHA") or "")
     if re.fullmatch(r"[0-9a-f]{40}", release_sha):
         return release_sha
     args = list(map(str, plist.get("ProgramArguments") or []))
@@ -342,15 +342,15 @@ def main(argv: list[str] | None = None) -> int:
         if len(args) != 1:
             print(json.dumps({"ok": False, "error": "apply takes no arguments"}))
             return 2
-        release_root = Path(os.environ.get("LIFE_MANAGER_RELEASE_ROOT", "~/loops/current")).expanduser()
+        release_root = Path(os.environ.get("MR_BOT_RELEASE_ROOT", "~/loops/current")).expanduser()
         agents_dir = Path(os.environ.get(
-            "LIFE_MANAGER_LAUNCH_AGENTS_DIR", "~/Library/LaunchAgents")).expanduser()
+            "MR_BOT_LAUNCH_AGENTS_DIR", "~/Library/LaunchAgents")).expanduser()
         launchctl_safe = Path(os.environ.get(
-            "LIFE_MANAGER_LAUNCHCTL_SAFE", str(release_root / "bin/launchctl-safe"))).expanduser()
+            "MR_BOT_LAUNCHCTL_SAFE", str(release_root / "bin/launchctl-safe"))).expanduser()
         try:
             results = apply_live(
                 release_root, agents_dir, launchctl_safe,
-                target=os.environ.get("LIFE_MANAGER_APPLY_TARGET"))
+                target=os.environ.get("MR_BOT_APPLY_TARGET"))
         except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
             print(json.dumps({"ok": False, "error": str(exc)}, sort_keys=True))
             return 1
@@ -397,9 +397,9 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"ok": False, "error": f"unknown loop id: {target}"}))
             return 2
         agents_dir = Path(os.environ.get(
-            "LIFE_MANAGER_LAUNCH_AGENTS_DIR", "~/Library/LaunchAgents")).expanduser()
+            "MR_BOT_LAUNCH_AGENTS_DIR", "~/Library/LaunchAgents")).expanduser()
         launchctl_safe = Path(os.environ.get(
-            "LIFE_MANAGER_LAUNCHCTL_SAFE", str(ROOT / "bin/launchctl-safe"))).expanduser()
+            "MR_BOT_LAUNCHCTL_SAFE", str(ROOT / "bin/launchctl-safe"))).expanduser()
         preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
         if preflight_rc:
             print(json.dumps({"ok": False, "error": detail.strip()}, sort_keys=True))

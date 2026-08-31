@@ -118,8 +118,8 @@ class CodexProfileBoundaryTest(unittest.TestCase):
                 "AGENT_RUNNER_CONFIG": str(ROOT / "config.json"),
                 "ANICCA_USAGE_LEDGER": str(usage_ledger),
                 "ANICCA_TOKEN_BUDGET_LEDGER": str(root / "token-budget.jsonl"),
-                "LIFE_MANAGER_PROVIDER_LEASE_PATH": "",
-                "LIFE_MANAGER_RELEASE_SHA": "",
+                "MR_BOT_PROVIDER_LEASE_PATH": "",
+                "MR_BOT_RELEASE_SHA": "",
             }
             with mock.patch.object(agent_runner, "resolve_provider_profiles", return_value=candidates), \
                     mock.patch.object(agent_runner, "provider_process_env", side_effect=fixture_provider_env), \

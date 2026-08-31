@@ -14,26 +14,25 @@ plist. No credential values or command arguments are stored.
 | Set | Count | Running | Loaded idle | Disabled | Unloaded |
 |---|---:|---:|---:|---:|---:|
 | Installed `ai.anicca.*` plist labels | 226 | 44 | 129 | 52 | 1 |
-| Installed, classified Life Manager-owned | 208 | 43 | 126 | 39 | 0 |
+| Installed, classified Mr.bot-owned | 208 | 43 | 126 | 39 | 0 |
 | Full plist/loaded/disabled union | 266 | 48 | 129 | 74 | 15 |
 
 Ownership uses the previous explicit owner classification first, then only
-known Life Manager checkout/release roots. A second readback resolved 20 active
+known Mr.bot checkout/release roots. A second readback resolved 20 active
 affiliate, marketing, finance, earn, and system labels from their installed
-argv and existing family ownership. The union classifies 221 Life
-Manager-owned, 3 external, 2 retired, and 43 ambiguous labels. Of the installed set, 208
-are Life Manager-owned, 2 are external, 2 are retired, and 14 disabled/unloaded labels are
+argv and existing family ownership. The union classifies 221 Mr.bot-owned, 3 external, 2 retired, and 43 ambiguous labels. Of the installed set, 208
+are Mr.bot-owned, 2 are external, 2 are retired, and 14 disabled/unloaded labels are
 ambiguous. All individual owner/domain/effect/state/release
 values and parse errors are in the JSON evidence.
 
 ## Gaps that must fail closed during import
 
-- All 208 installed Life Manager-owned jobs were unmanaged at capture time.
+- All 208 installed Mr.bot-owned jobs were unmanaged at capture time.
   TODO 2 imports the 169 loaded jobs; the 39 disabled jobs remain visible but
   are not active definitions.
-- 141 initially classified installed Life Manager-owned rows have no immutable release SHA readable
+- 141 initially classified installed Mr.bot-owned rows have no immutable release SHA readable
   from plist argv. Twenty explicitly run from a mutable
-  `/Projects/life-manager-main` checkout. TODO 2 may import their definitions,
+  `/Projects/mr-bot-main` checkout. TODO 2 may import their definitions,
   but TODO 4/9 must not migrate a label until immutable release and loaded argv
   readback pass.
 - The 35 initially unresolved active domains are resolved during TODO 2;

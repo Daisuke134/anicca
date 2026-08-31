@@ -8,8 +8,8 @@
 
 **Ponytail size gate:**
 
-- Modify `apps/life-manager/lib/connector-kokuchpro-workflow.js` — about 80–100 production LOC.
-- Modify `apps/life-manager/lib/connector-kokuchpro-workflow.test.js` — about 110–150 focused test LOC.
+- Modify `apps/mr-bot/lib/connector-kokuchpro-workflow.js` — about 80–100 production LOC.
+- Modify `apps/mr-bot/lib/connector-kokuchpro-workflow.test.js` — about 110–150 focused test LOC.
 - Exact two files; no new module, abstraction, dependency, credential path, native wiring, or external effect.
 
 **Measured official evidence:**
@@ -23,8 +23,8 @@
 
 **Files:**
 
-- Modify: `apps/life-manager/lib/connector-kokuchpro-workflow.js`
-- Modify: `apps/life-manager/lib/connector-kokuchpro-workflow.test.js`
+- Modify: `apps/mr-bot/lib/connector-kokuchpro-workflow.js`
+- Modify: `apps/mr-bot/lib/connector-kokuchpro-workflow.test.js`
 
 **Step 1 — RED**
 
@@ -41,7 +41,7 @@ Add focused tests proving:
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/connector-kokuchpro-workflow.test.js
 ```
 
@@ -54,7 +54,7 @@ Implement the minimum factory/default readers and safe-stage mapping. Reuse the 
 Run:
 
 ```bash
-cd apps/life-manager
+cd apps/mr-bot
 node --test lib/connector-kokuchpro-workflow.test.js
 node --test lib/connector-kokuchpro-workflow.test.js lib/connector-techplay-workflow.test.js
 node --check lib/connector-kokuchpro-workflow.js

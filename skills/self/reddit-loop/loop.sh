@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# reddit-loop/loop.sh — ONE no-human wake of the Reddit demand-gen loop (feeds life-manager-loop). This is NOT
+# reddit-loop/loop.sh — ONE no-human wake of the Reddit demand-gen loop (feeds mr-bot-loop). This is NOT
 # revenue; it measures the DEMAND engine's health/progress honestly. Anti-fake: a signup/post counts only if a real
 # marker (posts.jsonl / attributed-signups.jsonl) exists; karma comes from the account ledger; nothing is invented.
 # Seams: RD_TEST=1 + RD_ACCOUNTS=<file> + RD_DIR + RD_REQ.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; DIR="${RD_DIR:-$HERE}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
-REQ="${RD_REQ:-$HOME/.local/state/life-manager/state/reddit-loop-selfheal-request.json}"
+REQ="${RD_REQ:-$HOME/.local/state/mr-bot/state/reddit-loop-selfheal-request.json}"
 ACCTS="${RD_ACCOUNTS:-$HOME/.cloak/reddit-accounts.json}"
 POSTS="$DIR/state/posts.jsonl"; SIGN="$DIR/state/attributed-signups.jsonl"
 now=$(date +%s)
@@ -21,7 +21,7 @@ N_ACCT=0
 # account lives ONLY on camofox :9377, see ~/.cloak/reddit-accounts.json; checking :9222 here would
 # heal the wrong browser and misdirect the next pass.)
 if [ "${RD_TEST:-}" != "1" ]; then
-  curl -s --max-time 5 -o /dev/null http://127.0.0.1:9377/health 2>/dev/null || add_heal "CAMOFOX-DOWN(:9377) → bash $LIFE_MANAGER_REPO/skills/camofox-browser/scripts/start.sh"
+  curl -s --max-time 5 -o /dev/null http://127.0.0.1:9377/health 2>/dev/null || add_heal "CAMOFOX-DOWN(:9377) → bash $MR_BOT_REPO/skills/camofox-browser/scripts/start.sh"
 fi
 # READ: karma + posts + signups (all from real markers)
 KARMA="$(python3 -c "import json;d=json.load(open('$ACCTS'));a=(d if isinstance(d,list) else d.get('accounts',[]));print(sum(int(x.get('comment_karma',0)) for x in a))" 2>/dev/null||echo 0)"
@@ -40,7 +40,7 @@ else STATUS="ACT — post ONE more honest DISCLOSED contribution / answer genuin
 if [ -n "$HEAL" ]; then mkdir -p "$(dirname "$REQ")"; printf '{"loop":"reddit","ts":"%s","heal":"%s"}\n' "$(date -u +%FT%TZ)" "${HEAL//\"/}" > "$REQ"; else rm -f "$REQ" 2>/dev/null||true; fi
 TMP="$STATE_MD.tmp.$$"
 {
-  echo "# Reddit demand-gen loop — STATE (feeds life-manager-loop; HONEST DISCLOSED participation, NOT covert/broadcast)"
+  echo "# Reddit demand-gen loop — STATE (feeds mr-bot-loop; HONEST DISCLOSED participation, NOT covert/broadcast)"
   echo "goal: drive REAL LM signups via transparent builder participation. A post/signup counts ONLY if logged with a real URL."
   echo "last_wake_utc: $(date -u +%FT%TZ)"
   echo "heal_first: ${HEAL:-account present ✓, camofox ✓}"
@@ -56,7 +56,7 @@ TMP="$STATE_MD.tmp.$$"
 } > "$TMP" && mv "$TMP" "$STATE_MD"
 echo "[reddit-loop] accounts=$N_ACCT karma=$KARMA posts=$NPOST($POST_FRESH) signups=$SIGNUPS | heal=${HEAL:-none} | $STATUS"
 
-# Liveness heartbeat (FIND-032, ported from life-manager-loop): touch it HERE, in the deterministic MEASURE
+# Liveness heartbeat (FIND-032, ported from mr-bot-loop): touch it HERE, in the deterministic MEASURE
 # core (runs first on every pass — startup + daily cron — via STEP1, completes in ~2s, cannot derail).
 # Previously the reddit heartbeat was touched ONLY at the very end of the open-ended STARTUP/cron pass
 # ("FINALLY touch"), AFTER STEP2 ACT — and Reddit ACT routinely stalls (fresh top-level posts auto-removed
@@ -68,4 +68,4 @@ echo "[reddit-loop] accounts=$N_ACCT karma=$KARMA posts=$NPOST($POST_FRESH) sign
 # posts.jsonl freshness, checked separately by the output guard), so liveness must mean "the loop executed
 # its measurable core this pass", NOT "the open-ended posting task completed". Skip under test mode so the
 # real prod heartbeat is never touched by test-loop.sh.
-[ "${RD_TEST:-}" = "1" ] || { mkdir -p "$HOME/.local/state/life-manager/state" && touch "$HOME/.local/state/life-manager/state/.reddit-loop-last-pass" 2>/dev/null; } || true
+[ "${RD_TEST:-}" = "1" ] || { mkdir -p "$HOME/.local/state/mr-bot/state" && touch "$HOME/.local/state/mr-bot/state/.reddit-loop-last-pass" 2>/dev/null; } || true

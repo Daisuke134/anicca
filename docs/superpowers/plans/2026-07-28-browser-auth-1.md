@@ -3,12 +3,12 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Persist an authorized Steel browser context encrypted and bound to one
-Life Manager tenant, origin, and principal; restore it after a Railway process
+Mr.bot tenant, origin, and principal; restore it after a Railway process
 restart; and return an honest re-authentication handoff when it is no longer
 valid.
 
 **Architecture:** Steel remains an ephemeral, Railway-private Chromium worker.
-Life Manager exports Steel's closed `sessionContext`, validates it, encrypts it
+Mr.bot exports Steel's closed `sessionContext`, validates it, encrypts it
 with AES-256-GCM and tenant-bound AAD, and stores only ciphertext in PostgreSQL.
 A later job loads only the exact `uid + origin + principal_kind` row and injects
 it into a new Steel session. Provider readback decides whether to keep or
@@ -45,17 +45,17 @@ Railway-private Steel REST/CDP, Stagehand 3.7.1, Gemini, Node test runner.
 
 **Files:**
 
-- Create: `apps/life-manager/lib/browser-auth-session-store.js`
-- Create: `apps/life-manager/lib/browser-auth-session-store.test.js`
-- Create: `apps/life-manager/migrations/2026-07-28-lm-browser-auth-sessions.sql`
-- Create: `apps/life-manager/lib/browser-auth-session-migration.test.js`
-- Modify: `apps/life-manager/lib/browser-task-classifier.js`
-- Modify: `apps/life-manager/lib/browser-task-classifier.test.js`
-- Modify: `apps/life-manager/lib/browser-job-store.js`
-- Modify: `apps/life-manager/lib/browser-job-store.test.js`
-- Modify: `apps/life-manager/migrations/2026-07-28-lm-browser-jobs.sql`
-- Modify: `apps/life-manager/lib/browser-job-migration.test.js`
-- Modify: `apps/life-manager/test/browser-task-telegram-http-contract.test.js`
+- Create: `apps/mr-bot/lib/browser-auth-session-store.js`
+- Create: `apps/mr-bot/lib/browser-auth-session-store.test.js`
+- Create: `apps/mr-bot/migrations/2026-07-28-lm-browser-auth-sessions.sql`
+- Create: `apps/mr-bot/lib/browser-auth-session-migration.test.js`
+- Modify: `apps/mr-bot/lib/browser-task-classifier.js`
+- Modify: `apps/mr-bot/lib/browser-task-classifier.test.js`
+- Modify: `apps/mr-bot/lib/browser-job-store.js`
+- Modify: `apps/mr-bot/lib/browser-job-store.test.js`
+- Modify: `apps/mr-bot/migrations/2026-07-28-lm-browser-jobs.sql`
+- Modify: `apps/mr-bot/lib/browser-job-migration.test.js`
+- Modify: `apps/mr-bot/test/browser-task-telegram-http-contract.test.js`
 
 **Interfaces:**
 
@@ -93,7 +93,7 @@ Railway-private Steel REST/CDP, Stagehand 3.7.1, Gemini, Node test runner.
   Run:
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/browser-auth-session-store.test.js lib/browser-auth-session-migration.test.js
   ```
 
@@ -183,17 +183,17 @@ Railway-private Steel REST/CDP, Stagehand 3.7.1, Gemini, Node test runner.
 
   ```bash
   git add -A
-  git commit -m "feat(life-manager): encrypt tenant browser auth sessions"
+  git commit -m "feat(mr-bot): encrypt tenant browser auth sessions"
   ```
 
 ### Task 2: Add the verified Steel context round-trip
 
 **Files:**
 
-- Modify: `apps/life-manager/lib/steel-cdp-client.js`
-- Modify: `apps/life-manager/lib/steel-cdp-client.test.js`
-- Modify: `apps/life-manager/lib/stagehand-steel-driver.js`
-- Modify: `apps/life-manager/lib/stagehand-steel-driver.test.js`
+- Modify: `apps/mr-bot/lib/steel-cdp-client.js`
+- Modify: `apps/mr-bot/lib/steel-cdp-client.test.js`
+- Modify: `apps/mr-bot/lib/stagehand-steel-driver.js`
+- Modify: `apps/mr-bot/lib/stagehand-steel-driver.test.js`
 
 **Interfaces:**
 
@@ -272,21 +272,21 @@ Railway-private Steel REST/CDP, Stagehand 3.7.1, Gemini, Node test runner.
 
   ```bash
   git add -A
-  git commit -m "feat(life-manager): restore Steel browser contexts per tenant"
+  git commit -m "feat(mr-bot): restore Steel browser contexts per tenant"
   ```
 
 ### Task 3: Wire auth lifecycle into the durable browser job
 
 **Files:**
 
-- Modify: `apps/life-manager/lib/generic-browser-task.js`
-- Modify: `apps/life-manager/lib/generic-browser-task.test.js`
-- Modify: `apps/life-manager/lib/browser-job-runtime.js`
-- Modify: `apps/life-manager/lib/browser-job-runtime.test.js`
-- Modify: `apps/life-manager/lib/browser-job-store.js`
-- Modify: `apps/life-manager/lib/browser-job-store.test.js`
-- Modify: `apps/life-manager/migrations/2026-07-28-lm-browser-jobs.sql`
-- Modify: `apps/life-manager/lib/browser-job-migration.test.js`
+- Modify: `apps/mr-bot/lib/generic-browser-task.js`
+- Modify: `apps/mr-bot/lib/generic-browser-task.test.js`
+- Modify: `apps/mr-bot/lib/browser-job-runtime.js`
+- Modify: `apps/mr-bot/lib/browser-job-runtime.test.js`
+- Modify: `apps/mr-bot/lib/browser-job-store.js`
+- Modify: `apps/mr-bot/lib/browser-job-store.test.js`
+- Modify: `apps/mr-bot/migrations/2026-07-28-lm-browser-jobs.sql`
+- Modify: `apps/mr-bot/lib/browser-job-migration.test.js`
 
 **Interfaces:**
 
@@ -372,16 +372,16 @@ Railway-private Steel REST/CDP, Stagehand 3.7.1, Gemini, Node test runner.
 
   ```bash
   git add -A
-  git commit -m "feat(life-manager): persist browser auth lifecycle receipts"
+  git commit -m "feat(mr-bot): persist browser auth lifecycle receipts"
   ```
 
 ### Task 4: Build a secret-free production verification harness
 
 **Files:**
 
-- Create: `apps/life-manager/scripts/browser-auth-production-e2e.js`
-- Create: `apps/life-manager/scripts/browser-auth-production-e2e.test.js`
-- Modify: `apps/life-manager/package.json`
+- Create: `apps/mr-bot/scripts/browser-auth-production-e2e.js`
+- Create: `apps/mr-bot/scripts/browser-auth-production-e2e.test.js`
+- Modify: `apps/mr-bot/package.json`
 
 **Interfaces:**
 
@@ -444,7 +444,7 @@ Railway-private Steel REST/CDP, Stagehand 3.7.1, Gemini, Node test runner.
 
   ```bash
   git add -A
-  git commit -m "test(life-manager): verify browser auth continuity"
+  git commit -m "test(mr-bot): verify browser auth continuity"
   ```
 
 ### Task 5: Apply migration, deploy, and prove restart continuity
@@ -532,6 +532,6 @@ Railway-private Steel REST/CDP, Stagehand 3.7.1, Gemini, Node test runner.
 
   ```bash
   git add -A
-  git commit -m "docs(life-manager): prove tenant-safe cloud browser auth"
+  git commit -m "docs(mr-bot): prove tenant-safe cloud browser auth"
   git push
   ```

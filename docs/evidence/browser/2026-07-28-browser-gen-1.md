@@ -2,7 +2,7 @@
 
 ## Verdict
 
-Real external action succeeded. Life Manager received a natural-language Telegram
+Real external action succeeded. Mr.bot received a natural-language Telegram
 request, used Railway-private Steel Chromium, opened a live Luma event, filled the
 agent-owned registration identity, submitted the form, passed a managed Cloudflare
 browser check, and captured the provider-authored result **“You’re In”**.
@@ -89,6 +89,6 @@ the live form. Primary references:
 ## Boundary of this evidence
 
 BROWSER-GEN-1 is complete: one real provider action and receipt crossed the whole
-Telegram → Life Manager → Railway Steel → provider → Telegram path. This does not
+Telegram → Mr.bot → Railway Steel → provider → Telegram path. This does not
 complete BROWSER-AUTH-1, the three-intent BROWSER-MATRIX-1, or recovery coverage
 for every provider/challenge class.

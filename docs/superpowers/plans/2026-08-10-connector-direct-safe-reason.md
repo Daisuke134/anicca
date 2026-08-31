@@ -1,6 +1,6 @@
 # Connector Direct Safe Reason Implementation Plan
 
-> **For Luna:** Use Superpowers test-driven-development. Own only `apps/life-manager/lib/connector-peatix-workflow.js`, `connector-peatix-workflow.test.js`, `connector-minimal-runner.js`, and `connector-minimal-runner.test.js`. You are not alone in the codebase; preserve all other edits. Do not commit or push.
+> **For Luna:** Use Superpowers test-driven-development. Own only `apps/mr-bot/lib/connector-peatix-workflow.js`, `connector-peatix-workflow.test.js`, `connector-minimal-runner.js`, and `connector-minimal-runner.test.js`. You are not alone in the codebase; preserve all other edits. Do not commit or push.
 
 **Goal:** Preserve the exact privacy-safe Peatix direct failure stage through the provider-neutral circuit report so the next live wake identifies the one broken action.
 

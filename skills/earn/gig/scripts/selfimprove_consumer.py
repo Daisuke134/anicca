@@ -229,7 +229,7 @@ def main(argv: list[str] | None = None) -> int:
     default_root = Path(os.environ.get("GIG_STATE_DIR", str(Path.home() / "gig")))
     host_state = Path(os.environ.get(
         "GIG_HOST_STATE_DIR",
-        str(Path.home() / ".local" / "state" / "life-manager" / "state"),
+        str(Path.home() / ".local" / "state" / "mr-bot" / "state"),
     ))
     parser.add_argument("--audit", type=Path, default=default_root / "selfimprove-audit.jsonl")
     parser.add_argument("--cursor", type=Path, default=default_root / ".selfimprove-consumer-cursor")

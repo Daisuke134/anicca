@@ -1,42 +1,41 @@
 <!-- startup-context-version: 2026-08-27.2 -->
-<!-- startup-context-digest: 9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338 -->
-# Life Manager
+<!-- startup-context-digest: 882e479bf06b98a2a6db62352b8d3b6c3463767c6c73d7996caa328e25191d06 -->
+# Mr.bot
 
-**Life Manager is a proactive general agent that manages your body, mind, and money.** It turns goals into
+**Mr.bot is a proactive general agent that manages your body, mind, and money.** It turns goals into
 completed real-world actions, acts within delegated boundaries, verifies what happened, and reports the result
 in plain language with evidence in Telegram. Its mission is to make dependable care and agency continuously
 available and end suffering for humans and, ultimately, all living beings.
 
-| Group | What Life Manager manages through its loops |
+| Group | What Mr.bot manages through its loops |
 |---|---|
 | **Daily** | Calendar, event and accelerator applications, job applications, priorities, and follow-through |
 | **Physical / Mental** | Routines, wellbeing, and continuity of care |
 | **Financial** | Net worth, cash flow, spending, income and business opportunities, crypto, risk-managed investing, and self-funding compute from banked revenue |
 
-[Open Life Manager](https://aniccaai.com/lm) · [Start in Telegram](https://t.me/LifeManagerBotbot?start=lp) · [View the source](https://github.com/Daisuke134/life-manager)
+[Open Mr.bot](https://aniccaai.com/lm) · [Start in Telegram](https://t.me/LifeManagerBotbot?start=lp) · [View the source](https://github.com/Daisuke134/life-manager)
 
-Run the free, open-source, self-hosted Life Manager locally and keep your data on your machine; use the paid
+Run the free, open-source, self-hosted Mr.bot locally and keep your data on your machine; use the paid
 monthly cloud service when you want an always-on manager with only a phone. Both surfaces use the **same core**,
-evidence ledger, and human-readable reporting contract. Life
-Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
+evidence ledger, and human-readable reporting contract. Mr.bot never guarantees wealth or investment returns, and it never reports an attempted action as completed
 without a receipt.
 
 ## Built-in loop catalog
 
-Life Manager is shipped as one general-agent core plus specialist loops. These are
+Mr.bot is shipped as one general-agent core plus specialist loops. These are
 the main user-facing loop families; helper, healthcheck, browser-owner, reporting,
 and reconciliation loops support them behind the same control plane.
 
 | Capability | Canonical loop IDs | What it does |
 |---|---|---|
-| Connector | `life-manager-connector-native` | Finds eligible events, applies, verifies registration, and reports Calendar/Telegram receipts |
+| Connector | `mr-bot-connector-native` | Finds eligible events, applies, verifies registration, and reports Calendar/Telegram receipts |
 | Fundraising | `fundraiser` | Continuously discovers new accelerators, fellowships, grants, and public investor intakes and applies without an arbitrary daily cap |
 | Job Hunter | `job-search-daily`, `job-search-browser`, `job-search-inbox`, `job-search-mercor` | Discovers and submits qualified job applications, then reconciles confirmation and reply mail |
 | Gig / Coconala | `hf-gig-apply-direct`, `hf-gig-paid-direct`, `gig-outcome-watch` | Applies, negotiates, tracks paid work, and separates attempts from provider-verified outcomes |
 | Money Printer | `money-printer-symphony`, `money-printer-symphony-bridge` | Moves public opportunities through the durable workroom and human-resume boundary |
 | Writer | `writer-opportunity-discovery`, `writer-opportunity-response`, `writer-money-sync`, `writer-report` | Finds paid writing work, responds, and records publisher/payment receipts |
 | Affiliate | `affiliate-loop`, `affiliate-source-refresh`, `affiliate-browser` | Finds and publishes attributable affiliate opportunities through the owned browser path |
-| CFO | `life-manager-cfo-hourly` | Reconciles verified financial data and sends evidence-backed financial briefings |
+| CFO | `mr-bot-cfo-hourly` | Reconciles verified financial data and sends evidence-backed financial briefings |
 | Agent Economy | `agent-economy-loop` | Tracks agent revenue, compute cost, and self-funding without mixing owner funds |
 
 The complete lifecycle registry is [`config/loop-registry.json`](config/loop-registry.json).
@@ -48,14 +47,14 @@ jq -r '.loops | keys[]' config/loop-registry.json
 ./bin/lm-loop doctor
 ```
 
-Being present in the registry proves that a loop is part of Life Manager; it does
+Being present in the registry proves that a loop is part of Mr.bot; it does
 not prove the loop is healthy or that an external effect succeeded. Health comes
 from the latest terminal event, and business success comes only from the official
 provider receipt.
 
 ## The general agent we are building
 
-Life Manager is not a collection of website-specific bots. We are building one durable general agent that can
+Mr.bot is not a collection of website-specific bots. We are building one durable general agent that can
 discover an opportunity, decide whether it can complete the work profitably, propose and negotiate, produce and
 QA the deliverable, submit it, and follow the same identity through payment and payout. Upwork was the first
 marketplace investigation; it is now cleanly contained because the account is not eligible for API access and UI
@@ -67,7 +66,7 @@ The architecture is converging by copying and adapting proven boundaries from
 [DeepAgentsJS/LangGraph](https://github.com/langchain-ai/deepagentsjs) for the specialist harness and durable state,
 [browser-use](https://github.com/browser-use/browser-use) for the website-tool contract,
 [OpenClaw](https://github.com/openclaw/openclaw) for the current local wake and channels, and
-[Steel](https://github.com/steel-dev/steel-browser) for the hosted browser backend. Existing Life Manager
+[Steel](https://github.com/steel-dev/steel-browser) for the hosted browser backend. Existing Mr.bot
 `EffectIntent` and `ConnectorOutbox` rails remain the only path for irreversible money actions. The completion
 signal is an official `banked` receipt—not an application, click, model claim, contract, or pending balance.
 
@@ -75,7 +74,7 @@ signal is an official `banked` receipt—not an application, click, model claim,
 
 [Open the live Money Printer](https://aniccaai.com/money-printer) · [60-second judge guide](docs/webmcp-judge-guide.md)
 
-Money Printer is Life Manager's general earning-work surface. Its cloud scout searches the public Web for
+Money Printer is Mr.bot's general earning-work surface. Its cloud scout searches the public Web for
 current paid opportunities, admits only citation-backed public URLs, deduplicates them in Railway Postgres,
 and hands each one to the same durable capability worker. The person sees one six-column board and is asked
 only when identity, authority, judgment, payment information, or a physical action is genuinely required.
@@ -107,7 +106,7 @@ The WebMCP work added after August 25 includes the `/money-printer` guest route,
 responsive board, top-level imperative WebMCP registration, durable Opportunity and HumanTask contracts,
 Railway runtime-store separation, dedicated capability worker, citation-grounded recurring scout, safe failed
 receipt projection, Netlify proxy/security headers, and adversarially tested idempotency and tenant boundaries.
-Earlier Life Manager scheduling, marketplace, Telegram, billing, and evidence systems remain pre-existing work.
+Earlier Mr.bot scheduling, marketplace, Telegram, billing, and evidence systems remain pre-existing work.
 
 Current live proof includes a zero-login page/API, replay-zero internal writes, a page-independent worker,
 multiple public opportunities, completed qualification and scout receipts, restart-stable counts, and a
@@ -115,17 +114,17 @@ read-only verified Lancers application receipt (`project 5593484`, `proposal 278
 revenue: `Paid & verified` remains empty until an independently verified payment receipt exists. The required
 24-hour three-natural-cycle record and ChatGPT/Chrome client recordings are still being accumulated.
 
-The founder attests that Life Manager has generated approximately $1,000 in revenue. This is not MRR or ARR, and
+The founder attests that Mr.bot has generated approximately $1,000 in revenue. This is not MRR or ARR, and
 it is not proof that a provider-independent autonomous commerce loop is closed. That loop remains proven only by
 official receipts through `banked` and, eventually, `compute_paid`.
 
-**Life Manager is the product. Anicca is the company name only when a form explicitly asks for it.**
+**Mr.bot is the product. Anicca is the company name only when a form explicitly asks for it.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 🌐 **[日本語版 README はこちら →](README.ja.md)**
 
-**Repository SSOT:** this repository, [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager), is the only Life Manager code, spec, release, workflow, and deployment source. `Daisuke134/life-manager-v0` is a read-only migration source until its required-code and runtime-reference counts reach zero. The current ordered execution plan and remaining work are maintained in [`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md); repository consolidation history remains in [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md).
+**Repository SSOT:** this repository, [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager), is the only Mr.bot code, spec, release, workflow, and deployment source. `Daisuke134/life-manager-v0` is a read-only migration source until its required-code and runtime-reference counts reach zero. The current ordered execution plan and remaining work are maintained in [`docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`](docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md); repository consolidation history remains in [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md).
 
 ---
 
@@ -149,7 +148,7 @@ The command installs only missing dependencies, asks for the finalized resume an
 job preferences in Terminal, and opens the dedicated CloakBrowser for official
 login. It also installs `gog`, opens Gmail OAuth for the application email, and asks
 for the owner's Telegram bot token privately plus numeric chat ID. Finish the
-official login, then run the exact same command again. Life Manager verifies Gmail
+official login, then run the exact same command again. Mr.bot verifies Gmail
 and a real Telegram message ID before starting the owners. Passwords, OTPs and bot
 tokens are never printed or committed.
 
@@ -164,7 +163,7 @@ Requires Docker. The local stack is Postgres + an object store + the API, schedu
 the cloud runs.
 
 ```bash
-git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
+git clone https://github.com/Daisuke134/life-manager ~/mr-bot && cd ~/mr-bot
 ./scripts/local-up.sh
 ```
 
@@ -180,7 +179,7 @@ just that containers exist. First run builds the image and takes a few minutes.
 ```
 
 On macOS, explicitly select repository loops to supervise with launchd. There
-is no default list: Life Manager never starts private-provider or external-effect
+is no default list: Mr.bot never starts private-provider or external-effect
 loops merely because the repository was cloned.
 
 ```bash
@@ -192,7 +191,7 @@ loops merely because the repository was cloned.
 
 `loops-init` creates or validates the canonical user-owned credential store
 without adding any secret values. The selection is saved in
-`~/.config/life-manager/loops`. Model-backed or
+`~/.config/mr-bot/loops`. Model-backed or
 effectful selections fail before installation unless the user's own
 `~/.local/share/anicca/credentials.json` exists with parent mode `700` and file
 mode `600`. `loops-status` reports the same launchd, release, provider, blocker,
@@ -204,24 +203,24 @@ The API listens on `http://localhost:18788` and the worker exposes health on `:1
 running this.
 
 **Secrets are referenced, never inlined.** Jobs carry `secret://…` references and resolve them from the local
-keychain or a tenant vault; see [`apps/life-manager/.env.example`](apps/life-manager/.env.example) for the shape
+keychain or a tenant vault; see [`apps/mr-bot/.env.example`](apps/mr-bot/.env.example) for the shape
 (`TELEGRAM_BOT_TOKEN_REF`, `POSTIZ_ACCESS_TOKEN_REF`, `REVENUECAT_API_KEY_REF`, …). Connect your own Telegram bot
 token this way to talk to a local instance.
 
 ### Self-funding is part of the Financial Organ
 
 The wallet and compute-payment loop in [`docs/agent-economy.md`](docs/agent-economy.md) is not a separate product.
-It is Life Manager's Financial capability: provider revenue must become `banked` before it can fund
+It is Mr.bot's Financial capability: provider revenue must become `banked` before it can fund
 `compute_paid`, and owner funds must remain separate.
 
 ---
 
 ## One product, two execution surfaces
 
-Life Manager is one product in one repository. “Local Life Manager” and the web app are not separate products or repositories; they are two execution surfaces powered by the same core, capabilities, and state contracts.
+Mr.bot is one product in one repository. “Local Mr.bot” and the web app are not separate products or repositories; they are two execution surfaces powered by the same core, capabilities, and state contracts.
 
 ```text
-                              LIFE MANAGER
+                              MR.BOT
                     one product · one repository
                                  │
              ┌───────────────────┴───────────────────┐
@@ -230,8 +229,8 @@ Life Manager is one product in one repository. “Local Life Manager” and the 
      deploy/local/compose.yaml                 apps/landing
           │                                  web entry
           ▼                                       │
-     apps/life-manager                             ▼
-     api · scheduler · worker            apps/life-manager
+     apps/mr-bot                             ▼
+     api · scheduler · worker            apps/mr-bot
           │                              Telegram · voice
           ▼                              scheduler · /panel
      postgres · object store                       │
@@ -245,22 +244,22 @@ Life Manager is one product in one repository. “Local Life Manager” and the 
 
 | Path | Role | What it is not |
 |---|---|---|
-| `apps/life-manager/` | The product core: Telegram, scheduling, calls, authenticated `/panel`, billing, and user workflows. Runs both locally (compose) and in the cloud (Railway) | Not the whole repository |
+| `apps/mr-bot/` | The product core: Telegram, scheduling, calls, authenticated `/panel`, billing, and user workflows. Runs both locally (compose) and in the cloud (Railway) | Not the whole repository |
 | `deploy/local/` | The local execution surface — compose stack, ports, local-only credentials | Not a separate “local edition” product |
-| `apps/landing/` | The Life Manager onboarding web subset | Not the old multi-product Anicca website |
-| `runtime/loop/`, `install.sh`, `start-local.sh` | Economic runtime supporting Life Manager's Financial Organ — see [`docs/agent-economy.md`](docs/agent-economy.md) | Not the whole product or the normal user entry point |
+| `apps/landing/` | The Mr.bot onboarding web subset | Not the old multi-product Anicca website |
+| `runtime/loop/`, `install.sh`, `start-local.sh` | Economic runtime supporting Mr.bot's Financial Organ — see [`docs/agent-economy.md`](docs/agent-economy.md) | Not the whole product or the normal user entry point |
 | `runtime/compute-proxy/`, `services/` | Compute-payment and x402 settlement/API infrastructure for the same Financial capability | Not user-facing apps |
 | `skills/` | Shared capabilities used by local and cloud execution | Not independent products |
-| `apps/job-search-loop/`, `control-room/`, `adapters/` | Supporting operations, fleet documentation, and integrations | Not another Life Manager codebase |
+| `apps/job-search-loop/`, `control-room/`, `adapters/` | Supporting operations, fleet documentation, and integrations | Not another Mr.bot codebase |
 | `docs/`, `specs/` | Current SSOT, evidence, and retained architecture history | Historical files are not automatically current authority |
 
-Some internal package names, environment variables, service labels, and older documents still use `anicca`. In this repository, **Anicca is the company/technical namespace; Life Manager is the product**. A remaining `anicca` identifier does not imply a second product or another canonical repository.
+Some internal package names, environment variables, service labels, and older documents still use `anicca`. In this repository, **Anicca is the company/technical namespace; Mr.bot is the product**. A remaining `anicca` identifier does not imply a second product or another canonical repository.
 
 ---
 
 ## Connector agent — how event applications work
 
-Connector is the local Life Manager agent that fills a rolling 28-day Tokyo event horizon. It ranks YC hackathons, open lightning talks, AI, crypto, and startup events first; applies only to strong or moderate matches; uses Luma as the primary actionable source and the official connpass v2 API as the primary read-only fallback; then uses the remaining rails only after both primary sources are exhausted. It verifies provider results and reports evidence-backed outcomes in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
+Connector is the local Mr.bot agent that fills a rolling 28-day Tokyo event horizon. It ranks YC hackathons, open lightning talks, AI, crypto, and startup events first; applies only to strong or moderate matches; uses Luma as the primary actionable source and the official connpass v2 API as the primary read-only fallback; then uses the remaining rails only after both primary sources are exhausted. It verifies provider results and reports evidence-backed outcomes in Telegram. It is not a blind form-filler: a click is never treated as success by itself.
 
 ```mermaid
 flowchart LR
@@ -347,15 +346,15 @@ stateDiagram-v2
 | TECH PLAY | RSS/detail discovery, input/review/final action, registered readback, evidence | Connected; all three current eligible candidates conflict with Calendar, so live bundle remains pending |
 | KokuchPro | Official listing/detail discovery, strict free/Tokyo/open gate, entry/login readback, bounded Harness | Connected; current official first page has no event inside the 28-day window. Login is classified as `auth_required` and safely hands off without private-value or retry effects |
 
-Safety invariants: one hourly schedule owner, one browser target per wake, one external mutation at most per wake, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` proves a new completed application. A verified open lightning-talk application consumes that wake's effect budget before attendance; payment, CAPTCHA, identity verification, and unknown required fields always stop for human action. `completed_no_effect` is a healthy process result with zero new external writes. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md).
+Safety invariants: one hourly schedule owner, one browser target per wake, one external mutation at most per wake, `effect_unknown` means no retry, private form values never enter action history, and only an `applied_bundle` proves a new completed application. A verified open lightning-talk application consumes that wake's effect budget before attendance; payment, CAPTCHA, identity verification, and unknown required fields always stop for human action. `completed_no_effect` is a healthy process result with zero new external writes. Current evidence and remaining gates live in the [Connector execution SSOT](docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md).
 
 ### Connector local install and uninstall
 
 Keep private identity, Calendar, Telegram, Gemini, and connpass values in a mode-0600 file outside the repository. The connpass key is optional while its official application is pending; without it, connpass discovery fails closed and no browser fallback is attempted.
 
-1. Run `skills/connector/render-launchd.sh` into a private temporary directory, passing the canonical repository root, a private Life Manager state directory, and the external connector env file.
-2. Validate the rendered plist with `plutil -lint`. Install only `ai.anicca.life-manager-connector-native.plist` in the user's `Library/LaunchAgents`, mode 0600.
-3. Run `bin/launchctl-safe preflight`, then bootstrap only `ai.anicca.life-manager-connector-native`. Read it back with `bin/launchctl-safe print gui/$UID/ai.anicca.life-manager-connector-native`; it must show `StartInterval = 3600`, one label, and no `StartCalendarInterval`, `RunAtLoad`, or `KeepAlive`.
+1. Run `skills/connector/render-launchd.sh` into a private temporary directory, passing the canonical repository root, a private Mr.bot state directory, and the external connector env file.
+2. Validate the rendered plist with `plutil -lint`. Install only `ai.anicca.mr-bot-connector-native.plist` in the user's `Library/LaunchAgents`, mode 0600.
+3. Run `bin/launchctl-safe preflight`, then bootstrap only `ai.anicca.mr-bot-connector-native`. Read it back with `bin/launchctl-safe print gui/$UID/ai.anicca.mr-bot-connector-native`; it must show `StartInterval = 3600`, one label, and no `StartCalendarInterval`, `RunAtLoad`, or `KeepAlive`.
 4. To uninstall, boot out that exact label through `bin/launchctl-safe`, remove only its exact installed plist, and preserve the external env file, state, receipts, Calendar entries, and unrelated browser tabs.
 
 The renderer deliberately refuses to write directly into `Library/LaunchAgents`. This keeps rendering and live launchd mutation as separate, auditable steps.
@@ -369,7 +368,7 @@ Current canonical acceptance: PR `#1936` established the production baseline at 
 | Capability | Status |
 |---|---|
 | **Local stack** (`deploy/local/compose.yaml`) — postgres · object store · api · scheduler · worker | **Runs** — the five services come up healthy and stay up (observed running for days on the maintainer's machine). |
-| **Cloud service** (`apps/life-manager`, `node server.js` on Railway) | **Deployed** — the scheduler and API are the same code the local stack runs. |
+| **Cloud service** (`apps/mr-bot`, `node server.js` on Railway) | **Deployed** — the scheduler and API are the same code the local stack runs. |
 | **Telegram reporting with receipts** | **Live** — every report carries a message id, and a send that fails is not recorded as sent. |
 | **Calendar, connectors, coverage** (`lib/calendar-*`, `lib/connector-*`) | **Implemented, coverage still moving** — per-connector state and gaps are tracked in the execution spec rather than claimed here. |
 | **Financial loops** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |

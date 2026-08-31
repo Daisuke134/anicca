@@ -1,16 +1,16 @@
-# Life Manager 8i Cutover Evidence
+# Mr.bot 8i Cutover Evidence
 
 ## Result
 
 The `life-call` production service runs from `Daisuke134/life-manager`, branch
-`main`, root directory `apps/life-manager`.
+`main`, root directory `apps/mr-bot`.
 
 | Check | Evidence |
 |---|---|
 | Active Railway deployment | `6806b0d4-dcdf-430f-acea-35d8a5b11212` |
 | Requested commit | `a7ac84d44faac86ce00dc45b1d2ebeeb52ec9218` |
 | Railway API commit readback | `a7ac84d44faac86ce00dc45b1d2ebeeb52ec9218` (`SUCCESS`, active) |
-| Railway source readback | `Daisuke134/life-manager` / `apps/life-manager` / `/apps/life-manager/railway.toml` |
+| Railway source readback | `Daisuke134/life-manager` / `apps/mr-bot` / `/apps/mr-bot/railway.toml` |
 | Production health | HTTP `200`; `{"ok":true,"service":"life-call","ws":"/ws","build":"lm27-voicemail-v1"}` |
 | Zero-downtime monitor | 358 consecutive samples; 0 non-200 responses |
 | Telegram production bot | `getMe` succeeds, webhook ends in `/telegram`, real `sendMessage` succeeds |
@@ -51,8 +51,8 @@ GitHub API readback then confirms `Daisuke134/anicca-products` is archived.
    `fc84aceb-f286-488e-926d-83e6ed28690c` fail before the migrated root is
    fully applied. Railway still retains the old
    `/apps/life-call/railway.toml` and `apps/life-call/**` service settings.
-2. Updating `railwayConfigFile` to `/apps/life-manager/railway.toml` and
-   `watchPatterns` to `apps/life-manager/**` fixes the build configuration.
+2. Updating `railwayConfigFile` to `/apps/mr-bot/railway.toml` and
+   `watchPatterns` to `apps/mr-bot/**` fixes the build configuration.
 3. Deployment `1c28905f-980d-4c39-bdc6-01c2e749f730` reaches the requested
    commit successfully but is superseded by an automatic current-HEAD
    deployment while the configuration update settles.

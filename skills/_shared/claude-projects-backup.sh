@@ -20,7 +20,7 @@ set -uo pipefail
 
 SRC="$HOME/.claude/projects"
 BACKUP_ROOT="$HOME/.cloak/state-backups"
-LOG="$HOME/.local/state/life-manager/logs/claude-projects-backup.log"
+LOG="$HOME/.local/state/mr-bot/logs/claude-projects-backup.log"
 KEEP_GENERATIONS=14
 mkdir -p "$BACKUP_ROOT" "$(dirname "$LOG")"
 

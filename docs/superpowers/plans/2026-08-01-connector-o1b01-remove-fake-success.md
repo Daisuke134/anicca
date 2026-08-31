@@ -22,10 +22,10 @@
 ### Task 1: Verifier provenance and success receipt
 
 **Files:**
-- Modify: `apps/life-manager/lib/outbound-evidence.js`
-- Create: `apps/life-manager/lib/outbound-success.js`
-- Create: `apps/life-manager/lib/outbound-success.test.js`
-- Modify: `apps/life-manager/package.json`
+- Modify: `apps/mr-bot/lib/outbound-evidence.js`
+- Create: `apps/mr-bot/lib/outbound-success.js`
+- Create: `apps/mr-bot/lib/outbound-success.test.js`
+- Modify: `apps/mr-bot/package.json`
 
 **Interfaces:**
 - Consumes: `verifyOutboundEvidence(input, dependencies)` result。
@@ -40,8 +40,8 @@
 ### Task 2: Runtime completion gate
 
 **Files:**
-- Modify: `apps/life-manager/scripts/runtime-up.js`
-- Modify: `apps/life-manager/scripts/runtime-up.test.js`
+- Modify: `apps/mr-bot/scripts/runtime-up.js`
+- Modify: `apps/mr-bot/scripts/runtime-up.test.js`
 
 **Interfaces:**
 - Consumes: `assertVerifiedOutboundReceipt(receipt, job)`。
@@ -57,7 +57,7 @@
 
 **Files:**
 - Create: `docs/evidence/outbound/2026-08-01-o1b01-fake-success-gate.json`
-- Modify: `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`
+- Modify: `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md`
 
 - [x] Record RED/GREEN counts, rejected fake cases, implementation commits, and claim boundary.
 - [x] Run fresh tests, JSON validation, git diff check, and local/remote equality.

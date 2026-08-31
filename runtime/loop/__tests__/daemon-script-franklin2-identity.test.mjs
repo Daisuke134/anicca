@@ -171,8 +171,8 @@ test('impl-review iteration-3 FIND-002 fix — match-matrix simulation: applies 
 
   // Real deployed --home values (from ai.anicca.franklin-loop.plist / ai.anicca.franklin2-loop.plist,
   // as confirmed in iteration-1/2 notes.md).
-  const HOME_FRANKLIN = '/home/life-manager/.blockrun';
-  const HOME_FRANKLIN2 = '/home/life-manager/.franklin2-home/.blockrun';
+  const HOME_FRANKLIN = '/home/mr-bot/.blockrun';
+  const HOME_FRANKLIN2 = '/home/mr-bot/.franklin2-home/.blockrun';
   const SCRIPT = 'node __REPO_ROOT__/runtime/dashboard/telemetry-post-franklin.mjs';
   // skills/earn/sol-trade/run.sh:161's actual flagless, short-lived (`timeout 20`) one-shot
   // invocation — the argv pkill -f would actually see, ending at the identical script-path

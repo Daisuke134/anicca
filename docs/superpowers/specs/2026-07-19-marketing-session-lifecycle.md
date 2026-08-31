@@ -30,7 +30,7 @@ clip と capafy の共有 provision は account 作成日を day1 とし、day1-
 - `@useclaudeskills` は `status=warming_day1`、`session_owner=browser`、`started_warming=2026-07-18`。実測 account day は2。
 - 旧 goal-monitor が作った `.capafy-ig-account-cooked` は存在した。新 owner/day gate の verify probe は `verify_eligible=no`、`poisoned=false`、verify invocation 0回を返し、false marker を除去した。
 - legacy `~/.cloak/instagrapi-useclaudeskills.json` は存在する。削除せず、day3 warmer は settings を load/verify し、password relogin を行わない。
-- Life Manager tenant `dais-local` の `anicca.affirms2` は
+- Mr.bot tenant `dais-local` の `anicca.affirms2` は
   `ChallengeRequired` で隔離された後、Instagram web の reCAPTCHA と
   automated-behavior warning を解決した。同じ保存 session が
   `feed_ok=true`、`ping_ok=true`、`identity_ok=true` を返し、

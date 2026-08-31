@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Small repo-owned raw-CDP CLI used by Life Manager browser loops."""
+"""Small repo-owned raw-CDP CLI used by Mr.bot browser loops."""
 
 from __future__ import annotations
 

@@ -1,11 +1,11 @@
 # Lancers 月額 SNS 運用で first net MRR 10,000 USD、target 20,000 USD を目指す設計仕様
 
 **作成日:** 2026-08-13
-**正本:** Life Manager (`Daisuke134/life-manager`)
+**正本:** Mr.bot (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
 **状態:** Applyは公式ApplicationReceipt 41件、5分ごとのexhaustive ownerとTelegram ACKが稼働。Storefrontはcanonical 1件。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0、received grossは0円
 
-canonical repository は Life Manager とし、Lancers の credential、browser session、
+canonical repository は Mr.bot とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
 
 この文書をLancers money loopの**設計・acceptance gate・完了証拠・現在地・残TODOの唯一の正本**とする。
@@ -334,7 +334,7 @@ single browser lock、at-most-once action envelope、authoritative readback を�
 
 ### 4.6 canonical SSOT と安全な deployment
 
-canonical repository は Life Manager の main だけである。source、schema、test、launchd template、
+canonical repository は Mr.bot の main だけである。source、schema、test、launchd template、
 spec、plan はすべて canonical repo に置き、secret、browser session、runtime state、append-only
 ledger、evidence は外部に残して不可侵とする。worktree は一時的な開発隔離であり、launchd/cron/service
 が worktree や feature branch を実行してはならない。`~/.local` などの untracked mutable source を
@@ -356,7 +356,7 @@ disabled / unloadedであり、receipt検証後に30分tickを再開する。qua
 project別folderは追加せず、4 laneは同じLancers adapter、marketplace-core、ledgerを再利用する。
 
 ```text
-life-manager/
+mr-bot/
 ├── apps/lancers-revenue/
 │   ├── launchd/
 │   │   ├── ai.anicca.lancers-revenue-application.plist
@@ -884,7 +884,7 @@ Lancers公式「受注・報酬受け取りの流れ」は、プロジェクト�
 選ばれて受注確定 → 発注者の仮払い → 作業・納品 → 報酬支払」と説明する
 （https://www.lancers.jp/help/beginner/lancer）。現状は最初の応募receiptだけを閉じており、公式フロー上も売上ではない。
 
-sourceはLife Manager `origin/main`、immutable exact-SHA release、repo外runtime stateへ分離済みであり、三canonical ownerは
+sourceはMr.bot `origin/main`、immutable exact-SHA release、repo外runtime stateへ分離済みであり、三canonical ownerは
 exact release `295749ad…`へ収束済みである。一方、repo外mutable `listing_tick.py`を30分ごとにpublish modeで動かす
 第四のlegacy storefront ownerがenabled、105 runsで残っていた。canonical source/deploy境界の外からlisting mutation権限を
 持つため、idle状態でdisable/unloadした。plist、receipt、provider listingは削除せず、application/listing/ledger hashは前後不変である。
@@ -1096,7 +1096,7 @@ schema SSOTを追加しない。
    `safety_rejected`、`no_eligible_project`を区別し、
    expected/returned count、runner status/error classだけをsanitized logへ出す。cookie、prompt本文、proposal本文、buyer identityは出さない。
    raw evidenceは成功時削除、失敗時はexisting planner rootに最新一runだけ残し、次tickのresetで置換する。
-6. authoring SSOTはLife Manager `origin/main`だけ、runtimeはそのcommitからinstallerが作るread-only exact-SHA releaseだけとする。
+6. authoring SSOTはMr.bot `origin/main`だけ、runtimeはそのcommitからinstallerが作るread-only exact-SHA releaseだけとする。
    worktree、feature branch、repo外mutable sourceを実行しない。既存installerはartifact/plist/manifest作成だけを所有し、
    canonical deploy entrypointがinstaller実行後にapplication/report/work-sync三ownerを同じSHAへ`bootout → bootstrap`する。
    manifestへreport labelも含め、三つの`launchctl print`のProgramArgumentsとWorkingDirectoryがmanifest SHAと一致しなければ
@@ -1242,7 +1242,7 @@ storefront_contract_candidate_count=0`である。board `9024494`、message `589
 | Gate | 受入条件 | 必須証拠 |
 |---|---|---|
 | G0 定義 | MRR 式、商品境界、4 lane、lane-local state/receipt、per-entity straight state、resource-local effect fence、receipt 順序、安全不変条件がこの仕様と一致する | 仕様レビュー記録 |
-| G0.5 canonical source / safe deployment | source/schema/test/launchd template/spec/plan を canonical Life Manager repo に揃え、tests と許可された一回の fresh adversarial review を通し、main に merge/push した exact commit SHA の release artifact を install して manifest/deployed SHA を記録する。worktree/feature branch/untracked `~/.local` source は実行せず、その後にだけ application service を enable する。runtime state、secret、browser session、append-only ledger、evidence は移動・削除しない | test result、レビュー記録、main commit、artifact manifest、deployed SHA、service enable の順序、runtime state 不変の確認 |
+| G0.5 canonical source / safe deployment | source/schema/test/launchd template/spec/plan を canonical Mr.bot repo に揃え、tests と許可された一回の fresh adversarial review を通し、main に merge/push した exact commit SHA の release artifact を install して manifest/deployed SHA を記録する。worktree/feature branch/untracked `~/.local` source は実行せず、その後にだけ application service を enable する。runtime state、secret、browser session、append-only ledger、evidence は移動・削除しない | test result、レビュー記録、main commit、artifact manifest、deployed SHA、service enable の順序、runtime state 不変の確認 |
 | G1 first slice | semantic evidence/schema、canonicalization、G0.5を完了してapplication launchdを再有効化する。既存null-ID pendingをblind resendせず公式readbackし、targetごとの金額・納期とproposal IDを照合して`ApplicationReceipt`へ確定する。その後、公式業種欄、継続SNS運用の外部委任証拠、70%以上のprojected margin、一tick最大1応募を持つnormal acquisitionを30分bounded loopで稼働させる。G1は後段laneを先取りしない | `5585496 → 27803189`、`5586112 → 27808073`、`5585503 → 27808988`、submit 0のreconcile、pending 3→0、receipt 11→14、normal wake `observed=13, eligible=0, submitted=false`、launchd enabled、deployed SHA `038bee20e9b331baf5dd84eb4b0c1cd23b3b6432` |
 | G2 truthful acquisition | **完了。** storefront の四状態、readback mismatch、応募の四段階、incident/report 頻度を正しく表示する | exact release `d63dfd1…`、Telegram message ID `15922`、同一状態の再kick 0送信 |
 | G3A query coverage | **完了。** 10 queryを30分slotで一件ずつ決定的にrotationし、provider呼出しとsubmit boundを増やさない | exact release `a2081bc0…`、review 1/1 ship、実tick `LinkedIn / observed 2 / submitted false`、state/ledger/listing不変 |
@@ -1382,7 +1382,7 @@ Slice 1 は、application service を安全に戻す canonical source/deployment
 ### 含むもの
 
 1. application launchd を disabled のままにし、Task2/Task3 の順序事故で生じた semantic evidence/schema の blocker を修正する。
-2. source、schema、test、launchd template、spec、plan を canonical Life Manager repo に揃える。secret、browser session、runtime state、append-only ledger、evidence は外部の不可侵領域に残し、worktree/feature branch/untracked `~/.local` source を runtime にしない。
+2. source、schema、test、launchd template、spec、plan を canonical Mr.bot repo に揃える。secret、browser session、runtime state、append-only ledger、evidence は外部の不可侵領域に残し、worktree/feature branch/untracked `~/.local` source を runtime にしない。
 3. tests と、ユーザーの明示 override がない限り slice につき最大一回の fresh adversarial review を通し、同じ実装者が必要な FIX_FIRST を行った後、primary が mechanical verification を実施する。Critical / Important は閉じるまで block、Minor は記録する。
 4. canonical main に merge/push し、exact main commit SHA から release artifact を install、manifest と deployed SHA を記録する。これらが完了する前に application service を enable しない。
 5. service を enable した後の最初の E2E は read-only reconcile とし、project `5585496`（¥250,000）と `5586112`（¥10,000）の両方が `proposal_id=null` の readback-only quarantine に留まり、blind resend されず、どちらも他 entity の progress を block しないことを確認する。
@@ -1704,7 +1704,7 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | Storefront canonical | 公式inventoryは`published=1 / paused=0 / hidden=5 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式archived readback。public profile料金表もcanonical一件だけ | ¥98,000 / ¥198,000 / ¥398,000、画像、portfolio `743964`、spot/3か月/6か月routeは公開page一致。連続wake `status_effect_count=0` |
 | Storefront demand | canonical `1338228`は2連続production wakeで`action=unchanged / aligned=true / status_effect_count=0`。公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0` | owner exit 0、duplicate mutation 0、各wake後owned tab 0。7日需要実験を欠測なしで再開 |
 | Reporting | Reporter ownerはApplication wakeごとのevent keyを使い、latest production proofはenqueue 1 / delivered 1 / delivery uncertain 0 / provider message ID `46424` | 同じwakeだけdedupeし、次wakeは同じskip理由でも一度報告する |
-| Paid | ledger eventは`application_verified` 41件だけ。fresh financeはpayment history 0、残高0円、received gross 0円。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | Life ManagerはLancersでまだ収益を得ていない。Paid owner未完成がmoney loopの後段欠落 |
+| Paid | ledger eventは`application_verified` 41件だけ。fresh financeはpayment history 0、残高0円、received gross 0円。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | Mr.botはLancersでまだ収益を得ていない。Paid owner未完成がmoney loopの後段欠落 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
 
@@ -1888,7 +1888,7 @@ proposal額、listing価格、未受領offerはどの値にも入れない。sou
 ### 18.6 残TODO — この順序だけを使う
 
 provider-neutral architectureと未知市場contractの正本は
-`docs/superpowers/specs/2026-08-22-life-manager-gig-economy-loop-design.md` §4.8–§4.10である。
+`docs/superpowers/specs/2026-08-22-mr-bot-gig-economy-loop-design.md` §4.8–§4.10である。
 本表はLancersのcurrent production receipt順だけを所有し、共通architectureを複製しない。
 
 | 順序 | 一件の作業 | 完了証拠 | 実装目安 |
@@ -1951,7 +1951,7 @@ production ownerはこの一変数effectを完了した。immutable release `1f4
 - Lancers利用規約: https://www.lancers.jp/help/terms — 第8条は自動提案機能を利用した提案を想定し、第31条は人為的な高負荷accessと大量message送信を禁止する。
 - canonical Storefront公開page: https://www.lancers.jp/menu/detail/1338228
 - split-brain側の旧公開page: https://www.lancers.jp/menu/detail/1338233
-- GitHub code searchではLancers `serviceItemContract`の外部OSS実装は見つからず、現行Life Manager sourceだけである。provider selector/routeは公式frontend実測を正本にする。
+- GitHub code searchではLancers `serviceItemContract`の外部OSS実装は見つからず、現行Mr.bot sourceだけである。provider selector/routeは公式frontend実測を正本にする。
 - Coconala four-lane current SSOT: `/Users/operator/profitable-claude/docs/loop-engineering/26-gig-loop-asis-tobe-plan.md` §T
 - Coconala Apply: `application_direct.py`のlane-local owner、instant receipt report、exact outbox dispatchをcopyする。
 - Coconala Negotiate: `reply_detector.py`、`requested_estimate.py`、`telegram_report.py`のsingle semantic judgement、有限queue、official readback、自然言語every-wake reportをcopyする。
@@ -2102,7 +2102,7 @@ fingerprintは31→41、pendingは0、ApplicationReceiptは25であり、planner
 公式応募formのread-only実測で、従来fieldに加えて`data[ProposalAiDeclaration][ai_declaration]`がrequiredになり、
 value 0=`生成AIを使用していない / 使用しない`、value 1=`生成AIを使用している / 使用するが、著作権の侵害がなく、修正の
 要望も対応できる`の二択が未選択であることを確認した。route、canonical、proposal textarea、amount、due date、form actionは
-既存contractと一致する。Life Managerは生成AIを使うため、次の最小sliceは既存submitterで公式value 1のexact labelだけを選択し、
+既存contractと一致する。Mr.botは生成AIを使うため、次の最小sliceは既存submitterで公式value 1のexact labelだけを選択し、
 checkedをpresend検証する。変更は`application_tick.py` 1 file、6–12行で、新field/schema/state/serviceを作らない。
 
 このsliceは完了した。release `829824532eae871bc86835bbd087f60b40fc6ae0`は公式value 1のexact required controlと
@@ -2508,7 +2508,7 @@ URL・title・説明・licenseだけを追加する。modelは固定whitelistで
 
 **PRODUCTION EVIDENCE:** exact release `3fd41da5dbf287ece790da21b7a2f683b84d8c92`のApplication ownerは、固定queryでは未観測だった
 AI/API PoC `5586377`を`Python` queryから適合一件として選んだ。一回送信後はdurable pendingで停止し、次wakeはsubmit 0のreadback-onlyで
-公式proposal `27813129`へ確定した。pending 1→0、ApplicationReceipt 30→31、blind resend 0である。提案は公開Life Manager sourceを
+公式proposal `27813129`へ確定した。pending 1→0、ApplicationReceipt 30→31、blind resend 0である。提案は公開Mr.bot sourceを
 顧客実績ではなく制作例として正直に示し、補助金情報収集→構造化→match→将来API化のscopeにgroundする。
 
 **FIRST REAL BLOCKER:** provider構造化予算は10–20万円だが、本文はPoC予算10–15万円程度と具体化する。plannerは広いstructured maxを
@@ -2739,7 +2739,7 @@ Python/API/system automation応募に使う公開software proof `https://github.
 
 **NEXT DIRECT ACTION:** 既存canonical productへseller profileのpublic subtitle/descriptionだけを追加し、既存Storefront ownerがlisting/portfolio mutation 0の
 wakeで一回だけ保存する。内容はSNS制作に加え、Python、API、scheduler、worker、Postgres、object storage、Telegram reporting、公式readbackを持つ
-MIT公開Life Managerを実装証拠として明示する。保存前にpublic profileを読み、保存後はbuyer-visible public profileの完全一致で閉じる。
+MIT公開Mr.botを実装証拠として明示する。保存前にpublic profileを読み、保存後はbuyer-visible public profileの完全一致で閉じる。
 
 **PLAN SIZE:** production data 1 file、production code 1 file / 約30行、SSOT 1 section。新lane、scheduler、DB、state、receipt type、model callは0。
 
@@ -2763,7 +2763,7 @@ installed exact functionの行traceで、保存POST後のredirect完了前にrec
 確定した。public/formは旧値のままである。force clickは維持するが`no_wait_after`を外し、official POST navigation完了後だけpublic readbackへ進む。
 
 official POST responseをその場で読むとstatus 200、fieldは送信値を保持するが、server validationは「自己紹介にURLを入力することはできません」と返した。
-URL文字列だけを削除し、MIT公開Life Managerと検索可能なGitHub repository名`Daisuke134/life-manager`をverified proofとして残す。
+URL文字列だけを削除し、MIT公開Mr.botと検索可能なGitHub repository名`Daisuke134/life-manager`をverified proofとして残す。
 
 **DONE:** exact release `371358668d8f42fc06f55fa34bd4a30f818a1e71`のStorefront ownerが一度だけprofileを保存し、
 `profile_updated / profile_aligned true / profile_effect_count 1 / exit 0`で閉じた。cookie-free public profileはsubtitle
@@ -2832,13 +2832,13 @@ https://www.lancers.jp/lp/beginner/l/03
 
 **USER OUTCOME:** AI/API案件のbuyerが、profileを開いた時に応募文だけでなく公開制作物で実装能力を確認できる。
 
-**CURRENT OBSERVATION:** public profile本文はLife ManagerのPython、API、scheduler、worker、Postgres、object storage、Telegram reporting、
+**CURRENT OBSERVATION:** public profile本文はMr.botのPython、API、scheduler、worker、Postgres、object storage、Telegram reporting、
 official readbackを記載するが、portfolioはSNS制作例1件だけである。公式AI/API proposalは競合133件、account実績0件であり、公開proofの差が大きい。
 
 **FIRST SOURCE:** Lancers公式portfolio formは「制作物をビジュアルに見せることで、クライアントがあなたを選びやすくなる」と説明し、
 AI・システム開発・運用 / AI自動化・エージェント開発を公式categoryとして提供する。公式beginner guideもprofile充実と案件固有proofを受注actionに置く。
 
-**NEXT DIRECT ACTION:** 既存Storefront owner、既存portfolio form、既存の安全なworkflow assetを再利用し、MIT公開Life Managerの
+**NEXT DIRECT ACTION:** 既存Storefront owner、既存portfolio form、既存の安全なworkflow assetを再利用し、MIT公開Mr.botの
 software portfolioを1件だけ作る。新listing、画像生成、DB、schedulerは作らない。顧客実績、売上効果、未実装機能は記載しない。
 初回作成後にofficial portfolio IDをproduct SSOTへ固定し、次wakeはmutation 0にする。
 
@@ -2849,7 +2849,7 @@ software portfolioを1件だけ作る。新listing、画像生成、DB、schedul
 
 **FIRST EFFECT:** exact release `7f6b9c60c39468ed31ebe7c01eb0802d4135849b`のStorefront ownerが一度だけcreateし、official
 software portfolio ID `743987`を返した。cookie-free public profileはAI/API portfolioをSNS portfolioより先に表示し、exact title、
-Life Managerの実装説明、制作期間1ヶ月、参考価格180,000円、生成AI利用を表示する。listing `1338228`とSNS portfolio `743964`は不変、
+Mr.botの実装説明、制作期間1ヶ月、参考価格180,000円、生成AI利用を表示する。listing `1338228`とSNS portfolio `743964`は不変、
 Application、contracts、ledger SHA-256も前後一致した。product SSOTへ`743987`を固定し、next wakeでduplicate create 0を確認する。
 
 **DONE:** exact IDを固定したrelease `1e3f45720309d48aa2150a77375a080db5bdcc61`のsecond Storefront wakeは
@@ -2887,7 +2887,7 @@ buyer selection/reply/fundingであり、Work Syncを5分ごとに継続する�
 
 ### 18.46 Operational profile completion
 
-**USER OUTCOME:** 電話確認を収益blockerにせず、応募前に必要な公開profileを再現可能なLife Manager ownerで完成させる。
+**USER OUTCOME:** 電話確認を収益blockerにせず、応募前に必要な公開profileを再現可能なMr.bot ownerで完成させる。
 
 **CURRENT TRUTH:** Lancers公式mypageは本人確認、NDA、subtitle、自己紹介、職種、稼働状況、基本単価を完了済みとして扱い、
 未完了checkはprofile photoと電話確認だけ、completion 80%を返した。本人確認はownerが完了済みと確認した。電話確認は不要という

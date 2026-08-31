@@ -4,9 +4,9 @@
 const path = require("node:path");
 
 const { createMinimalProductionOperations } = require(
-  "../../apps/life-manager/lib/connector-minimal-operations.js",
+  "../../apps/mr-bot/lib/connector-minimal-operations.js",
 );
-const { sendMessage: sendTelegramMessage } = require("../../apps/life-manager/lib/telegram.js");
+const { sendMessage: sendTelegramMessage } = require("../../apps/mr-bot/lib/telegram.js");
 const { loadConnectorEnv } = require("./lib/load-connector-env.js");
 const { createNativeReportConfig } = require("./native-pass.js");
 

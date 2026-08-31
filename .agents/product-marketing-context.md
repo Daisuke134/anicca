@@ -1,13 +1,13 @@
-# Life Manager Product Marketing Context
+# Mr.bot Product Marketing Context
 
 This document is the semantic source of truth for product and fundraising copy. Exact URLs, dates,
 metrics, and evidence live in `startup-context.json` and must not be copied here as independent facts.
 
 ## Product Overview
 
-Life Manager is a personal manager for a person's body, mind, and money. It is built to turn goals into
+Mr.bot is a personal manager for a person's body, mind, and money. It is built to turn goals into
 completed real-world actions, then explain the outcome in plain language with evidence in Telegram.
-The local self-hosted runtime and the cloud product are two delivery modes for the same Life Manager core.
+The local self-hosted runtime and the cloud product are two delivery modes for the same Mr.bot core.
 
 ## Target Audience
 
@@ -33,7 +33,7 @@ coordinates specialist agents; deterministic code handles money arithmetic, stat
 
 ## Differentiation
 
-Life Manager is positioned as a manager, not a chat assistant. It does not stop at suggestions: where the
+Mr.bot is positioned as a manager, not a chat assistant. It does not stop at suggestions: where the
 user has delegated authority, it performs the action, verifies the result, records the evidence, and reports
 it in language a non-technical person can understand. Where action is unsafe or unauthorized, it fails closed
 and creates a concrete recovery task instead of inventing success.
@@ -42,7 +42,7 @@ and creates a concrete recovery task instead of inventing success.
 
 Alternatives include personal-finance dashboards, budgeting apps, calendar assistants, health trackers,
 human executive assistants, robo-advisors, and isolated autonomous-agent demos. Each solves one surface.
-Life Manager's approach is to connect those surfaces through one action ledger and one manager experience,
+Mr.bot's approach is to connect those surfaces through one action ledger and one manager experience,
 while reusing proven rails and open-source components instead of rebuilding every integration.
 
 ## Objections
@@ -54,7 +54,7 @@ while reusing proven rails and open-source components instead of rebuilding ever
 - **Will it guarantee wealth or investment returns?** No. It can measure spending, surface opportunities,
   enforce risk limits, and execute an approved strategy, but it cannot guarantee returns.
 - **Is this several unrelated products?** No. Connector, Job Hunter, CFO, and investment loops are specialist
-  capabilities inside one Life Manager product and one ordered execution plan.
+  capabilities inside one Mr.bot product and one ordered execution plan.
 
 ## Customer Language
 
@@ -73,10 +73,10 @@ what happened, where, when, what evidence exists, and what comes next, with tapp
 The repository and Telegram entry point are public. Local and cloud components exist, and several specialist
 loops have implementation evidence in the repository. User count, revenue, retention, complete personal-bank
 coverage, production investing performance, a public demo, and the founder video must be treated as unknown
-until the current evidence source verifies each claim. Old Anicca product traction is not Life Manager traction.
+until the current evidence source verifies each claim. Old Anicca product traction is not Mr.bot traction.
 
 ## Fundraising Goals
 
 Use accelerators and aligned investors to improve distribution, integrations, security, and the peer network
-around Life Manager. Applications must describe the current product truthfully, adapt to each program's actual
+around Mr.bot. Applications must describe the current product truthfully, adapt to each program's actual
 thesis, and track submission, confirmation, reply, meeting, and outcome as one evidence-backed funnel.

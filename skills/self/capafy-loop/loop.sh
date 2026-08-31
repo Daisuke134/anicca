@@ -8,18 +8,18 @@
 # Seams: CAPAFY_TEST=1 + CAPAFY_FIXTURE=<dir>, CAPAFY_LOGFILE, CAPAFY_DIR, CAPAFY_REQ.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
-DIR="${CAPAFY_DIR:-$LIFE_MANAGER_STATE_HOME/state/capafy-loop}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
-set -a; . $HOME/.local/state/life-manager/.env 2>/dev/null; set +a
-REQ="${CAPAFY_REQ:-$HOME/.local/state/life-manager/state/capafy-loop-selfheal-request.json}"
+MR_BOT_REPO="${MR_BOT_REPO:-$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$MR_BOT_REPO" ] || { echo "MR_BOT_REPO could not be resolved" >&2; exit 2; }
+export MR_BOT_REPO
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
+DIR="${CAPAFY_DIR:-$MR_BOT_STATE_HOME/state/capafy-loop}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
+set -a; . $HOME/.local/state/mr-bot/.env 2>/dev/null; set +a
+REQ="${CAPAFY_REQ:-$HOME/.local/state/mr-bot/state/capafy-loop-selfheal-request.json}"
 # daily_loop.sh stores its durable runtime state outside the source checkout.  Keep
 # the legacy checkout-local log as a migration fallback only; preferring it made a
 # healthy real publisher look as though it had never run after the state-home move.
-STATE_HOME_LP="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/daily_loop.log"
-LEGACY_LP="${LIFE_MANAGER_REPO:-$HERE}/skills/capafy-autopublish/state/daily_loop.log"
+STATE_HOME_LP="$MR_BOT_STATE_HOME/state/capafy-autopublish/daily_loop.log"
+LEGACY_LP="${MR_BOT_REPO:-$HERE}/skills/capafy-autopublish/state/daily_loop.log"
 if [ -n "${CAPAFY_LOGFILE:-}" ]; then
   LP="$CAPAFY_LOGFILE"
 elif [ -f "$STATE_HOME_LP" ] || [ ! -f "$LEGACY_LP" ]; then
@@ -33,7 +33,7 @@ fetch(){ local name="$1" url="$2"; shift 2
 HEAL=""; add_heal(){ HEAL="$HEAL$1; "; }
 CAP_TOK="${CAPAFY_ACCESS_TOKEN:-}"
 if [ -z "$CAP_TOK" ]; then
-  CAP_TOK="$(python3 -c "import json;print(json.load(open('$LIFE_MANAGER_REPO/skills/capafy-autopublish/vendor/capafy-publisher/config.json'))['access_token'])" 2>/dev/null || echo)"
+  CAP_TOK="$(python3 -c "import json;print(json.load(open('$MR_BOT_REPO/skills/capafy-autopublish/vendor/capafy-publisher/config.json'))['access_token'])" 2>/dev/null || echo)"
 fi
 
 # auth
@@ -71,7 +71,7 @@ except Exception: print('NA')" 2>/dev/null||echo NA)"
 # A4 sales reconcile: mirror server sales/trend + payout-info into the DEDICATED capafy ledger
 # (bank revenue, NOT on-chain — kept out of the on-chain realized reader) and surface the PENDING
 # seller balance the old report missed (it only read monthly PAID payout = $0, hiding a real sale).
-REC_LEDGER="$LIFE_MANAGER_STATE_HOME/state/capafy-earn-ledger.jsonl"
+REC_LEDGER="$MR_BOT_STATE_HOME/state/capafy-earn-ledger.jsonl"
 if [ "${CAPAFY_TEST:-}" = "1" ]; then
   REC_JSON="$(python3 "$HERE/capafy_earn_reconcile.py" --ledger "$REC_LEDGER" --sales-json "${CAPAFY_FIXTURE:-/nonexistent}/cap_trend.json" --payout-json "${CAPAFY_FIXTURE:-/nonexistent}/cap_payout.json" 2>/dev/null || echo '{}')"
 else

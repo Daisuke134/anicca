@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Ship Life Manager as a deployed WebMCP-enabled general entrepreneur agent that discovers opportunities anywhere, proves one fenced Lancers application with official readback, exposes minimal-human collaboration, and reaches a verified Devpost submission before September 4, 2026 05:00 JST.
+**Goal:** Ship Mr.bot as a deployed WebMCP-enabled general entrepreneur agent that discovers opportunities anywhere, proves one fenced Lancers application with official readback, exposes minimal-human collaboration, and reaches a verified Devpost submission before September 4, 2026 05:00 JST.
 
 **Architecture:** Start from current `origin/main`. Reuse `general-agent-work-adapter`, `marketplace-application-job/effect/adapter`, runtime/browser job stores, loop adapter registry, Panel auth/API/UI, Lancers application code, Mercor receipt contracts, ask/reply patterns, and money ledgers. Add one Money Printer projection, one durable human-task contract, and one Panel/WebMCP surface. The model judges opportunities and tool use; deterministic code owns identity, arithmetic, authorization, idempotency, effects, receipts, and tenant isolation.
 
@@ -55,11 +55,11 @@
 
 ```bash
 node --test \
-  apps/life-manager/lib/general-agent-work-adapter.test.js \
-  apps/life-manager/lib/hosted-goal-ingress.test.js \
-  apps/life-manager/lib/marketplace-application-adapter.test.js \
-  apps/life-manager/lib/marketplace-application-effect.test.js \
-  apps/life-manager/lib/loop-adapter-registry.test.js
+  apps/mr-bot/lib/general-agent-work-adapter.test.js \
+  apps/mr-bot/lib/hosted-goal-ingress.test.js \
+  apps/mr-bot/lib/marketplace-application-adapter.test.js \
+  apps/mr-bot/lib/marketplace-application-effect.test.js \
+  apps/mr-bot/lib/loop-adapter-registry.test.js
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q \
   apps/lancers-revenue/tests/test_lancers_adapter.py \
   apps/lancers-revenue/tests/test_lancers_status.py
@@ -123,8 +123,8 @@ If root cause is release/argv drift, change no provider code; cut/apply current 
 ### Task 2: Add the Provider-Neutral Money Printer Projection
 
 **Files:**
-- Create: `apps/life-manager/lib/money-printer-projection.js`
-- Create: `apps/life-manager/lib/money-printer-projection.test.js`
+- Create: `apps/mr-bot/lib/money-printer-projection.js`
+- Create: `apps/mr-bot/lib/money-printer-projection.test.js`
 
 **Interfaces:**
 
@@ -154,7 +154,7 @@ test("projection rejects cross-tenant and unverified money", () => {
 });
 ```
 
-- [x] Run `node --test apps/life-manager/lib/money-printer-projection.test.js`; observed module-not-found RED.
+- [x] Run `node --test apps/mr-bot/lib/money-printer-projection.test.js`; observed module-not-found RED.
 - [x] Implement only a pure immutable exact-key adapter over existing runtime and earnings ledgers. Reuse their arithmetic and receipt validation; do not create a second ledger. Use reference-only IDs, integer money strings, HTTPS receipt links, and no provider-name branches.
 
 ```js
@@ -178,18 +178,18 @@ function projectMoneyPrinter(input = {}) {
 ```
 
 `buildMoneyPrinterView` is private to this file and maps canonical statuses only; it never reads provider names.
-- [x] Run the focused test 2/2, commit `ec321cd1b` as `feat(life-manager): project money work`, and push.
+- [x] Run the focused test 2/2, commit `ec321cd1b` as `feat(mr-bot): project money work`, and push.
 
 ---
 
 ### Task 3: Expose the Money Printer Through the Existing Panel
 
 **Files:**
-- Modify: `apps/life-manager/lib/panel-api.js`
-- Modify: `apps/life-manager/lib/panel-api.test.js`
-- Modify: `apps/life-manager/lib/panel-ui.js`
-- Modify: `apps/life-manager/lib/panel-ui.test.js`
-- Modify: `apps/life-manager/server.js`
+- Modify: `apps/mr-bot/lib/panel-api.js`
+- Modify: `apps/mr-bot/lib/panel-api.test.js`
+- Modify: `apps/mr-bot/lib/panel-ui.js`
+- Modify: `apps/mr-bot/lib/panel-ui.test.js`
+- Modify: `apps/mr-bot/server.js`
 
 **Interfaces:**
 - Consumes: `projectMoneyPrinter()` and injected tenant-bound `moneyPrinterSource(scope)`.
@@ -222,7 +222,7 @@ async function moneyPrinter(scope, opts = {}) {
 ```
 
 Route `GET /api/panel/money-printer` through the same `sessionScope` and `sendPanelSection` boundary used by the existing sections.
-- [x] Run projection and changed Panel tests 58/58; commit `7b82045eb` as `feat(life-manager): show Money Printer`; push.
+- [x] Run projection and changed Panel tests 58/58; commit `7b82045eb` as `feat(mr-bot): show Money Printer`; push.
 
 Measured ruling: do not wire `server.js` to an empty fixture-like source. Task 5/7 must inject the real durable human-task/opportunity/runtime/receipt source before live deployment.
 
@@ -231,17 +231,17 @@ Measured ruling: do not wire `server.js` to an empty fixture-like source. Task 5
 ### Task 4: Register Focused WebMCP Site Tools
 
 **Files:**
-- Create: `apps/life-manager/lib/money-printer-webmcp.js`
-- Create: `apps/life-manager/lib/money-printer-webmcp.test.js`
-- Modify: `apps/life-manager/lib/panel-ui.js`
-- Modify: `apps/life-manager/lib/panel-ui.test.js`
+- Create: `apps/mr-bot/lib/money-printer-webmcp.js`
+- Create: `apps/mr-bot/lib/money-printer-webmcp.test.js`
+- Modify: `apps/mr-bot/lib/panel-ui.js`
+- Modify: `apps/mr-bot/lib/panel-ui.test.js`
 
 **Interfaces:**
 - Produces `renderMoneyPrinterWebMcpScript({ csrf }) -> string`.
 - Registers only `inspect_money_printer` in this task. Task 5 adds the two human-task tools; Task 7 adds opportunity/workroom/receipt tools after their server actions exist.
 
 - [x] Add one focused test proving top-level imperative registration, exact `inspect_money_printer`, empty narrow schema, `readOnlyHint: true`, same-origin GET, and no credential-shaped strings.
-- [x] Run `node --test apps/life-manager/lib/money-printer-webmcp.test.js`; observed module-not-found RED.
+- [x] Run `node --test apps/mr-bot/lib/money-printer-webmcp.test.js`; observed module-not-found RED.
 - [x] Implement generated browser script using `document.modelContext.registerTool()`, the same-origin Panel API, and structured results.
 
 ```js
@@ -270,11 +270,11 @@ async function registerMoneyPrinterTools(modelContext, request) {
 ### Task 5: Make Needs You Durable and Resume the Same Work
 
 **Files:**
-- Create: `apps/life-manager/migrations/2026-08-29-lm-money-printer-human-tasks.sql`
-- Create: `apps/life-manager/lib/money-printer-human-task.js`
-- Create: `apps/life-manager/lib/money-printer-human-task.test.js`
-- Modify: `apps/life-manager/lib/panel-api.js`
-- Modify: `apps/life-manager/lib/panel-api.test.js`
+- Create: `apps/mr-bot/migrations/2026-08-29-lm-money-printer-human-tasks.sql`
+- Create: `apps/mr-bot/lib/money-printer-human-task.js`
+- Create: `apps/mr-bot/lib/money-printer-human-task.test.js`
+- Modify: `apps/mr-bot/lib/panel-api.js`
+- Modify: `apps/mr-bot/lib/panel-api.test.js`
 
 **Interfaces:**
 - `buildHumanTask({ tenantId, jobId, reasonCode, question, requiredFormat, resumeRef, contextRefs, humanBoundaryRef })` returns a stable SHA-256 task ID. `humanBoundaryRef` is the reference-only output of the model/policy judgment; deterministic code never classifies human-only work with keywords.
@@ -336,8 +336,8 @@ async function answerHumanTask(input, store) {
 - Reuse: `skills/earn/lancers/scripts/status.py`
 - Reuse: `skills/earn/lancers/scripts/application_loop.py`
 - Reuse: `skills/earn/lancers/scripts/application_tick.py`
-- Reuse: `apps/life-manager/lib/marketplace-application-job.js`
-- Reuse: `apps/life-manager/lib/marketplace-application-effect.js`
+- Reuse: `apps/mr-bot/lib/marketplace-application-job.js`
+- Reuse: `apps/mr-bot/lib/marketplace-application-effect.js`
 - Update: `docs/superpowers/specs/2026-08-28-webmcp-challenge-winning-contract.md`
 
 **Interfaces:**
@@ -370,12 +370,12 @@ same-intent replay external effects=0
 ### Task 7: Prove Mercor and Unknown-Market Generality Without New Brains
 
 **Files:**
-- Create: `apps/life-manager/migrations/2026-08-29-lm-money-printer-opportunities.sql`
-- Create: `apps/life-manager/lib/money-printer-opportunity.js`
-- Create: `apps/life-manager/lib/money-printer-opportunity.test.js`
-- Create: `apps/life-manager/lib/money-printer-source.js`
-- Create: `apps/life-manager/lib/money-printer-source.test.js`
-- Modify only measured integration points: `apps/life-manager/lib/hosted-goal-ingress.js`, `apps/life-manager/lib/general-agent-work-adapter.js`, `apps/life-manager/scripts/runtime-up.js`, Panel API/WebMCP files
+- Create: `apps/mr-bot/migrations/2026-08-29-lm-money-printer-opportunities.sql`
+- Create: `apps/mr-bot/lib/money-printer-opportunity.js`
+- Create: `apps/mr-bot/lib/money-printer-opportunity.test.js`
+- Create: `apps/mr-bot/lib/money-printer-source.js`
+- Create: `apps/mr-bot/lib/money-printer-source.test.js`
+- Modify only measured integration points: `apps/mr-bot/lib/hosted-goal-ingress.js`, `apps/mr-bot/lib/general-agent-work-adapter.js`, `apps/mr-bot/scripts/runtime-up.js`, Panel API/WebMCP files
 - Reuse: `skills/_shared/marketplace-core/tests/fixtures/mercor-full-chain.json`
 
 **Interfaces:**

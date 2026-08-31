@@ -54,7 +54,7 @@ Only the existing TaskMarket label was kicked. It returned:
 
 `runs=9 / tasks_seen=5 / pending=5 / recorded=0 / exit=0 / stderr empty`
 
-No pre-existing Life Manager loop was stopped.
+No pre-existing Mr.bot loop was stopped.
 
 ## Sources
 

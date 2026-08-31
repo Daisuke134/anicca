@@ -152,7 +152,7 @@ CONTENT (並行、 手動、 Dais=editor)
 - ★ sutando `skills/proactive-loop/SKILL.md` を copy ★ (= 公開text、 番号付きloop完成品) + automaton guard (max-tools10/err5/loop3)。 ★ 自分で書く=original=罪、 やらない ★。 Felix の HEARTBEAT は $99内で 見えない→copyしない。
 
 ### 2-loop 決定 (= 1 runtime, 2 loop)
-- LOOP1 LIFE (速い、 毎1-5分、 time/位置trigger): 既存 anicca-products life-manager (lateness_check+realtime_guide) + sutando voice(Charon 1行tweak)。 行動時刻に電話。
+- LOOP1 LIFE (速い、 毎1-5分、 time/位置trigger): 既存 anicca-products mr-bot (lateness_check+realtime_guide) + sutando voice(Charon 1行tweak)。 行動時刻に電話。
 - LOOP2 EARN+SELF (遅い、 毎30m-1h、 戦略): sutando proactive-loop + automaton guard。 think→act→observe → earn/self-heal。
 - 両方 同じ Hermes(genesis) 上。 cost-governor 跨ぐ。
 
@@ -171,8 +171,8 @@ CONTENT (並行、 手動、 Dais=editor)
 - UB1. ★ Hermes は SOUL.md/CONSTITUTION.md/HEARTBEAT.md/MEMORY.md を 毎turn auto-inject するか? ★ (= Felix/OpenClaw の bootstrap機能)。 もし NO なら Felix pattern が 載らない → harness 再考 (OpenClaw?) が必要。 → Hermes docs/code 確認必須。
 - UB2. ★ Hermes の heartbeat は「LLM agent turn (think→act→observe)」を 回せるか? ★ 現 genesis heartbeat.sh = JSONL書くだけ、 LLM 呼ばない。 = 今のは「死んだ心拍」。 Hermes に「agent を 定期起動する」 mode があるか? なければ どう実装?
 - UB3. ★ subscription での「spend」とは何か? ★ Grok OAuth = 定額。 per-token cost = $0 (marginal)。 → automaton の「earn>spend / survival tier / 破産」 metric が 成立しない。 「spend」を 何と定義? (サブスク月額 amortize? rate-limit 残量? compute時間?) → 北極星 metric の 再定義 必須。
-- UB4. ★ canonical build repo は どこ? ★ ~/anicca(mother hub) / anicca-genesis(body) / anicca-products(life-manager spec が ここ)。 earn は genesis、 life は anicca-products。 統合先 1つに 決める。
-- UB5. ★ life-manager (anicca-products, Daytona, sutando-voice) と genesis (Hermes, earn) は 同じ agent か 別か? ★ 2 loop を 1 runtime と言ったが、 実体は 2 repo/2 stack。 どう 1 つにする?
+- UB4. ★ canonical build repo は どこ? ★ ~/anicca(mother hub) / anicca-genesis(body) / anicca-products(mr-bot spec が ここ)。 earn は genesis、 life は anicca-products。 統合先 1つに 決める。
+- UB5. ★ mr-bot (anicca-products, Daytona, sutando-voice) と genesis (Hermes, earn) は 同じ agent か 別か? ★ 2 loop を 1 runtime と言ったが、 実体は 2 repo/2 stack。 どう 1 つにする?
 - UB6. ★ 3-tier memory + Ralph loop の OSS copy元は? ★ Felix の実装は $99内(見えない)。 description だけ から作る= original=罪。 → OSS の copy元 (mem0 / letta / ralph技法 原典) を 特定 必須。 無ければ どうする?
 
 ### P0 runtime
@@ -210,8 +210,8 @@ CONTENT (並行、 手動、 Dais=editor)
 - U30. Sentry self-heal = 実 Sentry account/DSN 要るか? それとも log監視で代替?
 - U31. Ralph loop copy元 (U6)。 Hermes で coding agent を どう回す?
 
-### P5 life-manager
-- U32. life-manager の glob bug (lateness_check.py:265) は どの repo/branch? fix 済? (spec PHASE 0 in progress)
+### P5 mr-bot
+- U32. mr-bot の glob bug (lateness_check.py:265) は どの repo/branch? fix 済? (spec PHASE 0 in progress)
 - U33. voice stack: Twilio account + Gemini Live key は 存在? bodhi-realtime-agent の deps 揃ってる?
 - U34. 位置情報: iOS Shortcut / Telegram Live Location → どう受信・保存 (location_state dir)?
 - U35. 電話の発火 trigger = calendar event time? どう route 計算 (Google Maps API key?)
@@ -294,8 +294,8 @@ CONTENT (並行、 手動、 Dais=editor)
 - U92. ledger 保存形式/場所?
 - U93. 北極星 = earn>spend を どの horizon で 判定?
 
-### G. LIFE-MANAGER
-- U94. 既存 life-manager code (anicca-products branch) の 完成度?
+### G. MR.BOT
+- U94. 既存 mr-bot code (anicca-products branch) の 完成度?
 - U95. glob bug fix 済?
 - U96. Twilio account/番号/credits?
 - U97. Gemini Live key/quota?
@@ -350,7 +350,7 @@ CONTENT (並行、 手動、 Dais=editor)
 - U138. agent 投稿上限 (X spam → ban 防止)?
 - U139. X account 自動投稿 ban risk?
 - U140. 自律earn の tax/legal compliance (JP)?
-- U141. life-manager 失敗時 liability (電話漏れ→薬飲み忘れ)?
+- U141. mr-bot 失敗時 liability (電話漏れ→薬飲み忘れ)?
 - U142. user data privacy (位置/calendar/mail)?
 - U143. API ToS (X/Stripe/Lancers が AI自動化 許可?)
 - U144. 「no human in loop」vs「user承認」の 矛盾 整理?

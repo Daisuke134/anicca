@@ -19,7 +19,7 @@
 
 ## Global Constraints
 
-- 変更は`apps/life-manager/lib/connector-production-browser-harness.js`とmatching testの2 filesだけ。production約20〜45 LOC、test約40〜80 LOC。
+- 変更は`apps/mr-bot/lib/connector-production-browser-harness.js`とmatching testの2 filesだけ。production約20〜45 LOC、test約40〜80 LOC。
 - selector追加はexact `a[href="#new_registration_modal"]`だけ。一般`a`や広いhref selectorを追加しない。
 - Doorkeeper page identityはexact provider、lowercase non-www group、positive event ID、context event ID完全一致。
 - modal closed時のhidden email/submitはcontrol 0。Doorkeeperでは全controlにancestor/style/box visibilityを要求する。
@@ -34,8 +34,8 @@
 ### Task 1: Normalize the measured Doorkeeper modal DOM
 
 **Files:**
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
 
 - [x] **Step 1: Write RED inspector tests**
 
@@ -51,7 +51,7 @@
 - [x] **Step 2: Run RED**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-production-browser-harness.test.js
   ```
 
@@ -62,7 +62,7 @@
 - [x] **Step 4: Run GREEN and adjacent checks**
 
   ```bash
-  cd apps/life-manager
+  cd apps/mr-bot
   node --test lib/connector-production-browser-harness.test.js
   node --test lib/connector-browser-harness-adapter.test.js lib/connector-doorkeeper-workflow.test.js lib/connector-minimal-production.test.js
   node --check lib/connector-production-browser-harness.js

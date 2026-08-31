@@ -2,9 +2,9 @@
 set -uo pipefail
 umask 077
 
-ROOT="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+ROOT="${MR_BOT_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
 [ -n "$ROOT" ] || exit 2
-STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
 STATE="$STATE_HOME/state/capafy-headless-bridge"
 LOG="$STATE/bridge.log"
 LOCK="$STATE/lock"

@@ -16,9 +16,9 @@ This tool only selects + resolves the URL + does bookkeeping.
 import argparse, json, os, subprocess, sys, time
 from pathlib import Path
 
-REPO_ROOT = Path(os.environ.get("LIFE_MANAGER_REPO", Path(__file__).resolve().parents[4]))
+REPO_ROOT = Path(os.environ.get("MR_BOT_REPO", Path(__file__).resolve().parents[4]))
 CAPAFY_HTTP = str(REPO_ROOT / "skills/capafy-autopublish/vendor/capafy-user/scripts/capafy_http.py")
-ROTATION = os.path.expanduser("~/.local/state/life-manager/state/capafy-marketing-rotation.jsonl")
+ROTATION = os.path.expanduser("~/.local/state/mr-bot/state/capafy-marketing-rotation.jsonl")
 EVIDENCE_ROOT = REPO_ROOT / "skills/capafy/marketing-evidence"
 LISTING_URL_FMT = "https://capafy.ai/agent/{agent_id}"
 

@@ -2,7 +2,7 @@
 
 ## Outcome
 
-Life Manager now observes delivered uGig applications every five minutes and
+Mr.bot now observes delivered uGig applications every five minutes and
 can issue an exact capped invoice without a human after the category-specific
 external gates become true:
 
@@ -28,7 +28,7 @@ zero invoice reads, zero pull-request reads, and zero mutations.
 | delivery | <https://github.com/profullstack/aiornot.vote/pull/100> |
 | delivery commit | `a0424042815523f438f85c333938af691a9741f8` |
 | observer PR | <https://github.com/Daisuke134/life-manager/pull/1217> |
-| merged Life Manager commit | `f4b52f75d92c91ccffb92316953a6c0b48b7f129` |
+| merged Mr.bot commit | `f4b52f75d92c91ccffb92316953a6c0b48b7f129` |
 | settlement PR | <https://github.com/Daisuke134/life-manager/pull/1221> |
 | settlement merge | `a9edfe883e9a367f5e595087f393f3f4c44047aa` |
 
@@ -43,7 +43,7 @@ The same authenticated readback also confirms the second live uGig acquisition
 attempt: Crawlproof testimonial gig
 `4cdf4cde-f845-4db4-9618-4994da483ab2`, application
 `963943b0-829d-4f6c-a28e-c898e222c9a0`, proposed rate `$2`, status `pending`.
-Its cover letter explicitly identifies the deliverable as Life Manager AI
+Its cover letter explicitly identifies the deliverable as Mr.bot AI
 narration; it does not impersonate a human customer. It is not in the delivery
 observer config because no accepted deliverable exists yet.
 
@@ -53,17 +53,17 @@ observer config because no accepted deliverable exists yet.
 |---|---|
 | TDD RED | completed/paid tests failed because the observer rejected `completed`, the settlement module was absent, and the DB constraints were EVM-only |
 | focused GREEN | observer, settlement, ledger, runtime, migration, and production-script suites all exit 0 |
-| Life Manager full suite | `npm test` exit 0 before merge |
+| Mr.bot full suite | `npm test` exit 0 before merge |
 | shell syntax | PASS |
 | plist lint | PASS |
 | upstream contract readback | real route is `GET /api/gigs/[id]/invoice`; payment sync changes the application to `completed`; `merchant_tx_hash` is the payout to the worker wallet |
 | production DB migration | wallet/transaction constraints accept EVM or Solana and both read back `convalidated=true`; no ledger row is rewritten |
 | live mainnet adversarial probe | finalized tx `47aSEd…E1Ch` is rejected as `self-funded or has no external payer`; it is not revenue |
 | latest live uGig API run | `deliveries_seen=4`, `pending=4`, `invoice_created=0`, `paid=0`, `revenue_recorded=0` |
-| production launchd | `ai.anicca.life-manager-ugig-invoice-observer`, interval 300 seconds |
+| production launchd | `ai.anicca.mr-bot-ugig-invoice-observer`, interval 300 seconds |
 | production first run | `runs=1`, `last exit code=0` |
 | production latest run | `runs=16`, `last exit code=0` |
-| existing Life Manager loops | eight existing labels remained loaded; none was stopped or replaced |
+| existing Mr.bot loops | eight existing labels remained loaded; none was stopped or replaced |
 
 Production stdout:
 

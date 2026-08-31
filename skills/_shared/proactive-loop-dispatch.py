@@ -134,8 +134,8 @@ def main() -> int:
             anicca_home = os.environ.get(
                 "ANICCA_HOME",
                 os.environ.get(
-                    "LIFE_MANAGER_STATE_HOME",
-                    str(Path.home() / ".local/state/life-manager"),
+                    "MR_BOT_STATE_HOME",
+                    str(Path.home() / ".local/state/mr-bot"),
                 ),
             )
             cmd_map = default_restart_cmd_map(anicca_home)

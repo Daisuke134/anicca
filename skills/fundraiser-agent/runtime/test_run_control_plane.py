@@ -29,8 +29,8 @@ def _run(tmp_path, free_kib: int, curl_exit: int):
             **os.environ,
             "HOME": str(home),
             "PATH": f"{bin_dir}:{os.environ['PATH']}",
-            "LIFE_MANAGER_REPO": str(ROOT),
-            "LIFE_MANAGER_LOOP_CLI": str(cli),
+            "MR_BOT_REPO": str(ROOT),
+            "MR_BOT_LOOP_CLI": str(cli),
             "BASH_FUNC_df%%": df_function,
             "BASH_FUNC_sleep%%": "() { :; }",
         },
@@ -44,10 +44,10 @@ def _run(tmp_path, free_kib: int, curl_exit: int):
 def test_low_disk_requests_cleanup_through_lm_loop(tmp_path):
     result, calls = _run(tmp_path, free_kib=1, curl_exit=0)
     assert result.returncode == 75
-    assert calls.read_text().strip() == "restart life-manager-disk-cleanup"
+    assert calls.read_text().strip() == "restart mr-bot-disk-cleanup"
 
 
 def test_unavailable_cdp_restarts_registered_owner_through_lm_loop(tmp_path):
     result, calls = _run(tmp_path, free_kib=4 * 1024 * 1024, curl_exit=1)
     assert result.returncode == 75
-    assert calls.read_text().strip() == "restart life-manager-daily-driver"
+    assert calls.read_text().strip() == "restart mr-bot-daily-driver"

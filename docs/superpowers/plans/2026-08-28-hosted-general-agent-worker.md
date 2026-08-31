@@ -4,11 +4,11 @@
 
 **Goal:** Let the existing capability worker execute a canonical `general-agent.work` job through one injected bounded specialist and persist a safe structured receipt.
 
-**Architecture:** Add one loop adapter that validates the existing Goal WorkItem shape, delegates semantic work to `runBoundedSpecialist`, and validates the returned receipt. Register it under manifest loop ID `life-manager.general-agent`; the canonical runtime job continues to use `life-manager.manager` unchanged.
+**Architecture:** Add one loop adapter that validates the existing Goal WorkItem shape, delegates semantic work to `runBoundedSpecialist`, and validates the returned receipt. Register it under manifest loop ID `mr-bot.general-agent`; the canonical runtime job continues to use `mr-bot.manager` unchanged.
 
 **Tech Stack:** Node.js built-ins, existing loop adapter registry, `goal-work-item.js`, runtime worker, Node test runner.
 
-**Spec:** `docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md` (GA-11).
+**Spec:** `docs/superpowers/specs/2026-08-01-dais-mr-bot-five-phase-execution-spec.md` (GA-11).
 
 ## Global Constraints
 
@@ -22,10 +22,10 @@
 ### Task 1: Bounded WorkItem adapter
 
 **Files:**
-- Create: `apps/life-manager/lib/general-agent-work-adapter.js`
-- Test: `apps/life-manager/lib/general-agent-work-adapter.test.js`
-- Modify: `apps/life-manager/config/loop-adapters.json`
-- Modify: `apps/life-manager/lib/loop-adapter-registry.test.js`
+- Create: `apps/mr-bot/lib/general-agent-work-adapter.js`
+- Test: `apps/mr-bot/lib/general-agent-work-adapter.test.js`
+- Modify: `apps/mr-bot/config/loop-adapters.json`
+- Modify: `apps/mr-bot/lib/loop-adapter-registry.test.js`
 
 **Interfaces:**
 - Consumes: canonical `general-agent.work` job; injected `runBoundedSpecialist({tenant_id, job_id, goal_ref})`.
@@ -53,15 +53,15 @@ Assert missing specialist, wrong tenant/job/goal ref, raw goal/secret fields, or
 
 ```bash
 node --test \
-  apps/life-manager/lib/general-agent-work-adapter.test.js \
-  apps/life-manager/lib/loop-adapter-registry.test.js
+  apps/mr-bot/lib/general-agent-work-adapter.test.js \
+  apps/mr-bot/lib/loop-adapter-registry.test.js
 ```
 
 Expected: missing module and manifest length/capability failures.
 
 - [x] **Step 3: Implement the adapter**
 
-Validate job fields exactly: `loop_id=life-manager.manager`, `capability=general-agent.work`, `effect_class=none`, `effect_key=null`, `max_attempts=1`, and one `goal_ref` beginning with the encoded tenant prefix. `execute` awaits the injected specialist, rejects any receipt key outside the seven listed fields, and returns `{receipt}`. `verify` revalidates receipt/job identity; `report` returns only status, execution ID, and next-job count; `reconcile` returns `{state:"unknown"}` because no external effect exists.
+Validate job fields exactly: `loop_id=mr-bot.manager`, `capability=general-agent.work`, `effect_class=none`, `effect_key=null`, `max_attempts=1`, and one `goal_ref` beginning with the encoded tenant prefix. `execute` awaits the injected specialist, rejects any receipt key outside the seven listed fields, and returns `{receipt}`. `verify` revalidates receipt/job identity; `report` returns only status, execution ID, and next-job count; `reconcile` returns `{state:"unknown"}` because no external effect exists.
 
 - [x] **Step 4: Register and verify**
 
@@ -70,7 +70,7 @@ Add the manifest definition before `marketplace-application`:
 ```json
 {
   "adapter_id": "general-agent-work",
-  "loop_id": "life-manager.general-agent",
+  "loop_id": "mr-bot.general-agent",
   "capability": "general-agent.work",
   "effect_classes": ["none"],
   "module_ref": "lib/general-agent-work-adapter.js",
@@ -78,15 +78,15 @@ Add the manifest definition before `marketplace-application`:
 }
 ```
 
-Run the RED command plus `apps/life-manager/scripts/runtime-up.test.js` when dependencies are available.
+Run the RED command plus `apps/mr-bot/scripts/runtime-up.test.js` when dependencies are available.
 
 - [x] **Step 5: Commit and push** (`f7b6853ea`)
 
 ```bash
-git add apps/life-manager/lib/general-agent-work-adapter.js \
-  apps/life-manager/lib/general-agent-work-adapter.test.js \
-  apps/life-manager/config/loop-adapters.json \
-  apps/life-manager/lib/loop-adapter-registry.test.js
+git add apps/mr-bot/lib/general-agent-work-adapter.js \
+  apps/mr-bot/lib/general-agent-work-adapter.test.js \
+  apps/mr-bot/config/loop-adapters.json \
+  apps/mr-bot/lib/loop-adapter-registry.test.js
 git commit -m "feat: run hosted general-agent work"
 git push origin docs/general-agent-simple-scope-20260828
 ```

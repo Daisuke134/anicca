@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-LIFE_MANAGER_REPO="${LIFE_MANAGER_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
-[ -n "$LIFE_MANAGER_REPO" ] || { echo "LIFE_MANAGER_REPO could not be resolved" >&2; exit 2; }
-export LIFE_MANAGER_REPO
+MR_BOT_REPO="${MR_BOT_REPO:-$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel 2>/dev/null)}"
+[ -n "$MR_BOT_REPO" ] || { echo "MR_BOT_REPO could not be resolved" >&2; exit 2; }
+export MR_BOT_REPO
 # install-proactive-plist.sh — sprint-3 #30
 # Per-slot launchd plist installer. Idempotent. Darwin-only.
 # Single source of PURE logic in lib/plist_render.py (FIND-007 fix).
@@ -64,8 +64,8 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 2
 fi
 
-# ─── REQ-A2 pin: must be installing from $LIFE_MANAGER_REPO ───────
-CANONICAL_HOME="$LIFE_MANAGER_REPO"
+# ─── REQ-A2 pin: must be installing from $MR_BOT_REPO ───────
+CANONICAL_HOME="$MR_BOT_REPO"
 REPO_ROOT="$(cd "$SHARED_DIR/.." && cd .. && pwd)"
 if [[ "$REPO_ROOT" != "$CANONICAL_HOME" ]]; then
   echo "anicca repo root mismatch: expected $CANONICAL_HOME, got $REPO_ROOT" >&2
@@ -80,7 +80,7 @@ fi
 
 UID_NUM="$(id -u)"
 LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
-LOG_DIR="$HOME/.local/state/life-manager/logs"
+LOG_DIR="$HOME/.local/state/mr-bot/logs"
 LABEL="ai.anicca.${SLOT}-proactive"
 PLIST="$LAUNCH_AGENTS/$LABEL.plist"
 

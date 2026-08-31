@@ -81,7 +81,7 @@ cp -r ~/.cache/anicca-clones/felix-dl/skills/* ~/anicca/skills/
 + 残高低 → 安いstep / heartbeat遅く。 黒字 → ★自己複製 spawn child★。 残高0 → 停止。
 +## TASKLIST (every heartbeat) ← sutando
 + idleしない。 毎pass 最高ROI を kanban から選ぶ。
-+## LIFE (顧客がいれば) ← life-manager
++## LIFE (顧客がいれば) ← mr-bot
 + 位置+calendar → 10分前 電話(elevenlabs-calls skill) + mail先回り + gcal heal
 +## 配布 (収益の一部) ← 00-MASTER
 + BI / 募金団体 へ
@@ -94,10 +94,10 @@ cp -r ~/.cache/anicca-clones/felix-dl/skills/* ~/anicca/skills/
 + → aniccaai.com/dashboard に 各個体の 収支 公開 (Felix dashboard copy)
 ```
 
-### skills/elevenlabs-calls (Felix 同梱 = life-manager 電話に流用)
+### skills/elevenlabs-calls (Felix 同梱 = mr-bot 電話に流用)
 ```diff
   Felix の elevenlabs-calls/{call,conversation,agents,phones}.sh = ★ そのまま 電話 skill ★
-+ life-manager: 顧客の calendar/位置 → 行動時刻に call → 10分前ガイド
++ mr-bot: 顧客の calendar/位置 → 行動時刻に call → 10分前ガイド
 ```
 
 ## 3. 実装後 repo tree (= 母艦)
@@ -109,11 +109,11 @@ cp -r ~/.cache/anicca-clones/felix-dl/skills/* ~/anicca/skills/
 ├── HEARTBEAT.md   ← Felix checklist + EARN + SURVIVAL(automaton) + TASKLIST(sutando) + LIFE
 ├── BOOTSTRAP.md   ← Felix copy (first-run setup)
 ├── TOOLS.md / README.md  ← Felix copy
-├── skills/        ← Felix 13 skills + life-manager skills のみ (旧81 garbage 削除)
+├── skills/        ← Felix 13 skills + mr-bot skills のみ (旧81 garbage 削除)
 │   ├── x-posting / email-fortress / revenue-metrics / daily-review /
 │   ├── coding-agent-loops / cron-guide / site-health / talking-head /
 │   ├── research / blog-image-generator / instagram-slides /
-│   ├── elevenlabs-calls(=電話) / + life-manager(10分前/gcal)
+│   ├── elevenlabs-calls(=電話) / + mr-bot(10分前/gcal)
 ├── install.sh     ← local self-host (clone→setup→run)
 └── docs/superpowers/specs/  ← spec (この 4本)
 
@@ -209,8 +209,8 @@ B. genesis 起動 (= 自己資金 AI、 marketing copy 1)
  B4. earn loop: 自分のLP/x402 で 実 product 1個 売る → USDC着金 verify
  B5. 自己改善(error→fix) + 自己複製(spawn child) + 日次mail
  B6. aniccaai.com/dashboard に 収支 公開
-C. life-manager (marketing copy 2)
- C1. 既存 anicca-products life-manager bug fix (lateness_check glob)
+C. mr-bot (marketing copy 2)
+ C1. 既存 anicca-products mr-bot bug fix (lateness_check glob)
  C2. elevenlabs-calls skill で 10分前 電話 + 位置/calendar/route
  C3. mail先回り + 信用残高 + 毎朝メール
 D. WEB (aniccaai.com/install)

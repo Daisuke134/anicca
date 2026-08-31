@@ -20,11 +20,11 @@ function option(name) {
 }
 
 const targetOption = option("--target");
-if (!targetOption) throw new Error("--target is required; use a dedicated Life Manager current-kit directory");
+if (!targetOption) throw new Error("--target is required; use a dedicated Mr.bot current-kit directory");
 
 const target = resolve(targetOption);
 if (target.split("/").includes("submitted")) throw new Error("submitted history is immutable and cannot be an export target");
-if (!/life-manager/i.test(basename(target))) throw new Error("export target basename must identify Life Manager");
+if (!/mr-bot/i.test(basename(target))) throw new Error("export target basename must identify Mr.bot");
 
 const source = resolve(new URL("../../fundraising/application-kit/", import.meta.url).pathname);
 const context = await loadStartupContext(new URL("../../.agents/startup-context.json", import.meta.url));

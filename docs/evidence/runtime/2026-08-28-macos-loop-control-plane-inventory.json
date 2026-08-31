@@ -9,7 +9,7 @@
       "label": "ai.anicca.affiliate-browser",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-browser.plist",
       "release": null
@@ -21,7 +21,7 @@
       "label": "ai.anicca.affiliate-composition",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-composition.plist",
       "release": null
@@ -33,7 +33,7 @@
       "label": "ai.anicca.affiliate-impact-browser",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-impact-browser.plist",
       "release": null
@@ -45,7 +45,7 @@
       "label": "ai.anicca.affiliate-loop",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-loop.plist",
       "release": null
@@ -57,7 +57,7 @@
       "label": "ai.anicca.affiliate-source-refresh",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-source-refresh.plist",
       "release": null
@@ -69,7 +69,7 @@
       "label": "ai.anicca.affiliate-x-browser",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.affiliate-x-browser.plist",
       "release": null
@@ -81,7 +81,7 @@
       "label": "ai.anicca.agent-economy-loop",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.agent-economy-loop.plist",
       "release": "22a86ec1"
@@ -93,7 +93,7 @@
       "label": "ai.anicca.agentmail-nudge",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.agentmail-nudge.plist",
       "release": null
@@ -105,7 +105,7 @@
       "label": "ai.anicca.agentmail-replier",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.agentmail-replier.plist",
       "release": null
@@ -117,7 +117,7 @@
       "label": "ai.anicca.agentmail-webhook",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.agentmail-webhook.plist",
       "release": null
@@ -129,7 +129,7 @@
       "label": "ai.anicca.agents-skills-sync",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.agents-skills-sync.plist",
       "release": null
@@ -141,7 +141,7 @@
       "label": "ai.anicca.article-audit-7day",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.article-audit-7day.plist",
       "release": null
@@ -165,7 +165,7 @@
       "label": "ai.anicca.article-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.article-daily.plist",
       "release": null
@@ -189,7 +189,7 @@
       "label": "ai.anicca.article-healthcheck",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.article-healthcheck.plist",
       "release": null
@@ -201,7 +201,7 @@
       "label": "ai.anicca.article-learn-whitelist",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.article-learn-whitelist.plist",
       "release": null
@@ -213,7 +213,7 @@
       "label": "ai.anicca.article-resume",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.article-resume.plist",
       "release": null
@@ -225,7 +225,7 @@
       "label": "ai.anicca.article-self-improve",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.article-self-improve.plist",
       "release": null
@@ -237,7 +237,7 @@
       "label": "ai.anicca.article-zenn-retry",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.article-zenn-retry.plist",
       "release": null
@@ -249,7 +249,7 @@
       "label": "ai.anicca.autohedge",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.autohedge.plist",
       "release": null
@@ -273,7 +273,7 @@
       "label": "ai.anicca.bounty-core-healthcheck",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.bounty-core-healthcheck.plist",
       "release": null
@@ -309,7 +309,7 @@
       "label": "ai.anicca.bounty-proactive",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.bounty-proactive.plist",
       "release": null
@@ -321,7 +321,7 @@
       "label": "ai.anicca.browser-state-backup",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.browser-state-backup.plist",
       "release": null
@@ -333,7 +333,7 @@
       "label": "ai.anicca.cadence-deadline-check",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.cadence-deadline-check.plist",
       "release": null
@@ -345,7 +345,7 @@
       "label": "ai.anicca.capafy-goal-monitor",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.capafy-goal-monitor.plist",
       "release": "mutable-checkout"
@@ -357,7 +357,7 @@
       "label": "ai.anicca.capafy-goal-monitor-daily-close",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.capafy-goal-monitor-daily-close.plist",
       "release": "mutable-checkout"
@@ -369,7 +369,7 @@
       "label": "ai.anicca.capafy-goal-monitor-hourly",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.capafy-goal-monitor-hourly.plist",
       "release": "mutable-checkout"
@@ -381,7 +381,7 @@
       "label": "ai.anicca.capafy-ig-account-manager",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.capafy-ig-account-manager.plist",
       "release": "mutable-checkout"
@@ -393,7 +393,7 @@
       "label": "ai.anicca.capafy-ig-marketing-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist",
       "release": "mutable-checkout"
@@ -405,7 +405,7 @@
       "label": "ai.anicca.capafy-loop-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.capafy-loop-daily.plist",
       "release": "mutable-checkout"
@@ -417,7 +417,7 @@
       "label": "ai.anicca.capafy-loop-healthcheck",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.capafy-loop-healthcheck.plist",
       "release": "mutable-checkout"
@@ -429,7 +429,7 @@
       "label": "ai.anicca.capafy-outcome-monitor",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.capafy-outcome-monitor.plist",
       "release": "mutable-checkout"
@@ -441,7 +441,7 @@
       "label": "ai.anicca.ceo-runner",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.ceo-runner.plist",
       "release": null
@@ -489,7 +489,7 @@
       "label": "ai.anicca.citizen-refill",
       "last_exit": "127",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.citizen-refill.plist",
       "release": null
@@ -501,7 +501,7 @@
       "label": "ai.anicca.citizens-diff-monitor",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.citizens-diff-monitor.plist",
       "release": null
@@ -513,7 +513,7 @@
       "label": "ai.anicca.claude-projects-backup",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.claude-projects-backup.plist",
       "release": null
@@ -537,7 +537,7 @@
       "label": "ai.anicca.clip-loop",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.clip-loop.plist",
       "release": null
@@ -573,7 +573,7 @@
       "label": "ai.anicca.connector-daily-report",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -585,7 +585,7 @@
       "label": "ai.anicca.connector-fill-gaps",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -645,7 +645,7 @@
       "label": "ai.anicca.daily-nl-report",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.daily-nl-report.plist",
       "release": null
@@ -657,7 +657,7 @@
       "label": "ai.anicca.dd-keepalive-healthcheck",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.dd-keepalive-healthcheck.plist",
       "release": null
@@ -705,7 +705,7 @@
       "label": "ai.anicca.earn-watch",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.earn-watch.plist",
       "release": null
@@ -717,7 +717,7 @@
       "label": "ai.anicca.earning-health-allslots",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.earning-health-allslots.plist",
       "release": null
@@ -729,7 +729,7 @@
       "label": "ai.anicca.effect-watch",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.effect-watch.plist",
       "release": null
@@ -741,7 +741,7 @@
       "label": "ai.anicca.f7-silence-check",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.f7-silence-check.plist",
       "release": null
@@ -765,7 +765,7 @@
       "label": "ai.anicca.founder-loop-cadence",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.founder-loop-cadence.plist",
       "release": null
@@ -777,7 +777,7 @@
       "label": "ai.anicca.franklin-loop",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.franklin-loop.plist",
       "release": null
@@ -789,7 +789,7 @@
       "label": "ai.anicca.franklin2-loop",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.franklin2-loop.plist",
       "release": null
@@ -837,7 +837,7 @@
       "label": "ai.anicca.fuel-watch",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.fuel-watch.plist",
       "release": null
@@ -849,7 +849,7 @@
       "label": "ai.anicca.fundraiser",
       "last_exit": "75",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.fundraiser.plist",
       "release": "48c54b52"
@@ -861,7 +861,7 @@
       "label": "ai.anicca.gig-outcome-watch",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.gig-outcome-watch.plist",
       "release": null
@@ -885,7 +885,7 @@
       "label": "ai.anicca.hf-bounty-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-bounty-daily.plist",
       "release": null
@@ -897,7 +897,7 @@
       "label": "ai.anicca.hf-gig-apply-direct",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-gig-apply-direct.plist",
       "release": null
@@ -909,7 +909,7 @@
       "label": "ai.anicca.hf-gig-auditor",
       "last_exit": null,
       "launchd_state": "unloaded",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -921,7 +921,7 @@
       "label": "ai.anicca.hf-gig-browser",
       "last_exit": "-15",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-gig-browser.plist",
       "release": null
@@ -933,7 +933,7 @@
       "label": "ai.anicca.hf-gig-core-healthcheck",
       "last_exit": null,
       "launchd_state": "unloaded",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -945,7 +945,7 @@
       "label": "ai.anicca.hf-gig-daily-report",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-gig-daily-report.plist",
       "release": null
@@ -957,7 +957,7 @@
       "label": "ai.anicca.hf-gig-paid-direct",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-gig-paid-direct.plist",
       "release": null
@@ -969,7 +969,7 @@
       "label": "ai.anicca.hf-gig-pass",
       "last_exit": null,
       "launchd_state": "unloaded",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -981,7 +981,7 @@
       "label": "ai.anicca.hf-gig-release-watch",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-gig-release-watch.plist",
       "release": "mutable-checkout"
@@ -993,7 +993,7 @@
       "label": "ai.anicca.hf-gig-reply-detector",
       "last_exit": "120",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-gig-reply-detector.plist",
       "release": null
@@ -1005,7 +1005,7 @@
       "label": "ai.anicca.hf-gig-storefront-direct",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-gig-storefront-direct.plist",
       "release": null
@@ -1017,7 +1017,7 @@
       "label": "ai.anicca.hf-reddit-loop-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-reddit-loop-daily.plist",
       "release": null
@@ -1029,7 +1029,7 @@
       "label": "ai.anicca.hf-reddit-loop-healthcheck",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.hf-reddit-loop-healthcheck.plist",
       "release": null
@@ -1041,7 +1041,7 @@
       "label": "ai.anicca.image-claude-p",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.image-claude-p.plist",
       "release": null
@@ -1053,7 +1053,7 @@
       "label": "ai.anicca.image-franklin1",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.image-franklin1.plist",
       "release": null
@@ -1065,7 +1065,7 @@
       "label": "ai.anicca.image-franklin2",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.image-franklin2.plist",
       "release": null
@@ -1077,7 +1077,7 @@
       "label": "ai.anicca.job-search-browser",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.job-search-browser.plist",
       "release": "a4d1a92143e15623a9251081296a329eb6ff7516"
@@ -1101,7 +1101,7 @@
       "label": "ai.anicca.job-search-daily",
       "last_exit": "75",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.job-search-daily.plist",
       "release": "a4d1a92143e15623a9251081296a329eb6ff7516"
@@ -1113,7 +1113,7 @@
       "label": "ai.anicca.job-search-health",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.job-search-health.plist",
       "release": "a4d1a92143e15623a9251081296a329eb6ff7516"
@@ -1125,7 +1125,7 @@
       "label": "ai.anicca.job-search-inbox",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.job-search-inbox.plist",
       "release": "a4d1a92143e15623a9251081296a329eb6ff7516"
@@ -1137,7 +1137,7 @@
       "label": "ai.anicca.job-search-learning",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.job-search-learning.plist",
       "release": "a4d1a92143e15623a9251081296a329eb6ff7516"
@@ -1149,7 +1149,7 @@
       "label": "ai.anicca.job-search-mercor",
       "last_exit": "120",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.job-search-mercor.plist",
       "release": "0e8f76799960e98158e14e5c298cb6f6be70871f"
@@ -1161,7 +1161,7 @@
       "label": "ai.anicca.job-search-mercor-browser",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.job-search-mercor-browser.plist",
       "release": "3c9293ee4362ed386eb174dd761d5b54c09f2019"
@@ -1185,7 +1185,7 @@
       "label": "ai.anicca.lancers-revenue-application",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.lancers-revenue-application.plist",
       "release": "82acfd306fab1840183fe4d63d1e21c929f54e9e"
@@ -1197,7 +1197,7 @@
       "label": "ai.anicca.lancers-revenue-browser",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.lancers-revenue-browser.plist",
       "release": null
@@ -1209,7 +1209,7 @@
       "label": "ai.anicca.lancers-revenue-storefront",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.lancers-revenue-storefront.plist",
       "release": "82acfd306fab1840183fe4d63d1e21c929f54e9e"
@@ -1221,7 +1221,7 @@
       "label": "ai.anicca.lancers-revenue-telegram-report",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.lancers-revenue-telegram-report.plist",
       "release": "82acfd306fab1840183fe4d63d1e21c929f54e9e"
@@ -1233,7 +1233,7 @@
       "label": "ai.anicca.lancers-revenue-work-sync",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.lancers-revenue-work-sync.plist",
       "release": "82acfd306fab1840183fe4d63d1e21c929f54e9e"
@@ -1245,7 +1245,7 @@
       "label": "ai.anicca.larry-anicca-en-v1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-anicca-en-v1.plist",
       "release": null
@@ -1257,7 +1257,7 @@
       "label": "ai.anicca.larry-anicca-en-v2",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-anicca-en-v2.plist",
       "release": null
@@ -1269,7 +1269,7 @@
       "label": "ai.anicca.larry-anicca-en-v3",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-anicca-en-v3.plist",
       "release": null
@@ -1281,7 +1281,7 @@
       "label": "ai.anicca.larry-anicca-ja-v1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-anicca-ja-v1.plist",
       "release": null
@@ -1293,7 +1293,7 @@
       "label": "ai.anicca.larry-anicca-ja-v2",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-anicca-ja-v2.plist",
       "release": null
@@ -1305,7 +1305,7 @@
       "label": "ai.anicca.larry-en-female-reel-replace-1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-en-female-reel-replace-1.plist",
       "release": null
@@ -1317,7 +1317,7 @@
       "label": "ai.anicca.larry-en-v1-library-post",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-en-v1-library-post.plist",
       "release": null
@@ -1329,7 +1329,7 @@
       "label": "ai.anicca.larry-ja-male-buddha-reel-replace-1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-ja-male-buddha-reel-replace-1.plist",
       "release": null
@@ -1341,7 +1341,7 @@
       "label": "ai.anicca.larry-ja-male-cta-reel-replace-1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-ja-male-cta-reel-replace-1.plist",
       "release": null
@@ -1353,7 +1353,7 @@
       "label": "ai.anicca.larry-ja-v1-library-post",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-ja-v1-library-post.plist",
       "release": null
@@ -1365,7 +1365,7 @@
       "label": "ai.anicca.larry-jp-sunset-reel-replace-1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-jp-sunset-reel-replace-1.plist",
       "release": null
@@ -1377,7 +1377,7 @@
       "label": "ai.anicca.larry-library-filler",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-library-filler.plist",
       "release": null
@@ -1389,7 +1389,7 @@
       "label": "ai.anicca.larry-strategy-updater",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.larry-strategy-updater.plist",
       "release": null
@@ -1401,7 +1401,7 @@
       "label": "ai.anicca.lateness-heartbeat",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.lateness-heartbeat.plist",
       "release": null
@@ -1410,295 +1410,295 @@
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-en-affirmation-instagram",
+      "label": "ai.anicca.mr-bot-anicca-en-affirmation-instagram",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-en-affirmation-instagram.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-en-affirmation-instagram.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-en-card-instagram",
+      "label": "ai.anicca.mr-bot-anicca-en-card-instagram",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-en-card-instagram.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-en-card-instagram.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-en-slideshow-tiktok",
+      "label": "ai.anicca.mr-bot-anicca-en-slideshow-tiktok",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-en-slideshow-tiktok.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-en-slideshow-tiktok.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-en-widget-instagram",
+      "label": "ai.anicca.mr-bot-anicca-en-widget-instagram",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-en-widget-instagram.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-en-widget-instagram.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": null,
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-he",
+      "label": "ai.anicca.mr-bot-anicca-he",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-he.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-he.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-ja-widget-instagram",
+      "label": "ai.anicca.mr-bot-anicca-ja-widget-instagram",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-ja-widget-instagram.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-ja-widget-instagram.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": null,
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-jp4",
+      "label": "ai.anicca.mr-bot-anicca-jp4",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-jp4.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-jp4.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-larry-ja-instagram",
+      "label": "ai.anicca.mr-bot-anicca-larry-ja-instagram",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-larry-ja-instagram.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-larry-ja-instagram.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-main-instagram",
+      "label": "ai.anicca.mr-bot-anicca-main-instagram",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-main-instagram.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-main-instagram.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-main-tiktok",
+      "label": "ai.anicca.mr-bot-anicca-main-tiktok",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-main-tiktok.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-main-tiktok.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-anicca-obou-instagram",
+      "label": "ai.anicca.mr-bot-anicca-obou-instagram",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-anicca-obou-instagram.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-anicca-obou-instagram.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "financial",
       "effect_class": "message",
       "installed": true,
-      "label": "ai.anicca.life-manager-cfo-hourly",
+      "label": "ai.anicca.mr-bot-cfo-hourly",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-cfo-hourly.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-cfo-hourly.plist",
       "release": null
     },
     {
       "domain": "system",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-connector-healer-shadow",
+      "label": "ai.anicca.mr-bot-connector-healer-shadow",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-connector-healer-shadow.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-connector-healer-shadow.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": "system",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-connector-host-bridge",
+      "label": "ai.anicca.mr-bot-connector-host-bridge",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-connector-host-bridge.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-connector-host-bridge.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": "system",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-connector-native",
+      "label": "ai.anicca.mr-bot-connector-native",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-connector-native.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-connector-native.plist",
       "release": "57ed7c000"
     },
     {
       "domain": "system",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-connector-native-healthcheck",
+      "label": "ai.anicca.mr-bot-connector-native-healthcheck",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-connector-native-healthcheck.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-connector-native-healthcheck.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-daily",
+      "label": "ai.anicca.mr-bot-daily",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-daily.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-daily.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": null,
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-daily-driver",
+      "label": "ai.anicca.mr-bot-daily-driver",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-daily-driver.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-daily-driver.plist",
       "release": "8dbb7e5d"
     },
     {
       "domain": null,
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-dev",
+      "label": "ai.anicca.mr-bot-dev",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-dev.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-dev.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": "system",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-disk-cleanup",
+      "label": "ai.anicca.mr-bot-disk-cleanup",
       "last_exit": "2",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-disk-cleanup.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-disk-cleanup.plist",
       "release": null
     },
     {
       "domain": "financial",
       "effect_class": "message",
       "installed": true,
-      "label": "ai.anicca.life-manager-financial-report",
+      "label": "ai.anicca.mr-bot-financial-report",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-financial-report.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-financial-report.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": null,
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-honne-en",
+      "label": "ai.anicca.mr-bot-honne-en",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-honne-en.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-honne-en.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": null,
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-honne-ja",
+      "label": "ai.anicca.mr-bot-honne-ja",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-honne-ja.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-honne-ja.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-instagram-metrics",
+      "label": "ai.anicca.mr-bot-instagram-metrics",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-instagram-metrics.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-instagram-metrics.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": null,
       "effect_class": null,
       "installed": false,
-      "label": "ai.anicca.life-manager-loop-healthcheck",
+      "label": "ai.anicca.mr-bot-loop-healthcheck",
       "last_exit": null,
       "launchd_state": "disabled",
       "owner": "ambiguous",
@@ -1710,96 +1710,96 @@
       "domain": "financial",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-payout",
+      "label": "ai.anicca.mr-bot-payout",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-payout.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-payout.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": "system",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-selfbuild",
+      "label": "ai.anicca.mr-bot-selfbuild",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-selfbuild.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-selfbuild.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": "financial",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-taskmarket-ledger",
+      "label": "ai.anicca.mr-bot-taskmarket-ledger",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-taskmarket-ledger.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-taskmarket-ledger.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": "growth",
       "effect_class": "publish",
       "installed": true,
-      "label": "ai.anicca.life-manager-tiktok-metrics",
+      "label": "ai.anicca.mr-bot-tiktok-metrics",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-tiktok-metrics.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-tiktok-metrics.plist",
       "release": "7eb86d63b1040b0abb3e0041460211d4fd29a5f1"
     },
     {
       "domain": "earn",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-ugig-invoice-observer",
+      "label": "ai.anicca.mr-bot-ugig-invoice-observer",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-ugig-invoice-observer.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-ugig-invoice-observer.plist",
       "release": "mutable-checkout"
     },
     {
       "domain": "earn",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-upwork-browser",
+      "label": "ai.anicca.mr-bot-upwork-browser",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-upwork-browser.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-upwork-browser.plist",
       "release": null
     },
     {
       "domain": "earn",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-upwork-free-loop",
+      "label": "ai.anicca.mr-bot-upwork-free-loop",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-upwork-free-loop.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-upwork-free-loop.plist",
       "release": null
     },
     {
       "domain": "financial",
       "effect_class": "none",
       "installed": true,
-      "label": "ai.anicca.life-manager-x402-ledger",
+      "label": "ai.anicca.mr-bot-x402-ledger",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
-      "plist": "~/Library/LaunchAgents/ai.anicca.life-manager-x402-ledger.plist",
+      "plist": "~/Library/LaunchAgents/ai.anicca.mr-bot-x402-ledger.plist",
       "release": "mutable-checkout"
     },
     {
@@ -1809,7 +1809,7 @@
       "label": "ai.anicca.lm-recording-store",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.lm-recording-store.plist",
       "release": null
@@ -1833,7 +1833,7 @@
       "label": "ai.anicca.marketing-daily-report",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-daily-report.plist",
       "release": null
@@ -1845,7 +1845,7 @@
       "label": "ai.anicca.marketing-dashboard",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-dashboard.plist",
       "release": null
@@ -1857,7 +1857,7 @@
       "label": "ai.anicca.marketing-metrics",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-metrics.plist",
       "release": null
@@ -1869,7 +1869,7 @@
       "label": "ai.anicca.marketing-metrics-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-metrics-daily.plist",
       "release": null
@@ -1881,7 +1881,7 @@
       "label": "ai.anicca.marketing-mine-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-mine-daily.plist",
       "release": null
@@ -1893,7 +1893,7 @@
       "label": "ai.anicca.marketing-owner-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-owner-daily.plist",
       "release": null
@@ -1905,7 +1905,7 @@
       "label": "ai.anicca.marketing-owner-events",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-owner-events.plist",
       "release": null
@@ -1917,7 +1917,7 @@
       "label": "ai.anicca.marketing-owner-weekly",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-owner-weekly.plist",
       "release": null
@@ -1965,7 +1965,7 @@
       "label": "ai.anicca.marketing-score-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-score-daily.plist",
       "release": null
@@ -1977,7 +1977,7 @@
       "label": "ai.anicca.marketing-weekly-review",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.marketing-weekly-review.plist",
       "release": null
@@ -1989,7 +1989,7 @@
       "label": "ai.anicca.mcp-claude-p",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.mcp-claude-p.plist",
       "release": null
@@ -2001,7 +2001,7 @@
       "label": "ai.anicca.mcp-franklin1",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.mcp-franklin1.plist",
       "release": null
@@ -2013,7 +2013,7 @@
       "label": "ai.anicca.mcp-franklin2",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.mcp-franklin2.plist",
       "release": null
@@ -2025,7 +2025,7 @@
       "label": "ai.anicca.monkey-watchdog",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.monkey-watchdog.plist",
       "release": null
@@ -2049,7 +2049,7 @@
       "label": "ai.anicca.openclaw-conformity-monkey",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.openclaw-conformity-monkey.plist",
       "release": null
@@ -2061,7 +2061,7 @@
       "label": "ai.anicca.openclaw-core-backup",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.openclaw-core-backup.plist",
       "release": null
@@ -2073,7 +2073,7 @@
       "label": "ai.anicca.openclaw-janitor-monkey",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.openclaw-janitor-monkey.plist",
       "release": null
@@ -2109,7 +2109,7 @@
       "label": "ai.anicca.phone-conversation",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.phone-conversation.plist",
       "release": null
@@ -2121,7 +2121,7 @@
       "label": "ai.anicca.phone-tunnel",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.phone-tunnel.plist",
       "release": null
@@ -2133,7 +2133,7 @@
       "label": "ai.anicca.phone-tunnel-watcher",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.phone-tunnel-watcher.plist",
       "release": null
@@ -2145,7 +2145,7 @@
       "label": "ai.anicca.pipecat-phone",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.pipecat-phone.plist",
       "release": null
@@ -2157,7 +2157,7 @@
       "label": "ai.anicca.pm-decision-loop",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.pm-decision-loop.plist",
       "release": null
@@ -2193,7 +2193,7 @@
       "label": "ai.anicca.pm-live-trade",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.pm-live-trade.plist",
       "release": null
@@ -2277,7 +2277,7 @@
       "label": "ai.anicca.realtime-guide",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.realtime-guide.plist",
       "release": null
@@ -2313,7 +2313,7 @@
       "label": "ai.anicca.reelclaw-en-card-1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-en-card-1.plist",
       "release": null
@@ -2325,7 +2325,7 @@
       "label": "ai.anicca.reelclaw-en-card-2",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-en-card-2.plist",
       "release": null
@@ -2337,7 +2337,7 @@
       "label": "ai.anicca.reelclaw-en-card-3",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-en-card-3.plist",
       "release": null
@@ -2349,7 +2349,7 @@
       "label": "ai.anicca.reelclaw-en-widget-1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-en-widget-1.plist",
       "release": null
@@ -2361,7 +2361,7 @@
       "label": "ai.anicca.reelclaw-en-widget-2",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-en-widget-2.plist",
       "release": null
@@ -2373,7 +2373,7 @@
       "label": "ai.anicca.reelclaw-honne-en",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-honne-en.plist",
       "release": null
@@ -2385,7 +2385,7 @@
       "label": "ai.anicca.reelclaw-honne-ja",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-honne-ja.plist",
       "release": null
@@ -2397,7 +2397,7 @@
       "label": "ai.anicca.reelclaw-honne-ja-fresh",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-honne-ja-fresh.plist",
       "release": null
@@ -2409,7 +2409,7 @@
       "label": "ai.anicca.reelclaw-ja-card-1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-ja-card-1.plist",
       "release": null
@@ -2421,7 +2421,7 @@
       "label": "ai.anicca.reelclaw-ja-card-2",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-ja-card-2.plist",
       "release": null
@@ -2433,7 +2433,7 @@
       "label": "ai.anicca.reelclaw-ja-widget-1",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-ja-widget-1.plist",
       "release": null
@@ -2445,7 +2445,7 @@
       "label": "ai.anicca.reelclaw-ja-widget-2",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reelclaw-ja-widget-2.plist",
       "release": null
@@ -2457,7 +2457,7 @@
       "label": "ai.anicca.reinvest",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.reinvest.plist",
       "release": null
@@ -2469,7 +2469,7 @@
       "label": "ai.anicca.runtime-loop-healthcheck",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.runtime-loop-healthcheck.plist",
       "release": null
@@ -2481,7 +2481,7 @@
       "label": "ai.anicca.sbi-usdc-monitor",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.sbi-usdc-monitor.plist",
       "release": null
@@ -2493,7 +2493,7 @@
       "label": "ai.anicca.self-improve-evolve",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.self-improve-evolve.plist",
       "release": null
@@ -2505,7 +2505,7 @@
       "label": "ai.anicca.session-vault",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.session-vault.plist",
       "release": null
@@ -2517,7 +2517,7 @@
       "label": "ai.anicca.slack-bridge",
       "last_exit": "78",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.slack-bridge.plist",
       "release": null
@@ -2529,7 +2529,7 @@
       "label": "ai.anicca.slack-metrics-poller",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.slack-metrics-poller.plist",
       "release": null
@@ -2541,7 +2541,7 @@
       "label": "ai.anicca.sol-trade-earning-healthcheck",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.sol-trade-earning-healthcheck.plist",
       "release": null
@@ -2553,7 +2553,7 @@
       "label": "ai.anicca.stripe-revenue-listener",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.stripe-revenue-listener.plist",
       "release": null
@@ -2565,7 +2565,7 @@
       "label": "ai.anicca.stripe-revenue-poller",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.stripe-revenue-poller.plist",
       "release": null
@@ -2589,7 +2589,7 @@
       "label": "ai.anicca.telegram-bot",
       "last_exit": "1",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.telegram-bot.plist",
       "release": null
@@ -2613,7 +2613,7 @@
       "label": "ai.anicca.the402-provider",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.the402-provider.plist",
       "release": null
@@ -2625,7 +2625,7 @@
       "label": "ai.anicca.the402-worker",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.the402-worker.plist",
       "release": null
@@ -2637,7 +2637,7 @@
       "label": "ai.anicca.tier1-remediate",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.tier1-remediate.plist",
       "release": null
@@ -2649,7 +2649,7 @@
       "label": "ai.anicca.tier2-agent-diagnose",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.tier2-agent-diagnose.plist",
       "release": null
@@ -2661,7 +2661,7 @@
       "label": "ai.anicca.token-daily-report",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.token-daily-report.plist",
       "release": null
@@ -2685,7 +2685,7 @@
       "label": "ai.anicca.verify-loops-audit",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.verify-loops-audit.plist",
       "release": null
@@ -2697,7 +2697,7 @@
       "label": "ai.anicca.warmup-flip-daily",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.warmup-flip-daily.plist",
       "release": null
@@ -2709,7 +2709,7 @@
       "label": "ai.anicca.watchdog",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.watchdog.plist",
       "release": null
@@ -2721,7 +2721,7 @@
       "label": "ai.anicca.watercolor-jp-evening",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.watercolor-jp-evening.plist",
       "release": null
@@ -2733,7 +2733,7 @@
       "label": "ai.anicca.watercolor-jp-morning",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.watercolor-jp-morning.plist",
       "release": null
@@ -2745,7 +2745,7 @@
       "label": "ai.anicca.watercolor-jp-noon",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.watercolor-jp-noon.plist",
       "release": null
@@ -2757,7 +2757,7 @@
       "label": "ai.anicca.writer-book-monthly",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -2769,7 +2769,7 @@
       "label": "ai.anicca.writer-claim-loop",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.writer-claim-loop.plist",
       "release": null
@@ -2781,7 +2781,7 @@
       "label": "ai.anicca.writer-craft-train",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.writer-craft-train.plist",
       "release": null
@@ -2793,7 +2793,7 @@
       "label": "ai.anicca.writer-daily",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -2805,7 +2805,7 @@
       "label": "ai.anicca.writer-learn-daily",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -2817,7 +2817,7 @@
       "label": "ai.anicca.writer-learn-weekly",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -2829,7 +2829,7 @@
       "label": "ai.anicca.writer-money-sync",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.writer-money-sync.plist",
       "release": null
@@ -2841,7 +2841,7 @@
       "label": "ai.anicca.writer-opportunity-discovery",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.writer-opportunity-discovery.plist",
       "release": null
@@ -2853,7 +2853,7 @@
       "label": "ai.anicca.writer-opportunity-response",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.writer-opportunity-response.plist",
       "release": null
@@ -2865,7 +2865,7 @@
       "label": "ai.anicca.writer-report",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.writer-report.plist",
       "release": null
@@ -2877,7 +2877,7 @@
       "label": "ai.anicca.writer-resume",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": "no-installed-plist",
       "plist": null,
       "release": null
@@ -2889,7 +2889,7 @@
       "label": "ai.anicca.writer-sales-measure",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.writer-sales-measure.plist",
       "release": null
@@ -2901,7 +2901,7 @@
       "label": "ai.anicca.x-repost-digest",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x-repost-digest.plist",
       "release": null
@@ -2913,7 +2913,7 @@
       "label": "ai.anicca.x-repost-healthcheck",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x-repost-healthcheck.plist",
       "release": null
@@ -2925,7 +2925,7 @@
       "label": "ai.anicca.x-repost-ja-healthcheck",
       "last_exit": "127",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x-repost-ja-healthcheck.plist",
       "release": null
@@ -2937,7 +2937,7 @@
       "label": "ai.anicca.x-repost-ja-pass",
       "last_exit": "127",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x-repost-ja-pass.plist",
       "release": null
@@ -2949,7 +2949,7 @@
       "label": "ai.anicca.x-repost-pass",
       "last_exit": "127",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x-repost-pass.plist",
       "release": null
@@ -2961,7 +2961,7 @@
       "label": "ai.anicca.x-tweeter-healthcheck",
       "last_exit": "1",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x-tweeter-healthcheck.plist",
       "release": null
@@ -2973,7 +2973,7 @@
       "label": "ai.anicca.x-tweeter-pass",
       "last_exit": "127",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x-tweeter-pass.plist",
       "release": null
@@ -2985,7 +2985,7 @@
       "label": "ai.anicca.x402-acquisition-controller",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-acquisition-controller.plist",
       "release": null
@@ -2997,7 +2997,7 @@
       "label": "ai.anicca.x402-claude-p",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-claude-p.plist",
       "release": null
@@ -3021,7 +3021,7 @@
       "label": "ai.anicca.x402-experiment-franklin1",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-experiment-franklin1.plist",
       "release": null
@@ -3033,7 +3033,7 @@
       "label": "ai.anicca.x402-franklin1",
       "last_exit": "-15",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-franklin1.plist",
       "release": null
@@ -3045,7 +3045,7 @@
       "label": "ai.anicca.x402-franklin2",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-franklin2.plist",
       "release": null
@@ -3057,7 +3057,7 @@
       "label": "ai.anicca.x402-inflow-watch",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-inflow-watch.plist",
       "release": null
@@ -3069,7 +3069,7 @@
       "label": "ai.anicca.x402-inflow-watch-claude-p",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-inflow-watch-claude-p.plist",
       "release": null
@@ -3081,7 +3081,7 @@
       "label": "ai.anicca.x402-inflow-watch-franklin1",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-inflow-watch-franklin1.plist",
       "release": null
@@ -3093,7 +3093,7 @@
       "label": "ai.anicca.x402-inflow-watch-franklin2",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-inflow-watch-franklin2.plist",
       "release": null
@@ -3105,7 +3105,7 @@
       "label": "ai.anicca.x402-monitor",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-monitor.plist",
       "release": null
@@ -3117,7 +3117,7 @@
       "label": "ai.anicca.x402-research-serve",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-research-serve.plist",
       "release": null
@@ -3129,7 +3129,7 @@
       "label": "ai.anicca.x402-sale-observer",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-sale-observer.plist",
       "release": null
@@ -3141,7 +3141,7 @@
       "label": "ai.anicca.x402-seller-8404",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-seller-8404.plist",
       "release": null
@@ -3153,7 +3153,7 @@
       "label": "ai.anicca.x402-seller-8412",
       "last_exit": null,
       "launchd_state": "disabled",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-seller-8412.plist",
       "release": null
@@ -3165,7 +3165,7 @@
       "label": "ai.anicca.x402-settlement-recorder",
       "last_exit": "0",
       "launchd_state": "loaded-idle",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-settlement-recorder.plist",
       "release": null
@@ -3189,7 +3189,7 @@
       "label": "ai.anicca.x402-tunnel",
       "last_exit": "0",
       "launchd_state": "loaded-running",
-      "owner": "life-manager",
+      "owner": "mr-bot",
       "parse_error": null,
       "plist": "~/Library/LaunchAgents/ai.anicca.x402-tunnel.plist",
       "release": null
@@ -3209,7 +3209,7 @@
     "owners": {
       "ambiguous": 43,
       "external": 3,
-      "life-manager": 218,
+      "mr-bot": 218,
       "retired": 2
     },
     "states": {
@@ -3218,6 +3218,6 @@
       "loaded-running": 48,
       "unloaded": 15
     },
-    "unmanaged_life_manager": 218
+    "unmanaged_mr_bot": 218
   }
 }

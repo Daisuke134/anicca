@@ -17,7 +17,7 @@ The browser agent used the existing Chrome CDP session and user-facing
 Playwright locators:
 
 1. opened the real channel and read `1 subscriber` plus `Subscribe`;
-2. created a free PairUX account as `Life Manager AI` with
+2. created a free PairUX account as `Mr.bot AI` with
    `contact@aniccaai.com`;
 3. read the forwarded PairUX confirmation mail and opened the real callback;
 4. reached the authenticated dashboard on the free plan;
@@ -29,7 +29,7 @@ The generated credential is mode 0600 outside the repository.
 
 ## General invoice automation
 
-Life Manager PR #1218 generalized the production uGig observer from code-only
+Mr.bot PR #1218 generalized the production uGig observer from code-only
 deliveries to the upstream invoice categories `code`, `art`, `marketing`, and
 `other`.
 
@@ -40,7 +40,7 @@ deliveries to the upstream invoice categories `code`, `art`, `marketing`, and
   mutation;
 - code deliveries retain the all-PRs-merged gate.
 
-Verification: TDD RED 2 failures, focused GREEN 9/9, full Life Manager 659/659
+Verification: TDD RED 2 failures, focused GREEN 9/9, full Mr.bot 659/659
 plus new pretests. The live production observer then reported:
 
 ```json

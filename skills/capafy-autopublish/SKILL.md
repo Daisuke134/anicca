@@ -75,9 +75,9 @@ print it. After the split flow prints ✅, **you still do the browser render che
    (X-Access-Token header) → find a proven seller; GET `/agent/agent/agents/<id>` for its
    pricing/category/structure. Copy facts verbatim; write original words. The paid-only policy
    below overrides any winner free-trial field.
-2. **Build the skill** under `$LIFE_MANAGER_REPO/skills/<name>/` (pure-LLM, sandbox-complete,
+2. **Build the skill** under `$MR_BOT_REPO/skills/<name>/` (pure-LLM, sandbox-complete,
    honest; no web/tool/account claims). Add `test/case1.md`. Grep for leaks (CLEAN).
-3. **Write the listing** `$LIFE_MANAGER_STATE_HOME/features/capafy-<name>/LISTING.md` with the
+3. **Write the listing** `$MR_BOT_STATE_HOME/features/capafy-<name>/LISTING.md` with the
    header (Primary Model / category / tags), a pricing table copied from the winner with
    `No Free Trial` on every plan, and
    `## Title / ## shortDescription / ## welcomeMessage / ## detailedDescription`.
@@ -91,7 +91,7 @@ print it. After the split flow prints ✅, **you still do the browser render che
 
 ## Hard-won rules (full detail in PUBLISHING_RUNBOOK.md)
 - **WE COPY**: winner's price/cap/category/structure verbatim; every plan uses `No Free Trial`.
-- **LEAK GUARD**: publish from clean WS `$LIFE_MANAGER_STATE_HOME/work/capafy` (skill only), never LIVE.
+- **LEAK GUARD**: publish from clean WS `$MR_BOT_STATE_HOME/work/capafy` (skill only), never LIVE.
 - **LLM host (CP2)**: OpenRouter `anthropic/claude-sonnet-4.6`, format `openai-responses`,
   key `CAPAFY_HOST_OPENROUTER_KEY`; delete any blockrun/localhost card.
 - **CP1 15 gotchas** baked into `cp1_agent.py` (RHF element.fill, real mouse clicks,
@@ -115,4 +115,4 @@ capafy-autopublish/
 │            capafy-user/      (capafy_http.py = market search CLI)
 └── state/   published.jsonl (ledger)
 ```
-Canonical copy lives in `$LIFE_MANAGER_REPO/skills/capafy-autopublish`; no repo-external skill mirror is an execution source.
+Canonical copy lives in `$MR_BOT_REPO/skills/capafy-autopublish`; no repo-external skill mirror is an execution source.

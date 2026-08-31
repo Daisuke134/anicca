@@ -17,7 +17,7 @@ REQUIRED_KIB = int(os.environ.get("GIG_DISK_HEADROOM_KIB", "0"))
 REQUIRED_BYTES = REQUIRED_KIB * 1024
 RECEIPT_PATH = Path("state") / "disk-headroom.json"
 
-_PRODUCER_GATE = "life-manager-producer-preflight"
+_PRODUCER_GATE = "mr-bot-producer-preflight"
 _POLICY_FLAGS = (
     ("disk-writers.stop", "disk_writers_stop"),
     ("disk-pressure.block", "disk_pressure_block"),
@@ -97,17 +97,17 @@ def _host_state_dir() -> Path:
         os.environ.get("GIG_HOST_STATE_DIR")
         or os.environ.get("DISK_CONTROL_STATE_DIR")
         or os.environ.get("OPENCLAW_STATE_DIR")
-        or os.environ.get("LIFE_MANAGER_HOST_STATE_DIR")
+        or os.environ.get("MR_BOT_HOST_STATE_DIR")
     )
     if configured:
         return Path(configured).expanduser()
     # The production sentinel and emergency guard both write here. Installers can
-    # override it above when Life Manager is used without OpenClaw.
+    # override it above when Mr.bot is used without OpenClaw.
     return Path.home() / ".openclaw" / "state"
 
 
 def _producer_gate() -> tuple[str, Path] | None:
-    """Read the shared Life Manager stop contract before starting a producer."""
+    """Read the shared Mr.bot stop contract before starting a producer."""
     host_state = _host_state_dir()
     try:
         if not host_state.is_dir():

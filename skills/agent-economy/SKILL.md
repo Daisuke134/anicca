@@ -11,7 +11,7 @@ metadata:
 
 # agent-economy
 
-This is the public control-plane skill for a financially independent Life Manager agent. It does not
+This is the public control-plane skill for a financially independent Mr.bot agent. It does not
 invent a wallet, receive a private key, or broadcast a payment when called. Its default pass reconciles
 delayed receipts and reports the truth that the other earn slots use.
 
@@ -45,7 +45,7 @@ home. Creation moves no funds; funding remains an explicit external action.
 ## Run
 
 ```bash
-bash "$LIFE_MANAGER_REPO/skills/agent-economy/run.sh"
+bash "$MR_BOT_REPO/skills/agent-economy/run.sh"
 ```
 
 The output is one JSON summary. `unverified_external_rows` is visible but contributes zero to

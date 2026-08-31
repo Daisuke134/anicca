@@ -1,17 +1,17 @@
 {
   "version": 1,
-  "scope": "life-manager",
+  "scope": "mr-bot",
   "timeout_seconds": 900,
   "providers": {
     "codex": {
       "executable": "codex",
       "profiles": {
         "acct1": {
-          "automation_home": "~/.local/state/life-manager/codex-runner/acct1",
+          "automation_home": "~/.local/state/mr-bot/codex-runner/acct1",
           "auth_file": "~/.codex/auth.json"
         },
         "acct2": {
-          "automation_home": "~/.local/state/life-manager/codex-runner/acct2",
+          "automation_home": "~/.local/state/mr-bot/codex-runner/acct2",
           "auth_file": "~/.codex-acct2/auth.json"
         }
       },
@@ -50,7 +50,7 @@
     },
     "openclaw": {
       "executable": "openclaw",
-      "agent": "life-manager",
+      "agent": "mr-bot",
       "capabilities": {
         "structured_json": true,
         "tools": true,

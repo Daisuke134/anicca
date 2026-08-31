@@ -86,7 +86,7 @@
  T14. 子spawn: 親USDC→子wallet fund→子起動 (自分で)
  T15. swarm: 子と gh issue で協力
 
-■ Phase 3 — life-manager (consumer SaaS)
+■ Phase 3 — mr-bot (consumer SaaS)
  T16. 既存 life(Railway) bug fix + elevenlabs電話 + 位置/route
  T17. aniccaai.com/install: Telegram onboarding + Stripe sub
  T18. webhook → 顧客専用 instance cloud spawn (マルチテナント)

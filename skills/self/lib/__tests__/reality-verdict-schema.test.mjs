@@ -57,8 +57,8 @@ test("normalizeLoopName is a no-op when already suffixed", () => {
   assert.equal(normalizeLoopName("capafy-loop"), "capafy-loop");
 });
 
-test("normalizeLoopName('life-manager') and ('life-manager-loop') produce the identical name", () => {
-  assert.equal(normalizeLoopName("life-manager"), normalizeLoopName("life-manager-loop"));
+test("normalizeLoopName('mr-bot') and ('mr-bot-loop') produce the identical name", () => {
+  assert.equal(normalizeLoopName("mr-bot"), normalizeLoopName("mr-bot-loop"));
 });
 
 test("buildResultPath embeds the normalized loop name and the timestamp, under stateDir", () => {

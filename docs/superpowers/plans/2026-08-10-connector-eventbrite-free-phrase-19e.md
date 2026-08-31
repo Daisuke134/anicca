@@ -12,8 +12,8 @@ Eventbrite detail本文の明示的な無料表現を費用markerと誤認せず
 
 ## Owned files
 
-1. `apps/life-manager/lib/connector-eventbrite-workflow.js`
-2. `apps/life-manager/lib/connector-eventbrite-workflow.test.js`
+1. `apps/mr-bot/lib/connector-eventbrite-workflow.js`
+2. `apps/mr-bot/lib/connector-eventbrite-workflow.test.js`
 
 ## RED
 

@@ -36,7 +36,7 @@ AIに身体はなくても、継続費はある。推論APIは食費、cloud run
 
 ## 3. 最初の資金は誰が出すのか
 
-自立は無から始まらない。最初のwallet作成、cloud起動、最初の仕事を取る費用にはbootstrap capitalが要る。Life Managerのsubscriptionや、人間が送るUSDC・SOLは、この初期費用を担う。
+自立は無から始まらない。最初のwallet作成、cloud起動、最初の仕事を取る費用にはbootstrap capitalが要る。Mr.botのsubscriptionや、人間が送るUSDC・SOLは、この初期費用を担う。
 
 ただし、人間から10 USDCを受け取って残高が10増えても、AIが10稼いだことにはならない。これは資本の投入であり、収益は0だ。自分の別walletから移した資金、元本の回収、同じagent群の間の自己支払いも同じである。
 
@@ -134,9 +134,9 @@ Nosanaの公式protocol文書では、projectがpipeline jobを投稿し、node�
 
 そこで停止条件を「何時間使ったか」ではなく「移動と再起動に必要な残高を残せるか」へ変えた。これがreserve floorである。providerの冗長化も、契約先が2社あることではなく、同じartifactが起動し、heartbeatと決算書を返せるところまで試して初めて成立する。
 
-## 10. Life Managerとの接続
+## 10. Mr.botとの接続
 
-Life Managerは、人間ごとにagentを持たせ、そのagentが生活管理と経済活動を同じpolicyの中で行う製品になる。subscriptionは会社の売上であり、agentを起動するbootstrap subsidyである。agent自身の収益とは数えない。
+Mr.botは、人間ごとにagentを持たせ、そのagentが生活管理と経済活動を同じpolicyの中で行う製品になる。subscriptionは会社の売上であり、agentを起動するbootstrap subsidyである。agent自身の収益とは数えない。
 
 利用体験は次のようになる。
 

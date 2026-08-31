@@ -75,7 +75,7 @@ class RunBrowserPreflightTests(unittest.TestCase):
             environment.update(
                 {
                     "TEST_CANONICAL_HOME": str(home),
-                    "LIFE_MANAGER_LOOP_ID": "job-search-mercor-browser",
+                    "MR_BOT_LOOP_ID": "job-search-mercor-browser",
                     "JOB_SEARCH_BROWSER_PROFILE": str(selected_profile),
                 }
             )
@@ -164,7 +164,7 @@ class RunBrowserPreflightTests(unittest.TestCase):
             environment.update(
                 {
                     "TEST_CANONICAL_HOME": str(home),
-                    "LIFE_MANAGER_LOOP_ID": "job-search-mercor-browser",
+                    "MR_BOT_LOOP_ID": "job-search-mercor-browser",
                     "JOB_SEARCH_BROWSER_STATE_NAME": "job-search-browser",
                     "JOB_SEARCH_BROWSER_PROFILE": str(profile),
                     "GUARD_MARKER": str(guard_marker),
@@ -257,7 +257,7 @@ Path(os.environ["GUARD_CAPTURE"]).write_text(
                     "TEST_CANONICAL_HOME": str(home),
                     "GUARD_CAPTURE": str(guard_capture),
                     "CHROMIUM_CAPTURE": str(chromium_capture),
-                    "LIFE_MANAGER_LOOP_ID": "job-search-mercor-browser",
+                    "MR_BOT_LOOP_ID": "job-search-mercor-browser",
                 }
             )
             completed = subprocess.run(
@@ -272,7 +272,7 @@ Path(os.environ["GUARD_CAPTURE"]).write_text(
             self.assertEqual(
                 json.loads(guard_capture.read_text(encoding="utf-8")),
                 {
-                    "state": str(home / ".local" / "state" / "life-manager" / "mercor-browser"),
+                    "state": str(home / ".local" / "state" / "mr-bot" / "mercor-browser"),
                     "pressure": "1",
                     "headroom": "524288",
                 },
@@ -346,7 +346,7 @@ raise SystemExit(1)
         self.assertIn("GIG_DISK_HEADROOM_KIB=524288", TEXT)
         self.assertIn('GIG_HOST_STATE_DIR="$CANONICAL_HOME/.openclaw/state"', TEXT)
         self.assertIn(
-            'GIG_STATE_DIR="$CANONICAL_HOME/.local/state/life-manager/job-search-browser"',
+            'GIG_STATE_DIR="$CANONICAL_HOME/.local/state/mr-bot/job-search-browser"',
             TEXT,
         )
         unset_block = TEXT[TEXT.index("unset "):TEXT.index("\nGIG_DISK", TEXT.index("unset "))]
@@ -355,7 +355,7 @@ raise SystemExit(1)
             "GIG_IGNORE_DISK_WRITERS_STOP",
             "DISK_CONTROL_STATE_DIR",
             "OPENCLAW_STATE_DIR",
-            "LIFE_MANAGER_HOST_STATE_DIR",
+            "MR_BOT_HOST_STATE_DIR",
         ):
             self.assertIn(name, TEXT)
             self.assertIn(name, unset_block)

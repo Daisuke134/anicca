@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { notifyOpenClawGateway, parseOpenClawMessageId } = require("../../../apps/life-manager/lib/outbound-guardian.js");
+const { notifyOpenClawGateway, parseOpenClawMessageId } = require("../../../apps/mr-bot/lib/outbound-guardian.js");
 
 const SAFE_ID = /^[A-Za-z0-9:._-]{1,160}$/;
 const SAFE_REASON = /^[a-z0-9_:-]{1,100}$/;

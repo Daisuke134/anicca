@@ -17,10 +17,10 @@ First line of the post body, as fetched:
 
 > "You have said sorry for being late so many times the word stopped meaning anything."
 
-The body goes on to state that Life Manager calls ten minutes before you need to leave and keeps
+The body goes on to state that Mr.bot calls ten minutes before you need to leave and keeps
 ringing until you answer, that it reads the calendar together with travel time, and that it mails the
 other party before you do when you are going to be late. It closes on "I stopped managing my day. It
-manages me." The "Try Life Manager" line required by §10.0-8 is the narration's closing phrase in the
+manages me." The "Try Mr.bot" line required by §10.0-8 is the narration's closing phrase in the
 video, not text in the post body.
 
 ## Logged-out readback
@@ -48,7 +48,7 @@ article-writer pipeline's X Articles and are unrelated.
 
 ## Not verified
 
-The video's narration audio was not played back, so the spoken "Try Life Manager" closer is inferred from
+The video's narration audio was not played back, so the spoken "Try Mr.bot" closer is inferred from
 the format ruling rather than heard. `crwl` could not be used for the logged-out read — its Playwright
 install is missing `chromium_headless_shell-1228` and the binary cannot launch, so the default
 logged-out verification tool is currently broken and wants `playwright install chromium`.

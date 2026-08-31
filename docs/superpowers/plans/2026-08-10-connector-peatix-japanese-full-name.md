@@ -16,10 +16,10 @@
 
 - Modify: `skills/connector/native-pass.js`
 - Modify: `skills/connector/test/native-entrypoint.test.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.js`
-- Modify: `apps/life-manager/lib/connector-production-browser-harness.test.js`
-- Modify: `apps/life-manager/lib/connector-minimal-evidence.js`
-- Modify: `apps/life-manager/lib/connector-minimal-evidence.test.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.js`
+- Modify: `apps/mr-bot/lib/connector-production-browser-harness.test.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-evidence.js`
+- Modify: `apps/mr-bot/lib/connector-minimal-evidence.test.js`
 
 ## Contracts
 

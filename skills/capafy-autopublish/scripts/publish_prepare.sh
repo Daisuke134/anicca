@@ -30,19 +30,19 @@ ICON="$(cd "$(dirname "$ICON")" 2>/dev/null && pwd)/$(basename "$ICON")"
 
 AUTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUB="$AUTO/vendor/capafy-publisher"
-LIFE_MANAGER_STATE_HOME="${LIFE_MANAGER_STATE_HOME:-$HOME/.local/state/life-manager}"
+MR_BOT_STATE_HOME="${MR_BOT_STATE_HOME:-$HOME/.local/state/mr-bot}"
 VENV="${CAPAFY_BROWSER_PYTHON:-python3}"
 # OpenClaw resolves provider config from the isolated publisher HOME's
 # .openclaw/openclaw.json, not from runtime_dir. Give the publisher an isolated HOME so it cannot package the
 # operator's live OpenClaw providers. Canonical skill source remains in this repo.
-CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-home}"
-CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher}"
+CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$MR_BOT_STATE_HOME/runtime/capafy-publisher-home}"
+CAPAFY_PUBLISHER_STATE_HOME="${CAPAFY_PUBLISHER_STATE_HOME:-$MR_BOT_STATE_HOME/runtime/capafy-publisher}"
 WS="${CAPAFY_WORKSPACE:-$CAPAFY_PUBLISH_HOME/.openclaw/workspace}"
 SKILL_NAME="$(basename "$SKILL_DIR")"
 
 # launchd and direct recovery runs must use the same private credential SSOT.
 # Load names into the process only; never copy values into the repo or output.
-for ENV_FILE in "$LIFE_MANAGER_STATE_HOME/.env"; do
+for ENV_FILE in "$MR_BOT_STATE_HOME/.env"; do
   if [ -f "$ENV_FILE" ]; then
     set -a; . "$ENV_FILE" 2>/dev/null; set +a
   fi
@@ -137,7 +137,7 @@ except Exception: print('')")"
   [ "$DISCOVERY_STATUS" = "needs_selection" ] \
     || die "Phase A publish-init did not return needs_selection for agent_id=$ID"
   echo "Phase A discovery complete for agent_id=$ID"
-  SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
+  SEL_FILE="$MR_BOT_STATE_HOME/state/capafy-autopublish/sel_one.json"
   SELECTION_RESULT="$(printf '%s' "$DISCOVERY_OUT" | python3 "$AUTO/scripts/build_publish_selection.py" --skill-dir "$WS/skills/$SKILL_NAME" --title "$TITLE" --agent-id "$ID" --output "$SEL_FILE")" \
     || die "Phase A candidate did not map uniquely to the explicit skill; no init effect attempted"
   SELECTION_FILE="$(printf '%s' "$SELECTION_RESULT" | sed -n 's/^SELECTION_FILE=//p' | tail -1)"
@@ -163,7 +163,7 @@ except Exception: print('')")"
   [ "$DISCOVERY_STATUS" = "needs_selection" ] \
     || die "Phase A publish-init did not return needs_selection for new agent"
   echo "Phase A discovery complete for new agent"
-  SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
+  SEL_FILE="$MR_BOT_STATE_HOME/state/capafy-autopublish/sel_one.json"
   SELECTION_RESULT="$(printf '%s' "$DISCOVERY_OUT" | python3 "$AUTO/scripts/build_publish_selection.py" --skill-dir "$WS/skills/$SKILL_NAME" --title "$TITLE" --output "$SEL_FILE")" \
     || die "Phase A candidate did not map uniquely to the explicit skill; no init effect attempted"
   SELECTION_FILE="$(printf '%s' "$SELECTION_RESULT" | sed -n 's/^SELECTION_FILE=//p' | tail -1)"

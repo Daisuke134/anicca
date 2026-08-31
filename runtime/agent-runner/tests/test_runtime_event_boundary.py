@@ -16,7 +16,7 @@ class RuntimeEventBoundaryTest(unittest.TestCase):
     def test_managed_parent_loop_id_overrides_legacy_child_alias(self):
         with mock.patch.dict(
             os.environ,
-            {"LIFE_MANAGER_LOOP_ID": "hf-gig-storefront-direct"},
+            {"MR_BOT_LOOP_ID": "hf-gig-storefront-direct"},
         ):
             self.assertEqual(
                 runtime_event_loop_id("gig-storefront"),
