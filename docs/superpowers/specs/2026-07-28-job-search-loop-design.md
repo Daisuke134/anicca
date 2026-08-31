@@ -124,6 +124,14 @@ materials-ready and retryable applications in the existing queue order, apply th
 same fit/tenant recovery filters and dedupe by application ID, then enter the browser
 immediately. No new retry policy or external effect is added.
 
+The retryable-priority repair is implemented in the same
+`qualified_queue_ids()` function by combining pending materials-ready and Ledger
+retryable rows before the existing host, recovery-state and fit filters, then
+deduplicating application IDs without changing order. RED returned an empty queue for
+a retryable Danaher row; GREEN returns that exact application ID. Qualification tests
+pass 44/44 and the full Job Hunter suite passes 437/437. Main release and natural
+reopen proof remain.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
