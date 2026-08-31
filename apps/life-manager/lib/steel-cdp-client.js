@@ -218,11 +218,9 @@ function makeSteelCdpClient({ baseUrl = STEEL_BASE_URL, fetchImpl, connectCdp } 
     async getInteractiveDebugger(sessionId, publicCastUrl) {
       let target;
       try { target = new URL(publicCastUrl); } catch { throw new Error("Steel debugger public URL invalid"); }
-      const ticket = target.searchParams.getAll("ticket");
+      const pathMatch = target.pathname.match(/^\/api\/panel\/money-printer\/browser\/cast\/([A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43})$/);
       if (target.protocol !== "wss:" || target.username || target.password
-        || target.hash || [...target.searchParams.keys()].some((key) => key !== "ticket")
-        || ticket.length !== 1 || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/.test(ticket[0])
-        || target.pathname !== "/api/panel/money-printer/browser/cast") {
+        || target.search || target.hash || !pathMatch) {
         throw new Error("Steel debugger public URL invalid");
       }
       await this.assertLiveSession(sessionId);
