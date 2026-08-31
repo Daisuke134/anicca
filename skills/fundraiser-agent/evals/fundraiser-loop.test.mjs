@@ -210,6 +210,8 @@ test("production contract runs every minute and maximizes real applications", ()
   assert.match(dailyPrompt, /cdp_tab_gc\.py --owner ai\.anicca\.fundraiser/);
   assert.match(dailyPrompt, /cdp_default_tab\.py open about:blank --owner ai\.anicca\.fundraiser/);
   assert.match(dailyPrompt, /cdp_default_tab\.py close "\$TARGET_ID" --owner ai\.anicca\.fundraiser/);
+  assert.match(dailyPrompt, /FUNDRAISER_EVIDENCE_DIR\/target-id/);
+  assert.match(dailyPrompt, /helper has no `list` command/);
   assert.doesNotMatch(dailyPrompt, /cdp_context_lease\.py/);
   assert.match(dailyPrompt, /jq -r '\.target_id'/);
   assert.match(dailyPrompt, /Never use `rg`, `grep`, `find`, `locate`/);

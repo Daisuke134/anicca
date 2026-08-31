@@ -206,6 +206,7 @@ claims distinguishable, and never rename revenue as MRR/ARR without period proof
    - `TARGET_ID="$(python3 skills/browser/scripts/cdp_default_tab.py open about:blank --owner ai.anicca.fundraiser | jq -r '.target_id')"`
    - Require a non-empty `TARGET_ID`; use it for every CDP command. Never print or
      persist the full helper JSON or WebSocket URL.
+   - Immediately persist only the non-secret ID with `printf '%s' "$TARGET_ID" > "$FUNDRAISER_EVIDENCE_DIR/target-id"`; in every later shell command restore it with `TARGET_ID="$(cat "$FUNDRAISER_EVIDENCE_DIR/target-id")"`. The helper has no `list` command.
    - `python3 skills/browser/scripts/cdp.py nav "$TARGET_ID" "$URL"`
    - `printf '%s\n' "$JS" | python3 skills/browser/scripts/cdp.py eval "$TARGET_ID" -`
    - `python3 skills/browser/scripts/cdp_default_tab.py close "$TARGET_ID" --owner ai.anicca.fundraiser`
