@@ -1528,7 +1528,7 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 - Judge/userは`https://aniccaai.com/money-printer`だけからsignup-free guest session、opportunity追加、agent dispatch、cloud browser、human takeover、answer、same-job resume、receipt確認、resetを完走できる。Dais Mac、Telegram、email、CLIは不要。
 - Official Symphony一つが全workroomのclaim、isolated workspace、agent turn、retry/backoff、human/browser completion後のcontinuation、restart reconciliationを担う。二つ目のagent frameworkは追加しない。
 - Browser executionはexisting Railway-private Steel + Stagehandだけを使う。Steel/CDP/private URL、cookie、session context、credentialはclient、GitHub Issue、agent prompt、receiptへ出さない。
-- `lm_browser_jobs`はTelegram専用形状を廃止し、`source_kind=panel|telegram|symphony`とtenant/job/dispatch relationを持つ。Same work/effect keyは一browser job、一provider effect、一receiptだけを作る。
+- `lm_browser_jobs` schemaは変更しない。Existing tenant scopeの`uid + chat_id`とSymphony `dispatch_id`を既存unique keyへ渡し、same dispatchを一browser job、一provider effect、一receiptにする。
 - Active browser handoffはauthenticated tenantにだけshort-lived interactive streamとして表示する。Foreign tenantは404、expired/released sessionは410、raw Steel URLとsession IDはresponse 0。
 - UserはMoney Printer内のinteractive browserで自分のMercorへlogin/interview/KYCできる。Agentはpassword、OTP、CAPTCHA、KYC、camera/microphone interview、本人経験回答を代行しない。
 - Human takeover完了をprovider successとして扱わない。Cloud browser readbackがofficial provider stateを確認して初めてApplicationReceiptを作り、independent PaymentReceiptが無ければverified cashは0である。
@@ -1541,7 +1541,7 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 | Surface | As-Is measured | To-Be |
 |---|---|---|
 | Public product | Cloud Dashboard/WebMCP/API/DBはliveだが、real Mercor executionはDais local owner依存 | Browser、human takeover、resume、receiptまでcloud Web appだけで完結 |
-| Browser runtime | Railway-private Steel、Stagehand、`lm_browser_jobs`、encrypted tenant authは実装済み。ただしintakeはTelegram形状、one live session、human takeover UIなし | Same runtimeをpanel/Symphony intakeへ開き、bounded queue、owned interactive stream、context resealを追加 |
+| Browser runtime | Railway-private Steel、Stagehand、`lm_browser_jobs`、encrypted tenant authは実装済み。Queueはtenant/chat/message idempotencyとone live sessionを持つ | Existing enqueue contractへSymphony dispatchを渡し、owned interactive stream、context resealだけを追加 |
 | Symphony | Official runtime、bridge、private tracker、same-job human continuationはlocalでlive。Bridgeは固定tenant一件 | Cloud常駐一instance、server-selected fair tenant claim、browser-action result、multi-tenant same-job continuation |
 | Mercor | Local CDP 9334 loopはowned tab欠落でfail、cloud runtimeへ未接続 | User-owned encrypted cloud auth contextをfresh private Steel sessionへrestoreし、provider official readback |
 | Human handoff | Dashboard HumanTask answerはあるがprovider browser takeoverはなく、Telegramが通知導線 | Dashboard card内のinteractive browser、exact action、complete/cannot-complete、same-job resume |
@@ -1551,8 +1551,8 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 
 | Atom | Exact patch | Focused verification / done |
 |---|---|---|
-| C00 | source changeなし。production `life-call`、worker、Steel health、browser-job loop env、Symphony release、DB schema、public URL/tool discoveryを同一timestampでfreeze | current cloud assets、disabled flags、one-session limit、local dependencyをexact readback |
-| C01 | create `apps/life-manager/migrations/2026-08-31-lm-browser-job-workrooms.sql`; modify `apps/life-manager/lib/browser-job-store.js` + focused test | `source_kind`、`source_ref`、`job_id`、`dispatch_id`、`effect_key`をaddしTelegram columnsをnullable。tenant+effect unique、legacy rows valid、same effect replay one row |
+| C00 | complete / source change 0。production `life-call`、worker、Steel health、browser-job loop env、Symphony release、DB schema、public URL/tool discoveryを同一timestampでfreeze | 2026-08-31T12:46Z: public 200 + WebMCP、life-call/worker/Steel RUNNING、private Steel health 200、browser jobs ON、required tables present。Local Symphony failとMercor local owner loadedはC09 cutover対象 |
+| C01 | complete / source change 0。Existing `buildBrowserJob` / `enqueueBrowserJob`の`uid + chat_id + message_id` unique contractをC02で再利用する | `chat_id=Panel scope chatId`、`message_id=Symphony dispatch_id`、`update_id=job_id`。新migration、source abstraction、parallel queue 0。Rejected PR #3520は未mergeでclose |
 | C02 | modify `apps/life-manager/lib/money-printer-runtime-store.js`、`money-printer-symphony-api.js`とfocused tests; update `2026-08-30-lm-symphony-dispatches.sql` via additive new migration only | `LM_RESULT_V1 status=browser_action_required`をexact typed schemaでconsumeし、same tenant/job/dispatchのbrowser job一件へ変換、runtime job `waiting_browser`、raw/private field 0 |
 | C03 | modify `apps/life-manager/scripts/money-printer-symphony-bridge.js` + focused test、`ops/symphony/WORKFLOW.money-printer.md` | bridge requestからtenant selectorを除去しserver-selected fair claimだけをaccept。Workflowはartifact→browser action→receipt→HumanTask/completeをsame job roundsで継続 |
 | C04 | modify `apps/life-manager/lib/generic-browser-task.js`、`stagehand-steel-driver.js`、`browser-job-runtime.js` + one focused browser test | login/OTP/CAPTCHA/KYC/interviewでsessionをreleaseせずbounded `handoff_required`へhold。No handoff/expiry/errorは必ずrelease、one-session queue overlap 0 |
@@ -1569,7 +1569,7 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 
 | # | To-Be | Focused test | Cover |
 |---:|---|---|---|
-| 1 | Web/Symphony browser intake | `browser-job-store.test.js` workroom source + effect replay | OK |
+| 1 | Web/Symphony browser intake | existing enqueue duplicate test + C02 result-consume test | OK |
 | 2 | Browser action result | `money-printer-symphony-api.test.js` exact third result state | OK |
 | 3 | Multi-tenant Symphony claim | bridge/API + Postgres fair-claim test | OK |
 | 4 | Browser handoff retention | `stagehand-steel-driver.test.js` hold/expiry/release | OK |
