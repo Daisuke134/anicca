@@ -62,8 +62,12 @@ checkpoint without another provider effect. A visibly successful sign-in promote
 the tenant to `signed_in`. Focused browser/account tests pass 51/51, the full Job
 Hunter suite passes 432/432, the real `daily-20260831-155635` transcript validates
 without the false overlap, and a private SSOT copy proves
-`create_submitted -> recovery_requested`. Main-derived release and natural-owner
-readback remain the active gate.
+`create_submitted -> recovery_requested`. The implementation is merged to main as
+`d2e096948bb94eadefee5d73ce0c27de68f69679`, but Dais explicitly stopped deployment
+before any production apply. No release for that SHA exists, and all five loaded
+owners remain on `20260831T070607-6466fea3`. Do not cut/apply a new release, seed
+private recovery state, or trigger a validation wake until Dais explicitly resumes
+the fix. Main-derived release and natural-owner readback remain the pending gate.
 
 The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
 longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
