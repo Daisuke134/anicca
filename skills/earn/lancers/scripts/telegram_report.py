@@ -27,7 +27,31 @@ STATE = Path.home() / ".local/state/anicca/lancers/application.json"
 DATABASE = STATE.with_name("telegram.sqlite3")
 LEDGER_DATABASE = STATE.with_name("marketplace-ledger.sqlite3")
 STOREFRONT_LOG = STATE.parent / "logs/storefront.stdout.log"
-TARGET = os.environ.get("LANCERS_REPORT_CHAT") or os.environ.get("GIG_REPORT_CHAT", "")
+def _report_chat() -> str:
+    """Resolve the report destination from env, then from a config file.
+
+    The launchd plists for this lane are generated from the loop registry, which has no way to
+    declare environment variables, so an env-only lookup is empty in production and the lane
+    reports to nobody while still exiting 0. The job-search loop already solved this by reading
+    ``~/.config/anicca/<loop>/telegram.env`` when the env is bare; this reuses that shape.
+    """
+    for key in ("LANCERS_REPORT_CHAT", "GIG_REPORT_CHAT"):
+        value = os.environ.get(key, "").strip()
+        if value:
+            return value
+    config = Path.home() / ".config" / "anicca" / "lancers" / "telegram.env"
+    try:
+        lines = config.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return ""
+    for raw in lines:
+        name, _, value = raw.partition("=")
+        if name.strip() == "LANCERS_REPORT_CHAT":
+            return value.strip()
+    return ""
+
+
+TARGET = _report_chat()
 TOKYO = ZoneInfo("Asia/Tokyo")
 _LABELS = (("published", "受付中", "/myplan"), ("paused", "受付休止中", "/myplan/paused"), ("hidden", "非表示", "/myplan/archived"), ("draft", "下書き", "/myplan/draft"))
 _DEMAND_LABELS = (("search_impressions", "検索表示"), ("detail_views", "詳細閲覧"), ("favorites", "お気に入り"), ("inquiries", "相談"), ("orders", "注文"))
