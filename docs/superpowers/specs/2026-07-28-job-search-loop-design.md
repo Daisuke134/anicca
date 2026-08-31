@@ -63,11 +63,19 @@ the tenant to `signed_in`. Focused browser/account tests pass 51/51, the full Jo
 Hunter suite passes 432/432, the real `daily-20260831-155635` transcript validates
 without the false overlap, and a private SSOT copy proves
 `create_submitted -> recovery_requested`. The implementation is merged to main as
-`d2e096948bb94eadefee5d73ce0c27de68f69679`, but Dais explicitly stopped deployment
-before any production apply. No release for that SHA exists, and all five loaded
-owners remain on `20260831T070607-6466fea3`. Do not cut/apply a new release, seed
-private recovery state, or trigger a validation wake until Dais explicitly resumes
-the fix. Main-derived release and natural-owner readback remain the pending gate.
+`d2e096948bb94eadefee5d73ce0c27de68f69679`. Dais has now explicitly resumed the
+fix. All five loaded owners still remain on `20260831T070607-6466fea3`; no newer
+release or private-state seed exists yet. Later old-release wakes prove the remaining
+queue defect: `daily-20260831-170959` again ends with only Cloudera
+`email_recovery`, zero new applications, confirmed count 6 and deficit 42.
+`qualified_queue_ids()` treats the recovery-waiting `materials_ready` row as runnable,
+so `queued_existing` returns before fresh qualification. The active atom excludes
+only tenant state `recovery_requested` from the current wake queue without changing
+Ledger state, intent fences, fit judgment, or permanent eligibility. If no other
+runnable row remains, the existing fresh search must run immediately; an
+authoritative account-mail transition or visible successful sign-in makes Cloudera
+runnable again. Main-derived release, exact private-state seed and natural-owner
+readback remain the pending gate.
 
 The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
 longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
