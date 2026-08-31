@@ -2,6 +2,7 @@ import copy
 import hashlib
 import io
 import importlib.util
+import inspect
 import json
 import sqlite3
 import sys
@@ -898,3 +899,55 @@ class ApplicationLoopHolTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ExhaustiveDiscoveryTests(unittest.TestCase):
+    """The opt-in exhaustive path must see the whole board without widening the cheap tick."""
+
+    def _rows(self, application_loop):
+        # every query contributes one unique row plus one row they all share
+        return {
+            query: {"ok": True, "error": None, "opportunities": [
+                {"external_id": str(1000 + index), "title": f"job{index}"},
+                {"external_id": "9999", "title": "shared"},
+            ]}
+            for index, query in enumerate(application_loop.DISCOVERY_QUERIES)
+        }
+
+    def test_exhaustive_unions_every_query_and_deduplicates(self):
+        application_loop = _load_deployed_loop()
+        responses = self._rows(application_loop)
+        calls = []
+
+        def discover(**kwargs):
+            calls.append(kwargs["query"])
+            return responses[kwargs["query"]]
+
+        with patch.object(application_loop.status, "run_discovery", side_effect=discover):
+            result = application_loop._run_exhaustive_discovery(20.0)
+
+        self.assertEqual(calls, list(application_loop.DISCOVERY_QUERIES))
+        ids = sorted(row["external_id"] for row in result["opportunities"])
+        self.assertEqual(len(ids), len(application_loop.DISCOVERY_QUERIES) + 1)
+        self.assertEqual(ids.count("9999"), 1)
+        self.assertTrue(result["ok"])
+        self.assertNotIn("error", result)
+
+    def test_exhaustive_refuses_to_report_a_partial_board(self):
+        application_loop = _load_deployed_loop()
+
+        def discover(**_kwargs):
+            return {"ok": False, "error": "lancers_provider_error", "opportunities": []}
+
+        with patch.object(application_loop.status, "run_discovery", side_effect=discover):
+            result = application_loop._run_exhaustive_discovery(20.0)
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"], "lancers_provider_error")
+
+    def test_default_tick_is_unchanged_and_stays_opt_out(self):
+        application_loop = _load_deployed_loop()
+        self.assertIn("exhaustive", inspect.signature(application_loop.run_loop).parameters)
+        self.assertIs(
+            application_loop.run_loop.__kwdefaults__["exhaustive"], False,
+        )
