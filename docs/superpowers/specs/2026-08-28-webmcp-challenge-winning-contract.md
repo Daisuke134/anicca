@@ -1398,24 +1398,24 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 | S09 | bridgeをlaunchdへinstallする | complete: PR #3391でregistry/entry dispatch/5秒cadenceをmainへmergeし、PR #3394でこのloopだけ`Umask 077`とlog `0700/0600`へhardening。main `3b79c0b29ad15fca07506c58f21c7643b66280fd`由来release `/Users/anicca/loops/releases/20260831T051311-3b79c0b2`へtarget applyし、loaded argv exact、plist secret key 0、5秒interval/throttle、自然runと`bin/lm-loop restart`後のterminal PASS/exit 0/loaded-idle、cleanup errors 0/protected deletion 0、doctor missing/retired/unmanaged 0、stderr 0 bytes、fresh review `SHIP`。sibling log mode mutation 0 |
 | S10 | Symphonyをlaunchdへinstallする | complete: official pinned artifactをmain `901f2745381af8e6c81e94f57252760bda13b4f1`由来immutable releaseへtarget apply。warning acknowledgement、private tracker、state/log `0700/0600`、credential literal leak 0、GUI owner一プロセス、localhost API 200、public port 0、正規restart recovery、doctor異常0を実readback |
 | S11 | Railway worker capabilitiesから`general-agent.work`だけを外す | complete: production deployment `14ab83de-8793-4f0d-96f8-60b209a2bd3b` SUCCESS、capabilityは`money-printer.scout`だけ、container health 200、last poll更新、general-agent workのactive `money-printer-worker` lease 0、scout cycle継続。source change 0、変更variable 1件 |
-| S12 | two dispatchesを同時enqueueする | Symphony dashboard Agents 2/2、workspace refs別、DB open dispatch 2、cross-job refs 0 |
+| S12 | two dispatchesを同時enqueueする | complete: productionで`c50f205...`と`b554891...`を同一tenantへenqueue。Official Symphony logはIssue #1を08:32:29、#2を08:32:47に同時dispatchし、workspaceは`GH-1`/`GH-2`で分離。DBは別job/dispatch/result hash、各round 1、各Issue/result/close ack一件、cross-job ref 0。#1はimmutable artifact付き`completed`、#2はimmutable artifact + owner confirmationのgenuine `needs_human`。Bridgeのlaunchd GitHub auth欠落は`runtime/loop/entry_dispatch.py:205-237`とfocused testだけでRED→13/13 GREEN、PR #3413、CI 9/9、fresh `SHIP`、main `6466fea3...`由来immutable releaseへ復旧し自然run連続PASS/exit 0。capacity migrationはtenant xact advisory mutex + open cap 2 + fair poll、production function/readback一致 |
 
 ### 18.8 H — same-job minimal-human E2E（Section 14 item 3, slice 4）
 
 | Atom | One action | Exact completion evidence |
 |---|---|---|
-| H01 | canonical Mercor listingをfresh official pageで再確認する | Apply now、reward、requirements、interview。closure/hidden ineligibilityならeffect前にcandidate差替え |
-| H02 | owner session/profileから既知factsを読む | agentが使えるname/contact/profile refsを確認、値をevidenceへ複製しない |
-| H03 | listingをowner workroomへ一度addする | Opportunity ID/job ID、duplicate addで同じIDs、job count増加1 |
-| H04 | bridgeがsame jobをclaimしてIssueへmirrorする | DB waiting_agent、dispatch ref、private Issue ref、one issue only |
-| H05 | Symphony Codex agentがresearch/profile/form/artifactを進める | agent eventsとartifact refs。単なる「できません」handoffならfail |
-| H06 | provider-required interviewで停止する | HumanTask reason `provider_interview`、one exact action、15-minute estimate、prepared context refs |
-| H07 | Dashboard/WebMCPで同じtaskを読む | visible Needs You cardと`inspect_next_human_task`がtask ID/version一致し、`record_human_answer`がこの時だけ5th toolとして登録 |
-| H08 | Daisが本人interviewを行いanswerを一回送る | raw video/answerはvault/providerだけ。Dashboardはanswer refとversionだけ |
-| H09 | stale versionとsame idempotency key replayを各一回検証する | stale=conflict、same replay=same result、new answer row 1 |
-| H10 | same Life Manager jobを再dispatchする | job ID不変、新dispatch/Issue round、answered boundary refあり |
-| H11 | agentが再開してavailable terminalまで進む | qualification/application-step/provider receiptの得られた最深state。contract/cashは未取得なら主張0 |
-| H12 | official provider readbackとreplay-zeroを記録する | provider URL/ID、receipt hash、duplicate effect 0、verified cashはpayment receiptなしなら0 |
+| H01 | safe public pageのjudge evidence briefをagentへ一度渡す | complete: opportunity `b6722d...`、same job、Issue #1、artifact commit `89a4ef0...`、author-bound `LM_RESULT_V1 completed`、DB consumed/closed ack |
+| H02 | demo narration/evidence checklistをowner-confirmation workroomへ一度渡す | complete: opportunity `ae0cb18...`、same job、Issue #2、artifact commit `3661d91...`、author-bound `LM_RESULT_V1 needs_human` |
+| H03 | genuine minimal HumanTaskをDBへ固定する | complete: task `63d6d297...` version 1、reason `owner_confirmation`、format `approve/request_changes`、same job ref、status open |
+| H04 | stale shared-guest tasksをhuman boundaryどおり閉じる | complete: 前日残り2件は未承認human availabilityなので`false`を一回ずつ回答し、それぞれsame-job resume refをreadback。対象taskのmutation 0 |
+| H05 | `inspect_next_human_task`の対象をowner confirmationへ揃える | complete: production GETはtask `63d6d297...`、version/question/format/reasonがDBと一致 |
+| H06 | final browserの初期状態をfreezeする | pending: owner-confirmation task open、target job waiting_human、bridge PASS、initial four tools、artifact refs/readback accessible、他browser実行0 |
+| H07 | 録画中にChatGPT/WebMCPで同じtaskを読む | visible Needs You cardと`inspect_next_human_task`がtask ID/version一致し、`record_human_answer`がこの時だけ5th toolとして登録 |
+| H08 | 録画中にowner confirmationを一回`approve`する | `answer_ref=vault-answer://webmcp-judge/approve`だけを記録し、raw/private input 0 |
+| H09 | answer receiptとduplicate-zeroを読む | task row answered一件、command receipt succeeded一件、同じtask/versionの追加answer effect 0 |
+| H10 | same Life Manager jobをround 2へ再dispatchする | job ID `goal:ae0cb18...`不変、新dispatch/Issue round 2、answered boundary refあり |
+| H11 | agentが同じartifactをfinal lockしてterminalへ進む | round 2 artifact、author-bound completed result、DB consumed、GitHub CLOSED、workspace cleanup |
+| H12 | reload persistenceとreplay-zeroを記録する | board/workroom/WebMCP/API/DB一致、receipt/result hash一件、duplicate Issue/comment/answer 0、verified cashは0のまま |
 
 ### 18.9 G — guest replay + 24/7 proof（Section 14 items 4–5）
 
@@ -1479,4 +1479,4 @@ A01–A09はcomplete。新依存/endpoint 0。A09はrelated 120/120、fresh adve
 
 ### 18.13 Immediate next atom
 
-次はS12だけを実行する。既存API・bridge・official Symphonyだけで同じtenantへ`general-agent.work`を二件同時enqueueし、DB open dispatch 2、private GitHub Issue 2、Symphony dashboard Agents 2/2、workspace ref別、cross-job ref 0を実readbackする。新agent、別harness、別queue、browserは作らない。一件はcompleted、一件はgenuine `needs_human`にし、human answer/resumeは次のH01–H12でsame jobへ閉じる。R01–R12、A01–A09、S01–S11は完了済み。full browser production E2EはB12唯一のrecording runへ予約し、Chrome/ChatGPT内蔵browserの二重実行はしない。
+次はH06→H12→B12だけを順に実行する。対象は既にopenなowner-confirmation task `63d6d297...`とsame job `goal:ae0cb18...`だけ。既存CloakBrowser系の一回の録画runでChatGPT/WebMCPのinitial four→dynamic fifth→`approve`→same-job round 2→artifact/receipt→reload persistenceを閉じ、別browser・別harness・別queue・新agentは作らない。録画後は英語音声を付け、`<180.000s`、主要5場面可読、secret/private leak 0、unsupported claim 0をframe/audio/playbackで検査する。R01–R12、A01–A09、S01–S12、H01–H05は完了済み。MP4完成後のYouTube公開とDevpost submitは別Goal。
