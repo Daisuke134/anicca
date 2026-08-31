@@ -646,6 +646,37 @@ def test_targeted_browser_readbacks_admit_one_hidden_context_at_a_time():
     assert paid.PAID_MAX_PARALLEL_PROJECTS > 1
 
 
+def test_selected_talkroom_readback_honors_hidden_transport(tmp_path, monkeypatch):
+    snapshot = load("coconala_queue_snapshot")
+    seen = []
+    args = SimpleNamespace(
+        mode="selected-talkroom-only",
+        talkroom_id="18211957",
+        project_id="18211957",
+        selected_order_input={"talkroom_id": "18211957"},
+        hidden_no_screenshot=True,
+        evidence_dir=tmp_path / "evidence",
+        output=tmp_path / "snapshot.json",
+        projects_root=tmp_path / "projects",
+        cdp_helper=tmp_path / "cdp.py",
+    )
+
+    monkeypatch.setattr(
+        snapshot, "argument_parser",
+        lambda: SimpleNamespace(parse_args=lambda: args),
+    )
+    monkeypatch.setattr(snapshot, "load_connector_manifest", lambda: None)
+
+    def stop_after_transport_selection(*_args, **kwargs):
+        seen.append(kwargs["hidden"])
+        raise RuntimeError("stop after transport selection")
+
+    monkeypatch.setattr(snapshot, "inspect_page_with_retry", stop_after_transport_selection)
+
+    assert snapshot.main() == 1
+    assert seen == [True]
+
+
 def test_current_remote_wait_is_fresh(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)
