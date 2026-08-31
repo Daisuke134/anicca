@@ -646,3 +646,53 @@ governor の回収クラスにカタログを取り込む価値は独立して�
 2. `pnpm store prune` や `go clean -modcache` のように**専用コマンドが存在するものは
    `rm -rf` せずそのコマンドを使う**。参照されている分を残せる。
 3. CONFIRM 相当（Simulator runtime 等）は自動削除の対象にしない。fail-closed を崩さない。
+
+## 2026-08-31 release が減らない本当の理由（前の節の結論を訂正する）
+
+### 訂正1: 「生成側に上限が無い」は誤りだった
+
+`bin/cut-loop-release.sh` には最初から上限がある。
+`KEEP=${LOOPS_KEEP_RELEASES:-5}`、しかも **export の前**に
+`runtime/loop/central_cleanup.py --release-gc-only` を `PRE_KEEP=KEEP-1` で走らせている
+（後で刈ると KEEP+1 個ぶんの空きが要って ENOSPC で install が落ちたため、と註釈がある）。
+
+### 訂正2: retention を二重に実装してしまった
+
+`runtime/loop/central_cleanup.py` の `release_gc()` は既に
+launchd plist 参照（`loaded_release_roots`）、open 判定（`open_release_roots`）、
+`protected-releases.json`、世代数 `keep` の4つを全部見ている。
+本日 `disk_cleanup.py` に足した `RELEASE_RETENTION` は**これの再実装**である。
+書く前に既存を探さなかった。次はカタログ追加の前に `runtime/loop/` を読むこと。
+
+### 実際の原因: 全 release が稼働プロセスに握られている
+
+実測（2026-08-31 20:50 頃）:
+
+```
+releases on disk: 8
+held open:        8   ← 全部
+```
+
+`current` 以外で握られているもの:
+`20260828T204447-6ab86c33`、`20260830T115119-ab7df447`、
+`20260831T181958-70623b6a`、`20260831T202425-e40369d0`、
+`20260831T202939-20671b44`、`20260831T204728-439dc71d`、
+そして `20260831T200346-96810ccc.gc-trash.67654`。
+
+最後のものが決定的で、**gc は削除を試みて `.gc-trash.<pid>` へリネームまで進んだが、
+open だったので消せずに残骸になっている**。3日前の release すら握られたままである。
+
+`release_gc` が open な release を保護するのは正しい（稼働中 loop のコードを消せば壊れる）。
+だが **loop が古い release から動き続けて `current` へ移らない**ため、
+一度作られた release は永久に pin されたままになる。
+この状態では `KEEP=5` は無意味で、8個でも20個でも全部 protected として残る。
+
+**したがって回収側をこれ以上強化しても解決しない。**
+必要なのは「apply した後に対象 job を restart して `current` へ移し、
+古い release の参照を手放させる」ことである。
+`.gc-trash.<pid>` の残骸を回収する後始末も要る（プロセス終了後に再試行する）。
+
+### 補足実測
+
+home 全体の `node_modules` は **156 個**。`~/.npm` 548MB。
+`~/Library/Caches` は本日の掃除後 257MB（掃除前 2559MB）。
