@@ -18,6 +18,114 @@ from job_search_loop.runtime import main as compatibility_runtime_main
 
 
 class DirectCDPTypeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_email_recovery_checkpoint_persists_tenant_recovery_state(self):
+        from job_search_loop.browser_agent import runtime
+
+        row = {
+            "application_id": "application:recovery",
+            "company": "Cloudera",
+            "title": "Applied AI Specialist",
+            "canonical_url": "https://cloudera.wd5.myworkdayjobs.com/job/role",
+        }
+        session = Mock(close_owned=AsyncMock())
+        checkpoints = Mock()
+        checkpoints.save.return_value = Mock(checkpoint_sha256="a" * 64)
+        cursor = Mock(checkpoint=None)
+        cursor.handle.page_marker = "page"
+        cursor.handle.generation = 1
+        observation = Mock(content_sha256="b" * 64, url=row["canonical_url"])
+        builder = Mock(build=AsyncMock(return_value=observation))
+        context = (row, session, checkpoints, Mock(), cursor, builder)
+        store = Mock()
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime, "_context", new=AsyncMock(return_value=context)
+        ), patch.object(
+            runtime, "_path_env", return_value=Path(directory) / "credentials.json"
+        ), patch.object(
+            runtime, "MachineWorkdayCredentialStore", return_value=store
+        ):
+            result = await runtime.checkpoint("email_recovery")
+
+        self.assertEqual(result["status"], "checkpointed")
+        store.mark_account_status.assert_called_once_with(
+            row["canonical_url"], "recovery_requested"
+        )
+
+    async def test_recovery_requested_rejects_duplicate_forgot_password_effect(self):
+        from job_search_loop.browser_agent import runtime
+
+        row = {
+            "canonical_url": "https://cloudera.wd5.myworkdayjobs.com/job/role"
+        }
+        store = Mock(account_status=Mock(return_value="recovery_requested"))
+        observation = {"status": "observed", "observation": {"controls": []}}
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime, "_row", return_value=row
+        ), patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ), patch.object(
+            runtime, "MachineWorkdayCredentialStore", return_value=store
+        ), patch.object(
+            runtime,
+            "checkpoint",
+            new=AsyncMock(
+                return_value={
+                    "status": "checkpointed",
+                    "reason": "email_recovery",
+                }
+            ),
+        ) as checkpoint, patch.object(
+            runtime, "observe", new=AsyncMock(return_value=observation)
+        ), patch.object(
+            runtime, "act", new=AsyncMock(return_value={"status": "acted"})
+        ) as act:
+            result = await runtime.click(
+                label="Forgot your password?",
+                role="button",
+                stable_id="automation:forgotPasswordLink",
+            )
+
+        self.assertEqual(result["status"], "checkpointed")
+        self.assertEqual(result["reason"], "email_recovery")
+        checkpoint.assert_awaited_once_with("email_recovery")
+        act.assert_not_awaited()
+
+    async def test_failed_sign_in_preserves_recovery_requested_status(self):
+        from job_search_loop.browser_agent import runtime
+
+        row = {
+            "canonical_url": "https://cloudera.wd5.myworkdayjobs.com/job/role"
+        }
+        store = Mock(account_status=Mock(return_value="recovery_requested"))
+        acted = {
+            "status": "acted",
+            "observation": {
+                "validation": [],
+                "controls": [
+                    {"stable_id": "automation:signInSubmitButton"}
+                ],
+                "title": "Sign In",
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            runtime, "_row", return_value=row
+        ), patch.object(
+            runtime, "_path_env", return_value=Path(directory)
+        ), patch.object(
+            runtime, "MachineWorkdayCredentialStore", return_value=store
+        ), patch.object(
+            runtime, "act", new=AsyncMock(return_value=acted)
+        ):
+            await runtime.click(
+                label="Sign In",
+                role="button",
+                stable_id="automation:signInSubmitButton",
+            )
+
+        store.mark_account_status.assert_called_once_with(
+            row["canonical_url"], "recovery_requested"
+        )
+
     def test_command_lock_rejects_the_active_runtime_command_immediately(self):
         from job_search_loop.browser_agent import runtime
 

@@ -14,6 +14,7 @@ from job_search_loop.workday_credentials import (
     load_credentials,
     tenant_key,
 )
+from job_search_loop.browser_agent.workday_account import MachineWorkdayCredentialStore
 
 
 WORKDAY_URL = (
@@ -167,6 +168,31 @@ class WorkdayCredentialTests(unittest.TestCase):
         self.assertEqual(receipt["tenant"], "crowdstrike.wd5.myworkdayjobs.com")
         self.assertNotIn(account["application_email"], completed.stdout)
         self.assertNotIn(account["password"], completed.stdout)
+
+    def test_machine_store_persists_recovery_requested_status(self):
+        self.store.parent.mkdir(parents=True)
+        self.store.write_text(
+            json.dumps(
+                {
+                    "version": 1,
+                    "credentials": [
+                        {
+                            "service": "workday:crowdstrike.wd5.myworkdayjobs.com",
+                            "username": "candidate@example.com",
+                            "email": "candidate@example.com",
+                            "password": "Strong-Workday-Password-9!",
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        os.chmod(self.store, 0o600)
+        machine = MachineWorkdayCredentialStore(self.store)
+
+        machine.mark_account_status(WORKDAY_URL, "recovery_requested")
+
+        self.assertEqual(machine.account_status(WORKDAY_URL), "recovery_requested")
 
 
 if __name__ == "__main__":

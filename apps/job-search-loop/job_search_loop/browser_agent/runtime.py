@@ -688,6 +688,15 @@ async def click(*, label: str, role: str, stable_id: str, ordinal: int | None = 
     row = _row()
     if (
         detect_provider(row["canonical_url"]) == "workday"
+        and stable_id == "automation:forgotPasswordLink"
+        and MachineWorkdayCredentialStore(
+            _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
+        ).account_status(row["canonical_url"])
+        == "recovery_requested"
+    ):
+        return await checkpoint("email_recovery")
+    if (
+        detect_provider(row["canonical_url"]) == "workday"
         and stable_id
         in {"automation:createAccountLink", "automation:createAccountSubmitButton"}
         and MachineWorkdayCredentialStore(
@@ -739,8 +748,12 @@ async def click(*, label: str, role: str, stable_id: str, ordinal: int | None = 
                 "automation:signInSubmitButton" not in visible_ids
                 and str(observation.get("title") or "").strip().casefold() != "sign in"
             )
+            prior_status = store.account_status(row["canonical_url"])
+            next_status = "signed_in" if signed_in else "create_submitted"
+            if not signed_in and prior_status == "recovery_requested":
+                next_status = "recovery_requested"
             store.mark_account_status(
-                row["canonical_url"], "signed_in" if signed_in else "create_submitted"
+                row["canonical_url"], next_status
             )
     return result
 
@@ -868,6 +881,10 @@ async def wait(milliseconds: int) -> dict[str, Any]:
 async def checkpoint(reason: str) -> dict[str, Any]:
     row, session, checkpoints, _evidence, cursor, builder = await _context()
     observation = await builder.build(cursor.handle)
+    if reason == "email_recovery" and detect_provider(row["canonical_url"]) == "workday":
+        MachineWorkdayCredentialStore(
+            _path_env("JOB_SEARCH_MACHINE_CREDENTIALS")
+        ).mark_account_status(row["canonical_url"], "recovery_requested")
     prior_hashes = cursor.checkpoint.action_receipt_hashes if cursor.checkpoint else ()
     recovery_url = (
         provider_recovery_url(row["canonical_url"])

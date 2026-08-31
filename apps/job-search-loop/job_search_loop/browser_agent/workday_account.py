@@ -105,12 +105,17 @@ class MachineWorkdayCredentialStore:
         if entry is None:
             return "missing"
         status = str(entry.get("account_status") or "credential_only")
-        if status not in {"credential_only", "create_submitted", "signed_in"}:
+        if status not in {
+            "credential_only",
+            "create_submitted",
+            "recovery_requested",
+            "signed_in",
+        }:
             raise WorkdayCredentialError("Workday tenant account status is invalid")
         return status
 
     def mark_account_status(self, job_url: str, status: str) -> None:
-        if status not in {"create_submitted", "signed_in"}:
+        if status not in {"create_submitted", "recovery_requested", "signed_in"}:
             raise WorkdayCredentialError("Workday tenant account status is invalid")
         tenant = tenant_key(job_url)
         value = self._read()
