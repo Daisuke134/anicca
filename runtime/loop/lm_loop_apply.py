@@ -38,6 +38,7 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
         "ProcessType": "Background",
         "EnvironmentVariables": {
             "LIFE_MANAGER_LOOP_ID": loop_id,
+            "LIFE_MANAGER_REPO": str(release_root),
             "LIFE_MANAGER_RELEASE_SHA": release_sha,
             "LIFE_MANAGER_STATE_ROOT": os.path.expanduser(entry["state_root"]),
         },
