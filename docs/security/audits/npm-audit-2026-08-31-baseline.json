@@ -1,0 +1,575 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@ai-sdk/amazon-bedrock": {
+      "name": "@ai-sdk/amazon-bedrock",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/anthropic",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=3.0.126",
+      "nodes": [
+        "node_modules/@ai-sdk/amazon-bedrock"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/anthropic": {
+      "name": "@ai-sdk/anthropic",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "@ai-sdk/amazon-bedrock",
+        "@ai-sdk/google-vertex"
+      ],
+      "range": "<=2.0.100",
+      "nodes": [
+        "node_modules/@ai-sdk/anthropic"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/azure": {
+      "name": "@ai-sdk/azure",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/deepseek",
+        "@ai-sdk/openai",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.129",
+      "nodes": [
+        "node_modules/@ai-sdk/azure"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/cerebras": {
+      "name": "@ai-sdk/cerebras",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=1.0.58",
+      "nodes": [
+        "node_modules/@ai-sdk/cerebras"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/deepseek": {
+      "name": "@ai-sdk/deepseek",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "@ai-sdk/azure"
+      ],
+      "range": "<=1.0.55",
+      "nodes": [
+        "node_modules/@ai-sdk/deepseek"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/gateway": {
+      "name": "@ai-sdk/gateway",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "ai"
+      ],
+      "range": "<=2.0.144",
+      "nodes": [
+        "node_modules/@ai-sdk/gateway"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/google": {
+      "name": "@ai-sdk/google",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "@ai-sdk/google-vertex"
+      ],
+      "range": "<=2.0.95",
+      "nodes": [
+        "node_modules/@ai-sdk/google"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/google-vertex": {
+      "name": "@ai-sdk/google-vertex",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/anthropic",
+        "@ai-sdk/google",
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=3.0.171",
+      "nodes": [
+        "node_modules/@ai-sdk/google-vertex"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/groq": {
+      "name": "@ai-sdk/groq",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.52",
+      "nodes": [
+        "node_modules/@ai-sdk/groq"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/mistral": {
+      "name": "@ai-sdk/mistral",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.47",
+      "nodes": [
+        "node_modules/@ai-sdk/mistral"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/openai": {
+      "name": "@ai-sdk/openai",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.123",
+      "nodes": [
+        "node_modules/@ai-sdk/openai"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/openai-compatible": {
+      "name": "@ai-sdk/openai-compatible",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "@ai-sdk/google-vertex",
+        "@ai-sdk/xai"
+      ],
+      "range": "<=1.0.53",
+      "nodes": [
+        "node_modules/@ai-sdk/openai-compatible"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/perplexity": {
+      "name": "@ai-sdk/perplexity",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.42",
+      "nodes": [
+        "node_modules/@ai-sdk/perplexity"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/provider-utils": {
+      "name": "@ai-sdk/provider-utils",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1119676,
+          "name": "@ai-sdk/provider-utils",
+          "dependency": "@ai-sdk/provider-utils",
+          "title": "@ai-sdk/provider-utils has an Uncontrolled Resource Consumption issue",
+          "url": "https://github.com/advisories/GHSA-866g-f22w-33x8",
+          "severity": "low",
+          "cwe": [
+            "CWE-400"
+          ],
+          "cvss": {
+            "score": 4.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": "<=3.0.97"
+        }
+      ],
+      "effects": [
+        "@ai-sdk/amazon-bedrock",
+        "@ai-sdk/anthropic",
+        "@ai-sdk/azure",
+        "@ai-sdk/cerebras",
+        "@ai-sdk/deepseek",
+        "@ai-sdk/gateway",
+        "@ai-sdk/google",
+        "@ai-sdk/google-vertex",
+        "@ai-sdk/groq",
+        "@ai-sdk/mistral",
+        "@ai-sdk/openai",
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/perplexity",
+        "@ai-sdk/togetherai",
+        "@ai-sdk/xai",
+        "ai"
+      ],
+      "range": "<=3.0.97",
+      "nodes": [
+        "node_modules/@ai-sdk/provider-utils"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/togetherai": {
+      "name": "@ai-sdk/togetherai",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=1.0.57",
+      "nodes": [
+        "node_modules/@ai-sdk/togetherai"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/xai": {
+      "name": "@ai-sdk/xai",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.92",
+      "nodes": [
+        "node_modules/@ai-sdk/xai"
+      ],
+      "fixAvailable": true
+    },
+    "@opentelemetry/auto-instrumentations-node": {
+      "name": "@opentelemetry/auto-instrumentations-node",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@opentelemetry/sdk-node"
+      ],
+      "effects": [],
+      "range": "0.57.0 - 0.77.0",
+      "nodes": [
+        "node_modules/@opentelemetry/auto-instrumentations-node"
+      ],
+      "fixAvailable": true
+    },
+    "@opentelemetry/propagator-jaeger": {
+      "name": "@opentelemetry/propagator-jaeger",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1124011,
+          "name": "@opentelemetry/propagator-jaeger",
+          "dependency": "@opentelemetry/propagator-jaeger",
+          "title": "OpenTelemetry JavaScript: Denial of service in `JaegerPropagator` via unhandled exception on a malformed header",
+          "url": "https://github.com/advisories/GHSA-45rx-2jwx-cxfr",
+          "severity": "high",
+          "cwe": [
+            "CWE-248"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": "<2.9.0"
+        }
+      ],
+      "effects": [
+        "@opentelemetry/sdk-node"
+      ],
+      "range": "<2.9.0",
+      "nodes": [
+        "node_modules/@opentelemetry/propagator-jaeger"
+      ],
+      "fixAvailable": true
+    },
+    "@opentelemetry/sdk-node": {
+      "name": "@opentelemetry/sdk-node",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        "@opentelemetry/propagator-jaeger"
+      ],
+      "effects": [
+        "@opentelemetry/auto-instrumentations-node"
+      ],
+      "range": "0.200.0-dev.0 - 0.219.0",
+      "nodes": [
+        "node_modules/@opentelemetry/sdk-node"
+      ],
+      "fixAvailable": true
+    },
+    "ai": {
+      "name": "ai",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/gateway",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=0.0.0-fd764a60-20260114143805 || 3.0.22 - 6.0.0 || 7.0.0-beta.0 - 7.0.0-beta.1-gr2m-test",
+      "nodes": [
+        "node_modules/ai"
+      ],
+      "fixAvailable": true
+    },
+    "brace-expansion": {
+      "name": "brace-expansion",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1123896,
+          "name": "brace-expansion",
+          "dependency": "brace-expansion",
+          "title": "brace-expansion: DoS via exponential-time expansion of consecutive non-expanding {} groups",
+          "url": "https://github.com/advisories/GHSA-3jxr-9vmj-r5cp",
+          "severity": "high",
+          "cwe": [
+            "CWE-400",
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": ">=2.0.0 <2.1.2"
+        },
+        {
+          "source": 1130589,
+          "name": "brace-expansion",
+          "dependency": "brace-expansion",
+          "title": "brace-expansion: DoS via unbounded expansion length causing an out-of-memory process crash",
+          "url": "https://github.com/advisories/GHSA-mh99-v99m-4gvg",
+          "severity": "high",
+          "cwe": [
+            "CWE-400",
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=2.0.0 <2.1.3"
+        },
+        {
+          "source": 1130736,
+          "name": "brace-expansion",
+          "dependency": "brace-expansion",
+          "title": "brace-expansion: DoS via unbounded intermediate arrays, bypassing the CVE-2026-14257 mitigation",
+          "url": "https://github.com/advisories/GHSA-rgw5-rvv9-x895",
+          "severity": "high",
+          "cwe": [
+            "CWE-400",
+            "CWE-770"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+          },
+          "range": ">=2.0.0 <2.1.4"
+        }
+      ],
+      "effects": [],
+      "range": "2.0.0 - 2.1.3",
+      "nodes": [
+        "node_modules/brace-expansion"
+      ],
+      "fixAvailable": true
+    },
+    "fast-uri": {
+      "name": "fast-uri",
+      "severity": "high",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1130720,
+          "name": "fast-uri",
+          "dependency": "fast-uri",
+          "title": "fast-uri vulnerable to host confusion via backslash authority introducer",
+          "url": "https://github.com/advisories/GHSA-7p8r-x3mc-p8w7",
+          "severity": "high",
+          "cwe": [
+            "CWE-436"
+          ],
+          "cvss": {
+            "score": 7.5,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+          },
+          "range": ">=3.0.0 <3.1.5"
+        }
+      ],
+      "effects": [],
+      "range": "3.0.0 - 3.1.4",
+      "nodes": [
+        "node_modules/fast-uri"
+      ],
+      "fixAvailable": true
+    },
+    "hono": {
+      "name": "hono",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1130733,
+          "name": "hono",
+          "dependency": "hono",
+          "title": "Hono: ReDoS in CORS middleware via Access-Control-Request-Headers",
+          "url": "https://github.com/advisories/GHSA-8j4g-w8fx-2239",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-1333"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": "<4.12.34"
+        },
+        {
+          "source": 1138771,
+          "name": "hono",
+          "dependency": "hono",
+          "title": "Hono: `memo()` retains SSR output across requests, leading to cross-user data disclosure",
+          "url": "https://github.com/advisories/GHSA-f23p-vx2j-j53r",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-488"
+          ],
+          "cvss": {
+            "score": 4.8,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:L/UI:R/S:U/C:H/I:N/A:N"
+          },
+          "range": ">=3.8.0 <4.12.34"
+        },
+        {
+          "source": 1138772,
+          "name": "hono",
+          "dependency": "hono",
+          "title": "Hono: Proxy Helper does not remove response headers listed in the `Connection` header",
+          "url": "https://github.com/advisories/GHSA-79qm-7rj5-m7r9",
+          "severity": "low",
+          "cwe": [
+            "CWE-200"
+          ],
+          "cvss": {
+            "score": 3.7,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N"
+          },
+          "range": ">=4.7.0 <4.12.34"
+        },
+        {
+          "source": 1138773,
+          "name": "hono",
+          "dependency": "hono",
+          "title": "Hono: Algorithmic Complexity DoS in Language Middleware",
+          "url": "https://github.com/advisories/GHSA-54fx-42gc-7vw4",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-407"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": ">=4.12.0 <4.12.34"
+        }
+      ],
+      "effects": [],
+      "range": "<=4.12.33",
+      "nodes": [
+        "node_modules/hono"
+      ],
+      "fixAvailable": true
+    },
+    "protobufjs": {
+      "name": "protobufjs",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1123964,
+          "name": "protobufjs",
+          "dependency": "protobufjs",
+          "title": "protobufjs: Denial of Service via infinite loop in .proto option parsing",
+          "url": "https://github.com/advisories/GHSA-j3f2-48v5-ccww",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-835"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": ">=7.5.0 <=7.6.4"
+        }
+      ],
+      "effects": [],
+      "range": "7.5.0 - 7.6.4",
+      "nodes": [
+        "node_modules/protobufjs"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 17,
+      "moderate": 2,
+      "high": 5,
+      "critical": 0,
+      "total": 24
+    },
+    "dependencies": {
+      "prod": 423,
+      "dev": 0,
+      "optional": 30,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 452
+    }
+  }
+}
