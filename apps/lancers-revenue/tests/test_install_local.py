@@ -18,6 +18,7 @@ RELEASE_FILES = (
     "skills/earn/lancers/SKILL.md",
     "skills/earn/lancers/products/monthly-sns-content-ops-v1.json",
     "skills/earn/lancers/assets/monthly-sns-content-ops-v1.png",
+    "skills/gig-work/profile/avatar.jpg",
     "skills/earn/lancers/scripts/storefront_offer.py",
     "skills/earn/lancers/scripts/application_loop.py",
     "skills/earn/lancers/scripts/application_tick.py",

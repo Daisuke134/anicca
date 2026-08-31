@@ -37,7 +37,7 @@ def _load(name: str, path: Path) -> Any:
     return module
 
 
-def _product(path: Path) -> tuple[dict[str, Any], Path]:
+def _product(path: Path) -> tuple[dict[str, Any], Path, Path]:
     try: value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, ValueError): raise OfferError("product_invalid") from None
     if not isinstance(value, dict): raise OfferError("product_invalid")
@@ -64,8 +64,12 @@ def _product(path: Path) -> tuple[dict[str, Any], Path]:
     if not isinstance(profile, dict) or set(profile) != {"public_path", "subtitle", "description"} or re.fullmatch(r"/profile/[A-Za-z0-9_-]+", str(profile.get("public_path") or "")) is None or not isinstance(profile.get("subtitle"), str) or not 1 <= len(profile["subtitle"]) <= 60 or not isinstance(profile.get("description"), str) or not 1 <= len(profile["description"]) <= 2000: raise OfferError("product_invalid")
     image = (path.parent / value["image_path"]).resolve()
     if not image.is_file() or image.suffix.lower() not in {".png", ".jpg", ".jpeg", ".gif"}: raise OfferError("product_invalid")
+    avatar_path, avatar_sha256 = value.get("profile_avatar_path"), value.get("profile_avatar_sha256")
+    if not isinstance(avatar_path, str) or not avatar_path.strip() or not isinstance(avatar_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", avatar_sha256) is None: raise OfferError("product_invalid")
+    avatar = (path.parent / avatar_path).resolve()
+    if not avatar.is_file() or avatar.suffix.lower() not in {".jpg", ".jpeg", ".png"} or avatar.stat().st_size > 3_000_000 or hashlib.sha256(avatar.read_bytes()).hexdigest() != avatar_sha256: raise OfferError("profile_avatar_invalid")
     value["public_title"] = value["title_stem"] + "ます"
-    return value, image
+    return value, image, avatar
 
 
 def _text(page: Any, selector: str) -> str:
@@ -127,18 +131,28 @@ def _demand(page: Any, listing_id: str) -> dict[str, int]:
     return result
 
 
-def _profile(page: Any, product: Mapping[str, Any], apply: bool) -> dict[str, Any]:
+def _profile(page: Any, product: Mapping[str, Any], avatar: Path, apply: bool) -> dict[str, Any]:
     expected = product["seller_profile"]; path = expected["public_path"]
     response = page.goto(ORIGIN + path, wait_until="domcontentloaded", timeout=20_000)
     if response is None or response.status != 200 or urlsplit(str(page.url)).path != path: raise OfferError("profile_readback_invalid")
     subtitles = {" ".join(text.split()) for text in page.locator(".p-profile-media__sub-title-link").all_inner_texts() if text.strip()}
     descriptions = page.locator("p.p-profile-introduction__text")
     if len(subtitles) != 1 or descriptions.count() != 1: raise OfferError("profile_readback_invalid")
-    aligned = subtitles == {" ".join(expected["subtitle"].split())} and " ".join(descriptions.inner_text().split()) == " ".join(expected["description"].split())
-    if aligned or not apply: return {"profile_aligned": aligned, "profile_effect_count": 0}
+    text_aligned = subtitles == {" ".join(expected["subtitle"].split())} and " ".join(descriptions.inner_text().split()) == " ".join(expected["description"].split())
+    page.goto(ORIGIN + "/mypage", wait_until="networkidle", timeout=30_000)
+    completion = page.locator(".js-regularRankCheckPercent")
+    if completion.count() != 1: raise OfferError("profile_readback_invalid")
+    score = completion.get_attribute("data-score") or ""
+    if re.fullmatch(r"[0-9]+", score) is None: raise OfferError("profile_readback_invalid")
+    photo_missing = page.get_by_role("link", name="プロフィール写真を登録", exact=True).count() == 1
+    aligned = text_aligned and not photo_missing
+    if aligned or not apply: return {"profile_aligned": aligned, "profile_photo_aligned": not photo_missing, "profile_completion_percent": int(score), "profile_effect_count": 0}
     page.goto(ORIGIN + "/mypage/profile", wait_until="domcontentloaded", timeout=20_000)
     if urlsplit(str(page.url)).path != "/mypage/profile": raise OfferError("profile_form_changed")
     _field(page, "#UserProfileSubTitle").fill(expected["subtitle"]); _field(page, "#UserProfileDescription").fill(expected["description"])
+    if photo_missing:
+        if not avatar.is_file() or avatar.stat().st_size > 3_000_000 or avatar.suffix.lower() not in {".jpg", ".jpeg", ".png"}: raise OfferError("profile_avatar_invalid")
+        _field(page, "#UserProfileimage\\[\\]").set_input_files(str(avatar))
     invalid = page.locator("#UserProfileDescription").evaluate("""field => [...field.form.elements].filter(element => element.willValidate && !element.checkValidity()).map(element => ({id:element.id, empty:element.value === ""}))""")
     expected_invalid = {f"UserTimechargeRate{index}{field}" for index in range(1, 5) for field in ("Title", "UnitPrice")}
     if not isinstance(invalid, list) or {str(item.get("id")) for item in invalid if isinstance(item, Mapping) and item.get("empty") is True} != expected_invalid or len(invalid) != len(expected_invalid): raise OfferError("profile_form_changed")
@@ -148,8 +162,10 @@ def _profile(page: Any, product: Mapping[str, Any], apply: bool) -> dict[str, An
     try:
         with page.expect_response(lambda value: value.request.method == "POST" and urlsplit(value.url).path == "/mypage/profile", timeout=20_000) as saved: save.click(force=True, timeout=20_000)
     except Exception: raise OfferError("profile_submission_uncertain") from None
-    if saved.value.status not in {200, 302} or not _profile(page, product, False)["profile_aligned"]: raise OfferError("profile_submission_uncertain")
-    return {"profile_aligned": True, "profile_effect_count": 1}
+    if saved.value.status not in {200, 302}: raise OfferError("profile_submission_uncertain")
+    observed = _profile(page, product, avatar, False)
+    if not observed["profile_aligned"]: raise OfferError("profile_submission_uncertain")
+    return observed | {"profile_effect_count": 1}
 
 
 def _field(page: Any, selector: str) -> Any:
@@ -330,7 +346,7 @@ def _ensure_portfolio(page: Any, product: Mapping[str, Any], image: Path, key: s
 def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
     tick = browser = page = None; logged_in = False; result: dict[str, Any] = {"ok": False, "error": "offer_unavailable"}
     try:
-        product, image = _product(product_path); tick = _load("lancers_storefront_offer_tick", HERE / "application_tick.py")
+        product, image, avatar = _product(product_path); tick = _load("lancers_storefront_offer_tick", HERE / "application_tick.py")
         with tick.account_lock(state_path.with_name("work-sync.json")):
             browser = tick._default_browser_factory(tick.CDP_URL); page = tick._new_owned_page(browser)
             if not tick._production_account_ready(page): raise OfferError("account_unavailable")
@@ -344,7 +360,7 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
                     if portfolio["portfolio_effect_count"]:
                         result["action"] = "portfolio_created"; break
                 else:
-                    profile = _profile(page, product, True); result |= profile
+                    profile = _profile(page, product, avatar, True); result |= profile
                     if profile["profile_effect_count"]: result["action"] = "profile_updated"
             if result.get("ok") is True and result.get("aligned") is True:
                 result["demand"] = _demand(page, product["listing_external_id"])

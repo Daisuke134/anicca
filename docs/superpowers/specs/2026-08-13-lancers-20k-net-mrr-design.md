@@ -1899,7 +1899,7 @@ provider-neutral architectureと未知市場contractの正本は
 | 完了 | **production browser owner recovery**: manual PID任せをやめ、既存profileと`:9227`をsole reproducible ownerへ束ねる。attach timeout時は専用profileのLancers targetだけをcloseして一度retry | release `65a08a957…`、browser PID=launchd PID `29096`、login ready。Application / Storefront / Work Sync exit 0、Storefront/Work Sync second wake effect 0、self-heal E2E 12.59秒、state/ledger不変 | 完了 |
 | 完了 | **seller proof + public catalog convergence**: 公開portfolio `743964`とpackage `1338228`をApplication判断へ接続し、旧商品5件を受付休止から公式非表示へ収束 | release `add41af43…`、no-fit送信0、旧5件archived、public料金表1件、連続Storefront wake effect 0、Application/ledger/contracts不変 | 完了 |
 | 1 | **Read-only common inventory**: disabled Lancers profileをisolated ownerで復帰し、account identity hash、login、opportunities、messages、applications、active work、listing、contract、finance/payout、official URL、evidence hashをcommon `market-inventory`へ取得する | fresh authenticated inventory、source complete、2回の同値read、marketplace mutation 0、owned tab残存0 |
-| 2 | **First-trust profile**: public profileと32 proposal outcomeを再観測し、Lancers公式の外部実績申請面へCoconala等の真正な受注・完了・評価proofを渡せるかLunaが判断する。absolute-cheapest taskはprofile評価代替にしない | profile before/after、外部実績official ID/stateまたは根拠付きblocked、虚偽0、同一申請replay effect 0 |
+| 完了 | **First-trust profile**: subtitle、自己紹介、職種、稼働状況、基本単価、本人確認、NDA、公開portfolio/package proofを公式readbackし、Coconalaの同一persona avatarを正式profile photo fieldへ一度だけ登録。電話確認はowner指示で対象外 | 公式completion 80→90、写真未登録check消滅、POST 302、公開avatarあり。残る10%は電話確認だけで収益blockerにしない。再実行は写真effect 0 |
 | 3 | **First-review application canary**: review-bearing、bounded、objective acceptance、credible buyer、non-negative net、再利用可能proofを持つ一件をLunaが個別判断し、common Browser ACIとeffect kernelで送信する | exact project/proposal ID、strategy/profile/proof version、official readback、next replay submit 0 |
 | 4 | **Maximal positive-lifetime-EV acquisition**: 各fresh候補をLunaが個別判断し、別jobは最大並列、同じjobだけlease直列化する。Lancers native自動提案はcandidate-level Luna intent/readbackを証明するまでinventory-only | 全positive-EV候補にdecision、各proposal official ID、dynamic capacity、overbooking 0、duplicate 0、provider throttle時の縮退receipt |
 | 5 | **Negotiate / Contract completion**: buyer-last、Storefront相談、client-originated月額offer、仮払い済みactive contractをcommon Sales stageへ接続する。イベントがない時は正常no-op | message/offer/contract exact ID、ContractReceipt、次wake duplicate reply/承諾 0、存在しないbuyerへのeffect 0 |
@@ -2884,3 +2884,20 @@ buyer selection/reply/fundingであり、Work Syncを5分ごとに継続する�
 
 **REPORT EVIDENCE:** current Telegram ownerは同じhealthy revenue snapshotをstate-change dedupeし、enqueue 0、delivery 0、exit 0で閉じた。
 通知badge 5のDOMはnotification page上のbuyer event、contract、paymentを示さず、売上signalには使わない。
+
+### 18.46 Operational profile completion
+
+**USER OUTCOME:** 電話確認を収益blockerにせず、応募前に必要な公開profileを再現可能なLife Manager ownerで完成させる。
+
+**CURRENT TRUTH:** Lancers公式mypageは本人確認、NDA、subtitle、自己紹介、職種、稼働状況、基本単価を完了済みとして扱い、
+未完了checkはprofile photoと電話確認だけ、completion 80%を返した。本人確認はownerが完了済みと確認した。電話確認は不要という
+ownerの明示指示により、Application、Storefront、Negotiate、Paidの停止条件にしない。
+
+**EFFECT:** Coconala own profile `2564121`で使用中の同一persona avatarをLancers公式`UserProfile[image]` fieldへ一度だけ登録した。
+公式POSTは302、公開profile avatarをreadbackし、mypageの「プロフィール写真を登録」は消え、completionは80%から90%へ進んだ。
+残る10%は「電話確認を認証」だけであるため、公式100%とは報告せず、**運用必須profile complete**とする。
+
+**SYSTEM CONTRACT:** canonical avatarは`skills/gig-work/profile/avatar.jpg`に置く。既存Storefront ownerは公式mypageの写真未登録checkを
+read-only確認し、未登録時だけ同assetを既存profile formへ渡す。写真登録済みならeffect 0。新skill、scheduler、DB、browser profileは作らない。
+
+**NEXT DIRECT ACTION:** 表の次atomであるFirst-review application canaryへ進む。電話確認、追加generic listing、profile frameworkは前倒ししない。
