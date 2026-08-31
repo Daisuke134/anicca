@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Incident postmortem evidence editor">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#172554"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#background)"/>
+  <path d="M132 94h182l66 66v258H132z" fill="#f8fafc"/>
+  <path d="M314 94v66h66" fill="#cbd5e1"/>
+  <path d="M174 224h164M174 280h116M174 336h88" fill="none" stroke="#0f766e" stroke-width="24" stroke-linecap="round"/>
+  <circle cx="356" cy="362" r="58" fill="#f97316"/>
+  <path d="M356 330v40M356 394h.01" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round"/>
+</svg>
