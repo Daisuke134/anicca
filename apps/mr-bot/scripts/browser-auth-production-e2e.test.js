@@ -241,7 +241,7 @@ test('CLI never reflects a secret-like unknown mode to stdout or stderr', () => 
   assertNoSecrets(`${child.stdout}${child.stderr}`);
 });
 
-test('production adapter uses real durable store and browser-job runtime from claim through persisted terminal readback', async () => {
+test('production adapter persists a login handoff while holding the Steel session for takeover', async () => {
   const boundaries = makeProductionAdapterBoundaries();
   const deps = makeProductionDeps(REQUIRED_ENV, boundaries);
   const markerHash = 'a'.repeat(64);
@@ -258,9 +258,9 @@ test('production adapter uses real durable store and browser-job runtime from cl
   assert.equal(terminal.auth_marker_hash, markerHash);
   assert.equal(terminal.receipt.auth_marker_hash, markerHash);
   assert.equal(terminal.receipt.provider_receipt.handoff_required, true);
-  assert.equal(terminal.receipt.steel_released, true);
+  assert.equal(terminal.receipt.steel_released, false);
   assert.equal(terminal.receipt.evidence_message_id, '12');
-  assert.ok(terminal.trace.some((entry) => entry.stage === 'auth_context_invalidated' && entry.meta.invalidated === true));
+  assert.equal(terminal.trace.some((entry) => entry.stage === 'auth_context_invalidated'), false);
   const steps = boundaries.sqlCalls.map(({ sql }) => {
     if (/INSERT INTO public\.lm_browser_jobs/i.test(sql)) return 'enqueue';
     if (/claim_lm_browser_job_by_id/i.test(sql)) return 'claim';

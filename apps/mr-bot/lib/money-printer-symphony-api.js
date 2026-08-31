@@ -11,8 +11,8 @@ const JOB_RE = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
 const REASON_RE = /^[A-Za-z0-9][A-Za-z0-9._:\/-]{0,199}$/;
 const ANSWER_REF_RE = /^vault-answer:\/\/[a-z0-9][a-z0-9._-]{0,199}\/[A-Za-z0-9][A-Za-z0-9._~%-]{0,255}$/;
 const HUMAN_BOUNDARY_REF_RE = /^human-boundary:\/\/sha256\/[0-9a-f]{64}$/;
-const ISSUE_RE = /^github-issue:\/\/Daisuke134\/mr-bot-workrooms\/[1-9][0-9]*$/;
-const COMMENT_RE = /^github-comment:\/\/Daisuke134\/mr-bot-workrooms\/[1-9][0-9]*\/[1-9][0-9]*$/;
+const ISSUE_RE = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
+const COMMENT_RE = /^github-comment:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*\/[1-9][0-9]*$/;
 const ROUTES = new Map([
   ["/api/internal/money-printer/symphony/claim", "claim"],
   ["/api/internal/money-printer/symphony/issue", "issue"],

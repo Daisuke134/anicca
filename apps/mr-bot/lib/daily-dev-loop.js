@@ -83,7 +83,7 @@ function closedLedgerEntry(input) {
   const reason = REASONS.has(input.reason) ? input.reason : "invalid_machine_result";
   const issue = Number(input.issue_number);
   const prUrl = typeof input.pr_url === "string"
-    && /^https:\/\/github\.com\/Daisuke134\/mr-bot\/pull\/\d+$/.test(input.pr_url)
+    && /^https:\/\/github\.com\/Daisuke134\/life-manager\/pull\/\d+$/.test(input.pr_url)
     ? input.pr_url
     : null;
   return {

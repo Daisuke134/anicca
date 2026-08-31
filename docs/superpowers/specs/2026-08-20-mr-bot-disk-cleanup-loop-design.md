@@ -1,6 +1,6 @@
 # Mac Host Storage Governor — Mr.bot Disk Cleanup Loop 仕様
 
-OSS公開名: **Mr.bot Disk Cleanup Loop**  
+OSS公開名: **Mr.bot Disk Cleanup Loop**
 実行authority: **Mac Host Storage Governor**  
 公開skill: **`disk-cleanup`**
 

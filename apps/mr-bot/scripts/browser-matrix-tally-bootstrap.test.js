@@ -225,9 +225,9 @@ test("the account password is derived, stable, tenant-bound and never emitted", 
 });
 
 test("a display name always yields both profile fields", () => {
-  assert.deepEqual(agentProfileName("Mr.bot"), { firstName: "Life", lastName: "Manager" });
+  assert.deepEqual(agentProfileName("Mr.bot"), { firstName: "Mr.bot", lastName: "Mr.bot" });
   assert.deepEqual(agentProfileName("  Anicca  "), { firstName: "Anicca", lastName: "Anicca" });
-  assert.deepEqual(agentProfileName("Mr.bot Agent"), { firstName: "Life", lastName: "Manager Agent" });
+  assert.deepEqual(agentProfileName("Mr.bot Agent"), { firstName: "Mr.bot", lastName: "Agent" });
   assert.throws(() => agentProfileName("   "), /missing LM_AGENT_BROWSER_NAME/);
 });
 
@@ -251,8 +251,8 @@ test("a fresh account signs up, verifies the code, completes the profile and pub
   assert.deepEqual(calls[2], ["readTallyMail", { afterMs: 1_800_000_000_000 }]);
   assert.deepEqual(calls[3], ["submitVerificationCode", "428913"]);
   assert.deepEqual(calls[4], ["completeProfile", {
-    firstName: "Life",
-    lastName: "Manager",
+    firstName: "Mr.bot",
+    lastName: "Mr.bot",
     password: DERIVED_PASSWORD,
   }]);
   assert.deepEqual(calls[5], ["inspectAuthenticated"]);

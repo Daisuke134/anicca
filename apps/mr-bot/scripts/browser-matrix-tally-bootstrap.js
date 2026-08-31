@@ -156,7 +156,7 @@ function derivedTallyPassword(sessionKey, accountEmail) {
   return `Lm-${digest.slice(0, 28)}9!`;
 }
 
-// "Mr.bot" → { firstName: "Life", lastName: "Manager" }. /complete-profile demands both, so a
+// "Mr.bot" → { firstName: "Mr.bot", lastName: "Mr.bot" }. /complete-profile demands both, so a
 // single-word display name repeats itself rather than submitting an empty field.
 function agentProfileName(value) {
   const parts = required(value).split(/\s+/).filter(Boolean);

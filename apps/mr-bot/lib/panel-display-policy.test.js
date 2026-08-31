@@ -62,6 +62,7 @@ test("PANEL-8h timeline and ledger presentation projects hostile source records"
         on_chain_url: recipe.value,
         provider_payload: recipe.value,
       }],
+      reportReceipts: [],
     });
     assert.equal(ledger.financial.items[0].link, null, recipe.id);
     assert.equal(JSON.stringify(ledger).includes(recipe.value), false, recipe.id);

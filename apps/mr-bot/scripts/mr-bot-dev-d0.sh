@@ -42,7 +42,7 @@ write_result() {
 const fs = require("node:fs");
 const [file, status, reason, issueRaw, prRaw] = process.argv.slice(2);
 const issue = Number(issueRaw);
-const prUrl = /^https:\/\/github\.com\/Daisuke134\/mr-bot\/pull\/\d+$/.test(prRaw)
+const prUrl = /^https:\/\/github\.com\/Daisuke134\/life-manager\/pull\/\d+$/.test(prRaw)
   ? prRaw
   : null;
 fs.writeFileSync(file, JSON.stringify({

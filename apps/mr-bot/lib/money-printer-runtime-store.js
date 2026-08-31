@@ -5,8 +5,8 @@ const { canonicalOpportunityInput } = require("./money-printer-opportunity.js");
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const OPPORTUNITY_ID = /^[0-9a-f]{64}$/;
 const JOB_ID = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
-const GITHUB_ISSUE_REF = /^github-issue:\/\/Daisuke134\/mr-bot-workrooms\/[1-9][0-9]*$/;
-const GITHUB_COMMENT_REF = /^github-comment:\/\/Daisuke134\/mr-bot-workrooms\/[1-9][0-9]*\/[1-9][0-9]*$/;
+const GITHUB_ISSUE_REF = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
+const GITHUB_COMMENT_REF = /^github-comment:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*\/[1-9][0-9]*$/;
 const URI_REF = /^[a-z][a-z0-9+.-]{1,31}:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&'()*+,;=%-]{0,999}$/;
 const EXECUTION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
 

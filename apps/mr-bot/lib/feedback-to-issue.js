@@ -126,7 +126,7 @@ async function processNextFeedback({ query, claim, issueClient }) {
     await issueClient.ensureLabel(DEV_LOOP_LABEL);
     const existing = await issueClient.findByMarker(markerFor(normalized));
     const resolved = existing || await issueClient.create(issue);
-    if (!resolved || !/^https:\/\/github\.com\/Daisuke134\/mr-bot\/issues\/[1-9][0-9]*$/.test(resolved.url || "")) {
+    if (!resolved || !/^https:\/\/github\.com\/Daisuke134\/life-manager\/issues\/[1-9][0-9]*$/.test(resolved.url || "")) {
       throw new Error("feedback_issue_url_invalid");
     }
     await recordIssue(query, normalized.id, resolved.url);

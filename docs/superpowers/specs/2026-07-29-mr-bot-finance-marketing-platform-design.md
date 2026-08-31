@@ -1,7 +1,7 @@
 # Mr.bot Portable Runtime + Finance + Self-Improving Marketing Platform Design
 
 **Status:** Canonical program SSOT  
-**Scope owner:** Mr.bot  
+**Scope owner:** Mr.bot
 **Canonical repository:** `https://github.com/Daisuke134/life-manager`  
 **Current release:** OpenClaw-to-Mr.bot Portable Runtime Migration (local incident recovery)
 **First production products:** Anicca iOS and Honne AI

@@ -25,7 +25,7 @@ test("D0 works only in the canonical repo and gates PR creation on tests and eva
     path.join(__dirname, "../scripts/mr-bot-dev-d0.sh"),
     "utf8",
   );
-  assert.match(source, /Daisuke134\/mr-bot/);
+  assert.match(source, /Daisuke134\/life-manager/);
   assert.match(source, /apps\/mr-bot/);
   assert.match(source, /origin\/main/);
   assert.match(source, /LM_DEV_EXISTING_WORKTREE/);

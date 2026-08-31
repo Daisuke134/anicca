@@ -113,7 +113,7 @@ test("success signs the Base USDC authorization, verifies, settles, and accepts 
   assert.equal(signed.paymentPayload.payload.authorization.to, DESTINATION);
   assert.equal(
     signed.paymentPayload.payload.authorization.nonce,
-    "0x6776c2a0741f3207703c0658eb58bcce4e3d2aec9c8f90564591173d5cabae78",
+    "0xbe7512fdee331579f633b5d43e7f8400c1f2d122a8fb877fddbb8d5ccce50716",
   );
   assert.deepEqual(deps.calls[1].body, signed, "settle must receive the same authorization verify accepted");
 
