@@ -4672,6 +4672,80 @@ officially reconciled as completed/deduplicated with no resend. The remaining fa
      account question or article work, compile the private credential SSOT, installed publication
      skills and existing account receipts; an existing seller-owned account must be used rather
      than asked for again.
+
+   **General Paid Kernel v2 — Symphony-style work orchestration.** Do not install the OpenAI
+   Symphony Elixir preview as a second production controller beside `lm-loop`; that would create
+   two schedulers and two owners for the same marketplace effect. Keep launchd, `lm-loop`, public
+   main and immutable releases as the outer lifecycle. Adopt the language-neutral Symphony service
+   boundaries inside the existing Python Paid owner: durable work items, one isolated workspace and
+   resumable Codex App Server thread per order, bounded concurrency, retry/backoff, repo-owned
+   workflow policy and structured observability. Symphony remains suitable for dispatching harness
+   repair issues, not for directly owning Coconala effects. References:
+   `https://github.com/openai/symphony/blob/v0.0.2/SPEC.md` and
+   `https://openai.com/index/open-source-codex-orchestration-symphony/`.
+
+   WebMCP is an optional transport only when the authenticated page itself exposes a structured
+   tool. It does not replace API/CDP adapters and is not the autonomous controller; the WebMCP
+   proposal explicitly targets cooperative in-browser workflows and lists fully autonomous
+   workflows as a non-goal. Reference: `https://github.com/webmachinelearning/webmcp`.
+
+   - [ ] **GPK-1 — Durable work-item SSOT.** Add one versioned work-item schema and SQLite store
+     keyed by provider/account/talkroom. Persist contract, accumulated buyer requirements, required
+     output, required external effect, deadline, authority, current state, next transition, effect
+     keys, official receipts, retry time and Codex thread identity. A JSON project `state.json` may
+     remain a materialized view but must not compete as a second state machine.
+   - [ ] **GPK-2 — One order, one resumable agent thread.** Run the general Paid agent through Codex
+     App Server using the existing ChatGPT/Codex authentication route. Resume the same thread and
+     workspace after wakes and releases; do not create a fresh semantic agent that rereads the full
+     project for every transition. Bound turns, silence timeout and retries independently.
+   - [ ] **GPK-3 — Repository-owned Capability Registry.** Define typed capabilities with input and
+     output schemas, required authority, implementation entrypoint, official readback, effect key
+     and failure classes. Initial registry must cover research, documents, spreadsheets, articles,
+     note/BingX publication, image/video/audio work, website deploy, TikTok/X messaging, Google
+     Sheets, Coconala reply/attachment/cancellation/formal delivery and generic authenticated CDP.
+     Skills remain optional reusable guidance, never an admission whitelist.
+   - [ ] **GPK-4 — No project-authored production adapters.** Replace reusable scripts created under
+     individual `~/gig/projects/*/source` or `delivery/runtime` with tested repository capabilities.
+     First migrations are TikTok seller identity/inbox/readback and Coconala cancellation. The
+     general agent may create an artifact inside its project, but production transport and official
+     effect verification must come from the registry.
+   - [ ] **GPK-5 — Complete context before questions.** Compile the exact order, proposal, complete
+     talkroom, attachments, prior artifacts, receipts, private credential SSOT references, logged-in
+     sessions and available capabilities before semantic work. Ask the buyer only for genuinely
+     missing non-delegable authority or facts; never ask for an existing seller account because a
+     named skill was absent.
+   - [ ] **GPK-6 — Outcome state machine.** Enforce
+     `discovered -> contract_compiled -> capabilities_resolved -> building -> artifact_ready ->`
+     `published_if_required -> verified -> submitted -> official_readback -> replay_zero -> paid`.
+     Reply, plan, draft, model success and local PASS are nonterminal. Article contracts that include
+     publication require the real publisher URL plus Coconala submission/readback; file contracts
+     require the actual buyer-visible file and archive/hash checks.
+   - [ ] **GPK-7 — Independent verification and effect fence.** Keep model judgment about whether
+     work satisfies the contract, but let deterministic code authorize effects only from bound
+     artifact/effect/readback digests. Formal delivery requires complete accepted scope, independent
+     verification, explicit authority and no uncertain prior effect. An uncertain effect is
+     reconciled, never retried.
+   - [ ] **GPK-8 — Capability-gap self-improvement.** When no honest capability exists, persist a
+     `capability_gap` work item with the blocked order, exact missing tool and executable acceptance
+     criteria. Dispatch that engineering issue to a Symphony-style coding run, merge through public
+     main, cut an immutable release, register the new capability and resume the original Paid work.
+     Never ask Codex/operator to stand in for the missing production owner.
+   - [ ] **GPK-9 — Migrate the current queue without duplicate effects.** Import the six current
+     buyer states above, preserving every effect key, formal-delivery state, official receipt and
+     unresolved authority. Prove each imported item chooses the exact next transition and does not
+     replay an already-sent reply, attachment, DM, Sheet row or formal delivery.
+   - [ ] **GPK-10 — General-agent acceptance.** From one public immutable release, naturally complete
+     at least one file-production order, one research/report order, one article-publication order and
+     one remote-account order. Each must show actual work, buyer-visible submission, exact official
+     readback, replay-zero and payment/withdrawable observation where the marketplace exposes it.
+     Then run an unseen fifth order without adding buyer-specific code; a capability gap may be
+     created and repaired, but a status-only reply cannot count as completion.
+
+   **Current disk incident.** The redacted subprocess diagnostic proved the shared file failures
+   occurred earlier at `project_context_compiler.atomic_json` while disk pressure was active, not in
+   the image/report builders. The central cleanup owner removed `disk-pressure.block` and restored
+   about 4.5 GiB free. The next natural Paid pass must compile both contexts successfully before the
+   source-census or deliverable logic is changed; disk recovery alone is not delivery proof.
 2. **Negotiate / reply and estimate second.** A new profile estimate request `5242505` was visible
    officially as `要提案` with an 8,000 yen budget and 2026-09-02 proposal deadline, but the natural
    lane did not submit it or send the needed reply. Add a focused failing fixture from this exact
