@@ -14,14 +14,12 @@ LOG="$LIFE_MANAGER_STATE_HOME/logs/capafy-loop-healthcheck.log"
 EVIDENCE_ROOT="$LIFE_MANAGER_STATE_HOME/state/agent-runner-evidence/capafy-marketplace"
 OFFLINE_EVIDENCE_ROOT="$LIFE_MANAGER_STATE_HOME/state/agent-runner-evidence/capafy-offline-build"
 BACKOFF="$LIFE_MANAGER_STATE_HOME/state/capafy-provider-backoff.json"
+EVENTS="$LIFE_MANAGER_STATE_HOME/events.jsonl"
 STALE_SECONDS=$((30 * 60 * 60))
 ATTEMPT_GRACE_SECONDS=$((2 * 60 * 60))
 mkdir -p "$(dirname "$LOG")"
 
-if ! launchctl print "$DOMAIN/$LABEL" >/dev/null 2>&1; then
-  echo "$(date '+%F %T') missing launchd owner: $LABEL" >>"$LOG"
-  exit 1
-fi
+OWNER_STATUS="$(launchctl print "$DOMAIN/$LABEL" 2>/dev/null)" || OWNER_STATUS=""
 
 now="$(date +%s)"
 mtime="$(stat -f %m "$MARK" 2>/dev/null || echo 0)"
@@ -44,6 +42,36 @@ case "$LATEST_START" in
     fi
     ;;
 esac
+
+# A fresh successful owner terminal is stronger truth than the legacy healthy
+# marker. Do not restart a healthy hourly owner merely because that marker is old.
+if [ -n "$OWNER_STATUS" ] && printf '%s\n' "$OWNER_STATUS" | grep -q 'last exit code = 0' \
+  && python3 - "$EVENTS" "$now" "$STALE_SECONDS" <<'PY'
+import datetime as dt
+import json
+import sys
+
+path, now, stale = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+latest = None
+try:
+    for line in open(path, encoding="utf-8"):
+        row = json.loads(line)
+        if row.get("loop_id") == "capafy-loop-daily" and row.get("phase") == "report":
+            latest = row
+except (OSError, ValueError, TypeError):
+    raise SystemExit(1)
+if not latest or latest.get("status") != "pass":
+    raise SystemExit(1)
+stamp = str(latest.get("timestamp") or "").replace("Z", "+00:00")
+try:
+    observed = int(dt.datetime.fromisoformat(stamp).timestamp())
+except ValueError:
+    raise SystemExit(1)
+raise SystemExit(0 if now - observed < stale else 1)
+PY
+then
+  exit 0
+fi
 
 # Provider quota is not a dead scheduler. The hourly owner will try again on
 # its normal cadence; a five-minute kickstart here only amplifies the outage.
