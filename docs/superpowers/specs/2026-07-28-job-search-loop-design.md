@@ -175,6 +175,12 @@ the unavailable-launch fallback. No other task class, provider, cadence or effec
 fence changes. One to three natural wakes must prove the same Danaher retry reaches a
 provider terminal outcome instead of voluntary transport failure.
 
+The browser-only escalation is implemented in the production runner config as
+`terra-high-bounded`, Terra high, with the existing explicit-escalation declaration
+and Claude fallback unchanged. The runner suite passes 44/44 and the OSS source
+manifest verifies after binding the new config digest. Main release and natural
+Danaher retry proof remain.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
