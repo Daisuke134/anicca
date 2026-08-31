@@ -251,7 +251,9 @@ def _run_bounded(command: list[str], *, env=None, timeout: float | None = None):
 
 def _run(command: list[str], step: str, timeout: float | None = None) -> str:
     result = _run_bounded(command, timeout=timeout)
-    if result.returncode: raise Failure(step)
+    if result.returncode:
+        tail = redact_prompt_text((result.stderr or result.stdout or "")[-2000:]).strip()
+        raise Failure(step, tail or f"subprocess_returncode={result.returncode}")
     return result.stdout
 
 def _json_line(stdout: str, step: str) -> dict[str, Any]:

@@ -40,6 +40,17 @@ def test_paid_failure_preserves_machine_readable_step_and_diagnostic_detail() ->
     assert str(error) == "isolated_file_owner"
 
 
+def test_paid_subprocess_failure_preserves_bounded_stderr() -> None:
+    paid = load("paid_direct")
+    with pytest.raises(paid.Failure) as caught:
+        paid._run([
+            sys.executable, "-c",
+            "import sys; sys.stderr.write('source census startup failed'); raise SystemExit(7)",
+        ], "file_builder")
+    assert caught.value.step == "file_builder"
+    assert "source census startup failed" in caught.value.detail
+
+
 def test_failed_paid_workspace_with_runner_evidence_is_preserved(tmp_path: Path) -> None:
     paid = load("paid_direct")
     root = tmp_path / "projects" / "123"
