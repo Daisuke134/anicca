@@ -379,6 +379,52 @@ def _finance_source(page: Any) -> dict[str, Any]:
     return {"source_complete": False, "error": "finance_detail_readback_required"}
 
 
+def _read_surfaces(page: Any, verified_proposals: set[str], private_boards: list[Any]) -> dict[str, Any]:
+    """Every provider read behind the seven inventory surfaces.
+
+    _sales_action is deliberately not called here. ELZ-L01 needs a path that
+    cannot post a reply, and a runtime flag would leave _post_reply reachable in
+    the call graph.
+    """
+    result = _snapshot(lambda path: _fetch(page, path), verified_proposals, private_boards)
+    result.update(_contract_sources(page))
+    result["contract_candidates"] += result.pop("storefront_contract_candidates")
+    result["contract_candidates"].sort(key=lambda row: (row["source_kind"], row["provider_id"]))
+    result["contract_candidate_count"] = len(result["contract_candidates"])
+    result["proposal_pipeline"] = _proposal_pipeline(page, len(verified_proposals))
+    result["finance"] = _finance_source(page)
+    return result
+
+
+def read_only_inventory(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional[Callable[[str], Any]] = None) -> dict[str, Any]:
+    """ELZ-L01 preflight: read the seven surfaces and leave the marketplace untouched.
+
+    Unlike run_tick this writes no state file, so running it twice cannot change
+    what the second read observes.
+    """
+    browser = page = None
+    logged_in = False
+    result = _failed("observer_unavailable")
+    try:
+        verified_proposals = _verified_proposals(Path(state_path))
+        with application_tick.account_lock(Path(state_path).with_name("preflight.json")):
+            browser = (browser_factory or application_tick._default_browser_factory)(CDP_URL)
+            page = application_tick._new_owned_page(browser)
+            if not application_tick._production_account_ready(page):
+                raise SourceFailure("account_unavailable")
+            logged_in = True
+            result = _read_surfaces(page, verified_proposals, [])
+            result["logged_in"] = True
+    except SourceFailure as error:
+        result = _failed(str(error), logged_in)
+    except Exception as error:
+        result = _failed("account_lock_busy" if type(error).__name__ == "_AccountLockBusy" else "observer_unavailable", logged_in)
+    finally:
+        if not _cleanup(page, browser):
+            result = _failed("cleanup_failed", logged_in)
+    return result
+
+
 def _cleanup(page: Any, browser: Any) -> bool:
     try: page_ok = page is None or bool(application_tick._close_owned_page(page))
     except Exception: page_ok = False
@@ -404,14 +450,8 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
                 raise SourceFailure("account_unavailable")
             logged_in = True
             private_boards: list[Any] = []
-            result = _snapshot(lambda path: _fetch(page, path), verified_proposals, private_boards)
-            result.update(_contract_sources(page))
-            result["contract_candidates"] += result.pop("storefront_contract_candidates")
-            result["contract_candidates"].sort(key=lambda row: (row["source_kind"], row["provider_id"]))
-            result["contract_candidate_count"] = len(result["contract_candidates"])
+            result = _read_surfaces(page, verified_proposals, private_boards)
             result["reply_action"] = _sales_action(page, Path(state_path), private_boards, verified_proposals)
-            result["proposal_pipeline"] = _proposal_pipeline(page, len(verified_proposals))
-            result["finance"] = _finance_source(page)
             _write_state(Path(state_path).with_name("contracts.json"), {
                 "source_complete": True,
                 "observed_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
