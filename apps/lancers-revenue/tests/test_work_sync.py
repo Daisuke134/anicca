@@ -84,19 +84,77 @@ class WorkSyncTests(unittest.TestCase):
         self.assertNotIn("order_awarded", rendered)
         self.assertNotIn("ledger", rendered)
 
+    def test_read_only_inventory_cannot_reach_the_reply_post(self):
+        # ELZ-L01 needs provider effect 0 as a property of the call graph. An
+        # empty inbox proves nothing, so walk the module and require that no path
+        # out of read_only_inventory arrives at _post_reply.
+        import ast
+        tree = ast.parse(WORK_SYNC_PATH.read_text(encoding="utf-8"))
+        # Attribute calls count too, so routing the reply through a module
+        # (application_tick._post_reply(...)) cannot slip past this.
+        calls = {
+            node.name: {
+                child.func.id if isinstance(child.func, ast.Name) else child.func.attr
+                for child in ast.walk(node)
+                if isinstance(child, ast.Call) and isinstance(child.func, (ast.Name, ast.Attribute))
+            }
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef)
+        }
+        self.assertIn("read_only_inventory", calls)
+        self.assertIn("_post_reply", calls["_sales_action"])  # the write path still exists
+
+        reached, pending = set(), ["read_only_inventory"]
+        while pending:
+            name = pending.pop()
+            for callee in calls.get(name, ()):
+                if callee not in reached:
+                    reached.add(callee)
+                    pending.append(callee)
+
+        self.assertNotIn("_post_reply", reached)
+        self.assertNotIn("_sales_action", reached)
+        self.assertIn("_read_surfaces", reached)
+        for reader in ("_snapshot", "_contract_sources", "_proposal_pipeline", "_finance_source"):
+            self.assertIn(reader, reached)
+        self.assertIn("_post_reply", self._reachable_from(calls, "run_tick"))
+
+    @staticmethod
+    def _reachable_from(calls, entry):
+        reached, pending = set(), [entry]
+        while pending:
+            for callee in calls.get(pending.pop(), ()):
+                if callee not in reached:
+                    reached.add(callee)
+                    pending.append(callee)
+        return reached
+
     def test_official_contract_sources_are_bounded_and_fail_closed(self):
         sync = _load()
         class Page:
             url = ""
             def __init__(self, duplicate=False): self.duplicate = duplicate
-            def goto(self, url, **_kwargs): self.url = url
             def evaluate(self, _script):
                 if self.url.endswith("/mypage/proposals/all/working"):
                     rows = [{"href": "/work/detail/7", "status": "進行中"}]
                     return rows * (2 if self.duplicate else 1)
+                # The offers selector only matches hrefs below /offers/, so the two
+                # pages return different href sets even though the shape matches.
+                if self.url.endswith("/monthly_work_contracts/lancer/offers"):
+                    return {"empty": False, "hrefs": ["/monthly_work_contracts/lancer/offers/5"]}
                 return {"empty": False, "hrefs": ["/monthly_work_contracts/lancer/offers", "/monthly_work_contracts/lancer/9"]}
+            def goto(self, url, **_kwargs): self.url = url
 
-        self.assertEqual(sync._contract_sources(Page()), {"project_working_count": 1, "monthly_contract_count": 1})
+        self.assertEqual(sync._contract_sources(Page()), {
+            "incoming_monthly_offer_count": 1,
+            "incoming_monthly_offers": [{"provider_id": "5", "detail_path": "/monthly_work_contracts/lancer/offers/5"}],
+            "project_working_count": 1,
+            "monthly_contract_count": 1,
+            "contract_candidates": [
+                {"source_kind": "project", "provider_id": "7", "board_id": None, "detail_path": "/work/detail/7", "funding_status": "requires_detail_readback"},
+                {"source_kind": "monthly", "provider_id": "9", "board_id": None, "detail_path": "/monthly_work_contracts/lancer/9", "funding_status": "requires_detail_readback"},
+            ],
+        })
         with self.assertRaisesRegex(sync.SourceFailure, "contract_source_conflict"):
             sync._contract_sources(Page(duplicate=True))
 
