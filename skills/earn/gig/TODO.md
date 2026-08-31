@@ -398,6 +398,31 @@ checkpointing, exact payload/artifact hashes, official readback, and dedupe. Rel
 as one immutable Paid release, activate only `ai.anicca.hf-gig-paid-direct`, and require a natural aggregate
 with `failed=0` followed by a second natural replay with zero duplicate effects.
 
+Latest verified recovery state:
+
+- Public main `fdd09be343974472269736a6062f696707569dc5` invalidates stale Paid decisions with
+  semantic prompt v18 and defines live-system revision review as verified HTTPS URL delivery without an
+  attachment unless the buyer explicitly requests source/archive/download.
+- Public main `413d34f63af6fed2b021acfd6c7b7d393d776831` admits shared-browser targeted readbacks one at a
+  time while retaining eight-way project-owner execution. This removed intra-Paid browser fan-out but did
+  not by itself fix the measured HTTP 500 transport failure.
+- Public main `e2a5f0881c44bf20457feabf08d11b01a27dcdf9` explicitly closes every helper-owned hidden target
+  before releasing its ownership receipt. Public main `dab2b34463119f90c08c6b29a8e7b6438712f010`
+  fixes the actual visible-tab boundary by creating authenticated default-context tabs through Chrome's
+  standard `PUT /json/new?URL` endpoint instead of the broken `Target.createTarget` path. An isolated live
+  `/json/new` target connected and closed successfully; the exact Ryuu room then returned final route
+  `https://coconala.com/talkrooms/18211957` with complete history coverage and no customer effect.
+- usa `18214856` is still **not delivered**. There is no NOTE publication URL, no
+  `delivery/paid-remote-result.json`, and no Coconala message containing a published NOTE URL. The latest
+  official seller message only says the existing NOTE account was found and will be used. Its current
+  `paid-work-decision.json` remains stale v17 `await_buyer`, so the next Paid natural pass must regenerate
+  v18, use the private seller-owned NOTE/BingX resources, publish the actual 3,000–5,000-character article,
+  verify the public NOTE URL, submit that URL once, read it back, and replay zero.
+- No four-room completion claim is allowed yet. After browser admission is free, the next Paid natural pass
+  must refresh all nine rooms successfully, then start Ryuu, usa, 逃げ因子, and snow project owners
+  concurrently. Official Coconala readbacks remain serialized because the four lanes share one authenticated
+  browser; article/site/report/image production remains parallel in isolated project workspaces.
+
 3. [ ] byusco `18171890`: invalidate the stale note-only decision, consume the latest request,
    publish the reviewed article to the agreed anicca AI blog through the installed owner, read
    back the public URL, report and formally deliver it, obtain buyer completion, and replay with
