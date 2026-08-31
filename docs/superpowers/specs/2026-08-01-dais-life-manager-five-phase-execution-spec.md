@@ -27,7 +27,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
 上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 23 `ELZ-L01`で、Lancersのfresh authと読み取り専用inventoryの既存contractを調査し、現在activeなL01だけを最小単位へ分解する。Phase C（Seq 14〜22）はgeneral-agent基盤として完了済み。
+次の一件はAtomic program ledger Seq 24 `ELZ-L02`で、Opportunity/ApplicationIntent adapterの既存contractを調査し、現在activeなL02だけを最小単位へ分解する。Phase C（Seq 14〜22）とELZ-L01は完了済み。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
@@ -754,8 +754,13 @@ Goalへread-only帰属し、同じPGlite pathを別processで開いてbyte-stabl
 - [x] **C09-03** same PGliteを別processで再openしreflection同一hashを実証する — Eliza fork PR #43、merge `7949acef…`。別`bun` child process 2件がon-disk PGlite dirを順に開き、process 1がmigration適用＋success/failure/cost fixture writeとservice readの後close、process 2はwrite 0で同じdirを再openしsame hash/counts/reflectionを観測。distinct PID `78084`/`78114`、counts `{goals:1, plan_graphs:1, work_items:1, effect_intents:2, outcome_receipts:2, economic_receipts:2}`、canonical private `reflect-restart-receipt.json` mode 0600 status=`PASS`。typecheck exit 0/0 error、fresh adversarial review P0/P1 0（P2 2件は解消: test自身がcanonical pathへ書くよう修正、tsconfig除外は既存規約）。cold PGlite WASM compileが5s既定を超えてgreen testを落とす欠陥をtest timeoutで修正（cold 6.31s fail → 修正後pass）。model/provider/browser/marketplace/payment effect 0。次はC09-04
 - [x] **C09-04** ELZ-C09をDONEにしPhase LのELZ-L01だけをNEXTへ更新する — canonical `reflect-restart-receipt.json` status=`PASS`、fork merge `7949acef…`、typecheck exit 0、review open 0、external effect 0を再読出し。Atomic program ledger Seq 22をDONE、Seq 23 L01だけを`IN_PROGRESS — NEXT`へ更新。以後Lancers L01→L25順序は不変。次はELZ-L01
 
-Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はC09がactiveであり、新forkのgeneral-agent基盤が
-Lancers実環境へ到達していない。Lancersでの新規応募・契約・受領金・銀行着金はPhase C完了後のPhase Lで一つずつ実証する。
+- [x] **L01-01** Lancers preflightのreuse mapを固定する — `origin/main` `772bcaf86`の`work_sync.py` / `application_tick.py` / `test_work_sync.py`をSHA256固定。7 surfaceの既存readerを`_snapshot`・`_contract_sources`・`_proposal_pipeline`・`_finance_source`・`_production_account_ready`へ特定し、write pathが`run_tick:412`の`_sales_action`→`_post_reply`一本であることを確認。読み取り列の単一関数への切り出しを採用し、`run_tick`直呼び・`read_only`真偽flag（`_post_reply`がcall graphに残るため構造的証明にならない）・reader複製を棄却。private `lancers-preflight-reuse-map.json` mode 0600、code変更0。次はL01-02
+- [x] **L01-02** 送信経路を持たない読み取り入口を実装する — `_read_surfaces`へ4 readerを切り出し、`run_tick`と新規`read_only_inventory`が共用。`read_only_inventory`はstate fileを書かず、`preflight.json`の別lockを使う。`test_read_only_inventory_cannot_reach_the_reply_post`がASTでcall graphを歩き、直接呼び出しと属性呼び出しの両方で`_post_reply`/`_sales_action`到達不能・4 reader到達可能・`run_tick`からは`_post_reply`到達可能を要求。`_sales_action()`と`application_tick._post_reply()`の二通りの注入で当該testが落ちることを実測し、decorationでないことを確認。併せて`test_official_contract_sources_are_bounded_and_fail_closed`のstale fixtureを修復（2キー期待値と、offers selectorが返し得ないhrefのためmain上で常時失敗していた）。focused 11/11、suite baselineは8 failures + 1 error → 8 failures + 0 errors。次はL01-03
+- [x] **L01-03** 実Lancersで二回同値readを実証する — Eliza fork外のlegacy repo PR #3430、merge `a7ad25ec…`。committed command `work_sync.py --json --preflight`で実アカウントを2回read、inventory sha256一致、`identical: true`。7 surface実測値: logged_in true、board 2、unread 0、required_reply 0、application_board 0、contract_candidate 0、incoming_offer 0、proposal current 38 / receipt 39 / selecting 16 / open 7、finance残高0円・入金履歴0。canonical private `lancers-preflight-receipt.json` mode 0600 status=`PASS`。fresh adversarial review P0/P1 0、P2 2件（AST属性呼び出しの盲点、lock file未開示）を解消し残3件をknown_gapsへ記録。model/marketplace/payment effect 0。次はL01-04
+- [x] **L01-04** ELZ-L01をDONEにしELZ-L02だけをNEXTへ更新する — canonical `lancers-preflight-receipt.json` status=`PASS`、merge `a7ad25ec…`、review open 0、provider effect 0を再読出し。Atomic program ledger Seq 23をDONE、Seq 24 L02だけを`IN_PROGRESS — NEXT`へ更新。以後Lancers L02→L25順序は不変。次はELZ-L02
+
+Lancersでまだ新しい収益がないことは、この順序を飛ばす理由にしない。現時点はL02がactiveであり、Phase Cのgeneral-agent基盤は
+完了、Lancersは読み取り専用のpreflightまで到達した。新規応募・契約・受領金・銀行着金はPhase Lで一つずつ実証する。
 
 ##### Phase F — Eliza fixed treeを未変更でlocal起動する
 
@@ -793,8 +798,8 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
-| 23 | ELZ-L01 fresh auth and read-only inventory | **IN_PROGRESS — NEXT** | current account/login/opportunity/message/application/contract/financeを二回同値read、provider effect 0の`lancers-preflight-receipt.json` |
-| 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | TODO | transport、stable entity、fee/currency、readbackだけを持ち、subjective judgment 0の`lancers-adapter-receipt.json` |
+| 23 | ELZ-L01 fresh auth and read-only inventory | **DONE** | canonical private `lancers-preflight-receipt.json` mode 0600 status=`PASS`。legacy merge `a7ad25ec…`、committed `--preflight`で7 surfaceを2回read、inventory sha256一致。`read_only_inventory`から`_post_reply`到達不能をAST call graph testで機械的に証明し、二通りの注入で当該testが落ちることを実測。focused 11/11、review P0/P1 0、provider/model/payment effect 0 |
+| 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | **IN_PROGRESS — NEXT** | transport、stable entity、fee/currency、readbackだけを持ち、subjective judgment 0の`lancers-adapter-receipt.json` |
 | 25 | ELZ-L03 historical GA-10 fixture parity | TODO | Proposal `27861812`のfixtureをprovider call 0で同じterminal stateへ再生する`lancers-fixture-receipt.json` |
 | 26 | ELZ-L04 fresh authorized application | TODO | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
 | 27 | ELZ-L05 application replay and ack-loss reconcile | TODO | same intentのexecute 0、ledger insert 0、unknown時blind retry 0の`application-replay-receipt.json` |
