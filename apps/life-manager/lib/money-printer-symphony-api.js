@@ -7,6 +7,9 @@ const SECRET_RE = /^[A-Za-z0-9_-]{32,256}$/;
 const TENANT_RE = /^[a-z0-9][a-z0-9._-]{0,199}$/;
 const DISPATCH_RE = /^[0-9a-f]{64}$/;
 const JOB_RE = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$/;
+const REASON_RE = /^[A-Za-z0-9][A-Za-z0-9._:\/-]{0,199}$/;
+const ANSWER_REF_RE = /^vault-answer:\/\/[a-z0-9][a-z0-9._-]{0,199}\/[A-Za-z0-9][A-Za-z0-9._~%-]{0,255}$/;
+const HUMAN_BOUNDARY_REF_RE = /^human-boundary:\/\/sha256\/[0-9a-f]{64}$/;
 const ISSUE_RE = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
 const COMMENT_RE = /^github-comment:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*\/[1-9][0-9]*$/;
 const ROUTES = new Map([
@@ -198,6 +201,40 @@ function safeClaim(row, uid) {
   return safe;
 }
 
+function answeredHumanBoundaries(rows, expected) {
+  if (!Array.isArray(rows)) conflict();
+  return Object.freeze(rows.map((row) => {
+    if (!exactObject(row, ["uid", "job_id", "reason_code", "answer_ref", "human_boundary_ref", "version", "updated_at"])
+      || Object.getPrototypeOf(row) !== Object.prototype || Object.getOwnPropertySymbols(row).length !== 0
+      || row.uid !== expected.uid || row.job_id !== expected.jobId
+      || typeof row.reason_code !== "string" || !REASON_RE.test(row.reason_code)
+      || typeof row.answer_ref !== "string" || !ANSWER_REF_RE.test(row.answer_ref)
+      || !row.answer_ref.startsWith(`vault-answer://${expected.uid}/`)
+      || typeof row.human_boundary_ref !== "string" || !HUMAN_BOUNDARY_REF_RE.test(row.human_boundary_ref)
+      || !Number.isInteger(row.version) || row.version < 1
+      || !((typeof row.updated_at === "string" || row.updated_at instanceof Date)
+        && Number.isFinite(Date.parse(row.updated_at)))) {
+      conflict();
+    }
+    return Object.freeze({
+      reason_code: row.reason_code,
+      answer_ref: row.answer_ref,
+      human_boundary_ref: row.human_boundary_ref,
+    });
+  }));
+}
+
+async function safeClaimWithAnswered(row, uid, store) {
+  const safe = safeClaim(row, uid);
+  if (safe === null) return null;
+  const rows = typeof store.readAnsweredForJob === "function"
+    ? await store.readAnsweredForJob({ uid: safe.tenant_id, job_id: safe.job_id })
+    : safe.round === 1 ? [] : null;
+  const answered = answeredHumanBoundaries(rows, { uid: safe.tenant_id, jobId: safe.job_id });
+  if ((safe.round === 1 && answered.length !== 0) || (safe.round > 1 && answered.length === 0)) conflict();
+  return Object.freeze({ ...safe, answered_human_boundaries: answered });
+}
+
 function safeIssue(row, input) {
   const valid = safeDispatch(row, { uid: input.uid, dispatchId: input.dispatchId }, ["mirrored"]);
   if (valid.issue_ref !== input.issueRef || valid.result_ref != null || valid.result_hash != null) conflict();
@@ -285,7 +322,7 @@ async function processRequest(action, req, res, dependencies) {
     const store = storeFor(dependencies && dependencies.getRuntimeStore);
     if (action === "claim") {
       const row = await store.claimSymphony(input);
-      jsonResponse(res, 200, { dispatch: safeClaim(row, input.uid) });
+      jsonResponse(res, 200, { dispatch: await safeClaimWithAnswered(row, input.uid, store) });
       return;
     }
     if (action === "issue") {

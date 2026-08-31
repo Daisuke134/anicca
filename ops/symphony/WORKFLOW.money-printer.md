@@ -51,6 +51,14 @@ Read the fixed `LM_DISPATCH_V1` fields in the issue body and derive the tenant, 
 round from them. The model chooses the work path and should autonomously do all feasible research,
 qualification, drafting, and artifact work. Do not perform provider-side external mutation.
 
+For round 2 or later, the private `answered_human_boundaries` field is trusted reference-only state
+for this exact tenant and job. Validate each entry's `reason_code`, tenant-scoped `answer_ref`, and
+`human_boundary_ref` before using it; never fetch, quote, or infer the private answer behind a ref.
+An exact `vault-answer://<tenant>/approve` ref means the human boundary is approved and work should
+continue. An exact `vault-answer://<tenant>/request_changes` ref means revise the prepared artifact
+and continue from that same boundary. Any other, missing, foreign, or malformed ref is invalid and
+must stop fail-closed; never ask the same answered question again. Round 1 has an empty array.
+
 Create or reuse exactly the branch `symphony/issue-<issue number>-<first 12 dispatch characters>`.
 The only result artifact is `workrooms/<dispatch_id>/RESULT.md`. Verify it, commit it, and push it.
 Its artifact ref must be an immutable HTTPS GitHub blob URL containing the pushed commit SHA. The

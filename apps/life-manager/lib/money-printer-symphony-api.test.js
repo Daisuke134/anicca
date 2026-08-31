@@ -139,11 +139,82 @@ test("valid claim returns a safe dispatch and calls the tenant-scoped store once
       job_id: JOB_ID,
       round: 1,
       status: "claimed",
+      answered_human_boundaries: [],
     },
   });
   assert.deepEqual(calls, [["claim", { uid: TENANT }]]);
   assert.equal(result.body.dispatch.result_payload, undefined);
   assert.equal(result.body.dispatch.failure_code, undefined);
+});
+
+test("round2 claim propagates same-job answered boundaries and rejects malformed or foreign references", async () => {
+  const answered = {
+    uid: TENANT,
+    job_id: JOB_ID,
+    reason_code: "provider/interview",
+    answer_ref: `vault-answer://${TENANT}/approve`,
+    human_boundary_ref: `human-boundary://sha256/${"a".repeat(64)}`,
+    version: 1,
+    updated_at: "2026-08-31T00:00:00.000Z",
+  };
+  const row = { ...dispatch(), round: 2 };
+  const calls = [];
+  const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
+    async claimSymphony() { return row; },
+    async readAnsweredForJob(input) { calls.push(input); return [answered]; },
+  });
+
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.dispatch, {
+    tenant_id: TENANT,
+    dispatch_id: DISPATCH_ID,
+    job_id: JOB_ID,
+    round: 2,
+    status: "claimed",
+    answered_human_boundaries: [{
+      reason_code: "provider/interview",
+      answer_ref: `vault-answer://${TENANT}/approve`,
+      human_boundary_ref: `human-boundary://sha256/${"a".repeat(64)}`,
+    }],
+  });
+  assert.deepEqual(calls, [{ uid: TENANT, job_id: JOB_ID }]);
+  assert.doesNotMatch(JSON.stringify(result.body), /updated_at|private|secret/i);
+
+  for (const invalidAnswered of [
+    { ...answered, uid: FOREIGN_TENANT },
+    { ...answered, answer_ref: `vault-answer://${FOREIGN_TENANT}/approve` },
+    { ...answered, human_boundary_ref: "human-boundary://sha256/not-a-sha" },
+    { ...answered, private_answer: "must not leak" },
+  ]) {
+    const invalidResult = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
+      async claimSymphony() { return row; },
+      async readAnsweredForJob() { return [invalidAnswered]; },
+    });
+    assert.equal(invalidResult.status, 409);
+    assert.deepEqual(invalidResult.body, { error: "conflict" });
+  }
+});
+
+test("claim rejects non-empty round1 and empty round2 answered-boundary arrays", async () => {
+  const answered = {
+    uid: TENANT,
+    job_id: JOB_ID,
+    reason_code: "provider/interview",
+    answer_ref: `vault-answer://${TENANT}/approve`,
+    human_boundary_ref: `human-boundary://sha256/${"a".repeat(64)}`,
+    version: 1,
+    updated_at: "2026-08-31T00:00:00.000Z",
+  };
+  for (const [round, rows] of [[1, [answered]], [2, []]]) {
+    let readCalls = 0;
+    const result = await call("/api/internal/money-printer/symphony/claim", { tenant_id: TENANT }, {}, {
+      async claimSymphony() { return { ...dispatch(), round }; },
+      async readAnsweredForJob() { readCalls += 1; return rows; },
+    });
+    assert.equal(result.status, 409);
+    assert.deepEqual(result.body, { error: "conflict" });
+    assert.equal(readCalls, 1);
+  }
 });
 
 test("claim recovery projects only base identifiers and durable issue ref", async () => {
@@ -160,6 +231,7 @@ test("claim recovery projects only base identifiers and durable issue ref", asyn
       round: 1,
       status,
       issue_ref: ISSUE_REF,
+      answered_human_boundaries: [],
     });
     assert.equal(result.body.result_ref, undefined);
     assert.equal(result.body.result_hash, undefined);

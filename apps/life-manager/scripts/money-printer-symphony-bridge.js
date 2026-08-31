@@ -24,6 +24,9 @@ const EXPECTED_RESULT_AUTHOR = "Daisuke134";
 const MAX_COMMENT_AUTHOR_LENGTH = 100;
 const JOB_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:\/-]{0,199}$/;
 const EXECUTION_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+const MACHINE_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._:\/-]{0,199}$/;
+const ANSWER_REF_RE = /^vault-answer:\/\/[a-z0-9][a-z0-9._-]{0,199}\/[A-Za-z0-9][A-Za-z0-9._~%-]{0,255}$/;
+const HUMAN_BOUNDARY_REF_RE = /^human-boundary:\/\/sha256\/[0-9a-f]{64}$/;
 const URI_REF_RE = /^[a-z][a-z0-9+.-]{1,31}:\/\/[A-Za-z0-9][A-Za-z0-9._~:/?#@!$&'()*+,;=%-]{0,999}$/;
 const MAX_COMMENT_ROWS = 500;
 const MAX_COMMENT_BODY_BYTES = 32 * 1024;
@@ -31,14 +34,14 @@ const MAX_REQUIRED_FORMAT_BYTES = 4096;
 const MAX_RESULT_PAYLOAD_BYTES = 12 * 1024;
 const DISPATCH_PACKET_KEYS = [
   "protocol", "tenant_id", "dispatch_id", "job_id", "round", "opportunity_ref", "job_ref",
-  "title", "source_url", "value_minor", "currency", "workroom_status", "result_protocol",
+  "title", "source_url", "value_minor", "currency", "workroom_status", "result_protocol", "answered_human_boundaries",
 ];
 const ISSUE_STATE_KEYS = ["number", "url", "state"];
 const RESULT_READBACK_KEYS = ["tenant_id", "dispatch_id", "job_id", "status", "result_ref", "result_hash"];
 const HUMAN_RESULT_READBACK_KEYS = [...RESULT_READBACK_KEYS, "task_id", "task_status", "version"];
 const PUBLIC_TEXT_RE = /^[^\u0000-\u001f\u007f]+$/;
 const ISSUE_REF_RE = /^github-issue:\/\/Daisuke134\/life-manager-workrooms\/[1-9][0-9]*$/;
-const CLAIM_BASE_KEYS = ["tenant_id", "dispatch_id", "job_id", "round", "status"];
+const CLAIM_BASE_KEYS = ["tenant_id", "dispatch_id", "job_id", "round", "status", "answered_human_boundaries"];
 const CLAIM_RECOVERY_KEYS = [...CLAIM_BASE_KEYS, "issue_ref"];
 const CLOSE_READBACK_KEYS = ["tenant_id", "dispatch_id", "job_id", "status", "issue_ref", "result_ref", "result_hash"];
 const RECOVERY_STATUSES = new Set(["mirrored", "result_ready", "consumed"]);
@@ -91,6 +94,34 @@ function exactObject(value, keys) {
     && Object.getOwnPropertyNames(value).sort().join(",") === keys.slice().sort().join(","));
 }
 
+function validateAnsweredHumanBoundaries(value, tenantId) {
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype
+    || Object.getOwnPropertySymbols(value).length !== 0
+    || Object.keys(value).length !== value.length || value.length > 100) {
+    fail("answered human boundaries invalid");
+  }
+  return Object.freeze(value.map((row) => {
+    if (!exactObject(row, ["reason_code", "answer_ref", "human_boundary_ref"])
+      || typeof row.reason_code !== "string" || !MACHINE_ID_RE.test(row.reason_code)
+      || typeof row.answer_ref !== "string" || !ANSWER_REF_RE.test(row.answer_ref)
+      || !row.answer_ref.startsWith(`vault-answer://${tenantId}/`)
+      || typeof row.human_boundary_ref !== "string" || !HUMAN_BOUNDARY_REF_RE.test(row.human_boundary_ref)) {
+      fail("answered human boundaries invalid");
+    }
+    return Object.freeze({
+      reason_code: row.reason_code,
+      answer_ref: row.answer_ref,
+      human_boundary_ref: row.human_boundary_ref,
+    });
+  }));
+}
+
+function validateBoundaryCardinality(round, boundaries) {
+  if ((round === 1 && boundaries.length !== 0) || (round > 1 && boundaries.length === 0)) {
+    fail("answered human boundaries round invalid");
+  }
+}
+
 function validateDispatchPacket(packet) {
   if (!exactObject(packet, DISPATCH_PACKET_KEYS) || !Object.isFrozen(packet)
     || Object.getPrototypeOf(packet) !== Object.prototype) {
@@ -112,6 +143,8 @@ function validateDispatchPacket(packet) {
     || packet.result_protocol !== "LM_RESULT_V1") {
     fail("issue packet invalid");
   }
+  const boundaries = validateAnsweredHumanBoundaries(packet.answered_human_boundaries, packet.tenant_id);
+  validateBoundaryCardinality(packet.round, boundaries);
   if (DISPATCH_PACKET_KEYS.some((key) => typeof packet[key] === "string"
     && packet[key].includes(RESERVED_MARKER_PREFIX))) {
     fail("issue packet marker invalid");
@@ -855,12 +888,18 @@ function claimedDispatch(body, config) {
     || (status !== "claimed" && (typeof row.issue_ref !== "string" || !ISSUE_REF_RE.test(row.issue_ref)))) {
     fail("bridge dispatch scope invalid");
   }
+  const answeredHumanBoundaries = validateAnsweredHumanBoundaries(
+    row.answered_human_boundaries,
+    config.tenantId,
+  );
+  validateBoundaryCardinality(row.round, answeredHumanBoundaries);
   const dispatch = {
     tenant_id: row.tenant_id,
     dispatch_id: row.dispatch_id,
     job_id: row.job_id,
     round: row.round,
     status: row.status,
+    answered_human_boundaries: answeredHumanBoundaries,
   };
   if (status !== "claimed") dispatch.issue_ref = row.issue_ref;
   return dispatch;
@@ -914,6 +953,7 @@ function workroomPacket(row, config, dispatch) {
     round: dispatch.round,
     opportunity_ref: expectedOpportunityRef(config.tenantId, opportunityId),
     job_ref: jobRef,
+    answered_human_boundaries: dispatch.answered_human_boundaries,
     title: row.title.trim(),
     source_url: row.source_url.trim(),
     value_minor: row.value_minor,
