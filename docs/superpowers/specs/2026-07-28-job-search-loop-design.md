@@ -85,6 +85,15 @@ session to `signed_in`. Activation mail and failed/unknown reset navigation must
 change the tenant state. Without this transition, the new queue filters would defer a
 successfully reset tenant forever.
 
+The reset-release transition is implemented in
+`workday_account_mail.complete_account_mail()` immediately after visible
+password-reset success and before the verification event is marked opened. A real
+VerificationStore plus machine-credential integration fixture fails RED with
+`recovery_requested`, then passes GREEN with `create_submitted`; activation mail and
+every exception path remain unchanged. Workday verification tests pass 7/7 and the
+full Job Hunter suite passes 436/436. Main release and natural inbox plus daily-owner
+readback remain.
+
 The discovery-side queue repair is implemented in
 `workday_search_loop.qualified_queue_ids()`. It reuses the existing private machine
 credential SSOT and omits a row from the current wake only when its exact Workday
