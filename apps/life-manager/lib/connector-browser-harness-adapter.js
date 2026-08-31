@@ -1,6 +1,6 @@
 "use strict";
 
-const PAGE_WEBSOCKET = /^ws:\/\/127\.0\.0\.1:9222\/devtools\/page\/([A-Za-z0-9._-]{3,128})$/;
+const PAGE_WEBSOCKET = /^ws:\/\/(?:127\.0\.0\.1|\[::1\]):9222\/devtools\/page\/([A-Za-z0-9._-]{3,128})$/;
 const PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
 const EXPECTED_STATE = /^[a-z][a-z0-9_]{1,63}$/;

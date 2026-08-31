@@ -51,7 +51,7 @@ if [ -n "${CONNECTOR_NATIVE_HEALTH_PROBE_BIN:-}" ]; then
 else
   "$NODE_BIN" -e '
 const http = require("node:http");
-const request = http.get("http://127.0.0.1:9222/json/version", { timeout: 5_000 }, (response) => {
+const request = http.get("http://[::1]:9222/json/version", { timeout: 5_000 }, (response) => {
   response.resume();
   process.exitCode = response.statusCode === 200 ? 0 : 1;
 });

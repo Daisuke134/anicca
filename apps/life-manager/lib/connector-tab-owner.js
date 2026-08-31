@@ -4,8 +4,10 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { connectorEventUrl } = require("./cloakbrowser-daily-driver.js");
-
-const CONNECTOR_CDP_ENDPOINT = "http://127.0.0.1:9222";
+const {
+  CONNECTOR_CDP_ENDPOINT,
+  CONNECTOR_CDP_WEBSOCKET_ORIGIN,
+} = require("./connector-browser-target-controller.js");
 
 function normalizedEventUrl(value) {
   let parsed;
@@ -22,8 +24,7 @@ function validPageWebsocket(value, targetId) {
   try {
     const parsed = new URL(value);
     return parsed.protocol === "ws:"
-      && parsed.hostname === "127.0.0.1"
-      && parsed.port === "9222"
+      && parsed.origin === CONNECTOR_CDP_WEBSOCKET_ORIGIN
       && parsed.pathname === `/devtools/page/${targetId}`;
   } catch {
     return false;

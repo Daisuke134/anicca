@@ -8,7 +8,7 @@ const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
 const EXTENSION_PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
-const PAGE_WEBSOCKET = /^ws:\/\/127\.0\.0\.1:9222\/devtools\/page\/[A-Za-z0-9._-]{3,128}$/;
+const PAGE_WEBSOCKET = /^ws:\/\/(?:127\.0\.0\.1|\[::1\]):9222\/devtools\/page\/[A-Za-z0-9._-]{3,128}$/;
 const TECHPLAY_POSTCHECK_ATTEMPTS = 20;
 const TECHPLAY_POSTCHECK_INTERVAL_MS = 25;
 const KINDS = new Set(["input", "textarea", "select", "checkbox", "radio", "button", "link"]);
