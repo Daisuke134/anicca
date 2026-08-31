@@ -136,18 +136,25 @@ lsof -n | grep <対象>
 
 44個の loop が `~/anicca/skills/earn/x402-sell` を参照している（他に `marketing-engine` 3件、`sol-funding-daemon.sh` 1件）。
 
-`skills/earn` の中身を比較した結果:
+`origin/main` と `~/anicca` のファイル一覧を突き合わせた結果（2026-08-31）:
 
-- `~/anicca` 側 33項目、`life-manager-main` 側 37項目、release 側 38項目
-- **`~/anicca` にしか無いのは `state`（4MB）だけ**
-- ただし `x402-sell` は `~/anicca` 側の方がファイルが多い（`__tests__/` が life-manager 側に無い）
-- サイズ差 878MB vs 1MB は `node_modules` の有無
+| | ファイル数 |
+|---|---|
+| `origin/main` の `skills/earn/x402-sell` | 141 |
+| `~/anicca` の同ディレクトリ（node_modules と logs 除く） | 164 |
+| **`~/anicca` にしか無いもの** | **23** |
 
-**つまりコードの移行はほぼ済んでいて、残っているのはテストと state。**
+**その23ファイルは全て実行時データだった。** `attempts-0x....jsonl`（ウォレット別の試行記録）、`llm-resale-spend-0x....json`（支出記録）、`events.jsonl`、`market-scout.json` など。拡張子が `.jsonl` / `.json` / `.log` でないものはゼロ件。
+
+**コードの移行は完了している。** 一度は「本番コード17本が `~/anicca` にしか無い」と判定したが、それは `life-manager-main` の作業ブランチ（`feat/lancers-session-self-recovery-20260831`）と比較していたための誤り。`origin/main` には `acquisition-controller.mjs` `sale-observer.mjs` `experiment-tick.mjs` `store-activate.mjs` `the402-worker-daemon.mjs` `image-server.mjs` を含む97本の `.mjs` と、テスト36本が揃っている。**比較対象はチェックアウト中のブランチではなく `origin/main`。**
+
+未コミット195件の内訳も実測した: 165件が未追跡で、うち159件は `marketing-engine/evidence`。変更29件も `intel/*.jsonl` と `evidence/metrics/*` が大半。**コード変更は `cdp_daily_driver_keepalive.py` の1件だけで、`life-manager-main` 側との `diff` はゼロ行**（完全に同一）。
+
+したがって `~/anicca` に残る価値は**実行時 state のみ**。
 
 - [ ] **A-bis-0**: `~/Projects/life-manager`（v0 の archived クローン）の中身を確認し、救うべきものを `life-manager-main` へ移してから削除する
-- [ ] **A-bis-1**: `~/anicca/skills/earn/x402-sell/__tests__/` の中身を確認する。**テストだけなら移行不要**（Dais 判断 2026-08-31: 「テストファイルだけなら移行しなくていい」）。本番コードが混ざっている場合だけ移す
-- [ ] **A-bis-2**: 未コミット195件の中身を確認し、必要なものを `life-manager` へコミット
+- [x] **A-bis-1**: 完了。コードもテストも `origin/main` に揃っており、移行するものは無い
+- [x] **A-bis-2**: 完了。未コミット195件は全て evidence / intel / log の実行時データ。唯一のコード変更は差分ゼロ
 - [ ] **A-bis-3**: 44個の loop の参照先を `~/anicca/skills/earn/x402-sell` から release 内のパスへ張り替える
 - [ ] **A-bis-4**: `~/anicca/skills/earn/state`（4MB）の移設先を決める
 - [ ] **A-bis-5**: 全て済んだら `~/anicca` を削除（**3.5GB 回収**）
