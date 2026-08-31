@@ -2455,7 +2455,7 @@ Current read-only production matrix separates installed state from outcome proof
 |---|---|---|---|
 | Marketing 13 destinations | all 13 labels load `20260831T192828-7ab5a318`; each runs 0 / never exited | latest events are install-only with `effect_status=unknown`; manifest 13 `default-off`, armed 0, holds 17; latest receipts are generated artifacts, not Postiz/native publications | **UNPROVEN / OFF** |
 | Capafy daily | `ai.anicca.capafy-loop-daily` loads authoritative `20260831T193835-aced5c6b`; runs 0 / never exited | natural daily terminal absent | **PENDING NATURAL TERMINAL** |
-| Capafy healthcheck | same `aced5c6b`; runs 4 / last exit 0 | repeated deterministic health terminal pass | **PASS for health only** |
+| Capafy healthcheck | same `aced5c6b`; initially runs 4 / last exit 0, but the read-only 20:22 JST refresh shows runs 7 / last exit `78: EX_CONFIG` | recover a natural health terminal exit 0 without reloading, restarting, stopping, or applying either held Capafy label | **FAIL — CONFIG** |
 | Connector | `ai.anicca.life-manager-connector-native` loads `7ab5a318`; runs 1 / last exit 2 | latest global event `entrypoint_exit_2`; no completed Calendar/Telegram/bundle chain | **FAIL** |
 | Coconala Apply / Browser / Reply | `hf-gig-*` owners load `7ab5a318`; Apply last exit 0, Reply last exit 0, Browser long-running | no single current four-lane official terminal/replay manifest; process liveness is not marketplace completion | **PARTIAL / UNPROVEN** |
 | Coconala Paid / Storefront | same `7ab5a318`; Paid last exit 1, Storefront last exit 1 | current owner terminals are nonzero; official outstanding project closure/replay remains open in `skills/earn/gig/TODO.md` | **FAIL** |
