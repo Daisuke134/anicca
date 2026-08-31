@@ -1,6 +1,7 @@
 "use strict";
 
-const CONNECTOR_CDP_ENDPOINT = "http://127.0.0.1:9222";
+const CONNECTOR_CDP_ENDPOINT = "http://[::1]:9222";
+const CONNECTOR_CDP_WEBSOCKET_ORIGIN = "ws://[::1]:9222";
 
 function unavailable(message) {
   throw new Error(message || "Connector browser target controller unavailable");
@@ -18,8 +19,7 @@ function targetIdFromWebsocket(value) {
   const prefix = "/devtools/page/";
   if (
     parsed.protocol !== "ws:"
-    || parsed.hostname !== "127.0.0.1"
-    || parsed.port !== "9222"
+    || parsed.origin !== CONNECTOR_CDP_WEBSOCKET_ORIGIN
     || !parsed.pathname.startsWith(prefix)
     || parsed.username || parsed.password || parsed.search || parsed.hash
   ) unavailable("Connector page websocket invalid");
@@ -95,7 +95,7 @@ function createConnectorBrowserTargetController(options = {}) {
         const page = await findPage(targetId, baselinePages);
         return Object.freeze({
           target_id: targetId,
-          page_websocket: `ws://127.0.0.1:9222/devtools/page/${targetId}`,
+          page_websocket: `${CONNECTOR_CDP_WEBSOCKET_ORIGIN}/devtools/page/${targetId}`,
           page,
         });
       } catch (error) {
@@ -129,5 +129,6 @@ function createConnectorBrowserTargetController(options = {}) {
 
 module.exports = {
   CONNECTOR_CDP_ENDPOINT,
+  CONNECTOR_CDP_WEBSOCKET_ORIGIN,
   createConnectorBrowserTargetController,
 };

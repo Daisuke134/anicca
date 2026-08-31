@@ -3,6 +3,7 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const { CONNECTOR_CDP_WEBSOCKET_ORIGIN } = require("./connector-browser-target-controller.js");
 
 function unavailable(message) {
   throw new Error(message || "Connector target lease unavailable");
@@ -28,8 +29,7 @@ function pageWebsocket(value, expectedTargetId) {
   try { parsed = new URL(text); } catch { unavailable("Connector page websocket invalid"); }
   if (
     parsed.protocol !== "ws:"
-    || parsed.hostname !== "127.0.0.1"
-    || parsed.port !== "9222"
+    || parsed.origin !== CONNECTOR_CDP_WEBSOCKET_ORIGIN
     || parsed.pathname !== `/devtools/page/${expectedTargetId}`
     || parsed.username || parsed.password || parsed.search || parsed.hash
   ) unavailable("Connector page websocket invalid");
