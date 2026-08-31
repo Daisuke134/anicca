@@ -227,6 +227,16 @@ discovery so a pre-click crash cannot permanently strand Review-ready work.
 Acceptance is a natural wake that selects the four resumable rows without fit
 calls and lets Danaher acquire its current fence and finalize once.
 
+Natural wake `daily-20260831-231005` proves the queue repair with two Danaher
+rows and zero fit calls, but finalization still calls the new-claim path. Ledger
+returns no new intent because the exact row is already safely `submit_claimed`
+at fence 2, so the runtime stops before acquiring the browser fence. The active
+atom makes `claim_submission` return that exact existing intent only when the
+application and intent are both `submit_claimed` and the current generation has
+no clicked or confirmed phase. It does not increment the fence, allocate a new
+slot, or reopen terminal/ambiguous work. Acceptance is the same natural row
+reaching browser-fence acquisition and one final click.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable

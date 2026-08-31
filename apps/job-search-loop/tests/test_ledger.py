@@ -199,6 +199,12 @@ class LedgerTests(unittest.TestCase):
                 }
             ],
         )
+        resumed = self._claim(
+            self.ledger, self.application_id, "2026-07-29", "hash-after"
+        )
+        self.assertIsNotNone(resumed)
+        self.assertEqual((resumed.intent_id, resumed.fence), (second.intent_id, second.fence))
+        self.assertEqual(self.ledger.daily_slot_count("2026-07-29"), 1)
         self.ledger.connection.execute(
             """
             INSERT INTO submission_click_phases
@@ -208,6 +214,11 @@ class LedgerTests(unittest.TestCase):
             (second.intent_id, second.fence),
         )
         self.assertEqual(self.ledger.retryable_applications(), [])
+        self.assertIsNone(
+            self._claim(
+                self.ledger, self.application_id, "2026-07-29", "hash-after"
+            )
+        )
 
         with self.assertRaises(FenceError):
             _complete_verified(self.ledger,
