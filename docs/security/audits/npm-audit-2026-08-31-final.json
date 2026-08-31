@@ -1,0 +1,315 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@ai-sdk/amazon-bedrock": {
+      "name": "@ai-sdk/amazon-bedrock",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/anthropic",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=3.0.126",
+      "nodes": [
+        "node_modules/@ai-sdk/amazon-bedrock"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/anthropic": {
+      "name": "@ai-sdk/anthropic",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "@ai-sdk/amazon-bedrock",
+        "@ai-sdk/google-vertex"
+      ],
+      "range": "<=2.0.100",
+      "nodes": [
+        "node_modules/@ai-sdk/anthropic"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/azure": {
+      "name": "@ai-sdk/azure",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/deepseek",
+        "@ai-sdk/openai",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.129",
+      "nodes": [
+        "node_modules/@ai-sdk/azure"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/cerebras": {
+      "name": "@ai-sdk/cerebras",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=1.0.58",
+      "nodes": [
+        "node_modules/@ai-sdk/cerebras"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/deepseek": {
+      "name": "@ai-sdk/deepseek",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "@ai-sdk/azure"
+      ],
+      "range": "<=1.0.55",
+      "nodes": [
+        "node_modules/@ai-sdk/deepseek"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/gateway": {
+      "name": "@ai-sdk/gateway",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "ai"
+      ],
+      "range": "<=2.0.144",
+      "nodes": [
+        "node_modules/@ai-sdk/gateway"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/google": {
+      "name": "@ai-sdk/google",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "@ai-sdk/google-vertex"
+      ],
+      "range": "<=2.0.95",
+      "nodes": [
+        "node_modules/@ai-sdk/google"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/google-vertex": {
+      "name": "@ai-sdk/google-vertex",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/anthropic",
+        "@ai-sdk/google",
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=3.0.171",
+      "nodes": [
+        "node_modules/@ai-sdk/google-vertex"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/groq": {
+      "name": "@ai-sdk/groq",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.52",
+      "nodes": [
+        "node_modules/@ai-sdk/groq"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/mistral": {
+      "name": "@ai-sdk/mistral",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.47",
+      "nodes": [
+        "node_modules/@ai-sdk/mistral"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/openai": {
+      "name": "@ai-sdk/openai",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.123",
+      "nodes": [
+        "node_modules/@ai-sdk/openai"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/openai-compatible": {
+      "name": "@ai-sdk/openai-compatible",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [
+        "@ai-sdk/google-vertex",
+        "@ai-sdk/xai"
+      ],
+      "range": "<=1.0.53",
+      "nodes": [
+        "node_modules/@ai-sdk/openai-compatible"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/perplexity": {
+      "name": "@ai-sdk/perplexity",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.42",
+      "nodes": [
+        "node_modules/@ai-sdk/perplexity"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/provider-utils": {
+      "name": "@ai-sdk/provider-utils",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1119676,
+          "name": "@ai-sdk/provider-utils",
+          "dependency": "@ai-sdk/provider-utils",
+          "title": "@ai-sdk/provider-utils has an Uncontrolled Resource Consumption issue",
+          "url": "https://github.com/advisories/GHSA-866g-f22w-33x8",
+          "severity": "low",
+          "cwe": [
+            "CWE-400"
+          ],
+          "cvss": {
+            "score": 4.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:L"
+          },
+          "range": "<=3.0.97"
+        }
+      ],
+      "effects": [
+        "@ai-sdk/amazon-bedrock",
+        "@ai-sdk/anthropic",
+        "@ai-sdk/azure",
+        "@ai-sdk/cerebras",
+        "@ai-sdk/deepseek",
+        "@ai-sdk/gateway",
+        "@ai-sdk/google",
+        "@ai-sdk/google-vertex",
+        "@ai-sdk/groq",
+        "@ai-sdk/mistral",
+        "@ai-sdk/openai",
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/perplexity",
+        "@ai-sdk/togetherai",
+        "@ai-sdk/xai",
+        "ai"
+      ],
+      "range": "<=3.0.97",
+      "nodes": [
+        "node_modules/@ai-sdk/provider-utils"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/togetherai": {
+      "name": "@ai-sdk/togetherai",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=1.0.57",
+      "nodes": [
+        "node_modules/@ai-sdk/togetherai"
+      ],
+      "fixAvailable": true
+    },
+    "@ai-sdk/xai": {
+      "name": "@ai-sdk/xai",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/openai-compatible",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=2.0.92",
+      "nodes": [
+        "node_modules/@ai-sdk/xai"
+      ],
+      "fixAvailable": true
+    },
+    "ai": {
+      "name": "ai",
+      "severity": "low",
+      "isDirect": false,
+      "via": [
+        "@ai-sdk/gateway",
+        "@ai-sdk/provider-utils"
+      ],
+      "effects": [],
+      "range": "<=0.0.0-fd764a60-20260114143805 || 3.0.22 - 6.0.0 || 7.0.0-beta.0 - 7.0.0-beta.1-gr2m-test",
+      "nodes": [
+        "node_modules/ai"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 17,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 17
+    },
+    "dependencies": {
+      "prod": 421,
+      "dev": 0,
+      "optional": 30,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 450
+    }
+  }
+}
