@@ -907,7 +907,10 @@ async function handlePanelApiRequest(req, res, opts = {}) {
       if (receipt.replay) { sendJson(res, 200, receipt.replay); return; }
       claimedReceipt = receipt.claimed ? receipt : null;
       if (typeof body.answer === "string" && typeof opts.completeBrowserHandoff === "function") {
-        await opts.completeBrowserHandoff(scope.uid, body.answer);
+        const handoff = typeof opts.browserHandoffReader === "function"
+          ? await opts.browserHandoffReader(scope.uid) : null;
+        if (handoff && handoff.expired === false) await opts.completeBrowserHandoff(scope.uid, body.answer);
+        else if (body.answer === "approve") throw new Error("browser handoff unavailable");
       }
       const result = await answerHumanTask({
         scope,
