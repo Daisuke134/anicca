@@ -13,7 +13,7 @@ tracker:
 polling:
   interval_ms: 2000
 workspace:
-  root: /Users/anicca/Projects/life-manager-symphony-workspaces
+  root: $SYMPHONY_WORKSPACE_ROOT
 hooks:
   after_create: |
     gh repo clone Daisuke134/life-manager-workrooms .
@@ -21,7 +21,7 @@ agent:
   max_concurrent_agents: 2
   max_turns: 5
 codex:
-  command: env CODEX_HOME=/Users/anicca/.codex-acct2 /Users/anicca/.codex-acct2/packages/standalone/current/codex app-server
+  command: env CODEX_HOME=$CODEX_HOME codex app-server
   approval_policy: never
   thread_sandbox: workspace-write
   turn_sandbox_policy:

@@ -59,12 +59,10 @@ function validateConfig(config) {
     fail("bridge configuration invalid");
   }
   const secret = config.secret;
-  const tenantId = config.tenantId;
-  if (typeof secret !== "string" || !SECRET_RE.test(secret)
-    || typeof tenantId !== "string" || !TENANT_RE.test(tenantId)) {
+  if (typeof secret !== "string" || !SECRET_RE.test(secret)) {
     fail("bridge configuration invalid");
   }
-  return { apiBaseUrl, secret, tenantId };
+  return { apiBaseUrl, secret };
 }
 
 function responseStatus(response) {
@@ -630,7 +628,6 @@ function mirroredIssueReadback(body, packet, issueRef) {
 async function reconcileIssueForPacket(config, packet, deps = {}) {
   const validated = validateConfig(config);
   const validPacket = validateDispatchPacket(packet);
-  if (validPacket.tenant_id !== validated.tenantId) fail("issue packet tenant scope invalid");
   const issueClient = deps && deps.issueClient;
   if (!issueClient || typeof issueClient.list !== "function" || typeof issueClient.create !== "function") {
     fail("issue client unavailable");
@@ -662,7 +659,7 @@ async function reconcileIssueForPacket(config, packet, deps = {}) {
     }
     issueRef = issueRefFromUrl(matches[0].url);
   } else if (rows.length < 100) {
-    const result = createIssueForPacket(validPacket, { issueClient, tenantId: validated.tenantId });
+    const result = createIssueForPacket(validPacket, { issueClient, tenantId: validPacket.tenant_id });
     if (!result || result.status !== "created" || result.dispatch_id !== validPacket.dispatch_id
       || typeof result.issue_ref !== "string" || !ISSUE_REF_RE.test(result.issue_ref)) {
       fail("issue create failed");
@@ -682,7 +679,7 @@ async function reconcileIssueForPacket(config, packet, deps = {}) {
     method: "POST",
     headers: authHeaders,
     body: JSON.stringify({
-      tenant_id: validated.tenantId,
+      tenant_id: validPacket.tenant_id,
       dispatch_id: validPacket.dispatch_id,
       issue_ref: issueRef,
     }),
@@ -769,7 +766,6 @@ function closeReadback(value, packet, issueRef, result) {
 async function reconcileResultForIssue(config, packet, issueRef, deps = {}) {
   const validated = validateConfig(config);
   const validPacket = validateDispatchPacket(packet);
-  if (validPacket.tenant_id !== validated.tenantId) fail("issue packet tenant scope invalid");
   const issueMatch = typeof issueRef === "string" ? issueRef.match(ISSUE_REF_RE) : null;
   if (!issueMatch) fail("issue result scope invalid");
   const issueClient = deps && deps.issueClient;
@@ -806,7 +802,7 @@ async function reconcileResultForIssue(config, packet, issueRef, deps = {}) {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      tenant_id: validated.tenantId,
+      tenant_id: validPacket.tenant_id,
       dispatch_id: validPacket.dispatch_id,
       repo: ISSUE_REPO,
       author: EXPECTED_RESULT_AUTHOR,
@@ -853,7 +849,7 @@ async function reconcileResultForIssue(config, packet, issueRef, deps = {}) {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      tenant_id: validated.tenantId,
+      tenant_id: validPacket.tenant_id,
       dispatch_id: validPacket.dispatch_id,
       issue_ref: issueRef,
       result_ref: readback.result_ref,
@@ -881,7 +877,7 @@ function claimedDispatch(body, config) {
     fail("bridge dispatch scope invalid");
   }
   if (!row || typeof row !== "object" || Array.isArray(row)
-    || row.tenant_id !== config.tenantId
+    || typeof row.tenant_id !== "string" || !TENANT_RE.test(row.tenant_id)
     || typeof row.dispatch_id !== "string" || !HEX64_RE.test(row.dispatch_id)
     || typeof row.job_id !== "string" || !/^goal:[0-9a-f]{64}$/.test(row.job_id)
     || !Number.isSafeInteger(row.round) || row.round < 1
@@ -890,7 +886,7 @@ function claimedDispatch(body, config) {
   }
   const answeredHumanBoundaries = validateAnsweredHumanBoundaries(
     row.answered_human_boundaries,
-    config.tenantId,
+    row.tenant_id,
   );
   validateBoundaryCardinality(row.round, answeredHumanBoundaries);
   const dispatch = {
@@ -931,7 +927,7 @@ function expectedOpportunityRef(tenantId, opportunityId) {
 
 function workroomPacket(row, config, dispatch) {
   const opportunityId = dispatch.job_id.slice("goal:".length);
-  const jobRef = expectedJobRef(config.tenantId, dispatch.job_id);
+  const jobRef = expectedJobRef(dispatch.tenant_id, dispatch.job_id);
   if (!row || typeof row !== "object" || Array.isArray(row)
     || row.opportunity_id !== opportunityId
     || typeof row.title !== "string" || !row.title.trim() || row.title.length > 300
@@ -951,7 +947,7 @@ function workroomPacket(row, config, dispatch) {
     dispatch_id: dispatch.dispatch_id,
     job_id: dispatch.job_id,
     round: dispatch.round,
-    opportunity_ref: expectedOpportunityRef(config.tenantId, opportunityId),
+    opportunity_ref: expectedOpportunityRef(dispatch.tenant_id, opportunityId),
     job_ref: jobRef,
     answered_human_boundaries: dispatch.answered_human_boundaries,
     title: row.title.trim(),
@@ -975,7 +971,7 @@ async function claimMoneyPrinterWorkPacket(config, deps = {}) {
   };
 
   const claim = await request(fetchImpl, `${validated.apiBaseUrl}${CLAIM_PATH}`, {
-    method: "POST", headers: authHeaders, body: JSON.stringify({ tenant_id: validated.tenantId }),
+    method: "POST", headers: authHeaders, body: JSON.stringify({}),
   }, signal);
   responseStatus(claim);
   const dispatch = claimedDispatch(await json(claim), validated);
@@ -1003,7 +999,6 @@ function cliConfig(env = process.env) {
   return {
     apiBaseUrl: env.LM_SYMPHONY_API_BASE_URL || "",
     secret: env.LM_SYMPHONY_BRIDGE_SECRET || "",
-    tenantId: env.LM_RUNTIME_TENANT_ID || "",
   };
 }
 

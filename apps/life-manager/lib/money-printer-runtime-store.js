@@ -324,6 +324,25 @@ function createMoneyPrinterRuntimeStore({ query } = {}) {
   if (typeof query !== "function") unavailable();
 
   return Object.freeze({
+    async claimSymphonyNext() {
+      const candidates = (await query(`
+        SELECT jobs.tenant_id
+        FROM public.lm_runtime_jobs jobs
+        WHERE jobs.status = 'queued' AND jobs.capability = 'general-agent.work'
+          AND jobs.available_at <= clock_timestamp()
+          AND (SELECT count(*) FROM public.lm_symphony_dispatches dispatches
+            WHERE dispatches.tenant_id = jobs.tenant_id AND dispatches.issue_closed_at IS NULL) < 2
+        GROUP BY jobs.tenant_id
+        ORDER BY min(jobs.available_at), jobs.tenant_id
+        LIMIT 1
+      `)).rows;
+      if (candidates.length === 0) return null;
+      if (candidates.length !== 1) throw new Error("money printer runtime store Symphony claim readback invalid");
+      const uid = tenant(candidates[0].tenant_id);
+      return claimedSymphonyDispatch(await query(`
+        SELECT * FROM public.claim_lm_symphony_job($1)
+      `, [uid]), uid);
+    },
     async claimSymphony(value) {
       const uid = tenant(value);
       return claimedSymphonyDispatch(await query(`
