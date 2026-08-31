@@ -30,7 +30,8 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
         control.chmod(0o755)
         return healthcheck, lifecycle_calls, lifecycle_returncode
 
-    def run_stale_owner_healthcheck(self, lifecycle_returncode=0):
+    def run_stale_owner_healthcheck(self, lifecycle_returncode=0, launchctl_output="",
+                                    terminal_event=None):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             state_home = root / "state-home"
@@ -39,6 +40,9 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
             marker.touch()
             stale = time.time() - (31 * 60 * 60)
             os.utime(marker, (stale, stale))
+            if terminal_event is not None:
+                (state_home / "events.jsonl").write_text(
+                    json.dumps(terminal_event) + "\n", encoding="utf-8")
 
             healthcheck, lifecycle_calls, lifecycle_returncode = self.install_test_release(
                 root, lifecycle_returncode)
@@ -47,7 +51,10 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
             fake_bin.mkdir()
             launchctl = fake_bin / "launchctl"
             launchctl.write_text(
-                "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$CAPAFY_TEST_CALLS\"\nexit 0\n",
+                "#!/bin/sh\n"
+                "printf '%s\\n' \"$*\" >> \"$CAPAFY_TEST_CALLS\"\n"
+                "[ \"$1\" != print ] || printf '%s\\n' \"$CAPAFY_TEST_LAUNCHCTL_OUTPUT\"\n"
+                "exit 0\n",
                 encoding="utf-8",
             )
             launchctl.chmod(0o755)
@@ -58,13 +65,15 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
                 "CAPAFY_TEST_CALLS": str(calls),
                 "CAPAFY_TEST_LM_LOOP_CALLS": str(lifecycle_calls),
                 "CAPAFY_TEST_LM_LOOP_RC": str(lifecycle_returncode),
+                "CAPAFY_TEST_LAUNCHCTL_OUTPUT": launchctl_output,
             }
             result = subprocess.run(
                 ["bash", str(healthcheck)], env=env, text=True, capture_output=True, check=False
             )
             recorded = calls.read_text(encoding="utf-8").splitlines()
             lifecycle = lifecycle_calls.read_text(encoding="utf-8").splitlines() if lifecycle_calls.exists() else []
-            log = (state_home / "logs" / "capafy-loop-healthcheck.log").read_text(encoding="utf-8")
+            log_path = state_home / "logs" / "capafy-loop-healthcheck.log"
+            log = log_path.read_text(encoding="utf-8") if log_path.exists() else ""
             return result, recorded, lifecycle, log
 
     def run_healthcheck(self, error_class, incomplete_name, expected_return=0,
@@ -159,6 +168,21 @@ class CapafyHealthcheckQuotaBackoffTest(unittest.TestCase):
             self.assertEqual(lifecycle, ["restart capafy-loop-daily"])
             self.assertNotIn("restarted ai.anicca.capafy-loop-daily", log)
             self.assertIn("failed to restart ai.anicca.capafy-loop-daily", log)
+
+    def test_fresh_success_terminal_does_not_restart_for_stale_marker(self):
+            now = time.time()
+            result, recorded, lifecycle, _ = self.run_stale_owner_healthcheck(
+                launchctl_output="last exit code = 0",
+                terminal_event={
+                    "loop_id": "capafy-loop-daily",
+                    "phase": "report",
+                    "status": "pass",
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+                },
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(any(row.startswith("print ") for row in recorded), recorded)
+            self.assertEqual(lifecycle, [])
 
 
 if __name__ == "__main__":
