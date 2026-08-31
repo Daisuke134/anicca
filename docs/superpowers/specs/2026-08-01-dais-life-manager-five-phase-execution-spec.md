@@ -821,8 +821,8 @@ JPY 10,000,000/月はこの積み上げでは届かず、経路確定は`ELZ-Y01
 
 | Seq | Atom | 状態 | 原子的完了条件 / named receipt |
 |---:|---|---|---|
-| 23 | ELZ-L01 fresh auth and read-only inventory | **IN_PROGRESS — NEXT** | current account/login/opportunity/message/application/contract/financeを二回同値read、provider effect 0の`lancers-preflight-receipt.json` |
-| 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | TODO | transport、stable entity、fee/currency、readbackだけを持ち、subjective judgment 0の`lancers-adapter-receipt.json` |
+| 23 | ELZ-L01 fresh auth and read-only inventory | **DONE** | canonical private `~/.local/state/anicca/lancers/lancers-preflight-receipt.json` status=`PASS`, mode 600。15秒あけた2回のread-only `work_sync.run_tick()`が `logged_in:true / source_complete:true` で inventory SHA256 `0c4331d0…` 完全一致（boards 2 / unread 0 / proposal current_count 38）。provider effect 0。公式`/mypage/proposals`から proposal ID を38件読み返し、loopの報告38件と一致を確認済み。session失効時はSSOTの資格情報と受信箱のワンタイム確認で人手なく再確立した（手順は`ELZ-L07C`でloopへ移す） |
+| 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | **IN_PROGRESS — NEXT** | transport、stable entity、fee/currency、readbackだけを持ち、subjective judgment 0の`lancers-adapter-receipt.json` |
 | 25 | ELZ-L03 historical GA-10 fixture parity | TODO | Proposal `27861812`のfixtureをprovider call 0で同じterminal stateへ再生する`lancers-fixture-receipt.json` |
 | 25b | ELZ-L03B truthful profile and credibility surface | TODO | ★正本は`skills/gig-work/profile/PROFILE-ASSETS.md`。Coconalaの実証済みprofileはペルソナ`Kosuke｜教育×AI専門家`＋イラストavatarで運用され、Daisの法的身元・書類・個人職歴はマーケットプレイスへ出さない。profileはサイト非依存・言語非依存の資産1つとして持ち各サイトへrenderする（英/西/葡/タガログ展開前提）。Lancers実測2026-08-31: サイト自身が「完成度が高いと受注率が14倍」と表示、完成度50%・実績0件。書類を伴う本人確認と電話SMS確認はoperator-gatedとしてblocker記録し捏造しない★ Lancers公式profile（表示名、icon、自己紹介、スキル、実績、稼働条件）をtruthfulに満たしてofficial readbackする`profile-credibility-receipt.json`。空profileのまま応募へ進まない。虚偽経歴0、secret/PII 0、他provider effect 0 |
 | 26 | ELZ-L04 fresh authorized application | TODO | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
@@ -853,6 +853,11 @@ JPY 10,000,000/月はこの積み上げでは届かず、経路確定は`ELZ-Y01
 | 45 | ELZ-L23 owned bank transaction | TODO | payoutと一意にjoinする実口座transactionの`bank-readback-receipt.json` |
 | 46 | ELZ-L24 banked economic truth | TODO | payoutとbank delta=0、self-pay/top-up除外、新規外部buyerのみの`banked-economic-receipt.json` |
 | 47 | ELZ-L25 banked to compute-paid | TODO | received-cash cap内の実compute costと残高を束ねる`compute-paid-receipt.json` |
+
+| 47b | ELZ-L26 provider fallback invariant | TODO | 全task classのcandidatesが**異なるproviderを2つ以上**含むことをtestで強制する`fallback-invariant-receipt.json`。実測2026-08-31: 応募のtask classだけ`codex→codex`で、同一subscriptionのquota枯渇（Sep 6まで）で金の経路が全滅した。同ファイル内の`composition-agent`/`browser-lane-agent`は`codex→claude`で生存。★同一subscription内の候補2つは候補1つと同じ★ |
+| 47c | ELZ-L27 prompt regression eval harness | TODO | prompt/手順変更時に判断の劣化を機械的に検出する最小eval。形は`openai/evals`（`evals/registry/evals/<name>.yaml` + `data/<name>/*.jsonl`、1行1 sample、`Match`系かmodel-graded、`oaieval`で実行）。**種は今夜の実失敗3件**（Codex quota枯渇時のfallback、```jsonフェンス、散文＋JSON）。`langchain-ai/agentevals`の`create_trajectory_match_evaluator`（strict/unordered/subset/superset）で`discover→judge→apply→readback`の軌跡を検査し、**同一案件へのtwice applyと見送り理由の変質**を回帰として捕まえる。LangChainのeval engineering記事の`本番traceを掘る→失敗を1つ特定→evalにする→直す→再実行`をそのまま運用ループにする |
+| 47d | ELZ-L28 fleet observability | TODO | 沈黙する失敗をtraceで可視化する。**推奨=Langfuse**（trace/observation/session、`create_score`、dataset run、prompt versioning がLLM前提で揃う）。ただし自己ホストは web/worker/Postgres/ClickHouse/Redis/S3 の**6サービス最小**でMac miniには重い。軽量重視なら`openobserve`が単一binary（docker 1コマンド、local disk既定）でOTel GenAI semconv（`gen_ai_usage_input_tokens`/`cost`）とsession/agent-graphを持つが、evalsはEnterprise。**まずopenobserveで trace を出し、eval採点が要るならLangfuseへ**。計測すべき指標は provider別quota残・attempt別exit・確認/応募/見送り件数・重複応募数・receipt突合差分 |
+| 47e | ELZ-L29 one repository | TODO | 正本を`~/Projects/life-manager-main`（`github.com/Daisuke134/life-manager`）**1つ**に統合する`repo-consolidation-receipt.json`。実測2026-08-31: `~/anicca`(2290 commits)は**同一remoteの二重checkout**、`~/Projects/life-manager`(31 commits)は`life-manager-v0`、他に`life-manager-8i-cutover`/`life-manager-symphony-workspaces`/`life-manager-eliza-worktrees`/`life-manager-repo-v0-retire`が散在。Eliza forkは正当に別repo。**削除前に各dirの未push commitとuntracked成果物を列挙して提示し、承認後に削除する**。再生成可能なworktree/cacheは対象外 |
 
 ##### Phase H — failureを失敗層ごとに修復する
 
