@@ -149,6 +149,21 @@ empty allowed-host set and lost the retryable Danaher row; GREEN returns its exa
 Qualification tests pass 44/44 and the full Job Hunter suite passes 437/437. Main
 release and natural reopen proof remain.
 
+Wake `daily-20260831-210049` exposes one missing guard in that combined list:
+`retryable_applications()` is provider-neutral, so a non-Workday retry enters the
+host-bypass path and is passed to the Workday credential store, which raises
+`Workday job URL must use an official tenant host`; discovery then fails closed and
+the browser receives an empty queue. The active atom applies the existing
+`detect_provider()` contract before any Workday credential/fit check. Non-Workday
+retryables remain owned by their own browser provider path and cannot abort Workday
+discovery.
+
+The provider-filter repair applies the existing `detect_provider()` contract before
+the retryable host bypass and every Workday credential/fit access. RED returned both
+Ashby and Danaher from the Workday queue; GREEN returns only Danaher. Qualification
+tests pass 45/45 and the full Job Hunter suite passes 438/438. Main release and
+natural retryable reopen proof remain.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
