@@ -640,6 +640,12 @@ function createMinimalProductionDependencies(options = {}) {
   const kokuchproWorkflow = options.kokuchproWorkflow || createKokuchProDiscoveryWorkflow({
     now,
     onDiscoveryAudit: operations.recordKokuchProDiscoveryAudit || (() => {}),
+    registeredReconciliationEnabled: true,
+    hasAppliedBundle: (candidate) => evidenceChain.hasAppliedBundle({
+      provider: "kokuchpro",
+      event_ref: candidate.event_ref,
+      provider_status: "registered",
+    }),
   });
   const actionCache = options.actionCache || createConnectorActionCache({
     path: path.join(stateDir, "action-cache.json"),
