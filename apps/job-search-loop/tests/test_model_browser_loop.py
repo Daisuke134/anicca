@@ -851,6 +851,35 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
         self.assertEqual(run.call_count, 2)
         self.assertEqual(validate.call_count, 2)
 
+    def test_semantic_retry_shares_the_original_wake_timeout(self):
+        from job_search_loop.browser_agent import orchestrator
+
+        completed = Mock(returncode=0)
+        clock = Mock(monotonic=Mock(side_effect=(0.0, 0.0, 600.0)))
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            orchestrator.subprocess,
+            "run",
+            side_effect=(completed, completed),
+        ) as run, patch.object(
+            orchestrator,
+            "validate_pass_result",
+            side_effect=("transport_failed_without_command_failure", None),
+        ), patch.object(orchestrator, "time", clock, create=True):
+            returncode = orchestrator.invoke_runner(
+                runner=Path("/runtime/agent_runner.py"),
+                prompt=Path("/app/prompts/daily-pass.md"),
+                schema=Path("/app/schemas/pass-result.v1.schema.json"),
+                evidence_dir=Path(directory),
+                workdir=Path("/repo"),
+                timeout_seconds=900,
+                python="/python3",
+                active_provider="workday",
+            )
+
+        self.assertEqual(returncode, 0)
+        self.assertEqual(run.call_args_list[0].args[0][5], "900")
+        self.assertEqual(run.call_args_list[1].args[0][5], "300")
+
     def test_every_eligible_workday_row_reaches_the_mandatory_model_lane(self):
         daily = (APP_ROOT / "scripts" / "run-daily.sh").read_text(encoding="utf-8")
         prompt = (APP_ROOT / "prompts" / "daily-pass.md").read_text(encoding="utf-8")

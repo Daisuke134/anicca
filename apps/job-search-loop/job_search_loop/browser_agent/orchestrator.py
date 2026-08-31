@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import shlex
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -188,33 +190,37 @@ def invoke_runner(
     active_provider: str,
 ) -> int:
     """Delegate one wake to the existing bounded model runner."""
-    command = [
-        python,
-        str(runner),
-        "--task-class",
-        "browser-lane-agent",
-        "--timeout-seconds",
-        str(timeout_seconds),
-        "--prompt-file",
-        str(prompt),
-        "--schema",
-        str(schema),
-        "--evidence-dir",
-        str(evidence_dir),
-        "--task-label",
-        "job-search-daily",
-        "--loop",
-        "job-search",
-        "--workdir",
-        str(workdir),
-    ]
     environment = os.environ.copy()
     if active_provider == "all":
         environment.pop("JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER", None)
     else:
         environment["JOB_SEARCH_ACTIVE_APPLICATION_PROVIDER"] = active_provider
     reason = None
+    deadline = time.monotonic() + timeout_seconds
     for semantic_attempt in range(2):
+        remaining_seconds = math.ceil(deadline - time.monotonic())
+        if remaining_seconds < 1:
+            break
+        command = [
+            python,
+            str(runner),
+            "--task-class",
+            "browser-lane-agent",
+            "--timeout-seconds",
+            str(remaining_seconds),
+            "--prompt-file",
+            str(prompt),
+            "--schema",
+            str(schema),
+            "--evidence-dir",
+            str(evidence_dir),
+            "--task-label",
+            "job-search-daily",
+            "--loop",
+            "job-search",
+            "--workdir",
+            str(workdir),
+        ]
         returncode = subprocess.run(command, check=False, env=environment).returncode
         if returncode != 0:
             return returncode
