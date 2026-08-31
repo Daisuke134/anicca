@@ -236,7 +236,12 @@ class DirectCDPPage:
         x, y = float(resolved["x"]), float(resolved["y"])
         await self.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
         await self.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1})
-        await self.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1})
+        try:
+            await self.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1})
+        except TimeoutError:
+            # The input event is already on the wire. Retrying could advance an
+            # SPA twice, so preserve at-most-once delivery and observe instead.
+            pass
         # Provider SPAs often validate and rerender the next step well after the
         # mouse event returns.  Capture the post-action state only after that
         # bounded transition window, otherwise the model receives stale controls.
