@@ -4941,6 +4941,38 @@ def _disk_gate_reason() -> str | None:
         return f"disk_preflight_error:{type(error).__name__}"
 
 
+def _active_sibling_browser_lease(now: float | None = None) -> tuple[str, dict[str, Any]] | None:
+    """Return one fresh live lease owned by another gig lane without mutating the ledger."""
+    raw = os.environ.get("CLOAK_CONTEXT_LEASES_FILE", "").strip()
+    if not raw:
+        return None
+    path = Path(raw).expanduser()
+    try:
+        leases = _load(path)
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+    if not isinstance(leases, dict):
+        return None
+    observed_at = time.time() if now is None else now
+    for owner, lease in leases.items():
+        if not isinstance(owner, str) or not isinstance(lease, dict) or owner.startswith("gig-paid-direct"):
+            continue
+        pid, touched = lease.get("pid"), lease.get("ts")
+        if not isinstance(touched, (int, float)) or observed_at - touched > 15 * 60:
+            continue
+        if isinstance(pid, int) and pid > 0:
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                continue
+            except PermissionError:
+                pass
+            except OSError:
+                continue
+        return owner, lease
+    return None
+
+
 def _effect_gate_reason(args) -> str | None:
     """Check host pressure and the operator brake at the irreversible-effect boundary."""
     reason = _disk_gate_reason()
@@ -5102,6 +5134,16 @@ def run_once(args, output: Path) -> int:
     if brake_status == "held":
         _write(output, {"status": "operator_brake",
                         "operator_brake_file": str(args.operator_brake), **empty})
+        return 0
+    browser_lease = _active_sibling_browser_lease()
+    if browser_lease is not None:
+        owner, _lease = browser_lease
+        _write(output, {
+            "status": "pending", "reason": "browser_lease_busy",
+            "browser_lease_owner": owner, "retry_not_before": time.time() + 30,
+            "observed": 0, "actionable": 0, "effect": 0, "readback": 0,
+            "failed": 0, "pending": 1, "oldest": None, "items": [],
+        })
         return 0
     with _lock(args.lock_file) as acquired:
         if not acquired:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import sys
 import threading
 import time
@@ -65,6 +66,22 @@ def test_isolated_paid_runner_preserves_runtime_package_layout(tmp_path: Path) -
         capture_output=True, text=True, timeout=10,
     )
     assert completed.returncode == 0, completed.stderr
+
+
+def test_paid_browser_admission_waits_for_live_sibling_lease(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    paid = load("paid_direct")
+    ledger = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(ledger))
+    write_json(ledger, {
+        "gig-storefront-direct-pass": {"pid": os.getpid(), "ts": int(time.time())},
+    })
+    assert paid._active_sibling_browser_lease()[0] == "gig-storefront-direct-pass"
+    write_json(ledger, {
+        "dead-storefront": {"pid": 999_999_999, "ts": int(time.time())},
+    })
+    assert paid._active_sibling_browser_lease() is None
 
 
 def test_failed_paid_workspace_with_runner_evidence_is_preserved(tmp_path: Path) -> None:
