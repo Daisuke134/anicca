@@ -31,6 +31,15 @@ SOURCE_RECOVERY_REASON = "tracked-active-editorial-repair-source-defect"
 SOURCE_RECOVERY_ERROR_SUFFIX = (
     "QualitySelfHealError: quality receipt snapshot hash binding failed"
 )
+OWNER_RECOVERY_REASON = "tracked-repair-owner-prompt-source-defect"
+OWNER_PROMPT_PROHIBITION = (
+    "ARTICLE_QUALITY_REPAIR_OWNER_PID is already set by the wrapper. Never export, "
+    "unset, or overwrite it; never assign $$ or $PPID. Every gate command must "
+    "inherit the exact existing value."
+)
+QUALITY_SELF_HEAL_ORPHAN_OCCURRENCE_SHA256 = (
+    "13267eb414f5ef0cb0c4c1839066f486f79c1fb3a56c243df6e79f3f076144e1"
+)
 
 
 class QualityRepairError(ValueError):
@@ -127,12 +136,59 @@ def _atomic_create_once(path: Path, value: dict[str, Any]) -> str:
     return _sha256(path)
 
 
+def _atomic_create_text_once(path: Path, text: str) -> str:
+    """Persist a new prompt exactly once without replacing any existing path."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temporary = Path(temporary_name)
+    expected = text.encode("utf-8")
+    try:
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(expected)
+            stream.flush()
+            os.fsync(stream.fileno())
+        try:
+            os.link(temporary, path, follow_symlinks=False)
+        except FileExistsError as exc:
+            raise QualityRepairError("quality-repair-owner-prompt-exists") from exc
+        temporary_stat = os.lstat(temporary)
+        destination_stat = os.lstat(path)
+        if not (
+            os.path.isfile(temporary)
+            and os.path.isfile(path)
+            and temporary_stat.st_dev == destination_stat.st_dev
+            and temporary_stat.st_ino == destination_stat.st_ino
+            and temporary_stat.st_nlink == destination_stat.st_nlink == 2
+        ):
+            raise QualityRepairError("quality-repair-owner-prompt-link-mismatch")
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+    destination_stat = os.lstat(path)
+    if (
+        path.is_symlink()
+        or not path.is_file()
+        or destination_stat.st_dev != temporary_stat.st_dev
+        or destination_stat.st_ino != temporary_stat.st_ino
+        or destination_stat.st_nlink != 1
+        or path.read_bytes() != expected
+    ):
+        raise QualityRepairError("quality-repair-owner-prompt-write-mismatch")
+    return _sha256(path)
+
+
 def _refused(reason: str) -> dict[str, str]:
     return {"status": "REFUSED", "reason": reason}
 
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _owner_recovery_checkpoint(_phase: str) -> None:
+    """Test seam for the durable prompt/receipt/state recovery boundaries."""
 
 
 def _owner_is_alive(owner_pid: Any) -> bool:
@@ -680,6 +736,183 @@ def _tracked_active_editorial_repair_source_defect(
     }
 
 
+def _tracked_repair_owner_prompt_source_defect(
+    run_dir: Path, gates: Path, repair_state: dict[str, Any]
+) -> dict[str, Any] | None:
+    if not (
+        repair_state.get("version") == 1
+        and repair_state.get("status") == "terminal-incomplete"
+        and repair_state.get("run_id") == run_dir.name
+        and repair_state.get("repair_epoch") == REPAIR_EPOCH
+        and isinstance(repair_state.get("attempts"), int)
+        and not isinstance(repair_state.get("attempts"), bool)
+        and repair_state.get("attempts") == MAX_REPAIR_ATTEMPTS
+        and repair_state.get("quality_action") == "evaluate_reroute"
+        and repair_state.get("source_defect") == "reader-terminal-receipt"
+    ):
+        return None
+    first_path = gates / "quality-repair-source-recovery.json"
+    first = _regular_json(first_path)
+    if not (
+        first
+        and first.get("schema") == "writer.quality-repair-source-recovery"
+        and first.get("version") == 1
+        and first.get("run_id") == run_dir.name
+        and first.get("reason") == SOURCE_RECOVERY_REASON
+        and first.get("recovery_attempt") == 1
+        and isinstance(first.get("owner_pid"), int)
+        and not isinstance(first.get("owner_pid"), bool)
+        and first.get("receipt_sha256") == _receipt_hash(first)
+        and repair_state.get("source_recovery_receipt_sha256") == _sha256(first_path)
+        and repair_state.get("owner_pid") == first.get("owner_pid")
+        and not _owner_is_alive(first.get("owner_pid"))
+    ):
+        return None
+    owner_path = gates / "quality-repair-owner-recovery.json"
+    owner_prompt = (
+        gates
+        / "quality-repair"
+        / f"epoch-{REPAIR_EPOCH}"
+        / "prompts"
+        / "owner-recovery-1.txt"
+    )
+    if (
+        owner_path.is_symlink()
+        or owner_prompt.is_symlink()
+        or (gates / "quality-self-heal.json").exists()
+        or (gates / "quality-self-heal.json").is_symlink()
+        or (gates / "quality-self-heal-final.json").exists()
+        or (gates / "quality-self-heal-final.json").is_symlink()
+        or (gates / "terminal-quality-blocked.json").exists()
+        or (gates / "terminal-quality-blocked.json").is_symlink()
+        or (gates / "publication-state.json").exists()
+        or (gates / "publication-state.json").is_symlink()
+    ):
+        return None
+    old_prompt = (
+        gates / "quality-repair" / f"epoch-{REPAIR_EPOCH}" / "repair-prompt.txt"
+    )
+    if (
+        old_prompt.is_symlink()
+        or not old_prompt.is_file()
+    ):
+        return None
+    try:
+        old_prompt_text = old_prompt.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    if OWNER_PROMPT_PROHIBITION in old_prompt_text:
+        return None
+    expected_new_prompt = (
+        old_prompt_text.rstrip("\n") + "\n\n" + OWNER_PROMPT_PROHIBITION + "\n"
+    )
+    prompt_exists = owner_prompt.exists()
+    if prompt_exists and (
+        not owner_prompt.is_file()
+        or owner_prompt.read_bytes() != expected_new_prompt.encode("utf-8")
+    ):
+        return None
+    owner_receipt = _regular_json(owner_path) if owner_path.exists() else None
+    if owner_path.exists() and owner_receipt is None:
+        return None
+    drafts: dict[str, str] = {}
+    for lang in ("ja", "en"):
+        article = run_dir / f"article-{lang}.md"
+        identity = _regular_json(gates / f"identity-{lang}.json")
+        editorial = _regular_json(gates / f"editorial-{lang}.json")
+        reader = _regular_json(gates / f"reader-testing-gate-{lang}.terminal.json")
+        if article.is_symlink() or not article.is_file():
+            return None
+        try:
+            article_hash = _sha256(article)
+        except OSError:
+            return None
+        if not (
+            identity
+            and identity.get("verdict") == "PASS"
+            and identity.get("article_sha256") == article_hash
+            and editorial
+            and editorial.get("verdict") == "FAIL"
+            and editorial.get("requested_reasoning_effort") == "high"
+            and isinstance(editorial.get("article_sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", editorial["article_sha256"])
+            and editorial["article_sha256"] != article_hash
+            and reader
+            and _valid_reader_terminal(reader, lang, article_hash)
+        ):
+            return None
+        drafts[lang] = article_hash
+    if not _editorial_source_has_active_repair_authorization():
+        return None
+    quality_source = _quality_self_heal_orphan_occurrence_source()
+    if quality_source is None:
+        return None
+    evidence = {
+        "drafts": drafts,
+        "first_recovery_sha256": _sha256(first_path),
+        "old_prompt_path": str(old_prompt),
+        "old_prompt_sha256": _sha256(old_prompt),
+        "quality_self_heal_source_sha256": _sha256(quality_source),
+        "new_prompt_path": str(owner_prompt),
+        "new_prompt_text": expected_new_prompt,
+    }
+    state_is_old_prompt = (
+        repair_state.get("prompt_path") == str(old_prompt)
+        and repair_state.get("prompt_sha256") == evidence["old_prompt_sha256"]
+    )
+    if owner_receipt is None:
+        if not state_is_old_prompt:
+            return None
+        evidence["phase"] = "prompt-created" if prompt_exists else "fresh"
+        return evidence
+    if not (
+        owner_receipt.get("schema") == "writer.quality-repair-owner-recovery"
+        and owner_receipt.get("version") == 1
+        and owner_receipt.get("run_id") == run_dir.name
+        and owner_receipt.get("reason") == OWNER_RECOVERY_REASON
+        and owner_receipt.get("recovery_attempt") == 1
+        and owner_receipt.get("source_recovery_receipt_sha256")
+        == evidence["first_recovery_sha256"]
+        and owner_receipt.get("old_prompt_path") == evidence["old_prompt_path"]
+        and owner_receipt.get("old_prompt_sha256") == evidence["old_prompt_sha256"]
+        and owner_receipt.get("new_prompt_path") == evidence["new_prompt_path"]
+        and owner_receipt.get("new_prompt_sha256") == _sha256(owner_prompt)
+        and owner_receipt.get("quality_self_heal_source_sha256")
+        == evidence["quality_self_heal_source_sha256"]
+        and owner_receipt.get("receipt_sha256") == _receipt_hash(owner_receipt)
+    ):
+        return None
+    receipt_sha256 = _sha256(owner_path)
+    if repair_state.get("owner_recovery_receipt_sha256") == receipt_sha256:
+        if (
+            repair_state.get("prompt_path") != str(owner_prompt)
+            or repair_state.get("prompt_sha256") != _sha256(owner_prompt)
+        ):
+            return None
+        evidence["phase"] = "state-bound"
+        return evidence
+    if (
+        not state_is_old_prompt
+        or owner_receipt.get("prior_state_sha256") != _sha256(gates / "quality-repair-state.json")
+    ):
+        return None
+    evidence["phase"] = "receipt-created"
+    evidence["owner_recovery_receipt_sha256"] = receipt_sha256
+    return evidence
+
+
+def _quality_self_heal_orphan_occurrence_source() -> Path | None:
+    source = Path(__file__).resolve().parent / "quality_self_heal.py"
+    if source.is_symlink() or not source.is_file():
+        return None
+    try:
+        if _sha256(source) != QUALITY_SELF_HEAL_ORPHAN_OCCURRENCE_SHA256:
+            return None
+    except OSError:
+        return None
+    return source
+
+
 def _tracked_topic_router_reroute_source_defect(
     run_dir: Path, gates: Path, canonical: dict[str, Any]
 ) -> bool:
@@ -811,8 +1044,29 @@ def plan(run_dir: Path | str, ledger: Path | str) -> dict[str, Any]:
         except (TypeError, ValueError):
             return _refused(QUALITY_REPAIR_EVIDENCE_INVALID)
         if repair_state.get("status") == "terminal-incomplete":
+            owner_recovery_path = gates / "quality-repair-owner-recovery.json"
+            owner_recovery_evidence = _tracked_repair_owner_prompt_source_defect(
+                run_dir, gates, repair_state
+            )
+            if owner_recovery_evidence is not None:
+                return {
+                    "status": "READY",
+                    "reason": OWNER_RECOVERY_REASON,
+                    "run_id": run_id,
+                    "run_dir": str(run_dir),
+                    "repair_epoch": REPAIR_EPOCH,
+                    "attempts": attempts,
+                    "prompt_path": str(prompt_path),
+                    "prompt_sha256": repair_state["prompt_sha256"],
+                }
+            if owner_recovery_path.exists() or owner_recovery_path.is_symlink():
+                return _refused("quality-repair-owner-recovery-already-recorded")
             recovery_path = gates / "quality-repair-source-recovery.json"
-            if recovery_path.exists() or recovery_path.is_symlink():
+            if (
+                recovery_path.exists()
+                or recovery_path.is_symlink()
+                or "source_recovery_receipt_sha256" in repair_state
+            ):
                 return _refused(
                     "quality-repair-source-recovery-already-recorded"
                 )
@@ -1115,6 +1369,7 @@ ARCHIVED_EVIDENCE={archive}
 
 Hard boundaries:
 - This model call is the active repair executor. The wrapper sets ARTICLE_QUALITY_REPAIR_ACTIVE=1 and ARTICLE_QUALITY_REPAIR_OWNER_PID to its own parent PID.
+- {OWNER_PROMPT_PROHIBITION}
 - quality-repair-state status=invoking and that owner PID describe this exact execution. Do not wait for quality-repair-state or monitor its owner; doing so deadlocks the child against its parent. Start the gate work immediately.
 - Do not select a new topic, perform new research, create another run, or change gates/topic-route.json.
 - Do not replace the JA/EN artifact identities. Work only on article-ja.md and article-en.md in RUN_DIR.
@@ -1255,6 +1510,7 @@ def mark_invoking(
             "prepared-quality-repair",
             "orphaned-quality-repair",
             SOURCE_RECOVERY_REASON,
+            OWNER_RECOVERY_REASON,
         }
     ):
         raise QualityRepairError(str(decision.get("reason", "not-prepared")))
@@ -1290,8 +1546,9 @@ def mark_invoking(
         state["topic_id"] = expected_topic
         state["route_sha256"] = _sha256(route)
     source_recovery = decision.get("reason") == SOURCE_RECOVERY_REASON
+    owner_recovery = decision.get("reason") == OWNER_RECOVERY_REASON
     attempts = int(state.get("attempts", 0))
-    if not source_recovery:
+    if not source_recovery and not owner_recovery:
         attempts += 1
         if attempts > MAX_REPAIR_ATTEMPTS:
             raise QualityRepairError("quality-repair-attempt-limit")
@@ -1371,6 +1628,65 @@ def mark_invoking(
             recovery_path, receipt
         )
         _atomic_write(state_path, state)
+    if owner_recovery:
+        recovery_evidence = _tracked_repair_owner_prompt_source_defect(
+            run_dir, run_dir / "gates", state
+        )
+        if recovery_evidence is None:
+            raise QualityRepairError(QUALITY_REPAIR_EVIDENCE_INVALID)
+        prompts = (
+            run_dir
+            / "gates"
+            / "quality-repair"
+            / f"epoch-{REPAIR_EPOCH}"
+            / "prompts"
+        )
+        new_prompt = prompts / "owner-recovery-1.txt"
+        old_prompt = Path(recovery_evidence["old_prompt_path"])
+        phase = recovery_evidence["phase"]
+        if phase == "fresh":
+            new_prompt_sha256 = _atomic_create_text_once(
+                new_prompt, recovery_evidence["new_prompt_text"]
+            )
+            _owner_recovery_checkpoint("after-prompt-create")
+        else:
+            new_prompt_sha256 = _sha256(new_prompt)
+        recovery_path = run_dir / "gates" / "quality-repair-owner-recovery.json"
+        if phase in {"fresh", "prompt-created"}:
+            receipt = {
+                "schema": "writer.quality-repair-owner-recovery",
+                "version": 1,
+                "run_id": run_dir.name,
+                "reason": OWNER_RECOVERY_REASON,
+                "recovery_attempt": 1,
+                "source_recovery_receipt_sha256": recovery_evidence[
+                    "first_recovery_sha256"
+                ],
+                "prior_state_sha256": _sha256(state_path),
+                "old_prompt_path": recovery_evidence["old_prompt_path"],
+                "old_prompt_sha256": recovery_evidence["old_prompt_sha256"],
+                "new_prompt_path": str(new_prompt),
+                "new_prompt_sha256": new_prompt_sha256,
+                "quality_self_heal_source_sha256": recovery_evidence[
+                    "quality_self_heal_source_sha256"
+                ],
+                "owner_pid": owner_pid,
+                "created_at": _utc_now(),
+            }
+            receipt["receipt_sha256"] = _receipt_hash(receipt)
+            owner_receipt_sha256 = _atomic_create_once(recovery_path, receipt)
+            _owner_recovery_checkpoint("after-receipt-create")
+        else:
+            owner_receipt_sha256 = _sha256(recovery_path)
+        state.update(
+            {
+                "owner_recovery_receipt_sha256": owner_receipt_sha256,
+                "prompt_path": str(new_prompt),
+                "prompt_sha256": new_prompt_sha256,
+            }
+        )
+        _atomic_write(state_path, state)
+        _owner_recovery_checkpoint("after-state-bind")
     state.update(
         {
             "status": "invoking",
