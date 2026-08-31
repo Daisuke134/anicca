@@ -11,6 +11,8 @@ discovery. The only useful output of this wake is real application work and rece
 
 Mandatory first action: read the complete receipt ledger and application dossiers before the priority queue,
 then read `.agents/startup-context.json` and `.agents/fundraising-opportunities.json`.
+The opportunity file is an object and its configured candidate array is exactly
+`.priority_queue`; never iterate the object root or look for `.opportunities`.
 Build the pass queue from opportunities that do not already have a terminal receipt
 for the same organization, program, cohort/batch, and account. The ledger is memory:
 never open or submit the same provider application twice merely because its URL,
