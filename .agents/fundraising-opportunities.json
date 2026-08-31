@@ -9,6 +9,14 @@
   "explicit_format_exceptions": [],
   "priority_queue": [
     {
+      "program": "HF0 Residency",
+      "official_url": "https://www.hf0.com/apply",
+      "action": "apply_now_resume_second_page",
+      "reason": "The previous natural pass discovered the current official HF0 application, completed the first page from authorized profile facts, and reached page two. Resume from durable cursor resume_hf0_application_second_page, answer every truthful field, and continue to an official submission receipt or an exact current checkpoint without reopening completed pages.",
+      "organization": "HF0",
+      "cohort_window": "current rolling residency"
+    },
+    {
       "program": "GSAP2026 Enterprise B2B Course Phase 2",
       "official_url": "https://www.jetro.go.jp/customer/act?actId=B0091249B",
       "action": "inactive_deadline_passed",
@@ -27,18 +35,18 @@
     {
       "program": "ASAC 4th Pre-seed / 23rd Seed Program",
       "official_url": "https://www.acceleration-tokyo.metro.tokyo.lg.jp/program.php",
-      "action": "apply_now_account_recovery",
-      "reason": "Applications are open through September 13, 2026. Use the existing credential SSOT and ordinary account recovery if needed, complete every truthfully answerable field, and require an official completion PNG plus Telegram photo message ID. Later interview or attendance remains a human checkpoint.",
+      "action": "retry_when_provider_replies_to_password_recovery",
+      "reason": "The official password-recovery request is already submitted and no automated reset route exists. Do not reopen or resend while the provider response is unchanged; continue immediately to new discovery.",
       "organization": "Tokyo Metropolitan Government",
       "cohort_window": "2026-08-25 through 2026-09-13"
     },
     {
       "program": "Y Combinator",
       "official_url": "https://www.ycombinator.com/apply",
-      "action": "apply_now_founder_video_checkpoint",
-      "reason": "The founder explicitly authorized maximal current accelerator applications. Resume the current application, complete every truthfully answerable field, and if a fresh human-only founder video is required, send one precise Telegram checkpoint with the official duration, size, format, deadline, and upload requirement; continue discovering and applying to other programs without waiting. Submit only after all required evidence exists.",
+      "action": "retry_when_current_email_verification_available",
+      "reason": "Winter 2027 is open, but the official account gate is waiting for a current email verification link or code. Do not request or reopen it every wake while that evidence is unchanged; continue immediately to HF0 and new discovery.",
       "organization": "Y Combinator",
-      "cohort_window": "current open batch"
+      "cohort_window": "Winter 2027 Batch"
     }
   ]
 }
