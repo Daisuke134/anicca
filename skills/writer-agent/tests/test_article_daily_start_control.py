@@ -236,11 +236,12 @@ class ArticleStartPolicyTest(unittest.TestCase):
                 run_model,
             )
 
-    def test_signal_drains_model_before_interruption_archive(self):
+    def test_signal_drains_model_and_broker_before_interruption_archive(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             provider_pid = root / "provider.pid"
             child_pid = root / "child.pid"
+            broker_pid = root / "broker.pid"
             archive = root / "archive.marker"
             prompt = root / "prompt.txt"
             prompt.write_text("test\n", encoding="utf-8")
@@ -257,6 +258,14 @@ class ArticleStartPolicyTest(unittest.TestCase):
                 encoding="utf-8",
             )
             runner.chmod(0o755)
+            broker = root / "broker.py"
+            broker.write_text(
+                "import os, pathlib, signal, time\n"
+                "pathlib.Path(os.environ['BROKER_PID']).write_text(str(os.getpid()))\n"
+                "signal.signal(signal.SIGTERM, lambda *_: exit(0))\n"
+                "while True: time.sleep(.05)\n",
+                encoding="utf-8",
+            )
             state = root / "state.py"
             state.write_text(
                 "import os, pathlib, sys, time\n"
@@ -265,7 +274,7 @@ class ArticleStartPolicyTest(unittest.TestCase):
                 " except ProcessLookupError: return False\n"
                 "if 'archive-interrupted' in sys.argv:\n"
                 " deadline=time.monotonic()+3\n"
-                " paths=[pathlib.Path(os.environ['PROVIDER_PID']), pathlib.Path(os.environ['CHILD_PID'])]\n"
+                " paths=[pathlib.Path(os.environ['PROVIDER_PID']), pathlib.Path(os.environ['CHILD_PID']), pathlib.Path(os.environ['BROKER_PID'])]\n"
                 " while time.monotonic()<deadline and any(alive(int(p.read_text())) for p in paths): time.sleep(.02)\n"
                 " pathlib.Path(os.environ['ARCHIVE_MARKER']).write_text('alive' if any(alive(int(p.read_text())) for p in paths) else 'drained')\n",
                 encoding="utf-8",
@@ -273,21 +282,25 @@ class ArticleStartPolicyTest(unittest.TestCase):
             wrapper = (
                 ROOT / "skills/writer-agent/article-daily.sh"
             ).read_text(encoding="utf-8")
-            start = wrapper.index('MODEL_PASS_PID=""\nrun_model_pass()')
+            start = wrapper.index('MODEL_PASS_PID=""\ndrain_generation_workers()')
             end = wrapper.index(
                 'python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" begin',
                 start,
             )
+            normal_start = wrapper.index("run_model_pass\nRC=$?", end)
+            normal_end = wrapper.index("trap - INT TERM\nPASS_OUTPUT=", normal_start)
             harness = root / "harness.sh"
-            harness.write_text(
+            prefix = (
                 "#!/usr/bin/env bash\nset -uo pipefail\n"
                 f"ARTICLE_ROOT={ROOT / 'skills/writer-agent'}\n"
                 "ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS=30\n"
                 f"ARTICLE_MODEL_RUNNER={runner}\nPROMPT_FILE={prompt}\n"
                 f"LOG={root / 'run.log'}\nGENERATION_STATE={state}\n"
                 "RUN_TS=test\nGENERATION_ARGS=(--fixture test)\nGENERATION_ATTEMPT_ACTIVE=1\n"
-                + wrapper[start:end]
-                + "run_model_pass\nexit $?\n",
+                f"python3 {broker} &\nJUDGE_BROKER_PID=$!\n"
+            )
+            harness.write_text(
+                prefix + wrapper[start:end] + "run_model_pass\nexit $?\n",
                 encoding="utf-8",
             )
             harness.chmod(0o755)
@@ -295,15 +308,35 @@ class ArticleStartPolicyTest(unittest.TestCase):
             env.update({
                 "PROVIDER_PID": str(provider_pid),
                 "CHILD_PID": str(child_pid),
+                "BROKER_PID": str(broker_pid),
                 "ARCHIVE_MARKER": str(archive),
             })
             process = subprocess.Popen([str(harness)], env=env)
             deadline = time.monotonic() + 5
-            while time.monotonic() < deadline and not child_pid.is_file():
+            while time.monotonic() < deadline and not (
+                child_pid.is_file() and broker_pid.is_file()
+            ):
                 time.sleep(.02)
             self.assertTrue(child_pid.is_file())
+            self.assertTrue(broker_pid.is_file())
             process.terminate()
             self.assertEqual(process.wait(timeout=8), 143)
+            self.assertEqual(archive.read_text(encoding="utf-8"), "drained")
+
+            for path in (provider_pid, child_pid, broker_pid, archive):
+                path.unlink()
+            harness.write_text(
+                prefix.replace(
+                    "ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS=30",
+                    "ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS=.2",
+                )
+                + wrapper[start:end]
+                + wrapper[normal_start:normal_end]
+                + 'exit "$RC"\n',
+                encoding="utf-8",
+            )
+            completed = subprocess.run([str(harness)], env=env, timeout=8)
+            self.assertEqual(completed.returncode, 124)
             self.assertEqual(archive.read_text(encoding="utf-8"), "drained")
 
     def _duplicate_media_run(self, root: Path, *, live: bool = False, status: str | None = None):
