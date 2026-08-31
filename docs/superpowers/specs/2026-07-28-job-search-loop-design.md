@@ -86,8 +86,11 @@ qualification runs and yields seven new qualified rows, but then exposes the sec
 queue entrance: `RowQueueSupervisor.collect()` appends every Ledger retryable row and
 reintroduces Cloudera after the seven preferred IDs. The same exact tenant-state
 filter must apply at browser collection so recovery-waiting rows cannot enter through
-either source. The focused
-qualification suite passes 43/43, the full Job Hunter suite passes 433/433, and an
+either source. That second filter is now implemented in
+`RowQueueSupervisor.collect()` using the same exact machine credential state; a RED
+fixture reproduced `cloudera-recovery` before `fresh-company`, and GREEN returns only
+`fresh-company`. Model-browser tests pass 24/24 and the full Job Hunter suite passes
+434/434. The discovery-side qualification suite also passes 43/43, and an
 exact production Ledger plus private-SSOT copy removes Cloudera from the runnable
 queue with zero remaining queued rows, which forces the existing fresh qualification
 path. No Ledger transition, Submit intent, scheduler, provider judgment, or new state
