@@ -16,6 +16,7 @@ SKILLS = SKILLS_ROOT
 REPO = SKILLS_ROOT.parent
 STATUS_PATH = HERE / "status.py"
 APPLICATION_TICK_PATH = HERE / "application_tick.py"
+PROFILE_OWNER_PATH = HERE / "storefront_offer.py"
 AGENT_RUNNER = REPO / "runtime" / "agent-runner" / "agent_runner.py"
 AGENT_RUNNER_PATH = AGENT_RUNNER
 PLANNER_SCHEMA = SKILLS_ROOT / "gig-work" / "schemas" / "application_decisions.schema.json"
@@ -65,6 +66,11 @@ def _load(name: str, path: Path) -> Any:
 
 status = _load("_anicca_lancers_application_loop_status", STATUS_PATH)
 application_tick = _load("_anicca_lancers_application_loop_tick", APPLICATION_TICK_PATH)
+
+def _profile_preflight(state_path: Path) -> Mapping[str, object]:
+    owner = _load("_anicca_lancers_application_profile_owner", PROFILE_OWNER_PATH)
+    result = owner.ensure_profile(PRODUCT_PATH, state_path)
+    return result if isinstance(result, Mapping) else {"ok": False, "error": "profile_preflight_failed"}
 
 @dataclass(frozen=True)
 class ApplicationLoopResult:
@@ -652,6 +658,12 @@ run_once = run_loop
 def main(argv: Optional[Sequence[str]] = None, *, discovery: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, now: Optional[Callable[[], object]] = None, clock: Optional[Callable[[], object]] = None, stdout: Optional[TextIO] = None) -> int:
     parser = argparse.ArgumentParser(allow_abbrev=False); parser.add_argument("--json", action="store_true", required=True); parser.add_argument("--reconcile-only", action="store_true"); parser.add_argument("--state-path", default=str(DEFAULT_STATE_PATH)); parser.add_argument("--exhaustive", action="store_true", help="union every discovery query instead of stopping at the first fruitful one"); parser.add_argument("--discovery-timeout", type=float, default=20.0, help="seconds per discovery request (provider bound: 0 < t <= 60). The exhaustive budget is this multiplied by the number of queries, not a larger single request."); args = parser.parse_args(list(argv) if argv is not None else None)
     output_stream = sys.stdout if stdout is None else stdout
+    if not args.reconcile_only and discovery is None and planner is None and submitter is None and now is None and clock is None:
+        profile = _profile_preflight(Path(args.state_path))
+        if profile.get("ok") is not True:
+            result = ApplicationLoopResult(False, error="profile_preflight_failed").to_dict()
+            print(json.dumps(result, ensure_ascii=False, separators=(",", ":")), file=output_stream, flush=True)
+            return 1
     result = run_reconcile_only(Path(args.state_path), output_stream=output_stream) if args.reconcile_only else run_loop(discoverer=discovery, planner=planner, submitter=submitter, clock=clock or now, state_path=Path(args.state_path), output_stream=output_stream, exhaustive=args.exhaustive, timeout=args.discovery_timeout)
     return 0 if result["ok"] else 1
 
