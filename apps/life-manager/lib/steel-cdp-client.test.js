@@ -7,6 +7,7 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 const { makeSteelCdpClient, STEEL_BASE_URL, READ_FORM_EXPRESSION } = require("./steel-cdp-client.js");
+const { steelCastUrl } = require("../server.js");
 
 function fakeFetch(handler) {
   const calls = [];
@@ -50,6 +51,16 @@ test("interactive debugger copies Steel HTML but replaces its private cast URL",
   const html = await client.getInteractiveDebugger("steel-1", publicUrl);
   assert.match(html, new RegExp(publicUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.doesNotMatch(html, /railway\.internal|ws:\/\//i);
+});
+
+test("takeover proxy binds the private Steel cast to its owned session", () => {
+  assert.equal(
+    steelCastUrl("steel-1"),
+    "ws://steel-browser.railway.internal:8080/v1/sessions/steel-1/cast",
+  );
+  for (const invalid of ["", "../foreign", "steel/foreign", "a?token=secret"]) {
+    assert.throws(() => steelCastUrl(invalid), /session/i);
+  }
 });
 
 test("createRawSession leaves the private Steel CDP endpoint unattached for Stagehand", async () => {
