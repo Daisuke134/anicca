@@ -3,6 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
+  completeBrowserHandoff,
   runNextBrowserJob,
   startBrowserJobLoop,
 } = require("./browser-job-runtime.js");
@@ -209,4 +210,28 @@ test("the loop has an overlap guard so a slow browser job cannot be claimed twic
   resolveClaim();
   await Promise.all([first, second]);
   loop.close();
+});
+
+test("one held Steel session blocks another claim and completes through the same driver", async () => {
+  let claims = 0;
+  let releases = 0;
+  const driver = {
+    hasHeldSession: () => true,
+    async readHeldReceipt(id) {
+      assert.equal(id, "steel-1");
+      return { confirmed: true, status: "application submitted", currentUrl: "https://work.mercor.com/application" };
+    },
+    async releaseSession(id, options) {
+      releases += 1;
+      assert.equal(id, "steel-1");
+      assert.equal(options.providerReceipt.confirmed, true);
+      return { released: true, auth_context_saved: true, context_sha256: "a".repeat(64), key_version: 1 };
+    },
+  };
+  assert.deepEqual(await runNextBrowserJob({ driver, claimJob: async () => { claims += 1; return JOB; } }), { status: "handoff_waiting" });
+  assert.equal(claims, 0);
+  const completed = await completeBrowserHandoff("steel-1", "approve", { driver });
+  assert.equal(completed.providerReceipt.confirmed, true);
+  assert.equal(completed.release.released, true);
+  assert.equal(releases, 1);
 });

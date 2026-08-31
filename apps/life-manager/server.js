@@ -75,7 +75,7 @@ const { handleDietCallback } = require("./lib/diet-runtime.js");
 const { handlePreceptsCallback } = require("./lib/precepts-runtime.js");
 const { handleTypedPayoutAddress } = require("./lib/payout-address-intake.js");
 const { handleBrowserTaskMessage } = require("./lib/browser-task-intake.js");
-const { startBrowserJobLoop } = require("./lib/browser-job-runtime.js");
+const { completeBrowserHandoff, startBrowserJobLoop } = require("./lib/browser-job-runtime.js");
 const { makeSteelCdpClient } = require("./lib/steel-cdp-client.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
@@ -95,7 +95,7 @@ function getMoneyPrinterRuntimeStore() {
 async function readBrowserHandoff(uid) {
   getMoneyPrinterRuntimeStore();
   const rows = (await moneyPrinterRuntimePool.query(`
-    SELECT id, uid, status, receipt, finished_at FROM public.lm_browser_jobs
+    SELECT id, uid, status, principal_kind, receipt, finished_at FROM public.lm_browser_jobs
     WHERE uid = $1 AND status = 'handoff_required' AND receipt->>'steel_released' = 'false'
     ORDER BY finished_at DESC LIMIT 2
   `, [uid])).rows;
@@ -103,10 +103,42 @@ async function readBrowserHandoff(uid) {
   if (rows.length !== 1) throw new Error("browser handoff unavailable");
   const row = rows[0], sessionId = String(row.receipt && row.receipt.session_id || "");
   const finishedAt = Date.parse(row.finished_at);
-  if (row.uid !== uid || !/^[A-Za-z0-9._-]{1,200}$/.test(sessionId) || !Number.isFinite(finishedAt)) {
+  let origin;
+  try { origin = new URL(row.receipt && row.receipt.selected_origin); } catch { throw new Error("browser handoff unavailable"); }
+  if (row.uid !== uid || !/^[A-Za-z0-9._-]{1,200}$/.test(String(row.id || ""))
+    || !/^[A-Za-z0-9._-]{1,200}$/.test(sessionId) || !Number.isFinite(finishedAt)
+    || origin.protocol !== "https:" || origin.username || origin.password
+    || !["agent_owned", "user_provided"].includes(row.principal_kind)) {
     throw new Error("browser handoff unavailable");
   }
-  return { session_id: sessionId, expired: Date.now() >= finishedAt + 10 * 60 * 1000 };
+  return { browser_job_id: String(row.id), session_id: sessionId, expired: Date.now() >= finishedAt + 10 * 60 * 1000 };
+}
+async function finishBrowserHandoff(uid, answer) {
+  const handoff = await readBrowserHandoff(uid);
+  if (!handoff || handoff.expired) throw new Error("browser handoff unavailable");
+  const completed = await completeBrowserHandoff(handoff.session_id, answer);
+  if (answer === "approve" && completed.providerReceipt.confirmed !== true) {
+    const error = new Error("provider_unconfirmed"); error.status = 409; throw error;
+  }
+  const receipt = completed.providerReceipt;
+  const safeReceipt = {
+    confirmed: receipt.confirmed === true,
+    status: String(receipt.status || "unknown").slice(0, 100),
+    confirmation_id: receipt.confirmationId ? String(receipt.confirmationId).slice(0, 200) : null,
+    current_url: receipt.currentUrl || null,
+    handoff_required: receipt.handoffRequired === true,
+    handoff_reason: receipt.handoffReason || null,
+  };
+  const rows = (await moneyPrinterRuntimePool.query(`
+    UPDATE public.lm_browser_jobs
+    SET receipt = jsonb_set(jsonb_set(receipt, '{provider_receipt}', $3::jsonb), '{steel_released}', 'true'::jsonb),
+        updated_at = clock_timestamp()
+    WHERE id = $1 AND uid = $2 AND status = 'handoff_required'
+      AND receipt->>'session_id' = $4 AND receipt->>'steel_released' = 'false'
+    RETURNING id
+  `, [handoff.browser_job_id, uid, JSON.stringify(safeReceipt), handoff.session_id])).rows;
+  if (rows.length !== 1) throw new Error("browser handoff unavailable");
+  return true;
 }
 function getMoneyPrinterSource(scope) {
   if (!moneyPrinterSource) {
@@ -126,6 +158,7 @@ function panelApiOptions(path, options, getRuntimeStore = getMoneyPrinterRuntime
     opportunityStore: runtimeStore,
     humanTaskStore: runtimeStore,
     browserHandoffReader: readBrowserHandoff,
+    completeBrowserHandoff: finishBrowserHandoff,
     moneyPrinterSource: getMoneyPrinterSource,
   };
 }

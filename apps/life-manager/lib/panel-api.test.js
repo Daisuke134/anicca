@@ -508,6 +508,7 @@ test("Task 5B human-task API returns one safe tenant task and replays one answer
     status: "open",
   };
   const calls = [];
+  const browserCompletions = [];
   let state = { ...task };
   const humanTaskStore = {
     async readNext(scope) {
@@ -564,12 +565,16 @@ test("Task 5B human-task API returns one safe tenant task and replays one answer
       assert.equal(blocked.response.status, 409);
       assert.deepEqual(blocked.body, { error });
     }
-  }, { panelOrigin: "https://panel.example", commandStore, humanTaskStore, browserHandoffReader: async () => ({ expired: false }), sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
+  }, { panelOrigin: "https://panel.example", commandStore, humanTaskStore,
+    browserHandoffReader: async () => ({ expired: false }),
+    completeBrowserHandoff: async (uid, answer) => { browserCompletions.push({ uid, answer }); },
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
   assert.equal(calls[0].type, "read");
   assert.deepEqual(calls[0].scope, { uid: "tenant-a", chatId: "101", csrf: "csrf-a" });
   assert.deepEqual(calls.slice(1).map((call) => call.answer), [
     { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/approve" },
   ]);
+  assert.deepEqual(browserCompletions, [{ uid: "tenant-a", answer: "approve" }]);
 });
 
 test("Task 5B human-task answer rejects missing origin, CSRF, content type, and idempotency before the store", async () => {

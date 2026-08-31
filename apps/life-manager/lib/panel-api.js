@@ -450,6 +450,7 @@ function humanTaskErrorResponse(error) {
   if (message === "human task answer conflict" || message === "human task version conflict") {
     return { status: 409, body: { error: "human_task_conflict" } };
   }
+  if (message === "provider_unconfirmed") return { status: 409, body: { error: "provider_unconfirmed" } };
   if (message === "human task store unavailable" || message === "human task answer not read back"
     || message === "human_task_unavailable" || message === "panel_store_read_failed" || message === "panel_receipt_unavailable") {
     return { status: 502, body: { error: "human_task_unavailable" } };
@@ -905,6 +906,9 @@ async function handlePanelApiRequest(req, res, opts = {}) {
       const receipt = await claimMutationReceipt(scope, key, "money-printer.human-task.answer", body, commandStore);
       if (receipt.replay) { sendJson(res, 200, receipt.replay); return; }
       claimedReceipt = receipt.claimed ? receipt : null;
+      if (typeof body.answer === "string" && typeof opts.completeBrowserHandoff === "function") {
+        await opts.completeBrowserHandoff(scope.uid, body.answer);
+      }
       const result = await answerHumanTask({
         scope,
         taskId: body.task_id,

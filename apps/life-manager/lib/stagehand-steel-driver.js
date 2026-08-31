@@ -296,6 +296,15 @@ function makeStagehandSteelDriver(options = {}) {
   const authSessions = new Map();
 
   return {
+    hasHeldSession() { return sessions.size > 0; },
+    async readHeldReceipt(sessionId) {
+      const id = String(sessionId || "");
+      if (!sessions.has(id)) throw new Error("Stagehand handoff session unavailable");
+      return this.readProviderReceipt({
+        id,
+        websocketUrl: "ws://steel-browser.railway.internal:8080/",
+      });
+    },
     async openSession(input = {}) {
       let auth = null;
       let context;
