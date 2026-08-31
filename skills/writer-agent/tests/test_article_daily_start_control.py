@@ -232,9 +232,79 @@ class ArticleStartPolicyTest(unittest.TestCase):
             )]
             self.assertEqual(run_model.count("BOUNDED_EXEC_STOP_PATHS="), 1)
             self.assertIn(
-                'BOUNDED_EXEC_STOP_PATHS="$HOME/.openclaw/state/disk-writers.stop:$HOME/.openclaw/state/disk-pressure.block"',
+                'BOUNDED_EXEC_STOP_PATHS="$HOME/.openclaw/state/disk-writers.stop"',
                 run_model,
             )
+
+    def test_signal_drains_model_before_interruption_archive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            provider_pid = root / "provider.pid"
+            child_pid = root / "child.pid"
+            archive = root / "archive.marker"
+            prompt = root / "prompt.txt"
+            prompt.write_text("test\n", encoding="utf-8")
+            (root / "run.log").write_text("", encoding="utf-8")
+            runner = root / "runner.py"
+            runner.write_text(
+                "#!/usr/bin/env python3\n"
+                "import os, pathlib, signal, subprocess, sys, time\n"
+                "child = subprocess.Popen([sys.executable, '-c', "
+                "'import signal,time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(30)'])\n"
+                "pathlib.Path(os.environ['PROVIDER_PID']).write_text(str(os.getpid()))\n"
+                "pathlib.Path(os.environ['CHILD_PID']).write_text(str(child.pid))\n"
+                "while True: time.sleep(.05)\n",
+                encoding="utf-8",
+            )
+            runner.chmod(0o755)
+            state = root / "state.py"
+            state.write_text(
+                "import os, pathlib, sys, time\n"
+                "def alive(pid):\n"
+                " try: os.kill(pid, 0); return True\n"
+                " except ProcessLookupError: return False\n"
+                "if 'archive-interrupted' in sys.argv:\n"
+                " deadline=time.monotonic()+3\n"
+                " paths=[pathlib.Path(os.environ['PROVIDER_PID']), pathlib.Path(os.environ['CHILD_PID'])]\n"
+                " while time.monotonic()<deadline and any(alive(int(p.read_text())) for p in paths): time.sleep(.02)\n"
+                " pathlib.Path(os.environ['ARCHIVE_MARKER']).write_text('alive' if any(alive(int(p.read_text())) for p in paths) else 'drained')\n",
+                encoding="utf-8",
+            )
+            wrapper = (
+                ROOT / "skills/writer-agent/article-daily.sh"
+            ).read_text(encoding="utf-8")
+            start = wrapper.index('MODEL_PASS_PID=""\nrun_model_pass()')
+            end = wrapper.index(
+                'python3 "$GENERATION_STATE" "${GENERATION_ARGS[@]}" begin',
+                start,
+            )
+            harness = root / "harness.sh"
+            harness.write_text(
+                "#!/usr/bin/env bash\nset -uo pipefail\n"
+                f"ARTICLE_ROOT={ROOT / 'skills/writer-agent'}\n"
+                "ARTICLE_MODEL_AGENT_TIMEOUT_SECONDS=30\n"
+                f"ARTICLE_MODEL_RUNNER={runner}\nPROMPT_FILE={prompt}\n"
+                f"LOG={root / 'run.log'}\nGENERATION_STATE={state}\n"
+                "RUN_TS=test\nGENERATION_ARGS=(--fixture test)\nGENERATION_ATTEMPT_ACTIVE=1\n"
+                + wrapper[start:end]
+                + "run_model_pass\nexit $?\n",
+                encoding="utf-8",
+            )
+            harness.chmod(0o755)
+            env = os.environ.copy()
+            env.update({
+                "PROVIDER_PID": str(provider_pid),
+                "CHILD_PID": str(child_pid),
+                "ARCHIVE_MARKER": str(archive),
+            })
+            process = subprocess.Popen([str(harness)], env=env)
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline and not child_pid.is_file():
+                time.sleep(.02)
+            self.assertTrue(child_pid.is_file())
+            process.terminate()
+            self.assertEqual(process.wait(timeout=8), 143)
+            self.assertEqual(archive.read_text(encoding="utf-8"), "drained")
 
     def _duplicate_media_run(self, root: Path, *, live: bool = False, status: str | None = None):
         run = root / "runs" / "daily-2026-08-21"
