@@ -1022,14 +1022,16 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 | surface | current measured behavior | required behavior |
 |---|---|---|
-| schedule | immutable release `b67966ec...`のnative owner exact 1、`StartInterval=3600`、canary exit 0 | 24回の自然hourly receiptで継続証明 |
+| schedule | native owner exact 1、`StartInterval=3600`。現在のloaded argvはfull release `20260831T170229-b224ba46` / SHA `b224ba46…`だが、直近supervised wake `wake-f64e4ab26c1879c34ba68a97`は`wake_deadline` / exit 1 | 24回の自然hourly receiptで継続証明。manual kickstartと途中reloadはcountしない |
+| release completeness | 同一SHAの最初のrelease `20260831T153415-7255b4bb`はproduction依存`playwright-core`を欠き、Calendar read後のbrowser rail生成でexit 2。後続full releaseは3 dependency tree、154,232 entries、789,376,561 bytesを保持し、runtime requireを通る | apply前に全Git blob/mode、locked runtime dependency、required-module importを検証し、不完全releaseをloadedにしない |
+| browser owner | `127.0.0.1:9222`と`[::1]:9222`を別Chromiumが同時listenし、Connectorの固定IPv4 endpointは意図した`daily-driver`ではなく`job-search-daily` profileへ接続する。owned target分離は機能するがprofile identityは不一致 | endpointごとにlistener/profile owner exact 1を証明し、Connectorが宣言済み`browser-profile://cloakbrowser/daily-driver`だけへ接続する |
 | horizon | Calendar、Luma、connpassのactive primary pathはJST day 0〜27の28日 | 28日境界を維持 |
 | profile | YC hackathon→open LT→AI→crypto→startup、`strong/moderate`だけがauto-apply eligible | live候補で品質gateを維持 |
 | live ranking | provider-neutral rankingがactive minimal runnerに接続済み、large inventoryは3件chunk/並列3 | 10分wake内のterminalを維持 |
 | LT | classifier、talk pack、独立transition store、one-effect budgetはactive pathに接続済み | 実open LTのtalk application receiptを1件完成 |
-| provider result | Luma→connpassを尽くし、fallbackにも同じquality gateと160秒completion reserveを適用 | 実Luma bundleと次の自然wakeのreplay-zero |
+| provider result | Luma→connpassを尽くし、fallbackにも同じquality gateと160秒completion reserveを適用。KokuchProはlive spinner form対応をmain `b224ba46…`へ統合し、focused/adjacent 301/301とlive no-submit observe→literal `1` fill→postconditionをPASS | 実Luma bundleと次の自然wakeのreplay-zero。fallback実装PASSをapplication成功へ昇格しない |
 | connpass | official API v2 discoveryのみ。自動申込許可は未回答のためTelegram manual boundary、provider Submit 0 | official responseを監視し、明示許可までSubmit 0 |
-| evidence | ranking理由、topic class、LT状態、provider/Calendar/PNG/Telegram/bundle lineageは接続済み | live bundle・LT・24-hour soak receiptを追加 |
+| evidence | KokuchPro event `kokuchpro-event://event/33301feefecb914218e7c2318d9de99e`はpre-submit official readbackで`registered`となりduplicate Submit 0。provider receiptとPNG objectは保存済みだが、Calendar existing readback後の再readbackが`EVIDENCE_CALENDAR_READBACK_FAILED`となり、bundle/positive evidence chainは未完 | official Calendar exact 1を再照合し、同provider receipt/PNG/Calendar/Telegram lineageからbundleをrecoveryする。再登録やabsence推定はしない |
 
 #### 0.0.3 Atomic TODO SSOT
 
@@ -1111,7 +1113,21 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 - [ ] **CG-48** 24回の連続hourly receiptでduplicate Submit 0、concurrent owner 0、effect unknownの自動再送0、owned page/lock cleanupを確認する。
 - [x] **CG-49** public sample profile、Connector README/SKILL、install/uninstall手順を28日・hourly・Luma/connpass・LT・permission boundaryへ同期する。
 - [x] **CG-50** secretなしの隔離homeでinstall→render→focused no-effect wake→uninstallを再現し、private state/receiptをpackageしないことを確認する。
-- [ ] **CG-51** final spec state、test/effect receipts、known provider limitsを更新し、commit/push、remote readback、Telegram milestoneでConnector growth sliceをDONEにする。
+- [ ] **CG-51** final spec state、test/effect receipts、known provider limitsを更新する。完了には、release completeness gate、CDP listener/profile owner exact 1、KokuchPro既登録eventのCalendar/PNG/Telegram/bundle recovery、自然wake terminal、replay-zeroを含める。commit/push、remote readback、Telegram milestoneまで揃って初めてConnector growth sliceをDONEにする。
+
+#### 0.0.3.1 Current operational incident contract
+
+1. **Overview:** Connector code、loaded release、browser profile、provider effect、Calendar evidenceは別々に成功・失敗し得る。loaded label、unit test、provider登録のどれか一つだけで「working」と判定しない。
+2. **Acceptance criteria:** main由来full immutable releaseがrequired runtime importを通し、宣言済みdaily-driver owner exact 1へ接続し、同じnatural wakeでprovider official readback、Calendar exact 1、PNG/receipt、Telegram positive IDs、durable bundleを閉じる。次のnatural wakeはprovider Submit 0、Calendar duplicate 0、bundle reuse exact 1を証明する。
+3. **As-Is / To-Be:** As-IsはKokuchPro official registration `present`、duplicate Submit 0、provider receipt/PNG present、Calendar/bundle incomplete、直近wake exit 1。To-Beは既存provider effectを再実行せずevidenceだけをreconcileし、その後の自然hourly ownerがhealthy terminalとreplay-zeroを残す状態である。
+4. **Test matrix:** release completenessはmissing `playwright-core`をapply前に拒否、browser ownershipはdual-listener/wrong-profileを拒否、KokuchProはradioとspinner双方を保持しmixed/duplicate/mutated formを拒否、evidence recoveryはCalendar present/readback transient/replayを検証する。live acceptanceはnatural launchd/provider/Calendar/Telegram/bundle readbackで行う。
+5. **Boundaries:** provider登録を再実行しない。effect unknownをabsenceへ変換しない。Codexが直接Calendar/Telegram/bundleを捏造しない。別profile、別scheduler、legacy OpenClaw cron、all-label applyを回避策にしない。
+6. **Execution order:** current global orderの`CG-28 → CG-44 → CG-45 → CG-47 → CG-48 → CG-51`を維持する。CG-51内ではrelease completeness → browser owner → existing Calendar/evidence reconcile → natural terminal → replay-zero → final readbackの順で閉じる。
+
+| E2E item | Value |
+|---|---|
+| UI change | none |
+| Judgment | Maestro not required。official launchd、provider、Google Calendar、Telegram、durable bundleのreadbackが必要 |
 
 #### 0.0.4 Runtime flow
 
