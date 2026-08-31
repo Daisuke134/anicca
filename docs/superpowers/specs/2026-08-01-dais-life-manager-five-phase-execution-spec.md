@@ -948,6 +948,22 @@ Lancers実環境へ到達していない。Lancersでの新規応募・契約・
 - OpenClaw、Hermes、Agents JS、Codex app-serverをEliza `AgentRuntime`と並ぶ第二の中核runtimeとして組み込まない。
 - shared Gateway、profile selector、application-level `tenant_id`だけをsecurity boundaryと見なさない。tenant FK/RLSとruntime/network isolationを両方要求する。
 
+#### Receiptは主張でなくmechanical assertionを持つ — 2026-08-31採択
+
+既存の「modelの自己申告をclaimにしない」を、receipt本文の形にまで下ろす。
+
+- **各atomのreceiptは、そのatom固有のfailure modeを機械的に否定するassertionを1つ持つ。** `"provider_effect": 0`のような自己宣言をPASS根拠にしない。ELZ-L01の反例: `work_sync.py:412`の`run_tick()`は`_sales_action`経由で`_post_reply`を呼ぶため構造上read-onlyでないのに、受信箱がたまたま空だった実行のreceiptが`provider_effect 0`と書かれていた。要求されるのは「送信経路へ到達しないこと」をコードで示すassertionであり、「今回は送らなかった」という観測ではない。
+- **checkがevidenceとして数えられるのは、実装がspecから外れたときにそのcheckが落ちる場合だけ。** 落ちないcheckはdecorationとして扱い、receiptの根拠にしない。疑わしいときは実装をわざと壊してcheckが落ちることを一度確認する。
+- **完了ラベルは`practiced` / `documented` / `CI-enforced`の3段で書き、目標段階を併記する。** 「CI-enforced」を実態より高く書かない。
+
+出典（実code/実文で確認）: Intent Engineering for Coding Agents（Flemming Nørnberg Larsen、2026、Apache-2.0、53 files・約60,800語、companion CLI `iec`あり）の"A test counts as evidence when it would fail if the implementation diverged from the spec. Otherwise, it is decoration."およびAC ID traceability scan。`cobusgreyling/goal-engineering`の`skills/goal-verifier/SKILL.md:34-45`が持つpattern別mechanical gate（migrateなら`rg <legacy-path>`が0件、coverageなら実レポートを解析してhollow testを棄却）。
+
+#### Observability / evalの採択と棄却 — 2026-08-31
+
+- **採用**: telemetryはOpenTelemetry GenAI semconvで発信する。data modelは`Trace → Observation → Session`階層と、trace/observation/session/dataset-runのどれにも付く第一級`Score`（source=`API|EVAL|ANNOTATION`）をLangfuse `clickhouse/migrations/0001-0003`から採る。trajectory評価は`agentevals`（MIT、Python/TS両実装、`trajectory/utils.py:137-212`のexact/subset/superset/ignoreを決定論的に比較）を使う。local段階のbackendは単一binaryの`openobserve`とし、そのGenAI extractor（`src/core/src/traces/otel/extractors/usage.rs`）がGenAI semconvとLangfuse方言の双方を解釈するためbackend切替の自由度を保つ。
+- **棄却**: `Galileo-Agent-Labs/eval-engineer`はGalileo有料SaaS必須（commit 20、著者2）のためself-funded方針と衝突する。`l3yx/intentlang`は完了signalが「modelが`output`変数へ代入したこと」＝self-reportであり、本仕様のreceipt規律に対する後退となるため採らない。両者から採るのは上節のmechanical gateとRCA規律のみ。
+- **順序**: 観測層はPhase Iの前提だが、独立atomを新設せずPhase L各atomのreceipt要件として満たす。Phase L完了までに`Trace/Observation/Score`が実データで埋まっていない場合のみ、Phase H着手前に独立atomへ昇格する。
+
 #### Execution Steps / slice size
 
 各行を一つのsliceとして、spec/TODO更新→既存code reuse監査→必要最小変更→focused live verification→receipt→commit/pushの順で閉じる。
