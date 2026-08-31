@@ -303,7 +303,7 @@ test("WebMCP judge guest first GET creates one isolated guest and renders one se
     assert.match(response.headers.get("set-cookie") || "", /__Host-lm_panel_session=/);
     const html = await response.text();
     assert.match(html, /data-guest-mode/);
-    assert.match(html, /Judge guest — external effects disabled/);
+    assert.match(html, /Judge guest — isolated workroom/);
     assert.match(html, /data-panel-section="money-printer"/);
     assert.match(html, new RegExp(`const pageCsrf = "${expectedCsrf}"`));
   });
@@ -339,7 +339,7 @@ test("WebMCP judge guest repeat reuses a valid guest session without another use
   }, async (base) => {
     const response = await fetch(`${base}/money-printer`, { headers: { Cookie: `__Host-lm_panel_session=${session}` } });
     assert.equal(response.status, 200, await response.clone().text());
-    assert.match(await response.text(), /Judge guest — external effects disabled/);
+    assert.match(await response.text(), /Judge guest — isolated workroom/);
   });
   assert.equal(calls.filter(({ url }) => new URL(url).pathname.endsWith("/rpc/resolve_lm_panel_session")).length, 1);
   assert.equal(calls.filter(({ url }) => new URL(url).pathname.endsWith("/lm_users")).length, 0);
@@ -372,7 +372,7 @@ test("WebMCP judge guest never adopts an owner session and rejects wrong request
     const ownerResponse = await fetch(`${base}/money-printer`, { headers: { Cookie: `__Host-lm_panel_session=${owner}` } });
     assert.equal(ownerResponse.status, 200);
     const ownerHtml = await ownerResponse.text();
-    assert.match(ownerHtml, /Judge guest — external effects disabled/);
+    assert.match(ownerHtml, /Judge guest — isolated workroom/);
     assert.doesNotMatch(ownerHtml, /owner-uid|owner-chat/);
 
     for (const request of [

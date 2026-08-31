@@ -283,6 +283,16 @@ function emittedMoneyPrinterWorkroom() {
   return { validate: sandbox.__validateMoneyWorkroom, load: sandbox.__loadMoneyWorkroom, sandbox };
 }
 
+function emittedMoneyOpportunitySubmit() {
+  const script = renderPanelPage({ csrf: "page-csrf" }).match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
+  const start = script.indexOf("async function submitMoneyOpportunity");
+  const end = script.indexOf("\n    function commandForAction", start);
+  assert.ok(start >= 0 && end > start);
+  const sandbox = { Promise, Object, String, controlCsrf: "page-csrf", crypto: { randomUUID: () => "request-uuid" } };
+  vm.runInNewContext(`${script.slice(start, end)}\nglobalThis.__submitMoneyOpportunity = submitMoneyOpportunity;`, sandbox);
+  return { submit: sandbox.__submitMoneyOpportunity, sandbox };
+}
+
 function moneyWorkroomData(overrides = {}) {
   return {
     opportunity_id: MONEY_OPPORTUNITY_ID,
@@ -435,6 +445,55 @@ test("Money Printer cards emit escaped buttons and retain a workroom placeholder
   assert.doesNotMatch(html, /<img src=x onerror=alert/);
 });
 
+test("Money Printer visible intake posts one exact opportunity and refreshes the same board", async () => {
+  const html = renderPanelPage({ csrf: "page-csrf" });
+  assert.match(html, /data-money-opportunity-form/);
+  assert.match(html, /Add opportunity/);
+  const { submit, sandbox } = emittedMoneyOpportunitySubmit();
+  const fields = {
+    source_url: { value: " https://work.example/job " },
+    title: { value: " Paid work " },
+    goal_statement: { value: " Complete the application " },
+    value_minor: { value: " 50000 " },
+    currency: { value: " USD " },
+  };
+  const button = { disabled: false };
+  const status = { textContent: "" };
+  let resets = 0;
+  const form = {
+    elements: { namedItem: (name) => fields[name] || null },
+    querySelector: (selector) => selector === 'button[type="submit"]' ? button : status,
+    reset() { resets += 1; },
+  };
+  const calls = [];
+  sandbox.fetch = async (path, init) => {
+    calls.push({ path, init });
+    return { ok: true, status: 200, json: async () => ({ opportunity_id: MONEY_OPPORTUNITY_ID, job_ref: MONEY_JOB_REF, status: "DISCOVERED" }) };
+  };
+  let reloads = 0;
+  sandbox.loadPanelSection = async (name) => { assert.equal(name, "money-printer"); reloads += 1; };
+
+  await submit(form);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].path, "/api/panel/money-printer/opportunity");
+  assert.equal(calls[0].init.method, "POST");
+  assert.equal(calls[0].init.credentials, "same-origin");
+  assert.equal(calls[0].init.headers["x-lm-csrf"], "page-csrf");
+  assert.equal(calls[0].init.headers["idempotency-key"], "request-uuid");
+  assert.deepEqual(JSON.parse(calls[0].init.body), {
+    source_url: "https://work.example/job",
+    title: "Paid work",
+    goal_statement: "Complete the application",
+    value_minor: "50000",
+    currency: "USD",
+  });
+  assert.equal(resets, 1);
+  assert.equal(reloads, 1);
+  assert.equal(status.textContent, "Opportunity added");
+  assert.equal(button.disabled, false);
+});
+
 test("Money Printer workroom validator rejects foreign or invalid payloads", () => {
   const { validate } = emittedMoneyPrinterWorkroom();
   assert.equal(typeof validate, "function");
@@ -543,7 +602,8 @@ test("Money Printer panel embeds focused WebMCP tools with only page CSRF for th
 test("WebMCP judge guest uses the same Money Printer section without owner controls", () => {
   const html = renderPanelPage({ csrf: "csrf-value", guest: true });
   assert.match(html, /data-guest-mode/);
-  assert.match(html, /Judge guest — external effects disabled/);
+  assert.match(html, /Judge guest — isolated workroom/);
+  assert.match(html, /real cloud agent/);
   assert.match(html, /data-panel-section="money-printer"/);
   assert.match(html, /\/api\/panel\/money-printer/);
   const main = html.match(/<main class="panel-grid">[\s\S]*?<\/main>/)?.[0] || "";
