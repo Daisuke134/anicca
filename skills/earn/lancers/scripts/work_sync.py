@@ -20,7 +20,7 @@ from urllib.parse import quote, urlencode, urlsplit
 
 HERE = Path(__file__).resolve().parent
 SKILLS_ROOT = HERE.parents[2]
-AGENT_RUNNER = SKILLS_ROOT / "agent-runner" / "agent_runner.py"
+AGENT_RUNNER = SKILLS_ROOT.parent / "runtime" / "agent-runner" / "agent_runner.py"
 REPLY_SCHEMA = SKILLS_ROOT / "gig-work" / "schemas" / "reply_composition.schema.json"
 PRODUCT_PATH = HERE.parent / "products" / "monthly-sns-content-ops-v1.json"
 
