@@ -465,11 +465,7 @@ class ArticleStartPolicyTest(unittest.TestCase):
             (run / "gates" / "judge-broker" / "heartbeat").write_text("x")
             archive = state / "interrupted-generation" / run.name / "attempt-4"
             (archive / "gates").mkdir(parents=True)
-            for relative in (
-                "article-en.md", "article-ja.md", "headline-image.png",
-                "body-diagram.png", "gates/quality-terminal-en.json",
-                "gates/quality-terminal-ja.json",
-            ):
+            for relative in ("gates/attempt-budget-state.json",):
                 path = archive / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text("archived", encoding="utf-8")
@@ -477,11 +473,7 @@ class ArticleStartPolicyTest(unittest.TestCase):
                 {"path": relative, "sha256": hashlib.sha256(
                     (archive / relative).read_bytes()
                 ).hexdigest()}
-                for relative in (
-                    "article-en.md", "article-ja.md", "headline-image.png",
-                    "body-diagram.png", "gates/quality-terminal-en.json",
-                    "gates/quality-terminal-ja.json",
-                )
+                for relative in ("gates/attempt-budget-state.json",)
             ]
             state_value = {
                 "version": 1,
@@ -498,33 +490,61 @@ class ArticleStartPolicyTest(unittest.TestCase):
                 ],
             }
             state_path = archive / "generation-state.json"
-            state_path.write_text(json.dumps(state_value), encoding="utf-8")
-            state_hash = hashlib.sha256(state_path.read_bytes()).hexdigest()
-            manifest_hash = hashlib.sha256(
-                json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
-            ).hexdigest()
-            (archive / "generation-exhaustion-receipt.json").write_text(
-                json.dumps({
+            receipt_path = archive / "generation-exhaustion-receipt.json"
+
+            def write_proof(value):
+                state_value["attempts"][-1]["archive_manifest"] = value
+                state_path.write_text(json.dumps(state_value), encoding="utf-8")
+                receipt_path.write_text(json.dumps({
                     "schema": "writer.generation-exhaustion-receipt",
                     "version": 1, "run_id": run.name, "attempt": 4,
                     "status": "interrupted-safe", "return_code": 124,
                     "charged_attempts": 3, "maximum_attempts": 3,
-                    "state_sha256": state_hash,
-                    "archive_manifest_sha256": manifest_hash,
+                    "state_sha256": hashlib.sha256(state_path.read_bytes()).hexdigest(),
+                    "archive_manifest_sha256": hashlib.sha256(json.dumps(
+                        value, sort_keys=True, separators=(",", ":")
+                    ).encode()).hexdigest(),
                     "publication_state_absent": True, "public_ledger_rows": 0,
-                }),
-                encoding="utf-8",
-            )
+                }), encoding="utf-8")
+
+            write_proof(manifest)
             (state / "articles.jsonl").write_text("", encoding="utf-8")
 
             with patch.object(START, "validated_live_set", return_value=(False, None)):
                 decision = START.decide(state, "2026-08-21")
+                write_proof([{}])
+                malformed = START.decide(state, "2026-08-21")
+                partial_path = archive / "article-ja.md"
+                partial_path.write_text("partial", encoding="utf-8")
+                write_proof([{
+                    "path": "article-ja.md",
+                    "sha256": hashlib.sha256(partial_path.read_bytes()).hexdigest(),
+                }])
+                partial = START.decide(state, "2026-08-21")
+                write_proof([{
+                    "path": "./article-ja.md",
+                    "sha256": hashlib.sha256(partial_path.read_bytes()).hexdigest(),
+                }])
+                alias = START.decide(state, "2026-08-21")
+                for relative in (
+                    "article-en.md", "headline-image.png", "body-diagram.png"
+                ):
+                    (archive / relative).write_text("unlisted", encoding="utf-8")
+                write_proof([{
+                    "path": "article-ja.md",
+                    "sha256": hashlib.sha256(partial_path.read_bytes()).hexdigest(),
+                }])
+                unlisted = START.decide(state, "2026-08-21")
 
         self.assertEqual(decision["action"], "new")
         self.assertEqual(decision["run_id"], "")
         self.assertEqual(
             decision["reason"], "same-jst-day-exhausted-prepublication-archive"
         )
+        self.assertEqual(malformed["reason"], "same-jst-day-unclassified-run")
+        self.assertEqual(partial["reason"], "same-jst-day-unclassified-run")
+        self.assertEqual(alias["reason"], "same-jst-day-unclassified-run")
+        self.assertEqual(unlisted["reason"], "same-jst-day-unclassified-run")
 
     def test_legacy_exact8_partial_active_subset_stays_blocked(self):
         with tempfile.TemporaryDirectory() as tmp:

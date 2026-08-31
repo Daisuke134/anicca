@@ -562,8 +562,9 @@ def _exhausted_prepublication_archive(
     A timeout archive can move the immutable prompt and generation state out of
     the run directory.  Once all charged attempts are exhausted, that old run
     cannot be resumed; a new identity is safe only when the run contains no
-    publication/ledger row and the latest archive has the complete
-    pre-publication artifact set with no symlink or publication-state file.
+    publication/ledger row and the latest archive has either control evidence
+    only or the complete content artifact set, with no symlink or
+    publication-state file.
     """
     for row in rows:
         if row.get("run_id") != run_id:
@@ -634,11 +635,35 @@ def _exhausted_prepublication_archive(
         )
     ):
         return False
-    if final["archive_manifest"]:
-        content = (
-            "article-en.md", "article-ja.md", "headline-image.png",
-            "body-diagram.png",
-        )
+    content = (
+        "article-en.md", "article-ja.md", "headline-image.png",
+        "body-diagram.png",
+    )
+    manifest_paths = set()
+    for item in final["archive_manifest"]:
+        if (
+            not isinstance(item, dict)
+            or set(item) != {"path", "sha256"}
+            or not isinstance(item["path"], str)
+            or not isinstance(item["sha256"], str)
+            or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])
+        ):
+            return False
+        relative = Path(item["path"])
+        archived = latest / relative
+        if (
+            relative.is_absolute()
+            or ".." in relative.parts
+            or relative.as_posix() != item["path"]
+            or archived.is_symlink()
+            or not archived.is_file()
+            or hashlib.sha256(archived.read_bytes()).hexdigest() != item["sha256"]
+        ):
+            return False
+        manifest_paths.add(item["path"])
+    if manifest_paths.intersection(content):
+        if not set(content).issubset(manifest_paths):
+            return False
         if any(not (latest / path).is_file() or (latest / path).is_symlink() for path in content):
             return False
     maximum = archived_state.get("maximum_attempts")
