@@ -111,6 +111,16 @@ provider negotiation. The next atom must bound/fail over that no-output model st
 then prove at least one fresh Gmail-confirmed submission in one to three natural
 wakes; the rolling 48/24h KPI remains open.
 
+The timeout atom is implemented in `browser_agent.orchestrator.invoke_runner()` with
+one monotonic deadline shared by both semantic attempts. The first attempt receives
+the full configured wake budget; a retry receives only the remaining seconds, and no
+retry starts after the deadline. A RED fixture proved the old second attempt still
+received 900 seconds after 600 seconds elapsed; GREEN receives 300. Model-browser
+tests pass 25/25 and the full Job Hunter suite passes 435/435. This preserves the one
+bounded semantic retry while restoring the invariant that one owner wake cannot
+consume two complete 1,800-second browser budgets. Main release and natural wake
+readback remain.
+
 The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
 longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
 qualifies Regeneron application
