@@ -40,6 +40,22 @@ def test_paid_failure_preserves_machine_readable_step_and_diagnostic_detail() ->
     assert str(error) == "isolated_file_owner"
 
 
+def test_failed_paid_workspace_with_runner_evidence_is_preserved(tmp_path: Path) -> None:
+    paid = load("paid_direct")
+    root = tmp_path / "projects" / "123"
+    root.mkdir(parents=True)
+    workspace = None
+    with pytest.raises(RuntimeError, match="boom"):
+        with paid._project_workspace(root, "paid-source-census-") as raw:
+            workspace = Path(raw)
+            evidence = workspace / "evidence" / "attempt-01.stderr.log"
+            evidence.parent.mkdir(parents=True)
+            evidence.write_text("runner failed before summary\n", encoding="utf-8")
+            raise RuntimeError("boom")
+    assert workspace is not None and workspace.is_dir()
+    assert (workspace / "evidence" / "attempt-01.stderr.log").is_file()
+
+
 def blocked_project(tmp_path: Path) -> tuple[Path, str, str]:
     root = tmp_path / "project"
     feedback = "a" * 64

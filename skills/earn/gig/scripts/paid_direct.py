@@ -151,6 +151,11 @@ def _has_resumption_marker(workspace: Path) -> bool:
     return False
 
 
+def _has_runner_diagnostic(workspace: Path) -> bool:
+    return any(path.is_file() and not path.is_symlink()
+               for path in workspace.glob("**/evidence/**/*"))
+
+
 @contextmanager
 def _project_workspace(root: Path, prefix: str, *, resume: bool = False) -> Iterator[str]:
     """Keep active Paid work outside shared temp and resume it after abrupt worker death."""
@@ -168,7 +173,7 @@ def _project_workspace(root: Path, prefix: str, *, resume: bool = False) -> Iter
         yield str(workspace)
         completed = True
     finally:
-        if completed or not _has_resumption_marker(workspace):
+        if completed or not (_has_resumption_marker(workspace) or _has_runner_diagnostic(workspace)):
             shutil.rmtree(workspace, ignore_errors=True)
 
 def _text(value: Any) -> str: return str(value or "").strip()

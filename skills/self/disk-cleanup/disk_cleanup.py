@@ -11,6 +11,7 @@ import argparse
 from contextlib import contextmanager, suppress
 import errno
 import fcntl
+from functools import lru_cache
 import json
 import math
 import os
@@ -98,7 +99,37 @@ def _bytes(
     return total
 
 
+@lru_cache(maxsize=1)
+def _open_paths() -> frozenset[str] | None:
+    """Every open path once, because `+D` walks the tree it is asked about.
+
+    A release is ~1.2GiB, so probing six of them with `+D` spends the whole
+    governor budget and every candidate ends up preserved unprobed.
+    """
+    try:
+        result = subprocess.run(
+            ["/usr/sbin/lsof", "-nP", "-Fn"],
+            capture_output=True,
+            text=True,
+            timeout=LSOF_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode not in (0, 1):
+        return None
+    return frozenset(line[1:] for line in result.stdout.splitlines() if line.startswith("n/"))
+
+
 def _default_lsof(path: Path) -> str:
+    if RELEASE_NAME_PATTERN.fullmatch(path.name):
+        opened = _open_paths()
+        if opened is None:
+            return "probe-error"
+        root = str(path)
+        prefix = root + "/"
+        held = any(entry == root or entry.startswith(prefix) for entry in opened)
+        return "open" if held else "confirmed-closed"
     try:
         result = subprocess.run(
             ["/usr/sbin/lsof", "-nP", "+D", str(path)],

@@ -1027,14 +1027,14 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 | surface | current measured behavior | required behavior |
 |---|---|---|
-| schedule | production currentは`20260831T175027-b333d6ff` / SHA `b333d6ff…`、Connector labelはその祖先であるfull release `20260831T170229-b224ba46` / SHA `b224ba46…`、daily-driver labelは`6466fea3…`。native Connector owner exact 1、`StartInterval=3600`、直近自然wake `wake-f64e4ab26c1879c34ba68a97`は`wake_deadline` / exit 1 | manual kickstartと途中reloadを使わず、bundle完成後の自然hourly wake 2回でreplay-zeroを証明する |
+| schedule | production currentとConnector labelはfull release `20260831T184945-c78c003f` / SHA `c78c003f…`、daily-driver labelは`6466fea3…`。`c78c003f`はPR #3452/#3457を祖先に含む。native Connector owner exact 1、`StartInterval=3600`、apply後の自然wakeは未発生 | manual kickstartと途中reloadを使わず、最初の自然wakeでevidence recovery、その後2回でreplay-zeroを証明する |
 | release completeness | 同一SHAの最初のrelease `20260831T153415-7255b4bb`はproduction依存`playwright-core`を欠き、Calendar read後のbrowser rail生成でexit 2。後続full releaseは3 dependency tree、154,232 entries、789,376,561 bytesを保持し、runtime requireを通る | apply前に全Git blob/mode、locked runtime dependency、required-module importを検証し、不完全releaseをloadedにしない |
-| browser owner | `127.0.0.1:9222`と`[::1]:9222`を別Chromiumが同時listenし、Connectorの固定IPv4 endpointは意図した`daily-driver`ではなく`job-search-daily` profileへ接続する。owned target分離は機能するがprofile identityは不一致 | endpointごとにlistener/profile owner exact 1を証明し、Connectorが宣言済み`browser-profile://cloakbrowser/daily-driver`だけへ接続する |
+| browser owner | `127.0.0.1:9222`は`job-search-daily`、`[::1]:9222`は宣言済み`daily-driver`。PR #3452でproduction rail/target controller/leaseはIPv6 daily-driver exactへ固定し、wrong-profile IPv4を拒否した。Connector全696/696、isolated live targetはpage `1→2→1`、lease 0、provider effect 0 | 最初の自然wakeでloaded release自身がIPv6 targetを所有・cleanupし、job-search/Gig profile非干渉をreadbackする |
 | horizon | Calendar、Luma、connpassのactive primary pathはJST day 0〜27の28日 | 28日境界を維持 |
 | profile | YC hackathon→open LT→AI→crypto→startup、`strong/moderate`だけがauto-apply eligible | live候補で品質gateを維持 |
 | live ranking | provider-neutral rankingがactive minimal runnerに接続済み、large inventoryは3件chunk/並列3 | 10分wake内のterminalを維持 |
 | LT | classifier、talk pack、独立transition store、one-effect budgetはactive pathに接続済み | 実open LTのtalk application receiptを1件完成 |
-| provider result | Luma→connpassを尽くし、fallbackにも同じquality gateと160秒completion reserveを適用。KokuchProはPR #3433のauthenticated participant inventory reconciliationとPR #3434のspinner seat対応をmain `b224ba46…`へ統合した。PR #3433はfocused 71/71、Connector全691/691、live read-only participant inventoryで対象eventのexact URL・時刻・渋谷会場・`registered`を確認した | 既存KokuchPro登録のevidence chainと、その後の自然wake replay-zeroを完成する。fallback実装PASSや候補発見だけをapplication成功へ昇格しない |
+| provider result | Luma→connpassをprimaryとして維持し、fallbackにも同じquality gateと160秒completion reserveを適用。前回はKokuchPro evidence開始時にwake残り約75秒しかなくCalendar initial readbackでdeadline/create 0となった。PR #3457でKokuchProを最初のfallbackへ移し、native/runner 73/73をPASSした | 既存KokuchPro登録のevidence chainへ十分なwake時間を残し、その後の自然wake replay-zeroを完成する。fallback実装PASSや候補発見だけをapplication成功へ昇格しない |
 | connpass | official API v2 discoveryのみ。自動申込許可は未回答のためTelegram manual boundary、provider Submit 0 | official responseを監視し、明示許可までSubmit 0 |
 | evidence | KokuchPro event `kokuchpro-event://event/33301feefecb914218e7c2318d9de99e`は自然wakeのpre-submit official readbackで`registered`、duplicate Submit 0。checkpointはprovider receipt `370bb9be…`とPNG SHA `9c9cdc7a…`（1185×8121）を保存した。`EVIDENCE_CALENDAR_READBACK_FAILED`後のofficial Google Calendar readbackはidempotency 0件、title/canonical URL 0件、Telegram message/photo receipt 0件、applied bundle 0件 | 既存provider checkpointを再利用し、Calendar exact 1→Telegram positive message/photo IDs→同lineage durable bundleを自然wakeでrecoveryする。provider登録を再実行しない |
 
@@ -1141,8 +1141,8 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 - [x] **IR-01** PR #3433/#3434を含むimmutable Connector release `b224ba46…`をloaded argvでreadbackし、focused/Connector全testとlive read-only participant inventoryをPASSする。
 - [x] **IR-02** 自然wake `wake-f64e4ab26c1879c34ba68a97`で再Submit 0、official `registered`、provider receipt `370bb9be…`、PNG SHA `9c9cdc7a…`を同一checkpointへ保存する。
 - [x] **IR-03** Calendar failure後にofficial Google Calendarをidempotencyとtitle/canonical URLの両方で読み、対象0件、Telegram evidence receipt 0件、bundle 0件を確認する。
-- [ ] **IR-04** `127.0.0.1:9222`の`job-search-daily`と`[::1]:9222`の`daily-driver`競合を既存owner境界で解消し、Connectorが`browser-profile://cloakbrowser/daily-driver` exact 1だけへ接続する。新browser/profile/schedulerを作らない。
-- [ ] **IR-05** 残存target lease `CCBC4C100AAFF7C75F2EB59D7A4E11C7`をraw削除せず、公式Connector owner/reaper cleanupでowned pageとlockを閉じる。
+- [x] **IR-04** PR #3452で`127.0.0.1:9222`の`job-search-daily`をproduction owner/fenceから拒否し、Connectorを`[::1]:9222`の`browser-profile://cloakbrowser/daily-driver` exactへ接続する。Connector全696/696、isolated live target page `1→2→1`、lease 0、provider effect 0を確認する。新browser/profile/schedulerは作らない。
+- [ ] **IR-05** 残存target lease `813A69D6C5C21F03261B9F885DDEE298`をraw削除せず、公式Connector owner/reaper cleanupでowned pageとlockを閉じる。
 - [ ] **IR-06** 次の自然hourly wakeが既存provider checkpointを再利用し、Calendar exact 1→Telegram positive message/photo IDs→durable applied bundle exact 1を同一lineageで完成することをreadbackする。
 - [ ] **IR-07** さらに自然hourly wake 2回で同event Submit 0、Calendar duplicate 0、bundle reused/no duplicate、single owner、lock/page cleanupを確認する。
 - [ ] **IR-08** fresh read-only adversarial reviewer 1名がprovider receipt、PNG SHA、Calendar、Telegram IDs、bundle、2 wake replay-zeroを反証できないことを確認し、active Connector goalをcompleteにしてheartbeatを削除する。
