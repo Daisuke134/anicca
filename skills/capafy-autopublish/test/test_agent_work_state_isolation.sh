@@ -308,6 +308,88 @@ if rg -q 'publish-submit|drive_checkpoint2|drive_checkpoint3' "$UNKNOWN_CALLS"; 
   echo "FAIL: unknown finish readback reached an external effect" >&2
   exit 1
 fi
+
+PREPARE_BIN="$STATE_HOME/prepare-envelope-bin"
+mkdir -p "$PREPARE_BIN"
+PREPARE_COUNT="$STATE_HOME/prepare-count"
+CONTINUE_COUNT="$STATE_HOME/continue-count"
+CP2_MARKER="$STATE_HOME/cp2-marker"
+CP3_MARKER="$STATE_HOME/cp3-marker"
+python3 - "$PREPARE_BIN/python3" "$PREPARE_BIN/curl" <<'PY'
+from pathlib import Path
+import sys
+python_path, curl_path = sys.argv[1:]
+Path(python_path).write_text(
+    """#!/bin/sh
+inc() {
+  n=0
+  if [ -f \"$1\" ]; then n=$(cat \"$1\"); fi
+  n=$((n + 1)); printf '%s' \"$n\" > \"$1\"
+}
+if [ \"$1\" = \"packager.py\" ] && [ \"$2\" = \"publish-remote-status\" ]; then
+  printf '%s\\n' '{\"ok\":true,\"latest_version\":{\"agent_id\":\"agent-1\",\"platform_status\":0,\"audit_status\":0,\"is_confirmed_skills\":true,\"is_confirmed_config_keys\":false,\"agent_package_id\":\"\",\"package_uploaded\":false}}'
+  exit 0
+fi
+if [ \"$1\" = \"packager.py\" ] && [ \"$2\" = \"publish-submit\" ]; then
+  case \"$*\" in
+    *'--action prepare'*)
+      inc \"$PREPARE_COUNT\"
+      case \"$FAKE_MODE\" in
+        prepare-envelope) payload='{"ok":true,"agent_id":"agent-1","status":"security_review_required","security_ready":true,"next_action":"continue_upload"}' ;;
+        wrong-status) payload='{"ok":true,"agent_id":"agent-1","status":"security_ready","security_ready":true,"next_action":"continue_upload"}' ;;
+        security-false) payload='{"ok":true,"agent_id":"agent-1","status":"security_review_required","security_ready":false,"next_action":"continue_upload"}' ;;
+        next-action-missing) payload='{"ok":true,"agent_id":"agent-1","status":"security_review_required","security_ready":true}' ;;
+        wrong-agent) payload='{"ok":true,"agent_id":"other-agent","status":"security_review_required","security_ready":true,"next_action":"continue_upload"}' ;;
+      esac
+      printf '%s\\n' \"$payload\"
+      exit 0
+      ;;
+    *'--action continue_upload'*)
+      inc \"$CONTINUE_COUNT\"
+      printf '%s\\n' '{"ok":false,"agent_id":"agent-1","blocking_category":"deliberate_test_failure"}'
+      exit 7
+      ;;
+  esac
+fi
+case \"$*\" in
+  *drive_checkpoint2.py*) : > \"$CP2_MARKER\"; exit 0 ;;
+  *drive_checkpoint3.py*) : > \"$CP3_MARKER\"; exit 0 ;;
+esac
+exec \"$REAL_PYTHON\" \"$@\"
+""",
+    encoding="utf-8",
+)
+Path(curl_path).write_text(
+    """#!/bin/sh
+case \"$*\" in
+  *https://openrouter.ai/api/v1/key*) printf '%s\\n' '{"data":{"limit_remaining":null}}' ;;
+  *https://openrouter.ai/api/v1/credits*) printf '%s\\n' '{"data":{"total_credits":10,"total_usage":1}}' ;;
+  *https://openrouter.ai/api/v1/chat/completions*) printf '%s\\n' '{"choices":[{"message":{"content":"ok"}}]}' ;;
+  *) exit 1 ;;
+esac
+""",
+    encoding="utf-8",
+)
+PY
+chmod +x "$PREPARE_BIN/python3" "$PREPARE_BIN/curl"
+for mode in prepare-envelope wrong-status security-false next-action-missing wrong-agent; do
+  rm -f "$PREPARE_COUNT" "$CONTINUE_COUNT" "$CP2_MARKER" "$CP3_MARKER"
+  set +e
+  PREPARE_COUNT="$PREPARE_COUNT" CONTINUE_COUNT="$CONTINUE_COUNT" CP2_MARKER="$CP2_MARKER" CP3_MARKER="$CP3_MARKER" \
+    REAL_PYTHON="$REAL_PYTHON" FAKE_MODE="$mode" PATH="$PREPARE_BIN:$PATH" \
+    LIFE_MANAGER_STATE_HOME="$STATE_HOME/$mode-state" CAPAFY_PUBLISHER_STATE_HOME="$STATE_HOME/$mode-state/runtime/capafy-publisher" CAPAFY_HOST_OPENROUTER_KEY=test-key \
+    bash "$ROOT/scripts/publish_finish.sh" agent-1 unused-skill >/dev/null 2>&1
+  prepare_rc=$?
+  set -e
+  [ "$prepare_rc" -ne 0 ] || { echo "FAIL: prepare envelope mode $mode unexpectedly succeeded" >&2; exit 1; }
+  [ "$(cat "$PREPARE_COUNT" 2>/dev/null || printf '0')" = "1" ] || { echo "FAIL: $mode prepare count" >&2; exit 1; }
+  expected_continue=0
+  [ "$mode" = "prepare-envelope" ] && expected_continue=1
+  [ "$(cat "$CONTINUE_COUNT" 2>/dev/null || printf '0')" = "$expected_continue" ] || { echo "FAIL: $mode continue count" >&2; exit 1; }
+  [ ! -e "$CP2_MARKER" ] || { echo "FAIL: $mode reached CP2" >&2; exit 1; }
+  [ ! -e "$CP3_MARKER" ] || { echo "FAIL: $mode reached CP3" >&2; exit 1; }
+done
+
 before_shim_calls="$(wc -l < "$FAKE_CALLS")"
 set +e
 PATH="$FAKE_BIN:$PATH" bash "$ROOT/scripts/publish_one.sh" unused unused unused >/dev/null 2>&1

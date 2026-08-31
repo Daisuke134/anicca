@@ -133,14 +133,17 @@ except Exception: print('')")"
         PREPARE_STATUS="$(printf '%s' "$PREPARE_OUT" | python3 -c "import json,sys
 try: print(str(json.loads(sys.stdin.read(),strict=False).get('status','') or '').strip())
 except Exception: print('')")"
-        [ "$PREPARE_VALID" = "true" ] && [ "$PREPARE_AGENT_ID" = "$ID" ] \
-          && [ "$PREPARE_STATUS" = "security_ready" ] \
-          || die "publish-submit prepare response is not security_ready; no upload attempted"
         PREPARE_SECURITY_READY="$(printf '%s' "$PREPARE_OUT" | python3 -c "import json,sys
 try: print('true' if json.loads(sys.stdin.read(),strict=False).get('security_ready') is True else 'false')
 except Exception: print('false')")"
-        [ "$PREPARE_SECURITY_READY" = "true" ] \
-          || die "publish-submit prepare did not confirm security_ready; no upload attempted"
+        PREPARE_NEXT_ACTION="$(printf '%s' "$PREPARE_OUT" | python3 -c "import json,sys
+try: print(str(json.loads(sys.stdin.read(),strict=False).get('next_action','') or '').strip())
+except Exception: print('')")"
+        [ "$PREPARE_VALID" = "true" ] && [ "$PREPARE_AGENT_ID" = "$ID" ] \
+          && [ "$PREPARE_STATUS" = "security_review_required" ] \
+          && [ "$PREPARE_SECURITY_READY" = "true" ] \
+          && [ "$PREPARE_NEXT_ACTION" = "continue_upload" ] \
+          || die "publish-submit prepare response failed strict security envelope; no upload attempted"
         echo "security preparation complete"
 
         step "[4] publish-submit continue_upload (exactly once)"

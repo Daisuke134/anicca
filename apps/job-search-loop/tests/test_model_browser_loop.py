@@ -211,6 +211,59 @@ class ModelBrowserLoopContractTests(unittest.TestCase):
             ["old-rakuten", "new-company"],
         )
 
+    def test_browser_queue_omits_recovery_requested_workday_tenant(self):
+        from job_search_loop.browser_agent.queue import RowQueueSupervisor
+
+        rows = [
+            {
+                "application_id": "cloudera-recovery",
+                "company": "Cloudera",
+                "title": "Applied AI Specialist",
+                "canonical_url": "https://cloudera.wd5.myworkdayjobs.com/job/role",
+            },
+            {
+                "application_id": "fresh-company",
+                "company": "Fresh Company",
+                "title": "Customer Success",
+                "canonical_url": "https://fresh.wd5.myworkdayjobs.com/job/role",
+            },
+        ]
+        ledger = Mock()
+        ledger.pending_materials_ready_applications.return_value = rows
+        ledger.retryable_applications.return_value = []
+        ledger.workday_fit_qualified.return_value = True
+        with tempfile.TemporaryDirectory() as directory:
+            credentials = Path(directory) / "credentials.json"
+            credentials.write_text(
+                json.dumps(
+                    {
+                        "version": 1,
+                        "credentials": [
+                            {
+                                "service": "workday:cloudera.wd5.myworkdayjobs.com",
+                                "username": "candidate@example.com",
+                                "email": "candidate@example.com",
+                                "password": "Strong-Workday-Password-9!",
+                                "account_status": "recovery_requested",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            os.chmod(credentials, 0o600)
+            with patch.dict(
+                os.environ,
+                {"JOB_SEARCH_MACHINE_CREDENTIALS": str(credentials)},
+            ):
+                collected = RowQueueSupervisor.collect(
+                    ledger, active_provider="workday"
+                )
+
+        self.assertEqual(
+            [row["application_id"] for row in collected], ["fresh-company"]
+        )
+
     def test_transport_failed_requires_a_real_nonzero_runtime_command(self):
         from job_search_loop.browser_agent import orchestrator
 
