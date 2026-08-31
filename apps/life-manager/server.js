@@ -173,6 +173,11 @@ const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
 const BROWSER_TAKEOVER_PATH = "/api/panel/money-printer/browser";
 const BROWSER_CAST_PATH = `${BROWSER_TAKEOVER_PATH}/cast`;
 const browserTakeoverSteel = makeSteelCdpClient();
+function steelCastUrl(sessionId) {
+  const id = String(sessionId || "");
+  if (!/^[A-Za-z0-9._-]{1,200}$/.test(id)) throw new Error("Steel cast session invalid");
+  return `ws://steel-browser.railway.internal:8080/v1/sessions/${encodeURIComponent(id)}/cast`;
+}
 // The panel is served by this life-call HTTP service, not by the /lm onboarding site.
 // Railway supplies RAILWAY_PUBLIC_DOMAIN; LM_PANEL_BASE_URL is the explicit override for custom domains.
 const LM_PANEL_BASE = process.env.LM_PANEL_BASE_URL ||
@@ -1097,7 +1102,7 @@ server.on("upgrade", (req, socket, head) => {
   browserTakeover(req).then((state) => {
     if (state.status !== 200) { rejectUpgrade(socket, state.status); return; }
     browserTakeoverWss.handleUpgrade(req, socket, head, (client) => {
-      const upstream = new WebSocket("ws://steel-browser.railway.internal:8080/v1/sessions/cast", { maxPayload: 8 * 1024 * 1024 });
+      const upstream = new WebSocket(steelCastUrl(state.handoff.session_id), { maxPayload: 8 * 1024 * 1024 });
       client.on("message", (data, binary) => { if (upstream.readyState === WebSocket.OPEN) upstream.send(data, { binary }); });
       upstream.on("message", (data, binary) => { if (client.readyState === WebSocket.OPEN) client.send(data, { binary }); });
       const close = () => {
@@ -1276,4 +1281,4 @@ if (require.main === module) {
 // redeploy trigger 010026
 
 // Export pure helpers for unit tests (FIND-005).
-module.exports = { buildTag, inngestServeAllowed, panelApiOptions, panelOriginForPath, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
+module.exports = { buildTag, inngestServeAllowed, panelApiOptions, panelOriginForPath, steelCastUrl, testCallAllowed, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
