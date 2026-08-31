@@ -181,6 +181,15 @@ and Claude fallback unchanged. The runner suite passes 44/44 and the OSS source
 manifest verifies after binding the new config digest. Main release and natural
 Danaher retry proof remain.
 
+Natural wake `daily-20260831-214025` proves the retry queue is correct: it selects
+only the existing Danaher application with zero fresh fit decisions. It then exits
+before browser work because the caller declares an explicit-escalation route but
+does not pass the required escalation reason. The active atom adds that bounded
+reason to the existing runner invocation. It does not change the model, timeout,
+fallback, cadence, queue, or effect fences. Acceptance is a natural wake whose
+runner selects Terra high and proceeds beyond argument validation on the same
+Danaher row.
+
 Main release `20260831T181958-70623b6a` is now loaded by the existing five owners,
 and the Cloudera tenant is durably `recovery_requested`. Natural wake
 `daily-20260831-182159` returns `queued_existing` with exactly four fresh runnable
