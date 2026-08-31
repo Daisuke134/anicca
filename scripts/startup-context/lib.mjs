@@ -87,6 +87,13 @@ export function validateStartupContext(context) {
     if (!isNonEmptyString(link.url)) errors.push(`links.${key}.url is required`);
     if (link.status !== "verified") errors.push(`links.${key}.status must be verified`);
     if (!isNonEmptyString(link.expected_text)) errors.push(`links.${key}.expected_text is required`);
+    if (link.deployed_context_digest != null
+      && !/^[a-f0-9]{64}$/.test(String(link.deployed_context_digest))) {
+      errors.push(`links.${key}.deployed_context_digest must be a SHA-256 digest`);
+    }
+    if (key !== "product" && link.deployed_context_digest != null) {
+      errors.push(`links.${key}.deployed_context_digest is only valid for the product link`);
+    }
     if (!isNonEmptyString(link.verified_at)) errors.push(`links.${key}.verified_at is required`);
     if (!isNonEmptyString(link.evidence)) errors.push(`links.${key}.evidence is required`);
   }
@@ -268,9 +275,10 @@ export async function auditStartupContext(
           const body = await response.text();
           const expectedText = context.links[key].expected_text;
           const identityMatches = body.toLocaleLowerCase().includes(expectedText.toLocaleLowerCase());
+          const deployedContextDigest = context.links[key].deployed_context_digest || digest;
           const contextMatches =
             key !== "product" ||
-            (body.includes(context.context_version) && body.includes(digest));
+            (body.includes(context.context_version) && body.includes(deployedContextDigest));
           const check = {
             key,
             url,

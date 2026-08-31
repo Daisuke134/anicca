@@ -38,6 +38,11 @@ test("canonical startup context is valid and names Mr.bot as the product", async
   });
   assert.equal(context.traction.founder_attested_revenue.display, "approximately $1,000");
   assert.equal(context.traction.founder_attested_revenue.source, "founder_attested");
+  assert.deepEqual(
+    ["product", "repository", "telegram"].map((key) => context.links[key].expected_text),
+    ["Life Manager", "Life Manager", "Life Manager"],
+  );
+  assert.match(context.links.product.deployed_context_digest, /^[a-f0-9]{64}$/);
   for (const topic of ["mission", "revenue", "users", "applications", "agi"]) {
     const claim = context.claims.find((candidate) => candidate.topic === topic);
     assert.ok(claim, `missing ${topic} claim`);
@@ -74,6 +79,16 @@ test("validator rejects missing required fields", async () => {
   delete context.links.repository;
 
   assert.match(validateStartupContext(context).join("\n"), /links\.repository/);
+});
+
+test("validator constrains the transitional deployed digest to the product link", async () => {
+  const malformed = clone(await loadStartupContext(contextPath));
+  malformed.links.product.deployed_context_digest = "not-a-digest";
+  assert.match(validateStartupContext(malformed).join("\n"), /deployed_context_digest.*SHA-256/);
+
+  const misplaced = clone(await loadStartupContext(contextPath));
+  misplaced.links.repository.deployed_context_digest = "a".repeat(64);
+  assert.match(validateStartupContext(misplaced).join("\n"), /only valid for the product link/);
 });
 
 test("validator rejects an incomplete canonical application answer set", async () => {
@@ -159,8 +174,9 @@ test("audit reads back every verified canonical link", async () => {
   const requested = [];
   const fetchImpl = async (url) => {
     requested.push(url);
+    const link = Object.values(context.links).find((candidate) => candidate.url === url);
     return new Response(
-      `Mr.bot ${context.context_version} ${contextDigest(context)}`,
+      `${link.expected_text} ${context.context_version} ${link.deployed_context_digest || contextDigest(context)}`,
       { status: 200 },
     );
   };

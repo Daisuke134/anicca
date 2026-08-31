@@ -59,23 +59,24 @@
     "product": {
       "url": "https://aniccaai.com/lm",
       "status": "verified",
-      "expected_text": "Mr.bot",
-      "verified_at": "2026-08-02T12:00:00+09:00",
-      "evidence": "HTTP 200 and Mr.bot page title read back on 2026-08-02 JST."
+      "expected_text": "Life Manager",
+      "deployed_context_digest": "9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338",
+      "verified_at": "2026-08-31T17:12:00-04:00",
+      "evidence": "HTTP 200 with the deployed Life Manager identity and pinned deployed context digest read back on 2026-08-31 EDT; retain this external identity during the Mr.bot code rename."
     },
     "repository": {
       "url": "https://github.com/Daisuke134/life-manager",
       "status": "verified",
-      "expected_text": "Mr.bot",
-      "verified_at": "2026-08-02T12:00:00+09:00",
-      "evidence": "Public repository returned HTTP 200 on 2026-08-02 JST."
+      "expected_text": "Life Manager",
+      "verified_at": "2026-08-31T17:12:00-04:00",
+      "evidence": "Public repository returned HTTP 200 with its deployed Life Manager identity on 2026-08-31 EDT."
     },
     "telegram": {
       "url": "https://t.me/LifeManagerBotbot?start=lp",
       "status": "verified",
-      "expected_text": "Mr.bot",
-      "verified_at": "2026-08-02T12:00:00+09:00",
-      "evidence": "Telegram start page returned HTTP 200 on 2026-08-02 JST."
+      "expected_text": "Life Manager",
+      "verified_at": "2026-08-31T17:12:00-04:00",
+      "evidence": "Telegram start page returned HTTP 200 with its deployed Life Manager identity on 2026-08-31 EDT."
     },
     "dashboard": {
       "url": "https://aniccaai.com/dashboard",

@@ -1,5 +1,5 @@
 <!-- startup-context-version: 2026-08-27.2 -->
-<!-- startup-context-digest: 882e479bf06b98a2a6db62352b8d3b6c3463767c6c73d7996caa328e25191d06 -->
+<!-- startup-context-digest: 3e651b6308ec0762b11dcc8a66806f7c4a112ad5f48a631652dff622de975075 -->
 # Mr.bot
 
 **Mr.bot is a proactive general agent that manages your body, mind, and money.** It turns goals into

@@ -1,6 +1,6 @@
 <!-- generated from .agents/startup-context.json; do not edit -->
 context-version: 2026-08-27.2
-context-digest: 882e479bf06b98a2a6db62352b8d3b6c3463767c6c73d7996caa328e25191d06
+context-digest: 3e651b6308ec0762b11dcc8a66806f7c4a112ad5f48a631652dff622de975075
 
 # Mr.bot deck source
 
