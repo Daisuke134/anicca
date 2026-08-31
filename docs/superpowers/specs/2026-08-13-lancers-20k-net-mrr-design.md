@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** Applyは公式ApplicationReceipt 30件、Storefrontはcanonical 1件、production browserはsole ownerへ収束。契約候補0、Paid未完成のためnet MRRは未発生
+**状態:** Applyは公式ApplicationReceipt 41件、5分ごとのexhaustive ownerとTelegram ACKが稼働。Storefrontはcanonical 1件。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0、received grossは0円
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -1694,21 +1694,21 @@ sourceを5分observerが検知した時に実shapeで閉じる。active engineer
 | 面 | 実測した事実 | 判定 |
 |---|---|---|
 | canonical Git | current `origin/main`はwebsite-neutral Gig kernel更新を含み、installed Lancers releaseより先へ進んでいる | mainとinstalled releaseの同一性を推測せず、promotion時にmanifest bytesを再検証する |
-| installed release | `~/.local/state/anicca/lancers/deployment.json`はimmutable release `82acfd306fab1840183fe4d63d1e21c929f54e9e`と21-file manifestを保持 | customer state、browser profile、ledger、receiptを保存したまま、common kernelへの移行元として扱う |
-| production browser | `ai.anicca.lancers-revenue-browser`はdisabledでlaunchd serviceなし、loopback`:9227` listenerなし | historical recovery receiptは有効だがcurrent authenticated inventoryを証明しない。最初のsliceはread-only復帰 |
-| Apply | Application ownerはdisabled。durable ledgerは`application_verified=32`、application stateはfingerprint 119、pending 0、terminal blocked 7 | application effectは再開前。最後のprovider observationは2026-08-15でstale |
+| installed release | `~/.local/state/anicca/lancers/deployment.json`はimmutable release `381e45d58aa16680a34a0d5cf1746ab4ac0efe3e`と25-file manifestを保持 | main由来releaseだけがproduction source。customer state、browser profile、ledger、receiptはrepo外で保持 |
+| production browser | `ai.anicca.lancers-revenue-browser`はsole ownerとして`:9227`を保持し、Application、Storefront、Work Syncが同じauthenticated profileへattachする | browser restart直後のreadiness timeoutは次wakeで回復し、別profileや二重ownerを作らない |
+| Apply | Application ownerは5分ごとに10 queryの重複排除和集合を探索。durable ledgerは`application_verified=41`、fingerprint 216、pending 0。latest wakeは45件を観測し既判断案件を重複送信0で閉じた | Applyは稼働中だが、ApplicationReceiptは売上ではない。fresh positive-EV候補だけを最大1件/wakeで送信する |
 | Apply latest reconcile | project `5586218`、¥8,000、納期`2026-08-19`は一度だけ送信後、submit 0のreadback-onlyで公式proposal ID `27812863`へ確定。pending 1→0 | own-proposalは第462–463回の音声文字起こし＋整文を明記し、公開full scopeと一致。blind resend 0、receipt exactly 1 |
-| capacity | retained `contracts.json`はsource complete、active contract 0を返すがobserved_atは2026-08-15 | fresh inventoryまでcurrent capacityは`unknown`。stale zeroから応募を許可しない |
-| Sales source | retained snapshotはboard 1、required reply 0、unread 0、contract candidate 0 | current reply/offer stateはfresh inventoryまで`unknown`。存在しないbuyerへのeffect 0 |
-| Contract | retained project working 0、monthly 0、Storefront contract candidate 0 | ContractReceipt 0はledger truth。current provider absenceは未確認 |
+| capacity | fresh `contracts.json`はsource complete、active contract 0 | capacityは利用可能。funded contractがないためPaid workは開始しない |
+| Sales source | fresh snapshotはboard 2、required reply 0、unread 0、incoming monthly offer 0、contract candidate 0 | Work Syncは稼働。存在しないbuyerへのeffect 0 |
+| Contract | project working 0、monthly contract 0、Storefront contract candidate 0 | ContractReceipt 0がcurrent official truth |
 | Storefront canonical | 公式inventoryは`published=1 / paused=0 / hidden=5 / draft=0`。`1338228`だけactive、旧`1338229–1338233`は各owner wakeでPOST 302→公式archived readback。public profile料金表もcanonical一件だけ | ¥98,000 / ¥198,000 / ¥398,000、画像、portfolio `743964`、spot/3か月/6か月routeは公開page一致。連続wake `status_effect_count=0` |
 | Storefront demand | canonical `1338228`は2連続production wakeで`action=unchanged / aligned=true / status_effect_count=0`。公式counterは`表示1 / 閲覧0 / お気に入り0 / 相談0 / 注文0` | owner exit 0、duplicate mutation 0、各wake後owned tab 0。7日需要実験を欠測なしで再開 |
-| Reporting | retained Telegram outboxとhistorical provider ACKは保存されているがreport ownerはdisabled | stale snapshotをcurrent reportとして再送しない |
-| Paid | ledger eventは`application_verified` 32件だけ。retained公式snapshotは入出金履歴0、残高0円。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | current provider financeはfresh inventoryまで`unknown`。received cashは0件 |
+| Reporting | Reporter ownerはApplication wakeごとのevent keyを使い、latest production proofはenqueue 1 / delivered 1 / delivery uncertain 0 / provider message ID `46424` | 同じwakeだけdedupeし、次wakeは同じskip理由でも一度報告する |
+| Paid | ledger eventは`application_verified` 41件だけ。fresh financeはpayment history 0、残高0円、received gross 0円。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0件 | Life ManagerはLancersでまだ収益を得ていない。Paid owner未完成がmoney loopの後段欠落 |
 
 ### 18.2 なぜ応募しているのにお金にならないか
 
-応募数だけが解決策ではない。durable ledgerには累計32件の公式応募receiptがあり、retained公式snapshotのcontract candidateは0件である。
+応募数だけが解決策ではない。durable ledgerには累計41件の公式応募receiptがあり、fresh公式snapshotのcontract candidateは0件である。
 売上になる境界は応募ではなく、buyerが選ぶ／相談する、sellerが正しいreply・見積を返す、buyerが仮払いする、sellerが
 契約を承諾する、納品・検収が終わる、支払・payout・銀行入金が照合される、の後段である。
 
@@ -1898,7 +1898,7 @@ provider-neutral architectureと未知市場contractの正本は
 | 完了 | **Apply acquisition outcome診断**: 10 query公式件数を分離し、validator通過済み能力外を既存claimへ保存、Coconala同様にdefault wake最大3探索turnへ進めた。Lancersのrequired生成AI宣言value 1も正直に選択する | release `829824532…`、`observed 21 / eligible 8`、provider block submit 0、次候補`5584041`一回送信、proposal `27812830`、receipt 26、pending 0、blind resend 0 | 完了 |
 | 完了 | **production browser owner recovery**: manual PID任せをやめ、既存profileと`:9227`をsole reproducible ownerへ束ねる。attach timeout時は専用profileのLancers targetだけをcloseして一度retry | release `65a08a957…`、browser PID=launchd PID `29096`、login ready。Application / Storefront / Work Sync exit 0、Storefront/Work Sync second wake effect 0、self-heal E2E 12.59秒、state/ledger不変 | 完了 |
 | 完了 | **seller proof + public catalog convergence**: 公開portfolio `743964`とpackage `1338228`をApplication判断へ接続し、旧商品5件を受付休止から公式非表示へ収束 | release `add41af43…`、no-fit送信0、旧5件archived、public料金表1件、連続Storefront wake effect 0、Application/ledger/contracts不変 | 完了 |
-| 1 | **Read-only common inventory**: disabled Lancers profileをisolated ownerで復帰し、account identity hash、login、opportunities、messages、applications、active work、listing、contract、finance/payout、official URL、evidence hashをcommon `market-inventory`へ取得する | fresh authenticated inventory、source complete、2回の同値read、marketplace mutation 0、owned tab残存0 |
+| 完了 | **Read-only common inventory**: account identity、login、opportunities、messages、applications、active work、listing、contract、finance/payoutを既存ownersから取得 | fresh source complete、Application/Work Sync/Storefrontが同じauthenticated profileを使用、read-only inventory effect 0 |
 | 完了 | **First-trust profile**: subtitle、自己紹介、職種、稼働状況、基本単価、本人確認、NDA、公開portfolio/package proofを公式readbackし、Coconalaの同一persona avatarを正式profile photo fieldへ一度だけ登録。電話確認はowner指示で対象外 | 公式completion 80→90、写真未登録check消滅、POST 302、公開avatarあり。残る10%は電話確認だけで収益blockerにしない。再実行は写真effect 0 |
 | 3 | **First-review application canary**: review-bearing、bounded、objective acceptance、credible buyer、non-negative net、再利用可能proofを持つ一件をLunaが個別判断し、common Browser ACIとeffect kernelで送信する | exact project/proposal ID、strategy/profile/proof version、official readback、next replay submit 0 |
 | 4 | **Maximal positive-lifetime-EV acquisition**: 各fresh候補をLunaが個別判断し、別jobは最大並列、同じjobだけlease直列化する。Lancers native自動提案はcandidate-level Luna intent/readbackを証明するまでinventory-only | 全positive-EV候補にdecision、各proposal official ID、dynamic capacity、overbooking 0、duplicate 0、provider throttle時の縮退receipt |

@@ -174,6 +174,10 @@ Life Managerは最初からgeneralな`Goal → Plan/Graph → Tool → Effect �
 ただし抽象的なgeneral agentを完成したつもりにせず、Lancersを最初の実環境として、案件発見、応募、受注、制作、QA、納品、
 payment、payout、bankedまでを同じcoreで閉じる。Lancers固有のscheduler、planner、brain、ledgerは作らない。
 
+ユーザー入力は「Lancersで収益を作る」のようなgoal一つでよい。manager modelがmarket inventory、既存capability、経済性、現在stateから
+次のWorkItemを選び、deterministic coreはauthorization、lease、effect once、official readback、receiptだけを強制する。Elizaのautonomy intervalや
+one-off Job APIはこのmanagerを起動できるが、それ自体はmarketplace capability、buyer demand、delivery、paymentを提供しない。
+
 ```mermaid
 flowchart LR
     FOUNDATION1["Local OSS foundation<br/>Eliza fork + persistent runtime"] --> CORE1["General Agent Core<br/>provider-neutral"]
@@ -190,6 +194,17 @@ flowchart LR
 cloud先行はtenant auth、billing、isolation、provisioningに時間を使う一方、agentが一人分の実収益を閉じられるかを証明しないため採用しない。
 Lancers専用先行も未知marketplaceへ横展開できないため採用しない。最小の正解は、general coreをLancersで鍛え、local OSSの一人分を
 安定させてから同じAgent Coreをmulti-tenant hostへ載せることである。
+
+現在のproduction ownerはmain由来immutable releaseを使うlaunchd lanesであり、Eliza migration checkoutはgeneral coreの移行・検証面である。
+Eliza AgentRuntimeへcutoverするのは、同じLancers identity/stateを二重ownerにせず、application、contract、delivery、PaymentReceipt、bank matchが
+同じprovider-neutral receipt chainで再現された後だけである。target runtimeとcurrent runtimeを混同しない。
+
+##### 新marketplaceを5分で開始する境界
+
+5分SLOは、goal受領、manifest生成、既存browser/toolへの接続、read-only inventory、最初のsafe WorkItemまたは正直なblocked receiptまでとする。
+同じcommerce stages、effect kernel、outbox、money truthを再利用し、provider差分はdiscovery、transport、official readbackだけにする。
+KYC、buyer選定、契約、制作、検収、支払、payout、bank settlementは外部主体と公式状態に依存するため、5分以内の売上を完了条件にしない。
+速度目標は「5分ごとに新市場を安全に試せる」であり、「5分ごとに新市場で着金する」ではない。
 
 ##### 実装順はlocal OSSの一つのreceiptから始める
 
@@ -392,7 +407,8 @@ flowchart TD
 #### General Agentの開始点・現在地・理想像
 
 Lancersから直接作り始めたわけではない。最初にprovider非依存kernelを作り、Lancersを最初の実marketplace canaryにした。
-Lancersでは応募receiptとreplay-zeroまで実証したが、受注・納品・入金はまだ0である。公式への許可確認メール・問い合わせ・追跡は行わない。
+Lancersでは公式ApplicationReceipt 41件、replay-zero、5分ごとのexhaustive Apply、Work Sync、Storefront、各wake Telegram ACKまで実証したが、
+ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0、received grossは0円である。公式への許可確認メール・問い合わせ・追跡は行わない。
 Upworkは停止、Coconalaはこのtrackの対象外とする。
 
 ```mermaid
@@ -401,10 +417,9 @@ flowchart LR
     L --> H["GA-11 Hosted tenant<br/>queue → worker → receipt<br/>DONE"]
     H --> O["GA-12 OSS clean install<br/>DONE"]
     O --> R1["GA-13A tier2依存退役<br/>production natural pass<br/>DONE"]
-    R1 --> NOW["現在: ELZ-F01<br/>legacy baseline inventory"]
-    NOW --> CORE2["ELZ-F02〜C09<br/>fork → local boot → general core"]
-    CORE2 --> D["ELZ-L01〜L25<br/>Lancersで常時Money loop"]
-    D --> W["GA-15 / GA-16<br/>受注 → 納品 → banked"]
+    R1 --> CORE2["Eliza local foundation + general core<br/>DONE"]
+    CORE2 --> D["現在: Lancers conformance<br/>Apply 41 / Contract・Paid 0"]
+    D --> W["次: GA-15 / GA-16<br/>受注 → 納品 → banked"]
     W --> S["GA-18<br/>failureから自己修復"]
     S --> I["GA-17<br/>receiptから自己改善"]
     I --> OSS2["ELZ-R/O<br/>legacy cutover → Local OSS stable"]
