@@ -2931,3 +2931,12 @@ Telegram provider ACKで閉じる。
 応募Telegramは存在しない。report ownerは新snapshotをenqueue 1 / attempt 1まで進めたが、OpenClaw CLIのstate-migration warningがJSONの前に
 出る現行envelopeをwhole-string `json.loads`して`provider_response_invalid / delivery_uncertain`になった。過去uncertain eventは再送せず、既存
 agent-runnerのstrict parse→`JSONDecoder.raw_decode` salvageをreporterへ再利用して次の新snapshotからprovider message IDを受理する。
+
+**COCONALA PARITY GAP:** Reporterは5分ごとに起きてもevent keyをsemantic snapshot hashだけで作るため、別Application wakeが同じ
+`duplicate_project`やskipを返すとenqueue 0になり、人には何も届かない。Application logのvalid JSON行番号をwake sequenceとしてevent keyへ加える。
+同じwakeに対するReporter retryはdedupeし、次のApplication wakeは結果が同じでも自然文を一度送る。`duplicate_project`、`no_eligible_project`、
+`daily_quota_reached`は案件ID、送信しなかった理由、次の自動actionを表示する。これによりCoconalaと同じ「各wakeの応募/skip/次」を人が観測できる。
+
+**TRANSPORT PARITY:** Coconala Apply/Paidは`openclaw gateway call send`ではなく、`OpenClawTelegramTransport`の
+`openclaw message send --channel telegram --target ... --message ... --json`をproductionで使う。Lancersも同じCLI contractへ揃え、独自gateway RPCを
+廃止する。既存Lancers outboxのsend-started/delivery-uncertain fenceは維持し、provider message IDはtop-levelまたは`payload`から取得する。
