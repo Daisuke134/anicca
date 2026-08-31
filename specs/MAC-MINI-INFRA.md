@@ -550,3 +550,28 @@ release 同士はブロックを共有する。
 （1.83 → 8.96GB）。共有ブロックは最後の参照が消えて初めて解放される。
 したがって per-item のバイト数は共有分を二重計上する。
 正しい回収量は receipt の `free_before` / `free_after` 差分だけである。
+
+### 2026-08-31 未使用アプリの回収（完了。上の /Applications 表はこの分を含まない）
+
+Dais 承認のうえ削除した。合計 1.7GB、実測で avail 4659MiB → 6929MiB（+2.2GiB）。
+
+| 削除 | MB | 最終使用 |
+|---|---|---|
+| `/Applications/quarto` | 689 | 2026-05-08 |
+| `/Applications/Maestro.app` | 531 | 2026-01-24 |
+| `/Applications/Obsidian.app` | 482 | 2026-03-24 |
+| `/Applications/Creative Cloud Installer.app` | 16 | 2026-07-16 |
+| `~/Library/Caches/Adobe` | 125 | Adobe 残骸 |
+| `~/Downloads/Creative_Cloud_Installer.dmg` | 7 | Adobe 残骸 |
+
+削除前の確認: `ai.hermes.gateway.plist` が quarto と Maestro を参照していたが、
+実体は `PATH` 文字列（`.../quarto/bin` と `~/.maestro/bin`）であり `.app` 本体への依存ではない。
+`~/.maestro/bin` の CLI は別物として残っている。稼働プロセスも無し。
+
+`/Applications` 配下は root 所有のため `quarto` だけ `sudo rm` が必要だった。
+他は通常権限で消えた。
+
+**まだ動いている Adobe プロセスが 10 個ある**
+（`/Applications/Utilities/Adobe Creative Cloud/.../Adobe Crash Processor` など）。
+`lsof` 上で削除済みファイルを掴んではいない（deleted handle 0）ので容量は握っていないが、
+Creative Cloud 本体を消したはずなのに常駐が残っている状態であり、別途整理が要る。
