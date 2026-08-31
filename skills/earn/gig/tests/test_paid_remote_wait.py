@@ -624,6 +624,21 @@ def test_decision_prompt_scopes_required_assets_to_current_bounded_output(tmp_pa
     assert "Do not hide a required asset only in unresolved" not in prompt
 
 
+def test_decision_prompt_keeps_live_system_revisions_remote_and_url_only(tmp_path):
+    paid = load("paid_direct")
+
+    identity = {"message_id": "m1", "content_sha256": "d" * 64, "side": "buyer"}
+    prompt = paid._decision_prompt(
+        tmp_path / "context.json", "a" * 64, "b" * 64, "c" * 64,
+        identity, identity,
+    ).decode()
+
+    assert "already-published live system" in prompt
+    assert "choose remote until the live revision and its official verification are complete" in prompt
+    assert "send its verified HTTPS review URL without a file attachment" in prompt
+    assert "explicitly asks for source files, an archive, or a download" in prompt
+
+
 def test_current_remote_wait_is_fresh(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)

@@ -91,7 +91,7 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     profile.chmod(0o600)
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v17"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v18"
 PAID_DECISION_MODEL = "gpt-5.6-terra"
 PAID_FILE_MODEL = "gpt-5.6-terra"
 PAID_RUNNER_CANDIDATES = {
@@ -1315,6 +1315,13 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "complete nonempty machine-readable receipt that binds the intended query scope, attempted count equal to "
         "intended count, completion time, zero query errors, and the official URLs actually checked; the model still "
         "decides semantic eligibility from those sources. Audit progress semantically rather than copying a stored total. If an "
+        "already-published live system has an authorized target and official deployment or provider receipts in the "
+        "compiled context, a buyer-requested revision remains remote work: choose remote until the live revision and its official verification are complete. "
+        "For buyer review, send its verified HTTPS review URL without a file attachment. Choose file instead only when "
+        "the accumulated buyer contract explicitly asks for source files, an archive, or a download. "
+        "Do not resend a review URL already present in official Coconala readback; reconcile it and continue the revision. "
+        "If later feedback changes the live system, update and verify the same authorized target before deciding whether "
+        "a new URL message is needed. "
         "effect's exact outbound payload asks the recipient to confirm a required qualification, that effect remains "
         "qualification-only and does not count toward a qualified target until an affirmative official response is "
         "read back. When a stored classification contradicts its payload or official response state, do not propagate "
