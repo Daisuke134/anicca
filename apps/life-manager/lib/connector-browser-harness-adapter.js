@@ -5,6 +5,13 @@ const PROVIDER = /^[a-z][a-z0-9_-]{1,31}$/;
 const CONTROL = /^[a-z][a-z0-9_-]{1,63}$/;
 const EXPECTED_STATE = /^[a-z][a-z0-9_]{1,63}$/;
 const DEFAULT_DURATION_MS = 120_000;
+const PHASE_FAILURE_REASONS = Object.freeze({
+  heartbeat: "agent_heartbeat_failed",
+  observe: "agent_observe_failed",
+  propose: "agent_propose_failed",
+  perform: "agent_perform_failed",
+  readback: "agent_readback_failed",
+});
 const ALLOWED = new Map([
   ["observe", new Set(["ax_inspect", "dom_inspect", "parent_readback"])],
   ["fill", new Set(["ax_fill", "dom_fill", "ax_check", "ax_select", "ax_uncheck"])],
@@ -79,6 +86,7 @@ function createBrowserHarnessAdapter(options = {}) {
     const repaired = [];
     const controller = new AbortController();
     let dispatchAttempted = false;
+    let phase = null;
     let stopReason = "time_limit";
     const stop = () => Object.freeze({
       status: "failed",
@@ -101,13 +109,16 @@ function createBrowserHarnessAdapter(options = {}) {
     });
     try {
       for (let step = 1; step <= bounded.max_steps; step += 1) {
+        phase = "heartbeat";
         await call(deps.heartbeat, {
           provider: bounded.provider, target_id: bounded.target_id,
           expected_state: bounded.expected_state, step,
         });
+        phase = "observe";
         const observation = await call(deps.observePage, {
           page: bounded.page, target_id: bounded.target_id,
         });
+        phase = "propose";
         const proposed = await call(deps.proposeAction, {
           provider: bounded.provider, page_websocket: bounded.page_websocket,
           target_id: bounded.target_id, expected_state: bounded.expected_state,
@@ -115,6 +126,7 @@ function createBrowserHarnessAdapter(options = {}) {
         });
         const action = safeAction(proposed);
         if (!action) return Object.freeze({ status: "failed", safe_reason: "unsafe_agent_action", repaired_actions: Object.freeze([...repaired]) });
+        phase = "perform";
         const effect = await call(deps.performAction, {
           page: bounded.page, target_id: bounded.target_id, action,
           ...(action.purpose === "submit" ? {
@@ -129,6 +141,7 @@ function createBrowserHarnessAdapter(options = {}) {
           repaired_actions: Object.freeze([...repaired]),
         });
         repaired.push(action);
+        phase = "readback";
         const providerState = await call(deps.readExpectedState, {
           page: bounded.page, target_id: bounded.target_id, provider: bounded.provider,
           expected_state: bounded.expected_state,
@@ -139,6 +152,11 @@ function createBrowserHarnessAdapter(options = {}) {
       }
     } catch (error) {
       if (controller.signal.aborted) return stop();
+      if (PHASE_FAILURE_REASONS[phase]) return Object.freeze({
+        status: "failed",
+        safe_reason: dispatchAttempted ? "effect_unknown" : PHASE_FAILURE_REASONS[phase],
+        repaired_actions: Object.freeze([...repaired]),
+      });
       throw error;
     } finally {
       clearTimeout(timer);

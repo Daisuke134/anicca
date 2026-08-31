@@ -57,6 +57,52 @@ test("bounded fallback discovers and executes only focused actions on the exact 
   assert.deepEqual(calls.filter(([name]) => name === "perform").length, 2);
 });
 
+test("bounded specialist contains observe failures with a stage-specific safe reason", async () => {
+  const adapter = createBrowserHarnessAdapter({
+    async observePage() { throw new Error("observe dependency failed"); },
+    async proposeAction() { throw new Error("proposal must not run"); },
+    async performAction() { throw new Error("action must not run"); },
+    async readExpectedState() { throw new Error("readback must not run"); },
+  });
+
+  const result = await adapter.runFallback({
+    provider: "luma", page: {}, pageWebsocket: PAGE_WS,
+    expectedState: "registered_or_pending", maxSteps: 1,
+  });
+
+  assert.deepEqual(result, {
+    status: "failed",
+    safe_reason: "agent_observe_failed",
+    repaired_actions: [],
+  });
+});
+
+test("bounded specialist contains a post-dispatch exception as effect_unknown", async () => {
+  let dispatches = 0;
+  const adapter = createBrowserHarnessAdapter({
+    async observePage() { return Object.freeze({ state: "form", controls: ["submit"] }); },
+    async proposeAction() { return Object.freeze({ purpose: "submit", method: "ax_click", control: "submit" }); },
+    async performAction(input) {
+      input.beforeDispatch();
+      dispatches += 1;
+      throw new Error("post-dispatch dependency failed");
+    },
+    async readExpectedState() { throw new Error("readback must not run after failed dispatch"); },
+  });
+
+  const result = await adapter.runFallback({
+    provider: "luma", page: {}, pageWebsocket: PAGE_WS,
+    expectedState: "registered_or_pending", maxSteps: 2,
+  });
+
+  assert.deepEqual(result, {
+    status: "failed",
+    safe_reason: "effect_unknown",
+    repaired_actions: [],
+  });
+  assert.equal(dispatches, 1);
+});
+
 test("adapter rejects browser-wide, Gig, credential-bearing, and non-page websocket endpoints", () => {
   const adapter = createBrowserHarnessAdapter({
     observePage() {}, proposeAction() {}, performAction() {}, readExpectedState() {},
