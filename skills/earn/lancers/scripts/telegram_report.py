@@ -489,6 +489,18 @@ def _provider_id(value: object) -> Optional[str]:
     return None
 
 
+def _provider_payload(text: str) -> object:
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        decoder = json.JSONDecoder()
+        for index, character in enumerate(text):
+            if character not in "{[": continue
+            try: return decoder.raw_decode(text, index)[0]
+            except json.JSONDecodeError: continue
+    raise ValueError("provider_response_invalid")
+
+
 def deliver_pending(database: Path, notifier: Callable[[str], object], now: object) -> DeliveryResult:
     result = DeliveryResult()
     for _ in range(20):
@@ -569,7 +581,7 @@ def _default_notifier(message: str) -> SendResult:
         idempotency_key = "lancers-report:" + hashlib.sha256(message.encode("utf-8")).hexdigest()
         params = json.dumps({"channel": "telegram", "to": TARGET, "message": message, "idempotencyKey": idempotency_key}, ensure_ascii=False, separators=(",", ":"))
         completed = subprocess.run(["openclaw", "gateway", "call", "send", "--timeout", "60000", "--params", params, "--json"], capture_output=True, text=True, timeout=70, check=False)
-        payload = json.loads(completed.stdout) if completed.returncode == 0 else {}
+        payload = _provider_payload(completed.stdout) if completed.returncode == 0 else {}
         return SendResult(True, _provider_id(payload), "receipt_missing")
     except OSError:
         return SendResult(False, None, "process_not_started")
