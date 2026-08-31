@@ -97,6 +97,7 @@ async function readBrowserHandoff(uid) {
   const rows = (await moneyPrinterRuntimePool.query(`
     SELECT id, uid, status, principal_kind, receipt, finished_at FROM public.lm_browser_jobs
     WHERE uid = $1 AND status = 'handoff_required' AND receipt->>'steel_released' = 'false'
+      AND finished_at > clock_timestamp() - interval '10 minutes'
     ORDER BY finished_at DESC LIMIT 2
   `, [uid])).rows;
   if (rows.length === 0) return null;
