@@ -696,3 +696,58 @@ open だったので消せずに残骸になっている**。3日前の release 
 
 home 全体の `node_modules` は **156 個**。`~/.npm` 548MB。
 `~/Library/Caches` は本日の掃除後 257MB（掃除前 2559MB）。
+
+## 2026-08-31 release を pin していたのは Chromium の cwd だった（さらに訂正）
+
+前節で「loop が古い release から動き続けて current へ移らない」と書いたが、これも実測で覆った。
+
+### apply は既に restart している
+
+`runtime/loop/lm_loop_apply.py` の `install_one()` は
+plist を atomic write したあと `bootout` → `bootstrap` を行い、
+`_loaded_arguments` が期待値と一致するまで最大3回試行する。
+`_preserve_operational_attributes` には `_is_immutable_release_working_directory` があり、
+plist が release 内の `WorkingDirectory` を持っていた場合はそれを引き継がない。
+`bin/plistgen.py` の既定も `WorkingDirectory: $HOME` である。
+**つまり apply 側の restart と cwd 対策は既に入っている。**
+
+### 実際に掴んでいるもの
+
+`lsof` で current 以外の release を掴むプロセスを引くと:
+
+```
+Chromium  328 個   FD 種別は全て cwd
+```
+
+```
+Chromium 1009 anicca cwd DIR ... /Users/anicca/loops/releases/20260831T181958-70623b6a
+```
+
+**328 個の Chromium プロセスが `cwd` だけで release を掴んでいる。**
+開いているのはディレクトリ 1 個（64 bytes）だが、
+それだけでツリー全体が削除不能になり `release_gc` が protected として残す。
+`.gc-trash.<pid>` の残骸はこの状態で削除を試みた痕跡である。
+
+同時に、長寿命の loop script も自分の release を掴んでいる:
+`skills/writer-agent/article-daily.sh`、`skills/writer-agent/runtime/model-runner.sh`、
+`skills/stripe-revenue-listener/scripts/listen.sh`、
+`skills/self/spawn/scripts/citizens-diff-monitor.sh`、
+`skills/fundraiser-agent/runtime/run.sh`。
+Stripe listener のように設計上長時間走るものは、その間ずっと release を pin する。
+
+### したがって修正箇所は3つ
+
+1. **ブラウザを起動するとき cwd を release の外に置く。** loop script は release 内で動くので、
+   そこから spawn した Chromium は cwd を継承する。子プロセスは親より長く生き残る。
+   起動時に `cwd=$HOME` などを明示するだけで pin は外れる。
+2. **`.gc-trash.<pid>` の残骸を、掴んでいたプロセスが消えた後に再試行して回収する。**
+   現状は一度失敗するとそのまま残る。
+3. 長寿命 loop は release を pin して当然なので、
+   **保持世代数は「稼働中 loop の最長寿命」を下回れない**。
+   `KEEP=5` を減らす方向の調整は無意味で、pin を減らす方が効く。
+
+### 328 個という数自体が別の問題
+
+これは孤児化した Chromium が積み上がっていることを示す。
+容量とは別に、プロセス側の後始末が要る。
+ただしブラウザの停止は隔離 profile / PID を特定してから行うこと。
