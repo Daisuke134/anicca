@@ -3331,115 +3331,151 @@ test("TECH PLAY harness rejects an invalid injected postcondition sleep", () => 
 const KOKUCHPRO_EVENT_KEY = "33301feefecb914218e7c2318d9de99e", KOKUCHPRO_CANONICAL_URL = `https://www.kokuchpro.com/event/${KOKUCHPRO_EVENT_KEY}/`, KOKUCHPRO_ENTRY_URL = `${KOKUCHPRO_CANONICAL_URL}entry/`, KOKUCHPRO_TICKET_ID = "1", KOKUCHPRO_ENTRY_TOKEN = `kokuchpro_entry_${KOKUCHPRO_EVENT_KEY}`;
 function kokuchProCandidate(overrides = {}) { return { provider: "kokuchpro", event_ref: `kokuchpro-event://event/${KOKUCHPRO_EVENT_KEY}`, canonical_url: KOKUCHPRO_CANONICAL_URL, ticket_id: KOKUCHPRO_TICKET_ID, ...overrides }; }
 
-function makeKokuchProEntryPage({ formSpecs = [{}, {}], candidate = kokuchProCandidate(), transientInspectCalls = [], onSleep } = {}) {
-  let href = candidate.canonical_url; const clicks = []; let inspectCalls = 0; let sleepCalls = 0; const deferred = [];
+function makeKokuchProMultiStepPage({ candidate = kokuchProCandidate(), duplicateCanonical = false, duplicateFinal = false, malformedFinal = false, transientInspectCalls = [], onSleep } = {}) {
+  const entryUrl = `${candidate.canonical_url}entry/`; let href = candidate.canonical_url; const events = []; const clicks = []; let beforeDispatchCalls = 0; let inspectCalls = 0; let sleepCalls = 0;
   const document = { defaultView: { getComputedStyle() { return {}; } } };
-  const makeElement = (tagName, properties = {}) => { const element = { tagName, ownerDocument: document, parentElement: null, isConnected: true, hidden: false, disabled: false, style: {}, dataset: {}, getBoundingClientRect() { return { width: 100, height: 20 }; }, ...properties }; element.getAttribute = (name) => element[name] == null ? "" : element[name]; return element; };
-  const forms = formSpecs.map((spec = {}) => {
-    const form = makeElement("FORM", {
-      action: spec.action == null ? `${candidate.canonical_url}entry/` : spec.action,
-      method: spec.method == null ? "POST" : spec.method,
-    });
-    const methodInput = makeElement("INPUT", { type: "hidden", name: "_method", value: spec.methodValue == null ? "POST" : spec.methodValue }); const hidden = Array.from({ length: spec.hiddenCount == null ? 1 : spec.hiddenCount }, () => makeElement("INPUT", { type: "hidden", id: spec.hiddenId == null ? "FormEntryAvailability" : spec.hiddenId, name: spec.hiddenName == null ? "data[Form][entry_availability]" : spec.hiddenName, value: spec.ticketId == null ? candidate.ticket_id : spec.ticketId }));
-    const buttons = (spec.buttonSpecs == null ? [{}] : spec.buttonSpecs).map((button = {}) => makeElement("BUTTON", { type: button.type == null ? "submit" : button.type, innerText: button.label == null ? "申込む" : button.label, textContent: button.label == null ? "申込む" : button.label, disabled: button.disabled === true, ...(button.visible === false ? { getBoundingClientRect() { return { width: 0, height: 0 }; } } : {}) }));
-    const activeButtons = spec.deferSubmit === true ? [] : buttons; if (spec.deferSubmit === true) deferred.push({ form, buttons });
-    const descendants = [methodInput, ...hidden, ...activeButtons]; form.elements = descendants; [...descendants, ...buttons].forEach((element) => { element.form = form; element.parentElement = form; }); return form;
-  });
-  const activateDeferredSubmits = () => { for (const { form, buttons } of deferred.splice(0)) form.elements.push(...buttons); };
-  const sleep = async (milliseconds) => { sleepCalls += 1; await onSleep?.({ milliseconds, activateDeferredSubmits }); };
-  const page = { url() { return href; }, waitForTimeout: sleep, locator(selector) { const token = /^\[data-lm-connector-control="([^"]+)"\]$/.exec(selector)?.[1]; if (!token) return { async evaluateAll(callback, context) { inspectCalls += 1; if (transientInspectCalls.includes(inspectCalls)) return []; return Function("return (" + callback.toString() + ")")()(forms, context); } }; const matching = () => forms.flatMap((form) => form.elements).filter((element) => element.dataset?.lmConnectorControl === token); return { async count() { return matching().length; }, async elementHandles() { const elements = matching(); if (elements.length !== 1) return []; const [element] = elements; return [{ async evaluate(callback, context) { return callback(element, context); }, async click() { element.clicked = true; clicks.push(element); } }]; }, async click() { const elements = matching(); if (elements.length !== 1) throw new Error("ambiguous KokuchPro control"); elements[0].clicked = true; clicks.push(elements[0]); } }; } };
-  return { page, forms, clicks, sleep, get inspectCalls() { return inspectCalls; }, get sleepCalls() { return sleepCalls; }, activateDeferredSubmits, setHref(value) { href = value; } };
+  const makeElement = (tagName, properties = {}) => {
+    const element = { tagName, ownerDocument: document, parentElement: null, isConnected: true, hidden: false, disabled: false, style: {}, dataset: {}, getBoundingClientRect() { return { width: 100, height: 20 }; }, ...properties };
+    element.getAttribute = (name) => element[name] == null ? "" : element[name];
+    return element;
+  };
+  const form = makeElement("FORM", { action: entryUrl, method: "POST" });
+  const method = makeElement("INPUT", { type: "hidden", name: "_method", value: "POST" });
+  const email = makeElement("INPUT", { type: "hidden", id: "EntryEmail", name: "data[Entry][email]", value: "hidden-email" });
+  const name = makeElement("INPUT", { type: "hidden", id: "EntryName", name: "data[Entry][name]", value: "hidden-name" });
+  const publish = makeElement("INPUT", { type: "hidden", id: "EntryNamePublish", name: "data[Entry][name_publish]", value: "1" });
+  const message = makeElement("TEXTAREA", { id: "EntryMessage", name: "data[Entry][message]", value: "" });
+  const seatLabel = makeElement("LABEL", { innerText: "8/31(月)18:00～（無料）", textContent: "8/31(月)18:00～（無料）" });
+  const seat = makeElement("INPUT", { type: "radio", name: "data[Entry][seat]", value: "4631739", checked: false, labels: [seatLabel] });
+  seatLabel.control = seat; seatLabel.contains = (element) => element === seat;
+  const final = makeElement("BUTTON", { type: malformedFinal ? "button" : "submit", id: "entry_submit_button", innerText: "申込む", textContent: "申込む" });
+  const decoyFinal = makeElement("BUTTON", { type: "submit", id: "entry_submit_button_2", innerText: "申込む", textContent: "申込む" });
+  const canonicalMethod = makeElement("INPUT", { type: "hidden", name: "_method", value: "POST" });
+  const canonicalAvailability = makeElement("INPUT", { type: "hidden", id: "FormEntryAvailability", name: "data[Form][entry_availability]", value: candidate.ticket_id });
+  const canonicalButton = makeElement("BUTTON", { type: "submit", innerText: "申込む", textContent: "申込む" });
+  const canonicalForm = makeElement("FORM", { action: entryUrl, method: "POST" });
+  const canonicalForm2 = duplicateCanonical ? makeElement("FORM", { action: entryUrl, method: "POST" }) : null;
+  const canonicalMethod2 = duplicateCanonical ? makeElement("INPUT", { type: "hidden", name: "_method", value: "POST" }) : null;
+  const canonicalAvailability2 = duplicateCanonical ? makeElement("INPUT", { type: "hidden", id: "FormEntryAvailability", name: "data[Form][entry_availability]", value: candidate.ticket_id }) : null;
+  const canonicalButton2 = duplicateCanonical ? makeElement("BUTTON", { type: "submit", innerText: "申込む", textContent: "申込む" }) : null;
+  const searchForm = makeElement("FORM", { action: "https://www.kokuchpro.com/s/", method: "GET" });
+  const search = makeElement("INPUT", { type: "search", name: "q", value: "" });
+  const searchButton = makeElement("BUTTON", { type: "submit", innerText: "", textContent: "" });
+  if (canonicalForm2) canonicalForm2.elements = [canonicalMethod2, canonicalAvailability2, canonicalButton2];
+  const linkForms = [searchForm, canonicalForm, ...(canonicalForm2 ? [canonicalForm2] : [])];
+  canonicalForm.elements = [canonicalMethod, canonicalAvailability, canonicalButton];
+  form.elements = [method, email, name, publish, message, seat, final, ...(duplicateFinal ? [decoyFinal] : [])];
+  searchForm.elements = [search, searchButton];
+  for (const [owner, controls] of [[canonicalForm, canonicalForm.elements], ...(canonicalForm2 ? [[canonicalForm2, canonicalForm2.elements]] : []), [form, form.elements], [searchForm, searchForm.elements]]) {
+    for (const element of controls) { element.form = owner; element.parentElement = owner; }
+  }
+  const currentForms = () => href === candidate.canonical_url ? linkForms : [searchForm, form];
+  const tokenOf = (selector) => /^\[data-lm-connector-control="([^\"]+)"\]$/.exec(selector)?.[1] || "";
+  const matching = (token) => currentForms().flatMap((item) => item.elements.flatMap((element) => [element, ...Array.from(element.labels || [])])).filter((element) => element.dataset?.lmConnectorControl === token);
+  const page = {
+    url() { return href; },
+    async goto(url, options) {
+      events.push(["goto", url, options]);
+      if (url !== entryUrl) throw new Error("wrong navigation");
+      href = url;
+    },
+    locator(selector) {
+      const token = tokenOf(selector);
+      if (!token) return { async evaluateAll(callback, context) { inspectCalls += 1; if (transientInspectCalls.includes(inspectCalls)) return []; return Function("return (" + callback.toString() + ")")()(currentForms(), context); } };
+      return {
+        async count() { return matching(token).length; },
+        async elementHandles() { const elements = matching(token); if (elements.length !== 1) return []; const [element] = elements; return [{ async evaluate(callback, context) { return callback(element, context); }, async click() { element.clicked = true; if (element === seatLabel) { seat.checked = true; events.push(["check", token]); return; } clicks.push(element); events.push(["click", token]); if (element === final) href = KOKUCHPRO_ENTRY_URL; } }]; },
+        async click() { const elements = matching(token); if (elements.length !== 1) throw new Error("ambiguous control"); elements[0].clicked = true; clicks.push(elements[0]); events.push(["click", token]); },
+        async check() { const elements = matching(token); if (elements.length !== 1) throw new Error("ambiguous control"); elements[0].checked = true; events.push(["check", token]); },
+      };
+    },
+  };
+  const sleep = async () => { sleepCalls += 1; await onSleep?.(); };
+  return { page, candidate, form, canonicalForm, seat, final, clicks, events, sleep, entryUrl, setHref(value) { href = value; }, get inspectCalls() { return inspectCalls; }, get sleepCalls() { return sleepCalls; }, get beforeDispatchCalls() { return beforeDispatchCalls; }, beforeDispatch() { beforeDispatchCalls += 1; } };
 }
 
-test("KokuchPro harness uses the exact two-form entry control natively and requires registered readback", async () => {
-  const fixture = makeKokuchProEntryPage(); const candidate = kokuchProCandidate(); let agentCalls = 0; let readbacks = 0;
-  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", extensionProvider: "kokuchpro", async runAgentRunner() { agentCalls += 1; throw new Error("KokuchPro exact entry must not use agent proposer"); } });
-  const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } }, extensionProvider: "kokuchpro", extensionWorkflow: { async readProviderState() { readbacks += 1; return fixture.clicks.length === 1 ? { status: "registered", receipt_id: "kokuchpro-receipt-1" } : { status: "absent" }; } }, inspectControls: inspectPageControls, proposeAction: proposer, operateControl: operatePageControl, sleep: fixture.sleep, async resolveValue() { throw new Error("KokuchPro entry must not resolve a private value"); } });
-  const result = await harness.runFallback({ provider: "kokuchpro", candidate, page: fixture.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/KOKUCHPROENTRY1", maxSteps: 1, expectedState: "registered_or_pending" });
-  assert.deepEqual(result, { status: "completed", provider_state: { status: "registered", receipt_id: "kokuchpro-receipt-1" }, repaired_actions: [{ purpose: "submit", method: "ax_click", control: KOKUCHPRO_ENTRY_TOKEN }] });
-  assert.equal(fixture.clicks.length, 1); assert.equal(agentCalls, 0); assert.equal(readbacks, 2); assert.equal(fixture.sleepCalls, 0);
-});
-
-test("KokuchPro harness polls the exact serialized inspector and fails closed around readiness", async () => {
-  const fixture = makeKokuchProEntryPage({ transientInspectCalls: [1, 3] }); const candidate = kokuchProCandidate();
-  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", extensionProvider: "kokuchpro", async runAgentRunner() { throw new Error("native control expected"); } });
-  const harness = createProductionBrowserHarness({ lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } }, extensionProvider: "kokuchpro", extensionWorkflow: { async readProviderState() { return fixture.clicks.length === 1 ? { status: "registered", receipt_id: "kokuchpro-readiness-1" } : { status: "absent" }; } }, inspectControls: inspectPageControls, proposeAction: proposer, operateControl: operatePageControl, sleep: fixture.sleep, async resolveValue() { throw new Error("private value unexpected"); } });
-  const result = await harness.runFallback({ provider: "kokuchpro", candidate, page: fixture.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/KOKUCHPROREADY1", maxSteps: 1, expectedState: "registered_or_pending" });
-  assert.equal(result.status, "completed"); assert.equal(fixture.inspectCalls, 4); assert.equal(fixture.sleepCalls, 2); assert.equal(fixture.clicks.length, 1);
-});
-
-test("KokuchPro readiness ignores unrelated or hidden submits and bounds timeout and abort", async () => {
-  const candidate = kokuchProCandidate();
-  const asyncFixture = makeKokuchProEntryPage({ formSpecs: [{ deferSubmit: true }, { deferSubmit: true }, { hiddenCount: 0, action: `${KOKUCHPRO_CANONICAL_URL}other-visible/`, buttonSpecs: [{}] }, { hiddenCount: 0, action: `${KOKUCHPRO_CANONICAL_URL}other-hidden/`, buttonSpecs: [{ visible: false }] }], onSleep: ({ activateDeferredSubmits }) => activateDeferredSubmits() });
-  const asyncControls = await inspectPageControls({ provider: "kokuchpro", candidate, page: asyncFixture.page, sleep: asyncFixture.sleep });
-  assert.equal(asyncControls.length, 1); assert.equal(asyncFixture.inspectCalls, 2); assert.equal(asyncFixture.sleepCalls, 1); assert.equal(asyncFixture.clicks.length, 0);
-
-  const timeoutFixture = makeKokuchProEntryPage({ formSpecs: [{ deferSubmit: true }, { deferSubmit: true }] });
-  const timeoutControls = await inspectPageControls({ provider: "kokuchpro", candidate, page: timeoutFixture.page, sleep: timeoutFixture.sleep });
-  assert.deepEqual(timeoutControls, []); assert.equal(timeoutFixture.inspectCalls, 41); assert.equal(timeoutFixture.sleepCalls, 40); assert.equal(timeoutFixture.clicks.length, 0);
-
-  const controller = new AbortController(); const abortFixture = makeKokuchProEntryPage({ formSpecs: [{ deferSubmit: true }, { deferSubmit: true }], onSleep: () => controller.abort() });
-  const abortControls = await inspectPageControls({ provider: "kokuchpro", candidate, page: abortFixture.page, signal: controller.signal, sleep: abortFixture.sleep });
-  assert.deepEqual(abortControls, []); assert.equal(abortFixture.inspectCalls, 1); assert.equal(abortFixture.sleepCalls, 1); assert.equal(abortFixture.clicks.length, 0);
-});
-
-test("KokuchPro occurrence binding keeps an exact token and submits once", async () => {
-  const occurrence = "1901";
-  const candidate = kokuchProCandidate({
-    event_ref: `kokuchpro-event://event/${KOKUCHPRO_EVENT_KEY}/${occurrence}`,
-    canonical_url: `${KOKUCHPRO_CANONICAL_URL}${occurrence}/`,
+test("KokuchPro canonical route navigates by GET, checks one seat locally, then clicks one pinned final", async () => {
+  const fixture = makeKokuchProMultiStepPage(); let agentCalls = 0; let readbacks = 0;
+  const proposer = createBoundedActionProposer({ repoRoot: "/private/repo", evidenceDir: "/private/evidence", extensionProvider: "kokuchpro", async runAgentRunner() { agentCalls += 1; throw new Error("KokuchPro multi-step flow must stay native"); } });
+  const harness = createProductionBrowserHarness({
+    lumaWorkflow: { async readProviderState() { throw new Error("wrong provider"); } },
+    extensionProvider: "kokuchpro",
+    extensionWorkflow: { async readProviderState() { readbacks += 1; return fixture.clicks.includes(fixture.final) ? { status: "registered", receipt_id: "kokuchpro-multistep-1" } : { status: "absent" }; } },
+    inspectControls: inspectPageControls, proposeAction: proposer,
+    operateControl: (input) => operatePageControl({ ...input, beforeDispatch() { fixture.beforeDispatch(); input.beforeDispatch?.(); } }),
+    resolveValue: createPrivateValueResolver({ async readPeatixProfile() { throw new Error("KokuchPro must not read private profiles"); }, async readFormProfile() { throw new Error("KokuchPro must not read private profiles"); } }),
   });
-  const fixture = makeKokuchProEntryPage({ candidate });
-  const controls = await inspectPageControls({ provider: "kokuchpro", candidate, page: fixture.page, sleep: fixture.sleep });
-  const expectedToken = `kokuchpro_entry_${KOKUCHPRO_EVENT_KEY}_o_1gt`;
-  assert.equal(controls.length, 1);
-  assert.equal(controls[0].control, expectedToken);
-  assert.notEqual(controls[0].control, KOKUCHPRO_ENTRY_TOKEN);
-  const result = await operatePageControl({
-    provider: "kokuchpro", candidate, page: fixture.page, control: controls[0],
-    action: { purpose: "submit", method: "ax_click", control: expectedToken }, sleep: fixture.sleep,
-  });
-  assert.deepEqual(result, { status: "success" });
-  assert.equal(fixture.clicks.length, 1);
+  const result = await harness.runFallback({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, pageWebsocket: "ws://127.0.0.1:9222/devtools/page/KOKUCHPROMULTISTEP1", maxSteps: 3, expectedState: "registered_or_pending" });
+  assert.equal(result.status, "completed"); assert.equal(result.provider_state.status, "registered"); assert.equal(agentCalls, 0); assert.equal(readbacks, 4);
+  assert.deepEqual(fixture.events.map(([name]) => name), ["goto", "check", "click"]); assert.equal(fixture.beforeDispatchCalls, 1); assert.equal(fixture.clicks.length, 1); assert.equal(fixture.clicks[0], fixture.final);
+  assert.doesNotMatch(JSON.stringify(result), /hidden-email|hidden-name|4631739/);
 });
 
-test("KokuchPro exact entry control fails closed for semantic ambiguity and binding drift", async () => {
-  const candidate = kokuchProCandidate(); const control = { control: KOKUCHPRO_ENTRY_TOKEN, kind: "button", label: "申込む", required: false, completed: false, submittable: true }; const action = { purpose: "submit", method: "ax_click", control: KOKUCHPRO_ENTRY_TOKEN };
-  const operate = (fixture, selectedCandidate = candidate, selectedControl = control) => operatePageControl({ provider: "kokuchpro", candidate: selectedCandidate, page: fixture.page, control: selectedControl, action, sleep: fixture.sleep });
-  const invalidCases = [["wrong action", [{ action: "https://www.kokuchpro.com/event/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/entry/" }, {}]], ["wrong method", [{ method: "GET" }, {}]], ["wrong hidden method", [{ methodValue: "GET" }, {}]], ["wrong ticket", [{ ticketId: "999999" }, {}]], ["button type missing", [{ buttonSpecs: [{ type: "" }] }, {}]], ["zero forms", []], ["more than two equivalent forms", [{}, {}, {}]], ["ambiguous submit controls", [{ buttonSpecs: [{}, {}] }, {}]]];
-  for (const [name, formSpecs] of invalidCases) {
-    const fixture = makeKokuchProEntryPage({ formSpecs }); assert.deepEqual(await inspectPageControls({ provider: "kokuchpro", candidate, page: fixture.page, sleep: fixture.sleep }), [], name); assert.equal((await operate(fixture)).status, "failed", name); assert.equal(fixture.clicks.length, 0, name);
-  }
-  const pageDrift = makeKokuchProEntryPage(); const observed = await inspectPageControls({ provider: "kokuchpro", candidate, page: pageDrift.page, sleep: pageDrift.sleep }); pageDrift.setHref("https://www.kokuchpro.com/event/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/"); assert.equal((await operate(pageDrift, candidate, observed[0])).status, "failed", "page drift"); assert.equal(pageDrift.clicks.length, 0, "page drift");
-  const candidateDrift = makeKokuchProEntryPage(); const candidateControl = (await inspectPageControls({ provider: "kokuchpro", candidate, page: candidateDrift.page, sleep: candidateDrift.sleep }))[0]; assert.equal((await operate(candidateDrift, { ...candidate, ticket_id: "999999" }, candidateControl)).status, "failed", "candidate drift"); assert.equal(candidateDrift.clicks.length, 0, "candidate drift");
-});
-
-test("KokuchPro pinned entry handle rejects every pre-dispatch DOM drift without clicking", async () => {
-  const candidate = kokuchProCandidate();
-  const control = { control: KOKUCHPRO_ENTRY_TOKEN, kind: "button", label: "申込む", required: false, completed: false, submittable: true };
-  const action = { purpose: "submit", method: "ax_click", control: KOKUCHPRO_ENTRY_TOKEN };
-  const driftCases = [
-    ["button", (fixture) => { fixture.forms[0].elements[2].type = "button"; }],
-    ["form", (fixture) => { fixture.forms[0].action = `${KOKUCHPRO_CANONICAL_URL}other/`; }],
-    ["hidden method", (fixture) => { fixture.forms[0].elements[0].value = "GET"; }],
-    ["availability ticket", (fixture) => { fixture.forms[0].elements[1].value = "999999"; }],
-    ["token", (fixture) => { fixture.forms[0].elements[2].dataset.lmConnectorControl = "stale"; }],
-    ["visible", (fixture) => { fixture.forms[0].elements[2].hidden = true; }],
-    ["enabled", (fixture) => { fixture.forms[0].elements[2].disabled = true; }],
-    ["aria enabled", (fixture) => { fixture.forms[0].elements[2]["aria-enabled"] = "false"; }],
-    ["connected", (fixture) => { fixture.forms[0].elements[2].isConnected = false; }],
-  ];
-  for (const [name, drift] of driftCases) {
-    const fixture = makeKokuchProEntryPage();
-    const observed = await inspectPageControls({ provider: "kokuchpro", candidate, page: fixture.page, sleep: fixture.sleep });
-    const result = await operatePageControl({
-      provider: "kokuchpro", candidate, page: fixture.page, control: observed[0], action,
-      beforeDispatch: () => drift(fixture), sleep: fixture.sleep,
-    });
-    assert.equal(result.status, "failed", name);
-    assert.equal(fixture.clicks.length, 0, name);
+test("KokuchPro final control rejects duplicate or malformed final before dispatch", async () => {
+  for (const options of [{ duplicateFinal: true }, { malformedFinal: true }]) {
+    const fixture = makeKokuchProMultiStepPage(options); let beforeDispatchCalls = 0;
+    await fixture.page.goto(KOKUCHPRO_ENTRY_URL);
+    const controls = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep });
+    assert.deepEqual(controls, [], JSON.stringify(options));
+    const finalToken = KOKUCHPRO_ENTRY_TOKEN.replace("kokuchpro_entry_", "kokuchpro_final_");
+    const result = await operatePageControl({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, control: { control: finalToken, kind: "button", label: "申込む", required: false, completed: false, submittable: true }, action: { purpose: "submit", method: "ax_click", control: finalToken }, sleep: fixture.sleep, beforeDispatch: () => { beforeDispatchCalls += 1; } });
+    assert.equal(result.status, "failed", JSON.stringify(options)); assert.equal(beforeDispatchCalls, 0, JSON.stringify(options)); assert.equal(fixture.clicks.length, 0, JSON.stringify(options));
   }
 });
+
+test("KokuchPro canonical inspector accepts one or two exact forms and polls serialized DOM", async () => {
+  const fixture = makeKokuchProMultiStepPage({ duplicateCanonical: true, transientInspectCalls: [1] });
+  const controls = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep });
+  assert.deepEqual(controls, [{ control: KOKUCHPRO_ENTRY_TOKEN, kind: "link", label: "申込む", required: false, completed: false, submittable: false }]);
+  assert.equal(fixture.inspectCalls, 2); assert.equal(fixture.sleepCalls, 1);
+  const malformed = makeKokuchProMultiStepPage(); malformed.canonicalForm.method = "GET";
+  assert.deepEqual(await inspectPageControls({ provider: "kokuchpro", candidate: malformed.candidate, page: malformed.page, sleep: malformed.sleep }), []);
+});
+
+test("KokuchPro entry inspector polls the exact browser-realm form without exposing hidden values", async () => {
+  const fixture = makeKokuchProMultiStepPage({ transientInspectCalls: [1] }); await fixture.page.goto(fixture.entryUrl);
+  const controls = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep });
+  assert.equal(controls.length, 2); assert.equal(controls[0].kind, "radio"); assert.equal(controls[0].completed, false); assert.equal(controls[1].kind, "button");
+  assert.equal(fixture.inspectCalls, 2); assert.equal(fixture.sleepCalls, 1); assert.doesNotMatch(JSON.stringify(controls), /hidden-email|hidden-name|4631739/);
+});
+
+test("KokuchPro readiness ignores hidden submits, rejects unrelated submits, and bounds timeout and abort", async () => {
+  const hidden = makeKokuchProMultiStepPage(); await hidden.page.goto(hidden.entryUrl);
+  const hiddenSubmit = { ...hidden.final, id: "decoy", dataset: {}, getBoundingClientRect() { return { width: 0, height: 0 }; } }; hiddenSubmit.form = hidden.form; hiddenSubmit.parentElement = hidden.form; hidden.form.elements.push(hiddenSubmit);
+  assert.equal((await inspectPageControls({ provider: "kokuchpro", candidate: hidden.candidate, page: hidden.page, sleep: hidden.sleep })).length, 2);
+  const unrelated = makeKokuchProMultiStepPage(); await unrelated.page.goto(unrelated.entryUrl);
+  const unrelatedSubmit = { ...unrelated.final, id: "decoy", dataset: {}, innerText: "別の送信", textContent: "別の送信" }; unrelatedSubmit.form = unrelated.form; unrelatedSubmit.parentElement = unrelated.form; unrelated.form.elements.push(unrelatedSubmit);
+  assert.deepEqual(await inspectPageControls({ provider: "kokuchpro", candidate: unrelated.candidate, page: unrelated.page, sleep: unrelated.sleep }), []);
+  const timeout = makeKokuchProMultiStepPage(); await timeout.page.goto(timeout.entryUrl); timeout.form.elements = timeout.form.elements.filter((element) => element !== timeout.seat && element !== timeout.final);
+  assert.deepEqual(await inspectPageControls({ provider: "kokuchpro", candidate: timeout.candidate, page: timeout.page, sleep: timeout.sleep }), []); assert.equal(timeout.inspectCalls, 41); assert.equal(timeout.sleepCalls, 40);
+  const controller = new AbortController(); const aborted = makeKokuchProMultiStepPage({ onSleep: () => controller.abort() }); await aborted.page.goto(aborted.entryUrl); aborted.form.elements = aborted.form.elements.filter((element) => element !== aborted.seat && element !== aborted.final);
+  assert.deepEqual(await inspectPageControls({ provider: "kokuchpro", candidate: aborted.candidate, page: aborted.page, signal: controller.signal, sleep: aborted.sleep }), []); assert.equal(aborted.sleepCalls, 1);
+});
+
+test("KokuchPro occurrence binding stamps distinct route, seat, and final tokens", async () => {
+  const occurrence = "1901"; const candidate = kokuchProCandidate({ event_ref: `kokuchpro-event://event/${KOKUCHPRO_EVENT_KEY}/${occurrence}`, canonical_url: `${KOKUCHPRO_CANONICAL_URL}${occurrence}/` });
+  const fixture = makeKokuchProMultiStepPage({ candidate }); const route = await inspectPageControls({ provider: "kokuchpro", candidate, page: fixture.page, sleep: fixture.sleep });
+  assert.equal(route[0].control, `${KOKUCHPRO_ENTRY_TOKEN}_o_1gt`); await fixture.page.goto(fixture.entryUrl);
+  const entry = await inspectPageControls({ provider: "kokuchpro", candidate, page: fixture.page, sleep: fixture.sleep });
+  assert.deepEqual(entry.map((control) => control.control), [`kokuchpro_seat_${KOKUCHPRO_EVENT_KEY}_o_1gt`, `kokuchpro_final_${KOKUCHPRO_EVENT_KEY}_o_1gt`]); assert.notEqual(entry[0].control, entry[1].control);
+});
+
+test("KokuchPro semantic ambiguity and binding drift fail closed", async () => {
+  const fixture = makeKokuchProMultiStepPage(); await fixture.page.goto(fixture.entryUrl); const duplicateIdentity = { ...fixture.form.elements[1], dataset: {}, value: "second" }; duplicateIdentity.form = fixture.form; duplicateIdentity.parentElement = fixture.form; fixture.form.elements.push(duplicateIdentity);
+  assert.deepEqual(await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep }), []);
+  const emptyIdentity = makeKokuchProMultiStepPage(); await emptyIdentity.page.goto(emptyIdentity.entryUrl); emptyIdentity.form.elements[1].value = "   "; assert.deepEqual(await inspectPageControls({ provider: "kokuchpro", candidate: emptyIdentity.candidate, page: emptyIdentity.page, sleep: emptyIdentity.sleep }), []);
+  const route = makeKokuchProMultiStepPage(); const controls = await inspectPageControls({ provider: "kokuchpro", candidate: route.candidate, page: route.page, sleep: route.sleep }); route.setHref("https://www.kokuchpro.com/event/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/");
+  assert.equal((await operatePageControl({ provider: "kokuchpro", candidate: route.candidate, page: route.page, control: controls[0], action: { purpose: "submit", method: "ax_click", control: controls[0].control } })).status, "failed"); assert.equal(route.events.length, 0);
+});
+
+test("KokuchPro pinned final handle rejects pre-dispatch DOM drift without a second click", async () => {
+  const fixture = makeKokuchProMultiStepPage(); await fixture.page.goto(fixture.entryUrl); const controls = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep });
+  assert.equal((await operatePageControl({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, control: controls[0], action: { purpose: "fill", method: "ax_check", control: controls[0].control }, value: true, sleep: fixture.sleep })).status, "success");
+  const after = await inspectPageControls({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, sleep: fixture.sleep }); let beforeDispatchCalls = 0;
+  const result = await operatePageControl({ provider: "kokuchpro", candidate: fixture.candidate, page: fixture.page, control: after[1], action: { purpose: "submit", method: "ax_click", control: after[1].control }, beforeDispatch: () => { beforeDispatchCalls += 1; fixture.final.type = "button"; }, sleep: fixture.sleep });
+  assert.equal(result.status, "failed"); assert.equal(result.attempted, true); assert.equal(beforeDispatchCalls, 1); assert.equal(fixture.clicks.length, 0);
+});
+
 
 test("configured extension provider reuses the generic fallback for its exact token", async () => {
   const page = { url() { return "https://extension.example.test/event/1"; } };

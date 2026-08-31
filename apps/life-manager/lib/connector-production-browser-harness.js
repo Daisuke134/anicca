@@ -61,6 +61,7 @@ const KOKUCHPRO_ENTRY_SELECTOR = "form, form input, form button";
 const KOKUCHPRO_ENTRY_READY_TIMEOUT_MS = 2_000;
 const KOKUCHPRO_ENTRY_POLL_INTERVAL_MS = 50;
 const KOKUCHPRO_ENTRY_TOKEN = /^kokuchpro_entry_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/;
+const KOKUCHPRO_SEAT_TOKEN = /^kokuchpro_seat_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/, KOKUCHPRO_FINAL_TOKEN = /^kokuchpro_final_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/;
 
 function invalid() {
   throw new Error("Connector production Browser Harness invalid");
@@ -108,6 +109,8 @@ function kokuchProEntryToken(binding) {
   const token = binding ? `kokuchpro_entry_${binding.eventKey}${suffix}` : "";
   return KOKUCHPRO_ENTRY_TOKEN.test(token) ? token : "";
 }
+function kokuchProSeatToken(binding) { const token = kokuchProEntryToken(binding).replace("kokuchpro_entry_", "kokuchpro_seat_"); return KOKUCHPRO_SEAT_TOKEN.test(token) ? token : ""; }
+function kokuchProFinalToken(binding) { const token = kokuchProEntryToken(binding).replace("kokuchpro_entry_", "kokuchpro_final_"); return KOKUCHPRO_FINAL_TOKEN.test(token) ? token : ""; }
 function isEventbriteTriggerMeaning(control) {
   return Boolean(
     control && control.kind === "button" && typeof control.label === "string" && control.label.trim()
@@ -822,13 +825,13 @@ function inspectTechPlayConfirm(elements, context = {}) {
   return [{ control: token, kind: "button", label: TECHPLAY_FINAL_LABEL, required: false, completed: false, submittable: true }];
 }
 
-function inspectKokuchProEntry(elements, context = {}) {
+function inspectKokuchProCanonical(elements, context = {}) {
   if (!Array.isArray(elements) || elements.length > 100) return [];
   const canonicalUrl = String(context.canonicalUrl || ""), eventRef = String(context.eventRef || "");
   const ticketId = String(context.ticketId || ""), eventKey = String(context.eventKey || ""), token = String(context.token || "");
   const url = /^https:\/\/www\.kokuchpro\.com\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?\/$/.exec(canonicalUrl);
   const ref = /^kokuchpro-event:\/\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?$/.exec(eventRef);
-  if (!url || !ref || url[1] !== eventKey || ref[1] !== eventKey || (url[2] || "") !== (ref[2] || "")
+  if (String(context.href || "") !== canonicalUrl || !url || !ref || url[1] !== eventKey || ref[1] !== eventKey || (url[2] || "") !== (ref[2] || "")
     || !/^[1-9][0-9]*$/.test(ticketId) || !/^kokuchpro_entry_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/.test(token)) return [];
   const tag = (element) => String(element && element.tagName || "").toLowerCase();
   const attr = (element, name) => { try { const property = element && element[name]; if (property != null && String(property) !== "") return String(property); const value = element?.getAttribute?.(name); return value == null ? "" : String(value); } catch { return ""; } };
@@ -848,43 +851,74 @@ function inspectKokuchProEntry(elements, context = {}) {
   for (const element of elements) { const form = tag(element) === "form" ? element : element?.form; if (form && !seen.has(form)) { seen.add(form); forms.push(form); } }
   if (!forms.length) return [];
   try { forms.flatMap(controlsOf).forEach((element) => { if (element?.dataset) delete element.dataset.lmConnectorControl; }); } catch { return []; }
-  const entryAction = canonicalUrl + "entry/", selected = [];
-  for (const form of forms) {
-    const controls = controlsOf(form), markers = controls.filter((element) => tag(element) === "input" && (attr(element, "id") === "FormEntryAvailability" || attr(element, "name") === "data[Form][entry_availability]"));
+  const entryAction = canonicalUrl + "entry/";
+  const candidates = forms.filter((form) => attr(form, "action") === entryAction || controlsOf(form).some((element) => tag(element) === "input" && (attr(element, "id") === "FormEntryAvailability" || attr(element, "name") === "data[Form][entry_availability]")));
+  if (candidates.length < 1 || candidates.length > 2) return [];
+  const selected = [];
+  for (const form of candidates) {
+    const controls = controlsOf(form);
     const methods = controls.filter((element) => tag(element) === "input" && attr(element, "name") === "_method");
-    const action = attr(form, "action"), method = attr(form, "method").toUpperCase();
-    if (!markers.length && action !== entryAction) continue;
-    if (markers.length !== 1 || methods.length !== 1 || action !== entryAction || method !== "POST") return [];
-    const marker = markers[0], methodField = methods[0];
-    if (attr(methodField, "type").toLowerCase() !== "hidden" || attr(methodField, "value") !== "POST"
+    const markers = controls.filter((element) => tag(element) === "input" && (attr(element, "id") === "FormEntryAvailability" || attr(element, "name") === "data[Form][entry_availability]"));
+    if (attr(form, "action") !== entryAction || attr(form, "method").toUpperCase() !== "POST" || methods.length !== 1 || markers.length !== 1) return [];
+    const method = methods[0], marker = markers[0];
+    if (attr(method, "type").toLowerCase() !== "hidden" || attr(method, "value") !== "POST"
       || attr(marker, "id") !== "FormEntryAvailability" || attr(marker, "name") !== "data[Form][entry_availability]"
       || attr(marker, "type").toLowerCase() !== "hidden" || attr(marker, "value") !== ticketId) return [];
-    const submits = controls.filter((element) => {
-      const isSubmit = tag(element) === "button" && attr(element, "type").toLowerCase() === "submit";
-      return isSubmit && element.isConnected === true && element.disabled !== true
-        && attr(element, "aria-disabled").toLowerCase() !== "true" && attr(element, "aria-enabled").toLowerCase() !== "false" && visible(element);
-    });
+    const submits = controls.filter((element) => tag(element) === "button" && attr(element, "type").toLowerCase() === "submit"
+      && element.isConnected === true && element.disabled !== true && attr(element, "aria-disabled").toLowerCase() !== "true"
+      && attr(element, "aria-enabled").toLowerCase() !== "false" && visible(element));
     if (submits.length !== 1 || text(submits[0]) !== "申込む" || !submits[0].dataset) return [];
     selected.push(submits[0]);
   }
-  if (selected.length < 1 || selected.length > 2) return [];
   try { selected[0].dataset.lmConnectorControl = token; } catch { return []; }
-  return [{ control: token, kind: "button", label: "申込む", required: false, completed: false, submittable: true }];
+  return [{ control: token, kind: "link", label: "申込む", required: false, completed: false, submittable: false }];
 }
 
-async function inspectKokuchProEntryWhenReady(target, formsLocator, context, { signal, sleep } = {}) {
+function inspectKokuchProEntry(elements, context = {}) {
+  if (!Array.isArray(elements) || elements.length > 100) return [];
+  const canonicalUrl = String(context.canonicalUrl || ""), eventRef = String(context.eventRef || ""), href = String(context.href || "");
+  const eventKey = String(context.eventKey || ""), seatToken = String(context.seatToken || ""), finalToken = String(context.finalToken || "");
+  const url = /^https:\/\/www\.kokuchpro\.com\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?\/$/.exec(canonicalUrl);
+  const ref = /^kokuchpro-event:\/\/event\/([0-9a-f]{32})(?:\/([1-9][0-9]{0,19}))?$/.exec(eventRef);
+  if (!url || !ref || url[1] !== eventKey || ref[1] !== eventKey || (url[2] || "") !== (ref[2] || "")
+    || href !== canonicalUrl + "entry/"
+    || !/^kokuchpro_seat_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/.test(seatToken)
+    || !/^kokuchpro_final_[0-9a-f]{32}(?:_o_[0-9a-z]{1,13})?$/.test(finalToken)) return [];
+  const tag = (element) => String(element && element.tagName || "").toLowerCase(); const attr = (element, name) => { try { const property = element && element[name]; if (property != null && String(property) !== "") return String(property); const value = element?.getAttribute?.(name); return value == null ? "" : String(value); } catch { return ""; } };
+  const text = (element) => String(element && (element.innerText || element.textContent) || "").replace(/\s+/g, " ").trim(); const hiddenStyle = (style) => Boolean(style && [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase())) || String(style && style.opacity || "") === "0");
+  const visible = (element) => { let current = element; const view = element?.ownerDocument?.defaultView; while (current) { if (current.hidden === true || current.isConnected === false || attr(current, "aria-hidden").toLowerCase() === "true" || hiddenStyle(current.style)) return false; let computed = null; try { computed = view?.getComputedStyle?.(current); } catch { return false; } if (hiddenStyle(computed)) return false; current = current.parentElement || null; } try { const rect = element?.getBoundingClientRect?.(); return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0); } catch { return false; } };
+  const controlsOf = (form) => { try { return form?.elements != null ? Array.from(form.elements) : Array.from(form?.querySelectorAll?.("input, textarea, select, button") || []); } catch { return []; } }; const forms = [], seen = new Set();
+  for (const element of elements) { const form = tag(element) === "form" ? element : element?.form; if (form && !seen.has(form)) { seen.add(form); forms.push(form); } } if (!forms.length) return [];
+  try { forms.flatMap(controlsOf).forEach((element) => { if (element?.dataset) delete element.dataset.lmConnectorControl; }); } catch { return []; }
+  const entryAction = canonicalUrl + "entry/", entryForms = forms.filter((form) => attr(form, "action") === entryAction && attr(form, "method").toUpperCase() === "POST"); if (entryForms.length !== 1) return [];
+  const controls = controlsOf(entryForms[0]), identity = [["EntryEmail", "data[Entry][email]"], ["EntryName", "data[Entry][name]"], ["EntryNamePublish", "data[Entry][name_publish]"]].map(([id, name]) => controls.filter((element) => tag(element) === "input" && attr(element, "type").toLowerCase() === "hidden" && attr(element, "id") === id && attr(element, "name") === name));
+  const methods = controls.filter((element) => tag(element) === "input" && attr(element, "name") === "_method"), message = controls.filter((element) => attr(element, "id") === "EntryMessage" || attr(element, "name") === "data[Entry][message]"), seats = controls.filter((element) => tag(element) === "input" && attr(element, "type").toLowerCase() === "radio" && attr(element, "name") === "data[Entry][seat]"), finals = controls.filter((element) => tag(element) === "button" && attr(element, "id") === "entry_submit_button" && attr(element, "type").toLowerCase() === "submit");
+  if (methods.length !== 1 || attr(methods[0], "type").toLowerCase() !== "hidden" || attr(methods[0], "value") !== "POST" || identity.some((fields) => fields.length !== 1 || !String(attr(fields[0], "value")).trim()) || message.length > 1 || (message.length === 1 && (tag(message[0]) !== "textarea" || attr(message[0], "id") !== "EntryMessage" || attr(message[0], "name") !== "data[Entry][message]")) || seats.length !== 1 || finals.length !== 1) return [];
+  const seat = seats[0], final = finals[0], seatLabels = Array.from(seat.labels || []), seatLabelElement = seatLabels.length === 1 ? seatLabels[0] : null;
+  const seatLabel = text(seatLabelElement); const labelOwnsSeat = Boolean(seatLabelElement && (seatLabelElement.control === seat || seatLabelElement.contains?.(seat)));
+  if (!seatLabel || !labelOwnsSeat || !visible(seatLabelElement) || !seatLabelElement.dataset || seat.isConnected !== true || seat.disabled === true || attr(seat, "aria-disabled").toLowerCase() === "true" || attr(seat, "aria-enabled").toLowerCase() === "false" || final.isConnected !== true || final.disabled === true || attr(final, "aria-disabled").toLowerCase() === "true" || attr(final, "aria-enabled").toLowerCase() === "false" || !visible(final) || text(final) !== "申込む" || !final.dataset) return [];
+  if (controls.some((element) => element !== methods[0] && !identity.flat().includes(element) && !message.includes(element) && element !== seat && element !== final && visible(element) && ["input", "textarea", "select", "button"].includes(tag(element)))) return [];
+  try { seatLabelElement.dataset.lmConnectorControl = seatToken; final.dataset.lmConnectorControl = finalToken; }
+  catch { try { delete seatLabelElement.dataset.lmConnectorControl; delete final.dataset.lmConnectorControl; } catch {} return []; }
+  return [
+    { control: seatToken, kind: "radio", label: seatLabel, required: true, completed: seat.checked === true, submittable: false },
+    { control: finalToken, kind: "button", label: "申込む", required: false, completed: false, submittable: true },
+  ];
+}
+
+async function inspectKokuchProEntryWhenReady(target, formsLocator, context, { signal, sleep, inspector = inspectKokuchProEntry, expectedLength = 2 } = {}) {
   const wait = typeof sleep === "function" ? sleep
     : typeof target?.waitForTimeout === "function" ? (milliseconds) => target.waitForTimeout(milliseconds)
       : (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
   const aborted = () => Boolean(signal && signal.aborted === true);
   const inspect = async () => {
     if (aborted()) return [];
-    try { return await formsLocator.evaluateAll(inspectKokuchProEntry, context); }
+    try { return await formsLocator.evaluateAll(inspector, context); }
     catch { return []; }
   };
   const first = await inspect();
   if (aborted()) return [];
-  if (Array.isArray(first) && first.length === 1) return first;
+  if (Array.isArray(first) && first.length === expectedLength) return first;
   const deadline = Date.now() + KOKUCHPRO_ENTRY_READY_TIMEOUT_MS;
   const maxPolls = Math.ceil(KOKUCHPRO_ENTRY_READY_TIMEOUT_MS / KOKUCHPRO_ENTRY_POLL_INTERVAL_MS);
   const waitWithAbort = async (milliseconds) => {
@@ -920,7 +954,7 @@ async function inspectKokuchProEntryWhenReady(target, formsLocator, context, { s
     if (!waited || aborted()) return [];
     const current = await inspect();
     if (aborted()) return [];
-    if (Array.isArray(current) && current.length === 1) return current;
+    if (Array.isArray(current) && current.length === expectedLength) return current;
   }
   return [];
 }
@@ -956,10 +990,15 @@ async function inspectPageControls(input = {}) {
   }
   if (provider === "kokuchpro") {
     const binding = candidateKokuchProBinding(input.candidate);
-    if (!binding || href !== binding.canonicalUrl
+    if (!binding
       || (input.canonical_url != null && String(input.canonical_url) !== binding.canonicalUrl)
       || (input.ticket_id != null && String(input.ticket_id) !== binding.ticketId)) return Object.freeze([]);
-    const observed = await inspectKokuchProEntryWhenReady(page, locator, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token: kokuchProEntryToken(binding) }, { signal: input.signal, sleep: input.sleep });
+    const context = { href, canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId };
+    const observed = href === binding.canonicalUrl
+      ? await inspectKokuchProEntryWhenReady(page, locator, { ...context, token: kokuchProEntryToken(binding) }, { signal: input.signal, sleep: input.sleep, inspector: inspectKokuchProCanonical, expectedLength: 1 })
+      : href === `${binding.canonicalUrl}entry/`
+      ? await inspectKokuchProEntryWhenReady(page, locator, { ...context, seatToken: kokuchProSeatToken(binding), finalToken: kokuchProFinalToken(binding) }, { signal: input.signal, sleep: input.sleep })
+      : [];
     const afterHref = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     return href === afterHref && Array.isArray(observed) ? Object.freeze(observed.map(safeControl)) : Object.freeze([]);
   }
@@ -1264,7 +1303,7 @@ async function readKokuchProEntryHandle(handle, context = {}) {
           return result == null ? "" : String(result);
         } catch { return ""; }
       };
-      const text = (value) => String(value && (value.innerText || value.textContent || value.value) || "").replace(/\s+/g, " ").trim();
+      const text = (value) => String(value && (value.innerText || value.textContent) || "").replace(/\s+/g, " ").trim();
       const hiddenStyle = (style) => Boolean(style && [style.display, style.visibility, style.contentVisibility].some((value) => ["none", "hidden", "collapse"].includes(String(value || "").toLowerCase())) || String(style && style.opacity || "") === "0");
       const visible = (value) => {
         let current = value; const view = value?.ownerDocument?.defaultView;
@@ -1276,21 +1315,27 @@ async function readKokuchProEntryHandle(handle, context = {}) {
         }
         try { const rect = value?.getBoundingClientRect?.(); return Boolean(rect && Number(rect.width) > 0 && Number(rect.height) > 0); } catch { return false; }
       };
-      if (!element || tag(element) !== "button") return null;
-      const form = element.form || element.closest?.("form");
-      const controls = form?.elements != null ? Array.from(form.elements) : Array.from(form?.querySelectorAll?.("input, button") || []);
+      if (!element || !["button", "label"].includes(tag(element))) return null;
+      const labelSeat = tag(element) === "label" ? (element.control || element.querySelector?.('input[type="radio"][name="data[Entry][seat]"]')) : null;
+      const form = labelSeat?.form || element.form || element.closest?.("form");
+      const controls = form?.elements != null ? Array.from(form.elements) : Array.from(form?.querySelectorAll?.("input, textarea, select, button") || []);
       const methodFields = controls.filter((value) => tag(value) === "input" && attr(value, "name") === "_method");
-      const availabilityFields = controls.filter((value) => tag(value) === "input" && (attr(value, "id") === "FormEntryAvailability" || attr(value, "name") === "data[Form][entry_availability]"));
-      const methodField = methodFields.length === 1 ? methodFields[0] : null;
-      const availability = availabilityFields.length === 1 ? availabilityFields[0] : null;
+      const identities = [
+        ["EntryEmail", "data[Entry][email]"], ["EntryName", "data[Entry][name]"], ["EntryNamePublish", "data[Entry][name_publish]"],
+      ].map(([id, name]) => controls.filter((value) => tag(value) === "input" && attr(value, "type").toLowerCase() === "hidden" && attr(value, "id") === id && attr(value, "name") === name));
+      const seats = controls.filter((value) => tag(value) === "input" && attr(value, "type").toLowerCase() === "radio" && attr(value, "name") === "data[Entry][seat]");
+      const seat = seats.length === 1 ? seats[0] : null;
+      const seatLabels = seat ? Array.from(seat.labels || []) : []; const seatLabel = seatLabels.length === 1 ? seatLabels[0] : null;
+      const seatLabelVisible = Boolean(seatLabel && (seatLabel.control === seat || seatLabel.contains?.(seat)) && visible(seatLabel));
+      const identityReady = identities.every((fields) => fields.length === 1 && Boolean(String(attr(fields[0], "value")).trim()));
       return {
-        tag: tag(element), type: attr(element, "type").toLowerCase(), label: text(element),
+        tag: tag(element), type: attr(labelSeat || element, "type").toLowerCase(), id: attr(element, "id"), name: attr(labelSeat || element, "name"), label: text(element),
         formAction: attr(form, "action"), formMethod: attr(form, "method").toUpperCase(),
-        methodType: attr(methodField, "type").toLowerCase(), methodName: attr(methodField, "name"), methodValue: attr(methodField, "value"),
-        availabilityId: attr(availability, "id"), availabilityName: attr(availability, "name"), availabilityType: attr(availability, "type").toLowerCase(), availabilityValue: attr(availability, "value"),
+        methodType: attr(methodFields[0], "type").toLowerCase(), methodName: attr(methodFields[0], "name"), methodValue: attr(methodFields[0], "value"),
+        identityReady, seatCount: seats.length, seatChecked: seat ? seat.checked === true : false, seatLabelVisible,
         token: String(element.dataset?.lmConnectorControl || ""), visible: visible(element),
-        enabled: element.disabled !== true && attr(element, "aria-disabled").toLowerCase() !== "true" && attr(element, "aria-enabled").toLowerCase() !== "false",
-        connected: element.isConnected === true, ticketId: String(expected?.ticketId || ""),
+        enabled: (labelSeat || element).disabled !== true && attr(labelSeat || element, "aria-disabled").toLowerCase() !== "true" && attr(labelSeat || element, "aria-enabled").toLowerCase() !== "false",
+        connected: element.isConnected === true && (!labelSeat || labelSeat.isConnected === true), ticketId: String(expected?.ticketId || ""), expectedToken: String(expected?.token || ""),
       };
     }, context);
   } catch { return null; }
@@ -1298,48 +1343,88 @@ async function readKokuchProEntryHandle(handle, context = {}) {
 
 function validKokuchProEntryHandleState(state, { canonicalUrl, ticketId, token } = {}) {
   return Boolean(state && state.tag === "button" && state.type === "submit" && state.label === "申込む"
+    && state.id === "entry_submit_button"
     && state.formAction === `${canonicalUrl}entry/` && state.formMethod === "POST"
     && state.methodType === "hidden" && state.methodName === "_method" && state.methodValue === "POST"
-    && state.availabilityId === "FormEntryAvailability" && state.availabilityName === "data[Form][entry_availability]"
-    && state.availabilityType === "hidden" && state.availabilityValue === String(ticketId)
+    && state.identityReady === true && state.seatCount === 1 && state.seatChecked === true
     && state.token === token && state.visible === true && state.enabled === true && state.connected === true);
+}
+
+function validKokuchProSeatControl(control, binding, token) {
+  return Boolean(control && binding && token === kokuchProSeatToken(binding) && control.control === token && control.kind === "radio" && control.required === true && control.completed === false && control.submittable === false);
+}
+function validKokuchProFinalControl(control, binding, token) {
+  return Boolean(control && binding && token === kokuchProFinalToken(binding) && control.control === token && control.kind === "button" && control.label === "申込む" && control.required === false && control.completed === false && control.submittable === true);
+}
+
+function validKokuchProSeatHandleState(state, { canonicalUrl, token, checked = false } = {}) {
+  return Boolean(state && state.tag === "label" && state.type === "radio" && state.name === "data[Entry][seat]"
+    && state.formAction === `${canonicalUrl}entry/` && state.formMethod === "POST"
+    && state.methodType === "hidden" && state.methodName === "_method" && state.methodValue === "POST"
+    && state.identityReady === true && state.seatCount === 1 && state.seatChecked === checked && state.seatLabelVisible === true
+    && state.token === token && state.expectedToken === token && state.enabled === true && state.connected === true);
+}
+
+async function operateKokuchProEntryRoute(input, token) {
+  const binding = candidateKokuchProBinding(input.candidate), action = input.action || {}, control = input.control;
+  if (!binding || kokuchProEntryToken(binding) !== token || action.purpose !== "submit" || action.method !== "ax_click" || !control || control.control !== token || control.kind !== "link" || control.label !== "申込む" || control.required !== false || control.completed !== false || control.submittable !== false) return Object.freeze({ status: "failed" });
+  const current = () => { try { return String(input.page && typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } };
+  if (input.signal?.aborted || current() !== binding.canonicalUrl || typeof input.page.goto !== "function") return Object.freeze({ status: "failed", ...(input.signal?.aborted ? { safe_reason: "time_limit" } : {}) });
+  try { await input.page.goto(`${binding.canonicalUrl}entry/`, { waitUntil: "domcontentloaded" }); } catch { return Object.freeze({ status: "failed" }); }
+  const after = candidateKokuchProBinding(input.candidate); return current() === `${binding.canonicalUrl}entry/` && after?.eventRef === binding.eventRef && after?.canonicalUrl === binding.canonicalUrl && after?.eventKey === binding.eventKey && after?.occurrenceId === binding.occurrenceId && after?.ticketId === binding.ticketId ? Object.freeze({ status: "success" }) : Object.freeze({ status: "failed" });
 }
 
 async function operateKokuchProEntry(input, target, token, beforeDispatch) {
   const binding = candidateKokuchProBinding(input.candidate), action = input.action || {}, control = input.control;
-  if (!binding || kokuchProEntryToken(binding) !== token || action.purpose !== "submit" || action.method !== "ax_click"
-    || !control || control.control !== token || control.kind !== "button" || control.label !== "申込む" || control.required !== false || control.completed !== false || control.submittable !== true) return Object.freeze({ status: "failed" });
+  const seat = validKokuchProSeatControl(control, binding, token);
+  const final = validKokuchProFinalControl(control, binding, token);
+  if (!seat && !final) return Object.freeze({ status: "failed" });
   const href = () => { try { return String(input.page && typeof input.page.url === "function" ? input.page.url() : ""); } catch { return ""; } };
   const sameCandidate = () => { const current = candidateKokuchProBinding(input.candidate); return Boolean(current && current.eventRef === binding.eventRef && current.canonicalUrl === binding.canonicalUrl && current.eventKey === binding.eventKey && current.occurrenceId === binding.occurrenceId && current.ticketId === binding.ticketId); };
   if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
-  if (href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
+  if (href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
   let formsLocator;
   try { formsLocator = target.locator(KOKUCHPRO_ENTRY_SELECTOR); } catch { return Object.freeze({ status: "failed" }); }
   if (!formsLocator || typeof formsLocator.evaluateAll !== "function") return Object.freeze({ status: "failed" });
-  const controls = await inspectKokuchProEntryWhenReady(target, formsLocator, { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, ticketId: binding.ticketId, token }, { signal: input.signal, sleep: input.sleep });
-  const entry = Array.isArray(controls) && controls.length === 1 ? controls[0] : null;
-  if (!entry || entry.control !== token || entry.kind !== "button" || entry.label !== "申込む" || entry.required !== false || entry.completed !== false || entry.submittable !== true || href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
+  const controls = await inspectKokuchProEntryWhenReady(target, formsLocator, { href: href(), canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, eventKey: binding.eventKey, seatToken: kokuchProSeatToken(binding), finalToken: kokuchProFinalToken(binding) }, { signal: input.signal, sleep: input.sleep });
+  const selected = Array.isArray(controls) ? controls.find((item) => item.control === token) : null;
+  if ((seat ? !validKokuchProSeatControl(selected, binding, token) : !validKokuchProFinalControl(selected, binding, token)) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
   let locator, count;
   try { locator = target.locator(`[data-lm-connector-control="${token}"]`); count = await locator?.count?.(); } catch { return Object.freeze({ status: "failed" }); }
-  if (count !== 1 || href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
+  if (count !== 1 || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
   let handles = [];
   try {
     if (typeof locator.elementHandles === "function") handles = await locator.elementHandles();
     else if (typeof locator.elementHandle === "function") { const handle = await locator.elementHandle(); if (handle) handles = [handle]; }
   } catch { return Object.freeze({ status: "failed" }); }
   if (handles.length !== 1) return Object.freeze({ status: "failed" });
-  const handleContext = { canonicalUrl: binding.canonicalUrl, eventRef: binding.eventRef, ticketId: binding.ticketId, token };
+  if (seat) {
+    const handleContext = { canonicalUrl: binding.canonicalUrl, token };
+    const initial = await readKokuchProEntryHandle(handles[0], handleContext);
+    if (!validKokuchProSeatHandleState(initial, handleContext) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate() || input.value !== true) return Object.freeze({ status: "failed" });
+    let reboundCount; try { reboundCount = await locator.count(); } catch { return Object.freeze({ status: "failed" }); }
+    if (reboundCount !== 1) return Object.freeze({ status: "failed" });
+    const rebound = await readKokuchProEntryHandle(handles[0], handleContext);
+    if (!validKokuchProSeatHandleState(rebound, handleContext) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
+    if (typeof handles[0].click !== "function") return Object.freeze({ status: "failed" });
+    try { await handles[0].click(); } catch { return Object.freeze({ status: "failed" }); }
+    const completed = await readKokuchProEntryHandle(handles[0], handleContext);
+    if (!validKokuchProSeatHandleState(completed, { ...handleContext, checked: true }) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
+    return Object.freeze({ status: "success" });
+  }
+  const handleContext = { canonicalUrl: binding.canonicalUrl, ticketId: binding.ticketId, token };
   const initial = await readKokuchProEntryHandle(handles[0], handleContext);
-  if (!validKokuchProEntryHandleState(initial, handleContext) || href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
+  if (!validKokuchProEntryHandleState(initial, handleContext) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
   if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
-  if (!beforeDispatch()) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
-  let reboundCount;
-  try { reboundCount = await locator?.count?.(); } catch { return Object.freeze({ status: "failed" }); }
-  if (reboundCount !== 1 || href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
-  if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
+  let reboundCount; try { reboundCount = await locator.count(); } catch { return Object.freeze({ status: "failed" }); }
+  if (reboundCount !== 1 || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
   const rebound = await readKokuchProEntryHandle(handles[0], handleContext);
-  if (!validKokuchProEntryHandleState(rebound, handleContext) || href() !== binding.canonicalUrl || !sameCandidate()) return Object.freeze({ status: "failed" });
-  if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
+  if (!validKokuchProEntryHandleState(rebound, handleContext) || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed" });
+  if (input.signal && input.signal.aborted || !beforeDispatch()) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
+  let postCount; try { postCount = await locator.count(); } catch { return Object.freeze({ status: "failed", attempted: true }); }
+  if (postCount !== 1 || href() !== `${binding.canonicalUrl}entry/` || !sameCandidate()) return Object.freeze({ status: "failed", attempted: true });
+  const post = await readKokuchProEntryHandle(handles[0], handleContext);
+  if (!validKokuchProEntryHandleState(post, handleContext)) return Object.freeze({ status: "failed", attempted: true });
   if (typeof handles[0].click !== "function") return Object.freeze({ status: "failed", attempted: true });
   try { await handles[0].click(); } catch { return Object.freeze({ status: "failed", attempted: true }); }
   return Object.freeze({ status: "success" });
@@ -1355,7 +1440,11 @@ async function operatePageControl(input = {}) {
     return !(input.signal && input.signal.aborted);
   };
   if (input.signal && input.signal.aborted) return Object.freeze({ status: "failed", safe_reason: "time_limit" });
-  if (input.provider === "kokuchpro") return operateKokuchProEntry(input, target, token, beforeDispatch);
+  if (input.provider === "kokuchpro") {
+    const binding = candidateKokuchProBinding(input.candidate);
+    if (binding && token === kokuchProEntryToken(binding)) return operateKokuchProEntryRoute(input, token);
+    return operateKokuchProEntry(input, target, token, beforeDispatch);
+  }
   if (input.provider === "techplay") {
     const binding = candidateTechPlayBinding(input.candidate); let href = "";
     try { href = String(typeof input.page.url === "function" ? input.page.url() : ""); } catch { href = ""; }
@@ -1494,10 +1583,13 @@ function nativeConnpassControl(provider, state, controls) {
   return submits.length === 1 ? submits[0].control : null;
 }
 function nativeKokuchProControl(provider, controls) {
-  if (provider !== "kokuchpro" || !Array.isArray(controls) || controls.length !== 1) return null;
-  const [control] = controls;
-  return control && KOKUCHPRO_ENTRY_TOKEN.test(control.control) && control.kind === "button" && control.label === "申込む"
-    && control.required === false && control.completed === false && control.submittable === true ? control.control : null;
+  if (provider !== "kokuchpro" || !Array.isArray(controls)) return null;
+  const pendingSeat = controls.filter((control) => KOKUCHPRO_SEAT_TOKEN.test(String(control?.control || "")) && control.kind === "radio" && control.required === true && control.completed === false && control.submittable === false);
+  if (pendingSeat.length === 1) return pendingSeat[0].control;
+  const route = controls.filter((control) => KOKUCHPRO_ENTRY_TOKEN.test(String(control?.control || "")) && control.kind === "link" && control.label === "申込む" && control.required === false && control.completed === false && control.submittable === false);
+  if (route.length === 1 && controls.length === 1) return route[0].control;
+  const final = controls.filter((control) => KOKUCHPRO_FINAL_TOKEN.test(String(control?.control || "")) && control.kind === "button" && control.label === "申込む" && control.required === false && control.completed === false && control.submittable === true);
+  return final.length === 1 && controls.length === 2 && pendingSeat.length === 0 ? final[0].control : null;
 }
 function nativeDoorkeeperTrigger(provider, controls) {
   if (provider !== "doorkeeper") return null;
@@ -1574,7 +1666,12 @@ function createPrivateValueResolver(options = {}) {
   if (typeof readPeatixProfile !== "function" || typeof readFormProfile !== "function") invalid();
   return async function resolveValue(input = {}) {
     if (input && input.provider === "techplay") return resolveTechPlayPrivateValue(input, readPeatixProfile, readFormProfile, now);
-    const control = safeControl(input.control); const label = normalizedLabel(control.label); const question = normalizedLabel(control.question);
+    const control = safeControl(input.control);
+    if (input && input.provider === "kokuchpro") {
+      const binding = candidateKokuchProBinding(input.candidate);
+      return binding && kokuchProSeatToken(binding) === control.control && control.kind === "radio" && control.required === true && control.completed === false && control.submittable === false && input.action?.purpose === "fill" && input.action?.method === "ax_check" ? true : null;
+    }
+    const label = normalizedLabel(control.label); const question = normalizedLabel(control.question);
     if (input.provider === "eventbrite") {
       if (control.kind !== "input" || control.required !== true || control.completed !== false || control.submittable !== false) return null;
       const key = control.label === "First name" ? "given_name" : control.label === "Last name" ? "family_name" : ["Email", "Confirm email"].includes(control.label) ? "email" : null;
@@ -1713,7 +1810,7 @@ function createProductionBrowserHarness(options = {}) {
     const eventId = candidatePeatixEventId(candidate) || candidateMeetupEventId(candidate) || candidateDoorkeeperEventId(candidate) || eventbriteBinding?.eventId || techplayBinding?.eventId || "";
     const href = (() => { try { return String(typeof page.url === "function" ? page.url() : ""); } catch { return ""; } })();
     const connpassJoin = isConnpassJoin(provider, href);
-    const values = await inspectControls({ page, provider, candidate: provider === "techplay" || provider === extensionProvider ? candidate : undefined, event_id: eventId || undefined, canonical_url: eventbriteBinding?.canonicalUrl || techplayBinding?.canonicalUrl, ticket_id: techplayBinding?.ticketId, connpass_join: connpassJoin, signal: runtime.signal, sleep });
+    const values = await inspectControls({ page, provider, candidate: provider === "techplay" || provider === "kokuchpro" || provider === extensionProvider ? candidate : undefined, event_id: eventId || undefined, canonical_url: eventbriteBinding?.canonicalUrl || techplayBinding?.canonicalUrl, ticket_id: techplayBinding?.ticketId, connpass_join: connpassJoin, signal: runtime.signal, sleep });
     if (!Array.isArray(values) || values.length > 100 || (values.length < 1 && provider !== "eventbrite" && !allowEmpty)) invalid();
     const controls = values.map(safeControl);
     if (new Set(controls.map((item) => item.control)).size !== controls.length) invalid();
@@ -1794,6 +1891,9 @@ function createProductionBrowserHarness(options = {}) {
     const eventbriteAttendee = isEventbriteAttendeeFill({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
     const eventbriteMarketing = isEventbriteMarketingOptOut({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
     const eventbriteFinal = isEventbriteFinalRegister({ provider, page: input.page, candidate: input.candidate, control, controls: observation.controls });
+    const kokuchProBinding = provider === "kokuchpro" ? candidateKokuchProBinding(input.candidate) : null;
+    const kokuchProRoute = Boolean(kokuchProBinding && currentHref === kokuchProBinding.canonicalUrl && control.control === kokuchProEntryToken(kokuchProBinding)
+      && control.kind === "link" && control.label === "申込む" && control.required === false && control.completed === false && control.submittable === false);
     const eventbriteMarketingMatch = eventbriteMarketing ? EVENTBRITE_MARKETING_CONTROL.exec(control.control) : null;
     const attendeeFrame = eventbriteAttendee || eventbriteMarketing ? registry.get(input.page)?.frame : null;
     const finalFrame = eventbriteFinal ? registry.get(input.page)?.frame : null;
@@ -1805,7 +1905,7 @@ function createProductionBrowserHarness(options = {}) {
     const pendingRequiredAnswer = observation.controls.some((item) => ACTIONABLE_KINDS.has(item.kind) && item.required && !item.completed);
     if (control.kind === "button" && pendingRequiredAnswer) return Object.freeze({ status: "failed" });
     if (ACTIONABLE_KINDS.has(control.kind) && (!control.required || control.completed)) return Object.freeze({ status: "failed" });
-    if ((control.kind === "link" && !doorkeeperModalTrigger) || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
+    if ((control.kind === "link" && !doorkeeperModalTrigger && !kokuchProRoute) || (control.kind === "button" && control.submittable !== true)) return Object.freeze({ status: "failed" });
     if (doorkeeperModalTrigger && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
     if (eventbriteTrigger && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
     if (eventbriteTicket && (input.action.purpose !== "submit" || input.action.method !== "ax_click")) return Object.freeze({ status: "failed" });
@@ -1817,7 +1917,7 @@ function createProductionBrowserHarness(options = {}) {
     const action = actionForControl(control); if (!action) return Object.freeze({ status: "failed" });
     let value = null;
     if (FILL.has(action.method)) {
-      value = await resolveValue({ provider, page: input.page, control, action, state });
+      value = await resolveValue({ provider, page: input.page, candidate: input.candidate, control, action, state });
       if (
         !(typeof value === "string" || typeof value === "boolean" || Array.isArray(value))
         || (typeof value === "string" && (!value.trim() || value.length > 2_000))
