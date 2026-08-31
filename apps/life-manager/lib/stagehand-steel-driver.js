@@ -543,6 +543,8 @@ function makeStagehandSteelDriver(options = {}) {
         ? /\b(?:2fa|two-factor|one-time password|otp|verification code)\b/i.test(handoffText)
           ? "2fa"
           : "login"
+        : activeRegistrationForm
+          ? "registration"
         : /\b(?:captcha|challenge)\b/i.test(handoffText)
         ? "challenge"
         : /\b(?:2fa|two-factor|one-time password|otp)\b/i.test(handoffText)
