@@ -26,7 +26,7 @@ flowchart LR
 
 | order | state | atomic TODO | 完了の公式証拠 |
 |---|---|---|---|
-| R0 | **ACTIVE** | YouTube Script Writer `7686597754`を同じAgent/versionのまま`publish-submit prepare → continue_upload → CP2 → CP3`で閉じ、official online readback後にself-heal truthを統合する。R0.2は完了し、R0.3だけがactive | loaded release hash、daily/healthcheck exit 0、fresh terminal receipt、Agent status 4・skills/config/package true・全plan subscription/trial 0、replay/platform duplicate 0。buyer-side live chatは販売開始gateではない |
+| R0 | **ACTIVE** | 完了済みR0.1/R0.2を維持し、R0.3 self-heal修正だけをmain由来immutable releaseへ統合してinstalled ownerを自然wakeさせる | loaded release hash、daily/healthcheck exit 0、fresh terminal receipt、同じfailureの再発0、replay/platform duplicate 0 |
 | R1 | pending | 全新規listingを有料subscription、No Free Trial、正のcontribution marginへfail-closedする。sandbox feeは固定値でなくpublish時の公式console値をreceiptへ保存する | lintとcandidate backlogがtrial・赤字・one-shot候補をrejectし、official CP1 readbackがsubscriptionかつtrial 0 |
 | M0 | pending | fresh official demandから、毎周期に新inputが入り前回outputが陳腐化するcustomer jobを1件だけ選ぶ | hypothesis、renewal reason、price/cap/cost、success metric、stop conditionを持つready candidate 1件 |
 | M1 | pending | free slotの最初のwakeでsame-Agent retryを優先し、なければM0 candidateをCP1→CP2→CP3まで1件だけsubmitする | Agent/version/package、under-reviewまたはonline、billing/trial、duplicate/replay 0のofficial readback |
@@ -523,6 +523,22 @@ Current production truth:
 | C21 | prove seven consecutive daily healthy terminals and hourly freshness | 7-day ledger has no stale source, duplicate Agent/version/post or missing Telegram receipt | observing — strict proof `0/7` because an earlier same-day failed execution correctly breaks the streak。run `9`はCAP_FULL/rc0/write0、false-green classifierはfocused 10件でfailure/invalidを非zeroへ写像する |
 | C22 | operate growth and retention experiments until settled net MRR reaches `$10,000` | active subscription readback and refunds/fees reconcile to target | **active** — hourly control plane、official seller money readback、token refresh、Telegram dedupe、IG real metrics、official seller winner selectorは稼働済み。現在の公式値はpaid order `1`、one-time `$9.99`、subscription MRR `$0`。Data Analyst `7785270416`の新HyperFrames + Andrew MP4はquality gateを通りTelegram `29647`へ送信済みで、user approval後のcadence-open wakeだけが同bytesを投稿する。`$10K`完了は公式settled net subscription MRRでのみ判定する |
 | C23 | sustain offline skill development while all five submission slots are occupied | at most one bounded build per calendar day produces a repo-owned SKILL/LISTING/icon/evidence candidate; hourly CAP_FULL wakes outside that cadence spend 0 and all passes write 0 to Capafy | completed — run `7` created lint-clean `peer-review-response-editor`, backlog `ready=0→1`, official Agent total stayed `33`; run `8` reused the daily claim and spent 0 with platform write 0 |
+
+### Ownership boundary — developer TODO vs installed loop work
+
+**Loop developer（Codex）のTODO:** loopが下の業務loopを人手なしで所有できるように、既存ownerだけを修復・接続・releaseし、自然wakeの公式receiptで検証する。Codex自身は需要選定、Skill制作、Capafy提出、Instagram投稿、価格実験を代行しない。
+
+1. R0.3をimmutable releaseへ入れ、daily/healthcheckの自然wakeがexit 0で、正常dailyをhealthcheckが再起動しないことを確認する。
+2. R1でpaid subscription、trial 0、renewal reason、正のcontributionをloop入力の必須gateにする。
+3. M0でloop自身がfresh demandと公式seller truthから次のrecurring Skillを1件だけ選べるようにする。
+4. M1でloop自身が同一wake最大1件を開発・lint・提出し、same-Agent retry、package、subscription、trial 0、remote statusをreadbackできるようにする。
+5. M2でmarketing ownerがlisting固有creative、URL、native post、view/click receiptを同じrunへ結合できるようにする。
+6. M3でrevenue ownerがsubscription、refund、fee、hosted cost、settlementを公式receiptへ結合できるようにする。
+7. M4でloop自身が結果から一変数だけ改善または停止し、M0へ戻るgrowth controllerを完成させる。
+8. 各自然wakeを監視し、観測された先頭failureだけを修復する。Skill制作や投稿をCodexの手作業で穴埋めしない。
+9. official settled subscription net MRR `$10,000`のreceipt後だけO0→O1→O2を閉じ、各利用者が自分のpublisher/payoutで同じloopを運用できるOSS releaseを出す。
+
+**Installed loopが毎周期に実行する業務:** `需要観測 → recurring Skillを1件選定 → 開発 → economics/lint → 有料subscription提出 → listing別マーケティング → subscription/cost/settlement照合 → 改善または停止 → 次周期`。これはdeveloperの手動TODOではなく、loopのproduction responsibilityである。
 
 ### Remaining execution order
 
