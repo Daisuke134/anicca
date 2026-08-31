@@ -42,11 +42,28 @@ Recovery request state must become durable and cooldown-gated: after one visible
 reset acknowledgement, later wakes must wait for a new authoritative Gmail account
 event or an explicit account-state change before requesting another reset. The row
 must remain pre-Submit and the same wake must continue other eligible queue work.
-Runtime/orchestrator causality must also make the click-then-wait sequence strictly
-serial at the model event boundary so a successful checkpoint cannot leave the
-canonical owner at exit 2. Release proof requires one to three natural wakes with no
-duplicate reset request, no `overlapping_runtime_commands`, daily/health last exit 0,
-and unchanged zero Submit effects for Cloudera until account recovery actually lands.
+The causality validator must also stop treating Codex event-delivery overlap as proof
+of process overlap when both runtime commands exit 0 and the runtime active-command
+lease records no collision. The runtime lease remains the process-concurrency
+authority; any real nonzero runtime completion followed by another command remains a
+hard failure. Release proof requires one to three natural wakes with no duplicate
+reset request, no false `overlapping_runtime_commands`, daily/health last exit 0, and
+unchanged zero Submit effects for Cloudera until account recovery actually lands.
+
+The minimal implementation is complete in `browser_agent/orchestrator.py`,
+`browser_agent/workday_account.py`, and `browser_agent/runtime.py`. The outer
+validator no longer treats two successful runtime commands whose Codex lifecycle
+events overlap as process overlap; the existing nonblocking runtime command lease
+remains authoritative, and a command started after a real nonzero completion is
+still rejected. `email_recovery` now persists tenant state as
+`recovery_requested`. A later failed sign-in preserves that state, and selecting the
+visible Forgot Password control again is converted locally into the same safe
+checkpoint without another provider effect. A visibly successful sign-in promotes
+the tenant to `signed_in`. Focused browser/account tests pass 51/51, the full Job
+Hunter suite passes 432/432, the real `daily-20260831-155635` transcript validates
+without the false overlap, and a private SSOT copy proves
+`create_submitted -> recovery_requested`. Main-derived release and natural-owner
+readback remain the active gate.
 
 The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
 longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
@@ -2723,7 +2740,7 @@ not start merely because their design is already written:
 | `JOB-WORKDAY-E2E-MODEL-10P` | `completed` | JR2008507 exact UI, authoritative receipt, Ledger, Telegram and immediate dedupe/next-row evidence agree. |
 | `JOB-WORKDAY-ONLY-10P1` | `completed` | Existing-owner run `094943` uses release `374c2c744`, writes no non-Workday evidence, performs only `observe → queue_complete`, and creates zero non-Workday effects. |
 | `JOB-WORKDAY-FIT-QUALIFICATION-10P2` | `completed` | Rakuten Product & Growth Specialist closes with grounded fit decision, exact Review/Submit UI, Gog receipt `1a031c8ef3be0dbd`, Ledger submitted, Telegram `31463/31464`, and next-wake duplicate 0. |
-| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `cloudera_recovery_causality_blocked` | Release `6466fea3` keeps the rolling loop productive at 6 distinct Gmail-confirmed submissions / 24 hours, but Cloudera `Applied AI Specialist` remains `materials_ready` with intent 0 and confirmation 0. Wake `daily-20260831-155635` truthfully checkpoints `email_recovery` and sends Telegram `45966`, then the outer validator rejects its click/wait event order as `overlapping_runtime_commands`; canonical daily exits 2 and health exits 1. The row has 194 persisted browser steps from repeated recovery attempts without a new account-mail receipt. The next unchanged-order atom durably cooldown-gates recovery after one acknowledgement until a new Gmail/account-state event, preserves zero Submit effects, continues other eligible rows, and makes model command completion strictly serial. Completion requires one to three natural wakes with duplicate reset requests 0, validator failures 0, daily/health exit 0, plus the existing Gmail/Ledger/Telegram/replay-zero application gate. The rolling target remains at least 48 distinct Gmail-confirmed submissions per 24 hours. |
+| `JOB-WORKDAY-CONTINUOUS-SEARCH-10P3` | `cloudera_recovery_causality_implementation_done_release_gate` | Release `6466fea3` keeps the rolling loop productive at 6 distinct Gmail-confirmed submissions / 24 hours, but Cloudera `Applied AI Specialist` remains `materials_ready` with intent 0 and confirmation 0. Wake `daily-20260831-155635` truthfully checkpoints `email_recovery` and sends Telegram `45966`; both recovery click and wait exit 0 with no runtime lease collision, but the outer validator mistakes their Codex event-delivery overlap for process overlap and exits 2. The row has 194 persisted browser steps from repeated recovery attempts without a new account-mail receipt. The implementation persists `recovery_requested`, converts another Forgot Password selection into a local checkpoint with no provider effect, preserves that state across failed sign-in, and trusts the runtime lease rather than event ordering for process concurrency while retaining the post-nonzero command fence. Focused tests pass 51/51, full Job Hunter tests pass 432/432, the real failing transcript validates, and a private SSOT copy performs the exact state transition. Completion still requires a main-derived release and one to three natural wakes with duplicate reset requests 0, false validator failures 0, daily/health exit 0, plus the existing Gmail/Ledger/Telegram/replay-zero application gate. The rolling target remains at least 48 distinct Gmail-confirmed submissions per 24 hours. |
 | `JOB-ASHBY-E2E-MODEL-10Q` | `broken_unverified_pending_after_workday` | Prior evidence is diagnostic only. Start from zero after Workday and require a fit-qualified job, authoritative provider completion, Ledger, Telegram, and next-wake duplicate 0. |
 | `JOB-GREENHOUSE-E2E-MODEL-10R` | `broken_unverified_pending_after_10Q` | Prior evidence is diagnostic only. Start from zero after Ashby under the same authoritative gate. |
 | `JOB-LEVER-E2E-MODEL-10S` | `broken_unverified_pending_after_10R` | Prior discovery is diagnostic only. Start from zero after Greenhouse under the same authoritative gate. |
