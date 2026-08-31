@@ -86,6 +86,10 @@ class CodexProfileBoundaryTest(unittest.TestCase):
                     }).encode("utf-8") + b"\n")
                     completion_path.write_text('{"ok":true}', encoding="utf-8")
                     return 1
+                if behavior == "fresh_unavailable":
+                    stderr.write(b"Operation not permitted\n")
+                    completion_path.write_text('{"ok":true}', encoding="utf-8")
+                    return 127
                 if behavior == "unavailable":
                     stderr.write(b"connection refused\n")
                     return 1
@@ -275,6 +279,23 @@ class CodexProfileBoundaryTest(unittest.TestCase):
                     ("codex", "acct1", failure),
                     ("claude", None, "success"),
                 ])
+
+    def test_fresh_unavailable_without_runtime_work_calls_claude_once(self):
+        status, calls = self._run_candidate_fixture(
+            {
+                ("codex", "acct1"): "fresh_unavailable",
+                ("claude", None): "success",
+            },
+            include_claude=True,
+        )
+        self.assertEqual(status, 0)
+        self.assertEqual(
+            calls,
+            [
+                ("codex", "acct1", "fresh_unavailable"),
+                ("claude", None, "success"),
+            ],
+        )
 
     def test_run_acct2_structured_quota_calls_claude_once(self):
         status, calls = self._run_candidate_fixture(

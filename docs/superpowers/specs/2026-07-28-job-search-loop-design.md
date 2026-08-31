@@ -168,6 +168,15 @@ application result, or any uncertain effect keeps the existing no-fallback fence
 One existing-owner wake must prove Codex launch failure safely reaches the configured
 non-Codex browser candidate without duplicating an ATS action.
 
+The unavailable-fallback atom is implemented in
+`runtime/agent-runner/agent_runner.py`: runtime command start still stops every
+fallback, and a fresh result still stops quota/auth/timeout/validation failures, but
+`transient_unavailable` with no started work may continue to the already-configured
+non-Codex candidate. RED reproduced rc127 plus a fresh transport envelope ending with
+status 1 and no Claude call; GREEN calls Claude exactly once and returns success.
+Codex failover tests pass 17/17, all runner tests pass 44/44, and the full Job Hunter
+suite passes 437/437. Main release and natural fallback readback remain.
+
 The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
 longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
 qualifies Regeneron application

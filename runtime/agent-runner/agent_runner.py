@@ -1358,7 +1358,9 @@ def codex_failover_action(
     """Choose the only safe next step after a failed Codex account attempt."""
     if candidate.get("provider") != "codex":
         return "not_applicable"
-    if result_fresh or attempt_started_work:
+    if attempt_started_work:
+        return "stop"
+    if result_fresh and error_class != "transient_unavailable":
         return "stop"
     if candidate.get("account_fallback_next"):
         if error_class in {"transient_quota", "transient_auth"}:
