@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import sys
 import time
 import urllib.request
+from pathlib import Path
 
 from websocket import create_connection
 
@@ -117,9 +119,27 @@ def set_file(tid: str, selector: str, path: str, index: int = 0) -> dict:
         ws.close()
 
 
+def screenshot(tid: str, path: str) -> dict:
+    if not os.path.isabs(path):
+        raise ValueError("screenshot path must be absolute")
+    output = Path(path).resolve()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    ws = _page(tid)
+    try:
+        _rpc(ws, 1, "Page.enable")
+        encoded = _rpc(ws, 2, "Page.captureScreenshot", {
+            "format": "png", "fromSurface": True, "captureBeyondViewport": False,
+        })["data"]
+    finally:
+        ws.close()
+    output.write_bytes(base64.b64decode(encoded))
+    output.chmod(0o600)
+    return {"path": str(output), "bytes": output.stat().st_size}
+
+
 def main(argv: list[str]) -> int:
     if not argv:
-        raise SystemExit("usage: cdp.py new|nav|eval|clickxy|insert|key|setfile|close ...")
+        raise SystemExit("usage: cdp.py new|nav|eval|screenshot|clickxy|insert|key|setfile|close ...")
     command, *args = argv
     if command == "new":
         print(_browser_call("Target.createTarget", {"url": args[0] if args else "about:blank"})["targetId"])
@@ -128,6 +148,8 @@ def main(argv: list[str]) -> int:
     elif command == "eval":
         source = sys.stdin.read() if args[1] == "-" else open(args[1], encoding="utf-8").read()
         print(json.dumps(evaluate(args[0], source), ensure_ascii=False))
+    elif command == "screenshot":
+        print(json.dumps(screenshot(args[0], args[1])))
     elif command == "clickxy":
         print(json.dumps(click(args[0], int(args[1]), int(args[2]))))
     elif command == "insert":
