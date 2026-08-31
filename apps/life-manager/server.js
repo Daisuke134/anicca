@@ -47,7 +47,7 @@ const {
   createSupabaseLateApprovalStore,
   handleLateApprovalCallback,
 } = require("./lib/late-approval.js");
-const { sendPanelLink, handlePanelRequest, handleMoneyPrinterGuestRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode } = require("./lib/panel-auth.js");
+const { sendPanelLink, handlePanelRequest, handleMoneyPrinterGuestRequest, panelDeviceCodeFromCommand, confirmPanelDeviceCode, cookieValue, sessionScope, panelScopeCookie } = require("./lib/panel-auth.js");
 const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, composioCalendarDisconnect } = require("./lib/panel-api.js");
 const { createMoneyPrinterSource } = require("./lib/money-printer-source.js");
 const { createMoneyPrinterRuntimeStore } = require("./lib/money-printer-runtime-store.js");
@@ -76,6 +76,7 @@ const { handlePreceptsCallback } = require("./lib/precepts-runtime.js");
 const { handleTypedPayoutAddress } = require("./lib/payout-address-intake.js");
 const { handleBrowserTaskMessage } = require("./lib/browser-task-intake.js");
 const { startBrowserJobLoop } = require("./lib/browser-job-runtime.js");
+const { makeSteelCdpClient } = require("./lib/steel-cdp-client.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
@@ -90,6 +91,22 @@ function getMoneyPrinterRuntimeStore() {
     moneyPrinterRuntimeStore = createMoneyPrinterRuntimeStore({ query: moneyPrinterRuntimePool.query.bind(moneyPrinterRuntimePool) });
   }
   return moneyPrinterRuntimeStore;
+}
+async function readBrowserHandoff(uid) {
+  getMoneyPrinterRuntimeStore();
+  const rows = (await moneyPrinterRuntimePool.query(`
+    SELECT id, uid, status, receipt, finished_at FROM public.lm_browser_jobs
+    WHERE uid = $1 AND status = 'handoff_required' AND receipt->>'steel_released' = 'false'
+    ORDER BY finished_at DESC LIMIT 2
+  `, [uid])).rows;
+  if (rows.length === 0) return null;
+  if (rows.length !== 1) throw new Error("browser handoff unavailable");
+  const row = rows[0], sessionId = String(row.receipt && row.receipt.session_id || "");
+  const finishedAt = Date.parse(row.finished_at);
+  if (row.uid !== uid || !/^[A-Za-z0-9._-]{1,200}$/.test(sessionId) || !Number.isFinite(finishedAt)) {
+    throw new Error("browser handoff unavailable");
+  }
+  return { session_id: sessionId, expired: Date.now() >= finishedAt + 10 * 60 * 1000 };
 }
 function getMoneyPrinterSource(scope) {
   if (!moneyPrinterSource) {
@@ -118,6 +135,9 @@ const LM_TG_SECRET = process.env.LM_TELEGRAM_WEBHOOK_SECRET || "";
 const LM_LATE_APPROVAL_CALLBACK_SECRET = process.env.LM_LATE_APPROVAL_CALLBACK_SECRET
   || process.env.LM_UID_SECRET || LM_TG_SECRET || undefined;
 const PUBLIC_BASE = process.env.PUBLIC_BASE || "https://aniccaai.com";
+const BROWSER_TAKEOVER_PATH = "/api/panel/money-printer/browser";
+const BROWSER_CAST_PATH = `${BROWSER_TAKEOVER_PATH}/cast`;
+const browserTakeoverSteel = makeSteelCdpClient();
 // The panel is served by this life-call HTTP service, not by the /lm onboarding site.
 // Railway supplies RAILWAY_PUBLIC_DOMAIN; LM_PANEL_BASE_URL is the explicit override for custom domains.
 const LM_PANEL_BASE = process.env.LM_PANEL_BASE_URL ||
@@ -125,6 +145,23 @@ const LM_PANEL_BASE = process.env.LM_PANEL_BASE_URL ||
 
 function panelOriginForPath(path) {
   return String(path).startsWith("/api/panel/money-printer") ? PUBLIC_BASE : LM_PANEL_BASE;
+}
+
+async function browserTakeover(req) {
+  const session = cookieValue(req.headers.cookie, "__Host-lm_panel_session")
+    || cookieValue(req.headers.cookie, "lm_panel_session");
+  const scope = await sessionScope(session, { supaUrl: SUPA_URL, supaKey: SUPA_KEY });
+  if (!scope) return { status: 401 };
+  const handoff = await readBrowserHandoff(scope.uid);
+  if (!handoff) return { status: 404, scope };
+  if (handoff.expired) return { status: 410, scope };
+  await browserTakeoverSteel.assertLiveSession(handoff.session_id);
+  return { status: 200, scope, handoff };
+}
+
+function rejectUpgrade(socket, status) {
+  const text = status === 401 ? "Unauthorized" : status === 404 ? "Not Found" : status === 410 ? "Gone" : "Bad Gateway";
+  try { socket.end(`HTTP/1.1 ${status} ${text}\r\nConnection: close\r\n\r\n`); } catch { socket.destroy(); }
 }
 
 // inngestServeAllowed: pure helper — returns true when the /api/inngest route may serve requests.
@@ -293,6 +330,32 @@ const server = http.createServer((req, res) => {
       });
       return;
     }
+  }
+  if (path === BROWSER_TAKEOVER_PATH) {
+    if (req.method !== "GET") {
+      res.writeHead(405, { Allow: "GET", "cache-control": "no-store" }); res.end(); return;
+    }
+    browserTakeover(req).then(async (state) => {
+      if (state.status !== 200) { res.writeHead(state.status, { "cache-control": "no-store" }); res.end(); return; }
+      const publicOrigin = new URL(PUBLIC_BASE);
+      const html = await browserTakeoverSteel.getInteractiveDebugger(
+        state.handoff.session_id,
+        `wss://${publicOrigin.host}${BROWSER_CAST_PATH}`,
+      );
+      const renewed = panelScopeCookie(state.scope);
+      res.writeHead(200, {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store",
+        "content-security-policy": `default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src wss://${publicOrigin.host}; img-src data:; frame-ancestors 'self'`,
+        "x-content-type-options": "nosniff",
+        ...(renewed ? { "set-cookie": renewed } : {}),
+      });
+      res.end(html);
+    }).catch(() => {
+      if (!res.headersSent) res.writeHead(502, { "cache-control": "no-store" });
+      res.end();
+    });
+    return;
   }
   if (path === "/api/panel/session/telegram" || path === "/api/panel/session/device") {
     handlePanelRequest(req, res, {
@@ -995,6 +1058,25 @@ const server = http.createServer((req, res) => {
 });
 
 const wss = new WebSocket.Server({ server, path: "/ws" });
+const browserTakeoverWss = new WebSocket.Server({ noServer: true, maxPayload: 8 * 1024 * 1024 });
+
+server.on("upgrade", (req, socket, head) => {
+  if (String(req.url || "").split("?", 1)[0] !== BROWSER_CAST_PATH) return;
+  browserTakeover(req).then((state) => {
+    if (state.status !== 200) { rejectUpgrade(socket, state.status); return; }
+    browserTakeoverWss.handleUpgrade(req, socket, head, (client) => {
+      const upstream = new WebSocket("ws://steel-browser.railway.internal:8080/v1/sessions/cast", { maxPayload: 8 * 1024 * 1024 });
+      client.on("message", (data, binary) => { if (upstream.readyState === WebSocket.OPEN) upstream.send(data, { binary }); });
+      upstream.on("message", (data, binary) => { if (client.readyState === WebSocket.OPEN) client.send(data, { binary }); });
+      const close = () => {
+        if (client.readyState === WebSocket.OPEN) client.close();
+        if (upstream.readyState === WebSocket.OPEN) upstream.close();
+      };
+      client.on("close", close); client.on("error", close);
+      upstream.on("close", close); upstream.on("error", close);
+    });
+  }).catch(() => rejectUpgrade(socket, 502));
+});
 
 wss.on("connection", (carrierWs, req) => {
   if (!GEMINI_KEY) {
