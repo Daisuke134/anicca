@@ -4,6 +4,33 @@
 
 Goal 受領 2026-08-31。Phase C（Eliza 基盤 C01–C09）は完了済み。
 
+## 名指しされた破損3 lane — 全て一次証拠で診断済み・2つは修復済み
+
+| lane | 診断（一次証拠） | 現状 |
+|---|---|---|
+| `lancers-revenue-storefront` | 第1原因=`[Errno 28] No space left on device` が全書き込みで反復。ディスク回収後も exit 1 が残り、stdout の `{"error":"account_unavailable","logged_in":false}` から**セッション失効**が第2原因と判明 | **修復済み・exit 0** |
+| `job-search-mercor` | `EarningsReadbackError: provider must be mercor`。実ファイル `earnings-readback.json` が `status:"blocked"` / `page_url:".../explore"`(≠/earnings) / `provider` キー欠落。`mercor_earnings_capture.py:40-41` が blocked 形を書き `:122-123` で**無条件 return 0**、`run-mercor.sh` の CAPTURE_RC 判定を通過して sync が crash する**契約不一致** | 診断済み・未修正（Dais 指示で Lancers 優先） |
+| `hf-gig-storefront-direct` | 調査時点で `state = running`。exit 1 は release pin 切れ由来 | **修復済み（`lm-loop apply`）** |
+
+## Lancers 条件別 判定
+
+| 条件 | 判定 | 証拠 |
+|---|---|---|
+| (1) 認証 + read-only 二回同値 | **PASS** | 20秒間隔の2回が SHA256 `485cc032…` で完全一致。`logged_in:True` `source_complete:True` boards=2 unread=1 proposals=38 selecting=15。provider effect 0 |
+| (2) profile 完成 | **FAIL** | 公式画面で完成度 **50%**。未完了=写真/ビジネス経験/本人確認/機密保持確認/電話確認。実績0件・評価0件。基本単価は空だったので設定し `10000` を読み返し確認済み |
+| (3) 最大応募 | **BLOCKED** | 応募0件。判断モデルは動作を実証（案件5594217→submit_required/48万円/35日/提案文生成）したが、Codex が9/6まで利用上限。routing 変更は spec 制約とピン留めテストに抵触するため Dais の判断待ち |
+
+## 判断モデル経路の修復（3段階、すべて一次証拠）
+
+1. **存在しないパス** — `application_loop.py`/`work_sync.py` が `skills/agent-runner/agent_runner.py` を参照。git 履歴ゼロ＝最初から不在。release にも無い。実体は `runtime/agent-runner/`（1858行）。2ファイル2行修正。テスト 9 failed/42 passed で変更前後同一
+2. **Codex 枯渇** — `attempt-01/02.stdout.log` に `You've hit your usage limit … try again at Sep 6th, 2026`。応募 task class だけ codex→codex しかフォールバックが無く全滅。同ファイル内に codex→claude の実例が2つある
+3. **フェンス未除去** — `extract_claude_payload` がエンベロープのみ剥がし、中身の ```json フェンスを残すため呼出側の `json.loads` が失敗。既存 `OPENCLAW_JSON_FENCE` を再利用して除去。**`planner_runner_failed` → `ok:true`**。ガードテスト 18 passed
+
+## 決めたこと
+- routing 変更は**押し通さない**。spec に「model provider と routing は現行から変更しない」と明記、かつピン留めテスト2本が守っている。一度加えた claude フォールバックは撤回し全緑に復帰させた。A（Codex課金）か B（フォールバック許可＋テスト/spec更新）かは Dais の判断
+- site 固有 selector/regex を production code に焼かない（`session_recovery.py` は破棄）
+- profile は本名でなくペルソナで運用（正本 `skills/gig-work/profile/PROFILE-ASSETS.md`）
+
 ## 確認した証拠
 
 ### ディスク（全 lane の共通ブロッカー）— 解消
