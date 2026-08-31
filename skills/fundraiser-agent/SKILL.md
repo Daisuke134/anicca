@@ -58,13 +58,15 @@ reporting path.
    bank detail, or signature. Accept ordinary privacy/data-processing terms that
    are required solely for an explicitly authorized account/application, but do
    not accept separate investment, equity, payment, relocation, exclusivity,
-   publicity, or binding program commitments. If a human-only ceremony blocks one
-   candidate, persist its checkpoint and continue applying to other candidates.
+   publicity, or binding program commitments. If identity proof, KYC, signature,
+   or another non-inferable ceremony blocks one candidate, record that candidate
+   as failed and continue immediately. Never create or wait on a human checkpoint.
 6. Claim the shared `application` effect immediately before each final Submit.
    Submit that exact identity once, capture fresh UI and/or provider-mail readback,
    and then continue to the next candidate. `submit_unknown` is replay-zero.
-7. Send a real-time Telegram update immediately after every submitted,
-   `submit_unknown`, or human-blocked application, then send the pass aggregate.
+7. Send a real-time Telegram update immediately after every submitted or
+   `submit_unknown` application, then send the pass aggregate. Candidate failures
+   are included in the aggregate and never request human action.
 
 ## Evidence and outcome
 

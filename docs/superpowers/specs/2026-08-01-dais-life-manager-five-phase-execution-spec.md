@@ -6216,7 +6216,7 @@ QUALIFY（agent判断）
         ▼
 PREPARE
   application-kitの事実 + 最新traction + deck + program別回答
-  videoは公式formがrequiredと実読できた候補だけhuman checkpoint
+  videoは公式formがrequiredかつ既存動画が条件不適合なら候補failureとして次へ進む
         │
         ▼
 VERIFY（deterministic gate）
@@ -6288,8 +6288,8 @@ effect-capable `application-lane-agent`だけを使う。1 wake内と1日の応�
 
 #### Remaining TODO（順序不変）
 
-1. HF0 applicationの2ページ目を同じdurable cursorから再開し、公式submission receiptまたは具体的human checkpointまで完了する。
-2. founder videoがrequiredで、公式上限が120秒以上の候補ではprofile factのURLまたは検証済みdownload fileを使用する。120秒未満ならその候補だけcheckpointし、次候補へ進む。
+1. HF0 applicationの2ページ目を同じdurable cursorから再開し、通常項目を文脈から推定して公式submission receiptまで進める。本人確認・KYC・署名など推定不能な外部要件なら当該候補をfailureとして次へ進み、人待ち状態は作らない。
+2. founder videoがrequiredで、公式上限が120秒以上の候補ではprofile factのURLまたは検証済みdownload fileを使用する。120秒未満ならその候補だけfailureとして次候補へ進む。
 3. configured候補がblocked、duplicate、ineligibleでもpassを終了せず、公式Web/Xから未処理candidateを発見してqueueへ追加する。
 4. 復旧後最初の新規`submitted_verified`をcompletion PNG、Telegram photo message ID、application dossier付きで作る。
 5. 以後の自然wakeでも同一cohort replay 0を保ち、openでeligibleな新規候補がある限り件数上限なしで処理する。
@@ -6302,7 +6302,7 @@ effect-capable `application-lane-agent`だけを使う。1 wake内と1日の応�
 | 2 | effect-capable route | fundraiser contract test + natural agent-runner event | OK |
 | 3 | owned tab継続 | default-tab open/eval/close + natural ASAC cross-shell readback | OK |
 | 4 | replay-zero receipt | fundraiser recorder eval | OK |
-| 5 | human checkpoint非停止 | fundraiser continuous-pass eval | OK |
+| 5 | no-human loop。checkpoint生成禁止、候補failure後も継続 | fundraiser continuous-pass eval | OK |
 
 #### Boundaries
 
