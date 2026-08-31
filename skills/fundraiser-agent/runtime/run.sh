@@ -16,7 +16,6 @@ PHOTO_SENDER="$REPO_ROOT/skills/_shared/send-telegram-photo.sh"
 LOOP_CLI="${LIFE_MANAGER_LOOP_CLI:-$REPO_ROOT/bin/lm-loop}"
 MIN_FREE_KIB=$((1536 * 1024))
 PRESSURE_FREE_KIB=$((2 * 1024 * 1024))
-DISK_PRESSURE_FLAG="$HOME/.openclaw/state/disk-pressure.block"
 
 available_kib() {
   df -Pk "$STATE_ROOT" 2>/dev/null | awk 'NR==2 {print $4}'
@@ -35,11 +34,9 @@ if [ -z "$FREE_KIB" ] || ! [[ "$FREE_KIB" =~ ^[0-9]+$ ]]; then
   echo "fundraiser: disk preflight unavailable" >&2
   exit 2
 fi
-if [ "$FREE_KIB" -lt "$MIN_FREE_KIB" ] || {
-  [ -f "$DISK_PRESSURE_FLAG" ] && [ "$FREE_KIB" -lt "$PRESSURE_FREE_KIB" ]
-}; then
+if [ "$FREE_KIB" -lt "$PRESSURE_FREE_KIB" ]; then
   "$LOOP_CLI" restart life-manager-disk-cleanup >/dev/null 2>&1 || true
-  echo "fundraiser: deferred disk policy available_kib=$FREE_KIB required_kib=$MIN_FREE_KIB pressure_required_kib=$PRESSURE_FREE_KIB pressure_block=$([ -f "$DISK_PRESSURE_FLAG" ] && echo present || echo absent)" >>"$LOG"
+  echo "fundraiser: deferred disk policy available_kib=$FREE_KIB required_kib=$PRESSURE_FREE_KIB" >>"$LOG"
   exit 75
 fi
 
