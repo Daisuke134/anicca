@@ -17,6 +17,7 @@ from .ledger import Ledger
 from .state import canonical_url, is_excluded_employer, same_application_surface
 from .workday_discovery import _fetch_jobs, discover_one
 from .workday_qualification import POLICY_VERSION, fetch_official_description, qualify_one
+from .browser_agent.workday_account import MachineWorkdayCredentialStore
 
 SHORTLIST_SIZE = 24
 ROLLING_APPLICATION_TARGET = 48
@@ -89,12 +90,21 @@ def qualified_queue_ids(
     policy_version: str = POLICY_VERSION,
 ) -> tuple[str, ...]:
     ledger = Ledger(ledger_path)
+    credential_path = os.environ.get("JOB_SEARCH_MACHINE_CREDENTIALS")
+    credentials = (
+        MachineWorkdayCredentialStore(Path(credential_path)) if credential_path else None
+    )
     try:
         return tuple(
             str(row["application_id"])
             for row in ledger.pending_materials_ready_applications()
             if (urlsplit(str(row["canonical_url"])).hostname or "").casefold()
             in allowed_hosts
+            and (
+                credentials is None
+                or credentials.account_status(str(row["canonical_url"]))
+                != "recovery_requested"
+            )
             and ledger.workday_fit_qualified(
                 str(row["application_id"]), policy_version
             )

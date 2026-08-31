@@ -77,6 +77,16 @@ authoritative account-mail transition or visible successful sign-in makes Cloude
 runnable again. Main-derived release, exact private-state seed and natural-owner
 readback remain the pending gate.
 
+The queue repair is implemented only in `workday_search_loop.qualified_queue_ids()`.
+It reuses the existing private machine credential SSOT and omits a row from the
+current wake only when its exact Workday tenant state is `recovery_requested`; every
+other fit-qualified row keeps the prior ordering and behavior. The focused
+qualification suite passes 43/43, the full Job Hunter suite passes 433/433, and an
+exact production Ledger plus private-SSOT copy removes Cloudera from the runnable
+queue with zero remaining queued rows, which forces the existing fresh qualification
+path. No Ledger transition, Submit intent, scheduler, provider judgment, or new state
+store is added. Main merge, release, production seed and natural wake proof remain.
+
 The first release-owned wake, `daily-20260831-000827`, proves the rolling deficit no
 longer collapses qualification to one row: with deficit 47 it evaluates 24 candidates,
 qualifies Regeneron application
