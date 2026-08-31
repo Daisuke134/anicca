@@ -847,6 +847,7 @@ JPY 10,000,000/月はこの積み上げでは届かず、経路確定は`ELZ-Y01
 | 41 | ELZ-L19 waiting/resume state | TODO | `waiting_for`/`next_tick_at`からrestart後に同じcommerce itemを再開する`commerce-resume-receipt.json` |
 | 42 | ELZ-L20 revenue mode ontology | TODO | one-off、recurring、MRR、refund、fee、adjustmentを混同しない`revenue-mode-receipt.json` |
 | 42b | ELZ-L20B per-provider money reporting | TODO | provider別EconomicReceiptから確認/応募/返信/契約/着金を機械集計し、金額をmodelに生成させずTelegramへ一通で送る`provider-breakdown-receipt.json`。見送り理由の散文だけmodelが書く。着金と売上を別行にする。既存provider中立の`report_envelope.render_human_ja`と`TelegramOutbox`を再利用し、新通知基盤を作らない |
+| 42c | ELZ-L20C no silent failure | TODO | ★Dais明示 2026-08-31: 沈黙する失敗を禁止し、成功も失敗もリアルタイムでTelegramへ出す★ 分類可能な失敗（provider上限・auth失敗・parse失敗・lock競合）を`except Exception`で握り潰さず、stderrとTelegramの両方へ必ず出す`failure-visibility-receipt.json`。「何も起きなかった」も分母付きで報告する（確認N件→応募N件/見送りN件）。health checkの緑を稼働証明に採用しない。実測根拠: 2026-08-31の障害3件はすべて沈黙が原因だった — 132 laneが起動不能なのに`lm-loop doctor`は`ok:true`、Codex上限のエラーはstdoutに出ていたのに呼出側へは`no stderr`のみ、Lancers報告は宛先がプレースホルダで一度も届いていなかった。`application_loop.py`のコメント自身が「拒否がログに残らないlaneは、応募をやめたことを誰にも言わないまま止まる」と警告していた |
 | 43 | ELZ-L21 received payment | TODO | platform上の実受領金、fee、currency、external buyerを読む`payment-receipt.json` |
 | 44 | ELZ-L22 payout batch | TODO | payout ID、gross、fee/refund/adjustment、net、target、statusの`payout-batch-receipt.json` |
 | 45 | ELZ-L23 owned bank transaction | TODO | payoutと一意にjoinする実口座transactionの`bank-readback-receipt.json` |
