@@ -34,6 +34,24 @@ test("createSession posts /v1/sessions and returns the CDP websocket url", async
   assert.equal(fetchImpl.calls[0].method, "POST");
 });
 
+test("interactive debugger copies Steel HTML but replaces its private cast URL", async () => {
+  const privateUrl = "ws://steel-browser.railway.internal:8080/v1/sessions/cast";
+  const publicUrl = "wss://aniccaai.com/api/panel/money-printer/browser/cast";
+  const source = `<iframe></iframe><script>const ws=${JSON.stringify(privateUrl)}</script>`;
+  let calls = 0;
+  const client = makeSteelCdpClient({
+    fetchImpl: async () => {
+      calls += 1;
+      return calls === 1
+        ? ok({ id: "steel-1", status: "live" })
+        : { ok: true, status: 200, text: async () => source };
+    },
+  });
+  const html = await client.getInteractiveDebugger("steel-1", publicUrl);
+  assert.match(html, new RegExp(publicUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(html, /railway\.internal|ws:\/\//i);
+});
+
 test("createRawSession leaves the private Steel CDP endpoint unattached for Stagehand", async () => {
   let connectCalls = 0;
   const fetchImpl = fakeFetch(() => ok({

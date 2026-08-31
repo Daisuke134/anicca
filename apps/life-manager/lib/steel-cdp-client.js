@@ -204,6 +204,36 @@ function makeSteelCdpClient({ baseUrl = STEEL_BASE_URL, fetchImpl, connectCdp } 
 
   return {
     baseUrl,
+    async assertLiveSession(sessionId) {
+      const id = typeof sessionId === "string" ? sessionId.trim() : "";
+      if (!/^[A-Za-z0-9._-]{1,200}$/.test(id)) throw new Error("Steel live session invalid");
+      const response = await doFetch(`${baseUrl}/v1/sessions/${encodeURIComponent(id)}`);
+      if (!response || !response.ok) throw new Error("Steel live session unavailable");
+      const details = await readJson(response);
+      if (!details || details.id !== id || details.status !== "live") {
+        throw new Error("Steel live session unavailable");
+      }
+      return true;
+    },
+    async getInteractiveDebugger(sessionId, publicCastUrl) {
+      let target;
+      try { target = new URL(publicCastUrl); } catch { throw new Error("Steel debugger public URL invalid"); }
+      if (target.protocol !== "wss:" || target.username || target.password
+        || target.search || target.hash
+        || target.pathname !== "/api/panel/money-printer/browser/cast") {
+        throw new Error("Steel debugger public URL invalid");
+      }
+      await this.assertLiveSession(sessionId);
+      const response = await doFetch(`${baseUrl}/v1/sessions/debug?interactive=true&showControls=true`);
+      if (!response || !response.ok) throw new Error("Steel debugger unavailable");
+      const html = await response.text();
+      const privateCast = "ws://steel-browser.railway.internal:8080/v1/sessions/cast";
+      if (typeof html !== "string" || Buffer.byteLength(html) > 128 * 1024
+        || html.split(privateCast).length !== 2) throw new Error("Steel debugger invalid");
+      const safe = html.replace(privateCast, target.toString());
+      if (/railway\.internal|ws:\/\//i.test(safe)) throw new Error("Steel debugger invalid");
+      return safe;
+    },
     async health() {
       const response = await doFetch(`${baseUrl}/v1/health`);
       return Boolean(response && response.ok);

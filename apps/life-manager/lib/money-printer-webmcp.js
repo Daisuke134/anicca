@@ -37,7 +37,7 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
       throw error;
     }
   };
-  const taskKeys = ["task_id", "version", "question", "required_format", "reason_code"];
+  const taskKeys = ["task_id", "version", "question", "required_format", "reason_code", "browser_takeover_available"];
   let answerController = null;
   let answerTask = null;
 
@@ -55,13 +55,15 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
       || typeof value.question !== "string" || !value.question.trim()
       || !(typeof value.required_format === "string"
         || (value.required_format && typeof value.required_format === "object"))
-      || typeof value.reason_code !== "string" || !value.reason_code.trim()) return null;
+      || typeof value.reason_code !== "string" || !value.reason_code.trim()
+      || typeof value.browser_takeover_available !== "boolean") return null;
     return {
       task_id: value.task_id,
       version: value.version,
       question: value.question,
       required_format: value.required_format,
       reason_code: value.reason_code,
+      browser_takeover_available: value.browser_takeover_available,
     };
   };
   const sameTask = (left, right) => Boolean(left && right

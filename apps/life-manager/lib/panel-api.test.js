@@ -503,11 +503,12 @@ test("Task 5B human-task API returns one safe tenant task and replays one answer
     version: 1,
     question: "Approve the prepared delivery.",
     required_format: { kind: "approval", values: ["approve", "request_changes"] },
-    reason_code: "model_boundary",
+    reason_code: "provider_interview",
     resume_ref: "runtime-job://tenant-a/job-1",
     status: "open",
   };
   const calls = [];
+  const browserCompletions = [];
   let state = { ...task };
   const humanTaskStore = {
     async readNext(scope) {
@@ -537,12 +538,13 @@ test("Task 5B human-task API returns one safe tenant task and replays one answer
         question: task.question,
         required_format: task.required_format,
         reason_code: task.reason_code,
+        browser_takeover_available: true,
       },
     });
     assert.equal(Object.hasOwn(next.body.task, "uid"), false);
     assert.equal(Object.hasOwn(next.body.task, "resume_ref"), false);
 
-    const answer = { task_id: task.task_id, version: 1, answer_ref: "vault-answer://tenant-a/answer-1" };
+    const answer = { task_id: task.task_id, version: 1, answer: "approve" };
     const first = await humanTaskRequest(base, "money-printer/human-task/answer", { body: answer });
     assert.equal(first.response.status, 200);
     assert.deepEqual(first.body, { task_id: task.task_id, resume_ref: task.resume_ref });
@@ -551,7 +553,7 @@ test("Task 5B human-task API returns one safe tenant task and replays one answer
     assert.deepEqual(replay.body, first.body);
 
     const conflict = await humanTaskRequest(base, "money-printer/human-task/answer", {
-      body: { ...answer, answer_ref: "vault-answer://tenant-a/answer-2" },
+      body: { ...answer, answer: "request_changes" },
       headers: { "idempotency-key": "human-task-01" },
     });
     assert.equal(conflict.response.status, 409);
@@ -563,12 +565,16 @@ test("Task 5B human-task API returns one safe tenant task and replays one answer
       assert.equal(blocked.response.status, 409);
       assert.deepEqual(blocked.body, { error });
     }
-  }, { panelOrigin: "https://panel.example", commandStore, humanTaskStore, sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
+  }, { panelOrigin: "https://panel.example", commandStore, humanTaskStore,
+    browserHandoffReader: async () => ({ expired: false }),
+    completeBrowserHandoff: async (uid, answer) => { browserCompletions.push({ uid, answer }); },
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }) });
   assert.equal(calls[0].type, "read");
   assert.deepEqual(calls[0].scope, { uid: "tenant-a", chatId: "101", csrf: "csrf-a" });
   assert.deepEqual(calls.slice(1).map((call) => call.answer), [
-    { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/answer-1" },
+    { uid: "tenant-a", taskId: task.task_id, version: 1, answerRef: "vault-answer://tenant-a/approve" },
   ]);
+  assert.deepEqual(browserCompletions, [{ uid: "tenant-a", answer: "approve" }]);
 });
 
 test("Task 5B human-task answer rejects missing origin, CSRF, content type, and idempotency before the store", async () => {

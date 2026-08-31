@@ -25,7 +25,7 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   const task = {
     task_id: "a".repeat(64), version: 1,
     question: "Approve the prepared delivery.",
-    required_format: { kind: "approval" }, reason_code: "model_boundary",
+    required_format: { kind: "approval" }, reason_code: "model_boundary", browser_takeover_available: false,
   };
   let next = { task };
   let resolveAnswerRegistration;

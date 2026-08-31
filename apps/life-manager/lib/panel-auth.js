@@ -15,7 +15,7 @@ const DEVICE_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const DEVICE_CODE_RE = /^[2-9A-HJ-NP-Z]{8}$/;
 const MONEY_PRINTER_GUEST_UID = "webmcp-judge";
 const MONEY_PRINTER_GUEST_NAME = "WebMCP Judge Guest";
-const MONEY_PRINTER_GUEST_CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
+const MONEY_PRINTER_GUEST_CSP = "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'";
 
 function sha256(value) {
   return crypto.createHash("sha256").update(String(value)).digest("hex");
