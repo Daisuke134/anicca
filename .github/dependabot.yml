@@ -38,3 +38,15 @@ updates:
     open-pull-requests-limit: 3
     commit-message:
       prefix: "deps(x402-workers)"
+
+  # Production Mr.bot / Automation Hub runtime.
+  - package-ecosystem: npm
+    directory: /apps/mr-bot
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:30"
+      timezone: Asia/Tokyo
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(mr-bot)"

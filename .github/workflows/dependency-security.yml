@@ -1,0 +1,41 @@
+name: Dependency Security
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: Block newly introduced Critical or High vulnerabilities
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          fail-on-scopes: runtime, development, unknown
+          license-check: false
+
+  mr-bot-production-audit:
+    name: Mr.bot production dependency audit
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mr-bot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/mr-bot/package-lock.json
+      - name: Install the locked dependency graph
+        run: npm ci --ignore-scripts
+      - name: Fail on current production Critical or High vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
