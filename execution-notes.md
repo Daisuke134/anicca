@@ -122,6 +122,32 @@ Goal 受領 2026-08-31。Phase C（Eliza 基盤 C01–C09）は完了済み。
   ok:True / logged_in:True / source_complete:True / board_count:2 / unread_count:1
 - storefront と application lane が exit 1 → exit 0
 
+## 条件(3)の真の律速 — 探索の被覆（2026-08-31 実測）
+
+`_run_default_discovery` は `DISCOVERY_QUERIES` 10語を1 passで順に試すが、
+**未応募候補が残る最初の1語の結果だけを return し、残り9語の候補を見ない**。
+1語あたり `MAX_OPPORTUNITIES=20` 件上限。`observed_count` が 2/3/13/21 と変動するのは
+その回に当たった1語の結果数だから。**和集合ではなく単一クエリ抽出**。
+
+- ★この早期打ち切りは意図的★ — ガード `test_application_loop_hol.py::
+  test_default_discovery_skips_a_query_containing_only_claimed_projects` が
+  「新しい仕事が見つかった時点で止める」を固定している（hol = head-of-line）。
+  union 化を試したところこのガードが落ち、探索コストが最大10倍になると判明したため**撤回**した。
+  Lancers の discovery timeout は 20 秒、対して Coconala の網羅探索は
+  `application-lane-agent` route=`terra-medium-exhaustive-application` timeout=3600 秒の
+  **専用 task class** を持つ。網羅は「クエリを増やす」ではなく「時間予算を持つ別レーン」。
+- したがって `ELZ-L10B` の主作業は Coconala の網羅探索契約（新着＋27カテゴリ＋
+  キーワード＋pagination）の移植であり、キーワード追加ではない。**未承認・未着手**。
+
+## セッション終了時のブロック状態（2026-08-31）
+
+| 経路 | 状態 |
+|---|---|
+| 条件(2) 本人確認・電話確認 | **Dais のみ**（書類/SMS）。Telegram へ資格情報送付済み |
+| 条件(2) Coconala からの profile 移植 | **共有ブラウザ稼働中**で待機（publish 中の探査は禁止） |
+| 条件(3) 網羅探索の実装 | **設計承認待ち**（専用 task class の新設を要する） |
+| Mercor / CrowdWorks | Dais 明示指示により**着手しない** |
+
 ## 未解決項目（次にやる順）
 1. Mercor: capture blocked ↔ sync 契約不一致を repo 正本で修正（release は immutable なので repo → 新 release）
 2. Lancers: ディスク回復後に storefront lane を再実行し、ENOSPC 以外の失敗が残るか実測
