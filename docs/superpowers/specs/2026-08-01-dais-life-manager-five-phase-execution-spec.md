@@ -155,8 +155,8 @@ Eliza fork側で同じvertical sliceがofficial receiptとreplay-zeroまで通�
 ```mermaid
 flowchart LR
     GOAL["Goal"] --> PLAN["Model-authored Plan / Graph"]
-    PLAN --> OBSERVE["Observe environment"]
-    OBSERVE --> ACT["Choose and use tools"]
+    PLAN --> OBSERVE["Existing general browser<br/>eyes: read the live page"]
+    OBSERVE --> ACT["Existing general browser<br/>hands: click / type / upload"]
     ACT --> VERIFY["Official readback + receipt"]
     VERIFY --> REFLECT["Outcome / cost / time / failure"]
     REFLECT --> GOAL
@@ -165,6 +165,17 @@ flowchart LR
 modelはgoal分解、opportunity選択、未知siteの探索、tool選択、proposal、delivery方法、次のloop/graphを判断する。
 codeはtool、金額計算、tenant境界、immutable intent、dedupe、lease、receipt、ledger、billing、secret redactionだけを決定論的に扱う。
 marketplace名、keyword、regex、DOM selectorをsubjective judgmentの根拠にしない。Skillは成功手順のcacheであり、能力の許可リストではない。
+
+通常のWeb marketplaceでは、既存のauthenticated general browserを人間の「目と手」としてそのまま使う。model自身がlive画面を
+semanticに読み、初見siteでもsignup、profile、探索、応募、交渉、制作、upload、納品、支払確認の次actionを判断してbrowserを操作する。
+市場ごとのform sender、selector collection、click script、signup workflow、planner、brain、schedulerは作らない。UI変更時は固定selectorを
+修理するのでなく、同じagentが最新画面を再観察して進路を選び直す。provider固有codeを許すのは、汎用browserでは利用できない公式API、
+machine-readable receipt、または法的に必須のprotocol境界だけであり、そこへsemantic判断やWeb操作手順を入れない。
+
+再利用対象は三つに分ける。反復して有効だった自然言語の方法はversioned **Skill**、resume・portfolio・avatar・cover・proposal example・
+成果物templateは共有 **Asset**、account/session、buyer conversation、送信済みeffect、receipt、cost、revenue、成功率はtenant-private
+**Memory/Ledger**に保存する。新市場ではこれらを検索して再利用するが、該当Skillがなくてもgeneral model＋browserで実行可能なら進む。
+一回の成功を即hardcoded workflowへ変換せず、複数の実receiptで再利用価値が確認された方法だけをSkill/loop候補に昇格する。
 
 ##### Self-improvingはprivate学習とglobal改善を混ぜない
 
@@ -276,7 +287,7 @@ membership、role、invite、RLS、tenant FK、per-tenant secret、per-tenant co
 | local DB | PGlite。`PGLITE_DATA_DIR`を明示し、同じpathのstop/restart readbackを必須にする |
 | cloud identity | Supabase Auth user + organization membershipがtenant root。Telegramは署名済みchannel bindingでありtenant rootではない |
 | first model transport | Eliza既存`@elizaos/plugin-cli-inference`の`codex-sdk` backendを変更せず採用。warm Codex SDK thread、Eliza `models` map、native `outputSchema` planner、subscription auth/self-healを再利用する。通常判断は`gpt-5.6-luna` medium、重い判断・修復は既存task classの`gpt-5.6-terra`。独自runner/model adapter、OpenAI API key、open model、ClawRouter、Capafy credential、新規有料API利用は0 |
-| browser | localは既存authenticated CloakBrowserをEliza tool境界から利用。cloudはper-tenant profile/container/networkを分離 |
+| browser | localは既存authenticated CloakBrowser一つを人間の目と手として利用し、modelがlive UIをsemanticに操作する。marketplace別form/selector/click toolは作らない。cloudは同じbrowser能力をper-tenant profile/container/networkへ分離 |
 | judgment | goal分解、候補選択、profit/risk、未知UI、proposal、graph変更はmodelが判断。regex/keyword/provider branchに判断権を持たせない |
 | deterministic core | arithmetic、tenant boundary、immutable intent、dedupe、lease、receipt、ledger、billing、secret redactionだけ |
 
@@ -291,7 +302,7 @@ life-manager/
 ├── plugins/
 │   └── plugin-life-manager/      # Goal→WorkItem→Effect→Receiptのgeneral manager
 ├── skills/
-│   ├── earn/                     # marketplace等の反復可能recipeとprovider ACI
+│   ├── earn/                     # 実receiptで再利用価値を確認した自然言語recipe。marketplace別click/form scriptは禁止
 │   ├── loop-development/         # Life Manager loop lifecycleの唯一の開発skill
 │   └── ...                       # currentなskillだけ。archive/duplicate copy禁止
 ├── runtime/
@@ -318,7 +329,7 @@ private mutable dataはrepo外のLife Manager state rootへ置き、immutable re
 |---|---|
 | Eliza `packages/`、`apps/`、`plugins/plugin-life-manager/` | **KEEP**。final AgentRuntimeとgeneral manager |
 | Life Manager `skills/`、`runtime/loop/`、`config/loop-registry.json`、必要な`services/` | unique bytesだけ**MOVE ONCE**。import manifestでsource commit、target path、SHA-256を固定 |
-| Coconala/Lancers provider code | general judgmentをcoreへ戻し、provider discovery/transport/readback ACIだけ**KEEP** |
+| Coconala/Lancers provider code | general judgmentと通常Web操作をmodel＋general browserへ戻す。公式API/machine receipt等、browserで代替不能なprotocol境界だけ**KEEP**し、marketplace別form/selector/click workflowは**DELETE** |
 | duplicate agent runner、provider別brain/ledger/scheduler、個別installer、中央集約business reporter | owner parity後に**DELETE** |
 | `docs/legacy-life-manager/**`のsource/spec複製 | current判断を正本へ吸収し、migration receipt以外を**DELETE**。historyはGitで読む |
 | tracked `node_modules`、cache、render、log、screenshot、temporary evidence | **DELETE / ignore**。runtime dependencyにしない |
