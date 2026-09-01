@@ -3335,6 +3335,32 @@ def mark_planner_cache_consumed(cache_path: Path, content_key: str) -> None:
     _atomic_json(cache_path, raw)
 
 
+def _record_planner_claims(
+    intent_root: Path, snapshot: dict[str, object], *, status: str = "claimed",
+    results: list[dict[str, object]] | None = None,
+) -> None:
+    """Persist resource ownership before model work; the intent fence still owns effects."""
+    result_by_id = {
+        str(row.get("request_id")): str(row.get("status") or "unknown")
+        for row in (results or [])
+    }
+    for detail in snapshot["request_details"]:
+        assert isinstance(detail, dict)
+        request_id = str(detail["request_id"])
+        payload = {
+            "version": 1,
+            "resource_key": f"application:{request_id}",
+            "request_id": request_id,
+            "content_sha256": detail["content_sha256"],
+            "pass_id": snapshot["pass_id"],
+            "status": status,
+            "updated_at_epoch": int(time.time()),
+        }
+        if request_id in result_by_id:
+            payload["result_status"] = result_by_id[request_id]
+        fence._durable_replace(intent_root / "planner-claims" / f"{request_id}.json", payload)
+
+
 def collect_snapshot_with_readonly_retry(
     collector: CdpSnapshotCollector, lease_fence: dict[str, object]
 ) -> dict[str, object]:
@@ -3352,6 +3378,7 @@ def collect_snapshot_with_readonly_retry(
 
 
 PLANNER_REQUESTS_PER_CONTEXT = 10
+PLANNER_PARALLEL_WORKERS = 2
 
 
 def _planner_subsnapshot(
@@ -3530,17 +3557,30 @@ def invoke_isolated_planner(
         return {"decisions": []}, []
     rows: list[object] = []
     missing_ids: list[str] = []
-    for start in range(0, len(details), PLANNER_REQUESTS_PER_CONTEXT):
-        batch = details[start : start + PLANNER_REQUESTS_PER_CONTEXT]
-        batch_snapshot = _planner_subsnapshot(snapshot, batch)
-        batch_decisions, batch_missing = _invoke_isolated_planner_once(
+    starts = list(range(0, len(details), PLANNER_REQUESTS_PER_CONTEXT))
+    pool = ThreadPoolExecutor(
+        max_workers=min(PLANNER_PARALLEL_WORKERS, len(starts)),
+        thread_name_prefix="application-planner",
+    )
+    planned = {
+        start: pool.submit(
+            _invoke_isolated_planner_once,
             runner=runner,
             schema=schema,
-            snapshot=batch_snapshot,
+            snapshot=_planner_subsnapshot(
+                snapshot, details[start : start + PLANNER_REQUESTS_PER_CONTEXT]
+            ),
             evidence_dir=evidence_dir / "application-intent-planner" / f"batch-{start // PLANNER_REQUESTS_PER_CONTEXT + 1:02d}",
             workdir=workdir,
             timeout_seconds=timeout_seconds,
         )
+        for start in starts
+    }
+    pool.shutdown(wait=True)
+    for start in starts:
+        batch = details[start : start + PLANNER_REQUESTS_PER_CONTEXT]
+        batch_snapshot = _planner_subsnapshot(snapshot, batch)
+        batch_decisions, batch_missing = planned[start].result()
         if batch_missing:
             missing_set = set(batch_missing)
             retry_details = [
@@ -3757,6 +3797,7 @@ def run_parent(
                 evidence_dir / "application-observations.json",
                 collector.observation_payload(),
             )
+            _record_planner_claims(intent_root, snapshot)
             # D2: a prior pass may have already paid for a planner call over this exact
             # judgeable content and then died before committing it (browser wedge kill,
             # OOM, launchd timeout). Reuse it instead of re-asking the model.
@@ -3803,6 +3844,8 @@ def run_parent(
             attempt_budget_path=attempt_budget_path,
             attempt_budget_pass_id=pass_id,
         )
+        if fixture is None:
+            _record_planner_claims(intent_root, snapshot, status="completed", results=results)
         if fixture is None and ineligible_path is not None:
             record_ineligible_results(
                 ineligible_path,

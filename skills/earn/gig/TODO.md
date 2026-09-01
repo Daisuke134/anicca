@@ -5035,6 +5035,13 @@ queue is added. Each owner must also progress independent work concurrently insi
   is durably claimed before model work, bounded workers progress different resource IDs in parallel,
   a slow item does not block discovery or another item, and full reconciliation yields to urgent
   claimed work without being skipped permanently.
+  - [x] `PAR-3a Reply` already runs one durable SQLite producer, two consumers and idle reconciliation.
+  - [x] `PAR-3b Paid` already admits up to eight durable project resources to bounded workers.
+  - [ ] `PAR-3c Apply` **ACTIVE:** persist per-request planner claims, run bounded model workers, then
+    give independent request IDs bounded effect workers without weakening the request effect fence.
+  - [ ] `PAR-3d Storefront` run independent listing work through bounded workers while retaining
+    listing-specific mutation intents and official readback.
+  - [ ] `PAR-3e` deploy all four owners together and record concurrent natural readback.
 - [ ] `PAR-4` Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
   browser-context failure or release change records one exact next transition and retry time; the
   next natural wake resumes it while unrelated work continues. A buyer-authored revision creates a
