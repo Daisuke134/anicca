@@ -323,6 +323,17 @@ CLI still found exactly one matching client ID/provider order; paper equity was 
 `$99,970.95`. Strict plugin typecheck and five focused suites passed (`8/8` tests). Host adapters contain no
 Alpaca timing or trade decision.
 
+A11 is **ACTIVE**. `life-manager-eliza` merge `512ef713a5fac6dae002d62e566649e09924716a`
+(PR #63) adds a pinned-CLI campaign snapshot and an immutable reconciliation receipt without adding another
+broker or scheduler path. The official account returned exactly two entry fills and the two expected SPY option
+positions; fill-derived quantities matched the long `769C` and short `770C` legs with zero unexplained delta.
+Life Manager recorded the open campaign with entry debit `$29`, two fills, two positions, and unrealised P&L
+`-$2`; unrealised P&L was not recorded as revenue. A real branch-root Eliza runtime loaded the Life Manager
+plugin, action, and service, then fired the existing task ID through channel
+`life_manager_alpaca_paper_loop` with `ORDER_VERIFIED` and no pending dispatch. Official Alpaca CLI still found
+exactly one matching client order/provider order, paper equity `$99,997.95`, and cash `$99,970.95`. The position
+has not exited, so realised P&L is not yet available and A11 remains ACTIVE.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
@@ -356,6 +367,8 @@ Alpaca timing or trade decision.
 - [x] **A09:** Prove lost-acknowledgement and restart reconciliation without blind retry.
 - [x] **A10:** Register exactly one Eliza-owned durable Alpaca loop; host adapters only restart Eliza.
 - [ ] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
+  Entry, two fills, both open legs, current equity/cash, and unrealised P&L reconcile; the next fixed sub-atom is
+  a sealed exactly-once exit followed by official realised-P&L reconciliation.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface.
 - [ ] **A13:** Publish the truthful README, one-page write-up, PDF slides, 16:9 cover, and ≤4-minute video.
 - [ ] **A14:** Submit every required URL and the private account ID to Lablab, then read back official submitted
@@ -384,7 +397,7 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next plan scope is A11 only. Soft target: at most three production files and 100 production LOC per atom;
+Next plan scope is the A11 sealed exit only. Soft target: at most three production files and 100 production LOC per atom;
 reuse one existing contract/store/runner per responsibility. One focused normal-path check plus only the minimum
 regressions preventing money error, duplicate effect, unknown broker state, or secret leakage. A12–A15 and P01+
 receive later plans after the prior receipts exist.
