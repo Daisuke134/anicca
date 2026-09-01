@@ -246,6 +246,10 @@ capability claim is backed by an installed executable capability.
   That rendered discovery source is installed as immutable release
   `9723c3dd0bba8708435e4f2f0fac451011aac97d`; its real launchd auth-gated run remained
   `input_required`/`effect_delta:0`, while the global selector was restored to a complete release.
+  The official search also defaulted to expired jobs. Discovery now uses CrowdWorks' rendered
+  `hide_expired=true` route and unions the three exact Italian query variants before deduplication;
+  an exact production-interpreter pass inspected `26` unique open jobs, zero expired rows, and found
+  no eligible candidate, replacing the former ten-result/expired-biased scan.
 
 ### Live four-lane repair
 

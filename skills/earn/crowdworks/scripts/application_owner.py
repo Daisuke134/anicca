@@ -17,7 +17,7 @@ STATE = Path("~/.local/state/anicca/crowdworks").expanduser()
 PRODUCT = Path("~/gig/private/storefront-bundle/contracts/market-products/ui-translation.json").expanduser()
 TRANSACTION = STATE / "application-transaction.json"
 LEDGER = STATE / "application-receipts.jsonl"
-SEARCH = "イタリア語 UI Web アプリ 翻訳"
+SEARCHES = ("イタリア語","イタリア語 翻訳","イタリア 翻訳")
 
 def _module(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -29,8 +29,10 @@ profile = _module("crowdworks_profile", Path(__file__).with_name("profile.py"))
 application = _module("crowdworks_application", Path(__file__).with_name("application_tick.py"))
 
 def _candidate(page):
-    page.goto("https://crowdworks.jp/public/jobs?search%5Bkeywords%5D="+quote(SEARCH));account._wait(page);page.wait_for_timeout(3000)
-    links=page.locator('a[href*="/public/jobs/"]').evaluate_all("els => els.map(e => ({href:e.getAttribute('href') || '',title:(e.innerText || '').trim()}))")
+    links=[]
+    for search in SEARCHES:
+        page.goto("https://crowdworks.jp/public/jobs/search?hide_expired=true&search%5Bkeywords%5D="+quote(search));account._wait(page);page.wait_for_timeout(3000)
+        links+=page.locator('a[href*="/public/jobs/"]').evaluate_all("els => els.map(e => ({href:e.getAttribute('href') || '',title:(e.innerText || '').trim()}))")
     seen=set()
     for link in links:
         match=re.search(r"/public/jobs/([0-9]+)(?:[?#]|$)",link.get("href","") if isinstance(link,dict) else "")
