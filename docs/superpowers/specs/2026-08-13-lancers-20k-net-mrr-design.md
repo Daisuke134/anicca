@@ -2386,6 +2386,8 @@ Telegram ownerは「公式会話1件 / 返信必要0件 / 未読0件 / 月額オ
 
 > **2026-09-02 user-ordered regression override:** Apply laneを先頭atomへ戻す。累計47件は現在の応募速度の証明ではない。productionは60秒cadenceでも一wakeが数分かかり、Lancers固有の`skip_not_fit`が経験・実績不足を理由にAmazon運用、SEO、browser運用など完遂可能なdigital案件を送信前に落としていた。同じ見送りを次wakeで再判定するため、時間を消費して応募0を繰り返した。Coconala正本どおり`submit_required / hard_prohibited`の二択へ戻し、経験・portfolio・未知tool・browser操作を拒否理由にしない。完了条件は新しい案件を実送信し、公式proposal IDとApplicationReceipt増分を確認し、次wakeの同一案件再送0を確認すること。後段atomはこの回帰を閉じるまで進めない。
 
+> **REGRESSION CLOSED:** main `58a712955…`、immutable release `20260902T060753-58a71295`をApplication ownerへ配備した。旧releaseが「SEO実務歴3年以上」を理由に`skip_not_fit`にしたproject `5593999`を、新releaseは`submit_required`としてJPY 50,000、納期`2026-09-16`で一度だけ送信した。最初のeffectはpendingを保持した`submission_uncertain`、直後のreadback-only wakeは公式proposal `27876767`を確認し、pendingを空へ戻し、ApplicationReceiptをledger sequence `49`へ追加した。Telegramは案件別ACK `47952`、wake集計ACK `47953`。次wake開始後もledgerはsequence/count `49/49`で同一案件再送0。公式集計は今日5件・累計49件であり、売上・契約・入金はいずれも0のまま正直に分離する。
+
 **USER OUTCOME:** 応募件数だけを増やさず、clientが公式画面で確認できる実績証拠と一致する案件へ応募し、
 `ApplicationReceipt → buyer reply → contract`の転換率を上げる。
 
