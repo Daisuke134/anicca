@@ -417,6 +417,19 @@ added zero broker effects. During E2E recovery, the existing task's stale notifi
 reopened, and refired under the same task ID so its Financial channel—not `push/in_app`—owned the successful
 pass. Typecheck, build, and three focused suites passed (`4/4` tests).
 
+The A11 dispatcher self-heal sub-atom is **DONE** in `life-manager-eliza` merge
+`097111f3b1f379282e6dfd0244756faf32742c24` (PR #73). A real restart exposed two persisted-host failures:
+the deferred Life Manager plugin could register after the five-minute task had already recorded
+`disconnected`, and the task's legacy `bg-light-30s` execution profile caused the host-capability gate to
+substitute `in_app` before the contributed Financial dispatcher. The same Eliza boot hook now removes only
+that stale Alpaca dispatch state, clears the legacy profile, and lets the existing runner refire when the
+interval is naturally due. At `23:43:46Z` the same task ID fired without a REST/manual trigger and persisted
+`ok=true`, channel `life_manager_alpaca_paper_loop`, and
+`ORDER_VERIFIED / HOLD_CLOSED_SESSION / NO_TRADE`; pending dispatch was absent. Pinned-CLI readback remained
+paper `ACTIVE`, cash `$99,970.95`, equity `$99,997.95`, two positions, two entry fills, and unrealised P&L
+`-$2`. No close fill exists, so realised campaign P&L remains `$0`. Typecheck, build, three focused suites
+(`4/4` tests), and `git diff --check` passed.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
