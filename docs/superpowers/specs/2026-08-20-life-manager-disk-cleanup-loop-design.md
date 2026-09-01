@@ -62,6 +62,28 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 現在activeな先頭atomは **All-loop bounded-output audit** である。Connection recoveryとmajor manual cleanupを
 再びTODOへ戻さない。
 
+## Business-loop self-sustainability contract
+
+Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
+owner、class、expected maximum bytes、observed growth rate、lease、terminal state、rebuild proofを宣言する。
+業務loop自身には削除authorityを与えない。削除は単一のMac Host Storage Governorだけが行い、宣言済みの
+`ephemeral`または`regenerable_output`を、lease切れ・open handleなし・rebuild proof一致・protected reference
+なしと再確認した場合だけ回収する。unknownまたはprobe failureは常にpreserveする。
+
+次の資産は容量圧迫時も削除しない: buyer input、会話、feedback、未承認および承認済みartifact lineage、
+再提出base、source、checkpoint、effect receipt、ledger、credential、session、active workspace、loaded release。
+正式納品前の成果物もterminal扱いにしない。buyerの明示承認後も、正式納品receiptとreplay-zeroが確認されるまで
+そのlineageを保持する。
+
+各wakeは開始前とbulk write/effect直前にcapacity claimを行う。予測freeがfloorを割る場合、loopは新しい外部effectを
+開始せず、現在のcheckpointをatomic保存してcentral cleanupへ回収要求を残す。cleanup receiptでerrors 0、
+protected deletions 0、必要headroom回復をread backした次wakeが同じjob owner/checkpointから再開する。
+外部effectが不確実な状態では再送せず、公式readbackで既存effectを解決してから続行する。
+
+この契約の目的はbusiness loopを止めることではなく、bounded retentionと安全なpause/resumeにより常時稼働を
+持続可能にすることである。実装順序は既存のAll-loop bounded-output auditおよびAtomic TODO Registerを維持し、
+別のcleanup framework、loop別janitor、loop別削除allow-listは作らない。
+
 ## 現行実装状況とOSS境界
 
 この仕様は設計だけでなく、現在の実装と未完了のproduction workを追跡する。
