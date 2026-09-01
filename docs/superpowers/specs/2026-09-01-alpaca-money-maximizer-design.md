@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A02 DONE / A03 ACTIVE
+status: APPROVED DESIGN / A01-A03 DONE / A04 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -176,7 +176,7 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
-Current cursor: **A03 New paper-account bootstrap**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A04 Alpaca CLI preflight**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
@@ -195,11 +195,20 @@ private Alpaca account ID, and up to five social links. It reads `Last saved`; f
 Google login was not used, no secret or Discord/account identifier was written to the repository, and later atoms
 must replace provisional copy only with verified campaign facts.
 
+A03 is **DONE**. A brand-new Alpaca Trading API identity was created through the normal-email form and verified
+through the existing authenticated mail reader. Authenticator MFA and its recovery code are active; password,
+TOTP secret, recovery code, and paper account ID exist only in the mode-`0600` private credential SSOT. A fresh
+cookie-free login required both password and a newly generated TOTP code and returned the same private paper
+account. The official paper dashboard reads equity `$100,000.00`, cash `$100,000.00`, no open positions, no
+orders, and no activities. Official configuration reads options `Level 3`, including defined-risk spreads and
+multi-leg strategies. The provider offered a separate live Individual/Business account application; it was not
+started, and no KYC, funding, live-capital, or live-trading state was created.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
 | A02 | Team/submission shell — **DONE** | The official one-member team and saved Step-2 submission draft exist; the editor exposes title, short/long descriptions, tags, cover, video, slides, public GitHub, demo platform/URL, Alpaca account ID, and up to five social links; no final submit yet. |
-| A03 | New paper-account bootstrap | Normal-email flow yields a dedicated active paper account; account ID is private; cash/equity=`100000`; positions/orders/activity empty; option level recorded; new-session login works. |
+| A03 | New paper-account bootstrap — **DONE** | Normal-email flow yields a dedicated active paper account; account ID is private; cash/equity=`100000`; positions/orders/activity empty; options Level 3 is recorded; fresh password+TOTP login returns the same account. |
 | A04 | Alpaca CLI preflight | Pinned CLI version/doctor plus account/clock/stock/options/news reads return the dedicated paper account; secrets appear in no repo/log/chat artifact. Optional MCP is read-only and not a readiness dependency. |
 | A05 | Alpaca CLI provider adapter | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
 | A06 | Decision-before-effect | One bounded model call returns `NO_TRADE` or a typed thesis, structure, max loss, invalidation, exit, and evidence refs; the written decision precedes any effect intent. |
