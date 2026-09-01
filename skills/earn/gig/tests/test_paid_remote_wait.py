@@ -610,6 +610,27 @@ def test_remote_owner_prompt_reconciles_project_effect_receipts_before_mutation(
     assert "Never repeat an effect whose receipt is already verified" in prompt
 
 
+def test_paid_agent_creates_authorized_missing_resources_instead_of_asking_buyer(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+    identity = {"message_id": "m1", "content_sha256": "d" * 64, "side": "buyer"}
+
+    decision_prompt = paid._decision_prompt(
+        tmp_path / "context.json", "a" * 64, feedback, requirements_sha,
+        identity, identity,
+    ).decode()
+    owner_prompt = paid._repair_prompt(
+        root, tmp_path / "item.json", feedback, requirements_sha,
+        False, tmp_path / "cdp.py",
+    )
+
+    for prompt in (decision_prompt, owner_prompt):
+        assert "available=false proves only that no reusable resource is registered" in prompt
+        assert "create or recover the seller-owned resource autonomously" in prompt
+        assert "Never ask the buyer to supply a seller-owned account" in prompt
+
+
 def test_decision_prompt_scopes_required_assets_to_current_bounded_output(tmp_path):
     paid = load("paid_direct")
 
