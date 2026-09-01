@@ -266,6 +266,8 @@ def _json_line(stdout: str, step: str) -> dict[str, Any]:
 def _collector(args, mode, output, evidence, item_path=None, item=None):
     command = [sys.executable, str(args.collector), "--output", str(output), "--evidence-dir", str(evidence),
                "--mode", mode, "--projects-root", str(args.projects_root), "--cdp-helper", str(args.cdp_helper)]
+    if mode == "orders-only":
+        command.append("--visible-with-screenshot")
     if mode == "selected-talkroom-only":
         room = _text((item or {}).get("talkroom_id"))
         if not item_path or not re.fullmatch(r"[0-9]+", room): raise Failure("remote_resume")
