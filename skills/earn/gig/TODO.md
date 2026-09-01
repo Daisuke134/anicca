@@ -5031,7 +5031,7 @@ queue is added. Each owner must also progress independent work concurrently insi
   delivery; an uncertain prior effect is reconciled before any retry. Storefront retirement now
   persists a per-listing intent outside pass evidence and reconciles the official seller card before
   any retry; release `856bbf3f3` produced a natural terminal pass after deployment.
-- [ ] `PAR-3` **ACTIVE:** Run durable producer-consumer concurrency inside every lane. PASS = fresh eligible work
+- [x] `PAR-3` Run durable producer-consumer concurrency inside every lane. PASS = fresh eligible work
   is durably claimed before model work, bounded workers progress different resource IDs in parallel,
   a slow item does not block discovery or another item, and full reconciliation yields to urgent
   claimed work without being skipped permanently.
@@ -5051,14 +5051,19 @@ queue is added. Each owner must also progress independent work concurrently insi
     readable listing claims in one natural wake: `4313100` and `4330105` started about 27 ms apart
     and overlapped for about 12 seconds, followed by overlapping `4355225` and `4357844`. This proves
     the configured two-worker bound and independent listing progress.
-  - [ ] `PAR-3e` **ACTIVE:** deploy all four owners together and record concurrent natural readback.
+  - [x] `PAR-3e` deploy all four owners together and record concurrent natural readback.
     Release `2a8b72a2` was loaded by all four owners and produced simultaneous independent PIDs
     (`Reply=13021`, `Apply=13060`, `Paid=13117`, `Storefront=13160`); Reply recorded a same-release
     PASS. The remaining three were stopped through `lm-loop` before terminal because free disk fell
     from about 3.1 GiB to 257 MiB during the concurrent run. Do not treat that safety stop as a
     concurrency failure or as completion. Recover enough durable headroom, restore all three
-    scheduled owners, and record their natural terminals from one concurrent generation.
-- [ ] `PAR-4` Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
+    scheduled owners, and record their natural terminals from one concurrent generation. The
+    restored generation `54bde096` then ran all owners concurrently without lane-to-lane waiting:
+    Reply and Apply recorded natural PASS terminals, while Paid and Storefront independently
+    recorded natural FAIL terminals for their existing business-level faults. Free disk remained
+    about 2.2 GiB at the end. The two failures remain work for the ordered resumability/effect atoms;
+    they do not invalidate independent scheduling or bounded worker concurrency.
+- [ ] `PAR-4` **ACTIVE:** Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
   browser-context failure or release change records one exact next transition and retry time; the
   next natural wake resumes it while unrelated work continues. A buyer-authored revision creates a
   new version of the same work item instead of overwriting or duplicating the prior effect.
