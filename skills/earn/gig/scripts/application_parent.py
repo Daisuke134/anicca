@@ -2505,7 +2505,7 @@ def commit_decisions(
                 # the target below, but never strike the candidate for a neighbour's slow page.
                 if wedged_id and not readback_inconclusive_row(results[-1]):
                     wedge_counts[wedged_id] = wedge_counts.get(wedged_id, 0) + 1
-                    save_wedge_counts(store, wedge_counts)
+                    _set_wedge_count(store, wedged_id, wedge_counts[wedged_id])
                 recover = getattr(effects, "recover_wedged_target", None)
                 if callable(recover):
                     recover()
@@ -2818,14 +2818,14 @@ def commit_decisions(
                     "application": application,
                 })
                 if wedge_counts.pop(str(request_id), None) is not None:
-                    save_wedge_counts(store, wedge_counts)
+                    _set_wedge_count(store, str(request_id), 0)
         # The loop only notices a wedge when it reaches the NEXT candidate; the last
         # candidate's wedge would otherwise never be counted.
         if results and cdp_wedged_row(results[-1]):
             wedged_id = str(results[-1].get("request_id") or "")
             if wedged_id and not readback_inconclusive_row(results[-1]):
                 wedge_counts[wedged_id] = wedge_counts.get(wedged_id, 0) + 1
-                save_wedge_counts(store, wedge_counts)
+                _set_wedge_count(store, wedged_id, wedge_counts[wedged_id])
             recover = getattr(effects, "recover_wedged_target", None)
             if callable(recover):
                 recover()
@@ -3379,6 +3379,7 @@ def collect_snapshot_with_readonly_retry(
 
 PLANNER_REQUESTS_PER_CONTEXT = 10
 PLANNER_PARALLEL_WORKERS = 2
+APPLICATION_EFFECT_WORKERS = 2
 
 
 def _planner_subsnapshot(
@@ -3650,6 +3651,63 @@ def _run_parent_pipeline(
     return results
 
 
+def _run_live_commits_parallel(
+    *, snapshot: dict[str, object], decisions: dict[str, object], intent_root: Path,
+    lease_script: Path, lease_task: str, heartbeat_seconds: float,
+    evidence_dir: Path, ledger_path: Path, pass_id: str,
+    cap_override: int | None, attempt_budget_path: Path | None,
+) -> list[dict[str, object]]:
+    """Commit independent request IDs on two fenced targets; preserve decision order."""
+    rows = decisions["decisions"]
+    assert isinstance(rows, list)
+    if not rows:
+        return []
+    details = {
+        str(detail["request_id"]): detail
+        for detail in snapshot["request_details"]
+        if isinstance(detail, dict)
+    }
+
+    def run(index: int, decision: object) -> tuple[int, dict[str, object]]:
+        assert isinstance(decision, dict)
+        request_id = str(decision["request_id"])
+        with LeaseHandle(
+            lease_script=lease_script,
+            task=f"{lease_task}-commit-{request_id}",
+            heartbeat_seconds=heartbeat_seconds,
+        ) as worker_lease:
+            worker_snapshot = _planner_subsnapshot(
+                {**snapshot, "lease_fence": worker_lease.lease_fence},
+                [details[request_id]],
+            )
+            effects = CdpParentEffects(
+                ws_url=worker_lease.ws_url,
+                evidence_dir=evidence_dir / "commit-workers" / request_id,
+                ledger_path=ledger_path,
+                pass_id=f"{pass_id}-commit-{request_id}",
+            )
+            effects.ws_recycler = worker_lease.recycle
+            result = commit_decisions(
+                worker_snapshot,
+                {"decisions": [decision]},
+                store=fence.IntentStore(intent_root),
+                effects=effects,
+                cap_override=cap_override,
+                attempt_budget_path=attempt_budget_path,
+                attempt_budget_pass_id=pass_id,
+            )[0]
+            worker_lease.assert_healthy()
+            return index, result
+
+    with ThreadPoolExecutor(
+        max_workers=min(APPLICATION_EFFECT_WORKERS, len(rows)),
+        thread_name_prefix="application-effect",
+    ) as pool:
+        jobs = [pool.submit(run, index, decision) for index, decision in enumerate(rows)]
+        completed = [job.result() for job in jobs]
+    return [row for _, row in sorted(completed)]
+
+
 def _readonly_discovery_effect_factory(
     *,
     lease_script: Path,
@@ -3831,19 +3889,23 @@ def run_parent(
             _atomic_json(snapshot_path, snapshot)
         decisions_path = evidence_dir / "application-decisions.json"
         _atomic_json(decisions_path, decisions)
-        results = _run_parent_pipeline(
-            lease=lease,
-            snapshot=snapshot,
-            decisions=decisions,
-            effects=effects,
-            intent_root=intent_root,
-            cap_override=(
-                snapshot_contract.MAX_APPLICATIONS_CEILING
-                if all_eligible else None
-            ),
-            attempt_budget_path=attempt_budget_path,
-            attempt_budget_pass_id=pass_id,
-        )
+        cap_override = snapshot_contract.MAX_APPLICATIONS_CEILING if all_eligible else None
+        if fixture is None:
+            results = _run_live_commits_parallel(
+                snapshot=snapshot, decisions=decisions, intent_root=intent_root,
+                lease_script=lease_script, lease_task=lease_task,
+                heartbeat_seconds=heartbeat_seconds, evidence_dir=evidence_dir,
+                ledger_path=ledger_path, pass_id=pass_id, cap_override=cap_override,
+                attempt_budget_path=attempt_budget_path,
+            )
+            lease.assert_healthy()
+        else:
+            results = _run_parent_pipeline(
+                lease=lease, snapshot=snapshot, decisions=decisions, effects=effects,
+                intent_root=intent_root, cap_override=cap_override,
+                attempt_budget_path=attempt_budget_path,
+                attempt_budget_pass_id=pass_id,
+            )
         if fixture is None:
             _record_planner_claims(intent_root, snapshot, status="completed", results=results)
         if fixture is None and ineligible_path is not None:
@@ -3969,6 +4031,7 @@ def describe_error(error: BaseException) -> dict[str, str]:
 
 WEDGE_QUARANTINE_THRESHOLD = 3
 WEDGE_QUARANTINE_TTL_SECONDS = 48 * 60 * 60
+_WEDGE_COUNTS_LOCK = threading.RLock()
 
 
 def _wedge_counts_path(store: "fence.IntentStore") -> Path:
@@ -4086,6 +4149,17 @@ def save_wedge_counts(store: "fence.IntentStore", counts: dict[str, int]) -> Non
         updated_at = prior.get("updated_at") if (prior and prior_count == value) else now
         payload[str(key)] = {"count": value, "updated_at": updated_at}
     _atomic_json(path, payload)
+
+
+def _set_wedge_count(store: "fence.IntentStore", request_id: str, count: int) -> None:
+    """Update one resource without losing a sibling worker's counter."""
+    with _WEDGE_COUNTS_LOCK:
+        counts = load_wedge_counts(store)
+        if count > 0:
+            counts[request_id] = count
+        else:
+            counts.pop(request_id, None)
+        save_wedge_counts(store, counts)
 
 
 def ledger_applied_ids(ledger_path: Path) -> set[str]:
