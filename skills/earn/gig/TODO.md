@@ -39,11 +39,17 @@ model narration, and local success without the named readback are not PASS.
   PASS = the official counterparty readback binds Studio BlackWave to talkroom `10131237`; Reply
   prompt v28 receives that verified thread ID and always returns `stop_contact / stop`, never reply,
   estimate or clarify. Existing messages are not resent or changed. Focused semantic tests pass 34/34.
-- [ ] `AM02` Deploy both prompt policies through the normal immutable release boundary.
+- [x] `AM02` Deploy both prompt policies through the normal immutable release boundary.
   PASS = the change is merged to pushed main, a read-only immutable release contains the exact Apply
   and Reply policies, loaded owner argv points to that release, one natural pass per affected owner
   reaches a terminal result from the same SHA, and subsequent decisions use the new prompts. Do not
   submit a synthetic application or send a synthetic reply solely to prove either rule.
+  Release `26e6025635bf7ea6bb02b94888fe5ca6ff8c87f4` is an immutable ancestor of pushed main and
+  contains both policies. Apply and Reply loaded argv point to that release. Reply produced natural
+  pass events from the same SHA. Apply naturally reached terminal `entrypoint_exit_1` after fresh
+  official discovery returned zero eligible rows and the existing gate reported
+  `under_target_search_not_exhausted`; no synthetic application or reply was sent. Any later
+  decision is loaded from the release containing the new prompt policies.
 
 ### Manledge closure — account-owner priority override
 
