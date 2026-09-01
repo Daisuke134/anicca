@@ -156,7 +156,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    1. [x] 共通agent usage ledgerのowner-side lossless rotationを実装・release・自然wakeで検証する。
    2. [ ] **current:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、不要daemonだけをowner経由で
       drainし、VM使用量がmacOSにより縮小することをread backする。
-   3. 40 worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
+   3. [x] registered worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
       保ったまま回収する。
    4. 26 immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、central cleanupで後者だけを回収する。
    5. `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
