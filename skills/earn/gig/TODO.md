@@ -43,12 +43,15 @@ completion claim is nevertheless false until the two failing lanes below pass na
   `gig-apply-direct-1788284844274794000-82574` exited zero with `observed=40`, `pending=0`, and
   `durable_uncertain_count=40`; those 40 legacy pre-proof intents remain durable no-resubmit fences
   rather than being falsely reported as current pending work.
-- [ ] `C01` Restore Storefront's exact official public readback.
+- [x] `C01` Restore Storefront's exact official public readback.
   PASS = one natural `ai.anicca.hf-gig-storefront-direct` pass reads the 14-service official
   inventory, completes or safely declines its selected improvement, and ends pass with exact
-  public effect/readback or replay-zero. Current passes repeatedly fail
-  `public_text_readback_mismatch`; disk pressure also produced two `ENOSPC` failures, while every
-  observed task lease was released.
+  public effect/readback or replay-zero. Production release
+  `c4e7916e4cf86c700ac1f5d5687d9d81a01e5f39` submits package forms through the same proven
+  `requestSubmit` path as text mutations instead of a stale coordinate click. Natural pass
+  `storefront-direct-1788285409489850000-99678` read all 14 official services, saved the selected
+  additional package on service `4244556`, read its title and JPY 5,000 price back from the exact
+  public page, recorded `effect=1` and `readback=1`, released its isolated lease, and exited zero.
 - [ ] `C02` Prove all four installed owners concurrently healthy without adding a global lock.
   PASS = one runtime manifest binds Apply, Reply, Storefront, and Paid to their loaded immutable
   release SHA, cadence, latest natural terminal event, official effect/readback receipt, and
