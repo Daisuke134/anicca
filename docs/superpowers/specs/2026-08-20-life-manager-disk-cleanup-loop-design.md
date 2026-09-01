@@ -61,6 +61,53 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `6b4f59fb`の自然wakeで34 MiBをarchive 11,835行/357 KiB＋active 27,317行/24 MiBへ縮小し、全39,152行、
      gzip、active/archive/lock mode 0600、job runningをread backした。confirmed/unknown行はactive保持し、
      古いNO_EFFECT/READ_ONLY_CONFIRMEDだけをowner自身が圧縮した。
+   - **Current host storage census:** APFS containerは245.1 GB、使用243.9 GB、空き1.2 GBである。Data volumeは
+     205.4 GB、VM volumeは17.5 GBを使用する。VMには16 GiB超のswapfileがあり、これは直接削除せず、
+     重複browser/worker/daemonのownerをdrainした後にmacOSへ回収させる。大容量rootは`~/.openclaw`
+     10.63 GB、`~/Library` 9.23 GB、`~/gig` 8.93 GB、`~/anicca-project` 7.06 GB、canonical
+     Life Manager source/git/internal worktrees合計約4.90 GB、Codex homes約5.73 GB、`~/anicca` 3.77 GB、
+     `/private/var/folders` 3.38 GB、`~/.local/share` 2.87 GB、`~/.local/state/life-manager` 2.41 GB、
+     `~/.claude` 2.33 GB、外部`~/Projects/.worktrees` 1.44 GB、`~/.hermes` 1.52 GBである。
+     `~/loops/releases`には26 directory、Life Manager Gitには40 worktreeがある。一点のfree-space回復を
+     完了条件にせず、各familyのowner-side boundと再発防止readbackを要求する。
+   - **Source preservation correction:** `~/Projects/life-manager-main`と
+     `~/Projects/life-manager-eliza-migration`は両方active sourceとして保持する。Eliza migrationは未使用と
+     推測して削除しない。この二つ以外のLife Manager/OpenClaw/Anicca cloneは、dirty/unpushed commit、
+     unique ref、loaded argv、open file、state owner、production effect依存をread backし、必要なsource/stateを
+     二つの正本または外部state SSOTへ移した後だけretire候補になる。
+   - **OpenClaw retention boundary:** Postiz iOS、HCA、factory loopsがOpenClawを使用しているというowner仮説を
+     entrypoint、loaded argv、cwd/open file、state path、自然terminal eventで個別に検証する。実依存は保持して
+     Life Managerのimmutable release/state境界へ移す。`~/.openclaw/.git`約3.13 GB、workspace約2.17 GB、
+     skills約1.64 GB、media約702 MB、state約559 MBを名前だけで削除せず、依存0になった重複source/cacheだけを
+     retireする。credential、session、memory、customer evidence、publication receiptは保持する。
+   - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
+     active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
+     0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
+     `~/gig/projects/18128025`等のHermes名を含むBUYMA/customer artifactとeffect receiptはgateway退役と無関係に
+     project lineageとして保持する。
+
+   **All-loop bounded-output audit内の固定実行順:** 現在activeな共通agent usage rotationを閉じた後、次を
+   一件ずつ実行し、各atomでbefore/after bytes、loaded/open/dirty保護、errors 0、protected deletion 0、
+   次wake回収または自然terminal readbackを保存する。
+
+   1. 共通agent usage ledgerのowner-side lossless rotationを実装・release・自然wakeで検証する。
+   2. memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、不要daemonだけをowner経由で
+      drainし、VM使用量がmacOSにより縮小することをread backする。
+   3. 40 worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
+      保ったまま回収する。
+   4. 26 immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、central cleanupで後者だけを回収する。
+   5. `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
+      state、production argvを移管し、一repositoryずつretireする。
+   6. OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
+      移した後、重複`.git`/workspace/skills/mediaだけを回収する。
+   7. Hermes consumer 0を証明し、gatewayを正式retireして`~/.hermes`を回収する。customer Hermes assetsは保持する。
+   8. Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
+      BingX `18214856`を含む再提出中projectは保持し、terminal projectの古いregenerable attempt/workspaceだけを
+      owner cleanupへ接続する。
+   9. Codex/Claude sessionを保持しながら終了済みlog/archiveをbounded rotationへ接続する。
+   10. `/private/var/folders`とLibrary cacheはopen-path/owner proof後の再生成可能familyだけを回収する。
+   11. free 11 GiB以上、24時間ENOSPC 0/protected deletion 0を証明し、その後7日間のstate-write failure 0、
+       cleanup-caused producer failure 0を証明する。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
