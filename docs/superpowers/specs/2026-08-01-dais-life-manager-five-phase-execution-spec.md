@@ -29,7 +29,8 @@ Daisは2026-09-01、既存順序を明示的に変更し、Alpaca AI Trading Age
 [`2026-09-01-alpaca-money-maximizer-design.md`](2026-09-01-alpaca-money-maximizer-design.md)を正本とする。
 
 同spec `A01 Freeze event contract`は公式/archived rules matrixとCLI authority固定でDONE。現在activeな一件は
-`A02 Team/submission shell`。A02〜A14を2026-09-05 00:00 JSTの提出まで固定順序で閉じ、
+`A02 Team/submission shell`。通常メールOTPでLablab accountとevent screeningは作成済み、公式表示は`Waiting for approval`。
+media releaseとTerms/Privacy・sponsor data sharingの本人同意後にteam/submission shell作成を再開する。A02〜A14を2026-09-05 00:00 JSTの提出まで固定順序で閉じ、
 A15 portable OSS releaseを続ける。`P01+`のlive owner-capital ladderはpaperを実収益と呼ばず、別credential・別loss
 budget・jurisdiction/broker条件を満たした後だけ進める。顧客資産運用・有償投資助言は登録要否を閉じるまでpaper-onlyとする。
 
