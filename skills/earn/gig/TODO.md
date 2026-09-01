@@ -5041,14 +5041,17 @@ queue is added. Each owner must also progress independent work concurrently insi
     and checkpoints full reconciliation after one coverage turn so the next wake returns to fresh
     discovery. Release `462cc737` recorded a natural terminal pass in about 2m35s, down from the
     measured three-turn wake of about six minutes, without weakening the request effect fence.
-  - [ ] `PAR-3d Storefront` **ACTIVE:** run independent listing work through bounded workers while retaining
+  - [x] `PAR-3d Storefront` run independent listing work through bounded workers while retaining
     listing-specific mutation intents and official readback. PR `#3833` is merged and production
     release `ba5a809134372206d3df893d945566c0a99ebfd2` durably claims each due listing before
     browser work, scans at most two listings in owner-bound tabs, closes each tab in `finally`, and
     serializes ledger writes on the parent. Remaining acceptance is a natural Storefront wake with
     completed per-listing claim readback; the first deployed wake ended on the pre-existing category
-    option failure before that proof completed.
-  - [ ] `PAR-3e` deploy all four owners together and record concurrent natural readback.
+    option failure before that proof completed. Release `2a8b72a2` then recorded four completed,
+    readable listing claims in one natural wake: `4313100` and `4330105` started about 27 ms apart
+    and overlapped for about 12 seconds, followed by overlapping `4355225` and `4357844`. This proves
+    the configured two-worker bound and independent listing progress.
+  - [ ] `PAR-3e` **ACTIVE:** deploy all four owners together and record concurrent natural readback.
 - [ ] `PAR-4` Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
   browser-context failure or release change records one exact next transition and retry time; the
   next natural wake resumes it while unrelated work continues. A buyer-authored revision creates a
