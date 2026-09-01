@@ -30,7 +30,7 @@ Daisは2026-09-01、既存順序を明示的に変更し、Alpaca AI Trading Age
 
 同spec `A01 Freeze event contract`は公式/archived rules matrixとCLI authority固定でDONE。現在activeな一件は
 `A02 Team/submission shell`。通常メールOTPでLablab accountとevent screeningを作成し、Daisの明示同意後の公式表示は`Approved`。
-SSOTで確定できる全必須事実欄とLablab同意は送信済み。Lablabがteam作成前のDiscord account接続/community参加を追加必須化している。通常メールDiscord登録はprefill済みで、別のDiscord Terms本人同意後にteam/submission shell作成を再開する。A02〜A14を2026-09-05 00:00 JSTの提出まで固定順序で閉じ、
+SSOTで確定できる全必須事実欄とLablab同意は送信済み。Lablabがteam作成前のDiscord account接続/community参加を追加必須化している。通常メールDiscord登録を送信し、username利用可は確認済みだが、provider hCaptchaの人間確認が未完了。Daisの1回の可視check後にemail verification、OAuth、community参加、team/submission shell作成を再開する。A02〜A14を2026-09-05 00:00 JSTの提出まで固定順序で閉じ、
 A15 portable OSS releaseを続ける。`P01+`のlive owner-capital ladderはpaperを実収益と呼ばず、別credential・別loss
 budget・jurisdiction/broker条件を満たした後だけ進める。顧客資産運用・有償投資助言は登録要否を閉じるまでpaper-onlyとする。
 
