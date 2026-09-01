@@ -1478,12 +1478,9 @@ def main(argv: list[str] | None = None) -> int:
             output, pass_id, values, status="ok" if last_rc == 0 else "failed", args=args,
             error=None if last_rc == 0 else f"parent_failed_rc_{last_rc}",
         )
-    # Legacy B2 used at most three parent turns in one wake.  Direct initially
-    # migrated only refresh + one coverage turn, so an empty page always bought a
-    # five-minute quiet interval before the next page.  Reuse the same parent,
-    # cursor and objective components for the missing third turn; do not introduce
-    # another scheduler or executor.
-    max_parent_turns = 3
+    # One refresh plus one coverage turn keeps the cursor moving without letting
+    # full reconciliation block the next wake's fresh discovery for several minutes.
+    max_parent_turns = 2
     while True:
         last_phase, last_evidence, last_rc = phases[-1]
         values = _merged_phase_summary(
