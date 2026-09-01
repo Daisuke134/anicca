@@ -183,7 +183,10 @@ product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or 
 
 A02 is **IN PROGRESS at the provider-consent boundary**. A new Lablab account was created through its normal
 email OTP flow without Google/GitHub/AMD login, and the Alpaca event screening form now exists; the official
-event page reads `Waiting for approval`. Lablab requires the account owner to accept both a media release
+event page reads `Waiting for approval`. The factual screening fields are autosaved: identity and public
+profile links from the private profile SSOT, Japan, the derived age band, Startups & Entrepreneurship,
+Advanced AI-building experience, and Hackathon/Event Website. Company/job title remain blank because they are
+optional and no authoritative private fact supplies them. Lablab requires the account owner to accept both a media release
 (name/image/voice and event-participation use without additional compensation) and Terms/Privacy consent that
 includes sponsor data sharing. Life Manager must not accept those legal terms for Dais. Team/submission-shell
 creation and the A02 official readback resume immediately after Dais explicitly accepts both consents.
