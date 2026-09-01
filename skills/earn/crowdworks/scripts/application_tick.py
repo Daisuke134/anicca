@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""CrowdWorks wrapper for the shared application transaction coordinator."""
+
+from __future__ import annotations
+
+from dataclasses import replace
+import importlib.util
+from datetime import date
+from pathlib import Path
+import re
+import sys
+from typing import Callable, Mapping
+from urllib.parse import urlsplit
+
+
+_SHARED_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "_shared"
+    / "marketplace-core"
+    / "scripts"
+    / "application_transaction.py"
+)
+_SHARED_MODULE_NAME = "anicca_crowdworks_shared_application_transaction"
+
+
+def _load_shared():
+    if _SHARED_MODULE_NAME in sys.modules:
+        return sys.modules[_SHARED_MODULE_NAME]
+    spec = importlib.util.spec_from_file_location(_SHARED_MODULE_NAME, _SHARED_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("marketplace_application_transaction_unavailable")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[_SHARED_MODULE_NAME] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+shared = _load_shared()
+TickResult = shared.TickResult
+account_lock = shared.account_lock
+load_marketplace_contracts = shared.load_marketplace_contracts
+
+
+_ASCII_DIGITS = re.compile(r"^[0-9]+$")
+_AMOUNT = re.compile(r"^固定報酬: (?P<amount>[1-9][0-9]{0,2}(?:,[0-9]{3})*)円$")
+_DUE = re.compile(r"^完了予定日: (?P<year>[0-9]{4})年(?P<month>0[1-9]|1[0-2])月(?P<day>0[1-9]|[12][0-9]|3[01])日\((?P<weekday>[月火水木金土日])\)$")
+_PROJECT_SELECTOR = 'a[href="/public/jobs/{project_id}"]'
+_AMOUNT_SELECTOR = ".intro-employer_proposed_project > table.conditions span.quotation_price"
+_DUE_SELECTOR = ".intro-employer_proposed_project > table.conditions div.deadline"
+_PROGRESS_SELECTOR = ".cw-global_row > .progress ul.progress > li.current:nth-of-type(2)"
+_BODY_SELECTOR = "._messageSent_iq3vm_6._message_iq3vm_2 > ._messageBody_iq3vm_28:nth-of-type(2) > ._messageContent_iq3vm_35 > ._mediaBody_iq3vm_10:nth-of-type(2) > div:nth-of-type(2) > p"
+_READBACK_FAILED = TickResult(ok=False, error="provider_application_readback_failed")
+_PROPOSAL_LIST_URL = "https://crowdworks.jp/e/proposals"
+_EXPIRE_SELECTOR = "#expire_period"
+_FORM_SELECTOR = 'form#new_proposal[action="/proposals"][method="post"]'
+_TABLE_SELECTOR = "body.employee-proposals.employee-proposals-index .applications.section > table.proposals"
+def _one(page: object, selector: str):
+    locator = page.locator(selector)  # type: ignore[attr-defined]
+    if type(count := locator.count()) is not int or count != 1:
+        raise ValueError("selector_unobserved")
+    return locator
+def _value(locator: object) -> str:
+    if not isinstance(value := locator.input_value(), str):  # type: ignore[attr-defined]
+        raise ValueError("field_unobserved")
+    return value
+def _exact_url(raw_url: object, path: str, query: str = "") -> bool:
+    try:
+        parsed = urlsplit(raw_url) if isinstance(raw_url, str) else None
+        return parsed is not None and parsed.scheme == "https" and parsed.hostname == "crowdworks.jp" and parsed.username is None and parsed.password is None and parsed.port in (None, 443) and parsed.path == path and parsed.query == query and not parsed.fragment and not (query == "" and "?" in raw_url) and not ("#" in raw_url and parsed.fragment == "")
+    except (TypeError, ValueError):
+        return False
+def _read_proposal_detail(page: object, proposal_id: str, project_id: str, *, include_body: bool = False) -> Mapping[str, object]:
+    if _ASCII_DIGITS.fullmatch(proposal_id) is None or _ASCII_DIGITS.fullmatch(project_id) is None:
+        raise ValueError("identity_unobserved")
+    page.goto(f"https://crowdworks.jp/proposals/{proposal_id}")  # type: ignore[attr-defined]
+    if not _exact_url(getattr(page, "url", None), f"/proposals/{proposal_id}"): raise ValueError("route_unobserved")
+    _one(page, _PROJECT_SELECTOR.format(project_id=project_id))
+    amount = _AMOUNT.fullmatch(_one_text(page, _AMOUNT_SELECTOR))
+    due = _DUE.fullmatch(_one_text(page, _DUE_SELECTOR))
+    if amount is None or due is None: raise ValueError("terms_unobserved")
+    parsed_due = date(int(due.group("year")), int(due.group("month")), int(due.group("day")))
+    if due.group("weekday") != "月火水木金土日"[parsed_due.weekday()] or re.sub(r"\s+", " ", _one_text(page, _PROGRESS_SELECTOR)).strip() != "応募・スカウト": raise ValueError("state_unobserved")
+    observed: dict[str, object] = {"proposal_id": proposal_id, "project_id": project_id, "amount_minor": int(amount.group("amount").replace(",", "")), "delivery_due_on": parsed_due.isoformat()}
+    if include_body:
+        body = re.sub(r"\s+", " ", _one_text(page, _BODY_SELECTOR)).strip()
+        if not body: raise ValueError("body_unobserved")
+        observed["_proposal_text"] = body
+    return observed
+def _one_text(page: object, selector: str) -> str:
+    locator = page.locator(selector)  # type: ignore[attr-defined]
+    count = locator.count()
+    value = locator.inner_text() if type(count) is int and count == 1 else None
+    if not isinstance(value, str):
+        raise ValueError("selector_unobserved")
+    return value
+
+
+def reconcile_existing_application(*, page: object, proposal_id: str, opportunity: Mapping[str, object], state_path: Path, ledger_writer: Callable[[Mapping[str, object]], object], now: Callable[[], object], account_ready: Callable[[], bool]) -> TickResult:
+    """Read one existing provider application and import it without submitting."""
+    try:
+        project_id = opportunity.get("external_id")
+    except Exception: return _READBACK_FAILED
+    if not isinstance(proposal_id, str) or _ASCII_DIGITS.fullmatch(proposal_id) is None or not isinstance(project_id, str) or _ASCII_DIGITS.fullmatch(project_id) is None:
+        return _READBACK_FAILED
+    try:
+        detail = _read_proposal_detail(page, proposal_id, project_id, include_body=True)
+    except (KeyboardInterrupt, SystemExit, MemoryError):
+        raise
+    except Exception:
+        return _READBACK_FAILED
+    proposal_text = detail.pop("_proposal_text")
+    observed = dict(detail)
+    result = shared.run_transaction(
+        platform="crowdworks",
+        opportunity=opportunity,
+        proposal_text=proposal_text,
+        proposed_amount_minor=observed["amount_minor"],
+        delivery_due_on=observed["delivery_due_on"],
+        state_path=state_path,
+        account_ready=account_ready,
+        submitter=lambda *_args: {"proposal_id": proposal_id},
+        readback=lambda _proposal, _project: observed,
+        ledger_writer=ledger_writer,
+        now=now,
+    )
+    return replace(result, submitted=False)
+def _submit_application(page: object, opportunity: Mapping[str, object], proposal_text: str, amount_minor: int, delivery_due_on: str, expire_period_days: int | None) -> Mapping[str, object]:
+    project_id = opportunity.get("external_id")
+    try:
+        form_url = f"https://crowdworks.jp/proposals/new?job_offer_id={project_id}"
+        if getattr(page, "url", None) in (None, "about:blank"): page.goto(form_url)  # type: ignore[attr-defined]
+        if not isinstance(project_id, str) or not _exact_url(getattr(page, "url", None), "/proposals/new", f"job_offer_id={project_id}"): raise ValueError("route")
+        form = _one(page, _FORM_SELECTOR)
+        if str(form.get_attribute("method") or "").lower() != "post" or form.get_attribute("action") != "/proposals": raise ValueError("form")
+        job = _one(form, 'input#proposal_job_offer_id[type="hidden"]')
+        if job.get_attribute("type") != "hidden" or _value(job) != project_id: raise ValueError("job")
+        for selector, expected in (("#without_condition_false", "false"), ("#proposal_conditions_attributes_0_payment_type_fixed_price", "fixed_price"), ("#how_to_present_fixed_price_contract_amount", "contract_amount")):
+            item = _one(form, f'input{selector}[type="radio"][value="{expected}"]')
+            if item.get_attribute("type") != "radio" or item.get_attribute("value") != expected or not callable(getattr(item, "check", None)): raise ValueError("payment")
+            item.check()
+        amount = _one(form, 'input#amount_dummy_[type="text"]')
+        amount.fill(str(amount_minor))
+        amount.blur()
+        if _value(_one(form, 'input#proposal_conditions_attributes_0_milestones_attributes_0_amount_without_sales_tax[type="hidden"]')) != str(amount_minor): raise ValueError("amount")
+        year, month, day = delivery_due_on.split("-")
+        for suffix, expected in (("1i", year), ("2i", month), ("3i", day)):
+            item = _one(form, f'select[id$="deadline_{suffix}"]')
+            selected_value = expected if suffix == "1i" else str(int(expected))
+            item.select_option(selected_value)
+            if _value(item) != selected_value: raise ValueError("due")
+        body = _one(form, "textarea#proposal_conditions_attributes_0_message_attributes_body")
+        body.fill(proposal_text)
+        if _value(body) != proposal_text: raise ValueError("body")
+        expiry = _one(form, 'select#expire_period[name="expire_period"]')
+        if expire_period_days is None and _value(expiry) not in ("", "0"):
+            raise ValueError("expiry")
+        elif expire_period_days is not None:
+            expiry.select_option(str(expire_period_days))
+            if _value(expiry) != str(expire_period_days): raise ValueError("expiry")
+        submit = _one(form, 'input[name="commit"][type="submit"]')
+        if not submit.is_enabled(): raise ValueError("submit")
+    except Exception:
+        raise shared.SubmissionNotStarted("proposal_form_changed") from None
+    try:
+        submit.click(no_wait_after=True)
+        wait_for_url = getattr(page, "wait_for_url", None)
+        if not callable(wait_for_url): raise RuntimeError("navigation")
+        wait_for_url(re.compile(r"^https://crowdworks\.jp/proposals/[0-9]+$"), timeout=10_000)
+    except Exception: raise RuntimeError("submission_uncertain") from None
+    try:
+        parsed = urlsplit(getattr(page, "url", None))
+        match = re.fullmatch(r"/proposals/([0-9]+)", parsed.path) if _exact_url(getattr(page, "url", None), parsed.path) else None
+    except (TypeError, ValueError):
+        match = None
+    if match is None: raise RuntimeError("submission_uncertain")
+    return {"proposal_id": match.group(1)}
+def _readback_application(page: object, proposal_id: str | None, project_id: str) -> Mapping[str, object]:
+    try:
+        if proposal_id is not None:
+            return _read_proposal_detail(page, proposal_id, project_id)
+        page.goto(_PROPOSAL_LIST_URL)  # type: ignore[attr-defined]
+        if not _exact_url(getattr(page, "url", None), "/e/proposals"): return {}
+        for selector in ('a[href*="/e/proposals?page="]', 'a[rel="next"]'):
+            if page.locator(selector).count(): return {}  # type: ignore[attr-defined]
+        links = _one(page, _TABLE_SELECTOR).locator('a[href^="/proposals/"]')
+        if type(count := links.count()) is not int or count < 1: return {}
+        identities = set()
+        for index in range(count):
+            href = links.nth(index).get_attribute("href")
+            parsed = urlsplit(href or "")
+            match = re.fullmatch(r"/proposals/([0-9]+)", parsed.path)
+            if match is not None and not (parsed.scheme or parsed.netloc or parsed.query or parsed.fragment): identities.add(match.group(1))
+        matches = []
+        for identity in sorted(identities):
+            try:
+                matches.append(_read_proposal_detail(page, identity, project_id))
+            except Exception:
+                continue
+        return matches[0] if len(matches) == 1 else {}
+    except (KeyboardInterrupt, SystemExit, MemoryError): raise
+    except Exception:
+        return {}
+def execute_application(*, page: object, opportunity: Mapping[str, object], proposal_text: str, proposed_amount_minor: int, delivery_due_on: str, expire_period_days: int | None, state_path: Path, ledger_writer: Callable[[Mapping[str, object]], object], now: Callable[[], object], account_ready: Callable[[], bool]) -> TickResult:
+    """Submit one fixed-price intent once and verify it from CrowdWorks."""
+    project_id = opportunity.get("external_id") if isinstance(opportunity, Mapping) else None
+    try:
+        valid = isinstance(project_id, str) and _ASCII_DIGITS.fullmatch(project_id) is not None and isinstance(proposal_text, str) and bool(proposal_text) and isinstance(proposed_amount_minor, int) and not isinstance(proposed_amount_minor, bool) and proposed_amount_minor > 0 and isinstance(delivery_due_on, str) and date.fromisoformat(delivery_due_on).isoformat() == delivery_due_on and (expire_period_days is None or (isinstance(expire_period_days, int) and not isinstance(expire_period_days, bool) and expire_period_days > 0))
+    except (TypeError, ValueError, OverflowError):
+        valid = False
+    if not valid:
+        return TickResult(ok=False, error="proposal_form_changed", project_id=project_id if isinstance(project_id, str) else None)
+    return run_tick(
+        opportunity=opportunity,
+        proposal_text=proposal_text,
+        proposed_amount_minor=proposed_amount_minor,
+        delivery_due_on=delivery_due_on,
+        state_path=state_path,
+        account_ready=account_ready,
+        submitter=lambda source, text, amount, due: _submit_application(page, source, text, amount, due, expire_period_days),
+        readback=lambda proposal, project: _readback_application(page, proposal, project),
+        ledger_writer=ledger_writer,
+        now=now,
+    )
+def run_tick(**kwargs):
+    return shared.run_transaction(platform="crowdworks", **kwargs)
+
+
+__all__ = [
+    "TickResult",
+    "account_lock",
+    "load_marketplace_contracts",
+    "reconcile_existing_application",
+    "execute_application",
+    "run_tick",
+]

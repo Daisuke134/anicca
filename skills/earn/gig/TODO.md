@@ -208,6 +208,14 @@ capability claim is backed by an installed executable capability.
   exact official sent/readback matches the shared product contract, replay is effect-zero, and later
   inquiry/order/payment retain CrowdWorks plus job identity. CrowdWorks exposes job application rather
   than a worker storefront publication flow. Lancers remains excluded because its separate owner owns it.
+  The public `crowdworks-revenue-application` owner and its recovered submit/readback transaction are
+  implemented on a five-minute cadence. A live official search currently returns no open job matching
+  Japanese/English UI, Web or app text to Italian without a false native claim or AI prohibition, so the
+  owner completes cleanly as `no_eligible_open_job` with `effect_delta:0` and keeps polling. The isolated
+  account currently reads back `logged_out`; Google OAuth reaches Google's passkey challenge, while the
+  ordinary password route is not offered. Remaining closure is exactly one eligible open job, ordinary
+  account authentication, verified proposal receipt, and an effect-zero replay; neither condition pauses
+  the four independent Coconala owners.
 
 ### Live four-lane repair
 

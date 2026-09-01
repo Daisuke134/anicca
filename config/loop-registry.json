@@ -24,6 +24,17 @@
     "ai.anicca.tsbridge"
   ],
   "loops": {
+    "crowdworks-revenue-application": {
+      "cadence": {"start_interval_seconds": 300},
+      "cleanup": {"max_age_days": 14, "max_runs": 100},
+      "domain": "earn",
+      "effect_class": "application",
+      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "label": "ai.anicca.crowdworks-revenue-application",
+      "log_root": "~/.local/state/anicca/crowdworks/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/anicca/crowdworks"
+    },
     "affiliate-browser": {
       "cadence": {
         "keep_alive": true

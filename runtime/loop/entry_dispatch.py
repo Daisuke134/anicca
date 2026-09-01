@@ -66,6 +66,7 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     writer_state = home / ".local/state/life-manager/writer"
     lancers = root / "skills/earn/lancers/scripts"
     lancers_state = home / ".local/state/anicca/lancers"
+    crowdworks = root / "skills/earn/crowdworks/scripts"
     python = sys.executable
     cloak_python = str(home / ".openclaw/skills/_shared/venv-cloak/bin/python")
     fixed = {
@@ -92,6 +93,9 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         "lancers-revenue-application": [
             python, str(lancers / "application_loop.py"), "--json",
             "--state-path", str(lancers_state / "application.json"),
+        ],
+        "crowdworks-revenue-application": [
+            cloak_python, str(crowdworks / "application_owner.py"),
         ],
         "lancers-revenue-work-sync": [
             python, str(lancers / "work_sync.py"), "--json",
