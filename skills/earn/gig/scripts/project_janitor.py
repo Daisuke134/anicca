@@ -151,6 +151,8 @@ def _metadata_is_terminal(field: str, value: object) -> bool:
         else:
             return False
     normalized = value.strip().casefold() if isinstance(value, str) else ""
+    if field in {"transaction_state", "talkroom_state"}:
+        return normalized == COMPLETE_STATE.casefold()
     if field in UNCERTAIN_NONE_FIELDS and normalized == "none":
         return False
     if field in {"acceptance_status", "current_acceptance_status"} and normalized == "pass":
@@ -159,8 +161,14 @@ def _metadata_is_terminal(field: str, value: object) -> bool:
 
 
 def _contract_reclaim_reason(state: dict) -> str | None:
-    if state.get("transaction_state") != COMPLETE_STATE:
+    observed_states = [
+        state.get(field) for field in ("transaction_state", "talkroom_state")
+        if state.get(field) not in (None, "", "unknown")
+    ]
+    if COMPLETE_STATE not in observed_states:
         return "transaction_not_complete"
+    if any(value != COMPLETE_STATE for value in observed_states):
+        return "transaction_state_conflict"
     for field in CONTRACT_GUARD_FIELDS:
         if field in state and not _metadata_is_terminal(field, state[field]):
             return f"contract_guard:{field}"
