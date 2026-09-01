@@ -420,8 +420,7 @@ def read_only_inventory(*, state_path: Path = DEFAULT_STATE_PATH, browser_factor
     try:
         verified_proposals = _verified_proposals(Path(state_path))
         with application_tick.account_lock(Path(state_path).with_name("preflight.json")):
-            browser = (browser_factory or application_tick._default_browser_factory)(CDP_URL)
-            page = application_tick._new_owned_page(browser)
+            browser, page = application_tick._open_owned_page(browser_factory)
             if not application_tick._production_account_ready(page):
                 raise SourceFailure("account_unavailable")
             logged_in = True
@@ -494,8 +493,7 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
     try:
         verified_proposals = _verified_proposals(Path(state_path))
         with application_tick.account_lock(Path(state_path).with_name("work-sync.json")):
-            browser = (browser_factory or application_tick._default_browser_factory)(CDP_URL)
-            page = application_tick._new_owned_page(browser)
+            browser, page = application_tick._open_owned_page(browser_factory)
             if not application_tick._production_account_ready(page):
                 raise SourceFailure("account_unavailable")
             logged_in = True
