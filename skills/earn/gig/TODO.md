@@ -4909,9 +4909,9 @@ not part of this owner's execution queue. Do not advance a disk-cleanup item fro
 
 **Active atom: `PAR-1`.** Keep the following order unchanged:
 
-1. [ ] `PAR-1` — distinct authenticated BrowserContexts and lease identities for Apply, Reply,
+1. [x] `PAR-1` — distinct authenticated BrowserContexts and lease identities for Apply, Reply,
    Storefront and Paid; no sibling-caused `browser_lease_busy`.
-2. [ ] `PAR-2` — one deterministic effect fence per application, talkroom, listing or order.
+2. [x] `PAR-2` — one deterministic effect fence per application, talkroom, listing or order.
 3. [ ] `PAR-3` — durable bounded producer-consumer concurrency inside all four owners.
 4. [ ] `PAR-4` — resumable nonterminal work items; one slow/failing item never blocks another.
 5. [ ] `PAR-5` — concurrent truthful effects, official readback and replay-zero from one immutable
@@ -5020,15 +5020,18 @@ pass. Do not claim Paid working before this P0 and the buyer outcomes below are 
 business lanes remain four independent launchd owners; no fifth scheduler or global browser-effect
 queue is added. Each owner must also progress independent work concurrently inside its own lane.
 
-- [ ] `PAR-1` Give Apply, Reply, Storefront and Paid distinct authenticated BrowserContexts and
-  distinct lease identities. PASS = all four owners perform fresh official readback concurrently,
-  no owner returns `browser_lease_busy` because of a sibling, and stopping or timing out one owner
-  does not close, restart or invalidate another owner's context.
-- [ ] `PAR-2` Keep one deterministic effect fence per marketplace resource: application, talkroom,
+- [x] `PAR-1` Give Apply, Reply, Storefront and Paid distinct authenticated BrowserContexts and
+  distinct lease identities. Release `da6659e17fdc4f353d5d2c320fbae97524de6aa6` recorded natural
+  pass terminals for all four lanes. Concurrent production readback showed distinct authenticated
+  contexts for all four owners and no `browser_lease_busy`; releasing Reply left every Apply,
+  Storefront and Paid context intact.
+- [x] `PAR-2` Keep one deterministic effect fence per marketplace resource: application, talkroom,
   listing or order. PASS = concurrent workers may prepare different resources, but two workers
   cannot submit the same application, message, listing mutation, attachment, cancellation or formal
-  delivery; an uncertain prior effect is reconciled before any retry.
-- [ ] `PAR-3` Run durable producer-consumer concurrency inside every lane. PASS = fresh eligible work
+  delivery; an uncertain prior effect is reconciled before any retry. Storefront retirement now
+  persists a per-listing intent outside pass evidence and reconciles the official seller card before
+  any retry; release `856bbf3f3` produced a natural terminal pass after deployment.
+- [ ] `PAR-3` **ACTIVE:** Run durable producer-consumer concurrency inside every lane. PASS = fresh eligible work
   is durably claimed before model work, bounded workers progress different resource IDs in parallel,
   a slow item does not block discovery or another item, and full reconciliation yields to urgent
   claimed work without being skipped permanently.
@@ -5177,6 +5180,50 @@ queue is added. Each owner must also progress independent work concurrently insi
    `failed=0`, Negotiate has zero unowned actionable items, Storefront has a verified listing
    effect or a truthful no-op reason, Apply has complete accounting, and all four replay to zero
    duplicate external effects.
+6. **Shared gig kernel extraction.** Do this only after the Coconala four-lane release gate passes;
+   do not delay the current Coconala repair with a directory migration. Reuse the existing
+   provider-neutral modules at `skills/earn/gig/scripts/` and keep marketplace behavior behind thin
+   modules under `scripts/providers/`. The target shape is:
+
+   ```text
+   skills/earn/gig/
+   ├── config/connectors/{coconala,crowdworks}.json
+   ├── schemas/                         # neutral contracts + truly provider-specific schemas
+   ├── scripts/
+   │   ├── provider_adapter.py          # discovery/message/effect/readback contract
+   │   ├── project_workspace.py         # isolated resumable order workspace
+   │   ├── project_worker.py            # bounded independent worker
+   │   ├── workflow_executor.py         # prepare→verify→effect→official readback
+   │   ├── work_event_projector.py      # durable state projection
+   │   ├── marketplace_kpi_adapter.py   # revenue/conversion observations
+   │   └── providers/
+   │       ├── coconala_*.py
+   │       ├── crowdworks_*.py
+   │       └── upwork_*.py
+   └── tests/                            # common contract checks + minimal provider checks
+   ```
+
+   Shared ownership is limited to work-item state, workspace, bounded concurrency, retry/resume,
+   effect fences, context/profile input, artifact handoff, official readback contracts and KPI
+   projection. Login/session transport, URLs/APIs/selectors, discovery, application forms,
+   messaging, delivery/payment states and marketplace policy remain provider-owned. The agent makes
+   semantic decisions; deterministic adapters perform and verify effects. Do not create a second
+   scheduler, generic marketplace framework, copied Paid loop or copied Apply loop.
+
+   - [ ] `SHARE-1` Route one existing Coconala path and one existing Upwork path through the same
+     `provider_adapter.py` work-item/effect/readback contract without changing their live behavior.
+   - [ ] `SHARE-2` Move no working code merely for naming. Extract a helper only when both live
+     providers already duplicate the same behavior; otherwise leave it provider-owned.
+   - [ ] `SHARE-3` Make each prepared work item start its own writer immediately under bounded
+     concurrency; no parent all-prepare/all-write barrier and no cross-resource waiting.
+   - [ ] `SHARE-4` Prove common retry/resume and replay-zero with one transient read failure, one
+     process interruption and one uncertain prior effect while an unrelated item completes.
+7. **CrowdWorks adapter.** After `SHARE-1` through `SHARE-4`, add only CrowdWorks-specific connector,
+   authentication/session, discovery, application, messaging, contract/delivery/payment and official
+   readback modules. Reuse the shared profile, workspace, worker, effect fence, retry/resume,
+   observability and KPI paths. Acceptance is one real eligible application with official readback,
+   one inbound message handled with official readback, one resumable contracted-work item, and a
+   second natural wake with zero duplicate external effects.
 - [ ] Restore the explicit Job Hunter pause boundary. Current process readback again shows
   `job-search-daily` and Mercor browser roots alive without `MacAppCodeSignClone`; stop the owners,
   prevent release reconciliation from re-enabling user-paused labels, and verify they stay absent

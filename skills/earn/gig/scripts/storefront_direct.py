@@ -5059,6 +5059,23 @@ async def _execute_listing_state_effect_async(
         await ws.send(json.dumps({"id": cid, "method": "Page.navigate",
                                   "params": {"url": "https://coconala.com/mypage/services_lists"}})); cid += 1
         _, cid = await listing_inventory._wait_for_load(ws, asyncio.get_event_loop().time() + 15, cid)
+        # Reconcile the resource before retrying.  A prior click may have reached Coconala
+        # even when this process died before recording its readback.
+        raw, cid = await _evaluate(ws, (
+            "JSON.stringify([...document.querySelectorAll('.serviceListContentBox')]"
+            f".filter(c=>(c.innerHTML||'').includes({json.dumps('/services/' + service_id)}))"
+            ".map(c=>({text:(c.innerText||'').slice(0,200),restore:[...c.querySelectorAll('a')]"
+            ".map(a=>a.getAttribute('href')||'').filter(h=>/\\/services\\/(open|public)\\//.test(h))})))"
+        ), cid)
+        before_cards = json.loads(str(raw or "[]"))
+        if before_cards and "公開中" not in str(before_cards[0].get("text") or ""):
+            if not (before_cards[0].get("restore") or []):
+                raise RuntimeError("storefront_retire_prior_effect_unresolved")
+            readback = {"service_id": service_id, "cards": before_cards,
+                        "observed_at_epoch": int(time.time()), "archived": True,
+                        "restore_href": before_cards[0]["restore"][0], "recovered": True}
+            _atomic_write(evidence_dir / f"listing-state-readback-{service_id}.json", readback)
+            return readback
         clicked, cid = await _evaluate(ws, (
             "(()=>{const a=[...document.querySelectorAll('a.js_change-open-status')]"
             f".find(e=>e.getAttribute('href')==={json.dumps(action)});"
@@ -6530,6 +6547,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             retire_result = None
             retire_attempted_this_wake = False
             retire_effect_this_wake = False
+            retire_confirmed_this_wake = False
             # The allocator returns the single row it selected, preferring retirement, not the
             # whole catalogue; reading a list it never returns is how this silently did nothing.
             selected_allocation = portfolio.get("selected") or {}
@@ -6582,19 +6600,24 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         raise RuntimeError("storefront_retire_tab_open_failed")
                     try:
                         retire_attempted_this_wake = True
-                        retire_attempt = inventory_path.parent / "retire-attempt.json"
+                        retire_attempt = args.state_dir / f"retire-intent-{retire_service_id}.json"
                         _atomic_write(retire_attempt, {
                             "version": 1, "status": "attempted", "effect": 0,
                             "service_id": retire_service_id, "contract_sha256": retire_contract["contract_sha256"],
+                            "mutation_contract": retire_contract,
                             "attempted_at_epoch": int(time.time()),
                         })
                         retire_result = asyncio.run(_execute_listing_state_effect_async(
                             str(retire_tab["ws"]), contract=retire_contract,
                             evidence_dir=inventory_path.parent))
-                        retire_effect_this_wake = True
+                        retire_confirmed_this_wake = True
+                        retire_effect_this_wake = retire_result.get("recovered") is not True
                         _atomic_write(retire_attempt, {
-                            "version": 1, "status": "confirmed", "effect": 1,
+                            "version": 1, "status": "confirmed",
+                            "effect": int(retire_effect_this_wake),
                             "service_id": retire_service_id, "contract_sha256": retire_contract["contract_sha256"],
+                            "mutation_contract": retire_contract,
+                            "recovered": retire_result.get("recovered") is True,
                             "confirmed_at_epoch": int(time.time()),
                         })
                     finally:
@@ -7132,10 +7155,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 draft_result,
             )
             accepted_effect = int(
-                pending_effect is not None or retire_attempted_this_wake
+                pending_effect is not None or retire_effect_this_wake
                 or create_effect_this_wake or draft_effect_this_wake
             )
-            accepted_readback = int((create_draft_claim or {}).get("readback") or 0)
+            accepted_readback = int(
+                bool((create_draft_claim or {}).get("readback")) or retire_confirmed_this_wake
+            )
             if pending_effect is not None:
                 effect_row = {
                     "version": 1, "status": "accepted", "effect": 1,
@@ -7201,11 +7226,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             row = _receipt(
                 pass_id,
-                status=("delivery_unknown" if retire_attempted_this_wake and not retire_effect_this_wake
+                status=("delivery_unknown" if retire_attempted_this_wake and not retire_confirmed_this_wake
                         else "completed"),
                 reason=("public_accepted" if pending_effect is not None
                         else "draft_created" if create_effect_this_wake
-                        else "retire_delivery_unknown" if retire_attempted_this_wake and not retire_effect_this_wake
+                        else "retire_delivery_unknown" if retire_attempted_this_wake and not retire_confirmed_this_wake
+                        else "retire_reconciled" if retire_confirmed_this_wake and not retire_effect_this_wake
                         else "retire_accepted" if retire_effect_this_wake
                         else "draft_prepared" if draft_effect_this_wake
                         else "judgement_ready" if judgement["decision"] == "change"
@@ -7226,7 +7252,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 changed_field=judgement.get("changed_field"),
                 experiment_key=judgement.get("experiment_key"),
                 public_after_path=(str(pending_effect["public_after_path"]) if pending_effect else None),
-                recovered_effect=bool(pending_effect and pending_effect["recovered"]),
+                recovered_effect=bool(
+                    (pending_effect and pending_effect["recovered"])
+                    or (retire_result or {}).get("recovered")
+                ),
                 analytics_snapshot_key=analytics["snapshot_key"],
                 catalog_analytics=analytics.get("catalog_metrics"),
                 catalog_conversion_baseline=catalog_baseline,

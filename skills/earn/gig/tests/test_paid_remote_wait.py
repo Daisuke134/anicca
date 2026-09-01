@@ -1052,6 +1052,34 @@ def test_paid_child_env_scopes_browser_owner_by_talkroom(tmp_path):
     assert "GIG_CDP_LOCK_HELD" not in env
 
 
+def test_paid_browser_owners_are_scoped_by_talkroom():
+    paid = load("paid_direct")
+
+    assert paid._paid_browser_owners("18183618") == (
+        "paid-direct-18183618",
+        "paid-direct-18183618-remote-builder",
+        "paid-direct-18183618-remote-verifier",
+    )
+
+
+def test_paid_reclaims_only_the_current_talkroom_tabs(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    calls = []
+    monkeypatch.setattr(
+        paid.subprocess, "run",
+        lambda argv, **kwargs: calls.append((argv, kwargs["env"]["CLOAK_BROWSER_OWNER"])),
+    )
+
+    paid._reclaim_paid_tabs(
+        SimpleNamespace(cdp_helper=tmp_path / "cdp_default_tab.py", cdp_lock_dir=tmp_path),
+        "18183618",
+    )
+
+    assert [(call[0][-1], call[1]) for call in calls] == [
+        (owner, owner) for owner in paid._paid_browser_owners("18183618")
+    ]
+
+
 def test_effect_process_diagnostic_is_bounded():
     paid = load("paid_direct")
     process = SimpleNamespace(returncode=75, stdout="x" * 2500, stderr="deferred_cdp_busy")

@@ -145,6 +145,18 @@ class EntryDispatchTest(unittest.TestCase):
             self.assertEqual(Path(command[0]),expected)
             self.assertEqual(command[1],str(root/'skills/affiliate/scripts/local_browser.py'))
 
+    def test_paid_direct_uses_the_shared_gig_target_registry(self):
+        home = Path('/home')
+        base = {'KEEP': 'value'}
+
+        environment = entry_dispatch.environment_for('hf-gig-paid-direct', home, base)
+
+        self.assertEqual(base, {'KEEP': 'value'})
+        self.assertEqual(environment['KEEP'], 'value')
+        self.assertEqual(
+            environment['CLOAK_TARGET_OWNERS_FILE'],
+            '/home/.cloak/vault/gig-target-owners.json',
+        )
     def test_life_manager_daily_driver_uses_release_dispatch_with_exact_argv(self):
         command = command_for('life-manager-daily-driver', Path('/release'), Path('/home'))
         self.assertEqual(command, [
