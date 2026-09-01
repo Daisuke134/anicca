@@ -25,7 +25,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 ### 0.0 current cursor — LancersをGeneral Agentの最初の実環境として閉じる
 
 DaisはLancers応募laneを先に直すよう明示的に順序変更した。Alpaca trackは削除せず、Lancersの現在atomが閉じるまで
-pauseして保持する。現在activeな一件はAtomic program ledger Seq 28 `ELZ-L06` provider admission boundaryである。
+pauseして保持する。現在activeな一件はAtomic program ledger Seq 29 `ELZ-L07` one money wake ownerである。
 Seq 26 `ELZ-L04`はEliza AgentRuntimeが共通browserで案件5595090を観察し、モデルがintentを作り、
 effect kernel内の一回だけの送信で公式Proposal ID `27876969`を取得してDONEになった。別processからの同一effect keyは
 `effect_started=false / execute_count=0`でreplay-zeroを実証した。Seq 27 `ELZ-L05`は同じdurable PGliteを別processで
@@ -980,8 +980,8 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 25 | ELZ-L03 historical GA-10 fixture parity | **DONE** | canonical private `lancers-fixture-receipt.json` mode 0600 status=`PASS`。fork merge `03d97b88…`。記録済みGA-10 chain（absent/32 → execute 1 → present/33 → replay execute 0/33）をC08 kernelへ通し同一terminal stateを再現。provider call 0はreplay legの`executeOnce`が例外を投げる構造で担保し、mutation 2件でtestがdecorationでないことを実測。typecheck exit 0、plugin suite 17/17、review open 0 |
 | 26 | ELZ-L04 fresh authorized application | **DONE** | canonical private `application-receipt.json` mode 0600 status=`PASS`、SHA256 `e0517d2d…`。Eliza AgentRuntime＋single `plugin-life-manager`＋共通`plugin-browser`がfresh案件5595090を観察し、model-authored intentを確認画面でreadback後、effect key `lancers:application:5595090:v1`を一回だけ実行。公式finishと`/work/proposal/27876969`を読み、Proposal ID `27876969`、税抜400,000円、net 367,400円、期日2027-02-10を確定。fresh execute 1、別process replay execute 0。旧application writerはunloaded。browser generic fix commits `fc2e2dd517` / `9be60df245` |
 | 27 | ELZ-L05 application replay and ack-loss reconcile | **DONE** | canonical private `application-replay-receipt.json` mode 0600 status=`PASS`、SHA256 `18acc214…`。同一PGliteを別OS process（bootstrap PID 53431 / replay PID 53480 / unknown PID 53422）で再開。公式`/work/proposal/27876969` present replayはeffect started 0、provider execute 0、ledger insert 0、effect intent/outcome receipt countsは1→1。unknown readbackは`EFFECT_RECEIPT_KERNEL_UNKNOWN`、provider execute 0、blind retry 0 |
-| 28 | ELZ-L06 provider admission boundary | **IN_PROGRESS — NEXT** | Lancersだけをactive money providerにし、Upwork/Coconala/unknown provider effect 0の`provider-admission-receipt.json` |
-| 29 | ELZ-L07 one money wake owner | TODO | 一wake/一lease/heartbeat/next tick/clean releaseを一ownerで証明する`money-wake-receipt.json` |
+| 28 | ELZ-L06 provider admission boundary | **DONE** | canonical private `provider-admission-receipt.json` mode 0600 status=`PASS`、SHA256 `a7808bc6…`。provider-neutral `admitProviderEffect`へactive set `[lancers]`を渡し、Lancersだけadmitted。Upwork/Coconala/unknownは全て`LIFE_MANAGER_PROVIDER_NOT_ACTIVE`でeffect 0。semantic判断/UI操作/provider brain 0。Eliza fork PR #69、merge `8844df49…` |
+| 29 | ELZ-L07 one money wake owner | **IN_PROGRESS — NEXT** | 一wake/一lease/heartbeat/next tick/clean releaseを一ownerで証明する`money-wake-receipt.json` |
 | 30 | ELZ-L08 source-complete opportunity snapshot | TODO | source completenessとfresh timestampを持つread-only`opportunity-snapshot-receipt.json` |
 | 31 | ELZ-L09 profit/risk/capability decision | TODO | model理由、expected net、cost、capacity、truthful feasibilityを持つ`opportunity-decision-receipt.json` |
 | 32 | ELZ-L10 sealed intent cap and expiry | TODO | immutable content hash、effect key、spend/capacity ceiling、expiry、duplicate fenceの`sealed-intent-receipt.json` |
