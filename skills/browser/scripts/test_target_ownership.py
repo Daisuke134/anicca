@@ -70,31 +70,31 @@ def test_default_tab_close_refuses_target_owned_by_another_loop(
     assert calls == []
 
 
-def test_visible_default_tab_uses_json_new_endpoint(tmp_path, monkeypatch):
+def test_visible_tab_uses_owned_browser_context(tmp_path, monkeypatch):
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
-    requests = []
+    calls = []
+    monkeypatch.setattr(default_tab, "_lease", lambda owner: {
+        "ok": True, "context_id": f"context-{owner}",
+    })
 
-    def fake_urlopen(request, timeout):
-        requests.append((request.full_url, request.get_method(), timeout))
-        return SimpleNamespace(read=lambda: json.dumps({
-            "id": "visible-1",
-            "webSocketDebuggerUrl": "ws://127.0.0.1:9223/devtools/page/visible-1",
-        }).encode())
+    async def fake_call(method, params=None):
+        calls.append((method, params))
+        return {"targetId": "visible-1"}
 
-    monkeypatch.setattr(default_tab.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(default_tab, "_call", fake_call)
 
     row = default_tab.open_tab(
         "https://coconala.com/talkrooms/18211957", owner="paid",
     )
 
-    assert requests == [(
-        "http://127.0.0.1:9222/json/new?https%3A%2F%2Fcoconala.com%2Ftalkrooms%2F18211957",
-        "PUT",
-        8,
-    )]
+    assert calls == [("Target.createTarget", {
+        "url": "https://coconala.com/talkrooms/18211957",
+        "browserContextId": "context-paid",
+        "background": False,
+    })]
     assert row["target_id"] == "visible-1"
-    assert row["ws"] == "ws://127.0.0.1:9223/devtools/page/visible-1"
+    assert row["context"] == "context-paid"
     assert ownership.owner_for_target("visible-1") == "paid"
 
 
@@ -102,6 +102,9 @@ def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypat
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
     sent = []
+    monkeypatch.setattr(default_tab, "_lease", lambda owner: {
+        "ok": True, "context_id": f"context-{owner}",
+    })
 
     class FakeWebSocket:
         async def send(self, payload):
@@ -128,5 +131,6 @@ def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypat
     asyncio.run(default_tab._serve_hidden_tab("https://coconala.com", owner="paid"))
 
     assert [row["method"] for row in sent] == ["Target.createTarget", "Target.closeTarget"]
+    assert sent[0]["params"]["browserContextId"] == "context-paid"
     assert sent[-1]["params"] == {"targetId": "hidden-1"}
     assert ownership.owner_for_target("hidden-1") is None

@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
-"""Open a tab in the browser's PERSISTENT DEFAULT context (the daily-driver's own session).
+"""Open a tab in the caller's authenticated leased BrowserContext.
 
-Why this exists: cdp_context_lease.py gives each loop an incognito BrowserContext so loops stop
-navigating each other's tabs. That isolation is right for most work, but an incognito context only
-carries whatever cookies the vault seeds into it — and Coconala's provider/seller area
-(coconala.com/mypage/services_lists, /services/add, service edit) rejects a cookie-only seeded
-context with a 302 to /login, because it checks auth the base cookie snapshot does not carry. The
-persistent default context (where the real logged-in daily-driver session lives) passes that check.
-
-So: B0 storefront work drives the DEFAULT context via this helper; B1/B2 keep using the gig lease.
-A tab created with Target.createTarget and NO browserContextId lands in the default context (same
-primitive session_vault.py keepalive already uses to reach the authenticated session).
+Each loop already supplies a distinct CLOAK_BROWSER_OWNER. cdp_context_lease seeds that owner's
+context from the authenticated session vault, so sibling loops can navigate concurrently without
+sharing or closing one another's tabs.
 
     python3 cdp_default_tab.py open <url> --owner gig-pass
     python3 cdp_default_tab.py close <target_id> --owner gig-pass
@@ -22,8 +15,9 @@ import json
 import os
 import sys
 import urllib.request
-from urllib.parse import quote, urlparse
+from urllib.parse import urlparse
 
+import cdp_context_lease
 import target_ownership
 
 try:
@@ -49,6 +43,13 @@ def _page_ws(target_id):
     return f"ws://{parsed.netloc}/devtools/page/{target_id}"
 
 
+def _lease(owner):
+    lease = cdp_context_lease.acquire(owner)
+    if not lease.get("ok") or not lease.get("context_id"):
+        raise RuntimeError(f"browser context lease failed: {lease.get('reason', 'unknown')}")
+    return lease
+
+
 async def _call(method, params=None):
     async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
         await ws.send(json.dumps({"id": 1, "method": method, "params": params or {}}))
@@ -62,17 +63,19 @@ async def _call(method, params=None):
 
 def open_tab(url, background=False, owner=None):
     owner = target_ownership.require_owner(owner)
-    request = urllib.request.Request(
-        f"{_cdp_base()}/json/new?{quote(url, safe='')}", method="PUT",
-    )
-    res = json.loads(urllib.request.urlopen(request, timeout=8).read())
-    tid = res["id"]
+    lease = _lease(owner)
+    opened = asyncio.run(_call("Target.createTarget", {
+        "url": url,
+        "browserContextId": lease["context_id"],
+        "background": background,
+    }))
+    tid = opened["targetId"]
     target_ownership.claim_target(tid, owner)
     return {
         "ok": True,
         "target_id": tid,
-        "ws": res["webSocketDebuggerUrl"],
-        "context": "default",
+        "ws": _page_ws(tid),
+        "context": lease["context_id"],
         "background": background,
         "owner": owner,
     }
@@ -80,11 +83,13 @@ def open_tab(url, background=False, owner=None):
 
 async def _serve_hidden_tab(url, owner=None):
     owner = target_ownership.require_owner(owner)
+    lease = _lease(owner)
     async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
         await ws.send(json.dumps({
             "id": 1,
             "method": "Target.createTarget",
-            "params": {"url": url, "hidden": True, "background": True},
+            "params": {"url": url, "hidden": True, "background": True,
+                       "browserContextId": lease["context_id"]},
         }))
         while True:
             msg = json.loads(await ws.recv())
@@ -98,7 +103,7 @@ async def _serve_hidden_tab(url, owner=None):
             "ok": True,
             "target_id": target_id,
             "ws": _page_ws(target_id),
-            "context": "default",
+            "context": lease["context_id"],
             "hidden": True,
             "owner": owner,
         }), flush=True)
