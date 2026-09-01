@@ -23,6 +23,38 @@ readback; a phase name is never a checkbox. Do not start a later item until ever
 is checked. Check an item only with the evidence named after `PASS =`. Chat, process liveness,
 model narration, and local success without the named readback are not PASS.
 
+### Live Coconala four-lane completion — account-owner priority override
+
+Production audit found four independently loaded owners with no cross-lane completion wait:
+Apply and Storefront recur every 60 seconds, Reply is keep-alive, and Paid recurs every 300
+seconds. Their immutable release SHAs differ by lane and each observed task lease was released;
+the leases fence duplicate use of one task/browser, not the other three lanes. The four-lane
+completion claim is nevertheless false until the two failing lanes below pass naturally.
+
+- [ ] `C00` Restore Apply's official opportunity-source read.
+  PASS = one natural `ai.anicca.hf-gig-apply-direct` pass reads the official Coconala source,
+  reports a non-error source status, reconciles all 40 durable pending application intents, and
+  records effect/readback separately. Current production pass
+  `gig-apply-direct-1788277012837294000-46947` failed with `observed=0`, `effect=0`,
+  `readback=0`, `pending=40`, `source_health=OSError`, and `b2_objective_wake_failed`.
+- [ ] `C01` Restore Storefront's exact official public readback.
+  PASS = one natural `ai.anicca.hf-gig-storefront-direct` pass reads the 14-service official
+  inventory, completes or safely declines its selected improvement, and ends pass with exact
+  public effect/readback or replay-zero. Current passes repeatedly fail
+  `public_text_readback_mismatch`; disk pressure also produced two `ENOSPC` failures, while every
+  observed task lease was released.
+- [ ] `C02` Prove all four installed owners concurrently healthy without adding a global lock.
+  PASS = one runtime manifest binds Apply, Reply, Storefront, and Paid to their loaded immutable
+  release SHA, cadence, latest natural terminal event, official effect/readback receipt, and
+  released isolated lease; Apply and Storefront pass after `C00`/`C01`, Reply remains keep-alive,
+  Paid passes on its independent 300-second recurrence, and no lane waits for another lane's
+  completion.
+- [ ] `C03` Prove maximum safe Coconala work progression.
+  PASS = Apply submits every currently eligible non-duplicate opportunity and reconciles uncertain
+  intents before retry; Reply consumes every new buyer event once; Storefront continues measured
+  offer improvement; Paid dispatches distinct active projects in parallel while same-effect fences
+  prevent duplicate submission, delivery, or payment action.
+
 ### Apply music-production prohibition — account-owner priority override
 
 - [x] `AM01` Add a semantic Apply prohibition for music or produced/edited audio as the required
