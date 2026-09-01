@@ -4393,6 +4393,19 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
                 "_paid_prepare_status": "no_effect",
             })
             return 0
+        if semantic.get("decision") == "blocked":
+            _write(output, {
+                "status": "pending",
+                "talkroom_id": room,
+                "effect": 0,
+                "readback": 1,
+                "failed": 0,
+                "failed_step": None,
+                "semantic_decision": "blocked",
+                "unresolved": semantic.get("unresolved") or [],
+                "_paid_prepare_status": "pending",
+            })
+            return 0
         file_mode = semantic.get("decision") == "actionable" and semantic.get("mode") == "file"
         if file_mode:
             diagnostic_stage = "file_prepare"
