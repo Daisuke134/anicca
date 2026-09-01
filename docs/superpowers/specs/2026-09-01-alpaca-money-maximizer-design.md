@@ -366,6 +366,14 @@ readback retained the same filled provider order ID, two fills, two positions, z
 `$99,970.95`, equity `$99,997.95`, and unrealised P&L `-$2`. Natural recurrence therefore added zero broker
 orders. The next A11 sub-atom remains the regular-session sealed exit and realised-P&L reconciliation.
 
+Restart durability was re-read from the same live runtime and PGlite state rather than inferred from a PID. After
+process resurrection, the authenticated Eliza API retained task `st_mtj43gm5_goclnvsx`, its five-minute trigger,
+and advanced `firedAt` again to `21:27:38Z` with `ORDER_VERIFIED / HOLD_CLOSED_SESSION`. A fresh pinned-CLI
+v0.0.14 readback at `21:30:37Z` still showed exactly one filled campaign order, the same two entry fills and two
+positions, zero open orders, cash `$99,970.95`, equity `$99,997.95`, and unrealised P&L `-$2`. Thus restart plus
+subsequent natural replay preserved the durable task and added zero broker orders. The market clock remained
+closed with the next regular session at `2026-09-02T09:30:00-04:00`; no after-hours exit was attempted.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
