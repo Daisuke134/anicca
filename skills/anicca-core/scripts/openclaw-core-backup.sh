@@ -18,7 +18,7 @@
 set -uo pipefail
 
 DEST="${OPENCLAW_BACKUP_DIR:-$HOME/.openclaw-backups}"
-KEEP="${OPENCLAW_BACKUP_KEEP:-7}"
+KEEP="${OPENCLAW_BACKUP_KEEP:-2}"
 MIN_FREE_MB="${OPENCLAW_BACKUP_MIN_FREE_MB:-2048}"
 STAMP=$(date +%Y%m%d-%H%M%S)
 ARCHIVE="$DEST/openclaw-core-$STAMP.tar.gz"
