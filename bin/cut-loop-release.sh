@@ -28,8 +28,34 @@ KEEP="${LOOPS_KEEP_RELEASES:-5}"
 REF="${1:-HEAD}"
 RELEASE_PATHS="${LOOPS_RELEASE_PATHS:-}"
 NPM_BIN="${NPM_BIN:-$(command -v npm 2>/dev/null || true)}"
+CUT_LOCK="$LOOPS_ROOT/.release-cut.lock"
+DEST=""
 
 die() { echo "cut-loop-release: $*" >&2; exit 1; }
+
+cleanup() {
+  local status=$?
+  trap - EXIT INT TERM HUP
+  if [ -n "$DEST" ] && [ -d "$DEST" ] && [ ! -f "$DEST/RELEASE.json" ]; then
+    chmod -R u+w "$DEST" 2>/dev/null || true
+    find "$DEST" -depth -delete 2>/dev/null || true
+  fi
+  find "$CUT_LOCK" -depth -delete 2>/dev/null || true
+  exit "$status"
+}
+
+mkdir -p "$RELEASES" || die "cannot create release root"
+if ! mkdir "$CUT_LOCK" 2>/dev/null; then
+  LOCK_PID="$(cat "$CUT_LOCK/pid" 2>/dev/null || true)"
+  if [[ "$LOCK_PID" =~ ^[0-9]+$ ]] && ! kill -0 "$LOCK_PID" 2>/dev/null; then
+    find "$CUT_LOCK" -depth -delete 2>/dev/null || true
+    mkdir "$CUT_LOCK" 2>/dev/null || die "another release build owns $CUT_LOCK"
+  else
+    die "another release build owns $CUT_LOCK"
+  fi
+fi
+printf '%s\n' "$$" >"$CUT_LOCK/pid"
+trap cleanup EXIT INT TERM HUP
 
 prune_releases_after() {
   local keep="$1"
