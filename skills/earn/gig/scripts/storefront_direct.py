@@ -5461,6 +5461,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             if browser.returncode != 0 or browser.stdout.strip() not in {"ALIVE", "RECOVERED"}:
                 detail = (browser.stdout.strip() or browser.stderr.strip() or "unknown")[:200]
                 raise RuntimeError(f"storefront_browser_unavailable:{detail}")
+            # The owner lock proves no current storefront wake owns these tabs. Reclaim only
+            # this loop's leftovers from a prior crash; cleanup failure must not stop earning.
+            subprocess.run(
+                [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
+                 "--owner", "gig-storefront-direct", "close-owned"],
+                capture_output=True, text=True, check=False, timeout=30,
+            )
             task = f"gig-storefront-direct-{pass_id}"
             lease = _lease(args.lease_script, "acquire", task)
             ws_url = str(lease.get("ws") or "")
