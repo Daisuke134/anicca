@@ -554,6 +554,41 @@ def deliver_pending(database: Path, notifier: Callable[[str], object], now: obje
     return result
 
 
+def render_application_wake(result: Mapping[str, object]) -> str:
+    observed = int(result.get("observed_count") or 0)
+    eligible = int(result.get("eligible_count") or 0)
+    verified = int(result.get("verified_count") or 0)
+    project_id = str(result.get("project_id") or "").strip()
+    if result.get("application_verified") is True:
+        outcome = f"{verified or 1}件の応募を公式確認しました"
+    elif result.get("reason") == "duplicate_project":
+        outcome = f"案件{project_id}は応募済みのためスキップしました" if project_id else "応募済み案件をスキップしました"
+    elif result.get("reason") == "no_eligible_project":
+        outcome = "適合する新規案件がなかったため送信しませんでした"
+    elif result.get("reason"):
+        outcome = f"{result['reason']}のため送信しませんでした"
+    else:
+        outcome = f"{result.get('error') or 'unknown_error'}で完了できませんでした"
+    return (
+        f"[Lancers][応募] {'📨' if result.get('application_verified') else '⏭️' if result.get('ok') else '⚠️'} {outcome}\n"
+        f"確認: 公開案件{observed}件 / 適合候補{eligible}件 / 公式確認{verified}件。\n"
+        "次: 5分後のwakeで新着案件の確認と最大positive-EV応募を続けます。"
+    )
+
+
+def notify_application_wake(
+    result: Mapping[str, object], *, database: Path = DATABASE,
+    notifier: Optional[Callable[[str], object]] = None, now: object = None,
+) -> DeliveryResult:
+    moment = now or datetime.now(timezone.utc).isoformat()
+    message = render_application_wake(result)
+    identity = hashlib.sha256(
+        (str(_timestamp(moment)) + "\0" + json.dumps(result, sort_keys=True, separators=(",", ":"))).encode()
+    ).hexdigest()
+    outbox.enqueue(Path(database), f"lancers:application-wake:v1:{identity}", message, _timestamp(moment) or "unknown")
+    return deliver_pending(Path(database), notifier or _default_notifier, moment)
+
+
 def _pending_count(path: Path) -> Optional[int]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))

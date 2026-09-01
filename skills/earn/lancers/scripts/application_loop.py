@@ -665,6 +665,11 @@ def main(argv: Optional[Sequence[str]] = None, *, discovery: Optional[Callable[.
             print(json.dumps(result, ensure_ascii=False, separators=(",", ":")), file=output_stream, flush=True)
             return 1
     result = run_reconcile_only(Path(args.state_path), output_stream=output_stream) if args.reconcile_only else run_loop(discoverer=discovery, planner=planner, submitter=submitter, clock=clock or now, state_path=Path(args.state_path), output_stream=output_stream, exhaustive=args.exhaustive, timeout=args.discovery_timeout)
+    if not args.reconcile_only and discovery is None and planner is None and submitter is None and now is None and clock is None:
+        reporter = _load("_anicca_lancers_application_reporter", HERE / "telegram_report.py")
+        delivery = reporter.notify_application_wake(result)
+        if delivery.delivery_uncertain or delivery.pre_send_failed:
+            return 1
     return 0 if result["ok"] else 1
 
 __all__ = ["AGENT_RUNNER", "AGENT_RUNNER_PATH", "ApplicationLoopResult", "DEFAULT_EVIDENCE_DIR", "DEFAULT_EVIDENCE_ROOT", "DEFAULT_STATE_PATH", "PLANNER_SCHEMA", "SCHEMA_PATH", "application_tick", "build_planner_prompt", "invoke_planner", "main", "run_application_loop", "run_loop", "run_once", "run_reconcile_only", "status", "validate_decisions"]
