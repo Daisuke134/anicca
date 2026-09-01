@@ -7,8 +7,8 @@ execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.
 
 ## 1. Goal and boundaries
 
-Build the first CAPITAL capability of the Life Manager general money agent. One owner goal starts a bounded,
-restart-safe loop that observes Alpaca market/account state, lets the model propose or refuse a defined-risk
+Build the first registered durable loop in `plugin-life-manager` and the first CAPITAL capability of the Life
+Manager general money agent. One owner goal starts a bounded, restart-safe loop that observes Alpaca market/account state, lets the model propose or refuse a defined-risk
 options trade, applies deterministic risk and effect gates, executes on the dedicated hackathon paper account,
 and records official order/fill/P&L receipts. The same capability later ships in the local OSS and cloud hosts.
 
@@ -26,7 +26,8 @@ live owner-capital, and regulated customer management remain different capabilit
 4. Public repository, hosted demo, cover, one-pager, PDF slides, and a video no longer than four minutes are
    submitted before the deadline and independently readable while logged out.
 5. The capability uses the existing Life Manager Goal/PlanGraph/WorkItem/EffectIntent/OutcomeReceipt/
-   EconomicReceipt chain and does not create a second agent core, scheduler, product, or general ledger.
+   EconomicReceipt chain. Eliza owns the only loop registry and scheduler; the capability does not create a
+   second agent core, scheduler, product, or general ledger.
 6. A fresh install owns the complete lifecycle: create or resume the dedicated account through normal email,
    verify and store only secret references, prove a new-session login, then run trading without routine human
    setup. Replaying bootstrap reuses the bound account and creates zero duplicate accounts.
@@ -35,11 +36,18 @@ live owner-capital, and regulated customer management remain different capabilit
 
 The product is the canonical Life Manager monorepo. The agent core is the already selected ElizaOS
 `AgentRuntime` plus the single `plugin-life-manager`; Alpaca is a capability/provider adapter inside that core.
-The current launchd runtime contributes proven single-pass ownership, lock, heartbeat, timeout, and Telegram
-patterns during migration. It is a macOS host adapter, not a second product or agent brain.
+The Alpaca loop registers with `plugin-life-manager` and is started, scheduled, checkpointed, resumed, healed,
+and improved by the existing Eliza `AgentRuntime`. Current launchd code contributes proven lock, heartbeat,
+timeout, and Telegram patterns during migration, but it does not own an Alpaca schedule or pass. The only
+host-level responsibility is keeping the Eliza process alive: launchd on macOS, systemd on Linux, or the
+container/cloud restart policy. These interchangeable adapters contain no goal, market, account, risk, effect,
+or improvement state.
 
 ```mermaid
 flowchart TD
+    HOST["Thin host supervisor<br/>launchd / systemd / container"] --> RUNTIME["Eliza AgentRuntime<br/>single persistent process"]
+    RUNTIME --> REGISTRY["plugin-life-manager<br/>durable loop registry"]
+    REGISTRY --> GOAL
     GOAL["Maximize verified net worth<br/>inside the risk policy"] --> CORE["Life Manager Agent Core<br/>Goal → PlanGraph → WorkItem"]
     CORE --> OBS["Alpaca account / clock / bars<br/>news / option chain"]
     OBS --> MODEL["Model proposal<br/>thesis / no-trade / invalidation"]
@@ -51,9 +59,16 @@ flowchart TD
     RECEIPT --> CORE
 ```
 
-Local OSS runs the same bounded pass from launchd on macOS, systemd/cron on Linux, or Docker on a persistent
-host. Phones are Telegram/web clients to that host; mobile operating systems are not promised as reliable
-background daemon hosts. Cloud adds tenant isolation, vault, queue, billing, and quota without another core.
+Local OSS and cloud run the same persistent Eliza runtime and internal loop registry. Host adapters only start
+or restart that runtime; they never schedule the Alpaca loop. Phones are Telegram/web clients to a persistent
+host because mobile operating systems are not promised as reliable background daemon hosts. Cloud adds tenant
+isolation, vault, queue, billing, and quota without another core.
+
+Eliza self-healing owns task timeout, provider failure, stale observation, acknowledgement loss, circuit break,
+checkpoint resume, and loop-local quarantine. Eliza self-improvement owns receipt attribution, offline replay,
+no-effect evaluation, paper canary, versioned promotion, monitoring, and rollback. A completely dead Eliza
+process cannot execute its own recovery code, so only process resurrection remains outside Eliza. Machine power
+and host failure remain the responsibility of the operating system or cloud platform.
 
 ## 3. Reuse research — fixed source and decision
 
@@ -71,7 +86,8 @@ README claims alone.
 ### Reuse ladder inside Life Manager
 
 1. Reuse the existing Eliza Goal/effect/receipt/restart kernel for orchestration and exactly-once effects.
-2. Reuse current Life Manager financial/economic receipt, secret-reference, launchd owner, and Telegram patterns.
+2. Reuse current Life Manager financial/economic receipt, secret-reference, lease/heartbeat, and Telegram
+   patterns; do not reuse launchd as the loop owner.
 3. Adapt only MIT donor code that fills an Alpaca-specific gap and record attribution in
    `THIRD_PARTY_NOTICES.md`.
 4. Use the official Alpaca CLI/MCP/API rather than writing a custom market protocol.
@@ -146,12 +162,12 @@ product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or 
 | A07 | Risk gate | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
 | A08 | Exactly-once paper canary | Sealed intent submits one minimum-risk paper options order; official ID/client ID/readback bind to the intent; replay submits zero additional orders. |
 | A09 | Ack-loss/restart reconciliation | Simulated lost acknowledgement and process restart reconcile by client ID; absent/unknown state opens the breaker and blind retry remains zero. |
-| A10 | One-pass owner | One scheduled pass owns one lease/heartbeat, uses Alpaca clock, observes/decides/acts/reconciles, exits boundedly, and resumes the same state after restart. |
+| A10 | First registered durable loop | `plugin-life-manager` registers exactly one Alpaca loop; Eliza alone schedules each bounded pass, owns its lease/heartbeat/checkpoint, uses Alpaca clock, observes/decides/acts/reconciles, and resumes the same state after restart. Host adapters contain no Alpaca schedule. |
 | A11 | Paper campaign | Frozen strategy runs on the dedicated account; every proposal/no-trade/order/fill/exit/P&L is recorded; official account activity and Life Manager projection have zero unexplained delta. |
 | A12 | Read-only public demo | Hosted URL shows redacted account equity/P&L, positions/max loss, thesis, gate reasons, order/fill receipts, and timeline; public UI cannot place an order. |
 | A13 | Submission assets | Public README, one-pager, PDF slides, 16:9 cover, and ≤4-minute video truthfully match the current account and code. |
 | A14 | Submit and read back | Form contains hosted URL, public repo, assets, tags, and private account ID; official submitted state is read back before 2026-09-05 00:00 JST. |
-| A15 | Portable OSS release | Clean macOS and Linux/Docker installs start in paper mode from the public SHA; launchd/systemd/cron are host adapters to the same pass; secret-free fixture replay passes. |
+| A15 | Portable OSS release | Clean macOS and Linux/Docker installs start the same Eliza runtime in paper mode from the public SHA; launchd/systemd/container policy only supervise that process, while the Eliza registry schedules the loop; secret-free fixture replay passes. |
 
 ## 7. After submission — production ladder
 

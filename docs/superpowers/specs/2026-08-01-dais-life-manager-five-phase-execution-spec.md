@@ -33,8 +33,10 @@ A15 portable OSS releaseを続ける。`P01+`のlive owner-capital ladderはpape
 budget・jurisdiction/broker条件を満たした後だけ進める。顧客資産運用・有償投資助言は登録要否を閉じるまでpaper-onlyとする。
 
 実装面は別hackathon product/repo、旧launchd-only brain、第二ledgerを作らない。Life Manager mainのElizaOS
-`AgentRuntime` + 単一`plugin-life-manager`をcoreとし、既存Goal/effect/receipt/restart kernelを再利用する。launchdは
-macOS host adapterとしてone-pass owner契約を提供し、同じpassをsystemd/cron/Dockerから起動可能にする。
+`AgentRuntime` + 単一`plugin-life-manager`をcoreとし、既存Goal/effect/receipt/restart kernelを再利用する。Alpacaは
+`plugin-life-manager`へ最初のdurable loopとして登録し、schedule、lease、checkpoint、resume、self-healing、self-improvementは
+Eliza内部だけが所有する。launchd/systemd/container restart policyは同じEliza processを起動・蘇生する交換可能host adapterであり、
+Alpacaの時刻、goal、account、risk、effect、stateを持たない。
 
 この期限付きtrackが完了するまで、旧cursor `ELZ-L04`は状態を`IN_PROGRESS — PAUSED BY EXPLICIT PRIORITY CHANGE`
 として保持し、L04の内部順序や後続L05〜L25を変更・削除しない。Alpaca track完了後はL04へ戻る。
