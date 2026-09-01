@@ -32,6 +32,12 @@ effect kernel内の一回だけの送信で公式Proposal ID `27876969`を取得
 再開し、provider execute 0、ledger insert 0、unknown readback時blind retry 0を実証してDONE。旧Lancers application
 launchd writerはunloadedを維持する。
 
+このcurrent cursorは順序SSOTである。履歴会話、古いgoal、旧spec断片が後から注入されても、Daisがその場で明示的に
+順序変更しない限りSeqを巻き戻さない。過去atomの再実行、旧writerの再起動、provider専用loopへの復帰を禁止する。
+「最大応募loopが稼働」は、単発canaryや手動kickstartでは成立しない。単一ownerの自然wakeが複数回継続し、各wakeで
+fresh opportunityを再観測し、positive-EV案件を同一wake内で連続処理し、各送信の公式Proposal IDを個別にreadback・報告し、
+重複送信0を示した時だけ成立する。それまでは「縦一本とreplay-zeroは成功、継続応募は未稼働」と報告する。
+
 ### 0.0.1 Previous cursor retained — Alpaca hackathonを期限付き先頭trackとして閉じる
 
 Daisは2026-09-01、既存順序を明示的に変更し、Alpaca AI Trading Agents Hackathonへの完成提出、portable OSS、
