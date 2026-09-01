@@ -1,9 +1,9 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / IMPLEMENTATION NOT STARTED  
-owner: Dais / Life Manager  
-deadline: 2026-09-05 00:00 JST  
-execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0  
+status: APPROVED DESIGN / IMPLEMENTATION NOT STARTED
+owner: Dais / Life Manager
+deadline: 2026-09-05 00:00 JST
+execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
 
 ## 1. Goal and boundaries
 
