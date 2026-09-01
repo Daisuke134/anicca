@@ -609,6 +609,60 @@ The active implementation TODO is therefore Stage 3 items 9–14 applied to thes
 
 ### Stage 3 — generalize the measured Paid owner into a job-doing agent
 
+#### Paid Kernel product contract
+
+**Overview.** Life Manager Paid is a marketplace-neutral, no-human Job Owner that earns money by
+finishing accepted digital work. It MUST operate the same reasoning/tool loop across Coconala,
+Lancers, CrowdWorks, Fiverr, Upwork, and previously unseen marketplaces. A named Skill is an optional
+method cache, never a capability whitelist. When no exact Skill or pre-created account exists, the
+owner MUST use its general computer/browser/research/coding/media tools to create, recover, compose,
+or learn the required method and continue until the contracted outcome is submitted.
+
+**Acceptance criteria.**
+
+1. Every accepted `JobContract` gets one durable owner/thread/workspace that survives process exit,
+   provider failure, release changes, waits, revisions, and marketplace migration.
+2. The owner independently plans, researches, selects or creates authorized accounts, uses existing
+   Skills when useful, produces the real outcome, reviews it, repairs defects, and submits it through
+   the marketplace adapter. It MUST NOT stop at a draft, explanation, apology, progress reply, local
+   file, model output, or missing exact Skill.
+3. Independent jobs run concurrently up to bounded host/account capacity. A shared browser/account
+   serializes only the exact operation using that identity; it MUST NOT stop unrelated research,
+   coding, rendering, account preparation, or artifact production.
+4. Accepted achievable work MUST reach buyer-visible delivery and official readback. If the exact
+   outcome truly requires unavailable identity, consent, money, physical presence, or a prohibited
+   effect, the same owner MUST negotiate a truthful supported scope or complete official cancellation;
+   it MUST NOT impersonate, fabricate, or silently abandon the contract.
+5. Completion requires exact provider/marketplace receipts, acceptance or transaction completion,
+   and a second replay with every effect zero. Only identity, authorization, arithmetic, leases,
+   checkpoints, dedupe, payload/artifact hashes, typed effects, and official readback are deterministic.
+   Job interpretation, tool/Skill/account choice, production, research, repair, and semantic completion
+   judgment belong to the model.
+
+**As-is / To-be.** The current Paid parent starts disposable per-pass children whose progress is hidden
+until aggregate exit and whose objective dies on timeout/provider failure. The target system stores each
+job independently, continuously reconciles all active owners, resumes the same owner from durable
+checkpoints, and exposes live owner state without waiting for a parent batch. Marketplace code becomes a
+thin observe/effect/readback adapter; no marketplace forks the planner, producer, reviewer, lifecycle, or
+revenue logic.
+
+**Test matrix.** Process-exit resume, provider failover, missing-Skill general-tool execution,
+authorized account creation, concurrent different-job execution, same-identity serialization,
+artifact-repair continuation, exact submission/readback, cancellation, and replay-zero MUST pass on the
+shared kernel. Adapter conformance MUST pass unchanged for Coconala plus at least two of Lancers,
+CrowdWorks, Fiverr, or Upwork before marketplace-neutral completion is claimed.
+
+**Boundaries.** No foreground Codex/manual customer work satisfies this contract. No owner may perform
+illegal work, deception, another person's identity ceremony, unapproved spending/trading/KYC, or an
+embodied physical task. No extra human approval is required for ordinary authorized digital work,
+account creation, research, production, publishing, or marketplace submission.
+
+**Execution and E2E.** Implement items 9–16 in order through public-main immutable releases and the
+single registered Paid label. UI behavior changes through real marketplace/browser effects, so Maestro is
+not applicable; official provider DOM/API receipts are required instead. The live E2E is complete only
+when varied real jobs on at least two marketplaces reach accepted delivery and replay-zero without
+foreground customer work.
+
 9. [ ] Make Paid's project owner the website-neutral execution kernel. Give every discovered paid
    job one stable global owner ID plus website/account/job identities and lifecycle:
    `ACTIVE`, `WAITING_EXTERNAL`, `AWAITING_BUYER`, `TERMINAL_PENDING_REPLAY`,
