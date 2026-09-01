@@ -4875,16 +4875,20 @@ def _paid_browser_owners(room: str) -> tuple[str, ...]:
     return base, f"{base}-remote-builder", f"{base}-remote-verifier"
 
 
+def _reclaim_browser_owner(args, owner: str) -> None:
+    try:
+        subprocess.run(
+            [sys.executable, str(args.cdp_helper), "close-owned", "--owner", owner],
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            timeout=15, check=False, env=_fresh_child_env(args, owner=owner),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+
 def _reclaim_paid_tabs(args, room: str) -> None:
     for owner in _paid_browser_owners(room):
-        try:
-            subprocess.run(
-                [sys.executable, str(args.cdp_helper), "close-owned", "--owner", owner],
-                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                timeout=15, check=False, env=_fresh_child_env(args, owner=owner),
-            )
-        except (OSError, subprocess.TimeoutExpired):
-            pass
+        _reclaim_browser_owner(args, owner)
 
 
 def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
@@ -5442,6 +5446,8 @@ def main(argv=None) -> int:
     if args.effect_item: return _prepare_one(args, args.effect_item.expanduser().resolve(), args.output)
     if args.decision_item: return _decision_only(args, args.decision_item.expanduser().resolve(), args.output)
     run_id = f"{time.time_ns()}-{os.getpid()}"
+    parent_browser_owner = os.environ.get("CLOAK_BROWSER_OWNER", "gig-paid-direct")
+    _reclaim_browser_owner(args, parent_browser_owner)
     try:
         rc = run_once(args, args.output)
         result = _load(args.output)
@@ -5451,6 +5457,8 @@ def main(argv=None) -> int:
                   "readback": 0, "failed": 1, "pending": 0, "oldest": None,
                   "failed_step": "paid_direct", "error": type(error).__name__,
                   "error_detail": str(error)[:500], "items": []}
+    finally:
+        _reclaim_browser_owner(args, parent_browser_owner)
     try:
         result["telegram"] = _report_paid_wake(args, result, run_id)
     except Exception as error:
