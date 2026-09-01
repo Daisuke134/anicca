@@ -878,16 +878,17 @@ def run_live_tick(
         return TickResult(ok=False, error="state_invalid", project_id=str(project_id))
     browser = None
     try:
-        browser = (browser_factory or _default_browser_factory)(CDP_URL)
-        page = _new_owned_page(browser)
-    except Exception:
-        _stop_playwright_runtime(getattr(browser, "_anicca_playwright_runtime", None))
-        return TickResult(ok=False, error="browser_unavailable", project_id=str(project_id))
-    try:
-        if not _production_account_ready(page):
-            return TickResult(ok=False, error="account_unavailable", project_id=str(project_id))
-        pending_claim = _state_has_claim(state_path, str(project_id))
-        pending_terms = next(
+        with account_lock(state_path.with_name("work-sync.json")):
+            try:
+                browser = (browser_factory or _default_browser_factory)(CDP_URL)
+                page = _new_owned_page(browser)
+            except Exception:
+                _stop_playwright_runtime(getattr(browser, "_anicca_playwright_runtime", None))
+                return TickResult(ok=False, error="browser_unavailable", project_id=str(project_id))
+            if not _production_account_ready(page):
+                return TickResult(ok=False, error="account_unavailable", project_id=str(project_id))
+            pending_claim = _state_has_claim(state_path, str(project_id))
+            pending_terms = next(
             (
                 descriptor
                 for descriptor in read_pending_descriptors(state_path)
@@ -895,45 +896,47 @@ def run_live_tick(
                 and descriptor.get("project_id") == str(project_id)
             ),
             {},
-        ) if pending_claim else {}
-        if not pending_claim:
-            try:
-                _production_prepare(page, str(project_id), proposed_amount_minor, delivery_due_on)
-            except RuntimeError as exc:
-                error = str(exc) or "proposal_form_changed"
-                if error == TERMINAL_STATE_STATUS:
-                    try:
-                        _record_terminal_block(
-                            state_path, str(project_id),
-                            now or (lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
-                        )
-                    except Exception:
-                        return TickResult(ok=False, error="state_invalid", project_id=str(project_id))
-                    return TickResult(ok=False, error=TERMINAL_STATE_STATUS, project_id=str(project_id))
-                if error not in {"financial_terms_required", "proposal_form_changed"}:
-                    error = "proposal_form_changed"
-                return TickResult(ok=False, error=error, project_id=str(project_id))
-            except Exception:
-                return TickResult(ok=False, error="proposal_form_changed", project_id=str(project_id))
-        submitter = submitter_override or (lambda opportunity, text, amount, due: _production_submitter(page, opportunity, text, amount, due, proposal_reader))
+            ) if pending_claim else {}
+            if not pending_claim:
+                try:
+                    _production_prepare(page, str(project_id), proposed_amount_minor, delivery_due_on)
+                except RuntimeError as exc:
+                    error = str(exc) or "proposal_form_changed"
+                    if error == TERMINAL_STATE_STATUS:
+                        try:
+                            _record_terminal_block(
+                                state_path, str(project_id),
+                                now or (lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
+                            )
+                        except Exception:
+                            return TickResult(ok=False, error="state_invalid", project_id=str(project_id))
+                        return TickResult(ok=False, error=TERMINAL_STATE_STATUS, project_id=str(project_id))
+                    if error not in {"financial_terms_required", "proposal_form_changed"}:
+                        error = "proposal_form_changed"
+                    return TickResult(ok=False, error=error, project_id=str(project_id))
+                except Exception:
+                    return TickResult(ok=False, error="proposal_form_changed", project_id=str(project_id))
+            submitter = submitter_override or (lambda opportunity, text, amount, due: _production_submitter(page, opportunity, text, amount, due, proposal_reader))
 
-        def readback(proposal: Optional[str], project: str) -> Mapping[str, object]:
-            browser_value = readback_override(proposal, project) if readback_override is not None else _production_readback(page, proposal, project, proposal_reader)
-            identity = _strict_identity(browser_value, project, proposal)
-            terms = pending_terms if pending_claim else {
-                "project_id": project, "amount_minor": proposed_amount_minor,
-                "delivery_due_on": delivery_due_on,
-            }
-            return _strict_readback({**identity, **terms}, project, proposal) if identity and isinstance(terms, Mapping) and terms.get("project_id") == project else {}
+            def readback(proposal: Optional[str], project: str) -> Mapping[str, object]:
+                browser_value = readback_override(proposal, project) if readback_override is not None else _production_readback(page, proposal, project, proposal_reader)
+                identity = _strict_identity(browser_value, project, proposal)
+                terms = pending_terms if pending_claim else {
+                    "project_id": project, "amount_minor": proposed_amount_minor,
+                    "delivery_due_on": delivery_due_on,
+                }
+                return _strict_readback({**identity, **terms}, project, proposal) if identity and isinstance(terms, Mapping) and terms.get("project_id") == project else {}
 
-        return run_tick(
-            opportunity={"external_id": str(project_id), "platform": PLATFORM}, proposal_text=proposal_text,
-            proposed_amount_minor=proposed_amount_minor, delivery_due_on=delivery_due_on,
-            state_path=state_path, account_ready=lambda: True,
-            submitter=submitter, readback=readback,
-            ledger_writer=ledger_writer or _default_ledger_writer(state_path),
-            now=now or (lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
-        )
+            return run_tick(
+                opportunity={"external_id": str(project_id), "platform": PLATFORM}, proposal_text=proposal_text,
+                proposed_amount_minor=proposed_amount_minor, delivery_due_on=delivery_due_on,
+                state_path=state_path, account_ready=lambda: True,
+                submitter=submitter, readback=readback,
+                ledger_writer=ledger_writer or _default_ledger_writer(state_path),
+                now=now or (lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
+            )
+    except shared._AccountLockBusy:
+        return TickResult(ok=False, error="account_lock_busy", project_id=str(project_id))
     finally:
         _close_owned_page(page)
         _stop_playwright_runtime(getattr(browser, "_anicca_playwright_runtime", None))
