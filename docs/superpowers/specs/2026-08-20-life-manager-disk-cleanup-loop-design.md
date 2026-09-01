@@ -205,7 +205,10 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    `~/.openclaw-backups`は263,391,xxx bytesのarchiveを7世代保持し、約1.72 GiBへ再増加していた。全archiveは
    mode 0600/open FD 0、最新2世代は`tar tzf` PASS。古い5世代だけを回収し、Data volume freeは
    `826,784 → 2,119,144 KiB`（+1,292,360 KiB）、count 7→2。producerの既定保持数も7→2へ変更し、
-   次wakeから約527 MBを上限とする。credentialを含む最新2世代は保持する。
+   次wakeから約527 MBを上限とする。credentialを含む最新2世代は保持する。production plistにも
+   `OPENCLAW_BACKUP_KEEP=2`を設定し、`launchctl-safe` preflight PASS後にidle labelだけをreloadした。
+   RunAtLoadの自然runはlast exit 0、loaded env=2、archive count=2、両archive mode 0600・`tar tzf` PASS。
+   低disk時は既存`MIN_FREE_MB=2048` gateで新規archiveを書かず、loop停止0のままbounded状態を維持した。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
