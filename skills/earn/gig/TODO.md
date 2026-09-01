@@ -239,6 +239,10 @@ capability claim is backed by an installed executable capability.
   The unchanged installed SHA then reached its natural 300-second wake without a kickstart: launchd runs
   advanced `1→2`, runtime `running→entrypoint_exit_1`, owner/account timestamps advanced, and the same
   request/receipt plus `input_required`/`effect_delta:0` were preserved.
+  CrowdWorks moved public search results to client-rendered DOM, making the old urllib parser silently
+  inspect zero jobs. Discovery now reuses the owned Playwright page, extracts exact numeric job links,
+  and reads each official detail page; a focused official pass inspected `10` jobs and found zero exact
+  eligible Italian UI/Web/app translation jobs, with `inspected_jobs` retained in owner status.
 
 ### Live four-lane repair
 

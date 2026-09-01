@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
-from html.parser import HTMLParser
 import importlib.util
 import json
 import os
@@ -12,7 +11,6 @@ import re
 import sys
 import tempfile
 from urllib.parse import quote
-from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[4]
 STATE = Path("~/.local/state/anicca/crowdworks").expanduser()
@@ -30,33 +28,20 @@ account = _module("crowdworks_account", Path(__file__).with_name("account.py"))
 profile = _module("crowdworks_profile", Path(__file__).with_name("profile.py"))
 application = _module("crowdworks_application", Path(__file__).with_name("application_tick.py"))
 
-class Links(HTMLParser):
-    def __init__(self): super().__init__(); self.current=None; self.jobs=[]
-    def handle_starttag(self, tag, attrs):
-        href=dict(attrs).get("href","")
-        match=re.fullmatch(r"/public/jobs/([0-9]+)",href)
-        if tag=="a" and match: self.current=[match.group(1),""]
-    def handle_data(self,data):
-        if self.current is not None:self.current[1]+=data
-    def handle_endtag(self,tag):
-        if tag=="a" and self.current is not None:
-            self.jobs.append(tuple(self.current));self.current=None
-
-def _get(url: str) -> str:
-    request=Request(url,headers={"User-Agent":"Mozilla/5.0"})
-    with urlopen(request,timeout=20) as response:return response.read(2_000_000).decode("utf-8","replace")
-
-def _candidate():
-    parser=Links();parser.feed(_get("https://crowdworks.jp/public/jobs?search%5Bkeywords%5D="+quote(SEARCH)))
+def _candidate(page):
+    page.goto("https://crowdworks.jp/public/jobs?search%5Bkeywords%5D="+quote(SEARCH));account._wait(page);page.wait_for_timeout(3000)
+    links=page.locator('a[href*="/public/jobs/"]').evaluate_all("els => els.map(e => ({href:e.getAttribute('href') || '',title:(e.innerText || '').trim()}))")
     seen=set()
-    for job_id,title in parser.jobs:
+    for link in links:
+        match=re.search(r"/public/jobs/([0-9]+)(?:[?#]|$)",link.get("href","") if isinstance(link,dict) else "")
+        if match is None:continue
+        job_id,title=match.group(1),link.get("title","")
         if job_id in seen:continue
-        seen.add(job_id); detail=_get(f"https://crowdworks.jp/public/jobs/{job_id}")
-        text=re.sub(r"\s+"," ",re.sub(r"<[^>]+>"," ",detail))
+        seen.add(job_id);page.goto(f"https://crowdworks.jp/public/jobs/{job_id}");account._wait(page);text=re.sub(r"\s+"," ",page.locator("body").inner_text())
         required=("イタリア語" in text and "翻訳" in text and any(word in text for word in ("UI","Webサイト","アプリ","画面文言")))
         forbidden=any(word in text for word in ("このお仕事の募集は終了しています","ネイティブ限定","AI翻訳は禁止","出身地がイタリア語"))
-        if required and not forbidden:return {"external_id":job_id,"title":re.sub(r"\s+"," ",title).strip()}
-    return None
+        if required and not forbidden:return {"external_id":job_id,"title":re.sub(r"\s+"," ",title).strip()},len(seen)
+    return None,len(seen)
 
 def _proposal(product):
     return "\n".join((
@@ -90,9 +75,10 @@ def main():
             configured=profile.run_apply(page=page,receipt_path=STATE/"profile-receipt.json")
             if not configured.get("ok"):
                 result={"ok":False,"status":configured.get("error","profile_incomplete"),"effect_delta":0}
-            elif (candidate:=_candidate()) is None:
-                result={"ok":True,"status":"profile_complete_no_eligible_open_job","effect_delta":0}
+            elif (candidate_result:=_candidate(page))[0] is None:
+                result={"ok":True,"status":"profile_complete_no_eligible_open_job","inspected_jobs":candidate_result[1],"effect_delta":0}
             else:
+                candidate=candidate_result[0]
                 product=json.loads(PRODUCT.read_text(encoding="utf-8"));due=(date.today()+timedelta(days=7)).isoformat()
                 tick=application.execute_application(page=page,opportunity=candidate,proposal_text=_proposal(product),proposed_amount_minor=product["base_price"]["amount"],delivery_due_on=due,expire_period_days=7,state_path=TRANSACTION,ledger_writer=_append,now=lambda:datetime.now(timezone.utc).isoformat(),account_ready=lambda:True)
                 result={**tick.to_dict(),"status":"verified" if tick.application_verified else tick.error or tick.reason,"effect_delta":1 if tick.submitted else 0}
