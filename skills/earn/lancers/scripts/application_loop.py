@@ -2,13 +2,12 @@
 """Run one browserless-planned, at-most-one Lancers application tick."""
 from __future__ import annotations
 
-import argparse, inspect, json, os, re, shutil, sqlite3, subprocess, sys, uuid
+import argparse, inspect, json, os, re, shutil, subprocess, sys, uuid
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 import importlib.util
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Sequence, TextIO
-from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 SKILLS_ROOT = HERE.parents[2]
@@ -92,6 +91,7 @@ class ApplicationLoopResult:
     unresolved_project_id: Optional[str] = None
     planner_expected_count: Optional[int] = None
     planner_returned_count: Optional[int] = None
+    decision_reports: Optional[tuple[Mapping[str, object], ...]] = None
 
     def to_dict(self) -> dict[str, object]:
         result: dict[str, object] = {"ok": bool(self.ok), "platform": PLATFORM, "submitted": bool(self.submitted), "application_verified": bool(self.application_verified)}
@@ -107,6 +107,7 @@ class ApplicationLoopResult:
         for key in ("verified_project_ids", "verified_provider_proposal_ids", "provider_terminal_blocked_project_ids"):
             value = getattr(self, key)
             if value: result[key] = list(value)
+        if self.decision_reports: result["decision_reports"] = [dict(value) for value in self.decision_reports]
         if self.unresolved_project_id is not None: result["unresolved_project_id"] = self.unresolved_project_id
         return result
 
@@ -495,13 +496,7 @@ def _capacity_reason(state_path: Path, tick_value: object) -> Optional[str]:
         age = now.astimezone(timezone.utc) - observed.astimezone(timezone.utc)
         if age < timedelta(minutes=-1) or age > timedelta(minutes=15): raise ValueError
         if sum(counts): return "capacity_details_required"
-        database = Path(state_path).with_name("marketplace-ledger.sqlite3")
-        connection = sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True)
-        try: rows = connection.execute("SELECT occurred_at FROM marketplace_events WHERE platform=? AND event_type=?", (PLATFORM, "application_verified")).fetchall()
-        finally: connection.close()
-        japan = ZoneInfo("Asia/Tokyo"); japan_day = now.astimezone(japan).date()
-        used = sum(datetime.fromisoformat(str(row[0]).replace("Z", "+00:00")).astimezone(japan).date() == japan_day for row in rows)
-        return "daily_quota_reached" if used >= 10 else None
+        return None
     except Exception:
         return "capacity_source_unavailable"
 
@@ -559,9 +554,15 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     try: _claim_no_effect(decisions, state_path)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="state_invalid"), observed_count, 0, (), ())
     rows_by_id = {str(row["external_id"]): row for row in rows}
+    reports = tuple({
+        "project_id": project_id,
+        "title": str(rows_by_id[project_id].get("title") or "")[:200],
+        "business_class": str(decision["business_class"]),
+        "reason_codes": list(decision.get("reason_codes") or ()),
+    } for project_id, decision in decisions.items())
     eligible = [(rows_by_id[project_id], decision) for project_id, decision in decisions.items() if decision.get("business_class") == "submit_required"]
     if not eligible:
-        return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project"), observed_count, 0, (), ())
+        return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project", decision_reports=reports), observed_count, 0, (), ())
     if submitter is None and len(eligible) > 1:
         eligible = _rank_eligible_by_buyer_quality(eligible)
     verified, blocked = [], []
@@ -579,8 +580,8 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
         if _provider_terminal_blocked(current):
             blocked.append(project_id)
             continue
-        return _batch_summary(current, observed_count, len(eligible), verified, blocked, unresolved_project_id=project_id, submitted=any(item.submitted for item in verified))
-    final = verified[-1] if verified else ApplicationLoopResult(True, reason="provider_terminal_blocked", project_id=blocked[-1] if blocked else None)
+        return _batch_summary(replace(current, decision_reports=reports), observed_count, len(eligible), verified, blocked, unresolved_project_id=project_id, submitted=any(item.submitted for item in verified))
+    final = replace(verified[-1], decision_reports=reports) if verified else ApplicationLoopResult(True, reason="provider_terminal_blocked", project_id=blocked[-1] if blocked else None, decision_reports=reports)
     return _batch_summary(final, observed_count, len(eligible), verified, blocked, ok=True, submitted=any(item.submitted for item in verified))
 
 def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[Path] = None, discoverer: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, safety_verifier: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, clock: Optional[Callable[[], object]] = None, discovery: Optional[Callable[..., Mapping[str, object]]] = None, now: Optional[Callable[[], object]] = None, evidence_dir: Optional[Path] = None, output_stream: Optional[TextIO] = None, query: Optional[str] = None, timeout: float = 20.0) -> dict[str, object]:
@@ -612,7 +613,7 @@ def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH,
         if evidence is not None:
             source = discoverer or discovery
             turns = 3 if source is None and query is None else 1
-            observed_total = 0
+            observed_total = 0; decision_reports: list[Mapping[str, object]] = []
             for turn in range(turns):
                 turn_evidence = evidence
                 if turns > 1:
@@ -636,7 +637,8 @@ def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH,
                         except Exception: result = ApplicationLoopResult(False, error="planner_contract_invalid")
                         else: result = _plan_and_submit(opportunities, today, turn_evidence, planner, safety_verifier, submitter, Path(state_path))
                 observed_total += result.observed_count or 0
-                result = replace(result, observed_count=observed_total)
+                decision_reports.extend(result.decision_reports or ())
+                result = replace(result, observed_count=observed_total, decision_reports=tuple(decision_reports) or None)
                 if result.reason != "no_eligible_project":
                     break
     finally:

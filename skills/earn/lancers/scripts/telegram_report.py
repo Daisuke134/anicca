@@ -571,8 +571,29 @@ def render_application_wake(result: Mapping[str, object]) -> str:
         outcome = f"{result.get('error') or 'unknown_error'}で完了できませんでした"
     return (
         f"[Lancers][応募] {'📨' if result.get('application_verified') else '⏭️' if result.get('ok') else '⚠️'} {outcome}\n"
-        f"確認: 公開案件{observed}件 / 適合候補{eligible}件 / 公式確認{verified}件。\n"
+        f"確認: 公開案件{observed}件 / fresh判断{len(result.get('decision_reports') or [])}件 / 応募候補{eligible}件 / 公式確認{verified}件。\n"
         "次: 5分後のwakeで新着案件の確認と最大positive-EV応募を続けます。"
+    )
+
+
+def render_application_decision(decision: Mapping[str, object]) -> str:
+    project_id = str(decision.get("project_id") or "不明")
+    title = str(decision.get("title") or "案件名を取得できませんでした").strip()
+    business_class = str(decision.get("business_class") or "unknown")
+    reasons = decision.get("reason_codes") if isinstance(decision.get("reason_codes"), list) else []
+    if business_class == "hard_prohibited":
+        outcome = "🚫 応募しません"
+        explanation = f"募集文の「{reasons[1]}」が、対応できない必須条件（{reasons[0]}）に当たるためです。" if len(reasons) > 1 else "対応できない必須条件があるためです。"
+    elif business_class == "skip_not_fit":
+        outcome = "⏭️ 今回は応募しません"
+        explanation = " / ".join(str(value) for value in reasons) or "募集内容と提供可能な仕事が一致しないためです。"
+    else:
+        outcome = "✅ 応募候補として判断しました"
+        explanation = "能力と募集条件が一致したため、重複・capacity・公式受付を確認して応募します。"
+    return (
+        f"[Lancers][応募判断] {outcome}\n"
+        f"案件: {title}\n案件ID: {project_id}\n理由: {explanation}\n"
+        "次: この判断を保存し、同じ案件を再判断せず次のfresh案件へ進みます。"
     )
 
 
@@ -581,6 +602,15 @@ def notify_application_wake(
     notifier: Optional[Callable[[str], object]] = None, now: object = None,
 ) -> DeliveryResult:
     moment = now or datetime.now(timezone.utc).isoformat()
+    decisions = result.get("decision_reports") if isinstance(result.get("decision_reports"), list) else []
+    for decision in decisions:
+        if not isinstance(decision, Mapping):
+            continue
+        project_id = str(decision.get("project_id") or "").strip()
+        if not project_id:
+            continue
+        digest = hashlib.sha256(json.dumps(decision, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        outbox.enqueue(Path(database), f"lancers:application-decision:v1:{project_id}:{digest}", render_application_decision(decision), _timestamp(moment) or "unknown")
     message = render_application_wake(result)
     identity = hashlib.sha256(
         (str(_timestamp(moment)) + "\0" + json.dumps(result, sort_keys=True, separators=(",", ":"))).encode()
