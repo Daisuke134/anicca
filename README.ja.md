@@ -1,5 +1,5 @@
-<!-- startup-context-version: 2026-08-27.2 -->
-<!-- startup-context-digest: 9fbe6198c6d61da47d68767eec90a1d95d2e07058f024448d86372b5f3035338 -->
+<!-- startup-context-version: 2026-09-01.1 -->
+<!-- startup-context-digest: f61cbb3cd2878abfb67756de2b23e816070aa3d991c71f748b2dfe1dbd3180d6 -->
 # Life Manager
 
 **Life Managerは、あなたの身体・心・お金を管理するproactive general agentです。** 目標を提案で終わらせず、

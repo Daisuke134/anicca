@@ -130,6 +130,11 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
+Current cursor: **A01 Freeze event contract**. The prerequisite startup-context drift repair is DONE: public
+`/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
+production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
+product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
