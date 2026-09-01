@@ -106,6 +106,7 @@ MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_REMOTE_WAIT_RECHECK_SECONDS = 3600
 PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_MAX_PARALLEL_READBACKS = 1
+MANUAL_ONLY_TALKROOM_IDS = frozenset({"18211838"})
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
 # reimplement badly under time pressure, so the BUYMA and video contracts belong here now that both
@@ -659,7 +660,9 @@ def observe_orders(args, evidence_dir) -> list[dict[str, Any]]:
         _run(command, "orders_observation")
     try: queue = delivery_queue.build_preliminary(_load(snapshot), date.fromisoformat(args.today))
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as error: raise Failure("orders_observation") from error
-    return [dict(item) for item in queue.get("items", []) if isinstance(item, dict) and item.get("terminal") is not True
+    return [dict(item) for item in queue.get("items", []) if isinstance(item, dict)
+            and _text(item.get("talkroom_id")) not in MANUAL_ONLY_TALKROOM_IDS
+            and item.get("terminal") is not True
             and _text(item.get("talkroom_state")) not in {"取引完了", "completed", "closed", "terminal"}]
 
 def _regular_file(path: Path) -> bool:
