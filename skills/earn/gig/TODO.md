@@ -229,6 +229,10 @@ capability claim is backed by an installed executable capability.
   its focused live replay returned `input_required`, exit `1`, and `effect_delta:0` while preserving the
   exact same request ID and Telegram receipt, so credential insertion is picked up automatically without
   duplicate notification or application effects.
+  Production's cloak Python lacked the legacy helper's `websockets` dependency, so CrowdWorks vault
+  restore/dump now uses the already-installed Playwright CDP context directly and reuses one browser
+  connection. An exact-interpreter replay restored 46 saved cookies, confirmed the server session was
+  expired, then durably returned `input_required` and `effect_delta:0` with the same request/receipt.
 
 ### Live four-lane repair
 
