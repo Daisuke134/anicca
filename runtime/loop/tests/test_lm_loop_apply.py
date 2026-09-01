@@ -138,6 +138,15 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertNotIn("Umask", value)
         self.assertEqual(value["EnvironmentVariables"]["LIFE_MANAGER_RELEASE_SHA"], SHA)
 
+    def test_storefront_plist_uses_daily_driver_auth_vault(self):
+        value = registry()
+        value["loops"]["hf-gig-storefront-direct"] = value["loops"].pop("example")
+        rendered = plistlib.loads(build_apply_plan(value, self.root, SHA)[0]["plist_bytes"])
+        self.assertEqual(
+            rendered["EnvironmentVariables"]["CLOAK_SESSION_VAULT_FILE"],
+            str(Path.home() / ".cloak/vault/gig-daily-driver/auth-state.json"),
+        )
+
     def test_generic_install_does_not_secure_launchd_log_files(self):
         log_root = self.root / ".local/state/test-log-root"
         log_root.mkdir(mode=0o755, parents=True)

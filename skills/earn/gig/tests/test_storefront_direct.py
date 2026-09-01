@@ -454,7 +454,6 @@ def test_launchagent_is_immutable_dedicated_and_storefront_braked(monkeypatch):
     assert env["GIG_IGNORE_DISK_PRESSURE_BLOCK"] == "1"
     assert env["GIG_IGNORE_DISK_WRITERS_STOP"] == "1"
     assert env["GIG_DISK_HEADROOM_KIB"] == "524288"
-    assert env["CLOAK_SESSION_VAULT_FILE"].endswith("/auth-state.json")
     assert job["env"]["GIG_STOREFRONT_CAPABILITY_EVIDENCE"] == (
         "{{GIG_STOREFRONT_CAPABILITY_EVIDENCE}}"
     )
