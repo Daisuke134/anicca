@@ -198,6 +198,7 @@ def environment_for(loop_id: str, home: Path, base: dict[str, str]) -> dict[str,
         environment.update({
             "GITHUB_TOKEN": rows[0]["token"],
             "PATH": "/opt/homebrew/bin:/usr/bin:/bin",
+            "SYMPHONY_WORKSPACE_ROOT": str(home / ".local/state/life-manager/symphony-workspaces"),
         })
         return environment
     if loop_id != "money-printer-symphony-bridge":
