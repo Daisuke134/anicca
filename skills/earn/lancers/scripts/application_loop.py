@@ -594,7 +594,11 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
         if not decisions: raise ValueError
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
     try: _cache_no_effect(decisions, rows_by_id, state_path)
-    except Exception: return _batch_summary(ApplicationLoopResult(False, error="state_invalid"), observed_count, 0, (), ())
+    except Exception:
+        # This cache only avoids re-planning hard-prohibited listings.  Receipt and
+        # fingerprint state remain the authority for duplicate external effects, so
+        # a cache write failure must not stop fresh positive-EV applications.
+        pass
     reports = [{
         "project_id": project_id,
         "title": str(rows_by_id[project_id].get("title") or "")[:200],
