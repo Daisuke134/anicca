@@ -338,7 +338,15 @@ def _run_paid_preflight(args, command: list[str]) -> str:
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("a+", encoding="utf-8") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-        return _run(command, "remote_resume")
+        try:
+            return _run(command, "remote_resume")
+        except Failure as error:
+            if not any(transient in error.detail for transient in (
+                "collector_unhealthy:talkroom_history_empty",
+                "authenticated tab did not finish navigation",
+            )):
+                raise
+            return _run(command, "remote_resume")
 
 def _row(snapshot: dict[str, Any], room: str) -> dict[str, Any]:
     for value in snapshot.get("orders", []):
