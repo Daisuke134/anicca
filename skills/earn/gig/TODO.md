@@ -64,9 +64,15 @@ completion claim is nevertheless false until the two failing lanes below pass na
   `gig-apply-direct-1788285655638010000-8625` recorded `effect=2`, `readback=2`, and `pending=0`;
   Storefront pass `storefront-direct-1788285409489850000-99678` recorded exact public
   `effect=1/readback=1`, and its isolated context lease was released. No global cross-lane lock was
-  added. This gate is reopened because the next Paid receipt exposed an old cross-lane
-  `browser_lease_busy` preflight owned by Storefront; launchd concurrency alone did not prove that
-  Paid could progress while a sibling isolated context was active.
+  added. Production release `4fe91cd2bc926c307dd71043f21189a17f86d1d9` removes the stale
+  cross-lane lease preflights and retries one transient authenticated orders/talkroom render. Its real
+  Paid launchd run recovered from an initial `orders_missing_container`, observed the live queue, and
+  launched eight distinct `--effect-item` owners concurrently (`18128025`, `18180857`, `18184558`,
+  `18202085`, `18211838`, `18211957`, `18214856`, `18218780`). Seven owners terminated independently;
+  the final `18211957` read-only live-site verifier remains active. Remaining C02 closure is the parent
+  terminal receipt with exit zero and `failed=0`, then installing the same main-derived release SHA for
+  Apply, Reply, Storefront, and Paid and recording the four-owner runtime readback. Do not mark this gate
+  complete from the in-progress run or from its previous stale `latest.json`.
 - [ ] `C03` Prove maximum safe Coconala work progression.
   PASS = Apply submits every currently eligible non-duplicate opportunity and reconciles uncertain
   intents before retry; Reply consumes every new buyer event once; Storefront continues measured
