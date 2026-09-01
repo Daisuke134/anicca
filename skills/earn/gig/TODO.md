@@ -4357,10 +4357,13 @@ not a wider filter.
 
 ## 0b. Negotiate misses the five-minute reply target because its own pass is too long
 
-The previous diagnosis here was wrong. Change detection is working, and the four lanes are
-already independent launchd jobs that can run concurrently. They share one logged-in Chromium,
-but each owns a distinct target or BrowserContext; there is no global lock serializing all four.
-Production also showed Apply and Negotiate running at the same time under different PIDs.
+Change detection is working, and the four lanes are independent launchd jobs that can run
+concurrently for model work, artifact production and bookkeeping. Browser effects are not yet
+fully independent: the installed owners share the authenticated Gig browser boundary and
+`CDP_LOCK_DIR`, and Paid returns `pending / browser_lease_busy` while a sibling owns the context.
+Production shows separate lane PIDs, but a separate tab or PID is not proof of independent effect
+capacity. Outside parallelism exists; browser admission and official readback remain shared
+bottlenecks until each lane owns a distinct authenticated BrowserContext and lease.
 
 The measured incident is buyer message `2026-08-19 13:40:23 JST` to official seller readback at
 `13:50:36`, or **10 minutes 13 seconds**. The pass that snapshotted at `13:39:14` necessarily
@@ -4821,6 +4824,32 @@ Restart the browser only when the exact owner/lease census proves no active user
 complete nine-room targeted readback before resuming builders. Acceptance is: no HTTP 500, all nine
 rooms classified from fresh official DOM, no sibling interruption, and replay-zero for the readback
 pass. Do not claim Paid working before this P0 and the buyer outcomes below are complete.
+
+**Parallel outside and inside acceptance — keep this order inside the current cursor.** The four
+business lanes remain four independent launchd owners; no fifth scheduler or global browser-effect
+queue is added. Each owner must also progress independent work concurrently inside its own lane.
+
+- [ ] `PAR-1` Give Apply, Reply, Storefront and Paid distinct authenticated BrowserContexts and
+  distinct lease identities. PASS = all four owners perform fresh official readback concurrently,
+  no owner returns `browser_lease_busy` because of a sibling, and stopping or timing out one owner
+  does not close, restart or invalidate another owner's context.
+- [ ] `PAR-2` Keep one deterministic effect fence per marketplace resource: application, talkroom,
+  listing or order. PASS = concurrent workers may prepare different resources, but two workers
+  cannot submit the same application, message, listing mutation, attachment, cancellation or formal
+  delivery; an uncertain prior effect is reconciled before any retry.
+- [ ] `PAR-3` Run durable producer-consumer concurrency inside every lane. PASS = fresh eligible work
+  is durably claimed before model work, bounded workers progress different resource IDs in parallel,
+  a slow item does not block discovery or another item, and full reconciliation yields to urgent
+  claimed work without being skipped permanently.
+- [ ] `PAR-4` Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
+  browser-context failure or release change records one exact next transition and retry time; the
+  next natural wake resumes it while unrelated work continues. A buyer-authored revision creates a
+  new version of the same work item instead of overwriting or duplicating the prior effect.
+- [ ] `PAR-5` Prove fastest truthful submission and replay-zero from one immutable public-main
+  release. PASS = Apply submits every currently eligible posting, Reply handles every fresh buyer
+  event, Storefront executes every authorized mutation and Paid progresses every purchased order;
+  each effect has exact official readback, every retry is either effect-zero or a verified missing
+  effect, and one blocked resource never makes the parent lane stop processing the rest.
 
 1. **Paid / delivery first.** The latest production aggregate observed 9 rooms, 7 actionable,
    `effect=0`, `readback=4`, and 5 failures: `18128025=remote_resume`, `18180857=remote_builder`,
