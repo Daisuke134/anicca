@@ -56,6 +56,7 @@ FORBIDDEN_TERMS = ("receipt", "gate", "agent", "model", "browser", "token", "pro
 FORBIDDEN_RE = re.compile("|".join(re.escape(term).replace(r"\ ", r"[ _]") for term in FORBIDDEN_TERMS), re.IGNORECASE)
 RETAIN_EVIDENCE_ERRORS = frozenset({"planner_runner_failed", "planner_contract_invalid"})
 SKIP_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
+SKIP_CACHE_VERSION = 2
 
 def _load(name: str, path: Path) -> Any:
     spec = importlib.util.spec_from_file_location(name, path)
@@ -467,19 +468,23 @@ def _submit(fn: Callable[..., object], row: Mapping[str, object], proposal: str,
 def _skip_cache_path(state_path: Path) -> Path:
     return Path(state_path).with_name("application-decisions.json")
 
+def _skip_content_sha256(row: Mapping[str, object]) -> str:
+    payload = {key: row.get(key) for key in PUBLIC_FIELDS if key != "observed_at"}
+    return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
 def _read_skip_cache(state_path: Path, now: Optional[float] = None) -> dict[str, dict[str, object]]:
     try:
         value = json.loads(_skip_cache_path(state_path).read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {}
-    if not isinstance(value, Mapping) or value.get("version") != 1 or not isinstance(value.get("decisions"), Mapping):
-        raise ValueError
+    if not isinstance(value, Mapping) or value.get("version") != SKIP_CACHE_VERSION or not isinstance(value.get("decisions"), Mapping):
+        return {}
     current = time.time() if now is None else now
     result = {}
     for project_id, row in value["decisions"].items():
         if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or not isinstance(row, Mapping): raise ValueError
-        expires_at = row.get("expires_at")
-        if isinstance(expires_at, (int, float)) and not isinstance(expires_at, bool) and expires_at > current:
+        expires_at, content_sha256 = row.get("expires_at"), row.get("content_sha256")
+        if row.get("business_class") == "hard_prohibited" and isinstance(content_sha256, str) and re.fullmatch(r"[0-9a-f]{64}", content_sha256) and isinstance(expires_at, (int, float)) and not isinstance(expires_at, bool) and expires_at > current:
             result[project_id] = dict(row)
     return result
 
@@ -489,7 +494,7 @@ def _write_skip_cache(state_path: Path, decisions: Mapping[str, Mapping[str, obj
     try:
         with tempfile.NamedTemporaryFile("w", dir=path.parent, prefix=f".{path.name}.", delete=False, encoding="utf-8") as handle:
             temporary = handle.name; os.fchmod(handle.fileno(), 0o600)
-            json.dump({"version": 1, "decisions": decisions}, handle, ensure_ascii=False, sort_keys=True, separators=(",", ":")); handle.write("\n")
+            json.dump({"version": SKIP_CACHE_VERSION, "decisions": decisions}, handle, ensure_ascii=False, sort_keys=True, separators=(",", ":")); handle.write("\n")
         os.replace(temporary, path); os.chmod(path, 0o600)
     finally:
         if temporary:
@@ -503,17 +508,19 @@ def _filter_claimed_rows(rows: Sequence[Mapping[str, object]], state_path: Path)
     skip_cache = _read_skip_cache(state_path)
     remaining, first_claimed = [], None
     for row, project_id in zip(rows, ids):
-        if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or project_id in duplicate_ids or (not application_tick.state_has_claim(Path(state_path), project_id) and project_id not in skip_cache):
+        cached = skip_cache.get(project_id) if isinstance(project_id, str) else None
+        cache_matches = isinstance(cached, Mapping) and cached.get("content_sha256") == _skip_content_sha256(row)
+        if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or project_id in duplicate_ids or (not application_tick.state_has_claim(Path(state_path), project_id) and not cache_matches):
             remaining.append(row)
         elif first_claimed is None:
             first_claimed = project_id
     return remaining, first_claimed
 
-def _cache_no_effect(decisions: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
+def _cache_no_effect(decisions: Mapping[str, Mapping[str, object]], rows: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
     cached = _read_skip_cache(state_path); expires_at = time.time() + SKIP_CACHE_TTL_SECONDS
     for project_id, decision in decisions.items():
-        if decision.get("business_class") in {"hard_prohibited", "skip_not_fit"}:
-            cached[project_id] = {"business_class": decision["business_class"], "expires_at": expires_at}
+        if decision.get("business_class") == "hard_prohibited":
+            cached[project_id] = {"business_class": "hard_prohibited", "content_sha256": _skip_content_sha256(rows[project_id]), "expires_at": expires_at}
     _write_skip_cache(state_path, cached)
 
 def _capacity_reason(state_path: Path, tick_value: object) -> Optional[str]:
@@ -586,7 +593,7 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
             except Exception: invalid_ids.append(project_id)
         if not decisions: raise ValueError
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
-    try: _cache_no_effect(decisions, state_path)
+    try: _cache_no_effect(decisions, rows_by_id, state_path)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="state_invalid"), observed_count, 0, (), ())
     reports = [{
         "project_id": project_id,
