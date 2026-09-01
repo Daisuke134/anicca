@@ -580,11 +580,20 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_runner_failed", planner_expected_count=len(rows)), observed_count, 0, (), ())
     returned = len(planned.get("decisions")) if isinstance(planned, Mapping) and isinstance(planned.get("decisions"), list) else None
     try:
-        decisions = _validate(rows, planned, today)
+        items = planned.get("decisions") if isinstance(planned, Mapping) and set(planned) == {"decisions"} else None
+        if not isinstance(items, list) or len(items) != len(rows): raise ValueError
+        rows_by_id = {str(row["external_id"]): row for row in rows}
+        raw_ids = [str(item.get("request_id") or "") for item in items if isinstance(item, Mapping)]
+        if len(raw_ids) != len(rows) or set(raw_ids) != set(rows_by_id): raise ValueError
+        decisions = {}; invalid_ids = []
+        for item in items:
+            project_id = str(item["request_id"])
+            try: decisions.update(_validate([rows_by_id[project_id]], {"decisions": [item]}, today))
+            except Exception: invalid_ids.append(project_id)
+        if not decisions: raise ValueError
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
     try: _cache_no_effect(decisions, state_path)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="state_invalid"), observed_count, 0, (), ())
-    rows_by_id = {str(row["external_id"]): row for row in rows}
     reports = [{
         "project_id": project_id,
         "title": str(rows_by_id[project_id].get("title") or "")[:200],
@@ -592,6 +601,14 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
         "reason_codes": list(decision.get("reason_codes") or ()),
         "outcome": "skipped" if decision["business_class"] != "submit_required" else "planned",
     } for project_id, decision in decisions.items()]
+    reports.extend({
+        "project_id": project_id,
+        "title": str(rows_by_id[project_id].get("title") or "")[:200],
+        "business_class": "invalid",
+        "reason_codes": [],
+        "outcome": "failed",
+        "error": "planner_contract_invalid",
+    } for project_id in invalid_ids)
     eligible = [(rows_by_id[project_id], decision) for project_id, decision in decisions.items() if decision.get("business_class") == "submit_required"]
     if not eligible:
         return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project", decision_reports=tuple(reports)), observed_count, 0, (), ())
