@@ -356,7 +356,7 @@ def _vault()->Any:
     if _VAULT is not None:return _VAULT
     os.environ.update({"SESSION_VAULT_PORT":SESSION_VAULT_PORT,"SESSION_VAULT_DIR":SESSION_VAULT_DIR})
     try:
-        path=Path(__file__).resolve().parents[3]/"_shared/browser/scripts/session_vault.py";spec=importlib.util.spec_from_file_location("_anicca_crowdworks_session_vault",path)
+        path=Path(__file__).resolve().parents[3]/"browser/scripts/session_vault.py";spec=importlib.util.spec_from_file_location("_anicca_crowdworks_session_vault",path)
         if spec is None or spec.loader is None:raise RuntimeError
         _VAULT=importlib.util.module_from_spec(spec);spec.loader.exec_module(_VAULT);return _VAULT
     except Exception:raise _Error("vault_unavailable") from None
