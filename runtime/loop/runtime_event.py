@@ -49,7 +49,14 @@ def _next_archive(path: Path) -> Path:
     return candidate
 
 
-def rotate_jsonl_locked(fd: int, path: Path, max_bytes: int | None = None) -> None:
+def rotate_jsonl_locked(
+    fd: int,
+    path: Path,
+    max_bytes: int | None = None,
+    keep_archives: int | None = None,
+) -> None:
+    if keep_archives is not None and keep_archives < 0:
+        raise ValueError("keep_archives must be non-negative")
     if os.fstat(fd).st_size <= (max_bytes or _max_bytes()):
         return
     archive = _next_archive(path)
@@ -65,6 +72,11 @@ def rotate_jsonl_locked(fd: int, path: Path, max_bytes: int | None = None) -> No
         os.replace(temporary, archive)
         os.ftruncate(fd, 0)
         os.fsync(fd)
+        if keep_archives is not None:
+            archives = sorted(path.parent.glob(f"{path.stem}-*{path.suffix}.gz"))
+            expired_archives = archives[:-keep_archives] if keep_archives else archives
+            for expired in expired_archives:
+                expired.unlink()
     finally:
         try:
             temporary.unlink()
