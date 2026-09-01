@@ -173,20 +173,27 @@ capability claim is backed by an installed executable capability.
   mutation from official conversion evidence, and completed with public effect/readback `1/1`,
   `reason=public_accepted`, and its isolated browser lease released. The runner now honors an
   explicitly selected Codex profile, and text updates use the observed form's native submit path.
-- [ ] `S11` Persist one website-neutral `MarketProductContract` from the accepted Storefront offer.
+- [x] `S11` Persist one website-neutral `MarketProductContract` from the accepted Storefront offer.
   PASS = buyer job, delivery kind, inclusions, exclusions, inputs, artifact acceptance, base price,
   recurring-support boundary, capability evidence, paid-demand evidence and originality provenance
   validate without a Coconala service ID, form field or category ID.
-- [ ] `S12` Render the same product contract through thin Coconala, Lancers, CrowdWorks and Fiverr adapters.
-  PASS = each adapter maps only platform fields, categories, currency and limits; no adapter changes
-  the buyer job, invents credentials/results, copies competitor prose/images, or owns product judgment.
-- [ ] `S13` Qualify the product independently on each configured marketplace.
-  PASS = each platform records current official sold/reviewed comparable evidence and fees; missing,
-  unknown or zero-sale evidence remains explicit and never inherits Coconala demand as proof.
-- [ ] `S14` Publish one additional-platform canary through its installed Storefront owner.
-  PASS = an authenticated and authorized adapter performs one fenced publish, exact official readback
-  matches the shared product contract, replay is effect-zero, and inquiry/order/payment retain the
-  platform plus listing identity. Unconfigured platforms remain effect-zero rather than blocking others.
+  Contract `ui-italian-translation-display-check` is persisted at
+  `contracts/market-products/ui-translation.json` with SHA
+  `534b2a206729e73c91f5f051fc0caebda4b091388815a3f9a06c2ce66dc7612c`. Draft 2020-12
+  validation and a fresh SHA calculation passed, marketplace identifiers are absent, and identical
+  replay returned `changed:false`. Paid demand remains explicitly `unknown`; no sale is inferred or
+  awaited.
+- [ ] `S12` Render the shared product contract through a thin Coconala adapter.
+  PASS = the adapter maps only Coconala fields, category, JPY representation and limits; exact output
+  matches the accepted offer and does not change product judgment or retain competitor content.
+- [ ] `S13` Render and independently qualify the product through a thin CrowdWorks adapter.
+  PASS = the adapter maps only CrowdWorks fields, category, currency and limits; current official
+  CrowdWorks sold/reviewed comparable evidence and fees remain independent from Coconala evidence,
+  with missing, unknown or zero-sale evidence explicit.
+- [ ] `S14` Publish one CrowdWorks canary through its installed Storefront owner.
+  PASS = the authenticated owner performs one fenced publish, exact official readback matches the
+  shared product contract, replay is effect-zero, and inquiry/order/payment retain CrowdWorks plus
+  listing identity. Lancers is excluded from this sequence because its separate owner is implementing it.
 
 ### Live four-lane repair
 

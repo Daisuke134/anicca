@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anicca.ai/schemas/market-product-contract-v1.json",
+  "title": "MarketProductContract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version", "product_key", "buyer_job", "delivery_kind", "inclusions", "exclusions",
+    "required_inputs", "artifact_acceptance", "base_price", "recurring_support_boundary",
+    "capability_evidence", "paid_demand_evidence", "originality_provenance"
+  ],
+  "properties": {
+    "version": {"const": 1},
+    "product_key": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "buyer_job": {"$ref": "#/$defs/text"},
+    "delivery_kind": {"$ref": "#/$defs/text"},
+    "inclusions": {"$ref": "#/$defs/textList"},
+    "exclusions": {"$ref": "#/$defs/textList"},
+    "required_inputs": {"$ref": "#/$defs/textList"},
+    "artifact_acceptance": {"$ref": "#/$defs/textList"},
+    "base_price": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amount", "currency"],
+      "properties": {
+        "amount": {"type": "integer", "minimum": 1},
+        "currency": {"type": "string", "pattern": "^[A-Z]{3}$"}
+      }
+    },
+    "recurring_support_boundary": {"$ref": "#/$defs/text"},
+    "capability_evidence": {"$ref": "#/$defs/textList"},
+    "paid_demand_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "evidence"],
+      "properties": {
+        "status": {"enum": ["verified", "unknown"]},
+        "evidence": {"type": "array", "items": {"$ref": "#/$defs/text"}, "uniqueItems": true}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "verified"}}}, "then": {"properties": {"evidence": {"minItems": 1}}}}
+      ]
+    },
+    "originality_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "competitor_content_incorporated", "evidence"],
+      "properties": {
+        "method": {"$ref": "#/$defs/text"},
+        "competitor_content_incorporated": {"const": false},
+        "evidence": {"$ref": "#/$defs/textList"}
+      }
+    },
+    "contract_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "textList": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/text"}}
+  }
+}
