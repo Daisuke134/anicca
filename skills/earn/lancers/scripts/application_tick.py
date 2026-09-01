@@ -876,7 +876,7 @@ def run_live_tick(
             return TickResult(ok=False, error=TERMINAL_STATE_STATUS, project_id=str(project_id))
     except RuntimeError:
         return TickResult(ok=False, error="state_invalid", project_id=str(project_id))
-    browser = None
+    browser = page = None
     try:
         with account_lock(state_path.with_name("work-sync.json")):
             try:
