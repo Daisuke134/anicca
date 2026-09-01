@@ -181,15 +181,17 @@ Current cursor: **A02 Team/submission shell**. A01 is DONE with the event contra
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
 
-A02 is **IN PROGRESS at the provider-consent boundary**. A new Lablab account was created through its normal
+A02 is **IN PROGRESS at the Discord provider-consent boundary**. A new Lablab account was created through its normal
 email OTP flow without Google/GitHub/AMD login, and the Alpaca event screening form now exists; the official
-event page reads `Waiting for approval`. The factual screening fields are autosaved: identity and public
+event page reads `Approved`. Dais explicitly accepted the Lablab media release and Terms/Privacy sponsor-data
+sharing; the official form read back `Submission Successful`. The factual screening fields are autosaved: identity and public
 profile links from the private profile SSOT, Japan, the derived age band, Startups & Entrepreneurship,
 Advanced AI-building experience, and Hackathon/Event Website. Company/job title remain blank because they are
-optional and no authoritative private fact supplies them. Lablab requires the account owner to accept both a media release
-(name/image/voice and event-participation use without additional compensation) and Terms/Privacy consent that
-includes sponsor data sharing. Life Manager must not accept those legal terms for Dais. Team/submission-shell
-creation and the A02 official readback resume immediately after Dais explicitly accepts both consents.
+optional and no authoritative private fact supplies them. Lablab then disclosed that Discord account connection
+and community membership are mandatory before team creation. No existing Discord session or credential exists;
+the normal-email registration is prefilled and its generated password is stored only in the private credential
+SSOT. Creating the account constitutes acceptance of Discord's Terms, so team/submission-shell creation resumes
+after Dais explicitly accepts those separate terms. Google login remains prohibited.
 
 | Seq | Atom | Done condition |
 |---:|---|---|
