@@ -11,7 +11,6 @@ import json
 import os
 from pathlib import Path
 import re
-import subprocess
 import sys
 from typing import Any, Callable, Mapping, Optional, Sequence
 from urllib.parse import urlsplit
@@ -23,6 +22,7 @@ OUTBOX_PATH = ROOT / "skills/_shared/marketplace-core/scripts/telegram_outbox.py
 LEDGER_PATH = OUTBOX_PATH.with_name("ledger.py")
 TICK_PATH = HERE / "application_tick.py"
 WORK_SYNC_PATH = HERE / "work_sync.py"
+TELEGRAM_PATH = ROOT / "skills/_shared/telegram.py"
 STATE = Path.home() / ".local/state/anicca/lancers/application.json"
 DATABASE = STATE.with_name("telegram.sqlite3")
 LEDGER_DATABASE = STATE.with_name("marketplace-ledger.sqlite3")
@@ -701,13 +701,18 @@ def collect_snapshot(*, application_log: Path, state_path: Path, ledger_database
 
 def _default_notifier(message: str) -> SendResult:
     try:
-        completed = subprocess.run(["openclaw", "message", "send", "--channel", "telegram", "--target", TARGET, "--message", message, "--json"], stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=180, check=False)
-        payload = _provider_payload(completed.stdout) if completed.returncode == 0 else {}
-        return SendResult(True, _provider_id(payload), "receipt_missing")
-    except OSError:
-        return SendResult(False, None, "process_not_started")
-    except Exception:
-        return SendResult(True, None, "provider_response_invalid")
+        telegram = _load("_anicca_shared_telegram", TELEGRAM_PATH)
+        client = telegram.TelegramClient.from_env(
+            environ={"TELEGRAM_CHAT_ID": TARGET},
+            env_file=Path.home() / ".local/state/life-manager/.env",
+        )
+        receipt = client.send_text(message)
+        ids = receipt.get("message_ids") if isinstance(receipt, Mapping) else None
+        provider_id = str(ids[-1]) if isinstance(ids, list) and ids else None
+        return SendResult(True, provider_id, "receipt_missing" if provider_id is None else None)
+    except Exception as error:
+        attempted = type(error).__name__ == "TelegramDeliveryUnknown"
+        return SendResult(attempted, None, "transport_unknown" if attempted else "direct_transport_unavailable")
 
 
 def main(argv: Optional[Sequence[str]] = None, *, notifier: Optional[Callable[[str], object]] = None, stdout: Any = None) -> int:
