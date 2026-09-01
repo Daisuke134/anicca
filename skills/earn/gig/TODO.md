@@ -23,6 +23,56 @@ readback; a phase name is never a checkbox. Do not start a later item until ever
 is checked. Check an item only with the evidence named after `PASS =`. Chat, process liveness,
 model narration, and local success without the named readback are not PASS.
 
+### Live Coconala four-lane completion — account-owner priority override
+
+Production audit found four independently loaded owners with no cross-lane completion wait:
+Apply and Storefront recur every 60 seconds, Reply is keep-alive, and Paid recurs every 300
+seconds. Their immutable release SHAs differ by lane and each observed task lease was released;
+the leases fence duplicate use of one task/browser, not the other three lanes. The four-lane
+completion claim is nevertheless false until the two failing lanes below pass naturally.
+
+- [x] `C00` Restore Apply's official opportunity-source read.
+  PASS = a natural `ai.anicca.hf-gig-apply-direct` pass reads the official Coconala source,
+  reports a non-error source status, records effect/readback separately, and preserves historical
+  uncertain intents as no-resubmit fences without counting them as current-pass pending work.
+  Production release `895d0e2349ff2211c5a141a6a1b26b5936aef620` restores the authenticated
+  gig-browser vault to isolated Apply contexts. Pass `gig-apply-direct-1788283498583562000-42402`
+  observed 40 official listings, submitted 12 eligible applications, and recorded 12 individual
+  official applied-history readbacks. Authenticated replay recognized all 12 as already applied and
+  produced no duplicate effect. Natural final-release pass
+  `gig-apply-direct-1788284844274794000-82574` exited zero with `observed=40`, `pending=0`, and
+  `durable_uncertain_count=40`; those 40 legacy pre-proof intents remain durable no-resubmit fences
+  rather than being falsely reported as current pending work.
+- [x] `C01` Restore Storefront's exact official public readback.
+  PASS = one natural `ai.anicca.hf-gig-storefront-direct` pass reads the 14-service official
+  inventory, completes or safely declines its selected improvement, and ends pass with exact
+  public effect/readback or replay-zero. Production release
+  `c4e7916e4cf86c700ac1f5d5687d9d81a01e5f39` submits package forms through the same proven
+  `requestSubmit` path as text mutations instead of a stale coordinate click. Natural pass
+  `storefront-direct-1788285409489850000-99678` read all 14 official services, saved the selected
+  additional package on service `4244556`, read its title and JPY 5,000 price back from the exact
+  public page, recorded `effect=1` and `readback=1`, released its isolated lease, and exited zero.
+- [ ] `C02` Prove all four installed owners concurrently healthy without adding a global lock.
+  PASS = one runtime manifest binds Apply, Reply, Storefront, and Paid to their loaded immutable
+  release SHA, cadence, latest natural terminal event, official effect/readback receipt, and
+  released isolated lease; Apply and Storefront pass after `C00`/`C01`, Reply remains keep-alive,
+  Paid passes on its independent 300-second recurrence, and no lane waits for another lane's
+  completion. Runtime readback reports all four managed with no blocker, exact installed/event SHA,
+  last exit zero, and last terminal result `pass`: Apply and Storefront recur independently every
+  60 seconds, Reply remains keep-alive, and Paid recurs every 300 seconds. Apply and Storefront were
+  observed `loaded-running` concurrently and then completed independently. Apply pass
+  `gig-apply-direct-1788285655638010000-8625` recorded `effect=2`, `readback=2`, and `pending=0`;
+  Storefront pass `storefront-direct-1788285409489850000-99678` recorded exact public
+  `effect=1/readback=1`, and its isolated context lease was released. No global cross-lane lock was
+  added. This gate is reopened because the next Paid receipt exposed an old cross-lane
+  `browser_lease_busy` preflight owned by Storefront; launchd concurrency alone did not prove that
+  Paid could progress while a sibling isolated context was active.
+- [ ] `C03` Prove maximum safe Coconala work progression.
+  PASS = Apply submits every currently eligible non-duplicate opportunity and reconciles uncertain
+  intents before retry; Reply consumes every new buyer event once; Storefront continues measured
+  offer improvement; Paid dispatches distinct active projects in parallel while same-effect fences
+  prevent duplicate submission, delivery, or payment action.
+
 ### Apply music-production prohibition — account-owner priority override
 
 - [x] `AM01` Add a semantic Apply prohibition for music or produced/edited audio as the required
@@ -208,6 +258,12 @@ capability claim is backed by an installed executable capability.
   exact official sent/readback matches the shared product contract, replay is effect-zero, and later
   inquiry/order/payment retain CrowdWorks plus job identity. CrowdWorks exposes job application rather
   than a worker storefront publication flow. Lancers remains excluded because its separate owner owns it.
+  **Current authentication correction:** a fresh official dashboard probe returns
+  `authenticated:true`, `role:employee`, and the private credential SSOT contains a CrowdWorks entry.
+  Ordinary saved email/password login is the required path; Google OAuth/passkey is not used. The
+  current Apply failure is `config_invalid` because `public-profile.json.hours_limit` is a string while
+  the installed profile contract requires an integer. Historical logged-out/OAuth observations below
+  are incident evidence only and must not be reported as current state.
   The public `crowdworks-revenue-application` owner and its recovered submit/readback transaction are
   implemented on a five-minute cadence. The owner now requires authenticated official profile apply and
   public readback before it searches or submits, so missing authentication/profile state cannot be hidden
@@ -4829,6 +4885,42 @@ and release GC now preserves its loaded immutable release while idle. Regenerabl
 reclaimed only after open-file checks; current free space is about 8.1 GiB and
 `disk-pressure.block` is absent. Codex session databases and `.cloak` stay
 protected and are not cleanup candidates.
+
+### Current owner scope and fixed execution order
+
+This is the authoritative current cursor and supersedes historical incident/recovery ordering below.
+The cleanup owner is handled by another session; its historical checklist remains evidence but is
+not part of this owner's execution queue. Do not advance a disk-cleanup item from this cursor.
+
+**Active atom: `PAR-1`.** Keep the following order unchanged:
+
+1. [ ] `PAR-1` — distinct authenticated BrowserContexts and lease identities for Apply, Reply,
+   Storefront and Paid; no sibling-caused `browser_lease_busy`.
+2. [ ] `PAR-2` — one deterministic effect fence per application, talkroom, listing or order.
+3. [ ] `PAR-3` — durable bounded producer-consumer concurrency inside all four owners.
+4. [ ] `PAR-4` — resumable nonterminal work items; one slow/failing item never blocks another.
+5. [ ] `PAR-5` — concurrent truthful effects, official readback and replay-zero from one immutable
+   public-main release.
+6. [ ] Paid — finish every current buyer-level outcome and obtain aggregate `failed=0`; keep formal
+   delivery off until the buyer explicitly approves the reviewed work.
+7. [ ] Negotiate/Reply — continuously consume buyer feedback, resubmit revised drafts until accepted,
+   cover every fresh buyer event and prove replay-zero.
+8. [ ] Storefront — execute every authorized listing mutation with official attribution and
+   replay-zero.
+9. [ ] Apply — account for every eligible posting, submit each authorized application exactly once,
+   and prove official readback and replay-zero.
+10. [ ] Four-lane gate — concurrent natural wakes, independent failure, reboot recovery and two
+    consecutive natural starts from the same immutable public-main release.
+11. [ ] CrowdWorks parallel track — run concurrently with items 1–10 and never wait for the Coconala
+    gate. First fix the current Apply owner's `hours_limit` type mismatch, then prove continuous
+    truthful eligible-job discovery, one fenced submission per job, official readback and replay-zero.
+    The official dashboard currently reads `authenticated:true`, `role:employee`; use ordinary saved
+    email/password login only and do not route this owner through Google OAuth/passkey. After Apply is
+    healthy, add independent Negotiate/Reply, Paid/Fulfillment and real-time reporting owners through
+    the shared provider-neutral contracts.
+
+The detailed `PAR-1` through `PAR-5` acceptance criteria and buyer-level Paid queue remain below.
+Historical unchecked cleanup or recovery entries do not reorder this list.
 
 ### Host disk and Account 2 runtime verification
 

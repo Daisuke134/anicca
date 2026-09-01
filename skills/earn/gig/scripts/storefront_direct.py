@@ -5276,14 +5276,13 @@ async def _execute_package_effect_async(
             "seller_form_before_path": str(before_path), "prepared_at_epoch": int(time.time()),
             "effect_origin_pass_id": evidence_dir.name, "judgement": judgement,
         })
-        rect = filled["rect"]
-        if min(float(rect.get("w") or 0), float(rect.get("h") or 0)) <= 0:
-            raise RuntimeError("seller_package_submit_not_visible")
-        for event_type in ("mousePressed", "mouseReleased"):
-            await listing_inventory._call(ws, "Input.dispatchMouseEvent", {
-                "type": event_type, "x": float(rect["x"]), "y": float(rect["y"]),
-                "button": "left", "clickCount": 1,
-            }, cid); cid += 1
+        submitted = await evaluate(
+            "(()=>{const form=document.forms[0],submit=form?.querySelector("
+            "'button.submitButton.js_button-edit[type=submit]');"
+            "if(!submit)return false;form.requestSubmit(submit);return true})()"
+        )
+        if submitted is not True:
+            raise RuntimeError("seller_package_submit_missing")
         await asyncio.sleep(3)
         return before, after, intent_path
 

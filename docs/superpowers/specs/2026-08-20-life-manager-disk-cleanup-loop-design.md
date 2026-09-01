@@ -31,9 +31,26 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    - 現行agent-runner evidenceは256 MiB上限を持ち、新Life Manager rootは約73 MiB。旧OpenClaw evidence、
      旧lm-video、media outbound、ReelClaw runは現在のproducer rootではなく手動監査対象とする。
      `~/.openclaw/workspace/runs`はpublication receipt未接続のdeliverableなので自動削除しない。
-   - **現在activeな次atom:** 共通agent usage writer（active 21.1 MiB）のowner-side lossless rotationを接続する。
-     ledgerをblind truncateせず、owner readbackに必要な期間・materialized state・archiveを確認してから
-     `runtime/agent-runner.append_usage_event`へ最小修正を行う。
+   - **現在activeな次atom:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、
+     不要daemonだけをowner経由でdrainし、VM使用量がmacOSにより縮小することをread backする。
+     初回readbackはswap 10,240 MiB中9,105 MiB使用、compressor occupied約4.0 GiB相当。上位RSSはactive
+     Codex app-server 565 MiB、Eliza source agent 384 MiB、OpenClaw gateway 336 MiB。browserはprofile別に
+     daily-driver 1,809.5 MiB/24 process/1 root、gig-daily-driver 578.0 MiB/6/1、x-repost 486.4 MiB/8/1、
+     affiliate/en 464.0 MiB/11/1、x-diceai0 435.2 MiB/8/1、CrowdWorks 398.4 MiB/9/1、affiliate/x-en
+     329.6 MiB/8/1、job-search 238.2 MiB/6/1、Lancers 232.6 MiB/6/1、TikTok 228.5 MiB/7/1、
+     affiliate/impact 140.7 MiB/6/1である。同一profileのbrowser root重複は0なので、root processを名前だけで
+     drainしない。daily-driverのCDP targetは21件で、WebMCP、Alpaca、Coconala、Google OAuth等の進行中targetを
+     含む。次は各targetをowner lease、open handle、terminal receiptへ照合し、終了済みtargetだけをowner経由で
+     closeする。Lancers/CrowdWorks/Alpaca/WebMCP targetは別owner作業中のため保持する。parent=1、6時間超の
+     temporary Puppeteer profile process 1件はorphan候補だが、caller/open target照合前には終了しない。
+   - 共通agent usage writerのowner-side lossless rotationはPR #3710 / merge `a1f4017b`で完了した。
+     既存runtime-event gzip writerを再利用し、16 MiB超を同一inode/flock内でarchiveしてからactiveをtruncateする。
+     canonical usage reportはprivate `.jsonl.gz`とactive JSONLを横断する。release `a99beb28`を
+     `writer-claim-loop`と`writer-opportunity-discovery`だけへtarget applyし、後者の実agent wakeはrun 2、exit 0。
+     production readbackはarchive 25,750行/1,399,029 bytes＋active 8行/6,561 bytes＝25,758行、全mode 0600、
+     公式daily report 65 attempts、空き6.7 GiB。blind truncation、行loss、別loop停止は0である。
+     検証triggerで`kickstart -k`を使い直前instanceへexit 143を一度残したため、以後はrunning ownerを触らず、
+     idle readback後の`kickstart`を`-k`なしで使う。replacement instanceは即時起動しterminal exit 0で閉じた。
    - `lm-recording-store`はmain wrapperから旧OpenClaw skillへ戻る二重正本を廃止し、Life Manager data rootへ
      170 recording ID・173 MP3を統合、全hash一致を確認した。release `610f9059`でtarget applyし、実wakeは
      terminal PASS/exit 0。旧/new `lm-video` 548ファイル・220.5 MiBは全hash一致の削除候補である。
@@ -61,6 +78,99 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `6b4f59fb`の自然wakeで34 MiBをarchive 11,835行/357 KiB＋active 27,317行/24 MiBへ縮小し、全39,152行、
      gzip、active/archive/lock mode 0600、job runningをread backした。confirmed/unknown行はactive保持し、
      古いNO_EFFECT/READ_ONLY_CONFIRMEDだけをowner自身が圧縮した。
+   - **Current host storage census:** APFS physical containerは245.1 GB、使用243.4 GB、空き1.7 GB、
+     使用率99.3%である。System 11.3 GB、Preboot 7.5 GB、Recovery 2.2 GBを使用する。Data volumeの
+     `df` readbackは228 GiB中190 GiB使用、available 1.5 GiBである。数値は稼働loopのrelease生成・回収で
+     変動するため、cleanup判断時は保存値でなく同じ実機を再計測する。ただし下記のowner/path分類は再調査せず
+     次atomのstarting inventoryとして使う。
+
+     | root | measured bytes相当 | 主な内訳・境界 |
+     |---|---:|---|
+     | `~/.cloak` | 20.25 GiB | `state-backups` 10.32 GiB、`profiles` 9.57 GiB。不可侵storeであり一括削除しない |
+     | `~/loops` | 約19.8 GiB | `releases` 15.27 GiB、`life-manager` 874 MiB。releaseはcurrent/loaded/open/pinned判定後だけGCする |
+     | `~/Projects` | 約12.99 GiB | `life-manager-main` 4.56 GiB、外側`.worktrees` 4.01 GiB、`life-manager-eliza-migration` 2.89 GiB |
+     | `~/.openclaw` | 9.90 GiB | `.git` 2.91 GiB、workspace 2.02 GiB、skills 1.53 GiB、agents 778 MiB、media 670 MiB、state 534 MiB |
+     | `~/.local` | 9.46 GiB | state 5.00 GiB、share 2.67 GiB、pipx 1.10 GiB。state内はAnicca 2.74 GiB、Life Manager 2.25 GiB |
+     | `~/gig` | 8.32 GiB | projects 6.34 GiB、`.git` 433 MiB、apply-direct 350 MiB、DM materials 253 MiB、releases 239 MiB |
+     | `~/anicca-project` | 6.57 GiB | 旧cloneと推測して削除せず、unique ref/loaded argv/state ownerをread backする |
+     | `~/anicca` | 3.52 GiB | 同上 |
+     | `~/anicca-monk-factory` | 3.04 GiB | 不可侵store |
+     | `~/.codex` | 3.02 GiB | 別account home。session/log/archiveをowner分類する |
+     | `~/anicca-rtdash` | 2.55 GiB | 不可侵store |
+     | `~/.bun` | 2.41 GiB | 再生成cache回収後も残るowner dataを分類する |
+     | `~/.codex-acct2` | 2.33 GiB | active Codex account。active sessionを保持する |
+     | `~/.claude` | 2.17 GiB | active sessionを保持し、終了済みlog/archiveだけをrotation対象にする |
+     | `~/Desktop` | 2.11 GiB | ほぼ`MoneyPrinter-Hackathon-Demo`。WebMCP提出完了前は保持する |
+     | `~/.openclaw-backups` | 1.72 GiB | generation/復旧依存を確認してbounded retentionへ接続する |
+     | `~/.rustup` | 1.32 GiB | toolchain ownerを確認する |
+     | `~/Pictures` | 1.08 GiB | Life Manager/提出物/進行中deliverable依存とunique contentを監査し、依存0・再生成可能なら回収する |
+     | `~/.venvs` | 0.99 GiB | caller/entrypoint不在を確認したenvironmentだけを回収する |
+
+     system側は`/opt/homebrew` 12.52 GiB、`/private` 7.51 GiB、`/Applications` 7.58 GiB、
+     `/Library` 3.65 GiB、`/usr/local` 393 MiBである。ApplicationsはXcode 3.47 GiB、ChatGPT 1.38 GiB、
+     Chrome 1.37 GiB、Claude 823 MiB、Chat On Steroids 382 MiB、CodexBar 150 MiB。user Libraryで確認済みの
+     major rootsはApplication Support 4.29 GiB、Group Containers 1.02 GiB、Containers 194 MiB、Caches
+     142 MiB、Logs 114 MiB、Developer 31 MiB。Application SupportはCloudDocs 2.22 GiB、Google 477 MiB、
+     Claude 318 MiB、Syncthing 304 MiB、`awal-nodejs` 274 MiB、Codex 142 MiBである。
+
+     Life Manager source内部は`life-manager-main/.worktrees` 1.99 GiB、`.git` 1.67 GiB、`node_modules`
+     795 MiBである。外側`~/Projects/.worktrees`はAlpaca active worktree 3.55 GiB、その他約73–95 MiBの
+     worktree群である。Alpaca、GH-11、dirty、locked、unpushed、unmerged、open worktreeは保持する。
+     `Harmony`という大型app/rootは存在せず、名前一致はresearch tree内の小さなMarkdown 2件だけである。
+     `.camofox`は約1.4 MiBで容量原因ではない。`life-manager-repo-v0-retire` 454 MiB、
+     `anicca-portfolio-self-improve` 448 MiB、`anicca-docs-tools` 433 MiB、`actions-runner` 564 MiBは、名前だけで
+     消さずowner/provenance判定対象とする。
+
+     このcensusから優先監査familyは、①loop releases、②Cloak state backup/profile retention、③内外worktree、
+     ④Gig project lineage、⑤Anicca/OpenClaw重複clone、⑥OpenClaw backup/git/runtime output、⑦Anicca/Life Manager
+     state、⑧終了済みagent log/archive、⑨再生成可能なtool/cache、⑩未使用application/toolchainである。
+     「手動cleanupで一度freeが増えた」「ディレクトリ名が古そう」は完了証拠にしない。各familyでwriter owner、
+     active/open/loaded/dirty保護、保持上限、次wake回収、protected deletion 0を閉じる。
+
+     **User-data cleanup authority:** `~/Pictures`、`~/Desktop`、`~/Downloads`、その他user-owned directoryも
+     cleanup監査の対象外にしない。Life Manager source/state、WebMCP等の未完提出物、進行中buyer deliverable、
+     credential/session/ledger/receipt/evidence、唯一の原本、open fileからの参照がすべて0で、再生成可能または
+     byte-identicalな別正本があるとread backできたものは回収候補である。Daisはこの条件を満たすものについて
+     個別の事前確認をcleanup完了条件にしない。逆に「古そう」「user dataだから不要そう」という名前・年齢だけの
+     推測では削除しない。現在の`MoneyPrinter-Hackathon-Demo`はWebMCP提出完了まで保護する。
+   - **Source preservation correction:** `~/Projects/life-manager-main`と
+     `~/Projects/life-manager-eliza-migration`は両方active sourceとして保持する。Eliza migrationは未使用と
+     推測して削除しない。この二つ以外のLife Manager/OpenClaw/Anicca cloneは、dirty/unpushed commit、
+     unique ref、loaded argv、open file、state owner、production effect依存をread backし、必要なsource/stateを
+     二つの正本または外部state SSOTへ移した後だけretire候補になる。
+   - **OpenClaw retention boundary:** Postiz iOS、HCA、factory loopsがOpenClawを使用しているというowner仮説を
+     entrypoint、loaded argv、cwd/open file、state path、自然terminal eventで個別に検証する。実依存は保持して
+     Life Managerのimmutable release/state境界へ移す。`~/.openclaw/.git`約3.13 GB、workspace約2.17 GB、
+     skills約1.64 GB、media約702 MB、state約559 MBを名前だけで削除せず、依存0になった重複source/cacheだけを
+     retireする。credential、session、memory、customer evidence、publication receiptは保持する。
+   - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
+     active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
+     0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
+     `~/gig/projects/18128025`等のHermes名を含むBUYMA/customer artifactとeffect receiptはgateway退役と無関係に
+     project lineageとして保持する。
+
+   **All-loop bounded-output audit内の固定実行順:** 現在activeな共通agent usage rotationを閉じた後、次を
+   一件ずつ実行し、各atomでbefore/after bytes、loaded/open/dirty保護、errors 0、protected deletion 0、
+   次wake回収または自然terminal readbackを保存する。
+
+   1. [x] 共通agent usage ledgerのowner-side lossless rotationを実装・release・自然wakeで検証する。
+   2. [ ] **current:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、不要daemonだけをowner経由で
+      drainし、VM使用量がmacOSにより縮小することをread backする。
+   3. 40 worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
+      保ったまま回収する。
+   4. 26 immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、central cleanupで後者だけを回収する。
+   5. `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
+      state、production argvを移管し、一repositoryずつretireする。
+   6. OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
+      移した後、重複`.git`/workspace/skills/mediaだけを回収する。
+   7. Hermes consumer 0を証明し、gatewayを正式retireして`~/.hermes`を回収する。customer Hermes assetsは保持する。
+   8. Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
+      BingX `18214856`を含む再提出中projectは保持し、terminal projectの古いregenerable attempt/workspaceだけを
+      owner cleanupへ接続する。
+   9. Codex/Claude sessionを保持しながら終了済みlog/archiveをbounded rotationへ接続する。
+   10. `/private/var/folders`とLibrary cacheはopen-path/owner proof後の再生成可能familyだけを回収する。
+   11. free 11 GiB以上、24時間ENOSPC 0/protected deletion 0を証明し、その後7日間のstate-write failure 0、
+       cleanup-caused producer failure 0を証明する。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、

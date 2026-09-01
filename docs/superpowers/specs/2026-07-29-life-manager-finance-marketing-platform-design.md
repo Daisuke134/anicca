@@ -2475,18 +2475,20 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **incident recovery is reopened inside Order 25 MKT-10 at
-MKT-10R6, one destination at a time.** MKT-09R0 through the selected Postiz canary
-portfolio are terminal: capacity is safe, the shared publication fence remains closed,
-the JP4 false completion is quarantined, and the 13-effect set is 12 `present`
-plus one truthful `absent`. The full publication ledger is 43 `completed`,
-one `conflict`, and zero unknown/running/reconciling jobs. This does not prove
-all accounts or schedules healthy: the measured live schedules still produced
-only 32 of 64 expected provider rows, most accounts remain unclassified at
-0/day, and two delayed effects missed their logical slots by hours.
-MKT-12A0 remains blocked until cadence and attribution are healthy. Honne still has TikTok
-destinations only; dedicated Honne Instagram and YouTube integrations do not
-yet exist.
+Current TODO state: **Order 25 MKT-10R6 is terminal and MKT-10R7 is active.**
+All 12 retained Anicca/Honne destinations have one isolated owner-path
+kickstart, exact provider integration readback, native-profile owner/content
+readback, and same-slot replay with zero new publication and zero duplicate
+Telegram message. Manifest
+`marketing-lane-manifest:244631905b18f2e861ed6cf3dcace9e8d49a9b6365bcbfe58432e8a1b8355801`
+arms only the first incomplete target, Anicca EN Affirmation Instagram, at
+`target_daily_limit=3`; the other 11 targets and all 18 holds remain 0/day.
+All 12 launchd labels are loaded and each has exactly three configured JST
+calendar intervals. R7 remains active until each lane, in fixed order, produces
+terminal natural-slot published/missed/duplicate evidence before the next lane
+is armed. Attribution and bounded learning remain later ordered work. Honne
+still has TikTok destinations only; dedicated Honne Instagram and YouTube
+integrations do not exist.
 
 **Current incident correction:** the native screenshots and live integration
 readback reopen Order 25 MKT-10 before MKT-11. The fixed program order is not
@@ -2502,8 +2504,8 @@ installed labels continuously chase unrelated main commits. Per-label loaded
 argv plus sealed release metadata is the execution SSOT; a timestamped closure
 snapshot is evidence, not a permanent claim about the next independently
 applied release.
-The first unchecked subcursor remains MKT-10R6, followed strictly by R7.
-MKT-11, MKT-12, and MKT-13 stay blocked until MKT-10R7 closes.
+The first unchecked subcursor is MKT-10R7. MKT-11, MKT-12, and MKT-13 stay
+blocked until MKT-10R7 closes.
 
 | Subcursor | One-at-a-time work | Done evidence |
 |---:|---|---|
@@ -2513,8 +2515,8 @@ MKT-11, MKT-12, and MKT-13 stay blocked until MKT-10R7 closes.
 | MKT-10R3 | **done —** repair the control-plane drift fail-closed | PR `#3332` merged at `01dc472e…`. The R3 closure snapshot recorded all 13 destination labels at `20260831T004335-01dc472e` with exact loop ids; later `2026-08-31 01:00:24 JST` readback recorded 12 at descendant `20260831T005035-fc39c2a6` and Honne JA at `01dc472e…`. Each loaded argv pins one existing immutable main-derived release containing R4; installed labels need not equal the moving global selector. R3 install events created no publication. Manifest `4992c334…fc33` is 13/13 `default-off`, armed 0, with 17 holds; fence is closed |
 | MKT-10R4 | **done implementation/review/release; live proof belongs to R6 —** revalidate Larry assets and account routing | `@anicca.jp` is fixed to Postiz TikTok `cmp9sdev5012voh0y58qs45xc`, renderer/job format `larry`, form `affirmation-carousel`, and immutable pack `63e2b1b8…3664`. Six ordered 1010×1080 sunset JPEGs contain no person/ReelClaw media. The released adapter rejects invalid dimensions before secret/provider access; both Python transport and JS provider/receipt/reconcile paths reject a bare TikTok `/video/` URL and accept only exact `PUBLISHED` photo proof with matching integration, caption SHA, title, `DIRECT_POST`, and strict `p_pub_url~v2.<digits>`. Ordinary TikTok video and Instagram `/p/` routes remain intact. Focused Node 51/51 and transport 24/24 pass; fresh read-only verdict is `ship`; all eight CI checks pass. Native publication, Telegram, metrics registration, and replay-zero remain R6, so this is not yet a working-loop claim |
 | MKT-10R5 | **done read-only routing closure —** Revalidate ReelClaw/Honne/Anicca video routing | all 13 approved pack objects exist at their exact SHA refs. Every video pack readback matches its destination product, locale, format/form family; destination selection binds job-product + locale + platform + integration + format + form and rejects Honne/Card/integration cross-family substitutions. Focused destination/manifest/ledger suite passes 45/45 with provider writes 0. Mixed historical feeds remain quarantined |
-| MKT-10R6 | **active; owner-path canary passed, natural-slot gate remains —** prove the production slot contract one destination at a time through the natural owner | Historical run `18d0d1af1dbee290-64914` proved the missing `--slot` failure before provider access. The 439dc71d readback initially showed ten marketing labels at runs `0` / never exited and EN Card Instagram, EN Slideshow TikTok, and Honne JA at runs `1` / exit `1`. For the approved Larry sunset lane, the private env refs were corrected to the immutable lane objects; the existing `ai.anicca.life-manager-anicca-main-tiktok` owner then reached runs `4` / exit `0` with Postiz `PUBLISHED`, provider row `cmthai3x7083yoc0yeki4ofqe`, `provider_reconciled=true`, `DIRECT_POST`, caption SHA match, and Telegram `message_id=46395`. Same-owner replay reached runs `5` / exit `0` with receipts unchanged at 506. The target was restored to manifest `4992c334…fc33`, 13/13 `default-off`, armed 0, fence closed. This proves the owner path but not a CalendarInterval natural wake or a direct native photo URL (Postiz returns the profile URL for this photo proof), so R6 remains open. R6 MUST obtain the exact scheduled-slot, provider/native handle/form/content/caption readback, natural Telegram, metrics registration, and replay-zero before advancing |
-| MKT-10R7 | Restore target cadence and prove liveness | every retained mobile-app TikTok and Instagram destination produces three exact expected slots with correct native content; then Anicca TikTok `@aniccaaffirmation` and YouTube `@anicca-ai` receive exact owners and the same canary-to-three/day proof. Missing/wrong/duplicate posts alert naturally; only then MKT-11 resumes. Ebook/monk remains after this cursor |
+| MKT-10R6 | **done —** prove the production slot contract one destination at a time through the natural owner | all 12 retained routes were armed one at a time, official `lm-loop start` kickstarted, then exercised with one explicit unique slot when outside the due window. Each reached its exact Postiz integration and public native owner/content family; same-slot replay created zero new publication and zero duplicate Telegram. The two renamed Instagram aliases resolve to native `@anicca.ios` and `@anicca.ios.jp`; TikTok photo/video propagation IDs were read from the public profile rather than inferred from Postiz IDs. The slot-scoped publication fixes are merged in immutable main release `78350d1a…` |
+| MKT-10R7 | **active — first natural-slot readback remains** | manifest `24463190…` arms only Anicca EN Affirmation Instagram at 3/day; the other 11 targets and all 18 holds remain 0/day. Its loaded label has exactly 10:00/15:00/20:00 JST intervals and the destination-contract loop ID. Next atom: observe the 10:00 JST natural interval, classify it as published/missed/duplicate with provider/native readback, and fix this lane before arming EN Card next. `@aniccaaffirmation`, YouTube candidates, ebook, and monk remain 0/day and outside this 12-lane recovery portfolio |
 
 #### MKT-10R6 production-slot repair contract
 

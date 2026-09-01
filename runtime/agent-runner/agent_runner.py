@@ -29,7 +29,11 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from runtime.loop.macos_loop_registry import validate_registry  # noqa: E402
-from runtime.loop.runtime_event import append_runtime_event, build_runtime_event  # noqa: E402
+from runtime.loop.runtime_event import (  # noqa: E402
+    append_runtime_event,
+    build_runtime_event,
+    rotate_jsonl_locked,
+)
 from token_budget import TokenBudgetLedger, budget_day_for  # noqa: E402
 # These tools can perform the filesystem mutation required by a high-value
 # invocation.  Artifact truth is still decided by the deterministic domain
@@ -41,6 +45,7 @@ OPENCLAW_THINKING_VALUES = frozenset(("off", "minimal", "low", "medium", "high",
 RESTRICTED_EFFORTS = frozenset(("high", "xhigh", "max"))
 OPENCLAW_JSON_FENCE = re.compile(r"\A```json\r?\n(?P<body>.*?)\r?\n```\Z", re.DOTALL)
 DEFAULT_USAGE_LEDGER = Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "agent-usage.jsonl"
+DEFAULT_USAGE_MAX_BYTES = 16 * 1024 * 1024
 CLAUDE_PROVIDERS = {"claude", "claude-direct"}
 CODEX_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset(("uniqueItems", "allOf", "if", "then", "else"))
 # Smallest prompt that could plausibly express a bounded task. Kept low on
@@ -437,9 +442,11 @@ def extract_claude_payload(stdout_path: Path, result_path: Path) -> str:
 
 def append_usage_event(path: Path, event: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor = os.open(path, os.O_CREAT | os.O_WRONLY | os.O_APPEND, 0o600)
+    descriptor = os.open(path, os.O_CREAT | os.O_RDWR | os.O_APPEND, 0o600)
     with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        os.fchmod(handle.fileno(), 0o600)
+        rotate_jsonl_locked(handle.fileno(), path, DEFAULT_USAGE_MAX_BYTES)
         handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
         handle.flush()
         os.fsync(handle.fileno())

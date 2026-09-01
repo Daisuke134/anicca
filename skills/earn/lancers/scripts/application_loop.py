@@ -56,6 +56,7 @@ FORBIDDEN_TERMS = ("receipt", "gate", "agent", "model", "browser", "token", "pro
 FORBIDDEN_RE = re.compile("|".join(re.escape(term).replace(r"\ ", r"[ _]") for term in FORBIDDEN_TERMS), re.IGNORECASE)
 RETAIN_EVIDENCE_ERRORS = frozenset({"planner_runner_failed", "planner_contract_invalid"})
 SKIP_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
+SKIP_CACHE_VERSION = 2
 
 def _load(name: str, path: Path) -> Any:
     spec = importlib.util.spec_from_file_location(name, path)
@@ -467,19 +468,23 @@ def _submit(fn: Callable[..., object], row: Mapping[str, object], proposal: str,
 def _skip_cache_path(state_path: Path) -> Path:
     return Path(state_path).with_name("application-decisions.json")
 
+def _skip_content_sha256(row: Mapping[str, object]) -> str:
+    payload = {key: row.get(key) for key in PUBLIC_FIELDS if key != "observed_at"}
+    return hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
 def _read_skip_cache(state_path: Path, now: Optional[float] = None) -> dict[str, dict[str, object]]:
     try:
         value = json.loads(_skip_cache_path(state_path).read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {}
-    if not isinstance(value, Mapping) or value.get("version") != 1 or not isinstance(value.get("decisions"), Mapping):
-        raise ValueError
+    if not isinstance(value, Mapping) or value.get("version") != SKIP_CACHE_VERSION or not isinstance(value.get("decisions"), Mapping):
+        return {}
     current = time.time() if now is None else now
     result = {}
     for project_id, row in value["decisions"].items():
         if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or not isinstance(row, Mapping): raise ValueError
-        expires_at = row.get("expires_at")
-        if isinstance(expires_at, (int, float)) and not isinstance(expires_at, bool) and expires_at > current:
+        expires_at, content_sha256 = row.get("expires_at"), row.get("content_sha256")
+        if row.get("business_class") == "hard_prohibited" and isinstance(content_sha256, str) and re.fullmatch(r"[0-9a-f]{64}", content_sha256) and isinstance(expires_at, (int, float)) and not isinstance(expires_at, bool) and expires_at > current:
             result[project_id] = dict(row)
     return result
 
@@ -489,7 +494,7 @@ def _write_skip_cache(state_path: Path, decisions: Mapping[str, Mapping[str, obj
     try:
         with tempfile.NamedTemporaryFile("w", dir=path.parent, prefix=f".{path.name}.", delete=False, encoding="utf-8") as handle:
             temporary = handle.name; os.fchmod(handle.fileno(), 0o600)
-            json.dump({"version": 1, "decisions": decisions}, handle, ensure_ascii=False, sort_keys=True, separators=(",", ":")); handle.write("\n")
+            json.dump({"version": SKIP_CACHE_VERSION, "decisions": decisions}, handle, ensure_ascii=False, sort_keys=True, separators=(",", ":")); handle.write("\n")
         os.replace(temporary, path); os.chmod(path, 0o600)
     finally:
         if temporary:
@@ -503,17 +508,19 @@ def _filter_claimed_rows(rows: Sequence[Mapping[str, object]], state_path: Path)
     skip_cache = _read_skip_cache(state_path)
     remaining, first_claimed = [], None
     for row, project_id in zip(rows, ids):
-        if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or project_id in duplicate_ids or (not application_tick.state_has_claim(Path(state_path), project_id) and project_id not in skip_cache):
+        cached = skip_cache.get(project_id) if isinstance(project_id, str) else None
+        cache_matches = isinstance(cached, Mapping) and cached.get("content_sha256") == _skip_content_sha256(row)
+        if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or project_id in duplicate_ids or (not application_tick.state_has_claim(Path(state_path), project_id) and not cache_matches):
             remaining.append(row)
         elif first_claimed is None:
             first_claimed = project_id
     return remaining, first_claimed
 
-def _cache_no_effect(decisions: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
+def _cache_no_effect(decisions: Mapping[str, Mapping[str, object]], rows: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
     cached = _read_skip_cache(state_path); expires_at = time.time() + SKIP_CACHE_TTL_SECONDS
     for project_id, decision in decisions.items():
-        if decision.get("business_class") in {"hard_prohibited", "skip_not_fit"}:
-            cached[project_id] = {"business_class": decision["business_class"], "expires_at": expires_at}
+        if decision.get("business_class") == "hard_prohibited":
+            cached[project_id] = {"business_class": "hard_prohibited", "content_sha256": _skip_content_sha256(rows[project_id]), "expires_at": expires_at}
     _write_skip_cache(state_path, cached)
 
 def _capacity_reason(state_path: Path, tick_value: object) -> Optional[str]:
@@ -553,13 +560,11 @@ def _rank_eligible_by_buyer_quality(eligible: Sequence[tuple[Mapping[str, object
     ranked = []
     for index, item in enumerate(eligible):
         row, decision = item
-        try: rate = status.fetch_public_client_order_rate(row.get("buyer_external_id"))
-        except Exception: rate = None
         maximum = row.get("budget_max_minor")
         budget = maximum if isinstance(maximum, int) and not isinstance(maximum, bool) else int(decision["price_jpy"])
         proposal_match = re.search(r"(?:^|\n)提案数: ([0-9][0-9,]*)件(?:\n|$)", str(row.get("description") or ""))
         applicants = int(proposal_match.group(1).replace(",", "")) if proposal_match else float("inf")
-        ranked.append(((0 if budget >= 50000 else 1, -budget, 0 if isinstance(rate, int) else 1, -(rate or 0), applicants, index), item))
+        ranked.append(((0 if budget >= 50000 else 1, -budget, applicants, index), item))
     return [item for _key, item in sorted(ranked, key=lambda value: value[0])]
 
 def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence: Path, planner: Optional[Callable[..., object]], safety_verifier: Optional[Callable[..., object]], submitter: Optional[Callable[..., object]], state_path: Path) -> ApplicationLoopResult:
@@ -577,17 +582,24 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
         items = planned.get("decisions") if isinstance(planned, Mapping) and set(planned) == {"decisions"} else None
         if not isinstance(items, list) or len(items) != len(rows): raise ValueError
         rows_by_id = {str(row["external_id"]): row for row in rows}
-        raw_ids = [str(item.get("request_id") or "") for item in items if isinstance(item, Mapping)]
-        if len(raw_ids) != len(rows) or set(raw_ids) != set(rows_by_id): raise ValueError
         decisions = {}; invalid_ids = []
         for item in items:
-            project_id = str(item["request_id"])
+            project_id = str(item.get("request_id") or "") if isinstance(item, Mapping) else ""
+            if project_id not in rows_by_id or project_id in decisions:
+                decisions.pop(project_id, None)
+                invalid_ids.append(project_id)
+                continue
             try: decisions.update(_validate([rows_by_id[project_id]], {"decisions": [item]}, today))
             except Exception: invalid_ids.append(project_id)
+        invalid_ids.extend(project_id for project_id in rows_by_id if project_id not in decisions and project_id not in invalid_ids)
         if not decisions: raise ValueError
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
-    try: _cache_no_effect(decisions, state_path)
-    except Exception: return _batch_summary(ApplicationLoopResult(False, error="state_invalid"), observed_count, 0, (), ())
+    try: _cache_no_effect(decisions, rows_by_id, state_path)
+    except Exception:
+        # This cache only avoids re-planning hard-prohibited listings.  Receipt and
+        # fingerprint state remain the authority for duplicate external effects, so
+        # a cache write failure must not stop fresh positive-EV applications.
+        pass
     reports = [{
         "project_id": project_id,
         "title": str(rows_by_id[project_id].get("title") or "")[:200],

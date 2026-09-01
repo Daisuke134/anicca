@@ -31,7 +31,7 @@ render_ig_provision_prompt() {
   local isolated_port="${IG_PROVISION_PORT:?IG_PROVISION_PORT is required}"
   local context_id="${IG_PROVISION_CONTEXT_ID:?IG_PROVISION_CONTEXT_ID is required}"
   local browser_identity="${IG_PROVISION_BROWSER_IDENTITY:-$context_id}"
-  local owner_gmail="${IG_PROVISION_GMAIL_ACCOUNT:?IG_PROVISION_GMAIL_ACCOUNT is required}"
+  local owner_gmail="${IG_PROVISION_GMAIL_ACCOUNT:-${LIFE_MANAGER_GMAIL_ACCOUNT:?LIFE_MANAGER_GMAIL_ACCOUNT is required}}"
   local gmail_local="${owner_gmail%@*}"
   require_ig_isolated_context "$isolated_port" "$context_id" || return
 
