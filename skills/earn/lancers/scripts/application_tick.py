@@ -310,8 +310,9 @@ def _open_owned_page(browser_factory: Optional[Callable[[str], Any]] = None) -> 
         try:
             browser = (browser_factory or _default_browser_factory)(CDP_URL)
             return browser, _new_owned_page(browser)
-        except Exception:
+        except Exception as error:
             if attempt:
+                print(f"application_tick:browser_open_failed:{type(error).__name__}:{error}", file=sys.stderr)
                 raise
             time.sleep(1)
     raise RuntimeError("browser_unavailable")
