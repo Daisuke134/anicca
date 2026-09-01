@@ -236,6 +236,9 @@ capability claim is backed by an installed executable capability.
   Production immutable release `839aa5932195b83dc7f221962c59a809e6a8ef5a` then reproduced the same
   result through the real launchd owner: runs `1`, exit `1`, updated owner/account timestamps, unchanged
   request `crowdworks-8b1ac13aeb824442b90d506c7638e10e` and receipt `47313`, external effect zero.
+  The unchanged installed SHA then reached its natural 300-second wake without a kickstart: launchd runs
+  advanced `1→2`, runtime `running→entrypoint_exit_1`, owner/account timestamps advanced, and the same
+  request/receipt plus `input_required`/`effect_delta:0` were preserved.
 
 ### Live four-lane repair
 
