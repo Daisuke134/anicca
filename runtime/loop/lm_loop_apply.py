@@ -47,6 +47,10 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
     }
     if loop_id in _PRIVATE_LOG_LOOP_IDS:
         value["Umask"] = 0o077
+    if loop_id == "hf-gig-storefront-direct":
+        value["EnvironmentVariables"]["CLOAK_SESSION_VAULT_FILE"] = str(
+            Path.home() / ".cloak/vault/gig-daily-driver/auth-state.json"
+        )
     key, cadence = next(iter(entry["cadence"].items()))
     if key == "start_interval_seconds":
         value["StartInterval"] = cadence

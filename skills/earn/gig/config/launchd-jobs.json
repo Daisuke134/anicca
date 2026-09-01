@@ -192,7 +192,6 @@
       "env": {
         "CLOAK_BROWSER_OWNER": "gig-storefront-direct",
         "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
-        "CLOAK_SESSION_VAULT_FILE": "{{SESSION_VAULT_DIR}}/auth-state.json",
         "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
         "GIG_IGNORE_DISK_WRITERS_STOP": "1",
         "GIG_DISK_HEADROOM_KIB": "524288",
