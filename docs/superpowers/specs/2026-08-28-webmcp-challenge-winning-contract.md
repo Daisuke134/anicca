@@ -7,7 +7,7 @@
 **Primary objective:** WebMCP Challenge top 10に入り、賞金・ChatGPT Pro・Codex Micro等を獲得する  
 **Long-term objective:** Life Managerが継続的に収益機会を発見し、応募・実行・納品・着金確認まで閉じるentrepreneur agentになる
 
-**中心主張:** Life Managerは、Web上のbounty、gig、hackathon等の有償機会を発見し、実作業、応募・納品、公式receipt確認まで進めるopen-source Money Printerである。Agentが99%を実行し、本人性、権限、口座、現実世界の作業など人間にしかできない1%だけを`Needs You`へ出す。人間が一件を返すと同じworkroomから自動再開する。WebMCPは、人とagentが同じopportunity、work、human task、money proofを共同操作するinterfaceである。
+**中心主張:** Life Managerは、Web上のbounty、gig、hackathon等の有償機会を発見し、許可された機械作業、応募準備、連絡、進捗・入金確認を進めるopen-source Money Printerである。本人が行うAssessment、本人制作、最終提出・再提出、署名、KYC等だけを`Needs You`へ出す。人間が一件を返すと同じworkroomから自動再開する。これはno-human-loopではなく、責任境界を明示したminimal human-in-the-loop productである。WebMCPは、人とagentが同じopportunity、work、human task、money proofを共同操作するinterfaceである。
 
 ---
 
@@ -216,7 +216,7 @@ Current official readbackはdeadline、Top 10、live URL、public repo、audio�
 | Field | Final value / creation gate | Current status | Final gate |
 |---|---|---|---|
 | Project name | `Life Manager` | fixed | Devpost readback matches |
-| Tagline | `An open-source, 24/7 AI money printer that finds paid opportunities, does the work, and asks you only for the human 1%.` | fixed draft | authenticated form review |
+| Tagline | `An open-source, 24/7 AI money printer that finds paid opportunities, handles the machine work, and asks you only for the work that must be human.` | fixed draft | authenticated form review |
 | Live URL | `https://aniccaai.com/money-printer` | live: HTTP 200、zero-login guest、`tools=(self)`、no-store | immutable deploy SHA + isolated guest E2E + client-side `registerTool()` discovery |
 | Public repository | `https://github.com/Daisuke134/life-manager` | public | challenge source/instructions + clean clone verified |
 | OSS license | `https://github.com/Daisuke134/life-manager/blob/main/LICENSE` | GitHub detects MIT | license visible in submitted repo |
@@ -429,7 +429,7 @@ Visual surfaceは変更可能である。Life Managerの中核architectureを置
 
 ### 8.1 One sentence
 
-**Life Manager is an open-source, 24/7 AI money printer that continuously finds paid opportunities, does the work, submits or delivers it, and asks you only for the human 1% it cannot or should not perform.**
+**Life Manager is an open-source, 24/7 AI money printer that continuously finds paid opportunities, completes the authorized machine work, and asks you only for identity-bound work, assessment, creation, submission, or resubmission that must be yours.**
 
 ### 8.2 Product boundary
 
@@ -446,14 +446,28 @@ Canonical flowは七段だけである。
 1. Opportunity Scoutがpublic sourceから有償機会を発見する
 2. Modelがreward、deadline、eligibility、required work、cost、riskを判断する
 3. Orchestratorが一件をclaimし、persistent isolated workroomを作る
-4. General earning agentがbrowser、code、files、media等を使って実作業を進める
-5. Proposal authority、private profile、provider-required identity等が本当に必要な時だけ`Needs You`を一件出す
-6. 人間の回答後、同じworkroomとagent threadから自動再開し、一度だけ応募・納品する
+4. General earning agentがbrowser、code、files、media等を使い、provider policyと個別許可で認められた機械作業を進める
+5. MercorのAssessment、本人制作、提出・再提出、Proposal authority、private profile、provider-required identity等が必要な時だけ`Needs You`を一件出す
+6. 人間の回答後、同じworkroomとagent threadから自動再開し、許可されたeffectまたはprovider official readbackを一度だけ実行する
 7. Providerのofficial readback、cost、verified moneyをDashboardへ記録する
 
 WebMCPの主役は、対応agentと人間が同じMoney Printer Dashboardを共有する点である。Agentはtyped toolsでopportunity、workroom、human task、artifact、receiptを読み書きし、人は`Needs You`だけを処理する。WebMCPを24/7 background schedulerとは説明しない。Background continuationはLife Manager runtimeが担う。
 
 WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応募は通常の開発・提出processで行う。Primary live traceはMercorのsame-job human boundaryで閉じ、Lancers application receipt、generic bounty intake、複数source、複数cycle、複数opportunity、dedupe、restart recoveryを同じDashboardに表示する。Lancersの契約獲得、Mercorの選考結果、cash settlementは外部都合のため今回のDone条件にしない。
+
+#### Mercor authorization and minimal-human contract
+
+**USER-PROVIDED AUTHORIZATION:** Daisは、この製品によるMercorのaccount setup補助、opportunity discovery、応募準備、許可済みbrowser操作、message/inbox reconciliation、status tracking、payment trackingについてMercorから特別許可を得ていると明示した。この許可は公開規約から推論せず、提出前に許可主体、対象account、許可されたautomation、期間を示すprivate evidence refを保存する。許可範囲を越える操作は実行しない。
+
+Mercor laneの責任分界は次で固定する。
+
+| Agentが行う | 本人だけが行う |
+|---|---|
+| email入力後のaccount setup案内、browser session準備、公開案件探索、fit判定、応募フォーム準備、既知profileの入力、重複防止、message/inbox監視、面接日程準備、成果物packet準備、状態・支払いreadback | email magic-link/OTP、phone OTP、Assessment、Interview、本人の経験回答、本人として制作するcontract work、最終提出、再提出、契約署名、KYC/ID/selfie、work authorization申告、payout/bank設定 |
+
+Agentはhuman-only actionを代行しない。代わりに、一つの`Needs You` cardへprovider page、期限、要求、Agentが準備済みのcontext、本人が行うexact action、完了後のresume条件をまとめる。本人がinteractive browser内で完了を申告しても成功とはみなさず、Agentがprovider official stateをread backしてから同じworkroomを進める。
+
+「emailだけ」は初回入力のUX契約であり、本人確認不要という意味ではない。Userは最初にemailだけを入力し、以後必要になった本人限定ceremonyを`Needs You`から一件ずつ行う。既に確認済みの情報やsessionは再要求しない。
 
 ### 8.3A Launch adapters — general capabilityをprovider listへ縮めない
 
@@ -782,27 +796,31 @@ Focused reuse suiteはruntime/browser jobs、ask/reply、reconciliation、panel�
 
 ### 10.5 One product, one mode
 
-Hackathonで提供するmodeは一つだけである。Primary experienceは、Userが`https://aniccaai.com/money-printer`を開き、「Turn on my Money Printer」と頼むflowである。Site tools accessがある場合はChatGPT desktopのin-app browserがpage toolsを発見し、同じDashboard上でconstraints設定、opportunity確認、`Needs You`回答、continuation、receipt確認を行う。WebMCP自体にLife Manager API keyは不要だが、ChatGPT Site toolsのavailabilityはrollout、account、plan、model、workspaceに依存する。通常browser UIはChatGPT/Codex契約なしで使える。別product、別judge system、別local/cloud modeを作らない。
+Hackathonで提供するmodeは一つだけである。Primary real-user experienceは、Userが`https://aniccaai.com/money-printer`を開き、最初の画面へemailだけを入力して`Start Money Printer`を押すflowである。Site tools accessがある場合はChatGPT desktopのin-app browserがpage toolsを発見し、同じDashboard上でonboarding状態、opportunity、`Needs You`、continuation、receiptを操作する。WebMCP自体にLife Manager API keyは不要だが、ChatGPT Site toolsのavailabilityはrollout、account、plan、model、workspaceに依存する。通常browser UIはChatGPT/Codex契約なしで使える。別product、別judge system、別local/cloud modeを作らない。
 
 Life Managerのagent runtimeは同じcloud productの一部としてworkroomを24/7進める。Pageを閉じるとWebMCP toolsは一時的に利用不能になるが、workroomとscoutは同じdurable state上で継続する。Userがpageを再び開くと、対応agentは最新stateと未回答`Needs You`を再発見する。Judgeは支払い、Life Manager API key、private owner credentialなしのisolated guest tenantで試せる。Guest sessionの生成方式は実装とclean-browser E2Eで固定し、zero-loginという語はその実証前に使わない。Normal browser UIはfallbackとして同じ機能を持つが、primary demoとproduct storyはChatGPT in-app browserに置く。
 
 Canonical first-use UX:
 
-1. UserがChatGPT in-app browserでLife Managerを開く
-2. 「Turn on my Money Printer. Ask only when you genuinely need me」と頼む
-3. WebMCP agentが既存profileとcurrent constraintsをinspectする
-4. 稼働に不可欠で未取得の情報だけを一問ずつ`Needs You`で聞く
-5. Minimum setupが揃うと24/7 scoutとagent fleetを開始する
-6. Agentは自律実行し、human-only boundaryでのみ質問する
-7. UserがChatGPT conversationまたはcardで答えると、同じworkroomが自動再開する
-8. Userは後から「What is working, what needs me, and how much is verified?」と聞き、同じlive stateを確認する
+1. **Email start:** UserがMoney Printerを開き、email一つだけを入力して`Start Money Printer`を押す
+2. **Verify ownership:** Life Managerがone-time magic linkを送る。Userが同じbrowserで開くと、isolated tenant、durable session、empty Money Printer boardを一度だけ作る
+3. **Immediate cloud start:** Pageは`Setting up your money loop`を表示し、cloud scout、Symphony workroom owner、browser queueを開始する。Userは設定wizardの完了を待たない
+4. **Mercor connect:** Agentがtenant-bound Steel sessionでMercor login pageを開き、Dashboard内interactive browserを`Needs You`に出す。Userは同じemailのmagic link/OTPまたはGoogle loginを本人操作する
+5. **Minimal profile:** AgentがMercor official profileから既知fieldをreadし、resume等の不足物だけを一件ずつ`Needs You`にする。Userがresumeをuploadした場合はprivate object storageへ保存し、provider upload後もpublic boardへ内容を出さない
+6. **Autonomous acquisition:** Authenticated sessionをencrypted tenant contextとしてsealし、Agentが継続的に案件を探索、fit判定、dedupe、応募準備、許可範囲内の応募操作、inbox/status trackingを行う
+7. **Human-only work:** Assessment、Interview、本人制作、最終提出・再提出、署名、KYC、payout設定に到達した時だけ、exact provider screenと一つのrequired actionを`Needs You`へ出す
+8. **Prepared handoff:** 制作・提出taskでは、Agentがrequirements、期限、reference、format、checklist、保存先を先にまとめる。本人は作業し、MP4/PDF/ZIP/URL等のartifactをcardへuploadするかinteractive browserで直接提出する
+9. **Official resume:** 本人が`Completed`を押すと、Agentが同じprovider pageをread backする。official stateが確認できた場合だけ同じworkroomを`Working`または`Waiting`へ戻し、未確認ならcardを開いたままexact discrepancyを示す
+10. **Continuous follow-through:** Agentがmessage、selection、contract、revision request、deadline、earningsを追跡する。再提出は新しいworkroomを作らず同じartifact lineageへ戻す
+11. **Money truth:** Application、Contract、Delivery、Acceptance、Paymentを別receiptにし、settled PaymentReceiptが無い限り`Paid & verified`を増やさない
+12. **Return:** Userはemail magic linkまたはdurable sessionで戻り、`Working / Needs You / Waiting / Done / Paid`を同じboardで確認する
 
 #### 10.5A Exact screen experience
 
 別wizard、別admin、複数modeは作らない。Desktop、mobile、ChatGPT in-app browserは同じDashboardを使う。
 
-1. **Arrival:** `/money-printer`を開くと、上段に`Paid & verified / Agents working / Needs You / Opportunity value`、中央に六列board、下または右にselected workroomを表示する。Guestなら`Judge guest — external effects disabled`を明示する
-2. **Start:** Userは通常UIの`Start Money Printer`、またはChatGPTの一文promptを使う。WebMCP clientが利用可能ならcurrent toolsと最初のcallを`How WebMCP works` drawerへ表示する
+1. **Arrival:** unauthenticated Userにはemail fieldと`Start Money Printer`だけをprimary actionとして表示する。Product promise、human-only boundary、privacy linkは短く同じ画面に置く。Authenticated Userには上段metrics、六列board、selected workroomを表示する。Guestなら`Judge guest — external effects disabled`を明示する
+2. **Start:** Email submitはmagic-link送信、tenant bootstrap、idempotent start intentだけを行う。Emailの存在、未登録、送信失敗を第三者へ漏らさない。WebMCP clientが利用可能なら`start_money_printer`は同じdomain actionを呼ぶ
 3. **Autonomous work:** New opportunitiesとagent eventsが同じboardへ追加される。Userは各agent turnを承認せず、selected workroomでgoal、plan、artifact、last event、next action、proofをreadする
 4. **Needs You:** Human-only boundaryが発生した時だけ一枚のmodal/cardを開く。`Why you / Agent prepared / Required action / Resume after answer`を表示し、一問、一選択、または一file uploadだけを受ける
 5. **Resume:** 回答後はmodalが閉じ、同じcardが`Working`へ戻る。新しいworkroomやchatを作らず、activityにhuman answer refとresumed job refを並べる
@@ -810,7 +828,7 @@ Canonical first-use UX:
 7. **Return visit:** Pageを閉じてもhosted runtimeは継続し、再訪時に最新boardと未回答`Needs You`を復元する。WebMCP toolsはpageを開いている間だけ利用可能と説明する
 8. **Mobile:** 四metricsは横scroll、boardは一列ずつswipe、`Needs You` countをsticky buttonにする。Desktopと異なる機能やstateは持たない
 
-Human write surfaceは`Needs You`回答とglobal `Pause`だけである。Opportunity追加、constraint変更、workroom continuationはWebMCP clientまたは同じserver-validated domain actionを使い、UIだけの隠れ状態を作らない。
+Human write surfaceは初回email、`Needs You`回答/upload/takeover、global `Pause`だけである。Opportunity追加、constraint変更、workroom continuationはWebMCP clientまたは同じserver-validated domain actionを使い、UIだけの隠れ状態を作らない。
 
 将来のpricing、自前model接続、self-hostingは今回のsubmission scope外とする。Consumer ChatGPT subscriptionを第三者SaaSのbackground APIとして流用できるとは主張しない。
 
@@ -952,7 +970,7 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 | 1:52–2:15 | Life Managerが同じworkroomから再開し、一度だけsubmit/deliverする |
 | 2:15–2:30 | `Actual Owner Run — read-only`でofficial readback、cost、duplicate 0を表示 |
 | 2:30–2:45 | WebMCP tool call logと同じUI stateが更新された証拠を表示 |
-| 2:45–2:58 | agentが99%、人間がhuman-only 1%を担当し、verified moneyまで追うと説明 |
+| 2:45–2:58 | agentが許可済み機械作業、人間が本人限定workを担当し、verified moneyまで追うと説明 |
 
 動画で実装していないX watcher、application、work、payoutを成功として見せない。各claimは公式readbackがある範囲に限定する。
 
@@ -963,7 +981,7 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 | Time | Recorded screen | Narration |
 |---:|---|---|
 | 0:00–0:15 | Title + scattered posts/prompts about earning with AI | “People share countless ways to make money with Claude, Codex, and AI through bounties, gigs, apps, and online work. What is missing is a public, reproducible agent system that actually runs the whole process.” |
-| 0:15–0:30 | Full Money Printer Dashboard | “Life Manager is that system. It finds paid opportunities, does the work, submits or delivers it, and tracks the result on one board.” |
+| 0:15–0:30 | Full Money Printer Dashboard | “Life Manager is that system. It finds paid opportunities, handles the authorized machine work, and tracks every human task and result on one board.” |
 | 0:30–0:45 | recorded WebMCP Site tools drawer | “The page exposes WebMCP tools, so my WebMCP agent reads and changes the same state I see instead of guessing at buttons.” |
 | 0:45–1:00 | WebMCP agent adds one live public bounty/gig | “I add one real paid opportunity. Life Manager checks its reward, deadline, eligibility, required work, cost, and risk, then opens an isolated workroom.” |
 | 1:00–1:20 | Worker events and real artifact appear | “The earning agent uses its browser and work tools to complete the task without me supervising every turn.” |
@@ -972,7 +990,7 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 | 1:55–2:15 | Mac: same workroom resumes and submits once | “The same workroom resumes automatically and delivers the work exactly once.” |
 | 2:15–2:32 | `Actual Owner Run — read-only`; provider receipt and duplicate 0 | “The provider readback proves what was submitted or delivered. Applications and model claims are not counted as money.” |
 | 2:32–2:45 | WebMCP call log beside matching visible state | “Every WebMCP call changes the same state I can see, so the agent and I share one source of truth.” |
-| 2:45–2:56 | Dashboard with active, Needs You, receipts, verified money | “The agent does the ninety-nine percent it can do. I provide the human one percent, and Life Manager keeps working until the outcome is verified.” |
+| 2:45–2:56 | Dashboard with active, Needs You, receipts, verified money | “The agent handles the machine work. I perform the assessment, creation, and submission that must be mine, and Life Manager resumes until the outcome is verified.” |
 
 Recording assets:
 
@@ -990,7 +1008,7 @@ Recording assets:
 
 ### Project summary
 
-**Life Manager is an open-source, 24/7 AI money printer that continuously discovers paid opportunities, does the work, submits or delivers it, and tracks the verified outcome. Its agent handles the routine ninety-nine percent and asks a person only for the one percent that genuinely requires human identity, authority, judgment, payment information, or real-world action.**
+**Life Manager is an open-source, 24/7 AI money printer that continuously discovers paid opportunities, handles authorized machine work, prepares each handoff, and tracks the verified outcome. Its agent asks a person only for assessment, identity-bound creation, submission, resubmission, signature, payment information, or other actions that genuinely must be human.**
 
 ### Why this use case is a strong fit for WebMCP
 
@@ -1004,7 +1022,7 @@ Without WebMCP, an agent must infer Life Manager's interface from pixels and DOM
 
 ### What people and agents can do together that was difficult before
 
-People share many isolated ways to use Claude, Codex, and other AI systems to make money through bounties, gigs, apps, content, and online work. What has been missing is a public, reproducible end-to-end agent system that continuously discovers those opportunities, evaluates them, performs the work, pauses only at a genuine human boundary, resumes after the answer, submits or delivers once, and follows the result to an official receipt.
+People share many isolated ways to use Claude, Codex, and other AI systems to make money through bounties, gigs, apps, content, and online work. What has been missing is a public, reproducible end-to-end system that continuously discovers those opportunities, evaluates them, completes the authorized machine work, prepares the human-only work, resumes after the person acts, and follows the result to an official receipt.
 
 Life Manager lets people and agents divide real earning work according to what each does best. The agent handles discovery, qualification, research, planning, creation, execution, recovery, submission, and receipt reconciliation. The person contributes only identity, authority, judgment, payment information, or physical action when one of those is truly required. Both work from the same visible workroom, so the handoff is not a context-losing message; it is part of the durable work state. Together they can pursue short bounties and multi-day opportunities with minimal human involvement while keeping human control at the moments that must remain human.
 
@@ -1525,12 +1543,13 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 
 #### Acceptance criteria
 
-- Judge/userは`https://aniccaai.com/money-printer`だけからsignup-free guest session、opportunity追加、agent dispatch、cloud browser、human takeover、answer、same-job resume、receipt確認、resetを完走できる。Dais Mac、Telegram、email、CLIは不要。
+- Real userは`https://aniccaai.com/money-printer`でemail一つを入力し、magic link後にisolated tenant、cloud loop、Mercor connect、human takeover、same-job resume、receipt確認まで完走できる。Dais Mac、Telegram、CLIは不要。Judge guestは外部effectなしで同じbuild/state machineを再現する。
 - Official Symphony一つが全workroomのclaim、isolated workspace、agent turn、retry/backoff、human/browser completion後のcontinuation、restart reconciliationを担う。二つ目のagent frameworkは追加しない。
 - Browser executionはexisting Railway-private Steel + Stagehandだけを使う。Steel/CDP/private URL、cookie、session context、credentialはclient、GitHub Issue、agent prompt、receiptへ出さない。
 - `lm_browser_jobs` schemaは変更しない。Existing tenant scopeの`uid + chat_id`とSymphony `dispatch_id`を既存unique keyへ渡し、same dispatchを一browser job、一provider effect、一receiptにする。
 - Active browser handoffはauthenticated tenantにだけshort-lived interactive streamとして表示する。Foreign tenantは404、expired/released sessionは410、raw Steel URLとsession IDはresponse 0。
 - UserはMoney Printer内のinteractive browserで自分のMercorへlogin/interview/KYCできる。Agentはpassword、OTP、CAPTCHA、KYC、camera/microphone interview、本人経験回答を代行しない。
+- UserはAssessment、Interview、本人制作、最終提出・再提出、契約署名、KYC、payout設定を本人で行う。Agentはその前後の準備、期限、context、status、official readbackを担当し、本人制作物をAgent制作物として偽装しない。
 - Human takeover完了をprovider successとして扱わない。Cloud browser readbackがofficial provider stateを確認して初めてApplicationReceiptを作り、independent PaymentReceiptが無ければverified cashは0である。
 - Guest judgeは自分が入力したreal public URLでcloud agent work→genuine HumanTask→answer→continuation→durable receiptを再現できる。Fixture、mock effect、Dais-owned private stateは使わない。
 - Dais owner E2Eはcurrent eligible Mercor listingでcloud browser login→agent work→real human boundary→same-job resume→最深official application readbackまでを証明する。Mercor selection、contract、paymentはreceiptが到着するまで未完表示にする。
@@ -1563,6 +1582,14 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 | C09 | complete。Official Symphony v0.0.2 checksum + Codex 0.151.0をexisting Railway projectへdeployし、bridge/WORKFLOWはmain `d5e747256706e12250aa939e56e24938ffae1b87`から取得 | deployment `02dc4544...` SUCCESS、replica 1/1、volume READY、public URL 0、bridge idle、Agents 0/2。Local Symphony/bridgeは`lm-loop stop` bootout 0、launchctl unloaded、PID absent |
 | C10 | live-open。Eligible Mercor listing `Marketing Expert — Social Media (AI Agent Environments)`をcloud tenantでdispatchし、official Symphonyがworkroom Issue #12を作成、agent turn、`needs_human(provider_interview)` result、browser enqueue、HumanTask open、Issue close/DB ackまで実行 | merge/deploy SHA `492bca0aa2de475c36d320de0d7bef370060cfbf`、Symphony deployment `1d5c0aad...` SUCCESS。Issue #12/comment `5481370562`、task `21965fd...` v1。Dais Dashboard takeover、Mercor login/human-only step、official application readback、receiptは未完。verified cash 0 |
 | C11 | live-open。Chrome fresh guest `webmcp-guest-72001b5b8144f23ef58a0b92`でvisible formからreal Mercor Lifecycle listingを追加し、Found→Working→Needs You、request_changes、same job round16、reload/replay-zeroまで実証。Official Symphony round 16は同じjobをclaim/mirror/consumeし、fresh browser job `91984328-3756-46bb-b742-310ac8775d41`が`handoff_required` | Life-call PR #3580、merge/deploy SHA `52bf18ec5c73228985d7202d800c73ae64c1e234`、deployment `d7cf9a58-1991-4676-8188-92f3281a7b14` SUCCESS。Steel fork PR #3、merge `cb8fdeb461e74178d6bce71ff3ed34d8a2a03d1d`、exact image `sha-4afc32b1ac68dae72007073f288b438f4dd82175`、Railway deployment `f4db59a1-c563-4435-9157-a21d5b035227` SUCCESS、private health 200。Exact takeover castの1920×1080 JPEGを目視し、Mercorの`You need to be signed in to continue`、email、Login、Sign up controlsを確認。Human login/OTPはuser actionとして残す。ChatGPT in-app browserは診断後のavailable backendに存在せず未完。Provider official ApplicationReceipt/PaymentReceipt 0 |
+| C11.1 | email-only startを同じpublic pageへ追加し、magic link、tenant bootstrap、durable session、start intentを一つのidempotent domain actionへ接続する | new email→one tenant/one loop、replay tenant/worker duplicate 0、account enumeration 0、judge guest保全 |
+| C11.2 | email verify直後にcloud Symphony/scoutを開始し、Mercor connect HumanTaskを作る | page close後もworker継続、未認証provider effect 0、task一件だけ |
+| C11.3 | interactive Steel takeoverでUser本人がMercor magic link/OTP/loginを完了し、tenant-bound auth contextをresealする | raw credential/cookie/session URL露出0、foreign tenant 404、reload後session再利用 |
+| C11.4 | profile/resume不足を一件ずつ`Needs You`へ出し、known factを再質問せず、本人限定Assessment/InterviewをAgentから遮断する | duplicate human task 0、assessment AI代答0、private artifact public exposure 0 |
+| C11.5 | live Mercor acquisitionを開始し、discovery→fit→dedupe→応募準備→許可済みeffect→official ApplicationReceiptを一件閉じる | same application effect 1、official readback、ambiguous result再送0 |
+| C11.6 | 本人制作・最終提出・再提出をartifact lineage付きHumanTaskへ接続する | MP4/PDF/ZIP/URL upload、requirement checklist、same-workroom resume、provider official status確認 |
+| C11.7 | inbox、selection、contract、revision、deadline、earningsを継続reconcileする | Application/Contract/Delivery/Acceptance/Payment receipt分離、settled前cash 0 |
+| C11.8 | new-user production E2Eをfresh emailで実証する | email→tenant→Mercor login→live opportunity→human-only task→resume→official receipt、Dais private state 0、restart/replay-zero |
 | C12 | four-criteria evidence matrix、existing demoをnew cloud E2Eへ再録、clean clone、SHA freeze、YouTube、Devpost | 4 criteria各5/5 evidence、`<180s` audio video、live/repo/deploy SHA一致、exact submission preview後だけsubmit |
 
 #### Test matrix
