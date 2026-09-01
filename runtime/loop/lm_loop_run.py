@@ -41,9 +41,9 @@ def prepare_loop_run(registry: dict, loop_id: str, release_root: Path, *,
     return [str(executable)], totals
 
 
-def reset_loop_scratch(state_root: Path) -> Path:
+def reset_loop_scratch(state_root: Path, loop_id: str) -> Path:
     """Private scratch dir per loop, wiped every run so subprocess temp files cannot leak."""
-    scratch = state_root / "tmp"
+    scratch = state_root / "tmp" / loop_id
     if scratch.is_dir() and not scratch.is_symlink():
         shutil.rmtree(scratch, ignore_errors=True)
     scratch.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -114,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
         ))
     except (OSError, ValueError) as error:
         print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
-    scratch = reset_loop_scratch(Path(os.path.expanduser(entry["state_root"])))
+    scratch = reset_loop_scratch(Path(os.path.expanduser(entry["state_root"])), loop_id)
     try:
         return_code = _run_entrypoint(
             command,
