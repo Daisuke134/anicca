@@ -424,7 +424,8 @@ class LmLoopApplyTest(unittest.TestCase):
         lock_path = self.root / "apply.lock"
         values = self._apply_kwargs(current, lock_path)
 
-        with lock_path.open("a+") as owner_lock:
+        item_lock = lock_path.with_name(lock_path.name + ".ai.anicca.example.lock")
+        with item_lock.open("a+") as owner_lock:
             fcntl.flock(owner_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             with self.assertRaisesRegex(RuntimeError, "production apply is already owned"):
                 apply_live(
@@ -436,26 +437,33 @@ class LmLoopApplyTest(unittest.TestCase):
                 )
 
         self.assertEqual(list(values["agents_dir"].iterdir()), [])
-        self.assertFalse(values["calls"].exists())
+        self.assertEqual(values["calls"].read_text().splitlines(), ["preflight"])
 
-    def test_apply_rejects_release_that_is_not_current_before_mutation(self):
+    def test_apply_pins_requested_immutable_release_when_current_moves(self):
         release_a = self._release("release-a")
         release_b = self._release("release-b")
         current = self.root / "current"
         current.symlink_to(release_b)
-        values = self._apply_kwargs(current, self.root / "apply.lock")
+        expected_arguments = [
+            str(release_a.resolve() / "bin/lm-loop-run"),
+            "example",
+            str(release_a.resolve()),
+        ]
+        values = self._apply_kwargs(
+            current, self.root / "apply.lock", expected_arguments)
 
-        with self.assertRaisesRegex(RuntimeError, "apply release is not current"):
-            apply_live(
-                release_a,
-                values["agents_dir"],
-                values["launchctl_safe"],
-                current=current,
-                lock_path=values["lock_path"],
-            )
+        result = apply_live(
+            release_a,
+            values["agents_dir"],
+            values["launchctl_safe"],
+            current=current,
+            lock_path=values["lock_path"],
+        )
 
-        self.assertEqual(list(values["agents_dir"].iterdir()), [])
-        self.assertFalse(values["calls"].exists())
+        self.assertTrue(result[0]["ok"])
+        installed = plistlib.loads(
+            (values["agents_dir"] / "ai.anicca.example.plist").read_bytes())
+        self.assertEqual(installed["ProgramArguments"][2], str(release_a.resolve()))
 
     def test_apply_current_release_records_real_launchctl_calls(self):
         release = self._release("release-a").resolve()

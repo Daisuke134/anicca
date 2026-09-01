@@ -286,25 +286,22 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                event_writer=append_runtime_event) -> list[dict]:
     release_root = release_root.resolve()
     current = Path(current or "~/loops/current").expanduser()
-    with _apply_lock(current, lock_path):
-        def assert_current() -> None:
-            if current.resolve(strict=True) != release_root:
-                raise RuntimeError("apply release is not current")
-
-        assert_current()
-        registry = json.loads((release_root / "config/loop-registry.json").read_text())
-        manifest = json.loads((release_root / "RELEASE.json").read_text())
-        release_sha = manifest.get("sha")
-        plan = apply_registry(registry, release_root, release_sha, lambda item: item, target=target)
-        preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
-        if preflight_rc:
-            raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
-        results = []
-        for item in plan:
-            assert_current()
-            target = agents_dir / f"{item['label']}.plist"
+    registry = json.loads((release_root / "config/loop-registry.json").read_text())
+    manifest = json.loads((release_root / "RELEASE.json").read_text())
+    release_sha = manifest.get("sha")
+    plan = apply_registry(registry, release_root, release_sha, lambda item: item, target=target)
+    preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
+    if preflight_rc:
+        raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
+    results = []
+    for item in plan:
+        base = Path(lock_path).expanduser() if lock_path else current.parent / ".apply-locks"
+        item_lock = base / f"{item['label']}.lock" if not lock_path else base.with_name(
+            f"{base.name}.{item['label']}.lock")
+        with _apply_lock(current, item_lock):
+            target_path = agents_dir / f"{item['label']}.plist"
             result = None
-            existing_bytes = target.read_bytes() if target.is_file() else None
+            existing_bytes = target_path.read_bytes() if target_path.is_file() else None
             desired_bytes = _preserve_operational_attributes(
                 item["plist_bytes"], existing_bytes)
             if existing_bytes is not None and existing_bytes == desired_bytes:
@@ -317,9 +314,8 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                               "loaded_arguments": loaded, "release_sha": release_sha,
                               "changed": False}
             if result is None:
-                assert_current()
                 result = install_one(
-                    item, target, lambda args: _safe_launchctl(launchctl_safe, args))
+                    item, target_path, lambda args: _safe_launchctl(launchctl_safe, args))
                 result["changed"] = True
             entry = registry["loops"][item["loop_id"]]
             event = build_install_event(
@@ -328,7 +324,7 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
             event_writer(Path(os.path.expanduser(entry["state_root"])) / "events.jsonl", event)
             result["install_event_id"] = event["event_id"]
             results.append(result)
-        return results
+    return results
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -373,8 +369,10 @@ def main(argv: list[str] | None = None) -> int:
         applied, failed = [], []
         for row in eligible:
             try:
+                release_root = Path("~/loops/current").expanduser().resolve(strict=True)
                 applied.extend(apply_live(
-                    ROOT, Path("~/Library/LaunchAgents").expanduser(), ROOT / "bin/launchctl-safe",
+                    release_root, Path("~/Library/LaunchAgents").expanduser(),
+                    release_root / "bin/launchctl-safe",
                     target=row["loop_id"]))
             except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
                 failed.append({"loop_id": row["loop_id"], "error": str(exc)})
