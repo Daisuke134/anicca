@@ -250,6 +250,9 @@ capability claim is backed by an installed executable capability.
   `hide_expired=true` route and unions the three exact Italian query variants before deduplication;
   an exact production-interpreter pass inspected `26` unique open jobs, zero expired rows, and found
   no eligible candidate, replacing the former ten-result/expired-biased scan.
+  The open-only scan is installed for the CrowdWorks label as immutable release
+  `7846108cb8736430ebce957d615b6ab56e71db5f`; its first real auth-gated run remained
+  `input_required`/`effect_delta:0`, and the global selector again points to a complete release.
 
 ### Live four-lane repair
 
