@@ -764,6 +764,18 @@ def test_remote_wait_from_older_release_resumes_on_new_capability(tmp_path, monk
     assert paid._remote_wait_is_fresh(root, feedback, digest, now=result_mtime + 10) is False
 
 
+def test_remote_wait_resumes_when_exact_cycle_policy_changes(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    result = root / "delivery/paid-remote-result.json"
+    policy = root / "context/paid-file-operator-policy.json"
+    write_json(policy, {"version": 1})
+    result_mtime = result.stat().st_mtime
+    os.utime(policy, (result_mtime + 1, result_mtime + 1))
+
+    assert paid._remote_wait_is_fresh(root, feedback, digest, now=result_mtime + 10) is False
+
+
 def test_future_dated_remote_wait_is_not_fresh(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)
