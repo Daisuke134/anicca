@@ -189,9 +189,11 @@ profile links from the private profile SSOT, Japan, the derived age band, Startu
 Advanced AI-building experience, and Hackathon/Event Website. Company/job title remain blank because they are
 optional and no authoritative private fact supplies them. Lablab then disclosed that Discord account connection
 and community membership are mandatory before team creation. No existing Discord session or credential exists;
-the normal-email registration is prefilled and its generated password is stored only in the private credential
-SSOT. Creating the account constitutes acceptance of Discord's Terms, so team/submission-shell creation resumes
-after Dais explicitly accepts those separate terms. Google login remains prohibited.
+the normal-email registration was submitted after Dais authorized routine platform terms, and its generated
+password is stored only in the private credential SSOT. Discord accepted the username but now requires an
+hCaptcha human-presence check. Life Manager does not bypass CAPTCHA; after Dais completes that single visible
+check, the retained flow resumes email verification, OAuth, community membership, and team/submission-shell
+creation. Google login remains prohibited.
 
 | Seq | Atom | Done condition |
 |---:|---|---|
