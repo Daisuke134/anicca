@@ -46,6 +46,7 @@ RESTRICTED_EFFORTS = frozenset(("high", "xhigh", "max"))
 OPENCLAW_JSON_FENCE = re.compile(r"\A```json\r?\n(?P<body>.*?)\r?\n```\Z", re.DOTALL)
 DEFAULT_USAGE_LEDGER = Path.home() / ".local" / "state" / "life-manager" / "telemetry" / "agent-usage.jsonl"
 DEFAULT_USAGE_MAX_BYTES = 16 * 1024 * 1024
+DEFAULT_USAGE_ARCHIVES = 3
 CLAUDE_PROVIDERS = {"claude", "claude-direct"}
 CODEX_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset(("uniqueItems", "allOf", "if", "then", "else"))
 # Smallest prompt that could plausibly express a bounded task. Kept low on
@@ -446,7 +447,9 @@ def append_usage_event(path: Path, event: dict[str, Any]) -> None:
     with os.fdopen(descriptor, "a", encoding="utf-8") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
         os.fchmod(handle.fileno(), 0o600)
-        rotate_jsonl_locked(handle.fileno(), path, DEFAULT_USAGE_MAX_BYTES)
+        rotate_jsonl_locked(
+            handle.fileno(), path, DEFAULT_USAGE_MAX_BYTES, DEFAULT_USAGE_ARCHIVES
+        )
         handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
         handle.flush()
         os.fsync(handle.fileno())

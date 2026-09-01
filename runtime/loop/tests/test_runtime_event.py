@@ -5,7 +5,13 @@ import unittest
 from unittest import mock
 from pathlib import Path
 
-from runtime.loop.runtime_event import append_runtime_event, build_install_event, build_runtime_event, validate_runtime_event
+from runtime.loop.runtime_event import (
+    append_runtime_event,
+    build_install_event,
+    build_runtime_event,
+    rotate_jsonl_locked,
+    validate_runtime_event,
+)
 
 
 BASE = {
@@ -44,6 +50,18 @@ class RuntimeEventTest(unittest.TestCase):
             with gzip.open(archives[0], "rt", encoding="utf-8") as handle:
                 self.assertEqual(len(handle.readlines()) + len(path.read_text().splitlines()), 2)
             self.assertEqual(archives[0].stat().st_mode & 0o777, 0o600)
+
+    def test_rotation_prunes_only_old_archives_when_bounded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "usage.jsonl"
+            for index in range(4):
+                path.write_text(f'{{"index":{index}}}\n', encoding="utf-8")
+                with path.open("r+") as handle:
+                    rotate_jsonl_locked(handle.fileno(), path, 1, keep_archives=3)
+            archives = sorted(path.parent.glob("usage-*.jsonl.gz"))
+            self.assertEqual(len(archives), 3)
+            with gzip.open(archives[0], "rt", encoding="utf-8") as handle:
+                self.assertEqual(handle.read(), '{"index":1}\n')
 
     def test_unknown_and_secret_values_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "unknown fields"):
