@@ -83,10 +83,6 @@ def test_visible_default_tab_uses_json_new_endpoint(tmp_path, monkeypatch):
         }).encode())
 
     monkeypatch.setattr(default_tab.urllib.request, "urlopen", fake_urlopen)
-    monkeypatch.setattr(
-        default_tab.cdp, "_browser_call",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("legacy CDP createTarget")),
-    )
 
     row = default_tab.open_tab(
         "https://coconala.com/talkrooms/18211957", owner="paid",

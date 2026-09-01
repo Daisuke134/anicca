@@ -25,7 +25,6 @@ import urllib.request
 from urllib.parse import quote, urlparse
 
 import target_ownership
-import cdp
 
 try:
     import websockets
@@ -133,7 +132,7 @@ def close_tab(target_id, owner=None):
         raise PermissionError(
             f"target {target_id} is owned by {actual_owner or 'nobody'}, not {owner}"
         )
-    cdp._browser_call("Target.closeTarget", {"targetId": target_id})
+    asyncio.run(_call("Target.closeTarget", {"targetId": target_id}))
     target_ownership.release_target(target_id, owner)
     return {"ok": True, "closed": target_id, "owner": owner}
 
@@ -144,7 +143,7 @@ def close_owned_tabs(owner=None):
     owned = target_ownership.targets_for_owner(owner)
     live = {
         row.get("targetId")
-        for row in cdp._browser_call("Target.getTargets").get("targetInfos", [])
+        for row in asyncio.run(_call("Target.getTargets")).get("targetInfos", [])
     }
     closed = []
     pruned = []
@@ -155,7 +154,7 @@ def close_owned_tabs(owner=None):
             pruned.append(target_id)
             continue
         try:
-            cdp._browser_call("Target.closeTarget", {"targetId": target_id})
+            asyncio.run(_call("Target.closeTarget", {"targetId": target_id}))
             target_ownership.release_target(target_id, owner)
             closed.append(target_id)
         except Exception as error:
