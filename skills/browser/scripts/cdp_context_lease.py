@@ -215,38 +215,6 @@ def _browser_context_exists(context_id):
     return context_id in context_ids
 
 
-def _seed_cookies(no_seed=False):
-    if no_seed:
-        return []
-    try:
-        (targets,) = asyncio.run(_calls([("Target.getTargets", {})]))
-        contexts = []
-        for target in targets.get("targetInfos", []):
-            parsed = urlparse(str(target.get("url") or ""))
-            context_id = target.get("browserContextId")
-            if (target.get("type") == "page" and context_id
-                    and parsed.hostname in {"coconala.com", "www.coconala.com"}
-                    and (parsed.path.startswith("/mypage/") or parsed.path.startswith("/message")
-                         or parsed.path.startswith("/talkrooms/"))
-                    and context_id not in contexts):
-                contexts.append(context_id)
-        for context_id in contexts:
-            (result,) = asyncio.run(_calls([(
-                "Storage.getCookies", {"browserContextId": context_id},
-            )]))
-            cookies = result.get("cookies")
-            if isinstance(cookies, list) and cookies:
-                return cookies
-    except Exception:
-        pass
-    vault_path = _vault_path()
-    if os.path.exists(vault_path):
-        with open(vault_path, encoding="utf-8") as handle:
-            cookies = json.load(handle).get("cookies", [])
-            return cookies if isinstance(cookies, list) else []
-    return []
-
-
 def acquire(task, url="about:blank", no_seed=False):
     with _ledger_lock():
         leases = _leases()
@@ -292,7 +260,11 @@ def acquire(task, url="about:blank", no_seed=False):
                 _save(leases)
             return {"ok": True, "reused": True, **held}
 
-        cookies = _seed_cookies(no_seed)
+        cookies = []
+        vault_path = _vault_path()
+        if not no_seed and os.path.exists(vault_path):
+            with open(vault_path, encoding="utf-8") as handle:
+                cookies = json.load(handle).get("cookies", [])
 
         (ctx,) = asyncio.run(_calls([("Target.createBrowserContext", {})]))
         ctx_id = ctx["browserContextId"]
