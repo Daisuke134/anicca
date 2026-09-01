@@ -8,6 +8,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import time
@@ -946,7 +947,13 @@ def _publish_fresh_decision_notifications(
     *, args: argparse.Namespace, pass_id: str, evidence_dir: Path, values: dict[str, Any],
 ) -> None:
     now = int(time.time())
-    outbox = TelegramOutbox(args.telegram_database)
+    try:
+        outbox = TelegramOutbox(args.telegram_database)
+    except sqlite3.DatabaseError as error:
+        _atomic_json(evidence_dir / "application-decision-telegram.json", {
+            "version": 1, "enqueued": [], "dispatched": [], "error": type(error).__name__,
+        })
+        return
     enqueued: list[dict[str, Any]] = []
     for event_key, message in _fresh_decision_notifications(evidence_dir, values):
         if _decision_notification_exists(outbox, event_key):
