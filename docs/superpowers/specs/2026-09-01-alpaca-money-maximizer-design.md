@@ -220,8 +220,12 @@ and exposed neither value. Commit `4b0bb86350` extends the same checkpoint to de
 `CREATE_PAPER_ACCOUNT → VERIFY_EMAIL → CONFIGURE_MFA → BIND_API_KEYS → RUN_TRADING_LOOP` resumption. Its runtime
 fixture produced exactly one create step, required eight private refs including recovery code and account ID,
 then reached paper `READY` with cash/equity `100000`; Bun compiled every changed production entrypoint. The real
-existing account path remained `READY` and left the SSOT hash unchanged. A03 remains ACTIVE because the live
-Eliza planner has not yet driven the complete BrowserService-backed sequence from one owner goal and read it back.
+existing account path remained `READY` and left the SSOT hash unchanged. Commit `9c7dba5473` registers
+`plugin-life-manager` once in the normal macOS/Linux/Docker core collector while keeping it out of the CLI-less
+mobile boot. Commit `8dd1114f3e` routes every Alpaca Action into the `finance/automation` owner context and returns
+the concrete BrowserService/private-action chain to the native planner; its handler fixture persisted one Task,
+selected normal email rather than Google login, and exposed no secret. A03 remains ACTIVE because the live Eliza
+planner has not yet driven the complete BrowserService-backed sequence from one owner goal and read it back.
 
 A04 has **preflight evidence ready but remains ordered after A03** against the official `alpacahq/cli` release `v0.0.14`, source commit
 `53606273aa230a40c64b783425dcb3f4423ede30`. Its published release checksum was verified before installing the
