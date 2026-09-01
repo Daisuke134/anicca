@@ -435,6 +435,35 @@ Latest verified recovery state:
   project workspaces. Completion requires actual NOTE publication, current live-site revision, report and JPG
   submission, exact-room readbacks, aggregate `failed=0`, then a second natural replay with duplicate effects 0.
 
+**Active shared boundary — repair the Paid Kernel, not the named buyers.** The four rooms above are live
+acceptance fixtures for one marketplace-neutral owner contract; they are not foreground-Codex work items and
+must not receive buyer-specific code paths. Production proves that the parent can start multiple project
+children, but those children are disposable subprocesses rather than durable owners: provider/DNS failure,
+process exit, or a missing named resource ends the child before the objective is complete, and the parent
+publishes useful status only when the whole pass ends. The resource resolver also treated no pre-existing
+BingX account or exact skill as inability, despite the authorized job permitting the general agent to create
+the account with its browser/tools; the file path accepted an incomplete horse-racing proxy instead of making
+the same owner research public results until the contracted report was complete.
+
+The active implementation TODO is therefore Stage 3 items 9–14 applied to these four fixtures now:
+
+1. Persist one owner/thread/workspace per `JobContract`; resume the same owner after crash, provider failure,
+   wait, revision, or release instead of restarting semantic work inside one Paid parent pass.
+2. Give that owner the objective, complete context, general tools, private resource resolver, and optional
+   skills. Missing an exact skill or already-created account is never an admission failure; the model creates,
+   recovers, or composes what the authorized outcome requires unless identity, consent, money, physical
+   presence, or an unavailable official effect truly blocks it.
+3. Treat provider/network failure as durable `WAITING_EXTERNAL` with bounded failover/resume, never as a buyer
+   question or terminal `remote_resume`. Emit per-owner heartbeats and terminal receipts while work runs;
+   aggregate status must not hide live children behind the prior completed pass.
+4. Keep browser leases, identity, authorization, dedupe, checkpoints, hashes, typed effects, and exact official
+   readback deterministic. Keep job planning, research, artifact production, tool/skill/account choice, repair,
+   and completion judgment inside the agent loop. A fresh reviewer returns defects to the same owner until the
+   exact buyer outcome is complete; a draft, apology, unavailable-number report, or progress reply cannot pass.
+5. Keep Coconala, Lancers, CrowdWorks, Upwork, and new marketplaces as thin adapters around this same owner.
+   Adding a marketplace may add selectors/auth/effect/readback code only; it may not fork the planner, producer,
+   reviewer, lifecycle, or revenue logic.
+
 3. [ ] byusco `18171890`: invalidate the stale note-only decision, consume the latest request,
    publish the reviewed article to the agreed anicca AI blog through the installed owner, read
    back the public URL, report and formally deliver it, obtain buyer completion, and replay with
