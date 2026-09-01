@@ -1816,6 +1816,22 @@ they pass only as fields on the already exact row bound to the LM effect.
 | Anicca iOS EN Card | Instagram `@anicca.encards` | `cmpc3gx4001nklg0y27a8o66q` | English `reelclaw-card` / `nudge-card` 9:16 MP4 Reel from LM pack `anicca-ios-reelclaw-card-en.pack.json`; hook is bound to its exact approved media; never JA or Larry copy | 3/day at 08:45, 12:45, and 21:30 JST | Postiz exact `PUBLISHED` row, natural Telegram, replay 0, and metric owner verified; production-armed |
 | Anicca iOS EN Widget | Instagram `@anicca.en` | `cmn8y95rg02d2qx0y09bbk5pb` | English `reelclaw-widget` / `widget-demo-reel`: English hook followed by the lock-screen Widget installation flow; never Card EN or JA copy | 3/day at 07:30, 09:30, and 19:00 JST | direct native canary `DcekGtmjmOf`, natural Telegram, replay, and immediate metric source verified; scheduled 0/day/default-off |
 | Anicca iOS EN Affirmation | Instagram Postiz alias `@anicca.affirmation`, native owner `@anicca.ios` | `cmp9pedr700ttqh0yj8o57fog` | Larry-style six-image native English affirmation carousel: one hook plus five mental-health affirmation slides; never Card/Widget video | 3/day at 10:00, 15:00, and 20:00 JST | exact six-slide pack/approval and canary are verified; scheduled 0/day/default-off pending cadence arm |
+
+**Browser-fixed-post routing audit.** Direct browser inspection of the native
+profiles confirms the current content-family routing for all ten Anicca mobile
+lanes: `@anicca.ios` = EN affirmation, `@anicca.encards` = EN Card,
+`@anicca_slideshow` = EN slideshow, `@anicca.en` = EN Widget,
+`@anicca.he` / `@anicca.ios.jp` / `@anicca.jp4` = JA nudge Card,
+`@ani.cca1234` = JA Larry carousel, `@anicca.jp` = JA sunset Larry, and
+`@anicca.jp.videos` = JA Widget. Postiz alias `@anicca.affirmation` continues
+to resolve only to native `@anicca.ios`; Postiz alias `@anicca.jp1` continues
+to resolve only to native Instagram `@anicca.ios.jp`. `@anicca.jp.videos`
+matches the Widget family, but its fixed posts use a different actor asset from
+the current approved pack; keep it at 0/day until that asset-level difference is
+resolved. Recovery order remains one lane at a time: provider `PUBLISHED`, exact
+native owner, browser-visible matching new post, and same-slot replay zero for
+all three natural daily slots before the next lane is armed. Ebook/monk remains
+0/day until every Anicca and Honne lane is terminally verified.
 | Anicca iOS EN Slideshow | TikTok `@anicca_slideshow` | `cmnenjkff01j1pa0ysufmzhfr` | six-image native English mental-health carousel from the exact approved LM pack; never an MP4 or a Card/Widget creative | 3/day at 09:00, 15:00, and 21:00 JST | exact Postiz `PUBLISHED` row, local ordered assets/caption, natural Telegram `34998`, and replay 0 verified; metrics-owner closure remains active |
 | Anicca iOS EN Affirmation | TikTok `@aniccaaffirmation` | `cmp93bkpu01uvoh0yd3aj560g` | English affirmation video/carousel only; never Honne, Buddha, girl, or Japanese person-video content | 0/day until canary | native browser readback proves the Anicca App Store identity; connected but no retained Life Manager owner yet, so activation remains TODO |
 | Anicca iOS EN main | YouTube Shorts `@anicca-ai` | `cmq3u37gi005iqp0y90a2w92n` | English Anicca self-care/affirmation Shorts only | 0/day until canary | native browser readback proves the Anicca App Store identity; exact three/day owner remains TODO |
