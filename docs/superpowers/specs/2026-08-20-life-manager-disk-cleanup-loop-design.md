@@ -34,6 +34,15 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    - **現在activeな次atom:** 現役append-only ledger/logのownerと増加率を特定し、既存rotation/compactionへ接続する。
      先頭候補はaffiliate tool-attempt receipts、共通agent usage、Slack/Stripe event streamである。ledgerをblind
      truncateせず、owner readbackに必要な期間・materialized state・archiveを確認してから最小owner修正を行う。
+   - `lm-recording-store`はmain wrapperから旧OpenClaw skillへ戻る二重正本を廃止し、Life Manager data rootへ
+     170 recording ID・173 MP3を統合、全hash一致を確認した。release `610f9059`でtarget applyし、実wakeは
+     terminal PASS/exit 0。旧/new `lm-video` 548ファイル・220.5 MiBは全hash一致の削除候補である。
+   - OpenClaw janitorもrelease wrapperから旧OpenClaw curatorへ戻る二重正本を廃止した。backupから生成済み
+     `output/outputs/runs/workspace/.backups`を除外し、実production archiveを580 MiBから146 MiBへ縮小、
+     generations=1、archived/disabled=0、exit 0をread backした。収益loopは停止していない。
+   - OpenClaw Git pack 2.89 GiBはreachable履歴にruntime backup 579 MiB、Stripe event ledger約155 MiB×3、
+     `.next` cache、session tmp、DB WAL/browser cacheをcommitした結果であり、通常の`git gc`では回収不能。
+     active dirty repoの履歴rewriteは行わず、OpenClaw repo廃止/履歴移管atomで扱う。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
