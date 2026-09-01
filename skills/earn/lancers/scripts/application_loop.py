@@ -686,7 +686,7 @@ def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH,
         if evidence is not None:
             source = discoverer or discovery
             turns = 3 if source is None and query is None else 1
-            observed_total = 0; decision_reports: list[Mapping[str, object]] = []
+            observed_total = 0; decision_reports: list[Mapping[str, object]] = []; wake_seen_ids: set[str] = set()
             for turn in range(turns):
                 turn_evidence = evidence
                 if turns > 1:
@@ -706,11 +706,20 @@ def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH,
                     elif isinstance(opportunities, (str, bytes, bytearray)) or not isinstance(opportunities, Sequence): result = ApplicationLoopResult(False, error="discovery_failed")
                     elif not opportunities: result = ApplicationLoopResult(True, reason="no_eligible_project", observed_count=int(observed.get("observed_count") or 0), already_decided_count=int(observed.get("already_decided_count") or 0))
                     else:
-                        try: today = _tick_date(tick_value)
-                        except Exception: result = ApplicationLoopResult(False, error="planner_contract_invalid")
+                        fresh = []
+                        for row in opportunities:
+                            project_id = row.get("external_id") if isinstance(row, Mapping) else None
+                            if not isinstance(project_id, str) or project_id not in wake_seen_ids:
+                                fresh.append(row)
+                                if isinstance(project_id, str): wake_seen_ids.add(project_id)
+                        if not fresh:
+                            result = ApplicationLoopResult(True, reason="no_eligible_project", observed_count=int(observed.get("observed_count") or 0), already_decided_count=int(observed.get("already_decided_count") or 0))
                         else:
-                            result = _plan_and_submit(opportunities, today, turn_evidence, planner, safety_verifier, submitter, Path(state_path))
-                            result = replace(result, observed_count=max(result.observed_count or 0, int(observed.get("observed_count") or 0)), already_decided_count=int(observed.get("already_decided_count") or 0))
+                            try: today = _tick_date(tick_value)
+                            except Exception: result = ApplicationLoopResult(False, error="planner_contract_invalid")
+                            else:
+                                result = _plan_and_submit(fresh, today, turn_evidence, planner, safety_verifier, submitter, Path(state_path))
+                                result = replace(result, observed_count=max(result.observed_count or 0, int(observed.get("observed_count") or 0)), already_decided_count=int(observed.get("already_decided_count") or 0))
                 observed_total = max(observed_total, result.observed_count or 0) if source is None and query is None else observed_total + (result.observed_count or 0)
                 decision_reports.extend(result.decision_reports or ())
                 result = replace(result, observed_count=observed_total, decision_reports=tuple(decision_reports) or None)
