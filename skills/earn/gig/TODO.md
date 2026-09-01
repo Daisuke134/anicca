@@ -4909,9 +4909,9 @@ not part of this owner's execution queue. Do not advance a disk-cleanup item fro
 
 **Active atom: `PAR-1`.** Keep the following order unchanged:
 
-1. [ ] `PAR-1` — distinct authenticated BrowserContexts and lease identities for Apply, Reply,
+1. [x] `PAR-1` — distinct authenticated BrowserContexts and lease identities for Apply, Reply,
    Storefront and Paid; no sibling-caused `browser_lease_busy`.
-2. [ ] `PAR-2` — one deterministic effect fence per application, talkroom, listing or order.
+2. [x] `PAR-2` — one deterministic effect fence per application, talkroom, listing or order.
 3. [ ] `PAR-3` — durable bounded producer-consumer concurrency inside all four owners.
 4. [ ] `PAR-4` — resumable nonterminal work items; one slow/failing item never blocks another.
 5. [ ] `PAR-5` — concurrent truthful effects, official readback and replay-zero from one immutable
@@ -5025,11 +5025,13 @@ queue is added. Each owner must also progress independent work concurrently insi
   pass terminals for all four lanes. Concurrent production readback showed distinct authenticated
   contexts for all four owners and no `browser_lease_busy`; releasing Reply left every Apply,
   Storefront and Paid context intact.
-- [ ] `PAR-2` **ACTIVE:** Keep one deterministic effect fence per marketplace resource: application, talkroom,
+- [x] `PAR-2` Keep one deterministic effect fence per marketplace resource: application, talkroom,
   listing or order. PASS = concurrent workers may prepare different resources, but two workers
   cannot submit the same application, message, listing mutation, attachment, cancellation or formal
-  delivery; an uncertain prior effect is reconciled before any retry.
-- [ ] `PAR-3` Run durable producer-consumer concurrency inside every lane. PASS = fresh eligible work
+  delivery; an uncertain prior effect is reconciled before any retry. Storefront retirement now
+  persists a per-listing intent outside pass evidence and reconciles the official seller card before
+  any retry; release `856bbf3f3` produced a natural terminal pass after deployment.
+- [ ] `PAR-3` **ACTIVE:** Run durable producer-consumer concurrency inside every lane. PASS = fresh eligible work
   is durably claimed before model work, bounded workers progress different resource IDs in parallel,
   a slow item does not block discovery or another item, and full reconciliation yields to urgent
   claimed work without being skipped permanently.
