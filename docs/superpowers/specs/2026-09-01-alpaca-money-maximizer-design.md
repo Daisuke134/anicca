@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A03 DONE / A04 ACTIVE
+status: APPROVED DESIGN / A01-A04 DONE / A05 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -176,7 +176,7 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
-Current cursor: **A04 Alpaca CLI preflight**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A05 Alpaca CLI provider adapter**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
@@ -204,12 +204,22 @@ orders, and no activities. Official configuration reads options `Level 3`, inclu
 multi-leg strategies. The provider offered a separate live Individual/Business account application; it was not
 started, and no KYC, funding, live-capital, or live-trading state was created.
 
+A04 is **DONE** against the official `alpacahq/cli` release `v0.0.14`, source commit
+`53606273aa230a40c64b783425dcb3f4423ede30`. Its published release checksum was verified before installing the
+native macOS arm64 binary. `alpaca version` returns `0.0.14`; `alpaca doctor` reports no saved profile, env-only
+credentials, active profile `paper`, connected `paper-api.alpaca.markets` trading and data APIs, and all checks
+passed. CLI JSON reads return the same private account with status ACTIVE, cash/equity `100000`, options level
+3, a valid market clock, a current SPY trade, ten SPY option-chain snapshots, and three SPY news items. CLI
+position/order/activity lists each return zero. Paper keys exist only in the private credential SSOT and are
+injected into the process environment; `ALPACA_LIVE_TRADE=false`, no CLI profile or repo secret exists, and no
+mutation command ran.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
 | A02 | Team/submission shell — **DONE** | The official one-member team and saved Step-2 submission draft exist; the editor exposes title, short/long descriptions, tags, cover, video, slides, public GitHub, demo platform/URL, Alpaca account ID, and up to five social links; no final submit yet. |
 | A03 | New paper-account bootstrap — **DONE** | Normal-email flow yields a dedicated active paper account; account ID is private; cash/equity=`100000`; positions/orders/activity empty; options Level 3 is recorded; fresh password+TOTP login returns the same account. |
-| A04 | Alpaca CLI preflight | Pinned CLI version/doctor plus account/clock/stock/options/news reads return the dedicated paper account; secrets appear in no repo/log/chat artifact. Optional MCP is read-only and not a readiness dependency. |
+| A04 | Alpaca CLI preflight — **DONE** | Pinned CLI v0.0.14 and doctor plus account/clock/SPY/options/news reads return the dedicated paper account; zero positions/orders/activities reconcile; secrets appear in no repo/log/chat artifact. Optional MCP is not a readiness dependency. |
 | A05 | Alpaca CLI provider adapter | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
 | A06 | Decision-before-effect | One bounded model call returns `NO_TRADE` or a typed thesis, structure, max loss, invalidation, exit, and evidence refs; the written decision precedes any effect intent. |
 | A07 | Risk gate | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
