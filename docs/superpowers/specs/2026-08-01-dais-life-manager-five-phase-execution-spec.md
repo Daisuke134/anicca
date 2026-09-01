@@ -22,12 +22,23 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 3. `2026-07-30-outbound-apply-engine-design.md`の各pack内部順序
 4. その他の全体・履歴仕様
 
-### 0.0 2026-08-29 current cursor — ElizaOS forkでlocal general agentを先に完成させる
+### 0.0 current cursor — host安定化から自律収益、WebMCPの順で閉じる
 
-この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
-上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
-Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
-次の一件はAtomic program ledger Seq 26 `ELZ-L04`で、fresh authorized applicationの既存contractを調査し、現在activeなL04だけを最小単位へ分解する。Phase C（Seq 14〜22）とELZ-L01〜L03は完了済み。L04は実Lancersへ新規応募を一件送る最初のatomであり、送信前にauthorizationとsealed intentを閉じる。
+この節は、後段の「現在TODO」「次の一件」およびorgan別cursorを上書きする実行順序SSOTである。
+後段はarchitecture、実装履歴、atom内部のacceptanceとして保持するが、次作業の選択には使わない。
+Daisが明示した次の4 programを上から完了し、順序を変更しない。
+
+| Order | Program | Current truth | PASS |
+|---:|---|---|---|
+| 1 | Codex connection errorの恒久解決 | 消失した`life-manager-symphony-workspaces/GH-11`は`origin/main@3c018f24f`から独立worktreeとして復元し、active session理由でlock済み。本来cwdからのcommand実行は成功した。cleanupがactive Codex/Symphony workspaceを削除できる生命周期競合は未修正 | active・dirty・locked・open-session workspaceをcleanupが保持し、終了済み・clean・unlocked・remote保存済みworkspaceだけを回収する。`GH-11`を跨ぐcleanup replay後もcwd command成功、connection error 0、protected deletion 0 |
+| 2 | Disk cleanupの恒久解決 | production labelはlatest main release `3c018f24f`へ更新済みで自然runはexit 0、errors 0、protected deletion 0。安全な大容量cacheの候補化不足により、正常終了でもreclaimed 0になり得る | credential、browser profile、receipt、ledger、state、active worktree、loaded releaseを保持したまま、再生成可能なclosed cacheとstale workspace/releaseをpressure前に回収する。free-space governor、producer block/resume、cleanup replayがerrors 0・protected deletion 0 |
+| 3 | Lancers着金から自律market展開 | ElizaOS full forkと`plugin-life-manager`のgeneral coreは正本方針。既存Lancers/Coconala launchd ownerはcutover前のproduction ownerであり、process成功は収益証明ではない | Lancersで`Goal → WorkItem → discover → apply → contract → fulfill → deliver → payment → banked receipt → reflect`を人手なしで閉じる。その同じprovider-neutral coreがCrowdWorksを次市場として開始し、以後はLife Manager自身が市場、tool、loop/graphを選択・構築・検証してsettled netを増やす。subjectiveなmarket判断をkeyword/regex/provider branchへ固定しない |
+| 4 | WebMCP hackathon提出 | Money Printerのcode、Steel、Symphony、visual takeoverは存在するが、judge-facing final E2E、動画、YouTube、Devpost提出は未完 | 公開URLとrepoからjudgeが60秒でWebMCP takeoverを実行でき、4 criteriaを一次証拠で説明する。final E2E、動画、YouTube、Devpost receiptを閉じる |
+
+Order 4は別Codex sessionが独立workspace、branch、browser/profile、external submission stateを所有できる場合だけOrder 1〜3と並行してよい。
+同じ資源を共有する場合は並行せず、この表の順序へ戻す。現在activeな先頭atomはOrder 1のworkspace lifecycle保護である。
+Upwork terminal evidence、startup context、public claim、GA-01〜13A、Phase C、ELZ-L01〜L03は完了または履歴として保持する。
+旧cursor `ELZ-L04`以降はOrder 3内部のatomであり、Order 1〜2のPASS後に再開する。
 
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
