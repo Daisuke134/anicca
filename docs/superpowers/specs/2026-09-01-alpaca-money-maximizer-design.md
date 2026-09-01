@@ -72,23 +72,26 @@ and host failure remain the responsibility of the operating system or cloud plat
 
 ### Event contract and Alpaca interface authority
 
-This matrix freezes A01. The current official event shell confirms the deadline, event dates, challenge, and
-prize pool. Cloudflare prevents a complete anonymous live-body extraction, so event-specific details are also
-bound to the archived 20 August 2026 PDF verification (`SHA-256 7e436430…`) rather than silently inferred from
-the generic Lablab guide. A changed official form or organizer notice remains controlling and must be recorded
-as a visible conflict before submission.
+This matrix freezes A01. The current official event page was read through the existing browser session; the
+archived 20 August 2026 PDF verification (`SHA-256 7e436430…`) independently corroborates its controlling
+requirements. Anonymous crawl/search snippets are incomplete and do not override the live page. A changed
+official form or organizer notice remains controlling and must be recorded as a visible conflict before
+submission.
 
 | Requirement | Frozen contract | Evidence and conflict handling |
 |---|---|---|
-| Event window and deadline | Online, 28 August–4 September 2026; submit by **5 September 2026 00:00 JST** | Current official event page/search record and live event shell. The shell prints `Submission deadline Sep 5, 12:00 AM JST`. |
-| Challenge | Build an autonomous AI trading agent using Alpaca Trading API | Current official event record and archived event PDF page 2 agree. |
-| Agent-facing Alpaca surface | Event minimum is **either** Alpaca CLI or Alpaca MCP server | Archived event PDF page 2. A Lablab tutorial says to combine both, but it is guidance, not the controlling minimum. Life Manager deliberately exceeds the minimum with CLI authority plus optional read-only MCP presentation. |
-| Options | Every eligible strategy incorporates options; underlying-only entry is ineligible | Archived event PDF page 2. Alpaca official options docs confirm paper options are enabled by default and levels 2/3 support long options/spreads. |
-| Judged account | Brand-new Alpaca paper account dedicated to this hackathon; development accounts may differ | Archived event PDF page 3. Alpaca official paper docs confirm global email-only Paper Only signup and a default `$100,000` balance. |
-| Private judge identifier | Submit the dedicated Alpaca paper account ID for activity/P&L verification | Archived event PDF page 6. Public artifacts expose only a redacted/hash reference. |
-| Submission package | Hosted working URL, public GitHub repository, cover image, pitch video, PDF slide presentation | Archived event PDF page 6 plus current Lablab submission guide. Generic Lablab guidance permits a video up to five minutes; this project keeps the stricter ≤4-minute target. |
-| Judging | Presentation, business value, application of technology, originality; event evidence also emphasizes paper P&L and execution | Current Lablab judging guide supplies the four rubric dimensions; archived event verification supplies the Alpaca/P&L emphasis. P&L never overrides safety or truthfulness. |
-| Prize pool | `$6,000` | Current official event record. Prize allocation details are not available in the anonymous live shell and are not invented. |
+| Event window and deadline | Online, 28 August–4 September 2026; submit by **5 September 2026 00:00 JST** | Current official page and schedule both show the exact deadline; archived PDF agrees. |
+| Challenge | Build an autonomous AI trading agent using Alpaca Trading API in paper trading | Current official challenge and archived PDF page 2 agree. |
+| Agent-facing Alpaca surface | Event minimum is **either** Alpaca CLI or Alpaca MCP server | Current official `CORE REQUIREMENTS` and archived PDF page 2 agree. Life Manager chooses CLI authority plus optional read-only MCP presentation. |
+| Options | All strategies incorporate options; underlying-only entry is ineligible | Current official `CORE REQUIREMENTS` and archived PDF page 2 agree. Alpaca official options docs confirm paper options are enabled by default and levels 2/3 support long options/spreads. |
+| Judged account | Brand-new Alpaca paper account dedicated to this hackathon, starting at exactly `$100,000`; development accounts may differ | Current official `REQUIRED FOR JUDGING` and `ADDITIONAL REQUIREMENTS`. Alpaca official paper docs confirm global email-only Paper Only signup and the default `$100,000` balance. |
+| Required write-up | One page covering AI logic, risk gates, and Alpaca infrastructure implementation | Current official `ADDITIONAL REQUIREMENTS`. This is separate from the slide presentation. |
+| Private judge identifier | Submit the dedicated Alpaca paper account ID for activity/P&L verification | Current official `WHAT TO SUBMIT` and archived PDF page 6 agree. Public artifacts expose only a redacted/hash reference. |
+| Submission fields | Project title; short and long descriptions; technology/category tags; cover image; video presentation; slide presentation; public GitHub repository; demo platform and application URL; Alpaca account ID | Current official `WHAT TO SUBMIT`. Generic Lablab guidance permits a video up to five minutes; this project keeps the stricter ≤4-minute target. |
+| Social extra challenge | Up to five X/LinkedIn post links tagging lablab.ai and Alpaca | Current official extra challenge. These links are optional for main judging but required to compete for the social prize. |
+| Judging | P&L Performance; Technology Implementation; Creativity & Originality; Presentation & Execution | Current event-specific official criteria. The generic Lablab rubric does not replace these criteria. P&L never overrides safety or truthfulness. |
+| Team and originality | Team size 1–6; entrants 18+ for prize eligibility; submissions must be original and MIT-compliant | Current official guidelines and prize terms. Life Manager remains public MIT-compatible OSS with donor notices. |
+| Prize pool | `$6,000` cash plus `$300` Featherless credits displayed as `$6,300` total | Current official prize section: main cash `$2,500 + $1,500 + $1,000`, social cash `2 × $500`, and first-place Featherless credits `$300`. |
 
 **CLI authority decision:** the Alpaca CLI is the sole broker command/readback surface used by the Financial
 loop. Eliza invokes pinned CLI commands with structured JSON, binds every mutation to a stable
@@ -181,7 +184,7 @@ product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or 
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
-| A02 | Team/submission shell | Enrolled team exists and its official page exposes every required field; no final submit yet. |
+| A02 | Team/submission shell | An enrolled 1–6 member team exists and its official page exposes title, short/long descriptions, tags, cover, video, slides, public GitHub, demo platform/URL, Alpaca account ID, and up to five social links; no final submit yet. |
 | A03 | New paper-account bootstrap | Normal-email flow yields a dedicated active paper account; account ID is private; cash/equity=`100000`; positions/orders/activity empty; option level recorded; new-session login works. |
 | A04 | Alpaca CLI preflight | Pinned CLI version/doctor plus account/clock/stock/options/news reads return the dedicated paper account; secrets appear in no repo/log/chat artifact. Optional MCP is read-only and not a readiness dependency. |
 | A05 | Alpaca CLI provider adapter | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
