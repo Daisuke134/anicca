@@ -31,8 +31,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    - 現行agent-runner evidenceは256 MiB上限を持ち、新Life Manager rootは約73 MiB。旧OpenClaw evidence、
      旧lm-video、media outbound、ReelClaw runは現在のproducer rootではなく手動監査対象とする。
      `~/.openclaw/workspace/runs`はpublication receipt未接続のdeliverableなので自動削除しない。
-   - **現在activeな次atom:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、
-     不要daemonだけをowner経由でdrainし、VM使用量がmacOSにより縮小することをread backする。
+   - **memory/swap producer censusは完了:** 重複CloakBrowser renderer、終了済みworker、不要daemonだけを
+     owner経由でdrainし、VM使用量がmacOSにより縮小することをread backした。
      初回readbackはswap 10,240 MiB中9,105 MiB使用、compressor occupied約4.0 GiB相当。上位RSSはactive
      Codex app-server 565 MiB、Eliza source agent 384 MiB、OpenClaw gateway 336 MiB。browserはprofile別に
      daily-driver 1,809.5 MiB/24 process/1 root、gig-daily-driver 578.0 MiB/6/1、x-repost 486.4 MiB/8/1、
@@ -252,11 +252,15 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    stale 238をpruneし、live targetを各1件保持した。旧PID temp 88件1,398,291 bytes＋後発0-byte 1件は
    open FD 0を確認して回収した。新releaseのproduction CDP passを2連続で実行し、両registryとも
    `stale_pruned=0/closed=0`、daily/gig page 26/16保持、registry 1/0件、旧temp 0、errors 0だった。
-   swapは20,755.19→19,801.56 MiBへ縮小したが、11 GiB floorと自然wake継続観測が未達のため
-   memory/swap atomは未完了とする。
+   swapは20,755.19→19,553.56 MiBまで縮小した。その後19,761.75 MiBへ変動した時点の新規ownerは
+   Alpacaの`bun install`/Eliza sourceとCoconalaの500/425 MiB rendererで、別ownerの進行中作業として保持した。
+   affiliate 3 profileは各page 1、browser root重複0で、認証sessionを保持する`KeepAlive=1`のため停止しない。
+   registry 1/1件、旧temp 0を再確認し、cleanup漏れによる再増加ではないことを切り分けた。terminal pass 2回、
+   errors 0、closed 0、protected deletion 0、active/open/loaded producer保持をもってmemory/swap atomを完了する。
+   11 GiB floorと長期観測は固定順序⑨で閉じる。
 
-   **残TODO（順序固定）:** ①memory/swap owner-side drainとswap縮小readback、②残るrunning旧releaseの自然idle
-   reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
+   **残TODO（順序固定）:** ①[x] memory/swap owner-side drainとswap縮小readback、② **現在active:**
+   残るrunning旧releaseの自然idle reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
    ⑤Hermes正式retire、⑥Gig terminal project、⑦Codex/Claude終了済みlog/archive rotation、
    ⑧`/private/var/folders`・Library cache・未使用toolchain、⑨free 11 GiB以上＋24時間観測＋7日観測。
    これらを閉じた後に現在順序正本どおりLancers revenue loop、WebMCP hackathonへ進む。
