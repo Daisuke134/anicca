@@ -54,7 +54,7 @@ flowchart TD
     MODEL --> GATE["Deterministic risk gate<br/>max loss / exposure / freshness"]
     GATE --> EFFECT["Effect kernel<br/>sealed intent / exactly once"]
     EFFECT --> ALPACA["Alpaca paper API<br/>CLI effects + SDK reads + MCP evidence"]
-    ALPACA --> RECON["REST reconcile<br/>order / fill / position / P&L"]
+    ALPACA --> RECON["CLI reconcile<br/>order / fill / position / P&L"]
     RECON --> RECEIPT["Outcome + EconomicReceipt<br/>paper namespace"]
     RECEIPT --> CORE
 ```
