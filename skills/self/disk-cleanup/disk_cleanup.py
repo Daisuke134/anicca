@@ -29,8 +29,8 @@ from typing import Callable
 from host_inventory import FULL_INVENTORY_BUDGET_SECONDS, collect_host_inventory
 
 GiB = 1024**3
-PRODUCER_BLOCK_FLOOR_BYTES = 512 * 1024**2
-PRODUCER_BLOCK_CLEAR_BYTES = GiB
+PRODUCER_BLOCK_FLOOR_BYTES = 11 * GiB
+PRODUCER_BLOCK_CLEAR_BYTES = 20 * GiB
 FULL_INVENTORY_INTERVAL_SECONDS = 3600
 GOVERNOR_BUDGET_SECONDS = 90
 LSOF_TIMEOUT_SECONDS = 15
@@ -50,6 +50,18 @@ SOURCE_SUFFIXES = {
     ".ts", ".tsx",
 }
 SECRET_SUFFIXES = {".env", ".key", ".p12", ".pem", ".pfx"}
+EXACT_CACHE_ROOTS = {
+    "bun-cache": "Library/Caches/bun",
+    "burrito-cache": "Library/Caches/burrito_file_cache",
+    "codex-cache": "Library/Caches/Codex",
+    "codex-runtime-cache": ".cache/codex-runtimes",
+    "daily-driver-cache": ".cache/life-manager-daily-driver",
+    "ffmpeg-cache": "Library/Caches/ffmpeg-static-nodejs",
+    "google-cache": "Library/Caches/Google",
+    "hyperframes-cache": ".cache/hyperframes",
+    "npx-cache": ".npm/_npx",
+    "whisper-model-cache": ".cache/whisper",
+}
 
 
 class _ReceiptAtomicFailure(Exception):
@@ -454,8 +466,11 @@ class HostDiskGovernor:
         if item.get("class") == "ephemeral" and item.get("owner") == "temporary-run":
             return (
                 resolved.parent == temporary
-                and resolved.name.startswith("cfo-")
-                and resolved.name != "cfo-"
+                and (
+                    (resolved.name.startswith("cfo-") and resolved.name != "cfo-")
+                    or resolved.name == "capafy-hf-npm-cache"
+                    or resolved.name.startswith("capafy-hf-npm.")
+                )
             )
         if item.get("class") == "regenerable_output" and item.get("owner") == "browser":
             clone_root = temporary.parent / "X"
@@ -476,8 +491,8 @@ class HostDiskGovernor:
             )
         if item.get("class") == "regenerable_output":
             exact_caches = {
-                "codex-runtime-cache": (self.home / ".cache/codex-runtimes").resolve(),
-                "whisper-model-cache": (self.home / ".cache/whisper").resolve(),
+                owner: (self.home / relative).resolve()
+                for owner, relative in EXACT_CACHE_ROOTS.items()
             }
             expected = exact_caches.get(item.get("owner"))
             if expected is not None:
@@ -739,7 +754,7 @@ class HostDiskGovernor:
             # safe to drop is that nothing references it, checked during discovery.
             whole_tree_is_the_unit = item.get("owner") in {
                 "browser", "codex-runtime-cache", "whisper-model-cache", "release-retention",
-            }
+            } | set(EXACT_CACHE_ROOTS)
             descendant_state = None if whole_tree_is_the_unit else self._protected_descendant(path, deadline=deadline)
             if descendant_state is not None:
                 result["errors"] += descendant_state == "descendant_probe_error"
@@ -814,10 +829,7 @@ class HostDiskGovernor:
         a deletion candidate merely because it is large.
         """
         candidates: list[dict] = []
-        for relative, owner in (
-            (".cache/codex-runtimes", "codex-runtime-cache"),
-            (".cache/whisper", "whisper-model-cache"),
-        ):
+        for owner, relative in EXACT_CACHE_ROOTS.items():
             cache = self.home / relative
             if cache.is_dir() and not cache.is_symlink():
                 candidates.append({
@@ -899,10 +911,17 @@ class HostDiskGovernor:
         # arbitrary /private/tmp directories remain unknown and are preserved.
         if temporary.is_dir():
             for child in sorted(temporary.iterdir()):
-                if child.is_dir() and any(
-                    child.name.startswith(prefix)
-                    for prefix in ("cfo-",)
-                ):
+                try:
+                    old_capafy = (
+                        time.time() - child.stat().st_mtime >= 3600
+                        and (
+                            child.name == "capafy-hf-npm-cache"
+                            or child.name.startswith("capafy-hf-npm.")
+                        )
+                    )
+                except OSError:
+                    old_capafy = False
+                if child.is_dir() and (child.name.startswith("cfo-") or old_capafy):
                     candidates.append(
                         {
                             "path": child,
