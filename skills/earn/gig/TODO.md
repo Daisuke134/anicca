@@ -5067,9 +5067,15 @@ queue is added. Each owner must also progress independent work concurrently insi
    - `18128025` (`na_l5`): the latest buyer request is transaction cancellation, not another BUYMA
      artifact. Add one code-owned Coconala cancellation-request adapter with exact-room confirmation
      and replay-zero; do not route cancellation through `remote_resume` or fabricate delivery.
-   - `18211957` (`Ryu0820119`): a formal delivery already exists. Paid must only reconcile its
-     official acceptance/return state and must not send another artifact or formal effect unless a
-     distinct buyer-authored revision arrives.
+   - `18211957` (`Ryu0820119`): the distinct buyer revision `js-talkroomMessage-220762342` requested
+     transportation-fee changes using `IMG_5999.png` and `IMG_6001.png`. Public site verification
+     completed, and Paid sent the verification URL with official talkroom readback (`effect=1`,
+     `readback=1`). The fixes select attachments from the current buyer message instead of all 34
+     historical attachments and normalize verifier-owned semantic IDs only after every substantive
+     state, identity, freshness and outcome check passes. Remaining: remove the parent
+     all-preparers-before-any-writer barrier so one slow order cannot delay a prepared reply, and
+     retry `talkroom_history_empty` as a transient hydrated-page readback. Formal delivery stays off
+     unless a new explicit authority condition is satisfied.
    - `18214856` (`usa`): remains awaiting buyer after the qualification question. Before any later
      account question or article work, compile the private credential SSOT, installed publication
      skills and existing account receipts; an existing seller-owned account must be used rather
