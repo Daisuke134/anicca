@@ -342,6 +342,17 @@ now evaluates this exit on every pass. Its real after-hours fire returned `ORDER
 `HOLD_CLOSED_SESSION`, with pending dispatch empty and no close order submitted; the next regular-session fire
 owns the exactly-once close and subsequent realised-P&L reconciliation.
 
+Follow-up merges `45e33086bf0463323d3c28b1509854af2f5226ed` and
+`772189de2f4229fe6c47c6d926037cae8c61cefb` (PRs #65–#66) persist immutable
+`broker.paper.no_effect` receipts for future `NO_TRADE`/`RISK_REJECTED` decisions and make entry selection
+explicit from its sealed `*_to_open` legs, so a later exit intent cannot be mistaken for the entry. The earlier
+rejected `751P/750P` proposal now has one historical `RISK_REJECTED / SPREAD_LIMIT / effectStarted=false`
+receipt and no broker order. After restart on the same database, the existing five-minute task retained the same
+ID and returned `ORDER_VERIFIED / HOLD_CLOSED_SESSION`. Pinned-CLI readback still showed one filled entry,
+two fills, two positions, zero open orders, cash `$99,970.95`, equity `$99,997.95`, and unrealised P&L `-$2`.
+No close order exists while the regular session is closed; A11 remains ACTIVE until the loop records an official
+close fill, zero positions, and the realised paper P&L receipt.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
