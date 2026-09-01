@@ -4123,6 +4123,9 @@ def _remote_wait_is_fresh(root: Path, feedback: str, digest: str,
     release_manifest = REPO_ROOT / "RELEASE.json"
     if _regular_file(release_manifest) and release_manifest.stat().st_mtime > observed_at:
         return False
+    operator_policy = root / "context" / PAID_FILE_OPERATOR_POLICY
+    if _regular_file(operator_policy) and operator_policy.stat().st_mtime > observed_at:
+        return False
     age = (time.time() if now is None else now) - observed_at
     return 0 <= age < PAID_REMOTE_WAIT_RECHECK_SECONDS
 
