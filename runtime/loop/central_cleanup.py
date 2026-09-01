@@ -84,6 +84,21 @@ def release_gc(releases: Path, current: Path, agents: Path, keep: int) -> dict:
     return result
 
 
+def reconcile_idle_loops(current: Path) -> list[dict]:
+    results = []
+    for route in ("deterministic", "shared-agent-runner"):
+        try:
+            process = subprocess.run(
+                [str(current / "bin/lm-loop"), "reconcile", route],
+                capture_output=True, text=True, timeout=240,
+            )
+            detail = json.loads(process.stdout) if process.stdout.strip() else {}
+            results.append({"route": route, "ok": process.returncode == 0, "detail": detail})
+        except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError) as error:
+            results.append({"route": route, "ok": False, "error": str(error)})
+    return results
+
+
 def main() -> int:
     home = Path.home()
     loops_root = Path(os.environ.get("LOOPS_ROOT", "~/loops")).expanduser()
@@ -115,6 +130,7 @@ def main() -> int:
         print(json.dumps({"ok": False, "error": str(error)}, sort_keys=True)); return 1
     result.update({"ok": result["errors"] == 0 and host_ok,
                    "host_cleanup": host_result,
+                   "idle_reconcile": reconcile_idle_loops(current),
                    "shared_cache_candidates": 0, "orphan_candidates": 0})
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
     return 0 if result["ok"] else 1
