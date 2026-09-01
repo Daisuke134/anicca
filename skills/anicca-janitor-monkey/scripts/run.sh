@@ -3,6 +3,7 @@
 # Spec: 2026-06-07 v1.3 §3.6
 set -uo pipefail
 set -a; source "$HOME/.openclaw/.env" 2>/dev/null; set +a
+HERE="$(cd "$(dirname "$0")" && pwd)"
 source "$HOME/.openclaw/skills/_shared/cron-lock.sh"
 export ANICCA_MONKEY="anicca-janitor-monkey"
 
@@ -52,10 +53,9 @@ echo "$CRON_LIST_JSON" | \
 done
 
 # Run inherited curator + Sunday over-scheduled detection
-[ -x "$HOME/.openclaw/skills/anicca-janitor-monkey/scripts/curator.sh" ] && \
-  bash "$HOME/.openclaw/skills/anicca-janitor-monkey/scripts/curator.sh" 2>&1 | tail -3 || true
-[ -x "$HOME/.openclaw/skills/anicca-janitor-monkey/scripts/over-scheduled.sh" ] && [ "$(date +%u)" = "7" ] && \
-  bash "$HOME/.openclaw/skills/anicca-janitor-monkey/scripts/over-scheduled.sh" 2>&1 | tail -3 || true
+[ -x "$HERE/curator.sh" ] && bash "$HERE/curator.sh" 2>&1 | tail -3 || true
+[ -x "$HERE/over-scheduled.sh" ] && [ "$(date +%u)" = "7" ] && \
+  bash "$HERE/over-scheduled.sh" 2>&1 | tail -3 || true
 
 REPORT=":robot_face: janitor $(date -Iseconds) | archived=$ARCHIVED disabled=$DISABLED skipped=$SKIPPED"
 echo "$REPORT"
