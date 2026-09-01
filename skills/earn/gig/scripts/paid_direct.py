@@ -5314,7 +5314,8 @@ def main(argv=None) -> int:
         rc = 1
         result = {"status": "failed", "observed": 0, "actionable": 0, "effect": 0,
                   "readback": 0, "failed": 1, "pending": 0, "oldest": None,
-                  "failed_step": "paid_direct", "error": type(error).__name__, "items": []}
+                  "failed_step": "paid_direct", "error": type(error).__name__,
+                  "error_detail": str(error)[:500], "items": []}
     try:
         result["telegram"] = _report_paid_wake(args, result, run_id)
     except Exception as error:
