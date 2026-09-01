@@ -5025,7 +5025,7 @@ queue is added. Each owner must also progress independent work concurrently insi
   pass terminals for all four lanes. Concurrent production readback showed distinct authenticated
   contexts for all four owners and no `browser_lease_busy`; releasing Reply left every Apply,
   Storefront and Paid context intact.
-- [ ] `PAR-2` Keep one deterministic effect fence per marketplace resource: application, talkroom,
+- [ ] `PAR-2` **ACTIVE:** Keep one deterministic effect fence per marketplace resource: application, talkroom,
   listing or order. PASS = concurrent workers may prepare different resources, but two workers
   cannot submit the same application, message, listing mutation, attachment, cancellation or formal
   delivery; an uncertain prior effect is reconciled before any retry.
