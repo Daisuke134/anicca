@@ -25,6 +25,15 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    disk thresholdで停止する仕組みは追加しない。active worktree、取引中deliverable、credential、ledger、
    receipt、不可侵storeは保持する。完了条件は各ownerのbounded retentionと異常終了後の次wake回収であり、
    「一度空きを増やした」だけでは完了にしない。
+   - 実測済み: registry 166件、missing entrypoint 0、unmanaged label 0。共通wrapperのwake-local `tmp` cleanupは
+     有効だが、166件の `cleanup.max_age_days=14 / max_runs=100` は実run rootでmarker利用0件のため、それだけを
+     bounded-outputの証拠にしない。
+   - 現行agent-runner evidenceは256 MiB上限を持ち、新Life Manager rootは約73 MiB。旧OpenClaw evidence、
+     旧lm-video、media outbound、ReelClaw runは現在のproducer rootではなく手動監査対象とする。
+     `~/.openclaw/workspace/runs`はpublication receipt未接続のdeliverableなので自動削除しない。
+   - **現在activeな次atom:** 現役append-only ledger/logのownerと増加率を特定し、既存rotation/compactionへ接続する。
+     先頭候補はaffiliate tool-attempt receipts、共通agent usage、Slack/Stripe event streamである。ledgerをblind
+     truncateせず、owner readbackに必要な期間・materialized state・archiveを確認してから最小owner修正を行う。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
