@@ -52,12 +52,19 @@ completion claim is nevertheless false until the two failing lanes below pass na
   `storefront-direct-1788285409489850000-99678` read all 14 official services, saved the selected
   additional package on service `4244556`, read its title and JPY 5,000 price back from the exact
   public page, recorded `effect=1` and `readback=1`, released its isolated lease, and exited zero.
-- [ ] `C02` Prove all four installed owners concurrently healthy without adding a global lock.
+- [x] `C02` Prove all four installed owners concurrently healthy without adding a global lock.
   PASS = one runtime manifest binds Apply, Reply, Storefront, and Paid to their loaded immutable
   release SHA, cadence, latest natural terminal event, official effect/readback receipt, and
   released isolated lease; Apply and Storefront pass after `C00`/`C01`, Reply remains keep-alive,
   Paid passes on its independent 300-second recurrence, and no lane waits for another lane's
-  completion.
+  completion. Runtime readback reports all four managed with no blocker, exact installed/event SHA,
+  last exit zero, and last terminal result `pass`: Apply and Storefront recur independently every
+  60 seconds, Reply remains keep-alive, and Paid recurs every 300 seconds. Apply and Storefront were
+  observed `loaded-running` concurrently and then completed independently. Apply pass
+  `gig-apply-direct-1788285655638010000-8625` recorded `effect=2`, `readback=2`, and `pending=0`;
+  Storefront pass `storefront-direct-1788285409489850000-99678` recorded exact public
+  `effect=1/readback=1`, and its isolated context lease was released. No global cross-lane lock was
+  added.
 - [ ] `C03` Prove maximum safe Coconala work progression.
   PASS = Apply submits every currently eligible non-duplicate opportunity and reconciles uncertain
   intents before retry; Reply consumes every new buyer event once; Storefront continues measured
