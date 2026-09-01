@@ -706,6 +706,20 @@ def test_pending_effect_recovers_only_from_both_exact_public_values(tmp_path):
         raise AssertionError("partial effect accepted")
 
 
+def test_pending_recovery_skips_intent_superseded_by_confirmed_effect(tmp_path):
+    intents = tmp_path / "effect-intents"
+    intents.mkdir()
+    base = {"service_id": "4302213", "changed_field": "title"}
+    (intents / "old-prepared.json").write_text(json.dumps({
+        **base, "status": "prepared", "prepared_at_epoch": 10,
+    }))
+    (intents / "new-confirmed.json").write_text(json.dumps({
+        **base, "status": "confirmed", "prepared_at_epoch": 20,
+    }))
+
+    assert direct._pending_recovery(tmp_path, {"body": "latest confirmed public value"}) is None
+
+
 def test_public_observation_expands_folded_faq_before_readback(tmp_path, monkeypatch):
     import listing_inventory
 
