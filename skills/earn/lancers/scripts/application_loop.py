@@ -38,7 +38,7 @@ DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json
 DEFAULT_EVIDENCE_ROOT = Path.home() / ".local/state/anicca/lancers/planner"
 DEFAULT_EVIDENCE_DIR = DEFAULT_EVIDENCE_ROOT
 DECISION_FIELDS = frozenset({"request_id", "business_class", "reason_codes", "proposal_text", "price_jpy", "deliver_date"})
-BUSINESS_CLASSES = frozenset({"submit_required", "skip_not_fit", "hard_prohibited"})
+BUSINESS_CLASSES = frozenset({"submit_required", "hard_prohibited"})
 HARD_PROHIBITION_CLASSES = {
     "video_or_animation": "video editing/production, live-action filming, AI video, animation, or MV",
     "physical_or_onsite": "on-site work or physical making/assembly/cleaning/repair/cooking/sewing/woodwork/model making/packing/shipping/delivery/receipt",
@@ -254,15 +254,15 @@ def _snapshot(rows: Sequence[Mapping[str, object]], today: date) -> dict[str, ob
     return {"tick_date": today.isoformat(), "seller_proof": _seller_proof(), "opportunities": result}
 
 PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent plannerである。planner自身は外部操作を行わないが、delivery systemは既存の認証済みbrowserと利用可能なtoolsで外部web serviceを操作できる。"
+    "Coconalaと同じcommon marketplace feasibility policyを使う。合法で、現在のgeneral agentがcomputer、browser、code、research、writing、design、dataその他の利用可能なtoolsを使って全必須成果物を正直に完遂できる案件は広く応募する。判定はsubmit_requiredまたはhard_prohibitedの二択であり、前者を既定とする。"
     "確認済みのdelivery能力は、非同期のresearch、文章作成・編集・翻訳、digital content設計、code・software・data・AI automation、web/browser上の操作・調査・monitor、必要なtoolの導入・設定・利用、利用可能なtoolで生成できるdigital artifactである。現在未導入のsoftwareや未利用のweb serviceでも、公開または依頼者提供の通常accessで導入・利用・検証できるなら完遂可能として扱う。未提示の個人職歴、雇用経験、資格、電話営業、常駐staff稼働、専用hardwareや入手不能な外部credentialを能力として仮定しない。"
     "SNAPSHOTのseller_proofは現在のLancers公開profile、portfolio、packageとMIT公開source codeで買い手が確認できる証拠であり、能力の固定whitelistではない。案件scopeに合う証拠だけを具体的に活用し、未掲載の顧客実績、評価、売上効果、専門職歴を捏造しない。exactな同業実績や完成済みportfolioがなくても、転用可能な確認済み能力と案件固有の実行planで全必須scopeを完遂できるならsubmit_requiredにする。"
-    "各案件を実際の公開内容全体から自分で判断し、指定schemaのJSONだけを返す。現在の自律delivery systemが全必須成果物を正直に完成でき、買い手にcredible fitを示し、scope・期限・報酬から正のmarginで完遂できる場合だけsubmit_requiredとする。reason_codesは空、買い手向けの具体的な日本語proposalを200〜3000文字、正直な価格、現実的な納期で返す。"
+    "各案件を実際の公開内容全体から自分で判断し、指定schemaのJSONだけを返す。現在の自律delivery systemが全必須成果物を正直に完成できるならsubmit_requiredとする。専用Skill、同業職歴、実績、portfolio、testimonial、tool利用歴、資格を必要としない経験年数、難易度、競争、単発、曖昧な通常実装詳細は拒否理由にしない。未経験を経験済みと偽らず、転用可能な確認済み能力と案件固有の実行planを示す。reason_codesは空、買い手向けの具体的な日本語proposalを200〜3000文字、正直な価格、現実的な納期で返す。"
     "proposalは自己紹介だけで始めず、冒頭で依頼内容の理解と提供価値を案件固有に示す。依頼文の応募質問へ漏れなく直接答え、実行手順・schedule・納品物を明記し、案件に関係する場合だけ修正回数とLancersメッセージでの連絡方法を示す。検証済みでない実績は作らない。"
     "hard_prohibitedは案件全体が次のいずれかを必須とする場合だけ使う: "
     + "; ".join(f"{key}={value}" for key, value in HARD_PROHIBITION_CLASSES.items()) + "。"
     "hard_prohibitedではreason_codes[0]を正確なclass key、reason_codes[1]をtitle・description・categoryのいずれかに連続して存在する200文字以内の原文引用にし、proposal・price・dateはnullにする。任意・推奨・否定・引用中の単語だけで拒否しない。"
     "reason_codes[1]は公開原文から一文字も足さずcopyし、長い引用に自信がなければ判断根拠を直接示す短い連続原文を使う。"
-    "skip_not_fitはhard prohibitionではないが、tool導入・code作成・browser利用・調査を含む現在の自律delivery systemでも全必須成果物を完成できない、選定に必須の個人経験・属性を正直に示せない、またはscope・期限・報酬から正のmarginが客観的に成立しない場合だけ使う。未知のtool、外部web serviceの利用、認証済みbrowserによる予約投稿・返信・運用、学習やmonitor、exact実績不足、portfolio不足、実装難易度を理由にskipしない。system・software・AI・automation・web・data・digital contentは、明示的な禁止条件がなければsubmit_requiredを既定とする。reason_codes[0]は短いsemantic reason、reason_codes[1]はtitle・description・categoryのいずれかに連続して存在する200文字以内の根拠原文、proposal・price・dateはnullにする。"
     "案件全体から納品可能性をpriorityより先に確定する。完成動画そのものの生成・編集・書き出しが必須ならvideo_or_animation、企画・構成・台本・文章だけで完成動画制作が不要ならvideo_or_animationではない。機械的なkeyword ruleは使わない。"
     "経験の不確実さ、弱いportfolio、低予算、難易度、広いまたは曖昧なscope、単発、継続性不足、Adobe実績不明、任意の相談を単独のkeyword ruleでskipしない。正確な同分野実績がなくても、確認済みの転用可能な能力で全必須scopeを完遂できるなら案件固有の実行planで応募し、未作成物はplanと明示して捏造しない。"
     "納品可能性を確定した後の優先順は、定期購入・保守・運用、次にsystem・automation・AI・web・高報酬、次にその他の非同期作業。hard prohibition必須案件を継続・AI・高報酬・低予算・簡単そうという理由でsubmit_requiredへ変えない。実行可能な低優先案件を省略しない。submit_requiredを先に並べ、強い順に返す。"
@@ -344,11 +344,6 @@ def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) 
                 public_row = rows_by_id[project_id]
                 public_text = "\n".join(str(public_row.get(key) or "") for key in ("title", "description", "category"))
                 if not 1 <= len(reasons[1]) <= 200 or not _public_excerpt(reasons[1], public_text): raise ValueError
-            elif business_class == "skip_not_fit":
-                if proposal is not None or price is not None or due is not None or len(reasons) < 2: raise ValueError
-                public_row = rows_by_id[project_id]
-                public_text = "\n".join(str(public_row.get(key) or "") for key in ("title", "description", "category"))
-                if not 1 <= len(reasons[0]) <= 120 or not 1 <= len(reasons[1]) <= 200 or not _public_excerpt(reasons[1], public_text): raise ValueError
             elif reasons or not _safe_proposal(proposal, expected) or isinstance(price, bool) or not isinstance(price, int) or price < 1 or not _valid_date(due, today): raise ValueError
             found[project_id] = decision
         if set(found) != set(expected): raise ValueError

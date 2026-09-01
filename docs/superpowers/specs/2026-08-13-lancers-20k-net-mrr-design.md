@@ -2384,6 +2384,8 @@ Telegram ownerは「公式会話1件 / 返信必要0件 / 未読0件 / 月額オ
 
 ### 18.26 Application conversion audit — portfolio proof is the first blocker
 
+> **2026-09-02 user-ordered regression override:** Apply laneを先頭atomへ戻す。累計47件は現在の応募速度の証明ではない。productionは60秒cadenceでも一wakeが数分かかり、Lancers固有の`skip_not_fit`が経験・実績不足を理由にAmazon運用、SEO、browser運用など完遂可能なdigital案件を送信前に落としていた。同じ見送りを次wakeで再判定するため、時間を消費して応募0を繰り返した。Coconala正本どおり`submit_required / hard_prohibited`の二択へ戻し、経験・portfolio・未知tool・browser操作を拒否理由にしない。完了条件は新しい案件を実送信し、公式proposal IDとApplicationReceipt増分を確認し、次wakeの同一案件再送0を確認すること。後段atomはこの回帰を閉じるまで進めない。
+
 **USER OUTCOME:** 応募件数だけを増やさず、clientが公式画面で確認できる実績証拠と一致する案件へ応募し、
 `ApplicationReceipt → buyer reply → contract`の転換率を上げる。
 
