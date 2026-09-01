@@ -584,13 +584,16 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
         items = planned.get("decisions") if isinstance(planned, Mapping) and set(planned) == {"decisions"} else None
         if not isinstance(items, list) or len(items) != len(rows): raise ValueError
         rows_by_id = {str(row["external_id"]): row for row in rows}
-        raw_ids = [str(item.get("request_id") or "") for item in items if isinstance(item, Mapping)]
-        if len(raw_ids) != len(rows) or set(raw_ids) != set(rows_by_id): raise ValueError
         decisions = {}; invalid_ids = []
         for item in items:
-            project_id = str(item["request_id"])
+            project_id = str(item.get("request_id") or "") if isinstance(item, Mapping) else ""
+            if project_id not in rows_by_id or project_id in decisions:
+                decisions.pop(project_id, None)
+                invalid_ids.append(project_id)
+                continue
             try: decisions.update(_validate([rows_by_id[project_id]], {"decisions": [item]}, today))
             except Exception: invalid_ids.append(project_id)
+        invalid_ids.extend(project_id for project_id in rows_by_id if project_id not in decisions and project_id not in invalid_ids)
         if not decisions: raise ValueError
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
     try: _cache_no_effect(decisions, rows_by_id, state_path)
