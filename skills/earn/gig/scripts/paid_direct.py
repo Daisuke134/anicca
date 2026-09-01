@@ -3853,6 +3853,8 @@ def _normalize_builder_result(root: Path) -> None:
     after = _load(after_path)
     if (after.get("authenticated") is True and after.get("target") == intent.get("target")
             and paid_remote_result.canonical_equal(after.get("observed_state"), intent.get("desired_state"))):
+        if result.get("status") == "completed":
+            result["status"] = "ok"
         result["observed_state"] = after["observed_state"]
         result["after_state_digest"] = result["observed_digest"] = intent.get("desired_state_sha256")
         _write(intent_path, intent)
