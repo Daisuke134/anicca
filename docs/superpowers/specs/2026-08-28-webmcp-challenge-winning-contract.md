@@ -433,13 +433,13 @@ Visual surfaceは変更可能である。Life Managerの中核architectureを置
 
 ### 8.2 Product boundary
 
-今回提出するLife Managerは、bounty、gig、hackathon、paid task等の収益機会を一つのgeneral earning runtimeで進めるMoney Printerである。X、Web、GitHub、Devpost、marketplaces、mail等から公開・許可済みのopportunityを発見し、実作業、応募・納品、結果確認、着金確認まで追う。応募数、offer、agentの`done`を収益とは呼ばず、official receiptがある結果だけを表示する。
+今回のHackathonで提出するMoney PrinterはMercor専用である。Eliza Life Manager agentがMercor内のopportunity discovery、fit判断、応募準備、許可済みbrowser操作、連絡、本人制作物の提出、再提出、結果確認、着金確認まで追う。応募数、offer、agentの`done`を収益とは呼ばず、official receiptがある結果だけを表示する。
 
-既存Mercor、Lancers、gig、TaskMarket等のcodeは、general runtimeが再利用できるtools、browser state、evidence、historyとして段階的に吸収する。Core orchestratorはprovider名でexecutorを固定せず、Modelが現在のopportunityとenvironment feedbackを読み、利用可能なtoolsから次の行動を選ぶ。Coconalaはsubmission source、UI、demo、product storyに含めない。そこで実証済みのprovider-neutral isolation、effect fence、resume、receipt patternsだけを内部実装として再利用する。
+既存Lancers、gig、TaskMarket等のcodeやreceiptは過去の実装・検証履歴として保持するが、Hackathon product、UI、demo、acceptance criteria、active TODOには含めない。Babel AudioはMercor E2E完成後に追加できる次候補として記録するだけで、今回の実装順には入れない。
 
 ### 8.3 Canonical judge demo — one traced opportunity inside a 24/7 product
 
-製品runtimeはX、Web、GitHub、mail、search、任意marketplace URLから継続的にopportunityを見つけるEntrepreneur Agentである。Modelがmarket、reward、requirements、deadline、capability、cost、riskを読み、どこで何をすれば収益になるかを判断し、scout、qualify、claim、work、human handoff、delivery、reconciliationを繰り返す。LancersとMercorは最初の実証adapterであってproduct boundaryではない。三分動画のlive traceはcurrent Mercor listing一件をdiscovery→fit判断→tenant-bound Eliza Life Manager workroom→provider-required Assessmentまたは本人制作の`Needs You`→same-job resume→得られた最深official readbackまで追う。既存Lancers application receiptはseparate read-only proofとしてmoney truthとreplay-zeroを示す。一件を処理して停止するdemo executorやone-shot POCは作らない。
+製品runtimeはMercorを継続巡回するtenant-bound earning agentである。ModelがMercor listingのreward、requirements、deadline、capability、cost、riskを読み、scout、qualify、apply、work、human handoff、submission、reconciliationを繰り返す。三分動画は一件のcurrent Mercor listingをdiscovery→fit判断→Eliza Life Manager workroom→Assessmentまたは本人制作の`Needs You`→same-job resume→official readbackまで追う。一件を処理して停止するdemo executorやone-shot POCは作らない。
 
 Canonical flowは七段だけである。
 
@@ -453,7 +453,7 @@ Canonical flowは七段だけである。
 
 WebMCPの主役は、対応agentと人間が同じMoney Printer Dashboardを共有する点である。Agentはtyped toolsでopportunity、workroom、human task、artifact、receiptを読み書きし、人は`Needs You`だけを処理する。WebMCPを24/7 background schedulerとは説明しない。Background continuationはLife Manager runtimeが担う。
 
-WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応募は通常の開発・提出processで行う。Primary live traceはMercorのsame-job human boundaryで閉じ、Lancers application receipt、generic bounty intake、複数source、複数cycle、複数opportunity、dedupe、restart recoveryを同じDashboardに表示する。Lancersの契約獲得、Mercorの選考結果、cash settlementは外部都合のため今回のDone条件にしない。
+WebMCP Challenge応募自体をMoney Printerへ実行させない。Hackathon応募は通常の開発・提出processで行う。Live traceとDashboardはMercorだけを扱い、複数Mercor opportunity、dedupe、restart recoveryを示す。Mercorの選考結果とcash settlementは外部都合のため今回のDone条件にしない。
 
 #### Mercor authorization and minimal-human contract
 
@@ -469,13 +469,13 @@ Agentはhuman-only actionを代行しない。代わりに、一つの`Needs You
 
 「emailだけ」は初回入力のUX契約であり、本人確認不要という意味ではない。Userは最初にemailだけを入力し、以後必要になった本人限定ceremonyを`Needs You`から一件ずつ行う。既に確認済みの情報やsessionは再要求しない。
 
-### 8.3A Launch adapters — general capabilityをprovider listへ縮めない
+### 8.3A Hackathon provider — Mercor only
 
-| Source | Product role | Human boundary | Hackathon proof |
+| Provider | Product role | Human boundary | Hackathon proof |
 |---|---|---|---|
-| Lancers | 日本向け短期gig/application sourceで、公開searchに多数の新着task/projectあり | profile/private answers、proposal authority、provider-required本人操作 | existing official application receiptとreplay-zeroをread-only proofにする。acceptance/cashは主張しない |
-| Mercor | canonical owner live trace。高単価AI project/job source | Assessment、camera/microphone AI interview、本人の経験回答、本人制作、最終提出・再提出 | current public listing→fit判断→Eliza Life Manager workroom→human-only `Needs You`→same-job resume。2〜4週間の選考結果は必須にしない |
-| Open Web | X、Web、GitHub、mail、searchからAgentがopportunityを発見するgeneral source | claim、public delivery authority、payout setup、provider-specific ceremony | Modelがsource URL、requirements、environment feedbackから次のtoolsを選ぶ。UserへURL入力を要求せず、mechanical effectに必要な時だけthin adapterを追加する |
+| Mercor | 唯一のHackathon source、browser target、board card source | Assessment、Interview、本人の経験回答、本人制作、最終提出・再提出 | current Mercor listing→fit判断→Eliza Life Manager workroom→human-only `Needs You`→same-job resume→official readback |
+
+Mercor E2Eが完成するまで別providerを追加しない。Babel Audioは次候補、LancersとOpen Webは今回のscope外である。
 
 #### 8.3A-1 Runtime placement decision — Eliza Cloud product、isolated tenant agent、isolated browser identity
 
@@ -493,7 +493,7 @@ flowchart LR
   ELZ <--> LM[plugin-life-manager]
   LM <--> BJ[tenant-bound browser job]
   BJ <--> ST[Railway-private Steel + Stagehand]
-  ST <--> MER[Mercor / Lancers / open Web]
+  ST <--> MER[Mercor only]
   U -. Needs You answer / artifact .-> MP
 ```
 
@@ -532,12 +532,12 @@ Primary sources:
 
 | Official criterion | 5/5 target evidence from this source mix |
 |---|---|
-| WebMCP Leverage | ChatGPTがX/Webで発見した任意opportunity、Lancers、Mercorを同じtyped toolsでinspect/qualify/claimし、Mercorのartifact、human interview taskを同じvisible workroomで扱う。`Needs You`回答後のsame-job continuationとreceipt確認までWebMCPを使う |
-| Execution | Zero-login live Dashboard、24/7 multi-source scout、multiple concurrent workrooms、Lancersのreal application receipt、Mercorのlive same-job human boundary、generic bounty intake、single-client WebMCP E2Eを実物で見せる。単なるfixture/POCにしない |
-| Potential Impact | Mercorの$70–250/hr級AI roles、Lancersの多数のlive freelance projects、X/Web上の新しい機会を対象にする。特定marketplaceに閉じず、任意URLから新しい収益機会を処理する。Human minutes、agent steps、applications、deliveries、official moneyを別々に測る |
-| Creativity & Ambition | Symphonyのper-work-item agent orchestrationをcoding repo内からopen Web上のeconomic opportunitiesへ拡張する。人はhuman-only 1%だけを行い、未知marketplaceでも同じworkroom contractとmoney-truth ledgerで閉じる |
+| WebMCP Leverage | Eliza agentがMercor opportunityをtyped toolsでcard化・遷移し、Assessmentと本人制作物を同じvisible workroomの`Needs You`で受け取り、same-job continuationとreceipt確認までWebMCPを使う |
+| Execution | Email-only start、24/7 Mercor scout、multiple concurrent Mercor workrooms、live same-job human boundary、single-client WebMCP E2Eを実物で見せる。単なるfixture/POCにしない |
+| Potential Impact | Mercorの高単価AI roleを対象に、Human minutes、agent steps、applications、deliveries、official moneyを別々に測る |
+| Creativity & Ambition | Eliza Cloudのper-tenant agentがMercor browser loopを継続し、人はhuman-only taskだけを同じboardで処理する |
 
-満点はsource数ではなく証拠の深さで決まる。動画ではMercor一件をsame-job human boundaryと得られた最深official readbackまで追い、Lancers receiptと任意URL intakeは同じgeneral agentが既知・未知marketを扱うsupporting evidenceとして短く見せる。
+満点はsource数ではなく証拠の深さで決まる。動画はMercor一件をsame-job human boundaryと得られた最深official readbackまで追い、別providerを見せない。
 
 ### 8.4 Visual surface
 
@@ -548,8 +548,8 @@ Primary sources:
 │ Found       │ Working     │ Needs You   │ Waiting     │ Done │ Paid │
 ├─────────────┼─────────────┼─────────────┼─────────────┼──────┼──────┤
 │ Mercor role │ Application │ Assessment  │ Reply       │ Lost │ $120 │
-│ Lancers gig │ Work packet │ Upload MP4  │ Review      │ Done │ $80  │
-│ Web bounty  │             │ Resubmit PDF│ Payment     │      │      │
+│ Mercor task │ Work packet │ Upload MP4  │ Review      │ Done │ $80  │
+│ Mercor job  │ Interview   │ Resubmit PDF│ Payment     │      │      │
 └─────────────┴─────────────┴─────────────┴─────────────┴──────┴──────┘
 
 User controls: [Needs You card answer / upload]              [Pause]
@@ -1035,7 +1035,7 @@ The top-level page registers focused tools with `document.modelContext.registerT
 
 ### Impact and future
 
-The initial product is a general entrepreneur agent that continuously searches X, the Web, GitHub, mail, Lancers, Mercor, and arbitrary marketplace URLs for paid opportunities. Its primary proof follows one Lancers project from public listing through qualification, proposal preparation, one genuine human boundary, a fenced application, and official readback. Mercor demonstrates high-value roles and a provider-required human interview boundary. The same agent can inspect an unfamiliar marketplace URL and explain the work, tools, and missing mechanical adapter without a provider-specific routing branch. Life Manager remains free and unrestricted to judges throughout the judging period and records revenue only when an official receipt confirms that money was received.
+The Hackathon product is a Mercor-only earning agent. It continuously discovers Mercor opportunities, qualifies them, prepares and performs authorized browser work, creates a prepared `Needs You` card for assessment or identity-bound work, resumes the same workroom, and records official provider receipts. Babel Audio is a possible adapter after the Mercor end-to-end loop is complete; it is not part of this submission. Life Manager records revenue only when an official receipt confirms that money was received.
 
 ---
 
@@ -1542,7 +1542,7 @@ H07–H12とB12はcomplete。accepted artifactは `/Users/anicca/Desktop/MoneyPr
 
 Money PrinterをDaisのMac miniなしでjudge/userがend-to-end実行できるcloud Web productへ完成させる。Public WebMCP Dashboard、Eliza Cloud agent-server/tenant DB、`@elizaos/plugin-life-manager`、existing Railway-private Steel browser runtimeを一つのstate machineへ接続する。各tenantのEliza Life Manager agentがworkを進め、browser actionが必要な時はexisting cloud browser queueへtyped requestを出し、本人操作が必要な時だけDashboard内にprepared `Needs You`を出す。人間の完了後はsame Life Manager work itemをElizaが再開し、provider official readbackをreceiptへ固定する。
 
-Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceである。Product boundaryはMercor専用品ではなく、Agentが複数sourceから発見したpaid opportunityを同じworkroom contractで処理するMoney Printerである。UserはOpportunity URLや案件情報を入力しない。
+MercorはHackathon productの唯一のprovider、browser target、board sourceである。UserはOpportunity URLや案件情報を入力しない。Lancers、Open Web、Babel Audioを今回のactive runtime、UI、demo、acceptance criteria、TODOへ含めない。
 
 #### Acceptance criteria
 
@@ -1569,7 +1569,7 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 | Symphony | isolated Codex specialist、private tracker、same-job continuationは実証済み | optional long-running specialistとしてのみ残し、tenant/Mercor/money loop authorityを持たせない |
 | Mercor | Local CDP 9334 loopはowned tab欠落でfail、cloud runtimeへ未接続 | User-owned encrypted cloud auth contextをfresh private Steel sessionへrestoreし、provider official readback |
 | Human handoff | Dashboard HumanTask answerはあるがTelegramが通知導線 | Money Printer card内のAssessment回答・artifact upload、exact action、complete/cannot-complete、same-job resume |
-| Money truth | Mercor official earnings `$0.00`、Lancers verified applications 40、contract/payment 0 | Application/Contract/Delivery/Paymentを別receiptにし、verified cashはPaymentReceiptだけ |
+| Money truth | Mercor official earnings `$0.00`、contract/payment 0 | Application/Contract/Delivery/Paymentを別receiptにし、verified cashはPaymentReceiptだけ |
 
 #### Atomic TODO — immutable order
 
@@ -1592,7 +1592,7 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 | C11.3 | 六lane board `Found / Working / Needs You / Waiting / Done / Paid`だけをpost-start shellにし、human writeをNeeds You回答/uploadとglobal Pauseへ限定する | URL field 0、manual add/move 0、lane/card/workroom read可、mobile同一state |
 | C11.4 | existing Eliza Cloud tenant agentへLife Manager plugin、Money Printer goal、scoutを登録し、agent-only WebMCP toolsでcard create/move、Needs You open、resume、receipt recordを行う | page close後もagent継続、humanによるagent tool call 0、WebMCP action即board反映、parallel Eliza instance 0 |
 | C11.5 | Eliza provider bridgeがtenant-managed mailboxとSteelでMercor email signup/loginを完了し、tenant-bound auth contextをresealする | User Mercor画面0、human login action 0、raw mailbox/credential/cookie/session URL露出0、foreign tenant 404、reload後session再利用 |
-| C11.6 | live Mercor acquisitionを開始し、Agentがdiscovery→fit→dedupe→card作成→応募準備→許可済みeffect→official ApplicationReceiptを一件閉じる | human URL入力0、same application effect 1、official readback、ambiguous result再送0 |
+| C11.6 | Mercorだけを巡回し、Agentがdiscovery→fit→dedupe→card作成→応募準備→許可済みeffect→official ApplicationReceiptを一件閉じる | non-Mercor card 0、human URL入力0、same application effect 1、official readback、ambiguous result再送0 |
 | C11.7 | profile/resume不足と本人限定Assessment/Interviewをprepared `Needs You`へ一件ずつ出し、known factを再質問しない | duplicate human task 0、assessment AI代答0、Mercor UI露出0、private artifact public exposure 0 |
 | C11.8 | 本人制作・最終提出・再提出をartifact lineage付きNeeds Youへ接続する | MP4/PDF/ZIP/URL upload、requirement checklist、same-workroom resume、provider official status確認 |
 | C11.9 | inbox、selection、contract、revision、deadline、earningsを継続reconcileし、AgentがWebMCPでlaneを更新する | Application/Contract/Delivery/Acceptance/Payment receipt分離、settled前cash 0、manual card move 0 |
@@ -1630,7 +1630,7 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 2. C01–C03でbrowser actionをsame Symphony jobへ接続する。
 3. C04–C07でDashboard-only Needs Youとresumeを閉じる。
 4. C08–C09でmulti-tenant fair claimとcloud Symphony deploymentを閉じる。
-5. C10–C11で既存cloud Mercor/judge pathを実ブラウザ検証し、C11.1–C11.8でemail-only real-user onboarding、本人限定work、submission/resubmission、official receiptを閉じる。
+5. C10–C11で既存cloud Mercor/judge pathを実ブラウザ検証し、C11.1–C11.10でemail-only real-user onboarding、Mercor専用board、本人限定work、submission/resubmission、official receiptを閉じる。
 6. C12でfour-criteria evidence、video、freeze、submissionを閉じる。
 
 #### E2E judgment
