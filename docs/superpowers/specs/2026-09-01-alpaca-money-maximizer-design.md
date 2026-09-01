@@ -224,8 +224,16 @@ existing account path remained `READY` and left the SSOT hash unchanged. Commit 
 `plugin-life-manager` once in the normal macOS/Linux/Docker core collector while keeping it out of the CLI-less
 mobile boot. Commit `8dd1114f3e` routes every Alpaca Action into the `finance/automation` owner context and returns
 the concrete BrowserService/private-action chain to the native planner; its handler fixture persisted one Task,
-selected normal email rather than Google login, and exposed no secret. A03 remains ACTIVE because the live Eliza
-planner has not yet driven the complete BrowserService-backed sequence from one owner goal and read it back.
+selected normal email rather than Google login, and exposed no secret. A real isolated Eliza runtime then loaded
+`plugin-life-manager`, accepted one authenticated owner goal, selected and successfully executed
+`ALPACA_BOOTSTRAP`, and persisted exactly one checkpoint Task at `READY / RUN_TRADING_LOOP`. Its redacted action
+trajectory and Task readback reported eight bound credential refs, paper `ACTIVE`, cash/equity `100000`, options
+Level 3, and zero positions/orders/activities. After a full runtime stop and restart against the same state, a
+second owner goal executed the same action, kept the Task count at one, and returned the same facts; immediate
+official CLI readback still returned zero positions/orders/activities. No account, order, or trade was created by
+either pass. A03 remains ACTIVE because this proves autonomous detection, verification, checkpoint persistence,
+and restart resumption of the already-bound account, but not that Life Manager itself created that real account
+through the complete BrowserService-backed signup sequence.
 
 A04 has **preflight evidence ready but remains ordered after A03** against the official `alpacahq/cli` release `v0.0.14`, source commit
 `53606273aa230a40c64b783425dcb3f4423ede30`. Its published release checksum was verified before installing the
