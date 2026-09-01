@@ -171,6 +171,24 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    10. `/private/var/folders`とLibrary cacheはopen-path/owner proof後の再生成可能familyだけを回収する。
    11. free 11 GiB以上、24時間ENOSPC 0/protected deletion 0を証明し、その後7日間のstate-write failure 0、
        cleanup-caused producer failure 0を証明する。
+
+   **memory/swap atomの実測進捗:** 初回censusはswap `9,105 MiB / 10,240 MiB`、compressor約4 GiB。
+   browser profile別RSSはdaily-driver約1,810 MiB、Gig約578 MiB、X repost約486 MiB、Affiliate/en約464 MiB、
+   X diceai0約435 MiB、CrowdWorks約398 MiB、Affiliate/x-en約330 MiB、job-search約238 MiB、Lancers約233 MiB、
+   TikTok約229 MiB、Affiliate/impact約141 MiBだった。同一profileの重複browser rootは0。daily-driverのexact duplicate
+   Instagram Reel targetを1件だけcloseし、同URLを1件保持、root PIDとCDP応答を確認した。Gig/Coconala ownerには
+   同一talkroom `18128025` targetが5件あるが、別ownerがactiveなので競合変更せずowner-side finalizer不足として保持する。
+   `/private/var/folders`の一時Codex 304,280 KiBと一時Claude SDK 250,900 KiBはopen FD 0を再確認して回収し、
+   Data volume freeは`2,129,368 → 2,651,696 KiB`（+522,328 KiB）。Codex、Claude remote-control、daily-driver
+   CDPは回収後も生存した。Chromium/Chrome code-sign cloneは複数live PIDが実行中なので保持する。
+
+   `~/.codex` app-server PID 63957はlogin status=`Not logged in`、open rollout 0、control client 0、current sessionとは
+   別socketであることを確認してTERMした。旧socketは消滅し、正本`~/.codex-acct2` PID 57321は
+   `Logged in using ChatGPT`のまま生存した。旧daemonは再生成経路として保持する。終了後もmacOS swapは
+   `16,282 MiB / 17,408 MiB`、compressor約6.6 GiBで即時縮小せず、Data volume freeは約2.4 GiBである。
+   swapfileは直接削除しない。したがってこのatomはまだ完了ではなく、open/loaded processを止めるのではなく
+   owner別bounded artifact回収でData headroomを先に戻し、memory pressure低下後のswap縮小を再readbackする。
+   次の直接容量ownerは`~/loops/releases`約12.9 GiBだが、current/loaded/open/pinned判定前には削除しない。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
