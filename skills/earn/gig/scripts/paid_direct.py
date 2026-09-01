@@ -4447,6 +4447,15 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
         _write(output, {**prepared, "_paid_prepare_status": "prepared"})
         return 0
     except (AttributeError, Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
+        if (isinstance(error, Failure) and error.step == "file_builder"
+                and isinstance(root, Path)
+                and step_result_status.status_from_evidence(
+                    root / "evidence" / "agent-PAID_FILE_OWNER",
+                ) == "blocked"):
+            _write(output, {"status": "pending", "talkroom_id": room, "failed": 0,
+                            "failed_step": None, "effect": 0, "readback": 1,
+                            "_paid_prepare_status": "pending"})
+            return 0
         if isinstance(error, Failure) and error.step == "file_verifier" and isinstance(root, Path):
             try:
                 review_state = _load(root / "context" / "paid-review-state.json")
