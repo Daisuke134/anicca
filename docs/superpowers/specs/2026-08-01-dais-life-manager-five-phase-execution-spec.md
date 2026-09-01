@@ -3,7 +3,7 @@
 status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
-updated: 2026-09-01 JST
+updated: 2026-09-02 JST
 scope: Upwork終端処理、公開context収束、汎用Life Manager kernel、既存5段階の各organ
 active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_LOCAL_ACCEPTANCE
 
@@ -40,6 +40,16 @@ General Money taskを一件だけseedし、model decision 1回、heartbeat、5�
 「最大応募loopが稼働」は、単発canaryや手動kickstartでは成立しない。単一ownerの自然wakeが複数回継続し、各wakeで
 fresh opportunityを再観測し、positive-EV案件を同一wake内で連続処理し、各送信の公式Proposal IDを個別にreadback・報告し、
 重複送信0を示した時だけ成立する。それまでは「縦一本とreplay-zeroは成功、継続応募は未稼働」と報告する。
+
+本番ownershipは二層だけにする。`launchd`は同じEliza General Agent processを起動・監視・復旧するhost adapterであり、
+marketplace名、5分cadence、案件判断、応募手順、ledgerを持たない。5分wake、child Goal、checkpoint、lease、model判断、
+effect/readbackはAgentRuntime＋既存scheduling spine＋単一`plugin-life-manager`が所有する。旧Lancers launchd runnerを
+General Agentと並走させず、application laneはcutover後もsingle writerを維持する。
+
+browserも二重化しない。既存authenticated CloakBrowser daily-driverを唯一の画面/session ownerとし、`plugin-browser`は
+その既存CDPへ接続するGeneral Agentの目と手である。内部transportとして`puppeteer-core`を使っても、それは別browser、
+別profile、Lancers専用操作scriptではない。証明用`/tmp` harness、固定selector、provider固有click順をproduction loopへ
+昇格させない。General Agent自身がlive画面を観察し、既存general browser toolで次の操作をmodel判断する。
 
 ### 0.0.1 Previous cursor retained — Alpaca hackathonを期限付き先頭trackとして閉じる
 
