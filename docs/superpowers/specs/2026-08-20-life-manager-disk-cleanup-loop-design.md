@@ -158,7 +158,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
       drainし、VM使用量がmacOSにより縮小することをread backする。
    3. [x] registered worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
       保ったまま回収する。
-   4. 26 immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、central cleanupで後者だけを回収する。
+   4. [ ] **in progress:** immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、idleな旧release参照を
+      control planeでcurrentへ収束した後、central cleanupでunreferencedだけを回収する。running loopは停止しない。
    5. `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
       state、production argvを移管し、一repositoryずつretireする。
    6. OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
@@ -209,6 +210,30 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    `OPENCLAW_BACKUP_KEEP=2`を設定し、`launchctl-safe` preflight PASS後にidle labelだけをreloadした。
    RunAtLoadの自然runはlast exit 0、loaded env=2、archive count=2、両archive mode 0600・`tar tzf` PASS。
    低disk時は既存`MIN_FREE_MB=2048` gateで新規archiveを書かず、loop停止0のままbounded状態を維持した。
+
+   **release収束と追加manual cleanup追補:** 24 releaseの全SHAがcurrent `58a7129556`のancestorであることを
+   確認した。`lm-loop reconcile`はloaded-idleな旧labelだけを対象にし、running labelをskipする既存機構である。
+   `launchctl-safe` preflight PASS後、deterministic/shared routeへ合計133件をapplyし、失敗0。running旧labelは
+   競合停止せず保持した。続くcentral GCはunreferenced release 7件を除去し、実freeを
+   `5,385,196 → 10,105,932 KiB`（+4,720,736 KiB）へ回復した。初回GCのerrors 2は並行cleanupが同じ
+   unreferenced pathを先に消したraceで、再実行はevaluated 10、preserved 10、removed 0、errors 0、
+   protected deletion 0。release directoryは11件残り、旧releaseを実行中のloopとunloaded labelが残るためatomは
+   未完了である。自然idle後にreconcile→GCを繰り返し、current＋bounded rollback以外の参照が0になった時点で閉じる。
+
+   追加のread-only owner照合後、未使用`/Applications/Chat On Steroids.app`を391,668 KiB、旧Codex package
+   `0.151.0`と未使用plugin app-serverを合計570,048 KiB、重複pipx環境`camoufox`と`crawl4ai`を合計
+   1,006,880 KiB回収した。active Codex/ChatGPT sessionと`~/.venvs/crawl4ai`の`crwl`は回収後も生存し、
+   `crwl`はRC 0。XcodeはLancers/job-search/affiliate/disk-cleanupのlive Python processが使用するため保持、
+   PicturesはPhotos Libraryとしてopen中なので保持、Rustはpaid-work validationとHermes PATHが参照するため保持した。
+   `mise`約580 MiBと`feynman`約178 MiBはopen/launch reference 0の候補だが、caller確認前には回収しない。
+   最新Data volume readbackは228 GiB中180 GiB使用、available `9,914,404 KiB`（約9.5 GiB）であり、
+   11 GiB floorは未達。手動回収を完了条件にせず、残るwriter ownerのbounded retentionへ進む。
+
+   **残TODO（順序固定）:** ①memory/swap owner-side drainとswap縮小readback、②残るrunning旧releaseの自然idle
+   reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
+   ⑤Hermes正式retire、⑥Gig terminal project、⑦Codex/Claude終了済みlog/archive rotation、
+   ⑧`/private/var/folders`・Library cache・未使用toolchain、⑨free 11 GiB以上＋24時間観測＋7日観測。
+   これらを閉じた後に現在順序正本どおりLancers revenue loop、WebMCP hackathonへ進む。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
