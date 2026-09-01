@@ -90,7 +90,7 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         "marketing-mine-daily": [python, str(scheduled), "mine"],
         "marketing-score-daily": [python, str(scheduled), "score"],
         "lancers-revenue-application": [
-            python, str(lancers / "application_loop.py"), "--json",
+            python, str(lancers / "application_loop.py"), "--json", "--exhaustive",
             "--state-path", str(lancers_state / "application.json"),
         ],
         "lancers-revenue-work-sync": [
