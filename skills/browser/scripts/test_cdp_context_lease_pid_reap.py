@@ -78,6 +78,25 @@ def test_acquire_stamps_pid_on_a_fresh_lease(monkeypatch, tmp_path):
     assert saved["gig-task"]["pid"] == os.getppid()
 
 
+def test_seed_cookies_prefers_live_browser_over_stale_vault(monkeypatch, tmp_path):
+    module = load_module()
+    vault = tmp_path / "auth-state.json"
+    vault.write_text(json.dumps({"cookies": [{"name": "stale"}]}))
+    monkeypatch.setenv("CLOAK_SESSION_VAULT_FILE", str(vault))
+
+    async def live(pairs, timeout=None):
+        if pairs[0][0] == "Target.getTargets":
+            return [{"targetInfos": [{
+                "type": "page", "url": "https://coconala.com/message",
+                "browserContextId": "authenticated-context",
+            }]}]
+        assert pairs[0][1] == {"browserContextId": "authenticated-context"}
+        return [{"cookies": [{"name": "current"}]}]
+
+    monkeypatch.setattr(module, "_calls", live)
+    assert module._seed_cookies() == [{"name": "current"}]
+
+
 def test_gc_reaps_a_row_whose_pid_just_died_even_though_it_is_not_idle_stale(monkeypatch, tmp_path):
     module = load_module()
     leases_file = tmp_path / "leases.json"
