@@ -240,6 +240,12 @@ capability claim is backed by an installed executable capability.
   exact official sent/readback matches the shared product contract, replay is effect-zero, and later
   inquiry/order/payment retain CrowdWorks plus job identity. CrowdWorks exposes job application rather
   than a worker storefront publication flow. Lancers remains excluded because its separate owner owns it.
+  **Current authentication correction:** a fresh official dashboard probe returns
+  `authenticated:true`, `role:employee`, and the private credential SSOT contains a CrowdWorks entry.
+  Ordinary saved email/password login is the required path; Google OAuth/passkey is not used. The
+  current Apply failure is `config_invalid` because `public-profile.json.hours_limit` is a string while
+  the installed profile contract requires an integer. Historical logged-out/OAuth observations below
+  are incident evidence only and must not be reported as current state.
   The public `crowdworks-revenue-application` owner and its recovered submit/readback transaction are
   implemented on a five-minute cadence. The owner now requires authenticated official profile apply and
   public readback before it searches or submits, so missing authentication/profile state cannot be hidden
@@ -4887,9 +4893,13 @@ not part of this owner's execution queue. Do not advance a disk-cleanup item fro
    and prove official readback and replay-zero.
 10. [ ] Four-lane gate — concurrent natural wakes, independent failure, reboot recovery and two
     consecutive natural starts from the same immutable public-main release.
-11. [ ] CrowdWorks `S14` — after the Coconala gate, run one real Apply canary in an independent owner:
-    authenticate, choose one suitable open job, submit once, read back the official effect and prove
-    replay-zero.
+11. [ ] CrowdWorks parallel track — run concurrently with items 1–10 and never wait for the Coconala
+    gate. First fix the current Apply owner's `hours_limit` type mismatch, then prove continuous
+    truthful eligible-job discovery, one fenced submission per job, official readback and replay-zero.
+    The official dashboard currently reads `authenticated:true`, `role:employee`; use ordinary saved
+    email/password login only and do not route this owner through Google OAuth/passkey. After Apply is
+    healthy, add independent Negotiate/Reply, Paid/Fulfillment and real-time reporting owners through
+    the shared provider-neutral contracts.
 
 The detailed `PAR-1` through `PAR-5` acceptance criteria and buyer-level Paid queue remain below.
 Historical unchecked cleanup or recovery entries do not reorder this list.

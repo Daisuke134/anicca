@@ -1151,8 +1151,17 @@ The non-skippable completion order is:
    reaches official readback and replay-zero.
 10. Pass the four-lane release gate: concurrent natural wakes, independent failure, reboot recovery
     and two consecutive natural starts from one immutable public-main release.
-11. Run the CrowdWorks `S14` real canary with the same Apply contract in its own owner: authenticate,
-    select one suitable open job, submit once, read back the official effect and prove replay-zero.
+11. In parallel with steps 1–10, run CrowdWorks as an independent marketplace system. Its first
+    active lane is Apply: use the existing authenticated email/password account, continuously find
+    and submit every truthful eligible application once, read back each official effect and prove
+    replay-zero. CrowdWorks never waits for the Coconala four-lane gate.
+
+CrowdWorks authentication uses the provider's ordinary email/password form and the saved CrowdWorks
+credential. Google OAuth is not a fallback for this owner and a stale OAuth/passkey tab is not account
+state. Login state is decided only by a fresh official CrowdWorks dashboard readback. After Apply is
+healthy, add independent Negotiate/Reply, Paid/Fulfillment and real-time reporting owners using the
+same provider-neutral contracts, durable work items, effect fences and official receipts as Coconala;
+do not copy a scheduler or share a browser context with Coconala.
 
 Completion is not process liveness. All four Coconala lanes must produce their contracted official
 effects/readbacks concurrently, a sibling must never cause `browser_lease_busy`, and stopping one
