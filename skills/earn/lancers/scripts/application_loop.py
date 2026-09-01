@@ -592,7 +592,6 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
             try: decisions.update(_validate([rows_by_id[project_id]], {"decisions": [item]}, today))
             except Exception: invalid_ids.append(project_id)
         invalid_ids.extend(project_id for project_id in rows_by_id if project_id not in decisions and project_id not in invalid_ids)
-        if not decisions: raise ValueError
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
     try: _cache_no_effect(decisions, rows_by_id, state_path)
     except Exception:
