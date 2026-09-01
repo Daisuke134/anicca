@@ -558,6 +558,10 @@ def render_application_wake(result: Mapping[str, object]) -> str:
     observed = int(result.get("observed_count") or 0)
     eligible = int(result.get("eligible_count") or 0)
     verified = int(result.get("verified_count") or 0)
+    today_verified, cumulative_verified = _application_totals()
+    today_text = f"{today_verified}件" if today_verified is not None else "不明"
+    cumulative_text = f"{cumulative_verified}件" if cumulative_verified is not None else "不明"
+    already_decided = int(result.get("already_decided_count") or 0)
     project_id = str(result.get("project_id") or "").strip()
     if result.get("application_verified") is True:
         outcome = f"{verified or 1}件の応募を公式確認しました"
@@ -571,9 +575,25 @@ def render_application_wake(result: Mapping[str, object]) -> str:
         outcome = f"{result.get('error') or 'unknown_error'}で完了できませんでした"
     return (
         f"[Lancers][応募] {'📨' if result.get('application_verified') else '⏭️' if result.get('ok') else '⚠️'} {outcome}\n"
-        f"確認: 公開案件{observed}件 / fresh判断{len(result.get('decision_reports') or [])}件 / 応募候補{eligible}件 / 公式確認{verified}件。\n"
+        f"確認: 公開案件{observed}件 / 既判断{already_decided}件 / fresh判断{len(result.get('decision_reports') or [])}件 / 応募候補{eligible}件 / 公式確認{verified}件。\n"
+        f"応募実績: 今日{today_text} / 累計{cumulative_text}（公式proposal receipt）。\n"
         "次: 5分後のwakeで新着案件の確認と最大positive-EV応募を続けます。"
     )
+
+
+def _application_totals() -> tuple[Optional[int], Optional[int]]:
+    try:
+        events = _load("_anicca_lancers_application_totals", LEDGER_PATH).list_events(LEDGER_DATABASE)
+        stamps = []
+        for event in events:
+            kind = event.get("event_type") if isinstance(event, Mapping) else getattr(event, "event_type", None)
+            stamp = event.get("occurred_at") if isinstance(event, Mapping) else getattr(event, "occurred_at", None)
+            if kind == "application_verified" and isinstance(stamp, str):
+                stamps.append(datetime.fromisoformat(stamp.replace("Z", "+00:00")))
+        today = datetime.now(TOKYO).date()
+        return sum(stamp.astimezone(TOKYO).date() == today for stamp in stamps), len(stamps)
+    except Exception:
+        return None, None
 
 
 def render_application_decision(decision: Mapping[str, object]) -> str:

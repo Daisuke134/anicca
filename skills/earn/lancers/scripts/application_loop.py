@@ -82,6 +82,7 @@ class ApplicationLoopResult:
     provider_proposal_id: Optional[str] = None
     cleanup_error: Optional[str] = None
     observed_count: Optional[int] = None
+    already_decided_count: Optional[int] = None
     eligible_count: Optional[int] = None
     verified_count: Optional[int] = None
     provider_terminal_blocked_count: Optional[int] = None
@@ -98,7 +99,7 @@ class ApplicationLoopResult:
         for key in ("reason", "error", "project_id", "provider_proposal_id", "cleanup_error"):
             value = getattr(self, key)
             if value is not None: result[key] = value
-        for key in ("observed_count", "eligible_count", "verified_count", "provider_terminal_blocked_count"):
+        for key in ("observed_count", "already_decided_count", "eligible_count", "verified_count", "provider_terminal_blocked_count"):
             value = getattr(self, key)
             result[key] = int(value) if isinstance(value, int) and not isinstance(value, bool) else 0
         for key in ("planner_expected_count", "planner_returned_count"):
@@ -205,19 +206,25 @@ def _run_default_discovery(tick_value: object, timeout: float, state_path: Path)
     first = _discovery_query(tick_value)
     start = DISCOVERY_QUERIES.index(first)
     last: Mapping[str, object] = {"ok": False, "error": "no_normalized_opportunities", "opportunities": []}
+    observed_ids: set[str] = set()
+    decided_ids: set[str] = set()
     for offset in range(len(DISCOVERY_QUERIES)):
         query = DISCOVERY_QUERIES[(start + offset) % len(DISCOVERY_QUERIES)]
         last = status.run_discovery(query=query, limit=MAX_OPPORTUNITIES, timeout=timeout)
         if last.get("ok") is True:
             opportunities = last.get("opportunities")
             if isinstance(opportunities, Sequence) and not isinstance(opportunities, (str, bytes, bytearray)):
+                observed_ids.update(str(row.get("external_id")) for row in opportunities if isinstance(row, Mapping) and row.get("external_id"))
                 try: remaining, _ = _filter_claimed_rows(opportunities, state_path)
                 except Exception: return last
+                remaining_ids = {str(row.get("external_id")) for row in remaining if isinstance(row, Mapping)}
+                decided_ids.update(str(row.get("external_id")) for row in opportunities if isinstance(row, Mapping) and str(row.get("external_id")) not in remaining_ids)
                 if not remaining: continue
-            return last
+                return dict(last) | {"observed_count": len(observed_ids), "already_decided_count": len(decided_ids)}
+            return dict(last) | {"observed_count": len(observed_ids), "already_decided_count": len(decided_ids)}
         if last.get("error") != "no_normalized_opportunities":
             return last
-    return last
+    return {"ok": True, "platform": PLATFORM, "source": "public_html", "opportunities": [], "observed_count": len(observed_ids), "already_decided_count": len(decided_ids)}
 
 def _seller_proof() -> dict[str, object]:
     product = json.loads(PRODUCT_PATH.read_text(encoding="utf-8")); portfolio = product["portfolio"]; software_portfolio = product["software_portfolio"]; software = PUBLIC_SOFTWARE_PROOF
@@ -631,12 +638,14 @@ def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH,
                     elif error is not None and error != "no_normalized_opportunities":
                         result = ApplicationLoopResult(False, error=error if isinstance(error, str) and re.fullmatch(r"[A-Za-z0-9._:-]{1,256}", error) else "discovery_failed")
                     elif isinstance(opportunities, (str, bytes, bytearray)) or not isinstance(opportunities, Sequence): result = ApplicationLoopResult(False, error="discovery_failed")
-                    elif not opportunities: result = ApplicationLoopResult(True, reason="no_eligible_project")
+                    elif not opportunities: result = ApplicationLoopResult(True, reason="no_eligible_project", observed_count=int(observed.get("observed_count") or 0), already_decided_count=int(observed.get("already_decided_count") or 0))
                     else:
                         try: today = _tick_date(tick_value)
                         except Exception: result = ApplicationLoopResult(False, error="planner_contract_invalid")
-                        else: result = _plan_and_submit(opportunities, today, turn_evidence, planner, safety_verifier, submitter, Path(state_path))
-                observed_total += result.observed_count or 0
+                        else:
+                            result = _plan_and_submit(opportunities, today, turn_evidence, planner, safety_verifier, submitter, Path(state_path))
+                            result = replace(result, observed_count=max(result.observed_count or 0, int(observed.get("observed_count") or 0)), already_decided_count=int(observed.get("already_decided_count") or 0))
+                observed_total = max(observed_total, result.observed_count or 0) if source is None and query is None else observed_total + (result.observed_count or 0)
                 decision_reports.extend(result.decision_reports or ())
                 result = replace(result, observed_count=observed_total, decision_reports=tuple(decision_reports) or None)
                 if result.reason != "no_eligible_project":
