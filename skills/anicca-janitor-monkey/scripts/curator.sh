@@ -23,6 +23,8 @@ tar -czf "$BACKUP/$TS/skills.tar.gz" -C "$HOME/.openclaw" \
   --exclude="skills/.backups" --exclude="skills/.archive" \
   --exclude="*/state" --exclude="*/venv*" --exclude="*/node_modules" \
   --exclude="*/media" --exclude="*.mp4" --exclude="*/images" \
+  --exclude="*/output" --exclude="*/outputs" --exclude="*/runs" \
+  --exclude="*/workspace" --exclude="*/.backups" \
   --exclude="skills/anicca-earn-bounty/work" \
   skills 2>/dev/null
 
