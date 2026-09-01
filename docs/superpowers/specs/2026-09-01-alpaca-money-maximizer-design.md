@@ -382,6 +382,17 @@ legs closeable and do not authorize a second campaign before A11 reconciles this
 <https://docs.alpaca.markets/us/docs/spacex-trading-availability-and-faqs>,
 <https://docs.alpaca.markets/us/docs/crypto-trading>, and <https://docs.alpaca.markets/us/docs/245-trading>.
 
+There is no supported parameter that makes the two open option legs executable after hours. Alpaca's options
+validation requires `extended_hours=false` or omission; `day`/`gtc` describe lifetime, not an extended-hours
+execution venue. The current resolution is therefore one regular-session, two-leg `SELL_TO_CLOSE` /
+`BUY_TO_CLOSE` limit order through the existing sealed CLI effect, followed by official fills, zero positions,
+realised paper P&L, and replay-zero readback. The permanent non-blocking design after this frozen campaign closes
+is an asset-class-aware opportunity router inside the **same** Eliza task/effect kernel/CLI authority: crypto may
+run 24/7, eligible NMS equities/ETFs may run 24/5, and options entries/exits run only in their regular session.
+An option-session hold must never pause observations for another asset class, but it also must never create an
+unreconciled second campaign while A11 is active. Order validation source:
+<https://docs.alpaca.markets/us/docs/options-trading>.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
