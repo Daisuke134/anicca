@@ -5035,10 +5035,43 @@ queue is added. Each owner must also progress independent work concurrently insi
   is durably claimed before model work, bounded workers progress different resource IDs in parallel,
   a slow item does not block discovery or another item, and full reconciliation yields to urgent
   claimed work without being skipped permanently.
+  - [x] `PAR-3a Reply` already runs one durable SQLite producer, two consumers and idle reconciliation.
+  - [x] `PAR-3b Paid` already admits up to eight durable project resources to bounded workers.
+  - [x] `PAR-3c Apply` persists per-request planner claims, runs two planner and two effect workers,
+    and checkpoints full reconciliation after one coverage turn so the next wake returns to fresh
+    discovery. Release `462cc737` recorded a natural terminal pass in about 2m35s, down from the
+    measured three-turn wake of about six minutes, without weakening the request effect fence.
+  - [x] `PAR-3d Storefront` run independent listing work through bounded workers while retaining
+    listing-specific mutation intents and official readback. PR `#3833` is merged and production
+    release `ba5a809134372206d3df893d945566c0a99ebfd2` durably claims each due listing before
+    browser work, scans at most two listings in owner-bound tabs, closes each tab in `finally`, and
+    serializes ledger writes on the parent. Remaining acceptance is a natural Storefront wake with
+    completed per-listing claim readback; the first deployed wake ended on the pre-existing category
+    option failure before that proof completed. Release `2a8b72a2` then recorded four completed,
+    readable listing claims in one natural wake: `4313100` and `4330105` started about 27 ms apart
+    and overlapped for about 12 seconds, followed by overlapping `4355225` and `4357844`. This proves
+    the configured two-worker bound and independent listing progress.
+  - [ ] `PAR-3e` **ACTIVE:** deploy all four owners together and record concurrent natural readback.
+    Release `2a8b72a2` was loaded by all four owners and produced simultaneous independent PIDs
+    (`Reply=13021`, `Apply=13060`, `Paid=13117`, `Storefront=13160`); Reply recorded a same-release
+    PASS. The remaining three were stopped through `lm-loop` before terminal because free disk fell
+    from about 3.1 GiB to 257 MiB during the concurrent run. Do not treat that safety stop as a
+    concurrency failure or as completion. Recover enough durable headroom, restore all three
+    scheduled owners, and record their natural terminals from one concurrent generation.
 - [ ] `PAR-4` Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
   browser-context failure or release change records one exact next transition and retry time; the
   next natural wake resumes it while unrelated work continues. A buyer-authored revision creates a
   new version of the same work item instead of overwriting or duplicating the prior effect.
+  - [ ] After each project has one authoritative terminal/payment receipt, bound its generated
+    `work/`, `artifacts/` and superseded `delivery/` versions to the latest accepted artifact plus
+    one rollback generation. Permanently retain buyer source attachments, the exact sent artifact,
+    marketplace readback and payment/effect receipts. Current `evidence_gc` intentionally refuses
+    `projects/` and protects ZIP/PDF/mcaddon archives, so it cannot close this atom: live census found
+    old `athena-v4-final.mp4`, `v4.zip`, `v4.mcaddon`, `package-v4` and projects up to about 1.30 GiB.
+    Live size attribution is about 6.6 GiB under `~/gig/projects`, versus about 303 MiB Apply state,
+    55 MiB shared evidence and 36 MiB Storefront state. Exact-byte duplicate discovery may identify
+    safe candidates, but no project artifact is deleted until the terminal/payment receipt proves
+    which sent artifact and rollback generation remain authoritative.
 - [ ] `PAR-5` Prove fastest truthful submission and replay-zero from one immutable public-main
   release. PASS = Apply submits every currently eligible posting, Reply handles every fresh buyer
   event, Storefront executes every authorized mutation and Paid progresses every purchased order;

@@ -31,8 +31,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    - 現行agent-runner evidenceは256 MiB上限を持ち、新Life Manager rootは約73 MiB。旧OpenClaw evidence、
      旧lm-video、media outbound、ReelClaw runは現在のproducer rootではなく手動監査対象とする。
      `~/.openclaw/workspace/runs`はpublication receipt未接続のdeliverableなので自動削除しない。
-   - **現在activeな次atom:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、
-     不要daemonだけをowner経由でdrainし、VM使用量がmacOSにより縮小することをread backする。
+   - **memory/swap producer censusは完了:** 重複CloakBrowser renderer、終了済みworker、不要daemonだけを
+     owner経由でdrainし、VM使用量がmacOSにより縮小することをread backした。
      初回readbackはswap 10,240 MiB中9,105 MiB使用、compressor occupied約4.0 GiB相当。上位RSSはactive
      Codex app-server 565 MiB、Eliza source agent 384 MiB、OpenClaw gateway 336 MiB。browserはprofile別に
      daily-driver 1,809.5 MiB/24 process/1 root、gig-daily-driver 578.0 MiB/6/1、x-repost 486.4 MiB/8/1、
@@ -191,6 +191,15 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    owner別bounded artifact回収でData headroomを先に戻し、memory pressure低下後のswap縮小を再readbackする。
    次の直接容量ownerは`~/loops/releases`約12.9 GiBだが、current/loaded/open/pinned判定前には削除しない。
 
+   Gig Paidのowner-side finalizerはPR #3815、#3819、#3822でmainへ統合し、control plane release
+   `1412fabcec902941b38aab7d611a97d457003700`へ適用した。案件ownerと親`gig-paid-direct`をrun前後に
+   既存ownership helperで回収し、収益loopやbrowser processは停止しない。自然wake終了後の共通台帳は
+   paid owner 0。旧global台帳からownerが確定したlive target 8件をcloseし、stale target ID 1,054件をprune、
+   error 0。Gig browserはpage `23 → 15`、RSS約`2.57 GiB → 1.31 GiB`、Data空きは`3,819,604 KiB`
+   （約3.64 GiB）、swap使用は`19,647.75 MiB → 18,886.62 MiB`となった。11 GiB floorとswap縮小は未達なので
+   memory/swap atomは未完了のまま維持する。`~/.claude/**`と`~/.codex-acct2/**`はlog/archiveを含め全面的な
+   削除・移動・truncate・圧縮禁止とし、owner-side cleanup候補にも登録しない。
+
    **worktree/release/backup追補:** 3 primary repoのworktreeをdirty、locked、upstream、main包含、open FDで
    再分類した。Alpacaは明示保護、CrowdWorksはopen 9、GH-11はopen 7、Lancers/Coconala/WebMCP/Capafyは
    locked・unmerged等で保持した。clean・mainへmerged・unlocked・open 0の
@@ -220,6 +229,12 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    protected deletion 0。release directoryは11件残り、旧releaseを実行中のloopとunloaded labelが残るためatomは
    未完了である。自然idle後にreconcile→GCを繰り返し、current＋bounded rollback以外の参照が0になった時点で閉じる。
 
+   release収束は全provider共通のglobal apply lockで直列化しない。`activate-current`だけがglobal symlink lockを
+   保持し、`lm-loop apply/reconcile`はlaunchd label単位のlockを保持する。同一labelへの変更だけを排他し、
+   別label・別providerは常に並列で進める。各labelのapply直前に最新`~/loops/current`をresolveし、そのimmutable
+   releaseを当該applyの完了までpinする。途中で別releaseがcurrentになっても進行中applyを失敗させず、running
+   loopは既存どおり停止せずskipする。production同時reconcileのreadback完了後に本項を完了へ更新する。
+
    追加のread-only owner照合後、未使用`/Applications/Chat On Steroids.app`を391,668 KiB、旧Codex package
    `0.151.0`と未使用plugin app-serverを合計570,048 KiB、重複pipx環境`camoufox`と`crawl4ai`を合計
    1,006,880 KiB回収した。active Codex/ChatGPT sessionと`~/.venvs/crawl4ai`の`crwl`は回収後も生存し、
@@ -229,8 +244,23 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    最新Data volume readbackは228 GiB中180 GiB使用、available `9,914,404 KiB`（約9.5 GiB）であり、
    11 GiB floorは未達。手動回収を完了条件にせず、残るwriter ownerのbounded retentionへ進む。
 
-   **残TODO（順序固定）:** ①memory/swap owner-side drainとswap縮小readback、②残るrunning旧releaseの自然idle
-   reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
+   **CDP owner registry追補:** 実CDPとの照合でdaily registryは1,690件中live 1・stale 1,689、gig
+   registryは237件中live 0・stale 237だった。実page 26/15を閉じる対象にはせず、共通`cdp_tab_gc`へ
+   CDPに存在しないIDだけを全owner横断でpruneする処理を接続する。registryのatomic writeが失敗した場合も
+   writer自身のPID tempを`finally`で回収する。PR #3835をmainへ統合し、immutable release `f605732a`を
+   `current`へ切り替えた。一回収束でdaily 164,405→120 bytes・stale 1,689、gig 22,667→120 bytes・
+   stale 238をpruneし、live targetを各1件保持した。旧PID temp 88件1,398,291 bytes＋後発0-byte 1件は
+   open FD 0を確認して回収した。新releaseのproduction CDP passを2連続で実行し、両registryとも
+   `stale_pruned=0/closed=0`、daily/gig page 26/16保持、registry 1/0件、旧temp 0、errors 0だった。
+   swapは20,755.19→19,553.56 MiBまで縮小した。その後19,761.75 MiBへ変動した時点の新規ownerは
+   Alpacaの`bun install`/Eliza sourceとCoconalaの500/425 MiB rendererで、別ownerの進行中作業として保持した。
+   affiliate 3 profileは各page 1、browser root重複0で、認証sessionを保持する`KeepAlive=1`のため停止しない。
+   registry 1/1件、旧temp 0を再確認し、cleanup漏れによる再増加ではないことを切り分けた。terminal pass 2回、
+   errors 0、closed 0、protected deletion 0、active/open/loaded producer保持をもってmemory/swap atomを完了する。
+   11 GiB floorと長期観測は固定順序⑨で閉じる。
+
+   **残TODO（順序固定）:** ①[x] memory/swap owner-side drainとswap縮小readback、② **現在active:**
+   残るrunning旧releaseの自然idle reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
    ⑤Hermes正式retire、⑥Gig terminal project、⑦Codex/Claude終了済みlog/archive rotation、
    ⑧`/private/var/folders`・Library cache・未使用toolchain、⑨free 11 GiB以上＋24時間観測＋7日観測。
    これらを閉じた後に現在順序正本どおりLancers revenue loop、WebMCP hackathonへ進む。

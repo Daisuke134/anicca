@@ -1080,6 +1080,20 @@ def test_paid_reclaims_only_the_current_talkroom_tabs(tmp_path, monkeypatch):
     ]
 
 
+def test_paid_reclaims_parent_owner_without_touching_siblings(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    calls = []
+    monkeypatch.setattr(paid.subprocess, "run", lambda argv, **_kwargs: calls.append(argv))
+
+    paid._reclaim_browser_owner(
+        SimpleNamespace(cdp_helper=tmp_path / "cdp_default_tab.py", cdp_lock_dir=tmp_path),
+        "gig-paid-direct",
+    )
+
+    assert calls == [[sys.executable, str(tmp_path / "cdp_default_tab.py"),
+                      "close-owned", "--owner", "gig-paid-direct"]]
+
+
 def test_effect_process_diagnostic_is_bounded():
     paid = load("paid_direct")
     process = SimpleNamespace(returncode=75, stdout="x" * 2500, stderr="deferred_cdp_busy")

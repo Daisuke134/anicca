@@ -15,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import quote, urlsplit
 
@@ -2440,25 +2441,25 @@ def _scan_public_copy(
     due = [value for value in service_ids
            if value in changed_since_scan or value in never_read] + rotation[:4]
     due_ids = [value for value in service_ids if value in set(due)]
-    # One tab for the whole scan. Opening a tab per listing left tabs behind whenever a wake
-    # failed part way, and the browser answered later connections with HTTP 500 four times.
-    scan_tab = None
-    if due_ids:
-        opened = subprocess.run(
-            [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-             "--background", "open", "about:blank"],
-            capture_output=True, text=True, check=False, timeout=30,
-        )
-        try:
-            candidate = json.loads(opened.stdout)
-            if opened.returncode == 0 and candidate.get("ok") is True:
-                scan_tab = candidate
-        except (ValueError, KeyError):
-            scan_tab = None
-    for service_id in due_ids:
+    claims = state_dir / "compliance-claims"
+
+    def scan_one(service_id: str) -> tuple[dict, int, int]:
+        worker_started_at_ns = time.time_ns()
         url = f"https://coconala.com/mypage/services/{service_id}"
+        scan_tab = None
         observed: dict = {}
         try:
+            opened = subprocess.run(
+                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                 "--background", "open", "about:blank"],
+                capture_output=True, text=True, check=False, timeout=30,
+            )
+            try:
+                candidate = json.loads(opened.stdout)
+                if opened.returncode == 0 and candidate.get("ok") is True:
+                    scan_tab = candidate
+            except (ValueError, KeyError):
+                scan_tab = None
             if scan_tab is not None:
                 observed = asyncio.run(listing_inventory._eval_json(
                     str(scan_tab["ws"]), url,
@@ -2472,8 +2473,18 @@ def _scan_public_copy(
                     "return own.map(n=>{const e=f.querySelector('[name=\"'+n+'\"]');"
                     "return e?e.value||'':''}).join('\\n')})()})",
                 ))
-        except (KeyError, ValueError, OSError, RuntimeError):
+        except (KeyError, ValueError, OSError, RuntimeError, subprocess.TimeoutExpired):
             observed = {}
+        finally:
+            if isinstance(scan_tab, dict) and scan_tab.get("target_id"):
+                try:
+                    subprocess.run(
+                        [sys.executable, str(default_tab_script), "--owner",
+                         "gig-storefront-direct", "close", str(scan_tab["target_id"])],
+                        capture_output=True, text=True, check=False, timeout=30,
+                    )
+                except subprocess.TimeoutExpired:
+                    pass
         body = str(observed.get("body") or "")
         # The seller page reloads itself with a cache-busting query, so the path is what identifies
         # it. An empty read is not evidence of clean copy, only of a form that was not there.
@@ -2495,19 +2506,26 @@ def _scan_public_copy(
                 f":{observed.get('title') or ''}".encode()
             ).hexdigest(),
         }
+        return row, worker_started_at_ns, time.time_ns()
+
+    for service_id in due_ids:
+        _atomic_write(claims / f"{service_id}.json", {
+            "version": 1, "resource_key": f"listing:{service_id}", "status": "claimed",
+            "claimed_at_epoch": now,
+        })
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(scan_one, due_ids))
+    for row, worker_started_at_ns, worker_completed_at_ns in results:
         _append_key_once(ledger, "scan_key", row)
         scanned.append(row)
-        if terms:
+        _atomic_write(claims / f"{row['service_id']}.json", {
+            "version": 1, "resource_key": f"listing:{row['service_id']}",
+            "status": "completed", "scan_status": row["status"], "completed_at_epoch": now,
+            "claimed_at_epoch": now, "worker_started_at_ns": worker_started_at_ns,
+            "worker_completed_at_ns": worker_completed_at_ns,
+        })
+        if row["prohibited_terms"]:
             findings.append(row)
-    if isinstance(scan_tab, dict) and scan_tab.get("target_id"):
-        try:
-            subprocess.run(
-                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-                 "close", str(scan_tab["target_id"])], capture_output=True, text=True,
-                check=False, timeout=30,
-            )
-        except subprocess.TimeoutExpired:
-            pass
     # A listing not read this wake still has its last reading, and the catalogue view has to be
     # the whole catalogue or a duplicate pair disappears whenever one half is not due.
     read_now = {str(row["service_id"]) for row in scanned}
