@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -25,17 +26,24 @@ DEFAULT_LEDGER = (
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     rows = []
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return rows
-    for line in lines:
+    archives = sorted(path.parent.glob(f"{path.stem}-*{path.suffix}.gz"))
+    for source in [*archives, path]:
         try:
-            value = json.loads(line)
-        except json.JSONDecodeError:
+            handle = (
+                gzip.open(source, "rt", encoding="utf-8")
+                if source.suffix == ".gz"
+                else source.open(encoding="utf-8")
+            )
+            with handle:
+                for line in handle:
+                    try:
+                        value = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if isinstance(value, dict):
+                        rows.append(value)
+        except OSError:
             continue
-        if isinstance(value, dict):
-            rows.append(value)
     return rows
 
 

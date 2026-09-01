@@ -49,8 +49,8 @@ def _next_archive(path: Path) -> Path:
     return candidate
 
 
-def _rotate_locked(fd: int, path: Path) -> None:
-    if os.fstat(fd).st_size <= _max_bytes():
+def rotate_jsonl_locked(fd: int, path: Path, max_bytes: int | None = None) -> None:
+    if os.fstat(fd).st_size <= (max_bytes or _max_bytes()):
         return
     archive = _next_archive(path)
     temporary = archive.with_name(f".{archive.name}.tmp.{os.getpid()}")
@@ -193,7 +193,7 @@ def append_runtime_event(path: Path, event: dict) -> None:
     try:
         os.fchmod(fd, 0o600)
         fcntl.flock(fd, fcntl.LOCK_EX)
-        _rotate_locked(fd, path)
+        rotate_jsonl_locked(fd, path)
         os.lseek(fd, 0, os.SEEK_SET)
         with os.fdopen(os.dup(fd), "r", encoding="utf-8", errors="replace") as reader:
             for line in reader:
