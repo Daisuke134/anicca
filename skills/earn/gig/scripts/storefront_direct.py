@@ -5189,7 +5189,13 @@ async def _execute_text_effect_async(
             "seller_form_before_path": str(before_path), "prepared_at_epoch": int(time.time()),
             "effect_origin_pass_id": evidence_dir.name, "judgement": judgement,
         })
-        rect = filled["rect"]
+        await asyncio.sleep(0.5)
+        rect = json.loads(str(await evaluate(
+            "JSON.stringify((()=>{const e=document.forms[0]?.querySelector("
+            "'button.submitButton.js_button-edit[type=submit]');"
+            "if(!e)return {};const r=e.getBoundingClientRect();"
+            "return {x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height}})())"
+        ) or "{}"))
         if min(float(rect.get("w") or 0), float(rect.get("h") or 0)) <= 0:
             raise RuntimeError("seller_text_submit_not_visible")
         for event_type in ("mousePressed", "mouseReleased"):
