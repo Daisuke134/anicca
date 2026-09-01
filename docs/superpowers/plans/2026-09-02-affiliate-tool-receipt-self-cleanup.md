@@ -4,7 +4,7 @@
 
 **Goal:** Make the Affiliate loop bound its own `tool-attempt-receipts.jsonl` growth without deleting confirmed or uncertain external-effect evidence.
 
-**Architecture:** The Affiliate owner rotates only old `NO_EFFECT` operational rows when its ledger exceeds 32 MiB. It keeps protected effect rows and the newest 8 MiB of `NO_EFFECT` rows in the active ledger, writes older disposable rows to bounded gzip archives, and performs rotate→reopen→dedupe→append while holding one stable sibling lock file.
+**Architecture:** The Affiliate owner rotates only old `NO_EFFECT` and `READ_ONLY_CONFIRMED` operational rows when its ledger exceeds 32 MiB. It keeps protected effect rows and the newest 8 MiB of operational rows in the active ledger, writes older disposable rows to bounded gzip archives, and performs rotate→reopen→dedupe→append while holding one stable sibling lock file.
 
 **Tech Stack:** Python 3 standard library (`fcntl`, `gzip`, `json`, `os`, `tempfile`), `unittest`.
 
@@ -12,7 +12,7 @@
 
 - Do not change the Atomic TODO Register order.
 - Do not add another launchd job or cleanup framework.
-- Preserve `EFFECT_CONFIRMED`, `UNKNOWN`, malformed rows, credentials, sessions, buyer artifacts, ledgers outside this exact owner, and every open/leased path.
+- Preserve `EFFECT_CONFIRMED`, `UNKNOWN`, malformed rows, credentials, sessions, buyer artifacts, ledgers outside this exact owner, and every open/leased path. Only `NO_EFFECT` and `READ_ONLY_CONFIRMED` rows are operationally disposable.
 - Rotation failure must preserve the existing ledger and fail the append; it must never silently discard a receipt.
 - Production target: at most two files and 100 production LOC.
 
@@ -54,7 +54,7 @@ self.assertEqual(result["protected_rows"], 3)
 Run:
 
 ```bash
-python3 -m unittest skills.affiliate.tests.test_local_loop.AffiliateLoopTests.test_tool_attempt_rotation_preserves_external_effect_evidence
+python3 -m unittest skills.affiliate.tests.test_local_loop.LocalLoopTest.test_tool_attempt_rotation_preserves_external_effect_evidence
 ```
 
 Expected: `ERROR` because `rotate_tool_attempt_receipts` does not exist.
@@ -69,7 +69,7 @@ def rotate_tool_attempt_receipts(path, *, max_bytes=32 * 1024 * 1024,
                                  keep_archives=4):
     # Return zero counters below max_bytes.
     # Under the caller's stable sibling-file lock, classify only valid rows whose
-    # effect_certainty == "NO_EFFECT" as disposable.
+    # effect_certainty in {"NO_EFFECT", "READ_ONLY_CONFIRMED"} as disposable.
     # Preserve confirmed/unknown/malformed rows in the active file.
     # Preserve the newest recent_no_effect_bytes of disposable rows.
     # gzip older disposable rows to a 0600 temporary, fsync, then os.replace.
@@ -88,9 +88,9 @@ Add focused assertions that an immediate second rotation archives zero rows, and
 Run:
 
 ```bash
-python3 -m unittest skills.affiliate.tests.test_local_loop.AffiliateLoopTests.test_tool_attempt_rotation_preserves_external_effect_evidence
-python3 -m unittest skills.affiliate.tests.test_local_loop.AffiliateLoopTests.test_tool_attempt_rotation_replay_is_noop
-python3 -m unittest skills.affiliate.tests.test_local_loop.AffiliateLoopTests.test_tool_attempt_rotation_failure_preserves_ledger
+python3 -m unittest skills.affiliate.tests.test_local_loop.LocalLoopTest.test_tool_attempt_rotation_preserves_external_effect_evidence
+python3 -m unittest skills.affiliate.tests.test_local_loop.LocalLoopTest.test_tool_attempt_rotation_replay_is_noop
+python3 -m unittest skills.affiliate.tests.test_local_loop.LocalLoopTest.test_tool_attempt_rotation_failure_preserves_ledger
 python3 -m unittest skills.affiliate.tests.test_local_loop
 git diff --check
 ```
