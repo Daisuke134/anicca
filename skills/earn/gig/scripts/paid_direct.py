@@ -17,6 +17,7 @@ import paid_remote_result  # noqa: E402
 import reconcile_paid_delivery  # noqa: E402
 import step_result_status  # noqa: E402
 import project_ledger  # noqa: E402
+import project_janitor  # noqa: E402
 from private_data_boundary import redact_prompt_text, restricted_attachment_paths  # noqa: E402
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from telegram_report import OpenClawTelegramTransport  # noqa: E402
@@ -5266,6 +5267,10 @@ def run_once(args, output: Path) -> int:
     with _lock(args.lock_file) as acquired:
         if not acquired:
             _write(output, {"status": "busy", "observed": 0, "actionable": 0, "effect": 0, "readback": 0, "failed": 0, "pending": 0, "oldest": None, "items": []}); return 0
+        janitor = project_janitor.scan(
+            args.projects_root, args.projects_root.parent / "janitor.jsonl", dry_run=False,
+        )
+        _write(args.evidence_dir / "project-janitor.json", janitor)
         try:
             observed_items = observe_orders(args, args.evidence_dir / "orders")
             items, duplicate_dropped = _unique_orders(observed_items)
@@ -5412,6 +5417,7 @@ def run_once(args, output: Path) -> int:
                   "effect": effect, "readback": readback, "failed": failed,
                   "pending": pending,
                   "oldest": min(dates, default=None),
+                  "project_janitor": janitor,
                   "items": [rows[_text(item["talkroom_id"])] for item in items]}
         if failed_step: result["failed_step"] = failed_step
         _write(output, result); return int(bool(failed))
