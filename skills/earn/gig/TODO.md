@@ -4830,6 +4830,38 @@ reclaimed only after open-file checks; current free space is about 8.1 GiB and
 `disk-pressure.block` is absent. Codex session databases and `.cloak` stay
 protected and are not cleanup candidates.
 
+### Current owner scope and fixed execution order
+
+This is the authoritative current cursor and supersedes historical incident/recovery ordering below.
+The cleanup owner is handled by another session; its historical checklist remains evidence but is
+not part of this owner's execution queue. Do not advance a disk-cleanup item from this cursor.
+
+**Active atom: `PAR-1`.** Keep the following order unchanged:
+
+1. [ ] `PAR-1` — distinct authenticated BrowserContexts and lease identities for Apply, Reply,
+   Storefront and Paid; no sibling-caused `browser_lease_busy`.
+2. [ ] `PAR-2` — one deterministic effect fence per application, talkroom, listing or order.
+3. [ ] `PAR-3` — durable bounded producer-consumer concurrency inside all four owners.
+4. [ ] `PAR-4` — resumable nonterminal work items; one slow/failing item never blocks another.
+5. [ ] `PAR-5` — concurrent truthful effects, official readback and replay-zero from one immutable
+   public-main release.
+6. [ ] Paid — finish every current buyer-level outcome and obtain aggregate `failed=0`; keep formal
+   delivery off until the buyer explicitly approves the reviewed work.
+7. [ ] Negotiate/Reply — continuously consume buyer feedback, resubmit revised drafts until accepted,
+   cover every fresh buyer event and prove replay-zero.
+8. [ ] Storefront — execute every authorized listing mutation with official attribution and
+   replay-zero.
+9. [ ] Apply — account for every eligible posting, submit each authorized application exactly once,
+   and prove official readback and replay-zero.
+10. [ ] Four-lane gate — concurrent natural wakes, independent failure, reboot recovery and two
+    consecutive natural starts from the same immutable public-main release.
+11. [ ] CrowdWorks `S14` — after the Coconala gate, run one real Apply canary in an independent owner:
+    authenticate, choose one suitable open job, submit once, read back the official effect and prove
+    replay-zero.
+
+The detailed `PAR-1` through `PAR-5` acceptance criteria and buyer-level Paid queue remain below.
+Historical unchecked cleanup or recovery entries do not reorder this list.
+
 ### Host disk and Account 2 runtime verification
 
 - [x] Identify the recurring host producer instead of treating low space as an operator cleanup

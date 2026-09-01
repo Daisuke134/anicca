@@ -1118,6 +1118,48 @@ economics, then returns a schema-bound decision with cited evidence. Missing exa
 tool recipe or a Skill never forces skip; the proposal states only verified facts and a concrete plan.
 Skip remains limited to the shared Coconala feasibility/prohibition policy.
 
+### 6.2A Current Coconala parallel-lane completion contract
+
+This is the current implementation cursor and supersedes historical recovery ordering elsewhere in
+this document. Host cleanup has a separate owner and is outside this cursor. Coconala keeps four
+independent launchd owners: Apply, Negotiate/Reply, Storefront and Paid. Each owner has its own
+authenticated BrowserContext and lease identity. There is no global browser queue, fifth scheduler
+or sibling-lane wait.
+
+Outer parallelism means all four owners remain continuously scheduled and one failed, slow or
+restarted owner cannot pause another. Inner parallelism means each owner durably claims independent
+applications, talkrooms, listings or orders and advances them with bounded workers. Only two effects
+against the same exact marketplace resource are serialized by its deterministic effect fence. An
+uncertain effect is reconciled from official state before retry; it never becomes a reason to stop
+unrelated work.
+
+The non-skippable completion order is:
+
+1. `PAR-1`: give all four owners distinct authenticated BrowserContexts and lease identities.
+2. `PAR-2`: enforce one deterministic effect fence per application, talkroom, listing or order.
+3. `PAR-3`: add durable producer-consumer concurrency inside every owner.
+4. `PAR-4`: make every nonterminal work item resumable without blocking unrelated work.
+5. `PAR-5`: prove fastest truthful effects, official readback and replay-zero from one immutable
+   public-main release.
+6. Close Paid's current buyer queue with aggregate `failed=0`; formal delivery remains gated by the
+   buyer's explicit approval.
+7. Prove Negotiate/Reply covers every fresh buyer event, incorporates feedback, resubmits drafts as
+   needed and reaches replay-zero without creating duplicate messages.
+8. Prove Storefront executes every authorized listing mutation with official attribution and
+   replay-zero.
+9. Prove Apply accounts for every eligible posting, submits each authorized application once and
+   reaches official readback and replay-zero.
+10. Pass the four-lane release gate: concurrent natural wakes, independent failure, reboot recovery
+    and two consecutive natural starts from one immutable public-main release.
+11. Run the CrowdWorks `S14` real canary with the same Apply contract in its own owner: authenticate,
+    select one suitable open job, submit once, read back the official effect and prove replay-zero.
+
+Completion is not process liveness. All four Coconala lanes must produce their contracted official
+effects/readbacks concurrently, a sibling must never cause `browser_lease_busy`, and stopping one
+owner must leave the other three contexts and schedules intact. Concurrency remains bounded by
+measured host and account capacity; “parallel” does not authorize duplicate effects or unsafe
+unbounded fan-out.
+
 ### 6.3 Upwork money-printer Skill system
 
 The Upwork product is not a proposal helper. The existing launchd-owned Upwork loop owns the complete
