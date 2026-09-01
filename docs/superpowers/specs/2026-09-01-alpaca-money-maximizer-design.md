@@ -374,6 +374,14 @@ positions, zero open orders, cash `$99,970.95`, equity `$99,997.95`, and unreali
 subsequent natural replay preserved the durable task and added zero broker orders. The market clock remained
 closed with the next regular session at `2026-09-02T09:30:00-04:00`; no after-hours exit was attempted.
 
+Here `HOLD_CLOSED_SESSION` is narrowly an **options-exit** hold, not an Alpaca-wide market outage. The open
+campaign owns US-listed SPY option legs, and Alpaca says options orders may only be placed during regular market
+hours. Alpaca separately documents crypto trading 24 hours every day and 24/5 overnight trading for NMS
+securities. Those asset classes can support later Financial strategies, but they do not make the current option
+legs closeable and do not authorize a second campaign before A11 reconciles this frozen one. Sources:
+<https://docs.alpaca.markets/us/docs/spacex-trading-availability-and-faqs>,
+<https://docs.alpaca.markets/us/docs/crypto-trading>, and <https://docs.alpaca.markets/us/docs/245-trading>.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
