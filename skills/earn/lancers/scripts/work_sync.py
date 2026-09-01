@@ -569,10 +569,6 @@ def main(argv: Optional[Sequence[str]] = None, *, output_stream: Any = None, bro
     output = output_stream or sys.stdout
     output.write(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n")
     output.flush()
-    if not args.worker and browser_factory is None and worker_command is None:
-        reporter = _load("_anicca_lancers_work_sync_reporter", HERE / "telegram_report.py")
-        delivery = reporter.notify_work_sync_wake(result)
-        if delivery.delivery_uncertain or delivery.pre_send_failed: return 1
     return 0 if result["ok"] else 1
 
 

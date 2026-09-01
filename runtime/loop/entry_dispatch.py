@@ -97,6 +97,14 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             python, str(lancers / "work_sync.py"), "--json",
             "--state-path", str(lancers_state / "work-sync.json"),
         ],
+        "lancers-revenue-negotiate": [
+            python, str(lancers / "lane_report.py"), "--lane", "negotiate",
+            "--state-path", str(lancers_state / "contracts.json"),
+        ],
+        "lancers-revenue-paid": [
+            python, str(lancers / "lane_report.py"), "--lane", "paid",
+            "--state-path", str(lancers_state / "contracts.json"),
+        ],
         "lancers-revenue-storefront": [
             python, str(lancers / "storefront_offer.py"), "--apply",
             "--product", str(lancers.parent / "products/monthly-sns-content-ops-v1.json"),
