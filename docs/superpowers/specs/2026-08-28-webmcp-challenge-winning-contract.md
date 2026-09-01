@@ -475,7 +475,7 @@ Agentはhuman-only actionを代行しない。代わりに、一つの`Needs You
 |---|---|---|---|
 | Lancers | 日本向け短期gig/application sourceで、公開searchに多数の新着task/projectあり | profile/private answers、proposal authority、provider-required本人操作 | existing official application receiptとreplay-zeroをread-only proofにする。acceptance/cashは主張しない |
 | Mercor | canonical owner live trace。高単価AI project/job source | Assessment、camera/microphone AI interview、本人の経験回答、本人制作、最終提出・再提出 | current public listing→fit判断→Eliza Life Manager workroom→human-only `Needs You`→same-job resume。2〜4週間の選考結果は必須にしない |
-| Open Web / arbitrary URL | X、Web、GitHub、mail、search、User入力、任意marketplace URLからopportunityを受けるgeneral lane | claim、public delivery authority、payout setup、provider-specific ceremony | ModelがURL、requirements、environment feedbackから次のtoolsを選ぶ。mechanical effectに必要な時だけthin adapterを追加する |
+| Open Web | X、Web、GitHub、mail、searchからAgentがopportunityを発見するgeneral source | claim、public delivery authority、payout setup、provider-specific ceremony | Modelがsource URL、requirements、environment feedbackから次のtoolsを選ぶ。UserへURL入力を要求せず、mechanical effectに必要な時だけthin adapterを追加する |
 
 #### 8.3A-1 Runtime placement decision — Eliza Cloud product、isolated tenant agent、isolated browser identity
 
@@ -495,7 +495,6 @@ flowchart LR
   BJ <--> ST[Railway-private Steel + Stagehand]
   ST <--> MER[Mercor / Lancers / open Web]
   U -. Needs You answer / artifact .-> MP
-  MP -. scoped proxy .-> ST
 ```
 
 Hard decisions:
@@ -546,23 +545,23 @@ Primary sources:
 ┌──────────────────── Life Manager / Money Printer ────────────────────┐
 │ Paid & verified │ Agents working │ Needs You │ Opportunity value     │
 ├─────────────────┴────────────────┴───────────┴───────────────────────┤
-│ Found │ Working │ Needs You │ Waiting │ Done │ Paid                  │
-├───────┴─────────┴───────────┴─────────┴──────┴───────────────────────┤
-│ Lancers project  live reward  Needs You: approve proposal           │
-│ Public bounty URL live reward Working                                │
-│ Mercor role       $85/hr       Needs You: take interview             │
-├───────────────────────────────────────┬──────────────────────────────┤
-│ Selected workroom                    │ Live activity                 │
-│ goal / plan / artifact / next action │ agent + WebMCP calls + proof │
-│ one exact human action when required │ official receipt / duplicate │
-└───────────────────────────────────────┴──────────────────────────────┘
+│ Found       │ Working     │ Needs You   │ Waiting     │ Done │ Paid │
+├─────────────┼─────────────┼─────────────┼─────────────┼──────┼──────┤
+│ Mercor role │ Application │ Assessment  │ Reply       │ Lost │ $120 │
+│ Lancers gig │ Work packet │ Upload MP4  │ Review      │ Done │ $80  │
+│ Web bounty  │             │ Resubmit PDF│ Payment     │      │      │
+└─────────────┴─────────────┴─────────────┴─────────────┴──────┴──────┘
+
+User controls: [Needs You card answer / upload]              [Pause]
+Agent controls through WebMCP: [create card] [move card] [open task]
+                               [resume work] [record receipt]
 ```
 
 Telegramは重要なstate changeをpushする。Web pageは全体状況、workroom、人間task、proof、moneyを確認・操作する。両者は同じstate、action、ledgerを参照する。
 
-Life Manager workerはWebMCP toolsと同じdomain state-transition functionsを使う。内部の細かな`READY_FOR_EFFECT`、`QA_ACCEPTED`、`SUBMITTED`等は保持するが、人間UIでは`Found → Working → Needs You → Waiting → Done → Paid`の六列へ投影する。Background workerのcall自体はpage-local WebMCP invocationではないが、WebMCP-visible stateを通らないhidden work、hidden task、hidden effectを禁止する。WebMCP agent、人間UI、background workerの全操作が同じboard、workroom、artifact、human task、receiptへ収束する。
+Life Manager workerはWebMCP toolsと同じdomain state-transition functionsを使う。内部の細かな`READY_FOR_EFFECT`、`QA_ACCEPTED`、`SUBMITTED`等は保持するが、人間UIでは`Found → Working → Needs You → Waiting → Done → Paid`の六列へ投影する。AgentだけがWebMCPのtyped toolsでcardを作成・移動し、human taskを開き、回答後に再開し、receiptを記録する。Background workerのcall自体はpage-local WebMCP invocationではないが、WebMCP-visible stateを通らないhidden work、hidden task、hidden effectを禁止する。WebMCP agent、人間UI、background workerの全操作が同じboard、workroom、artifact、human task、receiptへ収束する。
 
-人間は全列をreadできる。通常のwrite操作はChatGPT conversationまたは`Needs You` cardから、一件の回答、選択、file upload、本人操作完了を返すことに限定する。回答後はcardをagentへ戻し、同じworkroomを自動再開する。緊急停止のため全体`Pause`だけは常時表示する。
+人間は全列をreadできる。案件追加、Opportunity URL、source選択、条件設定、card移動、workroom作成のinputを表示しない。通常のwrite操作は初回email、`Needs You` cardへの一件の回答・選択・file upload、緊急停止の全体`Pause`だけである。回答後はAgentがWebMCPでcardを`Working`へ戻し、同じworkroomを自動再開する。
 
 ### 8.5 Human task card
 
@@ -591,12 +590,13 @@ Minimal-human invariant:
 
 ### 8.6 WebMCP tools
 
-WebMCPはbackground runtimeではないが、Life Manager全体のagent-native control surfaceである。人間と対応agentが同じboard、workroom、artifact、human taskを読み書きし、background runtimeの全状態とeffectもこのsurfaceへ投影する。
+WebMCPはbackground runtimeではないが、Life Manager全体のagent-native control surfaceである。Eliza Life Manager agentがboard、workroom、artifact、human taskを操作し、人間は同じboardを読み、`Needs You`だけへ回答する。Background runtimeの全状態とeffectもこのsurfaceへ投影する。
 
-- **Task 4:** `inspect_money_printer` — opportunities、running、blocked、human tasks、verified moneyを読む。現時点で実在するtenant-bound GETだけを最初に登録する
-- **Task 5:** `inspect_next_human_task`、`record_human_answer` — exact human taskを読み、本人の明示入力refを一度だけ記録してsame workroomをresumeする
-- **Task 7:** `add_opportunity`、`inspect_workroom`、`inspect_receipt` — hosted goal ingress、workroom readback、typed receipt sourceへ接続してから登録する
-- **Deferred until a real domain action exists:** `set_constraints`、`continue_work`、`pause_work`、`revise_work_artifact`。未実装endpointをtoolとして公開しない
+- **Read:** `inspect_money_printer`、`inspect_workroom`、`inspect_next_human_task`、`inspect_receipt`
+- **Agent-only write:** `create_opportunity_card`、`move_opportunity_card`、`open_human_task`、`resume_work`、`record_receipt`
+- **Human response:** UIが`record_human_answer`とartifact uploadをserver-sideで呼ぶ。UserへWebMCP control toolや案件作成formを表示しない
+- **Global safety:** `pause_money_printer`だけをhuman UIへ常時表示する
+- **Removed from public human surface:** `add_opportunity`、`set_constraints`、manual card move、manual continuation
 
 ToolsはUIと同じdomain functionsを呼ぶ。AgentがWebMCP toolを使うたび、Dashboardの同じstateが更新される。Tool countはscoreではないため、実在domain actionのないtool、overlapするtool、動画で使わないtoolは登録しない。
 
@@ -811,7 +811,7 @@ Canonical first-use UX:
 4. **Mercor connect:** Eliza Life Manager agentがtenant-managed mailboxとSteel sessionを使ってMercorの通常email signup/loginをserver-sideで完了する。Mercor名、login page、magic link、OTP、Steel画面をUserへ見せない
 5. **Minimal profile:** AgentがMercor official profileから既知fieldをreadし、resume等の不足物だけを一件ずつ`Needs You`にする。Userがresumeをuploadした場合はprivate object storageへ保存し、provider upload後もpublic boardへ内容を出さない
 6. **Autonomous acquisition:** Authenticated sessionをencrypted tenant contextとしてsealし、Agentが継続的に案件を探索、fit判定、dedupe、応募準備、許可範囲内の応募操作、inbox/status trackingを行う
-7. **Human-only work:** Assessment、Interview、本人制作、最終提出・再提出、署名、KYC、payout設定に到達した時だけ、exact provider screenと一つのrequired actionを`Needs You`へ出す
+7. **Human-only work:** Assessment、Interview、本人制作、最終提出・再提出、署名、KYC、payout設定に到達した時だけ、provider画面ではなく一つのprepared `Needs You` cardを出す
 8. **Prepared handoff:** 制作・提出taskでは、Agentがrequirements、期限、reference、format、checklist、保存先を先にまとめる。本人は作業し、MP4/PDF/ZIP/URL等のartifactをcardへuploadする
 9. **Official resume:** 本人が`Completed`を押すと、Agentが同じprovider pageをread backする。official stateが確認できた場合だけ同じworkroomを`Working`または`Waiting`へ戻し、未確認ならcardを開いたままexact discrepancyを示す
 10. **Continuous follow-through:** Agentがmessage、selection、contract、revision request、deadline、earningsを追跡する。再提出は新しいworkroomを作らず同じartifact lineageへ戻す
@@ -831,7 +831,7 @@ Canonical first-use UX:
 7. **Return visit:** Pageを閉じてもhosted runtimeは継続し、再訪時に最新boardと未回答`Needs You`を復元する。WebMCP toolsはpageを開いている間だけ利用可能と説明する
 8. **Mobile:** 四metricsは横scroll、boardは一列ずつswipe、`Needs You` countをsticky buttonにする。Desktopと異なる機能やstateは持たない
 
-Human write surfaceは初回email、`Needs You`回答/upload/takeover、global `Pause`だけである。Opportunity追加、constraint変更、workroom continuationはWebMCP clientまたは同じserver-validated domain actionを使い、UIだけの隠れ状態を作らない。
+Human write surfaceは初回email、`Needs You`回答/upload、global `Pause`だけである。Opportunity追加、source URL入力、constraint変更、手動card移動、workroom continuationはhuman UIから削除する。Eliza Life Manager agentがWebMCP clientまたは同じserver-validated domain actionを使い、UIだけの隠れ状態を作らない。
 
 将来のpricing、自前model接続、self-hostingは今回のsubmission scope外とする。Consumer ChatGPT subscriptionを第三者SaaSのbackground APIとして流用できるとは主張しない。
 
@@ -986,7 +986,7 @@ JudgeはDashboardを直接確認でき、対応WebMCP clientからの操作も�
 | 0:00–0:15 | Title + scattered posts/prompts about earning with AI | “People share countless ways to make money with Claude, Codex, and AI through bounties, gigs, apps, and online work. What is missing is a public, reproducible agent system that actually runs the whole process.” |
 | 0:15–0:30 | Full Money Printer Dashboard | “Life Manager is that system. It finds paid opportunities, handles the authorized machine work, and tracks every human task and result on one board.” |
 | 0:30–0:45 | recorded WebMCP Site tools drawer | “The page exposes WebMCP tools, so my WebMCP agent reads and changes the same state I see instead of guessing at buttons.” |
-| 0:45–1:00 | WebMCP agent adds one live public bounty/gig | “I add one real paid opportunity. Life Manager checks its reward, deadline, eligibility, required work, cost, and risk, then opens an isolated workroom.” |
+| 0:45–1:00 | WebMCP agent discovers and creates one live opportunity card | “The agent finds one real paid opportunity, checks its reward, deadline, eligibility, required work, cost, and risk, then opens an isolated workroom.” |
 | 1:00–1:20 | Worker events and real artifact appear | “The earning agent uses its browser and work tools to complete the task without me supervising every turn.” |
 | 1:20–1:40 | Card moves to Needs You with completed packet | “Only when it reaches a boundary that genuinely requires my authority does it create one prepared human task.” |
 | 1:40–1:55 | iPhone: review and approve one exact action | “On my phone, I review the finished work and approve the exact public delivery. I do not reconstruct context or manage the agent.” |
@@ -1031,7 +1031,7 @@ Life Manager lets people and agents divide real earning work according to what e
 
 ### How WebMCP was implemented
 
-The top-level page registers focused tools with `document.modelContext.registerTool()`. The tools let a compatible agent inspect the Money Printer, add an opportunity, inspect a workroom, revise an artifact, record an exact human answer, continue or pause work, and inspect the final receipt. Each tool calls the same server-validated domain functions as the visible UI, so every successful agent action immediately appears on the Dashboard. Server-side revision checks, spend limits, effect fences, and idempotency prevent stale updates, unauthorized effects, and duplicate submissions. Without WebMCP, the same Dashboard remains usable by a person.
+The top-level page registers focused tools with `document.modelContext.registerTool()`. The tools let the tenant's Eliza Life Manager agent inspect the board, create and move opportunity cards, inspect a workroom, open a prepared human task, consume its answer, resume work, and record provider receipts. The human UI exposes none of those control inputs; it exposes only the board, `Needs You`, and `Pause`. Each tool calls the same server-validated domain functions that project the visible board, so every successful agent action immediately appears on the Dashboard. Server-side tenant checks, revision checks, spend limits, effect fences, and idempotency prevent stale updates, unauthorized effects, and duplicate submissions.
 
 ### Impact and future
 
@@ -1285,7 +1285,7 @@ One active item at a time。各itemは実物readbackを閉じてから次へ進�
 | Cloud browser | existing Railway-private Steel + Stagehand、`lm_browser_jobs`、tenant-bound encrypted auth contextを一経路だけ使う | current production code、private-only URL checks、auth isolation tests |
 | Human task | authenticated Money Printer sessionがowned workroomのAssessment回答・本人制作artifactだけを受け取る | Mercor/Steel UI、raw Steel/CDP/context/cookie非露出、foreign tenant 404 |
 | Canonical owner E2E | current eligible Mercor listingをcloud browserでinspect→prepare→real provider human boundary→same-job resume→official readback | listing/eligibilityはeffect直前に再確認。AI interview代答禁止 |
-| Guest E2E | cloud上のsame build/schema/Symphony/browser queueを使い、judge自身のpublic URLでagent work→genuine HumanTask→answer→resume→durable receiptを完走 | provider credentialが必要ならjudge自身がtakeoverで接続。Dais Mac、Telegram、fixture、mock effect 0 |
+| Guest E2E | cloud上のsame build/schema/Eliza agent/browser queueを使い、email start→agent discovery→genuine HumanTask→answer→resume→durable receiptを完走 | Human URL入力、provider UI、Dais Mac、Telegram、fixture、mock effect 0 |
 | Money truth | Application、interview、contract、delivery、paymentを別receiptにし、independent payment settlement以外はrevenue 0 | current verified cash 0 |
 | Browser fallback | ChatGPT desktop in-app browserをprimary、Google Chrome 151 + `chrome://flags/#enable-webmcp-testing`をfallback | local Chrome 151 installed |
 | Submission | Devpost project `1404362`、deadline `2026-09-03T20:00:00Z`、videoはpublic YouTube/audio/<3:00、custom fields全12件中required 9件 | live Devpost MCP readback |
@@ -1384,7 +1384,7 @@ Soft targetは一sliceあたりproduction 3 files以下 / 100 LOC以下である
 |---|---|---|
 | B01 | private evidence rootを作る | directory exists、mode 700 |
 | B02 | 既存CloakBrowser系browser harness一つをjudge pathに固定する | 新profile/client/harnessを追加せず、canonical URLとJudge guestを同じ経路で扱う |
-| B03 | initial tools contractをcode/focused testで固定する | exact four: `inspect_money_printer`、`add_opportunity`、`inspect_workroom`、`inspect_next_human_task`。open task時だけ`record_human_answer` |
+| B03 | historical initial tools contractをcode/focused testで固定した | `inspect_money_printer`、`add_opportunity`、`inspect_workroom`、`inspect_next_human_task`。C11.1/C11.4でpublic `add_opportunity`を削除し、agent-only card toolsへ置換する |
 | B04 | final録画前はcomponent/API checksだけを行う | full browser E2Eを消費せず、board/structured resultの不整合はfocused testで先に閉じる |
 | B05 | public payload privacy contractを固定する | cookie/token/email/private profile/raw receipt payloadの露出0 |
 | B06 | client fallbackを増設しない | superseded by single-browser scope。Chrome/ChatGPT二重証拠を要求しない |
@@ -1540,13 +1540,14 @@ H07–H12とB12はcomplete。accepted artifactは `/Users/anicca/Desktop/MoneyPr
 
 #### Overview
 
-Money PrinterをDaisのMac miniなしでjudge/userがend-to-end実行できるcloud Web productへ完成させる。Public WebMCP Dashboard、Eliza Cloud agent-server/tenant DB、`@elizaos/plugin-life-manager`、existing Railway-private Steel browser runtimeを一つのstate machineへ接続する。各tenantのEliza Life Manager agentがworkを進め、browser actionが必要な時はexisting cloud browser queueへtyped requestを出し、本人操作が必要な時だけDashboard内にinteractive `Needs You`を出す。人間の完了後はsame Life Manager work itemをElizaが再開し、provider official readbackをreceiptへ固定する。
+Money PrinterをDaisのMac miniなしでjudge/userがend-to-end実行できるcloud Web productへ完成させる。Public WebMCP Dashboard、Eliza Cloud agent-server/tenant DB、`@elizaos/plugin-life-manager`、existing Railway-private Steel browser runtimeを一つのstate machineへ接続する。各tenantのEliza Life Manager agentがworkを進め、browser actionが必要な時はexisting cloud browser queueへtyped requestを出し、本人操作が必要な時だけDashboard内にprepared `Needs You`を出す。人間の完了後はsame Life Manager work itemをElizaが再開し、provider official readbackをreceiptへ固定する。
 
-Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceである。Product boundaryはMercor専用品ではなく、userが入力した任意のpublic paid-opportunity URLを同じworkroom contractで処理するMoney Printerである。
+Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceである。Product boundaryはMercor専用品ではなく、Agentが複数sourceから発見したpaid opportunityを同じworkroom contractで処理するMoney Printerである。UserはOpportunity URLや案件情報を入力しない。
 
 #### Acceptance criteria
 
 - Real userは`https://aniccaai.com/money-printer`でemail一つを入力し、追加clickやMoney Printer loginなしでisolated tenant、Eliza cloud loop、server-side Mercor connect、human task、same-job resume、receipt確認まで進める。Dais Mac、Telegram、CLIは不要。Judge guestは外部effectなしで同じbuild/state machineを再現する。
+- Start後のhuman UIは`Found / Working / Needs You / Waiting / Done / Paid`の六lane、`Needs You`回答・artifact upload、global `Pause`だけである。Opportunity URL、案件追加、source、constraint、手動card移動のinputは0。
 - Existing Eliza Cloud一つがauthenticated tenant agentのlifecycle、routing、agent turn、retry、human/browser completion後のcontinuation、restart reflectionを担う。`@elizaos/plugin-life-manager`を各runtimeへ登録し、二つ目のtenant loop/frameworkを追加しない。
 - Browser executionはexisting Railway-private Steel + Stagehandだけを使う。Steel/CDP/private URL、cookie、session context、credentialはclient、GitHub Issue、agent prompt、receiptへ出さない。
 - `lm_browser_jobs` schemaは変更しない。Eliza organization/tenant identityとLife Manager work-item/effect keyを既存unique keyへ渡し、same effectを一browser job、一provider effect、一receiptにする。
@@ -1554,7 +1555,7 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 - Mercorのemail signup/loginとmail confirmationはtenant-managed mailboxを使いserver-sideで完了する。Userへ見せるのはAssessment、Interview、本人経験回答、本人制作、最終提出・再提出、およびproviderが本人操作を必須とする法的ceremonyだけで、Agentはそれらを代行しない。
 - UserはAssessment、Interview、本人制作、最終提出・再提出、契約署名、KYC、payout設定を本人で行う。Agentはその前後の準備、期限、context、status、official readbackを担当し、本人制作物をAgent制作物として偽装しない。
 - Human task完了をprovider successとして扱わない。Cloud browser readbackがofficial provider stateを確認して初めてApplicationReceiptを作り、independent PaymentReceiptが無ければverified cashは0である。
-- Guest judgeは自分が入力したreal public URLでcloud agent work→genuine HumanTask→answer→continuation→durable receiptを再現できる。Fixture、mock effect、Dais-owned private stateは使わない。
+- Guest judgeはemailだけで開始し、Agentが発見したreal public opportunityでcloud agent work→genuine HumanTask→answer→continuation→durable receiptを再現できる。Opportunity URL入力、fixture、mock effect、Dais-owned private stateは使わない。
 - Dais owner E2Eはcurrent eligible Mercor listingでcloud browser login→agent work→real human boundary→same-job resume→最深official application readbackまでを証明する。Mercor selection、contract、paymentはreceiptが到着するまで未完表示にする。
 - ChromeとChatGPT in-app browserの双方で同じpublic buildを確認する。Official requirementは一clientでよいが、Dais明示要求により両方をproduct verificationへ含める。
 
@@ -1586,14 +1587,16 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 | C09 | complete。Official Symphony v0.0.2 checksum + Codex 0.151.0をexisting Railway projectへdeployし、bridge/WORKFLOWはmain `d5e747256706e12250aa939e56e24938ffae1b87`から取得 | deployment `02dc4544...` SUCCESS、replica 1/1、volume READY、public URL 0、bridge idle、Agents 0/2。Local Symphony/bridgeは`lm-loop stop` bootout 0、launchctl unloaded、PID absent |
 | C10 | live-open。Eligible Mercor listing `Marketing Expert — Social Media (AI Agent Environments)`をcloud tenantでdispatchし、official Symphonyがworkroom Issue #12を作成、agent turn、`needs_human(provider_interview)` result、browser enqueue、HumanTask open、Issue close/DB ackまで実行 | merge/deploy SHA `492bca0aa2de475c36d320de0d7bef370060cfbf`、Symphony deployment `1d5c0aad...` SUCCESS。Issue #12/comment `5481370562`、task `21965fd...` v1。Dais Dashboard takeover、Mercor login/human-only step、official application readback、receiptは未完。verified cash 0 |
 | C11 | live-open。Chrome fresh guest `webmcp-guest-72001b5b8144f23ef58a0b92`でvisible formからreal Mercor Lifecycle listingを追加し、Found→Working→Needs You、request_changes、same job round16、reload/replay-zeroまで実証。Official Symphony round 16は同じjobをclaim/mirror/consumeし、fresh browser job `91984328-3756-46bb-b742-310ac8775d41`が`handoff_required` | Life-call PR #3580、merge/deploy SHA `52bf18ec5c73228985d7202d800c73ae64c1e234`、deployment `d7cf9a58-1991-4676-8188-92f3281a7b14` SUCCESS。Steel fork PR #3、merge `cb8fdeb461e74178d6bce71ff3ed34d8a2a03d1d`、exact image `sha-4afc32b1ac68dae72007073f288b438f4dd82175`、Railway deployment `f4db59a1-c563-4435-9157-a21d5b035227` SUCCESS、private health 200。Exact takeover castの1920×1080 JPEGを目視し、Mercorの`You need to be signed in to continue`、email、Login、Sign up controlsを確認。Human login/OTPはuser actionとして残す。ChatGPT in-app browserは診断後のavailable backendに存在せず未完。Provider official ApplicationReceipt/PaymentReceipt 0 |
-| C11.1 | email-only startを同じpublic pageへ追加し、tenant bootstrap、Eliza agent provision/reuse、opaque durable browser session、start intentを一つのidempotent domain actionへ接続する | one submit→one tenant/one agent/one loop、追加click 0、replay duplicate 0、account enumeration 0、judge guest保全 |
-| C11.2 | email submit直後にexisting Eliza Cloud tenant agentをprovision/reuseし、Life Manager plugin、Money Printer goal、scoutを開始する | page close後もagent継続、same email→same tenant agent、parallel Eliza instance 0、未認証provider effect 0 |
-| C11.3 | Eliza provider bridgeがtenant-managed mailboxとSteelでMercor email signup/loginを完了し、tenant-bound auth contextをresealする | User Mercor画面0、human login action 0、raw mailbox/credential/cookie/session URL露出0、foreign tenant 404、reload後session再利用 |
-| C11.4 | profile/resume不足を一件ずつ`Needs You`へ出し、known factを再質問せず、本人限定Assessment/InterviewをAgentから遮断する | duplicate human task 0、assessment AI代答0、private artifact public exposure 0 |
-| C11.5 | live Mercor acquisitionを開始し、discovery→fit→dedupe→応募準備→許可済みeffect→official ApplicationReceiptを一件閉じる | same application effect 1、official readback、ambiguous result再送0 |
-| C11.6 | 本人制作・最終提出・再提出をartifact lineage付きHumanTaskへ接続する | MP4/PDF/ZIP/URL upload、requirement checklist、same-workroom resume、provider official status確認 |
-| C11.7 | inbox、selection、contract、revision、deadline、earningsを継続reconcileする | Application/Contract/Delivery/Acceptance/Payment receipt分離、settled前cash 0 |
-| C11.8 | new-user production E2Eをfresh emailで実証する | email→Eliza tenant agent→Mercor server-side login→live opportunity→assessment/本人work task→resume→official receipt、Dais private state 0、cross-tenant read 0、restart/replay-zero |
+| C11.1 | public first pageをemail + `Start Money Printer`一つへ削り、Opportunity URL、案件追加、source、constraint等のinputを削除する | first page human input 1、submit 1、追加click 0、旧add-opportunity UI/APIへのhuman route 0 |
+| C11.2 | email submitをtenant bootstrap、Eliza agent provision/reuse、opaque durable browser session、start intentの一つのidempotent domain actionへ接続する | one email→one tenant/one agent/one loop、replay duplicate 0、account enumeration 0、judge guest保全 |
+| C11.3 | 六lane board `Found / Working / Needs You / Waiting / Done / Paid`だけをpost-start shellにし、human writeをNeeds You回答/uploadとglobal Pauseへ限定する | URL field 0、manual add/move 0、lane/card/workroom read可、mobile同一state |
+| C11.4 | existing Eliza Cloud tenant agentへLife Manager plugin、Money Printer goal、scoutを登録し、agent-only WebMCP toolsでcard create/move、Needs You open、resume、receipt recordを行う | page close後もagent継続、humanによるagent tool call 0、WebMCP action即board反映、parallel Eliza instance 0 |
+| C11.5 | Eliza provider bridgeがtenant-managed mailboxとSteelでMercor email signup/loginを完了し、tenant-bound auth contextをresealする | User Mercor画面0、human login action 0、raw mailbox/credential/cookie/session URL露出0、foreign tenant 404、reload後session再利用 |
+| C11.6 | live Mercor acquisitionを開始し、Agentがdiscovery→fit→dedupe→card作成→応募準備→許可済みeffect→official ApplicationReceiptを一件閉じる | human URL入力0、same application effect 1、official readback、ambiguous result再送0 |
+| C11.7 | profile/resume不足と本人限定Assessment/Interviewをprepared `Needs You`へ一件ずつ出し、known factを再質問しない | duplicate human task 0、assessment AI代答0、Mercor UI露出0、private artifact public exposure 0 |
+| C11.8 | 本人制作・最終提出・再提出をartifact lineage付きNeeds Youへ接続する | MP4/PDF/ZIP/URL upload、requirement checklist、same-workroom resume、provider official status確認 |
+| C11.9 | inbox、selection、contract、revision、deadline、earningsを継続reconcileし、AgentがWebMCPでlaneを更新する | Application/Contract/Delivery/Acceptance/Payment receipt分離、settled前cash 0、manual card move 0 |
+| C11.10 | new-user production E2Eをfresh emailで実証する | email→Eliza tenant agent→agent-created opportunity card→Mercor server-side login→assessment/本人work Needs You→resume→official receipt、human URL入力0、Dais private state 0、cross-tenant read 0、restart/replay-zero |
 | C12 | four-criteria evidence matrix、existing demoをnew cloud E2Eへ再録、clean clone、SHA freeze、YouTube、Devpost | 4 criteria各5/5 evidence、`<180s` audio video、live/repo/deploy SHA一致、exact submission preview後だけsubmit |
 
 #### Test matrix
@@ -1603,13 +1606,13 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 | 1 | Web/Symphony browser intake | existing enqueue duplicate test + C02 result-consume test | OK |
 | 2 | Browser action result | `money-printer-symphony-api.test.js` exact third result state | OK |
 | 3 | Multi-tenant Symphony claim | bridge/API + Postgres fair-claim test | OK |
-| 4 | Browser handoff retention | `stagehand-steel-driver.test.js` hold/expiry/release | OK |
-| 5 | Scoped interactive takeover | `money-printer-browser-takeover.test.js` HTTP/WS owner/foreign/expiry | OK |
-| 6 | Dashboard-only human loop | `panel-api.test.js` + `panel-ui.test.js` answer/resume | OK |
+| 4 | Server browser continuity | `stagehand-steel-driver.test.js` auth context reseal/reuse | OPEN: C11.5 |
+| 5 | Board-only human surface | focused UI/API check: URL/add/move/provider UI 0、six lanes present | OPEN: C11.1/C11.3 |
+| 6 | Dashboard-only human loop | `panel-api.test.js` + `panel-ui.test.js` answer/upload/resume | OPEN: C11.7/C11.8 |
 | 7 | Receipt and money truth | runtime-store test: Application ≠ Payment | OK |
 | 8 | Restart/replay | live cloud restart + same effect key | OK |
 | 9 | Owner Mercor E2E | real provider official readback | OK |
-| 10 | Judge E2E | Chrome + ChatGPT in-app browser, fresh guest | OK |
+| 10 | New-user E2E | fresh email、agent-created card、Needs You、receipt、cross-tenant 0 | OPEN: C11.10 |
 
 #### Boundaries
 
