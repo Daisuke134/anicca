@@ -5020,10 +5020,11 @@ pass. Do not claim Paid working before this P0 and the buyer outcomes below are 
 business lanes remain four independent launchd owners; no fifth scheduler or global browser-effect
 queue is added. Each owner must also progress independent work concurrently inside its own lane.
 
-- [ ] `PAR-1` **ACTIVE:** Give Apply, Reply, Storefront and Paid distinct authenticated BrowserContexts and
-  distinct lease identities. PASS = all four owners perform fresh official readback concurrently,
-  no owner returns `browser_lease_busy` because of a sibling, and stopping or timing out one owner
-  does not close, restart or invalidate another owner's context.
+- [x] `PAR-1` Give Apply, Reply, Storefront and Paid distinct authenticated BrowserContexts and
+  distinct lease identities. Release `da6659e17fdc4f353d5d2c320fbae97524de6aa6` recorded natural
+  pass terminals for all four lanes. Concurrent production readback showed distinct authenticated
+  contexts for all four owners and no `browser_lease_busy`; releasing Reply left every Apply,
+  Storefront and Paid context intact.
 - [ ] `PAR-2` Keep one deterministic effect fence per marketplace resource: application, talkroom,
   listing or order. PASS = concurrent workers may prepare different resources, but two workers
   cannot submit the same application, message, listing mutation, attachment, cancellation or formal
