@@ -16,10 +16,21 @@ const CONTRACT = path.resolve(__dirname, "../../../config/marketing-destinations
 
 test("the marketing destination SSOT fixes every retained route and every non-target connection", () => {
   const value = loadMarketingDestinationContract(CONTRACT);
-  assert.equal(value.targets.length, 13);
-  assert.equal(value.holds.filter((row) => row.integration_id).length, 17);
+  assert.equal(value.targets.length, 12);
+  assert.equal(value.holds.filter((row) => row.integration_id).length, 18);
   assert.equal(value.holds.filter((row) => row.integration_id === null).length, 3);
   assert.ok(value.targets.every((row) => row.cadence_jst.length === 3));
+  assert.equal(value.targets.some((row) => row.native_handle === "@obou.anicca"), false);
+  assert.equal(
+    value.holds.some((row) => row.postiz_profile === "@obou.anicca" && row.reason === "ebook_account_out_of_mobile_scope"),
+    true,
+  );
+  assert.deepEqual(
+    value.targets
+      .filter((row) => ["cmp9pedr700ttqh0yj8o57fog", "cmn8ycvtn02djqx0ytuisn9mw"].includes(row.integration_id))
+      .map((row) => [row.postiz_profile, row.native_handle]),
+    [["@anicca.affirmation", "@anicca.ios"], ["@anicca.jp1", "@anicca.ios.jp"]],
+  );
   assert.deepEqual(
     value.holds.filter((row) => row.integration_id === null).map((row) => `${row.platform}:${row.postiz_profile}`).sort(),
     ["tiktok:@anicca.jp1", "tiktok:@anicca.videojp", "tiktok:@anicca_girl"],
@@ -44,7 +55,7 @@ test("a target without an exact pack, form, cadence, label, or entrypoint fails 
 test("the loop registry exactly matches the destination SSOT labels, entrypoints, and cadences", () => {
   const contract = loadMarketingDestinationContract(CONTRACT);
   const registry = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../../config/loop-registry.json"), "utf8"));
-  assert.equal(auditMarketingDestinationRegistry(contract, registry).targets, 13);
+  assert.equal(auditMarketingDestinationRegistry(contract, registry).targets, 12);
   const candidate = structuredClone(registry);
   candidate.loops[contract.targets[0].loop_name].cadence.calendar_interval[0].Minute = 1;
   assert.throws(() => auditMarketingDestinationRegistry(contract, candidate), /cadence/i);
