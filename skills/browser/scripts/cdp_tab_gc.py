@@ -69,6 +69,9 @@ def main(argv=None):
         print(json.dumps({"ok": False, "reason": f"cdp_unreachable: {e}"}))
         return 0  # never crash the pass — the browser guard handles a dead browser
 
+    stale_pruned = target_ownership.prune_missing_targets(
+        tab.get("id") for tab in tabs if tab.get("id")
+    )
     owned_ids = target_ownership.targets_for_owner(owner)
     owned_pages = [
         tab
@@ -94,6 +97,7 @@ def main(argv=None):
         "owned_pages_before": len(owned_pages),
         "closed": closed,
         "owned_pages_after": len(owned_pages) - closed,
+        "stale_pruned": stale_pruned,
     }))
     return 0
 

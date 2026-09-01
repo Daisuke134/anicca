@@ -244,6 +244,12 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    最新Data volume readbackは228 GiB中180 GiB使用、available `9,914,404 KiB`（約9.5 GiB）であり、
    11 GiB floorは未達。手動回収を完了条件にせず、残るwriter ownerのbounded retentionへ進む。
 
+   **CDP owner registry追補:** 実CDPとの照合でdaily registryは1,690件中live 1・stale 1,689、gig
+   registryは237件中live 0・stale 237だった。実page 26/15を閉じる対象にはせず、共通`cdp_tab_gc`へ
+   CDPに存在しないIDだけを全owner横断でpruneする処理を接続する。registryのatomic writeが失敗した場合も
+   writer自身のPID tempを`finally`で回収する。production自然wakeでstale 0、実在/foreign/unregistered target保持、
+   errors 0、次wake再増加なしをread backするまでmemory/swap atomは未完了とする。
+
    **残TODO（順序固定）:** ①memory/swap owner-side drainとswap縮小readback、②残るrunning旧releaseの自然idle
    reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
    ⑤Hermes正式retire、⑥Gig terminal project、⑦Codex/Claude終了済みlog/archive rotation、
