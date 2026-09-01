@@ -275,6 +275,7 @@
       "env": {
         "CLOAK_BROWSER_OWNER": "gig-paid-direct",
         "CLOAK_CONTEXT_LEASES_FILE": "{{CLOAK_VAULT_DIR}}/gig-leases.json",
+        "CLOAK_SESSION_VAULT_FILE": "{{SESSION_VAULT_DIR}}/auth-state.json",
         "CDP_LOCK_DIR": "{{GIG_STATE_DIR}}/.cdp-gig.lock",
         "GIG_IGNORE_DISK_PRESSURE_BLOCK": "1",
         "GIG_IGNORE_DISK_WRITERS_STOP": "1",

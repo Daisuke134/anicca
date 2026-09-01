@@ -47,7 +47,7 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
     }
     if loop_id in _PRIVATE_LOG_LOOP_IDS:
         value["Umask"] = 0o077
-    if loop_id in {"hf-gig-apply-direct", "hf-gig-storefront-direct"}:
+    if loop_id in {"hf-gig-apply-direct", "hf-gig-storefront-direct", "hf-gig-paid-direct"}:
         value["EnvironmentVariables"]["CLOAK_SESSION_VAULT_FILE"] = str(
             Path.home() / ".cloak/vault/gig-daily-driver/auth-state.json"
         )
