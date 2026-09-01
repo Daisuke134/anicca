@@ -157,6 +157,12 @@ capability claim is backed by an installed executable capability.
 - [ ] `S09` Attribute the first inquiry, order and payment to the originating service.
   PASS = official talkroom/service identity, order and payment receipts retain the same service ID;
   unknown remains explicit and storefront revenue is never inferred from views, favourites or chat.
+  Current official readback: neither the direct-message detail DOM nor its inbox row exposes a
+  service link or service data attribute. The inbox's protobuf `activities.DirectMessage` contains
+  only room/user/body/opened/time/unread/customize fields and no service ID. Existing unknown rows
+  therefore remain unknown rather than being guessed from message text or catalogue activity.
+  Closure requires the next natural service-originated inquiry and its later official order/payment
+  identity to be observed and retained end to end; no synthetic buyer action is created for proof.
 - [ ] `S10` Continue measured portfolio learning without cloning competitors.
   PASS = each later wake either records a bounded official no-change reason or performs one fenced
   mutation selected from conversion evidence; zero-sale offers can be replaced, paid offers stay
