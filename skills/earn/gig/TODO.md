@@ -5052,6 +5052,12 @@ queue is added. Each owner must also progress independent work concurrently insi
     and overlapped for about 12 seconds, followed by overlapping `4355225` and `4357844`. This proves
     the configured two-worker bound and independent listing progress.
   - [ ] `PAR-3e` **ACTIVE:** deploy all four owners together and record concurrent natural readback.
+    Release `2a8b72a2` was loaded by all four owners and produced simultaneous independent PIDs
+    (`Reply=13021`, `Apply=13060`, `Paid=13117`, `Storefront=13160`); Reply recorded a same-release
+    PASS. The remaining three were stopped through `lm-loop` before terminal because free disk fell
+    from about 3.1 GiB to 257 MiB during the concurrent run. Do not treat that safety stop as a
+    concurrency failure or as completion. Recover enough durable headroom, restore all three
+    scheduled owners, and record their natural terminals from one concurrent generation.
 - [ ] `PAR-4` Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
   browser-context failure or release change records one exact next transition and retry time; the
   next natural wake resumes it while unrelated work continues. A buyer-authored revision creates a
@@ -5062,6 +5068,10 @@ queue is added. Each owner must also progress independent work concurrently insi
     marketplace readback and payment/effect receipts. Current `evidence_gc` intentionally refuses
     `projects/` and protects ZIP/PDF/mcaddon archives, so it cannot close this atom: live census found
     old `athena-v4-final.mp4`, `v4.zip`, `v4.mcaddon`, `package-v4` and projects up to about 1.30 GiB.
+    Live size attribution is about 6.6 GiB under `~/gig/projects`, versus about 303 MiB Apply state,
+    55 MiB shared evidence and 36 MiB Storefront state. Exact-byte duplicate discovery may identify
+    safe candidates, but no project artifact is deleted until the terminal/payment receipt proves
+    which sent artifact and rollback generation remain authoritative.
 - [ ] `PAR-5` Prove fastest truthful submission and replay-zero from one immutable public-main
   release. PASS = Apply submits every currently eligible posting, Reply handles every fresh buyer
   event, Storefront executes every authorized mutation and Paid progresses every purchased order;
