@@ -181,6 +181,20 @@ Current cursor: **A02 Team/submission shell**. A01 is DONE with the event contra
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
 
+A02 is **IN PROGRESS at the Discord provider-consent boundary**. A new Lablab account was created through its normal
+email OTP flow without Google/GitHub/AMD login, and the Alpaca event screening form now exists; the official
+event page reads `Approved`. Dais explicitly accepted the Lablab media release and Terms/Privacy sponsor-data
+sharing; the official form read back `Submission Successful`. The factual screening fields are autosaved: identity and public
+profile links from the private profile SSOT, Japan, the derived age band, Startups & Entrepreneurship,
+Advanced AI-building experience, and Hackathon/Event Website. Company/job title remain blank because they are
+optional and no authoritative private fact supplies them. Lablab then disclosed that Discord account connection
+and community membership are mandatory before team creation. No existing Discord session or credential exists;
+the normal-email registration was submitted after Dais authorized routine platform terms, and its generated
+password is stored only in the private credential SSOT. Discord accepted the username but now requires an
+hCaptcha human-presence check. Life Manager does not bypass CAPTCHA; after Dais completes that single visible
+check, the retained flow resumes email verification, OAuth, community membership, and team/submission-shell
+creation. Google login remains prohibited.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
