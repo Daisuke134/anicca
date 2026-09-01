@@ -629,6 +629,29 @@ def notify_work_sync_wake(result: Mapping[str, object], **kwargs: object) -> Del
     return _notify_lane_wake("work-sync", result, message, **kwargs)
 
 
+def notify_negotiate_wake(result: Mapping[str, object], **kwargs: object) -> DeliveryResult:
+    message = (
+        f"[Lancers][交渉] ✅ {result.get('reply_status') or '公式状態を確認しました'}\n"
+        f"公式会話{int(result.get('board_count') or 0)}件 / 返信必要{int(result.get('required_reply_count') or 0)}件 / "
+        f"未読{int(result.get('unread_count') or 0)}件 / 月額オファー{int(result.get('incoming_monthly_offer_count') or 0)}件 / "
+        f"契約候補{int(result.get('contract_candidate_count') or 0)}件。\n"
+        "次: buyer-lastのchanged threadだけを判断し、返信・見積・契約条件を公式確認します。"
+    )
+    return _notify_lane_wake("negotiate", result, message, **kwargs)
+
+
+def notify_paid_wake(result: Mapping[str, object], **kwargs: object) -> DeliveryResult:
+    finance = result.get("finance") if isinstance(result.get("finance"), Mapping) else {}
+    message = (
+        "[Lancers][納品・入金] ✅ 公式状態を確認しました\n"
+        f"稼働中project{int(result.get('project_working_count') or 0)}件 / 月額契約{int(result.get('monthly_contract_count') or 0)}件 / "
+        f"入出金履歴{int(finance.get('payment_history_count') or 0)}件 / 残高{int(finance.get('account_balance_jpy') or 0)}円 / "
+        f"入金{int(finance.get('received_gross_jpy') or 0)}円。\n"
+        "次: 仮払い済み契約だけを制作し、QA・正式納品・検収・PaymentReceiptを追跡します。"
+    )
+    return _notify_lane_wake("paid", result, message, **kwargs)
+
+
 def _pending_count(path: Path) -> Optional[int]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
