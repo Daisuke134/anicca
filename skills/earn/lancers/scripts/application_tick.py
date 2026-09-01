@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import sys
 import tempfile
+import time
 from typing import Any, Callable, Mapping, Optional, Sequence
 import urllib.request
 from urllib.parse import quote, urlsplit
@@ -301,6 +302,20 @@ def _new_owned_page(browser: Any) -> Any:
     if not contexts or not callable(getattr(contexts[0], "new_page", None)):
         raise RuntimeError("browser_page_unavailable")
     return contexts[0].new_page()
+
+
+def _open_owned_page(browser_factory: Optional[Callable[[str], Any]] = None) -> tuple[Any, Any]:
+    for attempt in range(2):
+        browser = None
+        try:
+            browser = (browser_factory or _default_browser_factory)(CDP_URL)
+            return browser, _new_owned_page(browser)
+        except Exception:
+            _stop_playwright_runtime(getattr(browser, "_anicca_playwright_runtime", None))
+            if attempt:
+                raise
+            time.sleep(1)
+    raise RuntimeError("browser_unavailable")
 
 
 def _close_owned_page(page: Any) -> bool:
@@ -654,8 +669,7 @@ def adopt_pending(
             if pending_entry.get("proposal_id") is not None and pending_entry.get("proposal_id") != proposal_id:
                 return TickResult(ok=False, error="pending_proposal_mismatch", project_id=project_id)
             try:
-                browser = (browser_factory or _default_browser_factory)(CDP_URL)
-                page = _new_owned_page(browser)
+                browser, page = _open_owned_page(browser_factory)
             except Exception:
                 return TickResult(ok=False, error="browser_unavailable", project_id=project_id)
             try:
@@ -880,8 +894,7 @@ def run_live_tick(
     try:
         with account_lock(state_path.with_name("work-sync.json")):
             try:
-                browser = (browser_factory or _default_browser_factory)(CDP_URL)
-                page = _new_owned_page(browser)
+                browser, page = _open_owned_page(browser_factory)
             except Exception:
                 _stop_playwright_runtime(getattr(browser, "_anicca_playwright_runtime", None))
                 return TickResult(ok=False, error="browser_unavailable", project_id=str(project_id))
