@@ -1250,7 +1250,7 @@ protected pathは容量不足時も削除しない。protected dataだけでrese
 cleanupは成功を偽装せずcapacity incidentを発行し、write-heavy producerを停止する。
 
 この保護は永久かつ上書き不能である。cleanup tier、容量緊急事態、LLM判断、学習済みpolicy、
-operator overrideのいずれも、`~/.claude/**`、`~/.codex/**`、またはClaude/Codexの
+operator overrideのいずれも、`~/.claude/**`、`~/.codex/**`、`~/.codex-acct2/**`、またはClaude/Codexの
 session・transcript・memoryへ削除、移動、truncate、圧縮のauthorityを与えない。
 容量増加への対応はowner側のlossless checkpoint/rotation/handoffだけとし、cleanupのeffectは常に0にする。
 
