@@ -216,9 +216,12 @@ now fill those values without model exposure, use the authenticated read-only ma
 only the Alpaca verification URL, capture TOTP/recovery/API/account material directly into the private SSOT, and
 generate/fill the current TOTP code without returning either the secret or code. Commit `69a3fa4e58` passed Biome
 and package typecheck; a production-function runtime fixture preserved mode `0600`, filled exactly six digits,
-and exposed neither value. The real existing account path remained `READY` and left the SSOT hash unchanged.
-A03 remains ACTIVE because the model/runtime orchestration does not yet drive the complete fresh signup sequence
-through these actions and resume it from the saved checkpoint.
+and exposed neither value. Commit `4b0bb86350` extends the same checkpoint to deterministic
+`CREATE_PAPER_ACCOUNT → VERIFY_EMAIL → CONFIGURE_MFA → BIND_API_KEYS → RUN_TRADING_LOOP` resumption. Its runtime
+fixture produced exactly one create step, required eight private refs including recovery code and account ID,
+then reached paper `READY` with cash/equity `100000`; Bun compiled every changed production entrypoint. The real
+existing account path remained `READY` and left the SSOT hash unchanged. A03 remains ACTIVE because the live
+Eliza planner has not yet driven the complete BrowserService-backed sequence from one owner goal and read it back.
 
 A04 has **preflight evidence ready but remains ordered after A03** against the official `alpacahq/cli` release `v0.0.14`, source commit
 `53606273aa230a40c64b783425dcb3f4423ede30`. Its published release checksum was verified before installing the
