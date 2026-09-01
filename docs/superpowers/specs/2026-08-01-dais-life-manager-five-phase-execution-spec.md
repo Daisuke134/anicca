@@ -177,6 +177,28 @@ machine-readable receipt、または法的に必須のprotocol境界だけであ
 **Memory/Ledger**に保存する。新市場ではこれらを検索して再利用するが、該当Skillがなくてもgeneral model＋browserで実行可能なら進む。
 一回の成功を即hardcoded workflowへ変換せず、複数の実receiptで再利用価値が確認された方法だけをSkill/loop候補に昇格する。
 
+##### 最終Economic Goalは市場名を指定せず、verified banked netを最大化する
+
+Lancers、CrowdWorks、Coconala、gig workは最初の学習環境であり、最終的な最上位Goalではない。local/cloudの各tenantは、
+次の一つのGoalを継続実行できる状態を完成形とする。
+
+> 利用者が委任した権限、法令・provider規約、秘密・安全、資金risk、納期と実delivery capacity、身体・精神・生活上のGoalを守りながら、
+> fees、refund、tax、compute、tool、広告、capital loss、human timeを差し引いたverified banked netを長期的に最大化する。
+
+manager modelは市場名や既存Skill一覧に限定されず、公開Web、既存browser、private Memory/Ledger、Assets、Skills、現在のcapacityから
+収益機会を発見する。gig marketplace、direct sales、owned product、subscription、affiliate、content、software、許可されたcapital activity等を
+同じ候補集合として比較し、期待net、実現確率、入金までの時間、risk、reversibility、capacity、他のLife Goalへの影響を根拠付きで判断する。
+codeに事業category、marketplace順序、keyword score、固定portfolio配分をhardcodeしない。
+
+採用した機会はtenant-scoped child Goal/PlanGraph/WorkItemとして作り、同じAgentRuntimeが独立checkpointとeffect identityを持つ複数loopを
+bounded並列実行する。別AGIやmarketplace別brainをspawnせず、一つのgeneral managerが資源を配分する。各child loopは
+`discover → act → official readback → banked/cost receipt → reflect`を繰り返し、managerは実outcomeに応じてscale、pause、retire、再設計、
+または新市場探索を選ぶ。応募数、契約額、pending balance、model予測はobjectiveに数えず、banked netと長期再現性だけを最終成果へ加算する。
+
+能力不足は停止理由ではない。general browserと既存能力で進め、真に不足する場合は実行可能なacceptanceを持つcapability-gap WorkItemを作り、
+coding agentが共通capabilityまたは自然言語Skillを構築・検証・mainへ統合する。元のchild Goalは同じcheckpointから再開し、成功した能力を
+他市場でも再利用する。この再帰によって、利用者が市場を一件ずつ指定しなくてもLife Manager自身が収益面を広げる。
+
 ##### Self-improvingはprivate学習とglobal改善を混ぜない
 
 ```mermaid
