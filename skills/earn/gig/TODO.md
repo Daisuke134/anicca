@@ -190,15 +190,24 @@ capability claim is backed by an installed executable capability.
   `ffee434bae3e5c0bcf358edf0df0662daf4f173c2485bd821eeb7cf987791ddf`. Its product binding matches
   S11 SHA `534b2a206729e73c91f5f051fc0caebda4b091388815a3f9a06c2ce66dc7612c`, every rendered field equals
   the accepted offer byte-for-value after canonical JSON loading, and identical replay returned
-  `changed:false` without touching any live loop.
-- [ ] `S13` Render and independently qualify the product through a thin CrowdWorks adapter.
+  `changed:false` without touching any live loop. GitHub repository `Daisuke134/life-manager` is public;
+  public main contains the registry and source for `hf-gig-apply-direct`, `hf-gig-reply-detector`,
+  `hf-gig-storefront-direct`, and `hf-gig-paid-direct`.
+- [x] `S13` Render and independently qualify the product through a thin CrowdWorks adapter.
   PASS = the adapter maps only CrowdWorks fields, category, currency and limits; current official
   CrowdWorks sold/reviewed comparable evidence and fees remain independent from Coconala evidence,
   with missing, unknown or zero-sale evidence explicit.
-- [ ] `S14` Publish one CrowdWorks canary through its installed Storefront owner.
-  PASS = the authenticated owner performs one fenced publish, exact official readback matches the
-  shared product contract, replay is effect-zero, and inquiry/order/payment retain CrowdWorks plus
-  listing identity. Lancers is excluded from this sequence because its separate owner is implementing it.
+  Account 2 generated and the deterministic adapter persisted
+  `contracts/adapters/crowdworks/ui-translation.json` with qualification SHA
+  `e3d70512631a60886d7230a7a469203c26e871c17e5e408576a7cf6646182175`. Official category 159 showed
+  7 jobs; comparable job 12941894 had applicants/contracted `3/1`, client reviews `316`, and hourly
+  JPY `1,500-2,000`; official worker fees remained 20%/10%/5% plus JPY 100/500 transfer fees. The
+  receipt keeps fixed-price demand explicitly unknown and identical replay returned `changed:false`.
+- [ ] `S14` Submit one CrowdWorks application canary through an installed Apply owner.
+  PASS = the authenticated owner performs one fenced application to a currently open suitable job,
+  exact official sent/readback matches the shared product contract, replay is effect-zero, and later
+  inquiry/order/payment retain CrowdWorks plus job identity. CrowdWorks exposes job application rather
+  than a worker storefront publication flow. Lancers remains excluded because its separate owner owns it.
 
 ### Live four-lane repair
 

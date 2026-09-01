@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "product_key", "product_contract_sha256", "adapter", "transport", "category", "mapping", "qualification", "fees", "evidence", "originality_provenance"],
+  "properties": {
+    "version": {"type": "integer", "const": 1},
+    "product_key": {"type": "string", "minLength": 1},
+    "product_contract_sha256": {"$ref": "#/$defs/sha"},
+    "adapter": {"type": "string", "const": "crowdworks"},
+    "transport": {"type": "string", "const": "application"},
+    "category": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "url"],
+      "properties": {"id": {"type": "string", "const": "159"}, "name": {"$ref": "#/$defs/text"}, "url": {"$ref": "#/$defs/url"}}
+    },
+    "mapping": {
+      "type": "object", "additionalProperties": false,
+      "required": ["buyer_job", "delivery_kind", "search_query", "gross_price"],
+      "properties": {
+        "buyer_job": {"$ref": "#/$defs/text"}, "delivery_kind": {"$ref": "#/$defs/text"},
+        "search_query": {"$ref": "#/$defs/text"},
+        "gross_price": {"type": "object", "additionalProperties": false, "required": ["amount", "currency"], "properties": {"amount": {"type": "integer", "minimum": 1}, "currency": {"type": "string", "const": "JPY"}}}
+      }
+    },
+    "qualification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "reason", "comparables", "unknowns"],
+      "properties": {
+        "status": {"type": "string", "enum": ["qualified", "unknown", "rejected"]}, "reason": {"$ref": "#/$defs/text"},
+        "unknowns": {"type": "array", "items": {"$ref": "#/$defs/text"}, "uniqueItems": true},
+        "comparables": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["job_id", "url", "budget_kind", "budget_min_jpy", "budget_max_jpy", "applicants", "contracted", "client_reviews"], "properties": {"job_id": {"type": "string", "pattern": "^[0-9]+$"}, "url": {"$ref": "#/$defs/url"}, "budget_kind": {"type": "string", "enum": ["hourly", "fixed"]}, "budget_min_jpy": {"type": "integer", "minimum": 0}, "budget_max_jpy": {"type": "integer", "minimum": 0}, "applicants": {"type": "integer", "minimum": 0}, "contracted": {"type": "integer", "minimum": 0}, "client_reviews": {"type": "integer", "minimum": 0}}}}
+      }
+    },
+    "fees": {
+      "type": "object", "additionalProperties": false, "required": ["currency", "tiers", "transfer_fee_jpy"],
+      "properties": {"currency": {"type": "string", "const": "JPY"}, "tiers": {"type": "array", "minItems": 3, "items": {"type": "object", "additionalProperties": false, "required": ["portion", "rate_percent"], "properties": {"portion": {"$ref": "#/$defs/text"}, "rate_percent": {"type": "integer", "enum": [5, 10, 20]}}}}, "transfer_fee_jpy": {"type": "array", "items": {"type": "integer", "enum": [100, 500]}, "minItems": 2, "maxItems": 2, "uniqueItems": true}}
+    },
+    "evidence": {"type": "array", "minItems": 3, "items": {"type": "object", "additionalProperties": false, "required": ["kind", "url", "content_sha256", "observed_at"], "properties": {"kind": {"type": "string", "enum": ["fee", "category", "comparable"]}, "url": {"$ref": "#/$defs/url"}, "content_sha256": {"$ref": "#/$defs/sha"}, "observed_at": {"type": "string", "format": "date-time"}}}},
+    "originality_provenance": {"type": "object", "additionalProperties": false, "required": ["competitor_content_incorporated", "method"], "properties": {"competitor_content_incorporated": {"type": "boolean", "const": false}, "method": {"$ref": "#/$defs/text"}}}
+  },
+  "$defs": {"text": {"type": "string", "minLength": 1}, "sha": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "url": {"type": "string", "pattern": "^https://crowdworks\\.jp/"}}
+}
