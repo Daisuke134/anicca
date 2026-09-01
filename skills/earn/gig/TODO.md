@@ -73,6 +73,10 @@ completion claim is nevertheless false until the two failing lanes below pass na
   terminal receipt with exit zero and `failed=0`, then installing the same main-derived release SHA for
   Apply, Reply, Storefront, and Paid and recording the four-owner runtime readback. Do not mark this gate
   complete from the in-progress run or from its previous stale `latest.json`.
+- [x] `C02a` Move the Coconala buyer `逃げ因子` to manual-only handling.
+  PASS = Paid never selects talkroom `18211838`; Reply always returns `stop_contact / stop` for the
+  same thread; no existing project artifact, receipt, or conversation history is deleted. The account
+  owner handles every future response, revision, submission, and delivery for this buyer manually.
 - [ ] `C03` Prove maximum safe Coconala work progression.
   PASS = Apply submits every currently eligible non-duplicate opportunity and reconciles uncertain
   intents before retry; Reply consumes every new buyer event once; Storefront continues measured
