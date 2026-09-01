@@ -6,6 +6,33 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 
 状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、141/153隔離fixture、stale app-serverのsession-owner分離、browser producer lifecycle、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gate、ULTRA receipt reserve/retryは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、atomic capacity claims、rapid-growth predictor、unknown-growth containment、24時間/7日観測は未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
+## 現在の順序正本
+
+完了済みを再実行しない。次の順序はDaisが明示的に変更するまで固定する。
+
+1. [x] **Codex connection recovery:** active account `~/.codex-acct2`は`codex login status`が
+   `Logged in using ChatGPT`、app-server PID `57321`とcontrol socketが存在する。さらに既存sessionではなく
+   fresh session `01a05d6c-3387-77c3-9a3e-0ab02eb3b5ce`を起動し、backendからexact
+   `CONNECTION_OK`を受信した。connection errorは完了であり、再調査しない。別home `~/.codex`は
+   `Not logged in`で、使用前の再認証が必要だが、active accountのconnection完了を未完へ戻さない。
+2. [x] **Major host cleanup and immediate recurrence fix:** Camofoxと再生成cacheを削除し、統合済み
+   worktreeをGit履歴保存後に除去した。Gig evidence GCは2,057 directories、21 files、496,937,786 bytesを
+   errors 0で回収した。Coconala Storefrontはdefault tabを`:9223`で開きながら`:9222`へcloseしていた
+   root causeを修正し、前回crashの同一owner target回収も接続した。production release `c74b5973`で
+   `storefront_live_pages=0 / duplicate_excess=0 / registry_total=0`をread backした。loopは停止していない。
+3. [ ] **All-loop bounded-output audit:** 全managed loopについてscratch、browser target、log/evidence、
+   immutable releaseの各owner cleanupを確認する。不足するloopだけ既存共通cleanupへ接続する。収益loopを
+   disk thresholdで停止する仕組みは追加しない。active worktree、取引中deliverable、credential、ledger、
+   receipt、不可侵storeは保持する。完了条件は各ownerのbounded retentionと異常終了後の次wake回収であり、
+   「一度空きを増やした」だけでは完了にしない。
+4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
+   Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
+5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
+   ApplicationReceipt、demo動画、YouTube、Devpost提出を閉じる。
+
+現在activeな先頭atomは **All-loop bounded-output audit** である。Connection recoveryとmajor manual cleanupを
+再びTODOへ戻さない。
+
 ## 現行実装状況とOSS境界
 
 この仕様は設計だけでなく、現在の実装と未完了のproduction workを追跡する。
@@ -18,7 +45,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 | cadence | 部分実装 | OSS plistは`StartInterval=300`。通常passはbounded fast pass、`cleanup-full-pass.at`の1時間マーカー（または互換の`EMERGENCY_GUARD_FULL_PASS=1`）がbounded full cleanupを発火する。Data volumeの空きがexact-byteで3GiB未満なら、fresh markerでもそのpassをfullへ昇格し、worktree starvationを防ぐ。critical full pass後は5分cooldownで逐次full-pass stormを抑制し、hourly/explicit fullも同じcooldownを受ける。不正・未来のtimestamp receiptはdue扱い、cooldown設定が不正ならfullを許可せずfastへfail-closedし、critical markerを書けない場合もfastへfail-closedする。`ai.anicca.life-manager-disk-cleanup`は`gui/501`へbootstrap済みで、`StartInterval=300`、single lock、kickstart/readbackを実測。`com.anicca.emergency-disk-guard`と`com.anicca.disk-sentinel`は60秒fallback/観測として登録されている |
 | runtime guard | 部分実装 | 通常の5分guardは`~/anicca-project/work`と`~/.openclaw/external`だけをbounded fast passし、host inventoryを毎回atomic writeする。Life Managerの`host-inventory-full.at`とfallbackの`cleanup-full-pass.at`を別々に管理し、各1時間 cadenceでfull census/cleanupを発火する。ULTRA時はfallback guardがexact-byte critical promotionを行い、`cleanup-critical-full-pass.at`の5分cooldown中はfast passへ戻る。hourly/explicit fullの失敗・timeout後も次回はfast passへ戻り、critical receipt書込み失敗もgig rootを追加しない。root size/unknown attributionは未完了 |
 | ledger/receipt | 部分実装 | cleanup ledgerを32 MiBでrotateし、約282 MiBから56 KiB + gzip archiveへ縮小。bounded operational logとimmutable incident receiptの正式分離は未完了 |
-| production recovery | 未完了 | 非リポジトリreceipt storm、3分超のworktree remote inspection、旧autopruneの無制限home `du` は封じた。旧autoprune/reclaim/janitorをbootout＋disableし、plistは`.disabled-20260821`へ可逆退避した。正本5分labelはload readback済み。2026-08-21T10:55Zのcritical readbackはfree約3.3GiB、swap使用約5.8GiB、`disk-pressure.block`/`disk-writers.stop`有効、cleanupは`evaluated=0/reclaimed=0/protected_deletions=0`だった。その後11GiB超・swap 0へ一時回復したが、OpenClaw/Codex/Chromium等の稼働中producerとhost-wide census gapが残り、24時間/7日観測は未開始。重要なCodex/OpenClaw sessionとVM swapfileは保持している |
+| production recovery | 部分完了 | connection recoveryとmajor manual cleanupは完了。Data volumeは空き21GiB、Storefrontの残留default tabは0、Gig evidenceは50MiBまで縮小している。Storefrontの誤CDP-port closeとcrash残骸回収はproduction release `c74b5973`へ反映済み。残る作業は全managed loopのbounded-output監査と24時間/7日観測であり、完了済みconnection/manual cleanupは再実行しない。重要なCodex/OpenClaw session、取引中deliverable、VM swapfileは保持する |
 
 ### 2026-08-21 incident fix evidence
 
