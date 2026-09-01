@@ -836,8 +836,11 @@ def _join_funnel(
             continue
         evidence = json.dumps({"buyer_last_said": row.get("buyer_last_said"),
                                "conversation": row.get("conversation")}, ensure_ascii=False)
-        service_ids = {value for value in re.findall(r"coconala\.com/services/(\d+)", evidence)
-                       if value in versions}
+        recorded_service_id = str(row.get("service_id") or "")
+        service_ids = ({recorded_service_id} if recorded_service_id in versions else {
+            value for value in re.findall(r"coconala\.com/services/(\d+)", evidence)
+            if value in versions
+        })
         current = conversations.setdefault(talkroom_id, {"service_ids": set(), "observed_at": row.get("sent_at")})
         current["service_ids"].update(service_ids)
         if type(row.get("sent_at")) is int:
