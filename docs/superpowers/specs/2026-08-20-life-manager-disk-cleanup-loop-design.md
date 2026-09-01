@@ -61,15 +61,54 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `6b4f59fb`の自然wakeで34 MiBをarchive 11,835行/357 KiB＋active 27,317行/24 MiBへ縮小し、全39,152行、
      gzip、active/archive/lock mode 0600、job runningをread backした。confirmed/unknown行はactive保持し、
      古いNO_EFFECT/READ_ONLY_CONFIRMEDだけをowner自身が圧縮した。
-   - **Current host storage census:** APFS containerは245.1 GB、使用243.9 GB、空き1.2 GBである。Data volumeは
-     205.4 GB、VM volumeは17.5 GBを使用する。VMには16 GiB超のswapfileがあり、これは直接削除せず、
-     重複browser/worker/daemonのownerをdrainした後にmacOSへ回収させる。大容量rootは`~/.openclaw`
-     10.63 GB、`~/Library` 9.23 GB、`~/gig` 8.93 GB、`~/anicca-project` 7.06 GB、canonical
-     Life Manager source/git/internal worktrees合計約4.90 GB、Codex homes約5.73 GB、`~/anicca` 3.77 GB、
-     `/private/var/folders` 3.38 GB、`~/.local/share` 2.87 GB、`~/.local/state/life-manager` 2.41 GB、
-     `~/.claude` 2.33 GB、外部`~/Projects/.worktrees` 1.44 GB、`~/.hermes` 1.52 GBである。
-     `~/loops/releases`には26 directory、Life Manager Gitには40 worktreeがある。一点のfree-space回復を
-     完了条件にせず、各familyのowner-side boundと再発防止readbackを要求する。
+   - **Current host storage census:** APFS physical containerは245.1 GB、使用243.4 GB、空き1.7 GB、
+     使用率99.3%である。System 11.3 GB、Preboot 7.5 GB、Recovery 2.2 GBを使用する。Data volumeの
+     `df` readbackは228 GiB中190 GiB使用、available 1.5 GiBである。数値は稼働loopのrelease生成・回収で
+     変動するため、cleanup判断時は保存値でなく同じ実機を再計測する。ただし下記のowner/path分類は再調査せず
+     次atomのstarting inventoryとして使う。
+
+     | root | measured bytes相当 | 主な内訳・境界 |
+     |---|---:|---|
+     | `~/.cloak` | 20.25 GiB | `state-backups` 10.32 GiB、`profiles` 9.57 GiB。不可侵storeであり一括削除しない |
+     | `~/loops` | 約19.8 GiB | `releases` 15.27 GiB、`life-manager` 874 MiB。releaseはcurrent/loaded/open/pinned判定後だけGCする |
+     | `~/Projects` | 約12.99 GiB | `life-manager-main` 4.56 GiB、外側`.worktrees` 4.01 GiB、`life-manager-eliza-migration` 2.89 GiB |
+     | `~/.openclaw` | 9.90 GiB | `.git` 2.91 GiB、workspace 2.02 GiB、skills 1.53 GiB、agents 778 MiB、media 670 MiB、state 534 MiB |
+     | `~/.local` | 9.46 GiB | state 5.00 GiB、share 2.67 GiB、pipx 1.10 GiB。state内はAnicca 2.74 GiB、Life Manager 2.25 GiB |
+     | `~/gig` | 8.32 GiB | projects 6.34 GiB、`.git` 433 MiB、apply-direct 350 MiB、DM materials 253 MiB、releases 239 MiB |
+     | `~/anicca-project` | 6.57 GiB | 旧cloneと推測して削除せず、unique ref/loaded argv/state ownerをread backする |
+     | `~/anicca` | 3.52 GiB | 同上 |
+     | `~/anicca-monk-factory` | 3.04 GiB | 不可侵store |
+     | `~/.codex` | 3.02 GiB | 別account home。session/log/archiveをowner分類する |
+     | `~/anicca-rtdash` | 2.55 GiB | 不可侵store |
+     | `~/.bun` | 2.41 GiB | 再生成cache回収後も残るowner dataを分類する |
+     | `~/.codex-acct2` | 2.33 GiB | active Codex account。active sessionを保持する |
+     | `~/.claude` | 2.17 GiB | active sessionを保持し、終了済みlog/archiveだけをrotation対象にする |
+     | `~/Desktop` | 2.11 GiB | ほぼ`MoneyPrinter-Hackathon-Demo`。WebMCP提出完了前は保持する |
+     | `~/.openclaw-backups` | 1.72 GiB | generation/復旧依存を確認してbounded retentionへ接続する |
+     | `~/.rustup` | 1.32 GiB | toolchain ownerを確認する |
+     | `~/Pictures` | 1.08 GiB | user asset。自動削除しない |
+     | `~/.venvs` | 0.99 GiB | caller/entrypoint不在を確認したenvironmentだけを回収する |
+
+     system側は`/opt/homebrew` 12.52 GiB、`/private` 7.51 GiB、`/Applications` 7.58 GiB、
+     `/Library` 3.65 GiB、`/usr/local` 393 MiBである。ApplicationsはXcode 3.47 GiB、ChatGPT 1.38 GiB、
+     Chrome 1.37 GiB、Claude 823 MiB、Chat On Steroids 382 MiB、CodexBar 150 MiB。user Libraryで確認済みの
+     major rootsはApplication Support 4.29 GiB、Group Containers 1.02 GiB、Containers 194 MiB、Caches
+     142 MiB、Logs 114 MiB、Developer 31 MiB。Application SupportはCloudDocs 2.22 GiB、Google 477 MiB、
+     Claude 318 MiB、Syncthing 304 MiB、`awal-nodejs` 274 MiB、Codex 142 MiBである。
+
+     Life Manager source内部は`life-manager-main/.worktrees` 1.99 GiB、`.git` 1.67 GiB、`node_modules`
+     795 MiBである。外側`~/Projects/.worktrees`はAlpaca active worktree 3.55 GiB、その他約73–95 MiBの
+     worktree群である。Alpaca、GH-11、dirty、locked、unpushed、unmerged、open worktreeは保持する。
+     `Harmony`という大型app/rootは存在せず、名前一致はresearch tree内の小さなMarkdown 2件だけである。
+     `.camofox`は約1.4 MiBで容量原因ではない。`life-manager-repo-v0-retire` 454 MiB、
+     `anicca-portfolio-self-improve` 448 MiB、`anicca-docs-tools` 433 MiB、`actions-runner` 564 MiBは、名前だけで
+     消さずowner/provenance判定対象とする。
+
+     このcensusから優先監査familyは、①loop releases、②Cloak state backup/profile retention、③内外worktree、
+     ④Gig project lineage、⑤Anicca/OpenClaw重複clone、⑥OpenClaw backup/git/runtime output、⑦Anicca/Life Manager
+     state、⑧終了済みagent log/archive、⑨再生成可能なtool/cache、⑩未使用application/toolchainである。
+     「手動cleanupで一度freeが増えた」「ディレクトリ名が古そう」は完了証拠にしない。各familyでwriter owner、
+     active/open/loaded/dirty保護、保持上限、次wake回収、protected deletion 0を閉じる。
    - **Source preservation correction:** `~/Projects/life-manager-main`と
      `~/Projects/life-manager-eliza-migration`は両方active sourceとして保持する。Eliza migrationは未使用と
      推測して削除しない。この二つ以外のLife Manager/OpenClaw/Anicca cloneは、dirty/unpushed commit、
