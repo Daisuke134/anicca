@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import errno, fcntl
-import importlib.util, json, os, re, shlex, subprocess, sys, tempfile, time, uuid
+import json, os, re, shlex, subprocess, sys, tempfile, time, uuid
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Sequence, TextIO
 from urllib.parse import parse_qsl, urlsplit
@@ -20,7 +20,7 @@ KEYCHAIN_SERVICE="ai.anicca.crowdworks.login"; TELEGRAM_TARGET="8547730585"; BRO
 CREDENTIALS_PATH=Path("~/.local/share/anicca/credentials.json").expanduser()
 ACCOUNT_RESULT_FIELDS=("ok","platform","authenticated","status","role","request_id","error")
 ACCOUNT_INTERFACES={"run_status":"(*, ownership_checker, browser_factory) -> AccountResult","run_ensure":"(*, state_path: Path, allow_signup: bool, ownership_checker, browser_factory, vault_restorer, vault_dumper, credential_loader, notifier, now) -> AccountResult","answer_request":"(*, request_id: str, state_path: Path, input_stream, credential_writer) -> AccountResult","run_signup":"(*, state_path: Path, ownership_checker, browser_factory, mail_reader, profile_reader, password_generator, credential_writer, now) -> AccountResult"}
-_MAX=4096; _TERMINAL_TIMEOUT=10.0; _POLL_INTERVAL=.1; _RUNTIME:Any=None; _VAULT:Any=None
+_MAX=4096; _TERMINAL_TIMEOUT=10.0; _POLL_INTERVAL=.1; _RUNTIME:Any=None; _BROWSER:Any=None
 class _Error(RuntimeError):
     def __init__(self,code:str)->None: self.code=code if type(code)is str and re.fullmatch(r"[a-z][a-z0-9_]{1,63}",code) else "account_operation_failed"
 @dataclass(frozen=True)
@@ -346,27 +346,25 @@ def _owner()->bool:
     return False
 def _browser(url:str)->Any:
     if url!=CDP_URL:raise _Error("browser_endpoint_invalid")
-    global _RUNTIME
+    global _RUNTIME,_BROWSER
+    if _BROWSER is not None and _BROWSER.is_connected():return _BROWSER
     try:
         from playwright.sync_api import sync_playwright
-        _RUNTIME=sync_playwright().start();return _RUNTIME.chromium.connect_over_cdp(CDP_URL)
+        _RUNTIME=sync_playwright().start();_BROWSER=_RUNTIME.chromium.connect_over_cdp(CDP_URL);return _BROWSER
     except Exception:raise _Error("browser_connect_failed") from None
-def _vault()->Any:
-    global _VAULT
-    if _VAULT is not None:return _VAULT
-    os.environ.update({"SESSION_VAULT_PORT":SESSION_VAULT_PORT,"SESSION_VAULT_DIR":SESSION_VAULT_DIR})
-    try:
-        path=Path(__file__).resolve().parents[3]/"browser/scripts/session_vault.py";spec=importlib.util.spec_from_file_location("_anicca_crowdworks_session_vault",path)
-        if spec is None or spec.loader is None:raise RuntimeError
-        _VAULT=importlib.util.module_from_spec(spec);spec.loader.exec_module(_VAULT);return _VAULT
-    except Exception:raise _Error("vault_unavailable") from None
 def _restore()->Any:
-    try:return _vault().restore()
-    except _Error:raise
+    try:
+        saved=json.loads((Path(SESSION_VAULT_DIR)/"auth-state.json").read_text(encoding="utf-8"));allowed={"name","value","domain","path","expires","httpOnly","secure","sameSite"};cookies=[{key:item[key] for key in allowed if key in item} for item in saved.get("cookies",[]) if isinstance(item,Mapping)]
+        if not cookies:raise RuntimeError
+        _browser(CDP_URL).contexts[0].add_cookies(cookies);return {"ok":True,"restored":len(cookies)}
     except Exception:raise _Error("vault_restore_failed") from None
 def _dump()->Any:
-    try:return _vault().dump()
-    except _Error:raise
+    try:
+        path=Path(SESSION_VAULT_DIR)/"auth-state.json";cookies=_browser(CDP_URL).contexts[0].cookies()
+        if not cookies:raise RuntimeError
+        path.parent.mkdir(mode=0o700,parents=True,exist_ok=True);fd,temp=tempfile.mkstemp(prefix=".auth-state.",dir=path.parent);os.fchmod(fd,0o600)
+        with os.fdopen(fd,"w",encoding="utf-8") as stream:json.dump({"ts":int(time.time()),"cookies":cookies},stream,separators=(",",":"));stream.flush();os.fsync(stream.fileno())
+        os.replace(temp,path);os.chmod(path,0o600);return {"ok":True,"cookies":len(cookies)}
     except Exception:raise _Error("vault_dump_failed") from None
 def _dump_checked(call:Callable[[],Any])->Any:
     try:value=_resolve(call())
