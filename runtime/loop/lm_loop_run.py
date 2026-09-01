@@ -115,9 +115,20 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError) as error:
         print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
     scratch = reset_loop_scratch(Path(os.path.expanduser(entry["state_root"])))
-    return_code = _run_entrypoint(
-        command, env={**os.environ, "LIFE_MANAGER_RELEASE_ROOT": str(release_root),
-                      "TMPDIR": f"{scratch}/"})
+    try:
+        return_code = _run_entrypoint(
+            command,
+            env={
+                **os.environ,
+                "LIFE_MANAGER_RELEASE_ROOT": str(release_root),
+                "TMPDIR": f"{scratch}/",
+                "NPM_CONFIG_CACHE": str(scratch / "npm-cache"),
+            },
+        )
+    finally:
+        # Scratch is never evidence. Every loop owns and removes its temporary
+        # downloads, package caches, and build products when its pass ends.
+        shutil.rmtree(scratch, ignore_errors=True)
     try:
         event = build_runtime_event(
             loop_id=loop_id, domain=entry["domain"], run_id=run_id,

@@ -39,8 +39,9 @@ THRESHOLDS = ((20 * GiB, "NORMAL"), (11 * GiB, "PREVENTIVE"), (6 * GiB, "PRESSUR
 RECEIPT_RESERVE_BYTES = 1024 * 1024
 RECEIPT_PAYLOAD_MAX_BYTES = 64 * 1024
 # A release is ~1.2GiB, so unbounded generations fill the disk on their own.
-# Keep the newest two beyond whatever a symlink or the protected list still needs.
-RELEASE_RETENTION = 2
+# Main plus the current immutable release are the rollback source. Older
+# unreferenced, closed generations must not consume another 1.2 GiB each.
+RELEASE_RETENTION = 1
 RELEASE_NAME_PATTERN = re.compile(r"\d{8}T\d{6}-[0-9a-f]{8}")
 SOURCE_SUFFIXES = {
     ".c", ".cc", ".cpp", ".go", ".h", ".hpp", ".java", ".js", ".jsx",
@@ -57,8 +58,11 @@ EXACT_CACHE_ROOTS = {
     "ffmpeg-cache": "Library/Caches/ffmpeg-static-nodejs",
     "google-cache": "Library/Caches/Google",
     "hyperframes-cache": ".cache/hyperframes",
+    "npm-cache": ".npm/_cacache",
     "npx-cache": ".npm/_npx",
+    "github-cache": ".cache/gh",
     "whisper-model-cache": ".cache/whisper",
+    "zig-cache": ".cache/zig",
 }
 
 
