@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A05 DONE / A06 ACTIVE
+status: APPROVED DESIGN / A01-A06 DONE / A07 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -176,7 +176,7 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
-Current cursor: **A06 Decision-before-effect**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A07 Risk gate**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
@@ -265,6 +265,15 @@ current SPY trade, and 100 option snapshots. The pinned CLI's own `order submit 
 `mleg` limit/day request with a stable client order ID, and an injected execution-boundary check produced a typed
 paper receipt. No REST/SDK mutation path exists and no order was submitted; the first broker effect remains A08.
 
+A06 is **DONE** in `life-manager-eliza` merge `f3e11707e60a22d5b2721ad11060fdf5531f7700` (PR #48).
+One bounded `ACTION_PLANNER` call returns either `NO_TRADE` or a strict options decision containing thesis,
+structure, maximum loss, invalidation, exit plan, and only offered evidence references. A tenant-scoped,
+work-item-unique `decision_receipts` row stores that payload separately from model-attempt metadata. The same
+work item replays the durable receipt without another model call. Its persistence transaction checks that no
+effect intent already exists and fails closed if effect ordering has been violated. Plugin strict typecheck and
+four focused suites passed (`7/7` tests), including first call=1, replay call=0, and effect-before-decision
+rejection. No broker order or other external effect ran in A06.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
@@ -272,8 +281,8 @@ paper receipt. No REST/SDK mutation path exists and no order was submitted; the 
 | A03 | Life Manager-owned paper-account bootstrap — **DONE** | From the existing normal-email/password/TOTP login, `plugin-life-manager` uses Alpaca's official **Open New Paper Account** path, captures the new account ID/API keys privately, and checkpoints the result; a restart resumes the saved checkpoint; pinned-CLI readback proves the new paper account has cash/equity=`100000`, empty positions/orders/activity, and options Level 3. The existing baseline account is neither deleted nor presented as agent-created. |
 | A04 | Alpaca CLI preflight — **DONE** | Pinned CLI v0.0.14 and doctor plus account/clock/SPY/options/news reads return the dedicated paper account; zero positions/orders/activities reconcile; secrets appear in no repo/log/chat artifact. Optional MCP is not a readiness dependency. |
 | A05 | Alpaca CLI provider adapter — **DONE** | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
-| A06 | Decision-before-effect — **ACTIVE** | One bounded model call returns `NO_TRADE` or a typed thesis, structure, max loss, invalidation, exit, and evidence refs; the written decision precedes any effect intent. |
-| A07 | Risk gate | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
+| A06 | Decision-before-effect — **DONE** | One bounded model call returns `NO_TRADE` or a typed thesis, structure, max loss, invalidation, exit, and evidence refs; the written decision precedes any effect intent. |
+| A07 | Risk gate — **ACTIVE** | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
 | A08 | Exactly-once paper canary | Sealed intent submits one minimum-risk paper options order through the CLI; official ID/client ID/CLI readback bind to the intent; replay submits zero additional orders. |
 | A09 | Ack-loss/restart reconciliation | Simulated lost acknowledgement and process restart reconcile by client ID; absent/unknown state opens the breaker and blind retry remains zero. |
 | A10 | First registered durable loop | `plugin-life-manager` registers exactly one Alpaca loop; Eliza alone schedules each bounded pass, owns its lease/heartbeat/checkpoint, uses Alpaca clock, observes/decides/acts/reconciles, and resumes the same state after restart. Host adapters contain no Alpaca schedule. |
@@ -291,7 +300,7 @@ paper receipt. No REST/SDK mutation path exists and no order was submitted; the 
 - [x] **A04:** Close the already-collected pinned CLI preflight against the new A03 account.
 - [x] **A05:** Implement the typed, paper-only Alpaca CLI provider adapter; reject live mode and any REST/SDK
   mutation fallback.
-- [ ] **A06:** Persist one model-authored `NO_TRADE` or typed options thesis before any effect intent.
+- [x] **A06:** Persist one model-authored `NO_TRADE` or typed options thesis before any effect intent.
 - [ ] **A07:** Enforce the deterministic defined-risk, exposure, freshness, cooldown, and drawdown gate.
 - [ ] **A08:** Submit and reconcile one minimum-risk paper canary with a stable `client_order_id`; replay adds
   zero orders.
