@@ -210,11 +210,11 @@ def _approved(path: Path, creative_id: str, video_hash: str, caption_hash: str) 
     return None
 
 
-def _existing(rows: list[dict], platform: str, creative_id: str, video_hash: str, caption_hash: str):
+def _existing(rows: list[dict], platform: str, creative_id: str, video_hash: str, caption_hash: str, slot: str = ""):
     url_owners: dict[str, tuple] = {}
     provider_owners: dict[str, tuple] = {}
     matches = []
-    expected = (creative_id, video_hash, caption_hash)
+    expected = (creative_id, video_hash, caption_hash, slot)
     for row in rows:
         if (
             row.get("platform") != platform
@@ -222,7 +222,7 @@ def _existing(rows: list[dict], platform: str, creative_id: str, video_hash: str
             or not _valid_public_url(platform, row.get("public_url"))
         ):
             continue
-        lineage = (row.get("creative_id"), row.get("video_sha256"), row.get("caption_sha256"))
+        lineage = (row.get("creative_id"), row.get("video_sha256"), row.get("caption_sha256"), row.get("slot", ""))
         public_url = row["public_url"]
         provider_id = row.get("provider_id")
         url_owners.setdefault(public_url, lineage)
@@ -343,7 +343,7 @@ def distribute_platform(config: DistributionConfig, platform: str) -> dict:
         )
     rows = _read_ledger(config.ledger)
 
-    existing = _existing(rows, platform, config.creative_id, video_hash, caption_hash)
+    existing = _existing(rows, platform, config.creative_id, video_hash, caption_hash, config.slot)
     if existing:
         return {
             "creative_id": config.creative_id,
