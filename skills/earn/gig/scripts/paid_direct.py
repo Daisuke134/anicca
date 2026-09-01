@@ -4120,6 +4120,9 @@ def _remote_wait_is_fresh(root: Path, feedback: str, digest: str,
                           now: float | None = None) -> bool:
     paid_remote_result.validate_wait(root, feedback, digest, pass_start=0)
     observed_at = (root / "delivery" / "paid-remote-result.json").stat().st_mtime
+    release_manifest = REPO_ROOT / "RELEASE.json"
+    if _regular_file(release_manifest) and release_manifest.stat().st_mtime > observed_at:
+        return False
     age = (time.time() if now is None else now) - observed_at
     return 0 <= age < PAID_REMOTE_WAIT_RECHECK_SECONDS
 

@@ -750,6 +750,20 @@ def test_remote_wait_expires_after_recheck_interval(tmp_path):
     assert paid._remote_wait_is_fresh(root, feedback, digest, now=mtime + 3601) is False
 
 
+def test_remote_wait_from_older_release_resumes_on_new_capability(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    result = root / "delivery/paid-remote-result.json"
+    release = tmp_path / "release"
+    manifest = release / "RELEASE.json"
+    write_json(manifest, {"sha": "a" * 40})
+    result_mtime = result.stat().st_mtime
+    os.utime(manifest, (result_mtime + 1, result_mtime + 1))
+    monkeypatch.setattr(paid, "REPO_ROOT", release)
+
+    assert paid._remote_wait_is_fresh(root, feedback, digest, now=result_mtime + 10) is False
+
+
 def test_future_dated_remote_wait_is_not_fresh(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)
