@@ -560,13 +560,11 @@ def _rank_eligible_by_buyer_quality(eligible: Sequence[tuple[Mapping[str, object
     ranked = []
     for index, item in enumerate(eligible):
         row, decision = item
-        try: rate = status.fetch_public_client_order_rate(row.get("buyer_external_id"))
-        except Exception: rate = None
         maximum = row.get("budget_max_minor")
         budget = maximum if isinstance(maximum, int) and not isinstance(maximum, bool) else int(decision["price_jpy"])
         proposal_match = re.search(r"(?:^|\n)提案数: ([0-9][0-9,]*)件(?:\n|$)", str(row.get("description") or ""))
         applicants = int(proposal_match.group(1).replace(",", "")) if proposal_match else float("inf")
-        ranked.append(((0 if budget >= 50000 else 1, -budget, 0 if isinstance(rate, int) else 1, -(rate or 0), applicants, index), item))
+        ranked.append(((0 if budget >= 50000 else 1, -budget, applicants, index), item))
     return [item for _key, item in sorted(ranked, key=lambda value: value[0])]
 
 def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence: Path, planner: Optional[Callable[..., object]], safety_verifier: Optional[Callable[..., object]], submitter: Optional[Callable[..., object]], state_path: Path) -> ApplicationLoopResult:
