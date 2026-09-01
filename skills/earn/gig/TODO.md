@@ -240,6 +240,12 @@ capability claim is backed by an installed executable capability.
   exact official sent/readback matches the shared product contract, replay is effect-zero, and later
   inquiry/order/payment retain CrowdWorks plus job identity. CrowdWorks exposes job application rather
   than a worker storefront publication flow. Lancers remains excluded because its separate owner owns it.
+  **Current authentication correction:** a fresh official dashboard probe returns
+  `authenticated:true`, `role:employee`, and the private credential SSOT contains a CrowdWorks entry.
+  Ordinary saved email/password login is the required path; Google OAuth/passkey is not used. The
+  current Apply failure is `config_invalid` because `public-profile.json.hours_limit` is a string while
+  the installed profile contract requires an integer. Historical logged-out/OAuth observations below
+  are incident evidence only and must not be reported as current state.
   The public `crowdworks-revenue-application` owner and its recovered submit/readback transaction are
   implemented on a five-minute cadence. The owner now requires authenticated official profile apply and
   public readback before it searches or submits, so missing authentication/profile state cannot be hidden
@@ -4861,6 +4867,42 @@ and release GC now preserves its loaded immutable release while idle. Regenerabl
 reclaimed only after open-file checks; current free space is about 8.1 GiB and
 `disk-pressure.block` is absent. Codex session databases and `.cloak` stay
 protected and are not cleanup candidates.
+
+### Current owner scope and fixed execution order
+
+This is the authoritative current cursor and supersedes historical incident/recovery ordering below.
+The cleanup owner is handled by another session; its historical checklist remains evidence but is
+not part of this owner's execution queue. Do not advance a disk-cleanup item from this cursor.
+
+**Active atom: `PAR-1`.** Keep the following order unchanged:
+
+1. [ ] `PAR-1` — distinct authenticated BrowserContexts and lease identities for Apply, Reply,
+   Storefront and Paid; no sibling-caused `browser_lease_busy`.
+2. [ ] `PAR-2` — one deterministic effect fence per application, talkroom, listing or order.
+3. [ ] `PAR-3` — durable bounded producer-consumer concurrency inside all four owners.
+4. [ ] `PAR-4` — resumable nonterminal work items; one slow/failing item never blocks another.
+5. [ ] `PAR-5` — concurrent truthful effects, official readback and replay-zero from one immutable
+   public-main release.
+6. [ ] Paid — finish every current buyer-level outcome and obtain aggregate `failed=0`; keep formal
+   delivery off until the buyer explicitly approves the reviewed work.
+7. [ ] Negotiate/Reply — continuously consume buyer feedback, resubmit revised drafts until accepted,
+   cover every fresh buyer event and prove replay-zero.
+8. [ ] Storefront — execute every authorized listing mutation with official attribution and
+   replay-zero.
+9. [ ] Apply — account for every eligible posting, submit each authorized application exactly once,
+   and prove official readback and replay-zero.
+10. [ ] Four-lane gate — concurrent natural wakes, independent failure, reboot recovery and two
+    consecutive natural starts from the same immutable public-main release.
+11. [ ] CrowdWorks parallel track — run concurrently with items 1–10 and never wait for the Coconala
+    gate. First fix the current Apply owner's `hours_limit` type mismatch, then prove continuous
+    truthful eligible-job discovery, one fenced submission per job, official readback and replay-zero.
+    The official dashboard currently reads `authenticated:true`, `role:employee`; use ordinary saved
+    email/password login only and do not route this owner through Google OAuth/passkey. After Apply is
+    healthy, add independent Negotiate/Reply, Paid/Fulfillment and real-time reporting owners through
+    the shared provider-neutral contracts.
+
+The detailed `PAR-1` through `PAR-5` acceptance criteria and buyer-level Paid queue remain below.
+Historical unchecked cleanup or recovery entries do not reorder this list.
 
 ### Host disk and Account 2 runtime verification
 

@@ -244,6 +244,17 @@ and prove the new account with the pinned CLI. It must not delete the baseline a
 use Google login, or describe the earlier manually created account as agent-created. Source:
 `https://docs.alpaca.markets/docs/paper-trading`.
 
+Latest A03 execution evidence: branch `feat/alpaca-a03-autonomous-bootstrap-20260901` commit `9cd8092801`
+prevents a fresh checkpoint from treating pre-existing credentials as account-creation proof. Focused bootstrap
+checks pass `7/7`. A clean isolated Eliza runtime loaded `plugin-life-manager`; the owner goal invoked
+`ALPACA_BOOTSTRAP`, persisted `SIGNUP / CREATE_PAPER_ACCOUNT`, and Eliza itself opened
+`https://app.alpaca.markets`. No account, order, position, or broker activity was created. The remaining active
+block inside A03 is the interactive browser target: server-only Eliza selected the JSDOM workspace fallback,
+which cannot complete Alpaca's login SPA, while the registered companion bridge is read-mostly and does not
+support click/fill. Connect the existing CloakBrowser CDP session as a BrowserService target that supports
+state/click/fill without adding a second executor; then resume the same checkpoint through private capture and
+pinned-CLI readback. A03 stays ACTIVE until those real receipts exist.
+
 A04 has **preflight evidence ready but remains ordered after A03** against the official `alpacahq/cli` release `v0.0.14`, source commit
 `53606273aa230a40c64b783425dcb3f4423ede30`. Its published release checksum was verified before installing the
 native macOS arm64 binary. `alpaca version` returns `0.0.14`; `alpaca doctor` reports no saved profile, env-only
