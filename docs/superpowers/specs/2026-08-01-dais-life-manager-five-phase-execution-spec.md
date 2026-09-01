@@ -30,13 +30,13 @@ Daisが明示した次の4 programを上から完了し、順序を変更しな�
 
 | Order | Program | Current truth | PASS |
 |---:|---|---|---|
-| 1 | Codex connection errorの恒久解決 | 消失した`life-manager-symphony-workspaces/GH-11`は`origin/main@3c018f24f`から独立worktreeとして復元し、active session理由でlock済み。本来cwdからのcommand実行は成功した。cleanupがactive Codex/Symphony workspaceを削除できる生命周期競合は未修正 | active・dirty・locked・open-session workspaceをcleanupが保持し、終了済み・clean・unlocked・remote保存済みworkspaceだけを回収する。`GH-11`を跨ぐcleanup replay後もcwd command成功、connection error 0、protected deletion 0 |
+| 1 | Codex connection errorの恒久解決 | **DONE**。GitHub workroom #11 close時にOfficial Symphonyが同じ`GH-11`をterminal cleanupし、開いたCodex sessionのcwdを消したことをlog・source・issue stateで確定。PR #3598 / main `67d3f4e78`でSymphony workspace rootを`~/.local/state/life-manager/symphony-workspaces`へ強制隔離した。旧Projects root注入を上書きするfocused 13/13、loop control contracts、GH-11 cwd・lock readback PASS。local Symphony/bridgeはretiredかつunloaded | Persistent Codex project workspaceとterminal時に削除されるSymphony runtime workspaceの所有rootが重ならない。再有効化時も外部の旧rootを継承せずruntime専用rootを使用する |
 | 2 | Disk cleanupの恒久解決 | production labelはlatest main release `3c018f24f`へ更新済みで自然runはexit 0、errors 0、protected deletion 0。安全な大容量cacheの候補化不足により、正常終了でもreclaimed 0になり得る | credential、browser profile、receipt、ledger、state、active worktree、loaded releaseを保持したまま、再生成可能なclosed cacheとstale workspace/releaseをpressure前に回収する。free-space governor、producer block/resume、cleanup replayがerrors 0・protected deletion 0 |
 | 3 | Lancers着金から自律market展開 | ElizaOS full forkと`plugin-life-manager`のgeneral coreは正本方針。既存Lancers/Coconala launchd ownerはcutover前のproduction ownerであり、process成功は収益証明ではない | Lancersで`Goal → WorkItem → discover → apply → contract → fulfill → deliver → payment → banked receipt → reflect`を人手なしで閉じる。その同じprovider-neutral coreがCrowdWorksを次市場として開始し、以後はLife Manager自身が市場、tool、loop/graphを選択・構築・検証してsettled netを増やす。subjectiveなmarket判断をkeyword/regex/provider branchへ固定しない |
 | 4 | WebMCP hackathon提出 | Money Printerのcode、Steel、Symphony、visual takeoverは存在するが、judge-facing final E2E、動画、YouTube、Devpost提出は未完 | 公開URLとrepoからjudgeが60秒でWebMCP takeoverを実行でき、4 criteriaを一次証拠で説明する。final E2E、動画、YouTube、Devpost receiptを閉じる |
 
 Order 4は別Codex sessionが独立workspace、branch、browser/profile、external submission stateを所有できる場合だけOrder 1〜3と並行してよい。
-同じ資源を共有する場合は並行せず、この表の順序へ戻す。現在activeな先頭atomはOrder 1のworkspace lifecycle保護である。
+同じ資源を共有する場合は並行せず、この表の順序へ戻す。現在activeな先頭atomはOrder 2のDisk cleanup恒久解決である。
 Upwork terminal evidence、startup context、public claim、GA-01〜13A、Phase C、ELZ-L01〜L03は完了または履歴として保持する。
 旧cursor `ELZ-L04`以降はOrder 3内部のatomであり、Order 1〜2のPASS後に再開する。
 
