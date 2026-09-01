@@ -168,6 +168,16 @@ capability claim is backed by an installed executable capability.
   PASS = each later wake either records a bounded official no-change reason or performs one fenced
   mutation selected from conversion evidence; zero-sale offers can be replaced, paid offers stay
   protected, and no competitor-owned prose/image/identity enters a published contract.
+  Current system evidence: public main `71e339f5027bedca1b79f9d60f02d088237f8488`
+  gives Storefront its existing daily-driver auth vault from the canonical loop installer and skips
+  stale prepared intents superseded by a newer confirmed effect. Natural owner readback reached 14
+  official services with 534 seeded cookies and released its isolated context. Release
+  `20260901T214328-71e339f5` also contains the complete skill registry/browser dependencies. Do not
+  wait for a sale. The remaining PASS action is one new terminal owner receipt from that release;
+  the current Codex execution context returns `launchctl gui/501` error 141 and lost the last owner
+  process before terminal receipt, so restore the GUI bootstrap context without touching the shared
+  browser, kick only the existing Storefront owner, and require bounded no-change or one fenced
+  effect plus official readback and released lease.
 - [ ] `S11` Persist one website-neutral `MarketProductContract` from the accepted Storefront offer.
   PASS = buyer job, delivery kind, inclusions, exclusions, inputs, artifact acceptance, base price,
   recurring-support boundary, capability evidence, paid-demand evidence and originality provenance
