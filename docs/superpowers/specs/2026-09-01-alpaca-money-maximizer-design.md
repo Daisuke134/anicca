@@ -181,6 +181,13 @@ Current cursor: **A02 Team/submission shell**. A01 is DONE with the event contra
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
 
+A02 is **IN PROGRESS at the provider-consent boundary**. A new Lablab account was created through its normal
+email OTP flow without Google/GitHub/AMD login, and the Alpaca event screening form now exists; the official
+event page reads `Waiting for approval`. Lablab requires the account owner to accept both a media release
+(name/image/voice and event-participation use without additional compensation) and Terms/Privacy consent that
+includes sponsor data sharing. Life Manager must not accept those legal terms for Dais. Team/submission-shell
+creation and the A02 official readback resume immediately after Dais explicitly accepts both consents.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
