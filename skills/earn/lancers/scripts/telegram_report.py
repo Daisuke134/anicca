@@ -589,6 +589,46 @@ def notify_application_wake(
     return deliver_pending(Path(database), notifier or _default_notifier, moment)
 
 
+def _notify_lane_wake(
+    lane: str, result: Mapping[str, object], message: str, *,
+    database: Path = DATABASE, notifier: Optional[Callable[[str], object]] = None,
+    now: object = None,
+) -> DeliveryResult:
+    moment = now or datetime.now(timezone.utc).isoformat()
+    identity = hashlib.sha256(
+        (lane + "\0" + str(_timestamp(moment)) + "\0" + json.dumps(result, sort_keys=True, separators=(",", ":"))).encode()
+    ).hexdigest()
+    outbox.enqueue(Path(database), f"lancers:{lane}-wake:v1:{identity}", message, _timestamp(moment) or "unknown")
+    return deliver_pending(Path(database), notifier or _default_notifier, moment)
+
+
+def notify_storefront_wake(result: Mapping[str, object], **kwargs: object) -> DeliveryResult:
+    action = str(result.get("action") or result.get("error") or "unknown")
+    demand = result.get("demand") if isinstance(result.get("demand"), Mapping) else {}
+    message = (
+        f"[Lancers][出品] {'✅' if result.get('ok') else '⚠️'} {action}\n"
+        f"商品: {result.get('canonical_url') or '公式URLを取得できませんでした'}\n"
+        f"需要: 検索表示{int(demand.get('search_impressions') or 0)}件 / 詳細閲覧{int(demand.get('detail_views') or 0)}件 / "
+        f"お気に入り{int(demand.get('favorites') or 0)}件 / 相談{int(demand.get('inquiries') or 0)}件 / 注文{int(demand.get('orders') or 0)}件。\n"
+        "次: 次の出品wakeで公式状態と需要を再確認します。"
+    )
+    return _notify_lane_wake("storefront", result, message, **kwargs)
+
+
+def notify_work_sync_wake(result: Mapping[str, object], **kwargs: object) -> DeliveryResult:
+    reply = result.get("reply_action") if isinstance(result.get("reply_action"), Mapping) else {}
+    finance = result.get("finance") if isinstance(result.get("finance"), Mapping) else {}
+    message = (
+        f"[Lancers][交渉・収益] {'✅' if result.get('ok') else '⚠️'} {reply.get('status') or result.get('error') or '確認完了'}\n"
+        f"交渉: 公式会話{int(result.get('board_count') or 0)}件 / 返信必要{int(result.get('required_reply_count') or 0)}件 / "
+        f"未読{int(result.get('unread_count') or 0)}件 / 契約候補{int(result.get('contract_candidate_count') or 0)}件。\n"
+        f"収益: 入出金履歴{int(finance.get('payment_history_count') or 0)}件 / 残高{int(finance.get('account_balance_jpy') or 0)}円 / "
+        f"入金{int(finance.get('received_gross_jpy') or 0)}円。\n"
+        "次: 次のwakeで返信・契約・仮払い・入金を再確認します。"
+    )
+    return _notify_lane_wake("work-sync", result, message, **kwargs)
+
+
 def _pending_count(path: Path) -> Optional[int]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))

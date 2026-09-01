@@ -401,7 +401,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     mode.add_argument("--inspect", action="store_true"); mode.add_argument("--apply", action="store_true")
     parser.add_argument("--product", type=Path, default=DEFAULT_PRODUCT); parser.add_argument("--state-path", type=Path, default=Path.home() / ".local/state/anicca/lancers/application.json")
     args = parser.parse_args(argv); result = run(args.apply, args.product, args.state_path)
-    print(json.dumps(result, ensure_ascii=False, sort_keys=True, separators=(",", ":"))); return 0 if result.get("ok") is True else 1
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True, separators=(",", ":")), flush=True)
+    if args.apply:
+        reporter = _load("_anicca_lancers_storefront_reporter", HERE / "telegram_report.py")
+        delivery = reporter.notify_storefront_wake(result)
+        if delivery.delivery_uncertain or delivery.pre_send_failed: return 1
+    return 0 if result.get("ok") is True else 1
 
 
 if __name__ == "__main__": raise SystemExit(main())
