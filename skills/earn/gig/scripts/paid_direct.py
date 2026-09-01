@@ -5156,7 +5156,8 @@ def run_once(args, output: Path) -> int:
                 except (Failure, OSError, ValueError, TypeError, json.JSONDecodeError) as error:
                     step = error.step if isinstance(error, Failure) else "targeted_readback"
                     failed, failed_step = failed + 1, step
-                    rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": step}
+                    rows[room] = {"talkroom_id": room, "status": "failed", "failed_step": step,
+                                  "error_detail": str(error)[:500]}
         work_candidates = []
         for item in targeted_items:
             room = _text(item.get("talkroom_id"))
