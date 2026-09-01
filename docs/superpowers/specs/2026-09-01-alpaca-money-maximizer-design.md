@@ -334,6 +334,14 @@ plugin, action, and service, then fired the existing task ID through channel
 exactly one matching client order/provider order, paper equity `$99,997.95`, and cash `$99,970.95`. The position
 has not exited, so realised P&L is not yet available and A11 remains ACTIVE.
 
+Follow-up `life-manager-eliza` merge `ad5f1fdbf7f12ced5ed24c53841bce4d5bb50496` (PR #64) seals the
+risk-reducing exit through the same effect kernel and stable client-ID derivation. It uses Alpaca's documented
+mleg sign convention (negative limit price means credit), records exact position/fill details, and creates a
+paper-only realised gain/loss receipt only after official positions reach zero. The existing five-minute task
+now evaluates this exit on every pass. Its real after-hours fire returned `ORDER_VERIFIED` plus
+`HOLD_CLOSED_SESSION`, with pending dispatch empty and no close order submitted; the next regular-session fire
+owns the exactly-once close and subsequent realised-P&L reconciliation.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
