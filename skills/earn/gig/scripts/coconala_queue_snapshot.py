@@ -510,6 +510,29 @@ def validate_orders_dom(dom: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def inspect_orders_when_ready(
+    helper: Path, evidence_dir: Path, *, hidden: bool, attempts: int = 3,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Retry only a correctly routed orders page whose semantic DOM is still loading."""
+    if attempts < 1:
+        raise ValueError("attempts must be positive")
+    transient = {"orders_missing_container", "orders_empty_without_semantic_marker"}
+    for attempt in range(attempts):
+        dom = inspect_page_with_retry(
+            helper, OPEN_ORDERS_URL, ORDERS_ONLY_EXPRESSION,
+            None if hidden else evidence_dir / "received-orders-open.png",
+            hidden=hidden,
+        )
+        try:
+            return dom, validate_orders_dom(dom)
+        except CollectorUnhealthy as error:
+            reason = str(error).removeprefix("collector_unhealthy:")
+            if reason not in transient or attempt == attempts - 1:
+                raise
+            time.sleep(1)
+    raise AssertionError("unreachable orders readiness retry")
+
+
 def dedupe_inbox_cards(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Keep one bounded record per stable talkroom path across virtualized rounds."""
     seen: set[str] = set()
@@ -3359,13 +3382,10 @@ def main() -> int:
     try:
         load_connector_manifest()
         if mode == "orders-only":
-            orders_dom = inspect_page_with_retry(
-                args.cdp_helper, OPEN_ORDERS_URL, ORDERS_ONLY_EXPRESSION,
-                screenshot(args.evidence_dir / "received-orders-open.png"),
-                hidden=hidden,
+            orders_dom, orders_coverage = inspect_orders_when_ready(
+                args.cdp_helper, args.evidence_dir, hidden=hidden,
             )
             source_dom = orders_dom
-            orders_coverage = validate_orders_dom(orders_dom)
             orders = orders_from_dom(orders_dom)
             if len(orders) != len(orders_dom["cards"]):
                 raise CollectorUnhealthy("orders_card_coverage_mismatch")
