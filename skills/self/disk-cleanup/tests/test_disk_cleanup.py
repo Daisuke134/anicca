@@ -490,13 +490,13 @@ def test_release_probe_uses_one_global_lsof_instead_of_walking_the_tree(tmp_path
     disk_cleanup._open_paths.cache_clear()
 
 
-def test_release_retention_keeps_referenced_and_newest_generations(tmp_path: Path) -> None:
+def test_release_retention_keeps_referenced_and_current_generation(tmp_path: Path) -> None:
     releases = tmp_path / "loops" / "releases"
     releases.mkdir(parents=True)
     names = [
         "20260828T010101-aaaaaaaa",  # oldest, unreferenced -> reclaimable
         "20260829T010101-bbbbbbbb",  # referenced by the protected list
-        "20260830T010101-cccccccc",  # newest two are kept regardless
+        "20260830T010101-cccccccc",  # closed and unreferenced -> reclaimable
         "20260831T010101-dddddddd",
     ]
     for name in names:
@@ -518,8 +518,9 @@ def test_release_retention_keeps_referenced_and_newest_generations(tmp_path: Pat
     governor.sweep(candidates)
 
     assert not (releases / names[0]).exists()
-    for name in names[1:]:
-        assert (releases / name).exists()
+    assert (releases / names[1]).exists()
+    assert not (releases / names[2]).exists()
+    assert (releases / names[3]).exists()
 
 
 def test_read_only_release_export_is_still_reclaimable(tmp_path: Path) -> None:
@@ -861,7 +862,7 @@ def test_run_once_records_inventory_summary(tmp_path: Path, monkeypatch) -> None
     assert receipt["inventory_roots"] == 2
 
 
-def test_run_once_clears_shared_producer_block_above_one_gib(tmp_path: Path, monkeypatch) -> None:
+def test_run_once_never_blocks_producers_even_below_eleven_gib(tmp_path: Path, monkeypatch) -> None:
     state = tmp_path / "state"
     state.mkdir()
     pressure = state / "disk-pressure.block"
@@ -875,32 +876,12 @@ def test_run_once_clears_shared_producer_block_above_one_gib(tmp_path: Path, mon
         home=tmp_path,
         state_dir=state,
         lsof=lambda _path: "confirmed-closed",
-        usage=lambda: (2 * GiB, 100 * GiB),
+        usage=lambda: (11 * GiB - 1, 100 * GiB),
     )
 
     governor.run_once()
 
     assert not pressure.exists()
-
-
-def test_run_once_blocks_producers_below_512_mib(tmp_path: Path, monkeypatch) -> None:
-    state = tmp_path / "state"
-    state.mkdir()
-    monkeypatch.setattr(
-        disk_cleanup,
-        "collect_host_inventory",
-        lambda **_kwargs: {"coverage": {"mount_count": 0, "root_count": 0, "gaps": []}},
-    )
-    governor = HostDiskGovernor(
-        home=tmp_path,
-        state_dir=state,
-        lsof=lambda _path: "confirmed-closed",
-        usage=lambda: (512 * 1024**2 - 1, 100 * GiB),
-    )
-
-    governor.run_once()
-
-    assert (state / "disk-pressure.block").is_file()
 
 
 def test_run_once_global_budget_preserves_candidate_and_does_not_advance_full_marker(

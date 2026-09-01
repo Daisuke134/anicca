@@ -1623,7 +1623,7 @@ Mercorはprimary real-provider trace、Lancersはsupporting receipt evidenceで�
 2. C01–C03でbrowser actionをsame Symphony jobへ接続する。
 3. C04–C07でDashboard-only human takeoverとresumeを閉じる。
 4. C08–C09でmulti-tenant fair claimとcloud Symphony deploymentを閉じる。
-5. C10でreal Mercor、C11でindependent judge pathを実ブラウザ検証する。
+5. C10–C11で既存cloud Mercor/judge pathを実ブラウザ検証し、C11.1–C11.8でemail-only real-user onboarding、本人限定work、submission/resubmission、official receiptを閉じる。
 6. C12でfour-criteria evidence、video、freeze、submissionを閉じる。
 
 #### E2E judgment

@@ -39,11 +39,17 @@ model narration, and local success without the named readback are not PASS.
   PASS = the official counterparty readback binds Studio BlackWave to talkroom `10131237`; Reply
   prompt v28 receives that verified thread ID and always returns `stop_contact / stop`, never reply,
   estimate or clarify. Existing messages are not resent or changed. Focused semantic tests pass 34/34.
-- [ ] `AM02` Deploy both prompt policies through the normal immutable release boundary.
+- [x] `AM02` Deploy both prompt policies through the normal immutable release boundary.
   PASS = the change is merged to pushed main, a read-only immutable release contains the exact Apply
   and Reply policies, loaded owner argv points to that release, one natural pass per affected owner
   reaches a terminal result from the same SHA, and subsequent decisions use the new prompts. Do not
   submit a synthetic application or send a synthetic reply solely to prove either rule.
+  Release `26e6025635bf7ea6bb02b94888fe5ca6ff8c87f4` is an immutable ancestor of pushed main and
+  contains both policies. Apply and Reply loaded argv point to that release. Reply produced natural
+  pass events from the same SHA. Apply naturally reached terminal `entrypoint_exit_1` after fresh
+  official discovery returned zero eligible rows and the existing gate reported
+  `under_target_search_not_exhausted`; no synthetic application or reply was sent. Any later
+  decision is loaded from the release containing the new prompt policies.
 
 ### Manledge closure — account-owner priority override
 
@@ -148,9 +154,16 @@ capability claim is backed by an installed executable capability.
   `44547340-9588932.png`, no public readback error, and the generated maintenance option. Natural
   replay `storefront-direct-1787829207737098000-21430` read 14 official services and 14 active
   listing contracts with effect zero and no duplicate publication.
-- [ ] `S09` Attribute the first inquiry, order and payment to the originating service.
-  PASS = official talkroom/service identity, order and payment receipts retain the same service ID;
-  unknown remains explicit and storefront revenue is never inferred from views, favourites or chat.
+- [x] `S09` Attribute inquiry, order and payment to the originating service without waiting for a sale.
+  PASS = when official talkroom DOM supplies one service identity, inquiry and payment receipts retain
+  that same service ID and order identity, replay appends zero duplicate events, absent or ambiguous
+  identity remains explicit unknown, and revenue is never inferred from views, favourites or chat.
+  The direct-message collector now emits exact `/services/<id>` links, Reply persists the single
+  official identity in its transcript, and Storefront projects that identity through inquiry and
+  payment receipts. A focused end-to-end contract passed with service `4371816`, order `order-1`,
+  payment `receipt-1`, storefront inquiry/payment `1/1`, net `1000`, and replay appended `0`.
+  Current production rows remain unknown because their official DOM/API supplied no service identity;
+  they are intentionally not guessed or relabelled.
 - [ ] `S10` Continue measured portfolio learning without cloning competitors.
   PASS = each later wake either records a bounded official no-change reason or performs one fenced
   mutation selected from conversion evidence; zero-sale offers can be replaced, paid offers stay
@@ -412,12 +425,16 @@ Latest verified recovery state:
   standard `PUT /json/new?URL` endpoint instead of the broken `Target.createTarget` path. An isolated live
   `/json/new` target connected and closed successfully; the exact Ryuu room then returned final route
   `https://coconala.com/talkrooms/18211957` with complete history coverage and no customer effect.
-- usa `18214856` is still **not delivered**. There is no NOTE publication URL, no
-  `delivery/paid-remote-result.json`, and no Coconala message containing a published NOTE URL. The latest
-  official seller message only says the existing NOTE account was found and will be used. Its decision is now
-  v18 `actionable/remote` with no unresolved input: use the private seller-owned NOTE/BingX resources, publish
-  the actual 3,000–5,000-character article, verify the public NOTE URL, submit that URL once, read it back,
-  and replay zero.
+- usa `18214856` has the buyer-visible work and one submission effect, but Paid is still **not complete**.
+  The natural owner published the 3,039-character NOTE article at
+  `https://note.com/anicca123/n/ne57c939d6c3b`; a public HTTP 200 readback contains affiliate URL
+  `https://bingxdao.com/invite/0NHH0M/`; and the installed Paid adapter sent that NOTE URL once in exact
+  Coconala room `18214856` with `formal_delivery_checkbox=false`. Fresh verification independently confirmed
+  the NOTE publication and exact-room message, so neither effect may be repeated. It rejected the owner's
+  hand-written BingX authentication receipt: a fresh official readback returned the BingX login page, while
+  Google ordinary login reached a passkey-only challenge. Paid must preserve the published/submitted effects,
+  complete or resume the authorized Google/BingX authentication ceremony, independently read back the
+  authenticated seller-owned BingX account plus WELCOME referral state, and then replay with zero effects.
 - Ryu `18211957` is v18 `actionable/remote`, but is still **not complete for the current revision**. The
   preserved Netlify result proves an older profile-navigation deployment, not the current HOME headings,
   schedule filters, banners, pricing area, and questionnaire requirements. Paid must update and verify the
@@ -428,12 +445,42 @@ Latest verified recovery state:
 - snow `18218780` is v18 `actionable/file` with no unresolved input, but has no `paid-work-result.json` or
   buyer-visible JPG. Paid must retrieve the supplied TIF, produce the specified full-resolution edit, submit
   it for review with formal delivery off, and read it back.
-- No four-room completion claim is allowed yet. The latest aggregate is `pending/browser_lease_busy` behind
-  Apply, with effect 0 and failed 0. After browser admission is free, Paid must refresh all nine rooms and
-  start the four project owners concurrently. Official Coconala readbacks remain serialized because the four
-  lanes share one authenticated browser; article/site/report/image production remains parallel in isolated
-  project workspaces. Completion requires actual NOTE publication, current live-site revision, report and JPG
-  submission, exact-room readbacks, aggregate `failed=0`, then a second natural replay with duplicate effects 0.
+- No four-room completion claim is allowed yet. Release `20260901T122539-b7dc7b3c` ran the project owners in
+  parallel and produced the USA publication/submission effects, but the cycle ended `failed=6` after the fresh
+  BingX authentication readback failed; the Paid launchd owner exited 1. Official Coconala readbacks remain
+  serialized because the projects share one authenticated marketplace browser; article/site/report/image
+  production remains parallel in isolated project workspaces. Completion still requires authenticated BingX
+  readback without trusting model-authored evidence, the remaining live-site/report/JPG outcomes, exact-room
+  readbacks, aggregate `failed=0`, then a second natural replay with duplicate effects 0.
+
+**Active shared boundary — repair the Paid Kernel, not the named buyers.** The four rooms above are live
+acceptance fixtures for one marketplace-neutral owner contract; they are not foreground-Codex work items and
+must not receive buyer-specific code paths. Production proves that the parent can start multiple project
+children, but those children are disposable subprocesses rather than durable owners: provider/DNS failure,
+process exit, or a missing named resource ends the child before the objective is complete, and the parent
+publishes useful status only when the whole pass ends. The resource resolver also treated no pre-existing
+BingX account or exact skill as inability, despite the authorized job permitting the general agent to create
+the account with its browser/tools; the file path accepted an incomplete horse-racing proxy instead of making
+the same owner research public results until the contracted report was complete.
+
+The active implementation TODO is therefore Stage 3 items 9–14 applied to these four fixtures now:
+
+1. Persist one owner/thread/workspace per `JobContract`; resume the same owner after crash, provider failure,
+   wait, revision, or release instead of restarting semantic work inside one Paid parent pass.
+2. Give that owner the objective, complete context, general tools, private resource resolver, and optional
+   skills. Missing an exact skill or already-created account is never an admission failure; the model creates,
+   recovers, or composes what the authorized outcome requires unless identity, consent, money, physical
+   presence, or an unavailable official effect truly blocks it.
+3. Treat provider/network failure as durable `WAITING_EXTERNAL` with bounded failover/resume, never as a buyer
+   question or terminal `remote_resume`. Emit per-owner heartbeats and terminal receipts while work runs;
+   aggregate status must not hide live children behind the prior completed pass.
+4. Keep browser leases, identity, authorization, dedupe, checkpoints, hashes, typed effects, and exact official
+   readback deterministic. Keep job planning, research, artifact production, tool/skill/account choice, repair,
+   and completion judgment inside the agent loop. A fresh reviewer returns defects to the same owner until the
+   exact buyer outcome is complete; a draft, apology, unavailable-number report, or progress reply cannot pass.
+5. Keep Coconala, Lancers, CrowdWorks, Upwork, and new marketplaces as thin adapters around this same owner.
+   Adding a marketplace may add selectors/auth/effect/readback code only; it may not fork the planner, producer,
+   reviewer, lifecycle, or revenue logic.
 
 3. [ ] byusco `18171890`: invalidate the stale note-only decision, consume the latest request,
    publish the reviewed article to the agreed anicca AI blog through the installed owner, read
@@ -579,6 +626,60 @@ Latest verified recovery state:
    machine-readable exhaustion receipt and zero effect; do not send a scope-change message yet.
 
 ### Stage 3 — generalize the measured Paid owner into a job-doing agent
+
+#### Paid Kernel product contract
+
+**Overview.** Life Manager Paid is a marketplace-neutral, no-human Job Owner that earns money by
+finishing accepted digital work. It MUST operate the same reasoning/tool loop across Coconala,
+Lancers, CrowdWorks, Fiverr, Upwork, and previously unseen marketplaces. A named Skill is an optional
+method cache, never a capability whitelist. When no exact Skill or pre-created account exists, the
+owner MUST use its general computer/browser/research/coding/media tools to create, recover, compose,
+or learn the required method and continue until the contracted outcome is submitted.
+
+**Acceptance criteria.**
+
+1. Every accepted `JobContract` gets one durable owner/thread/workspace that survives process exit,
+   provider failure, release changes, waits, revisions, and marketplace migration.
+2. The owner independently plans, researches, selects or creates authorized accounts, uses existing
+   Skills when useful, produces the real outcome, reviews it, repairs defects, and submits it through
+   the marketplace adapter. It MUST NOT stop at a draft, explanation, apology, progress reply, local
+   file, model output, or missing exact Skill.
+3. Independent jobs run concurrently up to bounded host/account capacity. A shared browser/account
+   serializes only the exact operation using that identity; it MUST NOT stop unrelated research,
+   coding, rendering, account preparation, or artifact production.
+4. Accepted achievable work MUST reach buyer-visible delivery and official readback. If the exact
+   outcome truly requires unavailable identity, consent, money, physical presence, or a prohibited
+   effect, the same owner MUST negotiate a truthful supported scope or complete official cancellation;
+   it MUST NOT impersonate, fabricate, or silently abandon the contract.
+5. Completion requires exact provider/marketplace receipts, acceptance or transaction completion,
+   and a second replay with every effect zero. Only identity, authorization, arithmetic, leases,
+   checkpoints, dedupe, payload/artifact hashes, typed effects, and official readback are deterministic.
+   Job interpretation, tool/Skill/account choice, production, research, repair, and semantic completion
+   judgment belong to the model.
+
+**As-is / To-be.** The current Paid parent starts disposable per-pass children whose progress is hidden
+until aggregate exit and whose objective dies on timeout/provider failure. The target system stores each
+job independently, continuously reconciles all active owners, resumes the same owner from durable
+checkpoints, and exposes live owner state without waiting for a parent batch. Marketplace code becomes a
+thin observe/effect/readback adapter; no marketplace forks the planner, producer, reviewer, lifecycle, or
+revenue logic.
+
+**Test matrix.** Process-exit resume, provider failover, missing-Skill general-tool execution,
+authorized account creation, concurrent different-job execution, same-identity serialization,
+artifact-repair continuation, exact submission/readback, cancellation, and replay-zero MUST pass on the
+shared kernel. Adapter conformance MUST pass unchanged for Coconala plus at least two of Lancers,
+CrowdWorks, Fiverr, or Upwork before marketplace-neutral completion is claimed.
+
+**Boundaries.** No foreground Codex/manual customer work satisfies this contract. No owner may perform
+illegal work, deception, another person's identity ceremony, unapproved spending/trading/KYC, or an
+embodied physical task. No extra human approval is required for ordinary authorized digital work,
+account creation, research, production, publishing, or marketplace submission.
+
+**Execution and E2E.** Implement items 9–16 in order through public-main immutable releases and the
+single registered Paid label. UI behavior changes through real marketplace/browser effects, so Maestro is
+not applicable; official provider DOM/API receipts are required instead. The live E2E is complete only
+when varied real jobs on at least two marketplaces reach accepted delivery and replay-zero without
+foreground customer work.
 
 9. [ ] Make Paid's project owner the website-neutral execution kernel. Give every discovered paid
    job one stable global owner ID plus website/account/job identities and lifecycle:
@@ -4269,10 +4370,13 @@ not a wider filter.
 
 ## 0b. Negotiate misses the five-minute reply target because its own pass is too long
 
-The previous diagnosis here was wrong. Change detection is working, and the four lanes are
-already independent launchd jobs that can run concurrently. They share one logged-in Chromium,
-but each owns a distinct target or BrowserContext; there is no global lock serializing all four.
-Production also showed Apply and Negotiate running at the same time under different PIDs.
+Change detection is working, and the four lanes are independent launchd jobs that can run
+concurrently for model work, artifact production and bookkeeping. Browser effects are not yet
+fully independent: the installed owners share the authenticated Gig browser boundary and
+`CDP_LOCK_DIR`, and Paid returns `pending / browser_lease_busy` while a sibling owns the context.
+Production shows separate lane PIDs, but a separate tab or PID is not proof of independent effect
+capacity. Outside parallelism exists; browser admission and official readback remain shared
+bottlenecks until each lane owns a distinct authenticated BrowserContext and lease.
 
 The measured incident is buyer message `2026-08-19 13:40:23 JST` to official seller readback at
 `13:50:36`, or **10 minutes 13 seconds**. The pass that snapshotted at `13:39:14` necessarily
@@ -4733,6 +4837,32 @@ Restart the browser only when the exact owner/lease census proves no active user
 complete nine-room targeted readback before resuming builders. Acceptance is: no HTTP 500, all nine
 rooms classified from fresh official DOM, no sibling interruption, and replay-zero for the readback
 pass. Do not claim Paid working before this P0 and the buyer outcomes below are complete.
+
+**Parallel outside and inside acceptance — keep this order inside the current cursor.** The four
+business lanes remain four independent launchd owners; no fifth scheduler or global browser-effect
+queue is added. Each owner must also progress independent work concurrently inside its own lane.
+
+- [ ] `PAR-1` Give Apply, Reply, Storefront and Paid distinct authenticated BrowserContexts and
+  distinct lease identities. PASS = all four owners perform fresh official readback concurrently,
+  no owner returns `browser_lease_busy` because of a sibling, and stopping or timing out one owner
+  does not close, restart or invalidate another owner's context.
+- [ ] `PAR-2` Keep one deterministic effect fence per marketplace resource: application, talkroom,
+  listing or order. PASS = concurrent workers may prepare different resources, but two workers
+  cannot submit the same application, message, listing mutation, attachment, cancellation or formal
+  delivery; an uncertain prior effect is reconciled before any retry.
+- [ ] `PAR-3` Run durable producer-consumer concurrency inside every lane. PASS = fresh eligible work
+  is durably claimed before model work, bounded workers progress different resource IDs in parallel,
+  a slow item does not block discovery or another item, and full reconciliation yields to urgent
+  claimed work without being skipped permanently.
+- [ ] `PAR-4` Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
+  browser-context failure or release change records one exact next transition and retry time; the
+  next natural wake resumes it while unrelated work continues. A buyer-authored revision creates a
+  new version of the same work item instead of overwriting or duplicating the prior effect.
+- [ ] `PAR-5` Prove fastest truthful submission and replay-zero from one immutable public-main
+  release. PASS = Apply submits every currently eligible posting, Reply handles every fresh buyer
+  event, Storefront executes every authorized mutation and Paid progresses every purchased order;
+  each effect has exact official readback, every retry is either effect-zero or a verified missing
+  effect, and one blocked resource never makes the parent lane stop processing the rest.
 
 1. **Paid / delivery first.** The latest production aggregate observed 9 rooms, 7 actionable,
    `effect=0`, `readback=4`, and 5 failures: `18128025=remote_resume`, `18180857=remote_builder`,

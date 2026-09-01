@@ -248,6 +248,9 @@ def thread_state(
     if len(counterparty_paths) != 1:
         raise collector.CollectorUnhealthy("counterparty_identity_ambiguous")
     counterparty_user_id = next(iter(counterparty_paths)).rsplit("/", 1)[-1]
+    service_urls = dom.get("service_urls") if isinstance(dom.get("service_urls"), list) else []
+    service_ids = {match.group(1) for value in service_urls
+                   if (match := re.fullmatch(r"/services/(\d+)", str(value or "")))}
     path = urlsplit(expected_url).path
     match = re.fullmatch(r"/mypage/direct_message/([A-Za-z0-9_-]+)", path)
     if not match:
@@ -256,7 +259,9 @@ def thread_state(
         json.dumps(fingerprint_rows, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
     return (
-        {"conversation": context_rows, "counterparty_user_id": counterparty_user_id, "_own_user_path": own_user_path},
+        {"conversation": context_rows, "counterparty_user_id": counterparty_user_id,
+         "official_service_id": next(iter(service_ids)) if len(service_ids) == 1 else None,
+         "_own_user_path": own_user_path},
         {
             "talkroom_id": match.group(1),
             "url": f"https://coconala.com{path}",

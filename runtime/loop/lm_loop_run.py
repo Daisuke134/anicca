@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
@@ -38,6 +39,15 @@ def prepare_loop_run(registry: dict, loop_id: str, release_root: Path, *,
         for key in totals:
             totals[key] += result[key]
     return [str(executable)], totals
+
+
+def reset_loop_scratch(state_root: Path) -> Path:
+    """Private scratch dir per loop, wiped every run so subprocess temp files cannot leak."""
+    scratch = state_root / "tmp"
+    if scratch.is_dir() and not scratch.is_symlink():
+        shutil.rmtree(scratch, ignore_errors=True)
+    scratch.mkdir(parents=True, exist_ok=True, mode=0o700)
+    return scratch
 
 
 def _atomic_json(path: Path, value: dict) -> None:
@@ -104,8 +114,21 @@ def main(argv: list[str] | None = None) -> int:
         ))
     except (OSError, ValueError) as error:
         print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
-    return_code = _run_entrypoint(
-        command, env={**os.environ, "LIFE_MANAGER_RELEASE_ROOT": str(release_root)})
+    scratch = reset_loop_scratch(Path(os.path.expanduser(entry["state_root"])))
+    try:
+        return_code = _run_entrypoint(
+            command,
+            env={
+                **os.environ,
+                "LIFE_MANAGER_RELEASE_ROOT": str(release_root),
+                "TMPDIR": f"{scratch}/",
+                "NPM_CONFIG_CACHE": str(scratch / "npm-cache"),
+            },
+        )
+    finally:
+        # Scratch is never evidence. Every loop owns and removes its temporary
+        # downloads, package caches, and build products when its pass ends.
+        shutil.rmtree(scratch, ignore_errors=True)
     try:
         event = build_runtime_event(
             loop_id=loop_id, domain=entry["domain"], run_id=run_id,

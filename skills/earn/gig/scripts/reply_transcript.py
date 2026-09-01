@@ -65,6 +65,9 @@ def transcript_row(
         "outgoing_hash": str(outgoing_hash),
         "buyer_last_said": buyer_lines[-1] if buyer_lines else "",
         "conversation": conversation,
+        "service_id": str(context.get("official_service_id"))
+        if isinstance(context, dict) and str(context.get("official_service_id") or "").isdigit()
+        else None,
         "outcome": None,
     }
 

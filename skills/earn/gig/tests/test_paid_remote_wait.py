@@ -610,6 +610,63 @@ def test_remote_owner_prompt_reconciles_project_effect_receipts_before_mutation(
     assert "Never repeat an effect whose receipt is already verified" in prompt
 
 
+def test_paid_agent_creates_authorized_missing_resources_instead_of_asking_buyer(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+    identity = {"message_id": "m1", "content_sha256": "d" * 64, "side": "buyer"}
+
+    decision_prompt = paid._decision_prompt(
+        tmp_path / "context.json", "a" * 64, feedback, requirements_sha,
+        identity, identity,
+    ).decode()
+    owner_prompt = paid._repair_prompt(
+        root, tmp_path / "item.json", feedback, requirements_sha,
+        False, tmp_path / "cdp.py",
+    )
+
+    for prompt in (decision_prompt, owner_prompt):
+        assert "available=false proves only that no reusable resource is registered" in prompt
+        assert "create or recover the seller-owned resource autonomously" in prompt
+        assert "Never ask the buyer to supply a seller-owned account" in prompt
+
+
+def test_orders_observation_retries_until_semantic_container_is_ready(tmp_path, monkeypatch):
+    snapshot = load("coconala_queue_snapshot")
+    calls = []
+    responses = [
+        {
+            "url": snapshot.OPEN_ORDERS_URL,
+            "title": "受注管理",
+            "container_present": False,
+            "cards": [],
+            "empty_state_present": False,
+        },
+        {
+            "url": snapshot.OPEN_ORDERS_URL,
+            "title": "受注管理",
+            "container_present": True,
+            "cards": [{"talkroom_url": "https://coconala.com/talkrooms/1"}],
+            "empty_state_present": False,
+        },
+    ]
+
+    def inspect(*_args, **_kwargs):
+        calls.append(1)
+        return responses.pop(0)
+
+    monkeypatch.setattr(snapshot, "inspect_page_with_retry", inspect)
+    monkeypatch.setattr(snapshot.time, "sleep", lambda _seconds: None)
+
+    dom, coverage = snapshot.inspect_orders_when_ready(
+        tmp_path / "cdp.py", tmp_path / "evidence", hidden=True,
+    )
+
+    assert len(calls) == 2
+    assert dom["container_present"] is True
+    assert coverage["coverage_complete"] is True
+
+
 def test_decision_prompt_scopes_required_assets_to_current_bounded_output(tmp_path):
     paid = load("paid_direct")
 
@@ -693,6 +750,32 @@ def test_remote_wait_expires_after_recheck_interval(tmp_path):
     assert paid._remote_wait_is_fresh(root, feedback, digest, now=mtime + 3601) is False
 
 
+def test_remote_wait_from_older_release_resumes_on_new_capability(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    result = root / "delivery/paid-remote-result.json"
+    release = tmp_path / "release"
+    manifest = release / "RELEASE.json"
+    write_json(manifest, {"sha": "a" * 40})
+    result_mtime = result.stat().st_mtime
+    os.utime(manifest, (result_mtime + 1, result_mtime + 1))
+    monkeypatch.setattr(paid, "REPO_ROOT", release)
+
+    assert paid._remote_wait_is_fresh(root, feedback, digest, now=result_mtime + 10) is False
+
+
+def test_remote_wait_resumes_when_exact_cycle_policy_changes(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    result = root / "delivery/paid-remote-result.json"
+    policy = root / "context/paid-file-operator-policy.json"
+    write_json(policy, {"version": 1})
+    result_mtime = result.stat().st_mtime
+    os.utime(policy, (result_mtime + 1, result_mtime + 1))
+
+    assert paid._remote_wait_is_fresh(root, feedback, digest, now=result_mtime + 10) is False
+
+
 def test_future_dated_remote_wait_is_not_fresh(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)
@@ -757,6 +840,7 @@ def test_normalizer_restores_feedback_alias_and_canonical_digest(tmp_path):
     result_path = root / "delivery/paid-remote-result.json"
     intent = json.loads(intent_path.read_text())
     result = json.loads(result_path.read_text())
+    result["status"] = "completed"
     intent.pop("buyer_feedback_sha256")
     result.pop("buyer_feedback_sha256")
     intent["feedback_sha256"] = feedback
@@ -785,6 +869,7 @@ def test_normalizer_restores_feedback_alias_and_canonical_digest(tmp_path):
     assert intent["desired_state_sha256"] == intent["desired_digest"] == digest
     assert result["desired_state_sha256"] == result["desired_digest"] == digest
     assert result["after_state_digest"] == result["observed_digest"] == digest
+    assert result["status"] == "ok"
 
 
 def test_paid_project_executor_runs_different_owners_in_parallel():

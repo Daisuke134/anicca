@@ -3,7 +3,7 @@
 status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
-updated: 2026-08-29 JST
+updated: 2026-09-01 JST
 scope: Upwork終端処理、公開context収束、汎用Life Manager kernel、既存5段階の各organ
 active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_LOCAL_ACCEPTANCE
 
@@ -22,13 +22,48 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 3. `2026-07-30-outbound-apply-engine-design.md`の各pack内部順序
 4. その他の全体・履歴仕様
 
-### 0.0 2026-08-29 current cursor — ElizaOS forkでlocal general agentを先に完成させる
+### 0.0 2026-09-01 current cursor — Alpaca hackathonを期限付き先頭trackとして閉じる
 
-この節は、後段の「現在TODO」「次の一件」「local-only」「self-funded agentは別product」という相反する記述を
-上書きする最新の実行順序SSOTである。後段は実装履歴・organ別acceptanceとして保持するが、次作業の選択には使わない。
+Daisは2026-09-01、既存順序を明示的に変更し、Alpaca AI Trading Agents Hackathonへの完成提出、portable OSS、
+その後のDais本人資本によるbounded production化を現在の先頭trackに指定した。設計・採用OSS・固定順序・acceptanceは
+[`2026-09-01-alpaca-money-maximizer-design.md`](2026-09-01-alpaca-money-maximizer-design.md)を正本とする。
+
+同spec `A01 Freeze event contract`は公式/archived rules matrixとCLI authority固定でDONE。現在activeな一件は
+`A02 Team/submission shell`。A02〜A14を2026-09-05 00:00 JSTの提出まで固定順序で閉じ、
+A15 portable OSS releaseを続ける。`P01+`のlive owner-capital ladderはpaperを実収益と呼ばず、別credential・別loss
+budget・jurisdiction/broker条件を満たした後だけ進める。顧客資産運用・有償投資助言は登録要否を閉じるまでpaper-onlyとする。
+
+実装面は別hackathon product/repo、旧launchd-only brain、第二ledgerを作らない。Life Manager mainのElizaOS
+`AgentRuntime` + 単一`plugin-life-manager`をcoreとし、既存Goal/effect/receipt/restart kernelを再利用する。Alpacaは
+`plugin-life-manager`へ最初のdurable loopとして登録し、schedule、lease、checkpoint、resume、self-healing、self-improvementは
+Eliza内部だけが所有する。launchd/systemd/container restart policyは同じEliza processを起動・蘇生する交換可能host adapterであり、
+Alpacaの時刻、goal、account、risk、effect、stateを持たない。
+
+この期限付きtrackが完了するまで、旧cursor `ELZ-L04`は状態を`IN_PROGRESS — PAUSED BY EXPLICIT PRIORITY CHANGE`
+として保持し、L04の内部順序や後続L05〜L25を変更・削除しない。Alpaca track完了後はL04へ戻る。
+
+### 0.0.0 Previous cursor retained — ElizaOS forkでlocal general agentを先に完成させる
+
+この節は2026-08-29時点のcursorを履歴として保持する。後段の実装履歴・organ別acceptanceと同様、
+2026-09-01のAlpaca期限付きtrackが完了するまで次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
 次の一件はAtomic program ledger Seq 26 `ELZ-L04`で、fresh authorized applicationの既存contractを調査し、現在activeなL04だけを最小単位へ分解する。Phase C（Seq 14〜22）とELZ-L01〜L03は完了済み。L04は実Lancersへ新規応募を一件送る最初のatomであり、送信前にauthorizationとsealed intentを閉じる。
+### 0.0.0.1 Previous cursor retained — host安定化から自律収益、WebMCPの順で閉じる
 
+この節はAlpaca優先への明示変更前のcursorを履歴として保持する。後段のarchitecture、実装履歴、atom内部の
+acceptanceと同様、Alpaca track完了まで次作業の選択には使わない。
+
+| Order | Program | Current truth | PASS |
+|---:|---|---|---|
+| 1 | Codex connection errorの恒久解決 | **DONE**。GitHub workroom #11 close時にOfficial Symphonyが同じ`GH-11`をterminal cleanupし、開いたCodex sessionのcwdを消したことをlog・source・issue stateで確定。PR #3598 / main `67d3f4e78`でSymphony workspace rootを`~/.local/state/life-manager/symphony-workspaces`へ強制隔離した。旧Projects root注入を上書きするfocused 13/13、loop control contracts、GH-11 cwd・lock readback PASS。local Symphony/bridgeはretiredかつunloaded | Persistent Codex project workspaceとterminal時に削除されるSymphony runtime workspaceの所有rootが重ならない。再有効化時も外部の旧rootを継承せずruntime専用rootを使用する |
+| 2 | Disk cleanupの恒久解決 | production labelはlatest main release `3c018f24f`へ更新済みで自然runはexit 0、errors 0、protected deletion 0。安全な大容量cacheの候補化不足により、正常終了でもreclaimed 0になり得る | credential、browser profile、receipt、ledger、state、active worktree、loaded releaseを保持したまま、再生成可能なclosed cacheとstale workspace/releaseをpressure前に回収する。free-space governor、producer block/resume、cleanup replayがerrors 0・protected deletion 0 |
+| 3 | Lancers着金から自律market展開 | ElizaOS full forkと`plugin-life-manager`のgeneral coreは正本方針。既存Lancers/Coconala launchd ownerはcutover前のproduction ownerであり、process成功は収益証明ではない | Lancersで`Goal → WorkItem → discover → apply → contract → fulfill → deliver → payment → banked receipt → reflect`を人手なしで閉じる。その同じprovider-neutral coreがCrowdWorksを次市場として開始し、以後はLife Manager自身が市場、tool、loop/graphを選択・構築・検証してsettled netを増やす。subjectiveなmarket判断をkeyword/regex/provider branchへ固定しない |
+| 4 | WebMCP hackathon提出 | Money Printerのcode、Steel、Symphony、visual takeoverは存在するが、judge-facing final E2E、動画、YouTube、Devpost提出は未完 | 公開URLとrepoからjudgeが60秒でWebMCP takeoverを実行でき、4 criteriaを一次証拠で説明する。final E2E、動画、YouTube、Devpost receiptを閉じる |
+
+Order 4は別Codex sessionが独立workspace、branch、browser/profile、external submission stateを所有できる場合だけOrder 1〜3と並行できる契約だった。
+同じ資源を共有する場合は並行しない。最後のactive atomはOrder 2のDisk cleanup恒久解決だった。
+Upwork terminal evidence、startup context、public claim、GA-01〜13A、Phase C、ELZ-L01〜L03は完了または履歴として保持する。
+旧cursor `ELZ-L04`以降はOrder 3内部のatomであり、Order 1〜2のPASS後に再開する。
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
 製品名とrepository名は**Life Manager**で固定する。`iManager`と`Lazarus`は音声入力の誤認であり、
@@ -899,7 +934,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 23 | ELZ-L01 fresh auth and read-only inventory | **DONE** | canonical private `lancers-preflight-receipt.json` mode 0600 status=`PASS`。legacy merge `a7ad25ec…`、committed `--preflight`で7 surfaceを2回read、inventory sha256一致。`read_only_inventory`から`_post_reply`到達不能をAST call graph testで機械的に証明し、二通りの注入で当該testが落ちることを実測。focused 11/11、review P0/P1 0、provider/model/payment effect 0 |
 | 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | **DONE** | canonical private `lancers-adapter-receipt.json` mode 0600 status=`PASS`。legacy merge `93fae399…`。実案件3件でtransport/stable entity/fee-currency(integer minor units)/readbackを実証し、`normalize_application_intent`がopportunity固定のidempotency keyでintentを封印。subjective judgment 0は「予算1〜9,000,000 minorの分布が到着順で全件素通りし、棄却は構造不正のみ」で機械的に証明。stdlibのみのしきい値注入で当該testが落ちることを実測（旧import走査は同じ注入を見逃した）。focused 9/9、review P0 0 / P1解消、marketplace write 0 |
 | 25 | ELZ-L03 historical GA-10 fixture parity | **DONE** | canonical private `lancers-fixture-receipt.json` mode 0600 status=`PASS`。fork merge `03d97b88…`。記録済みGA-10 chain（absent/32 → execute 1 → present/33 → replay execute 0/33）をC08 kernelへ通し同一terminal stateを再現。provider call 0はreplay legの`executeOnce`が例外を投げる構造で担保し、mutation 2件でtestがdecorationでないことを実測。typecheck exit 0、plugin suite 17/17、review open 0 |
-| 26 | ELZ-L04 fresh authorized application | **IN_PROGRESS — NEXT** | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
+| 26 | ELZ-L04 fresh authorized application | **IN_PROGRESS — PAUSED BY EXPLICIT PRIORITY CHANGE** | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json`。Alpaca A01〜A15完了後に再開 |
 | 27 | ELZ-L05 application replay and ack-loss reconcile | TODO | same intentのexecute 0、ledger insert 0、unknown時blind retry 0の`application-replay-receipt.json` |
 | 28 | ELZ-L06 provider admission boundary | TODO | Lancersだけをactive money providerにし、Upwork/Coconala/unknown provider effect 0の`provider-admission-receipt.json` |
 | 29 | ELZ-L07 one money wake owner | TODO | 一wake/一lease/heartbeat/next tick/clean releaseを一ownerで証明する`money-wake-receipt.json` |
@@ -1218,7 +1253,7 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 
 1. **Overview:** Connector code、loaded release、browser profile、provider effect、Calendar evidenceは別々に成功・失敗し得る。loaded label、unit test、provider登録のどれか一つだけで「working」と判定しない。
 2. **Acceptance criteria:** main由来full immutable releaseがrequired runtime importを通し、宣言済みdaily-driver profileのlistener exact 1へ接続し、natural wakeでprovider official readback、Calendar exact 1、PNG/receipt、Telegram positive IDs、durable bundleを閉じる。その後の自然wake 2回はprovider Submit 0、Calendar duplicate 0、bundle reuse exact 1、owned page/lock cleanupを証明する。
-3. **As-Is / To-Be:** As-IsはKokuchPro official registration `present`、duplicate Submit 0、provider receipt/PNG present、official Calendar 0、Telegram evidence receipt 0、bundle 0である。`wake-6ba11cd126103426c2923948`のKokuchPro failureはparticipant inventory session expiryによる公式login redirect `KOKUCHPRO_LISTING_NAVIGATION_FAILED`と3経路で特定し、private SSOTを値非表示で使った通常login後、participant card/event/candidate各exact 1、official `registered`をreadbackした。別sessionが作ったrelease `439dc71d…`は`node_modules`欠落のままConnectorへapplyされていたため、PR #3509で`build_apply_plan`へ`playwright-core`/`jsqr` completeness gateを追加した。現在loadedはmain SHA `758e2d7b…`のfull immutable release `20260831T211525-758e2d7b`、`release_paths=ALL`、両package marker/import PASS、IPv6 CDP healthy、process/lock/lease 0である。Sep1 Luma `oehnv2ay`は通常email-code login recovery後のofficial UIでin-person/free/registered、Calendar canonical exact 1、receipt/PNG、Telegram IDs `45106/45109`、bundle exact 1を再確認した。To-Beは既存KokuchPro provider effectを再実行せず、自然hourly wakeが既存checkpointからCalendar/Telegram/bundleだけをreconcileした後、healthy terminalとreplay-zeroを残す状態である。
+3. **As-Is / To-Be:** global currentは`20260901T041637-63aeb6a7`だが、Connector labelはfull immutable release `20260831T211525-758e2d7b`（SHA `758e2d7b…`）、daily-driverは`20260831T204728-439dc71d`をloadedしており、currentとloadedは分離している。Connectorは`runs=8 / last exit=2 / not running`。自然wakeは13:21Z以降も連続実行されたが、Luma/KokuchPro/Meetupの`provider_discovery_failed`、KokuchPro Harnessの`agent_observe_failed`、circuit openを繰り返した。最新`wake-fd81c2c7a10b3095d046c39f`はCalendar busyを22,365msで成功後、provider discovery actionを一件も保存せず`Connector minimal pass unavailable`、heartbeat `worker_failed`、exit 2で停止した。Aug31 KokuchProはofficial registration、duplicate Submit 0、provider receipt `370bb9be…`、PNG `9c9cdc7a…`を保持するがCalendar exact 0、Telegram evidence 0、bundle 0。Sep1 Luma `oehnv2ay`はCalendar canonical exact 1、receipt/PNG、Telegram IDs `45106/45109`、bundle exact 1を維持する。Connector process/lock/target leaseは0、disk freeは約2.1GiBでcentral cleanupが実行中。定期監視heartbeatはDaisの停止指示で削除済み。To-Beは既存KokuchPro provider effectを再実行せず、Calendar後・provider discovery前のgeneric startup failureをexact safe stageへ保存して修復し、自然hourly wakeでCalendar/Telegram/bundleをreconcileした後、healthy terminalとreplay-zeroを残す状態である。
 4. **Test matrix:** release completenessはmissing `playwright-core`または`jsqr`をinstaller/launchd mutation前に拒否し、complete Connector releaseだけを受理する。browser ownershipはdual-listener/wrong-profileを拒否、KokuchProはradioとspinner双方を保持しmixed/duplicate/mutated formを拒否、evidence recoveryはCalendar present/readback transient/replayを検証する。live acceptanceはnatural launchd/provider/Calendar/Telegram/bundle readbackで行う。
 5. **Boundaries:** provider登録を再実行しない。effect unknownをabsenceへ変換しない。Codexが直接Calendar/Telegram/bundleを捏造しない。別profile、別scheduler、legacy OpenClaw cron、all-label applyを回避策にしない。Capafy R0.2.3のexplicit cleared message前はglobal current移動とtargetless/all-label applyを実行しない。
 6. **Execution order:** current global orderの`CG-28 → CG-44 → CG-45 → CG-47 → CG-48 → CG-51`を維持する。CG-51内ではrelease completeness → browser owner → existing Calendar/evidence reconcile → natural terminal → replay-zero → final readbackの順で閉じる。cross-loop holdはこの順序を変更せず、自然ownerの観測だけを許可するcontrol-plane gateである。
@@ -1245,7 +1280,7 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 - [x] **IR-03** Calendar failure後にofficial Google Calendarをidempotencyとtitle/canonical URLの両方で読み、対象0件、Telegram evidence receipt 0件、bundle 0件を確認する。
 - [x] **IR-04** PR #3452で`127.0.0.1:9222`の`job-search-daily`をproduction owner/fenceから拒否し、Connectorを`[::1]:9222`の`browser-profile://cloakbrowser/daily-driver` exactへ接続する。Connector全696/696、isolated live target page `1→2→1`、lease 0、provider effect 0を確認する。新browser/profile/schedulerは作らない。
 - [x] **IR-05** 残存target lease `813A69D6C5C21F03261B9F885DDEE298`をraw削除せず、公式Connector owner/reaper cleanupで閉じる。`wake-6ba11cd126103426c2923948`終了後の`target-leases.json`は`targets={}`、Connector process/lock 0である。
-- [ ] **IR-06** `wake-6ba11cd126103426c2923948`のexternal dispatch前failureはKokuchPro session expiryによる`KOKUCHPRO_LISTING_NAVIGATION_FAILED`と特定し、通常login recoveryとofficial registered readbackを完了した。不完全release受理はPR #3509でinstaller前に拒否し、complete loaded release `758e2d7b…`のdependency importを実測した。次の自然hourly wakeが既存provider checkpointを再利用し、Calendar exact 1→Telegram positive message/photo IDs→durable applied bundle exact 1を同一lineageで完成することをreadbackする。PR #3489のCalendar transient retryは本番で15,253ms successを確認済みであり、追加retryやmanual kickstartを回避策にしない。
+- [ ] **IR-06** loaded release `758e2d7b…`の自然wake群を再監査する。最初に最新`wake-fd81c2c7a10b3095d046c39f`のCalendar成功後・provider discovery前`Connector minimal pass unavailable`を、`skills/connector/native-pass.js`→`connector-minimal-production.js`のproduction dependency composition境界でexact safe stageへ保存し、同時に過去wakeのLuma/KokuchPro discovery timeoutとの差分を確定する。既存provider checkpointを再利用し、再Submit 0のままCalendar exact 1→Telegram positive message/photo IDs→durable applied bundle exact 1を同一lineageで完成する。追加retry、manual kickstart、旧eventの再登録を回避策にしない。
 - [ ] **IR-07** さらに自然hourly wake 2回で同event Submit 0、Calendar duplicate 0、bundle reused/no duplicate、single owner、lock/page cleanupを確認する。
 - [ ] **IR-08** fresh read-only adversarial reviewer 1名がprovider receipt、PNG SHA、Calendar、Telegram IDs、bundle、2 wake replay-zeroを反証できないことを確認し、active Connector goalをcompleteにしてheartbeatを削除する。
 

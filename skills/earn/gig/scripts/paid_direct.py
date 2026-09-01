@@ -91,7 +91,7 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     profile.chmod(0o600)
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 PAID_DECISION_SCHEMA_VERSION = 4
-PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v18"
+PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v19"
 PAID_DECISION_MODEL = "gpt-5.6-terra"
 PAID_FILE_MODEL = "gpt-5.6-terra"
 PAID_RUNNER_CANDIDATES = {
@@ -1294,6 +1294,11 @@ def _decision_prompt(context: Path, context_sha256: str, feedback: str,
         "succeeded, never ask that buyer for an OTP, login availability, credentials, or another coordination step; choose "
         "remote and do the authorized work. A buyer who delegates execution judgment or asks for results is not asking for "
         "another explanation, approval question, or authentication ceremony. "
+        "A resource resolver result of available=false proves only that no reusable resource is registered; it does not "
+        "prove the authorized outcome is infeasible. When the buyer contract requires seller signup, account creation, "
+        "or resource setup and general browser/email tools can perform it, choose actionable remote and require the owner "
+        "to create or recover the seller-owned resource autonomously. Missing an exact named skill is not a blocker. "
+        "Never ask the buyer to supply a seller-owned account, skill, or setup step that the authorized owner can create. "
         "gate the buyer did not request. A seller's earlier voluntary promise to ask for confirmation is not a buyer requirement, "
         "and a newer seller correction plus an explicit private account authorization permits the promised work to proceed. "
         "Use await_buyer only after that "
@@ -3781,6 +3786,12 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             "substitute semantic copy. "
             "An authenticated remote session is not proof that it is the correct account. Before signup or asking the buyer for an account, "
             f"run python3 {code_root / 'skills/_shared/resource_resolver.py'} resolve --service <target-host> --capability <action>. "
+            "A resolver result of available=false proves only that no reusable resource is registered; it does not prove "
+            "the authorized outcome is infeasible. When the buyer contract requires seller signup, account creation, or "
+            "resource setup and general browser/email tools can perform it, create or recover the seller-owned resource autonomously. "
+            "Missing an exact named skill is not a blocker. Never ask the buyer to supply a seller-owned account, skill, or "
+            "setup step that the authorized owner can create. Persist any newly created credential only through the private "
+            "credential SSOT contract without exposing its value. "
             "Resource discovery is not live readiness: inspect the selected skill/session in official UI or API before effect. "
             "Independent projects may run concurrently, but serialize every read, mutation, and readback that uses the same "
             "external account/browser lease; never launch concurrent commands against one leased identity. "
@@ -3842,6 +3853,8 @@ def _normalize_builder_result(root: Path) -> None:
     after = _load(after_path)
     if (after.get("authenticated") is True and after.get("target") == intent.get("target")
             and paid_remote_result.canonical_equal(after.get("observed_state"), intent.get("desired_state"))):
+        if result.get("status") == "completed":
+            result["status"] = "ok"
         result["observed_state"] = after["observed_state"]
         result["after_state_digest"] = result["observed_digest"] = intent.get("desired_state_sha256")
         _write(intent_path, intent)
@@ -4109,6 +4122,12 @@ def _remote_wait_is_fresh(root: Path, feedback: str, digest: str,
                           now: float | None = None) -> bool:
     paid_remote_result.validate_wait(root, feedback, digest, pass_start=0)
     observed_at = (root / "delivery" / "paid-remote-result.json").stat().st_mtime
+    release_manifest = REPO_ROOT / "RELEASE.json"
+    if _regular_file(release_manifest) and release_manifest.stat().st_mtime > observed_at:
+        return False
+    operator_policy = root / "context" / PAID_FILE_OPERATOR_POLICY
+    if _regular_file(operator_policy) and operator_policy.stat().st_mtime > observed_at:
+        return False
     age = (time.time() if now is None else now) - observed_at
     return 0 <= age < PAID_REMOTE_WAIT_RECHECK_SECONDS
 
