@@ -5037,9 +5037,11 @@ queue is added. Each owner must also progress independent work concurrently insi
   claimed work without being skipped permanently.
   - [x] `PAR-3a Reply` already runs one durable SQLite producer, two consumers and idle reconciliation.
   - [x] `PAR-3b Paid` already admits up to eight durable project resources to bounded workers.
-  - [ ] `PAR-3c Apply` **ACTIVE:** persist per-request planner claims, run bounded model workers, then
-    give independent request IDs bounded effect workers without weakening the request effect fence.
-  - [ ] `PAR-3d Storefront` run independent listing work through bounded workers while retaining
+  - [x] `PAR-3c Apply` persists per-request planner claims, runs two planner and two effect workers,
+    and checkpoints full reconciliation after one coverage turn so the next wake returns to fresh
+    discovery. Release `462cc737` recorded a natural terminal pass in about 2m35s, down from the
+    measured three-turn wake of about six minutes, without weakening the request effect fence.
+  - [ ] `PAR-3d Storefront` **ACTIVE:** run independent listing work through bounded workers while retaining
     listing-specific mutation intents and official readback.
   - [ ] `PAR-3e` deploy all four owners together and record concurrent natural readback.
 - [ ] `PAR-4` Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
