@@ -2443,7 +2443,8 @@ def _scan_public_copy(
     due_ids = [value for value in service_ids if value in set(due)]
     claims = state_dir / "compliance-claims"
 
-    def scan_one(service_id: str) -> dict:
+    def scan_one(service_id: str) -> tuple[dict, int, int]:
+        worker_started_at_ns = time.time_ns()
         url = f"https://coconala.com/mypage/services/{service_id}"
         scan_tab = None
         observed: dict = {}
@@ -2505,7 +2506,7 @@ def _scan_public_copy(
                 f":{observed.get('title') or ''}".encode()
             ).hexdigest(),
         }
-        return row
+        return row, worker_started_at_ns, time.time_ns()
 
     for service_id in due_ids:
         _atomic_write(claims / f"{service_id}.json", {
@@ -2513,13 +2514,15 @@ def _scan_public_copy(
             "claimed_at_epoch": now,
         })
     with ThreadPoolExecutor(max_workers=2) as executor:
-        rows = list(executor.map(scan_one, due_ids))
-    for row in rows:
+        results = list(executor.map(scan_one, due_ids))
+    for row, worker_started_at_ns, worker_completed_at_ns in results:
         _append_key_once(ledger, "scan_key", row)
         scanned.append(row)
         _atomic_write(claims / f"{row['service_id']}.json", {
             "version": 1, "resource_key": f"listing:{row['service_id']}",
             "status": "completed", "scan_status": row["status"], "completed_at_epoch": now,
+            "claimed_at_epoch": now, "worker_started_at_ns": worker_started_at_ns,
+            "worker_completed_at_ns": worker_completed_at_ns,
         })
         if row["prohibited_terms"]:
             findings.append(row)
