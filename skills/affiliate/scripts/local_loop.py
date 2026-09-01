@@ -3,6 +3,7 @@
 
 import argparse
 import fcntl
+import gzip
 import hashlib
 import json
 import os
@@ -83,8 +84,95 @@ def append(path, value):
         os.fsync(stream.fileno())
 
 
+def rotate_tool_attempt_receipts(path, *, max_bytes=32 * 1024 * 1024,
+                                 recent_no_effect_bytes=8 * 1024 * 1024,
+                                 keep_archives=4):
+    result = {"archived_rows": 0, "protected_rows": 0, "active_rows": 0}
+    if not path.is_file() or path.stat().st_size <= max_bytes:
+        return result
+    lines = path.read_bytes().splitlines(keepends=True)
+    entries = []
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except (UnicodeDecodeError, ValueError):
+            entries.append((line, False))
+            continue
+        entries.append((line, row.get("effect_certainty") in {
+            "NO_EFFECT", "READ_ONLY_CONFIRMED",
+        }))
+    disposable_indices = [index for index, (_, disposable) in enumerate(entries)
+                          if disposable]
+    recent_indices = set()
+    recent_bytes = 0
+    while (disposable_indices
+           and recent_bytes + len(entries[disposable_indices[-1]][0])
+           <= recent_no_effect_bytes):
+        index = disposable_indices.pop()
+        line = entries[index][0]
+        recent_indices.add(index)
+        recent_bytes += len(line)
+    archived = [entries[index][0] for index in disposable_indices]
+    active = [line for index, (line, disposable) in enumerate(entries)
+              if not disposable or index in recent_indices]
+    result["protected_rows"] = sum(not disposable for _, disposable in entries)
+    result["active_rows"] = len(active)
+    if not archived:
+        return result
+
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    archive = path.with_name(f"tool-attempt-receipts.archive-{stamp}.jsonl.gz")
+    compressed = gzip.compress(b"".join(archived), mtime=0)
+    archive_tmp = archive.with_name(f".{archive.name}.{os.getpid()}.tmp")
+    active_tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        with archive_tmp.open("xb") as stream:
+            os.chmod(archive_tmp, 0o600)
+            stream.write(compressed)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(archive_tmp, archive)
+        with active_tmp.open("xb") as stream:
+            os.chmod(active_tmp, 0o600)
+            stream.write(b"".join(active))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(active_tmp, path)
+    finally:
+        archive_tmp.unlink(missing_ok=True)
+        active_tmp.unlink(missing_ok=True)
+    archives = sorted(path.parent.glob("tool-attempt-receipts.archive-*.jsonl.gz"))
+    for old in archives[:-max(0, keep_archives)] if keep_archives else archives:
+        old.unlink()
+    result["archived_rows"] = len(archived)
+    return result
+
+
+def _append_unique_unlocked(path, value, identity):
+    with path.open("a+", encoding="utf-8") as stream:
+        stream.seek(0)
+        for line in stream:
+            try:
+                existing = json.loads(line)
+            except ValueError:
+                continue
+            if all(existing.get(key) == value[key] for key in identity):
+                return False
+        stream.write(json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+        return True
+
+
 def append_unique(path, value, identity):
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if path.name == "tool-attempt-receipts.jsonl":
+        lock_path = path.with_name(f"{path.name}.lock")
+        with lock_path.open("a", encoding="utf-8") as lock:
+            os.chmod(lock_path, 0o600)
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            rotate_tool_attempt_receipts(path)
+            return _append_unique_unlocked(path, value, identity)
     with path.open("a+", encoding="utf-8") as stream:
         fcntl.flock(stream, fcntl.LOCK_EX)
         stream.seek(0)

@@ -1693,6 +1693,128 @@ class LocalLoopTest(unittest.TestCase):
             self.assertNotIn("secret", (state / "tool-attempt-receipts.jsonl").read_text())
             self.assertNotIn("https://", (state / "tool-attempt-receipts.jsonl").read_text())
 
+    def test_tool_attempt_rotation_preserves_external_effect_evidence(self):
+        with tempfile.TemporaryDirectory() as root:
+            state = Path(root)
+            ledger = state / "tool-attempt-receipts.jsonl"
+            for number in range(20):
+                MODULE.append(ledger, {
+                    "scheduler_run_id": f"old-{number}",
+                    "effect_certainty": "NO_EFFECT",
+                    "padding": "x" * 80,
+                })
+            MODULE.append(ledger, {
+                "scheduler_run_id": "confirmed",
+                "effect_certainty": "EFFECT_CONFIRMED",
+            })
+            MODULE.append(ledger, {
+                "scheduler_run_id": "unknown",
+                "effect_certainty": "UNKNOWN",
+            })
+            with ledger.open("a", encoding="utf-8") as stream:
+                stream.write("malformed\n")
+
+            result = MODULE.rotate_tool_attempt_receipts(
+                ledger, max_bytes=512, recent_no_effect_bytes=128,
+                keep_archives=2,
+            )
+
+            active = ledger.read_text(encoding="utf-8")
+            self.assertIn("EFFECT_CONFIRMED", active)
+            self.assertIn("UNKNOWN", active)
+            self.assertIn("malformed", active)
+            self.assertLessEqual(len(list(state.glob(
+                "tool-attempt-receipts.archive-*.jsonl.gz"
+            ))), 2)
+            self.assertGreater(result["archived_rows"], 0)
+            self.assertEqual(result["protected_rows"], 3)
+
+    def test_tool_attempt_rotation_replay_is_noop(self):
+        with tempfile.TemporaryDirectory() as root:
+            ledger = Path(root) / "tool-attempt-receipts.jsonl"
+            for number in range(20):
+                MODULE.append(ledger, {
+                    "scheduler_run_id": str(number),
+                    "effect_certainty": "NO_EFFECT", "padding": "x" * 80,
+                })
+            MODULE.rotate_tool_attempt_receipts(
+                ledger, max_bytes=512, recent_no_effect_bytes=128,
+            )
+            archive_count = len(list(Path(root).glob(
+                "tool-attempt-receipts.archive-*.jsonl.gz"
+            )))
+
+            replay = MODULE.rotate_tool_attempt_receipts(
+                ledger, max_bytes=512, recent_no_effect_bytes=128,
+            )
+
+            self.assertEqual(replay["archived_rows"], 0)
+            self.assertEqual(len(list(Path(root).glob(
+                "tool-attempt-receipts.archive-*.jsonl.gz"
+            ))), archive_count)
+
+    def test_tool_attempt_rotation_preserves_active_row_order(self):
+        with tempfile.TemporaryDirectory() as root:
+            ledger = Path(root) / "tool-attempt-receipts.jsonl"
+            rows = [
+                {"scheduler_run_id": "old", "effect_certainty": "NO_EFFECT",
+                 "padding": "x" * 300},
+                {"scheduler_run_id": "confirmed",
+                 "effect_certainty": "EFFECT_CONFIRMED"},
+                {"scheduler_run_id": "recent", "effect_certainty": "NO_EFFECT"},
+                {"scheduler_run_id": "unknown", "effect_certainty": "UNKNOWN"},
+            ]
+            for row in rows:
+                MODULE.append(ledger, row)
+
+            MODULE.rotate_tool_attempt_receipts(
+                ledger, max_bytes=256, recent_no_effect_bytes=128,
+            )
+
+            active_ids = [row["scheduler_run_id"] for row in MODULE.json_rows(ledger)]
+            self.assertEqual(active_ids, ["confirmed", "recent", "unknown"])
+
+    def test_tool_attempt_rotation_bounds_read_only_observations(self):
+        with tempfile.TemporaryDirectory() as root:
+            ledger = Path(root) / "tool-attempt-receipts.jsonl"
+            for number in range(20):
+                MODULE.append(ledger, {
+                    "scheduler_run_id": str(number),
+                    "effect_certainty": "READ_ONLY_CONFIRMED",
+                    "padding": "x" * 80,
+                })
+
+            result = MODULE.rotate_tool_attempt_receipts(
+                ledger, max_bytes=512, recent_no_effect_bytes=128,
+            )
+
+            self.assertGreater(result["archived_rows"], 0)
+            self.assertLess(ledger.stat().st_size, 512)
+
+    def test_tool_attempt_rotation_failure_preserves_ledger(self):
+        with tempfile.TemporaryDirectory() as root:
+            ledger = Path(root) / "tool-attempt-receipts.jsonl"
+            for number in range(20):
+                MODULE.append(ledger, {
+                    "scheduler_run_id": str(number),
+                    "effect_certainty": "NO_EFFECT", "padding": "x" * 80,
+                })
+            original = ledger.read_bytes()
+            real_replace = MODULE.os.replace
+
+            def fail_active_replace(source, destination):
+                if Path(destination) == ledger:
+                    raise OSError("injected active replace failure")
+                return real_replace(source, destination)
+
+            with patch.object(MODULE.os, "replace", side_effect=fail_active_replace):
+                with self.assertRaisesRegex(OSError, "active replace failure"):
+                    MODULE.rotate_tool_attempt_receipts(
+                        ledger, max_bytes=512, recent_no_effect_bytes=128,
+                    )
+
+            self.assertEqual(ledger.read_bytes(), original)
+
     def test_tool_attempt_failure_records_unknown_external_effect(self):
         with tempfile.TemporaryDirectory() as root:
             state = Path(root)
