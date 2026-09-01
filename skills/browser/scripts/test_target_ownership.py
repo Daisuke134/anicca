@@ -31,6 +31,18 @@ def test_registry_release_refuses_foreign_owner(tmp_path, monkeypatch):
     assert ownership.targets_for_owner("article-loop") == {"other-target"}
 
 
+def test_registry_prunes_only_targets_missing_from_cdp(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    ownership.claim_target("live-foreign", "article-loop")
+    ownership.claim_target("stale-foreign", "article-loop")
+    ownership.claim_target("stale-caller", "gig-pass")
+
+    assert ownership.prune_missing_targets({"live-foreign", "unregistered"}) == 2
+    assert ownership.targets_for_owner("article-loop") == {"live-foreign"}
+    assert ownership.targets_for_owner("gig-pass") == set()
+
+
 def test_gc_selects_only_callers_owned_surplus_targets(tmp_path, monkeypatch):
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))

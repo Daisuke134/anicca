@@ -42,11 +42,14 @@ def _mutate(callback):
             result, changed = callback(data["targets"])
             if changed:
                 temp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
-                temp.write_text(
-                    json.dumps(data, ensure_ascii=False, sort_keys=True) + "\n",
-                    encoding="utf-8",
-                )
-                os.replace(temp, path)
+                try:
+                    temp.write_text(
+                        json.dumps(data, ensure_ascii=False, sort_keys=True) + "\n",
+                        encoding="utf-8",
+                    )
+                    os.replace(temp, path)
+                finally:
+                    temp.unlink(missing_ok=True)
             return result
         finally:
             fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
@@ -105,3 +108,16 @@ def release_target(target_id, owner=None):
         return True, True
 
     return _mutate(release)
+
+
+def prune_missing_targets(live_target_ids):
+    """Forget registry rows whose CDP targets no longer exist."""
+    live_target_ids = set(live_target_ids)
+
+    def prune(targets):
+        stale = [target_id for target_id in targets if target_id not in live_target_ids]
+        for target_id in stale:
+            del targets[target_id]
+        return len(stale), bool(stale)
+
+    return _mutate(prune)
