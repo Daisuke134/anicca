@@ -103,7 +103,8 @@ def installed_skill_refs(service: str, capability: str) -> list[dict[str, Any]]:
         description = frontmatter_scalar(frontmatter, "description")
         if not matches_service(service, name, description, frontmatter):
             continue
-        if capability and capability not in tokens(name, description, frontmatter):
+        capability_tokens = tokens(capability)
+        if capability_tokens and not capability_tokens.issubset(tokens(name, description, frontmatter)):
             continue
         result.append({
             "skill": name,
