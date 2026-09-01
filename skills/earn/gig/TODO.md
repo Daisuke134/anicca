@@ -31,12 +31,18 @@ seconds. Their immutable release SHAs differ by lane and each observed task leas
 the leases fence duplicate use of one task/browser, not the other three lanes. The four-lane
 completion claim is nevertheless false until the two failing lanes below pass naturally.
 
-- [ ] `C00` Restore Apply's official opportunity-source read.
-  PASS = one natural `ai.anicca.hf-gig-apply-direct` pass reads the official Coconala source,
-  reports a non-error source status, reconciles all 40 durable pending application intents, and
-  records effect/readback separately. Current production pass
-  `gig-apply-direct-1788277012837294000-46947` failed with `observed=0`, `effect=0`,
-  `readback=0`, `pending=40`, `source_health=OSError`, and `b2_objective_wake_failed`.
+- [x] `C00` Restore Apply's official opportunity-source read.
+  PASS = a natural `ai.anicca.hf-gig-apply-direct` pass reads the official Coconala source,
+  reports a non-error source status, records effect/readback separately, and preserves historical
+  uncertain intents as no-resubmit fences without counting them as current-pass pending work.
+  Production release `895d0e2349ff2211c5a141a6a1b26b5936aef620` restores the authenticated
+  gig-browser vault to isolated Apply contexts. Pass `gig-apply-direct-1788283498583562000-42402`
+  observed 40 official listings, submitted 12 eligible applications, and recorded 12 individual
+  official applied-history readbacks. Authenticated replay recognized all 12 as already applied and
+  produced no duplicate effect. Natural final-release pass
+  `gig-apply-direct-1788284844274794000-82574` exited zero with `observed=40`, `pending=0`, and
+  `durable_uncertain_count=40`; those 40 legacy pre-proof intents remain durable no-resubmit fences
+  rather than being falsely reported as current pending work.
 - [ ] `C01` Restore Storefront's exact official public readback.
   PASS = one natural `ai.anicca.hf-gig-storefront-direct` pass reads the 14-service official
   inventory, completes or safely declines its selected improvement, and ends pass with exact
