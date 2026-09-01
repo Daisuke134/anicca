@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01 DONE / A02 ACTIVE
+status: APPROVED DESIGN / A01-A02 DONE / A03 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -176,29 +176,29 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
-Current cursor: **A02 Team/submission shell**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A03 New paper-account bootstrap**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
 
-A02 is **IN PROGRESS at the Discord provider-consent boundary**. A new Lablab account was created through its normal
-email OTP flow without Google/GitHub/AMD login, and the Alpaca event screening form now exists; the official
-event page reads `Approved`. Dais explicitly accepted the Lablab media release and Terms/Privacy sponsor-data
-sharing; the official form read back `Submission Successful`. The factual screening fields are autosaved: identity and public
-profile links from the private profile SSOT, Japan, the derived age band, Startups & Entrepreneurship,
-Advanced AI-building experience, and Hackathon/Event Website. Company/job title remain blank because they are
-optional and no authoritative private fact supplies them. Lablab then disclosed that Discord account connection
-and community membership are mandatory before team creation. No existing Discord session or credential exists;
-the normal-email registration was submitted after Dais authorized routine platform terms, and its generated
-password is stored only in the private credential SSOT. Discord accepted the username but now requires an
-hCaptcha human-presence check. Life Manager does not bypass CAPTCHA; after Dais completes that single visible
-check, the retained flow resumes email verification, OAuth, community membership, and team/submission-shell
-creation. Google login remains prohibited.
+A02 is **DONE**. The normal-email Lablab account remains `Approved` for the event, and Dais completed Discord's
+required human-presence checks. The connected Discord identity initially differed from the identity that had
+joined the LABLAB.AI community; changing the official Lablab OAuth connection to the joined identity removed
+the provider's `DISCORD_COMMUNITY_JOIN_REQUIRED` response. Lablab then returned HTTP `201` with a team slug and
+created the one-member, closed, UTC +9:00 team `Life Manager`. Official readback:
+`https://lablab.ai/ai-hackathons/alpaca-ai-trading-agents-hackathon/life-manager`.
+
+The submission draft also exists and is saved at Step 2 of 3 with title `Life Manager: Autonomous Options Money
+Loop`, truthful short/long descriptions, categories Finance/Investment/Personal Finance, and technology Alpaca.
+The official editor exposes cover image, required video and PDF slides, public repository, demo platform/URL,
+private Alpaca account ID, and up to five social links. It reads `Last saved`; final submission has not occurred.
+Google login was not used, no secret or Discord/account identifier was written to the repository, and later atoms
+must replace provisional copy only with verified campaign facts.
 
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
-| A02 | Team/submission shell | An enrolled 1–6 member team exists and its official page exposes title, short/long descriptions, tags, cover, video, slides, public GitHub, demo platform/URL, Alpaca account ID, and up to five social links; no final submit yet. |
+| A02 | Team/submission shell — **DONE** | The official one-member team and saved Step-2 submission draft exist; the editor exposes title, short/long descriptions, tags, cover, video, slides, public GitHub, demo platform/URL, Alpaca account ID, and up to five social links; no final submit yet. |
 | A03 | New paper-account bootstrap | Normal-email flow yields a dedicated active paper account; account ID is private; cash/equity=`100000`; positions/orders/activity empty; option level recorded; new-session login works. |
 | A04 | Alpaca CLI preflight | Pinned CLI version/doctor plus account/clock/stock/options/news reads return the dedicated paper account; secrets appear in no repo/log/chat artifact. Optional MCP is read-only and not a readiness dependency. |
 | A05 | Alpaca CLI provider adapter | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
