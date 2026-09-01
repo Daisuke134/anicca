@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A04 DONE / A05 ACTIVE
+status: APPROVED DESIGN / A01-A02 DONE / A03 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -176,7 +176,7 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
-Current cursor: **A05 Alpaca CLI provider adapter**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A03 Life Manager-owned paper-account bootstrap**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
@@ -195,7 +195,7 @@ private Alpaca account ID, and up to five social links. It reads `Last saved`; f
 Google login was not used, no secret or Discord/account identifier was written to the repository, and later atoms
 must replace provisional copy only with verified campaign facts.
 
-A03 is **DONE**. A brand-new Alpaca Trading API identity was created through the normal-email form and verified
+A03 has a **verified external baseline but remains ACTIVE**. A brand-new Alpaca Trading API identity was created through the normal-email form and verified
 through the existing authenticated mail reader. Authenticator MFA and its recovery code are active; password,
 TOTP secret, recovery code, and paper account ID exist only in the mode-`0600` private credential SSOT. A fresh
 cookie-free login required both password and a newly generated TOTP code and returned the same private paper
@@ -212,14 +212,14 @@ passed. CLI JSON reads return the same private account with status ACTIVE, cash/
 3, a valid market clock, a current SPY trade, ten SPY option-chain snapshots, and three SPY news items. CLI
 position/order/activity lists each return zero. Paper keys exist only in the private credential SSOT and are
 injected into the process environment; `ALPACA_LIVE_TRADE=false`, no CLI profile or repo secret exists, and no
-mutation command ran.
+mutation command ran. This evidence was collected early and remains valid, but A04 is not closed ahead of A03.
 
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
 | A02 | Team/submission shell — **DONE** | The official one-member team and saved Step-2 submission draft exist; the editor exposes title, short/long descriptions, tags, cover, video, slides, public GitHub, demo platform/URL, Alpaca account ID, and up to five social links; no final submit yet. |
-| A03 | New paper-account bootstrap — **DONE** | Normal-email flow yields a dedicated active paper account; account ID is private; cash/equity=`100000`; positions/orders/activity empty; options Level 3 is recorded; fresh password+TOTP login returns the same account. |
-| A04 | Alpaca CLI preflight — **DONE** | Pinned CLI v0.0.14 and doctor plus account/clock/SPY/options/news reads return the dedicated paper account; zero positions/orders/activities reconcile; secrets appear in no repo/log/chat artifact. Optional MCP is not a readiness dependency. |
+| A03 | Life Manager-owned paper-account bootstrap — **ACTIVE** | `plugin-life-manager` runs and checkpoints the normal-email signup/MFA/API-key binding flow itself, or detects and verifies the already-bound dedicated account without creating a duplicate; a restart resumes the saved checkpoint; account ID stays private; cash/equity=`100000`, empty positions/orders/activity, options Level 3, and fresh password+TOTP login are read back. The existing account proves the provider baseline only; it does not by itself satisfy autonomous bootstrap. |
+| A04 | Alpaca CLI preflight — **EVIDENCE READY, ORDERED AFTER A03** | Pinned CLI v0.0.14 and doctor plus account/clock/SPY/options/news reads return the dedicated paper account; zero positions/orders/activities reconcile; secrets appear in no repo/log/chat artifact. Optional MCP is not a readiness dependency. This atom closes only after A03 closes. |
 | A05 | Alpaca CLI provider adapter | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
 | A06 | Decision-before-effect | One bounded model call returns `NO_TRADE` or a typed thesis, structure, max loss, invalidation, exit, and evidence refs; the written decision precedes any effect intent. |
 | A07 | Risk gate | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
