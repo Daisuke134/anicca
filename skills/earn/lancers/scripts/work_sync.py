@@ -270,7 +270,19 @@ def _snapshot(fetch: Callable[[str], Any], verified_proposals: set[str], private
         applications += int(proposal in verified_proposals)
         if contract is not None:
             storefront_contracts.append({"source_kind": "storefront", "provider_id": contract, "board_id": board_id, "detail_path": f"/v1/message_api/boards/{board_id}", "funding_status": "requires_detail_readback"})
-        output.append({"board_id": board_id, "content_sha256": _digest({"board": board, "detail": detail}), "message_ids": [row["message_id"] for row in messages], "messages": messages})
+        source_refs = [
+            {"source_kind": kind, "provider_id": provider_id}
+            for kind, provider_id in (("proposal", proposal), ("job", job), ("storefront_contract", contract))
+            if provider_id is not None
+        ]
+        origin = "application" if proposal in verified_proposals else "storefront" if contract is not None else "inquiry"
+        buyer_last_message_id = max((row["message_id"] for row in messages), key=int) if board["is_required_reply"] and messages else None
+        output.append({
+            "board_id": board_id, "origin": origin, "source_refs": source_refs,
+            "buyer_last_message_id": buyer_last_message_id,
+            "content_sha256": _digest({"board": board, "detail": detail}),
+            "message_ids": [row["message_id"] for row in messages], "messages": messages,
+        })
     return {"ok": True, "logged_in": True, "source_complete": True, "board_count": len(boards), "required_reply_count": replies, "unread_count": unread, "application_board_count": applications, "storefront_contract_candidate_count": len(storefront_contracts), "storefront_contract_candidates": storefront_contracts, "boards": sorted(output, key=lambda row: row["board_id"])}
 
 
@@ -497,6 +509,7 @@ def run_tick(*, state_path: Path = DEFAULT_STATE_PATH, browser_factory: Optional
                 "unread_count": result["unread_count"],
                 "required_reply_count": result["required_reply_count"],
                 "application_board_count": result["application_board_count"],
+                "boards": result["boards"],
                 "reply_status": result["reply_action"]["status"],
                 "proposal_pipeline": result["proposal_pipeline"],
                 "finance": result["finance"],
