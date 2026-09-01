@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A02 DONE / A03 ACTIVE
+status: APPROVED DESIGN / A01-A03 DONE / A04 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -176,7 +176,7 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
-Current cursor: **A03 Life Manager-owned paper-account bootstrap**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A04 Alpaca CLI preflight**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
@@ -195,7 +195,7 @@ private Alpaca account ID, and up to five social links. It reads `Last saved`; f
 Google login was not used, no secret or Discord/account identifier was written to the repository, and later atoms
 must replace provisional copy only with verified campaign facts.
 
-A03 has a **verified external baseline but remains ACTIVE**. A brand-new Alpaca Trading API identity was created through the normal-email form and verified
+A03 is **DONE**. A brand-new Alpaca Trading API identity was created through the normal-email form and verified
 through the existing authenticated mail reader. Authenticator MFA and its recovery code are active; password,
 TOTP secret, recovery code, and paper account ID exist only in the mode-`0600` private credential SSOT. A fresh
 cookie-free login required both password and a newly generated TOTP code and returned the same private paper
@@ -231,31 +231,20 @@ trajectory and Task readback reported eight bound credential refs, paper `ACTIVE
 Level 3, and zero positions/orders/activities. After a full runtime stop and restart against the same state, a
 second owner goal executed the same action, kept the Task count at one, and returned the same facts; immediate
 official CLI readback still returned zero positions/orders/activities. No account, order, or trade was created by
-either pass. A03 remains ACTIVE because this proves autonomous detection, verification, checkpoint persistence,
-and restart resumption of the already-bound account, but not that Life Manager itself created that real account
-through the complete BrowserService-backed signup sequence.
+either pass. The closing implementation on branch `feat/alpaca-a03-autonomous-bootstrap-20260901` adds the
+existing CloakBrowser CDP session as a local BrowserService target and a deterministic, authenticated Life
+Manager bootstrap dispatch. Life Manager used Alpaca's official account switcher, created exactly one additional
+paper account named `Life Manager`, and left the original baseline account intact. The provider returned HTTP
+`200` for `POST /api/v1/paper_accounts`; switcher readback showed two paper accounts and exactly one `Life
+Manager` account. Life Manager selected the new account, generated its API keys, and captured the key, secret,
+and account number directly into the mode-`0600` private credential SSOT without returning their values to the
+model or logs. Pinned CLI v0.0.14 then returned `READY / RUN_TRADING_LOOP`, paper `ACTIVE`, cash/equity `100000`,
+options Level 3, and zero positions/orders/activities. After a full runtime restart, the same checkpoint returned
+the same READY facts; the provider still showed two paper accounts and one `Life Manager` account, proving zero
+duplicate creation. No live account, live capital, order, position, or trade was created. Closing commits through
+`a8e00e3f3e` passed BrowserService `22/22`, bootstrap/private-capture `2/2`, and focused import/diff checks.
 
-The remaining A03 path does not require a second Alpaca login or deletion of the verified baseline. Alpaca's
-official paper-trading documentation says one existing dashboard login can select **Open New Paper Account** from
-the paper-account menu, that a newly created paper account starts with the default `$100,000`, and that the new
-account requires newly generated API keys. Life Manager must perform that provider-supported operation through
-the existing normal-email/password/TOTP login, privately replace the bound paper account ID and API-key refs,
-and prove the new account with the pinned CLI. It must not delete the baseline account, create a second login,
-use Google login, or describe the earlier manually created account as agent-created. Source:
-`https://docs.alpaca.markets/docs/paper-trading`.
-
-Latest A03 execution evidence: branch `feat/alpaca-a03-autonomous-bootstrap-20260901` commit `9cd8092801`
-prevents a fresh checkpoint from treating pre-existing credentials as account-creation proof. Focused bootstrap
-checks pass `7/7`. A clean isolated Eliza runtime loaded `plugin-life-manager`; the owner goal invoked
-`ALPACA_BOOTSTRAP`, persisted `SIGNUP / CREATE_PAPER_ACCOUNT`, and Eliza itself opened
-`https://app.alpaca.markets`. No account, order, position, or broker activity was created. The remaining active
-block inside A03 is the interactive browser target: server-only Eliza selected the JSDOM workspace fallback,
-which cannot complete Alpaca's login SPA, while the registered companion bridge is read-mostly and does not
-support click/fill. Connect the existing CloakBrowser CDP session as a BrowserService target that supports
-state/click/fill without adding a second executor; then resume the same checkpoint through private capture and
-pinned-CLI readback. A03 stays ACTIVE until those real receipts exist.
-
-A04 has **preflight evidence ready but remains ordered after A03** against the official `alpacahq/cli` release `v0.0.14`, source commit
+A04 is **ACTIVE** with preflight evidence ready against the official `alpacahq/cli` release `v0.0.14`, source commit
 `53606273aa230a40c64b783425dcb3f4423ede30`. Its published release checksum was verified before installing the
 native macOS arm64 binary. `alpaca version` returns `0.0.14`; `alpaca doctor` reports no saved profile, env-only
 credentials, active profile `paper`, connected `paper-api.alpaca.markets` trading and data APIs, and all checks
@@ -263,14 +252,14 @@ passed. CLI JSON reads return the same private account with status ACTIVE, cash/
 3, a valid market clock, a current SPY trade, ten SPY option-chain snapshots, and three SPY news items. CLI
 position/order/activity lists each return zero. Paper keys exist only in the private credential SSOT and are
 injected into the process environment; `ALPACA_LIVE_TRADE=false`, no CLI profile or repo secret exists, and no
-mutation command ran. This evidence was collected early and remains valid, but A04 is not closed ahead of A03.
+mutation command ran. This evidence was collected early and now closes against the dedicated A03 account.
 
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
 | A02 | Team/submission shell — **DONE** | The official one-member team and saved Step-2 submission draft exist; the editor exposes title, short/long descriptions, tags, cover, video, slides, public GitHub, demo platform/URL, Alpaca account ID, and up to five social links; no final submit yet. |
-| A03 | Life Manager-owned paper-account bootstrap — **ACTIVE** | From the existing normal-email/password/TOTP login, `plugin-life-manager` uses Alpaca's official **Open New Paper Account** path, captures the new account ID/API keys privately, and checkpoints the result; a restart resumes the saved checkpoint; pinned-CLI readback proves the new paper account has cash/equity=`100000`, empty positions/orders/activity, and options Level 3. The existing baseline account is neither deleted nor presented as agent-created. |
-| A04 | Alpaca CLI preflight — **EVIDENCE READY, ORDERED AFTER A03** | Pinned CLI v0.0.14 and doctor plus account/clock/SPY/options/news reads return the dedicated paper account; zero positions/orders/activities reconcile; secrets appear in no repo/log/chat artifact. Optional MCP is not a readiness dependency. This atom closes only after A03 closes. |
+| A03 | Life Manager-owned paper-account bootstrap — **DONE** | From the existing normal-email/password/TOTP login, `plugin-life-manager` uses Alpaca's official **Open New Paper Account** path, captures the new account ID/API keys privately, and checkpoints the result; a restart resumes the saved checkpoint; pinned-CLI readback proves the new paper account has cash/equity=`100000`, empty positions/orders/activity, and options Level 3. The existing baseline account is neither deleted nor presented as agent-created. |
+| A04 | Alpaca CLI preflight — **ACTIVE** | Pinned CLI v0.0.14 and doctor plus account/clock/SPY/options/news reads return the dedicated paper account; zero positions/orders/activities reconcile; secrets appear in no repo/log/chat artifact. Optional MCP is not a readiness dependency. |
 | A05 | Alpaca CLI provider adapter | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
 | A06 | Decision-before-effect | One bounded model call returns `NO_TRADE` or a typed thesis, structure, max loss, invalidation, exit, and evidence refs; the written decision precedes any effect intent. |
 | A07 | Risk gate | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
@@ -285,7 +274,7 @@ mutation command ran. This evidence was collected early and remains valid, but A
 
 ### Remaining execution queue — fixed order
 
-- [ ] **A03:** Life Manager opens one new paper account inside the existing normal-email Alpaca login, binds its
+- [x] **A03:** Life Manager opens one new paper account inside the existing normal-email Alpaca login, binds its
   private account ID and fresh keys, proves exactly `$100,000` and zero effects through CLI, then proves restart
   resumption without creating another account.
 - [ ] **A04:** Close the already-collected pinned CLI preflight against the new A03 account.
