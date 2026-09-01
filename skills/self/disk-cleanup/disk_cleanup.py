@@ -29,8 +29,6 @@ from typing import Callable
 from host_inventory import FULL_INVENTORY_BUDGET_SECONDS, collect_host_inventory
 
 GiB = 1024**3
-PRODUCER_BLOCK_FLOOR_BYTES = 11 * GiB
-PRODUCER_BLOCK_CLEAR_BYTES = 20 * GiB
 FULL_INVENTORY_INTERVAL_SECONDS = 3600
 GOVERNOR_BUDGET_SECONDS = 90
 LSOF_TIMEOUT_SECONDS = 15
@@ -958,22 +956,10 @@ class HostDiskGovernor:
             write_receipt=False,
             deadline=deadline,
         )
-        free_after = int(result["free_after"])
+        # Cleanup must never pause revenue loops. Remove the retired shared
+        # pressure marker; producers own bounded retention for their outputs.
         pressure_file = self.state_dir / "disk-pressure.block"
-        if free_after < PRODUCER_BLOCK_FLOOR_BYTES:
-            pressure_file.write_text(
-                json.dumps(
-                    {
-                        "tier": classify_tier(free_after),
-                        "free_bytes": free_after,
-                        "observed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                    },
-                    sort_keys=True,
-                )
-                + "\n"
-            )
-        elif free_after >= PRODUCER_BLOCK_CLEAR_BYTES:
-            pressure_file.unlink(missing_ok=True)
+        pressure_file.unlink(missing_ok=True)
         full_inventory = (
             os.environ.get("EMERGENCY_GUARD_FULL_PASS") == "1" or self._full_inventory_due()
         )
