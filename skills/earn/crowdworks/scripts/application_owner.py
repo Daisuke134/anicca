@@ -83,9 +83,10 @@ def main():
     now=datetime.now(timezone.utc)
     if not account._owner():result={"ok":False,"status":"browser_unavailable","effect_delta":0}
     else:
-        browser=account._browser(account.CDP_URL);page=browser.contexts[0].new_page();page.goto(account.DASHBOARD_URL);account._wait(page);authenticated,_=account._auth(page)
-        if not authenticated:result={"ok":False,"status":"auth_required","effect_delta":0}
+        ensured=account.run_ensure(state_path=account.DEFAULT_STATE_PATH,allow_signup=False,ownership_checker=account._owner,browser_factory=account._browser,vault_restorer=account._restore,vault_dumper=account._dump,credential_loader=account._credentials,notifier=account._notify,now=lambda:datetime.now(timezone.utc).isoformat())
+        if not ensured.authenticated:result={"ok":False,"status":ensured.error or ensured.status,"effect_delta":0}
         else:
+            browser=account._browser(account.CDP_URL);page=browser.contexts[0].new_page()
             configured=profile.run_apply(page=page,receipt_path=STATE/"profile-receipt.json")
             if not configured.get("ok"):
                 result={"ok":False,"status":configured.get("error","profile_incomplete"),"effect_delta":0}
@@ -95,7 +96,7 @@ def main():
                 product=json.loads(PRODUCT.read_text(encoding="utf-8"));due=(date.today()+timedelta(days=7)).isoformat()
                 tick=application.execute_application(page=page,opportunity=candidate,proposal_text=_proposal(product),proposed_amount_minor=product["base_price"]["amount"],delivery_due_on=due,expire_period_days=7,state_path=TRANSACTION,ledger_writer=_append,now=lambda:datetime.now(timezone.utc).isoformat(),account_ready=lambda:True)
                 result={**tick.to_dict(),"status":"verified" if tick.application_verified else tick.error or tick.reason,"effect_delta":1 if tick.submitted else 0}
-        page.close()
+            page.close()
     result["observed_at"]=now.isoformat();_write_status(result);print(json.dumps(result,ensure_ascii=False,separators=(",",":")));return 0 if result.get("ok") else 1
 
 if __name__=="__main__":raise SystemExit(main())

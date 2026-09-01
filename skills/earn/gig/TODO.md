@@ -225,6 +225,10 @@ capability claim is backed by an installed executable capability.
   the official dashboard remained logged out; the credential SSOT has no CrowdWorks entry, so account
   request `crowdworks-8b1ac13aeb824442b90d506c7638e10e` is durably `input_required` with Telegram
   receipt `47313`, without creating a duplicate account or submitting an uncertain application.
+  The installed owner now invokes that existing account ensure path before every profile/search pass;
+  its focused live replay returned `input_required`, exit `1`, and `effect_delta:0` while preserving the
+  exact same request ID and Telegram receipt, so credential insertion is picked up automatically without
+  duplicate notification or application effects.
 
 ### Live four-lane repair
 
