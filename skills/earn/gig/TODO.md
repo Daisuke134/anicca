@@ -68,11 +68,16 @@ completion claim is nevertheless false until the two failing lanes below pass na
   cross-lane lease preflights and retries one transient authenticated orders/talkroom render. Its real
   Paid launchd run recovered from an initial `orders_missing_container`, observed the live queue, and
   launched eight distinct `--effect-item` owners concurrently (`18128025`, `18180857`, `18184558`,
-  `18202085`, `18211838`, `18211957`, `18214856`, `18218780`). Seven owners terminated independently;
-  the final `18211957` read-only live-site verifier remains active. Remaining C02 closure is the parent
-  terminal receipt with exit zero and `failed=0`, then installing the same main-derived release SHA for
-  Apply, Reply, Storefront, and Paid and recording the four-owner runtime readback. Do not mark this gate
-  complete from the in-progress run or from its previous stale `latest.json`.
+  `18202085`, `18211838`, `18211957`, `18214856`, `18218780`). Release
+  `a0fec435e9886caeb017954eff39820f755432d7` removes manual-only talkroom `18211838` before Paid
+  dispatch while leaving the other live orders eligible. Its current Paid run is still active; the
+  published `latest.json` is the prior terminal receipt and must not be used as the current result.
+  Remaining C02 atoms, in order:
+  1. Wait for the current Paid parent to publish its terminal receipt.
+  2. Require Paid `last exit code = 0`, terminal `status=pass`, and `failed=0`.
+  3. Install one current main-derived immutable release SHA for Apply, Reply, Storefront, and Paid.
+  4. Read back each loaded argv/SHA, cadence, terminal event, and isolated lease state.
+  5. Mark C02 complete only when that four-owner runtime readback passes.
 - [x] `C02a` Move the Coconala buyer `逃げ因子` to manual-only handling.
   PASS = Paid never selects talkroom `18211838`; Reply always returns `stop_contact / stop` for the
   same thread; no existing project artifact, receipt, or conversation history is deleted. The account
