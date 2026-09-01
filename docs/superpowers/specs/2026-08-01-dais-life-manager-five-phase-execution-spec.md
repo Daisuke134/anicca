@@ -28,7 +28,8 @@ Daisは2026-09-01、既存順序を明示的に変更し、Alpaca AI Trading Age
 その後のDais本人資本によるbounded production化を現在の先頭trackに指定した。設計・採用OSS・固定順序・acceptanceは
 [`2026-09-01-alpaca-money-maximizer-design.md`](2026-09-01-alpaca-money-maximizer-design.md)を正本とする。
 
-現在activeな一件は同spec `A01 Freeze event contract`。A01〜A14を2026-09-05 00:00 JSTの提出まで固定順序で閉じ、
+同spec `A01 Freeze event contract`は公式/archived rules matrixとCLI authority固定でDONE。現在activeな一件は
+`A02 Team/submission shell`。A02〜A14を2026-09-05 00:00 JSTの提出まで固定順序で閉じ、
 A15 portable OSS releaseを続ける。`P01+`のlive owner-capital ladderはpaperを実収益と呼ばず、別credential・別loss
 budget・jurisdiction/broker条件を満たした後だけ進める。顧客資産運用・有償投資助言は登録要否を閉じるまでpaper-onlyとする。
 

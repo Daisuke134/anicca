@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / IMPLEMENTATION NOT STARTED
+status: APPROVED DESIGN / A01 DONE / A02 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -70,6 +70,32 @@ no-effect evaluation, paper canary, versioned promotion, monitoring, and rollbac
 process cannot execute its own recovery code, so only process resurrection remains outside Eliza. Machine power
 and host failure remain the responsibility of the operating system or cloud platform.
 
+### Event contract and Alpaca interface authority
+
+This matrix freezes A01. The current official event shell confirms the deadline, event dates, challenge, and
+prize pool. Cloudflare prevents a complete anonymous live-body extraction, so event-specific details are also
+bound to the archived 20 August 2026 PDF verification (`SHA-256 7e436430…`) rather than silently inferred from
+the generic Lablab guide. A changed official form or organizer notice remains controlling and must be recorded
+as a visible conflict before submission.
+
+| Requirement | Frozen contract | Evidence and conflict handling |
+|---|---|---|
+| Event window and deadline | Online, 28 August–4 September 2026; submit by **5 September 2026 00:00 JST** | Current official event page/search record and live event shell. The shell prints `Submission deadline Sep 5, 12:00 AM JST`. |
+| Challenge | Build an autonomous AI trading agent using Alpaca Trading API | Current official event record and archived event PDF page 2 agree. |
+| Agent-facing Alpaca surface | Event minimum is **either** Alpaca CLI or Alpaca MCP server | Archived event PDF page 2. A Lablab tutorial says to combine both, but it is guidance, not the controlling minimum. Life Manager deliberately exceeds the minimum with CLI authority plus optional read-only MCP presentation. |
+| Options | Every eligible strategy incorporates options; underlying-only entry is ineligible | Archived event PDF page 2. Alpaca official options docs confirm paper options are enabled by default and levels 2/3 support long options/spreads. |
+| Judged account | Brand-new Alpaca paper account dedicated to this hackathon; development accounts may differ | Archived event PDF page 3. Alpaca official paper docs confirm global email-only Paper Only signup and a default `$100,000` balance. |
+| Private judge identifier | Submit the dedicated Alpaca paper account ID for activity/P&L verification | Archived event PDF page 6. Public artifacts expose only a redacted/hash reference. |
+| Submission package | Hosted working URL, public GitHub repository, cover image, pitch video, PDF slide presentation | Archived event PDF page 6 plus current Lablab submission guide. Generic Lablab guidance permits a video up to five minutes; this project keeps the stricter ≤4-minute target. |
+| Judging | Presentation, business value, application of technology, originality; event evidence also emphasizes paper P&L and execution | Current Lablab judging guide supplies the four rubric dimensions; archived event verification supplies the Alpaca/P&L emphasis. P&L never overrides safety or truthfulness. |
+| Prize pool | `$6,000` | Current official event record. Prize allocation details are not available in the anonymous live shell and are not invented. |
+
+**CLI authority decision:** the Alpaca CLI is the sole broker command/readback surface used by the Financial
+loop. Eliza invokes pinned CLI commands with structured JSON, binds every mutation to a stable
+`client_order_id`, and reconciles through CLI account/order/position/activity reads. The adapter does not add a
+second REST or SDK mutation path. MCP may be enabled only as a read-only judge/explanation surface; its absence
+cannot stop the loop, and it cannot place, replace, cancel, exercise, or close orders.
+
 ## 3. Reuse research — fixed source and decision
 
 The repositories below were cloned into an isolated temporary directory and inspected at the listed commits.
@@ -90,7 +116,8 @@ README claims alone.
    patterns; do not reuse launchd as the loop owner.
 3. Adapt only MIT donor code that fills an Alpaca-specific gap and record attribution in
    `THIRD_PARTY_NOTICES.md`.
-4. Use the official Alpaca CLI/MCP/API rather than writing a custom market protocol.
+4. Use the pinned official Alpaca CLI as the sole broker authority rather than writing a custom market protocol;
+   optional MCP is read-only and judge-facing.
 5. Add no strategy framework, new database, agent team, dashboard framework, or second scheduler.
 
 ## 4. Hackathon strategy and winning demo
@@ -113,9 +140,9 @@ proposal or `NO_TRADE`. Deterministic code validates structure and arithmetic. T
 Parameters freeze before the first judged trade. Historical replay chooses the initial strategy; competition
 P&L does not trigger mid-event curve fitting. Paper deposit, reset, or self-transfer is never income.
 
-The four-minute demo shows: Life Manager goal, new paper account and option level, MCP observation, model thesis,
-one rejected proposal, one permitted defined-risk proposal, Alpaca CLI/API order receipt, reconcile/fill/P&L,
-Telegram/panel evidence, and the same-core OSS path. The broad SELL/WORK/CAPITAL story is the opening/closing
+The four-minute demo shows: Life Manager goal, new paper account and option level, CLI observation, model thesis,
+one rejected proposal, one permitted defined-risk proposal, Alpaca CLI order receipt, reconcile/fill/P&L,
+Telegram/panel evidence, the optional read-only MCP explanation view, and the same-core OSS path. The broad SELL/WORK/CAPITAL story is the opening/closing
 differentiator; the middle of the demo is real Alpaca execution.
 
 ## 5. No-routine-human bootstrap
@@ -146,21 +173,21 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
-Current cursor: **A01 Freeze event contract**. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A02 Team/submission shell**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
 
 | Seq | Atom | Done condition |
 |---:|---|---|
-| A01 | Freeze event contract | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
+| A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
 | A02 | Team/submission shell | Enrolled team exists and its official page exposes every required field; no final submit yet. |
 | A03 | New paper-account bootstrap | Normal-email flow yields a dedicated active paper account; account ID is private; cash/equity=`100000`; positions/orders/activity empty; option level recorded; new-session login works. |
-| A04 | Alpaca CLI/MCP preflight | CLI doctor/account plus MCP account/clock/stock/options/news reads return the same dedicated account; secrets appear in no repo/log/chat artifact. |
-| A05 | Alpaca provider adapter | `plugin-life-manager` converts official account/market/option data to typed observations and can create a paper-only defined-risk order request; live endpoint/key is structurally rejected. |
+| A04 | Alpaca CLI preflight | Pinned CLI version/doctor plus account/clock/stock/options/news reads return the dedicated paper account; secrets appear in no repo/log/chat artifact. Optional MCP is read-only and not a readiness dependency. |
+| A05 | Alpaca CLI provider adapter | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
 | A06 | Decision-before-effect | One bounded model call returns `NO_TRADE` or a typed thesis, structure, max loss, invalidation, exit, and evidence refs; the written decision precedes any effect intent. |
 | A07 | Risk gate | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
-| A08 | Exactly-once paper canary | Sealed intent submits one minimum-risk paper options order; official ID/client ID/readback bind to the intent; replay submits zero additional orders. |
+| A08 | Exactly-once paper canary | Sealed intent submits one minimum-risk paper options order through the CLI; official ID/client ID/CLI readback bind to the intent; replay submits zero additional orders. |
 | A09 | Ack-loss/restart reconciliation | Simulated lost acknowledgement and process restart reconcile by client ID; absent/unknown state opens the breaker and blind retry remains zero. |
 | A10 | First registered durable loop | `plugin-life-manager` registers exactly one Alpaca loop; Eliza alone schedules each bounded pass, owns its lease/heartbeat/checkpoint, uses Alpaca clock, observes/decides/acts/reconciles, and resumes the same state after restart. Host adapters contain no Alpaca schedule. |
 | A11 | Paper campaign | Frozen strategy runs on the dedicated account; every proposal/no-trade/order/fill/exit/P&L is recorded; official account activity and Life Manager projection have zero unexplained delta. |
