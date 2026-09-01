@@ -204,7 +204,16 @@ orders, and no activities. Official configuration reads options `Level 3`, inclu
 multi-leg strategies. The provider offered a separate live Individual/Business account application; it was not
 started, and no KYC, funding, live-capital, or live-trading state was created.
 
-A04 is **DONE** against the official `alpacahq/cli` release `v0.0.14`, source commit
+The active Eliza implementation branch `feat/alpaca-a03-autonomous-bootstrap-20260901` now exposes
+`ALPACA_BOOTSTRAP` from the sole `plugin-life-manager`. It stores one redacted, non-scheduled checkpoint Task
+row; an empty checkpoint discovers six bound private refs from the mode-`0600` credential SSOT and runs only
+the pinned CLI. A production readback through that operation returned `READY` twice with one Task row,
+`scheduled=false`, paper ACTIVE, cash/equity `100000`, options Level 3, and zero positions/orders/activities.
+The second pass created no Task or account duplicate. Focused package evidence is 11 test files / 24 tests plus
+typecheck and Biome. A03 remains ACTIVE because the missing-credential branch currently emits the typed
+`CREATE_PAPER_ACCOUNT` next action but does not yet execute BrowserService/Gmail signup effects itself.
+
+A04 has **preflight evidence ready but remains ordered after A03** against the official `alpacahq/cli` release `v0.0.14`, source commit
 `53606273aa230a40c64b783425dcb3f4423ede30`. Its published release checksum was verified before installing the
 native macOS arm64 binary. `alpaca version` returns `0.0.14`; `alpaca doctor` reports no saved profile, env-only
 credentials, active profile `paper`, connected `paper-api.alpaca.markets` trading and data APIs, and all checks
