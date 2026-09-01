@@ -3,7 +3,7 @@
 **作成日:** 2026-08-13
 **正本:** Life Manager (`Daisuke134/life-manager`)
 **対象:** Lancers の acquisition、月額契約、納品、着金を一つの収益ループとして扱う
-**状態:** Applyは公式ApplicationReceipt 41件、5分ごとのexhaustive ownerとTelegram ACKが稼働。Storefrontはcanonical 1件。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0、received grossは0円
+**状態:** Applyは公式proposal receipt 44件、5分ごとのexhaustive ownerとlane専用Telegram ACKが稼働。Storefrontはcanonical 1件。ContractReceipt、DeliveryReceipt、PaymentReceipt、bank matchは0、received grossは0円
 
 canonical repository は Life Manager とし、Lancers の credential、browser session、
 runtime state、receipt、ledger は外部に残す。この仕様は runtime state を移動・複製・変更しない。
@@ -2965,6 +2965,14 @@ second implementation of Apply, Storefront, Negotiate or Paid. Deletion or archi
 three facts: every required host change is integrated or intentionally rejected, executable
 production references are zero, and unique required code is zero.
 
+Marketplace expansion reuses code directly; it does not copy a working loop or prompt into each
+provider folder. `skills/_shared/marketplace-core` and the proven Coconala `skills/earn/gig`
+contracts own opportunity normalization, positive-EV judgment, proposal generation, effect fence,
+Goal/WorkItem lifecycle, ledger, receipt, Telegram Outbox and learning attribution. A provider
+folder owns only authentication/browser attachment, routes/selectors, provider IDs, form actions,
+official readback and measured provider limits. CrowdWorks therefore adds an adapter to this core,
+not another scheduler, ledger, prompt fork or reporting stack.
+
 ### 19.2 Owner-visible Telegram contract
 
 Messages are sent by Life Manager itself. Do not prefix messages with `Codex:::`, `Claude:::`,
@@ -3021,8 +3029,8 @@ delivery 665544を公式確認、重複納品0。paymentは未確認であり0�
 The following order is immutable unless Dais explicitly says to change the order. Only the first
 unfinished atom is active.
 
-1. **L-01 Runtime truth inventory** — read back all installed Lancers launchd labels, exact immutable release SHA, interval, latest natural wake, exit, state/ledger hashes and Telegram ACK; classify missing, stale or split owners without creating replacements.
-2. **L-02 Report parity** — prove Apply, Storefront, Negotiate and Paid each use the §19.2 envelope; separate lane truth stores, deduplicate only the same wake/effect and accept a provider message ID.
+1. **L-01 Runtime truth inventory — DONE.** Five registry-owned labels exist: Browser, Application (300s), Storefront (1800s), Work Sync (300s) and legacy aggregate Telegram (300s). The original installed plists directly executed release `381e45d5…` and bypassed the control plane; Browser, Application, Storefront and Work Sync now execute `lm-loop-run` from the same immutable main release `50244baa…`. Application, Storefront and Work Sync all produce terminal runtime events from that SHA; Storefront run `18d138d767b67f18-32087` and Work Sync run `18d138c2483dbcb0-29470` pass. The aggregate Reporter is intentionally unloaded because lane owners now dispatch their own reports. Runtime hashes at inventory are `application.json=6555f1be…`, `contracts.json=8db7bb8b…`, `marketplace-ledger.sqlite3=1fbd9fd7…`, and `telegram.sqlite3=7adc27cc…`. Application wake report is provider-acknowledged as Telegram message ID `47223` with durable event key `lancers:application-wake:v1:ba21ac1c…`.
+2. **L-02 Report parity — ACTIVE.** Apply directly uses the shared durable marketplace Telegram Outbox and has provider message ID `47223`. Work Sync emits only `[Lancers][交渉・収益]` and passes with message ID `47230`; Storefront emits only `[Lancers][出品]` and passes with message ID `47231`. One later Apply transport attempt correctly remains `delivery_uncertain / provider_response_invalid` without replaying the same wake. Remaining work is to split Work Sync truth into independent Negotiate and Paid owners/stores, give each the full §19.2 official-ID/duplicate/effect envelope, and prove a provider ACK for each. The legacy combined `[Lancers][応募・出品]` scheduler stays unloaded.
 3. **L-03 First-review application canary** — submit one review-oriented, objectively completable, credible-buyer, non-negative-net application through the real Application owner; retain exact project/proposal ID, strategy/profile/proof versions, official readback and replay submit zero.
 4. **L-04 Maximal positive-EV Apply** — after L-03, evaluate every fresh candidate and submit every positive-lifetime-EV candidate allowed by provider throttle, funded capacity and duplicate fences; invent no fixed daily quota.
 5. **L-05 Storefront continuous owner** — observe official funnel metrics, run incremental and evidence-gated full wakes, perform at most one bounded catalogue effect, read it back publicly and preserve rollback.
