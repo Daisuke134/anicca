@@ -353,6 +353,11 @@ two fills, two positions, zero open orders, cash `$99,970.95`, equity `$99,997.9
 No close order exists while the regular session is closed; A11 remains ACTIVE until the loop records an official
 close fill, zero positions, and the realised paper P&L receipt.
 
+Current paper-money scoreboard (pinned-CLI readback): starting equity `$100,000`; current equity `$99,997.95`;
+realised P&L `$0`; open-position unrealised P&L `-$2`; realised profit made `$0`. Therefore the Alpaca loop has
+placed and filled its first paper trade but is **not making money yet**. Paper equity, unrealised P&L, and any
+future realised paper gain remain simulation evidence and must never be reported as revenue or live earnings.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
