@@ -2687,6 +2687,7 @@ def _validate_file_authorization(root: Path, stable: Path, feedback: str,
         raise ValueError("stale file authorization")
     ok, errors = paid_work_evidence.validate_paid_work(
         root, stable, artifact_judge=lambda *_: ("deliverable", _text(result.get("reason"))),
+        allow_review_ready=_load(root / "context" / "paid-work-decision.json").get("delivery_stage") == "review",
     )
     if not ok:
         raise ValueError("invalid authorized file bundle:" + ",".join(errors))
