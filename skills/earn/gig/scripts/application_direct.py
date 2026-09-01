@@ -1026,7 +1026,7 @@ def _finish(
     if durable_pending:
         report_results.extend(durable_pending)
         values["report_results"] = report_results
-        values["pending"] = int(values.get("pending") or 0) + len(durable_pending)
+        values["durable_uncertain_count"] = len(durable_pending)
         values["durable_pending_ids"] = [row["request_id"] for row in durable_pending]
     payload: dict[str, Any] = {
         "status": status,
