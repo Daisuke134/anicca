@@ -71,6 +71,7 @@ class EntryDispatchTest(unittest.TestCase):
                 'GH_TOKEN': 'alias',
                 'GH_ENTERPRISE_TOKEN': 'alias',
                 'GITHUB_ENTERPRISE_TOKEN': 'alias',
+                'SYMPHONY_WORKSPACE_ROOT': '/tmp/legacy-project-workspaces',
                 'KEEP': 'value',
             }
 
@@ -78,6 +79,8 @@ class EntryDispatchTest(unittest.TestCase):
 
             self.assertEqual(environment['GITHUB_TOKEN'], token)
             self.assertEqual(environment['PATH'], '/opt/homebrew/bin:/usr/bin:/bin')
+            self.assertEqual(environment['SYMPHONY_WORKSPACE_ROOT'],
+                             str(home / '.local/state/life-manager/symphony-workspaces'))
             self.assertEqual(environment['KEEP'], 'value')
             self.assertNotIn('GH_TOKEN', environment)
             self.assertNotIn('GH_ENTERPRISE_TOKEN', environment)

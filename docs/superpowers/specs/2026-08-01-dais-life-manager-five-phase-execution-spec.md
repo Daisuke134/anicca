@@ -45,7 +45,22 @@ macOS host adapterとしてone-pass owner契約を提供し、同じpassをsyste
 2026-09-01のAlpaca期限付きtrackが完了するまで次作業の選択には使わない。
 Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
 次の一件はAtomic program ledger Seq 26 `ELZ-L04`で、fresh authorized applicationの既存contractを調査し、現在activeなL04だけを最小単位へ分解する。Phase C（Seq 14〜22）とELZ-L01〜L03は完了済み。L04は実Lancersへ新規応募を一件送る最初のatomであり、送信前にauthorizationとsealed intentを閉じる。
+### 0.0.0.1 Previous cursor retained — host安定化から自律収益、WebMCPの順で閉じる
 
+この節はAlpaca優先への明示変更前のcursorを履歴として保持する。後段のarchitecture、実装履歴、atom内部の
+acceptanceと同様、Alpaca track完了まで次作業の選択には使わない。
+
+| Order | Program | Current truth | PASS |
+|---:|---|---|---|
+| 1 | Codex connection errorの恒久解決 | **DONE**。GitHub workroom #11 close時にOfficial Symphonyが同じ`GH-11`をterminal cleanupし、開いたCodex sessionのcwdを消したことをlog・source・issue stateで確定。PR #3598 / main `67d3f4e78`でSymphony workspace rootを`~/.local/state/life-manager/symphony-workspaces`へ強制隔離した。旧Projects root注入を上書きするfocused 13/13、loop control contracts、GH-11 cwd・lock readback PASS。local Symphony/bridgeはretiredかつunloaded | Persistent Codex project workspaceとterminal時に削除されるSymphony runtime workspaceの所有rootが重ならない。再有効化時も外部の旧rootを継承せずruntime専用rootを使用する |
+| 2 | Disk cleanupの恒久解決 | production labelはlatest main release `3c018f24f`へ更新済みで自然runはexit 0、errors 0、protected deletion 0。安全な大容量cacheの候補化不足により、正常終了でもreclaimed 0になり得る | credential、browser profile、receipt、ledger、state、active worktree、loaded releaseを保持したまま、再生成可能なclosed cacheとstale workspace/releaseをpressure前に回収する。free-space governor、producer block/resume、cleanup replayがerrors 0・protected deletion 0 |
+| 3 | Lancers着金から自律market展開 | ElizaOS full forkと`plugin-life-manager`のgeneral coreは正本方針。既存Lancers/Coconala launchd ownerはcutover前のproduction ownerであり、process成功は収益証明ではない | Lancersで`Goal → WorkItem → discover → apply → contract → fulfill → deliver → payment → banked receipt → reflect`を人手なしで閉じる。その同じprovider-neutral coreがCrowdWorksを次市場として開始し、以後はLife Manager自身が市場、tool、loop/graphを選択・構築・検証してsettled netを増やす。subjectiveなmarket判断をkeyword/regex/provider branchへ固定しない |
+| 4 | WebMCP hackathon提出 | Money Printerのcode、Steel、Symphony、visual takeoverは存在するが、judge-facing final E2E、動画、YouTube、Devpost提出は未完 | 公開URLとrepoからjudgeが60秒でWebMCP takeoverを実行でき、4 criteriaを一次証拠で説明する。final E2E、動画、YouTube、Devpost receiptを閉じる |
+
+Order 4は別Codex sessionが独立workspace、branch、browser/profile、external submission stateを所有できる場合だけOrder 1〜3と並行できる契約だった。
+同じ資源を共有する場合は並行しない。最後のactive atomはOrder 2のDisk cleanup恒久解決だった。
+Upwork terminal evidence、startup context、public claim、GA-01〜13A、Phase C、ELZ-L01〜L03は完了または履歴として保持する。
+旧cursor `ELZ-L04`以降はOrder 3内部のatomであり、Order 1〜2のPASS後に再開する。
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
 製品名とrepository名は**Life Manager**で固定する。`iManager`と`Lazarus`は音声入力の誤認であり、
