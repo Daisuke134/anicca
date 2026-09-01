@@ -5177,6 +5177,50 @@ queue is added. Each owner must also progress independent work concurrently insi
    `failed=0`, Negotiate has zero unowned actionable items, Storefront has a verified listing
    effect or a truthful no-op reason, Apply has complete accounting, and all four replay to zero
    duplicate external effects.
+6. **Shared gig kernel extraction.** Do this only after the Coconala four-lane release gate passes;
+   do not delay the current Coconala repair with a directory migration. Reuse the existing
+   provider-neutral modules at `skills/earn/gig/scripts/` and keep marketplace behavior behind thin
+   modules under `scripts/providers/`. The target shape is:
+
+   ```text
+   skills/earn/gig/
+   ├── config/connectors/{coconala,crowdworks}.json
+   ├── schemas/                         # neutral contracts + truly provider-specific schemas
+   ├── scripts/
+   │   ├── provider_adapter.py          # discovery/message/effect/readback contract
+   │   ├── project_workspace.py         # isolated resumable order workspace
+   │   ├── project_worker.py            # bounded independent worker
+   │   ├── workflow_executor.py         # prepare→verify→effect→official readback
+   │   ├── work_event_projector.py      # durable state projection
+   │   ├── marketplace_kpi_adapter.py   # revenue/conversion observations
+   │   └── providers/
+   │       ├── coconala_*.py
+   │       ├── crowdworks_*.py
+   │       └── upwork_*.py
+   └── tests/                            # common contract checks + minimal provider checks
+   ```
+
+   Shared ownership is limited to work-item state, workspace, bounded concurrency, retry/resume,
+   effect fences, context/profile input, artifact handoff, official readback contracts and KPI
+   projection. Login/session transport, URLs/APIs/selectors, discovery, application forms,
+   messaging, delivery/payment states and marketplace policy remain provider-owned. The agent makes
+   semantic decisions; deterministic adapters perform and verify effects. Do not create a second
+   scheduler, generic marketplace framework, copied Paid loop or copied Apply loop.
+
+   - [ ] `SHARE-1` Route one existing Coconala path and one existing Upwork path through the same
+     `provider_adapter.py` work-item/effect/readback contract without changing their live behavior.
+   - [ ] `SHARE-2` Move no working code merely for naming. Extract a helper only when both live
+     providers already duplicate the same behavior; otherwise leave it provider-owned.
+   - [ ] `SHARE-3` Make each prepared work item start its own writer immediately under bounded
+     concurrency; no parent all-prepare/all-write barrier and no cross-resource waiting.
+   - [ ] `SHARE-4` Prove common retry/resume and replay-zero with one transient read failure, one
+     process interruption and one uncertain prior effect while an unrelated item completes.
+7. **CrowdWorks adapter.** After `SHARE-1` through `SHARE-4`, add only CrowdWorks-specific connector,
+   authentication/session, discovery, application, messaging, contract/delivery/payment and official
+   readback modules. Reuse the shared profile, workspace, worker, effect fence, retry/resume,
+   observability and KPI paths. Acceptance is one real eligible application with official readback,
+   one inbound message handled with official readback, one resumable contracted-work item, and a
+   second natural wake with zero duplicate external effects.
 - [ ] Restore the explicit Job Hunter pause boundary. Current process readback again shows
   `job-search-daily` and Mercor browser roots alive without `MacAppCodeSignClone`; stop the owners,
   prevent release reconciliation from re-enabling user-paused labels, and verify they stay absent
