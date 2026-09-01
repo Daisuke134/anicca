@@ -31,9 +31,9 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    - 現行agent-runner evidenceは256 MiB上限を持ち、新Life Manager rootは約73 MiB。旧OpenClaw evidence、
      旧lm-video、media outbound、ReelClaw runは現在のproducer rootではなく手動監査対象とする。
      `~/.openclaw/workspace/runs`はpublication receipt未接続のdeliverableなので自動削除しない。
-   - **現在activeな次atom:** 現役append-only ledger/logのownerと増加率を特定し、既存rotation/compactionへ接続する。
-     先頭候補はaffiliate tool-attempt receipts、共通agent usage、Slack/Stripe event streamである。ledgerをblind
-     truncateせず、owner readbackに必要な期間・materialized state・archiveを確認してから最小owner修正を行う。
+   - **現在activeな次atom:** 共通agent usage writer（active 21.1 MiB）のowner-side lossless rotationを接続する。
+     ledgerをblind truncateせず、owner readbackに必要な期間・materialized state・archiveを確認してから
+     `runtime/agent-runner.append_usage_event`へ最小修正を行う。
    - `lm-recording-store`はmain wrapperから旧OpenClaw skillへ戻る二重正本を廃止し、Life Manager data rootへ
      170 recording ID・173 MP3を統合、全hash一致を確認した。release `610f9059`でtarget applyし、実wakeは
      terminal PASS/exit 0。旧/new `lm-video` 548ファイル・220.5 MiBは全hash一致の削除候補である。
@@ -54,6 +54,13 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    - 修正後readbackはData volume空き7.3 GiB、完成release 19、未完成release 0。19 releaseは
      launchd/open process/current参照で全件GC保護されるため、別ownerのlabelを競合移管して削除しない。
      11 GiB floor未達なのでAll-loop bounded-output auditとowner別rotationは未完了のまま維持する。
+   - 共通control-plane event writerはPR #3688で16 MiB到達時の同一inode/flock内lossless gzip rotationを
+     自己実行する。Stripe/Slackだけをrelease `e6ba840f`へ移管し、Stripeは51,670 archive行＋active 14行、
+     Slackは57,359 archive行＋active 14行、gzip PASS、mode 0600、両job runningをread backした。
+   - Affiliate tool receipt writerはPR #3692で実call pathを32 MiB owner rotationへ接続した。release
+     `6b4f59fb`の自然wakeで34 MiBをarchive 11,835行/357 KiB＋active 27,317行/24 MiBへ縮小し、全39,152行、
+     gzip、active/archive/lock mode 0600、job runningをread backした。confirmed/unknown行はactive保持し、
+     古いNO_EFFECT/READ_ONLY_CONFIRMEDだけをowner自身が圧縮した。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
