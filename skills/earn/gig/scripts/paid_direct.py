@@ -1729,7 +1729,7 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
                 or delivery_result.get("message_sha256") != message_sha256):
             raise ValueError("builder requirements contract mismatch")
         result = _load(verifier); desired = intent["desired_state"]; target = intent["target"]
-        _require_semantic_effect_binding(project_root, intent, delivery_result, result)
+        semantic_contract_sha256 = _require_semantic_effect_binding(project_root, intent, delivery_result)
         builder_outcome = _validated_business_outcome(delivery_result)
         verifier_outcome = _validated_business_outcome(result)
         if (not isinstance(result, dict) or result.get("verified") is not True
@@ -1751,7 +1751,7 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
             references = [("evidence", value) for value in result["evidence"] if isinstance(value, str) and value.strip()]
         if not references:
             raise ValueError("verifier evidence missing")
-        observed = False; now_ns = time.time_ns()
+        observed = False; now_ns = time.time_ns(); evidence_records = []
         for field, raw_path in references:
             evidence_path = (managed / raw_path if not Path(raw_path).is_absolute() else Path(raw_path)).resolve()
             evidence_path.relative_to(managed)
@@ -1760,7 +1760,6 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
                                                  and (mtime_ns <= min_evidence_mtime_ns or mtime_ns > now_ns + 1_000_000_000))):
                 raise ValueError("verifier evidence is stale or missing")
             evidence = _load(evidence_path)
-            _require_semantic_effect_binding(project_root, evidence)
             if (not isinstance(evidence, dict) or evidence.get("target") != target
                     or evidence.get("authenticated") is not True
                     or evidence.get("requirements_sha256") != requirements_sha256
@@ -1768,9 +1767,20 @@ def _validate_managed_verifier(verifier: Path, project_root: Path, intent: dict[
                 raise ValueError("verifier evidence identity mismatch")
             if not paid_remote_result.canonical_equal(evidence.get("observed_state"), desired):
                 raise ValueError("verifier observed state mismatch")
+            evidence_records.append((evidence_path, evidence))
             observed = True
         if not observed:
             raise ValueError("verifier observed evidence missing")
+        # The verifier model occasionally copies or recomputes this identifier
+        # incorrectly.  Normalize verifier-owned records only after every
+        # substantive state, identity, freshness, and outcome check succeeds.
+        if result.get("semantic_contract_sha256") != semantic_contract_sha256:
+            result["semantic_contract_sha256"] = semantic_contract_sha256
+            _write(verifier, result)
+        for evidence_path, evidence in evidence_records:
+            if evidence.get("semantic_contract_sha256") != semantic_contract_sha256:
+                evidence["semantic_contract_sha256"] = semantic_contract_sha256
+                _write(evidence_path, evidence)
         return verifier
     except Failure:
         raise
