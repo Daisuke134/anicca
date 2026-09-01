@@ -412,12 +412,16 @@ Latest verified recovery state:
   standard `PUT /json/new?URL` endpoint instead of the broken `Target.createTarget` path. An isolated live
   `/json/new` target connected and closed successfully; the exact Ryuu room then returned final route
   `https://coconala.com/talkrooms/18211957` with complete history coverage and no customer effect.
-- usa `18214856` is still **not delivered**. There is no NOTE publication URL, no
-  `delivery/paid-remote-result.json`, and no Coconala message containing a published NOTE URL. The latest
-  official seller message only says the existing NOTE account was found and will be used. Its decision is now
-  v18 `actionable/remote` with no unresolved input: use the private seller-owned NOTE/BingX resources, publish
-  the actual 3,000–5,000-character article, verify the public NOTE URL, submit that URL once, read it back,
-  and replay zero.
+- usa `18214856` has the buyer-visible work and one submission effect, but Paid is still **not complete**.
+  The natural owner published the 3,039-character NOTE article at
+  `https://note.com/anicca123/n/ne57c939d6c3b`; a public HTTP 200 readback contains affiliate URL
+  `https://bingxdao.com/invite/0NHH0M/`; and the installed Paid adapter sent that NOTE URL once in exact
+  Coconala room `18214856` with `formal_delivery_checkbox=false`. Fresh verification independently confirmed
+  the NOTE publication and exact-room message, so neither effect may be repeated. It rejected the owner's
+  hand-written BingX authentication receipt: a fresh official readback returned the BingX login page, while
+  Google ordinary login reached a passkey-only challenge. Paid must preserve the published/submitted effects,
+  complete or resume the authorized Google/BingX authentication ceremony, independently read back the
+  authenticated seller-owned BingX account plus WELCOME referral state, and then replay with zero effects.
 - Ryu `18211957` is v18 `actionable/remote`, but is still **not complete for the current revision**. The
   preserved Netlify result proves an older profile-navigation deployment, not the current HOME headings,
   schedule filters, banners, pricing area, and questionnaire requirements. Paid must update and verify the
@@ -428,12 +432,13 @@ Latest verified recovery state:
 - snow `18218780` is v18 `actionable/file` with no unresolved input, but has no `paid-work-result.json` or
   buyer-visible JPG. Paid must retrieve the supplied TIF, produce the specified full-resolution edit, submit
   it for review with formal delivery off, and read it back.
-- No four-room completion claim is allowed yet. The latest aggregate is `pending/browser_lease_busy` behind
-  Apply, with effect 0 and failed 0. After browser admission is free, Paid must refresh all nine rooms and
-  start the four project owners concurrently. Official Coconala readbacks remain serialized because the four
-  lanes share one authenticated browser; article/site/report/image production remains parallel in isolated
-  project workspaces. Completion requires actual NOTE publication, current live-site revision, report and JPG
-  submission, exact-room readbacks, aggregate `failed=0`, then a second natural replay with duplicate effects 0.
+- No four-room completion claim is allowed yet. Release `20260901T122539-b7dc7b3c` ran the project owners in
+  parallel and produced the USA publication/submission effects, but the cycle ended `failed=6` after the fresh
+  BingX authentication readback failed; the Paid launchd owner exited 1. Official Coconala readbacks remain
+  serialized because the projects share one authenticated marketplace browser; article/site/report/image
+  production remains parallel in isolated project workspaces. Completion still requires authenticated BingX
+  readback without trusting model-authored evidence, the remaining live-site/report/JPG outcomes, exact-room
+  readbacks, aggregate `failed=0`, then a second natural replay with duplicate effects 0.
 
 **Active shared boundary — repair the Paid Kernel, not the named buyers.** The four rooms above are live
 acceptance fixtures for one marketplace-neutral owner contract; they are not foreground-Codex work items and
