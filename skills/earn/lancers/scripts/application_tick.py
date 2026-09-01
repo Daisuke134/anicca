@@ -311,7 +311,6 @@ def _open_owned_page(browser_factory: Optional[Callable[[str], Any]] = None) -> 
             browser = (browser_factory or _default_browser_factory)(CDP_URL)
             return browser, _new_owned_page(browser)
         except Exception:
-            _stop_playwright_runtime(getattr(browser, "_anicca_playwright_runtime", None))
             if attempt:
                 raise
             time.sleep(1)
