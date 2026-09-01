@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A06 DONE / A07 ACTIVE
+status: APPROVED DESIGN / A01-A07 DONE / A08 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -137,7 +137,7 @@ proposal or `NO_TRADE`. Deterministic code validates structure and arithmetic. T
 - total open maximum loss: 3%; minimum uncommitted cash: 30%; no borrowed leverage;
 - daily realised/unrealised loss halt: 1.5%; portfolio high-water drawdown halt: 4%;
 - maximum five positions; maximum ten open orders; five-minute entry cooldown;
-- quote age at most 30 seconds, Greeks age at most 60 seconds, spread at most 15%;
+- quote age at most 30 seconds, Greeks age at most 60 seconds, spread at most 15%; initial entries use 7–45 DTE;
 - only regular-session entries; risk-reducing exits remain allowed while entries are halted.
 
 Parameters freeze before the first judged trade. Historical replay chooses the initial strategy; competition
@@ -176,7 +176,7 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
-Current cursor: **A07 Risk gate**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A08 Exactly-once paper canary**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
@@ -274,6 +274,18 @@ effect intent already exists and fails closed if effect ordering has been violat
 four focused suites passed (`7/7` tests), including first call=1, replay call=0, and effect-before-decision
 rejection. No broker order or other external effect ran in A06.
 
+A07 is **DONE** in `life-manager-eliza` merge `b7a39fc8eaf58ea838f36820e05ec3edb0f9b9b5` (PR #49).
+One pure gate checks the model decision against deterministic max-loss arithmetic and the frozen paper policy:
+0.5% per trade, 3% total open risk, 30% cash reserve, 1.5% daily-loss halt, 4% high-water drawdown halt,
+five positions, ten orders, five-minute cooldown, 30-second quotes, 60-second Greeks, 15% spread, option
+level, no leverage, regular-session entry, and healthy reconciliation. The initial 7–45 DTE range excludes
+0DTE and same-week expiration risk; [FINRA](https://www.finra.org/investors/insights/zeroing-in-options-trading-strategy)
+warns that buying and selling 0DTE options can be risky, while
+[OCC](https://www.optionseducation.org/referencelibrary/faq/weekly-options) documents weekly expiry/exercise
+behavior. Unknown structures and malformed runtime values fail closed. Plugin
+strict typecheck and four focused suites passed (`5/5` tests); a $400 maximum-loss spread on $100,000 equity
+passed, while the combined halt fixture returned every applicable reason. No broker effect ran in A07.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
@@ -282,8 +294,8 @@ rejection. No broker order or other external effect ran in A06.
 | A04 | Alpaca CLI preflight — **DONE** | Pinned CLI v0.0.14 and doctor plus account/clock/SPY/options/news reads return the dedicated paper account; zero positions/orders/activities reconcile; secrets appear in no repo/log/chat artifact. Optional MCP is not a readiness dependency. |
 | A05 | Alpaca CLI provider adapter — **DONE** | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
 | A06 | Decision-before-effect — **DONE** | One bounded model call returns `NO_TRADE` or a typed thesis, structure, max loss, invalidation, exit, and evidence refs; the written decision precedes any effect intent. |
-| A07 | Risk gate — **ACTIVE** | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
-| A08 | Exactly-once paper canary | Sealed intent submits one minimum-risk paper options order through the CLI; official ID/client ID/CLI readback bind to the intent; replay submits zero additional orders. |
+| A07 | Risk gate — **DONE** | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
+| A08 | Exactly-once paper canary — **ACTIVE** | Sealed intent submits one minimum-risk paper options order through the CLI; official ID/client ID/CLI readback bind to the intent; replay submits zero additional orders. |
 | A09 | Ack-loss/restart reconciliation | Simulated lost acknowledgement and process restart reconcile by client ID; absent/unknown state opens the breaker and blind retry remains zero. |
 | A10 | First registered durable loop | `plugin-life-manager` registers exactly one Alpaca loop; Eliza alone schedules each bounded pass, owns its lease/heartbeat/checkpoint, uses Alpaca clock, observes/decides/acts/reconciles, and resumes the same state after restart. Host adapters contain no Alpaca schedule. |
 | A11 | Paper campaign | Frozen strategy runs on the dedicated account; every proposal/no-trade/order/fill/exit/P&L is recorded; official account activity and Life Manager projection have zero unexplained delta. |
@@ -301,7 +313,7 @@ rejection. No broker order or other external effect ran in A06.
 - [x] **A05:** Implement the typed, paper-only Alpaca CLI provider adapter; reject live mode and any REST/SDK
   mutation fallback.
 - [x] **A06:** Persist one model-authored `NO_TRADE` or typed options thesis before any effect intent.
-- [ ] **A07:** Enforce the deterministic defined-risk, exposure, freshness, cooldown, and drawdown gate.
+- [x] **A07:** Enforce the deterministic defined-risk, exposure, freshness, cooldown, and drawdown gate.
 - [ ] **A08:** Submit and reconcile one minimum-risk paper canary with a stable `client_order_id`; replay adds
   zero orders.
 - [ ] **A09:** Prove lost-acknowledgement and restart reconciliation without blind retry.
