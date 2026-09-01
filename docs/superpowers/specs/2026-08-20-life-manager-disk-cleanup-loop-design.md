@@ -33,6 +33,16 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `~/.openclaw/workspace/runs`はpublication receipt未接続のdeliverableなので自動削除しない。
    - **現在activeな次atom:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、
      不要daemonだけをowner経由でdrainし、VM使用量がmacOSにより縮小することをread backする。
+     初回readbackはswap 10,240 MiB中9,105 MiB使用、compressor occupied約4.0 GiB相当。上位RSSはactive
+     Codex app-server 565 MiB、Eliza source agent 384 MiB、OpenClaw gateway 336 MiB。browserはprofile別に
+     daily-driver 1,809.5 MiB/24 process/1 root、gig-daily-driver 578.0 MiB/6/1、x-repost 486.4 MiB/8/1、
+     affiliate/en 464.0 MiB/11/1、x-diceai0 435.2 MiB/8/1、CrowdWorks 398.4 MiB/9/1、affiliate/x-en
+     329.6 MiB/8/1、job-search 238.2 MiB/6/1、Lancers 232.6 MiB/6/1、TikTok 228.5 MiB/7/1、
+     affiliate/impact 140.7 MiB/6/1である。同一profileのbrowser root重複は0なので、root processを名前だけで
+     drainしない。daily-driverのCDP targetは21件で、WebMCP、Alpaca、Coconala、Google OAuth等の進行中targetを
+     含む。次は各targetをowner lease、open handle、terminal receiptへ照合し、終了済みtargetだけをowner経由で
+     closeする。Lancers/CrowdWorks/Alpaca/WebMCP targetは別owner作業中のため保持する。parent=1、6時間超の
+     temporary Puppeteer profile process 1件はorphan候補だが、caller/open target照合前には終了しない。
    - 共通agent usage writerのowner-side lossless rotationはPR #3710 / merge `a1f4017b`で完了した。
      既存runtime-event gzip writerを再利用し、16 MiB超を同一inode/flock内でarchiveしてからactiveをtruncateする。
      canonical usage reportはprivate `.jsonl.gz`とactive JSONLを横断する。release `a99beb28`を
