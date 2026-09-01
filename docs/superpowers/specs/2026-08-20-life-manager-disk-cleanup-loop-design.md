@@ -31,9 +31,16 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    - 現行agent-runner evidenceは256 MiB上限を持ち、新Life Manager rootは約73 MiB。旧OpenClaw evidence、
      旧lm-video、media outbound、ReelClaw runは現在のproducer rootではなく手動監査対象とする。
      `~/.openclaw/workspace/runs`はpublication receipt未接続のdeliverableなので自動削除しない。
-   - **現在activeな次atom:** 共通agent usage writer（active 21.1 MiB）のowner-side lossless rotationを接続する。
-     ledgerをblind truncateせず、owner readbackに必要な期間・materialized state・archiveを確認してから
-     `runtime/agent-runner.append_usage_event`へ最小修正を行う。
+   - **現在activeな次atom:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、
+     不要daemonだけをowner経由でdrainし、VM使用量がmacOSにより縮小することをread backする。
+   - 共通agent usage writerのowner-side lossless rotationはPR #3710 / merge `a1f4017b`で完了した。
+     既存runtime-event gzip writerを再利用し、16 MiB超を同一inode/flock内でarchiveしてからactiveをtruncateする。
+     canonical usage reportはprivate `.jsonl.gz`とactive JSONLを横断する。release `a99beb28`を
+     `writer-claim-loop`と`writer-opportunity-discovery`だけへtarget applyし、後者の実agent wakeはrun 2、exit 0。
+     production readbackはarchive 25,750行/1,399,029 bytes＋active 8行/6,561 bytes＝25,758行、全mode 0600、
+     公式daily report 65 attempts、空き6.7 GiB。blind truncation、行loss、別loop停止は0である。
+     検証triggerで`kickstart -k`を使い直前instanceへexit 143を一度残したため、以後はrunning ownerを触らず、
+     idle readback後の`kickstart`を`-k`なしで使う。replacement instanceは即時起動しterminal exit 0で閉じた。
    - `lm-recording-store`はmain wrapperから旧OpenClaw skillへ戻る二重正本を廃止し、Life Manager data rootへ
      170 recording ID・173 MP3を統合、全hash一致を確認した。release `610f9059`でtarget applyし、実wakeは
      terminal PASS/exit 0。旧/new `lm-video` 548ファイル・220.5 MiBは全hash一致の削除候補である。
@@ -136,8 +143,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    一件ずつ実行し、各atomでbefore/after bytes、loaded/open/dirty保護、errors 0、protected deletion 0、
    次wake回収または自然terminal readbackを保存する。
 
-   1. 共通agent usage ledgerのowner-side lossless rotationを実装・release・自然wakeで検証する。
-   2. memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、不要daemonだけをowner経由で
+   1. [x] 共通agent usage ledgerのowner-side lossless rotationを実装・release・自然wakeで検証する。
+   2. [ ] **current:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、不要daemonだけをowner経由で
       drainし、VM使用量がmacOSにより縮小することをread backする。
    3. 40 worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
       保ったまま回収する。
