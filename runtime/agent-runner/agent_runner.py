@@ -622,6 +622,9 @@ def resolve_provider_profiles(
             isinstance(value, str) and value for value in order
         ):
             raise ValueError("codex account_profile_order is invalid")
+        if alias not in order:
+            raise ValueError(f"codex profile_alias is not in account_profile_order: {alias}")
+        order = order[order.index(alias):]
         for position, profile_alias in enumerate(order):
             profile = profiles.get(profile_alias)
             if not isinstance(profile, dict):

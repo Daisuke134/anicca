@@ -29,14 +29,15 @@ class CodexProfileRoutingTest(unittest.TestCase):
                     cursor += 1
                     continue
 
-                for position, profile_alias in enumerate(order):
+                routed_order = order[order.index(logical["profile_alias"]):]
+                for position, profile_alias in enumerate(routed_order):
                     with self.subTest(task_class=task_name, model=logical.get("model"), profile=profile_alias):
                         expected = {
                             **logical,
                             "profile_alias": profile_alias,
                             "automation_home": profiles[profile_alias]["automation_home"],
                             "auth_file": profiles[profile_alias]["auth_file"],
-                            "account_fallback_next": position == 0,
+                            "account_fallback_next": position < len(routed_order) - 1,
                         }
                         self.assertEqual(resolved[cursor], expected)
                     cursor += 1
