@@ -211,9 +211,11 @@ def validate_wait(root, feedback, digest, pass_start=0):
             or result.get("authenticated") is not True):
         raise ValueError("remote wait target mismatch")
     outcome = result.get("business_outcome")
+    effect_done = outcome.get("required_effect_satisfied") if isinstance(outcome, dict) else None
+    output_done = outcome.get("required_output_satisfied") if isinstance(outcome, dict) else None
     if (result.get("status") != "blocked" or not isinstance(outcome, dict)
-            or outcome.get("required_effect_satisfied") is not False
-            or outcome.get("required_output_satisfied") is not False
+            or not isinstance(effect_done, bool) or not isinstance(output_done, bool)
+            or (effect_done and output_done)
             or not isinstance(outcome.get("remaining_work"), list)
             or not outcome["remaining_work"]
             or not isinstance(result.get("blocker"), str)

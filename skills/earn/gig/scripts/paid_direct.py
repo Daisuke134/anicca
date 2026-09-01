@@ -3883,6 +3883,15 @@ def _normalize_builder_result(root: Path) -> None:
     after = _load(after_path)
     if (after.get("authenticated") is True and after.get("target") == intent.get("target")
             and paid_remote_result.canonical_equal(after.get("observed_state"), intent.get("desired_state"))):
+        outcome = result.get("business_outcome")
+        if isinstance(outcome, dict) and isinstance(outcome.get("official_receipts"), list):
+            source = _text((after.get("official_readback") or {}).get("provider")) or "official readback"
+            outcome["official_receipts"] = [
+                {"provider": source, "kind": "external_state", "official_url": receipt,
+                 "exact_readback": True, "readback_source": raw_after_value}
+                if isinstance(receipt, str) and receipt.startswith("https://") else receipt
+                for receipt in outcome["official_receipts"]
+            ]
         if result.get("status") == "completed":
             result["status"] = "ok"
         result["observed_state"] = after["observed_state"]
