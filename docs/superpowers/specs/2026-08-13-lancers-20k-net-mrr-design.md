@@ -2946,3 +2946,98 @@ profile preflightの一時Timeout後に次wakeで自動回復し、45件を網�
 Reporter ownerはApplication wake sequence `923`をevent keyへ固定し、Coconalaと同じ`openclaw message send`で
 `enqueued 1 / attempted 1 / delivered 1 / delivery_uncertain 0 / exit 0`、provider message ID `46424`を取得した。次Application wakeは
 同じdecisionでも一度報告し、同じwakeのReporter replayはevent keyで送信0にする。
+
+
+## 19. Life Manager repo boundary, owner-visible reports, and atomic completion order
+
+### 19.1 One active product, two source responsibilities
+
+The sole active Life Manager product, marketplace-loop SSOT, launchd control plane, immutable
+release source, provider adapters, receipts, ledgers, browser ownership and business specifications
+live in `Daisuke134/life-manager`. Lancers, Coconala, CrowdWorks and later marketplace lanes must
+not be implemented as independent production systems in `life-manager-eliza`.
+
+`Daisuke134/life-manager-eliza` is not a second marketplace-loop repository and is not deleted
+while its ElizaOS host and `@elizaos/plugin-life-manager` work remain unmerged. Its permitted
+responsibility is the general Agent host/foundation only. It must not own a marketplace timer,
+launchd label, provider selector, browser profile, business ledger, reporting transport or a
+second implementation of Apply, Storefront, Negotiate or Paid. Deletion or archival requires all
+three facts: every required host change is integrated or intentionally rejected, executable
+production references are zero, and unique required code is zero.
+
+### 19.2 Owner-visible Telegram contract
+
+Messages are sent by Life Manager itself. Do not prefix messages with `Codex:::`, `Claude:::`,
+`Eliza:::` or another development harness name. Every scheduled lane wake emits at most one
+natural-language owner report; retrying the same wake is deduplicated, while a later wake with the
+same business decision remains independently observable.
+
+Every report names the lane and contains: official entities observed, the semantic decision,
+external effect or exact no-effect reason, official readback IDs, duplicate count, blocker or
+unknown values, and the next automatic action. An ApplicationReceipt is never called revenue;
+a listing is never called an inquiry; an offer is never called a funded contract; delivery is
+never called payment; missing source completeness is reported as unknown rather than zero.
+
+Apply example:
+
+```text
+Lancers Apply
+観測45件 / fresh 3件 / 応募2件 / skip 1件
+応募: project 5599999 → proposal 27899999（公式履歴確認済み）
+skip: project 5594595（既応募、重複送信0）
+次に自動で行うこと: fresh案件を探索し、positive-EVかつcapacity内の全案件へ応募する。
+ユーザー操作は必要ありません。
+```
+
+Storefront example:
+
+```text
+Lancers Storefront
+商品1338228: 受付中。表示12 / 詳細3 / 相談1 / 注文0 / unknown 0。
+今回の変更0、公開readback成功、重複出品0。
+次に自動で行うこと: 新規相談をNegotiateへ渡し、次のfull wakeで市場と商品を再評価する。
+```
+
+Negotiate / Contract example:
+
+```text
+Lancers Negotiate
+thread 880011でbuyer返信を確認。質問へ返信し、月額198,000円の見積を送信。
+seller message 991122を公式確認。未処理offer 0、重複返信0。
+次に自動で行うこと: buyer返信とclient offerを監視し、条件・capacity・仮払いを確認する。
+```
+
+Paid / Finance example:
+
+```text
+Lancers Paid
+contract 771122は仮払い済み。制作→独立QA→正式納品を完了。
+delivery 665544を公式確認、重複納品0。paymentは未確認であり0円とは断定しない。
+次に自動で行うこと: 検収・修正・PaymentReceipt・payout・銀行入金を照合する。
+```
+
+### 19.3 Atomic TODO SSOT until verified money and provider expansion
+
+The following order is immutable unless Dais explicitly says to change the order. Only the first
+unfinished atom is active.
+
+1. **L-01 Runtime truth inventory** — read back all installed Lancers launchd labels, exact immutable release SHA, interval, latest natural wake, exit, state/ledger hashes and Telegram ACK; classify missing, stale or split owners without creating replacements.
+2. **L-02 Report parity** — prove Apply, Storefront, Negotiate and Paid each use the §19.2 envelope; separate lane truth stores, deduplicate only the same wake/effect and accept a provider message ID.
+3. **L-03 First-review application canary** — submit one review-oriented, objectively completable, credible-buyer, non-negative-net application through the real Application owner; retain exact project/proposal ID, strategy/profile/proof versions, official readback and replay submit zero.
+4. **L-04 Maximal positive-EV Apply** — after L-03, evaluate every fresh candidate and submit every positive-lifetime-EV candidate allowed by provider throttle, funded capacity and duplicate fences; invent no fixed daily quota.
+5. **L-05 Storefront continuous owner** — observe official funnel metrics, run incremental and evidence-gated full wakes, perform at most one bounded catalogue effect, read it back publicly and preserve rollback.
+6. **L-06 Inbox inventory** — Work Sync produces source-complete message, inquiry, buyer-last, estimate, client-offer and contract-candidate identities from Application and Storefront origins.
+7. **L-07 Negotiate reply** — process each changed thread with one semantic judgment, send the bounded reply/clarification/estimate, read back the seller message ID and prove duplicate reply zero.
+8. **L-08 Contract activation** — validate price, scope, deadline, capacity and official funding; accept only an authorized funded contract and persist a unique ContractReceipt.
+9. **L-09 Funded project creation** — create the project/work item only from ContractReceipt; bind requirements, acceptance criteria, deadline, artifact path and cost budget.
+10. **L-10 Fulfillment and independent QA** — produce only funded work, retain artifact hash and run independent acceptance QA; a failed item returns to the same project without blocking other threads.
+11. **L-11 Formal delivery** — submit the accepted artifact through the real Paid owner, read back the official delivery ID/state and prove duplicate delivery zero.
+12. **L-12 Revision and acceptance** — process bounded funded revisions or observe buyer acceptance; preserve thread-local resume and never redo an accepted effect.
+13. **L-13 Payment truth** — collect a received PaymentReceipt, provider fee/refund statement and source completeness; proposals, balances and expected amounts remain excluded.
+14. **L-14 Bank reconciliation and net MRR** — bind each payout batch to one bank transaction, require delta zero, subtract actual platform/AI/subcontract/refund costs and convert with recorded FX.
+15. **L-15 Learning attribution** — attribute selection, contract, delivery, revision, payment, retention and margin to profile/proof/proposal/price versions; change one variable at a time.
+16. **L-16 Lancers continuous acceptance** — prove two natural scheduled cycles for all four owners, maximal Apply, no stranded buyer/funded work, Telegram ACKs, duplicate external effects zero and exact-main provenance.
+17. **M-01 Common-core extraction by reuse** — retain the proven Goal/WorkItem/effect/readback/receipt, four-lane owner and report contracts in Life Manager; keep only provider UI/routes/IDs in adapters.
+18. **M-02 CrowdWorks first adapter** — connect read-only inventory, then one canary application, Negotiate, funded delivery and payment through the same contracts; create no copied scheduler or ledger.
+19. **M-03 Additional marketplace adapters** — add one provider at a time from measured demand and authorization, proving the complete paid chain before the next. Upwork remains excluded.
+20. **M-04 Portfolio-level money control** — schedule authorized providers concurrently with provider-local throttle and shared funded capacity; report verified net revenue/MRR by provider and aggregate, never applications or listings as money.
