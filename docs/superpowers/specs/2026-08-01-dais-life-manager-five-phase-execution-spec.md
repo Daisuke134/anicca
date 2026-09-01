@@ -41,15 +41,21 @@ General Money taskを一件だけseedし、model decision 1回、heartbeat、5�
 fresh opportunityを再観測し、positive-EV案件を同一wake内で連続処理し、各送信の公式Proposal IDを個別にreadback・報告し、
 重複送信0を示した時だけ成立する。それまでは「縦一本とreplay-zeroは成功、継続応募は未稼働」と報告する。
 
-本番ownershipは二層だけにする。`launchd`は同じEliza General Agent processを起動・監視・復旧するhost adapterであり、
-marketplace名、5分cadence、案件判断、応募手順、ledgerを持たない。5分wake、child Goal、checkpoint、lease、model判断、
-effect/readbackはAgentRuntime＋既存scheduling spine＋単一`plugin-life-manager`が所有する。旧Lancers launchd runnerを
-General Agentと並走させず、application laneはcutover後もsingle writerを維持する。
+本番business loopはEliza内部だけに置く。5分wake、child Goal、checkpoint、lease、model判断、effect/readbackは
+AgentRuntime＋既存scheduling spine＋単一`plugin-life-manager`が所有する。旧Lancers Application/Storefront/Negotiate/Paidの
+launchd business runnerを修復・再起動・並走させず、marketplace名、cadence、判断、応募手順、ledgerをlaunchdへ戻さない。
+OS process supervisionはbusiness loopではなく別のhost concernであり、現在のLancers migration atomへ混ぜない。
 
-browserも二重化しない。既存authenticated CloakBrowser daily-driverを唯一の画面/session ownerとし、`plugin-browser`は
-その既存CDPへ接続するGeneral Agentの目と手である。内部transportとして`puppeteer-core`を使っても、それは別browser、
-別profile、Lancers専用操作scriptではない。証明用`/tmp` harness、固定selector、provider固有click順をproduction loopへ
-昇格させない。General Agent自身がlive画面を観察し、既存general browser toolで次の操作をmodel判断する。
+browserも二重化しない。Job Hunter、Fundraiser、既存gig agentが使うauthenticated CloakBrowserのgeneral ACIを
+AgentRuntimeへ一つの汎用actionとして登録し、Luna自身がsnapshotを読み、同じactionのnavigate/click/type/upload/readbackを
+選ぶ。Life Manager application pathでは`puppeteer-core`を追加、import、直接resolveせず、Eliza forkのCDP targetも採用しない。
+CloakBrowser自身の内部実装はopaqueとし、既に稼働する同じChromium process/profile/sessionだけを使う。新Chromium、別profile、
+証明用`/tmp` harness、固定selector、provider固有click順をproduction loopへ昇格させない。
+
+`2026-08-13-lancers-20k-net-mrr-design.md`のL-02→M-04 launchd programは移行前の履歴であり、このcurrent cursorを
+上書きしない。古いgoal injectionで同programをactiveへ戻さない。現状は旧Application writerがunloaded、Elizaは実応募一件と
+replay-zeroまで成功したが、自然wakeを反復するproduction General Agentは未起動である。したがって最大応募が止まっている
+直接原因はsingle writer不在であり、旧writer再起動ではなくSeq 30以降を同じEliza coreで閉じて解消する。
 
 ### 0.0.1 Previous cursor retained — Alpaca hackathonを期限付き先頭trackとして閉じる
 
@@ -1001,7 +1007,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 27 | ELZ-L05 application replay and ack-loss reconcile | **DONE** | canonical private `application-replay-receipt.json` mode 0600 status=`PASS`、SHA256 `18acc214…`。同一PGliteを別OS process（bootstrap PID 53431 / replay PID 53480 / unknown PID 53422）で再開。公式`/work/proposal/27876969` present replayはeffect started 0、provider execute 0、ledger insert 0、effect intent/outcome receipt countsは1→1。unknown readbackは`EFFECT_RECEIPT_KERNEL_UNKNOWN`、provider execute 0、blind retry 0 |
 | 28 | ELZ-L06 provider admission boundary | **DONE** | canonical private `provider-admission-receipt.json` mode 0600 status=`PASS`、SHA256 `a7808bc6…`。provider-neutral `admitProviderEffect`へactive set `[lancers]`を渡し、Lancersだけadmitted。Upwork/Coconala/unknownは全て`LIFE_MANAGER_PROVIDER_NOT_ACTIVE`でeffect 0。semantic判断/UI操作/provider brain 0。Eliza fork PR #69、merge `8844df49…` |
 | 29 | ELZ-L07 one money wake owner | **DONE** | canonical private `money-wake-receipt.json` mode 0600 status=`PASS`、SHA256 `bf2dcc66…`。AgentRuntime＋durable PGlite＋既存scheduling spine＋single `plugin-life-manager`でowner row 1、interval 5分、model decision 1回、heartbeat `2026-09-01T23:42:15.103Z`、next fire `23:47:10.108Z`、clean release、provider effect 0。Eliza fork PR #71 merge `f1c86803…`、CLI account path修正PR #72 merge `da0cd2a0…` |
-| 30 | ELZ-L08 source-complete opportunity snapshot | **IN_PROGRESS — NEXT** | source completenessとfresh timestampを持つread-only`opportunity-snapshot-receipt.json` |
+| 30 | ELZ-L08 CloakBrowser ACI and source-complete opportunity snapshot | **IN_PROGRESS — NEXT** | 既存Job Hunter/FundraiserのCloakBrowser general ACIだけをAgentRuntime actionへ登録し、Lunaが同じauthenticated Chromium sessionを観察する。新browser、Eliza CDP target、`puppeteer-core`、provider script 0。source completenessとfresh timestampを持つread-only`opportunity-snapshot-receipt.json` |
 | 31 | ELZ-L09 profit/risk/capability decision | TODO | model理由、expected net、cost、capacity、truthful feasibilityを持つ`opportunity-decision-receipt.json` |
 | 32 | ELZ-L10 sealed intent cap and expiry | TODO | immutable content hash、effect key、spend/capacity ceiling、expiry、duplicate fenceの`sealed-intent-receipt.json` |
 | 33 | ELZ-L11 buyer inbox completeness | TODO | reply/offer/contract sourceを重複なしで読み、missing sourceを明示する`buyer-source-receipt.json` |
