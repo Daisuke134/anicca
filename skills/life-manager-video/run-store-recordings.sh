@@ -1,3 +1,4 @@
 #!/bin/bash
 set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
-exec python3 "$HOME/.openclaw/skills/life-manager-video/store-recordings.py"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+exec python3 "$HERE/store-recordings.py"
