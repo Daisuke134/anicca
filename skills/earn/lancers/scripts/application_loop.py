@@ -15,7 +15,6 @@ SKILLS = SKILLS_ROOT
 REPO = SKILLS_ROOT.parent
 STATUS_PATH = HERE / "status.py"
 APPLICATION_TICK_PATH = HERE / "application_tick.py"
-PROFILE_OWNER_PATH = HERE / "storefront_offer.py"
 AGENT_RUNNER = REPO / "runtime" / "agent-runner" / "agent_runner.py"
 AGENT_RUNNER_PATH = AGENT_RUNNER
 PLANNER_SCHEMA = SKILLS_ROOT / "gig-work" / "schemas" / "application_decisions.schema.json"
@@ -66,11 +65,6 @@ def _load(name: str, path: Path) -> Any:
 
 status = _load("_anicca_lancers_application_loop_status", STATUS_PATH)
 application_tick = _load("_anicca_lancers_application_loop_tick", APPLICATION_TICK_PATH)
-
-def _profile_preflight(state_path: Path) -> Mapping[str, object]:
-    owner = _load("_anicca_lancers_application_profile_owner", PROFILE_OWNER_PATH)
-    result = owner.ensure_profile(PRODUCT_PATH, state_path)
-    return result if isinstance(result, Mapping) else {"ok": False, "error": "profile_preflight_failed"}
 
 @dataclass(frozen=True)
 class ApplicationLoopResult:
@@ -257,7 +251,7 @@ def _snapshot(rows: Sequence[Mapping[str, object]], today: date) -> dict[str, ob
         result.append(compact)
     return {"tick_date": today.isoformat(), "seller_proof": _seller_proof(), "opportunities": result}
 
-PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent plannerである。ブラウザ・認証・外部操作はできない。"
+PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent plannerである。planner自身は外部操作を行わないが、delivery systemは既存の認証済みbrowserと利用可能なtoolsで外部web serviceを操作できる。"
     "確認済みのdelivery能力は、非同期のresearch、文章作成・編集・翻訳、digital content設計、code・software・data・AI automation、web/browser上の操作・調査・monitor、必要なtoolの導入・設定・利用、利用可能なtoolで生成できるdigital artifactである。現在未導入のsoftwareや未利用のweb serviceでも、公開または依頼者提供の通常accessで導入・利用・検証できるなら完遂可能として扱う。未提示の個人職歴、雇用経験、資格、電話営業、常駐staff稼働、専用hardwareや入手不能な外部credentialを能力として仮定しない。"
     "SNAPSHOTのseller_proofは現在のLancers公開profile、portfolio、packageとMIT公開source codeで買い手が確認できる証拠であり、能力の固定whitelistではない。案件scopeに合う証拠だけを具体的に活用し、未掲載の顧客実績、評価、売上効果、専門職歴を捏造しない。exactな同業実績や完成済みportfolioがなくても、転用可能な確認済み能力と案件固有の実行planで全必須scopeを完遂できるならsubmit_requiredにする。"
     "各案件を実際の公開内容全体から自分で判断し、指定schemaのJSONだけを返す。現在の自律delivery systemが全必須成果物を正直に完成でき、買い手にcredible fitを示し、scope・期限・報酬から正のmarginで完遂できる場合だけsubmit_requiredとする。reason_codesは空、買い手向けの具体的な日本語proposalを200〜3000文字、正直な価格、現実的な納期で返す。"
@@ -266,7 +260,7 @@ PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent planne
     + "; ".join(f"{key}={value}" for key, value in HARD_PROHIBITION_CLASSES.items()) + "。"
     "hard_prohibitedではreason_codes[0]を正確なclass key、reason_codes[1]をtitle・description・categoryのいずれかに連続して存在する200文字以内の原文引用にし、proposal・price・dateはnullにする。任意・推奨・否定・引用中の単語だけで拒否しない。"
     "reason_codes[1]は公開原文から一文字も足さずcopyし、長い引用に自信がなければ判断根拠を直接示す短い連続原文を使う。"
-    "skip_not_fitはhard prohibitionではないが、tool導入・code作成・browser利用・調査を含む現在の自律delivery systemでも全必須成果物を完成できない、選定に必須の個人経験・属性を正直に示せない、またはscope・期限・報酬から正のmarginが客観的に成立しない場合だけ使う。未知のtool、外部web serviceの利用、学習やmonitor、exact実績不足、portfolio不足、実装難易度を理由にskipしない。system・software・AI・automation・web・data・digital contentは、明示的な禁止条件がなければsubmit_requiredを既定とする。reason_codes[0]は短いsemantic reason、reason_codes[1]はtitle・description・categoryのいずれかに連続して存在する200文字以内の根拠原文、proposal・price・dateはnullにする。"
+    "skip_not_fitはhard prohibitionではないが、tool導入・code作成・browser利用・調査を含む現在の自律delivery systemでも全必須成果物を完成できない、選定に必須の個人経験・属性を正直に示せない、またはscope・期限・報酬から正のmarginが客観的に成立しない場合だけ使う。未知のtool、外部web serviceの利用、認証済みbrowserによる予約投稿・返信・運用、学習やmonitor、exact実績不足、portfolio不足、実装難易度を理由にskipしない。system・software・AI・automation・web・data・digital contentは、明示的な禁止条件がなければsubmit_requiredを既定とする。reason_codes[0]は短いsemantic reason、reason_codes[1]はtitle・description・categoryのいずれかに連続して存在する200文字以内の根拠原文、proposal・price・dateはnullにする。"
     "案件全体から納品可能性をpriorityより先に確定する。完成動画そのものの生成・編集・書き出しが必須ならvideo_or_animation、企画・構成・台本・文章だけで完成動画制作が不要ならvideo_or_animationではない。機械的なkeyword ruleは使わない。"
     "経験の不確実さ、弱いportfolio、低予算、難易度、広いまたは曖昧なscope、単発、継続性不足、Adobe実績不明、任意の相談を単独のkeyword ruleでskipしない。正確な同分野実績がなくても、確認済みの転用可能な能力で全必須scopeを完遂できるなら案件固有の実行planで応募し、未作成物はplanと明示して捏造しない。"
     "納品可能性を確定した後の優先順は、定期購入・保守・運用、次にsystem・automation・AI・web・高報酬、次にその他の非同期作業。hard prohibition必須案件を継続・AI・高報酬・低予算・簡単そうという理由でsubmit_requiredへ変えない。実行可能な低優先案件を省略しない。submit_requiredを先に並べ、強い順に返す。"
@@ -730,12 +724,6 @@ run_once = run_loop
 def main(argv: Optional[Sequence[str]] = None, *, discovery: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, now: Optional[Callable[[], object]] = None, clock: Optional[Callable[[], object]] = None, stdout: Optional[TextIO] = None) -> int:
     parser = argparse.ArgumentParser(allow_abbrev=False); parser.add_argument("--json", action="store_true", required=True); parser.add_argument("--reconcile-only", action="store_true"); parser.add_argument("--state-path", default=str(DEFAULT_STATE_PATH)); parser.add_argument("--exhaustive", action="store_true", help="union every discovery query instead of stopping at the first fruitful one"); parser.add_argument("--discovery-timeout", type=float, default=20.0, help="seconds per discovery request (provider bound: 0 < t <= 60). The exhaustive budget is this multiplied by the number of queries, not a larger single request."); args = parser.parse_args(list(argv) if argv is not None else None)
     output_stream = sys.stdout if stdout is None else stdout
-    if not args.reconcile_only and discovery is None and planner is None and submitter is None and now is None and clock is None:
-        profile = _profile_preflight(Path(args.state_path))
-        if profile.get("ok") is not True:
-            result = ApplicationLoopResult(False, error="profile_preflight_failed").to_dict()
-            print(json.dumps(result, ensure_ascii=False, separators=(",", ":")), file=output_stream, flush=True)
-            return 1
     result = run_reconcile_only(Path(args.state_path), output_stream=output_stream) if args.reconcile_only else run_loop(discoverer=discovery, planner=planner, submitter=submitter, clock=clock or now, state_path=Path(args.state_path), output_stream=output_stream, exhaustive=args.exhaustive, timeout=args.discovery_timeout)
     if not args.reconcile_only and discovery is None and planner is None and submitter is None and now is None and clock is None:
         reporter = _load("_anicca_lancers_application_reporter", HERE / "telegram_report.py")

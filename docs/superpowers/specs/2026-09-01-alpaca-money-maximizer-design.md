@@ -224,8 +224,25 @@ existing account path remained `READY` and left the SSOT hash unchanged. Commit 
 `plugin-life-manager` once in the normal macOS/Linux/Docker core collector while keeping it out of the CLI-less
 mobile boot. Commit `8dd1114f3e` routes every Alpaca Action into the `finance/automation` owner context and returns
 the concrete BrowserService/private-action chain to the native planner; its handler fixture persisted one Task,
-selected normal email rather than Google login, and exposed no secret. A03 remains ACTIVE because the live Eliza
-planner has not yet driven the complete BrowserService-backed sequence from one owner goal and read it back.
+selected normal email rather than Google login, and exposed no secret. A real isolated Eliza runtime then loaded
+`plugin-life-manager`, accepted one authenticated owner goal, selected and successfully executed
+`ALPACA_BOOTSTRAP`, and persisted exactly one checkpoint Task at `READY / RUN_TRADING_LOOP`. Its redacted action
+trajectory and Task readback reported eight bound credential refs, paper `ACTIVE`, cash/equity `100000`, options
+Level 3, and zero positions/orders/activities. After a full runtime stop and restart against the same state, a
+second owner goal executed the same action, kept the Task count at one, and returned the same facts; immediate
+official CLI readback still returned zero positions/orders/activities. No account, order, or trade was created by
+either pass. A03 remains ACTIVE because this proves autonomous detection, verification, checkpoint persistence,
+and restart resumption of the already-bound account, but not that Life Manager itself created that real account
+through the complete BrowserService-backed signup sequence.
+
+The remaining A03 path does not require a second Alpaca login or deletion of the verified baseline. Alpaca's
+official paper-trading documentation says one existing dashboard login can select **Open New Paper Account** from
+the paper-account menu, that a newly created paper account starts with the default `$100,000`, and that the new
+account requires newly generated API keys. Life Manager must perform that provider-supported operation through
+the existing normal-email/password/TOTP login, privately replace the bound paper account ID and API-key refs,
+and prove the new account with the pinned CLI. It must not delete the baseline account, create a second login,
+use Google login, or describe the earlier manually created account as agent-created. Source:
+`https://docs.alpaca.markets/docs/paper-trading`.
 
 A04 has **preflight evidence ready but remains ordered after A03** against the official `alpacahq/cli` release `v0.0.14`, source commit
 `53606273aa230a40c64b783425dcb3f4423ede30`. Its published release checksum was verified before installing the
@@ -241,7 +258,7 @@ mutation command ran. This evidence was collected early and remains valid, but A
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
 | A02 | Team/submission shell — **DONE** | The official one-member team and saved Step-2 submission draft exist; the editor exposes title, short/long descriptions, tags, cover, video, slides, public GitHub, demo platform/URL, Alpaca account ID, and up to five social links; no final submit yet. |
-| A03 | Life Manager-owned paper-account bootstrap — **ACTIVE** | `plugin-life-manager` runs and checkpoints the normal-email signup/MFA/API-key binding flow itself, or detects and verifies the already-bound dedicated account without creating a duplicate; a restart resumes the saved checkpoint; account ID stays private; cash/equity=`100000`, empty positions/orders/activity, options Level 3, and fresh password+TOTP login are read back. The existing account proves the provider baseline only; it does not by itself satisfy autonomous bootstrap. |
+| A03 | Life Manager-owned paper-account bootstrap — **ACTIVE** | From the existing normal-email/password/TOTP login, `plugin-life-manager` uses Alpaca's official **Open New Paper Account** path, captures the new account ID/API keys privately, and checkpoints the result; a restart resumes the saved checkpoint; pinned-CLI readback proves the new paper account has cash/equity=`100000`, empty positions/orders/activity, and options Level 3. The existing baseline account is neither deleted nor presented as agent-created. |
 | A04 | Alpaca CLI preflight — **EVIDENCE READY, ORDERED AFTER A03** | Pinned CLI v0.0.14 and doctor plus account/clock/SPY/options/news reads return the dedicated paper account; zero positions/orders/activities reconcile; secrets appear in no repo/log/chat artifact. Optional MCP is not a readiness dependency. This atom closes only after A03 closes. |
 | A05 | Alpaca CLI provider adapter | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
 | A06 | Decision-before-effect | One bounded model call returns `NO_TRADE` or a typed thesis, structure, max loss, invalidation, exit, and evidence refs; the written decision precedes any effect intent. |
@@ -254,6 +271,27 @@ mutation command ran. This evidence was collected early and remains valid, but A
 | A13 | Submission assets | Public README, one-pager, PDF slides, 16:9 cover, and ≤4-minute video truthfully match the current account and code. |
 | A14 | Submit and read back | Form contains hosted URL, public repo, assets, tags, and private account ID; official submitted state is read back before 2026-09-05 00:00 JST. |
 | A15 | Portable OSS release | Clean macOS and Linux/Docker installs start the same Eliza runtime in paper mode from the public SHA; launchd/systemd/container policy only supervise that process, while the Eliza registry schedules the loop; secret-free fixture replay passes. |
+
+### Remaining execution queue — fixed order
+
+- [ ] **A03:** Life Manager opens one new paper account inside the existing normal-email Alpaca login, binds its
+  private account ID and fresh keys, proves exactly `$100,000` and zero effects through CLI, then proves restart
+  resumption without creating another account.
+- [ ] **A04:** Close the already-collected pinned CLI preflight against the new A03 account.
+- [ ] **A05:** Implement the typed, paper-only Alpaca CLI provider adapter; reject live mode and any REST/SDK
+  mutation fallback.
+- [ ] **A06:** Persist one model-authored `NO_TRADE` or typed options thesis before any effect intent.
+- [ ] **A07:** Enforce the deterministic defined-risk, exposure, freshness, cooldown, and drawdown gate.
+- [ ] **A08:** Submit and reconcile one minimum-risk paper canary with a stable `client_order_id`; replay adds
+  zero orders.
+- [ ] **A09:** Prove lost-acknowledgement and restart reconciliation without blind retry.
+- [ ] **A10:** Register exactly one Eliza-owned durable Alpaca loop; host adapters only restart Eliza.
+- [ ] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
+- [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface.
+- [ ] **A13:** Publish the truthful README, one-page write-up, PDF slides, 16:9 cover, and ≤4-minute video.
+- [ ] **A14:** Submit every required URL and the private account ID to Lablab, then read back official submitted
+  state before the deadline.
+- [ ] **A15:** Publish and verify the portable macOS/Linux/Docker OSS release from the public SHA.
 
 ## 7. After submission — production ladder
 

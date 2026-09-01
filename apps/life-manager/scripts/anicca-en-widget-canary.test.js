@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -463,7 +464,7 @@ test("first effect opens only the exact lane/fence and restores bytes after succ
   }));
   assert.equal(result.publication.created, true);
   assert.equal(during.fence.state, "open");
-  assert.equal(during.fence.allowed_effect_key, `marketing:video:${PRODUCT}:instagram:${CREATIVE_ID}:${value.videoRef.slice(-64)}:${value.captionRef.slice(-64)}`);
+  assert.equal(during.fence.allowed_effect_key, `marketing:video:${PRODUCT}:instagram:${CREATIVE_ID}:${value.videoRef.slice(-64)}:${value.captionRef.slice(-64)}:${crypto.createHash("sha256").update(SLOT).digest("hex")}`);
   assert.deepEqual(during.manifest.lanes.map(({ integration_id, production_armed, lane_state }) => ({ integration_id, production_armed, lane_state })), [{ integration_id: INTEGRATION_ID, production_armed: true, lane_state: "production-armed" }]);
   assert.deepEqual(fs.readFileSync(value.manifestPath), value.originalManifest);
   assert.deepEqual(fs.readFileSync(value.fencePath), value.originalFence);
@@ -836,7 +837,7 @@ test("JA first effect arms only the target and restores exact controls", async (
   }));
   assert.equal(result.publication.created, true);
   assert.equal(during.fence.state, "open");
-  assert.equal(during.fence.allowed_effect_key, `marketing:video:${JA_LANE.product}:instagram:${JA_LANE.creativeId}:${value.videoRef.slice(-64)}:${value.captionRef.slice(-64)}`);
+  assert.equal(during.fence.allowed_effect_key, `marketing:video:${JA_LANE.product}:instagram:${JA_LANE.creativeId}:${value.videoRef.slice(-64)}:${value.captionRef.slice(-64)}:${crypto.createHash("sha256").update(SLOT).digest("hex")}`);
   assert.deepEqual(during.manifest.lanes.map(({ integration_id, production_armed, lane_state }) => ({ integration_id, production_armed, lane_state })), [{ integration_id: JA_LANE.integrationId, production_armed: true, lane_state: "production-armed" }]);
   assert.deepEqual(fs.readFileSync(value.manifestPath), value.originalManifest);
   assert.deepEqual(fs.readFileSync(value.fencePath), value.originalFence);
