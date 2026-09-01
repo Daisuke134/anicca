@@ -243,7 +243,7 @@
     "marketing-agent": {
       "route": "terra-medium-decision",
       "token_reservation": 49152,
-      "timeout_seconds": 900,
+      "timeout_seconds": 1800,
       "candidates": [
         {
           "provider": "codex",
