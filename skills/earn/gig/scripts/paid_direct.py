@@ -1816,6 +1816,11 @@ def resolve_managed_verifier(project_root: Path, feedback: str, digest: str) -> 
 
 def _targeted(args, item, index):
     room = _text(item.get("talkroom_id")); base = args.evidence_dir / "paid-direct" / "targeted" / room
+    browser_lease = _active_sibling_browser_lease()
+    if browser_lease is not None:
+        owner, _lease = browser_lease
+        return {**item, "_paid_targeted_status": "pending",
+                "browser_lease_owner": owner}
     item_path, snapshot = base / "item.json", base / "snapshot.json"
     _write(item_path, item)
     started_ns = time.time_ns()
@@ -5202,6 +5207,11 @@ def run_once(args, output: Path) -> int:
         work_candidates = []
         for item in targeted_items:
             room = _text(item.get("talkroom_id"))
+            if item.get("_paid_targeted_status") == "pending":
+                rows[room] = {"talkroom_id": room, "status": "pending",
+                              "reason": "browser_lease_busy",
+                              "browser_lease_owner": item.get("browser_lease_owner")}
+                continue
             reported = _reported_paid_row(args, item)
             if reported is not None:
                 rows[room] = reported
