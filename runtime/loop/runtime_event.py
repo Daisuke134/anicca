@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import fcntl
+import gzip
 import hashlib
 import json
 import os
 import re
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -26,6 +28,48 @@ SAFE_REF = re.compile(r"[a-z][a-z0-9+.-]*://[A-Za-z0-9._:/-]{1,512}\Z")
 SECRET = re.compile(
     r"(?i)(?:bearer\s+[A-Za-z0-9._~+/-]+|(?:token|secret|password|credential|api.?key|auth\.json)\s*[=:]|(?<![A-Za-z0-9])sk-[A-Za-z0-9_-]{16,}|/Users/)"
 )
+DEFAULT_MAX_BYTES = 16 * 1024 * 1024
+
+
+def _max_bytes() -> int:
+    try:
+        value = int(os.environ.get("LM_RUNTIME_EVENTS_MAX_BYTES", DEFAULT_MAX_BYTES))
+    except ValueError:
+        return DEFAULT_MAX_BYTES
+    return value if value > 0 else DEFAULT_MAX_BYTES
+
+
+def _next_archive(path: Path) -> Path:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    candidate = path.with_name(f"{path.stem}-{stamp}{path.suffix}.gz")
+    suffix = 0
+    while candidate.exists():
+        suffix += 1
+        candidate = path.with_name(f"{path.stem}-{stamp}.{suffix}{path.suffix}.gz")
+    return candidate
+
+
+def _rotate_locked(fd: int, path: Path) -> None:
+    if os.fstat(fd).st_size <= _max_bytes():
+        return
+    archive = _next_archive(path)
+    temporary = archive.with_name(f".{archive.name}.tmp.{os.getpid()}")
+    try:
+        os.lseek(fd, 0, os.SEEK_SET)
+        with os.fdopen(os.dup(fd), "rb") as source, temporary.open("xb") as raw:
+            with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as target:
+                shutil.copyfileobj(source, target)
+            raw.flush()
+            os.fsync(raw.fileno())
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, archive)
+        os.ftruncate(fd, 0)
+        os.fsync(fd)
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def validate_runtime_event(event: dict) -> dict:
@@ -149,6 +193,7 @@ def append_runtime_event(path: Path, event: dict) -> None:
     try:
         os.fchmod(fd, 0o600)
         fcntl.flock(fd, fcntl.LOCK_EX)
+        _rotate_locked(fd, path)
         os.lseek(fd, 0, os.SEEK_SET)
         with os.fdopen(os.dup(fd), "r", encoding="utf-8", errors="replace") as reader:
             for line in reader:
