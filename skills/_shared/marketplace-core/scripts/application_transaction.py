@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-import errno
 import fcntl
 import hashlib
 import importlib.util
@@ -197,12 +196,7 @@ def account_lock(state_path: Path):
     fd = os.open(str(path.with_name(path.name + ".lock")), os.O_CREAT | os.O_RDWR, 0o600)
     try:
         os.fchmod(fd, 0o600)
-        try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError as exc:
-            if exc.errno in (errno.EACCES, errno.EAGAIN):
-                raise _AccountLockBusy() from None
-            raise
+        fcntl.flock(fd, fcntl.LOCK_EX)
         yield
     finally:
         try:
