@@ -220,6 +220,11 @@ capability claim is backed by an installed executable capability.
   the four independent Coconala owners. Production label `ai.anicca.crowdworks-revenue-application` now
   loads main-derived immutable release `a78ae6f8b5cb1261c4b3ab1794457e7071fd67bf`; an actual launchd
   kickstart completed one run with exit `1`, official owner state `auth_required`, and `effect_delta:0`.
+  The stale session-vault import was corrected to the canonical public `skills/browser` module and
+  deployed as immutable release `48c2a4f94054e1f75a343e875fa66af5e9dd06d0`. Vault restore completed but
+  the official dashboard remained logged out; the credential SSOT has no CrowdWorks entry, so account
+  request `crowdworks-8b1ac13aeb824442b90d506c7638e10e` is durably `input_required` with Telegram
+  receipt `47313`, without creating a duplicate account or submitting an uncertain application.
 
 ### Live four-lane repair
 
