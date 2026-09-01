@@ -12,6 +12,7 @@ const {
   ACCOUNT_ID,
   EN_AFFIRMATION_LANE,
   EN_SLIDESHOW_TIKTOK_LANE,
+  JA_BUDDHA_TIKTOK_LANE,
   JA_MAIN_TIKTOK_LANE,
   INTEGRATION_REF,
   JA_LANE,
@@ -42,13 +43,14 @@ const JA_LARRY_PRODUCTION_SLOTS = Object.freeze(["10:30", "16:30", "22:30"]);
 const EN_AFFIRMATION_PRODUCTION_SLOTS = Object.freeze(["10:00", "15:00", "20:00"]);
 const EN_SLIDESHOW_PRODUCTION_SLOTS = Object.freeze(["09:00", "15:00", "21:00"]);
 const JA_MAIN_TIKTOK_PRODUCTION_SLOTS = Object.freeze(["08:00", "16:00", "22:37"]);
+const JA_BUDDHA_TIKTOK_PRODUCTION_SLOTS = Object.freeze(["07:00", "13:00", "20:00"]);
 
 const JA_RUNNER_LANE = JA_LANE;
 const EN_RUNNER_LANE = EN_AFFIRMATION_LANE;
 const TIKTOK_SLIDESHOW_RUNNER_LANE = EN_SLIDESHOW_TIKTOK_LANE;
 const JA_MAIN_TIKTOK_RUNNER_LANE = JA_MAIN_TIKTOK_LANE;
-const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-ja-larry-production": JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE, "run-en-affirmation-production": EN_RUNNER_LANE, "run-en-slideshow-tiktok": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-en-slideshow-tiktok-production": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-ja-main-tiktok": JA_MAIN_TIKTOK_RUNNER_LANE, "run-ja-main-tiktok-production": JA_MAIN_TIKTOK_RUNNER_LANE });
-const PRODUCTION_SLOTS = Object.freeze({ "run-ja-larry-production": JA_LARRY_PRODUCTION_SLOTS, "run-en-affirmation-production": EN_AFFIRMATION_PRODUCTION_SLOTS, "run-en-slideshow-tiktok-production": EN_SLIDESHOW_PRODUCTION_SLOTS, "run-ja-main-tiktok-production": JA_MAIN_TIKTOK_PRODUCTION_SLOTS });
+const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-ja-larry-production": JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE, "run-en-affirmation-production": EN_RUNNER_LANE, "run-en-slideshow-tiktok": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-en-slideshow-tiktok-production": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-ja-main-tiktok": JA_MAIN_TIKTOK_RUNNER_LANE, "run-ja-main-tiktok-production": JA_MAIN_TIKTOK_RUNNER_LANE, "run-ja-buddha-tiktok-production": JA_BUDDHA_TIKTOK_LANE });
+const PRODUCTION_SLOTS = Object.freeze({ "run-ja-larry-production": JA_LARRY_PRODUCTION_SLOTS, "run-en-affirmation-production": EN_AFFIRMATION_PRODUCTION_SLOTS, "run-en-slideshow-tiktok-production": EN_SLIDESHOW_PRODUCTION_SLOTS, "run-ja-main-tiktok-production": JA_MAIN_TIKTOK_PRODUCTION_SLOTS, "run-ja-buddha-tiktok-production": JA_BUDDHA_TIKTOK_PRODUCTION_SLOTS });
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -71,7 +73,7 @@ function parseArgs(argv = []) {
   if (lane) {
     return { command: argv[0], slot: exactInstant(argv[2], `${lane.name || "Larry"} canary slot`) };
   }
-  throw new Error("usage: anicca-larry-ja-canary.js run|run-ja-larry-production|run-en-affirmation|run-en-affirmation-production|run-en-slideshow-tiktok|run-en-slideshow-tiktok-production|run-ja-main-tiktok|run-ja-main-tiktok-production --slot <exact ISO instant>");
+  throw new Error("usage: anicca-larry-ja-canary.js <production command> [--slot <exact ISO instant>]");
 }
 
 function parseMediaRefs(value, lane = JA_RUNNER_LANE) {
