@@ -428,7 +428,10 @@ interval is naturally due. At `23:43:46Z` the same task ID fired without a REST/
 `ORDER_VERIFIED / HOLD_CLOSED_SESSION / NO_TRADE`; pending dispatch was absent. Pinned-CLI readback remained
 paper `ACTIVE`, cash `$99,970.95`, equity `$99,997.95`, two positions, two entry fills, and unrealised P&L
 `-$2`. No close fill exists, so realised campaign P&L remains `$0`. Typecheck, build, three focused suites
-(`4/4` tests), and `git diff --check` passed.
+(`4/4` tests), and `git diff --check` passed. The next natural recurrence at `23:49:16Z` returned the same
+three Financial statuses with pending dispatch absent; immediate CLI readback still showed two positions and
+two fills with identical cash/equity, proving this closed-session replay added zero broker effects. The final
+post-close replay-zero gate remains pending.
 
 ### Win target and verified competitive baseline
 
