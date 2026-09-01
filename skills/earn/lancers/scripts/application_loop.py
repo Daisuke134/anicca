@@ -637,6 +637,15 @@ def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH,
     if pending is not None:
         pending_result = _reconcile_pending(pending, Path(state_path))
         if pending_result.error != "submission_uncertain":
+            if pending_result.application_verified and pending_result.project_id:
+                pending_result = replace(pending_result, decision_reports=({
+                    "project_id": pending_result.project_id,
+                    "title": f"案件{pending_result.project_id}",
+                    "business_class": "submit_required",
+                    "reason_codes": [],
+                    "outcome": "application_verified",
+                    "provider_proposal_id": pending_result.provider_proposal_id,
+                },))
             if output_stream is not None: _emit(pending_result, output_stream)
             return pending_result.to_dict()
         quarantined_project_id = pending_result.unresolved_project_id or pending_result.project_id
