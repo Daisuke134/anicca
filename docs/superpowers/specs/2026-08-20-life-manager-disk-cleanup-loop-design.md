@@ -31,9 +31,26 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    - 現行agent-runner evidenceは256 MiB上限を持ち、新Life Manager rootは約73 MiB。旧OpenClaw evidence、
      旧lm-video、media outbound、ReelClaw runは現在のproducer rootではなく手動監査対象とする。
      `~/.openclaw/workspace/runs`はpublication receipt未接続のdeliverableなので自動削除しない。
-   - **現在activeな次atom:** 共通agent usage writer（active 21.1 MiB）のowner-side lossless rotationを接続する。
-     ledgerをblind truncateせず、owner readbackに必要な期間・materialized state・archiveを確認してから
-     `runtime/agent-runner.append_usage_event`へ最小修正を行う。
+   - **現在activeな次atom:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、
+     不要daemonだけをowner経由でdrainし、VM使用量がmacOSにより縮小することをread backする。
+     初回readbackはswap 10,240 MiB中9,105 MiB使用、compressor occupied約4.0 GiB相当。上位RSSはactive
+     Codex app-server 565 MiB、Eliza source agent 384 MiB、OpenClaw gateway 336 MiB。browserはprofile別に
+     daily-driver 1,809.5 MiB/24 process/1 root、gig-daily-driver 578.0 MiB/6/1、x-repost 486.4 MiB/8/1、
+     affiliate/en 464.0 MiB/11/1、x-diceai0 435.2 MiB/8/1、CrowdWorks 398.4 MiB/9/1、affiliate/x-en
+     329.6 MiB/8/1、job-search 238.2 MiB/6/1、Lancers 232.6 MiB/6/1、TikTok 228.5 MiB/7/1、
+     affiliate/impact 140.7 MiB/6/1である。同一profileのbrowser root重複は0なので、root processを名前だけで
+     drainしない。daily-driverのCDP targetは21件で、WebMCP、Alpaca、Coconala、Google OAuth等の進行中targetを
+     含む。次は各targetをowner lease、open handle、terminal receiptへ照合し、終了済みtargetだけをowner経由で
+     closeする。Lancers/CrowdWorks/Alpaca/WebMCP targetは別owner作業中のため保持する。parent=1、6時間超の
+     temporary Puppeteer profile process 1件はorphan候補だが、caller/open target照合前には終了しない。
+   - 共通agent usage writerのowner-side lossless rotationはPR #3710 / merge `a1f4017b`で完了した。
+     既存runtime-event gzip writerを再利用し、16 MiB超を同一inode/flock内でarchiveしてからactiveをtruncateする。
+     canonical usage reportはprivate `.jsonl.gz`とactive JSONLを横断する。release `a99beb28`を
+     `writer-claim-loop`と`writer-opportunity-discovery`だけへtarget applyし、後者の実agent wakeはrun 2、exit 0。
+     production readbackはarchive 25,750行/1,399,029 bytes＋active 8行/6,561 bytes＝25,758行、全mode 0600、
+     公式daily report 65 attempts、空き6.7 GiB。blind truncation、行loss、別loop停止は0である。
+     検証triggerで`kickstart -k`を使い直前instanceへexit 143を一度残したため、以後はrunning ownerを触らず、
+     idle readback後の`kickstart`を`-k`なしで使う。replacement instanceは即時起動しterminal exit 0で閉じた。
    - `lm-recording-store`はmain wrapperから旧OpenClaw skillへ戻る二重正本を廃止し、Life Manager data rootへ
      170 recording ID・173 MP3を統合、全hash一致を確認した。release `610f9059`でtarget applyし、実wakeは
      terminal PASS/exit 0。旧/new `lm-video` 548ファイル・220.5 MiBは全hash一致の削除候補である。
@@ -86,7 +103,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      | `~/Desktop` | 2.11 GiB | ほぼ`MoneyPrinter-Hackathon-Demo`。WebMCP提出完了前は保持する |
      | `~/.openclaw-backups` | 1.72 GiB | generation/復旧依存を確認してbounded retentionへ接続する |
      | `~/.rustup` | 1.32 GiB | toolchain ownerを確認する |
-     | `~/Pictures` | 1.08 GiB | user asset。自動削除しない |
+     | `~/Pictures` | 1.08 GiB | Life Manager/提出物/進行中deliverable依存とunique contentを監査し、依存0・再生成可能なら回収する |
      | `~/.venvs` | 0.99 GiB | caller/entrypoint不在を確認したenvironmentだけを回収する |
 
      system側は`/opt/homebrew` 12.52 GiB、`/private` 7.51 GiB、`/Applications` 7.58 GiB、
@@ -109,6 +126,13 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      state、⑧終了済みagent log/archive、⑨再生成可能なtool/cache、⑩未使用application/toolchainである。
      「手動cleanupで一度freeが増えた」「ディレクトリ名が古そう」は完了証拠にしない。各familyでwriter owner、
      active/open/loaded/dirty保護、保持上限、次wake回収、protected deletion 0を閉じる。
+
+     **User-data cleanup authority:** `~/Pictures`、`~/Desktop`、`~/Downloads`、その他user-owned directoryも
+     cleanup監査の対象外にしない。Life Manager source/state、WebMCP等の未完提出物、進行中buyer deliverable、
+     credential/session/ledger/receipt/evidence、唯一の原本、open fileからの参照がすべて0で、再生成可能または
+     byte-identicalな別正本があるとread backできたものは回収候補である。Daisはこの条件を満たすものについて
+     個別の事前確認をcleanup完了条件にしない。逆に「古そう」「user dataだから不要そう」という名前・年齢だけの
+     推測では削除しない。現在の`MoneyPrinter-Hackathon-Demo`はWebMCP提出完了まで保護する。
    - **Source preservation correction:** `~/Projects/life-manager-main`と
      `~/Projects/life-manager-eliza-migration`は両方active sourceとして保持する。Eliza migrationは未使用と
      推測して削除しない。この二つ以外のLife Manager/OpenClaw/Anicca cloneは、dirty/unpushed commit、
@@ -129,8 +153,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    一件ずつ実行し、各atomでbefore/after bytes、loaded/open/dirty保護、errors 0、protected deletion 0、
    次wake回収または自然terminal readbackを保存する。
 
-   1. 共通agent usage ledgerのowner-side lossless rotationを実装・release・自然wakeで検証する。
-   2. memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、不要daemonだけをowner経由で
+   1. [x] 共通agent usage ledgerのowner-side lossless rotationを実装・release・自然wakeで検証する。
+   2. [ ] **current:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、不要daemonだけをowner経由で
       drainし、VM使用量がmacOSにより縮小することをread backする。
    3. 40 worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
       保ったまま回収する。

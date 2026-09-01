@@ -1,5 +1,8 @@
+import gzip
+import os
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from runtime.loop.runtime_event import append_runtime_event, build_install_event, build_runtime_event, validate_runtime_event
@@ -29,6 +32,18 @@ class RuntimeEventTest(unittest.TestCase):
             append_runtime_event(path, BASE)
             append_runtime_event(path, BASE)
             self.assertEqual(len(path.read_text().splitlines()), 1)
+
+    def test_rotation_preserves_all_rows_in_private_gzip_archive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "events.jsonl"
+            with mock.patch.dict(os.environ, {"LM_RUNTIME_EVENTS_MAX_BYTES": "1"}):
+                append_runtime_event(path, BASE)
+                append_runtime_event(path, {**BASE, "event_id": "b" * 24})
+            archives = list(path.parent.glob("events-*.jsonl.gz"))
+            self.assertEqual(len(archives), 1)
+            with gzip.open(archives[0], "rt", encoding="utf-8") as handle:
+                self.assertEqual(len(handle.readlines()) + len(path.read_text().splitlines()), 2)
+            self.assertEqual(archives[0].stat().st_mode & 0o777, 0o600)
 
     def test_unknown_and_secret_values_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "unknown fields"):
