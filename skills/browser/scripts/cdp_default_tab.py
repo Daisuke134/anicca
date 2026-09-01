@@ -14,6 +14,7 @@ primitive session_vault.py keepalive already uses to reach the authenticated ses
 
     python3 cdp_default_tab.py open <url> --owner gig-pass
     python3 cdp_default_tab.py close <target_id> --owner gig-pass
+    python3 cdp_default_tab.py close-owned --owner gig-pass
 """
 import argparse
 import asyncio
@@ -137,9 +138,41 @@ def close_tab(target_id, owner=None):
     return {"ok": True, "closed": target_id, "owner": owner}
 
 
+def close_owned_tabs(owner=None):
+    """Reclaim targets left behind when the previous owner process died."""
+    owner = target_ownership.require_owner(owner)
+    owned = target_ownership.targets_for_owner(owner)
+    live = {
+        row.get("targetId")
+        for row in cdp._browser_call("Target.getTargets").get("targetInfos", [])
+    }
+    closed = []
+    pruned = []
+    errors = []
+    for target_id in sorted(owned):
+        if target_id not in live:
+            target_ownership.release_target(target_id, owner)
+            pruned.append(target_id)
+            continue
+        try:
+            cdp._browser_call("Target.closeTarget", {"targetId": target_id})
+            target_ownership.release_target(target_id, owner)
+            closed.append(target_id)
+        except Exception as error:
+            errors.append({"target_id": target_id, "reason": str(error)[:160]})
+    return {
+        "ok": not errors,
+        "owner": owner,
+        "owned": len(owned),
+        "closed": len(closed),
+        "pruned": len(pruned),
+        "errors": errors,
+    }
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("open", "serve-hidden", "close"))
+    parser.add_argument("command", choices=("open", "serve-hidden", "close", "close-owned"))
     parser.add_argument("value", nargs="?")
     parser.add_argument("--owner", default=os.environ.get("CLOAK_BROWSER_OWNER"))
     parser.add_argument("--background", action="store_true")
@@ -156,12 +189,14 @@ if __name__ == "__main__":
                 _serve_hidden_tab(args.value or "about:blank", owner=args.owner)
             )
             sys.exit(0)
-        else:
+        elif args.command == "close":
             out = (
                 close_tab(args.value, owner=args.owner)
                 if args.value
                 else {"ok": False, "reason": "close needs a target_id"}
             )
+        else:
+            out = close_owned_tabs(owner=args.owner)
     except Exception as e:
         out = {"ok": False, "reason": f"{type(e).__name__}: {e}"}
     print(json.dumps(out, ensure_ascii=False))

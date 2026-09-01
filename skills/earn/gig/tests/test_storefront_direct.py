@@ -319,6 +319,9 @@ def test_incremental_storefront_wake_validates_inventory_releases_lease_and_pers
         return lease
 
     def browser(argv, **_kwargs):
+        if argv[-1] == "close-owned":
+            events.append("reclaim")
+            return direct.subprocess.CompletedProcess(argv, 0, '{"ok":true}\n', "")
         assert argv == ["/bin/bash", str(args.ensure_browser_script)]
         events.append("browser")
         return direct.subprocess.CompletedProcess(argv, 0, "ALIVE\n", "")
@@ -352,7 +355,7 @@ def test_incremental_storefront_wake_validates_inventory_releases_lease_and_pers
     assert row["status"] == "completed" and row["effect"] == row["readback"] == 0
     assert row["official_services_read"] == 1
     assert row["lease"]["released"] is True
-    assert events == ["browser", "acquire", "observe", "release"]
+    assert events == ["browser", "reclaim", "acquire", "observe", "release"]
     assert len((args.state_dir / "offer-contracts.jsonl").read_text(encoding="utf-8").splitlines()) == 1
     assert json.loads((args.state_dir / "current.json").read_text(encoding="utf-8")) == row
     assert json.loads((args.state_dir / "wakes.jsonl").read_text(encoding="utf-8")) == row
