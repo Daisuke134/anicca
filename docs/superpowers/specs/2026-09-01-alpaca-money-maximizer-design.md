@@ -53,7 +53,7 @@ flowchart TD
     OBS --> MODEL["Model proposal<br/>thesis / no-trade / invalidation"]
     MODEL --> GATE["Deterministic risk gate<br/>max loss / exposure / freshness"]
     GATE --> EFFECT["Effect kernel<br/>sealed intent / exactly once"]
-    EFFECT --> ALPACA["Alpaca paper API<br/>CLI + MCP evidence"]
+    EFFECT --> ALPACA["Alpaca paper API<br/>CLI effects + SDK reads + MCP evidence"]
     ALPACA --> RECON["REST reconcile<br/>order / fill / position / P&L"]
     RECON --> RECEIPT["Outcome + EconomicReceipt<br/>paper namespace"]
     RECEIPT --> CORE
@@ -93,11 +93,13 @@ submission.
 | Team and originality | Team size 1–6; entrants 18+ for prize eligibility; submissions must be original and MIT-compliant | Current official guidelines and prize terms. Life Manager remains public MIT-compatible OSS with donor notices. |
 | Prize pool | `$6,000` cash plus `$300` Featherless credits displayed as `$6,300` total | Current official prize section: main cash `$2,500 + $1,500 + $1,000`, social cash `2 × $500`, and first-place Featherless credits `$300`. |
 
-**CLI authority decision:** the Alpaca CLI is the sole broker command/readback surface used by the Financial
-loop. Eliza invokes pinned CLI commands with structured JSON, binds every mutation to a stable
-`client_order_id`, and reconciles through CLI account/order/position/activity reads. The adapter does not add a
-second REST or SDK mutation path. MCP may be enabled only as a read-only judge/explanation surface; its absence
-cannot stop the loop, and it cannot place, replace, cancel, exercise, or close orders.
+**Broker authority decision:** the Alpaca CLI is the sole mutation and authoritative reconciliation surface used
+by the Financial loop. Eliza invokes pinned CLI commands with structured JSON, binds every mutation to a stable
+`client_order_id`, and reconciles through CLI account/order/position/activity reads. The official
+`@alpacahq/alpaca-trade-api` SDK may serve only the read-only bulk market-data plane; its trading namespace is not
+exposed by the Life Manager adapter. This is permitted because the event requires the Trading API plus at least
+one of CLI or MCP, not CLI-only implementation. MCP remains an optional read-only judge/explanation surface; it
+cannot place, replace, cancel, exercise, or close orders.
 
 ## 3. Reuse research — fixed source and decision
 
@@ -393,6 +395,16 @@ An option-session hold must never pause observations for another asset class, bu
 unreconciled second campaign while A11 is active. Order validation source:
 <https://docs.alpaca.markets/us/docs/options-trading>.
 
+The A11 non-blocking data-plane sub-atom is **DONE** in `life-manager-eliza` merge
+`1f18fcbe7c5a0b2a1b58a13819c4b8b1452b7499` (PR #67). The plugin pins the current official
+`@alpacahq/alpaca-trade-api` `4.0.1` SDK behind a read-only adapter that exposes only bulk option-chain and crypto
+snapshot reads. It does not return the SDK client or trading namespace, while the existing CLI remains the only
+order/effect and account/order/fill reconciliation path. Typecheck and plugin build passed. A real authenticated
+paper-data read returned 305 SPY call contracts plus BTC/USD and ETH/USD snapshots, including a current BTC
+trade, with zero broker mutation. The superseded `alpacahq/typescript-sdk` was rejected because its own official
+README says it is no longer maintained and points to `alpaca-trade-api-js`. This removes closed-session research
+blocking without authorising a second campaign before the open SPY spread closes.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
@@ -462,7 +474,8 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
 - [x] **A10:** Register exactly one Eliza-owned durable Alpaca loop; host adapters only restart Eliza.
 - [ ] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
   Entry, two fills, both open legs, current equity/cash, and unrealised P&L reconcile. Remaining A11 sub-atoms,
-  in order: ~~prove the existing five-minute Eliza task naturally refires~~ **DONE**; close through its sealed
+  in order: ~~prove the existing five-minute Eliza task naturally refires~~ **DONE**; ~~add the official-SDK
+  read-only option/crypto bulk data plane without a second mutation path~~ **DONE**; close through its sealed
   CLI-only exit; reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds zero
   orders; record the final campaign funnel (`proposed → vetoed/no-trade → submitted → filled → closed`) and no
   unexplained broker delta. Do not optimize for a cosmetic paper gain or open a second strategy before closure.
@@ -513,10 +526,12 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next plan scope is the A11 sealed exit only. Soft target: at most three production files and 100 production LOC per atom;
-reuse one existing contract/store/runner per responsibility. One focused normal-path check plus only the minimum
-regressions preventing money error, duplicate effect, unknown broker state, or secret leakage. A12–A15 and P01+
-receive later plans after the prior receipts exist.
+Next plan scope remains inside A11: while the options exit waits for the regular session, consume the completed
+read-only data plane to produce and persist an asset-aware **candidate ranking with no broker effect**; the same
+task then executes the already-sealed SPY exit when options reopen. Soft target: at most three production files
+and 100 production LOC per atom; reuse one existing contract/store/runner per responsibility. No second campaign
+or mutation path is authorised before the SPY close receipt. A12–A15 and P01+ receive later plans after the prior
+receipts exist.
 
 ## 9. Controlling references
 
@@ -529,6 +544,7 @@ receive later plans after the prior receipts exist.
 - Archived event-rule verification and PDF provenance:
   <https://github.com/MuhammadTahaBinZaeem/Dis-Pater/blob/b40188a09fc69c99145dc5aad58f3243996ad70a/artifacts/hackathon-rule-verification.md>
 - Alpaca CLI: <https://docs.alpaca.markets/us/docs/alpacas-cli>
+- Official JavaScript/TypeScript SDK: <https://github.com/alpacahq/alpaca-trade-api-js>
 - Alpaca MCP Server: <https://docs.alpaca.markets/us/docs/alpaca-mcp-server>
 - Alpaca paper trading: <https://docs.alpaca.markets/us/docs/paper-trading>
 - Lablab submission/judging overview: <https://lablab.ai/guide/ai-hackathons>
