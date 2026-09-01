@@ -405,6 +405,18 @@ trade, with zero broker mutation. The superseded `alpacahq/typescript-sdk` was r
 README says it is no longer maintained and points to `alpaca-trade-api-js`. This removes closed-session research
 blocking without authorising a second campaign before the open SPY spread closes.
 
+The A11 no-effect ranking sub-atom is **DONE** in `life-manager-eliza` merge
+`b4dc698ef66e46f9d6e82e82e1a279539d739f6d` (PR #70). The same registered task first
+reconciled the existing order and evaluated its sealed exit, then used the read-only SDK adapter to construct
+12 quoted SPY vertical-spread candidates while reading BTC/USD and ETH/USD only as market context. One bounded
+model decision returned `NO_TRADE`; Life Manager persisted the thesis, invalidation, exit plan, evidence refs,
+and all ranked candidates as `RESEARCH_ONLY / effectStarted=false`. The dispatcher result was
+`ORDER_VERIFIED / HOLD_CLOSED_SESSION / NO_TRADE`. Immediate pinned-CLI readback remained two positions, two
+fills, zero open orders, cash `$99,970.95`, equity `$99,997.95`, and unrealised P&L `-$2`, proving that research
+added zero broker effects. During E2E recovery, the existing task's stale notification escalation was closed,
+reopened, and refired under the same task ID so its Financial channel—not `push/in_app`—owned the successful
+pass. Typecheck, build, and three focused suites passed (`4/4` tests).
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
@@ -475,10 +487,11 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
 - [ ] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
   Entry, two fills, both open legs, current equity/cash, and unrealised P&L reconcile. Remaining A11 sub-atoms,
   in order: ~~prove the existing five-minute Eliza task naturally refires~~ **DONE**; ~~add the official-SDK
-  read-only option/crypto bulk data plane without a second mutation path~~ **DONE**; close through its sealed
-  CLI-only exit; reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds zero
-  orders; record the final campaign funnel (`proposed → vetoed/no-trade → submitted → filled → closed`) and no
-  unexplained broker delta. Do not optimize for a cosmetic paper gain or open a second strategy before closure.
+  read-only option/crypto bulk data plane without a second mutation path~~ **DONE**; ~~rank current candidates
+  and persist one model decision as a no-effect research receipt~~ **DONE**; close through its sealed CLI-only
+  exit; reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds
+  zero orders; record the final campaign funnel (`proposed → vetoed/no-trade → submitted → filled → closed`) and
+  no unexplained broker delta. Do not optimize for a cosmetic paper gain or open a second strategy before closure.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
   projection must drive both live and static views so they cannot drift. Above the fold show paper-only status,
   starting/current equity, realised/unrealised P&L, open max loss, last successful loop and broker reconciliation.
@@ -526,12 +539,11 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next plan scope remains inside A11: while the options exit waits for the regular session, consume the completed
-read-only data plane to produce and persist an asset-aware **candidate ranking with no broker effect**; the same
-task then executes the already-sealed SPY exit when options reopen. Soft target: at most three production files
-and 100 production LOC per atom; reuse one existing contract/store/runner per responsibility. No second campaign
-or mutation path is authorised before the SPY close receipt. A12–A15 and P01+ receive later plans after the prior
-receipts exist.
+Next plan scope remains inside A11: the same task executes the already-sealed SPY exit when the regular options
+session reopens, reconciles the official close order and fills to zero positions, persists realised paper P&L,
+and proves an identical replay adds zero orders. Soft target: at most three production files and 100 production
+LOC per atom; reuse one existing contract/store/runner per responsibility. No second campaign or mutation path
+is authorised before the SPY close receipt. A12–A15 and P01+ receive later plans after the prior receipts exist.
 
 ## 9. Controlling references
 
