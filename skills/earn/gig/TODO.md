@@ -217,7 +217,9 @@ capability claim is backed by an installed executable capability.
   is logged out; Google OAuth reaches Google's passkey challenge, while the
   ordinary password route is not offered. Remaining closure is exactly one eligible open job, ordinary
   account authentication, verified proposal receipt, and an effect-zero replay; neither condition pauses
-  the four independent Coconala owners.
+  the four independent Coconala owners. Production label `ai.anicca.crowdworks-revenue-application` now
+  loads main-derived immutable release `a78ae6f8b5cb1261c4b3ab1794457e7071fd67bf`; an actual launchd
+  kickstart completed one run with exit `1`, official owner state `auth_required`, and `effect_delta:0`.
 
 ### Live four-lane repair
 
