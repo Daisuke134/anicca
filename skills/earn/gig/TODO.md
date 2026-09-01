@@ -183,9 +183,14 @@ capability claim is backed by an installed executable capability.
   validation and a fresh SHA calculation passed, marketplace identifiers are absent, and identical
   replay returned `changed:false`. Paid demand remains explicitly `unknown`; no sale is inferred or
   awaited.
-- [ ] `S12` Render the shared product contract through a thin Coconala adapter.
+- [x] `S12` Render the shared product contract through a thin Coconala adapter.
   PASS = the adapter maps only Coconala fields, category, JPY representation and limits; exact output
   matches the accepted offer and does not change product judgment or retain competitor content.
+  The deterministic adapter persisted `contracts/adapters/coconala/ui-translation.json` with SHA
+  `ffee434bae3e5c0bcf358edf0df0662daf4f173c2485bd821eeb7cf987791ddf`. Its product binding matches
+  S11 SHA `534b2a206729e73c91f5f051fc0caebda4b091388815a3f9a06c2ce66dc7612c`, every rendered field equals
+  the accepted offer byte-for-value after canonical JSON loading, and identical replay returned
+  `changed:false` without touching any live loop.
 - [ ] `S13` Render and independently qualify the product through a thin CrowdWorks adapter.
   PASS = the adapter maps only CrowdWorks fields, category, currency and limits; current official
   CrowdWorks sold/reviewed comparable evidence and fees remain independent from Coconala evidence,
