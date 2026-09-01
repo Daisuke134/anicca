@@ -14,6 +14,8 @@ from types import SimpleNamespace
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 import storefront_direct as direct  # noqa: E402
+import coconala_reply_browser as reply_browser  # noqa: E402
+import reply_transcript  # noqa: E402
 
 
 def test_storefront_proposal_runner_class_is_accepted_and_toolless(tmp_path):
@@ -53,6 +55,46 @@ def test_capability_evidence_default_comes_only_from_operator_env(monkeypatch):
 
     monkeypatch.setenv("GIG_STOREFRONT_CAPABILITY_EVIDENCE", os.pathsep.join(("a", "b")))
     assert direct.build_parser().parse_args([]).capability_evidence == [Path("a"), Path("b")]
+
+
+def test_official_service_identity_flows_from_inquiry_to_payment(tmp_path):
+    context, _ = reply_browser.thread_state({
+        "url": "https://coconala.com/mypage/direct_message/123",
+        "title": "メッセージ詳細 | ココナラ", "container_present": True,
+        "own_user_path": "/users/12345", "service_urls": ["/services/4371816"],
+        "messages": [{"message_id": "m1", "author_path": "/users/67890",
+                      "sent_at": "2026-09-01 20:00:00", "body": "相談です"}],
+    }, "https://coconala.com/mypage/direct_message/123")
+    transcript = reply_transcript.transcript_row(
+        talkroom_id="123", context=context, outgoing_body="承知しました",
+        outgoing_hash="a" * 64, sent_at=10, status="composed",
+    )
+    transcripts = tmp_path / "transcripts.jsonl"
+    transcripts.write_text(json.dumps(transcript, ensure_ascii=False) + "\n")
+    earnings = tmp_path / "earnings.jsonl"
+    earnings.write_text(json.dumps({"talkroom_id": "123", "requestId": "order-1",
+                                    "idem_key": "receipt-1", "jpy": 1000,
+                                    "net_of_fee": True, "ts": 20}) + "\n")
+    empty = tmp_path / "empty.jsonl"
+    empty.write_text("")
+
+    result = direct._join_funnel(
+        tmp_path / "state", [{"service_id": "4371816", "service_version_sha256": "b" * 64}],
+        transcripts, empty, earnings, tmp_path / "projects", 30,
+        negotiate_run_log=tmp_path / "missing.jsonl",
+    )
+
+    assert result["by_origin"]["storefront"] == {
+        "inquiries": 1, "payments": 1, "net_jpy": 1000.0,
+    }
+    events = [json.loads(line) for line in (tmp_path / "state/funnel-events.jsonl").read_text().splitlines()]
+    assert {event["service_id"] for event in events} == {"4371816"}
+    replay = direct._join_funnel(
+        tmp_path / "state", [{"service_id": "4371816", "service_version_sha256": "b" * 64}],
+        transcripts, empty, earnings, tmp_path / "projects", 31,
+        negotiate_run_log=tmp_path / "missing.jsonl",
+    )
+    assert replay["appended"] == 0
 
 
 def test_catalog_baseline_keeps_latest_official_known_metrics(tmp_path):

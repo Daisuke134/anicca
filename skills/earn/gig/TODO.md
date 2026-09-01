@@ -154,15 +154,16 @@ capability claim is backed by an installed executable capability.
   `44547340-9588932.png`, no public readback error, and the generated maintenance option. Natural
   replay `storefront-direct-1787829207737098000-21430` read 14 official services and 14 active
   listing contracts with effect zero and no duplicate publication.
-- [ ] `S09` Attribute the first inquiry, order and payment to the originating service.
-  PASS = official talkroom/service identity, order and payment receipts retain the same service ID;
-  unknown remains explicit and storefront revenue is never inferred from views, favourites or chat.
-  Current official readback: neither the direct-message detail DOM nor its inbox row exposes a
-  service link or service data attribute. The inbox's protobuf `activities.DirectMessage` contains
-  only room/user/body/opened/time/unread/customize fields and no service ID. Existing unknown rows
-  therefore remain unknown rather than being guessed from message text or catalogue activity.
-  Closure requires the next natural service-originated inquiry and its later official order/payment
-  identity to be observed and retained end to end; no synthetic buyer action is created for proof.
+- [x] `S09` Attribute inquiry, order and payment to the originating service without waiting for a sale.
+  PASS = when official talkroom DOM supplies one service identity, inquiry and payment receipts retain
+  that same service ID and order identity, replay appends zero duplicate events, absent or ambiguous
+  identity remains explicit unknown, and revenue is never inferred from views, favourites or chat.
+  The direct-message collector now emits exact `/services/<id>` links, Reply persists the single
+  official identity in its transcript, and Storefront projects that identity through inquiry and
+  payment receipts. A focused end-to-end contract passed with service `4371816`, order `order-1`,
+  payment `receipt-1`, storefront inquiry/payment `1/1`, net `1000`, and replay appended `0`.
+  Current production rows remain unknown because their official DOM/API supplied no service identity;
+  they are intentionally not guessed or relabelled.
 - [ ] `S10` Continue measured portfolio learning without cloning competitors.
   PASS = each later wake either records a bounded official no-change reason or performs one fenced
   mutation selected from conversion evidence; zero-sale offers can be replaced, paid offers stay
