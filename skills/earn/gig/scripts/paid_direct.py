@@ -3849,7 +3849,10 @@ def _normalize_builder_result(root: Path) -> None:
         digest = paid_remote_result._sha(desired)
         intent["desired_state_sha256"] = intent["desired_digest"] = digest
         result["desired_state_sha256"] = result["desired_digest"] = digest
-    raw_after = Path(_text(result.get("after_evidence")))
+    raw_after_value = _text(result.get("after_evidence"))
+    if not raw_after_value:
+        return
+    raw_after = Path(raw_after_value)
     after_path = (root / raw_after if not raw_after.is_absolute() else raw_after).resolve()
     after_path.relative_to(root)
     after = _load(after_path)
