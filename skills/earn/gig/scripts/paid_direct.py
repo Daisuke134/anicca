@@ -3751,7 +3751,8 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
     code_root = REPO_ROOT
     semantic_contract, semantic_contract_sha256 = _semantic_effect_contract(root)
     role = "fresh read-only remote reviewer" if verifier else "paid remote owner"
-    tab_owner = "paid-direct-remote-verifier" if verifier else "paid-direct-remote-builder"
+    suffix = "remote-verifier" if verifier else "remote-builder"
+    tab_owner = f"{os.environ.get('CLOAK_BROWSER_OWNER', f'paid-direct-{root.name}')}-{suffix}"
     mutation = "Never mutate, click submit, or send anything." if verifier else "Mutate only the authenticated target when required, idempotently."
     target_contract = (
         f"Read builder-owned {root / 'delivery/paid-remote-intent.json'} and "
@@ -4869,6 +4870,23 @@ def _fresh_child_env(args, owner=None):
     return env
 
 
+def _paid_browser_owners(room: str) -> tuple[str, ...]:
+    base = f"paid-direct-{room}"
+    return base, f"{base}-remote-builder", f"{base}-remote-verifier"
+
+
+def _reclaim_paid_tabs(args, room: str) -> None:
+    for owner in _paid_browser_owners(room):
+        try:
+            subprocess.run(
+                [sys.executable, str(args.cdp_helper), "close-owned", "--owner", owner],
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                timeout=15, check=False, env=_fresh_child_env(args, owner=owner),
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+
+
 def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
                    effect_file: Path) -> tuple[dict[str, Any], int, int, int, str]:
     browser_owner = f"paid-direct-{room}"
@@ -5357,12 +5375,16 @@ def run_once(args, output: Path) -> int:
             actionable += 1
             prepared_file = item_file.with_name(item_file.stem + "-prepared.json")
             effect_file.unlink(missing_ok=True); prepared_file.unlink(missing_ok=True)
+            _reclaim_paid_tabs(args, room)
             jobs.append((room, executor.submit(
                 _run_paid_item, args, room, item_file, prepared_file, effect_file,
             )))
         executor.shutdown(wait=True)
         for room, job in jobs:
-            row, item_effect, item_readback, item_failed, item_step = job.result()
+            try:
+                row, item_effect, item_readback, item_failed, item_step = job.result()
+            finally:
+                _reclaim_paid_tabs(args, room)
             rows[room] = row
             effect += item_effect
             readback += item_readback
