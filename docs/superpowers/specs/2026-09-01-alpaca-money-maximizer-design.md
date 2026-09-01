@@ -358,6 +358,14 @@ realised P&L `$0`; open-position unrealised P&L `-$2`; realised profit made `$0`
 placed and filled its first paper trade but is **not making money yet**. Paper equity, unrealised P&L, and any
 future realised paper gain remain simulation evidence and must never be reported as revenue or live earnings.
 
+The A11 natural-recurrence sub-atom is **DONE**. Without a REST fire or second scheduler, the live Eliza
+TaskService refired the same interval task ID from `20:59:39Z` to `21:16:13Z`; the contributed Financial channel
+again returned `ORDER_VERIFIED / HOLD_CLOSED_SESSION`. The persisted trigger remains five minutes, although this
+observed process fire was late and is not represented as an exact-cadence guarantee. Immediate pinned-CLI
+readback retained the same filled provider order ID, two fills, two positions, zero open orders, cash
+`$99,970.95`, equity `$99,997.95`, and unrealised P&L `-$2`. Natural recurrence therefore added zero broker
+orders. The next A11 sub-atom remains the regular-session sealed exit and realised-P&L reconciliation.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
@@ -427,8 +435,8 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
 - [x] **A10:** Register exactly one Eliza-owned durable Alpaca loop; host adapters only restart Eliza.
 - [ ] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
   Entry, two fills, both open legs, current equity/cash, and unrealised P&L reconcile. Remaining A11 sub-atoms,
-  in order: prove the existing five-minute Eliza task naturally refires; close through its sealed CLI-only exit;
-  reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds zero
+  in order: ~~prove the existing five-minute Eliza task naturally refires~~ **DONE**; close through its sealed
+  CLI-only exit; reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds zero
   orders; record the final campaign funnel (`proposed → vetoed/no-trade → submitted → filled → closed`) and no
   unexplained broker delta. Do not optimize for a cosmetic paper gain or open a second strategy before closure.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
