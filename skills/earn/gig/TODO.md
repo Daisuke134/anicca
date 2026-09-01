@@ -243,6 +243,9 @@ capability claim is backed by an installed executable capability.
   inspect zero jobs. Discovery now reuses the owned Playwright page, extracts exact numeric job links,
   and reads each official detail page; a focused official pass inspected `10` jobs and found zero exact
   eligible Italian UI/Web/app translation jobs, with `inspected_jobs` retained in owner status.
+  That rendered discovery source is installed as immutable release
+  `9723c3dd0bba8708435e4f2f0fac451011aac97d`; its real launchd auth-gated run remained
+  `input_required`/`effect_delta:0`, while the global selector was restored to a complete release.
 
 ### Live four-lane repair
 
