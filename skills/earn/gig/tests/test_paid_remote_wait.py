@@ -840,6 +840,7 @@ def test_normalizer_restores_feedback_alias_and_canonical_digest(tmp_path):
     result_path = root / "delivery/paid-remote-result.json"
     intent = json.loads(intent_path.read_text())
     result = json.loads(result_path.read_text())
+    result["status"] = "completed"
     intent.pop("buyer_feedback_sha256")
     result.pop("buyer_feedback_sha256")
     intent["feedback_sha256"] = feedback
@@ -868,6 +869,7 @@ def test_normalizer_restores_feedback_alias_and_canonical_digest(tmp_path):
     assert intent["desired_state_sha256"] == intent["desired_digest"] == digest
     assert result["desired_state_sha256"] == result["desired_digest"] == digest
     assert result["after_state_digest"] == result["observed_digest"] == digest
+    assert result["status"] == "ok"
 
 
 def test_paid_project_executor_runs_different_owners_in_parallel():
