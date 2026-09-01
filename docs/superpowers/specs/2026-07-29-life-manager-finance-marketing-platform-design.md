@@ -2528,6 +2528,8 @@ blocked until MKT-10R7 closes.
 
 **MKT-10R7 live cursor override:** Instagram Postiz alias `@anicca.jp1` / native `@anicca.ios.jp` is terminal at 3/day under manifest `1bfb1ea7…a2b7`: JA Card Reel `https://www.instagram.com/reel/Dcw45GEkkSn/`, Postiz `cmtjbpx83035ppn0yqlg26mtl`, CalendarIntervals `08:10/13:10/19:10`, kickstart exit 0, and immediate replay publication/Telegram `created:false`. The first active atom is now TikTok `@anicca.jp4` / `cmn8x8hdv028uqx0y4gdfse5t`; this sentence supersedes the row's prior first-atom wording without reordering later atoms.
 
+**MKT-10R7 live cursor 2:** TikTok `@anicca.jp4` is terminal at 3/day under manifest `56caaf24…9c0c3`: exact Postiz `cmn8x8hdv028uqx0y4gdfse5t`, JA Card pack `dd0dc38d…ed3f`, native `https://www.tiktok.com/@anicca.jp4/video/7680693831918077972`, Postiz `cmtj88gjf02efpn0yy8p1a0pj`, and CalendarIntervals `09:15/15:15/20:45`. Its 08:59 kickstart was before the first due window and correctly created provider effects 0 (`marketing cycle has no due slot yet`). The first active atom is now Instagram `@ani.cca1234` / `cmq3sq7mc000eqp0y7azfm8yk`.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
