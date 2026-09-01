@@ -3939,6 +3939,13 @@ def _consultation_attachments(root: Path) -> tuple[list[dict[str, str]], list[Pa
     rows = requirements.get("attachments") if isinstance(requirements, dict) else None
     if not isinstance(rows, list):
         raise Failure("context_compile")
+    decision = _load(root / "context" / "paid-work-decision.json")
+    identity = decision.get("latest_message_identity") if isinstance(decision, dict) else None
+    message_id = _text(identity.get("message_id")) if isinstance(identity, dict) else ""
+    if not message_id:
+        raise Failure("context_compile")
+    rows = [row for row in rows if isinstance(row, dict) and
+            _text(row.get("download_reference")).startswith(f"message:{message_id}:attachment:")]
     if not rows:
         return [], [], []
     expected, images, documents = [], [], []
@@ -4147,7 +4154,7 @@ def _run_consultation_review(args, item_path: Path, root: Path, feedback: str, b
         try:
             reviewed = _validate_consultation_result(owner, expected)
         except (AttributeError, ValueError, TypeError) as error:
-            raise Failure("remote_builder") from error
+            raise Failure("answer_validation") from error
         if owner.get("status") != "ok":
             raise Failure("remote_builder")
         break
