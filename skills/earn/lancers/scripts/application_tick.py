@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import sys
 import tempfile
+import time
 from typing import Any, Callable, Mapping, Optional, Sequence
 import urllib.request
 from urllib.parse import quote, urlsplit
@@ -313,6 +314,7 @@ def _open_owned_page(browser_factory: Optional[Callable[[str], Any]] = None) -> 
             _stop_playwright_runtime(getattr(browser, "_anicca_playwright_runtime", None))
             if attempt:
                 raise
+            time.sleep(1)
     raise RuntimeError("browser_unavailable")
 
 
