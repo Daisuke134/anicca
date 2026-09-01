@@ -631,6 +631,42 @@ def test_paid_agent_creates_authorized_missing_resources_instead_of_asking_buyer
         assert "Never ask the buyer to supply a seller-owned account" in prompt
 
 
+def test_orders_observation_retries_until_semantic_container_is_ready(tmp_path, monkeypatch):
+    snapshot = load("coconala_queue_snapshot")
+    calls = []
+    responses = [
+        {
+            "url": snapshot.OPEN_ORDERS_URL,
+            "title": "受注管理",
+            "container_present": False,
+            "cards": [],
+            "empty_state_present": False,
+        },
+        {
+            "url": snapshot.OPEN_ORDERS_URL,
+            "title": "受注管理",
+            "container_present": True,
+            "cards": [{"talkroom_url": "https://coconala.com/talkrooms/1"}],
+            "empty_state_present": False,
+        },
+    ]
+
+    def inspect(*_args, **_kwargs):
+        calls.append(1)
+        return responses.pop(0)
+
+    monkeypatch.setattr(snapshot, "inspect_page_with_retry", inspect)
+    monkeypatch.setattr(snapshot.time, "sleep", lambda _seconds: None)
+
+    dom, coverage = snapshot.inspect_orders_when_ready(
+        tmp_path / "cdp.py", tmp_path / "evidence", hidden=True,
+    )
+
+    assert len(calls) == 2
+    assert dom["container_present"] is True
+    assert coverage["coverage_complete"] is True
+
+
 def test_decision_prompt_scopes_required_assets_to_current_bounded_output(tmp_path):
     paid = load("paid_direct")
 
