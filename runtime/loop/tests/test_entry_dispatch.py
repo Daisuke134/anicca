@@ -201,6 +201,10 @@ class EntryDispatchTest(unittest.TestCase):
             self.assertIn('/home/.local/state/life-manager/writer',joined)
             self.assertNotIn('/release/skills/writer-agent/state',joined)
 
+    def test_lancers_application_dispatches_exhaustive_coverage(self):
+        command = command_for('lancers-revenue-application', Path('/release'), Path('/home'))
+        self.assertIn('--exhaustive', command)
+
     def test_lancers_browser_disables_code_sign_clone(self):
         script = Path(__file__).parents[3] / 'runtime/legacy/lancers-revenue-browser/run.sh'
         self.assertIn('--disable-features=MacAppCodeSignClone', script.read_text())
