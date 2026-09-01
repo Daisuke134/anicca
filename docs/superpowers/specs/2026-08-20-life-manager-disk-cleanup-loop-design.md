@@ -86,7 +86,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      | `~/Desktop` | 2.11 GiB | ほぼ`MoneyPrinter-Hackathon-Demo`。WebMCP提出完了前は保持する |
      | `~/.openclaw-backups` | 1.72 GiB | generation/復旧依存を確認してbounded retentionへ接続する |
      | `~/.rustup` | 1.32 GiB | toolchain ownerを確認する |
-     | `~/Pictures` | 1.08 GiB | user asset。自動削除しない |
+     | `~/Pictures` | 1.08 GiB | Life Manager/提出物/進行中deliverable依存とunique contentを監査し、依存0・再生成可能なら回収する |
      | `~/.venvs` | 0.99 GiB | caller/entrypoint不在を確認したenvironmentだけを回収する |
 
      system側は`/opt/homebrew` 12.52 GiB、`/private` 7.51 GiB、`/Applications` 7.58 GiB、
@@ -109,6 +109,13 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      state、⑧終了済みagent log/archive、⑨再生成可能なtool/cache、⑩未使用application/toolchainである。
      「手動cleanupで一度freeが増えた」「ディレクトリ名が古そう」は完了証拠にしない。各familyでwriter owner、
      active/open/loaded/dirty保護、保持上限、次wake回収、protected deletion 0を閉じる。
+
+     **User-data cleanup authority:** `~/Pictures`、`~/Desktop`、`~/Downloads`、その他user-owned directoryも
+     cleanup監査の対象外にしない。Life Manager source/state、WebMCP等の未完提出物、進行中buyer deliverable、
+     credential/session/ledger/receipt/evidence、唯一の原本、open fileからの参照がすべて0で、再生成可能または
+     byte-identicalな別正本があるとread backできたものは回収候補である。Daisはこの条件を満たすものについて
+     個別の事前確認をcleanup完了条件にしない。逆に「古そう」「user dataだから不要そう」という名前・年齢だけの
+     推測では削除しない。現在の`MoneyPrinter-Hackathon-Demo`はWebMCP提出完了まで保護する。
    - **Source preservation correction:** `~/Projects/life-manager-main`と
      `~/Projects/life-manager-eliza-migration`は両方active sourceとして保持する。Eliza migrationは未使用と
      推測して削除しない。この二つ以外のLife Manager/OpenClaw/Anicca cloneは、dirty/unpushed commit、
