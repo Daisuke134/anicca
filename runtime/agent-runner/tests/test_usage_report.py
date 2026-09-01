@@ -1,4 +1,7 @@
+import gzip
 import importlib.util
+import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -73,6 +76,21 @@ class CanonicalUsageReportTest(unittest.TestCase):
 
         self.assertIn("API-equivalent estimate USD", rendered)
         self.assertIn("Actual billed USD", rendered)
+
+    def test_reader_includes_rotated_gzip_archives(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "agent-usage.jsonl"
+            archived = {"event_id": "archived"}
+            active = {"event_id": "active"}
+            with gzip.open(
+                path.with_name("agent-usage-20260902T000000Z.jsonl.gz"),
+                "wt",
+                encoding="utf-8",
+            ) as handle:
+                handle.write(json.dumps(archived) + "\n")
+            path.write_text(json.dumps(active) + "\n", encoding="utf-8")
+
+            self.assertEqual(self.report.read_jsonl(path), [archived, active])
 
 
 if __name__ == "__main__":
