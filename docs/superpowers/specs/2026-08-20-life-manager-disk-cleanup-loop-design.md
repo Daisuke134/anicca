@@ -191,6 +191,15 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    owner別bounded artifact回収でData headroomを先に戻し、memory pressure低下後のswap縮小を再readbackする。
    次の直接容量ownerは`~/loops/releases`約12.9 GiBだが、current/loaded/open/pinned判定前には削除しない。
 
+   Gig Paidのowner-side finalizerはPR #3815、#3819、#3822でmainへ統合し、control plane release
+   `1412fabcec902941b38aab7d611a97d457003700`へ適用した。案件ownerと親`gig-paid-direct`をrun前後に
+   既存ownership helperで回収し、収益loopやbrowser processは停止しない。自然wake終了後の共通台帳は
+   paid owner 0。旧global台帳からownerが確定したlive target 8件をcloseし、stale target ID 1,054件をprune、
+   error 0。Gig browserはpage `23 → 15`、RSS約`2.57 GiB → 1.31 GiB`、Data空きは`3,819,604 KiB`
+   （約3.64 GiB）、swap使用は`19,647.75 MiB → 18,886.62 MiB`となった。11 GiB floorとswap縮小は未達なので
+   memory/swap atomは未完了のまま維持する。`~/.claude/**`と`~/.codex-acct2/**`はlog/archiveを含め全面的な
+   削除・移動・truncate・圧縮禁止とし、owner-side cleanup候補にも登録しない。
+
    **worktree/release/backup追補:** 3 primary repoのworktreeをdirty、locked、upstream、main包含、open FDで
    再分類した。Alpacaは明示保護、CrowdWorksはopen 9、GH-11はopen 7、Lancers/Coconala/WebMCP/Capafyは
    locked・unmerged等で保持した。clean・mainへmerged・unlocked・open 0の
