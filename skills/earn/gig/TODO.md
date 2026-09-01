@@ -164,10 +164,15 @@ capability claim is backed by an installed executable capability.
   payment `receipt-1`, storefront inquiry/payment `1/1`, net `1000`, and replay appended `0`.
   Current production rows remain unknown because their official DOM/API supplied no service identity;
   they are intentionally not guessed or relabelled.
-- [ ] `S10` Continue measured portfolio learning without cloning competitors.
+- [x] `S10` Continue measured portfolio learning without cloning competitors.
   PASS = each later wake either records a bounded official no-change reason or performs one fenced
   mutation selected from conversion evidence; zero-sale offers can be replaced, paid offers stay
   protected, and no competitor-owned prose/image/identity enters a published contract.
+  Natural owner pass `storefront-direct-1788273132100222000-35314` on immutable main release
+  `c74b5973cfabe4f3a64fa2fadb8671bdeb00d36d` used Account 2, selected one original bounded body
+  mutation from official conversion evidence, and completed with public effect/readback `1/1`,
+  `reason=public_accepted`, and its isolated browser lease released. The runner now honors an
+  explicitly selected Codex profile, and text updates use the observed form's native submit path.
 - [ ] `S11` Persist one website-neutral `MarketProductContract` from the accepted Storefront offer.
   PASS = buyer job, delivery kind, inclusions, exclusions, inputs, artifact acceptance, base price,
   recurring-support boundary, capability evidence, paid-demand evidence and originality provenance
