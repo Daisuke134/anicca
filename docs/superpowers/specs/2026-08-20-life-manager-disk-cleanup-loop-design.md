@@ -149,7 +149,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `~/gig/projects/18128025`等のHermes名を含むBUYMA/customer artifactとeffect receiptはgateway退役と無関係に
      project lineageとして保持する。
 
-   **All-loop bounded-output audit内の固定実行順:** 現在activeな共通agent usage rotationを閉じた後、次を
+   **All-loop bounded-output audit内の固定実行順:** 現在activeなmemory/swap atomを閉じた後、次を
    一件ずつ実行し、各atomでbefore/after bytes、loaded/open/dirty保護、errors 0、protected deletion 0、
    次wake回収または自然terminal readbackを保存する。
 
@@ -189,6 +189,23 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    swapfileは直接削除しない。したがってこのatomはまだ完了ではなく、open/loaded processを止めるのではなく
    owner別bounded artifact回収でData headroomを先に戻し、memory pressure低下後のswap縮小を再readbackする。
    次の直接容量ownerは`~/loops/releases`約12.9 GiBだが、current/loaded/open/pinned判定前には削除しない。
+
+   **worktree/release/backup追補:** 3 primary repoのworktreeをdirty、locked、upstream、main包含、open FDで
+   再分類した。Alpacaは明示保護、CrowdWorksはopen 9、GH-11はopen 7、Lancers/Coconala/WebMCP/Capafyは
+   locked・unmerged等で保持した。clean・mainへmerged・unlocked・open 0の
+   `fix-loop-owner-scratch-20260902`だけをGit provenance付きで回収し、78,148 KiB、実free +82,688 KiB、
+   branch `docs/coconala-atomic-todo-20260902`とHEAD `1185857fc`を保持した。実体が既に無いCapafy 3件は
+   lock解除後にstale worktree metadataだけをpruneした。
+
+   immutable releaseは24件、約12.9 GiB。正本central release GCをcurrent releaseから実行し、
+   evaluated 24、protected 24、removed 0、errors 0、protected deletion 0だった。全releaseがcurrent、launchd argv、
+   open file/cwd、protected listのいずれかに参照されるため手動削除しない。19件から24件へ増えた事実は、
+   loop別immutable argvの収束不足としてrelease atomに残す。
+
+   `~/.openclaw-backups`は263,391,xxx bytesのarchiveを7世代保持し、約1.72 GiBへ再増加していた。全archiveは
+   mode 0600/open FD 0、最新2世代は`tar tzf` PASS。古い5世代だけを回収し、Data volume freeは
+   `826,784 → 2,119,144 KiB`（+1,292,360 KiB）、count 7→2。producerの既定保持数も7→2へ変更し、
+   次wakeから約527 MBを上限とする。credentialを含む最新2世代は保持する。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
