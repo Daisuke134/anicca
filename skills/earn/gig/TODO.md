@@ -5042,12 +5042,23 @@ queue is added. Each owner must also progress independent work concurrently insi
     discovery. Release `462cc737` recorded a natural terminal pass in about 2m35s, down from the
     measured three-turn wake of about six minutes, without weakening the request effect fence.
   - [ ] `PAR-3d Storefront` **ACTIVE:** run independent listing work through bounded workers while retaining
-    listing-specific mutation intents and official readback.
+    listing-specific mutation intents and official readback. PR `#3833` is merged and production
+    release `ba5a809134372206d3df893d945566c0a99ebfd2` durably claims each due listing before
+    browser work, scans at most two listings in owner-bound tabs, closes each tab in `finally`, and
+    serializes ledger writes on the parent. Remaining acceptance is a natural Storefront wake with
+    completed per-listing claim readback; the first deployed wake ended on the pre-existing category
+    option failure before that proof completed.
   - [ ] `PAR-3e` deploy all four owners together and record concurrent natural readback.
 - [ ] `PAR-4` Make every nonterminal item resumable. PASS = process exit, timeout, provider failure,
   browser-context failure or release change records one exact next transition and retry time; the
   next natural wake resumes it while unrelated work continues. A buyer-authored revision creates a
   new version of the same work item instead of overwriting or duplicating the prior effect.
+  - [ ] After each project has one authoritative terminal/payment receipt, bound its generated
+    `work/`, `artifacts/` and superseded `delivery/` versions to the latest accepted artifact plus
+    one rollback generation. Permanently retain buyer source attachments, the exact sent artifact,
+    marketplace readback and payment/effect receipts. Current `evidence_gc` intentionally refuses
+    `projects/` and protects ZIP/PDF/mcaddon archives, so it cannot close this atom: live census found
+    old `athena-v4-final.mp4`, `v4.zip`, `v4.mcaddon`, `package-v4` and projects up to about 1.30 GiB.
 - [ ] `PAR-5` Prove fastest truthful submission and replay-zero from one immutable public-main
   release. PASS = Apply submits every currently eligible posting, Reply handles every fresh buyer
   event, Storefront executes every authorized mutation and Paid progresses every purchased order;
