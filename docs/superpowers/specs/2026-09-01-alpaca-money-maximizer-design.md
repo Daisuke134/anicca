@@ -211,10 +211,14 @@ the pinned CLI. A production readback through that operation returned `READY` tw
 `scheduled=false`, paper ACTIVE, cash/equity `100000`, options Level 3, and zero positions/orders/activities.
 The second pass created no Task or account duplicate. A fresh-install fixture now atomically seeds only the
 owner's normal email, an internally generated password, and the paper endpoint into the private SSOT, preserves
-mode `0600`, and checkpoints three bound refs without returning the password to the model. The real existing
-account path remained `READY` and left the SSOT hash unchanged. Focused package evidence is 11 test files / 25
-tests plus typecheck and Biome. A03 remains ACTIVE because the typed `CREATE_PAPER_ACCOUNT` next action does not
-yet execute BrowserService/Gmail signup effects itself.
+mode `0600`, and checkpoints three bound refs without returning the password to the model. BrowserService actions
+now fill those values without model exposure, use the authenticated read-only mailbox CLI to allowlist and open
+only the Alpaca verification URL, capture TOTP/recovery/API/account material directly into the private SSOT, and
+generate/fill the current TOTP code without returning either the secret or code. Commit `69a3fa4e58` passed Biome
+and package typecheck; a production-function runtime fixture preserved mode `0600`, filled exactly six digits,
+and exposed neither value. The real existing account path remained `READY` and left the SSOT hash unchanged.
+A03 remains ACTIVE because the model/runtime orchestration does not yet drive the complete fresh signup sequence
+through these actions and resume it from the saved checkpoint.
 
 A04 has **preflight evidence ready but remains ordered after A03** against the official `alpacahq/cli` release `v0.0.14`, source commit
 `53606273aa230a40c64b783425dcb3f4423ede30`. Its published release checksum was verified before installing the
