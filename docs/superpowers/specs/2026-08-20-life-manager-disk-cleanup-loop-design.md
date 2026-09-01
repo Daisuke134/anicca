@@ -43,6 +43,17 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    - OpenClaw Git pack 2.89 GiBはreachable履歴にruntime backup 579 MiB、Stripe event ledger約155 MiB×3、
      `.next` cache、session tmp、DB WAL/browser cacheをcommitした結果であり、通常の`git gc`では回収不能。
      active dirty repoの履歴rewriteは行わず、OpenClaw repo廃止/履歴移管atomで扱う。
+   - manual deep cleanupではhash一致・open handle 0を確認した旧`lm-video`約220.5 MiB、Bun再生成cache
+     約5 GiB、npm cache約170 MiB、未完成release 5 tree、未参照完成release 3 tree（866,280,281 bytes）、
+     clean/merged/idle/unlocked worktree 2件約148 MiBを回収した。Alpaca、GH-11、Lancers、locked、dirty、
+     unmerged worktree、browser profile、deliverable、ledger、credential、不可侵storeは保持した。
+   - 未完成release再発のroot causeは`cut-loop-release.sh`にhost-wide build lockがなく、`npm ci`等の
+     export後failureでDEST cleanupが走らないことだった。PR #3668 / merge `176cd7e1`で同時buildを
+     1本へ直列化し、成功前のEXIT/INT/TERM/HUPで自身の未完成DESTを自己清掃する最小修正をmainへ統合した。
+     隔離readbackは2本目RC 1・owner lock保持、異常終了RC 1・自身のlock残留0。production loop停止0。
+   - 修正後readbackはData volume空き7.3 GiB、完成release 19、未完成release 0。19 releaseは
+     launchd/open process/current参照で全件GC保護されるため、別ownerのlabelを競合移管して削除しない。
+     11 GiB floor未達なのでAll-loop bounded-output auditとowner別rotationは未完了のまま維持する。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
@@ -63,7 +74,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 | cadence | 部分実装 | OSS plistは`StartInterval=300`。通常passはbounded fast pass、`cleanup-full-pass.at`の1時間マーカー（または互換の`EMERGENCY_GUARD_FULL_PASS=1`）がbounded full cleanupを発火する。Data volumeの空きがexact-byteで3GiB未満なら、fresh markerでもそのpassをfullへ昇格し、worktree starvationを防ぐ。critical full pass後は5分cooldownで逐次full-pass stormを抑制し、hourly/explicit fullも同じcooldownを受ける。不正・未来のtimestamp receiptはdue扱い、cooldown設定が不正ならfullを許可せずfastへfail-closedし、critical markerを書けない場合もfastへfail-closedする。`ai.anicca.life-manager-disk-cleanup`は`gui/501`へbootstrap済みで、`StartInterval=300`、single lock、kickstart/readbackを実測。`com.anicca.emergency-disk-guard`と`com.anicca.disk-sentinel`は60秒fallback/観測として登録されている |
 | runtime guard | 部分実装 | 通常の5分guardは`~/anicca-project/work`と`~/.openclaw/external`だけをbounded fast passし、host inventoryを毎回atomic writeする。Life Managerの`host-inventory-full.at`とfallbackの`cleanup-full-pass.at`を別々に管理し、各1時間 cadenceでfull census/cleanupを発火する。ULTRA時はfallback guardがexact-byte critical promotionを行い、`cleanup-critical-full-pass.at`の5分cooldown中はfast passへ戻る。hourly/explicit fullの失敗・timeout後も次回はfast passへ戻り、critical receipt書込み失敗もgig rootを追加しない。root size/unknown attributionは未完了 |
 | ledger/receipt | 部分実装 | cleanup ledgerを32 MiBでrotateし、約282 MiBから56 KiB + gzip archiveへ縮小。bounded operational logとimmutable incident receiptの正式分離は未完了 |
-| production recovery | 部分完了 | connection recoveryとmajor manual cleanupは完了。Data volumeは空き21GiB、Storefrontの残留default tabは0、Gig evidenceは50MiBまで縮小している。Storefrontの誤CDP-port closeとcrash残骸回収はproduction release `c74b5973`へ反映済み。残る作業は全managed loopのbounded-output監査と24時間/7日観測であり、完了済みconnection/manual cleanupは再実行しない。重要なCodex/OpenClaw session、取引中deliverable、VM swapfileは保持する |
+| production recovery | 部分完了 | connection recoveryとmajor manual cleanupは完了。直近readbackのData volume空きは7.3GiB、完成release 19、未完成release 0。release cutの並列化と失敗残骸はPR #3668で自己清掃化し、Storefrontの残留default tabは0、Gig evidenceは50MiBまで縮小している。残る作業は全managed loopのbounded-output監査、owner別rotation、11GiB floor回復、24時間/7日観測であり、完了済みconnection/manual cleanupは再実行しない。重要なCodex/OpenClaw session、取引中deliverable、VM swapfileは保持する |
 
 ### 2026-08-21 incident fix evidence
 
