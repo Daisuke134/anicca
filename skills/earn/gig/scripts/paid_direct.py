@@ -1826,7 +1826,13 @@ def _targeted(args, item, index):
             _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
             "targeted_readback", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
         )
-    except Failure:
+    except Failure as error:
+        if "authenticated tab did not finish navigation" in error.detail:
+            _run(
+                _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
+                "targeted_readback", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
+            )
+            return {**item, **_row(_load(snapshot), room)}
         # The collector atomically publishes the official snapshot before optional trailing
         # work. A child that wedges after that point must not discard this wake's fresh readback.
         if (not snapshot.is_file() or snapshot.stat().st_mtime_ns <= started_ns):
@@ -3858,19 +3864,26 @@ def _normalize_builder_result(root: Path) -> None:
             except (OSError, ValueError, TypeError, json.JSONDecodeError):
                 continue
             official = evidence.get("official_readback")
+            outcome = result.get("business_outcome")
+            no_effect_wait = (result.get("status") == "blocked" and isinstance(outcome, dict)
+                              and outcome.get("required_effect_satisfied") is False
+                              and outcome.get("required_output_satisfied") is False)
             if (evidence.get("authenticated") is True
                     and evidence.get("target") == intent.get("target")
                     and evidence.get("requirements_sha256") == intent.get("requirements_sha256")
                     and evidence.get("message_sha256") == intent.get("message_sha256")
                     and paid_remote_result.canonical_equal(evidence.get("observed_state"), desired)
-                    and isinstance(official, dict)
-                    and official.get("send_performed") is False
-                    and official.get("deduplicated") is True
-                    and official.get("exact_customer_message_readback") is True):
+                    and (no_effect_wait or (isinstance(official, dict)
+                         and official.get("send_performed") is False
+                         and official.get("deduplicated") is True
+                         and official.get("exact_customer_message_readback") is True))):
                 raw_after_value = str(candidate.relative_to(root))
                 result["before_evidence"] = raw_after_value
                 result["after_evidence"] = raw_after_value
-                result["status"] = "ok"
+                if not no_effect_wait:
+                    result["status"] = "ok"
+                elif not _text(result.get("blocker")):
+                    result["blocker"] = _text((outcome.get("remaining_work") or [""])[0])
                 result["verified_after"] = True
                 break
         if not raw_after_value:
