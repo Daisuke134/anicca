@@ -21,6 +21,7 @@ try:
     from .contracts import (  # type: ignore
         ApplicationIntent,
         ApplicationReceipt,
+        ContractReceipt,
         ContractValidationError,
         DeliveryIntent,
         DeliveryReceipt,
@@ -34,6 +35,7 @@ except (ImportError, ValueError):
         from contracts import (  # type: ignore
             ApplicationIntent,
             ApplicationReceipt,
+            ContractReceipt,
             ContractValidationError,
             DeliveryIntent,
             DeliveryReceipt,
@@ -54,6 +56,7 @@ except (ImportError, ValueError):
         _CONTRACTS_SPEC.loader.exec_module(_CONTRACTS_MODULE)
         ApplicationIntent = _CONTRACTS_MODULE.ApplicationIntent
         ApplicationReceipt = _CONTRACTS_MODULE.ApplicationReceipt
+        ContractReceipt = _CONTRACTS_MODULE.ContractReceipt
         ContractValidationError = _CONTRACTS_MODULE.ContractValidationError
         DeliveryIntent = _CONTRACTS_MODULE.DeliveryIntent
         DeliveryReceipt = _CONTRACTS_MODULE.DeliveryReceipt
@@ -220,6 +223,21 @@ def _normalize_application_receipt(parsed: ApplicationReceipt) -> LedgerEvent:
     )
 
 
+def _normalize_contract_receipt(parsed: ContractReceipt) -> LedgerEvent:
+    if parsed.status != "accepted":
+        raise UnsupportedLedgerEvent(
+            "contract receipt status is unsupported: {}".format(parsed.status)
+        )
+    return _build_event(
+        parsed=parsed,
+        event_type="order_awarded",
+        external_id=parsed.contract_external_id,
+        content_sha256=parsed.terms_sha256,
+        source_idempotency_key=None,
+        occurred_at=parsed.observed_at,
+    )
+
+
 def _normalize_work_event(parsed: WorkEvent) -> LedgerEvent:
     if parsed.event_type in _RECEIPT_ONLY_WORK_EVENTS:
         raise ReceiptRequiredError(
@@ -296,6 +314,8 @@ def normalize_event(value: Mapping[str, object]) -> LedgerEvent:
         return _normalize_opportunity(parsed)
     if isinstance(parsed, ApplicationReceipt):
         return _normalize_application_receipt(parsed)
+    if isinstance(parsed, ContractReceipt):
+        return _normalize_contract_receipt(parsed)
     if isinstance(parsed, WorkEvent):
         return _normalize_work_event(parsed)
     if isinstance(parsed, DeliveryReceipt):
