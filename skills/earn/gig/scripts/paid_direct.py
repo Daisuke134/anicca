@@ -647,7 +647,16 @@ def _reported_formal_cycle(args, item: dict[str, Any]) -> Path | None:
 
 def observe_orders(args, evidence_dir) -> list[dict[str, Any]]:
     snapshot = evidence_dir / "orders-only-snapshot.json"
-    _run(_collector(args, "orders-only", snapshot, evidence_dir), "orders_observation")
+    command = _collector(args, "orders-only", snapshot, evidence_dir)
+    try:
+        _run(command, "orders_observation")
+    except Failure as error:
+        if not any(transient in error.detail for transient in (
+            "collector_unhealthy:orders_missing_container",
+            "authenticated tab did not finish navigation",
+        )):
+            raise
+        _run(command, "orders_observation")
     try: queue = delivery_queue.build_preliminary(_load(snapshot), date.fromisoformat(args.today))
     except (OSError, ValueError, TypeError, json.JSONDecodeError) as error: raise Failure("orders_observation") from error
     return [dict(item) for item in queue.get("items", []) if isinstance(item, dict) and item.get("terminal") is not True
