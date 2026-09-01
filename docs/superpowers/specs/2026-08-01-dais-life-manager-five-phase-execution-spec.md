@@ -3,7 +3,7 @@
 status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
-updated: 2026-08-29 JST
+updated: 2026-09-01 JST
 scope: Upwork終端処理、公開context収束、汎用Life Manager kernel、既存5段階の各organ
 active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_LOCAL_ACCEPTANCE
 
@@ -22,11 +22,33 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 3. `2026-07-30-outbound-apply-engine-design.md`の各pack内部順序
 4. その他の全体・履歴仕様
 
-### 0.0 current cursor — host安定化から自律収益、WebMCPの順で閉じる
+### 0.0 2026-09-01 current cursor — Alpaca hackathonを期限付き先頭trackとして閉じる
 
-この節は、後段の「現在TODO」「次の一件」およびorgan別cursorを上書きする実行順序SSOTである。
-後段はarchitecture、実装履歴、atom内部のacceptanceとして保持するが、次作業の選択には使わない。
-Daisが明示した次の4 programを上から完了し、順序を変更しない。
+Daisは2026-09-01、既存順序を明示的に変更し、Alpaca AI Trading Agents Hackathonへの完成提出、portable OSS、
+その後のDais本人資本によるbounded production化を現在の先頭trackに指定した。設計・採用OSS・固定順序・acceptanceは
+[`2026-09-01-alpaca-money-maximizer-design.md`](2026-09-01-alpaca-money-maximizer-design.md)を正本とする。
+
+現在activeな一件は同spec `A01 Freeze event contract`。A01〜A14を2026-09-05 00:00 JSTの提出まで固定順序で閉じ、
+A15 portable OSS releaseを続ける。`P01+`のlive owner-capital ladderはpaperを実収益と呼ばず、別credential・別loss
+budget・jurisdiction/broker条件を満たした後だけ進める。顧客資産運用・有償投資助言は登録要否を閉じるまでpaper-onlyとする。
+
+実装面は別hackathon product/repo、旧launchd-only brain、第二ledgerを作らない。Life Manager mainのElizaOS
+`AgentRuntime` + 単一`plugin-life-manager`をcoreとし、既存Goal/effect/receipt/restart kernelを再利用する。launchdは
+macOS host adapterとしてone-pass owner契約を提供し、同じpassをsystemd/cron/Dockerから起動可能にする。
+
+この期限付きtrackが完了するまで、旧cursor `ELZ-L04`は状態を`IN_PROGRESS — PAUSED BY EXPLICIT PRIORITY CHANGE`
+として保持し、L04の内部順序や後続L05〜L25を変更・削除しない。Alpaca track完了後はL04へ戻る。
+
+### 0.0.0 Previous cursor retained — ElizaOS forkでlocal general agentを先に完成させる
+
+この節は2026-08-29時点のcursorを履歴として保持する。後段の実装履歴・organ別acceptanceと同様、
+2026-09-01のAlpaca期限付きtrackが完了するまで次作業の選択には使わない。
+Upworkのterminal evidence、startup context、public claim、GA-01〜13Aは完了または履歴として保持する。
+次の一件はAtomic program ledger Seq 26 `ELZ-L04`で、fresh authorized applicationの既存contractを調査し、現在activeなL04だけを最小単位へ分解する。Phase C（Seq 14〜22）とELZ-L01〜L03は完了済み。L04は実Lancersへ新規応募を一件送る最初のatomであり、送信前にauthorizationとsealed intentを閉じる。
+### 0.0.0.1 Previous cursor retained — host安定化から自律収益、WebMCPの順で閉じる
+
+この節はAlpaca優先への明示変更前のcursorを履歴として保持する。後段のarchitecture、実装履歴、atom内部の
+acceptanceと同様、Alpaca track完了まで次作業の選択には使わない。
 
 | Order | Program | Current truth | PASS |
 |---:|---|---|---|
@@ -35,11 +57,10 @@ Daisが明示した次の4 programを上から完了し、順序を変更しな�
 | 3 | Lancers着金から自律market展開 | ElizaOS full forkと`plugin-life-manager`のgeneral coreは正本方針。既存Lancers/Coconala launchd ownerはcutover前のproduction ownerであり、process成功は収益証明ではない | Lancersで`Goal → WorkItem → discover → apply → contract → fulfill → deliver → payment → banked receipt → reflect`を人手なしで閉じる。その同じprovider-neutral coreがCrowdWorksを次市場として開始し、以後はLife Manager自身が市場、tool、loop/graphを選択・構築・検証してsettled netを増やす。subjectiveなmarket判断をkeyword/regex/provider branchへ固定しない |
 | 4 | WebMCP hackathon提出 | Money Printerのcode、Steel、Symphony、visual takeoverは存在するが、judge-facing final E2E、動画、YouTube、Devpost提出は未完 | 公開URLとrepoからjudgeが60秒でWebMCP takeoverを実行でき、4 criteriaを一次証拠で説明する。final E2E、動画、YouTube、Devpost receiptを閉じる |
 
-Order 4は別Codex sessionが独立workspace、branch、browser/profile、external submission stateを所有できる場合だけOrder 1〜3と並行してよい。
-同じ資源を共有する場合は並行せず、この表の順序へ戻す。現在activeな先頭atomはOrder 2のDisk cleanup恒久解決である。
+Order 4は別Codex sessionが独立workspace、branch、browser/profile、external submission stateを所有できる場合だけOrder 1〜3と並行できる契約だった。
+同じ資源を共有する場合は並行しない。最後のactive atomはOrder 2のDisk cleanup恒久解決だった。
 Upwork terminal evidence、startup context、public claim、GA-01〜13A、Phase C、ELZ-L01〜L03は完了または履歴として保持する。
 旧cursor `ELZ-L04`以降はOrder 3内部のatomであり、Order 1〜2のPASS後に再開する。
-
 #### 0.0.1 最新基盤決定 — ElizaOSを完全forkし、Life Managerをlocal OSSからmulti-tenant SaaSへ育てる
 
 製品名とrepository名は**Life Manager**で固定する。`iManager`と`Lazarus`は音声入力の誤認であり、
@@ -910,7 +931,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 23 | ELZ-L01 fresh auth and read-only inventory | **DONE** | canonical private `lancers-preflight-receipt.json` mode 0600 status=`PASS`。legacy merge `a7ad25ec…`、committed `--preflight`で7 surfaceを2回read、inventory sha256一致。`read_only_inventory`から`_post_reply`到達不能をAST call graph testで機械的に証明し、二通りの注入で当該testが落ちることを実測。focused 11/11、review P0/P1 0、provider/model/payment effect 0 |
 | 24 | ELZ-L02 Opportunity/ApplicationIntent adapter | **DONE** | canonical private `lancers-adapter-receipt.json` mode 0600 status=`PASS`。legacy merge `93fae399…`。実案件3件でtransport/stable entity/fee-currency(integer minor units)/readbackを実証し、`normalize_application_intent`がopportunity固定のidempotency keyでintentを封印。subjective judgment 0は「予算1〜9,000,000 minorの分布が到着順で全件素通りし、棄却は構造不正のみ」で機械的に証明。stdlibのみのしきい値注入で当該testが落ちることを実測（旧import走査は同じ注入を見逃した）。focused 9/9、review P0 0 / P1解消、marketplace write 0 |
 | 25 | ELZ-L03 historical GA-10 fixture parity | **DONE** | canonical private `lancers-fixture-receipt.json` mode 0600 status=`PASS`。fork merge `03d97b88…`。記録済みGA-10 chain（absent/32 → execute 1 → present/33 → replay execute 0/33）をC08 kernelへ通し同一terminal stateを再現。provider call 0はreplay legの`executeOnce`が例外を投げる構造で担保し、mutation 2件でtestがdecorationでないことを実測。typecheck exit 0、plugin suite 17/17、review open 0 |
-| 26 | ELZ-L04 fresh authorized application | **IN_PROGRESS — NEXT** | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json` |
+| 26 | ELZ-L04 fresh authorized application | **IN_PROGRESS — PAUSED BY EXPLICIT PRIORITY CHANGE** | fresh candidate/authorization/intentから新Proposal ID一件をofficial readbackする`application-receipt.json`。Alpaca A01〜A15完了後に再開 |
 | 27 | ELZ-L05 application replay and ack-loss reconcile | TODO | same intentのexecute 0、ledger insert 0、unknown時blind retry 0の`application-replay-receipt.json` |
 | 28 | ELZ-L06 provider admission boundary | TODO | Lancersだけをactive money providerにし、Upwork/Coconala/unknown provider effect 0の`provider-admission-receipt.json` |
 | 29 | ELZ-L07 one money wake owner | TODO | 一wake/一lease/heartbeat/next tick/clean releaseを一ownerで証明する`money-wake-receipt.json` |
