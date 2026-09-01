@@ -247,8 +247,13 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    **CDP owner registry追補:** 実CDPとの照合でdaily registryは1,690件中live 1・stale 1,689、gig
    registryは237件中live 0・stale 237だった。実page 26/15を閉じる対象にはせず、共通`cdp_tab_gc`へ
    CDPに存在しないIDだけを全owner横断でpruneする処理を接続する。registryのatomic writeが失敗した場合も
-   writer自身のPID tempを`finally`で回収する。production自然wakeでstale 0、実在/foreign/unregistered target保持、
-   errors 0、次wake再増加なしをread backするまでmemory/swap atomは未完了とする。
+   writer自身のPID tempを`finally`で回収する。PR #3835をmainへ統合し、immutable release `f605732a`を
+   `current`へ切り替えた。一回収束でdaily 164,405→120 bytes・stale 1,689、gig 22,667→120 bytes・
+   stale 238をpruneし、live targetを各1件保持した。旧PID temp 88件1,398,291 bytes＋後発0-byte 1件は
+   open FD 0を確認して回収した。新releaseのproduction CDP passを2連続で実行し、両registryとも
+   `stale_pruned=0/closed=0`、daily/gig page 26/16保持、registry 1/0件、旧temp 0、errors 0だった。
+   swapは20,755.19→19,801.56 MiBへ縮小したが、11 GiB floorと自然wake継続観測が未達のため
+   memory/swap atomは未完了とする。
 
    **残TODO（順序固定）:** ①memory/swap owner-side drainとswap縮小readback、②残るrunning旧releaseの自然idle
    reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
