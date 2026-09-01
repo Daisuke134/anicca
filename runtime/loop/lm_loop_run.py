@@ -43,7 +43,7 @@ def prepare_loop_run(registry: dict, loop_id: str, release_root: Path, *,
 
 def reset_loop_scratch(state_root: Path, loop_id: str) -> Path:
     """Private scratch dir per loop, wiped every run so subprocess temp files cannot leak."""
-    scratch = state_root / "tmp" / loop_id
+    scratch = state_root / "loop-tmp" / loop_id
     if scratch.is_dir() and not scratch.is_symlink():
         shutil.rmtree(scratch, ignore_errors=True)
     scratch.mkdir(parents=True, exist_ok=True, mode=0o700)
