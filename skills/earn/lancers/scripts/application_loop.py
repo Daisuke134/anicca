@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Run one browserless-planned, at-most-one Lancers application tick."""
+"""Plan every visible Lancers opportunity and submit every eligible one."""
 from __future__ import annotations
 
-import argparse, inspect, json, os, re, shutil, subprocess, sys, uuid
+import argparse, inspect, json, os, re, shutil, subprocess, sys, tempfile, time, uuid
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 import importlib.util
@@ -56,6 +56,7 @@ KANA_RE = re.compile(r"[ぁ-ゖァ-ヺ]")
 FORBIDDEN_TERMS = ("receipt", "gate", "agent", "model", "browser", "token", "prompt", "internal id", "レシート", "ゲート", "エージェント", "モデル", "ブラウザ", "トークン", "プロンプト", "内部ID")
 FORBIDDEN_RE = re.compile("|".join(re.escape(term).replace(r"\ ", r"[ _]") for term in FORBIDDEN_TERMS), re.IGNORECASE)
 RETAIN_EVIDENCE_ERRORS = frozenset({"planner_runner_failed", "planner_contract_invalid"})
+SKIP_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60
 
 def _load(name: str, path: Path) -> Any:
     spec = importlib.util.spec_from_file_location(name, path)
@@ -296,7 +297,7 @@ def _planner_runtime_schema(prompt: str, evidence_dir: Path) -> Path:
     ids = [row["external_id"] for row in snapshot["opportunities"]]
     schema = json.loads(PLANNER_SCHEMA.read_text(encoding="utf-8"))
     decisions = schema["properties"]["decisions"]
-    decisions["minItems"] = 1
+    decisions["minItems"] = len(ids)
     decisions["maxItems"] = len(ids)
     decisions["items"]["properties"]["request_id"]["enum"] = ids
     decisions["items"]["properties"]["business_class"]["enum"] = sorted(BUSINESS_CLASSES)
@@ -335,7 +336,7 @@ def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) 
     try:
         if not isinstance(json.loads(SCHEMA_PATH.read_text(encoding="utf-8")), Mapping) or not isinstance(value, Mapping): raise ValueError
         decisions = value.get("decisions")
-        if set(value) != {"decisions"} or not isinstance(decisions, list) or not decisions or len(decisions) > len(rows): raise ValueError
+        if set(value) != {"decisions"} or not isinstance(decisions, list) or len(decisions) != len(rows): raise ValueError
         expected = [str(row["external_id"]) for row in rows]; rows_by_id = {str(row["external_id"]): row for row in rows}; found: dict[str, Mapping[str, object]] = {}
         for decision in decisions:
             if not isinstance(decision, Mapping) or set(decision) != DECISION_FIELDS: raise ValueError
@@ -354,6 +355,7 @@ def _validate(rows: Sequence[Mapping[str, object]], value: object, today: date) 
                 if not 1 <= len(reasons[0]) <= 120 or not 1 <= len(reasons[1]) <= 200 or not _public_excerpt(reasons[1], public_text): raise ValueError
             elif reasons or not _safe_proposal(proposal, expected) or isinstance(price, bool) or not isinstance(price, int) or price < 1 or not _valid_date(due, today): raise ValueError
             found[project_id] = decision
+        if set(found) != set(expected): raise ValueError
         for row in rows:
             if not _valid_observed_budget(row): raise ValueError
         for project_id, decision in found.items():
@@ -468,28 +470,57 @@ def _submit(fn: Callable[..., object], row: Mapping[str, object], proposal: str,
     except (TypeError, ValueError): keyword = False
     return fn(**values) if keyword else fn(row, proposal, amount, due)
 
+def _skip_cache_path(state_path: Path) -> Path:
+    return Path(state_path).with_name("application-decisions.json")
+
+def _read_skip_cache(state_path: Path, now: Optional[float] = None) -> dict[str, dict[str, object]]:
+    try:
+        value = json.loads(_skip_cache_path(state_path).read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    if not isinstance(value, Mapping) or value.get("version") != 1 or not isinstance(value.get("decisions"), Mapping):
+        raise ValueError
+    current = time.time() if now is None else now
+    result = {}
+    for project_id, row in value["decisions"].items():
+        if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or not isinstance(row, Mapping): raise ValueError
+        expires_at = row.get("expires_at")
+        if isinstance(expires_at, (int, float)) and not isinstance(expires_at, bool) and expires_at > current:
+            result[project_id] = dict(row)
+    return result
+
+def _write_skip_cache(state_path: Path, decisions: Mapping[str, Mapping[str, object]]) -> None:
+    path = _skip_cache_path(state_path); path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile("w", dir=path.parent, prefix=f".{path.name}.", delete=False, encoding="utf-8") as handle:
+            temporary = handle.name; os.fchmod(handle.fileno(), 0o600)
+            json.dump({"version": 1, "decisions": decisions}, handle, ensure_ascii=False, sort_keys=True, separators=(",", ":")); handle.write("\n")
+        os.replace(temporary, path); os.chmod(path, 0o600)
+    finally:
+        if temporary:
+            try: os.unlink(temporary)
+            except FileNotFoundError: pass
+
 def _filter_claimed_rows(rows: Sequence[Mapping[str, object]], state_path: Path) -> tuple[list[Mapping[str, object]], Optional[str]]:
     if any(not _valid_observed_budget(row) for row in rows): raise ValueError
     ids = [row.get("external_id") if isinstance(row, Mapping) else None for row in rows]
     duplicate_ids = {project_id for project_id in ids if isinstance(project_id, str) and ids.count(project_id) > 1}
+    skip_cache = _read_skip_cache(state_path)
     remaining, first_claimed = [], None
     for row, project_id in zip(rows, ids):
-        if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or project_id in duplicate_ids or not application_tick.state_has_claim(Path(state_path), project_id):
+        if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or project_id in duplicate_ids or (not application_tick.state_has_claim(Path(state_path), project_id) and project_id not in skip_cache):
             remaining.append(row)
         elif first_claimed is None:
             first_claimed = project_id
     return remaining, first_claimed
 
-def _claim_no_effect(decisions: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
-    project_ids = [project_id for project_id, decision in decisions.items() if decision.get("business_class") in {"hard_prohibited", "skip_not_fit"}]
-    if not project_ids:
-        return
-    if any(ID_RE.fullmatch(project_id) is None for project_id in project_ids):
-        raise ValueError
-    with application_tick.account_lock(Path(state_path)):
-        claims, pending = application_tick.shared._read_state(Path(state_path))
-        claims.update(application_tick._application_marker(project_id) for project_id in project_ids)
-        application_tick.shared._write_state(Path(state_path), claims, pending)
+def _cache_no_effect(decisions: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
+    cached = _read_skip_cache(state_path); expires_at = time.time() + SKIP_CACHE_TTL_SECONDS
+    for project_id, decision in decisions.items():
+        if decision.get("business_class") in {"hard_prohibited", "skip_not_fit"}:
+            cached[project_id] = {"business_class": decision["business_class"], "expires_at": expires_at}
+    _write_skip_cache(state_path, cached)
 
 def _capacity_reason(state_path: Path, tick_value: object) -> Optional[str]:
     try:
@@ -549,31 +580,27 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_runner_failed", planner_expected_count=len(rows)), observed_count, 0, (), ())
     returned = len(planned.get("decisions")) if isinstance(planned, Mapping) and isinstance(planned.get("decisions"), list) else None
     try:
-        items = planned.get("decisions") if isinstance(planned, Mapping) and set(planned) == {"decisions"} else None
-        request_ids = [item.get("request_id") if isinstance(item, Mapping) else None for item in items] if isinstance(items, list) else []
-        if not items or len(request_ids) != len(set(request_ids)): raise ValueError
-        decisions = {}
-        for item in items:
-            try: decisions.update(_validate(rows, {"decisions": [item]}, today))
-            except Exception: continue
-        if not decisions: raise ValueError
+        decisions = _validate(rows, planned, today)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
-    try: _claim_no_effect(decisions, state_path)
+    try: _cache_no_effect(decisions, state_path)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="state_invalid"), observed_count, 0, (), ())
     rows_by_id = {str(row["external_id"]): row for row in rows}
-    reports = tuple({
+    reports = [{
         "project_id": project_id,
         "title": str(rows_by_id[project_id].get("title") or "")[:200],
         "business_class": str(decision["business_class"]),
         "reason_codes": list(decision.get("reason_codes") or ()),
-    } for project_id, decision in decisions.items())
+        "outcome": "skipped" if decision["business_class"] != "submit_required" else "planned",
+    } for project_id, decision in decisions.items()]
     eligible = [(rows_by_id[project_id], decision) for project_id, decision in decisions.items() if decision.get("business_class") == "submit_required"]
     if not eligible:
-        return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project", decision_reports=reports), observed_count, 0, (), ())
+        return _batch_summary(ApplicationLoopResult(True, reason="no_eligible_project", decision_reports=tuple(reports)), observed_count, 0, (), ())
     if submitter is None and len(eligible) > 1:
         eligible = _rank_eligible_by_buyer_quality(eligible)
     verified, blocked = [], []
-    for row, decision in eligible[:1]:
+    unresolved: list[ApplicationLoopResult] = []
+    reports_by_id = {str(report["project_id"]): report for report in reports}
+    for row, decision in eligible:
         project_id, proposal = str(row["external_id"]), str(decision["proposal_text"])
         amount, due = int(decision["price_jpy"]), str(decision["deliver_date"])
         try:
@@ -583,12 +610,20 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
             current = ApplicationLoopResult(False, error="submission_uncertain", project_id=project_id)
         if _provider_verified(current):
             verified.append(current)
+            reports_by_id[project_id]["outcome"] = "application_verified"
+            reports_by_id[project_id]["provider_proposal_id"] = current.provider_proposal_id
             continue
         if _provider_terminal_blocked(current):
             blocked.append(project_id)
+            reports_by_id[project_id]["outcome"] = "provider_terminal_blocked"
             continue
-        return _batch_summary(replace(current, decision_reports=reports), observed_count, len(eligible), verified, blocked, unresolved_project_id=project_id, submitted=any(item.submitted for item in verified))
-    final = replace(verified[-1], decision_reports=reports) if verified else ApplicationLoopResult(True, reason="provider_terminal_blocked", project_id=blocked[-1] if blocked else None, decision_reports=reports)
+        reports_by_id[project_id]["outcome"] = "failed"
+        reports_by_id[project_id]["error"] = current.error or current.reason or "submission_unverified"
+        unresolved.append(current)
+    if unresolved:
+        current = unresolved[0]
+        return _batch_summary(replace(current, decision_reports=tuple(reports)), observed_count, len(eligible), verified, blocked, unresolved_project_id=current.project_id, submitted=any(item.submitted for item in verified))
+    final = replace(verified[-1], decision_reports=tuple(reports)) if verified else ApplicationLoopResult(True, reason="provider_terminal_blocked", project_id=blocked[-1] if blocked else None, decision_reports=tuple(reports))
     return _batch_summary(final, observed_count, len(eligible), verified, blocked, ok=True, submitted=any(item.submitted for item in verified))
 
 def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH, evidence_root: Optional[Path] = None, discoverer: Optional[Callable[..., Mapping[str, object]]] = None, planner: Optional[Callable[..., object]] = None, safety_verifier: Optional[Callable[..., object]] = None, submitter: Optional[Callable[..., object]] = None, clock: Optional[Callable[[], object]] = None, discovery: Optional[Callable[..., Mapping[str, object]]] = None, now: Optional[Callable[[], object]] = None, evidence_dir: Optional[Path] = None, output_stream: Optional[TextIO] = None, query: Optional[str] = None, timeout: float = 20.0) -> dict[str, object]:

@@ -601,19 +601,29 @@ def render_application_decision(decision: Mapping[str, object]) -> str:
     title = str(decision.get("title") or "案件名を取得できませんでした").strip()
     business_class = str(decision.get("business_class") or "unknown")
     reasons = decision.get("reason_codes") if isinstance(decision.get("reason_codes"), list) else []
-    if business_class == "hard_prohibited":
+    outcome_value = str(decision.get("outcome") or "")
+    if outcome_value == "application_verified":
+        outcome = "📨 応募を公式確認しました"
+        explanation = f"Lancersのproposal ID {decision.get('provider_proposal_id')} を公式履歴で確認しました。"
+    elif business_class == "hard_prohibited":
         outcome = "🚫 応募しません"
         explanation = f"募集文の「{reasons[1]}」が、対応できない必須条件（{reasons[0]}）に当たるためです。" if len(reasons) > 1 else "対応できない必須条件があるためです。"
     elif business_class == "skip_not_fit":
         outcome = "⏭️ 今回は応募しません"
         explanation = " / ".join(str(value) for value in reasons) or "募集内容と提供可能な仕事が一致しないためです。"
+    elif outcome_value == "provider_terminal_blocked":
+        outcome = "⏭️ 公式に応募できないためスキップしました"
+        explanation = "公式応募フォームが受付可能な状態ではなかったため、外部送信していません。"
+    elif outcome_value == "failed":
+        outcome = "⚠️ 応募を公式確認できませんでした"
+        explanation = f"{decision.get('error') or 'submission_unverified'} のため、完了とは数えていません。"
     else:
-        outcome = "✅ 応募候補として判断しました"
-        explanation = "能力と募集条件が一致したため、重複・capacity・公式受付を確認して応募します。"
+        outcome = "⚠️ 応募判断後の送信結果が未確定です"
+        explanation = "応募候補ですが、公式proposal receiptをまだ確認できていません。"
     return (
         f"[Lancers][応募判断] {outcome}\n"
         f"案件: {title}\n案件ID: {project_id}\n理由: {explanation}\n"
-        "次: この判断を保存し、同じ案件を再判断せず次のfresh案件へ進みます。"
+        "次: 同じwake内で次の案件の判断と応募を続けます。"
     )
 
 
