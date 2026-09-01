@@ -229,6 +229,12 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    protected deletion 0。release directoryは11件残り、旧releaseを実行中のloopとunloaded labelが残るためatomは
    未完了である。自然idle後にreconcile→GCを繰り返し、current＋bounded rollback以外の参照が0になった時点で閉じる。
 
+   release収束は全provider共通のglobal apply lockで直列化しない。`activate-current`だけがglobal symlink lockを
+   保持し、`lm-loop apply/reconcile`はlaunchd label単位のlockを保持する。同一labelへの変更だけを排他し、
+   別label・別providerは常に並列で進める。各labelのapply直前に最新`~/loops/current`をresolveし、そのimmutable
+   releaseを当該applyの完了までpinする。途中で別releaseがcurrentになっても進行中applyを失敗させず、running
+   loopは既存どおり停止せずskipする。production同時reconcileのreadback完了後に本項を完了へ更新する。
+
    追加のread-only owner照合後、未使用`/Applications/Chat On Steroids.app`を391,668 KiB、旧Codex package
    `0.151.0`と未使用plugin app-serverを合計570,048 KiB、重複pipx環境`camoufox`と`crawl4ai`を合計
    1,006,880 KiB回収した。active Codex/ChatGPT sessionと`~/.venvs/crawl4ai`の`crwl`は回収後も生存し、
