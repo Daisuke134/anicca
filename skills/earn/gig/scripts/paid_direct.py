@@ -3851,7 +3851,32 @@ def _normalize_builder_result(root: Path) -> None:
         result["desired_state_sha256"] = result["desired_digest"] = digest
     raw_after_value = _text(result.get("after_evidence"))
     if not raw_after_value:
-        return
+        owner_evidence = root / "evidence" / "agent-PAID_REMOTE_OWNER"
+        for candidate in sorted(owner_evidence.rglob("*.json"), reverse=True):
+            try:
+                evidence = _load(candidate)
+            except (OSError, ValueError, TypeError, json.JSONDecodeError):
+                continue
+            official = evidence.get("official_readback")
+            if (evidence.get("authenticated") is True
+                    and evidence.get("target") == intent.get("target")
+                    and evidence.get("requirements_sha256") == intent.get("requirements_sha256")
+                    and evidence.get("message_sha256") == intent.get("message_sha256")
+                    and paid_remote_result.canonical_equal(evidence.get("observed_state"), desired)
+                    and isinstance(official, dict)
+                    and official.get("send_performed") is False
+                    and official.get("deduplicated") is True
+                    and official.get("exact_customer_message_readback") is True):
+                raw_after_value = str(candidate.relative_to(root))
+                result["before_evidence"] = raw_after_value
+                result["after_evidence"] = raw_after_value
+                result["status"] = "ok"
+                result["verified_after"] = True
+                break
+        if not raw_after_value:
+            _write(intent_path, intent)
+            _write(result_path, result)
+            return
     raw_after = Path(raw_after_value)
     after_path = (root / raw_after if not raw_after.is_absolute() else raw_after).resolve()
     after_path.relative_to(root)
