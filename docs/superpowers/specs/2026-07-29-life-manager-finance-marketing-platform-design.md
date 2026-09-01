@@ -2476,19 +2476,26 @@ MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
 Current TODO state: **Order 25 MKT-10R6 is terminal and MKT-10R7 is active.**
-All 12 retained Anicca/Honne destinations have one isolated owner-path
-kickstart, exact provider integration readback, native-profile owner/content
-readback, and same-slot replay with zero new publication and zero duplicate
-Telegram message. Manifest
-`marketing-lane-manifest:244631905b18f2e861ed6cf3dcace9e8d49a9b6365bcbfe58432e8a1b8355801`
-arms only the first incomplete target, Anicca EN Affirmation Instagram, at
-`target_daily_limit=3`; the other 11 targets and all 18 holds remain 0/day.
-All 12 launchd labels are loaded and each has exactly three configured JST
-calendar intervals. R7 remains active until each lane, in fixed order, produces
-terminal natural-slot published/missed/duplicate evidence before the next lane
-is armed. Attribution and bounded learning remain later ordered work. Honne
-still has TikTok destinations only; dedicated Honne Instagram and YouTube
-integrations do not exist.
+All 12 retained Anicca/Honne destinations have a fresh production publication,
+exact provider-integration readback, native-profile owner/content-family
+readback, Telegram receipt, and same-slot replay with zero new effects. The
+frozen mapping is Anicca EN Instagram `@anicca.affirmation`/Larry,
+`@anicca.encards`/card, `@anicca.en`/widget; Anicca EN TikTok
+`@anicca_slideshow`/slideshow; Anicca JA Instagram `@anicca.jp1` (native
+`@anicca.ios.jp`)/card, `@ani.cca1234`/Larry,
+`@anicca.jp.videos`/widget; Anicca JA TikTok `@anicca.he`/card,
+`@anicca.jp4`/card, `@anicca.jp`/Larry carousel; and Honne TikTok
+`@honne_reveal`/EN relationship-confession and `@honnevideo`/JA
+relationship-confession. Their integration IDs remain the exact values in
+`config/marketing-destinations.json` and the live lane manifest.
+
+The JA-widget boot's missing production command is fixed at
+`d7269f70ef550ba056f006dc7412b9f107bfaea2`, released as
+`20260902T070901-d7269f70`. Recovery also exposed an operator-trigger defect:
+kickstart consumed a due slot and a subsequent explicit slot created one extra
+public post on each of `@anicca.he` and `@honne_reveal`. Both posts are valid
+for the mapped account/content family, but count as duplicates for this
+recovery. No public deletion is authorized. Ebook/monk remains 0/day.
 
 **Current incident correction:** the native screenshots and live integration
 readback reopen Order 25 MKT-10 before MKT-11. The fixed program order is not
@@ -2516,7 +2523,7 @@ blocked until MKT-10R7 closes.
 | MKT-10R4 | **done implementation/review/release; live proof belongs to R6 —** revalidate Larry assets and account routing | `@anicca.jp` is fixed to Postiz TikTok `cmp9sdev5012voh0y58qs45xc`, renderer/job format `larry`, form `affirmation-carousel`, and immutable pack `63e2b1b8…3664`. Six ordered 1010×1080 sunset JPEGs contain no person/ReelClaw media. The released adapter rejects invalid dimensions before secret/provider access; both Python transport and JS provider/receipt/reconcile paths reject a bare TikTok `/video/` URL and accept only exact `PUBLISHED` photo proof with matching integration, caption SHA, title, `DIRECT_POST`, and strict `p_pub_url~v2.<digits>`. Ordinary TikTok video and Instagram `/p/` routes remain intact. Focused Node 51/51 and transport 24/24 pass; fresh read-only verdict is `ship`; all eight CI checks pass. Native publication, Telegram, metrics registration, and replay-zero remain R6, so this is not yet a working-loop claim |
 | MKT-10R5 | **done read-only routing closure —** Revalidate ReelClaw/Honne/Anicca video routing | all 13 approved pack objects exist at their exact SHA refs. Every video pack readback matches its destination product, locale, format/form family; destination selection binds job-product + locale + platform + integration + format + form and rejects Honne/Card/integration cross-family substitutions. Focused destination/manifest/ledger suite passes 45/45 with provider writes 0. Mixed historical feeds remain quarantined |
 | MKT-10R6 | **done —** prove the production slot contract one destination at a time through the natural owner | all 12 retained routes were armed one at a time, official `lm-loop start` kickstarted, then exercised with one explicit unique slot when outside the due window. Each reached its exact Postiz integration and public native owner/content family; same-slot replay created zero new publication and zero duplicate Telegram. The two renamed Instagram aliases resolve to native `@anicca.ios` and `@anicca.ios.jp`; TikTok photo/video propagation IDs were read from the public profile rather than inferred from Postiz IDs. The slot-scoped publication fixes are merged in immutable main release `78350d1a…` |
-| MKT-10R7 | **active — first natural-slot readback remains** | manifest `24463190…` arms only Anicca EN Affirmation Instagram at 3/day; the other 11 targets and all 18 holds remain 0/day. Its loaded label has exactly 10:00/15:00/20:00 JST intervals and the destination-contract loop ID. At the 06:41 JST readback the durable monitor is live, `last_failure=null`, and the first 10:00 natural interval has not arrived; this is an active time-gated wait, not a blocker. Next atom: observe the 10:00 JST natural interval, classify it as published/missed/duplicate with provider/native readback, and fix this lane before arming EN Card next. `@aniccaaffirmation`, YouTube candidates, ebook, and monk remain 0/day and outside this 12-lane recovery portfolio |
+| MKT-10R7 | **active — cadence and duplicate closure remain** | all 12 mappings have fresh public owner/content readback and same-slot replay 0. The only observed recovery duplicates are one extra valid post each on `@anicca.he` and `@honne_reveal`, caused by kickstart consuming a due slot before an explicit slot was submitted. Next atoms, without reordering: (1) leave public deletion pending explicit owner instruction; (2) for each lane, kickstart and read receipt count first, submit an explicit slot only when unchanged; (3) observe the next three configured natural slots at the mapped native handle and require miss 0 / duplicate 0; (4) keep only the current lane armed, moving the arm in mapping order after it passes; (5) keep `@aniccaaffirmation`, YouTube candidates, ebook, and monk 0/day until all 12 mobile lanes pass |
 
 #### MKT-10R6 production-slot repair contract
 
