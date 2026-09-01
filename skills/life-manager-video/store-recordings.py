@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-# store-recordings.py — pull EVERY Telnyx call recording (LM wake calls) → store mp3 locally forever.
+# store-recordings.py — pull EVERY Telnyx call recording into the canonical Life Manager data root.
 # Idempotent (skips downloaded ids). Cron this for continuous storage.
 import json, os, urllib.request
 KEY = os.environ["TELNYX_API_KEY"]
-STORE = os.path.expanduser("~/.openclaw/state/lm-video/recordings")
+DATA_ROOT = os.path.abspath(os.path.expanduser(
+    os.environ.get("LM_DATA_DIR", "~/.local/state/life-manager")
+))
+STORE = os.path.join(DATA_ROOT, "state", "lm-video", "recordings")
 MAN = os.path.join(STORE, "manifest.jsonl")
 os.makedirs(STORE, exist_ok=True)
 req = urllib.request.Request("https://api.telnyx.com/v2/recordings?page%5Bsize%5D=50",
