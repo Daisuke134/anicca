@@ -203,6 +203,7 @@ const JA_BUDDHA_TIKTOK_LANE = Object.freeze({
   manifestAccount: "anicca-ios-ja-buddha-tiktok",
   lane: "anicca-buddha-ja-tiktok",
   creativeId: "JA-BUDDHA-MALE-32f25f0b",
+  title: "メンタルが勝手に安定する口癖5選",
   packRef: "object://sha256/5459a68431e702ad95cea927552366ccd3c1e8be60aa55455b80f560e86e017e",
   mediaRefs: Object.freeze([
     "object://sha256/32f25f0b1da13eafebdf1fce436b6235ba7930194328e97d109085050cb1a849",
@@ -218,7 +219,7 @@ const JA_BUDDHA_TIKTOK_LANE = Object.freeze({
   captionEnv: "LM_ANICCA_BUDDHA_TIKTOK_LARRY_CAPTION_REF",
   approvalEnv: "LM_ANICCA_BUDDHA_TIKTOK_LARRY_APPROVAL_REF",
   verificationEnv: "LM_ANICCA_BUDDHA_TIKTOK_LARRY_NATIVE_VERIFICATION_REF",
-  approvedPackName: "anicca-ios-larry-buddha-ja.pack.json",
+  approvedPackName: "anicca-ios-larry-buddha-male-ja.pack.json",
   workerLabel: "anicca-buddha-tiktok-canary",
 });
 
