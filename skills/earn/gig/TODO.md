@@ -233,6 +233,9 @@ capability claim is backed by an installed executable capability.
   restore/dump now uses the already-installed Playwright CDP context directly and reuses one browser
   connection. An exact-interpreter replay restored 46 saved cookies, confirmed the server session was
   expired, then durably returned `input_required` and `effect_delta:0` with the same request/receipt.
+  Production immutable release `839aa5932195b83dc7f221962c59a809e6a8ef5a` then reproduced the same
+  result through the real launchd owner: runs `1`, exit `1`, updated owner/account timestamps, unchanged
+  request `crowdworks-8b1ac13aeb824442b90d506c7638e10e` and receipt `47313`, external effect zero.
 
 ### Live four-lane repair
 
