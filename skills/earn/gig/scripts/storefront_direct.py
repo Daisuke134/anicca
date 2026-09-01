@@ -4792,12 +4792,28 @@ def _pending_recovery(
     state_dir: Path, own_page: dict, ws_url: str | None = None, evidence_dir: Path | None = None,
 ) -> dict | None:
     body = str(own_page.get("body") or "")
+    intents = []
     for path in sorted((state_dir / "effect-intents").glob("*.json")):
         try:
             intent = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        intents.append((path, intent))
+    latest_confirmed = {
+        (str(intent.get("service_id") or ""), str(intent.get("changed_field") or "")): max(
+            int(candidate.get("prepared_at_epoch") or 0)
+            for _, candidate in intents
+            if candidate.get("status") == "confirmed"
+            and candidate.get("service_id") == intent.get("service_id")
+            and candidate.get("changed_field") == intent.get("changed_field")
+        )
+        for _, intent in intents if intent.get("status") == "confirmed"
+    }
+    for path, intent in intents:
         if intent.get("status") not in {"prepared", "observed"}:
+            continue
+        key = (str(intent.get("service_id") or ""), str(intent.get("changed_field") or ""))
+        if latest_confirmed.get(key, 0) > int(intent.get("prepared_at_epoch") or 0):
             continue
         if intent.get("changed_field") == "image":
             contract = intent.get("mutation_contract")
