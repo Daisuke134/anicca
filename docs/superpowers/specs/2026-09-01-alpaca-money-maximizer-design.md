@@ -358,6 +358,41 @@ realised P&L `$0`; open-position unrealised P&L `-$2`; realised profit made `$0`
 placed and filled its first paper trade but is **not making money yet**. Paper equity, unrealised P&L, and any
 future realised paper gain remain simulation evidence and must never be reported as revenue or live earnings.
 
+### Win target and verified competitive baseline
+
+The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
+different scoreboards. The authenticated event page says judges score P&L Performance, Technology
+Implementation, Creativity & Originality, and Presentation & Execution. The live page labels its visible project
+ordering `Top submissions — By community vote`; its separate builder leaderboard explicitly says points do not
+affect submission evaluation. Social Engagement is a separate prize whose quality and likes/comments/shares may
+be considered. At the research readback there were 3,459 participants, 1,150 teams, 56 submissions, 78 drafts,
+and 44 Options Alpha submissions; the community-vote leader had nine votes. Community votes are useful reach,
+not proof of main-prize rank.
+
+The submission draft is real and saved at Step 2 of 3 (`26%`). Cover image, video, and slide PDF are mandatory;
+the complete submission also requires public GitHub, a logged-out working application URL, the private dedicated
+Alpaca paper account ID, and up to five X/LinkedIn post URLs. Deadline remains 2026-09-05 00:00 JST.
+
+### OSS and competitor code audit — copy the pattern, not the broker path
+
+All repositories below were shallow-cloned into an isolated temporary directory and inspected at the pinned
+commit. No source was copied into Life Manager during research.
+
+| Source | Inspected evidence | Adopt / reject |
+|---|---|---|
+| `Chong1120/Vetoed@465f8d7` | Deterministic shortlist/veto, paper-only guard, broker reconciliation, stable IDs, SQLite decision funnel, return-on-risk/exit reasons, static judge dashboard, write-up/Q&A/demo script. | **Adopt the audit/dashboard/presentation shapes.** Reject SDK mutation, GitHub Actions scheduler, and git-pushed broker journal. |
+| `ibrahimjatt1313-prog/AlphaPilot@7cb43cc` | Current community-vote leader: indicators, option ranking, position/open-order checks, SL/TP, CSV performance, Streamlit demo. Execution contains hard-coded contract/price and direct SDK calls. | Adopt only the simple judge-visible lifecycle. Reject execution and performance authority. |
+| `huygiatrng/AlpacaTradingAgent@8d9d770` | Analyst/researcher debates, SQLite checkpoints, memory/reflection, backtest UI, direct Alpaca integration. | Adopt structured decision explanation and later offline reflection vocabulary. Reject a second agent graph and broker client. |
+| `dyners5208/AlpacaTradingAgent@49a1100` | Defined-risk multi-leg orders, wheel workflow, margin checks, position manager and dashboard. | Use as strategy/reference evidence only. Reject direct SDK effects, live switch and wheel complexity before submission. |
+| `virattt/ai-hedge-fund@eff8a73` | Deterministic portfolio blending, non-negotiable position/gross clamps, point-in-time backtest, complete thesis→clamp→order→fill receipts. | Adopt clamp/funnel metric names for public explanation. Reject its simulated broker as campaign evidence. |
+| `TauricResearch/TradingAgents@9dee508` and `Lumiwealth/lumibot@859f02e` | Multi-role graph/memory and mature strategy/backtest abstractions. | Reference only; importing either framework would replace Eliza ownership and exceed the deadline. |
+| `alpacahq/alpaca-py@712dc73` | Official options/mleg, spreads, wheel, iron condor, 0DTE and backtest examples. | Use to validate strategy semantics only. Broker mutation remains pinned Alpaca CLI exclusively. |
+
+Life Manager's defensible difference is not “more agents.” It is the only inspected design that demonstrates the
+agent itself creating and resuming a fresh `$100,000` paper account, then keeps one Eliza loop, one pinned CLI
+broker authority, decision-before-effect receipts, deterministic vetoes, exactly-once recovery and a public
+broker-reconciled audit trail. The demo must make that end-to-end autonomy visible in under four minutes.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
@@ -391,13 +426,35 @@ future realised paper gain remain simulation evidence and must never be reported
 - [x] **A09:** Prove lost-acknowledgement and restart reconciliation without blind retry.
 - [x] **A10:** Register exactly one Eliza-owned durable Alpaca loop; host adapters only restart Eliza.
 - [ ] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
-  Entry, two fills, both open legs, current equity/cash, and unrealised P&L reconcile; the next fixed sub-atom is
-  a sealed exactly-once exit followed by official realised-P&L reconciliation.
-- [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface.
-- [ ] **A13:** Publish the truthful README, one-page write-up, PDF slides, 16:9 cover, and ≤4-minute video.
+  Entry, two fills, both open legs, current equity/cash, and unrealised P&L reconcile. Remaining A11 sub-atoms,
+  in order: prove the existing five-minute Eliza task naturally refires; close through its sealed CLI-only exit;
+  reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds zero
+  orders; record the final campaign funnel (`proposed → vetoed/no-trade → submitted → filled → closed`) and no
+  unexplained broker delta. Do not optimize for a cosmetic paper gain or open a second strategy before closure.
+- [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
+  projection must drive both live and static views so they cannot drift. Above the fold show paper-only status,
+  starting/current equity, realised/unrealised P&L, open max loss, last successful loop and broker reconciliation.
+  Then show candidate funnel/selectivity, model thesis, deterministic gate/veto reasons, order/fill/exit timeline,
+  self-heal/replay evidence, and the Life Manager-owned account-bootstrap checkpoint. Every number links to a
+  redacted receipt; Alpaca CLI readback is authoritative, never a local CSV or simulated broker.
+- [ ] **A13:** Publish the truthful README, one-page write-up, PDF slides, 16:9 cover, and ≤4-minute video. The
+  four-minute story is: goal-only prompt → Life Manager creates/resumes account → model proposes → code can veto
+  → CLI executes once → restart reconciles → public audit/P&L → portable open source. Include a judge Q&A for
+  P&L, novelty, paper limitations, duplicate prevention, CLI proof, and “why not ten agents.” Publish up to five
+  build-in-public posts and capture their URLs using this word map:
+  1. **Origin:** `goal → autonomous account → $100k paper` / fresh account / normal email / checkpoint / CLI.
+  2. **Honesty:** `realised $0, unrealised -$2` / refused trades / setback / no fake revenue / paper disclaimer.
+  3. **Reliability:** `decision before effect` / stable client ID / lost-ack self-heal / duplicate orders zero.
+  4. **Proof:** public read-only dashboard / broker reconciliation / thesis→veto→fill→exit / open-source demo.
+  5. **Final:** ≤4-minute demo / lessons / final paper P&L / GitHub / Lablab project / community-vote CTA.
+  Every post tags X `@lablabai @AlpacaHQ` or LinkedIn `lablab.ai` and `Alpaca`; quality comes before volume.
 - [ ] **A14:** Submit every required URL and the private account ID to Lablab, then read back official submitted
-  state before the deadline.
-- [ ] **A15:** Publish and verify the portable macOS/Linux/Docker OSS release from the public SHA.
+  state before the deadline. Read back the public project logged out, all asset links, correct paper account ID
+  privately, and official submitted state. Then request community votes with the truthful final post; never call
+  votes the judging result or claim first place before official results.
+- [ ] **A15:** Publish and verify the portable macOS/Linux/Docker OSS release from the public SHA. A clean fixture
+  installs the same Eliza plugin and pinned CLI, replays redacted receipts, and starts in paper mode; launchd,
+  systemd and Docker restart only Eliza. Tag the immutable release and make the public SHA match demo/submission.
 
 ## 7. After submission — production ladder
 
@@ -429,6 +486,11 @@ receive later plans after the prior receipts exist.
 ## 9. Controlling references
 
 - Event: <https://lablab.ai/ai-hackathons/alpaca-ai-trading-agents-hackathon>
+- Live submissions/community vote (not final judging):
+  <https://lablab.ai/ai-hackathons/alpaca-ai-trading-agents-hackathon/live>
+- Strongest inspected audit competitor: <https://github.com/Chong1120/Vetoed/tree/465f8d7e3aca996c49bc6f426fd0817a00d925b9>
+- Community-vote leader inspected at research time:
+  <https://github.com/ibrahimjatt1313-prog/AlphaPilot/tree/7cb43cc0f300d1ecb8e7cff08b8fff9bdd5482b3>
 - Archived event-rule verification and PDF provenance:
   <https://github.com/MuhammadTahaBinZaeem/Dis-Pater/blob/b40188a09fc69c99145dc5aad58f3243996ad70a/artifacts/hackathon-rule-verification.md>
 - Alpaca CLI: <https://docs.alpaca.markets/us/docs/alpacas-cli>
