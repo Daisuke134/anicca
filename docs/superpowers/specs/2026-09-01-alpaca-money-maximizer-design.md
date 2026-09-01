@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A09 DONE / A10 ACTIVE
+status: APPROVED DESIGN / A01-A10 DONE / A11 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -176,7 +176,7 @@ flowchart LR
 The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
 tests support the atom and do not create a separate completeness program.
 
-Current cursor: **A10 First registered durable loop**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A11 Paper campaign**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
@@ -310,6 +310,19 @@ made the sealed broker order absent after effect start: the route returned HTTP 
 typecheck and four focused suites passed (`6/6` tests). Closing paper readback was equity `$99,997.95` and cash
 `$99,970.95`; A09 proves recovery and fail-closed behavior, not material profit.
 
+A10 is **DONE** in `life-manager-eliza` merges `126f042f4181b80866ad696981a70ef22c49f2c1`,
+`3a0377164c0a005b888a44a344f3ee05312cb4cb`, and `ed39404f44f865cd35bd54227094940f1b4c363d`
+(PRs #60–#62). `plugin-life-manager` registers one seed-once five-minute interval task and one contributed
+Financial dispatch channel through the existing `plugin-scheduling` spine; no timer, scheduler DB, host cadence,
+or broker mutation path was added. The deferred-plugin boot hook seeded exactly one task. Official scheduled-task
+readback showed one matching idempotency key, then the existing Eliza runner naturally fired the same task ID and
+recorded `ok=true`, channel `life_manager_alpaca_paper_loop`, and Financial status `ORDER_VERIFIED`. The pass
+reconciled the A08 order through pinned Alpaca CLI and submitted no new order. After a full runtime stop/restart,
+readback preserved the same task ID, trigger, fire time, and result with matching task count one. Official Alpaca
+CLI still found exactly one matching client ID/provider order; paper equity was `$99,997.95` and cash
+`$99,970.95`. Strict plugin typecheck and five focused suites passed (`8/8` tests). Host adapters contain no
+Alpaca timing or trade decision.
+
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
@@ -321,8 +334,8 @@ typecheck and four focused suites passed (`6/6` tests). Closing paper readback w
 | A07 | Risk gate — **DONE** | Pure gate proves defined max loss, option level, quote/Greeks freshness, spread, DTE, cash/exposure, order/position count, cooldown, daily loss, drawdown, leverage, and reconciliation health. |
 | A08 | Exactly-once paper canary — **DONE** | One model-selected 769C/770C paper spread passed the deterministic gate, filled through pinned CLI, and reconciled to one official order/client ID; identical replay returned noop and added zero orders. Immediate unrealized P&L was `-$3`, so no profit claim is made. |
 | A09 | Ack-loss/restart reconciliation — **DONE** | A real process restart reconciled the simulated lost acknowledgement from one official client-ID readback, restored the receipt, and added zero orders; copied-DB absent state opened the breaker with zero blind retries. |
-| A10 | First registered durable loop — **ACTIVE** | `plugin-life-manager` registers exactly one Alpaca loop; Eliza alone schedules each bounded pass, owns its lease/heartbeat/checkpoint, uses Alpaca clock, observes/decides/acts/reconciles, and resumes the same state after restart. Host adapters contain no Alpaca schedule. |
-| A11 | Paper campaign | Frozen strategy runs on the dedicated account; every proposal/no-trade/order/fill/exit/P&L is recorded; official account activity and Life Manager projection have zero unexplained delta. |
+| A10 | First registered durable loop — **DONE** | Exactly one seed-once interval task fires through the existing Eliza scheduling spine and Life Manager Financial dispatcher; natural fire reconciled the official order, restart preserved the same task/result, and host adapters own no Alpaca schedule. |
+| A11 | Paper campaign — **ACTIVE** | Frozen strategy runs on the dedicated account; every proposal/no-trade/order/fill/exit/P&L is recorded; official account activity and Life Manager projection have zero unexplained delta. |
 | A12 | Read-only public demo | Hosted URL shows redacted account equity/P&L, positions/max loss, thesis, gate reasons, order/fill receipts, and timeline; public UI cannot place an order. |
 | A13 | Submission assets | Public README, one-pager, PDF slides, 16:9 cover, and ≤4-minute video truthfully match the current account and code. |
 | A14 | Submit and read back | Form contains hosted URL, public repo, assets, tags, and private account ID; official submitted state is read back before 2026-09-05 00:00 JST. |
@@ -341,7 +354,7 @@ typecheck and four focused suites passed (`6/6` tests). Closing paper readback w
 - [x] **A08:** Submit and reconcile one minimum-risk paper canary with a stable `client_order_id`; replay adds
   zero orders.
 - [x] **A09:** Prove lost-acknowledgement and restart reconciliation without blind retry.
-- [ ] **A10:** Register exactly one Eliza-owned durable Alpaca loop; host adapters only restart Eliza.
+- [x] **A10:** Register exactly one Eliza-owned durable Alpaca loop; host adapters only restart Eliza.
 - [ ] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface.
 - [ ] **A13:** Publish the truthful README, one-page write-up, PDF slides, 16:9 cover, and ≤4-minute video.
@@ -371,9 +384,9 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next plan scope is A10 only. Soft target: at most three production files and 100 production LOC per atom;
+Next plan scope is A11 only. Soft target: at most three production files and 100 production LOC per atom;
 reuse one existing contract/store/runner per responsibility. One focused normal-path check plus only the minimum
-regressions preventing money error, duplicate effect, unknown broker state, or secret leakage. A11–A15 and P01+
+regressions preventing money error, duplicate effect, unknown broker state, or secret leakage. A12–A15 and P01+
 receive later plans after the prior receipts exist.
 
 ## 9. Controlling references
