@@ -198,7 +198,7 @@ def _run_exhaustive_discovery(timeout: float) -> Mapping[str, object]:
     union["opportunities"] = list(merged.values())
     return union
 
-def _run_default_discovery(tick_value: object, timeout: float, state_path: Path) -> Mapping[str, object]:
+def _run_default_discovery(tick_value: object, timeout: float, state_path: Path, exclude_ids: frozenset[str] = frozenset()) -> Mapping[str, object]:
     first = _discovery_query(tick_value)
     start = DISCOVERY_QUERIES.index(first)
     last: Mapping[str, object] = {"ok": False, "error": "no_normalized_opportunities", "opportunities": []}
@@ -215,6 +215,7 @@ def _run_default_discovery(tick_value: object, timeout: float, state_path: Path)
                 except Exception: return last
                 remaining_ids = {str(row.get("external_id")) for row in remaining if isinstance(row, Mapping)}
                 decided_ids.update(str(row.get("external_id")) for row in opportunities if isinstance(row, Mapping) and str(row.get("external_id")) not in remaining_ids)
+                remaining = [row for row in remaining if str(row.get("external_id")) not in exclude_ids]
                 if not remaining: continue
                 return dict(last) | {"observed_count": len(observed_ids), "already_decided_count": len(decided_ids)}
             return dict(last) | {"observed_count": len(observed_ids), "already_decided_count": len(decided_ids)}
@@ -693,7 +694,7 @@ def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH,
                     turn_evidence = evidence / f"turn-{turn + 1}"
                     turn_evidence.mkdir(mode=0o700, exist_ok=False)
                 try:
-                    observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else (_run_exhaustive_discovery(timeout) if exhaustive else _run_default_discovery(tick_value, timeout, Path(state_path)))
+                    observed = source(query=query if query is not None else _discovery_query(tick_value), limit=MAX_OPPORTUNITIES, timeout=timeout) if source is not None or query is not None else (_run_exhaustive_discovery(timeout) if exhaustive else _run_default_discovery(tick_value, timeout, Path(state_path), frozenset(wake_seen_ids)))
                 except Exception: observed = None
                 if observed is None or not isinstance(observed, Mapping): result = ApplicationLoopResult(False, error="discovery_failed")
                 else:
