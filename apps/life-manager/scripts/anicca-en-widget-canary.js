@@ -726,7 +726,7 @@ async function runAniccaWidgetCanary(argv = [], deps = {}, lane = EN_LANE) {
     return value;
   } };
   const store = deps.store || createMarketingLocalLedger({ dataDir: config.dataDir, env, now: clock });
-  const publicationJob = buildMarketingVideoPublicationJob({ tenantId: config.tenantId, productId: lane.product, formatId: lane.format, form: lane.form, locale: lane.locale, slot: config.slot, creativeId: lane.creativeId, platform: lane.platform, videoRef: config.videoRef, captionRef: config.captionRef, approvalRef: config.approvalRef, instagramProfileRef: lane.profileRef, instagramIntegrationRef: lane.integrationRef, postizTokenRef: lane.tokenRef });
+  const publicationJob = buildMarketingVideoPublicationJob({ tenantId: config.tenantId, productId: lane.product, formatId: lane.format, form: lane.form, locale: lane.locale, slot: config.slot, creativeId: lane.creativeId, platform: lane.platform, videoRef: config.videoRef, captionRef: config.captionRef, approvalRef: config.approvalRef, instagramProfileRef: lane.profileRef, instagramIntegrationRef: lane.integrationRef, postizTokenRef: lane.tokenRef, slotScopedEffect: true });
   const runDistribution = deps.runDistribution || runDistributionProcess;
   const publicationAdapter = createMarketingVideoPublicationLoopAdapter({
     objectStore: storeObject,
