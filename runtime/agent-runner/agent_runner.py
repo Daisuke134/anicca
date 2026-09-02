@@ -701,16 +701,29 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
                          lease_fd: int | None = None) -> int:
     """Run one provider in an isolated process group with a hard timeout."""
     global _ACTIVE_PROVIDER_PROCESS
-    process = subprocess.Popen(
-        command,
-        stdin=subprocess.PIPE if input_bytes is not None else stdin,
-        stdout=stdout,
-        stderr=stderr,
-        cwd=cwd,
-        env=env,
-        start_new_session=os.name == "posix",
-        pass_fds=(lease_fd,) if lease_fd is not None else (),
-    )
+    provider_lock_fd = None
+    codex_home = env.get("CODEX_HOME")
+    if codex_home:
+        lock_path = Path(codex_home) / ".agent-runner-provider.lock"
+        lock_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        provider_lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+        fcntl.flock(provider_lock_fd, fcntl.LOCK_EX)
+    inherited_fds = tuple(fd for fd in (lease_fd, provider_lock_fd) if fd is not None)
+    try:
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE if input_bytes is not None else stdin,
+            stdout=stdout,
+            stderr=stderr,
+            cwd=cwd,
+            env=env,
+            start_new_session=os.name == "posix",
+            pass_fds=inherited_fds,
+        )
+    except BaseException:
+        if provider_lock_fd is not None:
+            os.close(provider_lock_fd)
+        raise
     _ACTIVE_PROVIDER_PROCESS = process
     try:
         if input_bytes is not None and process.stdin is not None:
@@ -742,6 +755,8 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
             time.sleep(0.25)
     finally:
         _ACTIVE_PROVIDER_PROCESS = None
+        if provider_lock_fd is not None:
+            os.close(provider_lock_fd)
     return process.returncode
 
 
