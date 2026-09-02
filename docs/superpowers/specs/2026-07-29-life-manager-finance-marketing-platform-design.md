@@ -2579,6 +2579,27 @@ The lane remains Life Manager-unarmed at 0/day while the next atom reuses the
 approved EN Widget pack lineage to run one exact Postiz/native canary, then
 proves Telegram and same-slot replay-zero before any cadence arm.
 
+**YouTube live cursor 3 — canary verified; scheduler install pending:** main PR
+`#3909` adds exact destination `anicca-ios-en-widget-youtube`, Postiz
+`cmq3u37gi005iqp0y90a2w92n`, the approved EN Widget pack
+`79e8fe12…701a1`, and three JST intervals `07:45/13:15/19:45`. Focused
+destination/manifest/cycle checks pass 29/29 and main-derived immutable release
+`20260902T105547-bc9ffdee` passes the same checks despite non-fatal npm ENOSPC
+warnings during unrelated dependency extraction. The one exact canary is public
+at `https://www.youtube.com/watch?v=P_Epsp57RbY`, Postiz
+`cmtjgc5yc0429pn0yrpr45yhj`, Telegram `48262`. Native metadata binds channel
+ID `UCFGkrtiSTni-AZ9DUY6Q5EA`, handle `@anicca-ai`, public availability, and
+English title/description; 1s/8s/14s native frames match the source Widget
+object. Same-slot replay returns generation/publication/Telegram
+`created:false`. Manifest `e34cb6de…c06c2e2` contains 14 targets / 16 holds and
+arms only this newly classified integration in addition to the prior thirteen.
+The LaunchAgent is not yet installed: targeted `lm-loop apply` fails closed
+before plist mutation because this Codex app-server context reports
+`id -un=501`, manager rc 153, and `gui/501` rc 141. Do not claim the three/day
+cron is live until a GUI/Aqua context runs targeted apply, then kickstart and
+reads back the exact loaded release argv and replay-zero. No retry publication
+is required.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
