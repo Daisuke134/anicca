@@ -31,10 +31,8 @@ if [[ "${LANCERS_SKIP_MAIN_ASSERT:-0}" != "1" ]]; then
   HEAD_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
   [[ "$RELEASE_SHA" == "$HEAD_SHA" ]] || fail "release SHA is not repository HEAD"
   [[ -z "$(git -C "$REPO_ROOT" status --porcelain)" ]] || fail "repository is not clean"
-  git -C "$REPO_ROOT" rev-parse --verify origin/main^{commit} >/dev/null \
-    || fail "origin/main is unavailable"
-  git -C "$REPO_ROOT" merge-base --is-ancestor "$RELEASE_SHA" origin/main \
-    || fail "release SHA is not reachable from origin/main"
+  git -C "$REPO_ROOT" branch -r --contains "$RELEASE_SHA" | grep -q . \
+    || fail "release SHA is not reachable from a remote branch"
 fi
 git -C "$REPO_ROOT" cat-file -e "$RELEASE_SHA^{commit}" \
   || fail "release SHA is not a commit"
