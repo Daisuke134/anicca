@@ -172,6 +172,16 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      read backした。新しい13:09版を保持し、byte-identicalな13:05版だけを回収した。Data空きは
      `37,107,544 KiB`（約35.4 GiB）へ増加した。`workspace/node_modules` 138,544 KiBはlockfileがあるが、
      live `anicca-ask`の親階層dependency候補なので、owner restart再構築契約を閉じるまで削除authority 0とする。
+     Gateway正本`openclaw cron list --json`はenabled job 1件（funder discovery）で、旧Larry/slideshow/
+     copy-viral jobsはenabled 0だった。process/open 0、現行jobから既存timestamp directoryへの参照0を確認し、
+     `workspace/posts` 174,064 KiB、Larryの7日超timestamp run 266,480 KiB、slideshow `output` 216,096 KiB、
+     copy-viral `state/run_*` 39,800 KiBを回収した。Larry共有`assets` 15,900 KiB、各skillの`SKILL.md`、scripts、
+     fonts、queue/history stateは保持し、Gateway PID 712がopen中の2 `SKILL.md`も削除していない。
+     `state/agent-runner-evidence`は334,580 KiBで既存256 MiB contractを超えていたため、正本
+     `reclaim_completed_evidence()`を再利用し、`summary.json`があるoldest completed runだけ122件・
+     68,746,180 bytesを回収した。current/active/summaryなし/symlinkは保持し、最新bounty/reddit completed receipt、
+     open handle 0をread backした。最終Data空きは`37,703,788 KiB`（約36.0 GiB）、cleanup errors 0、
+     protected deletion 0である。disabled raw jobsへ新しいcleanup codeは追加しない。
 
      `workspace/runs`の旧59 runは各々`reel-text.mp4`と`reel-final.mp4`を持ち、SHA-256で59/59組が
      byte-identicalだった。まず全`reel-final.mp4`を保持して重複`reel-text.mp4`だけ423,614,455 bytesを回収、
