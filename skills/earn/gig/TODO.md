@@ -162,9 +162,11 @@ completion claim is nevertheless false until the two failing lanes below pass na
   The first natural release attempt after those merges did not reach activation. Full release
   `20260902T222858-217adc4a` installed 751 root packages in 33 minutes and 74 agentmail packages in
   2 minutes, then `apps/life-manager npm ci` was terminated by signal 9. The cutter failed closed:
-  `current` remained the prior `c3651319` release and no loop argv changed. Its trap is now removing
-  the incomplete tree through PID `26121`; the host reached 96% usage with about 8.7 GiB free during
-  that cleanup. Do not call this a Coconala lane-local leak: the temporary bytes belong to the shared
+  `current` remained the prior `c3651319` release and no loop argv changed. Its trap removed the
+  incomplete tree through PID `26121`, then wrapper PID `78726` removed its private npm scratch;
+  releases fell from 15 to 14. The host reached 96% usage with about 8.7 GiB free during cleanup and
+  stabilized near 10.8 GiB free / 95% after both owners exited. Do not call this a Coconala lane-local
+  leak: the temporary bytes belong to the shared
   immutable-release build, while the independent Reply in-run retention defect is the bounded fix
   above. This atom remains open until the incomplete tree is gone, free space is read back, and a
   later natural release containing main `7a0a3930...` or newer activates successfully.
@@ -225,10 +227,9 @@ completion claim is nevertheless false until the two failing lanes below pass na
   Permanent deletion remains a separate irreversible user action, not automatic Coconala cleanup.
 
   Remaining C02 atoms, in order:
-  1. Let PID `26121` finish deleting incomplete release `20260902T222858-217adc4a`; read back its
-     disappearance and recovered host bytes. Then require the independent reconciler's next natural
-     cut to activate a complete pushed-main release containing PRs #4047 and #4051. Do not mutate
-     `gui/$UID` or interrupt any current lane.
+  1. The failed tree and scratch are gone. Require the independent reconciler's next natural cut to
+     activate a complete pushed-main release containing PRs #4047 and #4051, while separately
+     accounting for the remaining host usage. Do not mutate `gui/$UID` or interrupt any current lane.
   2. Preserve the four live parallel owners while they naturally converge. Current real process
      argv remains split: Reply=`663f1af0`, Apply=`c259cc6e`, Storefront=`6a9a93e6`, and
      Paid=`c3651319`; process presence is proven but a common-release terminal PASS is not.
