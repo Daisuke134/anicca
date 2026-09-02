@@ -163,6 +163,40 @@ lease、dedupe、effect fence、receipt、金額計算、Telegram deliveryだけ
 fresh opportunityを再観測し、positive-EV案件を同一wake内で連続処理し、各送信の公式Proposal IDを個別にreadback・報告し、
 重複送信0を示した時だけ成立する。それまでは「縦一本とreplay-zeroは成功、継続応募は未稼働」と報告する。
 
+### Authoritative current state
+
+現在の事実は次の四つを分離して扱う。
+
+1. `launchctl print gui/501/ai.anicca.lancers-revenue-application`はservice absentを返す。plist
+   `~/Library/LaunchAgents/ai.anicca.lancers-revenue-application.plist`は存在し、release `e9d59c32…`、
+   `StartInterval=60`を記載するが、plistの存在はloaded/runningの証明ではない。旧Python application ownerは現在稼働していない。
+2. CloakBrowser owner `lancers-revenue-browser`とCDP `:9227`は生存する。これはagentの手足が利用可能という証拠であり、
+   application action実行の証拠ではない。
+3. Eliza runtimeのBun processは生存し、`plugin-life-manager`、`plugin-browser`、AutonomyServiceの起動logを持つ。
+   upstream/local `BROWSER` actionはnavigate/click/type/fill/press/snapshot等を公開する。しかし現runtime logには
+   Lancers opportunity observation、browser action、Proposal readbackが一件もない。process生存をGeneral Agent application PASSにしない。
+4. official marketplace ledgerの最新はsequence 57、Proposal `27880270`、2026-09-02T10:56:54Zである。
+   これはLancers worktreeからの有限Python runで成立した。今日13件の公式応募は本物だが、Elizaによるものでも、
+   現在継続中の24/7 writerによるものでもない。
+
+したがって現在の判定は、`browser=READY / Eliza runtime=ALIVE_BUT_NO_LANCERS_EFFECT /
+old application launchd=NOT_LOADED / continuous application owner=NONE / banked net=0`である。
+「Elizaで最大応募中」「旧launchdが最大応募中」「AGI完成」のいずれも禁止する。
+
+開発sourceは一つのLancers worktree `GH-11-elz-proof`と一つのtopic branch
+`docs/lancers-eliza-atomic-plan-20260902`へ固定し、完了まで新しいLancers branch/worktreeを作らない。Git公式は、
+worktreeを同一repositoryへ関連付けた独立working tree、topic branchを一つのfeatureまたはrelated workのための
+short-lived branchと定義し、fully testedになった変更をstable branchへ進めるworkflowを説明する。この固定はGitの
+「worktreeは常に一つ」という要件ではなく、今回の一つのrelated workを複数branchへ分散させないproject ruleである。
+
+Sources:
+- Git worktree: https://git-scm.com/docs/git-worktree
+- Git Branching Workflows: https://git-scm.com/book/en/v2/Git-Branching-Branching-Workflows
+- ElizaOS upstream: https://github.com/elizaOS/eliza
+- ElizaOS AutonomyService: https://github.com/elizaOS/eliza/blob/develop/packages/core/src/features/autonomy/service.ts
+- ElizaOS Browser action: https://github.com/elizaOS/eliza/blob/develop/plugins/plugin-browser/src/actions/browser.ts
+- Agent/workflow distinction: https://www.anthropic.com/engineering/building-effective-agents
+
 本番business loopはEliza内部だけに置く。1分wake、child Goal、checkpoint、lease、model判断、effect/readbackは
 AgentRuntime＋既存scheduling spine＋単一`plugin-life-manager`が所有する。旧Lancers Application/Storefront/Negotiate/Paidの
 launchd business runnerを修復・再起動・並走させず、marketplace名、cadence、判断、応募手順、ledgerをlaunchdへ戻さない。

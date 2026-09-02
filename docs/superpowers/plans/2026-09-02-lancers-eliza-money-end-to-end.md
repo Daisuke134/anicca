@@ -2,7 +2,7 @@
 
 **Goal:** Lancersの応募を直ちにsingle-writerで継続し、応募からbanked netまでを閉じ、同じshared agent harnessを次marketplaceへ再利用する。
 
-**Current facts:** 旧Lancers application writerは退役済み。CloakBrowser ownerとCoconala ownerは正常。Eliza bounded proofはtask dispatchとLuna起動まで進んだがbrowser action・新Proposal IDへ到達せず不合格。一時tmux ownerは停止済み。
+**Current facts:** `launchctl print`で旧Lancers application serviceはabsent。plistは残るがloadedではない。CloakBrowser ownerは正常。Eliza Bun runtimeは生存し`plugin-browser`とAutonomyServiceをloadするが、Lancers browser action・Proposal receiptは0。最新公式Proposal `27880270`はworktreeの有限Python runによる。continuous application ownerは現在0であり、24/7最大応募は停止中。一時`eliza-lancers` tmuxは存在するが、process生存だけでapplication ownerとは数えない。Lancers開発はこのworktreeと現在branch一つだけで完了まで継続する。
 
 ## Fixed order
 
