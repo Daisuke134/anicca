@@ -176,6 +176,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
               - [x] P1d-3c-3c-8b-2-d: ENOSPC時に旧`lm_loop_run`が事前`cleanup-latest.json`の一時writeでentrypoint前に終了する根因を修正。事前receiptだけをdeferしcleanup本体を継続、通常I/O errorはfail-closed。focused cleanup test 16/16、Python syntax、diff check PASS。production rollout/readbackは未実施（旧disk-cleanup logでENOSPC 43件、receipt更新停止）
               - [x] P1d-3c-3c-8b-2-e: `.Trash/life-manager-gig-videos-20260902-134053`（`1,132,480 KiB`、manifest 16 files）をopen handle・Gig台帳・Coconala状態へ照合。`5188394`は納品確認待ち、`5174332`はv5再提出サイクル、`18211957`は取引中かつbuyer添付待ちのため、成果物を削除せず保持。`lsof` rows 0、削除0、protected deletion 0。safe delete candidateは0であり、P5 terminal lifecycleへ繰り越す。
               - [x] P1d-3c-3c-8b-2-f: `~/.openclaw-backups`を世代・整合性・参照単位で監査。単一の`openclaw-core-20260902-171143.tar.gz`（`257,220 KiB`）のみで`gzip -t` PASS。`lsof`はtimeoutしたためopen状態を不明として保持し、旧世代削除や一括purgeは行わない。safe delete candidate 0、P2 rollback retentionへ繰り越す。
+              - [x] P1d-3c-3c-8b-2-g: `~/.codex`をactive process/open path単位で監査。`codex app-server` PID 41290/41295、`codex-code-mode-host` PID 47072、SkyComputerUseService PID 22879が実在し、`logs_2.sqlite`、`thread_history_1.sqlite`、control socket、package binaryをopen。rootは`3,488,036 KiB`、30日超session 0。active Codex homeのため全削除・session purgeは行わず、P2 owner-side rotationへ繰り越す。
 
 #### P4 execution ledger
 
@@ -435,7 +436,7 @@ compatibility aliasを削除しalias 0となった。cleanup側3-5d/3-5eは完�
      | `~/anicca-project` | 6.57 GiB | 旧cloneと推測して削除せず、unique ref/loaded argv/state ownerをread backする |
      | `~/anicca` | 3.52 GiB | 同上 |
      | `~/anicca-monk-factory` | 3.04 GiB | 不可侵store |
-     | `~/.codex` | 3.02 GiB | 別account home。session/log/archiveをowner分類する |
+     | `~/.codex` | 3,488,036 KiB | active app-server/code-mode home。open DB/socketとprocessを保持し、P2 owner-side rotationへ繰り越す |
      | `~/anicca-rtdash` | 回収済み | 旧`anicca-project`残骸。rootとnested worktreeをremote branchへ保存し、SHA一致後にretireした |
      | `~/.bun` | 2.41 GiB | 再生成cache回収後も残るowner dataを分類する |
      | `~/.codex-acct2` | 2.33 GiB | active Codex account。active sessionを保持する |

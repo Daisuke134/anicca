@@ -180,6 +180,7 @@
     {"path": "~/anicca-project/.git", "owner": "active WebMCP common Git; preserve until worktree terminal"},
     {"path": "~/profitable-claude/.git", "owner": "active profitable-claude loop commits"},
     {"path": "~/.openclaw/skills/.backups", "owner": "single recent rollback generation"},
+    {"path": "~/.codex", "owner": "active Codex app-server, code-mode host, and computer-use service; preserve session/database/socket state"},
     {"path": "~/.Trash/life-manager-gig-videos-20260902-134053", "owner": "P5 Coconala/Gig deliverable retention; manifest contains active 5188394, 5174332, and 18211957 artifacts"}
   ],
   "unclassified_roots_over_100_mib": [],
@@ -674,6 +675,31 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "The backup directory contains one recent rollback archive, not an unbounded generation set. lsof timed out, so the validator fails closed and does not purge it; re-evaluate only under P2 rollback-retention with a proven replacement."
+    },
+    {
+      "batch": "p1d-codex-home-active-audit-26",
+      "path": "~/.codex",
+      "measured_kib": 3488036,
+      "active_processes": [
+        "41290 codex app-server --remote-control",
+        "41295 codex app-server daemon pid-update-loop",
+        "47072 codex-code-mode-host",
+        "22879 SkyComputerUseService"
+      ],
+      "open_paths": [
+        "logs_2.sqlite",
+        "thread_history_1.sqlite",
+        "queue_1.sqlite",
+        "app-server-control/app-server-control.sock",
+        "packages/standalone/releases/0.152.1-aarch64-apple-darwin/bin/codex"
+      ],
+      "sessions_older_than_30d": 0,
+      "decision": "preserve_active_codex_home",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Process argv and lsof prove this home is live. Whole-home deletion or session purge would risk the active connection; defer bounded log/archive rotation to P2."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
