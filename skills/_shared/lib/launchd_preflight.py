@@ -46,14 +46,24 @@ def probe(runner: Runner = subprocess.run) -> dict:
         observations["directory_services"] = {
             "argv": [], "returncode": 75, "stdout": "", "stderr": "username_unresolved"
         }
-    run("managername", ["/bin/launchctl", "managername"])
-    run("manageruid", ["/bin/launchctl", "manageruid"])
-    run("managerpid", ["/bin/launchctl", "managerpid"])
-    if uid.isdigit():
+    managername = run("managername", ["/bin/launchctl", "managername"])
+    manageruid = run("manageruid", ["/bin/launchctl", "manageruid"])
+    managerpid = run("managerpid", ["/bin/launchctl", "managerpid"])
+    owner_ready = (
+        uid.isdigit()
+        and bool(username) and not username.isdigit()
+        and observations["directory_services"]["returncode"] == 0
+        and f"UniqueID: {uid}" in observations["directory_services"]["stdout"]
+        and managername.returncode == 0 and managername.stdout.strip() == "Aqua"
+        and manageruid.returncode == 0 and manageruid.stdout.strip() == uid
+        and managerpid.returncode == 0 and managerpid.stdout.strip().isdigit()
+    )
+    if owner_ready:
         run("gui_domain", ["/bin/launchctl", "print", f"gui/{uid}"])
     else:
         observations["gui_domain"] = {
-            "argv": [], "returncode": 75, "stdout": "", "stderr": "uid_unresolved"
+            "argv": [], "returncode": 75, "stdout": "",
+            "stderr": "owner_prerequisites_failed_before_gui_probe",
         }
 
     errors = []
