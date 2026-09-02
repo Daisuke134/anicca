@@ -403,6 +403,119 @@ test("a failed provider_direct submit records the provider and its mapped connpa
   assert.equal(JSON.stringify(directFailure).includes("participation tier unavailable"), false);
 });
 
+test("an unknown direct submit effect opens the circuit before browser fallback or another candidate", async () => {
+  const state = fixture({
+    async runDirectAction({ candidate: selected }) {
+      state.calls.push(["direct", selected.event_ref]);
+      const error = new Error("private browser result unavailable");
+      error.unknownEffect = true;
+      throw error;
+    },
+    async runAgentFallback({ candidate: selected }) {
+      state.calls.push(["agent", selected.event_ref]);
+      return Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
+    },
+  });
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-direct-unknown", providers: ["connpass"],
+  }, state.dependencies);
+
+  assert.deepEqual(result, {
+    status: "circuit_open", safe_reason: "effect_unknown", telegram_provider_id: "9001",
+  });
+  assert.equal(state.calls.filter(([name]) => name === "direct").length, 1);
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
+  assert.equal(state.calls.filter(([name]) => name === "readback").length, 1);
+  const directFailure = state.calls
+    .filter(([name]) => name === "history")
+    .map(([, row]) => row)
+    .find((row) => row.purpose === "submit" && row.method === "provider_direct");
+  assert.equal(directFailure.safe_reason, "effect_unknown");
+});
+
+test("an unknown direct effect survives an audit-record failure", async () => {
+  const state = fixture({
+    async runDirectAction({ candidate: selected }) {
+      state.calls.push(["direct", selected.event_ref]);
+      const error = new Error("private browser result unavailable");
+      error.unknownEffect = true;
+      throw error;
+    },
+    async runAgentFallback({ candidate: selected }) {
+      state.calls.push(["agent", selected.event_ref]);
+      return Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
+    },
+  });
+  state.dependencies.recordAction = async (action) => {
+    state.calls.push(["history", action]);
+    if (action.method === "provider_direct") throw new Error("private audit sink unavailable");
+  };
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-audit-unknown", providers: ["connpass"],
+  }, state.dependencies);
+
+  assert.deepEqual(result, {
+    status: "circuit_open", safe_reason: "effect_unknown", telegram_provider_id: "9001",
+  });
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
+});
+
+test("a resolved unknown direct effect survives an audit-record failure", async () => {
+  const state = fixture({
+    async runDirectAction({ candidate: selected }) {
+      state.calls.push(["direct", selected.event_ref]);
+      return Object.freeze({ status: "failed", safe_reason: "effect_unknown" });
+    },
+    async runAgentFallback({ candidate: selected }) {
+      state.calls.push(["agent", selected.event_ref]);
+      return Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
+    },
+  });
+  state.dependencies.recordAction = async (action) => {
+    state.calls.push(["history", action]);
+    if (action.method === "provider_direct") throw new Error("private audit sink unavailable");
+  };
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-resolved-unknown", providers: ["connpass"],
+  }, state.dependencies);
+
+  assert.deepEqual(result, {
+    status: "circuit_open", safe_reason: "effect_unknown", telegram_provider_id: "9001",
+  });
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
+});
+
+test("an unknown Harness exception opens the circuit before another candidate", async () => {
+  const state = fixture({
+    async discoverCandidates() {
+      return [candidate("connpass", "agent-unknown-1"), candidate("connpass", "agent-unknown-2")];
+    },
+    async runDirectAction({ candidate: selected }) {
+      state.calls.push(["direct", selected.event_ref]);
+      return Object.freeze({ status: "failed", safe_reason: "direct_action_unavailable" });
+    },
+    async runAgentFallback({ candidate: selected }) {
+      state.calls.push(["agent", selected.event_ref]);
+      const error = new Error("private browser result unavailable");
+      error.unknownEffect = true;
+      throw error;
+    },
+  });
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-agent-unknown", providers: ["connpass"],
+  }, state.dependencies);
+
+  assert.deepEqual(result, {
+    status: "circuit_open", safe_reason: "effect_unknown", telegram_provider_id: "9001",
+  });
+  assert.deepEqual(state.calls.filter(([name]) => name === "direct").map(([, eventRef]) => eventRef), [
+    "connpass-event://event/agent-unknown-1",
+  ]);
+  assert.deepEqual(state.calls.filter(([name]) => name === "agent").map(([, eventRef]) => eventRef), [
+    "connpass-event://event/agent-unknown-1",
+  ]);
+});
+
 test("resolved direct and browser harness failures record truthful provider context", async () => {
   const state = fixture({
     async discoverCandidates() { return [candidate("luma", "resolved-failure")]; },

@@ -18,16 +18,27 @@ skips every Connpass action after sending the candidate report.
 - Add one allowlisted shared-env opt-in, off unless its value is exactly `true`.
 - Forward that value at the native production dependency boundary.
 - Keep the existing manual boundary available when the opt-in is absent or off.
+- Require both a public venue name and address with no online/placeholder
+  marker, plus a positively identified general-attendee Connpass tier, before
+  the confirmation click; online-only or ambiguous-location events remain
+  no-effect.
+- Treat an unknown effect from cache, direct, or Harness submission as a
+  circuit-open result and never retry it in the same wake, even if the audit
+  record write itself fails.
+- Make every exported Connpass permission boundary fail closed when omitted.
 - Update the Connector contract/spec to describe the explicit local opt-in.
 - Do not add a CLI, crawler, provider API, scheduler, browser profile, model
   decision gate, new evidence path, or second implementation.
 
 ## TDD and acceptance
 
-1. RED: the env loader rejects the new key and native config omits the opt-in.
+1. RED: the env loader rejects the new key and native config omits the opt-in;
+   online-only tier selection and unknown-effect fallback are also reproduced.
 2. GREEN: the allowlisted value reaches the factory as a boolean; omitted and
-   non-`true` values remain false.
-3. Run focused native/production/runner tests, the full outbound suite, shell
+   non-`true` values remain false; an online-only tier is rejected before
+   confirmation; unknown effect opens the circuit before fallback or another
+   candidate.
+3. Run focused native/production/runner/provider tests, the full outbound suite, shell
    and diff checks, then build a pushed immutable release.
 4. Apply only `ai.anicca.life-manager-connector-native`; read back the exact
    loaded release, hourly cadence, owner, state path, and process cleanup.
