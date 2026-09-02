@@ -122,6 +122,18 @@
         "ad55a93ea262ef29cb89282bbf11b0a1e78e2cda"
       ],
       "confirmation_password_required": true
+    },
+    {
+      "paths": [
+        "/private/tmp/coconala-reply-continuous-rollout",
+        "~/Projects/lm-spec-platform-first.gEmcMc",
+        "/private/tmp/codex-paid-latest.ipf1Vq",
+        "~/Projects/life-manager-main/.worktrees/coconala-paid-status-20260902",
+        "/private/tmp/lm-spec-trigger-browser"
+      ],
+      "expected_kib": 379120,
+      "reason": "unlocked, clean, merged into origin/main, open handles 0",
+      "recovery": "recreate a worktree from origin/main or the retained branch ref"
     }
   ],
   "receipts": [
