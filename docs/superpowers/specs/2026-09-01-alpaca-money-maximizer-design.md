@@ -368,8 +368,8 @@ flowchart LR
 ## 6. Strategic-retreat TODO — fixed execution order
 
 Current cursor: **R14**. R01–R13 are complete. The released loop proof (natural wakes, restart readback, and
-duplicate replay) is complete; the public projection source is now on the dedicated branch
-`feat/alpaca-public-projection-20260903` but is not yet in the immutable release. Only that final R14 promotion
+duplicate replay) is complete; the public projection source is merged in main (`875c8c7f`) together with
+pre-effect retry hardening (`6506ecef`) but is not yet in the immutable release. Only that final R14 promotion
 and readback remains active. Dais explicitly reorders the remaining queue to finish the reusable paper product
 before creating presentation assets. No atom uses TDD ceremony, a review agent, a subagent, or an Eliza runtime.
 Product integration happens only after R12 passes; presentation work cannot be used as evidence that the product
@@ -395,7 +395,7 @@ reuse an existing Life Manager helper or cut scope back to the acceptance path.
 | R11 | Close and score the campaign — **DONE** | Commit `c2c034dd8` ports the exact donor close shape: only during the official regular session and with a positive executable credit, seal one stable paper effect and submit one Alpaca `mleg` limit order with `sell_to_close` / `buy_to_close`; the campaign exit consumes the pass's single-effect allowance. A real eligible pass at `09:40 ET` submitted stable client ID `lm-ai-a64f6e61e92c9048ea930319`, reconciled broker status `filled` at `$0.26` credit, reduced the two SPY legs to zero positions, and sent Telegram `48661`. Entry debit `$29.00` and exit credit `$26.00` produce truthful realised campaign P&L `-$3.00`; equity/cash are `$99,996.83`, total change from `$100,000` is `-$3.17`, unrealised P&L is `$0.00`, and broker order count is two. |
 | R12 | Finish the reusable paper investment-loop product — **DONE** | The Life Manager candidate—not a separate repository—runs one finite registered `alpaca-investment` pass through official observation, cross-market candidates, model proposal/decline, deterministic gates, at-most-one CLI-only paper effect, stable-client-ID reconciliation, mode-`0600` receipts/state, and acknowledged Telegram delivery. The eligible pass closed the inherited campaign and sent `messageId=48661`; the immediate independent replay returned `NO_TRADE`, effect `none`, positions zero, unchanged broker order count two, and `messageId=48664`. `ALPACA_LIVE_TRADE` remains forced false and no secret or profit guarantee is exposed. |
 | R13 | Integrate and publish the usable OSS loop — **DONE** | On the exact R12 PASS candidate, record scoped diff and rollback, create one PR, merge once, and publish the minimum user-facing loop catalog/install/status information needed for another person to discover and run `alpaca-investment` on an Alpaca paper account. It remains one loop inside Life Manager, not a separate repository. The immutable release cut and host cadence proof are R14. |
-| R14 | Prove the released product runs continuously — **ACTIVE (final promotion pending)** | The current immutable release already has three consecutive natural passes plus a safe restart/readback and zero-delta duplicate replay. Finish by promoting the canonical read-only `/alpaca` projection source from branch `c94dbfac1` into the next main-derived immutable release, then read it without authentication against the same paper state. Only actual market opportunity may produce profit; `NO_TRADE` is valid operation but does not satisfy positive-P&L ambition. |
+| R14 | Prove the released product runs continuously — **ACTIVE (final promotion pending)** | The current immutable release already has three consecutive natural passes plus a safe restart/readback and zero-delta duplicate replay. The read-only `/alpaca` projection is merged as `875c8c7f`; the pre-effect retry hardening is merged as `6506ecef`. Finish by cutting the next main-derived immutable release and reading `/alpaca` without authentication against the same paper state. Only actual market opportunity may produce profit; `NO_TRADE` is valid operation but does not satisfy positive-P&L ambition. |
 | R15 | Build presentation assets and submit | Only after R14 product evidence exists, update the full README and one-page write-up, then create PDF slides, 16:9 cover, and a ≤4-minute screen-recorded pitch from the same facts. Fill every official field, verify public repository/demo/video/slides logged out, include the private account ID only in the form, submit before the deadline, read back submitted state, and remove the merged worktree. |
 
 R13 is **DONE** at PR [#4048](https://github.com/Daisuke134/life-manager/pull/4048), merged as
@@ -483,6 +483,14 @@ unauthenticated localhost HTTP readback returned `/alpaca` status `200` with no 
 `200` with the same equity/order/position/Telegram values; the response contained no POST surface or secrets.
 Because this source is not yet in main or the installed immutable release, R14 remains active only for that
 promotion and logged-out readback.
+
+Two subsequent natural wakes after the safe restart (at `17:12:15Z` and `17:24:19Z`) both ended
+`entrypoint_exit_78` before fresh agent evidence, with no broker or state delta; the intervening wake at
+`17:18:01Z` passed with Telegram `messageId=48837`. This exposed that a single immediate retry could still
+exhaust on a short-lived read failure. PR [#4077](https://github.com/Daisuke134/life-manager/pull/4077) merged
+as `6506ecefb71dc89216acdf1e90fe6e5cc94bb4ef` and bounds the finite pass to three attempts only before any
+order submission, recording a non-secret failure stage while preserving the post-submit no-retry fence. The
+next immutable release must contain this commit before R14 is closed.
 
 ### Explicit non-goals before submission
 
@@ -1141,9 +1149,10 @@ require investment management registration. Customer beta stays paper-only until
 The active atom remains the final R14 promotion. The `6dd27927` release has three consecutive natural PASS wakes
 (`messageId`s `48812`, `48816`, `48824`), a safe restart/readback, one recorded pre-effect transient failure
 followed by a successful post-restart wake (`messageId=48837`), and an identical replay with zero receipt/order
-delta. The read-only redacted projection is implemented on branch `c94dbfac1` and must now be merged once, cut
-into a new main-derived immutable release, and read at `/api/life-manager/alpaca/public` plus `/alpaca` without
-authentication. If the gate selects an eligible paper candidate, reconcile at most one official CLI effect; if it
+delta. The read-only redacted projection is merged in main (`875c8c7f`) and the pre-effect retry hardening is
+merged in main (`6506ecef`). Cut a new main-derived immutable release containing both, then read
+`/api/life-manager/alpaca/public` plus `/alpaca` without authentication. If the gate selects an eligible paper
+candidate, reconcile at most one official CLI effect; if it
 selects `NO_TRADE` or vetoes, retain that real result without manufacturing a trade. Do not manually fire, add a
 scheduler, restart macOS/loginwindow/app-server, or touch the Eliza migration runtime. A12–A15 artifacts remain
 ordered after this product proof and must reuse its frozen redacted projection.
