@@ -91,6 +91,15 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     )
     profile.chmod(0o600)
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
+
+
+def _run_private_model_serialized(root: Path, command: list[str], label: str, step: str) -> str:
+    """Serialize Paid model agents that share one mutable automation home."""
+    lock_path = root.parents[1] / ".paid-model-runner.lock"
+    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    with os.fdopen(descriptor, "r+") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        return _run(_private_model_runner(root, command, label), step)
 PAID_DECISION_SCHEMA_VERSION = 4
 PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v19"
 PAID_DECISION_MODEL = "gpt-5.6-terra"
@@ -1583,8 +1592,7 @@ def _paid_decision(args, item_path: Path, root: Path, base: Path) -> dict[str, A
               "--task-label", "paid-work-decision", "--escalation-reason",
               "Paid delivery routing must use an authorized escalation semantic model.",
               "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800", "--read-only"]
-        _run(_private_model_runner(root, decision_command, "paid-work-decision"),
-             "paid_work_decision")
+        _run_private_model_serialized(root, decision_command, "paid-work-decision", "paid_work_decision")
         try:
             value = _consultation_runner_result(
                 evidence, task_label="paid-work-decision", task_class="escalation-agent",
@@ -3605,7 +3613,7 @@ def _build_and_authorize_file(args, item_path: Path, root: Path, item: dict[str,
         ]
         for image in review_images + reference_images:
             verifier_command += ["--image", str(image)]
-        _run(_private_model_runner(root, verifier_command, "paid-file-verifier"), "file_verifier")
+        _run_private_model_serialized(root, verifier_command, "paid-file-verifier", "file_verifier")
         verdict, proof = _file_runner_result(
             verifier_evidence, task_label="paid-file-verifier", started_ns=verifier_started,
         )
@@ -4421,7 +4429,7 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                   "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800"]
             progress_size = progress.stat().st_size if _regular_file(progress) else 0
             try:
-                _run(_private_model_runner(root, owner_command, "paid-remote-owner"), "remote_builder")
+                _run_private_model_serialized(root, owner_command, "paid-remote-owner", "remote_builder")
             except Failure:
                 if _regular_file(progress) and progress.stat().st_size > progress_size:
                     raise Failure("remote_progress")
@@ -4481,7 +4489,7 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
               "--evidence-dir", str(verifier_evidence), "--task-label", "paid-remote-verifier",
               "--escalation-reason", "Fresh model independently verifies the paid live target",
               "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800"]
-        _run(_private_model_runner(root, verifier_command, "paid-remote-verifier"), "remote_verifier")
+        _run_private_model_serialized(root, verifier_command, "paid-remote-verifier", "remote_verifier")
         if (_requirements_snapshot(root) != requirements_snapshot
                 or _delivery_snapshot(root) != delivery_snapshot
                 or _project_identity_snapshot(root, verifier_evidence) != project_snapshot):
