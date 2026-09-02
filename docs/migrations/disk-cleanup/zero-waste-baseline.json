@@ -91,5 +91,15 @@
       "recovery": "redownload upstream release"
     }
   ],
-  "reclaimed_bytes": 0
+  "receipts": [
+    {
+      "batch": "p1c-regenerable-1",
+      "free_before_kib": 4201404,
+      "free_after_kib": 4530288,
+      "reclaimed_bytes_by_df": 336777216,
+      "missing_after": 8,
+      "protected_deletions": 0
+    }
+  ],
+  "reclaimed_bytes": 336777216
 }
