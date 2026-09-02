@@ -10,8 +10,14 @@ website are English, and it exists to earn: affiliate, creator revenue, and prom
 system builds. So the audience worth growing is the one that buys those, and everything below
 follows from that rather than from what is convenient to scrape.
 
-**Never runs on `@aniccaen` or `@diceai0`.** Those are the owner's personal accounts; posting to one
-from a loop was revoked on 2026-07-18. Japanese reach needs its own AI-owned account, not those.
+**A personal account is opt-in, per account, and not assumed.** Posting to `@aniccaen` from a loop
+was revoked on 2026-07-18, when the loop was cruder: no per-hour limit, no duplicate protection, no
+length or quality gate. Those exist now, so the owner has lifted the blanket ban — but each personal
+account still needs his explicit go before this loop touches it, because the cost of being wrong is
+his name rather than a burner's.
+
+`@diceai0` (Japanese, personal) is **not** in use yet and may be later. Until then, Japanese reach
+means either Japanese sources quoted from this account, or a separate AI-owned Japanese account.
 
 ## Language
 
