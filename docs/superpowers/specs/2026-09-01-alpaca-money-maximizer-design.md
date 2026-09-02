@@ -468,9 +468,11 @@ existing open maximum loss, every current position, open-order count, cash/equit
 drawdown, and reconciliation health. Existing positions without a readable opening risk fail closed as
 `OPEN_RISK_UNKNOWN`. The verified pure example adds the current `$29` SPY maximum loss to a `$250` candidate
 for aggregate maximum loss `$279`; typecheck, build, three focused suites (`5/5` tests), and `git diff --check`
-pass. This is still research-only and adds no broker effect. The currently running Eliza process uses a separate
-older branch and main-derived natural-wake evidence remains pending; source checks are not presented as runtime
-deployment proof.
+pass. This is still research-only and adds no broker effect. Read-only process and reflog evidence shows the
+running Eliza PID loaded separate-branch commit `41da4d035caead82534751ebed4c68db7030ad3f` at startup. Its checkout
+later advanced without a process restart to `4a7c839fa446e662ffb3ce6d222975ea43e802ac`; neither commit contains
+the spot-effect merge `951b02dfb0a3aab2464d943c5f5ff2190cae94f4`. Main-derived natural-wake evidence therefore remains pending;
+source checks and a changed checkout are not presented as runtime deployment proof.
 
 The A11 risk-gated spot-effect source sub-atom is **DONE** in `life-manager-eliza` merge
 `951b02dfb0a3aab2464d943c5f5ff2190cae94f4` (PR #85). The existing ranking pass now seals an allowed crypto
