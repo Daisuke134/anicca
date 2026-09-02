@@ -3497,8 +3497,12 @@ def main() -> int:
             talkroom["evidence_sha256"] = sha256_file(talkroom_path)
             atomic_json(args.evidence_dir / f"talkroom-preflight-{safe_name(talkroom_id)}.json", history)
             install_project_posting(project_id, args.projects_root)
+            feedback = persist_latest_paid_buyer_reply(
+                complete_talkroom, project_id, args.projects_root, observed_at,
+                source_talkroom_id=talkroom_id,
+            )
             offer = None
-            if talkroom.get("offer_reference"):
+            if feedback is None and talkroom.get("offer_reference"):
                 offer_url = f"https://coconala.com{talkroom['offer_reference']}"
                 offer = inspect_page_with_retry(
                     args.cdp_helper, offer_url, OFFER_EXPRESSION,
@@ -3510,10 +3514,6 @@ def main() -> int:
                     "request_id": offer.get("request_id"),
                     "url": urlsplit(str(offer.get("url") or "")).path,
                 })
-            feedback = persist_latest_paid_buyer_reply(
-                complete_talkroom, project_id, args.projects_root, observed_at,
-                source_talkroom_id=talkroom_id,
-            )
             if feedback is None:
                 feedback = persist_purchased_offer_brief(
                     project_id, talkroom_id, args.projects_root, observed_at,
