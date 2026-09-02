@@ -108,7 +108,7 @@ PAID_REMOTE_WAIT_RECHECK_SECONDS = 3600
 PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_MAX_PARALLEL_READBACKS = 1
 PAID_TERMINAL_RECONCILES_PER_WAKE = 2
-MANUAL_ONLY_TALKROOM_IDS = frozenset({"18211838"})
+MANUAL_ONLY_TALKROOM_IDS = frozenset({"18211838", "18211957"})
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
 # reimplement badly under time pressure, so the BUYMA and video contracts belong here now that both
