@@ -100,6 +100,9 @@ Step 9はStorefrontをApplyと別label・別owner、`StartInterval=1800`でSHA `
 `storefront_offer.py`へ既存finite-run patternと同じ180秒watchdogを追加して有限化した。2回目runはexit 0、公開出品 `1338228`、
 価格29,800/198,000/398,000円、画像、契約経路、需要9件を公式readbackし、独立Telegram ACK provider message ID `48724`をdelivered。
 Apply ownerとRemoteへの影響、141/153は0。Step 9は完了し、現在activeはStep 10 independent Negotiateである。
+Step 10はNegotiateをSHA `ddc054a84…`、別label・別owner、`StartInterval=300`で起動した。最初のrunはexit 0、公式会話2件、
+返信必要0、未読0、月額offer 0、契約候補0をreadbackし、独立Telegram ACK provider message ID `48727`をdelivered。lane稼働はPASSしたが
+ContractReceiptは0なのでStep 10はactiveのまま、Applyの母数拡大とbuyer-last新着の自然wake処理を継続する。
 Step 4 release preflightでは、既存exact-SHA Lancers installerがStep 3のshared policyをallowlistへ含めない欠落を修復した。
 isolated reconcile/normal installer testは2/2 PASSし、production external effect 0。残るStep 4はpushed commitのproduction installとexact 1 loadである。
 旧1件送信・daily quota・partial planner成功を期待したfocused testを現在の最大応募contractへ合わせ、application＋installerは26/26 PASS。

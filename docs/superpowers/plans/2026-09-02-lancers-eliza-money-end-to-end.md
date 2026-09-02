@@ -15,7 +15,7 @@
 - [x] **7 — replay-zero:** 2回目自然wakeは案件5595850をplanner入力から除外し、同Proposal receipt exact 1、ledger sequence `58→58`、pending 0、provider再送0でexit 0。新規Telegram 3件も全delivered。
 - [x] **8 — continuous natural Apply:** `--exhaustive`が同じ全件探索＋Luna判断を3巡していた一行を修正し、探索範囲を変えず1巡へ統一した。SHA `4e608343…`の自然wakeは約4分44秒でexit 0、次wake `runs=2`が自動再発した。single writer、全fresh一括判断、eligible全送信、official readback、案件別outboxを維持する。
 - [x] **9 — independent Storefront:** StorefrontをApplyと別label・別ownerでSHA `ddc054a84…`から起動した。初回はPlaywright driverが固着したため、同scriptへ既存finite-run patternと同じ180秒watchdogだけを追加。2回目runはexit 0、公開出品 `1338228`、価格29,800/198,000/398,000円、画像、契約経路、需要9件を公式readbackし、独立Telegram ACK `48724`をdelivered。Apply ownerとRemoteへの影響、141/153は0。
-- [ ] **10 — independent Negotiate（active）:** buyer-last返信、見積、契約を別ownerで処理し、公式ContractReceiptを得る。
+- [ ] **10 — independent Negotiate（active）:** SHA `ddc054a84…`を別label・別owner、`StartInterval=300`で起動。最初のrunは公式会話2件、返信必要0、未読0、月額offer 0、契約候補0をreadbackし、独立Telegram ACK `48727`、exit 0。lane稼働はPASSしたがContractReceiptはまだ0なので、Applyを継続しながらbuyer-last新着を自然wakeで処理する。
 - [ ] **11 — Paid real contract:** funded contractだけを制作し、QA、公式納品、DeliveryReceipt、PaymentReceiptを閉じる。
 - [ ] **12 — positive banked net:** payoutと銀行明細を照合し、外部buyer由来のverified banked netを正にする。
 - [ ] **13 — Gig Money Loop Skill:** Coconala/Lancersの複数実receiptで有効だった構造と、本人事実・resume・portfolio・能力証拠・提案素材から成るshared profile assetを再利用recipeとしてSkillへ記録する。provider adapterは表示形式だけを変え、別人を装う名前・画像・経歴は作らない。
