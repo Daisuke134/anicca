@@ -5415,10 +5415,24 @@ queue is added. Each owner must also progress independent work concurrently insi
    about 4.5 GiB free. The next natural Paid pass must compile both contexts successfully before the
    source-census or deliverable logic is changed; disk recovery alone is not delivery proof.
 
-   **Current readback.** Free space is 27 GiB and every `.mp4`, `.mov`, `.m4v` and `.webm` under
-   `~/gig` has been moved to the recoverable Trash bundle; the live gig tree contains zero video
-   files. Cleanup no longer probes GUI/launchctl and release inventory no longer blocks on global
-   `lsof`. Paid room `18223833` has captured the buyer's second budget-document request but still
+   The host later regressed to 4.3 GiB free. Live attribution finds about 12.0 GiB across eleven
+   `~/loops/releases` generations: ten old generations remain protected by installed plist paths,
+   including 106 labels pinned to `7942f224`, 28 to `439dc71d`, and 27 to `e9d59c32`; the current
+   `b940c7d4` generation is not itself an old deletion candidate. Per-lane cleanup correctly removes
+   only private scratch and cannot delete a release shared by other labels. The natural reconciler
+   selected running KeepAlive Reply for migration but failed with `production apply is already
+   owned` because `lm_loop_run.py` held its label apply lock for the child's entire continuous
+   lifetime. Branch commit `c7da7f4e8` narrows that lock to startup preparation; its exact
+   continuous-owner regression and related loop suites pass (`51 passed, 6 subtests`). Keep this
+   incident open until a public-main immutable release naturally migrates Reply, the old pin count
+   falls, central release GC reclaims the newly unpinned generation, and post-GC free space is read
+   back. Separately, 114 regenerable MP4/MOV/M4V files under Life Manager video state and Capafy
+   artifacts were removed (`223,995,054` bytes; zero remain in those two roots). Desktop raw video
+   sources remain outside this regenerable cleanup boundary.
+
+   **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
+   longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
+   budget-document request but still
    has no seller reply, artifact or official delivery readback. Its worker was blocked behind a
    redundant shared browser preflight even though the parent had already persisted the same-wake
    official targeted snapshot. Reuse that snapshot for parallel prepare; retain presend effect
