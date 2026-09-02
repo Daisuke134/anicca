@@ -480,6 +480,22 @@
         "~/profitable-claude"
       ],
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1d-retired-codegraph-15",
+      "removed": "~/.codegraph",
+      "logical_target_kib": 228104,
+      "free_before_kib": 8623044,
+      "free_after_kib": 8733748,
+      "open_or_registry_references_before_delete": 0,
+      "retained_single_generation_tools": [
+        "~/.rustup/toolchains/stable-aarch64-apple-darwin",
+        "~/.venvs/crawl4ai",
+        "~/.cache/codex-runtimes/codex-primary-runtime",
+        "~/.local/share/solana",
+        "~/.local/share/claude"
+      ],
+      "protected_deletions": 0
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
