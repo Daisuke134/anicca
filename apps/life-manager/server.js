@@ -1405,4 +1405,4 @@ if (require.main === module) {
 // redeploy trigger 010026
 
 // Export pure helpers for unit tests (FIND-005).
-module.exports = { browserCastPublicUrl, buildTag, createBrowserCastTicket, inngestServeAllowed, panelApiOptions, panelOriginForPath, steelCastUrl, testCallAllowed, verifyBrowserCastTicket, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
+module.exports = { browserCastPublicUrl, buildTag, createBrowserCastTicket, inngestServeAllowed, panelApiOptions, panelOriginForPath, server, steelCastUrl, testCallAllowed, verifyBrowserCastTicket, TEST_CALL_COOLDOWN_MS, TEST_CALL_DAILY_MAX };
