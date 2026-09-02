@@ -163,7 +163,17 @@
       "agents_present_after": true,
       "protected_deletions": 0,
       "note": "df delta includes concurrent APFS release; target size is reported separately"
+    },
+    {
+      "batch": "p1c-merged-worktrees-4",
+      "target_kib_by_du": 379120,
+      "free_before_kib": 9846312,
+      "free_after_kib": 10246536,
+      "free_delta_bytes_by_df": 409829376,
+      "paths_missing_after": 5,
+      "protected_deletions": 0,
+      "verification": "all five were clean, merged into origin/main, unlocked, and had zero open handles immediately before git worktree remove"
     }
   ],
-  "reclaimed_bytes_by_target_size": 3771928576
+  "reclaimed_bytes_by_target_size": 4160147456
 }

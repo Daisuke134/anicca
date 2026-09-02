@@ -97,7 +97,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 
 ### 未完TODO（優先度順・完了した行は実行履歴へ移す）
 
-1. [ ] P1 Zero-waste baseline — 現在free 4.6 GiB。全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上を達成する
+1. [ ] P1 Zero-waste baseline — 現在free 9.8 GiB。全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上を達成する
 2. [ ] P4 Legacy廃止残件 — P4a/P4bは完了。保護中のactive rootを消さず、caller/state/source移管とretire可能rootの回収を完了する
 3. [ ] P2 Writer-owned retention — 全managed writerへowner/quota/retention/finalizer/leaseを接続する
 4. [ ] P3 Release GC — actual loaded argv保護とabandoned partial release回収を完成する
@@ -118,6 +118,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
   - [x] P1c-2: 5月slideshow outputと6月copy-viral terminal runsを回収。Data free `2,818,280`→`3,118,508 KiB`、queue/code保持、protected deletion 0
   - [x] P1c-3: OpenClaw `.git` 2.89 GiBを回収。working config/skills/agents保持、open handle 0、Data free `3,267,300`→`11,301,876 KiB`。APFS同時解放とtarget sizeはreceiptで分離
   - [x] P1c-4: 残るsession/evidence/media、Anicca/Profitable Git、single backupをP2/P5/active ownerへ割当て、直接削除対象から除外する
+  - [x] P1c-5: clean・main統合済み・unlocked・open handle 0の終了worktree 5件を`git worktree remove`で回収。Data free `9,846,312`→`10,246,536 KiB`、Alpaca/GH-11/active worktree保持、protected deletion 0
 - [ ] P1d: 全local writable volumeを再計測し、100 MiB以上のunclassified root 0、normal free 30 GiB以上をreadbackする
 
 #### P4 execution ledger
