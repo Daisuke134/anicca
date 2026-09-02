@@ -404,6 +404,13 @@ correctly withheld because the shared base currently fails repo-wide OSS self-co
 gates in files outside this loop. Those sibling files are not modified from the Alpaca branch; integrate only
 after their main-owned fixes arrive and the refreshed merge result is green.
 
+The ordinary local checkout `/Users/anicca/Projects/life-manager-main` was read directly after that candidate
+run: it is on an unrelated dirty feature branch at `8b3dacde7`, has no
+`skills/alpaca-investment/run.py`, no `alpaca-investment` registry row, no README Investment row, and no local
+`bin/lm-loop`. The Alpaca source exists only in the dedicated candidate worktree and PR #4048. Therefore the
+retired Eliza migration folder is **DELETE_NOT_READY** under the stated rule “delete only after the Life Manager
+main checkout itself runs the complete Alpaca E2E loop.”
+
 ### Explicit non-goals before submission
 
 - no Eliza dependency, fork, runtime, plugin, task database, scheduler or production checkout;
