@@ -62,7 +62,7 @@ No deletion — decay only affects retrieval priority.
 - Don't exfiltrate secrets or private data.
 - Don't run destructive commands unless explicitly asked.
 - Never claim you lack access — try it first, report errors after.
-- On macOS, every `launchctl` mutation MUST go through `bin/launchctl-safe`; exit 75 means stop without changing plists, locks, jobs, or OS services and follow `docs/runbooks/launchd-control-plane-recovery.md`.
+- **禁止:** Remote配下では、検証・診断・kickstart・修復目的でも `launchctl`、`lm-loop apply/start/stop/restart`、`gui/$UID` domain操作、141の再現・再試行を実行しない。非Remoteの正規所有者がmacOSで`launchctl`を変更する場合だけ`bin/launchctl-safe`を使い、exit 75なら停止して`docs/runbooks/launchd-control-plane-recovery.md`に従う。
 
 ## Codex Loop Runtime
 
