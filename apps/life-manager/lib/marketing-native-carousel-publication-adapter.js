@@ -109,6 +109,21 @@ const EN_AFFIRMATION_LANE = Object.freeze({
   workerLabel: "anicca-en-affirmation-instagram-canary",
 });
 
+const EN_AFFIRMATION_TIKTOK_LANE = Object.freeze({
+  ...EN_AFFIRMATION_LANE,
+  name: "EN_AFFIRMATION_TIKTOK",
+  platform: "tiktok",
+  accountId: "@aniccaaffirmation",
+  nativeOwner: "@aniccaaffirmation",
+  accountRef: "account://tiktok/@aniccaaffirmation",
+  integrationRef: "integration://postiz/tiktok/cmp93bkpu01uvoh0yd3aj560g",
+  integrationId: "cmp93bkpu01uvoh0yd3aj560g",
+  manifestAccount: "anicca-ios-en-affirmation-tiktok",
+  manifestProfile: "@aniccaaffirmation",
+  lane: "anicca-en-affirmation-tiktok",
+  workerLabel: "anicca-en-affirmation-tiktok-canary",
+});
+
 const EN_SLIDESHOW_TIKTOK_LANE = Object.freeze({
   name: "EN_SLIDESHOW_TIKTOK",
   productId: PRODUCT_ID,
@@ -257,7 +272,7 @@ const JA_BUDDHA_TIKTOK_LANE = Object.freeze({
   workerLabel: "anicca-buddha-tiktok-canary",
 });
 
-const LANES = Object.freeze([JA_LANE, EN_AFFIRMATION_LANE, EN_SLIDESHOW_TIKTOK_LANE, JA_MAIN_TIKTOK_LANE, JA_JP1_TIKTOK_LANE, JA_BUDDHA_TIKTOK_LANE]);
+const LANES = Object.freeze([JA_LANE, EN_AFFIRMATION_LANE, EN_AFFIRMATION_TIKTOK_LANE, EN_SLIDESHOW_TIKTOK_LANE, JA_MAIN_TIKTOK_LANE, JA_JP1_TIKTOK_LANE, JA_BUDDHA_TIKTOK_LANE]);
 
 function selectMarketingNativeCarouselLane(input = {}) {
   const integrationRef = input.instagramIntegrationRef || input.integrationRef;
@@ -543,4 +558,4 @@ function createMarketingNativeCarouselPublicationLoopAdapter(deps = {}) {
   return Object.freeze({ plan: async (input) => [buildMarketingNativeCarouselPublicationJob(input)], execute: (job, extra = {}) => executeMarketingNativeCarouselPublicationJob(job, { ...deps, ...extra }), reconcile: async (effect) => reconcile(effect, services(deps)), verify: verifyMarketingNativeCarouselPublicationReceipt, report: summary });
 }
 
-module.exports = { ADAPTER_ID, LOOP_ID, CAPABILITY, PRODUCT_ID, FORMAT_ID, FORM_ID, ACCOUNT_ID, ACCOUNT_REF, INTEGRATION_REF, PACK_FORMAT_ID, JA_LANE, EN_AFFIRMATION_LANE, EN_SLIDESHOW_TIKTOK_LANE, JA_MAIN_TIKTOK_LANE, JA_JP1_TIKTOK_LANE, JA_BUDDHA_TIKTOK_LANE, assertMarketingCarouselJpeg, buildMarketingNativeCarouselPublicationJob, buildMarketingNativeCarouselJob: buildMarketingNativeCarouselPublicationJob, createMarketingNativeCarouselPublicationLoopAdapter, createMarketingNativeCarouselAdapter: createMarketingNativeCarouselPublicationLoopAdapter, executeMarketingNativeCarouselPublicationJob, executeMarketingNativeCarouselJob: executeMarketingNativeCarouselPublicationJob, normalizeMarketingNativeCarouselJob: normalizeJob, selectMarketingNativeCarouselLane, runPostizCarouselProcess, safeMarketingNativeCarouselSummary: summary, verifyMarketingNativeCarouselPublicationReceipt, verifyMarketingNativeCarouselReceipt: verifyMarketingNativeCarouselPublicationReceipt };
+module.exports = { ADAPTER_ID, LOOP_ID, CAPABILITY, PRODUCT_ID, FORMAT_ID, FORM_ID, ACCOUNT_ID, ACCOUNT_REF, INTEGRATION_REF, PACK_FORMAT_ID, JA_LANE, EN_AFFIRMATION_LANE, EN_AFFIRMATION_TIKTOK_LANE, EN_SLIDESHOW_TIKTOK_LANE, JA_MAIN_TIKTOK_LANE, JA_JP1_TIKTOK_LANE, JA_BUDDHA_TIKTOK_LANE, assertMarketingCarouselJpeg, buildMarketingNativeCarouselPublicationJob, buildMarketingNativeCarouselJob: buildMarketingNativeCarouselPublicationJob, createMarketingNativeCarouselPublicationLoopAdapter, createMarketingNativeCarouselAdapter: createMarketingNativeCarouselPublicationLoopAdapter, executeMarketingNativeCarouselPublicationJob, executeMarketingNativeCarouselJob: executeMarketingNativeCarouselPublicationJob, normalizeMarketingNativeCarouselJob: normalizeJob, selectMarketingNativeCarouselLane, runPostizCarouselProcess, safeMarketingNativeCarouselSummary: summary, verifyMarketingNativeCarouselPublicationReceipt, verifyMarketingNativeCarouselReceipt: verifyMarketingNativeCarouselPublicationReceipt };
