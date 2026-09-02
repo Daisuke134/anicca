@@ -111,6 +111,26 @@ completion claim is nevertheless false until the two failing lanes below pass na
   This is a release-rollout defect, not a four-lane scheduling lock and not a reason to touch the
   Mac, Remote app-server, launchd domain, or any running owner from a Remote session.
 
+  A later independent natural reconciliation did bind Paid's installed plist and real process argv
+  to complete release `20260902T140524-8f956147`; two short fixed-release wakes failed read-only at
+  orders observation, and the next fixed-release wake recovered the orders page without lifecycle
+  intervention. That wake read talkroom `18223833` officially as `取引中`, compiled the latest buyer
+  event, and removed the legacy accumulated-row digest blocker. Its semantic owner returned
+  `effect=0`, `readback=1`, `failed=0`, `status=pending`: the buyer is not asking for the first
+  project's artifact in that event, but for the separate NPO法人まくとぅー estimate consultation
+  already present in direct-message thread `10085794` with proposal deadline 9/3 23:59, budget
+  JPY 24,000, and completion target 9/10. The existing Reply estimate adapter has prior official
+  send/readback proof, so a second estimate UI implementation is not required.
+
+  Reply is installed and running continuously from `20260902T085615-e9d59c32`, but is not healthy:
+  every 30-second inbox/reconciliation probe currently ends read-only with
+  `RuntimeError: asyncio.run() cannot be called from a running event loop`. The exact boundary is
+  `cdp_default_tab._serve_hidden_tab`: it enters an async CDP session and then calls synchronous
+  context-lease acquisition, whose implementation calls `asyncio.run`. Consequently no new outbox
+  action was created for thread `10085794`, which explains both the missing estimate response and
+  other missing buyer replies such as Ryu's. Fix that nested event-loop boundary first, then let the
+  existing estimate owner consume the exact new event once; do not add an estimate sender to Paid.
+
   Disk cleanup is alive but cannot reclaim installed/running immutable releases. Natural cleanup
   passes remained `ok=true` with errors/protected deletions `0/0`, and one pass reclaimed about
   2.26 GB. Paid terminal reconciliation wrote a hash-bound receipt for completed project `5167108`;
@@ -122,15 +142,25 @@ completion claim is nevertheless false until the two failing lanes below pass na
   contract; only terminal `work/` and explicitly authorized byte-identical artifact duplicates are
   deleted.
 
+  Current disk readback is 27 GiB free. The dominant retained roots are `~/loops/releases` at about
+  7.26 GiB and `~/gig/projects` at about 4.63 GiB, not video. Nine immutable release directories
+  remain; six full releases are about 1.19 GiB each because different installed owners still pin
+  `f5b3f345`, `58a71295`, `5a9c95fa`, `e9d59c32`, `29fb7681`, or `8f956147`. Central cleanup must
+  preserve every installed/open release, so convergence is the disk fix. The live gig tree still
+  has zero MP4/MOV/M4V/WebM files; the recoverable Trash video bundle remains about 1.1 GiB.
+
   Remaining C02 atoms, in order:
   1. Approve and implement one independent short-cadence release reconciler that updates only
      `loaded-idle` owners from a complete pushed-main immutable release. It must not run the daily
      development/D0 workload, interrupt a running lane, or require a Remote session to invoke
      `launchctl`, `lm-loop apply/start/stop/restart`, `gui/$UID`, app-server signals, or a restart.
-  2. Let that independent owner wake naturally and bind Paid to the complete fixed release; require
-     the installed plist SHA and real process argv to match before making any delivery claim.
-  3. Require the fixed Paid wake to canonicalize project `5242505`'s sidecar and send/read back
-     talkroom `18223833` exactly once.
+  2. Paid is now naturally bound to the complete fixed release in both installed plist and real
+     process argv. Preserve that readback while the remaining owners converge.
+  3. Fix Reply's nested event-loop hidden-tab failure at its source. Let the existing Reply estimate
+     adapter consume the exact new event in direct-message thread `10085794`, submit the separate
+     JPY 24,000 estimate once, and require official estimate readback plus replay effect zero. Then
+     let Paid resume project `5242505` from the newer official event without repeating the first
+     project's delivery or any prior message.
   4. Require Paid `last exit code = 0`, terminal `status=pass`, `failed=0`, and replay effect `0`.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
