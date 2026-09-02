@@ -252,15 +252,18 @@ test("Connpass discovery requires a non-online public venue before checking Cale
       return [
         event(301, { venue_name: "", venue_address: "" }),
         event(302, { venue_name: "オンライン配信", venue_address: "Zoom" }),
-        event(303, { venue_name: "Shibuya Hall", venue_address: "Tokyo" }),
+        event(303, { venue_name: "未定", venue_address: "東京都港区1-2-3" }),
+        event(304, { venue_name: "Shibuya Hall", venue_address: "未定" }),
+        event(305, { venue_name: "Shibuya Hall", venue_address: "会場" }),
+        event(306, { venue_name: "Shibuya Hall", venue_address: "Tokyo" }),
       ];
     },
     isCalendarFree(candidate) { checked.push(candidate.event_ref); return true; },
   });
 
   const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
-  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/303"]);
-  assert.deepEqual(checked, ["connpass-event://event/303"]);
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/306"]);
+  assert.deepEqual(checked, ["connpass-event://event/306"]);
 });
 
 test("Connpass direct action and parent readback use the supplied owned page", async () => {

@@ -18,10 +18,13 @@ skips every Connpass action after sending the candidate report.
 - Add one allowlisted shared-env opt-in, off unless its value is exactly `true`.
 - Forward that value at the native production dependency boundary.
 - Keep the existing manual boundary available when the opt-in is absent or off.
-- Require a qualifying in-person Connpass tier before the confirmation click;
-  online-only events remain no-effect.
+- Require both a public venue name and address with no online/placeholder
+  marker, plus a positively identified general-attendee Connpass tier, before
+  the confirmation click; online-only or ambiguous-location events remain
+  no-effect.
 - Treat an unknown effect from cache, direct, or Harness submission as a
-  circuit-open result and never retry it in the same wake.
+  circuit-open result and never retry it in the same wake, even if the audit
+  record write itself fails.
 - Make every exported Connpass permission boundary fail closed when omitted.
 - Update the Connector contract/spec to describe the explicit local opt-in.
 - Do not add a CLI, crawler, provider API, scheduler, browser profile, model

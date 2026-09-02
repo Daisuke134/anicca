@@ -433,6 +433,58 @@ test("an unknown direct submit effect opens the circuit before browser fallback 
   assert.equal(directFailure.safe_reason, "effect_unknown");
 });
 
+test("an unknown direct effect survives an audit-record failure", async () => {
+  const state = fixture({
+    async runDirectAction({ candidate: selected }) {
+      state.calls.push(["direct", selected.event_ref]);
+      const error = new Error("private browser result unavailable");
+      error.unknownEffect = true;
+      throw error;
+    },
+    async runAgentFallback({ candidate: selected }) {
+      state.calls.push(["agent", selected.event_ref]);
+      return Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
+    },
+  });
+  state.dependencies.recordAction = async (action) => {
+    state.calls.push(["history", action]);
+    if (action.method === "provider_direct") throw new Error("private audit sink unavailable");
+  };
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-audit-unknown", providers: ["connpass"],
+  }, state.dependencies);
+
+  assert.deepEqual(result, {
+    status: "circuit_open", safe_reason: "effect_unknown", telegram_provider_id: "9001",
+  });
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
+});
+
+test("a resolved unknown direct effect survives an audit-record failure", async () => {
+  const state = fixture({
+    async runDirectAction({ candidate: selected }) {
+      state.calls.push(["direct", selected.event_ref]);
+      return Object.freeze({ status: "failed", safe_reason: "effect_unknown" });
+    },
+    async runAgentFallback({ candidate: selected }) {
+      state.calls.push(["agent", selected.event_ref]);
+      return Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
+    },
+  });
+  state.dependencies.recordAction = async (action) => {
+    state.calls.push(["history", action]);
+    if (action.method === "provider_direct") throw new Error("private audit sink unavailable");
+  };
+  const result = await runMinimalConnectorWake({
+    ownerToken: "owner-token-connector-resolved-unknown", providers: ["connpass"],
+  }, state.dependencies);
+
+  assert.deepEqual(result, {
+    status: "circuit_open", safe_reason: "effect_unknown", telegram_provider_id: "9001",
+  });
+  assert.equal(state.calls.filter(([name]) => name === "agent").length, 0);
+});
+
 test("an unknown Harness exception opens the circuit before another candidate", async () => {
   const state = fixture({
     async discoverCandidates() {

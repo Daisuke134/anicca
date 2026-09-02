@@ -109,12 +109,14 @@ async function readConnpassRegistrationStateOnPage(page) {
   return Object.freeze({ state: value.state, ...(value.state === "unavailable" ? { reason: "closed" } : {}) });
 }
 
-// Rules (owner-decided): a tier qualifies only if it is free (no yen
-// amount), not disabled, has room (an "n/m人" cap with n < m, or no cap at
-// all), and carries none of Dais's disqualifying restriction markers.
-// Among qualifying tiers, an in-person one is required; first qualifying tier
-// in document order wins. Online-only events fail closed before confirmation.
-const TIER_RESTRICTION_PATTERN = /学生|招待|登壇|発表|LT枠|スタッフ|関係者|主催|懇親会のみ/;
+// Rules (owner-decided): a tier qualifies only if it is free (no yen amount),
+// not disabled, has room (an "n/m人" cap with n < m, or no cap at all),
+// positively identifies a general-attendee tier, and carries none of Dais's
+// disqualifying restriction markers. Among qualifying tiers, an in-person one
+// is required; first qualifying tier in document order wins. Online-only or
+// unlabeled tiers fail closed before confirmation.
+const TIER_RESTRICTION_PATTERN = /学生|招待|女性|男性|限定|会員|member|limited|登壇|発表|LT枠|スタッフ|関係者|主催|懇親会のみ/i;
+const TIER_GENERAL_PATTERN = /(?:一般(?:参加|枠|席|チケット|受付)|だれでも(?:参加|枠)?|誰でも(?:参加|枠)?|通常(?:参加|枠)?|オープン(?:参加|枠)?|^参加(?:枠)?(?=\s|$)|public\b|open\b|anyone\b|all\b)/i;
 const TIER_YEN_PATTERN = /¥|\d[,\d]*\s*円/;
 const TIER_ONLINE_PATTERN = /オンライン|リモート|配信|視聴|Zoom|Google\s*meet/i;
 const TIER_CAPACITY_PATTERN = /(\d+)\s*\/\s*(\d+)\s*人/;
@@ -130,6 +132,7 @@ function selectParticipationTierIndex(tiers) {
       if (tier.disabled) return false;
       if (!/無料/.test(tier.label) || TIER_YEN_PATTERN.test(tier.label)) return false;
       if (TIER_RESTRICTION_PATTERN.test(tier.label)) return false;
+      if (!TIER_GENERAL_PATTERN.test(tier.label)) return false;
       const capacity = tier.label.match(TIER_CAPACITY_PATTERN);
       if (capacity && !(Number(capacity[1]) < Number(capacity[2]))) return false;
       return true;

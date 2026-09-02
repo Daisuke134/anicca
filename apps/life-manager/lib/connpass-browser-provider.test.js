@@ -244,6 +244,23 @@ test("an online-only event fails closed before the confirmation click", async ()
   assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
 });
 
+test("a non-general or unlabeled free tier fails closed before the confirmation click", async () => {
+  const page = joinFlowFixture({
+    tiers: [
+      { label: "女性参加枠 無料 先着順 1/10人", disabled: false },
+      { label: "一般参加・会員限定 無料 先着順 1/10人", disabled: false },
+      { label: "一般参加 limited 無料 1/10人", disabled: false },
+      { label: "無料 先着順 1/10人", disabled: false },
+    ],
+    states: [{ state: "absent" }],
+  });
+  await assert.rejects(
+    submitConnpassOnPage(page),
+    (error) => error.code === "CONNPASS_TIER_UNAVAILABLE" && error.unknownEffect === false,
+  );
+  assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
+});
+
 test("a tier showing a yen amount is never selected, even when it is otherwise open and unrestricted", async () => {
   const page = joinFlowFixture({
     tiers: [

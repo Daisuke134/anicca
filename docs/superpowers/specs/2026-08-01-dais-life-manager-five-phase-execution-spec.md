@@ -10056,7 +10056,7 @@ origin/main exact SHAのread-only immutable release `/Users/anicca/loops/connect
 
 現行の実行経路は、Lumaを先に探索し、適格候補が無い場合にConnpassへ進む。Connpassの発見は公式APIの読み取りに限定し、実申込はConnector専用CloakBrowserの既存セッションで行う。Google Calendarのbusy readback、28日窓、無料・受付中・strong/moderate、東京の対面条件を通過した候補だけを対象にする。
 
-Connpassの参加枠は、無料・空席・一般参加で、かつ対面の枠が存在する場合だけ選ぶ。オンライン枠しかないイベントは、確定ボタンを押す前に `CONNPASS_TIER_UNAVAILABLE` として終了し、申込しない。確定クリック後に登録状態を読めない場合は外部作用不明として `circuit_open / effect_unknown` にし、同じwakeでHarness、別候補、別providerへ再送しない。
+Connpassの参加枠は、無料・空席・一般参加で、かつ対面の枠が存在する場合だけ選ぶ。一般参加であることは枠ラベルに一般／参加／だれでも等の公開マーカーがあることで肯定し、ラベルが無い枠や限定枠は選ばない。イベント側も公開された会場名と住所の両方を持ち、オンライン語・未定・調整中等のplaceholderを含まない場合だけ対面とみなす。オンライン枠しかないイベント、場所未定のイベント、一般参加と肯定できない枠は、確定ボタンを押す前に `CONNPASS_TIER_UNAVAILABLE` または候補除外として終了し、申込しない。確定クリック後に登録状態を読めない場合は外部作用不明として `circuit_open / effect_unknown` にし、監査記録の書込みが失敗してもその不確実性を優先し、同じwakeでHarness、別候補、別providerへ再送しない。
 
 この実申込経路は `LM_CONNECTOR_CONNPASS_AUTOMATED_SUBMIT_ALLOWED=true` の明示的なローカルopt-inでのみ有効になる。未指定・空値・`false`・その他の値は全てmanual action boundaryへ戻し、native factory、production router、Connpass workflowの各境界も同じfail-closed契約を持つ。既存のmanual boundary、公式provider readback、Calendar event本体のexact-one登録、Telegramのpositive receipt、`applied_bundle`のdedupeは維持する。
 

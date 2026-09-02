@@ -213,9 +213,11 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
     if (!PURPOSE.test(purpose) || !METHOD.test(method)) invalid();
     const timestamp = exactInstant(deps.now());
     const actionStartedAt = Date.parse(timestamp);
+    let resolvedEffectUnknown = false;
     try {
       const value = await task();
       const resolvedFailure = typeof onResolvedFailure === "function" ? onResolvedFailure(value) : null;
+      resolvedEffectUnknown = Boolean(resolvedFailure && resolvedFailure.safe_reason === "effect_unknown");
       const hasFailureContext = Boolean(
         resolvedFailure && typeof resolvedFailure === "object" && !Array.isArray(resolvedFailure),
       );
@@ -229,15 +231,25 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
       }));
       return value;
     } catch (error) {
+      if (resolvedEffectUnknown) {
+        const unknownEffect = new Error("Connector action effect unknown");
+        unknownEffect.unknownEffect = true;
+        throw unknownEffect;
+      }
       const context = typeof onFailure === "function" ? onFailure(error) : null;
-      await deps.recordAction(Object.freeze({
-        purpose,
-        method,
-        timestamp,
-        result: "failed",
-        duration_ms: Math.max(0, Date.parse(exactInstant(deps.now())) - actionStartedAt),
-        ...(context && typeof context === "object" ? context : {}),
-      }));
+      try {
+        await deps.recordAction(Object.freeze({
+          purpose,
+          method,
+          timestamp,
+          result: "failed",
+          duration_ms: Math.max(0, Date.parse(exactInstant(deps.now())) - actionStartedAt),
+          ...(context && typeof context === "object" ? context : {}),
+        }));
+      } catch (auditError) {
+        if (error && error.unknownEffect === true) throw error;
+        throw auditError;
+      }
       throw error;
     }
   }
