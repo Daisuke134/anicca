@@ -2669,11 +2669,20 @@ machine-wide generated Codex rules.
 4. Add one default-off Life Manager destination/loop and focused contract.
 5. Run one controlled canary, then verify Postiz, native handle/content,
    Telegram, and same-slot replay-zero.
-6. Arm exactly three daily intervals, target-only apply, official kickstart,
-   and read back plist, loaded argv, immutable release, terminal event, and
-   provider effect.
+6. Arm exactly three daily intervals in source. Remote does not call lifecycle
+   commands; the independent release watcher applies the release and the loop's
+   natural wake runs it. Read back plist, loaded argv, immutable release,
+   terminal event, and provider effect from artifacts.
 7. Keep YouTube `@anicca-jp` owner-skipped at 0/day. Only after this YouTube
    atom is terminal may the ebook/monk work begin.
+
+**141 prevention invariant:** Remote ChatGPT/Codex/Claude sessions never call
+`launchctl`, `lm-loop apply/start/stop/restart`, app-server daemon lifecycle,
+remote-control lifecycle, Terminal/AppleScript bridges, or OS/app restart.
+They do not probe 141. Existing release watchers and natural loop wakes own all
+host lifecycle; Remote only observes process, ledger, receipts, and public
+effects. Historical 141 means an invalid harness context, never a reason to
+shutdown, restart, signal a Remote-owned process, or block the business TODO.
 
 #### MKT-10R6 production-slot repair contract
 
