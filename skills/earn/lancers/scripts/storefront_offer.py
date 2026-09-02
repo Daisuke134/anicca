@@ -9,6 +9,8 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
+import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -396,13 +398,37 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
     return result
 
 
+def _watchdog(command: Sequence[str], timeout: float = 180) -> dict[str, Any]:
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        try: os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError: pass
+        try: process.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            try: os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError: pass
+        return {"ok": False, "logged_in": False, "error": "storefront_timeout"}
+    if stderr or len(stdout.splitlines()) != 1:
+        return {"ok": False, "logged_in": False, "error": "storefront_worker_failed"}
+    try: result = json.loads(stdout)
+    except (TypeError, ValueError): return {"ok": False, "logged_in": False, "error": "storefront_worker_failed"}
+    return result if isinstance(result, dict) and type(result.get("ok")) is bool else {"ok": False, "logged_in": False, "error": "storefront_worker_failed"}
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(); mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--inspect", action="store_true"); mode.add_argument("--apply", action="store_true")
+    parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--product", type=Path, default=DEFAULT_PRODUCT); parser.add_argument("--state-path", type=Path, default=Path.home() / ".local/state/anicca/lancers/application.json")
-    args = parser.parse_args(argv); result = run(args.apply, args.product, args.state_path)
+    args = parser.parse_args(argv)
+    result = run(args.apply, args.product, args.state_path) if args.worker else _watchdog([
+        sys.executable, str(Path(__file__).resolve()), "--worker", "--apply" if args.apply else "--inspect",
+        "--product", str(args.product), "--state-path", str(args.state_path),
+    ])
     print(json.dumps(result, ensure_ascii=False, sort_keys=True, separators=(",", ":")), flush=True)
-    if args.apply:
+    if args.apply and not args.worker:
         reporter = _load("_anicca_lancers_storefront_reporter", HERE / "telegram_report.py")
         delivery = reporter.notify_storefront_wake(result)
         if delivery.delivery_uncertain or delivery.pre_send_failed: return 1
