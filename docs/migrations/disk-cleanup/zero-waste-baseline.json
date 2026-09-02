@@ -1129,6 +1129,24 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "The running Capafy owner uses the Life Manager release skill path, not this workspace directory. The three old DRY/proof artifacts have no open handles or exact source references. Keep the owner running; delete only after artifact reuse/retention confirmation and the required irreversible-delete confirmation, then record after-bytes and free delta."
+    },
+    {
+      "batch": "p1d-outbound-lbj-v65-audit-47",
+      "path": "~/.openclaw/workspace/outbound/lbj-v65",
+      "measured_kib": 39440,
+      "files": [
+        {"path": "tekokoro-no12-final-v65.mp4", "bytes": 40385196, "mtime": "2026-08-16T10:31:43"}
+      ],
+      "absolute_path_refs": 0,
+      "asset_name_refs": 0,
+      "owner_processes": 0,
+      "external_open_handle_rows_final": 0,
+      "decision": "candidate_stale_outbound_artifact_defer_confirmed_deletion",
+      "safe_delete_candidate": true,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "No current owner, exact source reference, or open handle was found in the scoped Life Manager/OpenClaw source trees. Keep business loops running; delete only after artifact reuse/retention confirmation and the required irreversible-delete confirmation, then record after-bytes and free delta."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
