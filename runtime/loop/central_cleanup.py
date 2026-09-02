@@ -50,27 +50,24 @@ def loaded_release_roots(agents_dir: Path, releases_root: Path) -> set[Path]:
 
 
 def open_release_roots(releases_root: Path) -> set[Path]:
-    """Return release roots referenced by any open file or process cwd."""
+    """Return release roots named by a running process command."""
     completed = subprocess.run(
-        ["lsof", "-Fn"],
+        ["ps", "-axo", "command="],
         capture_output=True, text=True, timeout=120,
     )
-    if completed.returncode not in (0, 1):
-        raise OSError(f"release lsof failed: {completed.returncode}")
-    base = releases_root.resolve()
-    protected: set[Path] = set()
-    for line in completed.stdout.splitlines():
-        if not line.startswith("n"):
-            continue
-        try:
-            relative = Path(line[1:]).resolve().relative_to(base)
-        except (OSError, ValueError):
-            continue
-        if relative.parts:
-            release = base / relative.parts[0]
-            if release.is_dir():
-                protected.add(release.resolve())
-    return protected
+    if completed.returncode != 0:
+        raise OSError(f"release process inventory failed: {completed.returncode}")
+    requested_base = releases_root.expanduser()
+    base = requested_base.resolve()
+    commands = completed.stdout
+    return {
+        release.resolve()
+        for release in base.iterdir()
+        if release.is_dir() and any(
+            candidate in commands
+            for candidate in (str(release.resolve()), str(requested_base / release.name))
+        )
+    }
 
 
 def release_gc(releases: Path, current: Path, agents: Path, keep: int) -> dict:
