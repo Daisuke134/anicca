@@ -620,6 +620,11 @@ kakuteishinkokuは保持し、Archiveは304,956→223,336 KiBとなった。
 clean・remote reachable・open 0の12 cloneを96,912 KiB回収し、dirtyな`clawrouter` 93,300 KiBだけを保持した。
 回収後Data空き`28,959,220 KiB`（約27.6 GiB）、errors 0、protected deletion 0である。
 
+`~/work/tt-creator-venv`は2026-05作成、caller 0、process 0、open handle 0で、削除済みHomebrew Python
+3.14.3_1を指す壊れた再生成環境だったため176,844 KiBを回収した。唯一のTikTok signup script 76 KiBは保持した。
+`~/build` 75,644 KiBはLife Manager iOS日本語/pushの固有検証evidenceだったため変更0とした。
+回収後Data空き`29,160,676 KiB`（約27.8 GiB）、errors 0、protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
