@@ -26,6 +26,70 @@ The new loop is named `alpaca-investment`:
 - model route: existing Life Manager shared agent runner behind one narrow decision contract. Training a new
   foundation model or importing another agent framework is outside this deadline.
 
+### Exact source tree and resolver chain
+
+`config/loop-registry.json` is the lifecycle inventory SSOT. It currently contains 172 entries on this spec
+branch; the installed immutable release reports 173 entries with `missing_entrypoints=[]`,
+`unmanaged_labels=[]`, and `retired_installed_labels=[]`. Those counts differ because this branch and the
+installed release are different SHAs; neither count alone proves that every job is presently producing effects.
+Runtime health is read only through `~/loops/current/bin/lm-loop status all`, never through a second inventory.
+
+`runtime/loop/entry_dispatch.py` is the closed resolver for registry rows whose entrypoint needs loop-specific
+argv. Its `fixed` mapping currently resolves such families as Lancers, CrowdWorks, affiliate, marketing, gig,
+writer, and Symphony. A registry row may also point directly to a repository-relative executable, so the Alpaca
+loop only gets a resolver row if its direct entrypoint cannot express the required command. The registry remains
+the list; the dispatcher is not allowed to become a second list of cadence, state, budget, or health.
+
+```text
+life-manager/
+├── config/
+│   ├── loop-registry.json              # list SSOT: ID, cadence, label, domain, effect, entrypoint
+│   └── ceo-budget-config.json          # Alpaca model/tool spending ceiling
+├── loops/
+│   └── alpaca-investment/
+│       └── loop.toml                  # portable launch declaration; no hand-written plist
+├── skills/
+│   └── alpaca-investment/
+│       ├── SKILL.md                   # operator/agent contract and tool descriptions
+│       └── run.py                     # one finite pass, then exit
+├── runtime/
+│   ├── loop/
+│   │   ├── entry_dispatch.py      # optional one-ID → argv resolver row
+│   │   ├── runtime_event.py       # reuse terminal event schema; trade effect already exists
+│   │   └── lm_loop*.py            # reuse lifecycle/apply/status; do not fork
+│   └── agent-runner/agent_runner.py   # existing Codex/model harness, called only for judgment
+└── bin/
+    ├── lm-loop                         # existing operator interface
+    ├── plistgen.py                     # declaration → portable launchd job
+    └── cut-loop-release.sh             # main SHA → immutable release
+
+~/.local/state/life-manager/alpaca-investment/       # mutable private runtime data, outside Git
+├── lock
+├── campaign.json                              # current SPY identity and position lifecycle
+├── receipts.jsonl                             # decision/effect/outcome/economic receipts
+├── latest-runtime-event.json                  # one terminal result per wake
+└── logs/                                      # bounded stdout/stderr; never credentials
+```
+
+The planned registry row is one list item:
+
+```json
+"alpaca-investment": {
+  "cadence": {"start_interval_seconds": 300},
+  "domain": "financial",
+  "effect_class": "trade",
+  "entrypoint": "skills/alpaca-investment/run.py",
+  "label": "ai.anicca.alpaca-investment",
+  "log_root": "~/.local/state/life-manager/alpaca-investment/logs",
+  "provider_route": "shared-agent-runner",
+  "state_root": "~/.local/state/life-manager/alpaca-investment"
+}
+```
+
+This is the target shape, not a claim that the row or files already exist. The implementation reuses the direct
+entrypoint first. If the exact production interpreter needs argv construction, the registry entrypoint changes
+to `runtime/loop/entry_dispatch.py` and exactly one resolver row points to `run.py`.
+
 ```mermaid
 flowchart LR
     LD["launchd<br/>wake every 5 minutes"] --> LOOP["Life Manager alpaca-investment<br/>one bounded pass, then exit"]
