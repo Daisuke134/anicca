@@ -202,6 +202,15 @@ completion claim is nevertheless false until the two failing lanes below pass na
      `official_service_contract_invalid`; and restore successful Telegram transport without
      changing a business result. Then require every affected lane `last exit code = 0`, terminal
      `status=pass`, `failed=0`, and replay effect `0`.
+     Storefront's exact rejected field is now known: all 14 current dashboard cards expose the
+     official state `受付休止中`, while `listing_inventory.py` recognized only `公開中`, `非公開`,
+     and `下書き`, leaving every contract state null. Branch
+     `fix/coconala-storefront-official-state-20260902` adds the current `受付中` / `受付休止中`
+     vocabulary to the list parser and Storefront contract. The three focused contract tests pass;
+     the full Storefront file remains 32 pass / 2 fail, and both failures reproduce unchanged on
+     clean base `4529a7e2a`, so they are not regressions from this fix. This atom remains open until
+     pushed main runs naturally and reads all 14 official contracts without
+     `official_service_contract_invalid`, then records the normal effect/readback or replay-zero.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
   6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
@@ -231,10 +240,12 @@ completion claim is nevertheless false until the two failing lanes below pass na
      file-owner path for `18218780`; `:4095-4112` and `:4411-4450` validate genuine remote-owner
      results. Reuse those paths, produce the requested JPG, and resume `18223833` only after the
      estimate's newer official event. No room-name branch is allowed.
-  6. Storefront contract — `skills/earn/gig/scripts/storefront_direct.py:3226-3246` contains every
-     rejected field and `:5505-5536` collects the 14 official sources. Persist the exact failed
-     field in the receipt, correct the collector/normalizer for that field, and require a 14-service
-     contract readback plus replay effect zero.
+  6. Storefront contract — `skills/earn/gig/scripts/listing_inventory.py:84-91` now parses the
+     observed `受付中` / `受付休止中` states, and
+     `skills/earn/gig/scripts/storefront_direct.py:3226-3248` accepts them in the official service
+     contract. `skills/earn/gig/tests/test_storefront_direct.py` binds a real-shaped paused dashboard
+     card through both boundaries. Require the next natural main-derived wake to read 14 non-null
+     official states and finish with exact effect/readback or replay effect zero before closing it.
   7. Telegram corruption — `~/gig/telegram-outbox.sqlite3` fails read-only `PRAGMA quick_check` with
      `database disk image is malformed`. Recover into a new database using SQLite `.recover`,
      validate `skills/earn/gig/scripts/telegram_outbox.py:18-38` schema and all surviving
