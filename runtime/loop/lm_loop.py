@@ -283,6 +283,7 @@ def activate_current(current: Path, release_root: Path,
 def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                target: str | None = None, *, current: Path | None = None,
                lock_path: Path | None = None,
+               preserve_unloaded: bool = False,
                event_writer=append_runtime_event) -> list[dict]:
     release_root = release_root.resolve()
     current = Path(current or "~/loops/current").expanduser()
@@ -315,7 +316,8 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                               "changed": False}
             if result is None:
                 result = install_one(
-                    item, target_path, lambda args: _safe_launchctl(launchctl_safe, args))
+                    item, target_path, lambda args: _safe_launchctl(launchctl_safe, args),
+                    preserve_unloaded=preserve_unloaded)
                 result["changed"] = True
             entry = registry["loops"][item["loop_id"]]
             event = build_install_event(
@@ -364,7 +366,8 @@ def main(argv: list[str] | None = None) -> int:
         eligible = [row for row in rows if (
             row["classification"] == "managed"
             and row["provider_route"] == route
-            and row["launchd_state"] == "loaded-idle"
+            and row["launchd_state"] in {"loaded-idle", "unloaded"}
+            and row["installed_release_sha"]
             and row["installed_release_sha"] != current_sha
         )]
         applied, failed = [], []
@@ -373,7 +376,8 @@ def main(argv: list[str] | None = None) -> int:
                 applied.extend(apply_live(
                     release_root, Path("~/Library/LaunchAgents").expanduser(),
                     release_root / "bin/launchctl-safe",
-                    target=row["loop_id"]))
+                    target=row["loop_id"],
+                    preserve_unloaded=row["launchd_state"] == "unloaded"))
             except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
                 failed.append({"loop_id": row["loop_id"], "error": str(exc)})
         print(json.dumps({
