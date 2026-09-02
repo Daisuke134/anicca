@@ -156,7 +156,10 @@ master specのcheckboxはprimary agentだけがmain統合・実service検証後�
 
 ### 5.1 調査・credential・接続rail
 
-- [ ] O3B-00a Moneytree LINK、Moneytree Web export、Binance Japan、対象wallet network、FXの公式仕様を調査
+- [x] O3B-00a Moneytree LINK、Moneytree Web export、Binance Japan、対象wallet network、FXの公式仕様を調査
+  evidence: `docs/superpowers/evidence/2026-08-02-cfo-official-provider-research.md`。Moneytree証券scope、
+  Binance Japan固有可用性、実wallet network、実account planなど、公式資料だけで確定できない項目は
+  次のinventoryへUNKNOWNとして引き継ぐ。
 - [ ] O3B-00b credential名、scope、rate limit、history期間、refresh、re-auth、IP allowlist、契約条件を記録
 - [ ] O3B-00c local secretを値非表示で棚卸しし、保存先、permission、expiration、接続可否をevidence化
 - [ ] O3B-00d CloakBrowserのMoneytree/Binance session、公式export、既存OpenClaw skill、公開wallet情報を棚卸し
