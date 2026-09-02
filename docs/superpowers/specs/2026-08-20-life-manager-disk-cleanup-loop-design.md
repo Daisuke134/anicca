@@ -262,8 +262,10 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    rollback 1件を保持する。その後、cleanupが他ownerのreconcileまで行う責務混在をPR #3875 / merge
    `e7bc7d3b4`で削除し、削除authorityをhost cleanupとrelease GCだけへ限定した。canonical labelは自然terminal境界で
    immutable release `20260902T092831-e7bc7d3b`へ更新され、次wakeは`ok=true`、host errors 0、release errors 0、
-   protected deletion 0、`idle_reconcile=[]`、reclaimed 1,951,451 bytes。release 7件はすべてcurrent/loaded/open参照中の
-   ため安全保持し、freeは約3.0 GiBで11 GiB floor未達。残る旧releaseはlong-lived running loopのため停止せず保持する。
+   protected deletion 0、`idle_reconcile=[]`、reclaimed 1,951,451 bytes。続く明示full-release reconcileは
+   `d1133b36`のplist参照を27→0へ収束し、deterministic/sharedともfailed 0、running stop 0。GC readbackは
+   release 7件＝current/loaded/open参照6件＋rollback 1件、errors 0、protected deletion 0で設計上限へ収束した。
+   freeは約3.9 GiBで11 GiB floor未達。残る旧releaseはlong-lived running loopのため停止せず保持する。
 
    追加のread-only owner照合後、未使用`/Applications/Chat On Steroids.app`を391,668 KiB、旧Codex package
    `0.151.0`と未使用plugin app-serverを合計570,048 KiB、重複pipx環境`camoufox`と`crawl4ai`を合計
