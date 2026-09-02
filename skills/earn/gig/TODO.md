@@ -5470,8 +5470,8 @@ queue is added. Each owner must also progress independent work concurrently insi
    The lock-lifetime fix is now merged through PR `#4023`; current immutable release
    `20260902T211246-af0fb4c1` is an immutable pushed-main descendant of `c7da7f4e8` and has about
    9.8 GiB free. Production is still split: Apply is installed on `c259cc6e`, Reply on `663f1af0`,
-   and Storefront plus Paid have moved to `0dbe1321`/`af0fb4c1`. Apply and Reply report their latest
-   terminal `pass`; Storefront and Paid still report `entrypoint_exit_1`. The release fix therefore
+   and Storefront plus Paid have moved to `0dbe1321`/`af0fb4c1`. Reply reports its latest terminal
+   `pass`; Apply, Storefront, and Paid now report `entrypoint_exit_1`. The release fix therefore
    removes the permanent migration-lock cause but does not prove four-lane completion or make an
    installed/running old release deletable. Require natural owner convergence, fresh terminal
    receipts, central GC, and a post-GC disk readback before closing this incident.
