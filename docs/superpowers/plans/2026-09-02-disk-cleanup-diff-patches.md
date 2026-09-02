@@ -3,6 +3,16 @@
 Canonical spec: `docs/superpowers/specs/2026-08-20-life-manager-disk-cleanup-loop-design.md`.
 This file is the exact file/line/diff/readback SSOT for P0–P7. Execute only the first unfinished patch.
 
+## Branch and merge contract
+
+- Workspace: `~/Projects/life-manager-symphony-workspaces/GH-11`
+- Branch: `fix/disk-cleanup-end-to-end`
+- Commit and push every finished atom to this branch; do not merge intermediate cleanup PRs to main.
+- Finish P0 remaining source work and P1–P6 implementation plus isolated verification in this branch.
+- Merge one final PR only after the pre-merge gate in the canonical spec passes.
+- Because production accepts only main-derived immutable releases, perform release/readback and P7 24-hour/7-day verification after that merge.
+- Retire this worktree and branch only after P7 passes.
+
 ## Goal and boundaries
 
 Keep every revenue loop running while each writer bounds its own scratch/cache/log/WAL/artifacts and central cleanup removes only shared regenerable garbage. Normal free space is at least 30 GiB; new unbounded writes projected below 11 GiB are zero.

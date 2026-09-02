@@ -53,6 +53,32 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 未参照release、再生成cache、期限切れlog、terminal run、同一内容のbackupである。macOS、現行application、認証profile、
 稼働toolchain、唯一のuser data、進行中WebMCP/Gig成果物は残す。
 
+### As-Is — 現在の開発状態
+
+- cleanupの専用workspaceは`~/Projects/life-manager-symphony-workspaces/GH-11`である。
+- 現在の専用branchは`fix/disk-cleanup-end-to-end`であり、`origin/main`から開始する。
+- 過去はP0内部patchとspec更新を複数branch/PRへ分割し、cleanup全体の完了前にmainへ逐次mergeした。この運用は終了する。
+- cleanup runtimeのmain由来release移管、自然wake PASS、compatibility alias削除は既にmain/productionへ反映済みで、再実行しない。
+- それ以外のP0残件とP1〜P7は未完であり、空き容量もnormal目標30 GiBへ未到達である。
+
+### To-Be — 一つのworktree、一つのbranch、一度のmerge
+
+1. cleanupのsource、spec、TODO、commit、検証証拠はGH-11の`fix/disk-cleanup-end-to-end`だけへ集約する。
+2. P0残件とP1〜P6の実装・隔離検証が完了するまでmainへmergeしない。途中PRをmergeせず、branchへcommit/pushする。
+3. unrelated taskをこのbranchへ入れず、別cleanup branch/worktreeも作らない。別agentはこのbranchを変更しない。
+4. pre-merge gateが全てPASSした時だけ一つのPRを作り、mainへ一度だけmergeする。
+5. productionはmain由来immutable releaseだけなので、merge後にrelease/readbackを行い、P7の24時間・7日receiptで最終完了する。
+6. P7完了後にGH-11 worktreeとcleanup branchをretireする。最終的に見る場所はmainとproduction receiptだけになる。
+
+#### Merge gate
+
+- [ ] P0残件とP1〜P6のsource変更がGH-11 branch内で完了
+- [ ] focused test、隔離E2E、`git diff --check`がPASS
+- [ ] TODO/specが実装と一致し、未分類100 MiB rootと既知の無上限writerが0
+- [ ] branchにuncommitted/unpushed変更が0
+- [ ] 一つの最終PRだけを作成してmainへmerge
+- [ ] merge後にmain由来release、production readback、P7 24時間・7日検証を完了
+
 ### 最初から最後までの固定TODO
 
 | 順序 | 状態 | 作業 | 完了証拠 |
@@ -75,7 +101,8 @@ Exact file/line/unified-diff/run/readback SSOT →
 `docs/superpowers/plans/2026-09-02-disk-cleanup-diff-patches.md`
 
 下のP0〜P7は上の固定TODOを実行可能なpatchへ畳んだものであり、順序を変えない。
-各patchは「source/mainへ統合、production反映、実bytes/readback、specのcheckbox更新」の4点が揃った時だけ完了とする。
+P0残件とP1〜P6はGH-11 branch内でsource・隔離検証・spec checkboxを閉じ、途中でmainへmergeしない。
+一つの最終PRをmergeした後、main由来release、production readback、P7の時間窓検証を閉じる。
 
 | Patch | 対応TODO | 変更対象 | このpatchが消す問題 | 完了証拠 |
 |---|---|---|---|---|
