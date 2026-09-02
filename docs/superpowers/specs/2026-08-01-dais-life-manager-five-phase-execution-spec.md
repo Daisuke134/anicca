@@ -25,7 +25,7 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 ### 0.0 current cursor — LancersをGeneral Agentの最初の実環境として閉じる
 
 DaisはLancers応募laneを先に直すよう明示的に順序変更した。Alpaca trackは削除せず、Lancersの現在atomが閉じるまで
-pauseして保持する。現在activeな一件はAtomic program ledger Seq 31 `ELZ-L09` profit/risk/capability decisionである。
+pauseして保持する。現在activeな一件はAtomic program ledger Seq 32 `ELZ-L10` sealed intent cap and expiryである。
 Seq 26 `ELZ-L04`はEliza AgentRuntimeが共通browserで案件5595090を観察し、モデルがintentを作り、
 effect kernel内の一回だけの送信で公式Proposal ID `27876969`を取得してDONEになった。別processからの同一effect keyは
 `effect_started=false / execute_count=0`でreplay-zeroを実証した。Seq 27 `ELZ-L05`は同じdurable PGliteを別processで
@@ -1011,8 +1011,8 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 28 | ELZ-L06 provider admission boundary | **DONE** | canonical private `provider-admission-receipt.json` mode 0600 status=`PASS`、SHA256 `a7808bc6…`。provider-neutral `admitProviderEffect`へactive set `[lancers]`を渡し、Lancersだけadmitted。Upwork/Coconala/unknownは全て`LIFE_MANAGER_PROVIDER_NOT_ACTIVE`でeffect 0。semantic判断/UI操作/provider brain 0。Eliza fork PR #69、merge `8844df49…` |
 | 29 | ELZ-L07 one money wake owner | **DONE** | canonical private `money-wake-receipt.json` mode 0600 status=`PASS`、SHA256 `bf2dcc66…`。AgentRuntime＋durable PGlite＋既存scheduling spine＋single `plugin-life-manager`でowner row 1、interval 5分、model decision 1回、heartbeat `2026-09-01T23:42:15.103Z`、next fire `23:47:10.108Z`、clean release、provider effect 0。Eliza fork PR #71 merge `f1c86803…`、CLI account path修正PR #72 merge `da0cd2a0…` |
 | 30 | ELZ-L08 CloakBrowser ACI and source-complete opportunity snapshot | **DONE** | canonical private `opportunity-snapshot-receipt.json` mode 0600 status=`PASS`、SHA256 `abefcdf5…`。Eliza fork PR #74 merge `9dd3486f…`で既存`browser-harness`をprovider-neutral Agent actionへ登録。認証済みCloakBrowser `:9227`のLancers公式project source 804件をpage 1–31まで走査し、last nonempty=27、terminal empty=28–31、HTTP 200、unique ID 713、ID集合SHA256 `01c81248…`、external effect 0。新browser/Eliza CDP target/`puppeteer-core`/provider workflow/selector 0 |
-| 31 | ELZ-L09 profit/risk/capability decision | **IN_PROGRESS — NEXT** | model理由、expected net、cost、capacity、truthful feasibilityを持つ`opportunity-decision-receipt.json` |
-| 32 | ELZ-L10 sealed intent cap and expiry | TODO | immutable content hash、effect key、spend/capacity ceiling、expiry、duplicate fenceの`sealed-intent-receipt.json` |
+| 31 | ELZ-L09 profit/risk/capability decision | **DONE** | canonical private `opportunity-decision-receipt.json` mode 0600 status=`PASS`、SHA256 `21365fa4…`。Coconala正本のcommon marketplace feasibility policyを直接使い、Luna highが最新system案件3件を本文全体から判断。3/3 `submit_required`、hard prohibited 0。順位5595238→5594760→5595185。各model理由、expected net 12,025/8,350/835円、cost 500/0/0円、capacity 8/4/1.5h、truthful feasibilityを保持。missing Skill/実績をskip理由にせず、external effect 0 |
+| 32 | ELZ-L10 sealed intent cap and expiry | **IN_PROGRESS — NEXT** | immutable content hash、effect key、spend/capacity ceiling、expiry、duplicate fenceの`sealed-intent-receipt.json` |
 | 33 | ELZ-L11 buyer inbox completeness | TODO | reply/offer/contract sourceを重複なしで読み、missing sourceを明示する`buyer-source-receipt.json` |
 | 34 | ELZ-L12 negotiation decision | TODO | modelがaccept/counter/decline/replyをterms evidenceから判断し、一message intentだけを作る`negotiation-receipt.json` |
 | 35 | ELZ-L13 client-originated approval | TODO | buyer offer/selection/approvalのofficial IDとterms hashを読む`offer-approval-receipt.json` |
