@@ -2732,25 +2732,20 @@ apply, kickstart, lifecycle, provider, or Telegram action. TODO 5 remains
 active until the independent release owner advances and one exact natural
 effect is verified.
 
-**YouTube live cursor 11 — release-owner assumption disproved:** installed
-state has no independent general release watcher. The former
-`ai.anicca.hf-gig-release-watch` is intentionally in `retired_labels`; the
-control-plane spec records that it exited 2 every five minutes, was retired by
-PR #2986, has no production recreator, and must not be restored. Installed
-`life-manager-selfbuild` runs daily at 04:10 but its exact entrypoint only hands
-an eligible PR to the merge guard; it does not cut or apply releases. Installed
-`life-manager-dev` also runs daily at 04:10, and its documented release
-reconciliation is restricted to existing `shared-agent-runner` rows, not new
-marketing labels. The current immutable selector therefore remains
-`20260902T140524-8f956147`, the new entrypoint is absent from that release, the
-new plist is absent, and provider/Telegram effects remain zero. The blocker is
-now exact: no active non-Remote owner currently owns release/install of this
-new marketing label. Remote must not work around that absence with
-`launchctl`, `lm-loop apply/start/stop/restart`, raw launchctl, Terminal,
-AppleScript, signal, app/Mac restart, direct publication, or resurrection of
-the retired watcher. TODO 5 stays active and is split only inside the same
-fixed-order atom: establish a valid non-Remote release/install owner, then let
-that owner produce the immutable label and natural canary evidence.
+**YouTube live cursor 11 — existing Life Manager rollout retained:** the lane
+already exists on `origin/main` with its exact destination, registry row,
+dedicated entrypoint, integration, pack, native handle, and three daily slots.
+No OpenClaw clone, new scheduler architecture, or new release-owner design is
+required. The observation that the current immutable selector still precedes
+this lane proves only that rollout had not reached this label at that instant;
+it does not prove that Life Manager lacks its established rollout process.
+Follow the same main-derived immutable-release and one-label rollout used by
+the working Anicca/Honne lanes, then let the real lane perform the canary and
+natural schedule. The retired Coconala-specific
+`ai.anicca.hf-gig-release-watch` remains unrelated and must not be restored.
+Remote still does not call `launchctl`, `lm-loop apply/start/stop/restart`, raw
+launchctl, Terminal/AppleScript bridges, signals, or app/Mac restart. Provider
+and Telegram effects remain zero until the real lane runs.
 
 **Next atomic TODO — fixed order:**
 
@@ -2765,11 +2760,10 @@ that owner produce the immutable label and natural canary evidence.
 4. **Done:** the default-off destination, registry row, dedicated boot route,
    shared-cycle lane, exact three slots, and focused contract are recorded in
    live cursor 9; no runtime or provider effect was claimed.
-5. **Active:** first establish a valid non-Remote owner for immutable
-   release/install of this new label without resurrecting the retired watcher;
-   then run one natural controlled canary and verify Postiz, native
-   handle/content, Telegram, and same-slot replay-zero. Remote performs none of
-   the prohibited lifecycle or substitute-publication actions.
+5. **Active:** use the established Life Manager main-derived immutable-release
+   and one-label rollout, then run one natural controlled canary and verify
+   Postiz, native handle/content, Telegram, and same-slot replay-zero. No new
+   owner architecture or OpenClaw clone is part of this atom.
 6. Arm exactly three daily intervals in source. Remote does not call lifecycle
    commands; the independent release watcher applies the release and the loop's
    natural wake runs it. Read back plist, loaded argv, immutable release,
