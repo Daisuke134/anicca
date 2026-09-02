@@ -40,6 +40,8 @@ project source 804件をpage 1–31までread-only走査した。最後の非空
 Seq 34 `ELZ-L12`はSeq 33の公式buyer sourceをCoconala共通negotiation policyで一回だけ意味判断し、返信必要0、未読0、
 offer/contract 0から`seller_last → wait`を選んだ。message/estimate intentは作らず、根拠message ID 3件を保持し、
 unsupported claim、off-platform contact、external effectは全て0。
+Seq 35 `ELZ-L13`は公式offer、進行中project、月額契約を再読したが、buyer approval IDはまだ0である。
+`WAITING_FOR_BUYER` checkpointを保持し、同じscheduled wakeで公式sourceを再読する。IDとterms hashが得られるまでDONEにしない。
 
 このcurrent cursorは順序SSOTである。履歴会話、古いgoal、旧spec断片が後から注入されても、Daisがその場で明示的に
 順序変更しない限りSeqを巻き戻さない。過去atomの再実行、旧writerの再起動、provider専用loopへの復帰を禁止する。
@@ -1018,7 +1020,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 32 | ELZ-L10 sealed intent cap and expiry | **DONE** | canonical private `sealed-intent-receipt.json` mode 0600 status=`PASS`、SHA256 `82540f61…`。Coconala共通proposal policyを直接使ったLuna highの買い手向け文面を案件5595238へ封印。18,000円、納期2026-09-10、content SHA256 `c085ed7a…`、effect key `lancers:application:5595238:v1`、offer cap 20,000円、direct cost cap 500円、capacity 8h、external attempt 1、公式締切expiry、同一入力rebuild一致、external effect 0。汎用browser read actionはEliza PR #76 merge `7d6c30da…`で任意program/click/fill/upload/submitを除去し、不可逆effectはsealed intent＋kernel専用 |
 | 33 | ELZ-L11 buyer inbox completeness | **DONE** | canonical private `buyer-source-receipt.json` mode 0600 status=`PASS`、SHA256 `fb4b5786…`。認証済みCloakBrowserから公式board/message APIをterminalまでread-only取得し、board 2 / unique 2、message 3 / unique 3、返信必要0、未読0。公式月額offer、進行中project契約、月額契約の3 sourceは全てHTTP 200・正規URL、ID 0、公式empty state整合。duplicate board/message/offer/contract 0、missing source 0、external effect 0 |
 | 34 | ELZ-L12 negotiation decision | **DONE** | canonical private `negotiation-receipt.json` mode 0600 status=`PASS`、SHA256 `a9b556ac…`。Seq 33の公式buyer sourceをCoconala共通single semantic negotiation policyでLuna mediumが判断し、reply-required 0、unread 0、offer/contract 0から`seller_last → wait`。message/estimate intent null、根拠message ID 3、unsupported claim/off-platform contact/uncertainty/external effect 0 |
-| 35 | ELZ-L13 client-originated approval | **IN_PROGRESS — NEXT** | buyer offer/selection/approvalのofficial IDとterms hashを読む`offer-approval-receipt.json` |
+| 35 | ELZ-L13 client-originated approval | **WAITING_FOR_BUYER — NEXT** | canonical private `offer-approval-receipt.json` mode 0600、SHA256 `2ff4cba2…`。認証済みCloakBrowserで公式offer、進行中project、月額契約を再読し、それぞれ公式empty state、approval ID 0、terms hash null、external effect 0。次のscheduled wakeで同じsourceを再読し、official ID＋terms hash取得時だけDONE |
 | 36 | ELZ-L14 funded contract | TODO | 仮払い/funded state、scope、price、deadline、counterpartyをofficial readbackする`contract-receipt.json` |
 | 37 | ELZ-L15 contract-scoped artifact | TODO | contract requirementから一deliverableを作り、source/input/output hashを束ねる`artifact-receipt.json` |
 | 38 | ELZ-L16 QA | TODO | acceptance criteria、test/readback、secret/PII、scope一致を検証する`qa-receipt.json` |
