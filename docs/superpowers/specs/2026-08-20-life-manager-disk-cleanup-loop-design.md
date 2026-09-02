@@ -154,6 +154,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
         - [x] P1d-3c-2c: IPv4 `:9222`を占有していた不要Google Chrome PID 419だけをSIGTERMで正常終了し、二重owner競合を0にした。Job Search Chromium PID 1139とIPv6 `[::1]:9222` CDPは継続し、`/json/version` readback PASS。Google Chrome open Life Manager path 0、収益loop停止0。既存consumerの`127.0.0.1`指定はIPv6 listenerへ届かないため、owner再起動を伴わない別atomとして閉じる
         - [x] P1d-3c-2d: shared persistent ownerの64/32 MiB cacheをprofile別directoryへ分離し、`with-browser.sh`がlease終了時にregistry上の自identity配下の再生成cacheだけを回収する契約を追加。daily-driver/TikTok/Buyma cache `455,364`→0 KiB、Data free `21,741,396`→`22,213,000 KiB`、全owner生存、Buyma `:9330`継続。browser registryの旧`anicca/...` caller 6件を`~/loops/current/...`へ正規化し、focused test 9/9、compile/shell syntax PASS
       - [ ] P1d-3c-3: process/RSS/swapの再増加停止とnormal free 30 GiB以上をreadbackする
+        - [x] P1d-3c-3a: clean・open process 0・remote保存済みの終了worktree 6件と再生成可能な独立Codex clone 1件を回収。未pushだったBuddha branchは先にremote保存。論理`568,044 KiB`、Data free `14,018,660`→`14,500,100 KiB`、lock/dirty/Eliza/Alpaca削除0
+        - [ ] P1d-3c-3b: `/private/tmp`の残る非Git terminal artifactとunlocked clean remote-saved worktreeを回収し、active/locked worktreeを保持する
 
 #### P4 execution ledger
 

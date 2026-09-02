@@ -381,6 +381,18 @@
       "registry_legacy_callers_after": 0,
       "focused_tests": "9/9 PASS",
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1d-terminal-worktrees-9",
+      "target_kib_by_du": 568044,
+      "free_before_kib": 14018660,
+      "free_after_kib": 14500100,
+      "removed_linked_worktrees": 6,
+      "removed_regenerable_clones": 1,
+      "newly_pushed_branches": ["docs/buddha-present-20260902"],
+      "locked_or_dirty_removed": 0,
+      "eliza_or_alpaca_removed": 0,
+      "protected_deletions": 0
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
