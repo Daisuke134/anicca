@@ -674,6 +674,13 @@ Library Logs `130,460 KiB`は全件7日以内で、Codex `113,804 KiB`と現在o
 Data空きは`30,124,992 KiB`（約28.7 GiB）である。Remoteから`launchctl`、signal、app restartを使わず、
 自然terminalまで⑤をactiveのまま保持する。
 
+Sparkle packageのversion readbackでは、現在の`/Applications/ChatGPT.app`が
+`26.820.60940 (7119)`、Installation内のstaged appが新しい`26.831.21537 (7579)`だった。
+したがって1,985,752 KiBは古い残骸ではなく未適用update packageであり、Updater PID 8768がsleep中でも
+削除しない。ChatGPTの自然終了、Updater terminal、新version適用を順にread backした後、既存Governorの
+次wakeでInstallation回収、errors 0、protected deletion 0を確認する。Remoteから終了・restart・signalを
+行ってこの条件を作らない。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
