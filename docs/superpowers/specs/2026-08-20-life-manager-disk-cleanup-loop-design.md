@@ -115,7 +115,9 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 - [x] P1b: 100 MiB以上の各componentをactive/protected/unique/regenerable/duplicateへ確定し、exact delete manifestを作る
 - [ ] P1c: effect直前にopen/dirty/remote/rollbackを再確認し、安全な再生成物と重複物だけを回収する
   - [x] P1c-1: terminal writer runのvenv/node_modules/nested Git/downloadとOpenClaw workspace node_modules、exact 8 pathを回収。Data free `4,201,404`→`4,530,288 KiB`、protected deletion 0
-  - [ ] P1c-2: OpenClaw `.git`、terminal media/evidence、残るduplicate sourceをeffect前再確認して回収または保護へ確定する
+  - [x] P1c-2: 5月slideshow outputと6月copy-viral terminal runsを回収。Data free `2,818,280`→`3,118,508 KiB`、queue/code保持、protected deletion 0
+  - [ ] P1c-3: OpenClaw `.git` 2.89 GiBを回収する。HEAD/working files/open handle 0は確認済み。GitHub GH001で保存不能な旧local-only commits 288件の不可逆削除password gateが残る
+  - [ ] P1c-4: terminal media/evidence、残るduplicate sourceをeffect前再確認して回収または保護へ確定する
 - [ ] P1d: 全local writable volumeを再計測し、100 MiB以上のunclassified root 0、normal free 30 GiB以上をreadbackする
 
 #### P4 execution ledger

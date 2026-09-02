@@ -6,7 +6,7 @@
       "path": "~/.openclaw",
       "measured_kib": 7884788,
       "components": [
-        {"path": ".git", "kib": 3054404, "classification": "remote_recoverable_candidate_needs_dirty_baseline_protection", "head_remote_verified": true, "open_handles": 0},
+        {"path": ".git", "kib": 3054404, "classification": "retire_ready_with_user_authorized_local_history_loss", "head_remote_verified": true, "open_handles": 0, "local_only_commits": 288, "push_blocker": "GitHub GH001: 155.09 MB events.jsonl and 578.44 MB skills backup exceed 100 MB", "working_files_preserved": true},
         {"path": "skills", "kib": 1294196, "classification": "active_source_plus_backup_candidate"},
         {"path": "agents", "kib": 718736, "classification": "protected_sessions_owner_retention"},
         {"path": "workspace", "kib": 691864, "classification": "mixed_active_and_regenerable"},
@@ -101,6 +101,19 @@
       "expected_kib": 129012,
       "reason": "terminal June run outputs; niches_queue.txt preserved",
       "recovery": "rerun copy-viral-format-factory"
+    },
+    {
+      "path": "~/.openclaw/.git",
+      "expected_kib": 3054404,
+      "reason": "runtime working tree does not need 2.89 GiB Git history; HEAD and one branch are remote; user explicitly accepts loss of remaining old local-only commits",
+      "recovery": "git init, add origin https://github.com/Daisuke134/anicca-dais.git, fetch required remote branch; working files remain in place",
+      "irreversible_local_refs": [
+        "696a7960bfe1ca4a7220f29160cb7eb86e8d4ecd",
+        "c30ff5589128f839fd5ccc027d4254f33df78fa6",
+        "b85a18d343f4eb50b4d79ca9a6d3b93b53c238f7",
+        "ad55a93ea262ef29cb89282bbf11b0a1e78e2cda"
+      ],
+      "confirmation_password_required": true
     }
   ],
   "receipts": [
@@ -111,7 +124,14 @@
       "reclaimed_bytes_by_df": 336777216,
       "missing_after": 8,
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1c-terminal-output-2",
+      "free_before_kib": 2818280,
+      "free_after_kib": 3118508,
+      "reclaimed_bytes_by_df": 307433472,
+      "protected_deletions": 0
     }
   ],
-  "reclaimed_bytes": 336777216
+  "reclaimed_bytes": 644210688
 }
