@@ -165,29 +165,28 @@ def _launchctl(*args: str) -> str:
 
 
 def _last_event(state_root: str, loop_id: str | None = None,
-                cache: dict[Path, list[str]] | None = None) -> dict | None:
+                cache: dict[Path, dict[str | None, dict]] | None = None) -> dict | None:
     path = Path(os.path.expanduser(state_root)) / "events.jsonl"
     if cache is not None and path in cache:
-        lines = cache[path]
-    else:
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except OSError:
-            lines = []
-        if cache is not None:
-            cache[path] = lines
+        return cache[path].get(loop_id)
+    reports: dict[str | None, dict] = {}
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        lines = []
     for line in reversed(lines):
         try:
             value = json.loads(line)
             validate_runtime_event(value)
         except (json.JSONDecodeError, ValueError):
             continue
-        if loop_id is not None and value.get("loop_id") != loop_id:
-            continue
         if value.get("phase") != "report":
             continue
-        return value
-    return None
+        reports.setdefault(None, value)
+        reports.setdefault(value.get("loop_id"), value)
+    if cache is not None:
+        cache[path] = reports
+    return reports.get(loop_id)
 
 
 def _release_from_plist(path: Path) -> str | None:
@@ -225,7 +224,7 @@ def collect_live(registry: dict) -> tuple[dict, dict, dict, set[str], set[str]]:
     releases, events = {}, {}
     for path in installed_paths:
         releases[path.stem] = _release_from_plist(path)
-    event_cache: dict[Path, list[str]] = {}
+    event_cache: dict[Path, dict[str | None, dict]] = {}
     for loop_id, entry in registry["loops"].items():
         label = entry["label"]
         releases[label] = _release_from_plist(plist_dir / f"{label}.plist")

@@ -5614,6 +5614,11 @@ queue is added. Each owner must also progress independent work concurrently insi
    snapshot because that path reads the macOS GUI launch domain. Acceptance is focused unit PASS
    followed by a later natural reconciler terminal and observable owner migration.
 
+   Live timing shows caching raw lines removes repeated disk reads but still reparses the same file
+   once per loop; the shared-route snapshot remained CPU-bound past three minutes. Cache the
+   validated latest report map by loop ID per file, so both read and JSON validation occur once per
+   state file during one snapshot. Keep the cache snapshot-local so later runs see new events.
+
    The same migration exposes a bootstrap lock conflict for owners launched from pre-lock-fix
    releases: each old long-running Coconala owner still holds its per-label execution lock for its
    full lifetime, while `apply_live()` tries to acquire that same file before performing an intended
