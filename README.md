@@ -2,10 +2,12 @@
 <!-- startup-context-digest: f61cbb3cd2878abfb67756de2b23e816070aa3d991c71f748b2dfe1dbd3180d6 -->
 # Life Manager
 
-**Life Manager is a proactive general agent that manages your body, mind, and money.** It turns goals into
-completed real-world actions, acts within delegated boundaries, verifies what happened, and reports the result
-in plain language with evidence in Telegram. Its mission is to make dependable care and agency continuously
-available and end suffering for humans and, ultimately, all living beings.
+**Life Manager is a proactive general agent that manages your body, mind, and money.** In normal operation,
+you do not have to prompt it or repeatedly give it goals. It learns your standing preferences and delegated
+boundaries, maintains the goals internally, notices what needs attention, and turns that into completed
+real-world actions. It verifies what happened and reports the result in plain language with evidence. Its
+mission is to make dependable care and agency continuously available and end suffering for humans and,
+ultimately, all living beings.
 
 | Group | What Life Manager manages through its loops |
 |---|---|
