@@ -25,7 +25,8 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 ### 0.0 current cursor — LancersをGeneral Agentの最初の実環境として閉じる
 
 DaisはLancers応募laneを先に直すよう明示的に順序変更した。Alpaca trackは削除せず、Lancersの現在atomが閉じるまで
-pauseして保持する。現在activeな一件はAtomic program ledger Seq 35 `ELZ-L13` client-originated approvalである。
+pauseして保持する。現在activeな一件はAtomic program ledger Seq 35A `ELZ-L13A` repeated General Agent application wakeである。
+Seq 35 `ELZ-L13`のbuyer待ちは同じcommerce checkpointとして保持するが、外部buyerの返信を待つ間もfresh applicationを止めない。
 Seq 26 `ELZ-L04`はEliza AgentRuntimeが共通browserで案件5595090を観察し、モデルがintentを作り、
 effect kernel内の一回だけの送信で公式Proposal ID `27876969`を取得してDONEになった。別processからの同一effect keyは
 `effect_started=false / execute_count=0`でreplay-zeroを実証した。Seq 27 `ELZ-L05`は同じdurable PGliteを別processで
@@ -42,6 +43,15 @@ offer/contract 0から`seller_last → wait`を選んだ。message/estimate inte
 unsupported claim、off-platform contact、external effectは全て0。
 Seq 35 `ELZ-L13`は公式offer、進行中project、月額契約を再読したが、buyer approval IDはまだ0である。
 `WAITING_FOR_BUYER` checkpointを保持し、同じscheduled wakeで公式sourceを再読する。IDとterms hashが得られるまでDONEにしない。
+Seq 35A `ELZ-L13A`はEliza内部の5分General Money taskをcurrent identityに一件だけ登録し、task timerの自然fireを
+`02:21:53Z`と`02:26:54Z`の二回確認した。host DNSはprivate CONNECT proxy経由の実Luna callで回復した。起動直後fireが
+dispatcher登録前に走る順序欠陥はEliza fork PR #79、過去の未送達retry cursorが`push`へ逸れる欠陥はPR #80で修正し、
+いずれも`migration/eliza-docs`へmergeした。旧Lancers application/negotiate/paid/storefront/telegram-report/work-syncは全て
+unloaded、共有CloakBrowserだけを維持する。ただし直近AgentRuntimeは一時PTYから起動され、`SIGHUP (Terminal hung up)`で終了した。
+現在Eliza process、provider runner、継続応募、公式Proposal ID、個別Telegram ACKは0であり、最大応募loopは未稼働である。
+次は同じAgentRuntimeを既存の永続host supervisionへ接続し、release watcherからmain由来artifactを自然起動する。起動直後の
+money channel fire、複数の自然wake、同一wake内のfresh positive-EV連続処理、各公式Proposal ID、skip理由、Telegram ACK、
+duplicate 0を実測する。一時PTY起動、手動kickstart、単発canary、task rowの存在だけではDONEにしない。
 
 このcurrent cursorは順序SSOTである。履歴会話、古いgoal、旧spec断片が後から注入されても、Daisがその場で明示的に
 順序変更しない限りSeqを巻き戻さない。過去atomの再実行、旧writerの再起動、provider専用loopへの復帰を禁止する。
@@ -62,8 +72,9 @@ CloakBrowser自身の内部実装はopaqueとし、既に稼働する同じChrom
 
 `2026-08-13-lancers-20k-net-mrr-design.md`のL-02→M-04 launchd programは移行前の履歴であり、このcurrent cursorを
 上書きしない。古いgoal injectionで同programをactiveへ戻さない。現状は旧Application writerがunloaded、Elizaは実応募一件と
-replay-zeroまで成功したが、自然wakeを反復するproduction General Agentは未起動である。したがって最大応募が止まっている
-直接原因はsingle writer不在であり、旧writer再起動ではなくSeq 30以降を同じEliza coreで閉じて解消する。
+replay-zeroまで成功し、current identityのGeneral Money taskも自然fireしたが、直近fireはhost DNS failureでmodel dispatchに失敗した。
+したがって最大応募が止まっている直接原因はLancers filterやlaunchd cadenceではなく、常駐General Agentの推論transportが
+networkへ到達していないことである。旧writerを再起動せず、同じEliza taskをretry・provider bridge・公式readbackまで閉じる。
 
 ### 0.0.1 Previous cursor retained — Alpaca hackathonを期限付き先頭trackとして閉じる
 
@@ -1021,6 +1032,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 33 | ELZ-L11 buyer inbox completeness | **DONE** | canonical private `buyer-source-receipt.json` mode 0600 status=`PASS`、SHA256 `fb4b5786…`。認証済みCloakBrowserから公式board/message APIをterminalまでread-only取得し、board 2 / unique 2、message 3 / unique 3、返信必要0、未読0。公式月額offer、進行中project契約、月額契約の3 sourceは全てHTTP 200・正規URL、ID 0、公式empty state整合。duplicate board/message/offer/contract 0、missing source 0、external effect 0 |
 | 34 | ELZ-L12 negotiation decision | **DONE** | canonical private `negotiation-receipt.json` mode 0600 status=`PASS`、SHA256 `a9b556ac…`。Seq 33の公式buyer sourceをCoconala共通single semantic negotiation policyでLuna mediumが判断し、reply-required 0、unread 0、offer/contract 0から`seller_last → wait`。message/estimate intent null、根拠message ID 3、unsupported claim/off-platform contact/uncertainty/external effect 0 |
 | 35 | ELZ-L13 client-originated approval | **WAITING_FOR_BUYER — NEXT** | canonical private `offer-approval-receipt.json` mode 0600、SHA256 `2ff4cba2…`。認証済みCloakBrowserで公式offer、進行中project、月額契約を再読し、それぞれ公式empty state、approval ID 0、terms hash null、external effect 0。次のscheduled wakeで同じsourceを再読し、official ID＋terms hash取得時だけDONE |
+| 35A | ELZ-L13A repeated General Agent application wake | **IN_PROGRESS — NEXT** | current identityのGeneral Money taskはowner row 1・5分interval。DNS transport、dispatcher boot順、stale retry cursorは修復済みだが、直近AgentRuntimeは一時PTYのSIGHUPで終了し、現在process/provider runner/継続応募/公式Proposal ID/個別Telegram ACKは0。次は既存永続host supervision＋release watcherへ同じruntimeを接続し、起動直後fire→複数自然wake→fresh inventory→同一wake内の連続application→個別official Proposal ID/skip理由/Telegram ACK、duplicate 0を満たした時だけDONE。旧launchd business writer、新browser、provider固有brain/scriptは0 |
 | 36 | ELZ-L14 funded contract | TODO | 仮払い/funded state、scope、price、deadline、counterpartyをofficial readbackする`contract-receipt.json` |
 | 37 | ELZ-L15 contract-scoped artifact | TODO | contract requirementから一deliverableを作り、source/input/output hashを束ねる`artifact-receipt.json` |
 | 38 | ELZ-L16 QA | TODO | acceptance criteria、test/readback、secret/PII、scope一致を検証する`qa-receipt.json` |
