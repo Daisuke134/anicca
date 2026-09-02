@@ -39,9 +39,10 @@ read-only参考実装へ降格し、Lancers production runtimeには使わない
 Step 1のApply call-graph比較は完了した。Coconalaはgig shared application parent/planner/effect fence/ledger/outboxを通り、Lancersは
 shared agent runnerとshared application transactionを既に使う一方、planner contract、orchestration、receipt projection、Telegramを
 Lancers内で再実装する。provider固有discovery/submit/readbackはadapter差分として正当である。Step 2 inventoryは実callerを固定し、
-agent runner、marketplace application transaction、contracts/ledger/outboxの一部が既に共有済みであることを確認した。最小の未共有重複は、
-LancersがCoconala/Upwork共通feasibility policyを自然言語で複製している点である。現在activeはStep 3、この本文コピーを既存共通関数の直接利用へ
-置換する一件だけである。
+agent runner、marketplace application transaction、contracts/ledger/outboxの一部が既に共有済みであることを確認した。Step 3はcommon feasibility本文だけを
+`skills/_shared/marketplace-core/scripts/feasibility_policy.py`へ移し、Coconala/Upworkの既存entrypointとLancersが同じ正本を読む形で完了した。
+provider固有discovery/submit/readback、receipt、Telegram、schedulerは変更していない。Coconala policy focused checkは3/3 PASS。現在activeはStep 4、
+共有済み経路を使うLancers Apply ownerをsingle writerで起動する一件である。
 固定順は、Apply比較→shared inventory→最小重複一件の
 shared化→Lancers single writer→新Proposal→案件別Telegram ACK→replay-zero→自然wake継続→Storefront→Negotiate→Paid→banked net→
 Gig Money Loop Skill→CrowdWorks→Freelancer.com→Life Manager自身のloop factoryである。各Stepを実測完了して正本更新後にだけ次へ進む。

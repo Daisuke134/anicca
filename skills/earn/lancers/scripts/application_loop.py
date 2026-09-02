@@ -15,6 +15,7 @@ SKILLS = SKILLS_ROOT
 REPO = SKILLS_ROOT.parent
 STATUS_PATH = HERE / "status.py"
 APPLICATION_TICK_PATH = HERE / "application_tick.py"
+FEASIBILITY_POLICY_PATH = SKILLS_ROOT / "_shared" / "marketplace-core" / "scripts" / "feasibility_policy.py"
 AGENT_RUNNER = REPO / "runtime" / "agent-runner" / "agent_runner.py"
 AGENT_RUNNER_PATH = AGENT_RUNNER
 PLANNER_SCHEMA = SKILLS_ROOT / "gig-work" / "schemas" / "application_decisions.schema.json"
@@ -66,6 +67,7 @@ def _load(name: str, path: Path) -> Any:
 
 status = _load("_anicca_lancers_application_loop_status", STATUS_PATH)
 application_tick = _load("_anicca_lancers_application_loop_tick", APPLICATION_TICK_PATH)
+feasibility_policy = _load("_anicca_marketplace_feasibility_policy", FEASIBILITY_POLICY_PATH)
 
 @dataclass(frozen=True)
 class ApplicationLoopResult:
@@ -253,10 +255,9 @@ def _snapshot(rows: Sequence[Mapping[str, object]], today: date) -> dict[str, ob
         result.append(compact)
     return {"tick_date": today.isoformat(), "seller_proof": _seller_proof(), "opportunities": result}
 
-PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent plannerである。planner自身は外部操作を行わないが、delivery systemは既存の認証済みbrowserと利用可能なtoolsで外部web serviceを操作できる。"
-    "Coconalaと同じcommon marketplace feasibility policyを使う。合法で、現在のgeneral agentがcomputer、browser、code、research、writing、design、dataその他の利用可能なtoolsを使って全必須成果物を正直に完遂できる案件は広く応募する。判定はsubmit_requiredまたはhard_prohibitedの二択であり、前者を既定とする。"
-    "確認済みのdelivery能力は、非同期のresearch、文章作成・編集・翻訳、digital content設計、code・software・data・AI automation、web/browser上の操作・調査・monitor、必要なtoolの導入・設定・利用、利用可能なtoolで生成できるdigital artifactである。現在未導入のsoftwareや未利用のweb serviceでも、公開または依頼者提供の通常accessで導入・利用・検証できるなら完遂可能として扱う。未提示の個人職歴、雇用経験、資格、電話営業、常駐staff稼働、専用hardwareや入手不能な外部credentialを能力として仮定しない。"
-    "SNAPSHOTのseller_proofは現在のLancers公開profile、portfolio、packageとMIT公開source codeで買い手が確認できる証拠であり、能力の固定whitelistではない。案件scopeに合う証拠だけを具体的に活用し、未掲載の顧客実績、評価、売上効果、専門職歴を捏造しない。exactな同業実績や完成済みportfolioがなくても、転用可能な確認済み能力と案件固有の実行planで全必須scopeを完遂できるならsubmit_requiredにする。"
+PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent plannerである。planner自身は外部操作を行わないが、delivery systemは既存の認証済みbrowserと利用可能なtoolsで外部web serviceを操作できる。\n"
+    + feasibility_policy.common_marketplace_feasibility_policy() + "\n"
+    "判定はsubmit_requiredまたはhard_prohibitedの二択であり、前者を既定とする。SNAPSHOTのseller_proofは現在のLancers公開profile、portfolio、packageとMIT公開source codeで買い手が確認できる証拠であり、能力の固定whitelistではない。案件scopeに合う証拠だけを具体的に活用し、未掲載の顧客実績、評価、売上効果、専門職歴を捏造しない。"
     "各案件を実際の公開内容全体から自分で判断し、指定schemaのJSONだけを返す。現在の自律delivery systemが全必須成果物を正直に完成できるならsubmit_requiredとする。専用Skill、同業職歴、実績、portfolio、testimonial、tool利用歴、資格を必要としない経験年数、難易度、競争、単発、曖昧な通常実装詳細は拒否理由にしない。未経験を経験済みと偽らず、転用可能な確認済み能力と案件固有の実行planを示す。reason_codesは空、買い手向けの具体的な日本語proposalを200〜3000文字、正直な価格、現実的な納期で返す。"
     "proposalは自己紹介だけで始めず、冒頭で依頼内容の理解と提供価値を案件固有に示す。依頼文の応募質問へ漏れなく直接答え、実行手順・schedule・納品物を明記し、案件に関係する場合だけ修正回数とLancersメッセージでの連絡方法を示す。検証済みでない実績は作らない。"
     "hard_prohibitedは案件全体が次のいずれかを必須とする場合だけ使う: "
