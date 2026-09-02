@@ -572,6 +572,13 @@ bounty-hunter専用plistは`~/Library/LaunchAgents`に未インストール、pr
 （約33.5 GiB）、errors 0、protected deletion 0である。`~/anicca-project` 4,182,088 KiBはWebMCP locked worktreeと
 live Codex progress reporterが所有するため変更0とした。
 
+hidden home root監査では`~/.anicca` 1,567,960 KiBのactive SQLite、logs、state、skills sourceを保持し、
+`skills/earn/x402-sell/node_modules` 636,880 KiBと`skills/economy/gig/node_modules` 96,656 KiBだけを
+再生成可能な重複dependencyとして回収した。x402のpackage-lockはlive `~/anicca` copyとSHA-256一致、gigのlockは
+`~/anicca`およびLife Manager mainと一致し、両node_modulesはopen handle 0、実process 0だった。削除後もcanonical
+`~/anicca/skills/earn/x402-sell`の13 processは生存し、`~/.anicca`は1,567,960→834,424 KiB、
+回収733,536 KiB、Data空き`36,230,408 KiB`（約34.6 GiB）、errors 0、protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
