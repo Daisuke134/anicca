@@ -2715,6 +2715,23 @@ named pack SHA is exact and its mode is `0600`. This is source configuration
 only: provider posts, Telegram messages, installed release changes, lifecycle
 commands, and runtime activation remain zero pending the controlled canary.
 
+**YouTube live cursor 10 — canary preflight ready, natural release pending:**
+private runtime state now contains only this lane's three required non-secret
+object references: pack `42b2cd…e6f62`, media `a3082d…28423`, and standing
+approval `07ac08ab…0717b`. The approval is account-bound to Anicca iOS / EN /
+YouTube / `reelclaw-card` / `@life-manager-m4p`; its exact object and the
+private env remain mode `0600`. Existing Postiz, Telegram, tenant, and data-root
+keys are present without being copied into source or evidence. Read-only
+ledger search finds no pending or completed Life Manager effect for the new
+integration, lane, native handle, or selected media, so there is no ambiguous
+publication to retry. PR #3936 merged to main at `5d27ad50…`; the immutable
+selector still reads prior main `8f956147…` after a five-minute observation
+window, so the 14:15 slot did not run this new lane. This is a verified wait,
+not a canary success and not proof of watcher failure. Remote performed no
+apply, kickstart, lifecycle, provider, or Telegram action. TODO 5 remains
+active until the independent release owner advances and one exact natural
+effect is verified.
+
 **Next atomic TODO — fixed order:**
 
 1. **Done:** resolve Postiz alias `@anicca-affirmation-video` to native
