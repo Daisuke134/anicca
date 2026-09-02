@@ -179,6 +179,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
               - [x] P1d-3c-3c-8b-2-g: `~/.codex`をactive process/open path単位で監査。`codex app-server` PID 41290/41295、`codex-code-mode-host` PID 47072、SkyComputerUseService PID 22879が実在し、`logs_2.sqlite`、`thread_history_1.sqlite`、control socket、package binaryをopen。rootは`3,488,036 KiB`、30日超session 0。active Codex homeのため全削除・session purgeは行わず、P2 owner-side rotationへ繰り越す。
               - [x] P1d-3c-3c-8b-2-h: 現行remote account `~/.codex-acct2`をactive process/open path単位で監査。`codex app-server` PID 46457/46464が`logs_2.sqlite`、`thread_history_1.sqlite`、`state_5.sqlite`、control socketと多数の現行session JSONLをopen。rootは`2,386,828 KiB`、直近session 65、30日超session 0。現行接続のため全削除・session purgeは行わず、P2 owner-side rotationへ繰り越す。
               - [x] P1d-3c-3c-8b-2-i: `~/.anicca-founder`を稼働economic-loopのowner単位で監査。`founder-loop-cadence`（PID 12755）と`agent-economy-loop`（PID 20741）が稼働し、`state/earn-ledger.jsonl`、wallet rotation state、`skills/earn`を保持。`ai.anicca.pm-live-trade.plist`の`ANICCA_HOME`も同rootを指す。rootは`867,964 KiB`で、金融state/credential/ledgerを含むため削除せず、P2 owner-side rotationへ繰り越す。
+              - [x] P1d-3c-3c-8b-2-j: `~/actions-runner`をrunner owner単位で監査。`runsvc.sh` PID 720と`Runner.Listener` PID 837が12時間超稼働し、`_diag` 35 files/`207,025,045 bytes`（7日超8 files/`58,178,222 bytes`）、`bin.2.334.0`と`externals.2.334.0`を保持。active log 1件はPID 837がopen。runner本体・job workspaceを削除/停止せず、owner-side bounded diagnostic retentionへ繰り越す。
 
 #### P4 execution ledger
 

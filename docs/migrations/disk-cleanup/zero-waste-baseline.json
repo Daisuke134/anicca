@@ -183,6 +183,7 @@
     {"path": "~/.codex", "owner": "active Codex app-server, code-mode host, and computer-use service; preserve session/database/socket state"},
     {"path": "~/.codex-acct2", "owner": "active remote Codex account; preserve app-server session/database/socket state"},
     {"path": "~/.anicca-founder", "owner": "active founder/economy loops; preserve wallet, ledger, state, and earn skills"},
+    {"path": "~/actions-runner/_diag", "owner": "active self-hosted GitHub runner diagnostics; retain open current log and bound old logs through runner owner"},
     {"path": "~/.Trash/life-manager-gig-videos-20260902-134053", "owner": "P5 Coconala/Gig deliverable retention; manifest contains active 5188394, 5174332, and 18211957 artifacts"}
   ],
   "unclassified_roots_over_100_mib": [],
@@ -755,6 +756,28 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Active founder/economy loops and wallet/ledger state reference this home. No secret values were read; whole-home or state purge is unsafe and deferred to owner-side P2 retention."
+    },
+    {
+      "batch": "p1d-actions-runner-audit-29",
+      "path": "~/actions-runner",
+      "measured_kib": 612712,
+      "active_processes": [
+        "720 runsvc.sh",
+        "837 Runner.Listener run --startuptype service"
+      ],
+      "diagnostics": {
+        "files": 35,
+        "bytes": 207025045,
+        "older_than_7d_files": 8,
+        "older_than_7d_bytes": 58178222,
+        "open_current_log": "_diag/Runner_20260902-134924-utc.log"
+      },
+      "decision": "preserve_active_runner_and_defer_owner_rotation",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Self-hosted runner is live. Do not stop the runner or remove bin/externals; old diagnostics need an owner retention contract and are not deleted by host cleanup without that proof."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
