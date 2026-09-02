@@ -28,6 +28,7 @@ const CITY_PAGE = "city-page-tokyo.html";
 const DISCOVER = "discover-tokyo.json";
 const SINGLE_FREE = "event-single-free-ticket.html";
 const TWO_FREE = "event-two-free-tickets.html";
+const VENUE_SOLD_OUT = "event-venue-ticket-sold-out.html";
 const PAID = "event-paid.html";
 const OUT_OF_REGION = "event-out-of-region.html";
 const ONLINE = "event-online-livestream.html";
@@ -145,17 +146,76 @@ test("the discover feed's is_free flag is not trusted in either direction", () =
 
 test("two free tickets on one event force the caller to name one", () => {
   const split = event(TWO_FREE);
-  assert.deepEqual(split.ticketTypes.map((t) => t.name), ["会場参加", "オンライン参加"]);
-  const undecided = luma.screenEvent(split);
+  assert.deepEqual(split.ticketTypes.map((t) => t.name), ["Standard", "オンライン"]);
+  const answers = { "氏名（仮名）": "成田大祐" };
+  const undecided = luma.screenEvent(split, { allowApproval: true, answers });
   assert.equal(undecided.ok, false);
   assert.ok(undecided.rejections.some((r) => r.code === "TICKET_CHOICE_REQUIRED"));
 
-  const chosen = luma.screenEvent(split, { ticketName: "会場参加" });
+  const chosen = luma.screenEvent(split, { ticketName: "Standard", allowApproval: true, answers });
   assert.equal(chosen.ok, true, JSON.stringify(chosen.rejections));
-  assert.equal(chosen.ticket.name, "会場参加");
+  assert.equal(chosen.ticket.name, "Standard");
 
-  assert.ok(luma.screenEvent(split, { ticketName: "not a ticket" })
+  assert.ok(luma.screenEvent(split, { ticketName: "not a ticket", allowApproval: true, answers })
     .rejections.some((r) => r.code === "TICKET_NOT_FOUND"));
+});
+
+test("★ a sold-out venue ticket never silently becomes an online seat ★", () => {
+  // Real capture of the event this task first attempted: 会場参加 is is_disabled with
+  // spots_remaining 0 (the page renders 売り切れ) while オンライン参加 is wide open — and the
+  // event-level ticket_info still says {is_free:true, is_sold_out:false}.
+  const split = event(VENUE_SOLD_OUT);
+  const [venue, online] = split.ticketTypes;
+  assert.equal(venue.name, "会場参加");
+  assert.equal(venue.isDisabled, true);
+  assert.equal(venue.spotsRemaining, 0);
+  assert.equal(online.isDisabled, false);
+
+  // Unnamed: the engine must NOT settle on the one ticket still standing.
+  const undecided = luma.screenEvent(split, { answers: { company: "x", job_title: "y" } });
+  assert.equal(undecided.ok, false);
+  assert.ok(undecided.rejections.some((r) => r.code === "TICKET_CHOICE_REQUIRED"));
+  assert.equal(undecided.ticket, null);
+
+  // Named: the honest answer is "that seat is gone", not "here is another one".
+  const named = luma.screenEvent(split, { ticketName: "会場参加", answers: { company: "x", job_title: "y" } });
+  assert.equal(named.ok, false);
+  assert.ok(named.rejections.some((r) => r.code === "TICKET_SOLD_OUT"));
+});
+
+test("a lone free ticket that is sold out is rejected, not booked", () => {
+  const base = event(SINGLE_FREE);
+  const gone = { ...base, ticketTypes: base.ticketTypes.map((t) => ({ ...t, isDisabled: true })) };
+  assert.ok(luma.screenEvent(gone).rejections.some((r) => r.code === "TICKET_SOLD_OUT"));
+  const empty = { ...base, ticketTypes: base.ticketTypes.map((t) => ({ ...t, spotsRemaining: 0 })) };
+  assert.ok(luma.screenEvent(empty).rejections.some((r) => r.code === "TICKET_SOLD_OUT"));
+});
+
+test("required host questions block the RSVP until real answers are supplied", () => {
+  const withQuestion = event(VENUE_SOLD_OUT);
+  assert.deepEqual(withQuestion.registrationQuestions.map((q) => [q.questionType, q.required, q.collectJobTitle]),
+    [["company", true, true]]);
+  const missing = luma.missingAnswers(withQuestion, null);
+  assert.deepEqual(missing, ["どちらの会社にお勤めですか？", "役職を教えてください"]);
+  assert.ok(luma.screenEvent(withQuestion, { ticketName: "オンライン参加" })
+    .rejections.some((r) => r.code === "QUESTIONS_UNANSWERED"));
+  assert.deepEqual(luma.missingAnswers(withQuestion, { company: "Anicca", job_title: "Founder" }), []);
+});
+
+test("optional host questions do not block anything", () => {
+  const online = event(ONLINE);
+  const optional = online.registrationQuestions.filter((q) => !q.required);
+  assert.ok(optional.length > 0, "fixture should carry optional questions");
+  assert.deepEqual(luma.missingAnswers({ registrationQuestions: optional }, null), []);
+});
+
+test("an answer can be keyed by question id, by Luma's question_type, or by the exact label", () => {
+  const question = { id: "2ne9plpv", questionType: "company", label: "どちらの会社にお勤めですか？", required: true, collectJobTitle: false };
+  const event_ = { registrationQuestions: [question] };
+  assert.deepEqual(luma.missingAnswers(event_, { "2ne9plpv": "Anicca" }), []);
+  assert.deepEqual(luma.missingAnswers(event_, { company: "Anicca" }), []);
+  assert.deepEqual(luma.missingAnswers(event_, { "どちらの会社にお勤めですか？": "Anicca" }), []);
+  assert.deepEqual(luma.missingAnswers(event_, { company: "   " }), ["どちらの会社にお勤めですか？"]);
 });
 
 test("a waitlist or sold-out event is not registrable", () => {

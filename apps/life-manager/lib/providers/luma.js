@@ -104,6 +104,14 @@ function ticketType(raw) {
     minCents: t.min_cents == null ? null : Number(t.min_cents),
     requireApproval: t.require_approval === true,
     isHidden: t.is_hidden === true,
+    // Measured 2026-07-31 on a live event: the venue ticket of an event whose event-level
+    // ticket_info said {is_free:true, is_sold_out:false} was itself is_disabled with
+    // spots_remaining 0, and the page rendered it as 売り切れ. Per-ticket availability is a
+    // different fact from event-level availability, and only the per-ticket one decides whether
+    // an in-person seat can actually be taken.
+    isDisabled: t.is_disabled === true,
+    spotsRemaining: t.spots_remaining == null ? null : Number(t.spots_remaining),
+    numRegistered: t.num_tickets_registered == null ? null : Number(t.num_tickets_registered),
     maxCapacity: t.max_capacity == null ? null : Number(t.max_capacity),
   });
 }
@@ -113,9 +121,40 @@ function isFreeTicket(ticket) {
   return ticket.type === "free" && ticket.cents == null && ticket.minCents == null;
 }
 
+/** Bookable = visible, not disabled, and not at zero remaining spots. */
+function isBookableTicket(ticket) {
+  if (ticket.isHidden || ticket.isDisabled) return false;
+  return ticket.spotsRemaining == null || ticket.spotsRemaining > 0;
+}
+
 function selectableTickets(ticketTypes) {
   return (ticketTypes || []).filter((ticket) => !ticket.isHidden);
 }
+
+// Question types this provider can actually fill. Anything else that is REQUIRED is refused
+// outright rather than half-filled: Luma renders dropdowns as custom widgets, and a form submitted
+// with a required field guessed at is worse than a form not submitted.
+const FILLABLE_QUESTIONS = Object.freeze(["text", "company", "linkedin", "github", "twitter", "website", "agree-check"]);
+const CONSENT_QUESTION = "agree-check";
+// Only these count as agreeing to something on the operator's behalf. "false"/"no" is NOT an answer
+// to a required consent — it is a refusal, and the RSVP must not proceed.
+const AFFIRMATIVE = Object.freeze(["true", "yes", "y", "1", "はい", "同意する", "agree"]);
+
+function registrationQuestion(raw) {
+  const q = raw && typeof raw === "object" ? raw : {};
+  return Object.freeze({
+    id: String(q.id || ""),
+    label: String(q.label || ""),
+    required: q.required === true,
+    questionType: String(q.question_type || ""),
+    options: Array.isArray(q.options) ? Object.freeze(q.options.map((o) => String(o))) : null,
+    collectJobTitle: q.collect_job_title === true,
+    jobTitleLabel: q.job_title_label == null ? null : String(q.job_title_label),
+  });
+}
+
+const isConsent = (question) => question.questionType === CONSENT_QUESTION;
+const isAffirmative = (value) => AFFIRMATIVE.includes(String(value || "").trim().toLowerCase());
 
 /**
  * Normalise either a discover entry or an event page into one shape.
@@ -154,6 +193,9 @@ function normalizeEvent(raw) {
       ? Object.freeze(source.categories.map((c) => String((c && c.name) || c)))
       : null,
     ticketTypes: hasTicketTypes ? Object.freeze(source.ticket_types.map(ticketType)) : null,
+    registrationQuestions: Array.isArray(source.registration_questions)
+      ? Object.freeze(source.registration_questions.map(registrationQuestion))
+      : null,
     hydrated: hasTicketTypes,
   });
 }
@@ -164,6 +206,46 @@ function parseEventPage(html) {
 }
 
 // ─────────────────────────────────────────────────────────────────────── pure: screening
+
+/**
+ * Look an answer up by question id, by Luma's question_type, or by the question's exact label.
+ * Three keys because the id is per-event (useless in config), the type is stable but coarse, and
+ * the label is what a human writing the answers file will naturally reach for.
+ */
+function answerFor(answers, ...keys) {
+  if (!answers || typeof answers !== "object") return null;
+  for (const key of keys) {
+    if (!key) continue;
+    const value = answers[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+/** @returns {string[]} the labels of required questions that have no usable answer supplied. */
+function missingAnswers(event, answers) {
+  const missing = [];
+  for (const question of (event && event.registrationQuestions) || []) {
+    if (!question.required) continue;
+    const supplied = answerFor(answers, question.id, question.questionType, question.label);
+    // A consent box is never ticked by default. Someone has to say yes on the record.
+    if (isConsent(question) ? !isAffirmative(supplied) : !supplied) {
+      missing.push(question.label || question.questionType || question.id);
+    }
+    if (question.collectJobTitle
+      && !answerFor(answers, `${question.id}:job_title`, "job_title", question.jobTitleLabel)) {
+      missing.push(question.jobTitleLabel || "job_title");
+    }
+  }
+  return missing;
+}
+
+/** @returns {string[]} labels of REQUIRED questions whose widget this provider cannot fill. */
+function unsupportedQuestions(event) {
+  return ((event && event.registrationQuestions) || [])
+    .filter((q) => q.required && !FILLABLE_QUESTIONS.includes(q.questionType))
+    .map((q) => `${q.label || q.id} (${q.questionType})`);
+}
 
 const DEFAULT_SCREEN = Object.freeze({
   regions: Object.freeze(["Tokyo"]),
@@ -220,29 +302,55 @@ function screenEvent(event, options = {}) {
     reject("NOT_HYDRATED", "ticket_types have not been read from the event page yet");
   } else {
     const selectable = selectableTickets(event.ticketTypes);
-    const free = selectable.filter(isFreeTicket);
-    if (free.length === 0) {
+    const freeAll = selectable.filter(isFreeTicket);
+    const bookable = freeAll.filter(isBookableTicket);
+    if (freeAll.length === 0) {
       reject("NOT_FREE", `no free ticket among ${selectable.length} ticket type(s)`);
     } else if (opts.ticketApiId || opts.ticketName) {
-      ticket = free.find((t) => (opts.ticketApiId ? t.apiId === opts.ticketApiId : t.name === opts.ticketName)) || null;
-      if (!ticket) {
+      const wanted = opts.ticketApiId
+        ? (t) => t.apiId === opts.ticketApiId
+        : (t) => t.name === opts.ticketName;
+      const named = freeAll.find(wanted) || null;
+      if (!named) {
         reject("TICKET_NOT_FOUND", `no free ticket named ${JSON.stringify(opts.ticketName || opts.ticketApiId)}`);
+      } else if (!isBookableTicket(named)) {
+        reject("TICKET_SOLD_OUT", `ticket ${JSON.stringify(named.name)} is sold out or disabled`);
+      } else {
+        ticket = named;
       }
-    } else if (free.length > 1) {
+    } else if (freeAll.length > 1) {
       // Two free tickets on an offline event is the venue/online split (measured: 会場参加 vs
       // オンライン参加). Guessing which is in-person from its NAME would be exactly the string
       // matching this provider exists to avoid, and guessing wrong books an online seat — the
       // defect. So the engine refuses, and the caller (the model, in QUALIFY) must name one.
+      //
+      // Counting ALL free tickets here, not just the bookable ones, is deliberate: when the venue
+      // ticket sells out (measured on a live event) the only ticket left standing is the online
+      // one, and an availability-based count would quietly hand it over as "the obvious choice".
       reject(
         "TICKET_CHOICE_REQUIRED",
-        `${free.length} free ticket types (${free.map((t) => t.name).join(" / ")}); caller must name one`,
+        `${freeAll.length} free ticket types (${freeAll.map((t) => t.name).join(" / ")}); caller must name one`,
       );
+    } else if (bookable.length === 0) {
+      reject("TICKET_SOLD_OUT", `the only free ticket (${freeAll[0].name}) is sold out or disabled`);
     } else {
-      [ticket] = free;
+      [ticket] = bookable;
     }
     if (ticket && ticket.requireApproval && opts.allowApproval !== true) {
       reject("APPROVAL_REQUIRED", `ticket ${JSON.stringify(ticket.name)} requires host approval`);
     }
+  }
+
+  // Hosts ask real questions ("which company do you work for?"). Submitting them blank is
+  // impossible (the form refuses, measured 2026-07-31) and filling them with invented text would
+  // be a lie told to a stranger. So an unanswered required question is a rejection, not a guess.
+  const unsupported = unsupportedQuestions(event);
+  if (unsupported.length) {
+    reject("QUESTION_TYPE_UNSUPPORTED", `required questions this provider cannot fill: ${unsupported.join(" / ")}`);
+  }
+  const unanswered = missingAnswers(event, opts.answers);
+  if (unanswered.length) {
+    reject("QUESTIONS_UNANSWERED", `host requires answers to: ${unanswered.join(" / ")}`);
   }
 
   return Object.freeze({
@@ -600,6 +708,93 @@ async function clickFirstAvailable(scope, selectors, { timeout = 4000 } = {}) {
   return null;
 }
 
+/**
+ * Answer the host's registration questions.
+ *
+ * Label lookup first, because that is unambiguous. Luma does not always associate its label text
+ * with the input, so the fallback is positional: fill the modal's still-empty text inputs in the
+ * order the questions are declared. That order is Luma's own (`position`), not a guess about
+ * wording, and every value written comes from the caller's answers — nothing is invented here.
+ */
+async function answerQuestions(scope, questions, answers) {
+  const notes = [];
+  const wanted = [];
+  const consents = [];
+  for (const question of questions || []) {
+    const value = answerFor(answers, question.id, question.questionType, question.label);
+    if (isConsent(question)) {
+      if (isAffirmative(value)) consents.push(question);
+      continue;
+    }
+    if (value) wanted.push({ label: question.label, value });
+    if (question.collectJobTitle) {
+      const title = answerFor(answers, `${question.id}:job_title`, "job_title", question.jobTitleLabel);
+      if (title) wanted.push({ label: question.jobTitleLabel || "job_title", value: title });
+    }
+  }
+
+  // Consent boxes are ticked only when the caller supplied an explicit affirmative for that exact
+  // question. Nothing is agreed to by default and nothing is agreed to by position.
+  for (const question of consents) {
+    let ticked = false;
+    for (const locator of [
+      scope.getByRole("checkbox", { name: question.label, exact: false }),
+      scope.locator(`label:has-text(${JSON.stringify(question.label)}) input[type="checkbox"]`),
+      scope.locator('input[type="checkbox"]'),
+    ]) {
+      try {
+        const box = locator.last();
+        if (await box.count() === 0) continue;
+        if (!(await box.isChecked())) await box.check({ timeout: 3000 });
+        ticked = true;
+        break;
+      } catch {
+        // try the next way of reaching the box
+      }
+    }
+    notes.push(`consent[${ticked ? "checked" : "unreachable"}]:${question.label.slice(0, 24)}`);
+  }
+
+  if (!wanted.length) return notes;
+
+  const pending = [];
+  for (const item of wanted) {
+    let done = false;
+    try {
+      const byLabel = scope.getByLabel(item.label, { exact: false }).last();
+      if (await byLabel.count() > 0) {
+        await byLabel.fill(item.value, { timeout: 3000 });
+        notes.push(`answer[label]:${item.label}`);
+        done = true;
+      }
+    } catch {
+      done = false;
+    }
+    if (!done) pending.push(item);
+  }
+  if (!pending.length) return notes;
+
+  const inputs = scope.locator('input[type="text"], input:not([type])');
+  const count = await inputs.count();
+  for (const item of pending) {
+    let placed = false;
+    for (let index = 0; index < count; index += 1) {
+      const input = inputs.nth(index);
+      try {
+        if (await input.inputValue() !== "") continue;
+        await input.fill(item.value, { timeout: 3000 });
+        notes.push(`answer[pos${index}]:${item.label}`);
+        placed = true;
+        break;
+      } catch {
+        // not fillable; try the next one
+      }
+    }
+    if (!placed) notes.push(`answer[unplaced]:${item.label}`);
+  }
+  return notes;
+}
+
 async function fillFirstAvailable(scope, selectors, value, { timeout = 4000 } = {}) {
   for (const selector of selectors) {
     const locator = scope.locator(selector).last();
@@ -692,6 +887,7 @@ async function rsvp(eventUrl, identity = {}, options = {}) {
     if (identity.phone) {
       diagnostics.push(`phone:${await fillFirstAvailable(scope, ['input[type="tel"]'], identity.phone) || "absent"}`);
     }
+    for (const note of await answerQuestions(scope, opts.questions, opts.answers)) diagnostics.push(note);
 
     diagnostics.push(`submit:${await clickFirstAvailable(scope, SUBMIT_SELECTORS, { timeout: 8000 }) || "none"}`);
 
@@ -768,6 +964,11 @@ module.exports = {
   parseDiscoverPayload,
   parseEventPage,
   normalizeEvent,
+  isFreeTicket,
+  isBookableTicket,
+  answerFor,
+  missingAnswers,
+  unsupportedQuestions,
   screenEvent,
   topicScore,
   rankEvents,

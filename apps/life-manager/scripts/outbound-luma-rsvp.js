@@ -22,7 +22,7 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const luma = require("../lib/providers/luma.js");
-const { readIdentity, nameFor, artifactDir } = require("../lib/outbound-events-stages.js");
+const { readIdentity, readAnswers, nameFor, artifactDir } = require("../lib/outbound-events-stages.js");
 
 const ENGINE_DIR = path.join(__dirname, "..", "..", "..", "runtime", "loop", "outbound");
 const loadEvidence = () => import(pathToFileURL(path.join(ENGINE_DIR, "evidence.mjs")).href);
@@ -37,6 +37,7 @@ function parseArgs(argv) {
     slug: flag("slug"),
     ticket: flag("ticket"),
     live: args.includes("--live"),
+    allowApproval: args.includes("--allow-approval"),
   };
 }
 
@@ -49,7 +50,12 @@ async function main(argv) {
 
   const canonicalUrl = luma.canonicalEventUrl(args.slug);
   const event = await luma.fetchEventPage(args.slug);
-  const screen = luma.screenEvent(event, args.ticket ? { ticketName: args.ticket } : {});
+  const answers = readAnswers(process.env);
+  const screen = luma.screenEvent(event, {
+    ...(args.ticket ? { ticketName: args.ticket } : {}),
+    ...(answers ? { answers } : {}),
+    ...(args.allowApproval ? { allowApproval: true } : {}),
+  });
 
   const preview = {
     canonicalUrl,
@@ -61,7 +67,13 @@ async function main(argv) {
     city: event.city,
     availability: event.availability,
     categories: event.categories,
-    tickets: event.ticketTypes.map((t) => ({ name: t.name, type: t.type, cents: t.cents, approval: t.requireApproval })),
+    tickets: event.ticketTypes.map((t) => ({
+      name: t.name, type: t.type, cents: t.cents, approval: t.requireApproval,
+      disabled: t.isDisabled, spots_remaining: t.spotsRemaining,
+    })),
+    questions: (event.registrationQuestions || []).map((q) => ({ label: q.label, type: q.questionType, required: q.required })),
+    unanswered: luma.missingAnswers(event, answers),
+    unsupported_questions: luma.unsupportedQuestions(event),
     screen: { ok: screen.ok, rejections: screen.rejections, ticket: screen.ticket && screen.ticket.name },
   };
 
@@ -79,6 +91,8 @@ async function main(argv) {
     cdpUrl: String(process.env.LM_BROWSER_CDP_URL || ""),
     artifactDir: artifactDir(process.env),
     ...(screen.ticket ? { ticketName: screen.ticket.name } : {}),
+    ...(event.registrationQuestions ? { questions: event.registrationQuestions } : {}),
+    ...(answers ? { answers } : {}),
   });
 
   const { verifyEvidence } = await loadEvidence();

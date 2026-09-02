@@ -42,6 +42,23 @@ function readIdentity(env = {}) {
   return { name, email, ...(phone ? { phone } : {}), ...(localName ? { localName } : {}) };
 }
 
+/**
+ * Standing answers to the questions hosts ask on the RSVP form ("which company do you work for?").
+ * JSON in LM_OUTBOUND_ANSWERS, keyed by Luma's question_type or by the exact question label.
+ * Unparseable JSON yields no answers, which makes the screen reject with QUESTIONS_UNANSWERED —
+ * the safe direction, since the alternative is submitting a stranger a made-up answer.
+ */
+function readAnswers(env = {}) {
+  const raw = String(env.LM_OUTBOUND_ANSWERS || "").trim();
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 /** A Japanese-locale event wants the Japanese form of the name when one is configured. */
 function nameFor(event, identity) {
   const jp = identity.localName;
@@ -56,6 +73,7 @@ function discoverOptions(config = {}) {
     ...(Array.isArray(config.regions) ? { regions: [...config.regions] } : {}),
     ...(Number.isInteger(config.hydrate_limit) ? { hydrateLimit: config.hydrate_limit } : {}),
     ...(Number.isInteger(config.polite_delay_ms) ? { politeDelayMs: config.polite_delay_ms } : {}),
+    ...(config.allow_approval === true ? { allowApproval: true } : {}),
   };
 }
 
@@ -63,6 +81,7 @@ function buildStages(deps = {}) {
   const luma = deps.luma || require("./providers/luma.js");
   const env = deps.env || process.env;
   const identity = deps.identity || readIdentity(env);
+  const answers = deps.answers === undefined ? readAnswers(env) : deps.answers;
   const readFile = deps.readFile || ((p) => fs.readFileSync(p));
   const evidenceDir = deps.artifactDir || artifactDir(env);
   const cdpUrl = deps.cdpUrl || String(env.LM_BROWSER_CDP_URL || "");
@@ -79,6 +98,7 @@ function buildStages(deps = {}) {
       // sell out in between.
       const verdict = luma.screenEvent(target, {
         ...discoverOptions(config),
+        ...(answers ? { answers } : {}),
         ...(target && target.ticket ? { ticketApiId: target.ticket.apiId } : {}),
       });
       if (!verdict.ok) {
@@ -99,6 +119,8 @@ function buildStages(deps = {}) {
         cdpUrl,
         artifactDir: evidenceDir,
         ...(ticket && ticket.name ? { ticketName: ticket.name } : {}),
+        ...(target.registrationQuestions ? { questions: target.registrationQuestions } : {}),
+        ...(answers ? { answers } : {}),
       });
       // ok=true means the attempt ran to completion. EVIDENCE decides whether it worked.
       return { ok: true, data: { receipt } };
@@ -152,4 +174,4 @@ function buildStages(deps = {}) {
   };
 }
 
-module.exports = { buildStages, readIdentity, nameFor, artifactDir, discoverOptions };
+module.exports = { buildStages, readIdentity, readAnswers, nameFor, artifactDir, discoverOptions };
