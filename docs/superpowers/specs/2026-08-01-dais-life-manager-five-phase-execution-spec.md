@@ -83,9 +83,11 @@ Eliza PR #86 merge `4a7c839fa4…`はGeneral Money promptに、各案件の公�
 というaggregateであり、Eliza/Lunaの出力ではない。PGlite WALではGeneral Money taskが06:34、06:40、06:45、06:51、06:57 UTCに
 自然fireしている一方、running PIDはPR #81以前の`ELIZA_CHAT_VIA_CLI=codex`、provider registry、約5分設定を保持する。task metadataは
 `connectorDegradation.reason=disconnected`、`Channel "life_manager_general_money_loop" has no registered message connector.`も記録する。
-したがって残境界はprompt調整ではない。正規の非Remote ownerが一度だけ、(1)旧application writerを退役し、(2)merge済みEliza＋正本launcherを
-single writerとして起動し、(3)既存Eliza connector deliveryへmoney turnの逐次callbackを束縛する。marketplace固有Telegram sender、集計reporter、
-別pollerは追加しない。Telegramで案件別ACKをprovider message IDまで確認できなければactivationをDONEにしない。
+したがって残境界はprompt調整ではない。host実測ではglobal release watcherは存在せず、main mergeだけではloaded GUI serviceを撤去しない。
+正規の非Remote Aqua ownerが一度だけ、(1)旧application writerをbootoutし、(2)merge済みEliza＋正本launcherをsingle writerとして起動する。
+その前にPR #90のprompt内shell送信を正本とはしない。Coconalaの共通contractどおり、Agentの案件別Decision/ApplicationReceiptを
+durable outboxへenqueueし、既存OpenClaw transportで送信し、provider message ID ACKをreceiptとして保存するgeneric connector deliveryへ束縛する。
+marketplace固有Telegram sender、集計reporter、別pollerは追加しない。Telegramで案件別ACKをprovider message IDまで確認できなければactivationをDONEにしない。
 
 `適合する新規案件がなかった`、`応募候補0件`、`fresh判断N件`のaggregateだけでwakeを終了することを禁止する。
 各fresh opportunityは同じwake内でLunaが公式title・本文・条件を読み、案件ごとにapplicationまたはskipを一件ずつ決める。
@@ -1077,7 +1079,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 33 | ELZ-L11 buyer inbox completeness | **DONE** | canonical private `buyer-source-receipt.json` mode 0600 status=`PASS`、SHA256 `fb4b5786…`。認証済みCloakBrowserから公式board/message APIをterminalまでread-only取得し、board 2 / unique 2、message 3 / unique 3、返信必要0、未読0。公式月額offer、進行中project契約、月額契約の3 sourceは全てHTTP 200・正規URL、ID 0、公式empty state整合。duplicate board/message/offer/contract 0、missing source 0、external effect 0 |
 | 34 | ELZ-L12 negotiation decision | **DONE** | canonical private `negotiation-receipt.json` mode 0600 status=`PASS`、SHA256 `a9b556ac…`。Seq 33の公式buyer sourceをCoconala共通single semantic negotiation policyでLuna mediumが判断し、reply-required 0、unread 0、offer/contract 0から`seller_last → wait`。message/estimate intent null、根拠message ID 3、unsupported claim/off-platform contact/uncertainty/external effect 0 |
 | 35 | ELZ-L13 client-originated approval | **WAITING_FOR_BUYER — NEXT** | canonical private `offer-approval-receipt.json` mode 0600、SHA256 `2ff4cba2…`。認証済みCloakBrowserで公式offer、進行中project、月額契約を再読し、それぞれ公式empty state、approval ID 0、terms hash null、external effect 0。次のscheduled wakeで同じsourceを再読し、official ID＋terms hash取得時だけDONE |
-| 35A | ELZ-L13A repeated General Agent application wake | **IN_PROGRESS — NEXT** | 旧Python application writerを正本registryから削除し、label `ai.anicca.lancers-revenue-application`を`retired_labels`へ移した。次release watcherの自然適用がloaded GUI serviceを撤去する。Eliza PR #90は、Coconalaと同じ既存OpenClaw Telegram transportをLunaの案件別判断直後に直接使い、provider messageId ACKを必須化した。正本launcherはprivate envを読み、Luna、1分interval、既存CloakBrowserを使う。次の唯一atomはrelease watcherによる旧label撤去のreadback後、Eliza runtimeを新commitで再開するsingle-writer cutover。その後live観察→一件送信→official Proposal ID→replay-zero、複数自然wake→同一wake連続application→案件別Telegram provider ID、duplicate 0でのみDONE。旧Python条件の延命、新browser、provider固有brain/script/senderは0 |
+| 35A | ELZ-L13A repeated General Agent application wake | **IN_PROGRESS — NEXT** | 旧Python application writerを正本registryから削除し、label `ai.anicca.lancers-revenue-application`を`retired_labels`へ移した。hostにglobal release watcherは存在せず、main mergeだけではloaded GUI serviceを撤去しない。PR #90のprompt内shell送信はCoconalaのdurable outbox contractと同一ではないため正本化しない。次の唯一atomは、案件別Decision/ApplicationReceipt→共通durable outbox→既存OpenClaw transport→provider message ID ACK保存をgeneric connector境界へ束縛すること。その後、正規の非Remote Aqua ownerが旧labelを一度だけbootoutし、private env、Luna、1分interval、既存CloakBrowserを使うEliza runtimeへsingle-writer cutoverする。live観察→一件送信→official Proposal ID→replay-zero、複数自然wake→同一wake連続application→案件別Telegram provider ID、duplicate 0でのみDONE。旧Python条件の延命、新browser、provider固有brain/script/senderは0 |
 | 36 | ELZ-L14 funded contract | TODO | 仮払い/funded state、scope、price、deadline、counterpartyをofficial readbackする`contract-receipt.json` |
 | 37 | ELZ-L15 contract-scoped artifact | TODO | contract requirementから一deliverableを作り、source/input/output hashを束ねる`artifact-receipt.json` |
 | 38 | ELZ-L16 QA | TODO | acceptance criteria、test/readback、secret/PII、scope一致を検証する`qa-receipt.json` |
