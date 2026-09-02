@@ -7,7 +7,7 @@ const ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/;
 const HANDLE = /^@[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 const OBJECT_REF = /^object:\/\/sha256\/[0-9a-f]{64}$/;
 const TIME = /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/;
-const PLATFORMS = new Set(["instagram", "tiktok"]);
+const PLATFORMS = new Set(["instagram", "tiktok", "youtube"]);
 
 function invalid(field) {
   throw new Error(`marketing destination contract ${field} invalid`);

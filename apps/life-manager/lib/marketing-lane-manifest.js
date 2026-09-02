@@ -278,9 +278,6 @@ function normalizeLane(row, options, assignments) {
     invalid("marketing lane disabled state ambiguous");
   }
   if (platform === "youtube" && productId !== "anicca") invalid("Honne YouTube lane is forbidden");
-  if (platform === "youtube" && (disabled !== true || laneState !== "disabled")) {
-    invalid("Anicca YouTube lane requires an explicit disabled state");
-  }
   const profilePlatformsSeen = [row, assignmentRecord.assignment]
     .flatMap((candidate) => ["profile", "profile_handle", "profileHandle", "handle"]
       .filter((key) => candidate[key] !== undefined)
