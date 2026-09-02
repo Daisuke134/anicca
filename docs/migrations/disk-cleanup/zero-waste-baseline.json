@@ -607,6 +607,19 @@
       "protected_deletions": 0,
       "free_after_kib": 6353844,
       "note": "Natural wake attempted to rebuild the same main SHA because production main's cutter omitted release_paths=ALL. Exact redundant cutter/tar were terminated; EXIT trap removed the partial tree and lock. The GH-11 cutter fix is not production-deployed, so the next authorized rollout must install it before this gate can close."
+    },
+    {
+      "batch": "p1d-release-gc-protected-readback-22",
+      "evaluated_releases": 16,
+      "preserved_releases": 16,
+      "removed_releases": 0,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "current_path": "~/loops/releases/20260903T004312-f68da040",
+      "current_manifest_release_paths": null,
+      "free_after_kib": 6145860,
+      "note": "Central release GC preserved every generation because launch-agent plist references, open process paths, current, or dependency-donor closure still protect them. No safe release deletion remains before production loaded-argv migration."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
