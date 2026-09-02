@@ -182,6 +182,15 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      68,746,180 bytesを回収した。current/active/summaryなし/symlinkは保持し、最新bounty/reddit completed receipt、
      open handle 0をread backした。最終Data空きは`37,703,788 KiB`（約36.0 GiB）、cleanup errors 0、
      protected deletion 0である。disabled raw jobsへ新しいcleanup codeは追加しない。
+     mediaはclient/取引deliverableを一括削除せず、後続v5が存在し、名前と時系列でreject済みのAthena v4 proxy
+     2本だけ101,876 KiB回収した。final/owner-review/source zipは保持した。8月21日の旧Codex disk-pressure診断
+     `logs_2.sqlite.gz`/`state_5.sqlite.gz`は現行session DBではなくopen/process/config参照0、原因と復旧証拠はspecへ
+     保存済みなので199,624 KiB回収した。現在のCodex homesとstorefront receipt archiveは保持した。
+     最終censusはOpenClaw total `7,898,576 KiB`、`.git` `3,054,404 KiB`、skills `1,294,352 KiB`、
+     agents `717,724 KiB`、workspace `691,428 KiB`、media `562,376 KiB`、state `492,160 KiB`だった。
+     `.git` pack 2.89 GiBはreachable、garbage 0、workspace ReelClaw 23動画は外部正本とのhash重複0でunique、
+     active `anicca-ask`/peer-revive/Cloak driverは生存している。agent/session/logは後続owner rotation atomへ残す。
+     Data空き`37,812,192 KiB`（約36.1 GiB）、errors 0、protected deletion 0でOpenClaw重複source/output atomを閉じる。
 
      `workspace/runs`の旧59 runは各々`reel-text.mp4`と`reel-final.mp4`を持ち、SHA-256で59/59組が
      byte-identicalだった。まず全`reel-final.mp4`を保持して重複`reel-text.mp4`だけ423,614,455 bytesを回収、
@@ -505,8 +514,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    不可侵storeは保持した。Data空きは`35,435,912 KiB`（約33.8 GiB）、errors 0、protected deletion 0である。
 
    **残TODO（順序固定）:** ①[x] host全体の外側大容量list、②[x]終了済み外側worktreeの第一GiB級batch、
-   ③[x] Life Manager正本外の残存重複repository/cloneと終了済みworktree、④ **現在active:** OpenClaw依存と重複`.git`/workspace/skills/media、
-   ⑤未使用application、`/private/var/folders`、Library cache、未使用toolchain、Downloads/Desktop/Picturesの安全なwaste、
+   ③[x] Life Manager正本外の残存重複repository/cloneと終了済みworktree、④[x] OpenClaw依存と重複`.git`/workspace/skills/media、
+   ⑤ **現在active:** 未使用application、`/private/var/folders`、Library cache、未使用toolchain、Downloads/Desktop/Picturesの安全なwaste、
    ⑥Codex/Claudeの保護rootを削除せずowner-side bounded rotation、⑦残るrunning旧releaseの自然idle reconcile＋central GC、
    ⑧Hermes正式retire、⑨Gig terminal project、⑩free 11 GiB以上＋24時間観測＋7日観測。
    これらを閉じた後に現在順序正本どおりLancers revenue loop、WebMCP hackathonへ進む。
@@ -515,8 +524,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
    ApplicationReceipt、demo動画、YouTube、Devpost提出を閉じる。
 
-現在activeな先頭atomは **OpenClawのowner依存と重複`.git`/workspace/skills/media** である。Life Manager個別loopの
-production変更は行わず、OpenClaw rootを消さずに終了済み・byte-identical・再生成可能なsource/outputを閉じる。Connection recovery、host census、
+現在activeな先頭atomは **未使用application、`/private/var/folders`、Library cache、未使用toolchain、user dataの安全なwaste** である。Life Manager個別loopの
+production変更は行わず、active process/open/session/sourceを保護して再生成可能・終了済み・重複dataを閉じる。Connection recovery、host census、
 完了済みmanual cleanup、回収済みworktreeを再びTODOへ戻さない。
 
 ## Business-loop self-sustainability contract
