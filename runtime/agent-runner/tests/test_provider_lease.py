@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from agent_runner import run_provider_process
+from agent_runner import remove_incompatible_codex_model_cache, run_provider_process
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -125,6 +125,24 @@ class ProviderLeaseTest(unittest.TestCase):
         rows = [json.loads(line) for line in events.read_text(encoding="utf-8").splitlines()]
         self.assertEqual([row[0] for row in rows], ["start", "end", "start", "end"])
         self.assertNotEqual(rows[0][1], rows[2][1])
+
+    def test_incompatible_codex_model_cache_is_removed_for_regeneration(self):
+        codex_home = self.root / "codex-home"
+        codex_home.mkdir()
+        cache = codex_home / "models_cache.json"
+        cache.write_text(json.dumps({"models": [{"slug": "gpt", "description": "stale"}]}), encoding="utf-8")
+
+        self.assertTrue(remove_incompatible_codex_model_cache(codex_home))
+        self.assertFalse(cache.exists())
+
+    def test_compatible_codex_model_cache_is_preserved(self):
+        codex_home = self.root / "codex-home"
+        codex_home.mkdir()
+        cache = codex_home / "models_cache.json"
+        cache.write_text(json.dumps({"models": [{"slug": "gpt", "base_instructions": ""}]}), encoding="utf-8")
+
+        self.assertFalse(remove_incompatible_codex_model_cache(codex_home))
+        self.assertTrue(cache.exists())
 
     def test_contended_provider_lease_returns_75_without_launching_provider(self):
         """Removing the rc 75 boundary must launch the stub provider and fail this test."""
