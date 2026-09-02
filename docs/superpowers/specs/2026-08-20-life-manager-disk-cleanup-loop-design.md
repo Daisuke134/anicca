@@ -149,6 +149,27 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      Life Managerのimmutable release/state境界へ移す。`~/.openclaw/.git`約3.13 GB、workspace約2.17 GB、
      skills約1.64 GB、media約702 MB、state約559 MBを名前だけで削除せず、依存0になった重複source/cacheだけを
      retireする。credential、session、memory、customer evidence、publication receiptは保持する。
+     直接censusでは`~/.openclaw`は10,597,453,824 bytesで、`.git`約3.0 GiB、workspace約2.1 GiB、
+     skills約1.6 GiB、agents約778 MiB、media約670 MiB、state約531 MiB、browser約314 MiB、
+     external約289 MiB、archives約279 MiB、identity約253 MiB、blockrun約182 MiB、logs約91 MiBだった。
+     `.git`はdirty tracked 57,589、untracked 10,961、unique/non-merged refsを持ち、2.89 GiB packは
+     loose/garbage 0なので削除・GCしない。workspace/skillsには`anicca-ask/server.js`、
+     `anicca-peer-revive/agent-api.py`、Cloak Playwright driverのlive processがあるためroot単位で削除しない。
+
+     `workspace/runs`の旧59 runは各々`reel-text.mp4`と`reel-final.mp4`を持ち、SHA-256で59/59組が
+     byte-identicalだった。全`reel-final.mp4`を保持し、重複`reel-text.mp4`だけ423,614,455 bytesを回収、
+     実freeは+417,644 KiB、final 59/text 0となった。`zenn-articles/node_modules`はpackage-lock保持、
+     open FD/process参照0、現行jobがgit/curlだけであることを確認して142,516 KiBを回収し、実freeは
+     `2,546,724 → 2,693,808 KiB`（+147,084 KiB）。workspace直下の`node_modules`はlive
+     `anicca-ask`が独自依存rootを持つことまで確認したが、他ownerのon-demand利用を未分類なので保持する。
+     cleanup production run 3はrelease `64a9a1c5`、terminal PASS、errors 0、protected deletion 0、
+     last exit 0であり、OpenClaw重複削除後も停止・再生成は0だった。
+
+     一方、同時点のswapは25,076.75 MiB使用まで再膨張し、Data空きは約3.4 GiBから約2.6 GiBへ再低下した。
+     これはcleanup停止ではなく、owner出力とswap増加が回収量を上回るcapacity incidentである。swapfileを
+     直接削除せず、稼働loop/browserも容量閾値で止めない。current OpenClaw atomで終了済み・重複artifactを
+     owner境界から回収し、後続Gig atomでは`apply-direct/wakes.jsonl`約47.7 MBと
+     `storefront-direct/wakes.jsonl`約20.4 MBのbounded rotationを接続する。
    - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
      active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
