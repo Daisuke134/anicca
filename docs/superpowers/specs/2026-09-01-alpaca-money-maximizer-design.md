@@ -428,7 +428,13 @@ GUI readback. Targeted apply changed only `ai.anicca.alpaca-investment`, wrote i
 `b4c70a0d0387c799270ba5bb`, and loaded immutable arguments ending in
 `bin/lm-loop-run alpaca-investment .../20260903T004312-f68da040`; no 141 occurred. `launchctl-safe print`
 confirms `run interval = 300 seconds`, `runs = 0`, and `last exit code = (never exited)` immediately after
-this apply. The next executable atom is the first natural five-minute wake on this release.
+this apply. The first natural wake at `2026-09-02T15:57:39Z` started but ended `entrypoint_exit_78` with the
+generic `alpaca_pass_failed` summary; it produced no new broker order or receipt and exposed no agent-evidence
+traceback. The next natural wake at `2026-09-02T16:03:16Z` completed successfully on the same release: `runs=2`,
+exit code `0`, decision `NO_TRADE`, effect `none`, positions `0`, broker orders `2`, paper equity/cash
+`$99,996.83`, realised P&L `-$3.00`, unrealised P&L `$0.00`, and Telegram provider `messageId=48773`.
+Because the first wake failed, the next executable atom is one more successful natural wake so the second and
+third wakes form the required consecutive pair; no 141 occurred.
 
 ### Explicit non-goals before submission
 
@@ -1079,11 +1085,12 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-The active atom remains R14. Its release cut and targeted apply are complete as recorded above. Now read back the
-first natural five-minute wake from that release, then the second consecutive wake: persisted decision/effect/outcome
-receipts, official Alpaca CLI account/order/position state, Telegram provider `messageId`, and unchanged state on
-identical replay. If the gate selects an eligible paper candidate, reconcile at most one official CLI effect; if
-it selects `NO_TRADE` or vetoes, retain that real result without manufacturing a trade. Do not manually fire,
+The active atom remains R14. Its release cut and targeted apply are complete as recorded above. The first natural
+wake failed with exit 78; the second natural wake passed with the persisted decision/effect/outcome receipt, official
+Alpaca account/order/position state, and Telegram `messageId=48773`. Read back one more natural five-minute wake so
+the second and third wakes are a consecutive passing pair, then prove unchanged state on identical replay. If the
+gate selects an eligible paper candidate, reconcile at most one official CLI effect; if it selects `NO_TRADE` or
+vetoes, retain that real result without manufacturing a trade. Do not manually fire,
 add a scheduler, restart macOS/loginwindow/app-server, or touch the Eliza migration runtime. A12–A15 artifacts
 remain ordered after this product proof and must reuse its frozen redacted projection.
 
