@@ -187,6 +187,7 @@
     {"path": "~/.agents/skills", "owner": "active agents-skills-sync canonical skill source"},
     {"path": "~/.agents/skills.bak-20260720", "owner": "unique HyperFrames assets; no verified replacement"},
     {"path": "~/bin/provider-services", "owner": "unique Akash provider-services CLI required by spawn/deploy source contract; retain until lane retirement or replacement proof"},
+    {"path": "~/.cloakbrowser/chromium-145.0.7632.109.2", "owner": "shared active Chromium binary for 13 authenticated browser profiles and 140 processes"},
     {"path": "~/.Trash/life-manager-gig-videos-20260902-134053", "owner": "P5 Coconala/Gig deliverable retention; manifest contains active 5188394, 5174332, and 18211957 artifacts"}
   ],
   "unclassified_roots_over_100_mib": [],
@@ -821,6 +822,32 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "No absolute-path process or open handle exists now, but source resolves the command through PATH. Deleting the only provider-services binary would break a documented Akash deployment lane; require retirement plus replacement readback before deletion."
+    },
+    {
+      "batch": "p1d-cloakbrowser-shared-binary-audit-32",
+      "path": "~/.cloakbrowser/chromium-145.0.7632.109.2",
+      "measured_kib": 360124,
+      "active_process_count": 140,
+      "profile_count": 13,
+      "representative_root_pids": [429, 849, 1131, 1139, 11155],
+      "active_profile_families": [
+        "gig-daily-driver",
+        "lancers/browser-profile",
+        "crowdworks/browser-profile",
+        "job-search-daily",
+        "affiliate/*",
+        "tiktok-anicca-jp-relogin",
+        "x-diceai0",
+        "x-repost-daily",
+        "buyma-na-l5-client",
+        "daily-driver"
+      ],
+      "decision": "preserve_shared_active_browser_binary",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "One binary is shared by many live authenticated profiles. Removing it would break multiple revenue loops; browser cache/profile cleanup must remain owner-scoped under P2/P6."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
