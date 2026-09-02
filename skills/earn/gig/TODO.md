@@ -5574,6 +5574,19 @@ queue is added. Each owner must also progress independent work concurrently insi
    independently scheduled but not complete or converged. Successful historical Apply/Storefront
    receipts remain valid evidence, but their current failing behavior is not an extraction reference.
 
+   The next release attempt exposed a separate release-construction bottleneck rather than a lane
+   scheduling defect. The cutter unpacked the complete repository and ran three independent
+   `npm ci` installs even though sealed working releases already contain dependencies built from the
+   exact same three lockfiles. The natural cut `20260902T232939-1af471b1` therefore remained in the
+   root install for more than fourteen minutes while free space fell to about 9.2 GiB. Working
+   Lancers release `20260902T074533-5a9c95fa` has all three matching lockfiles and complete
+   `node_modules`, so branch `fix/release-reuse-locked-deps-20260902` changes the cutter to APFS-clone
+   dependencies from any sealed exact-lockfile donor and retain `npm ci` as the donor-miss fallback.
+   The focused reuse and fallback checks both pass. This is not complete until the change is on
+   public main, one non-overlapping natural/source cut activates a release containing it, and the
+   four Coconala owners converge naturally from that public immutable release. Do not stop the
+   currently running old-cutter attempt and do not operate the macOS GUI launch domain.
+
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
    budget-document request but still
