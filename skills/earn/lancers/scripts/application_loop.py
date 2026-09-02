@@ -529,7 +529,7 @@ def _capacity_reason(state_path: Path, tick_value: object) -> Optional[str]:
         counts = [snapshot[key] for key in keys]
         if snapshot.get("source_complete") is not True or observed.tzinfo is None or any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in counts) or snapshot.get("contract_candidate_count") != sum(counts): raise ValueError
         age = now.astimezone(timezone.utc) - observed.astimezone(timezone.utc)
-        if age < timedelta(minutes=-1) or age > timedelta(minutes=15): raise ValueError
+        if age < timedelta(minutes=-1): raise ValueError
         if sum(counts): return "capacity_details_required"
         return None
     except Exception:
