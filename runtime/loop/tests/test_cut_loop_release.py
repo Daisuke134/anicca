@@ -9,6 +9,52 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CutLoopReleaseTest(unittest.TestCase):
+    def test_release_reuses_matching_sealed_dependencies(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            loops = root / "loops"
+            donor = loops / "releases" / "donor"
+            for relative in (Path("."), Path("runtime/agentmail"), Path("apps/life-manager")):
+                package = donor / relative
+                package.mkdir(parents=True, exist_ok=True)
+                (package / "package-lock.json").write_bytes(
+                    (ROOT / relative / "package-lock.json").read_bytes()
+                )
+                modules = package / "node_modules"
+                modules.mkdir()
+                (modules / "donor-marker").write_text("sealed")
+            (donor / "RELEASE.json").write_text(
+                '{"sha":"%s","release_paths":"ALL"}\n' % ("a" * 40)
+            )
+            (loops / "current").symlink_to(donor)
+            npm = root / "npm"
+            npm.write_text("#!/bin/sh\nexit 99\n")
+            npm.chmod(0o755)
+            agents = root / "agents"
+            agents.mkdir()
+
+            result = subprocess.run(
+                ["/bin/bash", str(ROOT / "bin/cut-loop-release.sh"), "origin/main"],
+                cwd=ROOT,
+                env={
+                    **os.environ,
+                    "LOOPS_ROOT": str(loops),
+                    "LOOPS_KEEP_RELEASES": "2",
+                    "LIFE_MANAGER_LAUNCH_AGENTS_DIR": str(agents),
+                    "NPM_BIN": str(npm),
+                },
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            release = (loops / "current").resolve()
+            for relative in (Path("."), Path("runtime/agentmail"), Path("apps/life-manager")):
+                self.assertEqual(
+                    (release / relative / "node_modules/donor-marker").read_text(), "sealed"
+                )
+
     def test_release_builds_locked_root_and_agentmail_dependencies(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
