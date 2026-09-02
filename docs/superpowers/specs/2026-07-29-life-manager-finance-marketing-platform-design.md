@@ -4185,3 +4185,16 @@ Cloud becomes Dais's scheduler owner only after:
 | Scope | Program is decomposed into OpenClaw independence and local recovery first; hosted deployment, financial/growth closure, and later health/development loops remain deferred |
 | Ambiguity | Local is the required full deployment now; hosted mode is optional future work; Docker, Colima, Railway, PostgreSQL, and OpenClaw are not local prerequisites or fallbacks |
 | Evidence honesty | Current ASC snapshots are marked inconsistent; unavailable product metrics never become zero |
+
+## Latest public-link recheck (2026-09-03 JST)
+
+The owner-provided TikTok short link `https://vt.tiktok.com/ZSVoGegjG/` is
+publicly readable without login. An HTTP 200 redirect resolves to the native
+photo URL `https://www.tiktok.com/@aniccaaffirmation/photo/7680912718362234130`.
+A fresh CloakBrowser readback at `2026-09-02T15:47:50Z` shows the same native
+owner `Anicca`, caption `5 affirmations to tell yourself every morning... |`
+`#anicca #affirmation`, and the page's current age text `3時間前`; canonical and
+`og:url` metadata name the same handle/photo ID. This recheck confirms the T4
+publication exists on the correct public TikTok account. It is evidence for
+T4 only; it does not by itself prove the other accounts or the three daily
+schedule triggers.
