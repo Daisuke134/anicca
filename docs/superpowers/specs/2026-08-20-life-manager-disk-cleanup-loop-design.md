@@ -776,8 +776,10 @@ Sparkle回帰とは分離して記録する。⑤の完了にはsourceのmain統
 `ai.anicca.life-manager-disk-cleanup.plist`は`~/loops/current`ではなくimmutable release
 `20260902T095123-64a9a1c5`（`LIFE_MANAGER_RELEASE_SHA=64a9a1c5...`）を直接pinし、`StartInterval=300`だった。
 `~/Library/LaunchAgents`にglobal release watcher plistはなく、旧`ai.anicca.hf-gig-release-watch`はretired stateに
-しか存在しない。したがって「独立release watcherがmain `68ac2dc45...`を自然反映する」という前提は現行hostでは
-成立しない。06:19:35Zの自然wakeも旧実装の`protected_descendant=1`、errors 0、protected deletion 0を返した。
+しか存在しない。したがって「独立release watcherが現在のorigin/main `0588339f...`を自然反映する」という前提は
+現行hostでは成立しない。最新の自然wakeも旧実装の`protected_descendant=1`、open 5、errors 0、
+protected deletion 0を返した。Data空きは`27,432,308 KiB`（約26.2 GiB）、Sparkle Installationは
+`1,985,752 KiB`、ChatGPT PID 410とUpdater PID 8768はactiveである。
 
 Remote sessionは`launchctl`、`lm-loop apply/start/stop/restart`、Terminal/AppleScript迂回、app/process signal、
 shutdown/restartを一切行わない。新releaseの作成だけではpin済みplistが変わらず、反映証拠にならないため行わない。
