@@ -265,7 +265,7 @@ def scan(projects_root: Path, ledger_path: Path, *, dry_run: bool) -> dict:
                 "project_id": project_id,
                 "deleted": deleted,
                 "bytes_freed": bytes_freed,
-                "transaction_state": state["transaction_state"],
+                "transaction_state": state.get("transaction_state") or state.get("talkroom_state"),
             }
             ledger_path.parent.mkdir(parents=True, exist_ok=True)
             with ledger_path.open("a", encoding="utf-8") as handle:

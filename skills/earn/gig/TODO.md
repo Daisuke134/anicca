@@ -5083,6 +5083,17 @@ queue is added. Each owner must also progress independent work concurrently insi
     retention is complete: reconcile an authoritative marketplace terminal state for projects absent
     from the current open-order snapshot, then let the same janitor remove only eligible `source/`
     and `work/`, before adding the separately guarded accepted-artifact generation bound above.
+    Releases `5343442c` and `64980aca` now use stable visible talkroom readback, recognize the
+    completed-page `評価完了` step, rotate through two rooms per wake, mirror both official state
+    fields, and run cleanup before active Paid work. Production observed rooms `18095433` and
+    `18102795` as `取引完了`; the next wake reclaimed 159,505,486 bytes of `source/` and `work/`
+    from projects `5197157` and `5198670`. A third already-terminal project (`18130722`) removed
+    its remaining 27,599-byte `source/` but exposed a receipt-only fallback bug when its older state
+    lacked `transaction_state`; use `talkroom_state` for that ledger field and verify the next wake
+    reports `errors=0`. The disk cleanup owner no longer runs mutable-current idle reconciliation,
+    which previously terminated long Paid wakes with exit 143 and redeployed unrelated owners.
+    Remaining in this atom: complete the bounded terminal census, then retain only the accepted
+    artifact plus one rollback generation; old MP4/ZIP/mcaddon/package generations are still held.
 - [ ] `PAR-5` Prove fastest truthful submission and replay-zero from one immutable public-main
   release. PASS = Apply submits every currently eligible posting, Reply handles every fresh buyer
   event, Storefront executes every authorized mutation and Paid progresses every purchased order;
