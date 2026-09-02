@@ -149,6 +149,16 @@ completion claim is nevertheless false until the two failing lanes below pass na
   plus replay-zero are recorded. Thread `10085794` is currently represented only by DLQ-closed
   historical rows, so it must not be force-submitted from stale spec text.
 
+  The same keep-alive run also exposed the disk-retention defect: by 22:58 JST it held 347 completed
+  `continuous/probe-*` directories and 371 completed worker directories. Registry cleanup runs only
+  before a new owner starts, while Reply intentionally remains one continuous process, so those
+  completed subruns had no in-run collector. Branch
+  `fix/coconala-reply-continuous-retention-20260902` bounds completed probe evidence to 8, completed
+  workers to 16, and reconciliation evidence/reports to 8 each. It deletes only directories with
+  their exact completion marker; active directories and symlinks are preserved. Two focused checks
+  pass. This remains open until a natural main-derived Reply owner performs the pruning and the disk
+  readback shows the bounded counts and recovered bytes.
+
   The latest natural Paid terminal pass observed nine items and recorded `effect=1`, `readback=5`,
   `failed=2`, and `pending=2`. Ryu `18211957` completed with `send_performed=true`,
   `remote_repaired=true`, and official readback; `18171850` completed by dedupe with official
