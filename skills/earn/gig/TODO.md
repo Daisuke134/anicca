@@ -5476,6 +5476,14 @@ queue is added. Each owner must also progress independent work concurrently insi
    installed/running old release deletable. Require natural owner convergence, fresh terminal
    receipts, central GC, and a post-GC disk readback before closing this incident.
 
+   A later exact GC audit found release `20260902T211110-ca40215c` complete, non-current, older
+   than five minutes, referenced by zero installed plists, and open by zero processes. It occupied
+   `1,251,524` KiB and was deleted without touching current `20260902T211246-af0fb4c1` or any
+   installed/running release. Release count fell from fourteen to thirteen; post-delete free space
+   is `11,904,604` KiB (about 11.35 GiB). A second full fence scan found zero additional safe release
+   candidates. The incident remains open only for four-lane convergence, later central GC of newly
+   unpinned releases, and final disk readback; per-lane deletion of shared releases remains forbidden.
+
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
    budget-document request but still
