@@ -184,6 +184,15 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `anicca-autohedge/vendor/.git`約6.4 MiBと`roundcube-webmail-skill/.git`約3.3 MiBはそれぞれdirty 1/6なので保持する。
      4回目cleanup wakeはruns 4、state not running、last exit 0、最新receipt errors 0、protected deletion 0、
      reclaimed 6,368 bytesで、run動画とZenn依存の再生成は0だった。
+
+     OpenClaw rootへのproduction参照はlaunchd plist 75件、enabled cron 79件中direct path参照71件で、
+     factory/slideshow/Postiz familyもenabledだった。したがってOpenClaw rootはretireせず、family単位の移管を続ける。
+     埋込cloneはclean、remote commit存在、open/config参照0を個別確認した。永久禁止の`external/codegraph`と
+     終了済み`gig-paid-builder/.../.tmp/plugins`はclone全体を回収し、`external/mcporter`、Camofox source、
+     TikTok scraper、Zenn editor、Instagram scraper、nano-banana、self-improving-agentはworking treeを保持して
+     `.git`だけ回収した。logical 134,836 KiB、実free +139,104 KiBで、mcporter/Camofox source readbackはPASS。
+     Zenn/dev-toはgit push owner、autohedge/roundcube/novaはdirtyなので保持した。OpenClaw totalは
+     10,597,453,824 bytes（約9.87 GiB）から9,426,030,592 bytes（約8.78 GiB）へ縮小した。
    - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
      active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
