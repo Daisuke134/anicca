@@ -483,6 +483,16 @@ second broker client, scheduler, or live-capital path was added. Typecheck, buil
 tests), and `git diff --check` pass. Main-derived natural-wake broker evidence remains pending and is not inferred
 from source checks.
 
+The A12 shared public-projection source sub-atom is **DONE** in `life-manager-eliza` merge
+`0837d62918d1ce1719e04f03cab807ad5859e139` (PR #87). A pure allowlist converts official CLI campaign state
+and persisted decision/effect/outcome receipts into paper status, starting/current equity, cash, total/daily/
+unrealised P&L, positions, redacted fills, latest thesis/gate, timeline and reconciliation counts. Broker order
+and fill IDs are replaced by deterministic `public-*` hashes; account ID, credentials, raw input references,
+model prompts and raw errors are never selected. `GET /api/life-manager/alpaca/public` performs reads only and
+returns a generic `503` on failure. Typecheck, build, focused redaction test (`1/1`), and `git diff --check` pass.
+A12 remains incomplete until the same projection drives a logged-out page on a hosted URL and that URL is read
+back without authentication.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
@@ -531,7 +541,7 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
 | A09 | Ack-loss/restart reconciliation — **DONE** | A real process restart reconciled the simulated lost acknowledgement from one official client-ID readback, restored the receipt, and added zero orders; copied-DB absent state opened the breaker with zero blind retries. |
 | A10 | First registered durable loop — **DONE** | Exactly one seed-once interval task fires through the existing Eliza scheduling spine and Life Manager Financial dispatcher; natural fire reconciled the official order, restart preserved the same task/result, and host adapters own no Alpaca schedule. |
 | A11 | Paper campaign — **ACTIVE** | Frozen strategy runs on the dedicated account; every proposal/no-trade/order/fill/exit/P&L is recorded; official account activity and Life Manager projection have zero unexplained delta. |
-| A12 | Read-only public demo | Hosted URL shows redacted account equity/P&L, positions/max loss, thesis, gate reasons, order/fill receipts, and timeline; public UI cannot place an order. |
+| A12 | Read-only public demo — **ACTIVE** | Shared redacted API projection is merged. Remaining: render and host the logged-out page, then read it back without authentication; public UI cannot place an order. |
 | A13 | Submission assets | Public README, one-pager, PDF slides, 16:9 cover, and ≤4-minute video truthfully match the current account and code. |
 | A14 | Submit and read back | Form contains hosted URL, public repo, assets, tags, and private account ID; official submitted state is read back before 2026-09-05 00:00 JST. |
 | A15 | Portable OSS release | Clean macOS and Linux/Docker installs start the same Eliza runtime in paper mode from the public SHA; launchd/systemd/container policy only supervise that process, while the Eliza registry schedules the loop; secret-free fixture replay passes. |
@@ -566,7 +576,8 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
   proposal/veto/order/fill receipt; identical replay must add zero orders. The sealed SPY exit remains active for
   the next regular options session, followed by the final campaign funnel and unexplained-delta check.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
-  projection must drive both live and static views so they cannot drift. Above the fold show paper-only status,
+  projection must drive both live and static views so they cannot drift. The shared allowlisted projection and
+  read-only GET route are **DONE**. Next, render that projection on a logged-out hosted page. Above the fold show paper-only status,
   starting/current equity, realised/unrealised P&L, open max loss, last successful loop and broker reconciliation.
   Then show candidate funnel/selectivity, model thesis, deterministic gate/veto reasons, order/fill/exit timeline,
   self-heal/replay evidence, and the Life Manager-owned account-bootstrap checkpoint. Every number links to a
