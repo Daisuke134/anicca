@@ -624,7 +624,7 @@ def test_remote_owner_prompt_searches_complete_repo_and_valid_shared_tools(tmp_p
     assert "write the durable result immediately before any optional exploration" in prompt
     assert "do not exhaustively inspect unrelated historical attachments or messages" in prompt
     assert "write status=blocked and a nonempty blocker in paid-remote-result.json" in prompt
-    assert "every wait receipt include either a nonempty readback" in prompt
+    assert "every wait receipt include nonempty provider, kind, and url or official_url fields" in prompt
     assert "readback_source and exact_readback=true" in prompt
 
 
