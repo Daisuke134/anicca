@@ -93,7 +93,7 @@ def observe(*, credentials_path: Path, cli_path: Path, symbol: str = "SPY") -> d
     ], env)
     positions = _run(cli_path, [
         "position", "list", "--quiet", "--jq",
-        "[.[]|{symbol,qty,side,market_value,unrealized_pl}]",
+        "[.[]|{symbol,qty,side,avg_entry_price,current_price,market_value,unrealized_pl}]",
     ], env)
     orders = _run(cli_path, [
         "order", "list", "--quiet", "--status", "all", "--limit", "500", "--jq", "length",
@@ -149,3 +149,47 @@ def find_order_by_client_id(
     if not isinstance(result, dict) or result.get("found") is not True:
         raise ValueError("alpaca_order_readback_invalid")
     return result
+
+
+def read_campaign_snapshot(
+    *, credentials_path: Path, cli_path: Path, symbols: tuple[str, str],
+) -> dict[str, Any]:
+    env = _context(credentials_path, cli_path)
+    account = _run(cli_path, [
+        "account", "get", "--quiet", "--jq",
+        "{cash:.cash,equity:.equity,last_equity:.last_equity}",
+    ], env)
+    positions = _run(cli_path, [
+        "position", "list", "--quiet", "--jq",
+        "[.[]|{symbol,qty,side,avg_entry_price,current_price,market_value,unrealized_pl}]",
+    ], env)
+    fills = _run(cli_path, [
+        "account", "activity", "list", "--activity-types", "FILL", "--page-size", "100",
+        "--direction", "asc", "--quiet", "--jq",
+        "[.[]|{order_id,symbol,side:(if .side==\"sell_short\" then \"sell\" else .side end),qty,price,transaction_time}]",
+    ], env)
+    clock = _run(cli_path, [
+        "clock", "get", "--quiet", "--jq", "{is_open:.is_open,observed_at:.timestamp}",
+    ], env)
+    option_query = (
+        ".snapshots|to_entries|map({symbol:.key,bid:.value.latestQuote.bp,"
+        "ask:.value.latestQuote.ap,quote_at:.value.latestQuote.t})"
+    )
+    options = _run(cli_path, [
+        "data", "option", "snapshot", "--symbols", ",".join(symbols),
+        "--limit", "2", "--quiet", "--jq", option_query,
+    ], env)
+    if not isinstance(account, dict) or not isinstance(clock, dict):
+        raise ValueError("alpaca_campaign_shape_invalid")
+    if not isinstance(positions, list) or not isinstance(fills, list) or not isinstance(options, list):
+        raise ValueError("alpaca_campaign_shape_invalid")
+    return {
+        "account": account,
+        "clock": clock,
+        "fills": [fill for fill in fills if fill.get("symbol") in symbols],
+        "options": options,
+        "paper": True,
+        "positions": [position for position in positions if position.get("symbol") in symbols],
+        "unexpected_positions": [position.get("symbol") for position in positions
+                                 if position.get("symbol") not in symbols],
+    }

@@ -8,7 +8,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from alpaca_cli import find_order_by_client_id, observe
+from alpaca_cli import find_order_by_client_id, observe, read_campaign_snapshot
+from campaign import SYMBOLS, reconcile
 from effect_store import reconcile_started
 
 
@@ -53,15 +54,23 @@ def main() -> int:
             credentials_path=credentials_path,
             cli_path=cli_path,
         )
+        campaign = reconcile(read_campaign_snapshot(
+            credentials_path=credentials_path,
+            cli_path=cli_path,
+            symbols=SYMBOLS,
+        ))
         _atomic_json(state / "observation-latest.json", observation)
+        _atomic_json(state / "campaign.json", campaign)
         summary = {
             "account": observation["account"],
             "activities_count": observation["activities_count"],
             "effect": "none",
+            "exit_status": campaign["exit_status"],
             "loop_id": "alpaca-investment",
             "orders_count": observation["open_and_closed_orders_count"],
             "paper": True,
             "positions_count": len(observation["positions"]),
+            "unrealized_pnl_usd": campaign["unrealized_pnl_usd"],
             "reconciliation": reconciliation,
             "status": "observed",
         }
