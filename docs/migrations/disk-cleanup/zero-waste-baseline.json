@@ -184,6 +184,8 @@
     {"path": "~/.codex-acct2", "owner": "active remote Codex account; preserve app-server session/database/socket state"},
     {"path": "~/.anicca-founder", "owner": "active founder/economy loops; preserve wallet, ledger, state, and earn skills"},
     {"path": "~/actions-runner/_diag", "owner": "active self-hosted GitHub runner diagnostics; retain open current log and bound old logs through runner owner"},
+    {"path": "~/.agents/skills", "owner": "active agents-skills-sync canonical skill source"},
+    {"path": "~/.agents/skills.bak-20260720", "owner": "unique HyperFrames assets; no verified replacement"},
     {"path": "~/.Trash/life-manager-gig-videos-20260902-134053", "owner": "P5 Coconala/Gig deliverable retention; manifest contains active 5188394, 5174332, and 18211957 artifacts"}
   ],
   "unclassified_roots_over_100_mib": [],
@@ -778,6 +780,27 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Self-hosted runner is live. Do not stop the runner or remove bin/externals; old diagnostics need an owner retention contract and are not deleted by host cleanup without that proof."
+    },
+    {
+      "batch": "p1d-agents-skills-audit-30",
+      "path": "~/.agents",
+      "canonical_skills_kib": 441032,
+      "backup_path": "~/.agents/skills.bak-20260720",
+      "backup_file_count": 2,
+      "backup_bytes": 37494236,
+      "backup_unique_files": [
+        "hyperframes-animation/examples/assets/hyperframes-showcase-hypecard.mp4",
+        "hyperframes-animation/examples/assets/background-tech-data-flow.mp4"
+      ],
+      "sync_owner": "ai.anicca.agents-skills-sync.plist",
+      "git_status": "main clean",
+      "replacement_verified": false,
+      "decision": "preserve_canonical_source_and_unique_backup_assets",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Backup has no same-path/hash counterpart in current skills, Codex skills, OpenClaw skills, or Projects. It is unique user-owned media, not a duplicate cache; defer deletion until an asset owner/replacement is proven."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
