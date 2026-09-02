@@ -62,9 +62,17 @@ def test_rejects_launchctl_141_without_mutation():
 
 def test_rejects_launchctl_manager_153():
     command = ("/bin/launchctl", "manageruid")
-    result = probe(runner_for({command: (153, "", "manager unavailable")}))
+    calls = []
+    base = runner_for({command: (153, "", "manager unavailable")})
+
+    def recording_runner(argv, **kwargs):
+        calls.append(tuple(argv))
+        return base(argv, **kwargs)
+
+    result = probe(recording_runner)
     assert result["mutation_allowed"] is False
     assert "manager_uid_mismatch" in result["errors"]
+    assert ("/bin/launchctl", "print", "gui/501") not in calls
 
 
 def test_gig_healer_does_not_kickstart_when_preflight_fails():

@@ -49,11 +49,24 @@ def probe(runner: Runner = subprocess.run) -> dict:
     run("managername", ["/bin/launchctl", "managername"])
     run("manageruid", ["/bin/launchctl", "manageruid"])
     run("managerpid", ["/bin/launchctl", "managerpid"])
-    if uid.isdigit():
+    prerequisites_ok = (
+        uid.isdigit()
+        and username
+        and not username.isdigit()
+        and observations["directory_services"]["returncode"] == 0
+        and f"UniqueID: {uid}" in observations["directory_services"]["stdout"]
+        and observations["managername"]["returncode"] == 0
+        and observations["managername"]["stdout"] == "Aqua"
+        and observations["manageruid"]["returncode"] == 0
+        and observations["manageruid"]["stdout"] == uid
+        and observations["managerpid"]["returncode"] == 0
+        and observations["managerpid"]["stdout"].isdigit()
+    )
+    if prerequisites_ok:
         run("gui_domain", ["/bin/launchctl", "print", f"gui/{uid}"])
     else:
         observations["gui_domain"] = {
-            "argv": [], "returncode": 75, "stdout": "", "stderr": "uid_unresolved"
+            "argv": [], "returncode": 75, "stdout": "", "stderr": "prerequisite_failed"
         }
 
     errors = []
@@ -70,7 +83,7 @@ def probe(runner: Runner = subprocess.run) -> dict:
         errors.append("manager_uid_mismatch")
     if observations["managerpid"]["returncode"] != 0 or not observations["managerpid"]["stdout"].isdigit():
         errors.append("manager_pid_unresolved")
-    if observations["gui_domain"]["returncode"] != 0:
+    if prerequisites_ok and observations["gui_domain"]["returncode"] != 0:
         errors.append("gui_domain_unreadable")
 
     return {
