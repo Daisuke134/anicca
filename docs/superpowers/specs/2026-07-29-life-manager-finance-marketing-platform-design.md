@@ -2556,6 +2556,17 @@ current pass. This is a deliberate skip, not a successful posting claim. The
 first active atom advances to classification of the existing YouTube
 integrations; ebook and monk remain later at 0/day.
 
+**YouTube live cursor 1:** the Postiz API returns exactly three YouTube rows:
+`@anicca-ai` / `cmq3u37gi005iqp0y90a2w92n`,
+`@anicca-affirmation-video` / `cmn8ymq6c02oio70y5ea1trv8`, and
+`@anicca-jp` / `cmn1oukj9012nnq0yqhouc3ib`. All three provider connections
+currently report `disabled:false`, but all three remain Life Manager-unarmed at
+0/day; provider connectivity is not a posting-owner claim. Work stays atomic:
+(1) classify and canary `@anicca-ai`; (2) classify and canary
+`@anicca-affirmation-video`; (3) preserve the existing owner-skip for
+`@anicca-jp` at 0/day unless the owner explicitly reopens it. No Honne content
+or identity may use these Anicca YouTube integrations.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
