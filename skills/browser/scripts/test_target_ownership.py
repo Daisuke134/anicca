@@ -146,6 +146,7 @@ def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypat
 
     monkeypatch.setattr(default_tab, "_browser_ws", lambda: "ws://browser")
     monkeypatch.setattr(default_tab.websockets, "connect", lambda *_args, **_kwargs: FakeConnection())
+    monkeypatch.setattr(default_tab, "_browser_ws", lambda: "ws://browser")
     monkeypatch.setattr(
         default_tab.sys, "stdin", SimpleNamespace(buffer=SimpleNamespace(read=lambda: b"")),
     )
