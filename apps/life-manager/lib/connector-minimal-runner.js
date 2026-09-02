@@ -148,6 +148,7 @@ function connpassActionBoundaryFailureContext(error) {
 const CONNPASS_SUBMIT_CODES = /^CONNPASS_(?:REGISTRATION_UNAVAILABLE|CONTROL_UNAVAILABLE|CONFIRM_UNAVAILABLE|TIER_UNAVAILABLE|QUESTIONNAIRE_REQUIRED|PAGE_UNAVAILABLE|READBACK_UNAVAILABLE|BROWSER_ACTION_FAILED|SESSION_EXPIRED)$/;
 
 function safeSubmitReason(error, fallback) {
+  if (error && error.unknownEffect === true) return "effect_unknown";
   const code = String(error && error.code || "");
   return CONNPASS_SUBMIT_CODES.test(code) ? code.toLowerCase() : fallback;
 }
@@ -400,13 +401,21 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             (error) => submitFailureContext(provider, error, "cached_action_failed"),
             (value) => resolvedSubmitFailureContext(provider, value, "cached_action_unverified"),
           );
-        } catch {
-          operation = Object.freeze({ status: "failed", safe_reason: "cached_action_failed" });
+        } catch (error) {
+          operation = Object.freeze({
+            status: "failed",
+            safe_reason: error && error.unknownEffect === true ? "effect_unknown" : "cached_action_failed",
+          });
         }
         if (operation && operation.status === "completed" && registered(operation.provider_state)) {
           providerState = operation.provider_state;
         }
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
+        if (operation && operation.status === "failed"
+          && operationSafeReason(operation, "cached_action_failed") === "effect_unknown") {
+          consecutiveFailures += 1;
+          return finish("circuit_open", "effect_unknown");
+        }
 
         if (!providerState) {
         try {
@@ -416,13 +425,20 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             (error) => submitFailureContext(provider, error, "direct_action_failed"),
             (value) => resolvedSubmitFailureContext(provider, value, "direct_action_unverified"),
           );
-        } catch {
-          operation = Object.freeze({ status: "failed", safe_reason: "direct_action_failed" });
+        } catch (error) {
+          operation = Object.freeze({
+            status: "failed",
+            safe_reason: error && error.unknownEffect === true ? "effect_unknown" : "direct_action_failed",
+          });
         }
         if (deadlineReached()) return finish("circuit_open", "wake_deadline");
 
         if (!operation || operation.status !== "completed") {
           directFailureReason = operationSafeReason(operation, "direct_action_unverified");
+          if (directFailureReason === "effect_unknown") {
+            consecutiveFailures += 1;
+            return finish("circuit_open", "effect_unknown");
+          }
           if (provider === "peatix" && directFailureReason === "peatix_readback_unavailable") {
             consecutiveFailures += 1;
             return finish("circuit_open", "effect_unknown");
@@ -443,9 +459,14 @@ async function runMinimalConnectorWake(input = {}, injected = {}) {
             );
             usedFallback = operation && operation.status === "completed";
             ambiguousAgentEffect = Boolean(operation && operation.status === "failed" && operation.safe_reason === "effect_unknown");
-          } catch {
-            operation = Object.freeze({ status: "failed", safe_reason: "agent_action_failed" });
+          } catch (error) {
+            operation = Object.freeze({
+              status: "failed",
+              safe_reason: error && error.unknownEffect === true ? "effect_unknown" : "agent_action_failed",
+            });
           }
+          ambiguousAgentEffect = Boolean(operation && operation.status === "failed"
+            && operationSafeReason(operation, "agent_action_failed") === "effect_unknown");
           if (deadlineReached()) return finish("circuit_open", "wake_deadline");
           if (operation && operation.status === "failed" && operation.safe_reason === "auth_required") break;
         }

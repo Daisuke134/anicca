@@ -14,6 +14,7 @@ const { zonedSlotInstant } = require("./honne-ja-shadow-schedule.js");
 const EVENT_REF = /^connpass-event:\/\/event\/[1-9][0-9]*$/;
 const EVENT_URL = /^https:\/\/(?:[a-z0-9-]+\.)?connpass\.com\/event\/[1-9][0-9]*\/$/i;
 const TIME_ZONE = "Asia/Tokyo";
+const CONNPASS_ONLINE_LOCATION_PATTERN = /オンライン|online|リモート|remote|配信|視聴|zoom|google\s*meet/i;
 // A wake must stay bounded: walk detail pages for at most this many
 // earliest-dated bindings per wake, even when a busy window discovers
 // hundreds of candidates. One constant, one place (Dais 2026-08-16).
@@ -51,6 +52,12 @@ function exactCandidate(value) {
     || Date.parse(value.starts_at) >= Date.parse(value.ends_at)
   ) invalid();
   return value;
+}
+
+function isInPersonCandidate(candidate) {
+  const location = [candidate.venue_name, candidate.venue_address]
+    .map((value) => String(value || "").trim()).filter(Boolean).join(" ");
+  return Boolean(location) && !CONNPASS_ONLINE_LOCATION_PATTERN.test(location);
 }
 
 function candidateWindow(now) {
@@ -293,7 +300,7 @@ function createConnpassScriptFirstWorkflow(options = {}) {
   // (undefined) is valid — the provider then fails closed on any required
   // name-shaped questionnaire field instead of guessing.
   const readAttendeeName = options.readAttendeeName;
-  const allowAutomatedSubmit = options.allowAutomatedSubmit !== false;
+  const allowAutomatedSubmit = options.allowAutomatedSubmit === true;
   if ([now, readBindings, readDetail, discoverOnPage, isCalendarFree, submitOnPage, readStateOnPage,
     onDiscoveryAudit, hasAppliedBundle]
     .some((value) => typeof value !== "function")
@@ -337,6 +344,7 @@ function createConnpassScriptFirstWorkflow(options = {}) {
         }
         if (candidate.registration_status !== "available") continue;
         if (candidate.ticket_price_status !== "free" || candidate.ticket_price_minor !== 0) continue;
+        if (!isInPersonCandidate(candidate)) continue;
         freeOpenCount += 1;
         let calendarFree;
         try { calendarFree = await isCalendarFree(candidate, calendar); }

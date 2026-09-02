@@ -299,7 +299,7 @@ function createProductionProviderRouter(options = {}) {
   const classifyTalkOpportunity = options.classifyTalkOpportunity;
   const buildTalkPack = options.buildTalkPack;
   const eventPreferences = rankCandidates == null ? null : requiredText(options.eventPreferences);
-  const connpassAutomatedSubmitAllowed = options.connpassAutomatedSubmitAllowed !== false;
+  const connpassAutomatedSubmitAllowed = options.connpassAutomatedSubmitAllowed === true;
   const now = options.now || (() => new Date());
   if (
     !lumaWorkflow || typeof lumaWorkflow.discoverCandidates !== "function"

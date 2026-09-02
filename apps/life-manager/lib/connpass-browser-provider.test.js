@@ -229,7 +229,7 @@ test("on a multi-tier event, selects the first free open unrestricted in-person 
   ]);
 });
 
-test("an online tier is selected only when it is the sole qualifying tier", async () => {
+test("an online-only event fails closed before the confirmation click", async () => {
   const page = joinFlowFixture({
     tiers: [
       { label: "学生ゆうせん枠 無料 先着順 9/15人", disabled: false },
@@ -237,10 +237,11 @@ test("an online tier is selected only when it is the sole qualifying tier", asyn
     ],
     states: [{ state: "absent" }, { state: "registered" }],
   });
-  assert.deepEqual(await submitConnpassOnPage(page), { status: "registered", effect_started: true });
-  assert.deepEqual(page.calls, [
-    "url", "click-join", "wait", "check-radio:1", "click-confirm", "wait", `goto:${EVENT_PAGE_URL}`,
-  ]);
+  await assert.rejects(
+    submitConnpassOnPage(page),
+    (error) => error.code === "CONNPASS_TIER_UNAVAILABLE" && error.unknownEffect === false,
+  );
+  assert.deepEqual(page.calls, ["url", "click-join", "wait"]);
 });
 
 test("a tier showing a yen amount is never selected, even when it is otherwise open and unrestricted", async () => {

@@ -704,6 +704,7 @@ test("production provider router continues from Luma to Connpass on the same pag
   const router = createProductionProviderRouter({
     lumaWorkflow: workflow,
     connpassWorkflow: workflow,
+    connpassAutomatedSubmitAllowed: true,
     actionCache,
     browserHarness,
     async performAction(input) { performed = input; return { status: "success" }; },
@@ -725,24 +726,27 @@ test("production provider router continues from Luma to Connpass on the same pag
 });
 
 test("production router blocks every Connpass submit path until provider permission is verified", async () => {
-  let effects = 0;
   const workflow = {
     async discoverCandidates() { return []; },
-    async runDirectAction() { effects += 1; return { status: "completed" }; },
+    async runDirectAction() { return { status: "completed" }; },
     async readProviderState() { return { status: "absent" }; },
   };
-  const router = createProductionProviderRouter({
-    lumaWorkflow: workflow, connpassWorkflow: workflow,
-    connpassAutomatedSubmitAllowed: false,
-    actionCache: { async replay() { effects += 1; }, saveVerifiedRepair() {} },
-    browserHarness: { async runFallback() { effects += 1; } },
-    async performAction() { effects += 1; },
-  });
-  const input = { provider: "connpass", candidate: { event_ref: "connpass-event://event/1" }, page: {}, pageWebsocket: "ws://fixture", maxSteps: 1, expectedState: "registered_or_pending" };
-  assert.equal((await router.runCachedAction(input)).safe_reason, "connpass_action_permission_required");
-  assert.equal((await router.runDirectAction(input)).safe_reason, "connpass_action_permission_required");
-  assert.equal((await router.runAgentFallback(input)).safe_reason, "connpass_action_permission_required");
-  assert.equal(effects, 0);
+  for (const permission of [undefined, false]) {
+    let effects = 0;
+    const options = {
+      lumaWorkflow: workflow, connpassWorkflow: workflow,
+      actionCache: { async replay() { effects += 1; }, saveVerifiedRepair() {} },
+      browserHarness: { async runFallback() { effects += 1; } },
+      async performAction() { effects += 1; },
+      ...(permission === undefined ? {} : { connpassAutomatedSubmitAllowed: permission }),
+    };
+    const router = createProductionProviderRouter(options);
+    const input = { provider: "connpass", candidate: { event_ref: "connpass-event://event/1" }, page: {}, pageWebsocket: "ws://fixture", maxSteps: 1, expectedState: "registered_or_pending" };
+    assert.equal((await router.runCachedAction(input)).safe_reason, "connpass_action_permission_required");
+    assert.equal((await router.runDirectAction(input)).safe_reason, "connpass_action_permission_required");
+    assert.equal((await router.runAgentFallback(input)).safe_reason, "connpass_action_permission_required");
+    assert.equal(effects, 0);
+  }
 });
 
 test("production provider router submits only strong or moderate ranked candidates and fails closed when ranking fails", async () => {

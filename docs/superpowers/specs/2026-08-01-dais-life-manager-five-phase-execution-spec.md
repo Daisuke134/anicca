@@ -10051,3 +10051,13 @@ origin/main祖先のread-only immutable release `/Users/anicca/loops/connector/r
 origin/main exact SHAのread-only immutable release `/Users/anicca/loops/connector/releases/20260827T171500-57ed7c000`を作成し、single hourly ownerへloadした。manual canary `wake-89092cc25c3296d557b2ee34`はCalendar 42,162ms、Luma discovery 59,251msをsuccessで通過し、Luma rankingは1 request / 8,040ms、inventoryは`26/26/23/9/2`。Connpassは`286/286/286/265/128`、ranking wall 206,418ms、未許可Submit 0のmanual boundaryを維持し、terminalは`completed_no_effect / fallback_deferred_for_wake_budget / consecutive_failure_count 0`、Telegram wake ID `37843`、launchd exit 0、process/owner-lock残留0。旧Luma generic failureは実経路で解消した。
 
 進捗522当時は旧releaseの失敗列を破棄し、loaded launchd `runs=1`（上記manual canaryのみ）、wake report 226、delivery 238、actionはcanary終了時のdurable countをbaselineにした。この旧24回gateと当時の残順序は履歴であり、current正本は`0.0.3`と`0.0.3.1`だけである。
+
+### 現行 Connector の Connpass 自動申込契約
+
+現行の実行経路は、Lumaを先に探索し、適格候補が無い場合にConnpassへ進む。Connpassの発見は公式APIの読み取りに限定し、実申込はConnector専用CloakBrowserの既存セッションで行う。Google Calendarのbusy readback、28日窓、無料・受付中・strong/moderate、東京の対面条件を通過した候補だけを対象にする。
+
+Connpassの参加枠は、無料・空席・一般参加で、かつ対面の枠が存在する場合だけ選ぶ。オンライン枠しかないイベントは、確定ボタンを押す前に `CONNPASS_TIER_UNAVAILABLE` として終了し、申込しない。確定クリック後に登録状態を読めない場合は外部作用不明として `circuit_open / effect_unknown` にし、同じwakeでHarness、別候補、別providerへ再送しない。
+
+この実申込経路は `LM_CONNECTOR_CONNPASS_AUTOMATED_SUBMIT_ALLOWED=true` の明示的なローカルopt-inでのみ有効になる。未指定・空値・`false`・その他の値は全てmanual action boundaryへ戻し、native factory、production router、Connpass workflowの各境界も同じfail-closed契約を持つ。既存のmanual boundary、公式provider readback、Calendar event本体のexact-one登録、Telegramのpositive receipt、`applied_bundle`のdedupeは維持する。
+
+この契約の実運用acceptanceは、修正済みimmutable releaseを対象labelだけへloadした後、実CloakBrowserのConnpass公式画面で申込状態をreadbackし、GOG CLIで同一eventのGoogle Calendar登録をexact one件確認し、Telegramのpositive message/photo receiptとdurable bundleを同じevent identityで照合して成立とする。これらのlive証拠が揃うまで、コード修正やrelease作成だけを申込成功とは扱わない。

@@ -16,6 +16,8 @@ function event(id, overrides = {}) {
     registration_status: "available",
     ticket_price_status: "free",
     ticket_price_minor: 0,
+    venue_name: "Tokyo venue",
+    venue_address: "Tokyo",
     ...overrides,
   });
 }
@@ -242,11 +244,31 @@ test("Connpass discovery reports the ordered eligibility gate counts", async () 
   }]);
 });
 
+test("Connpass discovery requires a non-online public venue before checking Calendar", async () => {
+  const checked = [];
+  const workflow = createConnpassScriptFirstWorkflow({
+    now: () => new Date("2026-08-07T08:30:00.000Z"),
+    async discoverOnPage() {
+      return [
+        event(301, { venue_name: "", venue_address: "" }),
+        event(302, { venue_name: "オンライン配信", venue_address: "Zoom" }),
+        event(303, { venue_name: "Shibuya Hall", venue_address: "Tokyo" }),
+      ];
+    },
+    isCalendarFree(candidate) { checked.push(candidate.event_ref); return true; },
+  });
+
+  const result = await workflow.discoverCandidates({ page: {}, calendar: [] });
+  assert.deepEqual(result.map((candidate) => candidate.event_ref), ["connpass-event://event/303"]);
+  assert.deepEqual(checked, ["connpass-event://event/303"]);
+});
+
 test("Connpass direct action and parent readback use the supplied owned page", async () => {
   const candidate = event(105);
   const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
   const calls = [];
   const workflow = createConnpassScriptFirstWorkflow({
+    allowAutomatedSubmit: true,
     async discoverOnPage() { return []; },
     async submitOnPage(suppliedPage, suppliedCandidate) {
       calls.push(["submit", suppliedPage, suppliedCandidate]);
@@ -277,6 +299,17 @@ test("Connpass direct action is zero while provider automation permission is unv
   assert.equal(submits, 0);
 });
 
+test("Connpass workflow defaults to no automated submit permission", async () => {
+  let submits = 0;
+  const workflow = createConnpassScriptFirstWorkflow({
+    discoverOnPage: async () => [],
+    async submitOnPage() { submits += 1; return { status: "registered" }; },
+  });
+  const result = await workflow.runDirectAction({ page: {}, candidate: event(991) });
+  assert.deepEqual(result, { status: "failed", safe_reason: "connpass_action_permission_required" });
+  assert.equal(submits, 0);
+});
+
 // Placeholder name only — never Dais's real name in a test fixture (see
 // connpass-browser-provider.test.js's PLACEHOLDER_IDENTITY comment). Proves
 // the workflow layer threads whatever readAttendeeName resolves straight
@@ -289,6 +322,7 @@ test("Connpass direct action threads the injected attendee name to submitOnPage,
   const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
   const calls = [];
   const workflow = createConnpassScriptFirstWorkflow({
+    allowAutomatedSubmit: true,
     async discoverOnPage() { return []; },
     readAttendeeName: async () => { calls.push("name"); return "Placeholder Taro"; },
     async submitOnPage(suppliedPage, suppliedCandidate, suppliedDependencies) {
@@ -310,6 +344,7 @@ test("Connpass direct action with no attendee-name injector still submits with a
   const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
   let receivedDependencies;
   const workflow = createConnpassScriptFirstWorkflow({
+    allowAutomatedSubmit: true,
     async discoverOnPage() { return []; },
     async submitOnPage(suppliedPage, suppliedCandidate, suppliedDependencies) {
       receivedDependencies = suppliedDependencies;
@@ -326,6 +361,7 @@ test("Connpass direct action reports a login-wall submit as a session problem, n
   const candidate = event(111);
   const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
   const workflow = createConnpassScriptFirstWorkflow({
+    allowAutomatedSubmit: true,
     async discoverOnPage() { return []; },
     async submitOnPage() {
       const error = new Error("Connpass session expired");
@@ -343,6 +379,7 @@ test("Connpass direct action still propagates every other submit error unchanged
   const candidate = event(112);
   const page = Object.freeze({ page_id: "same-owned-page", url() { return candidate.canonical_url; } });
   const workflow = createConnpassScriptFirstWorkflow({
+    allowAutomatedSubmit: true,
     async discoverOnPage() { return []; },
     async submitOnPage() {
       const error = new Error("Connpass participation tier unavailable");
@@ -383,6 +420,7 @@ test("Connpass direct action requires exact canonical URL without browser side e
       readCredentials() { forbiddenCalls.push("credentials"); },
     };
     const workflow = createConnpassScriptFirstWorkflow({
+      allowAutomatedSubmit: true,
       async discoverOnPage() { return []; },
       async submitOnPage() {
         submitCalls += 1;

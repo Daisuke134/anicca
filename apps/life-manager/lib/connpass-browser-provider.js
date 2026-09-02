@@ -112,8 +112,8 @@ async function readConnpassRegistrationStateOnPage(page) {
 // Rules (owner-decided): a tier qualifies only if it is free (no yen
 // amount), not disabled, has room (an "n/m人" cap with n < m, or no cap at
 // all), and carries none of Dais's disqualifying restriction markers.
-// Among qualifying tiers, an in-person one is preferred over an online one;
-// first qualifying tier in document order wins within each preference.
+// Among qualifying tiers, an in-person one is required; first qualifying tier
+// in document order wins. Online-only events fail closed before confirmation.
 const TIER_RESTRICTION_PATTERN = /学生|招待|登壇|発表|LT枠|スタッフ|関係者|主催|懇親会のみ/;
 const TIER_YEN_PATTERN = /¥|\d[,\d]*\s*円/;
 const TIER_ONLINE_PATTERN = /オンライン|リモート|配信|視聴|Zoom|Google\s*meet/i;
@@ -136,7 +136,7 @@ function selectParticipationTierIndex(tiers) {
     });
   if (qualifying.length === 0) return -1;
   const inPerson = qualifying.find((tier) => !TIER_ONLINE_PATTERN.test(tier.label));
-  return (inPerson || qualifying[0]).index;
+  return inPerson ? inPerson.index : -1;
 }
 
 async function selectParticipationTier(participationGroup) {
@@ -298,10 +298,10 @@ async function submitConnpassOnPage(page, _contract, dependencies = {}) {
     if (confirmLabel !== "申し込みを確定する") {
       throw providerError("Connpass confirm control unavailable", "CONNPASS_CONFIRM_UNAVAILABLE", false);
     }
-    // Pick the first free, open, unrestricted tier in document order,
-    // preferring in-person over online (see selectParticipationTierIndex).
-    // Fails closed with CONNPASS_TIER_UNAVAILABLE if none qualify — nothing
-    // below this point is clicked in that case.
+    // Pick the first free, open, unrestricted in-person tier in document
+    // order (see selectParticipationTierIndex). Fails closed with
+    // CONNPASS_TIER_UNAVAILABLE if none qualify — nothing below this point is
+    // clicked in that case.
     await selectParticipationTier(participationGroup);
   } catch (error) {
     if (error && typeof error.unknownEffect === "boolean") throw error;
