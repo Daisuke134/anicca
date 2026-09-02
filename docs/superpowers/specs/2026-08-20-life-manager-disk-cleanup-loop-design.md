@@ -471,19 +471,27 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    errors 0、closed 0、protected deletion 0、active/open/loaded producer保持をもってmemory/swap atomを完了する。
    11 GiB floorと長期観測は固定順序⑨で閉じる。
 
-   **残TODO（順序固定）:** ① **現在active:** host全体を再計測して外側の大容量順listを更新、②未使用application、
-   `/private/var/folders`、Library cache、未使用toolchain、Downloads/Desktop/Picturesの安全なwaste、
-   ③Life Manager正本外の重複repository/clone・終了済みworktree、④OpenClaw依存と重複`.git`/workspace/skills/media、
-   ⑤Codex/Claudeの保護rootを削除せずowner-side bounded rotation、⑥残るrunning旧releaseの自然idle reconcile＋central GC、
-   ⑦Hermes正式retire、⑧Gig terminal project、⑨free 11 GiB以上＋24時間観測＋7日観測。
+   **外側worktree回収readback:** `~/anicca-project/.worktrees`のうち、WebMCPと不可侵`anicca-rtdash`を除き、
+   process/open参照0の終了済み5 treeを監査した。dirtyは共通動画の既回収記録と少数の固有文書/generated stateで、
+   各treeの全差分を個別branchへcommit/pushし、local/remote SHA一致を確認してから`git worktree remove`した。
+   rootは`3,199,564 → 724,604 KiB`、`anicca-project`全体は`6,922,604 → 4,442,552 KiB`となり、
+   logical `2,474,960 KiB`を回収した。Data空きは`24,631,608 KiB`。errors 0、protected deletion 0で、
+   Life Manager main/Eliza、WebMCP、Alpaca、Coconala、Lancers、`anicca-rtdash`、Codex/Claude rootは存在をread backした。
+
+   **残TODO（順序固定）:** ①[x] host全体の外側大容量list、②[x]終了済み外側worktreeの第一GiB級batch、
+   ③ **現在active:** Life Manager正本外の残存重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
+   ⑤未使用application、`/private/var/folders`、Library cache、未使用toolchain、Downloads/Desktop/Picturesの安全なwaste、
+   ⑥Codex/Claudeの保護rootを削除せずowner-side bounded rotation、⑦残るrunning旧releaseの自然idle reconcile＋central GC、
+   ⑧Hermes正式retire、⑨Gig terminal project、⑩free 11 GiB以上＋24時間観測＋7日観測。
    これらを閉じた後に現在順序正本どおりLancers revenue loop、WebMCP hackathonへ進む。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
    ApplicationReceipt、demo動画、YouTube、Devpost提出を閉じる。
 
-現在activeな先頭atomは **Host-wide external waste elimination** である。Life Manager個別loopのproduction変更は
-行わず、Mac全体の外側を大容量順に回収する。Connection recoveryと完了済みmanual cleanupを再びTODOへ戻さない。
+現在activeな先頭atomは **Life Manager正本外の残存重複repository/clone** である。Life Manager個別loopの
+production変更は行わず、次にOpenClawのowner依存と重複source/outputを閉じる。Connection recovery、host census、
+完了済みmanual cleanup、回収済みworktreeを再びTODOへ戻さない。
 
 ## Business-loop self-sustainability contract
 
