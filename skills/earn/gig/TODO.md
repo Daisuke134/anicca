@@ -2039,14 +2039,20 @@ proved LaunchServices had opened a different document; shared `_open` now uses I
 its final receipt. Only regenerated caches and a completed failed staging copy were reclaimed; APFS then released
 19 GiB, while durable customer data, browser profiles and the verified v43 bundle remained intact.
 
-The remaining immediate blocker is now the macOS user bootstrap, not Paid logic, Coconala auth, artifact quality or
-disk. After the disk incident, `launchctl-safe`, direct `launchctl` and `launchctl asuser` all return 141
+**Superseded incident conclusion:** the following reboot diagnosis was wrong and must not be reused. `launchctl`
+141 only proved that this caller's control path was unavailable; it did not prove the Mac or GUI bootstrap needed
+repair. Stopping/replacing ChatGPT/Codex app-server disconnected the user's iPhone Remote session and is prohibited.
+The correct response is to preserve Remote/app-server/loginwindow/Mac, gather read-only process evidence, and let
+the existing immutable loop reach its next natural owner wake without mutating the host lifecycle.
+
+The then-observed symptoms were: after the disk incident, `launchctl-safe`, direct `launchctl` and `launchctl asuser` all returned 141
 `Reentrancy avoided`; Terminal/Aqua resolution returns -10827; OpenClaw Gateway is unavailable; sudo and localhost
 SSH report that uid 501 has no passwd record; and direct OpenDirectory lookup returns `eServerError`. No attempted
 path started another Paid process and customer effect/readback remain zero. A full Codex/ChatGPT desktop app
 restart was then rechecked and did not recover either service: OpenDirectory still returns `eServerError`, and
-`launchctl print gui/501/...` still returns 141. The exact minimum owner action is now one full Mac reboot, then
-resume this thread. On the recovered Aqua bootstrap,
+`launchctl print gui/501/...` still returns 141. The former conclusion that a full Mac reboot was required is
+explicitly withdrawn. After the user restored the bootstrap independently, the existing Paid owner resumed on
+the recovered Aqua bootstrap:
 kickstart the existing `ai.anicca.hf-gig-paid-direct` owner once; do not run a custom executor. Require v44 PASS,
 exact-room attachment/message readback with formal delivery OFF, then a second natural wake with replay-zero.
 The account owner then authorized that reboot. All three in-session native restart paths failed at the same broken
@@ -5147,6 +5153,17 @@ queue is added. Each owner must also progress independent work concurrently insi
      account question or article work, compile the private credential SSOT, installed publication
      skills and existing account receipts; an existing seller-owned account must be used rather
      than asked for again.
+   - `18223833` (`こころ支援 NPO法人まくとぅー`): the purchased budget-plan offer had no
+     buyer-authored talkroom message, so Paid repeatedly selected it with no requirements and no
+     project worker. Release `38085c31` now binds the authenticated purchased title as the initial
+     requirements key, reads the full proposal/DM context (7 messages and 5 captured spreadsheets),
+     and observes the active room as `取引中` instead of mistaking the future `評価完了` step label
+     for completion. Its first production worker reached semantic decision but exposed an exact
+     bootstrap digest mismatch; release `d3a58122` uses the existing canonical row/list digests and
+     repairs only its own bootstrap sidecar. Deploy after the in-flight Paid owner exits, then require
+     a natural worker result plus exact-room buyer-visible readback. The same wake also proved a
+     separate throughput defect: one 180-second browser preflight held the shared lock and delayed
+     every later project, so restore safe per-room preflight ownership after this room closes.
 
    **General Paid Kernel v2 — Symphony-style work orchestration.** Do not install the OpenAI
    Symphony Elixir preview as a second production controller beside `lm-loop`; that would create

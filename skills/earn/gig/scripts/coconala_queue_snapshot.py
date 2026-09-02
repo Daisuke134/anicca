@@ -385,7 +385,7 @@ TALKROOM_FULL_EXPRESSION = r'''(async()=>{const wait=ms=>new Promise(resolve=>se
 TALKROOM_ATTACHMENT_EXPRESSION = r'''(async()=>{const limit=16*1024*1024;let used=0;const rows=[];const enc=bytes=>{let s='';for(let i=0;i<bytes.length;i+=32768)s+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(s)};const messages=[...document.querySelectorAll('.d-talkroomMessage')];for(const m of messages){if(!m.classList.contains('d-talkroomMessage-isOthers'))continue;const files=[...m.querySelectorAll('.d-talkroomMessage_attachedFilesItem')];for(let i=0;i<files.length;i++){const f=files[i];const a=f.querySelector('a[href]');const row={reference:`message:${m.id||'unknown'}:attachment:${i}`,capture_error:null};if(!a?.href){row.capture_error='attachment_href_missing';rows.push(row);continue}try{const response=await fetch(a.href,{credentials:'include'});if(!response.ok)throw new Error(`http_${response.status}`);const buffer=await response.arrayBuffer();if(used+buffer.byteLength>limit){row.capture_error='attachment_capture_limit';rows.push(row);continue}used+=buffer.byteLength;row.content_type=response.headers.get('content-type')||null;row.size_bytes=buffer.byteLength;row.data_base64=enc(new Uint8Array(buffer))}catch(error){row.capture_error=String(error?.message||error).slice(0,160)}rows.push(row)}}return JSON.stringify(rows)})()'''
 OFFER_EXPRESSION = r'''JSON.stringify({url:location.href,title:document.title,request_id:((document.body.innerText.match(/No\.(\d+)/)||[])[1]||(([...document.querySelectorAll("a[href*='/requests/']")].map(a=>a.href).join(' ').match(/\/requests\/(\d+)/)||[])[1])||null),direct_message_url:([...(document.querySelectorAll("a[href*='/mypage/direct_message/']"))][0]||{}).href||null,body:(document.body.innerText||'').trim().slice(0,20000)})'''
 _CURRENT_STEP_JS = "const currentStep=(document.querySelector('.d-talkroomStep_label-current')?.innerText||'').trim();const transactionState=currentStep==='進行中'?'取引中':(currentStep==='納品送付'?'納品確認待ち':(currentStep==='取引完了'?'取引完了':'unknown'));"
-_TERMINAL_AWARE_STEP_JS = "const currentStep=(document.querySelector('.d-talkroomStep_label-current')?.innerText||'').trim();const flowText=(document.querySelector('.d-talkroomStep')?.innerText||'').trim();const transactionState=/評価完了|取引完了/.test(flowText)?'取引完了':(currentStep==='進行中'?'取引中':(currentStep==='納品送付'?'納品確認待ち':(currentStep==='取引完了'?'取引完了':'unknown')));"
+_TERMINAL_AWARE_STEP_JS = "const currentStep=(document.querySelector('.d-talkroomStep_label-current')?.innerText||'').trim();const flowText=(document.querySelector('.d-talkroomStep')?.innerText||'').trim();const transactionState=currentStep==='進行中'?'取引中':(currentStep==='納品送付'?'納品確認待ち':(currentStep==='取引完了'?'取引完了':(/評価完了|取引完了/.test(flowText)?'取引完了':'unknown')));"
 TALKROOM_EXPRESSION = TALKROOM_EXPRESSION.replace(_CURRENT_STEP_JS, _TERMINAL_AWARE_STEP_JS)
 TALKROOM_FULL_EXPRESSION = TALKROOM_FULL_EXPRESSION.replace(_CURRENT_STEP_JS, _TERMINAL_AWARE_STEP_JS)
 
@@ -2051,6 +2051,65 @@ def persist_latest_paid_buyer_reply(
     }
 
 
+def persist_purchased_offer_brief(
+    project_id: str, talkroom_id: str, projects_root: Path, observed_at: str,
+    title: Any, offer: Any,
+) -> dict[str, Any] | None:
+    """Let a purchased offer start work even before the buyer writes in chat."""
+    brief = _sanitize_paid_feedback(title)
+    if not brief or not isinstance(offer, dict) or not offer.get("body"):
+        return None
+    root = projects_root.expanduser().resolve() / str(project_id)
+    path = root / "requirements" / "live-buyer-reply.json"
+    identity = f"purchased-offer:{talkroom_id}"
+    digest = hashlib.sha256(f"{identity}\n{brief}".encode()).hexdigest()
+    statement_sha = hashlib.sha256(json.dumps(
+        {"text": brief, "attachments": []},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    accumulated_sha = hashlib.sha256(json.dumps(
+        [statement_sha], ensure_ascii=False, separators=(",", ":"),
+    ).encode()).hexdigest()
+    existing_payload = _existing_requirements(path)
+    existing = _request_named_by_existing_sidecar(path)
+    if existing is not None and existing_payload.get("source") != "purchased_offer_before_first_buyer_message":
+        return existing
+    if (existing is not None and existing_payload.get("feedback_sha256") == digest
+            and existing_payload.get("accumulated_sha256") == accumulated_sha):
+        return existing
+    atomic_json(path, {
+        "version": 1,
+        "source": "purchased_offer_before_first_buyer_message",
+        "buyer_feedback_stage": "initial_request",
+        "project_id": str(project_id),
+        "talkroom_id": str(talkroom_id),
+        "observed_at": observed_at,
+        "feedback_first_observed_at": observed_at,
+        "feedback_sha256": digest,
+        "feedback_identity_version": 1,
+        "feedback_identity_sha256": digest,
+        "feedback_message_identities": [identity],
+        "feedback_text": brief,
+        "attachments": [],
+        "accumulated_requirements": [{
+            "sha256": statement_sha,
+            "sent_at": None,
+            "first_observed_at": observed_at,
+            "text": brief,
+            "attachments": [],
+        }],
+        "accumulated_sha256": accumulated_sha,
+        "accumulated_observed_at": observed_at,
+    })
+    return {
+        "requirements_path": str(path),
+        "feedback_sha256": digest,
+        "feedback_identity_sha256": digest,
+        "feedback_message_identities": [identity],
+        "stage": "initial_request",
+    }
+
+
 class DefaultTab:
     def __init__(
         self,
@@ -3438,8 +3497,12 @@ def main() -> int:
             talkroom["evidence_sha256"] = sha256_file(talkroom_path)
             atomic_json(args.evidence_dir / f"talkroom-preflight-{safe_name(talkroom_id)}.json", history)
             install_project_posting(project_id, args.projects_root)
+            feedback = persist_latest_paid_buyer_reply(
+                complete_talkroom, project_id, args.projects_root, observed_at,
+                source_talkroom_id=talkroom_id,
+            )
             offer = None
-            if talkroom.get("offer_reference"):
+            if feedback is None and talkroom.get("offer_reference"):
                 offer_url = f"https://coconala.com{talkroom['offer_reference']}"
                 offer = inspect_page_with_retry(
                     args.cdp_helper, offer_url, OFFER_EXPRESSION,
@@ -3451,10 +3514,11 @@ def main() -> int:
                     "request_id": offer.get("request_id"),
                     "url": urlsplit(str(offer.get("url") or "")).path,
                 })
-            feedback = persist_latest_paid_buyer_reply(
-                complete_talkroom, project_id, args.projects_root, observed_at,
-                source_talkroom_id=talkroom_id,
-            )
+            if feedback is None:
+                feedback = persist_purchased_offer_brief(
+                    project_id, talkroom_id, args.projects_root, observed_at,
+                    (selected_order or {}).get("title"), offer,
+                )
             if feedback is not None:
                 talkroom["buyer_feedback_requirements_path"] = feedback["requirements_path"]
                 talkroom["buyer_feedback_sha256"] = feedback["feedback_sha256"]
@@ -3998,17 +4062,18 @@ def main() -> int:
             atomic_json(talkroom_path, talkroom)
             talkroom["evidence_sha256"] = sha256_file(talkroom_path)
             offer = None
+            offer_details = None
             if talkroom.get("offer_reference"):
                 offer_url = f"https://coconala.com{talkroom['offer_reference']}"
-                offer = inspect_page_with_retry(
+                offer_details = inspect_page_with_retry(
                     args.cdp_helper, offer_url, OFFER_EXPRESSION,
                     screenshot(args.evidence_dir / f"offer-{safe_name(order['talkroom_id'])}.png"),
                     hidden=hidden,
                 )
                 persist_project_proposal(
-                    project_id, str(order["talkroom_id"]), args.projects_root, offer, observed_at,
+                    project_id, str(order["talkroom_id"]), args.projects_root, offer_details, observed_at,
                 )
-                offer = {"request_id": offer.get("request_id"), "url": urlsplit(str(offer.get("url") or "")).path}
+                offer = {"request_id": offer_details.get("request_id"), "url": urlsplit(str(offer_details.get("url") or "")).path}
                 atomic_json(args.evidence_dir / f"offer-{safe_name(order['talkroom_id'])}.json", offer)
             enrich_order(order, talkroom, offer)
             atomic_json(
@@ -4023,6 +4088,11 @@ def main() -> int:
                 complete_talkroom, project_id, args.projects_root, observed_at,
                 source_talkroom_id=str(order["talkroom_id"]),
             )
+            if feedback is None:
+                feedback = persist_purchased_offer_brief(
+                    project_id, str(order["talkroom_id"]), args.projects_root, observed_at,
+                    order.get("title"), offer_details,
+                )
             if feedback is not None:
                 order["buyer_feedback_requirements_path"] = feedback["requirements_path"]
                 order["buyer_feedback_sha256"] = feedback["feedback_sha256"]

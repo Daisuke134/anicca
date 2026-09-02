@@ -20,7 +20,19 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    errors 0で回収した。Coconala Storefrontはdefault tabを`:9223`で開きながら`:9222`へcloseしていた
    root causeを修正し、前回crashの同一owner target回収も接続した。production release `c74b5973`で
    `storefront_live_pages=0 / duplicate_excess=0 / registry_total=0`をread backした。loopは停止していない。
-3. [ ] **All-loop bounded-output audit:** 全managed loopについてscratch、browser target、log/evidence、
+3. [ ] **Host-wide external waste elimination, then bounded-output audit:** 現在activeな先頭atomは
+   Life Manager内の個別loop変更ではなく、Mac全体を容量順に実測し、Life Managerの外側にある未使用application、
+   再生成cache、重複clone/repository、終了済みworktree、旧toolchain、old backup/archive、不要なuser dataを
+   大きい順に回収することである。最初に`/Applications`、`/opt/homebrew`、`/private/var/folders`、`~/Library`、
+   `~/.openclaw`、`~/anicca-project`、`~/anicca`、`~/Projects`のLife Manager正本外、`~/Downloads`、`~/Desktop`、
+   `~/Pictures`を同一filesystemから再計測する。ChatGPT、Claude、Chrome/Chromium等も名前で保護せず、現在の
+   Codex connection、browser session、loaded argv、open fileの実依存が0なら削除候補とする。逆にactive/open/
+   loaded/dirty/unpushed/uniqueなものは保持する。`~/.codex-acct2/**`、`~/.claude/**`、Alpaca、Coconala、Lancers、
+   WebMCPの進行中state/worktree、不可侵storeは削除しない。各候補は削除前bytes・owner/依存・復元可能性、
+   削除後bytes・free差分を同じ台帳へ記録する。Life Manager個別loopの変更や別ownerのproduction state変更は、
+   この外側cleanupが終わるまで行わない。
+
+   外側の大容量wasteを回収した後だけ、全managed loopについてscratch、browser target、log/evidence、
    immutable releaseの各owner cleanupを確認する。不足するloopだけ既存共通cleanupへ接続する。収益loopを
    disk thresholdで停止する仕組みは追加しない。active worktree、取引中deliverable、credential、ledger、
    receipt、不可侵storeは保持する。完了条件は各ownerのbounded retentionと異常終了後の次wake回収であり、
@@ -184,11 +196,83 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `anicca-autohedge/vendor/.git`約6.4 MiBと`roundcube-webmail-skill/.git`約3.3 MiBはそれぞれdirty 1/6なので保持する。
      4回目cleanup wakeはruns 4、state not running、last exit 0、最新receipt errors 0、protected deletion 0、
      reclaimed 6,368 bytesで、run動画とZenn依存の再生成は0だった。
-   - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
-     active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
+
+     OpenClaw rootへの静的production参照はlaunchd plist 75件、staleなraw cron storeでは79件中direct path参照71件だった。
+     ただしGateway CLIがschedulerの正本であり、`openclaw cron list --json`のenabled jobはLife Manager
+     funder discovery 1件だけである。raw storeの件数を稼働数として扱わない。OpenClaw rootはactive ask/peer/browser、
+     session、draft、receipt、unique deliverable、dirty sourceを持つためroot単位ではretireせず、依存0のfamilyだけを回収する。
+     埋込cloneはclean、remote commit存在、open/config参照0を個別確認した。永久禁止の`external/codegraph`と
+     終了済み`gig-paid-builder/.../.tmp/plugins`はclone全体を回収し、`external/mcporter`、Camofox source、
+     TikTok scraper、Zenn editor、Instagram scraper、nano-banana、self-improving-agentはworking treeを保持して
+     `.git`だけ回収した。logical 134,836 KiB、実free +139,104 KiBで、mcporter/Camofox source readbackはPASS。
+     Zenn/dev-toはgit push owner、autohedge/roundcube/novaはdirtyなので保持した。OpenClaw totalは
+     10,597,453,824 bytes（約9.87 GiB）から9,426,030,592 bytes（約8.78 GiB）へ縮小した。
+
+     `external/note-mcp`約220 MiBのうち`.venv` 221,292 KiBはprocess/open/direct caller 0で、enabled note cronは
+     別正本`~/.cache/anicca-clones/note-mcp`を使用していた。dirty source `.vcsdd/`と`uv.lock`を保持し、未使用venvだけ
+     回収して実free +225,104 KiB、次wake再生成0だった。identity application videos、disk-pressure archives、
+     browser user-data、UUID付きinbound PDFは提出物・唯一のbackup・session・message pathとして保持した。
+     media hash censusでは`media/life-manager/life-manager-real-provider-demo.mp4`とoutbound copyが完全一致したため、
+     正本を保持してopen 0のoutbound copy 21,853,895 bytesだけ回収し、実free +21,056 KiB。UUID付き同一PDF 3件は
+     path identityを保持した。5回目cleanup wakeはruns 5、state not running、last exit 0、
+     observed_at `2026-09-02T01:21:57Z`、errors 0、protected deletion 0、reclaimed 6,367 bytes、再生成0だった。
+
+     `4.7-slideshow-morning`は旧OpenClaw skillを実行したfactory ownerだが、Gateway正本では現在disabledである。
+     publish成功receipt後にだけ`pinterest/`と`viral-slideshows/` scratchをowner自身が削除し、slides、caption、
+     analysis、metadata、receipt、Downloads review bundleを保持する8行の最小finalizerを
+     `anicca-dais` main-internal commit `7bbca413`へpushした。shell syntax、隔離fixtureはPASS。
+     既存receipt 19件のremote Postiz media URLは108/108 HTTP 200、scratch open 0を確認し、18 directory、
+     logical 15,592 KiB、実free +13,028 KiBを回収した。receipt 19、slides 126、receiptのないscratch 4は保持。
+     disabled jobに次wakeはない。既存receipt 19件でdurabilityとremote media 108/108をread back済みであり、
+     再びenableする場合だけ最初の自然wakeでscratch 0とprotected artifact保持を再検証する。cleanup検証目的の追加投稿は発火しない。
+
+     Gateway正本でdisabledの`copy-viral-format-factory-3day`のstate約165 MiBは、同じ12,406,546-byte source動画を9 runへ
+     複製していた。fresh download必須契約は維持し、download後に同source IDの過去fileと`cmp`一致した場合だけ
+     APFS cloneへ置換してpathと独立inodeを保持するowner dedupeを`anicca-dais` main-internal commit
+     `abcaa523`へpushした。shell syntax、embedded Python compile、APFS隔離fixtureはPASS。
+     既存duplicate group 1件の8 copy、99,252,368 bytesをopen 0確認後にAPFS cloneへ変換し、source path 10本を
+     全保持して実free +96,148 KiB。cleanup 6回目wakeはruns 6、state not running、last exit 0、
+     observed_at `2026-09-02T01:28:38Z`、errors 0、protected deletion 0、reclaimed 1,949,910 bytesだった。
+     最終readbackでは`openclaw cron list --json`のenabled totalは1で、そのjobは
+     `o1c14-funder-program-discovery-daily`、旧4.7とcopy factoryは`--all`でdisabledを確認した。HCA runtime/launchd/processは0。
+     Postiz Honne JAはLife Manager label `ai.anicca.life-manager-honne-ja`としてimmutable release
+     `e9d59c327bcae0f3cfa07e3544c85af8349d80be`を実行し、runs 2、last exit 0である。OpenClawは
+     10,597,453,824 bytesから9,166,319,616 bytesへ縮小した。cleanup 7回目wakeはstate not running、last exit 0、
+     observed_at `2026-09-02T01:35:36Z`、errors 0、protected deletion 0、host reclaimed 6,386 bytesだった。
+     以上によりPostiz iOS/Honne移管、HCA依存0、旧factory scheduler無効化、重複artifact回収を個別readbackし、
+     残るOpenClaw dataはactive/unique/protectedとして分類済みである。
+   - **Hermes boundary:** 初回censusでは`ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBでrunningだった。
+     active daemonをfolder先行削除しない。全managed loopのgateway consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
      `~/gig/projects/18128025`等のHermes名を含むBUYMA/customer artifactとeffect receiptはgateway退役と無関係に
      project lineageとして保持する。
+     実測サイズは1,487,280 KiBで、`hermes-agent` 929,020 KiB、bundled Node 193,240 KiB、profiles 161,504 KiB、
+     logs 64,776 KiB、bin 58,420 KiB、retired profiles 43,020 KiB、backups 19,804 KiB、state 888 KiBである。
+     gatewayはcwd、venv、runtime generation、`state.db`、lock、gateway/agent/error logをopenし、
+     `gateway.error.log`は約40.5 MBまで増加している。gateway logにはprovider auth failureと
+     `sqlite3.OperationalError: unable to open database file`の反復があり、稼働しているだけで有効成果を示さない。
+     一方、Life Managerの`citizens-diff-monitor`はregistryのstate/log rootと実entrypointで`~/.hermes`を使用し、
+     `franklin2-loop`のloaded plistも`ANICCA_STATE_DIR=~/.hermes/state`を保持する。旧host registryには
+     `earn-watch.sh`と`reinvest.sh`参照も残る。これらはgateway process consumerではなく、外部state consumerとして保持する。
+     約888 KiBのcolony/finance stateは既にrelease外のdurable stateであり、gateway退役後もconsumerの正本として保持する。
+     credential/profile/ledgerも保持し、再生成可能runtimeだけを回収する。
+     追加consumer照合により、Franklin2とcitizens monitorはgateway API/processではなく既存外部stateだけを使用し、
+     gatewayのTCP listener/established consumerは0だった。`launchctl-safe` preflightはmutation allowed、Hermes sourceは
+     dirty 0でHEAD `e400dca96ec875c0454c798a29570d596cfcf21a`がNousResearch公式remoteに存在したため、
+     `ai.hermes.gateway`をdisable＋bootoutした。同じPID/labelの消失後もcitizens monitor PID 34914とFranklin2
+     PID 34883はrunningを維持した。open/loaded参照0の`hermes-agent` 929,020 KiB、bundled Node 193,240 KiB、
+     gateway bin 58,420 KiBと、退役gateway専用log約64 MiBだけを回収した。`~/.hermes`は
+     1,487,328 KiB→242,324 KiB、logical 1,245,004 KiB減。profiles/session、credential、state/ledger、backups、
+     retired profile、curator/update/monitor logは保持した。実freeは約6.51 GiBまで上昇した。
+     検証目的のmanual kick run `52226`は71秒後exit 143、その2秒後に同releaseのrun `53904`が開始し、
+     120秒後exit 1、latest receiptは`host_cleanup={}`、errors 0、protected deletion 0だった。stderrは今回更新されず、
+     過去ENOSPCを今回原因に数えない。続く自然runは別sessionのhost-wide control-plane reconcileで開始3秒後に
+     exit 143となったが、同じreleaseのreplacement run `64462`はterminal PASS、observed_at
+     `2026-09-02T01:57:06Z`、errors 0、protected deletion 0、host reclaimed 48,459,414 bytesだった。
+     Hermes runtime/node/binは再生成0、gateway disabled、state consumer 2本はrunningを維持したためHermes atomを閉じる。
+     その直後にfreeが約6.51 GiBから約181 MiBへ急落したが、Hermes sizeは242,324 KiBのままである。同時に
+     host-wide label再適用と約1.19 GiBの新immutable release作成があり、swap約25.2 GiBと他owner growthが重なった
+     capacity incidentとして次のGig owner atomで継続観測する。Hermes再生成またはcleanup保護違反とは扱わない。
 
    **All-loop bounded-output audit内の固定実行順:** 現在activeなrelease収束atomから、次を
    一件ずつ実行し、各atomでbefore/after bytes、loaded/open/dirty保護、errors 0、protected deletion 0、
@@ -203,12 +287,48 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
       control planeでcurrentへ収束した後、central cleanupでunreferencedだけを回収する。running loopは停止しない。
    5. [x] `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
       state、production argvを移管し、一repositoryずつretireする。
-   6. [ ] **current:** OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
+   6. [x] OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
       移した後、重複`.git`/workspace/skills/mediaだけを回収する。
-   7. Hermes consumer 0を証明し、gatewayを正式retireして`~/.hermes`を回収する。customer Hermes assetsは保持する。
-   8. Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
+   7. [x] Hermes gateway consumer 0を証明し、gatewayを正式retireして再生成可能runtimeを回収する。customer Hermes assetsは保持する。
+   8. [ ] **current:** Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
       BingX `18214856`を含む再提出中projectは保持し、terminal projectの古いregenerable attempt/workspaceだけを
       owner cleanupへ接続する。
+      2026-09-02のlive censusはnumeric project 41件、`state.json` 35件である。exclusive precedenceを
+      exact `project-terminal.json` → `buyer_feedback_pending_artifact=true` → approval/decision action →
+      `formal_delivery_confirmed=true` → other active/unknownとすると、active feedback 21件、awaiting approval 2件、
+      formally delivered 2件、terminal receipt 0件、other active/unknown 16件だった。`18211957`と`18214856`は
+      active feedback、稼働参照を観測した`18180857`はother activeとして保持する。最大project `18169583`は
+      1,364,380 KiB中delivery 1,109,680 KiBだがactive feedbackなので保持する。
+
+      production `project_janitor.py --dry-run`は35件を走査し、errors 0、would-clean 0、bytes 0だった。
+      paid parentから毎wake自動実行される配線自体は存在するが、実装はspecと異なり`state.json`の
+      `transaction_state`/`talkroom_state`だけで`source`/`work`を削除する。ledgerには現在取引中の
+      `18214856`と`18180857`を過去の完了stateからcleaned扱いした記録があり、stateが再びactiveへ変わり得るため
+      terminal authorityとして不十分である。A-24ではexact regular non-symlink `project-terminal.json`へauthorityを
+      一本化し、active/unknown/formally-delivered-onlyでは削除authority 0を維持する。現時点で正式terminal receiptは
+      0件なので、このatomのowner cleanupによるlive deletionは0である。
+
+      terminal authorityのlocal修正では、official provider readbackが両stateの`取引完了`を観測した時だけ、
+      current `state.json`とprovider snapshotのSHA-256へbindしたmode `0600`のexact receiptを書く。janitorは
+      receiptの全fieldとcurrent state hashが一致する時だけ`work/`を回収し、唯一原本になり得る`source/`を
+      cleanup対象から除外する。隔離fixtureは正規receiptでwork 12 bytes回収/source保持、stateを取引中へ変更後は
+      stale receiptとしてcleaned 0/errors 0だった。live dataへのdry-runは35 scanned/35 skipped/cleaned 0/
+      errors 0/bytes 0である。main由来immutable release、自然paid wake、terminal receipt、次wake janitorの
+      production readbackまでは未完了なのでitem 8はcurrentのまま維持する。
+
+      同日のremote disconnect調査ではscheduled restart/shutdown、user cron、shutdown commandを持つ
+      LaunchAgent/Daemonはいずれも0で、power scheduleは毎朝06:00のwakepoweronだけだった。直近boot
+      `13:07:53 JST`はownerの物理power cycleと一致する。切断前`11:07:19 JST`の
+      `WindowServer_2026-09-02-110744_*.userspace_watchdog_timeout.spin`はWindowServer main threadが40秒
+      check-in不能で、TCC `tccd`待ち、さらに`tccd`のuser-initiated threadがAPFS I/O内で全sample blockした
+      call chainを保存している。同種WindowServer watchdogは直近3日連続で存在し、disk I/O/TCC stallがGUIと
+      remote-controlを巻き込む再発classである。
+
+      `com.anicca.codex-remote-keepalive`はcanonical recovery plist/commentが300秒なのにlive plistだけ60秒へ
+      driftし、2 accountへ毎分login/status/start CLIを実行していた。control-plane preflight PASS後にlive plistを
+      canonical 300秒へ戻し、このkeepalive labelだけsafe reloadした。Codex app-server PIDはreload前後
+      `1366,1375,2089`で不変、keepalive run 1はlast exit 0、acct2 connected、loaded interval 300秒、kill 0だった。
+      これはscheduled rebootの除去ではなく、TCC/security process churnを正本cadenceへ戻したincident mitigationである。
    9. Codex/Claude sessionを保持しながら終了済みlog/archiveをbounded rotationへ接続する。
    10. `/private/var/folders`とLibrary cacheはopen-path/owner proof後の再生成可能familyだけを回収する。
    11. free 11 GiB以上、24時間ENOSPC 0/protected deletion 0を証明し、その後7日間のstate-write failure 0、
@@ -351,18 +471,27 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    errors 0、closed 0、protected deletion 0、active/open/loaded producer保持をもってmemory/swap atomを完了する。
    11 GiB floorと長期観測は固定順序⑨で閉じる。
 
-   **残TODO（順序固定）:** ①[x] memory/swap owner-side drainとswap縮小readback、② **現在active:**
-   残るrunning旧releaseの自然idle reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
-   ⑤Hermes正式retire、⑥Gig terminal project、⑦Codex/Claude終了済みlog/archive rotation、
-   ⑧`/private/var/folders`・Library cache・未使用toolchain、⑨free 11 GiB以上＋24時間観測＋7日観測。
+   **外側worktree回収readback:** `~/anicca-project/.worktrees`のうち、WebMCPと不可侵`anicca-rtdash`を除き、
+   process/open参照0の終了済み5 treeを監査した。dirtyは共通動画の既回収記録と少数の固有文書/generated stateで、
+   各treeの全差分を個別branchへcommit/pushし、local/remote SHA一致を確認してから`git worktree remove`した。
+   rootは`3,199,564 → 724,604 KiB`、`anicca-project`全体は`6,922,604 → 4,442,552 KiB`となり、
+   logical `2,474,960 KiB`を回収した。Data空きは`24,631,608 KiB`。errors 0、protected deletion 0で、
+   Life Manager main/Eliza、WebMCP、Alpaca、Coconala、Lancers、`anicca-rtdash`、Codex/Claude rootは存在をread backした。
+
+   **残TODO（順序固定）:** ①[x] host全体の外側大容量list、②[x]終了済み外側worktreeの第一GiB級batch、
+   ③ **現在active:** Life Manager正本外の残存重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
+   ⑤未使用application、`/private/var/folders`、Library cache、未使用toolchain、Downloads/Desktop/Picturesの安全なwaste、
+   ⑥Codex/Claudeの保護rootを削除せずowner-side bounded rotation、⑦残るrunning旧releaseの自然idle reconcile＋central GC、
+   ⑧Hermes正式retire、⑨Gig terminal project、⑩free 11 GiB以上＋24時間観測＋7日観測。
    これらを閉じた後に現在順序正本どおりLancers revenue loop、WebMCP hackathonへ進む。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
    ApplicationReceipt、demo動画、YouTube、Devpost提出を閉じる。
 
-現在activeな先頭atomは **All-loop bounded-output audit** である。Connection recoveryとmajor manual cleanupを
-再びTODOへ戻さない。
+現在activeな先頭atomは **Life Manager正本外の残存重複repository/clone** である。Life Manager個別loopの
+production変更は行わず、次にOpenClawのowner依存と重複source/outputを閉じる。Connection recovery、host census、
+完了済みmanual cleanup、回収済みworktreeを再びTODOへ戻さない。
 
 ## Business-loop self-sustainability contract
 

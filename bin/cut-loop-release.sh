@@ -28,6 +28,7 @@ KEEP="${LOOPS_KEEP_RELEASES:-1}"
 REF="${1:-HEAD}"
 RELEASE_PATHS="${LOOPS_RELEASE_PATHS:-}"
 NPM_BIN="${NPM_BIN:-$(command -v npm 2>/dev/null || true)}"
+NPM_NODE_BIN="${NPM_NODE_BIN:-}"
 CUT_LOCK="$LOOPS_ROOT/.release-cut.lock"
 DEST=""
 
@@ -128,8 +129,13 @@ fi
 for package_dir in "$DEST" "$DEST/runtime/agentmail" "$DEST/apps/life-manager"; do
   [ -f "$package_dir/package.json" ] && [ -f "$package_dir/package-lock.json" ] || continue
   [ -n "$NPM_BIN" ] || die "npm is required to build locked runtime dependencies"
-  (cd "$package_dir" && "$NPM_BIN" ci --omit=dev --ignore-scripts) || \
-    die "locked dependency build failed in $package_dir"
+  if [ -n "$NPM_NODE_BIN" ]; then
+    (cd "$package_dir" && "$NPM_NODE_BIN" "$NPM_BIN" ci --omit=dev --ignore-scripts) || \
+      die "locked dependency build failed in $package_dir"
+  else
+    (cd "$package_dir" && "$NPM_BIN" ci --omit=dev --ignore-scripts) || \
+      die "locked dependency build failed in $package_dir"
+  fi
 done
 
 cat >"$DEST/RELEASE.json" <<EOF

@@ -1320,6 +1320,26 @@
       "provider_route": "deterministic",
       "state_root": "~/.local/state/life-manager"
     },
+    "life-manager-anicca-ai-youtube": {
+      "cadence": {
+        "calendar_interval": [
+          { "Hour": 7, "Minute": 45 },
+          { "Hour": 13, "Minute": 15 },
+          { "Hour": 19, "Minute": 45 }
+        ]
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-ai-youtube-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-ai-youtube",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
     "life-manager-anicca-he": {
       "cadence": {
         "calendar_interval": [
