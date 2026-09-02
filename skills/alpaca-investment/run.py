@@ -34,11 +34,12 @@ def _atomic_json(path: Path, value: dict) -> None:
             pass
 
 
-def main() -> int:
+def main(*, retry: bool = False) -> int:
     state = Path(os.environ.get(
         "ALPACA_INVESTMENT_STATE_DIR",
         "~/.local/state/life-manager/alpaca-investment",
     )).expanduser()
+    effect_attempted = False
     try:
         credentials_path = Path(os.environ.get(
             "ANICCA_CREDENTIALS_FILE",
@@ -78,6 +79,7 @@ def main() -> int:
                 _atomic_json(exit_order_path, order)
             sealed = seal(state / "receipts.jsonl", exit_decision, order)
             mark_started(state / "receipts.jsonl", sealed)
+            effect_attempted = True
             submit_order(credentials_path=credentials_path, cli_path=cli_path,
                          client_order_id=sealed["client_order_id"], order=order)
             reconcile_started(
@@ -104,6 +106,7 @@ def main() -> int:
             order = order_for(decision)
             sealed = seal(state / "receipts.jsonl", decision, order)
             mark_started(state / "receipts.jsonl", sealed)
+            effect_attempted = True
             submit_order(credentials_path=credentials_path, cli_path=cli_path,
                          client_order_id=sealed["client_order_id"], order=order)
             reconcile_started(
@@ -137,6 +140,8 @@ def main() -> int:
         print(json.dumps(summary, separators=(",", ":")))
         return 0
     except (OSError, subprocess.SubprocessError, ValueError, json.JSONDecodeError):
+        if not retry and not effect_attempted:
+            return main(retry=True)
         print(json.dumps({
             "blocker": "alpaca_pass_failed",
             "effect": "none",
