@@ -9,6 +9,9 @@ MKT_PROBLEM="long videos are too long; the good 15s is buried"
 
 # ── WHAT you sell (product) ──
 MKT_INSTANCE="clip"
+MKT_LIFECYCLE_CONTRACT="marketing-engine/v1"
+MKT_PUBLISHER="meta_graph"
+MKT_STATE_NAMESPACE="marketing.clip"
 MKT_PRODUCT_SOURCE="YouTube source videos (clip pipeline)"
 MKT_LISTING_URL_FMT=""                          # clip monetizes via reach/affiliate, not a listing URL
 MKT_BIO_LINK=""

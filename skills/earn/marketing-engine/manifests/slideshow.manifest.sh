@@ -10,6 +10,9 @@ MKT_PROBLEM="Comparing products takes too much time and research"
 
 # ── WHAT you sell (product) ──
 MKT_INSTANCE="slideshow"
+MKT_LIFECYCLE_CONTRACT="marketing-engine/v1"
+MKT_PUBLISHER="meta_graph"
+MKT_STATE_NAMESPACE="marketing.slideshow"
 MKT_PRODUCT_SOURCE="Amazon affiliate product recommendations using Dais asset tag aniccaai-22"
 MKT_LISTING_URL_FMT=""
 MKT_BIO_LINK="https://example.com/amazon-affiliate-landing"

@@ -11,6 +11,9 @@ MKT_PROBLEM="building/prompt-engineering an AI skill from zero is slow and repet
 
 # ── WHAT you sell (product) ──
 MKT_INSTANCE="capafy"
+MKT_LIFECYCLE_CONTRACT="marketing-engine/v1"
+MKT_PUBLISHER="meta_graph"
+MKT_STATE_NAMESPACE="marketing.capafy"
 MKT_PRODUCT_SOURCE="capafy seller endpoint GET /agent/agents (agentStatus=online listings)"
 MKT_LISTING_URL_FMT="https://capafy.ai/agent/{id}"
 MKT_BIO_LINK="https://capafy-skills-daily.netlify.app"
