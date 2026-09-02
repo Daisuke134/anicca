@@ -179,7 +179,8 @@
     {"path": "~/.openclaw/media/outbound", "owner": "P5 terminal project lifecycle"},
     {"path": "~/anicca-project/.git", "owner": "active WebMCP common Git; preserve until worktree terminal"},
     {"path": "~/profitable-claude/.git", "owner": "active profitable-claude loop commits"},
-    {"path": "~/.openclaw/skills/.backups", "owner": "single recent rollback generation"}
+    {"path": "~/.openclaw/skills/.backups", "owner": "single recent rollback generation"},
+    {"path": "~/.Trash/life-manager-gig-videos-20260902-134053", "owner": "P5 Coconala/Gig deliverable retention; manifest contains active 5188394, 5174332, and 18211957 artifacts"}
   ],
   "unclassified_roots_over_100_mib": [],
   "delete_manifest": [
@@ -638,6 +639,27 @@
       "revenue_loops_stopped": 0,
       "protected_deletions": 0,
       "note": "The fallback is source-only on GH-11; it cannot be read back in production until the authorized main-derived release rollout. This is not a global stop or a disk-pressure threshold."
+    },
+    {
+      "batch": "p1d-trash-deliverable-audit-24",
+      "path": "~/.Trash/life-manager-gig-videos-20260902-134053",
+      "measured_kib": 1132480,
+      "manifest_file_count": 16,
+      "manifest_bytes": 1159631159,
+      "open_handles": 0,
+      "active_refs": {
+        "5188394": "Coconala transaction_state=納品確認待ち; delivery artifact remains active",
+        "5174332": "Coconala current_artifact=v5; active_feedback_cycle phase=ACTIONABLE action=resubmit",
+        "18211957": "Coconala transaction_state=取引中; buyer_feedback_pending_artifact=true"
+      },
+      "decision": "preserve_until_terminal_receipt",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "df_free_kib_after": 6471960,
+      "swap_used_mib_after": 25461.75,
+      "note": "lsof +D returned zero rows. The directory is not safe to purge because its manifest contains active or resubmittable Gig/Coconala source and deliverables; defer to P5 terminal lifecycle instead of deleting by Trash location alone."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

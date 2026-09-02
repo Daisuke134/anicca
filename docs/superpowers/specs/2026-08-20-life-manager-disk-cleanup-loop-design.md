@@ -55,7 +55,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 
 ### 現在地 — ゴミの大掃除は進んだが、再発防止はまだ終わっていない
 
-直近の自然wake・stale build回収後のData空きは`6,328,184 KiB`（約6.0 GiB）で、swap usedは`25,600.06 MiB`まで
+直近の自然wake・stale build回収後のData空きは`6,471,960 KiB`（約6.2 GiB）で、swap usedは`25,461.75 MiB`まで
 膨らんでいる。終了worktree、OpenClawの重複Git履歴、Bun cache、Claude transcriptの重複backup、旧CodeGraph、
 未使用app/cacheなどは回収済みで、100 MiB以上のowner不明rootも0になった。一方、通常目標の30 GiBには届かない。
 
@@ -174,6 +174,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
               - [x] P1d-3c-3c-8b-2-b: production main cutterが同一`f68da040…`を`release_paths=ALL`なしで再生成する重複buildを検出。未完成`20260903T005309-f68da040`のexact cutter/tarだけを終了し、trapでpartial tree/lockを回収。current維持、収益loop停止0、protected deletion 0。main-derived rollout/readbackは未実施
               - [x] P1d-3c-3c-8b-2-c: stale cutter回収後にcentral GCを実行し、16 releaseを評価。16を保護、0削除、errors 0、protected deletion 0。現行plist/open/依存donorを守ると安全な削除候補は0件であり、30 GiB gateはproduction rollout前には閉じない
               - [x] P1d-3c-3c-8b-2-d: ENOSPC時に旧`lm_loop_run`が事前`cleanup-latest.json`の一時writeでentrypoint前に終了する根因を修正。事前receiptだけをdeferしcleanup本体を継続、通常I/O errorはfail-closed。focused cleanup test 16/16、Python syntax、diff check PASS。production rollout/readbackは未実施（旧disk-cleanup logでENOSPC 43件、receipt更新停止）
+              - [x] P1d-3c-3c-8b-2-e: `.Trash/life-manager-gig-videos-20260902-134053`（`1,132,480 KiB`、manifest 16 files）をopen handle・Gig台帳・Coconala状態へ照合。`5188394`は納品確認待ち、`5174332`はv5再提出サイクル、`18211957`は取引中かつbuyer添付待ちのため、成果物を削除せず保持。`lsof` rows 0、削除0、protected deletion 0。safe delete candidateは0であり、P5 terminal lifecycleへ繰り越す。
 
 #### P4 execution ledger
 
@@ -354,6 +355,9 @@ compatibility aliasを削除しalias 0となった。cleanup側3-5d/3-5eは完�
    disk thresholdで停止する仕組みは追加しない。active worktree、取引中deliverable、credential、ledger、
    receipt、不可侵storeは保持する。完了条件は各ownerのbounded retentionと異常終了後の次wake回収であり、
    「一度空きを増やした」だけでは完了にしない。
+   - ホーム直下の再計測では`Desktop/MoneyPrinter-Hackathon-Demo`が`2,213,068 KiB`、`Pictures/Photos Library.photoslibrary`が
+     `1,126,640 KiB`で、提出物・唯一の写真ライブラリとして保持する。`.Trash/life-manager-gig-videos-20260902-134053`は
+     `1,132,480 KiB`だが、進行中Coconala成果物・buyer添付を含むため削除せず、terminal receipt後のP5へ繰り越す。
    - 実測済み: registry 166件、missing entrypoint 0、unmanaged label 0。共通wrapperのwake-local `tmp` cleanupは
      有効だが、166件の `cleanup.max_age_days=14 / max_runs=100` は実run rootでmarker利用0件のため、それだけを
      bounded-outputの証拠にしない。
