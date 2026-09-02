@@ -2659,15 +2659,76 @@ marketing cursor. The Codex runtime lesson is now discoverable in repo-root
 `AGENTS.md`, durable `MEMORY.md`, and the daily memory note, in addition to the
 machine-wide generated Codex rules.
 
+**YouTube live cursor 7 — affirmation alias classified:** live Postiz GET
+returns exactly one enabled YouTube integration
+`cmn8ymq6c02oio70y5ea1trv8`, named `Daily Affirmation App - Anicca`, under the
+provider alias `@anicca-affirmation-video`. That alias is not the current
+native handle: its URL returns 404. Published rows from the same integration
+resolve to native channel `Life Manager`, handle `@life-manager-m4p`, channel
+ID `UCqCLudkgpJZp4Pvi6ELGalw`; four independent published URLs agree on that
+identity. The current native Shorts feed starts with `UW9Y0b3dlpI`,
+`iCmr_9WbeT4`, `smNfGW6ibs4`, and `8ggJw-SNeAc`. Their titles and descriptions
+all advertise Anicca on the App Store in English. Direct frame inspection of
+the latest three shows a recurring 3D adult male character, English white
+captions, and short mental-health/self-compassion narratives, including mirror
+self-talk and eating-disorder recovery. Freeze this lane as Anicca iOS / EN /
+YouTube Shorts / renderer and job format `reelclaw-card` / form `nudge-card`.
+The retired `anicca-youtube-daily` source independently confirms that this
+exact integration consumed the newest `reelclaw-card-en` `reel-final.mp4` and
+names published `rZ2ojg0EAYk` as its live reference. It is not Widget, Larry/photo slideshow,
+Card, sunset, woman-led UGC, Honne, or monk content; those families are
+forbidden on this integration. Native YouTube exposes no pinned-post marker for
+these Shorts, so classification rests on the current ordered recent feed plus
+the integration-bound published URLs. Provider writes, publication effects,
+Telegram effects, and lifecycle commands remain zero. The next atom is the
+single-integration binding; no other YouTube integration may be borrowed.
+
+**YouTube live cursor 8 — account-bound pack ready:** the shared EN Card pack
+was rejected after direct frame inspection because it contains woman-led UGC
+plus green in-app affirmation cards, which does not match the current native
+`@life-manager-m4p` feed. A YouTube-only migration pack instead binds the
+directly inspected 24-second 1080x1920 H.264/AAC 3D male recovery narrative to
+Anicca iOS / EN / `reelclaw-card` / `nudge-card`. Exact refs are pack
+`object://sha256/42b2cd00440e0998947700ed0f3dc688f2ab737829b4f03e5f1bcfae9d2e6f62`,
+video `object://sha256/a3082d1e1ae3c52842e05c47a90dee2779dde08a515175f72f575cf729328423`,
+and caption
+`object://sha256/6c3d42b021fe01717d22b858a0bcb65a03fe8af59c02856e02f8dba39f827cc1`.
+All three object hashes read back exactly; the video object is mode `0600`.
+The named import is `anicca-ios-reelclaw-card-en-youtube.pack.json`. This first
+pack is migration input for the controlled canary, not permission to repeat the
+same creative forever; the production loop must rotate or generate fresh
+matching EN 3D male narratives while preserving the frozen account family. No
+provider, Telegram, scheduler, or lifecycle effect occurred.
+
+**YouTube live cursor 9 — default-off destination implemented:** destination
+SSOT now promotes only Postiz alias `@anicca-affirmation-video` / integration
+`cmn8ymq6c02oio70y5ea1trv8` from hold to retained lane
+`anicca-ios-en-card-youtube`, while freezing native handle
+`@life-manager-m4p`, pack `42b2cd…e6f62`, `reelclaw-card` / `nudge-card`, and
+JST `08:15`, `14:15`, `20:15`. Registry label
+`ai.anicca.life-manager-anicca-affirmation-youtube` points to the dedicated
+thin boot script, which reuses the existing account-bound cycle through command
+`run-anicca-affirmation-youtube`; existing `@anicca-ai` Widget and held
+`@anicca-jp` routes are unchanged. JSON, shell syntax, Node syntax, destination
+audit, registry audit, and the focused shared-cycle contract pass 13/13. The
+named pack SHA is exact and its mode is `0600`. This is source configuration
+only: provider posts, Telegram messages, installed release changes, lifecycle
+commands, and runtime activation remain zero pending the controlled canary.
+
 **Next atomic TODO — fixed order:**
 
-1. Inspect native YouTube `@anicca-affirmation-video` pinned/recent posts and
-   freeze exactly one product, locale, renderer, form, and forbidden families.
-2. Bind only Postiz `cmn8ymq6c02oio70y5ea1trv8`; do not borrow either other
-   YouTube integration.
-3. Select or build one matching approved pack and record exact object refs.
-4. Add one default-off Life Manager destination/loop and focused contract.
-5. Run one controlled canary, then verify Postiz, native handle/content,
+1. **Done:** resolve Postiz alias `@anicca-affirmation-video` to native
+   `@life-manager-m4p` / `UCqCLudkgpJZp4Pvi6ELGalw` and freeze Anicca iOS / EN /
+   `reelclaw-card` / `nudge-card` with the
+   forbidden families above.
+2. **Done:** live Postiz registry and integration-bound published URLs bind only
+   `cmn8ymq6c02oio70y5ea1trv8`; neither other YouTube integration is borrowed.
+3. **Done:** account-bound YouTube pack and exact video/caption refs are recorded
+   in live cursor 8; the mismatching shared Instagram pack remains excluded.
+4. **Done:** the default-off destination, registry row, dedicated boot route,
+   shared-cycle lane, exact three slots, and focused contract are recorded in
+   live cursor 9; no runtime or provider effect was claimed.
+5. **Active:** run one controlled canary, then verify Postiz, native handle/content,
    Telegram, and same-slot replay-zero.
 6. Arm exactly three daily intervals in source. Remote does not call lifecycle
    commands; the independent release watcher applies the release and the loop's
