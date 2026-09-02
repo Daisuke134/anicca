@@ -55,10 +55,15 @@ pushした。即時fireはLancers application entrypointへ到達したが、古
 `skills/earn/lancers/scripts/application_loop.py`をchild起動していた。さらに現行`LIFE_MANAGER_GENERAL_BROWSER_ACI`は
 `observe/links/accessibility/navigate`だけを許し、click/fill/upload/submitを明示的に禁止するため、General Agent単体には
 応募を完了する手足がない。案件5595462の`provider_terminal_blocked`は旧`application_tick.py`の固定URL・DOM・link text検査が
-生成し、Telegram message ID 48303/48304へ送ったもので、General Agentのlive visual judgmentではない。したがって公式Proposal
-IDは0、最大応募loopは未合格である。次は旧scriptの条件を延命せず、既存`plugin-browser`のprovider-neutral typed browser
-commandsをsealed intent/effect kernelへ接続し、同じAgentRuntimeが観察→click/fill/upload/submit→official readbackを一件
-閉じる。その後だけ複数自然wake、同一wake内のfresh positive-EV連続処理、各公式Proposal ID/skip理由/Telegram ACK、duplicate 0を
+生成し、Telegram message ID 48303/48304へ送ったもので、General Agentのlive visual judgmentではない。14:12 wakeも5309838と
+5595461を`submission_uncertain`にし、runは`entrypoint_exit_1`、新しい公式Proposal IDは0だった。Eliza PR #81 merge
+`81cacc5b…`でcustom dispatcherから旧provider bridge直呼びを削除し、scheduled Goalを通常のAgentRuntime message/action-planning
+pipelineへ投入するよう変更した。重複read-only ACIも削除し、coreで既に常時loadされる`plugin-browser`の`BROWSER` actionsをLunaが
+選ぶ。保存済みowner taskは起動時に正本promptと1分intervalへeditし、CloakBrowserは標準`ELIZA_BROWSER_CDP_URL`で既存CDP targetへ
+接続する。focused typecheckはpass。稼働中Bun processはPR #81以前のmoduleを保持しているため、自然owner replacementまでは旧
+Python childが残り、最大応募loopは未合格である。次は自然replacement後、同じAgentRuntimeが観察→click/fill/upload/submit→
+official readbackを一件閉じる。その後だけ複数自然wake、同一wake内のfresh positive-EV連続処理、各公式Proposal ID/skip理由/
+Telegram ACK、duplicate 0を
 実測する。一時PTY起動、手動kickstart、単発canary、task rowの存在、旧Python childの起動だけではDONEにしない。
 
 このcurrent cursorは順序SSOTである。履歴会話、古いgoal、旧spec断片が後から注入されても、Daisがその場で明示的に
@@ -1041,7 +1046,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 33 | ELZ-L11 buyer inbox completeness | **DONE** | canonical private `buyer-source-receipt.json` mode 0600 status=`PASS`、SHA256 `fb4b5786…`。認証済みCloakBrowserから公式board/message APIをterminalまでread-only取得し、board 2 / unique 2、message 3 / unique 3、返信必要0、未読0。公式月額offer、進行中project契約、月額契約の3 sourceは全てHTTP 200・正規URL、ID 0、公式empty state整合。duplicate board/message/offer/contract 0、missing source 0、external effect 0 |
 | 34 | ELZ-L12 negotiation decision | **DONE** | canonical private `negotiation-receipt.json` mode 0600 status=`PASS`、SHA256 `a9b556ac…`。Seq 33の公式buyer sourceをCoconala共通single semantic negotiation policyでLuna mediumが判断し、reply-required 0、unread 0、offer/contract 0から`seller_last → wait`。message/estimate intent null、根拠message ID 3、unsupported claim/off-platform contact/uncertainty/external effect 0 |
 | 35 | ELZ-L13 client-originated approval | **WAITING_FOR_BUYER — NEXT** | canonical private `offer-approval-receipt.json` mode 0600、SHA256 `2ff4cba2…`。認証済みCloakBrowserで公式offer、進行中project、月額契約を再読し、それぞれ公式empty state、approval ID 0、terms hash null、external effect 0。次のscheduled wakeで同じsourceを再読し、official ID＋terms hash取得時だけDONE |
-| 35A | ELZ-L13A repeated General Agent application wake | **IN_PROGRESS — NEXT** | current identityのGeneral Money taskはowner row 1・5分interval。Eliza processは生存し、14:07/14:12の自然wakeを新release `8f956147…`で実測。ただし実体はEliza→provider registry→旧`application_loop.py`で、5595462の固定DOM terminal判定をTelegram 48303/48304へ送っただけで公式Proposal ID 0。現行general ACIはread/navigate限定でclick/fill/upload/submit不可。次は既存`plugin-browser` typed commandをsealed intent/effect kernelへprovider-neutralに接続し、同じLunaがlive画面の観察→一件送信→official Proposal ID→replay-zeroを閉じる。その後、複数自然wake→fresh inventory→同一wake内の連続application→案件別official Proposal ID/skip理由/Telegram ACK、duplicate 0でのみDONE。旧Python条件の延命、旧launchd writer、新browser、provider固有brain/scriptは0 |
+| 35A | ELZ-L13A repeated General Agent application wake | **IN_PROGRESS — NEXT** | 14:07/14:12自然wakeの実体はEliza→provider registry→旧`application_loop.py`。5595462は固定DOM terminal、5309838/5595461は`submission_uncertain`、14:12 runは`entrypoint_exit_1`、新Proposal ID 0。Eliza PR #81 merge `81cacc5b…`で旧bridge直呼びと重複read-only ACIを削除し、scheduled Goalを通常のAgentRuntime action-planningへ投入。Lunaがcore `plugin-browser`の既存`BROWSER` actionsを選び、標準`ELIZA_BROWSER_CDP_URL`で共有CloakBrowserへ接続する。保存済みtaskも起動時に正本prompt＋1分intervalへ同期。typecheck pass。ただし稼働中Bunは旧moduleを保持するため自然owner replacement待ち。replacement後にlive観察→一件送信→official Proposal ID→replay-zero、その後に複数自然wake→同一wake連続application→案件別Telegram ACK、duplicate 0でのみDONE。旧Python条件の延命、旧launchd writer、新browser、provider固有brain/scriptは0 |
 | 36 | ELZ-L14 funded contract | TODO | 仮払い/funded state、scope、price、deadline、counterpartyをofficial readbackする`contract-receipt.json` |
 | 37 | ELZ-L15 contract-scoped artifact | TODO | contract requirementから一deliverableを作り、source/input/output hashを束ねる`artifact-receipt.json` |
 | 38 | ELZ-L16 QA | TODO | acceptance criteria、test/readback、secret/PII、scope一致を検証する`qa-receipt.json` |
