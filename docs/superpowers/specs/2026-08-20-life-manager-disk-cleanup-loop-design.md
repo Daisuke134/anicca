@@ -72,7 +72,10 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 現在3-5はsource fixをmainへ統合済みだが、production plistが旧immutable release `64a9a1c5...`を直接pinし、
 global release watcherがないため反映待ちである。禁止するのは、Remoteから`launchctl`、`gui/$UID`、
 `lm-loop apply/start/stop/restart`へ入り141を起こす経路と、Terminal/AppleScript等による同経路の迂回である。
-source/spec/Git変更、隔離test、read-only production観測、host-wide build lock取得後のimmutable release作成は継続する。
+ここで`gui/$UID`はlaunchdのservice domain名であり、通常の画面GUIを意味しない。CloakBrowser、Accessibility/CUA、
+アプリのボタン操作、通常のapp起動・終了、process診断、source/spec/Git変更、隔離test、read-only production観測、
+host-wide build lock取得後のimmutable release作成、再生成可能cacheの回収は一律に許可する。各commandは実行前に
+entrypointを読み、`launchctl ... gui/$UID`へ到達する場合だけその経路を実行しない。
 ただしrelease作成はloaded jobのpin変更ではなく、production反映の証拠には数えない。正規GUI/deployment ownerが
 新releaseを反映し、同じowner contextでreadbackした後にだけ3-5を完了へ更新する。
 
