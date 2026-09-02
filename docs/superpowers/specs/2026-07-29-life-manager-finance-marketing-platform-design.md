@@ -2544,6 +2544,23 @@ blocked until MKT-10R7 closes.
 
 **MKT-10R7 live cursor 7 — terminal override:** Honne JA TikTok `@honnevideo` is terminal at 3/day under manifest `8ec307f3…af72c`: exact Postiz integration `cmnit95mg015rrm0ye5vm8dhl`, Honne JA pack `d550a0a6…86ab`, CalendarIntervals `08:30/12:30/21:30`, and native `https://www.tiktok.com/@honnevideo/video/7680723828586170388` / Postiz publication `cmtjcebpa03e9pn0yst1kmlze`. Immediate same-slot replay returned generation/publication/Telegram `created:false`, so it produced no duplicate provider or notification effect. This terminal cursor supersedes the MKT-10R7 table row's earlier `active` wording: all 13 retained Anicca/Honne mobile targets are loaded, production-armed at exactly three CalendarIntervals/day, and point to immutable release `20260902T085615-e9d59c32`; all 17 non-target holds remain manifest-unarmed at 0/day. Missing TikTok `@anicca.videojp` has no exact Postiz integration and remains a hold rather than borrowing another account. YouTube, ebook, and monk remain outside this completed mobile-lane gate.
 
+**MKT-10R7 Buddha corrective cursor — terminal:** TikTok `@anicca_buddha`
+is bound to Postiz `cmp9txjdp01c8oh0yb6dhlarr`, Anicca iOS / JA / Larry
+six-image affirmation carousel, and the immutable eyeglass-wearing male
+restaurant pack `5459a684…017e`; sunset, woman, ReelClaw video, and generic
+Buddha imagery remain forbidden. The first activation published one wrong
+sunset carousel `7680702456753343765`, retained as incident evidence. The
+corrected effect uses Postiz row `cmtja7i520169s60y7tzkmv5z`; all six provider
+image bytes match the ordered job media SHA-256 values, and native profile
+readback binds the matching caption and male thumbnail to photo
+`7680708466381557012`. The provider returned after the wrapper had recorded
+the job as failed/unknown, so append-only `resolveReconciliation(present)`
+changed that exact job to completed with `unknown_effect=false`; no replacement
+publication occurred. Fresh adversarial verification returned `SHIP` and the
+owner report is Telegram `48448`. The lane remains configured at
+`07:00/13:00/20:00` JST; the next fixed-order item is MKT-11, not another
+canary or a replay of this effect.
+
 **MKT-10R8 live cursor 1:** owner classification is frozen as Anicca iOS / Japanese / TikTok `@anicca.videojp` / ReelClaw UGC video. Daily-driver native inspection shows the exact profile, Anicca logo and bio, plus pinned woman-led vertical videos with Japanese captions; sunset Larry, Buddha male and photo-carousel families are forbidden. A fresh live Postiz API read still has 30 integrations and no exact `@anicca.videojp` row; historical URLs for all plausible hold integrations resolve to their own handles rather than this target. TikTok Web `@anicca.jp` credentials do not switch to this separate account. Recovery email `keiodaisuke@gmail.com` identifies `@aniccaaffirmation`, so its code was not used; the next email attempt hit TikTok's temporary recovery-rate limit. Until exact OAuth ownership exists, this target remains manifest-unarmed at 0/day and no provider post is authorized. Next atom: recover the target session or connect it through Postiz, then freeze the returned integration ID before code, cadence or publication changes.
 
 **MKT-10R8 live cursor 2:** Gmail history proves `m.05eg95@bumpmail.io` is the owner alias for exactly `anicca.videojp`; fresh recovery emails explicitly greet `anicca.videojp`. Postiz login and Add Channel → TikTok OAuth are ready. TikTok accepts fresh email-code requests on new device IDs, but password-reset submission currently returns account-level `error_code=7`, `試行回数が上限に達しました。後ほどお試しください。`; no password change or Postiz integration was created. The private credential row is marked `recovery-pending`, not verified. The next atom remains one exact action: after the TikTok reset limit clears, finish alias recovery and OAuth (or authorize the prepared Postiz QR from the already logged-in iPhone), read back the new integration as profile `anicca.videojp`, then proceed to manifest/code/cadence/publication. All provider effects remain 0 for this target.

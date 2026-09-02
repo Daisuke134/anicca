@@ -468,9 +468,11 @@ existing open maximum loss, every current position, open-order count, cash/equit
 drawdown, and reconciliation health. Existing positions without a readable opening risk fail closed as
 `OPEN_RISK_UNKNOWN`. The verified pure example adds the current `$29` SPY maximum loss to a `$250` candidate
 for aggregate maximum loss `$279`; typecheck, build, three focused suites (`5/5` tests), and `git diff --check`
-pass. This is still research-only and adds no broker effect. The currently running Eliza process uses a separate
-older branch and main-derived natural-wake evidence remains pending; source checks are not presented as runtime
-deployment proof.
+pass. This is still research-only and adds no broker effect. Read-only process and reflog evidence shows the
+running Eliza PID loaded separate-branch commit `41da4d035caead82534751ebed4c68db7030ad3f` at startup. Its checkout
+later advanced without a process restart to `4a7c839fa446e662ffb3ce6d222975ea43e802ac`; neither commit contains
+the spot-effect merge `951b02dfb0a3aab2464d943c5f5ff2190cae94f4`. Main-derived natural-wake evidence therefore remains pending;
+source checks and a changed checkout are not presented as runtime deployment proof.
 
 The A11 risk-gated spot-effect source sub-atom is **DONE** in `life-manager-eliza` merge
 `951b02dfb0a3aab2464d943c5f5ff2190cae94f4` (PR #85). The existing ranking pass now seals an allowed crypto
@@ -492,6 +494,13 @@ model prompts and raw errors are never selected. `GET /api/life-manager/alpaca/p
 returns a generic `503` on failure. Typecheck, build, focused redaction test (`1/1`), and `git diff --check` pass.
 A12 remains incomplete until the same projection drives a logged-out page on a hosted URL and that URL is read
 back without authentication.
+
+The A12 read-only page source sub-atom is **DONE** in `life-manager-eliza` merge
+`7d2b79d65bdcf0f62fc4fd13bcdb25f99d075569` (PR #89). The responsive `/alpaca` page renders the same shared
+projection used by the GET API and adds no form, button, POST route, SDK mutation, broker client, or order
+surface. Focused public projection/page tests passed (`2/2`), plugin typecheck and build passed, and
+`git diff --check` passed. A12 remains incomplete until `/alpaca` is hosted at a logged-out public URL and that
+URL is read back without authentication.
 
 ### Win target and verified competitive baseline
 
@@ -541,7 +550,7 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
 | A09 | Ack-loss/restart reconciliation — **DONE** | A real process restart reconciled the simulated lost acknowledgement from one official client-ID readback, restored the receipt, and added zero orders; copied-DB absent state opened the breaker with zero blind retries. |
 | A10 | First registered durable loop — **DONE** | Exactly one seed-once interval task fires through the existing Eliza scheduling spine and Life Manager Financial dispatcher; natural fire reconciled the official order, restart preserved the same task/result, and host adapters own no Alpaca schedule. |
 | A11 | Paper campaign — **ACTIVE** | Frozen strategy runs on the dedicated account; every proposal/no-trade/order/fill/exit/P&L is recorded; official account activity and Life Manager projection have zero unexplained delta. |
-| A12 | Read-only public demo — **ACTIVE** | Shared redacted API projection is merged. Remaining: render and host the logged-out page, then read it back without authentication; public UI cannot place an order. |
+| A12 | Read-only public demo — **ACTIVE** | Shared redacted API projection and responsive `/alpaca` page are merged. Remaining: host the page and read it back without authentication; public UI cannot place an order. |
 | A13 | Submission assets | Public README, one-pager, PDF slides, 16:9 cover, and ≤4-minute video truthfully match the current account and code. |
 | A14 | Submit and read back | Form contains hosted URL, public repo, assets, tags, and private account ID; official submitted state is read back before 2026-09-05 00:00 JST. |
 | A15 | Portable OSS release | Clean macOS and Linux/Docker installs start the same Eliza runtime in paper mode from the public SHA; launchd/systemd/container policy only supervise that process, while the Eliza registry schedules the loop; secret-free fixture replay passes. |
@@ -576,8 +585,8 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
   proposal/veto/order/fill receipt; identical replay must add zero orders. The sealed SPY exit remains active for
   the next regular options session, followed by the final campaign funnel and unexplained-delta check.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
-  projection must drive both live and static views so they cannot drift. The shared allowlisted projection and
-  read-only GET route are **DONE**. Next, render that projection on a logged-out hosted page. Above the fold show paper-only status,
+  projection must drive both live and static views so they cannot drift. The shared allowlisted projection,
+  read-only GET route, and responsive `/alpaca` page are **DONE**. Next, host that page at a logged-out public URL and read it back without authentication. Above the fold show paper-only status,
   starting/current equity, realised/unrealised P&L, open max loss, last successful loop and broker reconciliation.
   Then show candidate funnel/selectivity, model thesis, deterministic gate/veto reasons, order/fill/exit timeline,
   self-heal/replay evidence, and the Life Manager-owned account-bootstrap checkpoint. Every number links to a
