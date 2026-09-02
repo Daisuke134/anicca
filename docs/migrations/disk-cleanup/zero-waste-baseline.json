@@ -89,6 +89,18 @@
       "expected_bytes": 13349080,
       "reason": "downloaded reproducible archive",
       "recovery": "redownload upstream release"
+    },
+    {
+      "path_glob": "~/.openclaw/skills/{anicca-tomb-slideshow,anicca-cafe-slideshow,anicca-fashion-slideshow,anicca-tomb-slideshow-ja,anicca-cafe-slideshow-ja,anicca-fashion-slideshow-ja,anicca-mantra-slideshow-ja,anicca-iam-photo-en}/output",
+      "expected_kib": 260984,
+      "reason": "terminal May slideshow outputs; skill scripts preserved",
+      "recovery": "rerun the owning slideshow skill"
+    },
+    {
+      "path_glob": "~/.openclaw/skills/copy-viral-format-factory/state/run_202606*",
+      "expected_kib": 129012,
+      "reason": "terminal June run outputs; niches_queue.txt preserved",
+      "recovery": "rerun copy-viral-format-factory"
     }
   ],
   "receipts": [
