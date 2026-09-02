@@ -178,6 +178,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
               - [x] P1d-3c-3c-8b-2-f: `~/.openclaw-backups`を世代・整合性・参照単位で監査。単一の`openclaw-core-20260902-171143.tar.gz`（`257,220 KiB`）のみで`gzip -t` PASS。`lsof`はtimeoutしたためopen状態を不明として保持し、旧世代削除や一括purgeは行わない。safe delete candidate 0、P2 rollback retentionへ繰り越す。
               - [x] P1d-3c-3c-8b-2-g: `~/.codex`をactive process/open path単位で監査。`codex app-server` PID 41290/41295、`codex-code-mode-host` PID 47072、SkyComputerUseService PID 22879が実在し、`logs_2.sqlite`、`thread_history_1.sqlite`、control socket、package binaryをopen。rootは`3,488,036 KiB`、30日超session 0。active Codex homeのため全削除・session purgeは行わず、P2 owner-side rotationへ繰り越す。
               - [x] P1d-3c-3c-8b-2-h: 現行remote account `~/.codex-acct2`をactive process/open path単位で監査。`codex app-server` PID 46457/46464が`logs_2.sqlite`、`thread_history_1.sqlite`、`state_5.sqlite`、control socketと多数の現行session JSONLをopen。rootは`2,386,828 KiB`、直近session 65、30日超session 0。現行接続のため全削除・session purgeは行わず、P2 owner-side rotationへ繰り越す。
+              - [x] P1d-3c-3c-8b-2-i: `~/.anicca-founder`を稼働economic-loopのowner単位で監査。`founder-loop-cadence`（PID 12755）と`agent-economy-loop`（PID 20741）が稼働し、`state/earn-ledger.jsonl`、wallet rotation state、`skills/earn`を保持。`ai.anicca.pm-live-trade.plist`の`ANICCA_HOME`も同rootを指す。rootは`867,964 KiB`で、金融state/credential/ledgerを含むため削除せず、P2 owner-side rotationへ繰り越す。
 
 #### P4 execution ledger
 

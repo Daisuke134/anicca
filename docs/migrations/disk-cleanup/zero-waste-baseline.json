@@ -182,6 +182,7 @@
     {"path": "~/.openclaw/skills/.backups", "owner": "single recent rollback generation"},
     {"path": "~/.codex", "owner": "active Codex app-server, code-mode host, and computer-use service; preserve session/database/socket state"},
     {"path": "~/.codex-acct2", "owner": "active remote Codex account; preserve app-server session/database/socket state"},
+    {"path": "~/.anicca-founder", "owner": "active founder/economy loops; preserve wallet, ledger, state, and earn skills"},
     {"path": "~/.Trash/life-manager-gig-videos-20260902-134053", "owner": "P5 Coconala/Gig deliverable retention; manifest contains active 5188394, 5174332, and 18211957 artifacts"}
   ],
   "unclassified_roots_over_100_mib": [],
@@ -727,6 +728,33 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Current remote connection and this session are using the home. Whole-home deletion or session purge is unsafe; defer bounded rotation to P2."
+    },
+    {
+      "batch": "p1d-anicca-founder-active-audit-28",
+      "path": "~/.anicca-founder",
+      "measured_kib": 867964,
+      "active_processes": [
+        "12755 founder-loop-cadence",
+        "20741 agent-economy-loop"
+      ],
+      "loaded_owner_refs": [
+        "ai.anicca.pm-live-trade.plist ANICCA_HOME=~/.anicca-founder",
+        "ai.anicca.pm-deterministic.plist.disabled-2026-07-13 PM_TRADE_AGENT_HOME=~/.anicca-founder/agents/polymarket-agent"
+      ],
+      "retained_components": [
+        "state/earn-ledger.jsonl",
+        "state/ledger.jsonl",
+        "state/loop-registry.json",
+        "state/key-rotation-backups",
+        "skills/earn",
+        "agents/polymarket-agent"
+      ],
+      "decision": "preserve_active_economy_owner",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Active founder/economy loops and wallet/ledger state reference this home. No secret values were read; whole-home or state purge is unsafe and deferred to owner-side P2 retention."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
