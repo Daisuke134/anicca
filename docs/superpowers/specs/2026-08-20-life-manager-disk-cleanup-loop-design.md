@@ -540,11 +540,18 @@ retire済み`~/src/SkillOpt`を除去し、self-contained `scripts.train`/`skill
 このvenvは削除済み扱いにしない。`~/Library/Caches/com.openai.codex` 1,986,228 KiBはSparkle installation cacheだが、
 Updater PID 8768がliveのためsignal/削除せず自然terminal待ちである。
 
+旧user-site `~/Library/Python/3.9`は2026-02から残るpip再生成物で、現行sourceのexact caller 0、実行process 0、
+open handle 0を確認した。Whisper/PyTorch等のpackage集合810,040 KiBを回収し、path消失をread backした。
+`brew cleanup`候補は約37.7 MiBだけで主因ではなく、現行formulaを削除しない。`~/Library/Application Support/awal-nodejs`
+280,164 KiBは`@coinbase/payments-mcp` 2.12.0の実体と判明したため、未使用cacheと誤分類せず保持した。
+回収後もChatGPT PID 410、`eliza-lancers` tmux PID 69785、Sparkle Updater PID 8768は生存し、Data空きは
+`29,496,572 KiB`（約28.1 GiB）、errors 0、protected deletion 0である。
+
 同時writer readbackでは保護対象`life-manager-eliza-migration`が約2.89 GiBから9,114,480 KiBへ増え、内訳は
 `node_modules` 4,356,344 KiB、`.git` 3,676,932 KiBだった。branchはdirty、`eliza-lancers` tmuxが同rootでlive、
 `.git`にはreachable pack 1.94 GiBとは別に`tmp_pack` garbage 1.20 GiBがある。別owner稼働中かつDaisの明示保護root
 なので本atomは変更0とし、owner terminal後のGit garbage/node_modules bounded retentionへ残す。直近Data空きは
-`29,734,516 KiB`（約28.4 GiB）で11 GiB floor以上だが、apps/cache atomはUpdater terminal、残cache/user-data分類、
+`29,496,572 KiB`（約28.1 GiB）で11 GiB floor以上だが、apps/cache atomはUpdater terminal、残cache/user-data分類、
 Eliza owner-side収束が未完了なので[x]にしない。
 
 ## Business-loop self-sustainability contract
