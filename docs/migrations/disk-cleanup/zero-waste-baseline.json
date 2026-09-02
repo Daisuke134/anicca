@@ -393,6 +393,21 @@
       "locked_or_dirty_removed": 0,
       "eliza_or_alpaca_removed": 0,
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1d-telegram-recovery-subset-10",
+      "target_kib_by_du": 77132,
+      "free_before_kib": 14755532,
+      "free_after_kib": 14829436,
+      "recovered_event_keys_missing_from_canonical": 0,
+      "recovered_report_ids_missing_from_canonical": 0,
+      "canonical_new_event_keys": 98,
+      "canonical_duplicate_event_keys": 0,
+      "canonical_integrity_after": "ok",
+      "canonical_rows_after": 19382,
+      "locked_worktrees_removed": 0,
+      "eliza_or_alpaca_removed": 0,
+      "protected_deletions": 0
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

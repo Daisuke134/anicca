@@ -155,7 +155,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
         - [x] P1d-3c-2d: shared persistent ownerの64/32 MiB cacheをprofile別directoryへ分離し、`with-browser.sh`がlease終了時にregistry上の自identity配下の再生成cacheだけを回収する契約を追加。daily-driver/TikTok/Buyma cache `455,364`→0 KiB、Data free `21,741,396`→`22,213,000 KiB`、全owner生存、Buyma `:9330`継続。browser registryの旧`anicca/...` caller 6件を`~/loops/current/...`へ正規化し、focused test 9/9、compile/shell syntax PASS
       - [ ] P1d-3c-3: process/RSS/swapの再増加停止とnormal free 30 GiB以上をreadbackする
         - [x] P1d-3c-3a: clean・open process 0・remote保存済みの終了worktree 6件と再生成可能な独立Codex clone 1件を回収。未pushだったBuddha branchは先にremote保存。論理`568,044 KiB`、Data free `14,018,660`→`14,500,100 KiB`、lock/dirty/Eliza/Alpaca削除0
-        - [ ] P1d-3c-3b: `/private/tmp`の残る非Git terminal artifactとunlocked clean remote-saved worktreeを回収し、active/locked worktreeを保持する
+        - [x] P1d-3c-3b: `/private/tmp`を再監査し、canonical Telegram DBに全19,284 event key/report IDが包含される旧recovery DB `77,132 KiB`だけを回収。Data free `14,755,532`→`14,829,436 KiB`、canonical integrity `ok`・19,382 rows。残るlinked worktree 7件は全lock付き、Eliza/Alpaca/Postgres readbackは別session保護、dirty削除0
+        - [ ] P1d-3c-3c: freeを継続減少させるhost-wide writer/rootを再計測し、再生成可能な最大ownerから回収してnormal free 30 GiB以上へ戻す
 
 #### P4 execution ledger
 
