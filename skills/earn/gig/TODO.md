@@ -127,9 +127,20 @@ completion claim is nevertheless false until the two failing lanes below pass na
   `RuntimeError: asyncio.run() cannot be called from a running event loop`. The exact boundary is
   `cdp_default_tab._serve_hidden_tab`: it enters an async CDP session and then calls synchronous
   context-lease acquisition, whose implementation calls `asyncio.run`. Consequently no new outbox
-  action was created for thread `10085794`, which explains both the missing estimate response and
-  other missing buyer replies such as Ryu's. Fix that nested event-loop boundary first, then let the
-  existing estimate owner consume the exact new event once; do not add an estimate sender to Paid.
+  action was created for thread `10085794`, which explains the missing estimate response and blocks
+  other newly discovered Reply events. Ryu talkroom `18211957` is no longer an example of that
+  missing-reply state: a later Paid pass sent its required reply once and retained official
+  readback. Fix the nested event-loop boundary first, then let the existing estimate owner consume
+  the exact new event once; do not add an estimate sender to Paid.
+
+  The latest natural Paid terminal pass observed nine items and recorded `effect=1`, `readback=5`,
+  `failed=2`, and `pending=2`. Ryu `18211957` completed with `send_performed=true`,
+  `remote_repaired=true`, and official readback; `18171850` completed by dedupe with official
+  readback, while `18202085`, `18184558`, and `18214856` were satisfied no-ops. The remaining
+  failures are `18128025` (`targeted_readback` timed out after 180 seconds) and transferred Chii
+  `18180857` (`remote_builder`), whose observe-only gate must prevent further effects. Pending items
+  are the separate estimate flow `18223833` and `18218780`. The recorded effect was not delivery of
+  `18223833`.
 
   Disk cleanup is alive but cannot reclaim installed/running immutable releases. Natural cleanup
   passes remained `ok=true` with errors/protected deletions `0/0`, and one pass reclaimed about
@@ -142,7 +153,7 @@ completion claim is nevertheless false until the two failing lanes below pass na
   contract; only terminal `work/` and explicitly authorized byte-identical artifact duplicates are
   deleted.
 
-  Current disk readback is 27 GiB free. The dominant retained roots are `~/loops/releases` at about
+  Current disk readback is 26 GiB free. The dominant retained roots are `~/loops/releases` at about
   7.26 GiB and `~/gig/projects` at about 4.63 GiB, not video. Nine immutable release directories
   remain; six full releases are about 1.19 GiB each because different installed owners still pin
   `f5b3f345`, `58a71295`, `5a9c95fa`, `e9d59c32`, `29fb7681`, or `8f956147`. Central cleanup must
@@ -161,7 +172,9 @@ completion claim is nevertheless false until the two failing lanes below pass na
      JPY 24,000 estimate once, and require official estimate readback plus replay effect zero. Then
      let Paid resume project `5242505` from the newer official event without repeating the first
      project's delivery or any prior message.
-  4. Require Paid `last exit code = 0`, terminal `status=pass`, `failed=0`, and replay effect `0`.
+  4. Restore the transferred `18180857` observe-only gate, resolve the `18128025` targeted-readback
+     timeout and `18218780` pending state, then require Paid `last exit code = 0`, terminal
+     `status=pass`, `failed=0`, and replay effect `0`.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
   6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
