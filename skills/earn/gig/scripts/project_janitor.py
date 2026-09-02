@@ -169,7 +169,11 @@ def _contract_reclaim_reason(state: dict) -> str | None:
         return "transaction_not_complete"
     if any(value != COMPLETE_STATE for value in observed_states):
         return "transaction_state_conflict"
-    for field in CONTRACT_GUARD_FIELDS:
+    # Once both independently stored marketplace state fields say 取引完了, stale
+    # workflow flags (pending feedback, next_action, work_state) cannot reopen the
+    # room and must not retain regenerable source/work forever. Shared references
+    # remain a real filesystem ownership constraint and still fail closed.
+    for field in SHARED_FIELDS:
         if field in state and not _metadata_is_terminal(field, state[field]):
             return f"contract_guard:{field}"
     return None

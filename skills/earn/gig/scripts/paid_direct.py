@@ -107,6 +107,7 @@ MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_REMOTE_WAIT_RECHECK_SECONDS = 3600
 PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_MAX_PARALLEL_READBACKS = 1
+PAID_TERMINAL_RECONCILES_PER_WAKE = 2
 MANUAL_ONLY_TALKROOM_IDS = frozenset({"18211838"})
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
@@ -665,6 +666,62 @@ def observe_orders(args, evidence_dir) -> list[dict[str, Any]]:
             and _text(item.get("talkroom_id")) not in MANUAL_ONLY_TALKROOM_IDS
             and item.get("terminal") is not True
             and _text(item.get("talkroom_state")) not in {"取引完了", "completed", "closed", "terminal"}]
+
+
+def _reconcile_absent_talkrooms(args, open_items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Refresh a bounded, rotating set of known rooms missing from the open-order page."""
+    receipt_path = args.evidence_dir / "terminal-reconciliation.json"
+    try:
+        previous = _load(receipt_path)
+        checked_at = dict(previous.get("checked_at") or {}) if isinstance(previous, dict) else {}
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        checked_at = {}
+    open_rooms = {_text(item.get("talkroom_id")) for item in open_items}
+    candidates: list[tuple[float, str, Path, dict[str, Any]]] = []
+    for root in args.projects_root.iterdir() if args.projects_root.is_dir() else ():
+        state_path = root / "state.json"
+        try:
+            state = _load(state_path)
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            continue
+        room = _text(state.get("talkroom_id")) if isinstance(state, dict) else ""
+        if (not re.fullmatch(r"[0-9]+", room) or room in open_rooms
+                or room in MANUAL_ONLY_TALKROOM_IDS):
+            continue
+        try:
+            last_checked = float(checked_at.get(room, 0))
+        except (TypeError, ValueError):
+            last_checked = 0
+        candidates.append((last_checked, room, root, state))
+
+    results = []
+    for _, room, root, state in sorted(candidates)[:PAID_TERMINAL_RECONCILES_PER_WAKE]:
+        base = args.evidence_dir / "terminal-reconciliation" / room
+        item_path, snapshot = base / "item.json", base / "snapshot.json"
+        item = {
+            "request_id": root.name,
+            "talkroom_id": room,
+            "talkroom_state": state.get("talkroom_state"),
+            "buyer": state.get("buyer"),
+        }
+        _write(item_path, item)
+        checked_at[room] = time.time()
+        try:
+            _run(
+                _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
+                "terminal_reconciliation", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
+            )
+            observed = {**item, **_row(_load(snapshot), room)}
+            delivery_project.record_queue_selection(args.projects_root, observed, adapter="coconala")
+            results.append({"talkroom_id": room, "status": "observed",
+                            "talkroom_state": observed.get("talkroom_state")})
+        except (Failure, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
+            results.append({"talkroom_id": room, "status": "failed",
+                            "failed_step": error.step if isinstance(error, Failure) else "state_update"})
+    receipt = {"version": 1, "checked_at": checked_at, "results": results,
+               "remaining_candidates": max(0, len(candidates) - len(results))}
+    _write(receipt_path, receipt)
+    return receipt
 
 def _regular_file(path: Path) -> bool:
     try: return stat.S_ISREG(path.lstat().st_mode)
@@ -5267,15 +5324,16 @@ def run_once(args, output: Path) -> int:
     with _lock(args.lock_file) as acquired:
         if not acquired:
             _write(output, {"status": "busy", "observed": 0, "actionable": 0, "effect": 0, "readback": 0, "failed": 0, "pending": 0, "oldest": None, "items": []}); return 0
-        janitor = project_janitor.scan(
-            args.projects_root, args.projects_root.parent / "janitor.jsonl", dry_run=False,
-        )
-        _write(args.evidence_dir / "project-janitor.json", janitor)
         try:
             observed_items = observe_orders(args, args.evidence_dir / "orders")
             items, duplicate_dropped = _unique_orders(observed_items)
         except Failure as error:
             _write(output, {"status": "failed", "observed": 0, "actionable": 0, "effect": 0, "readback": 0, "failed": 1, "pending": 0, "oldest": None, "failed_step": error.step, "items": []}); return 1
+        terminal_reconciliation = _reconcile_absent_talkrooms(args, items)
+        janitor = project_janitor.scan(
+            args.projects_root, args.projects_root.parent / "janitor.jsonl", dry_run=False,
+        )
+        _write(args.evidence_dir / "project-janitor.json", janitor)
         items.sort(key=lambda item: _paid_queue_priority(args, item))
         rows: dict[str, dict[str, Any]] = {}
         actionable = 0
@@ -5417,7 +5475,7 @@ def run_once(args, output: Path) -> int:
                   "effect": effect, "readback": readback, "failed": failed,
                   "pending": pending,
                   "oldest": min(dates, default=None),
-                  "project_janitor": janitor,
+                  "project_janitor": janitor, "terminal_reconciliation": terminal_reconciliation,
                   "items": [rows[_text(item["talkroom_id"])] for item in items]}
         if failed_step: result["failed_step"] = failed_step
         _write(output, result); return int(bool(failed))
