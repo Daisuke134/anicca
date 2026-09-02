@@ -3396,12 +3396,21 @@ def _observe_own_page(
           )];
           closed.forEach(control => control.click());
           if (collapsedBodies.length || closed.length) await new Promise(resolve => setTimeout(resolve, 500));
-          const serviceImageIds = [...new Set([...document.querySelectorAll('.c-contentsImagesProduction img')]
-            .map(image => (image.currentSrc || image.src || '').match(/service_images\\/original\\/([^/?]+)/)?.[1])
-            .filter(Boolean))];
+          const expectedImageCount = __EXPECTED_IMAGE_COUNT__;
+          let serviceImageIds = [];
+          for (let attempt = 0; attempt < 20; attempt += 1) {
+            serviceImageIds = [...new Set([...document.querySelectorAll('.c-contentsImagesProduction img')]
+              .map(image => (image.currentSrc || image.src || '').match(/service_images\\/original\\/([^/?]+)/)?.[1])
+              .filter(Boolean))];
+            if (expectedImageCount < 0 || serviceImageIds.length === expectedImageCount) break;
+            await new Promise(resolve => setTimeout(resolve, 250));
+          }
           return JSON.stringify({url:location.href,title:document.title,
             body:document.body ? document.body.innerText.slice(0,120000) : '',service_image_ids:serviceImageIds});
-        })()"""
+        })()""".replace(
+            "__EXPECTED_IMAGE_COUNT__",
+            str(expected_image_count if expected_image_count is not None else -1),
+        )
     observed = {}
     for attempt in range(3):
         observed = asyncio.run(listing_inventory._eval_json(ws_url, url, expression))

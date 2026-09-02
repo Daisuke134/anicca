@@ -211,6 +211,12 @@ completion claim is nevertheless false until the two failing lanes below pass na
      clean base `4529a7e2a`, so they are not regressions from this fix. This atom remains open until
      pushed main runs naturally and reads all 14 official contracts without
      `official_service_contract_invalid`, then records the normal effect/readback or replay-zero.
+     Main release `20260902T214511-6a9a93e6` then read all 14 services with non-null
+     `受付休止中` state, proving that correction in production. Its next boundary failed
+     `own_candidate_readback_invalid`: the gallery page currently has the expected six unique
+     service images, but each retry navigated again before lazy image URLs settled. The focused
+     follow-up keeps the same official page open and waits at most five seconds for the expected
+     unique image count; production PASS remains required.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
   6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
