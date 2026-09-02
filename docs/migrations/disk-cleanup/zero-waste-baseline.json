@@ -1147,6 +1147,22 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "No current owner, exact source reference, or open handle was found in the scoped Life Manager/OpenClaw source trees. Keep business loops running; delete only after artifact reuse/retention confirmation and the required irreversible-delete confirmation, then record after-bytes and free delta."
+    },
+    {
+      "batch": "p1d-funders-results-evidence-audit-48",
+      "path": "~/.openclaw/workspace/funders/results",
+      "measured_kib": 31932,
+      "file_count": 234,
+      "file_type": "png",
+      "owner": "~/.openclaw/workspace/funders/STATUS.md",
+      "owner_reference": "STATUS.md references the FT-* evidence paths for submit/failed/retry decisions",
+      "external_open_handle_rows_final": 0,
+      "decision": "preserve_application_evidence_defer_owner_retention",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "These screenshots are durable application evidence, not regenerable cache. Keep them even with no current open handle; define bounded retention in the funder owner/status map before any archive or deletion."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
