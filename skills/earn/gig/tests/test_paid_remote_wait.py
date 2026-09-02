@@ -621,6 +621,25 @@ def test_remote_owner_prompt_searches_complete_repo_and_valid_shared_tools(tmp_p
     assert f"search {paid.REPO_ROOT} with rg" in prompt
     assert str(paid.REPO_ROOT / "skills/_shared/resource_resolver.py") in prompt
     assert str(paid.REPO_ROOT / "skills/browser/with-browser.sh") in prompt
+    assert "write the durable result immediately before any optional exploration" in prompt
+    assert "do not exhaustively inspect unrelated historical attachments or messages" in prompt
+    assert "write status=blocked and a nonempty blocker in paid-remote-result.json" in prompt
+    assert "every wait receipt include either a nonempty readback" in prompt
+    assert "readback_source and exact_readback=true" in prompt
+
+
+def test_remote_verifier_prompt_persists_decision_before_optional_exploration(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+
+    prompt = paid._repair_prompt(
+        root, tmp_path / "item.json", feedback, requirements_sha,
+        True, tmp_path / "cdp.py",
+    )
+
+    assert "write that result immediately before any optional exploration" in prompt
+    assert "do not exhaustively inspect unrelated historical attachments or messages" in prompt
 
 
 def test_remote_owner_prompt_reconciles_project_effect_receipts_before_mutation(tmp_path):

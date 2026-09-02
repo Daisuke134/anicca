@@ -202,6 +202,34 @@ completion claim is nevertheless false until the two failing lanes below pass na
      `official_service_contract_invalid`; and restore successful Telegram transport without
      changing a business result. Then require every affected lane `last exit code = 0`, terminal
      `status=pass`, `failed=0`, and replay effect `0`.
+     Storefront's exact rejected field is now known: all 14 current dashboard cards expose the
+     official state `受付休止中`, while `listing_inventory.py` recognized only `公開中`, `非公開`,
+     and `下書き`, leaving every contract state null. Branch
+     `fix/coconala-storefront-official-state-20260902` adds the current `受付中` / `受付休止中`
+     vocabulary to the list parser and Storefront contract. The three focused contract tests pass;
+     the full Storefront file remains 32 pass / 2 fail, and both failures reproduce unchanged on
+     clean base `4529a7e2a`, so they are not regressions from this fix. This atom remains open until
+     pushed main runs naturally and reads all 14 official contracts without
+     `official_service_contract_invalid`, then records the normal effect/readback or replay-zero.
+     Main release `20260902T214511-6a9a93e6` then read all 14 services with non-null
+     `受付休止中` state, proving that correction in production. Its next boundary failed
+     `own_candidate_readback_invalid`: the gallery page currently has the expected six unique
+     service images, but each retry navigated again before lazy image URLs settled. The focused
+     follow-up keeps the same official page open and waits at most five seconds for the expected
+     unique image count. Natural pass `storefront-direct-1788353864455411000-25472` then read all
+     14 official services with non-null `受付休止中` state, read the gallery's six unique published
+     image IDs, safely declined a generated package because the slot was not absent, recorded
+     effect/readback `0/0`, and released its isolated lease. Storefront business readback is
+     therefore restored. At that point its Telegram report still failed `DatabaseError`; successful
+     transport and the resulting terminal owner exit zero remain part of this open atom.
+     SQLite `.recover` rebuilt the malformed 80 MB outbox into a validated 19,284-row candidate:
+     `PRAGMA quick_check=ok`, exact schema/indexes, 17,333 sent rows, and zero sent rows missing a
+     message ID. With zero open database handles, production was atomically replaced at 22:08 JST;
+     the original inode remains recoverable as
+     `~/gig/telegram-outbox.sqlite3.corrupt-20260902T220811`. Reply and Apply then appended new rows
+     while `quick_check` stayed `ok`. Storefront's exact no-op event reconciled to provider message
+     `48628`, and replay returned `deduped` without another send. A fresh natural Apply receipt and
+     fresh Storefront terminal owner exit zero are still required before transport is closed.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
   6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
@@ -231,10 +259,12 @@ completion claim is nevertheless false until the two failing lanes below pass na
      file-owner path for `18218780`; `:4095-4112` and `:4411-4450` validate genuine remote-owner
      results. Reuse those paths, produce the requested JPG, and resume `18223833` only after the
      estimate's newer official event. No room-name branch is allowed.
-  6. Storefront contract — `skills/earn/gig/scripts/storefront_direct.py:3226-3246` contains every
-     rejected field and `:5505-5536` collects the 14 official sources. Persist the exact failed
-     field in the receipt, correct the collector/normalizer for that field, and require a 14-service
-     contract readback plus replay effect zero.
+  6. Storefront contract — `skills/earn/gig/scripts/listing_inventory.py:84-91` now parses the
+     observed `受付中` / `受付休止中` states, and
+     `skills/earn/gig/scripts/storefront_direct.py:3226-3248` accepts them in the official service
+     contract. `skills/earn/gig/tests/test_storefront_direct.py` binds a real-shaped paused dashboard
+     card through both boundaries. Require the next natural main-derived wake to read 14 non-null
+     official states and finish with exact effect/readback or replay effect zero before closing it.
   7. Telegram corruption — `~/gig/telegram-outbox.sqlite3` fails read-only `PRAGMA quick_check` with
      `database disk image is malformed`. Recover into a new database using SQLite `.recover`,
      validate `skills/earn/gig/scripts/telegram_outbox.py:18-38` schema and all surviving
@@ -249,6 +279,12 @@ completion claim is nevertheless false until the two failing lanes below pass na
   PASS = Paid never selects talkroom `18211838`; Reply always returns `stop_contact / stop` for the
   same thread; no existing project artifact, receipt, or conversation history is deleted. The account
   owner handles every future response, revision, submission, and delivery for this buyer manually.
+
+  **Concurrent owner boundary:** Ryu talkroom `18211957` is assigned to a separate manual Codex
+  session by the account owner. This cursor must not edit that project's state/artifacts or send,
+  reply, submit, deliver, or replay an effect for that room. Do not use its result as evidence for
+  this cursor until the owning session publishes an exact official receipt and the production loop
+  has durably reconciled the room as externally owned.
 - [ ] `C03` Prove maximum safe Coconala work progression.
   PASS = Apply submits every currently eligible non-duplicate opportunity and reconciles uncertain
   intents before retry; Reply consumes every new buyer event once; Storefront continues measured
@@ -575,6 +611,24 @@ capability claim is backed by an installed executable capability.
 
 ### Shared job kernel
 
+**Execution ownership override:** the active Lancers extraction agent owns `K01`–`K09`,
+`A01`–`A10`, the later `SHARE-*` atoms, the provider recipe, and CrowdWorks/shared-kernel
+implementation. The Coconala cursor does not edit those components. It owns only making the four
+Coconala lanes complete and publishing exact main-derived runtime manifests, official effect/readback
+receipts, replay-zero receipts, and cleanup evidence for the extraction owner to consume. Both owners
+may work in separate worktrees, but the extraction owner must not copy or promote a currently failing
+Coconala behavior as a shared contract; only a named successful receipt may become the reference.
+The public repository `Daisuke134/life-manager` and its default `main` already contain all four
+Coconala registry rows and source entrypoints, so no private worktree handoff is required. Shared
+implementation remains unmerged until its own production files and acceptance receipts reach main.
+
+Scalability is measured by a shrinking provider-only change surface, not by promising a wall-clock
+duration. After Coconala proves the kernel, a new marketplace may add only its connector config,
+thin provider modules, registry owner rows, and conformance fixtures. It must not copy an Apply,
+Reply, Storefront, or Paid owner or modify lifecycle, checkpoint, workspace, concurrency, receipt,
+cleanup, observability, or KPI kernel code. Record files changed and elapsed implementation time for
+each provider so repeated launches can demonstrate the expected downward trend.
+
 - [ ] `K01` Define one website-neutral `JobContract` JSON Schema.
   PASS = one Coconala fixture validates and one malformed fixture is rejected.
 - [ ] `K02` Define the six owner lifecycle states in one schema.
@@ -615,6 +669,10 @@ capability claim is backed by an installed executable capability.
   PASS = download and upload hashes bind to the same job and cross-job reuse is rejected.
 - [ ] `A09` Add adapter terminal-state conformance.
   PASS = completion and cancellation each require official terminal readback before closure.
+- [ ] `A10` Publish one executable provider recipe and conformance entrypoint.
+  PASS = a fixture-only provider implements auth, discover, observe, apply, reply, deliver, and
+  readback by adding provider config/modules/fixtures only; no shared owner or kernel file changes,
+  and the recipe reports its changed-file surface and elapsed implementation time.
 
 ### Public OSS proof
 
@@ -5415,10 +5473,68 @@ queue is added. Each owner must also progress independent work concurrently insi
    about 4.5 GiB free. The next natural Paid pass must compile both contexts successfully before the
    source-census or deliverable logic is changed; disk recovery alone is not delivery proof.
 
-   **Current readback.** Free space is 27 GiB and every `.mp4`, `.mov`, `.m4v` and `.webm` under
-   `~/gig` has been moved to the recoverable Trash bundle; the live gig tree contains zero video
-   files. Cleanup no longer probes GUI/launchctl and release inventory no longer blocks on global
-   `lsof`. Paid room `18223833` has captured the buyer's second budget-document request but still
+   The host later regressed to 4.3 GiB free. Live attribution finds about 12.0 GiB across eleven
+   `~/loops/releases` generations: ten old generations remain protected by installed plist paths,
+   including 106 labels pinned to `7942f224`, 28 to `439dc71d`, and 27 to `e9d59c32`; the current
+   `b940c7d4` generation is not itself an old deletion candidate. Per-lane cleanup correctly removes
+   only private scratch and cannot delete a release shared by other labels. The natural reconciler
+   selected running KeepAlive Reply for migration but failed with `production apply is already
+   owned` because `lm_loop_run.py` held its label apply lock for the child's entire continuous
+   lifetime. Branch commit `c7da7f4e8` narrows that lock to startup preparation; its exact
+   continuous-owner regression and related loop suites pass (`51 passed, 6 subtests`). Keep this
+   incident open until a public-main immutable release naturally migrates Reply, the old pin count
+   falls, central release GC reclaims the newly unpinned generation, and post-GC free space is read
+   back. Separately, 114 regenerable MP4/MOV/M4V files under Life Manager video state and Capafy
+   artifacts were removed (`223,995,054` bytes; zero remain in those two roots). Desktop raw video
+   sources remain outside this regenerable cleanup boundary. The exact non-current release
+   `20260902T202305-b940c7d4` was then revalidated with plist pins `0` and open processes `0` and
+   deleted, while the half-built `20260902T204442-0dbe1321` generation was preserved. Regenerable
+   daily-driver HTTP/code cache, node-gyp headers and Bun package cache were also removed. Despite
+   these recoveries, concurrent release construction left only about 3.8 GiB free, so pin migration
+   and post-migration release GC remain the root completion gate.
+
+   The latest read-only audit reports 5.2 GiB free with the Data volume still 98% full. Thirteen
+   release directories remain; eleven are complete, current is
+   `20260902T204442-0dbe1321`, and the natural watcher is actively constructing incomplete release
+   `20260902T205757-17106565`. An exact completed-release scan found zero candidates satisfying all
+   deletion fences: non-current, plist pins zero, open processes zero, and age over five minutes.
+   Apply, Reply, Storefront, and Paid all have live processes, including two Paid remote-owner
+   workers, so their releases remain protected. The regenerable Life Manager video roots and
+   `~/gig/projects` contain zero MP4/MOV/M4V files. Outside those managed roots, Desktop, Downloads,
+   and recoverable Trash still contain 21 MP4/MOV/M4V files totaling `3,474,931,225` bytes. This
+   includes `athena-v4-final.mp4` only in Trash, not in the active paid-project tree. Permanent Trash
+   deletion and deletion of Desktop/Downloads source files are irreversible and therefore are not
+   automatic cleanup. Do not delete pinned/open releases or durable paid-project source, delivery,
+   and receipt artifacts merely to raise free space; recheck central GC after the active release
+   cut and natural owner convergence.
+
+   The lock-lifetime fix is now merged through PR `#4023`; current immutable release
+   `20260902T211246-af0fb4c1` is an immutable pushed-main descendant of `c7da7f4e8` and has about
+   9.8 GiB free. Production is still split: Apply is installed on `c259cc6e`, Reply on `663f1af0`,
+   and Storefront plus Paid have moved to `0dbe1321`/`af0fb4c1`. Reply reports its latest terminal
+   `pass`; Apply, Storefront, and Paid now report `entrypoint_exit_1`. The release fix therefore
+   removes the permanent migration-lock cause but does not prove four-lane completion or make an
+   installed/running old release deletable. Require natural owner convergence, fresh terminal
+   receipts, central GC, and a post-GC disk readback before closing this incident.
+
+   A later exact GC audit found release `20260902T211110-ca40215c` complete, non-current, older
+   than five minutes, referenced by zero installed plists, and open by zero processes. It occupied
+   `1,251,524` KiB and was deleted without touching current `20260902T211246-af0fb4c1` or any
+   installed/running release. Release count fell from fourteen to thirteen; post-delete free space
+   is `11,904,604` KiB (about 11.35 GiB). A second full fence scan found zero additional safe release
+   candidates. The incident remains open only for four-lane convergence, later central GC of newly
+   unpinned releases, and final disk readback; per-lane deletion of shared releases remains forbidden.
+
+   A newer natural readback has current release `20260902T211656-b2ca575e` and about 11 GiB free.
+   Paid recovered to terminal `pass` on installed/event SHA `af0fb4c1`, and Reply remains terminal
+   `pass` on `663f1af0`. Apply remains installed on `c259cc6e` with terminal `entrypoint_exit_1`;
+   Storefront remains on `0dbe1321` with terminal `entrypoint_exit_1`. The four owners are therefore
+   independently scheduled but not complete or converged. Successful historical Apply/Storefront
+   receipts remain valid evidence, but their current failing behavior is not an extraction reference.
+
+   **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
+   longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
+   budget-document request but still
    has no seller reply, artifact or official delivery readback. Its worker was blocked behind a
    redundant shared browser preflight even though the parent had already persisted the same-wake
    official targeted snapshot. Reuse that snapshot for parallel prepare; retain presend effect

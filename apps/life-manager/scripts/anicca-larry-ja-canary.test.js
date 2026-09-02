@@ -13,6 +13,7 @@ const {
   ACCOUNT_ID,
   EN_AFFIRMATION_LANE,
   EN_SLIDESHOW_TIKTOK_LANE,
+  JA_JP1_TIKTOK_LANE,
   JA_MAIN_TIKTOK_LANE,
   INTEGRATION_REF,
 } = require("../lib/marketing-native-carousel-publication-adapter.js");
@@ -20,6 +21,7 @@ const {
   EN_AFFIRMATION_LANE: EN_RUNNER_LANE,
   EN_SLIDESHOW_TIKTOK_LANE: TIKTOK_SLIDESHOW_RUNNER_LANE,
   JA_MAIN_TIKTOK_LANE: JA_MAIN_TIKTOK_RUNNER_LANE,
+  assertProductionControls,
   parseArgs,
   runAniccaEnAffirmationInstagramCanary,
   runAniccaEnSlideshowTikTokCanary,
@@ -360,6 +362,53 @@ test("JA main TikTok production command selects the recovered Larry sunset lane"
   assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE.accountId, "@anicca.jp");
   assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE.integrationId, "cmp9sdev5012voh0y58qs45xc");
   assert.equal(JA_MAIN_TIKTOK_RUNNER_LANE.renderer, "larry");
+});
+
+test("JA jp1 production controls keep the Postiz alias separate from its native handle", () => {
+  assert.equal(JA_JP1_TIKTOK_LANE.manifestProfile, "@anicca.jpx");
+  assert.equal(JA_JP1_TIKTOK_LANE.accountId, "@anicca.jp1");
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-jp1-production-controls-"));
+  const target = {
+    integration_id: JA_JP1_TIKTOK_LANE.integrationId,
+    tenant_id: "dais-local",
+    product_id: "anicca",
+    locale: "ja",
+    platform: "tiktok",
+    account: JA_JP1_TIKTOK_LANE.manifestAccount,
+    profile: JA_JP1_TIKTOK_LANE.manifestProfile,
+    provider: "postiz",
+    disabled: false,
+    verified: true,
+    owner: "life-manager",
+    disposition: "target",
+    renderer: "larry",
+    format: "larry",
+    approved_pack: JA_JP1_TIKTOK_LANE.approvedPackName,
+    canary_state: "verified",
+    target_daily_limit: 3,
+    lane_state: "production-armed",
+    production_armed: true,
+  };
+  const hold = {
+    integration_id: "control-test-hold",
+    platform: "x",
+    account: "@control-test-hold",
+    provider: "postiz",
+    provider_disabled: false,
+    owner: "life-manager",
+    disposition: "hold",
+    target_daily_limit: 0,
+    verified: true,
+  };
+  const manifest = createMarketingLaneManifest({
+    tenant_id: "dais-local",
+    integrations: [target],
+    holds: [hold],
+  }, { tenantId: "dais-local", assignments: [target] });
+  fs.mkdirSync(path.join(dataDir, "marketing"), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(path.join(dataDir, "marketing", "lane-manifest.json"), `${JSON.stringify(manifest)}\n`);
+  fs.writeFileSync(path.join(dataDir, "marketing", "publication-effect-fence.json"), JSON.stringify({ state: "closed" }));
+  assert.doesNotThrow(() => assertProductionControls({ dataDir }, JA_JP1_TIKTOK_LANE));
 });
 
 test("EN affirmation alternate self-consistent pack and approval stop before secret/provider", async () => {

@@ -109,6 +109,29 @@ const EN_AFFIRMATION_LANE = Object.freeze({
   workerLabel: "anicca-en-affirmation-instagram-canary",
 });
 
+const EN_AFFIRMATION_TIKTOK_LANE = Object.freeze({
+  ...EN_AFFIRMATION_LANE,
+  name: "EN_AFFIRMATION_TIKTOK",
+  platform: "tiktok",
+  accountId: "@aniccaaffirmation",
+  nativeOwner: "@aniccaaffirmation",
+  accountRef: "account://tiktok/@aniccaaffirmation",
+  integrationRef: "integration://postiz/tiktok/cmp93bkpu01uvoh0yd3aj560g",
+  integrationId: "cmp93bkpu01uvoh0yd3aj560g",
+  title: "read these 5 lines before you get out of bed",
+  packRef: "object://sha256/b6a0445a5b6ca22c5d391b0db3af0486f3168f06b4711bc576386ad77465e282",
+  approvalRef: "object://sha256/f372bae497776e316a50547139b11d173fca80c87ef1c8003e582bd3f25cb427",
+  packEnv: "LM_ANICCA_EN_AFFIRMATION_TIKTOK_PACK_REF",
+  mediaEnv: "LM_ANICCA_EN_AFFIRMATION_TIKTOK_MEDIA_REFS",
+  captionEnv: "LM_ANICCA_EN_AFFIRMATION_TIKTOK_CAPTION_REF",
+  approvalEnv: "LM_ANICCA_EN_AFFIRMATION_TIKTOK_APPROVAL_REF",
+  verificationEnv: "LM_ANICCA_EN_AFFIRMATION_TIKTOK_NATIVE_VERIFICATION_REF",
+  manifestAccount: "anicca-ios-en-affirmation-tiktok",
+  manifestProfile: "@aniccaaffirmation",
+  lane: "anicca-en-affirmation-tiktok",
+  workerLabel: "anicca-en-affirmation-tiktok-canary",
+});
+
 const EN_SLIDESHOW_TIKTOK_LANE = Object.freeze({
   name: "EN_SLIDESHOW_TIKTOK",
   productId: PRODUCT_ID,
@@ -192,6 +215,40 @@ const JA_MAIN_TIKTOK_LANE = Object.freeze({
   workerLabel: "anicca-main-tiktok-canary",
 });
 
+const JA_JP1_TIKTOK_LANE = Object.freeze({
+  ...JA_MAIN_TIKTOK_LANE,
+  name: "JA_JP1_TIKTOK",
+  accountId: "@anicca.jp1",
+  nativeOwner: "@anicca.jp1",
+  accountRef: "account://tiktok/@anicca.jp1",
+  integrationRef: "integration://postiz/tiktok/cmlrv8jq000hun60yy57eaptx",
+  integrationId: "cmlrv8jq000hun60yy57eaptx",
+  manifestAccount: "anicca-ios-ja-jp1-tiktok",
+  manifestProfile: "@anicca.jpx",
+  lane: "anicca-jp1-ja-tiktok",
+  creativeId: "JA-LARRY-V1-JP1-4695b946",
+  title: "メンタルが勝手に安定する\n口癖５選",
+  packRef: "object://sha256/4695b94628f24641c049f62388d207fe5e9ececd5b11f352aee9582d0b30561d",
+  mediaRefs: Object.freeze([
+    "object://sha256/d4f0030358eab3c89e36ea938ccfe1a3e33eadcc42d55f269a456fd72de08a3d",
+    "object://sha256/ac47a0fbc783a5bde9160b85da29b513a7e36daa131c252384510753cb210a8f",
+    "object://sha256/bbd5baa7f4463ac7c2d2e814705e702514e28db5f4760023d4fecdf924f0acd5",
+    "object://sha256/366527448cc3b70dbc15cb42b0fc196f572c65b51730efbd6ea1d0c69ec91dae",
+    "object://sha256/7d1ca4ebf4d2ede902ecb3251eefd8ab36fad8e4408133b9463f4edc56e8fc5f",
+    "object://sha256/0525669aca914138a707ae782bb759b74c833eae90ff9cfefb2635a64e6b5a68",
+  ]),
+  captionRef: "object://sha256/ae3057315163e6cf234eb2b8f21c4fc2643526cb2e22fca7f20ea303aa3a64f0",
+  approvalRef: "object://sha256/74521880c72452b66976e62de182b7864287daf58d37299b692b8f4f13ffb49f",
+  packEnv: "LM_ANICCA_JP1_TIKTOK_LARRY_PACK_REF",
+  mediaEnv: "LM_ANICCA_JP1_TIKTOK_LARRY_MEDIA_REFS",
+  captionEnv: "LM_ANICCA_JP1_TIKTOK_LARRY_CAPTION_REF",
+  approvalEnv: "LM_ANICCA_JP1_TIKTOK_LARRY_APPROVAL_REF",
+  verificationEnv: "LM_ANICCA_JP1_TIKTOK_LARRY_NATIVE_VERIFICATION_REF",
+  approvedPackName: "anicca-ios-larry-ja-v1.pack.json",
+  lastSlideRole: "body",
+  workerLabel: "anicca-jp1-tiktok-canary",
+});
+
 const JA_BUDDHA_TIKTOK_LANE = Object.freeze({
   ...JA_MAIN_TIKTOK_LANE,
   name: "JA_BUDDHA_TIKTOK",
@@ -223,7 +280,7 @@ const JA_BUDDHA_TIKTOK_LANE = Object.freeze({
   workerLabel: "anicca-buddha-tiktok-canary",
 });
 
-const LANES = Object.freeze([JA_LANE, EN_AFFIRMATION_LANE, EN_SLIDESHOW_TIKTOK_LANE, JA_MAIN_TIKTOK_LANE, JA_BUDDHA_TIKTOK_LANE]);
+const LANES = Object.freeze([JA_LANE, EN_AFFIRMATION_LANE, EN_AFFIRMATION_TIKTOK_LANE, EN_SLIDESHOW_TIKTOK_LANE, JA_MAIN_TIKTOK_LANE, JA_JP1_TIKTOK_LANE, JA_BUDDHA_TIKTOK_LANE]);
 
 function selectMarketingNativeCarouselLane(input = {}) {
   const integrationRef = input.instagramIntegrationRef || input.integrationRef;
@@ -509,4 +566,4 @@ function createMarketingNativeCarouselPublicationLoopAdapter(deps = {}) {
   return Object.freeze({ plan: async (input) => [buildMarketingNativeCarouselPublicationJob(input)], execute: (job, extra = {}) => executeMarketingNativeCarouselPublicationJob(job, { ...deps, ...extra }), reconcile: async (effect) => reconcile(effect, services(deps)), verify: verifyMarketingNativeCarouselPublicationReceipt, report: summary });
 }
 
-module.exports = { ADAPTER_ID, LOOP_ID, CAPABILITY, PRODUCT_ID, FORMAT_ID, FORM_ID, ACCOUNT_ID, ACCOUNT_REF, INTEGRATION_REF, PACK_FORMAT_ID, JA_LANE, EN_AFFIRMATION_LANE, EN_SLIDESHOW_TIKTOK_LANE, JA_MAIN_TIKTOK_LANE, JA_BUDDHA_TIKTOK_LANE, assertMarketingCarouselJpeg, buildMarketingNativeCarouselPublicationJob, buildMarketingNativeCarouselJob: buildMarketingNativeCarouselPublicationJob, createMarketingNativeCarouselPublicationLoopAdapter, createMarketingNativeCarouselAdapter: createMarketingNativeCarouselPublicationLoopAdapter, executeMarketingNativeCarouselPublicationJob, executeMarketingNativeCarouselJob: executeMarketingNativeCarouselPublicationJob, normalizeMarketingNativeCarouselJob: normalizeJob, selectMarketingNativeCarouselLane, runPostizCarouselProcess, safeMarketingNativeCarouselSummary: summary, verifyMarketingNativeCarouselPublicationReceipt, verifyMarketingNativeCarouselReceipt: verifyMarketingNativeCarouselPublicationReceipt };
+module.exports = { ADAPTER_ID, LOOP_ID, CAPABILITY, PRODUCT_ID, FORMAT_ID, FORM_ID, ACCOUNT_ID, ACCOUNT_REF, INTEGRATION_REF, PACK_FORMAT_ID, JA_LANE, EN_AFFIRMATION_LANE, EN_AFFIRMATION_TIKTOK_LANE, EN_SLIDESHOW_TIKTOK_LANE, JA_MAIN_TIKTOK_LANE, JA_JP1_TIKTOK_LANE, JA_BUDDHA_TIKTOK_LANE, assertMarketingCarouselJpeg, buildMarketingNativeCarouselPublicationJob, buildMarketingNativeCarouselJob: buildMarketingNativeCarouselPublicationJob, createMarketingNativeCarouselPublicationLoopAdapter, createMarketingNativeCarouselAdapter: createMarketingNativeCarouselPublicationLoopAdapter, executeMarketingNativeCarouselPublicationJob, executeMarketingNativeCarouselJob: executeMarketingNativeCarouselPublicationJob, normalizeMarketingNativeCarouselJob: normalizeJob, selectMarketingNativeCarouselLane, runPostizCarouselProcess, safeMarketingNativeCarouselSummary: summary, verifyMarketingNativeCarouselPublicationReceipt, verifyMarketingNativeCarouselReceipt: verifyMarketingNativeCarouselPublicationReceipt };

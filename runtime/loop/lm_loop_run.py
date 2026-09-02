@@ -119,32 +119,32 @@ def main(argv: list[str] | None = None) -> int:
             except (OSError, ValueError) as error:
                 print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
             scratch = reset_loop_scratch(Path(os.path.expanduser(entry["state_root"])), loop_id)
-            try:
-                return_code = _run_entrypoint(
-                    command,
-                    env={
-                        **os.environ,
-                        "LIFE_MANAGER_RELEASE_ROOT": str(release_root),
-                        "TMPDIR": f"{scratch}/",
-                        "NPM_CONFIG_CACHE": str(scratch / "npm-cache"),
-                    },
-                )
-            finally:
-                # Scratch is never evidence. Every loop owns and removes its temporary
-                # downloads, package caches, and build products when its pass ends.
-                shutil.rmtree(scratch, ignore_errors=True)
-            try:
-                event = build_runtime_event(
-                    loop_id=loop_id, domain=entry["domain"], run_id=run_id,
-                    release_sha=manifest["sha"], provider=entry["provider_route"],
-                    profile_alias=None, effect_class=entry["effect_class"],
-                    succeeded=return_code == 0,
-                    blocker=None if return_code == 0 else f"entrypoint_exit_{return_code}",
-                    evidence_scheme="lm-loop",
-                )
-                append_runtime_event(event_path, event)
-            except (OSError, ValueError) as error:
-                print(f"lm-loop-run: terminal event failed: {error}", file=sys.stderr)
+        try:
+            return_code = _run_entrypoint(
+                command,
+                env={
+                    **os.environ,
+                    "LIFE_MANAGER_RELEASE_ROOT": str(release_root),
+                    "TMPDIR": f"{scratch}/",
+                    "NPM_CONFIG_CACHE": str(scratch / "npm-cache"),
+                },
+            )
+        finally:
+            # Scratch is never evidence. Every loop owns and removes its temporary
+            # downloads, package caches, and build products when its pass ends.
+            shutil.rmtree(scratch, ignore_errors=True)
+        try:
+            event = build_runtime_event(
+                loop_id=loop_id, domain=entry["domain"], run_id=run_id,
+                release_sha=manifest["sha"], provider=entry["provider_route"],
+                profile_alias=None, effect_class=entry["effect_class"],
+                succeeded=return_code == 0,
+                blocker=None if return_code == 0 else f"entrypoint_exit_{return_code}",
+                evidence_scheme="lm-loop",
+            )
+            append_runtime_event(event_path, event)
+        except (OSError, ValueError) as error:
+            print(f"lm-loop-run: terminal event failed: {error}", file=sys.stderr)
     except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
         print(f"lm-loop-run: {error}", file=sys.stderr); return 78
     return return_code

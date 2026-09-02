@@ -3858,6 +3858,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
     )
     verifier_contract = (
         "Write version=1 remote-verifier-result.json under PROJECT_ROOT/evidence/agent-PAID_REMOTE_VERIFY/. "
+        "Once the required official checks are sufficient to decide PASS or BLOCKED, write that result immediately before any optional exploration; do not exhaustively inspect unrelated historical attachments or messages. "
         "On PASS write verified=true with matching feedback, target, desired/observed digest, canonical observed_state, "
         "requirements_sha256, message_sha256, customer_attachment, and fresh verifier evidence, then return runner status=ok. "
         "PASS is forbidden merely because one target state matches. Independently prove the complete required_effect and "
@@ -3875,9 +3876,12 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
         "Never modify paid-remote-intent.json, paid-remote-result.json, paid-answer.json, or any buyer/client surface."
         if verifier else
         "Write project-owned intent/result, authenticated before/after evidence, and a natural Japanese customer_message. "
+        "Once the required official checks are sufficient to decide completion or a blocker, write the durable result immediately before any optional exploration; do not exhaustively inspect unrelated historical attachments or messages. "
         "paid-remote-result.json must include business_outcome with required_effect_satisfied, required_output_satisfied, "
         "remaining_work, and official_receipts. Set both satisfied fields true only after the complete semantic contract has "
-        "official provider readback; otherwise preserve progress and return blocked without manufacturing a completion result. "
+        "official provider readback; otherwise preserve progress, write status=blocked and a nonempty blocker in paid-remote-result.json, "
+        "and make every wait receipt include either a nonempty readback or both readback_source and exact_readback=true, "
+        "and return blocked without manufacturing a completion result. "
         "do not submit to Coconala or use formal delivery."
     )
     correction = ""
