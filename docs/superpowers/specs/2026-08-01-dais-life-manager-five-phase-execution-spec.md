@@ -24,6 +24,9 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 
 ### 0.0 current cursor — LancersをGeneral Agentの最初の実環境として閉じる
 
+実装command、変更file/line、10分Eliza proof、launchd failback、banked、次marketplaceまでのatomic checklistは
+`docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`をこのSeq 35Aの実行plan正本とする。
+
 DaisはLancers応募laneを先に直すよう明示的に順序変更した。Alpaca trackは削除せず、Lancersの現在atomが閉じるまで
 pauseして保持する。現在activeな一件はAtomic program ledger Seq 35A `ELZ-L13A` repeated General Agent application wakeである。
 Seq 35 `ELZ-L13`のbuyer待ちは同じcommerce checkpointとして保持するが、外部buyerの返信を待つ間もfresh applicationを止めない。
