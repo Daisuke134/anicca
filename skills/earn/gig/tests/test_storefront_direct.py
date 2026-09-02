@@ -14,6 +14,7 @@ from types import SimpleNamespace
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 import storefront_direct as direct  # noqa: E402
+import listing_inventory  # noqa: E402
 import coconala_reply_browser as reply_browser  # noqa: E402
 import reply_transcript  # noqa: E402
 
@@ -639,6 +640,20 @@ def test_service_contract_binds_official_scope_price_and_dedupes(tmp_path):
     assert direct._append_contract_once(path, contract) is True
     assert direct._append_contract_once(path, contract) is False
     assert len(path.read_text().splitlines()) == 1
+
+
+def test_service_contract_accepts_current_paused_dashboard_state():
+    cards = listing_inventory.parse_list_page(
+        "出品サービス一覧\n受付休止中\n0\n5,000\n円\nサービス名\n編集する 公開設定 シェア\n",
+        ["91000001"],
+    )
+    text = "サービス内容\nscope\n購入にあたってのお願い"
+    contract = direct._service_contract({
+        **cards[0], "public_url": "https://coconala.com/services/91000001",
+        "category": "IT相談/プログラミング", "public_text": text,
+        "public_content_sha256": direct.hashlib.sha256(text.encode()).hexdigest(),
+    }, "2026-09-02T12:29:31+00:00")
+    assert contract["state"] == "受付休止中"
 
 
 def test_service_contract_requires_exact_coconala_heading_lines():

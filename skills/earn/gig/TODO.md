@@ -179,12 +179,14 @@ completion claim is nevertheless false until the two failing lanes below pass na
   contract; only terminal `work/` and explicitly authorized byte-identical artifact duplicates are
   deleted.
 
-  Current disk readback is 18 GiB free. The dominant retained roots are `~/loops/releases` at about
-  7.26 GiB and `~/gig/projects` at about 4.63 GiB, not video. Nine immutable release directories
-  remain; six full releases are about 1.19 GiB each because different installed owners still pin
-  `f5b3f345`, `58a71295`, `5a9c95fa`, `e9d59c32`, `29fb7681`, or `8f956147`. Central cleanup must
-  preserve every installed/open release, so convergence is the disk fix. The live gig tree still
-  has zero MP4/MOV/M4V/WebM files; the recoverable Trash video bundle remains about 1.1 GiB.
+  Current disk readback is about 18.94 GiB free. Fourteen immutable release directories remain;
+  thirteen are protected by a loaded plist, open process, or `current`, and central cleanup
+  naturally removed unreferenced release `20260902T213719-9b1117d9` while this cursor was running.
+  This confirms why lane-local cleanup must not remove shared immutable code and that central GC is
+  active. The live `~/gig` tree still contains zero MP4/MOV/M4V/WebM files. Desktop, Downloads, and
+  recoverable Trash contain 21 videos totaling 3,474,931,225 bytes; the largest are MoneyPrinter
+  raw recordings, buyer source `IMG_0880.mov`, and Trash-only 216 MiB `athena-v4-final.mp4`.
+  Permanent deletion remains a separate irreversible user action, not automatic Coconala cleanup.
 
   Remaining C02 atoms, in order:
   1. Preserve the implemented scoped reconciler on `c259cc6e`: it already moved the three
@@ -202,6 +204,34 @@ completion claim is nevertheless false until the two failing lanes below pass na
      `official_service_contract_invalid`; and restore successful Telegram transport without
      changing a business result. Then require every affected lane `last exit code = 0`, terminal
      `status=pass`, `failed=0`, and replay effect `0`.
+     Storefront's exact rejected field is now known: all 14 current dashboard cards expose the
+     official state `受付休止中`, while `listing_inventory.py` recognized only `公開中`, `非公開`,
+     and `下書き`, leaving every contract state null. Branch
+     `fix/coconala-storefront-official-state-20260902` adds the current `受付中` / `受付休止中`
+     vocabulary to the list parser and Storefront contract. The three focused contract tests pass;
+     the full Storefront file remains 32 pass / 2 fail, and both failures reproduce unchanged on
+     clean base `4529a7e2a`, so they are not regressions from this fix. This atom remains open until
+     pushed main runs naturally and reads all 14 official contracts without
+     `official_service_contract_invalid`, then records the normal effect/readback or replay-zero.
+     Main release `20260902T214511-6a9a93e6` then read all 14 services with non-null
+     `受付休止中` state, proving that correction in production. Its next boundary failed
+     `own_candidate_readback_invalid`: the gallery page currently has the expected six unique
+     service images, but each retry navigated again before lazy image URLs settled. The focused
+     follow-up keeps the same official page open and waits at most five seconds for the expected
+     unique image count. Natural pass `storefront-direct-1788353864455411000-25472` then read all
+     14 official services with non-null `受付休止中` state, read the gallery's six unique published
+     image IDs, safely declined a generated package because the slot was not absent, recorded
+     effect/readback `0/0`, and released its isolated lease. Storefront business readback is
+     therefore restored. At that point its Telegram report still failed `DatabaseError`; successful
+     transport and the resulting terminal owner exit zero remain part of this open atom.
+     SQLite `.recover` rebuilt the malformed 80 MB outbox into a validated 19,284-row candidate:
+     `PRAGMA quick_check=ok`, exact schema/indexes, 17,333 sent rows, and zero sent rows missing a
+     message ID. With zero open database handles, production was atomically replaced at 22:08 JST;
+     the original inode remains recoverable as
+     `~/gig/telegram-outbox.sqlite3.corrupt-20260902T220811`. Reply and Apply then appended new rows
+     while `quick_check` stayed `ok`. Storefront's exact no-op event reconciled to provider message
+     `48628`, and replay returned `deduped` without another send. A fresh natural Apply receipt and
+     fresh Storefront terminal owner exit zero are still required before transport is closed.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
   6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
@@ -231,10 +261,12 @@ completion claim is nevertheless false until the two failing lanes below pass na
      file-owner path for `18218780`; `:4095-4112` and `:4411-4450` validate genuine remote-owner
      results. Reuse those paths, produce the requested JPG, and resume `18223833` only after the
      estimate's newer official event. No room-name branch is allowed.
-  6. Storefront contract — `skills/earn/gig/scripts/storefront_direct.py:3226-3246` contains every
-     rejected field and `:5505-5536` collects the 14 official sources. Persist the exact failed
-     field in the receipt, correct the collector/normalizer for that field, and require a 14-service
-     contract readback plus replay effect zero.
+  6. Storefront contract — `skills/earn/gig/scripts/listing_inventory.py:84-91` now parses the
+     observed `受付中` / `受付休止中` states, and
+     `skills/earn/gig/scripts/storefront_direct.py:3226-3248` accepts them in the official service
+     contract. `skills/earn/gig/tests/test_storefront_direct.py` binds a real-shaped paused dashboard
+     card through both boundaries. Require the next natural main-derived wake to read 14 non-null
+     official states and finish with exact effect/readback or replay effect zero before closing it.
   7. Telegram corruption — `~/gig/telegram-outbox.sqlite3` fails read-only `PRAGMA quick_check` with
      `database disk image is malformed`. Recover into a new database using SQLite `.recover`,
      validate `skills/earn/gig/scripts/telegram_outbox.py:18-38` schema and all surviving
