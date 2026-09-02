@@ -9,7 +9,7 @@
 - [x] **A1 — failback source:** `config/loop-registry.json`へ最後に実績のある60秒rowを復元し、`retired_labels`から同labelを除いた。既存dispatchの欠落`--exhaustive`も復元した。
 - [x] **A2 — focused validation:** registry JSON parse PASS、既存`runtime.loop.tests.test_entry_dispatch` 15/15 PASS、`git diff --check` PASS。新test/frameworkは追加していない。
 - [x] **A3 — branch staging release:** pushed branch `db82bc6ca`から隔離release `20260902T194904-db82bc6c`を作成し、有限runを実行した。以後は過剰なfull buildを避け、worktreeの既存Pythonから直接testする。`gui/$UID`操作0。
-- [ ] **A4 — live apply PASS（active）:** 案件5595764は公式Proposal `27880270`、ledger sequence 57、Telegram ID 48547まで成立。ただしreconcileがtitleを`案件5595764`へ劣化し金額・納期を落とした。branch `e61dae788`でclick後の公式履歴readbackとtitle/98,000円/2026-09-23/report保持を修正済み。次のfresh applicationで完全な案件別ACKをlive確認する。
+- [ ] **A4 — live apply PASS（active）:** 案件5595764は公式Proposal `27880270`、ledger sequence 57、Telegram ID 48547まで成立。ただしreconcileがtitleを`案件5595764`へ劣化し金額・納期を落とした。branch `e61dae788`でclick後の公式履歴readbackとtitle/98,000円/2026-09-23/report保持を修正済み。現在の自然wakeは旧release `8f956147…`から動くPython batchで、修正branchでもEliza General Agentでもない。最新wakeは公開40/fresh18/候補0のため不合格。次はworktree修正から新しい実応募を一件行い、title・案件ID・提案額・納期・Proposal IDのTelegram ACKと、fresh全件の個別decision ACKをlive確認する。そこまでA5以降へ進まない。
 - [x] **A5 — official receipt/replay-zero:** 5595764の公式Proposal ID `27880270`を取得し、pending reconcileは同じ応募を再送せず公式履歴だけを読み、ledger sequence 57へ一回だけ記録した。
 - [ ] **A6 — profile/assets:** Lunaがlive profile画面でresume、職務経歴、portfolio、avatar、自己紹介、本人確認、振込設定を確認し、事実に基づく不足だけを既存private assetから補う。
 - [ ] **A7 — negotiation:** buyer返信を案件別に読み、返信・見積・条件交渉を行い、公式ContractReceiptを得る。

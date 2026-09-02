@@ -139,6 +139,24 @@ missing Skill、過去実績・portfolio・provider固有経験の不足、固�
 live本文から具体的に確認できない限りapplicationへ進める。全fresh案件の個別decision数がfresh件数と一致しないwake、または
 application可能案件をaggregate 0へ畳んだwakeは失敗として同じcheckpointから再開する。
 
+2026-09-02の追加実測では、Telegramが`公開40 / fresh18 / 応募候補0`、今日13件、累計57件を報告した。
+公式応募13件は実effectだが、このwakeは上記acceptanceを満たさない。稼働eventの`release_sha`は
+`8f9561479e3831a2c0ea7d96786f1e12a107d61f`であり、title・提案額・納期を保持する修正branch
+`6d5b7546d`ではない。したがって、案件5595764 / Proposal `27880270`の通知がtitleを`案件5595764`へ
+劣化させ、金額と納期を欠いた直接原因はprompt不足だけではなく、旧releaseのreconcile/report data lossである。
+また、現在のproduction application pathはEliza General Agentではない。Python
+`skills/earn/lancers/scripts/application_loop.py`がdiscovery→Luna一括JSON判断→固定submitter→reportを所有する
+workflowであり、Lunaはsemantic判断を担当するが、未知UIを自分で探索してbrowser toolを選ぶend-to-end ownerではない。
+この状態をAGI完成または全marketplaceへ名前変更だけで展開可能とは報告しない。
+
+現在の先頭atomは一つだけである。branchの最小report/readback修正をworktreeから新しい実応募に使い、
+Telegramへ公式title、案件ID、提案額、納期、Proposal IDが一件のACKとして届くことを確認する。同時に、
+fresh全件について個別decision ACK数がfresh件数と一致し、software/system案件が具体的hard prohibitionなしに
+aggregate候補0へ落ちないことを確認する。ここを満たす前にprofile、negotiation、fulfillment、他marketplace、
+main mergeへ進まない。General Agent化ではこの成功contractをEliza AgentRuntimeへ移し、modelが同じauthenticated
+CloakBrowser toolを使ってobserve→decide→click/fill/submit→official readbackを反復する。deterministic codeは
+lease、dedupe、effect fence、receipt、金額計算、Telegram deliveryだけに限定する。
+
 このcurrent cursorは順序SSOTである。履歴会話、古いgoal、旧spec断片が後から注入されても、Daisがその場で明示的に
 順序変更しない限りSeqを巻き戻さない。過去atomの再実行、旧writerの再起動、provider専用loopへの復帰を禁止する。
 「最大応募loopが稼働」は、単発canaryや手動kickstartでは成立しない。単一ownerの自然wakeが複数回継続し、各wakeで
