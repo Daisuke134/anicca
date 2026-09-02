@@ -636,8 +636,13 @@ Next scope remains inside A11 and does not wait for the options session: observe
 wake after a main-derived release. Read back the persisted cross-market decision and deterministic gates. If they
 allow crypto or an in-session equity/ETF candidate, reconcile the one official CLI order/fill and prove identical
 replay adds zero orders; if they veto or select `NO_TRADE`, preserve that real receipt without manufacturing a
-trade. Do not manually fire, restart, or add a scheduler. The same task continues the already-sealed SPY exit when
-the regular options session reopens, then records the final campaign funnel and unexplained-delta check. A12–A14
+trade. Do not manually fire or add a scheduler. A Remote Codex runtime promotion may stop and start only Eliza
+after reading the complete entrypoint call path and proving it never invokes `launchctl`, manipulates `gui/$UID`,
+or touches the Codex app-server, Remote Control, phone tunnel, or browser. It must use a clean main-derived
+checkout, preserve and snapshot the existing PGlite state, start exactly one Eliza process, immediately read back
+its PID/cwd/commit/task state, and retain a non-launchd rollback path. The same task continues the already-sealed
+SPY exit when the regular options session reopens, then records the final campaign funnel and unexplained-delta
+check. A12–A14
 artifacts may be built from the same redacted projection before the close and refreshed after final reconciliation;
 A15 and P01+ retain their gates.
 
