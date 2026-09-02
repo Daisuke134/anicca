@@ -22,7 +22,26 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 3. `2026-07-30-outbound-apply-engine-design.md`の各pack内部順序
 4. その他の全体・履歴仕様
 
-### 0.0 current cursor — LancersをGeneral Agentの最初の実環境として閉じる
+### 0.0 current cursor — Lancers収益を止めずGeneral Agentへ収束する
+
+旧`ai.anicca.lancers-revenue-application` application writerの退役は完了済みであり、再調査TODOへ戻さない。
+`lancers-revenue-browser`は認証済みCloakBrowser `:9227`のhost owner、`hf-gig-apply-direct`はCoconala ownerであり、
+どちらも旧Lancers application writerではない。2026-09-02のEliza bounded proofでは、durable money taskの登録・即時dispatchと
+Luna `gpt-5.6-luna`起動までは成立したが、1 wakeが60秒を超えてもbrowser actionへ到達せず、公式Proposal ID増分0だった。
+手動`tmux eliza-lancers`は実証用の一時ownerであり本番architectureではないため停止済み。孤児化したLuna subprocessも停止済み。
+したがってEliza application activationは不合格とし、収益回復の現在atomを最後に公式応募実績のあるimmutable launchd application
+releaseへのsingle-writer failbackとする。Remoteから`launchctl ... gui/$UID`は実行しない。source/registry/releaseを整え、正規ownerの
+自然反映をread-only観測する。
+
+failback後もLancers専用semantic brainを増やさない。launchdはcadenceと有限runのhost supervisorだけを持ち、案件判断、提案生成、
+履行可能性、skip理由は既存shared agent runner上のLunaが担う。Coconalaで実証済みの案件別Telegram ACK、official readback、dedupe、
+effect fence、assetsを共通componentとして直接再利用する。固定selector/click順をGeneral Agentの最終architectureにはしない。
+
+現在の順序SSOTは`docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`である。現在activeはA1 failback source復元。
+PASSは自然wakeでfresh案件ごとのapply/skip個別報告が出て、新しい公式Proposal IDが増え、同じ案件の重複送信0になること。
+その後profile/resume/assets、reply/negotiation、contract、fulfillment、delivery、payment、payout、bank matchを同じreceipt chainで閉じる。
+
+### 0.0-history — Eliza activationまでの履歴（現在TODOではない）
 
 実装command、変更file/line、10分Eliza proof、launchd failback、banked、次marketplaceまでのatomic checklistは
 `docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`をこのSeq 35Aの実行plan正本とする。
