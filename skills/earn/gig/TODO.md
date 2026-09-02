@@ -220,8 +220,16 @@ completion claim is nevertheless false until the two failing lanes below pass na
      14 official services with non-null `受付休止中` state, read the gallery's six unique published
      image IDs, safely declined a generated package because the slot was not absent, recorded
      effect/readback `0/0`, and released its isolated lease. Storefront business readback is
-     therefore restored. Its Telegram report still fails `DatabaseError`; successful transport and
-     the resulting terminal owner exit zero remain part of this open atom.
+     therefore restored. At that point its Telegram report still failed `DatabaseError`; successful
+     transport and the resulting terminal owner exit zero remain part of this open atom.
+     SQLite `.recover` rebuilt the malformed 80 MB outbox into a validated 19,284-row candidate:
+     `PRAGMA quick_check=ok`, exact schema/indexes, 17,333 sent rows, and zero sent rows missing a
+     message ID. With zero open database handles, production was atomically replaced at 22:08 JST;
+     the original inode remains recoverable as
+     `~/gig/telegram-outbox.sqlite3.corrupt-20260902T220811`. Reply and Apply then appended new rows
+     while `quick_check` stayed `ok`. Storefront's exact no-op event reconciled to provider message
+     `48628`, and replay returned `deduped` without another send. A fresh natural Apply receipt and
+     fresh Storefront terminal owner exit zero are still required before transport is closed.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
   6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
