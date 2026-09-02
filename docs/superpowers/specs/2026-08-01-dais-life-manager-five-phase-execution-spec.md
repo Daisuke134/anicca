@@ -88,9 +88,10 @@ agent runner、marketplace application transaction、contracts/ledger/outboxの�
 `skills/_shared/marketplace-core/scripts/feasibility_policy.py`へ移し、Coconala/Upworkの既存entrypointとLancersが同じ正本を読む形で完了した。
 provider固有discovery/submit/readback、receipt、Telegram、schedulerは変更していない。Coconala policy focused checkは3/3 PASS。現在activeはStep 4、
 共有済み経路を使うLancers Apply ownerをsingle writerで起動する一件である。
-Step 4のread-only owner監査ではinstalled plistは`StartInterval=60`で存在するが、GUI domainのserviceはabsentでApply owner 0だった。
-Eliza Lancers runtimeとtmuxも0で二重writerはない。このRemoteからのGUI-domain load/kickstartは禁止経路のため実行せず、Step 4は正規の非Remote
-ownerによるexact 1 load待ちとして未完を維持する。plist fileの存在だけを24/7稼働と報告しない。
+Step 4はstaged SHA `d93386bd…`を対象限定applyし、application owner exact 1、`StartInterval=60`、自然wake `runs=2`、直前exit 0まで進んだ。
+UID、Directory Services、Aqua manager UID/PID、GUI domain readbackのpreflightは全PASSし、141/153とRemote切断は0。Eliza Lancers runtimeとtmuxも0で
+二重writerはない。ただし最初の自然wakeは39件を判断後、案件5595850のLuna出力が過去年`1014-10-14`となりvalidatorが送信前に拒否し、fresh応募0件だった。
+commit `6ffa75269`でdeliver_dateをtick翌日〜60日と正本promptへ明示した。これをloaded releaseへ反映し、有限wakeと公式Proposalを得るまでStep 4は未完とする。
 Step 4 release preflightでは、既存exact-SHA Lancers installerがStep 3のshared policyをallowlistへ含めない欠落を修復した。
 isolated reconcile/normal installer testは2/2 PASSし、production external effect 0。残るStep 4はpushed commitのproduction installとexact 1 loadである。
 旧1件送信・daily quota・partial planner成功を期待したfocused testを現在の最大応募contractへ合わせ、application＋installerは26/26 PASS。
