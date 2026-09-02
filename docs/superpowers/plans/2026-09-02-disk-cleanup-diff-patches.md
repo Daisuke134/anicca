@@ -15,7 +15,7 @@ Keep every revenue loop running while each writer bounds its own scratch/cache/l
 
 | Patch | State | Exact surface |
 |---|---|---|
-| P0 runtime | source done; production unfinished | `runtime/loop/lm_loop.py:443-451`, production plist/readback |
+| P0 runtime | cleanup done; reconciler self-rollout unfinished | `bin/reconcile-agent-runner-release.sh`, `runtime/loop/lm_loop.py`, production argv/SHA readback |
 | P1 zero waste | unfinished | host inventory + exact delete receipt |
 | P2 writer retention | common runtime done; census unfinished | `runtime/loop/lm_loop_run.py:45-51,121-135`, `runtime/loop/runtime_event.py:31-84,200-220` |
 | P3 release GC | unfinished | `runtime/loop/central_cleanup.py:30-86`, `runtime/loop/loop_cleanup.py:92-135` |
@@ -26,6 +26,14 @@ Keep every revenue loop running while each writer bounds its own scratch/cache/l
 
 ## P0 — Runtime normalization
 
+### Current checkbox state
+
+- [x] Source fix merged to main.
+- [x] Cleanup loaded from `663f1af0...`; natural run PASS with errors 0 and protected deletions 0.
+- [x] Compatibility alias has zero references and is removed.
+- [ ] Release-reconciler itself is loaded from a main-derived immutable release.
+- [ ] P0 closes only after that loaded argv/SHA readback.
+
 Already merged source patch, `runtime/loop/lm_loop.py:443`:
 
 ```diff
@@ -35,7 +43,7 @@ Already merged source patch, `runtime/loop/lm_loop.py:443`:
              and row["provider_route"] == route
 ```
 
-Remaining operational patch: the non-Remote owner loads reconciler and cleanup from the same main-derived immutable release. Read-only `launchctl print gui/$UID/<label>` must show the new argv and `LIFE_MANAGER_RELEASE_SHA`. After a natural wake passes with `errors=0` and `protected_deletions=0`, remove the compatibility alias. Acceptance: old argv 0, alias 0, natural wake PASS, old ChatGPT staged generation 0.
+Remaining operational patch: the non-Remote owner loads the release-reconciler itself from a main-derived immutable release. Cleanup rollout, its natural PASS, and compatibility-alias removal are complete. Read-only `launchctl print gui/$UID/ai.anicca.life-manager-release-reconciler` must show the main-derived argv and `LIFE_MANAGER_RELEASE_SHA`. Acceptance: reconciler old argv 0; cleanup old argv 0; alias 0; natural cleanup wake PASS.
 
 ## P1 — Zero-waste baseline
 

@@ -60,7 +60,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 | 1 | 完了 | Codex connectionをfresh sessionで復旧 | backend `CONNECTION_OK`、app-server/socket存在 |
 | 2 | 完了 | 緊急manual cleanupと即時再発原因を修正 | 回収bytes、loop継続、errors 0、protected deletion 0 |
 | 3-1〜3-4 | 完了 | host census、終了worktree、重複clone、OpenClaw重複物を整理 | remote SHA、open/dirty保護、before/after bytes |
-| 3-5 | **現在active** | applications、Library、`/private/var/folders`、toolchain、user dataを分類し、Sparkle retention fixをproduction反映 | 新release pin、Updater terminal、新ChatGPT version、1.9 GiB回収、次wake errors 0 |
+| 3-5 | **現在active（cleanup側完了、reconciler自身のみ未完）** | applications、Library、`/private/var/folders`、toolchain、user dataを分類し、Sparkle retention fixをproduction反映 | cleanup=`663f1af0...`、自然wake PASS、alias 0。reconcilerのmain由来release readbackが残る |
 | 3-6 | 未完 | Codex/Claude sessionを削除せず、owner-side log/archive rotationを接続 | active session loss 0、上限超過後に元の上限へ戻る |
 | 3-7 | 未完 | loaded/open releaseが自然idleになった後、central GCで旧releaseを回収 | loaded/open/pinned保護、未参照generationだけ削除 |
 | 3-8 | 未完 | Hermesを正式retireし、必要機能をmainへ移す | caller 0、state/source移管、rollback receipt |
@@ -79,7 +79,7 @@ Exact file/line/unified-diff/run/readback SSOT →
 
 | Patch | 対応TODO | 変更対象 | このpatchが消す問題 | 完了証拠 |
 |---|---|---|---|---|
-| P0 Runtime正規化 | 3-5d、3-5e | `bin/reconcile-agent-runner-release.sh`、`runtime/loop/lm_loop.py`、production plist | unloaded release-reconciler、旧argv、一時compatibility alias、古いChatGPT staged generation | reconcilerとcleanupのloaded SHA=`5a3f94924...`、alias 0、自然wake PASS、新ChatGPT version |
+| P0 Runtime正規化 | 3-5d、3-5e | `bin/reconcile-agent-runner-release.sh`、`runtime/loop/lm_loop.py`、production plist | unloaded release-reconciler、旧argv、一時compatibility alias、古いChatGPT staged generation | cleanup=`663f1af0...`、alias 0、自然wake PASS。reconciler自身もmain由来releaseへ移る |
 | P1 Zero-waste baseline | 3-5最終 | host inventory receipt、exact delete manifest | 終了worktree、重複clone、partial release/build、未使用app/cache/user-data duplicate | 全local writable volumeを再計測、100 MiB以上のunclassified root 0、復元不能削除0、normal free 30 GiB以上 |
 | P2 Writer-owned retention | 3-6 | `runtime/loop/lm_loop_run.py`、`runtime/loop/loop_cleanup.py`、各producerのlog/WAL/cache設定 | Codex/Claude/OpenClaw/browser/buildのsession、scratch、log、WALが無上限に増える状態 | 全managed writerにowner、quota、retention、finalizer、active leaseがあり、上限超過後に同じ上限へ戻る。active session loss 0 |
 | P3 Release GC完結 | 3-7 | `runtime/loop/central_cleanup.py`、`runtime/loop/tests/test_loop_cleanup.py` | loaded release削除、partial release放置、release世代の無上限増加 | current、loaded/open、rollback 1世代だけ保存、symlink targetを実pathで保護、partial/unused generation 0、replay回収0 |
@@ -112,11 +112,26 @@ entrypointを読み、`launchctl ... gui/$UID`へ到達する場合だけその�
 - [x] 3-5a: applications、Library、`/private/var/folders`、toolchain、user dataのGiB級ownerを分類する。
 - [x] 3-5b: active Sparkle Updaterを保護し、terminal後のexact staged generationを回収するsource fixをmainへ統合する。
 - [x] 3-5c: host-wide build lockとmain SHAをreadbackし、同SHAからimmutable releaseを一世代作成して内容を検証する。
-- [ ] 3-5d: 正規GUI/deployment ownerがproduction pinをそのreleaseへ反映し、loaded argvとrelease SHAをreadbackする。
+- [ ] 3-5d: [x] cleanupをmain由来release `663f1af0...`へ反映してloaded argv/SHAをreadback、[ ] release-reconciler自身をmain由来releaseへ反映してreadbackする。
 - [ ] 3-5e: [x] Updater terminal、[x] Sparkle `Installation`約1.9 GiB回収、[ ] 新ChatGPT version、
   [x] 次wakeの`errors=0`、`protected_deletions=0`を実測する。
 - [ ] 3-5f: P1 Zero-waste baselineを実行し、100 MiB以上のunclassified root、終了worktree、重複clone、
   partial release/build、復元可能な期限切れcacheを0にし、normal free 30 GiB以上を読み戻す。
+
+#### 現在の実行チェックリスト（順序固定）
+
+- [ ] P0 Runtime正規化
+  - [x] source fixをmainへ統合
+  - [x] cleanupを`663f1af0...`へ自然移管し、自然wake PASS・errors 0・protected deletion 0を実測
+  - [x] compatibility aliasを削除し、参照0・alias 0を実測
+  - [ ] release-reconciler自身をmain由来immutable releaseへ移してloaded argv/SHAをreadback
+- [ ] P1 Zero-waste baseline — 現在free 9.1 GiB。全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上が残る
+- [ ] P2 Writer-owned retention — common scratch/JSONL rotationは実装済み。全managed writerのowner/quota/retention/finalizer/leaseが残る
+- [ ] P3 Release GC — actual loaded argvの実path保護とabandoned partial release回収が残る
+- [ ] P4 Legacy廃止 — Hermes/OpenClaw/重複repo・workspaceのcaller/state監査と安全な移管・廃止が残る
+- [ ] P5 Gig terminal lifecycle — 納品・再提出baseを守るproject ledger/finalizerが残る
+- [ ] P6 Capacity firewall — release buildを含む全producerのclaim/quota/heartbeatと、loopを止めない縮退動作が残る
+- [ ] P7 Forever verification — 24時間と続く7日間のproduction receiptが残る
 
 3-5cの実測releaseは`~/loops/releases/20260902T162519-eb068f0c`、exact SHA
 `eb068f0c8363381f380867ef1a94df378cd5234e`、provenance=`ancestor-of-origin-main`、size `1,251,424 KiB`である。
