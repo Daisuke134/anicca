@@ -157,8 +157,11 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `anicca-peer-revive/agent-api.py`、Cloak Playwright driverのlive processがあるためroot単位で削除しない。
 
      `workspace/runs`の旧59 runは各々`reel-text.mp4`と`reel-final.mp4`を持ち、SHA-256で59/59組が
-     byte-identicalだった。全`reel-final.mp4`を保持し、重複`reel-text.mp4`だけ423,614,455 bytesを回収、
-     実freeは+417,644 KiB、final 59/text 0となった。`zenn-articles/node_modules`はpackage-lock保持、
+     byte-identicalだった。まず全`reel-final.mp4`を保持して重複`reel-text.mp4`だけ423,614,455 bytesを回収、
+     実freeは+417,644 KiB、final 59/text 0となった。続くworkspace-wide hash照合で59/59本のfinalも
+     `reelclaw-assets/videos`内の正本23本のいずれかとbyte-identicalかつopen参照0と証明したため、run側copyだけ
+     423,614,455 bytesを追加回収した。実freeは+404,024 KiB、runsは約404 MiB→0、正本assets 23本、
+     run directory/metadataはすべて保持した。`zenn-articles/node_modules`はpackage-lock保持、
      open FD/process参照0、現行jobがgit/curlだけであることを確認して142,516 KiBを回収し、実freeは
      `2,546,724 → 2,693,808 KiB`（+147,084 KiB）。workspace直下の`node_modules`はlive
      `anicca-ask`が独自依存rootを持つことまで確認したが、他ownerのon-demand利用を未分類なので保持する。
