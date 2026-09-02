@@ -1014,6 +1014,23 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Low free space is currently dominated by encrypted macOS swap pressure, not visible /private/var/vm files. Do not delete swap or stop/signal live browser/agent processes; require owner lifecycle and natural OS reclamation readback."
+    },
+    {
+      "batch": "p1d-google-chrome-profile-cache-audit-41",
+      "path": "~/Library/Application Support/Google/Chrome",
+      "measured_kib": 366512,
+      "default_profile_kib": 205860,
+      "credential_and_history_files": ["Default/Login Data", "Default/Cookies", "Default/History", "Default/Web Data"],
+      "active_processes_final": 0,
+      "open_handle_rows_final": 0,
+      "regenerable_subtrees_kib": 157604,
+      "regenerable_subtrees": ["optimization_guide_model_store", "WasmTtsEngine", "Safe Browsing", "GraphiteDawnCache", "OnDeviceHeadSuggestModel", "extensions_crx_cache", "component_crx_cache", "Crashpad", "CertificateRevocation", "ActorSafetyLists", "ZxcvbnData"],
+      "decision": "preserve_profile_and_defer_chrome_cache_rotation",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "No Chrome process/open handle now, but profile contains credentials/history and cache deletion would trigger redownload. Keep root and auth state; owner-side retention may remove only proven cache after a Chrome launch/readback plan."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
