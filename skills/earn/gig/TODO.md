@@ -5147,6 +5147,17 @@ queue is added. Each owner must also progress independent work concurrently insi
      account question or article work, compile the private credential SSOT, installed publication
      skills and existing account receipts; an existing seller-owned account must be used rather
      than asked for again.
+   - `18223833` (`こころ支援 NPO法人まくとぅー`): the purchased budget-plan offer had no
+     buyer-authored talkroom message, so Paid repeatedly selected it with no requirements and no
+     project worker. Release `38085c31` now binds the authenticated purchased title as the initial
+     requirements key, reads the full proposal/DM context (7 messages and 5 captured spreadsheets),
+     and observes the active room as `取引中` instead of mistaking the future `評価完了` step label
+     for completion. Its first production worker reached semantic decision but exposed an exact
+     bootstrap digest mismatch; release `d3a58122` uses the existing canonical row/list digests and
+     repairs only its own bootstrap sidecar. Deploy after the in-flight Paid owner exits, then require
+     a natural worker result plus exact-room buyer-visible readback. The same wake also proved a
+     separate throughput defect: one 180-second browser preflight held the shared lock and delayed
+     every later project, so restore safe per-room preflight ownership after this room closes.
 
    **General Paid Kernel v2 — Symphony-style work orchestration.** Do not install the OpenAI
    Symphony Elixir preview as a second production controller beside `lm-loop`; that would create
