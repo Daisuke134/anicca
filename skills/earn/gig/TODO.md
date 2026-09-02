@@ -87,6 +87,11 @@ completion claim is nevertheless false until the two failing lanes below pass na
   latest janitor scanned 35 projects with errors zero, while only the central owner may delete an
   unreferenced release after every installed lane has converged away from it. Four lanes deleting
   shared releases independently would race with live code.
+  The old-release Paid parent then ended naturally with `observed=9`, `effect=0`, `readback=2`,
+  `failed=5`, and `pending=2`; no uncertain external effect was repeated. Two failures were
+  read-only CDP tab opens timing out at 25 seconds. The shared collector now retries that same
+  transient open once with a fresh owned tab, just as it already retries the known navigation
+  timeout; focused Paid regressions pass 71/71.
   Remaining C02 atoms, in order:
   1. Merge and naturally install the canonical-row normalization together with the already merged
      parent-snapshot reuse and cleanup fixes; do not mutate the active immutable release.
