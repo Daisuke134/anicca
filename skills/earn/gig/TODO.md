@@ -5587,6 +5587,17 @@ queue is added. Each owner must also progress independent work concurrently insi
    four Coconala owners converge naturally from that public immutable release. Do not stop the
    currently running old-cutter attempt and do not operate the macOS GUI launch domain.
 
+   PR `#4060` merged this repair to public main as `33a1acefc`. A GUI-domain-free source cut then
+   activated immutable full release `20260903T000125-33a1acef`; the next natural cut used that
+   repaired cutter and activated newer public-main release `20260903T000905-30b6bede`. Its live
+   process tree proved exact-lockfile donor cloning for root, Agentmail and the Life Manager app
+   with no `npm ci`. Apply, Reply, Paid and Storefront are all independently alive at the same time,
+   so there is no cross-lane execution queue, but they remain pinned to four older releases while
+   the natural reconciler is still migrating loaded owners. Free space is about 7.3 GiB. Keep this
+   atom open until that natural migration terminates, central GC removes only newly unpinned
+   releases, Reply action `529` has one official buyer-visible effect and readback, and replay is
+   zero. Ryu room `18211957` remains excluded from all loop effects.
+
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
    budget-document request but still
