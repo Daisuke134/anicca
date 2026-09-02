@@ -48,9 +48,8 @@ def _telegram_client():
     environment = dict(os.environ)
     state_env = Path(os.environ.get(
         "LIFE_MANAGER_ENV_FILE", "~/.local/state/life-manager/.env")).expanduser()
-    for path in (state_env, Path("~/.openclaw/.env").expanduser()):
-        for key, value in _env_file(path).items():
-            environment.setdefault(key, value)
+    for key, value in _env_file(state_env).items():
+        environment.setdefault(key, value)
     target = (environment.get("TELEGRAM_ALERT_CHAT_ID")
               or environment.get("LM_TELEGRAM_ALERT_CHAT_ID")
               or environment.get("TELEGRAM_CHAT_ID"))
