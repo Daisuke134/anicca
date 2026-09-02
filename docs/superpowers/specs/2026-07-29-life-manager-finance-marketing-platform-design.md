@@ -2591,7 +2591,8 @@ at `https://www.youtube.com/watch?v=P_Epsp57RbY`, Postiz
 ID `UCFGkrtiSTni-AZ9DUY6Q5EA`, handle `@anicca-ai`, public availability, and
 English title/description; 1s/8s/14s native frames match the source Widget
 object. Same-slot replay returns generation/publication/Telegram
-`created:false`. Manifest `e34cb6de…c06c2e2` contains 14 targets / 16 holds and
+`created:false`. Manifest `8cba262c…15d81f` contains 14 targets / 16 holds,
+marks this lane `canary-verified`, and
 arms only this newly classified integration in addition to the prior thirteen.
 The LaunchAgent is not yet installed: targeted `lm-loop apply` fails closed
 before plist mutation because this Codex app-server context reports
