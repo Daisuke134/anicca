@@ -684,7 +684,7 @@ def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH,
         except Exception: evidence = None
         if evidence is not None:
             source = discoverer or discovery
-            turns = 3 if source is None and query is None else 1
+            turns = 1 if exhaustive or source is not None or query is not None else 3
             observed_total = 0; decision_reports: list[Mapping[str, object]] = []; wake_seen_ids: set[str] = set()
             for turn in range(turns):
                 turn_evidence = evidence
