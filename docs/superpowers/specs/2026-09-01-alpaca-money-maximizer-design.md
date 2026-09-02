@@ -424,7 +424,11 @@ completed child process. PR [#4069](https://github.com/Daisuke134/life-manager/p
 `PermissionError` terminate/wait fallback and merged as `23720318c6dc030df2cdc3de98efd086a1eaa1fc`; the current
 `f68da040` release contains all three fixes. The safe preflight still returns `status=pass`,
 `mutation_allowed=true`, UID / Directory Services `501`, Aqua manager UID `501`, manager PID `1`, and successful
-GUI readback. Targeted apply to the new release is the next R14 action; no 141 has occurred.
+GUI readback. Targeted apply changed only `ai.anicca.alpaca-investment`, wrote install event
+`b4c70a0d0387c799270ba5bb`, and loaded immutable arguments ending in
+`bin/lm-loop-run alpaca-investment .../20260903T004312-f68da040`; no 141 occurred. `launchctl-safe print`
+confirms `run interval = 300 seconds`, `runs = 0`, and `last exit code = (never exited)` immediately after
+this apply. The next executable atom is the first natural five-minute wake on this release.
 
 ### Explicit non-goals before submission
 
