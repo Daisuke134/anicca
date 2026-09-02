@@ -2732,6 +2732,26 @@ apply, kickstart, lifecycle, provider, or Telegram action. TODO 5 remains
 active until the independent release owner advances and one exact natural
 effect is verified.
 
+**YouTube live cursor 11 — release-owner assumption disproved:** installed
+state has no independent general release watcher. The former
+`ai.anicca.hf-gig-release-watch` is intentionally in `retired_labels`; the
+control-plane spec records that it exited 2 every five minutes, was retired by
+PR #2986, has no production recreator, and must not be restored. Installed
+`life-manager-selfbuild` runs daily at 04:10 but its exact entrypoint only hands
+an eligible PR to the merge guard; it does not cut or apply releases. Installed
+`life-manager-dev` also runs daily at 04:10, and its documented release
+reconciliation is restricted to existing `shared-agent-runner` rows, not new
+marketing labels. The current immutable selector therefore remains
+`20260902T140524-8f956147`, the new entrypoint is absent from that release, the
+new plist is absent, and provider/Telegram effects remain zero. The blocker is
+now exact: no active non-Remote owner currently owns release/install of this
+new marketing label. Remote must not work around that absence with
+`launchctl`, `lm-loop apply/start/stop/restart`, raw launchctl, Terminal,
+AppleScript, signal, app/Mac restart, direct publication, or resurrection of
+the retired watcher. TODO 5 stays active and is split only inside the same
+fixed-order atom: establish a valid non-Remote release/install owner, then let
+that owner produce the immutable label and natural canary evidence.
+
 **Next atomic TODO — fixed order:**
 
 1. **Done:** resolve Postiz alias `@anicca-affirmation-video` to native
@@ -2745,8 +2765,11 @@ effect is verified.
 4. **Done:** the default-off destination, registry row, dedicated boot route,
    shared-cycle lane, exact three slots, and focused contract are recorded in
    live cursor 9; no runtime or provider effect was claimed.
-5. **Active:** run one controlled canary, then verify Postiz, native handle/content,
-   Telegram, and same-slot replay-zero.
+5. **Active:** first establish a valid non-Remote owner for immutable
+   release/install of this new label without resurrecting the retired watcher;
+   then run one natural controlled canary and verify Postiz, native
+   handle/content, Telegram, and same-slot replay-zero. Remote performs none of
+   the prohibited lifecycle or substitute-publication actions.
 6. Arm exactly three daily intervals in source. Remote does not call lifecycle
    commands; the independent release watcher applies the release and the loop's
    natural wake runs it. Read back plist, loaded argv, immutable release,
