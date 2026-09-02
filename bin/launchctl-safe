@@ -5,18 +5,33 @@ ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 PREFLIGHT="$ROOT/skills/_shared/lib/launchd_preflight.py"
 RECEIPT=${LIFE_MANAGER_LAUNCHD_PREFLIGHT_RECEIPT:-"$HOME/.local/state/life-manager/launchd-control-plane-preflight.json"}
 
-if [ -n "${CODEX_SESSION_ID:-}${CODEX_THREAD_ID:-}${CLAUDECODE:-}" ]; then
-  echo "launchctl blocked: preserve ChatGPT/Codex Remote; wait for the natural loop/release-watcher wake" >&2
-  exit 78
-fi
-
 if [ "${1:-}" = "preflight" ]; then
   exec /usr/bin/python3 "$PREFLIGHT" --receipt "$RECEIPT"
 fi
 [ "$#" -gt 0 ] || { echo "usage: launchctl-safe preflight | <launchctl arguments>" >&2; exit 2; }
 
 case "$1" in
-  print|list|managername|manageruid|managerpid|version|variant|help|print-disabled)
+  managername|manageruid|managerpid|version|variant|help)
+    exec /bin/launchctl "$@"
+    ;;
+  print|print-disabled)
+    case "${2:-}" in
+      gui/*)
+        /usr/bin/python3 "$PREFLIGHT" --receipt "$RECEIPT" >/dev/null || {
+          rc=$?
+          echo "launchctl GUI read blocked before unsafe domain access; receipt=$RECEIPT" >&2
+          exit "$rc"
+        }
+        ;;
+    esac
+    exec /bin/launchctl "$@"
+    ;;
+  list)
+    /usr/bin/python3 "$PREFLIGHT" --receipt "$RECEIPT" >/dev/null || {
+      rc=$?
+      echo "launchctl list blocked before unsafe bootstrap access; receipt=$RECEIPT" >&2
+      exit "$rc"
+    }
     exec /bin/launchctl "$@"
     ;;
   *)
