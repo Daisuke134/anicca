@@ -874,6 +874,34 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "The two copies are byte-identical but serve different foundryup roles. Removing bin breaks PATH; removing versions breaks foundryup use. Defer to P2 toolchain owner instead of deleting by duplicate appearance alone."
+    },
+    {
+      "batch": "p1d-clouddocs-content-dedup-audit-34",
+      "path": "~/Library/Application Support/CloudDocs",
+      "measured_kib": 2333432,
+      "content_root": "session/i",
+      "content_root_kib": 2306152,
+      "content_file_count": 3073,
+      "active_owner_processes": [
+        "fileproviderd",
+        "bird",
+        "cloudd"
+      ],
+      "duplicate_media": [
+        {"cloud_path": "session/i/f3447.mp4", "canonical_path": "~/Desktop/MoneyPrinter-Hackathon-Demo/money-printer-browser-raw.mp4", "sha256": "3de05c0da252649f8933ec5cbc1c6cd9bfd034a23d719b8ee5c05db322be3a3c", "bytes": 430608496},
+        {"cloud_path": "session/i/f3448.mp4", "canonical_path": "~/Desktop/MoneyPrinter-Hackathon-Demo/money-printer-final-raw.mp4", "sha256": "db85393de29266cf8db89d67d2c5562507cd7cf645e7dc9ac19a04facd96ca3a", "bytes": 656386308},
+        {"cloud_path": "session/i/f3455.mp4", "canonical_path": "~/Desktop/MoneyPrinter-Hackathon-Demo/Money-Printer-WebMCP-Demo.mp4", "sha256": "4fcead622dcd3d4c57d5ac72fb878a6cdef9599f184970e2d752aaeb1e0d4939", "bytes": 35229608},
+        {"cloud_path": "session/i/f3456.mp4", "canonical_path": "~/Desktop/MoneyPrinter-Hackathon-Demo/money-printer-resume-raw.mp4", "sha256": "5695c24b2b2f714e29ebc9be3dcdf5ca08b6a14bd2b36a02a87775f8a2fbfc02", "bytes": 1139112496},
+        {"cloud_path": "session/i/f1aa8.mp4", "canonical_path": "~/Library/Mobile Documents/.Trash/12｜【選べる楽しさ】みんなと同じものを作るだけじゃない.mp4", "sha256": "8150cd701ab5edf7a4429be561c1842bc514cd76a24fc6ecf19b1f3ca5c24bb3", "bytes": 29310704}
+      ],
+      "duplicate_media_bytes": 2290647612,
+      "open_handle_rows": 0,
+      "decision": "preserve_fileprovider_managed_cache_until_eviction_readback",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Content-level duplicates are proven, but CloudDocs/session is an OS sync-managed store; direct deletion can propagate as iCloud deletion. Use FileProvider eviction or owner-side retention with sync readback, not path-based unlink."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
