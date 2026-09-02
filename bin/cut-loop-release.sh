@@ -137,7 +137,7 @@ reuse_locked_dependencies() {
     donor_package="$donor$relative"
     [ -d "$donor_package/node_modules" ] || continue
     cmp -s "$package_dir/package-lock.json" "$donor_package/package-lock.json" || continue
-    cp -cR "$donor_package/node_modules" "$package_dir/node_modules" || return 1
+    ln -s "$donor_package/node_modules" "$package_dir/node_modules" || return 1
     return 0
   done
   return 1

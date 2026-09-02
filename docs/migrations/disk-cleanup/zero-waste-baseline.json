@@ -552,6 +552,21 @@
       "diff_check": "PASS",
       "protected_deletions": 0,
       "note": "Fresh npm dependency trees are sealed immediately. Final source sealing prunes every node_modules subtree so reused sealed dependencies do not incur a second metadata rewrite."
+    },
+    {
+      "batch": "p1d-shared-sealed-dependencies-19",
+      "dependency_transport": "absolute symlink to sealed donor release",
+      "gc_dependency_closure": true,
+      "isolated_symlink_fixture": "3/3 PASS",
+      "central_cleanup_focused_tests": "15/15 PASS",
+      "shell_syntax": "PASS",
+      "python_syntax": "PASS",
+      "diff_check": "PASS",
+      "natural_reconciler_latest_result": "entrypoint_exit_1",
+      "natural_reconciler_blocker": "release cut lock owned by concurrent build",
+      "gui_domain_error": false,
+      "protected_deletions": 0,
+      "note": "The reconciler runs every 60 seconds and failed closed while another session held the release-cut lock. No Remote launchctl retry was attempted. The next lock-free natural wake remains the production convergence gate."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

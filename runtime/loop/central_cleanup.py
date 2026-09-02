@@ -70,6 +70,30 @@ def open_release_roots(releases_root: Path) -> set[Path]:
     }
 
 
+def dependency_release_roots(releases_root: Path, roots: set[Path]) -> set[Path]:
+    """Protect sealed releases reached through shared node_modules symlinks."""
+    base = releases_root.resolve()
+    protected = set(roots)
+    pending = list(roots)
+    while pending:
+        release = pending.pop()
+        for relative in (Path("node_modules"), Path("runtime/agentmail/node_modules"),
+                         Path("apps/life-manager/node_modules")):
+            link = release / relative
+            if not link.is_symlink():
+                continue
+            try:
+                target = link.resolve(strict=True)
+                donor = base / target.relative_to(base).parts[0]
+            except (OSError, ValueError, IndexError):
+                continue
+            donor = donor.resolve()
+            if donor.is_dir() and donor not in protected:
+                protected.add(donor)
+                pending.append(donor)
+    return protected
+
+
 def release_gc(releases: Path, current: Path, agents: Path, keep: int) -> dict:
     """Collect releases while pinning every generation referenced by launchd."""
     protected = loaded_release_roots(agents, releases) | open_release_roots(releases)
@@ -81,8 +105,17 @@ def release_gc(releases: Path, current: Path, agents: Path, keep: int) -> dict:
             protected.update(Path(value).expanduser().resolve() for value in values if isinstance(value, str))
     except (OSError, json.JSONDecodeError):
         pass
+    explicit_protected = set(protected)
+    current_root = None
+    try:
+        current_root = current.resolve(strict=True)
+        protected.add(current_root)
+    except OSError:
+        pass
+    protected = dependency_release_roots(releases, protected)
     result = gc_releases(releases, current, keep=keep, protected=protected)
-    result["protected_release_count"] = len(protected)
+    implicit_current = {current_root} if current_root is not None and current_root not in explicit_protected else set()
+    result["protected_release_count"] = len(protected - implicit_current)
     return result
 
 
