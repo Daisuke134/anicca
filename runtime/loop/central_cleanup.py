@@ -109,7 +109,7 @@ def main() -> int:
     if sys.argv[1:] == ["--release-gc-only"]:
         try:
             result = release_gc(releases, current, agents,
-                                keep=int(os.environ.get("LIFE_MANAGER_RELEASE_KEEP", "5")))
+                                keep=int(os.environ.get("LIFE_MANAGER_RELEASE_KEEP", "1")))
         except (OSError, ValueError) as error:
             print(json.dumps({"ok": False, "error": str(error)}, sort_keys=True)); return 1
         result["ok"] = result["errors"] == 0
@@ -125,7 +125,7 @@ def main() -> int:
         host_ok, host_result = False, {"error": str(error)}
     try:
         result = release_gc(releases, current, agents,
-                            keep=int(os.environ.get("LIFE_MANAGER_RELEASE_KEEP", "5")))
+                            keep=int(os.environ.get("LIFE_MANAGER_RELEASE_KEEP", "1")))
     except (OSError, ValueError) as error:
         print(json.dumps({"ok": False, "error": str(error)}, sort_keys=True)); return 1
     result.update({"ok": result["errors"] == 0 and host_ok,
