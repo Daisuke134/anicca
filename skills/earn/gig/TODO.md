@@ -5598,6 +5598,13 @@ queue is added. Each owner must also progress independent work concurrently insi
    releases, Reply action `529` has one official buyer-visible effect and readback, and replay is
    zero. Ryu room `18211957` remains excluded from all loop effects.
 
+   A read-only process audit then found the old Paid release had admitted Ryu room `18211957` to a
+   semantic decision worker because the canonical `MANUAL_ONLY_TALKROOM_IDS` contained only the
+   separate manual room `18211838`. No send was observed, but discovery itself violates the manual
+   ownership boundary. Add `18211957` to that existing discovery-time exclusion and require the next
+   public release to report no Paid worker, send, delivery or replay for that room. Do not edit its
+   project state or evidence; the separate manual Codex owns it.
+
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
    budget-document request but still
