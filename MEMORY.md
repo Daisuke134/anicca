@@ -11,3 +11,7 @@ Do not run lifecycle preflight from Remote merely to reproduce a historical 141.
 Canonical example: when historical output shows targeted `lm-loop apply` returned launchd 141, do not rerun it from Remote, hand-write a plist, open Terminal, or request a restart. Wait for the independent release watcher and natural loop owner, then verify loaded argv, immutable release, terminal event, official effect, and replay-zero from read-only artifacts.
 
 Sources: [OpenAI non-interactive mode](https://developers.openai.com/codex/noninteractive), [OpenAI Scheduled tasks](https://developers.openai.com/codex/automations), [OpenAI Follow a goal](https://developers.openai.com/codex/use-cases/follow-goals), and [openai/codex issue #32321](https://github.com/openai/codex/issues/32321).
+
+## Delegated cleanup authority
+
+Symptom: an agent repeatedly asks for permission after Dais has already delegated cleanup or refactor authority. Wrong instinct: transfer ordinary owner/recovery decisions back to Dais because a file might matter. Correct move: measure owner, active/open state, uniqueness, remote or regeneration path, then act and record an exact receipt without asking again. General rule: explicit standing authority covers later reversible or deliberately accepted cleanup in the same scope; ask only when a higher safety boundary requires new authority or the target is outside that scope. Example: preserve OpenClaw working files, verify remote/open state, and remove obsolete Git metadata without repeating the permission question.

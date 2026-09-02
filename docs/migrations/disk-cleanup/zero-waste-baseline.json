@@ -131,7 +131,19 @@
       "free_after_kib": 3118508,
       "reclaimed_bytes_by_df": 307433472,
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1c-openclaw-git-history-3",
+      "target_bytes_by_du": 3127717888,
+      "free_before_kib": 3267300,
+      "free_after_kib": 11301876,
+      "free_delta_bytes_by_df": 8227405824,
+      "working_config_present_after": true,
+      "skills_present_after": true,
+      "agents_present_after": true,
+      "protected_deletions": 0,
+      "note": "df delta includes concurrent APFS release; target size is reported separately"
     }
   ],
-  "reclaimed_bytes": 644210688
+  "reclaimed_bytes_by_target_size": 3771928576
 }
