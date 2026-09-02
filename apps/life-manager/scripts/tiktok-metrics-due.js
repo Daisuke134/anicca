@@ -57,15 +57,23 @@ function discoverTargets(dataDir) { return TARGETS.flatMap((target) => discoverT
 
 function snapshotFile(dataDir, expected, window) { return path.join(dataDir, "tenants", expected.tenant_id, "marketing", "metrics", expected.native_owner, expected.shortcode, `${window}.combined.json`); }
 
-function delayed(dataDir, expected, window, observedAt) {
-  const unavailable = { status: "unavailable", value: null, reason: "source_delayed" };
+function delayed(dataDir, expected, window, observedAt, reason = "source_delayed") {
+  const unavailable = { status: "unavailable", value: null, reason };
   const post = Object.fromEntries(["views", "likes", "comments", "shares", "saves", "reach", "watch_time", "completion", "engagement"].map((key) => [key, { ...unavailable }]));
   const snapshot = { schema_version: 1, kind: "tiktok_combined_metric_snapshot", ...expected, window, observed_at: observedAt,
-    caption_sha256: crypto.createHash("sha256").update(expected.caption).digest("hex"), sources: { tiktok_native: { status: "unavailable", reason: "source_delayed", identity_verified: true }, postiz_post: { status: "unavailable", reason: "source_delayed" }, postiz_account: { status: "unavailable", reason: "source_delayed" } }, post, account_metrics: { status: "unavailable", reason: "source_delayed" } };
+    caption_sha256: crypto.createHash("sha256").update(expected.caption).digest("hex"), sources: { tiktok_native: { status: "unavailable", reason, identity_verified: true }, postiz_post: { status: "unavailable", reason }, postiz_account: { status: "unavailable", reason } }, post, account_metrics: { status: "unavailable", reason } };
   const file = snapshotFile(dataDir, expected, window); fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   if (fs.existsSync(file)) return { created: false, file, snapshot: JSON.parse(fs.readFileSync(file, "utf8")) };
   const temporary = `${file}.tmp-${process.pid}-${crypto.randomUUID()}`; fs.writeFileSync(temporary, `${JSON.stringify(snapshot, null, 2)}\n`, { mode: 0o600, flag: "wx" }); fs.renameSync(temporary, file); fs.chmodSync(file, 0o600);
   return { created: true, file, snapshot };
+}
+
+async function collectWindowSafely({ dataDir, expected, window, observedAt, input = {}, env = process.env, collect }) {
+  try { return { state: "measured", observation: await collect(input, env, observedAt) }; }
+  catch (error) {
+    if (error?.message !== "TikTok native metric content mismatch") throw error;
+    return { state: "source_mismatch", observation: delayed(dataDir, expected, window, observedAt, "native_content_mismatch") };
+  }
 }
 
 async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
@@ -80,7 +88,7 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
       if (nowMs < dueMs) { results.push({ video_id: expected.video_id, window, state: "pending", due_at: new Date(dueMs).toISOString() }); continue; }
       if (nowMs > dueMs + GRACE_MS) { const snapshot = delayed(dataDir, expected, window, new Date(nowMs).toISOString()); results.push({ video_id: expected.video_id, window, state: "source_delayed", telegram: await sendMetricSnapshot(snapshot, env, dataDir) }); continue; }
       const input = { tenantId: expected.tenant_id, productId: expected.product_id, locale: expected.locale, account: expected.account_id, integrationId: expected.integration_id, providerPostId: expected.provider_post_id, videoId: expected.video_id, publicUrl: expected.public_url, caption: expected.caption, window, publishedAt: expected.published_at };
-      const observation = await (expected.postiz_photo_only ? collectPostizPhotoWindow : collectTikTokWindow)(input, env, new Date(nowMs).toISOString()); results.push({ video_id: expected.video_id, window, state: "measured", telegram: await sendMetricSnapshot(observation, env, dataDir) });
+      const collected = await collectWindowSafely({ dataDir, expected, window, observedAt: new Date(nowMs).toISOString(), input, env, collect: expected.postiz_photo_only ? collectPostizPhotoWindow : collectTikTokWindow }); results.push({ video_id: expected.video_id, window, state: collected.state, telegram: await sendMetricSnapshot(collected.observation, env, dataDir) });
     }
     const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(nowMs)).map(({ type, value }) => [type, value])); const reportDay = `${parts.year}-${parts.month}-${parts.day}`;
     if (Number(parts.hour) > 17 || (Number(parts.hour) === 17 && Number(parts.minute) >= 30)) { const digest = persistDailyDigest({ dataDir, reportDay, observedAt: new Date(nowMs).toISOString(), expected }); results.push({ video_id: expected.video_id, window: "daily", state: digest.created ? "reported" : "complete", telegram: await sendMetricSnapshot(digest, env, dataDir) }); }
@@ -93,4 +101,4 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
 }
 
 if (require.main === module) runDue().then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
-module.exports = { GRACE_MS, TARGETS, WINDOWS, delayed, discoverJp4, discoverTarget, discoverTargets, runDue, snapshotFile };
+module.exports = { GRACE_MS, TARGETS, WINDOWS, collectWindowSafely, delayed, discoverJp4, discoverTarget, discoverTargets, runDue, snapshotFile };

@@ -1,7 +1,8 @@
 "use strict";
 const assert = require("node:assert/strict"); const fs = require("node:fs"); const os = require("node:os"); const path = require("node:path"); const test = require("node:test");
 const crypto = require("node:crypto");
-const { TARGETS, discoverTarget, discoverTargets, runDue, snapshotFile } = require("./tiktok-metrics-due.js");
+const due = require("./tiktok-metrics-due.js");
+const { TARGETS, discoverTarget, discoverTargets, runDue, snapshotFile } = due;
 const EXPECTED = { tenant_id: "dais-local", product_id: "anicca-ios", locale: "ja", account_id: "@anicca.jp4", native_owner: "anicca.jp4", integration_id: "cmn8x8hdv028uqx0y4gdfse5t", provider_post_id: "cmt328uot00s2qk0y23e8ptii", shortcode: "7676495865816632583", video_id: "7676495865816632583", public_url: "https://www.tiktok.com/@anicca.jp4/video/7676495865816632583", caption: "今すぐやれ", published_at: "2026-08-21T14:46:13.240Z" };
 
 test("existing TikTok snapshots are read-only and never re-enqueued", async () => {
@@ -19,6 +20,20 @@ test("existing TikTok snapshots are read-only and never re-enqueued", async () =
     assert.deepEqual(row.telegram, { created: false, reason: "snapshot_replay" });
     assert.equal(sends, 0);
   } finally { global.fetch = originalFetch; }
+});
+
+test("native content mismatch becomes explicit unavailable and does not throw", async () => {
+  assert.equal(typeof due.collectWindowSafely, "function");
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lm-tiktok-mismatch-"));
+  const observedAt = "2026-08-27T12:35:00.000Z";
+  const result = await due.collectWindowSafely({
+    dataDir, expected: EXPECTED, window: "24h", observedAt,
+    collect: async () => { throw new Error("TikTok native metric content mismatch"); },
+  });
+  assert.equal(result.state, "source_mismatch");
+  assert.equal(result.observation.snapshot.sources.tiktok_native.status, "unavailable");
+  assert.equal(result.observation.snapshot.sources.tiktok_native.reason, "native_content_mismatch");
+  assert.equal(JSON.parse(fs.readFileSync(result.observation.file, "utf8")).post.views.value, null);
 });
 
 test("JP4 due loop reports delayed and daily once while true 24h stays pending", async () => {
