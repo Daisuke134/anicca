@@ -5442,9 +5442,13 @@ queue is added. Each owner must also progress independent work concurrently insi
    deletion fences: non-current, plist pins zero, open processes zero, and age over five minutes.
    Apply, Reply, Storefront, and Paid all have live processes, including two Paid remote-owner
    workers, so their releases remain protected. The regenerable Life Manager video roots and
-   `~/gig/projects` contain zero MP4/MOV/M4V files. Do not delete pinned/open releases or durable
-   paid-project source, delivery, and receipt artifacts merely to raise free space; recheck central
-   GC after the active release cut and natural owner convergence.
+   `~/gig/projects` contain zero MP4/MOV/M4V files. Outside those managed roots, Desktop, Downloads,
+   and recoverable Trash still contain 21 MP4/MOV/M4V files totaling `3,474,931,225` bytes. This
+   includes `athena-v4-final.mp4` only in Trash, not in the active paid-project tree. Permanent Trash
+   deletion and deletion of Desktop/Downloads source files are irreversible and therefore are not
+   automatic cleanup. Do not delete pinned/open releases or durable paid-project source, delivery,
+   and receipt artifacts merely to raise free space; recheck central GC after the active release
+   cut and natural owner convergence.
 
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
