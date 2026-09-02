@@ -1086,6 +1086,28 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "All paths are selected by enabled reelclaw cron rotation and README canonical contract. Age alone is not terminal; remove/alias only after family-path compatibility and publication/readback proof."
+    },
+    {
+      "batch": "p1d-zenn-articles-repo-audit-45",
+      "path": "~/.openclaw/workspace/zenn-articles",
+      "measured_kib": 87788,
+      "git": {
+        "status": "dirty",
+        "branch": "main",
+        "behind_origin_main_commits": 1487,
+        "remote": "https://github.com/Daisuke134/zenn-articles.git",
+        "head": "aa20622798f9de5af14bccbd1a3323f36e4b9178",
+        "untracked": [".writer-retries/", "articles/automaton-en-full.md", "articles/automaton-en.md"]
+      },
+      "owners": ["zenn-backlog-deploy", "Life Manager writer"],
+      "external_processes": 0,
+      "external_open_handle_rows_final": 0,
+      "decision": "preserve_dirty_publication_source_defer_owner_push_retention",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Dirty source and unpublished drafts remain; deleting .git or articles would lose publication lineage. Owner must reconcile/push and define bounded retention before cleanup."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
