@@ -70,9 +70,20 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 | 5 | 未完 | WebMCP hackathon提出を閉じる | Mercor readback、replay-zero、動画、YouTube、Devpost |
 
 現在3-5はsource fixをmainへ統合済みだが、production plistが旧immutable release `64a9a1c5...`を直接pinし、
-global release watcherがないため反映待ちである。Remoteから`launchctl`、`lm-loop apply/start/stop/restart`、signal、
-Terminal/AppleScript迂回、Mac/app restartは行わない。正規GUI/deployment ownerが新releaseをpinし、同じcontextで
-readbackした後にだけ3-5を完了へ更新する。
+global release watcherがないため反映待ちである。禁止するのは、Remoteから`launchctl`、`gui/$UID`、
+`lm-loop apply/start/stop/restart`へ入り141を起こす経路と、Terminal/AppleScript等による同経路の迂回である。
+source/spec/Git変更、隔離test、read-only production観測、host-wide build lock取得後のimmutable release作成は継続する。
+ただしrelease作成はloaded jobのpin変更ではなく、production反映の証拠には数えない。正規GUI/deployment ownerが
+新releaseを反映し、同じowner contextでreadbackした後にだけ3-5を完了へ更新する。
+
+#### 3-5 Atomic TODO（この順序で一件ずつ閉じる）
+
+- [x] 3-5a: applications、Library、`/private/var/folders`、toolchain、user dataのGiB級ownerを分類する。
+- [x] 3-5b: active Sparkle Updaterを保護し、terminal後のexact staged generationを回収するsource fixをmainへ統合する。
+- [ ] 3-5c: host-wide build lockとmain SHAをreadbackし、同SHAからimmutable releaseを一世代作成して内容を検証する。
+- [ ] 3-5d: 正規GUI/deployment ownerがproduction pinをそのreleaseへ反映し、loaded argvとrelease SHAをreadbackする。
+- [ ] 3-5e: Updater terminal、新ChatGPT version、Sparkle `Installation`約1.9 GiB回収、次wakeの`errors=0`、
+  `protected_deletions=0`を実測する。
 
 ### 全Codexが守る同期ルール
 
@@ -781,8 +792,9 @@ Sparkle回帰とは分離して記録する。⑤の完了にはsourceのmain統
 protected deletion 0を返した。Data空きは`27,432,308 KiB`（約26.2 GiB）、Sparkle Installationは
 `1,985,752 KiB`、ChatGPT PID 410とUpdater PID 8768はactiveである。
 
-Remote sessionは`launchctl`、`lm-loop apply/start/stop/restart`、Terminal/AppleScript迂回、app/process signal、
-shutdown/restartを一切行わない。新releaseの作成だけではpin済みplistが変わらず、反映証拠にならないため行わない。
+Remote sessionは`launchctl`、`gui/$UID`、`lm-loop apply/start/stop/restart`、Terminal/AppleScriptによる
+同経路の迂回を一切行わない。それ以外のread-only診断、source/spec/Git変更、隔離検証、immutable release作成は
+止めない。新releaseの作成だけではpin済みplistが変わらないため、production反映証拠とは区別する。
 ⑤はmain source fix済み、production reflectionはGUI session ownerまたは既存の正規deployment ownerが
 同じcontextでreload/readbackできる時までopenとする。反映後もUpdater自然terminal、新version適用、次wake回収を
 実測するまで`[x]`にしない。
