@@ -6,6 +6,83 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 
 状態: Phase 1実装済み。Life Manager OSS skill、fail-closed governor、guard fallback、回帰テスト、旧cleanup ownerのcutover、正本5分labelのbootstrap/readback、MiB/GiB精度とswap telemetry、ULTRA時のexact-byte full-pass昇格、bootstrap health failureのcleanup内receipt契約、141/153隔離fixture、stale app-serverのsession-owner分離、browser producer lifecycle、Gig/Writer共通producer preflight、Paid/Storefrontのin-flight effect gate/checkpoint、Writer provider-start gate、ULTRA receipt reserve/retryは反映済み。supervisor non-stop/pause-resume契約、host-wide census、hourly intelligence、Writerのin-flight drainを含む全producer backpressure、atomic capacity claims、rapid-growth predictor、unknown-growth containment、24時間/7日観測は未完了。UID 501/GUI bootstrapと`ai.anicca.life-manager-disk-cleanup`のload readbackは復旧済み。
 
+## 最初に読む3分ガイド
+
+この節と「現在の順序正本」だけを最初に読む。それ以降は、候補を削除する前、障害を診断する時、
+完了証拠を更新する時に参照する。全Codexは同じspecの先頭未完atomだけを担当し、完了済みatomを再実行しない。
+
+### 目標は、空きを一度増やすことではなく、増えてもowner自身が上限へ戻すこと
+
+Mac全体の書込み元をownerへ割り当て、各ownerが生成物の上限、保存期間、active lease、terminal条件、
+再生成方法を宣言する。削除authorityはMac Host Storage Governorだけが持つ。Governorは、ownerの宣言に加えて
+open handleなし、active processなし、loaded argvからの参照なし、dirty/unpushedなし、唯一の原本でないことを
+effect直前に再確認する。どれか一つでも証明できなければ保存する。
+
+この仕組みは収益loopを止めるためのものではない。各loopは外部effectと売上処理を継続しながら、自分の
+temporary file、再生成cache、終了済みrun、期限切れlogをbounded retentionへ戻す。buyer input、進行中deliverable、
+credential、session、ledger、receipt、memory、state JSONLは容量を理由に削除しない。
+
+```mermaid
+flowchart LR
+  P[各producer / loop] -->|owner・class・lease・quota・terminalを宣言| M[Lifecycle manifest]
+  P -->|active成果物とstateは維持| R[24時間稼働]
+  M --> G[Mac Host Storage Governor]
+  G -->|証明済みの終了物だけ回収| F[free 11 GiB以上]
+  G -. unknown / active / unique .-> K[保存]
+```
+
+### 「すべてLife Manager mainへ統合する」はsourceの一元化を意味する
+
+最終的なsource、prompt、skill、loop定義、adapter、installer、cleanup contractの唯一の正本は
+`~/Projects/life-manager-main`である。`life-manager-eliza-migration`は、必要なEliza機能をmainへ移すかを判断する
+まで保護する一時sourceであり、今は削除しない。それ以外のLife Manager、Anicca、OpenClaw cloneは、固有sourceと
+production依存をmainまたは外部state SSOTへ移し、remote保存とSHA一致を確認した後にretireする。
+
+ただし、全ファイルをGit repoへ入れる意味ではない。変化するruntime dataをmainへcommitすると、Git packとcloneが
+再び肥大化する。sourceとruntimeを次の形に分ける。
+
+```text
+~/Projects/life-manager-main/             # source SSOT。最終的に開発対象はここだけ
+~/Projects/life-manager-eliza-migration/  # 移行判断まで保護。統合後にretire
+~/loops/releases/<immutable-release>/     # mainから再生成できるread-only実行物。世代数を制限
+~/.local/state/life-manager/               # ledger、receipt、checkpoint等のruntime state
+browser profile / credential SSOT         # 認証session。repoへ入れず、削除もしない
+```
+
+したがって「mainとEliza以外を全部消す」は、そのままの削除命令ではない。削除するのは、重複source、終了済みworktree、
+未参照release、再生成cache、期限切れlog、terminal run、同一内容のbackupである。macOS、現行application、認証profile、
+稼働toolchain、唯一のuser data、進行中WebMCP/Gig成果物は残す。
+
+### 最初から最後までの固定TODO
+
+| 順序 | 状態 | 作業 | 完了証拠 |
+|---:|:---:|---|---|
+| 1 | 完了 | Codex connectionをfresh sessionで復旧 | backend `CONNECTION_OK`、app-server/socket存在 |
+| 2 | 完了 | 緊急manual cleanupと即時再発原因を修正 | 回収bytes、loop継続、errors 0、protected deletion 0 |
+| 3-1〜3-4 | 完了 | host census、終了worktree、重複clone、OpenClaw重複物を整理 | remote SHA、open/dirty保護、before/after bytes |
+| 3-5 | **現在active** | applications、Library、`/private/var/folders`、toolchain、user dataを分類し、Sparkle retention fixをproduction反映 | 新release pin、Updater terminal、新ChatGPT version、1.9 GiB回収、次wake errors 0 |
+| 3-6 | 未完 | Codex/Claude sessionを削除せず、owner-side log/archive rotationを接続 | active session loss 0、上限超過後に元の上限へ戻る |
+| 3-7 | 未完 | loaded/open releaseが自然idleになった後、central GCで旧releaseを回収 | loaded/open/pinned保護、未参照generationだけ削除 |
+| 3-8 | 未完 | Hermesを正式retireし、必要機能をmainへ移す | caller 0、state/source移管、rollback receipt |
+| 3-9 | 未完 | Gig projectをbuyer承認・納品receipt単位でterminal化 | 原本・再提出base保持、terminal projectだけ回収 |
+| 3-10 | 未完 | 容量と安全性を長期観測 | free 11 GiB以上、24時間ENOSPC/protected deletion/cleanup起因failure 0、その後7日state-write failure 0 |
+| 4 | 未完 | Lancers revenue loopを別ownerの移管完了後に継続 | Apply→Negotiate→Paid→official payment |
+| 5 | 未完 | WebMCP hackathon提出を閉じる | Mercor readback、replay-zero、動画、YouTube、Devpost |
+
+現在3-5はsource fixをmainへ統合済みだが、production plistが旧immutable release `64a9a1c5...`を直接pinし、
+global release watcherがないため反映待ちである。Remoteから`launchctl`、`lm-loop apply/start/stop/restart`、signal、
+Terminal/AppleScript迂回、Mac/app restartは行わない。正規GUI/deployment ownerが新releaseをpinし、同じcontextで
+readbackした後にだけ3-5を完了へ更新する。
+
+### 全Codexが守る同期ルール
+
+1. 作業開始時に、この表の先頭未完atomと最新production evidenceを読む。
+2. 一つの候補ごとにbefore bytes、owner、active/open/loaded/dirty、復元方法を記録する。
+3. 削除後はafter bytes、free差分、errors、protected deletion、次wakeまたはterminalを確認する。
+4. 証拠が揃ったatomだけを完了へ変え、その変更をmainへ統合する。
+5. 別Codexが所有するLancers、Coconala、Alpaca、WebMCP、Eliza production stateへ並行変更しない。
+6. blockerや前提誤りも、そのturn内にこのspecへ書く。会話だけで状態を管理しない。
+
 ## 現在の順序正本
 
 完了済みを再実行しない。次の順序はDaisが明示的に変更するまで固定する。
