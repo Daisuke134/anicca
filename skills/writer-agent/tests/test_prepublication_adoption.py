@@ -709,6 +709,142 @@ class PrepublicationAdoptionTest(unittest.TestCase):
                 repair.mark_invoking(run, ledger, owner_pid=os.getpid())
             self.assertEqual(owner_receipt_path.read_bytes(), owner_receipt_bytes)
 
+    def test_terminal_incomplete_prompt_release_rebind_rearms_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run, ledger, old_prompt, owner_receipt_path = (
+                self.prompt_release_rebind_fixture(Path(tmp))
+            )
+            gates = run / "gates"
+            state_path = gates / "quality-repair-state.json"
+            source_path = gates / "quality-repair-source-recovery.json"
+            before = {
+                path: (path.read_bytes(), path.stat().st_ino)
+                for path in (source_path, old_prompt, owner_receipt_path)
+            }
+
+            decision = repair.plan(run, ledger)
+
+            self.assertEqual(decision["status"], "READY")
+            self.assertEqual(
+                decision["reason"],
+                repair.PROMPT_RELEASE_REBIND_RECOVERY_REASON,
+            )
+            self.assertEqual(decision["attempts"], 2)
+            prior_state = state_path.read_bytes()
+            invoking = repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+            self.assertEqual(invoking["status"], "invoking")
+            self.assertEqual(invoking["attempts"], 2)
+            new_prompt = (
+                gates
+                / "quality-repair"
+                / "epoch-1"
+                / "prompts"
+                / "release-rebind-recovery-1.txt"
+            )
+            self.assertIn(
+                "$ARTICLE_ROOT/scripts/quality_self_heal.py",
+                new_prompt.read_text(encoding="utf-8"),
+            )
+            self.assertNotIn("/loops/releases/", new_prompt.read_text(encoding="utf-8"))
+            for path, (body, inode) in before.items():
+                self.assertEqual(path.read_bytes(), body)
+                self.assertEqual(path.stat().st_ino, inode)
+            receipt_path = gates / "quality-repair-prompt-release-rebind-recovery.json"
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                receipt["schema"],
+                "writer.quality-repair-prompt-release-rebind-recovery",
+            )
+            self.assertEqual(
+                receipt["prior_state_sha256"],
+                hashlib.sha256(prior_state).hexdigest(),
+            )
+            self.assertEqual(receipt["receipt_sha256"], repair._receipt_hash(receipt))
+            repair.record_result(run, ledger, return_code=1)
+            self.assertEqual(
+                repair.plan(run, ledger),
+                {
+                    "status": "REFUSED",
+                    "reason": "quality-repair-prompt-release-rebind-recovery-already-recorded",
+                },
+            )
+
+    def test_prompt_release_rebind_refuses_wrong_state_tampering_and_symlink(self):
+        cases = {
+            "wrong terminal state": lambda run, _ledger: self._set_rebind_state(
+                run, status="retryable-incomplete"
+            ),
+            "prompt no longer names deleted release": lambda run, _ledger: self._replace_old_release(
+                run, "current-runtime"
+            ),
+            "existing rebind receipt": lambda run, _ledger: (
+                run / "gates/quality-repair-prompt-release-rebind-recovery.json"
+            ).write_text("{}\n", encoding="utf-8"),
+            "symlink rebind receipt": self._symlink_rebind_receipt,
+        }
+        for name, mutate in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                run, ledger, _old_prompt, _owner_receipt = (
+                    self.prompt_release_rebind_fixture(Path(tmp))
+                )
+                mutate(run, ledger)
+                decision = repair.plan(run, ledger)
+                self.assertNotEqual(
+                    decision.get("reason"),
+                    repair.PROMPT_RELEASE_REBIND_RECOVERY_REASON,
+                )
+
+    def prompt_release_rebind_fixture(self, root: Path):
+        run, _run_id, _prompt, ledger, _old = self.owner_recovery_fixture(root)
+        repair.mark_invoking(run, ledger, owner_pid=os.getpid())
+        repair.record_result(run, ledger, return_code=1)
+        gates = run / "gates"
+        original_prompt = gates / "quality-repair/epoch-1/repair-prompt.txt"
+        owner_prompt = gates / "quality-repair/epoch-1/prompts/owner-recovery-1.txt"
+        self._replace_old_release(run, "/Users/anicca/loops/releases/20260831T025240-be5347f5")
+        owner_receipt_path = gates / "quality-repair-owner-recovery.json"
+        owner_receipt = json.loads(owner_receipt_path.read_text(encoding="utf-8"))
+        owner_receipt["old_prompt_sha256"] = hashlib.sha256(
+            original_prompt.read_bytes()
+        ).hexdigest()
+        owner_receipt["new_prompt_sha256"] = hashlib.sha256(
+            owner_prompt.read_bytes()
+        ).hexdigest()
+        owner_receipt["receipt_sha256"] = repair._receipt_hash(owner_receipt)
+        owner_receipt_path.write_text(json.dumps(owner_receipt) + "\n", encoding="utf-8")
+        state_path = gates / "quality-repair-state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["prompt_sha256"] = hashlib.sha256(owner_prompt.read_bytes()).hexdigest()
+        state["owner_recovery_receipt_sha256"] = hashlib.sha256(
+            owner_receipt_path.read_bytes()
+        ).hexdigest()
+        state_path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+        return run, ledger, owner_prompt, owner_receipt_path
+
+    @staticmethod
+    def _replace_old_release(run: Path, replacement: str):
+        for path in (
+            run / "gates/quality-repair/epoch-1/repair-prompt.txt",
+            run / "gates/quality-repair/epoch-1/prompts/owner-recovery-1.txt",
+        ):
+            text = path.read_text(encoding="utf-8")
+            marker = str(Path(repair.__file__).resolve().parent)
+            path.write_text(text.replace(marker, replacement), encoding="utf-8")
+
+    @staticmethod
+    def _set_rebind_state(run: Path, *, status: str):
+        path = run / "gates/quality-repair-state.json"
+        state = json.loads(path.read_text(encoding="utf-8"))
+        state["status"] = status
+        path.write_text(json.dumps(state) + "\n", encoding="utf-8")
+
+    @staticmethod
+    def _symlink_rebind_receipt(run: Path, _ledger: Path):
+        path = run / "gates/quality-repair-prompt-release-rebind-recovery.json"
+        target = run.parent / "rebind-receipt-target.json"
+        target.write_text("{}\n", encoding="utf-8")
+        path.symlink_to(target)
+
     @staticmethod
     def make_active_editorial_repair_evidence(run: Path, prepared: dict):
         gates = run / "gates"
