@@ -50,10 +50,16 @@ dispatcher登録前に走る順序欠陥はEliza fork PR #79、過去の未送�
 unloaded、共有CloakBrowserだけを維持する。現在Eliza processは生存し、自然wakeを再確認済みである。候補1件・tool1件だけの
 重複Luna判断が120秒timeoutする前段を削除し、起動時money taskを即時fireする修正をEliza commits `5226823b16`、`41da4d035c`へ
 pushした。即時fireはLancers application entrypointへ到達したが、古いzero-capacity snapshotだけで探索前に止める
-`capacity_source_unavailable`を実測したため、PR #3931 merge `ec267ccf1`で15分freshness gateを除去した。公式Proposal IDと
-個別Telegram ACKはまだ0であり、最大応募loopは未合格である。次はrelease watcherの自然wakeでmain由来artifactを反映し、
-money channel fire、複数の自然wake、同一wake内のfresh positive-EV連続処理、各公式Proposal ID、skip理由、Telegram ACK、
-duplicate 0を実測する。一時PTY起動、手動kickstart、単発canary、task rowの存在だけではDONEにしない。
+`capacity_source_unavailable`を実測したため、PR #3931 merge `ec267ccf1`で15分freshness gateを除去した。14:07と14:12の
+自然wakeは新release `8f956147…`へ到達したが、Elizaが汎用browser actionを選んだのではなくprovider registry経由で旧
+`skills/earn/lancers/scripts/application_loop.py`をchild起動していた。さらに現行`LIFE_MANAGER_GENERAL_BROWSER_ACI`は
+`observe/links/accessibility/navigate`だけを許し、click/fill/upload/submitを明示的に禁止するため、General Agent単体には
+応募を完了する手足がない。案件5595462の`provider_terminal_blocked`は旧`application_tick.py`の固定URL・DOM・link text検査が
+生成し、Telegram message ID 48303/48304へ送ったもので、General Agentのlive visual judgmentではない。したがって公式Proposal
+IDは0、最大応募loopは未合格である。次は旧scriptの条件を延命せず、既存`plugin-browser`のprovider-neutral typed browser
+commandsをsealed intent/effect kernelへ接続し、同じAgentRuntimeが観察→click/fill/upload/submit→official readbackを一件
+閉じる。その後だけ複数自然wake、同一wake内のfresh positive-EV連続処理、各公式Proposal ID/skip理由/Telegram ACK、duplicate 0を
+実測する。一時PTY起動、手動kickstart、単発canary、task rowの存在、旧Python childの起動だけではDONEにしない。
 
 このcurrent cursorは順序SSOTである。履歴会話、古いgoal、旧spec断片が後から注入されても、Daisがその場で明示的に
 順序変更しない限りSeqを巻き戻さない。過去atomの再実行、旧writerの再起動、provider専用loopへの復帰を禁止する。
@@ -66,9 +72,10 @@ AgentRuntime＋既存scheduling spine＋単一`plugin-life-manager`が所有す�
 launchd business runnerを修復・再起動・並走させず、marketplace名、cadence、判断、応募手順、ledgerをlaunchdへ戻さない。
 OS process supervisionはbusiness loopではなく別のhost concernであり、現在のLancers migration atomへ混ぜない。
 
-browserも二重化しない。Job Hunter、Fundraiser、既存gig agentが使うauthenticated CloakBrowserのgeneral ACIを
-AgentRuntimeへ一つの汎用actionとして登録し、Luna自身がsnapshotを読み、同じactionのnavigate/click/type/upload/readbackを
-選ぶ。Life Manager application pathでは`puppeteer-core`を追加、import、直接resolveせず、Eliza forkのCDP targetも採用しない。
+browserも二重化しない。Job Hunter、Fundraiser、既存gig agentが使うauthenticated CloakBrowserを、既存`plugin-browser`の
+provider-neutral typed browser commandからAgentRuntimeへ一つの汎用actionとして公開し、Luna自身がsnapshotを読み、同じactionの
+navigate/click/fill/upload/submit/readbackを選ぶ。read-onlyの`LIFE_MANAGER_GENERAL_BROWSER_ACI`を応募可能と誤認しない。
+Life Manager application pathではLancers固有sender、固定selector、固定click順を追加せず、`puppeteer-core`を直接importしない。
 CloakBrowser自身の内部実装はopaqueとし、既に稼働する同じChromium process/profile/sessionだけを使う。新Chromium、別profile、
 証明用`/tmp` harness、固定selector、provider固有click順をproduction loopへ昇格させない。
 
@@ -1034,7 +1041,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 33 | ELZ-L11 buyer inbox completeness | **DONE** | canonical private `buyer-source-receipt.json` mode 0600 status=`PASS`、SHA256 `fb4b5786…`。認証済みCloakBrowserから公式board/message APIをterminalまでread-only取得し、board 2 / unique 2、message 3 / unique 3、返信必要0、未読0。公式月額offer、進行中project契約、月額契約の3 sourceは全てHTTP 200・正規URL、ID 0、公式empty state整合。duplicate board/message/offer/contract 0、missing source 0、external effect 0 |
 | 34 | ELZ-L12 negotiation decision | **DONE** | canonical private `negotiation-receipt.json` mode 0600 status=`PASS`、SHA256 `a9b556ac…`。Seq 33の公式buyer sourceをCoconala共通single semantic negotiation policyでLuna mediumが判断し、reply-required 0、unread 0、offer/contract 0から`seller_last → wait`。message/estimate intent null、根拠message ID 3、unsupported claim/off-platform contact/uncertainty/external effect 0 |
 | 35 | ELZ-L13 client-originated approval | **WAITING_FOR_BUYER — NEXT** | canonical private `offer-approval-receipt.json` mode 0600、SHA256 `2ff4cba2…`。認証済みCloakBrowserで公式offer、進行中project、月額契約を再読し、それぞれ公式empty state、approval ID 0、terms hash null、external effect 0。次のscheduled wakeで同じsourceを再読し、official ID＋terms hash取得時だけDONE |
-| 35A | ELZ-L13A repeated General Agent application wake | **IN_PROGRESS — NEXT** | current identityのGeneral Money taskはowner row 1・5分interval。Eliza processは生存し、自然wakeを13:52:31に再確認した。候補1件・tool1件を選ぶだけの重複Luna callが毎wake 120秒timeoutしてprovider bridgeへ進まない真因を削除し、起動時は保存済みnext fireを待たずmoney taskを即時fireするようEliza PR #79〜#80後のbranch commits `5226823b16`、`41da4d035c`で修正した。13:57:06の即時fireはimmutable release `e9d59c32…`の`lancers-revenue-application`へ到達したが、公式`contracts.json`のzero-capacity snapshotが15分を超えたという理由だけで`capacity_source_unavailable`、observed 0、応募0、Proposal ID 0として1.3秒で短絡した。この応募前の誤ったfreshness gateはLife Manager PR #3931 merge `ec267ccf1`で除去済み。次は独立release watcherの自然wakeで新release反映を確認し、複数自然wake→fresh inventory→同一wake内の連続application→案件別official Proposal ID/skip理由/Telegram ACK、duplicate 0を満たした時だけDONE。旧launchd business writer、新browser、provider固有brain/scriptは0 |
+| 35A | ELZ-L13A repeated General Agent application wake | **IN_PROGRESS — NEXT** | current identityのGeneral Money taskはowner row 1・5分interval。Eliza processは生存し、14:07/14:12の自然wakeを新release `8f956147…`で実測。ただし実体はEliza→provider registry→旧`application_loop.py`で、5595462の固定DOM terminal判定をTelegram 48303/48304へ送っただけで公式Proposal ID 0。現行general ACIはread/navigate限定でclick/fill/upload/submit不可。次は既存`plugin-browser` typed commandをsealed intent/effect kernelへprovider-neutralに接続し、同じLunaがlive画面の観察→一件送信→official Proposal ID→replay-zeroを閉じる。その後、複数自然wake→fresh inventory→同一wake内の連続application→案件別official Proposal ID/skip理由/Telegram ACK、duplicate 0でのみDONE。旧Python条件の延命、旧launchd writer、新browser、provider固有brain/scriptは0 |
 | 36 | ELZ-L14 funded contract | TODO | 仮払い/funded state、scope、price、deadline、counterpartyをofficial readbackする`contract-receipt.json` |
 | 37 | ELZ-L15 contract-scoped artifact | TODO | contract requirementから一deliverableを作り、source/input/output hashを束ねる`artifact-receipt.json` |
 | 38 | ELZ-L16 QA | TODO | acceptance criteria、test/readback、secret/PII、scope一致を検証する`qa-receipt.json` |
