@@ -171,6 +171,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
             - [x] P1d-3c-3c-8b-1: APFS cloneでも数十万inodeをreleaseごとに増やす残存gapを閉じ、lockfile一致時はsealed donor `node_modules`へsymlinkする。central GCはcurrent/loaded/open/explicit releaseからdependency symlinkを再帰追跡してdonor releaseを保護する。isolated symlink/readback 3/3、central cleanup focused test 15/15、syntax/diff PASS
             - [ ] P1d-3c-3c-8b-2: release-cut lock競合なしの自然reconciler wakeを待ち、loaded plistを新full releaseへ収束、dependency donor以外の旧releaseをGCしてfree 30 GiB以上をreadbackする。現在はproduction reconciler plistが`c259cc6e…`、main cutterのcurrent manifestが`release_paths=ALL`なしのため未達
               - [x] P1d-3c-3c-8b-2-a: 自然wakeの無期限GitHub HTTPS fetchを実測し、`GIT_TERMINAL_PROMPT=0`とHTTP connect/low-speed 15秒上限をreconciler sourceへ追加。focused reconciler test 1/1、shell syntax、diff check PASS。production rollout/readbackは未実施
+              - [x] P1d-3c-3c-8b-2-b: production main cutterが同一`f68da040…`を`release_paths=ALL`なしで再生成する重複buildを検出。未完成`20260903T005309-f68da040`のexact cutter/tarだけを終了し、trapでpartial tree/lockを回収。current維持、収益loop停止0、protected deletion 0。main-derived rollout/readbackは未実施
 
 #### P4 execution ledger
 

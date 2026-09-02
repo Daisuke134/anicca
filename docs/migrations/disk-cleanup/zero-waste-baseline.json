@@ -590,6 +590,23 @@
       "diff_check": "PASS",
       "production_rollout": false,
       "note": "The exact stale release cutter and archive children were terminated after verifying an incomplete obsolete SHA; its EXIT trap removed the partial tree and lock. Free space fluctuated under concurrent writers, so no reclaimed-byte claim is made. The fetch timeout source fix is pushed only on GH-11; production still needs the authorized main-derived rollout and loaded-argv readback."
+    },
+    {
+      "batch": "p1d-reconciler-duplicate-current-build-21",
+      "duplicate_target_sha": "f68da0406b80607aeb189157b1d01d7ed2881966",
+      "duplicate_target_path": "~/loops/releases/20260903T005309-f68da040",
+      "current_path_before": "~/loops/releases/20260903T004312-f68da040",
+      "current_manifest_release_paths_before": null,
+      "stale_cutter_pid": 4911,
+      "stale_archive_child_pid": 5547,
+      "partial_release_manifest_present_before": false,
+      "partial_release_present_after": false,
+      "release_cut_lock_present_after": false,
+      "current_path_after": "~/loops/releases/20260903T004312-f68da040",
+      "revenue_loops_stopped": 0,
+      "protected_deletions": 0,
+      "free_after_kib": 6353844,
+      "note": "Natural wake attempted to rebuild the same main SHA because production main's cutter omitted release_paths=ALL. Exact redundant cutter/tar were terminated; EXIT trap removed the partial tree and lock. The GH-11 cutter fix is not production-deployed, so the next authorized rollout must install it before this gate can close."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
