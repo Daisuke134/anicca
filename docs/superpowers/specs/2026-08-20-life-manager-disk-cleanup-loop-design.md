@@ -55,14 +55,16 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 
 ### 現在地 — ゴミの大掃除は進んだが、再発防止はまだ終わっていない
 
-現在のData空きは`16,392,268 KiB`（約15.6 GiB）である。終了worktree、OpenClawの重複Git履歴、Bun cache、
-Claude transcriptの重複backupなどは回収済みで、100 MiB以上のowner不明rootも0になった。一方、通常目標の
-30 GiBには届いていない。
+直近の自然wake・stale build回収後のData空きは`6,328,184 KiB`（約6.0 GiB）で、swap usedは`25,600.06 MiB`まで
+膨らんでいる。終了worktree、OpenClawの重複Git履歴、Bun cache、Claude transcriptの重複backup、旧CodeGraph、
+未使用app/cacheなどは回収済みで、100 MiB以上のowner不明rootも0になった。一方、通常目標の30 GiBには届かない。
 
-残る最大原因は、複数のbrowser loopがChromiumを常駐させ、macOS swapを増やしていることである。直近では
-Chromium系148 process、RSS `6,834,736 KiB`、swap used `10,908.5 MiB`を観測した。ファイルを一度削除しても、
-この書込み元をboundedにしなければ空きは再び減る。今やることは、loopそのものを止めず、各browser ownerが
-run-scoped child/contextを終了時に閉じ、profileを再利用し、同時実行数を上限内へ戻すP1d-3である。
+現在の`~/loops/current`は`f68da040…`を指すが、その`RELEASE.json`には`release_paths=ALL`がなく、full release gateを
+満たさない。LaunchAgentsは195件あり、旧`7942f224…`を104 plist、旧`439dc71d…`を28 plist、旧`e9d59c32…`を24
+plistが参照している。release-reconciler自身も`c259cc6e…`のimmutable releaseから起動している。さらに自然wakeが
+GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全release build `58fd5287…`を回収した。ファイルを一度
+削除しても、release cutとChromium/swapの上限をboundedにしなければ空きは再び減る。今やることはloopを止めずに
+自然wakeを短時間で失敗させ、main由来full releaseへ収束してから、loaded/open/依存donor以外をGCすることである。
 
 ここが終わるまで「disk問題は解決済み」とは扱わない。P1d-3で30 GiB以上をreadbackした後、下の未完TODOを
 上から一件ずつ進める。完了したatomはその場で`[x]`へ更新し、commit/pushする。
@@ -167,7 +169,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
           - [x] P1d-3c-3c-8a: reuse full release `33a1acef`の実buildをreadbackし、旧43分超から5分38秒へ短縮、`npm ci` 0、`release_paths=ALL`、current activation/lock解放PASS。ただしclone後の全tree `chmod -R`がmetadataを書き換えてfreeを`7,783,188`→最悪`6,704,412 KiB`へ落とす第二原因を特定し、fresh npm treeだけ個別seal、最終source sealは全`node_modules` subtreeをskipする。focused reuse test 1/1、isolated seal fixture 3/3、shell syntax/diff check PASS
           - [ ] P1d-3c-3c-8b: pre-mergeで安全に回収できる100 MiB以上の未分類root 0を最終readbackし、loaded plist参照releaseの自然移管後に旧世代GCでnormal free 30 GiB以上を閉じる
             - [x] P1d-3c-3c-8b-1: APFS cloneでも数十万inodeをreleaseごとに増やす残存gapを閉じ、lockfile一致時はsealed donor `node_modules`へsymlinkする。central GCはcurrent/loaded/open/explicit releaseからdependency symlinkを再帰追跡してdonor releaseを保護する。isolated symlink/readback 3/3、central cleanup focused test 15/15、syntax/diff PASS
-            - [ ] P1d-3c-3c-8b-2: release-cut lock競合なしの自然reconciler wakeを待ち、loaded plistを新full releaseへ収束、dependency donor以外の旧releaseをGCしてfree 30 GiB以上をreadbackする
+            - [ ] P1d-3c-3c-8b-2: release-cut lock競合なしの自然reconciler wakeを待ち、loaded plistを新full releaseへ収束、dependency donor以外の旧releaseをGCしてfree 30 GiB以上をreadbackする。現在はproduction reconciler plistが`c259cc6e…`、main cutterのcurrent manifestが`release_paths=ALL`なしのため未達
+              - [x] P1d-3c-3c-8b-2-a: 自然wakeの無期限GitHub HTTPS fetchを実測し、`GIT_TERMINAL_PROMPT=0`とHTTP connect/low-speed 15秒上限をreconciler sourceへ追加。focused reconciler test 1/1、shell syntax、diff check PASS。production rollout/readbackは未実施
 
 #### P4 execution ledger
 

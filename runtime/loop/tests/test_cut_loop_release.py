@@ -64,7 +64,7 @@ class CutLoopReleaseTest(unittest.TestCase):
             fake_git = fake_bin / "git"
             fake_git.write_text(
                 "#!/bin/sh\n"
-                "if [ \"$1\" = -C ] && [ \"$3\" = fetch ]; then exit 0; fi\n"
+                "case \" $* \" in *' fetch --quiet origin main '*) exit 0;; esac\n"
                 "if [ \"$1\" = -C ] && [ \"$3\" = rev-parse ]; then\n"
                 f"  cat {cutter_arg.parent / 'origin.sha'}\n"
                 "  exit 0\n"

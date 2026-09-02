@@ -6,7 +6,14 @@ SOURCE_REPO="${LIFE_MANAGER_SOURCE_REPO:-$HOME/Projects/life-manager-main}"
 LOOPS_ROOT="${LOOPS_ROOT:-$HOME/loops}"
 CURRENT="$LOOPS_ROOT/current"
 
-git -C "$SOURCE_REPO" fetch --quiet origin main
+# A natural wake must fail fast when GitHub is unreachable. Without bounded
+# transport settings, one hung HTTPS fetch pins the reconciler forever and
+# prevents the next cleanup/readback wake.
+GIT_TERMINAL_PROMPT=0 git -C "$SOURCE_REPO" \
+  -c http.connectTimeout=15 \
+  -c http.lowSpeedLimit=1 \
+  -c http.lowSpeedTime=15 \
+  fetch --quiet origin main
 main_sha="$(git -C "$SOURCE_REPO" rev-parse origin/main)"
 current_sha="$(jq -r '.sha // ""' "$CURRENT/RELEASE.json" 2>/dev/null || true)"
 current_paths="$(jq -r '.release_paths // ""' "$CURRENT/RELEASE.json" 2>/dev/null || true)"

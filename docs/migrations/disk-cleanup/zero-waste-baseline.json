@@ -567,6 +567,29 @@
       "gui_domain_error": false,
       "protected_deletions": 0,
       "note": "The reconciler runs every 60 seconds and failed closed while another session held the release-cut lock. No Remote launchctl retry was attempted. The next lock-free natural wake remains the production convergence gate."
+    },
+    {
+      "batch": "p1d-reconciler-stale-build-and-fetch-bound-20",
+      "stale_release_sha": "58fd5287780a457bbdd1943b6ca2bbd6beabd38c",
+      "stale_release_path": "~/loops/releases/20260903T004151-58fd5287",
+      "stale_release_manifest_present_before": false,
+      "stale_cutter_pid": 96376,
+      "stale_archive_child_pids": [97695, 97696],
+      "stale_build_started_before_current": true,
+      "current_sha_after_cleanup": "f68da0406b80607aeb189157b1d01d7ed2881966",
+      "origin_main_sha_after_cleanup": "f68da0406b80607aeb189157b1d01d7ed2881966",
+      "partial_release_present_after": false,
+      "release_cut_lock_present_after": false,
+      "revenue_loops_stopped": 0,
+      "protected_deletions": 0,
+      "free_after_kib": 6328184,
+      "swap_used_mib_after": 25600.06,
+      "source_fix": "reconcile-agent-runner-release.sh bounds HTTPS fetch with GIT_TERMINAL_PROMPT=0, http.connectTimeout=15, http.lowSpeedLimit=1, http.lowSpeedTime=15",
+      "focused_reconciler_test": "1/1 PASS",
+      "shell_syntax": "PASS",
+      "diff_check": "PASS",
+      "production_rollout": false,
+      "note": "The exact stale release cutter and archive children were terminated after verifying an incomplete obsolete SHA; its EXIT trap removed the partial tree and lock. Free space fluctuated under concurrent writers, so no reclaimed-byte claim is made. The fetch timeout source fix is pushed only on GH-11; production still needs the authorized main-derived rollout and loaded-argv readback."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
