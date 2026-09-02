@@ -440,6 +440,12 @@ generic `alpaca_pass_failed` summary before fresh agent evidence, and created no
 pair therefore has not yet been observed. No 141 occurred; the next executable atom remains two successful
 natural wakes after these failures.
 
+The repeated pre-effect failures are handled by a minimal source fix: PR
+[#4071](https://github.com/Daisuke134/life-manager/pull/4071) adds one retry of the same finite pass only before
+any order submission, while setting an `effect_attempted` fence so an unknown post-submit result is never retried.
+It merged to `origin/main` as `935f99247`; the installed plist remains on the verified f68 release until the new
+main-derived release is cut and applied. No live endpoint or funded account is enabled.
+
 ### Explicit non-goals before submission
 
 - no Eliza dependency, fork, runtime, plugin, task database, scheduler or production checkout;
@@ -1089,7 +1095,8 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-The active atom remains R14. Its release cut and targeted apply are complete as recorded above. The first natural
+The active atom remains R14. Its release cut and targeted apply are complete as recorded above; the source retry fix
+is merged to main but not yet in the installed release. The first natural
 wake failed with exit 78, the second passed (`messageId=48773`), and the third timed out in the diagnostic provider
 (`rc=124`, then loop exit 78); the fourth also returned exit 78 before fresh agent evidence. Read back two successful
 natural five-minute wakes in succession, then prove unchanged state on identical replay. If the gate selects an
