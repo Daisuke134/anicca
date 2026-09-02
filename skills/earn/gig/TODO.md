@@ -5605,6 +5605,15 @@ queue is added. Each owner must also progress independent work concurrently insi
    public release to report no Paid worker, send, delivery or replay for that room. Do not edit its
    project state or evidence; the separate manual Codex owns it.
 
+   The natural migration itself then remained in `lm-loop reconcile shared-agent-runner` for more
+   than seven minutes. The read path shows why: `collect_live()` asks `_last_event()` once per loop,
+   and `_last_event()` rereads that loop's entire `events.jsonl`; 174 registered loops share only 62
+   event files, including 52 loops sharing one 8.8 MiB file. One snapshot therefore performs more
+   than 600 MiB of redundant event-log reads before applying anything. Cache event-file lines by
+   path for the lifetime of one `collect_live()` call only; do not persist the cache or run a Remote
+   snapshot because that path reads the macOS GUI launch domain. Acceptance is focused unit PASS
+   followed by a later natural reconciler terminal and observable owner migration.
+
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
    budget-document request but still
