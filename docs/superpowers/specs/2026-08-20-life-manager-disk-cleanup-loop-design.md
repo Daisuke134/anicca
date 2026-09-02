@@ -53,6 +53,20 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 未参照release、再生成cache、期限切れlog、terminal run、同一内容のbackupである。macOS、現行application、認証profile、
 稼働toolchain、唯一のuser data、進行中WebMCP/Gig成果物は残す。
 
+### 現在地 — ゴミの大掃除は進んだが、再発防止はまだ終わっていない
+
+現在のData空きは`16,392,268 KiB`（約15.6 GiB）である。終了worktree、OpenClawの重複Git履歴、Bun cache、
+Claude transcriptの重複backupなどは回収済みで、100 MiB以上のowner不明rootも0になった。一方、通常目標の
+30 GiBには届いていない。
+
+残る最大原因は、複数のbrowser loopがChromiumを常駐させ、macOS swapを増やしていることである。直近では
+Chromium系148 process、RSS `6,834,736 KiB`、swap used `10,908.5 MiB`を観測した。ファイルを一度削除しても、
+この書込み元をboundedにしなければ空きは再び減る。今やることは、loopそのものを止めず、各browser ownerが
+run-scoped child/contextを終了時に閉じ、profileを再利用し、同時実行数を上限内へ戻すP1d-3である。
+
+ここが終わるまで「disk問題は解決済み」とは扱わない。P1d-3で30 GiB以上をreadbackした後、下の未完TODOを
+上から一件ずつ進める。完了したatomはその場で`[x]`へ更新し、commit/pushする。
+
 ### As-Is — 現在の開発状態
 
 - cleanupの専用workspaceは`~/Projects/life-manager-symphony-workspaces/GH-11`である。
@@ -86,7 +100,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 | 1 | 完了 | Codex connectionをfresh sessionで復旧 | backend `CONNECTION_OK`、app-server/socket存在 |
 | 2 | 完了 | 緊急manual cleanupと即時再発原因を修正 | 回収bytes、loop継続、errors 0、protected deletion 0 |
 | 3-1〜3-4 | 完了 | host census、終了worktree、重複clone、OpenClaw重複物を整理 | remote SHA、open/dirty保護、before/after bytes |
-| 3-5 | **現在active（cleanup側完了、reconciler自身のみ未完）** | applications、Library、`/private/var/folders`、toolchain、user dataを分類し、Sparkle retention fixをproduction反映 | cleanup=`663f1af0...`、自然wake PASS、alias 0。reconcilerのmain由来release readbackが残る |
+| 3-5 | **現在active（P1d-3のみ未完）** | 大容量rootの分類と安全なmanual cleanupを完了し、browser ownerのbounded lifecycleで再増加を止める | owner不明100 MiB root 0。free 30 GiB以上とswap再増加停止が残る |
 | 3-6 | 未完 | Codex/Claude sessionを削除せず、owner-side log/archive rotationを接続 | active session loss 0、上限超過後に元の上限へ戻る |
 | 3-7 | 未完 | loaded/open releaseが自然idleになった後、central GCで旧releaseを回収 | loaded/open/pinned保護、未参照generationだけ削除 |
 | 3-8 | 未完 | Hermesを正式retireし、必要機能をmainへ移す | caller 0、state/source移管、rollback receipt |
@@ -97,7 +111,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 
 ### 未完TODO（優先度順・完了した行は実行履歴へ移す）
 
-1. [ ] P1 Zero-waste baseline — 現在free 14.6 GiB。全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上を達成する
+1. [ ] P1 Zero-waste baseline — 現在free 15.6 GiB。owner不明100 MiB rootは0。残るP1d-3でbrowser由来swap再増加を止め、normal free 30 GiB以上を達成する
 2. [ ] P4 Legacy廃止残件 — P4a/P4bは完了。保護中のactive rootを消さず、caller/state/source移管とretire可能rootの回収を完了する
 3. [ ] P2 Writer-owned retention — 全managed writerへowner/quota/retention/finalizer/leaseを接続する
 4. [ ] P3 Release GC — actual loaded argv保護とabandoned partial release回収を完成する
