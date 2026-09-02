@@ -336,7 +336,7 @@ def _owner()->bool:
     if not binary.is_file():
         try:binary=sorted(BROWSER_ROOT.glob("chromium-*/Chromium.app/Contents/MacOS/Chromium"),reverse=True)[0]
         except (OSError,IndexError):raise _Error("browser_binary_unavailable") from None
-    try:subprocess.Popen([str(binary),f"--remote-debugging-port={CDP_PORT}",f"--user-data-dir={PROFILE_DIR}","--disable-features=WebAuthentication,WebAuthn","--no-first-run"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
+    try:subprocess.Popen([str(binary),f"--remote-debugging-port={CDP_PORT}",f"--user-data-dir={PROFILE_DIR}","--disk-cache-size=67108864","--media-cache-size=33554432",f"--disk-cache-dir={Path('~/.cache/crowdworks-browser').expanduser()}","--disable-features=WebAuthentication,WebAuthn","--no-first-run"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
     except Exception:raise _Error("browser_launch_failed") from None
     deadline=time.monotonic()+10
     while time.monotonic()<deadline:

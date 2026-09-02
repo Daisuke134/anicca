@@ -148,7 +148,7 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
         - [ ] P1d-3c-2b: Gig、Lancers、CrowdWorks、affiliate、legacy X ownerのcache上限と既存cacheをowner単位で閉じる
           - [x] P1d-3c-2b-1: Gig browserを64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `12,530,280`→`13,605,444 KiB`、`:9223` listener、owner PID 771、Chromium PID 849継続、cache残り0、shell syntax PASS。既存gig disk suiteは今回外の旧期待9 FAIL／16 PASSのため完了証拠に使用しない
           - [x] P1d-3c-2b-2: Lancers browserのcontrol-plane entrypointとlegacy installerを同じ64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `12,544,512`→`13,135,000 KiB`、`:9227` listener、owner PID 715、Chromium PID 1131継続、cache残り4 KiB、installer test 2/2とshell syntax PASS
-          - [ ] P1d-3c-2b-3: CrowdWorks browserのcache上限と既存cacheを閉じる
+          - [x] P1d-3c-2b-3: CrowdWorks browserを64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `14,120,576`→`14,530,684 KiB`、`:9228` listenerとChromium PID 11155継続、cache残り0、source compile PASS
           - [ ] P1d-3c-2b-4: affiliate browserのcache上限と既存cacheを閉じる
           - [ ] P1d-3c-2b-5: legacy X browserをmain正本へ割当て、cache上限と既存cacheを閉じる
         - [ ] P1d-3c-2c: IPv4 `:9222`を占有する不要Google Chrome ownerをretireし、Job Search endpoint競合を0にする

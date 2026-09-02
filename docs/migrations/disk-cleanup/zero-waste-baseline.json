@@ -81,6 +81,19 @@
         "limits": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
         "focused_test": "apps.lancers-revenue.tests.test_install_local 2/2 PASS; bash/zsh syntax PASS",
         "revenue_loop_stopped": false
+      },
+      "crowdworks_browser_cache": {
+        "source": "skills/earn/crowdworks/scripts/account.py",
+        "profile": "~/.local/state/anicca/crowdworks/browser-profile",
+        "cache_before_kib": 447248,
+        "cache_after_kib": 0,
+        "free_before_kib": 14120576,
+        "free_after_kib": 14530684,
+        "chromium_pid_after": 11155,
+        "listener_after": "127.0.0.1:9228",
+        "limits": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
+        "verification": "source compile PASS; no dedicated CrowdWorks account test exists",
+        "revenue_loop_stopped": false
       }
     }
   },
