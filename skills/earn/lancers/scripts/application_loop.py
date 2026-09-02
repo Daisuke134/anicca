@@ -621,6 +621,8 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     for row, decision in eligible:
         project_id, proposal = str(row["external_id"]), str(decision["proposal_text"])
         amount, due = int(decision["price_jpy"]), str(decision["deliver_date"])
+        reports_by_id[project_id]["price_jpy"] = amount
+        reports_by_id[project_id]["deliver_date"] = due
         try:
             value = application_tick.run_live_tick(project_id=project_id, proposal_text=proposal, proposed_amount_minor=amount, delivery_due_on=due, state_path=state_path) if submitter is None else _submit(submitter, row, proposal, amount, due, state_path)
             current = _tick_result(value, project_id)

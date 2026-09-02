@@ -822,9 +822,9 @@ def _production_submitter(
         with expect_navigation(wait_until="commit", timeout=10_000):
             final.click(no_wait_after=True)
     except Exception:
-        raise RuntimeError("submission_uncertain") from None
+        pass
     try:
-        observed = _strict_identity(proposal_reader(page, project_id), project_id, None)
+        observed = _production_readback(page, None, project_id, proposal_reader)
     except Exception:
         raise RuntimeError("submission_uncertain") from None
     return {**observed, "amount_minor": terms["amount_minor"], "delivery_due_on": terms["delivery_due_on"]} if observed else {}

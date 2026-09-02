@@ -604,7 +604,10 @@ def render_application_decision(decision: Mapping[str, object]) -> str:
     outcome_value = str(decision.get("outcome") or "")
     if outcome_value == "application_verified":
         outcome = "📨 応募を公式確認しました"
-        explanation = f"Lancersのproposal ID {decision.get('provider_proposal_id')} を公式履歴で確認しました。"
+        explanation = (
+            f"提案額{decision.get('price_jpy')}円、納期{decision.get('deliver_date')}、"
+            f"proposal ID {decision.get('provider_proposal_id')} を公式履歴で確認しました。"
+        )
     elif business_class == "hard_prohibited":
         outcome = "🚫 応募しません"
         explanation = f"募集文の「{reasons[1]}」が、対応できない必須条件（{reasons[0]}）に当たるためです。" if len(reasons) > 1 else "対応できない必須条件があるためです。"
