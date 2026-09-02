@@ -1687,7 +1687,7 @@ The fixed execution order and durable checklist for this focused recovery is:
    caption and slot readback, natural Telegram, metrics registration, and
    replay-zero. Every sibling marketing lane and every non-marketing label
    remains byte-for-byte unchanged.
-5. [ ] **MKT-10R7:** restore the twelve verified TikTok/Instagram mobile-app owners one
+5. [x] **MKT-10R7:** restore the thirteen verified TikTok/Instagram mobile-app owners one
    destination at a time at three/day. Advance after the exact handle, content
    family, integration, three-slot CalendarInterval, one real kickstart/native
    publication, and same-slot provider replay-zero pass at system level; waiting
@@ -2476,8 +2476,8 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **Order 25 MKT-10R6 is terminal and MKT-10R7 is active.**
-All 12 retained Anicca/Honne destinations have a fresh production publication,
+Current TODO state: **Order 25 MKT-10R7 is terminal.**
+All 13 retained Anicca/Honne destinations have a fresh production publication,
 exact provider-integration readback, native-profile owner/content-family
 readback, Telegram receipt, and same-slot replay with zero new effects. The
 frozen mapping is Anicca EN Instagram `@anicca.affirmation`/Larry,
@@ -2537,6 +2537,8 @@ blocked until MKT-10R7 closes.
 **MKT-10R7 live cursor 5:** Instagram `@anicca.jp.videos` is terminal at 3/day under manifest `14153b9b…2713`: exact Postiz `cmmzzg2es0539p30ycb94ayx0`, JA Widget pack `00dcff6f…95ed`, CalendarIntervals `08:05/13:05/18:20`, and live Reel `https://www.instagram.com/reel/Dcw6MWljNYd/` / Postiz `cmtjc4sit03capn0yl8pzvgsy`. Immediate replay returned publication/Telegram `created:false`. All eleven connected Anicca targets are now production-armed at 3/day; `@obou.anicca` is not a retained target, while missing `@anicca.videojp` remains 0/day. The first active atom is now Honne EN TikTok `@honne_reveal` / `cmoig11ew001zlv0yk6vqo1us`.
 
 **MKT-10R7 live cursor 6:** Honne EN TikTok `@honne_reveal` is terminal at 3/day under manifest `5025f5a8…42ba`: exact Postiz `cmoig11ew001zlv0yk6vqo1us`, relationship-confession ReelClaw pack `0c28dee0…7706`, CalendarIntervals `07:00/11:00/20:30`, and native `https://www.tiktok.com/@honne_reveal/video/7680694952506099732` / Postiz `cmtj8e61p02fvpn0ydj48cpjv`. Kickstart exited 0 with public URL HTTP 200, provider reconciliation true, publication replay false, and Telegram `created:false`. The first active atom is now Honne JA TikTok `@honnevideo` / `cmnit95mg015rrm0ye5vm8dhl`.
+
+**MKT-10R7 live cursor 7 — terminal override:** Honne JA TikTok `@honnevideo` is terminal at 3/day under manifest `8ec307f3…af72c`: exact Postiz integration `cmnit95mg015rrm0ye5vm8dhl`, Honne JA pack `d550a0a6…86ab`, CalendarIntervals `08:30/12:30/21:30`, and native `https://www.tiktok.com/@honnevideo/video/7680723828586170388` / Postiz publication `cmtjcebpa03e9pn0yst1kmlze`. Immediate same-slot replay returned generation/publication/Telegram `created:false`, so it produced no duplicate provider or notification effect. This terminal cursor supersedes the MKT-10R7 table row's earlier `active` wording: all 13 retained Anicca/Honne mobile targets are loaded, production-armed at exactly three CalendarIntervals/day, and point to immutable release `20260902T085615-e9d59c32`; all 17 non-target holds remain manifest-unarmed at 0/day. Missing TikTok `@anicca.videojp` has no exact Postiz integration and remains a hold rather than borrowing another account. YouTube, ebook, and monk remain outside this completed mobile-lane gate.
 
 #### MKT-10R6 production-slot repair contract
 
