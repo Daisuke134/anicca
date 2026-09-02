@@ -592,6 +592,11 @@ Hermes plistのPATHに残るため固定順序⑧まで保持し、現行`/opt/h
 read backした。`.maestro`は867,024→352,648 KiB、Data空き`38,371,072 KiB`（約36.6 GiB）、
 errors 0、protected deletion 0である。
 
+`~/.u2net/u2net.onnx`はprocess 0、open handle 0、source caller 0の公開ML model cacheだったため171,876 KiBを
+回収した。`~/.camofox` 1,480 KiBはDaisが未使用と明示したtool rootだが、多数の`storage-state.json`認証sessionを
+含むため、session移管証明なしでは削除せず保持した。Data空き`30,227,868 KiB`（約28.8 GiB）、
+errors 0、protected deletion 0である。
+
 `~/.agent-browser` 698,524 KiBはChrome for Testing 148.0.7778.97と148.0.7778.178の2versionを保持していた。
 rootおよび旧versionはprocess 0、open handle 0だったため、旧`.97`だけ349,004 KiBを回収した。新版`.178`、
 全engine/socket、`auth`、`.encryption-key`は保持をread backした。`.agent-browser`は698,524→349,520 KiB、
