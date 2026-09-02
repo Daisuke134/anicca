@@ -576,6 +576,21 @@ def test_wait_accepts_exact_readback_receipt_shape(tmp_path):
     assert remote.validate_wait(root, feedback, digest, pass_start=0)["status"] == "blocked"
 
 
+def test_wait_accepts_legacy_result_as_readback_and_kind(tmp_path):
+    remote = load("paid_remote_result")
+    root, feedback, digest = blocked_project(tmp_path)
+    result_path = root / "delivery/paid-remote-result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["business_outcome"]["official_receipts"] = [{
+        "provider": "provider.example",
+        "url": "https://provider.example/status",
+        "result": "Official status page shows the request is still pending.",
+    }]
+    write_json(result_path, result)
+
+    assert remote.validate_wait(root, feedback, digest, pass_start=0)["status"] == "blocked"
+
+
 def test_paid_direct_maps_valid_blocked_owner_to_pending(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)

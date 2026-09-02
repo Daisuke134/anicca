@@ -227,13 +227,18 @@ def validate_wait(root, feedback, digest, pass_start=0):
     readback_present = False
     for receipt in receipts:
         url = receipt.get("url") or receipt.get("official_url") if isinstance(receipt, dict) else None
+        legacy_result = receipt.get("result") if isinstance(receipt, dict) else None
+        kind = receipt.get("kind") if isinstance(receipt, dict) else None
         if (not isinstance(receipt, dict)
-                or any(not isinstance(receipt.get(key), str) or not receipt[key].strip()
-                       for key in ("provider", "kind"))
+                or not isinstance(receipt.get("provider"), str) or not receipt["provider"].strip()
+                or (not isinstance(kind, str) or not kind.strip())
+                and (not isinstance(legacy_result, str) or not legacy_result.strip())
                 or not isinstance(url, str) or not url.strip()):
             raise ValueError("invalid remote wait receipt")
         readback_present = readback_present or (
             isinstance(receipt.get("readback"), str) and bool(receipt["readback"].strip())
+        ) or (
+            isinstance(legacy_result, str) and bool(legacy_result.strip())
         ) or (
             receipt.get("exact_readback") is True
             and isinstance(receipt.get("readback_source"), str)
