@@ -164,12 +164,18 @@ def _launchctl(*args: str) -> str:
     return output
 
 
-def _last_event(state_root: str, loop_id: str | None = None) -> dict | None:
+def _last_event(state_root: str, loop_id: str | None = None,
+                cache: dict[Path, list[str]] | None = None) -> dict | None:
     path = Path(os.path.expanduser(state_root)) / "events.jsonl"
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return None
+    if cache is not None and path in cache:
+        lines = cache[path]
+    else:
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines = []
+        if cache is not None:
+            cache[path] = lines
     for line in reversed(lines):
         try:
             value = json.loads(line)
@@ -219,10 +225,11 @@ def collect_live(registry: dict) -> tuple[dict, dict, dict, set[str], set[str]]:
     releases, events = {}, {}
     for path in installed_paths:
         releases[path.stem] = _release_from_plist(path)
+    event_cache: dict[Path, list[str]] = {}
     for loop_id, entry in registry["loops"].items():
         label = entry["label"]
         releases[label] = _release_from_plist(plist_dir / f"{label}.plist")
-        event = _last_event(entry["state_root"], loop_id)
+        event = _last_event(entry["state_root"], loop_id, event_cache)
         if event:
             events[loop_id] = event
     return loaded, disabled, events, releases, installed
@@ -323,6 +330,7 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                lock_path: Path | None = None,
                preserve_unloaded: bool = False,
                skip_busy: bool = False,
+               reload_running: bool = False,
                event_writer=append_runtime_event) -> list[dict]:
     release_root = release_root.resolve()
     current = Path(current or "~/loops/current").expanduser()
@@ -335,7 +343,8 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
         raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
     results = []
     for item in plan:
-        item_lock = _label_apply_lock_path(current, item["label"], lock_path)
+        item_lock = (None if reload_running else
+                     _label_apply_lock_path(current, item["label"], lock_path))
         try:
             with _apply_lock(current, item_lock):
                 if skip_busy:
@@ -490,7 +499,8 @@ def main(argv: list[str] | None = None) -> int:
                     target=row["loop_id"],
                     preserve_unloaded=row["launchd_state"] == "unloaded",
                     skip_busy=(loaded_idle_only and
-                               row["loop_id"] not in explicitly_reloadable)))
+                               row["loop_id"] not in explicitly_reloadable),
+                    reload_running=row["launchd_state"] == "loaded-running"))
             except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
                 failed.append({"loop_id": row["loop_id"], "error": str(exc)})
         print(json.dumps({

@@ -5587,6 +5587,43 @@ queue is added. Each owner must also progress independent work concurrently insi
    four Coconala owners converge naturally from that public immutable release. Do not stop the
    currently running old-cutter attempt and do not operate the macOS GUI launch domain.
 
+   PR `#4060` merged this repair to public main as `33a1acefc`. A GUI-domain-free source cut then
+   activated immutable full release `20260903T000125-33a1acef`; the next natural cut used that
+   repaired cutter and activated newer public-main release `20260903T000905-30b6bede`. Its live
+   process tree proved exact-lockfile donor cloning for root, Agentmail and the Life Manager app
+   with no `npm ci`. Apply, Reply, Paid and Storefront are all independently alive at the same time,
+   so there is no cross-lane execution queue, but they remain pinned to four older releases while
+   the natural reconciler is still migrating loaded owners. Free space is about 7.3 GiB. Keep this
+   atom open until that natural migration terminates, central GC removes only newly unpinned
+   releases, Reply action `529` has one official buyer-visible effect and readback, and replay is
+   zero. Ryu room `18211957` remains excluded from all loop effects.
+
+   A read-only process audit then found the old Paid release had admitted Ryu room `18211957` to a
+   semantic decision worker because the canonical `MANUAL_ONLY_TALKROOM_IDS` contained only the
+   separate manual room `18211838`. No send was observed, but discovery itself violates the manual
+   ownership boundary. Add `18211957` to that existing discovery-time exclusion and require the next
+   public release to report no Paid worker, send, delivery or replay for that room. Do not edit its
+   project state or evidence; the separate manual Codex owns it.
+
+   The natural migration itself then remained in `lm-loop reconcile shared-agent-runner` for more
+   than seven minutes. The read path shows why: `collect_live()` asks `_last_event()` once per loop,
+   and `_last_event()` rereads that loop's entire `events.jsonl`; 174 registered loops share only 62
+   event files, including 52 loops sharing one 8.8 MiB file. One snapshot therefore performs more
+   than 600 MiB of redundant event-log reads before applying anything. Cache event-file lines by
+   path for the lifetime of one `collect_live()` call only; do not persist the cache or run a Remote
+   snapshot because that path reads the macOS GUI launch domain. Acceptance is focused unit PASS
+   followed by a later natural reconciler terminal and observable owner migration.
+
+   The same migration exposes a bootstrap lock conflict for owners launched from pre-lock-fix
+   releases: each old long-running Coconala owner still holds its per-label execution lock for its
+   full lifetime, while `apply_live()` tries to acquire that same file before performing an intended
+   running-owner release reload. Keep the per-label lock for normal duplicate-run prevention. For an
+   explicitly selected `loaded-running` release migration only, serialize deployment with the
+   existing short-lived global apply lock instead; the natural install/reload stops the old owner,
+   releases its legacy label lock and starts the new owner. Do not invoke Remote launchctl or a
+   manual restart. Acceptance is focused mocked apply/reconcile PASS and later natural four-owner
+   migration to a public release containing this change.
+
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
    budget-document request but still

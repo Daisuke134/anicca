@@ -724,7 +724,17 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
                 if stable is None or stable[:2] != snapshot:
                     stable = (*snapshot, time.monotonic())
                 elif time.monotonic() - stable[2] >= 2:
-                    terminate_process_tree(process)
+                    try:
+                        terminate_process_tree(process)
+                    except PermissionError:
+                        # macOS can deny a group signal after the provider has
+                        # already sealed its result. Stop the leader directly
+                        # and wait; never report success while it remains alive.
+                        try:
+                            process.terminate()
+                        except PermissionError:
+                            pass
+                        process.wait(timeout=5)
                     return 0
             if time.monotonic() >= deadline:
                 terminate_process_tree(process)
