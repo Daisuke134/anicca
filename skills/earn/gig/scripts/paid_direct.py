@@ -3880,6 +3880,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
         "paid-remote-result.json must include business_outcome with required_effect_satisfied, required_output_satisfied, "
         "remaining_work, and official_receipts. Set both satisfied fields true only after the complete semantic contract has "
         "official provider readback; otherwise preserve progress, write status=blocked and a nonempty blocker in paid-remote-result.json, "
+        "and make every wait receipt include either a nonempty readback or both readback_source and exact_readback=true, "
         "and return blocked without manufacturing a completion result. "
         "do not submit to Coconala or use formal delivery."
     )
