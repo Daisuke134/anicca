@@ -69,8 +69,9 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 | 4 | 未完 | Lancers revenue loopを別ownerの移管完了後に継続 | Apply→Negotiate→Paid→official payment |
 | 5 | 未完 | WebMCP hackathon提出を閉じる | Mercor readback、replay-zero、動画、YouTube、Devpost |
 
-現在3-5はsource fixをmainへ統合済みだが、production plistが旧immutable release `64a9a1c5...`を直接pinし、
-global release watcherがないため反映待ちである。禁止するのは、Remoteから`launchctl`、`gui/$UID`、
+現在3-5はsource fixをmainへ統合済みで、production plistとmacOS Background Task Management DBは
+新immutable release `eb068f0c...`をpinする。ただしloaded jobのargv/environmentは旧`64a9a1c5...`のままで、
+plist書込みと背景項目の許可toggleだけでは再読込されない。禁止するのは、Remoteから`launchctl`、`gui/$UID`、
 `lm-loop apply/start/stop/restart`へ入り141を起こす経路と、Terminal/AppleScript等による同経路の迂回である。
 ここで`gui/$UID`はlaunchdのservice domain名であり、通常の画面GUIを意味しない。CloakBrowser、Accessibility/CUA、
 アプリのボタン操作、通常のapp起動・終了、process診断、source/spec/Git変更、隔離test、read-only production観測、
@@ -91,7 +92,12 @@ entrypointを読み、`launchctl ... gui/$UID`へ到達する場合だけその�
 3-5cの実測releaseは`~/loops/releases/20260902T162519-eb068f0c`、exact SHA
 `eb068f0c8363381f380867ef1a94df378cd5234e`、provenance=`ancestor-of-origin-main`、size `1,251,424 KiB`である。
 `RELEASE.json`とrelease rootはread-onlyで、Sparkle retention fixを含む。作成時は`.release-cut.lock`と共通apply lockを使い、
-`launchctl`とplist reloadは0回である。production plistは引き続き旧`64a9a1c5...`をpinするため、3-5dは未完のままにする。
+`launchctl`とplist reloadは0回である。その後、apply planのatomic writerでcleanup plistだけを新releaseへ更新し、
+BTM DBも`20260902T162519-eb068f0c/bin/lm-loop-run`へ自動追従した。System Settingsの同名`lm-loop-run`
+170件をBTM label順と照合し、cleanupは169番目と特定した。実行中とidleの両方でその項目だけを
+GUIからOFF→ONしたが、許可状態だけが変わり、read-only `launchctl print`のloaded programは
+`20260902T095123-64a9a1c5/bin/lm-loop-run`、`LIFE_MANAGER_RELEASE_SHA=64a9a1c5...`のままだった。
+bootstrap/bootout/kickstart/submitは0回である。したがって3-5dはloaded argvが新SHAになるまで未完とする。
 作成直後のData空きは`25,853,440 KiB`、Sparkle Installationは`1,985,752 KiB`、Updater PID 8768はactive、
 installed ChatGPTは`26.820.60940 (7119)`である。
 
@@ -109,8 +115,14 @@ Data free `27,803,836,416 bytes`である。したがって3-5eを完了扱い�
 次の自然wake `18d170f9e4ffde38-41373`は追加triggerなしでterminal `pass`となった。receiptは
 `errors=0`、`protected_deletions=0`、`preserved_reasons={open:1, probe-budget-exhausted:5}`、
 追加回収`2,261,321,785 bytes`、`free_after=25,721,294,848 bytes`である。前runの`probe-error`は継続せず、
-fail-closed保存から自然回復した。3-5eの安全receiptは完了したが、production pinは旧releaseのままなので3-5dを
+fail-closed保存から自然回復した。3-5eの安全receiptは完了したが、loaded jobは旧releaseのままなので3-5dを
 先頭未完atomとして維持し、3-5全体を完了扱いにしない。
+
+GUI再登録後もloaded jobは旧releaseのままで、直前run `18d17211b68c2d40-72518`は旧SHAで
+terminal `fail`となった。これを新releaseの成否証拠に使わない。この時点のData volumeは228 GiB中
+約21 GiB空きである。次の唯一のatomは、正規deployment ownerが禁止経路外からjobを再読込し、
+loaded program/environmentの`eb068f0c...`一致と、次の自然wakeのterminal `pass` / `errors=0` /
+`protected_deletions=0`を読み戻すことである。
 
 ### 全Codexが守る同期ルール
 
