@@ -2039,14 +2039,20 @@ proved LaunchServices had opened a different document; shared `_open` now uses I
 its final receipt. Only regenerated caches and a completed failed staging copy were reclaimed; APFS then released
 19 GiB, while durable customer data, browser profiles and the verified v43 bundle remained intact.
 
-The remaining immediate blocker is now the macOS user bootstrap, not Paid logic, Coconala auth, artifact quality or
-disk. After the disk incident, `launchctl-safe`, direct `launchctl` and `launchctl asuser` all return 141
+**Superseded incident conclusion:** the following reboot diagnosis was wrong and must not be reused. `launchctl`
+141 only proved that this caller's control path was unavailable; it did not prove the Mac or GUI bootstrap needed
+repair. Stopping/replacing ChatGPT/Codex app-server disconnected the user's iPhone Remote session and is prohibited.
+The correct response is to preserve Remote/app-server/loginwindow/Mac, gather read-only process evidence, and let
+the existing immutable loop reach its next natural owner wake without mutating the host lifecycle.
+
+The then-observed symptoms were: after the disk incident, `launchctl-safe`, direct `launchctl` and `launchctl asuser` all returned 141
 `Reentrancy avoided`; Terminal/Aqua resolution returns -10827; OpenClaw Gateway is unavailable; sudo and localhost
 SSH report that uid 501 has no passwd record; and direct OpenDirectory lookup returns `eServerError`. No attempted
 path started another Paid process and customer effect/readback remain zero. A full Codex/ChatGPT desktop app
 restart was then rechecked and did not recover either service: OpenDirectory still returns `eServerError`, and
-`launchctl print gui/501/...` still returns 141. The exact minimum owner action is now one full Mac reboot, then
-resume this thread. On the recovered Aqua bootstrap,
+`launchctl print gui/501/...` still returns 141. The former conclusion that a full Mac reboot was required is
+explicitly withdrawn. After the user restored the bootstrap independently, the existing Paid owner resumed on
+the recovered Aqua bootstrap:
 kickstart the existing `ai.anicca.hf-gig-paid-direct` owner once; do not run a custom executor. Require v44 PASS,
 exact-room attachment/message readback with formal delivery OFF, then a second natural wake with replay-zero.
 The account owner then authorized that reboot. All three in-session native restart paths failed at the same broken

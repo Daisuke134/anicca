@@ -46,6 +46,11 @@ locked worktree -> focused test -> merged main -> immutable release -> lm-loop a
 - Do not create production plists, loop installers, release watchers, or raw
   mutating `launchctl` calls. Use `lm-loop apply/start/stop/restart`. Never
   restart another loop's process, browser, profile, or state owner.
+- Treat `launchctl` exit 141 as an unavailable control path, not permission to
+  repair the host. Never stop, signal, replace, or restart ChatGPT/Codex
+  app-server, Remote Control, the GUI bootstrap, loginwindow, or the Mac to
+  recover a loop. Preserve the user's remote session and use read-only process
+  evidence plus the next natural owner wake.
 - Loaded `ProgramArguments` must contain one exact release directory, never a
   branch, worktree, mutable checkout, or `~/loops/current` symlink.
 
