@@ -71,6 +71,9 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 
 ### Patch execution map（完了までの唯一の実行順）
 
+Exact file/line/unified-diff/run/readback SSOT →
+`docs/superpowers/plans/2026-09-02-disk-cleanup-diff-patches.md`
+
 下のP0〜P7は上の固定TODOを実行可能なpatchへ畳んだものであり、順序を変えない。
 各patchは「source/mainへ統合、production反映、実bytes/readback、specのcheckbox更新」の4点が揃った時だけ完了とする。
 
