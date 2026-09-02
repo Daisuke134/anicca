@@ -13,6 +13,7 @@ from alpaca_cli import (find_order_by_client_id, observe, read_allocator_snapsho
                         read_campaign_snapshot, submit_order)
 from campaign import SYMBOLS, reconcile
 from effect_store import mark_started, reconcile_started, record_no_trade, seal
+from reporter import deliver
 
 
 def _atomic_json(path: Path, value: dict) -> None:
@@ -87,6 +88,7 @@ def main() -> int:
         _atomic_json(state / "allocation-latest.json", decision)
         _atomic_json(state / "observation-latest.json", observation)
         _atomic_json(state / "campaign.json", campaign)
+        telegram = deliver(state, observation, campaign, decision, effect)
         summary = {
             "account": observation["account"],
             "activities_count": observation["activities_count"],
@@ -101,6 +103,7 @@ def main() -> int:
             "unrealized_pnl_usd": campaign["unrealized_pnl_usd"],
             "reconciliation": reconciliation,
             "status": "allocated",
+            "telegram_message_id": telegram["message_id"],
         }
         print(json.dumps(summary, separators=(",", ":")))
         return 0
