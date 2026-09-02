@@ -2498,8 +2498,10 @@ content first; freeze the correct Postiz integration and content family; run
 one real kickstart/publication; verify the new post on that exact native handle;
 verify three JST CalendarIntervals/day and same-slot replay-zero; then update
 this cursor before touching the next row. If a screenshot handle is absent from
-the machine-readable map, classify it as `unmapped` and do not borrow a similarly
-named integration. The screenshots currently show no accepted fresh post for
+the machine-readable map, classify it as `unmapped` until native redirects,
+owner-authored mapping evidence, and live provider rows establish an exact rename;
+never borrow a similarly named integration. The screenshots currently show no
+accepted fresh post for
 TikTok `@anicca.jp1`, `@anicca_girl`, or `@aniccaaffirmation`. Their four
 owner-supplied screenshot SHA-256 values are `a2a5446c…2fb47`,
 `42153a77…ccc7`, `100afd72…9488d`, and `8ad68fa6…3db5` (the last two show the
@@ -2509,7 +2511,7 @@ not publication receipts.
 | Order | Platform/account | Expected content / mapping state | Current truth |
 |---:|---|---|---|
 | T1 | TikTok `@anicca_buddha` / Postiz `cmp9txjdp01c8oh0yb6dhlarr` | JA Larry six-image eyeglass-wearing male restaurant slideshow; never sunset/woman/video | **done in this pass** — native photo `7680708466381557012`, Postiz `cmtja7i520169s60y7tzkmv5z`, reconciliation present, `07:00/13:00/20:00`, Telegram `48448` |
-| T2 | TikTok `@anicca.jp1` | screenshot shows JA male content; no TikTok destination row exists, while the same Postiz alias is currently assigned to Instagram native `@anicca.ios.jp` | **active — unmapped; browser + Postiz identity must be resolved before posting** |
+| T2 | TikTok native `@anicca.jp1` ← stale Postiz profile `anicca.jpx` / `cmlrv8jq000hun60yy57eaptx` | Anicca JA Larry v1 native photo carousel; pinned/current profile content is the eyeglass-wearing male restaurant slideshow with Japanese mental-health / `口癖5選` copy. This TikTok integration is distinct from Instagram Postiz alias `@anicca.jp1` → native `@anicca.ios.jp`. | **active — mapping resolved, publication/cadence still unproven.** Native browser readback shows exact handle `@anicca.jp1`, 68 followers, 9,371 likes, and pinned photo posts `7648815788727553281`, `7648654406237342997`, `7617830999455550737`. Owner-authored Gmail `19e9cf1b0210674f` explicitly records `anicca.jpx @anicca.jp1 larry JA v1 (rename済)`. Live Postiz integration remains enabled under stale provider name `anicca.jpx`; its historical `PUBLISHED` rows use matching Japanese mental-health captions, including row `cmrymf8g6012nn20y5dtj8r8v`. Next atom: bind the exact Larry JA v1 pack, create one new real Postiz publication, verify it natively on `@anicca.jp1`, verify exactly 3 JST slots/day, and prove same-slot replay creates zero effects. No fresh success is claimed yet.** |
 | T3 | TikTok `@anicca_girl` | screenshot shows EN male affirmation slideshow; absent from the current Postiz destination map | pending — unmapped; no fresh-post claim |
 | T4 | TikTok `@aniccaaffirmation` | screenshot shows EN woman/male affirmation slideshow; currently a Postiz hold, not a production target | pending — classify exact integration/content; no fresh-post claim |
 | T5 | TikTok `@anicca_slideshow` / `cmnenjkff01j1pa0ysufmzhfr` | Anicca EN mental-health photo slideshow | pending fresh native post + 3/day proof |
