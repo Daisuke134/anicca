@@ -402,7 +402,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual((decisions["minItems"], decisions["maxItems"]), (1, 1))
         self.assertEqual(decisions["items"]["properties"]["request_id"]["enum"], ["6000001"])
 
-    def test_normal_tick_submits_only_first_ranked_eligible_project(self):
+    def test_normal_tick_submits_every_eligible_project(self):
         application_loop = _load_deployed_loop()
         submitter_project_ids = []
         opportunities = [_opportunity("6000001"), _opportunity("6000002")]
@@ -440,9 +440,9 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
             )
 
-        self.assertEqual(submitter_project_ids, ["6000001"])
+        self.assertEqual(submitter_project_ids, ["6000001", "6000002"])
         self.assertEqual(result["eligible_count"], 2)
-        self.assertEqual(result["verified_count"], 1)
+        self.assertEqual(result["verified_count"], 2)
         with tempfile.TemporaryDirectory() as directory:
             partial = application_loop.run_loop(
                 state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence",
@@ -450,7 +450,9 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 safety_verifier=lambda *_args: self.fail("safety_called"), submitter=submitter,
                 clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
             )
-        self.assertNotIn("error", partial)
+        self.assertEqual(partial.get("error"), "planner_contract_invalid")
+        self.assertEqual(partial.get("planner_expected_count"), 2)
+        self.assertEqual(partial.get("planner_returned_count"), 1)
 
     def test_normal_tick_preserves_coconala_planner_order(self):
         application_loop = _load_deployed_loop()
@@ -477,7 +479,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
             result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, safety_verifier=_approved_safety, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
 
         self.assertEqual(result["eligible_count"], 3)
-        self.assertEqual(submitted, ["6000003"])
+        self.assertEqual(submitted, ["6000003", "6000001", "6000002"])
 
     def test_reconcile_only_reconciles_every_pending_application_without_discovery_or_submit(self):
         application_loop = _load_deployed_loop()
@@ -730,7 +732,8 @@ class ApplicationLoopHolTests(unittest.TestCase):
                     ),
                 )
 
-        self.assertEqual(result.get("error"), "planner_contract_invalid")
+        self.assertEqual(result.get("reason"), "no_eligible_project")
+        self.assertEqual(result["decision_reports"][0]["error"], "planner_contract_invalid")
         self.assertEqual(submitter_project_ids, [])
 
     def test_claimed_pending_projects_are_excluded_before_planning_even_over_batch_limit(self):
@@ -886,7 +889,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
 
             self.assertIsNone(application_loop._capacity_reason(state, now))
             connection = sqlite3.connect(root / "marketplace-ledger.sqlite3"); connection.execute("INSERT INTO marketplace_events VALUES ('lancers','application_verified','2026-08-14T02:00:00Z')"); connection.commit(); connection.close()
-            self.assertEqual(application_loop._capacity_reason(state, now), "daily_quota_reached")
+            self.assertIsNone(application_loop._capacity_reason(state, now))
             snapshot = json.loads((root / "contracts.json").read_text()); snapshot.update(project_working_count=1, contract_candidate_count=1); (root / "contracts.json").write_text(json.dumps(snapshot))
             self.assertEqual(application_loop._capacity_reason(state, now), "capacity_details_required")
 

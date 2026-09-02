@@ -93,6 +93,8 @@ Eliza Lancers runtimeとtmuxも0で二重writerはない。このRemoteからの
 ownerによるexact 1 load待ちとして未完を維持する。plist fileの存在だけを24/7稼働と報告しない。
 Step 4 release preflightでは、既存exact-SHA Lancers installerがStep 3のshared policyをallowlistへ含めない欠落を修復した。
 isolated reconcile/normal installer testは2/2 PASSし、production external effect 0。残るStep 4はpushed commitのproduction installとexact 1 loadである。
+旧1件送信・daily quota・partial planner成功を期待したfocused testを現在の最大応募contractへ合わせ、application＋installerは26/26 PASS。
+製品runtimeの追加変更は0で、Step 4の未完境界はproduction single-owner loadだけである。
 固定順は、Apply比較→shared inventory→最小重複一件の
 shared化→Lancers single writer→新Proposal→案件別Telegram ACK→replay-zero→自然wake継続→Storefront→Negotiate→Paid→banked net→
 Gig Money Loop Skill→CrowdWorks→Freelancer.com→Life Manager自身のloop factoryである。各Stepを実測完了して正本更新後にだけ次へ進む。
