@@ -5428,7 +5428,12 @@ queue is added. Each owner must also progress independent work concurrently insi
    falls, central release GC reclaims the newly unpinned generation, and post-GC free space is read
    back. Separately, 114 regenerable MP4/MOV/M4V files under Life Manager video state and Capafy
    artifacts were removed (`223,995,054` bytes; zero remain in those two roots). Desktop raw video
-   sources remain outside this regenerable cleanup boundary.
+   sources remain outside this regenerable cleanup boundary. The exact non-current release
+   `20260902T202305-b940c7d4` was then revalidated with plist pins `0` and open processes `0` and
+   deleted, while the half-built `20260902T204442-0dbe1321` generation was preserved. Regenerable
+   daily-driver HTTP/code cache, node-gyp headers and Bun package cache were also removed. Despite
+   these recoveries, concurrent release construction left only about 3.8 GiB free, so pin migration
+   and post-migration release GC remain the root completion gate.
 
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
