@@ -211,6 +211,14 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      logical 15,592 KiB、実free +13,028 KiBを回収した。receipt 19、slides 126、receiptのないscratch 4は保持。
      次の自然factory wakeでpost成功、receipt durability、scratch 0、protected artifact保持をread backするまで
      owner-side retentionのproduction完了とは扱わない。cleanup検証目的の追加投稿は発火しない。
+
+     enabled `copy-viral-format-factory-3day`のstate約165 MiBは、同じ12,406,546-byte source動画を9 runへ
+     複製していた。fresh download必須契約は維持し、download後に同source IDの過去fileと`cmp`一致した場合だけ
+     APFS cloneへ置換してpathと独立inodeを保持するowner dedupeを`anicca-dais` main-internal commit
+     `abcaa523`へpushした。shell syntax、embedded Python compile、APFS隔離fixtureはPASS。
+     既存duplicate group 1件の8 copy、99,252,368 bytesをopen 0確認後にAPFS cloneへ変換し、source path 10本を
+     全保持して実free +96,148 KiB。cleanup 6回目wakeはruns 6、state not running、last exit 0、
+     observed_at `2026-09-02T01:28:38Z`、errors 0、protected deletion 0、reclaimed 1,949,910 bytesだった。
    - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
      active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
