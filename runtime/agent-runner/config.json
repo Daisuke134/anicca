@@ -5,6 +5,9 @@
   "providers": {
     "codex": {
       "executable": "codex",
+      "executable_fallbacks": [
+        "~/.local/bin/codex"
+      ],
       "profiles": {
         "acct1": {
           "automation_home": "~/.local/state/life-manager/codex-runner/acct1",
