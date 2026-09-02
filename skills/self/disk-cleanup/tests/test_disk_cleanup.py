@@ -355,8 +355,9 @@ def test_closed_codex_sparkle_installation_generation_is_reclaimed(tmp_path: Pat
         tmp_path
         / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation/fBQSwumuD"
     )
-    generation.mkdir(parents=True)
-    (generation / "ChatGPT.zip").write_bytes(b"x" * 32)
+    source_like_payload = generation / "ChatGPT.app/Contents/Resources/main.js"
+    source_like_payload.parent.mkdir(parents=True)
+    source_like_payload.write_bytes(b"x" * 32)
     governor = HostDiskGovernor(
         home=tmp_path,
         state_dir=tmp_path / "state",
@@ -369,6 +370,23 @@ def test_closed_codex_sparkle_installation_generation_is_reclaimed(tmp_path: Pat
 
     assert result["reclaimed"] == 32
     assert not generation.exists()
+
+
+def test_active_codex_sparkle_updater_keeps_installation_generation(
+    tmp_path: Path, monkeypatch
+) -> None:
+    generation = (
+        tmp_path
+        / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation/fBQSwumuD"
+    )
+    generation.mkdir(parents=True)
+    monkeypatch.setattr(disk_cleanup, "_sparkle_updater_active", lambda _root: True)
+    governor = HostDiskGovernor(home=tmp_path, state_dir=tmp_path / "state")
+
+    candidates = [item for item in governor.discover_candidates() if item["owner"] == "codex-app-updater"]
+
+    assert candidates == []
+    assert generation.exists()
 
 
 def test_open_codex_sparkle_installation_generation_is_preserved(tmp_path: Path) -> None:

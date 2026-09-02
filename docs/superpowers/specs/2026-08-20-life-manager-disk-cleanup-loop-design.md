@@ -681,6 +681,20 @@ Sparkle packageのversion readbackでは、現在の`/Applications/ChatGPT.app`�
 次wakeでInstallation回収、errors 0、protected deletion 0を確認する。Remoteから終了・restart・signalを
 行ってこの条件を作らない。
 
+**Sparkle bounded-retention root-cause fix:** 実packageは`.app`内に`.js`等のsource-like fileを含むため、
+旧Governorはexact allowlist済みgenerationを`protected_descendant`として永久preserveしていた。一方で
+whole-tree扱いだけを追加すると、sleep中UpdaterはInstallationへopen handleを持たず、適用前packageを早過ぎて
+削除する。そこで`disk_cleanup.py`はSparkle `Launcher/.../Updater.app/Contents/MacOS/Updater`のprocess inventoryを
+先に取り、activeまたはprobe failureならInstallation candidateを0件にする。Updater terminal後だけexact childを
+whole-tree regenerable generationとして回収する。現在のproduction read-only discoveryは
+`sparkle_candidates=0`、Updater PID 8768とstaged appは保持された。
+
+検証はSparkle focused 4件、構文、残るdisk-cleanup 58件がPASSした。全59件実行の残り1件
+`test_receipt_reserve_rejects_sparse_file_with_nonzero_blocks`は、このAPFS temporary volumeがfixtureの1 MiB sparse fileへ
+2048 blockを全割当したため、変更コードへ入る前の前提assertで失敗した。receipt reserve実装やtestを本sliceで変更せず、
+Sparkle回帰とは分離して記録する。⑤の完了にはsourceのmain統合、独立release watcherの自然反映、Updater自然terminal、
+次wakeのInstallation回収、errors 0、protected deletion 0が必要である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
