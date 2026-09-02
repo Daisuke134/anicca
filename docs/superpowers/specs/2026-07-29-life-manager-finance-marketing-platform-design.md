@@ -4248,3 +4248,47 @@ different YouTube lane or for the owner-skipped YH lane.
 unchecked item after Y2. YH `@anicca-jp` remains an explicit owner-skipped
 0/day hold, and the absent/unconnected TikTok `@anicca.videojp` remains a
 separate hold; neither may be enabled by borrowing another integration.
+
+## MKT-11 metrics control-plane cursor (2026-09-03 JST)
+
+This cursor records the first metrics recovery attempt; it does not mark the
+TikTok or Instagram metrics lanes complete and does not claim fleet-wide
+publication.
+
+* **Replay-safety fix:** an existing TikTok metric snapshot is now read-only
+  and returns `telegram: {created:false, reason:"snapshot_replay"}` instead of
+  re-enqueuing the Telegram liveness job on every 30-minute wake. A regression
+  test covers the zero-transport-call path. The focused TikTok, Instagram, and
+  env-loader tests pass `19/19`.
+* **Secret source fix:** the TikTok and Instagram metrics boot scripts now load
+  the private marketing env (`LIFE_MANAGER_MARKETING_ENV_FILE`, default
+  `~/.local/state/life-manager/private/marketing.env`), which contains the
+  Postiz and Telegram references. The guarded loader test passes for both
+  scripts; no secret value is stored in the repository or plist.
+* **Release/apply evidence:** commit `3d85a6654fc0830bca8d2c196baa0a2b953b996c`
+  is pushed on the recovery branch. Immutable release
+  `20260903T020441-3d85a665` is current. Preflight is PASS (UID 501, Aqua,
+  manager PID 1, `gui/501` readback 0). Target-only apply event
+  `782174c43f870a5e2e3af1b3` loaded the TikTok metrics plist with that release,
+  `StartInterval=1800`, and no `WorkingDirectory` override.
+* **Kickstart result:** target-only start returned launchd operation codes 0;
+  readback showed one running process from the immutable release. Its terminal
+  runtime event is FAIL: run `18d190abbe061aa0-85441`, event
+  `2ab1b0c19166e8e3b0583ec1`, blocker `entrypoint_exit_1`. No publication
+  effect is claimed. The shared launchd stderr contains mixed historical and
+  concurrent-job lines (`TikTok native metric content mismatch`, missing-key,
+  and disk-space messages), so they are not attributed to this run without a
+  per-run artifact; the exit event is the authoritative failure evidence.
+* **Public-link boundary:** owner short URL
+  `https://vt.tiktok.com/ZSVoGegjG/` still resolves to the native
+  `@aniccaaffirmation` photo `7680912718362234130`; that proves this one public
+  post only, not the metrics fleet or three daily triggers.
+
+**Next atomic TODO (unchanged order):** isolate the per-run cause of
+`entrypoint_exit_1` without retrying the same failing GUI-domain operation;
+make one TikTok metrics wake terminate PASS with a durable run artifact; then
+perform the same apply/kickstart/readback for Instagram metrics. Only after
+those control-plane checks pass may the account-by-account public TikTok
+publication verification continue (TikTok → Instagram → YouTube). The
+remaining account mapping, three-slots-per-day proof, and all unverified
+accounts remain open.
