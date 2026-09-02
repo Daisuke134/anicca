@@ -18,6 +18,7 @@ RELEASE_NAME = re.compile(r"\d{8}T\d{6}-[0-9a-f]{8,40}\Z")
 def _tree_bytes(path: Path) -> int:
     total = 0
     for current, directories, files in os.walk(path, followlinks=False):
+        os.chmod(current, 0o700)
         directories[:] = [name for name in directories
                            if not (Path(current) / name).is_symlink()]
         for name in files:
@@ -44,11 +45,6 @@ def _remove_marked(path: Path) -> int:
     os.replace(path, trash)
     shutil.rmtree(trash)
     return size
-
-
-def _make_tree_removable(path: Path) -> None:
-    for current, _, _ in os.walk(path, followlinks=False):
-        os.chmod(current, 0o700)
 
 
 def cleanup_run_root(root: Path, contract: dict, active_run_ids: set[str], *,
@@ -127,7 +123,6 @@ def gc_releases(releases_root: Path, current: Path, *, keep: int,
         result["preserved_releases"] += 1
     for _, path in reversed(ordered[max(0, keep):]):
         try:
-            _make_tree_removable(path)
             result["reclaimed_bytes"] += _remove_marked(path)
             result["removed_releases"] += 1
         except OSError:
