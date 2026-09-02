@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED STRATEGIC RETREAT / ELIZA RUNTIME RETIRED / R01-R02 DONE / R03 ACTIVE
+status: APPROVED STRATEGIC RETREAT / ELIZA RUNTIME RETIRED / R01-R03 DONE / R04 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: this file, `Strategic-retreat TODO` section
@@ -339,7 +339,7 @@ flowchart LR
 
 ## 6. Strategic-retreat TODO — fixed execution order
 
-Current cursor: **R03**. R01–R02 are complete. Only the first unchecked atom is active. Dais explicitly authorizes this reordered
+Current cursor: **R04**. R01–R03 are complete. Only the first unchecked atom is active. Dais explicitly authorizes this reordered
 queue. No atom uses TDD ceremony, a review agent, a subagent, or an Eliza runtime. No PR or main merge occurs
 until R01–R14 pass. R15 alone integrates and releases.
 
@@ -352,7 +352,7 @@ reuse an existing Life Manager helper or cut scope back to the acceptance path.
 |---:|---|---|
 | R01 | Freeze the retreat and migration map — **DONE** | This spec names every reusable Eliza asset, its Life Manager destination, every rejected dependency, the runtime boundary, non-goals, and this immutable order. |
 | R02 | Create the Life Manager implementation worktree — **DONE** | Created clean locked worktree `/Users/anicca/Projects/life-manager-main/.worktrees/alpaca-investment-loop-20260902` on new branch `feat/alpaca-investment-loop-20260902`, tracking fetched `origin/main@a6522c94d42953fd3da98c6a30db8f17c9ba39f6`. Common Git dir is `/Users/anicca/Projects/life-manager-main/.git`; remote is `https://github.com/Daisuke134/life-manager.git`. The dirty ordinary checkout and both Eliza checkouts remain untouched. |
-| R03 | Register the minimal loop | Add `loops/alpaca-investment/loop.toml`, `skills/alpaca-investment/`, the loop-registry row and budget row. One invocation acquires a lock, performs one bounded pass and exits. Cadence is 300 seconds; no hand-written plist or second scheduler. |
+| R03 | Register the minimal loop — **DONE** | Implementation commit `22b74dee9` adds `loops/alpaca-investment/loop.toml`, `skills/alpaca-investment/{SKILL.md,run.py}`, one registry row and one budget row. Direct schema readback reports 174 registry entries, matching label/entrypoint, cadence 300 seconds and a registered budget. The executable finite stub exits 78 with `broker_observation_not_implemented` and zero effect, deliberately failing closed until R04. No plist, resolver row, second scheduler, PR, main merge, release or launchd mutation exists. |
 | R04 | Port official observation | Use pinned Alpaca CLI with private secret references to read the dedicated paper account, clock, positions, orders, activities and candidate market data. Reject live endpoints/credentials before any mutation. |
 | R05 | Port receipt and recovery invariants | Write atomic external state, stable effect IDs and decision/effect/outcome receipts. An uncertain acknowledgement reconciles by client ID before retry; identical replay creates zero duplicate orders. |
 | R06 | Port the existing paper campaign | Preserve the current SPY campaign identity, its two legs, entry fills, exit rule and official P&L reconciliation. Do not orphan, duplicate or silently rename the existing position. |
