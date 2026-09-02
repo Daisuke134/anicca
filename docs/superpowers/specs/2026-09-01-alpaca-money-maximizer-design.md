@@ -433,8 +433,10 @@ generic `alpaca_pass_failed` summary; it produced no new broker order or receipt
 traceback. The next natural wake at `2026-09-02T16:03:16Z` completed successfully on the same release: `runs=2`,
 exit code `0`, decision `NO_TRADE`, effect `none`, positions `0`, broker orders `2`, paper equity/cash
 `$99,996.83`, realised P&L `-$3.00`, unrealised P&L `$0.00`, and Telegram provider `messageId=48773`.
-Because the first wake failed, the next executable atom is one more successful natural wake so the second and
-third wakes form the required consecutive pair; no 141 occurred.
+Because the first wake failed, the second wake passed but the third wake at `2026-09-02T16:09:44Z` timed out in
+the diagnostic provider after its 120-second bound (`rc=124`, `transient_timeout`, no fresh result); the loop
+returned exit 78 and created no order. The required consecutive pair therefore has not yet been observed. No 141
+occurred; the next executable atom remains two successful natural wakes after this timeout.
 
 ### Explicit non-goals before submission
 
@@ -1086,13 +1088,12 @@ require investment management registration. Customer beta stays paper-only until
 ## 8. Scope target for the next implementation atom
 
 The active atom remains R14. Its release cut and targeted apply are complete as recorded above. The first natural
-wake failed with exit 78; the second natural wake passed with the persisted decision/effect/outcome receipt, official
-Alpaca account/order/position state, and Telegram `messageId=48773`. Read back one more natural five-minute wake so
-the second and third wakes are a consecutive passing pair, then prove unchanged state on identical replay. If the
-gate selects an eligible paper candidate, reconcile at most one official CLI effect; if it selects `NO_TRADE` or
-vetoes, retain that real result without manufacturing a trade. Do not manually fire,
-add a scheduler, restart macOS/loginwindow/app-server, or touch the Eliza migration runtime. A12–A15 artifacts
-remain ordered after this product proof and must reuse its frozen redacted projection.
+wake failed with exit 78, the second passed (`messageId=48773`), and the third timed out in the diagnostic provider
+(`rc=124`, then loop exit 78). Read back two successful natural five-minute wakes in succession, then prove
+unchanged state on identical replay. If the gate selects an eligible paper candidate, reconcile at most one official
+CLI effect; if it selects `NO_TRADE` or vetoes, retain that real result without manufacturing a trade. Do not
+manually fire, add a scheduler, restart macOS/loginwindow/app-server, or touch the Eliza migration runtime. A12–A15
+artifacts remain ordered after this product proof and must reuse its frozen redacted projection.
 
 ## 9. Controlling references
 
