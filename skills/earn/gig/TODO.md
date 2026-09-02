@@ -179,12 +179,14 @@ completion claim is nevertheless false until the two failing lanes below pass na
   contract; only terminal `work/` and explicitly authorized byte-identical artifact duplicates are
   deleted.
 
-  Current disk readback is 18 GiB free. The dominant retained roots are `~/loops/releases` at about
-  7.26 GiB and `~/gig/projects` at about 4.63 GiB, not video. Nine immutable release directories
-  remain; six full releases are about 1.19 GiB each because different installed owners still pin
-  `f5b3f345`, `58a71295`, `5a9c95fa`, `e9d59c32`, `29fb7681`, or `8f956147`. Central cleanup must
-  preserve every installed/open release, so convergence is the disk fix. The live gig tree still
-  has zero MP4/MOV/M4V/WebM files; the recoverable Trash video bundle remains about 1.1 GiB.
+  Current disk readback is about 18.94 GiB free. Fourteen immutable release directories remain;
+  thirteen are protected by a loaded plist, open process, or `current`, and central cleanup
+  naturally removed unreferenced release `20260902T213719-9b1117d9` while this cursor was running.
+  This confirms why lane-local cleanup must not remove shared immutable code and that central GC is
+  active. The live `~/gig` tree still contains zero MP4/MOV/M4V/WebM files. Desktop, Downloads, and
+  recoverable Trash contain 21 videos totaling 3,474,931,225 bytes; the largest are MoneyPrinter
+  raw recordings, buyer source `IMG_0880.mov`, and Trash-only 216 MiB `athena-v4-final.mp4`.
+  Permanent deletion remains a separate irreversible user action, not automatic Coconala cleanup.
 
   Remaining C02 atoms, in order:
   1. Preserve the implemented scoped reconciler on `c259cc6e`: it already moved the three
