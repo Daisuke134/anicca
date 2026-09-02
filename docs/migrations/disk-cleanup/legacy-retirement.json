@@ -34,16 +34,21 @@
     {
       "path": "~/Projects/life-manager-eliza-money-live-report",
       "measured_kib": 781672,
-      "classification": "clean_retirement_candidate",
+      "classification": "retire_ready",
       "dirty_lines": 0,
       "head": "b0a854bd35cbd94971a16c99c67dfc7e9fd458f0",
-      "blockers": ["prove remote branch contains HEAD", "prove no open process or worktree owner"]
+      "remote_refs_verified": ["refs/heads/fix/eliza-money-live-report-20260902", "refs/pull/90/head"],
+      "open_handles": 0,
+      "blockers": ["registered worktree must be removed with git worktree remove", "irreversible-action confirmation gate"]
     },
     {
       "path": "~/.openclaw-backups",
       "measured_kib": 514440,
-      "classification": "backup_retirement_candidate",
-      "blockers": ["classify unique generations", "prove current source and rollback copy"]
+      "classification": "preserve_bounded_rollback",
+      "generations": 2,
+      "members_each": 117,
+      "member_list_sha256": "1329e423608a888f828de22141e32bc0a8b7b961db608b311067f3497082a62e",
+      "blockers": ["openclaw-core-backup policy intentionally keeps two verified credential/identity rollback generations"]
     },
     {
       "path": "~/.hermes",
