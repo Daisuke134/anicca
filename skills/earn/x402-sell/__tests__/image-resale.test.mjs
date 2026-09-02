@@ -121,6 +121,8 @@ test('image resale sends no inherited human credentials upstream', async () => {
   const handler = makeImageResaleHandler({
     loadKey: () => `0x${'4'.repeat(64)}`,
     getBalanceUsd: async () => 4.5,
+    readState: () => null,
+    writeState: () => {},
     bareFetch: async () => fake402(),
     signPayment: async () => 'signature',
     paidFetch: async (_url, options) => {
@@ -129,7 +131,14 @@ test('image resale sends no inherited human credentials upstream', async () => {
     },
   });
   const res = responseHarness();
-  await handler({ body: { prompt: 'safe landscape' } }, res);
+  await handler({
+    body: { prompt: 'safe landscape' },
+    headers: {
+      authorization: 'Bearer inherited-human-credential',
+      cookie: 'session=inherited-human-credential',
+      'x-api-key': 'inherited-human-credential',
+    },
+  }, res);
 
   assert.deepEqual(Object.keys(paidHeaders).sort(), ['Content-Type', 'PAYMENT-SIGNATURE', 'User-Agent'].sort());
 });

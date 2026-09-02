@@ -197,6 +197,8 @@ test('paid BlockRun request exposes no inherited human credentials', async () =>
   const handler = makeLlmResaleHandler({
     getBalanceUsd: async () => 4.5,
     loadKey: () => `0x${'7'.repeat(64)}`,
+    readState: () => null,
+    writeState: () => {},
     bareFetch: async () => fake402('10000'),
     signPayment: async () => 'signature',
     paidFetch: async (_url, options) => {
@@ -205,6 +207,13 @@ test('paid BlockRun request exposes no inherited human credentials', async () =>
     },
   });
   const res = responseHarness();
-  await handler({ query: { prompt: 'hello' } }, res);
+  await handler({
+    query: { prompt: 'hello' },
+    headers: {
+      authorization: 'Bearer inherited-human-credential',
+      cookie: 'session=inherited-human-credential',
+      'x-api-key': 'inherited-human-credential',
+    },
+  }, res);
   assert.deepEqual(Object.keys(paidHeaders).sort(), ['Content-Type', 'PAYMENT-SIGNATURE', 'User-Agent'].sort());
 });
