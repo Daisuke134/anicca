@@ -142,6 +142,18 @@
       "recovery": "the next bun install downloads only the packages required by that project",
       "effect_command": "bun pm cache rm",
       "source": "https://bun.com/docs/pm/cli/pm"
+    },
+    {
+      "paths": [
+        "~/.cloak/state-backups/2026-08-27/claude-projects",
+        "~/.cloak/state-backups/2026-08-28/claude-projects",
+        "~/.cloak/state-backups/2026-08-29/claude-projects",
+        "~/.cloak/state-backups/2026-08-30/claude-projects",
+        "~/.cloak/state-backups/2026-08-31/claude-projects"
+      ],
+      "expected_kib": 7002476,
+      "reason": "daily full copies of Claude transcripts; current source plus the two newest backup generations remain; browser profile, vault, and credential backups remain for all seven dates",
+      "recovery": "restore from current ~/.claude/projects or either retained 2026-09-01/2026-09-02 claude-projects generation"
     }
   ],
   "receipts": [
