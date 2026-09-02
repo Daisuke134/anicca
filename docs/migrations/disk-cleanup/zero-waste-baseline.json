@@ -445,6 +445,22 @@
       "focused_test": "1 PASS, remaining full-archive test interrupted under low disk; test process and fixture residuals 0",
       "protected_deletions": 0,
       "note": "The stale npm child ignored TERM and was killed by exact PID. Its existing cutter trap removed the unfinished release and the generic loop runner removed its private npm scratch. Future unfinished-release cleanup attempts direct deletion before recursive chmod."
+    },
+    {
+      "batch": "p1d-openclaw-backup-generation-13",
+      "release_generations_measured": 13,
+      "release_generations_with_plist_references": 13,
+      "unreferenced_release_generations": 0,
+      "incomplete_release_generations": 0,
+      "old_backup": "~/.openclaw-backups/openclaw-core-20260902-130917.tar.gz",
+      "retained_backup": "~/.openclaw-backups/openclaw-core-20260902-171143.tar.gz",
+      "old_backup_paths": 117,
+      "retained_backup_paths": 117,
+      "old_only_paths": 0,
+      "retained_backup_kib": 257220,
+      "free_before_kib": 11233796,
+      "free_after_kib": 11487852,
+      "protected_deletions": 0
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

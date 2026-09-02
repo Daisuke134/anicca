@@ -159,7 +159,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
         - [ ] P1d-3c-3c: freeを継続減少させるhost-wide writer/rootを再計測し、再生成可能な最大ownerから回収してnormal free 30 GiB以上へ戻す
           - [x] P1d-3c-3c-1: Capafy run終了後もPPID 1で残った専用一時profileのGoogle Chrome root/helper 6 processをexact profile argvで回収し、entrypointのEXIT finalizerを「run中に新規生成したexact PIDだけTERM→最大5秒→残存exact PIDだけKILL→非参照profile削除」へ変更。deleted-open Capafy profile 0、保護CloakBrowser root 9件継続、収益loop停止0、shell syntax/diff check PASS。既存focused testは今回のcleanup到達前のfixture不備で4 FAIL／2 PASSのため完了証拠に使用しない
           - [x] P1d-3c-3c-2: release reconcilerが未完成SHA `217adc4a` のfull releaseで43分超滞留し、完成済みcurrent `c3651319`とorigin/main `7a0a3930`に追い越されても巨大`npm ci`を継続していた事実を特定。収益loop/current/reconciler本体を止めず、stale npm子だけを終了して既存trapへ未完成releaseと専用scratchを回収させた。未完成release・cut lock・scratch 0、current不変、Data free最悪`8,054,120`→`12,253,100 KiB`。future cutterは未完成treeをまず直接削除し、権限失敗時だけ再帰chmodするため低disk時の無駄なmetadata一周を行わない。shell syntax/diff check PASS、focused testは1件PASS後にfull archiveの重さから中断しtest process/fixture残存0
-          - [ ] P1d-3c-3c-3: 残るhost-wide増加ownerとrelease世代の保護理由を再計測し、安全な最大再生成物を回収する
+          - [x] P1d-3c-3c-3: release 13世代を実plistから照合し、全世代が3〜331箇所参照、参照0・未完成0のため削除0。Life Manager外では同日OpenClaw core backup 2世代が同一117 path集合（旧固有0）だったため最新17:11世代を保持して旧13:09世代だけを回収。Data free `11,233,796`→`11,487,852 KiB`、最新backup 1件`257,220 KiB`継続、protected deletion 0
+          - [ ] P1d-3c-3c-4: Life Manager外のclone/workspace/cacheを上位から監査し、active参照・dirty・提出artifactを保持して冗長世代だけを回収する
 
 #### P4 execution ledger
 
