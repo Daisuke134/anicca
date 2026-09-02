@@ -278,9 +278,11 @@ class HostDiskGovernor:
         self.lsof = lsof
         self.usage = usage or self._usage
         self.clock = clock
-        self.bootstrap_health = bootstrap_health or (
-            lambda: _default_bootstrap_health(self.home, self.state_dir)
-        )
+        # Filesystem cleanup does not depend on the GUI bootstrap. Probing
+        # Directory Services or launchctl here used to make the disk owner
+        # fail precisely when the host was under pressure, and could emit
+        # launchctl 141 from an otherwise unrelated cleanup pass.
+        self.bootstrap_health = bootstrap_health or (lambda: {"status": "not-applicable"})
 
     def _checked_bootstrap_health(self) -> dict[str, object]:
         try:
