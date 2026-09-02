@@ -118,6 +118,7 @@ const EN_AFFIRMATION_TIKTOK_LANE = Object.freeze({
   accountRef: "account://tiktok/@aniccaaffirmation",
   integrationRef: "integration://postiz/tiktok/cmp93bkpu01uvoh0yd3aj560g",
   integrationId: "cmp93bkpu01uvoh0yd3aj560g",
+  title: "5 affirmations to tell yourself every morning...",
   manifestAccount: "anicca-ios-en-affirmation-tiktok",
   manifestProfile: "@aniccaaffirmation",
   lane: "anicca-en-affirmation-tiktok",
