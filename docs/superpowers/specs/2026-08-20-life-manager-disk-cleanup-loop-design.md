@@ -563,6 +563,15 @@ buyer attachment、Athena final、direct-message attachment等のGig原本/納�
 `~/.local/libexec/anicca` 337,144 KiBはjob-search observabilityの単一binaryなので、いずれも本atomの削除対象外とした。
 再測定時のData空きは`34,413,320 KiB`（約32.8 GiB）、protected deletion 0である。
 
+追加のhome-root監査で`~/profitable-claude` 2,144,084 KiBのうち、retire済みbounty-hunterの
+`skills/bounty-hunter/state/clones`が約1.18 GiBを占有していた。32 cloneを個別判定し、clean、HEADがremote branchに
+reachable、open handle 0を全て満たす31件だけを削除した。`git clone --depth 1`の再生成経路をコードで確認し、
+bounty-hunter専用plistは`~/Library/LaunchAgents`に未インストール、process 0、最終heartbeat/logは2026-07-21の
+正常`pass done`だった。dirtyな`MichaelTroelsen_tdz-c64-knowledge` 50,668 KiBとqueue/state/sourceは保持した。
+`~/profitable-claude`は2,144,084→964,564 KiB、回収1,179,520 KiB、Data空き`35,127,360 KiB`
+（約33.5 GiB）、errors 0、protected deletion 0である。`~/anicca-project` 4,182,088 KiBはWebMCP locked worktreeと
+live Codex progress reporterが所有するため変更0とした。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
