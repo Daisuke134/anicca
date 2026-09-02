@@ -80,10 +80,17 @@ source/spec/Git変更、隔離test、read-only production観測、host-wide buil
 
 - [x] 3-5a: applications、Library、`/private/var/folders`、toolchain、user dataのGiB級ownerを分類する。
 - [x] 3-5b: active Sparkle Updaterを保護し、terminal後のexact staged generationを回収するsource fixをmainへ統合する。
-- [ ] 3-5c: host-wide build lockとmain SHAをreadbackし、同SHAからimmutable releaseを一世代作成して内容を検証する。
+- [x] 3-5c: host-wide build lockとmain SHAをreadbackし、同SHAからimmutable releaseを一世代作成して内容を検証する。
 - [ ] 3-5d: 正規GUI/deployment ownerがproduction pinをそのreleaseへ反映し、loaded argvとrelease SHAをreadbackする。
 - [ ] 3-5e: Updater terminal、新ChatGPT version、Sparkle `Installation`約1.9 GiB回収、次wakeの`errors=0`、
   `protected_deletions=0`を実測する。
+
+3-5cの実測releaseは`~/loops/releases/20260902T162519-eb068f0c`、exact SHA
+`eb068f0c8363381f380867ef1a94df378cd5234e`、provenance=`ancestor-of-origin-main`、size `1,251,424 KiB`である。
+`RELEASE.json`とrelease rootはread-onlyで、Sparkle retention fixを含む。作成時は`.release-cut.lock`と共通apply lockを使い、
+`launchctl`とplist reloadは0回である。production plistは引き続き旧`64a9a1c5...`をpinするため、3-5dは未完のままにする。
+作成直後のData空きは`25,853,440 KiB`、Sparkle Installationは`1,985,752 KiB`、Updater PID 8768はactive、
+installed ChatGPTは`26.820.60940 (7119)`である。
 
 ### 全Codexが守る同期ルール
 
