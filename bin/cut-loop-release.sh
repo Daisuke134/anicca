@@ -38,8 +38,10 @@ cleanup() {
   local status=$?
   trap - EXIT INT TERM HUP
   if [ -n "$DEST" ] && [ -d "$DEST" ] && [ ! -f "$DEST/RELEASE.json" ]; then
-    chmod -R u+w "$DEST" 2>/dev/null || true
-    find "$DEST" -depth -delete 2>/dev/null || true
+    if ! find "$DEST" -depth -delete 2>/dev/null; then
+      chmod -R u+w "$DEST" 2>/dev/null || true
+      find "$DEST" -depth -delete 2>/dev/null || true
+    fi
   fi
   find "$CUT_LOCK" -depth -delete 2>/dev/null || true
   exit "$status"

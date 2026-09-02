@@ -424,6 +424,27 @@
       "focused_tests": "4 FAIL / 2 PASS before cleanup boundary: LIFE_MANAGER_RELEASE_ROOT fixture and launchd self-heal fixture",
       "protected_deletions": 0,
       "note": "df fluctuated downward during concurrent active writers; this slice proves orphan ownership and termination, not a positive free-space delta. The finalizer now terminates only exact PIDs created during its own run and removes only unreferenced Capafy temporary profiles."
+    },
+    {
+      "batch": "p1d-stale-release-build-12",
+      "stale_sha": "217adc4ab2d6eb30a151b7ea639d15263d0b2544",
+      "completed_current_sha": "c3651319d1f05519274e9163b2b9033e5bc76b2e",
+      "origin_main_sha_at_detection": "7a0a3930a0e78b855543e45b28254b378ec21fcc",
+      "stale_npm_pid": 15282,
+      "reconciler_pid_preserved": 78726,
+      "free_minimum_kib": 8054120,
+      "free_after_stale_release_cleanup_kib": 12253100,
+      "free_delta_from_minimum_kib": 4198980,
+      "stale_release_present_after": false,
+      "release_cut_lock_present_after": false,
+      "release_reconciler_scratch_present_after": false,
+      "current_release_unchanged": true,
+      "revenue_loops_stopped": 0,
+      "shell_syntax": "PASS",
+      "diff_check": "PASS",
+      "focused_test": "1 PASS, remaining full-archive test interrupted under low disk; test process and fixture residuals 0",
+      "protected_deletions": 0,
+      "note": "The stale npm child ignored TERM and was killed by exact PID. Its existing cutter trap removed the unfinished release and the generic loop runner removed its private npm scratch. Future unfinished-release cleanup attempts direct deletion before recursive chmod."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

@@ -158,7 +158,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
         - [x] P1d-3c-3b: `/private/tmp`を再監査し、canonical Telegram DBに全19,284 event key/report IDが包含される旧recovery DB `77,132 KiB`だけを回収。Data free `14,755,532`→`14,829,436 KiB`、canonical integrity `ok`・19,382 rows。残るlinked worktree 7件は全lock付き、Eliza/Alpaca/Postgres readbackは別session保護、dirty削除0
         - [ ] P1d-3c-3c: freeを継続減少させるhost-wide writer/rootを再計測し、再生成可能な最大ownerから回収してnormal free 30 GiB以上へ戻す
           - [x] P1d-3c-3c-1: Capafy run終了後もPPID 1で残った専用一時profileのGoogle Chrome root/helper 6 processをexact profile argvで回収し、entrypointのEXIT finalizerを「run中に新規生成したexact PIDだけTERM→最大5秒→残存exact PIDだけKILL→非参照profile削除」へ変更。deleted-open Capafy profile 0、保護CloakBrowser root 9件継続、収益loop停止0、shell syntax/diff check PASS。既存focused testは今回のcleanup到達前のfixture不備で4 FAIL／2 PASSのため完了証拠に使用しない
-          - [ ] P1d-3c-3c-2: 次のhost-wide増加ownerを再計測し、同じself-clean契約で最大の再生成物を回収する
+          - [x] P1d-3c-3c-2: release reconcilerが未完成SHA `217adc4a` のfull releaseで43分超滞留し、完成済みcurrent `c3651319`とorigin/main `7a0a3930`に追い越されても巨大`npm ci`を継続していた事実を特定。収益loop/current/reconciler本体を止めず、stale npm子だけを終了して既存trapへ未完成releaseと専用scratchを回収させた。未完成release・cut lock・scratch 0、current不変、Data free最悪`8,054,120`→`12,253,100 KiB`。future cutterは未完成treeをまず直接削除し、権限失敗時だけ再帰chmodするため低disk時の無駄なmetadata一周を行わない。shell syntax/diff check PASS、focused testは1件PASS後にfull archiveの重さから中断しtest process/fixture残存0
+          - [ ] P1d-3c-3c-3: 残るhost-wide増加ownerとrelease世代の保護理由を再計測し、安全な最大再生成物を回収する
 
 #### P4 execution ledger
 
