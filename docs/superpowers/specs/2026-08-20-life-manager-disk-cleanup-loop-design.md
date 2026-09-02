@@ -181,6 +181,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
               - [x] P1d-3c-3c-8b-2-i: `~/.anicca-founder`を稼働economic-loopのowner単位で監査。`founder-loop-cadence`（PID 12755）と`agent-economy-loop`（PID 20741）が稼働し、`state/earn-ledger.jsonl`、wallet rotation state、`skills/earn`を保持。`ai.anicca.pm-live-trade.plist`の`ANICCA_HOME`も同rootを指す。rootは`867,964 KiB`で、金融state/credential/ledgerを含むため削除せず、P2 owner-side rotationへ繰り越す。
               - [x] P1d-3c-3c-8b-2-j: `~/actions-runner`をrunner owner単位で監査。`runsvc.sh` PID 720と`Runner.Listener` PID 837が12時間超稼働し、`_diag` 35 files/`207,025,045 bytes`（7日超8 files/`58,178,222 bytes`）、`bin.2.334.0`と`externals.2.334.0`を保持。active log 1件はPID 837がopen。runner本体・job workspaceを削除/停止せず、owner-side bounded diagnostic retentionへ繰り越す。
               - [x] P1d-3c-3c-8b-2-k: `~/.agents`を同期owner単位で監査。`ai.anicca.agents-skills-sync.plist`が現行`skills`（`441,032 KiB`）を管理し、`.git`はclean/main。`skills.bak-20260720`は2つのunique HyperFrames MP4（合計`37,494,236 bytes`）のみで、現行skills・Codex/OpenClaw/Projectsに同名counterpartなし。active同期sourceとunique assetを削除せず、owner-side backup/archive retentionへ繰り越す。
+              - [x] P1d-3c-3c-8b-2-l: `~/bin/provider-services`（`380,964,786 bytes`）をPATH・source契約単位で再監査。現在のprocess/open handleは0だが、`skills/self/spawn/scripts/deploy-akash.sh`、Akash spec、`specs/00-MASTER.md`、現行releaseが`provider-services`コマンドを要求するunique Akash CLIである。absolute path不在だけで不要と判定せず、Akash laneのretireと代替CLI readbackまでは保持する。削除0、protected deletion 0。
 
 #### P4 execution ledger
 

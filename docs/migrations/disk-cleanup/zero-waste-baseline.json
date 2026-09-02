@@ -186,6 +186,7 @@
     {"path": "~/actions-runner/_diag", "owner": "active self-hosted GitHub runner diagnostics; retain open current log and bound old logs through runner owner"},
     {"path": "~/.agents/skills", "owner": "active agents-skills-sync canonical skill source"},
     {"path": "~/.agents/skills.bak-20260720", "owner": "unique HyperFrames assets; no verified replacement"},
+    {"path": "~/bin/provider-services", "owner": "unique Akash provider-services CLI required by spawn/deploy source contract; retain until lane retirement or replacement proof"},
     {"path": "~/.Trash/life-manager-gig-videos-20260902-134053", "owner": "P5 Coconala/Gig deliverable retention; manifest contains active 5188394, 5174332, and 18211957 artifacts"}
   ],
   "unclassified_roots_over_100_mib": [],
@@ -801,6 +802,25 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Backup has no same-path/hash counterpart in current skills, Codex skills, OpenClaw skills, or Projects. It is unique user-owned media, not a duplicate cache; defer deletion until an asset owner/replacement is proven."
+    },
+    {
+      "batch": "p1d-provider-services-cli-audit-31",
+      "path": "~/bin/provider-services",
+      "measured_bytes": 380964786,
+      "process_refs": 0,
+      "open_handles": 0,
+      "source_refs": [
+        "skills/self/spawn/scripts/deploy-akash.sh",
+        "docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md",
+        "specs/00-MASTER.md",
+        "current release Akash feature tree"
+      ],
+      "decision": "preserve_unique_cli_until_akash_lane_retirement",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "No absolute-path process or open handle exists now, but source resolves the command through PATH. Deleting the only provider-services binary would break a documented Akash deployment lane; require retirement plus replacement readback before deletion."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
