@@ -57,12 +57,18 @@ class MacosLoopRegistryTest(unittest.TestCase):
         script = (ROOT / "bin/reconcile-agent-runner-release.sh").read_text()
         self.assertIn(
             "reconcile shared-agent-runner --loaded-idle-only "
-            "--loop-id hf-gig-apply-direct --loop-id hf-gig-reply-detector",
+            "--loop-id hf-gig-apply-direct",
+            script,
+        )
+        self.assertIn(
+            "reconcile shared-agent-runner --include-running "
+            "--loop-id hf-gig-reply-detector",
             script,
         )
         self.assertIn(
             "reconcile deterministic --loaded-idle-only "
-            "--loop-id hf-gig-storefront-direct --loop-id hf-gig-paid-direct",
+            "--loop-id hf-gig-storefront-direct --loop-id hf-gig-paid-direct "
+            "--loop-id life-manager-disk-cleanup",
             script,
         )
 

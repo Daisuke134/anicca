@@ -114,9 +114,18 @@ def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypat
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
     sent = []
-    monkeypatch.setattr(default_tab, "_lease", lambda owner: {
-        "ok": True, "context_id": f"context-{owner}",
-    })
+    def nested_lease(owner):
+        async def lease_result():
+            return {"ok": True, "context_id": f"context-{owner}"}
+
+        coroutine = lease_result()
+        try:
+            return asyncio.run(coroutine)
+        except RuntimeError:
+            coroutine.close()
+            raise
+
+    monkeypatch.setattr(default_tab, "_lease", nested_lease)
 
     class FakeWebSocket:
         async def send(self, payload):
@@ -135,7 +144,9 @@ def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypat
         async def __aexit__(self, *_args):
             return None
 
+    monkeypatch.setattr(default_tab, "_browser_ws", lambda: "ws://browser")
     monkeypatch.setattr(default_tab.websockets, "connect", lambda *_args, **_kwargs: FakeConnection())
+    monkeypatch.setattr(default_tab, "_browser_ws", lambda: "ws://browser")
     monkeypatch.setattr(
         default_tab.sys, "stdin", SimpleNamespace(buffer=SimpleNamespace(read=lambda: b"")),
     )

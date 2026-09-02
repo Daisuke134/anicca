@@ -470,9 +470,9 @@ drawdown, and reconciliation health. Existing positions without a readable openi
 for aggregate maximum loss `$279`; typecheck, build, three focused suites (`5/5` tests), and `git diff --check`
 pass. This is still research-only and adds no broker effect. Read-only process and reflog evidence shows the
 running Eliza PID loaded separate-branch commit `41da4d035caead82534751ebed4c68db7030ad3f` at startup. Its checkout
-later advanced without a process restart to `4a7c839fa446e662ffb3ce6d222975ea43e802ac`; neither commit contains
-the spot-effect merge `951b02dfb0a3aab2464d943c5f5ff2190cae94f4`. Main-derived natural-wake evidence therefore remains pending;
-source checks and a changed checkout are not presented as runtime deployment proof.
+later advanced without a process restart to `02f8acf2ffcdee075adb45ebd830b885d7f9291e`; neither commit contains
+the spot-effect merge `951b02dfb0a3aab2464d943c5f5ff2190cae94f4`. At that observation point main-derived natural-wake evidence
+remained pending; source checks and a changed checkout were not presented as runtime deployment proof.
 
 The A11 risk-gated spot-effect source sub-atom is **DONE** in `life-manager-eliza` merge
 `951b02dfb0a3aab2464d943c5f5ff2190cae94f4` (PR #85). The existing ranking pass now seals an allowed crypto
@@ -484,6 +484,17 @@ Current spot exposure is included in aggregate maximum loss before a later propo
 second broker client, scheduler, or live-capital path was added. Typecheck, build, two focused suites (`5/5`
 tests), and `git diff --check` pass. Main-derived natural-wake broker evidence remains pending and is not inferred
 from source checks.
+
+The main-derived runtime promotion is **DONE** without `launchctl` or any `gui/$UID` operation. The old Eliza
+tmux process stopped independently of the Codex app-server, Remote Control, phone tunnel, gateway and browser;
+all remained live. A 43 MB PGlite snapshot and the old start entrypoint were retained before promotion. The first
+main boot exposed an invalid WAL checkpoint in the existing PGlite directory; a pristine snapshot copy reproduced
+the failure, `pg_controldata` showed a shut-down cluster, and `pg_resetwal` repaired only a copy before it opened
+89 tables, read six scheduled tasks and 178 task-log rows, and closed cleanly. The same bounded recovery then
+restored production state. Eliza now runs from clean `life-manager-eliza` main merge
+`7d2b79d65bdcf0f62fc4fd13bcdb25f99d075569`, its PGlite lock names the new runtime PID, plugin-life-manager and
+AutonomyService completed startup, and the independent Remote processes remained live. The natural task wake and
+official broker receipt still require readback before this A11 sub-atom is complete.
 
 The A12 shared public-projection source sub-atom is **DONE** in `life-manager-eliza` merge
 `0837d62918d1ce1719e04f03cab807ad5859e139` (PR #87). A pure allowlist converts official CLI campaign state

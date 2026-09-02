@@ -69,6 +69,33 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 | 4 | 未完 | Lancers revenue loopを別ownerの移管完了後に継続 | Apply→Negotiate→Paid→official payment |
 | 5 | 未完 | WebMCP hackathon提出を閉じる | Mercor readback、replay-zero、動画、YouTube、Devpost |
 
+### Patch execution map（完了までの唯一の実行順）
+
+Exact file/line/unified-diff/run/readback SSOT →
+`docs/superpowers/plans/2026-09-02-disk-cleanup-diff-patches.md`
+
+下のP0〜P7は上の固定TODOを実行可能なpatchへ畳んだものであり、順序を変えない。
+各patchは「source/mainへ統合、production反映、実bytes/readback、specのcheckbox更新」の4点が揃った時だけ完了とする。
+
+| Patch | 対応TODO | 変更対象 | このpatchが消す問題 | 完了証拠 |
+|---|---|---|---|---|
+| P0 Runtime正規化 | 3-5d、3-5e | `bin/reconcile-agent-runner-release.sh`、`runtime/loop/lm_loop.py`、production plist | unloaded release-reconciler、旧argv、一時compatibility alias、古いChatGPT staged generation | reconcilerとcleanupのloaded SHA=`5a3f94924...`、alias 0、自然wake PASS、新ChatGPT version |
+| P1 Zero-waste baseline | 3-5最終 | host inventory receipt、exact delete manifest | 終了worktree、重複clone、partial release/build、未使用app/cache/user-data duplicate | 全local writable volumeを再計測、100 MiB以上のunclassified root 0、復元不能削除0、normal free 30 GiB以上 |
+| P2 Writer-owned retention | 3-6 | `runtime/loop/lm_loop_run.py`、`runtime/loop/loop_cleanup.py`、各producerのlog/WAL/cache設定 | Codex/Claude/OpenClaw/browser/buildのsession、scratch、log、WALが無上限に増える状態 | 全managed writerにowner、quota、retention、finalizer、active leaseがあり、上限超過後に同じ上限へ戻る。active session loss 0 |
+| P3 Release GC完結 | 3-7 | `runtime/loop/central_cleanup.py`、`runtime/loop/tests/test_loop_cleanup.py` | loaded release削除、partial release放置、release世代の無上限増加 | current、loaded/open、rollback 1世代だけ保存、symlink targetを実pathで保護、partial/unused generation 0、replay回収0 |
+| P4 Legacy廃止 | 3-8 | Hermes/OpenClaw/重複workspaceのcallerとstate移管 | 旧repo、重複`.git`、重複scheduler、古いskeleton | caller 0、必要source/stateはLife Manager mainへ移管、legacy folder/repo 0、rollback receipt |
+| P5 Gig terminal lifecycle | 3-9 | `skills/earn/gig/scripts/gig_release.py`、project ledger/finalizer | buyer承認済みprojectの中間生成物、終了browser clone、再生成可能な納品cache | 未納品/再提出baseは保持、terminal projectだけ回収、active project loss 0 |
+| P6 Capacity firewall | 3-10、A-33〜A-40 | `skills/self/disk-cleanup/disk_cleanup.py`、producer admission/heartbeat | cleanupより速い同時write、unknown growth、各loopの無制限allocation | 全managed producerにclaim/quota/heartbeat。global loop stopは0。pressure時もrotate/compact/stream/checkpointで有用な仕事を継続し、projected free 11 GiB未満の新規無制限write 0 |
+| P7 Forever verification | 3-10、A-41〜A-44 | production receipts/Telegram | 「1回空けただけ」の未検証状態 | 24時間free≥11 GiB、ENOSPC/protected deletion/cleanup起因failure 0。続く7日間state-write failure/oversubscription 0、final receipt/message ID |
+
+#### P7完了後の定常状態
+
+1. 不要物の定義は「所有者不在、active/open/dirty/unpushedではない、復元可能または重複、retention期限切れ」である。この条件の未回収物は0である。
+2. Life Managerのsourceはmain 1 repoに集約し、稼働に必要なimmutable releaseはcurrent、loaded/open、rollback 1世代だけである。終了worktree、重複clone、partial releaseは0である。
+3. 各loopは自分がscratch/cache/log/WAL/artifactのownerであり、run終了時のfinalizerと時間/世代/bytes上限で自分の使用量を元の上限へ戻す。中央cleanupはwriter contextがないprotected dataを削除しない。
+4. 通常目標はfree 30 GiB以上、絶対回復floorは11 GiBである。managed growthが増えるとowner rotationとcentral cleanupが同じ周期内に減らし、無上限に積み上がらない。
+5. 「永久に物理障害もunknown external writerも起きない」とは保証しない。保証対象は全managed producerであり、未登録writerは60秒予測で検出し、protected dataを削除せずincidentとして閉じ込める。
+
 現在3-5はsource fixをmainへ統合済みで、production plistとmacOS Background Task Management DBは
 新immutable release `eb068f0c...`をpinする。ただしloaded jobのargv/environmentは旧`64a9a1c5...`のままで、
 plist書込みと背景項目の許可toggleだけでは再読込されない。禁止するのは、Remoteから`launchctl`、`gui/$UID`、
@@ -88,6 +115,8 @@ entrypointを読み、`launchctl ... gui/$UID`へ到達する場合だけその�
 - [ ] 3-5d: 正規GUI/deployment ownerがproduction pinをそのreleaseへ反映し、loaded argvとrelease SHAをreadbackする。
 - [ ] 3-5e: [x] Updater terminal、[x] Sparkle `Installation`約1.9 GiB回収、[ ] 新ChatGPT version、
   [x] 次wakeの`errors=0`、`protected_deletions=0`を実測する。
+- [ ] 3-5f: P1 Zero-waste baselineを実行し、100 MiB以上のunclassified root、終了worktree、重複clone、
+  partial release/build、復元可能な期限切れcacheを0にし、normal free 30 GiB以上を読み戻す。
 
 3-5cの実測releaseは`~/loops/releases/20260902T162519-eb068f0c`、exact SHA
 `eb068f0c8363381f380867ef1a94df378cd5234e`、provenance=`ancestor-of-origin-main`、size `1,251,424 KiB`である。
@@ -145,6 +174,20 @@ terminal `pass`、`ok=true`、`errors=0`、`protected_deletions=0`、追加回�
 cleanupの自動実行と新release runtimeの安全readbackは復旧した。現在の先頭atomは、正規
 non-Remote ownerが新plistをloadし、loaded argv/environmentの`5a3f94924...`一致を読み戻した後、
 compatibility aliasの保護を解除することである。
+
+最新readbackでは、release-reconcilerはimmutable release `c259cc6e...`からrunning、last exit 0である一方、
+cleanupのplistは`5a3f94924...`を指すがlaunchd実argv/environmentは旧`64a9a1c5...`を保持し、旧pathの
+compatibility aliasへ依存する。Data空きは`12,713,788 KiB`で30 GiB目標未達である。既存reconcilerがGig 4本だけを
+明示指定してcleanupを対象外にしていたことが直接原因なので、deterministicの`--loaded-idle-only`対象へ
+`life-manager-disk-cleanup`を追加する最小source patchを入れる。これによりRemote sessionは`gui/$UID`を変更せず、
+既存launchd ownerが次回新releaseからidle cleanupを正規移管する。loaded argv、新SHA自然wake PASS、alias 0を
+readbackするまでP0と3-5dは未完のまま維持する。
+
+loaded reconciler自身が旧immutable scriptを保持していても、そのscriptは毎周期`$CURRENT/bin/lm-loop`を実行する。
+この既存境界を使い、callerが`life-manager-release-reconciler`かつrouteが`deterministic`の時だけ、runtime側の
+requested setへ`life-manager-disk-cleanup`を追加するcompatibility bridgeを置く。旧scriptの明示Gig IDsを変更せず、
+新しいscheduler、signal、Remote launchctl操作なしで、既存launchd ownerがidle cleanupを移管できる。reconciler自身が
+新scriptへ移った後もsetへの同一ID追加はidempotentである。
 
 ### 全Codexが守る同期ルール
 
@@ -2096,8 +2139,8 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 
 ## 6. Execution Steps — Atomic TODO
 
-この表はphase mapである。実装と完了判定の唯一のSSOTは下のAtomic TODO Register A-01〜A-44であり、
-後続itemを先に実行しない。
+この表と下のA-01〜A-45は証拠ledgerである。実行順のSSOTは冒頭のPatch execution map P0〜P7であり、
+各A-itemは対応するpatchの中でだけ閉じる。後続patchを先に実行しない。
 
 | # | Work | Completion evidence | State |
 |---:|---|---|---|
@@ -2120,7 +2163,7 @@ Test Matrixの`Cover=OK`は、必要な受入テストを定義済みである�
 | 16 | 7日間連続観測とproducer lifecycle audit | state write failure 0、cleanup起因producer failure 0 | 未完了: 24時間観測後に開始 |
 | 17 | rollback restore testと最終production receiptを保存 | prior label復元可能、final receipt、Telegram完了message ID | 未完了: launchd cutover、rollback実演、最終receiptが未完了 |
 
-### Atomic TODO Register（実装完了までの唯一の残TODO SSOT）
+### Atomic evidence register（P0〜P7の詳細証拠ledger）
 
 各行は1つの作業だけを持つ。順序を飛ばさず、受入証拠が保存されるまで完了扱いにしない。
 
