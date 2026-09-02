@@ -185,8 +185,10 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      4回目cleanup wakeはruns 4、state not running、last exit 0、最新receipt errors 0、protected deletion 0、
      reclaimed 6,368 bytesで、run動画とZenn依存の再生成は0だった。
 
-     OpenClaw rootへのproduction参照はlaunchd plist 75件、enabled cron 79件中direct path参照71件で、
-     factory/slideshow/Postiz familyもenabledだった。したがってOpenClaw rootはretireせず、family単位の移管を続ける。
+     OpenClaw rootへの静的production参照はlaunchd plist 75件、staleなraw cron storeでは79件中direct path参照71件だった。
+     ただしGateway CLIがschedulerの正本であり、`openclaw cron list --json`のenabled jobはLife Manager
+     funder discovery 1件だけである。raw storeの件数を稼働数として扱わない。OpenClaw rootはactive ask/peer/browser、
+     session、draft、receipt、unique deliverable、dirty sourceを持つためroot単位ではretireせず、依存0のfamilyだけを回収する。
      埋込cloneはclean、remote commit存在、open/config参照0を個別確認した。永久禁止の`external/codegraph`と
      終了済み`gig-paid-builder/.../.tmp/plugins`はclone全体を回収し、`external/mcporter`、Camofox source、
      TikTok scraper、Zenn editor、Instagram scraper、nano-banana、self-improving-agentはworking treeを保持して
@@ -203,22 +205,30 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      path identityを保持した。5回目cleanup wakeはruns 5、state not running、last exit 0、
      observed_at `2026-09-02T01:21:57Z`、errors 0、protected deletion 0、reclaimed 6,367 bytes、再生成0だった。
 
-     enabled `4.7-slideshow-morning`は毎日09:00 JSTに旧OpenClaw skillを実行するactive factory ownerである。
+     `4.7-slideshow-morning`は旧OpenClaw skillを実行したfactory ownerだが、Gateway正本では現在disabledである。
      publish成功receipt後にだけ`pinterest/`と`viral-slideshows/` scratchをowner自身が削除し、slides、caption、
      analysis、metadata、receipt、Downloads review bundleを保持する8行の最小finalizerを
      `anicca-dais` main-internal commit `7bbca413`へpushした。shell syntax、隔離fixtureはPASS。
      既存receipt 19件のremote Postiz media URLは108/108 HTTP 200、scratch open 0を確認し、18 directory、
      logical 15,592 KiB、実free +13,028 KiBを回収した。receipt 19、slides 126、receiptのないscratch 4は保持。
-     次の自然factory wakeでpost成功、receipt durability、scratch 0、protected artifact保持をread backするまで
-     owner-side retentionのproduction完了とは扱わない。cleanup検証目的の追加投稿は発火しない。
+     disabled jobに次wakeはない。既存receipt 19件でdurabilityとremote media 108/108をread back済みであり、
+     再びenableする場合だけ最初の自然wakeでscratch 0とprotected artifact保持を再検証する。cleanup検証目的の追加投稿は発火しない。
 
-     enabled `copy-viral-format-factory-3day`のstate約165 MiBは、同じ12,406,546-byte source動画を9 runへ
+     Gateway正本でdisabledの`copy-viral-format-factory-3day`のstate約165 MiBは、同じ12,406,546-byte source動画を9 runへ
      複製していた。fresh download必須契約は維持し、download後に同source IDの過去fileと`cmp`一致した場合だけ
      APFS cloneへ置換してpathと独立inodeを保持するowner dedupeを`anicca-dais` main-internal commit
      `abcaa523`へpushした。shell syntax、embedded Python compile、APFS隔離fixtureはPASS。
      既存duplicate group 1件の8 copy、99,252,368 bytesをopen 0確認後にAPFS cloneへ変換し、source path 10本を
      全保持して実free +96,148 KiB。cleanup 6回目wakeはruns 6、state not running、last exit 0、
      observed_at `2026-09-02T01:28:38Z`、errors 0、protected deletion 0、reclaimed 1,949,910 bytesだった。
+     最終readbackでは`openclaw cron list --json`のenabled totalは1で、そのjobは
+     `o1c14-funder-program-discovery-daily`、旧4.7とcopy factoryは`--all`でdisabledを確認した。HCA runtime/launchd/processは0。
+     Postiz Honne JAはLife Manager label `ai.anicca.life-manager-honne-ja`としてimmutable release
+     `e9d59c327bcae0f3cfa07e3544c85af8349d80be`を実行し、runs 2、last exit 0である。OpenClawは
+     10,597,453,824 bytesから9,166,319,616 bytesへ縮小した。cleanup 7回目wakeはstate not running、last exit 0、
+     observed_at `2026-09-02T01:35:36Z`、errors 0、protected deletion 0、host reclaimed 6,386 bytesだった。
+     以上によりPostiz iOS/Honne移管、HCA依存0、旧factory scheduler無効化、重複artifact回収を個別readbackし、
+     残るOpenClaw dataはactive/unique/protectedとして分類済みである。
    - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
      active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
@@ -238,9 +248,9 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
       control planeでcurrentへ収束した後、central cleanupでunreferencedだけを回収する。running loopは停止しない。
    5. [x] `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
       state、production argvを移管し、一repositoryずつretireする。
-   6. [ ] **current:** OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
+   6. [x] OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
       移した後、重複`.git`/workspace/skills/mediaだけを回収する。
-   7. Hermes consumer 0を証明し、gatewayを正式retireして`~/.hermes`を回収する。customer Hermes assetsは保持する。
+   7. [ ] **current:** Hermes consumer 0を証明し、gatewayを正式retireして`~/.hermes`を回収する。customer Hermes assetsは保持する。
    8. Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
       BingX `18214856`を含む再提出中projectは保持し、terminal projectの古いregenerable attempt/workspaceだけを
       owner cleanupへ接続する。
