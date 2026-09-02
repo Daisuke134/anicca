@@ -252,8 +252,9 @@ def _run_bounded(command: list[str], *, env=None, timeout: float | None = None):
         stdout_file.close(); stderr_file.close()
 
 
-def _run(command: list[str], step: str, timeout: float | None = None) -> str:
-    result = _run_bounded(command, timeout=timeout)
+def _run(command: list[str], step: str, timeout: float | None = None,
+         env: dict[str, str] | None = None) -> str:
+    result = _run_bounded(command, timeout=timeout, env=env)
     if result.returncode:
         tail = redact_prompt_text((result.stderr or result.stdout or "")[-2000:]).strip()
         raise Failure(step, tail or f"subprocess_returncode={result.returncode}")
@@ -706,10 +707,12 @@ def _reconcile_absent_talkrooms(args, open_items: list[dict[str, Any]]) -> dict[
         }
         _write(item_path, item)
         checked_at[room] = time.time()
+        owner = f"paid-terminal-{room}"
         try:
             _run(
                 _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
                 "terminal_reconciliation", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
+                env=_fresh_child_env(args, owner=owner),
             )
             observed = {**item, **_row(_load(snapshot), room)}
             delivery_project.record_queue_selection(args.projects_root, observed, adapter="coconala")
@@ -718,6 +721,15 @@ def _reconcile_absent_talkrooms(args, open_items: list[dict[str, Any]]) -> dict[
         except (Failure, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
             results.append({"talkroom_id": room, "status": "failed",
                             "failed_step": error.step if isinstance(error, Failure) else "state_update"})
+        finally:
+            try:
+                subprocess.run(
+                    [sys.executable, str(args.cdp_helper), "close-owned", "--owner", owner],
+                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    timeout=15, check=False, env=_fresh_child_env(args, owner=owner),
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                pass
     receipt = {"version": 1, "checked_at": checked_at, "results": results,
                "remaining_candidates": max(0, len(candidates) - len(results))}
     _write(receipt_path, receipt)
