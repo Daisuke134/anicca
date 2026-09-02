@@ -97,7 +97,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 
 ### 未完TODO（優先度順・完了した行は実行履歴へ移す）
 
-1. [ ] P1 Zero-waste baseline — 現在free 18.2 GiB。全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上を達成する
+1. [ ] P1 Zero-waste baseline — 現在free 14.6 GiB。全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上を達成する
 2. [ ] P4 Legacy廃止残件 — P4a/P4bは完了。保護中のactive rootを消さず、caller/state/source移管とretire可能rootの回収を完了する
 3. [ ] P2 Writer-owned retention — 全managed writerへowner/quota/retention/finalizer/leaseを接続する
 4. [ ] P3 Release GC — actual loaded argv保護とabandoned partial release回収を完成する

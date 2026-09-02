@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "volume_free_kib_observed": 19093520,
+  "volume_free_kib_observed": 15268756,
   "runtime_pressure": {
-    "swap_total_mib": 11264.0,
-    "swap_used_mib": 10293.5,
+    "swap_total_mib": 12288.0,
+    "swap_used_mib": 11060.5,
     "chromium_processes": 151,
-    "chromium_rss_kib": 5812352,
+    "chromium_rss_kib": 6934704,
     "classification": "managed_browser_lifecycle_gap",
     "required_fix": "each browser owner closes run-scoped children and contexts, reuses profiles, and enforces bounded concurrency without stopping the owning loop"
   },
