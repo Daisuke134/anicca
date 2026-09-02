@@ -72,12 +72,22 @@ completion claim is nevertheless false until the two failing lanes below pass na
   `a0fec435e9886caeb017954eff39820f755432d7` removes manual-only talkroom `18211838` before Paid
   dispatch while leaving the other live orders eligible. Its current Paid run is still active; the
   published `latest.json` is the prior terminal receipt and must not be used as the current result.
+  Live project `5242505` / talkroom `18223833` is not delivered: its first accumulated requirement
+  row retained a legacy text-only SHA while the send boundary requires the canonical
+  `{text, attachments}` SHA, so the effect owner correctly stopped at
+  `accumulated requirement row digest mismatch` with effect/readback `0/0`. The source fix
+  normalizes every retained row at `_merge_accumulated`, keeps its content and observation metadata,
+  and deduplicates by the canonical digest; focused Paid regressions pass 70/70. Production still
+  runs immutable release `20260902T131725-29fb7681`, so this is not a delivery/readback claim.
   Remaining C02 atoms, in order:
-  1. Wait for the current Paid parent to publish its terminal receipt.
-  2. Require Paid `last exit code = 0`, terminal `status=pass`, and `failed=0`.
-  3. Install one current main-derived immutable release SHA for Apply, Reply, Storefront, and Paid.
-  4. Read back each loaded argv/SHA, cadence, terminal event, and isolated lease state.
-  5. Mark C02 complete only when that four-owner runtime readback passes.
+  1. Merge and naturally install the canonical-row normalization together with the already merged
+     parent-snapshot reuse and cleanup fixes; do not mutate the active immutable release.
+  2. Let the current old-release Paid parent terminate naturally, then require the next Paid wake to
+     repair project `5242505`'s sidecar and send/read back talkroom `18223833` exactly once.
+  3. Require Paid `last exit code = 0`, terminal `status=pass`, `failed=0`, and replay effect `0`.
+  4. Install one current main-derived immutable release SHA for Apply, Reply, Storefront, and Paid.
+  5. Read back each loaded argv/SHA, cadence, terminal event, and isolated lease state.
+  6. Mark C02 complete only when that four-owner runtime readback passes.
 - [x] `C02a` Move the Coconala buyer `逃げ因子` to manual-only handling.
   PASS = Paid never selects talkroom `18211838`; Reply always returns `stop_contact / stop` for the
   same thread; no existing project artifact, receipt, or conversation history is deleted. The account
