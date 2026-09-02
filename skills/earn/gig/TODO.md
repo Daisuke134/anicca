@@ -208,6 +208,43 @@ completion claim is nevertheless false until the two failing lanes below pass na
      isolated lease state.
   7. Mark C02 complete only when that four-owner runtime readback passes. Only then close C03/O05,
      extract the remaining marketplace-neutral kernel pieces, and start the CloudWorks adapter E2E.
+
+  Exact implementation map for those atoms, against current `origin/main`:
+  1. Reply async boundary — `skills/browser/scripts/cdp_default_tab.py:84-87`: replace the direct
+     synchronous `_lease(owner)` call inside `_serve_hidden_tab` with
+     `await asyncio.to_thread(_lease, owner)`. Keep synchronous `open_tab` unchanged. Extend
+     `skills/browser/scripts/test_target_ownership.py:143` to prove hidden-tab lease acquisition
+     runs from an active event loop without nested `asyncio.run`.
+  2. Reply estimate — `skills/earn/gig/scripts/reply_detector.py:1619-1641` must route the exact
+     thread `10085794` event into the existing bounded adapter; do not add a second sender.
+     `skills/earn/gig/scripts/requested_estimate.py:1815-1901` owns the at-most-once lifecycle and
+     `:2185-2229` owns aggregate effect/readback. PASS is one JPY 24,000 effect, one official
+     readback, then replay effect zero.
+  3. Transferred-owner fence — `skills/earn/gig/scripts/paid_direct.py:2018-2050` currently drops
+     `observe_only` whenever a newer buyer reply exists. Represent handback authority in the durable
+     policy and keep the fence until a verified handback receipt; `:5273-5280` must report the room
+     reserved/deduplicated before any remote builder is admitted.
+  4. Targeted readback timeout — `skills/earn/gig/scripts/paid_direct.py:1943-1965` must turn a
+     timed-out read with no fresh atomic snapshot into a bounded pending retry, not a terminal room
+     failure; `:5395-5400` already maps `_paid_targeted_status=pending` to browser-lease pending.
+  5. Remaining Paid work — `skills/earn/gig/scripts/paid_direct.py:3035-3214` is the existing isolated
+     file-owner path for `18218780`; `:4095-4112` and `:4411-4450` validate genuine remote-owner
+     results. Reuse those paths, produce the requested JPG, and resume `18223833` only after the
+     estimate's newer official event. No room-name branch is allowed.
+  6. Storefront contract — `skills/earn/gig/scripts/storefront_direct.py:3226-3246` contains every
+     rejected field and `:5505-5536` collects the 14 official sources. Persist the exact failed
+     field in the receipt, correct the collector/normalizer for that field, and require a 14-service
+     contract readback plus replay effect zero.
+  7. Telegram corruption — `~/gig/telegram-outbox.sqlite3` fails read-only `PRAGMA quick_check` with
+     `database disk image is malformed`. Recover into a new database using SQLite `.recover`,
+     validate `skills/earn/gig/scripts/telegram_outbox.py:18-38` schema and all surviving
+     event-key/message-id bindings, then atomically replace the corrupt file only with all writers
+     stopped. Add an integrity failure receipt at `telegram_outbox.py:55-68`; stop reducing the
+     exception to only its class at `application_direct.py:1043-1063`.
+  8. Final convergence — `runtime/loop/lm_loop.py:377-413` owns scoped loaded-idle reconciliation.
+     After Reply exits normally, converge all four plists to one pushed-main immutable release and
+     require four fresh terminal PASS receipts, official effect/readback, released leases, and a
+     second replay with duplicate effect zero before checking C02.
 - [x] `C02a` Move the Coconala buyer `逃げ因子` to manual-only handling.
   PASS = Paid never selects talkroom `18211838`; Reply always returns `stop_contact / stop` for the
   same thread; no existing project artifact, receipt, or conversation history is deleted. The account
