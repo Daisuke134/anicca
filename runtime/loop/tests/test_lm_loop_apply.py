@@ -635,6 +635,45 @@ class LmLoopApplyTest(unittest.TestCase):
             ["hf-gig-apply-direct", "hf-gig-reply-detector"],
         )
 
+    def test_reconcile_explicit_running_owner_when_requested(self):
+        release = self._release("release-a").resolve()
+        value = registry()
+        value["loops"]["hf-gig-reply-detector"] = {
+            **value["loops"]["example"],
+            "label": "ai.anicca.hf-gig-reply-detector",
+            "provider_route": "shared-agent-runner",
+        }
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        rows = [{
+            "classification": "managed",
+            "provider_route": "shared-agent-runner",
+            "launchd_state": "loaded-running",
+            "installed_release_sha": "b" * 40,
+            "loop_id": "hf-gig-reply-detector",
+        }]
+        applied = []
+
+        def record_apply(release_root, *args, **kwargs):
+            applied.append(kwargs)
+            return [{"ok": True, "release_sha": SHA}]
+
+        with (
+            patch.object(lm_loop, "ROOT", release),
+            patch.object(lm_loop, "snapshot", return_value=rows),
+            patch.object(lm_loop, "apply_live", side_effect=record_apply),
+            patch.dict(os.environ, {"LIFE_MANAGER_RELEASE_ROOT": str(release)}),
+            redirect_stdout(io.StringIO()) as output,
+        ):
+            self.assertEqual(lm_loop.main([
+                "reconcile", "shared-agent-runner", "--include-running",
+                "--loop-id", "hf-gig-reply-detector",
+            ]), 0)
+
+        self.assertEqual(len(applied), 1)
+        self.assertEqual(applied[0]["target"], "hf-gig-reply-detector")
+        self.assertFalse(applied[0]["skip_busy"])
+        self.assertEqual(json.loads(output.getvalue())["eligible"], 1)
+
     def test_reconcile_loop_id_invalid_values_fail_closed(self):
         release = self._release("release-a").resolve()
         value = registry()
@@ -674,6 +713,19 @@ class LmLoopApplyTest(unittest.TestCase):
         ):
             self.assertEqual(lm_loop.main(["reconcile", "--not-an-option"]), 2)
         self.assertIn("error", json.loads(output.getvalue()))
+
+    def test_reconcile_include_running_requires_explicit_owner(self):
+        release = self._release("release-a").resolve()
+        with (
+            patch.object(lm_loop, "ROOT", release),
+            patch.object(lm_loop, "snapshot", side_effect=AssertionError("snapshot called")),
+            patch.dict(os.environ, {"LIFE_MANAGER_RELEASE_ROOT": str(release)}),
+            redirect_stdout(io.StringIO()) as output,
+        ):
+            self.assertEqual(lm_loop.main([
+                "reconcile", "shared-agent-runner", "--include-running",
+            ]), 2)
+        self.assertIn("requires --loop-id", json.loads(output.getvalue())["error"])
 
     def test_reconcile_without_loop_id_keeps_unloaded_default_behavior(self):
         release = self._release("release-a").resolve()

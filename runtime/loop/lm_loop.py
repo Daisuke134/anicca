@@ -397,13 +397,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     registry = validate_registry(json.loads((ROOT / "config/loop-registry.json").read_text()))
     if command == "reconcile":
-        positionals, loop_ids, loaded_idle_only = [], [], False
+        positionals, loop_ids, loaded_idle_only, include_running = [], [], False, False
         reconcile_args = args[1:]
         index = 0
         while index < len(reconcile_args):
             value = reconcile_args[index]
             if value == "--loaded-idle-only":
                 loaded_idle_only = True
+            elif value == "--include-running":
+                include_running = True
             elif value == "--loop-id":
                 if index + 1 >= len(reconcile_args) or reconcile_args[index + 1].startswith("--"):
                     print(json.dumps({"ok": False, "error": "--loop-id requires a value"}))
@@ -427,6 +429,14 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         route = positionals[0]
         requested_ids = set(loop_ids)
+        if include_running and not requested_ids:
+            print(json.dumps({"ok": False,
+                              "error": "--include-running requires --loop-id"}))
+            return 2
+        if include_running and loaded_idle_only:
+            print(json.dumps({"ok": False,
+                              "error": "--include-running conflicts with --loaded-idle-only"}))
+            return 2
         for loop_id in loop_ids:
             entry = registry["loops"].get(loop_id)
             if not isinstance(entry, dict):
@@ -439,7 +449,9 @@ def main(argv: list[str] | None = None) -> int:
         release_root = Path(os.environ.get("LIFE_MANAGER_RELEASE_ROOT", ROOT)).expanduser().resolve(strict=True)
         current_sha = json.loads((release_root / "RELEASE.json").read_text()).get("sha")
         rows = snapshot(registry, "all")
-        eligible_states = {"loaded-idle"} if loaded_idle_only else {"loaded-idle", "unloaded"}
+        eligible_states = ({"loaded-idle", "loaded-running"} if include_running else
+                           {"loaded-idle"} if loaded_idle_only else
+                           {"loaded-idle", "unloaded"})
         eligible = [row for row in rows if (
             row["classification"] == "managed"
             and row["loop_id"] != os.environ.get("LIFE_MANAGER_LOOP_ID")
