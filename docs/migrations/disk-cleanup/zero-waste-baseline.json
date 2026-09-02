@@ -18,6 +18,20 @@
         {"profile": "~/.cloak/profiles/x-diceai0", "processes": 8, "rss_kib": 578624}
       ],
       "decision": "fix the largest writer first; no browser-wide kill, no loop stop, and no launchctl GUI-domain operation"
+    },
+    "p1d_3b_receipt": {
+      "source": "runtime/loop/entry_dispatch.py",
+      "owner": "hf-gig-apply-direct",
+      "behavior": "run the existing PID-aware context lease GC before each revenue wake; cleanup failure never blocks the wake",
+      "first_live_reaped": ["paid-terminal-17963099", "paid-terminal-18011694"],
+      "second_live_reaped_count": 3,
+      "live_leases_preserved_after": 2,
+      "dead_leases_remaining": 0,
+      "cleanup_pending_remaining": 0,
+      "browser_process_stopped": false,
+      "revenue_loop_stopped": false,
+      "launchctl_gui_domain_used": false,
+      "focused_test": "runtime.loop.tests.test_entry_dispatch 15/15 PASS"
     }
   },
   "host_inventory_gaps_remaining": [

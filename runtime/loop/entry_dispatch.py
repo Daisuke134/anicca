@@ -8,6 +8,7 @@ import json
 import os
 import re
 import stat
+import subprocess
 import sys
 from pathlib import Path
 
@@ -17,6 +18,26 @@ _SYMPHONY_ARTIFACT_SHA256 = "a7c24792744eee5ab44188723267a9f11206ee834474028eda0
 _GITHUB_TOKEN = re.compile(
     r"(?:gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82})"
 )
+
+
+def _reap_dead_gig_contexts(loop_id: str, root: Path, environment: dict[str, str]) -> None:
+    """Reclaim only contexts whose recorded owner process is already dead."""
+    if loop_id != "hf-gig-apply-direct":
+        return
+    helper = root / "skills/browser/scripts/cdp_context_lease.py"
+    try:
+        subprocess.run(
+            [sys.executable, str(helper), "gc", "--idle-min", "45"],
+            env=environment,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        # Cleanup must never stop the revenue wake. The next wake retries it.
+        pass
 
 
 def _validated_symphony_artifact(home: Path) -> Path:
@@ -262,6 +283,7 @@ def main() -> int:
         home = Path.home()
         command = command_for(loop_id, root, home)
         environment = environment_for(loop_id, home, os.environ)
+        _reap_dead_gig_contexts(loop_id, root, environment)
     except ValueError as error:
         print(f"entry-dispatch: {error}", file=sys.stderr); return 78
     os.execve(command[0], command, environment)
