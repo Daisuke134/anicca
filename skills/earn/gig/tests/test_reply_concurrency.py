@@ -39,6 +39,31 @@ requested_estimate = _load_module(
 )
 
 
+def test_continuous_evidence_prunes_completed_only(tmp_path):
+    evidence = tmp_path / "reply-run"
+    probes = evidence / "continuous"
+    workers = probes / "workers"
+    for index in range(12):
+        marker = probes / f"probe-{index}" / "head-snapshot.json"
+        marker.parent.mkdir(parents=True)
+        marker.write_text("{}")
+    for index in range(20):
+        marker = workers / f"worker-{index}" / "result.json"
+        marker.parent.mkdir(parents=True)
+        marker.write_text("{}")
+    active = workers / "active"
+    active.mkdir()
+    link = workers / "linked"
+    link.symlink_to(active, target_is_directory=True)
+
+    detector._prune_continuous_evidence(evidence)
+
+    assert len(list(probes.glob("probe-*"))) == 8
+    assert len([path for path in workers.iterdir() if path.name.startswith("worker-")]) == 16
+    assert active.is_dir()
+    assert link.is_symlink()
+
+
 def _fake_targeted_scripts(
     tmp_path, *, next_action="reply", semantic_failure=None,
     orders_mode="empty", head_identity="b" * 64,
