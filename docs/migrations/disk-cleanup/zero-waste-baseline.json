@@ -902,6 +902,28 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Content-level duplicates are proven, but CloudDocs/session is an OS sync-managed store; direct deletion can propagate as iCloud deletion. Use FileProvider eviction or owner-side retention with sync readback, not path-based unlink."
+    },
+    {
+      "batch": "p1d-claude-project-history-audit-35",
+      "path": "~/.claude",
+      "measured_kib": 2275548,
+      "active_owners": [
+        "Claude.app",
+        "claude remote-control",
+        "Claude-managed runtime loops",
+        "current anicca-gig-core session"
+      ],
+      "largest_project_roots": [
+        {"path": "projects/-Users-anicca-anicca-project", "measured_kib": 992224, "older_than_30d_files": 2156, "older_than_30d_bytes": 451743627, "open_handle_rows": 0},
+        {"path": "projects/-Users-anicca-Projects-life-manager", "older_than_30d_files": 276, "older_than_30d_bytes": 36569670, "open_handle_rows": 0}
+      ],
+      "measured_old_candidate_bytes": 488313297,
+      "decision": "preserve_active_claude_home_defer_owner_bounded_rotation",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Old project/tool-result files are not open now, but session history and subagent evidence ownership/retention is not proven. Do not purge by age alone; require terminal-session and owner retention readback in P2."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
