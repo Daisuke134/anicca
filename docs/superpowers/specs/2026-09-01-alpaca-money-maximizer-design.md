@@ -665,6 +665,101 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
 
 ### Remaining execution queue — fixed order
 
+#### Execution method — how this list is consumed
+
+Treat the queue as one line of dominoes, not parallel projects:
+
+1. **Observe:** read the current worktree, runtime, task state, broker state, and last Telegram acknowledgement.
+2. **Change one box:** work only on the first unchecked box below, in the named dedicated worktree. Do not edit
+   the ordinary production checkout.
+3. **Verify the real acceptance:** run the smallest existing source check needed for that box, then use the real
+   paper runtime/API/CLI/readback named in the box. A configured timer, process PID, local log, dry run, or mock
+   is not completion evidence.
+4. **Save without integrating:** commit and push the feature branch, then update this checklist with the exact
+   observed evidence. Do not create a PR or merge main while any pre-merge box remains open.
+5. **Advance:** repeat from the new first unchecked box. After every A11–A15 box passes, integrate once, release
+   one main-derived immutable build, perform final readback, submit, and remove the merged worktrees.
+
+No step uses TDD ceremony, a review agent, a subagent, or an extra scheduler. No Remote command may invoke
+`launchctl` against `gui/$UID`, directly or through a wrapper. Runtime work must use a read entrypoint whose call
+path proves that prohibited operation is absent.
+
+#### Actionable TODO — one box at a time
+
+**A11 — repair the real five-minute Alpaca loop and finish the paper campaign**
+
+- [ ] A11.01 Record the implementation worktree remote, common Git directory, branch, fetched `origin/main`
+  SHA, status, and diff; preserve all unrelated changes in the ordinary checkout.
+- [ ] A11.02 Finish only the current Telegram wake-report change in
+  `plugins/plugin-life-manager/src/financial/alpaca-loop.ts`: natural Japanese decision, equity, cash, account
+  delta, realised/unrealised P&L, positions, effects, observation time, and required provider `messageId`.
+- [ ] A11.03 Format that file and run only its existing focused static checks: plugin typecheck, Biome check, and
+  `git diff --check`. Add no new test framework or speculative test suite.
+- [ ] A11.04 Commit and push the implementation feature branch. Do not create a PR and do not merge main.
+- [ ] A11.05 Read the production start entrypoint end to end and prove it never reaches `launchctl ... gui/$UID`,
+  the Codex app-server, Remote Control, phone tunnel, gateway, or browser.
+- [ ] A11.06 Copy the current PGlite state to an isolated candidate state, preserve a rollback snapshot, and
+  identify the original task `st_mtj43gm5_goclnvsx` and duplicate `st_mtjx3wys_vro5hct5` without mutating
+  production.
+- [ ] A11.07 In the isolated copy only, retain the original task and remove the duplicate/recovery-path authority;
+  confirm exactly one five-minute Alpaca interval task and one Financial dispatch channel.
+- [ ] A11.08 Start exactly one candidate Eliza process from the implementation worktree without launchd; read
+  back PID, cwd, commit, database path, plugin registration, original task ID, trigger, and next due time.
+- [ ] A11.09 Observe the first **natural** wake without REST/manual firing; require persisted decision/gate/effect/
+  outcome receipts, official Alpaca CLI account/order/position readback, and Telegram provider `messageId`.
+- [ ] A11.10 Observe the next consecutive **natural** wake approximately five minutes later with the same evidence;
+  confirm the task ID stayed unchanged and identical replay added zero broker orders.
+- [ ] A11.11 If the gate truthfully selects an eligible candidate, reconcile its one CLI-only paper order/fill;
+  if it returns `NO_TRADE` or veto, preserve that real result and manufacture no trade.
+- [ ] A11.12 At the next regular options session, let the same task execute the already sealed SPY two-leg exit;
+  reconcile the official close order/fills and zero remaining SPY option positions. Do not attempt an after-hours
+  options exit.
+- [ ] A11.13 Run one natural post-close replay and prove it creates zero duplicate orders; record final proposed,
+  vetoed/no-trade, submitted, filled, and closed counts with no unexplained broker delta.
+- [ ] A11.14 Freeze the truthful campaign scoreboard: starting/current equity, cash, realised P&L, unrealised P&L,
+  drawdown, fees/slippage limits, and paper-only disclaimer. Positive P&L is a target, never a fabricated gate.
+
+**A12 — make the same evidence visible to judges**
+
+- [ ] A12.01 Start the existing `/alpaca` page and shared redacted GET projection from the candidate branch.
+- [ ] A12.02 Publish that exact candidate at one stable HTTPS branch-preview URL without changing main.
+- [ ] A12.03 Open the URL in a logged-out session and verify HTTP success, current official numbers, receipt links,
+  mobile readability, and zero forms/buttons/POST/order-placement surfaces.
+
+**A13 — build the required truthful submission package**
+
+- [ ] A13.01 Update the public README and one-page write-up from the frozen A11/A12 evidence.
+- [ ] A13.02 Produce the PDF slides and 16:9 cover from the same facts and paper-only wording.
+- [ ] A13.03 Record and publish the ≤4-minute demo showing goal → account resume → proposal/veto → CLI effect →
+  reconciliation → Telegram → public dashboard; verify the public video while logged out.
+- [ ] A13.04 Publish up to five truthful social posts, record their URLs, and keep community voting separate from
+  official judging.
+
+**A14 — stage, integrate once, and submit**
+
+- [ ] A14.01 Fill every submission field and stage every URL/account identifier; verify each public artifact
+  logged out, leaving only the final submit action pending.
+- [ ] A14.02 Confirm both repositories are clean and scoped, branches are unique, secrets are absent, candidate
+  SHAs are recorded, and rollback is executable.
+- [ ] A14.03 Create the required PRs once, merge once, and cut one immutable main-derived release only after every
+  A11–A13 box and A15 portability precheck passes.
+- [ ] A14.04 Run the main-derived production readback: exactly one task, two natural wakes, official CLI receipts,
+  Telegram `messageId`s, logged-out dashboard, and no unexplained broker delta.
+- [ ] A14.05 Submit the official form and read back the submitted state before the deadline; record the final
+  project URL and immutable SHA.
+
+**A15 — prove the public release is portable, then clean up**
+
+- [ ] A15.01 From the candidate SHA, perform clean macOS and Linux/Docker install/start prechecks in paper mode;
+  host supervision may restart only Eliza and Eliza alone owns the five-minute schedule.
+- [ ] A15.02 After integration, repeat the portable check against the immutable public release tag and verify the
+  redacted receipt fixture contains no secret.
+- [ ] A15.03 Remove merged worktrees with `git worktree remove`, prune only missing administrative entries, and
+  retain the immutable release, submission evidence, and production rollback artifact.
+
+The current executable cursor is **A11.01**. A11.02 already has an uncommitted candidate change, but it cannot
+be declared done or reordered ahead of the worktree evidence captured by A11.01.
+
 - [x] **A03:** Life Manager opens one new paper account inside the existing normal-email Alpaca login, binds its
   private account ID and fresh keys, proves exactly `$100,000` and zero effects through CLI, then proves restart
   resumption without creating another account.
