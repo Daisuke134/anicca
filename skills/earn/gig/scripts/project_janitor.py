@@ -182,7 +182,10 @@ def _contract_reclaim_reason(state: dict) -> str | None:
 def _contains_shared_reference(path: Path) -> bool:
     try:
         for current, dirs, files in os.walk(path, followlinks=False):
-            for name in dirs + files:
+            for name in dirs:
+                if (Path(current) / name).is_symlink():
+                    return True
+            for name in files:
                 candidate = Path(current) / name
                 if candidate.is_symlink() or candidate.lstat().st_nlink > 1:
                     return True
