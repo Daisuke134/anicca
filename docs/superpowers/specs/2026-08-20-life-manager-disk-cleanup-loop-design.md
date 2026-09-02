@@ -695,6 +695,19 @@ whole-tree regenerable generationとして回収する。現在のproduction rea
 Sparkle回帰とは分離して記録する。⑤の完了にはsourceのmain統合、独立release watcherの自然反映、Updater自然terminal、
 次wakeのInstallation回収、errors 0、protected deletion 0が必要である。
 
+**Production reflection correction:** main統合後のinstalled stateを再監査すると、
+`ai.anicca.life-manager-disk-cleanup.plist`は`~/loops/current`ではなくimmutable release
+`20260902T095123-64a9a1c5`（`LIFE_MANAGER_RELEASE_SHA=64a9a1c5...`）を直接pinし、`StartInterval=300`だった。
+`~/Library/LaunchAgents`にglobal release watcher plistはなく、旧`ai.anicca.hf-gig-release-watch`はretired stateに
+しか存在しない。したがって「独立release watcherがmain `68ac2dc45...`を自然反映する」という前提は現行hostでは
+成立しない。06:19:35Zの自然wakeも旧実装の`protected_descendant=1`、errors 0、protected deletion 0を返した。
+
+Remote sessionは`launchctl`、`lm-loop apply/start/stop/restart`、Terminal/AppleScript迂回、app/process signal、
+shutdown/restartを一切行わない。新releaseの作成だけではpin済みplistが変わらず、反映証拠にならないため行わない。
+⑤はmain source fix済み、production reflectionはGUI session ownerまたは既存の正規deployment ownerが
+同じcontextでreload/readbackできる時までopenとする。反映後もUpdater自然terminal、新version適用、次wake回収を
+実測するまで`[x]`にしない。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
