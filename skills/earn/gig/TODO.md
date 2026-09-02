@@ -5238,6 +5238,16 @@ queue is added. Each owner must also progress independent work concurrently insi
    the image/report builders. The central cleanup owner removed `disk-pressure.block` and restored
    about 4.5 GiB free. The next natural Paid pass must compile both contexts successfully before the
    source-census or deliverable logic is changed; disk recovery alone is not delivery proof.
+
+   **Current readback.** Free space is 27 GiB and every `.mp4`, `.mov`, `.m4v` and `.webm` under
+   `~/gig` has been moved to the recoverable Trash bundle; the live gig tree contains zero video
+   files. Cleanup no longer probes GUI/launchctl and release inventory no longer blocks on global
+   `lsof`. Paid room `18223833` has captured the buyer's second budget-document request but still
+   has no seller reply, artifact or official delivery readback. Its worker was blocked behind a
+   redundant shared browser preflight even though the parent had already persisted the same-wake
+   official targeted snapshot. Reuse that snapshot for parallel prepare; retain presend effect
+   fencing and official post-send readback. Close this atom only after the natural installed owner
+   sends the buyer-visible response/artifact and replay produces zero duplicate effect.
 2. **Negotiate / reply and estimate second.** A new profile estimate request `5242505` was visible
    officially as `要提案` with an 8,000 yen budget and 2026-09-02 proposal deadline, but the natural
    lane did not submit it or send the needed reply. Add a focused failing fixture from this exact
