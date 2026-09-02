@@ -186,7 +186,8 @@ def _loaded_arguments(text: str) -> list[str]:
 
 def install_one(item: dict, target: Path,
                 launchctl: Callable[[list[str]], tuple[int, str]], *, attempts: int = 3,
-                sleeper: Callable[[float], None] = time.sleep) -> dict:
+                sleeper: Callable[[float], None] = time.sleep,
+                preserve_unloaded: bool = False) -> dict:
     label = item["label"]
     domain = f"gui/{os.getuid()}"
     service = f"{domain}/{label}"
@@ -196,6 +197,15 @@ def install_one(item: dict, target: Path,
     initial_rc, _ = launchctl(["print", service])
     was_loaded = initial_rc == 0
     _atomic_write(target, _preserve_operational_attributes(item["plist_bytes"], old_bytes))
+    if preserve_unloaded and not was_loaded:
+        return {
+            "ok": True,
+            "label": label,
+            "loaded": False,
+            "loaded_arguments": [],
+            "installed_arguments": item["expected_arguments"],
+            "release_sha": item["release_sha"],
+        }
     launchctl(["bootout", service])
     sleeper(1.0)
     last_detail = ""

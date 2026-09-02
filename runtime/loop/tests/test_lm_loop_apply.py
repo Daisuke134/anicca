@@ -400,6 +400,28 @@ class LmLoopApplyTest(unittest.TestCase):
         install_one(rendered, target, launchctl, attempts=1, sleeper=sleeps.append)
         self.assertEqual(sleeps, [1.0])
 
+    def test_reconcile_rebinds_unloaded_plist_without_loading_it(self):
+        target = self.root / "installed.plist"
+        target.write_bytes(plistlib.dumps({
+            "Label": "ai.anicca.example", "ProgramArguments": ["/old/run.sh"]}))
+        rendered = build_apply_plan(registry(), self.root, SHA)[0]
+        calls = []
+
+        def launchctl(args):
+            calls.append(args)
+            return (1, "not loaded") if args[0] == "print" else (0, "")
+
+        result = install_one(
+            rendered, target, launchctl, preserve_unloaded=True)
+
+        self.assertTrue(result["ok"])
+        self.assertFalse(result["loaded"])
+        self.assertEqual(calls, [["print", f"gui/{os.getuid()}/ai.anicca.example"]])
+        self.assertEqual(
+            plistlib.loads(target.read_bytes())["ProgramArguments"],
+            rendered["expected_arguments"],
+        )
+
     def test_swap_increases_settle_time_before_retry(self):
         target = self.root / "installed.plist"
         target.write_bytes(plistlib.dumps({
