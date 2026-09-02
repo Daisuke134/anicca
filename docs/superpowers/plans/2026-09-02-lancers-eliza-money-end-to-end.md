@@ -12,13 +12,13 @@
 - [x] **4 — Lancers Apply single writer:** SHA `acbc8b07…`の隔離releaseを対象限定applyし、owner exact 1、`StartInterval=60`、自然wake `runs=1`、terminal exit 0を確認した。preflight全PASS、141/153、Remote切断、二重writerは0。
 - [x] **5 — fresh official Proposal:** 自然wakeで案件5595850を90,000円、納期2026-09-09で送信し、公式Proposal ID `27880898`、ledger sequence 58を取得した。
 - [x] **6 — per-item Telegram ACK:** 同案件の正式title、ID、90,000円、2026-09-09、Proposal ID `27880898`を含む案件別ACKをTelegram provider message ID `48685`で確認した。同wakeの新規outbox 7件は全件delivered。
-- [ ] **7 — replay-zero（active）:** 同じ案件の次自然wakeでprovider execute 0、ledger insert 0を確認する。
-- [ ] **8 — continuous natural Apply:** 自然wakeを継続し、全fresh案件を判断して全`submit_required`を同一wake内で連続応募する。
+- [x] **7 — replay-zero:** 2回目自然wakeは案件5595850をplanner入力から除外し、同Proposal receipt exact 1、ledger sequence `58→58`、pending 0、provider再送0でexit 0。新規Telegram 3件も全delivered。
+- [ ] **8 — continuous natural Apply（active）:** 3回目以降の自然wakeを継続し、全fresh案件を判断して全`submit_required`を同一wake内で連続応募する。
 - [ ] **9 — independent Storefront:** StorefrontをApplyと別owner・別reportとして確認する。
 - [ ] **10 — independent Negotiate:** buyer-last返信、見積、契約を別ownerで処理し、公式ContractReceiptを得る。
 - [ ] **11 — Paid real contract:** funded contractだけを制作し、QA、公式納品、DeliveryReceipt、PaymentReceiptを閉じる。
 - [ ] **12 — positive banked net:** payoutと銀行明細を照合し、外部buyer由来のverified banked netを正にする。
-- [ ] **13 — Gig Money Loop Skill:** Coconala/Lancersの複数実receiptで有効だった構造だけを再利用recipeとしてSkillへ記録する。
+- [ ] **13 — Gig Money Loop Skill:** Coconala/Lancersの複数実receiptで有効だった構造と、本人事実・resume・portfolio・能力証拠・提案素材から成るshared profile assetを再利用recipeとしてSkillへ記録する。provider adapterは表示形式だけを変え、別人を装う名前・画像・経歴は作らない。
 - [ ] **14 — CrowdWorks thin adapter:** shared core＋薄いobserve/effect/readback adapterだけでCrowdWorksを開始する。
 - [ ] **15 — Freelancer.com repair:** 同じshared構造へ既存Freelancer.com loopを接続して修復する。
 - [ ] **16 — autonomous loop factory:** 3市場目以降はLife Manager自身が新市場を発見し、Skillを使ってadapter、canary、receipt、loop起動、改善まで行う。
