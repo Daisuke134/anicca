@@ -91,7 +91,9 @@ provider固有discovery/submit/readback、receipt、Telegram、schedulerは変�
 Step 4はstaged SHA `d93386bd…`を対象限定applyし、application owner exact 1、`StartInterval=60`、自然wake `runs=2`、直前exit 0まで進んだ。
 UID、Directory Services、Aqua manager UID/PID、GUI domain readbackのpreflightは全PASSし、141/153とRemote切断は0。Eliza Lancers runtimeとtmuxも0で
 二重writerはない。ただし最初の自然wakeは39件を判断後、案件5595850のLuna出力が過去年`1014-10-14`となりvalidatorが送信前に拒否し、fresh応募0件だった。
-commit `6ffa75269`でdeliver_dateをtick翌日〜60日と正本promptへ明示した。これをloaded releaseへ反映し、有限wakeと公式Proposalを得るまでStep 4は未完とする。
+commit `6ffa75269`でdeliver_dateをtick翌日〜60日と正本promptへ明示し、SHA `acbc8b07…`の隔離releaseへ反映した。自然wakeは案件5595850を
+90,000円、納期2026-09-09で送信し、公式Proposal ID `27880898`、ledger sequence 58を取得してexit 0。正式title、金額、納期、Proposal IDを含む
+案件別Telegram ACKもprovider message ID `48685`でdeliveredとなった。Step 4〜6は完了し、現在activeはStep 7 replay-zeroである。
 Step 4 release preflightでは、既存exact-SHA Lancers installerがStep 3のshared policyをallowlistへ含めない欠落を修復した。
 isolated reconcile/normal installer testは2/2 PASSし、production external effect 0。残るStep 4はpushed commitのproduction installとexact 1 loadである。
 旧1件送信・daily quota・partial planner成功を期待したfocused testを現在の最大応募contractへ合わせ、application＋installerは26/26 PASS。
