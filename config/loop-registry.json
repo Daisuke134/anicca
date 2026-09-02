@@ -1418,6 +1418,23 @@
       "provider_route": "deterministic",
       "state_root": "~/.local/state/life-manager"
     },
+    "life-manager-anicca-en-affirmation-tiktok": {
+      "cadence": {
+        "calendar_interval": [
+          { "Hour": 9, "Minute": 15 },
+          { "Hour": 14, "Minute": 15 },
+          { "Hour": 20, "Minute": 15 }
+        ]
+      },
+      "cleanup": { "max_age_days": 14, "max_runs": 100 },
+      "domain": "growth",
+      "effect_class": "publish",
+      "entrypoint": "apps/life-manager/scripts/anicca-en-affirmation-tiktok-production-boot.sh",
+      "label": "ai.anicca.life-manager-anicca-en-affirmation-tiktok",
+      "log_root": "~/.local/state/life-manager/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager"
+    },
     "life-manager-anicca-jp1-tiktok": {
       "cadence": {
         "calendar_interval": [
