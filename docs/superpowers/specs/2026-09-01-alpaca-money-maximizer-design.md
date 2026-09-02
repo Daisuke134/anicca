@@ -257,6 +257,25 @@ submission.
 | Team and originality | Team size 1–6; entrants 18+ for prize eligibility; submissions must be original and MIT-compliant | Current official guidelines and prize terms. Life Manager remains public MIT-compatible OSS with donor notices. |
 | Prize pool | `$6,000` cash plus `$300` Featherless credits displayed as `$6,300` total | Current official prize section: main cash `$2,500 + $1,500 + $1,000`, social cash `2 × $500`, and first-place Featherless credits `$300`. |
 
+### Current go/no-go summary
+
+**NO-GO for submission today.** The finite Life Manager paper pass works from the dedicated implementation
+worktree and successful passes deliver a natural-language Telegram report. The declaration cadence is 300
+seconds, but the candidate is not installed as the main-derived launchd release, so it is **not yet waking by
+itself every five minutes**. The most recent official account readback is equity `$99,997.88`, cash `$99,970.88`,
+account change `-$2.12`, unrealised P&L `-$2.00`, two open SPY option legs, and one historical broker order.
+Therefore it is **not currently profitable**, and no realised-profit claim is permitted.
+
+The deadline is **2026-09-05 00:00 JST**, meaning delivery must be complete during 4 September JST. The
+organizer publishes no guaranteed profit threshold or numeric judging weights. Winning cannot be guaranteed;
+the controllable acceptance target is: satisfy every eligibility requirement, make all four judging rows below
+PASS, submit every required artifact, and read back the official submitted state before the deadline.
+
+The required video does not require Dais's face or voice. The default presentation is a screen recording with
+voice-over or captions showing the loop, Telegram, broker reconciliation, and logged-out dashboard. Dais only
+needs to record himself if he prefers a personal pitch; the project must still supply the script, shot order,
+evidence, and final public video URL.
+
 **Broker authority decision:** the Alpaca CLI is the sole mutation and authoritative reconciliation surface used
 by the investment loop. The finite Life Manager entrypoint invokes pinned CLI commands with structured JSON, binds every mutation to a stable
 `client_order_id`, and reconciles through CLI account/order/position/activity reads. The official
@@ -750,8 +769,8 @@ negative or zero P&L remains visible and is never renamed revenue.
 | Official criterion | First-place product target | Acceptance evidence | Current measured state |
 |---|---|---|---|
 | P&L Performance | Finish the frozen bounded campaign with positive net paper P&L if market opportunities pass the gate; show return, max loss, drawdown, rejected trades and comparison with the `$100,000` start. Never force a trade merely to turn the number green. | Dedicated account ID; CLI account/activity/order/position readbacks; closed fills; realised/unrealised P&L; zero unexplained broker delta. | **FAIL:** equity `$99,997.88`; account delta `-$2.12`; unrealised P&L `-$2`; realised profit `$0`; one SPY spread remains open. |
-| Technology Implementation | One Eliza-owned five-minute task runs `observe → decide → gate → exactly-once effect → CLI reconcile → receipt → Telegram`. Crypto stays eligible 24/7, eligible equities 24/5, and options obey their session without blocking other assets. | One persistent task ID; consecutive natural wake receipts; stable client IDs; duplicate replay adds zero orders; Telegram `messageId` on every wake; restart preserves task and state. | **FAIL:** interval is configured, but the running source uses a non-release checkout and `pglite-recovery-20260902`; no current Alpaca wake success or Telegram acknowledgement is present. |
-| Creativity & Originality | Demonstrate Life Manager creating/resuming its own account, model proposal plus deterministic veto, CLI-only mutation, acknowledgement-loss recovery, cross-market selection and broker-reconciled economic memory in one product. | Demo receipts link bootstrap, thesis, veto, order, fill, recovery and P&L without secrets or a second scheduler/broker. | **PARTIAL:** historical A03–A10 evidence exists, but the currently running product does not demonstrate the complete live chain. |
+| Technology Implementation | One Life Manager five-minute loop runs `observe → decide → gate → exactly-once effect → CLI reconcile → receipt → Telegram`. Crypto stays eligible 24/7, eligible equities only when official fields permit, and options obey their regular session without blocking other assets. | One registered loop and launchd label; consecutive natural wake receipts; stable client IDs; duplicate replay adds zero orders; Telegram `messageId` on every wake; restart preserves state. | **PARTIAL:** separate real finite passes exit successfully; Telegram acknowledged `48618`, `48622`, `48623`, and `48633`; duplicate replay added zero orders; cadence is declared as 300 seconds. The candidate is not installed from an immutable main release, so no production natural five-minute wake is claimed. |
+| Creativity & Originality | Demonstrate the native Life Manager investment loop using model proposal plus deterministic veto, CLI-only mutation, acknowledgement-loss recovery, cross-market selection and broker-reconciled economic memory in one product. | Demo receipts link account, thesis, veto, order, fill, recovery and P&L without secrets, Eliza, or a second scheduler/broker. | **PARTIAL:** the native finite loop, cross-market allocator, deterministic gates, receipts, recovery, and Telegram reporting exist; the logged-out public demonstration and complete automatic lifecycle do not. |
 | Presentation & Execution | A judge understands the autonomous lifecycle in under four minutes and can inspect the same redacted evidence without login. Every required field is complete and truthful. | Public GitHub; logged-out `/alpaca`; one-page write-up; PDF slides; 16:9 cover; ≤4-minute video; private account ID; final submitted-state readback; optional social links. | **FAIL:** draft remains Step 2/3 at `26%`; hosted URL, cover, video, slides and final submit are incomplete. |
 
 First-place acceptance is all rows above at PASS plus official submitted-state readback before the deadline.
