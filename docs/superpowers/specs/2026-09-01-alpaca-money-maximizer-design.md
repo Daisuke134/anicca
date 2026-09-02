@@ -450,6 +450,17 @@ three focused suites passed (`4/4` tests). The selected far-OTM spread also expo
 expected-value, probability, freshness, and liquidity evidence must be normalized before any crypto/equity
 effect is authorized; a low debit alone is not a winning strategy.
 
+The A11 common scoring-gate implementation sub-atom is **DONE** in `life-manager-eliza` merge
+`640af4ca1790e6de6ef973430c5ae276f11d2332` (PR #82). The existing single model decision now supplies an
+estimated win probability and expected gain; deterministic code calculates expected value and checks it against
+the selected candidate's exact maximum loss. Every option, crypto and ETF candidate carries quote age and spread
+in basis points, while defined-risk options also carry maximum profit. The research-only gate rejects nonpositive
+expected value, quotes older than the existing 30-second policy, spreads above the existing 15% policy, maximum-
+loss mismatch, and option expected gain above the contract's maximum profit. No scheduler, broker client, DB,
+dependency or order path was added; Alpaca CLI remains the only mutation authority. Typecheck, build, three
+focused suites (`4/4` tests), and `git diff --check` pass. Main-derived production natural-wake evidence remains
+pending and is not inferred from the source checks.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
@@ -526,8 +537,9 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
   zero orders; record the final campaign funnel (`proposed → vetoed/no-trade → submitted → filled → closed`) and
   no unexplained broker delta. In parallel, ~~add one common candidate contract for crypto, equity/ETF and
   defined-risk options and persist one typed cross-market model choice with no broker effect~~ **DONE**. Next,
-  normalize comparable expected-value/probability/freshness/liquidity evidence and make the portfolio-level gate
-  account for every open position/order before the unchanged CLI effect path can act. Only then add one bounded
+  ~~normalize comparable expected-value/probability/freshness/liquidity evidence and veto weak selections~~
+  **DONE**. Next, make the portfolio-level gate account for every open position/order before the unchanged CLI
+  effect path can act. Only then add one bounded
   crypto/equity CLI order shape without adding a broker client or scheduler.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
   projection must drive both live and static views so they cannot drift. Above the fold show paper-only status,
@@ -576,15 +588,15 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next implementation scope remains inside A11 and does not wait for the options session: enrich the shared
-candidate observation with comparable return/risk, quote freshness, spread/liquidity, and probability evidence,
-then reject any cross-market decision whose chosen candidate is stale, illiquid, inconsistent with its offered
-maximum loss, or outside aggregate exposure including the existing SPY campaign. This remains a no-effect slice
-through the existing decision store and portfolio gate; it must not add an order client, scheduler, strategy
-hard-coded in deterministic code, or profit claim. The same task continues to execute the already-sealed SPY
-exit when the regular options session reopens. A later slice may add one bounded crypto/equity CLI order request
-only after this common evidence and aggregate gate are proven. A12–A14 artifacts may be built from the same
-redacted projection before the close and refreshed after final reconciliation; A15 and P01+ retain their gates.
+Next implementation scope remains inside A11 and does not wait for the options session: feed the reconciled open
+SPY campaign maximum loss, every current position, every open order, cash/equity, daily P&L and high-water
+drawdown into one asset-class-neutral portfolio gate before any future candidate can become an effect intent.
+This remains a no-effect slice through the existing decision store and receipt kernel; it must not add an order
+client, scheduler, strategy hard-coded in deterministic code, or profit claim. The same task continues to execute
+the already-sealed SPY exit when the regular options session reopens. A later slice may add one bounded
+crypto/equity CLI order request only after aggregate portfolio exposure is proven. A12–A14 artifacts may be built
+from the same redacted projection before the close and refreshed after final reconciliation; A15 and P01+ retain
+their gates.
 
 ## 9. Controlling references
 
