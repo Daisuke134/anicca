@@ -54,6 +54,19 @@
         "limits": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
         "focused_test": "apps/job-search-loop/tests/test_run_browser_preflight.py 10/10 PASS",
         "note": "127.0.0.1:9222 is separately occupied by Google Chrome PID 419 and returns 404; tracked as P1d-3c-2c"
+      },
+      "gig_browser_cache": {
+        "source": "skills/earn/gig/scripts/launch_gig_browser.sh",
+        "profile": "~/.cloak/profiles/gig-daily-driver",
+        "cache_before_kib": 1083148,
+        "cache_after_kib": 0,
+        "free_before_kib": 12530280,
+        "free_after_kib": 13605444,
+        "owner_pid_after": 771,
+        "chromium_pid_after": 849,
+        "listener_after": "127.0.0.1:9223",
+        "limits": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
+        "verification": "zsh syntax PASS; existing gig disk suite had 9 pre-existing policy/manifest expectation failures and 16 passes, so it is not claimed as acceptance evidence"
       }
     }
   },

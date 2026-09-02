@@ -86,5 +86,8 @@ exec "$chromium_bin" \
   --remote-debugging-address=127.0.0.1 \
   --remote-allow-origins='*' \
   --remote-debugging-port="$GIG_BROWSER_PORT" \
+  --disk-cache-size=67108864 \
+  --media-cache-size=33554432 \
+  --disk-cache-dir="$HOME/.cache/gig-daily-driver" \
   --user-data-dir="$GIG_BROWSER_PROFILE" \
   about:blank
