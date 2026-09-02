@@ -579,6 +579,13 @@ hidden home root監査では`~/.anicca` 1,567,960 KiBのactive SQLite、logs、s
 `~/anicca/skills/earn/x402-sell`の13 processは生存し、`~/.anicca`は1,567,960→834,424 KiB、
 回収733,536 KiB、Data空き`36,230,408 KiB`（約34.6 GiB）、errors 0、protected deletion 0である。
 
+`~/.browser-harness-profile` 886,628 KiBはMercor認証profileを含むためroot削除せず、profile process 0、open handle 0を
+確認してChrome再生成cacheだけを回収した。対象は`Cache`、`Code Cache`、GPU/shader cache、Service Worker
+`CacheStorage`、optimization/component/extension download cacheの35 directory、合計721,532 KiBである。
+Mercor profileの`Cookies`、`Login Data`、`Local Storage`、`IndexedDB`、`Sessions`は全て保持をread backした。
+profileは886,628→165,096 KiB、Data空き`38,014,420 KiB`（約36.3 GiB）、errors 0、
+protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
