@@ -2,12 +2,23 @@
   "schema_version": 1,
   "volume_free_kib_observed": 16392268,
   "runtime_pressure": {
-    "swap_total_mib": 12288.0,
-    "swap_used_mib": 10908.5,
-    "chromium_processes": 148,
-    "chromium_rss_kib": 6834736,
+    "swap_total_mib": 13312.0,
+    "swap_used_mib": 12203.06,
+    "chromium_processes": 155,
+    "chromium_rss_kib": 7319856,
     "classification": "managed_browser_lifecycle_gap",
-    "required_fix": "each browser owner closes run-scoped children and contexts, reuses profiles, and enforces bounded concurrency without stopping the owning loop"
+    "required_fix": "each browser owner closes only its run-scoped pages and contexts, reuses its authenticated profile, and enforces bounded owner concurrency without stopping the owning loop",
+    "p1d_3_owner_readback": {
+      "browser_roots": 13,
+      "shared_context_lease_rows": 0,
+      "gig_cdp_targets": 14,
+      "largest_profiles": [
+        {"profile": "~/.cloak/profiles/gig-daily-driver", "processes": 23, "rss_kib": 2236096},
+        {"profile": "~/.cloak/profiles/tiktok-anicca-jp-relogin", "processes": 21, "rss_kib": 1583696},
+        {"profile": "~/.cloak/profiles/x-diceai0", "processes": 8, "rss_kib": 578624}
+      ],
+      "decision": "fix the largest writer first; no browser-wide kill, no loop stop, and no launchctl GUI-domain operation"
+    }
   },
   "host_inventory_gaps_remaining": [
     "size-timeout:~/Projects",
