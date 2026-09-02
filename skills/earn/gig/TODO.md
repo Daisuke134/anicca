@@ -79,6 +79,14 @@ completion claim is nevertheless false until the two failing lanes below pass na
   normalizes every retained row at `_merge_accumulated`, keeps its content and observation metadata,
   and deduplicates by the canonical digest; focused Paid regressions pass 70/70. Production still
   runs immutable release `20260902T131725-29fb7681`, so this is not a delivery/readback claim.
+  Disk readback at 13:55 JST reports 35 GiB available and zero MP4/MOV/M4V/WebM files under
+  `~/gig`. The natural central cleanup pass from 13:54 to 13:56 JST ended `pass`, reclaimed about
+  2.51 GB from host cleanup, and reported errors/protected deletions `0/0`. It removed zero releases
+  because all eight remaining immutable releases were still protected by installed or running loop
+  owners. Per-lane project cleanup and central release cleanup are deliberately separate: Paid's
+  latest janitor scanned 35 projects with errors zero, while only the central owner may delete an
+  unreferenced release after every installed lane has converged away from it. Four lanes deleting
+  shared releases independently would race with live code.
   Remaining C02 atoms, in order:
   1. Merge and naturally install the canonical-row normalization together with the already merged
      parent-snapshot reuse and cleanup fixes; do not mutate the active immutable release.
