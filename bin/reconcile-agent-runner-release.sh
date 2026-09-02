@@ -29,12 +29,10 @@ if [ "$release_sha" != "$main_sha" ] || [ "$release_paths" != "ALL" ]; then
 fi
 
 status=0
-if ! LIFE_MANAGER_RELEASE_ROOT="$RELEASE_ROOT" \
-  "$RELEASE_ROOT/bin/lm-loop" reconcile shared-agent-runner --loaded-idle-only; then
+if ! LIFE_MANAGER_RELEASE_ROOT="$RELEASE_ROOT" "$RELEASE_ROOT/bin/lm-loop" reconcile shared-agent-runner --loaded-idle-only --loop-id hf-gig-apply-direct --loop-id hf-gig-reply-detector; then
   status=1
 fi
-if ! LIFE_MANAGER_RELEASE_ROOT="$RELEASE_ROOT" \
-  "$RELEASE_ROOT/bin/lm-loop" reconcile deterministic --loaded-idle-only; then
+if ! LIFE_MANAGER_RELEASE_ROOT="$RELEASE_ROOT" "$RELEASE_ROOT/bin/lm-loop" reconcile deterministic --loaded-idle-only --loop-id hf-gig-storefront-direct --loop-id hf-gig-paid-direct; then
   status=1
 fi
 exit "$status"
