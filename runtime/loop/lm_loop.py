@@ -164,12 +164,18 @@ def _launchctl(*args: str) -> str:
     return output
 
 
-def _last_event(state_root: str, loop_id: str | None = None) -> dict | None:
+def _last_event(state_root: str, loop_id: str | None = None,
+                cache: dict[Path, list[str]] | None = None) -> dict | None:
     path = Path(os.path.expanduser(state_root)) / "events.jsonl"
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return None
+    if cache is not None and path in cache:
+        lines = cache[path]
+    else:
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines = []
+        if cache is not None:
+            cache[path] = lines
     for line in reversed(lines):
         try:
             value = json.loads(line)
@@ -219,10 +225,11 @@ def collect_live(registry: dict) -> tuple[dict, dict, dict, set[str], set[str]]:
     releases, events = {}, {}
     for path in installed_paths:
         releases[path.stem] = _release_from_plist(path)
+    event_cache: dict[Path, list[str]] = {}
     for loop_id, entry in registry["loops"].items():
         label = entry["label"]
         releases[label] = _release_from_plist(plist_dir / f"{label}.plist")
-        event = _last_event(entry["state_root"], loop_id)
+        event = _last_event(entry["state_root"], loop_id, event_cache)
         if event:
             events[loop_id] = event
     return loaded, disabled, events, releases, installed
