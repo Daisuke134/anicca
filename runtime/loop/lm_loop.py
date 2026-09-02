@@ -429,6 +429,9 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         route = positionals[0]
         requested_ids = set(loop_ids)
+        if (route == "deterministic"
+                and os.environ.get("LIFE_MANAGER_LOOP_ID") == "life-manager-release-reconciler"):
+            requested_ids.add("life-manager-disk-cleanup")
         if include_running and not requested_ids:
             print(json.dumps({"ok": False,
                               "error": "--include-running requires --loop-id"}))
