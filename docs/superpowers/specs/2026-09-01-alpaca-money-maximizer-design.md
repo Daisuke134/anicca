@@ -175,10 +175,14 @@ flowchart LR
 
 ## 6. Ordered TODO — current priority track
 
-The order below is fixed until Dais explicitly changes it. Each atom ends with the named official readback;
-tests support the atom and do not create a separate completeness program.
+The order below is fixed until Dais explicitly changes it. Dais changed it after the first paper canary proved
+durability: the open SPY exit remains owned by the same background Eliza task, but a closed options session no
+longer blocks multi-market research, the bounded portfolio allocator, or submission artifacts. No second
+scheduler or broker mutation path is introduced. Each atom ends with the named official readback; tests support
+the atom and do not create a separate completeness program.
 
-Current cursor: **A11 Paper campaign**. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+Current cursor: **A11 Multi-market paper allocator**, while the original SPY exit remains active background
+reconciliation inside the same task. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
@@ -379,8 +383,9 @@ closed with the next regular session at `2026-09-02T09:30:00-04:00`; no after-ho
 Here `HOLD_CLOSED_SESSION` is narrowly an **options-exit** hold, not an Alpaca-wide market outage. The open
 campaign owns US-listed SPY option legs, and Alpaca says options orders may only be placed during regular market
 hours. Alpaca separately documents crypto trading 24 hours every day and 24/5 overnight trading for NMS
-securities. Those asset classes can support later Financial strategies, but they do not make the current option
-legs closeable and do not authorize a second campaign before A11 reconciles this frozen one. Sources:
+securities. Those asset classes do not make the current option legs closeable. Dais subsequently authorized the
+same Financial loop to continue across other asset classes while that exit remains monitored; aggregate
+exposure, open orders and campaign state must be included in every allocator decision. Sources:
 <https://docs.alpaca.markets/us/docs/spacex-trading-availability-and-faqs>,
 <https://docs.alpaca.markets/us/docs/crypto-trading>, and <https://docs.alpaca.markets/us/docs/245-trading>.
 
@@ -391,8 +396,9 @@ execution venue. The current resolution is therefore one regular-session, two-le
 realised paper P&L, and replay-zero readback. The permanent non-blocking design after this frozen campaign closes
 is an asset-class-aware opportunity router inside the **same** Eliza task/effect kernel/CLI authority: crypto may
 run 24/7, eligible NMS equities/ETFs may run 24/5, and options entries/exits run only in their regular session.
-An option-session hold must never pause observations for another asset class, but it also must never create an
-unreconciled second campaign while A11 is active. Order validation source:
+An option-session hold must never pause observations for another asset class. Any new bounded paper effect must
+still pass the one portfolio-level risk gate, use the existing CLI effect kernel, and reconcile before another
+effect begins. Order validation source:
 <https://docs.alpaca.markets/us/docs/options-trading>.
 
 The A11 non-blocking data-plane sub-atom is **DONE** in `life-manager-eliza` merge
@@ -507,7 +513,12 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
   and persist one model decision as a no-effect research receipt~~ **DONE**; close through its sealed CLI-only
   exit; reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds
   zero orders; record the final campaign funnel (`proposed → vetoed/no-trade → submitted → filled → closed`) and
-  no unexplained broker delta. Do not optimize for a cosmetic paper gain or open a second strategy before closure.
+  no unexplained broker delta. In parallel, add one common candidate contract for crypto, equity/ETF and
+  defined-risk options; one bounded model call returns `TRADE_CRYPTO`, `TRADE_EQUITY`,
+  `TRADE_DEFINED_RISK_OPTION`, `HOLD_EXISTING`, or `NO_TRADE`; the existing portfolio-level gate accounts for
+  every open position/order before the unchanged CLI effect path can act. The first slice is no-effect ranking
+  and receipt persistence; later slices add one bounded crypto/equity CLI order shape without adding a broker
+  client or scheduler.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
   projection must drive both live and static views so they cannot drift. Above the fold show paper-only status,
   starting/current equity, realised/unrealised P&L, open max loss, last successful loop and broker reconciliation.
@@ -555,11 +566,14 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next plan scope remains inside A11: the same task executes the already-sealed SPY exit when the regular options
-session reopens, reconciles the official close order and fills to zero positions, persists realised paper P&L,
-and proves an identical replay adds zero orders. Soft target: at most three production files and 100 production
-LOC per atom; reuse one existing contract/store/runner per responsibility. No second campaign or mutation path
-is authorised before the SPY close receipt. A12–A15 and P01+ receive later plans after the prior receipts exist.
+Next implementation scope remains inside A11 but no longer waits for the options session: define one shared
+multi-market candidate/decision contract, populate it from the existing read-only SPY option and BTC/ETH data
+plus one liquid equity/ETF observation, and persist one model-authored cross-market decision with zero broker
+effect. The same task continues to execute the already-sealed SPY exit when the regular options session reopens.
+Soft target: at most three production files and 100 production LOC; reuse the existing decision store, risk
+gate, task and CLI authority. A following slice may add one bounded crypto/equity CLI order request only after
+the common decision and aggregate portfolio gate are proven. A12–A14 artifacts may be built from the same
+redacted projection before the close and refreshed after final reconciliation; A15 and P01+ retain their gates.
 
 ## 9. Controlling references
 
