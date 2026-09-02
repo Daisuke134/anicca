@@ -20,7 +20,19 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    errors 0で回収した。Coconala Storefrontはdefault tabを`:9223`で開きながら`:9222`へcloseしていた
    root causeを修正し、前回crashの同一owner target回収も接続した。production release `c74b5973`で
    `storefront_live_pages=0 / duplicate_excess=0 / registry_total=0`をread backした。loopは停止していない。
-3. [ ] **All-loop bounded-output audit:** 全managed loopについてscratch、browser target、log/evidence、
+3. [ ] **Host-wide external waste elimination, then bounded-output audit:** 現在activeな先頭atomは
+   Life Manager内の個別loop変更ではなく、Mac全体を容量順に実測し、Life Managerの外側にある未使用application、
+   再生成cache、重複clone/repository、終了済みworktree、旧toolchain、old backup/archive、不要なuser dataを
+   大きい順に回収することである。最初に`/Applications`、`/opt/homebrew`、`/private/var/folders`、`~/Library`、
+   `~/.openclaw`、`~/anicca-project`、`~/anicca`、`~/Projects`のLife Manager正本外、`~/Downloads`、`~/Desktop`、
+   `~/Pictures`を同一filesystemから再計測する。ChatGPT、Claude、Chrome/Chromium等も名前で保護せず、現在の
+   Codex connection、browser session、loaded argv、open fileの実依存が0なら削除候補とする。逆にactive/open/
+   loaded/dirty/unpushed/uniqueなものは保持する。`~/.codex-acct2/**`、`~/.claude/**`、Alpaca、Coconala、Lancers、
+   WebMCPの進行中state/worktree、不可侵storeは削除しない。各候補は削除前bytes・owner/依存・復元可能性、
+   削除後bytes・free差分を同じ台帳へ記録する。Life Manager個別loopの変更や別ownerのproduction state変更は、
+   この外側cleanupが終わるまで行わない。
+
+   外側の大容量wasteを回収した後だけ、全managed loopについてscratch、browser target、log/evidence、
    immutable releaseの各owner cleanupを確認する。不足するloopだけ既存共通cleanupへ接続する。収益loopを
    disk thresholdで停止する仕組みは追加しない。active worktree、取引中deliverable、credential、ledger、
    receipt、不可侵storeは保持する。完了条件は各ownerのbounded retentionと異常終了後の次wake回収であり、
@@ -459,18 +471,19 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    errors 0、closed 0、protected deletion 0、active/open/loaded producer保持をもってmemory/swap atomを完了する。
    11 GiB floorと長期観測は固定順序⑨で閉じる。
 
-   **残TODO（順序固定）:** ①[x] memory/swap owner-side drainとswap縮小readback、② **現在active:**
-   残るrunning旧releaseの自然idle reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
-   ⑤Hermes正式retire、⑥Gig terminal project、⑦Codex/Claude終了済みlog/archive rotation、
-   ⑧`/private/var/folders`・Library cache・未使用toolchain、⑨free 11 GiB以上＋24時間観測＋7日観測。
+   **残TODO（順序固定）:** ① **現在active:** host全体を再計測して外側の大容量順listを更新、②未使用application、
+   `/private/var/folders`、Library cache、未使用toolchain、Downloads/Desktop/Picturesの安全なwaste、
+   ③Life Manager正本外の重複repository/clone・終了済みworktree、④OpenClaw依存と重複`.git`/workspace/skills/media、
+   ⑤Codex/Claudeの保護rootを削除せずowner-side bounded rotation、⑥残るrunning旧releaseの自然idle reconcile＋central GC、
+   ⑦Hermes正式retire、⑧Gig terminal project、⑨free 11 GiB以上＋24時間観測＋7日観測。
    これらを閉じた後に現在順序正本どおりLancers revenue loop、WebMCP hackathonへ進む。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
    ApplicationReceipt、demo動画、YouTube、Devpost提出を閉じる。
 
-現在activeな先頭atomは **All-loop bounded-output audit** である。Connection recoveryとmajor manual cleanupを
-再びTODOへ戻さない。
+現在activeな先頭atomは **Host-wide external waste elimination** である。Life Manager個別loopのproduction変更は
+行わず、Mac全体の外側を大容量順に回収する。Connection recoveryと完了済みmanual cleanupを再びTODOへ戻さない。
 
 ## Business-loop self-sustainability contract
 
