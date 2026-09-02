@@ -12,6 +12,7 @@ import itertools
 import json
 import os
 import re
+import shutil
 import signal
 import sqlite3
 import subprocess
@@ -77,6 +78,28 @@ def _atomic_json(path: Path, value: dict[str, Any]) -> None:
         except OSError:
             pass
         raise
+
+
+def _prune_continuous_evidence(evidence: Path) -> None:
+    """Bound completed artifacts from one keep-alive Reply process."""
+    contracts = (
+        (evidence / "continuous", "probe-*", "head-snapshot.json", 8),
+        (evidence / "continuous" / "workers", "*", "result.json", 16),
+        (evidence / "continuous" / "reconciliation-reports", "*", "result.json", 8),
+        (evidence / "reconciliation", "reconcile-*", "marketplace-snapshot.json", 8),
+    )
+    for root, pattern, marker_name, keep in contracts:
+        completed = []
+        for path in root.glob(pattern):
+            marker = path / marker_name
+            if path.is_symlink() or not path.is_dir() or not marker.is_file():
+                continue
+            try:
+                completed.append((marker.stat().st_mtime_ns, path))
+            except OSError:
+                continue
+        for _, path in sorted(completed, reverse=True)[keep:]:
+            shutil.rmtree(path, ignore_errors=True)
 
 
 def _run(
@@ -2320,6 +2343,7 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
                 await asyncio.to_thread(
                     _persist_continuous_worker_report, args, path, result,
                 )
+                await asyncio.to_thread(_prune_continuous_evidence, evidence)
             finally:
                 report_queue.task_done()
 
@@ -2327,7 +2351,9 @@ async def _run_continuous_runtime(args: Any, evidence: Path) -> dict[str, Any]:
         nonlocal probe_number
         probe_number += 1
         probe_evidence = evidence / "continuous" / f"probe-{probe_number}"
-        return await asyncio.to_thread(_collect_head_snapshot, args, probe_evidence)
+        result = await asyncio.to_thread(_collect_head_snapshot, args, probe_evidence)
+        await asyncio.to_thread(_prune_continuous_evidence, evidence)
+        return result
 
     async def worker(work: dict[str, Any]) -> dict[str, Any]:
         run_id = f"targeted-{int(time.time())}-{os.getpid()}-{work['action_id']}"

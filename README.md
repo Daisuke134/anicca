@@ -38,6 +38,7 @@ and reconciliation loops support them behind the same control plane.
 | Affiliate | `affiliate-loop`, `affiliate-source-refresh`, `affiliate-browser` | Finds and publishes attributable affiliate opportunities through the owned browser path |
 | CFO | `life-manager-cfo-hourly` | Reconciles verified financial data and sends evidence-backed financial briefings |
 | Agent Economy | `agent-economy-loop` | Tracks agent revenue, compute cost, and self-funding without mixing owner funds |
+| Investment | `alpaca-investment` | Runs a five-minute Alpaca paper-trading loop across eligible crypto, equities, and defined-risk option spreads; gates risk, reconciles each order, and reports every pass to Telegram |
 
 The complete lifecycle registry is [`config/loop-registry.json`](config/loop-registry.json).
 List every loop and inspect its live state through the canonical interfaces:
@@ -52,6 +53,29 @@ Being present in the registry proves that a loop is part of Life Manager; it doe
 not prove the loop is healthy or that an external effect succeeded. Health comes
 from the latest terminal event, and business success comes only from the official
 provider receipt.
+
+### Run the Alpaca investment loop
+
+This loop is structurally paper-only: it accepts the exact Alpaca paper endpoint,
+uses the pinned Alpaca CLI for every broker effect, and cannot be switched to live
+trading with an environment flag. Before running it, store one
+`app.alpaca.markets` credential record containing `api_key`, `api_secret`, and
+`paper_endpoint=https://paper-api.alpaca.markets/v2` in the private local
+credential file `~/.local/share/anicca/credentials.json` (directory mode `0700`,
+file mode `0600`). Configure `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in the
+private Life Manager environment; neither belongs in Git.
+
+Run and inspect one finite pass from a checkout:
+
+```bash
+ALPACA_LIVE_TRADE=false python3 skills/alpaca-investment/run.py
+./bin/lm-loop status alpaca-investment
+```
+
+An operator can install the five-minute job only from an immutable main-derived
+release through the standard `lm-loop apply` lifecycle. A successful process is
+not proof of profit: use the reported Alpaca account, position, order, and P&L
+readbacks. Paper results do not guarantee future or live returns.
 
 ## The general agent we are building
 
