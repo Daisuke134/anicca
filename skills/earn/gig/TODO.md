@@ -159,6 +159,16 @@ completion claim is nevertheless false until the two failing lanes below pass na
   pass. This remains open until a natural main-derived Reply owner performs the pruning and the disk
   readback shows the bounded counts and recovered bytes.
 
+  The first natural release attempt after those merges did not reach activation. Full release
+  `20260902T222858-217adc4a` installed 751 root packages in 33 minutes and 74 agentmail packages in
+  2 minutes, then `apps/life-manager npm ci` was terminated by signal 9. The cutter failed closed:
+  `current` remained the prior `c3651319` release and no loop argv changed. Its trap is now removing
+  the incomplete tree through PID `26121`; the host reached 96% usage with about 8.7 GiB free during
+  that cleanup. Do not call this a Coconala lane-local leak: the temporary bytes belong to the shared
+  immutable-release build, while the independent Reply in-run retention defect is the bounded fix
+  above. This atom remains open until the incomplete tree is gone, free space is read back, and a
+  later natural release containing main `7a0a3930...` or newer activates successfully.
+
   The latest natural Paid terminal pass observed nine items and recorded `effect=1`, `readback=5`,
   `failed=2`, and `pending=2`. Ryu `18211957` completed with `send_performed=true`,
   `remote_repaired=true`, and official readback; `18171850` completed by dedupe with official
@@ -215,11 +225,13 @@ completion claim is nevertheless false until the two failing lanes below pass na
   Permanent deletion remains a separate irreversible user action, not automatic Coconala cleanup.
 
   Remaining C02 atoms, in order:
-  1. Preserve the implemented scoped reconciler on `c259cc6e`: it already moved the three
-     loaded-idle owners without interrupting Reply. After Reply becomes idle, require the same
-     reconciler to move it without a Remote `gui/$UID` operation.
-  2. Apply, Storefront, and Paid are now naturally bound to `c259cc6e` in installed plist and real
-     process argv. Preserve that readback while Reply converges.
+  1. Let PID `26121` finish deleting incomplete release `20260902T222858-217adc4a`; read back its
+     disappearance and recovered host bytes. Then require the independent reconciler's next natural
+     cut to activate a complete pushed-main release containing PRs #4047 and #4051. Do not mutate
+     `gui/$UID` or interrupt any current lane.
+  2. Preserve the four live parallel owners while they naturally converge. Current real process
+     argv remains split: Reply=`663f1af0`, Apply=`c259cc6e`, Storefront=`6a9a93e6`, and
+     Paid=`c3651319`; process presence is proven but a common-release terminal PASS is not.
   3. Finish Reply's current action `529` on thread `9992000`: deploy the stale list-card suppression
      and bounded semantic corrective retry, then require one official reply/readback and replay
      effect zero. Reconcile thread `10085794` only from a newly observed official inbox identity;
