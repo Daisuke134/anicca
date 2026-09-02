@@ -167,6 +167,11 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `.git`はdirty tracked 57,589、untracked 10,961、unique/non-merged refsを持ち、2.89 GiB packは
      loose/garbage 0なので削除・GCしない。workspace/skillsには`anicca-ask/server.js`、
      `anicca-peer-revive/agent-api.py`、Cloak Playwright driverのlive processがあるためroot単位で削除しない。
+     OpenClaw atomの初回回収では、`~/.openclaw-backups`の同一サイズ263,391,388 bytesの2 archiveを
+     compressed hashだけで判定せず、decompressed tar stream hashと全path list hashの両方が一致し、open handle 0を
+     read backした。新しい13:09版を保持し、byte-identicalな13:05版だけを回収した。Data空きは
+     `37,107,544 KiB`（約35.4 GiB）へ増加した。`workspace/node_modules` 138,544 KiBはlockfileがあるが、
+     live `anicca-ask`の親階層dependency候補なので、owner restart再構築契約を閉じるまで削除authority 0とする。
 
      `workspace/runs`の旧59 runは各々`reel-text.mp4`と`reel-final.mp4`を持ち、SHA-256で59/59組が
      byte-identicalだった。まず全`reel-final.mp4`を保持して重複`reel-text.mp4`だけ423,614,455 bytesを回収、
