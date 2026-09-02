@@ -5646,6 +5646,15 @@ queue is added. Each owner must also progress independent work concurrently insi
    official targeted snapshot. Reuse that snapshot for parallel prepare; retain presend effect
    fencing and official post-send readback. Close this atom only after the natural installed owner
    sends the buyer-visible response/artifact and replay produces zero duplicate effect.
+
+   The next natural release was delayed in central release GC, not by a Coconala lane wait. The
+   old cleanup path chmodded every directory, walked every file to count bytes, and then walked the
+   same immutable `node_modules` tree again during `rmtree`; the live 1.2 GiB stale release stayed
+   in `.gc-trash` for more than eleven minutes while free space remained near 8 GiB. Fold directory
+   chmod into the existing byte walk and let `rmtree` perform the second traversal. The focused
+   read-only release-cleanup checks pass 3/3. Keep this deployment atom open until this patch is
+   merged, one natural release containing the unique Coconala roots is current, and every owner has
+   a matching cleanup receipt.
 2. **Negotiate / reply and estimate second.** A new profile estimate request `5242505` was visible
    officially as `要提案` with an 8,000 yen budget and 2026-09-02 proposal deadline, but the natural
    lane did not submit it or send the needed reply. Add a focused failing fixture from this exact
