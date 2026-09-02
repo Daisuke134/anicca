@@ -1687,17 +1687,22 @@ The fixed execution order and durable checklist for this focused recovery is:
    caption and slot readback, natural Telegram, metrics registration, and
    replay-zero. Every sibling marketing lane and every non-marketing label
    remains byte-for-byte unchanged.
-5. [x] **MKT-10R7:** restore the thirteen verified TikTok/Instagram mobile-app owners one
-   destination at a time at three/day. Advance after the exact handle, content
-   family, integration, three-slot CalendarInterval, one real kickstart/native
-   publication, and same-slot provider replay-zero pass at system level; waiting
-   for all three wall-clock slots is not a gate.
+5. [ ] **ACTIVE — MKT-10R7-PF:** re-audit and restore the mobile-app destinations
+   in owner-mandated platform order: every TikTok account first, then every
+   Instagram account, then YouTube. Historical Postiz rows, old native URLs,
+   loaded labels, or configured CalendarIntervals are evidence only and do not
+   prove a fresh post reached the intended native account. Advance exactly one
+   account at a time only after fresh native-profile readback, correct pinned-post
+   content-family match, one new public post, exact integration, three daily
+   CalendarIntervals, and same-slot provider/message replay-zero. The only TikTok
+   account currently accepted as freshly verified is `@anicca_buddha`.
 6. [x] **SKIPPED/HOLD — MKT-10R8:** TikTok `@anicca.videojp` is frozen as the
    Japanese ReelClaw UGC-video family, but has no exact Postiz integration.
    Keep it manifest-unarmed at 0/day and never borrow another integration;
    resume only after an exact `@anicca.videojp` connection exists.
-7. [ ] **ACTIVE:** Classify and canary the three existing YouTube integrations, install
-   their exact Life Manager owners, then use the same one-to-three/day gate.
+7. [ ] **BLOCKED BY PLATFORM ORDER:** after every TikTok and Instagram atom below
+   is freshly verified, classify and canary the existing YouTube integrations,
+   install their exact Life Manager owners, then use the same three/day gate.
 8. [ ] Close MKT-11 2h/24h/72h/7d metrics and ASC/RevenueCat/product
    attribution, MKT-12 bounded hook learning, and MKT-13 daily/weekly Telegram
    reports before retiring legacy OpenClaw ownership.
@@ -2480,8 +2485,57 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **Order 25 MKT-10R7 is terminal; owner-inserted MKT-10R8 is explicitly skipped/held at 0/day; YouTube classification is active.**
-All 13 retained Anicca/Honne destinations have a fresh production publication,
+Current TODO state: **MKT-10R7-PF is active. The owner explicitly replaced the
+prior cross-platform completion order with TikTok first, Instagram second, and
+YouTube third. Historical terminal cursors below remain incident evidence, but
+they no longer establish current posting health. Only TikTok `@anicca_buddha`
+has a newly accepted native/content/integration proof in this pass.**
+
+**Authoritative platform-first atomic queue (owner override).** An account is
+not done because a plist exists, a loop exits 0, Postiz says `PUBLISHED`, or an
+old direct URL exists. For each row, inspect the native profile and its pinned
+content first; freeze the correct Postiz integration and content family; run
+one real kickstart/publication; verify the new post on that exact native handle;
+verify three JST CalendarIntervals/day and same-slot replay-zero; then update
+this cursor before touching the next row. If a screenshot handle is absent from
+the machine-readable map, classify it as `unmapped` and do not borrow a similarly
+named integration. The screenshots currently show no accepted fresh post for
+TikTok `@anicca.jp1`, `@anicca_girl`, or `@aniccaaffirmation`. Their four
+owner-supplied screenshot SHA-256 values are `a2a5446c…2fb47`,
+`42153a77…ccc7`, `100afd72…9488d`, and `8ad68fa6…3db5` (the last two show the
+same `@aniccaaffirmation` profile); these are current native-profile evidence,
+not publication receipts.
+
+| Order | Platform/account | Expected content / mapping state | Current truth |
+|---:|---|---|---|
+| T1 | TikTok `@anicca_buddha` / Postiz `cmp9txjdp01c8oh0yb6dhlarr` | JA Larry six-image eyeglass-wearing male restaurant slideshow; never sunset/woman/video | **done in this pass** — native photo `7680708466381557012`, Postiz `cmtja7i520169s60y7tzkmv5z`, reconciliation present, `07:00/13:00/20:00`, Telegram `48448` |
+| T2 | TikTok `@anicca.jp1` | screenshot shows JA male content; no TikTok destination row exists, while the same Postiz alias is currently assigned to Instagram native `@anicca.ios.jp` | **active — unmapped; browser + Postiz identity must be resolved before posting** |
+| T3 | TikTok `@anicca_girl` | screenshot shows EN male affirmation slideshow; absent from the current Postiz destination map | pending — unmapped; no fresh-post claim |
+| T4 | TikTok `@aniccaaffirmation` | screenshot shows EN woman/male affirmation slideshow; currently a Postiz hold, not a production target | pending — classify exact integration/content; no fresh-post claim |
+| T5 | TikTok `@anicca_slideshow` / `cmnenjkff01j1pa0ysufmzhfr` | Anicca EN mental-health photo slideshow | pending fresh native post + 3/day proof |
+| T6 | TikTok `@anicca.he` / `cmq2aoena08bhqp0yx1epjcik` | Anicca JA ReelClaw Card video | pending fresh native post + 3/day proof |
+| T7 | TikTok `@anicca.jp4` / `cmn8x8hdv028uqx0y4gdfse5t` | Anicca JA ReelClaw Card video | pending fresh native post + 3/day proof |
+| T8 | TikTok `@anicca.jp` / `cmp9sdev5012voh0y58qs45xc` | mapped as JA Larry sunset carousel; must be rechecked against the native profile before reuse | pending fresh native post + 3/day proof |
+| T9 | TikTok `@honne_reveal` / `cmoig11ew001zlv0yk6vqo1us` | Honne EN relationship-confession ReelClaw video | pending fresh native post + 3/day proof |
+| T10 | TikTok `@honnevideo` / `cmnit95mg015rrm0ye5vm8dhl` | Honne JA relationship-confession ReelClaw video | pending fresh native post + 3/day proof |
+| TH | TikTok `@anicca.videojp` | JA ReelClaw UGC video; exact Postiz integration absent | owner-skipped hold at 0/day; not success and not part of the active pass |
+| I1 | Instagram Postiz `@anicca.affirmation` → native `@anicca.ios` / `cmp9pedr700ttqh0yj8o57fog` | Anicca EN Larry affirmation carousel | blocked by T2–T10; then pending fresh native post + 3/day proof |
+| I2 | Instagram `@anicca.encards` / `cmpc3gx4001nklg0y27a8o66q` | Anicca EN ReelClaw Card Reel | blocked by I1 |
+| I3 | Instagram `@anicca.en` / `cmn8y95rg02d2qx0y09bbk5pb` | Anicca EN Widget Reel | blocked by I2 |
+| I4 | Instagram Postiz `@anicca.jp1` → native `@anicca.ios.jp` / `cmn8ycvtn02djqx0ytuisn9mw` | Anicca JA ReelClaw Card Reel | blocked by I3; do not confuse with TikTok `@anicca.jp1` |
+| I5 | Instagram `@ani.cca1234` / `cmq3sq7mc000eqp0y7azfm8yk` | Anicca JA Larry carousel | blocked by I4 |
+| I6 | Instagram `@anicca.jp.videos` / `cmmzzg2es0539p30ycb94ayx0` | Anicca JA Widget Reel | blocked by I5 |
+| Y1 | YouTube `@anicca-ai` / `cmq3u37gi005iqp0y90a2w92n` | Anicca EN Widget Short | blocked by I6; prior canary is historical until platform-first readback |
+| Y2 | YouTube Postiz `@anicca-affirmation-video` → native `@life-manager-m4p` / `cmn8ymq6c02oio70y5ea1trv8` | Anicca EN 3D-male ReelClaw Card Short | blocked by Y1; no accepted canary yet |
+| YH | YouTube `@anicca-jp` / `cmn1oukj9012nnq0yqhouc3ib` | owner-skipped | hold at 0/day unless explicitly reopened |
+
+After Y2, and only then: MKT-11 metrics → MKT-12 self-improving hook loop →
+MKT-13 Telegram reporting/legacy retirement. Ebook/monk remains later.
+
+The following paragraphs and cursors are retained as historical evidence and
+must not override the platform-first queue above.
+**Historical claim, no longer accepted as current health:** all 13 retained
+Anicca/Honne destinations were previously recorded as having a fresh production publication,
 exact provider-integration readback, native-profile owner/content-family
 readback, Telegram receipt, and same-slot replay with zero new effects. The
 frozen mapping is Anicca EN Instagram `@anicca.affirmation`/Larry,
