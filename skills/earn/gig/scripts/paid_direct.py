@@ -3876,6 +3876,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
         "Never modify paid-remote-intent.json, paid-remote-result.json, paid-answer.json, or any buyer/client surface."
         if verifier else
         "Write project-owned intent/result, authenticated before/after evidence, and a natural Japanese customer_message. "
+        "Once the required official checks are sufficient to decide completion or a blocker, write the durable result immediately before any optional exploration; do not exhaustively inspect unrelated historical attachments or messages. "
         "paid-remote-result.json must include business_outcome with required_effect_satisfied, required_output_satisfied, "
         "remaining_work, and official_receipts. Set both satisfied fields true only after the complete semantic contract has "
         "official provider readback; otherwise preserve progress and return blocked without manufacturing a completion result. "

@@ -621,6 +621,8 @@ def test_remote_owner_prompt_searches_complete_repo_and_valid_shared_tools(tmp_p
     assert f"search {paid.REPO_ROOT} with rg" in prompt
     assert str(paid.REPO_ROOT / "skills/_shared/resource_resolver.py") in prompt
     assert str(paid.REPO_ROOT / "skills/browser/with-browser.sh") in prompt
+    assert "write the durable result immediately before any optional exploration" in prompt
+    assert "do not exhaustively inspect unrelated historical attachments or messages" in prompt
 
 
 def test_remote_verifier_prompt_persists_decision_before_optional_exploration(tmp_path):
