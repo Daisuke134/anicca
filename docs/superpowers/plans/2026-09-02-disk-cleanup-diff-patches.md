@@ -1,7 +1,7 @@
 # Disk Cleanup — Exact Diff Patch Series
 
 Canonical spec: `docs/superpowers/specs/2026-08-20-life-manager-disk-cleanup-loop-design.md`.
-This file is the exact file/line/diff/readback SSOT for P0–P7. Execute only the first unfinished patch.
+This file is the exact file/line/diff/readback SSOT for P0–P7. Execution priority is P4, P1, P2, P3, P5, P6, P0 remaining, pre-merge, final merge/deploy, P7, worktree retirement.
 
 ## Branch and merge contract
 

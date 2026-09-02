@@ -79,7 +79,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 - [ ] 一つの最終PRだけを作成してmainへmerge
 - [ ] merge後にmain由来release、production readback、P7 24時間・7日検証を完了
 
-### 最初から最後までの固定TODO
+### 実行履歴（TODOではない）
 
 | 順序 | 状態 | 作業 | 完了証拠 |
 |---:|:---:|---|---|
@@ -95,12 +95,26 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 | 4 | 未完 | Lancers revenue loopを別ownerの移管完了後に継続 | Apply→Negotiate→Paid→official payment |
 | 5 | 未完 | WebMCP hackathon提出を閉じる | Mercor readback、replay-zero、動画、YouTube、Devpost |
 
-### Patch execution map（完了までの唯一の実行順）
+### 未完TODO（優先度順・完了した行は実行履歴へ移す）
+
+1. [ ] P4 Legacy廃止 — caller/state/sourceを監査し、Hermes/OpenClaw周辺・重複repo/workspaceの安全な移管とretireを完了する
+2. [ ] P1 Zero-waste baseline — 全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上を達成する
+3. [ ] P2 Writer-owned retention — 全managed writerへowner/quota/retention/finalizer/leaseを接続する
+4. [ ] P3 Release GC — actual loaded argv保護とabandoned partial release回収を完成する
+5. [ ] P5 Gig terminal lifecycle — 納品・再提出baseを守り、terminal projectだけを回収する
+6. [ ] P6 Capacity firewall — 全producerのclaim/quota/heartbeatとloopを止めない縮退動作を完成する
+7. [ ] P0残件 — release-reconciler自身をmain由来immutable releaseへ移すsource/rolloutを完成する
+8. [ ] Pre-merge gate — focused test、隔離E2E、diff、spec、push状態を全てPASSにする
+9. [ ] 一つの最終PRをmainへmergeし、main由来releaseをproductionへ反映する
+10. [ ] P7 Forever verification — 24時間と続く7日間のproduction receiptをPASSにする
+11. [ ] GH-11 worktreeとcleanup branchをretireする
+
+### Patch reference map（実行順は上の未完TODOだけ）
 
 Exact file/line/unified-diff/run/readback SSOT →
 `docs/superpowers/plans/2026-09-02-disk-cleanup-diff-patches.md`
 
-下のP0〜P7は上の固定TODOを実行可能なpatchへ畳んだものであり、順序を変えない。
+下のP0〜P7はpatchの参照表であり、実行順は上の未完TODOだけを正本とする。
 P0残件とP1〜P6はGH-11 branch内でsource・隔離検証・spec checkboxを閉じ、途中でmainへmergeしない。
 一つの最終PRをmergeした後、main由来release、production readback、P7の時間窓検証を閉じる。
 
@@ -144,21 +158,6 @@ entrypointを読み、`launchctl ... gui/$UID`へ到達する場合だけその�
   [x] 次wakeの`errors=0`、`protected_deletions=0`を実測する。
 - [ ] 3-5f: P1 Zero-waste baselineを実行し、100 MiB以上のunclassified root、終了worktree、重複clone、
   partial release/build、復元可能な期限切れcacheを0にし、normal free 30 GiB以上を読み戻す。
-
-#### 現在の実行チェックリスト（順序固定）
-
-- [ ] P0 Runtime正規化
-  - [x] source fixをmainへ統合
-  - [x] cleanupを`663f1af0...`へ自然移管し、自然wake PASS・errors 0・protected deletion 0を実測
-  - [x] compatibility aliasを削除し、参照0・alias 0を実測
-  - [ ] release-reconciler自身をmain由来immutable releaseへ移してloaded argv/SHAをreadback
-- [ ] P1 Zero-waste baseline — 現在free 9.1 GiB。全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上が残る
-- [ ] P2 Writer-owned retention — common scratch/JSONL rotationは実装済み。全managed writerのowner/quota/retention/finalizer/leaseが残る
-- [ ] P3 Release GC — actual loaded argvの実path保護とabandoned partial release回収が残る
-- [ ] P4 Legacy廃止 — Hermes/OpenClaw/重複repo・workspaceのcaller/state監査と安全な移管・廃止が残る
-- [ ] P5 Gig terminal lifecycle — 納品・再提出baseを守るproject ledger/finalizerが残る
-- [ ] P6 Capacity firewall — release buildを含む全producerのclaim/quota/heartbeatと、loopを止めない縮退動作が残る
-- [ ] P7 Forever verification — 24時間と続く7日間のproduction receiptが残る
 
 3-5cの実測releaseは`~/loops/releases/20260902T162519-eb068f0c`、exact SHA
 `eb068f0c8363381f380867ef1a94df378cd5234e`、provenance=`ancestor-of-origin-main`、size `1,251,424 KiB`である。
