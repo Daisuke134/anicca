@@ -83,7 +83,7 @@ source/spec/Git変更、隔離test、read-only production観測、host-wide buil
 - [x] 3-5c: host-wide build lockとmain SHAをreadbackし、同SHAからimmutable releaseを一世代作成して内容を検証する。
 - [ ] 3-5d: 正規GUI/deployment ownerがproduction pinをそのreleaseへ反映し、loaded argvとrelease SHAをreadbackする。
 - [ ] 3-5e: [x] Updater terminal、[x] Sparkle `Installation`約1.9 GiB回収、[ ] 新ChatGPT version、
-  [ ] 次wakeの`errors=0`、`protected_deletions=0`を実測する。
+  [x] 次wakeの`errors=0`、`protected_deletions=0`を実測する。
 
 3-5cの実測releaseは`~/loops/releases/20260902T162519-eb068f0c`、exact SHA
 `eb068f0c8363381f380867ef1a94df378cd5234e`、provenance=`ancestor-of-origin-main`、size `1,251,424 KiB`である。
@@ -102,6 +102,12 @@ Source: [Sparkle Bundles](https://sparkle-project.org/documentation/bundles/) �
 `protected_deletions=0`だが、host cleanupの1候補をfail-closed `probe-error`として保存し、
 `entrypoint_exit_1`でterminalした。receiptは`errors=1`、`preserved_reasons={open:4, probe-error:1}`、
 Data free `27,803,836,416 bytes`である。したがって3-5eを完了扱いにせず、次の自然wake PASSを要求する。
+
+次の自然wake `18d170f9e4ffde38-41373`は追加triggerなしでterminal `pass`となった。receiptは
+`errors=0`、`protected_deletions=0`、`preserved_reasons={open:1, probe-budget-exhausted:5}`、
+追加回収`2,261,321,785 bytes`、`free_after=25,721,294,848 bytes`である。前runの`probe-error`は継続せず、
+fail-closed保存から自然回復した。3-5eの安全receiptは完了したが、production pinは旧releaseのままなので3-5dを
+先頭未完atomとして維持し、3-5全体を完了扱いにしない。
 
 ### 全Codexが守る同期ルール
 
