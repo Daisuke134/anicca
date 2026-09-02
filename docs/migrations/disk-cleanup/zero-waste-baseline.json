@@ -1108,6 +1108,27 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Dirty source and unpublished drafts remain; deleting .git or articles would lose publication lineage. Owner must reconcile/push and define bounded retention before cleanup."
+    },
+    {
+      "batch": "p1d-capafy-marketing-workspace-audit-46",
+      "path": "~/.openclaw/workspace/capafy-marketing",
+      "measured_kib": 42116,
+      "files": [
+        {"path": "capafy-yt-script-writer-DRY-v2-categoryBroll.mp4", "bytes": 21619192, "mtime": "2026-07-18T08:49:26"},
+        {"path": "capafy-yt-script-writer-DRY.mp4", "bytes": 21412815, "mtime": "2026-07-18T08:38:24"},
+        {"path": "useclaudeskills-proof-loggedout.png", "bytes": 86225, "mtime": "2026-07-18T08:58:02"}
+      ],
+      "absolute_path_refs": 0,
+      "asset_name_refs": 0,
+      "active_owner": "capafy-goal-monitor-daily-close",
+      "active_owner_release": "20260902T165833-7942f224",
+      "external_open_handle_rows_final": 0,
+      "decision": "candidate_stale_workspace_artifacts_defer_confirmed_deletion",
+      "safe_delete_candidate": true,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "The running Capafy owner uses the Life Manager release skill path, not this workspace directory. The three old DRY/proof artifacts have no open handles or exact source references. Keep the owner running; delete only after artifact reuse/retention confirmation and the required irreversible-delete confirmation, then record after-bytes and free delta."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
