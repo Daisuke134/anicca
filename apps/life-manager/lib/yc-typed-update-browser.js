@@ -144,7 +144,7 @@ function createPlaywrightYcTypedUpdateDriver(page, options = {}) {
           const marker = label.parentElement?.querySelector("div");
           if (!marker) return false;
           const signature = `${marker.className} ${marker.innerHTML}`;
-          return /bg-|border-[2-9]|<div|<span|checked/i.test(signature);
+          return /bg-|border-[2-9]|border-\[[2-9]px\]|<div|<span|checked/i.test(signature);
         });
         return selected.length === 1 ? selected[0].textContent.trim() : null;
       });

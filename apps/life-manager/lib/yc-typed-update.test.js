@@ -114,7 +114,7 @@ test("builds four content-addressed typed operations while application submissio
   assert.ok(Object.isFrozen(plan.operations[0].payload));
 });
 
-test("supports source-proven exact-equality omission only for conditional operations", () => {
+test("supports source-proven omission for confirmed demo and conditional text operations", () => {
   const input = validInput();
   for (const type of ["team_update", "founder_profile_update"]) {
     const operation = input.operations.find((candidate) => candidate.operation_type === type);
@@ -122,16 +122,14 @@ test("supports source-proven exact-equality omission only for conditional operat
     operation.payload = {};
     operation.expected_readback_digest = digest(operation.payload);
   }
+  input.operations[0].disposition = "omit_equal";
   const plan = buildYcTypedUpdatePlan(input, { now: NOW });
-  assert.deepEqual(plan.operations.filter(({ disposition }) => disposition === "omit_equal").map(({ operation_type }) => operation_type), ["team_update", "founder_profile_update"]);
-  for (const type of ["demo_update", "progress_update"]) {
-    const bad = validInput();
-    const operation = bad.operations.find((candidate) => candidate.operation_type === type);
-    operation.disposition = "omit_equal";
-    operation.payload = {};
-    operation.expected_readback_digest = digest(operation.payload);
-    assert.throws(() => buildYcTypedUpdatePlan(bad, { now: NOW }), /YC typed update/i);
-  }
+  assert.deepEqual(plan.operations.filter(({ disposition }) => disposition === "omit_equal").map(({ operation_type }) => operation_type), ["demo_update", "team_update", "founder_profile_update"]);
+  const bad = validInput();
+  bad.operations[1].disposition = "omit_equal";
+  bad.operations[1].payload = {};
+  bad.operations[1].expected_readback_digest = digest(bad.operations[1].payload);
+  assert.throws(() => buildYcTypedUpdatePlan(bad, { now: NOW }), /YC typed update/i);
 });
 
 test("fails closed on blocker, stale preview, duplicate type, route drift, payload extras, or any prior mutation", () => {

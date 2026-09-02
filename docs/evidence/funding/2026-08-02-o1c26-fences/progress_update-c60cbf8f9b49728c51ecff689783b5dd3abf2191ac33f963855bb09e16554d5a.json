@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "plan_digest": "4a8e5eb8e35634b84b5962a2800437228f97b250232caab034ad7a5c2a5192a6",
+  "operation_id": "c60cbf8f9b49728c51ecff689783b5dd3abf2191ac33f963855bb09e16554d5a",
+  "operation_type": "progress_update",
+  "payload_digest": "c432e09a988a56ec64b5b00c8c26ae5f9849e098e8fd3f8a56f94e814d061aec",
+  "expected_readback_digest": "c432e09a988a56ec64b5b00c8c26ae5f9849e098e8fd3f8a56f94e814d061aec",
+  "state": "not_applied",
+  "prepared_at": "2026-08-02T03:50:37.581Z",
+  "effect_attempted_at": "2026-08-02T03:50:37.737Z",
+  "readback_at": "2026-08-02T03:51:10.402Z",
+  "activation_count": 1,
+  "readback_digest": "64301654b55dd58f9cef831fc83fb4418f066fa948611432eb594174b406a180",
+  "fence_digest": "3a54521b1d1cc53d5909aba6acef81768fcae11556767b1f042eb49ddc6fe317"
+}

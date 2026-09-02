@@ -5,7 +5,7 @@ const { createHash } = require("node:crypto");
 const SHA = /^[0-9a-f]{64}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TYPES = Object.freeze(["demo_update", "progress_update", "team_update", "founder_profile_update"]);
-const CONDITIONAL = new Set(["team_update", "founder_profile_update"]);
+const CONDITIONAL = new Set(["demo_update", "team_update", "founder_profile_update"]);
 const PAYLOAD_KEYS = Object.freeze({
   demo_update: ["demo_video"],
   progress_update: ["productLink", "productCreds", "howfar", "worked", "techstack", "people_using", "have_revenue"],
@@ -47,9 +47,11 @@ function expectedRoute(id, type) {
 }
 function validatePayload(type, disposition, payload) {
   if (disposition === "omit_equal") {
-    exactKeys(payload, [], "omitted payload");
     if (!CONDITIONAL.has(type)) fail("required operation omission");
-    return;
+    if (type !== "demo_update") {
+      exactKeys(payload, [], "omitted payload");
+      return;
+    }
   }
   exactKeys(payload, PAYLOAD_KEYS[type], `${type} payload`);
   if (type === "demo_update") {
@@ -88,7 +90,7 @@ function buildYcTypedUpdatePlan(input = {}, options = {}) {
     validatePayload(type, operation.disposition, operation.payload);
     const payloadDigest = digest(operation.payload);
     if (operation.expected_readback_digest !== payloadDigest) fail("expected readback binding");
-    const assetDigest = type === "demo_update" && operation.disposition === "execute" ? operation.payload.demo_video.artifact_digest : null;
+    const assetDigest = type === "demo_update" ? operation.payload.demo_video.artifact_digest : null;
     const core = {
       operation_type: type,
       disposition: operation.disposition,
