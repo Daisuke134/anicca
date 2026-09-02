@@ -329,7 +329,7 @@ def _close_owned_page(page: Any) -> bool:
 
 def _production_account_ready(page: Any) -> bool:
     try:
-        page.goto(DASHBOARD_URL)
+        page.goto(DASHBOARD_URL, wait_until="domcontentloaded", timeout=20_000)
         if getattr(page, "url", None) != DASHBOARD_URL:
             return False
         return page.locator("#login_form").count() == 0

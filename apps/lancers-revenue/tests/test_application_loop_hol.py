@@ -175,6 +175,25 @@ class _FakeBrowser:
 
 
 class ApplicationLoopHolTests(unittest.TestCase):
+    def test_account_ready_navigation_is_bounded(self):
+        application_tick = _load_deployed_loop().application_tick
+
+        class Page:
+            url = application_tick.DASHBOARD_URL
+
+            def goto(self, url, **kwargs):
+                self.goto_call = (url, kwargs)
+
+            def locator(self, _selector):
+                return type("Locator", (), {"count": lambda _self: 0})()
+
+        page = Page()
+        self.assertTrue(application_tick._production_account_ready(page))
+        self.assertEqual(
+            page.goto_call,
+            (application_tick.DASHBOARD_URL, {"wait_until": "domcontentloaded", "timeout": 20_000}),
+        )
+
     def test_default_proposal_reader_accepts_mutable_display_name(self):
         application_loop = _load_deployed_loop()
         project_id = "5585503"
