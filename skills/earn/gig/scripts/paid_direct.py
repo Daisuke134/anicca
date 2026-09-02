@@ -4535,11 +4535,11 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             return 0
         base = args.evidence_dir / "paid-direct" / room
         preflight = base / "preflight" / "selected-talkroom-snapshot.json"
-        diagnostic_stage = "preflight_collect"
-        _run_paid_preflight(
-            args,
-            _collector(args, "selected-talkroom-only", preflight, preflight.parent, item_path, item),
+        diagnostic_stage = "reuse_parent_readback"
+        parent_snapshot = (
+            args.evidence_dir / "paid-direct" / "targeted" / room / "snapshot.json"
         )
+        _write(preflight, _load(parent_snapshot))
         diagnostic_stage = "preflight_validate"
         preflight_row = _row(_load(preflight), room)
         if _text(preflight_row.get("buyer_feedback_sha256")) != feedback: raise Failure("remote_resume")
