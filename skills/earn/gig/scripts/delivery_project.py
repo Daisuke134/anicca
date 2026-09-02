@@ -94,6 +94,7 @@ def record_queue_selection(base: str | Path, item: dict[str, Any], *, adapter: s
         "source_contract_id": item.get("contract_id"),
         "queue_class": item.get("queue_class"),
         "talkroom_state": item.get("talkroom_state"),
+        "transaction_state": item.get("transaction_state", item.get("talkroom_state")),
         "buyer_visible_artifact_observed": item.get("buyer_visible_artifact_observed") is True,
         "buyer_feedback_pending_artifact": item.get("buyer_feedback_pending_artifact") is True,
         "buyer_agreement_observed": item.get("buyer_agreement_observed") is True,
