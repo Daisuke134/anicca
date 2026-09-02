@@ -153,6 +153,9 @@ exec "$CHROMIUM_BIN" \
   --fingerprint-platform=macos \
   --remote-debugging-address=127.0.0.1 \
   --remote-allow-origins='*' \
+  --disk-cache-size=67108864 \
+  --media-cache-size=33554432 \
+  --disk-cache-dir="$HOME/.cache/job-search-browser" \
   "${PORT_ARGUMENT[@]}" \
   --user-data-dir="$PROFILE" \
   about:blank

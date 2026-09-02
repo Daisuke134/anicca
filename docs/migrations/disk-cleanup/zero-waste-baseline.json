@@ -40,6 +40,20 @@
         "before": "unbounded sleep with no signal handler and no context close",
         "after": "SIGTERM/SIGINT set a stop flag and finally closes the persistent context",
         "focused_test": "skills.affiliate.tests.test_local_browser 7/7 PASS"
+      },
+      "job_search_cache": {
+        "source": "apps/job-search-loop/scripts/run-browser.sh",
+        "profile": "~/.cloak/profiles/job-search-daily",
+        "cache_before_kib": 1296212,
+        "cache_after_kib": 0,
+        "free_before_kib": 11365348,
+        "free_after_kib": 12678676,
+        "owner_pid_after": 693,
+        "chromium_pid_after": 1139,
+        "listener_after": "[::1]:9222",
+        "limits": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
+        "focused_test": "apps/job-search-loop/tests/test_run_browser_preflight.py 10/10 PASS",
+        "note": "127.0.0.1:9222 is separately occupied by Google Chrome PID 419 and returns 404; tracked as P1d-3c-2c"
       }
     }
   },

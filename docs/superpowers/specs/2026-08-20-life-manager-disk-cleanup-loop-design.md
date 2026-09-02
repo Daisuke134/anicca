@@ -144,6 +144,9 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
     - [ ] P1d-3c: 残るresident browser ownerを同じ契約へ揃え、process/RSS/swapが再増加しないこととnormal free 30 GiB以上をreadbackしてP1dを閉じる
       - [x] P1d-3c-1: affiliate 3 browserの無限sleep ownerへSIGTERM/SIGINTと`finally: context.close()`を追加し、子Chromiumをowner終了時に回収する。既存focused test 7/7 PASS
       - [ ] P1d-3c-2: 残るresident browser ownerの終了契約とprofile cache上限を実測し、未実装ownerを0にする
+        - [x] P1d-3c-2a: Job Searchのdisk/media cacheを64/32 MiB上限のprofile外cacheへ変更し、既存profile cache `1,296,212 KiB`を回収。Data free `11,365,348`→`12,678,676 KiB`、Chromium PID 1139とIPv6 `:9222` listener継続、cache残り0、focused test 10/10 PASS
+        - [ ] P1d-3c-2b: Gig、Lancers、CrowdWorks、affiliate、legacy X ownerのcache上限と既存cacheをowner単位で閉じる
+        - [ ] P1d-3c-2c: IPv4 `:9222`を占有する不要Google Chrome ownerをretireし、Job Search endpoint競合を0にする
       - [ ] P1d-3c-3: process/RSS/swapの再増加停止とnormal free 30 GiB以上をreadbackする
 
 #### P4 execution ledger
