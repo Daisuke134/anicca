@@ -1,4 +1,5 @@
 import fcntl
+import io
 import json
 import os
 import plistlib
@@ -7,6 +8,7 @@ import stat
 import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -464,6 +466,40 @@ class LmLoopApplyTest(unittest.TestCase):
         installed = plistlib.loads(
             (values["agents_dir"] / "ai.anicca.example.plist").read_bytes())
         self.assertEqual(installed["ProgramArguments"][2], str(release_a.resolve()))
+
+    def test_reconcile_pins_one_explicit_release_for_the_whole_route(self):
+        release = self._release("release-a").resolve()
+        command_release = self._release("release-b").resolve()
+        (release / "config/loop-registry.json").write_text(json.dumps(two_loop_registry()))
+        (command_release / "config/loop-registry.json").write_text(
+            json.dumps(two_loop_registry())
+        )
+        rows = [
+            {
+                "classification": "managed",
+                "provider_route": "deterministic",
+                "launchd_state": "loaded-idle",
+                "installed_release_sha": "b" * 40,
+                "loop_id": loop_id,
+            }
+            for loop_id in ("example", "second")
+        ]
+        applied_roots = []
+
+        def record_apply(release_root, *args, **kwargs):
+            applied_roots.append(release_root)
+            return [{"ok": True, "release_sha": SHA}]
+
+        with (
+            patch.object(lm_loop, "ROOT", command_release),
+            patch.object(lm_loop, "snapshot", return_value=rows),
+            patch.object(lm_loop, "apply_live", side_effect=record_apply),
+            patch.dict(os.environ, {"LIFE_MANAGER_RELEASE_ROOT": str(release)}),
+            redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(lm_loop.main(["reconcile", "deterministic"]), 0)
+
+        self.assertEqual(applied_roots, [release, release])
 
     def test_apply_current_release_records_real_launchctl_calls(self):
         release = self._release("release-a").resolve()

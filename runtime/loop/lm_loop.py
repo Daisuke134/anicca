@@ -358,7 +358,8 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"ok": False, "error": "reconcile requires <provider-route>"}))
             return 2
         route = args[1]
-        current_sha = json.loads((ROOT / "RELEASE.json").read_text()).get("sha")
+        release_root = Path(os.environ.get("LIFE_MANAGER_RELEASE_ROOT", ROOT)).expanduser().resolve(strict=True)
+        current_sha = json.loads((release_root / "RELEASE.json").read_text()).get("sha")
         rows = snapshot(registry, "all")
         eligible = [row for row in rows if (
             row["classification"] == "managed"
@@ -369,7 +370,6 @@ def main(argv: list[str] | None = None) -> int:
         applied, failed = [], []
         for row in eligible:
             try:
-                release_root = Path("~/loops/current").expanduser().resolve(strict=True)
                 applied.extend(apply_live(
                     release_root, Path("~/Library/LaunchAgents").expanduser(),
                     release_root / "bin/launchctl-safe",
