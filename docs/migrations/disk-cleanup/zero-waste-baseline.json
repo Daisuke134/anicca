@@ -660,6 +660,20 @@
       "df_free_kib_after": 6471960,
       "swap_used_mib_after": 25461.75,
       "note": "lsof +D returned zero rows. The directory is not safe to purge because its manifest contains active or resubmittable Gig/Coconala source and deliverables; defer to P5 terminal lifecycle instead of deleting by Trash location alone."
+    },
+    {
+      "batch": "p1d-openclaw-backup-audit-25",
+      "path": "~/.openclaw-backups/openclaw-core-20260902-171143.tar.gz",
+      "measured_kib": 257220,
+      "generation_count": 1,
+      "gzip_integrity": "PASS",
+      "open_handles": "unknown_lsof_timeout",
+      "decision": "preserve_latest_rollback_generation",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "The backup directory contains one recent rollback archive, not an unbounded generation set. lsof timed out, so the validator fails closed and does not purge it; re-evaluate only under P2 rollback-retention with a proven replacement."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

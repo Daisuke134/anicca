@@ -175,6 +175,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
               - [x] P1d-3c-3c-8b-2-c: stale cutter回収後にcentral GCを実行し、16 releaseを評価。16を保護、0削除、errors 0、protected deletion 0。現行plist/open/依存donorを守ると安全な削除候補は0件であり、30 GiB gateはproduction rollout前には閉じない
               - [x] P1d-3c-3c-8b-2-d: ENOSPC時に旧`lm_loop_run`が事前`cleanup-latest.json`の一時writeでentrypoint前に終了する根因を修正。事前receiptだけをdeferしcleanup本体を継続、通常I/O errorはfail-closed。focused cleanup test 16/16、Python syntax、diff check PASS。production rollout/readbackは未実施（旧disk-cleanup logでENOSPC 43件、receipt更新停止）
               - [x] P1d-3c-3c-8b-2-e: `.Trash/life-manager-gig-videos-20260902-134053`（`1,132,480 KiB`、manifest 16 files）をopen handle・Gig台帳・Coconala状態へ照合。`5188394`は納品確認待ち、`5174332`はv5再提出サイクル、`18211957`は取引中かつbuyer添付待ちのため、成果物を削除せず保持。`lsof` rows 0、削除0、protected deletion 0。safe delete candidateは0であり、P5 terminal lifecycleへ繰り越す。
+              - [x] P1d-3c-3c-8b-2-f: `~/.openclaw-backups`を世代・整合性・参照単位で監査。単一の`openclaw-core-20260902-171143.tar.gz`（`257,220 KiB`）のみで`gzip -t` PASS。`lsof`はtimeoutしたためopen状態を不明として保持し、旧世代削除や一括purgeは行わない。safe delete candidate 0、P2 rollback retentionへ繰り越す。
 
 #### P4 execution ledger
 
@@ -440,7 +441,7 @@ compatibility aliasを削除しalias 0となった。cleanup側3-5d/3-5eは完�
      | `~/.codex-acct2` | 2.33 GiB | active Codex account。active sessionを保持する |
      | `~/.claude` | 2.17 GiB | active sessionを保持し、終了済みlog/archiveだけをrotation対象にする |
      | `~/Desktop` | 2.11 GiB | ほぼ`MoneyPrinter-Hackathon-Demo`。WebMCP提出完了前は保持する |
-     | `~/.openclaw-backups` | 1.72 GiB | generation/復旧依存を確認してbounded retentionへ接続する |
+     | `~/.openclaw-backups` | 257,220 KiB | 最新1世代の復旧archive。gzip整合性PASS、open状態不明のためP2 rollback retentionへ保持 |
      | `~/.rustup` | 1.32 GiB | toolchain ownerを確認する |
      | `~/Pictures` | 1.08 GiB | Life Manager/提出物/進行中deliverable依存とunique contentを監査し、依存0・再生成可能なら回収する |
      | `~/.venvs` | 0.99 GiB | caller/entrypoint不在を確認したenvironmentだけを回収する |
