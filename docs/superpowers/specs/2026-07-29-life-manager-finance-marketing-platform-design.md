@@ -2626,6 +2626,26 @@ atom requires an external state change: a valid logged-in GUI/Aqua execution
 context. Do not bypass `lm-loop`, hand-write the plist, run raw `launchctl`, or
 advance the next YouTube lane while this fixed-order atom is open.
 
+**YouTube live cursor 6 — `@anicca-ai` terminal at 3/day:** after the Codex
+harness returned to a healthy Aqua context (`id -un=anicca`, manager `Aqua`,
+`gui/501` rc 0), target-only `lm-loop apply` installed and loaded
+`ai.anicca.life-manager-anicca-ai-youtube`. Its plist and live argv point to
+immutable main release `20260902T131725-29fb7681` / SHA
+`29fb7681b3e3983870c105db8ec7907282f894f8` and contain exactly
+`07:45/13:15/19:45` JST. Official kickstart consumed the 13:15 slot once:
+YouTube `https://www.youtube.com/watch?v=vFptviO7Gfo`, Postiz
+`cmtjlbdvf00kvpn0yi13wq6lu`, Telegram `48283`. Native readback proves public
+15-second content on uploader `@anicca-ai`, channel ID
+`UCFGkrtiSTni-AZ9DUY6Q5EA`, English self-belief/affirmation copy, and the
+approved Widget family. The run terminated `pass` on the installed SHA and
+returned loaded-idle. A second official kickstart of the same due slot also
+terminated `pass`; generation/publication/Telegram all returned
+`created:false`, and the exact publication ledger remained three lifecycle
+rows plus one receipt. This supersedes cursors 3–5's pending scheduler state.
+The first active atom is now classification and canary of YouTube
+`@anicca-affirmation-video` / `cmn8ymq6c02oio70y5ea1trv8`; `@anicca-jp`
+remains owner-skipped at 0/day, and ebook/monk remain later.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
