@@ -571,7 +571,7 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(report["eligible"], 1)
         self.assertEqual(report["skipped_running"], ["running"])
 
-    def test_loaded_idle_reconcile_skips_without_mutation_when_owner_started(self):
+    def test_loaded_idle_reconcile_skips_prelock_running_owner_without_mutation(self):
         release = self._release("release-a").resolve()
         current = self.root / "current"
         current.symlink_to(release)
@@ -593,6 +593,7 @@ class LmLoopApplyTest(unittest.TestCase):
         )
         values["launchctl_safe"].chmod(0o755)
         rendered = build_apply_plan(registry(), release, SHA)[0]
+        events = []
         item_lock = lock_path.with_name(lock_path.name + ".ai.anicca.example.lock")
         with item_lock.open("a+") as owner_lock:
             fcntl.flock(owner_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -603,6 +604,7 @@ class LmLoopApplyTest(unittest.TestCase):
                 current=current,
                 lock_path=lock_path,
                 skip_busy=True,
+                event_writer=events.append,
             )
 
         self.assertEqual(result, [{
@@ -615,6 +617,56 @@ class LmLoopApplyTest(unittest.TestCase):
             "skipped": "loaded-running",
         }])
         self.assertEqual(target.read_bytes(), old_bytes)
+        self.assertEqual(events, [])
+        self.assertEqual(
+            values["calls"].read_text().splitlines(),
+            ["preflight", f"print gui/{os.getuid()}/ai.anicca.example"],
+        )
+
+    def test_loaded_idle_reconcile_skips_unloaded_after_lock_without_mutation(self):
+        release = self._release("release-a").resolve()
+        current = self.root / "current"
+        current.symlink_to(release)
+        lock_path = self.root / "apply.lock"
+        values = self._apply_kwargs(current, lock_path)
+        target = values["agents_dir"] / "ai.anicca.example.plist"
+        old_bytes = plistlib.dumps({
+            "Label": "ai.anicca.example",
+            "ProgramArguments": ["/old/run.sh"],
+        })
+        target.write_bytes(old_bytes)
+        values["launchctl_safe"].write_text(
+            "#!/bin/sh\n"
+            f"printf '%s\\n' \"$*\" >> {shlex.quote(str(values['calls']))}\n"
+            "if [ \"$1\" = print ]; then\n"
+            "  exit 1\n"
+            "fi\n"
+            "exit 0\n"
+        )
+        values["launchctl_safe"].chmod(0o755)
+        rendered = build_apply_plan(registry(), release, SHA)[0]
+        events = []
+        result = apply_live(
+            release,
+            values["agents_dir"],
+            values["launchctl_safe"],
+            current=current,
+            lock_path=lock_path,
+            skip_busy=True,
+            event_writer=events.append,
+        )
+
+        self.assertEqual(result, [{
+            "ok": True,
+            "label": "ai.anicca.example",
+            "loaded": False,
+            "loaded_arguments": [],
+            "release_sha": SHA,
+            "changed": False,
+            "skipped": "unloaded",
+        }])
+        self.assertEqual(target.read_bytes(), old_bytes)
+        self.assertEqual(events, [])
         self.assertEqual(
             values["calls"].read_text().splitlines(),
             ["preflight", f"print gui/{os.getuid()}/ai.anicca.example"],

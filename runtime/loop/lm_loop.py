@@ -17,6 +17,7 @@ from pathlib import Path
 from runtime.loop.macos_launchd_inventory import extract_release, parse_disabled, parse_loaded
 from runtime.loop.macos_loop_registry import validate_registry
 from runtime.loop.lm_loop_apply import (
+    _loaded_arguments,
     _preserve_operational_attributes,
     apply_registry,
     install_one,
@@ -274,6 +275,22 @@ def _service_is_running(detail: str) -> bool:
                           detail))
 
 
+def _skip_if_not_loaded_idle(item: dict, release_sha: str,
+                             launchctl_safe: Path) -> dict | None:
+    rc, printed = _safe_launchctl(
+        launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
+    if rc != 0:
+        return {"ok": True, "label": item["label"], "loaded": False,
+                "loaded_arguments": [], "release_sha": release_sha,
+                "changed": False, "skipped": "unloaded"}
+    if not _service_is_running(printed):
+        return None
+    return {"ok": True, "label": item["label"], "loaded": True,
+            "loaded_arguments": _loaded_arguments(printed),
+            "release_sha": release_sha, "changed": False,
+            "skipped": "loaded-running"}
+
+
 def activate_current(current: Path, release_root: Path,
                      lock_path: Path | None = None) -> None:
     current = Path(current).expanduser()
@@ -312,6 +329,12 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
         item_lock = _label_apply_lock_path(current, item["label"], lock_path)
         try:
             with _apply_lock(current, item_lock):
+                if skip_busy:
+                    skipped = _skip_if_not_loaded_idle(
+                        item, release_sha, launchctl_safe)
+                    if skipped is not None:
+                        results.append(skipped)
+                        continue
                 target_path = agents_dir / f"{item['label']}.plist"
                 result = None
                 existing_bytes = target_path.read_bytes() if target_path.is_file() else None
@@ -320,7 +343,6 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                 if existing_bytes is not None and existing_bytes == desired_bytes:
                     rc, printed = _safe_launchctl(
                         launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
-                    from runtime.loop.lm_loop_apply import _loaded_arguments
                     loaded = _loaded_arguments(printed) if rc == 0 else []
                     if loaded == item["expected_arguments"]:
                         result = {"ok": True, "label": item["label"],
@@ -341,15 +363,10 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
         except RuntimeError as exc:
             if not (skip_busy and str(exc) == "production apply is already owned"):
                 raise
-            rc, printed = _safe_launchctl(
-                launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
-            if rc != 0 or not _service_is_running(printed):
+            skipped = _skip_if_not_loaded_idle(item, release_sha, launchctl_safe)
+            if skipped is None:
                 raise
-            from runtime.loop.lm_loop_apply import _loaded_arguments
-            loaded_arguments = _loaded_arguments(printed)
-            results.append({"ok": True, "label": item["label"], "loaded": True,
-                            "loaded_arguments": loaded_arguments, "release_sha": release_sha,
-                            "changed": False, "skipped": "loaded-running"})
+            results.append(skipped)
     return results
 
 
