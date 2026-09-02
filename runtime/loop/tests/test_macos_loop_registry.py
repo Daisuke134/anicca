@@ -37,6 +37,22 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertNotIn("money-printer-symphony-bridge", registry["loops"])
         self.assertIn("ai.anicca.life-manager-money-printer-symphony-bridge", registry["retired_labels"])
 
+    def test_release_reconciler_is_an_independent_system_owner(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["life-manager-release-reconciler"]
+        self.assertEqual(row, {
+            "cadence": {"start_interval_seconds": 60},
+            "cleanup": {"max_age_days": 14, "max_runs": 100},
+            "domain": "system",
+            "effect_class": "none",
+            "entrypoint": "bin/reconcile-agent-runner-release.sh",
+            "label": "ai.anicca.life-manager-release-reconciler",
+            "log_root": "~/.local/state/life-manager/release-reconciler/logs",
+            "provider_route": "deterministic",
+            "state_root": "~/.local/state/life-manager/release-reconciler",
+        })
+        self.assertEqual(validate_registry(registry), registry)
+
     def test_registry_rejects_missing_and_secret_fields(self):
         missing = {"schema_version": 2, "loops": {"example": entry()}}
         del missing["loops"]["example"]["cleanup"]

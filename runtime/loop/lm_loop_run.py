@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 
 from runtime.loop.loop_cleanup import cleanup_run_root
+from runtime.loop.lm_loop import _apply_lock, _label_apply_lock_path
 from runtime.loop.macos_loop_registry import validate_registry
 from runtime.loop.runtime_event import append_runtime_event, build_runtime_event, build_runtime_start_event
 
@@ -95,52 +96,57 @@ def main(argv: list[str] | None = None) -> int:
         manifest = json.loads((release_root / "RELEASE.json").read_text())
         if not isinstance(manifest.get("sha"), str) or len(manifest["sha"]) != 40:
             raise ValueError("invalid release manifest SHA")
-        active = {value for value in os.environ.get("LIFE_MANAGER_ACTIVE_RUN_IDS", "").split(",") if value}
-        command, cleanup = prepare_loop_run(
-            registry, loop_id, release_root, active_run_ids=active, now=time.time())
-        entry = registry["loops"][loop_id]
-        receipt = Path(os.path.expanduser(entry["state_root"])) / "cleanup-latest.json"
-        _atomic_json(receipt, {"version": 1, "loop_id": loop_id,
-                              "release_sha": manifest["sha"], **cleanup})
-    except (OSError, ValueError, json.JSONDecodeError) as error:
+        entry = registry.get("loops", {}).get(loop_id)
+        if not isinstance(entry, dict):
+            raise ValueError(f"unknown loop id: {loop_id}")
+        current = Path("~/loops/current").expanduser()
+        item_lock = _label_apply_lock_path(current, entry["label"])
+        with _apply_lock(current, item_lock):
+            active = {value for value in os.environ.get("LIFE_MANAGER_ACTIVE_RUN_IDS", "").split(",") if value}
+            command, cleanup = prepare_loop_run(
+                registry, loop_id, release_root, active_run_ids=active, now=time.time())
+            receipt = Path(os.path.expanduser(entry["state_root"])) / "cleanup-latest.json"
+            _atomic_json(receipt, {"version": 1, "loop_id": loop_id,
+                                  "release_sha": manifest["sha"], **cleanup})
+            run_id = os.environ.get("LIFE_MANAGER_RUN_ID") or f"{time.time_ns():x}-{os.getpid()}"
+            event_path = Path(os.path.expanduser(entry["state_root"])) / "events.jsonl"
+            try:
+                append_runtime_event(event_path, build_runtime_start_event(
+                    loop_id=loop_id, domain=entry["domain"], run_id=run_id,
+                    release_sha=manifest["sha"], provider=entry["provider_route"],
+                    profile_alias=None, effect_class=entry["effect_class"],
+                ))
+            except (OSError, ValueError) as error:
+                print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
+            scratch = reset_loop_scratch(Path(os.path.expanduser(entry["state_root"])), loop_id)
+            try:
+                return_code = _run_entrypoint(
+                    command,
+                    env={
+                        **os.environ,
+                        "LIFE_MANAGER_RELEASE_ROOT": str(release_root),
+                        "TMPDIR": f"{scratch}/",
+                        "NPM_CONFIG_CACHE": str(scratch / "npm-cache"),
+                    },
+                )
+            finally:
+                # Scratch is never evidence. Every loop owns and removes its temporary
+                # downloads, package caches, and build products when its pass ends.
+                shutil.rmtree(scratch, ignore_errors=True)
+            try:
+                event = build_runtime_event(
+                    loop_id=loop_id, domain=entry["domain"], run_id=run_id,
+                    release_sha=manifest["sha"], provider=entry["provider_route"],
+                    profile_alias=None, effect_class=entry["effect_class"],
+                    succeeded=return_code == 0,
+                    blocker=None if return_code == 0 else f"entrypoint_exit_{return_code}",
+                    evidence_scheme="lm-loop",
+                )
+                append_runtime_event(event_path, event)
+            except (OSError, ValueError) as error:
+                print(f"lm-loop-run: terminal event failed: {error}", file=sys.stderr)
+    except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as error:
         print(f"lm-loop-run: {error}", file=sys.stderr); return 78
-    run_id = os.environ.get("LIFE_MANAGER_RUN_ID") or f"{time.time_ns():x}-{os.getpid()}"
-    event_path = Path(os.path.expanduser(entry["state_root"])) / "events.jsonl"
-    try:
-        append_runtime_event(event_path, build_runtime_start_event(
-            loop_id=loop_id, domain=entry["domain"], run_id=run_id,
-            release_sha=manifest["sha"], provider=entry["provider_route"],
-            profile_alias=None, effect_class=entry["effect_class"],
-        ))
-    except (OSError, ValueError) as error:
-        print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
-    scratch = reset_loop_scratch(Path(os.path.expanduser(entry["state_root"])), loop_id)
-    try:
-        return_code = _run_entrypoint(
-            command,
-            env={
-                **os.environ,
-                "LIFE_MANAGER_RELEASE_ROOT": str(release_root),
-                "TMPDIR": f"{scratch}/",
-                "NPM_CONFIG_CACHE": str(scratch / "npm-cache"),
-            },
-        )
-    finally:
-        # Scratch is never evidence. Every loop owns and removes its temporary
-        # downloads, package caches, and build products when its pass ends.
-        shutil.rmtree(scratch, ignore_errors=True)
-    try:
-        event = build_runtime_event(
-            loop_id=loop_id, domain=entry["domain"], run_id=run_id,
-            release_sha=manifest["sha"], provider=entry["provider_route"],
-            profile_alias=None, effect_class=entry["effect_class"],
-            succeeded=return_code == 0,
-            blocker=None if return_code == 0 else f"entrypoint_exit_{return_code}",
-            evidence_scheme="lm-loop",
-        )
-        append_runtime_event(event_path, event)
-    except (OSError, ValueError) as error:
-        print(f"lm-loop-run: terminal event failed: {error}", file=sys.stderr)
     return return_code
 
 
