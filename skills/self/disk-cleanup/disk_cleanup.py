@@ -87,6 +87,27 @@ def _session_recovery_receipt() -> dict[str, object]:
     }
 
 
+def _sparkle_updater_active(sparkle_root: Path) -> bool:
+    """Fail closed while Sparkle may still consume a staged generation."""
+    try:
+        completed = subprocess.run(
+            ["ps", "axww", "-o", "command="],
+            capture_output=True,
+            text=True,
+            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return True
+    if completed.returncode != 0:
+        return True
+    launcher = str((sparkle_root / "Launcher").resolve()) + "/"
+    return any(
+        launcher in command and "/Updater.app/Contents/MacOS/Updater" in command
+        for command in completed.stdout.splitlines()
+    )
+
+
 def _bytes(
     path: Path,
     *,
@@ -757,7 +778,8 @@ class HostDiskGovernor:
             # inside would preserve every generation forever; what makes an old one
             # safe to drop is that nothing references it, checked during discovery.
             whole_tree_is_the_unit = item.get("owner") in {
-                "browser", "codex-runtime-cache", "whisper-model-cache", "release-retention",
+                "browser", "codex-app-updater", "codex-runtime-cache", "whisper-model-cache",
+                "release-retention",
             } | set(EXACT_CACHE_ROOTS)
             descendant_state = None if whole_tree_is_the_unit else self._protected_descendant(path, deadline=deadline)
             if descendant_state is not None:
@@ -873,11 +895,13 @@ class HostDiskGovernor:
                         "discovery": "allowlisted",
                     }
                 )
-        sparkle_installation = (
-            self.home
-            / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle/Installation"
-        )
-        if sparkle_installation.is_dir() and not sparkle_installation.is_symlink():
+        sparkle_root = self.home / "Library/Caches/com.openai.codex/org.sparkle-project.Sparkle"
+        sparkle_installation = sparkle_root / "Installation"
+        if (
+            sparkle_installation.is_dir()
+            and not sparkle_installation.is_symlink()
+            and not _sparkle_updater_active(sparkle_root)
+        ):
             for child in sorted(sparkle_installation.iterdir()):
                 if (
                     child.is_dir()
