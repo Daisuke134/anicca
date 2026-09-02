@@ -40,6 +40,13 @@ test("loads the connpass API key without reflecting unknown secrets", () => {
   } finally { fs.rmSync(f.dir, { recursive: true, force: true }); }
 });
 
+test("loads the explicit Connpass submit opt-in through the connector allowlist", () => {
+  const f = fixture("LM_CONNECTOR_CONNPASS_AUTOMATED_SUBMIT_ALLOWED=true\n");
+  try {
+    assert.deepEqual(loadConnectorEnv(f.file), { LM_CONNECTOR_CONNPASS_AUTOMATED_SUBMIT_ALLOWED: "true" });
+  } finally { fs.rmSync(f.dir, { recursive: true, force: true }); }
+});
+
 test("fails closed for blank/control values, oversized files, and directories", () => {
   for (const value of ["", " \t", "\0", "\r", "\u000b", "Alpha\u000bBeta", "Alpha\u007fBeta"]) {
     const f = fixture(`DAIS_LEGAL_NAME_ROMAJI=${value}`);

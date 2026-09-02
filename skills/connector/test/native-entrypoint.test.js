@@ -114,6 +114,7 @@ test("official native pass builds the production dependency boundary from allowl
     assert.match(observed[0][1].eventPreferences, /YC.*Lightning Talk.*AI.*crypto.*startup/i);
     assert.equal(observed[0][1].geminiApiKey, "fixture-ranking-key");
     assert.equal(observed[0][1].connpassApiKey, BASE_ENV.CONNPASS_API_KEY);
+    assert.equal(observed[0][1].connpassAutomatedSubmitAllowed, false);
     assert.match(observed[0][1].wakeId, /^wake-[0-9a-f]{24}$/);
     assert.equal(observed[0][1].wakeId.includes("native-pass-minimal-owner"), false);
     assert.deepEqual(observed[1][1].providers, ["luma", "connpass", "kokuchpro", "meetup", "doorkeeper", "eventbrite", "techplay"]);
@@ -122,6 +123,25 @@ test("official native pass builds the production dependency boundary from allowl
   } finally {
     fs.rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test("native production config forwards the explicit Connpass submit opt-in", async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "connector-native-connpass-submit-opt-in-"));
+  let factoryInput;
+  try {
+    writeKanaProfile(directory);
+    const sharedEnvFile = writeSharedConnectorEnv(directory);
+    fs.appendFileSync(sharedEnvFile, "LM_CONNECTOR_CONNPASS_AUTOMATED_SUBMIT_ALLOWED=true\n");
+    await runNativePass({
+      repoRoot: REPO_ROOT,
+      stateDir: path.join(directory, "state"),
+      ownerToken: "native-pass-connpass-submit-opt-in-123456",
+      env: { ...BASE_ENV, HOME: directory, LM_CONNECTOR_SHARED_ENV_FILE: sharedEnvFile },
+      createDependencies(input) { factoryInput = input; return Object.freeze({ boundary: "production" }); },
+      async runWake() { return { status: "completed_no_effect" }; },
+    });
+    assert.equal(factoryInput.connpassAutomatedSubmitAllowed, true);
+  } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
 
 test("native production config fails closed when Telegram bot token is missing", async () => {
