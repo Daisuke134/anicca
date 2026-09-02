@@ -4067,6 +4067,15 @@ Claude, Hermes) to 40 seconds inside the 120-second route deadline; the configur
 natural readback gate remain open until the continuous owner runs this release and one authorized
 action completes.
 
+The hidden-tab crash root cause is fixed on main by `531264705`: the async CDP server now acquires
+the synchronous context lease off its running event loop, and the focused ownership suite passes
+6/6. The immutable `4e44a8954` release contains that fix. Production Reply still loaded the old
+`e9d59c32` release because the generic release reconciler admitted only `loaded-idle` owners while
+Reply is deliberately `KeepAlive`. The current rollout atom adds a fail-closed `--include-running`
+mode that requires an explicit `--loop-id`, and assigns it only to `hf-gig-reply-detector`; Apply,
+Storefront and Paid remain idle-only. This atom stays open until main is released naturally and the
+loaded Reply argv plus a following discovery receipt prove the new immutable SHA.
+
 - [x] Stop the repeated `targeted_inbox_identity_changed` cycle by preflighting the exact official
   thread head before semantic judgement, then binding the targeted job to the latest buyer-authored
   event without paying for an obsolete event (`644db7d95`, `9aa6a506c`; live result now reaches
