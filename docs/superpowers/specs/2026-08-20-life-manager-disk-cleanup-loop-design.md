@@ -149,6 +149,59 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      Life Managerのimmutable release/state境界へ移す。`~/.openclaw/.git`約3.13 GB、workspace約2.17 GB、
      skills約1.64 GB、media約702 MB、state約559 MBを名前だけで削除せず、依存0になった重複source/cacheだけを
      retireする。credential、session、memory、customer evidence、publication receiptは保持する。
+     直接censusでは`~/.openclaw`は10,597,453,824 bytesで、`.git`約3.0 GiB、workspace約2.1 GiB、
+     skills約1.6 GiB、agents約778 MiB、media約670 MiB、state約531 MiB、browser約314 MiB、
+     external約289 MiB、archives約279 MiB、identity約253 MiB、blockrun約182 MiB、logs約91 MiBだった。
+     `.git`はdirty tracked 57,589、untracked 10,961、unique/non-merged refsを持ち、2.89 GiB packは
+     loose/garbage 0なので削除・GCしない。workspace/skillsには`anicca-ask/server.js`、
+     `anicca-peer-revive/agent-api.py`、Cloak Playwright driverのlive processがあるためroot単位で削除しない。
+
+     `workspace/runs`の旧59 runは各々`reel-text.mp4`と`reel-final.mp4`を持ち、SHA-256で59/59組が
+     byte-identicalだった。まず全`reel-final.mp4`を保持して重複`reel-text.mp4`だけ423,614,455 bytesを回収、
+     実freeは+417,644 KiB、final 59/text 0となった。続くworkspace-wide hash照合で59/59本のfinalも
+     `reelclaw-assets/videos`内の正本23本のいずれかとbyte-identicalかつopen参照0と証明したため、run側copyだけ
+     423,614,455 bytesを追加回収した。実freeは+404,024 KiB、runsは約404 MiB→0、正本assets 23本、
+     run directory/metadataはすべて保持した。`zenn-articles/node_modules`はpackage-lock保持、
+     open FD/process参照0、現行jobがgit/curlだけであることを確認して142,516 KiBを回収し、実freeは
+     `2,546,724 → 2,693,808 KiB`（+147,084 KiB）。workspace直下の`node_modules`はlive
+     `anicca-ask`が独自依存rootを持つことまで確認したが、他ownerのon-demand利用を未分類なので保持する。
+     cleanup production run 3はrelease `64a9a1c5`、terminal PASS、errors 0、protected deletion 0、
+     last exit 0であり、OpenClaw重複削除後も停止・再生成は0だった。
+
+     一方、同時点のswapは25,076.75 MiB使用まで再膨張し、Data空きは約3.4 GiBから約2.6 GiBへ再低下した。
+     これはcleanup停止ではなく、owner出力とswap増加が回収量を上回るcapacity incidentである。swapfileを
+     直接削除せず、稼働loop/browserも容量閾値で止めない。current OpenClaw atomで終了済み・重複artifactを
+     owner境界から回収し、後続Gig atomでは`apply-direct/wakes.jsonl`約47.7 MBと
+     `storefront-direct/wakes.jsonl`約20.4 MBのbounded rotationを接続する。
+
+     skills censusは`_shared`約236 MiB、`4.7-slideshow-factory`約227 MiB、
+     `copy-viral-format-factory`約165 MiB、`.backups`約146 MiB、`anicca-vibe-trading`約91 MiBだった。
+     `_shared/venv-cloak`は複数live Playwright driverが参照するため保持する。slideshow familyの63 receiptは
+     `mode=drafts`・`privacy_level=SELF_ONLY`であり、公開完了と誤認せず、receipt/metadata/slideを保持する。
+     `anicca-vibe-trading/vendor`はdirty 0、open/config/process参照0の外部cloneで、実行working treeを保持したまま
+     不要な`.git`だけ42,336 KiB回収した。削除前HEAD `c1958a513da0e914189285e325291f008494ad65`は
+     GitHub commit APIで復元可能とread backし、実freeは+42,340 KiBだった。残る
+     `anicca-autohedge/vendor/.git`約6.4 MiBと`roundcube-webmail-skill/.git`約3.3 MiBはそれぞれdirty 1/6なので保持する。
+     4回目cleanup wakeはruns 4、state not running、last exit 0、最新receipt errors 0、protected deletion 0、
+     reclaimed 6,368 bytesで、run動画とZenn依存の再生成は0だった。
+
+     OpenClaw rootへのproduction参照はlaunchd plist 75件、enabled cron 79件中direct path参照71件で、
+     factory/slideshow/Postiz familyもenabledだった。したがってOpenClaw rootはretireせず、family単位の移管を続ける。
+     埋込cloneはclean、remote commit存在、open/config参照0を個別確認した。永久禁止の`external/codegraph`と
+     終了済み`gig-paid-builder/.../.tmp/plugins`はclone全体を回収し、`external/mcporter`、Camofox source、
+     TikTok scraper、Zenn editor、Instagram scraper、nano-banana、self-improving-agentはworking treeを保持して
+     `.git`だけ回収した。logical 134,836 KiB、実free +139,104 KiBで、mcporter/Camofox source readbackはPASS。
+     Zenn/dev-toはgit push owner、autohedge/roundcube/novaはdirtyなので保持した。OpenClaw totalは
+     10,597,453,824 bytes（約9.87 GiB）から9,426,030,592 bytes（約8.78 GiB）へ縮小した。
+
+     `external/note-mcp`約220 MiBのうち`.venv` 221,292 KiBはprocess/open/direct caller 0で、enabled note cronは
+     別正本`~/.cache/anicca-clones/note-mcp`を使用していた。dirty source `.vcsdd/`と`uv.lock`を保持し、未使用venvだけ
+     回収して実free +225,104 KiB、次wake再生成0だった。identity application videos、disk-pressure archives、
+     browser user-data、UUID付きinbound PDFは提出物・唯一のbackup・session・message pathとして保持した。
+     media hash censusでは`media/life-manager/life-manager-real-provider-demo.mp4`とoutbound copyが完全一致したため、
+     正本を保持してopen 0のoutbound copy 21,853,895 bytesだけ回収し、実free +21,056 KiB。UUID付き同一PDF 3件は
+     path identityを保持した。5回目cleanup wakeはruns 5、state not running、last exit 0、
+     observed_at `2026-09-02T01:21:57Z`、errors 0、protected deletion 0、reclaimed 6,367 bytes、再生成0だった。
    - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
      active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
@@ -164,11 +217,11 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
       drainし、VM使用量がmacOSにより縮小することをread backする。
    3. [x] registered worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
       保ったまま回収する。
-   4. [ ] **current:** immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、idleな旧release参照を
+   4. [x] immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、idleな旧release参照を
       control planeでcurrentへ収束した後、central cleanupでunreferencedだけを回収する。running loopは停止しない。
-   5. `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
+   5. [x] `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
       state、production argvを移管し、一repositoryずつretireする。
-   6. OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
+   6. [ ] **current:** OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
       移した後、重複`.git`/workspace/skills/mediaだけを回収する。
    7. Hermes consumer 0を証明し、gatewayを正式retireして`~/.hermes`を回収する。customer Hermes assetsは保持する。
    8. Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
@@ -266,6 +319,31 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    `d1133b36`のplist参照を27→0へ収束し、deterministic/sharedともfailed 0、running stop 0。GC readbackは
    release 7件＝current/loaded/open参照6件＋rollback 1件、errors 0、protected deletion 0で設計上限へ収束した。
    freeは約3.9 GiBで11 GiB floor未達。残る旧releaseはlong-lived running loopのため停止せず保持する。
+
+   **repository/clone atom開始:** `~/anicca`はproduction process/launchdが直接参照し、`~/anicca-project`は
+   dirty/untracked・unique refsに加えてCodex reporterとAffiliate landing rootが参照するため保持した。
+   `~/Projects/anicca-products` 905,809,920 bytesはclean、untracked 0、HEADがremote main包含、worktree 1、
+   open/process/launchd参照0、`~/Projects/steel-browser` 238,383,104 bytesはclean、untracked 0、PR #3 merge済み、
+   `git cherry`既適用、HEAD/main tree差分0、worktree 1、open/process/launchd参照0を確認して回収した。実freeは
+   `2,147,676 → 3,284,680 KiB`（+1,137,004 KiB）。次のcanonical cleanup自然wakeはlast exit 0、
+   protected deletion 0、release 1件852,315,245 bytes＋artifact 25,693,622 bytesを追加回収し、freeを
+   5,663,268 KiBへ戻した。ただしhost sweepは`probe-error` 1をfail-closed保持したためatomは未完了。
+   個別readback時はallowlist 12件がopenまたはconfirmed-closedでprobe-errorを再現せず、次wakeで再判定する。
+   `openai-symphony`は未追跡の唯一workflow 4 KiB、`ugig-nightcell7`はdirty deletionとunmerged remote branchを
+   持つため保持する。
+
+   host sweep内部errorをtop-level成功としていた判定はPR #3885 / merge `64a9a1c5`で、host errors 0かつ
+   protected deletion 0だけを成功とするよう修正した。同SHAのsparse release `20260902T095123-64a9a1c5`を
+   canonical labelへ適用し、RunAtLoadと次の5分wakeは連続PASS、last exit 0、host/release errors 0、
+   protected deletion 0、release SHA一致だった。初回は1,799,012,139 bytes、次wakeは1,949,902 bytesを回収した。
+
+   さらにclean・remote HEAD包含・worktree 1・current config/process/plist参照0のexternal research/tool clone 12件
+   （`.fugu`、SkillOpt、sutando、attendee、browser-harness、marketingskills、openclawnch、Conway research、
+   awesome-x402、substack、nano-banana-2、botcoin-miner-skill）を回収し、実free +267,636 KiB。続けて同条件の
+   `.anicca-genesis/runtime`、`.anicca/memory-sync`、`blockrun-cli`、`anicca-alarm`を回収し、+85,436 KiB。
+   合計18 cloneは次wake後も再生成0。`profitable-claude`約2.20 GBはdirty 6・untracked 1・worktree 5・収益plist参照、
+   `.automaton`はdirty 6,222・plist参照、`.agents`はactive shared skill SSOTのため保持する。その他dirty/untracked、
+   OpenClaw、Hermes、Gig、Codex/Claude、MoneyPrinter、不可侵storeは各後続atomまたは明示保護へ残す。
 
    追加のread-only owner照合後、未使用`/Applications/Chat On Steroids.app`を391,668 KiB、旧Codex package
    `0.151.0`と未使用plugin app-serverを合計570,048 KiB、重複pipx環境`camoufox`と`crawl4ai`を合計

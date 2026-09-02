@@ -19,6 +19,7 @@ skipped. One project's bad state.json must never stop the scan of the rest.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -28,6 +29,7 @@ from pathlib import Path
 
 COMPLETE_STATE = "取引完了"
 RECLAIM_DIRS = ("source", "work")
+ARTIFACT_DIRS = ("artifacts", "delivery", "deliverables")
 IMMUTABLE_ROOT_PARTS = frozenset((".cloak", ".openclaw"))
 IMMUTABLE_ROOT_NAMES = frozenset(("memory", "state"))
 ACTIVE_FIELDS = frozenset("active revision subscription shared_ref shared_refs".split())
@@ -110,6 +112,62 @@ def _remove_dir(path: Path) -> int:
     return size
 
 
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _prune_authorized_duplicates(project_dir: Path, *, dry_run: bool) -> dict:
+    """Remove only byte-identical old packages named by an owner receipt."""
+    receipt_path = project_dir / "context" / "owner-authorized-cleanup.json"
+    result = {"deleted": [], "bytes_freed": 0}
+    if not receipt_path.is_file():
+        return result
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    if (
+        receipt.get("version") != 1
+        or receipt.get("authority") != "account_owner_instruction"
+        or receipt.get("disposition") != "retain_latest_package_remove_old_work_and_video"
+        or receipt.get("remove_old_versions") is not True
+    ):
+        return result
+    project_root = project_dir.resolve()
+    retained = Path(str(receipt.get("retained_path", ""))).resolve()
+    if project_root not in retained.parents or retained.is_symlink() or not retained.is_file():
+        return result
+    retained_bytes = receipt.get("retained_bytes")
+    retained_sha = str(receipt.get("retained_sha256", "")).lower()
+    if retained.stat().st_size != retained_bytes or len(retained_sha) != 64:
+        return result
+    if _sha256(retained) != retained_sha:
+        return result
+
+    candidates = []
+    for dirname in ARTIFACT_DIRS:
+        root = project_dir / dirname
+        if not root.is_dir():
+            continue
+        for candidate in root.rglob("*"):
+            if (
+                candidate == retained
+                or candidate.is_symlink()
+                or not candidate.is_file()
+                or candidate.suffix != retained.suffix
+            ):
+                continue
+            if candidate.stat().st_size == retained_bytes and _sha256(candidate) == retained_sha:
+                candidates.append(candidate)
+    for candidate in candidates:
+        result["deleted"].append(str(candidate.relative_to(project_dir)))
+        result["bytes_freed"] += candidate.stat().st_size
+        if not dry_run:
+            candidate.unlink()
+    return result
+
+
 def _immutable_root_reason(projects_root: Path) -> str | None:
     try:
         resolved = projects_root.resolve()
@@ -182,7 +240,10 @@ def _contract_reclaim_reason(state: dict) -> str | None:
 def _contains_shared_reference(path: Path) -> bool:
     try:
         for current, dirs, files in os.walk(path, followlinks=False):
-            for name in dirs + files:
+            for name in dirs:
+                if (Path(current) / name).is_symlink():
+                    return True
+            for name in files:
                 candidate = Path(current) / name
                 if candidate.is_symlink() or candidate.lstat().st_nlink > 1:
                     return True
@@ -201,6 +262,8 @@ def scan(projects_root: Path, ledger_path: Path, *, dry_run: bool) -> dict:
         "bytes_freed": 0,
         "dry_run": dry_run,
         "would_clean": [],
+        "artifacts_cleaned": 0,
+        "artifact_bytes_freed": 0,
     }
     if not projects_root.is_dir():
         return summary
@@ -224,8 +287,25 @@ def scan(projects_root: Path, ledger_path: Path, *, dry_run: bool) -> dict:
             if reclaim_reason:
                 summary["skipped"] += 1
                 continue
+
+            artifact_result = _prune_authorized_duplicates(project_dir, dry_run=dry_run)
+            if artifact_result["deleted"]:
+                summary["artifacts_cleaned"] += 1
+                summary["artifact_bytes_freed"] += artifact_result["bytes_freed"]
+                summary["bytes_freed"] += artifact_result["bytes_freed"]
+                if not dry_run:
+                    artifact_ledger = ledger_path.with_name("artifact-janitor.jsonl")
+                    artifact_record = {
+                        "ts": int(time.time()),
+                        "project_id": project_id,
+                        **artifact_result,
+                    }
+                    artifact_ledger.parent.mkdir(parents=True, exist_ok=True)
+                    with artifact_ledger.open("a", encoding="utf-8") as handle:
+                        handle.write(json.dumps(artifact_record, ensure_ascii=False) + "\n")
+
             if project_id in already_cleaned:
-                continue  # idempotent: already recorded, nothing to redo
+                continue  # source/work already recorded; artifact pruning still ran above
 
             targets = [
                 project_dir / name
@@ -262,7 +342,7 @@ def scan(projects_root: Path, ledger_path: Path, *, dry_run: bool) -> dict:
                 "project_id": project_id,
                 "deleted": deleted,
                 "bytes_freed": bytes_freed,
-                "transaction_state": state["transaction_state"],
+                "transaction_state": state.get("transaction_state") or state.get("talkroom_state"),
             }
             ledger_path.parent.mkdir(parents=True, exist_ok=True)
             with ledger_path.open("a", encoding="utf-8") as handle:
