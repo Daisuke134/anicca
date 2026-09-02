@@ -5605,6 +5605,15 @@ queue is added. Each owner must also progress independent work concurrently insi
    public release to report no Paid worker, send, delivery or replay for that room. Do not edit its
    project state or evidence; the separate manual Codex owns it.
 
+   A registry audit found the four Coconala framework owners still pointed to one shared
+   `~/.openclaw` state/log root, while their actual marketplace data lives below `~/gig`. This makes
+   `lm-loop-run` receipts and cleanup scans cross-lane (the latest receipt even names
+   `agent-economy-loop`) and explains why a lane cannot clean its own run boundary truthfully. Change
+   only these four registry entries to unique `~/.local/state/life-manager/coconala/{apply,reply,paid,storefront}`
+   roots; leave existing `~/gig/projects`, delivery evidence and Ryu's manual state untouched. The
+   next release must read back four distinct roots and each cleanup receipt's own loop ID before this
+   cleanup atom can close.
+
    The natural migration itself then remained in `lm-loop reconcile shared-agent-runner` for more
    than seven minutes. The read path shows why: `collect_live()` asks `_last_event()` once per loop,
    and `_last_event()` rereads that loop's entire `events.jsonl`; 174 registered loops share only 62
