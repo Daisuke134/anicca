@@ -276,7 +276,7 @@ def _collector(args, mode, output, evidence, item_path=None, item=None):
         room = _text((item or {}).get("talkroom_id"))
         if not item_path or not re.fullmatch(r"[0-9]+", room): raise Failure("remote_resume")
         command += ["--talkroom-id", room, "--project-id", delivery_project.resolve_project_root(args.projects_root, item).name,
-                    "--selected-order-input", str(item_path)]
+                    "--selected-order-input", str(item_path), "--visible-with-screenshot"]
     return command
 
 def _collect_dm_context(args, item: dict[str, Any], root: Path, base: Path) -> None:
