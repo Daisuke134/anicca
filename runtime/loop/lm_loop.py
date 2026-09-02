@@ -11,6 +11,7 @@ import plistlib
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -152,10 +153,15 @@ def doctor_report(registry: dict, *, installed_labels: set[str], loaded_labels: 
 
 
 def _launchctl(*args: str) -> str:
-    result = subprocess.run(["launchctl", *args], capture_output=True, text=True, timeout=15)
+    with tempfile.TemporaryFile(mode="w+") as stdout, tempfile.TemporaryFile(mode="w+") as stderr:
+        result = subprocess.run(
+            ["launchctl", *args], stdout=stdout, stderr=stderr, text=True, timeout=15)
+        stdout.seek(0)
+        stderr.seek(0)
+        output, error = stdout.read(), stderr.read()
     if result.returncode:
-        raise RuntimeError(result.stderr.strip() or "launchctl failed")
-    return result.stdout
+        raise RuntimeError(error.strip() or "launchctl failed")
+    return output
 
 
 def _last_event(state_root: str, loop_id: str | None = None) -> dict | None:
@@ -240,8 +246,11 @@ def snapshot(registry: dict, target: str) -> list[dict]:
 
 
 def _safe_launchctl(executable: Path, args: list[str]) -> tuple[int, str]:
-    result = subprocess.run([str(executable), *args], capture_output=True, text=True, timeout=30)
-    return result.returncode, result.stdout + result.stderr
+    with tempfile.TemporaryFile(mode="w+") as output:
+        result = subprocess.run(
+            [str(executable), *args], stdout=output, stderr=output, text=True, timeout=30)
+        output.seek(0)
+        return result.returncode, output.read()
 
 
 @contextmanager
@@ -429,6 +438,9 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         route = positionals[0]
         requested_ids = set(loop_ids)
+        if (route == "deterministic"
+                and os.environ.get("LIFE_MANAGER_LOOP_ID") == "life-manager-release-reconciler"):
+            requested_ids.add("life-manager-disk-cleanup")
         if include_running and not requested_ids:
             print(json.dumps({"ok": False,
                               "error": "--include-running requires --loop-id"}))

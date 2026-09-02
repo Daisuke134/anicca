@@ -67,7 +67,8 @@ class MacosLoopRegistryTest(unittest.TestCase):
         )
         self.assertIn(
             "reconcile deterministic --loaded-idle-only "
-            "--loop-id hf-gig-storefront-direct --loop-id hf-gig-paid-direct",
+            "--loop-id hf-gig-storefront-direct --loop-id hf-gig-paid-direct "
+            "--loop-id life-manager-disk-cleanup",
             script,
         )
 

@@ -175,6 +175,20 @@ cleanupの自動実行と新release runtimeの安全readbackは復旧した。�
 non-Remote ownerが新plistをloadし、loaded argv/environmentの`5a3f94924...`一致を読み戻した後、
 compatibility aliasの保護を解除することである。
 
+最新readbackでは、release-reconcilerはimmutable release `c259cc6e...`からrunning、last exit 0である一方、
+cleanupのplistは`5a3f94924...`を指すがlaunchd実argv/environmentは旧`64a9a1c5...`を保持し、旧pathの
+compatibility aliasへ依存する。Data空きは`12,713,788 KiB`で30 GiB目標未達である。既存reconcilerがGig 4本だけを
+明示指定してcleanupを対象外にしていたことが直接原因なので、deterministicの`--loaded-idle-only`対象へ
+`life-manager-disk-cleanup`を追加する最小source patchを入れる。これによりRemote sessionは`gui/$UID`を変更せず、
+既存launchd ownerが次回新releaseからidle cleanupを正規移管する。loaded argv、新SHA自然wake PASS、alias 0を
+readbackするまでP0と3-5dは未完のまま維持する。
+
+loaded reconciler自身が旧immutable scriptを保持していても、そのscriptは毎周期`$CURRENT/bin/lm-loop`を実行する。
+この既存境界を使い、callerが`life-manager-release-reconciler`かつrouteが`deterministic`の時だけ、runtime側の
+requested setへ`life-manager-disk-cleanup`を追加するcompatibility bridgeを置く。旧scriptの明示Gig IDsを変更せず、
+新しいscheduler、signal、Remote launchctl操作なしで、既存launchd ownerがidle cleanupを移管できる。reconciler自身が
+新scriptへ移った後もsetへの同一ID追加はidempotentである。
+
 ### 全Codexが守る同期ルール
 
 1. 作業開始時に、この表の先頭未完atomと最新production evidenceを読む。
