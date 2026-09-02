@@ -164,7 +164,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
           - [x] P1d-3c-3c-5: home hidden directoryをtoolchain単位で細分化し、全Agent永久禁止・open/ref 0の`~/.codegraph`旧binary `228,104 KiB`を全回収。Data free `8,623,044`→`8,733,748 KiB`。Rust stable 1世代、Crawl4AI、Codex primary runtime、Solana、Claudeは現行tool、Camofoxは1.4 MiB fallbackのため保持。重複toolchain削除0、protected deletion 0
           - [x] P1d-3c-3c-6: Applications/Libraryをowner別に監査し、open/ref 0のAudiveris app `166,116 KiB`、node-gyp cache `63,844 KiB`、本体不在Pencil support `64,448 KiB`だけを回収（logical合計`294,408 KiB`）。ClaudeはMCP owner、ChatGPTはRemote、ChromeはCapafy、CodexBar/CloakBrowserはactiveのため保持。active process停止0、protected deletion 0
           - [x] P1d-3c-3c-7: 本番release reconcilerが未完成SHA `1af471b1`で27分、`npm ci`で21分滞留し、完成current `854bcf77`とorigin/main `02c58196`に追い越された再発を特定。stale npm子だけを終了して既存trapへ未完成release/lockを回収させ、Data free `7,770,892`→`9,066,132 KiB`。future cutterは別branchの実証済み最小実装`9d9ee6e6b`を再利用し、lockfile一致のsealed releaseから`node_modules`をAPFS clone、`npm ci`はlockfile変更時だけ実行する。focused reuse test 1/1、shell syntax/diff check PASS、収益loop/current停止0
-          - [ ] P1d-3c-3c-8: reuse修正を含む成果branchの残りcleanupを閉じ、normal free 30 GiBに必要な参照中release移管以外の回収可能量を再計測する
+          - [x] P1d-3c-3c-8a: reuse full release `33a1acef`の実buildをreadbackし、旧43分超から5分38秒へ短縮、`npm ci` 0、`release_paths=ALL`、current activation/lock解放PASS。ただしclone後の全tree `chmod -R`がmetadataを書き換えてfreeを`7,783,188`→最悪`6,704,412 KiB`へ落とす第二原因を特定し、fresh npm treeだけ個別seal、最終source sealは全`node_modules` subtreeをskipする。focused reuse test 1/1、isolated seal fixture 3/3、shell syntax/diff check PASS
+          - [ ] P1d-3c-3c-8b: pre-mergeで安全に回収できる100 MiB以上の未分類root 0を最終readbackし、loaded plist参照releaseの自然移管後に旧世代GCでnormal free 30 GiB以上を閉じる
 
 #### P4 execution ledger
 

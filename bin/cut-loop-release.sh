@@ -156,6 +156,7 @@ for package_dir in "$DEST" "$DEST/runtime/agentmail" "$DEST/apps/life-manager"; 
     (cd "$package_dir" && "$NPM_BIN" ci --omit=dev --ignore-scripts) || \
       die "locked dependency build failed in $package_dir"
   fi
+  chmod -R a-w "$package_dir/node_modules" 2>/dev/null || true
 done
 
 cat >"$DEST/RELEASE.json" <<EOF
@@ -177,7 +178,9 @@ EOF
 # state worth preserving, and one writable directory costs nothing while the code stays immutable.
 mkdir -p "$DEST/state/effective-cron"
 
-chmod -R a-w "$DEST" 2>/dev/null || true
+# Reused dependency trees already come from a sealed release, while fresh npm trees
+# are sealed above. Avoid rewriting metadata for hundreds of thousands of cloned files.
+find "$DEST" -type d -name node_modules -prune -o -exec chmod a-w {} + 2>/dev/null || true
 chmod -R u+w "$DEST/state" 2>/dev/null || true
 
 # Use the same host-wide owner lock as `lm-loop apply` while replacing `current` atomically.

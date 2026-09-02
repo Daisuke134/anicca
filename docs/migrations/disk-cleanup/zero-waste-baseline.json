@@ -535,6 +535,23 @@
       "diff_check": "PASS",
       "revenue_loops_stopped": 0,
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1d-release-seal-metadata-18",
+      "release_sha": "33a1acefcfec0f62cdba38b1242daccaaea23b2b",
+      "release_paths": "ALL",
+      "build_elapsed": "5m38s",
+      "npm_ci_processes": 0,
+      "free_before_final_recursive_seal_kib": 7783188,
+      "free_minimum_during_recursive_seal_kib": 6704412,
+      "current_activation": true,
+      "release_cut_lock_present_after": false,
+      "focused_reuse_test": "1/1 PASS",
+      "isolated_seal_fixture": "3/3 PASS",
+      "shell_syntax": "PASS",
+      "diff_check": "PASS",
+      "protected_deletions": 0,
+      "note": "Fresh npm dependency trees are sealed immediately. Final source sealing prunes every node_modules subtree so reused sealed dependencies do not incur a second metadata rewrite."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
