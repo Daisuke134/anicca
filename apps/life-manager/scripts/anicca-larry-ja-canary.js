@@ -13,6 +13,7 @@ const {
   EN_AFFIRMATION_LANE,
   EN_SLIDESHOW_TIKTOK_LANE,
   JA_BUDDHA_TIKTOK_LANE,
+  JA_JP1_TIKTOK_LANE,
   JA_MAIN_TIKTOK_LANE,
   INTEGRATION_REF,
   JA_LANE,
@@ -43,14 +44,16 @@ const JA_LARRY_PRODUCTION_SLOTS = Object.freeze(["10:30", "16:30", "22:30"]);
 const EN_AFFIRMATION_PRODUCTION_SLOTS = Object.freeze(["10:00", "15:00", "20:00"]);
 const EN_SLIDESHOW_PRODUCTION_SLOTS = Object.freeze(["09:00", "15:00", "21:00"]);
 const JA_MAIN_TIKTOK_PRODUCTION_SLOTS = Object.freeze(["08:00", "16:00", "22:37"]);
+const JA_JP1_TIKTOK_PRODUCTION_SLOTS = Object.freeze(["06:30", "12:00", "18:00"]);
 const JA_BUDDHA_TIKTOK_PRODUCTION_SLOTS = Object.freeze(["07:00", "13:00", "20:00"]);
 
 const JA_RUNNER_LANE = JA_LANE;
 const EN_RUNNER_LANE = EN_AFFIRMATION_LANE;
 const TIKTOK_SLIDESHOW_RUNNER_LANE = EN_SLIDESHOW_TIKTOK_LANE;
 const JA_MAIN_TIKTOK_RUNNER_LANE = JA_MAIN_TIKTOK_LANE;
-const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-ja-larry-production": JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE, "run-en-affirmation-production": EN_RUNNER_LANE, "run-en-slideshow-tiktok": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-en-slideshow-tiktok-production": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-ja-main-tiktok": JA_MAIN_TIKTOK_RUNNER_LANE, "run-ja-main-tiktok-production": JA_MAIN_TIKTOK_RUNNER_LANE, "run-ja-buddha-tiktok-production": JA_BUDDHA_TIKTOK_LANE });
-const PRODUCTION_SLOTS = Object.freeze({ "run-ja-larry-production": JA_LARRY_PRODUCTION_SLOTS, "run-en-affirmation-production": EN_AFFIRMATION_PRODUCTION_SLOTS, "run-en-slideshow-tiktok-production": EN_SLIDESHOW_PRODUCTION_SLOTS, "run-ja-main-tiktok-production": JA_MAIN_TIKTOK_PRODUCTION_SLOTS, "run-ja-buddha-tiktok-production": JA_BUDDHA_TIKTOK_PRODUCTION_SLOTS });
+const JA_JP1_TIKTOK_RUNNER_LANE = JA_JP1_TIKTOK_LANE;
+const COMMAND_LANES = Object.freeze({ run: JA_RUNNER_LANE, "run-ja-larry-production": JA_RUNNER_LANE, "run-en-affirmation": EN_RUNNER_LANE, "run-en-affirmation-production": EN_RUNNER_LANE, "run-en-slideshow-tiktok": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-en-slideshow-tiktok-production": TIKTOK_SLIDESHOW_RUNNER_LANE, "run-ja-main-tiktok": JA_MAIN_TIKTOK_RUNNER_LANE, "run-ja-main-tiktok-production": JA_MAIN_TIKTOK_RUNNER_LANE, "run-ja-jp1-tiktok-production": JA_JP1_TIKTOK_RUNNER_LANE, "run-ja-buddha-tiktok-production": JA_BUDDHA_TIKTOK_LANE });
+const PRODUCTION_SLOTS = Object.freeze({ "run-ja-larry-production": JA_LARRY_PRODUCTION_SLOTS, "run-en-affirmation-production": EN_AFFIRMATION_PRODUCTION_SLOTS, "run-en-slideshow-tiktok-production": EN_SLIDESHOW_PRODUCTION_SLOTS, "run-ja-main-tiktok-production": JA_MAIN_TIKTOK_PRODUCTION_SLOTS, "run-ja-jp1-tiktok-production": JA_JP1_TIKTOK_PRODUCTION_SLOTS, "run-ja-buddha-tiktok-production": JA_BUDDHA_TIKTOK_PRODUCTION_SLOTS });
 
 function required(value, label) {
   const text = String(value == null ? "" : value).trim();
@@ -220,7 +223,7 @@ function enSlideshowProductionSlot(nowMs) {
 function assertProductionControls(config, lane) {
   const manifest = JSON.parse(fs.readFileSync(path.join(config.dataDir, "marketing", "lane-manifest.json"), "utf8"));
   const fence = JSON.parse(fs.readFileSync(path.join(config.dataDir, "marketing", "publication-effect-fence.json"), "utf8"));
-  const targets = manifest.lanes.filter((row) => row.integration_id === lane.integrationId && row.profile === lane.accountId);
+  const targets = manifest.lanes.filter((row) => row.integration_id === lane.integrationId && row.profile === (lane.manifestProfile || lane.accountId));
   if (!isMarketingLaneManifest(manifest) || fence.state !== "closed" || targets.length !== 1
     || targets[0].lane_state !== "production-armed" || targets[0].production_armed !== true || targets[0].target_daily_limit !== 3) {
     throw new Error(`${lane.name} production controls are invalid`);
@@ -344,8 +347,13 @@ function runAniccaEnSlideshowTikTokCanary(argv = [], deps = {}) {
   return runAniccaCarouselCanary(argv, deps);
 }
 
+function runAniccaJp1TikTokCanary(argv = [], deps = {}) {
+  if (parseArgs(argv).command !== "run-ja-jp1-tiktok-production") throw new Error("JA jp1 TikTok canary accepts only the run-ja-jp1-tiktok-production command");
+  return runAniccaCarouselCanary(argv, deps);
+}
+
 if (require.main === module) {
   runAniccaCarouselCanary(process.argv.slice(2)).then((result) => process.stdout.write(`${JSON.stringify(result)}\n`)).catch((error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
 }
 
-module.exports = { ACCOUNT_ID, EN_AFFIRMATION_LANE, EN_AFFIRMATION_PRODUCTION_SLOTS, EN_SLIDESHOW_PRODUCTION_SLOTS, EN_SLIDESHOW_TIKTOK_LANE, INTEGRATION_REF, JA_LARRY_PRODUCTION_SLOTS, JA_MAIN_TIKTOK_LANE, JA_MAIN_TIKTOK_PRODUCTION_SLOTS, LANE, enAffirmationProductionSlot, enSlideshowProductionSlot, jaLarryProductionSlot, parseArgs, runAniccaCarouselCanary, runAniccaEnAffirmationInstagramCanary, runAniccaEnSlideshowTikTokCanary, runAniccaLarryJaCanary, verifyNativeObject };
+module.exports = { ACCOUNT_ID, EN_AFFIRMATION_LANE, EN_AFFIRMATION_PRODUCTION_SLOTS, EN_SLIDESHOW_PRODUCTION_SLOTS, EN_SLIDESHOW_TIKTOK_LANE, INTEGRATION_REF, JA_JP1_TIKTOK_LANE, JA_JP1_TIKTOK_PRODUCTION_SLOTS, JA_LARRY_PRODUCTION_SLOTS, JA_MAIN_TIKTOK_LANE, JA_MAIN_TIKTOK_PRODUCTION_SLOTS, LANE, assertProductionControls, enAffirmationProductionSlot, enSlideshowProductionSlot, jaLarryProductionSlot, parseArgs, runAniccaCarouselCanary, runAniccaEnAffirmationInstagramCanary, runAniccaEnSlideshowTikTokCanary, runAniccaJp1TikTokCanary, runAniccaLarryJaCanary, verifyNativeObject };
