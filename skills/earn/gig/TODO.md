@@ -249,6 +249,12 @@ completion claim is nevertheless false until the two failing lanes below pass na
   PASS = Paid never selects talkroom `18211838`; Reply always returns `stop_contact / stop` for the
   same thread; no existing project artifact, receipt, or conversation history is deleted. The account
   owner handles every future response, revision, submission, and delivery for this buyer manually.
+
+  **Concurrent owner boundary:** Ryu talkroom `18211957` is assigned to a separate manual Codex
+  session by the account owner. This cursor must not edit that project's state/artifacts or send,
+  reply, submit, deliver, or replay an effect for that room. Do not use its result as evidence for
+  this cursor until the owning session publishes an exact official receipt and the production loop
+  has durably reconciled the room as externally owned.
 - [ ] `C03` Prove maximum safe Coconala work progression.
   PASS = Apply submits every currently eligible non-duplicate opportunity and reconciles uncertain
   intents before retry; Reply consumes every new buyer event once; Storefront continues measured
@@ -575,6 +581,13 @@ capability claim is backed by an installed executable capability.
 
 ### Shared job kernel
 
+Scalability is measured by a shrinking provider-only change surface, not by promising a wall-clock
+duration. After Coconala proves the kernel, a new marketplace may add only its connector config,
+thin provider modules, registry owner rows, and conformance fixtures. It must not copy an Apply,
+Reply, Storefront, or Paid owner or modify lifecycle, checkpoint, workspace, concurrency, receipt,
+cleanup, observability, or KPI kernel code. Record files changed and elapsed implementation time for
+each provider so repeated launches can demonstrate the expected downward trend.
+
 - [ ] `K01` Define one website-neutral `JobContract` JSON Schema.
   PASS = one Coconala fixture validates and one malformed fixture is rejected.
 - [ ] `K02` Define the six owner lifecycle states in one schema.
@@ -615,6 +628,10 @@ capability claim is backed by an installed executable capability.
   PASS = download and upload hashes bind to the same job and cross-job reuse is rejected.
 - [ ] `A09` Add adapter terminal-state conformance.
   PASS = completion and cancellation each require official terminal readback before closure.
+- [ ] `A10` Publish one executable provider recipe and conformance entrypoint.
+  PASS = a fixture-only provider implements auth, discover, observe, apply, reply, deliver, and
+  readback by adding provider config/modules/fixtures only; no shared owner or kernel file changes,
+  and the recipe reports its changed-file surface and elapsed implementation time.
 
 ### Public OSS proof
 
@@ -5449,6 +5466,15 @@ queue is added. Each owner must also progress independent work concurrently insi
    automatic cleanup. Do not delete pinned/open releases or durable paid-project source, delivery,
    and receipt artifacts merely to raise free space; recheck central GC after the active release
    cut and natural owner convergence.
+
+   The lock-lifetime fix is now merged through PR `#4023`; current immutable release
+   `20260902T211246-af0fb4c1` is an immutable pushed-main descendant of `c7da7f4e8` and has about
+   9.8 GiB free. Production is still split: Apply is installed on `c259cc6e`, Reply on `663f1af0`,
+   and Storefront plus Paid have moved to `0dbe1321`/`af0fb4c1`. Apply and Reply report their latest
+   terminal `pass`; Storefront and Paid still report `entrypoint_exit_1`. The release fix therefore
+   removes the permanent migration-lock cause but does not prove four-lane completion or make an
+   installed/running old release deletable. Require natural owner convergence, fresh terminal
+   receipts, central GC, and a post-GC disk readback before closing this incident.
 
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
