@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
-"""Reclaim disk once a gig project's transaction is done, never before.
+"""Reclaim regenerable work after an official gig terminal receipt, never before.
 
-WHY: GigaFile-sourced buyer material cannot be re-downloaded, so `source/` and
-`work/` are kept for the whole lifetime of a project. But once
-`transaction_state == "取引完了"` (transaction complete) there is nothing left
-to revise -- the buyer can no longer request changes -- and those two dirs are
-pure disk pressure (measured 2026-08-08: one 納品確認待ち project alone holds
-15G of `source/`, and disk was down to 9G free). `artifacts/`, `evidence/`,
-`delivery/`, `state.json`, `events.jsonl` are untouched: they are cheap and
-are the durable record.
+WHY: buyer source can be unique and is never cleanup material. Regenerable
+`work/` may be reclaimed only when an official provider readback wrote a
+hash-bound `project-terminal.json`. `artifacts/`, `evidence/`, `delivery/`,
+`source/`, `state.json`, and `events.jsonl` remain durable records.
 
-SAFETY (fail-closed): any transaction_state other than "取引完了" -- including
-納品確認待ち (awaiting buyer confirmation, buyer can still ask for a redo),
-取引中 (in progress), a missing key, a missing/unparsable state.json -- is
-skipped. One project's bad state.json must never stop the scan of the rest.
+SAFETY (fail-closed): state fields, age, and workflow flags never grant deletion
+authority. A missing, symlinked, malformed, stale, or non-official terminal
+receipt is skipped. One project's bad receipt must never stop the scan.
 """
 
 from __future__ import annotations
@@ -28,45 +23,15 @@ import time
 from pathlib import Path
 
 COMPLETE_STATE = "取引完了"
-RECLAIM_DIRS = ("source", "work")
+RECLAIM_DIRS = ("work",)
 ARTIFACT_DIRS = ("artifacts", "delivery", "deliverables")
 IMMUTABLE_ROOT_PARTS = frozenset((".cloak", ".openclaw"))
 IMMUTABLE_ROOT_NAMES = frozenset(("memory", "state"))
-ACTIVE_FIELDS = frozenset("active revision subscription shared_ref shared_refs".split())
-SHARED_FIELDS = frozenset(("shared_ref", "shared_refs"))
-CONTRACT_GUARD_FIELDS = frozenset(
-    "active revision subscription shared_ref shared_refs official_readback "
-    "official_readback_status readback readback_status payment payment_status "
-    "payment_received paid lesson lesson_status lesson_complete work_state "
-    "queue_class next_action acceptance_status current_acceptance_status "
-    "talkroom_state terminal_state formal_delivery formal_delivery_confirmed "
-    "buyer_visible buyer_agreement_observed buyer_reply_after_artifact_observed "
-    "buyer_feedback_pending_artifact artifact_ready_pending_browser "
-    "buyer_formal_delivery_hold".split()
-)
-TRUE_TERMINAL_FIELDS = frozenset(
-    "formal_delivery formal_delivery_confirmed buyer_visible "
-    "buyer_agreement_observed buyer_reply_after_artifact_observed "
-    "official_readback payment_received paid lesson_complete".split()
-)
-FALSE_TERMINAL_FIELDS = frozenset(
-    "buyer_feedback_pending_artifact artifact_ready_pending_browser "
-    "buyer_formal_delivery_hold".split()
-)
-UNCERTAIN_NONE_FIELDS = frozenset(
-    "official_readback official_readback_status readback readback_status "
-    "payment payment_status payment_received paid lesson lesson_status "
-    "lesson_complete".split()
-)
-TERMINAL_MARKERS = frozenset("accepted cancelled closed complete completed confirmed "
-                             "delivered done expired finalized inactive none not_required "
-                             "paid received recorded settled verified 完了 確認済み 支払済み "
-                             "受取済み 不要 なし".split())
 
 
-def _project_ids_already_cleaned(ledger_path: Path) -> set[str]:
+def _project_receipts_already_cleaned(ledger_path: Path) -> set[tuple[str, str]]:
     """Idempotency: a project already recorded as cleaned writes no new row."""
-    done: set[str] = set()
+    done: set[tuple[str, str]] = set()
     if not ledger_path.exists():
         return done
     try:
@@ -80,8 +45,9 @@ def _project_ids_already_cleaned(ledger_path: Path) -> set[str]:
                 except json.JSONDecodeError:
                     continue
                 pid = row.get("project_id")
-                if pid:
-                    done.add(pid)
+                state_sha = row.get("terminal_state_sha256")
+                if isinstance(pid, str) and isinstance(state_sha, str):
+                    done.add((pid, state_sha))
     except OSError:
         pass
     return done
@@ -118,6 +84,49 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _terminal_receipt(project_dir: Path, state_path: Path) -> tuple[dict | None, str]:
+    path = project_dir / "project-terminal.json"
+    try:
+        if path.is_symlink() or not path.is_file():
+            return None, "terminal_receipt_missing"
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None, "terminal_receipt_invalid"
+    required = {
+        "version", "authority", "terminal", "adapter", "project_id", "talkroom_id",
+        "transaction_state", "talkroom_state", "state_sha256", "provider_snapshot_sha256",
+        "observed_at",
+    }
+    if not isinstance(receipt, dict) or set(receipt) != required:
+        return None, "terminal_receipt_schema"
+    project_id = project_dir.name
+    if (
+        receipt.get("version") != 1
+        or receipt.get("authority") != "official_provider_readback"
+        or receipt.get("terminal") is not True
+        or receipt.get("adapter") != "coconala"
+        or receipt.get("project_id") != project_id
+        or not isinstance(receipt.get("talkroom_id"), str)
+        or not receipt.get("talkroom_id")
+        or receipt.get("transaction_state") != COMPLETE_STATE
+        or receipt.get("talkroom_state") != COMPLETE_STATE
+        or not isinstance(receipt.get("observed_at"), (int, float))
+        or isinstance(receipt.get("observed_at"), bool)
+        or receipt.get("observed_at", 0) <= 0
+    ):
+        return None, "terminal_receipt_contract"
+    for field in ("state_sha256", "provider_snapshot_sha256"):
+        value = receipt.get(field)
+        if not isinstance(value, str) or len(value) != 64:
+            return None, f"terminal_receipt_{field}"
+    try:
+        if _sha256(state_path) != receipt["state_sha256"]:
+            return None, "terminal_receipt_stale"
+    except OSError:
+        return None, "state_unreadable"
+    return receipt, ""
 
 
 def _prune_authorized_duplicates(project_dir: Path, *, dry_run: bool) -> dict:
@@ -180,63 +189,6 @@ def _immutable_root_reason(projects_root: Path) -> str | None:
     return None
 
 
-def _metadata_is_terminal(field: str, value: object) -> bool:
-    if value is None or value == "":
-        return field not in CONTRACT_GUARD_FIELDS
-    if isinstance(value, bool):
-        if field in ACTIVE_FIELDS:
-            return not value
-        if field in TRUE_TERMINAL_FIELDS:
-            return value
-        if field in FALSE_TERMINAL_FIELDS:
-            return not value
-        return False
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        if field in {"payment_received", "paid"}:
-            return value > 0
-        return value == 0
-    if isinstance(value, (list, tuple, set)):
-        return not value
-    if field in SHARED_FIELDS:
-        return False
-    if isinstance(value, dict):
-        if not value:
-            return field not in CONTRACT_GUARD_FIELDS
-        for key in ("status", "state", "complete"):
-            if key in value:
-                value = value[key]
-                break
-        else:
-            return False
-    normalized = value.strip().casefold() if isinstance(value, str) else ""
-    if field in {"transaction_state", "talkroom_state"}:
-        return normalized == COMPLETE_STATE.casefold()
-    if field in UNCERTAIN_NONE_FIELDS and normalized == "none":
-        return False
-    if field in {"acceptance_status", "current_acceptance_status"} and normalized == "pass":
-        return True
-    return normalized in TERMINAL_MARKERS
-
-
-def _contract_reclaim_reason(state: dict) -> str | None:
-    observed_states = [
-        state.get(field) for field in ("transaction_state", "talkroom_state")
-        if state.get(field) not in (None, "", "unknown")
-    ]
-    if COMPLETE_STATE not in observed_states:
-        return "transaction_not_complete"
-    if any(value != COMPLETE_STATE for value in observed_states):
-        return "transaction_state_conflict"
-    # Once both independently stored marketplace state fields say 取引完了, stale
-    # workflow flags (pending feedback, next_action, work_state) cannot reopen the
-    # room and must not retain regenerable source/work forever. Shared references
-    # remain a real filesystem ownership constraint and still fail closed.
-    for field in SHARED_FIELDS:
-        if field in state and not _metadata_is_terminal(field, state[field]):
-            return f"contract_guard:{field}"
-    return None
-
-
 def _contains_shared_reference(path: Path) -> bool:
     try:
         for current, dirs, files in os.walk(path, followlinks=False):
@@ -253,7 +205,7 @@ def _contains_shared_reference(path: Path) -> bool:
 
 
 def scan(projects_root: Path, ledger_path: Path, *, dry_run: bool) -> dict:
-    already_cleaned = _project_ids_already_cleaned(ledger_path)
+    already_cleaned = _project_receipts_already_cleaned(ledger_path)
     summary = {
         "scanned": 0,
         "cleaned": 0,
@@ -283,8 +235,8 @@ def scan(projects_root: Path, ledger_path: Path, *, dry_run: bool) -> dict:
         project_id = project_dir.name
         try:
             state = json.loads(state_path.read_text(encoding="utf-8"))
-            reclaim_reason = _contract_reclaim_reason(state)
-            if reclaim_reason:
+            terminal, reclaim_reason = _terminal_receipt(project_dir, state_path)
+            if terminal is None:
                 summary["skipped"] += 1
                 continue
 
@@ -304,7 +256,8 @@ def scan(projects_root: Path, ledger_path: Path, *, dry_run: bool) -> dict:
                     with artifact_ledger.open("a", encoding="utf-8") as handle:
                         handle.write(json.dumps(artifact_record, ensure_ascii=False) + "\n")
 
-            if project_id in already_cleaned:
+            terminal_state_sha = terminal["state_sha256"]
+            if (project_id, terminal_state_sha) in already_cleaned:
                 continue  # source/work already recorded; artifact pruning still ran above
 
             targets = [
@@ -343,6 +296,7 @@ def scan(projects_root: Path, ledger_path: Path, *, dry_run: bool) -> dict:
                 "deleted": deleted,
                 "bytes_freed": bytes_freed,
                 "transaction_state": state.get("transaction_state") or state.get("talkroom_state"),
+                "terminal_state_sha256": terminal_state_sha,
             }
             ledger_path.parent.mkdir(parents=True, exist_ok=True)
             with ledger_path.open("a", encoding="utf-8") as handle:

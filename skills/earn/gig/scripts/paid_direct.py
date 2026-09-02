@@ -715,9 +715,33 @@ def _reconcile_absent_talkrooms(args, open_items: list[dict[str, Any]]) -> dict[
                 env=_fresh_child_env(args, owner=owner),
             )
             observed = {**item, **_row(_load(snapshot), room)}
-            delivery_project.record_queue_selection(args.projects_root, observed, adapter="coconala")
+            root = delivery_project.record_queue_selection(
+                args.projects_root, observed, adapter="coconala",
+            )
+            state_path = root / "state.json"
+            transaction_state = _text(observed.get("transaction_state") or observed.get("talkroom_state"))
+            talkroom_state = _text(observed.get("talkroom_state"))
+            terminal_receipt_written = False
+            if transaction_state == project_janitor.COMPLETE_STATE and talkroom_state == project_janitor.COMPLETE_STATE:
+                terminal_path = root / "project-terminal.json"
+                _write(terminal_path, {
+                    "version": 1,
+                    "authority": "official_provider_readback",
+                    "terminal": True,
+                    "adapter": "coconala",
+                    "project_id": root.name,
+                    "talkroom_id": room,
+                    "transaction_state": transaction_state,
+                    "talkroom_state": talkroom_state,
+                    "state_sha256": project_janitor._sha256(state_path),
+                    "provider_snapshot_sha256": project_janitor._sha256(snapshot),
+                    "observed_at": time.time(),
+                })
+                terminal_path.chmod(0o600)
+                terminal_receipt_written = True
             results.append({"talkroom_id": room, "status": "observed",
-                            "talkroom_state": observed.get("talkroom_state")})
+                            "talkroom_state": observed.get("talkroom_state"),
+                            "terminal_receipt_written": terminal_receipt_written})
         except (Failure, OSError, TypeError, ValueError, json.JSONDecodeError) as error:
             results.append({"talkroom_id": room, "status": "failed",
                             "failed_step": error.step if isinstance(error, Failure) else "state_update"})
