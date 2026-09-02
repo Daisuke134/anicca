@@ -22,6 +22,11 @@ def host_cleanup_command(root: Path, home: Path) -> list[str]:
             "--home", str(home), "--state-dir", str(home / ".openclaw/state")]
 
 
+def host_cleanup_ok(returncode: int, result: object) -> bool:
+    return (returncode == 0 and isinstance(result, dict)
+            and result.get("errors") == 0 and result.get("protected_deletions") == 0)
+
+
 def loaded_release_roots(agents_dir: Path, releases_root: Path) -> set[Path]:
     protected = set()
     base = releases_root.resolve()
@@ -105,7 +110,7 @@ def main() -> int:
             host_cleanup_command(ROOT, home), capture_output=True, text=True, timeout=240,
         )
         host_result = json.loads(host_process.stdout.splitlines()[-1]) if host_process.stdout.strip() else {}
-        host_ok = host_process.returncode == 0 and isinstance(host_result, dict)
+        host_ok = host_cleanup_ok(host_process.returncode, host_result)
     except (OSError, subprocess.TimeoutExpired, json.JSONDecodeError, IndexError) as error:
         host_ok, host_result = False, {"error": str(error)}
     try:

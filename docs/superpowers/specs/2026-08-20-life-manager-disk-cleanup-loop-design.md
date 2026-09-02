@@ -164,9 +164,9 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
       drainし、VM使用量がmacOSにより縮小することをread backする。
    3. [x] registered worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
       保ったまま回収する。
-   4. [ ] **current:** immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、idleな旧release参照を
+   4. [x] immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、idleな旧release参照を
       control planeでcurrentへ収束した後、central cleanupでunreferencedだけを回収する。running loopは停止しない。
-   5. `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
+   5. [ ] **current:** `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
       state、production argvを移管し、一repositoryずつretireする。
    6. OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
       移した後、重複`.git`/workspace/skills/mediaだけを回収する。
@@ -266,6 +266,18 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    `d1133b36`のplist参照を27→0へ収束し、deterministic/sharedともfailed 0、running stop 0。GC readbackは
    release 7件＝current/loaded/open参照6件＋rollback 1件、errors 0、protected deletion 0で設計上限へ収束した。
    freeは約3.9 GiBで11 GiB floor未達。残る旧releaseはlong-lived running loopのため停止せず保持する。
+
+   **repository/clone atom開始:** `~/anicca`はproduction process/launchdが直接参照し、`~/anicca-project`は
+   dirty/untracked・unique refsに加えてCodex reporterとAffiliate landing rootが参照するため保持した。
+   `~/Projects/anicca-products` 905,809,920 bytesはclean、untracked 0、HEADがremote main包含、worktree 1、
+   open/process/launchd参照0、`~/Projects/steel-browser` 238,383,104 bytesはclean、untracked 0、PR #3 merge済み、
+   `git cherry`既適用、HEAD/main tree差分0、worktree 1、open/process/launchd参照0を確認して回収した。実freeは
+   `2,147,676 → 3,284,680 KiB`（+1,137,004 KiB）。次のcanonical cleanup自然wakeはlast exit 0、
+   protected deletion 0、release 1件852,315,245 bytes＋artifact 25,693,622 bytesを追加回収し、freeを
+   5,663,268 KiBへ戻した。ただしhost sweepは`probe-error` 1をfail-closed保持したためatomは未完了。
+   個別readback時はallowlist 12件がopenまたはconfirmed-closedでprobe-errorを再現せず、次wakeで再判定する。
+   `openai-symphony`は未追跡の唯一workflow 4 KiB、`ugig-nightcell7`はdirty deletionとunmerged remote branchを
+   持つため保持する。
 
    追加のread-only owner照合後、未使用`/Applications/Chat On Steroids.app`を391,668 KiB、旧Codex package
    `0.151.0`と未使用plugin app-serverを合計570,048 KiB、重複pipx環境`camoufox`と`crawl4ai`を合計
