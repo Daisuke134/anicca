@@ -408,6 +408,22 @@
       "locked_worktrees_removed": 0,
       "eliza_or_alpaca_removed": 0,
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1d-capafy-orphan-browser-11",
+      "orphan_root_pid": 40312,
+      "orphan_helper_pids": [41125, 42277, 42311, 43102, 43569],
+      "orphan_profile": "~/.local/state/life-manager/loop-tmp/capafy-ig-marketing-daily/puppeteer_dev_chrome_profile-vsVJNI",
+      "free_before_kib": 11766688,
+      "free_after_kib": 11738380,
+      "deleted_open_capafy_profiles_after": 0,
+      "protected_cloakbrowser_roots_alive_after": 9,
+      "revenue_loops_stopped": 0,
+      "shell_syntax": "PASS",
+      "diff_check": "PASS",
+      "focused_tests": "4 FAIL / 2 PASS before cleanup boundary: LIFE_MANAGER_RELEASE_ROOT fixture and launchd self-heal fixture",
+      "protected_deletions": 0,
+      "note": "df fluctuated downward during concurrent active writers; this slice proves orphan ownership and termination, not a positive free-space delta. The finalizer now terminates only exact PIDs created during its own run and removes only unreferenced Capafy temporary profiles."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

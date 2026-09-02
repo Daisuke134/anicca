@@ -157,6 +157,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
         - [x] P1d-3c-3a: clean・open process 0・remote保存済みの終了worktree 6件と再生成可能な独立Codex clone 1件を回収。未pushだったBuddha branchは先にremote保存。論理`568,044 KiB`、Data free `14,018,660`→`14,500,100 KiB`、lock/dirty/Eliza/Alpaca削除0
         - [x] P1d-3c-3b: `/private/tmp`を再監査し、canonical Telegram DBに全19,284 event key/report IDが包含される旧recovery DB `77,132 KiB`だけを回収。Data free `14,755,532`→`14,829,436 KiB`、canonical integrity `ok`・19,382 rows。残るlinked worktree 7件は全lock付き、Eliza/Alpaca/Postgres readbackは別session保護、dirty削除0
         - [ ] P1d-3c-3c: freeを継続減少させるhost-wide writer/rootを再計測し、再生成可能な最大ownerから回収してnormal free 30 GiB以上へ戻す
+          - [x] P1d-3c-3c-1: Capafy run終了後もPPID 1で残った専用一時profileのGoogle Chrome root/helper 6 processをexact profile argvで回収し、entrypointのEXIT finalizerを「run中に新規生成したexact PIDだけTERM→最大5秒→残存exact PIDだけKILL→非参照profile削除」へ変更。deleted-open Capafy profile 0、保護CloakBrowser root 9件継続、収益loop停止0、shell syntax/diff check PASS。既存focused testは今回のcleanup到達前のfixture不備で4 FAIL／2 PASSのため完了証拠に使用しない
+          - [ ] P1d-3c-3c-2: 次のhost-wide増加ownerを再計測し、同じself-clean契約で最大の再生成物を回収する
 
 #### P4 execution ledger
 

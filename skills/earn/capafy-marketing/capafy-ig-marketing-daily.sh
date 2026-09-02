@@ -106,7 +106,37 @@ mkdir -p "$(dirname "$LOG")" "$(dirname "$ROT")"
 #    capafy never churns against clip/gig/Dais tabs on the shared daily-driver (churn = poison). ──
 BROWSER_SCRIPTS="$SCRIPT_DIR/../../browser/scripts"
 CAPAFY_LEASE="capafy-$$"; export CAPAFY_LEASE
-trap 'python3 "$BROWSER_SCRIPTS/cdp_context_lease.py" release "$CAPAFY_LEASE" >/dev/null 2>&1' EXIT
+CAPAFY_BROWSER_TMP="$HOME/.local/state/life-manager/loop-tmp/capafy-ig-marketing-daily"
+CAPAFY_BROWSER_PIDS_BEFORE=" $(pgrep -f -- "--user-data-dir=$CAPAFY_BROWSER_TMP/" 2>/dev/null | tr '\n' ' ') "
+cleanup_capafy_browser_children() {
+  python3 "$BROWSER_SCRIPTS/cdp_context_lease.py" release "$CAPAFY_LEASE" >/dev/null 2>&1 || true
+  capafy_browser_pids=""
+  for pid in $(pgrep -f -- "--user-data-dir=$CAPAFY_BROWSER_TMP/" 2>/dev/null); do
+    case "$CAPAFY_BROWSER_PIDS_BEFORE" in *" $pid "*) continue ;; esac
+    capafy_browser_pids="$capafy_browser_pids $pid"
+    kill -TERM "$pid" 2>/dev/null || true
+  done
+  for _ in 1 2 3 4 5; do
+    capafy_browser_running=false
+    for pid in $capafy_browser_pids; do
+      ps -p "$pid" -o command= 2>/dev/null | grep -F -- "--user-data-dir=$CAPAFY_BROWSER_TMP/" >/dev/null || continue
+      capafy_browser_running=true
+    done
+    $capafy_browser_running || break
+    sleep 1
+  done
+  for pid in $capafy_browser_pids; do
+    ps -p "$pid" -o command= 2>/dev/null | grep -F -- "--user-data-dir=$CAPAFY_BROWSER_TMP/" >/dev/null || continue
+    kill -KILL "$pid" 2>/dev/null || true
+  done
+  [ -d "$CAPAFY_BROWSER_TMP" ] || return
+  for profile in "$CAPAFY_BROWSER_TMP"/puppeteer_dev_chrome_profile-*; do
+    [ -d "$profile" ] || continue
+    pgrep -f -- "--user-data-dir=$profile" >/dev/null 2>&1 && continue
+    find "$profile" -depth -delete 2>/dev/null || true
+  done
+}
+trap cleanup_capafy_browser_children EXIT INT TERM HUP
 python3 "$BROWSER_SCRIPTS/cdp_context_lease.py" acquire "$CAPAFY_LEASE" >/dev/null 2>&1 || true
 echo "=== capafy-ig-marketing-daily run $(date '+%F %T %Z') ===" >>"$LOG"
 echo "account_state=$ACCOUNTS_FILE active_handle=${IG_HANDLE:-none} active_port=${IG_PORT:-none} provision_needed=$PROVISION_NEEDED reason=${PROVISION_REASON:-none}" >>"$LOG"
