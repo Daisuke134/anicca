@@ -67,6 +67,20 @@
         "listener_after": "127.0.0.1:9223",
         "limits": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
         "verification": "zsh syntax PASS; existing gig disk suite had 9 pre-existing policy/manifest expectation failures and 16 passes, so it is not claimed as acceptance evidence"
+      },
+      "lancers_browser_cache": {
+        "sources": ["runtime/legacy/lancers-revenue-browser/run.sh", "apps/lancers-revenue/scripts/install-local.sh"],
+        "profile": "~/.local/state/anicca/lancers/browser-profile",
+        "cache_before_kib": 658688,
+        "cache_after_kib": 4,
+        "free_before_kib": 12544512,
+        "free_after_kib": 13135000,
+        "owner_pid_after": 715,
+        "chromium_pid_after": 1131,
+        "listener_after": "127.0.0.1:9227",
+        "limits": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
+        "focused_test": "apps.lancers-revenue.tests.test_install_local 2/2 PASS; bash/zsh syntax PASS",
+        "revenue_loop_stopped": false
       }
     }
   },

@@ -263,7 +263,7 @@ import os, plistlib, sys
 from pathlib import Path
 template, output, chromium, profile, stdout, stderr, release = sys.argv[1:]
 value = plistlib.loads(Path(template).read_bytes())
-value["ProgramArguments"] = [chromium, "--no-first-run", "--no-default-browser-check", "--remote-debugging-address=127.0.0.1", "--remote-allow-origins=*", "--remote-debugging-port=9227", f"--user-data-dir={profile}", "about:blank"]
+value["ProgramArguments"] = [chromium, "--no-first-run", "--no-default-browser-check", "--remote-debugging-address=127.0.0.1", "--remote-allow-origins=*", "--remote-debugging-port=9227", "--disk-cache-size=67108864", "--media-cache-size=33554432", f"--disk-cache-dir={Path.home() / '.cache/lancers-revenue-browser'}", f"--user-data-dir={profile}", "about:blank"]
 value["WorkingDirectory"] = release; value["StandardOutPath"] = stdout; value["StandardErrorPath"] = stderr
 Path(output).write_bytes(plistlib.dumps(value, fmt=plistlib.FMT_XML, sort_keys=False)); os.chmod(output, 0o644)
 PY

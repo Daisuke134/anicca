@@ -10,4 +10,7 @@ mkdir -p "$profile"
 exec "$browser" --no-first-run --no-default-browser-check \
   --disable-features=MacAppCodeSignClone \
   --remote-debugging-address=127.0.0.1 --remote-allow-origins='*' \
-  --remote-debugging-port=9227 --user-data-dir="$profile" about:blank
+  --remote-debugging-port=9227 \
+  --disk-cache-size=67108864 --media-cache-size=33554432 \
+  --disk-cache-dir="$HOME/.cache/lancers-revenue-browser" \
+  --user-data-dir="$profile" about:blank

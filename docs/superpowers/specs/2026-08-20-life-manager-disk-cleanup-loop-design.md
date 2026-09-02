@@ -147,7 +147,7 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
         - [x] P1d-3c-2a: Job Searchのdisk/media cacheを64/32 MiB上限のprofile外cacheへ変更し、既存profile cache `1,296,212 KiB`を回収。Data free `11,365,348`→`12,678,676 KiB`、Chromium PID 1139とIPv6 `:9222` listener継続、cache残り0、focused test 10/10 PASS
         - [ ] P1d-3c-2b: Gig、Lancers、CrowdWorks、affiliate、legacy X ownerのcache上限と既存cacheをowner単位で閉じる
           - [x] P1d-3c-2b-1: Gig browserを64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `12,530,280`→`13,605,444 KiB`、`:9223` listener、owner PID 771、Chromium PID 849継続、cache残り0、shell syntax PASS。既存gig disk suiteは今回外の旧期待9 FAIL／16 PASSのため完了証拠に使用しない
-          - [ ] P1d-3c-2b-2: Lancers browserのcache上限と既存cacheを閉じる
+          - [x] P1d-3c-2b-2: Lancers browserのcontrol-plane entrypointとlegacy installerを同じ64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `12,544,512`→`13,135,000 KiB`、`:9227` listener、owner PID 715、Chromium PID 1131継続、cache残り4 KiB、installer test 2/2とshell syntax PASS
           - [ ] P1d-3c-2b-3: CrowdWorks browserのcache上限と既存cacheを閉じる
           - [ ] P1d-3c-2b-4: affiliate browserのcache上限と既存cacheを閉じる
           - [ ] P1d-3c-2b-5: legacy X browserをmain正本へ割当て、cache上限と既存cacheを閉じる
