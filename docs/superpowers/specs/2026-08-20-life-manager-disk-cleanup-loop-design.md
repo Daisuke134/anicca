@@ -597,6 +597,11 @@ rootおよび旧versionはprocess 0、open handle 0だったため、旧`.97`だ
 全engine/socket、`auth`、`.encryption-key`は保持をread backした。`.agent-browser`は698,524→349,520 KiB、
 Data空き`38,838,572 KiB`（約37.0 GiB）、errors 0、protected deletion 0である。
 
+`~/.stitch-mcp/google-cloud-sdk`はprocess 0、open handle 0で、現行`/opt/homebrew/bin/gcloud`と同じ
+Google Cloud SDK 561.0.0の重複installだったため424,564 KiBを回収した。`config/` 2,376 KiB内の
+application default credential、credentials DB、access token DBは保持し、Homebrew gcloudのversion readbackをPASSした。
+Data空き`39,567,980 KiB`（約37.7 GiB）、errors 0、protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
