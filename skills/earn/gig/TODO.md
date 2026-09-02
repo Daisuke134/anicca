@@ -216,7 +216,12 @@ completion claim is nevertheless false until the two failing lanes below pass na
      `own_candidate_readback_invalid`: the gallery page currently has the expected six unique
      service images, but each retry navigated again before lazy image URLs settled. The focused
      follow-up keeps the same official page open and waits at most five seconds for the expected
-     unique image count; production PASS remains required.
+     unique image count. Natural pass `storefront-direct-1788353864455411000-25472` then read all
+     14 official services with non-null `受付休止中` state, read the gallery's six unique published
+     image IDs, safely declined a generated package because the slot was not absent, recorded
+     effect/readback `0/0`, and released its isolated lease. Storefront business readback is
+     therefore restored. Its Telegram report still fails `DatabaseError`; successful transport and
+     the resulting terminal owner exit zero remain part of this open atom.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
   6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
