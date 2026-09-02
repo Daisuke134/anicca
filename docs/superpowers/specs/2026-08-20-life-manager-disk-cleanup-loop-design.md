@@ -193,6 +193,15 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `.git`だけ回収した。logical 134,836 KiB、実free +139,104 KiBで、mcporter/Camofox source readbackはPASS。
      Zenn/dev-toはgit push owner、autohedge/roundcube/novaはdirtyなので保持した。OpenClaw totalは
      10,597,453,824 bytes（約9.87 GiB）から9,426,030,592 bytes（約8.78 GiB）へ縮小した。
+
+     `external/note-mcp`約220 MiBのうち`.venv` 221,292 KiBはprocess/open/direct caller 0で、enabled note cronは
+     別正本`~/.cache/anicca-clones/note-mcp`を使用していた。dirty source `.vcsdd/`と`uv.lock`を保持し、未使用venvだけ
+     回収して実free +225,104 KiB、次wake再生成0だった。identity application videos、disk-pressure archives、
+     browser user-data、UUID付きinbound PDFは提出物・唯一のbackup・session・message pathとして保持した。
+     media hash censusでは`media/life-manager/life-manager-real-provider-demo.mp4`とoutbound copyが完全一致したため、
+     正本を保持してopen 0のoutbound copy 21,853,895 bytesだけ回収し、実free +21,056 KiB。UUID付き同一PDF 3件は
+     path identityを保持した。5回目cleanup wakeはruns 5、state not running、last exit 0、
+     observed_at `2026-09-02T01:21:57Z`、errors 0、protected deletion 0、reclaimed 6,367 bytes、再生成0だった。
    - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
      active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
