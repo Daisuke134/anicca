@@ -124,6 +124,28 @@ terminal `fail`となった。これを新releaseの成否証拠に使わない�
 loaded program/environmentの`eb068f0c...`一致と、次の自然wakeのterminal `pass` / `errors=0` /
 `protected_deletions=0`を読み戻すことである。
 
+正規`life-manager-release-reconciler`はmain `7942f224...`で60秒周期になり、running ownerをskipして
+idle ownerだけを反映した。ただしdeterministic routeに自分自身も含まれ、自己bootout後に
+bootstrapへ到達できず`entrypoint_exit_143`でunloadedとなった。共通reconcileのeligibleから
+`LIFE_MANAGER_LOOP_ID`の自分を除外する1行修正をPR #3990でmainへ統合した。focused existing testはPASS、
+merge SHAは`5a3f94924fe2437aaa1b1607dfcd1574de683882`である。同SHAの完全release
+`~/loops/releases/20260902T172649-5a3f9492`を作成し、reconcilerとcleanupのplistはatomic writerで
+新releaseへ更新済みである。
+
+その間にcentral release GCがloaded cleanupの旧directory `20260902T095123-64a9a1c5`を削除し、
+launchdは実行ファイル不在で`spawn scheduled` / last exit 78になった。loopを即時復旧するため、
+消失したexact旧pathだけを新releaseへのsymlinkとして復元した。raw `launchctl`変更は0回である。
+cleanupはPID 20556で再開し、child entrypointは新releaseの`runtime/loop/central_cleanup.py`、run
+`18d173d31dc1cb38-20556`のstart eventは`release_sha=5a3f94924...`である。このsymlinkは正規reloadまでの
+可逆compatibility aliasであり、3-5dはloaded argv/environmentが新path/SHAになるまで未完とする。
+再開runは`probe-error=1`をfail-closed保存しつつ、旧release 1世代を852,623,339 bytes回収したが
+terminal `fail`となった。次の自然wake `18d1748ffb04c628-39119`は`release_sha=5a3f94924...`で
+terminal `pass`、`ok=true`、`errors=0`、`protected_deletions=0`、追加回収`2,260,151,330 bytes`、
+`free_before=20,446,752,768`→`free_after=23,471,439,872 bytes`、保存理由`open=4`である。
+cleanupの自動実行と新release runtimeの安全readbackは復旧した。現在の先頭atomは、正規
+non-Remote ownerが新plistをloadし、loaded argv/environmentの`5a3f94924...`一致を読み戻した後、
+compatibility aliasの保護を解除することである。
+
 ### 全Codexが守る同期ルール
 
 1. 作業開始時に、この表の先頭未完atomと最新production evidenceを読む。
