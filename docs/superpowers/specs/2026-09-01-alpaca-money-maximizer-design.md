@@ -472,6 +472,17 @@ pass. This is still research-only and adds no broker effect. The currently runni
 older branch and main-derived natural-wake evidence remains pending; source checks are not presented as runtime
 deployment proof.
 
+The A11 risk-gated spot-effect source sub-atom is **DONE** in `life-manager-eliza` merge
+`951b02dfb0a3aab2464d943c5f5ff2190cae94f4` (PR #85). The existing ranking pass now seals an allowed crypto
+or equity/ETF selection into one stable `lm-a11-*` client order ID, persists one planned effect intent, and
+submits one paper-only market order through pinned Alpaca CLI v0.0.14. Crypto uses `gtc`; equity uses `day` and
+is vetoed outside the regular session. The existing effect-receipt kernel performs official client-ID readback,
+unknown acknowledgement opens the reconciliation breaker, and identical replay submits zero additional orders.
+Current spot exposure is included in aggregate maximum loss before a later proposal can act. No SDK mutation,
+second broker client, scheduler, or live-capital path was added. Typecheck, build, two focused suites (`5/5`
+tests), and `git diff --check` pass. Main-derived natural-wake broker evidence remains pending and is not inferred
+from source checks.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
@@ -550,8 +561,10 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
   defined-risk options and persist one typed cross-market model choice with no broker effect~~ **DONE**. Next,
   ~~normalize comparable expected-value/probability/freshness/liquidity evidence and veto weak selections~~
   **DONE**. ~~Make the portfolio-level gate account for every open position/order before the unchanged CLI
-  effect path can act~~ **DONE**. Next, add one bounded crypto/equity CLI order shape without adding a broker
-  client or scheduler.
+  effect path can act~~ **DONE**. ~~Add one bounded crypto/equity CLI order shape without adding a broker client
+  or scheduler~~ **DONE**. Next, observe the main-derived natural task wake and reconcile its official CLI
+  proposal/veto/order/fill receipt; identical replay must add zero orders. The sealed SPY exit remains active for
+  the next regular options session, followed by the final campaign funnel and unexplained-delta check.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
   projection must drive both live and static views so they cannot drift. Above the fold show paper-only status,
   starting/current equity, realised/unrealised P&L, open max loss, last successful loop and broker reconciliation.
@@ -599,15 +612,14 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next implementation scope remains inside A11 and does not wait for the options session: add one paper-only spot
-order request to the existing pinned Alpaca CLI adapter for crypto and eligible equity/ETF candidates. One stable
-client order ID, one planned effect intent, official order/fill readback, and replay-zero semantics must reuse the
-existing effect kernel. The order is eligible only after the scoring and aggregate portfolio gates both allow it;
-crypto may execute in its supported 24/7 session, while equities/ETFs must obey Alpaca's supported session and
-time-in-force rules. No SDK mutation, second broker client, scheduler, hard-coded asset selection, or live-capital
-path is permitted. The same task continues to execute the already-sealed SPY exit when the regular options
-session reopens. A12–A14 artifacts may be built from the same redacted projection before the close and refreshed
-after final reconciliation; A15 and P01+ retain their gates.
+Next scope remains inside A11 and does not wait for the options session: observe the existing Eliza task's natural
+wake after a main-derived release. Read back the persisted cross-market decision and deterministic gates. If they
+allow crypto or an in-session equity/ETF candidate, reconcile the one official CLI order/fill and prove identical
+replay adds zero orders; if they veto or select `NO_TRADE`, preserve that real receipt without manufacturing a
+trade. Do not manually fire, restart, or add a scheduler. The same task continues the already-sealed SPY exit when
+the regular options session reopens, then records the final campaign funnel and unexplained-delta check. A12–A14
+artifacts may be built from the same redacted projection before the close and refreshed after final reconciliation;
+A15 and P01+ retain their gates.
 
 ## 9. Controlling references
 
