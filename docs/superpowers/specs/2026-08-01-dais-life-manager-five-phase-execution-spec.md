@@ -99,6 +99,8 @@ isolated reconcile/normal installer testは2/2 PASSし、production external eff
 local-only SHAは拒否するprovenanceへ修正した。
 Pushed branch SHA `6a76454ac…`はtest-only bypassなしのisolated normal installで、SHA、26-file manifest、shared policy、`--exhaustive`、
 application labelをexact確認した。activate 0、production effect 0。Step 4の残りはproduction exact 1 loadだけである。
+現在disk上の未ロードapplication plistは旧release SHA `e9d59c327…`を指す。したがって旧plistの単純`start`は採用せず、push済み検証SHAを
+既存`lm-loop apply`でapplication label一件へ適用して同じtransaction内でload/readbackする。別scheduler、手動finite run、旧releaseの再起動では代替しない。
 branch codeのproduction-state reconcile-onlyはexit 0、submitted false、pending/unresolved 0。旧profile preflight callは現pathから除去済みで、
 新規応募・Telegram effect 0。load前readinessは成立した。
 runtime比較ではCoconala Applyは同じGUI domainにloaded、60秒cadence、runs 36、finite `lm-loop-run` processあり、Lancers Applyだけservice absentだった。
