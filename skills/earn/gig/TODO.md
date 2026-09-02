@@ -99,15 +99,45 @@ completion claim is nevertheless false until the two failing lanes below pass na
   reclaimed about 172 MB, but `idle_reconcile=[]`: Apply, Reply, Storefront, Paid, and the cleanup
   owner were all still running from protected older releases. Their installed plist argv must
   converge naturally before those releases can be deleted.
+  The next natural Paid wake proved that convergence does not currently exist: installed plist
+  `ai.anicca.hf-gig-paid-direct` remained on `29fb7681`, and its real process again executed
+  `20260902T131725-29fb7681` instead of complete current release
+  `20260902T140524-8f956147`. The retired `hf-gig-release-watch` has no production recreator; its
+  replacement `life-manager-dev` reconciles pushed main only on its daily 04:10 wake. Central
+  cleanup reports `idle_reconcile=[]` because that field is hard-coded and it owns garbage
+  collection only. The repeated old-release Paid pass ended naturally at 15:12 JST with
+  `observed=9`, `effect=0`, `readback=3`, `failed=4`, and `pending=2`. Talkroom `18223833` again
+  stopped at the legacy digest boundary with effect/readback `0/0`; it is still not delivered.
+  This is a release-rollout defect, not a four-lane scheduling lock and not a reason to touch the
+  Mac, Remote app-server, launchd domain, or any running owner from a Remote session.
+
+  Disk cleanup is alive but cannot reclaim installed/running immutable releases. Natural cleanup
+  passes remained `ok=true` with errors/protected deletions `0/0`, and one pass reclaimed about
+  2.26 GB. Paid terminal reconciliation wrote a hash-bound receipt for completed project `5167108`;
+  its janitor then removed about 188.9 MB of regenerable `work/`. Current measured project storage
+  is about 0.574 GiB regenerable `work/`, 3.064 GiB durable artifacts/delivery, and 0.836 GiB
+  source/evidence. `~/gig` contains zero MP4/MOV/M4V/WebM files. Sixteen removed videos remain in
+  recoverable Trash at about 1.1 GiB; permanent Trash deletion is irreversible and is not part of
+  automatic project cleanup. Durable buyer source, final artifacts, delivery and evidence remain by
+  contract; only terminal `work/` and explicitly authorized byte-identical artifact duplicates are
+  deleted.
+
   Remaining C02 atoms, in order:
-  1. Merge and naturally install the canonical-row normalization together with the already merged
-     parent-snapshot reuse and cleanup fixes; do not mutate the active immutable release.
-  2. Let the current old-release Paid parent terminate naturally, then require the next Paid wake to
-     repair project `5242505`'s sidecar and send/read back talkroom `18223833` exactly once.
-  3. Require Paid `last exit code = 0`, terminal `status=pass`, `failed=0`, and replay effect `0`.
-  4. Install one current main-derived immutable release SHA for Apply, Reply, Storefront, and Paid.
-  5. Read back each loaded argv/SHA, cadence, terminal event, and isolated lease state.
-  6. Mark C02 complete only when that four-owner runtime readback passes.
+  1. Approve and implement one independent short-cadence release reconciler that updates only
+     `loaded-idle` owners from a complete pushed-main immutable release. It must not run the daily
+     development/D0 workload, interrupt a running lane, or require a Remote session to invoke
+     `launchctl`, `lm-loop apply/start/stop/restart`, `gui/$UID`, app-server signals, or a restart.
+  2. Let that independent owner wake naturally and bind Paid to the complete fixed release; require
+     the installed plist SHA and real process argv to match before making any delivery claim.
+  3. Require the fixed Paid wake to canonicalize project `5242505`'s sidecar and send/read back
+     talkroom `18223833` exactly once.
+  4. Require Paid `last exit code = 0`, terminal `status=pass`, `failed=0`, and replay effect `0`.
+  5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
+     then allow central cleanup to remove only releases no longer installed or open.
+  6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
+     isolated lease state.
+  7. Mark C02 complete only when that four-owner runtime readback passes. Only then close C03/O05,
+     extract the remaining marketplace-neutral kernel pieces, and start the CloudWorks adapter E2E.
 - [x] `C02a` Move the Coconala buyer `逃げ因子` to manual-only handling.
   PASS = Paid never selects talkroom `18211838`; Reply always returns `stop_contact / stop` for the
   same thread; no existing project artifact, receipt, or conversation history is deleted. The account
