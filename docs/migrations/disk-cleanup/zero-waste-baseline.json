@@ -40,22 +40,56 @@
     }
   ],
   "protected_roots": ["~/Projects/life-manager-eliza-migration"],
-  "unclassified_roots_over_100_mib": [
-    "~/.openclaw/.git",
-    "~/.openclaw/skills",
-    "~/.openclaw/agents",
-    "~/.openclaw/workspace",
-    "~/.openclaw/media",
-    "~/.openclaw/state",
-    "~/.openclaw/browser",
-    "~/anicca-project/.git",
-    "~/anicca-project/.worktrees/webmcp-money-printer",
-    "~/anicca-project/music-factory",
-    "~/anicca-project/mobile-apps",
-    "~/anicca-project/apps",
-    "~/profitable-claude/skills/writer-agent/state/runs",
-    "~/profitable-claude/skills/writer-agent/state/interrupted-generation",
-    "~/profitable-claude/.git"
+  "unclassified_roots_over_100_mib": [],
+  "delete_manifest": [
+    {
+      "path": "~/.openclaw/workspace/node_modules",
+      "expected_kib": 138544,
+      "reason": "lockfile-backed dependency install",
+      "recovery": "cd ~/.openclaw/workspace && npm ci"
+    },
+    {
+      "path": "~/profitable-claude/skills/writer-agent/state/interrupted-generation/daily-2026-07-25/attempt-8/research-sources/ucp-samples/rest/python/server/.venv",
+      "expected_kib": 90960,
+      "reason": "terminal interrupted-run virtualenv",
+      "recovery": "recreate from source dependency metadata"
+    },
+    {
+      "path": "~/profitable-claude/skills/writer-agent/state/interrupted-generation/daily-2026-07-25/attempt-8/research-sources/ucp-samples/rest/python/client/flower_shop/.venv",
+      "expected_kib": 37780,
+      "reason": "terminal interrupted-run virtualenv",
+      "recovery": "recreate from source dependency metadata"
+    },
+    {
+      "path": "~/profitable-claude/skills/writer-agent/state/runs/daily-2026-07-30/research/srt/node_modules",
+      "expected_kib": 15616,
+      "reason": "terminal run dependency install",
+      "recovery": "reinstall from adjacent lockfile"
+    },
+    {
+      "path": "~/profitable-claude/skills/writer-agent/state/interrupted-generation/daily-2026-07-25/attempt-8/research-sources/ext-apps/.git",
+      "expected_kib": 15800,
+      "reason": "nested research clone history; working files preserved",
+      "recovery": "reclone research source"
+    },
+    {
+      "path": "~/profitable-claude/skills/writer-agent/state/interrupted-generation/daily-2026-07-25/attempt-8/research-sources/ucp-samples/.git",
+      "expected_kib": 12000,
+      "reason": "nested research clone history; working files preserved",
+      "recovery": "reclone research source"
+    },
+    {
+      "path": "~/profitable-claude/skills/writer-agent/state/runs/daily-2026-07-30/research/bin/pipelock",
+      "expected_bytes": 33942834,
+      "reason": "downloaded reproducible binary",
+      "recovery": "restore from adjacent release archive or redownload"
+    },
+    {
+      "path": "~/profitable-claude/skills/writer-agent/state/runs/daily-2026-07-30/research/release/pipelock_3.2.0_darwin_arm64.tar.gz",
+      "expected_bytes": 13349080,
+      "reason": "downloaded reproducible archive",
+      "recovery": "redownload upstream release"
+    }
   ],
   "reclaimed_bytes": 0
 }
