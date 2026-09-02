@@ -5,7 +5,7 @@ owner: Dais / Life Manager
 created: 2026-08-01 JST
 updated: 2026-09-02 JST
 scope: Upwork終端処理、公開context収束、汎用Life Manager kernel、既存5段階の各organ
-active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_LOCAL_ACCEPTANCE
+active_execution_surface: SELF_OWNED_LIFE_MANAGER_LOCAL_FIRST_CLOUD_AFTER_RECEIPT_CHAIN
 
 ## 0. この文書の権限
 
@@ -21,6 +21,48 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 2. この専用仕様書
 3. `2026-07-30-outbound-apply-engine-design.md`の各pack内部順序
 4. その他の全体・履歴仕様
+
+### 0.0.0 North Star — Life ManagerをGeneral Agentへ育てる
+
+Life Managerの目的は、marketplace専用botを大量に人手で作ることではない。利用者が自然言語でGoalを渡すと、同じGeneral Agent Coreが
+Goalを分解し、必要なloopを作り、既存Skill・Asset・Memory・Toolを組み合わせ、実行、公式確認、失敗修復、改善まで継続する。
+最初は収益という測定しやすいGoalをCoconalaとLancersで閉じる。次に同じcoreをCrowdWorks等へ広げ、最終的には仕事、健康、予定、学習、
+人間関係、資産その他の生活Goalを同じgraph上で管理する。
+
+ここでいうAGIは「何でも必ず成功する」という未検証の主張ではない。未知のGoalや環境でも、観察→計画→tool利用→公式readback→記憶→改善を
+繰り返し、専用brainを人間が毎回書かなくても新しいloopを構築できるGeneral Agentを意味する。成果は応募数、予測、自己申告ではなく、providerの
+公式receipt、健康・予定等の検証可能なoutcome、最終的には利用者が承認したGoalの実現で測る。consumerを入口にし、同じtenant-isolated coreを
+将来enterprise等へ展開するが、権限、法令、provider規約、安全、資金risk、privacyを越えて行動しない。
+
+理想構造は次の一方向である。
+
+```text
+life-manager/
+├── runtime/
+│   ├── agent-core/          # Goal分解、graph、reflection、loop生成
+│   ├── loop/                # cadence、lease、checkpoint、single-writer
+│   └── agent-runner/        # model実行の共通境界
+├── skills/
+│   ├── _shared/
+│   │   ├── marketplace-core/  # receipt、ledger、effect fence、Telegram、共通policy
+│   │   ├── assets/             # resume、portfolio、proposal、delivery templates
+│   │   └── browser/            # 認証済みbrowserの共通tool境界
+│   ├── earn/
+│   │   ├── gig/               # 複数marketで実証済みのGig Money Loop recipe
+│   │   ├── coconala/          # 薄いobserve/submit/readback adapter
+│   │   ├── lancers/           # 薄いobserve/submit/readback adapter
+│   │   ├── crowdworks/         # 同上
+│   │   └── freelancer/         # 同上
+│   └── life/                   # health、calendar、learning等の再利用Skill
+├── config/
+│   └── loop-registry.json      # owner、cadence、entrypointの宣言
+├── state/                      # repo外tenant-private Memory/Ledger/receipt/checkpoint
+└── docs/                       # Goal、spec、実証済みrecipe、運用記録
+```
+
+provider adapterは画面/API/receipt形式の差だけを持つ。案件選択、proposal、交渉、制作方法、次に作るloopというsemantic judgmentはshared core＋modelが
+担う。安定して決定できるeffect、dedupe、金額計算、lease、checkpoint、official readbackはworkflow/toolへ固定する。新市場展開はfolder copyではなく、
+shared coreへ薄いadapterと実receiptを追加し、成功方法だけをSkillへ戻す。
 
 ### 0.0 current cursor — Lancers収益を止めずGeneral Agentへ収束する
 
