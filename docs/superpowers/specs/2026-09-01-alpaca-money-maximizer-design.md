@@ -470,7 +470,7 @@ drawdown, and reconciliation health. Existing positions without a readable openi
 for aggregate maximum loss `$279`; typecheck, build, three focused suites (`5/5` tests), and `git diff --check`
 pass. This is still research-only and adds no broker effect. Read-only process and reflog evidence shows the
 running Eliza PID loaded separate-branch commit `41da4d035caead82534751ebed4c68db7030ad3f` at startup. Its checkout
-later advanced without a process restart to `4a7c839fa446e662ffb3ce6d222975ea43e802ac`; neither commit contains
+later advanced without a process restart to `02f8acf2ffcdee075adb45ebd830b885d7f9291e`; neither commit contains
 the spot-effect merge `951b02dfb0a3aab2464d943c5f5ff2190cae94f4`. Main-derived natural-wake evidence therefore remains pending;
 source checks and a changed checkout are not presented as runtime deployment proof.
 
