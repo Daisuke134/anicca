@@ -279,6 +279,19 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    `openai-symphony`は未追跡の唯一workflow 4 KiB、`ugig-nightcell7`はdirty deletionとunmerged remote branchを
    持つため保持する。
 
+   host sweep内部errorをtop-level成功としていた判定はPR #3885 / merge `64a9a1c5`で、host errors 0かつ
+   protected deletion 0だけを成功とするよう修正した。同SHAのsparse release `20260902T095123-64a9a1c5`を
+   canonical labelへ適用し、RunAtLoadと次の5分wakeは連続PASS、last exit 0、host/release errors 0、
+   protected deletion 0、release SHA一致だった。初回は1,799,012,139 bytes、次wakeは1,949,902 bytesを回収した。
+
+   さらにclean・remote HEAD包含・worktree 1・current config/process/plist参照0のexternal research/tool clone 12件
+   （`.fugu`、SkillOpt、sutando、attendee、browser-harness、marketingskills、openclawnch、Conway research、
+   awesome-x402、substack、nano-banana-2、botcoin-miner-skill）を回収し、実free +267,636 KiB。続けて同条件の
+   `.anicca-genesis/runtime`、`.anicca/memory-sync`、`blockrun-cli`、`anicca-alarm`を回収し、+85,436 KiB。
+   合計18 cloneは次wake後も再生成0。`profitable-claude`約2.20 GBはdirty 6・untracked 1・worktree 5・収益plist参照、
+   `.automaton`はdirty 6,222・plist参照、`.agents`はactive shared skill SSOTのため保持する。その他dirty/untracked、
+   OpenClaw、Hermes、Gig、Codex/Claude、MoneyPrinter、不可侵storeは各後続atomまたは明示保護へ残す。
+
    追加のread-only owner照合後、未使用`/Applications/Chat On Steroids.app`を391,668 KiB、旧Codex package
    `0.151.0`と未使用plugin app-serverを合計570,048 KiB、重複pipx環境`camoufox`と`crawl4ai`を合計
    1,006,880 KiB回収した。active Codex/ChatGPT sessionと`~/.venvs/crawl4ai`の`crwl`は回収後も生存し、
