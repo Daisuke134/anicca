@@ -395,6 +395,15 @@ reuse an existing Life Manager helper or cut scope back to the acceptance path.
 | R14 | Prove the released product runs continuously | Through the staged safe launchd lifecycle, apply exactly the single Alpaca label, then observe at least two consecutive natural five-minute wakes with receipts, official broker reconciliation, and Telegram `messageId`s. Confirm restart/state continuity, duplicate replay adds zero orders, other loops remain unaffected, and the public/logged-out redacted projection reads the same state. Only actual market opportunity may produce profit; `NO_TRADE` is valid operation but does not satisfy positive-P&L ambition. |
 | R15 | Build presentation assets and submit | Only after R14 product evidence exists, update the full README and one-page write-up, then create PDF slides, 16:9 cover, and a ≤4-minute screen-recorded pitch from the same facts. Fill every official field, verify public repository/demo/video/slides logged out, include the private account ID only in the form, submit before the deadline, read back submitted state, and remove the merged worktree. |
 
+R13 is **ACTIVE** at PR [#4048](https://github.com/Daisuke134/life-manager/pull/4048). Candidate
+`58cfbaa3c` includes the tenth user-facing README catalog row, paper-only setup/run/status guidance, the latest
+`origin/main`, and the portable Telegram path that reads only the Life Manager private environment. Real
+post-change pass `48674` remained `NO_TRADE`, positions zero and broker orders two. Registry tests are 15/15;
+the PR's Loop control contracts, Python syntax/unittest, startup-context and shell checks pass. Merge remains
+correctly withheld because the shared base currently fails repo-wide OSS self-contained, PII-shape and gitleaks
+gates in files outside this loop. Those sibling files are not modified from the Alpaca branch; integrate only
+after their main-owned fixes arrive and the refreshed merge result is green.
+
 ### Explicit non-goals before submission
 
 - no Eliza dependency, fork, runtime, plugin, task database, scheduler or production checkout;
