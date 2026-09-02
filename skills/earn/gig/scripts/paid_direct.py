@@ -3858,6 +3858,7 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
     )
     verifier_contract = (
         "Write version=1 remote-verifier-result.json under PROJECT_ROOT/evidence/agent-PAID_REMOTE_VERIFY/. "
+        "Once the required official checks are sufficient to decide PASS or BLOCKED, write that result immediately before any optional exploration; do not exhaustively inspect unrelated historical attachments or messages. "
         "On PASS write verified=true with matching feedback, target, desired/observed digest, canonical observed_state, "
         "requirements_sha256, message_sha256, customer_attachment, and fresh verifier evidence, then return runner status=ok. "
         "PASS is forbidden merely because one target state matches. Independently prove the complete required_effect and "
