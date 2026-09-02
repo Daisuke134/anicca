@@ -592,6 +592,11 @@ Hermes plistのPATHに残るため固定順序⑧まで保持し、現行`/opt/h
 read backした。`.maestro`は867,024→352,648 KiB、Data空き`38,371,072 KiB`（約36.6 GiB）、
 errors 0、protected deletion 0である。
 
+`~/.agent-browser` 698,524 KiBはChrome for Testing 148.0.7778.97と148.0.7778.178の2versionを保持していた。
+rootおよび旧versionはprocess 0、open handle 0だったため、旧`.97`だけ349,004 KiBを回収した。新版`.178`、
+全engine/socket、`auth`、`.encryption-key`は保持をread backした。`.agent-browser`は698,524→349,520 KiB、
+Data空き`38,838,572 KiB`（約37.0 GiB）、errors 0、protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
