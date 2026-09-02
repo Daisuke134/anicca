@@ -264,10 +264,13 @@ def submit_order(
         args = ["order", "submit", "--quiet", "--symbol", order["symbol"],
                 "--notional", order["notional_usd"], "--side", "buy", "--type", "market",
                 "--time-in-force", "gtc", "--client-order-id", client_order_id]
-    elif order.get("asset_class") == "option_spread":
+    elif order.get("asset_class") in {"option_spread", "option_spread_close"}:
+        closing = order["asset_class"] == "option_spread_close"
         legs = json.dumps([
-            {"symbol": order["long_symbol"], "ratio_qty": "1", "position_intent": "buy_to_open"},
-            {"symbol": order["short_symbol"], "ratio_qty": "1", "position_intent": "sell_to_open"},
+            {"symbol": order["long_symbol"], "ratio_qty": "1",
+             "position_intent": "sell_to_close" if closing else "buy_to_open"},
+            {"symbol": order["short_symbol"], "ratio_qty": "1",
+             "position_intent": "buy_to_close" if closing else "sell_to_open"},
         ], separators=(",", ":"))
         args = ["order", "submit", "--quiet", "--order-class", "mleg", "--qty", "1",
                 "--type", "limit", "--limit-price", order["limit_price"],

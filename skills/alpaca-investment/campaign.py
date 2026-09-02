@@ -75,3 +75,19 @@ def reconcile(snapshot: dict[str, Any]) -> dict[str, Any]:
     if status == "CLOSED":
         result["realized_pnl_usd"] = result["entry_cash_flow_usd"]
     return result
+
+
+def exit_order(campaign: dict[str, Any]) -> dict[str, Any]:
+    if campaign.get("exit_status") != "EXIT_READY":
+        raise ValueError("campaign_exit_not_ready")
+    credit = _number(campaign.get("exit_credit_usd"))
+    if credit <= 0:
+        raise ValueError("campaign_exit_credit_invalid")
+    return {
+        "asset_class": "option_spread_close",
+        "limit_price": str((-credit).quantize(Decimal("0.01"))),
+        "long_symbol": BUY_SYMBOL,
+        "short_symbol": SELL_SYMBOL,
+        "time_in_force": "day",
+        "type": "limit",
+    }

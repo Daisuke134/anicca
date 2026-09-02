@@ -11,7 +11,7 @@ from pathlib import Path
 from allocator import build_candidates, choose, order_for
 from alpaca_cli import (find_order_by_client_id, observe, read_allocator_snapshot,
                         read_campaign_snapshot, submit_order)
-from campaign import SYMBOLS, reconcile
+from campaign import CANDIDATE_REF, SYMBOLS, exit_order, reconcile
 from effect_store import mark_started, reconcile_started, record_no_trade, seal
 from reporter import deliver
 
@@ -62,6 +62,33 @@ def main() -> int:
             cli_path=cli_path,
             symbols=SYMBOLS,
         ))
+        effect = "none"
+        if campaign["exit_status"] == "EXIT_READY":
+            exit_decision = {
+                "candidate_ref": CANDIDATE_REF,
+                "gate": "campaign_exit_ready",
+                "paper": True,
+                "reason": "sealed_campaign_regular_session_positive_credit",
+            }
+            exit_order_path = state / "campaign-exit-order.json"
+            if exit_order_path.is_file():
+                order = json.loads(exit_order_path.read_text(encoding="utf-8"))
+            else:
+                order = exit_order(campaign)
+                _atomic_json(exit_order_path, order)
+            sealed = seal(state / "receipts.jsonl", exit_decision, order)
+            mark_started(state / "receipts.jsonl", sealed)
+            submit_order(credentials_path=credentials_path, cli_path=cli_path,
+                         client_order_id=sealed["client_order_id"], order=order)
+            reconcile_started(
+                state / "receipts.jsonl",
+                lambda value: find_order_by_client_id(
+                    credentials_path=credentials_path, cli_path=cli_path, client_order_id=value),
+            )
+            effect = sealed["effect_id"]
+            observation = observe(credentials_path=credentials_path, cli_path=cli_path)
+            campaign = reconcile(read_campaign_snapshot(
+                credentials_path=credentials_path, cli_path=cli_path, symbols=SYMBOLS))
         allocator_snapshot = read_allocator_snapshot(
             credentials_path=credentials_path, cli_path=cli_path)
         candidates = build_candidates(allocator_snapshot)
@@ -70,7 +97,9 @@ def main() -> int:
             Path(__file__).resolve().parents[2] / "runtime/agent-runner/agent_runner.py",
             Path(__file__).resolve().parents[2],
         )
-        effect = "none"
+        if effect != "none" and decision["approved"]:
+            decision["approved"] = False
+            decision["gate"] = "campaign_exit_used_effect_limit"
         if decision["approved"]:
             order = order_for(decision)
             sealed = seal(state / "receipts.jsonl", decision, order)
