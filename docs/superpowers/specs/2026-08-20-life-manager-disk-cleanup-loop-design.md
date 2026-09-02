@@ -586,6 +586,12 @@ Mercor profileの`Cookies`、`Login Data`、`Local Storage`、`IndexedDB`、`Ses
 profileは886,628→165,096 KiB、Data空き`38,014,420 KiB`（約36.3 GiB）、errors 0、
 protected deletion 0である。
 
+`~/.maestro` 867,024 KiBは50件の完了test outputが514,376 KiBを占め、全件7日超、open handle 0、
+active process 0、外部caller 0だったため`tests/`だけを回収した。`~/.maestro/lib` 351,968 KiBと旧CLI 2.6.0は
+Hermes plistのPATHに残るため固定順序⑧まで保持し、現行`/opt/homebrew/bin/maestro`がHomebrew 2.8.0を指すことを
+read backした。`.maestro`は867,024→352,648 KiB、Data空き`38,371,072 KiB`（約36.6 GiB）、
+errors 0、protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
