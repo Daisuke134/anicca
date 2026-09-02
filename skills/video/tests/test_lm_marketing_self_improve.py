@@ -159,3 +159,51 @@ class SelfImproveTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SinglePlatformDayOneTests(unittest.TestCase):
+    """9d must not wait on a second platform.
+
+    Requiring the same creative on BOTH Instagram and TikTok made day one unreachable the moment one
+    account was unavailable — which is exactly what happened when Instagram was suspended while TikTok
+    was live. One platform delivering is a real day of data, so the streak starts from it.
+    """
+
+    def rows(self, *platforms):
+        return [
+            {
+                "platform": platform,
+                "creative_id": "A01",
+                "video_sha256": "v" * 64,
+                "caption_sha256": "c" * 64,
+                "status": "published",
+                "public_url": (
+                    "https://www.tiktok.com/@anicca_buddha/video/7666359498763750676"
+                    if platform == "tiktok"
+                    else "https://www.instagram.com/reel/DbKkdfjsaTZ/"
+                ),
+            }
+            for platform in platforms
+        ]
+
+    def test_tiktok_alone_is_enough_to_start(self):
+        selected = self_improve.select_latest_delivery(self.rows("tiktok"))
+        self.assertEqual([row["platform"] for row in selected], ["tiktok"])
+
+    def test_instagram_alone_is_enough_to_start(self):
+        selected = self_improve.select_latest_delivery(self.rows("instagram"))
+        self.assertEqual([row["platform"] for row in selected], ["instagram"])
+
+    def test_both_platforms_are_still_returned_together_when_present(self):
+        selected = self_improve.select_latest_delivery(self.rows("instagram", "tiktok"))
+        self.assertEqual({row["platform"] for row in selected}, {"instagram", "tiktok"})
+
+    def test_a_run_with_no_real_delivery_still_refuses(self):
+        with self.assertRaises(self_improve.SelfImproveError):
+            self_improve.select_latest_delivery([])
+
+    def test_an_unpublished_or_fake_url_row_is_not_a_delivery(self):
+        rows = self.rows("tiktok")
+        rows[0]["public_url"] = "https://example.com/not-a-real-post"
+        with self.assertRaises(self_improve.SelfImproveError):
+            self_improve.select_latest_delivery(rows)

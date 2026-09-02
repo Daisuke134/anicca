@@ -47,6 +47,42 @@ def _valid_url(platform: str, value) -> bool:
     return False
 
 
+def _published_contracts(rows: list[dict]):
+    """Group real, published deliveries by the exact creative contract they carry."""
+    contracts: dict[tuple, dict[str, dict]] = {}
+    order: list[tuple] = []
+    for row in rows:
+        platform = row.get("platform")
+        key = (row.get("creative_id"), row.get("video_sha256"), row.get("caption_sha256"))
+        if (
+            platform in {"instagram", "tiktok"}
+            and row.get("status") == "published"
+            and all(isinstance(value, str) and value for value in key)
+            and _valid_url(platform, row.get("public_url"))
+        ):
+            if key not in contracts:
+                contracts[key] = {}
+                order.append(key)
+            contracts[key][platform] = row
+    return contracts, order
+
+
+def select_latest_delivery(rows: list[dict]) -> list[dict]:
+    """The most recent creative that actually reached the public, on whichever platforms carried it.
+
+    Day one used to require the same creative on BOTH Instagram and TikTok. That made the streak
+    unreachable the moment one account was unavailable — which is what happened when Instagram was
+    suspended while TikTok was live and publishing. One platform delivering is a real day of data, so
+    the run starts from it and picks up the second platform later without restarting the count.
+    """
+    contracts, order = _published_contracts(rows)
+    for key in reversed(order):
+        delivered = contracts[key]
+        if delivered:
+            return [delivered[platform] for platform in ("instagram", "tiktok") if platform in delivered]
+    raise SelfImproveError("no real published distribution to measure")
+
+
 def select_latest_pair(rows: list[dict]) -> list[dict]:
     contracts: dict[tuple, dict[str, dict]] = {}
     order: list[tuple] = []
@@ -131,7 +167,7 @@ def record_day(
     if same_day:
         return same_day[-1]
 
-    pair = select_latest_pair(distribution_rows)
+    pair = select_latest_delivery(distribution_rows)
     contract = pair[0]
     if any(
         row.get(field) != contract.get(field)
@@ -247,7 +283,7 @@ def main() -> int:
     args = parser.parse_args()
 
     distribution_rows = _read_jsonl(args.distribution_ledger)
-    pair = select_latest_pair(distribution_rows)
+    pair = select_latest_delivery(distribution_rows)
     urls = {row["platform"]: row["public_url"] for row in pair}
     metrics = {
         "instagram": collect_instagram(
