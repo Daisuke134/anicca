@@ -449,6 +449,11 @@ the retry fix), and targeted apply changed only `ai.anicca.alpaca-investment` wi
 `e8d2f099b8c5ea55565c5f5c`. `launchctl-safe print` confirms the new immutable arguments, `run interval = 300
 seconds`, `runs = 0`, and `last exit code = (never exited)`. No live endpoint or funded account is enabled.
 
+The first natural wake on `6dd27927` started at `2026-09-02T16:48:28Z` and passed at `2026-09-02T16:50:53Z`:
+agent-runner `rc=0` with schema-valid `NO_TRADE`, loop exit code `0`, effect `none`, positions `0`, broker orders
+`2`, paper equity/cash `$99,996.83`, realised P&L `-$3.00`, unrealised P&L `$0.00`, and Telegram provider
+`messageId=48812`. The next executable atom is one more successful natural five-minute wake on this same release.
+
 ### Explicit non-goals before submission
 
 - no Eliza dependency, fork, runtime, plugin, task database, scheduler or production checkout;
@@ -1099,12 +1104,13 @@ require investment management registration. Customer beta stays paper-only until
 ## 8. Scope target for the next implementation atom
 
 The active atom remains R14. Its first f68 release had one success followed by transient pre-effect failures, as
-recorded above; the retry fix is now installed in the new `6dd27927` release and the targeted apply reset the job to
-`runs = 0`. Read back two successful natural five-minute wakes in succession from this new release, then prove
-unchanged state on identical replay. If the gate selects an eligible paper candidate, reconcile at most one official
-CLI effect; if it selects `NO_TRADE` or vetoes, retain that real result without manufacturing a trade. Do not
-manually fire, add a scheduler, restart macOS/loginwindow/app-server, or touch the Eliza migration runtime. A12–A15
-artifacts remain ordered after this product proof and must reuse its frozen redacted projection.
+recorded above; the retry fix is now installed in the new `6dd27927` release and its first natural wake passed
+(`messageId=48812`, exit code `0`). Read back one more successful natural five-minute wake on this same release so
+the two wakes form the required consecutive pair, then prove unchanged state on identical replay. If the gate selects
+an eligible paper candidate, reconcile at most one official CLI effect; if it selects `NO_TRADE` or vetoes, retain
+that real result without manufacturing a trade. Do not manually fire, add a scheduler, restart macOS/loginwindow/
+app-server, or touch the Eliza migration runtime. A12–A15 artifacts remain ordered after this product proof and
+must reuse its frozen redacted projection.
 
 ## 9. Controlling references
 
