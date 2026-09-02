@@ -350,6 +350,19 @@
       "retained_browser_backup_dates": 7,
       "current_claude_projects_present_after": true,
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1d-browser-owner-conflict-7",
+      "retired_pid": 419,
+      "retired_process": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "retired_listener": "127.0.0.1:9222",
+      "job_search_pid_after": 1139,
+      "job_search_listener_after": "[::1]:9222",
+      "job_search_json_version_readback": true,
+      "google_chrome_process_present_after": false,
+      "revenue_loops_stopped": 0,
+      "protected_deletions": 0,
+      "note": "The duplicate IPv4 owner is gone. Existing 127.0.0.1 consumers cannot reach the surviving IPv6-only listener; this is recorded rather than hidden or repaired by a prohibited Remote GUI-domain restart."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

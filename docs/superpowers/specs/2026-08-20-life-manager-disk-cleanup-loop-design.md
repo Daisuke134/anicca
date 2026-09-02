@@ -151,7 +151,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
           - [x] P1d-3c-2b-3: CrowdWorks browserを64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `14,120,576`→`14,530,684 KiB`、`:9228` listenerとChromium PID 11155継続、cache残り0、source compile PASS
           - [x] P1d-3c-2b-4: affiliate 3 browserをprofile別の64/32 MiB上限profile外cacheへ変更し、既存cache `1,677,768 KiB`→`772 KiB`を回収。Data free `14,536,032`→`16,231,796 KiB`、Chromium PID 2524/4223/4226継続、focused test 7/7 PASS
           - [x] P1d-3c-2b-5: X repostが旧`~/anicca` launcherでなくmain releaseの`ensure_provision_browser.sh`→`cdp_persistent_context.py`を使うよう正規化し、既存2 profile cache `2,365,180 KiB`→`712 KiB`を回収。Data free `15,184,256`→`18,614,184 KiB`、旧owner/Chromium PID 23635/23655/48114/48142継続、focused test 12/12 PASS。次回自然起動からmain finalizer/cache上限を使用する
-        - [ ] P1d-3c-2c: IPv4 `:9222`を占有する不要Google Chrome ownerをretireし、Job Search endpoint競合を0にする
+        - [x] P1d-3c-2c: IPv4 `:9222`を占有していた不要Google Chrome PID 419だけをSIGTERMで正常終了し、二重owner競合を0にした。Job Search Chromium PID 1139とIPv6 `[::1]:9222` CDPは継続し、`/json/version` readback PASS。Google Chrome open Life Manager path 0、収益loop停止0。既存consumerの`127.0.0.1`指定はIPv6 listenerへ届かないため、owner再起動を伴わない別atomとして閉じる
+        - [ ] P1d-3c-2d: 残るdaily-driver、TikTok、Buyma browser ownerの終了契約・profile内cache・main callerを実測し、未実装ownerを0にする
       - [ ] P1d-3c-3: process/RSS/swapの再増加停止とnormal free 30 GiB以上をreadbackする
 
 #### P4 execution ledger
