@@ -1064,6 +1064,28 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Node@22 and Python@3.12 are not garbage despite no current process; explicit runtime callers remain. Only ggml 0.18 is an unreferenced 3.3 MiB old version, but brew linkage/cleanup must prove safe removal first."
+    },
+    {
+      "batch": "p1d-reelclaw-canonical-assets-audit-44",
+      "path": "~/.openclaw/workspace/reelclaw-assets/videos",
+      "measured_kib": 166864,
+      "file_count": 23,
+      "older_than_30d_files": 23,
+      "enabled_cron_count": 11,
+      "owner_scripts": ["run-card-en.sh", "run-card-ja.sh", "run-widget-en.sh", "run-widget-ja.sh", "run-honne-en.sh", "run-honne-ja.sh"],
+      "duplicate_aliases": {
+        "sha256": "7e24db967bf76398ff00e4784abe82e48c7c06095f52adbf7461bc65bdaa9ae9",
+        "paths": ["card-en/v1.mp4", "card-ja/v1.mp4", "widget-ja/v1.mp4"],
+        "bytes_each": 5138568,
+        "extra_logical_bytes": 10277136
+      },
+      "open_handle_rows": 0,
+      "decision": "preserve_canonical_rotating_assets_defer_alias_dedup",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "All paths are selected by enabled reelclaw cron rotation and README canonical contract. Age alone is not terminal; remove/alias only after family-path compatibility and publication/readback proof."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
