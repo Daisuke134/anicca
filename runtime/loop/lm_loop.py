@@ -262,6 +262,18 @@ def _apply_lock(current: Path, lock_path: Path | None):
             os.close(lock_fd)
 
 
+def _label_apply_lock_path(current: Path, label: str,
+                           lock_path: Path | None = None) -> Path:
+    base = Path(lock_path).expanduser() if lock_path else current.parent / ".apply-locks"
+    return (base / f"{label}.lock" if lock_path is None else
+            base.with_name(f"{base.name}.{label}.lock"))
+
+
+def _service_is_running(detail: str) -> bool:
+    return bool(re.search(r"\bstate\s*=\s*running\b|\bpid\s*=\s*[1-9][0-9]*\b",
+                          detail))
+
+
 def activate_current(current: Path, release_root: Path,
                      lock_path: Path | None = None) -> None:
     current = Path(current).expanduser()
@@ -284,6 +296,7 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                target: str | None = None, *, current: Path | None = None,
                lock_path: Path | None = None,
                preserve_unloaded: bool = False,
+               skip_busy: bool = False,
                event_writer=append_runtime_event) -> list[dict]:
     release_root = release_root.resolve()
     current = Path(current or "~/loops/current").expanduser()
@@ -296,36 +309,47 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
         raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
     results = []
     for item in plan:
-        base = Path(lock_path).expanduser() if lock_path else current.parent / ".apply-locks"
-        item_lock = base / f"{item['label']}.lock" if not lock_path else base.with_name(
-            f"{base.name}.{item['label']}.lock")
-        with _apply_lock(current, item_lock):
-            target_path = agents_dir / f"{item['label']}.plist"
-            result = None
-            existing_bytes = target_path.read_bytes() if target_path.is_file() else None
-            desired_bytes = _preserve_operational_attributes(
-                item["plist_bytes"], existing_bytes)
-            if existing_bytes is not None and existing_bytes == desired_bytes:
-                rc, printed = _safe_launchctl(
-                    launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
-                from runtime.loop.lm_loop_apply import _loaded_arguments
-                loaded = _loaded_arguments(printed) if rc == 0 else []
-                if loaded == item["expected_arguments"]:
-                    result = {"ok": True, "label": item["label"],
-                              "loaded_arguments": loaded, "release_sha": release_sha,
-                              "changed": False}
-            if result is None:
-                result = install_one(
-                    item, target_path, lambda args: _safe_launchctl(launchctl_safe, args),
-                    preserve_unloaded=preserve_unloaded)
-                result["changed"] = True
-            entry = registry["loops"][item["loop_id"]]
-            event = build_install_event(
-                loop_id=item["loop_id"], domain=entry["domain"], release_sha=release_sha,
-                provider=entry["provider_route"], effect_class=entry["effect_class"])
-            event_writer(Path(os.path.expanduser(entry["state_root"])) / "events.jsonl", event)
-            result["install_event_id"] = event["event_id"]
-            results.append(result)
+        item_lock = _label_apply_lock_path(current, item["label"], lock_path)
+        try:
+            with _apply_lock(current, item_lock):
+                target_path = agents_dir / f"{item['label']}.plist"
+                result = None
+                existing_bytes = target_path.read_bytes() if target_path.is_file() else None
+                desired_bytes = _preserve_operational_attributes(
+                    item["plist_bytes"], existing_bytes)
+                if existing_bytes is not None and existing_bytes == desired_bytes:
+                    rc, printed = _safe_launchctl(
+                        launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
+                    from runtime.loop.lm_loop_apply import _loaded_arguments
+                    loaded = _loaded_arguments(printed) if rc == 0 else []
+                    if loaded == item["expected_arguments"]:
+                        result = {"ok": True, "label": item["label"],
+                                  "loaded_arguments": loaded, "release_sha": release_sha,
+                                  "changed": False}
+                if result is None:
+                    result = install_one(
+                        item, target_path, lambda args: _safe_launchctl(launchctl_safe, args),
+                        preserve_unloaded=preserve_unloaded)
+                    result["changed"] = True
+                entry = registry["loops"][item["loop_id"]]
+                event = build_install_event(
+                    loop_id=item["loop_id"], domain=entry["domain"], release_sha=release_sha,
+                    provider=entry["provider_route"], effect_class=entry["effect_class"])
+                event_writer(Path(os.path.expanduser(entry["state_root"])) / "events.jsonl", event)
+                result["install_event_id"] = event["event_id"]
+                results.append(result)
+        except RuntimeError as exc:
+            if not (skip_busy and str(exc) == "production apply is already owned"):
+                raise
+            rc, printed = _safe_launchctl(
+                launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
+            if rc != 0 or not _service_is_running(printed):
+                raise
+            from runtime.loop.lm_loop_apply import _loaded_arguments
+            loaded_arguments = _loaded_arguments(printed)
+            results.append({"ok": True, "label": item["label"], "loaded": True,
+                            "loaded_arguments": loaded_arguments, "release_sha": release_sha,
+                            "changed": False, "skipped": "loaded-running"})
     return results
 
 
@@ -380,7 +404,8 @@ def main(argv: list[str] | None = None) -> int:
                     release_root, Path("~/Library/LaunchAgents").expanduser(),
                     release_root / "bin/launchctl-safe",
                     target=row["loop_id"],
-                    preserve_unloaded=row["launchd_state"] == "unloaded"))
+                    preserve_unloaded=row["launchd_state"] == "unloaded",
+                    skip_busy=loaded_idle_only))
             except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
                 failed.append({"loop_id": row["loop_id"], "error": str(exc)})
         print(json.dumps({
