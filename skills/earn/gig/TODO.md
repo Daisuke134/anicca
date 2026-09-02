@@ -142,6 +142,19 @@ completion claim is nevertheless false until the two failing lanes below pass na
   are the separate estimate flow `18223833` and `18218780`. The recorded effect was not delivery of
   `18223833`.
 
+  A newer four-lane read-only snapshot disproves completion. The installed plists still split across
+  releases: Apply, Reply detector, and Storefront use `20260902T085615-e9d59c32`, while Paid uses
+  `20260902T140524-8f956147`. All four processes existed concurrently, so there is no global
+  cross-lane scheduling wait, but none supplied the required four-owner terminal PASS set. Reply's
+  same keep-alive process had remained active for about 3 hours 39 minutes and its newest detector
+  artifact was only `status=busy`; it had produced no newer terminal receipt since 13:07 JST. Apply
+  first produced a clean `observed=80/failed=0` pass, then its newer pass failed closed with
+  `operator_brake_check_failed`, `observed=0`, and `failed=1`. Paid's newer published terminal
+  receipt superseded the nine-item pass and failed at `orders_observation` with
+  `observed=0/effect=0/readback=0/failed=1`; its Telegram report also returned `DatabaseError`.
+  Storefront was still running for about seven minutes without a terminal receipt. Concurrent
+  process presence proves parallelism, not health or completion.
+
   Disk cleanup is alive but cannot reclaim installed/running immutable releases. Natural cleanup
   passes remained `ok=true` with errors/protected deletions `0/0`, and one pass reclaimed about
   2.26 GB. Paid terminal reconciliation wrote a hash-bound receipt for completed project `5167108`;
@@ -153,7 +166,7 @@ completion claim is nevertheless false until the two failing lanes below pass na
   contract; only terminal `work/` and explicitly authorized byte-identical artifact duplicates are
   deleted.
 
-  Current disk readback is 26 GiB free. The dominant retained roots are `~/loops/releases` at about
+  Current disk readback is 24 GiB free. The dominant retained roots are `~/loops/releases` at about
   7.26 GiB and `~/gig/projects` at about 4.63 GiB, not video. Nine immutable release directories
   remain; six full releases are about 1.19 GiB each because different installed owners still pin
   `f5b3f345`, `58a71295`, `5a9c95fa`, `e9d59c32`, `29fb7681`, or `8f956147`. Central cleanup must
@@ -161,7 +174,7 @@ completion claim is nevertheless false until the two failing lanes below pass na
   has zero MP4/MOV/M4V/WebM files; the recoverable Trash video bundle remains about 1.1 GiB.
 
   Remaining C02 atoms, in order:
-  1. Approve and implement one independent short-cadence release reconciler that updates only
+  1. Implement one independent short-cadence release reconciler that updates only
      `loaded-idle` owners from a complete pushed-main immutable release. It must not run the daily
      development/D0 workload, interrupt a running lane, or require a Remote session to invoke
      `launchctl`, `lm-loop apply/start/stop/restart`, `gui/$UID`, app-server signals, or a restart.
@@ -172,9 +185,11 @@ completion claim is nevertheless false until the two failing lanes below pass na
      JPY 24,000 estimate once, and require official estimate readback plus replay effect zero. Then
      let Paid resume project `5242505` from the newer official event without repeating the first
      project's delivery or any prior message.
-  4. Restore the transferred `18180857` observe-only gate, resolve the `18128025` targeted-readback
-     timeout and `18218780` pending state, then require Paid `last exit code = 0`, terminal
-     `status=pass`, `failed=0`, and replay effect `0`.
+  4. Restore the transferred `18180857` observe-only gate; resolve Apply's
+     `operator_brake_check_failed`, Paid's `orders_observation` failure, the `18128025`
+     targeted-readback timeout, and `18218780` pending state; require Storefront to terminate with a
+     current receipt. Then require every affected lane `last exit code = 0`, terminal `status=pass`,
+     `failed=0`, and replay effect `0`.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
   6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
