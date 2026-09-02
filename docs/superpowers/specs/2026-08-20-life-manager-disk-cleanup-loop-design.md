@@ -295,6 +295,14 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
       terminal authorityとして不十分である。A-24ではexact regular non-symlink `project-terminal.json`へauthorityを
       一本化し、active/unknown/formally-delivered-onlyでは削除authority 0を維持する。現時点で正式terminal receiptは
       0件なので、このatomのowner cleanupによるlive deletionは0である。
+
+      terminal authorityのlocal修正では、official provider readbackが両stateの`取引完了`を観測した時だけ、
+      current `state.json`とprovider snapshotのSHA-256へbindしたmode `0600`のexact receiptを書く。janitorは
+      receiptの全fieldとcurrent state hashが一致する時だけ`work/`を回収し、唯一原本になり得る`source/`を
+      cleanup対象から除外する。隔離fixtureは正規receiptでwork 12 bytes回収/source保持、stateを取引中へ変更後は
+      stale receiptとしてcleaned 0/errors 0だった。live dataへのdry-runは35 scanned/35 skipped/cleaned 0/
+      errors 0/bytes 0である。main由来immutable release、自然paid wake、terminal receipt、次wake janitorの
+      production readbackまでは未完了なのでitem 8はcurrentのまま維持する。
    9. Codex/Claude sessionを保持しながら終了済みlog/archiveをbounded rotationへ接続する。
    10. `/private/var/folders`とLibrary cacheはopen-path/owner proof後の再生成可能familyだけを回収する。
    11. free 11 GiB以上、24時間ENOSPC 0/protected deletion 0を証明し、その後7日間のstate-write failure 0、
