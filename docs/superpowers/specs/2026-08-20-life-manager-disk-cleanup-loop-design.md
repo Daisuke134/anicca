@@ -82,8 +82,8 @@ source/spec/Git変更、隔離test、read-only production観測、host-wide buil
 - [x] 3-5b: active Sparkle Updaterを保護し、terminal後のexact staged generationを回収するsource fixをmainへ統合する。
 - [x] 3-5c: host-wide build lockとmain SHAをreadbackし、同SHAからimmutable releaseを一世代作成して内容を検証する。
 - [ ] 3-5d: 正規GUI/deployment ownerがproduction pinをそのreleaseへ反映し、loaded argvとrelease SHAをreadbackする。
-- [ ] 3-5e: Updater terminal、新ChatGPT version、Sparkle `Installation`約1.9 GiB回収、次wakeの`errors=0`、
-  `protected_deletions=0`を実測する。
+- [ ] 3-5e: [x] Updater terminal、[x] Sparkle `Installation`約1.9 GiB回収、[ ] 新ChatGPT version、
+  [ ] 次wakeの`errors=0`、`protected_deletions=0`を実測する。
 
 3-5cの実測releaseは`~/loops/releases/20260902T162519-eb068f0c`、exact SHA
 `eb068f0c8363381f380867ef1a94df378cd5234e`、provenance=`ancestor-of-origin-main`、size `1,251,424 KiB`である。
@@ -91,6 +91,17 @@ source/spec/Git変更、隔離test、read-only production観測、host-wide buil
 `launchctl`とplist reloadは0回である。production plistは引き続き旧`64a9a1c5...`をpinするため、3-5dは未完のままにする。
 作成直後のData空きは`25,853,440 KiB`、Sparkle Installationは`1,985,752 KiB`、Updater PID 8768はactive、
 installed ChatGPTは`26.820.60940 (7119)`である。
+
+Sparkle専用Autoupdate PID 8767とUpdater PID 8768は3時間18分sleep後もterminalせず、Installation treeへの
+open fileは0だった。ChatGPT PID 410とCodex app-server PID 648を維持したままSparkle専用2 processだけをTERMし、
+terminal readback後に再生成可能な`Installation`だけを削除した。実回収は`1,987,056 KiB`、Data空きは
+`25,238,708 KiB`から`27,225,764 KiB`へ増えた。Sparkleは同一bundleのupdate resumeを公式に許容する。
+Source: [Sparkle Bundles](https://sparkle-project.org/documentation/bundles/) — “a second updater ... resume that same update”。
+
+直後の旧production release `64a9a1c5...`による自然wake `18d17094ebcec950-31538`は、削除事故0、
+`protected_deletions=0`だが、host cleanupの1候補をfail-closed `probe-error`として保存し、
+`entrypoint_exit_1`でterminalした。receiptは`errors=1`、`preserved_reasons={open:4, probe-error:1}`、
+Data free `27,803,836,416 bytes`である。したがって3-5eを完了扱いにせず、次の自然wake PASSを要求する。
 
 ### 全Codexが守る同期ルール
 
