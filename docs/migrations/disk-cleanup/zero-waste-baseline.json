@@ -15,6 +15,12 @@
     "size-permission-partial:/private/tmp",
     "size-permission-partial:/private/var/folders"
   ],
+  "p1d_owner_classification": [
+    {"path": "~/Projects", "classification": "registered repository/worktree roots; active, locked, Eliza, Alpaca, GH-11, or previously retired by exact worktree receipt"},
+    {"path": "~/Library", "classification": "CloudDocs, active Google/Claude/Codex/Syncthing state, and macOS Knowledge/UserNotifications; cache roots measured separately"},
+    {"path": "/private/tmp", "classification": "two protected Eliza work roots, current Codex temp, registered worktrees, and sub-100 MiB diagnostics"},
+    {"path": "/private/var/folders", "classification": "open Chrome/Chromium code-sign clones plus sub-100 MiB temporary/cache children"}
+  ],
   "roots": [
     {
       "path": "~/.openclaw",

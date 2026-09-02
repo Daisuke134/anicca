@@ -123,7 +123,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
   - [x] P1c-7: `~/.cloak/state-backups`のClaude transcript full-copyだけ旧5世代を回収。Data free `11,967,840`→`18,989,956 KiB`。現行source、最新2 Claude世代、全7日分profiles/vault/creds保持、protected deletion 0
 - [ ] P1d: 全local writable volumeを再計測し、100 MiB以上のunclassified root 0、normal free 30 GiB以上をreadbackする
   - [x] P1d-1: APFS、snapshot、deleted-open file、VM/swap、process RSSを分解。snapshot/deleted-open 0、swap used `10,293.5 MiB`、Chromium 151 process / RSS `5,812,352 KiB`をmanaged browser lifecycle gapへ確定する
-  - [ ] P1d-2: `~/Projects`、`~/Library`、`/private/tmp`、`/private/var/folders`のsize timeout/permission partialをowner分類で閉じ、100 MiB以上のunclassified rootを0にする
+  - [x] P1d-2: `~/Projects`、`~/Library`、`/private/tmp`、`/private/var/folders`のsize timeout/permission partialをowner分類で閉じ、100 MiB以上のunclassified rootを0にする。Eliza/Alpaca/GH-11、active app/system state、open code-sign cloneは保護する
   - [ ] P1d-3: browser loopを停止せず、run-scoped child/context finalizerとbounded concurrencyでswap再増加を抑え、normal free 30 GiB以上をreadbackする
 
 #### P4 execution ledger
