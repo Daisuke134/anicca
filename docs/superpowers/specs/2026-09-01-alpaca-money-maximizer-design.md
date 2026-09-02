@@ -440,11 +440,14 @@ generic `alpaca_pass_failed` summary before fresh agent evidence, and created no
 pair therefore has not yet been observed. No 141 occurred; the next executable atom remains two successful
 natural wakes after these failures.
 
-The repeated pre-effect failures are handled by a minimal source fix: PR
+The repeated pre-effect failures were handled by a minimal source fix: PR
 [#4071](https://github.com/Daisuke134/life-manager/pull/4071) adds one retry of the same finite pass only before
 any order submission, while setting an `effect_attempted` fence so an unknown post-submit result is never retried.
-It merged to `origin/main` as `935f99247`; the installed plist remains on the verified f68 release until the new
-main-derived release is cut and applied. No live endpoint or funded account is enabled.
+It merged to `origin/main` as `935f99247`. A new immutable main-derived release is now
+`~/loops/current -> releases/20260903T014015-6dd27927` (SHA `6dd2792783acb99ab517b90250a32bb6c8a3fa40`, containing
+the retry fix), and targeted apply changed only `ai.anicca.alpaca-investment` with install event
+`e8d2f099b8c5ea55565c5f5c`. `launchctl-safe print` confirms the new immutable arguments, `run interval = 300
+seconds`, `runs = 0`, and `last exit code = (never exited)`. No live endpoint or funded account is enabled.
 
 ### Explicit non-goals before submission
 
@@ -1095,15 +1098,13 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-The active atom remains R14. Its release cut and targeted apply are complete as recorded above; the source retry fix
-is merged to main but not yet in the installed release. The first natural
-wake failed with exit 78, the second passed (`messageId=48773`), and the third timed out in the diagnostic provider
-(`rc=124`, then loop exit 78); the fourth also returned exit 78 before fresh agent evidence. Read back two successful
-natural five-minute wakes in succession, then prove unchanged state on identical replay. If the gate selects an
-eligible paper candidate, reconcile at most one official CLI effect; if it selects `NO_TRADE` or vetoes, retain that
-real result without manufacturing a trade. Do not manually fire, add a scheduler, restart macOS/loginwindow/
-app-server, or touch the Eliza migration runtime. A12–A15 artifacts remain ordered after this product proof and
-must reuse its frozen redacted projection.
+The active atom remains R14. Its first f68 release had one success followed by transient pre-effect failures, as
+recorded above; the retry fix is now installed in the new `6dd27927` release and the targeted apply reset the job to
+`runs = 0`. Read back two successful natural five-minute wakes in succession from this new release, then prove
+unchanged state on identical replay. If the gate selects an eligible paper candidate, reconcile at most one official
+CLI effect; if it selects `NO_TRADE` or vetoes, retain that real result without manufacturing a trade. Do not
+manually fire, add a scheduler, restart macOS/loginwindow/app-server, or touch the Eliza migration runtime. A12–A15
+artifacts remain ordered after this product proof and must reuse its frozen redacted projection.
 
 ## 9. Controlling references
 
