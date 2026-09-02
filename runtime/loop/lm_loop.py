@@ -374,7 +374,7 @@ def main(argv: list[str] | None = None) -> int:
     args = argv or sys.argv[1:]
     commands = {"apply", "doctor", "reconcile", "start", "stop", "restart", "status", "watch"}
     if not args or args[0] not in commands:
-        print("usage: lm-loop apply|doctor|reconcile <provider-route> [--loaded-idle-only]|start|stop|restart <loop-id|all>|status|watch [<loop-id|all>]", file=sys.stderr)
+        print("usage: lm-loop apply|doctor|reconcile <provider-route> [--loaded-idle-only] [--loop-id <loop-id>]...|start|stop|restart <loop-id|all>|status|watch [<loop-id|all>]", file=sys.stderr)
         return 2
     command = args[0]
     if command == "apply":
@@ -397,12 +397,29 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     registry = validate_registry(json.loads((ROOT / "config/loop-registry.json").read_text()))
     if command == "reconcile":
-        reconcile_args = [arg for arg in args[1:] if arg != "--loaded-idle-only"]
-        loaded_idle_only = "--loaded-idle-only" in args[1:]
-        if len(reconcile_args) != 1:
+        positionals, loop_ids, loaded_idle_only = [], [], False
+        reconcile_args = args[1:]
+        index = 0
+        while index < len(reconcile_args):
+            value = reconcile_args[index]
+            if value == "--loaded-idle-only":
+                loaded_idle_only = True
+            elif value == "--loop-id":
+                if index + 1 >= len(reconcile_args) or reconcile_args[index + 1].startswith("--"):
+                    print(json.dumps({"ok": False, "error": "--loop-id requires a value"}))
+                    return 2
+                loop_ids.append(reconcile_args[index + 1])
+                index += 1
+            elif value.startswith("--loop-id="):
+                loop_ids.append(value.split("=", 1)[1])
+            else:
+                positionals.append(value)
+            index += 1
+        if len(positionals) != 1:
             print(json.dumps({"ok": False, "error": "reconcile requires <provider-route>"}))
             return 2
-        route = reconcile_args[0]
+        route = positionals[0]
+        requested_ids = set(loop_ids)
         release_root = Path(os.environ.get("LIFE_MANAGER_RELEASE_ROOT", ROOT)).expanduser().resolve(strict=True)
         current_sha = json.loads((release_root / "RELEASE.json").read_text()).get("sha")
         rows = snapshot(registry, "all")
@@ -410,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
         eligible = [row for row in rows if (
             row["classification"] == "managed"
             and row["provider_route"] == route
+            and (not requested_ids or row["loop_id"] in requested_ids)
             and row["launchd_state"] in eligible_states
             and row["installed_release_sha"]
             and row["installed_release_sha"] != current_sha

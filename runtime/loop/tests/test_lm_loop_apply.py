@@ -571,6 +571,70 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(report["eligible"], 1)
         self.assertEqual(report["skipped_running"], ["running"])
 
+    def test_reconcile_loop_ids_limit_same_route_to_explicit_ids(self):
+        release = self._release("release-a").resolve()
+        value = registry()
+        for loop_id in (
+            "hf-gig-apply-direct",
+            "hf-gig-reply-detector",
+            "same-route-unrelated",
+        ):
+            value["loops"][loop_id] = {
+                **value["loops"]["example"],
+                "label": f"ai.anicca.{loop_id}",
+                "provider_route": "shared-agent-runner",
+            }
+        value["loops"]["other-route"] = {
+            **value["loops"]["example"],
+            "label": "ai.anicca.other-route",
+        }
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        rows = [
+            {
+                "classification": "managed",
+                "provider_route": route,
+                "launchd_state": "loaded-idle",
+                "installed_release_sha": "b" * 40,
+                "loop_id": loop_id,
+            }
+            for loop_id, route in (
+                ("hf-gig-apply-direct", "shared-agent-runner"),
+                ("hf-gig-reply-detector", "shared-agent-runner"),
+                ("same-route-unrelated", "shared-agent-runner"),
+                ("other-route", "deterministic"),
+            )
+        ]
+        applied = []
+
+        def record_apply(release_root, *args, **kwargs):
+            applied.append(kwargs["target"])
+            return [{"ok": True, "release_sha": SHA}]
+
+        with (
+            patch.object(lm_loop, "ROOT", release),
+            patch.object(lm_loop, "snapshot", return_value=rows),
+            patch.object(lm_loop, "apply_live", side_effect=record_apply),
+            patch.dict(os.environ, {"LIFE_MANAGER_RELEASE_ROOT": str(release)}),
+            redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(
+                lm_loop.main([
+                    "reconcile",
+                    "shared-agent-runner",
+                    "--loaded-idle-only",
+                    "--loop-id",
+                    "hf-gig-apply-direct",
+                    "--loop-id",
+                    "hf-gig-reply-detector",
+                ]),
+                0,
+            )
+
+        self.assertEqual(
+            applied,
+            ["hf-gig-apply-direct", "hf-gig-reply-detector"],
+        )
+
     def test_loaded_idle_reconcile_skips_prelock_running_owner_without_mutation(self):
         release = self._release("release-a").resolve()
         current = self.root / "current"

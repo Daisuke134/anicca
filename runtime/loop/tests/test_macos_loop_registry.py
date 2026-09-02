@@ -53,6 +53,19 @@ class MacosLoopRegistryTest(unittest.TestCase):
         })
         self.assertEqual(validate_registry(registry), registry)
 
+    def test_release_reconciler_scopes_each_route_to_the_four_gig_owners(self):
+        script = (ROOT / "bin/reconcile-agent-runner-release.sh").read_text()
+        self.assertIn(
+            "reconcile shared-agent-runner --loaded-idle-only "
+            "--loop-id hf-gig-apply-direct --loop-id hf-gig-reply-detector",
+            script,
+        )
+        self.assertIn(
+            "reconcile deterministic --loaded-idle-only "
+            "--loop-id hf-gig-storefront-direct --loop-id hf-gig-paid-direct",
+            script,
+        )
+
     def test_registry_rejects_missing_and_secret_fields(self):
         missing = {"schema_version": 2, "loops": {"example": entry()}}
         del missing["loops"]["example"]["cleanup"]
