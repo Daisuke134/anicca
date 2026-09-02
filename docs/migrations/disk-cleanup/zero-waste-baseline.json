@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "volume_free_kib_observed": 4654428,
+  "roots": [
+    {
+      "path": "~/.openclaw",
+      "measured_kib": 7884788,
+      "components": [
+        {"path": ".git", "kib": 3054404, "classification": "remote_recoverable_candidate_needs_dirty_baseline_protection", "head_remote_verified": true, "open_handles": 0},
+        {"path": "skills", "kib": 1294196, "classification": "active_source_plus_backup_candidate"},
+        {"path": "agents", "kib": 718736, "classification": "protected_sessions_owner_retention"},
+        {"path": "workspace", "kib": 691864, "classification": "mixed_active_and_regenerable"},
+        {"path": "media", "kib": 562376, "classification": "mixed_delivery_and_terminal_media"},
+        {"path": "state", "kib": 473804, "classification": "protected_state_plus_terminal_run_candidates"},
+        {"path": "browser", "kib": 321412, "classification": "protected_browser_profile"},
+        {"path": "workspace/node_modules", "kib": 138544, "classification": "regenerable_lockfile_present"},
+        {"path": "skills/.backups", "kib": 149412, "classification": "single_recent_backup_preserve_until_source_compare"}
+      ]
+    },
+    {
+      "path": "~/anicca-project",
+      "measured_kib": 4182088,
+      "components": [
+        {"path": ".git", "kib": 2280388, "classification": "protected_dirty_repo", "dirty_lines": 41},
+        {"path": ".worktrees/webmcp-money-printer", "kib": 468296, "classification": "protected_active_webmcp"},
+        {"path": "music-factory", "kib": 386484, "classification": "unique_assets_needs_owner_check"},
+        {"path": "mobile-apps", "kib": 217856, "classification": "product_sources_needs_remote_check"},
+        {"path": "apps", "kib": 180892, "classification": "product_sources_needs_remote_check"}
+      ]
+    },
+    {
+      "path": "~/profitable-claude",
+      "measured_kib": 964564,
+      "components": [
+        {"path": "skills/writer-agent/state/runs", "kib": 312440, "classification": "untracked_all_older_7d_regenerable_candidate"},
+        {"path": "skills/writer-agent/state/interrupted-generation", "kib": 256308, "classification": "untracked_all_older_7d_terminal_candidate"},
+        {"path": ".git", "kib": 178380, "classification": "protected_dirty_repo", "dirty_lines": 7},
+        {"path": ".worktrees", "kib": 76500, "classification": "needs_worktree_owner_check"}
+      ]
+    }
+  ],
+  "protected_roots": ["~/Projects/life-manager-eliza-migration"],
+  "unclassified_roots_over_100_mib": [
+    "~/.openclaw/.git",
+    "~/.openclaw/skills",
+    "~/.openclaw/agents",
+    "~/.openclaw/workspace",
+    "~/.openclaw/media",
+    "~/.openclaw/state",
+    "~/.openclaw/browser",
+    "~/anicca-project/.git",
+    "~/anicca-project/.worktrees/webmcp-money-printer",
+    "~/anicca-project/music-factory",
+    "~/anicca-project/mobile-apps",
+    "~/anicca-project/apps",
+    "~/profitable-claude/skills/writer-agent/state/runs",
+    "~/profitable-claude/skills/writer-agent/state/interrupted-generation",
+    "~/profitable-claude/.git"
+  ],
+  "reclaimed_bytes": 0
+}

@@ -109,6 +109,13 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 10. [ ] P7 Forever verification — 24時間と続く7日間のproduction receiptをPASSにする
 11. [ ] GH-11 worktreeとcleanup branchをretireする
 
+#### P1 execution ledger
+
+- [x] P1a: `~/.openclaw`、`~/anicca-project`、`~/profitable-claude`を内部componentまで実測し、size・Git・age・tracked・open/remote evidenceを`docs/migrations/disk-cleanup/zero-waste-baseline.json`へ記録する
+- [ ] P1b: 100 MiB以上の各componentをactive/protected/unique/regenerable/duplicateへ確定し、exact delete manifestを作る
+- [ ] P1c: effect直前にopen/dirty/remote/rollbackを再確認し、安全な再生成物と重複物だけを回収する
+- [ ] P1d: 全local writable volumeを再計測し、100 MiB以上のunclassified root 0、normal free 30 GiB以上をreadbackする
+
 #### P4 execution ledger
 
 - [x] P4a: 500 MiB級以上の主要legacy候補とHermes stateを実測し、size、dirty、HEAD、caller、remote、blockerを`docs/migrations/disk-cleanup/legacy-retirement.json`へ記録する
