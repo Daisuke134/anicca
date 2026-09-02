@@ -2646,6 +2646,35 @@ The first active atom is now classification and canary of YouTube
 `@anicca-affirmation-video` / `cmn8ymq6c02oio70y5ea1trv8`; `@anicca-jp`
 remains owner-skipped at 0/day, and ebook/monk remain later.
 
+**Shared-memory and checkout guard:** the canonical source checkout is
+`/Users/anicca/Projects/life-manager-main`, backed by
+`Daisuke134/life-manager`; production still executes only sealed main-derived
+releases. `/Users/anicca/anicca` is an older dirty checkout of the same remote,
+not the source SSOT. It must not be deleted yet because live LaunchAgents still
+reference its marketing metrics, x402, Franklin, and self-improvement paths.
+Retirement requires an inventory, one-owner-at-a-time migration to registry
+managed main releases, preservation of dirty runtime evidence, and a final
+loaded-reference count of zero. This cleanup does not reorder the active
+marketing cursor. The Codex runtime lesson is now discoverable in repo-root
+`AGENTS.md`, durable `MEMORY.md`, and the daily memory note, in addition to the
+machine-wide generated Codex rules.
+
+**Next atomic TODO — fixed order:**
+
+1. Inspect native YouTube `@anicca-affirmation-video` pinned/recent posts and
+   freeze exactly one product, locale, renderer, form, and forbidden families.
+2. Bind only Postiz `cmn8ymq6c02oio70y5ea1trv8`; do not borrow either other
+   YouTube integration.
+3. Select or build one matching approved pack and record exact object refs.
+4. Add one default-off Life Manager destination/loop and focused contract.
+5. Run one controlled canary, then verify Postiz, native handle/content,
+   Telegram, and same-slot replay-zero.
+6. Arm exactly three daily intervals, target-only apply, official kickstart,
+   and read back plist, loaded argv, immutable release, terminal event, and
+   provider effect.
+7. Keep YouTube `@anicca-jp` owner-skipped at 0/day. Only after this YouTube
+   atom is terminal may the ebook/monk work begin.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
