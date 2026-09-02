@@ -2616,6 +2616,16 @@ classification and canary of YouTube `@anicca-affirmation-video` /
 `cmn8ymq6c02oio70y5ea1trv8`; `@anicca-jp` remains owner-skipped at 0/day, and
 ebook/monk remain later.
 
+**YouTube live cursor 5 — GUI bridge unavailable:** a target-only helper was
+prepared to run the official apply/start/status commands from Terminal, but it
+never started. AppleScript rejects Terminal's `do script` command in this
+isolated app-server, LaunchServices cannot resolve Terminal by name, and the
+absolute Terminal.app open fails before launch. The target plist remains absent
+and publication effects remain unchanged. This confirms the remaining scheduler
+atom requires an external state change: a valid logged-in GUI/Aqua execution
+context. Do not bypass `lm-loop`, hand-write the plist, run raw `launchctl`, or
+advance the next YouTube lane while this fixed-order atom is open.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
