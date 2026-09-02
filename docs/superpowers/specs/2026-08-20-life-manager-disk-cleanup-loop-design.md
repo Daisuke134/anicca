@@ -616,6 +616,10 @@ kakuteishinkokuは保持し、Archiveは304,956→223,336 KiBとなった。
 直接削除・process停止・signal・restartを行わず保持した。追加回収後のData空きは`28,731,308 KiB`
 （約27.4 GiB）、errors 0、protected deletion 0である。
 
+`~/.research` 190,212 KiBは13個の調査cloneで、repo別にdirty、HEAD remote reachability、open handleを判定した。
+clean・remote reachable・open 0の12 cloneを96,912 KiB回収し、dirtyな`clawrouter` 93,300 KiBだけを保持した。
+回収後Data空き`28,959,220 KiB`（約27.6 GiB）、errors 0、protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
