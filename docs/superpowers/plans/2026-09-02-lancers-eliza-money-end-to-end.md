@@ -9,7 +9,7 @@
 - [x] **1 — Apply経路比較:** Coconala `hf-gig-apply-direct`とLancers `lancers-revenue-application`を実call graphで比較した。Coconalaは`application_direct.py → application_parent.py → application_planner.py → application_effect_fence.py → application ledger/work_event_projector → TelegramOutbox/apply_telegram_report.py`。Lancersは`application_loop.py → agent_runner.py → application_tick.py → shared application_transaction.py → Lancers official readback → lancers telegram_report.py`。Lancersはagent runnerとapplication transactionを既に共有するが、planner contract、orchestration、effect/ledger projection、Telegram outboxを別実装する。比較中の有限runはplanner待ちで停止し、submitter到達前、external application/Telegram effect 0。
 - [x] **2 — shared inventory:** 実callerで分類した。真の共有は`runtime/agent-runner/agent_runner.py`（Coconala/Lancers）、`_shared/marketplace-core/application_transaction.py`（Lancers/CrowdWorks）、同coreの`contracts.py`・`ledger.py`・`telegram_outbox.py`（Lancers receipt/report）。部分共有は`gig/application_planner.py::common_marketplace_feasibility_policy`（Coconala/Upworkのみ）と`application_decisions.schema.json`（Coconala/Lancers）。二重実装はLancers内のfeasibility長文、Coconala用とmarketplace-core用のTelegramOutbox、application orchestration、receipt projection。provider固有discovery/submit/readbackはadapterとして保持する。
 - [x] **3 — smallest deduplication:** common feasibility本文だけを`_shared/marketplace-core/scripts/feasibility_policy.py`へ移し、Coconala/Upworkの既存公開関数は互換entrypointとして同じshared正本を返し、Lancersはshared正本を直接読む。Lancers固有snapshot・hard prohibition schema・proposal constraints・provider adapterは保持した。Coconala policy focused checkは3/3 PASS。Lancers focused suiteはimport error 23件を解消して全24件を実行し、19 PASS、残4件はこのbranchで既に導入済みの複数応募・quota撤廃・evidence緩和と旧期待値の不一致でありStep 3差分由来ではない。
-- [ ] **4 — Lancers Apply single writer（active / load待ち）:** 共有済み経路を使うLancers Apply ownerをexact 1で起動する。installed plistは`StartInterval=60`で存在するが、read-only `launchctl print`はservice absentを返し、現在のApply ownerは0。Eliza Lancers runtime、tmux、二重writerも0。このRemoteからの`gui/$UID` bootstrap/kickstartは禁止経路なので実行せず、正規の非Remote ownerによるexact 1 load後に完了する。
+- [ ] **4 — Lancers Apply single writer（active / load待ち）:** 共有済み経路を使うLancers Apply ownerをexact 1で起動する。installed plistは`StartInterval=60`で存在するが、read-only `launchctl print`はservice absentを返し、現在のApply ownerは0。Eliza Lancers runtime、tmux、二重writerも0。Step 3のshared policyをexact-SHA releaseへ含めるinstaller allowlistを修復し、隔離installer test 2/2 PASS。このRemoteからの`gui/$UID` bootstrap/kickstartは禁止経路なので実行せず、正規の非Remote ownerによるexact 1 load後に完了する。
 - [ ] **5 — fresh official Proposal:** 新しい実応募を送り、公式Proposal IDを取得する。
 - [ ] **6 — per-item Telegram ACK:** 各案件のtitle、ID、apply/skip、具体理由、提案額、納期、Proposal IDを個別Telegram ACKで確認する。aggregateだけで終了しない。
 - [ ] **7 — replay-zero:** 同じ案件の再実行でprovider execute 0、ledger insert 0を確認する。
@@ -64,6 +64,9 @@ provider固有discovery、submit、official readback、receipt、Telegram、sche
 installed `~/Library/LaunchAgents/ai.anicca.lancers-revenue-application.plist`はlabel exact一致、`StartInterval=60`、loop ID
 `lancers-revenue-application`を持つ。一方、read-only `launchctl print gui/501/ai.anicca.lancers-revenue-application`は
 `Could not find service`を返す。したがってplist fileの存在を稼働と数えず、continuous Apply ownerは0、Step 4は未完である。
+既存exact-SHA installerは新しいshared policyをrelease allowlistへ含めていなかったため、
+`skills/_shared/marketplace-core/scripts/feasibility_policy.py`をmanifestへ追加した。isolated reconcile/normal installer testは2/2 PASSし、
+production state、plist、launchd effectは0。残るStep 4 actionは正しいpushed commitをproduction releaseへinstallし、single ownerをloadすることだけである。
 
 ## Exact A1 patch
 

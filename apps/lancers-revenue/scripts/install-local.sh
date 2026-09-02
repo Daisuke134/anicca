@@ -79,6 +79,7 @@ git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   skills/earn/lancers/scripts/lancers_adapter.py \
   skills/_shared/marketplace-core/scripts/application_transaction.py \
   skills/_shared/marketplace-core/scripts/contracts.py \
+  skills/_shared/marketplace-core/scripts/feasibility_policy.py \
   skills/_shared/marketplace-core/scripts/ledger.py \
   skills/_shared/marketplace-core/schemas/event.schema.json \
   skills/_shared/marketplace-core/schemas/opportunity.schema.json \

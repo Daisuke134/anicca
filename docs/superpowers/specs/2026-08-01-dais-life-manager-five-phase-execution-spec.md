@@ -91,6 +91,8 @@ provider固有discovery/submit/readback、receipt、Telegram、schedulerは変�
 Step 4のread-only owner監査ではinstalled plistは`StartInterval=60`で存在するが、GUI domainのserviceはabsentでApply owner 0だった。
 Eliza Lancers runtimeとtmuxも0で二重writerはない。このRemoteからのGUI-domain load/kickstartは禁止経路のため実行せず、Step 4は正規の非Remote
 ownerによるexact 1 load待ちとして未完を維持する。plist fileの存在だけを24/7稼働と報告しない。
+Step 4 release preflightでは、既存exact-SHA Lancers installerがStep 3のshared policyをallowlistへ含めない欠落を修復した。
+isolated reconcile/normal installer testは2/2 PASSし、production external effect 0。残るStep 4はpushed commitのproduction installとexact 1 loadである。
 固定順は、Apply比較→shared inventory→最小重複一件の
 shared化→Lancers single writer→新Proposal→案件別Telegram ACK→replay-zero→自然wake継続→Storefront→Negotiate→Paid→banked net→
 Gig Money Loop Skill→CrowdWorks→Freelancer.com→Life Manager自身のloop factoryである。各Stepを実測完了して正本更新後にだけ次へ進む。
