@@ -924,6 +924,24 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Old project/tool-result files are not open now, but session history and subagent evidence ownership/retention is not proven. Do not purge by age alone; require terminal-session and owner retention readback in P2."
+    },
+    {
+      "batch": "p1d-claude-agent-sdk-venv-audit-36",
+      "path": "~/.claude/security/agent-sdk-venv",
+      "measured_kib": 289632,
+      "active_processes": 0,
+      "open_handle_rows": 0,
+      "owner_refs": [
+        "~/.claude/plugins/marketplaces/claude-plugins-official/plugins/security-guidance/hooks/ensure_agent_sdk.py",
+        "~/.claude/plugins/cache/claude-plugins-official/security-guidance/2.0.6/hooks/ensure_agent_sdk.py"
+      ],
+      "rebuild_contract": "security-guidance hook creates state_dir/agent-sdk-venv when needed",
+      "decision": "preserve_hook_managed_venv_until_bounded_owner_rotation",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "No current process or open handle, but the installed hook has an exact recreate path and shebang contract. Deleting by age would trade 289 MiB for an unbounded rebuild; defer to owner-side retention."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
