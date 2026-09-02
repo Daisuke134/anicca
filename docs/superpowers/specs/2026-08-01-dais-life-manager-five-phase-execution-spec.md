@@ -1306,8 +1306,10 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 5. Lumaは既存guest registration pageをscript-firstで操作し、unknown required field、CAPTCHA、支払い、本人確認、
    effect unknownではfail closedにする。
 6. connpass discoveryは公式API v2だけを使う。API keyがなければconnpass railだけをfail closedにし、Lumaを継続する。
-   connpassの参加申込は公式write APIまたは書面による自動化許可が確認できるまで、正確な参加枠・LT枠・締切・URLを
-   Telegramへ送り、provider上の確定操作を自動実行しない。
+   ConnpassのUI参加申込は、Daisが自分のアカウントに対して共有connector envの
+   `LM_CONNECTOR_CONNPASS_AUTOMATED_SUBMIT_ALLOWED=true`を明示設定した時だけ、既存browser adapterの確定操作を許可する。
+   未設定・`true`以外は正確な参加枠・LT枠・締切・URLをTelegramへ送り、provider上の確定操作を自動実行しない。
+   API discovery keyをwrite permissionとして扱わず、API write endpointは使わない。
 7. Peatix、Meetup、Doorkeeper、Eventbrite、TECH PLAY、KokuchProは実装を保持するが、Lumaとconnpassを尽くした後、
    同じtopic/quality gateを通る時だけfallbackにする。空き日を埋めるためにthresholdを下げない。
 8. official scheduleはsingle launchd labelのhourly wakeとする。一wakeの新規external Submitはattendanceまたはtalkの
@@ -1334,7 +1336,7 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 | live ranking | provider-neutral rankingがactive minimal runnerに接続済み、large inventoryは3件chunk/並列3 | 10分wake内のterminalを維持 |
 | LT | classifier、talk pack、独立transition store、one-effect budgetはactive pathに接続済み | 実open LTのtalk application receiptを1件完成 |
 | provider result | Luma→connpassをprimaryとして維持し、fallbackにも同じquality gateと160秒completion reserveを適用。前回はKokuchPro evidence開始時にwake残り約75秒しかなくCalendar initial readbackでdeadline/create 0となった。PR #3457でKokuchProを最初のfallbackへ移し、native/runner 73/73をPASSした | 既存KokuchPro登録のevidence chainへ十分なwake時間を残し、その後の自然wake replay-zeroを完成する。fallback実装PASSや候補発見だけをapplication成功へ昇格しない |
-| connpass | official API v2 discoveryのみ。自動申込許可は未回答のためTelegram manual boundary、provider Submit 0 | official responseを監視し、明示許可までSubmit 0 |
+| connpass | official API v2 discoveryは動作。native passが自動申込opt-inをfactoryへ渡さないためTelegram manual boundary、provider Submit 0 | shared envの明示opt-inをnative factoryへ渡し、既存UI submit→official readback→Calendar→Telegram→bundleを実測。opt-inなしはmanual boundaryを維持 |
 | evidence | KokuchPro event `kokuchpro-event://event/33301feefecb914218e7c2318d9de99e`は自然wakeのpre-submit official readbackで`registered`、duplicate Submit 0。checkpointはprovider receipt `370bb9be…`とPNG SHA `9c9cdc7a…`（1185×8121）を保存した。`EVIDENCE_CALENDAR_READBACK_FAILED`後のofficial Google Calendar readbackはidempotency 0件、title/canonical URL 0件、Telegram message/photo receipt 0件、applied bundle 0件 | 既存provider checkpointを再利用し、Calendar exact 1→Telegram positive message/photo IDs→同lineage durable bundleを自然wakeでrecoveryする。provider登録を再実行しない |
 
 #### 0.0.3 Atomic TODO SSOT
@@ -1384,8 +1386,8 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 - [x] **CG-24** `connpass-api-client.test.js`で`X-API-Key`、`prefecture=tokyo`、28日分`ymd`、pagination、429、1req/sec以下を検証する。既存5秒間隔は安全側として保持してよい。
 - [x] **CG-25** `connector-connpass-workflow.js`のdiscoveryを既存`connpass-api-client.js`へ切り替え、active pathからcalendar page scrapingを外す。
 - [x] **CG-26** source scan regressionでactive connpass discoveryが`/api/v2/events/`以外へautomated list/detail accessしないことを検証する。
-- [x] **CG-27** connpass candidateでは参加枠、LT枠、補欠、締切、canonical URLをTelegram action receiptへ正規化し、provider permission未確認時のSubmitを0にする。
-- [ ] **CG-28** providerへ自動参加操作の許可範囲を問い合わせ、official response receiptを保存する。許可されたmethodだけを後続実装し、許可がなければTelegram action boundaryをfinal behaviorとする。問い合わせ送信receiptは `docs/evidence/outbound/2026-08-27-connpass-automation-permission-inquiry.json`、official responseはpending。
+- [x] **CG-27** connpass candidateでは参加枠、LT枠、補欠、締切、canonical URLをTelegram action receiptへ正規化し、local UI submit opt-in未設定時のSubmitを0にする。
+- [ ] **CG-28** provider APIのwrite permission問い合わせとofficial response receiptを追跡する。API writeは実装せず、provider responseがない間もUI申込の可否とは分離する。UI申込はDaisの明示的なローカルopt-in（`LM_CONNECTOR_CONNPASS_AUTOMATED_SUBMIT_ALLOWED=true`）だけが許可し、未設定・falseはTelegram action boundaryへ落とす。問い合わせ送信receiptは `docs/evidence/outbound/2026-08-27-connpass-automation-permission-inquiry.json`、official responseはpending。
 - [x] **CG-29** API keyを使うread-only live canaryでTokyo 28日inventoryを取得し、API audit、secret非露出、Luma continuationをreadbackしてcommit/pushする。
 
 ##### E. Lightning Talk application
@@ -1428,6 +1430,10 @@ Calendarを無関係なeventで埋めること自体を成果にしない。
 5. **Boundaries:** provider登録を再実行しない。effect unknownをabsenceへ変換しない。Codexが直接Calendar/Telegram/bundleを捏造しない。別profile、別scheduler、legacy OpenClaw cron、all-label applyを回避策にしない。Capafy R0.2.3のexplicit cleared message前はglobal current移動とtargetless/all-label applyを実行しない。
 6. **Execution order:** current global orderの`CG-28 → CG-44 → CG-45 → CG-47 → CG-48 → CG-51`を維持する。CG-51内ではrelease completeness → browser owner → existing Calendar/evidence reconcile → natural terminal → replay-zero → final readbackの順で閉じる。cross-loop holdはこの順序を変更せず、自然ownerの観測だけを許可するcontrol-plane gateである。
 
+7. **2026-09-02 Connpass submit wiring incident:** 候補探索とTelegram action boundaryは成功していたが、`skills/connector/native-pass.js`のproduction configが
+   `connpassAutomatedSubmitAllowed`をfactoryへ渡していなかった。factoryは未指定をfalseとしてmanual boundary callbackを注入し、runnerはそのreceipt後にConnpassのprovider actionを全skipしていた。実稼働の最新wakeでもboundary successの後にprovider direct/browser/readbackが無く、Submit・Calendar・bundleが0だった。修正は共有envの
+   `LM_CONNECTOR_CONNPASS_AUTOMATED_SUBMIT_ALLOWED=true`をallowlist経由でbooleanとしてnative factoryへ渡すことだけとし、未設定・falseは従来のmanual boundaryへ戻す。API discoveryは公式v2 read-only、API writeは0、新しいCLI/crawler/scheduler/browser profileは0とする。修正後はimmutable release provenance、loaded plist、natural wake、Connpass official state、Google Calendar exact-one readback、Telegram positive IDs、durable bundleを別々に確認する。
+
 | E2E item | Value |
 |---|---|
 | UI change | none |
@@ -1466,7 +1472,7 @@ flowchart TD
     T -->|yes| TA["talk application intent<br/>one effect max"]
     T -->|no| A["attendance registration<br/>one effect max"]
     G -->|Luma exhausted| P["connpass API v2 discovery"]
-    P --> Q{"provider automation<br/>permission verified?"}
+    P --> Q{"local UI submit<br/>opt-in enabled?"}
     Q -->|yes| A
     Q -->|no| U["Telegram exact action<br/>external Submit 0"]
     P -->|primary exhausted| F["quality-gated fallback"]
