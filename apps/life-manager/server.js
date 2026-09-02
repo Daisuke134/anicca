@@ -52,6 +52,7 @@ const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, 
 const { createMoneyPrinterSource } = require("./lib/money-printer-source.js");
 const { createMoneyPrinterRuntimeStore } = require("./lib/money-printer-runtime-store.js");
 const { handleMoneyPrinterSymphonyApiRequest } = require("./lib/money-printer-symphony-api.js");
+const { buildAlpacaPublicProjection, renderAlpacaPublicPage } = require("./lib/alpaca-public.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { handleCalendarOnboardRequest } = require("./lib/calendar-onboard.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
@@ -419,6 +420,41 @@ function ctxFromReq(req) {
 
 const server = http.createServer((req, res) => {
   const path = (req.url || "").split("?")[0];
+  if (path === "/alpaca") {
+    if (req.method !== "GET") {
+      res.writeHead(405, { "allow": "GET", "cache-control": "no-store" });
+      res.end("method not allowed");
+      return;
+    }
+    res.writeHead(200, {
+      "content-type": "text/html; charset=utf-8",
+      "content-security-policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+    });
+    res.end(renderAlpacaPublicPage());
+    return;
+  }
+  if (path === "/api/life-manager/alpaca/public") {
+    if (req.method !== "GET") {
+      res.writeHead(405, { "allow": "GET", "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: "method_not_allowed" }));
+      return;
+    }
+    try {
+      const projection = buildAlpacaPublicProjection();
+      res.writeHead(200, {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff",
+      });
+      res.end(JSON.stringify(projection));
+    } catch {
+      res.writeHead(503, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+      res.end(JSON.stringify({ error: "alpaca_public_projection_unavailable" }));
+    }
+    return;
+  }
   if (path === "/money-printer") {
     handleMoneyPrinterGuestRequest(req, res, {
       supaUrl: SUPA_URL,
