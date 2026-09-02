@@ -3879,7 +3879,8 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
         "Once the required official checks are sufficient to decide completion or a blocker, write the durable result immediately before any optional exploration; do not exhaustively inspect unrelated historical attachments or messages. "
         "paid-remote-result.json must include business_outcome with required_effect_satisfied, required_output_satisfied, "
         "remaining_work, and official_receipts. Set both satisfied fields true only after the complete semantic contract has "
-        "official provider readback; otherwise preserve progress and return blocked without manufacturing a completion result. "
+        "official provider readback; otherwise preserve progress, write status=blocked and a nonempty blocker in paid-remote-result.json, "
+        "and return blocked without manufacturing a completion result. "
         "do not submit to Coconala or use formal delivery."
     )
     correction = ""
