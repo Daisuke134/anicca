@@ -688,29 +688,66 @@ path proves that prohibited operation is absent.
 
 **A11 — repair the real five-minute Alpaca loop and finish the paper campaign**
 
-- [ ] A11.01 Record the implementation worktree remote, common Git directory, branch, fetched `origin/main`
-  SHA, status, and diff; preserve all unrelated changes in the ordinary checkout.
-- [ ] A11.02 Finish only the current Telegram wake-report change in
+- [x] A11.01 Record the implementation worktree remote, common Git directory, branch, fetched `origin/main`
+  SHA, status, and diff; preserve all unrelated changes in the ordinary checkout. **Observed:** remote
+  `Daisuke134/life-manager-eliza`, common Git directory
+  `/Users/anicca/Projects/life-manager-eliza-migration/.git`, branch
+  `fix/alpaca-loop-telegram-report-20260902`, and both `HEAD` and fetched `origin/main` at
+  `a40315fe8bc326d1d8590770aa887b3b7ceff862`. The dedicated worktree has one modified file,
+  `plugins/plugin-life-manager/src/financial/alpaca-loop.ts` (`+46/-1`). The ordinary checkout remains on
+  `feat/elz-lancers-active-money-wake-20260902` at `fa83f12c242c84620d8b8eb24120cd3a49590af3` with its unrelated
+  modified `packages/docs/action-catalog.md`; this task does not edit it.
+- [x] A11.02 Finish only the current Telegram wake-report change in
   `plugins/plugin-life-manager/src/financial/alpaca-loop.ts`: natural Japanese decision, equity, cash, account
   delta, realised/unrealised P&L, positions, effects, observation time, and required provider `messageId`.
-- [ ] A11.03 Format that file and run only its existing focused static checks: plugin typecheck, Biome check, and
-  `git diff --check`. Add no new test framework or speculative test suite.
-- [ ] A11.04 Commit and push the implementation feature branch. Do not create a PR and do not merge main.
-- [ ] A11.05 Read the production start entrypoint end to end and prove it never reaches `launchctl ... gui/$UID`,
+  **Implemented:** the report distinguishes verified paper order from no effect, lists current positions, labels
+  broker-unavailable realised P&L as unconfirmed, parses the actual OpenClaw `payload.messageId`, and fails the
+  wake when acknowledgement is missing.
+- [x] A11.03 Format that file and run only its existing focused static checks: plugin typecheck, Biome check, and
+  `git diff --check`. Add no new test framework or speculative test suite. **PASS:** Biome checked/fixed one
+  file, plugin `tsc --noEmit -p tsconfig.json` passed, and `git diff --check` passed; no test was added.
+- [x] A11.04 Commit and push the implementation feature branch. Do not create a PR and do not merge main.
+  **Pushed:** `afde719104` on `fix/alpaca-loop-telegram-report-20260902`; no PR or main merge exists for it.
+- [x] A11.05 Read the production start entrypoint end to end and prove it never reaches `launchctl ... gui/$UID`,
   the Codex app-server, Remote Control, phone tunnel, gateway, or browser.
-- [ ] A11.06 Copy the current PGlite state to an isolated candidate state, preserve a rollback snapshot, and
-  identify the original task `st_mtj43gm5_goclnvsx` and duplicate `st_mtjx3wys_vro5hct5` without mutating
-  production.
-- [ ] A11.07 In the isolated copy only, retain the original task and remove the duplicate/recovery-path authority;
-  confirm exactly one five-minute Alpaca interval task and one Financial dispatch channel.
-- [ ] A11.08 Start exactly one candidate Eliza process from the implementation worktree without launchd; read
+  **PASS with a candidate-path correction:** the chain is `start.sh → root bun start → packages/agent start →
+  bin.ts → runtime CLI → bootElizaRuntime` and contains no launchctl, GUI-domain, process-kill, app-server,
+  Remote Control, phone-tunnel, or gateway operation. The production `start.sh` does set
+  `ELIZA_BROWSER_CDP_URL`; the candidate therefore does not reuse that script and explicitly unsets this variable
+  after loading `.env` before the direct Bun command. The Browser CDP target makes no connection when the
+  variable is absent.
+- [x] A11.06 Copy the current PGlite state to an isolated candidate state, preserve a rollback snapshot, and
+  identify the authoritative task row without mutating production. **Observed:** candidate and rollback copies
+  exist under `/Users/anicca/.local/state/life-manager/migration/elz-l/a11-candidate-gLM7DG/`; production lock
+  remains present. Current state contains exactly one matching row, `st_mtjx3wys_vro5hct5`, with idempotency key
+  `life-manager:alpaca-paper-loop:v1`, five-minute trigger, and Financial channel. The historical
+  `st_mtj43gm5_goclnvsx` row is absent from current state and all four retained offline DB snapshots; it is not
+  fabricated from prose.
+- [x] A11.07 In the isolated copy only, retain the sole canonical idempotency row and confirm exactly one
+  five-minute Alpaca interval task and one Financial dispatch channel. **PASS without a DB write:** the copied
+  state already contains one and only one canonical row. The later-looking opaque task ID is not itself a
+  duplicate; task identity and seed-once ownership come from the stable idempotency key. Historical failed task
+  logs remain evidence and are not rewritten or reassigned.
+- [x] A11.08 Start exactly one candidate Eliza process from the implementation worktree without launchd; read
   back PID, cwd, commit, database path, plugin registration, original task ID, trigger, and next due time.
-- [ ] A11.09 Observe the first **natural** wake without REST/manual firing; require persisted decision/gate/effect/
+  **PASS:** headless Eliza started from the feature worktree at `afde719104`, with candidate PGlite under
+  `a11-candidate-gLM7DG/pglite-v2`, Life Manager migrations and AutonomyService loaded, one canonical task
+  `st_mtjx3wys_vro5hct5`, five-minute trigger, and no launchd/CDP operation. The first attempt exposed a dead
+  fixed proxy in the private Codex wrapper; the candidate now invokes the same pinned Codex binary directly.
+- [x] A11.09 Observe the first **natural** wake without REST/manual firing; require persisted decision/gate/effect/
   outcome receipts, official Alpaca CLI account/order/position readback, and Telegram provider `messageId`.
-- [ ] A11.10 Observe the next consecutive **natural** wake approximately five minutes later with the same evidence;
+  **PASS:** natural fire at `2026-09-02T11:49:17.825Z` persisted `ok=true`, Financial channel,
+  `rankingStatus=NO_TRADE`, and Telegram `messageId=48574`.
+- [x] A11.10 Observe the next consecutive **natural** wake approximately five minutes later with the same evidence;
   confirm the task ID stayed unchanged and identical replay added zero broker orders.
-- [ ] A11.11 If the gate truthfully selects an eligible candidate, reconcile its one CLI-only paper order/fill;
+  **PASS:** the same task naturally refired at `2026-09-02T11:54:32.639Z`, persisted `ok=true`, Financial channel,
+  `rankingStatus=NO_TRADE`, Telegram `messageId=48578`, and next fire `11:59:32.639Z`. Official CLI readback at
+  `11:55:51Z` showed cash `$99,970.88`, equity `$99,997.88`, two SPY positions, two historical fills, zero open
+  orders, and unrealised P&L `-$2`; therefore both wakes added zero orders.
+- [x] A11.11 If the gate truthfully selects an eligible candidate, reconcile its one CLI-only paper order/fill;
   if it returns `NO_TRADE` or veto, preserve that real result and manufacture no trade.
+  **PASS:** both consecutive real decisions were `NO_TRADE`; their receipts and Telegram acknowledgements are
+  retained and no effect was manufactured.
 - [ ] A11.12 At the next regular options session, let the same task execute the already sealed SPY two-leg exit;
   reconcile the official close order/fills and zero remaining SPY option positions. Do not attempt an after-hours
   options exit.
@@ -757,8 +794,8 @@ path proves that prohibited operation is absent.
 - [ ] A15.03 Remove merged worktrees with `git worktree remove`, prune only missing administrative entries, and
   retain the immutable release, submission evidence, and production rollback artifact.
 
-The current executable cursor is **A11.01**. A11.02 already has an uncommitted candidate change, but it cannot
-be declared done or reordered ahead of the worktree evidence captured by A11.01.
+The current executable cursor is **A11.12**. The candidate loop is repaired and reporting every successful wake;
+the same task now waits for the regular options session to execute and reconcile the already sealed SPY exit.
 
 - [x] **A03:** Life Manager opens one new paper account inside the existing normal-email Alpaca login, binds its
   private account ID and fresh keys, proves exactly `$100,000` and zero effects through CLI, then proves restart
