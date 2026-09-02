@@ -1,16 +1,75 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A10 HISTORICALLY DONE / A11 ACTIVE WITH PRODUCTION WAKE REGRESSION
+status: APPROVED STRATEGIC RETREAT / ELIZA RUNTIME RETIRED / R01 DONE / R02 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
-execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
+execution SSOT: this file, `Strategic-retreat TODO` section
+
+## 0. Controlling decision — strategic retreat from Eliza
+
+Dais explicitly changes the implementation order and runtime architecture. Life Manager does not ship or run
+the Alpaca loop through `life-manager-eliza`. The canonical product, loop source, registry, release, state
+contract, and public OSS surface are all `Daisuke134/life-manager`. Earlier A01–A15 Eliza implementation history
+below remains donor evidence only; it is not the current runtime plan or an integration dependency.
+
+The new loop is named `alpaca-investment`:
+
+- declaration: `loops/alpaca-investment/loop.toml`;
+- owned code and operator documentation: `skills/alpaca-investment/`;
+- lifecycle registration: `config/loop-registry.json` plus the existing Life Manager budget registry;
+- process entry: existing `runtime/loop/entry_dispatch.py`, extended by one dispatch row only if a direct
+  repository-relative entrypoint is insufficient;
+- mutable state/receipts: `~/.local/state/life-manager/alpaca-investment/`, outside Git and releases;
+- installed label: `ai.anicca.alpaca-investment`;
+- cadence: one bounded pass every 300 seconds;
+- broker authority: pinned official Alpaca CLI, paper mode only for the hackathon;
+- model route: existing Life Manager shared agent runner behind one narrow decision contract. Training a new
+  foundation model or importing another agent framework is outside this deadline.
+
+```mermaid
+flowchart LR
+    LD["launchd<br/>wake every 5 minutes"] --> LOOP["Life Manager alpaca-investment<br/>one bounded pass, then exit"]
+    LOOP --> OBS["Alpaca CLI<br/>account / market / positions"]
+    OBS --> DECIDE["Life Manager decision contract<br/>trade or NO_TRADE"]
+    DECIDE --> RISK["deterministic risk gate"]
+    RISK --> EFFECT["stable effect ID<br/>CLI paper order"]
+    EFFECT --> READBACK["CLI reconciliation<br/>fills / positions / P&L"]
+    READBACK --> STATE["private state + receipts"]
+    STATE --> TG["Telegram natural-language report<br/>provider messageId"]
+```
+
+Launchd owns only cadence and process resurrection. It never owns strategy, portfolio state, broker decisions,
+retry semantics, P&L, or Telegram copy. Each pass obtains a lock, reads official state, makes at most one bounded
+effect, reconciles before retry, writes one terminal runtime event, reports it, and exits. The next launchd wake
+is the recovery mechanism.
+
+### Reuse, learn, then own
+
+Do not fork or depend on Eliza. Copy and adapt only the smallest verified behaviors into Life Manager, retaining
+license notices where donor code requires them:
+
+| Existing asset | Life Manager use |
+|---|---|
+| pinned Alpaca CLI adapter and paper/live rejection | port the command shapes and validation |
+| decision-before-effect schema | map into one Life Manager pass receipt |
+| deterministic option/portfolio risk gates | port the pure rules, not the framework |
+| stable client order IDs and ack-loss reconciliation | port unchanged behavior |
+| SPY sealed exit and campaign reconciliation | preserve the existing campaign identity and official readback |
+| cross-market candidate/scoring logic | port only after the basic pass runs |
+| redacted public projection/dashboard | reuse as submission presentation data |
+| natural-language Telegram report | port the fields and require provider `messageId` |
+
+The minimal Life Manager harness is the loop contract already present in this repository: lock → observe →
+decide → risk → effect → reconcile → receipt → report → terminal event. General graph orchestration across
+friend loops is a later Life Manager capability built from their receipts; it is not a prerequisite for getting
+this investment loop running or submitting the hackathon.
 
 ## 1. Goal and boundaries
 
-Build the first registered durable loop in `plugin-life-manager` and the first CAPITAL capability of the Life
-Manager general money agent. One owner goal starts a bounded, restart-safe loop that observes Alpaca market/account state, lets the model propose or refuse a defined-risk
-options trade, applies deterministic risk and effect gates, executes on the dedicated hackathon paper account,
-and records official order/fill/P&L receipts. The same capability later ships in the local OSS and cloud hosts.
+Build one registered `alpaca-investment` loop inside the canonical Life Manager repository. Every launchd wake
+runs one bounded, restart-safe pass that observes Alpaca market/account state, lets the existing Life Manager
+model route propose or refuse a defined-risk trade, applies deterministic risk/effect gates, executes through
+the dedicated hackathon paper account, records official order/fill/P&L receipts, sends Telegram, and exits.
 
 This slice does not promise profit, call paper P&L money, use Dais's live capital, manage another person's
 assets, bypass CAPTCHA/KYC/provider consent, or let a model rewrite production and immediately trade. Paper,
@@ -20,20 +79,21 @@ live owner-capital, and regulated customer management remain different capabilit
 
 1. The submission satisfies every event-specific eligibility item: Trading API, CLI or MCP, options in every
    eligible strategy, a new dedicated $100,000 paper account, private account ID, and real paper activity/P&L.
-2. A scheduled no-routine-human pass completes `observe → decide → risk → effect → reconcile → receipt → reflect`.
+2. One launchd-owned five-minute wake completes `lock → observe → decide → risk → effect → reconcile → receipt →
+   report → terminal event`, then exits without a resident Eliza process.
 3. Unknown order outcome never causes a blind retry. New risk stops on stale state, reconciliation failure,
    daily loss, drawdown, insufficient option level, undefined max loss, or excessive spread/concentration.
 4. Public repository, hosted demo, cover, one-pager, PDF slides, and a video no longer than four minutes are
    submitted before the deadline and independently readable while logged out.
-5. The capability uses the existing Life Manager Goal/PlanGraph/WorkItem/EffectIntent/OutcomeReceipt/
-   EconomicReceipt chain. Eliza owns the only loop registry and scheduler; the capability does not create a
-   second agent core, scheduler, product, or general ledger.
+5. The capability uses the existing Life Manager loop registry, release tooling, shared agent runner, runtime
+   event schema, secret SSOT, and economic receipts. It creates no second scheduler, product, framework, model
+   host, or general ledger.
 6. A fresh install owns the complete lifecycle: create or resume the dedicated account through normal email,
    verify and store only secret references, prove a new-session login, then run trading without routine human
    setup. Replaying bootstrap reuses the bound account and creates zero duplicate accounts.
-7. Production uses one clean main-derived immutable release and the original Alpaca task/state. A five-minute
-   interval is not working until consecutive natural wakes persist receipts and return Telegram provider
-   `messageId` acknowledgements.
+7. Production uses one clean main-derived immutable Life Manager release and one registered launchd label. A
+   five-minute interval is not working until consecutive natural launchd wakes persist receipts and return
+   Telegram provider `messageId` acknowledgements.
 8. Every wake reports the official CLI readback in natural language: decision, equity, cash, account change from
    `$100,000`, realised P&L when officially knowable, unrealised P&L, positions, effects, and observation time.
    Missing delivery acknowledgement makes the wake unsuccessful.
@@ -48,44 +108,34 @@ requirements are satisfied. Therefore:
 
 1. Before work, verify the repository remote URL, common Git directory, fetched `origin/main` SHA, unique branch
    name, clean status, and dedicated worktree path. Never infer repository identity from the folder name.
-2. Keep spec/TODO commits in the Life Manager spec branch and implementation commits in the
-   `life-manager-eliza` implementation branch. Push both branches as durable backup; branch push is not a PR and
-   does not change main.
-3. Do not create a draft or normal PR while any A11–A15 pre-merge acceptance item is open. Do not merge a
+2. Keep spec/TODO commits in this Life Manager spec branch. Create one new implementation branch and linked
+   worktree from the latest `origin/main` of `Daisuke134/life-manager`; the old `life-manager-eliza` branch is
+   read-only donor evidence. Push branches as durable backup; branch push is not a PR and does not change main.
+3. Do not create a draft or normal PR while any R01–R14 pre-merge acceptance item is open. Do not merge a
    documentation-only, code-only, test-only, runtime-only, dashboard-only, or asset-only fragment to claim
    progress.
 4. Run the worktree candidate against the dedicated Alpaca **paper** account and isolated copied state. Prove
    the complete five-minute wake, official CLI effect/readback, Telegram `messageId`, duplicate prevention,
    dashboard, assets, and submission payload before integration. This is paper validation, not live capital.
-5. When every pre-merge acceptance item is PASS, create the required repository PRs in one integration window,
+5. When every pre-merge acceptance item is PASS, create the one required repository PR in one integration window,
    merge once, cut one immutable main-derived release, and perform the final production readback. If that
    readback fails, make no follow-up main patch; return to the same worktree branches and reopen the failed item.
 6. Only after the main-derived readback and official submission state succeed, delete merged branches and use
    `git worktree remove`. Use `git worktree prune` only for administrative entries whose working directories are
    already missing. Never manually delete or move a registered worktree.
 
-The pre-merge gate is explicit and all boxes remain on the feature branches until complete:
-
-- [ ] A11: one original Alpaca task, no duplicate task, two consecutive natural five-minute wakes, official
-  decision/effect/outcome receipts, zero duplicate orders, Telegram `messageId` for each wake, SPY exit or
-  truthful open-state reconciliation, and final campaign P&L/delta recorded;
-- [ ] A12: the same redacted projection serves a logged-out branch-preview URL and exposes no mutation surface;
-- [ ] A13: README, one-pager, PDF slides, 16:9 cover and ≤4-minute video all match the official account state;
-- [ ] A14: every submission field and URL is staged and independently readable, with only the final submit held
-  for the main-derived SHA;
-- [ ] A15: the candidate SHA installs and starts the same paper runtime on the required portable targets, with
-  host supervision owning process resurrection only;
-- [ ] integration-ready: both repositories are clean, branch names are unique, diffs contain only this project,
-  secrets are absent, and the exact candidate SHAs and rollback path are recorded.
+The pre-merge gate is the unchecked R-series queue in §6. Historical A-series evidence cannot satisfy a new
+R-series runtime box without a Life Manager candidate readback.
 
 Current work ownership is explicit:
 
 - spec/TODO worktree: `/Users/anicca/Projects/lm-t2-spec.OFNS1W`, branch
   `docs/alpaca-first-place-acceptance-20260902`, repository `Daisuke134/life-manager`;
-- implementation worktree: `/Users/anicca/Projects/.worktrees/life-manager-eliza-alpaca-telegram`, branch
-  `fix/alpaca-loop-telegram-report-20260902`, repository `Daisuke134/life-manager-eliza`;
-- the ordinary checkout `/Users/anicca/Projects/life-manager-eliza-migration` is current runtime evidence only
-  and is not an authorized implementation surface.
+- implementation worktree: not created until R02; it must be a fresh linked worktree of
+  `Daisuke134/life-manager` from the recorded latest `origin/main` SHA;
+- `/Users/anicca/Projects/.worktrees/life-manager-eliza-alpaca-telegram` and the ordinary
+  `/Users/anicca/Projects/life-manager-eliza-migration` checkout are donor evidence only and are not authorized
+  implementation or production surfaces.
 
 Primary sources: Git `git-worktree` documentation
 <https://git-scm.com/docs/git-worktree>, GitHub Flow
@@ -94,41 +144,30 @@ Primary sources: Git `git-worktree` documentation
 
 ## 2. Product and runtime decision
 
-The product is the canonical Life Manager monorepo. The agent core is the already selected ElizaOS
-`AgentRuntime` plus the single `plugin-life-manager`; Alpaca is a capability/provider adapter inside that core.
-The Alpaca loop registers with `plugin-life-manager` and is started, scheduled, checkpointed, resumed, healed,
-and improved by the existing Eliza `AgentRuntime`. Current launchd code contributes proven lock, heartbeat,
-timeout, and Telegram patterns during migration, but it does not own an Alpaca schedule or pass. The only
-host-level responsibility is keeping the Eliza process alive: launchd on macOS, systemd on Linux, or the
-container/cloud restart policy. These interchangeable adapters contain no goal, market, account, risk, effect,
-or improvement state.
+The product and runtime are the canonical Life Manager monorepo and its existing finite-loop contract. There is
+no resident Eliza runtime, Eliza plugin registration, Eliza database, Eliza task ID, or Eliza scheduler in the
+shipping path. `launchd` invokes one repository-owned bounded pass every 300 seconds on macOS. Linux/systemd and
+container restart policies may invoke the same finite entrypoint later; none contains trading logic.
 
 ```mermaid
 flowchart TD
-    HOST["Thin host supervisor<br/>launchd / systemd / container"] --> RUNTIME["Eliza AgentRuntime<br/>single persistent process"]
-    RUNTIME --> REGISTRY["plugin-life-manager<br/>durable loop registry"]
-    REGISTRY --> GOAL
-    GOAL["Maximize verified net worth<br/>inside the risk policy"] --> CORE["Life Manager Agent Core<br/>Goal → PlanGraph → WorkItem"]
-    CORE --> OBS["Alpaca account / clock / bars<br/>news / option chain"]
+    HOST["Host supervisor<br/>launchd first"] --> ENTRY["Life Manager finite entrypoint"]
+    ENTRY --> REGISTRY["Life Manager loop registry + budget"]
+    REGISTRY --> OBS["Alpaca account / clock / bars<br/>news / option chain"]
     OBS --> MODEL["Model proposal<br/>thesis / no-trade / invalidation"]
     MODEL --> GATE["Deterministic risk gate<br/>max loss / exposure / freshness"]
     GATE --> EFFECT["Effect kernel<br/>sealed intent / exactly once"]
     EFFECT --> ALPACA["Alpaca paper API<br/>CLI effects + SDK reads + MCP evidence"]
     ALPACA --> RECON["CLI reconcile<br/>order / fill / position / P&L"]
     RECON --> RECEIPT["Outcome + EconomicReceipt<br/>paper namespace"]
-    RECEIPT --> CORE
+    RECEIPT --> EXIT["Telegram + terminal event<br/>exit process"]
 ```
 
-Local OSS and cloud run the same persistent Eliza runtime and internal loop registry. Host adapters only start
-or restart that runtime; they never schedule the Alpaca loop. Phones are Telegram/web clients to a persistent
-host because mobile operating systems are not promised as reliable background daemon hosts. Cloud adds tenant
-isolation, vault, queue, billing, and quota without another core.
-
-Eliza self-healing owns task timeout, provider failure, stale observation, acknowledgement loss, circuit break,
-checkpoint resume, and loop-local quarantine. Eliza self-improvement owns receipt attribution, offline replay,
-no-effect evaluation, paper canary, versioned promotion, monitoring, and rollback. A completely dead Eliza
-process cannot execute its own recovery code, so only process resurrection remains outside Eliza. Machine power
-and host failure remain the responsibility of the operating system or cloud platform.
+Recovery is deliberately small: the pass writes state atomically outside the release, reconciles uncertain
+effects by stable client ID before retry, exits on terminal success/failure, and lets the next host wake resume.
+Phones remain Telegram/web clients. Cross-loop graphs, self-modifying strategies, a new model, and a generalized
+resident harness are deferred until after the hackathon because the existing Life Manager loop machinery is
+sufficient for this user outcome.
 
 ### Event contract and Alpaca interface authority
 
@@ -154,7 +193,7 @@ submission.
 | Prize pool | `$6,000` cash plus `$300` Featherless credits displayed as `$6,300` total | Current official prize section: main cash `$2,500 + $1,500 + $1,000`, social cash `2 × $500`, and first-place Featherless credits `$300`. |
 
 **Broker authority decision:** the Alpaca CLI is the sole mutation and authoritative reconciliation surface used
-by the Financial loop. Eliza invokes pinned CLI commands with structured JSON, binds every mutation to a stable
+by the investment loop. The finite Life Manager entrypoint invokes pinned CLI commands with structured JSON, binds every mutation to a stable
 `client_order_id`, and reconciles through CLI account/order/position/activity reads. The official
 `@alpacahq/alpaca-trade-api` SDK may serve only the read-only bulk market-data plane; its trading namespace is not
 exposed by the Life Manager adapter. This is permitted because the event requires the Trading API plus at least
@@ -176,9 +215,9 @@ README claims alone.
 
 ### Reuse ladder inside Life Manager
 
-1. Reuse the existing Eliza Goal/effect/receipt/restart kernel for orchestration and exactly-once effects.
-2. Reuse current Life Manager financial/economic receipt, secret-reference, lease/heartbeat, and Telegram
-   patterns; do not reuse launchd as the loop owner.
+1. Reuse the existing Life Manager finite-loop entrypoint, registry, release, runtime-event and state patterns.
+2. Port only the verified Eliza financial/economic receipt, stable-effect, reconciliation and Telegram behavior
+   that does not require its runtime, database, task service or plugin system; launchd owns cadence only.
 3. Adapt only MIT donor code that fills an Alpaca-specific gap and record attribution in
    `THIRD_PARTY_NOTICES.md`.
 4. Use the pinned official Alpaca CLI as the sole broker authority rather than writing a custom market protocol;
@@ -233,15 +272,54 @@ flowchart LR
     RESUME --> SIGNUP
 ```
 
-## 6. Ordered TODO — current priority track
+## 6. Strategic-retreat TODO — fixed execution order
 
-The order below is fixed until Dais explicitly changes it. Dais changed it after the first paper canary proved
+Current cursor: **R02**. R01 is complete in this specification. Only the first unchecked atom is active. Dais explicitly authorizes this reordered
+queue. No atom uses TDD ceremony, a review agent, a subagent, or an Eliza runtime. No PR or main merge occurs
+until R01–R14 pass. R15 alone integrates and releases.
+
+Soft implementation target: one existing loop declaration, one owned finite entrypoint, two existing registry
+rows, and at most one existing dispatcher edit; no new framework, service, database, scheduler, dependency, or
+directory tree. If the owned production logic would exceed about 150 new lines or six changed files, first
+reuse an existing Life Manager helper or cut scope back to the acceptance path.
+
+| Seq | Atom | Done condition |
+|---:|---|---|
+| R01 | Freeze the retreat and migration map — **DONE** | This spec names every reusable Eliza asset, its Life Manager destination, every rejected dependency, the runtime boundary, non-goals, and this immutable order. |
+| R02 | Create the Life Manager implementation worktree | Fetch `Daisuke134/life-manager`; record remote, common Git dir, `origin/main` SHA, clean status, unused branch name and dedicated linked worktree. Do not reuse either Eliza checkout. |
+| R03 | Register the minimal loop | Add `loops/alpaca-investment/loop.toml`, `skills/alpaca-investment/`, the loop-registry row and budget row. One invocation acquires a lock, performs one bounded pass and exits. Cadence is 300 seconds; no hand-written plist or second scheduler. |
+| R04 | Port official observation | Use pinned Alpaca CLI with private secret references to read the dedicated paper account, clock, positions, orders, activities and candidate market data. Reject live endpoints/credentials before any mutation. |
+| R05 | Port receipt and recovery invariants | Write atomic external state, stable effect IDs and decision/effect/outcome receipts. An uncertain acknowledgement reconciles by client ID before retry; identical replay creates zero duplicate orders. |
+| R06 | Port the existing paper campaign | Preserve the current SPY campaign identity, its two legs, entry fills, exit rule and official P&L reconciliation. Do not orphan, duplicate or silently rename the existing position. |
+| R07 | Enable the investment allocator | Each pass ranks options, eligible 24/5 equity/ETF and 24/7 crypto candidates with asset-aware market sessions, then emits `NO_TRADE` or at most one risk-bounded paper effect. Options remain part of every eligible hackathon strategy. |
+| R08 | Add owner-readable reporting | Every pass sends one natural-language Telegram report containing decision, equity, cash, change from `$100,000`, realised P&L when official, unrealised P&L, positions, effect and observation time. Missing provider `messageId` makes the pass unsuccessful. |
+| R09 | Prove the finite candidate | From the implementation worktree and isolated copied state, run real paper passes through official CLI readback. Prove paper-only enforcement, terminal events, restart/resume and zero duplicate effects; fake/dry/mock results do not count. |
+| R10 | Prove host cadence safely | From a local owner context that does not traverse Remote Control and does not invoke `launchctl ... gui/$UID` from this Codex session, install exactly one label and observe two consecutive natural five-minute wakes, receipts and Telegram `messageId`s. The remote session only reads resulting state/logs. |
+| R11 | Close and score the campaign | Reconcile the SPY exit or truthfully retain its open state; record official fills, zero unexplained broker delta, final/current equity, realised/unrealised P&L, drawdown and decision funnel. Never force a trade to manufacture positive P&L. |
+| R12 | Finish judge-visible product | The same redacted projection powers the logged-out demo; README, one-page write-up, PDF slides, 16:9 cover and ≤4-minute video match the actual Life Manager candidate and official account state. No public mutation surface or secret appears. |
+| R13 | Stage the complete submission | Public repository, logged-out app URL, assets, tags, private account ID and optional social links are filled and independently readable; final submit waits for the main-derived SHA. |
+| R14 | Pre-integration acceptance | All eight Acceptance items and four judging rows are PASS on the exact candidate SHA; diff is limited to this project; rollback and immutable release commands are recorded. |
+| R15 | Integrate, release and submit once | Create one PR, merge once, cut one immutable main-derived Life Manager release, apply through the established local-safe lifecycle, repeat official broker/Telegram/public readback, submit before the deadline, then remove the merged worktree. |
+
+### Explicit non-goals before submission
+
+- no Eliza dependency, fork, runtime, plugin, task database, scheduler or production checkout;
+- no new foundation model, training pipeline, multi-agent graph, general loop orchestrator or second ledger;
+- no live-funded trading, customer asset management, invented profit target or claim that paper P&L is revenue;
+- no manual plist authoring, no Remote `launchctl ... gui/$UID`, and no repetition or workaround if error 141 is
+  ever observed;
+- no PR, main merge, production promotion or cleanup while any R01–R14 box is open.
+
+## Appendix A. Historical Eliza execution evidence — superseded, read-only
+
+The old order below is no longer executable. It is retained only so verified broker and campaign evidence is not
+lost. Dais changed it after the first paper canary proved
 durability: the open SPY exit remains owned by the same background Eliza task, but a closed options session no
 longer blocks multi-market research, the bounded portfolio allocator, or submission artifacts. No second
 scheduler or broker mutation path is introduced. Each atom ends with the named official readback; tests support
 the atom and do not create a separate completeness program.
 
-Current cursor: **A11 Multi-market paper allocator**, while the original SPY exit remains active background
+Historical cursor was **A11 Multi-market paper allocator**, while the original SPY exit remained active background
 reconciliation inside the same task. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
