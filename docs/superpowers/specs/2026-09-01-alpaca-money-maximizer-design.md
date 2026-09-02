@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A10 DONE / A11 ACTIVE
+status: APPROVED DESIGN / A01-A10 HISTORICALLY DONE / A11 ACTIVE WITH PRODUCTION WAKE REGRESSION
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
@@ -31,6 +31,12 @@ live owner-capital, and regulated customer management remain different capabilit
 6. A fresh install owns the complete lifecycle: create or resume the dedicated account through normal email,
    verify and store only secret references, prove a new-session login, then run trading without routine human
    setup. Replaying bootstrap reuses the bound account and creates zero duplicate accounts.
+7. Production uses one clean main-derived immutable release and the original Alpaca task/state. A five-minute
+   interval is not working until consecutive natural wakes persist receipts and return Telegram provider
+   `messageId` acknowledgements.
+8. Every wake reports the official CLI readback in natural language: decision, equity, cash, account change from
+   `$100,000`, realised P&L when officially knowable, unrealised P&L, positions, effects, and observation time.
+   Missing delivery acknowledgement makes the wake unsuccessful.
 
 ## 2. Product and runtime decision
 
@@ -528,6 +534,43 @@ The submission draft is real and saved at Step 2 of 3 (`26%`). Cover image, vide
 the complete submission also requires public GitHub, a logged-out working application URL, the private dedicated
 Alpaca paper account ID, and up to five X/LinkedIn post URLs. Deadline remains 2026-09-05 00:00 JST.
 
+### First-place product contract — four judged criteria
+
+The organizer publishes no guaranteed dollar threshold and no public numeric weighting. Therefore “earn `$X`
+and win” is not a truthful acceptance rule. The target is the strongest judge-verifiable submission on all four
+named criteria. Positive paper P&L is a target; complete evidence and submission artifacts are hard gates. A
+negative or zero P&L remains visible and is never renamed revenue.
+
+| Official criterion | First-place product target | Acceptance evidence | Current measured state |
+|---|---|---|---|
+| P&L Performance | Finish the frozen bounded campaign with positive net paper P&L if market opportunities pass the gate; show return, max loss, drawdown, rejected trades and comparison with the `$100,000` start. Never force a trade merely to turn the number green. | Dedicated account ID; CLI account/activity/order/position readbacks; closed fills; realised/unrealised P&L; zero unexplained broker delta. | **FAIL:** equity `$99,997.88`; account delta `-$2.12`; unrealised P&L `-$2`; realised profit `$0`; one SPY spread remains open. |
+| Technology Implementation | One Eliza-owned five-minute task runs `observe → decide → gate → exactly-once effect → CLI reconcile → receipt → Telegram`. Crypto stays eligible 24/7, eligible equities 24/5, and options obey their session without blocking other assets. | One persistent task ID; consecutive natural wake receipts; stable client IDs; duplicate replay adds zero orders; Telegram `messageId` on every wake; restart preserves task and state. | **FAIL:** interval is configured, but the running source uses a non-release checkout and `pglite-recovery-20260902`; no current Alpaca wake success or Telegram acknowledgement is present. |
+| Creativity & Originality | Demonstrate Life Manager creating/resuming its own account, model proposal plus deterministic veto, CLI-only mutation, acknowledgement-loss recovery, cross-market selection and broker-reconciled economic memory in one product. | Demo receipts link bootstrap, thesis, veto, order, fill, recovery and P&L without secrets or a second scheduler/broker. | **PARTIAL:** historical A03–A10 evidence exists, but the currently running product does not demonstrate the complete live chain. |
+| Presentation & Execution | A judge understands the autonomous lifecycle in under four minutes and can inspect the same redacted evidence without login. Every required field is complete and truthful. | Public GitHub; logged-out `/alpaca`; one-page write-up; PDF slides; 16:9 cover; ≤4-minute video; private account ID; final submitted-state readback; optional social links. | **FAIL:** draft remains Step 2/3 at `26%`; hosted URL, cover, video, slides and final submit are incomplete. |
+
+First-place acceptance is all rows above at PASS plus official submitted-state readback before the deadline.
+Community votes support reach but do not replace the four judged criteria. The internal P&L objective is
+**positive net paper P&L with every frozen risk limit intact**; no unsupported minimum dollar amount is invented.
+
+### Current production incident — authoritative measured state
+
+Historical A10 proves the architecture worked once; it does not describe the current production process.
+Current readback shows:
+
+- running source: `/Users/anicca/Projects/life-manager-eliza-migration` on a non-main feature branch with an
+  unrelated dirty file;
+- running database: `/Users/anicca/.local/state/life-manager/migration/elz-l/l07/pglite-recovery-20260902`;
+- configured cadence: one Eliza interval task every five minutes;
+- historically proven task: `st_mtj43gm5_goclnvsx`; later manipulated duplicate: `st_mtjx3wys_vro5hct5`;
+- runtime result: Eliza is alive, but no current Alpaca natural-wake success receipt and no Telegram provider
+  `messageId`; the logged-out dashboard endpoint is not serving;
+- official Alpaca CLI-adapter readback: paper cash `$99,970.88`, equity `$99,997.88`, last equity `$99,998.88`,
+  two open SPY option legs, unrealised P&L `-$2`, realised profit `$0`, and no verified new trade from the
+  current wake path.
+
+The production incident is not evidence that more indicators are required. Execution/state authority is wrong
+before strategy quality can be measured. A configured five-minute trigger alone never marks the loop repaired.
+
 ### OSS and competitor code audit — copy the pattern, not the broker path
 
 All repositories below were shallow-cloned into an isolated temporary directory and inspected at the pinned
@@ -582,7 +625,9 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
 - [x] **A10:** Register exactly one Eliza-owned durable Alpaca loop; host adapters only restart Eliza.
 - [ ] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
   Entry, two fills, both open legs, current equity/cash, and unrealised P&L reconcile. Remaining A11 sub-atoms,
-  in order: ~~prove the existing five-minute Eliza task naturally refires~~ **DONE**; ~~add the official-SDK
+  in order: restore the historically proven single task/state from a clean main-derived worktree/release and
+  remove the duplicate/recovery-DB path from production; prove two consecutive natural five-minute wakes each
+  persist a proposal/veto/order/fill receipt and a Telegram provider `messageId`; ~~add the official-SDK
   read-only option/crypto bulk data plane without a second mutation path~~ **DONE**; ~~rank current candidates
   and persist one model decision as a no-effect research receipt~~ **DONE**; close through its sealed CLI-only
   exit; reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds
@@ -592,8 +637,8 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
   ~~normalize comparable expected-value/probability/freshness/liquidity evidence and veto weak selections~~
   **DONE**. ~~Make the portfolio-level gate account for every open position/order before the unchanged CLI
   effect path can act~~ **DONE**. ~~Add one bounded crypto/equity CLI order shape without adding a broker client
-  or scheduler~~ **DONE**. Next, observe the main-derived natural task wake and reconcile its official CLI
-  proposal/veto/order/fill receipt; identical replay must add zero orders. The sealed SPY exit remains active for
+  or scheduler~~ **DONE**. Next, reconcile the restored main-derived wakes against the official CLI; identical
+  replay must add zero orders. The sealed SPY exit remains active for
   the next regular options session, followed by the final campaign funnel and unexplained-delta check.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
   projection must drive both live and static views so they cannot drift. The shared allowlisted projection,
@@ -643,8 +688,12 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next scope remains inside A11 and does not wait for the options session: observe the existing Eliza task's natural
-wake after a main-derived release. Read back the persisted cross-market decision and deterministic gates. If they
+Next scope remains inside A11 and does not wait for the options session: from the dedicated
+`fix/alpaca-loop-telegram-report-20260902` worktree, complete the one-file Alpaca Telegram receipt change, merge
+only after its focused type/format checks pass, then promote one clean main-derived release without using
+`launchctl` or `gui/$UID`. Restore the original single Alpaca task/state authority rather than editing the later
+duplicate task. Read back two consecutive natural five-minute wakes, their persisted cross-market decisions,
+deterministic gates, official CLI account/order/position state, and Telegram provider `messageId` values. If they
 allow crypto or an in-session equity/ETF candidate, reconcile the one official CLI order/fill and prove identical
 replay adds zero orders; if they veto or select `NO_TRADE`, preserve that real receipt without manufacturing a
 trade. Do not manually fire or add a scheduler. A Remote Codex runtime promotion may stop and start only Eliza
