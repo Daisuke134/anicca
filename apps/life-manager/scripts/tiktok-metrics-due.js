@@ -75,7 +75,7 @@ async function runDue(nowMs = Date.now(), env = process.env, provided = null) {
   for (const expected of expecteds) {
     for (const [window, delay] of Object.entries(WINDOWS)) {
       const existingFile = snapshotFile(dataDir, expected, window);
-      if (fs.existsSync(existingFile)) { const snapshot = JSON.parse(fs.readFileSync(existingFile, "utf8")); results.push({ video_id: expected.video_id, window, state: "complete", telegram: await sendMetricSnapshot({ created: true, file: existingFile, snapshot }, env, dataDir) }); continue; }
+      if (fs.existsSync(existingFile)) { results.push({ video_id: expected.video_id, window, state: "complete", telegram: { created: false, reason: "snapshot_replay" } }); continue; }
       const dueMs = Date.parse(expected.published_at) + delay;
       if (nowMs < dueMs) { results.push({ video_id: expected.video_id, window, state: "pending", due_at: new Date(dueMs).toISOString() }); continue; }
       if (nowMs > dueMs + GRACE_MS) { const snapshot = delayed(dataDir, expected, window, new Date(nowMs).toISOString()); results.push({ video_id: expected.video_id, window, state: "source_delayed", telegram: await sendMetricSnapshot(snapshot, env, dataDir) }); continue; }

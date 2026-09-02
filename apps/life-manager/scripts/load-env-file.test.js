@@ -92,6 +92,8 @@ test("every marketing publication boot script loads the private marketing env", 
     "anicca-obou-instagram-production-boot.sh",
     "honne-en-production-boot.sh",
     "honne-ja-production-boot.sh",
+    "tiktok-metrics-production-boot.sh",
+    "instagram-metrics-production-boot.sh",
   ]) {
     const source = fs.readFileSync(path.join(__dirname, script), "utf8");
     assert.ok(
