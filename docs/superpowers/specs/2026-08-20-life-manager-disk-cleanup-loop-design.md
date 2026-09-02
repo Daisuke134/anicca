@@ -602,6 +602,20 @@ Google Cloud SDK 561.0.0の重複installだったため424,564 KiBを回収し�
 application default credential、credentials DB、access token DBは保持し、Homebrew gcloudのversion readbackをPASSした。
 Data空き`39,567,980 KiB`（約37.7 GiB）、errors 0、protected deletion 0である。
 
+`~/.agents/skills` 441,032 KiBはOpenClaw PID 712がSKILL.mdをopenしているため不可侵とした。
+旧`skills.bak-20260720` 62,592 KiBは1028 fileを現行treeとblob単位で比較し、非同一276 blobのうち272はGit履歴に
+reachable、2 pycは再生成可能だった。履歴外の唯一動画2本36,620 KiBだけを保持し、残り25,972 KiBを回収した。
+
+`~/Archive`はclean/dirtyをrepo別に判定し、clean、HEAD remote reachable、open handle 0を満たす11 cloneだけを
+81,620 KiB回収した。dirtyなStar-Office-UI、worldmonitor、automaton、youtube-auto-agentとremoteなし
+kakuteishinkokuは保持し、Archiveは304,956→223,336 KiBとなった。
+
+同時刻にData空きが約37.7 GiBから約27.3 GiBへ低下したが、既知writer rootに約10 GiB増加はなく、APFS snapshot 0、
+`vm.swapusage`はtotal 7,168 MiB、used 6,258.81 MiBだった。system-wide memory freeは71%、throttled page 0で、
+主ownerはCodex app-server、OpenClaw gateway、複数の稼働CloakBrowser rendererだった。swapはmacOS所有であり、
+直接削除・process停止・signal・restartを行わず保持した。追加回収後のData空きは`28,731,308 KiB`
+（約27.4 GiB）、errors 0、protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
