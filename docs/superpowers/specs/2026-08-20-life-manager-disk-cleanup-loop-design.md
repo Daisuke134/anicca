@@ -625,6 +625,12 @@ clean・remote reachable・open 0の12 cloneを96,912 KiB回収し、dirtyな`cl
 `~/build` 75,644 KiBはLife Manager iOS日本語/pushの固有検証evidenceだったため変更0とした。
 回収後Data空き`29,160,676 KiB`（約27.8 GiB）、errors 0、protected deletion 0である。
 
+`~/actions-runner` 585,768 KiBはRunner PID 720/808/837がbin/externalsを実使用しているため保持した。
+`_diag` 176,268 KiBは全件7日以内で、現行logをPID 837がopenし、8 MiB/file rotationも働いているため変更0とした。
+`~/.serena/logs`はprocess 0、open handle 0で、1542 file全件が7日超だったため68,256 KiBを回収した。
+language server 25,700 KiB、config、memoryは保持した。Data空き`29,077,376 KiB`（約27.7 GiB）、
+errors 0、protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
