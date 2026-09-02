@@ -1048,6 +1048,22 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "Both non-empty npx roots are current Claude MCP processes and one native module is open. Do not purge while active; after terminal, remove only exact owner cache with rebuild/readback proof."
+    },
+    {
+      "batch": "p1d-homebrew-toolchain-duplicate-audit-43",
+      "paths": ["/opt/homebrew/Cellar/node@22/22.22.0", "/opt/homebrew/Cellar/python@3.12/3.12.13", "/opt/homebrew/Cellar/ggml/0.18.0"],
+      "components": [
+        {"path": "node@22/22.22.0", "measured_kib": 60468, "caller_refs": ["ai.hermes.gateway.plist PATH", "~/.openclaw/workspace/screenshot-ab/run.sh"], "active_processes": 0, "decision": "preserve_required_hermes_openclaw_runtime"},
+        {"path": "python@3.12/3.12.13", "measured_kib": 84812, "caller_refs": ["~/.claude/security/agent-sdk-venv/pyvenv.cfg"], "active_processes": 0, "decision": "preserve_agent_sdk_base_interpreter"},
+        {"path": "ggml/0.18.0", "measured_kib": 3352, "opt_target": "ggml/0.20.2", "caller_refs": [], "active_processes": 0, "decision": "defer_brew_managed_old_version_cleanup"}
+      ],
+      "old_version_candidate_bytes": 3432448,
+      "decision": "preserve_caller_backed_toolchains_defer_brew_cleanup",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Node@22 and Python@3.12 are not garbage despite no current process; explicit runtime callers remain. Only ggml 0.18 is an unreferenced 3.3 MiB old version, but brew linkage/cleanup must prove safe removal first."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
