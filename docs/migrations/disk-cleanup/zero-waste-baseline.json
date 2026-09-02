@@ -461,6 +461,25 @@
       "free_before_kib": 11233796,
       "free_after_kib": 11487852,
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1d-external-clones-14",
+      "removed": [
+        "~/Projects/.worktrees/gig-ryu-colors-demo",
+        "~/Projects/ugig-moshcode",
+        "~/Projects/ugig-nightcell7"
+      ],
+      "logical_target_kib": 153124,
+      "remote_saved_before_delete": 3,
+      "open_or_registry_references_before_delete": 0,
+      "retained_active_dirty_or_protected": [
+        "~/anicca-project",
+        "~/anicca-project/.worktrees/webmcp-money-printer",
+        "~/Projects/lm-t2-spec.OFNS1W",
+        "~/Projects/ugig-aiornot-rss-mime",
+        "~/profitable-claude"
+      ],
+      "protected_deletions": 0
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
