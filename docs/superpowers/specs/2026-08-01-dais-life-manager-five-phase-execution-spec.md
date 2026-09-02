@@ -43,6 +43,9 @@ agent runner、marketplace application transaction、contracts/ledger/outboxの�
 `skills/_shared/marketplace-core/scripts/feasibility_policy.py`へ移し、Coconala/Upworkの既存entrypointとLancersが同じ正本を読む形で完了した。
 provider固有discovery/submit/readback、receipt、Telegram、schedulerは変更していない。Coconala policy focused checkは3/3 PASS。現在activeはStep 4、
 共有済み経路を使うLancers Apply ownerをsingle writerで起動する一件である。
+Step 4のread-only owner監査ではinstalled plistは`StartInterval=60`で存在するが、GUI domainのserviceはabsentでApply owner 0だった。
+Eliza Lancers runtimeとtmuxも0で二重writerはない。このRemoteからのGUI-domain load/kickstartは禁止経路のため実行せず、Step 4は正規の非Remote
+ownerによるexact 1 load待ちとして未完を維持する。plist fileの存在だけを24/7稼働と報告しない。
 固定順は、Apply比較→shared inventory→最小重複一件の
 shared化→Lancers single writer→新Proposal→案件別Telegram ACK→replay-zero→自然wake継続→Storefront→Negotiate→Paid→banked net→
 Gig Money Loop Skill→CrowdWorks→Freelancer.com→Life Manager自身のloop factoryである。各Stepを実測完了して正本更新後にだけ次へ進む。
