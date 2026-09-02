@@ -20,7 +20,19 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    errors 0で回収した。Coconala Storefrontはdefault tabを`:9223`で開きながら`:9222`へcloseしていた
    root causeを修正し、前回crashの同一owner target回収も接続した。production release `c74b5973`で
    `storefront_live_pages=0 / duplicate_excess=0 / registry_total=0`をread backした。loopは停止していない。
-3. [ ] **All-loop bounded-output audit:** 全managed loopについてscratch、browser target、log/evidence、
+3. [ ] **Host-wide external waste elimination, then bounded-output audit:** 現在activeな先頭atomは
+   Life Manager内の個別loop変更ではなく、Mac全体を容量順に実測し、Life Managerの外側にある未使用application、
+   再生成cache、重複clone/repository、終了済みworktree、旧toolchain、old backup/archive、不要なuser dataを
+   大きい順に回収することである。最初に`/Applications`、`/opt/homebrew`、`/private/var/folders`、`~/Library`、
+   `~/.openclaw`、`~/anicca-project`、`~/anicca`、`~/Projects`のLife Manager正本外、`~/Downloads`、`~/Desktop`、
+   `~/Pictures`を同一filesystemから再計測する。ChatGPT、Claude、Chrome/Chromium等も名前で保護せず、現在の
+   Codex connection、browser session、loaded argv、open fileの実依存が0なら削除候補とする。逆にactive/open/
+   loaded/dirty/unpushed/uniqueなものは保持する。`~/.codex-acct2/**`、`~/.claude/**`、Alpaca、Coconala、Lancers、
+   WebMCPの進行中state/worktree、不可侵storeは削除しない。各候補は削除前bytes・owner/依存・復元可能性、
+   削除後bytes・free差分を同じ台帳へ記録する。Life Manager個別loopの変更や別ownerのproduction state変更は、
+   この外側cleanupが終わるまで行わない。
+
+   外側の大容量wasteを回収した後だけ、全managed loopについてscratch、browser target、log/evidence、
    immutable releaseの各owner cleanupを確認する。不足するloopだけ既存共通cleanupへ接続する。収益loopを
    disk thresholdで停止する仕組みは追加しない。active worktree、取引中deliverable、credential、ledger、
    receipt、不可侵storeは保持する。完了条件は各ownerのbounded retentionと異常終了後の次wake回収であり、
@@ -303,6 +315,20 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
       stale receiptとしてcleaned 0/errors 0だった。live dataへのdry-runは35 scanned/35 skipped/cleaned 0/
       errors 0/bytes 0である。main由来immutable release、自然paid wake、terminal receipt、次wake janitorの
       production readbackまでは未完了なのでitem 8はcurrentのまま維持する。
+
+      同日のremote disconnect調査ではscheduled restart/shutdown、user cron、shutdown commandを持つ
+      LaunchAgent/Daemonはいずれも0で、power scheduleは毎朝06:00のwakepoweronだけだった。直近boot
+      `13:07:53 JST`はownerの物理power cycleと一致する。切断前`11:07:19 JST`の
+      `WindowServer_2026-09-02-110744_*.userspace_watchdog_timeout.spin`はWindowServer main threadが40秒
+      check-in不能で、TCC `tccd`待ち、さらに`tccd`のuser-initiated threadがAPFS I/O内で全sample blockした
+      call chainを保存している。同種WindowServer watchdogは直近3日連続で存在し、disk I/O/TCC stallがGUIと
+      remote-controlを巻き込む再発classである。
+
+      `com.anicca.codex-remote-keepalive`はcanonical recovery plist/commentが300秒なのにlive plistだけ60秒へ
+      driftし、2 accountへ毎分login/status/start CLIを実行していた。control-plane preflight PASS後にlive plistを
+      canonical 300秒へ戻し、このkeepalive labelだけsafe reloadした。Codex app-server PIDはreload前後
+      `1366,1375,2089`で不変、keepalive run 1はlast exit 0、acct2 connected、loaded interval 300秒、kill 0だった。
+      これはscheduled rebootの除去ではなく、TCC/security process churnを正本cadenceへ戻したincident mitigationである。
    9. Codex/Claude sessionを保持しながら終了済みlog/archiveをbounded rotationへ接続する。
    10. `/private/var/folders`とLibrary cacheはopen-path/owner proof後の再生成可能familyだけを回収する。
    11. free 11 GiB以上、24時間ENOSPC 0/protected deletion 0を証明し、その後7日間のstate-write failure 0、
@@ -445,18 +471,27 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    errors 0、closed 0、protected deletion 0、active/open/loaded producer保持をもってmemory/swap atomを完了する。
    11 GiB floorと長期観測は固定順序⑨で閉じる。
 
-   **残TODO（順序固定）:** ①[x] memory/swap owner-side drainとswap縮小readback、② **現在active:**
-   残るrunning旧releaseの自然idle reconcile＋central GC、③重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
-   ⑤Hermes正式retire、⑥Gig terminal project、⑦Codex/Claude終了済みlog/archive rotation、
-   ⑧`/private/var/folders`・Library cache・未使用toolchain、⑨free 11 GiB以上＋24時間観測＋7日観測。
+   **外側worktree回収readback:** `~/anicca-project/.worktrees`のうち、WebMCPと不可侵`anicca-rtdash`を除き、
+   process/open参照0の終了済み5 treeを監査した。dirtyは共通動画の既回収記録と少数の固有文書/generated stateで、
+   各treeの全差分を個別branchへcommit/pushし、local/remote SHA一致を確認してから`git worktree remove`した。
+   rootは`3,199,564 → 724,604 KiB`、`anicca-project`全体は`6,922,604 → 4,442,552 KiB`となり、
+   logical `2,474,960 KiB`を回収した。Data空きは`24,631,608 KiB`。errors 0、protected deletion 0で、
+   Life Manager main/Eliza、WebMCP、Alpaca、Coconala、Lancers、`anicca-rtdash`、Codex/Claude rootは存在をread backした。
+
+   **残TODO（順序固定）:** ①[x] host全体の外側大容量list、②[x]終了済み外側worktreeの第一GiB級batch、
+   ③ **現在active:** Life Manager正本外の残存重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
+   ⑤未使用application、`/private/var/folders`、Library cache、未使用toolchain、Downloads/Desktop/Picturesの安全なwaste、
+   ⑥Codex/Claudeの保護rootを削除せずowner-side bounded rotation、⑦残るrunning旧releaseの自然idle reconcile＋central GC、
+   ⑧Hermes正式retire、⑨Gig terminal project、⑩free 11 GiB以上＋24時間観測＋7日観測。
    これらを閉じた後に現在順序正本どおりLancers revenue loop、WebMCP hackathonへ進む。
 4. [ ] **Lancers revenue loop:** 別ownerが進行中のcontrol-plane移管とreadbackを競合変更せず完了させ、
    Application → Negotiate/Contract → Paid Fulfillment/Finance → official paymentを閉じる。
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
    ApplicationReceipt、demo動画、YouTube、Devpost提出を閉じる。
 
-現在activeな先頭atomは **All-loop bounded-output audit** である。Connection recoveryとmajor manual cleanupを
-再びTODOへ戻さない。
+現在activeな先頭atomは **Life Manager正本外の残存重複repository/clone** である。Life Manager個別loopの
+production変更は行わず、次にOpenClawのowner依存と重複source/outputを閉じる。Connection recovery、host census、
+完了済みmanual cleanup、回収済みworktreeを再びTODOへ戻さない。
 
 ## Business-loop self-sustainability contract
 

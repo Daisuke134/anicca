@@ -2579,6 +2579,102 @@ The lane remains Life Manager-unarmed at 0/day while the next atom reuses the
 approved EN Widget pack lineage to run one exact Postiz/native canary, then
 proves Telegram and same-slot replay-zero before any cadence arm.
 
+**YouTube live cursor 3 — canary verified; scheduler install pending:** main PR
+`#3909` adds exact destination `anicca-ios-en-widget-youtube`, Postiz
+`cmq3u37gi005iqp0y90a2w92n`, the approved EN Widget pack
+`79e8fe12…701a1`, and three JST intervals `07:45/13:15/19:45`. Focused
+destination/manifest/cycle checks pass 29/29 and main-derived immutable release
+`20260902T105547-bc9ffdee` passes the same checks despite non-fatal npm ENOSPC
+warnings during unrelated dependency extraction. The one exact canary is public
+at `https://www.youtube.com/watch?v=P_Epsp57RbY`, Postiz
+`cmtjgc5yc0429pn0yrpr45yhj`, Telegram `48262`. Native metadata binds channel
+ID `UCFGkrtiSTni-AZ9DUY6Q5EA`, handle `@anicca-ai`, public availability, and
+English title/description; 1s/8s/14s native frames match the source Widget
+object. Same-slot replay returns generation/publication/Telegram
+`created:false`. Manifest `8cba262c…15d81f` contains 14 targets / 16 holds,
+marks this lane `canary-verified`, and
+arms only this newly classified integration in addition to the prior thirteen.
+The LaunchAgent is not yet installed: targeted `lm-loop apply` fails closed
+before plist mutation because this Codex app-server context reports
+`id -un=501`, manager rc 153, and `gui/501` rc 141. Do not claim the three/day
+cron is live until a GUI/Aqua context runs targeted apply, then kickstart and
+reads back the exact loaded release argv and replay-zero. No retry publication
+is required.
+
+**YouTube live cursor 4 — exact remaining atom:** host storage is healthy again
+(26 GiB free), so disk capacity is not a blocker. The canary, native owner and
+content-family verification, Telegram receipt, manifest arm, and replay-zero
+are already terminal and must not be repeated. The only unfinished action for
+`@anicca-ai` is to run targeted `lm-loop apply` from a valid GUI/Aqua launchd
+context, kickstart the installed `life-manager-anicca-ai-youtube` loop, and
+read back its plist/loaded argv as immutable release
+`20260902T105547-bc9ffdee` with exactly `07:45/13:15/19:45` JST. This isolated
+Codex context still reports numeric `id -un=501`, missing manager context, and
+`gui/501` rc 141, so the official apply continues to fail closed before plist
+mutation. After that single scheduler atom closes, the next fixed-order atom is
+classification and canary of YouTube `@anicca-affirmation-video` /
+`cmn8ymq6c02oio70y5ea1trv8`; `@anicca-jp` remains owner-skipped at 0/day, and
+ebook/monk remain later.
+
+**YouTube live cursor 5 — GUI bridge unavailable:** a target-only helper was
+prepared to run the official apply/start/status commands from Terminal, but it
+never started. AppleScript rejects Terminal's `do script` command in this
+isolated app-server, LaunchServices cannot resolve Terminal by name, and the
+absolute Terminal.app open fails before launch. The target plist remains absent
+and publication effects remain unchanged. This confirms the remaining scheduler
+atom requires an external state change: a valid logged-in GUI/Aqua execution
+context. Do not bypass `lm-loop`, hand-write the plist, run raw `launchctl`, or
+advance the next YouTube lane while this fixed-order atom is open.
+
+**YouTube live cursor 6 — `@anicca-ai` terminal at 3/day:** after the Codex
+harness returned to a healthy Aqua context (`id -un=anicca`, manager `Aqua`,
+`gui/501` rc 0), target-only `lm-loop apply` installed and loaded
+`ai.anicca.life-manager-anicca-ai-youtube`. Its plist and live argv point to
+immutable main release `20260902T131725-29fb7681` / SHA
+`29fb7681b3e3983870c105db8ec7907282f894f8` and contain exactly
+`07:45/13:15/19:45` JST. Official kickstart consumed the 13:15 slot once:
+YouTube `https://www.youtube.com/watch?v=vFptviO7Gfo`, Postiz
+`cmtjlbdvf00kvpn0yi13wq6lu`, Telegram `48283`. Native readback proves public
+15-second content on uploader `@anicca-ai`, channel ID
+`UCFGkrtiSTni-AZ9DUY6Q5EA`, English self-belief/affirmation copy, and the
+approved Widget family. The run terminated `pass` on the installed SHA and
+returned loaded-idle. A second official kickstart of the same due slot also
+terminated `pass`; generation/publication/Telegram all returned
+`created:false`, and the exact publication ledger remained three lifecycle
+rows plus one receipt. This supersedes cursors 3–5's pending scheduler state.
+The first active atom is now classification and canary of YouTube
+`@anicca-affirmation-video` / `cmn8ymq6c02oio70y5ea1trv8`; `@anicca-jp`
+remains owner-skipped at 0/day, and ebook/monk remain later.
+
+**Shared-memory and checkout guard:** the canonical source checkout is
+`/Users/anicca/Projects/life-manager-main`, backed by
+`Daisuke134/life-manager`; production still executes only sealed main-derived
+releases. `/Users/anicca/anicca` is an older dirty checkout of the same remote,
+not the source SSOT. It must not be deleted yet because live LaunchAgents still
+reference its marketing metrics, x402, Franklin, and self-improvement paths.
+Retirement requires an inventory, one-owner-at-a-time migration to registry
+managed main releases, preservation of dirty runtime evidence, and a final
+loaded-reference count of zero. This cleanup does not reorder the active
+marketing cursor. The Codex runtime lesson is now discoverable in repo-root
+`AGENTS.md`, durable `MEMORY.md`, and the daily memory note, in addition to the
+machine-wide generated Codex rules.
+
+**Next atomic TODO — fixed order:**
+
+1. Inspect native YouTube `@anicca-affirmation-video` pinned/recent posts and
+   freeze exactly one product, locale, renderer, form, and forbidden families.
+2. Bind only Postiz `cmn8ymq6c02oio70y5ea1trv8`; do not borrow either other
+   YouTube integration.
+3. Select or build one matching approved pack and record exact object refs.
+4. Add one default-off Life Manager destination/loop and focused contract.
+5. Run one controlled canary, then verify Postiz, native handle/content,
+   Telegram, and same-slot replay-zero.
+6. Arm exactly three daily intervals, target-only apply, official kickstart,
+   and read back plist, loaded argv, immutable release, terminal event, and
+   provider effect.
+7. Keep YouTube `@anicca-jp` owner-skipped at 0/day. Only after this YouTube
+   atom is terminal may the ebook/monk work begin.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
