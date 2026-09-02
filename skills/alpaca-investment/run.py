@@ -8,7 +8,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from alpaca_cli import observe
+from alpaca_cli import find_order_by_client_id, observe
+from effect_store import reconcile_started
 
 
 def _atomic_json(path: Path, value: dict) -> None:
@@ -35,12 +36,22 @@ def main() -> int:
         "~/.local/state/life-manager/alpaca-investment",
     )).expanduser()
     try:
+        credentials_path = Path(os.environ.get(
+            "ANICCA_CREDENTIALS_FILE",
+            "~/.local/share/anicca/credentials.json",
+        )).expanduser()
+        cli_path = Path(os.environ.get("ALPACA_CLI", "~/.local/bin/alpaca")).expanduser()
+        reconciliation = reconcile_started(
+            state / "receipts.jsonl",
+            lambda client_order_id: find_order_by_client_id(
+                credentials_path=credentials_path,
+                cli_path=cli_path,
+                client_order_id=client_order_id,
+            ),
+        )
         observation = observe(
-            credentials_path=Path(os.environ.get(
-                "ANICCA_CREDENTIALS_FILE",
-                "~/.local/share/anicca/credentials.json",
-            )).expanduser(),
-            cli_path=Path(os.environ.get("ALPACA_CLI", "~/.local/bin/alpaca")).expanduser(),
+            credentials_path=credentials_path,
+            cli_path=cli_path,
         )
         _atomic_json(state / "observation-latest.json", observation)
         summary = {
@@ -51,6 +62,7 @@ def main() -> int:
             "orders_count": observation["open_and_closed_orders_count"],
             "paper": True,
             "positions_count": len(observation["positions"]),
+            "reconciliation": reconciliation,
             "status": "observed",
         }
         print(json.dumps(summary, separators=(",", ":")))

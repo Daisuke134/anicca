@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import stat
 import subprocess
 from pathlib import Path
@@ -27,6 +28,8 @@ def _credentials(path: Path) -> dict[str, str]:
     if info.st_size > MAX_CREDENTIAL_BYTES:
         raise ValueError("credential_file_too_large")
     document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise ValueError("credential_document_invalid")
     rows = [row for row in document.get("credentials", [])
             if isinstance(row, dict) and row.get("service") == "app.alpaca.markets"]
     if len(rows) != 1:
@@ -39,6 +42,25 @@ def _credentials(path: Path) -> dict[str, str]:
            for value in values.values()):
         raise ValueError("alpaca_paper_credentials_unavailable")
     return values  # type: ignore[return-value]
+
+
+def _context(credentials_path: Path, cli_path: Path) -> dict[str, str]:
+    if not cli_path.is_file() or not os.access(cli_path, os.X_OK):
+        raise ValueError("alpaca_cli_unavailable")
+    private = _credentials(credentials_path)
+    env = {
+        **os.environ,
+        "ALPACA_API_KEY": private["api_key"],
+        "ALPACA_SECRET_KEY": private["api_secret"],
+        "ALPACA_LIVE_TRADE": "false",
+    }
+    version = subprocess.run(
+        [str(cli_path), "version"], env=env, stdin=subprocess.DEVNULL,
+        capture_output=True, text=True, timeout=10, check=False,
+    )
+    if version.returncode != 0 or version.stdout.strip() != CLI_VERSION:
+        raise ValueError("alpaca_cli_version_unpinned")
+    return env
 
 
 def _run(cli: Path, args: list[str], env: dict[str, str]) -> Any:
@@ -59,21 +81,7 @@ def _run(cli: Path, args: list[str], env: dict[str, str]) -> Any:
 def observe(*, credentials_path: Path, cli_path: Path, symbol: str = "SPY") -> dict[str, Any]:
     if symbol != "SPY":
         raise ValueError("unsupported_observation_symbol")
-    if not cli_path.is_file() or not os.access(cli_path, os.X_OK):
-        raise ValueError("alpaca_cli_unavailable")
-    private = _credentials(credentials_path)
-    env = {
-        **os.environ,
-        "ALPACA_API_KEY": private["api_key"],
-        "ALPACA_SECRET_KEY": private["api_secret"],
-        "ALPACA_LIVE_TRADE": "false",
-    }
-    version = subprocess.run(
-        [str(cli_path), "version"], env=env, stdin=subprocess.DEVNULL,
-        capture_output=True, text=True, timeout=10, check=False,
-    )
-    if version.returncode != 0 or version.stdout.strip() != CLI_VERSION:
-        raise ValueError("alpaca_cli_version_unpinned")
+    env = _context(credentials_path, cli_path)
 
     account = _run(cli_path, [
         "account", "get", "--quiet", "--jq",
@@ -119,3 +127,25 @@ def observe(*, credentials_path: Path, cli_path: Path, symbol: str = "SPY") -> d
         "positions": positions,
         "trade": trade,
     }
+
+
+def find_order_by_client_id(
+    *, credentials_path: Path, cli_path: Path, client_order_id: str,
+) -> dict[str, Any] | None:
+    if not re.fullmatch(r"lm-ai-[0-9a-f]{24}", client_order_id):
+        raise ValueError("client_order_id_invalid")
+    env = _context(credentials_path, cli_path)
+    query = (
+        f"first(.[]|select(.client_order_id=={json.dumps(client_order_id)})) // "
+        "{found:false}|if .found==false then . else "
+        "{found:true,client_order_id:.client_order_id,status:.status,"
+        "filled_qty:.filled_qty,filled_avg_price:.filled_avg_price,submitted_at:.submitted_at} end"
+    )
+    result = _run(cli_path, [
+        "order", "list", "--quiet", "--status", "all", "--limit", "500", "--jq", query,
+    ], env)
+    if result == {"found": False}:
+        return None
+    if not isinstance(result, dict) or result.get("found") is not True:
+        raise ValueError("alpaca_order_readback_invalid")
+    return result
