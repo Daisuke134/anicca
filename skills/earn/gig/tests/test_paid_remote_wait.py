@@ -33,6 +33,23 @@ def write_json(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+def test_accumulation_normalizes_legacy_text_only_digest() -> None:
+    snapshot = load("coconala_queue_snapshot")
+    text = "Legacy buyer requirement"
+    legacy = {"text": text, "attachments": [], "sha256": hashlib.sha256(text.encode()).hexdigest()}
+
+    rows, digest = snapshot._merge_accumulated([legacy], [])
+
+    canonical = hashlib.sha256(json.dumps(
+        {"text": text, "attachments": []},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    assert rows[0]["sha256"] == canonical
+    assert digest == hashlib.sha256(json.dumps(
+        [canonical], ensure_ascii=False, separators=(",", ":"),
+    ).encode()).hexdigest()
+
+
 def test_paid_failure_preserves_machine_readable_step_and_diagnostic_detail() -> None:
     paid = load("paid_direct")
     error = paid.Failure("file_builder", "isolated_file_owner")

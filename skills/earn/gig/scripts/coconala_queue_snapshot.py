@@ -1626,11 +1626,20 @@ def _merge_accumulated(
     for row in existing if isinstance(existing, list) else []:
         if not isinstance(row, dict):
             continue
-        digest = str(row.get("sha256") or "")
-        if not digest or digest in seen:
+        normalized = {
+            **row,
+            "text": str(row.get("text") or ""),
+            "attachments": row.get("attachments") if isinstance(row.get("attachments"), list) else [],
+        }
+        digest = hashlib.sha256(json.dumps(
+            {"text": normalized["text"], "attachments": normalized["attachments"]},
+            ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")).hexdigest()
+        if digest in seen:
             continue
+        normalized["sha256"] = digest
         seen.add(digest)
-        merged.append(row)
+        merged.append(normalized)
     for row in snapshot_rows:
         if row["sha256"] in seen:
             continue
