@@ -411,7 +411,11 @@ def main(argv: list[str] | None = None) -> int:
                 loop_ids.append(reconcile_args[index + 1])
                 index += 1
             elif value.startswith("--loop-id="):
-                loop_ids.append(value.split("=", 1)[1])
+                loop_id = value.split("=", 1)[1]
+                if not loop_id:
+                    print(json.dumps({"ok": False, "error": "--loop-id requires a value"}))
+                    return 2
+                loop_ids.append(loop_id)
             else:
                 positionals.append(value)
             index += 1
@@ -420,6 +424,15 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         route = positionals[0]
         requested_ids = set(loop_ids)
+        for loop_id in loop_ids:
+            entry = registry["loops"].get(loop_id)
+            if not isinstance(entry, dict):
+                print(json.dumps({"ok": False, "error": f"unknown loop id: {loop_id}"}))
+                return 2
+            if entry["provider_route"] != route:
+                print(json.dumps({"ok": False,
+                                  "error": f"loop id {loop_id} is not on provider route {route}"}))
+                return 2
         release_root = Path(os.environ.get("LIFE_MANAGER_RELEASE_ROOT", ROOT)).expanduser().resolve(strict=True)
         current_sha = json.loads((release_root / "RELEASE.json").read_text()).get("sha")
         rows = snapshot(registry, "all")

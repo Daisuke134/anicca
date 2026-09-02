@@ -635,6 +635,67 @@ class LmLoopApplyTest(unittest.TestCase):
             ["hf-gig-apply-direct", "hf-gig-reply-detector"],
         )
 
+    def test_reconcile_loop_id_invalid_values_fail_closed(self):
+        release = self._release("release-a").resolve()
+        value = registry()
+        value["loops"]["shared"] = {
+            **value["loops"]["example"],
+            "label": "ai.anicca.shared",
+            "provider_route": "shared-agent-runner",
+        }
+        value["loops"]["deterministic-only"] = {
+            **value["loops"]["example"],
+            "label": "ai.anicca.deterministic-only",
+        }
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        for name, option in (
+            ("missing", ["--loop-id"]),
+            ("empty", ["--loop-id="]),
+            ("unknown", ["--loop-id", "not-registered"]),
+            ("wrong-route", ["--loop-id", "deterministic-only"]),
+        ):
+            with self.subTest(name=name), patch.object(lm_loop, "ROOT", release), \
+                    patch.object(lm_loop, "snapshot", return_value=[]), \
+                    patch.dict(os.environ, {"LIFE_MANAGER_RELEASE_ROOT": str(release)}), \
+                    redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(
+                    lm_loop.main(["reconcile", "shared-agent-runner", *option]),
+                    2,
+                )
+                self.assertIn("error", json.loads(output.getvalue()))
+
+    def test_reconcile_without_loop_id_keeps_unloaded_default_behavior(self):
+        release = self._release("release-a").resolve()
+        value = two_loop_registry()
+        value["loops"]["second"]["provider_route"] = "deterministic"
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        rows = [
+            {
+                "classification": "managed",
+                "provider_route": "deterministic",
+                "launchd_state": state,
+                "installed_release_sha": "b" * 40,
+                "loop_id": loop_id,
+            }
+            for loop_id, state in (("example", "loaded-idle"), ("second", "unloaded"))
+        ]
+        applied = []
+
+        def record_apply(release_root, *args, **kwargs):
+            applied.append(kwargs["target"])
+            return [{"ok": True, "release_sha": SHA}]
+
+        with (
+            patch.object(lm_loop, "ROOT", release),
+            patch.object(lm_loop, "snapshot", return_value=rows),
+            patch.object(lm_loop, "apply_live", side_effect=record_apply),
+            patch.dict(os.environ, {"LIFE_MANAGER_RELEASE_ROOT": str(release)}),
+            redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(lm_loop.main(["reconcile", "deterministic"]), 0)
+
+        self.assertEqual(applied, ["example", "second"])
+
     def test_loaded_idle_reconcile_skips_prelock_running_owner_without_mutation(self):
         release = self._release("release-a").resolve()
         current = self.root / "current"
