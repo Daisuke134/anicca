@@ -449,7 +449,12 @@ def main(argv: list[str] | None = None) -> int:
         release_root = Path(os.environ.get("LIFE_MANAGER_RELEASE_ROOT", ROOT)).expanduser().resolve(strict=True)
         current_sha = json.loads((release_root / "RELEASE.json").read_text()).get("sha")
         rows = snapshot(registry, "all")
+        explicitly_reloadable = {
+            loop_id for loop_id in requested_ids
+            if registry["loops"][loop_id].get("cadence", {}).get("keep_alive") is True
+        }
         eligible_states = ({"loaded-idle", "loaded-running"} if include_running else
+                           {"loaded-idle", "loaded-running"} if explicitly_reloadable else
                            {"loaded-idle"} if loaded_idle_only else
                            {"loaded-idle", "unloaded"})
         eligible = [row for row in rows if (
@@ -458,6 +463,9 @@ def main(argv: list[str] | None = None) -> int:
             and row["provider_route"] == route
             and (not requested_ids or row["loop_id"] in requested_ids)
             and row["launchd_state"] in eligible_states
+            and (row["launchd_state"] != "loaded-running"
+                 or include_running
+                 or row["loop_id"] in explicitly_reloadable)
             and row["installed_release_sha"]
             and row["installed_release_sha"] != current_sha
         )]
@@ -469,7 +477,8 @@ def main(argv: list[str] | None = None) -> int:
                     release_root / "bin/launchctl-safe",
                     target=row["loop_id"],
                     preserve_unloaded=row["launchd_state"] == "unloaded",
-                    skip_busy=loaded_idle_only))
+                    skip_busy=(loaded_idle_only and
+                               row["loop_id"] not in explicitly_reloadable)))
             except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
                 failed.append({"loop_id": row["loop_id"], "error": str(exc)})
         print(json.dumps({
