@@ -416,6 +416,9 @@ def main(argv: list[str] | None = None) -> int:
                     print(json.dumps({"ok": False, "error": "--loop-id requires a value"}))
                     return 2
                 loop_ids.append(loop_id)
+            elif value.startswith("--"):
+                print(json.dumps({"ok": False, "error": f"unknown reconcile option: {value}"}))
+                return 2
             else:
                 positionals.append(value)
             index += 1

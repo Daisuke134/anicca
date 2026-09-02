@@ -664,6 +664,17 @@ class LmLoopApplyTest(unittest.TestCase):
                 )
                 self.assertIn("error", json.loads(output.getvalue()))
 
+    def test_reconcile_rejects_unknown_option_before_snapshot(self):
+        release = self._release("release-a").resolve()
+        with (
+            patch.object(lm_loop, "ROOT", release),
+            patch.object(lm_loop, "snapshot", side_effect=AssertionError("snapshot called")),
+            patch.dict(os.environ, {"LIFE_MANAGER_RELEASE_ROOT": str(release)}),
+            redirect_stdout(io.StringIO()) as output,
+        ):
+            self.assertEqual(lm_loop.main(["reconcile", "--not-an-option"]), 2)
+        self.assertIn("error", json.loads(output.getvalue()))
+
     def test_reconcile_without_loop_id_keeps_unloaded_default_behavior(self):
         release = self._release("release-a").resolve()
         value = two_loop_registry()
