@@ -133,6 +133,22 @@ completion claim is nevertheless false until the two failing lanes below pass na
   readback. Fix the nested event-loop boundary first, then let the existing estimate owner consume
   the exact new event once; do not add an estimate sender to Paid.
 
+  The nested event-loop boundary is already fixed in the running Reply release, but the 22:35 JST
+  readback found the next root cause. The inbox list card for thread `9992000` keeps projecting old
+  identity `66f049...`, while the authoritative direct-thread head and durable outbox already hold
+  current buyer identity `e91548...`. `enqueue_head_rows()` dispatched the list-card identity
+  directly before `pending_targeted_actions()` could project the newest durable inbox event, causing
+  132 observed `targeted_inbox_identity_changed` retries against the same action. Current identity
+  attempts reached semantics but the model returned `seller_last/wait`; the deterministic validator
+  correctly rejected that as `semantic_purchase_decision_requires_proactive_reply`, which alone was
+  missing from the existing one-retry correction set. Branch
+  `fix/coconala-reply-stale-head-20260902` removes direct list-card dispatch and lets the immediately
+  following durable projection dispatch only the newest identity; it also admits that validator
+  error to the existing single corrective retry. Three focused Reply checks pass. This remains open
+  until pushed main runs naturally, action `529` leaves active pending, and official reply/readback
+  plus replay-zero are recorded. Thread `10085794` is currently represented only by DLQ-closed
+  historical rows, so it must not be force-submitted from stale spec text.
+
   The latest natural Paid terminal pass observed nine items and recorded `effect=1`, `readback=5`,
   `failed=2`, and `pending=2`. Ryu `18211957` completed with `send_performed=true`,
   `remote_repaired=true`, and official readback; `18171850` completed by dedupe with official
@@ -194,11 +210,12 @@ completion claim is nevertheless false until the two failing lanes below pass na
      reconciler to move it without a Remote `gui/$UID` operation.
   2. Apply, Storefront, and Paid are now naturally bound to `c259cc6e` in installed plist and real
      process argv. Preserve that readback while Reply converges.
-  3. Fix Reply's nested event-loop hidden-tab failure at its source. Let the existing Reply estimate
-     adapter consume the exact new event in direct-message thread `10085794`, submit the separate
-     JPY 24,000 estimate once, and require official estimate readback plus replay effect zero. Then
-     let Paid resume project `5242505` from the newer official event without repeating the first
-     project's delivery or any prior message.
+  3. Finish Reply's current action `529` on thread `9992000`: deploy the stale list-card suppression
+     and bounded semantic corrective retry, then require one official reply/readback and replay
+     effect zero. Reconcile thread `10085794` only from a newly observed official inbox identity;
+     every currently stored pending-looking row for it is DLQ-closed, so stale spec text is not
+     authority to submit a JPY 24,000 estimate. Then let Paid resume project `5242505` from the newer
+     official event without repeating the first project's delivery or any prior message.
   4. Restore the transferred `18180857` observe-only gate; resolve Paid's `remote_builder` failure,
      the `18128025` targeted-readback timeout, and `18218780` pending state; fix Storefront's
      `official_service_contract_invalid`; and restore successful Telegram transport without

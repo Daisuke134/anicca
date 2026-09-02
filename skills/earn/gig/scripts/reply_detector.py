@@ -2134,21 +2134,15 @@ async def supervise_replies(
                 continue
             event_key = coconala_inbox_event_key(thread_id, identity)
             try:
-                action = outbox.enqueue(
+                # Persist the observation only. enqueue_pending_actions() runs
+                # next and dispatches the newest durable identity for the action.
+                outbox.enqueue(
                     event_key=event_key, thread_id=thread_id,
                     thread_url=str(row.get("talkroom_url") or ""),
                     observed_at=int(time.time()),
                 )
             except Exception:
                 continue
-            if action.get("state") != "pending" or action.get("dlq_at") is not None:
-                continue
-            await enqueue_work({
-                "action_id": int(action["action_id"]),
-                "event_key": event_key, "thread_id": thread_id,
-                "identity_sha256": identity,
-                "expected_revision": int(action["revision"]),
-            })
 
     async def enqueue_pending_actions() -> None:
         # The direct supervisor must consume an exact inbox identity.  A

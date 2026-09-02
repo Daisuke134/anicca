@@ -1886,6 +1886,39 @@ def test_supervise_rebinds_stale_buyer_identity_once_and_replay_is_idempotent(tm
     assert len(dispatched) == 2
 
 
+def test_supervise_dispatches_durable_latest_identity_not_stale_list_card(tmp_path):
+    """A stale inbox-card identity cannot displace a newer durable thread head."""
+    args = _supervisor_args(tmp_path)
+    database = outbox.ConnectorOutbox(args.database, args.manifest)
+    old_identity = "a" * 64
+    new_identity = "b" * 64
+    _seed_pending_inbox_event(database, old_identity)
+    database.enqueue(
+        event_key=outbox.coconala_inbox_event_key("123", new_identity),
+        thread_id="123", thread_url="https://coconala.com/mypage/direct_message/123",
+        observed_at=1_755_555_201,
+    )
+    stop = asyncio.Event()
+    dispatched = []
+
+    async def probe():
+        return {"inquiries": [_head_row(old_identity)]}
+
+    async def worker(item):
+        dispatched.append(item)
+        stop.set()
+        return {"status": "completed"}
+
+    async def reconcile():
+        return None
+
+    asyncio.run(detector.supervise_replies(
+        args, probe=probe, worker=worker, reconcile=reconcile, stop=stop,
+    ))
+
+    assert [item["identity_sha256"] for item in dispatched] == [new_identity]
+
+
 def test_supervise_rebind_seller_last_closes_stale_action_without_dispatch(tmp_path):
     """A stale seller-last observation closes A and never creates buyer work B."""
     args = _supervisor_args(tmp_path)

@@ -691,6 +691,7 @@ class SemanticJudge:
                     "semantic_estimate_request_reply_conflict",
                     "semantic_seller_last_reply_conflict",
                     "semantic_inline_artifact_deferred",
+                    "semantic_purchase_decision_requires_proactive_reply",
                 }:
                     raise
             except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
