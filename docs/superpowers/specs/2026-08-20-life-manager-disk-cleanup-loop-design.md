@@ -173,6 +173,17 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      直接削除せず、稼働loop/browserも容量閾値で止めない。current OpenClaw atomで終了済み・重複artifactを
      owner境界から回収し、後続Gig atomでは`apply-direct/wakes.jsonl`約47.7 MBと
      `storefront-direct/wakes.jsonl`約20.4 MBのbounded rotationを接続する。
+
+     skills censusは`_shared`約236 MiB、`4.7-slideshow-factory`約227 MiB、
+     `copy-viral-format-factory`約165 MiB、`.backups`約146 MiB、`anicca-vibe-trading`約91 MiBだった。
+     `_shared/venv-cloak`は複数live Playwright driverが参照するため保持する。slideshow familyの63 receiptは
+     `mode=drafts`・`privacy_level=SELF_ONLY`であり、公開完了と誤認せず、receipt/metadata/slideを保持する。
+     `anicca-vibe-trading/vendor`はdirty 0、open/config/process参照0の外部cloneで、実行working treeを保持したまま
+     不要な`.git`だけ42,336 KiB回収した。削除前HEAD `c1958a513da0e914189285e325291f008494ad65`は
+     GitHub commit APIで復元可能とread backし、実freeは+42,340 KiBだった。残る
+     `anicca-autohedge/vendor/.git`約6.4 MiBと`roundcube-webmail-skill/.git`約3.3 MiBはそれぞれdirty 1/6なので保持する。
+     4回目cleanup wakeはruns 4、state not running、last exit 0、最新receipt errors 0、protected deletion 0、
+     reclaimed 6,368 bytesで、run動画とZenn依存の再生成は0だった。
    - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
      active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
