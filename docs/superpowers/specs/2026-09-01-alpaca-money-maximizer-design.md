@@ -407,8 +407,9 @@ those exact blockers without changing sibling sources.
 The ordinary local checkout `/Users/anicca/Projects/life-manager-main` was read directly before integration and
 was on an unrelated dirty feature branch at `8b3dacde7`; after the admin merge, remote `origin/main` contains
 the Alpaca source. The local ordinary checkout remains untouched because it has unrelated dirty files. R14
-release evidence is now present at `~/loops/current -> releases/20260903T002709-9c9b6df0`:
-`RELEASE.json` names SHA `9c9b6df07741c59b17abc7592764f436e0a713ac`, provenance `ancestor-of-origin-main`,
+R14's previous release evidence was at `~/loops/current -> releases/20260903T002709-9c9b6df0`. A fresh
+immutable release is now present at `~/loops/current -> releases/20260903T004312-f68da040`:
+`RELEASE.json` names SHA `f68da0406b80607aeb189157b1d01d7ed2881966`, provenance `ancestor-of-origin-main`,
 `release_paths=ALL`, and the release registry contains 174 entries including `alpaca-investment`. The first
 natural wake on the earlier release did start (`runs=1`) but failed with `entrypoint_exit_78`; read-only replay
 identified Apple Python 3.9.6 rejecting Alpaca's nanosecond quote timestamp (`...394123102+00:00`) in
@@ -417,13 +418,13 @@ normalization fix as `3a6466709bda54da28bda93f97b3a1cf16ea7cca`. The next repair
 stage but failed again because launchd's `/usr/bin:/bin:/usr/sbin:/sbin` PATH could not resolve `codex`; its
 isolated evidence contains `[Errno 2] No such file or directory: 'codex'`. PR
 [#4065](https://github.com/Daisuke134/life-manager/pull/4065) added the existing `executable_fallbacks` path
-`~/.local/bin/codex` and merged as `9c9b6df07741c59b17abc7592764f436e0a713ac`. The current release contains
-both fixes. The safe preflight returned `status=pass`, `mutation_allowed=true`, UID / Directory Services
-`501`, Aqua manager UID `501`, manager PID `1`, and successful GUI readback. Targeted apply changed only
-`ai.anicca.alpaca-investment`, wrote install event `c31b94901fec275a12d6ed2d`, and loaded immutable arguments
-ending in `bin/lm-loop-run alpaca-investment .../20260903T002709-9c9b6df0`; no 141 occurred.
-`launchctl-safe print` confirms `run interval = 300 seconds`, `runs = 0`, and `last exit code = (never exited)`
-after this repaired apply. The next executable atom is the first natural five-minute wake on this release.
+`~/.local/bin/codex` and merged as `9c9b6df07741c59b17abc7592764f436e0a713ac`. A subsequent isolated
+launchd-like run reached valid `NO_TRADE` JSON but exposed macOS `EPERM` while the runner cleaned up the
+completed child process. PR [#4069](https://github.com/Daisuke134/life-manager/pull/4069) added the narrow
+`PermissionError` terminate/wait fallback and merged as `23720318c6dc030df2cdc3de98efd086a1eaa1fc`; the current
+`f68da040` release contains all three fixes. The safe preflight still returns `status=pass`,
+`mutation_allowed=true`, UID / Directory Services `501`, Aqua manager UID `501`, manager PID `1`, and successful
+GUI readback. Targeted apply to the new release is the next R14 action; no 141 has occurred.
 
 ### Explicit non-goals before submission
 
