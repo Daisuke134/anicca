@@ -6,18 +6,24 @@
 
 ## Fixed order
 
-- [x] **A1 — failback source:** `config/loop-registry.json`へ最後に実績のある60秒rowを復元し、`retired_labels`から同labelを除いた。既存dispatchの欠落`--exhaustive`も復元した。
-- [x] **A2 — focused validation:** registry JSON parse PASS、既存`runtime.loop.tests.test_entry_dispatch` 15/15 PASS、`git diff --check` PASS。新test/frameworkは追加していない。
-- [x] **A3 — branch staging release:** pushed branch `db82bc6ca`から隔離release `20260902T194904-db82bc6c`を作成し、有限runを実行した。以後は過剰なfull buildを避け、worktreeの既存Pythonから直接testする。`gui/$UID`操作0。
-- [ ] **A4 — old loop single-writer failback（active）:** Eliza Lancers実行を撤退済みとして固定する。既存registry/entrypoint/application loop/reporterの最小差分だけを使い、GUI-domain操作を含まない正規release経路から旧application ownerを一つだけ復帰する。復帰前後にwriter exact 1を確認する。
-- [ ] **A5 — maximal apply and per-item reporting:** 同一wake内で全fresh案件をLunaが判断し、全`submit_required`を連続送信する。各案件ごとに公式title、ID、apply/skip、自然言語理由、提案額、納期、Proposal IDをTelegramへ即時送信する。`fresh N / 候補0`の集計だけで終了しない。
-- [ ] **A5R — official receipt/replay-zero:** 新しい実応募の公式Proposal IDを取得し、同じ案件の再実行でprovider execute 0、ledger insert 0を確認する。5595764 / `27880270`は既存回帰証拠として保持するが、新owner合格の代用にしない。
-- [ ] **A6 — profile/assets:** Lunaがlive profile画面でresume、職務経歴、portfolio、avatar、自己紹介、本人確認、振込設定を確認し、事実に基づく不足だけを既存private assetから補う。
-- [ ] **A7 — negotiation:** buyer返信を案件別に読み、返信・見積・条件交渉を行い、公式ContractReceiptを得る。
-- [ ] **A8 — fulfillment/delivery:** funded contractだけを制作し、QA、公式納品、DeliveryReceiptを閉じる。
-- [ ] **A9 — payment/banked:** PaymentReceipt、payout、銀行明細を照合し、外部buyer由来のverified banked netを正にする。
-- [ ] **A10 — self-owned General Agent harness:** Lancers/Coconalaで実証したGoal、Luna判断、browser、assets、lease、checkpoint、effect fence、official readback、receipt、Telegramを`life-manager-main`のprovider-neutral harnessへ抽出する。Elizaは参考実装として読むだけでruntime dependencyにしない。同じharnessへGoalを渡してCrowdWorks、Fiverrを開始する。全項目PASS後にbranchを一度だけmainへmergeしproductionへ昇格する。
-- [ ] **A11 — stale artifact cleanup（部分完了）:** 停止済みEliza Lancers log followerと、4条件を満たした統合済み旧worktree `lm-lancers-spec-live`、`lm-lancers-stale-zero-capacity`、`life-manager-retire-lancers-writer`および対応local branchを削除し、`git worktree prune`済み。残候補はA4〜A10の現役source/rollbackを固定後に同じ条件で監査する。Alpacaが使うEliza checkout、active、dirty、unmerged、locked、rollback sourceは保持する。
+- [ ] **1 — Apply経路比較（active）:** CoconalaとLancersのApply entrypoint→discovery→Luna judgment→effect fence→submit→official readback→案件別Telegram ACKを実call graphで比較し、共通・固有・重複を一覧化する。外部effect 0。
+- [ ] **2 — shared inventory:** 既に存在するshared部品を一覧化し、実際のcallerとreceiptを付ける。名前だけsharedでprovider固定のものはshared扱いしない。
+- [ ] **3 — smallest deduplication:** 重複している最小部品を一つだけsharedへ寄せ、Coconalaのproduction挙動を変えずLancersから直接再利用する。
+- [ ] **4 — Lancers Apply single writer:** 共有済み経路を使うLancers Apply ownerをexact 1で起動する。Eliza Lancers runtime、tmux、二重writerは0。
+- [ ] **5 — fresh official Proposal:** 新しい実応募を送り、公式Proposal IDを取得する。
+- [ ] **6 — per-item Telegram ACK:** 各案件のtitle、ID、apply/skip、具体理由、提案額、納期、Proposal IDを個別Telegram ACKで確認する。aggregateだけで終了しない。
+- [ ] **7 — replay-zero:** 同じ案件の再実行でprovider execute 0、ledger insert 0を確認する。
+- [ ] **8 — continuous natural Apply:** 自然wakeを継続し、全fresh案件を判断して全`submit_required`を同一wake内で連続応募する。
+- [ ] **9 — independent Storefront:** StorefrontをApplyと別owner・別reportとして確認する。
+- [ ] **10 — independent Negotiate:** buyer-last返信、見積、契約を別ownerで処理し、公式ContractReceiptを得る。
+- [ ] **11 — Paid real contract:** funded contractだけを制作し、QA、公式納品、DeliveryReceipt、PaymentReceiptを閉じる。
+- [ ] **12 — positive banked net:** payoutと銀行明細を照合し、外部buyer由来のverified banked netを正にする。
+- [ ] **13 — Gig Money Loop Skill:** Coconala/Lancersの複数実receiptで有効だった構造だけを再利用recipeとしてSkillへ記録する。
+- [ ] **14 — CrowdWorks thin adapter:** shared core＋薄いobserve/effect/readback adapterだけでCrowdWorksを開始する。
+- [ ] **15 — Freelancer.com repair:** 同じshared構造へ既存Freelancer.com loopを接続して修復する。
+- [ ] **16 — autonomous loop factory:** 3市場目以降はLife Manager自身が新市場を発見し、Skillを使ってadapter、canary、receipt、loop起動、改善まで行う。
+
+この順序はDaisが明示的に変更しない限り不変。各項目を完了して正本を更新してから次へ進む。profile/assetsはApply経路比較で不足を観測しても順序を飛ばさず、Step 8までの応募成立に必要な既存assetだけを再利用する。残cleanupは現役source/rollbackが確定した後に行い、Alpacaが使うEliza checkoutは削除しない。
 
 ## Exact A1 patch
 

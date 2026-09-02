@@ -36,10 +36,10 @@ read-only参考実装へ降格し、Lancers production runtimeには使わない
 全`submit_required`を連続送信する。各案件の公式title、ID、apply/skip、具体理由、提案額、納期、Proposal IDを案件別にTelegram ACKし、
 公式Proposal readbackだけを応募成功と数える。
 
-現在active atomはplan A4の旧loop single-writer failbackである。次にA5案件別最大応募、A5R新Proposal/replay-zero、profile、negotiation、
-fulfillment、payment/bankedを順に閉じる。最後にLancers/Coconalaで実証した共通部品を`life-manager-main`の自前General Agent harnessへ
-抽出し、Elizaをruntime dependencyにせずCrowdWorks/Fiverrへ展開する。以降の同節に残るEliza activation/failback記録は履歴であり、
-このoverrideを上書きしない。
+現在active atomはplan Step 1「CoconalaとLancersのApply経路比較」である。固定順は、Apply比較→shared inventory→最小重複一件の
+shared化→Lancers single writer→新Proposal→案件別Telegram ACK→replay-zero→自然wake継続→Storefront→Negotiate→Paid→banked net→
+Gig Money Loop Skill→CrowdWorks→Freelancer.com→Life Manager自身のloop factoryである。各Stepを実測完了して正本更新後にだけ次へ進む。
+以降の同節に残るEliza activation/failback記録は履歴であり、このoverrideを上書きしない。
 
 cleanupの初回監査では、停止済みEliza Lancers log followerを終了し、`clean / origin/mainへ統合済み / process参照0 / lockなし`を
 満たした`lm-lancers-spec-live`、`lm-lancers-stale-zero-capacity`、`life-manager-retire-lancers-writer`の3 worktreeと対応local branchを
