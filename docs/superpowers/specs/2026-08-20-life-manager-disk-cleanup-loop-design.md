@@ -528,6 +528,25 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 production変更は行わず、active process/open/session/sourceを保護して再生成可能・終了済み・重複dataを閉じる。Connection recovery、host census、
 完了済みmanual cleanup、回収済みworktreeを再びTODOへ戻さない。
 
+**Apps/cache atom進捗:** Applications再測定ではChatGPT PID 410が現在のCodex app-serverを所有し、Chrome、Claude、
+CodexBarもlive、Xcode内Pythonはjob-search/affiliate/Lancers/Stripe/fundraiser/watchdog等のloopを実行中だったため、
+app削除0とした。`/private/tmp`上位4 root約75–103 MiBは当日作成の現行Codex/Lancers workdirなので保持した。
+`~/Library/Caches/node-gyp`はheader cache 63,844 KiB、open/caller 0として回収した。DownloadsはSHA-256が一致する
+PDF/画像の重複pathだけを回収し、canonicalとPalantir/WebMCP dataを保持した。`~/.rustup` 1,380,348 KiBは唯一の
+active/default toolchainでfacilitator build callerあり、`~/.venvs/crawl4ai`は`crwl` ownerなので保持した。
+`~/.venvs/skillopt`は初回caller検索の見落としで一度回収したが、writer-agent `craft-train.sh`のexact callerを
+post-delete readbackで検出し、同じPython 3.14・`skillopt==0.2.0` wheelへ即復元した。旧editable metadataが参照した
+retire済み`~/src/SkillOpt`を除去し、self-contained `scripts.train`/`skillopt` import、`skillopt-train --help`をPASSした。
+このvenvは削除済み扱いにしない。`~/Library/Caches/com.openai.codex` 1,986,228 KiBはSparkle installation cacheだが、
+Updater PID 8768がliveのためsignal/削除せず自然terminal待ちである。
+
+同時writer readbackでは保護対象`life-manager-eliza-migration`が約2.89 GiBから9,114,480 KiBへ増え、内訳は
+`node_modules` 4,356,344 KiB、`.git` 3,676,932 KiBだった。branchはdirty、`eliza-lancers` tmuxが同rootでlive、
+`.git`にはreachable pack 1.94 GiBとは別に`tmp_pack` garbage 1.20 GiBがある。別owner稼働中かつDaisの明示保護root
+なので本atomは変更0とし、owner terminal後のGit garbage/node_modules bounded retentionへ残す。直近Data空きは
+`29,734,516 KiB`（約28.4 GiB）で11 GiB floor以上だが、apps/cache atomはUpdater terminal、残cache/user-data分類、
+Eliza owner-side収束が未完了なので[x]にしない。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
