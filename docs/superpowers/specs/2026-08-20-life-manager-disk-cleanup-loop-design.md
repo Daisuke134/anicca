@@ -145,12 +145,12 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
       - [x] P1d-3c-1: affiliate 3 browserの無限sleep ownerへSIGTERM/SIGINTと`finally: context.close()`を追加し、子Chromiumをowner終了時に回収する。既存focused test 7/7 PASS
       - [ ] P1d-3c-2: 残るresident browser ownerの終了契約とprofile cache上限を実測し、未実装ownerを0にする
         - [x] P1d-3c-2a: Job Searchのdisk/media cacheを64/32 MiB上限のprofile外cacheへ変更し、既存profile cache `1,296,212 KiB`を回収。Data free `11,365,348`→`12,678,676 KiB`、Chromium PID 1139とIPv6 `:9222` listener継続、cache残り0、focused test 10/10 PASS
-        - [ ] P1d-3c-2b: Gig、Lancers、CrowdWorks、affiliate、legacy X ownerのcache上限と既存cacheをowner単位で閉じる
+        - [x] P1d-3c-2b: Gig、Lancers、CrowdWorks、affiliate、legacy X ownerのcache上限と既存cacheをowner単位で閉じる
           - [x] P1d-3c-2b-1: Gig browserを64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `12,530,280`→`13,605,444 KiB`、`:9223` listener、owner PID 771、Chromium PID 849継続、cache残り0、shell syntax PASS。既存gig disk suiteは今回外の旧期待9 FAIL／16 PASSのため完了証拠に使用しない
           - [x] P1d-3c-2b-2: Lancers browserのcontrol-plane entrypointとlegacy installerを同じ64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `12,544,512`→`13,135,000 KiB`、`:9227` listener、owner PID 715、Chromium PID 1131継続、cache残り4 KiB、installer test 2/2とshell syntax PASS
           - [x] P1d-3c-2b-3: CrowdWorks browserを64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `14,120,576`→`14,530,684 KiB`、`:9228` listenerとChromium PID 11155継続、cache残り0、source compile PASS
           - [x] P1d-3c-2b-4: affiliate 3 browserをprofile別の64/32 MiB上限profile外cacheへ変更し、既存cache `1,677,768 KiB`→`772 KiB`を回収。Data free `14,536,032`→`16,231,796 KiB`、Chromium PID 2524/4223/4226継続、focused test 7/7 PASS
-          - [ ] P1d-3c-2b-5: legacy X browserをmain正本へ割当て、cache上限と既存cacheを閉じる
+          - [x] P1d-3c-2b-5: X repostが旧`~/anicca` launcherでなくmain releaseの`ensure_provision_browser.sh`→`cdp_persistent_context.py`を使うよう正規化し、既存2 profile cache `2,365,180 KiB`→`712 KiB`を回収。Data free `15,184,256`→`18,614,184 KiB`、旧owner/Chromium PID 23635/23655/48114/48142継続、focused test 12/12 PASS。次回自然起動からmain finalizer/cache上限を使用する
         - [ ] P1d-3c-2c: IPv4 `:9222`を占有する不要Google Chrome ownerをretireし、Job Search endpoint競合を0にする
       - [ ] P1d-3c-3: process/RSS/swapの再増加停止とnormal free 30 GiB以上をreadbackする
 

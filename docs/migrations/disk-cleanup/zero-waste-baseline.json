@@ -106,6 +106,19 @@
         "limits_per_profile": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
         "focused_test": "skills.affiliate.tests.test_local_browser 7/7 PASS",
         "revenue_loop_stopped": false
+      },
+      "x_browser_cache": {
+        "source": "skills/x-repost/x-repost-cli.sh",
+        "canonical_owner": "skills/browser/ensure_provision_browser.sh -> skills/browser/cdp_persistent_context.py",
+        "profiles": ["~/.cloak/profiles/x-repost-daily", "~/.cloak/profiles/x-diceai0"],
+        "cache_before_kib": 2365180,
+        "cache_after_kib": 712,
+        "free_before_kib": 15184256,
+        "free_after_kib": 18614184,
+        "legacy_owner_pids_preserved_until_natural_exit": [23635, 48114],
+        "chromium_pids_after": [23655, 48142],
+        "focused_test": "x-repost wrapper plus cdp-persistent-context 12/12 PASS",
+        "revenue_loop_stopped": false
       }
     }
   },
