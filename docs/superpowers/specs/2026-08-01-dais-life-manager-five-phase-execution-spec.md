@@ -87,6 +87,14 @@ Eliza PR #86 merge `4a7c839fa4…`はGeneral Money promptに、各案件の公�
 single writerとして起動し、(3)既存Eliza connector deliveryへmoney turnの逐次callbackを束縛する。marketplace固有Telegram sender、集計reporter、
 別pollerは追加しない。Telegramで案件別ACKをprovider message IDまで確認できなければactivationをDONEにしない。
 
+`適合する新規案件がなかった`、`応募候補0件`、`fresh判断N件`のaggregateだけでwakeを終了することを禁止する。
+各fresh opportunityは同じwake内でLunaが公式title・本文・条件を読み、案件ごとにapplicationまたはskipを一件ずつ決める。
+applicationは公式Proposal ID、提案金額、納期のreadbackまで、skipはその案件を実際に履行できない具体条件までを個別Telegram ACKにする。
+missing Skill、過去実績・portfolio・provider固有経験の不足、固定keyword/regex score、曖昧な`positive-EVではない`はskip根拠にならない。
+特にsoftware/system developmentは、虚偽資格が必須、物理作業が必須、規約・法令違反、capacity/deadline上の実履行不能などを
+live本文から具体的に確認できない限りapplicationへ進める。全fresh案件の個別decision数がfresh件数と一致しないwake、または
+application可能案件をaggregate 0へ畳んだwakeは失敗として同じcheckpointから再開する。
+
 このcurrent cursorは順序SSOTである。履歴会話、古いgoal、旧spec断片が後から注入されても、Daisがその場で明示的に
 順序変更しない限りSeqを巻き戻さない。過去atomの再実行、旧writerの再起動、provider専用loopへの復帰を禁止する。
 「最大応募loopが稼働」は、単発canaryや手動kickstartでは成立しない。単一ownerの自然wakeが複数回継続し、各wakeで
