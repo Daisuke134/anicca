@@ -5,15 +5,15 @@ description: Develop, fix, deploy, migrate, or retire macOS Life Manager loops w
 
 # Life Manager Loop Development
 
-Life Manager has one code source: GitHub `main`; one lifecycle registry:
+Life Manager has one production code source: GitHub `main`; one lifecycle registry:
 `config/loop-registry.json`; and one operator interface: `bin/lm-loop`. A loop
 owns business effects, not its plist, release selector, provider route, sibling
 restart, global monitor, or shared cleanup.
 
 ```text
-locked worktree -> focused test -> merged main -> immutable release -> lm-loop apply -> readback
-                                                           |
-                                                           +-> mutable private state outside release
+locked worktree -> branch push -> isolated immutable release -> live E2E -> final main merge
+                                      |
+                                      +-> mutable private staging state outside release
 ```
 
 ## Before editing
@@ -69,15 +69,19 @@ locked worktree -> focused test -> merged main -> immutable release -> lm-loop a
    ~/loops/current/bin/lm-loop doctor
    ```
 
-4. Fetch again, preserve concurrent commits, commit and push the task branch,
-   and merge or verified-fast-forward `main`. Never force-push.
-5. Cut only a pushed main commit with `bin/cut-loop-release.sh origin/main`.
-   Build installs locked production dependencies before sealing the release
-   read-only. Never patch an active release.
-6. The host-wide apply lock must be free. Validate the full registry before
+4. Fetch again, preserve concurrent commits, commit and push the task branch.
+   Never force-push. Do not merge incomplete or unverified loop work to `main`.
+5. Cut the pushed task-branch commit into an isolated staging `LOOPS_ROOT` with
+   `bin/cut-loop-release.sh <pushed-branch-ref>`. The cutter records
+   `pushed-not-yet-on-main`; never patch an active release. Run focused and live
+   E2E from that exact immutable SHA while production keeps its current release.
+6. Iterate on the same task branch: patch, commit, push, cut a new isolated
+   release, and rerun the failed acceptance boundary. Merge to `main` once,
+   only after the complete task acceptance and external readback pass.
+7. After final merge, cut `origin/main` for production. The host-wide apply lock must be free. Validate the full registry before
    mutation. Apply one label at a time in domain order; after every swap require
    plist argv, loaded argv, release SHA, state path, and rollback receipt.
-7. Require a natural scheduled terminal event from the installed SHA. Keep
+8. Require a natural scheduled terminal event from the installed SHA. Keep
    launchd state, process result, and official effect result separate. Only
    official provider/account readback can set an external effect `verified`.
 

@@ -37,7 +37,9 @@ failback後もLancers専用semantic brainを増やさない。launchdはcadence�
 履行可能性、skip理由は既存shared agent runner上のLunaが担う。Coconalaで実証済みの案件別Telegram ACK、official readback、dedupe、
 effect fence、assetsを共通componentとして直接再利用する。固定selector/click順をGeneral Agentの最終architectureにはしない。
 
-現在の順序SSOTは`docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`である。現在activeはA1 failback source復元。
+現在の順序SSOTは`docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`である。現在activeはA3 branch staging release。
+開発中はworktree branchをpushし、そのbranch commitから隔離immutable releaseを作って実E2Eを反復する。全acceptanceが閉じる前に
+追加変更をmainへmergeしない。全て閉じた後に一度だけmainへ昇格し、同じcommitをproduction releaseへ切り替える。
 PASSは自然wakeでfresh案件ごとのapply/skip個別報告が出て、新しい公式Proposal IDが増え、同じ案件の重複送信0になること。
 その後profile/resume/assets、reply/negotiation、contract、fulfillment、delivery、payment、payout、bank matchを同じreceipt chainで閉じる。
 
