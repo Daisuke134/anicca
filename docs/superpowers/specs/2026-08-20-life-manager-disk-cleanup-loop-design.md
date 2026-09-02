@@ -554,6 +554,15 @@ open handle 0を確認した。Whisper/PyTorch等のpackage集合810,040 KiBを�
 `29,496,572 KiB`（約28.1 GiB）で11 GiB floor以上だが、apps/cache atomはUpdater terminal、残cache/user-data分類、
 Eliza owner-side収束が未完了なので[x]にしない。
 
+user-data追加監査では`~/.Trash` 1,137,772 KiBのうち1,132,480 KiBが
+`life-manager-gig-videos-20260902-134053`だった。内容はbuyer source `IMG_0880.mov` 828,544 KiB、
+buyer attachment、Athena final、direct-message attachment等のGig原本/納品候補であり、`.local`、OpenClaw、Projectsに
+同名copy 0だった。Trashという置き場所だけを削除根拠にせず、固定順序⑨でterminal/receiptまたはbyte-identical copyを
+証明するまで保持する。`~/.claude` 2,275,548 KiBは次atom⑥、`~/.npm` 269,292 KiBはlive `npx`展開、
+`~/.local/share/mise` 593,496 KiBはOpenAI Symphonyが使うElixir/Erlang/Zig各1version、
+`~/.local/libexec/anicca` 337,144 KiBはjob-search observabilityの単一binaryなので、いずれも本atomの削除対象外とした。
+再測定時のData空きは`34,413,320 KiB`（約32.8 GiB）、protected deletion 0である。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
