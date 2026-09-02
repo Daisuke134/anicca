@@ -71,6 +71,8 @@ production state、plist、launchd effectは0。残るStep 4 actionは正しいp
 release provenanceをpush済みremote branchへ一般化し、local-only commitは引き続き拒否する。これによりmainを先に変更せずbranch releaseを実測できる。
 Pushed branch commit `6a76454ac1c9cb29706117da52054ad53d41a2b6`をtest-only bypassなし、activate 0のisolated normal installへ渡し、
 deployed SHA exact一致、26 files、shared policy packaged、`--exhaustive`、label exact一致を確認した。production external effect 0。
+同branch codeをproduction stateへ`--reconcile-only`で一回実行し、exit 0、`submitted=false`、reconciled/verified/unresolved各0を確認した。
+新規discovery、application、Telegram effectは0で、旧logの`profile_preflight_failed`は現call pathに存在しない。
 既存focused testに残っていた「最初のeligible一件だけ送信」「10件でdaily quota」「plannerが案件を欠落しても成功」の旧期待は、固定済みの
 最大応募contractと逆だったため現在仕様へ更新した。製品コード変更0で、application 24件＋installer 2件の合計26/26 PASS。
 
