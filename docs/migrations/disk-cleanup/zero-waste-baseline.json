@@ -134,6 +134,14 @@
       "expected_kib": 379120,
       "reason": "unlocked, clean, merged into origin/main, open handles 0",
       "recovery": "recreate a worktree from origin/main or the retained branch ref"
+    },
+    {
+      "path": "~/.bun/install/cache",
+      "expected_kib": 5307076,
+      "reason": "Bun global download cache; Bun executable and global install are outside this path; no running argv references the cache",
+      "recovery": "the next bun install downloads only the packages required by that project",
+      "effect_command": "bun pm cache rm",
+      "source": "https://bun.com/docs/pm/cli/pm"
     }
   ],
   "receipts": [
