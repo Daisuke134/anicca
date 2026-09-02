@@ -409,6 +409,7 @@ def main(argv: list[str] | None = None) -> int:
         eligible_states = {"loaded-idle"} if loaded_idle_only else {"loaded-idle", "unloaded"}
         eligible = [row for row in rows if (
             row["classification"] == "managed"
+            and row["loop_id"] != os.environ.get("LIFE_MANAGER_LOOP_ID")
             and row["provider_route"] == route
             and row["launchd_state"] in eligible_states
             and row["installed_release_sha"]
