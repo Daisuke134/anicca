@@ -83,10 +83,13 @@ def main() -> int:
         os.environ.get("AFFILIATE_BROWSER_PROFILE", "~/.cloak/profiles/affiliate/en")
     ).expanduser()
     profile.mkdir(mode=0o700, parents=True, exist_ok=True)
+    cache_dir = Path.home() / ".cache/affiliate-browser" / profile.name
     context = launch_persistent_context(
         str(profile), headless=False,
         args=[f"--remote-debugging-port={port}", "--remote-allow-origins=*",
-              "--disable-features=MacAppCodeSignClone"],
+              "--disable-features=MacAppCodeSignClone",
+              "--disk-cache-size=67108864", "--media-cache-size=33554432",
+              f"--disk-cache-dir={cache_dir}"],
     )
     pages = context.pages
     page = pages[0] if pages else context.new_page()

@@ -94,6 +94,18 @@
         "limits": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
         "verification": "source compile PASS; no dedicated CrowdWorks account test exists",
         "revenue_loop_stopped": false
+      },
+      "affiliate_browser_cache": {
+        "source": "skills/affiliate/scripts/local_browser.py",
+        "profiles": ["~/.cloak/profiles/affiliate/en", "~/.cloak/profiles/affiliate/x-en", "~/.cloak/profiles/affiliate/impact-en"],
+        "cache_before_kib": 1677768,
+        "cache_after_kib": 772,
+        "free_before_kib": 14536032,
+        "free_after_kib": 16231796,
+        "chromium_pids_after": [2524, 4223, 4226],
+        "limits_per_profile": {"disk_cache_bytes": 67108864, "media_cache_bytes": 33554432},
+        "focused_test": "skills.affiliate.tests.test_local_browser 7/7 PASS",
+        "revenue_loop_stopped": false
       }
     }
   },
