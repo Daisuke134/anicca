@@ -439,6 +439,17 @@ three Financial statuses with pending dispatch absent; immediate CLI readback st
 two fills with identical cash/equity, proving this closed-session replay added zero broker effects. The final
 post-close replay-zero gate remains pending.
 
+The A11 multi-market allocator contract sub-atom is **DONE** in `life-manager-eliza` merge
+`3df280e9d6d97e882986ee84e512973dcef1a241` (PR #75). The same natural task read 12 SPY defined-risk option
+candidates, live BTC/USD and ETH/USD quotes, and one QQQ snapshot through the read-only SDK, then offered all
+15 candidates to one model decision. The typed result carries `assetClass` plus one offered candidate reference;
+the model selected the SPY `782C/783C` debit spread with stated maximum loss `$2`. Life Manager persisted the
+decision and all offered candidates as `RESEARCH_ONLY / effectStarted=false`. Pinned-CLI readback remained the
+existing two SPY legs and two entry fills, so the allocator created zero broker effects. Typecheck, build, and
+three focused suites passed (`4/4` tests). The selected far-OTM spread also exposes the next quality gap: common
+expected-value, probability, freshness, and liquidity evidence must be normalized before any crypto/equity
+effect is authorized; a low debit alone is not a winning strategy.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
@@ -513,12 +524,11 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
   and persist one model decision as a no-effect research receipt~~ **DONE**; close through its sealed CLI-only
   exit; reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds
   zero orders; record the final campaign funnel (`proposed → vetoed/no-trade → submitted → filled → closed`) and
-  no unexplained broker delta. In parallel, add one common candidate contract for crypto, equity/ETF and
-  defined-risk options; one bounded model call returns `TRADE_CRYPTO`, `TRADE_EQUITY`,
-  `TRADE_DEFINED_RISK_OPTION`, `HOLD_EXISTING`, or `NO_TRADE`; the existing portfolio-level gate accounts for
-  every open position/order before the unchanged CLI effect path can act. The first slice is no-effect ranking
-  and receipt persistence; later slices add one bounded crypto/equity CLI order shape without adding a broker
-  client or scheduler.
+  no unexplained broker delta. In parallel, ~~add one common candidate contract for crypto, equity/ETF and
+  defined-risk options and persist one typed cross-market model choice with no broker effect~~ **DONE**. Next,
+  normalize comparable expected-value/probability/freshness/liquidity evidence and make the portfolio-level gate
+  account for every open position/order before the unchanged CLI effect path can act. Only then add one bounded
+  crypto/equity CLI order shape without adding a broker client or scheduler.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
   projection must drive both live and static views so they cannot drift. Above the fold show paper-only status,
   starting/current equity, realised/unrealised P&L, open max loss, last successful loop and broker reconciliation.
@@ -566,13 +576,14 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next implementation scope remains inside A11 but no longer waits for the options session: define one shared
-multi-market candidate/decision contract, populate it from the existing read-only SPY option and BTC/ETH data
-plus one liquid equity/ETF observation, and persist one model-authored cross-market decision with zero broker
-effect. The same task continues to execute the already-sealed SPY exit when the regular options session reopens.
-Soft target: at most three production files and 100 production LOC; reuse the existing decision store, risk
-gate, task and CLI authority. A following slice may add one bounded crypto/equity CLI order request only after
-the common decision and aggregate portfolio gate are proven. A12–A14 artifacts may be built from the same
+Next implementation scope remains inside A11 and does not wait for the options session: enrich the shared
+candidate observation with comparable return/risk, quote freshness, spread/liquidity, and probability evidence,
+then reject any cross-market decision whose chosen candidate is stale, illiquid, inconsistent with its offered
+maximum loss, or outside aggregate exposure including the existing SPY campaign. This remains a no-effect slice
+through the existing decision store and portfolio gate; it must not add an order client, scheduler, strategy
+hard-coded in deterministic code, or profit claim. The same task continues to execute the already-sealed SPY
+exit when the regular options session reopens. A later slice may add one bounded crypto/equity CLI order request
+only after this common evidence and aggregate gate are proven. A12–A14 artifacts may be built from the same
 redacted projection before the close and refreshed after final reconciliation; A15 and P01+ retain their gates.
 
 ## 9. Controlling references
