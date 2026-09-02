@@ -29,9 +29,9 @@ The new loop is named `alpaca-investment`:
 ### Exact source tree and resolver chain
 
 `config/loop-registry.json` is the lifecycle inventory SSOT. The integrated Alpaca candidate contains 174 loop
-entries; the currently installed immutable release still reports 173 entries with `missing_entrypoints=[]`,
-`unmanaged_labels=[]`, and `retired_installed_labels=[]`. Those counts differ because this branch and the
-installed release are different SHAs; neither count alone proves that every job is presently producing effects.
+entries; the currently installed immutable release now reports 174 entries with `missing_entrypoints=[]`,
+`unmanaged_labels=[]`, and `retired_installed_labels=[]`. Both are point-in-time inventory snapshots; neither
+count alone proves that every job is presently producing effects.
 Runtime health is read only through `~/loops/current/bin/lm-loop status all`, never through a second inventory.
 
 `runtime/loop/entry_dispatch.py` is the closed resolver for registry rows whose entrypoint needs loop-specific
@@ -406,10 +406,16 @@ those exact blockers without changing sibling sources.
 
 The ordinary local checkout `/Users/anicca/Projects/life-manager-main` was read directly before integration and
 was on an unrelated dirty feature branch at `8b3dacde7`; after the admin merge, remote `origin/main` contains
-`421509afb`. The local ordinary checkout remains untouched because it has unrelated dirty files. Before the
-merge it had no Alpaca source; the main commit now contains it. Production `~/loops/current` still points to a
-different release before the R14 release cut; no installed five-minute wake is claimed yet. The release-cut lock
-is now free, so the next executable atom is the single main-derived release cut.
+the Alpaca source. The local ordinary checkout remains untouched because it has unrelated dirty files. R14
+release evidence is now present at `~/loops/current -> releases/20260902T234103-854bcf77`: `RELEASE.json` names
+SHA `854bcf770fde28702fd4d07817e528e8cf449cb8`, provenance `ancestor-of-origin-main`, and the release registry
+contains 174 entries including `alpaca-investment`. The safe preflight returned `status=pass`,
+`mutation_allowed=true`, UID/Directory Services `501`, Aqua manager UID `501`, manager PID `1`, and successful
+GUI readback. Targeted apply changed only `ai.anicca.alpaca-investment`, wrote install event
+`6793e8a265778fa4b2eb38d4`, and loaded immutable arguments ending in `bin/lm-loop-run alpaca-investment
+.../20260902T234103-854bcf77`; no 141 occurred. `launchctl-safe print` confirms `run interval = 300 seconds`,
+`state = not running`, `runs = 0`, and `last exit code = (never exited)`, which is the expected pre-first-
+interval state. The next executable atom is the first natural five-minute wake.
 
 ### Explicit non-goals before submission
 
@@ -1060,11 +1066,8 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-The next atom is R14. From the current `origin/main`, cut exactly one immutable Life Manager release while the
-shared release lock is free, then run the staged `launchctl-safe` preflight. Apply only the registered
-`ai.anicca.alpaca-investment` label after UID, Directory Services, Aqua manager, manager UID/PID, and GUI
-readback all pass; never issue raw `launchctl`, a `gui/$UID` probe after a failed owner check, or any 141 retry.
-Read back two consecutive natural five-minute wakes from that release: persisted decision/effect/outcome
+The active atom remains R14. Its release cut and targeted apply are complete as recorded above. Now read back the
+first natural five-minute wake from that release, then the second consecutive wake: persisted decision/effect/outcome
 receipts, official Alpaca CLI account/order/position state, Telegram provider `messageId`, and unchanged state on
 identical replay. If the gate selects an eligible paper candidate, reconcile at most one official CLI effect; if
 it selects `NO_TRADE` or vetoes, retain that real result without manufacturing a trade. Do not manually fire,
