@@ -2502,11 +2502,32 @@ the machine-readable map, classify it as `unmapped` until native redirects,
 owner-authored mapping evidence, and live provider rows establish an exact rename;
 never borrow a similarly named integration. The screenshots currently show no
 accepted fresh post for
-TikTok `@anicca.jp1`, `@anicca_girl`, or `@aniccaaffirmation`. Their four
+TikTok `@anicca_girl` or `@aniccaaffirmation`; `@anicca.jp1` now has the T2
+receipt below. Their four
 owner-supplied screenshot SHA-256 values are `a2a5446c…2fb47`,
 `42153a77…ccc7`, `100afd72…9488d`, and `8ad68fa6…3db5` (the last two show the
 same `@aniccaaffirmation` profile); these are current native-profile evidence,
 not publication receipts.
+
+**Evidence-based completion gate (applies to every T/I/Y row).** The Mac does
+not stay under a 24-hour Codex watch. The logged-in user's `launchd` owns an
+installed and loaded LaunchAgent whose `StartCalendarInterval` is an array of
+exactly three JST `{Hour, Minute}` dictionaries; all three wakes call the same
+finite production entrypoint. Completion requires: `plutil` validation; GUI
+owner-domain loaded-job readback (a plist on disk alone is insufficient per the
+installed macOS `launchd.plist(5)` documentation); one real publication;
+Postiz integration ID plus `PUBLISHED` row/readback; exact native handle and
+content-family readback; and same-slot replay with publication and notification
+both `created:false`. Each run records slot, outcome, provider row/public URL,
+and error for later inspection; it terminates instead of remaining as a watcher.
+This follows Apple's supported per-user `~/Library/LaunchAgents` model and
+`launchd` ownership ([Apple Support](https://support.apple.com/guide/terminal/script-management-with-launchd-apdc6c1077b-5d5d-4d35-9c19-60f2397b2369/mac)),
+Postiz's integration-ID/channel model and observable `QUEUE/PUBLISHED/ERROR`
+post states ([integrations](https://docs.postiz.com/public-api/integrations/list.md),
+[posts](https://docs.postiz.com/public-api/posts/list.md)), and OpenAI's model
+that schedules own recurring background runs while durable instructions live in
+the task/skill rather than an operator watching continuously
+([OpenAI Docs](https://developers.openai.com/codex/automations)).
 
 | Order | Platform/account | Expected content / mapping state | Current truth |
 |---:|---|---|---|
