@@ -22,7 +22,14 @@ MAX_OPEN_ORDERS = 10
 
 
 def _age_seconds(timestamp: str) -> float:
-    observed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    normalized = timestamp.replace("Z", "+00:00")
+    # Apple system Python 3.9 accepts at most six fractional-second digits;
+    # Alpaca can return nanosecond timestamps. Keep the instant, normalize the
+    # precision, and make the same candidate gate portable across host Pythons.
+    match = re.fullmatch(r"(.*)\.(\d+)([+-]\d{2}:\d{2})", normalized)
+    if match:
+        normalized = f"{match.group(1)}.{match.group(2)[:6].ljust(6, '0')}{match.group(3)}"
+    observed = datetime.fromisoformat(normalized)
     return (datetime.now(timezone.utc) - observed).total_seconds()
 
 
