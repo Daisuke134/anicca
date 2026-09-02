@@ -97,7 +97,7 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 
 ### 未完TODO（優先度順・完了した行は実行履歴へ移す）
 
-1. [ ] P1 Zero-waste baseline — 現在free 18.1 GiB。全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上を達成する
+1. [ ] P1 Zero-waste baseline — 現在free 18.2 GiB。全volume再計測、100 MiB以上のunclassified root 0、normal free 30 GiB以上を達成する
 2. [ ] P4 Legacy廃止残件 — P4a/P4bは完了。保護中のactive rootを消さず、caller/state/source移管とretire可能rootの回収を完了する
 3. [ ] P2 Writer-owned retention — 全managed writerへowner/quota/retention/finalizer/leaseを接続する
 4. [ ] P3 Release GC — actual loaded argv保護とabandoned partial release回収を完成する
@@ -122,6 +122,9 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
   - [x] P1c-6: Bun公式`bun pm cache rm`でglobal cache `5,307,076 KiB`→0を回収。APFS clonefile共有のため物理freeは`11,756,112`→`11,832,516 KiB`、Bun本体/version保持、protected deletion 0
   - [x] P1c-7: `~/.cloak/state-backups`のClaude transcript full-copyだけ旧5世代を回収。Data free `11,967,840`→`18,989,956 KiB`。現行source、最新2 Claude世代、全7日分profiles/vault/creds保持、protected deletion 0
 - [ ] P1d: 全local writable volumeを再計測し、100 MiB以上のunclassified root 0、normal free 30 GiB以上をreadbackする
+  - [x] P1d-1: APFS、snapshot、deleted-open file、VM/swap、process RSSを分解。snapshot/deleted-open 0、swap used `10,293.5 MiB`、Chromium 151 process / RSS `5,812,352 KiB`をmanaged browser lifecycle gapへ確定する
+  - [ ] P1d-2: `~/Projects`、`~/Library`、`/private/tmp`、`/private/var/folders`のsize timeout/permission partialをowner分類で閉じ、100 MiB以上のunclassified rootを0にする
+  - [ ] P1d-3: browser loopを停止せず、run-scoped child/context finalizerとbounded concurrencyでswap再増加を抑え、normal free 30 GiB以上をreadbackする
 
 #### P4 execution ledger
 
