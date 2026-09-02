@@ -142,6 +142,9 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
     - [x] P1d-3a: 実process、parent chain、profile、CDP target、lease台帳を突合する。13 browser root / Chromium 155 process / RSS `7,319,856 KiB`、swap used `12,203.06 MiB`を観測。最大ownerは`gig-daily-driver` 23 process / `2,236,096 KiB`、次点はTikTok relogin 21 process / `1,583,696 KiB`。`gig`のCDP targetは14、shared lease台帳は空であり、停止ではなく各ownerのpage/context終了契約を直す
     - [x] P1d-3b: 最大writerの`gig-daily-driver`で、同時実行中の仕事を壊さず、各runが作ったpage/contextだけを`finally`で閉じ、owner内concurrencyをboundedにする。apply wake入口が既存PID-aware lease GCを実行し、live leaseを保持したまま終了owner 2件、続くreadbackで3件を回収。dead remaining 0、cleanup pending 0、既存dispatch test 15/15 PASS
     - [ ] P1d-3c: 残るresident browser ownerを同じ契約へ揃え、process/RSS/swapが再増加しないこととnormal free 30 GiB以上をreadbackしてP1dを閉じる
+      - [x] P1d-3c-1: affiliate 3 browserの無限sleep ownerへSIGTERM/SIGINTと`finally: context.close()`を追加し、子Chromiumをowner終了時に回収する。既存focused test 7/7 PASS
+      - [ ] P1d-3c-2: 残るresident browser ownerの終了契約とprofile cache上限を実測し、未実装ownerを0にする
+      - [ ] P1d-3c-3: process/RSS/swapの再増加停止とnormal free 30 GiB以上をreadbackする
 
 #### P4 execution ledger
 

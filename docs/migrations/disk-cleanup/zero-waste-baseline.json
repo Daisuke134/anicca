@@ -32,6 +32,15 @@
       "revenue_loop_stopped": false,
       "launchctl_gui_domain_used": false,
       "focused_test": "runtime.loop.tests.test_entry_dispatch 15/15 PASS"
+    },
+    "p1d_3c_receipts": {
+      "affiliate_browser_finalizer": {
+        "source": "skills/affiliate/scripts/local_browser.py",
+        "owners": ["affiliate-browser", "affiliate-impact-browser", "affiliate-x-browser"],
+        "before": "unbounded sleep with no signal handler and no context close",
+        "after": "SIGTERM/SIGINT set a stop flag and finally closes the persistent context",
+        "focused_test": "skills.affiliate.tests.test_local_browser 7/7 PASS"
+      }
     }
   },
   "host_inventory_gaps_remaining": [

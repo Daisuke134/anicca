@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import pwd
+import signal
 import stat
 import subprocess
 import time
@@ -95,7 +96,19 @@ def main() -> int:
             wait_until="domcontentloaded",
             timeout=30_000,
         )
-    while True:
-        time.sleep(60)
+    stopping = False
+
+    def stop(_signum, _frame):
+        nonlocal stopping
+        stopping = True
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGINT, stop)
+    try:
+        while not stopping:
+            time.sleep(1)
+    finally:
+        context.close()
+    return 0
 if __name__ == "__main__":
     raise SystemExit(main())
