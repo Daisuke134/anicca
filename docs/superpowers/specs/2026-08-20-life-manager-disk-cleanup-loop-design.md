@@ -229,8 +229,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      observed_at `2026-09-02T01:35:36Z`、errors 0、protected deletion 0、host reclaimed 6,386 bytesだった。
      以上によりPostiz iOS/Honne移管、HCA依存0、旧factory scheduler無効化、重複artifact回収を個別readbackし、
      残るOpenClaw dataはactive/unique/protectedとして分類済みである。
-   - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
-     active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
+   - **Hermes boundary:** 初回censusでは`ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBでrunningだった。
+     active daemonをfolder先行削除しない。全managed loopのgateway consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
      `~/gig/projects/18128025`等のHermes名を含むBUYMA/customer artifactとeffect receiptはgateway退役と無関係に
      project lineageとして保持する。
@@ -241,10 +241,26 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `sqlite3.OperationalError: unable to open database file`の反復があり、稼働しているだけで有効成果を示さない。
      一方、Life Managerの`citizens-diff-monitor`はregistryのstate/log rootと実entrypointで`~/.hermes`を使用し、
      `franklin2-loop`のloaded plistも`ANICCA_STATE_DIR=~/.hermes/state`を保持する。旧host registryには
-     `earn-watch.sh`と`reinvest.sh`参照も残る。したがってconsumer 0ではなく、現時点でgateway/rootを削除しない。
-     次の単一migrationは、約888 KiBのcolony/finance stateをLife Manager外部stateへlossless copyし、spawn default、
-     citizens monitor、Franklin2、旧script参照を同じ正本へ切り替えてimmutable releaseの自然readbackを得る。
-     その後だけgatewayを正式retireし、credential/profile/ledgerの保護copyを確認して再生成可能runtimeを回収する。
+     `earn-watch.sh`と`reinvest.sh`参照も残る。これらはgateway process consumerではなく、外部state consumerとして保持する。
+     約888 KiBのcolony/finance stateは既にrelease外のdurable stateであり、gateway退役後もconsumerの正本として保持する。
+     credential/profile/ledgerも保持し、再生成可能runtimeだけを回収する。
+     追加consumer照合により、Franklin2とcitizens monitorはgateway API/processではなく既存外部stateだけを使用し、
+     gatewayのTCP listener/established consumerは0だった。`launchctl-safe` preflightはmutation allowed、Hermes sourceは
+     dirty 0でHEAD `e400dca96ec875c0454c798a29570d596cfcf21a`がNousResearch公式remoteに存在したため、
+     `ai.hermes.gateway`をdisable＋bootoutした。同じPID/labelの消失後もcitizens monitor PID 34914とFranklin2
+     PID 34883はrunningを維持した。open/loaded参照0の`hermes-agent` 929,020 KiB、bundled Node 193,240 KiB、
+     gateway bin 58,420 KiBと、退役gateway専用log約64 MiBだけを回収した。`~/.hermes`は
+     1,487,328 KiB→242,324 KiB、logical 1,245,004 KiB減。profiles/session、credential、state/ledger、backups、
+     retired profile、curator/update/monitor logは保持した。実freeは約6.51 GiBまで上昇した。
+     検証目的のmanual kick run `52226`は71秒後exit 143、その2秒後に同releaseのrun `53904`が開始し、
+     120秒後exit 1、latest receiptは`host_cleanup={}`、errors 0、protected deletion 0だった。stderrは今回更新されず、
+     過去ENOSPCを今回原因に数えない。続く自然runは別sessionのhost-wide control-plane reconcileで開始3秒後に
+     exit 143となったが、同じreleaseのreplacement run `64462`はterminal PASS、observed_at
+     `2026-09-02T01:57:06Z`、errors 0、protected deletion 0、host reclaimed 48,459,414 bytesだった。
+     Hermes runtime/node/binは再生成0、gateway disabled、state consumer 2本はrunningを維持したためHermes atomを閉じる。
+     その直後にfreeが約6.51 GiBから約181 MiBへ急落したが、Hermes sizeは242,324 KiBのままである。同時に
+     host-wide label再適用と約1.19 GiBの新immutable release作成があり、swap約25.2 GiBと他owner growthが重なった
+     capacity incidentとして次のGig owner atomで継続観測する。Hermes再生成またはcleanup保護違反とは扱わない。
 
    **All-loop bounded-output audit内の固定実行順:** 現在activeなrelease収束atomから、次を
    一件ずつ実行し、各atomでbefore/after bytes、loaded/open/dirty保護、errors 0、protected deletion 0、
@@ -261,8 +277,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
       state、production argvを移管し、一repositoryずつretireする。
    6. [x] OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
       移した後、重複`.git`/workspace/skills/mediaだけを回収する。
-   7. [ ] **current:** Hermes consumer 0を証明し、gatewayを正式retireして`~/.hermes`を回収する。customer Hermes assetsは保持する。
-   8. Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
+   7. [x] Hermes gateway consumer 0を証明し、gatewayを正式retireして再生成可能runtimeを回収する。customer Hermes assetsは保持する。
+   8. [ ] **current:** Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
       BingX `18214856`を含む再提出中projectは保持し、terminal projectの古いregenerable attempt/workspaceだけを
       owner cleanupへ接続する。
    9. Codex/Claude sessionを保持しながら終了済みlog/archiveをbounded rotationへ接続する。
