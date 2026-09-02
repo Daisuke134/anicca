@@ -250,6 +250,7 @@ test("a non-general or unlabeled free tier fails closed before the confirmation 
       { label: "女性参加枠 無料 先着順 1/10人", disabled: false },
       { label: "一般参加・会員限定 無料 先着順 1/10人", disabled: false },
       { label: "一般参加 limited 無料 1/10人", disabled: false },
+      { label: "Small 無料 先着順 1/10人", disabled: false },
       { label: "無料 先着順 1/10人", disabled: false },
     ],
     states: [{ state: "absent" }],
