@@ -181,7 +181,19 @@
       "paths_missing_after": 5,
       "protected_deletions": 0,
       "verification": "all five were clean, merged into origin/main, unlocked, and had zero open handles immediately before git worktree remove"
+    },
+    {
+      "batch": "p1c-bun-global-cache-5",
+      "target_kib_by_du": 5307076,
+      "free_before_kib": 11756112,
+      "free_after_kib": 11832516,
+      "free_delta_bytes_by_df": 78237696,
+      "cache_kib_after": 0,
+      "bun_path_after": "/opt/homebrew/bin/bun",
+      "bun_version_after": "1.3.9",
+      "protected_deletions": 0,
+      "note": "logical cache bytes and physical df delta differ because Bun uses APFS clonefile copy-on-write"
     }
   ],
-  "reclaimed_bytes_by_target_size": 4160147456
+  "reclaimed_bytes_by_target_size": 9594593280
 }
