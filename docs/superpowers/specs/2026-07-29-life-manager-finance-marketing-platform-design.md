@@ -2536,6 +2536,8 @@ blocked until MKT-10R7 closes.
 
 **MKT-10R7 live cursor 5:** Instagram `@anicca.jp.videos` is terminal at 3/day under manifest `14153b9b…2713`: exact Postiz `cmmzzg2es0539p30ycb94ayx0`, JA Widget pack `00dcff6f…95ed`, CalendarIntervals `08:05/13:05/18:20`, and live Reel `https://www.instagram.com/reel/Dcw6MWljNYd/` / Postiz `cmtjc4sit03capn0yl8pzvgsy`. Immediate replay returned publication/Telegram `created:false`. All eleven connected Anicca targets are now production-armed at 3/day; `@obou.anicca` is not a retained target, while missing `@anicca.videojp` remains 0/day. The first active atom is now Honne EN TikTok `@honne_reveal` / `cmoig11ew001zlv0yk6vqo1us`.
 
+**MKT-10R7 live cursor 6:** Honne EN TikTok `@honne_reveal` is terminal at 3/day under manifest `5025f5a8…42ba`: exact Postiz `cmoig11ew001zlv0yk6vqo1us`, relationship-confession ReelClaw pack `0c28dee0…7706`, CalendarIntervals `07:00/11:00/20:30`, and native `https://www.tiktok.com/@honne_reveal/video/7680694952506099732` / Postiz `cmtj8e61p02fvpn0ydj48cpjv`. Kickstart exited 0 with public URL HTTP 200, provider reconciliation true, publication replay false, and Telegram `created:false`. The first active atom is now Honne JA TikTok `@honnevideo` / `cmnit95mg015rrm0ye5vm8dhl`.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
