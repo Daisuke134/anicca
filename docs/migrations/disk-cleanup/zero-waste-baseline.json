@@ -999,6 +999,21 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "All files are recent and two are open by the active ChatGPT app. No stale log deletion is justified; keep connection-error evidence and hand retention to Codex owner after session terminal."
+    },
+    {
+      "batch": "p1d-swap-pressure-readback-40",
+      "data_volume": "/",
+      "data_volume_total_kib": 239362496,
+      "data_volume_free_kib": 7564136,
+      "private_var_vm_visible_files_kib": 0,
+      "vm_swapusage": {"total_mib": 26624.0, "used_mib": 25794.75, "free_mib": 829.25},
+      "live_rss_owners": ["Chromium renderers", "Claude.app", "Codex app-server"],
+      "decision": "preserve_os_managed_swap_and_defer_owner_lifecycle",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Low free space is currently dominated by encrypted macOS swap pressure, not visible /private/var/vm files. Do not delete swap or stop/signal live browser/agent processes; require owner lifecycle and natural OS reclamation readback."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
