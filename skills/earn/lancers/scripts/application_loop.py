@@ -411,37 +411,41 @@ def _run_live_tick_bounded(
         "--delivery-due-on", str(delivery_due_on),
         "--proposal-stdin", "--json", "--state-path", str(state_path),
     ]
-    process = subprocess.Popen(
-        command,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,
-    )
-    try:
-        stdout, stderr = process.communicate(
-            proposal_text, timeout=APPLICATION_TICK_TIMEOUT_SECONDS
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stdout, tempfile.TemporaryFile(mode="w+", encoding="utf-8") as stderr:
+        process = subprocess.Popen(
+            command, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr,
+            text=True, start_new_session=True,
         )
-    except subprocess.TimeoutExpired:
         try:
-            os.killpg(process.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        try:
-            stdout, stderr = process.communicate(timeout=5)
+            if process.stdin is not None:
+                try:
+                    process.stdin.write(proposal_text)
+                except BrokenPipeError:
+                    pass
+                finally:
+                    process.stdin.close()
+            process.wait(timeout=APPLICATION_TICK_TIMEOUT_SECONDS)
         except subprocess.TimeoutExpired:
             try:
-                os.killpg(process.pid, signal.SIGKILL)
+                os.killpg(process.pid, signal.SIGTERM)
             except ProcessLookupError:
                 pass
-            stdout, stderr = process.communicate()
-        return {
-            "ok": False,
-            "error": "application_tick_timeout",
-            "project_id": str(project_id),
-        }
-    lines = [line for line in stdout.splitlines() if line.strip()]
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                process.wait()
+            return {
+                "ok": False,
+                "error": "application_tick_timeout",
+                "project_id": str(project_id),
+            }
+        stdout.seek(0); stderr.seek(0)
+        stdout_text, stderr_text = stdout.read(), stderr.read()
+    lines = [line for line in stdout_text.splitlines() if line.strip()]
     for line in reversed(lines):
         try:
             value = json.loads(line)
@@ -449,7 +453,7 @@ def _run_live_tick_bounded(
             continue
         if isinstance(value, Mapping):
             return value
-    detail = (stderr or "").strip().splitlines()
+    detail = stderr_text.strip().splitlines()
     raise RuntimeError(
         f"application_tick_output_invalid:{detail[-1][:200] if detail else process.returncode}"
     )
