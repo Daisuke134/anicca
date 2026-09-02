@@ -653,6 +653,27 @@ preserveする。terminal後は既存Governorのopen-path再確認を通るた�
 retention gapの登録である。⑤はこれらのbefore/after bytes、active/open/dirty保護、errors 0、
 protected deletion 0を揃えるまで`[x]`にしない。
 
+追加のhost-wide分解では、Library上位はApplication Support `4,472,852 KiB`、Caches `2,279,600 KiB`、
+Group Containers `1,055,960 KiB`だった。Application Supportの主成分はCloudDocs同期data `2,331,036 KiB`、
+現行Chrome/Claude/Syncthing/Codex stateであり、CachesはSparkle `1,986,228 KiB`以外にGiB級root 0だった。
+Desktop `2,213,068 KiB`は現行MoneyPrinter hackathon成果、Pictures `1,130,844 KiB`はPhotos Library、
+Group Containers最大 `732,484 KiB`はmacOS UserNotificationsなので保持した。
+
+`/private/var/folders`は合計`484,712 KiB`で、SpeechModelCache、現行Chromium/Chrome helper cache、当日作成の
+`colors-site-review-v59.zip`が主成分だった。古いGiB級temporary wasteは0で、当日成果物とOS/browser active cacheを
+削除しない。ApplicationsはXcode、ChatGPT、Chrome、Claudeがほぼ全量で現行process/callerあり、未使用GiB級appは0。
+Audiveris `166,116 KiB`もGig paid fulfillmentの音楽成果物で参照されるため保持した。
+
+一度回収した`~/Library/Caches/node-gyp`は現行Node 25.6.1のheader `63,844 KiB`として再生成された。
+これは1versionでboundedなbuild cacheであり、毎回消すと再downloadを繰り返すためwaste扱いしない。
+retentionは現行1versionを保持し、複数version化した時だけterminal/open proof後に旧versionを回収する。
+Library Logs `130,460 KiB`は全件7日以内で、Codex `113,804 KiB`と現在open中のClaude Remote log
+`15,148 KiB`が主成分のため、固定順序⑥のowner-side bounded rotationへ渡す。
+
+最新readbackではUpdater PID 8768は`01:59:51`継続中、Sparkle Installationは`1,985,752 KiB`、
+Data空きは`30,124,992 KiB`（約28.7 GiB）である。Remoteから`launchctl`、signal、app restartを使わず、
+自然terminalまで⑤をactiveのまま保持する。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
