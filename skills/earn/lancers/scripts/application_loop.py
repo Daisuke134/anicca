@@ -2,7 +2,7 @@
 """Plan every visible Lancers opportunity and submit every eligible one."""
 from __future__ import annotations
 
-import argparse, inspect, json, os, re, shutil, subprocess, sys, tempfile, time, uuid
+import argparse, inspect, json, os, re, shutil, signal, subprocess, sys, tempfile, time, uuid
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta, timezone
 import importlib.util
@@ -35,6 +35,7 @@ PUBLIC_SOFTWARE_PROOF = {
 PLANNER_TASK_CLASS = "application-intent-planner"
 ESCALATION_REASON = "application decision and client-facing proposal text come from this single call"
 PLANNER_TIMEOUT_SECONDS = 420
+APPLICATION_TICK_TIMEOUT_SECONDS = 120
 DEFAULT_STATE_PATH = Path.home() / ".local/state/anicca/lancers/application.json"
 DEFAULT_EVIDENCE_ROOT = Path.home() / ".local/state/anicca/lancers/planner"
 DEFAULT_EVIDENCE_DIR = DEFAULT_EVIDENCE_ROOT
@@ -390,6 +391,70 @@ def _emit(result: ApplicationLoopResult, stream: TextIO) -> None:
 def _pending_submitter_override(*_args: object, **_kwargs: object) -> Mapping[str, object]:
     raise RuntimeError("pending_reconciliation_submitter_disabled")
 
+
+def _run_live_tick_bounded(
+    *, project_id: str, proposal_text: str, proposed_amount_minor: int,
+    delivery_due_on: str, state_path: Path,
+) -> Mapping[str, object]:
+    """Run the existing live transaction behind a finite process boundary.
+
+    Playwright's sync ``new_page`` can wait forever when the dedicated browser's CDP
+    driver is wedged. Calling the existing ``application_tick.py`` entrypoint in its
+    own process keeps that failure from holding this wake's account lock forever. The
+    child still owns the canonical claim/submit/readback transaction; this wrapper only
+    bounds its lifetime and returns its JSON result.
+    """
+    command = [
+        sys.executable, str(APPLICATION_TICK_PATH), "submit",
+        "--project-id", str(project_id),
+        "--proposed-amount-minor", str(proposed_amount_minor),
+        "--delivery-due-on", str(delivery_due_on),
+        "--proposal-stdin", "--json", "--state-path", str(state_path),
+    ]
+    process = subprocess.Popen(
+        command,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        stdout, stderr = process.communicate(
+            proposal_text, timeout=APPLICATION_TICK_TIMEOUT_SECONDS
+        )
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            stdout, stderr = process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            stdout, stderr = process.communicate()
+        return {
+            "ok": False,
+            "error": "application_tick_timeout",
+            "project_id": str(project_id),
+        }
+    lines = [line for line in stdout.splitlines() if line.strip()]
+    for line in reversed(lines):
+        try:
+            value = json.loads(line)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(value, Mapping):
+            return value
+    detail = (stderr or "").strip().splitlines()
+    raise RuntimeError(
+        f"application_tick_output_invalid:{detail[-1][:200] if detail else process.returncode}"
+    )
+
+
 def _reconcile_pending(descriptor: Mapping[str, object], state_path: Path) -> ApplicationLoopResult:
     project_id = descriptor.get("project_id")
     if not isinstance(project_id, str) or not project_id:
@@ -625,7 +690,7 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
         reports_by_id[project_id]["price_jpy"] = amount
         reports_by_id[project_id]["deliver_date"] = due
         try:
-            value = application_tick.run_live_tick(project_id=project_id, proposal_text=proposal, proposed_amount_minor=amount, delivery_due_on=due, state_path=state_path) if submitter is None else _submit(submitter, row, proposal, amount, due, state_path)
+            value = _run_live_tick_bounded(project_id=project_id, proposal_text=proposal, proposed_amount_minor=amount, delivery_due_on=due, state_path=state_path) if submitter is None else _submit(submitter, row, proposal, amount, due, state_path)
             current = _tick_result(value, project_id)
         except Exception:
             current = ApplicationLoopResult(False, error="submission_uncertain", project_id=project_id)
