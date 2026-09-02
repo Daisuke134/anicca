@@ -942,6 +942,24 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "No current process or open handle, but the installed hook has an exact recreate path and shebang contract. Deleting by age would trade 289 MiB for an unbounded rebuild; defer to owner-side retention."
+    },
+    {
+      "batch": "p1d-claude-ecc-marketplace-audit-37",
+      "path": "~/.claude/plugins/marketplaces/ecc",
+      "measured_kib": 74160,
+      "git_status": "clean main",
+      "remote": "https://github.com/affaan-m/ECC.git",
+      "head": "99baa8250096f2d295583572399a5c9aba2ce312",
+      "installed_plugin_entry": false,
+      "active_processes": 0,
+      "open_handle_rows_final": 0,
+      "rebuild_proof": "git clone from known_marketplaces.json origin",
+      "decision": "defer_uninstalled_marketplace_source_to_owner_retention",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "ECC is not an installed plugin and is clean/remote-backed, but known_marketplaces.json can refresh it and an active session may transiently read marketplace files. Require session-reference zero plus re-clone/readback before any deletion."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
