@@ -162,7 +162,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
           - [x] P1d-3c-3c-3: release 13世代を実plistから照合し、全世代が3〜331箇所参照、参照0・未完成0のため削除0。Life Manager外では同日OpenClaw core backup 2世代が同一117 path集合（旧固有0）だったため最新17:11世代を保持して旧13:09世代だけを回収。Data free `11,233,796`→`11,487,852 KiB`、最新backup 1件`257,220 KiB`継続、protected deletion 0
           - [x] P1d-3c-3c-4: Life Manager外のclone/workspaceを監査し、remote保存済み・open/ref 0の`gig-ryu-colors-demo`、`ugig-moshcode`、`ugig-nightcell7`だけを回収（logical `153,124 KiB`）。Anicca旧cloneはactive plist/16 process/dirty、WebMCP worktreeはlock付き、Alpaca branchは明示保護、AIorNot cloneはremote不明の壊れたworktree pointer、Profitable Claudeはactive plist/dirtyのため削除0。branch/remote保持、protected deletion 0
           - [x] P1d-3c-3c-5: home hidden directoryをtoolchain単位で細分化し、全Agent永久禁止・open/ref 0の`~/.codegraph`旧binary `228,104 KiB`を全回収。Data free `8,623,044`→`8,733,748 KiB`。Rust stable 1世代、Crawl4AI、Codex primary runtime、Solana、Claudeは現行tool、Camofoxは1.4 MiB fallbackのため保持。重複toolchain削除0、protected deletion 0
-          - [ ] P1d-3c-3c-6: Applications/Library cacheをowner別に監査し、現行Remote/browser/toolを保持して旧世代と再生成cacheだけを回収する
+          - [x] P1d-3c-3c-6: Applications/Libraryをowner別に監査し、open/ref 0のAudiveris app `166,116 KiB`、node-gyp cache `63,844 KiB`、本体不在Pencil support `64,448 KiB`だけを回収（logical合計`294,408 KiB`）。ClaudeはMCP owner、ChatGPTはRemote、ChromeはCapafy、CodexBar/CloakBrowserはactiveのため保持。active process停止0、protected deletion 0
+          - [ ] P1d-3c-3c-7: freeを現在も減少させるwriterを再計測し、active別sessionを止めずにその生成物のowner-cleanup境界を閉じる
 
 #### P4 execution ledger
 

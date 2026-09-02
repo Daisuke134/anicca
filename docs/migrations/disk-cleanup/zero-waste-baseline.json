@@ -496,6 +496,28 @@
         "~/.local/share/claude"
       ],
       "protected_deletions": 0
+    },
+    {
+      "batch": "p1d-unused-app-and-library-cache-16",
+      "removed": [
+        "~/Applications/Audiveris.app",
+        "~/Library/Caches/node-gyp",
+        "~/Library/Application Support/Pencil"
+      ],
+      "logical_target_kib": 294408,
+      "audiveris_free_before_kib": 8662852,
+      "audiveris_free_after_kib": 8815768,
+      "free_after_all_kib": 7774608,
+      "retained_active_apps": [
+        "/Applications/ChatGPT.app",
+        "/Applications/Google Chrome.app",
+        "/Applications/Claude.app",
+        "/Applications/CodexBar.app",
+        "~/.cloakbrowser"
+      ],
+      "active_processes_stopped": 0,
+      "protected_deletions": 0,
+      "note": "Host free space fell during this slice because concurrent writers outpaced these deletions; logical target size and exact post-delete absence are the cleanup evidence."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
