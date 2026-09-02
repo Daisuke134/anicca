@@ -189,6 +189,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
               - [x] P1d-3c-3c-8b-2-q: `~/.claude/security/agent-sdk-venv`（`289,632 KiB`）を再生成契約単位で監査。現行process 0、`lsof +D` rows 0だが、Claude公式`security-guidance`の`ensure_agent_sdk.py`が同pathを必要時に作成し、hookの実行shebang/venv rootも固定している。削除すると次回hookで再build（またはsecurity hook failure）を招くため、無条件削除せず、P2 owner-side bounded venv retentionへ繰り越す。
               - [x] P1d-3c-3c-8b-2-r: `~/.claude/plugins/marketplaces/ecc`（`74,160 KiB`）をmarketplace単位で監査。Gitはclean `main`、`origin=https://github.com/affaan-m/ECC.git`、HEAD `99baa825…`でremote再取得可能、`installed_plugins.json`にECC plugin entryはなく、最終`lsof +D`/process readbackは0だった。`known_marketplaces.json`の更新sourceとしては残るため、現行session参照0・再clone/readback・削除確認を揃えるまで無条件unlinkせず、P2 marketplace retentionへ繰り越す。
               - [x] P1d-3c-3c-8b-2-s: `~/Library/Application Support/Syncthing`（`311,428 KiB`、うち`index-v2`のDB`317,652,992 bytes`）をdaemon/DB owner単位で監査。`syncthing`実行process、専用LaunchAgent、最終`lsof +D` rowsは0、DB最終更新は2026-02-26。設定は`~/anicca-project`をmacbook-pro/mac-mini間で同期する内容であり、anicca-project本体は現行WebMCP保護rootのため、index単独削除は再同期再構築を発生させる。実行binary/ownerの復活または同期retire証明、再構築readbackまでは削除せず、P2 sync-owner retentionへ繰り越す。
+              - [x] P1d-3c-3c-8b-2-t: `~/Library/Logs/com.openai.codex`（`115,436 KiB`）をlog owner/rotation単位で監査。全fileが7日以内（7日超`0 files / 0 bytes`）、最大でも約11 MiBのbounded daily logで、ChatGPT PID 410が現行2 logをopenしている。接続障害の証拠を含むためログrootや現行fileは削除せず、Codex owner-side bounded rotation（terminal/open/readback）へ繰り越す。
 
 #### P4 execution ledger
 

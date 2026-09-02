@@ -981,6 +981,24 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "No daemon/binary owner is installed or running now, but the index describes a cross-device sync of the protected anicca-project root. Index-only deletion would force a full rescan/rebuild; require owner retirement or deterministic rebuild proof before deletion."
+    },
+    {
+      "batch": "p1d-codex-log-rotation-audit-39",
+      "path": "~/Library/Logs/com.openai.codex",
+      "measured_kib": 115436,
+      "older_than_7d_files": 0,
+      "older_than_7d_bytes": 0,
+      "largest_log_bytes": 11358026,
+      "open_handles": [
+        "ChatGPT PID 410 -> 2026/09/02/codex-desktop-c0d21c8a...t0...log",
+        "ChatGPT PID 410 -> 2026/09/02/codex-desktop-c0d21c8a...t1...log"
+      ],
+      "decision": "preserve_recent_diagnostic_logs_defer_owner_bounded_rotation",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "All files are recent and two are open by the active ChatGPT app. No stale log deletion is justified; keep connection-error evidence and hand retention to Codex owner after session terminal."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
