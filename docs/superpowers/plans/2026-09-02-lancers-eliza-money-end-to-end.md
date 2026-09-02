@@ -66,6 +66,9 @@ installed `~/Library/LaunchAgents/ai.anicca.lancers-revenue-application.plist`�
 `Could not find service`を返す。したがってplist fileの存在を稼働と数えず、continuous Apply ownerは0、Step 4は未完である。
 さらにinstalled plistのargv/envは旧release SHA `e9d59c327bcae0f3cfa07e3544c85af8349d80be`を指す。単純な`lm-loop start`では修正版にならないため、
 正規operator actionはpush済み検証SHAのreleaseをapplication label一件へ`lm-loop apply`し、load/readbackまで同じtransactionで閉じることである。
+branchへ最新mainを取り込んだ統合SHA `03c8754bf1054ff129284cb3bca1e2483af7a824`はfocused 26/26 PASS。global currentを触らない隔離releaseを
+`~/.local/state/life-manager/staging/lancers-step4/current`へ作成し、SHA、shared policy、共通operator/runner、read-only `unloaded`を確認した。
+残る正規GUI-owner commandは`LIFE_MANAGER_RELEASE_ROOT="$HOME/.local/state/life-manager/staging/lancers-step4/current" LIFE_MANAGER_APPLY_TARGET=lancers-revenue-application "$HOME/.local/state/life-manager/staging/lancers-step4/current/bin/lm-loop" apply`の一つである。
 loop開発protocolも同じ欠落を再発させないよう更新した。今後はplist、release、test、手動finite runでは`ON/shipped`にせず、loaded owner exact 1、
 意図したSHAの自然wake、terminal eventと公式readbackまでを必須にする。現在のLancers Applyはこの定義でOFFである。
 同じread-only監査でCoconala Apply `ai.anicca.hf-gig-apply-direct`は同じGUI domainにloaded、60秒cadence、runs 36、finite

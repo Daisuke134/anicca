@@ -101,6 +101,10 @@ Pushed branch SHA `6a76454ac…`はtest-only bypassなしのisolated normal inst
 application labelをexact確認した。activate 0、production effect 0。Step 4の残りはproduction exact 1 loadだけである。
 現在disk上の未ロードapplication plistは旧release SHA `e9d59c327…`を指す。したがって旧plistの単純`start`は採用せず、push済み検証SHAを
 既存`lm-loop apply`でapplication label一件へ適用して同じtransaction内でload/readbackする。別scheduler、手動finite run、旧releaseの再起動では代替しない。
+最新`origin/main`を同じworktreeへ競合なしで取り込み、統合SHA `03c8754bf…`でfocused 26/26を再確認した。global `~/loops/current`を変更せず、
+`~/.local/state/life-manager/staging/lancers-step4/current`へ同SHAの隔離releaseを作成した。共通`lm-loop`、`lm-loop-run`、registry、Lancers runtime、
+shared policyを含み、read-only statusはLancers `unloaded`、production effect 0である。正規GUI ownerの残る一操作は次である。
+`LIFE_MANAGER_RELEASE_ROOT="$HOME/.local/state/life-manager/staging/lancers-step4/current" LIFE_MANAGER_APPLY_TARGET=lancers-revenue-application "$HOME/.local/state/life-manager/staging/lancers-step4/current/bin/lm-loop" apply`
 branch codeのproduction-state reconcile-onlyはexit 0、submitted false、pending/unresolved 0。旧profile preflight callは現pathから除去済みで、
 新規応募・Telegram effect 0。load前readinessは成立した。
 runtime比較ではCoconala Applyは同じGUI domainにloaded、60秒cadence、runs 36、finite `lm-loop-run` processあり、Lancers Applyだけservice absentだった。
