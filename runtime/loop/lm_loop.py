@@ -330,6 +330,7 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                lock_path: Path | None = None,
                preserve_unloaded: bool = False,
                skip_busy: bool = False,
+               reload_running: bool = False,
                event_writer=append_runtime_event) -> list[dict]:
     release_root = release_root.resolve()
     current = Path(current or "~/loops/current").expanduser()
@@ -342,7 +343,8 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
         raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
     results = []
     for item in plan:
-        item_lock = _label_apply_lock_path(current, item["label"], lock_path)
+        item_lock = (None if reload_running else
+                     _label_apply_lock_path(current, item["label"], lock_path))
         try:
             with _apply_lock(current, item_lock):
                 if skip_busy:
@@ -497,7 +499,8 @@ def main(argv: list[str] | None = None) -> int:
                     target=row["loop_id"],
                     preserve_unloaded=row["launchd_state"] == "unloaded",
                     skip_busy=(loaded_idle_only and
-                               row["loop_id"] not in explicitly_reloadable)))
+                               row["loop_id"] not in explicitly_reloadable),
+                    reload_running=row["launchd_state"] == "loaded-running"))
             except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
                 failed.append({"loop_id": row["loop_id"], "error": str(exc)})
         print(json.dumps({

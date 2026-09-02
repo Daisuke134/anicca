@@ -5614,6 +5614,16 @@ queue is added. Each owner must also progress independent work concurrently insi
    snapshot because that path reads the macOS GUI launch domain. Acceptance is focused unit PASS
    followed by a later natural reconciler terminal and observable owner migration.
 
+   The same migration exposes a bootstrap lock conflict for owners launched from pre-lock-fix
+   releases: each old long-running Coconala owner still holds its per-label execution lock for its
+   full lifetime, while `apply_live()` tries to acquire that same file before performing an intended
+   running-owner release reload. Keep the per-label lock for normal duplicate-run prevention. For an
+   explicitly selected `loaded-running` release migration only, serialize deployment with the
+   existing short-lived global apply lock instead; the natural install/reload stops the old owner,
+   releases its legacy label lock and starts the new owner. Do not invoke Remote launchctl or a
+   manual restart. Acceptance is focused mocked apply/reconcile PASS and later natural four-owner
+   migration to a public release containing this change.
+
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
    budget-document request but still
