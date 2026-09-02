@@ -17,7 +17,7 @@ if [ "$main_sha" != "$current_sha" ] || [ "$current_complete" -ne 1 ]; then
   cutter="$CURRENT/bin/cut-loop-release.sh"
   [ -x "$cutter" ] || cutter="$SOURCE_REPO/bin/cut-loop-release.sh"
   LIFE_MANAGER_SOURCE_REPO="$SOURCE_REPO" LOOPS_ROOT="$LOOPS_ROOT" LOOPS_RELEASE_PATHS= \
-    bash "$cutter" origin/main
+    bash "$cutter" "$main_sha"
 fi
 
 RELEASE_ROOT="$(cd "$CURRENT" && pwd -P)"
