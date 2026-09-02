@@ -1681,7 +1681,7 @@ The fixed execution order and durable checklist for this focused recovery is:
 3. [x] Finish MKT-09 classification, pack, canary, native-readback, Telegram,
    metric-registration, and replay-zero gates; `@anicca_buddha` is a truthful
    mixed-account hold, not a guessed Anicca renderer lane.
-4. [ ] **ACTIVE — MKT-10R6:** repair the existing shared Life Manager/Postiz
+4. [x] **MKT-10R6:** repair the existing shared Life Manager/Postiz
    production-slot boundary, arm exactly one approved destination, and prove
    one natural scheduled wake through exact Postiz/native account, content,
    caption and slot readback, natural Telegram, metrics registration, and
@@ -1692,9 +1692,13 @@ The fixed execution order and durable checklist for this focused recovery is:
    family, integration, three-slot CalendarInterval, one real kickstart/native
    publication, and same-slot provider replay-zero pass at system level; waiting
    for all three wall-clock slots is not a gate.
-6. [ ] Classify and canary the three existing YouTube integrations, install
+6. [x] **SKIPPED/HOLD — MKT-10R8:** TikTok `@anicca.videojp` is frozen as the
+   Japanese ReelClaw UGC-video family, but has no exact Postiz integration.
+   Keep it manifest-unarmed at 0/day and never borrow another integration;
+   resume only after an exact `@anicca.videojp` connection exists.
+7. [ ] **ACTIVE:** Classify and canary the three existing YouTube integrations, install
    their exact Life Manager owners, then use the same one-to-three/day gate.
-7. [ ] Close MKT-11 2h/24h/72h/7d metrics and ASC/RevenueCat/product
+8. [ ] Close MKT-11 2h/24h/72h/7d metrics and ASC/RevenueCat/product
    attribution, MKT-12 bounded hook learning, and MKT-13 daily/weekly Telegram
    reports before retiring legacy OpenClaw ownership.
 
@@ -2476,7 +2480,7 @@ order is the §12.3 recovery checklist: `MKT-09R0 → MKT-09R1 → MKT-09R2 →
 MKT-09R3-01..13 → MKT-09R4..R9 → MKT-10 → MKT-11 → MKT-12 → MKT-13`.
 No later row starts early.
 
-Current TODO state: **Order 25 MKT-10R7 is terminal.**
+Current TODO state: **Order 25 MKT-10R7 is terminal; owner-inserted MKT-10R8 is explicitly skipped/held at 0/day; YouTube classification is active.**
 All 13 retained Anicca/Honne destinations have a fresh production publication,
 exact provider-integration readback, native-profile owner/content-family
 readback, Telegram receipt, and same-slot replay with zero new effects. The
@@ -2524,7 +2528,7 @@ blocked until MKT-10R7 closes.
 | MKT-10R4 | **done implementation/review/release; live proof belongs to R6 —** revalidate Larry assets and account routing | `@anicca.jp` is fixed to Postiz TikTok `cmp9sdev5012voh0y58qs45xc`, renderer/job format `larry`, form `affirmation-carousel`, and immutable pack `63e2b1b8…3664`. Six ordered 1010×1080 sunset JPEGs contain no person/ReelClaw media. The released adapter rejects invalid dimensions before secret/provider access; both Python transport and JS provider/receipt/reconcile paths reject a bare TikTok `/video/` URL and accept only exact `PUBLISHED` photo proof with matching integration, caption SHA, title, `DIRECT_POST`, and strict `p_pub_url~v2.<digits>`. Ordinary TikTok video and Instagram `/p/` routes remain intact. Focused Node 51/51 and transport 24/24 pass; fresh read-only verdict is `ship`; all eight CI checks pass. Native publication, Telegram, metrics registration, and replay-zero remain R6, so this is not yet a working-loop claim |
 | MKT-10R5 | **done read-only routing closure —** Revalidate ReelClaw/Honne/Anicca video routing | all 13 approved pack objects exist at their exact SHA refs. Every video pack readback matches its destination product, locale, format/form family; destination selection binds job-product + locale + platform + integration + format + form and rejects Honne/Card/integration cross-family substitutions. Focused destination/manifest/ledger suite passes 45/45 with provider writes 0. Mixed historical feeds remain quarantined |
 | MKT-10R6 | **done —** prove the production slot contract one destination at a time through the natural owner | all 12 retained routes were armed one at a time, official `lm-loop start` kickstarted, then exercised with one explicit unique slot when outside the due window. Each reached its exact Postiz integration and public native owner/content family; same-slot replay created zero new publication and zero duplicate Telegram. The two renamed Instagram aliases resolve to native `@anicca.ios` and `@anicca.ios.jp`; TikTok photo/video propagation IDs were read from the public profile rather than inferred from Postiz IDs. The slot-scoped publication fixes are merged in immutable main release `78350d1a…` |
-| MKT-10R7 | **active — advance one destination at a time by system-level closure** | `@anicca_buddha` is terminal for this gate: exact TikTok `cmp9txjdp01c8oh0yb6dhlarr`, eyeglass-wearing male restaurant carousel pack `5459a684…017e`, native `https://www.tiktok.com/@anicca_buddha/photo/7680708466381557012`, CalendarIntervals `07:00/13:00/20:00`, and replay-zero are verified. Instagram `@anicca.ios` is terminal: Postiz `cmp9pedr700ttqh0yj8o57fog`, English Larry pack `e23cd412…669e`, native `https://www.instagram.com/p/Dcwqt-lgV9i/`, and CalendarIntervals `10:00/15:00/20:00`. Instagram `@anicca.encards` is terminal: Postiz `cmpc3gx4001nklg0y27a8o66q`, English Card pack `e204995d…0820e`, native `https://www.instagram.com/reel/Dcfph70jorc/`, and CalendarIntervals `08:45/12:45/21:30`. TikTok `@anicca_slideshow` is terminal: Postiz `cmnenjkff01j1pa0ysufmzhfr`, English slideshow pack `3241653e…624c`, native `https://www.tiktok.com/@anicca_slideshow/video/7679813817349459208`, and CalendarIntervals `09:00/15:00/21:00`. Instagram `@anicca.en` is terminal: Postiz `cmn8y95rg02d2qx0y09bbk5pb`, English Widget, CalendarIntervals `07:30/09:30/19:00`, live `https://www.instagram.com/reel/Dcw4GmLAATN/`, Postiz `cmtjbh17b01hbs60yz8knikst`, and replay publication/Telegram/receipt delta 0. TikTok `@anicca.he` is terminal: Postiz `cmq2aoena08bhqp0yx1epjcik`, Japanese Card pack `35a31331…f96f`, CalendarIntervals `07:15/13:45/18:15`, manifest `a5550ea5…8940` at 3/day, exact native `https://www.tiktok.com/@anicca.he/video/7680693015963125780`, Postiz `cmtj86uh402dvpn0yrf7j1m0y`, and kickstart exit 0 with publication/Telegram `created:false`. One earlier wrong Buddha sunset carousel remains public pending explicit deletion instruction. Owner direction removes the three-wall-clock-slot wait. `@anicca.videojp` is blocked because no matching Postiz integration exists and remains 0/day. Next atoms, without reordering: (1) system-close connected Instagram `@anicca.ios.jp` / `cmn8ycvtn02djqx0ytuisn9mw`; (2) continue remaining connected Anicca destinations one by one; (3) system-close Honne EN then JA; (4) return to missing integrations only after exact Postiz connections exist; (5) keep YouTube, ebook, and monk 0/day until mobile lanes pass |
+| MKT-10R7 | **done — all thirteen retained destinations system-closed** | The terminal cursor below is authoritative: every retained Anicca/Honne TikTok/Instagram target is loaded at exactly three CalendarIntervals/day with exact integration, native owner/content readback, one real publication, and replay-zero. `@anicca.videojp` is not one of the thirteen connected targets and remains a separate 0/day hold. |
 
 **MKT-10R7 live cursor override:** Instagram Postiz alias `@anicca.jp1` / native `@anicca.ios.jp` is terminal at 3/day under manifest `1bfb1ea7…a2b7`: JA Card Reel `https://www.instagram.com/reel/Dcw45GEkkSn/`, Postiz `cmtjbpx83035ppn0yqlg26mtl`, CalendarIntervals `08:10/13:10/19:10`, kickstart exit 0, and immediate replay publication/Telegram `created:false`. The first active atom is now TikTok `@anicca.jp4` / `cmn8x8hdv028uqx0y4gdfse5t`; this sentence supersedes the row's prior first-atom wording without reordering later atoms.
 
@@ -2539,6 +2543,18 @@ blocked until MKT-10R7 closes.
 **MKT-10R7 live cursor 6:** Honne EN TikTok `@honne_reveal` is terminal at 3/day under manifest `5025f5a8…42ba`: exact Postiz `cmoig11ew001zlv0yk6vqo1us`, relationship-confession ReelClaw pack `0c28dee0…7706`, CalendarIntervals `07:00/11:00/20:30`, and native `https://www.tiktok.com/@honne_reveal/video/7680694952506099732` / Postiz `cmtj8e61p02fvpn0ydj48cpjv`. Kickstart exited 0 with public URL HTTP 200, provider reconciliation true, publication replay false, and Telegram `created:false`. The first active atom is now Honne JA TikTok `@honnevideo` / `cmnit95mg015rrm0ye5vm8dhl`.
 
 **MKT-10R7 live cursor 7 — terminal override:** Honne JA TikTok `@honnevideo` is terminal at 3/day under manifest `8ec307f3…af72c`: exact Postiz integration `cmnit95mg015rrm0ye5vm8dhl`, Honne JA pack `d550a0a6…86ab`, CalendarIntervals `08:30/12:30/21:30`, and native `https://www.tiktok.com/@honnevideo/video/7680723828586170388` / Postiz publication `cmtjcebpa03e9pn0yst1kmlze`. Immediate same-slot replay returned generation/publication/Telegram `created:false`, so it produced no duplicate provider or notification effect. This terminal cursor supersedes the MKT-10R7 table row's earlier `active` wording: all 13 retained Anicca/Honne mobile targets are loaded, production-armed at exactly three CalendarIntervals/day, and point to immutable release `20260902T085615-e9d59c32`; all 17 non-target holds remain manifest-unarmed at 0/day. Missing TikTok `@anicca.videojp` has no exact Postiz integration and remains a hold rather than borrowing another account. YouTube, ebook, and monk remain outside this completed mobile-lane gate.
+
+**MKT-10R8 live cursor 1:** owner classification is frozen as Anicca iOS / Japanese / TikTok `@anicca.videojp` / ReelClaw UGC video. Daily-driver native inspection shows the exact profile, Anicca logo and bio, plus pinned woman-led vertical videos with Japanese captions; sunset Larry, Buddha male and photo-carousel families are forbidden. A fresh live Postiz API read still has 30 integrations and no exact `@anicca.videojp` row; historical URLs for all plausible hold integrations resolve to their own handles rather than this target. TikTok Web `@anicca.jp` credentials do not switch to this separate account. Recovery email `keiodaisuke@gmail.com` identifies `@aniccaaffirmation`, so its code was not used; the next email attempt hit TikTok's temporary recovery-rate limit. Until exact OAuth ownership exists, this target remains manifest-unarmed at 0/day and no provider post is authorized. Next atom: recover the target session or connect it through Postiz, then freeze the returned integration ID before code, cadence or publication changes.
+
+**MKT-10R8 live cursor 2:** Gmail history proves `m.05eg95@bumpmail.io` is the owner alias for exactly `anicca.videojp`; fresh recovery emails explicitly greet `anicca.videojp`. Postiz login and Add Channel → TikTok OAuth are ready. TikTok accepts fresh email-code requests on new device IDs, but password-reset submission currently returns account-level `error_code=7`, `試行回数が上限に達しました。後ほどお試しください。`; no password change or Postiz integration was created. The private credential row is marked `recovery-pending`, not verified. The next atom remains one exact action: after the TikTok reset limit clears, finish alias recovery and OAuth (or authorize the prepared Postiz QR from the already logged-in iPhone), read back the new integration as profile `anicca.videojp`, then proceed to manifest/code/cadence/publication. All provider effects remain 0 for this target.
+
+**MKT-10R8 terminal owner override:** skip this account for now. Preserve the
+verified mapping `@anicca.videojp` → Anicca iOS / Japanese / ReelClaw UGC video,
+but keep it as an explicit missing-integration hold at 0/day. No OAuth retry,
+manifest arm, cadence, publication, or borrowed integration is allowed in the
+current pass. This is a deliberate skip, not a successful posting claim. The
+first active atom advances to classification of the existing YouTube
+integrations; ebook and monk remain later at 0/day.
 
 #### MKT-10R6 production-slot repair contract
 
