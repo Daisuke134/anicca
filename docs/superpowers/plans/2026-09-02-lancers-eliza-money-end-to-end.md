@@ -7,8 +7,8 @@
 ## Fixed order
 
 - [x] **1 — Apply経路比較:** Coconala `hf-gig-apply-direct`とLancers `lancers-revenue-application`を実call graphで比較した。Coconalaは`application_direct.py → application_parent.py → application_planner.py → application_effect_fence.py → application ledger/work_event_projector → TelegramOutbox/apply_telegram_report.py`。Lancersは`application_loop.py → agent_runner.py → application_tick.py → shared application_transaction.py → Lancers official readback → lancers telegram_report.py`。Lancersはagent runnerとapplication transactionを既に共有するが、planner contract、orchestration、effect/ledger projection、Telegram outboxを別実装する。比較中の有限runはplanner待ちで停止し、submitter到達前、external application/Telegram effect 0。
-- [ ] **2 — shared inventory（active）:** 既に存在するshared部品を一覧化し、実際のcallerとreceiptを付ける。名前だけsharedでprovider固定のものはshared扱いしない。
-- [ ] **3 — smallest deduplication:** 重複している最小部品を一つだけsharedへ寄せ、Coconalaのproduction挙動を変えずLancersから直接再利用する。
+- [x] **2 — shared inventory:** 実callerで分類した。真の共有は`runtime/agent-runner/agent_runner.py`（Coconala/Lancers）、`_shared/marketplace-core/application_transaction.py`（Lancers/CrowdWorks）、同coreの`contracts.py`・`ledger.py`・`telegram_outbox.py`（Lancers receipt/report）。部分共有は`gig/application_planner.py::common_marketplace_feasibility_policy`（Coconala/Upworkのみ）と`application_decisions.schema.json`（Coconala/Lancers）。二重実装はLancers内のfeasibility長文、Coconala用とmarketplace-core用のTelegramOutbox、application orchestration、receipt projection。provider固有discovery/submit/readbackはadapterとして保持する。
+- [ ] **3 — smallest deduplication（active）:** Lancers内にコピーされたcommon feasibility本文だけを削り、Coconala/Upworkが既に使う`gig/application_planner.py::common_marketplace_feasibility_policy`を直接読む。Lancers固有snapshot・hard prohibition schema・proposal constraints・provider adapterは保持し、Coconala production codeは変更しない。
 - [ ] **4 — Lancers Apply single writer:** 共有済み経路を使うLancers Apply ownerをexact 1で起動する。Eliza Lancers runtime、tmux、二重writerは0。
 - [ ] **5 — fresh official Proposal:** 新しい実応募を送り、公式Proposal IDを取得する。
 - [ ] **6 — per-item Telegram ACK:** 各案件のtitle、ID、apply/skip、具体理由、提案額、納期、Proposal IDを個別Telegram ACKで確認する。aggregateだけで終了しない。
@@ -37,6 +37,20 @@
 | provider effect/readback | Coconala-specific browser/provider | Lancers-specific browser/form/readback | thin adapter responsibility |
 | receipt/ledger | gig application ledger + work-event projection | Lancers marketplace ledger/result object | duplicated contract/projection |
 | Telegram | shared `TelegramOutbox` + `apply_telegram_report.py` | Lancers outbox bridge + `telegram_report.py` | duplicated; aggregate wake is the observed UX defect |
+
+## Step 2 shared inventory receipt
+
+| component | actual callers | classification | next action |
+|---|---|---|---|
+| `runtime/agent-runner/agent_runner.py` | Coconala Apply and Lancers Apply/Work Sync | shared and live | keep |
+| `_shared/marketplace-core/application_transaction.py` | Lancers and CrowdWorks application ticks | shared and live | keep |
+| `_shared/marketplace-core/contracts.py` / `ledger.py` | Lancers application receipt/report | shared contract/ledger | keep; later connect Coconala only after live parity |
+| `_shared/marketplace-core/telegram_outbox.py` | Lancers reporter | shared location, one live provider caller | keep |
+| `gig/application_planner.py::common_marketplace_feasibility_policy` | Coconala and Upwork | proven shared policy | Step 3: reuse from Lancers |
+| `gig/schemas/application_decisions.schema.json` | Coconala parent | shared contract candidate | Lancers currently reads parallel `skills/gig-work` schema; do not move in Step 3 |
+| `gig/scripts/telegram_outbox.py` | Coconala Apply/Reply/Paid/Storefront | Coconala working shared-within-gig | do not replace before Lancers Apply receipt |
+| Lancers discovery/form/readback | Lancers only | valid provider adapter | keep |
+| Lancers embedded feasibility prose | Lancers only, duplicates common policy | duplicated judgment guidance | delete copy in Step 3 |
 
 ## Exact A1 patch
 
