@@ -363,6 +363,24 @@
       "revenue_loops_stopped": 0,
       "protected_deletions": 0,
       "note": "The duplicate IPv4 owner is gone. Existing 127.0.0.1 consumers cannot reach the surviving IPv6-only listener; this is recorded rather than hidden or repaired by a prohibited Remote GUI-domain restart."
+    },
+    {
+      "batch": "p1d-resident-browser-cache-8",
+      "profiles": [
+        "~/.cloak/profiles/daily-driver",
+        "~/.cloak/profiles/tiktok-anicca-jp-relogin",
+        "~/.cloak/profiles/buyma-na-l5-client"
+      ],
+      "cache_before_kib": 455364,
+      "cache_after_kib": 0,
+      "free_before_kib": 21741396,
+      "free_after_kib": 22213000,
+      "browser_owners_alive_after": true,
+      "buyma_listener_after": "127.0.0.1:9330",
+      "registry_legacy_callers_before": 6,
+      "registry_legacy_callers_after": 0,
+      "focused_tests": "9/9 PASS",
+      "protected_deletions": 0
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

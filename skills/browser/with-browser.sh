@@ -13,6 +13,10 @@ fi
 
 GUARD="${AI_BROWSER_GUARD:-$HOME/.config/ai/bin/browser-guard.sh}"
 ENSURE="${AI_ENSURE_PROVISION_BROWSER:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ensure_provision_browser.sh}"
+CACHE_GC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/profile_cache_gc.py"
+REGISTRY="${AI_BROWSER_REGISTRY:-$HOME/.config/ai/registry/browsers.toml}"
+PYTHON="${BROWSER_CACHE_GC_PYTHON:-/opt/homebrew/bin/python3}"
+[ -x "$PYTHON" ] || PYTHON=python3
 WAIT_SECONDS="${BROWSER_WAIT_SECONDS:-300}"
 CDP=""
 deadline=$(( $(date +%s) + WAIT_SECONDS ))
@@ -48,6 +52,7 @@ release_once() {
   [ "$released" -eq 1 ] && return
   released=1
   [ "$child" -ne 0 ] && kill -TERM "$child" 2>/dev/null || true
+  "$PYTHON" "$CACHE_GC" "$IDENTITY" --registry "$REGISTRY" >/dev/null 2>&1 || true
   "$GUARD" release "$IDENTITY" >/dev/null 2>&1 || true
 }
 trap release_once EXIT INT TERM HUP

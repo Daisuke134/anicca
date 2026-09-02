@@ -141,9 +141,9 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
   - [ ] P1d-3: browser loopを停止せず、run-scoped child/context finalizerとbounded concurrencyでswap再増加を抑え、normal free 30 GiB以上をreadbackする
     - [x] P1d-3a: 実process、parent chain、profile、CDP target、lease台帳を突合する。13 browser root / Chromium 155 process / RSS `7,319,856 KiB`、swap used `12,203.06 MiB`を観測。最大ownerは`gig-daily-driver` 23 process / `2,236,096 KiB`、次点はTikTok relogin 21 process / `1,583,696 KiB`。`gig`のCDP targetは14、shared lease台帳は空であり、停止ではなく各ownerのpage/context終了契約を直す
     - [x] P1d-3b: 最大writerの`gig-daily-driver`で、同時実行中の仕事を壊さず、各runが作ったpage/contextだけを`finally`で閉じ、owner内concurrencyをboundedにする。apply wake入口が既存PID-aware lease GCを実行し、live leaseを保持したまま終了owner 2件、続くreadbackで3件を回収。dead remaining 0、cleanup pending 0、既存dispatch test 15/15 PASS
-    - [ ] P1d-3c: 残るresident browser ownerを同じ契約へ揃え、process/RSS/swapが再増加しないこととnormal free 30 GiB以上をreadbackしてP1dを閉じる
+      - [ ] P1d-3c: 残るresident browser ownerを同じ契約へ揃え、process/RSS/swapが再増加しないこととnormal free 30 GiB以上をreadbackしてP1dを閉じる
       - [x] P1d-3c-1: affiliate 3 browserの無限sleep ownerへSIGTERM/SIGINTと`finally: context.close()`を追加し、子Chromiumをowner終了時に回収する。既存focused test 7/7 PASS
-      - [ ] P1d-3c-2: 残るresident browser ownerの終了契約とprofile cache上限を実測し、未実装ownerを0にする
+      - [x] P1d-3c-2: 残るresident browser ownerの終了契約とprofile cache上限を実測し、未実装ownerを0にする
         - [x] P1d-3c-2a: Job Searchのdisk/media cacheを64/32 MiB上限のprofile外cacheへ変更し、既存profile cache `1,296,212 KiB`を回収。Data free `11,365,348`→`12,678,676 KiB`、Chromium PID 1139とIPv6 `:9222` listener継続、cache残り0、focused test 10/10 PASS
         - [x] P1d-3c-2b: Gig、Lancers、CrowdWorks、affiliate、legacy X ownerのcache上限と既存cacheをowner単位で閉じる
           - [x] P1d-3c-2b-1: Gig browserを64/32 MiB上限のprofile外cacheへ変更し、既存cacheを回収。Data free `12,530,280`→`13,605,444 KiB`、`:9223` listener、owner PID 771、Chromium PID 849継続、cache残り0、shell syntax PASS。既存gig disk suiteは今回外の旧期待9 FAIL／16 PASSのため完了証拠に使用しない
@@ -152,7 +152,7 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
           - [x] P1d-3c-2b-4: affiliate 3 browserをprofile別の64/32 MiB上限profile外cacheへ変更し、既存cache `1,677,768 KiB`→`772 KiB`を回収。Data free `14,536,032`→`16,231,796 KiB`、Chromium PID 2524/4223/4226継続、focused test 7/7 PASS
           - [x] P1d-3c-2b-5: X repostが旧`~/anicca` launcherでなくmain releaseの`ensure_provision_browser.sh`→`cdp_persistent_context.py`を使うよう正規化し、既存2 profile cache `2,365,180 KiB`→`712 KiB`を回収。Data free `15,184,256`→`18,614,184 KiB`、旧owner/Chromium PID 23635/23655/48114/48142継続、focused test 12/12 PASS。次回自然起動からmain finalizer/cache上限を使用する
         - [x] P1d-3c-2c: IPv4 `:9222`を占有していた不要Google Chrome PID 419だけをSIGTERMで正常終了し、二重owner競合を0にした。Job Search Chromium PID 1139とIPv6 `[::1]:9222` CDPは継続し、`/json/version` readback PASS。Google Chrome open Life Manager path 0、収益loop停止0。既存consumerの`127.0.0.1`指定はIPv6 listenerへ届かないため、owner再起動を伴わない別atomとして閉じる
-        - [ ] P1d-3c-2d: 残るdaily-driver、TikTok、Buyma browser ownerの終了契約・profile内cache・main callerを実測し、未実装ownerを0にする
+        - [x] P1d-3c-2d: shared persistent ownerの64/32 MiB cacheをprofile別directoryへ分離し、`with-browser.sh`がlease終了時にregistry上の自identity配下の再生成cacheだけを回収する契約を追加。daily-driver/TikTok/Buyma cache `455,364`→0 KiB、Data free `21,741,396`→`22,213,000 KiB`、全owner生存、Buyma `:9330`継続。browser registryの旧`anicca/...` caller 6件を`~/loops/current/...`へ正規化し、focused test 9/9、compile/shell syntax PASS
       - [ ] P1d-3c-3: process/RSS/swapの再増加停止とnormal free 30 GiB以上をreadbackする
 
 #### P4 execution ledger
