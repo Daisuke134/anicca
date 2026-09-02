@@ -62,14 +62,14 @@ No deletion — decay only affects retrieval priority.
 - Don't exfiltrate secrets or private data.
 - Don't run destructive commands unless explicitly asked.
 - Never claim you lack access — try it first, report errors after.
-- **禁止:** Remote配下では、検証・診断・kickstart・修復目的でも `launchctl`、`lm-loop apply/start/stop/restart`、`gui/$UID` domain操作、141の再現・再試行を実行しない。非Remoteの正規所有者がmacOSで`launchctl`を変更する場合だけ`bin/launchctl-safe`を使い、exit 75なら停止して`docs/runbooks/launchd-control-plane-recovery.md`に従う。
+- **141対策の禁止は実行経路だけ:** Remote配下からmacOSログインGUI domain `gui/$UID`へ到達するbootstrap/bootout/kickstart/submit等を実行しない。raw `launchctl`か`lm-loop`等のwrapper経由かは問わない。GUI domainへ入らないrelease・診断・`lm-loop`・app-server操作は一律禁止しない。実行前にentrypointを読み、`launchctl ... gui/$UID`への到達有無を確認する。非Remoteの正規所有者がmacOSで`launchctl`を変更する場合だけ`bin/launchctl-safe`を使い、exit 75なら停止して`docs/runbooks/launchd-control-plane-recovery.md`に従う。
 
 ## Codex Loop Runtime
 
 - Long-running work in one conversation uses `/goal`. Recurring Codex work uses Desktop Scheduled Tasks or an external scheduler that starts one finite `codex exec` run and stores JSONL/final-output evidence.
 - The external scheduler owns cadence, cwd, sandbox, and termination. Codex Desktop/app-server never creates a self-restart loop with `launchctl submit`, Terminal, AppleScript, self-kill, or reopen commands.
-- Business loops run only through their existing natural wake. From a Remote ChatGPT/Codex/Claude session, never call `launchctl`, `lm-loop apply/start/stop/restart`, app-server lifecycle commands, or a replacement Codex executor. Release changes belong to the independent release watcher.
-- Do not probe or reproduce launchd 141 from Remote. If prior logs contain numeric username, non-Aqua manager, 141, or failed LaunchServices, keep Remote alive, preserve the exact unfinished atom, and observe process/ledger/artifact read-only until the natural owner or release watcher advances it. Never propose shutdown, app/Mac restart, Terminal/AppleScript, raw launchctl, or signals to app-server/updater as the remedy.
+- Business loops use their existing owner. Remote may inspect and change code, release, state, and commands whose call path does not enter `gui/$UID`; it must not create a replacement executor or use a wrapper to evade that exact GUI-domain boundary.
+- Do not probe or reproduce launchd 141 through the same GUI-domain path. If 141 appears, identify the exact call path entering `gui/$UID`; do not classify the whole loop, `lm-loop`, release tooling, restart, PGlite, or app-server as forbidden without that evidence. Terminal/AppleScript is not an allowed workaround for the prohibited GUI-domain operation.
 - Durable rationale and the canonical failure example live in `MEMORY.md` under “Codex loop runtime boundary.”
 - Sources: [OpenAI non-interactive mode](https://developers.openai.com/codex/noninteractive), [Scheduled tasks](https://developers.openai.com/codex/automations), [Follow a goal](https://developers.openai.com/codex/use-cases/follow-goals), [openai/codex issue #32321](https://github.com/openai/codex/issues/32321).
 - Before creating, changing, migrating, debugging, or retiring a Life Manager loop, MUST read and follow `skills/loop-development/SKILL.md`.
