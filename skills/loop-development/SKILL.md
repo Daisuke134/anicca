@@ -26,6 +26,8 @@ locked worktree -> branch push -> isolated immutable release -> live E2E -> fina
    lock --reason '<task>' <path>`. Never edit the shared checkout.
 3. Name the exact loop IDs and files owned by one registry TODO. Do not modify a
    sibling loop unless the root cause is its shared runtime boundary.
+4. Identify the runtime owner and activation path before coding. A rendered or
+   installed plist is configuration, not evidence that a loop is on.
 
 ## Source, state, and ownership
 
@@ -84,12 +86,19 @@ locked worktree -> branch push -> isolated immutable release -> live E2E -> fina
 8. Require a natural scheduled terminal event from the installed SHA. Keep
    launchd state, process result, and official effect result separate. Only
    official provider/account readback can set an external effect `verified`.
+   Do not call the loop shipped until the target label has one loaded owner and
+   its natural run is observed. If the current context cannot perform the
+   authorized activation, record the exact existing operator handoff; do not
+   invent a second scheduler or report completion.
 
 ## Done gates
 
 - Every managed label exists once, is enabled and loaded, and points to one
   existing immutable release. `doctor` reports unmanaged 0, missing 0, and
   installed-retired 0.
+- `ON` means loaded owner exact one plus a natural run from the intended SHA.
+  Plist existence, rendered config, passing tests, or a manual finite run alone
+  never satisfies this gate.
 - Active entrypoints have no legacy installer, managed raw launchd mutation,
   direct provider selection, worktree source, or release-local mutable state.
 - Dependency import smoke tests pass through the exact interpreter returned by

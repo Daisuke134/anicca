@@ -104,6 +104,9 @@ branch codeのproduction-state reconcile-onlyはexit 0、submitted false、pendi
 runtime比較ではCoconala Applyは同じGUI domainにloaded、60秒cadence、runs 36、finite `lm-loop-run` processあり、Lancers Applyだけservice absentだった。
 Codex app-serverはrich client protocolでbusiness loop schedulerではない。`codex exec`はscript/CI/scheduled job内のfinite agent run、Desktop Scheduled Tasksは
 desktop app管理の別schedulerである。Lancersは第二control planeを作らず、Coconala同様launchdをcadence owner、既存agent runnerを意味判断境界にする。
+再発防止として`skills/loop-development/SKILL.md`の完了条件を更新した。plist、release、test、手動finite runだけでは稼働と数えず、対象labelの
+loaded owner exact 1、意図したSHAからの自然wake、terminal eventと必要な公式readbackを観測して初めて`ON/shipped`とする。現在contextが正規activationを
+実行できない場合は既存operatorへのexact handoffを記録し、代替schedulerを発明せず、完了とも報告しない。この基準ではLancers Applyは現在もOFFである。
 Sources: https://developers.openai.com/codex/app-server , https://developers.openai.com/codex/noninteractive , https://developers.openai.com/codex/automations
 固定順は、Apply比較→shared inventory→最小重複一件の
 shared化→Lancers single writer→新Proposal→案件別Telegram ACK→replay-zero→自然wake継続→Storefront→Negotiate→Paid→banked net→
