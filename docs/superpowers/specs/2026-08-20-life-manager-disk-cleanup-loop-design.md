@@ -636,6 +636,23 @@ clean・remote reachable・open 0の12 cloneを96,912 KiB回収し、dirtyな`cl
 language server 25,700 KiB、config、memoryは保持した。Data空き`29,077,376 KiB`（約27.7 GiB）、
 errors 0、protected deletion 0である。
 
+**Apps/cache atomの再発防止ownership readback:** canonical Storage Governorの実コードを再確認した。
+中央削除authorityが直接扱うのは`EXACT_CACHE_ROOTS`、未参照immutable release、closed browser code-sign clone、
+Codex Sparkle installation、prefixで所有証明できる一時runだけである。Maestro test output、Serena log、
+bounty research clone、agent-browser versionは中央がpath推測で削除せず、各producerのbounded retention/finalizerで
+閉じる。これは「各loopが自分のowner/class/lease/terminal/rebuild proofを宣言し、単一Governorだけが削除する」
+契約を維持し、loop別の自由削除や第二janitorを作らないためである。
+
+2026-09-02の再測定では`~/.maestro/tests`と`~/.serena/logs`は0 KiB、Data空きは
+`30,167,592 KiB`（約28.8 GiB）だった。Codex Sparkle `Installation`は`1,985,752 KiB`でallowlist登録済みだが、
+Updater PID 8768が`01:54:27`継続中のため、Remoteからsignal・restart・`launchctl`を行わず自然terminalまで
+preserveする。terminal後は既存Governorのopen-path再確認を通るため、別cleanerを追加しない。
+
+⑤の残りは、(a) Sparkle Updater自然terminal後の既存Governor receipt、(b) user Libraryと`/private/var/folders`の
+未分類上位root、(c) Downloads/Desktop/Picturesのduplicate/rebuild proof付きwaste、(d) 今回判明したproducer別
+retention gapの登録である。⑤はこれらのbefore/after bytes、active/open/dirty保護、errors 0、
+protected deletion 0を揃えるまで`[x]`にしない。
+
 ## Business-loop self-sustainability contract
 
 Apply、Negotiate、Storefront、Paidを含む各managed business loopは、自分の生成物について
