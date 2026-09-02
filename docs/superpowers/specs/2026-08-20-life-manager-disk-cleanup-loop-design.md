@@ -189,6 +189,16 @@ requested setへ`life-manager-disk-cleanup`を追加するcompatibility bridge�
 新しいscheduler、signal、Remote launchctl操作なしで、既存launchd ownerがidle cleanupを移管できる。reconciler自身が
 新scriptへ移った後もsetへの同一ID追加はidempotentである。
 
+bridge main `663f1af0d1aa5a0eaa0fe6b5e8660758d347f3fd`から完全release
+`~/loops/releases/20260902T192731-663f1af0`を既存ownerが自然cutした。build中のfreeは約12 GiBから約8 GiBまで
+低下し、release build自体をP6 capacity claim対象へ入れる必要があることを実測した。post-cut GCが旧loaded argvの
+alias target `5a3f9492...`を削除しlast exit 78を一度発生させたため、P3 actual-loaded argv保護は未完の安全blockerである。
+続くdeterministic reconcileはRemote mutationなしでcleanupを`663f1af0...`へ正規swapした。新SHA自然run
+`18d17c142d1c2d28-32001`はterminal PASS、errors 0、protected deletion 0、reclaimed `2,315,689,941 bytes`、
+free `7,396,675,584`→`10,562,560,000 bytes`である。旧pathを参照するplist/process/open handle 0を確認後、dangling
+compatibility aliasを削除しalias 0となった。cleanup側3-5d/3-5eは完了したが、release-reconciler自身はloaded
+`c259cc6e...`のため、正規non-Remote ownerがreconcilerをmain由来releaseへ移すまでP0全体は未完とする。
+
 ### 全Codexが守る同期ルール
 
 1. 作業開始時に、この表の先頭未完atomと最新production evidenceを読む。
