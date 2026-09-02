@@ -62,6 +62,16 @@ def seal(ledger: Path, decision: dict[str, Any], order: dict[str, Any]) -> dict[
     return {"client_order_id": client_order_id, "decision_id": decision_id, "effect_id": effect_id}
 
 
+def record_no_trade(ledger: Path, decision: dict[str, Any]) -> str:
+    decision_id = _digest({"paper": True, "decision": decision})
+    _append_once(ledger, {
+        "decision": decision, "decision_id": decision_id, "outcome": "no_trade",
+        "paper": True, "receipt_type": "decision",
+        "recorded_at": datetime.now(timezone.utc).isoformat(), "schema_version": 1,
+    }, ("receipt_type", "decision_id"))
+    return decision_id
+
+
 def mark_started(ledger: Path, sealed: dict[str, str]) -> None:
     if any(row.get("receipt_type") == "outcome" and row.get("effect_id") == sealed["effect_id"]
            for row in _rows(ledger)):

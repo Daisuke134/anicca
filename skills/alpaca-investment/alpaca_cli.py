@@ -7,6 +7,7 @@ import os
 import re
 import stat
 import subprocess
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -193,3 +194,89 @@ def read_campaign_snapshot(
         "unexpected_positions": [position.get("symbol") for position in positions
                                  if position.get("symbol") not in symbols],
     }
+
+
+def read_allocator_snapshot(
+    *, credentials_path: Path, cli_path: Path,
+) -> dict[str, Any]:
+    """Read only the official fields needed to offer trade candidates."""
+    env = _context(credentials_path, cli_path)
+    account = _run(cli_path, [
+        "account", "get", "--quiet", "--jq",
+        "{cash:.cash,equity:.equity,last_equity:.last_equity}",
+    ], env)
+    clock = _run(cli_path, [
+        "clock", "get", "--quiet", "--jq", "{is_open:.is_open,timestamp:.timestamp}",
+    ], env)
+    positions = _run(cli_path, ["position", "list", "--quiet", "--jq", "length"], env)
+    orders = _run(cli_path, [
+        "order", "list", "--quiet", "--status", "open", "--limit", "500", "--jq", "length",
+    ], env)
+    spy = _run(cli_path, [
+        "data", "latest-trade", "--symbol", "SPY", "--quiet", "--jq",
+        "{price:.trade.p,timestamp:.trade.t}",
+    ], env)
+    crypto = _run(cli_path, [
+        "data", "crypto", "latest-quotes", "--symbols", "BTC/USD,ETH/USD", "--quiet", "--jq",
+        ".quotes|to_entries|map({symbol:.key,bid:.value.bp,ask:.value.ap,quote_at:.value.t})",
+    ], env)
+    qqq_asset = _run(cli_path, [
+        "asset", "get", "--symbol-or-asset-id", "QQQ", "--quiet", "--jq",
+        "{symbol,tradable,status,overnight_tradable,overnight_halted,fractionable}",
+    ], env)
+    qqq_quote = _run(cli_path, [
+        "data", "latest-quotes", "--symbols", "QQQ", "--quiet", "--jq",
+        ".quotes.QQQ|{bid:.bp,ask:.ap,quote_at:.t}",
+    ], env)
+    price = float(spy["price"])
+    option_query = (
+        ".snapshots|to_entries|map({symbol:.key,bid:.value.latestQuote.bp,"
+        "ask:.value.latestQuote.ap,quote_at:.value.latestQuote.t})"
+    )
+    options = _run(cli_path, [
+        "data", "option", "chain", "--underlying-symbol", "SPY",
+        "--expiration-date-gte", str(date.today() + timedelta(days=7)),
+        "--expiration-date-lte", str(date.today() + timedelta(days=45)),
+        "--strike-price-gte", f"{price * .97:.2f}",
+        "--strike-price-lte", f"{price * 1.03:.2f}",
+        "--type", "call", "--limit", "100", "--quiet", "--jq", option_query,
+    ], env)
+    if not isinstance(account, dict) or not isinstance(clock, dict):
+        raise ValueError("alpaca_allocator_shape_invalid")
+    if not isinstance(positions, int) or not isinstance(orders, int):
+        raise ValueError("alpaca_allocator_shape_invalid")
+    if not isinstance(crypto, list) or not isinstance(options, list):
+        raise ValueError("alpaca_allocator_shape_invalid")
+    return {"account": account, "clock": clock, "crypto": crypto,
+            "open_orders": orders, "option_quotes": options, "positions": positions,
+            "qqq_asset": qqq_asset, "qqq_quote": qqq_quote, "spy": spy}
+
+
+def submit_order(
+    *, credentials_path: Path, cli_path: Path, client_order_id: str,
+    order: dict[str, Any],
+) -> dict[str, Any]:
+    """Submit one already-gated paper order through the pinned CLI."""
+    if not re.fullmatch(r"lm-ai-[0-9a-f]{24}", client_order_id):
+        raise ValueError("client_order_id_invalid")
+    env = _context(credentials_path, cli_path)
+    if order.get("asset_class") == "crypto" and order.get("symbol") in {"BTC/USD", "ETH/USD"}:
+        args = ["order", "submit", "--quiet", "--symbol", order["symbol"],
+                "--notional", order["notional_usd"], "--side", "buy", "--type", "market",
+                "--time-in-force", "gtc", "--client-order-id", client_order_id]
+    elif order.get("asset_class") == "option_spread":
+        legs = json.dumps([
+            {"symbol": order["long_symbol"], "ratio_qty": "1", "position_intent": "buy_to_open"},
+            {"symbol": order["short_symbol"], "ratio_qty": "1", "position_intent": "sell_to_open"},
+        ], separators=(",", ":"))
+        args = ["order", "submit", "--quiet", "--order-class", "mleg", "--qty", "1",
+                "--type", "limit", "--limit-price", order["limit_price"],
+                "--time-in-force", "day", "--legs", legs,
+                "--client-order-id", client_order_id]
+    else:
+        raise ValueError("unsupported_order_shape")
+    result = _run(cli_path, [*args, "--jq",
+        "{client_order_id,status,submitted_at,symbol,notional}"], env)
+    if not isinstance(result, dict) or result.get("client_order_id") != client_order_id:
+        raise ValueError("alpaca_submit_readback_invalid")
+    return result

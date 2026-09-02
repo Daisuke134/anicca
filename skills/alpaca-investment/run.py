@@ -8,9 +8,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-from alpaca_cli import find_order_by_client_id, observe, read_campaign_snapshot
+from allocator import build_candidates, choose, order_for
+from alpaca_cli import (find_order_by_client_id, observe, read_allocator_snapshot,
+                        read_campaign_snapshot, submit_order)
 from campaign import SYMBOLS, reconcile
-from effect_store import reconcile_started
+from effect_store import mark_started, reconcile_started, record_no_trade, seal
 
 
 def _atomic_json(path: Path, value: dict) -> None:
@@ -59,12 +61,38 @@ def main() -> int:
             cli_path=cli_path,
             symbols=SYMBOLS,
         ))
+        allocator_snapshot = read_allocator_snapshot(
+            credentials_path=credentials_path, cli_path=cli_path)
+        candidates = build_candidates(allocator_snapshot)
+        decision = choose(
+            allocator_snapshot, candidates, state,
+            Path(__file__).resolve().parents[2] / "runtime/agent-runner/agent_runner.py",
+            Path(__file__).resolve().parents[2],
+        )
+        effect = "none"
+        if decision["approved"]:
+            order = order_for(decision)
+            sealed = seal(state / "receipts.jsonl", decision, order)
+            mark_started(state / "receipts.jsonl", sealed)
+            submit_order(credentials_path=credentials_path, cli_path=cli_path,
+                         client_order_id=sealed["client_order_id"], order=order)
+            reconcile_started(
+                state / "receipts.jsonl",
+                lambda value: find_order_by_client_id(
+                    credentials_path=credentials_path, cli_path=cli_path, client_order_id=value),
+            )
+            effect = sealed["effect_id"]
+        else:
+            record_no_trade(state / "receipts.jsonl", decision)
+        _atomic_json(state / "allocation-latest.json", decision)
         _atomic_json(state / "observation-latest.json", observation)
         _atomic_json(state / "campaign.json", campaign)
         summary = {
             "account": observation["account"],
             "activities_count": observation["activities_count"],
-            "effect": "none",
+            "candidate_count": len(candidates),
+            "decision": decision["candidate_ref"],
+            "effect": effect,
             "exit_status": campaign["exit_status"],
             "loop_id": "alpaca-investment",
             "orders_count": observation["open_and_closed_orders_count"],
@@ -72,13 +100,13 @@ def main() -> int:
             "positions_count": len(observation["positions"]),
             "unrealized_pnl_usd": campaign["unrealized_pnl_usd"],
             "reconciliation": reconciliation,
-            "status": "observed",
+            "status": "allocated",
         }
         print(json.dumps(summary, separators=(",", ":")))
         return 0
     except (OSError, subprocess.SubprocessError, ValueError, json.JSONDecodeError):
         print(json.dumps({
-            "blocker": "alpaca_observation_failed",
+            "blocker": "alpaca_pass_failed",
             "effect": "none",
             "loop_id": "alpaca-investment",
             "status": "blocked",
