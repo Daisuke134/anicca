@@ -2,7 +2,7 @@
 
 **Goal:** `life-manager-main`の実績あるLancers loopをsingle-writerで復帰し、最大応募からbanked netまでを閉じる。Eliza forkは実行基盤にせず、将来の自前General Agent harnessの参考資料に限定する。
 
-**Current facts:** Eliza Lancers runtime process 0、tmux session 0。ApplyはSHA `4e608343…`からsingle writer exact 1、`StartInterval=60`で自然wakeを継続し、案件5595850 / 90,000円 / 納期2026-09-09 / Proposal `27880898`、Telegram `48685`、replay-zeroを実証済み。Storefrontは別label・別owner、`StartInterval=1800`でSHA `ddc054a84…`をloaded。browser固着を180秒で閉じるwatchdog追加後の2回目runはexit 0となり、公開出品 `1338228`、価格29,800/198,000/398,000円、需要9件を公式readbackし、独立Telegram ACK `48724`を配信した。preflightは全PASS、141/153とRemote切断は0。現在activeはStep 10 Negotiate。Eliza migration checkoutはAlpaca作業中なので削除せず、Lancers runtimeとしては使用しない。
+**Current facts:** Eliza Lancers runtime process 0、tmux session 0。既存Apply ownerはrelease SHA `4e608343…`、single writer exact 1、`StartInterval=60`でloadedだが、直近runはplanner後のPlaywright `new_page()`固着で`last exit code=1`となり、現在のcontinuous Applyは未合格。案件5595936でclaim・送信・公式Proposal readback・Telegram ACKは増えていない。過去ログの`No space left on device`／SQLite open failureも別再発監視対象である。修正commit `0eb217ea6`は既存`application_tick.py submit`を候補ごとの120秒子プロセス境界へ移し、既存transaction/readbackを変更せず固着した候補だけを回収する。構文チェックとLancers HOL 25件はPASS済みだが、修正版は未release。Storefront/Negotiateの既存receiptは保持するが、固定順により現在activeはStep 8。Eliza migration checkoutはAlpaca作業中なので削除せず、Lancers runtimeとしては使用しない。
 
 ## Fixed order
 
@@ -13,7 +13,7 @@
 - [x] **5 — fresh official Proposal:** 自然wakeで案件5595850を90,000円、納期2026-09-09で送信し、公式Proposal ID `27880898`、ledger sequence 58を取得した。
 - [x] **6 — per-item Telegram ACK:** 同案件の正式title、ID、90,000円、2026-09-09、Proposal ID `27880898`を含む案件別ACKをTelegram provider message ID `48685`で確認した。同wakeの新規outbox 7件は全件delivered。
 - [x] **7 — replay-zero:** 2回目自然wakeは案件5595850をplanner入力から除外し、同Proposal receipt exact 1、ledger sequence `58→58`、pending 0、provider再送0でexit 0。新規Telegram 3件も全delivered。
-- [x] **8 — continuous natural Apply:** `--exhaustive`が同じ全件探索＋Luna判断を3巡していた一行を修正し、探索範囲を変えず1巡へ統一した。SHA `4e608343…`の自然wakeは約4分44秒でexit 0、次wake `runs=2`が自動再発した。single writer、全fresh一括判断、eligible全送信、official readback、案件別outboxを維持する。
+- [ ] **8 — continuous natural Apply（active）:** 旧SHA `4e608343…`のrunはplanner後にPlaywright `contexts[0].new_page()`で固着し、claim・公式応募・readbackへ到達しないままexit 1となった。commit `0eb217ea6`で既存`application_tick.py submit`を候補単位の子プロセスへ分離し、120秒でprocess groupを回収して次候補・次wakeを塞がない。新browser/provider codeは追加していない。修正版releaseをsingle writerへ反映後、自然wake 3回連続、各fresh案件の個別ACK、公式Proposal ID、replay-zero、exit 0を確認して初めて完了とする。
 - [x] **9 — independent Storefront:** StorefrontをApplyと別label・別ownerでSHA `ddc054a84…`から起動した。初回はPlaywright driverが固着したため、同scriptへ既存finite-run patternと同じ180秒watchdogだけを追加。2回目runはexit 0、公開出品 `1338228`、価格29,800/198,000/398,000円、画像、契約経路、需要9件を公式readbackし、独立Telegram ACK `48724`をdelivered。Apply ownerとRemoteへの影響、141/153は0。
 - [ ] **10 — independent Negotiate（active）:** SHA `ddc054a84…`を別label・別owner、`StartInterval=300`で起動。最初のrunは公式会話2件、返信必要0、未読0、月額offer 0、契約候補0をreadbackし、独立Telegram ACK `48727`、exit 0。lane稼働はPASSしたがContractReceiptはまだ0なので、Applyを継続しながらbuyer-last新着を自然wakeで処理する。
 - [ ] **11 — Paid real contract:** funded contractだけを制作し、QA、公式納品、DeliveryReceipt、PaymentReceiptを閉じる。
@@ -23,7 +23,20 @@
 - [ ] **15 — Freelancer.com repair:** 同じshared構造へ既存Freelancer.com loopを接続して修復する。
 - [ ] **16 — autonomous loop factory:** 3市場目以降はLife Manager自身が新市場を発見し、Skillを使ってadapter、canary、receipt、loop起動、改善まで行う。
 
-この順序はDaisが明示的に変更しない限り不変。各項目を完了して正本を更新してから次へ進む。profile/assetsはApply経路比較で不足を観測しても順序を飛ばさず、Step 8までの応募成立に必要な既存assetだけを再利用する。残cleanupは現役source/rollbackが確定した後に行い、Alpacaが使うEliza checkoutは削除しない。
+この順序はDaisが明示的に変更しない限り不変。各項目を完了して正本を更新してから次へ進む。現在の先頭atomはStep 8の修正版release反映と3回連続自然wakeであり、
+Step 9以降の既存receiptを理由に前倒ししない。profile/assetsはApply成立に必要な既存assetだけを再利用する。残cleanupは現役source/rollbackが確定した後に行い、Alpacaが使うEliza checkoutは削除しない。
+
+## Step 8 corrective slice — bounded application transaction
+
+症状は、plannerの後に同一プロセスのPlaywright `new_page()`が返らず、親`application_loop.py`が共有browser leaseを保持したまま次の自然wakeを塞ぐことだった。
+`work-sync.json.lock`と`application.json.lock`の二重取得ではなく、外側account lockは維持する。`application_loop.py`は既存CLI `application_tick.py submit`を
+候補ごとに`start_new_session=True`で起動し、120秒のtimeoutで子process groupだけを終了する。子が出した最後のJSONを既存の`_tick_result`へ渡すため、
+canonical claim、dedupe、effect fence、official readback、receiptは既存経路のままである。timeoutは`application_tick_timeout`として未確認扱いにし、同じ案件を盲目的に再送しない。
+
+Acceptance: pushed commit `0eb217ea6`からimmutable releaseを作成し、対象labelのsingle writerをそのreleaseへ切り替える。以後、自然wake 3回連続で
+planner→候補処理→terminal exit 0を観測し、各fresh案件についてtitle、ID、apply/skip理由、金額・納期、応募時は公式Proposal IDを個別Telegram ACKへ記録する。
+同一案件の再実行は公式履歴とledgerでreplay-zeroを確認する。`No space left on device`またはSQLite open failureが再発した場合は、保護storeを削除せず、
+再生成可能な古いrelease/logの実測後にだけ最小cleanupを行い、空き容量回復を別blockerとして記録する。
 
 ## Step 1 comparison receipt
 

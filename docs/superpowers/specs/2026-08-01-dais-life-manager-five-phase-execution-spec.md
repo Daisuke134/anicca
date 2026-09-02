@@ -3,7 +3,7 @@
 status: ACTIVE
 owner: Dais / Life Manager
 created: 2026-08-01 JST
-updated: 2026-09-02 JST
+updated: 2026-09-03 JST
 scope: Upwork終端処理、公開context収束、汎用Life Manager kernel、既存5段階の各organ
 active_execution_surface: SELF_OWNED_LIFE_MANAGER_LOCAL_FIRST_CLOUD_AFTER_RECEIPT_CHAIN
 
@@ -75,7 +75,23 @@ Daisの明示変更により、LancersのEliza runtime移行はここで中止�
 read-only参考実装へ降格し、Lancers production runtimeには使わない。`life-manager-eliza-migration` checkoutはAlpaca作業が残るため
 現時点では削除しない。Lancersは`life-manager-main`に残る実績ある60秒application loopへsingle-writerで復帰する。
 
-現在はEliza Lancers runtime 0、tmux session 0、旧application service absentで、continuous writer 0である。復帰対象は既存の
+#### 2026-09-03 current correction — Step 8を再開
+
+上記の過去記録にある「continuous Apply完了」「Step 10 active」は、現在の実行状態を表さないため無効とする。現在のproduction ownerは
+`ai.anicca.lancers-revenue-application`一件だけで、release SHA `4e608343…`、`StartInterval=60`、`launchctl print`は`state=running`を返すが、
+直近runは`last exit code=1`である。plannerが案件5595936を選んだ後、Lancersの`application_loop.py`が同一プロセス内のPlaywright
+`contexts[0].new_page()`で停止し、claim・応募送信・公式Proposal readbackへ到達しなかった。今回の停止では新規ApplicationReceipt、Proposal ID、Telegram ACKは増えていない。
+過去ログには別時刻の`No space left on device`とSQLite `unable to open database file`もあるため、これらは別の再発監視対象として記録する。
+
+原因を一つの最小変更へ固定し、commit `0eb217ea6`で既存`application_tick.py submit`を候補ごとの子プロセス境界へ移した。子は既存のclaim、effect fence、
+official readback、ledgerをそのまま所有し、親は120秒のprocess-group timeout後にその子だけを回収して次候補・次wakeへ戻る。新しいbrowser、Puppeteer、selector、
+provider判断、ledger、schedulerは追加していない。構文チェックと既存Lancers HOL 25件はPASSしたが、このcommitはまだproduction releaseへ反映していない。
+
+したがって現在のcursorは固定順のStep 8（continuous natural Apply）のままである。Step 8の完了条件は、修正版releaseのsingle writerをloadedにした後、
+自然wakeを3回連続で観測し、各fresh案件の個別apply/skip ACK、応募ごとの公式Proposal ID、replay-zero、terminal exit 0を確認することとする。
+この条件を満たすまでStep 9以降へ進まず、「24/7最大応募中」「応募成功」「収益発生」と報告しない。
+
+以下は2026-09-02以前の履歴記録であり、上の2026-09-03 current correctionが優先する。履歴時点ではEliza Lancers runtime 0、tmux session 0、旧application service absentで、continuous writer 0だった。復帰対象は既存の
 `config/loop-registry.json` → `runtime/loop/entry_dispatch.py` → `skills/earn/lancers/scripts/application_loop.py --exhaustive` →
 `telegram_report.py`である。新scheduler、browser、ledger、provider固有brainは作らない。Lunaが全fresh案件を意味判断し、同一wake内で
 全`submit_required`を連続送信する。各案件の公式title、ID、apply/skip、具体理由、提案額、納期、Proposal IDを案件別にTelegram ACKし、
