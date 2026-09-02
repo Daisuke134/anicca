@@ -8,7 +8,11 @@ import sys
 import tempfile
 import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from agent_runner import run_provider_process
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -90,6 +94,37 @@ class ProviderLeaseTest(unittest.TestCase):
         while time.monotonic() < deadline and self._lease_is_busy(lock_path):
             time.sleep(0.02)
         self.assertFalse(self._lease_is_busy(lock_path), "lease remained busy after provider exit")
+
+    def test_shared_codex_home_serializes_provider_processes(self):
+        events = self.root / "events.jsonl"
+        provider = self.root / "provider.py"
+        provider.write_text(
+            "import json, os, sys, time\n"
+            "from pathlib import Path\n"
+            "path = Path(sys.argv[1])\n"
+            "with path.open('a') as handle: handle.write(json.dumps(['start', os.getpid()]) + '\\n')\n"
+            "time.sleep(0.1)\n"
+            "with path.open('a') as handle: handle.write(json.dumps(['end', os.getpid()]) + '\\n')\n",
+            encoding="utf-8",
+        )
+        codex_home = self.root / "codex-home"
+        codex_home.mkdir()
+        env = {**os.environ, "CODEX_HOME": str(codex_home)}
+
+        def run():
+            return run_provider_process(
+                [sys.executable, str(provider), str(events)],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                timeout=5, cwd=str(self.root), input_bytes=None,
+                stdin=subprocess.DEVNULL, env=env,
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            self.assertEqual([future.result() for future in (executor.submit(run), executor.submit(run))], [0, 0])
+
+        rows = [json.loads(line) for line in events.read_text(encoding="utf-8").splitlines()]
+        self.assertEqual([row[0] for row in rows], ["start", "end", "start", "end"])
+        self.assertNotEqual(rows[0][1], rows[2][1])
 
     def test_contended_provider_lease_returns_75_without_launching_provider(self):
         """Removing the rc 75 boundary must launch the stub provider and fail this test."""
