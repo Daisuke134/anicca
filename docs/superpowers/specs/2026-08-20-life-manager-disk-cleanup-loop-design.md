@@ -114,7 +114,7 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      | `~/anicca` | 3.52 GiB | 同上 |
      | `~/anicca-monk-factory` | 3.04 GiB | 不可侵store |
      | `~/.codex` | 3.02 GiB | 別account home。session/log/archiveをowner分類する |
-     | `~/anicca-rtdash` | 2.55 GiB | 不可侵store |
+     | `~/anicca-rtdash` | 回収済み | 旧`anicca-project`残骸。rootとnested worktreeをremote branchへ保存し、SHA一致後にretireした |
      | `~/.bun` | 2.41 GiB | 再生成cache回収後も残るowner dataを分類する |
      | `~/.codex-acct2` | 2.33 GiB | active Codex account。active sessionを保持する |
      | `~/.claude` | 2.17 GiB | active sessionを保持し、終了済みlog/archiveだけをrotation対象にする |
@@ -471,15 +471,26 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    errors 0、closed 0、protected deletion 0、active/open/loaded producer保持をもってmemory/swap atomを完了する。
    11 GiB floorと長期観測は固定順序⑨で閉じる。
 
-   **外側worktree回収readback:** `~/anicca-project/.worktrees`のうち、WebMCPと不可侵`anicca-rtdash`を除き、
+   **外側worktree回収readback:** `~/anicca-project/.worktrees`のうち、WebMCPを除き、
    process/open参照0の終了済み5 treeを監査した。dirtyは共通動画の既回収記録と少数の固有文書/generated stateで、
    各treeの全差分を個別branchへcommit/pushし、local/remote SHA一致を確認してから`git worktree remove`した。
    rootは`3,199,564 → 724,604 KiB`、`anicca-project`全体は`6,922,604 → 4,442,552 KiB`となり、
    logical `2,474,960 KiB`を回収した。Data空きは`24,631,608 KiB`。errors 0、protected deletion 0で、
-   Life Manager main/Eliza、WebMCP、Alpaca、Coconala、Lancers、`anicca-rtdash`、Codex/Claude rootは存在をread backした。
+   Life Manager main/Eliza、WebMCP、Alpaca、Coconala、Lancers、Codex/Claude rootは存在をread backした。
+
+   **外側repository/worktree最終回収readback:** `anicca-rtdash`はrootのdirty 2件とnested `t2b-discovery`を
+   remoteへ保存し、local/remote SHA一致後にretireした。さらに`life-manager-repo-v0-retire`、
+   `anicca-portfolio-self-improve`、`anicca-docs-tools`、`anicca-project`の残存6 worktree、`anicca`の12 worktree、
+   Life Manager mainのunlocked/process 0 worktree 31件、Elizaのclean/unlocked `alpaca-a03` 6,335,464 KiBを、
+   dirty差分はすべて固有remote branchへ保存してSHA一致後に回収した。Git metadataを失った
+   `life-manager-8i-cutover-evidence`は2,907 fileのblobが全て既存履歴にreachableであることをtemporary indexで証明して
+   回収した。終了時に未lockのLife Manager worktreeは正本rootだけ、`~/anicca/.worktrees`は0 KiB、
+   `~/Projects/.worktrees`は2,423,392 KiBで全てcurrent/locked、`~/anicca-project/.worktrees`はWebMCPのみ
+   468,296 KiBだった。`life-manager-main`、`life-manager-eliza-migration`、GH-11、WebMCP、locked/current session、
+   不可侵storeは保持した。Data空きは`35,435,912 KiB`（約33.8 GiB）、errors 0、protected deletion 0である。
 
    **残TODO（順序固定）:** ①[x] host全体の外側大容量list、②[x]終了済み外側worktreeの第一GiB級batch、
-   ③ **現在active:** Life Manager正本外の残存重複repository/clone、④OpenClaw依存と重複`.git`/workspace/skills/media、
+   ③[x] Life Manager正本外の残存重複repository/cloneと終了済みworktree、④ **現在active:** OpenClaw依存と重複`.git`/workspace/skills/media、
    ⑤未使用application、`/private/var/folders`、Library cache、未使用toolchain、Downloads/Desktop/Picturesの安全なwaste、
    ⑥Codex/Claudeの保護rootを削除せずowner-side bounded rotation、⑦残るrunning旧releaseの自然idle reconcile＋central GC、
    ⑧Hermes正式retire、⑨Gig terminal project、⑩free 11 GiB以上＋24時間観測＋7日観測。
@@ -489,8 +500,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 5. [ ] **WebMCP hackathon:** Lancersと独立して別Codexで進め、Mercor公式readback、same-job replay-zero、
    ApplicationReceipt、demo動画、YouTube、Devpost提出を閉じる。
 
-現在activeな先頭atomは **Life Manager正本外の残存重複repository/clone** である。Life Manager個別loopの
-production変更は行わず、次にOpenClawのowner依存と重複source/outputを閉じる。Connection recovery、host census、
+現在activeな先頭atomは **OpenClawのowner依存と重複`.git`/workspace/skills/media** である。Life Manager個別loopの
+production変更は行わず、OpenClaw rootを消さずに終了済み・byte-identical・再生成可能なsource/outputを閉じる。Connection recovery、host census、
 完了済みmanual cleanup、回収済みworktreeを再びTODOへ戻さない。
 
 ## Business-loop self-sustainability contract
