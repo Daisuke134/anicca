@@ -461,6 +461,17 @@ dependency or order path was added; Alpaca CLI remains the only mutation authori
 focused suites (`4/4` tests), and `git diff --check` pass. Main-derived production natural-wake evidence remains
 pending and is not inferred from the source checks.
 
+The A11 aggregate portfolio-gate implementation sub-atom is **DONE** in `life-manager-eliza` merge
+`e9d15205afcf4e63283226dad86793a284cc5cbf` (PR #83). The ranking pass reads the official CLI campaign
+snapshot and the immutable opening-order risk receipt, then evaluates candidate maximum loss together with
+existing open maximum loss, every current position, open-order count, cash/equity, daily P&L, high-water
+drawdown, and reconciliation health. Existing positions without a readable opening risk fail closed as
+`OPEN_RISK_UNKNOWN`. The verified pure example adds the current `$29` SPY maximum loss to a `$250` candidate
+for aggregate maximum loss `$279`; typecheck, build, three focused suites (`5/5` tests), and `git diff --check`
+pass. This is still research-only and adds no broker effect. The currently running Eliza process uses a separate
+older branch and main-derived natural-wake evidence remains pending; source checks are not presented as runtime
+deployment proof.
+
 ### Win target and verified competitive baseline
 
 The target is both **main-prize first place** and one of the two **Social Engagement prizes**, but they are
@@ -538,9 +549,9 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
   no unexplained broker delta. In parallel, ~~add one common candidate contract for crypto, equity/ETF and
   defined-risk options and persist one typed cross-market model choice with no broker effect~~ **DONE**. Next,
   ~~normalize comparable expected-value/probability/freshness/liquidity evidence and veto weak selections~~
-  **DONE**. Next, make the portfolio-level gate account for every open position/order before the unchanged CLI
-  effect path can act. Only then add one bounded
-  crypto/equity CLI order shape without adding a broker client or scheduler.
+  **DONE**. ~~Make the portfolio-level gate account for every open position/order before the unchanged CLI
+  effect path can act~~ **DONE**. Next, add one bounded crypto/equity CLI order shape without adding a broker
+  client or scheduler.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
   projection must drive both live and static views so they cannot drift. Above the fold show paper-only status,
   starting/current equity, realised/unrealised P&L, open max loss, last successful loop and broker reconciliation.
@@ -588,15 +599,15 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next implementation scope remains inside A11 and does not wait for the options session: feed the reconciled open
-SPY campaign maximum loss, every current position, every open order, cash/equity, daily P&L and high-water
-drawdown into one asset-class-neutral portfolio gate before any future candidate can become an effect intent.
-This remains a no-effect slice through the existing decision store and receipt kernel; it must not add an order
-client, scheduler, strategy hard-coded in deterministic code, or profit claim. The same task continues to execute
-the already-sealed SPY exit when the regular options session reopens. A later slice may add one bounded
-crypto/equity CLI order request only after aggregate portfolio exposure is proven. A12–A14 artifacts may be built
-from the same redacted projection before the close and refreshed after final reconciliation; A15 and P01+ retain
-their gates.
+Next implementation scope remains inside A11 and does not wait for the options session: add one paper-only spot
+order request to the existing pinned Alpaca CLI adapter for crypto and eligible equity/ETF candidates. One stable
+client order ID, one planned effect intent, official order/fill readback, and replay-zero semantics must reuse the
+existing effect kernel. The order is eligible only after the scoring and aggregate portfolio gates both allow it;
+crypto may execute in its supported 24/7 session, while equities/ETFs must obey Alpaca's supported session and
+time-in-force rules. No SDK mutation, second broker client, scheduler, hard-coded asset selection, or live-capital
+path is permitted. The same task continues to execute the already-sealed SPY exit when the regular options
+session reopens. A12–A14 artifacts may be built from the same redacted projection before the close and refreshed
+after final reconciliation; A15 and P01+ retain their gates.
 
 ## 9. Controlling references
 
