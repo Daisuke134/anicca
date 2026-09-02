@@ -237,8 +237,8 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
 
    release収束は全provider共通のglobal apply lockで直列化しない。`activate-current`だけがglobal symlink lockを
    保持し、`lm-loop apply/reconcile`はlaunchd label単位のlockを保持する。同一labelへの変更だけを排他し、
-   別label・別providerは常に並列で進める。各labelのapply直前に最新`~/loops/current`をresolveし、そのimmutable
-   releaseを当該applyの完了までpinする。途中で別releaseがcurrentになっても進行中applyを失敗させず、running
+   別label・別providerは常に並列で進める。route開始時に明示されたimmutable releaseを一度だけresolveし、
+   全labelのapply完了まで同じreleaseをpinする。途中で別releaseがcurrentになっても進行中applyを失敗させず、running
    loopは既存どおり停止せずskipする。production同時reconcileのreadback完了後に本項を完了へ更新する。
 
    PR #3855 release `e9d59c327`へのshared reconcile中、別ownerがglobal currentをGig用sparse release
@@ -247,6 +247,21 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    fail-closedし、既存argvを保持した。protected deletion 0・running stop 0だが、shared routeがglobal currentを
    labelごとに再解決すると別ownerのsparse releaseを採用する未解消の収束条件である。currentを手動で奪い返さず、
    full releaseをroute単位でpinして全labelへ使う最小control-plane修正後にreconcile→central GCを再実行する。
+
+   この混在root causeはPR #3865 / merge `972a70f9`で修正した。`LIFE_MANAGER_RELEASE_ROOT`をroute開始時に
+   一度だけresolveし、full release `e9d59c327`を明示pinしたproduction reconcileはdeterministic 62＋4、
+   shared-agent-runner 18＋3をapply、failed 0。running 24/18件は停止せずskipし、全applied SHAは
+   `e9d59c327`で一致した。installedだがunloadedな4 labelが旧releaseを永続保護する残余はPR #3870 /
+   merge `0b7d22e65`で閉じ、serviceをload/bootoutせずatomic plist rebindだけを行った。productionはunloaded 4件＋
+   追加natural-idle 3件を`e9d59c327`へ収束し、failed 0、running stop 0。
+
+   central GCの既定が、current/loaded/open/pinned全件とは別に未参照rollbackを5世代保持していたため、free
+   約0.5 GiBでも候補5件を全保存していた。PR #3873 / merge `d7e993cc3`で未参照rollback既定を1世代へ変更した。
+   同じproduction GC canaryはevaluated 12、removed 3、reclaimed 977,863,637 bytes、free
+   `517,220 → 2,042,820 KiB`、errors 0、protected deletion 0。releaseは9件で、current/loaded/open 8件＋
+   rollback 1件を保持する。source defaultを含むsparse release `d7e993cc3`は作成済みだが、canonical
+   disk-cleanup labelは旧`d1133b36`のactive run中なので中断しない。自然terminal境界でtarget applyし、
+   次wakeのGC readback後に自動化を閉じる。残る旧releaseはlong-lived running loopのため停止せず保持する。
 
    追加のread-only owner照合後、未使用`/Applications/Chat On Steroids.app`を391,668 KiB、旧Codex package
    `0.151.0`と未使用plugin app-serverを合計570,048 KiB、重複pipx環境`camoufox`と`crawl4ai`を合計
