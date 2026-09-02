@@ -51,6 +51,12 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      公式daily report 65 attempts、空き6.7 GiB。blind truncation、行loss、別loop停止は0である。
      検証triggerで`kickstart -k`を使い直前instanceへexit 143を一度残したため、以後はrunning ownerを触らず、
      idle readback後の`kickstart`を`-k`なしで使う。replacement instanceは即時起動しterminal exit 0で閉じた。
+     archiveが無制限に増える残余はPR #3855 / merge `e9d59c327`で閉じた。agent usageだけをactive最大16 MiB＋
+     private gzip 3世代へ制限し、他のruntime-event writerは変更しない。release `e9d59c327`の自然
+     `agentmail-nudge` wakeはinstalled/event SHA一致、terminal PASS、last exit 0。同wakeはusage rowを追記し、
+     production active 519,148 bytes＋archive 1,399,029 bytes、合計26,351行、invalid 0、mode 0600だった。
+     同じproduction codeの隔離4回rotationはarchive 3、active 1行、retained ID 4/4、temporary 0。
+     credential、receipt、session、別ledgerの削除0、errors 0、protected deletion 0、稼働loop停止0である。
    - `lm-recording-store`はmain wrapperから旧OpenClaw skillへ戻る二重正本を廃止し、Life Manager data rootへ
      170 recording ID・173 MP3を統合、全hash一致を確認した。release `610f9059`でtarget applyし、実wakeは
      terminal PASS/exit 0。旧/new `lm-video` 548ファイル・220.5 MiBは全hash一致の削除候補である。
@@ -149,16 +155,16 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      `~/gig/projects/18128025`等のHermes名を含むBUYMA/customer artifactとeffect receiptはgateway退役と無関係に
      project lineageとして保持する。
 
-   **All-loop bounded-output audit内の固定実行順:** 現在activeなmemory/swap atomを閉じた後、次を
+   **All-loop bounded-output audit内の固定実行順:** 現在activeなrelease収束atomから、次を
    一件ずつ実行し、各atomでbefore/after bytes、loaded/open/dirty保護、errors 0、protected deletion 0、
    次wake回収または自然terminal readbackを保存する。
 
    1. [x] 共通agent usage ledgerのowner-side lossless rotationを実装・release・自然wakeで検証する。
-   2. [ ] **current:** memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、不要daemonだけをowner経由で
+   2. [x] memory/swap producer censusを取り、重複CloakBrowser renderer、終了済みworker、不要daemonだけをowner経由で
       drainし、VM使用量がmacOSにより縮小することをread backする。
    3. [x] registered worktreeをactive/locked/dirty/unpushed/unmerged/openとclean/merged/idleへ分類し、後者だけをGit provenanceを
       保ったまま回収する。
-   4. [ ] **in progress:** immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、idleな旧release参照を
+   4. [ ] **current:** immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、idleな旧release参照を
       control planeでcurrentへ収束した後、central cleanupでunreferencedだけを回収する。running loopは停止しない。
    5. `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
       state、production argvを移管し、一repositoryずつretireする。
@@ -234,6 +240,13 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    別label・別providerは常に並列で進める。各labelのapply直前に最新`~/loops/current`をresolveし、そのimmutable
    releaseを当該applyの完了までpinする。途中で別releaseがcurrentになっても進行中applyを失敗させず、running
    loopは既存どおり停止せずskipする。production同時reconcileのreadback完了後に本項を完了へ更新する。
+
+   PR #3855 release `e9d59c327`へのshared reconcile中、別ownerがglobal currentをGig用sparse release
+   `794690cabe`へ切り替えた。label単位lockにより既処理labelは`e9d59c327`、後続6 labelは`794690ca`へ
+   applyされ、running 16 labelは停止せずskipされた。一方、sparse releaseにentrypointがない14 labelはeffect前に
+   fail-closedし、既存argvを保持した。protected deletion 0・running stop 0だが、shared routeがglobal currentを
+   labelごとに再解決すると別ownerのsparse releaseを採用する未解消の収束条件である。currentを手動で奪い返さず、
+   full releaseをroute単位でpinして全labelへ使う最小control-plane修正後にreconcile→central GCを再実行する。
 
    追加のread-only owner照合後、未使用`/Applications/Chat On Steroids.app`を391,668 KiB、旧Codex package
    `0.151.0`と未使用plugin app-serverを合計570,048 KiB、重複pipx環境`camoufox`と`crawl4ai`を合計
