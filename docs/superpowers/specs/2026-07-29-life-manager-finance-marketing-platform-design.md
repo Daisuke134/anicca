@@ -2601,6 +2601,21 @@ cron is live until a GUI/Aqua context runs targeted apply, then kickstart and
 reads back the exact loaded release argv and replay-zero. No retry publication
 is required.
 
+**YouTube live cursor 4 — exact remaining atom:** host storage is healthy again
+(26 GiB free), so disk capacity is not a blocker. The canary, native owner and
+content-family verification, Telegram receipt, manifest arm, and replay-zero
+are already terminal and must not be repeated. The only unfinished action for
+`@anicca-ai` is to run targeted `lm-loop apply` from a valid GUI/Aqua launchd
+context, kickstart the installed `life-manager-anicca-ai-youtube` loop, and
+read back its plist/loaded argv as immutable release
+`20260902T105547-bc9ffdee` with exactly `07:45/13:15/19:45` JST. This isolated
+Codex context still reports numeric `id -un=501`, missing manager context, and
+`gui/501` rc 141, so the official apply continues to fail closed before plist
+mutation. After that single scheduler atom closes, the next fixed-order atom is
+classification and canary of YouTube `@anicca-affirmation-video` /
+`cmn8ymq6c02oio70y5ea1trv8`; `@anicca-jp` remains owner-skipped at 0/day, and
+ebook/monk remain later.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
