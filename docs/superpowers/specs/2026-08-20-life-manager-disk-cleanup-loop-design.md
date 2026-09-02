@@ -202,6 +202,15 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      正本を保持してopen 0のoutbound copy 21,853,895 bytesだけ回収し、実free +21,056 KiB。UUID付き同一PDF 3件は
      path identityを保持した。5回目cleanup wakeはruns 5、state not running、last exit 0、
      observed_at `2026-09-02T01:21:57Z`、errors 0、protected deletion 0、reclaimed 6,367 bytes、再生成0だった。
+
+     enabled `4.7-slideshow-morning`は毎日09:00 JSTに旧OpenClaw skillを実行するactive factory ownerである。
+     publish成功receipt後にだけ`pinterest/`と`viral-slideshows/` scratchをowner自身が削除し、slides、caption、
+     analysis、metadata、receipt、Downloads review bundleを保持する8行の最小finalizerを
+     `anicca-dais` main-internal commit `7bbca413`へpushした。shell syntax、隔離fixtureはPASS。
+     既存receipt 19件のremote Postiz media URLは108/108 HTTP 200、scratch open 0を確認し、18 directory、
+     logical 15,592 KiB、実free +13,028 KiBを回収した。receipt 19、slides 126、receiptのないscratch 4は保持。
+     次の自然factory wakeでpost成功、receipt durability、scratch 0、protected artifact保持をread backするまで
+     owner-side retentionのproduction完了とは扱わない。cleanup検証目的の追加投稿は発火しない。
    - **Hermes boundary:** `ai.hermes.gateway`はPID `34961`、KeepAlive、`~/.hermes`約1.52 GBで現在runningである。
      active daemonをfolder先行削除しない。全managed loopのHermes consumerが0であること、loaded/open referenceが
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
