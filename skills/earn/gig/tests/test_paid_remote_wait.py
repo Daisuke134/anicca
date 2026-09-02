@@ -50,6 +50,33 @@ def test_accumulation_normalizes_legacy_text_only_digest() -> None:
     ).encode()).hexdigest()
 
 
+def test_talkroom_readback_retries_transient_tab_open_timeout(monkeypatch) -> None:
+    snapshot = load("coconala_queue_snapshot")
+    attempts = []
+
+    class Tab:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def __enter__(self):
+            attempts.append(1)
+            if len(attempts) == 1:
+                raise __import__("subprocess").TimeoutExpired(["cdp", "open"], 25)
+            return SimpleNamespace(ws="ws://ready")
+
+        def __exit__(self, *_args):
+            return False
+
+    async def inspect(*_args, **_kwargs):
+        return {"ok": True}
+
+    monkeypatch.setattr(snapshot, "DefaultTab", Tab)
+    monkeypatch.setattr(snapshot, "inspect_page", inspect)
+
+    assert snapshot.inspect_page_with_retry(Path("helper"), "https://example.test", "1", None) == {"ok": True}
+    assert len(attempts) == 2
+
+
 def test_paid_failure_preserves_machine_readable_step_and_diagnostic_detail() -> None:
     paid = load("paid_direct")
     error = paid.Failure("file_builder", "isolated_file_owner")

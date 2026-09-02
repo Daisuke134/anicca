@@ -2736,6 +2736,9 @@ def inspect_page_with_retry(
                     validate_coverage=validate_coverage,
                     attachment_project_root=attachment_project_root,
                 ))
+        except subprocess.TimeoutExpired:
+            if attempt == attempts - 1:
+                raise
         except RuntimeError as exc:
             if str(exc) != TRANSIENT_NAVIGATION_ERROR or attempt == attempts - 1:
                 raise
