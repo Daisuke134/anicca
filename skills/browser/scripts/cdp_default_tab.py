@@ -83,7 +83,7 @@ def open_tab(url, background=False, owner=None):
 
 async def _serve_hidden_tab(url, owner=None):
     owner = target_ownership.require_owner(owner)
-    lease = _lease(owner)
+    lease = await asyncio.to_thread(_lease, owner)
     async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
         await ws.send(json.dumps({
             "id": 1,
