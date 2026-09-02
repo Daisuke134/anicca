@@ -101,6 +101,10 @@ Pushed branch SHA `6a76454ac…`はtest-only bypassなしのisolated normal inst
 application labelをexact確認した。activate 0、production effect 0。Step 4の残りはproduction exact 1 loadだけである。
 branch codeのproduction-state reconcile-onlyはexit 0、submitted false、pending/unresolved 0。旧profile preflight callは現pathから除去済みで、
 新規応募・Telegram effect 0。load前readinessは成立した。
+runtime比較ではCoconala Applyは同じGUI domainにloaded、60秒cadence、runs 36、finite `lm-loop-run` processあり、Lancers Applyだけservice absentだった。
+Codex app-serverはrich client protocolでbusiness loop schedulerではない。`codex exec`はscript/CI/scheduled job内のfinite agent run、Desktop Scheduled Tasksは
+desktop app管理の別schedulerである。Lancersは第二control planeを作らず、Coconala同様launchdをcadence owner、既存agent runnerを意味判断境界にする。
+Sources: https://developers.openai.com/codex/app-server , https://developers.openai.com/codex/noninteractive , https://developers.openai.com/codex/automations
 固定順は、Apply比較→shared inventory→最小重複一件の
 shared化→Lancers single writer→新Proposal→案件別Telegram ACK→replay-zero→自然wake継続→Storefront→Negotiate→Paid→banked net→
 Gig Money Loop Skill→CrowdWorks→Freelancer.com→Life Manager自身のloop factoryである。各Stepを実測完了して正本更新後にだけ次へ進む。

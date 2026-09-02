@@ -64,6 +64,16 @@ provider固有discovery、submit、official readback、receipt、Telegram、sche
 installed `~/Library/LaunchAgents/ai.anicca.lancers-revenue-application.plist`はlabel exact一致、`StartInterval=60`、loop ID
 `lancers-revenue-application`を持つ。一方、read-only `launchctl print gui/501/ai.anicca.lancers-revenue-application`は
 `Could not find service`を返す。したがってplist fileの存在を稼働と数えず、continuous Apply ownerは0、Step 4は未完である。
+同じread-only監査でCoconala Apply `ai.anicca.hf-gig-apply-direct`は同じGUI domainにloaded、60秒cadence、runs 36、finite
+`lm-loop-run` processありだった。LancersだけにCodex app-serverが必要なのではなく、差はCoconala ownerが既にload済みでLancers ownerがabsentな点である。
+OpenAI公式資料ではapp-serverはrich client integration用、automation/CIはCodex SDK、script/scheduled jobの有限runは`codex exec`、Desktop
+Scheduled Tasksはdesktop appが管理する別schedulerである。したがってLancersはCoconalaと同じlaunchd supervisorをsingle ownerとして再利用し、
+意味判断だけを既存agent runnerへ渡す。app-server、Scheduled Tasks、第二schedulerを追加しない。
+
+Sources:
+- OpenAI, `Codex App Server`: https://developers.openai.com/codex/app-server — rich clients向けで、automation jobsにはSDKを使うと明記。
+- OpenAI, `Non-interactive mode`: https://developers.openai.com/codex/noninteractive — `codex exec`はscripts、CI、scheduled jobs向け。
+- OpenAI, `Scheduled tasks`: https://developers.openai.com/codex/automations — local project taskはdesktop app稼働が必要で、CLIは管理UIを持たない。
 既存exact-SHA installerは新しいshared policyをrelease allowlistへ含めていなかったため、
 `skills/_shared/marketplace-core/scripts/feasibility_policy.py`をmanifestへ追加した。isolated reconcile/normal installer testは2/2 PASSし、
 production state、plist、launchd effectは0。残るStep 4 actionは正しいpushed commitをproduction releaseへinstallし、single ownerをloadすることだけである。
