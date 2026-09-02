@@ -2567,6 +2567,18 @@ currently report `disabled:false`, but all three remain Life Manager-unarmed at
 `@anicca-jp` at 0/day unless the owner explicitly reopens it. No Honne content
 or identity may use these Anicca YouTube integrations.
 
+**YouTube live cursor 2 — `@anicca-ai` classified:** native YouTube readback
+binds handle `@anicca-ai` to channel ID `UCFGkrtiSTni-AZ9DUY6Q5EA` and Postiz
+integration `cmq3u37gi005iqp0y90a2w92n`. Its latest twenty Shorts all use the
+title `how to put affirmations on your lockscreen`; direct frame inspection of
+the latest three shows the same woman-led English UGC hook, `Put affirmations
+on your lockscreen`. The exact mapping is therefore Anicca iOS / English /
+YouTube Shorts / `reelclaw-widget` / `lockscreen-affirmation-widget`. Larry,
+Card, Japanese, Honne, and the skipped JA YouTube canary assets are forbidden.
+The lane remains Life Manager-unarmed at 0/day while the next atom reuses the
+approved EN Widget pack lineage to run one exact Postiz/native canary, then
+proves Telegram and same-slot replay-zero before any cadence arm.
+
 #### MKT-10R6 production-slot repair contract
 
 1. **Overview:** production launchd wakes currently omit the slot required by the canary CLI, so every loaded marketing destination can appear installed while failing before publication.
