@@ -5077,6 +5077,12 @@ queue is added. Each owner must also progress independent work concurrently insi
     55 MiB shared evidence and 36 MiB Storefront state. Exact-byte duplicate discovery may identify
     safe candidates, but no project artifact is deleted until the terminal/payment receipt proves
     which sent artifact and rollback generation remain authoritative.
+    Paid release `794690ca` now runs the existing fail-closed project janitor on every natural wake
+    and writes `project-janitor.json`; the first production receipt scanned 34 projects with
+    `cleaned=0`, `skipped=34`, `errors=0`. This proves the cleaner is connected, but not that project
+    retention is complete: reconcile an authoritative marketplace terminal state for projects absent
+    from the current open-order snapshot, then let the same janitor remove only eligible `source/`
+    and `work/`, before adding the separately guarded accepted-artifact generation bound above.
 - [ ] `PAR-5` Prove fastest truthful submission and replay-zero from one immutable public-main
   release. PASS = Apply submits every currently eligible posting, Reply handles every fresh buyer
   event, Storefront executes every authorized mutation and Paid progresses every purchased order;
