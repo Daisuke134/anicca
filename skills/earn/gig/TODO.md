@@ -5435,6 +5435,17 @@ queue is added. Each owner must also progress independent work concurrently insi
    these recoveries, concurrent release construction left only about 3.8 GiB free, so pin migration
    and post-migration release GC remain the root completion gate.
 
+   The latest read-only audit reports 5.2 GiB free with the Data volume still 98% full. Thirteen
+   release directories remain; eleven are complete, current is
+   `20260902T204442-0dbe1321`, and the natural watcher is actively constructing incomplete release
+   `20260902T205757-17106565`. An exact completed-release scan found zero candidates satisfying all
+   deletion fences: non-current, plist pins zero, open processes zero, and age over five minutes.
+   Apply, Reply, Storefront, and Paid all have live processes, including two Paid remote-owner
+   workers, so their releases remain protected. The regenerable Life Manager video roots and
+   `~/gig/projects` contain zero MP4/MOV/M4V files. Do not delete pinned/open releases or durable
+   paid-project source, delivery, and receipt artifacts merely to raise free space; recheck central
+   GC after the active release cut and natural owner convergence.
+
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
    budget-document request but still
