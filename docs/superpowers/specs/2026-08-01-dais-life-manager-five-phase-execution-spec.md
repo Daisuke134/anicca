@@ -47,9 +47,11 @@ Seq 35A `ELZ-L13A`はEliza内部の5分General Money taskをcurrent identityに�
 `02:21:53Z`と`02:26:54Z`の二回確認した。host DNSはprivate CONNECT proxy経由の実Luna callで回復した。起動直後fireが
 dispatcher登録前に走る順序欠陥はEliza fork PR #79、過去の未送達retry cursorが`push`へ逸れる欠陥はPR #80で修正し、
 いずれも`migration/eliza-docs`へmergeした。旧Lancers application/negotiate/paid/storefront/telegram-report/work-syncは全て
-unloaded、共有CloakBrowserだけを維持する。ただし直近AgentRuntimeは一時PTYから起動され、`SIGHUP (Terminal hung up)`で終了した。
-現在Eliza process、provider runner、継続応募、公式Proposal ID、個別Telegram ACKは0であり、最大応募loopは未稼働である。
-次は同じAgentRuntimeを既存の永続host supervisionへ接続し、release watcherからmain由来artifactを自然起動する。起動直後の
+unloaded、共有CloakBrowserだけを維持する。現在Eliza processは生存し、自然wakeを再確認済みである。候補1件・tool1件だけの
+重複Luna判断が120秒timeoutする前段を削除し、起動時money taskを即時fireする修正をEliza commits `5226823b16`、`41da4d035c`へ
+pushした。即時fireはLancers application entrypointへ到達したが、古いzero-capacity snapshotだけで探索前に止める
+`capacity_source_unavailable`を実測したため、PR #3931 merge `ec267ccf1`で15分freshness gateを除去した。公式Proposal IDと
+個別Telegram ACKはまだ0であり、最大応募loopは未合格である。次はrelease watcherの自然wakeでmain由来artifactを反映し、
 money channel fire、複数の自然wake、同一wake内のfresh positive-EV連続処理、各公式Proposal ID、skip理由、Telegram ACK、
 duplicate 0を実測する。一時PTY起動、手動kickstart、単発canary、task rowの存在だけではDONEにしない。
 
@@ -1032,7 +1034,7 @@ Lancersでまだ新しい収益がないことは、この順序を飛ばす理�
 | 33 | ELZ-L11 buyer inbox completeness | **DONE** | canonical private `buyer-source-receipt.json` mode 0600 status=`PASS`、SHA256 `fb4b5786…`。認証済みCloakBrowserから公式board/message APIをterminalまでread-only取得し、board 2 / unique 2、message 3 / unique 3、返信必要0、未読0。公式月額offer、進行中project契約、月額契約の3 sourceは全てHTTP 200・正規URL、ID 0、公式empty state整合。duplicate board/message/offer/contract 0、missing source 0、external effect 0 |
 | 34 | ELZ-L12 negotiation decision | **DONE** | canonical private `negotiation-receipt.json` mode 0600 status=`PASS`、SHA256 `a9b556ac…`。Seq 33の公式buyer sourceをCoconala共通single semantic negotiation policyでLuna mediumが判断し、reply-required 0、unread 0、offer/contract 0から`seller_last → wait`。message/estimate intent null、根拠message ID 3、unsupported claim/off-platform contact/uncertainty/external effect 0 |
 | 35 | ELZ-L13 client-originated approval | **WAITING_FOR_BUYER — NEXT** | canonical private `offer-approval-receipt.json` mode 0600、SHA256 `2ff4cba2…`。認証済みCloakBrowserで公式offer、進行中project、月額契約を再読し、それぞれ公式empty state、approval ID 0、terms hash null、external effect 0。次のscheduled wakeで同じsourceを再読し、official ID＋terms hash取得時だけDONE |
-| 35A | ELZ-L13A repeated General Agent application wake | **IN_PROGRESS — NEXT** | current identityのGeneral Money taskはowner row 1・5分interval。DNS transport、dispatcher boot順、stale retry cursorは修復済みだが、直近AgentRuntimeは一時PTYのSIGHUPで終了し、現在process/provider runner/継続応募/公式Proposal ID/個別Telegram ACKは0。次は既存永続host supervision＋release watcherへ同じruntimeを接続し、起動直後fire→複数自然wake→fresh inventory→同一wake内の連続application→個別official Proposal ID/skip理由/Telegram ACK、duplicate 0を満たした時だけDONE。旧launchd business writer、新browser、provider固有brain/scriptは0 |
+| 35A | ELZ-L13A repeated General Agent application wake | **IN_PROGRESS — NEXT** | current identityのGeneral Money taskはowner row 1・5分interval。Eliza processは生存し、自然wakeを13:52:31に再確認した。候補1件・tool1件を選ぶだけの重複Luna callが毎wake 120秒timeoutしてprovider bridgeへ進まない真因を削除し、起動時は保存済みnext fireを待たずmoney taskを即時fireするようEliza PR #79〜#80後のbranch commits `5226823b16`、`41da4d035c`で修正した。13:57:06の即時fireはimmutable release `e9d59c32…`の`lancers-revenue-application`へ到達したが、公式`contracts.json`のzero-capacity snapshotが15分を超えたという理由だけで`capacity_source_unavailable`、observed 0、応募0、Proposal ID 0として1.3秒で短絡した。この応募前の誤ったfreshness gateはLife Manager PR #3931 merge `ec267ccf1`で除去済み。次は独立release watcherの自然wakeで新release反映を確認し、複数自然wake→fresh inventory→同一wake内の連続application→案件別official Proposal ID/skip理由/Telegram ACK、duplicate 0を満たした時だけDONE。旧launchd business writer、新browser、provider固有brain/scriptは0 |
 | 36 | ELZ-L14 funded contract | TODO | 仮払い/funded state、scope、price、deadline、counterpartyをofficial readbackする`contract-receipt.json` |
 | 37 | ELZ-L15 contract-scoped artifact | TODO | contract requirementから一deliverableを作り、source/input/output hashを束ねる`artifact-receipt.json` |
 | 38 | ELZ-L16 QA | TODO | acceptance criteria、test/readback、secret/PII、scope一致を検証する`qa-receipt.json` |
