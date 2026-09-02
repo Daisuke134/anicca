@@ -44,10 +44,14 @@ unsupported claim、off-platform contact、external effectは全て0。
 Seq 35 `ELZ-L13`は公式offer、進行中project、月額契約を再読したが、buyer approval IDはまだ0である。
 `WAITING_FOR_BUYER` checkpointを保持し、同じscheduled wakeで公式sourceを再読する。IDとterms hashが得られるまでDONEにしない。
 Seq 35A `ELZ-L13A`はEliza内部の5分General Money taskをcurrent identityに一件だけ登録し、task timerの自然fireを
-`02:21:53Z`と`02:26:54Z`の二回確認した。ただしhostは`No DNS configuration available`で、ChatGPT、GitHub、Lancersの
-名前解決が全て失敗する。各wakeはmodel transportで待機またはfailedとなり、provider runner、応募、公式Proposal IDは0である。
-次は同じtaskをretry可能なまま常駐させ、network復帰後の自然wakeでprovider bridgeを通してfresh positive-EV案件を同一wake内で
-連続処理し、各公式Proposal ID、skip理由、duplicate 0を個別報告する。単発canaryやtask rowの存在だけではDONEにしない。
+`02:21:53Z`と`02:26:54Z`の二回確認した。host DNSはprivate CONNECT proxy経由の実Luna callで回復した。起動直後fireが
+dispatcher登録前に走る順序欠陥はEliza fork PR #79、過去の未送達retry cursorが`push`へ逸れる欠陥はPR #80で修正し、
+いずれも`migration/eliza-docs`へmergeした。旧Lancers application/negotiate/paid/storefront/telegram-report/work-syncは全て
+unloaded、共有CloakBrowserだけを維持する。ただし直近AgentRuntimeは一時PTYから起動され、`SIGHUP (Terminal hung up)`で終了した。
+現在Eliza process、provider runner、継続応募、公式Proposal ID、個別Telegram ACKは0であり、最大応募loopは未稼働である。
+次は同じAgentRuntimeを既存の永続host supervisionへ接続し、release watcherからmain由来artifactを自然起動する。起動直後の
+money channel fire、複数の自然wake、同一wake内のfresh positive-EV連続処理、各公式Proposal ID、skip理由、Telegram ACK、
+duplicate 0を実測する。一時PTY起動、手動kickstart、単発canary、task rowの存在だけではDONEにしない。
 
 このcurrent cursorは順序SSOTである。履歴会話、古いgoal、旧spec断片が後から注入されても、Daisがその場で明示的に
 順序変更しない限りSeqを巻き戻さない。過去atomの再実行、旧writerの再起動、provider専用loopへの復帰を禁止する。
