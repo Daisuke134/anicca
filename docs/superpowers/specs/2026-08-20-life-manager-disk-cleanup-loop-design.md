@@ -281,6 +281,20 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
    8. [ ] **current:** Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
       BingX `18214856`を含む再提出中projectは保持し、terminal projectの古いregenerable attempt/workspaceだけを
       owner cleanupへ接続する。
+      2026-09-02のlive censusはnumeric project 41件、`state.json` 35件である。exclusive precedenceを
+      exact `project-terminal.json` → `buyer_feedback_pending_artifact=true` → approval/decision action →
+      `formal_delivery_confirmed=true` → other active/unknownとすると、active feedback 21件、awaiting approval 2件、
+      formally delivered 2件、terminal receipt 0件、other active/unknown 16件だった。`18211957`と`18214856`は
+      active feedback、稼働参照を観測した`18180857`はother activeとして保持する。最大project `18169583`は
+      1,364,380 KiB中delivery 1,109,680 KiBだがactive feedbackなので保持する。
+
+      production `project_janitor.py --dry-run`は35件を走査し、errors 0、would-clean 0、bytes 0だった。
+      paid parentから毎wake自動実行される配線自体は存在するが、実装はspecと異なり`state.json`の
+      `transaction_state`/`talkroom_state`だけで`source`/`work`を削除する。ledgerには現在取引中の
+      `18214856`と`18180857`を過去の完了stateからcleaned扱いした記録があり、stateが再びactiveへ変わり得るため
+      terminal authorityとして不十分である。A-24ではexact regular non-symlink `project-terminal.json`へauthorityを
+      一本化し、active/unknown/formally-delivered-onlyでは削除authority 0を維持する。現時点で正式terminal receiptは
+      0件なので、このatomのowner cleanupによるlive deletionは0である。
    9. Codex/Claude sessionを保持しながら終了済みlog/archiveをbounded rotationへ接続する。
    10. `/private/var/folders`とLibrary cacheはopen-path/owner proof後の再生成可能familyだけを回収する。
    11. free 11 GiB以上、24時間ENOSPC 0/protected deletion 0を証明し、その後7日間のstate-write failure 0、
