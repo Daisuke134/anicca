@@ -53,13 +53,13 @@ Luna `gpt-5.6-luna`起動までは成立したが、1 wakeが60秒を超えて�
 production要件でもなく、ローカルshellを保持しただけである。2026-09-02の再実測ではEliza Lancers runtime process 0、tmux session 0、
 continuous application owner 0である。Eliza launcherの`LIFE_MANAGER_ENABLE_MONEY_LOOP`欠落は修正し、task register・seed・dispatchと
 Luna起動までは確認したが、約120秒の推論後もbrowser action 0、公式Proposal増分0、案件別Telegram ACK 0だった。
-したがってEliza application activationは未合格であり、A4はCLI inference→planner→共有`BROWSER` actionの既存経路を直す一件だけをactiveとする。
+したがってEliza application activationは未合格だった。このCLI inference調査は戦略変更により停止し、現在TODOには含めない。
 
 failback後もLancers専用semantic brainを増やさない。launchdはcadenceと有限runのhost supervisorだけを持ち、案件判断、提案生成、
 履行可能性、skip理由は既存shared agent runner上のLunaが担う。Coconalaで実証済みの案件別Telegram ACK、official readback、dedupe、
 effect fence、assetsを共通componentとして直接再利用する。固定selector/click順をGeneral Agentの最終architectureにはしない。
 
-現在の順序SSOTは`docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`である。現在activeはA4 live apply PASS。
+現在の順序SSOTは`docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`である。現在activeはA4 old loop single-writer failback。
 開発中はworktree branchをpushし、そのbranch commitから隔離immutable releaseを作って実E2Eを反復する。全acceptanceが閉じる前に
 追加変更をmainへmergeしない。全て閉じた後に一度だけmainへ昇格し、同じcommitをproduction releaseへ切り替える。
 branch testは案件5595764を98,000円、納期2026-09-23で実送信し、公式Proposal ID `27880270`、ledger sequence 57、
