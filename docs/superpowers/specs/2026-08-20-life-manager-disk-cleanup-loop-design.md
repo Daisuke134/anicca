@@ -166,9 +166,9 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
       保ったまま回収する。
    4. [x] immutable releaseをcurrent/loaded/open/pinnedとunreferencedへ分類し、idleな旧release参照を
       control planeでcurrentへ収束した後、central cleanupでunreferencedだけを回収する。running loopは停止しない。
-   5. [ ] **current:** `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
+   5. [x] `life-manager-main`と`life-manager-eliza-migration`を保護したまま、その他repository/cloneのunique ref、dirty
       state、production argvを移管し、一repositoryずつretireする。
-   6. OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
+   6. [ ] **current:** OpenClawのPostiz iOS、HCA、factory loop依存を個別readbackし、依存部分をimmutable release＋外部stateへ
       移した後、重複`.git`/workspace/skills/mediaだけを回収する。
    7. Hermes consumer 0を証明し、gatewayを正式retireして`~/.hermes`を回収する。customer Hermes assetsは保持する。
    8. Gig projectをactive feedback、awaiting approval、formally delivered、terminalへ分類する。RyuSan `18211957`、
