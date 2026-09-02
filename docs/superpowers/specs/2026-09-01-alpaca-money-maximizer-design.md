@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED STRATEGIC RETREAT / ELIZA RUNTIME RETIRED / R01-R12 DONE / R13 ACTIVE
+status: APPROVED STRATEGIC RETREAT / ELIZA RUNTIME RETIRED / R01-R13 DONE / R14 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: this file, `Strategic-retreat TODO` section
@@ -28,8 +28,8 @@ The new loop is named `alpaca-investment`:
 
 ### Exact source tree and resolver chain
 
-`config/loop-registry.json` is the lifecycle inventory SSOT. It currently contains 172 entries on this spec
-branch; the installed immutable release reports 173 entries with `missing_entrypoints=[]`,
+`config/loop-registry.json` is the lifecycle inventory SSOT. The integrated Alpaca candidate contains 174 loop
+entries; the currently installed immutable release still reports 173 entries with `missing_entrypoints=[]`,
 `unmanaged_labels=[]`, and `retired_installed_labels=[]`. Those counts differ because this branch and the
 installed release are different SHAs; neither count alone proves that every job is presently producing effects.
 Runtime health is read only through `~/loops/current/bin/lm-loop status all`, never through a second inventory.
@@ -367,7 +367,7 @@ flowchart LR
 
 ## 6. Strategic-retreat TODO — fixed execution order
 
-Current cursor: **R13**. R01–R12 are complete. Only the first unchecked atom is active. Dais explicitly
+Current cursor: **R14**. R01–R13 are complete. Only the first unchecked atom is active. Dais explicitly
 reorders the remaining queue to finish the reusable paper product before creating presentation assets. No atom
 uses TDD ceremony, a review agent, a subagent, or an Eliza runtime. Product integration happens only after R12
 passes; presentation work cannot be used as evidence that the product works.
@@ -391,8 +391,8 @@ reuse an existing Life Manager helper or cut scope back to the acceptance path.
 | R10 | Prove host cadence safely — **DONE (PRE-INTEGRATION)** | Commit `434984915` removes the false rule that any Codex environment must reject launchd, while strengthening the actual 141 boundary. Preflight now resolves UID, username, Directory Services, Aqua manager, manager UID and manager PID before it issues any `gui/$UID` probe; a failed owner prerequisite stops before the GUI command. `launchctl-safe` requires that preflight for GUI reads, list and every mutation, with raw bypass still forbidden. Current non-GUI readback is `anicca / 501 / Directory Services 501 / Aqua / manager UID 501 / manager PID 1`. An isolated failed-manager fixture issued zero GUI probes; 45 existing launchd apply/lifecycle/preflight tests plus six subtests pass. Registry readback fixes the single candidate label `ai.anicca.alpaca-investment`, interval 300 seconds and immutable `lm-loop-run` argv. Per the established workflow and Apple domain contract ([Apple launchctl(1)](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchctl.1)), actual installation cannot precede the main-derived immutable release; R15 owns targeted apply and two consecutive natural five-minute wake/messageId readbacks. |
 | R11 | Close and score the campaign — **DONE** | Commit `c2c034dd8` ports the exact donor close shape: only during the official regular session and with a positive executable credit, seal one stable paper effect and submit one Alpaca `mleg` limit order with `sell_to_close` / `buy_to_close`; the campaign exit consumes the pass's single-effect allowance. A real eligible pass at `09:40 ET` submitted stable client ID `lm-ai-a64f6e61e92c9048ea930319`, reconciled broker status `filled` at `$0.26` credit, reduced the two SPY legs to zero positions, and sent Telegram `48661`. Entry debit `$29.00` and exit credit `$26.00` produce truthful realised campaign P&L `-$3.00`; equity/cash are `$99,996.83`, total change from `$100,000` is `-$3.17`, unrealised P&L is `$0.00`, and broker order count is two. |
 | R12 | Finish the reusable paper investment-loop product — **DONE** | The Life Manager candidate—not a separate repository—runs one finite registered `alpaca-investment` pass through official observation, cross-market candidates, model proposal/decline, deterministic gates, at-most-one CLI-only paper effect, stable-client-ID reconciliation, mode-`0600` receipts/state, and acknowledged Telegram delivery. The eligible pass closed the inherited campaign and sent `messageId=48661`; the immediate independent replay returned `NO_TRADE`, effect `none`, positions zero, unchanged broker order count two, and `messageId=48664`. `ALPACA_LIVE_TRADE` remains forced false and no secret or profit guarantee is exposed. |
-| R13 | Integrate and publish the usable OSS loop | On the exact R12 PASS candidate, record scoped diff and rollback, create one PR, merge once, and cut one immutable main-derived Life Manager release. Add only the minimum user-facing loop catalog/install/status information needed for another person to discover and run `alpaca-investment` on an Alpaca paper account. It remains one loop inside Life Manager, not a separate repository. |
-| R14 | Prove the released product runs continuously | Through the staged safe launchd lifecycle, apply exactly the single Alpaca label, then observe at least two consecutive natural five-minute wakes with receipts, official broker reconciliation, and Telegram `messageId`s. Confirm restart/state continuity, duplicate replay adds zero orders, other loops remain unaffected, and the public/logged-out redacted projection reads the same state. Only actual market opportunity may produce profit; `NO_TRADE` is valid operation but does not satisfy positive-P&L ambition. |
+| R13 | Integrate and publish the usable OSS loop — **DONE** | On the exact R12 PASS candidate, record scoped diff and rollback, create one PR, merge once, and publish the minimum user-facing loop catalog/install/status information needed for another person to discover and run `alpaca-investment` on an Alpaca paper account. It remains one loop inside Life Manager, not a separate repository. The immutable release cut and host cadence proof are R14. |
+| R14 | Prove the released product runs continuously — **ACTIVE** | Cut one immutable main-derived Life Manager release, then through the staged safe lifecycle apply exactly the single Alpaca label and observe at least two consecutive natural five-minute wakes with receipts, official broker reconciliation, and Telegram `messageId`s. Confirm restart/state continuity, duplicate replay adds zero orders, other loops remain unaffected, and the public/logged-out redacted projection reads the same state. Only actual market opportunity may produce profit; `NO_TRADE` is valid operation but does not satisfy positive-P&L ambition. |
 | R15 | Build presentation assets and submit | Only after R14 product evidence exists, update the full README and one-page write-up, then create PDF slides, 16:9 cover, and a ≤4-minute screen-recorded pitch from the same facts. Fill every official field, verify public repository/demo/video/slides logged out, include the private account ID only in the form, submit before the deadline, read back submitted state, and remove the merged worktree. |
 
 R13 is **DONE** at PR [#4048](https://github.com/Daisuke134/life-manager/pull/4048), merged as
@@ -408,8 +408,8 @@ The ordinary local checkout `/Users/anicca/Projects/life-manager-main` was read 
 was on an unrelated dirty feature branch at `8b3dacde7`; after the admin merge, remote `origin/main` contains
 `421509afb`. The local ordinary checkout remains untouched because it has unrelated dirty files. Before the
 merge it had no Alpaca source; the main commit now contains it. Production `~/loops/current` still points to a
-different release while the shared release-cut lock is held by another live release process, so R14 has not
-started and no installed five-minute wake is claimed.
+different release before the R14 release cut; no installed five-minute wake is claimed yet. The release-cut lock
+is now free, so the next executable atom is the single main-derived release cut.
 
 ### Explicit non-goals before submission
 
@@ -936,13 +936,18 @@ path proves that prohibited operation is absent.
   if it returns `NO_TRADE` or veto, preserve that real result and manufacture no trade.
   **PASS:** both consecutive real decisions were `NO_TRADE`; their receipts and Telegram acknowledgements are
   retained and no effect was manufactured.
-- [ ] A11.12 At the next regular options session, let the same task execute the already sealed SPY two-leg exit;
-  reconcile the official close order/fills and zero remaining SPY option positions. Do not attempt an after-hours
-  options exit.
-- [ ] A11.13 Run one natural post-close replay and prove it creates zero duplicate orders; record final proposed,
-  vetoed/no-trade, submitted, filled, and closed counts with no unexplained broker delta.
-- [ ] A11.14 Freeze the truthful campaign scoreboard: starting/current equity, cash, realised P&L, unrealised P&L,
-  drawdown, fees/slippage limits, and paper-only disclaimer. Positive P&L is a target, never a fabricated gate.
+- [x] A11.12 At the next regular options session, let the same task execute the already sealed SPY two-leg exit;
+  reconcile the official close order/fills and zero remaining SPY option positions. **PASS:** `09:40 ET`, client ID
+  `lm-ai-a64f6e61e92c9048ea930319`, broker `filled` at `$0.26` credit, two positions became zero, order count
+  `1 → 2`, and Telegram `messageId=48661`. No after-hours options exit was attempted.
+- [x] A11.13 Run one natural post-close replay and prove it creates zero duplicate orders; record final proposed,
+  vetoed/no-trade, submitted, filled, and closed counts with no unexplained broker delta. **PASS:** immediate replay
+  produced `NO_TRADE`/`effect=none`, `messageId=48664`, positions `0`, and order count stayed `2`; the portable
+  reporter replay produced `messageId=48674` with the same broker state. No duplicate order was created.
+- [x] A11.14 Freeze the truthful campaign scoreboard: starting/current equity, cash, realised P&L, unrealised P&L,
+  drawdown, fees/slippage limits, and paper-only disclaimer. **PASS:** start `$100,000.00`; current equity/cash
+  `$99,996.83`; campaign realised `-$3.00`; total delta `-$3.17`; unrealised `$0.00`; positions `0`; broker
+  orders `2`; paper-only and no-profit-guarantee wording retained.
 
 **A12 — make the same evidence visible to judges**
 
@@ -982,8 +987,9 @@ path proves that prohibited operation is absent.
 - [ ] A15.03 Remove merged worktrees with `git worktree remove`, prune only missing administrative entries, and
   retain the immutable release, submission evidence, and production rollback artifact.
 
-The current executable cursor is **A11.12**. The candidate loop is repaired and reporting every successful wake;
-the same task now waits for the regular options session to execute and reconcile the already sealed SPY exit.
+The current executable cursor is **R14**. A11.12–A11.14 are closed by the receipts above. R01–R13 are complete;
+R14 first cuts the immutable main-derived release, then performs the staged safe lifecycle and two natural
+five-minute wake readbacks. A12–A15 remain ordered after that product proof.
 
 - [x] **A03:** Life Manager opens one new paper account inside the existing normal-email Alpaca login, binds its
   private account ID and fresh keys, proves exactly `$100,000` and zero effects through CLI, then proves restart
@@ -997,23 +1003,15 @@ the same task now waits for the regular options session to execute and reconcile
   zero orders.
 - [x] **A09:** Prove lost-acknowledgement and restart reconciliation without blind retry.
 - [x] **A10:** Register exactly one Eliza-owned durable Alpaca loop; host adapters only restart Eliza.
-- [ ] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
-  Entry, two fills, both open legs, current equity/cash, and unrealised P&L reconcile. Remaining A11 sub-atoms,
-  in order: restore the historically proven single task/state from a clean main-derived worktree/release and
-  remove the duplicate/recovery-DB path from production; prove two consecutive natural five-minute wakes each
-  persist a proposal/veto/order/fill receipt and a Telegram provider `messageId`; ~~add the official-SDK
-  read-only option/crypto bulk data plane without a second mutation path~~ **DONE**; ~~rank current candidates
-  and persist one model decision as a no-effect research receipt~~ **DONE**; close through its sealed CLI-only
-  exit; reconcile one official close order/fills, zero positions and realised P&L; show identical replay adds
-  zero orders; record the final campaign funnel (`proposed → vetoed/no-trade → submitted → filled → closed`) and
-  no unexplained broker delta. In parallel, ~~add one common candidate contract for crypto, equity/ETF and
-  defined-risk options and persist one typed cross-market model choice with no broker effect~~ **DONE**. Next,
-  ~~normalize comparable expected-value/probability/freshness/liquidity evidence and veto weak selections~~
-  **DONE**. ~~Make the portfolio-level gate account for every open position/order before the unchanged CLI
-  effect path can act~~ **DONE**. ~~Add one bounded crypto/equity CLI order shape without adding a broker client
-  or scheduler~~ **DONE**. Next, reconcile the restored main-derived wakes against the official CLI; identical
-  replay must add zero orders. The sealed SPY exit remains active for
-  the next regular options session, followed by the final campaign funnel and unexplained-delta check.
+- [x] **A11:** Run the frozen paper campaign and reconcile every proposal, fill, exit, and P&L receipt.
+  Entry, two fills, both open legs, the sealed close, current equity/cash, realised/unrealised P&L, replay, and
+  final funnel now reconcile. The campaign closed at `09:40 ET` with client ID
+  `lm-ai-a64f6e61e92c9048ea930319`, broker status `filled`, exit credit `$26.00`, and Telegram `messageId=48661`.
+  Immediate replay returned `NO_TRADE`/`effect=none` with unchanged broker order count `2` and
+  `messageId=48664`; the portable reporter pass returned the same no-effect result with `messageId=48674`.
+  The frozen scoreboard is starting equity `$100,000.00`, current equity/cash `$99,996.83`, campaign realised
+  P&L `-$3.00`, total change `-$3.17`, unrealised P&L `$0.00`, and zero open SPY positions. Positive P&L is not
+  claimed; this remains paper-only evidence.
 - [ ] **A12:** Publish a logged-out, read-only, redacted demo with no order-placement surface. One shared
   projection must drive both live and static views so they cannot drift. The shared allowlisted projection,
   read-only GET route, and responsive `/alpaca` page are **DONE**. Next, host that page at a logged-out public URL and read it back without authentication. Above the fold show paper-only status,
@@ -1062,24 +1060,16 @@ require investment management registration. Customer beta stays paper-only until
 
 ## 8. Scope target for the next implementation atom
 
-Next scope remains inside A11 and does not wait for the options session: from the dedicated
-`fix/alpaca-loop-telegram-report-20260902` worktree, complete the one-file Alpaca Telegram receipt change, merge
-nowhere yet, and continue A11–A15 in their fixed order on the two named branches. Create PRs only after every
-pre-merge acceptance item in the workflow above passes, then promote one clean main-derived release without
-using `launchctl` or `gui/$UID`. Restore the original single Alpaca task/state authority rather than editing the later
-duplicate task. Read back two consecutive natural five-minute wakes, their persisted cross-market decisions,
-deterministic gates, official CLI account/order/position state, and Telegram provider `messageId` values. If they
-allow crypto or an in-session equity/ETF candidate, reconcile the one official CLI order/fill and prove identical
-replay adds zero orders; if they veto or select `NO_TRADE`, preserve that real receipt without manufacturing a
-trade. Do not manually fire or add a scheduler. A Remote Codex runtime promotion may stop and start only Eliza
-after reading the complete entrypoint call path and proving it never invokes `launchctl`, manipulates `gui/$UID`,
-or touches the Codex app-server, Remote Control, phone tunnel, or browser. It must use a clean main-derived
-checkout, preserve and snapshot the existing PGlite state, start exactly one Eliza process, immediately read back
-its PID/cwd/commit/task state, and retain a non-launchd rollback path. The same task continues the already-sealed
-SPY exit when the regular options session reopens, then records the final campaign funnel and unexplained-delta
-check. A12–A14
-artifacts may be built from the same redacted projection before the close and refreshed after final reconciliation;
-A15 and P01+ retain their gates.
+The next atom is R14. From the current `origin/main`, cut exactly one immutable Life Manager release while the
+shared release lock is free, then run the staged `launchctl-safe` preflight. Apply only the registered
+`ai.anicca.alpaca-investment` label after UID, Directory Services, Aqua manager, manager UID/PID, and GUI
+readback all pass; never issue raw `launchctl`, a `gui/$UID` probe after a failed owner check, or any 141 retry.
+Read back two consecutive natural five-minute wakes from that release: persisted decision/effect/outcome
+receipts, official Alpaca CLI account/order/position state, Telegram provider `messageId`, and unchanged state on
+identical replay. If the gate selects an eligible paper candidate, reconcile at most one official CLI effect; if
+it selects `NO_TRADE` or vetoes, retain that real result without manufacturing a trade. Do not manually fire,
+add a scheduler, restart macOS/loginwindow/app-server, or touch the Eliza migration runtime. A12–A15 artifacts
+remain ordered after this product proof and must reuse its frozen redacted projection.
 
 ## 9. Controlling references
 
