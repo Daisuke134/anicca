@@ -1,3 +1,4 @@
+import errno
 import json
 import os
 import subprocess
@@ -9,6 +10,7 @@ from unittest import mock
 from pathlib import Path
 
 from runtime.loop.loop_cleanup import cleanup_run_root, gc_releases
+from runtime.loop import lm_loop_run
 from runtime.loop.lm_loop_run import prepare_loop_run
 from runtime.loop.runtime_event import validate_runtime_event
 from runtime.loop.central_cleanup import loaded_release_roots, open_release_roots, release_gc
@@ -148,6 +150,33 @@ class LoopCleanupTest(unittest.TestCase):
                          ("pass", "a" * 40, "deterministic"))
         self.assertEqual(event["effect_status"], "not_applicable")
         self.assertTrue(event["evidence_refs"][0].startswith("lm-loop://job/"))
+
+    def test_loop_run_reaches_cleanup_entrypoint_when_progress_receipt_is_full(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); home = root / "home"; home.mkdir()
+            entry = root / "bin/job.sh"; entry.parent.mkdir()
+            entry.write_text("#!/bin/sh\n")
+            entry.chmod(0o755)
+            registry = {"schema_version": 2, "loops": {"job": {
+                "label": "ai.anicca.job", "domain": "system", "entrypoint": "bin/job.sh",
+                "cadence": {"run_at_load": True}, "effect_class": "none",
+                "state_root": "~/state", "log_root": "~/state/logs",
+                "cleanup": {"max_runs": 1, "max_age_days": 1},
+                "provider_route": "deterministic"}}}
+            (root / "config").mkdir()
+            (root / "config/loop-registry.json").write_text(json.dumps(registry))
+            (root / "RELEASE.json").write_text(json.dumps({"sha": "a" * 40}))
+            with mock.patch.dict(os.environ, {"HOME": str(home)}), \
+                    mock.patch.object(lm_loop_run, "_atomic_json",
+                                      side_effect=OSError(errno.ENOSPC, "receipt full")), \
+                    mock.patch.object(lm_loop_run, "_run_entrypoint", return_value=0) as run:
+                result = lm_loop_run.main(["job", str(root)])
+            self.assertEqual(result, 0)
+            run.assert_called_once()
+            self.assertEqual(
+                json.loads((home / "state/events.jsonl").read_text().splitlines()[-1])["status"],
+                "pass",
+            )
 
     def test_loop_run_passes_release_root_to_entrypoint_without_git(self):
         with tempfile.TemporaryDirectory() as directory:

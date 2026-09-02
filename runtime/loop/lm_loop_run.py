@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import shutil
@@ -106,8 +107,15 @@ def main(argv: list[str] | None = None) -> int:
             command, cleanup = prepare_loop_run(
                 registry, loop_id, release_root, active_run_ids=active, now=time.time())
             receipt = Path(os.path.expanduser(entry["state_root"])) / "cleanup-latest.json"
-            _atomic_json(receipt, {"version": 1, "loop_id": loop_id,
-                                  "release_sha": manifest["sha"], **cleanup})
+            try:
+                _atomic_json(receipt, {"version": 1, "loop_id": loop_id,
+                                      "release_sha": manifest["sha"], **cleanup})
+            except OSError as error:
+                if error.errno != errno.ENOSPC:
+                    raise
+                # The cleanup entrypoint owns the pressure reserve and must be
+                # allowed to run when this best-effort progress receipt cannot fit.
+                print(f"lm-loop-run: cleanup receipt deferred: {error}", file=sys.stderr)
             run_id = os.environ.get("LIFE_MANAGER_RUN_ID") or f"{time.time_ns():x}-{os.getpid()}"
             event_path = Path(os.path.expanduser(entry["state_root"])) / "events.jsonl"
             try:

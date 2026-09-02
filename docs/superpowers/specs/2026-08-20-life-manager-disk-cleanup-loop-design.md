@@ -173,6 +173,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
               - [x] P1d-3c-3c-8b-2-a: 自然wakeの無期限GitHub HTTPS fetchを実測し、`GIT_TERMINAL_PROMPT=0`とHTTP connect/low-speed 15秒上限をreconciler sourceへ追加。focused reconciler test 1/1、shell syntax、diff check PASS。production rollout/readbackは未実施
               - [x] P1d-3c-3c-8b-2-b: production main cutterが同一`f68da040…`を`release_paths=ALL`なしで再生成する重複buildを検出。未完成`20260903T005309-f68da040`のexact cutter/tarだけを終了し、trapでpartial tree/lockを回収。current維持、収益loop停止0、protected deletion 0。main-derived rollout/readbackは未実施
               - [x] P1d-3c-3c-8b-2-c: stale cutter回収後にcentral GCを実行し、16 releaseを評価。16を保護、0削除、errors 0、protected deletion 0。現行plist/open/依存donorを守ると安全な削除候補は0件であり、30 GiB gateはproduction rollout前には閉じない
+              - [x] P1d-3c-3c-8b-2-d: ENOSPC時に旧`lm_loop_run`が事前`cleanup-latest.json`の一時writeでentrypoint前に終了する根因を修正。事前receiptだけをdeferしcleanup本体を継続、通常I/O errorはfail-closed。focused cleanup test 16/16、Python syntax、diff check PASS。production rollout/readbackは未実施（旧disk-cleanup logでENOSPC 43件、receipt更新停止）
 
 #### P4 execution ledger
 

@@ -620,6 +620,24 @@
       "current_manifest_release_paths": null,
       "free_after_kib": 6145860,
       "note": "Central release GC preserved every generation because launch-agent plist references, open process paths, current, or dependency-donor closure still protect them. No safe release deletion remains before production loaded-argv migration."
+    },
+    {
+      "batch": "p1d-loop-run-enospc-receipt-fallback-23",
+      "source_file": "runtime/loop/lm_loop_run.py",
+      "root_cause": "pre-entrypoint cleanup-latest.json atomic write aborted the cleanup loop on ENOSPC despite the disk-cleanup owner's reserve",
+      "behavior": "defer only ENOSPC progress-receipt failure and continue to cleanup entrypoint; re-raise all other OSError values",
+      "focused_cleanup_tests": "16/16 PASS",
+      "python_syntax": "PASS",
+      "diff_check": "PASS",
+      "production_disk_cleanup_release_sha": "607afae000f8e0613f984ede1612404e7c2a9ae6",
+      "production_enospc_log_count": 43,
+      "production_last_receipt_mtime": "2026-08-28 21:04:52",
+      "production_rollout": false,
+      "free_after_kib": 6234424,
+      "swap_used_mib_after": 26093.5,
+      "revenue_loops_stopped": 0,
+      "protected_deletions": 0,
+      "note": "The fallback is source-only on GH-11; it cannot be read back in production until the authorized main-derived release rollout. This is not a global stop or a disk-pressure threshold."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
