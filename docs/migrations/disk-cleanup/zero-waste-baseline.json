@@ -960,6 +960,27 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "ECC is not an installed plugin and is clean/remote-backed, but known_marketplaces.json can refresh it and an active session may transiently read marketplace files. Require session-reference zero plus re-clone/readback before any deletion."
+    },
+    {
+      "batch": "p1d-syncthing-index-audit-38",
+      "path": "~/Library/Application Support/Syncthing",
+      "measured_kib": 311428,
+      "index_path": "index-v2",
+      "index_files": [
+        {"path": "index-v2/folder.0001-c79co5uw.db", "bytes": 317620224, "mtime": "2026-02-26 02:05:28"},
+        {"path": "index-v2/main.db", "bytes": 32768, "mtime": "2026-02-26 02:05:28"}
+      ],
+      "configured_folder": "~/anicca-project",
+      "configured_devices": ["macbook-pro", "AniccanoMac-mini.local"],
+      "active_processes": 0,
+      "launchagent_refs": 0,
+      "open_handle_rows_final": 0,
+      "decision": "preserve_sync_index_until_sync_retirement_and_rebuild_readback",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "No daemon/binary owner is installed or running now, but the index describes a cross-device sync of the protected anicca-project root. Index-only deletion would force a full rescan/rebuild; require owner retirement or deterministic rebuild proof before deletion."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
