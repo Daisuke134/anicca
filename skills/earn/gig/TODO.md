@@ -166,7 +166,7 @@ completion claim is nevertheless false until the two failing lanes below pass na
   released. Paid's current receipt is `observed=8`, `readback=4`, `failed=2`, `pending=2`, and
   `failed_step=remote_builder`; `18128025` still times out at targeted readback, transferred
   `18180857` still reaches remote builder, and `18223833` plus `18218780` remain pending. The host
-  has 17 GiB free. Coconala therefore remains incomplete despite three-owner release convergence.
+  has 18 GiB free. Coconala therefore remains incomplete despite three-owner release convergence.
 
   Disk cleanup is alive but cannot reclaim installed/running immutable releases. Natural cleanup
   passes remained `ok=true` with errors/protected deletions `0/0`, and one pass reclaimed about
@@ -179,7 +179,7 @@ completion claim is nevertheless false until the two failing lanes below pass na
   contract; only terminal `work/` and explicitly authorized byte-identical artifact duplicates are
   deleted.
 
-  Current disk readback is 17 GiB free. The dominant retained roots are `~/loops/releases` at about
+  Current disk readback is 18 GiB free. The dominant retained roots are `~/loops/releases` at about
   7.26 GiB and `~/gig/projects` at about 4.63 GiB, not video. Nine immutable release directories
   remain; six full releases are about 1.19 GiB each because different installed owners still pin
   `f5b3f345`, `58a71295`, `5a9c95fa`, `e9d59c32`, `29fb7681`, or `8f956147`. Central cleanup must
