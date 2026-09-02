@@ -523,6 +523,54 @@ class LmLoopApplyTest(unittest.TestCase):
 
         self.assertEqual(applied_roots, [release, release])
 
+    def test_reconcile_loaded_idle_only_leaves_unloaded_rows_untouched(self):
+        release = self._release("release-a").resolve()
+        rows = [
+            {
+                "classification": "managed",
+                "provider_route": "deterministic",
+                "launchd_state": "loaded-idle",
+                "installed_release_sha": "b" * 40,
+                "loop_id": "example",
+            },
+            {
+                "classification": "managed",
+                "provider_route": "deterministic",
+                "launchd_state": "unloaded",
+                "installed_release_sha": "b" * 40,
+                "loop_id": "unloaded",
+            },
+            {
+                "classification": "managed",
+                "provider_route": "deterministic",
+                "launchd_state": "loaded-running",
+                "installed_release_sha": "b" * 40,
+                "loop_id": "running",
+            },
+        ]
+        applied = []
+
+        def record_apply(release_root, *args, **kwargs):
+            applied.append(release_root)
+            return [{"ok": True, "release_sha": SHA}]
+
+        with (
+            patch.object(lm_loop, "ROOT", release),
+            patch.object(lm_loop, "snapshot", return_value=rows),
+            patch.object(lm_loop, "apply_live", side_effect=record_apply),
+            patch.dict(os.environ, {"LIFE_MANAGER_RELEASE_ROOT": str(release)}),
+            redirect_stdout(io.StringIO()) as output,
+        ):
+            self.assertEqual(
+                lm_loop.main(["reconcile", "deterministic", "--loaded-idle-only"]),
+                0,
+            )
+
+        self.assertEqual(applied, [release])
+        report = json.loads(output.getvalue())
+        self.assertEqual(report["eligible"], 1)
+        self.assertEqual(report["skipped_running"], ["running"])
+
     def test_apply_current_release_records_real_launchctl_calls(self):
         release = self._release("release-a").resolve()
         current = self.root / "current"

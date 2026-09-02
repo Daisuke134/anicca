@@ -1791,6 +1791,22 @@
       "provider_route": "deterministic",
       "state_root": "~/.anicca"
     },
+    "life-manager-release-reconciler": {
+      "cadence": {
+        "start_interval_seconds": 60
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "bin/reconcile-agent-runner-release.sh",
+      "label": "ai.anicca.life-manager-release-reconciler",
+      "log_root": "~/.local/state/life-manager/release-reconciler/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/release-reconciler"
+    },
     "life-manager-selfbuild": {
       "cadence": {
         "calendar_interval": {
