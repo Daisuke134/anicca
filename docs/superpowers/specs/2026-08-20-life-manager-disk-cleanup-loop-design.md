@@ -138,8 +138,13 @@ launchdは実行ファイル不在で`spawn scheduled` / last exit 78になっ�
 cleanupはPID 20556で再開し、child entrypointは新releaseの`runtime/loop/central_cleanup.py`、run
 `18d173d31dc1cb38-20556`のstart eventは`release_sha=5a3f94924...`である。このsymlinkは正規reloadまでの
 可逆compatibility aliasであり、3-5dはloaded argv/environmentが新path/SHAになるまで未完とする。
-現在の先頭atomは、再開runのterminal `pass` / `errors=0` / `protected_deletions=0`を得た後、
-正規non-Remote ownerが新plistをloadし、compatibility aliasの保護を解除することである。
+再開runは`probe-error=1`をfail-closed保存しつつ、旧release 1世代を852,623,339 bytes回収したが
+terminal `fail`となった。次の自然wake `18d1748ffb04c628-39119`は`release_sha=5a3f94924...`で
+terminal `pass`、`ok=true`、`errors=0`、`protected_deletions=0`、追加回収`2,260,151,330 bytes`、
+`free_before=20,446,752,768`→`free_after=23,471,439,872 bytes`、保存理由`open=4`である。
+cleanupの自動実行と新release runtimeの安全readbackは復旧した。現在の先頭atomは、正規
+non-Remote ownerが新plistをloadし、loaded argv/environmentの`5a3f94924...`一致を読み戻した後、
+compatibility aliasの保護を解除することである。
 
 ### 全Codexが守る同期ルール
 
