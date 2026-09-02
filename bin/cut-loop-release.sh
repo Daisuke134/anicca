@@ -24,7 +24,7 @@ LOOPS_ROOT="${LOOPS_ROOT:-$HOME/loops}"
 RELEASES="$LOOPS_ROOT/releases"
 CURRENT="$LOOPS_ROOT/current"
 # state root is intentionally not resolved here (see RELEASE.json note below)
-KEEP="${LOOPS_KEEP_RELEASES:-5}"
+KEEP="${LOOPS_KEEP_RELEASES:-1}"
 REF="${1:-HEAD}"
 RELEASE_PATHS="${LOOPS_RELEASE_PATHS:-}"
 NPM_BIN="${NPM_BIN:-$(command -v npm 2>/dev/null || true)}"
