@@ -40,6 +40,12 @@ effect fence、assetsを共通componentとして直接再利用する。固定se
 現在の順序SSOTは`docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`である。現在activeはA3 branch staging release。
 開発中はworktree branchをpushし、そのbranch commitから隔離immutable releaseを作って実E2Eを反復する。全acceptanceが閉じる前に
 追加変更をmainへmergeしない。全て閉じた後に一度だけmainへ昇格し、同じcommitをproduction releaseへ切り替える。
+branch testは案件5595764を98,000円、納期2026-09-23で実送信し、公式Proposal ID `27880270`、ledger sequence 57、
+Telegram provider ID `48547`を取得した。pending reconcileは公式履歴だけを読み重複送信0。ただしreconcile messageが正式titleを
+`案件5595764`へ劣化し金額・納期を落としたためreportingは未合格。branch `e61dae788`は最終clickのnavigation timeout後も
+公式履歴を読むよう修正し、元decisionへtitle、price、due、Proposal IDを保持する。renderer単体では完全messageを確認済み。
+次のfresh applicationで同じ完全messageのTelegram provider ACKが得られるまでA4を継続する。
+
 PASSは自然wakeでfresh案件ごとのapply/skip個別報告が出て、新しい公式Proposal IDが増え、同じ案件の重複送信0になること。
 その後profile/resume/assets、reply/negotiation、contract、fulfillment、delivery、payment、payout、bank matchを同じreceipt chainで閉じる。
 
