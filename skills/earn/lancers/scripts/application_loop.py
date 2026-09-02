@@ -267,7 +267,7 @@ PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent planne
     "案件全体から納品可能性をpriorityより先に確定する。完成動画そのものの生成・編集・書き出しが必須ならvideo_or_animation、企画・構成・台本・文章だけで完成動画制作が不要ならvideo_or_animationではない。機械的なkeyword ruleは使わない。"
     "経験の不確実さ、弱いportfolio、低予算、難易度、広いまたは曖昧なscope、単発、継続性不足、Adobe実績不明、任意の相談を単独のkeyword ruleでskipしない。正確な同分野実績がなくても、確認済みの転用可能な能力で全必須scopeを完遂できるなら案件固有の実行planで応募し、未作成物はplanと明示して捏造しない。"
     "納品可能性を確定した後の優先順は、定期購入・保守・運用、次にsystem・automation・AI・web・高報酬、次にその他の非同期作業。hard prohibition必須案件を継続・AI・高報酬・低予算・簡単そうという理由でsubmit_requiredへ変えない。実行可能な低優先案件を省略しない。submit_requiredを先に並べ、強い順に返す。"
-    "既知のbudget_max_minorを超えず、依頼本文にproviderの広い予算帯より狭い具体予算があれば本文の上限を優先する。budgetが応相談・未定でも拒否しない。一律の最低価格や固定上限を設けない。scopeと正のmarginを守りながら競合より少し安い価格と、実行可能な最短納期を選ぶ。"
+    "既知のbudget_max_minorを超えず、依頼本文にproviderの広い予算帯より狭い具体予算があれば本文の上限を優先する。budgetが応相談・未定でも拒否しない。一律の最低価格や固定上限を設けない。scopeと正のmarginを守りながら競合より少し安い価格と、実行可能な最短納期を選ぶ。deliver_dateはSNAPSHOT.tick_dateの翌日から60日以内の実在する日付をYYYY-MM-DDで返す。"
     "live call・video meeting・顔出し・音声収録を自発的に約束せず、任意ならLancersメッセージと文書による非同期確認を提案する。必須ならhard_prohibitedにする。"
     "提案文には次の語を含めない: " + ", ".join(FORBIDDEN_TERMS) + "。送信・受注・納品・支払済みと主張しない。\nSNAPSHOT:\n")
 
