@@ -2061,12 +2061,22 @@ def persist_purchased_offer_brief(
         return None
     root = projects_root.expanduser().resolve() / str(project_id)
     path = root / "requirements" / "live-buyer-reply.json"
-    existing = _request_named_by_existing_sidecar(path)
-    if existing is not None:
-        return existing
     identity = f"purchased-offer:{talkroom_id}"
     digest = hashlib.sha256(f"{identity}\n{brief}".encode()).hexdigest()
-    statement_sha = hashlib.sha256(brief.encode()).hexdigest()
+    statement_sha = hashlib.sha256(json.dumps(
+        {"text": brief, "attachments": []},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    accumulated_sha = hashlib.sha256(json.dumps(
+        [statement_sha], ensure_ascii=False, separators=(",", ":"),
+    ).encode()).hexdigest()
+    existing_payload = _existing_requirements(path)
+    existing = _request_named_by_existing_sidecar(path)
+    if existing is not None and existing_payload.get("source") != "purchased_offer_before_first_buyer_message":
+        return existing
+    if (existing is not None and existing_payload.get("feedback_sha256") == digest
+            and existing_payload.get("accumulated_sha256") == accumulated_sha):
+        return existing
     atomic_json(path, {
         "version": 1,
         "source": "purchased_offer_before_first_buyer_message",
@@ -2088,7 +2098,7 @@ def persist_purchased_offer_brief(
             "text": brief,
             "attachments": [],
         }],
-        "accumulated_sha256": statement_sha,
+        "accumulated_sha256": accumulated_sha,
         "accumulated_observed_at": observed_at,
     })
     return {
