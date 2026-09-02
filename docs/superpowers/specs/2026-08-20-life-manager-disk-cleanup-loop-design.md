@@ -183,6 +183,7 @@ GitHub HTTPS `git fetch`で無期限に待つ実測があり、古い不完全re
               - [x] P1d-3c-3c-8b-2-k: `~/.agents`を同期owner単位で監査。`ai.anicca.agents-skills-sync.plist`が現行`skills`（`441,032 KiB`）を管理し、`.git`はclean/main。`skills.bak-20260720`は2つのunique HyperFrames MP4（合計`37,494,236 bytes`）のみで、現行skills・Codex/OpenClaw/Projectsに同名counterpartなし。active同期sourceとunique assetを削除せず、owner-side backup/archive retentionへ繰り越す。
               - [x] P1d-3c-3c-8b-2-l: `~/bin/provider-services`（`380,964,786 bytes`）をPATH・source契約単位で再監査。現在のprocess/open handleは0だが、`skills/self/spawn/scripts/deploy-akash.sh`、Akash spec、`specs/00-MASTER.md`、現行releaseが`provider-services`コマンドを要求するunique Akash CLIである。absolute path不在だけで不要と判定せず、Akash laneのretireと代替CLI readbackまでは保持する。削除0、protected deletion 0。
               - [x] P1d-3c-3c-8b-2-m: `~/.cloakbrowser/chromium-145.0.7632.109.2`（`360,124 KiB`）を共有browser binaryとして監査。140 processが13 profile（Gig/Coconala/Lancers/CrowdWorks/affiliate/job-search等）で同一binaryを実行し、代表root PIDは429/849/1131/1139/11155。profile/stateは`~/.cloak`・各owner stateにあり、このbinaryを削除すると複数収益loopを同時に壊すため、cacheと混同せず保持する。
+              - [x] P1d-3c-3c-8b-2-n: `~/.foundry`（`360,640 KiB`）をtoolchain更新契約単位で監査。`bin/{anvil,cast,chisel,forge}`と`versions/v1.7.1/{anvil,cast,chisel,forge}`は各hashが一致する別inodeの二重配置（余分な論理コピー合計`184,590,736 bytes`、約176 MiB）だが、`foundryup use`はversion側から`FOUNDRY_BIN_DIR`へコピーし、PATHは`~/.foundry/bin`を解決する。現行anvil/forge/cast/chisel processは0だが、Akash/Lancers/economy sourceとPATH契約が残るため片側の削除やsymlink化は行わず、canonical/link置換のreadbackをP2 toolchain ownerへ繰り越す。
 
 #### P4 execution ledger
 

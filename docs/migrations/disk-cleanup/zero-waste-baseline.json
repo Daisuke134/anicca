@@ -848,6 +848,32 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "One binary is shared by many live authenticated profiles. Removing it would break multiple revenue loops; browser cache/profile cleanup must remain owner-scoped under P2/P6."
+    },
+    {
+      "batch": "p1d-foundry-dual-install-audit-33",
+      "path": "~/.foundry",
+      "measured_kib": 360640,
+      "version_dirs": ["versions/v1.7.1"],
+      "duplicate_binaries": {
+        "bin/anvil": {"version_path": "versions/v1.7.1/anvil", "sha256": "5c9f9aad323062b1c0421a63595741430acaea150da3611e38c45071e4cf4e28", "bytes": 34752816},
+        "bin/cast": {"version_path": "versions/v1.7.1/cast", "sha256": "eb9a9dc730a0f178556b90d39a30212375ee6e7c754fee96fa95b2723878e220", "bytes": 49411088},
+        "bin/chisel": {"version_path": "versions/v1.7.1/chisel", "sha256": "401c4ee50a66c2ac145eb01ffbc74cb7d68e474d733dc55b2c83b2197a7083f4", "bytes": 33254352},
+        "bin/forge": {"version_path": "versions/v1.7.1/forge", "sha256": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa", "bytes": 67172480}
+      },
+      "duplicate_copy_bytes": 184590736,
+      "active_processes": 0,
+      "path_resolution": "~/.foundry/bin/{anvil,cast,chisel,forge}",
+      "update_contract": "foundryup use copies versions/<version> binaries into bin/ and may replace symlinks",
+      "source_refs": [
+        "Akash deployment lane",
+        "Lancers/economy source and specs"
+      ],
+      "decision": "preserve_toolchain_managed_dual_layout_until_canonical_replacement_readback",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "The two copies are byte-identical but serve different foundryup roles. Removing bin breaks PATH; removing versions breaks foundryup use. Defer to P2 toolchain owner instead of deleting by duplicate appearance alone."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
