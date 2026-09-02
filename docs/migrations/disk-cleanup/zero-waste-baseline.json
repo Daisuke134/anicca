@@ -518,6 +518,23 @@
       "active_processes_stopped": 0,
       "protected_deletions": 0,
       "note": "Host free space fell during this slice because concurrent writers outpaced these deletions; logical target size and exact post-delete absence are the cleanup evidence."
+    },
+    {
+      "batch": "p1d-release-dependency-reuse-17",
+      "stale_sha": "1af471b1",
+      "completed_current_sha": "854bcf770fde28702fd4d07817e528e8cf449cb8",
+      "origin_main_sha_at_detection": "02c58196fc91797e3fe5e5b37c5d33afa6f973a4",
+      "stale_npm_pid": 41556,
+      "free_before_kib": 7770892,
+      "free_after_kib": 9066132,
+      "stale_release_present_after": false,
+      "release_cut_lock_present_after": false,
+      "dependency_reuse_source_commit": "9d9ee6e6b6bdcb3721fadc9ddb211d0f445b5fea",
+      "focused_reuse_test": "1/1 PASS",
+      "shell_syntax": "PASS",
+      "diff_check": "PASS",
+      "revenue_loops_stopped": 0,
+      "protected_deletions": 0
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704

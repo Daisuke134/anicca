@@ -128,8 +128,26 @@ if [ "$ARCHIVE_RC" -ne 0 ]; then
   die "export of $SHORT failed"
 fi
 
+reuse_locked_dependencies() {
+  local package_dir="$1" relative donor donor_package
+  relative="${package_dir#"$DEST"}"
+  for donor in "$RELEASES"/*; do
+    [ "$donor" != "$DEST" ] || continue
+    [ -f "$donor/RELEASE.json" ] || continue
+    donor_package="$donor$relative"
+    [ -d "$donor_package/node_modules" ] || continue
+    cmp -s "$package_dir/package-lock.json" "$donor_package/package-lock.json" || continue
+    cp -cR "$donor_package/node_modules" "$package_dir/node_modules" || return 1
+    return 0
+  done
+  return 1
+}
+
 for package_dir in "$DEST" "$DEST/runtime/agentmail" "$DEST/apps/life-manager"; do
   [ -f "$package_dir/package.json" ] && [ -f "$package_dir/package-lock.json" ] || continue
+  if reuse_locked_dependencies "$package_dir"; then
+    continue
+  fi
   [ -n "$NPM_BIN" ] || die "npm is required to build locked runtime dependencies"
   if [ -n "$NPM_NODE_BIN" ]; then
     (cd "$package_dir" && "$NPM_NODE_BIN" "$NPM_BIN" ci --omit=dev --ignore-scripts) || \

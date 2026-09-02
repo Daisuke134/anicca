@@ -163,7 +163,8 @@ run-scoped child/contextを終了時に閉じ、profileを再利用し、同時�
           - [x] P1d-3c-3c-4: Life Manager外のclone/workspaceを監査し、remote保存済み・open/ref 0の`gig-ryu-colors-demo`、`ugig-moshcode`、`ugig-nightcell7`だけを回収（logical `153,124 KiB`）。Anicca旧cloneはactive plist/16 process/dirty、WebMCP worktreeはlock付き、Alpaca branchは明示保護、AIorNot cloneはremote不明の壊れたworktree pointer、Profitable Claudeはactive plist/dirtyのため削除0。branch/remote保持、protected deletion 0
           - [x] P1d-3c-3c-5: home hidden directoryをtoolchain単位で細分化し、全Agent永久禁止・open/ref 0の`~/.codegraph`旧binary `228,104 KiB`を全回収。Data free `8,623,044`→`8,733,748 KiB`。Rust stable 1世代、Crawl4AI、Codex primary runtime、Solana、Claudeは現行tool、Camofoxは1.4 MiB fallbackのため保持。重複toolchain削除0、protected deletion 0
           - [x] P1d-3c-3c-6: Applications/Libraryをowner別に監査し、open/ref 0のAudiveris app `166,116 KiB`、node-gyp cache `63,844 KiB`、本体不在Pencil support `64,448 KiB`だけを回収（logical合計`294,408 KiB`）。ClaudeはMCP owner、ChatGPTはRemote、ChromeはCapafy、CodexBar/CloakBrowserはactiveのため保持。active process停止0、protected deletion 0
-          - [ ] P1d-3c-3c-7: freeを現在も減少させるwriterを再計測し、active別sessionを止めずにその生成物のowner-cleanup境界を閉じる
+          - [x] P1d-3c-3c-7: 本番release reconcilerが未完成SHA `1af471b1`で27分、`npm ci`で21分滞留し、完成current `854bcf77`とorigin/main `02c58196`に追い越された再発を特定。stale npm子だけを終了して既存trapへ未完成release/lockを回収させ、Data free `7,770,892`→`9,066,132 KiB`。future cutterは別branchの実証済み最小実装`9d9ee6e6b`を再利用し、lockfile一致のsealed releaseから`node_modules`をAPFS clone、`npm ci`はlockfile変更時だけ実行する。focused reuse test 1/1、shell syntax/diff check PASS、収益loop/current停止0
+          - [ ] P1d-3c-3c-8: reuse修正を含む成果branchの残りcleanupを閉じ、normal free 30 GiBに必要な参照中release移管以外の回収可能量を再計測する
 
 #### P4 execution ledger
 
