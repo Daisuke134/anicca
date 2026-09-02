@@ -16,9 +16,9 @@ const CONTRACT = path.resolve(__dirname, "../../../config/marketing-destinations
 
 test("the marketing destination SSOT fixes every retained route and every non-target connection", () => {
   const value = loadMarketingDestinationContract(CONTRACT);
-  assert.equal(value.targets.length, 15);
-  assert.equal(value.holds.filter((row) => row.integration_id).length, 15);
-  assert.equal(value.holds.filter((row) => row.integration_id === null).length, 3);
+  assert.equal(value.targets.length, 16);
+  assert.equal(value.holds.filter((row) => row.integration_id).length, 14);
+  assert.equal(value.holds.filter((row) => row.integration_id === null).length, 2);
   assert.ok(value.targets.every((row) => row.cadence_jst.length === 3));
   assert.equal(value.targets.some((row) => row.native_handle === "@obou.anicca"), false);
   assert.equal(
@@ -33,7 +33,7 @@ test("the marketing destination SSOT fixes every retained route and every non-ta
   );
   assert.deepEqual(
     value.holds.filter((row) => row.integration_id === null).map((row) => `${row.platform}:${row.postiz_profile}`).sort(),
-    ["tiktok:@anicca.jp1", "tiktok:@anicca.videojp", "tiktok:@anicca_girl"],
+    ["tiktok:@anicca.videojp", "tiktok:@anicca_girl"],
   );
 });
 
@@ -55,7 +55,7 @@ test("a target without an exact pack, form, cadence, label, or entrypoint fails 
 test("the loop registry exactly matches the destination SSOT labels, entrypoints, and cadences", () => {
   const contract = loadMarketingDestinationContract(CONTRACT);
   const registry = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../../config/loop-registry.json"), "utf8"));
-  assert.equal(auditMarketingDestinationRegistry(contract, registry).targets, 15);
+  assert.equal(auditMarketingDestinationRegistry(contract, registry).targets, 16);
   const candidate = structuredClone(registry);
   candidate.loops[contract.targets[0].loop_name].cadence.calendar_interval[0].Minute = 1;
   assert.throws(() => auditMarketingDestinationRegistry(contract, candidate), /cadence/i);
