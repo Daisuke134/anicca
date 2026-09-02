@@ -1031,6 +1031,23 @@
       "errors": 0,
       "protected_deletions": 0,
       "note": "No Chrome process/open handle now, but profile contains credentials/history and cache deletion would trigger redownload. Keep root and auth state; owner-side retention may remove only proven cache after a Chrome launch/readback plan."
+    },
+    {
+      "batch": "p1d-npm-npx-active-audit-42",
+      "path": "~/.npm",
+      "measured_kib": 268308,
+      "npx_roots": [
+        {"path": "_npx/e32e96c087c8e544", "measured_kib": 139960, "package": "conway-terminal", "owner_processes": ["2533 npx", "2580 npx", "2978 node", "2997 node"]},
+        {"path": "_npx/6583fba12287d067", "measured_kib": 128220, "package": "@modelcontextprotocol/server-pdf", "owner_processes": ["2578 npx", "3014 node"], "open_native_binary": "@napi-rs/canvas skia.darwin-arm64.node"},
+        {"path": "_npx/b388654678d519d9", "measured_kib": 0, "package": null}
+      ],
+      "logs_kib": 128,
+      "decision": "preserve_active_npx_cache_defer_terminal_owner_rotation",
+      "safe_delete_candidate": false,
+      "reclaimed_bytes": 0,
+      "errors": 0,
+      "protected_deletions": 0,
+      "note": "Both non-empty npx roots are current Claude MCP processes and one native module is open. Do not purge while active; after terminal, remove only exact owner cache with rebuild/readback proof."
     }
   ],
   "reclaimed_bytes_by_target_size": 16765128704
