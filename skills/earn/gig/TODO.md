@@ -155,6 +155,19 @@ completion claim is nevertheless false until the two failing lanes below pass na
   Storefront was still running for about seven minutes without a terminal receipt. Concurrent
   process presence proves parallelism, not health or completion.
 
+  Release `20260902T180359-c259cc6e` now contains the scoped deterministic reconciler. A later
+  read-only snapshot proves it moved the loaded-idle Apply, Storefront, and Paid owners onto that
+  release while correctly leaving the continuously running Reply detector untouched on
+  `20260902T085615-e9d59c32`. Reply had then remained in the same process for about 5 hours 29
+  minutes, with no terminal detector receipt newer than the 13:07 JST `status=busy` artifact.
+  Apply's newest completed pass is process-healthy (`status=ok`, `observed=80`, `failed=0`) but its
+  Telegram transport reports `DatabaseError`. Storefront's current receipt is terminal
+  `status=failed`, `reason=official_service_contract_invalid`, `effect/readback=0/0`, with its lease
+  released. Paid's current receipt is `observed=8`, `readback=4`, `failed=2`, `pending=2`, and
+  `failed_step=remote_builder`; `18128025` still times out at targeted readback, transferred
+  `18180857` still reaches remote builder, and `18223833` plus `18218780` remain pending. The host
+  has 17 GiB free. Coconala therefore remains incomplete despite three-owner release convergence.
+
   Disk cleanup is alive but cannot reclaim installed/running immutable releases. Natural cleanup
   passes remained `ok=true` with errors/protected deletions `0/0`, and one pass reclaimed about
   2.26 GB. Paid terminal reconciliation wrote a hash-bound receipt for completed project `5167108`;
@@ -166,7 +179,7 @@ completion claim is nevertheless false until the two failing lanes below pass na
   contract; only terminal `work/` and explicitly authorized byte-identical artifact duplicates are
   deleted.
 
-  Current disk readback is 24 GiB free. The dominant retained roots are `~/loops/releases` at about
+  Current disk readback is 17 GiB free. The dominant retained roots are `~/loops/releases` at about
   7.26 GiB and `~/gig/projects` at about 4.63 GiB, not video. Nine immutable release directories
   remain; six full releases are about 1.19 GiB each because different installed owners still pin
   `f5b3f345`, `58a71295`, `5a9c95fa`, `e9d59c32`, `29fb7681`, or `8f956147`. Central cleanup must
@@ -174,22 +187,21 @@ completion claim is nevertheless false until the two failing lanes below pass na
   has zero MP4/MOV/M4V/WebM files; the recoverable Trash video bundle remains about 1.1 GiB.
 
   Remaining C02 atoms, in order:
-  1. Implement one independent short-cadence release reconciler that updates only
-     `loaded-idle` owners from a complete pushed-main immutable release. It must not run the daily
-     development/D0 workload, interrupt a running lane, or require a Remote session to invoke
-     `launchctl`, `lm-loop apply/start/stop/restart`, `gui/$UID`, app-server signals, or a restart.
-  2. Paid is now naturally bound to the complete fixed release in both installed plist and real
-     process argv. Preserve that readback while the remaining owners converge.
+  1. Preserve the implemented scoped reconciler on `c259cc6e`: it already moved the three
+     loaded-idle owners without interrupting Reply. After Reply becomes idle, require the same
+     reconciler to move it without a Remote `gui/$UID` operation.
+  2. Apply, Storefront, and Paid are now naturally bound to `c259cc6e` in installed plist and real
+     process argv. Preserve that readback while Reply converges.
   3. Fix Reply's nested event-loop hidden-tab failure at its source. Let the existing Reply estimate
      adapter consume the exact new event in direct-message thread `10085794`, submit the separate
      JPY 24,000 estimate once, and require official estimate readback plus replay effect zero. Then
      let Paid resume project `5242505` from the newer official event without repeating the first
      project's delivery or any prior message.
-  4. Restore the transferred `18180857` observe-only gate; resolve Apply's
-     `operator_brake_check_failed`, Paid's `orders_observation` failure, the `18128025`
-     targeted-readback timeout, and `18218780` pending state; require Storefront to terminate with a
-     current receipt. Then require every affected lane `last exit code = 0`, terminal `status=pass`,
-     `failed=0`, and replay effect `0`.
+  4. Restore the transferred `18180857` observe-only gate; resolve Paid's `remote_builder` failure,
+     the `18128025` targeted-readback timeout, and `18218780` pending state; fix Storefront's
+     `official_service_contract_invalid`; and restore successful Telegram transport without
+     changing a business result. Then require every affected lane `last exit code = 0`, terminal
+     `status=pass`, `failed=0`, and replay effect `0`.
   5. Converge Apply, Reply, Storefront, and Paid onto one current main-derived immutable release SHA,
      then allow central cleanup to remove only releases no longer installed or open.
   6. Read back each loaded argv/SHA, cadence, terminal event, official effect/readback receipt, and
