@@ -234,6 +234,17 @@ OSS公開名: **Life Manager Disk Cleanup Loop**
      0であること、必要なcredential/state移管をread backした後、label retire→terminal確認→root回収の順に行う。
      `~/gig/projects/18128025`等のHermes名を含むBUYMA/customer artifactとeffect receiptはgateway退役と無関係に
      project lineageとして保持する。
+     実測サイズは1,487,280 KiBで、`hermes-agent` 929,020 KiB、bundled Node 193,240 KiB、profiles 161,504 KiB、
+     logs 64,776 KiB、bin 58,420 KiB、retired profiles 43,020 KiB、backups 19,804 KiB、state 888 KiBである。
+     gatewayはcwd、venv、runtime generation、`state.db`、lock、gateway/agent/error logをopenし、
+     `gateway.error.log`は約40.5 MBまで増加している。gateway logにはprovider auth failureと
+     `sqlite3.OperationalError: unable to open database file`の反復があり、稼働しているだけで有効成果を示さない。
+     一方、Life Managerの`citizens-diff-monitor`はregistryのstate/log rootと実entrypointで`~/.hermes`を使用し、
+     `franklin2-loop`のloaded plistも`ANICCA_STATE_DIR=~/.hermes/state`を保持する。旧host registryには
+     `earn-watch.sh`と`reinvest.sh`参照も残る。したがってconsumer 0ではなく、現時点でgateway/rootを削除しない。
+     次の単一migrationは、約888 KiBのcolony/finance stateをLife Manager外部stateへlossless copyし、spawn default、
+     citizens monitor、Franklin2、旧script参照を同じ正本へ切り替えてimmutable releaseの自然readbackを得る。
+     その後だけgatewayを正式retireし、credential/profile/ledgerの保護copyを確認して再生成可能runtimeを回収する。
 
    **All-loop bounded-output audit内の固定実行順:** 現在activeなrelease収束atomから、次を
    一件ずつ実行し、各atomでbefore/after bytes、loaded/open/dirty保護、errors 0、protected deletion 0、
