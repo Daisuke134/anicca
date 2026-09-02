@@ -407,15 +407,20 @@ those exact blockers without changing sibling sources.
 The ordinary local checkout `/Users/anicca/Projects/life-manager-main` was read directly before integration and
 was on an unrelated dirty feature branch at `8b3dacde7`; after the admin merge, remote `origin/main` contains
 the Alpaca source. The local ordinary checkout remains untouched because it has unrelated dirty files. R14
-release evidence is now present at `~/loops/current -> releases/20260902T234103-854bcf77`: `RELEASE.json` names
-SHA `854bcf770fde28702fd4d07817e528e8cf449cb8`, provenance `ancestor-of-origin-main`, and the release registry
-contains 174 entries including `alpaca-investment`. The safe preflight returned `status=pass`,
-`mutation_allowed=true`, UID/Directory Services `501`, Aqua manager UID `501`, manager PID `1`, and successful
-GUI readback. Targeted apply changed only `ai.anicca.alpaca-investment`, wrote install event
-`6793e8a265778fa4b2eb38d4`, and loaded immutable arguments ending in `bin/lm-loop-run alpaca-investment
-.../20260902T234103-854bcf77`; no 141 occurred. `launchctl-safe print` confirms `run interval = 300 seconds`,
-`state = not running`, `runs = 0`, and `last exit code = (never exited)`, which is the expected pre-first-
-interval state. The next executable atom is the first natural five-minute wake.
+release evidence is now present at `~/loops/current -> releases/20260903T000905-30b6bede`:
+`RELEASE.json` names SHA `30b6bede0602d2de3b43c8b366c7cfc7c013ae52`, provenance `ancestor-of-origin-main`,
+`release_paths=ALL`, and the release registry contains 174 entries including `alpaca-investment`. The first
+natural wake on the prior release did start (`runs=1`) but failed with `entrypoint_exit_78`; read-only replay in
+the same launchd-like environment identified the root cause as Apple Python 3.9.6 rejecting Alpaca's
+nanosecond quote timestamp (`...394123102+00:00`) in `datetime.fromisoformat`. PR [#4061](https://github.com/Daisuke134/life-manager/pull/4061)
+merged that one-file normalization fix as `3a6466709bda54da28bda93f97b3a1cf16ea7cca`, and the repaired release
+contains the normalization code. The safe preflight returned `status=pass`, `mutation_allowed=true`, UID /
+Directory Services `501`, Aqua manager UID `501`, manager PID `1`, and successful GUI readback. Targeted apply
+changed only `ai.anicca.alpaca-investment`, wrote install event `9a7372e90276be96b2baf5ad`, and loaded immutable
+arguments ending in `bin/lm-loop-run alpaca-investment .../20260903T000905-30b6bede`; no 141 occurred.
+`launchctl-safe print` confirms `run interval = 300 seconds`, `runs = 0`, and `last exit code = (never exited)`
+after the repaired apply. The next executable atom is the first natural five-minute wake on this repaired
+release.
 
 ### Explicit non-goals before submission
 
