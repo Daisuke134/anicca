@@ -981,7 +981,7 @@ def test_paid_model_runner_is_serialized_across_parallel_projects(tmp_path, monk
     monkeypatch.setattr(paid, "_run", run)
     monkeypatch.setattr(paid, "_private_model_runner", lambda _root, command, _label: command)
     with ThreadPoolExecutor(max_workers=2) as executor:
-        futures = [executor.submit(paid._run_private_model_serialized, root, ["agent"], "step")
+        futures = [executor.submit(paid._run_private_model_serialized, root, ["agent"], "label", "step")
                    for root in roots]
         assert [future.result() for future in futures] == ["ok", "ok"]
 
