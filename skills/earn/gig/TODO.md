@@ -581,6 +581,17 @@ capability claim is backed by an installed executable capability.
 
 ### Shared job kernel
 
+**Execution ownership override:** the active Lancers extraction agent owns `K01`–`K09`,
+`A01`–`A10`, the later `SHARE-*` atoms, the provider recipe, and CrowdWorks/shared-kernel
+implementation. The Coconala cursor does not edit those components. It owns only making the four
+Coconala lanes complete and publishing exact main-derived runtime manifests, official effect/readback
+receipts, replay-zero receipts, and cleanup evidence for the extraction owner to consume. Both owners
+may work in separate worktrees, but the extraction owner must not copy or promote a currently failing
+Coconala behavior as a shared contract; only a named successful receipt may become the reference.
+The public repository `Daisuke134/life-manager` and its default `main` already contain all four
+Coconala registry rows and source entrypoints, so no private worktree handoff is required. Shared
+implementation remains unmerged until its own production files and acceptance receipts reach main.
+
 Scalability is measured by a shrinking provider-only change surface, not by promising a wall-clock
 duration. After Coconala proves the kernel, a new marketplace may add only its connector config,
 thin provider modules, registry owner rows, and conformance fixtures. It must not copy an Apply,
@@ -5483,6 +5494,13 @@ queue is added. Each owner must also progress independent work concurrently insi
    is `11,904,604` KiB (about 11.35 GiB). A second full fence scan found zero additional safe release
    candidates. The incident remains open only for four-lane convergence, later central GC of newly
    unpinned releases, and final disk readback; per-lane deletion of shared releases remains forbidden.
+
+   A newer natural readback has current release `20260902T211656-b2ca575e` and about 11 GiB free.
+   Paid recovered to terminal `pass` on installed/event SHA `af0fb4c1`, and Reply remains terminal
+   `pass` on `663f1af0`. Apply remains installed on `c259cc6e` with terminal `entrypoint_exit_1`;
+   Storefront remains on `0dbe1321` with terminal `entrypoint_exit_1`. The four owners are therefore
+   independently scheduled but not complete or converged. Successful historical Apply/Storefront
+   receipts remain valid evidence, but their current failing behavior is not an extraction reference.
 
    **Current business readback.** Cleanup no longer probes GUI/launchctl and release inventory no
    longer blocks on global `lsof`. Paid room `18223833` has captured the buyer's second
