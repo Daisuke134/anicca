@@ -92,6 +92,13 @@ completion claim is nevertheless false until the two failing lanes below pass na
   read-only CDP tab opens timing out at 25 seconds. The shared collector now retries that same
   transient open once with a fresh owned tab, just as it already retries the known navigation
   timeout; focused Paid regressions pass 71/71.
+  The independent watcher naturally cut complete release `20260902T140524-8f956147`; its SHA is a
+  descendant of all three fixes and its immutable files contain canonical-row normalization,
+  parent-snapshot reuse, and tab-open retry. Paid started one old-release wake 15 seconds before
+  that cut, so it is not the verification wake. The 14:09 central cleanup pass ended `pass` and
+  reclaimed about 172 MB, but `idle_reconcile=[]`: Apply, Reply, Storefront, Paid, and the cleanup
+  owner were all still running from protected older releases. Their installed plist argv must
+  converge naturally before those releases can be deleted.
   Remaining C02 atoms, in order:
   1. Merge and naturally install the canonical-row normalization together with the already merged
      parent-snapshot reuse and cleanup fixes; do not mutate the active immutable release.
