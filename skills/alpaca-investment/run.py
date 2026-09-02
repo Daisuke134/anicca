@@ -34,18 +34,20 @@ def _atomic_json(path: Path, value: dict) -> None:
             pass
 
 
-def main(*, retry: bool = False) -> int:
+def main(*, attempt: int = 0) -> int:
     state = Path(os.environ.get(
         "ALPACA_INVESTMENT_STATE_DIR",
         "~/.local/state/life-manager/alpaca-investment",
     )).expanduser()
     effect_attempted = False
+    stage = "start"
     try:
         credentials_path = Path(os.environ.get(
             "ANICCA_CREDENTIALS_FILE",
             "~/.local/share/anicca/credentials.json",
         )).expanduser()
         cli_path = Path(os.environ.get("ALPACA_CLI", "~/.local/bin/alpaca")).expanduser()
+        stage = "reconcile_started"
         reconciliation = reconcile_started(
             state / "receipts.jsonl",
             lambda client_order_id: find_order_by_client_id(
@@ -54,10 +56,12 @@ def main(*, retry: bool = False) -> int:
                 client_order_id=client_order_id,
             ),
         )
+        stage = "observe"
         observation = observe(
             credentials_path=credentials_path,
             cli_path=cli_path,
         )
+        stage = "campaign_read"
         campaign = reconcile(read_campaign_snapshot(
             credentials_path=credentials_path,
             cli_path=cli_path,
@@ -73,27 +77,35 @@ def main(*, retry: bool = False) -> int:
             }
             exit_order_path = state / "campaign-exit-order.json"
             if exit_order_path.is_file():
+                stage = "campaign_exit_order_read"
                 order = json.loads(exit_order_path.read_text(encoding="utf-8"))
             else:
+                stage = "campaign_exit_order_build"
                 order = exit_order(campaign)
                 _atomic_json(exit_order_path, order)
+            stage = "campaign_exit_submit"
             sealed = seal(state / "receipts.jsonl", exit_decision, order)
             mark_started(state / "receipts.jsonl", sealed)
             effect_attempted = True
             submit_order(credentials_path=credentials_path, cli_path=cli_path,
                          client_order_id=sealed["client_order_id"], order=order)
+            stage = "campaign_exit_reconcile"
             reconcile_started(
                 state / "receipts.jsonl",
                 lambda value: find_order_by_client_id(
                     credentials_path=credentials_path, cli_path=cli_path, client_order_id=value),
             )
             effect = sealed["effect_id"]
+            stage = "campaign_exit_observe"
             observation = observe(credentials_path=credentials_path, cli_path=cli_path)
+            stage = "campaign_exit_campaign_read"
             campaign = reconcile(read_campaign_snapshot(
                 credentials_path=credentials_path, cli_path=cli_path, symbols=SYMBOLS))
+        stage = "allocator_read"
         allocator_snapshot = read_allocator_snapshot(
             credentials_path=credentials_path, cli_path=cli_path)
         candidates = build_candidates(allocator_snapshot)
+        stage = "allocation_decide"
         decision = choose(
             allocator_snapshot, candidates, state,
             Path(__file__).resolve().parents[2] / "runtime/agent-runner/agent_runner.py",
@@ -103,12 +115,15 @@ def main(*, retry: bool = False) -> int:
             decision["approved"] = False
             decision["gate"] = "campaign_exit_used_effect_limit"
         if decision["approved"]:
+            stage = "allocation_order_build"
             order = order_for(decision)
+            stage = "allocation_submit"
             sealed = seal(state / "receipts.jsonl", decision, order)
             mark_started(state / "receipts.jsonl", sealed)
             effect_attempted = True
             submit_order(credentials_path=credentials_path, cli_path=cli_path,
                          client_order_id=sealed["client_order_id"], order=order)
+            stage = "allocation_reconcile"
             reconcile_started(
                 state / "receipts.jsonl",
                 lambda value: find_order_by_client_id(
@@ -117,9 +132,11 @@ def main(*, retry: bool = False) -> int:
             effect = sealed["effect_id"]
         else:
             record_no_trade(state / "receipts.jsonl", decision)
+        stage = "state_write"
         _atomic_json(state / "allocation-latest.json", decision)
         _atomic_json(state / "observation-latest.json", observation)
         _atomic_json(state / "campaign.json", campaign)
+        stage = "telegram_deliver"
         telegram = deliver(state, observation, campaign, decision, effect)
         summary = {
             "account": observation["account"],
@@ -140,12 +157,15 @@ def main(*, retry: bool = False) -> int:
         print(json.dumps(summary, separators=(",", ":")))
         return 0
     except (OSError, subprocess.SubprocessError, ValueError, json.JSONDecodeError):
-        if not retry and not effect_attempted:
-            return main(retry=True)
+        # Read/agent/report failures before an effect are transient-safe to retry. Once submit_order
+        # was called, never retry: an unknown broker acknowledgement must reconcile on the next wake.
+        if not effect_attempted and attempt < 2:
+            return main(attempt=attempt + 1)
         print(json.dumps({
             "blocker": "alpaca_pass_failed",
             "effect": "none",
             "loop_id": "alpaca-investment",
+            "stage": stage,
             "status": "blocked",
         }, separators=(",", ":")))
         return 78
