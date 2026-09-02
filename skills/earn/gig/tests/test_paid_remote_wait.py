@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -955,6 +956,36 @@ def test_paid_project_executor_runs_different_owners_in_parallel():
             future.result()
 
     assert maximum == 2
+
+
+def test_paid_model_runner_is_serialized_across_parallel_projects(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    projects = tmp_path / "gig" / "projects"
+    roots = [projects / "one", projects / "two"]
+    for root in roots:
+        root.mkdir(parents=True)
+    active = 0
+    maximum = 0
+    guard = threading.Lock()
+
+    def run(_command, _step):
+        nonlocal active, maximum
+        with guard:
+            active += 1
+            maximum = max(maximum, active)
+        time.sleep(0.05)
+        with guard:
+            active -= 1
+        return "ok"
+
+    monkeypatch.setattr(paid, "_run", run)
+    monkeypatch.setattr(paid, "_private_model_runner", lambda _root, command, _label: command)
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [executor.submit(paid._run_private_model_serialized, root, ["agent"], "step")
+                   for root in roots]
+        assert [future.result() for future in futures] == ["ok", "ok"]
+
+    assert maximum == 1
 
 
 def test_answer_receipt_does_not_close_pending_buyer_artifact():
