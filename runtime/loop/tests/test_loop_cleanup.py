@@ -1,4 +1,5 @@
 import json
+import fcntl
 import os
 import subprocess
 import sys
@@ -211,6 +212,38 @@ class LoopCleanupTest(unittest.TestCase):
             wrapper.terminate();wrapper.wait(timeout=5);time.sleep(0.1)
             with self.assertRaises(ProcessLookupError):
                 os.kill(grandchild,0)
+
+    def test_continuous_loop_releases_apply_lock_after_startup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); home = root / "home"; home.mkdir()
+            entry = root / "bin/job.sh"; entry.parent.mkdir()
+            started = home / "started"
+            entry.write_text(f'#!/bin/sh\ntouch "{started}"\nsleep 60\n')
+            entry.chmod(0o755)
+            registry = {"schema_version": 2, "loops": {"job": {
+                "label": "ai.anicca.job", "domain": "system", "entrypoint": "bin/job.sh",
+                "cadence": {"keep_alive": True}, "effect_class": "none",
+                "state_root": "~/state", "log_root": "~/state/logs",
+                "cleanup": {"max_runs": 1, "max_age_days": 1},
+                "provider_route": "deterministic"}}}
+            (root / "config").mkdir()
+            (root / "config/loop-registry.json").write_text(json.dumps(registry))
+            (root / "RELEASE.json").write_text(json.dumps({"sha": "a" * 40}))
+            wrapper = subprocess.Popen(
+                [sys.executable, "-m", "runtime.loop.lm_loop_run", "job", str(root)],
+                cwd=Path(__file__).parents[3], env={**os.environ, "HOME": str(home)})
+            try:
+                for _ in range(100):
+                    if started.exists():
+                        break
+                    time.sleep(0.02)
+                self.assertTrue(started.exists())
+                lock = home / "loops/.apply-locks/ai.anicca.job.lock"
+                with lock.open("a+") as handle:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            finally:
+                wrapper.terminate()
+                wrapper.wait(timeout=5)
 
     def test_release_gc_preserves_release_loaded_by_launchd(self):
         import plistlib
