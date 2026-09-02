@@ -4198,3 +4198,53 @@ owner `Anicca`, caption `5 affirmations to tell yourself every morning... |`
 publication exists on the correct public TikTok account. It is evidence for
 T4 only; it does not by itself prove the other accounts or the three daily
 schedule triggers.
+
+## Platform-first cursor — Y2 terminal (2026-09-03 JST)
+
+This append-only cursor supersedes the earlier Y2 `blocked` wording in the
+historical platform table. Y2 is now terminal; no claim is made here for a
+different YouTube lane or for the owner-skipped YH lane.
+
+* **Mapping/ownership:** Postiz integration `cmn8ymq6c02oio70y5ea1trv8`
+  (`identifier=youtube`, `disabled=false`, alias/profile
+  `@anicca-affirmation-video`) maps to the native YouTube channel
+  `@life-manager-m4p` (`UCqCLudkgpJZp4Pvi6ELGalw`). A live Postiz integrations
+  request returned HTTP 200 with the exact row; no similarly named channel was
+  borrowed.
+* **Content contract:** product `anicca`, locale `en`, platform `youtube`,
+  `reelclaw-card` renderer, `nudge-card` form; approved pack
+  `object://sha256/42b2cd00440e0998947700ed0f3dc688f2ab737829b4f03e5f1bcfae9d2e6f62`,
+  media `object://sha256/a3082d1e1ae3c52842e05c47a90dee2779dde08a515175f72f575cf729328423`,
+  approval `object://sha256/07ac08abd9f6f4d47e6ba4d57a676da19b9654b347c7974101014201f000717b`.
+  The pack title is `The scale decided everything — then it went quiet.` and
+  the source is a 1080×1920, 23-second 3D-male card video.
+* **Real canary:** slot `2026-09-02T16:00:00.000Z` created exactly one
+  generation (`YT-LIFE-MANAGER-SCALE-3D-MALE-a3082d1e1ae3`), one Postiz
+  publication (`cmtka7i0b006dqg0yd6ewcx1r`), public URL
+  `https://www.youtube.com/watch?v=P3rOcj7d7OA`, and Telegram message `48766`.
+  YouTube oEmbed returned HTTP 200 with author URL
+  `https://www.youtube.com/@life-manager-m4p`; fresh native browser metadata
+  canonicalized to `https://www.youtube.com/shorts/P3rOcj7d7OA` and showed the
+  same title/channel. The downloaded artifact is H.264/AAC, 360×640, 23.73s;
+  frame comparisons against the approved source were non-zero transcode
+  differences only (RMSE `721.478`, `872.393`, `843.364` at sampled frames),
+  confirming the posted content is the approved pack rather than a dry-run or
+  substitute.
+* **Replay/effect fence:** rerunning the exact same command and slot returned
+  `generation.created=false`, `publication.created=false`, and
+  `telegram.created=false`, with the same provider row, URL, and Telegram ID.
+  No duplicate provider or notification effect was created.
+* **Cadence/ownership:** the live manifest is
+  `marketing-lane-manifest:37631b84c770bc1c8370bcd29f211a7cea7ef5989d4156c122ae45b5768b87a9`
+  (17 lanes, 13 holds); Y2 is `production-armed`, `canary_state=canary-verified`,
+  and `target_daily_limit=3`. Target-only apply event `99a62767e51a8cefbe5454c9`
+  loaded immutable release `f68da0406b80607aeb189157b1d01d7ed2881966`.
+  `plutil -lint` passes and owner-domain readback shows exactly
+  `08:15/14:15/20:15` JST CalendarIntervals, the release-pinned entrypoint,
+  and a finite (non-watcher) job. The job is not claimed to have waited for a
+  future slot; the canary and system-level cadence proof are already complete.
+
+**Authoritative next atom:** MKT-11 metrics/attribution is now the first
+unchecked item after Y2. YH `@anicca-jp` remains an explicit owner-skipped
+0/day hold, and the absent/unconnected TikTok `@anicca.videojp` remains a
+separate hold; neither may be enabled by borrowing another integration.
