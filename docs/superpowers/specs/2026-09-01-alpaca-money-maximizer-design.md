@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED STRATEGIC RETREAT / ELIZA RUNTIME RETIRED / R01-R05 DONE / R06 ACTIVE
+status: APPROVED STRATEGIC RETREAT / ELIZA RUNTIME RETIRED / R01-R06 DONE / R07 ACTIVE
 owner: Dais / Life Manager
 deadline: 2026-09-05 00:00 JST
 execution SSOT: this file, `Strategic-retreat TODO` section
@@ -339,7 +339,7 @@ flowchart LR
 
 ## 6. Strategic-retreat TODO — fixed execution order
 
-Current cursor: **R06**. R01–R05 are complete. Only the first unchecked atom is active. Dais explicitly authorizes this reordered
+Current cursor: **R07**. R01–R06 are complete. Only the first unchecked atom is active. Dais explicitly authorizes this reordered
 queue. No atom uses TDD ceremony, a review agent, a subagent, or an Eliza runtime. No PR or main merge occurs
 until R01–R14 pass. R15 alone integrates and releases.
 
@@ -355,7 +355,7 @@ reuse an existing Life Manager helper or cut scope back to the acceptance path.
 | R03 | Register the minimal loop — **DONE** | Implementation commit `22b74dee9` adds `loops/alpaca-investment/loop.toml`, `skills/alpaca-investment/{SKILL.md,run.py}`, one registry row and one budget row. Direct schema readback reports 174 registry entries, matching label/entrypoint, cadence 300 seconds and a registered budget. The executable finite stub exits 78 with `broker_observation_not_implemented` and zero effect, deliberately failing closed until R04. No plist, resolver row, second scheduler, PR, main merge, release or launchd mutation exists. |
 | R04 | Port official observation — **DONE** | Implementation commit `cbbf898a0` adds the pinned paper-only CLI observation boundary and finite entrypoint readback. A real isolated-state pass exited 0 with effect none: CLI `0.0.14`, paper ACTIVE, cash `$99,970.88`, equity `$99,997.88`, last equity `$99,998.88`, options level 3, regular session closed, two positions, one historical order, nine activities, current SPY trade and 100 option contracts. The redacted observation file was mode `0600`; no account ID or credential was emitted. Exact paper endpoint and private-file ownership/modes are required before CLI execution. |
 | R05 | Port receipt and recovery invariants — **DONE** | Implementation commit `8275bb0bd` adds an append-only mode-`0600` receipt ledger, canonical decision/effect hashing, stable `lm-ai-*` client IDs, planned/started/blocked/applied transitions and CLI client-ID lookup. Repeating the same decision/order produced one stable identity and one planned receipt. A missing acknowledgement opened the breaker; the next wake performed another read-only reconciliation rather than submit; a later broker result produced one outcome. Direct official CLI lookup of the sealed absent ID returned absent, submitted zero orders, and the account order count remained one. |
-| R06 | Port the existing paper campaign | Preserve the current SPY campaign identity, its two legs, entry fills, exit rule and official P&L reconciliation. Do not orphan, duplicate or silently rename the existing position. |
+| R06 | Port the existing paper campaign — **DONE** | Implementation commit `30d53c74e` owns the original `a08-canary-2` / `alpaca-option-spread://SPY/2026-09-08/769C-770C` campaign in Life Manager and reconciles the exact `SPY260908C00769000`/`SPY260908C00770000` legs from official CLI fills and positions. Isolated real readback found two fills, two matching positions, entry cash flow `-$29.00`, unrealised P&L `-$2.00`, exit credit `$0.23`, one unchanged historical order and no unexplained instrument. The market was closed, so the exact exit rule returned `HOLD_CLOSED_SESSION` and submitted zero orders. Campaign and observation state were mode `0600`; final close remains R11. |
 | R07 | Enable the investment allocator | Each pass ranks options, eligible 24/5 equity/ETF and 24/7 crypto candidates with asset-aware market sessions, then emits `NO_TRADE` or at most one risk-bounded paper effect. Options remain part of every eligible hackathon strategy. |
 | R08 | Add owner-readable reporting | Every pass sends one natural-language Telegram report containing decision, equity, cash, change from `$100,000`, realised P&L when official, unrealised P&L, positions, effect and observation time. Missing provider `messageId` makes the pass unsuccessful. |
 | R09 | Prove the finite candidate | From the implementation worktree and isolated copied state, run real paper passes through official CLI readback. Prove paper-only enforcement, terminal events, restart/resume and zero duplicate effects; fake/dry/mock results do not count. |
