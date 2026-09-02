@@ -336,24 +336,18 @@ test("rejects a profile URL whose platform differs from the assigned lane", () =
   );
 });
 
-test("keeps Anicca YouTube disabled until the later direct-URL contract", () => {
-  for (const overrides of [
-    { disabled: false, lane_state: "default-off" },
-    { disabled: false, lane_state: "shadow" },
-    { disabled: false, lane_state: "production-armed", production_armed: true },
-  ]) {
-    assert.throws(
-      () => createManifest([row({
-        id: `anicca-youtube-${overrides.lane_state}`,
-        product_id: "anicca",
-        platform: "youtube",
-        profile: "@anicca-jp",
-        account: "anicca-main-ja",
-        ...overrides,
-      })]),
-      /explicit disabled state/i,
-    );
-  }
+test("allows only Anicca YouTube lanes after the direct-URL contract", () => {
+  const manifest = createManifest([row({
+    id: "anicca-ai-youtube",
+    product_id: "anicca",
+    platform: "youtube",
+    profile: "@anicca-ai",
+    account: "@anicca-ai",
+    disabled: false,
+    lane_state: "production-armed",
+    production_armed: true,
+  })]);
+  assert.equal(manifest.lanes[0].production_armed, true);
 });
 
 test("blocks Honne YouTube and duplicate or historical routes without guessing", () => {
