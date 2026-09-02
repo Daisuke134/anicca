@@ -635,6 +635,48 @@ class LmLoopApplyTest(unittest.TestCase):
             ["hf-gig-apply-direct", "hf-gig-reply-detector"],
         )
 
+    def test_old_release_reconciler_command_also_moves_idle_disk_cleanup(self):
+        release = self._release("release-a").resolve()
+        value = registry()
+        value["loops"]["hf-gig-paid-direct"] = {
+            **value["loops"]["example"],
+            "label": "ai.anicca.hf-gig-paid-direct",
+        }
+        value["loops"]["life-manager-disk-cleanup"] = {
+            **value["loops"]["example"],
+            "label": "ai.anicca.life-manager-disk-cleanup",
+        }
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        rows = [{
+            "classification": "managed",
+            "provider_route": "deterministic",
+            "launchd_state": "loaded-idle",
+            "installed_release_sha": "b" * 40,
+            "loop_id": loop_id,
+        } for loop_id in ("hf-gig-paid-direct", "life-manager-disk-cleanup")]
+        applied = []
+
+        def record_apply(release_root, *args, **kwargs):
+            applied.append(kwargs["target"])
+            return [{"ok": True, "release_sha": SHA}]
+
+        with (
+            patch.object(lm_loop, "ROOT", release),
+            patch.object(lm_loop, "snapshot", return_value=rows),
+            patch.object(lm_loop, "apply_live", side_effect=record_apply),
+            patch.dict(os.environ, {
+                "LIFE_MANAGER_RELEASE_ROOT": str(release),
+                "LIFE_MANAGER_LOOP_ID": "life-manager-release-reconciler",
+            }),
+            redirect_stdout(io.StringIO()),
+        ):
+            self.assertEqual(lm_loop.main([
+                "reconcile", "deterministic", "--loaded-idle-only",
+                "--loop-id", "hf-gig-paid-direct",
+            ]), 0)
+
+        self.assertEqual(applied, ["hf-gig-paid-direct", "life-manager-disk-cleanup"])
+
     def test_reconcile_explicit_running_owner_when_requested(self):
         release = self._release("release-a").resolve()
         value = registry()

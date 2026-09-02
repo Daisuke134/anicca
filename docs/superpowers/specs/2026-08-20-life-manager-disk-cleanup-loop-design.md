@@ -183,6 +183,12 @@ compatibility aliasへ依存する。Data空きは`12,713,788 KiB`で30 GiB目�
 既存launchd ownerが次回新releaseからidle cleanupを正規移管する。loaded argv、新SHA自然wake PASS、alias 0を
 readbackするまでP0と3-5dは未完のまま維持する。
 
+loaded reconciler自身が旧immutable scriptを保持していても、そのscriptは毎周期`$CURRENT/bin/lm-loop`を実行する。
+この既存境界を使い、callerが`life-manager-release-reconciler`かつrouteが`deterministic`の時だけ、runtime側の
+requested setへ`life-manager-disk-cleanup`を追加するcompatibility bridgeを置く。旧scriptの明示Gig IDsを変更せず、
+新しいscheduler、signal、Remote launchctl操作なしで、既存launchd ownerがidle cleanupを移管できる。reconciler自身が
+新scriptへ移った後もsetへの同一ID追加はidempotentである。
+
 ### 全Codexが守る同期ルール
 
 1. 作業開始時に、この表の先頭未完atomと最新production evidenceを読む。
