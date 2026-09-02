@@ -28,16 +28,17 @@ active_execution_surface: ELIZAOS_FORK_LOCAL_OSS_FIRST_MULTITENANT_CLOUD_AFTER_L
 `lancers-revenue-browser`は認証済みCloakBrowser `:9227`のhost owner、`hf-gig-apply-direct`はCoconala ownerであり、
 どちらも旧Lancers application writerではない。2026-09-02のEliza bounded proofでは、durable money taskの登録・即時dispatchと
 Luna `gpt-5.6-luna`起動までは成立したが、1 wakeが60秒を超えてもbrowser actionへ到達せず、公式Proposal ID増分0だった。
-手動`tmux eliza-lancers`は実証用の一時ownerであり本番architectureではないため停止済み。孤児化したLuna subprocessも停止済み。
-したがってEliza application activationは不合格とし、収益回復の現在atomを最後に公式応募実績のあるimmutable launchd application
-releaseへのsingle-writer failbackとする。Remoteから`launchctl ... gui/$UID`は実行しない。source/registry/releaseを整え、正規ownerの
-自然反映をread-only観測する。
+手動`tmux eliza-lancers`は実証用の一時ownerであり本番architectureではないため停止済み。tmuxはElizaOSのruntime機能でも
+production要件でもなく、ローカルshellを保持しただけである。2026-09-02の再実測ではEliza Lancers runtime process 0、tmux session 0、
+continuous application owner 0である。Eliza launcherの`LIFE_MANAGER_ENABLE_MONEY_LOOP`欠落は修正し、task register・seed・dispatchと
+Luna起動までは確認したが、約120秒の推論後もbrowser action 0、公式Proposal増分0、案件別Telegram ACK 0だった。
+したがってEliza application activationは未合格であり、A4はCLI inference→planner→共有`BROWSER` actionの既存経路を直す一件だけをactiveとする。
 
 failback後もLancers専用semantic brainを増やさない。launchdはcadenceと有限runのhost supervisorだけを持ち、案件判断、提案生成、
 履行可能性、skip理由は既存shared agent runner上のLunaが担う。Coconalaで実証済みの案件別Telegram ACK、official readback、dedupe、
 effect fence、assetsを共通componentとして直接再利用する。固定selector/click順をGeneral Agentの最終architectureにはしない。
 
-現在の順序SSOTは`docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`である。現在activeはA3 branch staging release。
+現在の順序SSOTは`docs/superpowers/plans/2026-09-02-lancers-eliza-money-end-to-end.md`である。現在activeはA4 live apply PASS。
 開発中はworktree branchをpushし、そのbranch commitから隔離immutable releaseを作って実E2Eを反復する。全acceptanceが閉じる前に
 追加変更をmainへmergeしない。全て閉じた後に一度だけmainへ昇格し、同じcommitをproduction releaseへ切り替える。
 branch testは案件5595764を98,000円、納期2026-09-23で実送信し、公式Proposal ID `27880270`、ledger sequence 57、
@@ -45,6 +46,10 @@ Telegram provider ID `48547`を取得した。pending reconcileは公式履歴�
 `案件5595764`へ劣化し金額・納期を落としたためreportingは未合格。branch `e61dae788`は最終clickのnavigation timeout後も
 公式履歴を読むよう修正し、元decisionへtitle、price、due、Proposal IDを保持する。renderer単体では完全messageを確認済み。
 次のfresh applicationで同じ完全messageのTelegram provider ACKが得られるまでA4を継続する。
+
+不要物を残して現役経路を曖昧にしない。ただし名前や古さだけでworktree/runtimeを削除しない。A4〜A10の現役sourceとrollbackを
+固定した後、`dirty=0`、`unmerged=0`、`process reference=0`、`lock/owner=0`の4条件を実測し、全て満たす旧artifactだけを削除する。
+active、dirty、unmerged、locked、rollback sourceは保持する。欠損worktree metadataは最後に`git worktree prune`で整理する。
 
 PASSは自然wakeでfresh案件ごとのapply/skip個別報告が出て、新しい公式Proposal IDが増え、同じ案件の重複送信0になること。
 その後profile/resume/assets、reply/negotiation、contract、fulfillment、delivery、payment、payout、bank matchを同じreceipt chainで閉じる。
