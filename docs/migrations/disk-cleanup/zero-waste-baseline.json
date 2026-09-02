@@ -40,6 +40,14 @@
     }
   ],
   "protected_roots": ["~/Projects/life-manager-eliza-migration"],
+  "deferred_owned_components": [
+    {"path": "~/.openclaw/agents/anicca/sessions", "owner": "P2 writer-owned session retention"},
+    {"path": "~/.openclaw/state/agent-runner-evidence", "owner": "P2 evidence retention"},
+    {"path": "~/.openclaw/media/outbound", "owner": "P5 terminal project lifecycle"},
+    {"path": "~/anicca-project/.git", "owner": "active WebMCP common Git; preserve until worktree terminal"},
+    {"path": "~/profitable-claude/.git", "owner": "active profitable-claude loop commits"},
+    {"path": "~/.openclaw/skills/.backups", "owner": "single recent rollback generation"}
+  ],
   "unclassified_roots_over_100_mib": [],
   "delete_manifest": [
     {
