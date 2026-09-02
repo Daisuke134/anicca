@@ -6,8 +6,8 @@
 
 ## Fixed order
 
-- [ ] **1 — Apply経路比較（active）:** CoconalaとLancersのApply entrypoint→discovery→Luna judgment→effect fence→submit→official readback→案件別Telegram ACKを実call graphで比較し、共通・固有・重複を一覧化する。外部effect 0。
-- [ ] **2 — shared inventory:** 既に存在するshared部品を一覧化し、実際のcallerとreceiptを付ける。名前だけsharedでprovider固定のものはshared扱いしない。
+- [x] **1 — Apply経路比較:** Coconala `hf-gig-apply-direct`とLancers `lancers-revenue-application`を実call graphで比較した。Coconalaは`application_direct.py → application_parent.py → application_planner.py → application_effect_fence.py → application ledger/work_event_projector → TelegramOutbox/apply_telegram_report.py`。Lancersは`application_loop.py → agent_runner.py → application_tick.py → shared application_transaction.py → Lancers official readback → lancers telegram_report.py`。Lancersはagent runnerとapplication transactionを既に共有するが、planner contract、orchestration、effect/ledger projection、Telegram outboxを別実装する。比較中の有限runはplanner待ちで停止し、submitter到達前、external application/Telegram effect 0。
+- [ ] **2 — shared inventory（active）:** 既に存在するshared部品を一覧化し、実際のcallerとreceiptを付ける。名前だけsharedでprovider固定のものはshared扱いしない。
 - [ ] **3 — smallest deduplication:** 重複している最小部品を一つだけsharedへ寄せ、Coconalaのproduction挙動を変えずLancersから直接再利用する。
 - [ ] **4 — Lancers Apply single writer:** 共有済み経路を使うLancers Apply ownerをexact 1で起動する。Eliza Lancers runtime、tmux、二重writerは0。
 - [ ] **5 — fresh official Proposal:** 新しい実応募を送り、公式Proposal IDを取得する。
@@ -24,6 +24,19 @@
 - [ ] **16 — autonomous loop factory:** 3市場目以降はLife Manager自身が新市場を発見し、Skillを使ってadapter、canary、receipt、loop起動、改善まで行う。
 
 この順序はDaisが明示的に変更しない限り不変。各項目を完了して正本を更新してから次へ進む。profile/assetsはApply経路比較で不足を観測しても順序を飛ばさず、Step 8までの応募成立に必要な既存assetだけを再利用する。残cleanupは現役source/rollbackが確定した後に行い、Alpacaが使うEliza checkoutは削除しない。
+
+## Step 1 comparison receipt
+
+| boundary | Coconala working path | Lancers current path | verdict |
+|---|---|---|---|
+| registry/entry | `hf-gig-apply-direct` → `application_direct.py --all-eligible` | `lancers-revenue-application` → `application_loop.py --exhaustive` | provider-specific entrypoints are expected |
+| discovery | Coconala B2 source/context | Lancers exhaustive queries/status | provider adapter responsibility |
+| model | shared `runtime/agent-runner/agent_runner.py` | same shared runner | already shared |
+| feasibility/planner | `gig/application_planner.py` common policy + shared schema | Lancers embeds a second long policy and validates its own decisions | duplicated; inventory in Step 2 |
+| effect fence/transaction | `gig/application_effect_fence.py` + parent lifecycle | `application_tick.py` loads `_shared/marketplace-core/application_transaction.py` | transaction core partly shared, fence/projection differ |
+| provider effect/readback | Coconala-specific browser/provider | Lancers-specific browser/form/readback | thin adapter responsibility |
+| receipt/ledger | gig application ledger + work-event projection | Lancers marketplace ledger/result object | duplicated contract/projection |
+| Telegram | shared `TelegramOutbox` + `apply_telegram_report.py` | Lancers outbox bridge + `telegram_report.py` | duplicated; aggregate wake is the observed UX defect |
 
 ## Exact A1 patch
 

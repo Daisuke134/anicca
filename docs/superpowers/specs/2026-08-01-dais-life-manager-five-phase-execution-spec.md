@@ -36,7 +36,10 @@ read-only参考実装へ降格し、Lancers production runtimeには使わない
 全`submit_required`を連続送信する。各案件の公式title、ID、apply/skip、具体理由、提案額、納期、Proposal IDを案件別にTelegram ACKし、
 公式Proposal readbackだけを応募成功と数える。
 
-現在active atomはplan Step 1「CoconalaとLancersのApply経路比較」である。固定順は、Apply比較→shared inventory→最小重複一件の
+Step 1のApply call-graph比較は完了した。Coconalaはgig shared application parent/planner/effect fence/ledger/outboxを通り、Lancersは
+shared agent runnerとshared application transactionを既に使う一方、planner contract、orchestration、receipt projection、Telegramを
+Lancers内で再実装する。provider固有discovery/submit/readbackはadapter差分として正当である。現在activeはStep 2 shared inventoryである。
+固定順は、Apply比較→shared inventory→最小重複一件の
 shared化→Lancers single writer→新Proposal→案件別Telegram ACK→replay-zero→自然wake継続→Storefront→Negotiate→Paid→banked net→
 Gig Money Loop Skill→CrowdWorks→Freelancer.com→Life Manager自身のloop factoryである。各Stepを実測完了して正本更新後にだけ次へ進む。
 以降の同節に残るEliza activation/failback記録は履歴であり、このoverrideを上書きしない。
