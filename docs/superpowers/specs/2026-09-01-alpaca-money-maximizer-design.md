@@ -38,6 +38,60 @@ live owner-capital, and regulated customer management remain different capabilit
    `$100,000`, realised P&L when officially knowable, unrealised P&L, positions, effects, and observation time.
    Missing delivery acknowledgement makes the wake unsuccessful.
 
+### Development and integration workflow — source-backed project rule
+
+This project adopts a stricter completion gate than GitHub's optional draft-PR workflow because Dais requires
+one autonomous implementation owner and no review ceremony. Git defines a linked worktree as a separate working
+tree that shares the repository but has its own `HEAD` and index; GitHub states that branch commits do not reach
+the default branch until merge, and that a pull request is merged only when changes are ready and repository
+requirements are satisfied. Therefore:
+
+1. Before work, verify the repository remote URL, common Git directory, fetched `origin/main` SHA, unique branch
+   name, clean status, and dedicated worktree path. Never infer repository identity from the folder name.
+2. Keep spec/TODO commits in the Life Manager spec branch and implementation commits in the
+   `life-manager-eliza` implementation branch. Push both branches as durable backup; branch push is not a PR and
+   does not change main.
+3. Do not create a draft or normal PR while any A11–A15 pre-merge acceptance item is open. Do not merge a
+   documentation-only, code-only, test-only, runtime-only, dashboard-only, or asset-only fragment to claim
+   progress.
+4. Run the worktree candidate against the dedicated Alpaca **paper** account and isolated copied state. Prove
+   the complete five-minute wake, official CLI effect/readback, Telegram `messageId`, duplicate prevention,
+   dashboard, assets, and submission payload before integration. This is paper validation, not live capital.
+5. When every pre-merge acceptance item is PASS, create the required repository PRs in one integration window,
+   merge once, cut one immutable main-derived release, and perform the final production readback. If that
+   readback fails, make no follow-up main patch; return to the same worktree branches and reopen the failed item.
+6. Only after the main-derived readback and official submission state succeed, delete merged branches and use
+   `git worktree remove`. Use `git worktree prune` only for administrative entries whose working directories are
+   already missing. Never manually delete or move a registered worktree.
+
+The pre-merge gate is explicit and all boxes remain on the feature branches until complete:
+
+- [ ] A11: one original Alpaca task, no duplicate task, two consecutive natural five-minute wakes, official
+  decision/effect/outcome receipts, zero duplicate orders, Telegram `messageId` for each wake, SPY exit or
+  truthful open-state reconciliation, and final campaign P&L/delta recorded;
+- [ ] A12: the same redacted projection serves a logged-out branch-preview URL and exposes no mutation surface;
+- [ ] A13: README, one-pager, PDF slides, 16:9 cover and ≤4-minute video all match the official account state;
+- [ ] A14: every submission field and URL is staged and independently readable, with only the final submit held
+  for the main-derived SHA;
+- [ ] A15: the candidate SHA installs and starts the same paper runtime on the required portable targets, with
+  host supervision owning process resurrection only;
+- [ ] integration-ready: both repositories are clean, branch names are unique, diffs contain only this project,
+  secrets are absent, and the exact candidate SHAs and rollback path are recorded.
+
+Current work ownership is explicit:
+
+- spec/TODO worktree: `/Users/anicca/Projects/lm-t2-spec.OFNS1W`, branch
+  `docs/alpaca-first-place-acceptance-20260902`, repository `Daisuke134/life-manager`;
+- implementation worktree: `/Users/anicca/Projects/.worktrees/life-manager-eliza-alpaca-telegram`, branch
+  `fix/alpaca-loop-telegram-report-20260902`, repository `Daisuke134/life-manager-eliza`;
+- the ordinary checkout `/Users/anicca/Projects/life-manager-eliza-migration` is current runtime evidence only
+  and is not an authorized implementation surface.
+
+Primary sources: Git `git-worktree` documentation
+<https://git-scm.com/docs/git-worktree>, GitHub Flow
+<https://docs.github.com/en/get-started/using-github/github-flow>, and GitHub pull-request merge documentation
+<https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/merging-a-pull-request>.
+
 ## 2. Product and runtime decision
 
 The product is the canonical Life Manager monorepo. The agent core is the already selected ElizaOS
@@ -690,8 +744,9 @@ require investment management registration. Customer beta stays paper-only until
 
 Next scope remains inside A11 and does not wait for the options session: from the dedicated
 `fix/alpaca-loop-telegram-report-20260902` worktree, complete the one-file Alpaca Telegram receipt change, merge
-only after its focused type/format checks pass, then promote one clean main-derived release without using
-`launchctl` or `gui/$UID`. Restore the original single Alpaca task/state authority rather than editing the later
+nowhere yet, and continue A11–A15 in their fixed order on the two named branches. Create PRs only after every
+pre-merge acceptance item in the workflow above passes, then promote one clean main-derived release without
+using `launchctl` or `gui/$UID`. Restore the original single Alpaca task/state authority rather than editing the later
 duplicate task. Read back two consecutive natural five-minute wakes, their persisted cross-market decisions,
 deterministic gates, official CLI account/order/position state, and Telegram provider `messageId` values. If they
 allow crypto or an in-session equity/ETF candidate, reconcile the one official CLI order/fill and prove identical
