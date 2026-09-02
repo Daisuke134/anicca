@@ -96,7 +96,10 @@ commit `6ffa75269`でdeliver_dateをtick翌日〜60日と正本promptへ明示�
 案件別Telegram ACKもprovider message ID `48685`でdeliveredとなった。2回目自然wakeは同案件をplanner入力から除外し、同Proposal receipt exact 1、
 ledger sequence `58→58`、pending 0、provider再送0、exit 0でreplay-zeroを実証した。新規Telegram 3件も全delivered。Step 4〜7は完了し、現在activeは
 Step 8は`--exhaustive`時の重複3巡を1巡へ直し、SHA `4e608343…`の自然wakeが約4分44秒でexit 0、次wake `runs=2`が自動再発したため完了した。
-現在activeはStep 9 independent Storefrontである。
+Step 9はStorefrontをApplyと別label・別owner、`StartInterval=1800`でSHA `ddc054a84…`から起動した。初回のPlaywright driver固着は
+`storefront_offer.py`へ既存finite-run patternと同じ180秒watchdogを追加して有限化した。2回目runはexit 0、公開出品 `1338228`、
+価格29,800/198,000/398,000円、画像、契約経路、需要9件を公式readbackし、独立Telegram ACK provider message ID `48724`をdelivered。
+Apply ownerとRemoteへの影響、141/153は0。Step 9は完了し、現在activeはStep 10 independent Negotiateである。
 Step 4 release preflightでは、既存exact-SHA Lancers installerがStep 3のshared policyをallowlistへ含めない欠落を修復した。
 isolated reconcile/normal installer testは2/2 PASSし、production external effect 0。残るStep 4はpushed commitのproduction installとexact 1 loadである。
 旧1件送信・daily quota・partial planner成功を期待したfocused testを現在の最大応募contractへ合わせ、application＋installerは26/26 PASS。

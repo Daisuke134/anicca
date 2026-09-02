@@ -2,7 +2,7 @@
 
 **Goal:** `life-manager-main`の実績あるLancers loopをsingle-writerで復帰し、最大応募からbanked netまでを閉じる。Eliza forkは実行基盤にせず、将来の自前General Agent harnessの参考資料に限定する。
 
-**Current facts:** Eliza Lancers runtime process 0、tmux session 0。Lancers applicationはSHA `d93386bd…`の隔離releaseからsingle writer exact 1でloadedされ、`StartInterval=60`、自然wake `runs=2`、直前exit 0を公式launchd readbackで確認した。preflightはUID、Directory Services、Aqua manager UID/PID、GUI domain readbackが全てPASSし、対象限定apply後も141/153とRemote切断は0。最初の自然wakeは39件を判断したが、Lunaが案件5595850へ不正な過去年 `1014-10-14`を返しvalidatorが拒否したため応募0件。正本promptへ`tick_date翌日〜60日`を明記したcommit `6ffa75269`をpush済みで、現loaded releaseへの反映とfresh公式Proposalは未完。案件5595764 / Proposal `27880270`はこの経路の有限runで成立した。Eliza migration checkoutはAlpaca作業中なので削除せず、Lancers runtimeとしては使用しない。
+**Current facts:** Eliza Lancers runtime process 0、tmux session 0。ApplyはSHA `4e608343…`からsingle writer exact 1、`StartInterval=60`で自然wakeを継続し、案件5595850 / 90,000円 / 納期2026-09-09 / Proposal `27880898`、Telegram `48685`、replay-zeroを実証済み。Storefrontは別label・別owner、`StartInterval=1800`でSHA `ddc054a84…`をloaded。browser固着を180秒で閉じるwatchdog追加後の2回目runはexit 0となり、公開出品 `1338228`、価格29,800/198,000/398,000円、需要9件を公式readbackし、独立Telegram ACK `48724`を配信した。preflightは全PASS、141/153とRemote切断は0。現在activeはStep 10 Negotiate。Eliza migration checkoutはAlpaca作業中なので削除せず、Lancers runtimeとしては使用しない。
 
 ## Fixed order
 
@@ -14,8 +14,8 @@
 - [x] **6 — per-item Telegram ACK:** 同案件の正式title、ID、90,000円、2026-09-09、Proposal ID `27880898`を含む案件別ACKをTelegram provider message ID `48685`で確認した。同wakeの新規outbox 7件は全件delivered。
 - [x] **7 — replay-zero:** 2回目自然wakeは案件5595850をplanner入力から除外し、同Proposal receipt exact 1、ledger sequence `58→58`、pending 0、provider再送0でexit 0。新規Telegram 3件も全delivered。
 - [x] **8 — continuous natural Apply:** `--exhaustive`が同じ全件探索＋Luna判断を3巡していた一行を修正し、探索範囲を変えず1巡へ統一した。SHA `4e608343…`の自然wakeは約4分44秒でexit 0、次wake `runs=2`が自動再発した。single writer、全fresh一括判断、eligible全送信、official readback、案件別outboxを維持する。
-- [ ] **9 — independent Storefront（active）:** StorefrontをApplyと別owner・別reportとして確認する。
-- [ ] **10 — independent Negotiate:** buyer-last返信、見積、契約を別ownerで処理し、公式ContractReceiptを得る。
+- [x] **9 — independent Storefront:** StorefrontをApplyと別label・別ownerでSHA `ddc054a84…`から起動した。初回はPlaywright driverが固着したため、同scriptへ既存finite-run patternと同じ180秒watchdogだけを追加。2回目runはexit 0、公開出品 `1338228`、価格29,800/198,000/398,000円、画像、契約経路、需要9件を公式readbackし、独立Telegram ACK `48724`をdelivered。Apply ownerとRemoteへの影響、141/153は0。
+- [ ] **10 — independent Negotiate（active）:** buyer-last返信、見積、契約を別ownerで処理し、公式ContractReceiptを得る。
 - [ ] **11 — Paid real contract:** funded contractだけを制作し、QA、公式納品、DeliveryReceipt、PaymentReceiptを閉じる。
 - [ ] **12 — positive banked net:** payoutと銀行明細を照合し、外部buyer由来のverified banked netを正にする。
 - [ ] **13 — Gig Money Loop Skill:** Coconala/Lancersの複数実receiptで有効だった構造と、本人事実・resume・portfolio・能力証拠・提案素材から成るshared profile assetを再利用recipeとしてSkillへ記録する。provider adapterは表示形式だけを変え、別人を装う名前・画像・経歴は作らない。
