@@ -3237,7 +3237,9 @@ def _service_contract(source: dict, observed_at: str) -> dict:
     }
     if (
         not service_id.isdigit() or contract["public_url"] != f"https://coconala.com/services/{service_id}"
-        or not contract["title"] or contract["state"] not in {"公開中", "非公開", "下書き"}
+        or not contract["title"] or contract["state"] not in {
+            "受付中", "受付休止中", "公開中", "非公開", "下書き",
+        }
         or type(contract["price_jpy"]) is not int or contract["price_jpy"] < 0
         or not contract["category"] or not public_text
         or not {"サービス内容", "購入にあたってのお願い"} <= public_headings
