@@ -109,6 +109,14 @@ browser profile / credential SSOT         # 認証session。repoへ入れず、�
 10. [ ] P7 Forever verification — 24時間と続く7日間のproduction receiptをPASSにする
 11. [ ] GH-11 worktreeとcleanup branchをretireする
 
+#### P4 Atomic TODO
+
+- [x] P4a: 500 MiB級以上の主要legacy候補とHermes stateを実測し、size、dirty、HEAD、caller、remote、blockerを`docs/migrations/disk-cleanup/legacy-retirement.json`へ記録する
+- [ ] P4b: clean candidateのremote ref、open process、worktree ownerを検証し、retire可能/保護へ確定する
+- [ ] P4c: dirty legacy repoの固有source/stateをmainまたは外部state SSOTへ移し、callerを0にする
+- [ ] P4d: retire条件を満たしたrootだけを回収し、before/after bytesとrollback receiptを記録する
+- [ ] P4e: caller after 0、legacy folder/repo 0、必要source/state loss 0をreadbackしてP4を完了する
+
 ### Patch reference map（実行順は上の未完TODOだけ）
 
 Exact file/line/unified-diff/run/readback SSOT →

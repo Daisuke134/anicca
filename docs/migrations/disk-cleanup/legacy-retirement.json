@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "legacy_roots": [
+    {
+      "path": "~/Projects/life-manager-eliza-migration",
+      "measured_kib": 10300520,
+      "classification": "preserve_migration_source",
+      "dirty_lines": 1,
+      "head": "fa83f12c242c84620d8b8eb24120cd3a49590af3",
+      "blockers": ["active migration decision", "dirty worktree", "7 repository references"]
+    },
+    {
+      "path": "~/.openclaw",
+      "measured_kib": 7888756,
+      "classification": "preserve_active_runtime_store",
+      "blockers": ["immutable protected store", "current loop registry state/log roots", "active source and credential dependencies"]
+    },
+    {
+      "path": "~/anicca-project",
+      "measured_kib": 4182088,
+      "classification": "blocked_legacy_repo",
+      "dirty_lines": 41,
+      "head": "78566da90d279c4903ed393ceed331d97a587f5c",
+      "blockers": ["dirty worktree", "37 repository references", "required source not yet migrated"]
+    },
+    {
+      "path": "~/profitable-claude",
+      "measured_kib": 964564,
+      "classification": "blocked_legacy_repo",
+      "dirty_lines": 7,
+      "head": "8db5463b45c026c732a487f8838b82698808c49b",
+      "blockers": ["dirty worktree", "31 repository references", "required source not yet migrated"]
+    },
+    {
+      "path": "~/Projects/life-manager-eliza-money-live-report",
+      "measured_kib": 781672,
+      "classification": "clean_retirement_candidate",
+      "dirty_lines": 0,
+      "head": "b0a854bd35cbd94971a16c99c67dfc7e9fd458f0",
+      "blockers": ["prove remote branch contains HEAD", "prove no open process or worktree owner"]
+    },
+    {
+      "path": "~/.openclaw-backups",
+      "measured_kib": 514440,
+      "classification": "backup_retirement_candidate",
+      "blockers": ["classify unique generations", "prove current source and rollback copy"]
+    },
+    {
+      "path": "~/.hermes",
+      "measured_kib": 242328,
+      "classification": "active_state_pending_migration",
+      "blockers": ["registry label ai.anicca.citizens-diff-monitor", "61 repository references", "state migration not complete"]
+    }
+  ],
+  "callers_before": [
+    {"root": "~/.openclaw", "evidence": "config/loop-registry.json contains current state_root/log_root consumers"},
+    {"root": "~/.hermes", "evidence": "ai.anicca.citizens-diff-monitor owns state_root/log_root"},
+    {"root": "~/anicca-project", "repository_file_count": 37},
+    {"root": "~/profitable-claude", "repository_file_count": 31},
+    {"root": "~/Projects/life-manager-eliza-migration", "repository_file_count": 7}
+  ],
+  "state_migrations": [],
+  "remote_refs": [
+    {"root": "~/anicca-project", "url": "https://github.com/Daisuke134/anicca-products.git"},
+    {"root": "~/profitable-claude", "url": "https://github.com/Daisuke134/profitable-claude.git"},
+    {"root": "~/Projects/life-manager-eliza-migration", "url": "https://github.com/Daisuke134/life-manager-eliza.git"},
+    {"root": "~/Projects/life-manager-eliza-money-live-report", "url": "https://github.com/Daisuke134/life-manager-eliza.git"}
+  ],
+  "callers_after": [],
+  "retired_roots": [],
+  "rollback": []
+}
