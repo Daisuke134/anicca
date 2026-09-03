@@ -49,11 +49,35 @@
 10. **Capafy 販売再開** — marketing loop 接続（postiz self-host 検討）。
 11. **共有 component / skill 化** — gig 3 platform は既に PROFILE-ASSETS.md を共有済（良）。loop-building recipe を「金を刷る loop を作る skill」に一般化。
 12. **README を real-time status に** — この表を README から参照し、loop が自分で更新する仕組み。
+13. **profile readback を loop 化**（`PROFILE-ASSETS.md` 手順8 の未実装分）— 3 platform の public profile を定期的に読み返し、完成度と欠落項目を state に記録。劣化を検知できるようにする。Lancers の職務経歴書 upload 有無もこの readback で 1 度だけ実測する。
+   ※ 順序 SSOT は変更していない。ただし #13 は安価かつ「受注率14倍」の根に触れるため、Dais が許可すれば #1 の前に前倒しする価値がある（提案のみ、正本は末尾のまま）。
 
 ## 補足事実
 
 - Lancers profile: 公式完成度 **90%**（本人確認・NDA・avatar・portfolio 済）。残り10%は電話認証のみで、収益ブロッカーではない。
-- **résumé/履歴書 field は Coconala・Lancers いずれにも存在しない**（9/3 再確認: `PROFILE-ASSETS.md` 全文 + Lancers/Coconala state dir + gig scripts を résumé/resume/履歴書/職務経歴/resume_upload で grep、0件）。両サイトとも self-intro文（300字以上、済）+ portfolio/package（済）が résumé相当で、document upload 欄自体がない。「résumé未upload」は該当なし。
+
+### 履歴書/職務経歴書（実サイト一次情報で再検証。当初の「欄は存在しない」は誤りだったので訂正）
+
+| サイト | 職務経歴書 upload 欄 | 一次ソース |
+|---|---|---|
+| **Lancers** | **新規登録フローにのみ存在**（任意、「スキップする」で飛ばせる）。通常の「プロフィール編集」画面には無く、経歴・資格はテキスト入力のみ | lancers.jp/consultation/detail/7604（回答「職務経歴書の同様の内容をプロフィールに記載することができます」）、lancers.jp/faq/A1028/615 |
+| **Coconala** | **無し**。職歴・学歴・資格は全てテキスト欄。画像upload は portfolio と本人確認書類のみ | help.coconala.com/hc/ja/articles/360011290814 |
+
+Coconala は該当なしで確定。**Lancers は登録時に skip された可能性があり、当該アカウントで実際に upload 済みかは未確認**。
+ただし公式の案内どおりテキストの経歴欄で代替可能なので、収益ブロッカーとは断定できない。
+
+### ★ 本当の穴: profile 完成度が誰にも監視されていない
+
+`PROFILE-ASSETS.md` 手順8 は「public URL からプロフィールを読み返して完成度を記録する」と定めているが、
+**`~/.local/state/anicca/lancers/` に completeness / profile readback の記録は 1 件も無い**（grep 実測 0件）。
+つまり「完成度90%」は `PROFILE-ASSETS.md` に手書きされた 8-31 時点の一回限りの値で、loop は profile を継続監視していない。
+**profile が劣化・reset されても誰も気付かない構造。** Lancers 公式は「完成度が高いと受注率が14倍」と明示しており、
+監視不在は最上位 leverage の放置。
+
+Lancers 公式の「完成度100%の内訳」は 3 出所（help.lancers.jp / lancers.jp/faq / info.lancers.jp）を当たったが非公開。
+公式が受注率向上要素として挙げるのは: 顔写真 / 自己紹介文 / 4つの認証 / ポートフォリオ / パッケージ出品
+（lancers.jp/help/beginner/lancer/profile）。
+
 - Lancers 応募60件の内訳: open 21 / selecting 14 / canceled 11 / ended 10 / unknown 4。**明示的 rejection は記録なし、受注も0** — 落選というより案件側の流札が主。
 - Coconala outcome 549件: we_won 6 / someone_contracted 128 / closed_unfilled 394。勝率 ~1.1%（応募母数比）。
 - gig 3 platform は component 重複ではなく共有 profile + platform別 adapter の構成（適切な分業、再発明なし）。
