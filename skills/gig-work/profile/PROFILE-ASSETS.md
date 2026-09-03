@@ -57,7 +57,7 @@ completed jobs can still carry them honestly. Keep them only while the lane can 
 - `avatar` — stylised character portrait, square, used as the profile icon
 - `cover` — wide banner carrying the headline, supporting line, trust strip and badge
 
-Both are assets, not per-site artwork. Store the source files next to this file and re-render
+Both are assets, not per-site artwork. The canonical avatar is `avatar.jpg`; re-render
 text layers per language rather than redrawing. Generated cover art per locale is acceptable;
 the avatar stays identical across sites so the persona is recognisable.
 
@@ -83,10 +83,8 @@ Currency and price anchors are per-market and must be re-derived, not converted 
 
 ## Open items
 
-- Source image files for `avatar` and `cover` are not yet stored beside this file; they currently
-  exist only inside the live Coconala account. Capture them into this directory so a new
-  marketplace can be onboarded without touching the Coconala browser.
-- Lancers, as of 2026-08-31, is missing: profile photo, business experience / qualification,
-  identity verification, NDA confirmation, phone verification. Of these, business experience and
-  NDA confirmation are automatable from this bundle; identity and phone verification are
-  operator-gated.
+- The cover source is not yet stored beside this file. Capture it only when a marketplace has a
+  useful cover field; it does not block Lancers acquisition.
+- Lancers has the canonical avatar, truthful profile copy, public portfolio/package proof,
+  identity verification, and NDA confirmation. Its official completion is 90%; the remaining 10%
+  is phone verification, which the owner explicitly excludes and which does not block earning.

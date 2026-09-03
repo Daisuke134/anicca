@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_PRODUCT = HERE.parent / "products" / "monthly-sns-content-ops-v1.json"
+DEFAULT_AVATAR = HERE.parents[2] / "gig-work" / "profile" / "avatar.jpg"
 ORIGIN = "https://www.lancers.jp"
 DEMAND_LABELS = {
     "検索結果の表示人数": "search_impressions",
@@ -127,18 +128,28 @@ def _demand(page: Any, listing_id: str) -> dict[str, int]:
     return result
 
 
-def _profile(page: Any, product: Mapping[str, Any], apply: bool) -> dict[str, Any]:
+def _profile(page: Any, product: Mapping[str, Any], avatar: Path, apply: bool) -> dict[str, Any]:
     expected = product["seller_profile"]; path = expected["public_path"]
     response = page.goto(ORIGIN + path, wait_until="domcontentloaded", timeout=20_000)
     if response is None or response.status != 200 or urlsplit(str(page.url)).path != path: raise OfferError("profile_readback_invalid")
     subtitles = {" ".join(text.split()) for text in page.locator(".p-profile-media__sub-title-link").all_inner_texts() if text.strip()}
     descriptions = page.locator("p.p-profile-introduction__text")
     if len(subtitles) != 1 or descriptions.count() != 1: raise OfferError("profile_readback_invalid")
-    aligned = subtitles == {" ".join(expected["subtitle"].split())} and " ".join(descriptions.inner_text().split()) == " ".join(expected["description"].split())
-    if aligned or not apply: return {"profile_aligned": aligned, "profile_effect_count": 0}
+    text_aligned = subtitles == {" ".join(expected["subtitle"].split())} and " ".join(descriptions.inner_text().split()) == " ".join(expected["description"].split())
+    page.goto(ORIGIN + "/mypage", wait_until="networkidle", timeout=30_000)
+    completion = page.locator(".js-regularRankCheckPercent")
+    if completion.count() != 1: raise OfferError("profile_readback_invalid")
+    score = completion.get_attribute("data-score") or ""
+    if re.fullmatch(r"[0-9]+", score) is None: raise OfferError("profile_readback_invalid")
+    photo_missing = page.get_by_role("link", name="プロフィール写真を登録", exact=True).count() == 1
+    aligned = text_aligned and not photo_missing
+    if aligned or not apply: return {"profile_aligned": aligned, "profile_photo_aligned": not photo_missing, "profile_completion_percent": int(score), "profile_effect_count": 0}
     page.goto(ORIGIN + "/mypage/profile", wait_until="domcontentloaded", timeout=20_000)
     if urlsplit(str(page.url)).path != "/mypage/profile": raise OfferError("profile_form_changed")
     _field(page, "#UserProfileSubTitle").fill(expected["subtitle"]); _field(page, "#UserProfileDescription").fill(expected["description"])
+    if photo_missing:
+        if not avatar.is_file() or avatar.stat().st_size > 3_000_000 or avatar.suffix.lower() not in {".jpg", ".jpeg", ".png"}: raise OfferError("profile_avatar_invalid")
+        _field(page, "#UserProfileimage\\[\\]").set_input_files(str(avatar))
     invalid = page.locator("#UserProfileDescription").evaluate("""field => [...field.form.elements].filter(element => element.willValidate && !element.checkValidity()).map(element => ({id:element.id, empty:element.value === ""}))""")
     expected_invalid = {f"UserTimechargeRate{index}{field}" for index in range(1, 5) for field in ("Title", "UnitPrice")}
     if not isinstance(invalid, list) or {str(item.get("id")) for item in invalid if isinstance(item, Mapping) and item.get("empty") is True} != expected_invalid or len(invalid) != len(expected_invalid): raise OfferError("profile_form_changed")
@@ -148,8 +159,10 @@ def _profile(page: Any, product: Mapping[str, Any], apply: bool) -> dict[str, An
     try:
         with page.expect_response(lambda value: value.request.method == "POST" and urlsplit(value.url).path == "/mypage/profile", timeout=20_000) as saved: save.click(force=True, timeout=20_000)
     except Exception: raise OfferError("profile_submission_uncertain") from None
-    if saved.value.status not in {200, 302} or not _profile(page, product, False)["profile_aligned"]: raise OfferError("profile_submission_uncertain")
-    return {"profile_aligned": True, "profile_effect_count": 1}
+    if saved.value.status not in {200, 302}: raise OfferError("profile_submission_uncertain")
+    observed = _profile(page, product, avatar, False)
+    if not observed["profile_aligned"]: raise OfferError("profile_submission_uncertain")
+    return observed | {"profile_effect_count": 1}
 
 
 def _field(page: Any, selector: str) -> Any:
@@ -344,7 +357,7 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
                     if portfolio["portfolio_effect_count"]:
                         result["action"] = "portfolio_created"; break
                 else:
-                    profile = _profile(page, product, True); result |= profile
+                    profile = _profile(page, product, DEFAULT_AVATAR, True); result |= profile
                     if profile["profile_effect_count"]: result["action"] = "profile_updated"
             if result.get("ok") is True and result.get("aligned") is True:
                 result["demand"] = _demand(page, product["listing_external_id"])
