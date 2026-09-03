@@ -52,7 +52,8 @@
 
 ## 補足事実
 
-- Lancers profile: 公式完成度 **90%**（本人確認・NDA・avatar・portfolio 済）。残り10%は電話認証のみで、収益ブロッカーではない。「résumé 未upload」は現状の実測では確認されず — profile bundle は avatar+copy+portfolio 構成で resume 欄由来の減点なし。
+- Lancers profile: 公式完成度 **90%**（本人確認・NDA・avatar・portfolio 済）。残り10%は電話認証のみで、収益ブロッカーではない。
+- **résumé/履歴書 field は Coconala・Lancers いずれにも存在しない**（9/3 再確認: `PROFILE-ASSETS.md` 全文 + Lancers/Coconala state dir + gig scripts を résumé/resume/履歴書/職務経歴/resume_upload で grep、0件）。両サイトとも self-intro文（300字以上、済）+ portfolio/package（済）が résumé相当で、document upload 欄自体がない。「résumé未upload」は該当なし。
 - Lancers 応募60件の内訳: open 21 / selecting 14 / canceled 11 / ended 10 / unknown 4。**明示的 rejection は記録なし、受注も0** — 落選というより案件側の流札が主。
 - Coconala outcome 549件: we_won 6 / someone_contracted 128 / closed_unfilled 394。勝率 ~1.1%（応募母数比）。
 - gig 3 platform は component 重複ではなく共有 profile + platform別 adapter の構成（適切な分業、再発明なし）。
