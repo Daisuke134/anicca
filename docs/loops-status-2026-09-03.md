@@ -37,20 +37,36 @@
 
 ## TODO（この順。順序 SSOT — Dais 明示なしに変更禁止）
 
-1. **Lancers planner_contract_invalid 修正** — `_validate()` を「不正 row は skip、健全 row だけで判断」に変更（batch 全滅をやめる）。修正後、次 wake で fresh判断 >0 と応募実行を実測。
-2. **CrowdWorks config 修正** — `hours_limit` を int（例 35）に修正 + 4 lane を launchd に bootstrap。応募 canary 1件を実測。
-3. **Coconala revenue collector 復旧** — 8/15 から止まっている収益取得を再稼働、現在残高を実測。稼ぎ頭の計器を直す。
-4. **Fundraiser 再起動** — disk 回復済みなので kickstart、accelerator 応募 1件の受領証跡まで確認。
-5. **Agent economy 復旧** — franklin1 の git 衝突解消（stash/clean）、franklin2 の proxy 429 対応、daemon 再起動。まず yield で黒字化の一歩。
-6. **Writer 売上計測復旧** — Note/Substack ログイン修復、sales-ledger `ok:true` を実測。
-7. **Job hunter を Workday 専用から拡張** — remote + Tokyo。まず今日の `runner_failed` の根本原因修正。
-8. **LM Cloud 出荷** — QR onboarding 最小化 → X で配布 → 初ユーザー → Stripe 初 charge。
-9. **Alpaca 修復 + hackathon 提出**（paper のままで提出可）。
-10. **Capafy 販売再開** — marketing loop 接続（postiz self-host 検討）。
-11. **共有 component / skill 化** — gig 3 platform は既に PROFILE-ASSETS.md を共有済（良）。loop-building recipe を「金を刷る loop を作る skill」に一般化。
-12. **README を real-time status に** — この表を README から参照し、loop が自分で更新する仕組み。
-13. **profile readback を loop 化**（`PROFILE-ASSETS.md` 手順8 の未実装分）— 3 platform の public profile を定期的に読み返し、完成度と欠落項目を state に記録。劣化を検知できるようにする。Lancers の職務経歴書 upload 有無もこの readback で 1 度だけ実測する。
-   ※ 順序 SSOT は変更していない。ただし #13 は安価かつ「受注率14倍」の根に触れるため、Dais が許可すれば #1 の前に前倒しする価値がある（提案のみ、正本は末尾のまま）。
+順序改定: 2026-09-03、Dais 承認により旧 #13（profile readback）を先頭へ前倒し。以降は 1 つずつ順に閉じる。
+
+各項目の DONE 条件は「コードが直った」ではなく「**外形的な実測 evidence が出た**」。evidence 無しで次へ進まない。
+
+1. **profile readback を loop 化** — `PROFILE-ASSETS.md` 手順8 の未実装分。3 platform の公開プロフィールを定期的に読み返し、完成度と欠落項目を state に記録。Lancers の職務経歴書 upload 有無もこの readback で 1 度だけ実測する。
+   DONE: `~/.local/state/anicca/*/profile-readback.json` に完成度と欠落項目が記録され、2 回目の wake でも更新される。
+2. **Lancers planner_contract_invalid 修正** — `_validate()` を「不正 row は skip、健全 row だけで判断」に変更（1 行の毒で batch 全滅する設計をやめる）。
+   DONE: 次 wake の launchd.out.log で `error` が消え `eligible_count > 0`、かつ `application_verified` が 60 → 61 以上に増える。
+3. **CrowdWorks config 修正** — `public-profile.json` の `hours_limit` を int（例 35）へ + 4 lane を launchd に bootstrap。
+   DONE: exit 1 が止まり、`application-receipts.jsonl` に 8-11 以降の新規 receipt が 1 件付く。
+4. **Coconala revenue collector 復旧** — 8-15 から止まっている収益取得を再稼働。稼ぎ頭の計器を直す。
+   DONE: `revenue-collect.log` に本日日付の `status:ok` と現在残高が入る。
+5. **Fundraiser 再起動** — disk 事故で 8-31 から停止。disk は回復済み（19Gi free）なので kickstart。
+   DONE: accelerator 応募 1 件の受領証跡（確認メール or 応募 ID）を state に記録。
+6. **Agent economy 復旧** — franklin1 の git 衝突解消（stash/clean）、franklin2 の proxy 429 対応、daemon 再起動。net -$18.65 の底打ちが目的。
+   DONE: 両 franklin が 8-28 以降で初めて wake 完走し、ledger に本日行が付く。
+7. **Writer 売上計測復旧** — Note/Substack ログイン修復。
+   DONE: `sales-ledger.jsonl` に `ok:true` の実測行（金額込み）が 1 行入る。
+8. **Job hunter を Workday 専用から拡張** — まず本日の `runner_failed` の根本原因修正、その後 remote + Tokyo の一般求人へ拡張。
+   DONE: 応募 1 件の受領証跡。
+9. **LM Cloud 出荷** — QR onboarding 最小化 → X で配布 → 初ユーザー → Stripe 初 charge。
+   DONE: `stripe-revenue-poller` が `new charges: 1` 以上を観測。
+10. **Alpaca 修復 + hackathon 提出** — `alpaca_pass_failed` の解消。提出は paper のままで可。
+    DONE: 提出受領画面 or 確認メール。
+11. **Capafy 販売再開** — marketing loop 接続（postiz self-host 検討）。
+    DONE: 8-12 以降で初の新規注文が ledger に付く。
+12. **共有 component / skill 化** — gig 3 platform は既に PROFILE-ASSETS.md を共有済（良）。loop-building recipe を「金を刷る loop を作る skill」へ一般化。
+    DONE: skill を使って新規 loop を 1 本組み、既存資産を再利用できたことを実証。
+13. **README を real-time status に** — この表を README から参照し、loop が自分で更新する仕組み。
+    DONE: loop が書き換えた README の diff が commit される。
 
 ## 補足事実
 
