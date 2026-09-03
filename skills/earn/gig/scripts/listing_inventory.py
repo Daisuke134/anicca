@@ -84,10 +84,10 @@ def parse_list_page(rendered_text: str, service_ids: list[str]) -> list[dict]:
     body = rendered_text.split(LIST_HEADER, 1)
     body = body[1] if len(body) == 2 else rendered_text
     chunks = body.split(CARD_DELIMITER)[:-1]  # trailing chunk is pagination, not a card
-    skip_tokens = {"公開中", "非公開", "下書き", "定期購入可"}
+    skip_tokens = {"公開中", "非公開", "下書き", "受付休止中", "定期購入可"}
     cards = []
     for sid, chunk in zip(service_ids, chunks):
-        status_m = re.search(r"(公開中|非公開|下書き)", chunk)
+        status_m = re.search(r"(公開中|非公開|下書き|受付休止中)", chunk)
         price_m = re.search(r"([\d,]+)\s*\n\s*円", chunk)
         title = ""
         for ln in (line.strip() for line in chunk.splitlines()):

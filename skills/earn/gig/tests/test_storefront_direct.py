@@ -721,3 +721,33 @@ def test_image_form_and_public_readback_accept_only_one_image_delta(monkeypatch)
         assert "seller_image_non_image_changed" in str(error)
     else:
         raise AssertionError("a non-image field changed alongside the image")
+
+
+def test_reopen_suspended_listings_covers_all_14_and_is_idempotent_when_public(tmp_path, monkeypatch):
+    def fake_run(argv, **_kwargs):
+        return SimpleNamespace(returncode=0, stdout=json.dumps({
+            "ok": True, "ws": "ws://leased", "target_id": "t1", "closed": "t1",
+        }))
+
+    async def fake_reopen(_ws_url, *, service_id):
+        return {"service_id": service_id, "reopened": True, "readback_state": "公開中"}
+
+    monkeypatch.setattr(direct.subprocess, "run", fake_run)
+    monkeypatch.setattr(direct, "_reopen_one_suspended_service_async", fake_reopen)
+
+    suspended = [{"service_id": str(90000000 + i), "state": direct.SUSPENDED_LISTING_STATE}
+                 for i in range(14)]
+    effects_path = tmp_path / "effects.jsonl"
+    count = direct._reopen_suspended_listings(
+        suspended, default_tab_script=Path("cdp_default_tab.py"),
+        effects_path=effects_path, pass_id="pass-1",
+    )
+    assert count == 14
+    assert len(effects_path.read_text().splitlines()) == 14
+
+    public = [{**row, "state": "公開中"} for row in suspended]
+    count_replay = direct._reopen_suspended_listings(
+        public, default_tab_script=Path("cdp_default_tab.py"),
+        effects_path=effects_path, pass_id="pass-2",
+    )
+    assert count_replay == 0
