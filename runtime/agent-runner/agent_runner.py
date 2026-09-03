@@ -694,6 +694,25 @@ def install_termination_forwarding() -> None:
         signal.signal(signum, forward_termination_to_provider)
 
 
+def remove_incompatible_codex_model_cache(codex_home: Path) -> bool:
+    """Drop a regenerable cache that the installed Codex schema cannot decode."""
+    cache = codex_home / "models_cache.json"
+    if not cache.is_file():
+        return False
+    try:
+        payload = json.loads(cache.read_text(encoding="utf-8"))
+        models = payload.get("models") if isinstance(payload, dict) else None
+        compatible = isinstance(models, list) and all(
+            isinstance(model, dict) and "base_instructions" in model for model in models
+        )
+    except (OSError, json.JSONDecodeError):
+        compatible = False
+    if compatible:
+        return False
+    cache.unlink(missing_ok=True)
+    return True
+
+
 def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
                          timeout: int, cwd: str, input_bytes: bytes | None,
                          stdin: Any, env: dict[str, str],
@@ -708,6 +727,7 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
         lock_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         provider_lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
         fcntl.flock(provider_lock_fd, fcntl.LOCK_EX)
+        remove_incompatible_codex_model_cache(Path(codex_home))
     inherited_fds = tuple(fd for fd in (lease_fd, provider_lock_fd) if fd is not None)
     try:
         process = subprocess.Popen(
