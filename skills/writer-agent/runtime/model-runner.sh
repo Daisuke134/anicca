@@ -209,7 +209,7 @@ if [ "$BROKER_MODE" = "1" ] && [ "${ARTICLE_JUDGE_BROKER_SERVER:-}" != "1" ] \
   exit 64
 fi
 
-PROVIDER="${ARTICLE_PROVIDER:-auto}"
+PROVIDER="${ARTICLE_PROVIDER:-claude}"
 case "$PROVIDER" in
   auto|codex|claude) ;;
   *) echo "model-runner: ARTICLE_PROVIDER must be auto, codex, or claude" >&2; exit 64 ;;
