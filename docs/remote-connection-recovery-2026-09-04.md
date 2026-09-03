@@ -131,9 +131,43 @@ panic(cpu 2): userspace watchdog timeout: no successful checkins from
 を全検索、該当ゼロ。予約電源は `wakepoweron at 6:00AM` のみ）。
 つまり「誰かが再起動している」のではなく、**過負荷で落ちている**。
 
-観測時の負荷: load average 21.99 / `mds_stores` 83.7% CPU（Spotlight）/
-WindowServer 43.2% / Python loop 複数 / CloakBrowser renderer / pageouts 2.4M。
-ChatGPT デスクトップアプリは**起動しておらず、無関係**。
+**真因はメモリ枯渇。CPU ではない。** panic ログの `memoryStatus`:
+
+```
+free:            927 pages = 約 15 MB   ← 16GB のマシンで
+wired:       270,175 pages = 約 4.2 GB
+compressions:   2,497,067,244           ← 25億回
+decompressions: 2,348,545,942
+```
+
+WindowServer が checkin できなかったのは CPU 不足ではなく、
+**描画に必要なメモリすら確保できなかったから**。
+
+計測時点の実機も同じ状態:
+
+```
+搭載 RAM  16 GB / 空き 61 MB / swap 8.4 GB 使用（10GB 中 82%）
+```
+
+内訳（巨大プロセスは無く、数の問題。最大でも 314MB）:
+
+| 種別 | プロセス数 | 合計メモリ |
+|---|---|---|
+| **Chromium (CloakBrowser)** | **111** | **4,845 MB** |
+| claude | 26 | 1,745 MB |
+| node | 54 | 1,104 MB |
+| Python | 74 | 859 MB |
+| codex | 28 | 689 MB |
+| openclaw | 13 | 669 MB |
+| mds (Spotlight) | 2 | **70 MB** |
+
+全プロセス数 724。
+
+**Spotlight 犯人説は棄却。** 70MB しか使っていない。CPU の瞬間値だけを見た早計だった。
+**loop を減らす案も棄却** — 稼働中の loop 全部（claude+codex+python+node = 4.4GB）より
+**Chromium 単独（4.8GB）のほうが多い**。稼ぎを削る必要はない。
+
+ChatGPT デスクトップアプリは起動しておらず無関係。
 
 **これが全ての切断の親玉。** Claude も Codex も Mac ごと落ちれば切れる。
 
@@ -201,12 +235,13 @@ ChatGPT デスクトップアプリは**起動しておらず、無関係**。
 
 原因G。ここを直さないと、他の全ての修正が1〜2日で無効になる。
 
-- [ ] **E1** 負荷の内訳を計測し、常時どれだけの loop が走っているか確定する
-- [ ] **E2** Spotlight のインデックス対象から repo / worktree / node_modules を除外
-      （観測時 `mds_stores` が単独で 83.7% CPU）
-- [ ] **E3** 同時実行する loop の上限を設ける
-- [ ] **E4** CloakBrowser の常駐 renderer 数を見直す
-- [ ] **E5** 対策後、panic が止まったかを `last reboot` で1週間追跡
+- [x] **E1** panic ログを読み、真因を特定 → **メモリ枯渇**（CPU ではない）
+- [ ] **E2** ~~Spotlight のインデックス除外~~ **棄却**。実測 70MB、効果なし
+- [ ] **E3** ~~loop の同時実行数に上限~~ **棄却**。稼ぎを削る割に Chromium より小さい
+- [ ] **E4** **CloakBrowser の Chromium が 111 プロセス・4.8GB ある理由を特定し、
+      不要なものを閉じる。搭載メモリの 30% を単独消費** ← E群の本体
+- [ ] **E5** ~~1週間 panic を追跡~~ **棄却**。監視は成果物ではない。
+      対策は「見張らなくても壊れない仕組み」であるべき
 
 ### 優先5 — 監視（気づかない時間をゼロに）
 
