@@ -4,6 +4,12 @@ from pathlib import Path
 
 
 class TerraDefaultTest(unittest.TestCase):
+    def test_codex_provider_uses_managed_current_cli_before_path(self):
+        config_path = Path(__file__).resolve().parents[1] / "config.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(config["providers"]["codex"]["executable"], "~/.local/bin/codex")
+
     def test_every_executable_agent_class_prefers_terra(self):
         config_path = Path(__file__).resolve().parents[1] / "config.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))
