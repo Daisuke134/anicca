@@ -21,9 +21,9 @@
 
 | # | Loop | 判定 | 実測 | 根本原因 / 差分 |
 |---|---|---|---|---|
-| 1 | Gig: Coconala | 🟢 唯一の稼ぎ頭 | 4 lane稼働中、応募継続（9/2最新）、¥129,636 | revenue collector が 8/15 から停止 → 今の残高が見えない。paid/storefront lane が間欠 fail |
+| 1 | Gig: Coconala | 🔴 出品全休止 | 4 lane稼働中、応募継続（9/2最新）、¥129,636 | revenue collector が 8/15 から停止 → 今の残高が見えない。paid/storefront lane が間欠 fail |
 | 2 | Gig: Lancers | 🔴 応募停止中 | 6 job稼働だが application lane が毎tick `planner_contract_invalid`。今日 fresh判断0件 | `application_loop.py` の `_validate()`: observed 33件のうち1件でも budget_min/max_minor 不正だと batch全体を ValueError で捨てる設計。1行の毒で全滅 |
-| 3 | Gig: CrowdWorks | 🔴 8/11から死亡 | application が5分毎に exit 1。4 lane は launchd に未bootstrap | `public-profile.json` の `hours_limit: "31-40"`（文字列）を validator が int 要求で reject。既知バグ（gig TODO.md L524）未修正 |
+| 3 | Gig: CrowdWorks | 🔴 8/11から死亡 | application exit 1、`account.json` が 8/11 から `input_required` | credential 未投入（旧 hours_limit 説は取り消し） |
 | 4 | Writer | 🟡 書けるが測れない | 記事公開は継続（9/1 run あり）。sales-ledger は 8/22 から `ok:false` 連発 | Note/Substack の売上計測が壊れ、収益検証不能。article-daily exit 75 |
 | 5 | Affiliate | 🟡 投稿するが¥0 | X投稿は今日も稼働。毎cycle `NO_REVENUE_CREDIT` | Amazon Associates の成果が一度も confirm されず |
 | 6 | Investment (Alpaca) | 🔴 blocked | `alpaca_pass_failed` を毎cycle。pm-live-trade は $2.05 で HOLD（最小 $5 未満） | Alpaca 認証/pass 失敗。hackathon 提出は paper のままで可能 |
@@ -37,36 +37,31 @@
 
 ## TODO（この順。順序 SSOT — Dais 明示なしに変更禁止）
 
-順序改定: 2026-09-03、Dais 承認により旧 #13（profile readback）を先頭へ前倒し。以降は 1 つずつ順に閉じる。
-
+順序改定 2026-09-04: Dais 明示指示「まず Coconala 出品(storefront)を直す → Lancers 完全プロフィールで応募 → CrowdWorks」。#1〜#3 を gig 3 platform で固定、以降は 9/3 順を維持。
 各項目の DONE 条件は「コードが直った」ではなく「**外形的な実測 evidence が出た**」。evidence 無しで次へ進まない。
 
-1. **profile readback を loop 化** — `PROFILE-ASSETS.md` 手順8 の未実装分。3 platform の公開プロフィールを定期的に読み返し、完成度と欠落項目を state に記録。Lancers の職務経歴書 upload 有無もこの readback で 1 度だけ実測する。
-   DONE: `~/.local/state/anicca/*/profile-readback.json` に完成度と欠落項目が記録され、2 回目の wake でも更新される。
-2. **Lancers planner_contract_invalid 修正** — `_validate()` を「不正 row は skip、健全 row だけで判断」に変更（1 行の毒で batch 全滅する設計をやめる）。
-   DONE: 次 wake の launchd.out.log で `error` が消え `eligible_count > 0`、かつ `application_verified` が 60 → 61 以上に増える。
-3. **CrowdWorks config 修正** — `public-profile.json` の `hours_limit` を int（例 35）へ + 4 lane を launchd に bootstrap。
-   DONE: exit 1 が止まり、`application-receipts.jsonl` に 8-11 以降の新規 receipt が 1 件付く。
-4. **Coconala revenue collector 復旧** — 8-15 から止まっている収益取得を再稼働。稼ぎ頭の計器を直す。
-   DONE: `revenue-collect.log` に本日日付の `status:ok` と現在残高が入る。
-5. **Fundraiser 再起動** — disk 事故で 8-31 から停止。disk は回復済み（19Gi free）なので kickstart。
-   DONE: accelerator 応募 1 件の受領証跡（確認メール or 応募 ID）を state に記録。
-6. **Agent economy 復旧** — franklin1 の git 衝突解消（stash/clean）、franklin2 の proxy 429 対応、daemon 再起動。net -$18.65 の底打ちが目的。
-   DONE: 両 franklin が 8-28 以降で初めて wake 完走し、ledger に本日行が付く。
-7. **Writer 売上計測復旧** — Note/Substack ログイン修復。
-   DONE: `sales-ledger.jsonl` に `ok:true` の実測行（金額込み）が 1 行入る。
-8. **Job hunter を Workday 専用から拡張** — まず本日の `runner_failed` の根本原因修正、その後 remote + Tokyo の一般求人へ拡張。
-   DONE: 応募 1 件の受領証跡。
-9. **LM Cloud 出荷** — QR onboarding 最小化 → X で配布 → 初ユーザー → Stripe 初 charge。
-   DONE: `stripe-revenue-poller` が `new charges: 1` 以上を観測。
-10. **Alpaca 修復 + hackathon 提出** — `alpaca_pass_failed` の解消。提出は paper のままで可。
-    DONE: 提出受領画面 or 確認メール。
-11. **Capafy 販売再開** — marketing loop 接続（postiz self-host 検討）。
-    DONE: 8-12 以降で初の新規注文が ledger に付く。
-12. **共有 component / skill 化** — gig 3 platform は既に PROFILE-ASSETS.md を共有済（良）。loop-building recipe を「金を刷る loop を作る skill」へ一般化。
-    DONE: skill を使って新規 loop を 1 本組み、既存資産を再利用できたことを実証。
-13. **README を real-time status に** — この表を README から参照し、loop が自分で更新する仕組み。
-    DONE: loop が書き換えた README の diff が commit される。
+1. **Coconala storefront 復活（受付再開 + 高単価システム開発出品）** — 実測: 14 service 全部 `受付休止中`（8/25〜8/27 19:50 の間に同時発生、実行者不明。loop に休止/再開コードなし。`storefront_direct.py:198` は state を `公開中/非公開/下書き` しか知らず、`受付休止中` は未知状態。8/5〜9/3 purchases 0、公開 mutation 0 件）。
+   a. seller 単位の受付休止設定 / 各 service の「受付を再開」を storefront lane の effect として追加し、14 件を再開。`受付休止中` を既知 state に入れる。
+   b. `~/gig/applied.jsonl` の高単価 観測案件（¥300,000 / ¥250,000 / ¥180,000、システム開発・制作 category）を元に **システム/アプリ開発** 出品を新規作成（`publication_guard=already_public` は capability 重複だけ弾き、新 capability は通す）。
+   c. 同じ出品 asset（title/body/価格/画像）を Lancers package・CrowdWorks へも流せる形で `skills/gig-work/profile/` 配下に置く（共有 component）。
+   DONE: `current.json` の 14 service が `公開中`、新規システム開発出品 ≥1 件が公開 URL で readback、次 wake で replay effect 0。
+2. **Lancers 応募復旧 + 完全プロフィール応募** — `application_loop.py:320-350` `_validate()` が 1 行不正で batch 全滅（`planner_contract_invalid`、9/4 も継続、今日 fresh 判断 0）。不正 row は skip、健全 row だけで判断へ。profile は 9/4 に avatar 登録で 90%（残り電話認証のみ、blocker にしない）。
+   DONE: 次 wake で `error` 消滅・`eligible_count > 0`、`application_verified` 60 → 61 以上。
+3. **CrowdWorks 復旧** — 実測: `account.json` が 8/11 から `status: input_required`（credential 待ち）で application lane exit 1。9/3 に書いた `hours_limit` 文字列説は repo/state に該当ファイル無し（**誤りとして取り消し**）。credentials.json SSOT から再ログイン → 4 lane を launchd に bootstrap。
+   DONE: `application-receipts.jsonl` に 8/11 以降初の receipt 1 件。
+4. **profile readback を loop 化** — 3 platform の公開プロフィールを定期 readback し完成度を state に記録（Lancers storefront lane は 9/4 から `profile_completion_percent` を返す。Coconala/CrowdWorks は未）。
+   DONE: `~/.local/state/anicca/*/profile-readback.json` が 2 回目 wake でも更新。
+5. **Coconala revenue collector 復旧** — `~/gig/earnings.jsonl` 最終行 8/12。専用 plist 無し。
+   DONE: 本日日付の行が入る。
+6. **Fundraiser 再起動** — 8/31 disk 事故停止、未復帰。 DONE: accelerator 応募 1 件の受領証跡。
+7. **Agent economy 復旧** — franklin1 git 衝突 / franklin2 proxy 429 / daemon 未復帰。 DONE: 両 franklin が wake 完走、ledger に本日行。
+8. **Writer 売上計測復旧** — DONE: `sales-ledger.jsonl` に `ok:true` 1 行。
+9. **Job hunter 拡張** — `runner_failed` 修正 → remote + Tokyo 一般求人。 DONE: 応募 1 件の受領証跡。
+10. **LM Cloud 出荷** — QR onboarding → X 配布 → Stripe 初 charge。 DONE: `new charges: 1`。
+11. **Alpaca 修復 + hackathon 提出** — DONE: 提出受領。
+12. **Capafy 販売再開** — postiz self-host 含む marketing 接続。 DONE: 新規注文 1 件。
+13. **共有 component / 「金を刷る loop を作る skill」化** — 実測: 共有 profile を読むのは Lancers のみ（`storefront_offer.py:20`）。Coconala/CrowdWorks は未接続。 DONE: skill で新 loop 1 本、既存資産再利用を実証。
+14. **README を real-time status に** — DONE: loop が書き換えた README diff が commit される。
 
 ## 補足事実
 
