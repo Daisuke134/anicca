@@ -52,7 +52,7 @@ const { handlePanelApiRequest, handlePanelOAuthCallback, composioCalendarStart, 
 const { createMoneyPrinterSource } = require("./lib/money-printer-source.js");
 const { createMoneyPrinterRuntimeStore } = require("./lib/money-printer-runtime-store.js");
 const { handleMoneyPrinterSymphonyApiRequest } = require("./lib/money-printer-symphony-api.js");
-const { buildAlpacaPublicProjection, renderAlpacaPublicPage } = require("./lib/alpaca-public.js");
+const { renderAlpacaPublicPage, resolveAlpacaPublicProjection } = require("./lib/alpaca-public.js");
 const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { handleCalendarOnboardRequest } = require("./lib/calendar-onboard.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
@@ -418,7 +418,7 @@ function ctxFromReq(req) {
   return { event: { summary, start: { dateTime }, location }, urgency, lang, name, wakeUid, wakeEventKey };
 }
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   const path = (req.url || "").split("?")[0];
   if (path === "/alpaca") {
     if (req.method !== "GET") {
@@ -442,7 +442,7 @@ const server = http.createServer((req, res) => {
       return;
     }
     try {
-      const projection = buildAlpacaPublicProjection();
+      const projection = await resolveAlpacaPublicProjection({ supaUrl: SUPA_URL, supaKey: SUPA_KEY });
       res.writeHead(200, {
         "content-type": "application/json; charset=utf-8",
         "cache-control": "no-store",

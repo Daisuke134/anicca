@@ -126,6 +126,97 @@ function buildAlpacaPublicProjection(input = {}) {
   });
 }
 
+const ALPACA_PUBLIC_SNAPSHOT_ID = "alpaca-hackathon";
+
+function supabaseCredentials(options = {}) {
+  const supaUrl = String(options.supaUrl || process.env.SUPABASE_URL || "").replace(/\/$/, "");
+  const supaKey = options.supaKey || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  if (!supaUrl || !supaKey || typeof fetchImpl !== "function") {
+    throw new Error("Alpaca public snapshot storage is unavailable");
+  }
+  return { supaUrl, supaKey, fetchImpl };
+}
+
+function supabaseHeaders(supaKey, prefer) {
+  return {
+    apikey: supaKey,
+    Authorization: `Bearer ${supaKey}`,
+    "Content-Type": "application/json",
+    ...(prefer ? { Prefer: prefer } : {}),
+  };
+}
+
+function isoTimestamp(value, label) {
+  const date = new Date(value == null ? Date.now() : value);
+  if (!Number.isFinite(date.getTime())) throw new Error(`Alpaca public ${label} is invalid`);
+  return date.toISOString();
+}
+
+async function publishAlpacaPublicProjection(options = {}) {
+  const { supaUrl, supaKey, fetchImpl } = supabaseCredentials(options);
+  const projection = buildAlpacaPublicProjection(options);
+  const now = isoTimestamp(
+    typeof options.now === "function" ? options.now() : options.now,
+    "snapshot time",
+  );
+  const observedAt = projection.observed_at || now;
+  let response;
+  try {
+    response = await fetchImpl(`${supaUrl}/rest/v1/lm_alpaca_public_snapshot?on_conflict=id`, {
+      method: "POST",
+      headers: supabaseHeaders(supaKey, "resolution=merge-duplicates,return=minimal"),
+      body: JSON.stringify({
+        id: ALPACA_PUBLIC_SNAPSHOT_ID,
+        projection,
+        observed_at: observedAt,
+        updated_at: now,
+      }),
+    });
+  } catch (error) {
+    throw new Error(`Alpaca public snapshot publish failed: ${error && error.message ? error.message : error}`);
+  }
+  if (!response || !response.ok) {
+    throw new Error(`Alpaca public snapshot publish failed (${response ? response.status : "no response"})`);
+  }
+  return projection;
+}
+
+async function fetchAlpacaPublicProjection(options = {}) {
+  const { supaUrl, supaKey, fetchImpl } = supabaseCredentials(options);
+  let response;
+  try {
+    response = await fetchImpl(
+      `${supaUrl}/rest/v1/lm_alpaca_public_snapshot?id=eq.${ALPACA_PUBLIC_SNAPSHOT_ID}&select=projection&limit=1`,
+      { headers: supabaseHeaders(supaKey) },
+    );
+  } catch (error) {
+    throw new Error(`Alpaca public snapshot read failed: ${error && error.message ? error.message : error}`);
+  }
+  if (!response || !response.ok) {
+    throw new Error(`Alpaca public snapshot read failed (${response ? response.status : "no response"})`);
+  }
+  let rows;
+  try {
+    rows = await response.json();
+  } catch {
+    throw new Error("Alpaca public snapshot read returned invalid JSON");
+  }
+  if (!Array.isArray(rows) || rows.length !== 1) {
+    throw new Error("Alpaca public snapshot read returned an unexpected row count");
+  }
+  const projection = rows[0] && rows[0].projection;
+  if (!projection || typeof projection !== "object" || Array.isArray(projection)) {
+    throw new Error("Alpaca public snapshot read returned an invalid projection");
+  }
+  return projection;
+}
+
+async function resolveAlpacaPublicProjection(options = {}) {
+  const local = (options.buildLocal || buildAlpacaPublicProjection)();
+  return local.observed_at ? local : fetchAlpacaPublicProjection(options);
+}
+
 function renderAlpacaPublicPage() {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Life Manager Alpaca paper-trading evidence"><title>Life Manager — Alpaca Paper Loop</title><style>
   :root{color-scheme:dark;--bg:#07110f;--panel:#0d1c18;--line:#23453b;--mint:#66f2bd;--text:#edf8f3;--muted:#91aaa0;--red:#ff8c8c}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#12382d 0,transparent 35%),var(--bg);color:var(--text);font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}main{width:min(1120px,calc(100% - 32px));margin:auto;padding:42px 0 64px}header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:24px}h1{font:700 clamp(32px,6vw,64px)/.95 system-ui,sans-serif;letter-spacing:-.06em;margin:8px 0 12px}.eyebrow,.badge{color:var(--mint);text-transform:uppercase;letter-spacing:.14em;font-size:12px}.badge{border:1px solid var(--mint);border-radius:999px;padding:8px 12px;white-space:nowrap}.lede{color:var(--muted);max-width:700px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:linear-gradient(145deg,rgba(17,40,33,.95),rgba(9,24,20,.95));border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}.metric{grid-column:span 3}.wide{grid-column:span 8}.side{grid-column:span 4}.full{grid-column:1/-1}h2{font:650 17px system-ui,sans-serif;margin:0 0 14px}.label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.value{font:650 26px system-ui,sans-serif;margin-top:6px}.positive{color:var(--mint)}.negative{color:var(--red)}dl{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0}dt{color:var(--muted)}dd{margin:0;overflow-wrap:anywhere}.muted{color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:400}.error{color:var(--red)}footer{color:var(--muted);font-size:11px;margin-top:18px}@media(max-width:800px){header{display:block}.badge{display:inline-block;margin-top:12px}.metric,.wide,.side{grid-column:1/-1}main{padding-top:26px}.card{padding:15px}}
@@ -133,4 +224,11 @@ function renderAlpacaPublicPage() {
   const money=n=>typeof n==='number'?new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n):'—';const esc=v=>String(v??'—');const set=(id,v)=>document.getElementById(id).textContent=esc(v);const tone=(id,n)=>{const e=document.getElementById(id);e.classList.toggle('positive',typeof n==='number'&&n>=0);e.classList.toggle('negative',typeof n==='number'&&n<0)};const table=(id,heads,rows)=>{const host=document.getElementById(id);host.textContent='';if(!rows.length){host.textContent='None';return}const t=document.createElement('table'),h=document.createElement('tr');heads.forEach(x=>{const e=document.createElement('th');e.textContent=x;h.append(e)});t.append(h);rows.forEach(r=>{const tr=document.createElement('tr');r.forEach(x=>{const e=document.createElement('td');e.textContent=esc(x);tr.append(e)});t.append(tr)});host.append(t)};fetch('/api/life-manager/alpaca/public',{headers:{accept:'application/json'}}).then(r=>{if(!r.ok)throw Error('unavailable');return r.json()}).then(p=>{set('starting',money(p.starting_equity_usd));set('equity',money(p.equity_usd));set('pnl',money(p.total_pnl_usd));set('unrealized',money(p.unrealized_pnl_usd));tone('pnl',p.total_pnl_usd);tone('unrealized',p.unrealized_pnl_usd);const d=p.latest_decision||{},dl=document.getElementById('decision');dl.textContent='';[['Status',d.candidate_ref],['Gate',d.gate],['Reason',d.reason],['Expected gain',money(d.expected_gain_usd)],['Observed',d.observed_at]].forEach(([k,v])=>{const a=document.createElement('dt'),b=document.createElement('dd');a.textContent=k;b.textContent=esc(v);dl.append(a,b)});const r=p.reconciliation||{};document.getElementById('reconciliation').innerHTML='';[['Status',r.status],['Positions',r.positions],['Fills',r.fills],['Broker orders',r.broker_orders],['Telegram',p.telegram&&p.telegram.delivered?'delivered':'unavailable'],['Observed',p.observed_at]].forEach(([k,v])=>{const a=document.createElement('dt'),b=document.createElement('dd');a.textContent=k;b.textContent=esc(v);document.getElementById('reconciliation').append(a,b)});table('positions',['Symbol','Side','Qty','Entry','Current','Value','Unrealised'],(p.positions||[]).map(x=>[x.symbol,x.side,x.quantity,money(x.average_entry_price),money(x.current_price),money(x.market_value),money(x.unrealized_pnl)]));table('fills',['Public fill','Symbol','Side','Qty','Price','Time'],(p.fills||[]).map(x=>[x.id,x.symbol,x.side,x.quantity,money(x.price),x.transaction_at]))}).catch(()=>{document.querySelectorAll('.muted').forEach(e=>e.textContent='Read-only evidence is temporarily unavailable.');document.getElementById('reconciliation').textContent='Unavailable'})</script></body></html>`;
 }
 
-module.exports = { buildAlpacaPublicProjection, renderAlpacaPublicPage, stateDir };
+module.exports = {
+  buildAlpacaPublicProjection,
+  fetchAlpacaPublicProjection,
+  publishAlpacaPublicProjection,
+  resolveAlpacaPublicProjection,
+  renderAlpacaPublicPage,
+  stateDir,
+};
