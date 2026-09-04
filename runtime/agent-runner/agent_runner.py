@@ -423,6 +423,36 @@ def budget_charge_tokens(provider: str, usage: dict[str, Any], reservation_token
     return total - cached
 
 
+def claude_json_document(payload: str) -> str:
+    """Return the single JSON document inside a Claude answer, or the answer unchanged.
+
+    Callers json.loads() the result file, so anything the model puts around the object is a
+    parse error that reads as a runner failure even though the answer was correct. Measured
+    2026-08-31 on the Lancers planner: the model reasoned in prose, wrote "JSON出す。", then
+    emitted the object, and json.loads reported `Extra data: line 1 column 3`.
+
+    Only a whole document is accepted. If what is found does not span to the end of the
+    remaining text, the original string is returned untouched rather than silently keeping the
+    first of several objects -- a truncated or multi-answer reply must fail loudly upstream.
+    """
+    text = payload.strip()
+    fenced = OPENCLAW_JSON_FENCE.fullmatch(text)
+    if fenced and "```" not in fenced.group("body"):
+        text = fenced.group("body").strip()
+    start = min((i for i in (text.find("{"), text.find("[")) if i != -1), default=-1)
+    if start == -1:
+        return payload
+    try:
+        _, end = json.JSONDecoder().raw_decode(text, start)
+    except ValueError:
+        return payload
+    # A closing fence may trail the object when the model wrote prose before opening the fence,
+    # so the whole string was never a fence match. Backticks are not a second answer.
+    if text[end:].strip().strip("`").strip():
+        return payload
+    return text[start:end]
+
+
 def extract_claude_payload(stdout_path: Path, result_path: Path) -> str:
     """Unwrap Claude's JSON output envelope while tolerating legacy plain output."""
     text = stdout_path.read_text(encoding="utf-8", errors="replace")
@@ -433,6 +463,8 @@ def extract_claude_payload(stdout_path: Path, result_path: Path) -> str:
         return ""
     if isinstance(wrapper, dict) and wrapper.get("type") == "result" and "result" in wrapper:
         payload = wrapper["result"]
+        if isinstance(payload, str):
+            payload = claude_json_document(payload)
         result_path.write_text(
             payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False),
             encoding="utf-8",
@@ -1657,6 +1689,35 @@ def run() -> int:
         runtime_capabilities: dict[str, Any] = {}
         sandbox_preflight: dict[str, Any] = {}
         candidate_prompt = prompt
+        if provider in CLAUDE_PROVIDERS:
+            # Codex is handed the output schema through --output-schema, so it answers in the
+            # required shape. The claude CLI has no equivalent flag, so without this the model
+            # guesses the envelope, schema validation fails, and the runner correctly refuses to
+            # select a schema-invalid answer -- the fallback exists but can never be chosen.
+            # Measured 2026-08-31: attempt-03 returned is_error=false with a well-formed decision
+            # that was discarded because it was not wrapped in the schema's envelope.
+            # Measured 2026-09-04 on the storefront proposal agent: rc=0, a complete well-formed
+            # object -- but built from the caller's own context field names (hypothesis_key,
+            # before) instead of the schema's (hypothesis, proposed_price_jpy, uncertainty). The
+            # schema dump alone sits at the tail of a long prompt behind a same-shaped context
+            # object; naming the required keys is what a Codex candidate gets for free from
+            # --output-schema and a Claude candidate does not.
+            required_top_level = schema.get("required", []) if isinstance(schema, dict) else []
+            candidate_prompt = (
+                f"{prompt}\n\n"
+                "OUTPUT CONTRACT: reply with one JSON document and nothing else. No prose, no "
+                "code fence. It must validate against this JSON Schema exactly, including the "
+                "top-level envelope:\n"
+                f"{json.dumps(schema, ensure_ascii=False)}\n"
+                + (
+                    "The top-level object MUST contain exactly these keys, spelled exactly as "
+                    f"in the schema: {', '.join(required_top_level)}. Use the schema's own key "
+                    "names even when the input context above uses different names for a similar "
+                    "concept; do not copy a context object's field names or add fields the "
+                    "schema does not define.\n"
+                    if isinstance(required_top_level, list) and required_top_level else ""
+                )
+            )
         openclaw_workdir: str | None = None
         try:
             required_capabilities, model_capabilities = candidate_capabilities(provider_config, effective_candidate)
@@ -1687,7 +1748,7 @@ def run() -> int:
                         stderr=stderr,
                         timeout=attempt_timeout_seconds,
                         cwd=parsed.workdir,
-                        input_bytes=prompt.encode("utf-8") if parsed.prompt_stdin else None,
+                        input_bytes=candidate_prompt.encode("utf-8") if parsed.prompt_stdin else None,
                         stdin=None if parsed.prompt_stdin else subprocess.DEVNULL,
                         env=provider_process_env(
                             provider, provider_config, task_class=parsed.task_class,
