@@ -717,19 +717,34 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
                          timeout: int, cwd: str, input_bytes: bytes | None,
                          stdin: Any, env: dict[str, str],
                          completion_path: Path | None = None,
-                         lease_fd: int | None = None) -> int:
+                         lease_fd: int | None = None,
+                         deadline: float | None = None) -> int:
     """Run one provider in an isolated process group with a hard timeout."""
     global _ACTIVE_PROVIDER_PROCESS
+    deadline = time.monotonic() + timeout if deadline is None else deadline
     provider_lock_fd = None
-    codex_home = env.get("CODEX_HOME")
-    if codex_home:
-        lock_path = Path(codex_home) / ".agent-runner-provider.lock"
-        lock_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        provider_lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
-        fcntl.flock(provider_lock_fd, fcntl.LOCK_EX)
-        remove_incompatible_codex_model_cache(Path(codex_home))
-    inherited_fds = tuple(fd for fd in (lease_fd, provider_lock_fd) if fd is not None)
     try:
+        codex_home = env.get("CODEX_HOME")
+        if codex_home:
+            lock_path = Path(codex_home) / ".agent-runner-provider.lock"
+            lock_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            provider_lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+            while True:
+                try:
+                    fcntl.flock(provider_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except OSError as error:
+                    if error.errno not in (errno.EACCES, errno.EAGAIN):
+                        raise
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise subprocess.TimeoutExpired(command, timeout)
+                    time.sleep(min(0.25, remaining))
+            remove_incompatible_codex_model_cache(Path(codex_home))
+        inherited_fds = tuple(fd for fd in (lease_fd, provider_lock_fd) if fd is not None)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise subprocess.TimeoutExpired(command, timeout)
         process = subprocess.Popen(
             command,
             stdin=subprocess.PIPE if input_bytes is not None else stdin,
@@ -740,16 +755,10 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
             start_new_session=os.name == "posix",
             pass_fds=inherited_fds,
         )
-    except BaseException:
-        if provider_lock_fd is not None:
-            os.close(provider_lock_fd)
-        raise
-    _ACTIVE_PROVIDER_PROCESS = process
-    try:
+        _ACTIVE_PROVIDER_PROCESS = process
         if input_bytes is not None and process.stdin is not None:
             process.stdin.write(input_bytes)
             process.stdin.close()
-        deadline = time.monotonic() + timeout
         stable: tuple[int, int, float] | None = None
         while process.poll() is None:
             if completion_path is not None and completion_path.is_file():
@@ -1687,6 +1696,7 @@ def run() -> int:
                         ),
                         completion_path=result_path,
                         lease_fd=lease_fd,
+                        deadline=total_deadline,
                     )
                 except subprocess.TimeoutExpired:
                     timed_out = True

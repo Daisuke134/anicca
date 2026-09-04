@@ -8,6 +8,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -125,6 +126,75 @@ class ProviderLeaseTest(unittest.TestCase):
         rows = [json.loads(line) for line in events.read_text(encoding="utf-8").splitlines()]
         self.assertEqual([row[0] for row in rows], ["start", "end", "start", "end"])
         self.assertNotEqual(rows[0][1], rows[2][1])
+
+    def test_shared_codex_home_timeout_does_not_launch_provider(self):
+        lock_path = self.root / "codex-home" / ".agent-runner-provider.lock"
+        lock_path.parent.mkdir()
+        holder = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        self.addCleanup(lambda: os.close(holder))
+        fcntl.flock(holder, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        marker = self.root / "provider-launched"
+        provider = self.root / "provider.py"
+        provider.write_text(
+            "from pathlib import Path\n"
+            f"Path({str(marker)!r}).touch()\n",
+            encoding="utf-8",
+        )
+        runner = self.root / "runner.py"
+        outcome = self.root / "outcome"
+        runner.write_text(
+            "import os, subprocess, sys\n"
+            "from pathlib import Path\n"
+            f"sys.path.insert(0, {str(ROOT)!r})\n"
+            "from agent_runner import run_provider_process\n"
+            "try:\n"
+            "    run_provider_process(\n"
+            f"        [sys.executable, {str(provider)!r}],\n"
+            "        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=0.2,\n"
+            f"        cwd={str(self.root)!r}, input_bytes=None, stdin=subprocess.DEVNULL,\n"
+            f"        env={{**os.environ, 'CODEX_HOME': {str(lock_path.parent)!r}}},\n"
+            "    )\n"
+            "except subprocess.TimeoutExpired:\n"
+            f"    Path({str(outcome)!r}).write_text('TimeoutExpired')\n"
+            "else:\n"
+            f"    Path({str(outcome)!r}).write_text('completed')\n",
+            encoding="utf-8",
+        )
+        try:
+            result = subprocess.run(
+                [sys.executable, str(runner)],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=2,
+            )
+        except subprocess.TimeoutExpired:
+            self.fail("provider lock wait exceeded the run_provider_process timeout")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(outcome.read_text(encoding="utf-8"), "TimeoutExpired")
+        self.assertFalse(marker.exists(), "timed-out lock wait launched a provider")
+
+    def test_expired_deadline_after_preflight_does_not_launch_provider(self):
+        codex_home = self.root / "codex-home"
+        codex_home.mkdir()
+        marker = self.root / "provider-launched"
+        provider = self.root / "provider.py"
+        provider.write_text(
+            "from pathlib import Path\n"
+            f"Path({str(marker)!r}).touch()\n",
+            encoding="utf-8",
+        )
+        env = {**os.environ, "CODEX_HOME": str(codex_home)}
+
+        with mock.patch(
+            "agent_runner.remove_incompatible_codex_model_cache",
+            side_effect=lambda _path: time.sleep(0.1),
+        ):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                run_provider_process(
+                    [sys.executable, str(provider)],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5,
+                    deadline=time.monotonic() + 0.02, cwd=str(self.root),
+                    input_bytes=None, stdin=subprocess.DEVNULL, env=env,
+                )
+        self.assertFalse(marker.exists(), "expired total deadline launched a provider")
 
     def test_incompatible_codex_model_cache_is_removed_for_regeneration(self):
         codex_home = self.root / "codex-home"

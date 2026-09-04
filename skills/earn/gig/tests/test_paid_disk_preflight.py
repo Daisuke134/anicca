@@ -156,6 +156,37 @@ def test_paid_item_keeps_atomic_checkpoint_when_effect_child_reports_pressure(tm
     assert json.loads(checkpoint.read_text(encoding="utf-8"))["effect"] == 0
 
 
+def test_paid_item_does_not_repeat_prepare_after_timeout_124(tmp_path, monkeypatch):
+    paid = _load_paid()
+    item_file = tmp_path / "item.json"
+    prepared_file = tmp_path / "item-prepared.json"
+    effect_file = tmp_path / "item-result.json"
+    item_file.write_text("{}", encoding="utf-8")
+    calls = []
+
+    def fake_run(command, **_kwargs):
+        calls.append(command)
+        return SimpleNamespace(returncode=124, stdout="", stderr="step timed out")
+
+    monkeypatch.setattr(paid, "_run_bounded", fake_run)
+    monkeypatch.setattr(paid, "_prepare_command", lambda *_args: ["--effect-item"])
+    monkeypatch.setattr(paid, "_fresh_child_env", lambda _args, owner=None: os.environ.copy())
+
+    row, effect, readback, failed, step = paid._run_paid_item(
+        SimpleNamespace(), "room", item_file, prepared_file, effect_file,
+    )
+
+    assert calls == [["--effect-item"]]
+    assert row == {
+        "talkroom_id": "room",
+        "status": "failed",
+        "failed_step": "remote_resume",
+    }
+    assert effect == readback == 0
+    assert failed == 1
+    assert step == "remote_resume"
+
+
 def test_parent_disk_checkpoint_is_atomic_and_private(tmp_path):
     paid = _load_paid()
     args = SimpleNamespace(evidence_dir=tmp_path)

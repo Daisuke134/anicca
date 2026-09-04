@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Recover verified paid remote answers through existing delivery boundaries."""
 from __future__ import annotations
-import argparse, fcntl, hashlib, json, mimetypes, os, re, shutil, signal, stat, subprocess, sys, tempfile, threading, time, zipfile
+import argparse, errno, fcntl, hashlib, json, mimetypes, os, re, shutil, signal, stat, subprocess, sys, tempfile, threading, time, zipfile
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -93,13 +93,26 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
     return ["/usr/bin/sandbox-exec", "-f", str(profile), *command]
 
 
-def _run_private_model_serialized(root: Path, command: list[str], label: str, step: str) -> str:
-    """Serialize Paid model agents that share one mutable automation home."""
-    lock_path = root.parents[1] / ".paid-model-runner.lock"
-    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
-    with os.fdopen(descriptor, "r+") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+def _run_private_model_serialized(root: Path, command: list[str], label: str, step: str,
+                                  *, effect_owner: bool = False) -> str:
+    """Run a private model command; only external-effect owners get a local lease."""
+    if not effect_owner:
         return _run(_private_model_runner(root, command, label), step)
+    lock_path = root.parent / ".paid-effect-owner.lock"
+    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as error:
+            if error.errno in (errno.EACCES, errno.EAGAIN):
+                raise Failure("remote_owner_busy") from error
+            raise
+        try:
+            return _run(_private_model_runner(root, command, label), step)
+        finally:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+    finally:
+        os.close(descriptor)
 PAID_DECISION_SCHEMA_VERSION = 4
 PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v19"
 PAID_DECISION_MODEL = "gpt-5.6-terra"
@@ -117,7 +130,7 @@ PAID_REMOTE_WAIT_RECHECK_SECONDS = 3600
 PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_MAX_PARALLEL_READBACKS = 1
 PAID_TERMINAL_RECONCILES_PER_WAKE = 2
-MANUAL_ONLY_TALKROOM_IDS = frozenset({"18211838", "18211957"})
+MANUAL_ONLY_TALKROOM_IDS = frozenset()
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
 # reimplement badly under time pressure, so the BUYMA and video contracts belong here now that both
@@ -4429,7 +4442,9 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
                   "--loop", _runner_loop_id(), "--workdir", str(root), "--timeout-seconds", "1800"]
             progress_size = progress.stat().st_size if _regular_file(progress) else 0
             try:
-                _run_private_model_serialized(root, owner_command, "paid-remote-owner", "remote_builder")
+                _run_private_model_serialized(
+                    root, owner_command, "paid-remote-owner", "remote_builder", effect_owner=True,
+                )
             except Failure:
                 if _regular_file(progress) and progress.stat().st_size > progress_size:
                     raise Failure("remote_progress")
@@ -5015,7 +5030,8 @@ def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
                 "prepare_process": _effect_process_diagnostic(prepare),
             }
             _write(prepared_file, prepared)
-        if (attempt == 0 and prepare.returncode
+        if (attempt == 0 and prepare.returncode != STEP_TIMEOUT_RETURNCODE
+                and prepare.returncode
                 and prepared.get("failed_step") == "remote_resume"):
             continue
         break
@@ -5323,7 +5339,7 @@ def _admitted_paid_projects(args, items: list[dict[str, Any]]) -> list[dict[str,
     admission = paid_admission.plan(
         available,
         projects_root=args.projects_root,
-        max_orders=PAID_MAX_PARALLEL_PROJECTS,
+        max_orders=len(available),
     )
     paid_admission.record_decisions(
         admission, projects_root=args.projects_root,
