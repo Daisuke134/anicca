@@ -206,6 +206,13 @@ GENERATED_MUTATION_FIELDS = {"image", "title", "catchphrase", "body", "package",
 # The seller listing-state control is the form's own hidden `mode` field, not a `data[...]` input.
 LISTING_STATE_DELTA = "mode"
 PUBLIC_LISTING_STATE = "公開中"
+# Coconala's own per-service "受付休止" toggle (data-publish-links stop_fg=1) freezes new
+# orders without unpublishing or archiving the listing -- a known, recoverable listing
+# state distinct from 公開中/非公開/下書き, not a platform error. Measured 2026-09-04 on
+# /mypage/services_lists: the card control at stop_fg==1 renders a plain anchor
+# `<a href="/services/reopen/<id>">受付を再開する</a>` (no js_change-open-status class, no
+# confirmation modal) -- see _reopen_suspended_listings.
+SUSPENDED_LISTING_STATE = "受付休止中"
 MUTATION_CONTRACT_FIELDS = {
     "version", "platform", "service_id", "precondition_listing_version_sha256",
     "changed_field", "before_value", "proposed_value", "allowed_delta", "rollback_value",
@@ -3238,7 +3245,7 @@ def _service_contract(source: dict, observed_at: str) -> dict:
     if (
         not service_id.isdigit() or contract["public_url"] != f"https://coconala.com/services/{service_id}"
         or not contract["title"] or contract["state"] not in {
-            "受付中", "受付休止中", "公開中", "非公開", "下書き",
+            "受付中", "公開中", "非公開", "下書き", SUSPENDED_LISTING_STATE,
         }
         or type(contract["price_jpy"]) is not int or contract["price_jpy"] < 0
         or not contract["category"] or not public_text
@@ -5178,6 +5185,102 @@ async def _restore_listing_state_async(ws_url: str, *, service_id: str, restore_
     return {"service_id": service_id, "restored": True, "observed_at_epoch": int(time.time())}
 
 
+async def _reopen_one_suspended_service_async(ws_url: str, *, service_id: str) -> dict:
+    """Reopen one 受付休止中 listing via its own card's plain reopen link, then prove it stuck.
+
+    Measured 2026-09-04 on /mypage/services_lists: the popover template's reopen branch
+    (rendered when data-publish-links.stop_fg==1) is a plain anchor
+    `<a href="/services/reopen/<id>">受付を再開する</a>` -- unlike stop/archive
+    (a.js_change-open-status, AJAX-bound, archive has a confirmation modal), this control
+    carries no onclick class and no confirmation, so the bound action is a direct
+    navigation, not a click on a JS handler this module never observed.
+    """
+    import websockets
+    import listing_inventory
+
+    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10,
+                                  max_size=40 * 1024 * 1024) as ws:
+        cid = 1
+        await listing_inventory._call(ws, "Page.enable", {}, cid); cid += 1
+        await ws.send(json.dumps({"id": cid, "method": "Page.navigate",
+                                  "params": {"url": f"https://coconala.com/services/reopen/{service_id}"}})); cid += 1
+        _, cid = await listing_inventory._wait_for_load(ws, asyncio.get_event_loop().time() + 15, cid)
+        await asyncio.sleep(2)
+        card_text = None
+        for page in (1, 2, 3):
+            url = ("https://coconala.com/mypage/services_lists" if page == 1
+                   else f"https://coconala.com/mypage/services_lists/page:{page}")
+            await ws.send(json.dumps({"id": cid, "method": "Page.navigate", "params": {"url": url}})); cid += 1
+            _, cid = await listing_inventory._wait_for_load(ws, asyncio.get_event_loop().time() + 15, cid)
+            raw, cid = await _evaluate(ws, (
+                "JSON.stringify([...document.querySelectorAll('.serviceListContentBox')]"
+                f".filter(c=>(c.innerHTML||'').includes({json.dumps('/services/' + service_id)}))"
+                ".map(c=>(c.innerText||'').slice(0,80)))"
+            ), cid)
+            cards = json.loads(str(raw or "[]"))
+            if cards:
+                card_text = str(cards[0])
+                break
+    if card_text is None:
+        raise RuntimeError("storefront_reopen_card_missing_after_reopen")
+    state = (PUBLIC_LISTING_STATE if PUBLIC_LISTING_STATE in card_text
+             else SUSPENDED_LISTING_STATE if SUSPENDED_LISTING_STATE in card_text else "unknown")
+    if state != PUBLIC_LISTING_STATE:
+        raise RuntimeError(f"storefront_reopen_not_public:{state}")
+    return {"service_id": service_id, "reopened": True, "readback_state": state,
+            "observed_at_epoch": int(time.time())}
+
+
+def _reopen_suspended_listings(
+    inventory_services: list[dict], *, default_tab_script: Path, effects_path: Path, pass_id: str,
+) -> int:
+    """Reopen every 受付休止中 listing once per wake, before any proposal/mutation phase.
+
+    Purchases were 0 since 2026-08-05 because every listing sat in this recoverable,
+    buyer-invisible-to-purchase state -- nothing was buyable. Idempotent: a service only
+    appears here while its freshly observed card still reads 受付休止中, so a replay
+    against an all-public catalogue makes 0 browser calls (see test_storefront_direct.py).
+    Each listing gets its own tab, mirroring the retire effect's own-tab pattern: reusing
+    the wake's shared leased socket after a full pass of browsing is what returns HTTP 500.
+    """
+    targets = sorted({
+        str(row.get("service_id")) for row in inventory_services
+        if isinstance(row, dict) and str(row.get("state") or "") == SUSPENDED_LISTING_STATE
+        and str(row.get("service_id") or "").isdigit()
+    })
+    effect_count = 0
+    for service_id in targets:
+        opened = subprocess.run(
+            [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+             "--background", "open", "about:blank"],
+            capture_output=True, text=True, check=False, timeout=30,
+        )
+        tab = None
+        try:
+            tab = json.loads(opened.stdout)
+            if opened.returncode != 0 or tab.get("ok") is not True:
+                raise RuntimeError("storefront_reopen_tab_open_failed")
+            result = asyncio.run(_reopen_one_suspended_service_async(
+                str(tab["ws"]), service_id=service_id))
+        finally:
+            if isinstance(tab, dict) and tab.get("target_id"):
+                subprocess.run(
+                    [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                     "close", str(tab["target_id"])], capture_output=True, text=True,
+                    check=False, timeout=30,
+                )
+        appended = _append_key_once(effects_path, "experiment_key", {
+            "version": 1, "status": "accepted", "effect": 1, "effect_class": "reopen",
+            "service_id": service_id, "changed_field": "listing_state",
+            "experiment_key": f"storefront:v1:{service_id}:listing_state:reopen:{pass_id}",
+            "before_value": SUSPENDED_LISTING_STATE, "after_value": result["readback_state"],
+            "accepted_at_epoch": int(time.time()), "pass_id": pass_id,
+        })
+        if appended:
+            effect_count += 1
+    return effect_count
+
+
 async def _execute_text_effect_async(
     ws_url: str, *, contract: dict, judgement: dict, public_before_path: Path,
     evidence_dir: Path, state_dir: Path,
@@ -6019,6 +6122,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 )
                 row = _persist_receipt(args, output, row)
                 return 0, row
+            if args.effect:
+                blocked = _persist_effect_block(args, output, pass_id, "before_reopen_effect")
+                if blocked is not None:
+                    return 0, blocked
+                _reopen_suspended_listings(
+                    inventory["services"],
+                    default_tab_script=getattr(args, "default_tab_script", DEFAULT_TAB),
+                    effects_path=args.state_dir / "effects.jsonl", pass_id=pass_id,
+                )
             capability_families, capability_templates = _load_capability_families(
                 getattr(args, "listing_contract_families", DEFAULT_LISTING_CONTRACT_FAMILIES),
             )

@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_PRODUCT = HERE.parent / "products" / "monthly-sns-content-ops-v1.json"
+DEFAULT_AVATAR = HERE.parents[2] / "gig-work" / "profile" / "avatar.jpg"
 ORIGIN = "https://www.lancers.jp"
 DEMAND_LABELS = {
     "検索結果の表示人数": "search_impressions",
@@ -380,6 +381,9 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
                     result[key + "_url"] = portfolio["portfolio_url"]
                     if portfolio["portfolio_effect_count"]:
                         result["action"] = "portfolio_created"; break
+                else:
+                    profile = _profile(page, product, DEFAULT_AVATAR, True); result |= profile
+                    if profile["profile_effect_count"]: result["action"] = "profile_updated"
             if result.get("ok") is True and result.get("aligned") is True:
                 result["demand"] = _demand(page, product["listing_external_id"])
                 if apply: _write_receipt(Path(state_path), product, result["demand"])
