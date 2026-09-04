@@ -211,7 +211,7 @@ def _run_default_discovery(tick_value: object, timeout: float, state_path: Path,
             opportunities = last.get("opportunities")
             if isinstance(opportunities, Sequence) and not isinstance(opportunities, (str, bytes, bytearray)):
                 observed_ids.update(str(row.get("external_id")) for row in opportunities if isinstance(row, Mapping) and row.get("external_id"))
-                try: remaining, _ = _filter_claimed_rows(opportunities, state_path)
+                try: remaining, _, _ = _filter_claimed_rows(opportunities, state_path)
                 except Exception: return last
                 remaining_ids = {str(row.get("external_id")) for row in remaining if isinstance(row, Mapping)}
                 decided_ids.update(str(row.get("external_id")) for row in opportunities if isinstance(row, Mapping) and str(row.get("external_id")) not in remaining_ids)
@@ -497,20 +497,23 @@ def _write_skip_cache(state_path: Path, decisions: Mapping[str, Mapping[str, obj
             try: os.unlink(temporary)
             except FileNotFoundError: pass
 
-def _filter_claimed_rows(rows: Sequence[Mapping[str, object]], state_path: Path) -> tuple[list[Mapping[str, object]], Optional[str]]:
-    if any(not _valid_observed_budget(row) for row in rows): raise ValueError
-    ids = [row.get("external_id") if isinstance(row, Mapping) else None for row in rows]
+def _filter_claimed_rows(rows: Sequence[Mapping[str, object]], state_path: Path) -> tuple[list[Mapping[str, object]], Optional[str], list[dict[str, str]]]:
+    # ponytail: a malformed row (bad budget shape) is skipped individually instead of
+    # discarding every other row observed this tick alongside it.
+    good_rows = [row for row in rows if _valid_observed_budget(row)]
+    skipped = [{"project_id": str(row.get("external_id")) if isinstance(row, Mapping) and isinstance(row.get("external_id"), str) else "unknown", "reason": "invalid_observed_budget"} for row in rows if not _valid_observed_budget(row)]
+    ids = [row.get("external_id") if isinstance(row, Mapping) else None for row in good_rows]
     duplicate_ids = {project_id for project_id in ids if isinstance(project_id, str) and ids.count(project_id) > 1}
     skip_cache = _read_skip_cache(state_path)
     remaining, first_claimed = [], None
-    for row, project_id in zip(rows, ids):
+    for row, project_id in zip(good_rows, ids):
         cached = skip_cache.get(project_id) if isinstance(project_id, str) else None
         cache_matches = isinstance(cached, Mapping) and cached.get("content_sha256") == _skip_content_sha256(row)
         if not isinstance(project_id, str) or ID_RE.fullmatch(project_id) is None or project_id in duplicate_ids or (not application_tick.state_has_claim(Path(state_path), project_id) and not cache_matches):
             remaining.append(row)
         elif first_claimed is None:
             first_claimed = project_id
-    return remaining, first_claimed
+    return remaining, first_claimed, skipped
 
 def _cache_no_effect(decisions: Mapping[str, Mapping[str, object]], rows: Mapping[str, Mapping[str, object]], state_path: Path) -> None:
     cached = _read_skip_cache(state_path); expires_at = time.time() + SKIP_CACHE_TTL_SECONDS
@@ -565,14 +568,20 @@ def _rank_eligible_by_buyer_quality(eligible: Sequence[tuple[Mapping[str, object
 
 def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence: Path, planner: Optional[Callable[..., object]], safety_verifier: Optional[Callable[..., object]], submitter: Optional[Callable[..., object]], state_path: Path) -> ApplicationLoopResult:
     observed_count = len(rows)
+    pre_filter_by_id = {str(row["external_id"]): row for row in rows if isinstance(row, Mapping) and isinstance(row.get("external_id"), str)}
     try:
-        rows, claimed_project_id = _filter_claimed_rows(rows, state_path)
+        rows, claimed_project_id, budget_skips = _filter_claimed_rows(rows, state_path)
+        skip_reports = [{
+            "project_id": item["project_id"],
+            "title": str(pre_filter_by_id.get(item["project_id"], {}).get("title") or "")[:200],
+            "business_class": "invalid", "reason_codes": [], "outcome": "failed", "error": item["reason"],
+        } for item in budget_skips]
         if not rows:
-            return _batch_summary(ApplicationLoopResult(True, reason="duplicate_project", project_id=claimed_project_id), observed_count, 0, (), ())
+            return _batch_summary(ApplicationLoopResult(True, reason="duplicate_project", project_id=claimed_project_id, decision_reports=tuple(skip_reports) or None), observed_count, 0, (), ())
         prompt = build_planner_prompt(rows, today)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid"), observed_count, 0, (), ())
     try: planned = (planner or _default_planner)(prompt, evidence)
-    except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_runner_failed", planner_expected_count=len(rows)), observed_count, 0, (), ())
+    except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_runner_failed", planner_expected_count=len(rows), decision_reports=tuple(skip_reports) or None), observed_count, 0, (), ())
     returned = len(planned.get("decisions")) if isinstance(planned, Mapping) and isinstance(planned.get("decisions"), list) else None
     try:
         items = planned.get("decisions") if isinstance(planned, Mapping) and set(planned) == {"decisions"} else None
@@ -588,20 +597,21 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
             try: decisions.update(_validate([rows_by_id[project_id]], {"decisions": [item]}, today))
             except Exception: invalid_ids.append(project_id)
         invalid_ids.extend(project_id for project_id in rows_by_id if project_id not in decisions and project_id not in invalid_ids)
-    except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned), observed_count, 0, (), ())
+    except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid", planner_expected_count=len(rows), planner_returned_count=returned, decision_reports=tuple(skip_reports) or None), observed_count, 0, (), ())
     try: _cache_no_effect(decisions, rows_by_id, state_path)
     except Exception:
         # This cache only avoids re-planning hard-prohibited listings.  Receipt and
         # fingerprint state remain the authority for duplicate external effects, so
         # a cache write failure must not stop fresh positive-EV applications.
         pass
-    reports = [{
+    reports = list(skip_reports)
+    reports.extend({
         "project_id": project_id,
         "title": str(rows_by_id[project_id].get("title") or "")[:200],
         "business_class": str(decision["business_class"]),
         "reason_codes": list(decision.get("reason_codes") or ()),
         "outcome": "skipped" if decision["business_class"] != "submit_required" else "planned",
-    } for project_id, decision in decisions.items()]
+    } for project_id, decision in decisions.items())
     reports.extend({
         "project_id": project_id,
         "title": str(rows_by_id[project_id].get("title") or "")[:200],
