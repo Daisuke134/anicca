@@ -95,24 +95,29 @@ def _private_model_runner(root: Path, command: list[str], label: str) -> list[st
 
 def _run_private_model_serialized(root: Path, command: list[str], label: str, step: str,
                                   *, effect_owner: bool = False) -> str:
-    """Run a private model command; only external-effect owners get a local lease."""
-    if not effect_owner:
-        return _run(_private_model_runner(root, command, label), step)
-    lock_path = root.parent / ".paid-effect-owner.lock"
-    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
-    try:
+    """Admit one paid model run at a time, before its runner timeout starts."""
+    effect_descriptor = None
+    if effect_owner:
+        effect_lock_path = root.parent / ".paid-effect-owner.lock"
+        effect_descriptor = os.open(effect_lock_path, os.O_CREAT | os.O_RDWR, 0o600)
         try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(effect_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError as error:
+            os.close(effect_descriptor)
             if error.errno in (errno.EACCES, errno.EAGAIN):
                 raise Failure("remote_owner_busy") from error
             raise
-        try:
-            return _run(_private_model_runner(root, command, label), step)
-        finally:
-            fcntl.flock(descriptor, fcntl.LOCK_UN)
+    model_lock_path = root.parent / ".paid-model-admission.lock"
+    model_descriptor = os.open(model_lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(model_descriptor, fcntl.LOCK_EX)
+        return _run(_private_model_runner(root, command, label), step)
     finally:
-        os.close(descriptor)
+        fcntl.flock(model_descriptor, fcntl.LOCK_UN)
+        os.close(model_descriptor)
+        if effect_descriptor is not None:
+            fcntl.flock(effect_descriptor, fcntl.LOCK_UN)
+            os.close(effect_descriptor)
 PAID_DECISION_SCHEMA_VERSION = 4
 PAID_DECISION_PROMPT_VERSION = "paid-semantic-decision-v19"
 PAID_DECISION_MODEL = "gpt-5.6-terra"
