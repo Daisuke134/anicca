@@ -1,0 +1,28 @@
+name: Temporary Cloud Multi-Travel Duplicate RED
+
+on:
+  push:
+    branches:
+      - fix/cloud-multi-travel-t5-20260904
+
+permissions:
+  contents: read
+
+jobs:
+  focused-red:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            apps/life-manager/lib
+          sparse-checkout-cone-mode: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: |
+          node --test \
+            apps/life-manager/lib/travel-reminder-multi-due.test.js \
+            apps/life-manager/lib/travel-reminder.test.js
