@@ -18,7 +18,10 @@
           "auth_file": "~/.codex-acct2/auth.json"
         }
       },
-      "account_profile_order": ["acct1", "acct2"],
+      "account_profile_order": [
+        "acct1",
+        "acct2"
+      ],
       "ssl_cert_file": "/etc/ssl/cert.pem",
       "project_doc_max_bytes": 0,
       "disabled_skills": [
@@ -229,7 +232,7 @@
           "profile_alias": "acct2"
         },
         {
-          "provider": "claude",
+          "provider": "claude-direct",
           "model": "claude-sonnet-5"
         }
       ]
@@ -324,7 +327,12 @@
       "token_reservation": 32768,
       "timeout_seconds": 900,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "high", "profile_alias": "acct2"}
+        {
+          "provider": "codex",
+          "model": "gpt-5.6-terra",
+          "effort": "high",
+          "profile_alias": "acct2"
+        }
       ]
     },
     "affiliate-escalation-agent": {
@@ -333,7 +341,12 @@
       "token_reservation": 65536,
       "timeout_seconds": 3600,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-sol", "effort": "high", "profile_alias": "acct2"}
+        {
+          "provider": "codex",
+          "model": "gpt-5.6-sol",
+          "effort": "high",
+          "profile_alias": "acct2"
+        }
       ]
     }
   }

@@ -70,6 +70,7 @@ class ApplicationIntentIsolationTest(unittest.TestCase):
             "candidates": [
                 {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high", "profile_alias": "acct2"},
                 {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium", "profile_alias": "acct2"},
+                {"provider": "claude-direct", "model": "claude-sonnet-5"},
             ],
         })
 
