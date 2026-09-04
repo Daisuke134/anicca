@@ -24,7 +24,9 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 from telegram_outbox import TelegramOutbox, dispatch_one  # noqa: E402
 from owner_notify import send_email_if_configured  # noqa: E402
-from gig_paths import BROWSER_DIR, GIG_DIR, HOST_STATE_DIR, RUNNER_DIR, STATE_DIR  # noqa: E402
+from gig_paths import (  # noqa: E402
+    BROWSER_DIR, GIG_DIR, HOST_STATE_DIR, LISTING_CATALOG, RUNNER_DIR, STATE_DIR,
+)
 from gig_disk_guard import disk_headroom_ok  # noqa: E402
 import evidence_gc  # noqa: E402
 
@@ -1338,6 +1340,32 @@ def _load_capability_families(path: Path) -> tuple[dict[str, str], dict[str, dic
                    for service_id, family in mappings.items())):
         raise RuntimeError("listing_contract_families_invalid")
     return mappings, families
+
+
+def _load_catalog_entries(path: Path = LISTING_CATALOG) -> dict[str, dict]:
+    """Load the owner's platform-agnostic listing catalog, keyed by capability_family.
+
+    The catalog is competitor- and budget-evidenced content the owner curated ahead of time
+    (skills/gig-work/profile/listings/catalog.json). CREATE grounds its generated proposal in
+    the matching entry so buyer-facing copy stays anchored to what the owner actually decided
+    to sell, instead of the model inventing scope, price or deliverables unsupervised.
+    """
+    try:
+        config = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    listings = config.get("listings")
+    if not isinstance(listings, list):
+        return {}
+    catalog: dict[str, dict] = {}
+    for row in listings:
+        if not isinstance(row, dict) or not str(row.get("family") or ""):
+            continue
+        catalog[str(row["family"])] = {
+            key: row.get(key) for key in
+            ("id", "title_ja", "value_prop", "tiers", "deliverables", "required_inputs", "faq")
+        }
+    return catalog
 
 
 def _validate_mutation_contract(contract: dict, capability_families: dict[str, str]) -> None:
@@ -3691,7 +3719,7 @@ def _paid_demand_price_floor(demand: dict) -> int | None:
 
 def _create_proposal_prompt(
     source: dict, family_name: str, family: dict, demand: dict,
-    capability_paths: set[str], catalog_titles: list[str],
+    capability_paths: set[str], catalog_titles: list[str], listing_catalog_entry: dict | None = None,
 ) -> tuple[str, set[str]]:
     offer_ref = f"official:offer-contract:{source['service_id']}:{source['service_version_sha256']}"
     family_ref = f"owned:capability-family:{family_name}"
@@ -3712,8 +3740,16 @@ def _create_proposal_prompt(
         "current_catalog_titles": catalog_titles,
         "allowed_evidence_refs": sorted(allowed_refs),
         "paid_demand_price_floor_jpy": _paid_demand_price_floor(demand),
+        "owner_listing_catalog_entry": listing_catalog_entry,
     }
-    prompt = """Create one distinct Coconala service proposal from CONTEXT_JSON and return only the
+    catalog_instruction = (
+        "owner_listing_catalog_entry is the owner's pre-decided spec for this capability_family "
+        "(scope tiers, prices, deliverables, required_inputs, FAQ). When present, build the proposal "
+        "from it: head/body/inclusions/exclusions/required_inputs must match its deliverables and "
+        "required_inputs, and display_price_jpy/paid_option_price_jpy must land within its tiers' "
+        "price range rather than inventing unrelated scope or price. "
+    ) if listing_catalog_entry else ""
+    prompt = catalog_instruction + """Create one distinct Coconala service proposal from CONTEXT_JSON and return only the
 strict schema object. The source_service_id must equal source_offer.service_id; that existing service
 supplies the seller-form adapter, not proof of the new capability. The new service must sell a bounded
 buyer-visible outcome supported by the owned capability family; it must not
@@ -3784,11 +3820,12 @@ def _create_blueprint_from_cluster(committed: dict, cluster: dict, category_row:
 def _invoke_create_proposal(
     *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path, source: dict,
     family_name: str, family: dict, demand: dict, capability_paths: set[str],
-    catalog_titles: list[str], timeout_seconds: int,
+    catalog_titles: list[str], timeout_seconds: int, listing_catalog_entry: dict | None = None,
 ) -> tuple[dict, dict, set[str]]:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     prompt, allowed_refs = _create_proposal_prompt(
         source, family_name, family, demand, capability_paths, catalog_titles,
+        listing_catalog_entry=listing_catalog_entry,
     )
     started = time.time()
     completed = subprocess.run(
@@ -7034,6 +7071,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         demand=demand, capability_paths=create_capability_paths,
                         catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
                         timeout_seconds=args.timeout_seconds,
+                        listing_catalog_entry=_load_catalog_entries().get(str(create_family)),
                     )
                 proposal_agent = create_route
                 if create_proposal.get("decision") == "create" and args.effect:
