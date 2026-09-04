@@ -49,14 +49,11 @@ class TerraDefaultTest(unittest.TestCase):
                         {"provider": "codex", "model": "gpt-5.6-terra",
                          "effort": "high", "profile_alias": "acct2"},
                     ]
-                if name == "storefront-proposal-agent":
-                    expected.append(
-                        {"provider": "claude-direct", "model": "claude-sonnet-5"}
-                    )
-                if name in {"browser-lane-agent", "escalation-agent"}:
-                    expected.append(
-                        {"provider": "claude", "model": "claude-sonnet-5"}
-                    )
+                # Every executable class now carries a working Claude fallback so a
+                # codex quota outage cannot idle a money lane.
+                fallback = {"provider": "claude-direct", "model": "claude-sonnet-5"}
+                if fallback not in expected:
+                    expected.append(fallback)
                 self.assertEqual(candidates, expected)
 
     def test_a_restricted_candidate_carries_its_escalation_route(self):
