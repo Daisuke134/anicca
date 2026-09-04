@@ -3,6 +3,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -38,9 +39,17 @@ def _atomic_json(path: Path, value: dict) -> None:
 def _publish_public_snapshot() -> bool:
     """Best-effort evidence sync; never authorize a retry of the trading pass."""
     publisher = Path(__file__).resolve().parents[2] / "apps/life-manager/scripts/publish-alpaca-public.js"
+    node = os.environ.get("NODE_BIN") or shutil.which("node")
+    if not node:
+        for candidate in ("/opt/homebrew/bin/node", "/usr/local/bin/node"):
+            if os.access(candidate, os.X_OK):
+                node = candidate
+                break
+    if not node:
+        return False
     try:
         completed = subprocess.run(
-            ["node", str(publisher)],
+            [node, str(publisher)],
             check=False,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

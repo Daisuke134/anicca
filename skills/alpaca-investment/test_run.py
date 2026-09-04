@@ -1,4 +1,5 @@
 import importlib.util
+import shutil
 import subprocess
 import sys
 import unittest
@@ -15,6 +16,19 @@ SPEC.loader.exec_module(MODULE)
 
 
 class PublicSnapshotTest(unittest.TestCase):
+    def test_publication_uses_homebrew_node_when_launchd_path_hides_node(self):
+        with patch.dict(MODULE.os.environ, {"PATH": "/usr/bin"}, clear=True):
+            with patch.object(shutil, "which", return_value=None):
+                with patch.object(
+                    MODULE.os,
+                    "access",
+                    side_effect=lambda path, mode: path == "/opt/homebrew/bin/node",
+                ):
+                    with patch.object(MODULE.subprocess, "run") as run:
+                        run.return_value.returncode = 0
+                        self.assertTrue(MODULE._publish_public_snapshot())
+        self.assertEqual(run.call_args.args[0][0], "/opt/homebrew/bin/node")
+
     @patch.object(MODULE.subprocess, "run")
     def test_publication_is_one_bounded_best_effort_child(self, run):
         run.return_value.returncode = 0
