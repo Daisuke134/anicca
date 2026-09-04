@@ -959,7 +959,7 @@ def test_paid_project_executor_runs_different_owners_in_parallel():
     assert maximum == 2
 
 
-def test_paid_model_runner_delegates_serialization_to_generic_runner(tmp_path, monkeypatch):
+def test_paid_model_runner_waits_before_starting_runner_timeout(tmp_path, monkeypatch):
     paid = load("paid_direct")
     projects = tmp_path / "gig" / "projects"
     roots = [projects / "one", projects / "two"]
@@ -986,7 +986,7 @@ def test_paid_model_runner_delegates_serialization_to_generic_runner(tmp_path, m
                    for root in roots]
         assert [future.result() for future in futures] == ["ok", "ok"]
 
-    assert maximum == 2
+    assert maximum == 1
 
 
 def test_paid_effect_owner_lease_is_held_through_run(tmp_path, monkeypatch):
