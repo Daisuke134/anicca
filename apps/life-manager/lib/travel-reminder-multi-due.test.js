@@ -47,6 +47,7 @@ test("a later-start trip whose departure reminder is due is not blocked by an ea
     telegramToken: "token",
     supaUrl: "https://supa.example",
     supaKey: "service-key",
+    travelLogAssociation: false,
     directionsRoute: async (_origin, destination) => ({
       provider: "transit",
       durationSeconds: destination === "近場" ? 5 * 60 : 40 * 60,
@@ -101,6 +102,7 @@ test("candidate route evaluations start concurrently so one slow route cannot co
     telegramToken: "token",
     supaUrl: "https://supa.example",
     supaKey: "service-key",
+    travelLogAssociation: false,
     directionsRoute: async (_origin, destination) => {
       started += 1;
       await routeBarrier;
