@@ -212,6 +212,11 @@ async function fetchAlpacaPublicProjection(options = {}) {
   return projection;
 }
 
+async function resolveAlpacaPublicProjection(options = {}) {
+  const local = (options.buildLocal || buildAlpacaPublicProjection)();
+  return local.observed_at ? local : fetchAlpacaPublicProjection(options);
+}
+
 function renderAlpacaPublicPage() {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Life Manager Alpaca paper-trading evidence"><title>Life Manager — Alpaca Paper Loop</title><style>
   :root{color-scheme:dark;--bg:#07110f;--panel:#0d1c18;--line:#23453b;--mint:#66f2bd;--text:#edf8f3;--muted:#91aaa0;--red:#ff8c8c}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#12382d 0,transparent 35%),var(--bg);color:var(--text);font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}main{width:min(1120px,calc(100% - 32px));margin:auto;padding:42px 0 64px}header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:24px}h1{font:700 clamp(32px,6vw,64px)/.95 system-ui,sans-serif;letter-spacing:-.06em;margin:8px 0 12px}.eyebrow,.badge{color:var(--mint);text-transform:uppercase;letter-spacing:.14em;font-size:12px}.badge{border:1px solid var(--mint);border-radius:999px;padding:8px 12px;white-space:nowrap}.lede{color:var(--muted);max-width:700px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:linear-gradient(145deg,rgba(17,40,33,.95),rgba(9,24,20,.95));border:1px solid var(--line);border-radius:16px;padding:18px;min-width:0}.metric{grid-column:span 3}.wide{grid-column:span 8}.side{grid-column:span 4}.full{grid-column:1/-1}h2{font:650 17px system-ui,sans-serif;margin:0 0 14px}.label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.value{font:650 26px system-ui,sans-serif;margin-top:6px}.positive{color:var(--mint)}.negative{color:var(--red)}dl{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0}dt{color:var(--muted)}dd{margin:0;overflow-wrap:anywhere}.muted{color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:400}.error{color:var(--red)}footer{color:var(--muted);font-size:11px;margin-top:18px}@media(max-width:800px){header{display:block}.badge{display:inline-block;margin-top:12px}.metric,.wide,.side{grid-column:1/-1}main{padding-top:26px}.card{padding:15px}}
@@ -223,6 +228,7 @@ module.exports = {
   buildAlpacaPublicProjection,
   fetchAlpacaPublicProjection,
   publishAlpacaPublicProjection,
+  resolveAlpacaPublicProjection,
   renderAlpacaPublicPage,
   stateDir,
 };

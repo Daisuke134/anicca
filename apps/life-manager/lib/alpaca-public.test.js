@@ -7,6 +7,7 @@ const {
   buildAlpacaPublicProjection,
   fetchAlpacaPublicProjection,
   publishAlpacaPublicProjection,
+  resolveAlpacaPublicProjection,
 } = require("./alpaca-public.js");
 
 const SUPA = {
@@ -138,4 +139,24 @@ test("reader returns the redacted projection from the single durable row", async
   );
   assert.equal(calls[0].init.headers.apikey, SUPA.supaKey);
   assert.equal(calls[0].init.headers.Authorization, `Bearer ${SUPA.supaKey}`);
+});
+
+test("resolver prefers observed local state and otherwise reads the durable row", async () => {
+  const local = { paper: true, observed_at: UPDATED_AT };
+  let calls = 0;
+  assert.equal(await resolveAlpacaPublicProjection({
+    buildLocal: () => local,
+    ...SUPA,
+    fetchImpl: async () => { calls += 1; return jsonResponse([]); },
+  }), local);
+  assert.equal(calls, 0);
+
+  const remote = buildAlpacaPublicProjection(INPUT);
+  const result = await resolveAlpacaPublicProjection({
+    buildLocal: () => ({ paper: true, observed_at: null }),
+    ...SUPA,
+    fetchImpl: async () => { calls += 1; return jsonResponse([{ projection: remote }]); },
+  });
+  assert.deepEqual(result, remote);
+  assert.equal(calls, 1);
 });
