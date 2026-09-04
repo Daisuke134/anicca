@@ -80,13 +80,11 @@ def render(observation: dict[str, Any], campaign: dict[str, Any],
     )
 
 
-def deliver(state: Path, observation: dict[str, Any], campaign: dict[str, Any],
-            decision: dict[str, Any], effect: str) -> dict[str, Any]:
+def _deliver_message(state: Path, event_key: str, message: str,
+                     observed_at: str) -> dict[str, Any]:
     outbox = _load_outbox()
     database = state / "telegram-outbox.sqlite3"
-    event_key = f"alpaca-wake:{decision['observed_at']}"
-    message = render(observation, campaign, decision, effect)
-    inserted = outbox.enqueue(database, event_key, message, decision["observed_at"])
+    inserted = outbox.enqueue(database, event_key, message, observed_at)
     if not inserted:
         item = next((row for row in outbox.list_items(database)
                      if row.event_key == event_key), None)
@@ -116,3 +114,38 @@ def deliver(state: Path, observation: dict[str, Any], campaign: dict[str, Any],
                     encoding="utf-8")
     path.chmod(0o600)
     return receipt
+
+
+def deliver(state: Path, observation: dict[str, Any], campaign: dict[str, Any],
+            decision: dict[str, Any], effect: str) -> dict[str, Any]:
+    observed_at = decision["observed_at"]
+    return _deliver_message(
+        state,
+        f"alpaca-wake:{observed_at}",
+        render(observation, campaign, decision, effect),
+        observed_at,
+    )
+
+
+def render_failure(*, stage: str, effect_uncertain: bool, wake_id: str) -> str:
+    effect_text = (
+        "paper注文を送信した可能性があるため、自動再試行せず次回wakeでbroker照合します。"
+        if effect_uncertain else
+        "paper注文の送信前に停止したため、注文は実行していません。"
+    )
+    return (
+        "Codex::: Alpaca paper投資loopの1回分です。"
+        f"処理段階 {stage} で安全に完了できなかったため、今回の判断結果を確定できませんでした。"
+        f"{effect_text}原因の詳細は秘密情報を含む可能性があるため送信していません。"
+        f"観測開始時刻 {wake_id}。"
+    )
+
+
+def deliver_failure(state: Path, *, stage: str, effect_uncertain: bool,
+                    wake_id: str) -> dict[str, Any]:
+    return _deliver_message(
+        state,
+        f"alpaca-failure:{wake_id}",
+        render_failure(stage=stage, effect_uncertain=effect_uncertain, wake_id=wake_id),
+        wake_id,
+    )
