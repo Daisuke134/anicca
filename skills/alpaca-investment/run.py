@@ -66,6 +66,8 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         "~/.local/state/life-manager/alpaca-investment",
     )).expanduser()
     effect_attempted = False
+    observation = None
+    campaign = None
     stage = "start"
     try:
         credentials_path = Path(os.environ.get(
@@ -197,6 +199,8 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
                     stage=stage,
                     effect_uncertain=effect_attempted or stage == "reconcile_started",
                     wake_id=wake_id,
+                    observation=observation,
+                    campaign=campaign,
                 )
             except Exception:
                 pass
