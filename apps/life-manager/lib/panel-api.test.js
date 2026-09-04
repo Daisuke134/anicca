@@ -318,6 +318,51 @@ test("Task 7B1 opportunity API creates one tenant-scoped workroom and returns on
   });
 });
 
+test("Task find-work API dispatches a real cloud browser job to Mercor for the current tenant", async () => {
+  const fixture = makeFixture();
+  const commandStore = receiptCommandStore();
+  const calls = [];
+  const enqueueBrowserJobImpl = async (input) => {
+    calls.push(input);
+    return { created: true, job: { id: "job-find-1", status: "queued" } };
+  };
+
+  await withApiServer(fixture, async (base) => {
+    const result = await opportunityRequest(base, "money-printer/find-work", {
+      body: {},
+      headers: { "idempotency-key": "find-work-01" },
+    });
+    assert.equal(result.response.status, 200);
+    assert.deepEqual(result.body, { job_id: "job-find-1", status: "queued" });
+
+    const replay = await opportunityRequest(base, "money-printer/find-work", {
+      body: {},
+      headers: { "idempotency-key": "find-work-01" },
+    });
+    assert.equal(replay.response.status, 200);
+    assert.deepEqual(replay.body, result.body);
+
+    const badBody = await opportunityRequest(base, "money-printer/find-work", {
+      body: { query: "roles" },
+      headers: { "idempotency-key": "find-work-02" },
+    });
+    assert.equal(badBody.response.status, 400);
+    assert.deepEqual(badBody.body, { error: "invalid_find_work" });
+  }, {
+    panelOrigin: "https://panel.example",
+    sessionScopeImpl: async () => ({ uid: "tenant-a", chatId: "101", csrf: "csrf-a" }),
+    commandStore,
+    enqueueBrowserJobImpl,
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].uid, "tenant-a");
+  assert.match(calls[0].classification.goal, /https:\/\/work\.mercor\.com\/explore/);
+  assert.equal(calls[0].classification.actionKind, "explore_listings");
+  assert.equal(calls[0].classification.requiresLogin, false);
+  assert.equal(calls[0].classification.principalKind, "none");
+});
+
 test("Task 7B1 opportunity API rejects invalid write fences and body shape before the store", async () => {
   const fixture = makeFixture();
   let writes = 0;

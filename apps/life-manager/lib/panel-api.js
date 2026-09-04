@@ -16,12 +16,17 @@ const { isHelperBlock } = require("./wake-filter.js");
 const { projectMoneyPrinter } = require("./money-printer-projection.js");
 const { answerHumanTask } = require("./money-printer-human-task.js");
 const { createOpportunity } = require("./money-printer-opportunity.js");
+const { enqueueBrowserJob } = require("./browser-job-store.js");
 
 const ENDPOINTS = new Set(["money-printer", "timeline", "scores", "ledger", "gates", "settings"]);
 const HUMAN_TASK_NEXT_ENDPOINT = "money-printer/human-task/next";
 const HUMAN_TASK_ANSWER_ENDPOINT = "money-printer/human-task/answer";
 const MONEY_PRINTER_OPPORTUNITY_ENDPOINT = "money-printer/opportunity";
 const MONEY_PRINTER_WORKROOM_ENDPOINT = "money-printer/workroom";
+const MONEY_PRINTER_FIND_WORK_ENDPOINT = "money-printer/find-work";
+const MERCOR_FIND_WORK_GOAL = "Open https://work.mercor.com/explore and list the paid roles that are currently open. "
+  + "For each role return its title, its short description, and its pay if shown. Do not log in. "
+  + "Stop at any login, OTP, CAPTCHA, KYC, camera, microphone, or personal-experience question.";
 const ONBOARDING_ACTIONS = new Set(["name.save", "home.save", "notifications.enable", "phone.save", "phone.skip", "call.enable", "call.skip", "payment.skip"]);
 const CALL_MINUTES_BEFORE = Object.freeze([10, 5]);
 const SCORE_ORGANS = Object.freeze(["daily", "physical", "mental", "financial"]);
@@ -359,6 +364,26 @@ async function createMoneyPrinterOpportunity(scope, body, opts) {
     job_ref: runtimeJobRef(scope.uid, created.job_id),
     status: created.status,
   };
+}
+
+async function createMoneyPrinterFindWork(scope, opts) {
+  const enqueue = opts.enqueueBrowserJobImpl || enqueueBrowserJob;
+  const stamp = String(opts.nowMs == null ? Date.now() : opts.nowMs);
+  const { job } = await enqueue({
+    uid: scope.uid,
+    chatId: `money-printer:${scope.uid}`,
+    messageId: `find-work:${stamp}`,
+    updateId: `find-work:${stamp}`,
+    rawPrompt: MERCOR_FIND_WORK_GOAL,
+    classification: {
+      locale: "en",
+      goal: MERCOR_FIND_WORK_GOAL,
+      actionKind: "explore_listings",
+      requiresLogin: false,
+      principalKind: "none",
+    },
+  }, opts);
+  return { job_id: job.id, status: job.status };
 }
 
 async function workroom(scope, opportunityId, opts) {
@@ -799,7 +824,8 @@ async function handlePanelApiRequest(req, res, opts = {}) {
   const humanTaskAnswerEndpoint = endpoint === HUMAN_TASK_ANSWER_ENDPOINT;
   if (!ENDPOINTS.has(endpoint) && endpoint !== "control-center" && endpoint !== "commands"
     && !onboardingEndpoint && !humanTaskNextEndpoint && !humanTaskAnswerEndpoint
-    && endpoint !== MONEY_PRINTER_OPPORTUNITY_ENDPOINT && endpoint !== MONEY_PRINTER_WORKROOM_ENDPOINT) {
+    && endpoint !== MONEY_PRINTER_OPPORTUNITY_ENDPOINT && endpoint !== MONEY_PRINTER_WORKROOM_ENDPOINT
+    && endpoint !== MONEY_PRINTER_FIND_WORK_ENDPOINT) {
     sendJson(res, 404, { error: "not_found" });
     return;
   }
@@ -856,6 +882,38 @@ async function handlePanelApiRequest(req, res, opts = {}) {
       const status = error && error.status || 502;
       const errorCode = ["idempotency_conflict", "idempotency_in_progress", "idempotency_failed"].includes(error && error.message)
         ? error.message : error && ["invalid_json", "body_too_large"].includes(error.message) ? error.message : status === 400 ? "invalid_opportunity" : "opportunity_unavailable";
+      sendJson(res, status, { error: errorCode });
+    }
+    return;
+  }
+  if (endpoint === MONEY_PRINTER_FIND_WORK_ENDPOINT) {
+    if (req.method !== "POST") { sendJson(res, 405, { error: "method_not_allowed" }, { Allow: "POST" }); return; }
+    if (!/^application\/json(?:;|$)/i.test(String(req.headers["content-type"] || ""))) { sendJson(res, 415, { error: "json_required" }); return; }
+    const expectedOrigin = String(opts.panelOrigin || opts.panelBaseUrl || "").replace(/\/$/, "");
+    if (!expectedOrigin || String(req.headers.origin || "") !== expectedOrigin) { sendJson(res, 403, { error: "origin_rejected" }); return; }
+    if (!timingEqual(req.headers["x-lm-csrf"], scope.csrf || csrfToken(session))) { sendJson(res, 403, { error: "csrf_rejected" }); return; }
+    const key = String(req.headers["idempotency-key"] || "");
+    if (!/^[A-Za-z0-9._:-]{8,128}$/.test(key)) { sendJson(res, 400, { error: "idempotency_required" }); return; }
+    let claimedReceipt = null;
+    try {
+      const body = await readJson(req);
+      if (!body || typeof body !== "object" || Array.isArray(body) || Object.keys(body).length !== 0) {
+        throw workroomError("invalid_find_work", 400);
+      }
+      const receipt = await claimMutationReceipt(scope, key, "money-printer.find-work.create", body, commandStore);
+      if (receipt.replay) { sendJson(res, 200, receipt.replay); return; }
+      claimedReceipt = receipt.claimed ? receipt : null;
+      const result = await createMoneyPrinterFindWork(scope, opts);
+      await commandStore.finishReceipt(scope, key, { requestHash: receipt.requestHash, commandType: "money-printer.find-work.create", status: "succeeded", result });
+      claimedReceipt = null;
+      sendJson(res, 200, result);
+    } catch (error) {
+      if (claimedReceipt) {
+        try { await commandStore.finishReceipt(scope, key, { requestHash: claimedReceipt.requestHash, commandType: "money-printer.find-work.create", status: "failed", result: null }); } catch { /* pending keeps retries blocked */ }
+      }
+      const status = error && error.status || 502;
+      const errorCode = ["idempotency_conflict", "idempotency_in_progress", "idempotency_failed"].includes(error && error.message)
+        ? error.message : error && ["invalid_json", "body_too_large"].includes(error.message) ? error.message : status === 400 ? "invalid_find_work" : "find_work_unavailable";
       sendJson(res, status, { error: errorCode });
     }
     return;

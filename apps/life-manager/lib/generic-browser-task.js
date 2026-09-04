@@ -93,6 +93,7 @@ async function runGenericBrowserTask(job, deps) {
     evidence_sha256: null,
     steel_released: false,
     auth_marker_hash: job.auth_marker_hash || null,
+    extracted_roles: null,
   };
   let session = null;
   let evidence = null;
@@ -144,6 +145,7 @@ async function runGenericBrowserTask(job, deps) {
       onActionStarted: recordActionStarted,
     }), actionTimeoutMs, "browser action");
     sideEffectStarted = action && action.sideEffectStarted === true;
+    result.extracted_roles = action && Array.isArray(action.extractedRoles) ? action.extractedRoles : null;
     await recordSelected(action);
     result.action = action && action.action ? String(action.action).slice(0, 500) : null;
     if (sideEffectStarted) await recordActionStarted(action);

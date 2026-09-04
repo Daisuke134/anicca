@@ -65,6 +65,7 @@ test("Money Printer registers inspection and state-dependent human answer tools"
       if (url.endsWith("/money-printer")) return { ok: true, status: 200, json: async () => body };
       if (url.endsWith("/human-task/next")) return { ok: true, status: 200, json: async () => next };
       if (url.endsWith("/money-printer/opportunity")) return { ok: true, status: 200, json: async () => ({ opportunity_id: "c".repeat(64), job_ref: "runtime-job://tenant-a/goal%3Ac", status: "DISCOVERED" }) };
+      if (url.endsWith("/money-printer/find-work")) return { ok: true, status: 200, json: async () => ({ job_id: "job-find-1", status: "queued" }) };
       if (url.includes("/money-printer/workroom?opportunity_id=")) return { ok: true, status: 200, json: async () => ({ opportunity_id: "c".repeat(64), job_ref: "runtime-job://tenant-a/goal%3Ac", status: "DISCOVERED", activity: [] }) };
       return { ok: true, status: 200, json: async () => ({ task_id: task.task_id, resume_ref: "runtime-job://tenant-a/job-1" }) };
     },
@@ -78,15 +79,17 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   });
   await initialized;
 
-  assert.equal(registrations.length, 4);
+  assert.equal(registrations.length, 5);
   const moneyPrinterRegistration = registrations.find(({ tool: candidate }) => candidate.name === "inspect_money_printer");
   const nextTaskRegistration = registrations.find(({ tool: candidate }) => candidate.name === "inspect_next_human_task");
   const addOpportunityRegistration = registrations.find(({ tool: candidate }) => candidate.name === "add_opportunity");
   const inspectWorkroomRegistration = registrations.find(({ tool: candidate }) => candidate.name === "inspect_workroom");
+  const findMercorWorkRegistration = registrations.find(({ tool: candidate }) => candidate.name === "find_mercor_work");
   assert.ok(moneyPrinterRegistration);
   assert.ok(nextTaskRegistration);
   assert.ok(addOpportunityRegistration);
   assert.ok(inspectWorkroomRegistration);
+  assert.ok(findMercorWorkRegistration);
   const { tool } = moneyPrinterRegistration;
   const { tool: inspectNextTask } = nextTaskRegistration;
   assert.equal(tool.name, "inspect_money_printer");
@@ -125,6 +128,14 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   assert.equal(inspectWorkroom.annotations.readOnlyHint, true);
   assert.equal(inspectWorkroom.annotations.untrustedContentHint, true);
 
+  const { tool: findMercorWork } = findMercorWorkRegistration;
+  assert.deepEqual(JSON.parse(JSON.stringify(findMercorWork.inputSchema)), {
+    type: "object",
+    properties: {},
+    additionalProperties: false,
+  });
+  assert.equal(findMercorWork.annotations.readOnlyHint, false);
+
   assert.deepEqual(await tool.execute({}), body);
   assert.deepEqual(requests[0], {
     url: "/api/panel/money-printer",
@@ -142,7 +153,7 @@ test("Money Printer registers inspection and state-dependent human answer tools"
     url: "/api/panel/money-printer/human-task/next",
     init: { method: "GET", credentials: "same-origin", headers: { Accept: "application/json" } },
   });
-  assert.equal(registrations.length, 5);
+  assert.equal(registrations.length, 6);
   const { tool: answerTool, options } = registrations.find(({ tool: candidate }) => candidate.name === "record_human_answer");
   assert.equal(answerTool.name, "record_human_answer");
   assert.match(answerTool.description, /resume|side effect|write/i);
@@ -204,6 +215,14 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   assert.equal(refreshEvents.length, 2);
   assert.deepEqual(refreshEvents.map((event) => event.type), ["money-printer:refresh", "money-printer:refresh"]);
 
+  const findWorkResult = await findMercorWork.execute({});
+  assert.deepEqual(findWorkResult, { job_id: "job-find-1", status: "queued" });
+  const findWorkRequest = requests.find((entry) => entry.url === "/api/panel/money-printer/find-work");
+  assert.ok(findWorkRequest);
+  assert.equal(findWorkRequest.init.method, "POST");
+  assert.equal(findWorkRequest.init.body, "{}");
+  assert.match(findWorkRequest.init.headers["idempotency-key"], /^find-mercor-work-[A-Za-z0-9._:-]{8,128}$/);
+
   let rejectRefresh;
   nextRefresh = new Promise((_resolve, reject) => { rejectRefresh = reject; });
   const failedRefresh = addOpportunity.execute(opportunityInput);
@@ -213,8 +232,8 @@ test("Money Printer registers inspection and state-dependent human answer tools"
   const workroom = { opportunity_id: "c".repeat(64), job_ref: created.job_ref, status: "DISCOVERED", activity: [] };
   const inspectResult = await inspectWorkroom.execute({ opportunity_id: workroom.opportunity_id });
   assert.deepEqual(inspectResult, workroom);
-  assert.equal(requests[6].url, "/api/panel/money-printer/workroom?opportunity_id=" + encodeURIComponent(workroom.opportunity_id));
-  assert.deepEqual(requests[6].init, {
+  assert.equal(requests[7].url, "/api/panel/money-printer/workroom?opportunity_id=" + encodeURIComponent(workroom.opportunity_id));
+  assert.deepEqual(requests[7].init, {
     method: "GET",
     credentials: "same-origin",
     headers: { Accept: "application/json" },
@@ -238,6 +257,8 @@ test("Money Printer registers inspection and state-dependent human answer tools"
     { tool: "inspect_next_human_task", status: "succeeded" },
     { tool: "add_opportunity", status: "running" },
     { tool: "add_opportunity", status: "succeeded" },
+    { tool: "find_mercor_work", status: "running" },
+    { tool: "find_mercor_work", status: "succeeded" },
     { tool: "add_opportunity", status: "running" },
     { tool: "add_opportunity", status: "failed" },
     { tool: "inspect_workroom", status: "running" },

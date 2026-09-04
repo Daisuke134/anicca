@@ -1393,6 +1393,7 @@ if (require.main === module) {
     console.log(`[life-call] ${loops.started ? "loops ON (standalone)" : "VOICE DAEMON (loops OFF)"} — ${loops.reason}`);
     const browserJobs = startBrowserJobLoop({
       enabled: process.env.LM_BROWSER_TASKS_ENABLED === "1",
+      opportunityStore: process.env.LM_BROWSER_TASKS_ENABLED === "1" ? getMoneyPrinterRuntimeStore() : null,
     });
     console.log(`[life-call] browser jobs ${browserJobs.enabled ? "ON (Railway private Steel)" : "OFF"}`);
     // INC-3: register our own webhook from our own env — registration and comparison are one value.
