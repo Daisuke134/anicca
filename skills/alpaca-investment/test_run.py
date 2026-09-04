@@ -55,6 +55,10 @@ class FailureTelegramTest(unittest.TestCase):
         self.assertIn("送信した可能性", message)
         self.assertNotIn("注文は実行していません", message)
 
+    def test_terminal_effect_is_unknown_after_submit(self):
+        self.assertEqual(MODULE._terminal_effect(False), "none")
+        self.assertEqual(MODULE._terminal_effect(True), "unknown")
+
 
 if __name__ == "__main__":
     unittest.main()

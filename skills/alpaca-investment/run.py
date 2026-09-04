@@ -55,6 +55,10 @@ def _retry_allowed(stage: str, effect_attempted: bool, attempt: int) -> bool:
     return stage != "telegram_deliver" and not effect_attempted and attempt < 2
 
 
+def _terminal_effect(effect_attempted: bool) -> str:
+    return "unknown" if effect_attempted else "none"
+
+
 def main(*, attempt: int = 0, wake_id=None) -> int:
     wake_id = wake_id or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     state = Path(os.environ.get(
@@ -198,7 +202,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
                 pass
         print(json.dumps({
             "blocker": "alpaca_pass_failed",
-            "effect": "none",
+            "effect": _terminal_effect(effect_attempted),
             "loop_id": "alpaca-investment",
             "stage": stage,
             "status": "blocked",
