@@ -80,13 +80,11 @@ def render(observation: dict[str, Any], campaign: dict[str, Any],
     )
 
 
-def deliver(state: Path, observation: dict[str, Any], campaign: dict[str, Any],
-            decision: dict[str, Any], effect: str) -> dict[str, Any]:
+def _deliver_message(state: Path, event_key: str, message: str,
+                     observed_at: str) -> dict[str, Any]:
     outbox = _load_outbox()
     database = state / "telegram-outbox.sqlite3"
-    event_key = f"alpaca-wake:{decision['observed_at']}"
-    message = render(observation, campaign, decision, effect)
-    inserted = outbox.enqueue(database, event_key, message, decision["observed_at"])
+    inserted = outbox.enqueue(database, event_key, message, observed_at)
     if not inserted:
         item = next((row for row in outbox.list_items(database)
                      if row.event_key == event_key), None)
@@ -116,3 +114,88 @@ def deliver(state: Path, observation: dict[str, Any], campaign: dict[str, Any],
                     encoding="utf-8")
     path.chmod(0o600)
     return receipt
+
+
+def deliver(state: Path, observation: dict[str, Any], campaign: dict[str, Any],
+            decision: dict[str, Any], effect: str) -> dict[str, Any]:
+    observed_at = decision["observed_at"]
+    return _deliver_message(
+        state,
+        f"alpaca-wake:{observed_at}",
+        render(observation, campaign, decision, effect),
+        observed_at,
+    )
+
+
+def render_failure(*, stage: str, effect_uncertain: bool, wake_id: str,
+                   financial_text: str = "") -> str:
+    effect_text = (
+        "paper注文を送信した可能性があるため、自動再試行せず次回wakeでbroker照合します。"
+        if effect_uncertain else
+        "paper注文の送信前に停止したため、注文は実行していません。"
+    )
+    return (
+        "Codex::: Alpaca paper投資loopの1回分です。"
+        f"処理段階 {stage} で安全に完了できなかったため、今回の判断結果を確定できませんでした。"
+        f"{effect_text}{financial_text}原因の詳細は秘密情報を含む可能性があるため送信していません。"
+        f"観測開始時刻 {wake_id}。"
+    )
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _latest_financial_text(state: Path, observation=None, campaign=None) -> str:
+    observation = observation or _read_json(state / "observation-latest.json")
+    campaign = campaign or _read_json(state / "campaign.json")
+    account = observation.get("account") if isinstance(observation.get("account"), dict) else {}
+    campaign = campaign if isinstance(campaign, dict) else {}
+
+    def decimal(value: Any):
+        try:
+            amount = Decimal(str(value))
+            return amount if amount.is_finite() else None
+        except (ValueError, TypeError, ArithmeticError):
+            return None
+
+    def money(amount) -> str:
+        if amount is None:
+            return "不明"
+        return f"-${abs(amount):,.2f}" if amount < 0 else f"${amount:,.2f}"
+
+    equity = decimal(account.get("equity"))
+    cash = decimal(account.get("cash"))
+    realized = decimal(campaign.get("realized_pnl_usd"))
+    unrealized = decimal(campaign.get("unrealized_pnl_usd"))
+    positions = observation.get("positions")
+    position_count = f"{len(positions)}件" if isinstance(positions, list) else "不明"
+    clock = observation.get("clock")
+    observed_at = clock.get("observed_at", "不明") if isinstance(clock, dict) else "不明"
+    delta = equity - Decimal("100000") if equity is not None else None
+    return (
+        f"利用可能な最新値（観測時刻 {observed_at}）：資産は {money(equity)}、"
+        f"現金は {money(cash)}、開始時$100,000から {money(delta)}。"
+        f"確定損益 {money(realized)}、含み損益 {money(unrealized)}、"
+        f"保有ポジション {position_count}。"
+    )
+
+
+def deliver_failure(state: Path, *, stage: str, effect_uncertain: bool,
+                    wake_id: str, observation=None,
+                    campaign=None) -> dict[str, Any]:
+    return _deliver_message(
+        state,
+        f"alpaca-failure:{wake_id}",
+        render_failure(
+            stage=stage,
+            effect_uncertain=effect_uncertain,
+            wake_id=wake_id,
+            financial_text=_latest_financial_text(state, observation, campaign),
+        ),
+        wake_id,
+    )
