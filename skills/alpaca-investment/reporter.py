@@ -127,7 +127,8 @@ def deliver(state: Path, observation: dict[str, Any], campaign: dict[str, Any],
     )
 
 
-def render_failure(*, stage: str, effect_uncertain: bool, wake_id: str) -> str:
+def render_failure(*, stage: str, effect_uncertain: bool, wake_id: str,
+                   financial_text: str = "") -> str:
     effect_text = (
         "paper注文を送信した可能性があるため、自動再試行せず次回wakeでbroker照合します。"
         if effect_uncertain else
@@ -136,16 +137,59 @@ def render_failure(*, stage: str, effect_uncertain: bool, wake_id: str) -> str:
     return (
         "Codex::: Alpaca paper投資loopの1回分です。"
         f"処理段階 {stage} で安全に完了できなかったため、今回の判断結果を確定できませんでした。"
-        f"{effect_text}原因の詳細は秘密情報を含む可能性があるため送信していません。"
+        f"{effect_text}{financial_text}原因の詳細は秘密情報を含む可能性があるため送信していません。"
         f"観測開始時刻 {wake_id}。"
     )
 
 
+def _read_json(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _latest_financial_text(state: Path, observation=None, campaign=None) -> str:
+    observation = observation or _read_json(state / "observation-latest.json")
+    campaign = campaign or _read_json(state / "campaign.json")
+    account = observation.get("account") if isinstance(observation.get("account"), dict) else {}
+    try:
+        equity = Decimal(str(account["equity"]))
+        cash = Decimal(str(account["cash"]))
+    except (KeyError, ValueError, ArithmeticError):
+        return "利用可能な最新残高・損益はありません。"
+
+    def money(value: Any) -> str:
+        try:
+            amount = Decimal(str(value))
+        except (ValueError, ArithmeticError):
+            return "不明"
+        return f"-${abs(amount):,.2f}" if amount < 0 else f"${amount:,.2f}"
+
+    positions = observation.get("positions")
+    position_count = len(positions) if isinstance(positions, list) else 0
+    observed_at = observation.get("clock", {}).get("observed_at", "不明")
+    return (
+        f"利用可能な最新値（観測時刻 {observed_at}）：資産は {money(equity)}、"
+        f"現金は {money(cash)}、開始時$100,000から {money(equity - Decimal('100000'))}。"
+        f"確定損益 {money(campaign.get('realized_pnl_usd'))}、"
+        f"含み損益 {money(campaign.get('unrealized_pnl_usd'))}、"
+        f"保有ポジション {position_count}件。"
+    )
+
+
 def deliver_failure(state: Path, *, stage: str, effect_uncertain: bool,
-                    wake_id: str) -> dict[str, Any]:
+                    wake_id: str, observation=None,
+                    campaign=None) -> dict[str, Any]:
     return _deliver_message(
         state,
         f"alpaca-failure:{wake_id}",
-        render_failure(stage=stage, effect_uncertain=effect_uncertain, wake_id=wake_id),
+        render_failure(
+            stage=stage,
+            effect_uncertain=effect_uncertain,
+            wake_id=wake_id,
+            financial_text=_latest_financial_text(state, observation, campaign),
+        ),
         wake_id,
     )
