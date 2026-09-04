@@ -27,5 +27,21 @@ class PublicSnapshotTest(unittest.TestCase):
         self.assertFalse(MODULE._publish_public_snapshot())
 
 
+class FailureTelegramTest(unittest.TestCase):
+    @patch.object(MODULE, "deliver_failure", create=True)
+    @patch.object(MODULE, "observe", side_effect=OSError("provider payload must stay private"))
+    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
+    def test_terminal_failure_reports_once_after_internal_retries(
+        self, _reconcile, observe, deliver_failure
+    ):
+        deliver_failure.return_value = {"message_id": "123", "status": "delivered"}
+        self.assertEqual(MODULE.main(), 78)
+        self.assertEqual(observe.call_count, 3)
+        deliver_failure.assert_called_once()
+        self.assertEqual(deliver_failure.call_args.kwargs["stage"], "observe")
+        self.assertFalse(deliver_failure.call_args.kwargs["effect_attempted"])
+        self.assertNotIn("provider payload", str(deliver_failure.call_args))
+
+
 if __name__ == "__main__":
     unittest.main()

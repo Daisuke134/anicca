@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 from allocator import build_candidates, choose, order_for
@@ -13,7 +14,7 @@ from alpaca_cli import (find_order_by_client_id, observe, read_allocator_snapsho
                         read_campaign_snapshot, submit_order)
 from campaign import CANDIDATE_REF, SYMBOLS, exit_order, reconcile
 from effect_store import mark_started, reconcile_started, record_no_trade, seal
-from reporter import deliver
+from reporter import deliver, deliver_failure
 
 
 def _atomic_json(path: Path, value: dict) -> None:
@@ -50,7 +51,8 @@ def _publish_public_snapshot() -> bool:
         return False
 
 
-def main(*, attempt: int = 0) -> int:
+def main(*, attempt: int = 0, wake_id: str | None = None) -> int:
+    wake_id = wake_id or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     state = Path(os.environ.get(
         "ALPACA_INVESTMENT_STATE_DIR",
         "~/.local/state/life-manager/alpaca-investment",
@@ -178,13 +180,21 @@ def main(*, attempt: int = 0) -> int:
         # Read/agent/report failures before an effect are transient-safe to retry. Once submit_order
         # was called, never retry: an unknown broker acknowledgement must reconcile on the next wake.
         if not effect_attempted and attempt < 2:
-            return main(attempt=attempt + 1)
+            return main(attempt=attempt + 1, wake_id=wake_id)
+        telegram = {"status": "delivery_uncertain"}
+        if stage != "telegram_deliver":
+            try:
+                telegram = deliver_failure(
+                    state, stage=stage, effect_attempted=effect_attempted, wake_id=wake_id)
+            except ValueError:
+                pass
         print(json.dumps({
             "blocker": "alpaca_pass_failed",
             "effect": "none",
             "loop_id": "alpaca-investment",
             "stage": stage,
             "status": "blocked",
+            "telegram_status": telegram["status"],
         }, separators=(",", ":")))
         return 78
 
