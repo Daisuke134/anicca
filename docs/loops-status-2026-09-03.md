@@ -80,12 +80,21 @@ storefront / paid / Lancers 応募の 3 lane がこの 1 点で止まってい�
 
 ### 🔄 進行中
 
+0. **★律速★ ルーターが Claude 候補へ到達しない** — 14 task class に fallback を入れて出荷済（PR #4090）だが、本番の試行記録は毎回 codex 1 行で終わり Claude の行が書かれない。`agent_runner.py` の候補ループ（1826-1935）と `codex_failover_action`（1449）で、codex 枠切れ後にチェーンが打ち切られている。
+   DONE: `reply-semantic-agent` と `application-intent-planner` の attempts に claude の 2 行目が rc=0 で出る。
+   **これが開くまで返信・応募・出品はいずれも動かない。他項目を先に開けない。**
+
+
 1. **Coconala 出品をソフトウェア構築へ入れ替え** — Dais 方針: 今の 14 件は翻訳・小作業で、稼いでいる出品者が誰もやっていない領域。売るのは Web/業務システム構築、モバイルアプリ、自動化、既存システム修正。単価 5〜30万円、月額の継続オプション付き。文面・価格・オプション・画像は上位出品者の実物を写す。
    DONE 条件: システム/アプリ開発の出品 ≥2 本が公開 URL で受注可能、弱い出品は demand データ（views/favorites/purchases）を根拠に退出、次 wake で重複 0。
 2. **Lancers を現行 release へ出荷** — PR #4088 は main 済み。release ビルドのロック待ち。
    DONE 条件: lane が exit 0、`planner_runner_failed` 消滅、判断数 > 0。
 
 ### ⬜ 未着手（この順）
+
+0'. **label ドリフト解消と release 回収** — 12 label が別々の古い release を固定しており、release を切っても指し直さないと変更が死ぬ。副作用でディスクを圧迫（release だけで 16GB、空き 5.1GB）。
+   DONE: 全 label が現行 release を指し、未参照 release を回収して空き 15GB 以上。
+
 
 3. **Coconala paid の取りこぼし解消** — 未返信 97 thread（飢餓修正は本番済、消化はこれから）。停滞 3 件のうち 1 件は納品物済みで未送信、1 件は客がキャンセル済み、1 件は成果物なし。
    DONE: wake summary の未返信 0・未提出 0、返信 receipt ≥1。
