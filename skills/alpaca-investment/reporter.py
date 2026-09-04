@@ -154,28 +154,34 @@ def _latest_financial_text(state: Path, observation=None, campaign=None) -> str:
     observation = observation or _read_json(state / "observation-latest.json")
     campaign = campaign or _read_json(state / "campaign.json")
     account = observation.get("account") if isinstance(observation.get("account"), dict) else {}
-    try:
-        equity = Decimal(str(account["equity"]))
-        cash = Decimal(str(account["cash"]))
-    except (KeyError, ValueError, ArithmeticError):
-        return "利用可能な最新残高・損益はありません。"
+    campaign = campaign if isinstance(campaign, dict) else {}
 
-    def money(value: Any) -> str:
+    def decimal(value: Any):
         try:
             amount = Decimal(str(value))
-        except (ValueError, ArithmeticError):
+            return amount if amount.is_finite() else None
+        except (ValueError, TypeError, ArithmeticError):
+            return None
+
+    def money(amount) -> str:
+        if amount is None:
             return "不明"
         return f"-${abs(amount):,.2f}" if amount < 0 else f"${amount:,.2f}"
 
+    equity = decimal(account.get("equity"))
+    cash = decimal(account.get("cash"))
+    realized = decimal(campaign.get("realized_pnl_usd"))
+    unrealized = decimal(campaign.get("unrealized_pnl_usd"))
     positions = observation.get("positions")
-    position_count = len(positions) if isinstance(positions, list) else 0
-    observed_at = observation.get("clock", {}).get("observed_at", "不明")
+    position_count = f"{len(positions)}件" if isinstance(positions, list) else "不明"
+    clock = observation.get("clock")
+    observed_at = clock.get("observed_at", "不明") if isinstance(clock, dict) else "不明"
+    delta = equity - Decimal("100000") if equity is not None else None
     return (
         f"利用可能な最新値（観測時刻 {observed_at}）：資産は {money(equity)}、"
-        f"現金は {money(cash)}、開始時$100,000から {money(equity - Decimal('100000'))}。"
-        f"確定損益 {money(campaign.get('realized_pnl_usd'))}、"
-        f"含み損益 {money(campaign.get('unrealized_pnl_usd'))}、"
-        f"保有ポジション {position_count}件。"
+        f"現金は {money(cash)}、開始時$100,000から {money(delta)}。"
+        f"確定損益 {money(realized)}、含み損益 {money(unrealized)}、"
+        f"保有ポジション {position_count}。"
     )
 
 
