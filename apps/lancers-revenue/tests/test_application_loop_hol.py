@@ -839,6 +839,57 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(submitter_project_ids, ["6000001"])
         self.assertEqual(result["verified_project_ids"], ["6000001"])
 
+    def test_discovery_batch_over_max_opportunities_is_sliced_not_rejected(self):
+        """A wake that observes more than MAX_OPPORTUNITIES rows (exhaustive discovery unions
+        every query with no cap) must still get a judged batch instead of failing the whole
+        turn as planner_contract_invalid before the planner is ever called."""
+        application_loop = _load_deployed_loop()
+        planner_snapshots = []
+        opportunities = [
+            _opportunity(str(8000000 + index))
+            for index in range(application_loop.MAX_OPPORTUNITIES + 5)
+        ]
+
+        def discoverer(**kwargs):
+            return {"ok": True, "error": None, "opportunities": opportunities}
+
+        def planner(prompt, evidence):
+            snapshot = json.loads(prompt.split("SNAPSHOT:\n", 1)[1])
+            planner_snapshots.append(snapshot)
+            return {
+                "decisions": [
+                    _ineligible_decision(row["external_id"])
+                    for row in snapshot["opportunities"]
+                ]
+            }
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(
+                application_loop.application_tick,
+                "read_pending_descriptor",
+                return_value=None,
+            ), patch.object(
+                application_loop.application_tick,
+                "state_has_claim",
+                return_value=False,
+            ):
+                result = application_loop.run_loop(
+                    state_path=root / "application.json",
+                    evidence_root=root / "evidence",
+                    discoverer=discoverer,
+                    planner=planner,
+                    submitter=lambda *_args, **_kwargs: self.fail("submitter_called"),
+                    clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
+                )
+
+        self.assertNotIn("error", result)
+        self.assertEqual(len(planner_snapshots), 1)
+        self.assertEqual(
+            len(planner_snapshots[0]["opportunities"]),
+            application_loop.MAX_OPPORTUNITIES,
+        )
+
     def test_schema_and_runtime_share_coconala_business_contract(self):
         application_loop = _load_deployed_loop()
         schema = json.loads(
