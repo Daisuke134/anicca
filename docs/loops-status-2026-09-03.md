@@ -74,7 +74,20 @@ storefront / paid / Lancers 応募の 3 lane がこの 1 点で止まってい�
 | D9 | 出品カタログ 20 本（システム/アプリ開発特化、¥5,000〜¥350,000、月額保守含む） | `skills/gig-work/profile/listings/catalog.json` |
 | D10 | Coconala の capability family 欠落を復元 | `listing_contract_family_missing` 消滅 |
 
-**運用上の必須知識（忘れると再発する）:** release を切っても launchd label は自動で更新されない。
+**運用上の必須知識（忘れると再発する）:**
+
+`bin/cut-loop-release.sh` は `~/loops/current` の symlink を張り替えるだけで、label は指し直さない。
+自動追随するのは `ai.anicca.life-manager-release-reconciler` だけで、対象は **5 label にハードコード**（gig 4 lane + disk-cleanup）。
+残り 170 label は `LIFE_MANAGER_APPLY_TARGET=<loop-id> <release>/bin/lm-loop apply` を打つまで古い release で動き続ける。
+
+その結果として 2026-09-04 に起きたこと:
+- 出荷した修正が本番に載っていないのに「出荷済み」に見えた（`browser-lane-agent` が死んだ proxy を呼び続けた）
+- ほぼ全 release が「使用中」と判定され回収できず、空き容量が 716MB まで低下
+- `agent-economy-loop` は **削除済み release を指したまま** 8/28 から停止していた（本当の原因。git 衝突説は誤り）
+
+回収手順: 全 label を現行 release へ指し直す → `python3 runtime/loop/central_cleanup.py --release-gc-only`（冪等、繰り返し実行可）。
+恒久対策: reconciler の idle-safe な指し直しを 5 label 固定から registry 全体へ広げる。稼働中 loop を無条件に再起動しない設計が前提。
+ release を切っても launchd label は自動で更新されない。
 `LIFE_MANAGER_APPLY_TARGET=<label> <release>/bin/lm-loop apply` で指し直さないと変更は死んだまま。
 2026-09-04 に 12 label が全部バラバラの古い release に固定されていた。
 
