@@ -1,4 +1,4 @@
-name: Temporary Cloud Multi-Travel Duplicate RED
+name: Temporary Cloud Multi-Travel Duplicate GREEN
 
 on:
   push:
@@ -6,10 +6,10 @@ on:
       - fix/cloud-multi-travel-t5-20260904
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  focused-red:
+  focused-green:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -18,11 +18,28 @@ jobs:
           fetch-depth: 1
           sparse-checkout: |
             apps/life-manager/lib
+            .github/scripts
+            .github/workflows
           sparse-checkout-cone-mode: true
+          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: |
+      - name: Apply production fix
+        run: python3 .github/scripts/apply-cloud-multi-travel-duplicate-due.py
+      - name: Run focused Cloud reminder suite
+        run: |
           node --test \
             apps/life-manager/lib/travel-reminder-multi-due.test.js \
             apps/life-manager/lib/travel-reminder.test.js
+      - name: Commit fix and remove temporary TDD machinery
+        shell: bash
+        run: |
+          rm -f .github/scripts/apply-cloud-multi-travel-duplicate-due.py
+          rm -f .github/workflows/temp-cloud-multi-travel-t5-duplicate-red.yml
+          git config user.name "Life Manager TDD"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "fix(life-manager): skip already-sent due reminders"
+          git push origin HEAD:${GITHUB_REF_NAME}
