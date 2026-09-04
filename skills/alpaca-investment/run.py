@@ -192,6 +192,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         if _retry_allowed(stage, effect_attempted, attempt):
             return main(attempt=attempt + 1, wake_id=wake_id)
         telegram = {"status": "delivery_uncertain"}
+        failure_delivery_succeeded = False
         if stage != "telegram_deliver":
             try:
                 telegram = deliver_failure(
@@ -202,6 +203,12 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
                     observation=observation,
                     campaign=campaign,
                 )
+                failure_delivery_succeeded = True
+            except Exception:
+                pass
+        if failure_delivery_succeeded:
+            try:
+                _publish_public_snapshot()
             except Exception:
                 pass
         print(json.dumps({
