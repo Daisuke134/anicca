@@ -433,6 +433,14 @@ def extract_claude_payload(stdout_path: Path, result_path: Path) -> str:
         return ""
     if isinstance(wrapper, dict) and wrapper.get("type") == "result" and "result" in wrapper:
         payload = wrapper["result"]
+        if isinstance(payload, str):
+            # Claude answers a schema-constrained task with the object inside a ```json fence.
+            # Callers json.loads() this file, so an un-stripped fence reads as a runner failure
+            # even though the model answered correctly. Unwrap only a whole-string fence, and
+            # only when nothing else is fenced, so partial or multi-block output stays verbatim.
+            fenced = OPENCLAW_JSON_FENCE.fullmatch(payload.strip())
+            if fenced and "```" not in fenced.group("body"):
+                payload = fenced.group("body")
         result_path.write_text(
             payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False),
             encoding="utf-8",
