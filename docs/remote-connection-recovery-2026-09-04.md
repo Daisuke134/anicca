@@ -15,7 +15,7 @@ Mac mini (`AniccanoMac-mini.local`) とスマホの接続が3系統とも壊れ�
 |---|---|---|
 | Codex acct2 | daisukenarita53 (`9aac4cc6…`) | ✅ 接続済み・自己修復あり |
 | Codex acct1 | keiodaisuke (`59f9ff19…`) | ✅ 接続済み・自己修復あり |
-| Claude RC | keiodaisuke | ⚠️ daemon は生存、既存 session は全滅 |
+| Claude RC | keiodaisuke | ✅ 接続・trust flag 自動修復・err ログ復旧 |
 | **Mac 本体** | — | ❌ **1〜2日おきに kernel panic** |
 
 両 Codex は別 environment で**同時接続**を実測（`…8ff8c53e` / `…9bced6d2`）。
@@ -23,6 +23,14 @@ Mac mini (`AniccanoMac-mini.local`) とスマホの接続が3系統とも壊れ�
 ---
 
 ## 判明した原因
+
+### 原因A2 — plist のキー名が誤っていて、エラーが5年分どこにも残っていなかった
+
+`com.anicca.claude-remote-control.plist` に `StandardErrPath` と書かれていた。
+launchd の正しいキーは **`StandardErrorPath`**。launchd は未知のキーを黙って無視するため、
+**stderr がどこにも記録されていなかった**。今夜、原因特定が遅れた直接の理由。
+
+**対処済み**: キー名を修正。修正後に初めて err ログファイルが生成された。
 
 ### 原因A — Claude の trust flag が false に戻っていた
 
@@ -37,7 +45,16 @@ Error: Workspace not trusted.
 
 で exit 1。`KeepAlive=true` なので15秒ごとに同じ失敗を無限リトライ。stderr ログファイルすら作られず、外からは無音死に見えた。
 
-**対処済み**: flag を `true` に戻して kickstart。PID 26064 で `Connected`。
+**対処済み**: flag を `true` に戻して kickstart。さらに恒久対策として
+`~/.local/bin/claude-remote-control-preflight.sh` を launchd の起動ラッパーにし、
+起動のたびに flag を検査・修復するようにした（plist の ProgramArguments を差し替え）。
+
+**実証**: launchd 環境で flag を `false` にして再起動 → err ログに
+`preflight: restored hasTrustDialogAccepted for /Users/anicca/Projects/life-manager-main`
+が記録され、flag は `True` に復帰、`exit 0`。障害を再現した上で自動修復を確認した。
+
+同ラッパーで `out.log` のローテーションも行う（10MB 超で `.1` へ退避。56MB まで
+無制限に育っていた）。
 
 ### 原因B — `codex login --device-auth` は起動時点で auth.json を消す
 
@@ -197,8 +214,8 @@ ChatGPT デスクトップアプリは起動しておらず無関係。
 
 ### 優先2 — Claude セッション
 
-- [ ] **2-a** 既存 session は復活不可。新規で開き直す（要ユーザー操作）
-- [ ] **2-b** 既存 session は **約4時間以内なら復帰可能**（公式 docs）。
+- [x] **2-a** 既存 session は復活不可。新規で開き直す（要ユーザー操作）
+- [x] **2-b** 既存 session は **約4時間以内なら復帰可能**（公式 docs）。
       `claude remote-control`（全 session 復帰）/ `--continue`（起動時 session のみ）/
       `--session-id <id>`。
       > "These commands work for about four hours after the server stopped.
@@ -208,9 +225,9 @@ ChatGPT デスクトップアプリは起動しておらず無関係。
       ただし復帰の結果は3分岐で、旧メッセージが引き継がれない場合がある:
       「Claude Code starts a replacement session with an auto-generated name and
       leaves the conversation's earlier messages out of it.」
-- [~] **2-c** trust flag の自動修復 preflight を RC の plist に追加
+- [x] **2-c** trust flag の自動修復 preflight を RC の plist に追加
       （`hasTrustDialogAccepted` が false なら true に戻してから起動）
-- [ ] **2-d** stderr ログが作られていない件の調査。今回これが発見を遅らせた
+- [x] **2-d** stderr ログが作られていない件の調査。今回これが発見を遅らせた
 - [ ] **2-e** 既知バグの確認: anthropics/claude-code#34255
       「Remote Control silently drops the connection... the built-in reconnection
       doesn't work... Connection typically drops after 15-60 minutes of use.」

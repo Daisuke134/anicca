@@ -40,11 +40,13 @@
 順序改定 2026-09-04: Dais 明示指示「まず Coconala 出品(storefront)を直す → Lancers 完全プロフィールで応募 → CrowdWorks」。#1〜#3 を gig 3 platform で固定、以降は 9/3 順を維持。
 各項目の DONE 条件は「コードが直った」ではなく「**外形的な実測 evidence が出た**」。evidence 無しで次へ進まない。
 
-1. **Coconala storefront 復活（受付再開 + 高単価システム開発出品）** — 実測: 14 service 全部 `受付休止中`（8/25〜8/27 19:50 の間に同時発生、実行者不明。loop に休止/再開コードなし。`storefront_direct.py:198` は state を `公開中/非公開/下書き` しか知らず、`受付休止中` は未知状態。8/5〜9/3 purchases 0、公開 mutation 0 件）。
-   a. seller 単位の受付休止設定 / 各 service の「受付を再開」を storefront lane の effect として追加し、14 件を再開。`受付休止中` を既知 state に入れる。
-   b. `~/gig/applied.jsonl` の高単価 観測案件（¥300,000 / ¥250,000 / ¥180,000、システム開発・制作 category）を元に **システム/アプリ開発** 出品を新規作成（`publication_guard=already_public` は capability 重複だけ弾き、新 capability は通す）。
-   c. 同じ出品 asset（title/body/価格/画像）を Lancers package・CrowdWorks へも流せる形で `skills/gig-work/profile/` 配下に置く（共有 component）。
-   DONE: `current.json` の 14 service が `公開中`、新規システム開発出品 ≥1 件が公開 URL で readback、次 wake で replay effect 0。
+1. **Coconala storefront 復活（受付再開 + 高単価システム開発出品）**
+   進捗 2026-09-04:
+   - a. **DONE** — 14 件 `受付休止中` → `公開中`（commit `665bd1acd`、effects.jsonl reopen 14 行、readback 受付休止 0）。根本原因: 一覧 scraper が `受付休止中` を読めず `state:None`、contract 検証が 14 件を毎 wake 捨てていた。休止の実行者は不明（loop に休止コード無し、8/25〜8/27 に同時発生）。
+   - a'. **DONE** — 再開後に `listing_contract_family_missing:4371816`。原因は repo 外 state `~/gig/private/storefront-bundle/families.json` から `ai-automation-builder` family が欠落。手で復元（backup `/tmp/families.json.bak`）。commit 無し（state file）。
+   - b. **進行中** — 新規出品は lane 自身の create path が毎 wake `storefront_create_proposal_failed`。原因: codex acct2 が **usage limit（9/7 11:26 まで）**、claude fallback が 160s timeout・stdout 0（`ANTHROPIC_API_KEY` 優先で connector 無効警告）。claude 経路を直して lane が自分で出品する状態に戻す。高単価の雛形は `~/gig/applied.jsonl`（¥300,000 / ¥250,000 / ¥180,000、システム開発・制作）。
+   - c. 未着手 — 出品 asset を `skills/gig-work/profile/` 配下に共有化。
+   DONE: 新規システム開発出品 ≥1 件が公開 URL で readback、wake が exit 0、次 wake で replay effect 0。
 2. **Lancers 応募復旧 + 完全プロフィール応募** — `application_loop.py:320-350` `_validate()` が 1 行不正で batch 全滅（`planner_contract_invalid`、9/4 も継続、今日 fresh 判断 0）。不正 row は skip、健全 row だけで判断へ。profile は 9/4 に avatar 登録で 90%（残り電話認証のみ、blocker にしない）。
    DONE: 次 wake で `error` 消滅・`eligible_count > 0`、`application_verified` 60 → 61 以上。
 3. **CrowdWorks 復旧** — 実測: `account.json` が 8/11 から `status: input_required`（credential 待ち）で application lane exit 1。9/3 に書いた `hours_limit` 文字列説は repo/state に該当ファイル無し（**誤りとして取り消し**）。credentials.json SSOT から再ログイン → 4 lane を launchd に bootstrap。
