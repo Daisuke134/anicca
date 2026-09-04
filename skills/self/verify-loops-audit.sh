@@ -8,6 +8,17 @@ export LIFE_MANAGER_REPO
 # output artifact is stale to an autonomous self-fix — grounded in the artifact, never a self-graded marker.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 set -uo pipefail
+# launchd deliberately starts with a minimal environment.  The Capafy inventory
+# gate authenticates from CAPAFY_ACCESS_TOKEN, which is held only in the private
+# state env file (never in a release).  Without loading it this audit mistakes
+# its own unauthenticated read for SERVER_UNREADABLE and needlessly spawns a
+# publisher self-fix while the real hourly owner is healthy/CAP_FULL.
+LIFE_MANAGER_ENV_FILE="$HOME/.local/state/life-manager/.env"
+if [ -f "$LIFE_MANAGER_ENV_FILE" ]; then
+  set -a
+  . "$LIFE_MANAGER_ENV_FILE" >/dev/null 2>&1 || true
+  set +a
+fi
 SELF="${VERIFY_LOOPS_SELF_DIR:-$LIFE_MANAGER_REPO/skills/self}"; now=$(date +%s)
 OUT="$(bash "$SELF/verify-loops.sh" 2>&1)"
 LOG="$HOME/.local/state/life-manager/logs/verify-loops-audit.log"; mkdir -p "$(dirname "$LOG")"
