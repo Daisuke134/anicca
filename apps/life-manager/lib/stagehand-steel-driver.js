@@ -37,6 +37,14 @@ const receiptSchema = z.object({
   activeAuthenticationForm: z.boolean().optional(),
 });
 
+const listingSchema = z.object({
+  roles: z.array(z.object({
+    title: z.string(),
+    description: z.string(),
+    pay: z.string(),
+  })),
+});
+
 function pageUrl(page) {
   if (!page) return "";
   if (typeof page.url === "function") return String(page.url());
@@ -387,6 +395,7 @@ function makeStagehandSteelDriver(options = {}) {
       const readOnlyAuth = Boolean(
         explicitUrl && context.actionKind === "browser_auth_continuity_readback",
       );
+      const listRoles = Boolean(explicitUrl && context.actionKind === "explore_listings");
 
       const discoveryTask = [
         "Search the live web for websites that can satisfy this delegated goal:",
@@ -401,13 +410,38 @@ function makeStagehandSteelDriver(options = {}) {
             model: MODEL,
             executionModel: MODEL,
           });
-        const actionAgent = readOnlyAuth ? null : stagehand.agent({
+        const actionAgent = readOnlyAuth || listRoles ? null : stagehand.agent({
             mode: "cua",
             model: AGENT_MODEL,
             systemPrompt: AGENT_SYSTEM_PROMPT,
           });
         if (explicitUrl) await page.goto(explicitUrl);
         else await discoveryAgent.execute(discoveryTask);
+        if (listRoles) {
+          const selectedUrl = publicPageUrl(page, agentEmail);
+          if (!selectedUrl) throw new Error("browser listing readback carried no public page");
+          const selected = {
+            selectedUrl,
+            selectedOrigin: new URL(selectedUrl).origin,
+            selectionReason: "Explicit explore-listings URL.",
+          };
+          if (typeof context.onSelected === "function") await context.onSelected(selected);
+          const listing = await stagehand.extract(
+            "List the paid roles or job listings currently visible on this page. For each, return its title, a short description, and its pay if shown (empty string if not shown). Do not log in, register, or submit anything.",
+            listingSchema,
+          );
+          const extractedRoles = (listing.roles || []).slice(0, 20).map((role) => ({
+            title: replaceIdentity(role.title, agentEmail).slice(0, 300),
+            description: replaceIdentity(role.description, agentEmail).slice(0, 2000),
+            pay: replaceIdentity(role.pay || "", agentEmail).slice(0, 100),
+          }));
+          return {
+            ...selected,
+            action: `Listed ${extractedRoles.length} roles.`,
+            sideEffectStarted: false,
+            extractedRoles,
+          };
+        }
         let selection;
         let selectedUrl;
         if (readOnlyAuth) {
@@ -498,6 +532,16 @@ function makeStagehandSteelDriver(options = {}) {
       const open = sessions.get(String(session.id));
       const restoredAuth = authSessions.get(String(session.id));
       if (!open) throw new Error("Stagehand session unavailable for provider readback");
+      if (action && Array.isArray(action.extractedRoles)) {
+        return {
+          confirmed: true,
+          status: "listed",
+          confirmationId: null,
+          currentUrl: publicPageUrl(open.page, agentEmail),
+          handoffRequired: false,
+          handoffReason: null,
+        };
+      }
       const readOnlyAuth = action && action.readOnlyAuth === true;
       const extracted = await open.stagehand.extract(
         readOnlyAuth
