@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import textwrap
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -640,3 +641,59 @@ def test_all_coconala_chromium_launches_disable_code_sign_clone():
     ]
     for script in scripts:
         assert "--disable-features=MacAppCodeSignClone" in script.read_text()
+
+
+def test_browser_launcher_restores_vault_after_cdp_is_ready(tmp_path):
+    (tmp_path / ".openclaw" / "state").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "gig" / "state").mkdir(parents=True, exist_ok=True)
+    browser = (
+        tmp_path / ".cloakbrowser" / "chromium-145.0.0.0"
+        / "Chromium.app" / "Contents" / "MacOS" / "Chromium"
+    )
+    browser.parent.mkdir(parents=True)
+    browser.write_text(textwrap.dedent("""\
+        #!/usr/bin/env python3
+        import http.server, sys, threading, time
+        port = int(next(arg.split("=", 1)[1] for arg in sys.argv if arg.startswith("--remote-debugging-port=")))
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200); self.end_headers(); self.wfile.write(b'{}')
+            def log_message(self, *_args): pass
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        time.sleep(1)
+        server.shutdown()
+        raise SystemExit(7)
+    """), encoding="utf-8")
+    browser.chmod(0o755)
+    marker = tmp_path / "restored"
+    helper = tmp_path / "session-vault.py"
+    helper.write_text(
+        "#!/usr/bin/env python3\nimport os, pathlib\n"
+        "pathlib.Path(os.environ['RESTORE_MARKER']).write_text('restored:' + os.environ['SESSION_VAULT_PORT'])\n",
+        encoding="utf-8",
+    )
+    helper.chmod(0o755)
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "auth-state.json").write_text("{}", encoding="utf-8")
+    port = 19223
+    env = {
+        **os.environ,
+        "HOME": str(tmp_path),
+        "GIG_BROWSER_PORT": str(port),
+        "GIG_BROWSER_PROFILE": str(tmp_path / "profile"),
+        "GIG_BROWSER_TLS_COMPAT": "off",
+        "GIG_SESSION_VAULT_HELPER": str(helper),
+        "SESSION_VAULT_DIR": str(vault),
+        "CLOAK_CDP_BASE_URL": f"http://127.0.0.1:{port}",
+        "RESTORE_MARKER": str(marker),
+    }
+
+    result = subprocess.run(
+        ["/bin/bash", str(GIG_BROWSER_PATH)], env=env,
+        text=True, capture_output=True, timeout=10,
+    )
+
+    assert result.returncode == 7
+    assert marker.read_text(encoding="utf-8") == f"restored:{port}"
