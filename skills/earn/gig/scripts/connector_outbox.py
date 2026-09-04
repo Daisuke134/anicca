@@ -2784,7 +2784,8 @@ class ConnectorOutbox:
                 """SELECT * FROM connector_actions
                    WHERE platform=? AND thread_id=? AND dlq_at IS NULL
                    ORDER BY CASE state WHEN 'pending' THEN 0 WHEN 'blocked' THEN 1
-                                       ELSE 2 END, action_id
+                                       WHEN 'reconcile_pending' THEN 2
+                                       ELSE 3 END, action_id
                    LIMIT 1""",
                 (platform, thread_id),
             ).fetchone()
@@ -2822,11 +2823,23 @@ class ConnectorOutbox:
             if action is None:
                 result["not_dead_lettered_because"] = "no_live_action"
                 return result
-            if str(action["state"]) not in ("pending", "blocked"):
+            if str(action["state"]) not in ("pending", "blocked", "reconcile_pending"):
                 # 'claimed'/'intent_ready' means an owner still holds the fence and
-                # 'reconcile_pending' is already bounded by reconcile_attempts;
-                # quarantining either from here would forge a transition behind a
-                # live participant's back.
+                # quarantining it here would forge a transition behind a live
+                # participant's back.
+                #
+                # 'reconcile_pending' WAS excluded on the theory that it is "already
+                # bounded by reconcile_attempts" -- true only when a failure happens
+                # inside reconcile_observation.  Measured 2026-09-04 on thread
+                # 10085794 (action 605): CollectorUnhealthy(dm_attachment_message_
+                # identity_changed) is raised by browser.read_before(), BEFORE
+                # reconcile_observation ever runs, so reconcile_attempts never
+                # advances.  With this state excluded the consecutive-failure streak
+                # climbed past 30 identical failures, once every poll_seconds
+                # forever, and the thread could never be dead-lettered by either
+                # bound.  Dead-lettering here does not touch state (see
+                # _dead_letter), so a reconcile_pending action is quarantined the
+                # same safe way a pending or blocked one already is.
                 result["not_dead_lettered_because"] = f"state:{action['state']}"
                 return result
             if now < int(action["updated_at"]):
