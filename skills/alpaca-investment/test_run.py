@@ -29,6 +29,40 @@ class PublicSnapshotTest(unittest.TestCase):
 
 
 class FailureTelegramTest(unittest.TestCase):
+    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
+    @patch.object(MODULE, "observe", side_effect=RuntimeError("provider payload must stay private"))
+    @patch.object(MODULE, "deliver_failure")
+    @patch.object(MODULE, "_publish_public_snapshot", return_value=False)
+    def test_final_failure_publishes_after_telegram_delivery_and_stays_blocked(
+        self, publish_snapshot, deliver_failure, _observe, _reconcile
+    ):
+        events = []
+
+        def record_failure_delivery(*_args, **_kwargs):
+            events.append("telegram")
+            return {"message_id": "123", "status": "delivered"}
+
+        def record_snapshot_publication(*_args, **_kwargs):
+            events.append("snapshot")
+            raise RuntimeError("public sink unavailable")
+
+        deliver_failure.side_effect = record_failure_delivery
+        publish_snapshot.side_effect = record_snapshot_publication
+
+        self.assertEqual(MODULE.main(), 78)
+        self.assertEqual(events, ["telegram", "snapshot"])
+        publish_snapshot.assert_called_once_with()
+
+    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
+    @patch.object(MODULE, "observe", side_effect=RuntimeError("provider payload must stay private"))
+    @patch.object(MODULE, "deliver_failure", side_effect=RuntimeError("telegram store unavailable"))
+    @patch.object(MODULE, "_publish_public_snapshot")
+    def test_failure_delivery_exception_skips_publication_and_stays_blocked(
+        self, publish_snapshot, _deliver_failure, _observe, _reconcile
+    ):
+        self.assertEqual(MODULE.main(), 78)
+        publish_snapshot.assert_not_called()
+
     @patch.object(MODULE, "deliver_failure", create=True)
     @patch.object(MODULE, "observe", side_effect=RuntimeError("provider payload must stay private"))
     @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
