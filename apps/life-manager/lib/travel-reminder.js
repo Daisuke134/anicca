@@ -337,19 +337,26 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
     return { event, key, route, routeAttempted, departureMs, dueAt };
   };
   const prepared = await Promise.all(candidates.map(prepareCandidate));
-  const selected = prepared
+  const dueCandidates = prepared
     .filter((candidate) => isReminderDue(now, candidate.dueAt))
-    .sort((a, b) => (a.dueAt - b.dueAt) || (startMs(a.event) - startMs(b.event)) || a.key.localeCompare(b.key))[0] || null;
-  if (!selected) {
+    .sort((a, b) => (a.dueAt - b.dueAt) || (startMs(a.event) - startMs(b.event)) || a.key.localeCompare(b.key));
+  if (!dueCandidates.length) {
     const nextDueAt = prepared.reduce((earliest, candidate) => candidate.dueAt !== null
       && (earliest === null || candidate.dueAt < earliest) ? candidate.dueAt : earliest, null);
     return { status: "suppressed", reason: "not-due", dueAt: nextDueAt };
   }
+  let selected = null;
+  for (const candidate of dueCandidates) {
+    let claimed = false;
+    try { claimed = await (deps.claimTravel || claimTravel)(user.uid, candidate.key, "telegram-t5", supaUrl, supaKey); }
+    catch { return { status: "suppressed", reason: "claim-failed" }; }
+    if (claimed) {
+      selected = candidate;
+      break;
+    }
+  }
+  if (!selected) return { status: "suppressed", reason: "duplicate" };
   const { event, key, route, routeAttempted, departureMs } = selected;
-  let claimed = false;
-  try { claimed = await (deps.claimTravel || claimTravel)(user.uid, key, "telegram-t5", supaUrl, supaKey); }
-  catch { return { status: "suppressed", reason: "claim-failed" }; }
-  if (!claimed) return { status: "suppressed", reason: "duplicate" };
   let response = null;
   try { response = await (deps.sendMessage || sendMessage)(token, chatId, formatTravelReminder(event, route, {
     departureMs, timezone: deps.timezone || user.call_time_zone || DEFAULT_TIMEZONE, routeAttempted,
