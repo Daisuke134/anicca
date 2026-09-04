@@ -296,9 +296,7 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   const candidates = reminderEvents(events, now);
   if (!candidates.length) return { status: "suppressed", reason: "no-event" };
   const home = deps.home !== undefined ? deps.home : user.home_address;
-  let selected = null;
-  let nextDueAt = null;
-  for (const event of candidates) {
+  const prepareCandidate = async (event) => {
     const key = eventKey(event);
     let targetGoClaimed = false;
     const previousReturnClaims = new Map();
@@ -336,12 +334,17 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
     }
     const departureMs = computeDepartureMs(event, route, { bufferMin: deps.bufferMin });
     const dueAt = computeReminderDueAt(event, { departureMs });
-    if (dueAt !== null && (nextDueAt === null || dueAt < nextDueAt)) nextDueAt = dueAt;
-    if (!isReminderDue(now, dueAt)) continue;
-    selected = { event, key, route, routeAttempted, departureMs };
-    break;
+    return { event, key, route, routeAttempted, departureMs, dueAt };
+  };
+  const prepared = await Promise.all(candidates.map(prepareCandidate));
+  const selected = prepared
+    .filter((candidate) => isReminderDue(now, candidate.dueAt))
+    .sort((a, b) => (a.dueAt - b.dueAt) || (startMs(a.event) - startMs(b.event)) || a.key.localeCompare(b.key))[0] || null;
+  if (!selected) {
+    const nextDueAt = prepared.reduce((earliest, candidate) => candidate.dueAt !== null
+      && (earliest === null || candidate.dueAt < earliest) ? candidate.dueAt : earliest, null);
+    return { status: "suppressed", reason: "not-due", dueAt: nextDueAt };
   }
-  if (!selected) return { status: "suppressed", reason: "not-due", dueAt: nextDueAt };
   const { event, key, route, routeAttempted, departureMs } = selected;
   let claimed = false;
   try { claimed = await (deps.claimTravel || claimTravel)(user.uid, key, "telegram-t5", supaUrl, supaKey); }
