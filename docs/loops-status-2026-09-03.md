@@ -40,7 +40,13 @@
 順序改定 2026-09-04: Dais 明示指示「まず Coconala 出品(storefront)を直す → Lancers 完全プロフィールで応募 → CrowdWorks」。#1〜#3 を gig 3 platform で固定、以降は 9/3 順を維持。
 各項目の DONE 条件は「コードが直った」ではなく「**外形的な実測 evidence が出た**」。evidence 無しで次へ進まない。
 
-0. **全 loop の LLM provider を Claude Sonnet に統一** — 実測: Coconala storefront の create-proposal は codex acct2 を第一経路にしており usage limit（9/7 まで）で全滅、claude fallback は 160s timeout。Dais 指示「全 loop を Sonnet で動かす」。各 loop の provider route を棚卸しし、codex/GPT 第一経路を claude-sonnet-5 へ切替、claude 経路の auth/timeout を実測で通す。
+0. **全 loop の LLM provider を Claude Sonnet に統一** — Dais 指示。棚卸し 2026-09-04 実測:
+   - 変更点は 1 箇所: `runtime/agent-runner/config.json` の `task_classes.*.candidates`（gig 4 lane / job-search / capafy / alpaca / marketing が共有）。Writer は `model-runner.sh` で既に claude。franklin×2 は別 repo（対象外）。
+   - 現状: ほぼ全 class が `codex@acct2` 第一。claude fallback 無し 14 class（reply-semantic / application-intent-planner / marketing / diagnostic / composition / tool / repeatable / high-value / affiliate×2 / writer-repair 等）は `transient_quota` で死亡中（capafy・alpaca・reply-detector で実測）。
+   - 罠1: deployed release `20260904T010225-659deab7` の config は repo と drift（planner の claude-direct fallback が deployed では消失）。修正は release 経路で出荷しないと効かない。
+   - 罠2: claude leg は配線だけでは通らない（job-search で claude fallback が `validation_or_task_failure` rc=1、storefront で 160s timeout）。`claude` provider = cli-proxy `:8317` 経由、`claude-direct` = 素の CLI。どちらを既定にするかは storefront 修理の実測結果で決める。
+   - `skills/earn/gig/agent-runner/` は未使用の複製（`gig_paths.py:21` は runtime 側を指す）→ 削除候補。
+   手順: storefront の claude 経路が実測で通る → その provider 設定を全 class の第一候補に、codex は fallback（9/7 まで死）→ release 出荷 → 各 loop の次 wake attempts で `provider=claude rc=0` を readback。
    DONE: 全 loop の直近 wake の attempts で provider=claude rc=0。codex 依存で落ちる loop が 0。
 1. **Coconala storefront 復活 → 出品カタログ化（最重要・最も汎用）**
    Dais 方針: 出品は 4 lane で最も汎用。サービス自体にレビューが蓄積し recurring になる。上限 20 本を「上手くいっている競合の出品を見て写す」。特化はシステム開発（0→1 開発、Web/アプリ、修正）。出品 asset は platform 非依存で共有し、skill で定義して Lancers/CrowdWorks へもそのまま流す。
