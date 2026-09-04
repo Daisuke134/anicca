@@ -10,6 +10,7 @@ import hashlib
 import json
 import math
 import os
+import pwd
 import re
 import signal
 import shutil
@@ -583,6 +584,12 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
         return child_env
     if provider not in CLAUDE_PROVIDERS:
         return child_env
+    # launchd jobs run with a minimal environment that omits USER; the claude
+    # CLI reads its stored OAuth credentials only when USER is set, so every
+    # loop's claude call fails "Not logged in" without this even though the
+    # account is fully logged in (measured 2026-09-04).
+    if not child_env.get("USER"):
+        child_env["USER"] = pwd.getpwuid(os.getuid()).pw_name
     if provider == "claude-direct":
         for name in (
             "ANTHROPIC_BASE_URL", "ANTHROPIC_AUTH_TOKEN",

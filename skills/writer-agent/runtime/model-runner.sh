@@ -2,6 +2,14 @@
 # One model process boundary for Writer Agent.
 set -uo pipefail
 
+# launchd jobs run with a minimal environment that omits USER; the claude CLI
+# reads its stored OAuth credentials only when USER is set, so a launchd-run
+# claude call fails "Not logged in" even though the account is fully logged
+# in (measured 2026-09-04). codex does not read USER for auth, so this is
+# scoped to the value claude needs.
+: "${USER:=$(id -un)}"
+export USER
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUPPORT="$SCRIPT_DIR/model-runner-support.py"
 MODE="${1:-}"
