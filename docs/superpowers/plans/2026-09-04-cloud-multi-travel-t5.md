@@ -4,7 +4,7 @@
 
 **Goal:** Ensure one later-start physical Calendar event whose departure T-5 is already due cannot be blocked by an earlier-start event whose own reminder is not due.
 
-**Architecture:** Keep the existing Calendar, Transit/Google routing, Telegram send, `lm_travel_log` claim, and Telegram receipt paths unchanged. Preserve `nextReminderEvent()` for compatibility, but let `travelReminderOnce()` evaluate eligible events until it finds a currently-due event, then run the existing exactly-once claim/send/receipt path for that one event only. Do not add a scheduler, database table, provider, or second send path.
+**Architecture:** Keep the existing Calendar, Transit/Google routing, Telegram send, `lm_travel_log` claim, and Telegram receipt paths unchanged. Preserve `nextReminderEvent()` for compatibility. `travelReminderOnce()` prepares eligible event route/due facts concurrently behind the existing provider timeout, selects a currently-due event, then runs the existing exactly-once claim/send/receipt path for that one event only. Do not add a scheduler, database table, provider, or second send path.
 
 **Tech Stack:** Node.js CommonJS, built-in `node:test`, existing Life Manager Calendar/Transit/Telegram/Supabase adapters.
 
@@ -59,14 +59,16 @@ node --test \
 
 Observed on GitHub Actions run `33868126721`: 31 pass / 1 fail. The new test returned `status='suppressed'` instead of `status='sent'`, proving the existing earliest-start selection masks the due later-start trip.
 
-- [ ] **Step 3: Implement the minimum due-candidate selection**
+- [x] **Step 3: Implement the minimum due-candidate selection**
 
-Keep `nextReminderEvent()` unchanged. Extract the current per-event route/due preparation into one helper and iterate eligible timed non-helper events in stable start order until finding the first event for which `isReminderDue(now, dueAt)` is true. If no event is due, preserve `suppressed/not-due`; if no event exists, preserve `suppressed/no-event`. After selection, reuse the existing claim → send → Telegram receipt code unchanged.
+`nextReminderEvent()` remains compatible. Eligible timed non-helper events are prepared independently; route/due preparation starts concurrently so one slow Transit candidate cannot serially consume the 35-second reminder budget. The selected currently-due event alone reaches the existing claim → send → Telegram receipt path. No due candidate preserves `suppressed/not-due`; no candidate preserves `suppressed/no-event`.
 
-- [ ] **Step 4: Run focused tests and verify GREEN**
+Fresh review found the first sequential implementation could make the provider budget `25s × N`. A second TDD regression isolated this (`1 !== 2` route evaluations started before release) and required concurrent read-only preparation without parallel Telegram effects.
 
-Run the same focused command. Expected: all tests pass, including the new regression.
+- [x] **Step 4: Run focused tests and verify GREEN**
+
+GitHub Actions run `33868886846` passed **33/33** focused reminder tests after the concurrency fix. `git diff --check` also passed before the CI-owned commit. Temporary TDD scripts/workflows were removed automatically after GREEN.
 
 - [ ] **Step 5: Review and integrate safely**
 
-Run `git diff --check`, perform a fresh read-only review for AC-18/19/24/25/26 and privacy/replay invariants, refresh from current `main`, preserve concurrent Lancers commits, remove temporary CI machinery, then open the bounded PR. Production E2E is a separate next task and is not claimed by unit-test GREEN.
+Fresh read-only review has checked AC-18/19/24/25/26, privacy, existing durable claim/receipt behavior, and the slow-route deadline regression. Refresh from current `main`, preserve concurrent Lancers commits, open the bounded PR, and merge only if GitHub reports it mergeable and checks remain clean. Production E2E is a separate next task and is not claimed by unit-test GREEN.
