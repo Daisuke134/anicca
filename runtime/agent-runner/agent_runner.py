@@ -1696,12 +1696,27 @@ def run() -> int:
             # select a schema-invalid answer -- the fallback exists but can never be chosen.
             # Measured 2026-08-31: attempt-03 returned is_error=false with a well-formed decision
             # that was discarded because it was not wrapped in the schema's envelope.
+            # Measured 2026-09-04 on the storefront proposal agent: rc=0, a complete well-formed
+            # object -- but built from the caller's own context field names (hypothesis_key,
+            # before) instead of the schema's (hypothesis, proposed_price_jpy, uncertainty). The
+            # schema dump alone sits at the tail of a long prompt behind a same-shaped context
+            # object; naming the required keys is what a Codex candidate gets for free from
+            # --output-schema and a Claude candidate does not.
+            required_top_level = schema.get("required", []) if isinstance(schema, dict) else []
             candidate_prompt = (
                 f"{prompt}\n\n"
                 "OUTPUT CONTRACT: reply with one JSON document and nothing else. No prose, no "
                 "code fence. It must validate against this JSON Schema exactly, including the "
                 "top-level envelope:\n"
                 f"{json.dumps(schema, ensure_ascii=False)}\n"
+                + (
+                    "The top-level object MUST contain exactly these keys, spelled exactly as "
+                    f"in the schema: {', '.join(required_top_level)}. Use the schema's own key "
+                    "names even when the input context above uses different names for a similar "
+                    "concept; do not copy a context object's field names or add fields the "
+                    "schema does not define.\n"
+                    if isinstance(required_top_level, list) and required_top_level else ""
+                )
             )
         openclaw_workdir: str | None = None
         try:
