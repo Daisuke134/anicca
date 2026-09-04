@@ -40,13 +40,19 @@
 順序改定 2026-09-04: Dais 明示指示「まず Coconala 出品(storefront)を直す → Lancers 完全プロフィールで応募 → CrowdWorks」。#1〜#3 を gig 3 platform で固定、以降は 9/3 順を維持。
 各項目の DONE 条件は「コードが直った」ではなく「**外形的な実測 evidence が出た**」。evidence 無しで次へ進まない。
 
-1. **Coconala storefront 復活（受付再開 + 高単価システム開発出品）**
+0. **全 loop の LLM provider を Claude Sonnet に統一** — 実測: Coconala storefront の create-proposal は codex acct2 を第一経路にしており usage limit（9/7 まで）で全滅、claude fallback は 160s timeout。Dais 指示「全 loop を Sonnet で動かす」。各 loop の provider route を棚卸しし、codex/GPT 第一経路を claude-sonnet-5 へ切替、claude 経路の auth/timeout を実測で通す。
+   DONE: 全 loop の直近 wake の attempts で provider=claude rc=0。codex 依存で落ちる loop が 0。
+1. **Coconala storefront 復活 → 出品カタログ化（最重要・最も汎用）**
+   Dais 方針: 出品は 4 lane で最も汎用。サービス自体にレビューが蓄積し recurring になる。上限 20 本を「上手くいっている競合の出品を見て写す」。特化はシステム開発（0→1 開発、Web/アプリ、修正）。出品 asset は platform 非依存で共有し、skill で定義して Lancers/CrowdWorks へもそのまま流す。
    進捗 2026-09-04:
-   - a. **DONE** — 14 件 `受付休止中` → `公開中`（commit `665bd1acd`、effects.jsonl reopen 14 行、readback 受付休止 0）。根本原因: 一覧 scraper が `受付休止中` を読めず `state:None`、contract 検証が 14 件を毎 wake 捨てていた。休止の実行者は不明（loop に休止コード無し、8/25〜8/27 に同時発生）。
-   - a'. **DONE** — 再開後に `listing_contract_family_missing:4371816`。原因は repo 外 state `~/gig/private/storefront-bundle/families.json` から `ai-automation-builder` family が欠落。手で復元（backup `/tmp/families.json.bak`）。commit 無し（state file）。
-   - b. **進行中** — 新規出品は lane 自身の create path が毎 wake `storefront_create_proposal_failed`。原因: codex acct2 が **usage limit（9/7 11:26 まで）**、claude fallback が 160s timeout・stdout 0（`ANTHROPIC_API_KEY` 優先で connector 無効警告）。claude 経路を直して lane が自分で出品する状態に戻す。高単価の雛形は `~/gig/applied.jsonl`（¥300,000 / ¥250,000 / ¥180,000、システム開発・制作）。
-   - c. 未着手 — 出品 asset を `skills/gig-work/profile/` 配下に共有化。
-   DONE: 新規システム開発出品 ≥1 件が公開 URL で readback、wake が exit 0、次 wake で replay effect 0。
+   - a. **DONE** — 14 件 `受付休止中` → `公開中`（commit `665bd1acd`、effects.jsonl reopen 14 行、readback 受付休止 0）。根本原因: 一覧 scraper が `受付休止中` を読めず `state:None`、contract 検証が 14 件を毎 wake 捨てていた。
+   - a'. **DONE** — `listing_contract_family_missing:4371816`。repo 外 state `~/gig/private/storefront-bundle/families.json` の family 欠落を復元。
+   - b. **進行中** — lane の create path が `storefront_create_proposal_failed`（#0 の provider 問題）。claude 経路を直して lane が自分で出品できる状態へ。
+   - c. **競合調査 → 出品カタログ 20 本** — Coconala「システム開発・制作」「Web/業務システム」「AI」上位出品（売上件数・星5）を lane 既存の competitor 観測（`competitor-*.json`）で収集し、title/価格帯/構成/FAQ の共通パターンを抽出。雛形は `~/gig/applied.jsonl` 高単価案件（¥300,000/¥250,000/¥180,000）。asset は `skills/gig-work/profile/listings/*.json`（platform 非依存: title/body/価格tier/納期/FAQ/画像）に置き、skill で「出品 asset の作り方・流し方」を定義。
+   - d. **公開** — カタログから順に公開（上限 20）、各 wake で公開状態と購入数を readback。
+   DONE: 公開 ≥ 15 件、うちシステム開発系 ≥ 5 件が公開 URL で readback、wake exit 0、replay effect 0。
+1'. **Coconala paid lane: 全 client に返信・提出** — 実測未（Dais 報告: 一部 client に返信/提出していない、取りこぼしあり）。paid lane の state で「未返信 client 数」「未提出 見積り数」を実測し、取りこぼし 0 にする。
+   DONE: paid lane の wake summary に unanswered_clients=0、未提出 0、かつ実際の返信 receipt ≥1。
 2. **Lancers 応募復旧 + 完全プロフィール応募** — `application_loop.py:320-350` `_validate()` が 1 行不正で batch 全滅（`planner_contract_invalid`、9/4 も継続、今日 fresh 判断 0）。不正 row は skip、健全 row だけで判断へ。profile は 9/4 に avatar 登録で 90%（残り電話認証のみ、blocker にしない）。
    DONE: 次 wake で `error` 消滅・`eligible_count > 0`、`application_verified` 60 → 61 以上。
 3. **CrowdWorks 復旧** — 実測: `account.json` が 8/11 から `status: input_required`（credential 待ち）で application lane exit 1。9/3 に書いた `hours_limit` 文字列説は repo/state に該当ファイル無し（**誤りとして取り消し**）。credentials.json SSOT から再ログイン → 4 lane を launchd に bootstrap。
