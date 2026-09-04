@@ -4,7 +4,7 @@
   "timeout_seconds": 900,
   "providers": {
     "codex": {
-      "executable": "codex",
+      "executable": "~/.local/bin/codex",
       "executable_fallbacks": [
         "~/.local/bin/codex"
       ],
@@ -18,7 +18,10 @@
           "auth_file": "~/.codex-acct2/auth.json"
         }
       },
-      "account_profile_order": ["acct1", "acct2"],
+      "account_profile_order": [
+        "acct1",
+        "acct2"
+      ],
       "ssl_cert_file": "/etc/ssl/cert.pem",
       "project_doc_max_bytes": 0,
       "disabled_skills": [
@@ -117,6 +120,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -131,6 +138,10 @@
           "effort": "medium",
           "timeout_seconds": 120,
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -146,7 +157,7 @@
           "profile_alias": "acct2"
         },
         {
-          "provider": "claude",
+          "provider": "claude-direct",
           "model": "claude-sonnet-5"
         }
       ]
@@ -161,6 +172,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -174,6 +189,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -191,7 +210,7 @@
           "profile_alias": "acct2"
         },
         {
-          "provider": "claude",
+          "provider": "claude-direct",
           "model": "claude-sonnet-5"
         }
       ]
@@ -207,6 +226,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -227,6 +250,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -240,6 +267,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -253,6 +284,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -266,6 +301,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -282,7 +321,7 @@
           "profile_alias": "acct2"
         },
         {
-          "provider": "claude",
+          "provider": "claude-direct",
           "model": "claude-sonnet-5"
         }
       ]
@@ -298,6 +337,10 @@
           "model": "gpt-5.6-sol",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -311,6 +354,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
         }
       ]
     },
@@ -320,7 +367,16 @@
       "token_reservation": 32768,
       "timeout_seconds": 900,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-terra", "effort": "high", "profile_alias": "acct2"}
+        {
+          "provider": "codex",
+          "model": "gpt-5.6-terra",
+          "effort": "high",
+          "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
+        }
       ]
     },
     "affiliate-escalation-agent": {
@@ -329,7 +385,16 @@
       "token_reservation": 65536,
       "timeout_seconds": 3600,
       "candidates": [
-        {"provider": "codex", "model": "gpt-5.6-sol", "effort": "high", "profile_alias": "acct2"}
+        {
+          "provider": "codex",
+          "model": "gpt-5.6-sol",
+          "effort": "high",
+          "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude-direct",
+          "model": "claude-sonnet-5"
+        }
       ]
     }
   }

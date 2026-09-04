@@ -573,9 +573,13 @@ def render_application_wake(result: Mapping[str, object]) -> str:
         outcome = f"{result['reason']}のため送信しませんでした"
     else:
         outcome = f"{result.get('error') or 'unknown_error'}で完了できませんでした"
+    decision_reports = result.get("decision_reports") or []
+    skipped_reports = [item for item in decision_reports if isinstance(item, Mapping) and item.get("outcome") == "failed"]
+    skip_reasons = sorted({str(item.get("error") or "unknown") for item in skipped_reports})
+    skip_text = f" / skip{len(skipped_reports)}件({','.join(skip_reasons)})" if skipped_reports else ""
     return (
         f"[Lancers][応募] {'📨' if result.get('application_verified') else '⏭️' if result.get('ok') else '⚠️'} {outcome}\n"
-        f"確認: 公開案件{observed}件 / 既判断{already_decided}件 / fresh判断{len(result.get('decision_reports') or [])}件 / 応募候補{eligible}件 / 公式確認{verified}件。\n"
+        f"確認: 公開案件{observed}件 / 既判断{already_decided}件 / fresh判断{len(decision_reports)}件{skip_text} / 応募候補{eligible}件 / 公式確認{verified}件。\n"
         f"応募実績: 今日{today_text} / 累計{cumulative_text}（公式proposal receipt）。\n"
         "次: 5分後のwakeで新着案件の確認と最大positive-EV応募を続けます。"
     )

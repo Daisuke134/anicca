@@ -7,8 +7,32 @@ const {
 } = require("./browser-job-store.js");
 const { runGenericBrowserTask } = require("./generic-browser-task.js");
 const { makeStagehandSteelDriver } = require("./stagehand-steel-driver.js");
+const { createOpportunity } = require("./money-printer-opportunity.js");
 const { sendMessage, sendPhoto } = require("./telegram.js");
 let defaultDriver = null;
+
+async function cardExtractedRoles(job, result, deps) {
+  if (!deps.opportunityStore || !Array.isArray(result.extracted_roles) || !result.selected_url) return;
+  const nowIso = new Date(deps.nowMs || Date.now()).toISOString();
+  for (const [index, role] of result.extracted_roles.entries()) {
+    if (!role || typeof role.title !== "string" || !role.title.trim()) continue;
+    const sourceUrl = new URL(result.selected_url);
+    sourceUrl.searchParams.set("lm_role", String(index));
+    try {
+      await createOpportunity({
+        tenantId: job.uid,
+        sourceUrl: sourceUrl.toString(),
+        title: role.title,
+        goalStatement: role.description && role.description.trim() ? role.description : role.title,
+        valueMinor: 0,
+        currency: "USD",
+        observedAt: nowIso,
+      }, deps.opportunityStore);
+    } catch (error) {
+      console.error(`[browser-job] find-work card failed job=${job.id} role=${index} ${String(error && error.message || error)}`);
+    }
+  }
+}
 
 function driverFor(deps) {
   if (deps.driver) return deps.driver;
@@ -40,7 +64,7 @@ async function runNextBrowserJob(deps = {}) {
   const send = deps.sendMessage || sendMessage;
   const sendEvidence = deps.sendPhoto || sendPhoto;
   const telegramToken = deps.telegramToken || process.env.LM_TELEGRAM_BOT_TOKEN;
-  return runGenericBrowserTask(job, {
+  const result = await runGenericBrowserTask(job, {
     appendTrace: append,
     openSession: driver.openSession.bind(driver),
     discoverAndAct: driver.discoverAndAct.bind(driver),
@@ -52,6 +76,8 @@ async function runNextBrowserJob(deps = {}) {
       sendEvidence(telegramToken, chatId, evidence.bytes, caption),
     finishJob: finish,
   });
+  await cardExtractedRoles(job, result, deps);
+  return result;
 }
 
 async function completeBrowserHandoff(sessionId, answer, deps = {}) {

@@ -186,6 +186,32 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
     await refreshMoneyPrinter();
     return result;
   };
+  const exactFindWorkResult = (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)
+      || Object.keys(value).length !== 2
+      || typeof value.job_id !== "string" || !value.job_id
+      || typeof value.status !== "string" || !value.status) throw new Error("find_mercor_work unavailable");
+    return { job_id: value.job_id, status: value.status };
+  };
+  const findMercorWorkRequest = async () => {
+    const response = await fetch("/api/panel/money-printer/find-work", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+        "content-type": "application/json",
+        "x-lm-csrf": pageCsrf,
+        "idempotency-key": idempotencyKey("find-mercor-work-"),
+      },
+      body: JSON.stringify({}),
+    });
+    let value = {};
+    try { value = await response.json(); } catch {}
+    if (!response.ok) throw new Error(String(value && value.error || "find_mercor_work unavailable"));
+    const result = exactFindWorkResult(value);
+    await refreshMoneyPrinter();
+    return result;
+  };
   const inspectWorkroomRequest = (input) => {
     if (!input || typeof input !== "object" || Array.isArray(input)
       || Object.keys(input).length !== 1 || !/^[0-9a-f]{64}$/.test(String(input.opportunity_id || ""))) {
@@ -245,6 +271,17 @@ function renderMoneyPrinterWebMcpScript({ csrf } = {}) {
       },
       annotations: { readOnlyHint: false },
       execute: wrapExecute("add_opportunity", addOpportunityRequest),
+    }),
+    document.modelContext.registerTool({
+      name: "find_mercor_work",
+      description: "Dispatch our existing cloud browser to open work.mercor.com/explore and list its currently open paid roles. This is a real, tenant-scoped cloud browser job; it returns a job reference, and matching roles appear as Found-lane cards once the job finishes.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      annotations: { readOnlyHint: false },
+      execute: wrapExecute("find_mercor_work", findMercorWorkRequest),
     }),
     document.modelContext.registerTool({
       name: "inspect_workroom",

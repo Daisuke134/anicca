@@ -139,7 +139,7 @@ class CodexProfileBoundaryTest(unittest.TestCase):
             [(row["provider"], row["model"], row.get("profile_alias")) for row in candidates],
             [
                 ("codex", "gpt-5.6-terra", "acct2"),
-                ("claude", "claude-sonnet-5", None),
+                ("claude-direct", "claude-sonnet-5", None),
             ],
         )
 

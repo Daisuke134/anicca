@@ -2314,7 +2314,13 @@ async def capture_click_downloads(
     project_root: Path | None = None,
 ) -> int:
     """Capture buyer attachment controls that expose no href."""
-    with tempfile.TemporaryDirectory(prefix="gig-buyer-attachments-") as directory:
+    download_parent = None
+    if project_root is not None:
+        download_parent = project_root / "delivery" / ".attachment-downloads"
+        download_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix="gig-buyer-attachments-", dir=download_parent,
+    ) as directory:
         try:
             await call(ws, request_id, "Browser.setDownloadBehavior", {
                 "behavior": "allow",

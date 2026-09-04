@@ -452,6 +452,43 @@ class ApplicationLoopHolTests(unittest.TestCase):
             )
         self.assertNotIn("error", partial)
 
+    def test_one_bad_budget_row_does_not_discard_two_good_rows(self):
+        # skills/earn/lancers/scripts/application_loop.py::_filter_claimed_rows used to
+        # `raise ValueError` for the whole batch when any single row had a malformed
+        # budget shape, which surfaced as planner_contract_invalid with zero judgements
+        # even though the other rows in the same batch were perfectly valid.
+        application_loop = _load_deployed_loop()
+        bad_row = _opportunity("6000000")
+        bad_row["budget_min_minor"] = 500000  # exceeds budget_max_minor: invalid shape
+        opportunities = [bad_row, _opportunity("6000001"), _opportunity("6000002")]
+
+        def discoverer(**kwargs):
+            return {"ok": True, "error": None, "opportunities": opportunities}
+
+        def planner(prompt, evidence):
+            return {"decisions": [_ineligible_decision("6000001"), _ineligible_decision("6000002")]}
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = application_loop.run_loop(
+                state_path=root / "application.json",
+                evidence_root=root / "evidence",
+                discoverer=discoverer,
+                planner=planner,
+                safety_verifier=_approved_safety,
+                submitter=lambda **_kwargs: self.fail("submitter_called"),
+                clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
+            )
+
+        self.assertNotEqual(result.get("error"), "planner_contract_invalid")
+        self.assertEqual(result.get("observed_count"), 3)
+        reports = result.get("decision_reports") or []
+        self.assertEqual(len(reports), 3)
+        judged = {report["project_id"]: report for report in reports}
+        self.assertEqual(judged["6000000"]["error"], "invalid_observed_budget")
+        self.assertEqual(judged["6000001"]["business_class"], "hard_prohibited")
+        self.assertEqual(judged["6000002"]["business_class"], "hard_prohibited")
+
     def test_normal_tick_preserves_coconala_planner_order(self):
         application_loop = _load_deployed_loop()
         project_ids = ["6000001", "6000002", "6000003"]
@@ -801,6 +838,57 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertIn("6000001", planned_project_ids)
         self.assertEqual(submitter_project_ids, ["6000001"])
         self.assertEqual(result["verified_project_ids"], ["6000001"])
+
+    def test_discovery_batch_over_max_opportunities_is_sliced_not_rejected(self):
+        """A wake that observes more than MAX_OPPORTUNITIES rows (exhaustive discovery unions
+        every query with no cap) must still get a judged batch instead of failing the whole
+        turn as planner_contract_invalid before the planner is ever called."""
+        application_loop = _load_deployed_loop()
+        planner_snapshots = []
+        opportunities = [
+            _opportunity(str(8000000 + index))
+            for index in range(application_loop.MAX_OPPORTUNITIES + 5)
+        ]
+
+        def discoverer(**kwargs):
+            return {"ok": True, "error": None, "opportunities": opportunities}
+
+        def planner(prompt, evidence):
+            snapshot = json.loads(prompt.split("SNAPSHOT:\n", 1)[1])
+            planner_snapshots.append(snapshot)
+            return {
+                "decisions": [
+                    _ineligible_decision(row["external_id"])
+                    for row in snapshot["opportunities"]
+                ]
+            }
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(
+                application_loop.application_tick,
+                "read_pending_descriptor",
+                return_value=None,
+            ), patch.object(
+                application_loop.application_tick,
+                "state_has_claim",
+                return_value=False,
+            ):
+                result = application_loop.run_loop(
+                    state_path=root / "application.json",
+                    evidence_root=root / "evidence",
+                    discoverer=discoverer,
+                    planner=planner,
+                    submitter=lambda *_args, **_kwargs: self.fail("submitter_called"),
+                    clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
+                )
+
+        self.assertNotIn("error", result)
+        self.assertEqual(len(planner_snapshots), 1)
+        self.assertEqual(
+            len(planner_snapshots[0]["opportunities"]),
+            application_loop.MAX_OPPORTUNITIES,
+        )
 
     def test_schema_and_runtime_share_coconala_business_contract(self):
         application_loop = _load_deployed_loop()

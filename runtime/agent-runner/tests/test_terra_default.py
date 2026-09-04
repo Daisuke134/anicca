@@ -4,6 +4,12 @@ from pathlib import Path
 
 
 class TerraDefaultTest(unittest.TestCase):
+    def test_codex_provider_uses_managed_current_cli_before_path(self):
+        config_path = Path(__file__).resolve().parents[1] / "config.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(config["providers"]["codex"]["executable"], "~/.local/bin/codex")
+
     def test_every_executable_agent_class_prefers_terra(self):
         config_path = Path(__file__).resolve().parents[1] / "config.json"
         config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -20,6 +26,7 @@ class TerraDefaultTest(unittest.TestCase):
                     expected = [
                         {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high", "profile_alias": "acct2"},
                         {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium", "profile_alias": "acct2"},
+                        {"provider": "claude-direct", "model": "claude-sonnet-5"},
                     ]
                 if name == "reply-semantic-agent":
                     expected = [{"provider": "codex", "model": "gpt-5.6-luna",
@@ -42,10 +49,11 @@ class TerraDefaultTest(unittest.TestCase):
                         {"provider": "codex", "model": "gpt-5.6-terra",
                          "effort": "high", "profile_alias": "acct2"},
                     ]
-                if name in {"storefront-proposal-agent", "browser-lane-agent", "escalation-agent"}:
-                    expected.append(
-                        {"provider": "claude", "model": "claude-sonnet-5"}
-                    )
+                # Every executable class now carries a working Claude fallback so a
+                # codex quota outage cannot idle a money lane.
+                fallback = {"provider": "claude-direct", "model": "claude-sonnet-5"}
+                if fallback not in expected:
+                    expected.append(fallback)
                 self.assertEqual(candidates, expected)
 
     def test_a_restricted_candidate_carries_its_escalation_route(self):

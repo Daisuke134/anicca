@@ -39,6 +39,27 @@ requested_estimate = _load_module(
 )
 
 
+def test_attachment_download_temp_lives_under_project(monkeypatch, tmp_path):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    observed = {}
+    real_temporary_directory = snapshot.tempfile.TemporaryDirectory
+
+    def recording_temporary_directory(*args, **kwargs):
+        observed["dir"] = kwargs.get("dir")
+        return real_temporary_directory(*args, **kwargs)
+
+    async def fake_call(*_args, **_kwargs):
+        return {}
+
+    monkeypatch.setattr(snapshot.tempfile, "TemporaryDirectory", recording_temporary_directory)
+    monkeypatch.setattr(snapshot, "call", fake_call)
+
+    asyncio.run(snapshot.capture_click_downloads(object(), 1, {"messages": []}, project_root=project_root))
+
+    assert Path(observed["dir"]).is_relative_to(project_root)
+
+
 def test_continuous_evidence_prunes_completed_only(tmp_path):
     evidence = tmp_path / "reply-run"
     probes = evidence / "continuous"
