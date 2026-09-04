@@ -1,0 +1,24 @@
+name: Temporary Cloud Multi-Travel T-5 Review TDD
+
+on:
+  push:
+    branches:
+      - fix/cloud-multi-travel-t5-20260904
+
+permissions:
+  contents: read
+
+jobs:
+  focused-red:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run focused reminder tests
+        run: |
+          node --test \
+            apps/life-manager/lib/travel-reminder-multi-due.test.js \
+            apps/life-manager/lib/travel-reminder.test.js
