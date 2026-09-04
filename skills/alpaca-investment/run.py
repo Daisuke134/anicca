@@ -51,7 +51,11 @@ def _publish_public_snapshot() -> bool:
         return False
 
 
-def main(*, attempt: int = 0, wake_id: str | None = None) -> int:
+def _retry_allowed(stage: str, effect_attempted: bool, attempt: int) -> bool:
+    return stage != "telegram_deliver" and not effect_attempted and attempt < 2
+
+
+def main(*, attempt: int = 0, wake_id=None) -> int:
     wake_id = wake_id or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     state = Path(os.environ.get(
         "ALPACA_INVESTMENT_STATE_DIR",
@@ -176,17 +180,21 @@ def main(*, attempt: int = 0, wake_id: str | None = None) -> int:
         }
         print(json.dumps(summary, separators=(",", ":")))
         return 0
-    except (OSError, subprocess.SubprocessError, ValueError, json.JSONDecodeError):
+    except Exception:
         # Read/agent/report failures before an effect are transient-safe to retry. Once submit_order
         # was called, never retry: an unknown broker acknowledgement must reconcile on the next wake.
-        if not effect_attempted and attempt < 2:
+        if _retry_allowed(stage, effect_attempted, attempt):
             return main(attempt=attempt + 1, wake_id=wake_id)
         telegram = {"status": "delivery_uncertain"}
         if stage != "telegram_deliver":
             try:
                 telegram = deliver_failure(
-                    state, stage=stage, effect_attempted=effect_attempted, wake_id=wake_id)
-            except ValueError:
+                    state,
+                    stage=stage,
+                    effect_uncertain=effect_attempted or stage == "reconcile_started",
+                    wake_id=wake_id,
+                )
+            except Exception:
                 pass
         print(json.dumps({
             "blocker": "alpaca_pass_failed",
