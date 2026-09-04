@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import importlib.util
 import json
@@ -958,7 +959,7 @@ def test_paid_project_executor_runs_different_owners_in_parallel():
     assert maximum == 2
 
 
-def test_paid_model_runner_is_serialized_across_parallel_projects(tmp_path, monkeypatch):
+def test_paid_model_runner_delegates_serialization_to_generic_runner(tmp_path, monkeypatch):
     paid = load("paid_direct")
     projects = tmp_path / "gig" / "projects"
     roots = [projects / "one", projects / "two"]
@@ -985,7 +986,103 @@ def test_paid_model_runner_is_serialized_across_parallel_projects(tmp_path, monk
                    for root in roots]
         assert [future.result() for future in futures] == ["ok", "ok"]
 
-    assert maximum == 1
+    assert maximum == 2
+
+
+def test_paid_effect_owner_lease_is_held_through_run(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    root = tmp_path / "gig" / "projects" / "one"
+    root.mkdir(parents=True)
+    entered = threading.Event()
+    release = threading.Event()
+    calls = []
+
+    def run(command, step):
+        calls.append((command, step))
+        entered.set()
+        assert release.wait(timeout=1)
+        return "ok"
+
+    monkeypatch.setattr(paid, "_run", run)
+    monkeypatch.setattr(paid, "_private_model_runner", lambda _root, command, _label: command)
+    worker_result = []
+
+    def invoke_first():
+        try:
+            worker_result.append(("ok", paid._run_private_model_serialized(
+                root, ["first"], "label", "step", effect_owner=True,
+            )))
+        except BaseException as error:
+            worker_result.append(("error", error))
+
+    worker = threading.Thread(
+        target=invoke_first,
+        daemon=True,
+    )
+    second_result = []
+    second_done = threading.Event()
+
+    def invoke_second():
+        try:
+            second_result.append(("ok", paid._run_private_model_serialized(
+                root, ["second"], "label", "step", effect_owner=True,
+            )))
+        except BaseException as error:
+            second_result.append(("error", error))
+        finally:
+            second_done.set()
+
+    second = threading.Thread(target=invoke_second, daemon=True)
+    try:
+        worker.start()
+        assert entered.wait(timeout=1)
+        second.start()
+        assert second_done.wait(timeout=1), "effect-owner lease blocked instead of failing fast"
+        assert len(second_result) == 1
+        assert second_result[0][0] == "error"
+        assert isinstance(second_result[0][1], paid.Failure)
+        assert second_result[0][1].step == "remote_owner_busy"
+        assert calls == [(["first"], "step")]
+    finally:
+        release.set()
+        worker.join(timeout=1)
+        second.join(timeout=1)
+    assert not worker.is_alive()
+    assert worker_result == [("ok", "ok")]
+
+
+def test_paid_model_runner_does_not_wait_on_legacy_lock(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    root = tmp_path / "gig" / "projects" / "one"
+    root.mkdir(parents=True)
+    lock_path = root.parents[1] / ".paid-model-runner.lock"
+    descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    called = threading.Event()
+    result = []
+
+    def run(_command, _step):
+        called.set()
+        return "ok"
+
+    monkeypatch.setattr(paid, "_run", run)
+    monkeypatch.setattr(paid, "_private_model_runner", lambda _root, command, _label: command)
+    worker = threading.Thread(
+        target=lambda: result.append(
+            paid._run_private_model_serialized(root, ["agent"], "label", "step")
+        ),
+        daemon=True,
+    )
+    try:
+        worker.start()
+        assert called.wait(timeout=1), "legacy Paid lock blocked the model runner"
+        worker.join(timeout=1)
+        assert not worker.is_alive()
+        assert result == ["ok"]
+    finally:
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
+        os.close(descriptor)
+        worker.join(timeout=1)
 
 
 def test_answer_receipt_does_not_close_pending_buyer_artifact():
@@ -1227,6 +1324,58 @@ def test_paid_admission_selects_independent_projects_in_same_wake(tmp_path):
     admitted = paid._admitted_paid_projects(args, items)
 
     assert [item["talkroom_id"] for item in admitted] == ["101", "102"]
+
+
+def test_paid_admission_includes_all_available_orders_beyond_worker_width(tmp_path):
+    paid = load("paid_direct")
+    args = SimpleNamespace(projects_root=tmp_path)
+    items = [
+        {"talkroom_id": str(101 + index), "buyer": f"buyer-{index}"}
+        for index in range(9)
+    ]
+
+    admitted = paid._admitted_paid_projects(args, items)
+
+    assert [item["talkroom_id"] for item in admitted] == [str(101 + index) for index in range(9)]
+
+
+def test_paid_observation_does_not_exclude_ryu_talkroom(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    evidence = tmp_path / "orders"
+    args = SimpleNamespace(collector=tmp_path / "collector", projects_root=tmp_path,
+                           cdp_helper=tmp_path / "cdp", today="2026-09-04")
+    snapshot = {
+        "version": 1,
+        "source": "authenticated_coconala_default_context_dom",
+        "captured_at": "2026-09-04T12:00:00+00:00",
+        "collector_mode": "orders-only",
+        "observed_sources": ["orders"],
+        "open_orders_list_observed": True,
+        "orders": [{
+            "talkroom_id": "18211957",
+            "contract_id": "talkroom:18211957",
+            "marketplace_url": "https://coconala.com/talkrooms/18211957",
+            "status": "unknown",
+            "buyer": "Ryu0820119",
+        }],
+        "source_receipt": {
+            "source": "orders",
+            "requested_route": "https://coconala.com/mypage/received_orders/open",
+            "final_route": "https://coconala.com/mypage/received_orders/open",
+            "login_redirect": False,
+            "coverage_complete": True,
+            "cards_count": 1,
+            "empty_state_present": False,
+        },
+        "read_only": True,
+    }
+    write_json(evidence / "orders-only-snapshot.json", snapshot)
+    monkeypatch.setattr(paid, "_collector", lambda *_args, **_kwargs: ["collector"])
+    monkeypatch.setattr(paid, "_run", lambda *_args, **_kwargs: "")
+
+    observed = paid.observe_orders(args, evidence)
+
+    assert [item["talkroom_id"] for item in observed] == ["18211957"]
 
 
 def test_paid_admission_skips_future_timed_retry_for_actionable_project(tmp_path):

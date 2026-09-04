@@ -10,6 +10,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 GIG_DISK_HEADROOM_KIB=524288
 GIG_HOST_STATE_DIR="$HOME/.openclaw/state"
 GIG_STATE_DIR="$HOME/gig"
+unset GIG_IGNORE_DISK_PRESSURE_BLOCK GIG_IGNORE_DISK_WRITERS_STOP
 unset DISK_CONTROL_STATE_DIR OPENCLAW_STATE_DIR LIFE_MANAGER_HOST_STATE_DIR
 export GIG_DISK_HEADROOM_KIB GIG_HOST_STATE_DIR GIG_STATE_DIR
 GIG_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -73,7 +74,7 @@ case "${GIG_BROWSER_TLS_COMPAT:-auto}:$chromium_major" in
     ;;
 esac
 
-exec "$chromium_bin" \
+"$chromium_bin" \
   --no-first-run \
   --no-default-browser-check \
   --password-store=basic \
@@ -87,4 +88,42 @@ exec "$chromium_bin" \
   --remote-allow-origins='*' \
   --remote-debugging-port="$GIG_BROWSER_PORT" \
   --user-data-dir="$GIG_BROWSER_PROFILE" \
-  about:blank
+  about:blank &
+browser_pid=$!
+
+forward_signal() {
+  local signal="$1" status="$2"
+  kill "-$signal" "$browser_pid" 2>/dev/null || true
+  wait "$browser_pid" 2>/dev/null || true
+  exit "$status"
+}
+trap 'forward_signal TERM 143' TERM
+trap 'forward_signal INT 130' INT
+
+# KeepAlive can replace a crashed Chromium, but the replacement is useful only after its
+# authenticated state is restored. Wait for this exact child to expose CDP, restore the
+# profile's existing vault once, then remain its launchd-supervised parent.
+cdp_base="${CLOAK_CDP_BASE_URL:-http://127.0.0.1:$GIG_BROWSER_PORT}"
+vault_dir="${SESSION_VAULT_DIR:-$HOME/.cloak/vault/gig-daily-driver}"
+vault_helper="${GIG_SESSION_VAULT_HELPER:-$GIG_SCRIPT_DIR/../../../browser/scripts/session_vault.py}"
+for _ in $(jot 30); do
+  kill -0 "$browser_pid" 2>/dev/null || break
+  if /usr/bin/curl -fsS --max-time 1 "$cdp_base/json/version" >/dev/null 2>&1; then
+    if [ -r "$vault_dir/auth-state.json" ] && [ -r "$vault_helper" ]; then
+      vault_python=/opt/homebrew/bin/python3
+      [ -x "$vault_python" ] || vault_python=/usr/bin/python3
+      SESSION_VAULT_DIR="$vault_dir" SESSION_VAULT_PORT="$GIG_BROWSER_PORT" \
+        CLOAK_CDP_BASE_URL="$cdp_base" \
+        "$vault_python" "$vault_helper" restore || \
+        echo "Gig CloakBrowser session vault restore failed" >&2
+    fi
+    break
+  fi
+  sleep 1
+done
+
+if wait "$browser_pid"; then
+  exit 0
+else
+  exit $?
+fi
