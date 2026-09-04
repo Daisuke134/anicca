@@ -268,11 +268,17 @@ def _resolve_cp2_url(raw_url):
     if (
         parts.scheme != "https"
         or parts.netloc.lower() != "api.capafy.ai"
-        or not re.fullmatch(r"/C[0-9]+", parts.path)
+        # The upload API now returns its final review handle (/R...) rather
+        # than the older credential handle (/C...).  Both are first-party
+        # opaque links and resolve to the same tightly validated CP2 target.
+        or not re.fullmatch(r"/[CR][0-9]+", parts.path)
         or parts.query
         or parts.fragment
     ):
-        raise RuntimeError("CP2 short URL must be exactly https://api.capafy.ai/C<digits>")
+        raise RuntimeError(
+            "CP2 short URL must be exactly https://api.capafy.ai/C<digits> "
+            "or the server-issued https://api.capafy.ai/R<digits>"
+        )
 
     locations = _single_redirect_location(raw_url, "HEAD")
     if not locations:

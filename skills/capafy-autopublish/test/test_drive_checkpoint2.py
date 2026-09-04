@@ -81,6 +81,21 @@ def test_short_cp2_url_resolves_one_valid_redirect(monkeypatch) -> None:
     assert seen == [("https://api.capafy.ai/C123", "HEAD")]
 
 
+def test_server_issued_review_url_resolves_for_cp2(monkeypatch) -> None:
+    module = load_module()
+    final = "https://capafy.ai/developer/createAgent?source=temp-link&token=123&page=review"
+    seen = []
+
+    def redirect(url, method):
+        seen.append((url, method))
+        return [final]
+
+    monkeypatch.setattr(module, "_single_redirect_location", redirect)
+
+    assert module._resolve_cp2_url("https://api.capafy.ai/R2094331963960610816") == final
+    assert seen == [("https://api.capafy.ai/R2094331963960610816", "HEAD")]
+
+
 def test_short_cp2_url_rejects_cross_domain_location(monkeypatch) -> None:
     module = load_module()
     monkeypatch.setattr(

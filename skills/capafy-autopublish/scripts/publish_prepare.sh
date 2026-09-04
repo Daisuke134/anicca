@@ -38,6 +38,11 @@ CAPAFY_PUBLISH_HOME="${CAPAFY_PUBLISH_HOME:-$LIFE_MANAGER_STATE_HOME/runtime/cap
 WS="${CAPAFY_WORKSPACE:-$CAPAFY_PUBLISH_HOME/.openclaw/workspace}"
 SKILL_NAME="$(basename "$SKILL_DIR")"
 SEL_FILE="$LIFE_MANAGER_STATE_HOME/state/capafy-autopublish/sel_one.json"
+# Releases are intentionally immutable.  Keep every publisher scratch artifact
+# (including the work-state manifest) in durable private state, never beside the
+# vendored publisher code under the release directory.
+PUBLISH_WORK_ROOT="${CAPAFY_PUBLISH_WORK_ROOT:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-work}"
+PUBLISH_TMP_ROOT="${CAPAFY_PUBLISH_TMP_ROOT:-$LIFE_MANAGER_STATE_HOME/runtime/capafy-publisher-tmp}"
 
 # launchd and direct recovery runs must use the same private credential SSOT.
 # Load names into the process only; never copy values into the repo or output.
@@ -89,6 +94,7 @@ cd "$PUB" || die "cd PUB"
 TITLE="$(grep -A1 '^## Title' "$LISTING" | tail -1)"
 # write selections via python (heredoc redirects can be blocked by the sandbox)
 mkdir -p "$(dirname "$SEL_FILE")"
+mkdir -p "$PUBLISH_WORK_ROOT/agents" "$PUBLISH_TMP_ROOT"
 "$VENV" - "$TITLE" "$SKILL_NAME" "$SEL_FILE" <<'PY'
 import json,sys,os
 title,sn,out=sys.argv[1],sys.argv[2],sys.argv[3]
@@ -133,7 +139,7 @@ if [ -n "$ID" ]; then
   # publish-init so this retry cannot reset or ship a previous agent's state.
   # A scheduler/agent-runner may inherit this from an unrelated prior attempt.
   # Never let that ambient value redirect a resume into another agent's manifest.
-  export CAPAFY_PUBLISH_WORK_DIR="$PUB/.temp/agents/$ID"
+  export CAPAFY_PUBLISH_WORK_DIR="$PUBLISH_WORK_ROOT/agents/$ID"
   # BUG FIX 2026-07-17: this branch used to skip publish-init entirely, leaving the
   # LOCAL publish work-state (.temp/publish-work-state.json) pointed at whatever
   # agent_id a PRIOR run last touched. publish-ship then failed closed with
@@ -182,14 +188,15 @@ fi
 RAW="$(python3 packager.py publish-refresh-url --agent-id "$ID" --step init 2>/dev/null)"
 TOK="$(echo "$RAW" | python3 -c "import json,sys;print(json.load(sys.stdin).get('review_url',''))" | grep -oE '[0-9]{15,}' | head -1)"
 EDIT="https://capafy.ai/developer/createAgent?source=temp-link&token=${TOK}&page=edit"
-python3 "$AUTO/scripts/build_config.py" "$LISTING" "$ICON" "$EDIT" "$PUB/.temp/cfg_one.json" >/dev/null 2>&1 || die "build_config failed"
+CFG_ONE="$PUBLISH_TMP_ROOT/cfg_one.json"
+python3 "$AUTO/scripts/build_config.py" "$LISTING" "$ICON" "$EDIT" "$CFG_ONE" >/dev/null 2>&1 || die "build_config failed"
 
 step "PREPARE DONE — hand off to agentic CP1"
 echo "AGENT_ID=$ID"
 echo "EDIT_URL=$EDIT"
 echo ""
 echo "TARGET PRICING (drive each plan card to these EXACT values on the 価格設定 tab):"
-python3 - "$PUB/.temp/cfg_one.json" <<'PY'
+python3 - "$CFG_ONE" <<'PY'
 import json,sys
 c=json.load(open(sys.argv[1]))
 for p in c["plans"]:

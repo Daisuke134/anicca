@@ -35,6 +35,26 @@
 | 12 | Mobile (Capafy) | 🟡 停滞 | $19.98 で 8/12 から売上なし、ledger 8/22 停止 | 新規販売導線なし。postiz/自前 marketing 未接続 |
 | - | Ebook | ⚫ 存在しない | plist も pipeline もなし | 作るなら新規（優先度は上記の後） |
 
+
+## 2026-09-04 実測サマリ（本番に載ったもの）
+
+main `455cc4bdb` / live release `20260904T182615-455cc4bd`。
+
+| 変更 | 証拠 | 状態 |
+|---|---|---|
+| launchd が `USER` を渡さず claude CLI が保存済み認証を読めなかった。runner 2 箇所で補完（plist 191 個は不変） | 同一呼び出しが rc1/result無 → rc0/schema_valid。PR #4085 | 本番 |
+| Coconala 出品 14 件を `受付休止中` → `公開中` | effects.jsonl に reopen 14 行、readback 休止 0 | 本番外（効果は適用済） |
+| 一覧 scraper が `受付休止中` を state:None として捨てていた | 契約検証が 14 件を毎 wake 破棄していた | 本番 |
+| reply lane の backlog 飢餓（新着ゼロの pass でしか backlog を見ない gate） | 修正前は 1 thread、修正後は 3 thread 判断 | 本番 |
+| Lancers `_filter_claimed_rows` が 1 行の予算不正で planner 前に全滅 | `planner_contract_invalid` 消滅、観測 33→40、exit 0。PR #4086 | 本番 |
+| Lancers profile に顔写真登録、公式完成度 90% | 公式 readback | 本番 |
+| 出品カタログ 20 本（platform 非依存、¥5,000〜¥350,000） | `skills/gig-work/profile/listings/catalog.json` | 資産のみ、未公開 |
+
+**残る単一の壁:** 共有モデル runner の返答契約。`claude-direct` は rc 0 で返すが `missing required property decision` で棄却される。
+storefront / paid / Lancers 応募の 3 lane がこの 1 点で止まっている。ここが開けば同時に動く。
+
+**誤りだった仮説（記録）:** 認証切れ説、CrowdWorks の `hours_limit` 文字列説、paid lane の lock 競合説、Writer が claude で稼働中という説。すべて実測で反証。
+
 ## TODO（この順。順序 SSOT — Dais 明示なしに変更禁止）
 
 順序改定 2026-09-04: Dais 明示指示「まず Coconala 出品(storefront)を直す → Lancers 完全プロフィールで応募 → CrowdWorks」。#1〜#3 を gig 3 platform で固定、以降は 9/3 順を維持。
