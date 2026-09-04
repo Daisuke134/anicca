@@ -452,3 +452,68 @@ def test_supervisor_runs_first_full_reconciliation_after_one_poll(tmp_path, monk
     ), timeout=1))
 
     assert reconciliations == [True]
+
+
+class _BacklogController:
+    """A controller with a durable backlog and no reconciliations in flight.
+
+    Every backlog thread routes through the "no exact event" early return in
+    process_one (pending_action_for_thread -> None, then a lifecycle lookup that
+    raises), so the test never has to fake a browser or a compose function.
+    """
+
+    def __init__(self, backlog):
+        self._backlog = backlog
+        self.outbox = SimpleNamespace(
+            action_lifecycle_for_event=lambda event_key, thread_id: (_ for _ in ()).throw(
+                ValueError("no exact event for test")
+            )
+        )
+
+    def reconciliation_actions(self):
+        return {}
+
+    def pending_actions(self):
+        return self._backlog
+
+    def pending_action_for_thread(self, thread_id):
+        return None
+
+
+def test_durable_backlog_is_processed_even_when_the_fresh_scan_finds_items():
+    """Bug measured 2026-09-04: 97 threads sat pending up to 30 days because the
+    backlog fallback only ran when the fresh scan found literally nothing this
+    pass. A busy shop's fresh scan almost never finds nothing, so the backlog
+    was starved. The fold-in must fire whenever this is not a targeted single-
+    thread call (semantic_ssot is not True), independent of the fresh scan.
+    """
+    backlog = [
+        {
+            "thread_id": "10103725", "event_key": "coconala:message:v1:10103725:1",
+            "event_observed_at": 1000, "thread_url": "https://coconala.com/talkrooms/10103725",
+        },
+        {
+            "thread_id": "10153363", "event_key": "coconala:message:v1:10153363:1",
+            "event_observed_at": 2000, "thread_url": "https://coconala.com/talkrooms/10153363",
+        },
+    ]
+    controller = _BacklogController(backlog)
+    queue = {
+        "status": "ready",
+        "items": [{
+            "event_key": "coconala:message:v1:99999999:1",
+            "covered_event_keys": ["coconala:message:v1:99999999:1"],
+            "talkroom_id": "99999999",
+            "talkroom_url": "https://coconala.com/talkrooms/99999999",
+            "origin_at": "2026-09-04T00:00:00+00:00",
+        }],
+    }
+
+    summary = reply_lane.process_queue(
+        controller=controller, queue=queue, compose=lambda context: "unused",
+        browser_factory=lambda action, item: None, owner_prefix="test",
+        clock=lambda: 1, paid_talkroom_ids=lambda: set(),
+    )
+
+    decided_threads = {entry["talkroom_id"] for entry in summary["errors"]}
+    assert decided_threads == {"99999999", "10103725", "10153363"}

@@ -307,7 +307,15 @@ def process_queue(
             ).isoformat(),
         })
         queued_threads.add(thread_id)
-    if queue.get("status") == "queue_empty" and not items and queue.get("semantic_ssot") is not True:
+    # Bug (measured 2026-09-04): this used to require "status == queue_empty and not
+    # items" before folding in the durable backlog. A busy shop's fresh scan almost
+    # always finds at least one item, so that condition was true on ~0 passes and 97
+    # threads sat in connector_actions state=pending for up to 30 days, re-queued but
+    # never selected. queued_threads already dedupes against whatever the fresh scan
+    # found, so folding the backlog in on every non-targeted pass is safe -- only the
+    # targeted single-thread path (semantic_ssot is True) must stay excluded, since it
+    # exists to process exactly one thread, not the whole backlog.
+    if queue.get("semantic_ssot") is not True:
         for action in controller.pending_actions():
             thread_id = str(action["thread_id"])
             if thread_id in queued_threads:
