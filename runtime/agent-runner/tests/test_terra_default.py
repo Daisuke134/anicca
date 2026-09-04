@@ -26,6 +26,7 @@ class TerraDefaultTest(unittest.TestCase):
                     expected = [
                         {"provider": "codex", "model": "gpt-5.6-luna", "effort": "high", "profile_alias": "acct2"},
                         {"provider": "codex", "model": "gpt-5.6-terra", "effort": "medium", "profile_alias": "acct2"},
+                        {"provider": "claude-direct", "model": "claude-sonnet-5"},
                     ]
                 if name == "reply-semantic-agent":
                     expected = [{"provider": "codex", "model": "gpt-5.6-luna",
