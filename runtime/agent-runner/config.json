@@ -227,6 +227,10 @@
           "model": "gpt-5.6-terra",
           "effort": "medium",
           "profile_alias": "acct2"
+        },
+        {
+          "provider": "claude",
+          "model": "claude-sonnet-5"
         }
       ]
     },
