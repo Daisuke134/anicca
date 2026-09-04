@@ -1,0 +1,56 @@
+name: Temporary Cloud Multi-Travel T-5 TDD
+
+on:
+  push:
+    branches:
+      - fix/cloud-multi-travel-t5-20260904
+
+permissions:
+  contents: write
+
+jobs:
+  focused-tdd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/life-manager/package-lock.json
+
+      - name: Install Life Manager dependencies
+        working-directory: apps/life-manager
+        run: npm ci --ignore-scripts
+
+      - name: Apply production fix only after the RED run is observed
+        shell: bash
+        run: |
+          if [[ -f .github/scripts/apply-cloud-multi-travel-t5.py ]]; then
+            echo "APPLY_FIX=1" >> "$GITHUB_ENV"
+            python3 .github/scripts/apply-cloud-multi-travel-t5.py
+          fi
+
+      - name: Run focused reminder tests
+        run: |
+          node --test \
+            apps/life-manager/lib/travel-reminder-multi-due.test.js \
+            apps/life-manager/lib/travel-reminder.test.js
+
+      - name: Commit the generated fix and remove temporary TDD machinery
+        if: ${{ env.APPLY_FIX == '1' }}
+        shell: bash
+        run: |
+          rm -f .github/scripts/apply-cloud-multi-travel-t5.py
+          rm -f .github/workflows/temp-cloud-multi-travel-t5-tdd.yml
+          git config user.name "Life Manager TDD"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "fix(life-manager): select due reminders across travel events"
+          git push origin HEAD:${GITHUB_REF_NAME}
