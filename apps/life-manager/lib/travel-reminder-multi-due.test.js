@@ -71,3 +71,57 @@ test("a later-start trip whose departure reminder is due is not blocked by an ea
   assert.match(sent[0], /東京タワー/);
   assert.doesNotMatch(sent[0], /近場の予定/);
 });
+
+test("candidate route evaluations start concurrently so one slow route cannot consume the whole reminder deadline", async () => {
+  const earlierShortTrip = event(
+    "concurrent-earlier",
+    "近場の予定",
+    "近場",
+    "2026-09-04T14:00:00+09:00",
+  );
+  const laterLongTrip = event(
+    "concurrent-later",
+    "東京タワー",
+    "東京タワー",
+    "2026-09-04T14:20:00+09:00",
+  );
+  let started = 0;
+  let releaseRoutes;
+  const routeBarrier = new Promise((resolve) => { releaseRoutes = resolve; });
+
+  const run = travelReminderOnce({
+    uid: "concurrent-user",
+    telegram_chat_id: "concurrent-chat",
+    notifications_enabled: true,
+  }, NOW, {
+    events: [earlierShortTrip, laterLongTrip],
+    home: HOME,
+    mapsKey: "maps",
+    timezone: "Asia/Tokyo",
+    telegramToken: "token",
+    supaUrl: "https://supa.example",
+    supaKey: "service-key",
+    directionsRoute: async (_origin, destination) => {
+      started += 1;
+      await routeBarrier;
+      return {
+        provider: "transit",
+        durationSeconds: destination === "近場" ? 5 * 60 : 40 * 60,
+        steps: [],
+      };
+    },
+    claimTravel: async () => true,
+    sendMessage: async () => ({ ok: true, result: { message_id: 911 } }),
+    recordTravelTelegramReceipt: async () => ({ ok: true, matched: 1 }),
+    log: () => {},
+  });
+
+  await new Promise((resolve) => setImmediate(resolve));
+  const startedBeforeRelease = started;
+  releaseRoutes();
+  const result = await run;
+
+  assert.equal(startedBeforeRelease, 2);
+  assert.equal(result.status, "sent");
+  assert.equal(result.eventKey, laterLongTrip.id);
+});
