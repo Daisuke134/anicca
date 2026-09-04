@@ -127,3 +127,58 @@ test("candidate route evaluations start concurrently so one slow route cannot co
   assert.equal(result.status, "sent");
   assert.equal(result.eventKey, laterLongTrip.id);
 });
+
+test("an already-claimed due trip does not starve another due trip", async () => {
+  const alreadySent = event(
+    "already-sent",
+    "先に通知済み",
+    "場所A",
+    "2026-09-04T14:20:00+09:00",
+  );
+  const stillNeedsSend = event(
+    "needs-send",
+    "東京タワー",
+    "東京タワー",
+    "2026-09-04T14:25:00+09:00",
+  );
+  const claimAttempts = [];
+  const sent = [];
+
+  const result = await travelReminderOnce({
+    uid: "duplicate-due-user",
+    telegram_chat_id: "duplicate-due-chat",
+    notifications_enabled: true,
+  }, NOW, {
+    events: [alreadySent, stillNeedsSend],
+    home: HOME,
+    mapsKey: "maps",
+    timezone: "Asia/Tokyo",
+    telegramToken: "token",
+    supaUrl: "https://supa.example",
+    supaKey: "service-key",
+    travelLogAssociation: false,
+    directionsRoute: async (_origin, destination) => ({
+      provider: "transit",
+      durationSeconds: destination === "場所A" ? 40 * 60 : 45 * 60,
+      steps: [],
+    }),
+    claimTravel: async (_uid, eventKey, leg) => {
+      assert.equal(leg, "telegram-t5");
+      claimAttempts.push(eventKey);
+      return eventKey === stillNeedsSend.id;
+    },
+    sendMessage: async (_token, _chatId, text) => {
+      sent.push(text);
+      return { ok: true, result: { message_id: 912 } };
+    },
+    recordTravelTelegramReceipt: async () => ({ ok: true, matched: 1 }),
+    log: () => {},
+  });
+
+  assert.equal(result.status, "sent");
+  assert.equal(result.eventKey, stillNeedsSend.id);
+  assert.deepEqual(claimAttempts, [alreadySent.id, stillNeedsSend.id]);
+  assert.equal(sent.length, 1);
+  assert.match(sent[0], /東京タワー/);
+  assert.doesNotMatch(sent[0], /先に通知済み/);
+});
