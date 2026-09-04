@@ -712,12 +712,21 @@ def run_loop(*, exhaustive: bool = False, state_path: Path = DEFAULT_STATE_PATH,
                     elif isinstance(opportunities, (str, bytes, bytearray)) or not isinstance(opportunities, Sequence): result = ApplicationLoopResult(False, error="discovery_failed")
                     elif not opportunities: result = ApplicationLoopResult(True, reason="no_eligible_project", observed_count=int(observed.get("observed_count") or 0), already_decided_count=int(observed.get("already_decided_count") or 0))
                     else:
+                        # Exhaustive discovery unions every query with no per-call cap, so a wake
+                        # can see more rows than one planner call may ever receive (build_planner_prompt's
+                        # _snapshot enforces MAX_OPPORTUNITIES and raising there fails the whole
+                        # batch with zero judged). Slice to that cap per turn and only mark the
+                        # sliced-in rows as seen, so the remaining rows are picked up on a later turn
+                        # instead of being silently dropped or blocking every row behind an oversized batch.
                         fresh = []
                         for row in opportunities:
                             project_id = row.get("external_id") if isinstance(row, Mapping) else None
                             if not isinstance(project_id, str) or project_id not in wake_seen_ids:
                                 fresh.append(row)
-                                if isinstance(project_id, str): wake_seen_ids.add(project_id)
+                            if len(fresh) >= MAX_OPPORTUNITIES: break
+                        for row in fresh:
+                            project_id = row.get("external_id") if isinstance(row, Mapping) else None
+                            if isinstance(project_id, str): wake_seen_ids.add(project_id)
                         if not fresh:
                             result = ApplicationLoopResult(True, reason="no_eligible_project", observed_count=int(observed.get("observed_count") or 0), already_decided_count=int(observed.get("already_decided_count") or 0))
                         else:
