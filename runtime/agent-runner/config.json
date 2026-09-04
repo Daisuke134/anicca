@@ -146,7 +146,7 @@
           "profile_alias": "acct2"
         },
         {
-          "provider": "claude",
+          "provider": "claude-direct",
           "model": "claude-sonnet-5"
         }
       ]
