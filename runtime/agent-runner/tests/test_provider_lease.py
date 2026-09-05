@@ -96,7 +96,7 @@ class ProviderLeaseTest(unittest.TestCase):
             time.sleep(0.02)
         self.assertFalse(self._lease_is_busy(lock_path), "lease remained busy after provider exit")
 
-    def test_shared_codex_home_rejects_overlapping_provider_process(self):
+    def test_shared_codex_home_queues_provider_processes_without_overlap(self):
         events = self.root / "events.jsonl"
         provider = self.root / "provider.py"
         provider.write_text(
@@ -127,11 +127,10 @@ class ProviderLeaseTest(unittest.TestCase):
             results = [future.result() for future in (executor.submit(run), executor.submit(run))]
 
         rows = [json.loads(line) for line in events.read_text(encoding="utf-8").splitlines()]
-        self.assertEqual(results.count(0), 1)
-        self.assertEqual(results.count("busy"), 1)
-        self.assertEqual([row[0] for row in rows], ["start", "end"])
+        self.assertEqual(results, [0, 0])
+        self.assertEqual([row[0] for row in rows], ["start", "end", "start", "end"])
 
-    def test_shared_codex_home_busy_returns_immediately_without_launching_provider(self):
+    def test_shared_codex_home_busy_until_deadline_raises_without_launching_provider(self):
         lock_path = self.root / "codex-home" / ".agent-runner-provider.lock"
         lock_path.parent.mkdir()
         holder = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
@@ -144,36 +143,56 @@ class ProviderLeaseTest(unittest.TestCase):
             f"Path({str(marker)!r}).touch()\n",
             encoding="utf-8",
         )
-        runner = self.root / "runner.py"
-        outcome = self.root / "outcome"
-        runner.write_text(
-            "import os, subprocess, sys\n"
+        started = time.monotonic()
+        with self.assertRaises(ProviderLeaseBusy):
+            run_provider_process(
+                [sys.executable, str(provider)],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5,
+                deadline=started + 0.2, cwd=str(self.root), input_bytes=None,
+                stdin=subprocess.DEVNULL, env={**os.environ, "CODEX_HOME": str(lock_path.parent)},
+            )
+        elapsed = time.monotonic() - started
+        self.assertGreaterEqual(elapsed, 0.15)
+        self.assertLess(elapsed, 1)
+        self.assertFalse(marker.exists(), "timed-out lock wait launched a provider")
+
+    def test_shared_codex_home_late_lock_acquisition_is_busy_without_launching_provider(self):
+        lock_path = self.root / "codex-home" / ".agent-runner-provider.lock"
+        lock_path.parent.mkdir()
+        holder = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        self.addCleanup(lambda: os.close(holder))
+        fcntl.flock(holder, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        marker = self.root / "provider-launched"
+        provider = self.root / "provider.py"
+        provider.write_text(
             "from pathlib import Path\n"
-            f"sys.path.insert(0, {str(ROOT)!r})\n"
-            "from agent_runner import ProviderLeaseBusy, run_provider_process\n"
-            "try:\n"
-            "    run_provider_process(\n"
-            f"        [sys.executable, {str(provider)!r}],\n"
-            "        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=0.2,\n"
-            f"        cwd={str(self.root)!r}, input_bytes=None, stdin=subprocess.DEVNULL,\n"
-            f"        env={{**os.environ, 'CODEX_HOME': {str(lock_path.parent)!r}}},\n"
-            "    )\n"
-            "except ProviderLeaseBusy:\n"
-            f"    Path({str(outcome)!r}).write_text('ProviderLeaseBusy')\n"
-            "else:\n"
-            f"    Path({str(outcome)!r}).write_text('completed')\n",
+            f"Path({str(marker)!r}).touch()\n",
             encoding="utf-8",
         )
-        try:
-            result = subprocess.run(
-                [sys.executable, str(runner)],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=2,
-            )
-        except subprocess.TimeoutExpired:
-            self.fail("provider lock wait exceeded the run_provider_process timeout")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outcome.read_text(encoding="utf-8"), "ProviderLeaseBusy")
-        self.assertFalse(marker.exists(), "timed-out lock wait launched a provider")
+        deadline = 1.0
+        now = 0.0
+        released = False
+
+        def monotonic():
+            return now
+
+        def release_after_deadline(_duration):
+            nonlocal now, released
+            now = deadline + 0.01
+            fcntl.flock(holder, fcntl.LOCK_UN)
+            released = True
+
+        with mock.patch("agent_runner.time.monotonic", side_effect=monotonic):
+            with mock.patch("agent_runner.time.sleep", side_effect=release_after_deadline):
+                with self.assertRaises(ProviderLeaseBusy):
+                    run_provider_process(
+                        [sys.executable, str(provider)],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5,
+                        deadline=deadline, cwd=str(self.root), input_bytes=None,
+                        stdin=subprocess.DEVNULL, env={"CODEX_HOME": str(lock_path.parent)},
+                    )
+        self.assertTrue(released)
+        self.assertFalse(marker.exists(), "late lock acquisition launched a provider")
 
     def test_expired_deadline_after_preflight_does_not_launch_provider(self):
         codex_home = self.root / "codex-home"
