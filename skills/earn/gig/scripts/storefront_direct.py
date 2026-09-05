@@ -41,6 +41,7 @@ DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json
 DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
 DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_proposal.schema.json"
 DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_proposal.schema.json"
+DEFAULT_FACET_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_facet_proposal.schema.json"
 DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child.schema.json"
 DEFAULT_BOOTSTRAP_SELECTION_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_selection.schema.json"
 DEFAULT_BOOTSTRAP_LISTING_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_listing.schema.json"
@@ -1876,6 +1877,92 @@ def _validate_category_choice(chosen_value: str, options: list, level: str = "ca
     return {"value": str(match["value"]), "label": str(match.get("label") or "").strip()}
 
 
+def _invoke_facet_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
+    listing: dict, facet_groups: dict[str, dict], timeout_seconds: int,
+) -> tuple[dict, dict]:
+    """Choose values for every facet group the bound category's live form actually renders.
+
+    Facet groups and their option ids are category-specific and unknown until the draft renders
+    them: a writing category's ids never appear on a development category's form, which renders
+    an entirely different set. Only the groups read off THIS draft are ever offered.
+    """
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    context = {
+        "listing": listing,
+        "facet_groups": [
+            {"group_id": group_id, "group_label": group["group_label"],
+             "required": group["required"], "max_select": group.get("max_select"),
+             "options": group["options"]}
+            for group_id, group in sorted(facet_groups.items())
+        ],
+    }
+    prompt = """Choose the official facet values this Coconala category's live form renders for the
+listing in CONTEXT_JSON, and return only the strict schema object. `facets` is an array with at most
+one entry per group_id from CONTEXT_JSON.facet_groups; every required facet group must appear with at
+least one value, and when a group's max_select is set, never return more values for it than that. Copy
+every value exactly from that group's own official options; never invent a value or move one between
+groups. Ground each pick in the listing's own title/catchphrase/head/body/category, not in the group's
+id or a guess. Omit a non-required group entirely, or give it an empty values array, when nothing in
+the listing supports a choice.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-facet-proposal", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"storefront_facet_proposal_failed:{completed.returncode}")
+    summary = json.loads((evidence_dir / "summary.json").read_text(encoding="utf-8"))
+    result_path = Path(str(summary["result_path"])).resolve()
+    result_path.relative_to(evidence_dir.resolve())
+    if summary.get("status") != "success" or summary.get("selected_model") != "gpt-5.6-terra":
+        raise RuntimeError("storefront_facet_proposal_evidence_invalid")
+    return json.loads(result_path.read_text(encoding="utf-8")), {
+        "provider": summary.get("selected_provider"), "model": summary.get("selected_model")}
+
+
+def _validate_facet_selection(chosen: dict, facet_groups: dict[str, dict]) -> dict[str, list[str]]:
+    """Bind facet picks to the official values the live form actually offered, group by group.
+
+    A group the form never rendered has nothing to verify. A required group left empty, a value
+    outside that exact group's own options, or a count over its own max_select means the pick did
+    not come from the live form, and Coconala's own required-field check would reject it anyway.
+    """
+    picks_list = chosen.get("facets")
+    # A dynamic per-category key (one entry per discovered facet group) cannot be expressed as a
+    # fixed JSON Schema object in strict structured-output mode, so the agent returns an array of
+    # {group_id, values} instead; this is the one place that shape gets turned back into a map.
+    if not isinstance(picks_list, list) or not all(
+        isinstance(row, dict) and isinstance(row.get("group_id"), str) for row in picks_list
+    ):
+        raise RuntimeError("storefront_facet_selection_invalid")
+    if len(picks_list) != len({row["group_id"] for row in picks_list}):
+        raise RuntimeError("storefront_facet_selection_duplicate_group")
+    picks = {row["group_id"]: row.get("values") for row in picks_list}
+    resolved: dict[str, list[str]] = {}
+    for group_id, group in facet_groups.items():
+        official = {str(option["value"]) for option in group["options"]}
+        values = picks.get(group_id)
+        if values is None:
+            values = []
+        if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+            raise RuntimeError(f"storefront_facet_selection_type_invalid:{group_id}")
+        chosen_values = list(dict.fromkeys(values))
+        if not set(chosen_values) <= official:
+            raise RuntimeError(f"storefront_facet_selection_not_official:{group_id}")
+        if group.get("required") and not chosen_values:
+            raise RuntimeError(f"storefront_facet_selection_required_empty:{group_id}")
+        max_select = group.get("max_select")
+        if isinstance(max_select, int) and len(chosen_values) > max_select:
+            raise RuntimeError(f"storefront_facet_selection_over_max:{group_id}")
+        if chosen_values:
+            resolved[group_id] = chosen_values
+    return resolved
+
+
 def _demand_cluster_key(query: str, category_url: str) -> str:
     identity = json.dumps({"query": query.strip(), "category": category_url.strip()},
                           ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -2367,6 +2454,27 @@ def _traffic_without_inquiries(
     return [service_id for _, service_id in sorted(ranked, reverse=True)]
 
 
+def _subscription_heal_diverges(state_dir: Path, family_name: str, active_row: dict) -> bool:
+    """True when the active draft's last confirmed contract needs a subscription correction
+    Coconala's own edit form cannot actually apply.
+
+    Draft 4385273 (mobile_app_dev) proved this empirically: unchecking `can_subscribe` and
+    resubmitting never cleared the `discount_ratio` Coconala had already persisted from an
+    earlier save, because the category never supports a subscription at all -- the platform
+    simply does not process that field once `can_subscribe` is off. Re-healing forever cannot
+    converge on such a draft, so its recorded contract is compared against what healing would
+    produce today; a mismatch means the draft is stuck and must be rebuilt from a blank one
+    rather than resubmitted again.
+    """
+    demand_evidence_path = str(active_row.get("demand_evidence_path") or "")
+    if not demand_evidence_path:
+        return False
+    healed = _recover_prepared_create_contract(state_dir, family_name, demand_evidence_path)
+    if healed is None:
+        return False
+    return str(healed.get("contract_sha256") or "") != str(active_row.get("contract_sha256") or "")
+
+
 def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
     """Drafts this loop abandoned, never those with publication history.
 
@@ -2375,6 +2483,7 @@ def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
     """
     published = set()
     active_by_family: dict[str, str] = {}
+    active_rows: dict[str, dict] = {}
     if ledger_path.exists():
         for line in ledger_path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -2384,10 +2493,30 @@ def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
                 published.add(str(row.get("draft_service_id") or ""))
             family = str(row.get("capability_family") or "")
             draft_id = str(row.get("draft_service_id") or "")
-            if (row.get("status") in {"draft_created", "draft_prepared"}
+            # `prepare_draft`'s own return dict uses status "prepared", never "draft_prepared" --
+            # that second string never matches a real row, so this membership test used to only
+            # ever capture a draft's *create* event and silently skip its later *prepare* event.
+            # `active_by_family` still ended up with the right draft_id either way (the id does
+            # not change between the two events), which is why this stayed dormant. But
+            # `active_rows` feeds `_subscription_heal_diverges`, which needs the row that actually
+            # reflects the draft's current, form-verified contract -- handing it the stale
+            # just-created row compared a healthy prepared draft's healed contract against an
+            # earlier, different contract_sha256 and always looked like a mismatch. That false
+            # positive got 4385965 -- a correctly healed, freshly prepared draft -- deleted for no
+            # reason on 2026-09-05.
+            if (row.get("status") in {"draft_created", "prepared"}
                     and int(row.get("public_effect") or 0) == 0 and family and draft_id.isdigit()):
                 active_by_family[family] = draft_id
+                active_rows[family] = row
     protected = published | set(active_by_family.values())
+    # Losing protection here is narrow and specific: only a draft whose own recorded contract
+    # provably cannot converge (see `_subscription_heal_diverges`) loses it, never one that is
+    # merely mid-flight.
+    stuck = {
+        draft_id for family, draft_id in active_by_family.items()
+        if _subscription_heal_diverges(ledger_path.parent, family, active_rows[family])
+    }
+    protected -= stuck
     return [value for value in sorted(draft_ids) if value not in protected]
 
 
@@ -2401,12 +2530,46 @@ def _observed_deleted_draft_ids(evidence_root: Path) -> set[str]:
     return deleted
 
 
+def _healed_subscription(contract: dict) -> dict:
+    """Recompute a create contract's subscription pair from its own recorded intent.
+
+    A contract sealed before the `can_subscribe`/`discount_ratio` pairing fix (or one that
+    otherwise drifted) can sit in `generated-create-contract.json` with a subscription that no
+    longer matches its own `recurring_support_included` flag -- draft 4385273 kept that stale
+    `{enabled: True, discount_ratio: "5"}` pair for mobile_app_dev, a family whose category offers
+    no subscription, so every recovered wake resubmitted the same rejected pair. Deriving the
+    pair fresh from `recurring_support_included` every time a contract is recovered, instead of
+    trusting whatever was baked in at seal time, means any future stale draft heals itself on the
+    next wake rather than needing a one-off manual correction.
+    """
+    wants_recurring = bool((contract.get("capability_evidence") or {}).get("recurring_support_included"))
+    return {"enabled": True, "discount_ratio": "5"} if wants_recurring else {"enabled": False, "discount_ratio": "0"}
+
+
+def _reseal_healed_contract(contract: dict) -> dict:
+    if not isinstance(contract.get("subscription"), dict):
+        return contract  # not a full create contract shape; nothing to heal
+    healed = _healed_subscription(contract)
+    if contract.get("subscription") == healed:
+        return contract
+    corrected = {**contract, "subscription": healed}
+    unsigned = {key: value for key, value in corrected.items()
+                if key not in {"contract_sha256", "hero_image"}}
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {**corrected, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+
+
 def _recover_prepared_create_contract(
     state_dir: Path, family_name: str, demand_evidence_path: str,
 ) -> dict | None:
     wakes = state_dir / "wakes.jsonl"
     if not wakes.is_file():
         return None
+    # A draft this loop has since deleted (see `_deletable_drafts`'s subscription-heal-diverges
+    # check) must never be recovered again: its evidence still satisfies every integrity check
+    # below, but the URL it names no longer exists, so reusing it would trade one stuck loop for
+    # another instead of letting a genuinely blank draft take its place.
+    deleted_draft_ids = _observed_deleted_draft_ids(state_dir / "evidence")
     for line in reversed(wakes.read_text(encoding="utf-8").splitlines()):
         if not line.strip():
             continue
@@ -2415,7 +2578,8 @@ def _recover_prepared_create_contract(
         if (row.get("status") != "completed" or draft.get("status") != "prepared"
                 or int(draft.get("readback") or 0) != 1 or int(draft.get("public_effect") or 0) != 0
                 or draft.get("capability_family") != family_name
-                or str(draft.get("demand_evidence_path") or "") != demand_evidence_path):
+                or str(draft.get("demand_evidence_path") or "") != demand_evidence_path
+                or str(draft.get("draft_service_id") or "") in deleted_draft_ids):
             continue
         path = state_dir / "evidence" / str(row.get("pass_id") or "") / "generated-create-contract.json"
         try:
@@ -2430,9 +2594,19 @@ def _recover_prepared_create_contract(
         expected = hashlib.sha256(json.dumps(
             unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
         ).encode()).hexdigest()
+        # A contract sealed before facet groups were discovered per category never carries a
+        # "facets" key at all: it inherited whichever facet ids the source listing's own family
+        # happened to use, silently wrong for any other category. Recovering it verbatim would
+        # re-fail the exact publish error this key exists to prevent, so it is regenerated
+        # instead of reused.
+        if "facets" not in (contract.get("category_specific") or {}):
+            continue
         if (digest == expected == draft.get("contract_sha256")
                 and str(contract.get("draft_service_id") or "") == str(draft.get("draft_service_id") or "")):
-            return contract
+            # Heal after verifying the file matches what this loop actually recorded, so a
+            # tampered or corrupted contract still fails closed above -- only a genuine, intact
+            # contract gets its subscription pair recomputed here.
+            return _reseal_healed_contract(contract)
     return None
 
 
@@ -3792,7 +3966,12 @@ buyer-visible outcome supported by the owned capability family; it must not
 duplicate or merely rephrase any current_catalog_titles. Use the demand page only as demand evidence,
 never copy seller wording, reviews, sales, guarantees or unsupported claims. Include exact evidence
 refs for the official offer, owned family and demand evidence. The title_stem excludes the final
-Japanese `ます`. head must state outcome, exact inclusions, exclusions, required inputs and support
+Japanese `ます`, so it must end in the continuative (i-form) of a Japanese verb -- the character
+right before the implicit `ます` has to be one Coconala can attach `ます` to, e.g. `...を開発し`,
+`...を執筆し`, `...を実装し`. It must never end in a bare noun such as `...アプリ` or `...システム`
+(that would render as the ungrammatical `...アプリます`); if the offer is naturally noun-shaped,
+add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. head must state
+outcome, exact inclusions, exclusions, required inputs and support
 boundary. Write head and body as buyer-facing Japanese prose: never emit a schema field name or an
 English label such as `outcome:`, and never prefix a sentence with a bare label like `含むもの:`. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
 lines: headline, supporting line, and two or three short badges separated by `｜`; do not include price,
@@ -7153,11 +7332,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                 continue
                             row = json.loads(line)
                             draft_id = str(row.get("draft_service_id") or "")
+                            # Same "prepared", not "draft_prepared", vocabulary as the ledger rows
+                            # `prepare_draft` writes (see `_deletable_drafts`) -- without this a
+                            # draft that had already been prepared, not just created, was never
+                            # offered back for reuse here.
                             if (row.get("capability_family") == create_family and draft_id.isdigit()
                                     and draft_id not in inventory_ids
                                     and draft_id not in deleted_draft_ids
                                     and int(row.get("public_effect") or 0) == 0
-                                    and row.get("status") in {"draft_created", "draft_prepared"}):
+                                    and row.get("status") in {"draft_created", "prepared"}):
                                 preferred_draft_ids.append(draft_id)
                     create_draft_claim = storefront_draft.create_or_claim_blank_draft(
                         getattr(args, "default_tab_script", DEFAULT_TAB),
@@ -7214,6 +7397,40 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         demand_derivation = {**(demand_derivation or {}),
                                              "category_triple": blueprint["category"],
                                              "category_child_route": child_route.get("model")}
+                        # The bound category's own live form is the only source of its facet
+                        # groups: the writing category's ids never apply to a development
+                        # category, which renders an entirely different, previously unknown set
+                        # (e.g. 基本対応範囲/言語 on the app-development subcategory). A category
+                        # that renders none has nothing to choose.
+                        facet_form = storefront_draft.read_category_form(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            draft_id, blueprint["category"],
+                        )
+                        facet_groups = facet_form.get("facet_groups") or {}
+                        resolved_facets: dict[str, list[str]] = {}
+                        if facet_groups:
+                            facet_choice, facet_route = _invoke_facet_proposal(
+                                runner=getattr(args, "runner", DEFAULT_RUNNER),
+                                schema=getattr(
+                                    args, "facet_proposal_schema", DEFAULT_FACET_PROPOSAL_SCHEMA),
+                                workdir=args.workdir,
+                                evidence_dir=inventory_path.parent / "facet-proposal-agent",
+                                listing={
+                                    "title_stem": create_proposal.get("title_stem"),
+                                    "catchphrase": create_proposal.get("catchphrase"),
+                                    "head": create_proposal.get("head"),
+                                    "body": create_proposal.get("body"),
+                                    "category": blueprint["category"],
+                                },
+                                facet_groups=facet_groups, timeout_seconds=args.timeout_seconds,
+                            )
+                            resolved_facets = _validate_facet_selection(facet_choice, facet_groups)
+                            demand_derivation = {**(demand_derivation or {}),
+                                                 "facet_group_ids": sorted(facet_groups),
+                                                 "facet_route": facet_route.get("model")}
+                        blueprint = {**blueprint, "category_specific": {
+                            **blueprint["category_specific"], "facets": resolved_facets,
+                        }}
                     new_listing_contract = recovered_create_contract or _seal_create_contract(
                         create_proposal, source=create_source, family_name=create_family,
                         family=create_template,
@@ -7575,6 +7792,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--demand-proposal-schema", type=Path, default=DEFAULT_DEMAND_PROPOSAL_SCHEMA)
     parser.add_argument("--category-proposal-schema", type=Path, default=DEFAULT_CATEGORY_PROPOSAL_SCHEMA)
     parser.add_argument("--category-child-schema", type=Path, default=DEFAULT_CATEGORY_CHILD_SCHEMA)
+    parser.add_argument("--facet-proposal-schema", type=Path, default=DEFAULT_FACET_PROPOSAL_SCHEMA)
     parser.add_argument("--bootstrap-selection-schema", type=Path, default=DEFAULT_BOOTSTRAP_SELECTION_SCHEMA)
     parser.add_argument("--bootstrap-listing-schema", type=Path, default=DEFAULT_BOOTSTRAP_LISTING_SCHEMA)
     parser.add_argument("--bootstrap-import-schema", type=Path, default=DEFAULT_BOOTSTRAP_IMPORT_SCHEMA)

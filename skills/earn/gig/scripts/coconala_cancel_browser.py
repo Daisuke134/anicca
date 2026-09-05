@@ -153,7 +153,7 @@ def browser_state_expression(reason: str, detail: str) -> str:
 
 
 def cancel_send_button_expression() -> str:
-    return '''(()=>{const modal=[...document.querySelectorAll('.modal-content,[role=dialog]')].find(x=>x.offsetParent!==null&&(x.innerText||'').includes('キャンセルリクエスト'));const e=modal?[...modal.querySelectorAll('button')].find(x=>(x.innerText||'').trim()==='送信する'&&x.offsetParent!==null&&!x.disabled&&!x.classList.contains('is-disabled')):null;if(!e)return null;const formal=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type="checkbox"]');if(!formal||formal.checked)return null;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()'''
+    return '''(()=>{const formal=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type="checkbox"]');if(!formal||formal.checked)return null;const e=[...document.querySelectorAll('.d-talkroomProviderCancellationModal_sendButton')].find(x=>x.offsetParent!==null&&!x.disabled&&!x.classList.contains('is-disabled'));if(!e)return null;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()'''
 
 
 def cancel_form_configuration_expression(reason: str, detail: str) -> str:
@@ -177,8 +177,12 @@ def cancel_form_configuration_expression(reason: str, detail: str) -> str:
 
 def intent_is_reconcile_only(intent: dict[str, Any], effect_key: str) -> bool:
     return intent.get("effect_key") == effect_key and intent.get("phase") in {
-        "click_started", "verified",
+        "click_started", "effect_started", "verified",
     }
+
+
+def initial_intent_phase(previous: dict[str, Any], reconcile_only: bool) -> str:
+    return previous.get("phase") if reconcile_only else "prepared"
 
 
 def cancellation_initial_action(
@@ -187,12 +191,14 @@ def cancellation_initial_action(
     if matching_cancellation(state, contract):
         return "dedupe"
     if intent_is_reconcile_only(intent, effect_key):
-        return "retry" if ready_to_send(state, contract) else "reconcile_unknown"
+        if intent.get("phase") == "click_started" and ready_to_send(state, contract):
+            return "retry"
+        return "reconcile_unknown"
     return "send"
 
 
 def cancel_send_button_click_expression() -> str:
-    return '''(()=>{const modal=[...document.querySelectorAll('.modal-content,[role=dialog]')].find(x=>x.offsetParent!==null&&(x.innerText||'').includes('キャンセルリクエスト'));const e=modal?[...modal.querySelectorAll('button')].find(x=>(x.innerText||'').trim()==='送信する'&&x.offsetParent!==null&&!x.disabled&&!x.classList.contains('is-disabled')):null;if(!e)return false;const formal=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type="checkbox"]');if(!formal||formal.checked)return false;e.click();return true})()'''
+    return '''(()=>{const modal=[...document.querySelectorAll('.modal-content,[role=dialog]')].find(x=>x.offsetParent!==null&&(x.innerText||'').includes('キャンセルリクエストを送信すると取り消せません。'));const e=modal?[...modal.querySelectorAll('button')].find(x=>(x.innerText||'').trim()==='送信する'&&x.offsetParent!==null&&!x.disabled&&!x.classList.contains('is-disabled')):null;if(!e)return false;const formal=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type="checkbox"]');if(!formal||formal.checked)return false;e.click();return true})()'''
 
 
 class Session:
@@ -216,14 +222,14 @@ class Session:
         return result.get("result", {}).get("value")
 
 
-async def _wait(session: Session, expression: str, predicate: Any, timeout: float) -> dict[str, Any]:
+async def _wait(session: Session, expression: str, predicate: Any, timeout: float) -> Any:
     deadline, last = time.monotonic() + timeout, {}
     while time.monotonic() < deadline:
         value = await session.evaluate(expression)
         if isinstance(value, dict):
             last = value
-            if predicate(value):
-                return value
+        if predicate(value):
+            return value
         await asyncio.sleep(0.5)
     raise RuntimeError(f"cancellation_readback_timeout:{json.dumps({k: last.get(k) for k in ('url','transaction_state','formal_delivery_control_checked','cancel_control_present','cancellation_pending')}, separators=(',', ':'))}")
 
@@ -275,10 +281,20 @@ async def submit(ws_url: str, contract: CancellationContract, timeout: float, *,
             def mark_started() -> None:
                 intent = json.loads(intent_path.read_text(encoding="utf-8"))
                 intent["phase"] = "click_started"
-                intent["effect_started_at"] = datetime.now(timezone.utc).isoformat()
+                intent["click_started_at"] = datetime.now(timezone.utc).isoformat()
                 collector.atomic_json(intent_path, intent)
 
-            await _click(session, cancel_send_button_expression(), mark_started, dispatch=False)
+            await _click(session, cancel_send_button_expression(), mark_started)
+            await _wait(
+                session,
+                '''(()=>[...document.querySelectorAll('.modal-content,[role=dialog]')].some(x=>x.offsetParent!==null&&(x.innerText||'').includes('キャンセルリクエストを送信すると取り消せません。')))()''',
+                lambda value: value is True,
+                timeout,
+            )
+            intent = json.loads(intent_path.read_text(encoding="utf-8"))
+            intent["phase"] = "effect_started"
+            intent["effect_started_at"] = datetime.now(timezone.utc).isoformat()
+            collector.atomic_json(intent_path, intent)
             if await session.evaluate(cancel_send_button_click_expression(), user_gesture=True) is not True:
                 raise RuntimeError("cancellation_send_not_clickable")
             sent = True
@@ -338,7 +354,7 @@ def main() -> int:
         "feedback_sha256": contract.feedback_sha256, "reason": contract.reason,
         "detail_sha256": hashlib.sha256(contract.detail.encode()).hexdigest(),
         "formal_delivery_checkbox": False,
-        "phase": "click_started" if reconcile_only else "prepared",
+        "phase": initial_intent_phase(previous, reconcile_only),
     })
     with collector.DefaultTab(args.default_tab_helper, contract.talkroom_url) as tab:
         state, screenshot, sent = asyncio.run(submit(

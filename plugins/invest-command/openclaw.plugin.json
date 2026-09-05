@@ -1,0 +1,13 @@
+{
+  "id": "life-manager-invest-command",
+  "name": "Life Manager Investment Command",
+  "description": "Deterministic /invest status command for the existing Telegram gateway",
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

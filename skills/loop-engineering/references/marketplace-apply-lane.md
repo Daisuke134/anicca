@@ -12,11 +12,19 @@ marketplace adapter — each one costs a day to rediscover.
 | Idempotent submission, replay prevention, pending reconciliation | `skills/_shared/marketplace-core/scripts/application_transaction.py` |
 | Receipt ledger | `.../ledger.py` |
 | Telegram delivery with exactly-once accounting | `.../telegram_outbox.py` |
-| The `[Platform][応募判断]` message | `skills/earn/gig/scripts/report_envelope.py` (platform-neutral; takes the display name as an argument) |
+| The `[Platform][応募判断]` / `[Platform][応募完了]` message | `skills/earn/gig/scripts/report_envelope.py` (platform-neutral; takes the display name as an argument) |
+| The per-wake lane summary | `skills/_shared/marketplace-core/scripts/lane_summary.py` |
+| Sending, and draining the outbox | `.../telegram_delivery.py` (never a CLI: launchd gives a job no PATH) |
 | What to sell, at what price, per platform | `skills/gig-work/profile/listings/catalog.json` |
 
 An adapter that adds its own ledger, its own outbox or its own wording is the
 defect this file exists to prevent.
+
+`report_envelope.py` still sits in the Coconala adapter rather than in
+`_shared/marketplace-core/`. Four Coconala scripts import it and that lane is
+being worked on concurrently, so moving it is the extraction step to take when
+that work settles — not while two sessions would both be editing it. Load it by
+path in the meantime; do not copy it.
 
 ## The eight silent faults
 
@@ -92,3 +100,32 @@ Shipping is not merging. A merged fix stays dormant until a release is cut from
 a main SHA and each label is repointed at it; `cut-loop-release.sh` with no
 argument cuts from whatever branch the checkout happens to be on, which can
 produce a release missing the very code you shipped.
+
+## Faults found while wiring the reports (2026-09-05, same day)
+
+**9. A receipt is validated twice.** Adding a field to the JSON schema is not
+enough — the same receipt is also built into a frozen dataclass, and the
+mismatch surfaces as a generic uncertain result, never as a schema error. Add
+the field to both, and make it optional so every other lane's rows stay valid.
+
+**10. The state writer keeps a fixed field list.** Anything a lane attaches to a
+claim that is not on that list is dropped on the next write, silently. That is
+why the job's name never reached the receipt even after the receipt could carry
+it.
+
+**11. Not every helper receives what its caller has.** `_reconcile_pending` is
+handed the pending entry, not the opportunity, so reading the opportunity there
+raises inside a broad `except` and turns every reconciliation into
+`submission_uncertain`. When a change makes everything uncertain at once,
+suspect an exception inside the settle path before suspecting the provider.
+
+**12. Silence is ambiguous.** A lane that reports only its successes cannot be
+distinguished from a lane that has stopped. Send one line per wake — what was
+inspected, what was declined and why, what was applied — and the reader can
+tell "nothing was eligible" from "broken" without opening a terminal.
+
+**13. An abandoned claim stops the whole queue.** A sender killed between
+claiming a message and resolving it leaves the claim in `sending`, and because
+the claimer only reads `pending`, delivery stops entirely and silently. Both
+CrowdWorks and Lancers had accumulated stuck claims — reclaim them, past a
+window and only when no provider id was recorded.

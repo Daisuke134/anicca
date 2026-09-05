@@ -97,6 +97,9 @@ def _is_project_id(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
+_OPTIONAL_PENDING_FIELDS = {"title"}
+
+
 def _read_state(path: Path) -> Tuple[Set[str], Dict[str, Dict[str, object]]]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -125,10 +128,16 @@ def _read_state(path: Path) -> Tuple[Set[str], Dict[str, Dict[str, object]]]:
     for marker, raw_entry in raw_pending.items():
         if not _is_sha256(marker) or marker not in fingerprints:
             raise _StateInvalid()
-        if not isinstance(raw_entry, Mapping) or set(raw_entry) not in (
+        # The title is optional and carried only so a later reconcile can name the job, so compare
+        # the required fields rather than the exact set: an exact-set check rejected the whole state
+        # file the moment a claim carried one, and every reconcile returned state_invalid.
+        if not isinstance(raw_entry, Mapping) or set(raw_entry) - _OPTIONAL_PENDING_FIELDS not in (
             _LEGACY_PENDING_FIELDS,
             _PENDING_FIELDS,
         ):
+            raise _StateInvalid()
+        entry_title = raw_entry.get("title")
+        if entry_title is not None and (not isinstance(entry_title, str) or not entry_title.strip()):
             raise _StateInvalid()
         proposal_id = raw_entry["proposal_id"]
         if proposal_id is not None and (
@@ -154,6 +163,9 @@ def _read_state(path: Path) -> Tuple[Set[str], Dict[str, Dict[str, object]]]:
             "amount_minor": amount_minor,
             "delivery_due_on": delivery_due_on,
         }
+        # Rebuilding the entry field by field is the third place the title was dropped, after the
+        # writer's field list and the reader's exact-set check.
+        if isinstance(entry_title, str) and entry_title.strip(): entry["title"] = entry_title.strip()
         if set(raw_entry) == _PENDING_FIELDS:
             entry["project_id"] = project_id
         pending[marker] = entry
@@ -168,6 +180,9 @@ def _write_state(
         marker: {
             **{field: entry[field] for field in _LEGACY_PENDING_FIELDS},
             **({"project_id": entry["project_id"]} if "project_id" in entry else {}),
+            # The claim carries the job's name so a later reconcile can name it; dropping it here
+            # is why receipts read "案件: 案件 13422653" instead of the job.
+            **({"title": entry["title"]} if "title" in entry else {}),
         }
         for marker, entry in sorted(pending.items())
     }
@@ -339,6 +354,12 @@ def _reconcile_pending(
             "idempotency_key": f"{platform}:application_receipt:{proposal_id}:v1",
             "observed_at": now(),
         }
+        # A receipt without the job's name forces every reader to report a bare id, which is why
+        # CrowdWorks reports read "案件: 案件 13422653" while Lancers names the job.
+        title = pending_entry.get("title")
+        if isinstance(title, str) and title.strip(): receipt["opportunity_title"] = title.strip()[:300]
+        amount = pending_entry.get("amount_minor")
+        if isinstance(amount, int) and not isinstance(amount, bool) and amount > 0: receipt["proposed_amount_minor"] = amount
         load_marketplace_contracts().parse_application_receipt(receipt)
         ledger_writer(receipt)
         pending.pop(marker, None)
@@ -403,6 +424,10 @@ def run_transaction(
                     "delivery_due_on": delivery_due_on,
                     "project_id": project_id,
                 }
+                # Carry the job's name with the claim so a later reconcile, which only knows ids,
+                # can still write a receipt a human can read.
+                claim_title = opportunity.get("title") if isinstance(opportunity, Mapping) else None
+                if isinstance(claim_title, str) and claim_title.strip(): pending_entry["title"] = claim_title.strip()[:300]
                 claims.add(marker)
                 pending[marker] = pending_entry
                 try:

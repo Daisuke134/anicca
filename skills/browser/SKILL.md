@@ -84,7 +84,7 @@ through filling, and neither could tell. Take a context instead: CDP `Target.cre
 reach into it.
 
 ```bash
-LEASE=$(python3 $LIFE_MANAGER_REPO/skills/browser/scripts/cdp_context_lease.py acquire gig)   # your own space
+LEASE=$(AI_BROWSER_HOLDER_PID=$$ python3 $LIFE_MANAGER_REPO/skills/browser/scripts/cdp_context_lease.py acquire gig)   # your own space
 WS=$(echo "$LEASE" | python3 -c 'import sys,json;print(json.load(sys.stdin)["ws"])') # drive this tab
 # ... do the work over $WS ...
 python3 $LIFE_MANAGER_REPO/skills/browser/scripts/cdp_context_lease.py release gig            # tabs die with it
