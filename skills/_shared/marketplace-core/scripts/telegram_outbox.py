@@ -2,7 +2,7 @@
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 from pathlib import Path
 import sqlite3
@@ -286,6 +286,31 @@ def mark_delivery_uncertain(
             """,
             (error_code, event_key),
         )
+
+
+def reclaim_stale(database: Path, *, older_than_seconds: int = 900) -> int:
+    """Return claims abandoned by a dead sender to pending.
+
+    A claim moves to 'sending' before the provider call and is resolved after it. If the process
+    dies in between — killed by a supervisor, a host restart — nothing resolves it, and because
+    claim_next only looks at 'pending' the queue stops delivering entirely and silently. Measured
+    2026-09-05: three abandoned claims blocked every later CrowdWorks report.
+
+    A reclaimed message may already have reached the provider, so this is deliberately conservative:
+    only claims older than the window are returned, and only when no provider id was recorded.
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(seconds=max(1, int(older_than_seconds)))).isoformat()
+    with _write_connection(database) as connection:
+        cursor = connection.execute(
+            f"""
+            UPDATE {_TABLE}
+            SET status = 'pending', claimed_at = NULL, last_error_code = 'sender_abandoned'
+            WHERE status = 'sending' AND provider_message_id IS NULL AND claimed_at IS NOT NULL
+              AND claimed_at < ?
+            """,
+            (cutoff,),
+        )
+        return int(cursor.rowcount or 0)
 
 
 def list_items(database: Path) -> list[OutboxItem]:
