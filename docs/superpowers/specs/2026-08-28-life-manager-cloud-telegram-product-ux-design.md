@@ -1,471 +1,186 @@
 # Life Manager Cloud Telegram-First Product UX Design
 
-状態: APPROVED — launch coreを先にreleaseし、その後local/cloud共通harnessをElizaOSへ段階移行する。発売前の全面rewriteは禁止
+状態: APPROVED — 2026-09-05 owner scope revision。既存Life Manager Cloudの日常機能を出荷する。新しいagent frameworkへの移行は行わない。
 
-正本範囲: public QRから始まる初回体験、日常のTelegram体験、cloud/self-host共通境界、将来の会話runtime
+正本範囲: public QR/deep linkからの初回体験、日常のTelegram通知、任意の電話、既存Stripe課金、友達betaと公開までの残作業。
 
-実装契約と現在地:
+## 0. 最新のowner決定と正本の優先順位
 
-- on-time coreのMUST/DO NOT → `2026-08-26-life-manager-cloud-on-time-core-design.md`
-- atomic implementation order → `../plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`
-- 測定済みstatusとreceipt → `.superpowers/sdd/2026-08-26-life-manager-cloud-on-time-core/progress.md`
+- 今回の担当はCloudの日常機能の出荷だけ。local loopの修理・運用・12 loopのcloud移植はこのチェックリストに含めない。local事情を把握するlocal Codex側の別作業とする。
+- ElizaOS / Eliza Cloud / `@elizaos/plugin-life-manager`は採用しない。旧採用比較、plugin化、cutoverを本specから削除した。発売後の必須Phase 2としても復活させない。
+- 既存Life Manager runtime、Railway、Supabase、Calendar接続、Transit/Google、Telegram、Telnyxを再利用する。別runtime、別queue、別ledgerへ全面rewriteしない。
+- 課金は既存Stripeを維持する。Telegram Stars比較・導入・決済基盤移行は今回の開発TODOに含めない。これは実装スコープの決定であり、外部サービスの規約についての適合性証明ではない。
+- 1件ずつ実装・検証する。local作業を取り合わず、他ループの障害や将来の無料化をCloudの日常版出荷条件にしない。
 
-## 1. Telegramが製品で、public WebはQRだけに限定する
+正本の役割:
 
-Telegramが製品である。
+- 本spec §8: 現在の残作業順。古いplanやprogress中の旧移行方針・旧Active Orderに優先する。
+- `2026-08-26-life-manager-cloud-on-time-core-design.md`: 既存の技術契約。§8の各実装で変更するACは、同じsliceで明示的に更新する。
+- `../plans/2026-08-28-life-manager-cloud-on-time-core-finish.md`: 既存coreの詳細実装・検証手順。完了済みsliceを再実装せず、適用可能な手順だけ再利用する。
+- `../../../.superpowers/sdd/2026-08-26-life-manager-cloud-on-time-core/progress.md`: 測定済み状態とreceiptの履歴。過去の証拠は保存し、旧Eliza移行決定は本owner決定で失効する。
 
-Life Manager Cloudは、ユーザーが予定表や乗換アプリを何度も開かなくても、次の予定へ時間どおり動ける状態を作る。日常の主画面はTelegramと電話である。public websiteはQRまたはTelegram deep linkを表示するだけで、account、onboarding、dashboard、日常操作を持たない。
+この文書の更新自体は、機能実装・本番deploy・fresh-user E2E完了を意味しない。
 
-初回設定、接続状態、課金確認はTelegramから開くTelegram Mini Appの中だけで行う。Mini Appは配信技術としてWebを使うが、ユーザーにとって独立したWeb Appではない。通常browserで使うstandalone dashboard、Supabase login、新しいpassword accountはlaunch scopeに含めない。
+## 1. Telegramが製品で、public Webは開始導線に限定する
 
-MVPではGoogle Calendarを予定の保存先として1回接続する。ユーザーはGoogle Calendarを毎日開く必要はない。Calendarそのものを不要にするには、後続phaseでTelegramから予定を作成・変更する会話機能を追加する。
+Life Manager Cloudは、ユーザーが予定表や乗換アプリを繰り返し開かなくても、次の予定へ時間どおり動ける状態を作る。日常の主画面はTelegramと任意の電話である。
+
+`/life-manager`と`/lm`は同じ製品へ案内する。QRとタップ可能なTelegram deep linkを用意する。同じスマホでInstagram/LINEを見ている人に、QR scanだけを要求しない。public Webはtenant identity、onboarding state、日常dashboardを所有しない。
+
+初回設定と接続状態の確認はTelegramから開くMini Appで行う。独立したpassword accountやSupabase loginを追加しない。Life Manager専用native appのdownloadも不要とする。Telegramがない人には導入方法を案内する。
+
+Google Calendarは本人が初回に接続・同意する。PC不要・個人APIキー不要であって、Google accountやサービスへの同意まで不要という意味ではない。Calendarそのものを不要にする自由会話での予定作成・変更は今回の出荷条件にしない。
 
 ```mermaid
 flowchart TD
-  QR[友達がpublic QRを読む] --> BOT[TelegramでLife Managerを開始]
-  BOT --> APP[準備する Mini App]
-  APP --> CAL[1/4 Calendarを接続]
-  CAL --> HOME[2/4 自宅を登録]
-  HOME --> NOTIFY[3/4 Telegram通知をON]
-  NOTIFY --> PHONE{4/4 電話も使う?}
-  PHONE -->|使わない| READY[3日trial開始]
-  PHONE -->|使う| CALL[番号入力と明示opt-in]
-  CALL --> READY
-  READY --> VALUE[次の予定と最初の通知時刻を表示]
-  VALUE --> DAILY[以後はTelegramと任意の電話だけ]
+  ENTRY[QRまたは開始リンク] --> BOT[Telegramで開始]
+  BOT --> MINI[準備する Mini App]
+  MINI --> CAL[Calendarを接続]
+  CAL --> HOME[自宅または基準地点]
+  HOME --> NOTIFY[Telegram通知を有効化]
+  NOTIFY --> PHONE{電話も使う?}
+  PHONE -->|スキップ| READY[準備完了]
+  PHONE -->|番号入力と明示opt-in| READY
+  READY --> DAILY[日常はTelegramと任意の電話]
 ```
 
-## 2. 初回画面は一画面一判断にする
+## 2. 初回設定は最小限にする
 
-迷わせない。
+Telegram署名済みactorからtenant identityを確定する。Telegram profileの名前があれば再入力を要求しない。Google consentの途中で中断した場合も、安全に同じ本人の設定へ戻れるようにする。
 
-Telegramの署名済みactorがtenant identityになる。Supabase loginは表示しない。Google画面はCalendar consentの1回だけ開く。Telegram profileに名前があれば名前入力も表示しない。
-
-### 2.1 QRから最初の価値まで
-
-```text
-┌─────────────────────────────┐
-│ Telegram                    │
-│                             │
-│ Life Manager                │
-│ 遅刻しないための準備を      │
-│ 3分で終わらせます。          │
-│                             │
-│ [ 準備する ]                 │
-└─────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────┐
-│ Life Manager          1 / 4 │
-│                             │
-│ カレンダーをつなぐ           │
-│ 予定を読み、必要な時だけ      │
-│ Telegramで知らせます。       │
-│                             │
-│ [ Calendarを接続 ]           │
-└─────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────┐
-│ Life Manager          2 / 4 │
-│                             │
-│ 住んでいる場所               │
-│ [ 東京都新宿区……………… ]    │
-│                             │
-│ [ 次へ ]                     │
-│ 位置共有中は現在地を優先      │
-└─────────────────────────────┘
-                │
-                ▼
-┌─────────────────────────────┐
-│ 準備できました ✓             │
-│                             │
-│ 次の予定                     │
-│ 08:40  MUIT 出社             │
-│                             │
-│ ✓ 移動時間を自動追加          │
-│ ✓ 出発5分前に乗換を送信       │
-│ ✓ 電話ONならT-10/T-5に着信    │
-│                             │
-│ 無料期間  残り3日             │
-│ [ Telegramへ戻る ]           │
-└─────────────────────────────┘
-```
-
-### 2.2 画面契約
-
-| 画面 | 主操作 | 表示してはいけないもの |
+| 画面 | 主操作・表示 | 禁止 |
 |---|---|---|
-| Telegram `/start` | `準備する` | uid、chat ID、token、Google login |
-| Calendar | `Calendarを接続` | Supabase login、別のaccount作成 |
-| Home | 住所入力 | background GPSを取得しているという表現 |
-| Notifications | `通知を有効にする` | 電話同意との抱き合わせ |
-| Phone | 入力またはskip | 入力しただけでcall ON |
-| Call | `電話で確認する`またはskip | default opt-in |
-| Ready | 次予定、提供価値、trial期限 | 必須checkout、未検証の成功表示 |
+| `/start` | `準備する` | uid/chat ID/tokenの手入力 |
+| Calendar | `Calendarを接続`、server側の接続確認 | 別password account、接続未確認の成功表示 |
+| Home | 自宅または基準地点の登録 | 常時GPSを取得しているとの表現 |
+| Notifications | 通知ON/OFF | 電話同意との抱き合わせ |
+| Phone | 番号入力またはskip、別途call opt-in | 番号登録だけで電話ON |
+| Ready | 次予定、通知予定時刻、trial期限、設定への戻り方 | 未取得の次予定・未送信通知を成功扱い |
 
-## 3. 日常は三つの先回りだけに絞る
+3分以内を初回設定の目標とし、実測前に保証しない。電話なしでもtrialとTelegram通知を使える。再scan/reloadは同じtenantへ戻り、trialや接続を重複作成しない。
 
-通知は三つだけでよい。
+## 3. 日常の通知を、そのまま行動できる案内にする
 
-ユーザーが日常的に受け取るのは、移動block、Telegram乗換、任意の電話である。設定画面を開かせる通知や、価値のない定期メッセージは送らない。
+Cloud v1の中心は、Calendarの移動block、出発前のTelegram案内、任意の電話。価値のない定期メッセージは送らない。
 
-```mermaid
-sequenceDiagram
-  participant U as ユーザー
-  participant LM as Life Manager Cloud
-  participant GC as Google Calendar
-  participant TG as Telegram
-  participant TX as Telnyx
+### 3.1 物理的な移動
 
-  LM->>GC: [Travel] blockを自動作成
-  Note over LM,GC: Google event IDをreceiptとして保持
-  LM->>TX: 出発T-10 call
-  TX-->>LM: call ID + signed webhook
-  LM->>TX: 出発T-5 call
-  TX-->>LM: call ID + signed webhook
-  LM->>TG: 次予定 + provider由来の実乗換
-  TG-->>LM: message ID
-  LM->>LM: replay時はdurable claimで追加effect 0
-  U-->>TG: 必要な時だけ設定変更または位置共有
-```
+各移動ごとに次を順番に表示する。
 
-### 3.1 Telegram本文
+1. 予定名・予定開始時刻、基準出発地、家や現在地を出る時刻、providerによる到着見込み。
+2. 出発地から最初の駅までの徒歩。
+3. 乗車時刻、駅、路線、種別、行先、存在する番線、降車時刻・駅。
+4. 乗換があれば、その徒歩区間と次の乗車。
+5. 最後の駅から目的地までの徒歩、取得できた運賃。
 
-```text
-🚆 次は 08:40「MUIT 出社」
+徒歩を最後の合計だけにまとめて省略しない。距離・番線・入口・出口・号車は、同じ採用経路に対応したsource factが取得できた場合だけ表示する。取得できないfieldをLLMで補わない。全駅の入口・出口・推奨号車対応や新provider契約は友達betaの前提にしない。
 
-08:14 出発 → 08:40 到着予定
-目的地: MIRSUBISHI UFJ INFORMATION TECHNOLOGY
+経路providerの各時刻、access/transfer/egressの徒歩時間と、Calendarの移動block・Telegram・電話の基準時刻を整合させる。予定開始時刻をproviderの到着見込みとして表示しない。providerのdepartureが駅発かdoor発かを確認し、徒歩やbufferを二重加算しない。
 
-08:18 信濃町駅
-中央・総武線 → 四ツ谷駅
-丸ノ内線 → 赤坂見附駅
-徒歩 6分 / 乗換 1回
+通知基準は電車の発車5分前ではなく、移動を始める5分前。1日複数移動も個別eventで処理する。送信予定時刻と実際のprovider受付時刻を記録し、端末到達の秒単位保証はしない。
 
-[今から出る] [位置情報を送る] [通知設定]
-```
+基準出発地はfreshな本人の共有位置、条件を満たす直前予定の場所、登録基準地点の順。位置共有がなければ現在地を把握していると表示しない。ユーザー間で位置や経路を流用しない。
 
-表示するのはproviderが返した事実だけである。出口、最適車両、混雑を推測しない。元eventのtitle/locationは表示とclaim identityに残し、経路計算だけにautofill済み住所を使う。
+### 3.2 オンライン・場所なし・経路不明
 
-## 4. 既存coreを守り、ElizaOSをlocal/cloud共通agent harnessとして採用する
+- online eventは開始5分前に予定通知を送る。鉄道絵文字・出発/到着・乗換検索を使わない。
+- 確認できた参加URLを表示できる。イベント案内ページしか分からない時は`イベント詳細`とし、参加用URLだと断定しない。
+- 場所なしeventにも偽の移動を作らない。
+- physical eventで経路を取得できない時は、予定名・開始時刻・目的地と取得失敗を明示する。確認済みの基準出発時刻がある場合だけ、その根拠とともに表示し、予定開始を出発/到着へ代入しない。
+- 失敗を無言で捨てず、同じ障害を連投しない。送信成否不明の時は即再送せずreconciliationを優先する。
 
-置き換えない。
+### 3.3 変更・取消・電話
 
-on-time coreは決められた時刻に同じ結果を出す必要がある。LLMの自由判断をscheduler、dedupe、provider receiptへ混ぜない。将来の会話runtimeは、ユーザーの依頼を既存toolへ翻訳する入口として追加する。
+予定の変更/取消、送信済み予定、同時刻の別event、オンラインと対面の混在を区別する。古い経路の送信を止め、再評価で無条件に新しいclaimを作って二重通知しない。
+
+電話は`call_enabled === true`と有効な電話番号がある人だけ。physicalは同じ出発時刻のT-10/T-5、online・場所なし・起床・就寝は既存policyに従い予定開始基準。睡眠推定など未実装の機能を出荷済みとして扱わない。
+
+## 4. 既存Life Manager Cloudを使う
 
 ```mermaid
 flowchart LR
-  subgraph CHANNELS[ユーザーが触る場所]
-    QR[public QR / deep linkだけ]
-    TG[Telegram]
-    MINI[Telegram Mini App]
-  end
-
-  subgraph CLOUD[Life Manager Cloud]
-    EDGE[Railway webhook / panel]
-    ID[Telegram署名 → tenant UID]
-    DB[(Supabase\n設定・trial・ledger)]
-    CORE[Deterministic on-time core]
-    CHAT[Phase 2: ElizaOS AgentRuntime]
-    TOOLS[許可されたLife Manager tools]
-  end
-
-  subgraph PROVIDERS[公式effect/readback]
-    GC[Google Calendar]
-    ROUTE[Transit / Google Route]
-    TX[Telnyx]
-    API[Telegram Bot API]
-    STRIPE[Stripe]
-  end
-
-  QR --> TG
-  TG --> EDGE
-  MINI --> EDGE
-  EDGE --> ID --> DB
-  DB --> CORE
-  CORE --> GC
-  CORE --> ROUTE
-  CORE --> TX
-  CORE --> API
-  STRIPE -->|verified webhookだけ| DB
-  TG -. Phase 2の自由会話 .-> CHAT
-  CHAT --> TOOLS --> CORE
-  CHAT -. DB/providerへ直接書かない .-> DB
+  QR[public QR / deep link] --> TG[Telegram]
+  TG --> EDGE[既存Railway webhook / panel]
+  MINI[Telegram Mini App] --> EDGE
+  EDGE --> ID[署名actorからtenantを確定]
+  ID --> DB[(Supabase 設定・trial・ledger)]
+  DB --> CORE[既存Life Manager on-time core]
+  CORE --> GC[Composio / Google Calendar]
+  CORE --> ROUTE[Transit / Google fallback]
+  CORE --> BOT[Telegram Bot API]
+  CORE --> TX[任意のTelnyx call]
+  STRIPE[既存Stripe] -->|検証済みwebhook| DB
 ```
 
-### 4.1 唯一の選択: ElizaOS
+時刻計算、scheduler ownership、atomic claim、provider receiptをLLMの自由判断へ移さない。既存認証・Calendar接続・queue・cache・ledger・provider adapterを先に再利用する。別agent frameworkやplugin kernelを追加しない。
 
-agent runtimeを比較し続けない。localとcloudの両方で固定commitのElizaOSを使う。OpenClaw、Hermes、OpenClawMU、独自agent loopは採用しない。Life ManagerはEliza plugin/actions/servicesだけを所有する。
+## 5. Phone-onlyの境界
 
-cloneしたEliza固定commit`29bed1bb394a2c0c7c0df6dc12babbe28667efbe`のproduction codeから、次を確認した。
+一般Cloudユーザーは、自分やDaisのMac mini、localhost、local browser session、gog、Keychain、local launchd、手動tunnelを実行時の依存にしない。Cloudのscheduler・保存先・秘密情報・provider接続だけで動くことを証明する。
 
-1. `AgentRuntime`がagentごとのactions、providers、evaluators、services、model routing、memory、database adapter、message loopを一つのkernelとして所有する。
-2. local agent serverとcloud dedicated agent-serverが同じ`@elizaos/core` AgentRuntimeとplugin packagesを実行する。
-3. cloudにはcontainer-free shared tierと、isolated containerを持つ`dedicated-lazy`/`dedicated-always` tierが既にある。
-4. Shared conversationはCloudflare Durable Objectでagent/roomごとに順序化され、client message IDのclaim/replay/conflictを持つ。
-5. Personal Telegram edgeはprovider message IDを保存するstrongly ordered delivery ledgerを持ち、ambiguous sendをtombstoneにして再送を防ぐ。
-6. schedulerはPostgres-backed task store、atomic `claimForFire`、idempotency key、CAS update、apply receiptを実装している。
-7. cloud control planeはorganization/user tenancy、agent quota、shared→dedicated cutover、container lifecycle、warm pool、billing、Stripe、tenant DBを既に持つ。
-8. local Dockerとremote dedicated containerのproviderが同じsandbox interfaceに実装されている。
+self-host/localは別surfaceとして維持し、この出荷作業で変更しない。将来のloop移植はlocal Codex側と別計画で1件ずつ進める。業務ロジックやskillsを共有できても、owner個人の認証・wallet・browser profileを他ユーザーへコピーしない。
 
-したがって、agent loop、plugin system、session/memory schema、Telegram connector、cloud turn coordinator、scheduler、container control plane、shared/dedicated tierをLife Manager側で再実装しない。
+## 6. 既存Stripeと3日trialを維持する
 
-### 4.2 OpenClawとのcode-backed比較
+Calendar consent、home、notificationsが揃った時にserverが3日trialを1回だけ付与する。phoneとcall opt-inはtrial開始条件にしない。再scan、client時計、localStorageで期限を延長しない。
 
-| 判断軸 | OpenClaw固定commit | Eliza固定commit | Life Manager判断 |
-|---|---|---|---|
-| local personal assistant | Gateway、Telegram spool、SQLite replay guard、cronが強い | AgentRuntime、desktop/mobile、plugin ecosystemがある | 両方可 |
-| cloud multi-tenant | upstreamはsingle operator。AWS sampleを別途接続する必要がある | shared/dedicated tier、org/user tenancy、billing、container lifecycleが同repo | Eliza |
-| Telegram exactly-once | disk spool + bot/chat/message replay guard | Durable Object delivery ledger + provider message IDs + uncertain tombstone | CloudではEliza |
-| local/cloud同一code | 同じGatewayをtenant別containerで動かせる | local/dedicatedは同じAgentRuntime/plugin。sharedは互換subset | Eliza dedicated-lazyを基準にする |
-| scheduler | local SQLite cron | Postgres task store、atomic fire claim、CAS、receipt | Eliza |
-| billing/plan | なし。Life Manager側でcontrol planeが必要 | quota、credits、Stripe、compute billing、shared→dedicated upgradeあり | Eliza |
-| 導入の軽さ | 小さく始めやすい | cloud全体は大きくbeta | OpenClaw |
-| 独自cloud architecture量 | 多い | 少ない | Eliza |
+既存Stripe Checkout・署名検証webhook・entitlement・解約処理を再利用し、支払い成功/失敗/重複/更新/解約でserver側の利用権が正しくなることを確認する。client入力で`paid`を設定しない。trial期限後は仕様どおりの利用権へ切り替え、upgrade通知はdurable claimで最大1回とする。
 
-OpenClawのTelegram実装は良いが、Life Managerが必要とするpublic SaaS、tenant、billing、shared/dedicated computeをOpenClawの外で設計する必要がある。それは「独自architectureを作らない」という決定に反する。Eliza Cloudは巨大で運用も複雑だが、複雑さそのものが既にupstream codeとして実装されているため、Life Managerが新しく設計する量は少ない。
+課金テストはtest modeを優先する。実カードへの請求、通話残高の補充、有料契約は金額・通貨・支払元についての許可なく行わない。決済基盤の追加・比較は本チェックリストの対象外。
 
-```mermaid
-flowchart TB
-  PACK[同一Life Manager Plugin]
+## 7. 完了には実際の効果と証拠が必要
 
-  subgraph LOCAL[Local product]
-    LG[Eliza AgentRuntime\nlocal agent server]
-    LS[(Eliza local SQL state)]
-    LG --> LS
-  end
-
-  subgraph CLOUD[Cloud product]
-    EDGE[Eliza Telegram edge]
-    SHARED[shared tier\ncheap chat]
-    A[dedicated-lazy AgentRuntime\ntenant A]
-    B[dedicated-lazy AgentRuntime\ntenant B]
-    EDGE --> SHARED
-    EDGE --> A
-    EDGE --> B
-  end
-
-  PACK --> LG
-  PACK --> SHARED
-  PACK --> A
-  PACK --> B
-```
-
-Eliza Cloudをゼロからcopyして独自mini-cloudを作らない。upstream forkを固定し、Life Manager pluginとbranding/provider settingsだけを差分にする。既存Supabase/Stripe/on-time ledgerは移行期間中のauthorityとして残し、Elizaのtenant/billingへ一度に置換しない。
-
-Eliza Cloudのshared tierはfull AgentRuntime containerを持たない互換subsetである。local/cloud parityの基準は`dedicated-lazy` agent-serverとし、shared tierはtext-onlyの低コスト経路としてparityが証明されたtoolだけを後から許可する。
-
-### 4.3 車輪を作らない — 借りる層とLife Manager固有の薄い層
-
-新しく作るのは「遅刻しないための判断と証拠のつなぎ方」だけである。chat app、login、OAuth、DB、決済、agent loop、cloud runtimeは作らない。
-
-```mermaid
-flowchart LR
-  subgraph REUSE[そのまま借りる既存の車輪]
-    MSG[Telegram Bot API / Mini Apps]
-    UX[Poke / Townのmessaging-first UX]
-    OAUTH[Composio + Google Calendar OAuth]
-    RUN[Railway + Inngest]
-    DATA[Supabase Postgres]
-    PAY[Stripe Checkout + webhook]
-    ROUTE[Transit / Google Routes]
-    VOICE[Telnyx]
-    CHAT[Phase 2: ElizaOS]
-  end
-
-  subgraph OWN[Life Managerだけが持つ薄いproduct logic]
-    POLICY[次予定・出発時刻・T-10/T-5 policy]
-    UXSTATE[4-step onboardingとtrial UX]
-    FENCE[intent → claim → effect → readback]
-    PROOF[provider ID + replay-zero]
-  end
-
-  MSG --> UXSTATE
-  UX --> UXSTATE
-  OAUTH --> POLICY
-  RUN --> POLICY
-  DATA --> FENCE
-  PAY --> UXSTATE
-  ROUTE --> POLICY
-  VOICE --> FENCE
-  CHAT -. launch後だけ .-> POLICY
-  POLICY --> FENCE --> PROOF
-```
-
-| 層 | 再利用するもの | Life Managerが薄く足すもの | 作らないもの |
-|---|---|---|---|
-| 会話画面 | Telegramの1対1 chat、Mini App、`initData` | `/start`、通知本文、4-step setup | 独自messenger、mobile app、chat protocol |
-| UXパターン | Pokeの「既存text内で先回り」、Townの「同じthreadで依頼と承認」 | 遅刻防止に必要な三つの先回りだけ | 万能assistant UI、常用dashboard |
-| identity | Telegram署名actor | actor→tenant UIDの固定binding | password account、Supabase Google login、raw `?tg=` identity |
-| Calendar接続 | ComposioのGoogle consent/provider status | ACTIVEだけを受理するstate machine | OAuth broker、Calendar clone |
-| runtime | Railway deploy、Inngest schedule | bounded scheduler owner | VM orchestrator、独自queue、独自cron platform |
-| durable state | Supabase/Postgres、unique constraint、RLS | effect key、claim、trial deadline | agent独自DB、client deadline、memoryをauthority化 |
-| 課金 | Stripe hosted Checkout、signed webhook | value-first 3-day trialとentitlement filter | card form、billing engine、`paid`の別writer |
-| route/call | provider response、Telnyx signed webhook | provider factsの整形と最大1回policy | 乗換engine、電話carrier、推測route |
-| 自由会話 | Eliza AgentRuntime、Telegram edge、memory、actions、scheduler | Life Manager pluginとprovider adapters | agent loop、plugin kernel、session DB、cloud coordinatorの再実装 |
-
-## 5. cloudとself-hostは同じEliza AgentRuntimeとLife Manager pluginを使う
-
-同じsource artifactを使うが、全ユーザーを一つのunscoped processへ詰め込まない。localは一人につき一つのEliza AgentRuntime、cloudはEliza Cloudのorganization/user/agent scopeでsharedまたはdedicated-lazy runtimeを使う。予定選択、出発時刻、route整形、effect keyを同じLife Manager pluginとして両方へinstallする。
-
-```mermaid
-flowchart TB
-  SHARED[同一Life Manager Plugin\n予定選択・時刻・route・effect key]
-
-  subgraph HOSTED[Cloud product]
-    EDGE[Eliza Cloud Telegram edge]
-    PODS[shared / dedicated-lazy AgentRuntime]
-    SQL[(Eliza Cloud Postgres + Durable Objects)]
-  end
-
-  subgraph LOCAL[Self-host product]
-    DAEMON[Eliza AgentRuntime]
-    LSTATE[(Eliza local SQL adapter)]
-    ONE[一人のowner]
-  end
-
-  SHARED --> PODS
-  EDGE --> PODS
-  SQL --> EDGE
-  SHARED --> DAEMON --> LSTATE --> ONE
-```
-
-local loopを別architectureのままcloudへ複製しない。ユーザー価値が確認された機能を一つずつEliza action/service/plugin contractへ切り出し、同じpackageをlocal/dedicated cloudへinstallする。現行launch coreはprovider acceptanceを取り終えるまで挙動を変えず、その後の移行で既存receipt/replay testをそのままport gateにする。
-
-## 6. trialは価値を体験した後に1回だけ課金を求める
-
-Calendar consent、home、notificationsが揃った瞬間に、serverが`now + 3 days`を一度だけ保存する。phoneとcall opt-inはtrial開始の条件にしない。trial中はpaid userと同じon-time coreを使う。
-
-期限切れ後はexternal effectを止め、Stripe checkoutを含むupgrade Telegramを最大1回送る。延長はしない。再scan、再onboarding、client時計、localStorageのどれも期限を変えられず、Stripe webhookだけが`paid`を書ける。
-
-```mermaid
-stateDiagram-v2
-  [*] --> Setup
-  Setup --> Trial: Calendar + home + notifications
-  Trial --> Paid: verified Stripe webhook
-  Trial --> Expired: server deadline到達
-  Expired --> Expired: scheduler effect 0
-  Expired --> Paid: verified Stripe webhook
-  Expired --> UpgradeSent: Telegram message IDを1回記録
-  UpgradeSent --> UpgradeSent: replay effect 0
-  Paid --> Paid: scheduler継続
-```
-
-## 7. 証拠がそろうまで「完成」と表示しない
-
-証拠が先である。
-
-```mermaid
-flowchart LR
-  INTENT[effect intent] --> CLAIM[Supabase atomic claim]
-  CLAIM --> SEND[providerへ1回送る]
-  SEND --> READBACK[provider公式readback]
-  READBACK --> RECEIPT[durable IDを保存]
-  RECEIPT --> REPLAY[同じ入力を再評価]
-  REPLAY --> ZERO[追加effect 0]
-```
-
-| ユーザー価値 | 完了証拠 |
+| 価値 | 完了証拠 |
 |---|---|
 | 移動block | Google Calendar event IDとstatus |
-| T-10/T-5電話 | Telnyx call ID、signed webhook、Supabase wake ledger |
-| T-5乗換 | Telegram message ID、route provider、travel ledger |
-| tenant onboarding | Telegram initData、別UID、cross-actor read 0 |
-| trial | Supabase期限、trial中effect、期限後effect 0 |
-| 課金 | Stripe webhook event ID、paid readback |
-| deploy | GitHub Deployment、Railway health、exact SHA |
+| T-10/T-5電話 | Telnyx call ID、署名検証済みwebhook、同じwake ledger |
+| T-5通知 | 採用routeと予定時刻、Telegram message ID、travel ledger |
+| 初回設定 | 本人以外の実Telegram client、別tenant、他tenantへのread/write 0 |
+| trial/Stripe | server期限、正式なStripe event、利用権のreadback |
+| deploy | 対象serviceのexact SHAとhealth。deploy成功を通知成功の代わりにしない |
+| restart/replay | 設定・claim・receiptが残り、余分なCalendar/Telegram/call effect 0 |
 
-## 8. 実装順はlaunch coreとconversationを混ぜない
+raw initData、OAuth token、電話、住所、座標、provider payloadを公開repoや通常logへ残さない。合成actorのテストは本物の新規ユーザーの操作テストの代用にしない。
 
-```mermaid
-flowchart TD
-  A[Active 1\nTask 12 return誤帰属を閉じる] --> B[Active 2\n3日trialを実装]
-  B --> C[Active 3\nPR merge + exact SHA deploy]
-  C --> D[Active 4\n別Telegram actor QR E2E]
-  D --> E[Active 5\n新しいfuture eventでprovider E2E]
-  E --> F[Active 6\nreplay-zero + controlled event cleanup]
-  F --> LAUNCH[友達betaを開始]
-  LAUNCH --> PACKAGE[Phase 2\nLife Manager Eliza plugin化]
-  PACKAGE --> CLOUD[Eliza Cloud dedicated-lazy pilot]
-  CLOUD --> CHAT[自由会話を1 toolずつ追加]
-```
+## 8. 出荷までの残TODO — この順で1件ずつ
 
-Active TODOの測定済み状態と最新の一手はprogress.mdだけに置く。Phase 2はActive 1–6がprovider evidence付きで完了するまでproduction codeへ入れない。
+この表は残作業の順序であり、未確認の機能を未実装と断定する表ではない。既存証拠はprogressから再利用し、変更が影響する境界と未証明の境界を検証する。今回の最初の実装対象はCLOUD-01。
 
-### 8.1 友達が使えるまでの残TODO — ユーザー体験順
-
-```mermaid
-flowchart LR
-  NOW[現在\ncode + schema merged] --> DEPLOY[1. exact deploy]
-  DEPLOY --> QR[2. 友達がQR scan]
-  QR --> VALUE[3. 3分setup + 最初の価値]
-  VALUE --> EVENT[4. 自然eventで通知/電話]
-  EVENT --> EXPIRY[5. 3日後の境界]
-  EXPIRY --> ZERO[6. replay-zero + cleanup]
-  ZERO --> BETA[friend beta]
-  BETA --> CHAT[Phase 2\nPoke/Town型の自由会話]
-```
-
-| 順番 | 友達から見える状態 | 残作業とDone証拠 | 現在 |
-|---|---|---|---|
-| 1 | botが常時cloudで動く | GitHub DeploymentとRailway `/health.build`が同じexact SHA | Railway deployment backlog incidentの解消待ち。code/schema/health fixはmerged |
-| 2 | QR→Telegram→`準備する` | 実在するDais以外のTelegram actorがscan。uid/chat/secretをQRに含めず、Google/Supabase loginなし | public payloadは`https://t.me/LifeManagerBotbot?start=lp`まで証明済み。clean-device real actorが未完 |
-| 3 | Calendar→home→通知→phone任意→Ready | distinct tenant、Calendar ACTIVE、trial期限、次予定preview、cross-actor read/write 0 | server flow実装済み。real actor provider E2Eが未完 |
-| 4 | 移動block、T-10/T-5電話、T-5 Telegram乗換 | 新しいfuture physical eventとno-location eventでGoogle event ID、Telnyx call/signed webhook、Telegram message ID、Supabase ledger | 旧no-location eventsは両call level/AMD ledgerあり。新physical route/message receiptとprovider call IDsが未完 |
-| 5 | 期限までは価値、期限後は1回だけupgrade | 同じactorの自然な3日deadlineでcohort除外、paid=false、upgrade message最大1、期限延長0 | schema/logic適用済み。自然時間のproduction readbackが未完 |
-| 6 | 同じ予定を再評価しても二重に来ない | 新Travel 0、新call 0、新Telegram 0、claims不変。controlled eventsを`send-updates=none`で削除しcancelled | 未完。receipt取得前は旧eventを削除しない |
-
-UI polishでlaunchを遅らせない。QR landing、Telegram `/start`、4-step Mini App、Ready card、日常の乗換message、期限切れupgradeの六画面だけをbeta対象にする。自由入力chat、voice、photo、email作業、agent memory UIはbeta後である。
-
-## 9. Superpowersを毎回同じ順序で使う
-
-```mermaid
-flowchart LR
-  GOAL[Goal\nユーザー価値とDone] --> DESIGN[Brainstorming\n設計承認]
-  DESIGN --> SPEC[Spec\n正本を1つ]
-  SPEC --> PLAN[Writing plans\natomic TODO]
-  PLAN --> RED[TDD RED]
-  RED --> GREEN[最小GREEN]
-  GREEN --> REVIEW[Fresh read-only review]
-  REVIEW --> VERIFY[Provider E2E + replay-zero]
-  VERIFY --> STATE[Progress更新]
-  STATE -->|次の1件| RED
-```
-
-primaryだけがspec、plan、progress、完了判定を更新する。workerは割当code/testだけ、reviewerはexact commitのread-onlyとする。各sliceはPonytail fullで既存再利用を先に通す。
-
-## 10. 採用する設計と棄却する設計
-
-| 論点 | 採用 | 棄却 |
+| ID | 作業 | 完了条件 |
 |---|---|---|
-| 主UI | Telegram | 常用Web dashboard、新しいmobile app |
-| 初回identity | Telegram署名actor | raw query ID、Supabase Google login |
-| Calendar | consent 1回、以後background | 毎日のCalendar操作 |
-| 電話 | phone任意、別の明示opt-in | phone入力を同意扱い |
-| trial | server-owned 3日、1回だけ | localStorage、再登録延長、usage meter新設 |
-| 会話runtime | ElizaOSだけ | OpenClaw、Hermes、OpenClawMU、独自agent loop |
-| cloud/local共有 | 同じAgentRuntime + 同じLife Manager plugin | 別harness、挙動の異なる再実装 |
-| 完了判定 | provider ID + durable ledger + replay-zero | local test、log文、process liveness |
+| CLOUD-01 | 詳細なTelegram経路表示とonline表示 | 徒歩→乗車→乗換→最後の徒歩を省略せず表示。onlineは移動表示/route call 0。直通・乗換・徒歩のみ・online・経路失敗の回帰テストが通る。架空の入口/号車/時刻なし。 |
+| CLOUD-02 | 出発・到着・通知時刻の整合性 | 同じ採用経路でCalendar/Telegram/電話を計算。1日3移動、出発順の逆転、予定変更/取消、同時刻の別event、replayを検証。出発T-5の予定と実送信時刻を照合。 |
+| CLOUD-03 | QR/リンクからの初回設定 | `/life-manager`と`/lm`を同じ開始導線へ。iPhone/Android・Instagram/LINE内からTelegram/Google consentを経てReadyへ戻れる。中断再開、電話skip、重複actorなし。 |
+| CLOUD-04 | Cloud単独稼働とtenant分離 | local credential/localhost/Macを使わない新規tenantで予定取得・通知。別tenantの設定/予定/送信先/課金にアクセス不可。restart後も設定とreceipt保持。 |
+| CLOUD-05 | 日常の設定・停止・復旧 | 通知ON/OFF、住所変更、明示位置共有、Calendar再接続、電話opt-in/skip、問い合わせ・接続解除/削除案内。認証切れ/route障害/送信失敗をsilent failureや連投にしない。 |
+| CLOUD-06 | 友達の実機E2Eと少人数beta | Dais以外が自分のCalendarで設定完了。実経路・移動block・Telegram ID、任意のcallを照合。複数移動とreplay追加effect 0。iPhone/Android、3日利用を記録。 |
+| CLOUD-07 | 既存Stripe/trialの最終確認 | trial一度だけ、期限境界、正式なpayment eventと利用権、失敗・重複・更新・解約を確認。追加の決済方式は作らない。実請求は別途許可。 |
+| CLOUD-08 | 公開ページ・README・説明を実物へ統一 | QRとタップリンク、実通知例、対応範囲、既存料金、privacy/support導線が一致。Cloud利用可能とself-host/将来機能を区別して一般公開。 |
 
-## 11. Current launchの範囲外
+CLOUD-01〜06で友達向けbeta、CLOUD-07〜08で有料の一般公開を判定する。各sliceで該当spec AC更新→RED→最小修正→GREEN→review→対象service deploy/readbackを行い、effectが変わる場合はprovider receiptとreplayを確認する。
 
-- 自由会話、voice note、画像理解、email作業、browser作業。
-- Eliza plugin移行とEliza Cloud cutover。これはlaunch acceptance後のPhase 2で行う。
-- Gmail connector、native event store、Google Calendar不要化。
-- local loopの一括cloud移植。
-- 新しいroute provider、agent memory DB、sandbox、quota service。
-- annual plan、価格変更、usage-based billing。
+入口/出口/推奨号車の追加取得、全12 loopの移植、自由会話、agent economyによる費用補填は、この8項目の後の別計画。今回の完了条件を増やさない。
 
-## 12. 一次資料
+## 9. 作業の分担と記録
 
-- Poke: https://poke.com/ — messagingを主画面にし、接続serviceとmemoryから先回りする製品例。
-- Town Telegram: https://www.town.com/features/telegram と https://www.town.com/integrations/telegram — text、photo、voiceを同じthreadへ入れ、effectをapprovalへ戻す製品例。
-- Eliza AgentRuntime: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/core/src/runtime.ts — actions/providers/services/model/memory/database/message loopのkernel。
-- Eliza shared turn coordinator: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/lib/services/shared-runtime/conversation-coordinator.ts — Durable Objectのturn順序、claim/replay/conflict、cutover seal。
-- Eliza Telegram edge: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/api/eliza-app/webhook/_telegram-edge.ts — connector identity、idempotent internal turn、provider delivery ledger。
-- Eliza Telegram delivery ledger: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/api/src/personal-telegram-delivery.ts — strongly ordered provider message ID receiptとuncertain tombstone。
-- Eliza scheduled task store: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/plugins/plugin-scheduling/src/scheduled-task/store.ts — Postgres atomic fire claim、CAS、apply receipts。
-- Eliza sandbox lifecycle: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/lib/services/eliza-sandbox.ts — shared/dedicated tier、quota、idempotent create、container lifecycle。
-- Eliza local/remote provider: https://github.com/elizaOS/eliza/blob/29bed1bb394a2c0c7c0df6dc12babbe28667efbe/packages/cloud/shared/src/lib/services/sandbox-provider.ts — local Dockerとremote Dockerの共通interface。
-- OpenClaw comparison evidence: https://github.com/openclaw/openclaw/blob/90a9622a6cf5740ab4b9f6f65d9081d47ffbc4e4/extensions/telegram/src/message-dispatch-dedupe.ts と https://github.com/aws-samples/sample-openclaw-multi-tenant-platform/blob/2cb44f7f0a359ef8054cac8be02f07c035e88f4d/helm/applicationset.yaml。
+Cloud担当は上記8項目だけを順番に閉じる。local Codexはlocal運用と後続移植を別に担当する。primaryだけがspec/plan/progressの完了判定を更新し、workerは割当code/test、reviewerはexact commitのread-onlyを担当する。
+
+利用可能なworkerがないセッションでは、存在しないsubagent実行を装わず直接検証する。コードのmerge、deploy、provider成功、友達betaを別々に記録する。古いledgerのEliza採用方針は歴史記録であり、実行指示として復活させない。
+
+## 10. 今回変更しないもの
+
+- local launchd/12 loopの修理、稼働設定、移植、投資・cryptoの実行。
+- self-host版の削除や全面rewrite。
+- 別agent framework、plugin migration、決済基盤移行。
+- 新しい経路provider契約、全駅の出口/号車対応。
+- annual plan、価格変更、usage-based billing、無料化の約束。
+- 提出済みhackathonの提出物や審査導線。
+
+## 11. 根拠と実装参照
+
+- Owner decision: 2026-09-05、この会話でCloudの日常版のみ、Stripe維持、Eliza不採用、local移植はlocal Codex側と明示。
+- 技術契約: `2026-08-26-life-manager-cloud-on-time-core-design.md`。
+- 実測履歴: `../../../.superpowers/sdd/2026-08-26-life-manager-cloud-on-time-core/progress.md`。
+- Source: `apps/life-manager/lib/travel-reminder.js`、`transit.js`、`travel.js`、`calendar-interpreter.js`、`panel-api.js`、`panel-ui.js`、`telegram-onboard.js`、`payment-link.js`、`user-selector.js`、`apps/life-manager/scheduler.js`。
+- 公開入口の確認元: `Daisuke134/anicca-products`の`apps/landing/app/life-manager/LifeManagerBody.tsx`と`apps/landing/app/lm/LmBody.tsx`。変更前に実際の公開source/deployを再確認する。
+- 改定前の設計比較はGit履歴に残るが、採用決定・実行計画としては無効。
