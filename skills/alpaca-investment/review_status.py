@@ -27,14 +27,20 @@ def classify_dashboard(text: str, selected_account: str = "") -> str | None:
         return "action_required"
     if "application rejected" in normalized:
         return "rejected"
-    if re.search(r"(?:^|\n)\s*(?:life manager\s*\n)?live\s*-\s*[a-z0-9]{6,}\s*$",
-                 selected_account.lower()):
+    if selected_account_kind(selected_account) == "live":
         return "active"
     return None
 
 
+def selected_account_kind(value: str) -> str | None:
+    match = re.search(r"(?:^|\n)\s*(?:life manager\s*\n)?(paper|live)\s*-\s*[a-z0-9]{6,}\s*$",
+                      value.lower())
+    return match.group(1) if match else None
+
+
 def dashboard_ready(url: str, text: str, selected_account: str = "") -> bool:
-    return "/login" in url or bool(selected_account) or classify_dashboard(text) is not None
+    return ("/login" in url or selected_account_kind(selected_account) is not None
+            or classify_dashboard(text) is not None)
 
 
 def due(receipt: dict, *, now: datetime | None = None, interval_seconds: int = 1800) -> bool:
@@ -100,7 +106,7 @@ def refresh(state: Path, *, force: bool = False) -> dict:
         cdp = [sys.executable, str(BROWSER / "scripts/cdp.py")]
         _command([*cdp, "nav", target, DASHBOARD], env=env)
         snapshot = None
-        expression = '''(()=>{const buttons=[...document.querySelectorAll("button")];const selected=buttons.find(x=>/^(?:Life Manager\\n)?(?:Paper|Live)\\s*-/.test(x.innerText.trim()));return {url:location.href,text:(document.body?.innerText||""),selected:(selected?.innerText||"")}})()'''
+        expression = '''(()=>{const selected=document.querySelector("nav > div.h-14 > button");return {url:location.href,text:(document.body?.innerText||""),selected:(selected?.innerText||"")}})()'''
         for _ in range(20):
             snapshot = json.loads(_command([*cdp, "eval", target, "-"], stdin=expression, env=env))
             if dashboard_ready(snapshot.get("url", ""), snapshot.get("text", ""), snapshot.get("selected", "")):
@@ -111,9 +117,9 @@ def refresh(state: Path, *, force: bool = False) -> dict:
         text = snapshot.get("text", "")
         selected = snapshot.get("selected", "")
         status = classify_dashboard(text, selected)
-        if status is None and "Paper -" in selected:
-            _command([*cdp, "eval", target, "-"], stdin='[...document.querySelectorAll("button")].find(x=>x.innerText.includes("Paper -"))?.click(); true', env=env)
-            switched = json.loads(_command([*cdp, "eval", target, "-"], stdin='Boolean([...document.querySelectorAll("button")].find(x=>x.offsetParent!==null&&/^Live\\s*-/.test(x.innerText.trim()))?.click())', env=env))
+        if status is None and selected_account_kind(selected) == "paper":
+            _command([*cdp, "eval", target, "-"], stdin='document.querySelector("nav > div.h-14 > button")?.click(); true', env=env)
+            switched = json.loads(_command([*cdp, "eval", target, "-"], stdin='(()=>{const trigger=document.querySelector("nav > div.h-14 > button");const option=[...document.querySelectorAll("button")].find(x=>x!==trigger&&x.offsetParent!==null&&/(?:^|\\n)Live\\s*-/.test(x.innerText.trim()));option?.click();return Boolean(option)})()', env=env))
             if switched:
                 for _ in range(20):
                     time.sleep(0.5)
