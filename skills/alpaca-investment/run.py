@@ -49,22 +49,41 @@ def _deployment() -> str:
     return value
 
 
+def _mode() -> str:
+    value = os.environ.get("LIFE_MANAGER_INVESTMENT_MODE")
+    if value not in {"paper", "shadow", "live"}:
+        raise ValueError("investment_mode_invalid")
+    return value
+
+
+def _mode_paths(mode: str) -> tuple[Path, Path]:
+    if mode not in {"paper", "shadow", "live"}:
+        raise ValueError("investment_mode_invalid")
+    suffix = mode.upper()
+    credentials = os.environ.get(f"ALPACA_INVESTMENT_{suffix}_CREDENTIALS_FILE")
+    state = os.environ.get(f"ALPACA_INVESTMENT_{suffix}_STATE_DIR")
+    if mode == "paper":
+        credentials = credentials or os.environ.get("ANICCA_CREDENTIALS_FILE") \
+            or "~/.local/share/anicca/credentials.json"
+        state = state or os.environ.get("ALPACA_INVESTMENT_STATE_DIR") \
+            or "~/.local/state/life-manager/alpaca-investment"
+    elif not credentials or not state:
+        raise ValueError("investment_mode_paths_missing")
+    return Path(credentials).expanduser(), Path(state).expanduser()
+
+
 def main(*, attempt: int = 0, wake_id=None) -> int:
     wake_id = wake_id or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    state = Path(os.environ.get(
-        "ALPACA_INVESTMENT_STATE_DIR",
-        "~/.local/state/life-manager/alpaca-investment",
-    )).expanduser()
+    state = Path(os.environ.get("ALPACA_INVESTMENT_STATE_DIR",
+                               "~/.local/state/life-manager/alpaca-investment")).expanduser()
     effect_attempted = False
     observation = None
     campaign = None
     stage = "start"
     try:
+        mode = _mode()
+        credentials_path, state = _mode_paths(mode)
         deployment = _deployment()
-        credentials_path = Path(os.environ.get(
-            "ANICCA_CREDENTIALS_FILE",
-            "~/.local/share/anicca/credentials.json",
-        )).expanduser()
         cli_path = Path(os.environ.get("ALPACA_CLI", "~/.local/bin/alpaca")).expanduser()
         stage = "reconcile_started"
         reconciliation = reconcile_started(

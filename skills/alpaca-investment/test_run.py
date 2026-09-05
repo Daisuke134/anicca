@@ -48,6 +48,44 @@ class DeploymentProfileTest(unittest.TestCase):
                     MODULE._deployment()
 
 
+class InvestmentModeTest(unittest.TestCase):
+    def test_requires_exact_mode_before_broker_access(self):
+        for value in ("paper", "shadow", "live", None, "", " paper", "PAPER", "paper,live"):
+            with self.subTest(value=value):
+                if value in {"paper", "shadow", "live"}:
+                    with patch.dict(MODULE.os.environ, {"LIFE_MANAGER_INVESTMENT_MODE": value}):
+                        self.assertEqual(MODULE._mode(), value)
+                    continue
+                with patch.dict(MODULE.os.environ, {
+                    "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
+                    **({} if value is None else {"LIFE_MANAGER_INVESTMENT_MODE": value}),
+                }, clear=True), patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0}), \
+                        patch.object(MODULE, "observe", side_effect=RuntimeError("broker-called")) as observe, \
+                        patch.object(MODULE, "deliver_failure", return_value={"status": "delivered"}):
+                    MODULE.main(wake_id="mode-validation")
+                self.assertEqual(observe.call_count, 0)
+
+    def test_paper_mode_selects_configured_paper_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            credentials, state = root / "paper.json", root / "paper-state"
+            observed = []
+            def broker_boundary(**kwargs):
+                observed.append(kwargs)
+                raise RuntimeError("stop-at-broker-boundary")
+            with patch.dict(MODULE.os.environ, {
+                "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
+                "LIFE_MANAGER_INVESTMENT_MODE": "paper",
+                "ALPACA_INVESTMENT_PAPER_CREDENTIALS_FILE": str(credentials),
+                "ALPACA_INVESTMENT_PAPER_STATE_DIR": str(state),
+            }, clear=True), patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0}) as reconcile, \
+                    patch.object(MODULE, "observe", side_effect=broker_boundary), \
+                    patch.object(MODULE, "deliver_failure", return_value={"status": "delivered"}):
+                MODULE.main(wake_id="paper-paths")
+        self.assertEqual(observed[0]["credentials_path"], credentials)
+        self.assertEqual(reconcile.call_args.args[0], state / "receipts.jsonl")
+
+
 class PortablePassTest(unittest.TestCase):
     @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
     @patch.object(MODULE, "observe")
@@ -78,6 +116,7 @@ class PortablePassTest(unittest.TestCase):
                 "ALPACA_INVESTMENT_STATE_DIR": str(root / "state"),
                 "NODE_BIN": str(executable), "ALPACA_MARKER": str(marker),
                 "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
+                "LIFE_MANAGER_INVESTMENT_MODE": "paper",
             }), redirect_stdout(StringIO()) as output:
                 self.assertEqual(MODULE.main(wake_id="wake-success"), 0)
             self.assertFalse(marker.exists())
@@ -107,6 +146,7 @@ class PortablePassTest(unittest.TestCase):
                 "ALPACA_INVESTMENT_STATE_DIR": str(root / "state"),
                 "NODE_BIN": str(executable), "ALPACA_MARKER": str(marker),
                 "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
+                "LIFE_MANAGER_INVESTMENT_MODE": "paper",
             }), redirect_stdout(StringIO()):
                 self.assertEqual(MODULE.main(wake_id="wake-failure"), 78)
             self.assertFalse(marker.exists())
@@ -122,6 +162,7 @@ class FailureTelegramTest(unittest.TestCase):
         deliver_failure.return_value = {"message_id": "123", "status": "delivered"}
         with patch.dict(MODULE.os.environ, {
             "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
+            "LIFE_MANAGER_INVESTMENT_MODE": "paper",
         }):
             self.assertEqual(MODULE.main(), 78)
         self.assertEqual(observe.call_count, 3)
