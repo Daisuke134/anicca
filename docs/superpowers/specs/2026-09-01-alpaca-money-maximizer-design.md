@@ -913,7 +913,10 @@ run end to end in cloud independently of those browser loops.
 
 This order is fixed until Dais explicitly changes it. The current cursor is **L04**. Each atom merges to `main`
 independently and ends with official readback. The local loop closes the entire bounded live lifecycle first.
-Cloud begins only after the local repeatability gate passes, and runs the same committed core.
+Cloud broker execution and account ownership begin only after the local repeatability gate passes, and run the
+same committed core. L04 may complete effect-disabled Cloud UX, tenant-state, secret-reference, scheduler, and
+fixture-parity readiness while provider review is pending. That readiness cannot resolve a live credential,
+contact Alpaca's trading API, submit an order, or claim L13 complete.
 
 L01 is **DONE** in implementation commit `2eb1e886d`: the existing environment-injected finite paper pass retains
 observation, model proposal, deterministic gate, sealed effect, reconciliation, durable state, and Telegram while
@@ -957,6 +960,40 @@ next automatic action, and contain neither `Codex`, `Alpaca`, nor `:::`. It chan
 it adds no sender, schedule, outbox, or sibling-loop dependency. Until L04 closes, every natural paper wake still
 reports balance, P&L, decision or failure, and `NO_TRADE` when applicable. This repair restores the already-required
 product description; it does not mark the L07 command surface complete or reorder the TODO.
+
+### L04 pre-approval work queue
+
+Provider review blocks only official live-account facts and effects; it does not block the product shell around
+them. The following sub-atoms are the fixed L04 execution order. They refine L04 without moving L05–L18. “E2E”
+before approval always means the complete pre-approval path and must not be reported as live-trading E2E.
+
+| Seq | Pre-approval atom | Current evidence | Acceptance gate |
+|---:|---|---|---|
+| L04.1 | Local authenticated review monitor — **DONE** | Production SHA `5c91094d`; natural wake and Telegram message `58961` | The five-minute local paper pass invokes a 30-minute authenticated dashboard read best-effort, persists only explicit provider state, reports it, and continues paper operation on browser failure. |
+| L04.2 | Local Telegram onboarding/status E2E | Plugin and command registration pass; an actual owner-originated `/invest` round trip is not yet recorded | From Dais's Telegram, `/invest` reaches the local gateway, returns the official signup URL or verified current lifecycle plus paper balance/reason, and yields one provider message ID. No secret appears. |
+| L04.3 | Local pre-approval replay E2E | Natural paper wakes pass, but one sealed replay fixture does not yet cover the whole signup-state-to-report path | A clean fixture replays `setup_required → in_review`, one `NO_TRADE`, one approved paper proposal, reconciliation, restart, and Telegram rendering with duplicate effects/messages zero. |
+| L04.4 | Shared Investment chat contract | Local `/invest` exists; Cloud slash router has no Investment command | One host-neutral response model renders the same command name, signup button, lifecycle copy, balance/reason, and fail-closed states for local and Cloud. Local gateway and Cloud webhook are thin transports. |
+| L04.5 | Cloud `/invest` E2E, effects disabled | Existing Cloud Telegram webhook, subscription identity, and tenant isolation exist; Investment routing is absent | An authenticated Cloud tenant sends `/invest` and receives the shared response with a provider message ID. Unlinked/cross-tenant requests fail closed. Broker calls and scheduler effects remain zero. |
+| L04.6 | Tenant-scoped Cloud Investment state and secret references | Existing Cloud secret-provider supports tenant-bound `secret://` refs; no Investment profile exists | Cloud stores only lifecycle, deployment, mode, pause/kill state, core digest, receipt refs, and Alpaca secret references. Raw credentials never enter DB, queue, log, Telegram, fixture, or Git. |
+| L04.7 | Cloud scheduler dry-run | Existing Inngest/scheduler infrastructure exists; Investment job is not wired | A disabled-by-default five-minute job claims one tenant/account owner, runs fixture/read-only core only, writes a durable receipt, and reports `effect_permission=none`. Retry/restart creates zero duplicate jobs or messages. |
+| L04.8 | Local/Cloud parity fixture | Local core is portable; no cross-host Investment parity receipt exists | Identical sealed inputs produce the same decision, risk result, report fields, core digest, and idempotency key locally and in the Cloud adapter. Any mismatch fails the Cloud job closed. |
+| L04.9 | Approval transition — **WAITING ON PROVIDER** | Official state remains `in_review` | Authenticated provider readback proves `approved` or selected `Live - <id>`, then verifies initial owner-authorized funding is at most `$100`. Only this closes L04 and advances the cursor to L05. |
+
+The pre-approval user journeys are therefore:
+
+```mermaid
+flowchart LR
+  A[Telegram /invest] --> B{Account lifecycle}
+  B -->|setup_required| C[Official signup/KYC link]
+  B -->|in_review| D[Paper loop continues every 5 min]
+  C --> E[Provider review]
+  E --> D
+  D --> F[Decision or NO_TRADE + reason + balance in Telegram]
+  E -->|approved/Live verified| G[L05 live read-only preflight]
+```
+
+Local and Cloud share `A` through `F`; only the transport, scheduler, tenant store, and secret resolver differ.
+Neither deployment may execute `G` or any live effect while L04.9 is pending.
 
 | Seq | Atom | Acceptance gate |
 |---:|---|---|
