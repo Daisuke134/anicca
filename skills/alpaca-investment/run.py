@@ -42,6 +42,13 @@ def _terminal_effect(effect_attempted: bool) -> str:
     return "unknown" if effect_attempted else "none"
 
 
+def _deployment() -> str:
+    value = os.environ.get("LIFE_MANAGER_INVESTMENT_DEPLOYMENT")
+    if value not in {"local", "cloud"}:
+        raise ValueError("investment_deployment_invalid")
+    return value
+
+
 def main(*, attempt: int = 0, wake_id=None) -> int:
     wake_id = wake_id or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     state = Path(os.environ.get(
@@ -53,6 +60,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
     campaign = None
     stage = "start"
     try:
+        deployment = _deployment()
         credentials_path = Path(os.environ.get(
             "ANICCA_CREDENTIALS_FILE",
             "~/.local/share/anicca/credentials.json",
@@ -82,6 +90,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         if campaign["exit_status"] == "EXIT_READY":
             exit_decision = {
                 "candidate_ref": CANDIDATE_REF,
+                "deployment": deployment,
                 "gate": "campaign_exit_ready",
                 "paper": True,
                 "reason": "sealed_campaign_regular_session_positive_credit",
@@ -122,6 +131,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             Path(__file__).resolve().parents[2] / "runtime/agent-runner/agent_runner.py",
             Path(__file__).resolve().parents[2],
         )
+        decision["deployment"] = deployment
         if effect != "none" and decision["approved"]:
             decision["approved"] = False
             decision["gate"] = "campaign_exit_used_effect_limit"
@@ -154,6 +164,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             "activities_count": observation["activities_count"],
             "candidate_count": len(candidates),
             "decision": decision["candidate_ref"],
+            "deployment": deployment,
             "effect": effect,
             "exit_status": campaign["exit_status"],
             "loop_id": "alpaca-investment",
