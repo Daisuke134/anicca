@@ -98,7 +98,7 @@ def _run_private_model_serialized(root: Path, command: list[str], label: str, st
     """Admit one paid model run at a time, before its runner timeout starts."""
     effect_descriptor = None
     if effect_owner:
-        effect_lock_path = root.parent / ".paid-effect-owner.lock"
+        effect_lock_path = root / ".paid-effect-owner.lock"
         effect_descriptor = os.open(effect_lock_path, os.O_CREAT | os.O_RDWR, 0o600)
         try:
             fcntl.flock(effect_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -107,7 +107,7 @@ def _run_private_model_serialized(root: Path, command: list[str], label: str, st
             if error.errno in (errno.EACCES, errno.EAGAIN):
                 raise Failure("remote_owner_busy") from error
             raise
-    model_lock_path = root.parent / ".paid-model-admission.lock"
+    model_lock_path = root / ".paid-model-admission.lock"
     model_descriptor = os.open(model_lock_path, os.O_CREAT | os.O_RDWR, 0o600)
     try:
         fcntl.flock(model_descriptor, fcntl.LOCK_EX)
