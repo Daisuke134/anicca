@@ -79,6 +79,45 @@ def test_talkroom_readback_retries_transient_tab_open_timeout(monkeypatch) -> No
     assert len(attempts) == 2
 
 
+def test_buyer_attachment_fetch_has_a_finite_timeout() -> None:
+    snapshot = load("coconala_queue_snapshot")
+
+    assert "AbortSignal.timeout(" in snapshot.TALKROOM_ATTACHMENT_EXPRESSION
+    assert "attachment_fetch_timeout" in snapshot.TALKROOM_ATTACHMENT_EXPRESSION
+
+
+def test_talkroom_readback_falls_back_to_metadata_when_attachment_capture_times_out(monkeypatch) -> None:
+    snapshot = load("coconala_queue_snapshot")
+    captures = []
+
+    class Tab:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def __enter__(self):
+            return SimpleNamespace(ws="ws://ready")
+
+        def __exit__(self, *_args):
+            return False
+
+    async def inspect(*_args, **kwargs):
+        captures.append(kwargs["capture_buyer_attachments"])
+        if kwargs["capture_buyer_attachments"]:
+            raise TimeoutError
+        return {"messages": [{"attachments": [{"filename": "banner.png"}]}]}
+
+    monkeypatch.setattr(snapshot, "DefaultTab", Tab)
+    monkeypatch.setattr(snapshot, "inspect_page", inspect)
+
+    result = snapshot.inspect_page_with_retry(
+        Path("helper"), "https://example.test", "1", None,
+        capture_buyer_attachments=True,
+    )
+
+    assert captures == [True, False]
+    assert result["messages"][0]["attachments"][0]["filename"] == "banner.png"
+
+
 def test_paid_failure_preserves_machine_readable_step_and_diagnostic_detail() -> None:
     paid = load("paid_direct")
     error = paid.Failure("file_builder", "isolated_file_owner")
