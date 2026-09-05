@@ -782,7 +782,8 @@ adversarial review reports SHIP with no silent real-money loss path. After targe
 `/Users/anicca/loops/releases/20260905T131625-697a72bf`, the natural wake first recorded an intermediate fail while
 the same process retried, then ended `pass` at `2026-09-05T04:24:32.655354+00:00`. Installed/event SHA match;
 stdout and the newest decision receipt both read `mode=paper`; Telegram message `57631` was delivered with
-`mode=paper`, balance, P&L, natural-language `NO_TRADE` reason, and no order. No live broker mutation occurred.
+`mode=paper`, balance, P&L, the `NO_TRADE` gate, and no order. The model's full natural-language reason is not yet
+included in Telegram and remains part of L07. No live broker mutation occurred.
 
 | Seq | Atom | Acceptance gate |
 |---:|---|---|
