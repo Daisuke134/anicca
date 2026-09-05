@@ -459,8 +459,7 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
         answer_path = root / "delivery" / "paid-answer.json"
         answer = _load(answer_path)
         intent = _load(root / "delivery" / "paid-remote-intent.json")
-        if _operator_policy_newer_than(root, item, answer_path):
-            return None
+        result_path = root / "delivery" / "paid-remote-result.json"
         try:
             current_decision = _current_paid_decision(root, item)
         except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
@@ -468,12 +467,19 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
         new_non_answer_work = (isinstance(current_decision, dict)
                                and current_decision.get("decision") == "actionable"
                                and current_decision.get("mode") != "answer")
+        if (isinstance(current_decision, dict)
+                and current_decision.get("decision") == "actionable"
+                and current_decision.get("mode") == "answer"
+                and intent.get("mode") not in {"answer", "consultation_answer"}):
+            return None
         # Sending the answer changes the compiled context and intentionally makes the prior
         # semantic decision stale. Replay recognition therefore binds the signed answer intent
         # directly to the unchanged buyer feedback and official seller-last readback; requiring
         # the old decision to remain current makes every successful answer look actionable again.
         if (intent.get("mode") in {"answer", "consultation_answer"}
                 and not new_non_answer_work and _answer_cycle_may_close(observed)):
+            if _operator_policy_newer_than(root, item, answer_path):
+                return None
             _validate_consultation_authorization(root, feedback)
             message = _text(answer.get("message"))
             formal = observed.get("formal_delivery_observed", observed.get("formal_delivery_confirmed"))
@@ -482,8 +488,12 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
                     and _text(observed.get("talkroom_state", observed.get("transaction_state")))):
                 return root
             return None
-        result = _load(root / "delivery" / "paid-remote-result.json")
-        message = _text(result.get("customer_message")) or _text(answer.get("message"))
+        if _operator_policy_newer_than(root, item, result_path):
+            return None
+        result = _load(result_path)
+        message = _text(result.get("customer_message"))
+        if result.get("status") != "completed" and not message:
+            message = _text(answer.get("message"))
         attachment = _validated_customer_attachment(root, result.get("customer_attachment"))
         seller_match = (_seller_message_with_attachment(observed, message, attachment["filename"])
                         if attachment else
