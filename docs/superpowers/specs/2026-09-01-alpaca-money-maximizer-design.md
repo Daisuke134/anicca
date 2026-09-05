@@ -698,16 +698,40 @@ cumulative realised/unrealised P&L, positions, remaining loss budget, observatio
 fields remain `unknown`; they are never fabricated as zero. Telegram acknowledgement uncertainty never retries an
 order.
 
-The initial command surface is deliberately small:
+`/invest` is the one user entry point. `/investment` is needlessly long, while `/trading` incorrectly narrows the
+product to frequent stock trades instead of observation, holding, refusal, exit, and risk management. The command
+returns the current lifecycle state and only the actions valid in that state as Telegram buttons:
 
-| Command | User result | Effect boundary |
+```mermaid
+stateDiagram-v2
+    [*] --> NeedsAccount: /invest
+    NeedsAccount --> InReview: provider signup + owner KYC handoff
+    InReview --> InReview: loop polls and reports
+    InReview --> NeedsFunding: provider approves
+    NeedsFunding --> Ready: owner funds within campaign cap
+    Ready --> Running: Start
+    Running --> Paused: Pause
+    Paused --> Running: Resume
+    Running --> Stopped: Kill
+```
+
+The loop reuses verified Life Manager profile fields and its private credential store; it does not ask the user to
+repeat known identity or login data in Telegram. It performs signup/login/MFA, opens the provider's secure owner
+handoff, and polls application state. Only provider-required suitability answers, disclosures, legal signature,
+identity document/selfie, and owner funding remain human actions. Tax IDs, documents, passwords, MFA secrets, and
+API keys never enter Telegram, receipts, logs, or Git. Once approved, the loop binds live API credentials through
+the private operator path, completes L05 read-only preflight, and exposes `Start` only when every gate passes.
+
+The initial action surface behind `/invest` is deliberately small:
+
+| Action | User result | Effect boundary |
 |---|---|---|
-| `/status` | Mode, deployment, equity, cash, P&L, positions, latest wake, next wake | Read-only |
-| `/why` | Natural-language explanation of the latest proposal, rejection, or `NO_TRADE` | Read-only |
-| `/risk` | Capital cap, per-trade cap, daily remaining loss budget, halt reason | Read-only |
-| `/pause` | Blocks new entries; reconciliation and risk-reducing exits continue | Authenticated state change |
-| `/resume` | Re-enables entries only when all live gates pass | Authenticated state change |
-| `/kill` | Blocks new entries, cancels open orders, then performs official reconciliation | Authenticated emergency action |
+| `/invest` or `Status` | Lifecycle, mode, deployment, equity, cash, P&L, positions, latest wake, next wake | Read-only |
+| `Why` | Natural-language explanation of the latest proposal, rejection, or `NO_TRADE` | Read-only |
+| `Risk` | Capital cap, per-trade cap, daily remaining loss budget, halt reason | Read-only |
+| `Start` / `Resume` | Enables entries only when live-account and risk gates pass | Authenticated state change |
+| `Pause` | Blocks new entries; reconciliation and risk-reducing exits continue | Authenticated state change |
+| `Kill` | Blocks new entries, cancels open orders, then performs official reconciliation | Authenticated emergency action |
 
 There is no Telegram command for changing credentials, increasing capital, weakening risk limits, or switching
 deployment. Those operations require the deployment's private operator path and explicit readback.
@@ -821,12 +845,18 @@ stdout and the newest decision receipt both read `mode=paper`; Telegram message 
 `mode=paper`, balance, P&L, the `NO_TRADE` gate, and no order. The model's full natural-language reason is not yet
 included in Telegram and remains part of L07. No live broker mutation occurred.
 
+L04 is **SUBMITTED / IN REVIEW**. Dais completed the provider KYC flow. Authenticated Alpaca readback shows exact
+status `Application submitted: In review` and states that Alpaca may request additional information. This proves
+submission, not approval, live API availability, options permission, or funding. The cursor remains L04 until the
+official account state is approved and owner funding of at most `$100` is verified; the loop polls and reports the
+review state without resubmitting the application.
+
 | Seq | Atom | Acceptance gate |
 |---:|---|---|
 | L01 | Portable finite pass — **DONE** | Reuse the working local paper loop to prove observation, model proposal, deterministic gate, sealed effect, reconciliation, receipt, and Telegram from one environment-neutral entrypoint. Broker credentials, scheduler, and mutable state remain injected boundaries. Dashboard publishing is excluded from the portable pass. |
 | L02 | Explicit deployment profile — **DONE** | One required `LIFE_MANAGER_INVESTMENT_DEPLOYMENT=cloud|local` value is reported in status/receipts. Installation rejects an absent or ambiguous profile; it implements no cross-profile coordination or automatic failover. |
 | L03 | Structural paper/shadow/live separation — **DONE** | Separate credential refs, endpoints, receipt namespaces, and effect permissions make a paper key incapable of a live effect and make shadow mode read-only. Mode appears in every receipt and Telegram report. Only the frozen paper namespace can invoke the hackathon dashboard publisher; shadow/live have no publisher call path. |
-| L04 | Human live-account gate | Dais completes provider-required identity, legal agreements, options application, and funding. The model does not answer suitability/KYC questions or move money. Verified owner funding is at most `$100` for the initial campaign. |
+| L04 | Human live-account gate — **SUBMITTED / IN REVIEW** | Dais completes provider-required identity, legal agreements, options application, and funding. The model does not answer suitability/KYC questions or move money. Verified owner funding is at most `$100` for the initial campaign. |
 | L05 | Owner-live read-only preflight | The local loop reads Dais's live Alpaca status, cash, buying power, options approval/trading level, configurations, and positions/orders without submitting an order. |
 | L06 | Frozen live-risk gate | Tests and receipt evidence enforce the `$100` allocation cap, `$10` per-trade maximum loss, `$20` New-York-day halt, one-position/one-intent limits, verified cash-flow adjustment, and all forbidden strategy classes. Unknown inputs reject entry. |
 | L07 | Telegram control and reporting | Every local natural wake reports once. `/status`, `/why`, `/risk`, `/pause`, `/resume`, and `/kill` authenticate the owner, preserve exactly-once effects, and return official readback. |
