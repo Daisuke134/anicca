@@ -4574,6 +4574,22 @@ def _is_coconala_cancellation_block(semantic: dict[str, Any]) -> bool:
     )
 
 
+def _durable_coconala_cancellation_intent(intent: dict[str, Any], item: dict[str, Any]) -> bool:
+    room, feedback = _text(item.get("talkroom_id")), _text(item.get("buyer_feedback_sha256"))
+    return (
+        bool(room and feedback)
+        and isinstance(intent, dict)
+        and intent.get("action") == "cancellation_request"
+        and intent.get("target") == f"https://coconala.com/talkrooms/{room}"
+        and intent.get("feedback_sha256") == feedback
+        and intent.get("effect_key") == hashlib.sha256(
+            f"coconala:cancel:{room}:{feedback}".encode()
+        ).hexdigest()
+        and intent.get("formal_delivery_checkbox") is False
+        and intent.get("phase") in {"prepared", "click_started", "effect_started", "verified"}
+    )
+
+
 def _run_coconala_cancellation(args, item_path: Path, root: Path,
                                feedback: str, evidence_dir: Path) -> dict[str, Any]:
     payload = _json_line(_run([
@@ -4631,9 +4647,22 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             pass
         diagnostic_stage = "semantic_decision"
         try:
-            semantic = _current_paid_decision(root, item)
+            cancellation_intent = _load(root / "delivery" / "cancellation-intent.json")
         except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
-            semantic = _paid_decision(args, item_path, root, base)
+            cancellation_intent = None
+        if _durable_coconala_cancellation_intent(cancellation_intent, item):
+            semantic = {
+                "decision": "blocked",
+                "required_effect": "Coconala キャンセルリクエスト: cancel the transaction.",
+                "unresolved": [
+                    "No code-owned Coconala cancellation/transaction-control adapter is present.",
+                ],
+            }
+        else:
+            try:
+                semantic = _current_paid_decision(root, item)
+            except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
+                semantic = _paid_decision(args, item_path, root, base)
         if semantic.get("decision") in {"satisfied_noop", "await_buyer"}:
             status = "satisfied_noop" if semantic.get("decision") == "satisfied_noop" else "awaiting_buyer"
             _write(output, {
