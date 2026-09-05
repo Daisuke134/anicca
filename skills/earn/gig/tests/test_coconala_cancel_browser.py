@@ -114,6 +114,17 @@ def test_cancel_send_button_is_scoped_to_visible_modal():
     assert "[...document.querySelectorAll('button')]" not in expression
 
 
+def test_cancel_form_configuration_uses_native_setter_and_both_control_events():
+    cancel = load()
+    expression = cancel.cancel_form_configuration_expression(cancel.REASON, cancel.DETAIL)
+
+    assert "Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set" in expression
+    assert "select.dispatchEvent(new Event('input',{bubbles:true}))" in expression
+    assert "select.dispatchEvent(new Event('change',{bubbles:true}))" in expression
+    assert "textarea.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText'}))" in expression
+    assert "textarea.dispatchEvent(new Event('change',{bubbles:true}))" in expression
+
+
 def test_pending_readback_excludes_answered_history_and_requires_no_current_control():
     cancel = load()
     expression = cancel.browser_state_expression(cancel.REASON, cancel.DETAIL)
