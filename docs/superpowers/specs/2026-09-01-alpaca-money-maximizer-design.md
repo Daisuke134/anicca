@@ -806,6 +806,14 @@ Live account is accepted only when the stable account-switcher trigger itself ch
 decision, and delivered Telegram message `58961` containing `ライブ口座: 審査中` with no `Codex` or `Alpaca`
 sender label. This proves monitoring and reporting, not account approval; L04 remains in review.
 
+The owner-originated local `/invest` acceptance now passes. Its first production attempt exposed a stale OpenClaw
+command-registry snapshot: Telegram reached the registered handler, but the runtime lookup returned `Command not
+found.` A normal managed gateway restart rebuilt one consistent plugin snapshot. Dais then sent `/invest` again
+from his phone and received the expected `Investment Loop` response with `ライブ口座: 審査中`, paper equity and
+cash `$99,996.76`, `取引なし`, and the model's natural-language reason. The gateway recorded the outbound delivery
+as Telegram message `59456`. No credential or live effect was present. This closes only L04.2; provider status is
+still `in_review` and the next active atom is L04.3.
+
 #### 7.2.1 Start-to-finish product UX map
 
 The ordered L01–L15 table in section 8 remains the only implementation TODO SSOT. This map explains the same order
@@ -970,8 +978,8 @@ before approval always means the complete pre-approval path and must not be repo
 | Seq | Pre-approval atom | Current evidence | Acceptance gate |
 |---:|---|---|---|
 | L04.1 | Local authenticated review monitor — **DONE** | Production SHA `5c91094d`; natural wake and Telegram message `58961` | The five-minute local paper pass invokes a 30-minute authenticated dashboard read best-effort, persists only explicit provider state, reports it, and continues paper operation on browser failure. |
-| L04.2 | Local Telegram onboarding/status E2E — **ACTIVE** | Plugin and command registration pass. Mac Telegram Web is logged out; no Telegram Desktop or reusable MTProto user session exists, and no prior owner-originated `/invest` event is recorded. | Dais sends `/invest` once from his phone to `@AniccaLifeBot`. The local gateway returns verified lifecycle plus paper balance/reason and yields one provider message ID. No secret appears. Codex verifies the receipt; it does not impersonate the owner with a bot-generated update. |
-| L04.3 | Local pre-approval replay E2E | Natural paper wakes pass, but one sealed replay fixture does not yet cover the whole signup-state-to-report path | A clean fixture replays `setup_required → in_review`, one `NO_TRADE`, one approved paper proposal, reconciliation, restart, and Telegram rendering with duplicate effects/messages zero. |
+| L04.2 | Local Telegram onboarding/status E2E — **DONE** | Owner-originated `/invest` returned the verified `in_review` lifecycle, paper equity/cash `$99,996.76`, `NO_TRADE`, and natural-language reason; gateway delivery receipt `59456`. The initial stale command-registry snapshot was recovered by a managed gateway restart. | Dais sends `/invest` once from his phone to `@AniccaLifeBot`. The local gateway returns verified lifecycle plus paper balance/reason and yields one provider message ID. No secret appears. Codex verifies the receipt; it does not impersonate the owner with a bot-generated update. |
+| L04.3 | Local pre-approval replay E2E — **ACTIVE** | Natural paper wakes and the owner-originated `/invest` pass, but one sealed replay fixture does not yet cover the whole signup-state-to-report path | A clean fixture replays `setup_required → in_review`, one `NO_TRADE`, one approved paper proposal, reconciliation, restart, and Telegram rendering with duplicate effects/messages zero. |
 | L04.4 | Shared Investment chat contract | Local `/invest` exists; Cloud slash router has no Investment command | One host-neutral response model renders the same command name, signup button, lifecycle copy, balance/reason, and fail-closed states for local and Cloud. Local gateway and Cloud webhook are thin transports. |
 | L04.5 | Cloud `/invest` E2E, effects disabled | Existing Cloud Telegram webhook, subscription identity, and tenant isolation exist; Investment routing is absent | An authenticated Cloud tenant sends `/invest` and receives the shared response with a provider message ID. Unlinked/cross-tenant requests fail closed. Broker calls and scheduler effects remain zero. |
 | L04.6 | Tenant-scoped Cloud Investment state and secret references | Existing Cloud secret-provider supports tenant-bound `secret://` refs; no Investment profile exists | Cloud stores only lifecycle, deployment, mode, pause/kill state, core digest, receipt refs, and Alpaca secret references. Raw credentials never enter DB, queue, log, Telegram, fixture, or Git. |
