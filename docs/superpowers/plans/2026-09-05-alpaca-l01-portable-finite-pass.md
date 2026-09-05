@@ -27,7 +27,7 @@
 - Consumes: existing `main(*, attempt=0, wake_id=None) -> int` and environment-injected state/credential/CLI boundaries.
 - Produces: the same finite pass result and Telegram behavior with no dashboard child process or `public_snapshot_published` summary field.
 
-- [ ] **Step 1: Write the failing behavior test**
+- [x] **Step 1: Write the failing behavior test**
 
 Replace publisher-unit tests and publisher mocks with these focused success/failure pass tests (keeping the existing retry/effect tests):
 
@@ -92,7 +92,7 @@ class PortablePassTest(unittest.TestCase):
 
 Add `json`, `tempfile`, `redirect_stdout`, and `StringIO` imports required by these tests. The tests fail if either portable-pass path starts the fake dashboard publisher; the assertions observe the marker rather than asserting on a mock.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run:
 
@@ -102,7 +102,7 @@ python3 -m unittest skills.alpaca-investment.test_run
 
 Expected: the new tests fail because current `run.py` invokes `_publish_public_snapshot()` on success and after a delivered terminal failure.
 
-- [ ] **Step 3: Implement the minimum deletion**
+- [x] **Step 3: Implement the minimum deletion**
 
 In `skills/alpaca-investment/run.py`:
 
@@ -112,7 +112,7 @@ In `skills/alpaca-investment/run.py`:
 - delete the terminal-failure publisher call;
 - preserve observation, allocation, effect fencing, reconciliation, state writes, Telegram delivery, retry rules, output status, and return codes unchanged.
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 Run:
 
@@ -123,6 +123,6 @@ git diff --check
 
 Expected: all focused tests pass and the diff check reports no errors.
 
-- [ ] **Step 5: Primary verification and state update**
+- [x] **Step 5: Primary verification and state update**
 
 The primary agent runs the applicable existing Alpaca and loop-runtime tests, confirms the pass remains paper-only and production is not mutated, obtains a fresh adversarial review, then marks L01 DONE and L02 active in the Alpaca live-product spec. Commit, push, merge, and production deployment are separate primary-owned gates.
