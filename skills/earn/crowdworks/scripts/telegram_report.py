@@ -21,6 +21,10 @@ from typing import Any, Callable, Mapping, Optional, Sequence
 
 ROOT = Path(__file__).resolve().parents[4]
 OUTBOX_PATH = ROOT / "skills" / "_shared" / "marketplace-core" / "scripts" / "telegram_outbox.py"
+# The [Platform][応募判断] wording is already written once, platform-neutral, and proven in
+# production by Coconala. Reuse it rather than writing a fourth copy of the same sentences; moving
+# the file into _shared is the extraction step once its other consumer is not mid-flight.
+ENVELOPE_PATH = ROOT / "skills" / "earn" / "gig" / "scripts" / "report_envelope.py"
 STATE = Path("~/.local/state/anicca/crowdworks").expanduser()
 LEDGER = STATE / "application-receipts.jsonl"
 STATUS = STATE / "application-owner.json"
@@ -36,6 +40,7 @@ def _load(name: str, path: Path):
 
 
 outbox = _load("crowdworks_report_outbox", OUTBOX_PATH)
+envelope = _load("crowdworks_report_envelope", ENVELOPE_PATH)
 
 
 @dataclass(frozen=True)
@@ -45,46 +50,53 @@ class SendResult:
     error: Optional[str]
 
 
-def collect_snapshot(*, ledger_path: Path = LEDGER, status_path: Path = STATUS, now: str) -> dict[str, object]:
-    """What this lane can honestly say: verified receipts, today's receipts, and the last tick."""
-    receipts: list[Mapping[str, object]] = []
+def _receipts(ledger_path: Path) -> list[Mapping[str, object]]:
     try: lines = ledger_path.read_text(encoding="utf-8").splitlines()
-    except OSError: lines = []
+    except OSError: return []
+    out = []
     for line in lines:
         try: record = json.loads(line)
         except ValueError: continue
-        if isinstance(record, Mapping): receipts.append(record)
-    today = now[:10]
-    verified = [r for r in receipts if r.get("status") == "verified"]
-    todays = [r for r in verified if str(r.get("observed_at", ""))[:10] == today]
-    try: status = json.loads(status_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError): status = {}
-    return {
-        "verified_total": len(verified),
-        "today_count": len(todays),
-        "today_proposals": [str(r.get("application_external_id")) for r in todays if r.get("application_external_id")],
-        "last_status": status.get("status") if isinstance(status.get("status"), str) else None,
-        "last_observed_at": status.get("observed_at") if isinstance(status.get("observed_at"), str) else None,
-        "date": today,
+        if isinstance(record, Mapping) and record.get("status") == "verified": out.append(record)
+    return out
+
+
+def decision_message(receipt: Mapping[str, object], now: str) -> str:
+    """One application, rendered by the shared [Platform][応募判断] envelope."""
+    project = str(receipt.get("opportunity_external_id") or "")
+    proposal = str(receipt.get("application_external_id") or "")
+    observed = str(receipt.get("observed_at") or now)
+    work_event = {
+        "kind": "application",
+        "state": "selected",
+        "event_key": f"crowdworks:application:{proposal}",
+        "entity_id": project,
+        "occurred_at": observed,
+        "next_action": "クライアントからの返信を待ち、返信があれば同じレーンが対応します。",
+        "attributes": {
+            "platform": "crowdworks",
+            "platform_display_name": "CrowdWorks",
+            "title": f"案件 {project}",
+            "reason_codes": [f"公式応募ID {proposal} を公式ページで確認済み"],
+        },
     }
+    built = envelope.build_work_event_envelope(work_event=work_event, observed_at=datetime.fromisoformat(now))
+    return envelope.render_human_ja(built)
 
 
-def render_snapshot(snapshot: Mapping[str, object]) -> str:
-    today = snapshot.get("today_count") if type(snapshot.get("today_count")) is int else 0
-    total = snapshot.get("verified_total") if type(snapshot.get("verified_total")) is int else 0
-    status = snapshot.get("last_status") or "不明"
-    icon = "📨" if today else ("⚠️" if status not in ("profile_complete_no_eligible_open_job", "duplicate_project", "verified") else "✅")
-    headline = f"本日{today}件の応募を公式確認しました" if today else "本日の新規応募はありません"
-    proposals = snapshot.get("today_proposals") if isinstance(snapshot.get("today_proposals"), list) else []
-    detail = f"提案ID: {'、'.join(proposals)}。" if proposals else ""
-    return (f"{icon} CrowdWorks 応募レーン: {headline}。{detail}"
-            f"公式確認済みの累計は{total}件です。直近の結果は{status}でした。")
-
-
-def enqueue_snapshot(database: Path, snapshot: Mapping[str, object], now: str) -> bool:
-    key = f"crowdworks:apply:{snapshot.get('date')}:{snapshot.get('verified_total')}:{snapshot.get('last_status')}"
-    try: return bool(outbox.enqueue(Path(database), key, render_snapshot(snapshot), now))
-    except outbox.IdempotencyConflict: return False
+def enqueue_decisions(database: Path, *, ledger_path: Path = LEDGER, now: str) -> int:
+    """Enqueue one message per verified application; the proposal id keeps it exactly-once."""
+    enqueued = 0
+    for receipt in _receipts(ledger_path):
+        proposal = str(receipt.get("application_external_id") or "")
+        if not proposal: continue
+        try:
+            if outbox.enqueue(Path(database), f"crowdworks:application:{proposal}", decision_message(receipt, now), now): enqueued += 1
+        except outbox.IdempotencyConflict:
+            continue
+        except Exception:
+            continue
+    return enqueued
 
 
 def _provider_id(payload: object) -> Optional[str]:
@@ -133,8 +145,7 @@ def deliver_pending(database: Path, notifier: Callable[[str], SendResult], now: 
 
 def run(*, database: Path = DATABASE, notifier: Optional[Callable[[str], SendResult]] = None, now: Optional[str] = None) -> dict[str, object]:
     stamp = now or datetime.now(timezone.utc).isoformat()
-    snapshot = collect_snapshot(now=stamp)
-    enqueued = int(enqueue_snapshot(database, snapshot, stamp))
+    enqueued = enqueue_decisions(database, now=stamp)
     delivery = deliver_pending(database, notifier or _default_notifier, stamp)
     return {"ok": delivery.delivery_uncertain == 0 and delivery.pre_send_failed == 0, "platform": "crowdworks",
             "enqueued": enqueued, "attempted": delivery.attempted, "delivered": delivery.delivered,
