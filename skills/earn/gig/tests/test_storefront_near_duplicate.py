@@ -80,3 +80,72 @@ def test_latest_unpublished_candidate_per_family_is_not_deleted_as_litter(tmp_pa
     assert storefront_direct._deletable_drafts(
         ledger, ["4371756", "4371796"],
     ) == ["4371756"]
+
+
+def test_an_active_draft_stuck_on_an_unhealable_subscription_pair_loses_its_protection(tmp_path):
+    """Draft 4385273 (mobile_app_dev) kept resubmitting a can_subscribe/discount_ratio pair
+    Coconala's own edit form can never actually clear. The active-family guard that normally
+    protects a mid-flight draft must step aside for this specific, precisely diagnosed case so
+    the loop can delete it and rebuild from a blank draft, instead of resubmitting forever."""
+    import hashlib
+    import json as _json
+
+    poisoned_unsigned = {
+        "draft_service_id": "4385273",
+        "capability_evidence": {"family": "mobile_app_dev", "recurring_support_included": False},
+        "demand_evidence_path": "/evidence/mobile.json",
+        "subscription": {"enabled": True, "discount_ratio": "5"},
+    }
+    digest = hashlib.sha256(_json.dumps(
+        poisoned_unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    poisoned_contract = {**poisoned_unsigned, "contract_sha256": digest}
+    evidence = tmp_path / "evidence" / "wake-1"
+    evidence.mkdir(parents=True)
+    (evidence / "generated-create-contract.json").write_text(
+        _json.dumps(poisoned_contract) + "\n", encoding="utf-8",
+    )
+    (tmp_path / "wakes.jsonl").write_text(_json.dumps({
+        "pass_id": "wake-1", "status": "completed",
+        "new_listing_draft": {
+            "status": "prepared", "readback": 1, "public_effect": 0,
+            "draft_service_id": "4385273", "contract_sha256": digest,
+            "capability_family": "mobile_app_dev",
+            "demand_evidence_path": "/evidence/mobile.json",
+        },
+    }) + "\n", encoding="utf-8")
+    ledger = tmp_path / "new-listing-drafts.jsonl"
+    ledger.write_text(_json.dumps({
+        "draft_service_id": "4385273", "status": "draft_prepared", "public_effect": 0,
+        "capability_family": "mobile_app_dev", "demand_evidence_path": "/evidence/mobile.json",
+        "contract_sha256": digest,
+    }) + "\n", encoding="utf-8")
+
+    assert storefront_direct._deletable_drafts(ledger, ["4385273"]) == ["4385273"]
+    # A healthy active draft -- one whose recorded contract already matches what healing would
+    # produce -- keeps its protection; only the provably stuck one loses it.
+    healthy_unsigned = {**poisoned_unsigned, "draft_service_id": "9999999",
+                        "subscription": {"enabled": False, "discount_ratio": "0"}}
+    healthy_digest = hashlib.sha256(_json.dumps(
+        healthy_unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    healthy_contract = {**healthy_unsigned, "contract_sha256": healthy_digest}
+    (evidence / "generated-create-contract.json").write_text(
+        _json.dumps(healthy_contract) + "\n", encoding="utf-8",
+    )
+    (tmp_path / "wakes.jsonl").write_text(_json.dumps({
+        "pass_id": "wake-1", "status": "completed",
+        "new_listing_draft": {
+            "status": "prepared", "readback": 1, "public_effect": 0,
+            "draft_service_id": "9999999", "contract_sha256": healthy_digest,
+            "capability_family": "mobile_app_dev",
+            "demand_evidence_path": "/evidence/mobile.json",
+        },
+    }) + "\n", encoding="utf-8")
+    ledger.write_text(_json.dumps({
+        "draft_service_id": "9999999", "status": "draft_prepared", "public_effect": 0,
+        "capability_family": "mobile_app_dev", "demand_evidence_path": "/evidence/mobile.json",
+        "contract_sha256": healthy_digest,
+    }) + "\n", encoding="utf-8")
+
+    assert storefront_direct._deletable_drafts(ledger, ["9999999"]) == []
