@@ -335,7 +335,6 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
   if (!user || !user.uid || !chatId || user.notifications_enabled === false || now === null) return { status: "skipped" };
   const token = deps.telegramToken !== undefined ? deps.telegramToken : process.env.LM_TELEGRAM_BOT_TOKEN;
   if (!token) return { status: "skipped", reason: "telegram-unconfigured" };
-  if (!token) return { status: "skipped", reason: "telegram-unconfigured" };
   const supaUrl = deps.supaUrl !== undefined ? deps.supaUrl : process.env.SUPABASE_URL;
   const supaKey = deps.supaKey !== undefined ? deps.supaKey : process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supaUrl || !supaKey) return { status: "skipped", reason: "travel-ledger-unconfigured" };
