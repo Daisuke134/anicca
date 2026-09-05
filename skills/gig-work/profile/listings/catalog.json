@@ -1,0 +1,2597 @@
+{
+  "version": 1,
+  "generated_at": "2026-09-04",
+  "purpose": "Platform-agnostic Coconala/Lancers/CrowdWorks listing catalog specialized in system/app development, grounded in observed competitor pricing and applied.jsonl demand.",
+  "persona_ref": "skills/gig-work/profile/PROFILE-ASSETS.md (Kosuke｜教育×AI専門家)",
+  "listings": [
+    {
+      "id": "mvp-0to1-webapp-build",
+      "title_ja": "0→1でWebアプリ・業務システムを最短開発します",
+      "family": "mvp_web_app_build",
+      "value_prop": "アイデアを最短距離で動くWebアプリ/業務システムに変換。要件定義から設計・実装・納品まで一気通貫。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 80000,
+          "scope": "単機能MVP（画面数〜5、DB1系統）",
+          "delivery_days": 14
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 180000,
+          "scope": "複数機能・管理画面つき業務システム",
+          "delivery_days": 21
+        },
+        {
+          "name": "プレミアム",
+          "price_jpy": 300000,
+          "scope": "認証・決済・外部API連携込みのフル機能開発",
+          "delivery_days": 30
+        }
+      ],
+      "deliverables": [
+        "要件定義書",
+        "動作するWebアプリ本体一式",
+        "簡易操作マニュアル",
+        "1週間の無償バグ修正"
+      ],
+      "required_inputs": [
+        "実現したい業務フロー・画面イメージ",
+        "利用者数・想定アクセス規模",
+        "既存システムがあればアクセス情報"
+      ],
+      "faq": [
+        {
+          "q": "プログラミング未経験でも発注できますか？",
+          "a": "はい。要件をヒアリングし、こちらで設計・実装します。"
+        },
+        {
+          "q": "途中で仕様変更は可能ですか？",
+          "a": "軽微な変更は対応します。大幅な変更は追加見積りとなります。"
+        },
+        {
+          "q": "納品後の保守はできますか？",
+          "a": "別途「開発済みシステムの保守・運用代行」で継続対応可能です。"
+        },
+        {
+          "q": "使用技術は選べますか？",
+          "a": "要件に応じてPython/Node.js/GAS等から適切な技術を提案します。"
+        },
+        {
+          "q": "見積りだけ先に欲しいです",
+          "a": "無料でお見積り・要件整理のご相談を受け付けています。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "gramu「AIを活用した業務自動化システムを開発します」100,000円 - AI/system build base price anchor"
+          }
+        ],
+        "demand_refs": [
+          {
+            "requestId": "5164798",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "建築資材販売システムの設計・開発・運用担当者を募集します, price_jpy 300000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "PC/スマホ画面モックアップに実際の業務画面(ログイン後のダッシュボード想定)を1枚配置し、『0→1で最短開発』の文字を上段、対応範囲(要件定義〜納品)を下段に重ねる",
+        "gallery": [
+          "要件定義書からリリースまでの4ステップ図解(ヒアリング→設計→実装→納品)",
+          "実装した画面のスクリーンショット風モックアップ2〜3枚",
+          "納期・価格帯を示す料金表カード"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "business-system-dashboard-dev",
+      "title_ja": "業務システム・管理ダッシュボードを開発します",
+      "family": "business_system_dev",
+      "value_prop": "予約・在庫・顧客管理などの業務システムと可視化ダッシュボードを設計から構築まで対応。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 150000,
+          "scope": "単一業務(予約/在庫等)のシステム化",
+          "delivery_days": 21
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 250000,
+          "scope": "複数業務連携＋ダッシュボード",
+          "delivery_days": 30
+        }
+      ],
+      "deliverables": [
+        "業務フロー図",
+        "業務システム本体",
+        "管理者用ダッシュボード",
+        "運用マニュアル"
+      ],
+      "required_inputs": [
+        "現状の業務フロー(Excel/紙運用の実物)",
+        "関係者数・想定同時利用人数",
+        "既存データ(あれば)"
+      ],
+      "faq": [
+        {
+          "q": "紙やExcel運用からの移行は対応できますか？",
+          "a": "はい、現状データを分析した上でシステム化します。"
+        },
+        {
+          "q": "クラウド/オンプレどちらも対応可能ですか？",
+          "a": "要件に応じてクラウド(AWS/GCP)中心にご提案します。"
+        },
+        {
+          "q": "複数拠点での利用は可能ですか？",
+          "a": "Web型で開発するため、複数拠点から同時アクセス可能です。"
+        },
+        {
+          "q": "開発後の追加機能は依頼できますか？",
+          "a": "可能です。別途お見積りいたします。"
+        },
+        {
+          "q": "セキュリティ要件は相談できますか？",
+          "a": "認証方式やアクセス制御について要件定義段階でご相談いただけます。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [],
+        "demand_refs": [
+          {
+            "requestId": "5192353",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "マンション管理データ可視化ダッシュボード企画設計者募集, price_jpy 180000"
+          },
+          {
+            "requestId": "5242583",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "レンタルスペース予約システムの設計・開発エキスパート募集, price_jpy 250000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "予約/在庫/顧客管理いずれかの一覧画面モックアップに、グラフ付きダッシュボードを重ねて表示",
+        "gallery": [
+          "管理画面のスクリーンショット風モックアップ",
+          "Before(紙・Excel管理)→After(Webシステム)比較図",
+          "料金プラン3段の比較表"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ai-agent-automation-integration",
+      "title_ja": "AIエージェント導入・業務自動化システムを開発します",
+      "family": "ai_agent_integration",
+      "value_prop": "生成AIエージェントを業務フローに組み込み、問い合わせ対応・情報収集・レポート作成を自動化。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 50000,
+          "scope": "単一業務プロセスへのAIエージェント導入",
+          "delivery_days": 10
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 100000,
+          "scope": "複数プロセス連携＋外部ツール接続",
+          "delivery_days": 18
+        },
+        {
+          "name": "プレミアム",
+          "price_jpy": 280000,
+          "scope": "企画〜開発〜社内展開までの伴走支援",
+          "delivery_days": 30
+        }
+      ],
+      "deliverables": [
+        "AIエージェント設計書",
+        "動作するエージェント本体/ワークフロー",
+        "利用マニュアル"
+      ],
+      "required_inputs": [
+        "自動化したい業務内容の具体例",
+        "使用中のツール(Slack/LINE/GAS等)",
+        "扱うデータの機密度"
+      ],
+      "faq": [
+        {
+          "q": "ChatGPT/Claude以外のモデルも使えますか？",
+          "a": "要件に応じて複数モデルから選定します。"
+        },
+        {
+          "q": "社内データを学習させることはできますか？",
+          "a": "RAG方式でナレッジを参照させる形が可能です。"
+        },
+        {
+          "q": "誤答対策はできますか？",
+          "a": "ガードレール設計・人によるレビュー導線を組み込みます。"
+        },
+        {
+          "q": "導入後の運用サポートはありますか？",
+          "a": "保守プランで継続対応いたします。"
+        },
+        {
+          "q": "AIエージェントの企画段階から相談できますか？",
+          "a": "プレミアムプランで企画から伴走します。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "MATSURYU｜まつりゅう「AIエージェントを活用した業務改善を支援します」50,000円 (31件) - top of search results"
+          },
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "DIGI LINE「AIエージェント・自動化プログラムを開発します」50,000円 (22件)"
+          }
+        ],
+        "demand_refs": [
+          {
+            "requestId": "5211464",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "AI自動化システムの企画・開発・導入支援ができる方募集, price_jpy 280000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "クラウドサーバー構築(24時間自動稼働)",
+          "price_jpy": 50000,
+          "adds": "自PCをつけっぱなしにしなくても良いようクラウド/VPS上に構築し24時間自動稼働化する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「クラウド・サーバー構築（PCつけっぱなし不要・24時間自動稼働）＋50,000円」"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "チャット画面にAIエージェントが問い合わせ対応している様子のモックアップと『業務自動化』のコピー",
+        "gallery": [
+          "AIエージェントの処理フロー図(受信→解析→回答/レポート作成)",
+          "導入前後の対応時間比較を示す簡易グラフ"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "line-bot-reservation-system",
+      "title_ja": "LINE Bot・LINE予約システムを開発します",
+      "family": "line_bot_dev",
+      "value_prop": "LINE公式アカウントを使った予約・問い合わせ自動応答システムを構築。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 50000,
+          "scope": "FAQ自動応答LINE Bot",
+          "delivery_days": 10
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 100000,
+          "scope": "予約管理＋Googleカレンダー連携",
+          "delivery_days": 14
+        }
+      ],
+      "deliverables": [
+        "LINE Bot本体",
+        "管理用スプレッドシート/カレンダー連携",
+        "設定マニュアル"
+      ],
+      "required_inputs": [
+        "LINE公式アカウント(ご自身で用意)",
+        "想定する問い合わせ・予約フロー",
+        "既存の予約管理方法"
+      ],
+      "faq": [
+        {
+          "q": "LINE公式アカウントは用意してもらえますか？",
+          "a": "アカウント作成はお客様側でお願いしています。"
+        },
+        {
+          "q": "月額費用はかかりますか？",
+          "a": "運用サポートプランをご用意しています(月額)。"
+        },
+        {
+          "q": "予約のダブルブッキングは防げますか？",
+          "a": "Googleカレンダー連携で自動排他制御します。"
+        },
+        {
+          "q": "AIによる自然文対応もできますか？",
+          "a": "生成AI連携プランで自然文対応も可能です。"
+        },
+        {
+          "q": "リッチメニューのデザインも込みですか？",
+          "a": "簡易デザインは含みます。凝ったデザインは別途相談です。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します」月額3,000円 (56件, 総販売251件) - recurring-revenue proof"
+          },
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "keumaru／けうまる「AIで常に自動対応するLINE Botを構築します」35,000円 (55件, 総販売890件)"
+          }
+        ],
+        "demand_refs": []
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "monthly_plan": {
+        "name": "月額継続プラン",
+        "price_jpy": 3000,
+        "includes": [
+          "LINE予約/問い合わせ自動応答システムの稼働継続(サーバー・ドメイン維持)",
+          "軽微な修正・設定変更への対応"
+        ],
+        "min_term_months": null,
+        "cancel_anytime": true,
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します」月額3,000円(税込)・初期費用なし・いつでも解約可能・定期購入可、販売実績251件"
+            }
+          ]
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "クラウドサーバー構築(24時間自動稼働)",
+          "price_jpy": 50000,
+          "adds": "自PCをつけっぱなしにしなくても良いようクラウド/VPS上に構築し24時間自動稼働化する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「クラウド・サーバー構築（PCつけっぱなし不要・24時間自動稼働）＋50,000円」"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "LINEのトーク画面モックアップに予約完了メッセージを表示し、『LINE予約システム（月額制）』のタイトル二段構成を再現(evidence: ayan LINE Bot屋のタイトル構成)",
+        "gallery": [
+          "Googleカレンダー連携の管理画面イメージ",
+          "顧客が予約するリッチメニュー操作の流れ図",
+          "月額プランの料金カード(初期費用なし・いつでも解約可)"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "slack-zoom-workflow-automation",
+      "title_ja": "Slack・Zoom連携の業務自動化フローを構築します",
+      "family": "slack_zoom_automation",
+      "value_prop": "会議記録・通知・タスク連携をSlack/Zoom/カレンダー間で自動化。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 60000,
+          "scope": "Zoom→Slack通知の自動化",
+          "delivery_days": 10
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 180000,
+          "scope": "会議録・議事録要約含む複数ツール連携",
+          "delivery_days": 21
+        }
+      ],
+      "deliverables": [
+        "連携フロー設計書",
+        "自動化スクリプト/Zapier・GAS等の実装",
+        "運用マニュアル"
+      ],
+      "required_inputs": [
+        "使用中のSlackワークスペース権限",
+        "Zoomアカウント種別",
+        "自動化したい通知/記録内容"
+      ],
+      "faq": [
+        {
+          "q": "Zapier/Makeなどのノーコードツールも使えますか？",
+          "a": "要件に応じてノーコード/コードを使い分けます。"
+        },
+        {
+          "q": "議事録の自動要約もできますか？",
+          "a": "生成AIによる要約を組み込み可能です。"
+        },
+        {
+          "q": "既存のワークフローを壊さず追加できますか？",
+          "a": "既存フローへの影響を確認しながら実装します。"
+        },
+        {
+          "q": "他のチャットツール(Teams等)にも対応できますか？",
+          "a": "対応可能です。事前にご相談ください。"
+        },
+        {
+          "q": "運用開始後のトラブル対応は？",
+          "a": "保守プランで対応いたします。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [],
+        "demand_refs": [
+          {
+            "requestId": "5214788",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "ZOOMとSlack連携自動化フロー設計・構築担当者を募集します, price_jpy 180000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "クラウドサーバー構築(24時間自動稼働)",
+          "price_jpy": 50000,
+          "adds": "自PCをつけっぱなしにしなくても良いようクラウド/VPS上に構築し24時間自動稼働化する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「クラウド・サーバー構築（PCつけっぱなし不要・24時間自動稼働）＋50,000円」"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "Slack通知画面とZoom会議アイコンを並べ、自動連携の矢印でつなぐ構図",
+        "gallery": [
+          "会議記録→Slack通知→タスク登録の3ステップ図",
+          "対応ツール一覧(Slack/Zoom/カレンダー)のロゴ風アイコン"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "web-scraping-data-collection-tool",
+      "title_ja": "Webスクレイピング・データ収集ツールを開発します",
+      "family": "web_scraping_tool",
+      "value_prop": "対象サイトから定期的にデータを取得し、Excel/スプレッドシートへ自動出力するツールを開発。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 50000,
+          "scope": "単一サイトからの定期データ取得",
+          "delivery_days": 10
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 120000,
+          "scope": "複数サイト＋通知/リスト化まで一括対応",
+          "delivery_days": 18
+        }
+      ],
+      "deliverables": [
+        "スクレイピングツール本体",
+        "取得データの出力先(Excel/シート)",
+        "実行手順書"
+      ],
+      "required_inputs": [
+        "対象サイトのURL",
+        "取得したい項目",
+        "取得頻度(定期実行の要否)"
+      ],
+      "faq": [
+        {
+          "q": "ログインが必要なサイトも対応できますか？",
+          "a": "利用規約の範囲内で対応可否を確認の上、対応します。"
+        },
+        {
+          "q": "サイト構造が変わったら壊れませんか？",
+          "a": "変更検知時の修正保守プランをご用意しています。"
+        },
+        {
+          "q": "取得頻度は自由に設定できますか？",
+          "a": "定期実行(cron等)で自由に設定可能です。"
+        },
+        {
+          "q": "APIが公開されているサイトは安く済みますか？",
+          "a": "はい、公式API利用時は工数が下がり割安になります。"
+        },
+        {
+          "q": "取得したデータをそのまま分析もお願いできますか？",
+          "a": "別途データ分析・可視化として承れます。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-category-c956fcc0ff4b.json",
+            "note": "エイトさん「PythonでWebスクレイピングツール作成します」10,000円 (624件) - おすすめのサービス上位表示"
+          }
+        ],
+        "demand_refs": [
+          {
+            "requestId": "5208865",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "Google広告の透明性センター・Meta広告ライブラリを活用した広告出稿先企業リスト作成ツール開発, price_jpy 180000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "クラウドサーバー構築(24時間自動稼働)",
+          "price_jpy": 50000,
+          "adds": "自PCをつけっぱなしにしなくても良いようクラウド/VPS上に構築し24時間自動稼働化する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「クラウド・サーバー構築（PCつけっぱなし不要・24時間自動稼働）＋50,000円」"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mac対応",
+          "price_jpy": 15000,
+          "adds": "Windows前提の標準スコープに加え、Mac(M1以降)環境でも動作するよう追加対応する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「Mac M1チップセット以降対応＋15,000円」"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "対象サイトのデータがExcel/スプレッドシートへ矢印で流れ込む構図、『定期実行』のバッジを添える",
+        "gallery": [
+          "取得データのExcel出力イメージ(表形式モックアップ)",
+          "定期実行スケジュール設定画面のイメージ",
+          "有料オプション(クラウド構築/Mac対応)を示す料金カード"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "excel-vba-gas-automation-tool",
+      "title_ja": "Excel VBA・GASで業務自動化ツールを開発します",
+      "family": "excel_vba_gas_automation",
+      "value_prop": "転記・集計・請求書発行などの定型作業をExcel VBAやGoogle Apps Scriptで自動化。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 50000,
+          "scope": "単一マクロ/スクリプト作成",
+          "delivery_days": 7
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 100000,
+          "scope": "複数工程の自動化＋UI(ボタン操作)整備",
+          "delivery_days": 14
+        }
+      ],
+      "deliverables": [
+        "マクロ/スクリプト本体ファイル",
+        "操作マニュアル",
+        "1回の無償修正"
+      ],
+      "required_inputs": [
+        "自動化したい作業の現状ファイル(サンプル)",
+        "作業手順の説明",
+        "利用環境(Excel/Googleスプレッドシート)"
+      ],
+      "faq": [
+        {
+          "q": "既存マクロの修正だけでも依頼できますか？",
+          "a": "はい、改修のみのご依頼も承ります。"
+        },
+        {
+          "q": "VBAとGASどちらが向いていますか？",
+          "a": "利用環境(ローカルExcelかGoogle Workspaceか)に応じてご提案します。"
+        },
+        {
+          "q": "複数人で使うツールにも対応できますか？",
+          "a": "共有前提の設計にも対応します。"
+        },
+        {
+          "q": "ソースコードは開示されますか？",
+          "a": "はい、コード開示込みで納品します。"
+        },
+        {
+          "q": "納品後にエラーが出たら？",
+          "a": "納品後1週間は無償対応します。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "いき 育児中「Excel VBAによる自動化。なんでも承ります」29,000円 (464件, 総販売実績多数)"
+          },
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "n00518「Google Apps Scriptで自動化します」3,000円 (929件)"
+          }
+        ],
+        "demand_refs": [
+          {
+            "requestId": "5229434",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "【Excel VBA】薬局の請求書・送付状作成マクロの開発, price_jpy 160000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "monthly_plan": {
+        "name": "月額保守プラン",
+        "price_jpy": 10000,
+        "includes": [
+          "納品したExcel VBA/GASツールの月次動作確認",
+          "作ったツールを止めないための保守運用対応"
+        ],
+        "min_term_months": null,
+        "cancel_anytime": true,
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-6e9170cc1a05.json",
+              "note": "れい®︎「ExcelマクロやGASツールの保守運用します VBA・GAS・Python｜作ったツールを止めない月額保守」評価5.0(18)、関連サービス一覧に表示された価格帯10,000円前後(検索結果スニペットのため単価は概算)"
+            }
+          ]
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "クラウドサーバー構築(24時間自動稼働)",
+          "price_jpy": 50000,
+          "adds": "自PCをつけっぱなしにしなくても良いようクラウド/VPS上に構築し24時間自動稼働化する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「クラウド・サーバー構築（PCつけっぱなし不要・24時間自動稼働）＋50,000円」"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mac対応",
+          "price_jpy": 15000,
+          "adds": "Windows前提の標準スコープに加え、Mac(M1以降)環境でも動作するよう追加対応する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「Mac M1チップセット以降対応＋15,000円」"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "Excelシートにマクロボタンが並ぶモックアップ、『転記・集計・請求書自動化』のコピー",
+        "gallery": [
+          "自動化前後の作業時間比較図",
+          "生成される請求書/集計表のサンプルイメージ",
+          "月額保守プランの料金カード"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "legacy-system-website-fix",
+      "title_ja": "既存システム・Webサイトの不具合修正・改修を承ります",
+      "family": "legacy_system_fix",
+      "value_prop": "担当者不在で放置されたシステム/サイトの不具合調査・修正・引き継ぎ対応。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 50000,
+          "scope": "不具合調査＋軽微な修正1件",
+          "delivery_days": 7
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 150000,
+          "scope": "複数不具合修正＋動作保証テスト",
+          "delivery_days": 14
+        }
+      ],
+      "deliverables": [
+        "修正済みシステム/サイト",
+        "調査報告書(原因と対応内容)",
+        "再発防止の提案"
+      ],
+      "required_inputs": [
+        "管理画面/サーバーへのアクセス権限",
+        "不具合の再現手順・スクリーンショット",
+        "元の開発者との連絡可否"
+      ],
+      "faq": [
+        {
+          "q": "ソースコードが無い/わからない状態でも依頼できますか？",
+          "a": "現状調査から着手可能です。"
+        },
+        {
+          "q": "改ざんされたサイトの復旧も対応できますか？",
+          "a": "対応可能です。原因調査を含みます。"
+        },
+        {
+          "q": "緊急対応は可能ですか？",
+          "a": "内容によりスタンダードプラン内で優先対応します。"
+        },
+        {
+          "q": "修正後の保守もお願いできますか？",
+          "a": "保守プランへの移行が可能です。"
+        },
+        {
+          "q": "使用言語・フレームワークを問わず対応できますか？",
+          "a": "主要言語(PHP/Python/JS/VBA等)に対応します。事前にご確認ください。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [],
+        "demand_refs": [
+          {
+            "requestId": "5219315",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "Webサイトの不具合修正と品質確認ができる方を募集します, price_jpy 180000"
+          },
+          {
+            "requestId": "5232714",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "ロリポップのサーバー改ざん・不審ファイルの駆除、403エラーからの復旧とWP移行対応者を募集します, price_jpy 150000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "赤いエラーアイコンが消えてチェックマークに変わる修理前後の比較構図",
+        "gallery": [
+          "不具合調査→原因特定→修正→引き継ぎ資料の4ステップ図",
+          "対応可能な言語/技術のロゴ風アイコン一覧"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "mobile-app-planning-dev",
+      "title_ja": "スマホアプリの企画・開発を承ります",
+      "family": "mobile_app_dev",
+      "value_prop": "アイデア段階から要件定義・UI設計・実装まで、iOS/Android向けアプリを開発。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 200000,
+          "scope": "単機能アプリ(画面数〜8)",
+          "delivery_days": 30
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 350000,
+          "scope": "会員機能・データ保存込みの本格アプリ",
+          "delivery_days": 45
+        }
+      ],
+      "deliverables": [
+        "要件定義書",
+        "アプリ本体(ストア申請用ビルド)",
+        "簡易マニュアル"
+      ],
+      "required_inputs": [
+        "実現したいアプリの機能一覧・参考アプリ",
+        "対象OS(iOS/Android/両方)",
+        "ストアアカウントの有無"
+      ],
+      "faq": [
+        {
+          "q": "ストア申請の代行もお願いできますか？",
+          "a": "申請サポートも対応可能です(規約上の名義はお客様となります)。"
+        },
+        {
+          "q": "Flutter/ReactNativeどちらで作れますか？",
+          "a": "要件に応じてクロスプラットフォーム技術を選定します。"
+        },
+        {
+          "q": "既存アプリの機能追加は可能ですか？",
+          "a": "既存コードを確認の上、対応します。"
+        },
+        {
+          "q": "デザインも一緒にお願いできますか？",
+          "a": "簡易UIデザインは含みます。本格デザインは別途相談です。"
+        },
+        {
+          "q": "リリース後のサポートはありますか？",
+          "a": "保守プランで継続対応します。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [],
+        "demand_refs": [
+          {
+            "requestId": "5187246",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "筋力トレーニングアプリの企画・開発を手伝ってください！, price_jpy 280000"
+          },
+          {
+            "requestId": "5198800",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "心理学実験用学習アプリの要件定義・設計・開発エンジニア募集, price_jpy 300000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "iPhone/Androidの実機モックアップ2台にアプリ画面を表示",
+        "gallery": [
+          "企画→UI設計→実装→リリースの工程図",
+          "主要画面3〜4枚のワイヤーフレーム風モックアップ"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ai-feature-webapp-dev",
+      "title_ja": "AI機能を組み込んだWebアプリを開発します(OpenAI/Claude API活用)",
+      "family": "web_app_ai_feature",
+      "value_prop": "添削・診断・レコメンドなどAI機能をWebアプリに実装。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 150000,
+          "scope": "単一AI機能(添削/診断等)のWebアプリ化",
+          "delivery_days": 21
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 240000,
+          "scope": "複数AI機能＋ユーザー管理込み",
+          "delivery_days": 30
+        }
+      ],
+      "deliverables": [
+        "Webアプリ本体",
+        "AI連携部分の設計書",
+        "APIキー設定手順書"
+      ],
+      "required_inputs": [
+        "実現したいAI機能の具体例",
+        "利用予定のAI API(OpenAI/Claude等、未定でも可)",
+        "想定ユーザー数"
+      ],
+      "faq": [
+        {
+          "q": "APIキーは誰が用意しますか？",
+          "a": "原則お客様にご用意いただき、利用料もお客様負担となります。"
+        },
+        {
+          "q": "どのAIモデルが向いているか分かりません",
+          "a": "要件をヒアリングし最適なモデルをご提案します。"
+        },
+        {
+          "q": "プロンプトの精度改善もお願いできますか？",
+          "a": "納品前にチューニングを行います。"
+        },
+        {
+          "q": "生成結果の誤り対策は？",
+          "a": "人によるレビュー導線・ガードレールを設計に含めます。"
+        },
+        {
+          "q": "既存Webアプリへの機能追加は可能ですか？",
+          "a": "既存コードを確認の上、対応可否をお伝えします。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [],
+        "demand_refs": [
+          {
+            "requestId": "5208574",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "OpenAI API活用のAI添削Webアプリ開発の見積もり依頼, price_jpy 240000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "Webアプリ画面にAI診断/レコメンド結果がポップアップする構図、OpenAI/Claude APIのロゴを添える",
+        "gallery": [
+          "入力→AI処理→結果表示の3ステップ図",
+          "レコメンド/添削結果のサンプル画面モックアップ"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "recruiting-site-new-build",
+      "title_ja": "採用サイト・求人サイトの新規制作を承ります",
+      "family": "recruiting_site_dev",
+      "value_prop": "企業の採用活動・求人マッチング用サイトを企画から構築まで対応。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 150000,
+          "scope": "静的採用サイト(〜10ページ)",
+          "delivery_days": 21
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 280000,
+          "scope": "応募フォーム/管理画面付き求人サイト",
+          "delivery_days": 30
+        }
+      ],
+      "deliverables": [
+        "採用/求人サイト本体",
+        "応募フォーム連携",
+        "運用マニュアル"
+      ],
+      "required_inputs": [
+        "会社/採用に関する原稿・写真素材",
+        "掲載したい求人情報",
+        "希望デザインテイスト・参考サイト"
+      ],
+      "faq": [
+        {
+          "q": "原稿作成もお願いできますか？",
+          "a": "簡易ライティングは含みます。本格取材は別途相談です。"
+        },
+        {
+          "q": "応募者管理システムと連携できますか？",
+          "a": "既存ATS/スプレッドシート連携に対応可能です。"
+        },
+        {
+          "q": "SEO対策も含まれますか？",
+          "a": "基本的なSEO設定込みで対応します。"
+        },
+        {
+          "q": "更新は自分たちでできますか？",
+          "a": "CMS導入により更新可能な形で構築します。"
+        },
+        {
+          "q": "多言語対応はできますか？",
+          "a": "対応可能です。事前にご相談ください。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [],
+        "demand_refs": [
+          {
+            "requestId": "5230962",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "ナイトワーク求人サイトの企画・設計・開発をお願いできる方を募集します, price_jpy 280000"
+          },
+          {
+            "requestId": "5211265",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "企業の採用活動に使用する採用サイトの新規制作を検討しています, price_jpy 240000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "採用サイトのトップページモックアップ(求人一覧+エントリーボタン)",
+        "gallery": [
+          "求人票詳細ページのモックアップ",
+          "応募導線(閲覧→エントリー→選考)のフロー図"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ec-site-build-migration",
+      "title_ja": "ECサイトの構築・Shopify/EC-CUBE移行を承ります",
+      "family": "ec_site_build_migrate",
+      "value_prop": "新規ECサイトの構築、または既存ECの他プラットフォームへの移行・機能追加。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 150000,
+          "scope": "既存テンプレートでのEC新規構築",
+          "delivery_days": 21
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 250000,
+          "scope": "プラットフォーム移行＋カスタム機能追加",
+          "delivery_days": 30
+        }
+      ],
+      "deliverables": [
+        "ECサイト本体",
+        "商品データ移行",
+        "運用マニュアル"
+      ],
+      "required_inputs": [
+        "現在利用中のECプラットフォーム(あれば)",
+        "取扱商品数・カテゴリ構成",
+        "決済/配送方法の要件"
+      ],
+      "faq": [
+        {
+          "q": "Shopify以外(BASE/EC-CUBE等)も対応できますか？",
+          "a": "主要プラットフォームに対応可能です。"
+        },
+        {
+          "q": "商品データの移行は自動化できますか？",
+          "a": "CSV等を用いた一括移行を行います。"
+        },
+        {
+          "q": "既存の会員データも移行できますか？",
+          "a": "移行元/先の仕様を確認の上、対応します。"
+        },
+        {
+          "q": "デザインのカスタマイズはどこまで可能ですか？",
+          "a": "テーマ改修レベルまで対応可能です。フルスクラッチは別途相談です。"
+        },
+        {
+          "q": "移行後の販売継続性は保証されますか？",
+          "a": "移行手順を計画し、ダウンタイムを最小化します。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [],
+        "demand_refs": [
+          {
+            "requestId": "5237693",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "Shopify移行プロジェクト推進と運用改善ができる方を募集します, price_jpy 250000"
+          },
+          {
+            "requestId": "5222468",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "EC-CUBEでの業務改善のため、構築と機能追加ができるエンジニアを探しています, price_jpy 180000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "商品一覧+カートアイコンのECサイトトップページモックアップ",
+        "gallery": [
+          "Shopify/EC-CUBE移行のBefore→After比較図",
+          "決済/在庫連携の対応範囲アイコン一覧"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "spreadsheet-to-webapp-replace",
+      "title_ja": "スプレッドシート業務をWebシステムに置き換えます",
+      "family": "spreadsheet_replace_system",
+      "value_prop": "属人化したExcel/スプレッドシート運用を、複数人が同時利用できるWebシステムに移行。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 100000,
+          "scope": "単一スプレッドシート業務のシステム化",
+          "delivery_days": 18
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 180000,
+          "scope": "複数シート連携＋権限管理込み",
+          "delivery_days": 25
+        }
+      ],
+      "deliverables": [
+        "Webシステム本体",
+        "既存データの移行",
+        "操作マニュアル"
+      ],
+      "required_inputs": [
+        "現在使用中のスプレッドシート(実物/サンプル)",
+        "利用者数・権限区分",
+        "更新頻度"
+      ],
+      "faq": [
+        {
+          "q": "今のスプレッドシートの数式もそのまま使えますか？",
+          "a": "ロジックを解析し、システム側の処理として再現します。"
+        },
+        {
+          "q": "移行後もスプレッドシートは併用できますか？",
+          "a": "並行運用期間を設けることも可能です。"
+        },
+        {
+          "q": "誰でも編集できてしまう問題は解決しますか？",
+          "a": "権限管理・変更履歴機能で対応します。"
+        },
+        {
+          "q": "スマホからも使えますか？",
+          "a": "レスポンシブ対応で構築します。"
+        },
+        {
+          "q": "移行に伴うトレーニングはお願いできますか？",
+          "a": "簡易マニュアルと操作説明を含みます。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-category-c956fcc0ff4b.json",
+            "note": "改善マニア「業務システム / アプリを構築します」10,000円 (83件) - DX専門エンジニアによるGoogleアプリ自動化"
+          }
+        ],
+        "demand_refs": []
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "属人化したスプレッドシートが複数人同時アクセス可能なWeb画面に置き換わる比較構図",
+        "gallery": [
+          "移行前(単独編集で衝突)→移行後(同時編集)の比較図",
+          "移行後のWebシステム画面モックアップ"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "chrome-extension-automation-dev",
+      "title_ja": "Chrome拡張機能で業務作業を自動化します",
+      "family": "chrome_extension_dev",
+      "value_prop": "ブラウザ上の繰り返し作業をChrome拡張機能化して自動化。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 50000,
+          "scope": "単一サイト上の定型操作の自動化",
+          "delivery_days": 10
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 100000,
+          "scope": "複数サイト対応＋設定UI付き",
+          "delivery_days": 18
+        }
+      ],
+      "deliverables": [
+        "Chrome拡張機能本体(.crx/ソース)",
+        "インストール・使用手順書"
+      ],
+      "required_inputs": [
+        "自動化したい操作の具体的な手順",
+        "対象サイトのURL",
+        "利用ブラウザ環境"
+      ],
+      "faq": [
+        {
+          "q": "Chromeウェブストアへの公開もお願いできますか？",
+          "a": "非公開配布/ストア公開どちらも対応可能です。"
+        },
+        {
+          "q": "サイトの仕様変更で壊れませんか？",
+          "a": "変更検知時の修正保守プランをご用意しています。"
+        },
+        {
+          "q": "社内限定での配布は可能ですか？",
+          "a": "はい、限定配布に対応します。"
+        },
+        {
+          "q": "他のブラウザ(Edge等)でも動きますか？",
+          "a": "Chromium系ブラウザであれば動作します。"
+        },
+        {
+          "q": "既存の拡張機能の改修も承れますか？",
+          "a": "ソースコードをご提供いただければ対応可能です。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-category-c956fcc0ff4b.json",
+            "note": "mikayase「使いやすい！Chrome拡張機能で作業自動化します」8,000円 (56件, 200件以上の自動化実績)"
+          }
+        ],
+        "demand_refs": []
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "クラウドサーバー構築(24時間自動稼働)",
+          "price_jpy": 50000,
+          "adds": "自PCをつけっぱなしにしなくても良いようクラウド/VPS上に構築し24時間自動稼働化する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「クラウド・サーバー構築（PCつけっぱなし不要・24時間自動稼働）＋50,000円」"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mac対応",
+          "price_jpy": 15000,
+          "adds": "Windows前提の標準スコープに加え、Mac(M1以降)環境でも動作するよう追加対応する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「Mac M1チップセット以降対応＋15,000円」"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "ブラウザのツールバーに拡張機能アイコンが追加され、ワンクリックで作業が完了する構図",
+        "gallery": [
+          "拡張機能のポップアップUIモックアップ",
+          "手動操作(複数クリック)→拡張機能(1クリック)の比較図"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "browser-rpa-auto-purchase-tool",
+      "title_ja": "ブラウザ操作RPA・自動購入/自動出品ツールを開発します",
+      "family": "browser_rpa_tool",
+      "value_prop": "在庫監視・自動購入・自動出品などブラウザ操作を伴う定型作業を自動化。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 80000,
+          "scope": "単一サイトの監視・自動実行",
+          "delivery_days": 14
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 150000,
+          "scope": "複数サイト対応＋通知連携",
+          "delivery_days": 21
+        }
+      ],
+      "deliverables": [
+        "自動化ツール本体",
+        "実行環境セットアップ手順",
+        "運用マニュアル"
+      ],
+      "required_inputs": [
+        "対象サイト・対象商品/情報",
+        "実行環境(Windows/Mac、常時稼働の要否)",
+        "認証方式(2段階認証等)"
+      ],
+      "faq": [
+        {
+          "q": "Captcha/2段階認証があっても対応できますか？",
+          "a": "内容により自動解除の実装、または人手介入設計を提案します。"
+        },
+        {
+          "q": "24時間稼働は可能ですか？",
+          "a": "サーバー常駐実行の構成をご提案できます。"
+        },
+        {
+          "q": "利用規約違反にならないか心配です",
+          "a": "対象サイトの規約を確認の上、リスクをご説明します。"
+        },
+        {
+          "q": "複数アカウントの切り替えは可能ですか？",
+          "a": "対応可能です。要件に応じて設計します。"
+        },
+        {
+          "q": "動作しなくなった場合の保守は？",
+          "a": "保守プランで仕様変更への追従対応をします。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-category-c956fcc0ff4b.json",
+            "note": "エイトさん「ブラウザ操作・API連携自動化ツールを開発します」25,000円 (34件, 総販売1,069件)"
+          },
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-category-c956fcc0ff4b.json",
+            "note": "tanaka_s_001「自動化・自動購入ツールを開発します」販売実績682件, 評価4.9(408) - proven repeat-buy category"
+          }
+        ],
+        "demand_refs": []
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "monthly_plan": {
+        "name": "月額利用継続プラン",
+        "price_jpy": 12000,
+        "includes": [
+          "自動購入/自動出品ツールの1ヶ月利用継続",
+          "アプリ側アップデートに伴う無償の軽微な修正対応(規模により有償)"
+        ],
+        "min_term_months": null,
+        "cancel_anytime": true,
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-6e9170cc1a05.json",
+              "note": "MERUKENココnara「フリマアプリ(複数)の自動化1ヶ月の利用ができます メルケンツール」月額12,000円・1ヶ月利用権として販売、販売実績464件"
+            }
+          ]
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "クラウドサーバー構築(24時間自動稼働)",
+          "price_jpy": 50000,
+          "adds": "自PCをつけっぱなしにしなくても良いようクラウド/VPS上に構築し24時間自動稼働化する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「クラウド・サーバー構築（PCつけっぱなし不要・24時間自動稼働）＋50,000円」"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mac対応",
+          "price_jpy": 15000,
+          "adds": "Windows前提の標準スコープに加え、Mac(M1以降)環境でも動作するよう追加対応する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "同出品の有料オプション「Mac M1チップセット以降対応＋15,000円」"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "在庫監視→自動購入完了通知の流れをブラウザ画面モックアップで表現、『1ヶ月の利用ができます』の月額バッジを添える(evidence: MERUKENツール)",
+        "gallery": [
+          "在庫監視〜自動購入〜自動出品の3ステップ図",
+          "月額利用継続プランの料金カード"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "data-dashboard-visualization",
+      "title_ja": "データ可視化・ダッシュボードを構築します",
+      "family": "data_dashboard_viz",
+      "value_prop": "売上・業績・アンケートなどのデータを自動集計し、見やすいダッシュボードとして可視化。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 100000,
+          "scope": "単一データソースの可視化ダッシュボード",
+          "delivery_days": 14
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 180000,
+          "scope": "複数データソース統合＋自動更新",
+          "delivery_days": 21
+        }
+      ],
+      "deliverables": [
+        "ダッシュボード本体(Looker Studio/Tableau等)",
+        "データ連携設定",
+        "操作マニュアル"
+      ],
+      "required_inputs": [
+        "可視化したいデータ(サンプル/実データ)",
+        "使用中のBIツール(あれば)",
+        "更新頻度の要件"
+      ],
+      "faq": [
+        {
+          "q": "どのBIツールを使いますか？",
+          "a": "要件・予算に応じてLooker Studio/Tableau等から選定します。"
+        },
+        {
+          "q": "リアルタイム更新は可能ですか？",
+          "a": "データソースに応じて自動更新間隔を設定します。"
+        },
+        {
+          "q": "複数部署で見られるようにできますか？",
+          "a": "権限設定込みで共有可能です。"
+        },
+        {
+          "q": "スマホでも見られますか？",
+          "a": "レスポンシブ対応のダッシュボードで構築します。"
+        },
+        {
+          "q": "既存のExcel集計をそのまま移行できますか？",
+          "a": "既存ロジックを解析し再現します。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [],
+        "demand_refs": [
+          {
+            "requestId": "5192353",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "マンション管理データ可視化ダッシュボード企画設計者募集, price_jpy 180000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "売上/業績データが棒グラフ・折れ線グラフのダッシュボードに集約される構図",
+        "gallery": [
+          "生データ→自動集計→ダッシュボードの3ステップ図",
+          "ダッシュボード画面のスクリーンショット風モックアップ"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ai-dx-diagnosis-consult",
+      "title_ja": "AI活用・業務DX診断のご相談を承ります",
+      "family": "ai_diagnosis_consult",
+      "value_prop": "何から自動化すべきか分からない状態から、優先順位と概算費用を整理する初回診断。",
+      "tiers": [
+        {
+          "name": "診断相談",
+          "price_jpy": 5000,
+          "scope": "現状ヒアリング＋自動化候補の洗い出し(60分)",
+          "delivery_days": 3
+        },
+        {
+          "name": "診断レポート付き",
+          "price_jpy": 15000,
+          "scope": "ヒアリング＋優先順位・概算費用レポート",
+          "delivery_days": 5
+        }
+      ],
+      "deliverables": [
+        "ヒアリング議事メモ",
+        "自動化候補リスト(優先順位付き)",
+        "概算費用感の目安"
+      ],
+      "required_inputs": [
+        "現状の業務フロー概要",
+        "課題だと感じている作業",
+        "予算感(あれば)"
+      ],
+      "faq": [
+        {
+          "q": "発注前提でなくても相談できますか？",
+          "a": "はい、相談のみでも問題ありません。"
+        },
+        {
+          "q": "診断後にそのまま開発を依頼できますか？",
+          "a": "本カタログの各開発メニューへスムーズに移行できます。"
+        },
+        {
+          "q": "オンライン相談ですか？",
+          "a": "ビデオチャットまたはテキストでのやり取りに対応します。"
+        },
+        {
+          "q": "業種によって対応可否はありますか？",
+          "a": "基本的に業種を問わず対応します。特殊要件は事前にご相談ください。"
+        },
+        {
+          "q": "相談だけで終わっても大丈夫ですか？",
+          "a": "問題ありません。無理な追加提案は行いません。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "ティーボックス「AI初心者の会社の業務を1つ自動化します」初回相談無料。専門用語なしでAI導入をサポート, 30,000円 - diagnostic-entry pattern"
+          }
+        ],
+        "demand_refs": [
+          {
+            "requestId": "5228831",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "社内業務DX化、AIシステム導入作成。ノウハウの落とし込み, price_jpy 220000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "image_guidance": {
+        "cover": "チェックリストと優先順位マトリクスを示す診断シートのイメージ",
+        "gallery": [
+          "現状ヒアリング→優先順位付け→概算費用提示の3ステップ図"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "system-dev-requirement-estimate",
+      "title_ja": "システム開発のお見積り・要件定義相談を承ります",
+      "family": "system_estimate_consult",
+      "value_prop": "作りたいシステムのイメージを整理し、要件定義書と概算見積りを作成。開発発注前の必須ステップ。",
+      "tiers": [
+        {
+          "name": "ヒアリングのみ",
+          "price_jpy": 10000,
+          "scope": "要件ヒアリング＋簡易要件メモ",
+          "delivery_days": 3
+        },
+        {
+          "name": "要件定義書作成",
+          "price_jpy": 30000,
+          "scope": "要件定義書＋概算見積り書の作成",
+          "delivery_days": 7
+        }
+      ],
+      "deliverables": [
+        "要件ヒアリングメモ",
+        "要件定義書(または簡易版)",
+        "概算見積り"
+      ],
+      "required_inputs": [
+        "作りたいシステムのイメージ・参考サイト/アプリ",
+        "想定ユーザー数・利用シーン",
+        "予算感・希望納期"
+      ],
+      "faq": [
+        {
+          "q": "この後の開発も同じ人に頼めますか？",
+          "a": "はい、本カタログの開発メニューでそのまま対応可能です。"
+        },
+        {
+          "q": "他社への発注用の資料としても使えますか？",
+          "a": "汎用的な要件定義書として作成しますので、他社発注にも利用可能です。"
+        },
+        {
+          "q": "急いでいるのですが対応できますか？",
+          "a": "ヒアリングのみプランなら短納期で対応可能です。"
+        },
+        {
+          "q": "曖昧なイメージしかなくても大丈夫ですか？",
+          "a": "問題ありません。ヒアリングを通じて整理します。"
+        },
+        {
+          "q": "見積り金額はどこまで正確ですか？",
+          "a": "概算であり、詳細要件確定後に正式見積りへ移行します。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "MATSURYU/mizuno等、上位表示サービスの多くが「見積り必須」フローを採用 - estimate-first pattern common across top sellers"
+          }
+        ],
+        "demand_refs": []
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "image_guidance": {
+        "cover": "要件定義書のサンプルページと概算見積り表を並べた構図",
+        "gallery": [
+          "要件整理→要件定義書作成→見積り提示の3ステップ図"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "system-ui-ux-improvement",
+      "title_ja": "既存システムのUI/UX改善提案・実装を承ります",
+      "family": "app_ui_ux_improvement",
+      "value_prop": "使いにくいと言われている既存システム/アプリの画面を分析し、改善提案から実装まで対応。",
+      "tiers": [
+        {
+          "name": "ベーシック",
+          "price_jpy": 80000,
+          "scope": "UI/UX改善提案レポート＋主要画面の改修",
+          "delivery_days": 14
+        },
+        {
+          "name": "スタンダード",
+          "price_jpy": 180000,
+          "scope": "全画面改修＋ユーザーテスト",
+          "delivery_days": 21
+        }
+      ],
+      "deliverables": [
+        "UI/UX改善提案書",
+        "改修後の画面一式",
+        "ビフォーアフター比較資料"
+      ],
+      "required_inputs": [
+        "現行システムへのアクセス/画面キャプチャ",
+        "ユーザーからの主な不満点",
+        "改修可能な技術範囲(既存コード有無)"
+      ],
+      "faq": [
+        {
+          "q": "デザインだけで実装はできない場合も対応できますか？",
+          "a": "提案書のみのご依頼も承ります。"
+        },
+        {
+          "q": "既存のコードを触らずに提案だけできますか？",
+          "a": "はい、非破壊的な改善提案のみも可能です。"
+        },
+        {
+          "q": "ユーザーテストは実施してもらえますか？",
+          "a": "スタンダードプランに含まれます。"
+        },
+        {
+          "q": "デザインシステムがなくても対応できますか？",
+          "a": "簡易的なデザインガイドを作成しながら進めます。"
+        },
+        {
+          "q": "改修範囲はどう決まりますか？",
+          "a": "初回ヒアリングで優先度の高い画面から範囲を決定します。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [],
+        "demand_refs": [
+          {
+            "requestId": "5224400",
+            "path": "/Users/anicca/gig/applied.jsonl",
+            "note": "AIシステム開発のUI/UX改善提案ができる方を募集します, price_jpy 180000"
+          }
+        ]
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "paid_addons": [
+        {
+          "name": "初期セットアップサポート",
+          "price_jpy": 10000,
+          "adds": "カメラオフのビデオ通話で操作手順を案内し、納品物をすぐ使える状態まで一緒に設定する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+                "note": "tanaka_s_001「自動化・自動購入ツールを開発します」有料オプション「初期セットアップ(カメラオフのビデオ通話にて操作指示)＋10,000円」販売実績682件"
+              }
+            ]
+          }
+        },
+        {
+          "name": "複雑ロジック・例外処理の追加",
+          "price_jpy": 20000,
+          "adds": "分岐条件やAI精度チューニングなど、標準スコープを超える複雑な例外処理・ロジックを追加実装する",
+          "evidence": {
+            "competitor_refs": [
+              {
+                "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f63866e46d38.json",
+                "note": "⭐️⭐️⭐️ランク☘ヤフオクマスター「商品データ作成を一気通貫で自動化します」有料オプション「AIの生成精度を極限まで高めるプロンプト設計と複雑な例外処理を追加します＋20,000円」販売実績90件"
+              }
+            ]
+          }
+        }
+      ],
+      "image_guidance": {
+        "cover": "使いにくい画面(ごちゃついたUI)→改善後(整理されたUI)の比較構図",
+        "gallery": [
+          "改善前後のUIモックアップ比較",
+          "分析→改善提案→実装の3ステップ図"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "system-maintenance-retainer",
+      "title_ja": "開発済みシステムの保守・運用を月額で代行します",
+      "family": "maintenance_retainer",
+      "value_prop": "納品済み/既存のシステム・ツールを継続的に保守し、不具合対応と軽微な改修を月額で提供。",
+      "tiers": [
+        {
+          "name": "ライトプラン",
+          "price_jpy": 5000,
+          "scope": "月次の動作確認＋簡易不具合対応(月1回)",
+          "delivery_days": 3
+        },
+        {
+          "name": "スタンダードプラン",
+          "price_jpy": 30000,
+          "scope": "月次保守＋軽微な機能追加(月内対応)",
+          "delivery_days": 5
+        }
+      ],
+      "deliverables": [
+        "月次保守レポート",
+        "不具合対応記録",
+        "軽微な改修対応"
+      ],
+      "required_inputs": [
+        "対象システムへのアクセス権限",
+        "過去の開発経緯資料(あれば)",
+        "月あたりの想定対応件数"
+      ],
+      "faq": [
+        {
+          "q": "自分たちが開発したシステムでも依頼できますか？",
+          "a": "コードを確認の上、対応可否をお伝えします。"
+        },
+        {
+          "q": "いつでも解約できますか？",
+          "a": "はい、いつでも解約可能です。"
+        },
+        {
+          "q": "緊急時の対応スピードは？",
+          "a": "プランに応じた初回返答時間内で対応します。"
+        },
+        {
+          "q": "大規模な改修が必要になったら？",
+          "a": "都度、別途お見積りいたします。"
+        },
+        {
+          "q": "他社が作ったシステムでも対応できますか？",
+          "a": "ソースコードが確認できれば対応可能です。"
+        }
+      ],
+      "evidence": {
+        "competitor_refs": [
+          {
+            "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788470992778125000-6762/competitor-search-0076b3a9cc3a.json",
+            "note": "いき 育児中「納品済の業務自動化ツールの保守対応いたします」5,000円/60分 (6件) - maintenance-retainer proof; ayan月額3,000円「定期購入可」56件 - recurring revenue pattern"
+          }
+        ],
+        "demand_refs": []
+      },
+      "platform_overrides": {
+        "coconala": {
+          "category": "IT相談・システム開発"
+        },
+        "lancers": {
+          "category": "システム開発"
+        },
+        "crowdworks": {
+          "category": "システム開発・運用"
+        }
+      },
+      "image_guidance": {
+        "cover": "月次保守レポートのサンプルと『いつでも解約可能』バッジを配置した構図(evidence: ayan LINE Bot屋の月額表記パターン)",
+        "gallery": [
+          "月次保守レポートのサンプルイメージ",
+          "ライト/スタンダード2プランの料金比較表"
+        ],
+        "evidence": {
+          "competitor_refs": [
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-f0baf2beb050.json",
+              "note": "ayan LINE Bot屋「LINE予約システム（月額制）提供します 管理はGoogleカレンダー＆お客様が迷わない予約画面」251件・デモ動画公開中 - cover title = 成果+ベネフィットの二段構成、デモ動画/画面キャプチャの掲載パターン"
+            },
+            {
+              "path": "/Users/anicca/gig/storefront-direct/evidence/storefront-direct-1788520008584007000-38400/competitor-service-62a3a9349cb8.json",
+              "note": "tanaka_s_001「自動化・自動購入ツールを開発します」682件 - 評価/販売実績バッジと有料オプション表をサムネイル・ギャラリーで可視化するパターン"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

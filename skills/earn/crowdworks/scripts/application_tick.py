@@ -128,7 +128,9 @@ def _submit_application(page: object, opportunity: Mapping[str, object], proposa
     project_id = opportunity.get("external_id")
     try:
         form_url = f"https://crowdworks.jp/proposals/new?job_offer_id={project_id}"
-        if getattr(page, "url", None) in (None, "about:blank"): page.goto(form_url)  # type: ignore[attr-defined]
+        # The owner hands over a page parked on the job detail page, not a blank one, so navigating
+        # only from about:blank left every submission failing the route check below.
+        if not _exact_url(getattr(page, "url", None), "/proposals/new", f"job_offer_id={project_id}"): page.goto(form_url)  # type: ignore[attr-defined]
         if not isinstance(project_id, str) or not _exact_url(getattr(page, "url", None), "/proposals/new", f"job_offer_id={project_id}"): raise ValueError("route")
         form = _one(page, _FORM_SELECTOR)
         if str(form.get_attribute("method") or "").lower() != "post" or form.get_attribute("action") != "/proposals": raise ValueError("form")
