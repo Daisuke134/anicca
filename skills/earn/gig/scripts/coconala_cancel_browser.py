@@ -156,6 +156,25 @@ def cancel_send_button_expression() -> str:
     return '''(()=>{const modal=[...document.querySelectorAll('.modal-content,[role=dialog]')].find(x=>x.offsetParent!==null&&(x.innerText||'').includes('キャンセルリクエスト'));const e=modal?[...modal.querySelectorAll('button')].find(x=>(x.innerText||'').trim()==='送信する'&&x.offsetParent!==null&&!x.disabled&&!x.classList.contains('is-disabled')):null;if(!e)return null;const formal=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type="checkbox"]');if(!formal||formal.checked)return null;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()'''
 
 
+def cancel_form_configuration_expression(reason: str, detail: str) -> str:
+    reason_json, detail_json = json.dumps(reason, ensure_ascii=False), json.dumps(detail, ensure_ascii=False)
+    return f'''(()=>{{
+      const modal=[...document.querySelectorAll('.modal-content,[role=dialog]')].find(e=>e.offsetParent!==null&&(e.innerText||'').includes('キャンセルリクエスト'));
+      const select=modal?.querySelector('select'); const textarea=modal?.querySelector('textarea');
+      const option=select?[...select.options].find(o=>(o.textContent||'').trim()==={reason_json}):null;
+      if(!select||!textarea||!option)return false;
+      const selectSetter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set;
+      selectSetter.call(select,option.value);
+      select.dispatchEvent(new Event('input',{{bubbles:true}}));
+      select.dispatchEvent(new Event('change',{{bubbles:true}}));
+      const textareaSetter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;
+      textareaSetter.call(textarea,{detail_json});
+      textarea.dispatchEvent(new InputEvent('input',{{bubbles:true,inputType:'insertText'}}));
+      textarea.dispatchEvent(new Event('change',{{bubbles:true}}));
+      return true;
+    }})()'''
+
+
 def intent_is_reconcile_only(intent: dict[str, Any], effect_key: str) -> bool:
     return intent.get("effect_key") == effect_key and intent.get("phase") in {
         "click_started", "verified",
@@ -221,17 +240,9 @@ async def submit(ws_url: str, contract: CancellationContract, timeout: float, *,
             if reconcile_only:
                 raise RuntimeError("cancellation_reconcile_unknown")
             await _click(session, '''(()=>{const e=[...document.querySelectorAll('a,button')].find(x=>(x.innerText||'').trim()==='取引をキャンセルリクエストする'&&x.offsetParent!==null);if(!e)return null;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()''')
-            configured = await session.evaluate(f'''(()=>{{
-              const modal=[...document.querySelectorAll('.modal-content,[role=dialog]')].find(e=>e.offsetParent!==null&&(e.innerText||'').includes('キャンセルリクエスト'));
-              const select=modal?.querySelector('select'); const textarea=modal?.querySelector('textarea');
-              const option=select?[...select.options].find(o=>(o.textContent||'').trim()==={json.dumps(contract.reason, ensure_ascii=False)}):null;
-              if(!select||!textarea||!option)return false;
-              select.value=option.value; select.dispatchEvent(new Event('change',{{bubbles:true}}));
-              const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set;
-              setter.call(textarea,{json.dumps(contract.detail, ensure_ascii=False)});
-              textarea.dispatchEvent(new InputEvent('input',{{bubbles:true,inputType:'insertText'}}));
-              return true;
-            }})()''')
+            configured = await session.evaluate(
+                cancel_form_configuration_expression(contract.reason, contract.detail)
+            )
             if configured is not True:
                 raise RuntimeError("cancellation_form_not_configurable")
             def mark_started() -> None:
