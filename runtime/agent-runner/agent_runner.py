@@ -554,6 +554,8 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
                          task_class: str | None = None) -> dict[str, str]:
     """Build a provider-scoped, non-interactive child environment."""
     child_env = dict(os.environ if environ is None else environ)
+    if provider != "codex":
+        child_env.pop("CODEX_HOME", None)
     if task_class == "application-intent-planner":
         child_env = _strip_browser_routes_for_planner(child_env)
     if provider == "codex":
@@ -768,17 +770,12 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
             lock_path = Path(codex_home) / ".agent-runner-provider.lock"
             lock_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             provider_lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
-            while True:
-                try:
-                    fcntl.flock(provider_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    break
-                except OSError as error:
-                    if error.errno not in (errno.EACCES, errno.EAGAIN):
-                        raise
-                    remaining = deadline - time.monotonic()
-                    if remaining <= 0:
-                        raise subprocess.TimeoutExpired(command, timeout)
-                    time.sleep(min(0.25, remaining))
+            try:
+                fcntl.flock(provider_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError as error:
+                if error.errno in (errno.EACCES, errno.EAGAIN):
+                    raise ProviderLeaseBusy("codex automation home is busy") from error
+                raise
             remove_incompatible_codex_model_cache(Path(codex_home))
         inherited_fds = tuple(fd for fd in (lease_fd, provider_lock_fd) if fd is not None)
         remaining = deadline - time.monotonic()
@@ -1769,6 +1766,10 @@ def run() -> int:
                 except subprocess.TimeoutExpired:
                     timed_out = True
                     rc = 124
+                except ProviderLeaseBusy as error:
+                    launch_error = str(error)
+                    stderr.write((launch_error + "\n").encode())
+                    rc = 75
                 except OSError as error:
                     launch_error = str(error)
                     stderr.write((launch_error + "\n").encode())

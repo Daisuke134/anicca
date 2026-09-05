@@ -42,21 +42,61 @@ def _terminal_effect(effect_attempted: bool) -> str:
     return "unknown" if effect_attempted else "none"
 
 
+def _deployment() -> str:
+    value = os.environ.get("LIFE_MANAGER_INVESTMENT_DEPLOYMENT")
+    if value not in {"local", "cloud"}:
+        raise ValueError("investment_deployment_invalid")
+    return value
+
+
+def _mode() -> str:
+    value = os.environ.get("LIFE_MANAGER_INVESTMENT_MODE")
+    if value not in {"paper", "shadow", "live"}:
+        raise ValueError("investment_mode_invalid")
+    return value
+
+
+def _mode_paths(mode: str) -> tuple[Path, Path]:
+    if mode not in {"paper", "shadow", "live"}:
+        raise ValueError("investment_mode_invalid")
+    suffix = mode.upper()
+    credentials = os.environ.get(f"ALPACA_INVESTMENT_{suffix}_CREDENTIALS_FILE")
+    state = os.environ.get(f"ALPACA_INVESTMENT_{suffix}_STATE_DIR")
+    if mode == "paper":
+        credentials = credentials or os.environ.get("ANICCA_CREDENTIALS_FILE") \
+            or "~/.local/share/anicca/credentials.json"
+        state = state or os.environ.get("ALPACA_INVESTMENT_STATE_DIR") \
+            or "~/.local/state/life-manager/alpaca-investment"
+    elif not credentials or not state:
+        raise ValueError("investment_mode_paths_missing")
+    selected_state = Path(state).expanduser()
+    selected_resolved = selected_state.resolve()
+    paper_state = (os.environ.get("ALPACA_INVESTMENT_PAPER_STATE_DIR")
+                   or os.environ.get("ALPACA_INVESTMENT_STATE_DIR")
+                   or "~/.local/state/life-manager/alpaca-investment")
+    for other, other_state in (
+        ("paper", paper_state),
+        ("shadow", os.environ.get("ALPACA_INVESTMENT_SHADOW_STATE_DIR")),
+        ("live", os.environ.get("ALPACA_INVESTMENT_LIVE_STATE_DIR")),
+    ):
+        if other != mode and other_state and selected_resolved == Path(other_state).expanduser().resolve():
+            raise ValueError("investment_mode_state_path_conflict")
+    return Path(credentials).expanduser(), selected_state
+
+
 def main(*, attempt: int = 0, wake_id=None) -> int:
     wake_id = wake_id or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    state = Path(os.environ.get(
-        "ALPACA_INVESTMENT_STATE_DIR",
-        "~/.local/state/life-manager/alpaca-investment",
-    )).expanduser()
+    mode = os.environ.get("LIFE_MANAGER_INVESTMENT_MODE")
+    state = Path(os.environ.get("ALPACA_INVESTMENT_STATE_DIR",
+                               "~/.local/state/life-manager/alpaca-investment")).expanduser()
     effect_attempted = False
     observation = None
     campaign = None
     stage = "start"
     try:
-        credentials_path = Path(os.environ.get(
-            "ANICCA_CREDENTIALS_FILE",
-            "~/.local/share/anicca/credentials.json",
-        )).expanduser()
+        mode = _mode()
+        credentials_path, state = _mode_paths(mode)
+        deployment = _deployment()
         cli_path = Path(os.environ.get("ALPACA_CLI", "~/.local/bin/alpaca")).expanduser()
         stage = "reconcile_started"
         reconciliation = reconcile_started(
@@ -82,36 +122,42 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         if campaign["exit_status"] == "EXIT_READY":
             exit_decision = {
                 "candidate_ref": CANDIDATE_REF,
+                "deployment": deployment,
+                "mode": mode,
                 "gate": "campaign_exit_ready",
-                "paper": True,
+                "paper": mode == "paper",
                 "reason": "sealed_campaign_regular_session_positive_credit",
             }
-            exit_order_path = state / "campaign-exit-order.json"
-            if exit_order_path.is_file():
-                stage = "campaign_exit_order_read"
-                order = json.loads(exit_order_path.read_text(encoding="utf-8"))
+            if mode != "paper":
+                exit_decision.update({"approved": False, "gate": f"{mode}_read_only"})
+                record_no_trade(state / "receipts.jsonl", exit_decision)
             else:
-                stage = "campaign_exit_order_build"
-                order = exit_order(campaign)
-                _atomic_json(exit_order_path, order)
-            stage = "campaign_exit_submit"
-            sealed = seal(state / "receipts.jsonl", exit_decision, order)
-            mark_started(state / "receipts.jsonl", sealed)
-            effect_attempted = True
-            submit_order(credentials_path=credentials_path, cli_path=cli_path,
-                         client_order_id=sealed["client_order_id"], order=order)
-            stage = "campaign_exit_reconcile"
-            reconcile_started(
-                state / "receipts.jsonl",
-                lambda value: find_order_by_client_id(
-                    credentials_path=credentials_path, cli_path=cli_path, client_order_id=value),
-            )
-            effect = sealed["effect_id"]
-            stage = "campaign_exit_observe"
-            observation = observe(credentials_path=credentials_path, cli_path=cli_path)
-            stage = "campaign_exit_campaign_read"
-            campaign = reconcile(read_campaign_snapshot(
-                credentials_path=credentials_path, cli_path=cli_path, symbols=SYMBOLS))
+                exit_order_path = state / "campaign-exit-order.json"
+                if exit_order_path.is_file():
+                    stage = "campaign_exit_order_read"
+                    order = json.loads(exit_order_path.read_text(encoding="utf-8"))
+                else:
+                    stage = "campaign_exit_order_build"
+                    order = exit_order(campaign)
+                    _atomic_json(exit_order_path, order)
+                stage = "campaign_exit_submit"
+                sealed = seal(state / "receipts.jsonl", exit_decision, order)
+                mark_started(state / "receipts.jsonl", sealed)
+                effect_attempted = True
+                submit_order(credentials_path=credentials_path, cli_path=cli_path,
+                             client_order_id=sealed["client_order_id"], order=order)
+                stage = "campaign_exit_reconcile"
+                reconcile_started(
+                    state / "receipts.jsonl",
+                    lambda value: find_order_by_client_id(
+                        credentials_path=credentials_path, cli_path=cli_path, client_order_id=value),
+                )
+                effect = sealed["effect_id"]
+                stage = "campaign_exit_observe"
+                observation = observe(credentials_path=credentials_path, cli_path=cli_path)
+                stage = "campaign_exit_campaign_read"
+                campaign = reconcile(read_campaign_snapshot(
+                    credentials_path=credentials_path, cli_path=cli_path, symbols=SYMBOLS))
         stage = "allocator_read"
         allocator_snapshot = read_allocator_snapshot(
             credentials_path=credentials_path, cli_path=cli_path)
@@ -122,10 +168,12 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             Path(__file__).resolve().parents[2] / "runtime/agent-runner/agent_runner.py",
             Path(__file__).resolve().parents[2],
         )
+        decision["deployment"] = deployment
+        decision["mode"] = mode
         if effect != "none" and decision["approved"]:
             decision["approved"] = False
             decision["gate"] = "campaign_exit_used_effect_limit"
-        if decision["approved"]:
+        if decision["approved"] and mode == "paper":
             stage = "allocation_order_build"
             order = order_for(decision)
             stage = "allocation_submit"
@@ -142,6 +190,8 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             )
             effect = sealed["effect_id"]
         else:
+            if decision["approved"]:
+                decision.update({"approved": False, "gate": f"{mode}_read_only"})
             record_no_trade(state / "receipts.jsonl", decision)
         stage = "state_write"
         _atomic_json(state / "allocation-latest.json", decision)
@@ -154,11 +204,13 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             "activities_count": observation["activities_count"],
             "candidate_count": len(candidates),
             "decision": decision["candidate_ref"],
+            "deployment": deployment,
             "effect": effect,
             "exit_status": campaign["exit_status"],
             "loop_id": "alpaca-investment",
             "orders_count": observation["open_and_closed_orders_count"],
-            "paper": True,
+            "mode": mode,
+            "paper": mode == "paper",
             "positions_count": len(observation["positions"]),
             "unrealized_pnl_usd": campaign["unrealized_pnl_usd"],
             "reconciliation": reconciliation,
@@ -182,6 +234,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
                     wake_id=wake_id,
                     observation=observation,
                     campaign=campaign,
+                    mode=mode if mode in {"paper", "shadow", "live"} else "unknown",
                 )
             except Exception:
                 pass
@@ -189,6 +242,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             "blocker": "alpaca_pass_failed",
             "effect": _terminal_effect(effect_attempted),
             "loop_id": "alpaca-investment",
+            "mode": mode if mode in {"paper", "shadow", "live"} else "unknown",
             "stage": stage,
             "status": "blocked",
             "telegram_status": telegram["status"],

@@ -140,6 +140,21 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertNotIn("Umask", value)
         self.assertEqual(value["EnvironmentVariables"]["LIFE_MANAGER_RELEASE_SHA"], SHA)
 
+    def test_alpaca_plist_declares_local_deployment(self):
+        value = registry()
+        value["loops"]["alpaca-investment"] = value["loops"].pop("example")
+        rendered = plistlib.loads(build_apply_plan(value, self.root, SHA)[0]["plist_bytes"])
+        self.assertEqual(
+            rendered["EnvironmentVariables"]["LIFE_MANAGER_INVESTMENT_DEPLOYMENT"],
+            "local",
+        )
+        environment = rendered["EnvironmentVariables"]
+        self.assertEqual(environment["LIFE_MANAGER_INVESTMENT_MODE"], "paper")
+        self.assertEqual(environment["ALPACA_INVESTMENT_PAPER_CREDENTIALS_FILE"],
+                         str(Path.home() / ".local/share/anicca/credentials.json"))
+        self.assertEqual(environment["ALPACA_INVESTMENT_PAPER_STATE_DIR"],
+                         str(Path.home() / ".local/state/life-manager/example"))
+
     def test_storefront_plist_uses_daily_driver_auth_vault(self):
         value = registry()
         value["loops"]["hf-gig-storefront-direct"] = value["loops"].pop("example")

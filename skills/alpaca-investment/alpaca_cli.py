@@ -14,11 +14,20 @@ from typing import Any
 
 CLI_VERSION = "0.0.14"
 PAPER_ENDPOINT = "https://paper-api.alpaca.markets/v2"
+LIVE_ENDPOINT = "https://api.alpaca.markets/v2"
 MAX_CREDENTIAL_BYTES = 1_048_576
 MAX_OUTPUT_BYTES = 64 * 1024
 
 
-def _credentials(path: Path) -> dict[str, str]:
+def _selected_mode(mode: str | None = None) -> str:
+    value = mode if mode is not None else os.environ.get("LIFE_MANAGER_INVESTMENT_MODE")
+    if value not in {"paper", "shadow", "live"}:
+        raise ValueError("investment_mode_invalid")
+    return value
+
+
+def _credentials(path: Path, mode: str | None = None) -> dict[str, str]:
+    mode = _selected_mode(mode)
     parent, info = path.parent, path.lstat()
     if path.is_symlink() or parent.is_symlink():
         raise ValueError("credential_path_invalid")
@@ -36,24 +45,28 @@ def _credentials(path: Path) -> dict[str, str]:
     if len(rows) != 1:
         raise ValueError("alpaca_credential_record_invalid")
     row = rows[0]
-    if row.get("paper_endpoint") != PAPER_ENDPOINT:
-        raise ValueError("live_endpoint_forbidden")
-    values = {key: row.get(key) for key in ("api_key", "api_secret")}
+    endpoint_key = "paper_endpoint" if mode == "paper" else "live_endpoint"
+    endpoint = PAPER_ENDPOINT if mode == "paper" else LIVE_ENDPOINT
+    if row.get(endpoint_key) != endpoint:
+        raise ValueError(f"alpaca_{mode}_credentials_unavailable")
+    fields = ("api_key", "api_secret") if mode == "paper" else ("live_api_key", "live_api_secret")
+    values = {"api_key": row.get(fields[0]), "api_secret": row.get(fields[1])}
     if any(not isinstance(value, str) or not value or len(value) > 8192
            for value in values.values()):
-        raise ValueError("alpaca_paper_credentials_unavailable")
+        raise ValueError(f"alpaca_{mode}_credentials_unavailable")
     return values  # type: ignore[return-value]
 
 
-def _context(credentials_path: Path, cli_path: Path) -> dict[str, str]:
+def _context(credentials_path: Path, cli_path: Path, mode: str | None = None) -> dict[str, str]:
+    mode = _selected_mode(mode)
     if not cli_path.is_file() or not os.access(cli_path, os.X_OK):
         raise ValueError("alpaca_cli_unavailable")
-    private = _credentials(credentials_path)
+    private = _credentials(credentials_path, mode)
     env = {
         **os.environ,
         "ALPACA_API_KEY": private["api_key"],
         "ALPACA_SECRET_KEY": private["api_secret"],
-        "ALPACA_LIVE_TRADE": "false",
+        "ALPACA_LIVE_TRADE": "false" if mode == "paper" else "true",
     }
     version = subprocess.run(
         [str(cli_path), "version"], env=env, stdin=subprocess.DEVNULL,
@@ -82,7 +95,8 @@ def _run(cli: Path, args: list[str], env: dict[str, str]) -> Any:
 def observe(*, credentials_path: Path, cli_path: Path, symbol: str = "SPY") -> dict[str, Any]:
     if symbol != "SPY":
         raise ValueError("unsupported_observation_symbol")
-    env = _context(credentials_path, cli_path)
+    mode = _selected_mode()
+    env = _context(credentials_path, cli_path, mode)
 
     account = _run(cli_path, [
         "account", "get", "--quiet", "--jq",
@@ -124,7 +138,8 @@ def observe(*, credentials_path: Path, cli_path: Path, symbol: str = "SPY") -> d
         "observed_symbol": symbol,
         "open_and_closed_orders_count": orders,
         "option_contracts_count": options,
-        "paper": True,
+        "mode": mode,
+        "paper": mode == "paper",
         "positions": positions,
         "trade": trade,
     }
@@ -155,7 +170,8 @@ def find_order_by_client_id(
 def read_campaign_snapshot(
     *, credentials_path: Path, cli_path: Path, symbols: tuple[str, str],
 ) -> dict[str, Any]:
-    env = _context(credentials_path, cli_path)
+    mode = _selected_mode()
+    env = _context(credentials_path, cli_path, mode)
     account = _run(cli_path, [
         "account", "get", "--quiet", "--jq",
         "{cash:.cash,equity:.equity,last_equity:.last_equity}",
@@ -189,7 +205,8 @@ def read_campaign_snapshot(
         "clock": clock,
         "fills": [fill for fill in fills if fill.get("symbol") in symbols],
         "options": options,
-        "paper": True,
+        "mode": mode,
+        "paper": mode == "paper",
         "positions": [position for position in positions if position.get("symbol") in symbols],
         "unexpected_positions": [position.get("symbol") for position in positions
                                  if position.get("symbol") not in symbols],
@@ -254,12 +271,15 @@ def read_allocator_snapshot(
 
 def submit_order(
     *, credentials_path: Path, cli_path: Path, client_order_id: str,
-    order: dict[str, Any],
+    order: dict[str, Any], mode: str | None = None,
 ) -> dict[str, Any]:
     """Submit one already-gated paper order through the pinned CLI."""
     if not re.fullmatch(r"lm-ai-[0-9a-f]{24}", client_order_id):
         raise ValueError("client_order_id_invalid")
-    env = _context(credentials_path, cli_path)
+    mode = _selected_mode(mode)
+    if mode != "paper":
+        raise ValueError("investment_mode_effect_forbidden")
+    env = _context(credentials_path, cli_path, mode)
     if order.get("asset_class") == "crypto" and order.get("symbol") in {"BTC/USD", "ETH/USD"}:
         args = ["order", "submit", "--quiet", "--symbol", order["symbol"],
                 "--notional", order["notional_usd"], "--side", "buy", "--type", "market",

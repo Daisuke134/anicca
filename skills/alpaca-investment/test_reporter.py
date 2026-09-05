@@ -23,6 +23,23 @@ OBSERVATION = {
 CAMPAIGN = {"realized_pnl_usd": "-3.00", "unrealized_pnl_usd": "0.00"}
 
 
+class ModeReportTest(unittest.TestCase):
+    def test_success_and_failure_reports_expose_mode(self):
+        message = reporter.render(
+            {"account": {"equity": "100000", "cash": "100000"}, "positions": []},
+            {"unrealized_pnl_usd": "0.00"},
+            {"candidate_ref": "NO_TRADE", "gate": "model_no_trade",
+             "observed_at": "2026-09-05T00:00:00Z", "mode": "shadow"}, "none")
+        self.assertIn("mode=shadow", message)
+        self.assertNotIn("開始時$100,000", message)
+        failure = reporter.render_failure(
+            stage="observe", effect_uncertain=False,
+            wake_id="2026-09-05T00:00:00Z", mode="live")
+        self.assertIn("mode=live", failure)
+        self.assertIn("live注文", failure)
+        self.assertNotIn("paper注文", failure)
+
+
 class FailureBalanceTest(unittest.TestCase):
     def test_failure_report_reads_last_snapshot_and_names_it_as_latest(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -39,6 +56,7 @@ class FailureBalanceTest(unittest.TestCase):
                     stage="observe",
                     effect_uncertain=False,
                     wake_id="2026-09-04T10:15:00Z",
+                    mode="paper",
                 )
 
         message = send.call_args.args[2]
@@ -51,6 +69,25 @@ class FailureBalanceTest(unittest.TestCase):
         self.assertIn("保有ポジション 0件", message)
         self.assertIn("2026-09-04T10:10:25Z", message)
         self.assertNotIn("must-not-appear", message)
+
+    def test_nonpaper_failure_omits_paper_baseline(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            reporter,
+            "_deliver_message",
+            return_value={"message_id": "123", "status": "delivered"},
+        ) as send:
+            reporter.deliver_failure(
+                Path(directory),
+                stage="observe",
+                effect_uncertain=False,
+                wake_id="2026-09-04T10:15:00Z",
+                observation=OBSERVATION,
+                campaign=CAMPAIGN,
+                mode="live",
+            )
+        message = send.call_args.args[2]
+        self.assertIn("資産は $99,996.76", message)
+        self.assertNotIn("開始時$100,000", message)
 
     def test_partial_or_malformed_snapshot_reports_each_unknown_without_crashing(self):
         observation = {
@@ -75,7 +112,7 @@ class FailureBalanceTest(unittest.TestCase):
         message = send.call_args.args[2]
         self.assertIn("資産は 不明", message)
         self.assertIn("現金は 不明", message)
-        self.assertIn("開始時$100,000から 不明", message)
+        self.assertNotIn("開始時$100,000", message)
         self.assertIn("確定損益 -$3.00", message)
         self.assertIn("含み損益 不明", message)
         self.assertIn("保有ポジション 不明", message)

@@ -11,6 +11,7 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from agent_runner import (  # noqa: E402
+    ProviderLeaseBusy,
     classify_provider_error,
     codex_attempt_started_work,
     codex_failover_action,
@@ -95,6 +96,8 @@ class CodexProfileBoundaryTest(unittest.TestCase):
                     return 1
                 if behavior == "timeout":
                     return 124
+                if behavior == "busy":
+                    raise ProviderLeaseBusy("codex automation home is busy")
                 if behavior == "success":
                     if provider == "codex":
                         completion_path.write_text('{"ok":true}', encoding="utf-8")
@@ -279,6 +282,20 @@ class CodexProfileBoundaryTest(unittest.TestCase):
                     ("codex", "acct1", failure),
                     ("claude", None, "success"),
                 ])
+
+    def test_run_codex_home_busy_calls_claude_once(self):
+        status, calls = self._run_candidate_fixture(
+            {
+                ("codex", "acct1"): "busy",
+                ("claude", None): "success",
+            },
+            include_claude=True,
+        )
+        self.assertEqual(status, 0)
+        self.assertEqual(calls, [
+            ("codex", "acct1", "busy"),
+            ("claude", None, "success"),
+        ])
 
     def test_fresh_unavailable_without_runtime_work_calls_claude_once(self):
         status, calls = self._run_candidate_fixture(

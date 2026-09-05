@@ -133,7 +133,7 @@ PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
 MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_REMOTE_WAIT_RECHECK_SECONDS = 3600
 PAID_MAX_PARALLEL_PROJECTS = 8
-PAID_MAX_PARALLEL_READBACKS = 1
+PAID_MAX_PARALLEL_READBACKS = PAID_MAX_PARALLEL_PROJECTS
 PAID_TERMINAL_RECONCILES_PER_WAKE = 2
 MANUAL_ONLY_TALKROOM_IDS = frozenset()
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
@@ -1971,16 +1971,17 @@ def _targeted(args, item, index):
     item_path, snapshot = base / "item.json", base / "snapshot.json"
     _write(item_path, item)
     started_ns = time.time_ns()
+    environment = _fresh_child_env(args, owner=f"paid-direct-{room}")
     try:
         _run(
             _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
-            "targeted_readback", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
+            "targeted_readback", timeout=TARGETED_READBACK_TIMEOUT_SECONDS, env=environment,
         )
     except Failure as error:
         if "authenticated tab did not finish navigation" in error.detail:
             _run(
                 _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
-                "targeted_readback", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
+                "targeted_readback", timeout=TARGETED_READBACK_TIMEOUT_SECONDS, env=environment,
             )
             return {**item, **_row(_load(snapshot), room)}
         # The collector atomically publishes the official snapshot before optional trailing
@@ -3957,8 +3958,8 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
             "setup step that the authorized owner can create. Persist any newly created credential only through the private "
             "credential SSOT contract without exposing its value. "
             "Resource discovery is not live readiness: inspect the selected skill/session in official UI or API before effect. "
-            "Independent projects may run concurrently, but serialize every read, mutation, and readback that uses the same "
-            "external account/browser lease; never launch concurrent commands against one leased identity. "
+            "All independent paid projects run concurrently for observation, mutation, and readback. Each project owns a "
+            "distinct browser target and owner identity and never waits for another project merely because the provider account is shared. "
             "When the first channel is unavailable, use the complete project context to resolve another authorized skill, account, "
             "or contact surface that achieves the same buyer outcome. Treat qualification questions as legitimate first contact when "
             "the recipient permits that channel; do not require every fact to be public before contact, and do not stop merely because "
@@ -5400,11 +5401,6 @@ def run_once(args, output: Path) -> int:
             items, duplicate_dropped = _unique_orders(observed_items)
         except Failure as error:
             _write(output, {"status": "failed", "observed": 0, "actionable": 0, "effect": 0, "readback": 0, "failed": 1, "pending": 0, "oldest": None, "failed_step": error.step, "items": []}); return 1
-        terminal_reconciliation = _reconcile_absent_talkrooms(args, items)
-        janitor = project_janitor.scan(
-            args.projects_root, args.projects_root.parent / "janitor.jsonl", dry_run=False,
-        )
-        _write(args.evidence_dir / "project-janitor.json", janitor)
         items.sort(key=lambda item: _paid_queue_priority(args, item))
         rows: dict[str, dict[str, Any]] = {}
         actionable = 0
@@ -5541,6 +5537,23 @@ def run_once(args, output: Path) -> int:
             disk_blocked_reason = disk_blocked_reason or "disk_pressure"
         pending = _paid_pending_count(rows)
         result_status = _paid_parent_status(failed=failed, pending=pending)
+        try:
+            terminal_reconciliation = _reconcile_absent_talkrooms(args, items)
+        except Exception as error:
+            terminal_reconciliation = {
+                "status": "failed", "failed_step": "terminal_reconciliation",
+                "error": type(error).__name__,
+            }
+        try:
+            janitor = project_janitor.scan(
+                args.projects_root, args.projects_root.parent / "janitor.jsonl", dry_run=False,
+            )
+            _write(args.evidence_dir / "project-janitor.json", janitor)
+        except Exception as error:
+            janitor = {
+                "status": "failed", "failed_step": "project_janitor",
+                "error": type(error).__name__,
+            }
         result = {"status": result_status, "observed": len(items),
                   "duplicate_dropped": duplicate_dropped, "actionable": actionable,
                   "effect": effect, "readback": readback, "failed": failed,
