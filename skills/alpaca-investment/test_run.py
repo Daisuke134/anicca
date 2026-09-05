@@ -12,6 +12,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 import reporter as REPORTER
+import alpaca_cli as CLI
 SPEC = importlib.util.spec_from_file_location("alpaca_investment_run", ROOT / "run.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
@@ -84,6 +85,57 @@ class InvestmentModeTest(unittest.TestCase):
                 MODULE.main(wake_id="paper-paths")
         self.assertEqual(observed[0]["credentials_path"], credentials)
         self.assertEqual(reconcile.call_args.args[0], state / "receipts.jsonl")
+
+
+class BrokerContextTest(unittest.TestCase):
+    def _credential(self, root, row):
+        private = root / "private"
+        private.mkdir(parents=True, mode=0o700)
+        path = private / "credentials.json"
+        path.write_text(json.dumps({"credentials": [row]}))
+        path.chmod(0o600)
+        return path
+
+    def test_paper_and_live_contexts_use_separate_records(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, cli = Path(directory), Path(directory) / "alpaca"
+            cli.write_text("#!/bin/sh\n[ \"$1\" = version ] && echo 0.0.14\n")
+            cli.chmod(0o700)
+            paper = self._credential(root / "paper", {
+                "service": "app.alpaca.markets", "paper_endpoint": CLI.PAPER_ENDPOINT,
+                "api_key": "paper-key", "api_secret": "paper-secret"})
+            live = self._credential(root / "live", {
+                "service": "app.alpaca.markets", "live_endpoint": "https://api.alpaca.markets/v2",
+                "live_api_key": "live-key", "live_api_secret": "live-secret"})
+            for mode, path, key, live_trade in (
+                ("paper", paper, "paper-key", "false"),
+                ("shadow", live, "live-key", "true"), ("live", live, "live-key", "true")):
+                context = CLI._context(path, cli, mode=mode)
+                self.assertEqual((context["ALPACA_API_KEY"], context["ALPACA_LIVE_TRADE"]),
+                                 (key, live_trade))
+            with self.assertRaises(ValueError):
+                CLI._context(paper, cli, mode="live")
+
+
+class ShadowReadOnlyTest(unittest.TestCase):
+    def test_shadow_never_submits_campaign_exit_or_allocator_order(self):
+        observation = {"account": {"cash": "100000", "equity": "100000"},
+                       "activities_count": 0, "clock": {"observed_at": "2026-09-05T00:00:00Z"},
+                       "open_and_closed_orders_count": 0, "positions": []}
+        with tempfile.TemporaryDirectory() as directory, patch.dict(MODULE.os.environ, {
+            "LIFE_MANAGER_INVESTMENT_MODE": "shadow", "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
+            "ALPACA_INVESTMENT_SHADOW_CREDENTIALS_FILE": str(Path(directory) / "live.json"),
+            "ALPACA_INVESTMENT_SHADOW_STATE_DIR": str(Path(directory) / "shadow-state"),
+        }, clear=True), patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0}), \
+                patch.object(MODULE, "observe", return_value=observation), patch.object(MODULE, "read_campaign_snapshot"), \
+                patch.object(MODULE, "reconcile", return_value={"exit_status": "EXIT_READY", "exit_credit_usd": "0.50", "unrealized_pnl_usd": "0.00"}), \
+                patch.object(MODULE, "exit_order", return_value={"asset_class": "option_spread_close"}), \
+                patch.object(MODULE, "read_allocator_snapshot", return_value={}), patch.object(MODULE, "build_candidates", return_value=[]), \
+                patch.object(MODULE, "choose", return_value={"approved": True, "candidate_ref": "crypto://BTC/USD", "candidate": {"asset_class": "crypto"}, "gate": "approved", "observed_at": "2026-09-05T00:00:00Z"}), \
+                patch.object(MODULE, "order_for", return_value={"asset_class": "crypto"}), patch.object(MODULE, "submit_order") as submit, \
+                patch.object(MODULE, "deliver", return_value={"message_id": "123"}):
+            self.assertEqual(MODULE.main(wake_id="shadow-read-only"), 0)
+        submit.assert_not_called()
 
 
 class PortablePassTest(unittest.TestCase):

@@ -114,32 +114,36 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
                 "paper": True,
                 "reason": "sealed_campaign_regular_session_positive_credit",
             }
-            exit_order_path = state / "campaign-exit-order.json"
-            if exit_order_path.is_file():
-                stage = "campaign_exit_order_read"
-                order = json.loads(exit_order_path.read_text(encoding="utf-8"))
+            if mode != "paper":
+                exit_decision.update({"approved": False, "gate": f"{mode}_read_only"})
+                record_no_trade(state / "receipts.jsonl", exit_decision)
             else:
-                stage = "campaign_exit_order_build"
-                order = exit_order(campaign)
-                _atomic_json(exit_order_path, order)
-            stage = "campaign_exit_submit"
-            sealed = seal(state / "receipts.jsonl", exit_decision, order)
-            mark_started(state / "receipts.jsonl", sealed)
-            effect_attempted = True
-            submit_order(credentials_path=credentials_path, cli_path=cli_path,
-                         client_order_id=sealed["client_order_id"], order=order)
-            stage = "campaign_exit_reconcile"
-            reconcile_started(
-                state / "receipts.jsonl",
-                lambda value: find_order_by_client_id(
-                    credentials_path=credentials_path, cli_path=cli_path, client_order_id=value),
-            )
-            effect = sealed["effect_id"]
-            stage = "campaign_exit_observe"
-            observation = observe(credentials_path=credentials_path, cli_path=cli_path)
-            stage = "campaign_exit_campaign_read"
-            campaign = reconcile(read_campaign_snapshot(
-                credentials_path=credentials_path, cli_path=cli_path, symbols=SYMBOLS))
+                exit_order_path = state / "campaign-exit-order.json"
+                if exit_order_path.is_file():
+                    stage = "campaign_exit_order_read"
+                    order = json.loads(exit_order_path.read_text(encoding="utf-8"))
+                else:
+                    stage = "campaign_exit_order_build"
+                    order = exit_order(campaign)
+                    _atomic_json(exit_order_path, order)
+                stage = "campaign_exit_submit"
+                sealed = seal(state / "receipts.jsonl", exit_decision, order)
+                mark_started(state / "receipts.jsonl", sealed)
+                effect_attempted = True
+                submit_order(credentials_path=credentials_path, cli_path=cli_path,
+                             client_order_id=sealed["client_order_id"], order=order)
+                stage = "campaign_exit_reconcile"
+                reconcile_started(
+                    state / "receipts.jsonl",
+                    lambda value: find_order_by_client_id(
+                        credentials_path=credentials_path, cli_path=cli_path, client_order_id=value),
+                )
+                effect = sealed["effect_id"]
+                stage = "campaign_exit_observe"
+                observation = observe(credentials_path=credentials_path, cli_path=cli_path)
+                stage = "campaign_exit_campaign_read"
+                campaign = reconcile(read_campaign_snapshot(
+                    credentials_path=credentials_path, cli_path=cli_path, symbols=SYMBOLS))
         stage = "allocator_read"
         allocator_snapshot = read_allocator_snapshot(
             credentials_path=credentials_path, cli_path=cli_path)
@@ -154,7 +158,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         if effect != "none" and decision["approved"]:
             decision["approved"] = False
             decision["gate"] = "campaign_exit_used_effect_limit"
-        if decision["approved"]:
+        if decision["approved"] and mode == "paper":
             stage = "allocation_order_build"
             order = order_for(decision)
             stage = "allocation_submit"
@@ -171,6 +175,8 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             )
             effect = sealed["effect_id"]
         else:
+            if decision["approved"]:
+                decision.update({"approved": False, "gate": f"{mode}_read_only"})
             record_no_trade(state / "receipts.jsonl", decision)
         stage = "state_write"
         _atomic_json(state / "allocation-latest.json", decision)
