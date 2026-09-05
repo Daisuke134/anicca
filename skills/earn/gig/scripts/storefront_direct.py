@@ -2406,7 +2406,18 @@ def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
                 published.add(str(row.get("draft_service_id") or ""))
             family = str(row.get("capability_family") or "")
             draft_id = str(row.get("draft_service_id") or "")
-            if (row.get("status") in {"draft_created", "draft_prepared"}
+            # `prepare_draft`'s own return dict uses status "prepared", never "draft_prepared" --
+            # that second string never matches a real row, so this membership test used to only
+            # ever capture a draft's *create* event and silently skip its later *prepare* event.
+            # `active_by_family` still ended up with the right draft_id either way (the id does
+            # not change between the two events), which is why this stayed dormant. But
+            # `active_rows` feeds `_subscription_heal_diverges`, which needs the row that actually
+            # reflects the draft's current, form-verified contract -- handing it the stale
+            # just-created row compared a healthy prepared draft's healed contract against an
+            # earlier, different contract_sha256 and always looked like a mismatch. That false
+            # positive got 4385965 -- a correctly healed, freshly prepared draft -- deleted for no
+            # reason on 2026-09-05.
+            if (row.get("status") in {"draft_created", "prepared"}
                     and int(row.get("public_effect") or 0) == 0 and family and draft_id.isdigit()):
                 active_by_family[family] = draft_id
                 active_rows[family] = row
@@ -7227,11 +7238,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                 continue
                             row = json.loads(line)
                             draft_id = str(row.get("draft_service_id") or "")
+                            # Same "prepared", not "draft_prepared", vocabulary as the ledger rows
+                            # `prepare_draft` writes (see `_deletable_drafts`) -- without this a
+                            # draft that had already been prepared, not just created, was never
+                            # offered back for reuse here.
                             if (row.get("capability_family") == create_family and draft_id.isdigit()
                                     and draft_id not in inventory_ids
                                     and draft_id not in deleted_draft_ids
                                     and int(row.get("public_effect") or 0) == 0
-                                    and row.get("status") in {"draft_created", "draft_prepared"}):
+                                    and row.get("status") in {"draft_created", "prepared"}):
                                 preferred_draft_ids.append(draft_id)
                     create_draft_claim = storefront_draft.create_or_claim_blank_draft(
                         getattr(args, "default_tab_script", DEFAULT_TAB),

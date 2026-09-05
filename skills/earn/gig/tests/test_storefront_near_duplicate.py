@@ -116,7 +116,7 @@ def test_an_active_draft_stuck_on_an_unhealable_subscription_pair_loses_its_prot
     }) + "\n", encoding="utf-8")
     ledger = tmp_path / "new-listing-drafts.jsonl"
     ledger.write_text(_json.dumps({
-        "draft_service_id": "4385273", "status": "draft_prepared", "public_effect": 0,
+        "draft_service_id": "4385273", "status": "prepared", "public_effect": 0,
         "capability_family": "mobile_app_dev", "demand_evidence_path": "/evidence/mobile.json",
         "contract_sha256": digest,
     }) + "\n", encoding="utf-8")
@@ -143,9 +143,63 @@ def test_an_active_draft_stuck_on_an_unhealable_subscription_pair_loses_its_prot
         },
     }) + "\n", encoding="utf-8")
     ledger.write_text(_json.dumps({
-        "draft_service_id": "9999999", "status": "draft_prepared", "public_effect": 0,
+        "draft_service_id": "9999999", "status": "prepared", "public_effect": 0,
         "capability_family": "mobile_app_dev", "demand_evidence_path": "/evidence/mobile.json",
         "contract_sha256": healthy_digest,
     }) + "\n", encoding="utf-8")
 
     assert storefront_direct._deletable_drafts(ledger, ["9999999"]) == []
+
+
+def test_a_draft_with_both_a_create_and_a_prepare_row_is_judged_by_the_prepare_row(tmp_path):
+    """Draft 4385965 (mobile_app_dev) was correctly healed and prepared, then wrongly deleted on
+    2026-09-05: `_deletable_drafts` matched ledger rows against the literal string
+    `"draft_prepared"`, which `prepare_draft` never actually writes (it writes `"prepared"`), so
+    the guard silently fell back to whichever row had status `"draft_created"` -- an earlier,
+    now-superseded contract from before the draft was filled in. Comparing that stale contract to
+    what healing produces today always looked like a mismatch, so a perfectly healthy, freshly
+    prepared draft lost its protection and was deleted for no reason. Every draft that completes
+    its normal create-then-prepare lifecycle carries exactly this two-row shape, so this is not an
+    edge case -- it must be judged by its own latest (prepare) row, not its create row."""
+    import hashlib
+    import json as _json
+
+    healthy_unsigned = {
+        "draft_service_id": "4385965",
+        "capability_evidence": {"family": "mobile_app_dev", "recurring_support_included": False},
+        "demand_evidence_path": "/evidence/mobile.json",
+        "subscription": {"enabled": False, "discount_ratio": "0"},
+    }
+    healthy_digest = hashlib.sha256(_json.dumps(
+        healthy_unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    healthy_contract = {**healthy_unsigned, "contract_sha256": healthy_digest}
+    evidence = tmp_path / "evidence" / "wake-2"
+    evidence.mkdir(parents=True)
+    (evidence / "generated-create-contract.json").write_text(
+        _json.dumps(healthy_contract) + "\n", encoding="utf-8",
+    )
+    (tmp_path / "wakes.jsonl").write_text("\n".join(_json.dumps(row) for row in [
+        {
+            "pass_id": "wake-2", "status": "completed",
+            "new_listing_draft": {
+                "status": "prepared", "readback": 1, "public_effect": 0,
+                "draft_service_id": "4385965", "contract_sha256": healthy_digest,
+                "capability_family": "mobile_app_dev",
+                "demand_evidence_path": "/evidence/mobile.json",
+            },
+        },
+    ]) + "\n", encoding="utf-8")
+    ledger = tmp_path / "new-listing-drafts.jsonl"
+    # The create row is written first and carries a different (interim) contract_sha256, exactly
+    # like a real draft_created row does before the form has been filled in.
+    ledger.write_text("\n".join(_json.dumps(row) for row in [
+        {"draft_service_id": "4385965", "status": "draft_created", "public_effect": 0,
+         "capability_family": "mobile_app_dev", "demand_evidence_path": "/evidence/mobile.json",
+         "contract_sha256": "interim-create-time-contract-sha"},
+        {"draft_service_id": "4385965", "status": "prepared", "public_effect": 0,
+         "capability_family": "mobile_app_dev", "demand_evidence_path": "/evidence/mobile.json",
+         "contract_sha256": healthy_digest},
+    ]) + "\n", encoding="utf-8")
+
+    assert storefront_direct._deletable_drafts(ledger, ["4385965"]) == []
