@@ -2642,12 +2642,13 @@ def _collect_analytics(
         observed: dict = {}
         period = None
         for attempt in range(3):
-            opened = subprocess.run(
-                [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
-                 "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
-            )
             tab = None
+            observed = {}
             try:
+                opened = subprocess.run(
+                    [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
+                     "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
+                )
                 tab = json.loads(opened.stdout)
                 if opened.returncode != 0 or tab.get("ok") is not True:
                     raise RuntimeError("official_analytics_tab_open_failed")
@@ -2655,8 +2656,13 @@ def _collect_analytics(
                     str(tab["ws"]), url,
                     "JSON.stringify({url:location.href,title:document.title,body:document.body?document.body.innerText.slice(0,120000):''})",
                 ))
-            except (KeyError, json.JSONDecodeError) as error:
-                raise RuntimeError("official_analytics_tab_open_invalid") from error
+            except (KeyError, json.JSONDecodeError, RuntimeError, OSError, subprocess.SubprocessError):
+                # A slow or unreachable browser call is this attempt's problem, not grounds to
+                # abort the wake: fall through as a failed attempt so the retry loop below can
+                # try again, or — once attempts are exhausted — land in the existing
+                # "unavailable/official_readback_failed_after_retries" snapshot path instead of
+                # raising out of run_once and turning one flaky call into a failed pass.
+                observed = {}
             finally:
                 if isinstance(tab, dict) and tab.get("target_id"):
                     try:
@@ -5662,11 +5668,17 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 raise RuntimeError(f"storefront_browser_unavailable:{detail}")
             # The owner lock proves no current storefront wake owns these tabs. Reclaim only
             # this loop's leftovers from a prior crash; cleanup failure must not stop earning.
-            subprocess.run(
-                [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
-                 "--owner", "gig-storefront-direct", "close-owned"],
-                capture_output=True, text=True, check=False, timeout=30,
-            )
+            # A slow browser under load can make this best-effort call miss its own subprocess
+            # timeout, and a raised TimeoutExpired here used to abort the whole wake even though
+            # the comment above already says cleanup failure must not stop earning.
+            try:
+                subprocess.run(
+                    [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
+                     "--owner", "gig-storefront-direct", "close-owned"],
+                    capture_output=True, text=True, check=False, timeout=30,
+                )
+            except subprocess.SubprocessError:
+                pass
             task = f"gig-storefront-direct-{pass_id}"
             lease = _lease(args.lease_script, "acquire", task)
             ws_url = str(lease.get("ws") or "")
