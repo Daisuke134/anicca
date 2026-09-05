@@ -4023,6 +4023,13 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
 def _normalize_builder_result(root: Path) -> None:
     intent_path, result_path = root / "delivery/paid-remote-intent.json", root / "delivery/paid-remote-result.json"
     intent, result = _load(intent_path), _load(result_path)
+    outcome = result.get("business_outcome")
+    remaining = outcome.get("remaining_work") if isinstance(outcome, dict) else None
+    remaining_blocker = (remaining[0].strip() if isinstance(remaining, list) and remaining
+                         and isinstance(remaining[0], str) else "")
+    if (result.get("status") == "blocked" and not _text(result.get("blocker"))
+            and remaining_blocker):
+        result["blocker"] = remaining_blocker
     feedback = _text(intent.get("buyer_feedback_sha256") or intent.get("feedback_sha256"))
     if re.fullmatch(r"[0-9a-f]{64}", feedback):
         intent["feedback_sha256"] = intent["buyer_feedback_sha256"] = feedback
@@ -4059,8 +4066,8 @@ def _normalize_builder_result(root: Path) -> None:
                 result["after_evidence"] = raw_after_value
                 if not no_effect_wait:
                     result["status"] = "ok"
-                elif not _text(result.get("blocker")):
-                    result["blocker"] = _text((outcome.get("remaining_work") or [""])[0])
+                elif not _text(result.get("blocker")) and remaining_blocker:
+                    result["blocker"] = remaining_blocker
                 result["verified_after"] = True
                 break
         if not raw_after_value:
