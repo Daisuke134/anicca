@@ -12,11 +12,19 @@ marketplace adapter — each one costs a day to rediscover.
 | Idempotent submission, replay prevention, pending reconciliation | `skills/_shared/marketplace-core/scripts/application_transaction.py` |
 | Receipt ledger | `.../ledger.py` |
 | Telegram delivery with exactly-once accounting | `.../telegram_outbox.py` |
-| The `[Platform][応募判断]` message | `skills/earn/gig/scripts/report_envelope.py` (platform-neutral; takes the display name as an argument) |
+| The `[Platform][応募判断]` / `[Platform][応募完了]` message | `skills/earn/gig/scripts/report_envelope.py` (platform-neutral; takes the display name as an argument) |
+| The per-wake lane summary | `skills/_shared/marketplace-core/scripts/lane_summary.py` |
+| Sending, and draining the outbox | `.../telegram_delivery.py` (never a CLI: launchd gives a job no PATH) |
 | What to sell, at what price, per platform | `skills/gig-work/profile/listings/catalog.json` |
 
 An adapter that adds its own ledger, its own outbox or its own wording is the
 defect this file exists to prevent.
+
+`report_envelope.py` still sits in the Coconala adapter rather than in
+`_shared/marketplace-core/`. Four Coconala scripts import it and that lane is
+being worked on concurrently, so moving it is the extraction step to take when
+that work settles — not while two sessions would both be editing it. Load it by
+path in the meantime; do not copy it.
 
 ## The eight silent faults
 
