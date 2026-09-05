@@ -3861,7 +3861,12 @@ buyer-visible outcome supported by the owned capability family; it must not
 duplicate or merely rephrase any current_catalog_titles. Use the demand page only as demand evidence,
 never copy seller wording, reviews, sales, guarantees or unsupported claims. Include exact evidence
 refs for the official offer, owned family and demand evidence. The title_stem excludes the final
-Japanese `ます`. head must state outcome, exact inclusions, exclusions, required inputs and support
+Japanese `ます`, so it must end in the continuative (i-form) of a Japanese verb -- the character
+right before the implicit `ます` has to be one Coconala can attach `ます` to, e.g. `...を開発し`,
+`...を執筆し`, `...を実装し`. It must never end in a bare noun such as `...アプリ` or `...システム`
+(that would render as the ungrammatical `...アプリます`); if the offer is naturally noun-shaped,
+add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. head must state
+outcome, exact inclusions, exclusions, required inputs and support
 boundary. Write head and body as buyer-facing Japanese prose: never emit a schema field name or an
 English label such as `outcome:`, and never prefix a sentence with a bare label like `含むもの:`. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
 lines: headline, supporting line, and two or three short badges separated by `｜`; do not include price,
