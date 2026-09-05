@@ -181,6 +181,20 @@ def intent_is_reconcile_only(intent: dict[str, Any], effect_key: str) -> bool:
     }
 
 
+def cancellation_initial_action(
+    intent: dict[str, Any], effect_key: str, state: dict[str, Any], contract: CancellationContract,
+) -> str:
+    if matching_cancellation(state, contract):
+        return "dedupe"
+    if intent_is_reconcile_only(intent, effect_key):
+        return "retry" if ready_to_send(state, contract) else "reconcile_unknown"
+    return "send"
+
+
+def cancel_send_button_click_expression() -> str:
+    return '''(()=>{const modal=[...document.querySelectorAll('.modal-content,[role=dialog]')].find(x=>x.offsetParent!==null&&(x.innerText||'').includes('キャンセルリクエスト'));const e=modal?[...modal.querySelectorAll('button')].find(x=>(x.innerText||'').trim()==='送信する'&&x.offsetParent!==null&&!x.disabled&&!x.classList.contains('is-disabled')):null;if(!e)return false;const formal=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type="checkbox"]');if(!formal||formal.checked)return false;e.click();return true})()'''
+
+
 class Session:
     def __init__(self, websocket: Any):
         self.websocket = websocket
@@ -190,10 +204,13 @@ class Session:
         self.request_id += 1
         return await collector.call(self.websocket, self.request_id, method, params or {})
 
-    async def evaluate(self, expression: str) -> Any:
-        result = await self.call("Runtime.evaluate", {
+    async def evaluate(self, expression: str, *, user_gesture: bool = False) -> Any:
+        params: dict[str, Any] = {
             "expression": expression, "returnByValue": True, "awaitPromise": True,
-        })
+        }
+        if user_gesture:
+            params["userGesture"] = True
+        result = await self.call("Runtime.evaluate", params)
         if result.get("exceptionDetails"):
             raise RuntimeError("cancellation_browser_evaluate_failed")
         return result.get("result", {}).get("value")
@@ -211,7 +228,9 @@ async def _wait(session: Session, expression: str, predicate: Any, timeout: floa
     raise RuntimeError(f"cancellation_readback_timeout:{json.dumps({k: last.get(k) for k in ('url','transaction_state','formal_delivery_control_checked','cancel_control_present','cancellation_pending')}, separators=(',', ':'))}")
 
 
-async def _click(session: Session, selector_expression: str, before_dispatch: Any = None) -> None:
+async def _click(
+    session: Session, selector_expression: str, before_dispatch: Any = None, *, dispatch: bool = True,
+) -> None:
     deadline, point = time.monotonic() + 10, None
     while time.monotonic() < deadline and not isinstance(point, dict):
         point = await session.evaluate(selector_expression)
@@ -221,6 +240,8 @@ async def _click(session: Session, selector_expression: str, before_dispatch: An
         raise RuntimeError("cancellation_control_not_clickable")
     if before_dispatch is not None:
         before_dispatch()
+    if not dispatch:
+        return
     for event in ("mouseMoved", "mousePressed", "mouseReleased"):
         params: dict[str, Any] = {"type": event, "x": point["x"], "y": point["y"]}
         if event != "mouseMoved":
@@ -229,16 +250,22 @@ async def _click(session: Session, selector_expression: str, before_dispatch: An
 
 
 async def submit(ws_url: str, contract: CancellationContract, timeout: float, *,
-                 intent_path: Path, reconcile_only: bool = False) -> tuple[dict[str, Any], bytes, bool]:
+                 intent_path: Path, reconcile_only: bool = False,
+                 previous_intent: dict[str, Any] | None = None) -> tuple[dict[str, Any], bytes, bool]:
     expression = browser_state_expression(contract.reason, contract.detail)
+    effect_key = hashlib.sha256(f"coconala:cancel:{contract.talkroom_id}:{contract.feedback_sha256}".encode()).hexdigest()
     async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=64 * 1024 * 1024) as ws:
         session = Session(ws)
         await session.call("Page.enable")
         initial = await _wait(session, expression, lambda value: ready_to_send(value, contract) or matching_cancellation(value, contract), timeout)
         sent = False
-        if not matching_cancellation(initial, contract):
-            if reconcile_only:
-                raise RuntimeError("cancellation_reconcile_unknown")
+        initial_intent = previous_intent
+        if initial_intent is None:
+            initial_intent = {"effect_key": effect_key, "phase": "click_started"} if reconcile_only else {}
+        action = cancellation_initial_action(initial_intent, effect_key, initial, contract)
+        if action == "reconcile_unknown":
+            raise RuntimeError("cancellation_reconcile_unknown")
+        if action != "dedupe":
             await _click(session, '''(()=>{const e=[...document.querySelectorAll('a,button')].find(x=>(x.innerText||'').trim()==='取引をキャンセルリクエストする'&&x.offsetParent!==null);if(!e)return null;e.scrollIntoView({block:'center'});const r=e.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}})()''')
             configured = await session.evaluate(
                 cancel_form_configuration_expression(contract.reason, contract.detail)
@@ -251,7 +278,9 @@ async def submit(ws_url: str, contract: CancellationContract, timeout: float, *,
                 intent["effect_started_at"] = datetime.now(timezone.utc).isoformat()
                 collector.atomic_json(intent_path, intent)
 
-            await _click(session, cancel_send_button_expression(), mark_started)
+            await _click(session, cancel_send_button_expression(), mark_started, dispatch=False)
+            if await session.evaluate(cancel_send_button_click_expression(), user_gesture=True) is not True:
+                raise RuntimeError("cancellation_send_not_clickable")
             sent = True
         verified = await _wait(session, expression, lambda value: matching_cancellation(value, contract), timeout)
         screenshot = await session.call("Page.captureScreenshot", {"format": "png", "captureBeyondViewport": False})
@@ -315,6 +344,7 @@ def main() -> int:
         state, screenshot, sent = asyncio.run(submit(
             tab.ws, contract, args.timeout, intent_path=intent_path,
             reconcile_only=reconcile_only,
+            previous_intent=previous,
         ))
     evidence = persist(args.evidence_dir.resolve(), contract, state, screenshot, sent)
     intent = json.loads(intent_path.read_text(encoding="utf-8"))
