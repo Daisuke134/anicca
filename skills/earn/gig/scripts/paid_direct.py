@@ -5400,11 +5400,6 @@ def run_once(args, output: Path) -> int:
             items, duplicate_dropped = _unique_orders(observed_items)
         except Failure as error:
             _write(output, {"status": "failed", "observed": 0, "actionable": 0, "effect": 0, "readback": 0, "failed": 1, "pending": 0, "oldest": None, "failed_step": error.step, "items": []}); return 1
-        terminal_reconciliation = _reconcile_absent_talkrooms(args, items)
-        janitor = project_janitor.scan(
-            args.projects_root, args.projects_root.parent / "janitor.jsonl", dry_run=False,
-        )
-        _write(args.evidence_dir / "project-janitor.json", janitor)
         items.sort(key=lambda item: _paid_queue_priority(args, item))
         rows: dict[str, dict[str, Any]] = {}
         actionable = 0
@@ -5541,6 +5536,23 @@ def run_once(args, output: Path) -> int:
             disk_blocked_reason = disk_blocked_reason or "disk_pressure"
         pending = _paid_pending_count(rows)
         result_status = _paid_parent_status(failed=failed, pending=pending)
+        try:
+            terminal_reconciliation = _reconcile_absent_talkrooms(args, items)
+        except Exception as error:
+            terminal_reconciliation = {
+                "status": "failed", "failed_step": "terminal_reconciliation",
+                "error": type(error).__name__,
+            }
+        try:
+            janitor = project_janitor.scan(
+                args.projects_root, args.projects_root.parent / "janitor.jsonl", dry_run=False,
+            )
+            _write(args.evidence_dir / "project-janitor.json", janitor)
+        except Exception as error:
+            janitor = {
+                "status": "failed", "failed_step": "project_janitor",
+                "error": type(error).__name__,
+            }
         result = {"status": result_status, "observed": len(items),
                   "duplicate_dropped": duplicate_dropped, "actionable": actionable,
                   "effect": effect, "readback": readback, "failed": failed,
