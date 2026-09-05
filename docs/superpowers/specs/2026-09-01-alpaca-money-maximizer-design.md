@@ -1,6 +1,6 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED PAPER HISTORY / LIVE OSS DESIGN / L01 DONE / L02 ACTIVE
+status: APPROVED PAPER HISTORY / LIVE OSS DESIGN / L01–L02 DONE / L03 ACTIVE
 owner: Dais / Life Manager
 hackathon deadline: 2026-09-05 00:00 JST — submitted
 Alpaca live-product implementation SSOT: this document §§7–8
@@ -753,7 +753,7 @@ profit in a calendar month; a projected annualisation or one lucky trade does no
 
 ## 8. Ordered live implementation TODO
 
-This order is fixed until Dais explicitly changes it. The current cursor is **L02**. Each atom merges to `main`
+This order is fixed until Dais explicitly changes it. The current cursor is **L03**. Each atom merges to `main`
 independently and ends with official readback. The local loop closes the entire bounded live lifecycle first.
 Cloud begins only after the local repeatability gate passes, and runs the same committed core.
 
@@ -766,10 +766,18 @@ unmanaged, or installed-retired labels, and fresh task review reports no finding
 300-second wake ended `pass` at `2026-09-05T02:30:00.939137+00:00`, delivered Telegram message `57303`, recorded
 paper `NO_TRADE` with no broker effect, and emitted no dashboard-publication field.
 
+L02 is **DONE** in main merge `16b0425859da1aa305a6cdbcbdb84c4c94936629`: exact `local|cloud`
+validation runs before broker access, every new decision receipt and successful stdout status records the validated
+profile, and only the local Alpaca plist declares `local`. Focused profile tests pass 11/11 and independent reviews
+report no findings. The targeted production apply first recorded the interrupted old-process event and one
+`transient_timeout`; it was not called success at that point. The same new release then completed a natural
+300-second pass at `2026-09-05T03:17:37.697251+00:00`. Plist, stdout, and the newest decision receipt all read
+`local`; Telegram message `57418` was delivered; the paper decision was `NO_TRADE` with no broker effect.
+
 | Seq | Atom | Acceptance gate |
 |---:|---|---|
 | L01 | Portable finite pass — **DONE** | Reuse the working local paper loop to prove observation, model proposal, deterministic gate, sealed effect, reconciliation, receipt, and Telegram from one environment-neutral entrypoint. Broker credentials, scheduler, and mutable state remain injected boundaries. Dashboard publishing is excluded from the portable pass. |
-| L02 | Explicit deployment profile | One required `LIFE_MANAGER_INVESTMENT_DEPLOYMENT=cloud|local` value is reported in status/receipts. Installation rejects an absent or ambiguous profile; it implements no cross-profile coordination or automatic failover. |
+| L02 | Explicit deployment profile — **DONE** | One required `LIFE_MANAGER_INVESTMENT_DEPLOYMENT=cloud|local` value is reported in status/receipts. Installation rejects an absent or ambiguous profile; it implements no cross-profile coordination or automatic failover. |
 | L03 | Structural paper/shadow/live separation | Separate credential refs, endpoints, receipt namespaces, and effect permissions make a paper key incapable of a live effect and make shadow mode read-only. Mode appears in every receipt and Telegram report. Only the frozen paper namespace can invoke the hackathon dashboard publisher; shadow/live have no publisher call path. |
 | L04 | Human live-account gate | Dais completes provider-required identity, legal agreements, options application, and funding. The model does not answer suitability/KYC questions or move money. Verified owner funding is at most `$100` for the initial campaign. |
 | L05 | Owner-live read-only preflight | The local loop reads Dais's live Alpaca status, cash, buying power, options approval/trading level, configurations, and positions/orders without submitting an order. |

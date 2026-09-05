@@ -87,7 +87,7 @@ Run the focused test, the Alpaca tests, runtime loop tests, registry test, and `
 
 ---
 
-### Task 3: Primary verification and state update
+### Task 3: Primary verification and state update — DONE
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-09-01-alpaca-money-maximizer-design.md`
