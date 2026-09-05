@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 import reporter as REPORTER
 import alpaca_cli as CLI
+import effect_store as EFFECT_STORE
 SPEC = importlib.util.spec_from_file_location("alpaca_investment_run", ROOT / "run.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
@@ -85,6 +86,16 @@ class InvestmentModeTest(unittest.TestCase):
                 MODULE.main(wake_id="paper-paths")
         self.assertEqual(observed[0]["credentials_path"], credentials)
         self.assertEqual(reconcile.call_args.args[0], state / "receipts.jsonl")
+
+    def test_receipts_and_reconciled_rows_expose_top_level_mode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = Path(directory) / "receipts.jsonl"
+            EFFECT_STORE.record_no_trade(ledger, {"mode": "shadow", "candidate_ref": "NO_TRADE"})
+            sealed = EFFECT_STORE.seal(ledger, {"mode": "paper", "candidate_ref": "TRADE"}, {"asset_class": "crypto"})
+            EFFECT_STORE.mark_started(ledger, sealed)
+            EFFECT_STORE.reconcile_started(ledger, lambda _: {"found": True, "status": "filled"})
+            rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+        self.assertTrue(all(row.get("mode") in {"paper", "shadow"} for row in rows))
 
 
 class BrokerContextTest(unittest.TestCase):
@@ -175,6 +186,7 @@ class PortablePassTest(unittest.TestCase):
             summary = json.loads(output.getvalue())
             self.assertNotIn("public_snapshot_published", summary)
             self.assertEqual(summary["deployment"], "local")
+            self.assertEqual(summary["mode"], "paper")
             receipts = [
                 json.loads(line)
                 for line in (root / "state" / "receipts.jsonl").read_text(
@@ -199,9 +211,10 @@ class PortablePassTest(unittest.TestCase):
                 "NODE_BIN": str(executable), "ALPACA_MARKER": str(marker),
                 "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
                 "LIFE_MANAGER_INVESTMENT_MODE": "paper",
-            }), redirect_stdout(StringIO()):
+            }), redirect_stdout(StringIO()) as output:
                 self.assertEqual(MODULE.main(wake_id="wake-failure"), 78)
             self.assertFalse(marker.exists())
+            self.assertEqual(json.loads(output.getvalue())["mode"], "paper")
 
 
 class FailureTelegramTest(unittest.TestCase):

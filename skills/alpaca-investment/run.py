@@ -74,6 +74,7 @@ def _mode_paths(mode: str) -> tuple[Path, Path]:
 
 def main(*, attempt: int = 0, wake_id=None) -> int:
     wake_id = wake_id or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    mode = os.environ.get("LIFE_MANAGER_INVESTMENT_MODE")
     state = Path(os.environ.get("ALPACA_INVESTMENT_STATE_DIR",
                                "~/.local/state/life-manager/alpaca-investment")).expanduser()
     effect_attempted = False
@@ -110,8 +111,9 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             exit_decision = {
                 "candidate_ref": CANDIDATE_REF,
                 "deployment": deployment,
+                "mode": mode,
                 "gate": "campaign_exit_ready",
-                "paper": True,
+                "paper": mode == "paper",
                 "reason": "sealed_campaign_regular_session_positive_credit",
             }
             if mode != "paper":
@@ -155,6 +157,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             Path(__file__).resolve().parents[2],
         )
         decision["deployment"] = deployment
+        decision["mode"] = mode
         if effect != "none" and decision["approved"]:
             decision["approved"] = False
             decision["gate"] = "campaign_exit_used_effect_limit"
@@ -194,7 +197,8 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             "exit_status": campaign["exit_status"],
             "loop_id": "alpaca-investment",
             "orders_count": observation["open_and_closed_orders_count"],
-            "paper": True,
+            "mode": mode,
+            "paper": mode == "paper",
             "positions_count": len(observation["positions"]),
             "unrealized_pnl_usd": campaign["unrealized_pnl_usd"],
             "reconciliation": reconciliation,
@@ -218,6 +222,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
                     wake_id=wake_id,
                     observation=observation,
                     campaign=campaign,
+                    mode=mode if mode in {"paper", "shadow", "live"} else "unknown",
                 )
             except Exception:
                 pass
@@ -225,6 +230,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             "blocker": "alpaca_pass_failed",
             "effect": _terminal_effect(effect_attempted),
             "loop_id": "alpaca-investment",
+            "mode": mode if mode in {"paper", "shadow", "live"} else "unknown",
             "stage": stage,
             "status": "blocked",
             "telegram_status": telegram["status"],

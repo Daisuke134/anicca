@@ -23,6 +23,22 @@ OBSERVATION = {
 CAMPAIGN = {"realized_pnl_usd": "-3.00", "unrealized_pnl_usd": "0.00"}
 
 
+class ModeReportTest(unittest.TestCase):
+    def test_success_and_failure_reports_expose_mode(self):
+        message = reporter.render(
+            {"account": {"equity": "100000", "cash": "100000"}, "positions": []},
+            {"unrealized_pnl_usd": "0.00"},
+            {"candidate_ref": "NO_TRADE", "gate": "model_no_trade",
+             "observed_at": "2026-09-05T00:00:00Z", "mode": "shadow"}, "none")
+        self.assertIn("mode=shadow", message)
+        failure = reporter.render_failure(
+            stage="observe", effect_uncertain=False,
+            wake_id="2026-09-05T00:00:00Z", mode="live")
+        self.assertIn("mode=live", failure)
+        self.assertIn("live注文", failure)
+        self.assertNotIn("paper注文", failure)
+
+
 class FailureBalanceTest(unittest.TestCase):
     def test_failure_report_reads_last_snapshot_and_names_it_as_latest(self):
         with tempfile.TemporaryDirectory() as directory:

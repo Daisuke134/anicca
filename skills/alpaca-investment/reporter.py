@@ -61,6 +61,7 @@ def _telegram_client():
 
 def render(observation: dict[str, Any], campaign: dict[str, Any],
            decision: dict[str, Any], effect: str) -> str:
+    mode = decision.get("mode", "unknown")
     def money(value: Decimal) -> str:
         return f"-${abs(value):,.2f}" if value < 0 else f"${value:,.2f}"
 
@@ -69,9 +70,9 @@ def render(observation: dict[str, Any], campaign: dict[str, Any],
     change = equity - Decimal("100000")
     realized = campaign.get("realized_pnl_usd")
     realized_text = f"確定損益 {money(Decimal(realized))}、" if realized is not None else ""
-    effect_text = "注文なし" if effect == "none" else f"paper効果 {effect[:12]}"
+    effect_text = "注文なし" if effect == "none" else f"{mode}効果 {effect[:12]}"
     return (
-        "Codex::: Alpaca paper投資loopの1回分です。"
+        f"Codex::: Alpaca {mode}投資loopの1回分です（mode={mode}）。"
         f"判断は {decision['candidate_ref']}（{decision['gate']}）。"
         f"資産は {money(equity)}、現金は {money(cash)}、開始時$100,000から {money(change)}。"
         f"{realized_text}含み損益 {money(Decimal(campaign['unrealized_pnl_usd']))}、"
@@ -128,14 +129,14 @@ def deliver(state: Path, observation: dict[str, Any], campaign: dict[str, Any],
 
 
 def render_failure(*, stage: str, effect_uncertain: bool, wake_id: str,
-                   financial_text: str = "") -> str:
+                   financial_text: str = "", mode: str = "unknown") -> str:
     effect_text = (
-        "paper注文を送信した可能性があるため、自動再試行せず次回wakeでbroker照合します。"
+        f"{mode}注文を送信した可能性があるため、自動再試行せず次回wakeでbroker照合します。"
         if effect_uncertain else
-        "paper注文の送信前に停止したため、注文は実行していません。"
+        f"{mode}注文の送信前に停止したため、注文は実行していません。"
     )
     return (
-        "Codex::: Alpaca paper投資loopの1回分です。"
+        f"Codex::: Alpaca {mode}投資loopの1回分です（mode={mode}）。"
         f"処理段階 {stage} で安全に完了できなかったため、今回の判断結果を確定できませんでした。"
         f"{effect_text}{financial_text}原因の詳細は秘密情報を含む可能性があるため送信していません。"
         f"観測開始時刻 {wake_id}。"
@@ -187,7 +188,7 @@ def _latest_financial_text(state: Path, observation=None, campaign=None) -> str:
 
 def deliver_failure(state: Path, *, stage: str, effect_uncertain: bool,
                     wake_id: str, observation=None,
-                    campaign=None) -> dict[str, Any]:
+                    campaign=None, mode: str = "unknown") -> dict[str, Any]:
     return _deliver_message(
         state,
         f"alpaca-failure:{wake_id}",
@@ -195,6 +196,7 @@ def deliver_failure(state: Path, *, stage: str, effect_uncertain: bool,
             stage=stage,
             effect_uncertain=effect_uncertain,
             wake_id=wake_id,
+            mode=mode,
             financial_text=_latest_financial_text(state, observation, campaign),
         ),
         wake_id,

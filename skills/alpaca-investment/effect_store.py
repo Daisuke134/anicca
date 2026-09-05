@@ -11,6 +11,15 @@ from pathlib import Path
 from typing import Any, Callable
 
 
+MODES = frozenset({"paper", "shadow", "live"})
+
+
+def _mode(value: Any) -> str:
+    if value not in MODES:
+        raise ValueError("investment_mode_invalid")
+    return value
+
+
 def _digest(value: Any) -> str:
     encoded = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
@@ -45,39 +54,44 @@ def _append_once(path: Path, row: dict[str, Any], identity: tuple[str, ...]) -> 
 
 
 def seal(ledger: Path, decision: dict[str, Any], order: dict[str, Any]) -> dict[str, str]:
-    decision_id = _digest({"paper": True, "decision": decision})
+    mode = _mode(decision.get("mode"))
+    paper = mode == "paper"
+    decision_id = _digest({"mode": mode, "decision": decision})
     effect_id = _digest({"decision_id": decision_id, "order": order})
     client_order_id = f"lm-ai-{effect_id[:24]}"
     now = datetime.now(timezone.utc).isoformat()
     _append_once(ledger, {
-        "decision": decision, "decision_id": decision_id, "paper": True,
+        "decision": decision, "decision_id": decision_id, "mode": mode, "paper": paper,
         "receipt_type": "decision", "recorded_at": now, "schema_version": 1,
     }, ("receipt_type", "decision_id"))
     _append_once(ledger, {
         "client_order_id": client_order_id, "decision_id": decision_id,
-        "effect_id": effect_id, "order": order, "paper": True,
+        "effect_id": effect_id, "order": order, "mode": mode, "paper": paper,
         "receipt_type": "effect_intent", "recorded_at": now,
         "schema_version": 1, "status": "planned",
     }, ("receipt_type", "effect_id", "status"))
-    return {"client_order_id": client_order_id, "decision_id": decision_id, "effect_id": effect_id}
+    return {"client_order_id": client_order_id, "decision_id": decision_id,
+            "effect_id": effect_id, "mode": mode}
 
 
 def record_no_trade(ledger: Path, decision: dict[str, Any]) -> str:
-    decision_id = _digest({"paper": True, "decision": decision})
+    mode = _mode(decision.get("mode"))
+    decision_id = _digest({"mode": mode, "decision": decision})
     _append_once(ledger, {
         "decision": decision, "decision_id": decision_id, "outcome": "no_trade",
-        "paper": True, "receipt_type": "decision",
+        "mode": mode, "paper": mode == "paper", "receipt_type": "decision",
         "recorded_at": datetime.now(timezone.utc).isoformat(), "schema_version": 1,
     }, ("receipt_type", "decision_id"))
     return decision_id
 
 
 def mark_started(ledger: Path, sealed: dict[str, str]) -> None:
+    mode = _mode(sealed.get("mode"))
     if any(row.get("receipt_type") == "outcome" and row.get("effect_id") == sealed["effect_id"]
            for row in _rows(ledger)):
         raise ValueError("effect_already_completed")
     _append_once(ledger, {
-        **sealed, "paper": True, "receipt_type": "effect_intent",
+        **sealed, "mode": mode, "paper": mode == "paper", "receipt_type": "effect_intent",
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "schema_version": 1, "status": "started",
     }, ("receipt_type", "effect_id", "status"))
@@ -98,24 +112,30 @@ def reconcile_started(
                and effect_id not in outcomes]
     reconciled = 0
     for intent in pending:
+        mode = intent.get("mode")
+        if mode is None:
+            if intent.get("paper") is not True:
+                raise ValueError("investment_mode_invalid")
+            mode = "paper"
+        mode = _mode(mode)
         order = find_order(intent["client_order_id"])
         if order is None:
             _append_once(ledger, {
                 "client_order_id": intent["client_order_id"], "effect_id": intent["effect_id"],
-                "paper": True, "receipt_type": "effect_intent",
+                "mode": mode, "paper": mode == "paper", "receipt_type": "effect_intent",
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
                 "schema_version": 1, "status": "reconciliation_blocked",
             }, ("receipt_type", "effect_id", "status"))
             raise ValueError("reconciliation_blocked")
         _append_once(ledger, {
             "client_order_id": intent["client_order_id"], "effect_id": intent["effect_id"],
-            "paper": True, "receipt_type": "effect_intent",
+            "mode": mode, "paper": mode == "paper", "receipt_type": "effect_intent",
             "recorded_at": datetime.now(timezone.utc).isoformat(),
             "schema_version": 1, "status": "applied",
         }, ("receipt_type", "effect_id", "status"))
         _append_once(ledger, {
             "broker": order, "effect_id": intent["effect_id"], "outcome": "broker_reconciled",
-            "paper": True, "receipt_type": "outcome",
+            "mode": mode, "paper": mode == "paper", "receipt_type": "outcome",
             "recorded_at": datetime.now(timezone.utc).isoformat(), "schema_version": 1,
         }, ("receipt_type", "effect_id"))
         reconciled += 1

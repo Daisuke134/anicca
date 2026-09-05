@@ -148,6 +148,12 @@ class LmLoopApplyTest(unittest.TestCase):
             rendered["EnvironmentVariables"]["LIFE_MANAGER_INVESTMENT_DEPLOYMENT"],
             "local",
         )
+        environment = rendered["EnvironmentVariables"]
+        self.assertEqual(environment["LIFE_MANAGER_INVESTMENT_MODE"], "paper")
+        self.assertEqual(environment["ALPACA_INVESTMENT_PAPER_CREDENTIALS_FILE"],
+                         str(Path.home() / ".local/share/anicca/credentials.json"))
+        self.assertEqual(environment["ALPACA_INVESTMENT_PAPER_STATE_DIR"],
+                         str(Path.home() / ".local/state/life-manager/example"))
 
     def test_storefront_plist_uses_daily_driver_auth_vault(self):
         value = registry()

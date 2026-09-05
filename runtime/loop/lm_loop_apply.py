@@ -46,7 +46,14 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
         "StandardErrorPath": str(Path(log_root) / "launchd.err.log"),
     }
     if loop_id == "alpaca-investment":
-        value["EnvironmentVariables"]["LIFE_MANAGER_INVESTMENT_DEPLOYMENT"] = "local"
+        value["EnvironmentVariables"].update({
+            "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
+            "LIFE_MANAGER_INVESTMENT_MODE": "paper",
+            "ALPACA_INVESTMENT_PAPER_CREDENTIALS_FILE": str(
+                Path.home() / ".local/share/anicca/credentials.json"
+            ),
+            "ALPACA_INVESTMENT_PAPER_STATE_DIR": os.path.expanduser(entry["state_root"]),
+        })
     if loop_id in _PRIVATE_LOG_LOOP_IDS:
         value["Umask"] = 0o077
     if loop_id in {"hf-gig-apply-direct", "hf-gig-storefront-direct", "hf-gig-paid-direct"}:
