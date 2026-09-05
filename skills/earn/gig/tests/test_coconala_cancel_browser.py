@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import importlib.util
 import json
 import sys
@@ -134,11 +135,49 @@ def test_pending_readback_excludes_answered_history_and_requires_no_current_cont
 
 
 @pytest.mark.parametrize("phase", ["click_started", "verified"])
-def test_started_or_verified_intent_can_only_reconcile(phase):
+def test_started_or_verified_intent_deduplicates_or_retries_only_from_initial_state(phase):
     cancel = load()
+    value = contract(cancel)
+    intent = {"effect_key": "same", "phase": phase}
 
-    assert cancel.intent_is_reconcile_only({"effect_key": "same", "phase": phase}, "same") is True
-    assert cancel.intent_is_reconcile_only({"effect_key": "other", "phase": phase}, "same") is False
+    assert cancel.cancellation_initial_action(
+        intent, "same", live_state(cancel, existing=True), value,
+    ) == "dedupe"
+    assert cancel.cancellation_initial_action(
+        intent, "same", live_state(cancel), value,
+    ) == "retry"
+    assert cancel.cancellation_initial_action(
+        intent, "same", live_state(cancel, ids=("old", "m2")), value,
+    ) == "reconcile_unknown"
+    assert cancel.cancellation_initial_action(
+        {"effect_key": "other", "phase": phase}, "same", live_state(cancel), value,
+    ) == "send"
+
+
+def test_cancel_send_dom_click_is_scoped_and_rechecks_guards():
+    cancel = load()
+    expression = cancel.cancel_send_button_click_expression()
+
+    assert "modal.querySelectorAll('button')" in expression
+    assert "[...document.querySelectorAll('button')]" not in expression
+    assert "!x.disabled&&!x.classList.contains('is-disabled')" in expression
+    assert "if(!formal||formal.checked)return false" in expression
+    assert "e.click()" in expression
+
+
+def test_runtime_evaluate_can_mark_user_gesture(monkeypatch):
+    cancel = load()
+    calls = []
+
+    async def fake_call(_ws, _request_id, method, params):
+        calls.append((method, params))
+        return {"result": {"value": True}}
+
+    monkeypatch.setattr(cancel.collector, "call", fake_call)
+
+    assert asyncio.run(cancel.Session(object()).evaluate("1", user_gesture=True)) is True
+    assert calls[0][0] == "Runtime.evaluate"
+    assert calls[0][1]["userGesture"] is True
 
 
 def test_contract_rejects_non_cancellation_feedback():
