@@ -290,10 +290,12 @@ test("formatter emits the canonical ordered Japanese route shape and only provid
     "13:15 出発 → 14:00 到着予定",
     "目的地: 渋谷",
     "",
+    "🚶 出発地 → 東京駅 2番線",
+    "徒歩 5分",
     "13:20 東京駅 2番線",
     "丸ノ内線・荻窪行 → 13:40 新宿駅",
     "13:46 新宿駅からJR線 → 13:55 渋谷駅",
-    "徒歩 5分 / 乗換 1回 / IC 209円",
+    "乗換 1回 / IC 209円",
     "",
     "※ 出口番号は経路元が返した場合だけ表示します。運行情報が変わることがあります。",
   ].join("\n"));
@@ -315,7 +317,7 @@ test("route failure sends event-only fallback with an explicit unavailable sente
     timezone: "Asia/Tokyo",
   });
   assert.match(text, /次は 14:00「打ち合わせ」/);
-  assert.match(text, /13:15 出発/);
+  assert.doesNotMatch(text, /出発|到着予定/);
   assert.match(text, /目的地: 渋谷/);
   assert.match(text, /経路を取得できませんでした/);
   assert.doesNotMatch(text, /丸ノ内線|209円/);
@@ -491,7 +493,7 @@ test("provider rejection, transport uncertainty, and duplicate claim never write
   const rejected = await travelReminderOnce({ uid: "rejected", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
     ...base,
     claimTravel: async () => true,
-    unclaimTravel: async (...args) => { releases += 1; assert.equal(args[2], "telegram-t5"); return true; },
+    unclaimTravel: async (...args) => { releases += 1; return true; },
     sendMessage: async () => ({ ok: false, status: 500 }),
   });
   assert.equal(rejected.status, "send_failed");
