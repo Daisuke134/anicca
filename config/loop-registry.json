@@ -2512,22 +2512,6 @@
       "provider_route": "shared-agent-runner",
       "state_root": "~/.local/state/life-manager/stripe-revenue-poller"
     },
-    "telegram-bot": {
-      "cadence": {
-        "keep_alive": true
-      },
-      "cleanup": {
-        "max_age_days": 14,
-        "max_runs": 100
-      },
-      "domain": "system",
-      "effect_class": "message",
-      "entrypoint": "skills/anicca-life-manager/scripts/telegram_bot.py",
-      "label": "ai.anicca.telegram-bot",
-      "log_root": "~/.local/state/life-manager/telegram-bot/logs",
-      "provider_route": "shared-agent-runner",
-      "state_root": "~/.local/state/life-manager/telegram-bot"
-    },
     "the402-provider": {
       "cadence": {
         "keep_alive": true
