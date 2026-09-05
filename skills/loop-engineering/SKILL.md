@@ -1,6 +1,6 @@
 ---
 name: loop-engineering
-description: The single entry point for building, fixing, releasing or operating a Life Manager loop. Routes to the lifecycle rules, the marketplace recipes, the shared runtime and the gig assets instead of holding them. Read this before writing loop code, adding a lane, or onboarding a new marketplace.
+description: Use when building, fixing, releasing or operating a Life Manager loop, adding a marketplace lane, or deciding whether existing loop components must be reused.
 ---
 
 # Loop Engineering
@@ -26,6 +26,7 @@ retry engine, ledger, browser launcher or model client.
 |---|---|
 | Change a loop, its cadence, release or plist | `skills/loop-development/SKILL.md` |
 | Build or fix an Apply lane on any marketplace | `references/marketplace-apply-lane.md` |
+| Build or fix a Paid/Fulfillment lane on any marketplace | `references/marketplace-paid-lane.md` |
 | Reuse the shared marketplace runtime | `skills/_shared/marketplace-core/scripts/` |
 | Sell the same catalogue on a new platform | `skills/gig-work/profile/listings/catalog.json` |
 | Lane ownership and parallelism rules | spec §6.2A, `docs/superpowers/specs/2026-08-22-life-manager-gig-economy-loop-design.md` |
