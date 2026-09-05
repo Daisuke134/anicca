@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from agent_runner import remove_incompatible_codex_model_cache, run_provider_process
+from agent_runner import ProviderLeaseBusy, remove_incompatible_codex_model_cache, run_provider_process
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,7 +96,7 @@ class ProviderLeaseTest(unittest.TestCase):
             time.sleep(0.02)
         self.assertFalse(self._lease_is_busy(lock_path), "lease remained busy after provider exit")
 
-    def test_shared_codex_home_serializes_provider_processes(self):
+    def test_shared_codex_home_rejects_overlapping_provider_process(self):
         events = self.root / "events.jsonl"
         provider = self.root / "provider.py"
         provider.write_text(
@@ -113,21 +113,25 @@ class ProviderLeaseTest(unittest.TestCase):
         env = {**os.environ, "CODEX_HOME": str(codex_home)}
 
         def run():
-            return run_provider_process(
-                [sys.executable, str(provider), str(events)],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                timeout=5, cwd=str(self.root), input_bytes=None,
-                stdin=subprocess.DEVNULL, env=env,
-            )
+            try:
+                return run_provider_process(
+                    [sys.executable, str(provider), str(events)],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    timeout=5, cwd=str(self.root), input_bytes=None,
+                    stdin=subprocess.DEVNULL, env=env,
+                )
+            except ProviderLeaseBusy:
+                return "busy"
 
         with ThreadPoolExecutor(max_workers=2) as executor:
-            self.assertEqual([future.result() for future in (executor.submit(run), executor.submit(run))], [0, 0])
+            results = [future.result() for future in (executor.submit(run), executor.submit(run))]
 
         rows = [json.loads(line) for line in events.read_text(encoding="utf-8").splitlines()]
-        self.assertEqual([row[0] for row in rows], ["start", "end", "start", "end"])
-        self.assertNotEqual(rows[0][1], rows[2][1])
+        self.assertEqual(results.count(0), 1)
+        self.assertEqual(results.count("busy"), 1)
+        self.assertEqual([row[0] for row in rows], ["start", "end"])
 
-    def test_shared_codex_home_timeout_does_not_launch_provider(self):
+    def test_shared_codex_home_busy_returns_immediately_without_launching_provider(self):
         lock_path = self.root / "codex-home" / ".agent-runner-provider.lock"
         lock_path.parent.mkdir()
         holder = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
@@ -146,7 +150,7 @@ class ProviderLeaseTest(unittest.TestCase):
             "import os, subprocess, sys\n"
             "from pathlib import Path\n"
             f"sys.path.insert(0, {str(ROOT)!r})\n"
-            "from agent_runner import run_provider_process\n"
+            "from agent_runner import ProviderLeaseBusy, run_provider_process\n"
             "try:\n"
             "    run_provider_process(\n"
             f"        [sys.executable, {str(provider)!r}],\n"
@@ -154,8 +158,8 @@ class ProviderLeaseTest(unittest.TestCase):
             f"        cwd={str(self.root)!r}, input_bytes=None, stdin=subprocess.DEVNULL,\n"
             f"        env={{**os.environ, 'CODEX_HOME': {str(lock_path.parent)!r}}},\n"
             "    )\n"
-            "except subprocess.TimeoutExpired:\n"
-            f"    Path({str(outcome)!r}).write_text('TimeoutExpired')\n"
+            "except ProviderLeaseBusy:\n"
+            f"    Path({str(outcome)!r}).write_text('ProviderLeaseBusy')\n"
             "else:\n"
             f"    Path({str(outcome)!r}).write_text('completed')\n",
             encoding="utf-8",
@@ -168,7 +172,7 @@ class ProviderLeaseTest(unittest.TestCase):
         except subprocess.TimeoutExpired:
             self.fail("provider lock wait exceeded the run_provider_process timeout")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(outcome.read_text(encoding="utf-8"), "TimeoutExpired")
+        self.assertEqual(outcome.read_text(encoding="utf-8"), "ProviderLeaseBusy")
         self.assertFalse(marker.exists(), "timed-out lock wait launched a provider")
 
     def test_expired_deadline_after_preflight_does_not_launch_provider(self):
