@@ -93,6 +93,44 @@ storefront / paid / Lancers 応募の 3 lane がこの 1 点で止まってい�
 
 ### 🔄 進行中
 
+#### Storefront（ココナラ）— 完了条件は spec 6.2A の 8 番「全出品変更を公式帰属付きで実行し再実行ゼロ」
+
+済:
+- モデル到達（USER 環境変数）/ 休止14件を公開へ復帰 / 死んだブラウザ貸出の回収（PR #4109）
+- 遅い browser 呼び出しで wake 全体を落とさない（PR #4111）
+- 出品の種類をカタログに縛る（PR #4107）— 全スキルが出品候補に露出していた
+- 競合参照を 6 → 14 件に拡張
+
+残り、この順:
+1. **専用ブラウザ文脈と貸出識別子**（spec 6.2A PAR-1）。今は1台共有で兄弟 lane 由来の詰まりが出る。仕様違反状態
+2. **自主的な24時間制限を外す** — `storefront_direct.py:1488` `CREATE_MIN_INTERVAL_SECONDS=86400` は我々が決めた数字。ココナラの上限は20件、今15件で5枠空き
+3. **看板をシステム開発へ** — 公開プロフィールが「Kosuke｜教育研修PPT×AI活用」。開発案件が来ない
+4. **開発でない ¥55,000（4384702「顧客インタビューを意思決定メモに整理します」）を下ろす**
+5. **カタログから開発系を公開**し、公開ページで題名・本文・価格を確認
+6. **全出品変更が公式読み戻しで確認でき、次wakeで重複ゼロ**を実証
+
+現在の棚（15件、¥15,000以上は3件）:
+`¥55,000 4384702 顧客インタビュー整理(非開発)` / `¥20,000 4330368 OpenCV画像認識実装` / `¥15,000 4371816 定型業務のAI自動化` / 残り12件は ¥3,000〜7,000
+
+#### 共有部品（gig 3 platform）
+7. `capafy/catalog/` を出品候補から外す（誤出品の根本）
+8. 看板を `skills/gig-work/profile/positioning.md` に切り出し3platformで共有
+9. ランサーズの `products/` 独自定義を捨てカタログを読む
+10. クラウドワークスもカタログを読む
+11. カタログ1箇所の変更が3platformに反映されることを実測
+
+#### レシピ集約（spec 6.2B）
+12. `loop-development` を `loop-engineering` へ統合し `references/` を作る（deploy / browser / providers / degradation / money-loop-shape / evidence）
+13. `earn/gig` の216ファイルから recipe と adapter を分離
+14. そのレシピで新platformを1本作り再利用を実証
+
+#### 運用上の制約（無視すると再発）
+- release を切っても label は指し直されない
+- ブラウザは1台共有。spec は lane毎に独立した文脈を要求しているが未実装
+- 機械の負荷。agent 3セッション同時で load 60超、browser 呼び出しが時間切れになる
+
+
+
 0. **★律速★ ルーターが Claude 候補へ到達しない** — 14 task class に fallback を入れて出荷済（PR #4090）だが、本番の試行記録は毎回 codex 1 行で終わり Claude の行が書かれない。`agent_runner.py` の候補ループ（1826-1935）と `codex_failover_action`（1449）で、codex 枠切れ後にチェーンが打ち切られている。
    DONE: `reply-semantic-agent` と `application-intent-planner` の attempts に claude の 2 行目が rc=0 で出る。
    **これが開くまで返信・応募・出品はいずれも動かない。他項目を先に開けない。**
