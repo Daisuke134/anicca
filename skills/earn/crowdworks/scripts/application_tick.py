@@ -88,7 +88,10 @@ def _read_proposal_detail(page: object, proposal_id: str, project_id: str, *, in
     if due.group("weekday") != "月火水木金土日"[parsed_due.weekday()] or re.sub(r"\s+", " ", _one_text(page, _PROGRESS_SELECTOR)).strip() != "応募・スカウト": raise ValueError("state_unobserved")
     observed: dict[str, object] = {"proposal_id": proposal_id, "project_id": project_id, "amount_minor": _exclusive(int(amount.group("amount").replace(",", ""))), "delivery_due_on": parsed_due.isoformat()}
     if include_body:
-        body = re.sub(r"\s+", " ", _one_text(page, _BODY_SELECTOR)).strip()
+        # Collapsing whitespace here turned the submitted line breaks into spaces, so the content
+        # fingerprint could never match what was sent and every application verified as uncertain
+        # forever. CrowdWorks returns the body verbatim; keep it that way.
+        body = _one_text(page, _BODY_SELECTOR).replace("\r\n", "\n").strip()
         if not body: raise ValueError("body_unobserved")
         observed["_proposal_text"] = body
     return observed
