@@ -493,7 +493,7 @@ test("provider rejection, transport uncertainty, and duplicate claim never write
   const rejected = await travelReminderOnce({ uid: "rejected", telegram_chat_id: "chat", notifications_enabled: true }, NOW, {
     ...base,
     claimTravel: async () => true,
-    unclaimTravel: async (...args) => { releases += 1; return true; },
+    unclaimTravel: async (...args) => { releases += 1; assert.equal(args[2], "telegram-t5"); return true; },
     sendMessage: async () => ({ ok: false, status: 500 }),
   });
   assert.equal(rejected.status, "send_failed");
