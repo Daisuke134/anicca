@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -65,6 +66,16 @@ def test_known_account_status_never_reopens_signup(tmp_path):
 
     assert "審査中" in reply["text"]
     assert "reply_markup" not in reply
+
+
+def test_cli_prints_clickable_signup_url_for_new_user(tmp_path):
+    result = subprocess.run(
+        [sys.executable, str(SCRIPTS / "investment_status.py"), "--state-root", str(tmp_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert "Alpacaで口座開設する: https://app.alpaca.markets/signup" in result.stdout
 
 
 def test_running_bot_registers_invest_command():

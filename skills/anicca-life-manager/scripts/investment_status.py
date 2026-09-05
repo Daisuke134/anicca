@@ -1,6 +1,8 @@
 """Build the local /invest reply from the investment loop's existing receipts."""
+
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -66,3 +68,25 @@ def build_investment_reply(state_root: Path) -> dict:
 def build_investment_status(state_root: Path) -> str:
     """Compatibility helper for callers that only need message text."""
     return build_investment_reply(state_root)["text"]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--state-root",
+        type=Path,
+        default=Path.home() / ".local" / "state" / "life-manager",
+    )
+    args = parser.parse_args()
+    reply = build_investment_reply(args.state_root)
+    print(reply["text"])
+    keyboard = reply.get("reply_markup", {}).get("inline_keyboard", [])
+    for row in keyboard:
+        for button in row:
+            if button.get("url"):
+                print(f"\n{button['text']}: {button['url']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

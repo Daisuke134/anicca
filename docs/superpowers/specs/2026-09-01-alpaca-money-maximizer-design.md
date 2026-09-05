@@ -770,7 +770,7 @@ The initial action surface behind `/invest` is deliberately small:
 | `Kill` | Blocks new entries, cancels open orders, then performs official reconciliation | Authenticated emergency action |
 
 While L04 is in review, the first local UX slice is available without changing TODO order: the already-running
-local Telegram bot owns `/invest`, reads the existing paper observation/allocation receipts, and reads a private
+the existing OpenClaw Telegram gateway owns `/invest`, reads the existing paper observation/allocation receipts, and reads a private
 local application-status receipt. It reports `in_review`, the paper balance, and the latest natural-language
 decision reason. Missing or unknown state fails closed and never implies live readiness. This slice is read-only;
 it does not complete L05 or L07 and cannot submit an order, move money, or expose credentials in Telegram.
