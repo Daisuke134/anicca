@@ -70,10 +70,6 @@ except Exception:  # noqa: BLE001 - instrumentation may never break its host
             return None
 
 
-# See coconala_formal_delivery_browser.DELIVERY_MATCH_PREFIX -- same key, same reason.
-DELIVERY_MATCH_PREFIX = 40
-
-
 class ProgressContract(NamedTuple):
     talkroom_id: str
     talkroom_url: str
@@ -386,7 +382,7 @@ def matching_seller_message(
     as matching_seller_text already did for the answer lane: attachment name AND our own
     opening. Same strength, no dependency on text the buyer should never have seen.
     """
-    expected = normalize_for_match(message)[:DELIVERY_MATCH_PREFIX]
+    expected = normalize_for_match(message)
     if not expected:
         return None
     messages = state.get("seller_messages")
@@ -399,7 +395,7 @@ def matching_seller_message(
         if (
             isinstance(attachments, list)
             and artifact_basename in attachments
-            and normalize_for_match(row.get("text")).startswith(expected)
+            and normalize_for_match(row.get("text")) == expected
         ):
             return row
     return None
@@ -408,19 +404,19 @@ def matching_seller_message(
 def _normalized_text(value: Any) -> str:
     # DOM innerText injects arbitrary whitespace/newlines; whitespace carries
     # no meaning for matching Japanese text, so drop it entirely.
-    return re.sub(r"\s+", "", str(value or ""))
+    return normalize_for_match(value)
 
 
 def matching_seller_text(state: dict[str, Any], message: str) -> dict[str, Any] | None:
     """Find our answer among seller messages by whitespace-normalized text."""
-    needle = _normalized_text(message)[:120]
+    needle = _normalized_text(message)
     if not needle:
         return None
     messages = state.get("seller_messages")
     if not isinstance(messages, list):
         return None
     for row in reversed(messages):
-        if isinstance(row, dict) and needle in _normalized_text(row.get("text")):
+        if isinstance(row, dict) and needle == _normalized_text(row.get("text")):
             return row
     return None
 
@@ -568,7 +564,11 @@ def persist_answer_evidence(
 
 def browser_state_expression(artifact_basename: str) -> str:
     encoded = json.dumps(artifact_basename, ensure_ascii=False)
-    return f'''(()=>{{
+    return f'''(async()=>{{
+      const expanders=[...document.querySelectorAll('.d-talkroomMessage button,.d-talkroomMessage a')]
+        .filter(x=>(x.innerText||'').trim()==='続きを読む');
+      expanders.forEach(x=>x.click());
+      if(expanders.length) await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
       const form=document.querySelector('.d-messageForm');
       const textarea=document.querySelector('textarea[placeholder="メッセージを入力"]');
       const formal=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type="checkbox"]');
