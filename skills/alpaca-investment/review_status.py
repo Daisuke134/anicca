@@ -19,7 +19,7 @@ BROWSER = REPO / "skills/browser"
 DASHBOARD = "https://app.alpaca.markets/dashboard/overview"
 
 
-def classify_dashboard(text: str) -> str | None:
+def classify_dashboard(text: str, selected_account: str = "") -> str | None:
     normalized = " ".join(text.lower().split())
     if "application submitted: in review" in normalized:
         return "in_review"
@@ -27,13 +27,14 @@ def classify_dashboard(text: str) -> str | None:
         return "action_required"
     if "application rejected" in normalized:
         return "rejected"
-    if re.search(r"\blive\s*-\s*[a-z0-9]{6,}\b", normalized):
+    if re.search(r"(?:^|\n)\s*(?:life manager\s*\n)?live\s*-\s*[a-z0-9]{6,}\s*$",
+                 selected_account.lower()):
         return "active"
     return None
 
 
-def dashboard_ready(url: str, text: str) -> bool:
-    return "/login" in url or "Paper -" in text or classify_dashboard(text) is not None
+def dashboard_ready(url: str, text: str, selected_account: str = "") -> bool:
+    return "/login" in url or bool(selected_account) or classify_dashboard(text) is not None
 
 
 def due(receipt: dict, *, now: datetime | None = None, interval_seconds: int = 1800) -> bool:
@@ -51,6 +52,10 @@ def _read(path: Path) -> dict:
         return value if isinstance(value, dict) else {}
     except (OSError, json.JSONDecodeError):
         return {}
+
+
+def read_receipt(state: Path) -> dict:
+    return _read(state / "account-status.json")
 
 
 def _write(path: Path, value: dict) -> None:
@@ -80,7 +85,7 @@ def _command(args: list[str], *, stdin: str | None = None, env=None) -> str:
 
 def refresh(state: Path, *, force: bool = False) -> dict:
     receipt_path = state / "account-status.json"
-    previous = _read(receipt_path)
+    previous = read_receipt(state)
     if not force and not due(previous):
         return {**previous, "checked": False}
     owner = f"alpaca-review-{os.getpid()}"
@@ -95,21 +100,28 @@ def refresh(state: Path, *, force: bool = False) -> dict:
         cdp = [sys.executable, str(BROWSER / "scripts/cdp.py")]
         _command([*cdp, "nav", target, DASHBOARD], env=env)
         snapshot = None
-        expression = '({url:location.href,text:(document.body?.innerText||"")})'
+        expression = '''(()=>{const buttons=[...document.querySelectorAll("button")];const selected=buttons.find(x=>/^(?:Life Manager\\n)?(?:Paper|Live)\\s*-/.test(x.innerText.trim()));return {url:location.href,text:(document.body?.innerText||""),selected:(selected?.innerText||"")}})()'''
         for _ in range(20):
             snapshot = json.loads(_command([*cdp, "eval", target, "-"], stdin=expression, env=env))
-            if dashboard_ready(snapshot.get("url", ""), snapshot.get("text", "")):
+            if dashboard_ready(snapshot.get("url", ""), snapshot.get("text", ""), snapshot.get("selected", "")):
                 break
             time.sleep(0.5)
         if not snapshot or "/login" in snapshot.get("url", ""):
             raise RuntimeError("review_session_logged_out")
         text = snapshot.get("text", "")
-        if "Paper -" in text:
-            click_selector = '[...document.querySelectorAll("button")].find(x=>x.innerText.includes("Paper -"))?.click(); true'
-            _command([*cdp, "eval", target, "-"], stdin=click_selector, env=env)
-            time.sleep(0.5)
-            text = json.loads(_command([*cdp, "eval", target, "-"], stdin='document.body?.innerText||""', env=env))
-        status = classify_dashboard(text)
+        selected = snapshot.get("selected", "")
+        status = classify_dashboard(text, selected)
+        if status is None and "Paper -" in selected:
+            _command([*cdp, "eval", target, "-"], stdin='[...document.querySelectorAll("button")].find(x=>x.innerText.includes("Paper -"))?.click(); true', env=env)
+            switched = json.loads(_command([*cdp, "eval", target, "-"], stdin='Boolean([...document.querySelectorAll("button")].find(x=>x.offsetParent!==null&&/^Live\\s*-/.test(x.innerText.trim()))?.click())', env=env))
+            if switched:
+                for _ in range(20):
+                    time.sleep(0.5)
+                    snapshot = json.loads(_command([*cdp, "eval", target, "-"], stdin=expression, env=env))
+                    selected = snapshot.get("selected", "")
+                    status = classify_dashboard(snapshot.get("text", ""), selected)
+                    if status == "active":
+                        break
         if status is None:
             raise RuntimeError("review_status_unrecognized")
         observed_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
