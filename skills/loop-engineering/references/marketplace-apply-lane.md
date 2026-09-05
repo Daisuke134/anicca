@@ -20,6 +20,22 @@ marketplace adapter — each one costs a day to rediscover.
 An adapter that adds its own ledger, its own outbox or its own wording is the
 defect this file exists to prevent.
 
+## Where the three lanes stand (2026-09-06)
+
+| Piece | Coconala | Lancers | CrowdWorks |
+|---|---|---|---|
+| transaction, ledger | own | shared | shared |
+| outbox | own diverged copy | shared | shared |
+| delivery loop + sender | own | own | shared |
+| wake summary | own | shared | shared |
+| per-decision message | hand-written | — | shared renderer |
+
+Coconala owns `report_envelope.py` and does not call it: its own
+`[ココナラ][応募判断]` is hand-written in `application_direct.py`. So the one
+sentence exists three times. Wiring Coconala to its own renderer is the next
+extraction, and it belongs to whoever owns that lane — not to a second session
+editing the same files.
+
 `report_envelope.py` still sits in the Coconala adapter rather than in
 `_shared/marketplace-core/`. Four Coconala scripts import it and that lane is
 being worked on concurrently, so moving it is the extraction step to take when
