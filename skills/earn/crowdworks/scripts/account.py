@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import errno, fcntl
-import json, os, re, shlex, subprocess, sys, tempfile, time, uuid
+import json, os, re, shlex, signal, subprocess, sys, tempfile, time, uuid
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Sequence, TextIO
 from urllib.parse import parse_qsl, urlsplit
@@ -329,19 +329,41 @@ def _owned_listener(pid:int,deadline:float)->bool:
         if command:return _command_owns_profile(command)
         time.sleep(.1)
     return False
+def _cdp_alive()->bool:
+    try:
+        from urllib.request import urlopen
+        with urlopen(f"{CDP_URL}/json/version",timeout=5) as response:return response.status==200
+    except Exception:return False
+def _unlock()->None:
+    for name in ("SingletonLock","SingletonCookie","SingletonSocket"):
+        try:(Path(PROFILE_DIR)/name).unlink()
+        except OSError:pass
+def _reap(pid:int)->None:
+    try:os.kill(pid,signal.SIGKILL)
+    except (OSError,ProcessLookupError,PermissionError):pass
+    deadline=time.monotonic()+10
+    while time.monotonic()<deadline and _listener() is not None:time.sleep(.1)
+    _unlock()
 def _owner()->bool:
     pid=_listener()
-    if pid is not None:return _owned_listener(pid,time.monotonic()+10)
+    # A LISTEN socket does not prove CDP works: a wedged Chromium keeps the port bound while its
+    # DevTools endpoint is dead, and a crashed one leaves a SingletonLock that makes every relaunch
+    # exit instantly. Both states looked "owned" here, so the loop stayed silently dark from 2026-08-11.
+    if pid is not None:
+        if not _owned_listener(pid,time.monotonic()+10):return False
+        if _cdp_alive():return True
+        _reap(pid)
+    else:_unlock()
     binary=Path(BROWSER_BINARY)
     if not binary.is_file():
         try:binary=sorted(BROWSER_ROOT.glob("chromium-*/Chromium.app/Contents/MacOS/Chromium"),reverse=True)[0]
         except (OSError,IndexError):raise _Error("browser_binary_unavailable") from None
     try:subprocess.Popen([str(binary),f"--remote-debugging-port={CDP_PORT}",f"--user-data-dir={PROFILE_DIR}","--disable-features=WebAuthentication,WebAuthn","--no-first-run"],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
     except Exception:raise _Error("browser_launch_failed") from None
-    deadline=time.monotonic()+10
+    deadline=time.monotonic()+30
     while time.monotonic()<deadline:
         pid=_listener()
-        if pid is not None:return _owned_listener(pid,deadline)
+        if pid is not None and _owned_listener(pid,deadline) and _cdp_alive():return True
         time.sleep(.1)
     return False
 def _browser(url:str)->Any:
