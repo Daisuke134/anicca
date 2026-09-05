@@ -97,6 +97,9 @@ def _is_project_id(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
+_OPTIONAL_PENDING_FIELDS = {"title"}
+
+
 def _read_state(path: Path) -> Tuple[Set[str], Dict[str, Dict[str, object]]]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -125,10 +128,16 @@ def _read_state(path: Path) -> Tuple[Set[str], Dict[str, Dict[str, object]]]:
     for marker, raw_entry in raw_pending.items():
         if not _is_sha256(marker) or marker not in fingerprints:
             raise _StateInvalid()
-        if not isinstance(raw_entry, Mapping) or set(raw_entry) not in (
+        # The title is optional and carried only so a later reconcile can name the job, so compare
+        # the required fields rather than the exact set: an exact-set check rejected the whole state
+        # file the moment a claim carried one, and every reconcile returned state_invalid.
+        if not isinstance(raw_entry, Mapping) or set(raw_entry) - _OPTIONAL_PENDING_FIELDS not in (
             _LEGACY_PENDING_FIELDS,
             _PENDING_FIELDS,
         ):
+            raise _StateInvalid()
+        entry_title = raw_entry.get("title")
+        if entry_title is not None and (not isinstance(entry_title, str) or not entry_title.strip()):
             raise _StateInvalid()
         proposal_id = raw_entry["proposal_id"]
         if proposal_id is not None and (
@@ -154,6 +163,9 @@ def _read_state(path: Path) -> Tuple[Set[str], Dict[str, Dict[str, object]]]:
             "amount_minor": amount_minor,
             "delivery_due_on": delivery_due_on,
         }
+        # Rebuilding the entry field by field is the third place the title was dropped, after the
+        # writer's field list and the reader's exact-set check.
+        if isinstance(entry_title, str) and entry_title.strip(): entry["title"] = entry_title.strip()
         if set(raw_entry) == _PENDING_FIELDS:
             entry["project_id"] = project_id
         pending[marker] = entry

@@ -36,7 +36,13 @@ def _listings():
         if terms and tiers: out.append({**item, "terms": terms, "tiers": tiers})
     return out
 
-BUILD_CATEGORIES = ("システム開発", "ソフトウェア", "アプリ", "ホームページ", "Web制作", "プログラミング", "スクレイピング", "データベース", "運用・保守")
+# Measured against the categories CrowdWorks actually prints, not guessed: the first list rejected
+# 「AI・チャットボット開発」「ChatGPT開発」「Webサイト更新・保守」, all of which the catalogue sells.
+BUILD_CATEGORIES = (
+    "システム開発", "ソフトウェア", "アプリ", "ホームページ", "Web制作", "Webサイト",
+    "プログラミング", "スクレイピング", "データベース", "運用・保守", "保守",
+    "チャットボット", "ChatGPT", "自動化", "開発",
+)
 
 _CATEGORY = re.compile(r"([^ ]{2,40})の仕事の依頼")
 
@@ -84,7 +90,9 @@ def _applied():
 DECLINED_PER_WAKE = 3
 
 def _decline(declined, job_id, title, reason):
-    if len(declined) < DECLINED_PER_WAKE:
+    # The same posting is returned by more than one catalogue search, and reporting it twice in one
+    # wake reads as two separate decisions.
+    if len(declined) < DECLINED_PER_WAKE and not any(item["external_id"] == job_id for item in declined):
         declined.append({"external_id": job_id, "title": re.sub(r"\s+", " ", title).strip()[:200], "reason": reason})
 
 def _candidate(page, listings, rotation):
