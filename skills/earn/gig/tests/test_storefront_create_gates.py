@@ -344,6 +344,9 @@ def test_a_prepared_readback_contract_is_reused_instead_of_regenerated(tmp_path)
         "draft_service_id": "4371816",
         "capability_evidence": {"family": "ai-automation-builder"},
         "demand_evidence_path": "/evidence/ai.json",
+        # A real recovered contract always carries the target category's own discovered facet
+        # groups (see storefront_facet_proposal); this is what a post-facets-fix seal looks like.
+        "category_specific": {"facets": {}},
     }
     digest = hashlib.sha256(json.dumps(
         unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
@@ -385,6 +388,9 @@ def test_a_recovered_contract_heals_a_subscription_pair_that_does_not_match_its_
         "capability_evidence": {"family": "mobile_app_dev", "recurring_support_included": False},
         "demand_evidence_path": "/evidence/mobile.json",
         "subscription": {"enabled": True, "discount_ratio": "5"},
+        # A real recovered contract always carries the target category's own discovered facet
+        # groups (see storefront_facet_proposal); this is what a post-facets-fix seal looks like.
+        "category_specific": {"facets": {}},
     }
     digest = hashlib.sha256(json.dumps(
         poisoned_unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),

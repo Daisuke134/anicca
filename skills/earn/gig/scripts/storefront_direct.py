@@ -41,6 +41,7 @@ DEFAULT_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_proposal.schema.json
 DEFAULT_CREATE_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_create_proposal.schema.json"
 DEFAULT_DEMAND_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_demand_proposal.schema.json"
 DEFAULT_CATEGORY_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_category_proposal.schema.json"
+DEFAULT_FACET_PROPOSAL_SCHEMA = GIG_DIR / "schemas" / "storefront_facet_proposal.schema.json"
 DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child.schema.json"
 DEFAULT_BOOTSTRAP_SELECTION_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_selection.schema.json"
 DEFAULT_BOOTSTRAP_LISTING_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_listing.schema.json"
@@ -1876,6 +1877,83 @@ def _validate_category_choice(chosen_value: str, options: list, level: str = "ca
     return {"value": str(match["value"]), "label": str(match.get("label") or "").strip()}
 
 
+def _invoke_facet_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
+    listing: dict, facet_groups: dict[str, dict], timeout_seconds: int,
+) -> tuple[dict, dict]:
+    """Choose values for every facet group the bound category's live form actually renders.
+
+    Facet groups and their option ids are category-specific and unknown until the draft renders
+    them: a writing category's ids never appear on a development category's form, which renders
+    an entirely different set. Only the groups read off THIS draft are ever offered.
+    """
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    context = {
+        "listing": listing,
+        "facet_groups": [
+            {"group_id": group_id, "group_label": group["group_label"],
+             "required": group["required"], "max_select": group.get("max_select"),
+             "options": group["options"]}
+            for group_id, group in sorted(facet_groups.items())
+        ],
+    }
+    prompt = """Choose the official facet values this Coconala category's live form renders for the
+listing in CONTEXT_JSON, and return only the strict schema object. Every required facet group must
+receive at least one value; when a group's max_select is set, never return more values than that for
+it. Copy every value exactly from that group's own official options; never invent a value or move one
+between groups. Ground each pick in the listing's own title/catchphrase/head/body/category, not in the
+group's id or a guess. A non-required group may be left with an empty list when nothing in the listing
+supports a choice.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-facet-proposal", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"storefront_facet_proposal_failed:{completed.returncode}")
+    summary = json.loads((evidence_dir / "summary.json").read_text(encoding="utf-8"))
+    result_path = Path(str(summary["result_path"])).resolve()
+    result_path.relative_to(evidence_dir.resolve())
+    if summary.get("status") != "success" or summary.get("selected_model") != "gpt-5.6-terra":
+        raise RuntimeError("storefront_facet_proposal_evidence_invalid")
+    return json.loads(result_path.read_text(encoding="utf-8")), {
+        "provider": summary.get("selected_provider"), "model": summary.get("selected_model")}
+
+
+def _validate_facet_selection(chosen: dict, facet_groups: dict[str, dict]) -> dict[str, list[str]]:
+    """Bind facet picks to the official values the live form actually offered, group by group.
+
+    A group the form never rendered has nothing to verify. A required group left empty, a value
+    outside that exact group's own options, or a count over its own max_select means the pick did
+    not come from the live form, and Coconala's own required-field check would reject it anyway.
+    """
+    picks = chosen.get("facets")
+    if not isinstance(picks, dict):
+        raise RuntimeError("storefront_facet_selection_invalid")
+    resolved: dict[str, list[str]] = {}
+    for group_id, group in facet_groups.items():
+        official = {str(option["value"]) for option in group["options"]}
+        values = picks.get(group_id)
+        if values is None:
+            values = []
+        if not isinstance(values, list) or not all(isinstance(value, str) for value in values):
+            raise RuntimeError(f"storefront_facet_selection_type_invalid:{group_id}")
+        chosen_values = list(dict.fromkeys(values))
+        if not set(chosen_values) <= official:
+            raise RuntimeError(f"storefront_facet_selection_not_official:{group_id}")
+        if group.get("required") and not chosen_values:
+            raise RuntimeError(f"storefront_facet_selection_required_empty:{group_id}")
+        max_select = group.get("max_select")
+        if isinstance(max_select, int) and len(chosen_values) > max_select:
+            raise RuntimeError(f"storefront_facet_selection_over_max:{group_id}")
+        if chosen_values:
+            resolved[group_id] = chosen_values
+    return resolved
+
+
 def _demand_cluster_key(query: str, category_url: str) -> str:
     identity = json.dumps({"query": query.strip(), "category": category_url.strip()},
                           ensure_ascii=False, sort_keys=True, separators=(",", ":"))
@@ -2507,6 +2585,13 @@ def _recover_prepared_create_contract(
         expected = hashlib.sha256(json.dumps(
             unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
         ).encode()).hexdigest()
+        # A contract sealed before facet groups were discovered per category never carries a
+        # "facets" key at all: it inherited whichever facet ids the source listing's own family
+        # happened to use, silently wrong for any other category. Recovering it verbatim would
+        # re-fail the exact publish error this key exists to prevent, so it is regenerated
+        # instead of reused.
+        if "facets" not in (contract.get("category_specific") or {}):
+            continue
         if (digest == expected == draft.get("contract_sha256")
                 and str(contract.get("draft_service_id") or "") == str(draft.get("draft_service_id") or "")):
             # Heal after verifying the file matches what this loop actually recorded, so a
@@ -7303,6 +7388,40 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         demand_derivation = {**(demand_derivation or {}),
                                              "category_triple": blueprint["category"],
                                              "category_child_route": child_route.get("model")}
+                        # The bound category's own live form is the only source of its facet
+                        # groups: the writing category's ids never apply to a development
+                        # category, which renders an entirely different, previously unknown set
+                        # (e.g. 基本対応範囲/言語 on the app-development subcategory). A category
+                        # that renders none has nothing to choose.
+                        facet_form = storefront_draft.read_category_form(
+                            getattr(args, "default_tab_script", DEFAULT_TAB),
+                            draft_id, blueprint["category"],
+                        )
+                        facet_groups = facet_form.get("facet_groups") or {}
+                        resolved_facets: dict[str, list[str]] = {}
+                        if facet_groups:
+                            facet_choice, facet_route = _invoke_facet_proposal(
+                                runner=getattr(args, "runner", DEFAULT_RUNNER),
+                                schema=getattr(
+                                    args, "facet_proposal_schema", DEFAULT_FACET_PROPOSAL_SCHEMA),
+                                workdir=args.workdir,
+                                evidence_dir=inventory_path.parent / "facet-proposal-agent",
+                                listing={
+                                    "title_stem": create_proposal.get("title_stem"),
+                                    "catchphrase": create_proposal.get("catchphrase"),
+                                    "head": create_proposal.get("head"),
+                                    "body": create_proposal.get("body"),
+                                    "category": blueprint["category"],
+                                },
+                                facet_groups=facet_groups, timeout_seconds=args.timeout_seconds,
+                            )
+                            resolved_facets = _validate_facet_selection(facet_choice, facet_groups)
+                            demand_derivation = {**(demand_derivation or {}),
+                                                 "facet_group_ids": sorted(facet_groups),
+                                                 "facet_route": facet_route.get("model")}
+                        blueprint = {**blueprint, "category_specific": {
+                            **blueprint["category_specific"], "facets": resolved_facets,
+                        }}
                     new_listing_contract = recovered_create_contract or _seal_create_contract(
                         create_proposal, source=create_source, family_name=create_family,
                         family=create_template,
@@ -7664,6 +7783,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--demand-proposal-schema", type=Path, default=DEFAULT_DEMAND_PROPOSAL_SCHEMA)
     parser.add_argument("--category-proposal-schema", type=Path, default=DEFAULT_CATEGORY_PROPOSAL_SCHEMA)
     parser.add_argument("--category-child-schema", type=Path, default=DEFAULT_CATEGORY_CHILD_SCHEMA)
+    parser.add_argument("--facet-proposal-schema", type=Path, default=DEFAULT_FACET_PROPOSAL_SCHEMA)
     parser.add_argument("--bootstrap-selection-schema", type=Path, default=DEFAULT_BOOTSTRAP_SELECTION_SCHEMA)
     parser.add_argument("--bootstrap-listing-schema", type=Path, default=DEFAULT_BOOTSTRAP_LISTING_SCHEMA)
     parser.add_argument("--bootstrap-import-schema", type=Path, default=DEFAULT_BOOTSTRAP_IMPORT_SCHEMA)

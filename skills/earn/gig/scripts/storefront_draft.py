@@ -47,10 +47,16 @@ def load_contract(path: Path) -> dict[str, Any]:
         or type(fields.get("delivery_days")) is not int or not 1 <= fields["delivery_days"] <= 99
         or type(fields.get("order_limit")) is not int or not 1 <= fields["order_limit"] <= 20
         or not isinstance(category_specific, dict)
-        or any(not isinstance(category_specific.get(key), list) or not category_specific[key]
-               for key in ("features", "industries", "languages"))
-        or any(not all(str(item).isdigit() for item in category_specific[key])
-               for key in ("features", "industries", "languages"))
+        # Facet groups are category-specific: Coconala assigns each category its own group ids,
+        # so this is keyed by whatever ids the target category's own live form rendered rather
+        # than a fixed set. A category that renders none has an empty dict, not a missing key.
+        or not isinstance(category_specific.get("facets"), dict)
+        or any(
+            not re.fullmatch(r"[0-9]+", str(group_id))
+            or not isinstance(item_values, list) or not item_values
+            or not all(isinstance(item, str) and re.fullmatch(r"[0-9]+", item) for item in item_values)
+            for group_id, item_values in category_specific["facets"].items()
+        )
         or category_specific.get("provision_format") not in {"1", "2", "3"}
         or not str(category_specific.get("fix_limit") or "").lstrip("-").isdigit()
         or not str(category_specific.get("unit_price_jpy_per_character") or "").isdigit()
@@ -178,13 +184,20 @@ def _snapshot_mismatches(snapshot: dict[str, Any], contract: dict[str, Any]) -> 
     mismatches = [name for name, value in _expected_values(contract).items() if values.get(name) != value]
     if not isinstance(price, dict) or str(price.get("text") or "").replace(",", "") != display:
         mismatches.append("price_option_text")
-    # Feature, industry and language facets, per-character pricing, revision limits and
-    # subscription belong to the writing category. Another official category simply does not
-    # render them, so there is nothing to verify rather than a fault.
+    # Facet checkboxes are named by the category's own group ids, discovered off the live form
+    # rather than assumed from another category (see category_specific["facets"] in load_contract
+    # and _facet_groups_from_rows below). A group the category does not render is not settable,
+    # so there is nothing to verify rather than a fault.
+    for group_id, wanted_values in category_specific.get("facets", {}).items():
+        facet_name = f"data[facets][{group_id}][]"
+        facet_actual = checked(facet_name)
+        facet_wanted = set(wanted_values)
+        if facet_name in settable and facet_actual != facet_wanted:
+            mismatches.append(f"{facet_name}{_field_detail(rows, facet_name)}={facet_actual!r}!={facet_wanted!r}")
+    # Per-character pricing, revision limits and subscription belong to the writing category.
+    # Another official category simply does not render them, so there is nothing to verify
+    # rather than a fault.
     for name, actual, wanted in (
-        ("data[facets][163][]", checked("data[facets][163][]"), set(category_specific["features"])),
-        ("data[facets][164][]", checked("data[facets][164][]"), set(category_specific["industries"])),
-        ("data[facets][165][]", checked("data[facets][165][]"), set(category_specific["languages"])),
         ("data[Service][provision_format]", checked("data[Service][provision_format]"),
          {category_specific["provision_format"]}),
         # A contract that does not want recurring support must verify the checkbox stayed
@@ -245,6 +258,55 @@ DRAFT_SNAPSHOT_EXPRESSION = (
     "images:[...document.querySelectorAll('.js_image-thumbnail')].map(e=>({style:e.getAttribute('style')||'',src:e.getAttribute('src')||''}))"
     ".filter(e=>e.style||e.src)}})())"
 )
+
+
+# Coconala assigns each category its own facet group ids and option values (a writing category
+# never shares its ids with a development category), so every group is read off the live form
+# rather than assumed. Each `<tr>` that holds facet checkboxes carries the group's Japanese
+# heading, an optional `※必須` required marker and an optional `最大N個` cap next to it.
+FACET_ROW_EXPRESSION = (
+    "JSON.stringify([...document.querySelectorAll('input[name^=\"data[facets][\"]')].map(el=>{"
+    "const tr=el.closest('tr');"
+    "const attention=tr?((tr.querySelector('.attention')||{}).innerText||''):'';"
+    "const heading=tr?((tr.querySelector('th h4 b')||{}).innerText||''):'';"
+    "const label=el.closest('label');"
+    "const maxMatch=attention.match(/最大(\\d+)個/);"
+    "return{name:el.name,value:el.value,"
+    "label:(label?label.innerText:'').trim(),"
+    "group_label:heading.trim(),"
+    "required:/必須/.test(attention),"
+    "max_select:maxMatch?parseInt(maxMatch[1],10):null};"
+    "})())"
+)
+
+
+def _facet_groups_from_rows(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Group the live form's own per-checkbox facet rows into one entry per facet group id.
+
+    A facet group id from one category means nothing on another: the writing category's ids
+    163/164/165 never appear on a development category's form, which instead renders its own
+    ids (e.g. 80/81) with entirely different options. This groups only what the draft actually
+    rendered, in the order the form rendered it, so nothing here is assumed from elsewhere.
+    """
+    groups: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        match = re.fullmatch(r"data\[facets\]\[(\d+)\]\[\]", str(row.get("name") or ""))
+        if not match:
+            continue
+        group_id = match.group(1)
+        group = groups.setdefault(group_id, {
+            "group_id": group_id,
+            "group_label": str(row.get("group_label") or "").strip(),
+            "required": bool(row.get("required")),
+            "max_select": row.get("max_select") if isinstance(row.get("max_select"), int) else None,
+            "options": [],
+        })
+        value = str(row.get("value") or "")
+        if value and not any(option["value"] == value for option in group["options"]):
+            group["options"].append({"value": value, "label": str(row.get("label") or "").strip()})
+    return groups
 
 
 async def _prepare(ws_url: str, contract: dict[str, Any]) -> tuple[dict[str, Any], bool]:
@@ -310,10 +372,12 @@ async def _prepare(ws_url: str, contract: dict[str, Any]) -> tuple[dict[str, Any
                 raise RuntimeError("storefront_draft_price_contract_mismatch")
             await asyncio.sleep(0.5)
         category_specific = contract["category_specific"]
+        # Facet checkbox names are built from whatever group ids the target category's own form
+        # rendered (see category_specific["facets"]), never a fixed set of ids from another
+        # category.
         checkbox_values = {
-            "data[facets][163][]": category_specific["features"],
-            "data[facets][164][]": category_specific["industries"],
-            "data[facets][165][]": category_specific["languages"],
+            f"data[facets][{group_id}][]": item_values
+            for group_id, item_values in category_specific.get("facets", {}).items()
         }
         configured, cid = await _evaluate(ws, (
             "(()=>{const sets=" + json.dumps(checkbox_values) + ";"
@@ -971,7 +1035,8 @@ async def _read_category_form_async(ws_url: str, category: dict[str, dict[str, s
         snapshot = json.loads(str(raw or "{}"))
         if snapshot.get("url") is None or not isinstance(snapshot.get("fields"), list):
             raise RuntimeError("storefront_bootstrap_form_unavailable")
-        return snapshot
+        facet_raw, cid = await _evaluate(ws, FACET_ROW_EXPRESSION, cid)
+        return {**snapshot, "facet_groups": _facet_groups_from_rows(json.loads(str(facet_raw or "[]")))}
 
 
 def read_category_form(
