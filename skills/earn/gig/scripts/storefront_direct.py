@@ -1556,6 +1556,30 @@ def _family_traffic_without_sales(
             "views": views, "purchases": purchases}
 
 
+def _family_already_published(draft_ledger_path: Path, family_name: str) -> bool:
+    """Report whether a capability family already has a live CREATE listing.
+
+    `_family_traffic_without_sales` only catches a family once its published listing has
+    collected views in analytics.jsonl, and only if families.json maps a service to it.
+    mobile_app_dev published as service 4386009 but never gained that families.json mapping,
+    so neither check ever fired: `_next_unused_demand_cluster` kept reselecting its cluster
+    every wake because nothing else marked the cluster consumed. This reads the loop's own
+    creation ledger instead, which every CREATE writes to regardless of families.json.
+    """
+    if not family_name or not draft_ledger_path.exists():
+        return False
+    for line in draft_ledger_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if (str(row.get("candidate_key") or "").startswith("storefront:create:v1:")
+                and row.get("capability_family") == family_name
+                and (row.get("status") in {"published", "already_public"}
+                     or row.get("public_effect") == 1)):
+            return True
+    return False
+
+
 def _score_demand_cluster(cluster: dict) -> dict:
     """Score one official demand cluster from what the marketplace actually shows.
 
@@ -1607,6 +1631,26 @@ def _seal_demand_proposal(proposal: dict, family_names: set[str], catalog_titles
         sealed.append({"query": query, "capability_family": family,
                        "rationale": str(row.get("rationale") or "").strip()})
     return sealed
+
+
+def _catalog_capability_templates(configured: dict, catalog: dict) -> dict:
+    """Give every owner-curated catalog family a template, not only the ones already tried.
+
+    families.json only ever grows an entry for a family this loop happened to explore before
+    (ten entries, of which just two -- mobile_app_dev and mvp_web_app_build -- also name a
+    skills/gig-work/profile/listings/catalog.json family). Demand exploration can only offer
+    the model families present in this dict, so the other eighteen catalog listings were
+    structurally unreachable even with free shelf slots and no competing traffic. Catalog
+    fields are enough context for the model to reason about a query for that family.
+    """
+    merged = dict(configured)
+    for family, entry in catalog.items():
+        merged.setdefault(family, {
+            "name": str(entry.get("title_ja") or family),
+            "description": str(entry.get("value_prop") or ""),
+            "deliverables": entry.get("deliverables") or [],
+        })
+    return merged
 
 
 def _market_capability_templates(configured: dict, inventory: dict) -> dict:
@@ -6408,6 +6452,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             capability_templates = _market_capability_templates(
                 capability_templates, public_capability_inventory,
             )
+            capability_templates = _catalog_capability_templates(
+                capability_templates, _load_catalog_entries(),
+            )
             presentation_snapshot = _seller_snapshot_for(ws_url, PRESENTATION_SERVICE_ID)
             scope_snapshot = _seller_snapshot_for(ws_url, SCOPE_SERVICE_ID)
             # Retained so the listing-state adapter can bind the real seller submit controls.
@@ -7255,7 +7302,29 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 demand_derivation = {**(demand_derivation or {}),
                                      "create_blocked": "own_family_has_traffic_without_sales",
                                      "own_family_evidence": unsold_family}
-            if unused_cluster is not None and bound_category is not None and unsold_family is None:
+            # A family can already be public without ever tripping the traffic-without-sales
+            # check above: that check needs a families.json service mapping, and a CREATE never
+            # writes one back. mobile_app_dev published as service 4386009 with no such mapping,
+            # so its cluster kept winning `_next_unused_demand_cluster` forever -- the ledger's
+            # own creation history is dismissed here instead, which every CREATE always updates.
+            family_already_public = (
+                unsold_family is None and unused_cluster is not None
+                and _family_already_published(
+                    args.state_dir / "new-listing-drafts.jsonl",
+                    str(unused_cluster.get("capability_family") or ""))
+            )
+            if family_already_public:
+                cluster_key = str((unused_cluster or {}).get("cluster_key") or "")
+                if cluster_key:
+                    _append_key_once(dismissal_ledger, "cluster_key", {
+                        "version": 1, "cluster_key": cluster_key, "status": "dismissed",
+                        "reason": "capability_family_already_public",
+                        "observed_at_epoch": int(time.time()),
+                    })
+                demand_derivation = {**(demand_derivation or {}),
+                                     "create_blocked": "capability_family_already_public"}
+            if (unused_cluster is not None and bound_category is not None
+                    and unsold_family is None and not family_already_public):
                 try:
                     cluster_blueprint = _create_blueprint_from_cluster(
                         new_listing_contract, unused_cluster, bound_category)

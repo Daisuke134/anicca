@@ -933,3 +933,43 @@ def test_create_min_interval_fills_the_shelf_in_hours_not_days(tmp_path):
     # Once a full interval has elapsed, spacing opens again for the next of the 6 slots.
     later = now + direct.CREATE_MIN_INTERVAL_SECONDS
     assert (later - last_create) >= direct.CREATE_MIN_INTERVAL_SECONDS
+
+
+def test_next_unused_demand_cluster_skips_an_already_published_family(tmp_path):
+    # mobile_app_dev published as service 4386009 but families.json never gained a service
+    # mapping for it, so `_family_traffic_without_sales` could never see it and the loop kept
+    # reselecting the same already-public cluster every wake forever: nothing else marked it
+    # consumed. `_family_already_published` reads the loop's own creation ledger instead,
+    # which every CREATE always updates, and the caller feeds its cluster_key into the
+    # existing dismissal set so `_next_unused_demand_cluster` advances to the next family.
+    draft_ledger = tmp_path / "new-listing-drafts.jsonl"
+    draft_ledger.write_text(json.dumps({
+        "candidate_key": "storefront:create:v1:deadbeef",
+        "capability_family": "mobile_app_dev",
+        "status": "already_public",
+        "public_effect": 0,
+    }) + "\n", encoding="utf-8")
+
+    assert direct._family_already_published(draft_ledger, "mobile_app_dev") is True
+    assert direct._family_already_published(draft_ledger, "mvp_web_app_build") is False
+    assert direct._family_already_published(tmp_path / "missing.jsonl", "mobile_app_dev") is False
+
+    stuck_cluster = {
+        "cluster_key": "storefront:demand:v1:mobile-app-dev-cluster", "status": "known",
+        "score": 12, "median_price_jpy": 60_000, "capability_family": "mobile_app_dev",
+    }
+    next_cluster = {
+        "cluster_key": "storefront:demand:v1:mvp-web-app-build-cluster", "status": "known",
+        "score": 12, "median_price_jpy": 30_000, "capability_family": "mvp_web_app_build",
+    }
+    clusters = [stuck_cluster, next_cluster]
+
+    # Before the fix's caller ever runs, the already-public family still wins the tie-break
+    # (higher median_price_jpy), which is exactly how the loop deadlocked on it forever.
+    assert direct._next_unused_demand_cluster(clusters, set())["capability_family"] == "mobile_app_dev"
+
+    # Once its cluster_key is dismissed -- what the new `family_already_public` branch does
+    # every wake it is reselected -- the next unused catalog family becomes reachable.
+    dismissed = {stuck_cluster["cluster_key"]}
+    selected = direct._next_unused_demand_cluster(clusters, dismissed)
+    assert selected["capability_family"] == "mvp_web_app_build"
