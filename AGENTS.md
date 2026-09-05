@@ -75,7 +75,8 @@ No deletion — decay only affects retrieval priority.
 - Before creating, changing, migrating, debugging, or retiring a Life Manager loop, MUST read and follow `skills/loop-development/SKILL.md`.
 
 ## Life Manager Cloud development
-- Use `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md` for product UX, `docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md` for current MUST/DO NOT, `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md` for the active checklist, and the matching `.superpowers/sdd/.../progress.md` for measured state.
+- Use `docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md` §§0/8 for the current Cloud launch scope and ordered remaining TODO, `docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-core-design.md` for technical MUST/DO NOT, `docs/superpowers/plans/2026-08-28-life-manager-cloud-on-time-core-finish.md` for reusable implementation detail, and the matching `.superpowers/sdd/.../progress.md` for measured history. The 2026-09-05 owner scope supersedes old Active Orders and migration rulings; completed evidence is not discarded.
+- Owner scope (2026-09-05): ship the existing Cloud daily core; retain existing Stripe; no ElizaOS/Eliza Cloud/plugin migration and no Telegram Stars implementation task. Local operation and later loop migration belong to the separate local Codex workstream, not this launch checklist. Start with CLOUD-01 detailed travel/online notification UX.
 - Work one active TODO at a time: Ponytail full → Superpowers spec/plan → TDD implementation → fresh read-only review → provider readback/replay-zero → primary updates progress.
 
 ## Access
@@ -88,9 +89,9 @@ List your authenticated CLIs, API keys, and secrets below so Felix knows what he
 | `gh` (GitHub) | ✅ / ❌ | `brew install gh && gh auth login` |
 | `stripe` | ✅ / ❌ | `brew install stripe/stripe-cli/stripe` |
 | `codex` | ✅ / ❌ | `npm install -g @openai/codex && codex auth login` |
-| `himalaya` (email) | ✅ / ❌ | `brew install himalaya` + config |
+| `himalaya` | ✅ / ❌ | `brew install himalaya` + config |
 | `bird` (X/Twitter) | ✅ / ❌ | Export cookies from browser |
-| `tmux` | ✅ / ❌ | `brew install tmux && mkdir -p ~/.tmux` |
+| `tmux` | ✅ / ❌ | `brew install tmux` |
 | `ralphy` | ✅ / ❌ | `npm install -g ralphy` |
 
 ### API Keys
