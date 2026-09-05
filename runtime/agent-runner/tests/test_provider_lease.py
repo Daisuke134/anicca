@@ -13,7 +13,14 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from agent_runner import ProviderLeaseBusy, remove_incompatible_codex_model_cache, run_provider_process
+from agent_runner import (
+    CODEX_INVOCATION_HOME_MARKER,
+    _OWNED_CODEX_INVOCATION_HOMES,
+    ProviderLeaseBusy,
+    provider_process_env,
+    remove_incompatible_codex_model_cache,
+    run_provider_process,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -129,6 +136,148 @@ class ProviderLeaseTest(unittest.TestCase):
         rows = [json.loads(line) for line in events.read_text(encoding="utf-8").splitlines()]
         self.assertEqual(results, [0, 0])
         self.assertEqual([row[0] for row in rows], ["start", "end", "start", "end"])
+
+    def test_codex_invocations_use_isolated_homes_and_cleanup(self):
+        automation_home = self.root / "codex-profile"
+        auth_file = self.root / "profile-auth.json"
+        auth_file.write_text("{}\n", encoding="utf-8")
+        provider = self.root / "provider.py"
+        provider.write_text(
+            "import sys, time\n"
+            "from pathlib import Path\n"
+            "own, peer = map(Path, sys.argv[1:3])\n"
+            "own.touch()\n"
+            "while not peer.exists():\n"
+            "    time.sleep(0.01)\n",
+            encoding="utf-8",
+        )
+        base_env = {"PATH": os.environ.get("PATH", "")}
+        provider_config = {
+            "automation_home": str(automation_home),
+            "auth_file": str(auth_file),
+        }
+        invocation_ids = ("invocation-a", "invocation-b")
+        envs = [
+            provider_process_env(
+                "codex", provider_config, base_env, invocation_id=invocation_id,
+            )
+            for invocation_id in invocation_ids
+        ]
+        homes = [Path(env["CODEX_HOME"]) for env in envs]
+        self.assertEqual(
+            homes,
+            [automation_home / "invocations" / invocation_id for invocation_id in invocation_ids],
+        )
+        for home in homes:
+            self.assertEqual((home / "auth.json").resolve(), auth_file.resolve())
+
+        markers = [self.root / "provider-a", self.root / "provider-b"]
+
+        def run(env, own, peer):
+            try:
+                return run_provider_process(
+                    [sys.executable, str(provider), str(own), str(peer)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=1,
+                    cwd=str(self.root),
+                    input_bytes=None,
+                    stdin=subprocess.DEVNULL,
+                    env=env,
+                )
+            except Exception as error:
+                return f"{type(error).__name__}: {error}"
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = [
+                future.result()
+                for future in (
+                    executor.submit(run, envs[0], markers[0], markers[1]),
+                    executor.submit(run, envs[1], markers[1], markers[0]),
+                )
+            ]
+
+        self.assertEqual(results, [0, 0])
+        self.assertTrue(all(marker.exists() for marker in markers))
+        self.assertTrue(automation_home.is_dir())
+        self.assertTrue(auth_file.is_file())
+        self.assertTrue(all(not home.exists() for home in homes))
+
+    def test_codex_invocation_leaf_must_be_new_and_preserves_existing_paths(self):
+        automation_home = self.root / "codex-profile"
+        automation_home.mkdir()
+        auth_file = self.root / "profile-auth.json"
+        auth_file.write_text("{}\n", encoding="utf-8")
+        invocations_home = automation_home / "invocations"
+        invocations_home.mkdir()
+
+        existing_dir = invocations_home / "existing-dir"
+        existing_dir.mkdir()
+        dir_sentinel = existing_dir / "sentinel"
+        dir_sentinel.write_text("directory\n", encoding="utf-8")
+
+        existing_file = invocations_home / "existing-file"
+        existing_file.write_text("file\n", encoding="utf-8")
+
+        symlink_target = self.root / "symlink-target"
+        symlink_target.mkdir()
+        symlink_sentinel = symlink_target / "sentinel"
+        symlink_sentinel.write_text("symlink\n", encoding="utf-8")
+        existing_symlink = invocations_home / "existing-symlink"
+        existing_symlink.symlink_to(symlink_target, target_is_directory=True)
+
+        provider_config = {
+            "automation_home": str(automation_home),
+            "auth_file": str(auth_file),
+        }
+        for invocation_id, sentinel in (
+            ("existing-dir", dir_sentinel),
+            ("existing-file", existing_file),
+            ("existing-symlink", symlink_sentinel),
+        ):
+            with self.subTest(invocation_id=invocation_id):
+                with self.assertRaisesRegex(ValueError, "invocation_id"):
+                    provider_process_env(
+                        "codex", provider_config, {"PATH": os.environ.get("PATH", "")},
+                        invocation_id=invocation_id,
+                    )
+                self.assertTrue(sentinel.exists())
+                self.assertNotIn(
+                    (invocations_home / invocation_id).resolve(),
+                    _OWNED_CODEX_INVOCATION_HOMES,
+                )
+        self.assertTrue(existing_symlink.is_symlink())
+        self.assertTrue(symlink_sentinel.is_file())
+
+    def test_unregistered_codex_home_marker_preserves_caller_home(self):
+        caller_home = self.root / "caller-codex-home"
+        caller_home.mkdir()
+        sentinel = caller_home / "sentinel"
+        sentinel.write_text("keep\n", encoding="utf-8")
+        provider = self.root / "provider.py"
+        provider.write_text(
+            "import sys\n"
+            "from pathlib import Path\n"
+            "Path(sys.argv[1]).touch()\n",
+            encoding="utf-8",
+        )
+        result = run_provider_process(
+            [sys.executable, str(provider), str(self.root / "provider-ran")],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            cwd=str(self.root),
+            input_bytes=None,
+            stdin=subprocess.DEVNULL,
+            env={
+                **os.environ,
+                "CODEX_HOME": str(caller_home),
+                CODEX_INVOCATION_HOME_MARKER: str(caller_home),
+            },
+        )
+        self.assertEqual(result, 0)
+        self.assertTrue(sentinel.is_file())
+        self.assertTrue(caller_home.is_dir())
 
     def test_shared_codex_home_busy_until_deadline_raises_without_launching_provider(self):
         lock_path = self.root / "codex-home" / ".agent-runner-provider.lock"
