@@ -1281,6 +1281,8 @@ def command_for(provider: str, executable: str, provider_config: dict[str, Any],
         ]
         if args.task_class in TOOLLESS_TASK_CLASSES:
             command.extend(["--tools", ""])
+        elif not getattr(args, "read_only", False):
+            command.append("--dangerously-skip-permissions")
         command.append("-p")
         if not prompt_via_stdin:
             command.append(prompt)
