@@ -27,3 +27,9 @@ def test_same_session_readback_requires_the_complete_normalized_message():
     )
     assert browser.matching_seller_text(state, message) == state["seller_messages"][-1]
     assert browser.matching_seller_message(state, "result.zip", message) == state["seller_messages"][-1]
+    assert browser.matching_seller_message(state, "other.zip", message) is None
+
+    expression = browser.browser_state_expression("result.zip")
+    assert "==='続きを読む'" in expression
+    assert "x.click()" in expression
+    assert "requestAnimationFrame(()=>requestAnimationFrame(resolve))" in expression

@@ -564,7 +564,11 @@ def persist_answer_evidence(
 
 def browser_state_expression(artifact_basename: str) -> str:
     encoded = json.dumps(artifact_basename, ensure_ascii=False)
-    return f'''(()=>{{
+    return f'''(async()=>{{
+      const expanders=[...document.querySelectorAll('.d-talkroomMessage button,.d-talkroomMessage a')]
+        .filter(x=>(x.innerText||'').trim()==='続きを読む');
+      expanders.forEach(x=>x.click());
+      if(expanders.length) await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
       const form=document.querySelector('.d-messageForm');
       const textarea=document.querySelector('textarea[placeholder="メッセージを入力"]');
       const formal=document.querySelector('.d-messageFormButtonArea_item-deliveryCheck input[type="checkbox"]');
