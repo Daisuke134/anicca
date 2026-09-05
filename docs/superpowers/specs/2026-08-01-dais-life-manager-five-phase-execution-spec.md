@@ -162,7 +162,7 @@ scheduled navigationをterminal扱いする共有`BROWSER`境界だった。旧w
 Alpaca hackathon提出は完了した。旧A01〜A15とEliza所有architectureは提出時の凍結履歴であり、現在実装へ使わない。
 提出後のnative launchd/local-live-first product architecture、固定順序、acceptanceの唯一の正本は
 [`2026-09-01-alpaca-money-maximizer-design.md` §§7–8](2026-09-01-alpaca-money-maximizer-design.md)とする。
-そのtrack内cursorはL01である。全体portfolioでどのtrackを実行するかは本節では変更しない。
+そのtrack内cursorはL02である。L01 portable finite passは完了済み。全体portfolioでどのtrackを実行するかは本節では変更しない。
 
 ### 0.0.0 Previous cursor retained — ElizaOS forkでlocal general agentを先に完成させる
 
