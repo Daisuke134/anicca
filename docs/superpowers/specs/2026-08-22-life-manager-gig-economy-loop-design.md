@@ -1128,15 +1128,17 @@ or sibling-lane wait.
 
 Outer parallelism means all four owners remain continuously scheduled and one failed, slow or
 restarted owner cannot pause another. Inner parallelism means each owner durably claims independent
-applications, talkrooms, listings or orders and advances them with bounded workers. Only two effects
-against the same exact marketplace resource are serialized by its deterministic effect fence. An
-uncertain effect is reconciled from official state before retry; it never becomes a reason to stop
-unrelated work.
+applications, talkrooms, listings or orders and advances them with bounded workers. Effect ownership
+is disjoint by construction: Apply alone submits applications, Negotiate/Reply alone replies to buyer
+threads, Storefront alone mutates listings, and Paid alone fulfills and responds on paid orders. No
+lane competes for another lane's effect, so there is no cross-lane serialization, arbitration or
+shared effect lock. Each owner prevents replay from its own durable state and reconciles an uncertain
+result from official state without pausing any other owner or work item.
 
 The non-skippable completion order is:
 
 1. `PAR-1`: give all four owners distinct authenticated BrowserContexts and lease identities.
-2. `PAR-2`: enforce one deterministic effect fence per application, talkroom, listing or order.
+2. `PAR-2`: enforce disjoint effect ownership and owner-local durable replay prevention.
 3. `PAR-3`: add durable producer-consumer concurrency inside every owner.
 4. `PAR-4`: make every nonterminal work item resumable without blocking unrelated work.
 5. `PAR-5`: prove fastest truthful effects, official readback and replay-zero from one immutable
@@ -1160,29 +1162,29 @@ CrowdWorks authentication uses the provider's ordinary email/password form and t
 credential. Google OAuth is not a fallback for this owner and a stale OAuth/passkey tab is not account
 state. Login state is decided only by a fresh official CrowdWorks dashboard readback. After Apply is
 healthy, add independent Negotiate/Reply, Paid/Fulfillment and real-time reporting owners using the
-same provider-neutral contracts, durable work items, effect fences and official receipts as Coconala;
+same provider-neutral contracts, durable work items, owner-local replay prevention and official receipts as Coconala;
 do not copy a scheduler or share a browser context with Coconala.
 
 Completion is not process liveness. All four Coconala lanes must produce their contracted official
 effects/readbacks concurrently, a sibling must never cause `browser_lease_busy`, and stopping one
-owner must leave the other three contexts and schedules intact. Concurrency remains bounded by
-measured host and account capacity; “parallel” does not authorize duplicate effects or unsafe
-unbounded fan-out.
+owner must leave the other three contexts and schedules intact. Every eligible work item inside each
+owner advances concurrently; capacity limits may bound worker count but may never create sibling-lane
+waiting or cross-lane serialization.
 
 This concurrency contract includes authenticated browser observation, external updates, production
-E2E and official readback. Distinct lanes and distinct resource/effect identities continue at the
-same time; no owner asks another lane to stop. A release apply changes one label atomically under the
-existing control-plane lock while every unrelated label remains running. Serialization is permitted
-only inside the smallest correctness boundary: the same browser target, the same account mutation,
-or the same resource/effect key. It must never expand into a Coconala-wide, account-wide, lane-wide,
-or platform-wide queue.
+E2E and official readback. All lanes and all independently owned work items continue at the same time;
+no owner asks another lane to stop and no browser, account, client, resource or platform-wide queue
+coordinates them. A release apply changes one label atomically under the existing control-plane lock
+while every unrelated label remains running. Replay prevention is private to the sole owner and never
+becomes a concurrency mechanism between lanes.
 
-### 6.2B Reuse-first loop-development contract
+### 6.2B One-entry Loop Engineering and reuse contract
 
-`skills/loop-development/SKILL.md` is the only entry skill for Life Manager loop work. Loop
-Engineering is the body of measured design knowledge consumed through that skill, not a competing
-second skill. The entry skill stays short and routes the current task to focused references; it must
-not duplicate the full engineering corpus into every model context.
+`skills/loop-engineering/SKILL.md` is the only entry skill for building, fixing, releasing or operating
+Life Manager loops. The existing loop-development lifecycle rules, proven business-loop recipes,
+gig-work assets and measured Loop Engineering knowledge are routed through this one skill rather than
+competing entry skills. Its entry file stays short and routes the current task to focused references;
+it does not load the full engineering corpus into every model context.
 
 Every loop is composed from four layers with one-way dependencies:
 
@@ -1191,7 +1193,7 @@ loop config -> reusable recipe -> shared runtime -> provider adapter -> official
 ```
 
 - `runtime/` owns scheduling, work-item admission, model routing/failover, checkpoint/resume,
-  retries, effect fencing, receipts, health and recovery. It knows no marketplace business rules.
+  retries, owner-local replay prevention, receipts, health and recovery. It knows no marketplace business rules.
 - reusable recipe modules own a business lifecycle such as Apply, Negotiate, Paid, Storefront,
   publishing or investment. They know no provider DOM selectors or credentials.
 - provider adapters own only official provider observation, mutation and readback.
@@ -1205,9 +1207,9 @@ Paid lifecycle first, Lancers becomes its second consumer and fixes the shared b
 CrowdWorks proves that the boundary is provider-neutral. Later marketplaces add an adapter and loop
 configuration, not another Paid implementation.
 
-The user experience is outcome-only: every open client is observed on cadence; independent clients
-advance concurrently; one failure cannot delay another; only the failed work item retries; an exact
-effect cannot duplicate; new buyer feedback resumes the same owner; and the loop continues through
+The user experience is outcome-only: every open client is observed on cadence; all clients advance
+concurrently; one failure cannot delay another; only the failed work item retries; the sole owner
+does not replay its completed state transition; new buyer feedback resumes the same owner; and the loop continues through
 build, independent verification, normal provider response and official readback until buyer approval
 or official terminal state. Provider/model/browser recovery is automatic and never asks the user to
 restart the Mac. Coconala room `18211957` additionally keeps formal delivery disabled until the
@@ -1277,26 +1279,23 @@ application, contract or worker cap.
 
 ```mermaid
 flowchart LR
-  A[Acquire workers\ndiscover qualify propose] --> X[Resource effect leases]
-  S[Sell workers\nmessages offers contracts] --> X
-  F[Fulfill workers\nbuild QA revise deliver] --> X
+  A[Apply owner\ndiscover qualify propose] --> U[Provider account]
+  S[Reply owner\nmessages offers contracts] --> U
+  F[Paid owner\nbuild QA revise respond] --> U
+  O[Storefront owner\nlistings inventory improve] --> U
   M[Money lane\nfees refunds payouts] --> R[Official receipts]
   L[Learn lane\nfunnel one-variable experiment] --> A
-  X --> U[Upwork browser account]
   U --> R
   R --> T[Telegram and funnel ledger]
   T --> L
 ```
 
-Discovery, page inspection, model judgment, proposal generation, messages in different rooms,
-fulfillment for different contracts, QA, delivery, accounting and learning run concurrently. Effects
-are fenced by the narrowest provider resource: one job ID for a proposal, one room/head for a reply,
-one offer ID for acceptance and one contract/milestone for delivery. Distinct resources never wait on
-an account-wide browser lease merely because they use the same site or profile. Multiple tabs/pages are
-normal independent workers. Only genuinely shared mutable state receives a short global reservation:
-Connects balance, account settings, KYC, billing and payout. The reservation freezes the expected
-delta; official readback releases or reconciles it. Paid deadlines and buyer messages receive higher
-economic priority, but they do not stop unrelated acquisition or fulfillment workers.
+Discovery, page inspection, model judgment, proposal generation, buyer replies, storefront updates,
+fulfillment, QA, accounting and learning run concurrently. Their effect types have one declared owner;
+they do not negotiate ownership at runtime and never wait on an account-wide browser lease merely
+because they use the same site or profile. Multiple tabs/pages are normal independent workers. Paid
+deadlines and buyer messages receive higher economic priority inside their owners, but they do not stop
+unrelated acquisition, storefront or fulfillment workers.
 
 Application volume is maximized subject only to current authority, truthful capability, positive
 expected verified net, provider/account health, available Connects and deliverable capacity. There is
