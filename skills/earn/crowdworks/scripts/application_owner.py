@@ -68,12 +68,25 @@ account = _module("crowdworks_account", Path(__file__).with_name("account.py"))
 profile = _module("crowdworks_profile", Path(__file__).with_name("profile.py"))
 application = _module("crowdworks_application", Path(__file__).with_name("application_tick.py"))
 
+def _applied():
+    """Projects this account already applied to. Without it the search keeps returning its own
+    best match and every tick ends duplicate_project instead of reaching the next open job."""
+    done = set()
+    try: lines = LEDGER.read_text(encoding="utf-8").splitlines()
+    except OSError: return done
+    for line in lines:
+        try: record = json.loads(line)
+        except ValueError: continue
+        identity = record.get("opportunity_external_id")
+        if isinstance(identity, str): done.add(identity)
+    return done
+
 def _candidate(page, listings, rotation):
     """Search the catalog's own terms and return the first job a catalog tier can actually serve."""
     # Rotation decides where to start, not where to stop: capping at a handful of listings meant a
     # day whose slice happened to be quiet reported no work while other listings had live jobs.
     ordered = listings[rotation:] + listings[:rotation]
-    seen = set(); rejected = {"closed_or_unverified": 0, "off_topic": 0, "wrong_category": 0, "budget": 0}
+    seen = _applied(); already = len(seen); rejected = {"closed_or_unverified": 0, "off_topic": 0, "wrong_category": 0, "budget": 0}
     deadline = time.monotonic() + SEARCH_BUDGET_SECONDS
     for listing in ordered:
         if time.monotonic() > deadline: break
@@ -103,8 +116,8 @@ def _candidate(page, listings, rotation):
             if not any(word in _category(text) for word in BUILD_CATEGORIES):rejected["wrong_category"]+=1;continue
             tier=_priced(listing,text)
             if tier is None:rejected["budget"]+=1;continue
-            return {"external_id":job_id,"title":re.sub(r"\s+"," ",title).strip()},listing,tier,{"inspected":len(seen),**rejected}
-    return None,None,None,{"inspected":len(seen),**rejected}
+            return {"external_id":job_id,"title":re.sub(r"\s+"," ",title).strip()},listing,tier,{"inspected":len(seen)-already,**rejected}
+    return None,None,None,{"inspected":len(seen)-already,**rejected}
 
 def _proposal(listing, tier):
     return "\n".join((
