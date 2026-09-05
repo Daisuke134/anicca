@@ -641,6 +641,47 @@ def test_paid_direct_maps_valid_blocked_owner_to_pending(tmp_path):
     ) == "pending"
 
 
+def test_normalizer_repairs_missing_blocker_from_first_remaining_work(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    result_path = root / "delivery/paid-remote-result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result.pop("blocker")
+    write_json(result_path, result)
+
+    paid._normalize_builder_result(root)
+
+    normalized = json.loads(result_path.read_text(encoding="utf-8"))
+    assert normalized["blocker"] == "Wait for the provider reply."
+    assert paid.paid_remote_result.validate_wait(
+        root, feedback, digest, pass_start=0,
+    )["status"] == "blocked"
+
+
+def test_normalizer_does_not_invent_blocker_for_malformed_remaining_work(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    result_path = root / "delivery/paid-remote-result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result.pop("blocker")
+    result["business_outcome"]["remaining_work"] = [{"text": "Wait for the provider reply."}]
+    write_json(result_path, result)
+    intent = json.loads((root / "delivery/paid-remote-intent.json").read_text(encoding="utf-8"))
+    write_json(root / "evidence/agent-PAID_REMOTE_OWNER/wait.json", {
+        "authenticated": True,
+        "target": intent["target"],
+        "requirements_sha256": intent["requirements_sha256"],
+        "observed_state": intent["desired_state"],
+    })
+
+    paid._normalize_builder_result(root)
+
+    normalized = json.loads(result_path.read_text(encoding="utf-8"))
+    assert "blocker" not in normalized
+    with pytest.raises(ValueError, match="not an external wait"):
+        paid.paid_remote_result.validate_wait(root, feedback, digest, pass_start=0)
+
+
 def test_remote_owner_prompt_includes_exact_cycle_account_owner_policy(tmp_path):
     paid = load("paid_direct")
     root, feedback, _digest = blocked_project(tmp_path)
