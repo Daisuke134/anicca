@@ -28,13 +28,13 @@
 - Produces: `_deployment() -> str`, returning only `local` or `cloud`.
 - Produces: `decision["deployment"]` before receipt creation and `summary["deployment"]` on success.
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
 
 Add a `DeploymentProfileTest` that calls `_deployment()` under exact `local` and `cloud` values and rejects `None`, `""`, `"local,cloud"`, `" local"`, and `"LOCAL"` with `ValueError("investment_deployment_invalid")`. Make existing pass tests default to `local`. In the success pass test, stop mocking `record_no_trade`, read the real temporary `receipts.jsonl`, and assert the decision receipt and stdout summary both contain `"deployment": "local"`.
 
 Run `python3 -m unittest skills.alpaca-investment.test_run`; expect failure because `_deployment` and recorded deployment do not exist.
 
-- [ ] **Step 2: GREEN**
+- [x] **Step 2: GREEN**
 
 Add the minimum validator:
 
@@ -61,7 +61,7 @@ Run `python3 -m unittest skills.alpaca-investment.test_run skills.alpaca-investm
 **Interfaces:**
 - Produces: generated `alpaca-investment` plist environment value `LIFE_MANAGER_INVESTMENT_DEPLOYMENT=local`.
 
-- [ ] **Step 1: RED**
+- [x] **Step 1: RED**
 
 Add a focused renderer test that renames the existing example registry row to `alpaca-investment`, renders its plist, and asserts:
 
@@ -74,7 +74,7 @@ self.assertEqual(
 
 Run `python3 -m unittest runtime.loop.tests.test_lm_loop_apply.LmLoopApplyTest.test_alpaca_plist_declares_local_deployment`; expect a missing-key failure.
 
-- [ ] **Step 2: GREEN**
+- [x] **Step 2: GREEN**
 
 In `_plist()`, add one Alpaca-specific environment assignment after the base plist is built:
 
