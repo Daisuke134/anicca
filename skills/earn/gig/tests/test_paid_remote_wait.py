@@ -645,6 +645,41 @@ def test_remote_owner_prompt_searches_complete_repo_and_valid_shared_tools(tmp_p
     assert "readback_source and exact_readback=true" in prompt
 
 
+def test_paid_clients_use_independent_parallel_readbacks_and_browser_targets(tmp_path, monkeypatch):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+
+    prompt = paid._repair_prompt(
+        root, tmp_path / "item.json", feedback, requirements_sha,
+        False, tmp_path / "cdp.py",
+    )
+
+    assert paid.PAID_MAX_PARALLEL_READBACKS == paid.PAID_MAX_PARALLEL_PROJECTS
+    assert "All independent paid projects run concurrently" in prompt
+    assert "serialize every read, mutation, and readback" not in prompt
+
+    owners = []
+    collector_output = {}
+
+    def collector(_args, _mode, output, *_rest):
+        collector_output["path"] = output
+        return ["collector"]
+
+    def run(_command, _step, **kwargs):
+        owners.append(kwargs.get("env", {}).get("CLOAK_BROWSER_OWNER"))
+        write_json(collector_output["path"], {"orders": [{"talkroom_id": "18211957"}]})
+
+    monkeypatch.setattr(paid, "_collector", collector)
+    monkeypatch.setattr(paid, "_run", run)
+    monkeypatch.setattr(paid, "_row", lambda _snapshot, _room: {"talkroom_id": "18211957"})
+    args = SimpleNamespace(evidence_dir=tmp_path, cdp_lock_dir=tmp_path / "locks")
+
+    paid._targeted(args, {"talkroom_id": "18211957"}, 0)
+
+    assert owners == ["paid-direct-18211957"]
+
+
 def test_remote_verifier_prompt_persists_decision_before_optional_exploration(tmp_path):
     paid = load("paid_direct")
     root, feedback, _digest = blocked_project(tmp_path)
@@ -758,13 +793,6 @@ def test_decision_prompt_keeps_live_system_revisions_remote_and_url_only(tmp_pat
     assert "choose remote until the live revision and its official verification are complete" in prompt
     assert "send its verified HTTPS review URL without a file attachment" in prompt
     assert "explicitly asks for source files, an archive, or a download" in prompt
-
-
-def test_targeted_browser_readbacks_admit_one_hidden_context_at_a_time():
-    paid = load("paid_direct")
-
-    assert paid.PAID_MAX_PARALLEL_READBACKS == 1
-    assert paid.PAID_MAX_PARALLEL_PROJECTS > 1
 
 
 def test_selected_talkroom_readback_uses_visible_transport_for_attachments(tmp_path, monkeypatch):
