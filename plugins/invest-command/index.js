@@ -17,6 +17,7 @@ export default {
   register(api) {
     api.registerCommand({
       name: "invest",
+      nativeNames: { default: "invest" },
       description: "Investment Loopの状態と設定",
       channels: ["telegram"],
       requireAuth: true,

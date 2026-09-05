@@ -5,6 +5,7 @@ let command;
 plugin.register({ registerCommand(value) { command = value; } });
 
 assert.equal(command.name, "invest");
+assert.deepEqual(command.nativeNames, { default: "invest" });
 assert.deepEqual(command.channels, ["telegram"]);
 assert.equal(command.requireAuth, true);
 assert.equal(command.acceptsArgs, false);
