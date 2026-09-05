@@ -22,16 +22,17 @@ import re
 import time
 from pathlib import Path
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Application,
+    CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     MessageHandler,
     filters,
 )
 
-from investment_status import build_investment_status
+from investment_status import build_investment_reply
 
 LIFE_MANAGER_HOME = Path(os.environ.get(
     "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
@@ -222,7 +223,23 @@ async def cmd_help(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_invest(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
     """Show the truthful local investment onboarding/runtime state."""
-    await update.message.reply_text(build_investment_status(LIFE_MANAGER_HOME))
+    reply = build_investment_reply(LIFE_MANAGER_HOME)
+    markup = reply.get("reply_markup")
+    if markup:
+        markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton(**button) for button in row]
+            for row in markup["inline_keyboard"]
+        ])
+    await update.message.reply_text(reply["text"], reply_markup=markup)
+
+
+async def on_invest_callback(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
+    """Close the optional signup prompt without creating account state."""
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(
+        "Investment Loop\n\n今回は開始しません。準備できたら /invest を送ってください。"
+    )
 
 
 async def cmd_status(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
@@ -505,6 +522,7 @@ def main() -> None:
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("invest", cmd_invest))
+    app.add_handler(CallbackQueryHandler(on_invest_callback, pattern=r"^invest:later$"))
     app.add_handler(CommandHandler("subscribe", cmd_subscribe))
     app.add_handler(CommandHandler("connect", cmd_connect))
     app.add_handler(CommandHandler("payout", cmd_payout))
