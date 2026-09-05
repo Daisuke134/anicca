@@ -202,6 +202,16 @@ COMPETITOR_SOURCES = (
     ("service", "https://coconala.com/services/2200084"),
     ("service", "https://coconala.com/services/3122692"),
     ("service", "https://coconala.com/services/3741646"),
+    # Widened 2026-09-05: the six sources above covered one automation subcategory only.
+    # These add IT相談・システム開発's own subcategories (システム開発・制作,
+    # システム保守・運用代行) and the top verified seller by lifetime sales in each,
+    # measured live at coconala.com before being added here.
+    ("category", "https://coconala.com/categories/232"),
+    ("category", "https://coconala.com/categories/237"),
+    ("service", "https://coconala.com/services/2141574"),
+    ("service", "https://coconala.com/services/1786841"),
+    ("service", "https://coconala.com/services/1263913"),
+    ("service", "https://coconala.com/services/1196016"),
 )
 MUTATION_FIELDS = {"image", "title", "catchphrase", "body", "package", "FAQ", "price", "listing_state"}
 GENERATED_MUTATION_FIELDS = {"image", "title", "catchphrase", "body", "package", "FAQ", "price"}
@@ -1630,6 +1640,17 @@ def _resolve_create_capability(
 def _proposal_capability_evidence(all_evidence: set[str], selected_evidence: set[str]) -> set[str]:
     """Do not let evidence for an unrelated capability redefine the selected product."""
     return set(selected_evidence or all_evidence)
+
+
+def _catalog_bound_demand_clusters(clusters: list[dict], catalog_families: set[str]) -> list[dict]:
+    """Drop a scraped market cluster naming a capability family outside the owner's catalog.
+
+    A cluster outside skills/gig-work/profile/listings/catalog.json produced a live
+    non-software listing (service 4384702, "user-interview-synthesizer") on 2026-09-05.
+    A create driven by demand must stay inside what the owner curated to sell.
+    """
+    return [row for row in clusters
+            if str(row.get("capability_family") or "") in catalog_families]
 
 
 def _next_unused_demand_cluster(clusters: list[dict], dismissed: set[str]) -> dict | None:
@@ -6855,6 +6876,8 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             # When the committed demand is spent, look for the next market instead of idling.
             demand_ledger = args.state_dir / "demand-evidence.jsonl"
             known_clusters = _jsonl_rows(demand_ledger)[0] if demand_ledger.exists() else []
+            known_clusters = _catalog_bound_demand_clusters(
+                known_clusters, set(_load_catalog_entries()))
             known_clusters = [{
                 **row,
                 "recurring_potential": _capability_recurring_potential(

@@ -254,6 +254,22 @@ def test_dismissed_zero_conversion_market_never_blocks_the_next_demand_cluster()
     assert sd._next_unused_demand_cluster(clusters, {"excel", "ai", "interview"}) is None
 
 
+def test_a_cluster_outside_the_owner_catalog_never_reaches_create():
+    # Regression for service 4384702 "user-interview-synthesizer", published 2026-09-05 from
+    # a scraped cluster that named a capability family the owner never put in the catalog.
+    sd = _sd()
+    clusters = [
+        {"cluster_key": "interview", "query": "インタビュー分析", "status": "known", "score": 12,
+         "capability_family": "user-interview-synthesizer"},
+        {"cluster_key": "excel", "query": "Excel 自動化", "status": "known", "score": 5,
+         "capability_family": "excel_vba_gas_automation"},
+    ]
+    bound = sd._catalog_bound_demand_clusters(clusters, {"excel_vba_gas_automation"})
+    assert [row["cluster_key"] for row in bound] == ["excel"]
+    selected = sd._next_unused_demand_cluster(bound, set())
+    assert selected["cluster_key"] == "excel"
+
+
 def test_a_changed_public_capability_inventory_triggers_fresh_market_discovery_once():
     sd = _sd()
     clusters = [{"capability_inventory_sha256": "a" * 64, "status": "known", "score": 1}]
