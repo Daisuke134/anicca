@@ -176,3 +176,75 @@ def test_gc_does_not_reap_a_row_reacquired_by_a_live_pid_between_dispose_and_fin
     assert "gig-task" not in result["reaped"]
     saved = json.loads(leases_file.read_text(encoding="utf-8"))
     assert saved["gig-task"]["pid"] == os.getpid()
+
+
+def test_acquire_reclaims_a_lease_whose_holder_pid_is_dead(monkeypatch, tmp_path):
+    # D5: acquire() used to trust target_responds() alone -- an orphaned tab that still
+    # answers Runtime.evaluate kept a provably-dead holder's context alive in the ledger
+    # until gc's idle_min window (or a human) caught up (measured 2026-09-05: a dead
+    # holder blocked an unrelated lane for 26 wakes). acquire() must reclaim on the free,
+    # local pid check without waiting on the network probe at all.
+    module = load_module()
+    leases_file = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
+    _write_leases(leases_file, {
+        "gig-task": {
+            "context_id": "old-context", "target_id": "old-target",
+            "ws": "ws://127.0.0.1:9222/devtools/page/old-target",
+            "ts": int(time.time()), "token": "a" * 32, "generation": 1,
+            "pid": _dead_pid(),
+        }
+    })
+
+    def target_responds_should_not_be_needed(*args, **kwargs):
+        raise AssertionError("acquire() must not wait on target_responds for a dead pid")
+
+    monkeypatch.setattr(module, "target_responds", target_responds_should_not_be_needed)
+
+    disposed = []
+
+    async def dispose_then_create(pairs, timeout=None):
+        out = []
+        for method, params in pairs:
+            if method == "Target.disposeBrowserContext":
+                disposed.append(params.get("browserContextId"))
+                out.append({})
+            elif method == "Target.createBrowserContext":
+                out.append({"browserContextId": "new-context"})
+            elif method == "Target.createTarget":
+                out.append({"targetId": "new-target"})
+        return out
+
+    monkeypatch.setattr(module, "_calls", dispose_then_create)
+    result = module.acquire("gig-task")
+
+    assert disposed == ["old-context"]
+    assert result["ok"] is True
+    assert result["reused"] is False
+    assert result["context_id"] == "new-context"
+    assert result["pid"] == os.getppid()
+
+
+def test_acquire_does_not_reclaim_a_lease_whose_holder_pid_is_alive(monkeypatch, tmp_path):
+    module = load_module()
+    leases_file = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
+    _write_leases(leases_file, {
+        "gig-task": {
+            "context_id": "old-context", "target_id": "old-target",
+            "ws": "ws://127.0.0.1:9222/devtools/page/old-target",
+            "ts": int(time.time()), "token": "a" * 32, "generation": 1,
+            "pid": os.getpid(),  # this test process is definitely alive
+        }
+    })
+    monkeypatch.setattr(module, "target_responds", lambda *a, **k: True)
+
+    def create_should_not_be_called(pairs, timeout=None):
+        raise AssertionError("acquire() must not dispose/recreate a live holder's context")
+
+    monkeypatch.setattr(module, "_calls", create_should_not_be_called)
+    result = module.acquire("gig-task")
+
+    assert result["ok"] is True
+    assert result["reused"] is True
+    assert result["context_id"] == "old-context"

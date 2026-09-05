@@ -219,9 +219,19 @@ def acquire(task, url="about:blank", no_seed=False):
     with _ledger_lock():
         leases = _leases()
         held = leases.get(task)
-        if held and not target_responds(held.get("ws") or _page_ws(held.get("target_id") or "")):
-            # Dead renderer. Drop the whole context so the next block builds a fresh one;
-            # reusing it would fail this lane on every pass until a human noticed.
+        holder_dead = bool(held) and _pid_alive(held.get("pid")) is False
+        if held and (holder_dead or not target_responds(
+            held.get("ws") or _page_ws(held.get("target_id") or "")
+        )):
+            # Dead holder (confirmed via the free, local pid check -- no need to spend up
+            # to target_responds()'s 6s network round trip proving what os.kill() already
+            # answered) or dead renderer. Drop the whole context so the next block builds a
+            # fresh one; waiting out target_responds() here -- or worse, leaving the row for
+            # gc's idle_min window -- let a provably-dead holder's leaked context sit open
+            # and degrade the shared browser for every other lane in the meantime (measured
+            # 2026-09-05: job-search-daily's dead pid 55895 sat in the ledger for 26 wakes
+            # of an unrelated task, gig-storefront-direct, timing out on acquire, until a
+            # manual `gc --idle-min 0` reaped it).
             try:
                 asyncio.run(_calls([(
                     "Target.disposeBrowserContext",

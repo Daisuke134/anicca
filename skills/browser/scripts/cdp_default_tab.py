@@ -50,15 +50,21 @@ def _lease(owner):
     return lease
 
 
-async def _call(method, params=None):
-    async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
-        await ws.send(json.dumps({"id": 1, "method": method, "params": params or {}}))
-        while True:
-            msg = json.loads(await ws.recv())
-            if msg.get("id") == 1:
-                if "error" in msg:
-                    raise RuntimeError(f"{method}: {msg['error']}")
-                return msg.get("result", {})
+async def _call(method, params=None, timeout=20.0):
+    """One CDP call on a fresh browser connection, bounded by `timeout`.
+
+    This used to `await ws.recv()` with no deadline at all -- the exact hang
+    cdp_context_lease.py's `_calls()` was fixed to avoid (see its docstring: "recv()
+    used to wait forever"). A busy or wedged browser then left the caller's own external
+    subprocess timeout (30s in storefront_direct.py's `open`/`close` call sites) as the
+    only thing that could ever end this call, and that ends it with SIGKILL -- which can
+    fire after `Target.createTarget` already created a tab on the browser but before
+    `target_ownership.claim_target()` ever runs, leaking an untracked, unowned tab
+    forever. Reuses cdp_context_lease's own proven deadline-batch helper instead of
+    duplicating the recv-loop-with-a-clock logic a second time.
+    """
+    (result,) = await cdp_context_lease._calls([(method, params)], timeout=timeout)
+    return result
 
 
 def open_tab(url, background=False, owner=None):

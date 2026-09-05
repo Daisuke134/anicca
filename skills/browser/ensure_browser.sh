@@ -25,6 +25,12 @@ post_recovery() {
   if [ -n "${CLOAK_BROWSER_OWNER:-}" ]; then
     python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/cdp_tab_gc.py" --owner "$CLOAK_BROWSER_OWNER" >> "$LOG" 2>&1 || true
   fi
+  # Only the already-alive fast path (below) used to run this; a lane that woke into a
+  # crashed browser and recovered it here got no lease reap at all until the next lucky
+  # already-alive wake. acquire() now self-reclaims a dead-pid holder of its own task on
+  # every call, but a task nobody has re-acquired since its holder died still leaks its
+  # context until something calls gc -- so recovery wakes need this backstop too.
+  python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/cdp_context_lease.py" gc --idle-min 45 >> "$LOG" 2>&1 || true
 }
 
 if alive; then
