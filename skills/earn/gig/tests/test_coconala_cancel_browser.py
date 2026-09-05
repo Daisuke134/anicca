@@ -160,17 +160,27 @@ def test_contract_rejects_non_cancellation_feedback():
         cancel.validate_contract(queue, requirements)
 
 
-def test_paid_routes_only_exact_adapter_block_to_cancellation():
+def test_paid_routes_cancellation_block_when_any_unresolved_entry_mentions_adapter():
     paid = load_module("paid_direct")
     matching = {
         "decision": "blocked",
         "required_effect": "Coconala キャンセルリクエスト: cancel the transaction.",
-        "unresolved": ["No code-owned Coconala cancellation adapter is present."],
+        "unresolved": [
+            "No code-owned Coconala cancellation/transaction-control adapter is present.",
+            "The latest acknowledgement is also unresolved.",
+        ],
     }
 
     assert paid._is_coconala_cancellation_block(matching) is True
     assert paid._is_coconala_cancellation_block({
         **matching, "required_effect": "Restore the customer website."
+    }) is False
+    assert paid._is_coconala_cancellation_block({
+        **matching,
+        "unresolved": [
+            "Coconala cancellation remains unresolved.",
+            "The latest acknowledgement is also unresolved.",
+        ],
     }) is False
 
 
