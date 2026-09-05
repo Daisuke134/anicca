@@ -1301,7 +1301,7 @@ def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     args = SimpleNamespace(**{
         name: tmp_path / name for name in (
             "run_with_cdp_lock", "evidence_dir", "projects_root", "collector",
-            "answer_browser", "formal_browser", "delivery_evidence_dir", "cdp_helper",
+                "answer_browser", "formal_browser", "cancel_browser", "delivery_evidence_dir", "cdp_helper",
             "context_compiler", "dm_collector", "agent_runner", "runner_schema",
             "artifact_schema", "cdp_lock_dir",
         )
