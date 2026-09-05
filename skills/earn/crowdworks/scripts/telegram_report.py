@@ -27,7 +27,7 @@ OUTBOX_PATH = ROOT / "skills" / "_shared" / "marketplace-core" / "scripts" / "te
 ENVELOPE_PATH = ROOT / "skills" / "earn" / "gig" / "scripts" / "report_envelope.py"
 # Lancers delivers through this client, not through a CLI: launchd gives a job no PATH, so shelling
 # out to a Homebrew binary fails as process_not_started and the queue silently stops delivering.
-TELEGRAM_PATH = ROOT / "skills" / "_shared" / "telegram.py"
+DELIVERY_PATH = ROOT / "skills" / "_shared" / "marketplace-core" / "scripts" / "telegram_delivery.py"
 CHAT_CONFIG = Path.home() / ".config" / "anicca" / "crowdworks" / "telegram.env"
 STATE = Path("~/.local/state/anicca/crowdworks").expanduser()
 LEDGER = STATE / "application-receipts.jsonl"
@@ -58,13 +58,8 @@ def _load(name: str, path: Path):
 
 outbox = _load("crowdworks_report_outbox", OUTBOX_PATH)
 envelope = _load("crowdworks_report_envelope", ENVELOPE_PATH)
-
-
-@dataclass(frozen=True)
-class SendResult:
-    started: bool
-    provider_id: Optional[str]
-    error: Optional[str]
+delivery = _load("crowdworks_report_delivery", DELIVERY_PATH)
+SendResult = delivery.SendResult
 
 
 def _receipts(ledger_path: Path) -> list[Mapping[str, object]]:
@@ -116,54 +111,14 @@ def enqueue_decisions(database: Path, *, ledger_path: Path = LEDGER, now: str) -
     return enqueued
 
 
-def _default_notifier(message: str) -> SendResult:
-    try:
-        telegram = _load("crowdworks_shared_telegram", TELEGRAM_PATH)
-        client = telegram.TelegramClient.from_env(
-            environ={"TELEGRAM_CHAT_ID": TARGET},
-            env_file=Path.home() / ".local/state/life-manager/.env",
-        )
-        receipt = client.send_text(message)
-        ids = receipt.get("message_ids") if isinstance(receipt, Mapping) else None
-        provider_id = str(ids[-1]) if isinstance(ids, list) and ids else None
-        return SendResult(True, provider_id, "receipt_missing" if provider_id is None else None)
-    except Exception as error:
-        attempted = type(error).__name__ == "TelegramDeliveryUnknown"
-        return SendResult(attempted, None, "transport_unknown" if attempted else "direct_transport_unavailable")
-
-
-@dataclass(frozen=True)
-class Delivery:
-    attempted: int
-    delivered: int
-    delivery_uncertain: int
-    pre_send_failed: int
-
-
-def deliver_pending(database: Path, notifier: Callable[[str], SendResult], now: str) -> Delivery:
-    attempted = delivered = uncertain = pre_send = 0
-    # A sender killed mid-call leaves its claim behind and blocks every later message.
-    try: outbox.reclaim_stale(Path(database))
-    except Exception: pass
-    while (item := outbox.claim_next(Path(database))) is not None:
-        attempted += 1
-        result = notifier(item.message)
-        if not result.started:
-            outbox.mark_pre_send_failed(Path(database), item.event_key, result.error or "process_not_started"); pre_send += 1
-        elif result.provider_id:
-            outbox.mark_delivered(Path(database), item.event_key, result.provider_id, now); delivered += 1
-        else:
-            outbox.mark_delivery_uncertain(Path(database), item.event_key, result.error or "receipt_missing"); uncertain += 1
-    return Delivery(attempted, delivered, uncertain, pre_send)
-
-
 def run(*, database: Path = DATABASE, notifier: Optional[Callable[[str], SendResult]] = None, now: Optional[str] = None) -> dict[str, object]:
     stamp = now or datetime.now(timezone.utc).isoformat()
     enqueued = enqueue_decisions(database, now=stamp)
-    delivery = deliver_pending(database, notifier or _default_notifier, stamp)
-    return {"ok": delivery.delivery_uncertain == 0 and delivery.pre_send_failed == 0, "platform": "crowdworks",
-            "enqueued": enqueued, "attempted": delivery.attempted, "delivered": delivery.delivered,
-            "delivery_uncertain": delivery.delivery_uncertain, "pre_send_failed": delivery.pre_send_failed}
+    send = notifier or (lambda message: delivery.send_via_shared_client(message, chat_id=TARGET))
+    sent = delivery.deliver_pending(outbox, database, send, stamp)
+    return {"ok": sent.delivery_uncertain == 0 and sent.pre_send_failed == 0, "platform": "crowdworks",
+            "enqueued": enqueued, "attempted": sent.attempted, "delivered": sent.delivered,
+            "delivery_uncertain": sent.delivery_uncertain, "pre_send_failed": sent.pre_send_failed}
 
 
 def main(argv: Optional[Sequence[str]] = None, *, notifier: Optional[Callable[[str], SendResult]] = None, stdout: Any = None) -> int:
