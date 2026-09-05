@@ -1153,7 +1153,7 @@
     },
     {
       "id": "mobile-app-planning-dev",
-      "title_ja": "スマホアプリの企画・開発を承ります",
+      "title_ja": "iOS/Androidスマホアプリを開発します",
       "family": "mobile_app_dev",
       "value_prop": "アイデア段階から要件定義・UI設計・実装まで、iOS/Android向けアプリを開発。",
       "tiers": [
@@ -1278,7 +1278,7 @@
     },
     {
       "id": "ai-feature-webapp-dev",
-      "title_ja": "AI機能を組み込んだWebアプリを開発します(OpenAI/Claude API活用)",
+      "title_ja": "AI機能を組み込んだWebアプリを開発します",
       "family": "web_app_ai_feature",
       "value_prop": "添削・診断・レコメンドなどAI機能をWebアプリに実装。",
       "tiers": [
