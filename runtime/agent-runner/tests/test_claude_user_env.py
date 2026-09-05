@@ -22,6 +22,15 @@ class ClaudeUserEnvTest(unittest.TestCase):
         env = provider_process_env("claude-direct", {}, environ=environ)
         self.assertEqual(env.get("USER"), "someone")
 
+    def test_claude_direct_does_not_inherit_codex_home_lock_scope(self):
+        environ = {
+            "HOME": "/Users/anicca",
+            "PATH": "/usr/bin:/bin",
+            "CODEX_HOME": "/fixture/busy-codex-home",
+        }
+        env = provider_process_env("claude-direct", {}, environ=environ)
+        self.assertNotIn("CODEX_HOME", env)
+
 
 if __name__ == "__main__":
     unittest.main()
