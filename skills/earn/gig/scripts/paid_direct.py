@@ -4566,7 +4566,11 @@ def _is_coconala_cancellation_block(semantic: dict[str, Any]) -> bool:
         and isinstance(unresolved, list)
         and len(unresolved) == 1
         and "coconala" in effect.casefold()
-        and "cancellation" in effect.casefold()
+        and (
+            "cancellation" in effect.casefold()
+            or re.search(r"\bcancel\b", effect, re.IGNORECASE) is not None
+            or "キャンセル" in effect
+        )
         and "adapter" in _text(unresolved[0]).casefold()
     )
 
