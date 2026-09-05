@@ -702,14 +702,18 @@ order.
 product to frequent stock trades instead of observation, holding, refusal, exit, and risk management. The command
 returns the current lifecycle state and only the actions valid in that state as Telegram buttons:
 
+The existing Life Manager subscription entitlement remains the only product payment gate. An unpaid user receives
+the existing subscription checkout and returns to `/invest` after payment; Investment Loop creates no second plan,
+checkout, billing service, or investment-specific subscription. A paid user goes directly to the account state.
+
 ```mermaid
 stateDiagram-v2
     [*] --> NeedsAccount: /invest
     NeedsAccount --> InReview: owner opens official signup link and completes signup + KYC
     InReview --> InReview: loop polls and reports
     InReview --> NeedsFunding: provider approves
-    NeedsFunding --> Ready: owner funds within campaign cap
-    Ready --> Running: Start
+    NeedsFunding --> Shadow: owner authorizes initial funding within campaign cap
+    Shadow --> Running: read-only, risk, and shadow gates pass automatically
     Running --> Paused: Pause
     Paused --> Running: Resume
     Running --> Stopped: Kill
@@ -728,12 +732,20 @@ The exact new-account chat contract is:
 >
 > Alpacaで口座開設と本人確認を完了してください。Life Managerと同じメールアドレスを使うと接続が簡単です。
 >
-> 完了したら下の「提出した」を押してください。審査中になった後はLife Managerが状態を確認します。
+> 口座開設、本人確認、初回入金を完了してください。その後はLife Managerが状態を確認して自動運転します。
 
-Buttons: `Alpacaで口座開設する` (URL above), `提出した`, and `今はしない`. `提出した` performs status
-readback; it never treats the tap itself as proof of submission. When provider/API polling becomes available, a
-detected `SUBMITTED` or `APPROVAL_PENDING` state removes even that tap. The bot then reports only a state change or
-required human action, rather than repeatedly asking the user to check.
+Buttons: `Alpacaで口座開設する` (URL above) and `今はしない`. Signup, KYC, and initial owner-authorized funding
+are one provider-owned ceremony whenever Alpaca exposes them in one flow. Life Manager never requires a separate
+`提出した`, `入金を確認`, `Shadowを開始`, or `ライブ開始` acknowledgement. After the account is privately bound,
+the loop polls official account state. A detected `SUBMITTED` or `APPROVAL_PENDING` state enters review; `APPROVED`
+or `ACTIVE` plus funded cash advances automatically through L05 read-only preflight, L06 risk checks, and the L08
+shadow gate. Live entries become eligible automatically only after every frozen gate passes. A Telegram tap or
+free-text claim is never proof of submission, approval, funding, or readiness.
+
+The same one-time setup records the user's instruction to run autonomously under the frozen `$100` allocated-capital,
+`$10` per-trade-loss, and `$20` daily-loss limits. It does not authorize exceeding those limits, withdrawing funds,
+or changing the destination account. This one-time mandate replaces per-order and first-live confirmations; it does
+not replace the provider/bank's legally required identity, agreement, or transfer authorization.
 
 The user creates the provider password in the signup ceremony and stores it with the device password manager or a
 passkey when supported. Life Manager never mandates one shared password across services and never promises to know
@@ -741,9 +753,10 @@ a password the user created. Password reuse is rejected because compromise of on
 the brokerage account. This security boundary adds no recurring UX step: autofill handles later login, while
 passwords, tax IDs, documents, MFA secrets, and API keys never enter Telegram, receipts, logs, or Git.
 
-After approval, the loop binds live API credentials through the deployment's private secret path, completes L05
-read-only preflight, and exposes `Start` only when every gate passes. The only required human actions are the
-provider signup/KYC ceremony, any provider-requested additional identity response, and owner-authorized funding.
+After approval, the loop binds live API credentials through the deployment's private secret path and advances
+without another human confirmation. The only required human actions are the provider signup/KYC ceremony, any
+provider-requested additional identity response, and the provider/bank authorization that moves the owner's initial
+funds. These actions cannot be inferred or performed silently. Everything after that is loop-owned.
 
 The initial action surface behind `/invest` is deliberately small:
 
@@ -752,7 +765,7 @@ The initial action surface behind `/invest` is deliberately small:
 | `/invest` or `Status` | Lifecycle, mode, deployment, equity, cash, P&L, positions, latest wake, next wake | Read-only |
 | `Why` | Natural-language explanation of the latest proposal, rejection, or `NO_TRADE` | Read-only |
 | `Risk` | Capital cap, per-trade cap, daily remaining loss budget, halt reason | Read-only |
-| `Start` / `Resume` | Enables entries only when live-account and risk gates pass | Authenticated state change |
+| `Resume` | Re-enables automatic entries only after the user previously chose `Pause` and every gate still passes | Authenticated state change |
 | `Pause` | Blocks new entries; reconciliation and risk-reducing exits continue | Authenticated state change |
 | `Kill` | Blocks new entries, cancels open orders, then performs official reconciliation | Authenticated emergency action |
 
@@ -764,6 +777,13 @@ it does not complete L05 or L07 and cannot submit an order, move money, or expos
 
 There is no Telegram command for changing credentials, increasing capital, weakening risk limits, or switching
 deployment. Those operations require the deployment's private operator path and explicit readback.
+
+Local and cloud expose this identical chat contract. The host is invisible to the user: local uses launchd and
+private local state; cloud uses the existing Life Manager scheduler, tenant state, and encrypted secret provider.
+Exactly one deployment owns an account at a time. Every natural wake reports decision or `NO_TRADE`, reason,
+official account/effect readback, balance and P&L, remaining risk budget, and next wake. Review-state polling sends
+only state changes or required action, avoiding repetitive noise. After activation, skipped trades, orders, fills,
+exits, failures, halts, and recovery all report without asking the user to supervise the loop.
 
 ### 7.3 Frozen initial live-risk policy
 
