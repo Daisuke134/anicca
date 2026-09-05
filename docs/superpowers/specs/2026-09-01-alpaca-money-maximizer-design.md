@@ -733,6 +733,12 @@ The initial action surface behind `/invest` is deliberately small:
 | `Pause` | Blocks new entries; reconciliation and risk-reducing exits continue | Authenticated state change |
 | `Kill` | Blocks new entries, cancels open orders, then performs official reconciliation | Authenticated emergency action |
 
+While L04 is in review, the first local UX slice is available without changing TODO order: the already-running
+local Telegram bot owns `/invest`, reads the existing paper observation/allocation receipts, and reads a private
+local application-status receipt. It reports `in_review`, the paper balance, and the latest natural-language
+decision reason. Missing or unknown state fails closed and never implies live readiness. This slice is read-only;
+it does not complete L05 or L07 and cannot submit an order, move money, or expose credentials in Telegram.
+
 There is no Telegram command for changing credentials, increasing capital, weakening risk limits, or switching
 deployment. Those operations require the deployment's private operator path and explicit readback.
 
@@ -852,11 +858,10 @@ official account state is approved and owner funding of at most `$100` is verifi
 review state without resubmitting the application.
 
 L04 review does not pause the existing paper loop. Production evidence shows the launchd job loaded at 300-second
-cadence, decision receipts continuing every natural wake, and 145 reports acknowledged through the established
-`AniccaLifeBot` owner route. The defect is presentation: reports identify themselves as `Codex::: Alpaca` instead
-of the loop-owned `[Investment Loop][投資判断]` or `[Investment Loop][実行エラー]`. The prerequisite envelope repair
-also surfaces the model's natural-language reason and next automatic action, matching the existing Coconala/Lancers
-report shape without copying their implementation. It changes presentation only;
+cadence, decision receipts continuing every natural wake, and reports acknowledged through the established
+`AniccaLifeBot` owner route. The presentation repair is deployed: reports now use the loop-owned
+`[Investment Loop][投資判断]` or `[Investment Loop][実行エラー]`, include the model's natural-language reason and
+next automatic action, and contain neither `Codex`, `Alpaca`, nor `:::`. It changes presentation only;
 it adds no sender, schedule, outbox, or sibling-loop dependency. Until L04 closes, every natural paper wake still
 reports balance, P&L, decision or failure, and `NO_TRADE` when applicable. This repair restores the already-required
 product description; it does not mark the L07 command surface complete or reorder the TODO.
