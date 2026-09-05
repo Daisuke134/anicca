@@ -851,6 +851,14 @@ submission, not approval, live API availability, options permission, or funding.
 official account state is approved and owner funding of at most `$100` is verified; the loop polls and reports the
 review state without resubmitting the application.
 
+L04 review does not pause the existing paper loop. Production evidence shows the launchd job loaded at 300-second
+cadence, decision receipts continuing every natural wake, and 145 reports acknowledged through the established
+`AniccaLifeBot` owner route. The defect is presentation: reports identify themselves as `Codex::: Alpaca` instead
+of the product-owned `Life Manager::: Investment loop`. The prerequisite naming repair changes that envelope only;
+it adds no sender, schedule, outbox, or sibling-loop dependency. Until L04 closes, every natural paper wake still
+reports balance, P&L, decision or failure, and `NO_TRADE` when applicable. This repair restores the already-required
+product description; it does not mark the L07 command surface complete or reorder the TODO.
+
 | Seq | Atom | Acceptance gate |
 |---:|---|---|
 | L01 | Portable finite pass — **DONE** | Reuse the working local paper loop to prove observation, model proposal, deterministic gate, sealed effect, reconciliation, receipt, and Telegram from one environment-neutral entrypoint. Broker credentials, scheduler, and mutable state remain injected boundaries. Dashboard publishing is excluded from the portable pass. |
