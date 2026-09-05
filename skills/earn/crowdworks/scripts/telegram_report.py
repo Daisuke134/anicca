@@ -28,6 +28,7 @@ ENVELOPE_PATH = ROOT / "skills" / "earn" / "gig" / "scripts" / "report_envelope.
 # Lancers delivers through this client, not through a CLI: launchd gives a job no PATH, so shelling
 # out to a Homebrew binary fails as process_not_started and the queue silently stops delivering.
 DELIVERY_PATH = ROOT / "skills" / "_shared" / "marketplace-core" / "scripts" / "telegram_delivery.py"
+SUMMARY_PATH = ROOT / "skills" / "_shared" / "marketplace-core" / "scripts" / "lane_summary.py"
 CHAT_CONFIG = Path.home() / ".config" / "anicca" / "crowdworks" / "telegram.env"
 STATE = Path("~/.local/state/anicca/crowdworks").expanduser()
 LEDGER = STATE / "application-receipts.jsonl"
@@ -59,6 +60,7 @@ def _load(name: str, path: Path):
 outbox = _load("crowdworks_report_outbox", OUTBOX_PATH)
 envelope = _load("crowdworks_report_envelope", ENVELOPE_PATH)
 delivery = _load("crowdworks_report_delivery", DELIVERY_PATH)
+summary = _load("crowdworks_lane_summary", SUMMARY_PATH)
 SendResult = delivery.SendResult
 
 
@@ -118,9 +120,30 @@ def enqueue_decisions(database: Path, *, ledger_path: Path = LEDGER, now: str) -
     return enqueued
 
 
+def enqueue_wake_summary(database: Path, *, status_path: Path = STATUS, ledger_path: Path = LEDGER, now: str) -> int:
+    """One line per wake so silence is never ambiguous: a lane with nothing to do says so."""
+    try: status = json.loads(status_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError): return 0
+    receipts = _receipts(ledger_path)
+    today = now[:10]
+    message = summary.summarise_apply_wake(
+        platform_display_name="CrowdWorks",
+        status=status,
+        today_verified=len([r for r in receipts if str(r.get("observed_at", ""))[:10] == today]),
+        total_verified=len(receipts),
+    )
+    if not message: return 0
+    observed = str(status.get("observed_at") or now)
+    try:
+        return int(bool(outbox.enqueue(Path(database), f"crowdworks:wake:{observed}", message, now)))
+    except Exception:
+        return 0
+
+
 def run(*, database: Path = DATABASE, notifier: Optional[Callable[[str], SendResult]] = None, now: Optional[str] = None) -> dict[str, object]:
     stamp = now or datetime.now(timezone.utc).isoformat()
     enqueued = enqueue_decisions(database, now=stamp)
+    enqueued += enqueue_wake_summary(database, now=stamp)
     send = notifier or (lambda message: delivery.send_via_shared_client(message, chat_id=TARGET))
     sent = delivery.deliver_pending(outbox, database, send, stamp)
     return {"ok": sent.delivery_uncertain == 0 and sent.pre_send_failed == 0, "platform": "crowdworks",
