@@ -766,16 +766,25 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
     provider_lock_fd = None
     try:
         codex_home = env.get("CODEX_HOME")
+        codex_home_lock_contended = False
         if codex_home:
             lock_path = Path(codex_home) / ".agent-runner-provider.lock"
             lock_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             provider_lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
-            try:
-                fcntl.flock(provider_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except OSError as error:
-                if error.errno in (errno.EACCES, errno.EAGAIN):
-                    raise ProviderLeaseBusy("codex automation home is busy") from error
-                raise
+            while True:
+                try:
+                    fcntl.flock(provider_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except OSError as error:
+                    if error.errno not in (errno.EACCES, errno.EAGAIN):
+                        raise
+                    codex_home_lock_contended = True
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise ProviderLeaseBusy("codex automation home is busy") from error
+                    time.sleep(min(0.01, remaining))
+            if codex_home_lock_contended and time.monotonic() >= deadline:
+                raise ProviderLeaseBusy("codex automation home is busy")
             remove_incompatible_codex_model_cache(Path(codex_home))
         inherited_fds = tuple(fd for fd in (lease_fd, provider_lock_fd) if fd is not None)
         remaining = deadline - time.monotonic()
