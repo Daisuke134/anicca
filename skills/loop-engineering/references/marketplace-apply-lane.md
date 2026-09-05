@@ -13,7 +13,7 @@ marketplace adapter — each one costs a day to rediscover.
 | Receipt ledger | `.../ledger.py` |
 | Telegram delivery with exactly-once accounting | `.../telegram_outbox.py` |
 | The `[Platform][応募判断]` / `[Platform][応募完了]` message | `skills/earn/gig/scripts/report_envelope.py` (platform-neutral; takes the display name as an argument) |
-| The per-wake lane summary | `skills/_shared/marketplace-core/scripts/lane_summary.py` |
+| The per-wake lane summary | `skills/_shared/marketplace-core/scripts/lane_summary.py` (Lancers and CrowdWorks both render through it) |
 | Sending, and draining the outbox | `.../telegram_delivery.py` (never a CLI: launchd gives a job no PATH) |
 | What to sell, at what price, per platform | `skills/gig-work/profile/listings/catalog.json` |
 
@@ -123,6 +123,17 @@ suspect an exception inside the settle path before suspecting the provider.
 distinguished from a lane that has stopped. Send one line per wake — what was
 inspected, what was declined and why, what was applied — and the reader can
 tell "nothing was eligible" from "broken" without opening a terminal.
+
+**14. A category allow-list must be measured, not guessed.** The first list
+rejected `AI・チャットボット開発`, `ChatGPT開発` and `Webサイト更新・保守` — all sold
+by the catalogue — and was the largest rejection bucket. Sample the categories
+the provider actually prints before deciding what is out of scope, then keep a
+case for each accepted and each rejected name so widening it later is safe.
+
+**15. Optional state fields are rejected in three places.** A field added to a
+claim has to survive the writer's field list, the reader's field-set check and
+the reader's field-by-field rebuild. Miss the middle one and the whole state
+file is invalid, which surfaces as every reconcile failing at once.
 
 **13. An abandoned claim stops the whole queue.** A sender killed between
 claiming a message and resolving it leaves the claim in `sending`, and because
