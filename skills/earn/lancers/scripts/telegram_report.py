@@ -528,6 +528,11 @@ def _provider_payload(text: str) -> object:
 
 def deliver_pending(database: Path, notifier: Callable[[str], object], now: object) -> DeliveryResult:
     result = DeliveryResult()
+    # A sender killed between claiming and resolving leaves its claim in 'sending' forever, and
+    # claim_next only reads 'pending', so one abandoned claim silently stops the whole queue.
+    # Measured on CrowdWorks 2026-09-05: three of them blocked every later report.
+    try: outbox.reclaim_stale(Path(database))
+    except Exception: pass
     for _ in range(20):
         item = outbox.claim_next(Path(database))
         if item is None:
