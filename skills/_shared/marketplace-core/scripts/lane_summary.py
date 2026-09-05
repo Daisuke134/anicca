@@ -20,6 +20,9 @@ _ICON_FAIL = "⚠️"
 
 
 def _count(value: object) -> str:
+    """A count, optionally carrying its own detail: (3, "proposal_form_changed") -> 3件(proposal_form_changed)."""
+    if isinstance(value, tuple) and len(value) == 2:
+        return f"{_count(value[0])}({value[1]})" if value[1] else _count(value[0])
     return f"{value}件" if isinstance(value, int) and not isinstance(value, bool) else "取得できませんでした"
 
 

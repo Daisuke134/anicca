@@ -76,6 +76,7 @@ def _load(name: str, path: Path) -> Any:
     spec.loader.exec_module(module)
     return module
 outbox = _load("lancers_report_outbox", OUTBOX_PATH)
+summary = _load("lancers_lane_summary", OUTBOX_PATH.with_name("lane_summary.py"))
 
 
 def _inventory_item(locator: Any, code: str, visible: bool = True) -> Any:
@@ -582,11 +583,24 @@ def render_application_wake(result: Mapping[str, object]) -> str:
     skipped_reports = [item for item in decision_reports if isinstance(item, Mapping) and item.get("outcome") == "failed"]
     skip_reasons = sorted({str(item.get("error") or "unknown") for item in skipped_reports})
     skip_text = f" / skip{len(skipped_reports)}件({','.join(skip_reasons)})" if skipped_reports else ""
-    return (
-        f"[Lancers][応募] {'📨' if result.get('application_verified') else '⏭️' if result.get('ok') else '⚠️'} {outcome}\n"
-        f"確認: 公開案件{observed}件 / 既判断{already_decided}件 / fresh判断{len(decision_reports)}件{skip_text} / 応募候補{eligible}件 / 公式確認{verified}件。\n"
-        f"応募実績: 今日{today_text} / 累計{cumulative_text}（公式proposal receipt）。\n"
-        "次: 5分後のwakeで新着案件の確認と最大positive-EV応募を続けます。"
+    # Same sentence, one implementation: CrowdWorks renders its wake through this too, so the two
+    # lanes cannot drift into two different reports of the same kind of event.
+    return summary.render_lane_summary(
+        platform_display_name="Lancers",
+        lane="応募",
+        icon="📨" if result.get("application_verified") else "⏭️" if result.get("ok") else "⚠️",
+        headline=outcome,
+        counts=[
+            ("公開案件", observed),
+            ("既判断", already_decided),
+            (f"fresh判断", len(decision_reports)),
+            *([("skip", (len(skipped_reports), ",".join(skip_reasons)))] if skipped_reports else []),
+            ("応募候補", eligible),
+            ("公式確認", verified),
+        ],
+        today_verified=today_verified,
+        total_verified=cumulative_verified,
+        next_action="5分後のwakeで新着案件の確認と最大positive-EV応募を続けます。",
     )
 
 
