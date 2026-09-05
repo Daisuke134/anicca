@@ -9,7 +9,9 @@ function selfResponse(event) {
   return String((self && self.responseStatus) || event.status || "").toLowerCase();
 }
 function onlineSignal(event) {
-  const urls = [event.hangoutLink, event.location]
+  const location = String(event.location || "").trim();
+  if (/^(?:オンライン|online)(?:\s*$|\s*[:：-]\s*|\s+)/i.test(location)) return true;
+  const urls = [event.hangoutLink, location]
     .concat(((event.conferenceData || {}).entryPoints || []).map((entry) => entry && entry.uri))
     .filter(Boolean);
   return urls.some((value) => /^https?:\/\//i.test(String(value)));
