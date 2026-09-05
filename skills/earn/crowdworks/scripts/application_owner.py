@@ -175,6 +175,8 @@ def main():
                 tick=application.execute_application(page=page,opportunity=candidate,proposal_text=_proposal(listing,tier),proposed_amount_minor=tier["price_jpy"],delivery_due_on=due,expire_period_days=7,state_path=TRANSACTION,ledger_writer=_append,now=lambda:datetime.now(timezone.utc).isoformat(),account_ready=lambda:True)
                 result={**tick.to_dict(),"status":"verified" if tick.application_verified else tick.error or tick.reason,"effect_delta":1 if tick.submitted else 0}
             page.close()
+    # Reporting is a separate owner (crowdworks-revenue-report). Apply owns submissions only, so a
+    # failed or slow report can never hold up an application, and vice versa.
     result["observed_at"]=now.isoformat();_write_status(result);print(json.dumps(result,ensure_ascii=False,separators=(",",":")));return 0 if result.get("ok") else 1
 
 if __name__=="__main__":raise SystemExit(main())
