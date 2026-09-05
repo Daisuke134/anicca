@@ -1485,7 +1485,16 @@ def _render_listing_state_mutation(
     }, capability_families)
 
 
-CREATE_MIN_INTERVAL_SECONDS = 86_400
+# The create -> prepare -> publish state machine advances at most one step per wake and
+# needs exactly three sequential passes to take a blank draft public: create_or_claim_blank_draft
+# (draft_created), prepare_draft (draft_prepared), publish_draft (published) -- each gated by its
+# own _persist_effect_block checkpoint. At this lane's 60-second wake cadence that is 180 seconds
+# in the ideal case; one hour is ~20x that, enough headroom for slow browser/agent round trips on
+# any one step without a next creation attempt colliding with a cycle still in flight. Coconala
+# caps a seller at 20 live listings, so at one new creation started per hour the remaining free
+# slots fill within a handful of hours -- same working day, never the multi-day drift the previous
+# 86,400-second (one per day) spacing produced.
+CREATE_MIN_INTERVAL_SECONDS = 3_600
 
 
 def _extract_search_demand(body: str) -> dict:

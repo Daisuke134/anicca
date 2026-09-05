@@ -137,9 +137,11 @@ def _reconcile(page):
     imported = 0
     for entry in pending.values():
         project_id = entry.get("project_id") if isinstance(entry, dict) else None
-        if not isinstance(project_id, str) or entry.get("proposal_id"): continue
-        proposal_id = application.find_proposal_id(page, project_id)
-        if proposal_id is None: continue
+        if not isinstance(project_id, str): continue
+        # Still pending means still unverified, whether or not the submit step managed to read an id
+        # back. Skipping the entries that already carried one stranded application 304592525.
+        proposal_id = entry.get("proposal_id") or application.find_proposal_id(page, project_id)
+        if not isinstance(proposal_id, str): continue
         outcome = application.reconcile_existing_application(page=page, proposal_id=proposal_id, opportunity={"external_id": project_id}, state_path=TRANSACTION, ledger_writer=_append, now=lambda: datetime.now(timezone.utc).isoformat(), account_ready=lambda: True)
         imported += 1 if getattr(outcome, "application_verified", False) else 0
     return imported
