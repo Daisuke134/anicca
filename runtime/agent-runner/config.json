@@ -154,6 +154,7 @@
           "provider": "codex",
           "model": "gpt-5.6-terra",
           "effort": "medium",
+          "timeout_seconds": 90,
           "profile_alias": "acct2"
         },
         {
