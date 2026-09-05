@@ -3,7 +3,7 @@
 status: APPROVED PAPER HISTORY / LIVE OSS DESIGN / L01 ACTIVE
 owner: Dais / Life Manager
 hackathon deadline: 2026-09-05 00:00 JST — submitted
-execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
+Alpaca live-product implementation SSOT: this document §§7–8
 
 Sections 1–6 are the frozen hackathon design and execution history. They describe the former Eliza architecture
 and must not be used to implement current work. Sections 7–8 supersede them for the native launchd/cloud live-money
@@ -640,14 +640,16 @@ own Alpaca account. A hosted service that chooses or executes trades for other p
 regulated product and is outside this implementation queue until qualified legal review closes its jurisdiction,
 registration, disclosure, suitability, custody, and supervision requirements.
 
-### 7.1 Deployment decision: choose cloud or local
+### 7.1 Deployment decision: prove local live first, then cloud
 
 The same open-source investment core supports two mutually exclusive deployment profiles:
 
-- `cloud`: the recommended production default. One persistent cloud worker owns scheduling, model calls, Alpaca
-  effects, receipts, and Telegram. The user needs only a phone after one-time account connection.
-- `local`: a self-hosted alternative using launchd on macOS or a documented container scheduler on Linux. It runs
-  the same finite pass and writes the same receipts.
+- `local`: the first production proving surface. The existing Mac mini launchd loop is extended from paper through
+  shadow to bounded live execution, including real buy, fill, hold, exit, realised P&L, Telegram, restart recovery,
+  and repeated natural 300-second wakes.
+- `cloud`: the second production surface. Only after local live satisfies its repeatability gate, the exact same
+  committed finite pass is wired to one cloud scheduler and worker. Cloud does not receive a rewritten strategy,
+  risk engine, broker adapter, reporter, or ledger.
 
 One installation chooses exactly one profile for an Alpaca account. Cloud and local do not coordinate, fail over,
 take over, share a lease, or run the same account concurrently. Moving an account is a deliberate operator
@@ -660,8 +662,8 @@ flowchart TD
     BOT --> RUNNER
 
     CHOOSE{"Choose one deployment"}
-    CHOOSE -->|recommended| CLOUD["Life Manager Cloud<br/>scheduler + one worker"]
-    CHOOSE -->|self-hosted| LOCAL["Life Manager Local<br/>launchd or container scheduler"]
+    CHOOSE -->|prove first| LOCAL["Life Manager Local<br/>launchd on Mac mini"]
+    CHOOSE -->|after local gate| CLOUD["Life Manager Cloud<br/>scheduler + one worker"]
     CLOUD --> RUNNER["Portable investment pass"]
     LOCAL --> RUNNER
 
@@ -676,14 +678,17 @@ flowchart TD
     RECEIPT --> BOT
 ```
 
-Development reuses the working local paper loop and focused local tests, but does not create a separate local-live
-product that must later be migrated. The common core is deployed to cloud in shadow mode before the first live
-effect; the first owner-capital canary and bounded live campaign execute in cloud. Cloud execution is technically
-complete without a browser or Mac mini because market observation, order entry,
+The local loop is a complete product, not a disposable prototype. It must prove the whole live effect lifecycle
+before cloud work starts. Portability comes from keeping scheduler, secret loading, and state storage behind narrow
+interfaces while the finite pass remains identical. Cloud work wires those interfaces; it does not migrate or
+rewrite trading logic. Cloud execution is technically complete without a browser or Mac mini because market observation, order entry,
 and reconciliation use Alpaca's network API through the pinned CLI. The cloud deployment needs only a scheduler,
 one worker per installation, encrypted secrets, durable receipts, outbound Alpaca access, and Telegram delivery.
 The existing hackathon dashboard is left untouched. No new dashboard, web trading console, cloud/local coordinator,
 multi-region failover, or customer signup platform belongs in the first live release.
+The dashboard publisher remains connected only to its frozen paper-state namespace. Shadow and live entrypoints
+must have no call path to that publisher, so private account balances, positions, orders, or fills cannot enter the
+public projection.
 
 ### 7.2 Telegram-only UX
 
@@ -729,33 +734,49 @@ unrealised P&L. Fees reduce P&L. Missing activity, cash-flow, position, or valua
 unknown and rejects new entries. The `$100` allocation cap is loop-owned maximum loss plus committed premium, not
 the brokerage account's total balance.
 
-Paper-to-live promotion requires at least 30 calendar days or 100 decisions, positive net P&L after explicit fee
-and slippage assumptions, maximum drawdown below 5%, and zero duplicate orders, unresolved effects, secret leaks,
-or safety breaches. The first live canary is one smallest broker-valid, defined-risk order. A loss does not trigger
-a compensating trade.
+Promotion beyond the first live canary requires both the L11 local-repeatability gate and the L12 measured-performance
+gate. The first live canary is one smallest broker-valid, defined-risk order. A loss does not trigger a compensating
+trade.
+
+### 7.4 Verified growth target
+
+The business target is `$10,000` in verified monthly net trading profit, not deposits, turnover, unrealised gains,
+or a guaranteed return. The loop cannot reach that target from the initial `$100` capital cap. Required capital is
+`$10,000 / verified monthly net return`; for illustration, 1% requires `$1,000,000`, 2% requires `$500,000`, 5%
+requires `$200,000`, and 10% requires `$100,000`. A 10% monthly return is not the planning assumption.
+
+Capital grows only through a separately approved budget after a complete measurement window shows positive net
+profit after fees and slippage, drawdown within policy, reconciled effects, and zero safety breach. Each capital
+step repeats shadow, canary, and bounded-campaign gates. Strategy changes and capital increases never occur in the
+same release. The `$10,000` KPI is reached only when official broker receipts prove at least that much realised net
+profit in a calendar month; a projected annualisation or one lucky trade does not qualify.
 
 ## 8. Ordered live implementation TODO
 
 This order is fixed until Dais explicitly changes it. The current cursor is **L01**. Each atom merges to `main`
-independently and ends with official readback. The working local paper loop is used first to extract and test the
-common core; cloud shadow is the first new production deployment. Local-live production is not built before cloud.
+independently and ends with official readback. The local loop closes the entire bounded live lifecycle first.
+Cloud begins only after the local repeatability gate passes, and runs the same committed core.
 
 | Seq | Atom | Acceptance gate |
 |---:|---|---|
-| L01 | Portable finite pass | Reuse the working local paper loop to prove observation, model proposal, deterministic gate, sealed effect, reconciliation, receipt, and Telegram from one environment-neutral entrypoint. Broker credentials, scheduler, and mutable state remain injected boundaries. |
+| L01 | Portable finite pass | Reuse the working local paper loop to prove observation, model proposal, deterministic gate, sealed effect, reconciliation, receipt, and Telegram from one environment-neutral entrypoint. Broker credentials, scheduler, and mutable state remain injected boundaries. Dashboard publishing is excluded from the portable pass. |
 | L02 | Explicit deployment profile | One required `LIFE_MANAGER_INVESTMENT_DEPLOYMENT=cloud|local` value is reported in status/receipts. Installation rejects an absent or ambiguous profile; it implements no cross-profile coordination or automatic failover. |
-| L03 | Structural paper/shadow/live separation | Separate credential refs, endpoints, receipt namespaces, and effect permissions make a paper key incapable of a live effect and make shadow mode read-only. Mode appears in every receipt and Telegram report. |
+| L03 | Structural paper/shadow/live separation | Separate credential refs, endpoints, receipt namespaces, and effect permissions make a paper key incapable of a live effect and make shadow mode read-only. Mode appears in every receipt and Telegram report. Only the frozen paper namespace can invoke the hackathon dashboard publisher; shadow/live have no publisher call path. |
 | L04 | Human live-account gate | Dais completes provider-required identity, legal agreements, options application, and funding. The model does not answer suitability/KYC questions or move money. Verified owner funding is at most `$100` for the initial campaign. |
-| L05 | Owner-live read-only preflight | Official Alpaca readback verifies Dais's live account status, cash, buying power, options approval/trading level, configurations, and zero unexplained positions/orders without submitting an order. |
+| L05 | Owner-live read-only preflight | The local loop reads Dais's live Alpaca status, cash, buying power, options approval/trading level, configurations, and positions/orders without submitting an order. |
 | L06 | Frozen live-risk gate | Tests and receipt evidence enforce the `$100` allocation cap, `$10` per-trade maximum loss, `$20` New-York-day halt, one-position/one-intent limits, verified cash-flow adjustment, and all forbidden strategy classes. Unknown inputs reject entry. |
-| L07 | Telegram control and reporting | Every natural wake reports once. `/status`, `/why`, `/risk`, `/pause`, `/resume`, and `/kill` authenticate the owner, preserve exactly-once effects, and return official readback. |
-| L08 | Cloud shadow runtime | Deploy the common core directly to one cloud worker. A single cloud scheduler invokes it every 300 seconds with encrypted secrets and durable external state, but live mutation remains disabled. Two natural wakes prove no overlap, Telegram delivery, and restart recovery. |
-| L09 | Live shadow measurement | Cloud reads the live account and produces proposals without mutation while paper executes or no-trades. Receipts measure decision, quote, expected-fill, fee, and slippage deltas for 30 days or 100 decisions. |
-| L10 | Promotion gate | A deterministic report proves positive assumed net P&L, drawdown below 5%, and zero safety violations. Failure keeps live mutation disabled without deadline override. |
-| L11 | One cloud owner-capital canary | One smallest broker-valid defined-risk order executes from cloud, uses at most `$10` maximum loss and one stable `client_order_id`; official order/fill/position readback proves exactly one effect. |
-| L12 | Bounded cloud live campaign | Natural cloud wakes operate within the frozen `$100/$10/$20` limits. Every decision and effect reaches the ledger and Telegram; breach or unknown state halts new entries. |
-| L13 | Local self-host profile | Clean macOS launchd and Linux container fixtures run the same committed core, mode gates, receipts, and Telegram UX as an alternative installation. This is portability proof, not migration or failover for the cloud account. |
-| L14 | OSS release | Public `main` contains README, architecture, threat model, risk policy, cloud/local setup, secret handling, recovery, and verified fixture replay. No credential, private account ID, or profit guarantee is published. |
+| L07 | Telegram control and reporting | Every local natural wake reports once. `/status`, `/why`, `/risk`, `/pause`, `/resume`, and `/kill` authenticate the owner, preserve exactly-once effects, and return official readback. |
+| L08 | Local live shadow | The launchd loop observes the live account and produces proposals without mutation for at least two natural wakes; paper continues to exercise the effect path. Live credentials cannot reach submit. |
+| L09 | One local owner-capital canary | One smallest broker-valid defined-risk order executes from the Mac mini, uses at most `$10` maximum loss and one stable `client_order_id`, then official order/fill/position readback proves exactly one effect. |
+| L10 | Local end-to-end close | The same loop observes, exits, and reconciles the canary; official activity proves the close fills, zero unexplained position delta, fees, and realised net P&L. Restart and acknowledgement-loss replay add zero orders. |
+| L11 | Local 24/7 repeatability | After L09, at least 30 consecutive calendar days and at least 100 natural 300-second wakes cover New-York-day reset, market close/open, a weekend, and multiple process restarts. Every decision, `NO_TRADE`, rejection, order, fill, exit, failure, and recovery reaches durable receipts and Telegram; duplicate orders, unresolved effects, secret leaks, and safety breaches remain zero. |
+| L12 | Local performance gate | Official receipts calculate net realised/unrealised P&L, fees, slippage, drawdown, exposure, and benchmark. Net-negative or statistically unsupported results keep the `$100` cap and block capital expansion without blocking further bounded measurement. |
+| L13 | Disabled cloud wiring | With cloud scheduling and broker mutation disabled, wire the L12-frozen core artifact behind the existing Life Manager cloud queue, scheduler, encrypted secrets, durable receipts, and Telegram transport. Cloud readback reports the same core digest; the change is host wiring only and introduces no strategy, risk, effect, or reporting fork. |
+| L14 | Ownership transfer and cloud shadow parity | Before the first cloud wake, stop local and read back no running pass, drain both queues, reconcile official orders/positions, and verify export/import of account binding, pause/kill state, loss-day baseline/high-water state, receipts, unresolved intents, and issued client IDs. Only then enable cloud shadow for at least two natural 300-second wakes. Fixture inputs produce the same decision/risk/receipt shape and restart adds zero duplicate jobs or effects. |
+| L15 | One cloud parity canary | After explicit environment transfer and local shutdown readback, cloud executes one canary under the unchanged `$100/$10/$20` policy and reconciles exactly one official broker effect. |
+| L16 | Bounded cloud live campaign | Natural cloud wakes reproduce the local lifecycle and Telegram UX. Any parity, reconciliation, or safety failure stops new entries and returns the project to local diagnosis, not automatic failover. |
+| L17 | OSS self-host release | Public `main` contains the shared core, local launchd/Linux container wiring, cloud wiring, README, architecture, threat model, risk policy, secret handling, recovery, and verified fixture replay. No credential, private account ID, or profit guarantee is published. |
+| L18 | Capital and `$10k/month` ladder | A new approved spec may increase capital one measured step at a time. Official monthly receipts, not projections, must prove `$10,000` realised net profit before the target is marked achieved. |
 
 Capital expansion is not a scheduled TODO. A later spec may propose it only after verified live net profit after
 fees, no safety breach, and a new explicitly approved maximum-loss budget.
