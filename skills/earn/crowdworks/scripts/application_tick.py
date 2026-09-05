@@ -69,6 +69,12 @@ def _exact_url(raw_url: object, path: str, query: str = "") -> bool:
         return parsed is not None and parsed.scheme == "https" and parsed.hostname == "crowdworks.jp" and parsed.username is None and parsed.password is None and parsed.port in (None, 443) and parsed.path == path and parsed.query == query and not parsed.fragment and not (query == "" and "?" in raw_url) and not ("#" in raw_url and parsed.fragment == "")
     except (TypeError, ValueError):
         return False
+def _exclusive(amount: int) -> int:
+    """Proposals are submitted tax-exclusive but 固定報酬 reads back tax-inclusive (300,000 → 330,000),
+    so verification compared 330,000 against the recorded 300,000 and called every real application
+    submission_uncertain. Reverse the tax only when it reverses exactly."""
+    base = round(amount / 1.1)
+    return base if round(base * 1.1) == amount else amount
 def _read_proposal_detail(page: object, proposal_id: str, project_id: str, *, include_body: bool = False) -> Mapping[str, object]:
     if _ASCII_DIGITS.fullmatch(proposal_id) is None or _ASCII_DIGITS.fullmatch(project_id) is None:
         raise ValueError("identity_unobserved")
@@ -80,7 +86,7 @@ def _read_proposal_detail(page: object, proposal_id: str, project_id: str, *, in
     if amount is None or due is None: raise ValueError("terms_unobserved")
     parsed_due = date(int(due.group("year")), int(due.group("month")), int(due.group("day")))
     if due.group("weekday") != "月火水木金土日"[parsed_due.weekday()] or re.sub(r"\s+", " ", _one_text(page, _PROGRESS_SELECTOR)).strip() != "応募・スカウト": raise ValueError("state_unobserved")
-    observed: dict[str, object] = {"proposal_id": proposal_id, "project_id": project_id, "amount_minor": int(amount.group("amount").replace(",", "")), "delivery_due_on": parsed_due.isoformat()}
+    observed: dict[str, object] = {"proposal_id": proposal_id, "project_id": project_id, "amount_minor": _exclusive(int(amount.group("amount").replace(",", ""))), "delivery_due_on": parsed_due.isoformat()}
     if include_body:
         body = re.sub(r"\s+", " ", _one_text(page, _BODY_SELECTOR)).strip()
         if not body: raise ValueError("body_unobserved")
@@ -95,6 +101,33 @@ def _one_text(page: object, selector: str) -> str:
     return value
 
 
+def find_proposal_id(page: object, project_id: str) -> str | None:
+    """The proposal id CrowdWorks holds for this project, read from the worker's own list.
+
+    A submission whose landing page was not recognised leaves the transaction pending with no
+    proposal id, so without this the application exists on CrowdWorks and never reaches the ledger.
+    """
+    if not isinstance(project_id, str) or _ASCII_DIGITS.fullmatch(project_id) is None: return None
+    try:
+        page.goto(_PROPOSAL_LIST_URL)  # type: ignore[attr-defined]
+        if not _exact_url(getattr(page, "url", None), "/e/proposals"): return None
+        links = _one(page, _TABLE_SELECTOR).locator('a[href^="/proposals/"]')
+        identities = set()
+        for index in range(links.count()):
+            parsed = urlsplit(links.nth(index).get_attribute("href") or "")
+            match = re.fullmatch(r"/proposals/([0-9]+)", parsed.path)
+            if match is not None and not (parsed.scheme or parsed.netloc or parsed.query): identities.add(match.group(1))
+        matches = []
+        for identity in sorted(identities):
+            try:
+                _read_proposal_detail(page, identity, project_id); matches.append(identity)
+            except Exception:
+                continue
+        return matches[0] if len(matches) == 1 else None
+    except (KeyboardInterrupt, SystemExit, MemoryError):
+        raise
+    except Exception:
+        return None
 def reconcile_existing_application(*, page: object, proposal_id: str, opportunity: Mapping[str, object], state_path: Path, ledger_writer: Callable[[Mapping[str, object]], object], now: Callable[[], object], account_ready: Callable[[], bool]) -> TickResult:
     """Read one existing provider application and import it without submitting."""
     try:
@@ -128,7 +161,9 @@ def _submit_application(page: object, opportunity: Mapping[str, object], proposa
     project_id = opportunity.get("external_id")
     try:
         form_url = f"https://crowdworks.jp/proposals/new?job_offer_id={project_id}"
-        if getattr(page, "url", None) in (None, "about:blank"): page.goto(form_url)  # type: ignore[attr-defined]
+        # The owner hands over a page parked on the job detail page, not a blank one, so navigating
+        # only from about:blank left every submission failing the route check below.
+        if not _exact_url(getattr(page, "url", None), "/proposals/new", f"job_offer_id={project_id}"): page.goto(form_url)  # type: ignore[attr-defined]
         if not isinstance(project_id, str) or not _exact_url(getattr(page, "url", None), "/proposals/new", f"job_offer_id={project_id}"): raise ValueError("route")
         form = _one(page, _FORM_SELECTOR)
         if str(form.get_attribute("method") or "").lower() != "post" or form.get_attribute("action") != "/proposals": raise ValueError("form")
@@ -165,11 +200,14 @@ def _submit_application(page: object, opportunity: Mapping[str, object], proposa
         submit.click(no_wait_after=True)
         wait_for_url = getattr(page, "wait_for_url", None)
         if not callable(wait_for_url): raise RuntimeError("navigation")
-        wait_for_url(re.compile(r"^https://crowdworks\.jp/proposals/[0-9]+$"), timeout=10_000)
+        # CrowdWorks lands the accepted proposal on /proposals/<id>#scroll_to_message. Refusing the
+        # fragment reported submission_uncertain for proposal 304582247, which had in fact posted.
+        wait_for_url(re.compile(r"^https://crowdworks\.jp/proposals/[0-9]+(?:#[^?]*)?$"), timeout=10_000)
     except Exception: raise RuntimeError("submission_uncertain") from None
     try:
         parsed = urlsplit(getattr(page, "url", None))
-        match = re.fullmatch(r"/proposals/([0-9]+)", parsed.path) if _exact_url(getattr(page, "url", None), parsed.path) else None
+        landed = parsed.scheme == "https" and parsed.hostname == "crowdworks.jp" and parsed.port in (None, 443) and not parsed.query and parsed.username is None and parsed.password is None
+        match = re.fullmatch(r"/proposals/([0-9]+)", parsed.path) if landed else None
     except (TypeError, ValueError):
         match = None
     if match is None: raise RuntimeError("submission_uncertain")
@@ -227,6 +265,7 @@ def run_tick(**kwargs):
 
 __all__ = [
     "TickResult",
+    "find_proposal_id",
     "account_lock",
     "load_marketplace_contracts",
     "reconcile_existing_application",
