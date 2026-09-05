@@ -133,6 +133,38 @@ def test_transient_official_inventory_failure_retries_without_success_claim():
     assert direct._storefront_failure_disposition("unexpected") == ("failed", 1)
 
 
+def test_analytics_collection_degrades_instead_of_aborting_on_slow_browser_call(
+    tmp_path, monkeypatch,
+):
+    """A browser call that keeps timing out must end this listing's analytics as
+    unavailable, not raise out of `_collect_analytics` and abort the whole wake.
+
+    Production wakes crashed with exit 1 because `subprocess.TimeoutExpired` from the
+    default-tab "open" call escaped the retry loop on the very first attempt instead of
+    being treated as a failed attempt.
+    """
+    def always_times_out(argv, **_kwargs):
+        raise subprocess.TimeoutExpired(cmd=argv, timeout=30)
+
+    monkeypatch.setattr(direct.subprocess, "run", always_times_out)
+    state_dir = tmp_path / "state"
+    state_dir.mkdir()
+    evidence_dir = tmp_path / "evidence"
+    evidence_dir.mkdir()
+
+    result = direct._collect_analytics(
+        state_dir, evidence_dir, 1_700_000_000, [direct.TARGET_SERVICE_ID],
+    )
+
+    assert result["metrics"]["views"] == {
+        "status": "unavailable", "value": None,
+        "reason": "official_readback_failed_after_retries",
+    }
+    rows = [json.loads(line) for line in
+            (state_dir / "analytics.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert rows and rows[0]["official"] is False
+
+
 def _args(tmp_path: Path):
     """Start from the real CLI contract so the fixture cannot drift from the runtime."""
     args = direct.build_parser().parse_args([])
