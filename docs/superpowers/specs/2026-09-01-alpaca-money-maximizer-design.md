@@ -761,8 +761,8 @@ L01 is **DONE** in implementation commit `2eb1e886d`: the existing environment-i
 observation, model proposal, deterministic gate, sealed effect, reconciliation, durable state, and Telegram while
 the success and terminal-failure dashboard child-process paths are removed. Focused Alpaca tests pass 8/8, loop
 runtime tests pass 109/109, registry tests pass 15/15, `lm-loop doctor` reports 174 entries with zero missing,
-unmanaged, or installed-retired labels, and fresh task review reports no findings. After merge, immutable main
-release `bd18a131ca8387d21d59aad3f5c6fef705fbc95c` was applied only to `alpaca-investment`. Its next natural
+unmanaged, or installed-retired labels, and fresh task review reports no findings. After merge, L01 targeted
+`alpaca-investment` with immutable main release `bd18a131ca8387d21d59aad3f5c6fef705fbc95c`. Its next natural
 300-second wake ended `pass` at `2026-09-05T02:30:00.939137+00:00`, delivered Telegram message `57303`, recorded
 paper `NO_TRADE` with no broker effect, and emitted no dashboard-publication field.
 
