@@ -1516,10 +1516,18 @@ def test_review_ready_undeterminable_ships_only_at_final_review_round():
 
 def test_paid_runner_contract_matches_runtime_terra_route():
     paid = load("paid_direct")
+    runtime_config = json.loads(
+        (SCRIPTS.parents[3] / "runtime" / "agent-runner" / "config.json").read_text()
+    )
+    escalation_route = runtime_config["task_classes"]["escalation-agent"]["candidates"]
 
     assert paid.PAID_DECISION_MODEL == "gpt-5.6-terra"
     assert paid.PAID_FILE_MODEL == "gpt-5.6-terra"
     assert ("codex", "gpt-5.6-terra") in paid.PAID_RUNNER_CANDIDATES
+    assert {
+        (candidate["provider"], candidate["model"])
+        for candidate in escalation_route
+    } <= paid.PAID_RUNNER_CANDIDATES
 
 
 def test_normalize_acceptance_repairs_archive_member_bookkeeping(tmp_path):

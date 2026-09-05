@@ -187,7 +187,12 @@ def _snapshot_mismatches(snapshot: dict[str, Any], contract: dict[str, Any]) -> 
         ("data[facets][165][]", checked("data[facets][165][]"), set(category_specific["languages"])),
         ("data[Service][provision_format]", checked("data[Service][provision_format]"),
          {category_specific["provision_format"]}),
-        ("data[Service][can_subscribe]", checked("data[Service][can_subscribe]"), {"1"}),
+        # A contract that does not want recurring support must verify the checkbox stayed
+        # unchecked and the discount stayed at "0" (設定しない), not just skip the check --
+        # Coconala rejects publish when can_subscribe reverts to false while a stale nonzero
+        # discount_ratio is still set, so both sides of this pair must match intent exactly.
+        ("data[Service][can_subscribe]", checked("data[Service][can_subscribe]"),
+         {"1"} if contract["subscription"]["enabled"] else set()),
         ("data[Service][fix_limit]", values.get("data[Service][fix_limit]"), category_specific["fix_limit"]),
         ("data[Service][unit_price]", values.get("data[Service][unit_price]"),
          category_specific["unit_price_jpy_per_character"]),
@@ -325,7 +330,8 @@ async def _prepare(ws_url: str, contract: dict[str, Any]) -> tuple[dict[str, Any
             "if(radio){radio.checked=true;radio.dispatchEvent(new Event('change',{bubbles:true}))}"
             f"if(fix){{fix.value={json.dumps(category_specific['fix_limit'])};fix.dispatchEvent(new Event('change',{{bubbles:true}}))}}"
             f"if(unit){{unit.value={json.dumps(category_specific['unit_price_jpy_per_character'])};unit.dispatchEvent(new Event('input',{{bubbles:true}}))}}"
-            "if(subscribe){subscribe.checked=true;subscribe.dispatchEvent(new Event('change',{bubbles:true}))}"
+            f"if(subscribe){{subscribe.checked={json.dumps(bool(contract['subscription']['enabled']))};"
+            "subscribe.dispatchEvent(new Event('change',{bubbles:true}))}"
             f"if(discount){{discount.value={json.dumps(contract['subscription']['discount_ratio'])};discount.dispatchEvent(new Event('change',{{bubbles:true}}))}}"
             "return true})()"
         ), cid)

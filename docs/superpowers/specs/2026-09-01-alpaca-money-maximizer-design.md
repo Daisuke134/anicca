@@ -751,6 +751,42 @@ step repeats shadow, canary, and bounded-campaign gates. Strategy changes and ca
 same release. The `$10,000` KPI is reached only when official broker receipts prove at least that much realised net
 profit in a calendar month; a projected annualisation or one lucky trade does not qualify.
 
+### 7.5 Product and revenue decision
+
+The long-term customer default is the **existing Life Manager Cloud / Web App**, while `local` remains the proving
+surface and the OSS self-host option. Alpaca does not create another signup, subscription, billing, tenant,
+dashboard, queue, scheduler, secret store, or customer application. A customer chooses one deployment for one
+Alpaca account; neither profile is a companion process for the other. The cloud product needs no Mac mini or
+browser for normal investing because the finite pass observes, submits, and reconciles through Alpaca's API. A
+phone with the existing Life Manager UX and Telegram is sufficient for routine status, explanations, pause, resume,
+and emergency stop after the provider's one-time owner onboarding is complete.
+
+Local closes the live lifecycle first because it is the cheapest bounded place to prove the exact core against
+Dais's own `$100` campaign. This is not a throwaway implementation: its core, receipts, risk policy, and Telegram
+contract become the cloud artifact. Cloud work begins at L13 and changes only hosting adapters—scheduler, worker,
+encrypted tenant secrets, durable state, and Telegram transport. It does not introduce a second strategy or broker
+effect path.
+
+Life Manager has two distinct revenue lines which must never be conflated:
+
+1. **Owner trading result:** verified realised net P&L from Dais's own Alpaca account. Deposits, paper gains,
+   turnover, projections, and unrealised gains are not revenue.
+2. **Existing Life Manager subscription:** recurring payment for the existing hosted product. Alpaca becomes one
+   capability inside that product; it does not build a parallel commercial stack. Subscription revenue does not
+   prove that the investment strategy makes money.
+
+Hosting a system that chooses or executes trades for customer accounts may trigger investment-adviser, broker,
+suitability, disclosure, custody, supervision, or jurisdiction-specific obligations. Therefore the current L01–L18
+queue proves Dais's account and produces an OSS self-host release; it does not silently turn L13 into public
+managed trading for every existing tenant. A later approved commercial activation must obtain qualified legal
+review and reuse the existing Life Manager identity, billing, tenant isolation, onboarding, and support boundaries.
+Only Alpaca-specific consent, disclosures, account binding, and trading controls may be added. Marketing must not
+promise profit or call the product a guaranteed money printer.
+
+Browser-dependent Life Manager capabilities such as marketplace gig work remain local or hybrid until their own
+cloud browser/session boundary is proven. That does not block the Alpaca investment loop: Alpaca's API-only core can
+run end to end in cloud independently of those browser loops.
+
 ## 8. Ordered live implementation TODO
 
 This order is fixed until Dais explicitly changes it. The current cursor is **L04**. Each atom merges to `main`

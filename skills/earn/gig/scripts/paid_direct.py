@@ -127,7 +127,7 @@ PAID_RUNNER_CANDIDATES = {
     ("codex", "gpt-5.6-sol"),
     ("codex", "gpt-5.6-luna"),
     ("claude", "claude-sonnet-5"),
-    ("claude-direct", "sonnet"),
+    ("claude-direct", "claude-sonnet-5"),
 }
 PAID_FILE_POLICY_VERSION = "paid-file-build-review-v21"
 MAX_FILE_REVIEW_ITERATIONS = 1
