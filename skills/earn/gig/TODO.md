@@ -36,19 +36,32 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `18d27005ea553bb0-42383` ended `pass` with observed `5`, actionable `3`, readback `4`, failed `0`,
    and pending `1`. Talkroom `18180857` remains durably retry-owned because its TikTok recipient
    route is externally unavailable; it is not dropped and does not block unrelated buyers.
-3. [ ] `SHARED-PAID-1` Use Lancers as the second real Paid platform and extraction trigger.
+3. [ ] `COCONALA-PAID-3` Restore continuous Paid health after the reference pass regressed.
+   PASS = preserve every already-read-back effect, remove the current per-project
+   `remote_builder/transient_timeout` failure boundary, and observe a fresh natural installed-release
+   aggregate with `failed=0`; a following natural wake must retain Ryu's existing message with no
+   duplicate send and keep formal delivery off. Official runtime readback reports installed release
+   `5993c085ad66c11fea08ec91870a2d2362826459` running a new natural wake, while the latest completed
+   event remains release `eee65f8a1b998244ebd98622d262989e20d490fc`, terminal `fail`, blocker
+   `entrypoint_exit_1`. That completed aggregate observed five rooms and failed two project builders,
+   including Ryu `18211957`, without performing an external effect. The running wake is not a PASS
+   until it publishes its terminal receipt. Earlier writes also failed with `ENOSPC`, but current
+   filesystem readback has about 10 GiB available; disk exhaustion is therefore prior incident
+   evidence, not the current root-cause claim. Do not advance shared extraction from a presently
+   failing reference owner.
+4. [ ] `SHARED-PAID-1` Use Lancers as the second real Paid platform and extraction trigger.
    PASS = implement one provider-neutral Paid entrypoint from
    `skills/loop-engineering/references/marketplace-paid-lane.md`, moving only orchestration already
    proven identical on Coconala and Lancers into `skills/_shared/marketplace-core/`. Keep auth,
    selectors, provider states and mutations in thin adapters; do not copy `paid_direct.py`.
-4. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
+5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
-5. [ ] `CROWDWORKS-PAID-1` Add only the CrowdWorks Paid adapter to the proven shared entrypoint.
+6. [ ] `CROWDWORKS-PAID-1` Add only the CrowdWorks Paid adapter to the proven shared entrypoint.
    PASS = no shared planner/worker/reviewer/lifecycle fork; one real contracted-work item reaches
    official submission readback and replay-zero. The existing CrowdWorks Apply owner remains
    independently parallel and is not replaced by this item.
-6. [ ] `NEXT-MARKETPLACE-PAID-1` Repeat adapter conformance for Fiverr or the next authorized
+7. [ ] `NEXT-MARKETPLACE-PAID-1` Repeat adapter conformance for Fiverr or the next authorized
    marketplace without changing the shared Paid lifecycle. PASS = provider-only config/transport/
    effect/readback changes plus one real official receipt chain and replay-zero.
 
