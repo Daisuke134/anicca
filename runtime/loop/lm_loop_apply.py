@@ -45,6 +45,8 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
         "StandardOutPath": str(Path(log_root) / "launchd.out.log"),
         "StandardErrorPath": str(Path(log_root) / "launchd.err.log"),
     }
+    if loop_id == "alpaca-investment":
+        value["EnvironmentVariables"]["LIFE_MANAGER_INVESTMENT_DEPLOYMENT"] = "local"
     if loop_id in _PRIVATE_LOG_LOOP_IDS:
         value["Umask"] = 0o077
     if loop_id in {"hf-gig-apply-direct", "hf-gig-storefront-direct", "hf-gig-paid-direct"}:
