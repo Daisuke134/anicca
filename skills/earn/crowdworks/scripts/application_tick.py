@@ -215,7 +215,15 @@ def _submit_application(page: object, opportunity: Mapping[str, object], proposa
 def _readback_application(page: object, proposal_id: str | None, project_id: str) -> Mapping[str, object]:
     try:
         if proposal_id is not None:
-            return _read_proposal_detail(page, proposal_id, project_id)
+            # The proposal page is read immediately after submitting it and is not always settled
+            # yet, which reported submission_uncertain for applications CrowdWorks had accepted.
+            for attempt in range(3):
+                try:
+                    return _read_proposal_detail(page, proposal_id, project_id)
+                except Exception:
+                    if attempt == 2: raise
+                    wait = getattr(page, "wait_for_timeout", None)
+                    if callable(wait): wait(2_000)
         page.goto(_PROPOSAL_LIST_URL)  # type: ignore[attr-defined]
         if not _exact_url(getattr(page, "url", None), "/e/proposals"): return {}
         for selector in ('a[href*="/e/proposals?page="]', 'a[rel="next"]'):
