@@ -157,26 +157,12 @@ networkへ到達していないことである、という旧診断はDNS回復�
 scheduled navigationをterminal扱いする共有`BROWSER`境界だった。旧writerを再起動せず、同じEliza Agent turnを共有`BROWSER`・effect fence・
 公式readbackまで閉じる。
 
-### 0.0.1 Previous cursor retained — Alpaca hackathonを期限付き先頭trackとして閉じる
+### 0.0.1 Previous cursor retained — Alpaca hackathon完了履歴とlive-product参照
 
-Daisは2026-09-01、既存順序を明示的に変更し、Alpaca AI Trading Agents Hackathonへの完成提出、portable OSS、
-その後のDais本人資本によるbounded production化を現在の先頭trackに指定した。設計・採用OSS・固定順序・acceptanceは
-[`2026-09-01-alpaca-money-maximizer-design.md`](2026-09-01-alpaca-money-maximizer-design.md)を正本とする。
-
-同spec `A01 Freeze event contract`は公式/archived rules matrixとCLI authority固定でDONE。現在activeな一件は
-`A02 Team/submission shell`。通常メールOTPでLablab accountとevent screeningを作成し、Daisの明示同意後の公式表示は`Approved`。
-SSOTで確定できる全必須事実欄とLablab同意は送信済み。Lablabがteam作成前のDiscord account接続/community参加を追加必須化している。通常メールDiscord登録を送信し、username利用可は確認済みだが、provider hCaptchaの人間確認が未完了。Daisの1回の可視check後にemail verification、OAuth、community参加、team/submission shell作成を再開する。A02〜A14を2026-09-05 00:00 JSTの提出まで固定順序で閉じ、
-A15 portable OSS releaseを続ける。`P01+`のlive owner-capital ladderはpaperを実収益と呼ばず、別credential・別loss
-budget・jurisdiction/broker条件を満たした後だけ進める。顧客資産運用・有償投資助言は登録要否を閉じるまでpaper-onlyとする。
-
-実装面は別hackathon product/repo、旧launchd-only brain、第二ledgerを作らない。Life Manager mainのElizaOS
-`AgentRuntime` + 単一`plugin-life-manager`をcoreとし、既存Goal/effect/receipt/restart kernelを再利用する。Alpacaは
-`plugin-life-manager`へ最初のdurable loopとして登録し、schedule、lease、checkpoint、resume、self-healing、self-improvementは
-Eliza内部だけが所有する。launchd/systemd/container restart policyは同じEliza processを起動・蘇生する交換可能host adapterであり、
-Alpacaの時刻、goal、account、risk、effect、stateを持たない。
-
-この期限付きtrackはLancers優先への明示変更によりpauseして保持する。L04〜L25の内部順序は変更・削除せず、
-L04完了後のL05から固定順序で進める。
+Alpaca hackathon提出は完了した。旧A01〜A15とEliza所有architectureは提出時の凍結履歴であり、現在実装へ使わない。
+提出後のnative launchd/local-live-first product architecture、固定順序、acceptanceの唯一の正本は
+[`2026-09-01-alpaca-money-maximizer-design.md` §§7–8](2026-09-01-alpaca-money-maximizer-design.md)とする。
+そのtrack内cursorはL01である。全体portfolioでどのtrackを実行するかは本節では変更しない。
 
 ### 0.0.0 Previous cursor retained — ElizaOS forkでlocal general agentを先に完成させる
 
