@@ -1898,12 +1898,13 @@ def _invoke_facet_proposal(
         ],
     }
     prompt = """Choose the official facet values this Coconala category's live form renders for the
-listing in CONTEXT_JSON, and return only the strict schema object. Every required facet group must
-receive at least one value; when a group's max_select is set, never return more values than that for
-it. Copy every value exactly from that group's own official options; never invent a value or move one
-between groups. Ground each pick in the listing's own title/catchphrase/head/body/category, not in the
-group's id or a guess. A non-required group may be left with an empty list when nothing in the listing
-supports a choice.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+listing in CONTEXT_JSON, and return only the strict schema object. `facets` is an array with at most
+one entry per group_id from CONTEXT_JSON.facet_groups; every required facet group must appear with at
+least one value, and when a group's max_select is set, never return more values for it than that. Copy
+every value exactly from that group's own official options; never invent a value or move one between
+groups. Ground each pick in the listing's own title/catchphrase/head/body/category, not in the group's
+id or a guess. Omit a non-required group entirely, or give it an empty values array, when nothing in
+the listing supports a choice.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separators=(",", ":"))
     completed = subprocess.run(
         [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
          "--schema", str(schema), "--evidence-dir", str(evidence_dir),
@@ -1930,9 +1931,17 @@ def _validate_facet_selection(chosen: dict, facet_groups: dict[str, dict]) -> di
     outside that exact group's own options, or a count over its own max_select means the pick did
     not come from the live form, and Coconala's own required-field check would reject it anyway.
     """
-    picks = chosen.get("facets")
-    if not isinstance(picks, dict):
+    picks_list = chosen.get("facets")
+    # A dynamic per-category key (one entry per discovered facet group) cannot be expressed as a
+    # fixed JSON Schema object in strict structured-output mode, so the agent returns an array of
+    # {group_id, values} instead; this is the one place that shape gets turned back into a map.
+    if not isinstance(picks_list, list) or not all(
+        isinstance(row, dict) and isinstance(row.get("group_id"), str) for row in picks_list
+    ):
         raise RuntimeError("storefront_facet_selection_invalid")
+    if len(picks_list) != len({row["group_id"] for row in picks_list}):
+        raise RuntimeError("storefront_facet_selection_duplicate_group")
+    picks = {row["group_id"]: row.get("values") for row in picks_list}
     resolved: dict[str, list[str]] = {}
     for group_id, group in facet_groups.items():
         official = {str(option["value"]) for option in group["options"]}
