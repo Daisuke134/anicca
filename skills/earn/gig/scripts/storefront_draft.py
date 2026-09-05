@@ -276,7 +276,7 @@ FACET_ROW_EXPRESSION = (
     "group_label:heading.trim(),"
     "required:/必須/.test(attention),"
     "max_select:maxMatch?parseInt(maxMatch[1],10):null};"
-    "})())"
+    "}))"
 )
 
 
