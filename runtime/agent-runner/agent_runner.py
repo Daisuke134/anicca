@@ -64,6 +64,8 @@ DEFAULT_EVIDENCE_MIN_FREE_BYTES = 512 * 1024 * 1024
 DEFAULT_EVIDENCE_MAX_BYTES = 256 * 1024 * 1024
 PROVIDER_LEASE_BUSY = 75
 PROVIDER_LEASE_BUSY_LINE = "LIFE_MANAGER_PROVIDER_LEASE_BUSY"
+CODEX_INVOCATION_HOME_MARKER = "_LIFE_MANAGER_CODEX_INVOCATION_HOME"
+_OWNED_CODEX_INVOCATION_HOMES: set[Path] = set()
 
 # OpenAI Standard tier, short context, USD per 1M tokens: (input, cached_input, output).
 # Source: https://developers.openai.com/api/docs/pricing (fetched 2026-07-25).
@@ -551,9 +553,11 @@ def _strip_browser_routes_for_planner(child_env: dict[str, str]) -> dict[str, st
 
 def provider_process_env(provider: str, provider_config: dict[str, Any],
                          environ: dict[str, str] | None = None, *,
-                         task_class: str | None = None) -> dict[str, str]:
+                         task_class: str | None = None,
+                         invocation_id: str | None = None) -> dict[str, str]:
     """Build a provider-scoped, non-interactive child environment."""
     child_env = dict(os.environ if environ is None else environ)
+    child_env.pop(CODEX_INVOCATION_HOME_MARKER, None)
     if provider != "codex":
         child_env.pop("CODEX_HOME", None)
     if task_class == "application-intent-planner":
@@ -562,13 +566,36 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
         automation_home_value = provider_config.get("automation_home")
         if not automation_home_value:
             return child_env
+        if invocation_id is not None and (
+            not isinstance(invocation_id, str)
+            or re.fullmatch(r"[A-Za-z0-9_-]+", invocation_id) is None
+        ):
+            raise ValueError("codex invocation_id must be a safe path component")
         automation_home = Path(os.path.expandvars(os.path.expanduser(
             str(automation_home_value)
         )))
         automation_home.mkdir(parents=True, exist_ok=True, mode=0o700)
         automation_home.chmod(0o700)
-        child_env["CODEX_HOME"] = str(automation_home)
-        automation_user_home = automation_home / "user-home"
+        codex_home = automation_home
+        if invocation_id is not None:
+            invocations_home = automation_home / "invocations"
+            try:
+                invocations_home.mkdir(exist_ok=True, mode=0o700)
+            except FileExistsError as error:
+                raise ValueError("codex invocation parent must be a real directory") from error
+            if invocations_home.is_symlink() or not invocations_home.is_dir():
+                raise ValueError("codex invocation parent must be a real directory")
+            invocations_home.chmod(0o700)
+            codex_home = invocations_home / invocation_id
+            try:
+                codex_home.mkdir(exist_ok=False, mode=0o700)
+            except FileExistsError as error:
+                raise ValueError("codex invocation_id home already exists") from error
+        else:
+            codex_home.mkdir(parents=True, exist_ok=True, mode=0o700)
+        codex_home.chmod(0o700)
+        child_env["CODEX_HOME"] = str(codex_home)
+        automation_user_home = codex_home / "user-home"
         automation_user_home.mkdir(parents=True, exist_ok=True, mode=0o700)
         automation_user_home.chmod(0o700)
         child_env["HOME"] = str(automation_user_home)
@@ -606,7 +633,7 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
         if not auth_file.is_file():
             raise ValueError("codex automation auth unavailable")
         auth_source = auth_file.resolve()
-        auth_target = automation_home / "auth.json"
+        auth_target = codex_home / "auth.json"
         try:
             auth_target.symlink_to(auth_source)
         except FileExistsError:
@@ -615,6 +642,10 @@ def provider_process_env(provider: str, provider_config: dict[str, Any],
                     raise ValueError("codex automation auth target mismatch")
             except OSError as error:
                 raise ValueError("codex automation auth target invalid") from error
+        if invocation_id is not None:
+            owned_home = codex_home.resolve()
+            _OWNED_CODEX_INVOCATION_HOMES.add(owned_home)
+            child_env[CODEX_INVOCATION_HOME_MARKER] = str(owned_home)
         return child_env
     if provider not in CLAUDE_PROVIDERS:
         return child_env
@@ -764,8 +795,19 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
     global _ACTIVE_PROVIDER_PROCESS
     deadline = time.monotonic() + timeout if deadline is None else deadline
     provider_lock_fd = None
+    process: subprocess.Popen[bytes] | None = None
+    child_env = dict(env)
+    cleanup_marker = child_env.pop(CODEX_INVOCATION_HOME_MARKER, None)
+    cleanup_home = None
+    if cleanup_marker and child_env.get("CODEX_HOME"):
+        marked_home = Path(cleanup_marker).resolve()
+        if (
+            marked_home == Path(child_env["CODEX_HOME"]).resolve()
+            and marked_home in _OWNED_CODEX_INVOCATION_HOMES
+        ):
+            cleanup_home = marked_home
     try:
-        codex_home = env.get("CODEX_HOME")
+        codex_home = child_env.get("CODEX_HOME")
         codex_home_lock_contended = False
         if codex_home:
             lock_path = Path(codex_home) / ".agent-runner-provider.lock"
@@ -796,7 +838,7 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
             stdout=stdout,
             stderr=stderr,
             cwd=cwd,
-            env=env,
+            env=child_env,
             start_new_session=os.name == "posix",
             pass_fds=inherited_fds,
         )
@@ -828,9 +870,16 @@ def run_provider_process(command: list[str], *, stdout: Any, stderr: Any,
                 raise subprocess.TimeoutExpired(command, timeout)
             time.sleep(0.25)
     finally:
+        if process is not None and process.poll() is None:
+            terminate_process_tree(process)
         _ACTIVE_PROVIDER_PROCESS = None
         if provider_lock_fd is not None:
             os.close(provider_lock_fd)
+        if cleanup_home:
+            try:
+                shutil.rmtree(cleanup_home, ignore_errors=True)
+            finally:
+                _OWNED_CODEX_INVOCATION_HOMES.discard(cleanup_home)
     return process.returncode
 
 
@@ -1768,7 +1817,13 @@ def run() -> int:
                         input_bytes=candidate_prompt.encode("utf-8") if parsed.prompt_stdin else None,
                         stdin=None if parsed.prompt_stdin else subprocess.DEVNULL,
                         env=provider_process_env(
-                            provider, provider_config, task_class=parsed.task_class,
+                            provider,
+                            provider_config,
+                            task_class=parsed.task_class,
+                            invocation_id=(
+                                f"{os.getpid()}-{index}-{uuid.uuid4().hex}"
+                                if provider == "codex" else None
+                            ),
                         ),
                         completion_path=result_path,
                         lease_fd=lease_fd,
