@@ -785,6 +785,34 @@ official account/effect readback, balance and P&L, remaining risk budget, and ne
 only state changes or required action, avoiding repetitive noise. After activation, skipped trades, orders, fills,
 exits, failures, halts, and recovery all report without asking the user to supervise the loop.
 
+#### 7.2.1 Start-to-finish product UX map
+
+The ordered L01–L15 table in section 8 remains the only implementation TODO SSOT. This map explains the same order
+from the paying user's perspective; it does not add, remove, or reorder an atom.
+
+| Product phase | User sees or does | Life Manager owns | TODO gate |
+|---|---|---|---|
+| Existing subscription | An unpaid user receives the existing Life Manager checkout; a paid user continues immediately | Reuses the existing entitlement and returns to `/invest`; no new billing product | Existing Cloud product |
+| Enter Investment Loop | Sends `/invest` once | Resolves paid status, owner authentication, deployment owner, and current account lifecycle | L04 UX slice |
+| Open account | Taps `Alpacaで口座開設する`, then completes signup, KYC, agreements, initial funding authorization, and the bounded-autonomy instruction in one setup | Supplies the official URL and known Life Manager email; never asks for secrets or repeated profile data in Telegram | L04 |
+| Review | Does nothing unless Alpaca requires a genuinely human identity/legal response | Polls official status, continues paper operation, reports state changes, and links directly to the exact additional-action page when required | L04 |
+| Approval and funding detected | Receives an informational message; no confirmation tap | Reads account status, cash, buying power, permissions, configuration, positions, and orders without mutation | L05 |
+| Safety qualification | Receives risk status; no confirmation tap | Enforces fixed `$100/$10/$20`, one-position/one-intent, fresh-data, cash-flow, and fail-closed gates | L06 |
+| Local shadow | Receives every natural decision and reason; does nothing | Observes the live account without submit permission for at least two natural wakes | L07–L08 |
+| Local live canary and close | Receives order/fill/position/exit/P&L readback; no per-order approval | Executes and reconciles one smallest defined-risk effect, then closes it exactly once | L09–L10 |
+| Local repeatable operation | Reads Telegram; may optionally use `Pause`, `Resume`, or `Kill` | Runs 24/7, reports every wake, survives restart, prevents duplicates, and measures official net performance | L11–L12 |
+| Cloud availability | Uses the same `/invest` UX from a phone; no migration ceremony | Reuses the frozen core in existing Life Manager Cloud, transfers single ownership, proves shadow parity, then one cloud canary | L13–L15 |
+
+The product is complete only when L15 passes. “Makes money” means the loop's objective is positive verified net P&L
+after fees and slippage; it is never represented as guaranteed profit. L12 blocks capital expansion when evidence is
+negative or statistically unsupported, while the bounded loop may continue collecting evidence.
+
+Telegram reporting follows two cadences. Lifecycle reports are event-driven: subscription required, signup link,
+review started, additional action required, approved, funded, shadow started, live eligible, paused, killed, or halted.
+Operational reports occur every natural investment wake, including `NO_TRADE`, and contain decision, natural-language
+reason, mode/deployment, equity, cash, realised/unrealised P&L, positions/orders, remaining loss budget, official
+effect/readback status, observation time, and next wake. No report asks the user to acknowledge an automatic step.
+
 ### 7.3 Frozen initial live-risk policy
 
 - Maximum live capital allocated to this loop: `$100`.
