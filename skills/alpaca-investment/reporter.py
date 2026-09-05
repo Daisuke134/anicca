@@ -72,14 +72,25 @@ def render(observation: dict[str, Any], campaign: dict[str, Any],
     realized = campaign.get("realized_pnl_usd")
     realized_text = f"確定損益 {money(Decimal(realized))}、" if realized is not None else ""
     effect_text = "注文なし" if effect == "none" else f"{mode}効果 {effect[:12]}"
-    return (
-        f"Life Manager::: Investment loopの1回分です（mode={mode}）。"
-        f"判断は {decision['candidate_ref']}（{decision['gate']}）。"
-        f"資産は {money(equity)}、現金は {money(cash)}{baseline_text}。"
-        f"{realized_text}含み損益 {money(Decimal(campaign['unrealized_pnl_usd']))}、"
-        f"保有ポジション {len(observation['positions'])}件、{effect_text}。"
-        f"観測時刻 {decision['observed_at']}。"
-    )
+    heading = "⏭️ 今回は投資しませんでした" if effect == "none" else "✅ 投資注文を実行しました"
+    return "\n".join((
+        "[Investment Loop][投資判断]",
+        heading,
+        "",
+        f"モード: {mode}",
+        f"判断: {decision['candidate_ref']}（{decision['gate']}）",
+        f"理由: {decision.get('reason') or '理由は記録されていません'}",
+        f"資産: {money(equity)}",
+        f"現金: {money(cash)}{baseline_text}",
+        f"損益: {realized_text}含み損益 {money(Decimal(campaign['unrealized_pnl_usd']))}",
+        f"保有: {len(observation['positions'])}件",
+        f"注文: {effect_text}",
+        f"観測時刻: {decision['observed_at']}",
+        "",
+        "次に自動で行うこと",
+        "5分後に市場と口座を再確認します。",
+        "ユーザーの操作は必要ありません。",
+    ))
 
 
 def _deliver_message(state: Path, event_key: str, message: str,
@@ -136,12 +147,21 @@ def render_failure(*, stage: str, effect_uncertain: bool, wake_id: str,
         if effect_uncertain else
         f"{mode}注文の送信前に停止したため、注文は実行していません。"
     )
-    return (
-        f"Life Manager::: Investment loopの1回分です（mode={mode}）。"
-        f"処理段階 {stage} で安全に完了できなかったため、今回の判断結果を確定できませんでした。"
-        f"{effect_text}{financial_text}原因の詳細は秘密情報を含む可能性があるため送信していません。"
-        f"観測開始時刻 {wake_id}。"
-    )
+    return "\n".join((
+        "[Investment Loop][実行エラー]",
+        "⚠️ 今回の投資判断を確定できませんでした",
+        "",
+        f"モード: {mode}",
+        f"停止段階: {stage}",
+        effect_text,
+        financial_text,
+        "原因の詳細は秘密情報を含む可能性があるため送信していません。",
+        f"観測開始時刻: {wake_id}",
+        "",
+        "次に自動で行うこと",
+        "5分後に安全な処理を再開します。",
+        "ユーザーの操作は必要ありません。",
+    ))
 
 
 def _read_json(path: Path) -> dict[str, Any]:

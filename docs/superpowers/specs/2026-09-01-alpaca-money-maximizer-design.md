@@ -854,7 +854,9 @@ review state without resubmitting the application.
 L04 review does not pause the existing paper loop. Production evidence shows the launchd job loaded at 300-second
 cadence, decision receipts continuing every natural wake, and 145 reports acknowledged through the established
 `AniccaLifeBot` owner route. The defect is presentation: reports identify themselves as `Codex::: Alpaca` instead
-of the product-owned `Life Manager::: Investment loop`. The prerequisite naming repair changes that envelope only;
+of the loop-owned `[Investment Loop][投資判断]` or `[Investment Loop][実行エラー]`. The prerequisite envelope repair
+also surfaces the model's natural-language reason and next automatic action, matching the existing Coconala/Lancers
+report shape without copying their implementation. It changes presentation only;
 it adds no sender, schedule, outbox, or sibling-loop dependency. Until L04 closes, every natural paper wake still
 reports balance, P&L, decision or failure, and `NO_TRADE` when applicable. This repair restores the already-required
 product description; it does not mark the L07 command surface complete or reorder the TODO.
