@@ -796,11 +796,15 @@ written atomically to the private application-status receipt. Until that readbac
 state remains `in_review`, `/invest` says when it was observed, and the five-minute paper loop continues normally.
 
 The dashboard checker reuses the shared browser foundation, owns a leased context, performs read-only navigation,
-and releases what it opens. It does not use a sibling loop's tab or launch a second browser. The checker is not
-enabled while the shared context lease returns a target that disappears before first navigation; that condition is
-a browser-foundation blocker, not evidence that the Alpaca application changed. Once the lease path is healthy,
-the checker logs in from the private credential SSOT/TOTP path, snapshots the authenticated session, and reports
-only a verified state change or required owner action to Telegram.
+and releases what it opens. It does not use a sibling loop's tab or launch a second browser. The shared lease now
+binds command-substitution callers to their durable wrapper PID and the raw CDP client uses the lease's
+`127.0.0.1` target namespace. The local paper pass invokes the checker best-effort every 30 minutes: browser or
+unknown-DOM failure preserves the last verified receipt and never stops the five-minute paper pass. A selected
+Live account is accepted only when the stable account-switcher trigger itself changes from `Paper - <id>` to
+`Live - <id>`; a hidden or visible menu candidate is not approval evidence. The deployed main SHA
+`5c91094de1566f4e9b8d6173b170b723cd8647c0` completed a natural production wake, wrote `in_review` into the
+decision, and delivered Telegram message `58961` containing `ライブ口座: 審査中` with no `Codex` or `Alpaca`
+sender label. This proves monitoring and reporting, not account approval; L04 remains in review.
 
 #### 7.2.1 Start-to-finish product UX map
 
