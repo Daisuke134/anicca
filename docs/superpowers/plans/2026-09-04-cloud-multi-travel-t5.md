@@ -75,6 +75,18 @@ Fix: order due candidates, attempt the existing durable `telegram-t5` claim in t
 
 GREEN: GitHub Actions `33869733279` — focused suite succeeded and the CI-owned commit removed the temporary TDD workflow/script. The permanent suite is **34/34** after this fix.
 
-- [x] **Step 5: Fresh review and integration gates**
+- [x] **Step 5: Fresh review, clean integration, and production deploy**
 
-Fresh review checked AC-18/19/24/25/26, privacy, replay safety, the slow-route deadline regression, and duplicate-due starvation. Current PR is `#4093`; it was refreshed from current `main` without changing concurrent Lancers work and is mergeable. Production provider E2E is deliberately a separate next task and is not claimed by this code-level completion.
+Fresh review checked AC-18/19/24/25/26, privacy, replay safety, the slow-route deadline regression, and duplicate-due starvation. The TDD branch was replaced by clean PR `#4095`, containing one commit and only the final three production/test/docs files. PR `#4095` merged as `2ade8ec054188a98dbe19820d8d59b5c130927f6`.
+
+Railway/GitHub commit-status readback for that exact merge is aggregate `success`: `Anicca - life-call` is success, `Anicca - money-printer-worker` is success, and `Anicca - x402-agents` reports `No deployment needed - watched paths not modified`. The current `main` still contains the due-candidate concurrent preparation and skip-already-claimed selection code.
+
+The same watch-path isolation is still healthy on current main `5420430fefd32e7df89cf64489f8b7ed2b1c4842`: life-call, money-printer-worker, and x402-agents all report `No deployment needed - watched paths not modified`, with aggregate commit status `success`.
+
+- [ ] **Step 6: Prove the multi-event production provider boundary without disturbing a real user schedule**
+
+The pre-existing on-time-core Task 16AG already proves the single-event provider path: a controlled physical Calendar event produced one `provider=transit` Telegram send, durable positive `message_id=981`, and replay-zero on the next 60-second tick. That evidence does **not** prove this multi-event regression because it had only one non-helper reminder candidate.
+
+Close this step only with one natural production window containing at least two eligible non-helper events where a later-start event has an earlier computed departure T-5, or with a separate beta tenant whose call lane is explicitly disabled. Require the later-start/earlier-departure event to receive one provider-backed Telegram message with a positive durable `telegram-t5` receipt; if an earlier due candidate is already claimed, require the next due candidate to send once. The following fixed-60-second tick must add Telegram sends `0` and leave both claims unchanged.
+
+Do not create fake controlled physical events on Dais's live tenant merely to force this proof while `call_enabled=true` / `wake_policy=all-events`, because those test events would also create real T-10/T-5 phone effects. Do not weaken the call policy or manually trigger the scheduler to make the test convenient.
