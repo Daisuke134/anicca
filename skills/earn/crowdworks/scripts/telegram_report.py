@@ -74,13 +74,19 @@ def _receipts(ledger_path: Path) -> list[Mapping[str, object]]:
 
 
 def decision_message(receipt: Mapping[str, object], now: str) -> str:
-    """One application, rendered by the shared [Platform][応募判断] envelope."""
+    """One completed application, rendered by the shared envelope.
+
+    The application is already submitted and confirmed on CrowdWorks by the time a receipt exists,
+    so this is the 応募完了 event. Reporting it as 応募判断 said "応募を準備します" about work that
+    was already done.
+    """
     project = str(receipt.get("opportunity_external_id") or "")
     proposal = str(receipt.get("application_external_id") or "")
     observed = str(receipt.get("observed_at") or now)
+    title = receipt.get("opportunity_title")
     work_event = {
         "kind": "application",
-        "state": "selected",
+        "state": "verified",
         "event_key": f"crowdworks:application:{proposal}",
         "entity_id": project,
         "occurred_at": observed,
@@ -88,8 +94,9 @@ def decision_message(receipt: Mapping[str, object], now: str) -> str:
         "attributes": {
             "platform": "crowdworks",
             "platform_display_name": "CrowdWorks",
-            "title": f"案件 {project}",
-            "reason_codes": [f"公式応募ID {proposal} を公式ページで確認済み"],
+            "title": title if isinstance(title, str) and title.strip() else f"案件 {project}",
+            "proposal_id": proposal,
+            "quote": {"currency": "JPY", "amount": str(receipt.get("proposed_amount_minor") or ""), "unit": "固定報酬"},
         },
     }
     built = envelope.build_work_event_envelope(work_event=work_event, observed_at=datetime.fromisoformat(now))
