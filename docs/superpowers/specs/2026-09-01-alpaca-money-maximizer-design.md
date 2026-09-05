@@ -1,9 +1,13 @@
 # Life Manager Alpaca Money Maximizer — design and ordered TODO
 
-status: APPROVED DESIGN / A01-A10 DONE / A11 ACTIVE
+status: APPROVED PAPER HISTORY / LIVE OSS DESIGN / L01 ACTIVE
 owner: Dais / Life Manager
-deadline: 2026-09-05 00:00 JST
+hackathon deadline: 2026-09-05 00:00 JST — submitted
 execution SSOT: `2026-08-01-dais-life-manager-five-phase-execution-spec.md` §0.0
+
+Sections 1–6 are the frozen hackathon design and execution history. They describe the former Eliza architecture
+and must not be used to implement current work. Sections 7–8 supersede them for the native launchd/cloud live-money
+product; section 8 is the only current ordered TODO.
 
 ## 1. Goal and boundaries
 
@@ -173,16 +177,17 @@ flowchart LR
     RESUME --> SIGNUP
 ```
 
-## 6. Ordered TODO — current priority track
+## 6. Hackathon execution history — closed
 
-The order below is fixed until Dais explicitly changes it. Dais changed it after the first paper canary proved
+This section preserves the paper-hackathon implementation history. It is not the current execution queue; the
+only authoritative current cursor and order are in section 8. During the event, Dais changed the order after the first paper canary proved
 durability: the open SPY exit remains owned by the same background Eliza task, but a closed options session no
 longer blocks multi-market research, the bounded portfolio allocator, or submission artifacts. No second
 scheduler or broker mutation path is introduced. Each atom ends with the named official readback; tests support
 the atom and do not create a separate completeness program.
 
-Current cursor: **A11 Multi-market paper allocator**, while the original SPY exit remains active background
-reconciliation inside the same task. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
+The historical cursor was **A11 Multi-market paper allocator**. The submitted product has since moved to the
+native launchd loop recorded in section 7. A01 is DONE with the event contract matrix above. The prerequisite startup-context drift repair is DONE: public
 `/lm` metadata is bound to context `2026-09-01.1` / digest `f61cbb3c…` through anicca-products PR #402,
 production deploy run `33500496615` and its money-path smoke passed, and the Life Manager live audit reads
 product/repository/Telegram as 3/3 GREEN. This prerequisite does not consume or reorder an Alpaca atom.
@@ -194,12 +199,11 @@ the provider's `DISCORD_COMMUNITY_JOIN_REQUIRED` response. Lablab then returned 
 created the one-member, closed, UTC +9:00 team `Life Manager`. Official readback:
 `https://lablab.ai/ai-hackathons/alpaca-ai-trading-agents-hackathon/life-manager`.
 
-The submission draft also exists and is saved at Step 2 of 3 with title `Life Manager: Autonomous Options Money
-Loop`, truthful short/long descriptions, categories Finance/Investment/Personal Finance, and technology Alpaca.
-The official editor exposes cover image, required video and PDF slides, public repository, demo platform/URL,
-private Alpaca account ID, and up to five social links. It reads `Last saved`; final submission has not occurred.
-Google login was not used, no secret or Discord/account identifier was written to the repository, and later atoms
-must replace provisional copy only with verified campaign facts.
+The final submission is public with title `Life Manager: Autonomous Options Money Loop`, truthful short/long
+descriptions, categories Finance/Investment/Personal Finance, technology Alpaca, video, slides, public repository,
+demo URL, and the private Alpaca account ID supplied only to the submission form. Logged-out readback returns the
+public project and demo. Google login was not used, and no secret or Discord/account identifier was written to the
+repository.
 
 A03 is **DONE**. A brand-new Alpaca Trading API identity was created through the normal-email form and verified
 through the existing authenticated mail reader. Authenticator MFA and its recovery code are active; password,
@@ -551,7 +555,7 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
 | Seq | Atom | Done condition |
 |---:|---|---|
 | A01 | Freeze event contract — **DONE** | Official/archived rules matrix confirms deadline, Trading API, CLI/MCP, options, new paper account, account ID, judging, and every submission artifact; conflicts remain visible. |
-| A02 | Team/submission shell — **DONE** | The official one-member team and saved Step-2 submission draft exist; the editor exposes title, short/long descriptions, tags, cover, video, slides, public GitHub, demo platform/URL, Alpaca account ID, and up to five social links; no final submit yet. |
+| A02 | Team/submission shell — **DONE** | The official one-member team and final public submission contain title, short/long descriptions, tags, cover, video, slides, public GitHub, demo URL, and the private Alpaca account ID. |
 | A03 | Life Manager-owned paper-account bootstrap — **DONE** | From the existing normal-email/password/TOTP login, `plugin-life-manager` uses Alpaca's official **Open New Paper Account** path, captures the new account ID/API keys privately, and checkpoints the result; a restart resumes the saved checkpoint; pinned-CLI readback proves the new paper account has cash/equity=`100000`, empty positions/orders/activity, and options Level 3. The existing baseline account is neither deleted nor presented as agent-created. |
 | A04 | Alpaca CLI preflight — **DONE** | Pinned CLI v0.0.14 and doctor plus account/clock/SPY/options/news reads return the dedicated paper account; zero positions/orders/activities reconcile; secrets appear in no repo/log/chat artifact. Optional MCP is not a readiness dependency. |
 | A05 | Alpaca CLI provider adapter — **DONE** | `plugin-life-manager` converts CLI JSON account/market/option data to typed observations and can submit a paper-only defined-risk order request through the CLI; live mode is structurally rejected and no second REST/SDK mutation path exists. |
@@ -566,7 +570,10 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
 | A14 | Submit and read back | Form contains hosted URL, public repo, assets, tags, and private account ID; official submitted state is read back before 2026-09-05 00:00 JST. |
 | A15 | Portable OSS release | Clean macOS and Linux/Docker installs start the same Eliza runtime in paper mode from the public SHA; launchd/systemd/container policy only supervise that process, while the Eliza registry schedules the loop; secret-free fixture replay passes. |
 
-### Remaining execution queue — fixed order
+### Archived pre-submission queue — non-authoritative
+
+The checklist below records the plan as it existed before final submission. It must not be resumed or used to
+order current work. Section 8 supersedes every unchecked historical item.
 
 - [x] **A03:** Life Manager opens one new paper account inside the existing normal-email Alpaca login, binds its
   private account ID and fresh keys, proves exactly `$100,000` and zero effects through CLI, then proves restart
@@ -621,41 +628,137 @@ broker-reconciled audit trail. The demo must make that end-to-end autonomy visib
   installs the same Eliza plugin and pinned CLI, replays redacted receipts, and starts in paper mode; launchd,
   systemd and Docker restart only Eliza. Tag the immutable release and make the public SHA match demo/submission.
 
-## 7. After submission — production ladder
+## 7. After submission — live-money OSS product
 
-Production does not redefine hackathon paper P&L as revenue. It advances only in this order:
+The hackathon submission is complete and public. The production loop now runs as the native
+`alpaca-investment` launchd job every 300 seconds; Eliza is not its scheduler or runtime. The public dashboard
+remains online unchanged as a hackathon artifact, but is not used by the live-money product. Removing, migrating,
+refactoring, or extending it is out of scope. Telegram is the normal product interface.
 
-| Seq | Atom | Gate |
+Production does not redefine paper P&L as revenue or promise profit. The first live boundary manages only Dais's
+own Alpaca account. A hosted service that chooses or executes trades for other people's accounts is a separate
+regulated product and is outside this implementation queue until qualified legal review closes its jurisdiction,
+registration, disclosure, suitability, custody, and supervision requirements.
+
+### 7.1 Deployment decision: choose cloud or local
+
+The same open-source investment core supports two mutually exclusive deployment profiles:
+
+- `cloud`: the recommended production default. One persistent cloud worker owns scheduling, model calls, Alpaca
+  effects, receipts, and Telegram. The user needs only a phone after one-time account connection.
+- `local`: a self-hosted alternative using launchd on macOS or a documented container scheduler on Linux. It runs
+  the same finite pass and writes the same receipts.
+
+One installation chooses exactly one profile for an Alpaca account. Cloud and local do not coordinate, fail over,
+take over, share a lease, or run the same account concurrently. Moving an account is a deliberate operator
+procedure: stop the old deployment, verify no running pass or unresolved effect, export/import only the documented
+state, then start the new deployment. Automatic migration is a non-goal.
+
+```mermaid
+flowchart TD
+    PHONE["Phone<br/>Telegram"] <--> BOT["Life Manager Telegram Bot"]
+    BOT --> RUNNER
+
+    CHOOSE{"Choose one deployment"}
+    CHOOSE -->|recommended| CLOUD["Life Manager Cloud<br/>scheduler + one worker"]
+    CHOOSE -->|self-hosted| LOCAL["Life Manager Local<br/>launchd or container scheduler"]
+    CLOUD --> RUNNER["Portable investment pass"]
+    LOCAL --> RUNNER
+
+    RUNNER --> OBSERVE["Alpaca account, market, options read"]
+    OBSERVE --> MODEL["Model: proposal or NO_TRADE"]
+    MODEL --> RISK["Deterministic risk gate"]
+    RISK -->|reject| RECEIPT["Decision and economic receipt"]
+    RISK -->|allow| INTENT["Seal stable order intent"]
+    INTENT --> ALPACA["Alpaca live API through pinned CLI"]
+    ALPACA --> RECON["Official order, fill, position, P&L readback"]
+    RECON --> RECEIPT
+    RECEIPT --> BOT
+```
+
+Development reuses the working local paper loop and focused local tests, but does not create a separate local-live
+product that must later be migrated. The common core is deployed to cloud in shadow mode before the first live
+effect; the first owner-capital canary and bounded live campaign execute in cloud. Cloud execution is technically
+complete without a browser or Mac mini because market observation, order entry,
+and reconciliation use Alpaca's network API through the pinned CLI. The cloud deployment needs only a scheduler,
+one worker per installation, encrypted secrets, durable receipts, outbound Alpaca access, and Telegram delivery.
+The existing hackathon dashboard is left untouched. No new dashboard, web trading console, cloud/local coordinator,
+multi-region failover, or customer signup platform belongs in the first live release.
+
+### 7.2 Telegram-only UX
+
+Every natural wake sends one concise Japanese report, including `NO_TRADE`, risk rejection, success, and terminal
+failure. A report states the decision and natural-language reason, order/effect status, equity, cash, daily and
+cumulative realised/unrealised P&L, positions, remaining loss budget, observation time, and next wake. Missing
+fields remain `unknown`; they are never fabricated as zero. Telegram acknowledgement uncertainty never retries an
+order.
+
+The initial command surface is deliberately small:
+
+| Command | User result | Effect boundary |
+|---|---|---|
+| `/status` | Mode, deployment, equity, cash, P&L, positions, latest wake, next wake | Read-only |
+| `/why` | Natural-language explanation of the latest proposal, rejection, or `NO_TRADE` | Read-only |
+| `/risk` | Capital cap, per-trade cap, daily remaining loss budget, halt reason | Read-only |
+| `/pause` | Blocks new entries; reconciliation and risk-reducing exits continue | Authenticated state change |
+| `/resume` | Re-enables entries only when all live gates pass | Authenticated state change |
+| `/kill` | Blocks new entries, cancels open orders, then performs official reconciliation | Authenticated emergency action |
+
+There is no Telegram command for changing credentials, increasing capital, weakening risk limits, or switching
+deployment. Those operations require the deployment's private operator path and explicit readback.
+
+### 7.3 Frozen initial live-risk policy
+
+- Maximum live capital allocated to this loop: `$100`.
+- Maximum defined loss per new trade: `$10`.
+- Daily realised plus unrealised loss halt: `$20`.
+- Maximum concurrent position: one; maximum unresolved order intent: one.
+- Use a dedicated Alpaca live account when the provider permits it. Otherwise, live mode requires zero external or
+  manually opened positions and orders; any external position or order halts new entries.
+- No borrowed leverage, naked short option, martingale, averaging down, or loss-limit reset during the same day.
+- New entries require fresh account/quote data, sufficient buying power, approved option level, regular-session
+  eligibility, and zero unresolved prior effect.
+- Risk-reducing cancellation, reconciliation, and exit remain available while entries are halted.
+- Any unknown order acknowledgement, unexplained position, credential mismatch, stale data, or breached limit
+  fails closed. Capital never increases automatically.
+
+The risk day is `America/New_York` and resets at midnight in that timezone. The day's baseline is the first
+official account-equity read after midnight. The `$20` halt uses the worse of (a) official current equity minus
+that baseline, adjusted only for verified deposits and withdrawals, and (b) the sum of official realised and
+unrealised P&L. Fees reduce P&L. Missing activity, cash-flow, position, or valuation evidence makes the loss budget
+unknown and rejects new entries. The `$100` allocation cap is loop-owned maximum loss plus committed premium, not
+the brokerage account's total balance.
+
+Paper-to-live promotion requires at least 30 calendar days or 100 decisions, positive net P&L after explicit fee
+and slippage assumptions, maximum drawdown below 5%, and zero duplicate orders, unresolved effects, secret leaks,
+or safety breaches. The first live canary is one smallest broker-valid, defined-risk order. A loss does not trigger
+a compensating trade.
+
+## 8. Ordered live implementation TODO
+
+This order is fixed until Dais explicitly changes it. The current cursor is **L01**. Each atom merges to `main`
+independently and ends with official readback. The working local paper loop is used first to extract and test the
+common core; cloud shadow is the first new production deployment. Local-live production is not built before cloud.
+
+| Seq | Atom | Acceptance gate |
 |---:|---|---|
-| P01 | Measurement window | Frozen paper strategy reaches the predeclared duration/trade count; fees/slippage assumptions, drawdown, benchmark, and option liquidity are reported. |
-| P02 | Owner-live eligibility | Alpaca confirms Dais's jurisdiction/account/product eligibility; tax and broker conditions are recorded; live and paper credentials remain separate. |
-| P03 | Live shadow | Live account/market is read-only and produces proposals while paper executes; decision and expected-fill deltas are measured. |
-| P04 | Owner-capital canary | Dais predefines a loss budget and funds only that budget; one smallest defined-risk position executes and independently reconciles. |
-| P05 | Bounded live campaign | Capital cap increases only after verified positive net after fees and no safety breach; net-negative or unexplained state automatically demotes to paper/read-only. |
-| P06 | Cross-rail allocator | The existing model compares verified SELL, WORK, reserve, compute, and CAPITAL opportunity economics; deposits and unrealised gains never count as earned income. |
-| P07 | Self-improvement | Economic receipts create private improvement candidates; offline replay → no-effect canary → bounded canary → versioned promotion/rollback. Model/code changes cannot trade in the same release cycle. |
+| L01 | Portable finite pass | Reuse the working local paper loop to prove observation, model proposal, deterministic gate, sealed effect, reconciliation, receipt, and Telegram from one environment-neutral entrypoint. Broker credentials, scheduler, and mutable state remain injected boundaries. |
+| L02 | Explicit deployment profile | One required `LIFE_MANAGER_INVESTMENT_DEPLOYMENT=cloud|local` value is reported in status/receipts. Installation rejects an absent or ambiguous profile; it implements no cross-profile coordination or automatic failover. |
+| L03 | Structural paper/shadow/live separation | Separate credential refs, endpoints, receipt namespaces, and effect permissions make a paper key incapable of a live effect and make shadow mode read-only. Mode appears in every receipt and Telegram report. |
+| L04 | Human live-account gate | Dais completes provider-required identity, legal agreements, options application, and funding. The model does not answer suitability/KYC questions or move money. Verified owner funding is at most `$100` for the initial campaign. |
+| L05 | Owner-live read-only preflight | Official Alpaca readback verifies Dais's live account status, cash, buying power, options approval/trading level, configurations, and zero unexplained positions/orders without submitting an order. |
+| L06 | Frozen live-risk gate | Tests and receipt evidence enforce the `$100` allocation cap, `$10` per-trade maximum loss, `$20` New-York-day halt, one-position/one-intent limits, verified cash-flow adjustment, and all forbidden strategy classes. Unknown inputs reject entry. |
+| L07 | Telegram control and reporting | Every natural wake reports once. `/status`, `/why`, `/risk`, `/pause`, `/resume`, and `/kill` authenticate the owner, preserve exactly-once effects, and return official readback. |
+| L08 | Cloud shadow runtime | Deploy the common core directly to one cloud worker. A single cloud scheduler invokes it every 300 seconds with encrypted secrets and durable external state, but live mutation remains disabled. Two natural wakes prove no overlap, Telegram delivery, and restart recovery. |
+| L09 | Live shadow measurement | Cloud reads the live account and produces proposals without mutation while paper executes or no-trades. Receipts measure decision, quote, expected-fill, fee, and slippage deltas for 30 days or 100 decisions. |
+| L10 | Promotion gate | A deterministic report proves positive assumed net P&L, drawdown below 5%, and zero safety violations. Failure keeps live mutation disabled without deadline override. |
+| L11 | One cloud owner-capital canary | One smallest broker-valid defined-risk order executes from cloud, uses at most `$10` maximum loss and one stable `client_order_id`; official order/fill/position readback proves exactly one effect. |
+| L12 | Bounded cloud live campaign | Natural cloud wakes operate within the frozen `$100/$10/$20` limits. Every decision and effect reaches the ledger and Telegram; breach or unknown state halts new entries. |
+| L13 | Local self-host profile | Clean macOS launchd and Linux container fixtures run the same committed core, mode gates, receipts, and Telegram UX as an alternative installation. This is portability proof, not migration or failover for the cloud account. |
+| L14 | OSS release | Public `main` contains README, architecture, threat model, risk policy, cloud/local setup, secret handling, recovery, and verified fixture replay. No credential, private account ID, or profit guarantee is published. |
 
-Managing only Dais's own account is the first production boundary. Selling compensated security-specific advice
-or accepting discretion over customer assets is a separate regulated product track. Before that track, obtain
-qualified Japanese legal advice and determine registration: Japan's FSA says compensated investment advice may
-require investment advisory/agency registration, while accepting investment authority over customer assets may
-require investment management registration. Customer beta stays paper-only until that boundary is closed.
-
-## 8. Scope target for the next implementation atom
-
-Next scope remains inside A11 and does not wait for the options session: observe the existing Eliza task's natural
-wake after a main-derived release. Read back the persisted cross-market decision and deterministic gates. If they
-allow crypto or an in-session equity/ETF candidate, reconcile the one official CLI order/fill and prove identical
-replay adds zero orders; if they veto or select `NO_TRADE`, preserve that real receipt without manufacturing a
-trade. Do not manually fire or add a scheduler. A Remote Codex runtime promotion may stop and start only Eliza
-after reading the complete entrypoint call path and proving it never invokes `launchctl`, manipulates `gui/$UID`,
-or touches the Codex app-server, Remote Control, phone tunnel, or browser. It must use a clean main-derived
-checkout, preserve and snapshot the existing PGlite state, start exactly one Eliza process, immediately read back
-its PID/cwd/commit/task state, and retain a non-launchd rollback path. The same task continues the already-sealed
-SPY exit when the regular options session reopens, then records the final campaign funnel and unexplained-delta
-check. A12–A14
-artifacts may be built from the same redacted projection before the close and refreshed after final reconciliation;
-A15 and P01+ retain their gates.
+Capital expansion is not a scheduled TODO. A later spec may propose it only after verified live net profit after
+fees, no safety breach, and a new explicitly approved maximum-loss budget.
 
 ## 9. Controlling references
 
