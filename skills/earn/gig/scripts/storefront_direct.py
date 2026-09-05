@@ -2401,6 +2401,35 @@ def _observed_deleted_draft_ids(evidence_root: Path) -> set[str]:
     return deleted
 
 
+def _healed_subscription(contract: dict) -> dict:
+    """Recompute a create contract's subscription pair from its own recorded intent.
+
+    A contract sealed before the `can_subscribe`/`discount_ratio` pairing fix (or one that
+    otherwise drifted) can sit in `generated-create-contract.json` with a subscription that no
+    longer matches its own `recurring_support_included` flag -- draft 4385273 kept that stale
+    `{enabled: True, discount_ratio: "5"}` pair for mobile_app_dev, a family whose category offers
+    no subscription, so every recovered wake resubmitted the same rejected pair. Deriving the
+    pair fresh from `recurring_support_included` every time a contract is recovered, instead of
+    trusting whatever was baked in at seal time, means any future stale draft heals itself on the
+    next wake rather than needing a one-off manual correction.
+    """
+    wants_recurring = bool((contract.get("capability_evidence") or {}).get("recurring_support_included"))
+    return {"enabled": True, "discount_ratio": "5"} if wants_recurring else {"enabled": False, "discount_ratio": "0"}
+
+
+def _reseal_healed_contract(contract: dict) -> dict:
+    if not isinstance(contract.get("subscription"), dict):
+        return contract  # not a full create contract shape; nothing to heal
+    healed = _healed_subscription(contract)
+    if contract.get("subscription") == healed:
+        return contract
+    corrected = {**contract, "subscription": healed}
+    unsigned = {key: value for key, value in corrected.items()
+                if key not in {"contract_sha256", "hero_image"}}
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {**corrected, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+
+
 def _recover_prepared_create_contract(
     state_dir: Path, family_name: str, demand_evidence_path: str,
 ) -> dict | None:
@@ -2432,7 +2461,10 @@ def _recover_prepared_create_contract(
         ).encode()).hexdigest()
         if (digest == expected == draft.get("contract_sha256")
                 and str(contract.get("draft_service_id") or "") == str(draft.get("draft_service_id") or "")):
-            return contract
+            # Heal after verifying the file matches what this loop actually recorded, so a
+            # tampered or corrupted contract still fails closed above -- only a genuine, intact
+            # contract gets its subscription pair recomputed here.
+            return _reseal_healed_contract(contract)
     return None
 
 
