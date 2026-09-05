@@ -973,3 +973,30 @@ def test_next_unused_demand_cluster_skips_an_already_published_family(tmp_path):
     dismissed = {stuck_cluster["cluster_key"]}
     selected = direct._next_unused_demand_cluster(clusters, dismissed)
     assert selected["capability_family"] == "mvp_web_app_build"
+
+
+def test_create_proposal_prompt_requires_a_grounded_paid_option_on_create():
+    # line_bot_dev's proposal returned paid_option_title/paid_option_price_jpy as null on a
+    # `create` decision, which the JSON schema allows (both fields type ["string"/"integer",
+    # "null"]) but `_seal_create_contract` rejects with storefront_create_content_invalid,
+    # because catalog.json carries no paid_options field to ground one and the prompt never
+    # told the model create requires it. The fix is at generation time, not validation: make
+    # the requirement and a grounded source for it explicit in the prompt the model reads.
+    source = {"service_id": "4355225", "service_version_sha256": "b" * 64}
+    demand = {"evidence_path": "/tmp/demand-search-example.json"}
+    listing_catalog_entry = {
+        "title_ja": "LINE Bot・LINE予約システムを開発します",
+        "tiers": [
+            {"name": "ベーシック", "price_jpy": 50_000},
+            {"name": "スタンダード", "price_jpy": 100_000},
+        ],
+        "deliverables": ["LINE Bot本体", "管理用スプレッドシート/カレンダー連携"],
+        "faq": [{"q": "月額費用はかかりますか？", "a": "運用サポートプランをご用意しています(月額)。"}],
+    }
+    prompt, _ = direct._create_proposal_prompt(
+        source, "line_bot_dev", {}, demand, set(), [],
+        listing_catalog_entry=listing_catalog_entry,
+    )
+    assert "paid_option_title and paid_option_price_jpy must both be" in prompt
+    assert "no_op` may leave every commercial field null" in prompt
+    assert "never invent it" in prompt

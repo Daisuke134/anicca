@@ -4029,7 +4029,12 @@ automations -> delivery_kind `implementation`, working system in the base delive
 post-acceptance maintenance; (2) demand `interview analysis` plus a synthesis capability ->
 delivery_kind `analysis`, decision memo in the base deliverable, no invented software build. Price the
 actual base deliverable at or above paid_demand_price_floor_jpy when present; do not default to the
-cheapest option. Capability artifacts prove that the workforce can execute; they do not prove buyers
+cheapest option. When decision is `create`, paid_option_title and paid_option_price_jpy must both be
+non-null -- only `no_op` may leave every commercial field null. Derive the paid option from evidence,
+never invent it: a scope increment the base deliverable excludes (an owner_listing_catalog_entry tier
+above the one you priced from, one more deliverable from its list, or the recurring/monthly support its
+FAQ or competitor evidence names), priced below display_price_jpy. If no such increment is evidenced,
+price it as a bounded rush-delivery reduction of delivery_days. Capability artifacts prove that the workforce can execute; they do not prove buyers
 want that artifact's niche. The product buyer job must directly match the official demand query and
 comparables. Example: generic `AI agent business automation` demand plus a past computer-vision build
 may prove implementation ability, but it does not justify selling that past vision niche; propose a
