@@ -25,6 +25,29 @@ def _publisher_probe(root: Path) -> tuple[Path, Path]:
     return executable, marker
 
 
+class DeploymentProfileTest(unittest.TestCase):
+    def test_accepts_only_exact_local_or_cloud(self):
+        for value in ("local", "cloud"):
+            with patch.dict(MODULE.os.environ, {
+                "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": value,
+            }):
+                self.assertEqual(MODULE._deployment(), value)
+
+    def test_rejects_missing_or_non_exact_values(self):
+        invalid_values = (None, "", "local,cloud", " local", "LOCAL")
+        for value in invalid_values:
+            environment = {} if value is None else {
+                "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": value,
+            }
+            with self.subTest(value=value), patch.dict(
+                MODULE.os.environ, environment, clear=True
+            ):
+                with self.assertRaisesRegex(
+                    ValueError, "^investment_deployment_invalid$"
+                ):
+                    MODULE._deployment()
+
+
 class PortablePassTest(unittest.TestCase):
     @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
     @patch.object(MODULE, "observe")
@@ -33,10 +56,9 @@ class PortablePassTest(unittest.TestCase):
     @patch.object(MODULE, "read_allocator_snapshot", return_value={})
     @patch.object(MODULE, "build_candidates", return_value=[])
     @patch.object(MODULE, "choose")
-    @patch.object(MODULE, "record_no_trade")
     @patch.object(MODULE, "deliver", return_value={"message_id": "123"})
     def test_success_has_no_dashboard_effect_or_public_summary(
-        self, _deliver, _record, choose, _build, _allocator, reconcile,
+        self, _deliver, choose, _build, _allocator, reconcile,
         _campaign, observe, _reconcile_started,
     ):
         observe.return_value = {
@@ -55,10 +77,24 @@ class PortablePassTest(unittest.TestCase):
             with patch.dict(MODULE.os.environ, {
                 "ALPACA_INVESTMENT_STATE_DIR": str(root / "state"),
                 "NODE_BIN": str(executable), "ALPACA_MARKER": str(marker),
+                "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
             }), redirect_stdout(StringIO()) as output:
                 self.assertEqual(MODULE.main(wake_id="wake-success"), 0)
             self.assertFalse(marker.exists())
-            self.assertNotIn("public_snapshot_published", json.loads(output.getvalue()))
+            summary = json.loads(output.getvalue())
+            self.assertNotIn("public_snapshot_published", summary)
+            self.assertEqual(summary["deployment"], "local")
+            receipts = [
+                json.loads(line)
+                for line in (root / "state" / "receipts.jsonl").read_text(
+                    encoding="utf-8"
+                ).splitlines()
+            ]
+            decision_receipt = next(
+                receipt for receipt in receipts
+                if receipt["receipt_type"] == "decision"
+            )
+            self.assertEqual(decision_receipt["decision"]["deployment"], "local")
 
     @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
     @patch.object(MODULE, "observe", side_effect=RuntimeError("provider unavailable"))
@@ -70,6 +106,7 @@ class PortablePassTest(unittest.TestCase):
             with patch.dict(MODULE.os.environ, {
                 "ALPACA_INVESTMENT_STATE_DIR": str(root / "state"),
                 "NODE_BIN": str(executable), "ALPACA_MARKER": str(marker),
+                "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
             }), redirect_stdout(StringIO()):
                 self.assertEqual(MODULE.main(wake_id="wake-failure"), 78)
             self.assertFalse(marker.exists())
@@ -83,7 +120,10 @@ class FailureTelegramTest(unittest.TestCase):
         self, _reconcile, observe, deliver_failure
     ):
         deliver_failure.return_value = {"message_id": "123", "status": "delivered"}
-        self.assertEqual(MODULE.main(), 78)
+        with patch.dict(MODULE.os.environ, {
+            "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
+        }):
+            self.assertEqual(MODULE.main(), 78)
         self.assertEqual(observe.call_count, 3)
         deliver_failure.assert_called_once()
         self.assertEqual(deliver_failure.call_args.kwargs["stage"], "observe")
