@@ -705,7 +705,7 @@ returns the current lifecycle state and only the actions valid in that state as 
 ```mermaid
 stateDiagram-v2
     [*] --> NeedsAccount: /invest
-    NeedsAccount --> InReview: provider signup + owner KYC handoff
+    NeedsAccount --> InReview: owner opens official signup link and completes signup + KYC
     InReview --> InReview: loop polls and reports
     InReview --> NeedsFunding: provider approves
     NeedsFunding --> Ready: owner funds within campaign cap
@@ -715,12 +715,35 @@ stateDiagram-v2
     Running --> Stopped: Kill
 ```
 
-The loop reuses verified Life Manager profile fields and its private credential store; it does not ask the user to
-repeat known identity or login data in Telegram. It performs signup/login/MFA, opens the provider's secure owner
-handoff, and polls application state. Only provider-required suitability answers, disclosures, legal signature,
-identity document/selfie, and owner funding remain human actions. Tax IDs, documents, passwords, MFA secrets, and
-API keys never enter Telegram, receipts, logs, or Git. Once approved, the loop binds live API credentials through
-the private operator path, completes L05 read-only preflight, and exposes `Start` only when every gate passes.
+For a new account, Life Manager does not automate the browser signup. Signup and KYC are one short provider-owned
+ceremony, and automating only its first pages adds cloud browser/session complexity without removing the mandatory
+human identity work. `/invest` therefore sends one Telegram URL button named `Alpacaで口座開設する` whose exact
+target is Alpaca's official signup page: `https://app.alpaca.markets/signup`. The message shows the user's existing
+Life Manager email, masked unless the chat is owner-authenticated, and recommends using that address so account
+binding is simple. It does not ask the user to copy the email, password, tax ID, document, or MFA value into chat.
+
+The exact new-account chat contract is:
+
+> Investment Loop
+>
+> Alpacaで口座開設と本人確認を完了してください。Life Managerと同じメールアドレスを使うと接続が簡単です。
+>
+> 完了したら下の「提出した」を押してください。審査中になった後はLife Managerが状態を確認します。
+
+Buttons: `Alpacaで口座開設する` (URL above), `提出した`, and `今はしない`. `提出した` performs status
+readback; it never treats the tap itself as proof of submission. When provider/API polling becomes available, a
+detected `SUBMITTED` or `APPROVAL_PENDING` state removes even that tap. The bot then reports only a state change or
+required human action, rather than repeatedly asking the user to check.
+
+The user creates the provider password in the signup ceremony and stores it with the device password manager or a
+passkey when supported. Life Manager never mandates one shared password across services and never promises to know
+a password the user created. Password reuse is rejected because compromise of one unrelated service would expose
+the brokerage account. This security boundary adds no recurring UX step: autofill handles later login, while
+passwords, tax IDs, documents, MFA secrets, and API keys never enter Telegram, receipts, logs, or Git.
+
+After approval, the loop binds live API credentials through the deployment's private secret path, completes L05
+read-only preflight, and exposes `Start` only when every gate passes. The only required human actions are the
+provider signup/KYC ceremony, any provider-requested additional identity response, and owner-authorized funding.
 
 The initial action surface behind `/invest` is deliberately small:
 
