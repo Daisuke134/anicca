@@ -8,6 +8,7 @@ import os
 import pytest
 import subprocess
 import sys
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -904,3 +905,31 @@ def test_reopen_suspended_listings_covers_all_14_and_is_idempotent_when_public(t
         effects_path=effects_path, pass_id="pass-2",
     )
     assert count_replay == 0
+
+
+def test_create_min_interval_fills_the_shelf_in_hours_not_days(tmp_path):
+    # The 20-listing cap minus the 14 already live leaves 6 free slots. One new creation
+    # started per CREATE_MIN_INTERVAL_SECONDS must clear all 6 inside a single day.
+    assert direct.CREATE_MIN_INTERVAL_SECONDS < 86_400
+    remaining_slots = 20 - 14
+    assert remaining_slots * direct.CREATE_MIN_INTERVAL_SECONDS <= 24 * 3_600
+
+    state_dir = tmp_path
+    now = int(time.time())
+    (state_dir / "wakes.jsonl").write_text(json.dumps({
+        "new_listing_draft": {
+            "public_effect": 1,
+            "candidate_key": "storefront:create:v1:abc123",
+        },
+        "observed_at_epoch": now,
+    }) + "\n", encoding="utf-8")
+
+    last_create = direct._last_published_create_epoch(state_dir)
+    assert last_create == now
+
+    # Immediately after a publish, spacing must still be closed: this is the runaway guard.
+    assert (now - last_create) < direct.CREATE_MIN_INTERVAL_SECONDS
+
+    # Once a full interval has elapsed, spacing opens again for the next of the 6 slots.
+    later = now + direct.CREATE_MIN_INTERVAL_SECONDS
+    assert (later - last_create) >= direct.CREATE_MIN_INTERVAL_SECONDS
