@@ -3977,7 +3977,18 @@ def _seal_create_contract(
                           "display_price_jpy": display_price,
                           "delivery_days": int(proposal["delivery_days"]), "order_limit": 1,
                           "body": body, "accept_estimates": True, "estimate_required": False},
-        "category_specific": blueprint["category_specific"], "subscription": blueprint["subscription"],
+        "category_specific": blueprint["category_specific"],
+        # blueprint["subscription"] is the owner's one committed bootstrap contract (a
+        # recurring writing service) and is always {enabled: True, discount_ratio: "5"}. Every
+        # subsequent create blindly inherited that regardless of this proposal's own delivery
+        # kind: a bounded one-off implementation like mobile_app_dev got a subscription
+        # discount toggled on a category that does not actually offer one, so Coconala accepted
+        # the draft save (client-side state) but rejected publish with "最低サービス価格を下回る
+        # 割引設定はできません" -- the persisted can_subscribe flag reverted to false while the
+        # stale discount_ratio stayed set, an inconsistent pair the server refuses. Only carry a
+        # subscription when the proposal itself asked for recurring support.
+        "subscription": (blueprint["subscription"] if proposal["recurring_support_included"]
+                         else {"enabled": False, "discount_ratio": "0"}),
         "paid_options": [{"title": option_title, "price_jpy": option_price, "opened": "1"}],
         "publication_gate": blueprint["publication_gate"], "proposal_evidence": evidence,
         "success_metric": proposal["success_metric"],

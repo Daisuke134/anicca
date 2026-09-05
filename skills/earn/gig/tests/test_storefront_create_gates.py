@@ -54,7 +54,7 @@ def test_rows_written_before_the_field_existed_still_close_the_gate():
 
 
 
-def test_a_catalogue_fills_over_days_not_over_consecutive_wakes(tmp_path):
+def test_a_catalogue_fills_within_an_hour_not_on_consecutive_wakes(tmp_path):
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
     import storefront_direct as sd
@@ -72,8 +72,9 @@ def test_a_catalogue_fills_over_days_not_over_consecutive_wakes(tmp_path):
 
     last = sd._last_published_create_epoch(state)
     assert last == 1_786_891_168  # a wake without a public effect never counts
-    assert sd.CREATE_MIN_INTERVAL_SECONDS == 86_400
-    assert last + sd.CREATE_MIN_INTERVAL_SECONDS > 1_786_895_800  # still closed hours later
+    assert sd.CREATE_MIN_INTERVAL_SECONDS == 3_600
+    assert last + sd.CREATE_MIN_INTERVAL_SECONDS > 1_786_892_068  # still closed minutes later
+    assert last + sd.CREATE_MIN_INTERVAL_SECONDS <= 1_786_899_999  # open again within the hour
     assert sd._last_published_create_epoch(tmp_path / "absent") is None
 
 
@@ -453,6 +454,63 @@ def test_a_two_level_category_writes_no_type_field():
         "master": {"value": "11"}, "sub": {"value": "230"}, "type": None}}
     assert "data[Service][master_category_type_id]" in sdraft._expected_values(three)
     assert "data[Service][master_category_type_id]" not in sdraft._expected_values(two)
+
+
+def test_a_non_recurring_listing_must_verify_subscription_stayed_off():
+    """Live wake 2026-09-05: a one-off mobile_app_dev draft kept can_subscribe=1/discount=5%
+    from the owner's one recurring-writing bootstrap contract. Coconala accepted the draft save
+    (client-side state matched) but rejected publish with a discount-below-minimum error once
+    can_subscribe reverted server-side while the stale discount_ratio stuck around. The fix must
+    verify both sides of that pair for real, not stop verifying it."""
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "scripts"))
+    import storefront_draft as sdraft
+
+    contract = {
+        "draft_url": "https://coconala.com/mypage/services/999",
+        "public_fields": {"overview_input": "アプリを開発し", "catchphrase": "要件定義から開発まで対応します",
+                          "head": "h", "body": "b", "display_price_jpy": 200000,
+                          "price_option_value": "220000", "delivery_days": 30, "order_limit": 1},
+        "category": {"master": {"value": "11"}, "sub": {"value": "237"}, "type": {"value": "740"}},
+        "category_specific": {"features": ["1"], "industries": ["2"], "languages": ["3"],
+                              "provision_format": "1", "fix_limit": "0",
+                              "unit_price_jpy_per_character": "0"},
+        "paid_options": [{"title": "opt", "price_jpy": 350000, "opened": "1"}],
+        "subscription": {"enabled": False, "discount_ratio": "0"},
+    }
+
+    def snapshot_with(can_subscribe_checked, discount_value):
+        expected = sdraft._expected_values(contract)
+        fields = [{"name": name, "value": value, "checked": False} for name, value in expected.items()]
+        fields += [
+            {"name": "data[facets][163][]", "value": "1", "checked": True},
+            {"name": "data[facets][164][]", "value": "2", "checked": True},
+            {"name": "data[facets][165][]", "value": "3", "checked": True},
+            {"name": "data[Service][provision_format]", "value": "1", "checked": True},
+            {"name": "data[Service][can_subscribe]", "value": "1", "checked": can_subscribe_checked},
+            {"name": "data[Service][fix_limit]", "value": "0", "checked": False},
+            {"name": "data[Service][unit_price]", "value": "0", "checked": False},
+            {"name": "data[ServiceSubscription][discount_ratio]", "value": discount_value, "checked": False},
+            {"name": "data[Option][0][title]", "value": "opt", "checked": False},
+            {"name": "data[Option][0][price]", "value": "350000", "checked": False},
+            {"name": "data[Option][0][opened]", "value": "1", "checked": False},
+        ]
+        return {
+            "url": contract["draft_url"], "action": contract["draft_url"], "fields": fields,
+            "price_options": [{"value": "220000", "text": "200,000円"}],
+            "images": [{"style": "background-image:url(x/service_images/original/a.png)"}],
+        }
+
+    # Correctly turned off: unchecked box, discount reset to "0" (設定しない).
+    assert sdraft._snapshot_mismatches(snapshot_with(False, "0"), contract) == []
+    # The exact bug: box unchecked (as Coconala actually persisted it) but the discount select
+    # still carries the stale nonzero ratio from the owner's one recurring bootstrap contract.
+    stale = sdraft._snapshot_mismatches(snapshot_with(False, "5"), contract)
+    assert any("discount_ratio" in item for item in stale)
+    # Also catch the reverse: box still checked when the contract asked for it off.
+    checked_on = sdraft._snapshot_mismatches(snapshot_with(True, "0"), contract)
+    assert any("can_subscribe" in item for item in checked_on)
 
 
 if __name__ == "__main__":
