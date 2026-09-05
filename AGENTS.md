@@ -89,9 +89,9 @@ List your authenticated CLIs, API keys, and secrets below so Felix knows what he
 | `gh` (GitHub) | ✅ / ❌ | `brew install gh && gh auth login` |
 | `stripe` | ✅ / ❌ | `brew install stripe/stripe-cli/stripe` |
 | `codex` | ✅ / ❌ | `npm install -g @openai/codex && codex auth login` |
-| `himalaya` | ✅ / ❌ | `brew install himalaya` + config |
+| `himalaya` (email) | ✅ / ❌ | `brew install himalaya` + config |
 | `bird` (X/Twitter) | ✅ / ❌ | Export cookies from browser |
-| `tmux` | ✅ / ❌ | `brew install tmux` |
+| `tmux` | ✅ / ❌ | `brew install tmux && mkdir -p ~/.tmux` |
 | `ralphy` | ✅ / ❌ | `npm install -g ralphy` |
 
 ### API Keys
