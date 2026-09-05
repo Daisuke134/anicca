@@ -2367,6 +2367,27 @@ def _traffic_without_inquiries(
     return [service_id for _, service_id in sorted(ranked, reverse=True)]
 
 
+def _subscription_heal_diverges(state_dir: Path, family_name: str, active_row: dict) -> bool:
+    """True when the active draft's last confirmed contract needs a subscription correction
+    Coconala's own edit form cannot actually apply.
+
+    Draft 4385273 (mobile_app_dev) proved this empirically: unchecking `can_subscribe` and
+    resubmitting never cleared the `discount_ratio` Coconala had already persisted from an
+    earlier save, because the category never supports a subscription at all -- the platform
+    simply does not process that field once `can_subscribe` is off. Re-healing forever cannot
+    converge on such a draft, so its recorded contract is compared against what healing would
+    produce today; a mismatch means the draft is stuck and must be rebuilt from a blank one
+    rather than resubmitted again.
+    """
+    demand_evidence_path = str(active_row.get("demand_evidence_path") or "")
+    if not demand_evidence_path:
+        return False
+    healed = _recover_prepared_create_contract(state_dir, family_name, demand_evidence_path)
+    if healed is None:
+        return False
+    return str(healed.get("contract_sha256") or "") != str(active_row.get("contract_sha256") or "")
+
+
 def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
     """Drafts this loop abandoned, never those with publication history.
 
@@ -2375,6 +2396,7 @@ def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
     """
     published = set()
     active_by_family: dict[str, str] = {}
+    active_rows: dict[str, dict] = {}
     if ledger_path.exists():
         for line in ledger_path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -2387,7 +2409,16 @@ def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
             if (row.get("status") in {"draft_created", "draft_prepared"}
                     and int(row.get("public_effect") or 0) == 0 and family and draft_id.isdigit()):
                 active_by_family[family] = draft_id
+                active_rows[family] = row
     protected = published | set(active_by_family.values())
+    # Losing protection here is narrow and specific: only a draft whose own recorded contract
+    # provably cannot converge (see `_subscription_heal_diverges`) loses it, never one that is
+    # merely mid-flight.
+    stuck = {
+        draft_id for family, draft_id in active_by_family.items()
+        if _subscription_heal_diverges(ledger_path.parent, family, active_rows[family])
+    }
+    protected -= stuck
     return [value for value in sorted(draft_ids) if value not in protected]
 
 
@@ -2436,6 +2467,11 @@ def _recover_prepared_create_contract(
     wakes = state_dir / "wakes.jsonl"
     if not wakes.is_file():
         return None
+    # A draft this loop has since deleted (see `_deletable_drafts`'s subscription-heal-diverges
+    # check) must never be recovered again: its evidence still satisfies every integrity check
+    # below, but the URL it names no longer exists, so reusing it would trade one stuck loop for
+    # another instead of letting a genuinely blank draft take its place.
+    deleted_draft_ids = _observed_deleted_draft_ids(state_dir / "evidence")
     for line in reversed(wakes.read_text(encoding="utf-8").splitlines()):
         if not line.strip():
             continue
@@ -2444,7 +2480,8 @@ def _recover_prepared_create_contract(
         if (row.get("status") != "completed" or draft.get("status") != "prepared"
                 or int(draft.get("readback") or 0) != 1 or int(draft.get("public_effect") or 0) != 0
                 or draft.get("capability_family") != family_name
-                or str(draft.get("demand_evidence_path") or "") != demand_evidence_path):
+                or str(draft.get("demand_evidence_path") or "") != demand_evidence_path
+                or str(draft.get("draft_service_id") or "") in deleted_draft_ids):
             continue
         path = state_dir / "evidence" / str(row.get("pass_id") or "") / "generated-create-contract.json"
         try:
