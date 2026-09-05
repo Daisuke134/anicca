@@ -372,6 +372,60 @@ def test_a_prepared_readback_contract_is_reused_instead_of_regenerated(tmp_path)
     ) is None
 
 
+def test_a_recovered_contract_heals_a_subscription_pair_that_does_not_match_its_own_intent(tmp_path):
+    """Draft 4385273 (mobile_app_dev) kept a stale can_subscribe/discount pair from before the
+    fix, so every recovered wake resubmitted the exact rejected pair to Coconala. Recovery must
+    correct the pair from the contract's own `recurring_support_included` flag rather than trust
+    whatever was sealed, so a stale draft heals on its own next wake instead of needing a
+    one-off manual fix."""
+    import hashlib
+    sd = _sd()
+    poisoned_unsigned = {
+        "draft_service_id": "4385273",
+        "capability_evidence": {"family": "mobile_app_dev", "recurring_support_included": False},
+        "demand_evidence_path": "/evidence/mobile.json",
+        "subscription": {"enabled": True, "discount_ratio": "5"},
+    }
+    digest = hashlib.sha256(json.dumps(
+        poisoned_unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    poisoned_contract = {**poisoned_unsigned, "contract_sha256": digest}
+    evidence = tmp_path / "evidence" / "wake-1"
+    evidence.mkdir(parents=True)
+    (evidence / "generated-create-contract.json").write_text(
+        json.dumps(poisoned_contract) + "\n", encoding="utf-8",
+    )
+    (tmp_path / "wakes.jsonl").write_text(json.dumps({
+        "pass_id": "wake-1", "status": "completed",
+        "new_listing_draft": {
+            "status": "prepared", "readback": 1, "public_effect": 0,
+            "draft_service_id": "4385273", "contract_sha256": digest,
+            "capability_family": "mobile_app_dev",
+            "demand_evidence_path": "/evidence/mobile.json",
+        },
+    }) + "\n", encoding="utf-8")
+
+    healed = sd._recover_prepared_create_contract(
+        tmp_path, "mobile_app_dev", "/evidence/mobile.json",
+    )
+    assert healed["subscription"] == {"enabled": False, "discount_ratio": "0"}
+    # The healed contract must still verify against its own recomputed signature, or
+    # prepare_draft/publish_draft would be handed a self-inconsistent contract.
+    reunsigned = {key: value for key, value in healed.items()
+                  if key not in {"contract_sha256", "hero_image"}}
+    assert healed["contract_sha256"] == hashlib.sha256(json.dumps(
+        reunsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode()).hexdigest()
+    assert sd._recover_prepared_create_contract(
+        tmp_path, "other-family", "/evidence/mobile.json",
+    ) is None
+    # A contract already consistent with its own recurring flag passes through unchanged,
+    # including its contract_sha256 -- healing must be a no-op, not a re-signature on every read.
+    assert sd._reseal_healed_contract(poisoned_contract) != poisoned_contract
+    consistent = {**poisoned_contract, "subscription": {"enabled": False, "discount_ratio": "0"}}
+    assert sd._reseal_healed_contract(consistent) is consistent
+
+
 def test_recurring_potential_comes_from_the_owned_capability_not_marketplace_copy():
     sd = _sd()
     assert sd._capability_recurring_potential({
