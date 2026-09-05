@@ -168,6 +168,9 @@ def _write_state(
         marker: {
             **{field: entry[field] for field in _LEGACY_PENDING_FIELDS},
             **({"project_id": entry["project_id"]} if "project_id" in entry else {}),
+            # The claim carries the job's name so a later reconcile can name it; dropping it here
+            # is why receipts read "案件: 案件 13422653" instead of the job.
+            **({"title": entry["title"]} if "title" in entry else {}),
         }
         for marker, entry in sorted(pending.items())
     }
@@ -339,6 +342,12 @@ def _reconcile_pending(
             "idempotency_key": f"{platform}:application_receipt:{proposal_id}:v1",
             "observed_at": now(),
         }
+        # A receipt without the job's name forces every reader to report a bare id, which is why
+        # CrowdWorks reports read "案件: 案件 13422653" while Lancers names the job.
+        title = pending_entry.get("title")
+        if isinstance(title, str) and title.strip(): receipt["opportunity_title"] = title.strip()[:300]
+        amount = pending_entry.get("amount_minor")
+        if isinstance(amount, int) and not isinstance(amount, bool) and amount > 0: receipt["proposed_amount_minor"] = amount
         load_marketplace_contracts().parse_application_receipt(receipt)
         ledger_writer(receipt)
         pending.pop(marker, None)
@@ -403,6 +412,10 @@ def run_transaction(
                     "delivery_due_on": delivery_due_on,
                     "project_id": project_id,
                 }
+                # Carry the job's name with the claim so a later reconcile, which only knows ids,
+                # can still write a receipt a human can read.
+                claim_title = opportunity.get("title") if isinstance(opportunity, Mapping) else None
+                if isinstance(claim_title, str) and claim_title.strip(): pending_entry["title"] = claim_title.strip()[:300]
                 claims.add(marker)
                 pending[marker] = pending_entry
                 try:
