@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import importlib.util
 import json
 import sys
@@ -110,8 +112,9 @@ def test_cancel_send_button_is_scoped_to_visible_modal():
     cancel = load()
     expression = cancel.cancel_send_button_expression()
 
-    assert "modal.querySelectorAll('button')" in expression
-    assert "[...document.querySelectorAll('button')]" not in expression
+    assert ".d-talkroomProviderCancellationModal_sendButton" in expression
+    assert "!x.disabled&&!x.classList.contains('is-disabled')" in expression
+    assert "if(!formal||formal.checked)return null" in expression
 
 
 def test_cancel_form_configuration_uses_native_setter_and_both_control_events():
@@ -133,12 +136,123 @@ def test_pending_readback_excludes_answered_history_and_requires_no_current_cont
     assert "への回答" not in expression
 
 
-@pytest.mark.parametrize("phase", ["click_started", "verified"])
-def test_started_or_verified_intent_can_only_reconcile(phase):
+@pytest.mark.parametrize(("phase", "ready_action"), [
+    ("click_started", "retry"),
+    ("effect_started", "reconcile_unknown"),
+    ("verified", "reconcile_unknown"),
+])
+def test_reconcile_intent_action_depends_on_phase(phase, ready_action):
+    cancel = load()
+    value = contract(cancel)
+    intent = {"effect_key": "same", "phase": phase}
+
+    assert cancel.cancellation_initial_action(
+        intent, "same", live_state(cancel, existing=True), value,
+    ) == "dedupe"
+    assert cancel.cancellation_initial_action(
+        intent, "same", live_state(cancel), value,
+    ) == ready_action
+    assert cancel.cancellation_initial_action(
+        intent, "same", live_state(cancel, ids=("old", "m2")), value,
+    ) == "reconcile_unknown"
+    assert cancel.cancellation_initial_action(
+        {"effect_key": "other", "phase": phase}, "same", live_state(cancel), value,
+    ) == "send"
+
+
+def test_submit_persists_each_click_phase_and_waits_for_matching_completion(tmp_path, monkeypatch):
+    cancel = load()
+    value = contract(cancel)
+    intent_path = tmp_path / "intent.json"
+    intent_path.write_text(json.dumps({"phase": "prepared"}), encoding="utf-8")
+    observed = {}
+
+    class Connection:
+        async def __aenter__(self): return object()
+        async def __aexit__(self, *_args): pass
+
+    async def call(method, _params=None):
+        return {"data": "cG5n"} if method == "Page.captureScreenshot" else {}
+
+    async def evaluate(expression, *, user_gesture=False):
+        if "e.click()" in expression:
+            observed["confirmation"] = (
+                json.loads(intent_path.read_text())["phase"], user_gesture,
+            )
+        return True
+
+    async def fake_click(_session, expression, before_dispatch=None, **_kwargs):
+        if before_dispatch:
+            before_dispatch()
+            observed["provider"] = json.loads(intent_path.read_text())["phase"]
+
+    waits = iter([live_state(cancel), True, live_state(cancel, existing=True)])
+    async def fake_wait(_session, _expression, predicate, _timeout):
+        value = next(waits)
+        if isinstance(value, dict) and value["cancellation_pending"]:
+            observed["completion"] = not predicate(live_state(cancel)) and predicate(value)
+        return value
+
+    monkeypatch.setattr(cancel.websockets, "connect", lambda *_args, **_kwargs: Connection())
+    monkeypatch.setattr(cancel, "Session", lambda _ws: SimpleNamespace(call=call, evaluate=evaluate))
+    monkeypatch.setattr(cancel, "_click", fake_click)
+    monkeypatch.setattr(cancel, "_wait", fake_wait)
+
+    state, _screenshot, sent = asyncio.run(cancel.submit(
+        "ws://test", value, 0.01, intent_path=intent_path,
+    ))
+
+    assert observed == {
+        "provider": "click_started",
+        "confirmation": ("effect_started", True),
+        "completion": True,
+    }
+    assert sent and cancel.matching_cancellation(state, value)
+
+
+def test_reconcile_intent_phase_is_preserved():
+    cancel = load()
+    assert cancel.initial_intent_phase({"phase": "effect_started"}, True) == "effect_started"
+    assert cancel.initial_intent_phase({"phase": "effect_started"}, False) == "prepared"
+
+
+def test_cancel_send_dom_click_is_scoped_and_rechecks_guards():
+    cancel = load()
+    expression = cancel.cancel_send_button_click_expression()
+
+    assert "modal.querySelectorAll('button')" in expression
+    assert "[...document.querySelectorAll('button')]" not in expression
+    assert "!x.disabled&&!x.classList.contains('is-disabled')" in expression
+    assert "if(!formal||formal.checked)return false" in expression
+    assert "キャンセルリクエストを送信すると取り消せません。" in expression
+    assert "e.click()" in expression
+
+
+def test_wait_returns_for_boolean_predicate():
     cancel = load()
 
-    assert cancel.intent_is_reconcile_only({"effect_key": "same", "phase": phase}, "same") is True
-    assert cancel.intent_is_reconcile_only({"effect_key": "other", "phase": phase}, "same") is False
+    class FakeSession:
+        async def evaluate(self, _expression):
+            return True
+
+    assert asyncio.run(
+        cancel._wait(FakeSession(), "true", lambda value: value is True, 0.01)
+    ) is True
+
+
+def test_runtime_evaluate_can_mark_user_gesture(monkeypatch):
+    cancel = load()
+    calls = []
+
+    async def fake_call(_ws, _request_id, method, params):
+        calls.append((method, params))
+        return {"result": {"value": True}}
+
+    monkeypatch.setattr(cancel.collector, "call", fake_call)
+
+    assert asyncio.run(cancel.Session(object()).evaluate("1", user_gesture=True)) is True
+    assert calls[0][0] == "Runtime.evaluate"
+    assert calls[0][1]["userGesture"] is True
 
 
 def test_contract_rejects_non_cancellation_feedback():
@@ -182,6 +296,40 @@ def test_paid_routes_cancellation_block_when_any_unresolved_entry_mentions_adapt
             "The latest acknowledgement is also unresolved.",
         ],
     }) is False
+
+
+def test_paid_accepts_only_exact_durable_cancellation_intent():
+    paid = load_module("paid_direct")
+    room, feedback = "18218780", "a" * 64
+    item = {"talkroom_id": room, "buyer_feedback_sha256": feedback}
+    intent = {
+        "action": "cancellation_request",
+        "target": f"https://coconala.com/talkrooms/{room}",
+        "feedback_sha256": feedback,
+        "effect_key": hashlib.sha256(
+            f"coconala:cancel:{room}:{feedback}".encode()
+        ).hexdigest(),
+        "formal_delivery_checkbox": False,
+        "phase": "prepared",
+    }
+
+    assert paid._durable_coconala_cancellation_intent(intent, item) is True
+    for field, value in (
+        ("action", "answer"),
+        ("target", "https://coconala.com/talkrooms/other"),
+        ("feedback_sha256", "b" * 64),
+        ("effect_key", "wrong"),
+        ("formal_delivery_checkbox", True),
+        ("phase", "pending"),
+    ):
+        assert paid._durable_coconala_cancellation_intent(
+            {**intent, field: value}, item
+        ) is False
+
+    for phase in ("prepared", "click_started", "effect_started", "verified"):
+        assert paid._durable_coconala_cancellation_intent(
+            {**intent, "phase": phase}, item
+        ) is True
 
 
 def test_paid_aggregation_preserves_cancellation_effect(tmp_path, monkeypatch):

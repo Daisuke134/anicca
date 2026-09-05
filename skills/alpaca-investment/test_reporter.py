@@ -29,8 +29,10 @@ class ModeReportTest(unittest.TestCase):
             {"account": {"equity": "100000", "cash": "100000"}, "positions": []},
             {"unrealized_pnl_usd": "0.00"},
             {"candidate_ref": "NO_TRADE", "gate": "model_no_trade",
-             "observed_at": "2026-09-05T00:00:00Z", "mode": "shadow"}, "none")
+             "observed_at": "2026-09-05T00:00:00Z", "mode": "shadow",
+             "application_status": "in_review"}, "none")
         self.assertIn("モード: shadow", message)
+        self.assertIn("ライブ口座: 審査中", message)
         self.assertTrue(message.startswith("[Investment Loop][投資判断]"))
         self.assertNotIn("Codex", message)
         self.assertNotIn("Alpaca", message)

@@ -73,11 +73,19 @@ def render(observation: dict[str, Any], campaign: dict[str, Any],
     realized_text = f"確定損益 {money(Decimal(realized))}、" if realized is not None else ""
     effect_text = "注文なし" if effect == "none" else f"{mode}効果 {effect[:12]}"
     heading = "⏭️ 今回は投資しませんでした" if effect == "none" else "✅ 投資注文を実行しました"
+    review = {
+        "in_review": "審査中",
+        "approved": "承認済み",
+        "active": "有効",
+        "action_required": "追加対応が必要",
+        "rejected": "不承認",
+    }.get(decision.get("application_status"), "未確認")
     return "\n".join((
         "[Investment Loop][投資判断]",
         heading,
         "",
         f"モード: {mode}",
+        f"ライブ口座: {review}",
         f"判断: {decision['candidate_ref']}（{decision['gate']}）",
         f"理由: {decision.get('reason') or '理由は記録されていません'}",
         f"資産: {money(equity)}",

@@ -54,6 +54,9 @@ not prove the loop is healthy or that an external effect succeeded. Health comes
 from the latest terminal event, and business success comes only from the official
 provider receipt.
 
+Loop architecture and reuse decisions start at [`skills/loop-engineering/SKILL.md`](skills/loop-engineering/SKILL.md).
+Release and launchd work then follows its required `loop-development` route.
+
 ### Run the Alpaca investment loop
 
 This loop is structurally paper-only: it accepts the exact Alpaca paper endpoint,

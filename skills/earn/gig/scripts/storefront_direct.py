@@ -2367,6 +2367,27 @@ def _traffic_without_inquiries(
     return [service_id for _, service_id in sorted(ranked, reverse=True)]
 
 
+def _subscription_heal_diverges(state_dir: Path, family_name: str, active_row: dict) -> bool:
+    """True when the active draft's last confirmed contract needs a subscription correction
+    Coconala's own edit form cannot actually apply.
+
+    Draft 4385273 (mobile_app_dev) proved this empirically: unchecking `can_subscribe` and
+    resubmitting never cleared the `discount_ratio` Coconala had already persisted from an
+    earlier save, because the category never supports a subscription at all -- the platform
+    simply does not process that field once `can_subscribe` is off. Re-healing forever cannot
+    converge on such a draft, so its recorded contract is compared against what healing would
+    produce today; a mismatch means the draft is stuck and must be rebuilt from a blank one
+    rather than resubmitted again.
+    """
+    demand_evidence_path = str(active_row.get("demand_evidence_path") or "")
+    if not demand_evidence_path:
+        return False
+    healed = _recover_prepared_create_contract(state_dir, family_name, demand_evidence_path)
+    if healed is None:
+        return False
+    return str(healed.get("contract_sha256") or "") != str(active_row.get("contract_sha256") or "")
+
+
 def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
     """Drafts this loop abandoned, never those with publication history.
 
@@ -2375,6 +2396,7 @@ def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
     """
     published = set()
     active_by_family: dict[str, str] = {}
+    active_rows: dict[str, dict] = {}
     if ledger_path.exists():
         for line in ledger_path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -2384,10 +2406,30 @@ def _deletable_drafts(ledger_path: Path, draft_ids: list[str]) -> list[str]:
                 published.add(str(row.get("draft_service_id") or ""))
             family = str(row.get("capability_family") or "")
             draft_id = str(row.get("draft_service_id") or "")
-            if (row.get("status") in {"draft_created", "draft_prepared"}
+            # `prepare_draft`'s own return dict uses status "prepared", never "draft_prepared" --
+            # that second string never matches a real row, so this membership test used to only
+            # ever capture a draft's *create* event and silently skip its later *prepare* event.
+            # `active_by_family` still ended up with the right draft_id either way (the id does
+            # not change between the two events), which is why this stayed dormant. But
+            # `active_rows` feeds `_subscription_heal_diverges`, which needs the row that actually
+            # reflects the draft's current, form-verified contract -- handing it the stale
+            # just-created row compared a healthy prepared draft's healed contract against an
+            # earlier, different contract_sha256 and always looked like a mismatch. That false
+            # positive got 4385965 -- a correctly healed, freshly prepared draft -- deleted for no
+            # reason on 2026-09-05.
+            if (row.get("status") in {"draft_created", "prepared"}
                     and int(row.get("public_effect") or 0) == 0 and family and draft_id.isdigit()):
                 active_by_family[family] = draft_id
+                active_rows[family] = row
     protected = published | set(active_by_family.values())
+    # Losing protection here is narrow and specific: only a draft whose own recorded contract
+    # provably cannot converge (see `_subscription_heal_diverges`) loses it, never one that is
+    # merely mid-flight.
+    stuck = {
+        draft_id for family, draft_id in active_by_family.items()
+        if _subscription_heal_diverges(ledger_path.parent, family, active_rows[family])
+    }
+    protected -= stuck
     return [value for value in sorted(draft_ids) if value not in protected]
 
 
@@ -2401,12 +2443,46 @@ def _observed_deleted_draft_ids(evidence_root: Path) -> set[str]:
     return deleted
 
 
+def _healed_subscription(contract: dict) -> dict:
+    """Recompute a create contract's subscription pair from its own recorded intent.
+
+    A contract sealed before the `can_subscribe`/`discount_ratio` pairing fix (or one that
+    otherwise drifted) can sit in `generated-create-contract.json` with a subscription that no
+    longer matches its own `recurring_support_included` flag -- draft 4385273 kept that stale
+    `{enabled: True, discount_ratio: "5"}` pair for mobile_app_dev, a family whose category offers
+    no subscription, so every recovered wake resubmitted the same rejected pair. Deriving the
+    pair fresh from `recurring_support_included` every time a contract is recovered, instead of
+    trusting whatever was baked in at seal time, means any future stale draft heals itself on the
+    next wake rather than needing a one-off manual correction.
+    """
+    wants_recurring = bool((contract.get("capability_evidence") or {}).get("recurring_support_included"))
+    return {"enabled": True, "discount_ratio": "5"} if wants_recurring else {"enabled": False, "discount_ratio": "0"}
+
+
+def _reseal_healed_contract(contract: dict) -> dict:
+    if not isinstance(contract.get("subscription"), dict):
+        return contract  # not a full create contract shape; nothing to heal
+    healed = _healed_subscription(contract)
+    if contract.get("subscription") == healed:
+        return contract
+    corrected = {**contract, "subscription": healed}
+    unsigned = {key: value for key, value in corrected.items()
+                if key not in {"contract_sha256", "hero_image"}}
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {**corrected, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+
+
 def _recover_prepared_create_contract(
     state_dir: Path, family_name: str, demand_evidence_path: str,
 ) -> dict | None:
     wakes = state_dir / "wakes.jsonl"
     if not wakes.is_file():
         return None
+    # A draft this loop has since deleted (see `_deletable_drafts`'s subscription-heal-diverges
+    # check) must never be recovered again: its evidence still satisfies every integrity check
+    # below, but the URL it names no longer exists, so reusing it would trade one stuck loop for
+    # another instead of letting a genuinely blank draft take its place.
+    deleted_draft_ids = _observed_deleted_draft_ids(state_dir / "evidence")
     for line in reversed(wakes.read_text(encoding="utf-8").splitlines()):
         if not line.strip():
             continue
@@ -2415,7 +2491,8 @@ def _recover_prepared_create_contract(
         if (row.get("status") != "completed" or draft.get("status") != "prepared"
                 or int(draft.get("readback") or 0) != 1 or int(draft.get("public_effect") or 0) != 0
                 or draft.get("capability_family") != family_name
-                or str(draft.get("demand_evidence_path") or "") != demand_evidence_path):
+                or str(draft.get("demand_evidence_path") or "") != demand_evidence_path
+                or str(draft.get("draft_service_id") or "") in deleted_draft_ids):
             continue
         path = state_dir / "evidence" / str(row.get("pass_id") or "") / "generated-create-contract.json"
         try:
@@ -2432,7 +2509,10 @@ def _recover_prepared_create_contract(
         ).encode()).hexdigest()
         if (digest == expected == draft.get("contract_sha256")
                 and str(contract.get("draft_service_id") or "") == str(draft.get("draft_service_id") or "")):
-            return contract
+            # Heal after verifying the file matches what this loop actually recorded, so a
+            # tampered or corrupted contract still fails closed above -- only a genuine, intact
+            # contract gets its subscription pair recomputed here.
+            return _reseal_healed_contract(contract)
     return None
 
 
@@ -3792,7 +3872,12 @@ buyer-visible outcome supported by the owned capability family; it must not
 duplicate or merely rephrase any current_catalog_titles. Use the demand page only as demand evidence,
 never copy seller wording, reviews, sales, guarantees or unsupported claims. Include exact evidence
 refs for the official offer, owned family and demand evidence. The title_stem excludes the final
-Japanese `ます`. head must state outcome, exact inclusions, exclusions, required inputs and support
+Japanese `ます`, so it must end in the continuative (i-form) of a Japanese verb -- the character
+right before the implicit `ます` has to be one Coconala can attach `ます` to, e.g. `...を開発し`,
+`...を執筆し`, `...を実装し`. It must never end in a bare noun such as `...アプリ` or `...システム`
+(that would render as the ungrammatical `...アプリます`); if the offer is naturally noun-shaped,
+add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. head must state
+outcome, exact inclusions, exclusions, required inputs and support
 boundary. Write head and body as buyer-facing Japanese prose: never emit a schema field name or an
 English label such as `outcome:`, and never prefix a sentence with a bare label like `含むもの:`. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
 lines: headline, supporting line, and two or three short badges separated by `｜`; do not include price,
@@ -7153,11 +7238,15 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                 continue
                             row = json.loads(line)
                             draft_id = str(row.get("draft_service_id") or "")
+                            # Same "prepared", not "draft_prepared", vocabulary as the ledger rows
+                            # `prepare_draft` writes (see `_deletable_drafts`) -- without this a
+                            # draft that had already been prepared, not just created, was never
+                            # offered back for reuse here.
                             if (row.get("capability_family") == create_family and draft_id.isdigit()
                                     and draft_id not in inventory_ids
                                     and draft_id not in deleted_draft_ids
                                     and int(row.get("public_effect") or 0) == 0
-                                    and row.get("status") in {"draft_created", "draft_prepared"}):
+                                    and row.get("status") in {"draft_created", "prepared"}):
                                 preferred_draft_ids.append(draft_id)
                     create_draft_claim = storefront_draft.create_or_claim_blank_draft(
                         getattr(args, "default_tab_script", DEFAULT_TAB),
