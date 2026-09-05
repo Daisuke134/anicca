@@ -31,6 +31,7 @@ class ModeReportTest(unittest.TestCase):
             {"candidate_ref": "NO_TRADE", "gate": "model_no_trade",
              "observed_at": "2026-09-05T00:00:00Z", "mode": "shadow"}, "none")
         self.assertIn("mode=shadow", message)
+        self.assertNotIn("開始時$100,000", message)
         failure = reporter.render_failure(
             stage="observe", effect_uncertain=False,
             wake_id="2026-09-05T00:00:00Z", mode="live")
@@ -55,6 +56,7 @@ class FailureBalanceTest(unittest.TestCase):
                     stage="observe",
                     effect_uncertain=False,
                     wake_id="2026-09-04T10:15:00Z",
+                    mode="paper",
                 )
 
         message = send.call_args.args[2]
@@ -67,6 +69,25 @@ class FailureBalanceTest(unittest.TestCase):
         self.assertIn("保有ポジション 0件", message)
         self.assertIn("2026-09-04T10:10:25Z", message)
         self.assertNotIn("must-not-appear", message)
+
+    def test_nonpaper_failure_omits_paper_baseline(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            reporter,
+            "_deliver_message",
+            return_value={"message_id": "123", "status": "delivered"},
+        ) as send:
+            reporter.deliver_failure(
+                Path(directory),
+                stage="observe",
+                effect_uncertain=False,
+                wake_id="2026-09-04T10:15:00Z",
+                observation=OBSERVATION,
+                campaign=CAMPAIGN,
+                mode="live",
+            )
+        message = send.call_args.args[2]
+        self.assertIn("資産は $99,996.76", message)
+        self.assertNotIn("開始時$100,000", message)
 
     def test_partial_or_malformed_snapshot_reports_each_unknown_without_crashing(self):
         observation = {
@@ -91,7 +112,7 @@ class FailureBalanceTest(unittest.TestCase):
         message = send.call_args.args[2]
         self.assertIn("資産は 不明", message)
         self.assertIn("現金は 不明", message)
-        self.assertIn("開始時$100,000から 不明", message)
+        self.assertNotIn("開始時$100,000", message)
         self.assertIn("確定損益 -$3.00", message)
         self.assertIn("含み損益 不明", message)
         self.assertIn("保有ポジション 不明", message)

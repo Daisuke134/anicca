@@ -68,13 +68,14 @@ def render(observation: dict[str, Any], campaign: dict[str, Any],
     equity = Decimal(str(observation["account"]["equity"]))
     cash = Decimal(str(observation["account"]["cash"]))
     change = equity - Decimal("100000")
+    baseline_text = f"、開始時$100,000から {money(change)}" if mode == "paper" else ""
     realized = campaign.get("realized_pnl_usd")
     realized_text = f"確定損益 {money(Decimal(realized))}、" if realized is not None else ""
     effect_text = "注文なし" if effect == "none" else f"{mode}効果 {effect[:12]}"
     return (
         f"Codex::: Alpaca {mode}投資loopの1回分です（mode={mode}）。"
         f"判断は {decision['candidate_ref']}（{decision['gate']}）。"
-        f"資産は {money(equity)}、現金は {money(cash)}、開始時$100,000から {money(change)}。"
+        f"資産は {money(equity)}、現金は {money(cash)}{baseline_text}。"
         f"{realized_text}含み損益 {money(Decimal(campaign['unrealized_pnl_usd']))}、"
         f"保有ポジション {len(observation['positions'])}件、{effect_text}。"
         f"観測時刻 {decision['observed_at']}。"
@@ -151,7 +152,8 @@ def _read_json(path: Path) -> dict[str, Any]:
         return {}
 
 
-def _latest_financial_text(state: Path, observation=None, campaign=None) -> str:
+def _latest_financial_text(state: Path, observation=None, campaign=None,
+                           mode: str = "unknown") -> str:
     observation = observation or _read_json(state / "observation-latest.json")
     campaign = campaign or _read_json(state / "campaign.json")
     account = observation.get("account") if isinstance(observation.get("account"), dict) else {}
@@ -178,9 +180,10 @@ def _latest_financial_text(state: Path, observation=None, campaign=None) -> str:
     clock = observation.get("clock")
     observed_at = clock.get("observed_at", "不明") if isinstance(clock, dict) else "不明"
     delta = equity - Decimal("100000") if equity is not None else None
+    baseline_text = f"、開始時$100,000から {money(delta)}" if mode == "paper" else ""
     return (
         f"利用可能な最新値（観測時刻 {observed_at}）：資産は {money(equity)}、"
-        f"現金は {money(cash)}、開始時$100,000から {money(delta)}。"
+        f"現金は {money(cash)}{baseline_text}。"
         f"確定損益 {money(realized)}、含み損益 {money(unrealized)}、"
         f"保有ポジション {position_count}。"
     )
@@ -197,7 +200,7 @@ def deliver_failure(state: Path, *, stage: str, effect_uncertain: bool,
             effect_uncertain=effect_uncertain,
             wake_id=wake_id,
             mode=mode,
-            financial_text=_latest_financial_text(state, observation, campaign),
+            financial_text=_latest_financial_text(state, observation, campaign, mode),
         ),
         wake_id,
     )

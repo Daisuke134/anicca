@@ -87,6 +87,21 @@ class InvestmentModeTest(unittest.TestCase):
         self.assertEqual(observed[0]["credentials_path"], credentials)
         self.assertEqual(reconcile.call_args.args[0], state / "receipts.jsonl")
 
+    def test_mode_state_paths_reject_shared_namespaces(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, paper, shared = Path(directory), Path(directory) / "paper", Path(directory) / "shared"
+            base = {
+                "ALPACA_INVESTMENT_PAPER_STATE_DIR": str(paper),
+                "ALPACA_INVESTMENT_SHADOW_CREDENTIALS_FILE": str(root / "shadow.json"),
+                "ALPACA_INVESTMENT_LIVE_CREDENTIALS_FILE": str(root / "live.json"),
+                "ALPACA_INVESTMENT_SHADOW_STATE_DIR": str(root / "shadow"),
+                "ALPACA_INVESTMENT_LIVE_STATE_DIR": str(root / "live"),
+            }
+            for mode, selected in (("shadow", {"ALPACA_INVESTMENT_SHADOW_STATE_DIR": str(paper)}), ("live", {"ALPACA_INVESTMENT_LIVE_STATE_DIR": str(shared), "ALPACA_INVESTMENT_SHADOW_STATE_DIR": str(shared)})):
+                with self.subTest(mode=mode), patch.dict(MODULE.os.environ, {**base, **selected}, clear=True):
+                    with self.assertRaisesRegex(ValueError, "^investment_mode_state_path_conflict$"):
+                        MODULE._mode_paths(mode)
+
     def test_receipts_and_reconciled_rows_expose_top_level_mode(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger = Path(directory) / "receipts.jsonl"
@@ -96,6 +111,17 @@ class InvestmentModeTest(unittest.TestCase):
             EFFECT_STORE.reconcile_started(ledger, lambda _: {"found": True, "status": "filled"})
             rows = [json.loads(line) for line in ledger.read_text().splitlines()]
         self.assertTrue(all(row.get("mode") in {"paper", "shadow"} for row in rows))
+
+    def test_legacy_paper_intent_reconciliation_writes_mode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = Path(directory) / "receipts.jsonl"
+            ledger.write_text(json.dumps({
+                "client_order_id": "legacy-order", "effect_id": "legacy-effect",
+                "paper": True, "receipt_type": "effect_intent", "status": "started",
+            }) + "\n")
+            EFFECT_STORE.reconcile_started(ledger, lambda _: {"found": True, "status": "filled"})
+            rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+        self.assertTrue(all(row.get("mode") == "paper" for row in rows[1:]))
 
 
 class BrokerContextTest(unittest.TestCase):
@@ -126,6 +152,50 @@ class BrokerContextTest(unittest.TestCase):
                                  (key, live_trade))
             with self.assertRaises(ValueError):
                 CLI._context(paper, cli, mode="live")
+
+    def test_submit_rejects_shadow_and_live_before_cli_or_order(self):
+        with patch.object(CLI, "_context") as context, patch.object(CLI, "_run") as run, \
+                patch.object(CLI.subprocess, "run") as process:
+            for mode in ("shadow", "live"):
+                with self.subTest(mode=mode), self.assertRaisesRegex(
+                    ValueError, "^investment_mode_effect_forbidden$"):
+                    CLI.submit_order(
+                        credentials_path=Path("missing"), cli_path=Path("missing"),
+                        client_order_id="lm-ai-" + "a" * 24,
+                        order={"asset_class": "crypto", "symbol": "BTC/USD", "notional_usd": "1"},
+                        mode=mode,
+                    )
+        context.assert_not_called()
+        run.assert_not_called()
+        process.assert_not_called()
+
+
+class BrokerSnapshotTest(unittest.TestCase):
+    def test_shadow_and_live_snapshots_are_nonpaper(self):
+        for mode in ("shadow", "live"):
+            with self.subTest(mode=mode), patch.dict(
+                CLI.os.environ, {"LIFE_MANAGER_INVESTMENT_MODE": mode}, clear=True
+            ), patch.object(CLI, "_context", return_value={}), patch.object(
+                CLI, "_run", side_effect=[
+                    {"cash": "101", "equity": "102"},
+                    {"is_open": False, "observed_at": "2026-09-05T00:00:00Z"},
+                    [], 0, 0, {"symbol": "SPY"}, 0,
+                ]
+            ):
+                observation = CLI.observe(credentials_path=Path("missing"), cli_path=Path("missing"))
+            self.assertEqual((observation["mode"], observation["paper"]), (mode, False))
+            with patch.dict(
+                CLI.os.environ, {"LIFE_MANAGER_INVESTMENT_MODE": mode}, clear=True
+            ), patch.object(CLI, "_context", return_value={}), patch.object(
+                CLI, "_run", side_effect=[
+                    {"cash": "101", "equity": "102"}, [], [],
+                    {"is_open": False, "observed_at": "2026-09-05T00:00:00Z"}, [],
+                ]
+            ):
+                snapshot = CLI.read_campaign_snapshot(
+                    credentials_path=Path("missing"), cli_path=Path("missing"), symbols=("A", "B")
+                )
+            self.assertEqual((snapshot["mode"], snapshot["paper"]), (mode, False))
 
 
 class ShadowReadOnlyTest(unittest.TestCase):

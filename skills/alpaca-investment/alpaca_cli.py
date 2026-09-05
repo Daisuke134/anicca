@@ -95,7 +95,8 @@ def _run(cli: Path, args: list[str], env: dict[str, str]) -> Any:
 def observe(*, credentials_path: Path, cli_path: Path, symbol: str = "SPY") -> dict[str, Any]:
     if symbol != "SPY":
         raise ValueError("unsupported_observation_symbol")
-    env = _context(credentials_path, cli_path)
+    mode = _selected_mode()
+    env = _context(credentials_path, cli_path, mode)
 
     account = _run(cli_path, [
         "account", "get", "--quiet", "--jq",
@@ -137,7 +138,8 @@ def observe(*, credentials_path: Path, cli_path: Path, symbol: str = "SPY") -> d
         "observed_symbol": symbol,
         "open_and_closed_orders_count": orders,
         "option_contracts_count": options,
-        "paper": True,
+        "mode": mode,
+        "paper": mode == "paper",
         "positions": positions,
         "trade": trade,
     }
@@ -168,7 +170,8 @@ def find_order_by_client_id(
 def read_campaign_snapshot(
     *, credentials_path: Path, cli_path: Path, symbols: tuple[str, str],
 ) -> dict[str, Any]:
-    env = _context(credentials_path, cli_path)
+    mode = _selected_mode()
+    env = _context(credentials_path, cli_path, mode)
     account = _run(cli_path, [
         "account", "get", "--quiet", "--jq",
         "{cash:.cash,equity:.equity,last_equity:.last_equity}",
@@ -202,7 +205,8 @@ def read_campaign_snapshot(
         "clock": clock,
         "fills": [fill for fill in fills if fill.get("symbol") in symbols],
         "options": options,
-        "paper": True,
+        "mode": mode,
+        "paper": mode == "paper",
         "positions": [position for position in positions if position.get("symbol") in symbols],
         "unexpected_positions": [position.get("symbol") for position in positions
                                  if position.get("symbol") not in symbols],

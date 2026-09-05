@@ -69,7 +69,19 @@ def _mode_paths(mode: str) -> tuple[Path, Path]:
             or "~/.local/state/life-manager/alpaca-investment"
     elif not credentials or not state:
         raise ValueError("investment_mode_paths_missing")
-    return Path(credentials).expanduser(), Path(state).expanduser()
+    selected_state = Path(state).expanduser()
+    selected_resolved = selected_state.resolve()
+    paper_state = (os.environ.get("ALPACA_INVESTMENT_PAPER_STATE_DIR")
+                   or os.environ.get("ALPACA_INVESTMENT_STATE_DIR")
+                   or "~/.local/state/life-manager/alpaca-investment")
+    for other, other_state in (
+        ("paper", paper_state),
+        ("shadow", os.environ.get("ALPACA_INVESTMENT_SHADOW_STATE_DIR")),
+        ("live", os.environ.get("ALPACA_INVESTMENT_LIVE_STATE_DIR")),
+    ):
+        if other != mode and other_state and selected_resolved == Path(other_state).expanduser().resolve():
+            raise ValueError("investment_mode_state_path_conflict")
+    return Path(credentials).expanduser(), selected_state
 
 
 def main(*, attempt: int = 0, wake_id=None) -> int:
