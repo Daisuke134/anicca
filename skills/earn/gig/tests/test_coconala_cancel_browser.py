@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import importlib.util
 import json
 import sys
@@ -295,6 +296,40 @@ def test_paid_routes_cancellation_block_when_any_unresolved_entry_mentions_adapt
             "The latest acknowledgement is also unresolved.",
         ],
     }) is False
+
+
+def test_paid_accepts_only_exact_durable_cancellation_intent():
+    paid = load_module("paid_direct")
+    room, feedback = "18218780", "a" * 64
+    item = {"talkroom_id": room, "buyer_feedback_sha256": feedback}
+    intent = {
+        "action": "cancellation_request",
+        "target": f"https://coconala.com/talkrooms/{room}",
+        "feedback_sha256": feedback,
+        "effect_key": hashlib.sha256(
+            f"coconala:cancel:{room}:{feedback}".encode()
+        ).hexdigest(),
+        "formal_delivery_checkbox": False,
+        "phase": "prepared",
+    }
+
+    assert paid._durable_coconala_cancellation_intent(intent, item) is True
+    for field, value in (
+        ("action", "answer"),
+        ("target", "https://coconala.com/talkrooms/other"),
+        ("feedback_sha256", "b" * 64),
+        ("effect_key", "wrong"),
+        ("formal_delivery_checkbox", True),
+        ("phase", "pending"),
+    ):
+        assert paid._durable_coconala_cancellation_intent(
+            {**intent, field: value}, item
+        ) is False
+
+    for phase in ("prepared", "click_started", "effect_started", "verified"):
+        assert paid._durable_coconala_cancellation_intent(
+            {**intent, "phase": phase}, item
+        ) is True
 
 
 def test_paid_aggregation_preserves_cancellation_effect(tmp_path, monkeypatch):
