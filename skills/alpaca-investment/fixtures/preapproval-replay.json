@@ -1,0 +1,44 @@
+{
+  "application_status": {
+    "application_status": "in_review",
+    "observed_at": "2026-09-06T00:00:00Z",
+    "source": "fixture"
+  },
+  "approved_proposal": {
+    "approved": true,
+    "candidate_ref": "SPY-PUT-CREDIT-SPREAD",
+    "deployment": "local",
+    "gate": "approved",
+    "mode": "paper",
+    "observed_at": "2026-09-06T00:05:00Z",
+    "reason": "Fixture proposal"
+  },
+  "campaign": {
+    "exit_status": "CLOSED",
+    "realized_pnl_usd": "0.00",
+    "unrealized_pnl_usd": "0.00"
+  },
+  "no_trade": {
+    "approved": false,
+    "candidate_ref": "NO_TRADE",
+    "deployment": "local",
+    "gate": "model_no_trade",
+    "mode": "paper",
+    "observed_at": "2026-09-06T00:00:00Z",
+    "reason": "Fixture has no directional evidence"
+  },
+  "observation": {
+    "account": {
+      "cash": "100000.00",
+      "equity": "100000.00"
+    },
+    "positions": []
+  },
+  "order": {
+    "limit_price": "0.10",
+    "qty": "1",
+    "side": "buy",
+    "symbol": "SPY-FIXTURE",
+    "type": "limit"
+  }
+}
