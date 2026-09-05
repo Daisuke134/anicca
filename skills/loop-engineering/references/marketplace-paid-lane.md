@@ -26,14 +26,13 @@ items; they never make items disappear.
 
 ## Ownership and parallelism
 
-Paid alone fulfils accepted orders. Apply, Negotiate and Storefront never send a
-Paid effect. Different orders use project-scoped claims and may progress in
-parallel. Only the same order/effect identity is serialized. A browser identity
-lease may briefly serialize access to one authenticated session without turning
-an unrelated client into `failed`.
+Lane ownership follows spec §6.2A. Within Paid, different orders use
+project-scoped claims and progress in parallel; only the same order/effect
+identity is serialized. A browser identity lease may briefly serialize one
+authenticated session without turning an unrelated client into `failed`.
 
-The provider-independent runtime owns scheduling, bounded retries, model routing,
-checkpoint/resume and receipt persistence. In particular:
+Reuse the provider-independent primitives that already exist for model routing,
+effect fencing, receipts and recovery. In particular:
 
 - a busy Codex profile fails over before spending a task timeout;
 - every model invocation gets a private runtime home and lock while reusing only
@@ -49,11 +48,12 @@ The next wake performs read-only official reconciliation: adopt an existing
 matching effect with effect count zero, retry only after authoritative absence,
 or remain pending when neither can be proved.
 
-A typed blocker is resumable state, not a failed or forgotten order. Persist a
-nonempty blocker, `remaining_work` as a nonempty string array, and official wait
-receipts. The parent reports the order as pending and the next wake revalidates
-it while other orders continue normally. Use `remaining_work=[]` only after the
-required effect and output both have official readback.
+A blocked outcome is explicit resumable state, not a failed or forgotten order.
+Persist a nonempty blocker string, `remaining_work` as a nonempty string array,
+and official wait receipts. The parent reports the order as pending and the next
+wake revalidates it while other orders continue normally. Use
+`remaining_work=[]` only after both required effect and output have official
+readback.
 
 ## Provider adapter contract
 
@@ -95,6 +95,10 @@ Coconala currently supplies the production evidence for this recipe:
 - `skills/earn/gig/scripts/coconala_paid_progress_browser.py` — normal reply with formal delivery off;
 - `runtime/agent-runner/agent_runner.py` — shared model routing and fallback.
 
-New platforms reuse the lifecycle and runtime, then add only their measured
-provider adapter. Do not claim production support until a real active order has
-an official readback receipt and a second run proves replay count zero.
+`paid_direct.py` is still a Coconala-specific orchestrator; the repository does
+not yet have a provider-neutral Paid entrypoint. A second real Paid platform is
+the extraction trigger: reuse the recipe and existing shared primitives, measure
+its adapter, then move only proven duplicate orchestration into
+`skills/_shared/marketplace-core/`. Do not claim production support until a real
+active order has an official readback receipt and a second run proves replay
+count zero.

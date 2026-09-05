@@ -5,8 +5,9 @@ description: Use when building, fixing, releasing or operating a Life Manager lo
 
 # Loop Engineering
 
-One entry, so no lane invents what another lane already owns. This file routes;
-it does not carry the corpus.
+One architecture router, so no lane invents what another lane already owns.
+This file routes; release and launchd work still requires the focused
+`loop-development` subskill.
 
 ```text
 loop config -> reusable recipe -> shared runtime -> provider adapter -> official provider

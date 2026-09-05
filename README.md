@@ -54,8 +54,8 @@ not prove the loop is healthy or that an external effect succeeded. Health comes
 from the latest terminal event, and business success comes only from the official
 provider receipt.
 
-All loop development starts at [`skills/loop-engineering/SKILL.md`](skills/loop-engineering/SKILL.md),
-which routes each lifecycle to one reusable recipe and keeps marketplace differences in provider adapters.
+Loop architecture and reuse decisions start at [`skills/loop-engineering/SKILL.md`](skills/loop-engineering/SKILL.md).
+Release and launchd work then follows its required `loop-development` route.
 
 ### Run the Alpaca investment loop
 
