@@ -698,19 +698,92 @@ cumulative realised/unrealised P&L, positions, remaining loss budget, observatio
 fields remain `unknown`; they are never fabricated as zero. Telegram acknowledgement uncertainty never retries an
 order.
 
-The initial command surface is deliberately small:
+`/invest` is the one user entry point. `/investment` is needlessly long, while `/trading` incorrectly narrows the
+product to frequent stock trades instead of observation, holding, refusal, exit, and risk management. The command
+returns the current lifecycle state and only the actions valid in that state as Telegram buttons:
 
-| Command | User result | Effect boundary |
+The existing Life Manager subscription entitlement remains the only product payment gate. An unpaid user receives
+the existing subscription checkout and returns to `/invest` after payment; Investment Loop creates no second plan,
+checkout, billing service, or investment-specific subscription. A paid user goes directly to the account state.
+
+```mermaid
+stateDiagram-v2
+    [*] --> NeedsAccount: /invest
+    NeedsAccount --> InReview: owner opens official signup link and completes signup + KYC
+    InReview --> InReview: loop polls and reports
+    InReview --> NeedsFunding: provider approves
+    NeedsFunding --> Shadow: owner authorizes initial funding within campaign cap
+    Shadow --> Running: read-only, risk, and shadow gates pass automatically
+    Running --> Paused: Pause
+    Paused --> Running: Resume
+    Running --> Stopped: Kill
+```
+
+For a new account, Life Manager does not automate the browser signup. Signup and KYC are one short provider-owned
+ceremony, and automating only its first pages adds cloud browser/session complexity without removing the mandatory
+human identity work. `/invest` therefore sends one Telegram URL button named `Alpacaで口座開設する` whose exact
+target is Alpaca's official signup page: `https://app.alpaca.markets/signup`. The message shows the user's existing
+Life Manager email, masked unless the chat is owner-authenticated, and recommends using that address so account
+binding is simple. It does not ask the user to copy the email, password, tax ID, document, or MFA value into chat.
+
+The exact new-account chat contract is:
+
+> Investment Loop
+>
+> Alpacaで口座開設と本人確認を完了してください。Life Managerと同じメールアドレスを使うと接続が簡単です。
+>
+> 口座開設、本人確認、初回入金を完了してください。その後はLife Managerが状態を確認して自動運転します。
+
+Buttons: `Alpacaで口座開設する` (URL above) and `今はしない`. Signup, KYC, and initial owner-authorized funding
+are one provider-owned ceremony whenever Alpaca exposes them in one flow. Life Manager never requires a separate
+`提出した`, `入金を確認`, `Shadowを開始`, or `ライブ開始` acknowledgement. After the account is privately bound,
+the loop polls official account state. A detected `SUBMITTED` or `APPROVAL_PENDING` state enters review; `APPROVED`
+or `ACTIVE` plus funded cash advances automatically through L05 read-only preflight, L06 risk checks, and the L08
+shadow gate. Live entries become eligible automatically only after every frozen gate passes. A Telegram tap or
+free-text claim is never proof of submission, approval, funding, or readiness.
+
+The same one-time setup records the user's instruction to run autonomously under the frozen `$100` allocated-capital,
+`$10` per-trade-loss, and `$20` daily-loss limits. It does not authorize exceeding those limits, withdrawing funds,
+or changing the destination account. This one-time mandate replaces per-order and first-live confirmations; it does
+not replace the provider/bank's legally required identity, agreement, or transfer authorization.
+
+The user creates the provider password in the signup ceremony and stores it with the device password manager or a
+passkey when supported. Life Manager never mandates one shared password across services and never promises to know
+a password the user created. Password reuse is rejected because compromise of one unrelated service would expose
+the brokerage account. This security boundary adds no recurring UX step: autofill handles later login, while
+passwords, tax IDs, documents, MFA secrets, and API keys never enter Telegram, receipts, logs, or Git.
+
+After approval, the loop binds live API credentials through the deployment's private secret path and advances
+without another human confirmation. The only required human actions are the provider signup/KYC ceremony, any
+provider-requested additional identity response, and the provider/bank authorization that moves the owner's initial
+funds. These actions cannot be inferred or performed silently. Everything after that is loop-owned.
+
+The initial action surface behind `/invest` is deliberately small:
+
+| Action | User result | Effect boundary |
 |---|---|---|
-| `/status` | Mode, deployment, equity, cash, P&L, positions, latest wake, next wake | Read-only |
-| `/why` | Natural-language explanation of the latest proposal, rejection, or `NO_TRADE` | Read-only |
-| `/risk` | Capital cap, per-trade cap, daily remaining loss budget, halt reason | Read-only |
-| `/pause` | Blocks new entries; reconciliation and risk-reducing exits continue | Authenticated state change |
-| `/resume` | Re-enables entries only when all live gates pass | Authenticated state change |
-| `/kill` | Blocks new entries, cancels open orders, then performs official reconciliation | Authenticated emergency action |
+| `/invest` or `Status` | Lifecycle, mode, deployment, equity, cash, P&L, positions, latest wake, next wake | Read-only |
+| `Why` | Natural-language explanation of the latest proposal, rejection, or `NO_TRADE` | Read-only |
+| `Risk` | Capital cap, per-trade cap, daily remaining loss budget, halt reason | Read-only |
+| `Resume` | Re-enables automatic entries only after the user previously chose `Pause` and every gate still passes | Authenticated state change |
+| `Pause` | Blocks new entries; reconciliation and risk-reducing exits continue | Authenticated state change |
+| `Kill` | Blocks new entries, cancels open orders, then performs official reconciliation | Authenticated emergency action |
+
+While L04 is in review, the first local UX slice is available without changing TODO order: the already-running
+local Telegram bot owns `/invest`, reads the existing paper observation/allocation receipts, and reads a private
+local application-status receipt. It reports `in_review`, the paper balance, and the latest natural-language
+decision reason. Missing or unknown state fails closed and never implies live readiness. This slice is read-only;
+it does not complete L05 or L07 and cannot submit an order, move money, or expose credentials in Telegram.
 
 There is no Telegram command for changing credentials, increasing capital, weakening risk limits, or switching
 deployment. Those operations require the deployment's private operator path and explicit readback.
+
+Local and cloud expose this identical chat contract. The host is invisible to the user: local uses launchd and
+private local state; cloud uses the existing Life Manager scheduler, tenant state, and encrypted secret provider.
+Exactly one deployment owns an account at a time. Every natural wake reports decision or `NO_TRADE`, reason,
+official account/effect readback, balance and P&L, remaining risk budget, and next wake. Review-state polling sends
+only state changes or required action, avoiding repetitive noise. After activation, skipped trades, orders, fills,
+exits, failures, halts, and recovery all report without asking the user to supervise the loop.
 
 ### 7.3 Frozen initial live-risk policy
 
@@ -821,12 +894,27 @@ stdout and the newest decision receipt both read `mode=paper`; Telegram message 
 `mode=paper`, balance, P&L, the `NO_TRADE` gate, and no order. The model's full natural-language reason is not yet
 included in Telegram and remains part of L07. No live broker mutation occurred.
 
+L04 is **SUBMITTED / IN REVIEW**. Dais completed the provider KYC flow. Authenticated Alpaca readback shows exact
+status `Application submitted: In review` and states that Alpaca may request additional information. This proves
+submission, not approval, live API availability, options permission, or funding. The cursor remains L04 until the
+official account state is approved and owner funding of at most `$100` is verified; the loop polls and reports the
+review state without resubmitting the application.
+
+L04 review does not pause the existing paper loop. Production evidence shows the launchd job loaded at 300-second
+cadence, decision receipts continuing every natural wake, and reports acknowledged through the established
+`AniccaLifeBot` owner route. The presentation repair is deployed: reports now use the loop-owned
+`[Investment Loop][投資判断]` or `[Investment Loop][実行エラー]`, include the model's natural-language reason and
+next automatic action, and contain neither `Codex`, `Alpaca`, nor `:::`. It changes presentation only;
+it adds no sender, schedule, outbox, or sibling-loop dependency. Until L04 closes, every natural paper wake still
+reports balance, P&L, decision or failure, and `NO_TRADE` when applicable. This repair restores the already-required
+product description; it does not mark the L07 command surface complete or reorder the TODO.
+
 | Seq | Atom | Acceptance gate |
 |---:|---|---|
 | L01 | Portable finite pass — **DONE** | Reuse the working local paper loop to prove observation, model proposal, deterministic gate, sealed effect, reconciliation, receipt, and Telegram from one environment-neutral entrypoint. Broker credentials, scheduler, and mutable state remain injected boundaries. Dashboard publishing is excluded from the portable pass. |
 | L02 | Explicit deployment profile — **DONE** | One required `LIFE_MANAGER_INVESTMENT_DEPLOYMENT=cloud|local` value is reported in status/receipts. Installation rejects an absent or ambiguous profile; it implements no cross-profile coordination or automatic failover. |
 | L03 | Structural paper/shadow/live separation — **DONE** | Separate credential refs, endpoints, receipt namespaces, and effect permissions make a paper key incapable of a live effect and make shadow mode read-only. Mode appears in every receipt and Telegram report. Only the frozen paper namespace can invoke the hackathon dashboard publisher; shadow/live have no publisher call path. |
-| L04 | Human live-account gate | Dais completes provider-required identity, legal agreements, options application, and funding. The model does not answer suitability/KYC questions or move money. Verified owner funding is at most `$100` for the initial campaign. |
+| L04 | Human live-account gate — **SUBMITTED / IN REVIEW** | Dais completes provider-required identity, legal agreements, options application, and funding. The model does not answer suitability/KYC questions or move money. Verified owner funding is at most `$100` for the initial campaign. |
 | L05 | Owner-live read-only preflight | The local loop reads Dais's live Alpaca status, cash, buying power, options approval/trading level, configurations, and positions/orders without submitting an order. |
 | L06 | Frozen live-risk gate | Tests and receipt evidence enforce the `$100` allocation cap, `$10` per-trade maximum loss, `$20` New-York-day halt, one-position/one-intent limits, verified cash-flow adjustment, and all forbidden strategy classes. Unknown inputs reject entry. |
 | L07 | Telegram control and reporting | Every local natural wake reports once. `/status`, `/why`, `/risk`, `/pause`, `/resume`, and `/kill` authenticate the owner, preserve exactly-once effects, and return official readback. |

@@ -31,6 +31,8 @@ from telegram.ext import (
     filters,
 )
 
+from investment_status import build_investment_status
+
 LIFE_MANAGER_HOME = Path(os.environ.get(
     "LIFE_MANAGER_HOME", str(Path.home() / ".local" / "state" / "life-manager"),
 ))
@@ -208,6 +210,7 @@ async def cmd_help(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
         "  /start    begin (or resume) onboarding\n"
         "  /where    show what location I currently know\n"
         "  /status   show daemon + cron health\n"
+        "  /invest   show investment setup and loop status\n"
         "  /subscribe  get the $20/mo checkout link\n"
         "  /connect  link Google Calendar/Gmail (if you skipped it)\n"
         "  /payout   set or change your payout destination\n"
@@ -215,6 +218,11 @@ async def cmd_help(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
         "  /stop     forget your location\n"
         "  /help     this message"
     )
+
+
+async def cmd_invest(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
+    """Show the truthful local investment onboarding/runtime state."""
+    await update.message.reply_text(build_investment_status(LIFE_MANAGER_HOME))
 
 
 async def cmd_status(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
@@ -496,6 +504,7 @@ def main() -> None:
     app.add_handler(CommandHandler("where", cmd_where))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("status", cmd_status))
+    app.add_handler(CommandHandler("invest", cmd_invest))
     app.add_handler(CommandHandler("subscribe", cmd_subscribe))
     app.add_handler(CommandHandler("connect", cmd_connect))
     app.add_handler(CommandHandler("payout", cmd_payout))

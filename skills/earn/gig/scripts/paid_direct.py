@@ -98,7 +98,7 @@ def _run_private_model_serialized(root: Path, command: list[str], label: str, st
     """Admit one paid model run at a time, before its runner timeout starts."""
     effect_descriptor = None
     if effect_owner:
-        effect_lock_path = root.parent / ".paid-effect-owner.lock"
+        effect_lock_path = root / ".paid-effect-owner.lock"
         effect_descriptor = os.open(effect_lock_path, os.O_CREAT | os.O_RDWR, 0o600)
         try:
             fcntl.flock(effect_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -107,7 +107,7 @@ def _run_private_model_serialized(root: Path, command: list[str], label: str, st
             if error.errno in (errno.EACCES, errno.EAGAIN):
                 raise Failure("remote_owner_busy") from error
             raise
-    model_lock_path = root.parent / ".paid-model-admission.lock"
+    model_lock_path = root / ".paid-model-admission.lock"
     model_descriptor = os.open(model_lock_path, os.O_CREAT | os.O_RDWR, 0o600)
     try:
         fcntl.flock(model_descriptor, fcntl.LOCK_EX)
@@ -4558,6 +4558,44 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
     except (AttributeError, OSError, ValueError, TypeError, json.JSONDecodeError, Failure) as error:
         raise Failure("remote_resume") from error
 
+def _is_coconala_cancellation_block(semantic: dict[str, Any]) -> bool:
+    unresolved = semantic.get("unresolved")
+    effect = _text(semantic.get("required_effect"))
+    return (
+        semantic.get("decision") == "blocked"
+        and isinstance(unresolved, list)
+        and "coconala" in effect.casefold()
+        and (
+            "cancellation" in effect.casefold()
+            or re.search(r"\bcancel\b", effect, re.IGNORECASE) is not None
+            or "キャンセル" in effect
+        )
+        and any("adapter" in _text(item).casefold() for item in unresolved)
+    )
+
+
+def _run_coconala_cancellation(args, item_path: Path, root: Path,
+                               feedback: str, evidence_dir: Path) -> dict[str, Any]:
+    payload = _json_line(_run([
+        sys.executable, str(args.cancel_browser),
+        "--queue-item", str(item_path), "--project-root", str(root),
+        "--evidence-dir", str(evidence_dir),
+        "--default-tab-helper", str(args.cdp_helper),
+    ], "cancellation_browser"), "cancellation_browser")
+    evidence = payload.get("evidence")
+    if (
+        payload.get("ok") is not True
+        or not isinstance(evidence, dict)
+        or evidence.get("action") != "cancellation_request"
+        or evidence.get("feedback_sha256") != feedback
+        or evidence.get("formal_delivery_checkbox") is not False
+        or evidence.get("readback") != 1
+        or not (evidence.get("send_performed") is True or evidence.get("deduplicated") is True)
+    ):
+        raise Failure("cancellation_browser")
+    return evidence
+
+
 def _prepare_one(args, item_path: Path, output: Path) -> int:
     room = ""; root = None; diagnostic_stage = "load_item"
     try:
@@ -4606,6 +4644,31 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
                 "failed": 0,
                 "semantic_decision": semantic.get("decision"),
                 "_paid_prepare_status": "no_effect",
+            })
+            return 0
+        if _is_coconala_cancellation_block(semantic):
+            disk_reason = _effect_gate_reason(args)
+            if disk_reason is not None:
+                return _write_disk_pending(output, room, disk_reason, "before_cancellation_effect")
+            cancellation = _run_coconala_cancellation(
+                args, item_path, root, feedback, base / "cancellation",
+            )
+            result = {
+                "talkroom_id": room,
+                "send_performed": cancellation.get("send_performed") is True,
+                "deduplicated": cancellation.get("deduplicated") is True,
+                "formal_delivery_checkbox": False,
+                "effect_key": cancellation.get("effect_key"),
+                "evidence_paths": {
+                    "official_readback": cancellation.get("live_dom_path"),
+                    "screenshot": cancellation.get("screenshot_path"),
+                },
+            }
+            _write(output, {
+                "status": "completed", "talkroom_id": room,
+                "effect": int(result["send_performed"]), "readback": 1, "failed": 0,
+                "semantic_decision": "cancellation", "formal_delivery_checkbox": False,
+                "item": result, "_paid_prepare_status": "terminal_effect",
             })
             return 0
         if semantic.get("decision") == "blocked":
@@ -4971,6 +5034,7 @@ def _child_command(args, phase, item, output):
     return [sys.executable, str(HERE / "paid_direct.py"), phase, str(item), "--output", str(output),
             "--evidence-dir", str(args.evidence_dir), "--projects-root", str(args.projects_root), "--collector", str(args.collector),
             "--answer-browser", str(args.answer_browser), "--formal-browser", str(args.formal_browser),
+            "--cancel-browser", str(args.cancel_browser),
             "--delivery-evidence-dir", str(args.delivery_evidence_dir),
             "--cdp-helper", str(args.cdp_helper), "--context-compiler", str(args.context_compiler),
             "--dm-collector", str(args.dm_collector),
@@ -5053,6 +5117,19 @@ def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
             "deduplicated": True,
             "formal_delivery_checkbox": False,
         }, 0, int(prepared.get("readback") == 1), 0, ""
+    if prepare.returncode == 0 and prepared.get("_paid_prepare_status") == "terminal_effect":
+        item = prepared.get("item")
+        if not isinstance(item, dict):
+            return {"talkroom_id": room, "status": "failed", "failed_step": "effect_result"}, 0, 0, 1, "effect_result"
+        return {
+            "talkroom_id": room,
+            "status": _text(prepared.get("status")) or "completed",
+            "send_performed": item.get("send_performed") is True,
+            "deduplicated": item.get("deduplicated") is True,
+            "formal_delivery_checkbox": False,
+            "effect_key": item.get("effect_key"),
+            "evidence_paths": item.get("evidence_paths") or {},
+        }, int(prepared.get("effect") or 0), int(prepared.get("readback") == 1), 0, ""
     if prepare.returncode or prepared.get("_paid_prepare_status") != "prepared":
         step = _text(prepared.get("failed_step")) or "remote_resume"
         return {"talkroom_id": room, "status": "failed", "failed_step": step}, 0, 0, 1, step
@@ -5570,6 +5647,7 @@ def _parser():
     parser.add_argument("--projects-root", type=Path, default=Path.home() / "gig/projects"); parser.add_argument("--collector", type=Path, default=HERE / "coconala_queue_snapshot.py")
     parser.add_argument("--run-with-cdp-lock", type=Path, default=HERE / "run_with_cdp_lock.sh"); parser.add_argument("--answer-browser", type=Path, default=HERE / "coconala_paid_progress_browser.py")
     parser.add_argument("--formal-browser", type=Path, default=HERE / "coconala_formal_delivery_browser.py")
+    parser.add_argument("--cancel-browser", type=Path, default=HERE / "coconala_cancel_browser.py")
     parser.add_argument("--delivery-evidence-dir", type=Path, default=Path.home() / "gig" / "delivery-evidence")
     parser.add_argument("--cdp-lock-dir", type=Path, default=Path.home() / "gig" / ".cdp-gig.lock")
     parser.add_argument("--cdp-helper", type=Path, default=BROWSER_DIR / "scripts" / "cdp_default_tab.py"); parser.add_argument("--lock-file", type=Path)
@@ -5588,7 +5666,7 @@ def _parser():
 
 def main(argv=None) -> int:
     args = _parser().parse_args(argv)
-    for name in ("output", "evidence_dir", "projects_root", "collector", "run_with_cdp_lock", "answer_browser", "formal_browser", "delivery_evidence_dir", "cdp_lock_dir", "context_compiler", "dm_collector", "agent_runner", "runner_schema", "artifact_schema", "decision_schema"): setattr(args, name, getattr(args, name).expanduser().resolve())
+    for name in ("output", "evidence_dir", "projects_root", "collector", "run_with_cdp_lock", "answer_browser", "formal_browser", "cancel_browser", "delivery_evidence_dir", "cdp_lock_dir", "context_compiler", "dm_collector", "agent_runner", "runner_schema", "artifact_schema", "decision_schema"): setattr(args, name, getattr(args, name).expanduser().resolve())
     args.cdp_helper = args.cdp_helper.expanduser(); args.lock_file = args.lock_file.expanduser().resolve() if args.lock_file else args.evidence_dir / ".paid-direct.lock"
     if args.write_item: return _write_one(args, args.write_item.expanduser().resolve(), args.output)
     if args.effect_item: return _prepare_one(args, args.effect_item.expanduser().resolve(), args.output)

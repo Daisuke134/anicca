@@ -1027,7 +1027,7 @@ def test_paid_project_executor_runs_different_owners_in_parallel():
     assert maximum == 2
 
 
-def test_paid_model_runner_waits_before_starting_runner_timeout(tmp_path, monkeypatch):
+def test_paid_model_runner_runs_different_projects_in_parallel(tmp_path, monkeypatch):
     paid = load("paid_direct")
     projects = tmp_path / "gig" / "projects"
     roots = [projects / "one", projects / "two"]
@@ -1054,7 +1054,7 @@ def test_paid_model_runner_waits_before_starting_runner_timeout(tmp_path, monkey
                    for root in roots]
         assert [future.result() for future in futures] == ["ok", "ok"]
 
-    assert maximum == 1
+    assert maximum == 2
 
 
 def test_paid_effect_owner_lease_is_held_through_run(tmp_path, monkeypatch):
@@ -1301,7 +1301,7 @@ def test_paid_effect_child_does_not_take_global_browser_lock(tmp_path):
     args = SimpleNamespace(**{
         name: tmp_path / name for name in (
             "run_with_cdp_lock", "evidence_dir", "projects_root", "collector",
-            "answer_browser", "formal_browser", "delivery_evidence_dir", "cdp_helper",
+                "answer_browser", "formal_browser", "cancel_browser", "delivery_evidence_dir", "cdp_helper",
             "context_compiler", "dm_collector", "agent_runner", "runner_schema",
             "artifact_schema", "cdp_lock_dir",
         )
