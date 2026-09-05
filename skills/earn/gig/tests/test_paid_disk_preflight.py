@@ -3,7 +3,9 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import threading
 import zipfile
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -95,6 +97,79 @@ def test_effect_gate_uses_expiring_brake_contract(monkeypatch, tmp_path, brake_s
 
     assert paid._effect_gate_reason(SimpleNamespace(operator_brake=path)) == expected
     assert seen == [path]
+
+
+def test_active_clients_finish_before_absent_room_maintenance(tmp_path, monkeypatch):
+    paid = _load_paid()
+    active_refresh_started = threading.Event()
+
+    @contextmanager
+    def acquired(_path):
+        yield True
+
+    def reconcile(_args, _items):
+        assert active_refresh_started.is_set(), "old-room maintenance blocked active clients"
+        raise OSError("maintenance receipt unavailable")
+
+    item = {"talkroom_id": "18211957", "snapshot_captured_at": "now"}
+    monkeypatch.setattr(paid, "_operator_brake_status", lambda _path: "free")
+    monkeypatch.setattr(paid, "_lock", acquired)
+    monkeypatch.setattr(paid, "observe_orders", lambda *_args: [item])
+    monkeypatch.setattr(paid, "_reconcile_absent_talkrooms", reconcile)
+    def broken_janitor(*_args, **_kwargs):
+        raise OSError("janitor state unavailable")
+
+    project_root = tmp_path / "projects" / "18211957"
+    project_root.mkdir(parents=True)
+    monkeypatch.setattr(paid.project_janitor, "scan", broken_janitor)
+    monkeypatch.setattr(
+        paid,
+        "_targeted",
+        lambda _args, row, _index: (active_refresh_started.set() or row),
+    )
+    monkeypatch.setattr(
+        paid,
+        "_reported_paid_row",
+        lambda _args, _row: None,
+    )
+    monkeypatch.setattr(paid, "_admitted_paid_projects", lambda _args, rows: rows)
+    monkeypatch.setattr(paid, "_effect_gate_reason", lambda _args: None)
+    monkeypatch.setattr(
+        paid.delivery_project, "record_queue_selection", lambda *_args, **_kwargs: project_root,
+    )
+    monkeypatch.setattr(paid, "_recoverable", lambda _args, _row: (project_root, None))
+    monkeypatch.setattr(paid, "_reclaim_paid_tabs", lambda *_args: None)
+    monkeypatch.setattr(
+        paid,
+        "_run_paid_item",
+        lambda *_args: ({
+            "talkroom_id": "18211957", "status": "completed",
+            "formal_delivery_checkbox": False,
+        }, 1, 1, 0, ""),
+    )
+    args = SimpleNamespace(
+        operator_brake=tmp_path / "operator.brake",
+        lock_file=tmp_path / "paid.lock",
+        evidence_dir=tmp_path / "evidence",
+        projects_root=tmp_path / "projects",
+    )
+
+    output = tmp_path / "result.json"
+    assert paid.run_once(args, output) == 0
+    result = json.loads(output.read_text(encoding="utf-8"))
+    assert result["observed"] == 1
+    assert result["effect"] == result["readback"] == 1
+    assert result["items"][0]["talkroom_id"] == "18211957"
+    assert result["terminal_reconciliation"] == {
+        "status": "failed",
+        "failed_step": "terminal_reconciliation",
+        "error": "OSError",
+    }
+    assert result["project_janitor"] == {
+        "status": "failed",
+        "failed_step": "project_janitor",
+        "error": "OSError",
+    }
 
 
 def test_write_item_gate_returns_no_effect_pending_checkpoint(tmp_path, monkeypatch):
