@@ -187,7 +187,8 @@ def _work_event_messages(event: dict[str, Any]) -> tuple[str, str]:
                 f"依頼ID: {event['entity_id']}",
                 f"Proposal ID: {_clean(attributes.get('proposal_id'), '確認済み')}",
                 f"提案: {_clean(quote.get('currency'))} {_clean(quote.get('amount'))} / {_clean(quote.get('unit'))}",
-                f"Connects: {attributes.get('connects_before')} → {attributes.get('connects_after')} (-{attributes.get('connects_spent')})",
+                *([f"Connects: {attributes.get('connects_before')} → {attributes.get('connects_after')} (-{attributes.get('connects_spent')})"]
+                  if attributes.get("connects_spent") is not None else []),
                 "",
                 "次に自動で行うこと",
                 str(event["next_action"]),

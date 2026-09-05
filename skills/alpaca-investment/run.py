@@ -14,6 +14,8 @@ from alpaca_cli import (find_order_by_client_id, observe, read_allocator_snapsho
 from campaign import CANDIDATE_REF, SYMBOLS, exit_order, reconcile
 from effect_store import mark_started, reconcile_started, record_no_trade, seal
 from reporter import deliver, deliver_failure
+from review_status import read_receipt as read_application_status
+from review_status import refresh as refresh_application_status
 
 
 def _atomic_json(path: Path, value: dict) -> None:
@@ -82,6 +84,16 @@ def _mode_paths(mode: str) -> tuple[Path, Path]:
         if other != mode and other_state and selected_resolved == Path(other_state).expanduser().resolve():
             raise ValueError("investment_mode_state_path_conflict")
     return Path(credentials).expanduser(), selected_state
+
+
+def _review_status(state: Path, mode: str, deployment: str) -> dict:
+    current = read_application_status(state)
+    if mode != "paper" or deployment != "local" or not current:
+        return current
+    try:
+        return refresh_application_status(state)
+    except Exception:
+        return current
 
 
 def main(*, attempt: int = 0, wake_id=None) -> int:
@@ -193,6 +205,8 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             if decision["approved"]:
                 decision.update({"approved": False, "gate": f"{mode}_read_only"})
             record_no_trade(state / "receipts.jsonl", decision)
+        review = _review_status(state, mode, deployment)
+        decision["application_status"] = review.get("application_status", "unknown")
         stage = "state_write"
         _atomic_json(state / "allocation-latest.json", decision)
         _atomic_json(state / "observation-latest.json", observation)

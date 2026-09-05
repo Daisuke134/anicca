@@ -14,7 +14,7 @@ from pathlib import Path
 from websocket import create_connection
 
 
-HOST = os.environ.get("CDP_HOST", "localhost")
+HOST = os.environ.get("CDP_HOST", "127.0.0.1")
 PORT = os.environ.get("CDP_PORT", "9222")
 BASE = f"http://{HOST}:{PORT}"
 

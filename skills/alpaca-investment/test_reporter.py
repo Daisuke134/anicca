@@ -29,13 +29,22 @@ class ModeReportTest(unittest.TestCase):
             {"account": {"equity": "100000", "cash": "100000"}, "positions": []},
             {"unrealized_pnl_usd": "0.00"},
             {"candidate_ref": "NO_TRADE", "gate": "model_no_trade",
-             "observed_at": "2026-09-05T00:00:00Z", "mode": "shadow"}, "none")
-        self.assertIn("mode=shadow", message)
+             "observed_at": "2026-09-05T00:00:00Z", "mode": "shadow",
+             "application_status": "in_review"}, "none")
+        self.assertIn("モード: shadow", message)
+        self.assertIn("ライブ口座: 審査中", message)
+        self.assertTrue(message.startswith("[Investment Loop][投資判断]"))
+        self.assertNotIn("Codex", message)
+        self.assertNotIn("Alpaca", message)
+        self.assertIn("理由: 理由は記録されていません", message)
         self.assertNotIn("開始時$100,000", message)
         failure = reporter.render_failure(
             stage="observe", effect_uncertain=False,
             wake_id="2026-09-05T00:00:00Z", mode="live")
-        self.assertIn("mode=live", failure)
+        self.assertIn("モード: live", failure)
+        self.assertTrue(failure.startswith("[Investment Loop][実行エラー]"))
+        self.assertNotIn("Codex", failure)
+        self.assertNotIn("Alpaca", failure)
         self.assertIn("live注文", failure)
         self.assertNotIn("paper注文", failure)
 

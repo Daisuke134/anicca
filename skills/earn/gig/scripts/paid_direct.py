@@ -98,7 +98,7 @@ def _run_private_model_serialized(root: Path, command: list[str], label: str, st
     """Admit one paid model run at a time, before its runner timeout starts."""
     effect_descriptor = None
     if effect_owner:
-        effect_lock_path = root.parent / ".paid-effect-owner.lock"
+        effect_lock_path = root / ".paid-effect-owner.lock"
         effect_descriptor = os.open(effect_lock_path, os.O_CREAT | os.O_RDWR, 0o600)
         try:
             fcntl.flock(effect_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -107,7 +107,7 @@ def _run_private_model_serialized(root: Path, command: list[str], label: str, st
             if error.errno in (errno.EACCES, errno.EAGAIN):
                 raise Failure("remote_owner_busy") from error
             raise
-    model_lock_path = root.parent / ".paid-model-admission.lock"
+    model_lock_path = root / ".paid-model-admission.lock"
     model_descriptor = os.open(model_lock_path, os.O_CREAT | os.O_RDWR, 0o600)
     try:
         fcntl.flock(model_descriptor, fcntl.LOCK_EX)
@@ -459,8 +459,7 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
         answer_path = root / "delivery" / "paid-answer.json"
         answer = _load(answer_path)
         intent = _load(root / "delivery" / "paid-remote-intent.json")
-        if _operator_policy_newer_than(root, item, answer_path):
-            return None
+        result_path = root / "delivery" / "paid-remote-result.json"
         try:
             current_decision = _current_paid_decision(root, item)
         except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
@@ -468,12 +467,19 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
         new_non_answer_work = (isinstance(current_decision, dict)
                                and current_decision.get("decision") == "actionable"
                                and current_decision.get("mode") != "answer")
+        if (isinstance(current_decision, dict)
+                and current_decision.get("decision") == "actionable"
+                and current_decision.get("mode") == "answer"
+                and intent.get("mode") not in {"answer", "consultation_answer"}):
+            return None
         # Sending the answer changes the compiled context and intentionally makes the prior
         # semantic decision stale. Replay recognition therefore binds the signed answer intent
         # directly to the unchanged buyer feedback and official seller-last readback; requiring
         # the old decision to remain current makes every successful answer look actionable again.
         if (intent.get("mode") in {"answer", "consultation_answer"}
                 and not new_non_answer_work and _answer_cycle_may_close(observed)):
+            if _operator_policy_newer_than(root, item, answer_path):
+                return None
             _validate_consultation_authorization(root, feedback)
             message = _text(answer.get("message"))
             formal = observed.get("formal_delivery_observed", observed.get("formal_delivery_confirmed"))
@@ -482,16 +488,29 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
                     and _text(observed.get("talkroom_state", observed.get("transaction_state")))):
                 return root
             return None
-        result = _load(root / "delivery" / "paid-remote-result.json")
-        message = _text(answer.get("message"))
+        if _operator_policy_newer_than(root, item, result_path):
+            return None
+        result = _load(result_path)
+        message = _text(result.get("customer_message"))
+        if result.get("status") != "completed" and not message:
+            message = _text(answer.get("message"))
         attachment = _validated_customer_attachment(root, result.get("customer_attachment"))
         seller_match = (_seller_message_with_attachment(observed, message, attachment["filename"])
                         if attachment else
                         _seller_last_sha256(observed) == hashlib.sha256(_comparison_key(message).encode()).hexdigest())
         formal = observed.get("formal_delivery_observed", observed.get("formal_delivery_confirmed"))
-        if (result.get("status") == "ok" and result.get("verified_after") is True
+        outcome = result.get("business_outcome")
+        terminal = (
+            result.get("status") == "ok" and result.get("verified_after") is True
+        ) or (
+            result.get("status") == "completed"
+            and isinstance(outcome, dict)
+            and outcome.get("required_effect_satisfied") is True
+            and outcome.get("required_output_satisfied") is True
+            and outcome.get("remaining_work") == []
+        )
+        if (terminal
                 and result.get("buyer_feedback_sha256") == feedback
-                and _comparison_key(_text(result.get("customer_message"))) == _comparison_key(message)
                 and message and seller_match
                 and formal is False
                 and _text(observed.get("talkroom_state", observed.get("transaction_state")))):
@@ -3905,7 +3924,8 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
         "Write project-owned intent/result, authenticated before/after evidence, and a natural Japanese customer_message. "
         "Once the required official checks are sufficient to decide completion or a blocker, write the durable result immediately before any optional exploration; do not exhaustively inspect unrelated historical attachments or messages. "
         "paid-remote-result.json must include business_outcome with required_effect_satisfied, required_output_satisfied, "
-        "remaining_work, and official_receipts. Set both satisfied fields true only after the complete semantic contract has "
+        "remaining_work, and official_receipts. remaining_work must always be an array: use a nonempty string array when "
+        "blocked and [] only when no work remains. Set both satisfied fields true only after the complete semantic contract has "
         "official provider readback; otherwise preserve progress, write status=blocked and a nonempty blocker in paid-remote-result.json, "
         "and make every wait receipt include nonempty provider, kind, and url or official_url fields, plus either a nonempty readback or both readback_source and exact_readback=true, "
         "and return blocked without manufacturing a completion result. "
@@ -4003,6 +4023,13 @@ def _repair_prompt(root: Path, item: Path, feedback: str, requirements_sha256: s
 def _normalize_builder_result(root: Path) -> None:
     intent_path, result_path = root / "delivery/paid-remote-intent.json", root / "delivery/paid-remote-result.json"
     intent, result = _load(intent_path), _load(result_path)
+    outcome = result.get("business_outcome")
+    remaining = outcome.get("remaining_work") if isinstance(outcome, dict) else None
+    remaining_blocker = (remaining[0].strip() if isinstance(remaining, list) and remaining
+                         and isinstance(remaining[0], str) else "")
+    if (result.get("status") == "blocked" and not _text(result.get("blocker"))
+            and remaining_blocker):
+        result["blocker"] = remaining_blocker
     feedback = _text(intent.get("buyer_feedback_sha256") or intent.get("feedback_sha256"))
     if re.fullmatch(r"[0-9a-f]{64}", feedback):
         intent["feedback_sha256"] = intent["buyer_feedback_sha256"] = feedback
@@ -4039,8 +4066,8 @@ def _normalize_builder_result(root: Path) -> None:
                 result["after_evidence"] = raw_after_value
                 if not no_effect_wait:
                     result["status"] = "ok"
-                elif not _text(result.get("blocker")):
-                    result["blocker"] = _text((outcome.get("remaining_work") or [""])[0])
+                elif not _text(result.get("blocker")) and remaining_blocker:
+                    result["blocker"] = remaining_blocker
                 result["verified_after"] = True
                 break
         if not raw_after_value:
@@ -4558,6 +4585,60 @@ def _run_remote_repair(args, item_path: Path, root: Path, feedback: str, base: P
     except (AttributeError, OSError, ValueError, TypeError, json.JSONDecodeError, Failure) as error:
         raise Failure("remote_resume") from error
 
+def _is_coconala_cancellation_block(semantic: dict[str, Any]) -> bool:
+    unresolved = semantic.get("unresolved")
+    effect = _text(semantic.get("required_effect"))
+    return (
+        semantic.get("decision") == "blocked"
+        and isinstance(unresolved, list)
+        and "coconala" in effect.casefold()
+        and (
+            "cancellation" in effect.casefold()
+            or re.search(r"\bcancel\b", effect, re.IGNORECASE) is not None
+            or "キャンセル" in effect
+        )
+        and any("adapter" in _text(item).casefold() for item in unresolved)
+    )
+
+
+def _durable_coconala_cancellation_intent(intent: dict[str, Any], item: dict[str, Any]) -> bool:
+    room, feedback = _text(item.get("talkroom_id")), _text(item.get("buyer_feedback_sha256"))
+    return (
+        bool(room and feedback)
+        and isinstance(intent, dict)
+        and intent.get("action") == "cancellation_request"
+        and intent.get("target") == f"https://coconala.com/talkrooms/{room}"
+        and intent.get("feedback_sha256") == feedback
+        and intent.get("effect_key") == hashlib.sha256(
+            f"coconala:cancel:{room}:{feedback}".encode()
+        ).hexdigest()
+        and intent.get("formal_delivery_checkbox") is False
+        and intent.get("phase") in {"prepared", "click_started", "effect_started", "verified"}
+    )
+
+
+def _run_coconala_cancellation(args, item_path: Path, root: Path,
+                               feedback: str, evidence_dir: Path) -> dict[str, Any]:
+    payload = _json_line(_run([
+        sys.executable, str(args.cancel_browser),
+        "--queue-item", str(item_path), "--project-root", str(root),
+        "--evidence-dir", str(evidence_dir),
+        "--default-tab-helper", str(args.cdp_helper),
+    ], "cancellation_browser"), "cancellation_browser")
+    evidence = payload.get("evidence")
+    if (
+        payload.get("ok") is not True
+        or not isinstance(evidence, dict)
+        or evidence.get("action") != "cancellation_request"
+        or evidence.get("feedback_sha256") != feedback
+        or evidence.get("formal_delivery_checkbox") is not False
+        or evidence.get("readback") != 1
+        or not (evidence.get("send_performed") is True or evidence.get("deduplicated") is True)
+    ):
+        raise Failure("cancellation_browser")
+    return evidence
+
+
 def _prepare_one(args, item_path: Path, output: Path) -> int:
     room = ""; root = None; diagnostic_stage = "load_item"
     try:
@@ -4593,9 +4674,22 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             pass
         diagnostic_stage = "semantic_decision"
         try:
-            semantic = _current_paid_decision(root, item)
+            cancellation_intent = _load(root / "delivery" / "cancellation-intent.json")
         except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
-            semantic = _paid_decision(args, item_path, root, base)
+            cancellation_intent = None
+        if _durable_coconala_cancellation_intent(cancellation_intent, item):
+            semantic = {
+                "decision": "blocked",
+                "required_effect": "Coconala キャンセルリクエスト: cancel the transaction.",
+                "unresolved": [
+                    "No code-owned Coconala cancellation/transaction-control adapter is present.",
+                ],
+            }
+        else:
+            try:
+                semantic = _current_paid_decision(root, item)
+            except (AttributeError, KeyError, OSError, ValueError, TypeError, json.JSONDecodeError):
+                semantic = _paid_decision(args, item_path, root, base)
         if semantic.get("decision") in {"satisfied_noop", "await_buyer"}:
             status = "satisfied_noop" if semantic.get("decision") == "satisfied_noop" else "awaiting_buyer"
             _write(output, {
@@ -4606,6 +4700,31 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
                 "failed": 0,
                 "semantic_decision": semantic.get("decision"),
                 "_paid_prepare_status": "no_effect",
+            })
+            return 0
+        if _is_coconala_cancellation_block(semantic):
+            disk_reason = _effect_gate_reason(args)
+            if disk_reason is not None:
+                return _write_disk_pending(output, room, disk_reason, "before_cancellation_effect")
+            cancellation = _run_coconala_cancellation(
+                args, item_path, root, feedback, base / "cancellation",
+            )
+            result = {
+                "talkroom_id": room,
+                "send_performed": cancellation.get("send_performed") is True,
+                "deduplicated": cancellation.get("deduplicated") is True,
+                "formal_delivery_checkbox": False,
+                "effect_key": cancellation.get("effect_key"),
+                "evidence_paths": {
+                    "official_readback": cancellation.get("live_dom_path"),
+                    "screenshot": cancellation.get("screenshot_path"),
+                },
+            }
+            _write(output, {
+                "status": "completed", "talkroom_id": room,
+                "effect": int(result["send_performed"]), "readback": 1, "failed": 0,
+                "semantic_decision": "cancellation", "formal_delivery_checkbox": False,
+                "item": result, "_paid_prepare_status": "terminal_effect",
             })
             return 0
         if semantic.get("decision") == "blocked":
@@ -4971,6 +5090,7 @@ def _child_command(args, phase, item, output):
     return [sys.executable, str(HERE / "paid_direct.py"), phase, str(item), "--output", str(output),
             "--evidence-dir", str(args.evidence_dir), "--projects-root", str(args.projects_root), "--collector", str(args.collector),
             "--answer-browser", str(args.answer_browser), "--formal-browser", str(args.formal_browser),
+            "--cancel-browser", str(args.cancel_browser),
             "--delivery-evidence-dir", str(args.delivery_evidence_dir),
             "--cdp-helper", str(args.cdp_helper), "--context-compiler", str(args.context_compiler),
             "--dm-collector", str(args.dm_collector),
@@ -5053,6 +5173,19 @@ def _run_paid_item(args, room: str, item_file: Path, prepared_file: Path,
             "deduplicated": True,
             "formal_delivery_checkbox": False,
         }, 0, int(prepared.get("readback") == 1), 0, ""
+    if prepare.returncode == 0 and prepared.get("_paid_prepare_status") == "terminal_effect":
+        item = prepared.get("item")
+        if not isinstance(item, dict):
+            return {"talkroom_id": room, "status": "failed", "failed_step": "effect_result"}, 0, 0, 1, "effect_result"
+        return {
+            "talkroom_id": room,
+            "status": _text(prepared.get("status")) or "completed",
+            "send_performed": item.get("send_performed") is True,
+            "deduplicated": item.get("deduplicated") is True,
+            "formal_delivery_checkbox": False,
+            "effect_key": item.get("effect_key"),
+            "evidence_paths": item.get("evidence_paths") or {},
+        }, int(prepared.get("effect") or 0), int(prepared.get("readback") == 1), 0, ""
     if prepare.returncode or prepared.get("_paid_prepare_status") != "prepared":
         step = _text(prepared.get("failed_step")) or "remote_resume"
         return {"talkroom_id": room, "status": "failed", "failed_step": step}, 0, 0, 1, step
@@ -5570,6 +5703,7 @@ def _parser():
     parser.add_argument("--projects-root", type=Path, default=Path.home() / "gig/projects"); parser.add_argument("--collector", type=Path, default=HERE / "coconala_queue_snapshot.py")
     parser.add_argument("--run-with-cdp-lock", type=Path, default=HERE / "run_with_cdp_lock.sh"); parser.add_argument("--answer-browser", type=Path, default=HERE / "coconala_paid_progress_browser.py")
     parser.add_argument("--formal-browser", type=Path, default=HERE / "coconala_formal_delivery_browser.py")
+    parser.add_argument("--cancel-browser", type=Path, default=HERE / "coconala_cancel_browser.py")
     parser.add_argument("--delivery-evidence-dir", type=Path, default=Path.home() / "gig" / "delivery-evidence")
     parser.add_argument("--cdp-lock-dir", type=Path, default=Path.home() / "gig" / ".cdp-gig.lock")
     parser.add_argument("--cdp-helper", type=Path, default=BROWSER_DIR / "scripts" / "cdp_default_tab.py"); parser.add_argument("--lock-file", type=Path)
@@ -5588,7 +5722,7 @@ def _parser():
 
 def main(argv=None) -> int:
     args = _parser().parse_args(argv)
-    for name in ("output", "evidence_dir", "projects_root", "collector", "run_with_cdp_lock", "answer_browser", "formal_browser", "delivery_evidence_dir", "cdp_lock_dir", "context_compiler", "dm_collector", "agent_runner", "runner_schema", "artifact_schema", "decision_schema"): setattr(args, name, getattr(args, name).expanduser().resolve())
+    for name in ("output", "evidence_dir", "projects_root", "collector", "run_with_cdp_lock", "answer_browser", "formal_browser", "cancel_browser", "delivery_evidence_dir", "cdp_lock_dir", "context_compiler", "dm_collector", "agent_runner", "runner_schema", "artifact_schema", "decision_schema"): setattr(args, name, getattr(args, name).expanduser().resolve())
     args.cdp_helper = args.cdp_helper.expanduser(); args.lock_file = args.lock_file.expanduser().resolve() if args.lock_file else args.evidence_dir / ".paid-direct.lock"
     if args.write_item: return _write_one(args, args.write_item.expanduser().resolve(), args.output)
     if args.effect_item: return _prepare_one(args, args.effect_item.expanduser().resolve(), args.output)
