@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+ALPACA_SIGNUP_URL = "https://app.alpaca.markets/signup"
+
 
 def _read_json(path: Path) -> dict:
     try:
@@ -13,11 +15,27 @@ def _read_json(path: Path) -> dict:
         return {}
 
 
-def build_investment_status(state_root: Path) -> str:
+def build_investment_reply(state_root: Path) -> dict:
     root = state_root / "alpaca-investment"
-    account = _read_json(root / "account-status.json")
+    account_path = root / "account-status.json"
+    account = _read_json(account_path)
     observation = _read_json(root / "observation-latest.json")
     allocation = _read_json(root / "allocation-latest.json")
+
+    if not account_path.exists():
+        return {
+            "text": "\n".join([
+                "Investment Loop",
+                "",
+                "Alpacaで口座開設と本人確認を完了してください。",
+                "Life Managerと同じメールアドレスを使うと接続が簡単です。",
+                "完了後はLife Managerが審査状態を確認し、自動運転まで進めます。",
+            ]),
+            "reply_markup": {"inline_keyboard": [[
+                {"text": "Alpacaで口座開設する", "url": ALPACA_SIGNUP_URL},
+                {"text": "今はしない", "callback_data": "invest:later"},
+            ]]},
+        }
 
     application_status = str(account.get("application_status") or "unknown").lower()
     paper_account = observation.get("account") if isinstance(observation.get("account"), dict) else {}
@@ -42,4 +60,9 @@ def build_investment_status(state_root: Path) -> str:
             lines.append(f"理由: {reason}")
     else:
         lines.append("paper loop: 最新状態をまだ読み取れません。次の5分周期で再確認します。")
-    return "\n".join(lines)
+    return {"text": "\n".join(lines)}
+
+
+def build_investment_status(state_root: Path) -> str:
+    """Compatibility helper for callers that only need message text."""
+    return build_investment_reply(state_root)["text"]
