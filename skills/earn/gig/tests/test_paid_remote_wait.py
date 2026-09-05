@@ -873,6 +873,46 @@ def test_current_remote_wait_is_fresh(tmp_path):
     assert paid._remote_wait_is_fresh(root, feedback, digest, now=mtime + 10) is True
 
 
+def test_stale_paid_answer_must_not_hide_current_officially_read_back_remote_completion(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    result_path = root / "delivery" / "paid-remote-result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    current_message = "Current remote completion\nread back officially."
+    result.update({
+        "status": "completed",
+        "buyer_feedback_sha256": feedback,
+        "customer_message": current_message,
+        "business_outcome": {
+            "required_effect_satisfied": True,
+            "required_output_satisfied": True,
+            "remaining_work": [],
+        },
+    })
+    write_json(result_path, result)
+    write_json(root / "delivery" / "paid-answer.json", {
+        "status": "answer", "message": "Older stale paid answer.",
+    })
+    intent_path = root / "delivery" / "paid-remote-intent.json"
+    intent = json.loads(intent_path.read_text(encoding="utf-8"))
+    intent.pop("mode", None)
+    write_json(intent_path, intent)
+    item = {
+        "request_id": root.name,
+        "talkroom_id": "current-room",
+        "buyer_feedback_sha256": feedback,
+        "seller_messages": [{"text": " Current remote completion read back officially. "}],
+        "formal_delivery_observed": False,
+        "formal_delivery_confirmed": False,
+        "talkroom_state": "取引中",
+        "transaction_state": "取引中",
+    }
+
+    assert paid._reported_remote_cycle(
+        SimpleNamespace(projects_root=tmp_path), item,
+    ) == root
+
+
 def test_remote_wait_expires_after_recheck_interval(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)

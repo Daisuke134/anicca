@@ -483,15 +483,24 @@ def _reported_remote_cycle(args, item: dict[str, Any]) -> Path | None:
                 return root
             return None
         result = _load(root / "delivery" / "paid-remote-result.json")
-        message = _text(answer.get("message"))
+        message = _text(result.get("customer_message")) or _text(answer.get("message"))
         attachment = _validated_customer_attachment(root, result.get("customer_attachment"))
         seller_match = (_seller_message_with_attachment(observed, message, attachment["filename"])
                         if attachment else
                         _seller_last_sha256(observed) == hashlib.sha256(_comparison_key(message).encode()).hexdigest())
         formal = observed.get("formal_delivery_observed", observed.get("formal_delivery_confirmed"))
-        if (result.get("status") == "ok" and result.get("verified_after") is True
+        outcome = result.get("business_outcome")
+        terminal = (
+            result.get("status") == "ok" and result.get("verified_after") is True
+        ) or (
+            result.get("status") == "completed"
+            and isinstance(outcome, dict)
+            and outcome.get("required_effect_satisfied") is True
+            and outcome.get("required_output_satisfied") is True
+            and outcome.get("remaining_work") == []
+        )
+        if (terminal
                 and result.get("buyer_feedback_sha256") == feedback
-                and _comparison_key(_text(result.get("customer_message"))) == _comparison_key(message)
                 and message and seller_match
                 and formal is False
                 and _text(observed.get("talkroom_state", observed.get("transaction_state")))):
