@@ -120,6 +120,40 @@ def enqueue_decisions(database: Path, *, ledger_path: Path = LEDGER, now: str) -
     return enqueued
 
 
+def enqueue_declines(database: Path, *, status_path: Path = STATUS, now: str) -> int:
+    """A job we judged and turned down is a decision, rendered by the shared 応募判断 skip branch."""
+    try: status = json.loads(status_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError): return 0
+    inspected = status.get("inspected_jobs") if isinstance(status.get("inspected_jobs"), Mapping) else {}
+    declined = inspected.get("declined") if isinstance(inspected.get("declined"), list) else []
+    observed = str(status.get("observed_at") or now)
+    enqueued = 0
+    for item in declined:
+        if not isinstance(item, Mapping): continue
+        project = str(item.get("external_id") or "")
+        if not project: continue
+        work_event = {
+            "kind": "application",
+            "state": "skipped",
+            "event_key": f"crowdworks:declined:{project}",
+            "entity_id": project,
+            "occurred_at": observed,
+            "next_action": "次のwakeで別の案件を確認します。",
+            "attributes": {
+                "platform": "crowdworks",
+                "platform_display_name": "CrowdWorks",
+                "title": str(item.get("title") or f"案件 {project}"),
+                "reason_codes": [str(item.get("reason") or "受注条件に合いません")],
+            },
+        }
+        try:
+            built = envelope.build_work_event_envelope(work_event=work_event, observed_at=datetime.fromisoformat(now))
+            enqueued += int(bool(outbox.enqueue(Path(database), f"crowdworks:declined:{project}", envelope.render_human_ja(built), now)))
+        except Exception:
+            continue
+    return enqueued
+
+
 def enqueue_wake_summary(database: Path, *, status_path: Path = STATUS, ledger_path: Path = LEDGER, now: str) -> int:
     """One line per wake so silence is never ambiguous: a lane with nothing to do says so."""
     try: status = json.loads(status_path.read_text(encoding="utf-8"))
@@ -143,6 +177,7 @@ def enqueue_wake_summary(database: Path, *, status_path: Path = STATUS, ledger_p
 def run(*, database: Path = DATABASE, notifier: Optional[Callable[[str], SendResult]] = None, now: Optional[str] = None) -> dict[str, object]:
     stamp = now or datetime.now(timezone.utc).isoformat()
     enqueued = enqueue_decisions(database, now=stamp)
+    enqueued += enqueue_declines(database, now=stamp)
     enqueued += enqueue_wake_summary(database, now=stamp)
     send = notifier or (lambda message: delivery.send_via_shared_client(message, chat_id=TARGET))
     sent = delivery.deliver_pending(outbox, database, send, stamp)

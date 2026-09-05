@@ -81,12 +81,21 @@ def _applied():
         if isinstance(identity, str): done.add(identity)
     return done
 
+DECLINED_PER_WAKE = 3
+
+def _decline(declined, job_id, title, reason):
+    if len(declined) < DECLINED_PER_WAKE:
+        declined.append({"external_id": job_id, "title": re.sub(r"\s+", " ", title).strip()[:200], "reason": reason})
+
 def _candidate(page, listings, rotation):
     """Search the catalog's own terms and return the first job a catalog tier can actually serve."""
     # Rotation decides where to start, not where to stop: capping at a handful of listings meant a
     # day whose slice happened to be quiet reported no work while other listings had live jobs.
     ordered = listings[rotation:] + listings[:rotation]
     seen = _applied(); already = len(seen); rejected = {"closed_or_unverified": 0, "off_topic": 0, "wrong_category": 0, "budget": 0}
+    # Postings we looked at seriously and still declined. Reporting every search hit would be noise;
+    # a job that matched the listing and was then declined is a decision worth telling Dais about.
+    declined = []
     deadline = time.monotonic() + SEARCH_BUDGET_SECONDS
     for listing in ordered:
         if time.monotonic() > deadline: break
@@ -113,11 +122,18 @@ def _candidate(page, listings, rotation):
             if not any(term in title or term in detail for term in listing["terms"]):rejected["off_topic"]+=1;continue
             # The catalog only sells build work. Without this a 医療事務 staffing post matched on the
             # word AI機能 alone and would have received a 240,000円 web-app proposal.
-            if not any(word in _category(text) for word in BUILD_CATEGORIES):rejected["wrong_category"]+=1;continue
+            if not any(word in _category(text) for word in BUILD_CATEGORIES):
+                rejected["wrong_category"]+=1
+                _decline(declined,job_id,title,f"募集カテゴリ「{_category(text) or '不明'}」は開発の受注範囲外です")
+                continue
             tier=_priced(listing,text)
-            if tier is None:rejected["budget"]+=1;continue
-            return {"external_id":job_id,"title":re.sub(r"\s+"," ",title).strip()},listing,tier,{"inspected":len(seen)-already,**rejected}
-    return None,None,None,{"inspected":len(seen)-already,**rejected}
+            if tier is None:
+                rejected["budget"]+=1
+                budget=_budget(text)
+                _decline(declined,job_id,title,f"提示予算{budget[1]:,}円が最低単価{listing['tiers'][0]['price_jpy']:,}円に届きません" if budget else "固定報酬の提示がありません")
+                continue
+            return {"external_id":job_id,"title":re.sub(r"\s+"," ",title).strip()},listing,tier,{"inspected":len(seen)-already,**rejected,"declined":declined}
+    return None,None,None,{"inspected":len(seen)-already,**rejected,"declined":declined}
 
 def _proposal(listing, tier):
     return "\n".join((
