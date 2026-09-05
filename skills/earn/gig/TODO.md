@@ -16,9 +16,45 @@ offers from measured conversion, and Paid completes accepted work through offici
 readback and replay-zero. A marketplace-specific customer case is evidence for this kernel, not a
 separate architecture or the definition of completion.
 
-## Active atomic cursor — execute exactly top to bottom
+## Active atomic cursor — marketplace Paid reuse
 
-This is the only executable cursor. One checkbox is one bounded change or one bounded
+This is the only executable cursor for this owner. Older unchecked Coconala incident and customer
+case lists below are historical evidence and do not reopen completed work or reorder this list.
+Independent Storefront, Apply, Reply, Lancers and CrowdWorks owners continue in parallel in their
+own worktrees and resource scopes; “top to bottom” orders only this owner's changes.
+
+1. [x] `COCONALA-PAID-1` Close Ryu0820119 talkroom `18211957` through Paid itself.
+   PASS = the loop consumes the latest cumulative revision, sends the corrected buyer-visible
+   result as a normal message, reads the exact seller message back from the authenticated room,
+   leaves formal delivery off, and a later wake performs no duplicate send. Production release
+   `bec7a75f3398298de7c959d1ff03503b60e63a64` satisfies this contract; the final readback records
+   `seller_message_observed=true`, `formal_delivery_confirmed=false`, and transaction state `取引中`.
+2. [x] `COCONALA-PAID-2` Accept the Coconala Paid owner as the reference implementation.
+   PASS = one natural installed-release pass represents every observed order, progresses different
+   orders independently, records exact official readback for effects, preserves blocked work as a
+   resumable pending item, and reports no failed item. Natural run
+   `18d27005ea553bb0-42383` ended `pass` with observed `5`, actionable `3`, readback `4`, failed `0`,
+   and pending `1`. Talkroom `18180857` remains durably retry-owned because its TikTok recipient
+   route is externally unavailable; it is not dropped and does not block unrelated buyers.
+3. [ ] `SHARED-PAID-1` Use Lancers as the second real Paid platform and extraction trigger.
+   PASS = implement one provider-neutral Paid entrypoint from
+   `skills/loop-engineering/references/marketplace-paid-lane.md`, moving only orchestration already
+   proven identical on Coconala and Lancers into `skills/_shared/marketplace-core/`. Keep auth,
+   selectors, provider states and mutations in thin adapters; do not copy `paid_direct.py`.
+4. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
+   entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
+   same-session official readback, and a second natural replay with effect zero are all receipt-bound.
+5. [ ] `CROWDWORKS-PAID-1` Add only the CrowdWorks Paid adapter to the proven shared entrypoint.
+   PASS = no shared planner/worker/reviewer/lifecycle fork; one real contracted-work item reaches
+   official submission readback and replay-zero. The existing CrowdWorks Apply owner remains
+   independently parallel and is not replaced by this item.
+6. [ ] `NEXT-MARKETPLACE-PAID-1` Repeat adapter conformance for Fiverr or the next authorized
+   marketplace without changing the shared Paid lifecycle. PASS = provider-only config/transport/
+   effect/readback changes plus one real official receipt chain and replay-zero.
+
+## Historical Coconala atomic cursor — evidence only
+
+One checkbox was one bounded change or one bounded
 readback; a phase name is never a checkbox. Do not start a later item until every earlier item
 is checked. Check an item only with the evidence named after `PASS =`. Chat, process liveness,
 model narration, and local success without the named readback are not PASS.
