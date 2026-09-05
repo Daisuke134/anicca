@@ -1169,6 +1169,71 @@ owner must leave the other three contexts and schedules intact. Concurrency rema
 measured host and account capacity; “parallel” does not authorize duplicate effects or unsafe
 unbounded fan-out.
 
+This concurrency contract includes authenticated browser observation, external updates, production
+E2E and official readback. Distinct lanes and distinct resource/effect identities continue at the
+same time; no owner asks another lane to stop. A release apply changes one label atomically under the
+existing control-plane lock while every unrelated label remains running. Serialization is permitted
+only inside the smallest correctness boundary: the same browser target, the same account mutation,
+or the same resource/effect key. It must never expand into a Coconala-wide, account-wide, lane-wide,
+or platform-wide queue.
+
+### 6.2B Reuse-first loop-development contract
+
+`skills/loop-development/SKILL.md` is the only entry skill for Life Manager loop work. Loop
+Engineering is the body of measured design knowledge consumed through that skill, not a competing
+second skill. The entry skill stays short and routes the current task to focused references; it must
+not duplicate the full engineering corpus into every model context.
+
+Every loop is composed from four layers with one-way dependencies:
+
+```text
+loop config -> reusable recipe -> shared runtime -> provider adapter -> official provider
+```
+
+- `runtime/` owns scheduling, work-item admission, model routing/failover, checkpoint/resume,
+  retries, effect fencing, receipts, health and recovery. It knows no marketplace business rules.
+- reusable recipe modules own a business lifecycle such as Apply, Negotiate, Paid, Storefront,
+  publishing or investment. They know no provider DOM selectors or credentials.
+- provider adapters own only official provider observation, mutation and readback.
+- loop definitions select a recipe, provider, cadence and policy. They do not implement another
+  runner, retry engine, ledger, browser launcher or model client.
+
+Before adding code, the implementing agent searches `runtime/`, existing recipe modules, provider
+adapters and `skills/_shared/`. Existing capability is reused. A new abstraction is prohibited for
+one speculative consumer; the second real consumer is the extraction trigger. Coconala proves the
+Paid lifecycle first, Lancers becomes its second consumer and fixes the shared boundary, and
+CrowdWorks proves that the boundary is provider-neutral. Later marketplaces add an adapter and loop
+configuration, not another Paid implementation.
+
+The user experience is outcome-only: every open client is observed on cadence; independent clients
+advance concurrently; one failure cannot delay another; only the failed work item retries; an exact
+effect cannot duplicate; new buyer feedback resumes the same owner; and the loop continues through
+build, independent verification, normal provider response and official readback until buyer approval
+or official terminal state. Provider/model/browser recovery is automatic and never asks the user to
+restart the Mac. Coconala room `18211957` additionally keeps formal delivery disabled until the
+account owner explicitly changes that project policy.
+
+Implementation order is immutable unless Dais explicitly changes it:
+
+1. Make Coconala Paid account for every open client with omission zero.
+2. Make each paid project an independently resumable work item; prioritize active buyer work over
+   terminal-history reconciliation.
+3. Complete build -> independent verify -> normal response -> official readback for Ryu and every
+   other actionable client; retry only failed items every five minutes.
+4. Prove concurrent Coconala Apply, Negotiate, Paid and Storefront natural effects from one immutable
+   main release without sibling pauses or cross-client context.
+5. Extract only the proven provider-neutral Paid lifecycle into existing shared modules; keep
+   Coconala DOM/session operations in its adapter.
+6. Connect Lancers Paid to that lifecycle with only a Lancers adapter and loop configuration.
+7. Connect CrowdWorks Paid the same way and prove no Coconala/Lancers evidence contamination.
+8. Add a reuse architecture check that rejects loop-local model runners, schedulers, retry engines,
+   ledgers, raw launchd mutation, credential reads and browser launchers when the shared capability
+   already exists.
+9. Audit the remaining Life Manager loops by revenue priority and migrate only measured duplicate
+   capabilities; do not perform a repository-wide rewrite.
+10. Prove new-platform onboarding by adding one adapter plus loop configuration with no change to the
+    shared Paid lifecycle.
+
 ### 6.3 Upwork money-printer Skill system
 
 The Upwork product is not a proposal helper. The existing launchd-owned Upwork loop owns the complete
