@@ -13,7 +13,8 @@ copy Coconala's `paid_direct.py` when adding Lancers, CrowdWorks or Fiverr.
    another order from being observed, repaired or answered.
 4. Reconcile prior intents from official state before creating a new effect.
 5. Compile cumulative buyer requirements and attachments, then choose exactly
-   one outcome: fulfil, answer, wait for buyer, no-op, cancel, or typed blocker.
+   one outcome: fulfil, answer, wait for buyer, no-op, cancel, or an explicit
+   resumable blocker.
 6. For fulfilment, build in the order workspace, independently review the real
    artifact, freeze its hash and buyer-visible message, then authorize an effect.
 7. Immediately before any mutation, read the same order again. A newer buyer
