@@ -22,11 +22,11 @@ Make the existing finite Alpaca pass select exactly one `paper|shadow|live` mode
 
 ## Tasks
 
-1. Add focused failing tests for exact mode selection, separated paths/endpoints, shadow submit denial, receipt mode, Telegram mode, and paper plist values.
-2. Implement the smallest production wiring in the existing Alpaca runner, CLI boundary, receipt store, reporter, and targeted plist renderer.
-3. Run focused tests, registry tests, doctor, and the existing relevant runtime suite; obtain a fresh read-only adversarial review.
-4. Merge the implementation, cut one immutable main release, apply only `alpaca-investment` after `launchctl-safe` preflight, and verify a natural paper wake reports `mode=paper` in stdout, receipts, and Telegram.
-5. Record production evidence, merge it, report the milestone to Telegram, then advance only to L04.
+1. [x] Add focused failing tests for exact mode selection, separated paths/endpoints, shadow submit denial, receipt mode, Telegram mode, and paper plist values.
+2. [x] Implement the smallest production wiring in the existing Alpaca runner, CLI boundary, receipt store, reporter, and targeted plist renderer.
+3. [x] Run focused tests, registry tests, doctor, and the existing relevant runtime suite; obtain a fresh read-only adversarial review.
+4. [x] Merge the implementation, cut one immutable main release, apply only `alpaca-investment` after `launchctl-safe` preflight, and verify a natural paper wake reports `mode=paper` in stdout, receipts, and Telegram.
+5. [x] Record production evidence, merge it, report the milestone to Telegram, then advance only to L04.
 
 ## Acceptance criteria
 
