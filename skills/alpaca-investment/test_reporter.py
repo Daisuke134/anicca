@@ -31,11 +31,17 @@ class ModeReportTest(unittest.TestCase):
             {"candidate_ref": "NO_TRADE", "gate": "model_no_trade",
              "observed_at": "2026-09-05T00:00:00Z", "mode": "shadow"}, "none")
         self.assertIn("mode=shadow", message)
+        self.assertTrue(message.startswith("Life Manager::: Investment loop"))
+        self.assertNotIn("Codex", message)
+        self.assertNotIn("Alpaca", message)
         self.assertNotIn("開始時$100,000", message)
         failure = reporter.render_failure(
             stage="observe", effect_uncertain=False,
             wake_id="2026-09-05T00:00:00Z", mode="live")
         self.assertIn("mode=live", failure)
+        self.assertTrue(failure.startswith("Life Manager::: Investment loop"))
+        self.assertNotIn("Codex", failure)
+        self.assertNotIn("Alpaca", failure)
         self.assertIn("live注文", failure)
         self.assertNotIn("paper注文", failure)
 

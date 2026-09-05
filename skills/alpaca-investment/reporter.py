@@ -73,7 +73,7 @@ def render(observation: dict[str, Any], campaign: dict[str, Any],
     realized_text = f"確定損益 {money(Decimal(realized))}、" if realized is not None else ""
     effect_text = "注文なし" if effect == "none" else f"{mode}効果 {effect[:12]}"
     return (
-        f"Codex::: Alpaca {mode}投資loopの1回分です（mode={mode}）。"
+        f"Life Manager::: Investment loopの1回分です（mode={mode}）。"
         f"判断は {decision['candidate_ref']}（{decision['gate']}）。"
         f"資産は {money(equity)}、現金は {money(cash)}{baseline_text}。"
         f"{realized_text}含み損益 {money(Decimal(campaign['unrealized_pnl_usd']))}、"
@@ -137,7 +137,7 @@ def render_failure(*, stage: str, effect_uncertain: bool, wake_id: str,
         f"{mode}注文の送信前に停止したため、注文は実行していません。"
     )
     return (
-        f"Codex::: Alpaca {mode}投資loopの1回分です（mode={mode}）。"
+        f"Life Manager::: Investment loopの1回分です（mode={mode}）。"
         f"処理段階 {stage} で安全に完了できなかったため、今回の判断結果を確定できませんでした。"
         f"{effect_text}{financial_text}原因の詳細は秘密情報を含む可能性があるため送信していません。"
         f"観測開始時刻 {wake_id}。"
