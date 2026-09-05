@@ -56,6 +56,14 @@ def test_pid_alive_none_for_missing_or_invalid():
     assert module._pid_alive("not-a-pid") is None
 
 
+def test_holder_pid_rejects_dead_invalid_and_out_of_range_values(monkeypatch):
+    module = load_module()
+    fallback = os.getppid()
+    for value in ("invalid", "0", str(_dead_pid()), str(2**80)):
+        monkeypatch.setenv("AI_BROWSER_HOLDER_PID", value)
+        assert module._holder_pid() == fallback
+
+
 def test_acquire_stamps_pid_on_a_fresh_lease(monkeypatch, tmp_path):
     module = load_module()
     leases_file = tmp_path / "leases.json"

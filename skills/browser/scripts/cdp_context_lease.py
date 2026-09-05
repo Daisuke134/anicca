@@ -145,7 +145,9 @@ def _holder_pid():
         pid = int(configured)
     except (TypeError, ValueError):
         pid = 0
-    return pid if pid > 0 else os.getppid()
+    if 0 < pid <= 2_147_483_647 and _pid_alive(pid) is True:
+        return pid
+    return os.getppid()
 
 
 def _leases():
