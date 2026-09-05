@@ -78,6 +78,52 @@ def test_acquire_stamps_pid_on_a_fresh_lease(monkeypatch, tmp_path):
     assert saved["gig-task"]["pid"] == os.getppid()
 
 
+def test_acquire_uses_explicit_holder_pid_from_command_substitution_wrapper(monkeypatch, tmp_path):
+    module = load_module()
+    leases_file = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
+    monkeypatch.setenv("AI_BROWSER_HOLDER_PID", str(os.getpid()))
+
+    async def create_ok(pairs, timeout=None):
+        out = []
+        for method, _ in pairs:
+            if method == "Target.createBrowserContext":
+                out.append({"browserContextId": "c1"})
+            elif method == "Target.createTarget":
+                out.append({"targetId": "t1"})
+        return out
+
+    monkeypatch.setattr(module, "_calls", create_ok)
+    result = module.acquire("gig-task")
+
+    assert result["pid"] == os.getpid()
+    saved = json.loads(leases_file.read_text(encoding="utf-8"))
+    assert saved["gig-task"]["pid"] == os.getpid()
+
+
+def test_reuse_and_heartbeat_keep_explicit_holder_pid(monkeypatch, tmp_path):
+    module = load_module()
+    leases_file = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
+    monkeypatch.setenv("AI_BROWSER_HOLDER_PID", str(os.getpid()))
+    _write_leases(leases_file, {
+        "gig-task": {
+            "context_id": "c1", "target_id": "t1",
+            "ws": "ws://127.0.0.1:9222/devtools/page/t1",
+            "ts": int(time.time()), "token": "a" * 32, "generation": 1,
+            "pid": os.getppid(),
+        }
+    })
+    monkeypatch.setattr(module, "target_responds", lambda *a, **k: True)
+
+    reused = module.acquire("gig-task")
+    heartbeat = module.heartbeat("gig-task", token="a" * 32, generation=1)
+
+    assert reused["pid"] == os.getpid()
+    assert heartbeat["ok"] is True
+    assert json.loads(leases_file.read_text(encoding="utf-8"))["gig-task"]["pid"] == os.getpid()
+
+
 def test_gc_reaps_a_row_whose_pid_just_died_even_though_it_is_not_idle_stale(monkeypatch, tmp_path):
     module = load_module()
     leases_file = tmp_path / "leases.json"
