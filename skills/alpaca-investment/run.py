@@ -3,8 +3,6 @@
 
 import json
 import os
-import shutil
-import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -34,30 +32,6 @@ def _atomic_json(path: Path, value: dict) -> None:
             os.unlink(temporary)
         except FileNotFoundError:
             pass
-
-
-def _publish_public_snapshot() -> bool:
-    """Best-effort evidence sync; never authorize a retry of the trading pass."""
-    publisher = Path(__file__).resolve().parents[2] / "apps/life-manager/scripts/publish-alpaca-public.js"
-    node = os.environ.get("NODE_BIN") or shutil.which("node")
-    if not node:
-        for candidate in ("/opt/homebrew/bin/node", "/usr/local/bin/node"):
-            if os.access(candidate, os.X_OK):
-                node = candidate
-                break
-    if not node:
-        return False
-    try:
-        completed = subprocess.run(
-            [node, str(publisher)],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=20,
-        )
-        return completed.returncode == 0
-    except (OSError, subprocess.TimeoutExpired):
-        return False
 
 
 def _retry_allowed(stage: str, effect_attempted: bool, attempt: int) -> bool:
@@ -175,7 +149,6 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         _atomic_json(state / "campaign.json", campaign)
         stage = "telegram_deliver"
         telegram = deliver(state, observation, campaign, decision, effect)
-        snapshot_published = _publish_public_snapshot()
         summary = {
             "account": observation["account"],
             "activities_count": observation["activities_count"],
@@ -191,7 +164,6 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             "reconciliation": reconciliation,
             "status": "allocated",
             "telegram_message_id": telegram["message_id"],
-            "public_snapshot_published": snapshot_published,
         }
         print(json.dumps(summary, separators=(",", ":")))
         return 0
@@ -201,7 +173,6 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         if _retry_allowed(stage, effect_attempted, attempt):
             return main(attempt=attempt + 1, wake_id=wake_id)
         telegram = {"status": "delivery_uncertain"}
-        failure_delivery_succeeded = False
         if stage != "telegram_deliver":
             try:
                 telegram = deliver_failure(
@@ -212,12 +183,6 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
                     observation=observation,
                     campaign=campaign,
                 )
-                failure_delivery_succeeded = True
-            except Exception:
-                pass
-        if failure_delivery_succeeded:
-            try:
-                _publish_public_snapshot()
             except Exception:
                 pass
         print(json.dumps({

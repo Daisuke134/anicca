@@ -1,8 +1,10 @@
+import json
 import importlib.util
-import shutil
-import subprocess
 import sys
+import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
@@ -15,68 +17,65 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-class PublicSnapshotTest(unittest.TestCase):
-    def test_publication_uses_homebrew_node_when_launchd_path_hides_node(self):
-        with patch.dict(MODULE.os.environ, {"PATH": "/usr/bin"}, clear=True):
-            with patch.object(shutil, "which", return_value=None):
-                with patch.object(
-                    MODULE.os,
-                    "access",
-                    side_effect=lambda path, mode: path == "/opt/homebrew/bin/node",
-                ):
-                    with patch.object(MODULE.subprocess, "run") as run:
-                        run.return_value.returncode = 0
-                        self.assertTrue(MODULE._publish_public_snapshot())
-        self.assertEqual(run.call_args.args[0][0], "/opt/homebrew/bin/node")
+def _publisher_probe(root: Path) -> tuple[Path, Path]:
+    marker = root / "publisher-called"
+    executable = root / "node"
+    executable.write_text('#!/bin/sh\n: > "$ALPACA_MARKER"\n', encoding="utf-8")
+    executable.chmod(0o700)
+    return executable, marker
 
-    @patch.object(MODULE.subprocess, "run")
-    def test_publication_is_one_bounded_best_effort_child(self, run):
-        run.return_value.returncode = 0
-        self.assertTrue(MODULE._publish_public_snapshot())
-        run.assert_called_once()
-        self.assertFalse(run.call_args.kwargs["check"])
-        self.assertEqual(run.call_args.kwargs["timeout"], 20)
 
-    @patch.object(MODULE.subprocess, "run", side_effect=subprocess.TimeoutExpired("node", 20))
-    def test_publication_timeout_cannot_escape_into_pass_retry(self, _run):
-        self.assertFalse(MODULE._publish_public_snapshot())
+class PortablePassTest(unittest.TestCase):
+    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
+    @patch.object(MODULE, "observe")
+    @patch.object(MODULE, "read_campaign_snapshot", return_value={})
+    @patch.object(MODULE, "reconcile")
+    @patch.object(MODULE, "read_allocator_snapshot", return_value={})
+    @patch.object(MODULE, "build_candidates", return_value=[])
+    @patch.object(MODULE, "choose")
+    @patch.object(MODULE, "record_no_trade")
+    @patch.object(MODULE, "deliver", return_value={"message_id": "123"})
+    def test_success_has_no_dashboard_effect_or_public_summary(
+        self, _deliver, _record, choose, _build, _allocator, reconcile,
+        _campaign, observe, _reconcile_started,
+    ):
+        observe.return_value = {
+            "account": {"cash": "100000", "equity": "100000"},
+            "activities_count": 0, "clock": {"observed_at": "2026-09-05T00:00:00Z"},
+            "open_and_closed_orders_count": 0, "positions": [],
+        }
+        reconcile.return_value = {"exit_status": "CLOSED", "unrealized_pnl_usd": "0"}
+        choose.return_value = {
+            "approved": False, "candidate_ref": "NO_TRADE", "gate": "model_no_trade",
+            "observed_at": "2026-09-05T00:00:00Z",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            executable, marker = _publisher_probe(root)
+            with patch.dict(MODULE.os.environ, {
+                "ALPACA_INVESTMENT_STATE_DIR": str(root / "state"),
+                "NODE_BIN": str(executable), "ALPACA_MARKER": str(marker),
+            }), redirect_stdout(StringIO()) as output:
+                self.assertEqual(MODULE.main(wake_id="wake-success"), 0)
+            self.assertFalse(marker.exists())
+            self.assertNotIn("public_snapshot_published", json.loads(output.getvalue()))
+
+    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
+    @patch.object(MODULE, "observe", side_effect=RuntimeError("provider unavailable"))
+    @patch.object(MODULE, "deliver_failure", return_value={"message_id": "123", "status": "delivered"})
+    def test_terminal_failure_has_no_dashboard_effect(self, _deliver, _observe, _reconcile):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            executable, marker = _publisher_probe(root)
+            with patch.dict(MODULE.os.environ, {
+                "ALPACA_INVESTMENT_STATE_DIR": str(root / "state"),
+                "NODE_BIN": str(executable), "ALPACA_MARKER": str(marker),
+            }), redirect_stdout(StringIO()):
+                self.assertEqual(MODULE.main(wake_id="wake-failure"), 78)
+            self.assertFalse(marker.exists())
 
 
 class FailureTelegramTest(unittest.TestCase):
-    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
-    @patch.object(MODULE, "observe", side_effect=RuntimeError("provider payload must stay private"))
-    @patch.object(MODULE, "deliver_failure")
-    @patch.object(MODULE, "_publish_public_snapshot", return_value=False)
-    def test_final_failure_publishes_after_telegram_delivery_and_stays_blocked(
-        self, publish_snapshot, deliver_failure, _observe, _reconcile
-    ):
-        events = []
-
-        def record_failure_delivery(*_args, **_kwargs):
-            events.append("telegram")
-            return {"message_id": "123", "status": "delivered"}
-
-        def record_snapshot_publication(*_args, **_kwargs):
-            events.append("snapshot")
-            raise RuntimeError("public sink unavailable")
-
-        deliver_failure.side_effect = record_failure_delivery
-        publish_snapshot.side_effect = record_snapshot_publication
-
-        self.assertEqual(MODULE.main(), 78)
-        self.assertEqual(events, ["telegram", "snapshot"])
-        publish_snapshot.assert_called_once_with()
-
-    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
-    @patch.object(MODULE, "observe", side_effect=RuntimeError("provider payload must stay private"))
-    @patch.object(MODULE, "deliver_failure", side_effect=RuntimeError("telegram store unavailable"))
-    @patch.object(MODULE, "_publish_public_snapshot")
-    def test_failure_delivery_exception_skips_publication_and_stays_blocked(
-        self, publish_snapshot, _deliver_failure, _observe, _reconcile
-    ):
-        self.assertEqual(MODULE.main(), 78)
-        publish_snapshot.assert_not_called()
-
     @patch.object(MODULE, "deliver_failure", create=True)
     @patch.object(MODULE, "observe", side_effect=RuntimeError("provider payload must stay private"))
     @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
