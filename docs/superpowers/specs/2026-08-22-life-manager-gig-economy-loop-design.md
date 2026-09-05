@@ -33,14 +33,17 @@ This document changes design and implementation order only. It does not start, s
 current provider runtimes. `skills/earn/gig/TODO.md` remains the shared production-repair SSOT,
 while each provider spec owns its transport/runtime sequence.
 
-Current Paid status and order are therefore recorded only in that TODO. Coconala is the accepted
-reference implementation: its installed Paid owner has completed the Ryu revision through a normal
-message with exact official readback, formal delivery off and replay-zero, and its latest natural
-aggregate pass has failed items zero while retaining one externally blocked order as durable pending
-work. The next extraction proof is a real Lancers Paid lifecycle; CrowdWorks then adds a thin Paid
-adapter to the same entrypoint. Independent marketplace owners may continue concurrently because
-their accounts, work items and effect identities are disjoint; this ordering scopes shared-kernel
-changes and does not impose a cross-market runtime barrier.
+Current Paid status and order are therefore recorded only in that TODO. Coconala has the accepted
+reference receipt chain: its Paid owner completed the Ryu revision through a normal message with
+exact official readback, formal delivery off and replay-zero. That historical acceptance does not
+hide a later operational regression: the latest completed Paid wake reports `entrypoint_exit_1`
+after two project builders timed out. A newer installed release is running but has no terminal
+receipt yet, so restoring a natural aggregate with failed items zero is again the first Paid atom.
+After that health gate, the next extraction proof is
+a real Lancers Paid lifecycle; CrowdWorks then adds a thin Paid adapter to the same entrypoint.
+Independent marketplace owners may continue concurrently because their accounts, work items and
+effect identities are disjoint; this ordering scopes shared-kernel changes and does not impose a
+cross-market runtime barrier.
 
 The target receipt contract is not implemented end-to-end today. The tracked shared marketplace
 contract has Application/Delivery/Payment-shaped records but no mandatory Contract,
