@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import time
 import tempfile
 from urllib.parse import quote
 
@@ -17,7 +18,7 @@ STATE = Path("~/.local/state/anicca/crowdworks").expanduser()
 CATALOG = ROOT / "skills" / "gig-work" / "profile" / "listings" / "catalog.json"
 TRANSACTION = STATE / "application-transaction.json"
 LEDGER = STATE / "application-receipts.jsonl"
-SEARCHES_PER_TICK = 4
+SEARCH_BUDGET_SECONDS = 240
 # 固定報酬制 10,000円 〜 30,000円 / 固定報酬制 50,000円
 _BUDGET = re.compile(r"固定報酬制\s*([\d,]+)\s*円(?:\s*〜\s*([\d,]+)\s*円)?")
 
@@ -69,9 +70,13 @@ application = _module("crowdworks_application", Path(__file__).with_name("applic
 
 def _candidate(page, listings, rotation):
     """Search the catalog's own terms and return the first job a catalog tier can actually serve."""
+    # Rotation decides where to start, not where to stop: capping at a handful of listings meant a
+    # day whose slice happened to be quiet reported no work while other listings had live jobs.
     ordered = listings[rotation:] + listings[:rotation]
     seen = set(); rejected = {"closed_or_unverified": 0, "off_topic": 0, "wrong_category": 0, "budget": 0}
-    for listing in ordered[:SEARCHES_PER_TICK]:
+    deadline = time.monotonic() + SEARCH_BUDGET_SECONDS
+    for listing in ordered:
+        if time.monotonic() > deadline: break
         page.goto("https://crowdworks.jp/public/jobs/search?hide_expired=true&search%5Bkeywords%5D="+quote(listing["terms"][0]));account._wait(page);page.wait_for_timeout(3000)
         # Result titles only. A bare a[href*="/public/jobs/"] also returns the category sidebar and
         # the recommendation rail: 227 links for a 20-result search, nearly all unrelated.
@@ -111,6 +116,21 @@ def _proposal(listing, tier):
         "ご不明点や範囲の調整があれば、ご希望に合わせて再見積りいたします。",
     ))
 
+def _reconcile(page):
+    """Import any submission whose landing page was not recognised, so a real application that
+    CrowdWorks already accepted still reaches the ledger instead of being silently lost."""
+    try: pending = json.loads(TRANSACTION.read_text(encoding="utf-8")).get("pending") or {}
+    except Exception: return 0
+    imported = 0
+    for entry in pending.values():
+        project_id = entry.get("project_id") if isinstance(entry, dict) else None
+        if not isinstance(project_id, str) or entry.get("proposal_id"): continue
+        proposal_id = application.find_proposal_id(page, project_id)
+        if proposal_id is None: continue
+        outcome = application.reconcile_existing_application(page=page, proposal_id=proposal_id, opportunity={"external_id": project_id}, state_path=TRANSACTION, ledger_writer=_append, now=lambda: datetime.now(timezone.utc).isoformat(), account_ready=lambda: True)
+        imported += 1 if getattr(outcome, "application_verified", False) else 0
+    return imported
+
 def _append(receipt):
     LEDGER.parent.mkdir(parents=True,exist_ok=True)
     with LEDGER.open("a",encoding="utf-8") as handle:
@@ -131,10 +151,11 @@ def main():
         else:
             browser=account._browser(account.CDP_URL);page=browser.contexts[0].new_page()
             configured=profile.run_apply(page=page,receipt_path=STATE/"profile-receipt.json")
+            imported=_reconcile(page) if configured.get("ok") else 0
             if not configured.get("ok"):
                 result={"ok":False,"status":configured.get("error","profile_incomplete"),"effect_delta":0}
             elif (candidate_result:=_candidate(page,_listings(),now.timetuple().tm_yday%max(1,len(_listings()))))[0] is None:
-                result={"ok":True,"status":"profile_complete_no_eligible_open_job","inspected_jobs":candidate_result[3],"effect_delta":0}
+                result={"ok":True,"status":"profile_complete_no_eligible_open_job","imported_applications":imported,"inspected_jobs":candidate_result[3],"effect_delta":0}
             else:
                 candidate,listing,tier,_inspected=candidate_result
                 due=(date.today()+timedelta(days=int(tier.get("delivery_days",7)))).isoformat()
