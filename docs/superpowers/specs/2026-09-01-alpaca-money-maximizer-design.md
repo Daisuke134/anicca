@@ -785,6 +785,23 @@ official account/effect readback, balance and P&L, remaining risk budget, and ne
 only state changes or required action, avoiding repetitive noise. After activation, skipped trades, orders, fills,
 exits, failures, halts, and recovery all report without asking the user to supervise the loop.
 
+For the owner retail account, review polling has two distinct evidence levels. Alpaca's documented
+`SUBMITTED` / `APPROVAL_PENDING` / `APPROVED` / `ACTIVE` lifecycle belongs to Broker API and Event API;
+the current private credential set contains a retail login and paper Trading API key, not Broker API Basic
+credentials. The paper `/v2/account` response therefore cannot prove KYC approval. The existing authenticated
+Gmail route may detect a new Alpaca message and wake the checker, but mail subject/body classification is only a
+trigger and never changes `application_status` by itself. `approved`, `active`, `action_required`, or `rejected`
+must come from one authenticated provider-dashboard readback (or a future official retail status API) and be
+written atomically to the private application-status receipt. Until that readback succeeds, the last verified
+state remains `in_review`, `/invest` says when it was observed, and the five-minute paper loop continues normally.
+
+The dashboard checker reuses the shared browser foundation, owns a leased context, performs read-only navigation,
+and releases what it opens. It does not use a sibling loop's tab or launch a second browser. The checker is not
+enabled while the shared context lease returns a target that disappears before first navigation; that condition is
+a browser-foundation blocker, not evidence that the Alpaca application changed. Once the lease path is healthy,
+the checker logs in from the private credential SSOT/TOTP path, snapshots the authenticated session, and reports
+only a verified state change or required owner action to Telegram.
+
 #### 7.2.1 Start-to-finish product UX map
 
 The ordered L01–L15 table in section 8 remains the only implementation TODO SSOT. This map explains the same order
