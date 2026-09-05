@@ -6874,10 +6874,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 if line.strip()
             ) if (args.state_dir / "new-listing-drafts.jsonl").exists() else False
             # When the committed demand is spent, look for the next market instead of idling.
+            catalog_families = set(_load_catalog_entries())
             demand_ledger = args.state_dir / "demand-evidence.jsonl"
             known_clusters = _jsonl_rows(demand_ledger)[0] if demand_ledger.exists() else []
-            known_clusters = _catalog_bound_demand_clusters(
-                known_clusters, set(_load_catalog_entries()))
+            known_clusters = _catalog_bound_demand_clusters(known_clusters, catalog_families)
             known_clusters = [{
                 **row,
                 "recurring_potential": _capability_recurring_potential(
@@ -6976,19 +6976,28 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             )
             if demand_already_sold and (unused_cluster is None or inventory_probe_due):
                 try:
+                    # Scoped to the owner's catalog: an unscoped run named
+                    # "user-interview-synthesizer" (not in the catalog) and it went on to
+                    # publish live on 2026-09-05 as service 4384702.
+                    exploration_families = {
+                        name: value for name, value in _unlisted_capability_templates(
+                            capability_templates, capability_families,
+                        ).items() if name in catalog_families
+                    } or {
+                        name: value for name, value in capability_templates.items()
+                        if name in catalog_families
+                    }
                     proposal, route = _invoke_demand_proposal(
                         runner=getattr(args, "runner", DEFAULT_RUNNER),
                         schema=getattr(args, "demand_proposal_schema", DEFAULT_DEMAND_PROPOSAL_SCHEMA),
                         workdir=args.workdir,
                         evidence_dir=inventory_path.parent / "demand-proposal-agent",
-                        families=_unlisted_capability_templates(
-                            capability_templates, capability_families,
-                        ),
+                        families=exploration_families,
                         catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
                         timeout_seconds=args.timeout_seconds,
                     )
                     sealed = _seal_demand_proposal(
-                        proposal, set(capability_templates),
+                        proposal, set(exploration_families),
                         [str(row.get("title") or "") for row in inventory["services"]],
                     )
                     appended = 0
