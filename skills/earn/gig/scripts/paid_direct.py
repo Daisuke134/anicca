@@ -4063,6 +4063,8 @@ def _normalize_builder_result(root: Path) -> None:
             ]
         if result.get("status") == "completed":
             result["status"] = "ok"
+        if result.get("status") == "ok":
+            result["verified_after"] = True
         result["observed_state"] = after["observed_state"]
         result["after_state_digest"] = result["observed_digest"] = intent.get("desired_state_sha256")
         _write(intent_path, intent)

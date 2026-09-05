@@ -934,6 +934,7 @@ def test_normalizer_restores_feedback_alias_and_canonical_digest(tmp_path):
     assert result["desired_state_sha256"] == result["desired_digest"] == digest
     assert result["after_state_digest"] == result["observed_digest"] == digest
     assert result["status"] == "ok"
+    assert result["verified_after"] is True
 
 
 def test_paid_project_executor_runs_different_owners_in_parallel():
