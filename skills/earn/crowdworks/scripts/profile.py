@@ -136,7 +136,10 @@ def _close(page:Any)->None:
 def run_observe(*,browser:Any=None,page:Any=None,browser_factory:Any=None,ownership_checker:Any=None)->dict[str,Any]:
     own=page is None; created=None
     try:
-        if browser is None: owner,factory=_defaults(); (ownership_checker or owner)() or _fail("browser_ownership_conflict"); browser=(browser_factory or factory)("http://127.0.0.1:9228")
+        # A caller-supplied page already carries a live browser; acquiring another one here starts a
+        # second Playwright runtime in the same process and throws, which is what made every
+        # profile-gated application tick fail with the generic profile_apply_failed.
+        if browser is None and page is None: owner,factory=_defaults(); (ownership_checker or owner)() or _fail("browser_ownership_conflict"); browser=(browser_factory or factory)("http://127.0.0.1:9228")
         created=page or _new_page(browser); created or _fail("browser_page_unavailable")
         return observe_page(created)
     except ProfileError as error: return {"ok":False,"platform":PLATFORM,"error":error.code}
@@ -148,7 +151,10 @@ def run_apply(*,config_path:Path|str=DEFAULT_CONFIG_PATH,browser:Any=None,page:A
     except Exception as error: return {"ok":False,"platform":PLATFORM,"error":error.code if isinstance(error,ProfileError) else "config_invalid"}
     own=page is None; created=None
     try:
-        if browser is None: owner,factory=_defaults(); (ownership_checker or owner)() or _fail("browser_ownership_conflict"); browser=(browser_factory or factory)("http://127.0.0.1:9228")
+        # A caller-supplied page already carries a live browser; acquiring another one here starts a
+        # second Playwright runtime in the same process and throws, which is what made every
+        # profile-gated application tick fail with the generic profile_apply_failed.
+        if browser is None and page is None: owner,factory=_defaults(); (ownership_checker or owner)() or _fail("browser_ownership_conflict"); browser=(browser_factory or factory)("http://127.0.0.1:9228")
         created=page or _new_page(browser); created or _fail("browser_page_unavailable")
         result=_apply_page(created,config,now)
         if receipt_path is not None: _write_receipt(Path(receipt_path),{key:result[key] for key in ("provider_employee_id","intent_hash","changed_fields","official_public_url","component_counts","component_hashes","timestamp","status")})
