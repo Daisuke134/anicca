@@ -14,8 +14,8 @@ from datetime import datetime, timezone
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
-import subprocess
 import sys
 from typing import Any, Callable, Mapping, Optional, Sequence
 
@@ -25,11 +25,28 @@ OUTBOX_PATH = ROOT / "skills" / "_shared" / "marketplace-core" / "scripts" / "te
 # production by Coconala. Reuse it rather than writing a fourth copy of the same sentences; moving
 # the file into _shared is the extraction step once its other consumer is not mid-flight.
 ENVELOPE_PATH = ROOT / "skills" / "earn" / "gig" / "scripts" / "report_envelope.py"
+# Lancers delivers through this client, not through a CLI: launchd gives a job no PATH, so shelling
+# out to a Homebrew binary fails as process_not_started and the queue silently stops delivering.
+TELEGRAM_PATH = ROOT / "skills" / "_shared" / "telegram.py"
+CHAT_CONFIG = Path.home() / ".config" / "anicca" / "crowdworks" / "telegram.env"
 STATE = Path("~/.local/state/anicca/crowdworks").expanduser()
 LEDGER = STATE / "application-receipts.jsonl"
 STATUS = STATE / "application-owner.json"
 DATABASE = STATE / "telegram-outbox.sqlite3"
-TARGET = "8547730585"
+def _report_chat() -> str:
+    """Where the owner report goes; never a repository literal."""
+    for key in ("CROWDWORKS_REPORT_CHAT", "GIG_REPORT_CHAT"):
+        value = os.environ.get(key, "").strip()
+        if value: return value
+    try: lines = CHAT_CONFIG.read_text(encoding="utf-8").splitlines()
+    except OSError: return ""
+    for raw in lines:
+        name, _, value = raw.partition("=")
+        if name.strip() in ("CROWDWORKS_REPORT_CHAT", "GIG_REPORT_CHAT"): return value.strip()
+    return ""
+
+
+TARGET = _report_chat()
 
 
 def _load(name: str, path: Path):
@@ -99,26 +116,20 @@ def enqueue_decisions(database: Path, *, ledger_path: Path = LEDGER, now: str) -
     return enqueued
 
 
-def _provider_id(payload: object) -> Optional[str]:
-    if isinstance(payload, Mapping):
-        for key in ("messageId", "message_id", "id"):
-            value = payload.get(key)
-            if isinstance(value, (str, int)) and not isinstance(value, bool): return str(value)
-        for key in ("result", "payload", "data"):
-            found = _provider_id(payload.get(key))
-            if found is not None: return found
-    return None
-
-
 def _default_notifier(message: str) -> SendResult:
     try:
-        completed = subprocess.run(["openclaw", "message", "send", "--channel", "telegram", "--target", TARGET, "--message", message, "--json"], capture_output=True, text=True, timeout=70, check=False)
-        payload = json.loads(completed.stdout[completed.stdout.find("{"):]) if completed.returncode == 0 and "{" in completed.stdout else {}
-        return SendResult(True, _provider_id(payload), "receipt_missing")
-    except OSError:
-        return SendResult(False, None, "process_not_started")
-    except Exception:
-        return SendResult(True, None, "provider_response_invalid")
+        telegram = _load("crowdworks_shared_telegram", TELEGRAM_PATH)
+        client = telegram.TelegramClient.from_env(
+            environ={"TELEGRAM_CHAT_ID": TARGET},
+            env_file=Path.home() / ".local/state/life-manager/.env",
+        )
+        receipt = client.send_text(message)
+        ids = receipt.get("message_ids") if isinstance(receipt, Mapping) else None
+        provider_id = str(ids[-1]) if isinstance(ids, list) and ids else None
+        return SendResult(True, provider_id, "receipt_missing" if provider_id is None else None)
+    except Exception as error:
+        attempted = type(error).__name__ == "TelegramDeliveryUnknown"
+        return SendResult(attempted, None, "transport_unknown" if attempted else "direct_transport_unavailable")
 
 
 @dataclass(frozen=True)
@@ -131,6 +142,9 @@ class Delivery:
 
 def deliver_pending(database: Path, notifier: Callable[[str], SendResult], now: str) -> Delivery:
     attempted = delivered = uncertain = pre_send = 0
+    # A sender killed mid-call leaves its claim behind and blocks every later message.
+    try: outbox.reclaim_stale(Path(database))
+    except Exception: pass
     while (item := outbox.claim_next(Path(database))) is not None:
         attempted += 1
         result = notifier(item.message)
