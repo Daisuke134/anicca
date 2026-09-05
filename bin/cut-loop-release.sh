@@ -125,6 +125,17 @@ EOF
 # state worth preserving, and one writable directory costs nothing while the code stays immutable.
 mkdir -p "$DEST/state/effective-cron"
 
+# Loop ledgers are operational state, never release content.  In particular reddit-loop records
+# externally verified permalinks in skills/self/reddit-loop/state/posts.jsonl; without this link,
+# an immutable release either rejects the append or starts every pass with an empty ledger and
+# triggers a false stale-output self-heal.  Keep the release path stable for existing supervisors
+# while routing the bytes to durable host state.
+LOOP_STATE_ROOT="${LOOPS_STATE_ROOT:-$HOME/.local/state/life-manager/state/loops}"
+REDDIT_STATE_DIR="$LOOP_STATE_ROOT/reddit-loop"
+mkdir -p "$REDDIT_STATE_DIR" || die "cannot create durable reddit-loop state"
+[ ! -e "$DEST/skills/self/reddit-loop/state" ] || die "reddit-loop state unexpectedly present in release archive"
+ln -s "$REDDIT_STATE_DIR" "$DEST/skills/self/reddit-loop/state" || die "cannot link durable reddit-loop state"
+
 chmod -R a-w "$DEST" 2>/dev/null || true
 chmod -R u+w "$DEST/state" 2>/dev/null || true
 
