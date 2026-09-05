@@ -153,7 +153,7 @@ def test_paid_routes_only_exact_adapter_block_to_cancellation():
     paid = load_module("paid_direct")
     matching = {
         "decision": "blocked",
-        "required_effect": "Submit the cancellation request through the Coconala transaction controls.",
+        "required_effect": "Coconala キャンセルリクエスト: cancel the transaction.",
         "unresolved": ["No code-owned Coconala cancellation adapter is present."],
     }
 
