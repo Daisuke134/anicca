@@ -68,6 +68,15 @@ def test_known_account_status_never_reopens_signup(tmp_path):
     assert "reply_markup" not in reply
 
 
+def test_active_account_is_presented_as_live_ready_but_still_fail_closed(tmp_path):
+    _write(tmp_path / "alpaca-investment" / "account-status.json", {"application_status": "active"})
+
+    message = build_investment_status(tmp_path)
+
+    assert "承認済み" in message
+    assert "ライブ注文は出しません" in message
+
+
 def test_cli_prints_clickable_signup_url_for_new_user(tmp_path):
     result = subprocess.run(
         [sys.executable, str(SCRIPTS / "investment_status.py"), "--state-root", str(tmp_path)],

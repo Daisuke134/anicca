@@ -49,7 +49,7 @@ def build_investment_reply(state_root: Path) -> dict:
     lines = ["Investment Loop", ""]
     if application_status == "in_review":
         lines.append("ライブ口座: 審査中です。今は操作不要です。承認を確認したら、次に必要な操作だけ知らせます。")
-    elif application_status == "approved":
+    elif application_status in {"approved", "active"}:
         lines.append("ライブ口座: 承認済みです。入金とリスク上限を確認するまでライブ注文は出しません。")
     elif application_status in {"rejected", "action_required"}:
         lines.append("ライブ口座: 追加対応が必要です。Alpacaの画面で表示される本人対応だけ行ってください。")

@@ -112,6 +112,19 @@ class InvestmentModeTest(unittest.TestCase):
             rows = [json.loads(line) for line in ledger.read_text().splitlines()]
         self.assertTrue(all(row.get("mode") in {"paper", "shadow"} for row in rows))
 
+    def test_review_polling_is_local_paper_only_and_fails_soft(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            (state / "account-status.json").write_text(
+                '{"application_status":"in_review","observed_at":"2026-09-05T00:00:00Z"}'
+            )
+            with patch.object(MODULE, "refresh_application_status", side_effect=RuntimeError("browser")) as refresh:
+                self.assertEqual(MODULE._review_status(state, "paper", "local")["application_status"], "in_review")
+                self.assertEqual(refresh.call_count, 1)
+                MODULE._review_status(state, "paper", "cloud")
+                MODULE._review_status(state, "live", "local")
+                self.assertEqual(refresh.call_count, 1)
+
     def test_legacy_paper_intent_reconciliation_writes_mode(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger = Path(directory) / "receipts.jsonl"
