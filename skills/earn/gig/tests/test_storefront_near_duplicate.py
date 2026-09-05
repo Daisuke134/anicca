@@ -95,6 +95,9 @@ def test_an_active_draft_stuck_on_an_unhealable_subscription_pair_loses_its_prot
         "capability_evidence": {"family": "mobile_app_dev", "recurring_support_included": False},
         "demand_evidence_path": "/evidence/mobile.json",
         "subscription": {"enabled": True, "discount_ratio": "5"},
+        # A real recovered contract always carries the target category's own discovered facet
+        # groups (see storefront_facet_proposal); this is what a post-facets-fix seal looks like.
+        "category_specific": {"facets": {}},
     }
     digest = hashlib.sha256(_json.dumps(
         poisoned_unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
