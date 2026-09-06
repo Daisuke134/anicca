@@ -24,6 +24,15 @@ CLI_OPERATIONS = frozenset({
     "data_latest-quotes", "data_latest-trade", "data_option", "order_list",
     "order_submit", "position_list",
 })
+SAFE_ERROR_CODES = frozenset({
+    "alpaca_allocator_risk_invalid", "alpaca_allocator_shape_invalid",
+    "alpaca_cli_json_invalid", "alpaca_cli_output_too_large", "alpaca_cli_unavailable",
+    "alpaca_cli_version_unpinned", "alpaca_credential_record_invalid",
+    "alpaca_live_credentials_unavailable", "alpaca_paper_credentials_unavailable",
+    "alpaca_shadow_credentials_unavailable", "credential_document_invalid",
+    "credential_file_too_large", "credential_path_invalid", "credential_permissions_invalid",
+    "investment_mode_invalid",
+})
 
 
 def _selected_mode(mode: str | None = None) -> str:

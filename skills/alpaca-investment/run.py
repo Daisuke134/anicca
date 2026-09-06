@@ -9,8 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from allocator import build_candidates, choose, order_for
-from alpaca_cli import (CLI_OPERATIONS, find_order_by_client_id, observe, read_allocator_snapshot,
-                        read_campaign_snapshot, submit_order)
+from alpaca_cli import (CLI_OPERATIONS, SAFE_ERROR_CODES, find_order_by_client_id, observe,
+                        read_allocator_snapshot, read_campaign_snapshot, submit_order)
 from campaign import CANDIDATE_REF, SYMBOLS, exit_order, reconcile
 from effect_store import mark_started, reconcile_started, record_no_trade, seal
 from reporter import deliver, deliver_failure
@@ -46,6 +46,8 @@ def _terminal_effect(effect_attempted: bool) -> str:
 
 def _error_code(error: Exception) -> str:
     value = str(error)
+    if value in SAFE_ERROR_CODES:
+        return value
     for prefix in ("alpaca_cli_failed:", "alpaca_cli_timeout:"):
         if value.startswith(prefix) and value.removeprefix(prefix) in CLI_OPERATIONS:
             return value

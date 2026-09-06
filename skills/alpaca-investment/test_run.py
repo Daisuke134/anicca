@@ -313,6 +313,12 @@ class FailureTelegramTest(unittest.TestCase):
         error = ValueError("alpaca_cli_failed:account_get:provider-payload-SECRET")
         self.assertEqual(MODULE._error_code(error), "ValueError")
 
+    def test_known_internal_failure_code_is_emitted_exactly(self):
+        error = ValueError("alpaca_allocator_shape_invalid")
+        self.assertEqual(MODULE._error_code(error), "alpaca_allocator_shape_invalid")
+        tainted = ValueError("alpaca_allocator_shape_invalid:provider-payload-SECRET")
+        self.assertEqual(MODULE._error_code(tainted), "ValueError")
+
     @patch.object(MODULE, "deliver_failure", create=True)
     @patch.object(MODULE, "observe", side_effect=RuntimeError("provider payload must stay private"))
     @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
