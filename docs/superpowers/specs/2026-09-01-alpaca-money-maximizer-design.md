@@ -926,6 +926,31 @@ same committed core. L04 may complete effect-disabled Cloud UX, tenant-state, se
 fixture-parity readiness while provider review is pending. That readiness cannot resolve a live credential,
 contact Alpaca's trading API, submit an order, or claim L13 complete.
 
+### 8.1 Current cursor and executable work
+
+The freshest authoritative Alpaca account receipt is
+`~/.local/state/life-manager/alpaca-investment/account-status.json`: it records
+`application_status=in_review`, `source=authenticated_provider_readback`, observed at
+`2026-09-05T15:22:11.758684Z`. No newer authenticated receipt proves `approved`, a selectable Live account, live
+API permission, or funding. Therefore the live account is still treated as **in review** and every live effect
+remains disabled. A missing newer receipt is not evidence of rejection or approval.
+
+This status does not stop all work. It divides the unchanged ordered queue into the following executable bands:
+
+| Band | Fixed atoms | What may happen now |
+|---|---|---|
+| Completed foundation | L01–L04.4 | Preserve the portable finite pass, deployment/mode separation, local review monitor, Local `/invest`, replay fixture, and shared chat contract. |
+| Active now, no live effects | L04.5–L04.8 | Close the owner-originated Cloud `/invest` receipt, then add tenant-scoped state/secret references, disabled five-minute Cloud dry-run, and Local/Cloud parity fixture. Broker submit permission remains zero. |
+| Provider transition | L04.9 | Continue authenticated monitoring. Advance only after official `approved` or selected `Live - <id>` readback and at most `$100` owner-authorized initial funding. |
+| Local live proof | L05–L12 | After L04.9, perform read-only preflight, freeze risk, complete Telegram controls, shadow, one canary, its close, repeatability, and measured net-performance gate. |
+| Cloud live proof | L13–L16 | Wire the frozen core, transfer single ownership from Local to Cloud, prove shadow parity, then execute and reconcile one Cloud canary and bounded campaign. Local and Cloud never submit concurrently for one account. |
+| Product release and growth | L17–L18 | Publish the OSS self-host release, then use a separately approved measured capital ladder. `$10k/month` means official realised net trading P&L here; Life Manager subscription MRR is a separate product metric. |
+
+Within the active band the exact next action remains L04.5: Dais sends `/invest` once to `@LifeManagerBotbot`,
+and production must log one positive Telegram `provider_message_id`. Until that receipt exists, L04.6 does not
+become active. This is an acceptance probe, not a recurring product burden; normal Cloud users use the same single
+`/invest` entry point after the tenant state exists.
+
 L01 is **DONE** in implementation commit `2eb1e886d`: the existing environment-injected finite paper pass retains
 observation, model proposal, deterministic gate, sealed effect, reconciliation, durable state, and Telegram while
 the success and terminal-failure dashboard child-process paths are removed. Focused Alpaca tests pass 8/8, loop
@@ -954,8 +979,9 @@ stdout and the newest decision receipt both read `mode=paper`; Telegram message 
 `mode=paper`, balance, P&L, the `NO_TRADE` gate, and no order. The model's full natural-language reason is not yet
 included in Telegram and remains part of L07. No live broker mutation occurred.
 
-L04 is **SUBMITTED / IN REVIEW**. Dais completed the provider KYC flow. Authenticated Alpaca readback shows exact
-status `Application submitted: In review` and states that Alpaca may request additional information. This proves
+L04 is **SUBMITTED / IN REVIEW**. Dais completed the provider KYC flow. The freshest authenticated Alpaca readback,
+observed at `2026-09-05T15:22:11.758684Z`, records exact application status `in_review`; the provider UI states that
+Alpaca may request additional information. This proves
 submission, not approval, live API availability, options permission, or funding. The cursor remains L04 until the
 official account state is approved and owner funding of at most `$100` is verified; the loop polls and reports the
 review state without resubmitting the application.
