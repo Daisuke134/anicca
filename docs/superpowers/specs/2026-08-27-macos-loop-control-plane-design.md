@@ -152,6 +152,10 @@ completion remain separate.
      normal close, close-owned and hidden-target teardown. Contexts remain live while another tab
      from that owner exists. Shared lease/ownership regression tests pass (32), bounding the seed
      target and renderer lifetime without touching another owner's work.
+   - [x] Add one domain-neutral macOS memory-admission primitive under `runtime/host`. It reads the
+     native `memory_pressure -Q` free percentage, defaults to a 15% floor, persists a mode-`0600`
+     pass/deferred receipt, and exits `75` without starting new work when pressure is unsafe or
+     unmeasurable. Unit tests pass (4); no running process is killed or restarted.
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
