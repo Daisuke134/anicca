@@ -198,10 +198,15 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `paid_kernel.py` now owns per-work durable state, intent-before-effect persistence, same-item OS
    fencing, different-item concurrency, mutation-time latest-event invalidation, official readback,
    reconcile-unknown, external waits, process-boundary resume, replay-zero and item-failure isolation.
-   Focused trajectory regressions pass 6/6 at checkpoint `c5c6a7ba3`. The atom remains unchecked:
-   next connect one executable entrypoint plus thin Coconala and Lancers inventory/effect/readback
-   adapters, route both through the kernel, run the existing Paid regressions, and obtain the named
-   natural/official evidence before merging or marking complete.
+   The generic CLI now loads any configured adapter without a provider branch. A thin Lancers adapter
+   reuses its existing seven-surface official inventory reader; its live read-only preflight records
+   `observed=0`, `effect=0`, `failed=0`, matching the current zero working-contract state. A thin
+   Coconala adapter now owns mapping, targeted refresh, cumulative-context, mutation and readback
+   seams without copying its business owner. Focused kernel plus both-adapter regressions pass 14/14
+   through checkpoint `7fcfa8fa1`. The atom remains unchecked: next wire Coconala's existing official
+   functions into the adapter's default `build()`, run the complete existing Coconala Paid regression,
+   route the installed entrypoint through the shared CLI, and obtain natural official evidence before
+   merging or marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
