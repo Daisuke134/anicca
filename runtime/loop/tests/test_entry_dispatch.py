@@ -55,6 +55,10 @@ class EntryDispatchTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no dispatch command'):
             command_for('affiliate-impact-browser', Path('/release'), Path('/home'))
 
+    def test_affiliate_x_browser_no_longer_has_a_handwritten_dispatch(self):
+        with self.assertRaisesRegex(ValueError, 'no dispatch command'):
+            command_for('affiliate-x-browser', Path('/release'), Path('/home'))
+
     def test_lancers_browser_has_a_finite_renderer_process_limit(self):
         script = Path(__file__).parents[3] / 'runtime/legacy/lancers-revenue-browser/run.sh'
         self.assertIn('--renderer-process-limit="$renderer_limit"', script.read_text())
@@ -184,14 +188,6 @@ class EntryDispatchTest(unittest.TestCase):
             self.assertNotIn('GH_TOKEN', environment)
             self.assertNotIn('GH_ENTERPRISE_TOKEN', environment)
             self.assertNotIn('GITHUB_ENTERPRISE_TOKEN', environment)
-
-    def test_remaining_affiliate_browsers_use_installed_cloakbrowser_python(self):
-        root=Path('/release'); home=Path('/home')
-        expected=home/'.openclaw/skills/_shared/venv-cloak/bin/python'
-        for loop_id in ('affiliate-x-browser',):
-            command=command_for(loop_id,root,home)
-            self.assertEqual(Path(command[0]),expected)
-            self.assertEqual(command[1],str(root/'skills/affiliate/scripts/local_browser.py'))
 
     def test_paid_direct_uses_the_shared_gig_target_registry(self):
         home = Path('/home')
