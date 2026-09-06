@@ -88,6 +88,10 @@ test("cacheKey: provider, endpoints, mode, anchor type, timezone/service date, a
     { ...base, fromKey: "opaque-a" }));
   assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42,
     { ...base, toKey: "opaque-b" }));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42,
+    { ...base, eventVersion: "event-v2" }));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42,
+    { ...base, purpose: "return" }));
 });
 
 test("getOrCompute: provider-scoped contexts do not share a cached route", async () => {
