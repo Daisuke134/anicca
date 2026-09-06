@@ -21,11 +21,50 @@ evidence ledger, and human-readable reporting contract. Life
 Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
 without a receipt.
 
+## Choose how to use Life Manager
+
+| You want to... | Start here | What you need |
+|---|---|---|
+| Use the hosted daily manager | [Cloud entry](https://aniccaai.com/lm) / [Telegram](https://t.me/LifeManagerBotbot?start=lp) | A phone, Telegram, and your own Google Calendar consent; no Docker or always-on personal computer |
+| Run the server yourself | [Self-hosted server instructions](#run-the-server-stack-yourself) | Your own always-on host, Docker Engine with Compose, and your own provider configuration |
+| Run a host-native specialist loop | [Registry](config/loop-registry.json) and its installation instructions | The declared host capabilities and your own credentials; cloning does not activate every loop |
+
+**Cloud launch status — checked 2026-09-06: engineering acceptance is still open.**
+The detailed-reminder change [#4150](https://github.com/Daisuke134/life-manager/pull/4150) is not yet merged;
+do not interpret an entry link, an existing deployment, or the catalog below as proof that the new-user release
+is ready. The current [Cloud launch contract](docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md#8-出荷までの残todo--この順で1件ずつ)
+puts implementation, automated checks, operator verification, Stripe tests, and public-page preparation
+**before** the final friend/real-phone test. User acceptance remains required before general release.
+This is a dated status, not an automatically refreshed production monitor.
+
 ## Built-in loop catalog
 
-Life Manager is shipped as one general-agent core plus specialist loops. These are
-the main user-facing loop families; helper, healthcheck, browser-owner, reporting,
-and reconciliation loops support them behind the same control plane.
+Count product workstreams separately from scheduled jobs. The [dated 12-loop audit](docs/loops-status-2026-09-03.md)
+uses the following **12 major workstreams**. This preserves the audit's grouping, not its old health/revenue figures;
+it is not a claim that all 12 run in Cloud, are healthy, or earn revenue today.
+
+| # | Major workstream | Intended outcome |
+|---|---|---|
+| 1 | Gig: Coconala | Applications, listings, negotiation, delivery, and verified payment |
+| 2 | Gig: Lancers | The same commerce lifecycle through the Lancers adapter |
+| 3 | Gig: CrowdWorks | The same commerce lifecycle through the CrowdWorks adapter |
+| 4 | Writer | Publish or deliver writing and reconcile publisher/payment evidence |
+| 5 | Affiliate | Publish attributable recommendations and reconcile commissions |
+| 6 | Investment / Alpaca | Risk-gated paper execution and broker readback; not earned cash |
+| 7 | Agent Economy / Crypto | Reconcile earnings and costs toward self-funded compute |
+| 8 | Job Hunter | Qualified applications, replies, and hiring outcomes |
+| 9 | Fundraiser | Eligible accelerator, fellowship, grant, and investor applications |
+| 10 | Connector | Relevant events, registration, and Calendar/Telegram follow-through |
+| 11 | Life Manager Cloud | Ship and improve the daily product, acquire users, and reconcile subscriptions |
+| 12 | Mobile / Capafy | Build, market, and measure mobile-product sales |
+
+CFO and the Money Printer control room are additional capabilities/surfaces, not automatically a new thirteenth
+workstream. Ebook was recorded separately as unimplemented in that audit. Add a new named workstream only with
+its definition and source mapping; do not inflate the count. Apply/storefront/negotiate/paid lanes, reports,
+healthchecks, and reconciliation can each have their own registry ID without being a new major workstream.
+
+<details>
+<summary>Selected capability-to-registry mappings (not the complete workstream inventory)</summary>
 
 | Capability | Canonical loop IDs | What it does |
 |---|---|---|
@@ -40,10 +79,13 @@ and reconciliation loops support them behind the same control plane.
 | Agent Economy | `agent-economy-loop` | Tracks agent revenue, compute cost, and self-funding without mixing owner funds |
 | Investment | `alpaca-investment` | Runs a five-minute Alpaca paper-trading loop across eligible crypto, equities, and defined-risk option spreads; gates risk, reconciles each order, and reports every pass to Telegram |
 
+</details>
+
 The complete lifecycle registry is [`config/loop-registry.json`](config/loop-registry.json).
 List every loop and inspect its live state through the canonical interfaces:
 
 ```bash
+jq '.loops | length' config/loop-registry.json  # current job count, not workstream count
 jq -r '.loops | keys[]' config/loop-registry.json
 ./bin/lm-loop status all
 ./bin/lm-loop doctor
@@ -158,11 +200,13 @@ official receipts through `banked` and, eventually, `compute_paid`.
 
 ## Quick start
 
-### Use it — cloud (nothing to install)
+### Use it — cloud (phone client; launch acceptance pending)
 
 [Start in Telegram](https://t.me/LifeManagerBotbot?start=lp), or open the
-[web app](https://aniccaai.com/lm). The always-on service runs the scheduler, the connectors, and the
-authenticated `/panel`; you talk to it in Telegram and it reports back there with receipts.
+[web app](https://aniccaai.com/lm). The daily launch flow is Telegram → initial setup → your Google Calendar
+consent → home/base location → notifications; phone calls are optional. Daily work runs on the hosted service,
+not your phone or the maintainer's Mac. See the launch status above before inviting users. Telegram may need to
+be installed; no separate Life Manager native app or personal API key is required by this Cloud flow.
 
 ### Run it yourself — local (your machine holds the data)
 
@@ -187,8 +231,20 @@ Ashby, Greenhouse, Lever, Mercor and generic ATS lanes are not working products.
 
 ### Run the server stack yourself
 
-Requires Docker. The local stack is Postgres + an object store + the API, scheduler, and worker — the same core
-the cloud runs.
+Requires Docker Engine with the Compose plugin on the self-hosting machine, not on a Cloud user's phone.
+[`scripts/local-up.sh`](scripts/local-up.sh) invokes `docker compose` with
+[`deploy/local/compose.yaml`](deploy/local/compose.yaml), which builds
+[`apps/life-manager/Dockerfile.runtime`](apps/life-manager/Dockerfile.runtime).
+These files are referenced parts of the self-hosted startup path, not unused framework migration files.
+
+The Compose model includes Postgres, object store, API, scheduler, worker, a marketing-liveness service,
+and one-shot migration/runtime initialization. Container health is not proof that every specialist loop or
+provider integration works. This is a local profile: review credentials, network exposure, TLS, and backups
+before adapting it to an Internet-facing host.
+
+Cloud service build settings must be read back per service. The presence of both `Dockerfile.runtime` and
+`apps/life-manager/nixpacks.toml` does not prove which builder produced a live Railway deployment. Do not remove
+Dockerfiles, Compose configuration, images, or data volumes based only on a filename or on one service not using them.
 
 ```bash
 git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
@@ -247,9 +303,9 @@ It is Life Manager's Financial capability: provider revenue must become `banked`
 
 Life Manager is one product in one repository. “Local Life Manager” and the web app are not separate products or repositories; they are two execution surfaces powered by the same core, capabilities, and state contracts.
 
-The target contract does not copy loops into separate local and cloud folders. The current lifecycle inventory
-contains 175 loop IDs in [`config/loop-registry.json`](config/loop-registry.json), with repository-relative
-entrypoints across the repository. The local Compose scheduler currently starts a smaller built-in set directly;
+The target contract does not copy loops into separate local and cloud folders. The lifecycle inventory is
+[`config/loop-registry.json`](config/loop-registry.json); use the count command above instead of a drifting
+hard-coded total. Its entries point to repository-relative entrypoints across the repository. The local Compose scheduler currently starts a smaller built-in set directly;
 making local and cloud schedulers consume the same complete registry is unfinished portability work. In the target,
 both dispatch the same entrypoints and only the scheduler, storage, secret, and browser adapters differ. The
 complete architecture and ordered portability work are tracked in

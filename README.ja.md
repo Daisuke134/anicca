@@ -18,6 +18,56 @@ free・open source・self-hosted版をローカルで動かしてdataを自分�
 paid monthly cloudを使います。どちらも**同じcore**、証拠台帳、人間向け報告contractを使います。資産増加や投資収益を保証せず、
 receiptのない試行を「完了」と報告しません。
 
+## 使い方を選ぶ
+
+| 目的 | 入口 | 必要なもの |
+|---|---|---|
+| Cloudの日常マネージャーを使う | [Web入口](https://aniccaai.com/lm) / [Telegram](https://t.me/LifeManagerBotbot?start=lp) | スマホ、Telegram、自分のGoogle Calendar接続への同意。Dockerや常時起動PCは不要 |
+| サーバーを自分で運用する | 下のself-host手順 | 常時稼働する自分のhost、Docker Engine + Compose、自分のprovider設定 |
+| host固有の専門loopを動かす | [registry](config/loop-registry.json)と各install手順 | loopごとに必要なOS/ブラウザ/認証。cloneだけで全loopは有効にならない |
+
+**Cloud出荷状態 — 2026-09-06確認: 開発側の完了確認はまだ残っています。**
+詳細通知の[PR #4150](https://github.com/Daisuke134/life-manager/pull/4150)は未mergeです。
+既存の公開URLやdeployは「新規ユーザー向け完成版が使える」証明ではありません。
+[Cloud出荷仕様 §8](docs/superpowers/specs/2026-08-28-life-manager-cloud-telegram-product-ux-design.md#8-出荷までの残todo--この順で1件ずつ)
+に従い、実装・自動テスト・必要なCloud運用実測・Stripe検証・公開準備を先に終え、
+最後に本人/友達のスマホで確認します。これは日時つきの状態記録であり、自動更新の稼働監視ではありません。
+
+## 主要12系統と、内部の実行ジョブを分ける
+
+[2026-09-03監査](docs/loops-status-2026-09-03.md)の分類は次の12系統です。
+この一覧は分類を引き継ぐもので、古い売上/稼働値を現在値として転記しません。
+**全系統がCloud対応済み、正常稼働中、収益化済みという意味ではありません。**
+
+| # | 主要系統 | 目指す結果 |
+|---|---|---|
+| 1 | Gig: Coconala | 応募・出品・交渉・納品・入金確認 |
+| 2 | Gig: Lancers | 同じcommerce lifecycleをLancers adapterで実行 |
+| 3 | Gig: CrowdWorks | 同じcommerce lifecycleをCrowdWorks adapterで実行 |
+| 4 | Writer | 執筆/公開とpublisher・payment記録の照合 |
+| 5 | Affiliate | 成果に紐づく推薦/公開と報酬確認 |
+| 6 | Investment / Alpaca | risk gate付きpaper取引とbroker readback。実収入ではない |
+| 7 | Agent Economy / Crypto | 収益と費用を照合しcomputeの自己負担へ進める |
+| 8 | Job Hunter | 条件に合う応募、返信、採用結果 |
+| 9 | Fundraiser | accelerator・fellowship・grant・投資家への適格な応募 |
+| 10 | Connector | 関連イベント、登録、Calendar/Telegramへの反映 |
+| 11 | Life Manager Cloud | 日常版の出荷/改善、集客、subscription記録の照合 |
+| 12 | Mobile / Capafy | mobile製品の開発・marketing・売上計測 |
+
+CFOやMoney Printerは追加の能力/画面であり、自動的に「13本目」と数えません。
+Ebookは当該監査では別枠の未実装です。新系統は名前・役割・sourceを定義して追加します。
+応募/出品/交渉/納品、report、healthcheck、reconciliationの個別job IDと、主要系統数を混同しません。
+
+```bash
+jq '.loops | length' config/loop-registry.json  # 内部job ID数。主要系統数ではない
+jq -r '.loops | keys[]' config/loop-registry.json
+./bin/lm-loop status all
+./bin/lm-loop doctor
+```
+
+登録ありと、実機で稼働中、provider側の成功、実際の収益は別です。
+loop追加・修正・運用は[loop-engineering](skills/loop-engineering/SKILL.md)を入口にします。
+
 ## 現在構築しているgeneral agent
 
 Life Managerはwebsite固有botの集合ではありません。1つのdurable general agentが機会を発見し、利益を残して
@@ -42,19 +92,33 @@ founder証言ではLife Managerはapproximately $1,000の収益を生み出し�
 
 🌐 **[English README here →](README.md)**
 
-**リポジトリ正本:** この [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager) だけをLife Managerのcode、spec、release、workflow、deploy sourceとします。`Daisuke134/life-manager-v0`はrequired codeとruntime referenceが0になるまで読み取り専用のmigration sourceです。現在の固定実行順と残TODOは [`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md)、repository統合履歴は [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md) に置きます。
+**リポジトリ正本:** この [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager) だけをLife Managerのcode、spec、release、workflow、deploy sourceとします。`Daisuke134/life-manager-v0`はarchiveされた歴史的repositoryであり、runtimeやmigration sourceではありません。現在の固定実行順と残TODOは [`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md)、repository統合履歴は [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md) に置きます。
 
 ---
 
 ## はじめ方
 
-### 使う — クラウド（インストール不要）
+### 使う — クラウド（スマホがclient。出荷判定は未完了）
 
-[Telegram で始める](https://t.me/LifeManagerBotbot?start=lp)、または [Web アプリ](https://aniccaai.com/lm)を開きます。常時稼働のサービスが scheduler・connector・認証付き `/panel` を回し、あなたは Telegram で話しかけ、Telegram に証拠つきで返ってきます。
+[Telegram](https://t.me/LifeManagerBotbot?start=lp)または[Web入口](https://aniccaai.com/lm)から、
+初回設定 → 本人のGoogle Calendar接続 → 基準地点 → 通知設定へ進む設計です。電話は任意です。
+Telegramの導入は必要な場合がありますが、Life Manager専用native appや個人APIキーの設定は不要です。
+日常処理はCloudが行い、本人や開発者のMacの常時稼働に依存させません。招待前に上の出荷状態を確認してください。
 
 ### 自分で動かす — ローカル（dataは自分の端末に残る）
 
-Docker が必要です。ローカルスタックは Postgres + object store + API・scheduler・worker で、**クラウドと同じ core** です。
+Docker Engine + Composeが必要なのは、自分でサーバーを運用するhostです。Cloud利用者のスマホには不要です。
+[`scripts/local-up.sh`](scripts/local-up.sh)が[`deploy/local/compose.yaml`](deploy/local/compose.yaml)を読み、
+[`apps/life-manager/Dockerfile.runtime`](apps/life-manager/Dockerfile.runtime)をbuildします。
+これらは参照のある起動経路であり、未使用のmigration残骸ではありません。
+
+ComposeにはPostgres、object store、API、scheduler、worker、marketing-liveness、
+一度だけ実行するmigration/runtime初期化があります。コンテナのhealthは全loopの動作証明ではありません。
+local用の設定なので、Internetへ公開する前に認証、port公開、TLS、backupを確認してください。
+
+Cloud側で使うbuilderはserviceごとの設定/build logで確認します。`Dockerfile.runtime`と
+`apps/life-manager/nixpacks.toml`があるだけでは、現在のRailwayのbuilderは断定できません。
+参照/稼働確認なしにDockerfile、Compose設定、image、データvolumeを削除しないでください。
 
 ```bash
 git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
@@ -98,6 +162,11 @@ provider revenueを`banked`へ到達させてから`compute_paid`へ使い、own
 ---
 
 ## 1つの製品、2つの実行面
+
+同じsource/entrypointを共有する方針ですが、全loopのCloud移植や全OS対応はまだ完了していません。
+現在のCompose schedulerは一部の組み込み処理を直接起動し、全registry共通dispatchは後続作業です。
+[単一repo・2 runtimeの設計](docs/superpowers/specs/2026-09-06-life-manager-one-repo-two-runtimes-design.md)
+を参照し、下の構造図を全機能の稼働証明と混同しないでください。
 
 Life Manager は1つの製品であり、正本リポジトリもここ1つです。「ローカル Life Manager」と Web アプリは別製品・別リポジトリではなく、同じcore、能力、状態契約を使う2つの実行面です。
 
