@@ -23,24 +23,81 @@ owners keep acquiring, serving and completing paid work. Coconala, Lancers, Crow
 later marketplace reuse the same deterministic lifecycle. A new provider adds only its authenticated
 inventory, identity vocabulary, selectors, mutations and official readback; it does not copy a lane.
 
-The target ownership tree is:
+The target ownership tree is below. Names under `paid/` describe responsibilities, not a requirement
+to create every file before the second provider proves the split. Reuse the existing shared
+`contracts.py`, `ledger.py`, agent runner and `runtime/loop` primitives wherever they already satisfy
+the contract.
 
 ```text
 skills/
 ├── _shared/marketplace-core/
 │   ├── scripts/
-│   │   ├── apply_kernel.py      # opportunity lifecycle, intent, submission receipt and replay
-│   │   ├── paid_kernel.py       # work-item lifecycle, resume, receipts, replay and backoff
-│   │   ├── reply_kernel.py      # event lifecycle, reply/estimate intent, receipts and replay
-│   │   ├── storefront_kernel.py # offer lifecycle, conversion evidence, mutation and rollback
-│   │   └── reporting.py         # one receipt-derived operator report for every provider and lane
-│   ├── schemas/                 # provider-neutral work-item, effect and receipt contracts
-│   └── tests/                   # adapter conformance and replay-zero fixtures
-├── earn/gig/scripts/            # thin Coconala Paid/Reply adapters
-├── earn/lancers/scripts/        # thin Lancers Paid/Reply adapters
-├── earn/crowdworks/scripts/      # thin CrowdWorks Paid/Reply adapters
-└── loop-development/SKILL.md    # canonical build, release, ownership and acceptance rules
+│   │   ├── paid/
+│   │   │   ├── kernel.py          # one bounded observe -> decide -> act -> verify -> persist wake
+│   │   │   ├── contracts.py       # WorkItem, BuyerEvent, Intent, Effect, Receipt, MoneyReceipt
+│   │   │   ├── owner.py           # durable lifecycle and independent per-order ownership
+│   │   │   ├── context.py         # cumulative brief, messages and attachments for the model
+│   │   │   ├── planner.py         # website-neutral model/tool loop; no category keyword routing
+│   │   │   ├── reviewer.py        # fresh review of exact artifact/message against current contract
+│   │   │   ├── workspace.py       # stable order workspace and immutable artifact hashes
+│   │   │   ├── effects.py         # compare-and-swap fence and reconcile-before-retry
+│   │   │   ├── receipts.py        # official submission/acceptance/payment evidence
+│   │   │   └── retry.py           # durable backoff, next_eligible_at and resumability
+│   │   ├── apply_kernel.py         # separately owned shared Apply lifecycle
+│   │   ├── reply_kernel.py         # separately owned shared Reply/estimate lifecycle
+│   │   ├── storefront_kernel.py    # separately owned shared offer/conversion lifecycle
+│   │   ├── ledger.py               # existing cross-lane identity and receipt ledger
+│   │   └── reporting.py            # receipt-derived operator report for every provider/lane
+│   ├── schemas/
+│   │   ├── paid-work-item.schema.json
+│   │   ├── paid-effect.schema.json
+│   │   ├── paid-receipt.schema.json
+│   │   └── money-receipt.schema.json
+│   └── tests/
+│       ├── test_paid_kernel.py
+│       ├── test_paid_adapter_conformance.py
+│       └── fixtures/{coconala,lancers,crowdworks,mercor,freelancer,upwork}/
+├── earn/marketplace-adapters/
+│   ├── coconala/paid_adapter.py
+│   ├── lancers/paid_adapter.py
+│   ├── crowdworks/paid_adapter.py
+│   ├── mercor/paid_adapter.py
+│   ├── freelancer/paid_adapter.py
+│   └── upwork/paid_adapter.py
+├── loop-development/SKILL.md              # build/release/ownership/acceptance SSOT
+├── loop-engineering/references/
+│   └── marketplace-paid-lane.md           # Paid business-lifecycle recipe SSOT
+└── earn/gig/TODO.md                       # fixed execution order and measured acceptance evidence
 ```
+
+### Paid sharing boundary
+
+| Shared forever | Provider-specific thin adapter |
+|---|---|
+| Stable global work-item ID and lifecycle | Login, session recovery, KYC/account state |
+| Cumulative buyer context and attachment manifest | Order/message/revision IDs and provider state vocabulary |
+| Model planning, tool/Skill selection and artifact production | Inventory URLs, pagination, API/DOM selectors and downloads |
+| Stable workspace, artifact hashing and fresh review | Message, upload, formal-delivery and cancellation mutations |
+| Intent/effect fencing, official reconciliation and replay-zero | Same-session official readback parsing |
+| Durable waits, retry budget, backoff and process-exit resume | Provider limits, file-size rules and capability declaration |
+| Submission, acceptance, payment and payout receipt contracts | Provider receipt IDs/URLs and normalized money fields |
+| Cross-provider reporting, conversion, latency, cost and net-cash attribution | Provider fee/tax vocabulary before normalization |
+
+Mercor, Freelancer.com, Upwork, Fiverr and future marketplaces use this same Paid kernel. They do not
+receive a copied owner or lifecycle. A provider adapter declares typed capabilities such as
+`can_message`, `can_upload`, `can_formally_deliver`, `can_cancel`, `can_read_acceptance` and
+`can_read_payment`. A missing capability yields durable `WAITING_EXTERNAL` state with
+`blocker_kind=human`; it never causes a provider fork or a fabricated success. Mercor
+interviews/assessments and any Upwork work that
+truthfully requires a person remain human gates, while inventory, context, reminders, permitted work,
+delivery preparation, official readback, receipts and payout reconciliation continue through the
+shared kernel. Freelancer.com can use the full autonomous path wherever its official surface and job
+terms permit it.
+
+Skills remain optional reusable method caches, not capability gates. `loop-development/SKILL.md`
+governs how every owner is built and released; `marketplace-paid-lane.md` governs the one Paid
+lifecycle. Add a provider Skill only when repeated provider ceremonies or constraints justify one;
+never encode buyer/job judgment or duplicate the Paid lifecycle in that Skill.
 
 Apply and Storefront remain independently owned while their parallel work is active. Shared runtime
 changes require an explicit conflict check; this cursor never replaces their business code.
