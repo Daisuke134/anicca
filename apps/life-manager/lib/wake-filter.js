@@ -66,7 +66,8 @@ function originFor(ev, allEvents, home) {
 // every 30 min, or the event was added late, or leaveMs was already past when travel ran), compute the
 // leave time INLINE — from the back-to-back previous venue when there is one, else home — so a
 // must-travel event still wakes before departure instead of (wrongly) anchoring to event start.
-// directionsFn is injected (the real travel.js directionsMinutes) so this stays testable.
+// Structured routing is authoritative when supplied. directionsFn is the legacy compatibility path
+// only for callers that do not have routeFn; it must never issue a second provider call after routeFn.
 async function resolveDeparture(ev, allEvents, {
   home, mapsKey, nowMs = Date.now(), bufferMin = 5, directionsFn, routeFn, uid, timezone,
 } = {}) {
@@ -80,7 +81,7 @@ async function resolveDeparture(ev, allEvents, {
       route = await routeFn(origin, ev.location, mapsKey, ev.startMs, nowMs, false, { uid, timezone });
     } catch { route = null; }
     const exact = computeDoorDepartureMs(ev.startMs, route, { bufferMin });
-    if (exact !== null) return exact;
+    return exact === null ? ev.startMs : exact;
   }
   if (typeof directionsFn !== "function") return ev.startMs;
   let mins = null;
