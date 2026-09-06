@@ -239,7 +239,7 @@ shared-component or legacy-retirement atom is active.
 - [x] `WT-01` Inventory all 75 registered worktrees with path, branch, lock, dirty state, PR, merge status and active process owner.
 - [x] `WT-02` Attempt exact-path cleanup only after a same-command preflight. The two audit candidates became locked before execution, so fail closed and remove zero; never force-remove, unlock or delete dirty/unmerged/active paths.
 - [x] `WT-03` Confirm dry-run prune has no eligible metadata and retain 75 paths: 65 locked plus 10 active/open-PR/unmerged/ignored-state paths.
-- [ ] `WT-04` Add an owner/expiry/heartbeat policy for task worktree locks, then have each owner retire its merged clean worktree; re-audit before every exact removal.
+- [ ] `WT-04` Add an owner/expiry/heartbeat policy for task worktree locks, then have each owner retire its merged clean worktree; re-audit before every exact removal. The repository-owned lease contract and runbook are implemented; live readback finds 75 paths: 1 managed active lease, 63 legacy unmanaged locks and 11 unmanaged worktrees. Completion still requires each legacy owner to adopt the lease or safely retire its path.
 - [ ] `ARCH-01` Freeze the current 175 managed, 22 external, 48 retired and cloud-adapter inventory with owner and last receipt.
 - [ ] `ARCH-02` Add one `loop.json` schema generated from the current registry; do not create a second hand-edited source.
 - [ ] `ARCH-03` Add validated `command`/`adapter` fields and migrate one low-risk loop end to end.
