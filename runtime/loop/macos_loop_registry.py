@@ -15,7 +15,7 @@ FIELDS = {
     "label", "domain", "entrypoint", "cadence", "effect_class", "state_root",
     "log_root", "cleanup", "provider_route",
 }
-OPTIONAL_FIELDS = {"adapter", "browser_owner", "command"}
+OPTIONAL_FIELDS = {"adapter", "browser_owner", "command", "runtime_timeout_seconds"}
 SECRET_FIELD = re.compile(r"token|secret|password|credential|auth|api.?key", re.I)
 
 
@@ -81,6 +81,11 @@ def validate_registry(registry: dict) -> dict:
             not isinstance(value, int) or isinstance(value, bool) or value <= 0
         ):
             _fail(f"{loop_id}: invalid start_interval_seconds")
+        if "runtime_timeout_seconds" in row:
+            timeout = row["runtime_timeout_seconds"]
+            if (not isinstance(timeout, int) or isinstance(timeout, bool) or timeout <= 0
+                    or key == "keep_alive"):
+                _fail(f"{loop_id}: invalid runtime_timeout_seconds")
         if key in {"run_at_load", "keep_alive"} and value is not True:
             _fail(f"{loop_id}: {key} must be true")
         if key == "calendar_interval" and not isinstance(value, (dict, list)):
@@ -188,6 +193,7 @@ def loop_json_schema() -> dict:
                 "additionalProperties": False,
             },
             "provider_route": {"type": "string", "enum": sorted(ROUTES)},
+            "runtime_timeout_seconds": positive_integer,
             "adapter": {"type": "string", "enum": ["exec", "python"]},
             "command": {
                 "type": "array",
@@ -211,6 +217,14 @@ def loop_json_schema() -> dict:
             "adapter": ["command"],
             "command": ["adapter"],
         },
+        "allOf": [{
+            "not": {
+                "required": ["runtime_timeout_seconds"],
+                "properties": {
+                    "cadence": {"required": ["keep_alive"]},
+                },
+            },
+        }],
         "additionalProperties": False,
     }
 

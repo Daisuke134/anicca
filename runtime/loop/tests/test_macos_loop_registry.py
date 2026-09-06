@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from runtime.loop.macos_loop_registry import (
+    loop_json_schema,
     render_job_models,
     render_loop_json_schema,
     validate_registry,
@@ -145,6 +146,31 @@ class MacosLoopRegistryTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_registry({"schema_version": 2, "loops": {"example": explicit_null}})
 
+    def test_runtime_timeout_is_positive_and_scheduled_only(self):
+        value = entry()
+        value["runtime_timeout_seconds"] = 10800
+        self.assertEqual(
+            validate_registry({"schema_version": 2, "loops": {"example": value}})["loops"]["example"],
+            value,
+        )
+        for timeout in (None, 0, -1, True, 1.5, "10800"):
+            invalid = entry()
+            invalid["runtime_timeout_seconds"] = timeout
+            with self.subTest(timeout=timeout), self.assertRaises(ValueError):
+                validate_registry({"schema_version": 2, "loops": {"example": invalid}})
+        continuous = entry()
+        continuous["cadence"] = {"keep_alive": True}
+        continuous["runtime_timeout_seconds"] = 10800
+        with self.assertRaises(ValueError):
+            validate_registry({"schema_version": 2, "loops": {"example": continuous}})
+
+        self.assertEqual(loop_json_schema()["allOf"], [{
+            "not": {
+                "required": ["runtime_timeout_seconds"],
+                "properties": {"cadence": {"required": ["keep_alive"]}},
+            },
+        }])
+
     def test_marketing_dashboard_uses_direct_python_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["marketing-dashboard"]
@@ -161,6 +187,7 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertEqual(row["adapter"], "exec")
         self.assertEqual(row["command"], ["sources", "wake"])
         self.assertEqual(row["entrypoint"], "skills/affiliate/affiliate")
+        self.assertEqual(row["runtime_timeout_seconds"], 10800)
 
     def test_affiliate_composition_uses_direct_exec_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())

@@ -153,6 +153,7 @@
       "label": "ai.anicca.affiliate-source-refresh",
       "log_root": "~/.local/state/life-manager/affiliate-source-refresh/logs",
       "provider_route": "deterministic",
+      "runtime_timeout_seconds": 10800,
       "state_root": "~/.local/state/life-manager/affiliate-source-refresh"
     },
     "affiliate-x-browser": {
