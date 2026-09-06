@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reversibly wire the existing daily mine and weekly review schedules to Gate 8."""
+"""Reversibly wire the existing weekly review schedule to Gate 8."""
 
 from __future__ import annotations
 
@@ -37,16 +37,10 @@ def install(*, repo=REPO_ROOT, home=pathlib.Path.home(), backup_root=None, apply
     backup_root = pathlib.Path(backup_root or ENGINE_ROOT / "evidence" / "schedulers" / "gate8-backups")
     launchctl = launchctl or _default_launchctl
     launch_agents = home / "Library" / "LaunchAgents"
-    daily_path = launch_agents / "ai.anicca.marketing-mine-daily.plist"
     weekly_path = launch_agents / "ai.anicca.marketing-weekly-review.plist"
-    if not daily_path.is_file() or not weekly_path.is_file():
-        raise ValueError("Gate 8 requires the existing daily mine and weekly review plists")
-    daily = _read(daily_path)
+    if not weekly_path.is_file():
+        raise ValueError("Gate 8 requires the existing weekly review plist")
     weekly = _read(weekly_path)
-    daily_args = daily.get("ProgramArguments")
-    expected_runner = str(repo / "skills/earn/marketing-engine/report/scheduled_runner.py")
-    if not isinstance(daily_args, list) or len(daily_args) < 3 or daily_args[-1] != "mine" or expected_runner not in daily_args:
-        raise ValueError("daily mine schedule does not own the canonical mine lane")
 
     expected_weekly_args = [str(repo / "skills/earn/marketing-engine/bin/lm"), "intel", "gap", "--telegram"]
     log_root = home / "Library" / "Logs" / "AniccaMarketing"
@@ -59,12 +53,6 @@ def install(*, repo=REPO_ROOT, home=pathlib.Path.home(), backup_root=None, apply
     result = {
         "schema_version": "marketing.gate8-schedules.v1",
         "mode": "apply" if apply else "plan",
-        "daily": {
-            "path": str(daily_path), "label": daily.get("Label"),
-            "would_change": False, "changed": False,
-            "program_arguments": daily_args,
-            "cadence": daily.get("StartCalendarInterval"),
-        },
         "weekly": {
             "path": str(weekly_path), "label": weekly.get("Label"),
             "would_change": weekly_change, "changed": False,

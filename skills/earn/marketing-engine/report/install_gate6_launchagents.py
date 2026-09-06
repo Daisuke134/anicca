@@ -19,7 +19,6 @@ REPO_ROOT = HERE.parents[3]
 SCHEDULED_RUNNER = HERE / "scheduled_runner.py"
 DEFAULT_LAUNCH_DIR = pathlib.Path.home() / "Library" / "LaunchAgents"
 MAPPINGS = {
-    "ai.anicca.marketing-mine-daily": "mine",
     "ai.anicca.marketing-score-daily": "score",
     "ai.anicca.marketing-metrics-daily": "metrics",
     "ai.anicca.marketing-dashboard": "dashboard",
