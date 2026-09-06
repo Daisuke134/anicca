@@ -239,7 +239,7 @@ def whisper_transcriber(media: pathlib.Path, destination: pathlib.Path,
     completed = subprocess.run(
         ["whisper", str(media), "--model", config["model"], "--device", config["device"],
          "--language", language, "--task", "transcribe", "--output_dir", str(destination),
-         "--output_format", "json", "--verbose", "False", "--word_timestamps", "True"],
+         "--output_format", "json", "--verbose", "False"],
         text=True, capture_output=True, timeout=600, check=False,
     )
     if completed.returncode != 0:
