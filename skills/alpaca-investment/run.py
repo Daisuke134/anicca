@@ -183,6 +183,10 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         stage = "allocator_read"
         allocator_snapshot = read_allocator_snapshot(
             credentials_path=credentials_path, cli_path=cli_path)
+        unresolved = reconciliation.get("unresolved")
+        if isinstance(unresolved, bool) or not isinstance(unresolved, int) or unresolved != 0:
+            raise ValueError("investment_unresolved_intent")
+        allocator_snapshot["unresolved_intents"] = unresolved
         candidates = build_candidates(allocator_snapshot)
         stage = "allocation_decide"
         decision = choose(

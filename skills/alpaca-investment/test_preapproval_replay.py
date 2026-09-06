@@ -84,11 +84,11 @@ class PreapprovalReplayTest(unittest.TestCase):
                 return {"client_order_id": client_order_id, "status": "filled"}
 
             first = effect_store.reconcile_started(ledger, find_order)
-            self.assertEqual(first, {"pending": 1, "reconciled": 1})
+            self.assertEqual(first, {"pending": 1, "reconciled": 1, "unresolved": 0})
 
             restarted_store = importlib.reload(effect_store)
             second = restarted_store.reconcile_started(ledger, find_order)
-            self.assertEqual(second, {"pending": 0, "reconciled": 0})
+            self.assertEqual(second, {"pending": 0, "reconciled": 0, "unresolved": 0})
             self.assertEqual(broker_reads, [sealed["client_order_id"]])
 
             sends: list[str] = []
