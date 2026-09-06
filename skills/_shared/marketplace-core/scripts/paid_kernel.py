@@ -294,11 +294,24 @@ def main(argv: list[str] | None = None) -> int:
                           state_root=args.state_root.expanduser().resolve(),
                           max_workers=args.max_workers)
     except Exception as error:
-        result = {
-            "status": "failed", "observed": 0, "actionable": 0, "effect": 0, "readback": 0,
-            "failed": 1, "pending": 0, "failed_step": "provider_inventory",
-            "error_type": type(error).__name__, "items": [],
-        }
+        wait_reason = getattr(error, "paid_wait_reason", None)
+        remaining = getattr(error, "paid_remaining_work", None)
+        if (isinstance(wait_reason, str) and wait_reason.strip()
+                and isinstance(remaining, list) and remaining
+                and all(isinstance(value, str) and value.strip() for value in remaining)):
+            result = {
+                "status": "pending", "observed": 0, "actionable": 0,
+                "effect": 0, "readback": 0, "failed": 0, "pending": 1,
+                "items": [{"work_id": "__provider_inventory__", "status": "pending",
+                           "reason": wait_reason.strip(), "remaining_work": remaining,
+                           "effect": 0, "readback": 0, "failed": 0}],
+            }
+        else:
+            result = {
+                "status": "failed", "observed": 0, "actionable": 0, "effect": 0, "readback": 0,
+                "failed": 1, "pending": 0, "failed_step": "provider_inventory",
+                "error_type": type(error).__name__, "items": [],
+            }
     _write(args.output.expanduser().resolve(), result)
     return int(result["failed"] > 0)
 
