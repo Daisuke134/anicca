@@ -26,6 +26,8 @@ from gig_disk_guard import disk_headroom_ok  # noqa: E402
 
 DEFAULT_STEP_TIMEOUT_SECONDS = 2100
 TARGETED_READBACK_TIMEOUT_SECONDS = 180
+TERMINAL_RECONCILIATION_TIMEOUT_SECONDS = 90
+TERMINAL_RECONCILIATION_CLEANUP_TIMEOUT_SECONDS = 15
 DM_CONTEXT_TIMEOUT_SECONDS = 180
 # One prepare child owns up to three 60-minute production rounds plus three 30-minute reviews.
 # Its outer deadline must not expire before those already-bounded inner steps can settle.
@@ -134,7 +136,7 @@ MAX_FILE_REVIEW_ITERATIONS = 1
 PAID_REMOTE_WAIT_RECHECK_SECONDS = 3600
 PAID_MAX_PARALLEL_PROJECTS = 8
 PAID_MAX_PARALLEL_READBACKS = PAID_MAX_PARALLEL_PROJECTS
-PAID_TERMINAL_RECONCILES_PER_WAKE = 2
+PAID_TERMINAL_RECONCILES_PER_WAKE = 1
 MANUAL_ONLY_TALKROOM_IDS = frozenset()
 PAID_SOURCE_CENSUS_VERSION = "paid-source-census-v4"
 # The skills a paid order may be built with. A skill the lane cannot see is a skill it will
@@ -757,7 +759,7 @@ def _reconcile_absent_talkrooms(args, open_items: list[dict[str, Any]]) -> dict[
         try:
             _run(
                 _collector(args, "selected-talkroom-only", snapshot, base, item_path, item),
-                "terminal_reconciliation", timeout=TARGETED_READBACK_TIMEOUT_SECONDS,
+                "terminal_reconciliation", timeout=TERMINAL_RECONCILIATION_TIMEOUT_SECONDS,
                 env=_fresh_child_env(args, owner=owner),
             )
             observed = {**item, **_row(_load(snapshot), room)}
@@ -796,7 +798,8 @@ def _reconcile_absent_talkrooms(args, open_items: list[dict[str, Any]]) -> dict[
                 subprocess.run(
                     [sys.executable, str(args.cdp_helper), "close-owned", "--owner", owner],
                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                    timeout=15, check=False, env=_fresh_child_env(args, owner=owner),
+                    timeout=TERMINAL_RECONCILIATION_CLEANUP_TIMEOUT_SECONDS,
+                    check=False, env=_fresh_child_env(args, owner=owner),
                 )
             except (OSError, subprocess.TimeoutExpired):
                 pass

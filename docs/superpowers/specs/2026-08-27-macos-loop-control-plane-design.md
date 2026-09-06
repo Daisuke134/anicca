@@ -193,6 +193,11 @@ completion remain separate.
    completed and replay-zero; advance every other actionable purchased room independently to a useful
    buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal
    delivery remains off unless the separately defined authority condition becomes true.
+   - [x] Bound historical terminal-room reconciliation so it cannot consume the Paid five-minute
+     cadence. Each wake rotates through at most one absent/terminal candidate with a dedicated
+     90-second collector timeout and 15-second owned-target cleanup budget (105 seconds worst case,
+     below half the cadence); buyer-targeted readback retains its separate 180-second timeout.
+     Paid-focused regression tests pass (108).
 3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
    accounting, every authorized application submitted, exact official readback and replay-zero.
 4. [ ] Integrate the Storefront owner's focused public-main commit and require one verified authorized
