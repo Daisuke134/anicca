@@ -1,11 +1,11 @@
 {
   "schema_version": "marketing.video-tools-lock.v1",
-  "verified_at": "2026-08-01T15:14:25Z",
+  "verified_at": "2026-09-06T23:15:34Z",
   "tools": {
     "yt-dlp": {
-      "version": "2026.07.04",
+      "version": "2026.08.19",
       "install": "homebrew",
-      "source_url": "https://github.com/yt-dlp/yt-dlp/releases/tag/2026.07.04"
+      "source_url": "https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19"
     },
     "openai-whisper": {
       "version": "20250625",
