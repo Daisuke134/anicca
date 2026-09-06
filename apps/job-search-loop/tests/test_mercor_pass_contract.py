@@ -20,12 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class MercorPassContractTests(unittest.TestCase):
-    def test_mercor_runs_every_thirty_minutes_in_all_scheduler_declarations(self):
+    def test_mercor_is_retired_locally_but_keeps_portable_thirty_minute_cadence(self):
         registry = json.loads((ROOT.parents[1] / "config" / "loop-registry.json").read_text())
-        self.assertEqual(
-            registry["loops"]["job-search-mercor"]["cadence"]["start_interval_seconds"],
-            1800,
-        )
+        self.assertNotIn("job-search-mercor", registry["loops"])
+        self.assertIn("ai.anicca.job-search-mercor", registry["retired_labels"])
         loop = tomllib.loads((ROOT.parents[1] / "loops" / "job-hunter" / "loop.toml").read_text())
         self.assertEqual(loop["jobs"]["mercor"]["interval_seconds"], 1800)
         provider_registry = (ROOT.parents[1] / "loops" / "job-hunter" / "registry.yaml").read_text()

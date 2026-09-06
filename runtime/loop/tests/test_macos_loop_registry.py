@@ -62,6 +62,11 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertNotIn("telegram-bot", registry["loops"])
         self.assertIn("ai.anicca.telegram-bot", registry["retired_labels"])
 
+    def test_unused_job_search_browser_is_retired_after_shared_owner_readback(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        self.assertNotIn("job-search-browser", registry["loops"])
+        self.assertIn("ai.anicca.job-search-browser", registry["retired_labels"])
+
     def test_release_reconciler_is_an_independent_system_owner(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["life-manager-release-reconciler"]

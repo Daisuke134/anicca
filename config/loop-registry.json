@@ -1046,22 +1046,6 @@
       "provider_route": "deterministic",
       "state_root": "~/anicca/skills/earn/x402-sell"
     },
-    "job-search-browser": {
-      "cadence": {
-        "keep_alive": true
-      },
-      "cleanup": {
-        "max_age_days": 14,
-        "max_runs": 100
-      },
-      "domain": "earn",
-      "effect_class": "application",
-      "entrypoint": "apps/job-search-loop/scripts/run-browser.sh",
-      "label": "ai.anicca.job-search-browser",
-      "log_root": "~/.local/state/anicca/job-search/logs",
-      "provider_route": "deterministic",
-      "state_root": "~/.local/state/anicca/job-search"
-    },
     "job-search-daily": {
       "cadence": {
         "start_interval_seconds": 1800
@@ -3191,6 +3175,7 @@
     "ai.anicca.cfo-daily",
     "ai.anicca.dd-keepalive-healthcheck",
     "ai.anicca.hf-gig-release-watch",
+    "ai.anicca.job-search-browser",
     "ai.anicca.job-search-mercor",
     "ai.anicca.job-search-mercor-browser",
     "ai.anicca.larry-anicca-en-v1",

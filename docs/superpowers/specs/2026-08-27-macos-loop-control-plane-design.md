@@ -129,10 +129,14 @@ completion remain separate.
    - [x] Add registry-level browser profile/port ownership validation and record six unique owners:
      Affiliate provider/Impact/X, Gig, Lancers and the shared daily-driver. Duplicate declared
      profiles or ports now fail registry validation before apply.
-   - [ ] Resolve Job Search ownership from official consumer readback. Its dedicated Chromium binds
-     IPv6 `:9222`, while its source consumers address IPv4 `127.0.0.1:9222` and therefore reach the
-     shared daily-driver. Do not guess between retiring the unused dedicated owner and migrating all
-     consumers to a new dedicated port.
+   - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
+     browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
+     ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
+     Chromium bound only IPv6 `[::1]:9222` and held one blank target. Retire that unused Life Manager
+     owner in source and make Job Search healthcheck verify `ai.anicca.life-manager-daily-driver`.
+     Keep the standalone OSS launcher available outside the Life Manager registry. Production still
+     runs the old dedicated owner until a separately safe, approved retirement removes its loaded
+     plist; no browser was stopped or restarted during this source atom.
    - [ ] Inventory every remaining browser/Node/Python owner, then enforce PID ownership and bounded
      context/tab/renderer retention.
 2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
