@@ -44,7 +44,7 @@ jobs:
             AGENTS.md apps/life-manager/lib apps/life-manager/test \
             apps/life-manager/migrations apps/life-manager/package.json \
             apps/life-manager/package-lock.json apps/life-manager/scheduler.js \
-            apps/life-manager/server.js docs/superpowers/specs/2026-09-05-cloud-01-reminder-display-contract.md
+            apps/life-manager/server.js docs/superpowers/specs/2026-09-06-cloud-01-current-main.md
           git rev-parse HEAD > "$RUNNER_TEMP/cloud-review/commit.txt"
           sha256sum "$RUNNER_TEMP/cloud-review/cloud-source.tar.gz" > "$RUNNER_TEMP/cloud-review/archive.sha256"
       - name: Retain tracked-source verification snapshot
