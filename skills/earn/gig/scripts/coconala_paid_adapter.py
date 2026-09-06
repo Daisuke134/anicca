@@ -203,7 +203,7 @@ def _load_paid_direct():
     return module
 
 
-def _decision(row: Mapping[str, Any]) -> dict[str, Any]:
+def _decision(row: Mapping[str, Any], *, allow_formal_delivery: bool = False) -> dict[str, Any]:
     context = row.get("context")
     if not isinstance(context, Mapping):
         raise RuntimeError("coconala_paid_context_unavailable")
@@ -220,6 +220,9 @@ def _decision(row: Mapping[str, Any]) -> dict[str, Any]:
     if mode == "cancellation":
         action = "cancel"
     elif mode == "file" and context.get("delivery_action") == "formal":
+        if not allow_formal_delivery:
+            return {"action": "wait", "reason": "formal_delivery_disabled",
+                    "remaining_work": ["retain prepared delivery until formal delivery is authorized"]}
         action = "formal_delivery"
     elif mode == "file":
         action = "submit"
@@ -236,6 +239,7 @@ def build(argv: list[str]):
     bridge_parser = argparse.ArgumentParser(add_help=False)
     bridge_parser.add_argument("--account-id", default="coconala-primary")
     bridge_parser.add_argument("--bridge-root", type=Path)
+    bridge_parser.add_argument("--allow-formal-delivery", action="store_true")
     bridge_args, paid_argv = bridge_parser.parse_known_args(argv)
     placeholder = str(Path(os.devnull))
     args = paid._parser().parse_args(["--output", placeholder, *paid_argv])
@@ -257,7 +261,9 @@ def build(argv: list[str]):
         effect_runner=bridge.effect,
         readback_reader=bridge.readback,
     )
-    return adapter, _decision
+    def decide(row: Mapping[str, Any]) -> dict[str, Any]:
+        return _decision(row, allow_formal_delivery=bridge_args.allow_formal_delivery)
+    return adapter, decide
 
 
 __all__ = ["CoconalaPaidAdapter", "build"]

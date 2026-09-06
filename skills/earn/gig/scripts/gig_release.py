@@ -79,7 +79,7 @@ JOB_PROCESS_MARKERS = {
     "ai.anicca.hf-gig-browser": "--remote-debugging-port=9223",
     "ai.anicca.hf-gig-apply-direct": "application_direct.py",
     "ai.anicca.hf-gig-storefront-direct": "storefront_direct.py",
-    "ai.anicca.hf-gig-paid-direct": "paid_direct.py",
+    "ai.anicca.hf-gig-paid-direct": "paid_kernel.py",
     "ai.anicca.hf-gig-reply-detector": "reply_detector.py",
     "ai.anicca.article-daily": "article-daily.sh",
     "ai.anicca.article-resume": "article-resume-pending.sh",

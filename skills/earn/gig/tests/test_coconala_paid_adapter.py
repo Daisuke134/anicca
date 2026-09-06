@@ -80,8 +80,13 @@ def test_shared_decision_preserves_coconala_effect_kind() -> None:
                               "_paid_mode": "cancellation"}})["action"] == "cancel"
     assert module._decision({**base, "context": {**base["context"],
                               "_paid_mode": "file", "delivery_action": "progress"}})["action"] == "submit"
-    assert module._decision({**base, "context": {**base["context"],
-                              "_paid_mode": "file", "delivery_action": "formal"}})["action"] == "formal_delivery"
+    formal = {**base, "context": {**base["context"],
+                                   "_paid_mode": "file", "delivery_action": "formal"}}
+    assert module._decision(formal) == {
+        "action": "wait", "reason": "formal_delivery_disabled",
+        "remaining_work": ["retain prepared delivery until formal delivery is authorized"],
+    }
+    assert module._decision(formal, allow_formal_delivery=True)["action"] == "formal_delivery"
     assert module._decision({**base, "context": {**base["context"],
                               "_paid_mode": "answer"}})["action"] == "answer"
 
@@ -108,5 +113,5 @@ def test_default_build_reuses_paid_direct_runtime_without_copying_owner(tmp_path
     ])
     assert isinstance(adapter, module.CoconalaPaidAdapter)
     assert adapter.account_id == "seller-1"
-    assert decide is module._decision
+    assert decide({"context": {"_paid_prepare_status": "no_effect"}}) == {"action": "noop"}
     assert adapter.context_reader.__self__.paid.__file__.endswith("/paid_direct.py")

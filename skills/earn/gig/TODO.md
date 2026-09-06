@@ -214,9 +214,14 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    no-op, durable wait, answer, progress submission, formal delivery and cancellation into the shared
    contract. It does not copy buyer judgment, artifact production or the old admission lifecycle;
    the shared kernel owns bounded concurrency. Focused shared/adapter tests pass 40/40 and the wider
-   Paid/Coconala delivery/project regression passes 147/147 with no external effect. The atom remains
-   unchecked: next route the installed entrypoint through the shared CLI and obtain natural official
-   terminal/readback/replay-zero evidence before merging or marking complete.
+   Paid/Coconala delivery/project regression passes 147/147 with no external effect. The launchd
+   manifest now routes the unchanged Coconala Paid label through `paid_kernel.py` plus the thin
+   adapter, preserves the existing state/evidence/project roots, and omits the adapter's explicit
+   formal-delivery capability flag so formal delivery remains durably disabled. Manifest/release/
+   adapter regressions pass 28/28 (one unrelated stale `watch` CLI assertion is deselected). This
+   routing is pushed but not activated. The atom remains unchecked: next integrate current `main`,
+   release this route, and obtain natural official terminal/readback/replay-zero evidence before
+   merging or marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
