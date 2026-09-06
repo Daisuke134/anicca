@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+import re
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -26,10 +27,13 @@ def _number(value: Any) -> Decimal:
     return number
 
 
-def _instant(value: Any) -> datetime:
-    if not isinstance(value, str) or not value.endswith("Z"):
+def parse_instant(value: Any) -> datetime:
+    if not isinstance(value, str):
         raise ValueError
-    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    normalized = re.sub(
+        r"(\.\d{6})\d+(?=(?:Z|[+-]\d{2}:\d{2})$)", r"\1", value
+    )
+    parsed = datetime.fromisoformat(normalized.replace("Z", "+00:00"))
     if parsed.tzinfo is None:
         raise ValueError
     return parsed.astimezone(timezone.utc)
@@ -48,7 +52,7 @@ def evaluate_entry(snapshot: dict[str, Any], max_loss_usd: Any,
         allocated = _number(snapshot.get("allocated_capital_usd"))
         realized = _number(snapshot.get("realized_pnl_ny_day_usd"))
         unrealized = _number(snapshot.get("unrealized_pnl_usd"))
-        observed = _instant(snapshot.get("observed_at"))
+        observed = parse_instant(snapshot.get("observed_at"))
         current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
         ny_day = current.astimezone(ZoneInfo("America/New_York")).date().isoformat()
         checks = {
