@@ -198,7 +198,7 @@ def build(argv):
     ])
     assert rc == 0
     assert json.loads(output.read_text(encoding="utf-8")) == {
-        "effect": 0, "failed": 0, "items": [], "observed": 0,
+        "actionable": 0, "effect": 0, "failed": 0, "items": [], "observed": 0,
         "pending": 0, "readback": 0, "status": "ok",
     }
 
@@ -221,7 +221,22 @@ def build(argv): return Adapter(), decide
         "--output", str(output),
     ]) == 1
     assert json.loads(output.read_text(encoding="utf-8")) == {
-        "status": "failed", "observed": 0, "effect": 0, "readback": 0,
+        "status": "failed", "observed": 0, "actionable": 0, "effect": 0, "readback": 0,
         "failed": 1, "pending": 0, "failed_step": "provider_inventory",
         "error_type": "RuntimeError", "items": [],
     }
+
+
+def test_no_effect_preserves_shared_lifecycle_classification(tmp_path: Path) -> None:
+    adapter = Adapter([observation("done"), observation("buyer")])
+
+    def classify(row: dict) -> dict:
+        return {"action": "noop", "classification": (
+            "completed" if row["work_id"] == "done" else "awaiting_buyer"
+        )}
+
+    result = paid.run_wake(adapter=adapter, decide=classify, state_root=tmp_path)
+    assert [item["status"] for item in result["items"]] == ["completed", "awaiting_buyer"]
+    assert result["observed"] == 2
+    assert result["actionable"] == result["effect"] == result["failed"] == 0
+    assert result["readback"] == 2

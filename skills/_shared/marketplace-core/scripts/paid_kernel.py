@@ -22,6 +22,9 @@ from typing import Any, Callable, Mapping, Protocol
 
 
 MUTATIONS = frozenset({"answer", "submit", "formal_delivery", "cancel"})
+NO_EFFECT_CLASSIFICATIONS = frozenset({
+    "completed", "awaiting_buyer", "reserved_for_owner", "satisfied_noop", "noop",
+})
 
 
 class PaidAdapter(Protocol):
@@ -168,8 +171,12 @@ def _run_one_locked(adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Map
         raise ValueError("paid_decision_invalid")
     action = _text(decision.get("action"), "action")
     if action == "noop":
-        _write(path, {"version": 1, "observation": row, "status": "noop"})
-        return {"work_id": row["work_id"], "status": "noop", "reason": "no_effect_required",
+        classification = str(decision.get("classification") or "noop").strip()
+        if classification not in NO_EFFECT_CLASSIFICATIONS:
+            raise ValueError("paid_noop_classification_invalid")
+        _write(path, {"version": 1, "observation": row, "status": classification})
+        return {"work_id": row["work_id"], "status": classification,
+                "reason": "no_effect_required",
                 "effect": 0, "readback": 1, "failed": 0}
     if action == "wait":
         reason = _text(decision.get("reason"), "reason")
@@ -240,6 +247,7 @@ def run_wake(*, adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Mapping
     return {
         "status": "ok",
         "observed": len(items),
+        "actionable": sum(item["status"] not in NO_EFFECT_CLASSIFICATIONS for item in items),
         "effect": sum(item["effect"] for item in items),
         "readback": sum(item["readback"] for item in items),
         "failed": sum(item["failed"] for item in items),
@@ -287,7 +295,7 @@ def main(argv: list[str] | None = None) -> int:
                           max_workers=args.max_workers)
     except Exception as error:
         result = {
-            "status": "failed", "observed": 0, "effect": 0, "readback": 0,
+            "status": "failed", "observed": 0, "actionable": 0, "effect": 0, "readback": 0,
             "failed": 1, "pending": 0, "failed_step": "provider_inventory",
             "error_type": type(error).__name__, "items": [],
         }

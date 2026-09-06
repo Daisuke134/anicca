@@ -93,8 +93,9 @@ def test_shared_decision_preserves_coconala_effect_kind() -> None:
 
 def test_shared_decision_maps_existing_terminal_and_wait_states() -> None:
     module = load()
-    assert module._decision({"context": {"_paid_prepare_status": "no_effect"}}) == {
-        "action": "noop"
+    assert module._decision({"context": {"_paid_prepare_status": "no_effect",
+                                         "status": "awaiting_buyer"}}) == {
+        "action": "noop", "classification": "awaiting_buyer"
     }
     assert module._decision({"context": {
         "_paid_prepare_status": "pending", "reason": "external_access",
@@ -113,5 +114,7 @@ def test_default_build_reuses_paid_direct_runtime_without_copying_owner(tmp_path
     ])
     assert isinstance(adapter, module.CoconalaPaidAdapter)
     assert adapter.account_id == "seller-1"
-    assert decide({"context": {"_paid_prepare_status": "no_effect"}}) == {"action": "noop"}
+    assert decide({"context": {"_paid_prepare_status": "no_effect"}}) == {
+        "action": "noop", "classification": "satisfied_noop"
+    }
     assert adapter.context_reader.__self__.paid.__file__.endswith("/paid_direct.py")

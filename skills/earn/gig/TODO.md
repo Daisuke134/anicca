@@ -241,9 +241,12 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    Coconala cookie from its unsuccessful login attempt. The pre-diagnosis mode-0600 backup remains at
    `~/.cloak/vault/gig-daily-driver/auth-state.1788710549.json`. It has not been restored because the
    vault is a concurrently shared auth resource and requires owner coordination before overwrite.
-   The atom remains unchecked: coordinate that exact backup/owner state, recover Coconala auth without
-   restarting the browser, then obtain a natural five-room official aggregate and following replay-zero
-   before marking complete.
+   While auth remains gated, the shared aggregate stopped collapsing every zero-effect room into
+   generic `noop`: it now preserves `completed`, `awaiting_buyer`, `reserved_for_owner` and
+   `satisfied_noop`, and reports provider-neutral `observed`, `actionable`, `readback`, `failed` and
+   `pending` counts. Focused Coconala/Lancers/kernel regressions pass 20/20. The atom remains unchecked:
+   coordinate that exact backup/owner state, recover Coconala auth without restarting the browser,
+   then obtain a natural five-room official aggregate and following replay-zero before marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
