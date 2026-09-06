@@ -187,7 +187,7 @@ completion remain separate.
      Keep the standalone OSS launcher available outside the Life Manager registry. Production still
      runs the old dedicated owner until a separately safe, approved retirement removes its loaded
      plist; no browser was stopped or restarted during this source atom.
-   - [ ] Inventory every remaining browser/Node/Python owner, then enforce bounded
+   - [x] Inventory every remaining browser/Node/Python owner, then enforce bounded
      context/tab/renderer retention. Registered browser profile/port/PID ownership is now enforced.
      A `2026-09-06 22:xx JST` read-only host inventory found 12 Chromium roots: six registry-owned,
      CrowdWorks `:9228`, the source-retired but still-loaded Job Search owner, and four external
@@ -208,6 +208,13 @@ completion remain separate.
      wake's isolated process group, waits 15 seconds, then KILLs only that group and records exit 124.
      Continuous keep-alive owners remain exempt. Runner/cleanup regressions pass (20); production remains
      on older immutable releases until the complete gate is merged and applied without browser restart.
+     Descendant aggregation separates Life Manager from 26 external Node processes: continuous non-browser
+     Life Manager services currently retain about one service child each, while OpenClaw/Claude/ChatGPT MCP
+     and provision-browser processes are external ownership and are never killed by this control plane.
+     CrowdWorks and provision-browser labels are explicitly registered as external; Job Search is the sole
+     source-retired browser still loaded from an older production release and remains an apply-time retirement,
+     not permission for an ad-hoc stop. This completes the source inventory/bounds atom; immutable-release
+     application and live boundedness readback remain part of the aggregate production gate below.
 2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
    completed and replay-zero; advance every other actionable purchased room independently to a useful
    buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal
