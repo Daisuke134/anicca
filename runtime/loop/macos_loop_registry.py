@@ -65,22 +65,27 @@ def validate_registry(registry: dict) -> dict:
         if not isinstance(cadence, dict) or len(cadence) != 1 or set(cadence) - CADENCES:
             _fail(f"{loop_id}: cadence must contain exactly one allowed key")
         key, value = next(iter(cadence.items()))
-        if key == "start_interval_seconds" and (not isinstance(value, int) or value <= 0):
+        if key == "start_interval_seconds" and (
+            not isinstance(value, int) or isinstance(value, bool) or value <= 0
+        ):
             _fail(f"{loop_id}: invalid start_interval_seconds")
         if key in {"run_at_load", "keep_alive"} and value is not True:
             _fail(f"{loop_id}: {key} must be true")
         if key == "calendar_interval" and not isinstance(value, (dict, list)):
             _fail(f"{loop_id}: invalid calendar_interval")
         for root_field in ("state_root", "log_root"):
-            if not isinstance(row[root_field], str) or not row[root_field].startswith("~/"):
+            if (not isinstance(row[root_field], str)
+                    or not row[root_field].startswith("~/")
+                    or row[root_field] == "~/"):
                 _fail(f"{loop_id}: {root_field} must be home-relative")
         cleanup = row["cleanup"]
         if not isinstance(cleanup, dict) or set(cleanup) != {"max_runs", "max_age_days"}:
             _fail(f"{loop_id}: cleanup contract is incomplete")
-        if any(not isinstance(cleanup[key], int) or cleanup[key] <= 0 for key in cleanup):
+        if any(not isinstance(cleanup[key], int) or isinstance(cleanup[key], bool)
+               or cleanup[key] <= 0 for key in cleanup):
             _fail(f"{loop_id}: cleanup bounds must be positive integers")
         browser_owner = row.get("browser_owner")
-        if browser_owner is not None:
+        if "browser_owner" in row:
             if not isinstance(browser_owner, dict) or set(browser_owner) != {"profile", "cdp_port"}:
                 _fail(f"{loop_id}: browser_owner contract is incomplete")
             profile = browser_owner["profile"]
@@ -120,3 +125,73 @@ def render_job_models(registry: dict) -> bytes:
         for loop_id in sorted(registry["loops"])
     ]
     return (json.dumps(models, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+
+def loop_json_schema() -> dict:
+    positive_integer = {"type": "integer", "minimum": 1}
+    calendar = {"type": ["object", "array"]}
+    cadence_variants = {
+        "calendar_interval": calendar,
+        "keep_alive": {"const": True},
+        "run_at_load": {"const": True},
+        "start_interval_seconds": positive_integer,
+    }
+    cadence = {
+        "oneOf": [
+            {
+                "type": "object",
+                "required": [name],
+                "properties": {name: contract},
+                "additionalProperties": False,
+            }
+            for name, contract in cadence_variants.items()
+        ],
+    }
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/Daisuke134/life-manager/runtime/loop/loop.schema.json",
+        "title": "Life Manager loop.json",
+        "type": "object",
+        "required": ["loop_id", *sorted(FIELDS)],
+        "properties": {
+            "loop_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+            "label": {"type": "string", "pattern": "^ai\\.anicca\\..*$"},
+            "domain": {"type": "string", "enum": sorted(DOMAINS)},
+            "entrypoint": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^(?!/)(?!(?:\\./)*\\.?$)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+            },
+            "cadence": cadence,
+            "effect_class": {"type": "string", "enum": sorted(EFFECTS)},
+            "state_root": {"type": "string", "pattern": "^~/.+"},
+            "log_root": {"type": "string", "pattern": "^~/.+"},
+            "cleanup": {
+                "type": "object",
+                "required": ["max_age_days", "max_runs"],
+                "properties": {
+                    "max_age_days": positive_integer,
+                    "max_runs": positive_integer,
+                },
+                "additionalProperties": False,
+            },
+            "provider_route": {"type": "string", "enum": sorted(ROUTES)},
+            "browser_owner": {
+                "type": "object",
+                "required": ["cdp_port", "profile"],
+                "properties": {
+                    "cdp_port": {"type": "integer", "minimum": 1, "maximum": 65535},
+                    "profile": {
+                        "type": "string",
+                        "pattern": "^~/(?!\\.\\.(?:/|$))(?!.*\\/\\.\\.(?:/|$)).+",
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        "additionalProperties": False,
+    }
+
+
+def render_loop_json_schema() -> bytes:
+    return (json.dumps(loop_json_schema(), indent=2, sort_keys=True) + "\n").encode()
