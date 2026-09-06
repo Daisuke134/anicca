@@ -187,6 +187,16 @@ class MacosLoopRegistryTest(unittest.TestCase):
             "skills/earn/marketing-engine/report/scheduled_runner.py",
         )
 
+    def test_marketing_mine_daily_uses_direct_python_adapter(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["marketing-mine-daily"]
+        self.assertEqual(row["adapter"], "python")
+        self.assertEqual(row["command"], ["mine"])
+        self.assertEqual(
+            row["entrypoint"],
+            "skills/earn/marketing-engine/report/scheduled_runner.py",
+        )
+
     def test_affiliate_source_refresh_uses_direct_exec_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["affiliate-source-refresh"]

@@ -25,14 +25,7 @@ class ScheduleInstallerTests(unittest.TestCase):
         (self.repo / "skills/earn/marketing-engine/bin/lm").write_text("#!/bin/sh\n")
         (self.repo / "skills/earn/marketing-engine/report").mkdir(parents=True)
         (self.repo / "skills/earn/marketing-engine/report/scheduled_runner.py").write_text("")
-        self.daily = self.launch_agents / "ai.anicca.marketing-mine-daily.plist"
         self.weekly = self.launch_agents / "ai.anicca.marketing-weekly-review.plist"
-        self._write(self.daily, {
-            "Label": "ai.anicca.marketing-mine-daily",
-            "ProgramArguments": ["python3", str(self.repo / "skills/earn/marketing-engine/report/scheduled_runner.py"), "mine"],
-            "WorkingDirectory": str(self.repo),
-            "StartCalendarInterval": {"Hour": 5, "Minute": 30},
-        })
         self._write(self.weekly, {
             "Label": "ai.anicca.marketing-weekly-review",
             "ProgramArguments": ["python3", "/old/weekly_review.py"],
@@ -56,26 +49,21 @@ class ScheduleInstallerTests(unittest.TestCase):
             launchctl=lambda args: 0,
         )
         weekly = plistlib.loads(self.weekly.read_bytes())
-        daily = plistlib.loads(self.daily.read_bytes())
         self.assertTrue(first["weekly"]["changed"])
-        self.assertFalse(first["daily"]["changed"])
         self.assertEqual({"Weekday": 0, "Hour": 21, "Minute": 0}, weekly["StartCalendarInterval"])
         self.assertEqual([str(self.repo / "skills/earn/marketing-engine/bin/lm"), "intel", "gap", "--telegram"], weekly["ProgramArguments"])
-        self.assertEqual("mine", daily["ProgramArguments"][-1])
         self.assertTrue((backup / self.weekly.name).is_file())
         second = installer.install(
             repo=self.repo, home=self.home, backup_root=backup, apply=False,
             launchctl=lambda args: self.fail("launchctl must not run in plan mode"),
         )
         self.assertFalse(second["weekly"]["would_change"])
-        self.assertFalse(second["daily"]["would_change"])
 
-    def test_refuses_daily_schedule_that_no_longer_owns_mine_lane(self):
-        value = plistlib.loads(self.daily.read_bytes())
-        value["ProgramArguments"][-1] = "score"
-        self._write(self.daily, value)
-        with self.assertRaisesRegex(ValueError, "daily mine"):
-            installer.install(repo=self.repo, home=self.home, backup_root=self.root / "b", apply=False)
+    def test_does_not_require_or_inspect_the_registry_owned_daily_job(self):
+        result = installer.install(
+            repo=self.repo, home=self.home, backup_root=self.root / "b", apply=False,
+        )
+        self.assertNotIn("daily", result)
 
 
 if __name__ == "__main__":
