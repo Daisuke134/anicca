@@ -5,8 +5,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 const runtimeJobs = require("./runtime-job-store.js");
 const { createInvestmentStateStore } = require("./investment-state-store.js");
+const { runParityCore, assertLocalCloudParity } = require("./investment-parity-core.js");
 
 const FIXTURE_PATH = path.resolve(__dirname, "fixtures/investment-preapproval-replay.json");
+const PARITY_PATH = path.resolve(__dirname, "fixtures/investment-parity-expected.json");
 const CAPABILITY = "investment.dry-run";
 let pool;
 
@@ -14,18 +16,6 @@ function fiveMinuteSlot(value = new Date()) {
   const milliseconds = value instanceof Date ? value.getTime() : Date.parse(value);
   if (!Number.isFinite(milliseconds)) throw new Error("investment dry-run time invalid");
   return new Date(Math.floor(milliseconds / 300000) * 300000).toISOString();
-}
-
-function runReadOnlyCore(fixture) {
-  const noTrade = fixture && fixture.no_trade;
-  const account = fixture && fixture.observation && fixture.observation.account;
-  if (!noTrade || noTrade.candidate_ref !== "NO_TRADE" || noTrade.gate !== "model_no_trade"
-    || typeof noTrade.reason !== "string" || !account
-    || typeof account.cash !== "string" || typeof account.equity !== "string") {
-    throw new Error("investment dry-run fixture invalid");
-  }
-  return Object.freeze({ decision: noTrade.candidate_ref, gate: noTrade.gate,
-    reason: noTrade.reason, cash: account.cash, equity: account.equity });
 }
 
 function productionDependencies() {
@@ -80,11 +70,14 @@ function makeInvestmentDryRun(stateStore, jobs, opts = {}) {
       || job.capability !== CAPABILITY || job.effect_class !== "none" || job.effect_key !== null) {
       throw new Error("investment dry-run claimed job invalid");
     }
-    const core = runReadOnlyCore(fixture);
-    const coreDigest = crypto.createHash("sha256").update(JSON.stringify(core)).digest("hex");
+    const parity = runParityCore(fixture);
+    const expectedParity = opts.expectedParity || (opts.fixture ? parity
+      : JSON.parse(fs.readFileSync(PARITY_PATH, "utf8")));
+    assertLocalCloudParity(parity, expectedParity);
     const receipt = Object.freeze({ effect_permission: "none", broker_calls: 0, message_calls: 0,
-      deployment: "cloud", mode: owner.mode, decision: core.decision, gate: core.gate,
-      reason: core.reason, cash: core.cash, equity: core.equity, core_digest: coreDigest, fixture_ref: fixtureRef,
+      deployment: "cloud", mode: owner.mode, decision: parity.decision, gate: parity.risk.gate,
+      reason: parity.report.reason, cash: parity.report.cash, equity: parity.report.equity,
+      core_digest: parity.core_digest, idempotency_key: parity.idempotency_key, fixture_ref: fixtureRef,
       observed_at: claimedSlot });
     await jobs.completeJob({ tenantId: owner.uid, jobId: job.job_id, attempt: job.attempt,
       workerId, receipt });
@@ -109,5 +102,5 @@ function startInvestmentDryRunLoop(opts = {}) {
   return setTimer(run, 300000);
 }
 
-module.exports = { CAPABILITY, fiveMinuteSlot, runReadOnlyCore, makeInvestmentDryRun,
+module.exports = { CAPABILITY, fiveMinuteSlot, makeInvestmentDryRun,
   runInvestmentDryRun, startInvestmentDryRunLoop };

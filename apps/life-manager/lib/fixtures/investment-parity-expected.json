@@ -1,0 +1,1 @@
+{"core_digest":"85ac90e0027acd0c57ac0a81ef01db1a02c8a2b5b59ae50774fe2a40ec89f259","decision":"NO_TRADE","idempotency_key":"e66dc8de6083d2d2d716d99a81358e2672d965c07cbff1f923c86703172c4c9d","report":{"cash":"100000.00","equity":"100000.00","reason":"Fixture has no directional evidence"},"risk":{"approved":false,"effect_permission":"none","gate":"model_no_trade"}}
