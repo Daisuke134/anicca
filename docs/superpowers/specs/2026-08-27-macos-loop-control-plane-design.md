@@ -167,6 +167,9 @@ completion remain separate.
      ledger and put close/release in `finally` beginning immediately after target creation. Attach,
      evaluate or navigation failure can no longer bypass cleanup. Session and ownership tests pass
      (18).
+   - [x] Make the shared raw-CDP CLI require an explicit or environment owner for `new` and `close`.
+     New targets are atomically claimed under the same per-owner limit and closed on claim failure;
+     foreign close fails before any CDP mutation. Browser CLI/session/ownership tests pass (22).
    - [ ] Close the remaining live-retention gap. A source-driven 25-cycle open/close probe left zero
      lease and target-owner rows and did not increase page count (2 before/after). A later 5x10 probe
      also left both ledgers empty and reduced Chromium RSS from 1.21 GiB to 1.06 GiB, but concurrent
