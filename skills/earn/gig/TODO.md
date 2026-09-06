@@ -323,6 +323,18 @@ does not start them and does not reorder anyone's cursor to fit them:
    `continuing_after_source_failure`, `must_stop`, `next_cursor`, `next_cursor_path`. Each needs its
    own reading of whether the unbound path is reachable, which is a different change from the one
    that added the guard.
+   **The first diagnosis was wrong, and the title it now carries is what corrected it.** The next
+   wake reported `title='ご指定のページが見つかりませんでした | ココナラ'` — a real 404, not a false
+   positive on the pattern, and not a stale base URL either. Run
+   `gig-apply-direct-1788704318844213000-62661` shows why: the pass had exactly one required source,
+   `single:new`, and its cursor was on `?page=9` after `?page=8` had rendered normally. The lane had
+   simply walked off the end of the listing.
+   So the fatal error was two mistakes stacked: running out of pages was read as the source being
+   gone, and with a single required source there was then no successor to move to, so every wake
+   failed with nothing actually wrong. Fixed by restarting the cursor at the source's first page
+   when a not-found lands on `?page=N` with N ≥ 2 — for a newest-first firehose, reading it again
+   means starting from the newest. A not-found on the first page still fails loudly, because that
+   one really is a missing source.
 
 What is true once all five are checked: a stranger clones this repository, sets `TELEGRAM_BOT_TOKEN`
 and `TELEGRAM_CHAT_ID`, runs an Apply lane, and receives the same reporting Dais receives today —

@@ -88,3 +88,69 @@ def test_the_default_kind_stays_access_denied_for_callers_that_pass_none():
         Path("/tmp"), failures, "single:new", "refresh",
     )
     assert failures["single:new"]["error"] == "source_access_denied"
+
+
+def _cursor(tmp_path: Path, next_url: str, source_id: str = "single:new") -> Path:
+    path = tmp_path / "b2-coverage-cursor.json"
+    path.write_text(json.dumps({
+        "source_id": source_id,
+        "previous_url": "https://coconala.com/requests?page=8&recruiting=true&sort=new",
+        "next_url": next_url,
+        "reason": "next_page",
+        "prior_inspected_request_ids": [],
+    }), encoding="utf-8")
+    return path
+
+
+def test_running_off_the_last_page_restarts_the_source_instead_of_failing(tmp_path):
+    """The exact production shape: page 8 rendered, page 9 does not exist.
+
+    Measured 2026-09-06 on run gig-apply-direct-1788704318844213000-62661. `single:new` was the
+    only required source, so 'missing source' left no successor to move to and the pass failed --
+    every wake, with nothing actually wrong.
+    """
+    path = _cursor(tmp_path, "https://coconala.com/requests?page=9&recruiting=true&sort=new")
+
+    assert application_direct._restart_cursor_after_pagination_end(
+        path, "single:new", "source_not_found") is True
+
+    cursor = json.loads(path.read_text(encoding="utf-8"))
+    assert cursor["reason"] == "restart_after_pagination_end"
+    assert cursor["previous_url"] == ""
+    # Back to the first page, with the source's own filters intact and no page parameter.
+    assert cursor["next_url"] == "https://coconala.com/requests?recruiting=true&sort=new"
+
+
+def test_a_first_page_that_is_missing_is_a_real_missing_source(tmp_path):
+    """No page parameter means the source itself answered 404, which must still fail loudly."""
+    path = _cursor(tmp_path, "https://coconala.com/requests?recruiting=true&sort=new")
+    assert application_direct._restart_cursor_after_pagination_end(
+        path, "single:new", "source_not_found") is False
+
+
+def test_page_one_is_not_treated_as_an_overrun(tmp_path):
+    path = _cursor(tmp_path, "https://coconala.com/requests?page=1&recruiting=true&sort=new")
+    assert application_direct._restart_cursor_after_pagination_end(
+        path, "single:new", "source_not_found") is False
+
+
+def test_an_access_denial_is_never_restarted_as_pagination(tmp_path):
+    path = _cursor(tmp_path, "https://coconala.com/requests?page=9&recruiting=true&sort=new")
+    assert application_direct._restart_cursor_after_pagination_end(
+        path, "single:new", "source_access_denied") is False
+
+
+def test_a_cursor_for_another_source_is_left_alone(tmp_path):
+    path = _cursor(tmp_path, "https://coconala.com/requests?page=9&recruiting=true&sort=new")
+    assert application_direct._restart_cursor_after_pagination_end(
+        path, "single:keyword", "source_not_found") is False
+    assert json.loads(path.read_text(encoding="utf-8"))["reason"] == "next_page"
+
+
+def test_a_missing_or_unreadable_cursor_does_not_pretend_to_restart(tmp_path):
+    assert application_direct._restart_cursor_after_pagination_end(
+        tmp_path / "absent.json", "single:new", "source_not_found") is False
+    broken = tmp_path / "broken.json"
+    broken.write_text("{ not json", encoding="utf-8")
+    assert application_direct._restart_cursor_after_pagination_end(
+        broken, "single:new", "source_not_found") is False
