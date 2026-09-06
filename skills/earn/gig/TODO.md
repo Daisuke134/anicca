@@ -185,6 +185,11 @@ Two measured facts decide the standard, and they point in opposite directions:
    redrive live in `_shared/marketplace-core/`, all three marketplaces resolve through them, and
    `earn/gig/scripts/telegram_outbox.py` is gone. Sequenced with the Paid and Storefront owners,
    because two of the importers are theirs; this owner does not do it unilaterally.
+   Proven in production: release `20260906T212050-363b78ce`, nine labels repointed onto it
+   (Coconala Apply, six Lancers lanes, two CrowdWorks lanes), and Lancers then delivered three wake
+   reports through the migrated shared loop — `message_id` 62166 (application), 62168 (paid), 62170
+   (negotiate). Consolidating those nine labels onto one release also made three old releases
+   collectable, reclaiming 1.77 GB with free space back from 9.9 GiB to 11 GiB.
    The Lancers private delivery loop is now closed too: `earn/lancers/scripts/telegram_report.py`
    drains through the shared `deliver_pending`, adapting only its `SendResult` shape. All three
    outcomes were checked against the old behaviour — a numeric ack lands `delivered` with the id
