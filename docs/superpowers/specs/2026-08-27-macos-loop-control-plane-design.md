@@ -159,6 +159,15 @@ completion remain separate.
    - [x] Route Coconala Paid, Apply, Reply and Storefront through memory admission before their
      existing disk guard. Their business argv and modes remain unchanged; only a new unsafe-memory
      wake is deferred. Dispatch, memory and browser-owner tests pass (24).
+   - [x] Route Gig's legacy `cdp_nav_snapshot.hidden_page_target` through the shared target-owner
+     ledger. It claims immediately after creation and releases after close; a killed helper leaves
+     an attributable row instead of an unknowable tab. New and existing navigation/ownership tests
+     pass (19).
+   - [ ] Close the remaining live-retention gap. A source-driven 25-cycle open/close probe left zero
+     lease and target-owner rows and did not increase page count (2 before/after). A later 5x10 probe
+     also left both ledgers empty and reduced Chromium RSS from 1.21 GiB to 1.06 GiB, but concurrent
+     old-release lanes moved total pages 3→5 and renderers 6→9. Four stable unowned legacy pages and
+     transient unowned hidden targets remain, so sustained host-wide boundedness is not yet proved.
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
