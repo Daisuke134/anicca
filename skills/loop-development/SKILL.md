@@ -22,8 +22,9 @@ locked worktree -> focused test -> merged main -> immutable release -> lm-loop a
    arguments, latest terminal event, and official effect receipt. Never infer
    production from a checkout or PID.
 2. Fetch and record `HEAD`, upstream, `origin/main`, and dirty state. Work only
-   in a dedicated linked worktree. For production validation, run `git worktree
-   lock --reason '<task>' <path>`. Never edit the shared checkout.
+   in a dedicated linked worktree. Acquire and renew its owner/task lease with
+   `scripts/worktree-lease.py`; see `docs/runbooks/worktree-lifecycle.md`. Never
+   edit the shared checkout.
 3. Name the exact loop IDs and files owned by one registry TODO. Do not modify a
    sibling loop unless the root cause is its shared runtime boundary.
 
@@ -96,8 +97,9 @@ locked worktree -> focused test -> merged main -> immutable release -> lm-loop a
   loaded release, active run, receipt, ledger, credential, and session.
 - 500-loop scale, clean-user install, reboot recovery, natural pass, official
   effect separation, gitleaks, and replay-zero pass.
-- The worktree is clean, merged, and unused before it is unlocked and removed.
-  Never remove another session's dirty, unmerged, locked, or active worktree.
+- The worktree is clean, merged, and unused before its owner unlocks and removes
+  the exact path. Lease expiry only requests owner verification; it never permits
+  deletion. Never remove another session's dirty, unmerged, locked, or active worktree.
 
 ## One runtime table
 
