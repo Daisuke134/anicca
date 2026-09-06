@@ -136,7 +136,11 @@ class TelegramReportTests(unittest.TestCase):
             "observed_count": 13, "eligible_count": 1, "submitted": False,
             "verified_count": 0, "error": "submission_uncertain",
         }, pending=1, blocker="submission_uncertain"))
-        for value in ("observed 13", "qualified 1", "submitted 0", "newly verified 0", "pending 1", "cumulative verified 14", "submission_uncertain"):
+        # The wake report is Japanese narrative now, but every stage must still be separately
+        # readable -- observed is not qualified, qualified is not submitted, submitted is not
+        # verified -- and the warning must name the blocker rather than just showing a triangle.
+        for value in ("公開案件は13件", "適合候補は1件", "新しい応募は送信していません",
+                      "公式確認は0件", "累計14件", "確認待ちは1件", "submission_uncertain"):
             self.assertIn(value, message)
     def test_no_eligible_does_not_turn_receipts_into_revenue(self):
         report = _load_report()
@@ -144,16 +148,24 @@ class TelegramReportTests(unittest.TestCase):
             "observed_count": 13, "eligible_count": 0, "submitted": False,
             "verified_count": 0, "reason": "no_eligible_project",
         }))
-        self.assertIn("blocker none", message)
-        self.assertIn("売上: unknown", message)
+        # 14 official application receipts are not 14 of revenue. The report must say the revenue
+        # was not computed, and must never render a receipt count where a yen amount belongs.
+        self.assertIn("✅", message)
+        self.assertIn("売上とAI処理費は集計していません", message)
         self.assertNotIn("売上: 14", message)
+        self.assertNotIn("売上14", message)
     def test_reconciled_application_does_not_keep_stale_submission_blocker(self):
         report = _load_report()
         message = report.render_snapshot(_snapshot(report, {
             "observed_count": 2, "eligible_count": 2, "submitted": False,
             "verified_count": 0, "error": "submission_uncertain",
         }, pending=0, verified=15))
-        self.assertIn("cumulative verified 15 / pending 0 / blocker none", message)
+        # Nothing is pending any more, so submission_uncertain is resolved: the report must show a
+        # clean wake, not carry yesterday's blocker forward.
+        self.assertIn("累計15件", message)
+        self.assertIn("確認待ちは0件", message)
+        self.assertIn("✅", message)
+        self.assertNotIn("submission_uncertain", message)
     def test_storefront_states_are_separate_and_mismatch_is_warning(self):
         report = _load_report()
         message = report.render_snapshot(_snapshot(report, {"observed_count": 1}, storefront={
@@ -168,10 +180,16 @@ class TelegramReportTests(unittest.TestCase):
     def test_timestamps_and_actual_cost_are_explicitly_unknown_or_labeled(self):
         report = _load_report()
         message = report.render_snapshot(_snapshot(report, {"observed_count": 1}))
-        self.assertIn("source_observed_at", message)
-        self.assertIn("official_readback_observed_at", message)
-        self.assertIn("provider event time: unknown", message)
-        self.assertIn("AI処理費: unknown (meter未接続)", message)
+        # Unknown must stay explicitly unknown rather than becoming a plausible number. The
+        # snapshot is where these values live; the message must not invent one either.
+        snapshot = _snapshot(report, {"observed_count": 1})
+        # Known values stay exactly as observed; unknown ones stay None rather than becoming a
+        # plausible number, and the cost carries its own explicit label.
+        self.assertEqual(snapshot["source_observed_at"], "2026-08-13T09:00:00Z")
+        self.assertEqual(snapshot["official_readback_observed_at"], "2026-08-13T08:59:00Z")
+        self.assertIsNone(snapshot["provider_event_time"])
+        self.assertEqual(snapshot["actual_ai_cost"], "unknown (meter未接続)")
+        self.assertIn("売上とAI処理費は集計していません", message)
         self.assertNotIn("qualification cost", message)
         self.assertNotIn("file mtime", message)
     def test_semantic_dedupe_is_daily_and_state_change_sensitive(self):
@@ -256,7 +274,9 @@ class TelegramReportTests(unittest.TestCase):
             state.write_text('{"fingerprints":[],"pending":{}}\n', encoding="utf-8")
             snapshot = report.collect_snapshot(application_log=log, state_path=state, ledger_database=root / "ledger.sqlite3", storefront={"published": 0, "paused": 0, "hidden": 0, "draft": 0}, ledger_events=[], now="2099-01-01T00:00:00Z")
             message = report.render_snapshot(snapshot)
-            self.assertIn("source_observed_at: unknown", message)
+            # The invariant is that `now` is never passed off as the moment the source was
+            # observed. The timestamps left the human message, so assert it where the value lives.
+            self.assertIsNone(snapshot["source_observed_at"])
             self.assertNotIn("2099", message)
     def test_non_positive_or_non_numeric_provider_ids_are_uncertain(self):
         report = _load_report()
