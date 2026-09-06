@@ -86,6 +86,40 @@ def test_acquire_stamps_pid_on_a_fresh_lease(monkeypatch, tmp_path):
     assert saved["gig-task"]["pid"] == os.getppid()
 
 
+def test_acquire_fails_closed_before_creating_context_at_browser_limit(monkeypatch, tmp_path):
+    module = load_module()
+    leases_file = tmp_path / "leases.json"
+    monkeypatch.setenv("CLOAK_CONTEXT_LEASES_FILE", str(leases_file))
+    monkeypatch.setenv("CLOAK_BROWSER_MAX_CONTEXTS", "2")
+    _write_leases(leases_file, {
+        "first": {"context_id": "c1", "target_id": "t1", "pid": os.getpid()},
+        "second": {"context_id": "c2", "target_id": "t2", "pid": os.getpid()},
+    })
+
+    async def must_not_create(*_args, **_kwargs):
+        raise AssertionError("context creation must not run above the browser limit")
+
+    monkeypatch.setattr(module, "_calls", must_not_create)
+    try:
+        module.acquire("third", no_seed=True)
+    except RuntimeError as error:
+        assert str(error) == "browser_context_limit"
+    else:
+        raise AssertionError("new context was admitted above the browser limit")
+
+
+def test_browser_context_limit_rejects_invalid_configuration(monkeypatch):
+    module = load_module()
+    for value in ("0", "129", "not-an-integer"):
+        monkeypatch.setenv("CLOAK_BROWSER_MAX_CONTEXTS", value)
+        try:
+            module._max_contexts()
+        except ValueError as error:
+            assert str(error) == "CLOAK_BROWSER_MAX_CONTEXTS must be an integer from 1 to 128"
+        else:
+            raise AssertionError(f"invalid browser context limit accepted: {value}")
+
+
 def test_acquire_uses_explicit_holder_pid_from_command_substitution_wrapper(monkeypatch, tmp_path):
     module = load_module()
     leases_file = tmp_path / "leases.json"

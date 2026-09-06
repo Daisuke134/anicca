@@ -189,6 +189,13 @@ completion remain separate.
      plist; no browser was stopped or restarted during this source atom.
    - [ ] Inventory every remaining browser/Node/Python owner, then enforce bounded
      context/tab/renderer retention. Registered browser profile/port/PID ownership is now enforced.
+     A `2026-09-06 22:xx JST` read-only host inventory found 12 Chromium roots: six registry-owned,
+     CrowdWorks `:9228`, the source-retired but still-loaded Job Search owner, and four external
+     provisioned/user owners. The Gig owner held 12 pages and 17 renderers; nine pages were live,
+     PID-bound Paid/Apply/Storefront context leases, so global tab deletion would break legitimate
+     parallel work. The shared context lease now admits at most 16 simultaneous contexts per browser
+     by default (override range 1..128), reuses an existing owner's lease at the ceiling, and rejects
+     only a new context with `browser_context_limit`. Focused lease/GC/hang regressions pass (24).
 2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
    completed and replay-zero; advance every other actionable purchased room independently to a useful
    buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal
