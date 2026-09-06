@@ -137,7 +137,9 @@ Two measured facts decide the standard, and they point in opposite directions:
    lm-loop apply` repointed the label (`changed: true`, install event `384c8616248e74c8f5994094`).
    Natural pass `gig-apply-direct-1788695849598369000-63171` on that SHA delivered
    `message_id 62135`, written to `~/gig/telegram-delivery-receipts/`. The installed release holds
-   zero `openclaw` references in both Apply files.
+   zero `openclaw` references in both Apply files. Re-confirmed on the later release `7ddf271a`:
+   pass `gig-apply-direct-1788698159382209000-16112` delivered `message_id 62188` with
+   `transport: sent`.
 2. [x] `APPLY-REPORT-2` Remove the last CrowdWorks Apply shell-out. PASS = `earn/crowdworks/scripts/account.py`
    sends through `telegram_delivery.send_via_shared_client` and resolves its chat from
    `CROWDWORKS_REPORT_CHAT` rather than a repository literal, and one natural credential-request
@@ -280,6 +282,17 @@ does not start them and does not reorder anyone's cursor to fit them:
   `OpenClawTelegramTransport`, used by `paid_direct.py`, `ask_buyer_pass.py`, `checkpoint_via_tg.py`
   and `retainer_lane.py`. Same transport, same defect, different owner.
 - [ ] `STOREFRONT-REPORT-1` (Storefront owner) Retire the `openclaw` exec in `storefront_direct.py`.
+
+8. [ ] `APPLY-REPORT-8` Coconala Apply exits 1 in its report phase while its report succeeds.
+   Found while closing this cursor, and **not caused by it**. On release `7ddf271a` the lane's
+   report is delivered (`message_id 62188`, `transport: sent`) and the pass still ends
+   `entrypoint_exit_1`. The only non-empty stderr is `coverage.stderr`:
+   `{"ok":false,"error":"source_not_found:single:new","error_type":"ParentContractError",`
+   `"error_at":"application_parent.py:953"}` — a discovery failure, not a reporting one. It has
+   occurred 30 times since 2026-09-05 07:48, a day before any change here.
+   PASS = the lane either finds its `single:new` source or reports the discovery failure as its own
+   blocker instead of failing the pass at the report phase, and the launchd exit says which one
+   happened. Today an exit 1 is indistinguishable from a lane that never reported at all.
 
 What is true once all five are checked: a stranger clones this repository, sets `TELEGRAM_BOT_TOKEN`
 and `TELEGRAM_CHAT_ID`, runs an Apply lane, and receives the same reporting Dais receives today —
