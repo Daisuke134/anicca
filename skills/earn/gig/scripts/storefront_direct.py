@@ -3815,15 +3815,18 @@ def _observe_own_page(
             str(expected_image_count if expected_image_count is not None else -1),
         )
     observed = {}
-    for attempt in range(3):
+    # A public page that has not finished rendering is weather, not a verdict on the listing,
+    # so it gets the same settling window every other transient reader in this loop uses --
+    # see `references/transient-vs-fatal.md` in the loop-engineering skill.
+    for attempt in range(5):
         observed = asyncio.run(listing_inventory._eval_json(ws_url, url, expression))
         body = str(observed.get("body") or "")
         image_ids = observed.get("service_image_ids")
         valid = _own_page_readback_valid(observed, service_id, expected_image_count)
         if valid:
             break
-        if attempt < 2:
-            time.sleep(2)
+        if attempt < 4:
+            time.sleep(3)
     else:
         raise RuntimeError("own_candidate_readback_invalid")
     row = {
@@ -5250,6 +5253,10 @@ def _seller_snapshot_from_fresh_tab(default_tab_script: Path, service_id: str) -
             last_error = error
             if attempt >= 2:
                 raise RuntimeError(f"storefront_create_source_snapshot_failed:{type(error).__name__}") from error
+            # Deliberately short, and deliberately not the loop's five-by-three shape: the call
+            # this wraps is `_seller_snapshot_for`, which already waits that long by itself.
+            # Widening here would nest one retry inside another and spend a minute of the wake
+            # on a single service.
             time.sleep(1)
         finally:
             if isinstance(tab, dict) and tab.get("target_id"):
