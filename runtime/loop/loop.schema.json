@@ -2,6 +2,22 @@
   "$id": "https://github.com/Daisuke134/life-manager/runtime/loop/loop.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "allOf": [
+    {
+      "not": {
+        "properties": {
+          "cadence": {
+            "required": [
+              "keep_alive"
+            ]
+          }
+        },
+        "required": [
+          "runtime_timeout_seconds"
+        ]
+      }
+    }
+  ],
   "dependentRequired": {
     "adapter": [
       "command"
@@ -165,6 +181,10 @@
         "shared-agent-runner"
       ],
       "type": "string"
+    },
+    "runtime_timeout_seconds": {
+      "minimum": 1,
+      "type": "integer"
     },
     "state_root": {
       "pattern": "^~/.+",

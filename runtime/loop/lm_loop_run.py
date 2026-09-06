@@ -69,7 +69,9 @@ def _atomic_json(path: Path, value: dict) -> None:
 
 
 def _runtime_limit(entry: dict) -> int | None:
-    return None if entry.get("cadence") == {"keep_alive": True} else 3600
+    if entry.get("cadence") == {"keep_alive": True}:
+        return None
+    return entry.get("runtime_timeout_seconds", 3600)
 
 
 def _memory_admission_deferred(path: Path, started_ns: int) -> bool:
