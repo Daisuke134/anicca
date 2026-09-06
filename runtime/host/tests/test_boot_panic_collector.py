@@ -23,6 +23,7 @@ class BootPanicCollectorTest(unittest.TestCase):
                 "tccd": [],
                 "sandboxd": ["sandboxd_2026-09-03.resource.diag"],
             },
+            "watchdog_mentions": {"WindowServer": True, "tccd": True, "sandboxd": True},
             "panic_text": (
                 "userspace watchdog timeout: no successful checkins from WindowServer; "
                 "blocked through tccd; sandboxd thread limit; compressor 100%"
@@ -39,7 +40,7 @@ class BootPanicCollectorTest(unittest.TestCase):
         self.assertEqual(receipt["boot"]["id"], "A1B2-C3D4")
         self.assertEqual(receipt["component_boundary"], "WindowServer")
         self.assertEqual(receipt["reset_reports"], ["ResetCounter-2026-09-03-064606.diag"])
-        self.assertTrue(receipt["watchdog_evidence"]["tccd"]["mentioned_in_latest_panic"])
+        self.assertTrue(receipt["watchdog_evidence"]["tccd"]["mentioned_in_reports"])
         self.assertEqual(receipt["browser"]["tab_count"], 4)
         serialized = json.dumps(receipt)
         self.assertNotIn("panic_text", serialized)
