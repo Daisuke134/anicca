@@ -32,6 +32,10 @@ Measured incident evidence:
   to loginwindow. Manual console login at `18:18` recreated the Aqua session, after which user
   LaunchAgents and Chromium owners resumed. Therefore the current failure boundary is GUI-session
   loss under host-wide process/browser pressure, followed by an unowned pre-login gap.
+- Disk capacity is a separate failure class. The September 6 Jetsam and WindowServer reports prove
+  memory/compressor exhaustion and a TCC wait; they do not identify disk-full I/O as the trigger.
+  Disk headroom remains independently guarded because a full volume can break atomic state writes,
+  release construction and browser profiles, but disk cleanup is not the repair for this incident.
 - FileVault is off. `sysadminctl` reports automatic login user `anicca`, `autoLoginUser=anicca`, and
   `/etc/kcpassword` exists with root-only permissions. Manual password entry after the panic was not
   caused by missing normal auto-login configuration.
@@ -100,6 +104,22 @@ The control plane manages lifecycle. Existing loop adapters continue to own
 business effects through `plan → execute → reconcile → verify → report`.
 Individual loops MUST NOT implement their own installer, account switcher,
 release selector, monitor, or global cleanup policy.
+
+The control plane is domain-neutral. Gig marketplaces, affiliate revenue,
+trading, publishing, health and future money/life loops reuse the same lifecycle,
+capacity admission, resource ownership, durable cursor, bounded retry, event,
+effect-receipt and recovery primitives. Domain modules add only behavior proven
+common to two real consumers. Provider adapters add only API/DOM/session terms
+and official effect/readback. A loop adds only its objective, model context and
+cursor. New domains must not copy these primitives into their own skill tree or
+introduce a second scheduler, watchdog, provider router, event format or ledger.
+
+```text
+runtime/loop (all domains)
+  -> domain kernel (only proven domain behavior)
+    -> provider adapter (API/DOM/session/effect readback)
+      -> loop objective and cursor
+```
 
 ```mermaid
 flowchart TD

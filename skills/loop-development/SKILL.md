@@ -88,6 +88,24 @@ trigger evidence, first failing component boundary, forbidden recovery actions,
 and the observable acceptance condition. Never claim “self-healing” from PID or
 restart counts; require resumed durable progress and official effect separation.
 
+Reuse in layers. Before adding code to a gig, affiliate, trading, publishing,
+health, or future loop, search the shared runtime and registry first:
+
+1. `runtime/loop` owns lifecycle, admission, durable execution, retry/backoff,
+   events, effect receipts, and recovery for every domain.
+2. A domain module owns behavior genuinely shared by multiple loops in that
+   domain, such as marketplace work items or publishing attribution.
+3. A provider adapter owns only its API/DOM/session vocabulary and official
+   effect/readback implementation.
+4. A loop owns only its business objective, model context, and durable cursor.
+
+Do not copy a shared primitive into a provider or loop directory. Do not extract
+an abstraction from one speculative consumer: route a second real consumer
+through the existing contract first, then move only proven duplicate behavior.
+Keep failure classes separate. Memory pressure, disk pressure, authentication,
+provider failure, and GUI-session loss have different evidence and recovery;
+one threshold or watchdog must not treat them as interchangeable.
+
 ## Develop, merge, and deploy
 
 1. Write the focused failing test first. Cover the real failure boundary:
