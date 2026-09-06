@@ -117,6 +117,38 @@ class MacosLoopRegistryTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "secret-like"):
             validate_registry(secret)
 
+    def test_command_and_adapter_are_validated_as_one_contract(self):
+        value = entry()
+        value.update({"adapter": "python", "command": ["dashboard"]})
+        self.assertEqual(
+            validate_registry({"schema_version": 2, "loops": {"example": value}})["loops"]["example"],
+            value,
+        )
+        for adapter, command in ((None, ["dashboard"]), ("python", None),
+                                 ("shell", ["dashboard"]), ("python", []),
+                                 ("python", [""])):
+            invalid = entry()
+            if adapter is not None:
+                invalid["adapter"] = adapter
+            if command is not None:
+                invalid["command"] = command
+            with self.subTest(adapter=adapter, command=command), self.assertRaises(ValueError):
+                validate_registry({"schema_version": 2, "loops": {"example": invalid}})
+        explicit_null = entry()
+        explicit_null.update({"adapter": None, "command": None})
+        with self.assertRaises(ValueError):
+            validate_registry({"schema_version": 2, "loops": {"example": explicit_null}})
+
+    def test_marketing_dashboard_uses_direct_python_adapter(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["marketing-dashboard"]
+        self.assertEqual(row["adapter"], "python")
+        self.assertEqual(row["command"], ["dashboard"])
+        self.assertEqual(
+            row["entrypoint"],
+            "skills/earn/marketing-engine/report/scheduled_runner.py",
+        )
+
     def test_external_labels_are_explicit_and_cannot_overlap_managed(self):
         value = {"schema_version": 2, "loops": {"example": entry()},
                  "external_labels": ["ai.anicca.tsbridge"]}
@@ -194,6 +226,10 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertEqual(schema["properties"]["effect_class"]["enum"], [
             "account_mutation", "application", "message", "money", "none", "publish", "trade",
         ])
+        self.assertEqual(schema["properties"]["adapter"]["enum"], ["python"])
+        self.assertEqual(schema["properties"]["command"]["items"], {
+            "type": "string", "minLength": 1,
+        })
         self.assertFalse(schema["additionalProperties"])
 
     def test_registry_and_loop_schema_share_boundary_constraints(self):

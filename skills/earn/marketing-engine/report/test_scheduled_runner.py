@@ -34,6 +34,13 @@ class ScheduledRunnerTests(unittest.TestCase):
                 if len(command) > 1 and command[1].endswith((".py", ".sh")):
                     self.assertTrue(pathlib.Path(command[1]).exists())
 
+    def test_managed_loop_defaults_are_outside_the_immutable_release(self):
+        state, evidence = scheduled_runner.default_roots({
+            "LIFE_MANAGER_STATE_ROOT": "/tmp/marketing-dashboard",
+        })
+        self.assertEqual(state, pathlib.Path("/tmp/marketing-dashboard/state"))
+        self.assertEqual(evidence, pathlib.Path("/tmp/marketing-dashboard/evidence/runs"))
+
 
 if __name__ == "__main__":
     unittest.main()
