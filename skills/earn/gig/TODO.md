@@ -203,10 +203,13 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `observed=0`, `effect=0`, `failed=0`, matching the current zero working-contract state. A thin
    Coconala adapter now owns mapping, targeted refresh, cumulative-context, mutation and readback
    seams without copying its business owner. Focused kernel plus both-adapter regressions pass 14/14
-   through checkpoint `7fcfa8fa1`. The atom remains unchecked: next wire Coconala's existing official
-   functions into the adapter's default `build()`, run the complete existing Coconala Paid regression,
-   route the installed entrypoint through the shared CLI, and obtain natural official evidence before
-   merging or marking complete.
+   through checkpoint `7fcfa8fa1`. Default-bridge inspection found one real extraction blocker:
+   normal answers and file delivery already separate prepare from effect/readback, but Coconala
+   cancellation still mutates inside `_prepare_one()`. Connecting that path unchanged would violate
+   the shared kernel's intent-before-effect fence. The atom remains unchecked: first move only the
+   cancellation mutation into the existing effect side, then wire the default `build()`, run the
+   complete existing Coconala Paid regression, route the installed entrypoint through the shared CLI,
+   and obtain natural official evidence before merging or marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
