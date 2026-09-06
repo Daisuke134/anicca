@@ -194,6 +194,14 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `skills/loop-engineering/references/marketplace-paid-lane.md`, moving only orchestration already
    proven identical on Coconala and Lancers into `skills/_shared/marketplace-core/`. Keep auth,
    selectors, provider states and mutations in thin adapters; do not copy `paid_direct.py`.
+   Shared-kernel implementation is in progress on pushed branch `feat/shared-paid-1-20260907`.
+   `paid_kernel.py` now owns per-work durable state, intent-before-effect persistence, same-item OS
+   fencing, different-item concurrency, mutation-time latest-event invalidation, official readback,
+   reconcile-unknown, external waits, process-boundary resume, replay-zero and item-failure isolation.
+   Focused trajectory regressions pass 6/6 at checkpoint `c5c6a7ba3`. The atom remains unchecked:
+   next connect one executable entrypoint plus thin Coconala and Lancers inventory/effect/readback
+   adapters, route both through the kernel, run the existing Paid regressions, and obtain the named
+   natural/official evidence before merging or marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
