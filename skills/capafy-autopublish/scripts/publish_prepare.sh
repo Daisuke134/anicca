@@ -110,7 +110,14 @@ ID="$(python3 packager.py publish-list 2>/dev/null | TITLE="$TITLE" REUSE_AGENT_
 import json,os,sys
 want=os.environ['TITLE'].strip()
 reuse=os.environ.get('REUSE_AGENT_ID','').strip()
-try: lst=json.loads(sys.stdin.read(),strict=False)['agents']['list']
+try:
+ data=json.loads(sys.stdin.read(),strict=False)
+ raw=data.get('agents') if isinstance(data,dict) else None
+ lst=raw.get('list') if isinstance(raw,dict) else raw
+ if data.get('ok') is False or not isinstance(lst,list): raise ValueError('unreadable publish-list')
+ lst=[{'agentId':a.get('agentId',a.get('agent_id')),
+       'name':a.get('name'),
+       'agentStatus':a.get('agentStatus',a.get('agent_status'))} for a in lst if isinstance(a,dict)]
 except Exception: sys.exit(0)
 if reuse:
   rows=[a for a in lst if str(a.get('agentId') or '')==reuse]

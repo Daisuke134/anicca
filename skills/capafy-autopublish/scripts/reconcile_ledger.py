@@ -75,7 +75,19 @@ def server_agents():
             [sys.executable, "packager.py", "publish-list"],
             cwd=PUB, capture_output=True, text=True, timeout=60,
         ).stdout
-        return json.loads(out, strict=False)["agents"]["list"]
+        payload = json.loads(out, strict=False)
+        if not isinstance(payload, dict) or payload.get("ok") is False:
+            raise ValueError(payload.get("error") if isinstance(payload, dict) else "invalid publish-list payload")
+        raw = payload.get("agents")
+        if isinstance(raw, dict):
+            raw = raw.get("list")
+        if not isinstance(raw, list):
+            raise ValueError("publish-list agents is not a list")
+        return [{
+            "agentId": row.get("agentId", row.get("agent_id")),
+            "name": row.get("name"),
+            "agentStatus": row.get("agentStatus", row.get("agent_status")),
+        } for row in raw if isinstance(row, dict)]
     except Exception as e:
         print(f"[reconcile] server read FAILED: {e}", file=sys.stderr)
         return None

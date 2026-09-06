@@ -65,6 +65,20 @@ def test_normalize_agents_returns_exact_slot_and_retry_counts() -> None:
     assert result["agents"][4]["lifecycle"] == "retry"
 
 
+def test_server_agents_accepts_normalized_publish_list(monkeypatch) -> None:
+    module = load_module()
+
+    class Completed:
+        stdout = '{"ok":true,"agents":[{"agent_id":"42","name":"Live","agent_status":"online","agent_type":"run_online","latest_agent_version_id":"v1"}]}'
+
+    monkeypatch.setattr(module.subprocess, "run", lambda *args, **kwargs: Completed())
+    assert module.server_agents() == [{
+        "agentId": "42", "name": "Live", "agentStatus": "online",
+        "agentType": "run_online", "latestAgentVersionId": "v1",
+        "latestVersionName": None, "sales": None, "recentSales": None,
+    }]
+
+
 def test_rejections_consume_the_live_unlisted_cap() -> None:
     module = load_module()
     rows = [

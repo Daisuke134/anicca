@@ -164,7 +164,29 @@ def server_agents():
             [sys.executable, "packager.py", "publish-list"],
             cwd=PUB, capture_output=True, text=True, timeout=90,
         ).stdout
-        return json.loads(out, strict=False)["agents"]["list"]
+        payload = json.loads(out, strict=False)
+        # capafy-publisher changed publish-list from the raw API envelope
+        # {"agents": {"list": [...]}} to its normalized CLI envelope
+        # {"ok": true, "agents": [{"agent_id": ..., "agent_status": ...}]}.
+        # Accept both at this boundary and restore the legacy field names used by
+        # the scheduler.  A malformed or failed CLI result remains unreadable.
+        if not isinstance(payload, dict) or payload.get("ok") is False:
+            raise ValueError(payload.get("error") if isinstance(payload, dict) else "invalid publish-list payload")
+        raw = payload.get("agents")
+        if isinstance(raw, dict):
+            raw = raw.get("list")
+        if not isinstance(raw, list):
+            raise ValueError("publish-list agents is not a list")
+        return [{
+            "agentId": row.get("agentId", row.get("agent_id")),
+            "name": row.get("name"),
+            "agentStatus": row.get("agentStatus", row.get("agent_status")),
+            "agentType": row.get("agentType", row.get("agent_type")),
+            "latestAgentVersionId": row.get("latestAgentVersionId", row.get("latest_agent_version_id")),
+            "latestVersionName": row.get("latestVersionName", row.get("latest_version_name")),
+            "sales": row.get("sales"),
+            "recentSales": row.get("recentSales", row.get("recent_sales")),
+        } for row in raw if isinstance(row, dict)]
     except Exception as e:
         print(f"[inventory_status] server read FAILED: {e}", file=sys.stderr)
         return None
