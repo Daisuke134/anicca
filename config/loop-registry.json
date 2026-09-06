@@ -2469,6 +2469,7 @@
       "state_root": "~/.local/state/life-manager/sbi-usdc-monitor"
     },
     "self-improve-evolve": {
+      "adapter": "python",
       "cadence": {
         "start_interval_seconds": 21600
       },
@@ -2476,9 +2477,12 @@
         "max_age_days": 14,
         "max_runs": 100
       },
+      "command": [
+        "self-improve"
+      ],
       "domain": "system",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
       "label": "ai.anicca.self-improve-evolve",
       "log_root": "~/.openclaw/logs",
       "provider_route": "shared-agent-runner",
