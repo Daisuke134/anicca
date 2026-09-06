@@ -4166,7 +4166,15 @@ must be one of these characters, which is exactly what Coconala can attach `ま�
 {TITLE_STEM_CONTINUATIVE_ENDINGS} -- e.g. `...を開発し`,
 `...を執筆し`, `...を実装し`. It must never end in a bare noun such as `...アプリ` or `...システム`
 (that would render as the ungrammatical `...アプリます`); if the offer is naturally noun-shaped,
-add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. head must state
+add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. A stem that ends in a
+particle is the same mistake wearing different clothes: it is a noun phrase whose verb is
+missing. `...FAQ自動応答Botを` would render as `...FAQ自動応答Botをます`. The particles
+`を`, `の`, `が`, `は`, `と` are refused outright. Do not read the character list above as
+permission for `に`, `で` or `へ` either: those appear in it only because they are the
+continuative of verbs like 死に and 出で, so they are correct only when they genuinely are your
+verb's continuative, never when they are a particle. When the stem you want ends in a particle,
+the verb is the word you left out, so append it: `...Botを構築し`, `...応答を自動化し`,
+`...設定を代行し`. Read your own final word before returning and confirm it is a verb. head must state
 outcome, exact inclusions, exclusions, required inputs and support
 boundary. Write head and body as buyer-facing Japanese prose: never emit a schema field name or an
 English label such as `outcome:`, and never prefix a sentence with a bare label like `含むもの:`. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
