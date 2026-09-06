@@ -159,6 +159,10 @@ completion remain separate.
    - [x] Route Coconala Paid, Apply, Reply and Storefront through memory admission before their
      existing disk guard. Their business argv and modes remain unchanged; only a new unsafe-memory
      wake is deferred. Dispatch, memory and browser-owner tests pass (24).
+   - [x] Preserve that deferral as non-failure across both scheduler classes. Exit `75` now produces
+     a `blocked` runtime event with `memory_admission_deferred`, while the KeepAlive Reply owner uses
+     the shared admission wait mode and remains alive until headroom recovers instead of triggering a
+     launchd restart loop. Focused admission, dispatch, runner and event tests pass (35).
    - [x] Route Gig's legacy `cdp_nav_snapshot.hidden_page_target` through the shared target-owner
      ledger. It claims immediately after creation and releases after close; a killed helper leaves
      an attributable row instead of an unknowable tab. New and existing navigation/ownership tests
@@ -212,8 +216,16 @@ completion remain separate.
      Life Manager services currently retain about one service child each, while OpenClaw/Claude/ChatGPT MCP
      and provision-browser processes are external ownership and are never killed by this control plane.
      CrowdWorks and provision-browser labels are explicitly registered as external; Job Search is the sole
-     source-retired browser still loaded from an older production release and remains an apply-time retirement,
-     not permission for an ad-hoc stop. This completes the source inventory/bounds atom; immutable-release
+     source-retired browser still loaded from an older production release. Full registry apply now retires every
+     declared obsolete label through `launchctl-safe`, verifies it absent, then removes its plist; targeted apply
+     never expands into retirement. Apply regressions pass (37 plus 6 subtests). This remains an apply-time
+     retirement, not permission for an ad-hoc stop.
+     The browser-port owner now starts each browser root in a dedicated process group, forwards signals to that
+     group, and does not release port/profile receipts until all descendants have received bounded TERM/KILL
+     cleanup. A real regression spawns a 60-second grandchild after its root exits and proves the group cannot
+     survive lease release. The shared CDP client also honors the acquired `CDP` lease endpoint, and target
+     ownership defaults to one tab even when a caller omits its limit. Combined browser regressions pass (41).
+     This completes the source inventory/bounds atom; immutable-release
      application and live boundedness readback remain part of the aggregate production gate below.
 2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
    completed and replay-zero; advance every other actionable purchased room independently to a useful
