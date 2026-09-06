@@ -57,6 +57,7 @@ const { createSupabaseCommandStore } = require("./lib/panel-api.js");
 const { handleCalendarOnboardRequest } = require("./lib/calendar-onboard.js");
 const { parseUserCommand, dispatchParsedControl, executeUserCommand } = require("./lib/user-command.js");
 const { parseSlashCommand, slashAliasText, handleSlashCommand } = require("./lib/slash-command.js");
+const { createInvestmentStateStore } = require("./lib/investment-state-store.js");
 const { handleFeedbackMessage, createPostgresFeedbackStore } = require("./lib/feedback-intake.js");
 const { resolveTelegramReply } = require("./lib/telegram-reply.js");
 const { handleInboundReply, handleAskCallback, parseInboundRecipient } = require("./lib/ask.js");
@@ -82,6 +83,8 @@ const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const investmentStateStore = SUPA_URL && SUPA_KEY
+  ? createInvestmentStateStore({ supaUrl: SUPA_URL, supaKey: SUPA_KEY }) : null;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
 let moneyPrinterSource, moneyPrinterRuntimePool, moneyPrinterRuntimeStore;
 function getMoneyPrinterRuntimeStore() {
@@ -1034,10 +1037,12 @@ const server = http.createServer(async (req, res) => {
             const outcome = await handleSlashCommand(slash, row, {
               token: LM_TG_TOKEN, chatId: u.chatId, base: PUBLIC_BASE,
               supaUrl: SUPA_URL, supaKey: SUPA_KEY,
-              // L04.5 has no tenant Investment profile yet (that is L04.6). A linked Cloud tenant
-              // therefore starts at the truthful onboarding state; no broker or scheduler is
-              // reachable from this command path.
-              getInvestmentState: async () => ({ lifecycle: "setup_required" }),
+              // Tenant-bound control state only. Broker credentials remain behind secret:// refs,
+              // and this read path cannot submit an order or start a scheduler.
+              getInvestmentState: (uid) => {
+                if (!investmentStateStore) throw new Error("investment state store unavailable");
+                return investmentStateStore.read(uid);
+              },
             });
             if (outcome.handled) {
               console.log(`[slash] command=${slash.name} action=${outcome.action}${outcome.ok === false ? ` reason=${outcome.reason || "failed"}` : ""}${outcome.providerMessageId == null ? "" : ` provider_message_id=${outcome.providerMessageId}`}`);
