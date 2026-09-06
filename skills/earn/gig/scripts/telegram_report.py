@@ -2030,19 +2030,54 @@ def weekly_message(
     ))
 
 
-class OpenClawTelegramTransport:
+_DELIVERY_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "_shared" / "marketplace-core" / "scripts" / "telegram_delivery.py"
+)
+
+
+def _load_shared_delivery():
+    """The sender Lancers and CrowdWorks already share. Never a CLI."""
+    name = "gig_report_shared_telegram_delivery"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, _DELIVERY_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("marketplace_telegram_delivery_unavailable")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+class GigTelegramTransport:
+    """Reply, Paid, Storefront and the legacy reporters, sending through the in-repo client.
+
+    This used to exec `/opt/homebrew/bin/openclaw` with a 60s timeout. Measured 2026-09-07: 12 of
+    33 Coconala sends in one hour ended `delivery_unknown` with `TimeoutExpired`, while Lancers
+    (37 sends) and CrowdWorks (4) had zero failures -- they already go through this shared client.
+    A CLI is also unusable in a clone of this repository, which forfeits the OSS goal.
+
+    `executable` is still accepted and ignored so the four call sites in other owners' files keep
+    working untouched.
+    """
+
     def __init__(
         self,
         *,
         target: str,
-        executable: Path = Path("/opt/homebrew/bin/openclaw"),
+        executable: Path | None = None,
         run: Callable[..., Any] = subprocess.run,
         receipt_dir: Path | None = None,
         now_ms: Callable[[], int] | None = None,
+        sender: Callable[..., Any] | None = None,
+        env_file: Path | None = None,
     ):
         self.target = str(target)
-        self.executable = Path(executable)
+        self.executable = executable
         self.run = run
+        self.sender = sender
+        self.env_file = env_file
         self.receipt_dir = Path(
             receipt_dir or Path.home() / "gig/telegram-delivery-receipts"
         )
@@ -2054,39 +2089,15 @@ class OpenClawTelegramTransport:
     def send_report(self, message: str, *, event_key: str) -> str:
         message_id = send_email_if_configured(message, event_key=event_key, run=self.run)
         if message_id is None:
-            command = [
-                str(self.executable), "message", "send",
-                "--channel", "telegram", "--target", self.target,
-                "--message", message, "--json",
-            ]
-            try:
-                completed = self.run(
-                    command, stdin=subprocess.DEVNULL, capture_output=True,
-                    text=True, timeout=60, check=False,
-                )
-                if completed.returncode != 0:
-                    raise RuntimeError(
-                        f"Telegram transport failed rc={completed.returncode}"
-                    )
-                provider_output = completed.stdout
-            except subprocess.TimeoutExpired as error:
-                provider_output = error.stdout
-                if not provider_output:
-                    raise
-            if isinstance(provider_output, bytes):
-                provider_output = provider_output.decode("utf-8", errors="strict")
-            try:
-                result = json.loads(provider_output)
-            except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as error:
-                raise RuntimeError("Telegram transport returned invalid JSON") from error
-            payload = result.get("payload") if isinstance(result, dict) else None
-            if isinstance(payload, dict) and payload.get("ok") is False:
-                raise RuntimeError("Telegram provider rejected message")
-            message_id = result.get("messageId") if isinstance(result, dict) else None
-            if not message_id and isinstance(payload, dict):
-                message_id = payload.get("messageId")
+            send = self.sender or _load_shared_delivery().send_via_shared_client
+            result = send(message, chat_id=self.target, env_file=self.env_file)
+            message_id = getattr(result, "provider_id", None)
             if not message_id:
-                raise RuntimeError("Telegram ACK has no message ID")
+                # Raise so the caller records delivery_unknown rather than counting an
+                # unacknowledged message as sent. Same contract as before.
+                raise RuntimeError(
+                    f"Telegram delivery unacknowledged: {getattr(result, 'error', None)}"
+                )
         self.receipt_dir.mkdir(parents=True, exist_ok=True)
         event_digest = hashlib.sha256(event_key.encode("utf-8")).hexdigest()
         receipt = {
@@ -2117,6 +2128,11 @@ class OpenClawTelegramTransport:
                 pass
         return str(message_id)
 
+
+
+# The four call sites that use this live in the Paid and Storefront owners' files; keeping the
+# old name means this fix needs no change in any of them.
+OpenClawTelegramTransport = GigTelegramTransport
 
 def _dispatch_message(
     *, outbox: TelegramOutbox, event_key: str, kind: str, message: str,
@@ -2232,7 +2248,7 @@ def main() -> int:
     # pass_outage owns the canonical reason set and rejects anything outside it.
     parser.add_argument("--reason", default="")
     parser.add_argument("--detail", default="")
-    parser.add_argument("--openclaw", type=Path, default=Path("/opt/homebrew/bin/openclaw"))
+
     parser.add_argument("--events", type=Path)
     parser.add_argument("--evidence", type=Path)
     parser.add_argument("--connector-database", type=Path, default=home / "gig/connector-outbox.sqlite3")
@@ -2280,7 +2296,6 @@ def main() -> int:
     )
     transport = OpenClawTelegramTransport(
         target=args.target,
-        executable=args.openclaw,
         receipt_dir=args.gig_dir / "telegram-delivery-receipts",
     )
     # Drain a few of the rows redrive_unresolved() just reopened, so a redriven
