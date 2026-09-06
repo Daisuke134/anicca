@@ -23,6 +23,7 @@ test("Google Directions success and later cache hit emit separate usage facts", 
   try {
     await directionsRoute("geo:40.730,-73.930", "geo:40.740,-73.980", "key", 2000000, 1000, false, opts);
     await directionsRoute("geo:40.730,-73.930", "geo:40.740,-73.980", "key", 2000000, 1000, false, opts);
+    await directionsRoute("geo:40.730,-73.930", "geo:40.740,-73.980", "key", 2000000, 1000, false, opts);
   } finally {
     globalThis.fetch = oldFetch;
   }
