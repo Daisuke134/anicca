@@ -3464,8 +3464,27 @@ def collect_snapshot_with_readonly_retry(
 
 
 PLANNER_REQUESTS_PER_CONTEXT = 10
-PLANNER_PARALLEL_WORKERS = 2
-APPLICATION_EFFECT_WORKERS = 2
+
+
+def _workers(name: str, default: int) -> int:
+    """Parallelism, overridable so it can be proven rather than argued about.
+
+    Both of these arrived on 2026-09-02 (`claim and parallelize apply planning`,
+    `run apply effects on bounded workers`) and Coconala's last application is from that same day.
+    Since then every listing fails the offer-form read with a *fully rendered* top page -- the shape
+    of reading a page a sibling worker navigated, not of a redirect, a session failure or a markup
+    change. Serial is how the lane worked when it last applied, so serial is the default until
+    concurrent browser ownership is proven safe; the env var restores concurrency without a release.
+    """
+    try:
+        value = int(os.environ.get(name, "") or default)
+    except ValueError:
+        return default
+    return value if value >= 1 else default
+
+
+PLANNER_PARALLEL_WORKERS = _workers("GIG_PLANNER_PARALLEL_WORKERS", 1)
+APPLICATION_EFFECT_WORKERS = _workers("GIG_APPLICATION_EFFECT_WORKERS", 1)
 
 
 def _planner_subsnapshot(

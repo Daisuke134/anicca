@@ -499,8 +499,22 @@ does not start them and does not reorder anyone's cursor to fit them:
    no longer make offers. Authentication is not the issue — the lane reads `応募・スカウト管理`
    normally. The tiebreaker is the route Coconala's own apply button points at, which the lane sees
    (`accepting_control: present`) and discards. It is now captured beside the failure as
-   `accepting_control: {href, tag}`: if it disagrees with `/offers/add/<id>` the provider moved the
-   form, and if it agrees the account cannot use it.
+   `accepting_control: {href, tag}`. It came back `{"href": "", "tag": "button"}` — the apply control
+   is a JavaScript button with no route at all, so neither candidate was ever testable that way and
+   the provider-moved-the-form line of inquiry is closed.
+   **What actually changed is ours, and it is dated.** Two parallelism changes landed on 2026-09-02 —
+   `56feea055 claim and parallelize apply planning` (`PLANNER_PARALLEL_WORKERS`) and
+   `612fc2ec0 run apply effects on bounded workers` (`APPLICATION_EFFECT_WORKERS`) — and Coconala's
+   last application is 2026-09-02 15:05:36 JST. The offer-form URL has not changed since 2026-08-16,
+   through weeks of successful applications, so the route is not the variable. Reading a *fully
+   rendered* top page is the shape of reading a page a sibling worker navigated: a redirect lands
+   somewhere related, an expired session lands on login, and the lane reads `応募・スカウト管理`
+   normally in the same pass. The failure evidence even carries the shard in its path
+   (`refresh-evidence/discovery/shard-0/`).
+   Both knobs now default to serial and are overridable by `GIG_PLANNER_PARALLEL_WORKERS` and
+   `GIG_APPLICATION_EFFECT_WORKERS`, so the hypothesis is testable in production both ways without
+   cutting a release. Serial is how the lane worked on the day it last applied.
+   PASS is unchanged and still owed: a natural wake submits an application with an official readback.
 
 10. [x] `APPLY-REPORT-10` Name the marketplace in the submitted-application report. `report_envelope.py`
    excluded `coconala` from the `[Platform][応募完了]` format, so Coconala fell through to a generic
