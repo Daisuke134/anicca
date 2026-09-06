@@ -131,8 +131,14 @@ class MacosLoopRegistryTest(unittest.TestCase):
             validate_registry({"schema_version": 2, "loops": {"example": executable}})["loops"]["example"],
             executable,
         )
+        no_arguments = entry()
+        no_arguments.update({"adapter": "python", "command": []})
+        self.assertEqual(
+            validate_registry({"schema_version": 2, "loops": {"example": no_arguments}})["loops"]["example"],
+            no_arguments,
+        )
         for adapter, command in ((None, ["dashboard"]), ("python", None),
-                                 ("shell", ["dashboard"]), ("python", []),
+                                 ("shell", ["dashboard"]),
                                  ("python", [""])):
             invalid = entry()
             if adapter is not None:
@@ -195,6 +201,16 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertEqual(row["adapter"], "exec")
         self.assertEqual(row["command"], ["compose", "wake"])
         self.assertEqual(row["entrypoint"], "skills/affiliate/affiliate")
+
+    def test_crowdworks_application_uses_repo_managed_runtime_python(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["crowdworks-revenue-application"]
+        self.assertEqual(row["adapter"], "exec")
+        self.assertEqual(row["command"], [])
+        self.assertEqual(
+            row["entrypoint"],
+            "skills/earn/crowdworks/scripts/application-owner",
+        )
 
     def test_marketing_metrics_daily_uses_direct_python_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())

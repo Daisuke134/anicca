@@ -93,9 +93,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             python, str(lancers / "application_loop.py"), "--json", "--exhaustive",
             "--state-path", str(lancers_state / "application.json"),
         ],
-        "crowdworks-revenue-application": [
-            cloak_python, str(crowdworks / "application_owner.py"),
-        ],
         "crowdworks-revenue-report": [
             cloak_python, str(crowdworks / "telegram_report.py"), "--json",
         ],

@@ -31,8 +31,6 @@ VENV="$HOME/.local/share/life-manager/venv"
 if [ ! -x "$VENV/bin/python" ]; then
   python3 -m venv "$VENV"
 fi
-if ! "$VENV/bin/python" -c 'import jsonschema' >/dev/null 2>&1; then
-  "$VENV/bin/pip" install jsonschema
-fi
+"$VENV/bin/pip" install --disable-pip-version-check -r "$TARGET/requirements-runtime.txt"
 
 exec "$VENV/bin/python" "$TARGET/scripts/life-manager-onboarding-server.py" --open

@@ -119,6 +119,25 @@ class LoopCleanupTest(unittest.TestCase):
                     registry, "job", root, active_run_ids=set())
             self.assertEqual(argv, [sys.executable, str(entrypoint.resolve()), "dashboard"])
 
+    def test_loop_run_preserves_empty_python_adapter_argv(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entrypoint = root / 'application_owner.py'
+            entrypoint.write_text('#!/usr/bin/env python3\n')
+            entrypoint.chmod(0o755)
+            registry = {"schema_version": 2, "loops": {"job": {
+                "label": "ai.anicca.job", "domain": "earn",
+                "entrypoint": "application_owner.py", "adapter": "python",
+                "command": [], "cadence": {"run_at_load": True},
+                "effect_class": "application", "state_root": "~/state",
+                "log_root": "~/state/logs",
+                "cleanup": {"max_runs": 1, "max_age_days": 1},
+                "provider_route": "deterministic"}}}
+            with mock.patch.dict(os.environ, {"HOME": str(root / 'home')}):
+                argv, _ = prepare_loop_run(
+                    registry, "job", root, active_run_ids=set())
+            self.assertEqual(argv, [sys.executable, str(entrypoint.resolve())])
+
     def test_loop_run_preserves_exec_adapter_argv(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
