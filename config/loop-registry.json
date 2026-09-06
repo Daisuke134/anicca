@@ -127,6 +127,7 @@
       "state_root": "~/.local/state/life-manager/affiliate-impact-browser"
     },
     "affiliate-loop": {
+      "adapter": "exec",
       "cadence": {
         "start_interval_seconds": 600
       },
@@ -134,9 +135,13 @@
         "max_age_days": 14,
         "max_runs": 100
       },
+      "command": [
+        "loop",
+        "wake"
+      ],
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/affiliate/affiliate",
       "label": "ai.anicca.affiliate-loop",
       "log_root": "~/.local/state/life-manager/affiliate-loop/logs",
       "provider_route": "deterministic",
