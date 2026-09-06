@@ -121,9 +121,15 @@ owns `CLOUD-01` through `CLOUD-08`. Finish and integrate one cost atom before st
    usage events for 2026-09-06 UTC: Directions failure 5 / USD 0.025 estimated, Geocoding failure
    5 / USD 0.025, and Geocoding success 7 / USD 0.035. The estimates are provider list-price
    accounting events, not a replacement for the Google Cloud invoice.
-2. **COST-02 — stop paid failure replay:** wire `lm_route_cache` to production, add bounded negative
-   cache for deterministic 4xx/no-route and short backoff for timeout/5xx, and prove a later valid route
-   can recover.
+2. **COST-02 — stop paid failure replay (DONE):** wire `lm_route_cache` to production, add bounded
+   negative cache for deterministic 4xx/no-route and short backoff for timeout/5xx, and prove a later
+   valid route can recover. PRs #4291 and #4298 integrated the durable store and the production-observed
+   raw-address fallback gap. Focused route/travel tests passed 135/135; a fresh-process test proves zero
+   additional provider calls during the 30-minute deterministic-failure TTL and recovery after expiry.
+   Production build `342aaf07f` returned HTTP 200, wrote 4 natural success rows and 5 natural
+   `google/no_route` negative rows with TTL 1800 seconds, and the next readback kept paid Directions
+   failures at 5 (zero increase). Network/5xx uses a 120-second backoff. Raw addresses are represented
+   only by opaque SHA-256 cache scopes and are not persisted.
 3. **COST-03 — one route fact:** make travel block, Telegram reminder, and optional call reuse one
    event/version-scoped route result; prove schedule/location changes invalidate it.
 4. **COST-04 — owner and spend guard:** prove exactly one Cloud scheduler owner, add tenant/provider
