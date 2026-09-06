@@ -488,6 +488,19 @@ does not start them and does not reorder anyone's cursor to fit them:
    rendered, returning at a bounded deadline so a genuine redirect is still reported -- with the
    settled page's identity rather than a half-navigated one. Four tests, including the exact
    production sequence.
+   **That was still not the root cause, and the fix is what proved it.** On the settling release the
+   observed title stopped being empty: `url='https://coconala.com/'`,
+   `title='ココナラ - プロが集まる日本最大級のスキルマーケット'`. The page is fully rendered, and what
+   it renders is genuinely Coconala's top page — so `/offers/add/<request_id>` really does redirect,
+   for every listing (71 of 71 on run `gig-apply-direct-1788707655795413000-58204`). The settling
+   window was worth keeping because it removed the ambiguity that hid this, but it did not restore
+   applications.
+   Two candidates remain, with opposite fixes: the provider moved the offer form, or this account may
+   no longer make offers. Authentication is not the issue — the lane reads `応募・スカウト管理`
+   normally. The tiebreaker is the route Coconala's own apply button points at, which the lane sees
+   (`accepting_control: present`) and discards. It is now captured beside the failure as
+   `accepting_control: {href, tag}`: if it disagrees with `/offers/add/<id>` the provider moved the
+   form, and if it agrees the account cannot use it.
 
 10. [x] `APPLY-REPORT-10` Name the marketplace in the submitted-application report. `report_envelope.py`
    excluded `coconala` from the `[Platform][応募完了]` format, so Coconala fell through to a generic
