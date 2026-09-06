@@ -124,6 +124,27 @@ The immediate Paid order therefore remains exactly `SHARED-PAID-1` -> `LANCERS-P
 Mercor, Freelancer.com, Fiverr, Upwork or another authorized marketplace from live contract
 availability and adapter feasibility; the name does not imply that any of them already works.
 
+Why this order is fixed:
+
+1. Close the host P0 first because no browser marketplace owner can be continuously trusted while
+   the Aqua/WindowServer control plane can still disappear.
+2. Close `SHARED-PAID-1` before adding another provider so Coconala's proven lifecycle becomes the
+   one reusable kernel instead of another copied `paid_direct.py`.
+3. Complete Lancers next because it is the measured second Paid boundary and therefore proves the
+   extraction against a different provider vocabulary, even while its live contract inventory is zero.
+4. Add CrowdWorks only after that boundary is proven; it contributes selectors, auth, provider state,
+   mutation and readback only, never another lifecycle.
+5. Add one further marketplace to prove that onboarding a provider is repeatable rather than a
+   three-platform special case. Human-required steps become durable human waits, not provider forks.
+6. Build shared Reply only after Paid is closed because Paid is the revenue-critical terminal lane and
+   its work-item, receipt, replay-zero and retry contracts are the proven primitives Reply should reuse.
+7. Canonicalize `loop-development/SKILL.md` last from measured Paid and Reply behavior; writing the
+   canon earlier would preserve guesses rather than the implementation that actually passed.
+
+Zero live contracts never permits skipping an adapter atom or checking it complete. It proves only
+the empty official inventory path. The atom stays open until a real contract produces submission,
+same-session official readback and a following replay with effect zero.
+
 ## Host P0 before this Paid cursor
 
 The current first work is `PANIC-1` through `PANIC-6` in
