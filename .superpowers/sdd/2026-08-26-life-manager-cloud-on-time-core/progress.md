@@ -11,14 +11,14 @@ Baseline: focused Life Manager suite 175/175 PASS.
 1. [x] **CLOUD-05 clean merge** — `user-command.js`、CLOUD-05 test、settings-recovery migration の3製品ファイルだけをmerge済み。一時workflowはmainに存在しない。tenant scope、idempotency、cross-chat rejection、phone removalによる`call_enabled=false`、row-shaped RPC returnを検証済み。旧PR #4276はclosed。
 2. [x] **CLOUD-05 production migration/readback** — approved migrationだけをproduction Supabaseへ適用済み。transaction内のsanitized test tenantでhome変更、phone変更、phone削除、`phone=null`、`call_enabled=false`、通知維持、cross-tenant mutation拒否、同一idempotency key replayの重複mutation 0をreadback済み。fixtureはROLLBACK後0行。
 3. [x] **CLOUD-03 live onboarding** — production Telegram署名sessionとsame-tenant resume、real tenantのGoogle Calendar接続/home/Telegram通知/Ready、transaction actorのhome→notifications→phone skip、phone/call optional、exact one-time 3-day trial contractを証明済み。real friendのQR操作だけを最終UATに保持する。
-4. [ ] **CLOUD-04 cloud runtime** — real tenant A/Bの分離、Railway restart/redeploy後の永続化、production SHA/health、Mac mini・localhost・launchctl・Keychain依存0をlive readbackする。既に通る156/156 source contractを再実装しない。
+4. [x] **CLOUD-04 cloud runtime** — tenant A/B分離、Railway対象service restart後の永続化、production SHA/health、Mac mini・localhost・launchctl・Keychain依存0をlive readback済み。既存source contractを再実装していない。
 5. [ ] **CLOUD-07 Stripe test mode** — current checkout/payment link、webhook endpoint/secret設定、trialing、active、past_due、cancel、duplicate、out-of-order、`lm_users` entitlementをTEST MODE / TEST CLOCKだけで検証する。real charge 0、Stripeだけがpaid authority。
 6. [ ] **CLOUD-08 public surface** — `anicca-products`の`/lm`と`/life-manager`をDAILY機能の真実なcopyへ更新する。QR/deep link、本人Calendar consent、Telegram通知、phone/call optional、3日trial、Cloud userのMac不要、privacy/support/disconnectを表示し、test/lint/build、PR、merge、実deployを確認する。
 7. [ ] **Full production acceptance** — physical、online、locationless、multiple physical、changed/cancelled、phone off/onをprovider receiptとreplay追加effect 0で証明する。exact deployed main SHA、Railway health/restart/persistence、tenant A/B分離を記録する。
 8. [ ] **Google Cloud cost incident closure** — billing accountのJuly/Augustをproject/service/SKU/dayで確定し、September MTD/forecast/current daily burnをreadbackする。Gemini、Search grounding、Live API、Maps/Routes/Geocoding、Cloud Run/compute/storage/network、abandoned project、retry/schedule trafficをrepo/runtimeと対応づける。ROOT_CAUSE、CURRENT_DAILY_BURN、SAFE_FIX、POST_FIX_EXPECTED_COSTを出し、production DAILY機能を壊さない安全な削減だけを適用する。COST-03 PR #4300はこの項目まで未mergeで保持する。
 9. [ ] **FRIEND-BETA READY gate** — 上記を全て閉じた後だけ、actual public URL、Telegram link、QR、friend DM、5分onboarding、test checklist、成功条件を一つのpackageとして渡す。最後に残る作業をreal friend UATだけにする。
 
-Current atom: **4. CLOUD-04 cloud runtime**.
+Current atom: **5. CLOUD-07 Stripe test mode**.
 
 ### CLOUD-05 inherited CI evidence
 
@@ -32,6 +32,7 @@ Current atom: **4. CLOUD-04 cloud runtime**.
 - CLOUD-05 product mergeはPR #4295 / `5d19290a8f12d054e90f466dbd1e5a6590a3efa1`。PR #4305 / `c951851cbaab87dff078681f89d2d7873cd87757`は同時進行を検出する前にmergeされ、同じ3 product filesのtree差分0の空commit。mainにはtemporary workflow 0、product behavior重複0。focused/regression 170/170、Travel、Loop、Python、Shell、TruffleHog PASS。
 - Production migration preflightは同じDB transactionでPASS後ROLLBACK。COMMIT readbackはRPC 1、home/phone/call-disable/row-return contract true、service role execute true、anon/authenticated false。sanitized tenant transactionはhome/phone/remove/call-disable/notification-preserve/cross-scope/replay-zero/receipt-exactly-oneが全true、rollback後user/receipt fixture各0。
 - CLOUD-03 production HTTPはofficial `LifeManagerBotbot` token署名でsession 200、cookie true、onboarding GET 200、step dashboard、Calendar/home/notifications true。production transaction onboardingはdashboard/Calendar/notifications/phone optional/calls opt-in/trial active/exact 3 daysが全true、rollback後fixture 0。real friend Telegram操作はFRIEND-BETA gateの最後にだけ行う。
+- CLOUD-04 production transactionはtenant A更新、tenant B不変、cross-write 0。exact `life-call` service restart後もhealth restored、build `5d19290a8f12d054e90f466dbd1e5a6590a3efa1`不変、service SUCCESS、Supabase user count不変。production変数名とdaily runtime sourceのMac/localhost/launchctl/Keychain finding 0、関連139/139 PASS。
 
 ## Pre-flight conflict and interface scan
 
