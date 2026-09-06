@@ -1,0 +1,61 @@
+{
+  "campaign": {
+    "exit_status": "CLOSED",
+    "realized_pnl_usd": "0.00",
+    "unrealized_pnl_usd": "0.00"
+  },
+  "no_trade": {
+    "approved": false,
+    "candidate_ref": "NO_TRADE",
+    "deployment": "local",
+    "gate": "model_no_trade",
+    "mode": "paper",
+    "observed_at": "2026-09-06T14:00:00Z",
+    "reason": "Fixture has no directional evidence"
+  },
+  "observation": {
+    "account": {
+      "cash": "100000.00",
+      "equity": "100000.00"
+    },
+    "positions": []
+  },
+  "paper_order": {
+    "asset_class": "crypto",
+    "notional_usd": "10.00",
+    "side": "buy",
+    "symbol": "BTC/USD",
+    "time_in_force": "gtc",
+    "type": "market"
+  },
+  "paper_proposal": {
+    "approved": true,
+    "candidate_ref": "crypto://BTC/USD",
+    "deployment": "local",
+    "gate": "approved",
+    "mode": "paper",
+    "observed_at": "2026-09-06T14:00:05Z",
+    "reason": "Sealed fixture proposal"
+  },
+  "risk_rejection": {
+    "max_loss_usd": "10.00",
+    "now": "2026-09-06T14:00:00Z",
+    "snapshot": {
+      "allocated_capital_usd": "90.01",
+      "cash_flow_ny_day_usd": "0",
+      "ny_day": "2026-09-06",
+      "observed_at": "2026-09-06T13:59:50Z",
+      "realized_pnl_ny_day_usd": "0",
+      "unrealized_pnl_usd": "0"
+    }
+  },
+  "shadow_proposal": {
+    "approved": true,
+    "candidate_ref": "crypto://BTC/USD",
+    "deployment": "local",
+    "gate": "approved",
+    "mode": "shadow",
+    "observed_at": "2026-09-06T14:00:10Z",
+    "reason": "Sealed shadow proposal"
+  }
+}
