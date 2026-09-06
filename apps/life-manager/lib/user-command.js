@@ -2,6 +2,7 @@
 
 const crypto = require("node:crypto");
 const { DEFAULTS: RUNTIME_DEFAULTS } = require("./runtime-preferences.js");
+const { normalizePhone } = require("./telegram-onboard.js");
 
 const BOOLEAN_SETTINGS = new Set(["call_enabled", "notifications_enabled", "daily_automation_enabled"]);
 const USER_SETTINGS = new Set(["call_language", "wake_policy"]);
@@ -9,6 +10,9 @@ const TIME_ZONES = new Set(["Asia/Tokyo", "UTC", "Europe/London", "America/New_Y
 const AVAILABLE_ACTIONS = Object.freeze([
   "connect calendar / カレンダーをつないで",
   "disconnect calendar / カレンダーを切断",
+  "set home <address> / 自宅を<住所>にして",
+  "set phone <number> / 電話番号を<番号>にして",
+  "remove phone / 電話番号を削除",
   "turn calls on|off / 電話をオン|オフ",
   "turn notifications on|off / 通知をオン|オフ",
   "turn daily automation on|off / デイリー自動化をオン|オフ",
@@ -34,6 +38,21 @@ function validateCommand(input) {
     if (!exactKeys(input, ["type", "provider"]) || input.provider !== "calendar") invalid();
     return Object.freeze({ type: input.type, provider: input.provider });
   }
+  if (input.type === "profile.set") {
+    if (!exactKeys(input, ["type", "field", "value"])) invalid();
+    if (input.field === "home_address") {
+      const value = typeof input.value === "string" ? input.value.trim() : "";
+      if (!value || value.length > 240) invalid();
+      return Object.freeze({ type: "profile.set", field: "home_address", value });
+    }
+    if (input.field === "phone") {
+      if (input.value === null) return Object.freeze({ type: "profile.set", field: "phone", value: null });
+      const value = normalizePhone(input.value);
+      if (!value) invalid();
+      return Object.freeze({ type: "profile.set", field: "phone", value });
+    }
+    invalid();
+  }
   if (input.type !== "setting.set" || !exactKeys(input, ["type", "setting", "value"])) invalid();
   if (BOOLEAN_SETTINGS.has(input.setting) && typeof input.value === "boolean") return Object.freeze({ ...input });
   if (input.setting === "call_language" && ["en", "ja"].includes(input.value)) return Object.freeze({ ...input });
@@ -46,10 +65,23 @@ function normalizeText(value) {
   return String(value || "").trim().toLowerCase().replace(/[。.!！?？]+$/g, "").replace(/\s+/g, " ");
 }
 
+function compactRawText(value) {
+  return String(value || "").trim().replace(/[。.!！?？]+$/g, "").replace(/\s+/g, " ");
+}
+
 function parseUserCommand(text) {
-  const value = normalizeText(text);
-  if (/^(open|get) (the )?dashboard( link)?$/.test(value) || /^(ダッシュボード|パネル)を?開いて$/.test(value)) return { kind: "panel" };
+  const raw = compactRawText(text);
+  const value = raw.toLowerCase();
   const setting = (name, enabled) => ({ kind: "command", command: { type: "setting.set", setting: name, value: enabled } });
+  const profile = (field, next) => ({ kind: "command", command: validateCommand({ type: "profile.set", field, value: next }) });
+  let match;
+
+  if (/^(open|get) (the )?dashboard( link)?$/.test(value) || /^(ダッシュボード|パネル)を?開いて$/.test(value)) return { kind: "panel" };
+  if ((match = /^(?:set|change) (?:my )?(?:home|base)(?: address)? (.+)$/i.exec(raw))) return profile("home_address", match[1]);
+  if ((match = /^(?:自宅|家|基準地点)を?(.+?)に(?:して|変更して)$/.exec(raw))) return profile("home_address", match[1]);
+  if ((match = /^(?:set|change) (?:my )?phone(?: number)? (.+)$/i.exec(raw))) return profile("phone", match[1]);
+  if ((match = /^電話番号を?(.+?)に(?:して|変更して)$/.exec(raw))) return profile("phone", match[1]);
+  if (/^(?:remove|delete|clear) (?:my )?phone(?: number)?$/i.test(raw) || /^電話番号を?(?:削除|消して|解除)$/.test(raw)) return profile("phone", null);
   if (/^(connect|reconnect) (my )?(google )?calendar$/.test(value) || /^(カレンダーを?(接続|つないで|繋いで|再接続))$/.test(value)) return { kind: "command", command: { type: "connection.start", provider: "calendar" } };
   if (/^disconnect (my )?(google )?calendar$/.test(value) || /^カレンダーを?(切断|解除して)$/.test(value)) return { kind: "command", command: { type: "connection.disconnect", provider: "calendar" } };
   if (/^(turn |disable |enable )?(calls?|call)( (on|off))?$/.test(value)) return setting("call_enabled", !/(off|disable)/.test(value));
@@ -85,11 +117,6 @@ async function buildControlCenter(scope, deps = {}) {
   if (!store) throw new Error("store_required");
   const user = await store.readUser(scope);
   if (!user || String(user.telegram_chat_id) !== String(scope.chatId)) throw new Error("scope_mismatch");
-  // The runtime defaults are the ONE source (lib/runtime-preferences.js). This used to hardcode its
-  // own copy, and when the wake call became opt-in (§5.2.1) that copy still said `call_enabled: true`
-  // — so a user with a phone and no preference row was told "Calls are enabled" while the scheduler
-  // placed none, and the only action offered was to turn them off. A panel that contradicts the
-  // scheduler is worse than a panel that says nothing.
   const prefs = { ...RUNTIME_DEFAULTS, call_time_zone: "Asia/Tokyo", ...(await store.readPreferences(scope)) };
   delete prefs.delegation_enabled;
   const location = await store.readLocation(scope);
@@ -141,20 +168,25 @@ async function executeUserCommand(scope, rawCommand, deps = {}) {
     if (command.type === "setting.set") {
       if (BOOLEAN_SETTINGS.has(command.setting) || command.setting === "call_time_zone") state = await (store.mutatePreferences || store.patchPreferences).call(store, scope, { [command.setting]: command.value });
       else state = await (store.mutateUser || store.patchUser).call(store, scope, { [command.setting]: command.value });
+    } else if (command.type === "profile.set") {
+      state = await (store.mutateUser || store.patchUser).call(store, scope, { [command.field]: command.value });
     } else if (command.type === "connection.start") {
       const resumed = deps.startCalendarConnection ? await deps.startCalendarConnection(scope) : null;
       if (resumed) {
         state = resumed;
       } else {
-      const bytes = (deps.randomBytes || crypto.randomBytes)(32), stateToken = bytes.toString("base64url");
-      await store.createOAuthState(scope, { stateHash: hash(stateToken), provider: "calendar", expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString() });
-      const oauth = await (deps.startCalendarOAuth || startCalendarOAuth)(scope, stateToken, deps);
-      state = { provider: "calendar", state: "action_required", redirectUrl: oauth.redirectUrl };
+        const bytes = (deps.randomBytes || crypto.randomBytes)(32), stateToken = bytes.toString("base64url");
+        await store.createOAuthState(scope, { stateHash: hash(stateToken), provider: "calendar", expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString() });
+        const oauth = await (deps.startCalendarOAuth || startCalendarOAuth)(scope, stateToken, deps);
+        state = { provider: "calendar", state: "action_required", redirectUrl: oauth.redirectUrl };
       }
     } else {
       state = await (deps.disconnectCalendar || disconnectCalendar)(scope, deps);
     }
-    const result = { ok: true, command, state, message: command.type === "setting.set" ? "Setting updated" : command.type === "connection.disconnect" ? "Calendar disconnected" : "Calendar connection is ready" };
+    const message = command.type === "setting.set" ? "Setting updated"
+      : command.type === "profile.set" ? "Profile updated"
+        : command.type === "connection.disconnect" ? "Calendar disconnected" : "Calendar connection is ready";
+    const result = { ok: true, command, state, message };
     await store.finishReceipt(scope, key, { requestHash: digest, commandType: command.type, status: "succeeded", result });
     return result;
   } catch (error) {
