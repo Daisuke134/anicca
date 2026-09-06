@@ -931,7 +931,8 @@ contact Alpaca's trading API, submit an order, or claim L13 complete.
 The freshest authoritative Alpaca account receipt is
 `~/.local/state/life-manager/alpaca-investment/account-status.json`: it records
 `application_status=in_review`, `source=authenticated_provider_readback`, observed at
-`2026-09-05T15:22:11.758684Z`. No newer authenticated receipt proves `approved`, a selectable Live account, live
+`2026-09-06T11:16:22.088017Z`. The forced authenticated refresh returned `checked=true`, `changed=false`, and
+`application_status=in_review`. No newer authenticated receipt proves `approved`, a selectable Live account, live
 API permission, or funding. Therefore the live account is still treated as **in review** and every live effect
 remains disabled. A missing newer receipt is not evidence of rejection or approval.
 
@@ -980,7 +981,7 @@ stdout and the newest decision receipt both read `mode=paper`; Telegram message 
 included in Telegram and remains part of L07. No live broker mutation occurred.
 
 L04 is **SUBMITTED / IN REVIEW**. Dais completed the provider KYC flow. The freshest authenticated Alpaca readback,
-observed at `2026-09-05T15:22:11.758684Z`, records exact application status `in_review`; the provider UI states that
+observed at `2026-09-06T11:16:22.088017Z`, records exact application status `in_review`; the provider UI states that
 Alpaca may request additional information. This proves
 submission, not approval, live API availability, options permission, or funding. The cursor remains L04 until the
 official account state is approved and owner funding of at most `$100` is verified; the loop polls and reports the
@@ -1011,7 +1012,7 @@ before approval always means the complete pre-approval path and must not be repo
 | L04.6 | Tenant-scoped Cloud Investment state and secret references | Existing Cloud secret-provider supports tenant-bound `secret://` refs; no Investment profile exists | Cloud stores only lifecycle, deployment, mode, pause/kill state, core digest, receipt refs, and Alpaca secret references. Raw credentials never enter DB, queue, log, Telegram, fixture, or Git. |
 | L04.7 | Cloud scheduler dry-run | Existing Inngest/scheduler infrastructure exists; Investment job is not wired | A disabled-by-default five-minute job claims one tenant/account owner, runs fixture/read-only core only, writes a durable receipt, and reports `effect_permission=none`. Retry/restart creates zero duplicate jobs or messages. |
 | L04.8 | Local/Cloud parity fixture | Local core is portable; no cross-host Investment parity receipt exists | Identical sealed inputs produce the same decision, risk result, report fields, core digest, and idempotency key locally and in the Cloud adapter. Any mismatch fails the Cloud job closed. |
-| L04.9 | Approval transition — **WAITING ON PROVIDER** | Official state remains `in_review` | Authenticated provider readback proves `approved` or selected `Live - <id>`, then verifies initial owner-authorized funding is at most `$100`. Only this closes L04 and advances the cursor to L05. |
+| L04.9 | Approval transition — **WAITING ON PROVIDER** | Forced authenticated refresh at `2026-09-06T11:16:22.088017Z` returned `in_review`, `checked=true`, `changed=false`; no Live account is verified | Authenticated provider readback proves `approved` or selected `Live - <id>`, then verifies initial owner-authorized funding is at most `$100`. Only this closes L04 and advances the cursor to L05. |
 
 The pre-approval user journeys are therefore:
 
