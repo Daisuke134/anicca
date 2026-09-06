@@ -65,9 +65,22 @@ def _latest_panic_text(names: list[str]) -> str:
         return ""
     try:
         with (REPORT_ROOT / names[0]).open("r", encoding="utf-8", errors="replace") as handle:
-            return handle.read(512 * 1024)
+            return handle.read(8 * 1024 * 1024)
     except OSError:
         return ""
+
+
+def _report_mentions(names: list[str]) -> dict[str, bool]:
+    found = {name: False for name in ("WindowServer", "tccd", "sandboxd")}
+    for report_name in names:
+        try:
+            with (REPORT_ROOT / report_name).open("r", encoding="utf-8", errors="replace") as handle:
+                text = handle.read(16 * 1024 * 1024).lower()
+        except OSError:
+            continue
+        for name in found:
+            found[name] = found[name] or name.lower() in text
+    return found
 
 
 def _memory() -> dict[str, int | None]:
@@ -137,7 +150,9 @@ def build_receipt(raw: dict, *, collected_at: str | None = None) -> dict:
         "watchdog_evidence": {
             name: {
                 "report_names": raw["watchdog_reports"][name],
-                "mentioned_in_latest_panic": name.lower() in raw.get("panic_text", "").lower(),
+                "mentioned_in_reports": raw.get("watchdog_mentions", {}).get(
+                    name, name.lower() in raw.get("panic_text", "").lower()
+                ),
             }
             for name in ("WindowServer", "tccd", "sandboxd")
         },
@@ -178,6 +193,7 @@ def collect() -> dict:
         name: _report_names(f"{name}_*watchdog*") + _report_names(f"{name}_*.spin")
         for name in ("WindowServer", "tccd", "sandboxd")
     }
+    watchdog_names = [name for values in watchdog.values() for name in values]
     return build_receipt({
         "boot_session_uuid": _run("sysctl", "-n", "kern.bootsessionuuid").strip() or "unknown",
         "boot_time": boot_time,
@@ -185,6 +201,7 @@ def collect() -> dict:
         "panic_reports": panic_reports,
         "reset_reports": list(dict.fromkeys(reset_reports))[:20],
         "watchdog_reports": {key: list(dict.fromkeys(value))[:20] for key, value in watchdog.items()},
+        "watchdog_mentions": _report_mentions(panic_reports + watchdog_names),
         "panic_text": _latest_panic_text(panic_reports),
         "memory": _memory(),
         "disk": {"root_free_bytes": shutil.disk_usage("/").free},
