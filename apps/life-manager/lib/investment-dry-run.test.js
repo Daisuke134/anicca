@@ -5,7 +5,8 @@ const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { makeInvestmentDryRun, fiveMinuteSlot, runInvestmentDryRun } = require("./investment-dry-run.js");
+const { makeInvestmentDryRun, fiveMinuteSlot, runInvestmentDryRun,
+  startInvestmentDryRunLoop } = require("./investment-dry-run.js");
 
 const state = { uid: "owner-1", lifecycle: "in_review", deployment: "cloud", mode: "paper",
   paused: false, killed: false, core_digest: null, receipt_refs: [],
@@ -15,6 +16,19 @@ test("production fixture is packaged inside the Railway app root with the sealed
   const bytes = fs.readFileSync(path.join(__dirname, "fixtures/investment-preapproval-replay.json"));
   assert.equal(crypto.createHash("sha256").update(bytes).digest("hex"),
     "a123789d7306f1551dc8e8637fc15e2af732f756b57170fe2a1928aeb2375592");
+});
+
+test("in-process owner starts immediately and repeats every five minutes", async () => {
+  let runs = 0;
+  let timer;
+  const handle = startInvestmentDryRunLoop({ runOnce: async () => { runs += 1; },
+    setTimer: (fn, ms) => (timer = { fn, ms }) });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(runs, 1);
+  assert.equal(timer.ms, 300000);
+  await timer.fn();
+  assert.equal(runs, 2);
+  assert.equal(handle, timer);
 });
 
 test("investment dry-run is disabled by default", async () => {
