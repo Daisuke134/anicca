@@ -251,6 +251,18 @@ completion remain separate.
      identity and resolver regressions pass (14). This is source-only until the complete immutable-main
      release gate below; the currently loaded Paid owner remains on release `363b78ce` and is not stopped
      or restarted.
+   - [x] Remove the circular Coconala identity gate from the remote owner/verifier stage. A natural Paid
+     cycle for Ryu `18211957` completed the requested Netlify revision and exact production readback, but
+     withheld the buyer handoff because it treated talkroom buyer link `/users/6256167` as a mismatch with
+     an assumed seller profile `/users/2564121`. The latter is not a Paid authentication SSOT, and the
+     remote stage cannot prove a Coconala send that intentionally occurs only after its own PASS. The
+     shared prompt contract now defines `required_output_satisfied` at this stage as verified remote output
+     plus an accurate handoff ready for the downstream code-owned Coconala connector. Remote owner and
+     verifier never open Coconala, never require or guess a fixed Coconala profile ID, and never interpret
+     a buyer profile link as seller identity. The existing connector alone owns authenticated presend,
+     formal-delivery-off enforcement, exact send and seller-message readback. Paid remote regressions pass
+     (89). This remains source-only until immutable release application and the natural Ryu retry prove the
+     complete effect.
 3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
    accounting, every authorized application submitted, exact official readback and replay-zero.
 4. [ ] Integrate the Storefront owner's focused public-main commit and require one verified authorized

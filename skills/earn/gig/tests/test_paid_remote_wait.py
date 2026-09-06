@@ -756,6 +756,21 @@ def test_remote_owner_prompt_searches_complete_repo_and_valid_shared_tools(tmp_p
     assert "readback_source and exact_readback=true" in prompt
 
 
+def test_remote_stage_leaves_coconala_delivery_to_verified_connector(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+
+    for verifier in (False, True):
+        prompt = paid._repair_prompt(
+            root, tmp_path / "item.json", feedback, requirements_sha,
+            verifier, tmp_path / "cdp.py",
+        )
+        assert "does not mean the Coconala message is already sent" in prompt
+        assert "Never require or guess a fixed Coconala profile ID" in prompt
+        assert "code-owned Coconala connector" in prompt
+
+
 def test_paid_clients_use_independent_parallel_readbacks_and_browser_targets(tmp_path, monkeypatch):
     paid = load("paid_direct")
     root, feedback, _digest = blocked_project(tmp_path)
