@@ -35,6 +35,8 @@ jobs:
         run: node --test lib/travel-reminder.test.js lib/calendar-interpreter.test.js lib/events.test.js lib/transit.test.js lib/travel-transit-wire.test.js lib/route-cache.test.js
       - name: Detailed travel and online notification regressions
         run: node --test lib/travel-reminder-detail.test.js
+      - name: Shared Calendar, Telegram, and call timing contract
+        run: node --test lib/travel-timing.test.js
       - name: Package exact tracked Cloud source for offline verification
         working-directory: .
         run: |
