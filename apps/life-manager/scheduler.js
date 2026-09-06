@@ -451,7 +451,7 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
       const depMs = await resolveDeparture(ev, futureEvents, {
         home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
         directionsFn: deps.directionsMinutes || directionsMinutes,
-        routeFn: deps.directionsRoute || directionsRoute, uid: u.uid,
+        routeFn: deps.directionsRoute || (deps.directionsMinutes ? undefined : directionsRoute), uid: u.uid,
         timezone: u.call_time_zone || u.time_zone,
       });
       const mins = (depMs - now) / 60000;
