@@ -185,15 +185,30 @@ Two measured facts decide the standard, and they point in opposite directions:
    redrive live in `_shared/marketplace-core/`, all three marketplaces resolve through them, and
    `earn/gig/scripts/telegram_outbox.py` is gone. Sequenced with the Paid and Storefront owners,
    because two of the importers are theirs; this owner does not do it unilaterally.
-   Still owed inside this owner's scope: `earn/lancers/scripts/telegram_report.py:548-558` keeps a
-   private copy of the delivery loop and calls the shared resolvers unfenced. Moving it onto
-   `deliver_pending` needs no other owner.
+   The Lancers private delivery loop is now closed too: `earn/lancers/scripts/telegram_report.py`
+   drains through the shared `deliver_pending`, adapting only its `SendResult` shape. All three
+   outcomes were checked against the old behaviour — a numeric ack lands `delivered` with the id
+   stored, a pre-send failure returns the row to `pending`, a missing ack quarantines it as
+   `delivery_uncertain` — and `apps/lancers-revenue/tests/` fails a byte-identical list of 12 tests
+   before and after.
+   **Found while doing it, not fixed here:** those 12 are red on `main` for an unrelated reason.
+   The Lancers wake report was rewritten into Japanese narrative form and its assertions still
+   expect the old telemetry strings (`observed 13`, `blocker none`, `source_observed_at: unknown`).
+   A reporting suite that is already red cannot fail loudly when reporting actually breaks, which is
+   the failure class this whole cursor exists to prevent. Recorded as `APPLY-REPORT-6`.
 5. [ ] `APPLY-REPORT-5` One renderer for the per-decision sentence. PASS = `report_envelope.py` lives in
    `_shared/marketplace-core/`, the hand-written `[ココナラ][応募判断]` at `application_direct.py:923`
    is replaced by a call to it, and all three platforms render that sentence from one place.
    **Sequencing constraint:** four Coconala scripts import this module and the Paid owner is editing
    that lane concurrently, so start this only after `COCONALA-PAID-3A` settles. Load it by path in
    the meantime; do not copy it. `APPLY-REPORT-1` through `4` carry no such constraint and do not wait.
+
+6. [ ] `APPLY-REPORT-6` Make the Lancers reporting suite able to fail. PASS =
+   `apps/lancers-revenue/tests/test_telegram_report.py` is green against the message the lane
+   actually sends, with no assertion weakened to pass — each of the 12 either asserts the Japanese
+   narrative the renderer now produces or is deleted as testing a format that no longer exists.
+   Measured 2026-09-06: 12 failed, and they have been failing since the renderer was rewritten, so
+   a real reporting regression would not have been visible.
 
 Two items measured here belong to other owners and are recorded so they are not lost. This owner
 does not start them and does not reorder anyone's cursor to fit them:
