@@ -641,6 +641,37 @@ def test_paid_direct_maps_valid_blocked_owner_to_pending(tmp_path):
     ) == "pending"
 
 
+def test_paid_direct_maps_verified_authentication_blocker_to_pending(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    result_path = root / "delivery/paid-remote-result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["authenticated"] = False
+    result["business_outcome"]["official_receipts"] = [{
+        "provider": "provider.example",
+        "kind": "seller_login_recovery_readback",
+        "url": "https://provider.example/login",
+        "readback": "The provider rendered no authenticated owner view or login form.",
+    }]
+    write_json(result_path, result)
+
+    assert paid._remote_owner_checkpoint(
+        "blocked", root, feedback, digest, pass_start=0,
+    ) == "pending"
+
+
+def test_remote_wait_rejects_unauthenticated_non_authentication_blocker(tmp_path):
+    remote = load("paid_remote_result")
+    root, feedback, digest = blocked_project(tmp_path)
+    result_path = root / "delivery/paid-remote-result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["authenticated"] = False
+    write_json(result_path, result)
+
+    with pytest.raises(ValueError, match="remote wait target mismatch"):
+        remote.validate_wait(root, feedback, digest, pass_start=0)
+
+
 def test_normalizer_repairs_missing_blocker_from_first_remaining_work(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)

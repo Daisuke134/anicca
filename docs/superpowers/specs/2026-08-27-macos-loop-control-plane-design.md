@@ -203,6 +203,12 @@ completion remain separate.
      at `21:36:12 JST` (`runs=2`, PID `16514`) without a kick, restart or browser intervention.
      Follow that exact run to a terminal receipt and require room `18180857` to leave `pending`;
      the latest aggregate before this run is observed `5`, pending `1`, failed `0`.
+   - [x] Preserve a verified authentication-recovery blocker as retry-owned `pending`, not a
+     mechanical Paid failure. An unauthenticated wait is accepted only when the result remains
+     blocked with both required outcomes false and carries a provider-, URL- and readback-bound
+     authentication/login recovery receipt; an unauthenticated generic blocker still fails closed.
+     Paid remote regression tests pass (88). This closes the production `18180857` failure where
+     TikTok exposed neither an authenticated `@anicca.jp` owner view nor an available login form.
 3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
    accounting, every authorized application submitted, exact official readback and replay-zero.
 4. [ ] Integrate the Storefront owner's focused public-main commit and require one verified authorized
