@@ -14,6 +14,11 @@ from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _GUARD = _REPO_ROOT / "skills/earn/gig/scripts/gig_disk_guard.py"
+_START_URLS = {
+    "affiliate-browser": "https://elevenlabs.io/app/home",
+    "affiliate-impact-browser": "https://app.impact.com/login.user",
+    "affiliate-x-browser": "https://x.com/home",
+}
 _READABLE = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
 _REMOVED_ENV = (
     "GIG_IGNORE_DISK_PRESSURE_BLOCK", "GIG_IGNORE_DISK_WRITERS_STOP",
@@ -78,7 +83,10 @@ def _disk_preflight(home: Path | None = None, guard: Path | None = None) -> bool
 
 def _cdp_port() -> int | None:
     try:
-        port = int(os.environ.get("AFFILIATE_CDP_PORT", "9324"))
+        port = int(os.environ.get(
+            "AFFILIATE_CDP_PORT",
+            os.environ.get("LIFE_MANAGER_BROWSER_CDP_PORT", "9324"),
+        ))
     except (TypeError, ValueError):
         return None
     return port if 1 <= port <= 65_535 else None
@@ -92,6 +100,23 @@ def _renderer_limit() -> int | None:
     return limit if 1 <= limit <= 64 else None
 
 
+def _browser_profile() -> Path:
+    return Path(os.environ.get(
+        "AFFILIATE_BROWSER_PROFILE",
+        os.environ.get("LIFE_MANAGER_BROWSER_PROFILE", "~/.cloak/profiles/affiliate/en"),
+    )).expanduser()
+
+
+def _start_url() -> str:
+    return os.environ.get(
+        "AFFILIATE_START_URL",
+        _START_URLS.get(
+            os.environ.get("LIFE_MANAGER_LOOP_ID", "affiliate-browser"),
+            _START_URLS["affiliate-browser"],
+        ),
+    )
+
+
 def main() -> int:
     if not _disk_preflight():
         return 1
@@ -99,9 +124,7 @@ def main() -> int:
     renderer_limit = _renderer_limit()
     if port is None or renderer_limit is None:
         return 1
-    profile = Path(
-        os.environ.get("AFFILIATE_BROWSER_PROFILE", "~/.cloak/profiles/affiliate/en")
-    ).expanduser()
+    profile = _browser_profile()
     if not profile.is_absolute():
         return 1
     if os.environ.get("AFFILIATE_BROWSER_PORT_OWNED") != "1":
@@ -124,7 +147,7 @@ def main() -> int:
     page = pages[0] if pages else context.new_page()
     if page.url == "about:blank":
         page.goto(
-            os.environ.get("AFFILIATE_START_URL", "https://elevenlabs.io/app/home"),
+            _start_url(),
             wait_until="domcontentloaded",
             timeout=30_000,
         )
