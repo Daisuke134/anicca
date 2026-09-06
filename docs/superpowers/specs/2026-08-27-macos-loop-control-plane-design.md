@@ -263,6 +263,17 @@ completion remain separate.
      formal-delivery-off enforcement, exact send and seller-message readback. Paid remote regressions pass
      (89). This remains source-only until immutable release application and the natural Ryu retry prove the
      complete effect.
+   - [ ] Release/readback gate for the two remaining live liabilities. The natural old-release aggregate
+     observed five rooms and three actionable rooms with `effect=0`, `readback=3`, `failed=1`, `pending=1`:
+     `18180857` is the old `remote_builder` authentication-result mapping failure and Ryu `18211957` is the
+     newly measured circular Coconala-profile pending state; `18223833` and `18171850` are replay-zero with
+     formal delivery off, and `18211838` is a replay-zero satisfied no-op. From one immutable main release,
+     require `18180857` to become retry-owned pending or complete, require Ryu's verified handoff to be sent
+     by the Coconala connector with exact seller-message readback and formal delivery off, and require the
+     aggregate to end with `failed=0`. The old wake also demonstrated that parallel project execution can
+     keep the parent alive for more than 29 minutes, preventing a new five-minute observation wake; after
+     these liabilities clear, separate bounded discovery cadence from long project progress without
+     spawning unmanaged orphan workers.
 3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
    accounting, every authorized application submitted, exact official readback and replay-zero.
 4. [ ] Integrate the Storefront owner's focused public-main commit and require one verified authorized
