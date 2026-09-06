@@ -57,15 +57,27 @@ def prepare_mine_command(command: list[str], state_root: pathlib.Path,
     """Seed mutable intel data outside the release and route daily writes there."""
     source = HERE.parent / "intel"
     target = pathlib.Path(state_root) / "intel"
+    if target.is_symlink():
+        raise OSError(f"refusing symlinked mutable intel directory: {target}")
     target.mkdir(parents=True, exist_ok=True)
+    target.chmod(0o700)
     for path in source.rglob("*"):
         if not path.is_file() or path.suffix not in {".json", ".jsonl"}:
             continue
         relative = path.relative_to(source)
         destination = target / relative
+        parent = target
+        for part in relative.parts[:-1]:
+            parent = parent / part
+            if parent.is_symlink():
+                raise OSError(f"refusing symlinked mutable intel directory: {parent}")
+            parent.mkdir(exist_ok=True)
+            parent.chmod(0o700)
+        if destination.is_symlink():
+            raise OSError(f"refusing symlinked mutable intel file: {destination}")
         if not destination.exists():
-            destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, destination)
+        destination.chmod(0o600)
     return [
         *command,
         "--source-registry", str(source / "sources.json"),
