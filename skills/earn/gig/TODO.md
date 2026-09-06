@@ -126,11 +126,19 @@ Two measured facts decide the standard, and they point in opposite directions:
   transport, launchd gave the job no PATH, and the lane reported nothing for a full day while
   exiting 0. Silence that exits 0 is the failure this whole file exists to prevent.
 
-1. [ ] `APPLY-REPORT-1` Move Coconala Apply onto the in-repo transport. PASS = `apply_telegram_report.py`
+1. [x] `APPLY-REPORT-1` Move Coconala Apply onto the in-repo transport. PASS = `apply_telegram_report.py`
    holds no `openclaw` reference and no absolute binary path, one natural
    `ai.anicca.hf-gig-apply-direct` wake delivers its report through `_shared/telegram.py`, and the
    returned Telegram `message_id` is recorded in the outbox receipt. A local send is not PASS.
-2. [ ] `APPLY-REPORT-2` Remove the last CrowdWorks Apply shell-out. PASS = `earn/crowdworks/scripts/account.py`
+   `OpenClawTelegramTransport` became `ApplyTelegramTransport` and now calls
+   `telegram_delivery.send_via_shared_client`; delivery without a provider id still raises so
+   `dispatch_one` records `delivery_unknown`. Release `20260906T205531-dc61a3b6` carries release SHA
+   `dc61a3b64cbfec811f7ce939568500dc7cc43a5b`, and `LIFE_MANAGER_APPLY_TARGET=hf-gig-apply-direct
+   lm-loop apply` repointed the label (`changed: true`, install event `384c8616248e74c8f5994094`).
+   Natural pass `gig-apply-direct-1788695849598369000-63171` on that SHA delivered
+   `message_id 62135`, written to `~/gig/telegram-delivery-receipts/`. The installed release holds
+   zero `openclaw` references in both Apply files.
+2. [x] `APPLY-REPORT-2` Remove the last CrowdWorks Apply shell-out. PASS = `earn/crowdworks/scripts/account.py`
    sends through `telegram_delivery.send_via_shared_client` and resolves its chat from
    `CROWDWORKS_REPORT_CHAT` rather than a repository literal, and one natural credential-request
    wake delivers with a recorded `message_id`.
@@ -141,7 +149,12 @@ Two measured facts decide the standard, and they point in opposite directions:
    `storefront_direct.py`. Those belong to the Paid and Storefront owners and are not touched here.
    The Apply sources are the scope; retiring the Paid and Storefront copies is `PAID-REPORT-1` and
    `STOREFRONT-REPORT-1` below, for those owners to take.
-3. [ ] `APPLY-REPORT-3` Make the non-dependency machine-checked instead of remembered. PASS = the check
+   Merged as `948d69acba0cad0a0ea8f4272bccfd067b1e1873`. `_notify` now sends through
+   `send_via_shared_client` and resolves its chat from `CROWDWORKS_REPORT_CHAT`, so the hardcoded
+   chat literal is gone too. Live check returned `message_id 62126`. The natural credential-request
+   wake is still owed: `account.json` has sat at `status: input_required` since 2026-08-11, so the
+   next real request is the readback that closes this line.
+3. [x] `APPLY-REPORT-3` Make the non-dependency machine-checked instead of remembered. PASS = the check
    already proven at `earn/marketing-engine/intel/verify_gate9.py:192` — assert the named sources
    contain no `openclaw` and no `/opt/homebrew`, record `openclaw_dependency: false` — runs over the
    Apply sources of all three platforms (`earn/gig/scripts/apply_telegram_report.py`,
@@ -149,6 +162,10 @@ Two measured facts decide the standard, and they point in opposite directions:
    `earn/crowdworks/scripts/account.py`, `earn/crowdworks/scripts/application_tick.py`,
    `earn/crowdworks/scripts/telegram_report.py`) and fails when one reappears. An allow-list of
    files, not a repository-wide scan, because other owners' lanes are mid-flight.
+   Landed as `skills/_shared/marketplace-core/tests/test_apply_transport_portability.py`, also
+   rejecting `/usr/local/bin/`, with a second test that fails if an allow-listed file is renamed
+   away. Proven in both directions: 9 passed clean, appending `openclaw` to
+   `crowdworks/account.py` failed 2 of them, removing it passed again.
 4. [ ] `APPLY-REPORT-4` Fold Coconala's diverged outbox back into the shared one. PASS = the 794-line
    divergence is gone, `earn/gig/scripts/telegram_outbox.py` no longer exists as a second
    implementation, and Coconala Apply still delivers exactly once across a restart.
