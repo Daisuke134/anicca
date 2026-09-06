@@ -996,6 +996,55 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual((events[0][1]["loop_id"], events[0][1]["phase"]),
                          ("example", "plan"))
 
+    def test_full_apply_removes_retired_loaded_job_after_absence_readback(self):
+        release = self._release("release-a").resolve()
+        value = json.loads((release / "config/loop-registry.json").read_text())
+        value["retired_labels"] = ["ai.anicca.retired-example"]
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        current = self.root / "current"
+        current.symlink_to(release)
+        agents = self.root / "LaunchAgents"
+        agents.mkdir()
+        retired_plist = agents / "ai.anicca.retired-example.plist"
+        retired_plist.write_text("old")
+        service = f"gui/{os.getuid()}/ai.anicca.retired-example"
+        managed_service = f"gui/{os.getuid()}/ai.anicca.example"
+        expected = [str(release / "bin/lm-loop-run"), "example", str(release)]
+        calls = []
+        loaded = {service}
+
+        def safe(_executable, args):
+            calls.append(args)
+            if args == ["preflight"]:
+                return 0, "ok"
+            if args[:1] == ["print"]:
+                if args[1] not in loaded:
+                    return 1, "absent"
+                if args[1] == managed_service:
+                    return 0, "arguments = {\n" + "\n".join(expected) + "\n}\n"
+                return 0, "state = running"
+            if args[:1] == ["bootout"]:
+                loaded.discard(args[1])
+                return 0, ""
+            if args[:1] == ["bootstrap"]:
+                loaded.add(managed_service)
+                return 0, ""
+            return 0, ""
+
+        with patch.object(lm_loop, "_safe_launchctl", side_effect=safe):
+            results = apply_live(
+                release, agents, self.root / "launchctl-safe",
+                current=current, lock_path=self.root / "apply.lock",
+                event_writer=lambda *_: None,
+            )
+
+        retired = next(row for row in results if row.get("retired"))
+        self.assertEqual(retired["label"], "ai.anicca.retired-example")
+        self.assertFalse(retired_plist.exists())
+        self.assertEqual(calls[:4], [
+            ["preflight"], ["print", service], ["bootout", service], ["print", service],
+        ])
+
     def test_reapply_same_release_with_preserved_attributes_is_noop(self):
         release = self._release("release-a").resolve()
         current = self.root / "current"
