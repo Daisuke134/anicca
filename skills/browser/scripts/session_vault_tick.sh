@@ -88,9 +88,26 @@ fi
 # which is itself traffic, so skipping is correct and never forces a tab into a live pass.
 GIG_GUARD="$HOME/.config/ai/bin/browser-guard.sh"
 if [ -x "$GIG_GUARD" ]; then
-  log "gig browser: acquire coconala:kosuke"
-  if GIG_CDP="$("$GIG_GUARD" acquire coconala:kosuke 2>/dev/null)"; then
-    GIG_PORT="$(printf '%s' "$GIG_CDP" | sed -n 's|.*:\([0-9][0-9]*\)/*$|\1|p')"
+  # Resolve the live port WITHOUT taking the exclusive lease. `status` reads it from
+  # DevToolsActivePort and returns immediately; `acquire` fails whenever any gig lane holds it,
+  # which is most of the time -- measured 2026-09-07 07:57:18, "lease BUSY ... skipping this tick"
+  # one second after the first successful pass. Gating on the lease means the one job that can heal
+  # a dead session almost never runs, which is the opposite of what it is for.
+  #
+  # Not taking it is correct rather than merely convenient: the four gig lanes already work as
+  # several isolated browser contexts on this browser at once (five were live during that
+  # measurement), and dump/keepalive/relogin open their own tab and close it. Nothing here waits for
+  # a lane, and no lane waits for this.
+  log "gig browser: resolve coconala:kosuke port"
+  GIG_PORT="$("$GIG_GUARD" status coconala:kosuke 2>/dev/null | python3 -c "
+import json,sys
+try: d=json.load(sys.stdin)
+except Exception: sys.exit(0)
+for row in d.get('identities', []):
+    if row.get('identity') == 'coconala:kosuke' and row.get('reachable') and row.get('port'):
+        print(row['port']); break
+" 2>/dev/null || true)"
+  if true; then
     if [ -n "$GIG_PORT" ]; then
       # Bank into the gig browser's OWN vault. SESSION_VAULT_DIR defaults to
       # ~/.cloak/vault/daily-driver, so every dump this tick ever ran wrote the human browser's
@@ -137,11 +154,8 @@ print('1' if d.get('ok') else '')
         fi
       fi
     else
-      log "gig browser: could not read a port from the lease, skipping"
+      log "gig browser: coconala:kosuke not reachable, skipping this tick"
     fi
-    "$GIG_GUARD" release coconala:kosuke >/dev/null 2>&1 || true
-  else
-    log "gig browser: lease BUSY or unreachable, skipping this tick"
   fi
 fi
 
