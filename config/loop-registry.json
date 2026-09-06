@@ -2009,6 +2009,7 @@
       "state_root": "~/.local/state/life-manager/marketing-daily-report"
     },
     "marketing-dashboard": {
+      "adapter": "python",
       "cadence": {
         "start_interval_seconds": 900
       },
@@ -2018,10 +2019,13 @@
       },
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
       "label": "ai.anicca.marketing-dashboard",
       "log_root": "~/Library/Application Support/AniccaMarketing/logs",
       "provider_route": "shared-agent-runner",
+      "command": [
+        "dashboard"
+      ],
       "state_root": "~/Library/Application Support/AniccaMarketing"
     },
     "marketing-metrics": {

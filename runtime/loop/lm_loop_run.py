@@ -39,7 +39,11 @@ def prepare_loop_run(registry: dict, loop_id: str, release_root: Path, *,
         result = cleanup_run_root(root, entry["cleanup"], active_run_ids, now=now)
         for key in totals:
             totals[key] += result[key]
-    return [str(executable)], totals
+    command = [str(executable)]
+    if entry.get("adapter") == "python":
+        command.insert(0, sys.executable)
+    command.extend(entry.get("command", []))
+    return command, totals
 
 
 def reset_loop_scratch(state_root: Path, loop_id: str) -> Path:

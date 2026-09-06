@@ -11,6 +11,10 @@ from runtime.loop.entry_dispatch import command_for
 
 
 class EntryDispatchTest(unittest.TestCase):
+    def test_marketing_dashboard_no_longer_has_a_handwritten_dispatch(self):
+        with self.assertRaisesRegex(ValueError, 'no dispatch command'):
+            command_for('marketing-dashboard', Path('/release'), Path('/home'))
+
     def test_lancers_browser_has_a_finite_renderer_process_limit(self):
         script = Path(__file__).parents[3] / 'runtime/legacy/lancers-revenue-browser/run.sh'
         self.assertIn('--renderer-process-limit="$renderer_limit"', script.read_text())
