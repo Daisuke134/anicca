@@ -12,9 +12,8 @@ import time
 from pathlib import Path
 
 
-_GUARD_RELATIVE = Path(
-    "gig/releases/life-manager/current/skills/earn/gig/scripts/gig_disk_guard.py"
-)
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_GUARD = _REPO_ROOT / "skills/earn/gig/scripts/gig_disk_guard.py"
 _READABLE = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
 _REMOVED_ENV = (
     "GIG_IGNORE_DISK_PRESSURE_BLOCK", "GIG_IGNORE_DISK_WRITERS_STOP",
@@ -44,11 +43,11 @@ def _canonical_home() -> Path | None:
     return home if home.is_absolute() and home.is_dir() else None
 
 
-def _disk_preflight(home: Path | None = None) -> bool:
+def _disk_preflight(home: Path | None = None, guard: Path | None = None) -> bool:
     home = _canonical_home() if home is None else home
     if home is None or not home.is_absolute() or not home.is_dir():
         return False
-    guard = home / _GUARD_RELATIVE
+    guard = _GUARD if guard is None else guard
     try:
         if (
             guard.is_symlink()

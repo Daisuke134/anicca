@@ -129,15 +129,18 @@ fields, and the versioned submit control. It journals the effect before submit
 and never prints the password. Redirect to a different provider page proves only
 reset acceptance; `resume` must still prove the authenticated application state.
 
-Install the local release and its isolated launchd owners:
+Install the shared Life Manager runtime and reconcile its registry-owned loops:
 
 ```bash
-skills/affiliate/scripts/install-release.sh
+scripts/bootstrap.sh
+~/loops/current/bin/lm-loop reconcile shared-agent-runner --include-running --loop-id affiliate-browser
 skills/affiliate/affiliate loop wake
 skills/affiliate/affiliate loop placement --placement article-1 --locale en
 ```
 
-`ai.anicca.affiliate-browser` owns the isolated provider profile on CDP `9324`;
+The shared `lm-loop` control plane owns every launchd job. No Affiliate-specific
+installer or external Python environment exists. `ai.anicca.affiliate-browser`
+owns the isolated provider profile on CDP `9324`;
 `ai.anicca.affiliate-x-browser` owns the English X profile on CDP `9326`.
 `ai.anicca.affiliate-composition` consumes at most one due credential-free
 source bundle per wake and writes a sealed terminal composition receipt.

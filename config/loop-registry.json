@@ -62,6 +62,7 @@
       "state_root": "~/.local/state/anicca/crowdworks"
     },
     "affiliate-browser": {
+      "adapter": "exec",
       "browser_owner": {
         "cdp_port": 9324,
         "profile": "~/.cloak/profiles/affiliate/en"
@@ -73,9 +74,10 @@
         "max_age_days": 14,
         "max_runs": 100
       },
+      "command": [],
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/affiliate/scripts/local-browser",
       "label": "ai.anicca.affiliate-browser",
       "log_root": "~/.local/state/life-manager/affiliate-browser/logs",
       "provider_route": "shared-agent-runner",

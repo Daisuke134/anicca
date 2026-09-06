@@ -12,7 +12,6 @@ from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "local_browser.py"
-INSTALLER = Path(__file__).parents[1] / "scripts" / "install-release.sh"
 SPEC = importlib.util.spec_from_file_location("affiliate_local_browser", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
@@ -113,7 +112,7 @@ class LocalBrowserPreflightTest(unittest.TestCase):
                 "STUB_RESULT": "0",
             }
             with patch.dict(os.environ, inherited, clear=False):
-                self.assertTrue(MODULE._disk_preflight(home))
+                self.assertTrue(MODULE._disk_preflight(home, guard))
 
             record = json.loads(capture.read_text(encoding="utf-8"))
             self.assertEqual(record["argv"], [str(guard), "/usr/bin/true"])
@@ -144,7 +143,7 @@ class LocalBrowserPreflightTest(unittest.TestCase):
                              return_value=SimpleNamespace(pw_dir=str(home))),
                 patch.object(MODULE.os, "getuid", return_value=9876),
             ):
-                self.assertTrue(MODULE._disk_preflight())
+                self.assertTrue(MODULE._disk_preflight(guard=home / GUARD_RELATIVE))
             record = json.loads(capture.read_text(encoding="utf-8"))
             self.assertEqual(record["env"]["GIG_HOST_STATE_DIR"],
                              str(home / ".openclaw/state"))
@@ -161,7 +160,7 @@ class LocalBrowserPreflightTest(unittest.TestCase):
                 host_state.mkdir(parents=True)
                 lane_state.mkdir(parents=True)
                 (host_state / flag).write_text("blocked\n", encoding="utf-8")
-                self.install_guard(home)
+                guard = self.install_guard(home)
                 capture = home / "capture.json"
                 with patch.dict(os.environ, {
                     "HOME": "/hostile/home", "GIG_DISK_HEADROOM_KIB": "0",
@@ -169,7 +168,7 @@ class LocalBrowserPreflightTest(unittest.TestCase):
                     "GIG_IGNORE_DISK_WRITERS_STOP": "1",
                     "STUB_CAPTURE": str(capture),
                 }, clear=False):
-                    self.assertFalse(MODULE._disk_preflight(home))
+                    self.assertFalse(MODULE._disk_preflight(home, guard))
                 receipt = json.loads(
                     (lane_state / "state/disk-headroom.json").read_text(encoding="utf-8")
                 )
@@ -220,25 +219,6 @@ class LocalBrowserPreflightTest(unittest.TestCase):
             ):
                 self.assertEqual(MODULE.main(), 1)
             self.assertFalse(profile.exists())
-
-    def test_installer_contract_and_release_only_owners(self) -> None:
-        text = INSTALLER.read_text(encoding="utf-8")
-        self.assertIn('[[ -f "$GUARD_PATH" && ! -L "$GUARD_PATH" && -r "$GUARD_PATH" ]]', text)
-        self.assertIn('/usr/bin/python3 -I -m py_compile "$GUARD_COMPILE_PATH"', text)
-        self.assertIn('/usr/bin/plutil -insert external_dependencies -array "$RECEIPT_STAGE"', text)
-        self.assertIn('external_dependencies.0.path -string', text)
-        self.assertNotIn('external_dependencies -json', text)
-        release_only = text.split('if [[ "$INSTALL_LAUNCHD" != "1" ]]', 1)[1].split(
-            "CLOAK_PYTHON=", 1
-        )[0]
-        self.assertIn("exit 0", release_only)
-        self.assertIn(
-            '["ai.anicca.affiliate-browser","ai.anicca.affiliate-impact-browser",'
-            '"ai.anicca.affiliate-x-browser"]',
-            text,
-        )
-        self.assertNotIn("launchctl bootout", release_only)
-        self.assertNotIn("launchctl bootstrap", release_only)
 
 
 if __name__ == "__main__":
