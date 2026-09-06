@@ -31,7 +31,7 @@ const {
 } = require("./lib/wake-miss.js");
 const { putEvents, getEvents } = require("./lib/event-cache.js");
 const { runOrgan } = require("./lib/organ-run.js");
-const { fillTravel, directionsMinutes } = require("./lib/travel.js");
+const { fillTravel, directionsMinutes, directionsRoute } = require("./lib/travel.js");
 const { formatTravelAutofillMessage } = require("./lib/i18n.js");
 const { askTick } = require("./lib/ask.js");
 const { onboardNudgeAll } = require("./lib/telegram-onboard.js");
@@ -451,6 +451,8 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
       const depMs = await resolveDeparture(ev, futureEvents, {
         home: u.home_address, mapsKey, nowMs: now, bufferMin: 5,
         directionsFn: deps.directionsMinutes || directionsMinutes,
+        routeFn: deps.directionsRoute || (deps.directionsMinutes ? undefined : directionsRoute), uid: u.uid,
+        timezone: u.call_time_zone || u.time_zone,
       });
       const mins = (depMs - now) / 60000;
       // A level is DUE once its threshold has passed, not only while the tick sits inside a ~2-min

@@ -7,6 +7,7 @@ on:
     paths:
       - 'apps/life-manager/lib/**'
       - 'apps/life-manager/test/**'
+      - 'apps/life-manager/scheduler.js'
       - 'apps/life-manager/package.json'
       - 'apps/life-manager/package-lock.json'
       - '.github/workflows/cloud-reminder.yml'
@@ -35,6 +36,8 @@ jobs:
         run: node --test lib/travel-reminder.test.js lib/calendar-interpreter.test.js lib/events.test.js lib/transit.test.js lib/travel-transit-wire.test.js lib/route-cache.test.js
       - name: Detailed travel and online notification regressions
         run: node --test lib/travel-reminder-detail.test.js
+      - name: Shared Calendar, Telegram, and call timing contract
+        run: node --test lib/travel-timing.test.js lib/wake-filter.test.js lib/travel-return.test.js test/wake-levels.test.js test/wake-loop-isolation.test.js
       - name: Package exact tracked Cloud source for offline verification
         working-directory: .
         run: |
