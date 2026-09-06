@@ -530,7 +530,14 @@ def prepare_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
             break
         except RuntimeError as error:
             last_error = error
-            retryable = str(error).startswith("storefront_draft_category_option_missing")
+            # The same two errors `readback_published_draft` already retries below: a category
+            # option that has not loaded yet, and a snapshot whose url/action still names the
+            # page the tab was on a moment ago. Both are the form not having caught up, not the
+            # draft being wrong -- the contract named the right draft in every observed case.
+            retryable = (
+                str(error).startswith("storefront_draft_category_option_missing")
+                or str(error).startswith("storefront_draft_readback_mismatch")
+            )
             if not retryable or attempt >= 2:
                 raise
         finally:
