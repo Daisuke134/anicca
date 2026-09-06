@@ -32,11 +32,19 @@ Measured incident evidence:
 
 Execute exactly in this order:
 
-1. [ ] `PANIC-1` Add one read-only boot/panic evidence collector to the existing control plane.
+1. [x] `PANIC-1` Add one read-only boot/panic evidence collector to the existing control plane.
    PASS = on every boot it records boot ID/time, prior orderly-shutdown presence, panic/reset report
    identity, WindowServer/tccd/sandboxd watchdog evidence, memory/compressor counters, disk free
    bytes, and browser-owner/process/tab counts without credentials or customer data. It identifies
    the failing component boundary; it does not kill or restart a process.
+   Production receipt: `boot-panic-evidence` is loaded from immutable main release
+   `a3c77aafe372c8c3434e4e5122c3bb51c7514850` with `RunAtLoad`, last exit `0`, and a terminal
+   `pass`. The current boot has exactly one mode-`0600` receipt keyed by boot session UUID; it
+   records prior orderly shutdown `false`, component boundary `WindowServer`, four panic identities,
+   six reset identities, WindowServer/tccd/sandboxd evidence, memory/compressor and disk counters,
+   and aggregate browser owner/process/renderer/endpoint/tab counts. A receipt scan found zero URLs,
+   user paths, bearer tokens, or API-key-shaped values. `lm-loop doctor` remains green with 175
+   managed entries and zero missing, unmanaged, or installed-retired labels.
 2. [ ] `PANIC-2` Measure and bound GUI-browser ownership at the source. PASS = every registered
    browser owner has a finite context/tab/renderer retention contract, stale resources are reclaimed
    only after ownership/open-file checks, and a sustained real workload no longer grows browser or
