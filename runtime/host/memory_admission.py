@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 from typing import Sequence
 
@@ -71,7 +72,19 @@ def _write_receipt(payload: dict[str, object]) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    command = list(sys.argv[1:] if argv is None else argv)
+    args = list(sys.argv[1:] if argv is None else argv)
+    wait_seconds = 0
+    if args[:1] == ["--wait-seconds"]:
+        if len(args) < 4 or args[2] != "--":
+            return 64
+        try:
+            wait_seconds = int(args[1])
+        except ValueError:
+            return 64
+        if not 1 <= wait_seconds <= 3600:
+            return 64
+        args = args[3:]
+    command = args
     if not command:
         return 64
     try:
@@ -80,21 +93,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 64
     if not 1 <= minimum <= 100:
         return 64
-    available = memory_free_percent()
-    if available is None:
-        _write_receipt({
-            "status": "deferred", "effect": 0,
-            "reason": "memory_headroom_unavailable",
-            "minimum_free_percent": minimum,
-        })
-        return 75
-    if available < minimum:
-        _write_receipt({
-            "status": "deferred", "effect": 0,
-            "reason": "memory_headroom_low", "free_percent": available,
-            "minimum_free_percent": minimum,
-        })
-        return 75
+    while True:
+        available = memory_free_percent()
+        if available is None:
+            _write_receipt({
+                "status": "deferred", "effect": 0,
+                "reason": "memory_headroom_unavailable",
+                "minimum_free_percent": minimum,
+            })
+        elif available < minimum:
+            _write_receipt({
+                "status": "deferred", "effect": 0,
+                "reason": "memory_headroom_low", "free_percent": available,
+                "minimum_free_percent": minimum,
+            })
+        else:
+            break
+        if not wait_seconds:
+            return 75
+        time.sleep(wait_seconds)
     _write_receipt({
         "status": "pass", "effect": 0, "reason": "memory_headroom_ok",
         "free_percent": available, "minimum_free_percent": minimum,

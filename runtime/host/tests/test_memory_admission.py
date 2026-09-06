@@ -73,6 +73,23 @@ class MemoryAdmissionTests(unittest.TestCase):
             row = json.loads(receipt.read_text(encoding="utf-8"))
             self.assertEqual(row["reason"], "memory_headroom_unavailable")
 
+    def test_wait_mode_defers_in_process_until_headroom_recovers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            receipt = Path(temporary) / "memory.json"
+            with (
+                patch.dict(os.environ, {
+                    "LIFE_MANAGER_MEMORY_RECEIPT": str(receipt),
+                }, clear=True),
+                patch.object(MODULE, "memory_free_percent", side_effect=[9, 43]),
+                patch.object(MODULE.time, "sleep") as sleep,
+                patch.object(MODULE.os, "execvpe", side_effect=SystemExit) as execute,
+            ):
+                with self.assertRaises(SystemExit):
+                    MODULE.main(["--wait-seconds", "30", "--", "/usr/bin/true"])
+            sleep.assert_called_once_with(30)
+            self.assertEqual(execute.call_args.args[0], "/usr/bin/true")
+            self.assertEqual(json.loads(receipt.read_text())["status"], "pass")
+
 
 if __name__ == "__main__":
     unittest.main()

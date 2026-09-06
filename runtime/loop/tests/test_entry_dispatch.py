@@ -211,7 +211,7 @@ class EntryDispatchTest(unittest.TestCase):
         storefront=command_for('hf-gig-storefront-direct',root,home)
         guard = [sys.executable, '/release/runtime/host/memory_admission.py']
         self.assertEqual(apply[:2], guard)
-        self.assertEqual(reply[:2], guard)
+        self.assertEqual(reply[:5], guard + ['--wait-seconds','30','--'])
         self.assertEqual(storefront[:2], guard)
         self.assertIn('--all-eligible',apply)
         self.assertEqual(reply[-5:],['--continuous','--poll-seconds','30','--workers','2'])

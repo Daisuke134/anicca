@@ -68,6 +68,14 @@ def _runtime_limit(entry: dict) -> int | None:
     return None if entry.get("cadence") == {"keep_alive": True} else 3600
 
 
+def _terminal_outcome(return_code: int) -> tuple[bool, bool, str | None]:
+    if return_code == 0:
+        return True, False, None
+    if return_code == 75:
+        return False, True, "memory_admission_deferred"
+    return False, False, f"entrypoint_exit_{return_code}"
+
+
 def _run_entrypoint(command: list[str], env: dict[str, str] | None = None, *,
                     timeout_seconds: float | None = None,
                     termination_grace_seconds: float = 15) -> int:
@@ -154,12 +162,12 @@ def main(argv: list[str] | None = None) -> int:
             # downloads, package caches, and build products when its pass ends.
             shutil.rmtree(scratch, ignore_errors=True)
         try:
+            succeeded, deferred, blocker = _terminal_outcome(return_code)
             event = build_runtime_event(
                 loop_id=loop_id, domain=entry["domain"], run_id=run_id,
                 release_sha=manifest["sha"], provider=entry["provider_route"],
                 profile_alias=None, effect_class=entry["effect_class"],
-                succeeded=return_code == 0,
-                blocker=None if return_code == 0 else f"entrypoint_exit_{return_code}",
+                succeeded=succeeded, deferred=deferred, blocker=blocker,
                 evidence_scheme="lm-loop",
             )
             append_runtime_event(event_path, event)

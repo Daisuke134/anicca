@@ -156,6 +156,7 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         ],
         "hf-gig-reply-detector": [
             *memory_guard,
+            "--wait-seconds", "30", "--",
             python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
             python, str(root / "skills/earn/gig/scripts/reply_detector.py"),
             "--trigger", "fallback", "--runner",
