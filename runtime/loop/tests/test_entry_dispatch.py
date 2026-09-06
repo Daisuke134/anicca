@@ -43,6 +43,10 @@ class EntryDispatchTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no dispatch command'):
             command_for('crowdworks-revenue-application', Path('/release'), Path('/home'))
 
+    def test_crowdworks_report_no_longer_has_a_handwritten_dispatch(self):
+        with self.assertRaisesRegex(ValueError, 'no dispatch command'):
+            command_for('crowdworks-revenue-report', Path('/release'), Path('/home'))
+
     def test_lancers_browser_has_a_finite_renderer_process_limit(self):
         script = Path(__file__).parents[3] / 'runtime/legacy/lancers-revenue-browser/run.sh'
         self.assertIn('--renderer-process-limit="$renderer_limit"', script.read_text())
