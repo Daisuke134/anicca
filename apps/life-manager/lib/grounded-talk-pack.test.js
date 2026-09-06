@@ -64,11 +64,17 @@ test("rejects gaps, overlaps, unknown evidence, placeholders, secrets, and wealt
 
 test("generator sends event text as untrusted data and facts as the only claim source", async () => {
   let request;
+  const usage = [];
   const pack = await generateGroundedTalkPack(INPUT, {
     apiKey: "fixture-key",
+    tenantId: "tenant-1",
+    recordUsageEvent: async (event) => { usage.push(event); return true; },
     async fetchImpl(url, options) {
       request = { url, options, body: JSON.parse(options.body) };
-      return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(validPack()) }] } }] }) };
+      return { ok: true, status: 200, json: async () => ({
+        usageMetadata: { promptTokenCount: 200, candidatesTokenCount: 50, totalTokenCount: 250 },
+        candidates: [{ content: { parts: [{ text: JSON.stringify(validPack()) }] } }],
+      }) };
     },
   });
   assert.deepEqual(pack, validPack());
@@ -78,6 +84,9 @@ test("generator sends event text as untrusted data and facts as the only claim s
   assert.match(prompt, /evidence:\/\/connector\/o1b12/);
   assert.equal(request.body.generationConfig.responseMimeType, "application/json");
   assert.equal(request.body.generationConfig.temperature, 0);
+  assert.deepEqual(usage.map((event) => [event.tenantId, event.provider, event.feature]), [
+    ["tenant-1", "gemini", "grounded_talk_pack"],
+  ]);
 });
 
 test("model failure and invalid JSON never fall back to an invented talk", async () => {

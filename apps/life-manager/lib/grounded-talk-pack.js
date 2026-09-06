@@ -3,6 +3,7 @@
 const { canonicalEventUrl } = require("./canonical-event-url.js");
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const { persistGeminiUsage } = require("./gemini-usage.js");
 const PACK_KEYS = Object.freeze(["abstract", "application_reason", "bio", "outline", "product_demo_summary", "title"]);
 const SEGMENT_KEYS = Object.freeze(["content", "end_second", "evidence_refs", "heading", "start_second"]);
 const FACT_KEYS = Object.freeze(["evidence_ref", "fact"]);
@@ -154,6 +155,9 @@ async function generateGroundedTalkPack(input, options = {}) {
   if (!response || response.ok !== true) throw new Error("grounded talk pack unavailable");
   let body;
   try { body = await response.json(); } catch { throw new Error("grounded talk pack unavailable"); }
+  await persistGeminiUsage(body, {
+    tenantId: options.tenantId, feature: "grounded_talk_pack",
+  }, options);
   const raw = body?.candidates?.[0]?.content?.parts?.[0]?.text;
   let parsed;
   try { parsed = JSON.parse(raw || ""); } catch { throw new Error("grounded talk pack unavailable"); }

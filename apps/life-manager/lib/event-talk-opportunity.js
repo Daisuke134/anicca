@@ -5,6 +5,7 @@ const { isIP } = require("node:net");
 const { canonicalEventUrl } = require("./canonical-event-url.js");
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const { persistGeminiUsage } = require("./gemini-usage.js");
 const PARTICIPATION_KINDS = Object.freeze(["audience_only", "talk_application", "both", "unknown"]);
 const TALK_FORMATS = Object.freeze(["lightning_talk", "cfp", "demo", "pitch", "workshop", "other"]);
 const APPLICATION_STATUSES = Object.freeze(["open", "closed", "invite_only", "not_offered", "unknown"]);
@@ -160,6 +161,9 @@ async function inferEventTalkOpportunity(input, options = {}) {
     throw new Error(`event talk classifier failed (${response ? response.status : "no response"})`);
   }
   const body = await response.json();
+  await persistGeminiUsage(body, {
+    tenantId: options.tenantId, feature: "event_talk_opportunity",
+  }, options);
   const raw = body?.candidates?.[0]?.content?.parts?.[0]?.text;
   let parsed;
   try { parsed = JSON.parse(raw || ""); } catch { throw new Error("event talk classifier returned invalid JSON"); }

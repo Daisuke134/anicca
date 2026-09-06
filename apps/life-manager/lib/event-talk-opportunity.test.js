@@ -84,13 +84,17 @@ test("一般参加だけ、締切済み、招待制はtalk applicationを作ら�
 
 test("Gemini structured outputへ本文全体をuntrusted dataとして渡しschema検証する", async () => {
   let request;
+  const usage = [];
   const actual = await inferEventTalkOpportunity(SOURCE, {
     apiKey: "fixture-key",
+    tenantId: "tenant-1",
+    recordUsageEvent: async (event) => { usage.push(event); return true; },
     fetchImpl: async (url, options) => {
       request = { url, options, body: JSON.parse(options.body) };
       return {
         ok: true,
         json: async () => ({
+          usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 20, totalTokenCount: 120 },
           candidates: [{ content: { parts: [{ text: JSON.stringify(openDecision()) }] } }],
         }),
       };
@@ -104,6 +108,9 @@ test("Gemini structured outputへ本文全体をuntrusted dataとして渡しsch
   assert.match(prompt, /ライトニングトーク登壇者も募集中/);
   assert.equal(request.body.generationConfig.responseMimeType, "application/json");
   assert.equal(request.body.generationConfig.temperature, 0);
+  assert.deepEqual(usage.map((event) => [event.tenantId, event.provider, event.feature]), [
+    ["tenant-1", "gemini", "event_talk_opportunity"],
+  ]);
 });
 
 test("model failureやinvalid JSONをkeyword fallbackで成功にしない", async () => {
