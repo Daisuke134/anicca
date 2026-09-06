@@ -17,6 +17,17 @@ class IdempotencyConflict(OutboxError):
     """The event key already names a different message."""
 
 
+class StaleClaim(OutboxError):
+    """The claim this worker holds was reclaimed and re-issued, so its result is not authoritative.
+
+    reclaim_stale returns an abandoned 'sending' row to pending, and claim_next hands it to a second
+    worker. Without this check the first worker — merely slow, not dead — can still resolve the row,
+    overwriting the live worker's record with a result from a send nobody is tracking. The Coconala
+    outbox has fenced this since it was written; the shared one did not, which is why nothing should
+    have migrated onto it yet.
+    """
+
+
 class InvalidState(OutboxError):
     """An operation was requested for an incompatible outbox state."""
 
@@ -207,11 +218,24 @@ def _get_item(connection: sqlite3.Connection, event_key: str) -> sqlite3.Row:
     return row
 
 
+def _fenced(row: sqlite3.Row, claimed_at: Optional[str]) -> sqlite3.Row:
+    """Reject a resolver whose claim no longer matches the row's.
+
+    claimed_at is the claim identity claim_next handed out. It is optional so existing callers keep
+    working unchanged; deliver_pending passes it, which is the loop every marketplace lane uses.
+    """
+    if claimed_at is not None and row["claimed_at"] != claimed_at:
+        raise StaleClaim(row["event_key"])
+    return row
+
+
 def mark_delivered(
     database: Path,
     event_key: str,
     provider_message_id: str,
     delivered_at: str,
+    *,
+    claimed_at: Optional[str] = None,
 ) -> None:
     """Record a provider acknowledgement without allowing a downgrade."""
 
@@ -221,7 +245,7 @@ def mark_delivered(
     )
     delivered_at = _require_text("delivered_at", delivered_at)
     with _write_connection(database) as connection:
-        row = _get_item(connection, event_key)
+        row = _fenced(_get_item(connection, event_key), claimed_at)
         if row["status"] == "delivered":
             if row["provider_message_id"] != provider_message_id:
                 raise IdempotencyConflict(event_key)
@@ -244,13 +268,15 @@ def mark_delivered(
             raise IdempotencyConflict(provider_message_id) from error
 
 
-def mark_pre_send_failed(database: Path, event_key: str, error_code: str) -> None:
+def mark_pre_send_failed(
+    database: Path, event_key: str, error_code: str, *, claimed_at: Optional[str] = None
+) -> None:
     """Return a claim to pending only when no provider call was attempted."""
 
     event_key = _require_text("event_key", event_key)
     error_code = _require_text("error_code", error_code)
     with _write_connection(database) as connection:
-        row = _get_item(connection, event_key)
+        row = _fenced(_get_item(connection, event_key), claimed_at)
         if row["status"] != "sending":
             if row["status"] == "pending":
                 return
@@ -266,14 +292,14 @@ def mark_pre_send_failed(database: Path, event_key: str, error_code: str) -> Non
 
 
 def mark_delivery_uncertain(
-    database: Path, event_key: str, error_code: str
+    database: Path, event_key: str, error_code: str, *, claimed_at: Optional[str] = None
 ) -> None:
     """Quarantine a message once the provider call may have happened."""
 
     event_key = _require_text("event_key", event_key)
     error_code = _require_text("error_code", error_code)
     with _write_connection(database) as connection:
-        row = _get_item(connection, event_key)
+        row = _fenced(_get_item(connection, event_key), claimed_at)
         if row["status"] == "delivery_uncertain":
             return
         if row["status"] != "sending":
@@ -328,10 +354,12 @@ __all__ = [
     "InvalidState",
     "OutboxError",
     "OutboxItem",
+    "StaleClaim",
     "claim_next",
     "enqueue",
     "list_items",
     "mark_delivered",
     "mark_delivery_uncertain",
     "mark_pre_send_failed",
+    "reclaim_stale",
 ]
