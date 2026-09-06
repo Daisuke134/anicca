@@ -220,14 +220,17 @@ def yt_dlp_downloader(observation: dict, destination: pathlib.Path, limits: dict
     template = str(destination / "source.%(ext)s")
     completed = subprocess.run(
         ["yt-dlp", "--no-playlist", "--max-filesize", str(limits["max_download_bytes"]),
-         "-f", "b[ext=mp4]/b", "-o", template, observation["native_url"]],
+         "-f", "w[ext=mp4]/w", "-o", template, observation["native_url"]],
         text=True, capture_output=True, timeout=180, check=False,
     )
     if completed.returncode != 0:
         raise RuntimeError((completed.stderr or completed.stdout or "yt-dlp download failed").strip()[-1000:])
     files = [path for path in destination.glob("source.*") if path.is_file()]
     if len(files) != 1:
-        raise RuntimeError("download did not produce exactly one media file")
+        detail = (completed.stderr or completed.stdout or "no downloader output").strip()[-1000:]
+        raise RuntimeError(
+            f"download produced {len(files)} media files instead of one: {detail}"
+        )
     return files[0]
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 from video_intel import (VideoIntelError, discover_videos, ingest_transcripts,
-                         load_video_registry)
+                         load_video_registry, yt_dlp_downloader)
 
 
 def registry_payload():
@@ -68,6 +68,16 @@ def playlist():
 
 
 class VideoIntelTest(unittest.TestCase):
+    def test_downloader_prefers_small_mp4_and_reports_success_without_a_file(self):
+        completed = mock.Mock(returncode=0, stdout="larger than max-filesize", stderr="")
+        with tempfile.TemporaryDirectory() as temp, \
+                mock.patch("video_intel.subprocess.run", return_value=completed) as run:
+            with self.assertRaisesRegex(RuntimeError, "larger than max-filesize"):
+                yt_dlp_downloader(
+                    {"native_url": "https://www.tiktok.com/@owner/video/1"},
+                    Path(temp), {"max_download_bytes": 30_000_000})
+        self.assertEqual(run.call_args.args[0][4:6], ["-f", "w[ext=mp4]/w"])
+
     def test_registry_rejects_mixed_product_source(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "sources.json"
