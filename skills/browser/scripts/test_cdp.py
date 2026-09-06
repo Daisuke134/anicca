@@ -26,6 +26,29 @@ def test_explicit_host_remains_supported(monkeypatch):
     assert _load_module().HOST == "browser.internal"
 
 
+def test_guarded_cdp_url_selects_the_leased_browser(monkeypatch):
+    monkeypatch.delenv("CDP_HOST", raising=False)
+    monkeypatch.delenv("CDP_PORT", raising=False)
+    monkeypatch.setenv("CDP", "http://127.0.0.1:61993")
+
+    module = _load_module()
+
+    assert module.HOST == "127.0.0.1"
+    assert module.PORT == "61993"
+    assert module.BASE == "http://127.0.0.1:61993"
+
+
+def test_explicit_host_and_port_override_guarded_cdp_url(monkeypatch):
+    monkeypatch.setenv("CDP", "http://127.0.0.1:61993")
+    monkeypatch.setenv("CDP_HOST", "browser.internal")
+    monkeypatch.setenv("CDP_PORT", "9333")
+
+    module = _load_module()
+
+    assert module.HOST == "browser.internal"
+    assert module.PORT == "9333"
+
+
 def test_new_claims_target_for_required_owner(monkeypatch, capsys):
     module = _load_module()
     events = []

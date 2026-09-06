@@ -13,10 +13,37 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 
 _OWNER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
+
+
+def _process_group_exists(pgid: int) -> bool:
+    try:
+        os.killpg(pgid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+
+
+def _terminate_process_group(pgid: int, grace_seconds: float = 2.0) -> None:
+    if not _process_group_exists(pgid):
+        return
+    try:
+        os.killpg(pgid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    deadline = time.monotonic() + grace_seconds
+    while time.monotonic() < deadline:
+        if not _process_group_exists(pgid):
+            return
+        time.sleep(0.02)
+    try:
+        os.killpg(pgid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
 
 
 def _default_state_dir() -> Path:
@@ -102,7 +129,7 @@ def run(args: argparse.Namespace) -> int:
                 }, sort_keys=True), file=sys.stderr)
                 return 75
 
-            child = subprocess.Popen(command)
+            child = subprocess.Popen(command, start_new_session=True)
             payload = {
                 "owner": args.owner,
                 "pid": os.getpid(),
@@ -115,8 +142,10 @@ def run(args: argparse.Namespace) -> int:
             _write_receipt(profile_receipt_path, payload)
 
             def forward(signum: int, _frame: object) -> None:
-                if child.poll() is None:
-                    child.send_signal(signum)
+                try:
+                    os.killpg(child.pid, signum)
+                except ProcessLookupError:
+                    pass
 
             previous = {}
             for signum in (signal.SIGTERM, signal.SIGINT):
@@ -124,6 +153,7 @@ def run(args: argparse.Namespace) -> int:
             try:
                 return child.wait()
             finally:
+                _terminate_process_group(child.pid)
                 for signum, handler in previous.items():
                     signal.signal(signum, handler)
                 for owned_receipt in (receipt_path, profile_receipt_path):

@@ -1,9 +1,11 @@
 import json
+import os
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 
 
@@ -12,6 +14,55 @@ LANCERS_LAUNCHER = Path(__file__).parents[3] / "runtime/legacy/lancers-revenue-b
 
 
 class BrowserPortOwnerTests(unittest.TestCase):
+    def test_process_group_is_terminated_before_owner_releases_lease(self):
+        args = type("Args", (), {
+            "state_dir": Path("/tmp/browser-owner-test-state"),
+            "profile": "/profiles/owned",
+            "port": 9224,
+            "owner": "owned",
+            "command": ["--", "/usr/bin/true"],
+        })()
+        child = MagicMock(pid=43210)
+        child.wait.return_value = 0
+        with (
+            tempfile.TemporaryDirectory() as temporary,
+            patch.object(args, "state_dir", Path(temporary) / "state"),
+            patch("runtime.host.browser_port_owner.subprocess.Popen", return_value=child) as popen,
+            patch("runtime.host.browser_port_owner._terminate_process_group") as terminate,
+        ):
+            from runtime.host.browser_port_owner import run
+            self.assertEqual(run(args), 0)
+        popen.assert_called_once_with(["/usr/bin/true"], start_new_session=True)
+        terminate.assert_called_once_with(43210)
+
+    def test_descendant_cannot_survive_after_browser_root_exits(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            state = root / "state"
+            root_pid_path = root / "root-pid"
+            child_code = (
+                "import pathlib,subprocess,sys;"
+                "subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)']);"
+                f"pathlib.Path({str(root_pid_path)!r}).write_text(str(__import__('os').getpid()))"
+            )
+            owner = subprocess.Popen([
+                sys.executable, str(SCRIPT), "run", "--state-dir", str(state),
+                "--port", "9225", "--profile", "/profiles/descendant",
+                "--owner", "descendant", "--", sys.executable, "-c", child_code,
+            ])
+            self.assertEqual(owner.wait(timeout=5), 0)
+            pgid = int(root_pid_path.read_text())
+            deadline = time.monotonic() + 3
+            while time.monotonic() < deadline:
+                try:
+                    os.killpg(pgid, 0)
+                except ProcessLookupError:
+                    break
+                time.sleep(0.02)
+            else:
+                self.fail("browser descendant process group survived lease release")
+            self.assertFalse((state / "9225.json").exists())
+
     def test_lancers_launcher_reexecutes_through_shared_owner(self):
         launcher = LANCERS_LAUNCHER.read_text(encoding="utf-8")
         self.assertIn('runtime/host/browser_port_owner.py', launcher)

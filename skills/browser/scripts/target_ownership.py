@@ -55,7 +55,7 @@ def _mutate(callback):
             fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 
-def claim_target(target_id, owner=None, max_targets=None):
+def claim_target(target_id, owner=None, max_targets=1):
     owner = require_owner(owner)
     if not target_id:
         raise ValueError("target_id is required")

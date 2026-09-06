@@ -10,14 +10,28 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from websocket import create_connection
 
 import target_ownership
 
 
-HOST = os.environ.get("CDP_HOST", "127.0.0.1")
-PORT = os.environ.get("CDP_PORT", "9222")
+def _endpoint() -> tuple[str, str]:
+    guarded = os.environ.get("CDP", "").strip()
+    guarded_host, guarded_port = "127.0.0.1", "9222"
+    if guarded:
+        parsed = urlsplit(guarded)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.port is None:
+            raise ValueError("CDP must be an absolute http(s) URL with an explicit port")
+        guarded_host, guarded_port = parsed.hostname, str(parsed.port)
+    return (
+        os.environ.get("CDP_HOST", guarded_host),
+        os.environ.get("CDP_PORT", guarded_port),
+    )
+
+
+HOST, PORT = _endpoint()
 BASE = f"http://{HOST}:{PORT}"
 
 
