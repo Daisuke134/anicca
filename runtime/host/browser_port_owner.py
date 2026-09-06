@@ -26,6 +26,8 @@ def _process_group_exists(pgid: int) -> bool:
         return True
     except ProcessLookupError:
         return False
+    except PermissionError:
+        return True
 
 
 def _terminate_process_group(pgid: int, grace_seconds: float = 2.0) -> None:
@@ -35,6 +37,8 @@ def _terminate_process_group(pgid: int, grace_seconds: float = 2.0) -> None:
         os.killpg(pgid, signal.SIGTERM)
     except ProcessLookupError:
         return
+    except PermissionError as exc:
+        raise RuntimeError(f"cannot terminate owned process group {pgid}") from exc
     deadline = time.monotonic() + grace_seconds
     while time.monotonic() < deadline:
         if not _process_group_exists(pgid):
@@ -43,7 +47,15 @@ def _terminate_process_group(pgid: int, grace_seconds: float = 2.0) -> None:
     try:
         os.killpg(pgid, signal.SIGKILL)
     except ProcessLookupError:
-        pass
+        return
+    except PermissionError as exc:
+        raise RuntimeError(f"cannot kill owned process group {pgid}") from exc
+    deadline = time.monotonic() + grace_seconds
+    while time.monotonic() < deadline:
+        if not _process_group_exists(pgid):
+            return
+        time.sleep(0.02)
+    raise RuntimeError(f"owned process group {pgid} survived SIGKILL")
 
 
 def _default_state_dir() -> Path:

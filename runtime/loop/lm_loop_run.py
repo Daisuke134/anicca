@@ -68,10 +68,21 @@ def _runtime_limit(entry: dict) -> int | None:
     return None if entry.get("cadence") == {"keep_alive": True} else 3600
 
 
-def _terminal_outcome(return_code: int) -> tuple[bool, bool, str | None]:
+def _memory_admission_deferred(path: Path, started_ns: int) -> bool:
+    try:
+        if path.stat().st_mtime_ns < started_ns:
+            return False
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        return False
+    return value.get("status") == "deferred" and value.get("effect") == 0
+
+
+def _terminal_outcome(return_code: int, *, memory_deferred: bool = False
+                      ) -> tuple[bool, bool, str | None]:
     if return_code == 0:
         return True, False, None
-    if return_code == 75:
+    if return_code == 75 and memory_deferred:
         return False, True, "memory_admission_deferred"
     return False, False, f"entrypoint_exit_{return_code}"
 
@@ -147,6 +158,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"lm-loop-run: start event failed: {error}", file=sys.stderr)
             scratch = reset_loop_scratch(Path(os.path.expanduser(entry["state_root"])), loop_id)
         try:
+            memory_receipt = scratch / "memory-admission.json"
+            started_ns = time.time_ns()
             return_code = _run_entrypoint(
                 command,
                 env={
@@ -154,15 +167,18 @@ def main(argv: list[str] | None = None) -> int:
                     "LIFE_MANAGER_RELEASE_ROOT": str(release_root),
                     "TMPDIR": f"{scratch}/",
                     "NPM_CONFIG_CACHE": str(scratch / "npm-cache"),
+                    "LIFE_MANAGER_MEMORY_RECEIPT": str(memory_receipt),
                 },
                 timeout_seconds=_runtime_limit(entry),
             )
+            memory_deferred = _memory_admission_deferred(memory_receipt, started_ns)
         finally:
             # Scratch is never evidence. Every loop owns and removes its temporary
             # downloads, package caches, and build products when its pass ends.
             shutil.rmtree(scratch, ignore_errors=True)
         try:
-            succeeded, deferred, blocker = _terminal_outcome(return_code)
+            succeeded, deferred, blocker = _terminal_outcome(
+                return_code, memory_deferred=memory_deferred)
             event = build_runtime_event(
                 loop_id=loop_id, domain=entry["domain"], run_id=run_id,
                 release_sha=manifest["sha"], provider=entry["provider_route"],

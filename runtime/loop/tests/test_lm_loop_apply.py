@@ -1045,6 +1045,43 @@ class LmLoopApplyTest(unittest.TestCase):
             ["preflight"], ["print", service], ["bootout", service], ["print", service],
         ])
 
+    def test_retirement_fails_closed_when_presence_probe_is_not_an_absence(self):
+        release = self._release("release-a").resolve()
+        value = json.loads((release / "config/loop-registry.json").read_text())
+        value["retired_labels"] = ["ai.anicca.retired-example"]
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        agents = self.root / "LaunchAgents"
+        agents.mkdir()
+        retired_plist = agents / "ai.anicca.retired-example.plist"
+        retired_plist.write_text("old")
+        with (
+            patch.object(lm_loop, "_safe_launchctl", side_effect=[
+                (0, "ok"), (78, "invalid Aqua bootstrap"),
+            ]),
+            self.assertRaisesRegex(RuntimeError, "presence readback failed"),
+        ):
+            apply_live(
+                release, agents, self.root / "launchctl-safe",
+                current=release, lock_path=self.root / "apply.lock",
+            )
+        self.assertTrue(retired_plist.exists())
+
+    def test_targeted_apply_never_processes_retired_labels(self):
+        release = self._release("release-a").resolve()
+        value = json.loads((release / "config/loop-registry.json").read_text())
+        value["retired_labels"] = ["ai.anicca.retired-example"]
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        agents = self.root / "LaunchAgents"
+        agents.mkdir()
+        expected = [str(release / "bin/lm-loop-run"), "example", str(release)]
+        launchctl_safe, calls = self._launchctl_recorder(expected)
+        apply_live(
+            release, agents, launchctl_safe, target="example",
+            current=release, lock_path=self.root / "apply.lock",
+            event_writer=lambda *_: None,
+        )
+        self.assertNotIn("ai.anicca.retired-example", calls.read_text())
+
     def test_reapply_same_release_with_preserved_attributes_is_noop(self):
         release = self._release("release-a").resolve()
         current = self.root / "current"

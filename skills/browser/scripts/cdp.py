@@ -19,16 +19,12 @@ import target_ownership
 
 def _endpoint() -> tuple[str, str]:
     guarded = os.environ.get("CDP", "").strip()
-    guarded_host, guarded_port = "127.0.0.1", "9222"
     if guarded:
         parsed = urlsplit(guarded)
         if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.port is None:
             raise ValueError("CDP must be an absolute http(s) URL with an explicit port")
-        guarded_host, guarded_port = parsed.hostname, str(parsed.port)
-    return (
-        os.environ.get("CDP_HOST", guarded_host),
-        os.environ.get("CDP_PORT", guarded_port),
-    )
+        return parsed.hostname, str(parsed.port)
+    return os.environ.get("CDP_HOST", "127.0.0.1"), os.environ.get("CDP_PORT", "9222")
 
 
 HOST, PORT = _endpoint()

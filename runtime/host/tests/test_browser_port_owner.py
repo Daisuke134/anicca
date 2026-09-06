@@ -6,6 +6,10 @@ import tempfile
 import time
 import unittest
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+from runtime.host.browser_port_owner import _process_group_exists, _terminate_process_group
 from pathlib import Path
 
 
@@ -14,6 +18,20 @@ LANCERS_LAUNCHER = Path(__file__).parents[3] / "runtime/legacy/lancers-revenue-b
 
 
 class BrowserPortOwnerTests(unittest.TestCase):
+    def test_permission_denied_probe_means_group_still_exists(self):
+        with patch("runtime.host.browser_port_owner.os.killpg", side_effect=PermissionError):
+            self.assertTrue(_process_group_exists(43210))
+
+    def test_cleanup_fails_closed_if_owned_group_survives_sigkill(self):
+        with (
+            patch("runtime.host.browser_port_owner._process_group_exists", return_value=True),
+            patch("runtime.host.browser_port_owner.os.killpg"),
+            patch("runtime.host.browser_port_owner.time.sleep"),
+            patch("runtime.host.browser_port_owner.time.monotonic", side_effect=[0, 2, 2, 4]),
+            pytest.raises(RuntimeError, match="survived SIGKILL"),
+        ):
+            _terminate_process_group(43210, grace_seconds=1)
+
     def test_process_group_is_terminated_before_owner_releases_lease(self):
         args = type("Args", (), {
             "state_dir": Path("/tmp/browser-owner-test-state"),

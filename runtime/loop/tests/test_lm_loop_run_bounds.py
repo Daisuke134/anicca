@@ -1,8 +1,11 @@
+import json
 import os
 import sys
 import time
 
-from runtime.loop.lm_loop_run import _run_entrypoint, _runtime_limit, _terminal_outcome
+from runtime.loop.lm_loop_run import (
+    _memory_admission_deferred, _run_entrypoint, _runtime_limit, _terminal_outcome,
+)
 
 
 def test_scheduled_wakes_have_a_finite_one_hour_safety_limit():
@@ -16,8 +19,19 @@ def test_continuous_owner_has_no_scheduled_wake_deadline():
 
 
 def test_memory_admission_exit_is_deferred_not_failed():
-    assert _terminal_outcome(75) == (False, True, "memory_admission_deferred")
+    assert _terminal_outcome(75, memory_deferred=True) == (
+        False, True, "memory_admission_deferred")
+    assert _terminal_outcome(75) == (False, False, "entrypoint_exit_75")
     assert _terminal_outcome(1) == (False, False, "entrypoint_exit_1")
+
+
+def test_memory_deferral_requires_a_fresh_matching_receipt(tmp_path):
+    receipt = tmp_path / "memory.json"
+    started = time.time_ns()
+    receipt.write_text(json.dumps({"status": "deferred", "effect": 0}))
+    assert _memory_admission_deferred(receipt, started)
+    receipt.write_text(json.dumps({"status": "pass", "effect": 0}))
+    assert not _memory_admission_deferred(receipt, started)
 
 
 def test_entrypoint_timeout_terminates_its_process_group():

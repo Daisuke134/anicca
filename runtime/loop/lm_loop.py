@@ -324,14 +324,24 @@ def _retire_labels(registry: dict, agents_dir: Path, launchctl_safe: Path,
     for label in sorted(registry.get("retired_labels", [])):
         with _apply_lock(current, _label_apply_lock_path(current, label, lock_path)):
             service = f"{domain}/{label}"
-            present_rc, _ = _safe_launchctl(launchctl_safe, ["print", service])
+            present_rc, present_detail = _safe_launchctl(launchctl_safe, ["print", service])
+            absent = present_rc != 0 and bool(re.search(
+                r"(?i)(?:could not find service|service not found|\babsent\b)", present_detail))
+            if present_rc != 0 and not absent:
+                raise RuntimeError(
+                    f"{label}: retirement presence readback failed: {present_detail.strip()}")
             if present_rc == 0:
                 bootout_rc, detail = _safe_launchctl(launchctl_safe, ["bootout", service])
                 if bootout_rc != 0:
                     raise RuntimeError(f"{label}: retirement bootout failed: {detail.strip()}")
-                verify_rc, _ = _safe_launchctl(launchctl_safe, ["print", service])
+                verify_rc, verify_detail = _safe_launchctl(launchctl_safe, ["print", service])
                 if verify_rc == 0:
                     raise RuntimeError(f"{label}: retirement readback still loaded")
+                if not re.search(
+                        r"(?i)(?:could not find service|service not found|\babsent\b)",
+                        verify_detail):
+                    raise RuntimeError(
+                        f"{label}: retirement absence readback failed: {verify_detail.strip()}")
             plist = agents_dir / f"{label}.plist"
             removed = plist.is_file()
             if removed:
