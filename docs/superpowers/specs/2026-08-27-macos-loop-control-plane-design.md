@@ -170,6 +170,10 @@ completion remain separate.
    - [x] Make the shared raw-CDP CLI require an explicit or environment owner for `new` and `close`.
      New targets are atomically claimed under the same per-owner limit and closed on claim failure;
      foreign close fails before any CDP mutation. Browser CLI/session/ownership tests pass (22).
+   - [x] Route the shared authenticated-page scout through target ownership with cleanup beginning
+     immediately after create. Attach/evaluate failures now close and release the target. A production
+     source audit finds seven remaining `Target.createTarget` paths; each is governed by the shared
+     target ledger, context-lease ledger, and/or immediate `finally` teardown. Browser tests pass (23).
    - [ ] Close the remaining live-retention gap. A source-driven 25-cycle open/close probe left zero
      lease and target-owner rows and did not increase page count (2 before/after). A later 5x10 probe
      also left both ledgers empty and reduced Chromium RSS from 1.21 GiB to 1.06 GiB, but concurrent

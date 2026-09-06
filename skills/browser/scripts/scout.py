@@ -23,8 +23,22 @@ import subprocess
 import sys
 import urllib.request
 
+import target_ownership
+
+try:
+    import websockets
+except ImportError:
+    websockets = None
+
 CRWL = os.path.expanduser("~/.local/bin/crwl")
 EXCERPT = 6000  # keep each page small — the model needs the signal, not the whole DOM
+
+
+def _browser_ws():
+    data = json.loads(
+        urllib.request.urlopen("http://127.0.0.1:9222/json/version", timeout=8).read()
+    )
+    return data["webSocketDebuggerUrl"]
 
 
 def _public(url):
@@ -40,16 +54,11 @@ def _public(url):
 def _browser(url):
     """Fetch a login-required page by driving the running daily-driver over CDP."""
     import asyncio
-    try:
-        import websockets
-    except ImportError:
+    if websockets is None:
         raise RuntimeError("pip install websockets")
 
-    d = json.loads(urllib.request.urlopen("http://127.0.0.1:9222/json/version", timeout=8).read())
-    ws_url = d["webSocketDebuggerUrl"]
-
     async def run():
-        async with websockets.connect(ws_url, max_size=64 * 1024 * 1024) as ws:
+        async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
             mid = [0]
 
             async def call(method, params=None, sess=None):
@@ -68,12 +77,21 @@ def _browser(url):
 
             t = await call("Target.createTarget", {"url": url})
             tid = t["targetId"]
-            sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
-            await asyncio.sleep(4)
-            r = await call("Runtime.evaluate",
-                           {"expression": "document.body.innerText", "returnByValue": True}, sess=sess)
-            await call("Target.closeTarget", {"targetId": tid})
-            return (r.get("result", {}).get("value") or "")[:EXCERPT]
+            claimed = False
+            try:
+                target_ownership.claim_target(tid, "browser-scout")
+                claimed = True
+                sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
+                await asyncio.sleep(4)
+                r = await call("Runtime.evaluate",
+                               {"expression": "document.body.innerText", "returnByValue": True}, sess=sess)
+                return (r.get("result", {}).get("value") or "")[:EXCERPT]
+            finally:
+                try:
+                    await call("Target.closeTarget", {"targetId": tid})
+                finally:
+                    if claimed:
+                        target_ownership.release_target(tid, "browser-scout")
 
     return asyncio.run(run())
 
