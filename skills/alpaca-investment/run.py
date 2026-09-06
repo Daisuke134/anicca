@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from allocator import build_candidates, choose, order_for
-from alpaca_cli import (find_order_by_client_id, observe, read_allocator_snapshot,
+from alpaca_cli import (CLI_OPERATIONS, find_order_by_client_id, observe, read_allocator_snapshot,
                         read_campaign_snapshot, submit_order)
 from campaign import CANDIDATE_REF, SYMBOLS, exit_order, reconcile
 from effect_store import mark_started, reconcile_started, record_no_trade, seal
@@ -42,6 +42,14 @@ def _retry_allowed(stage: str, effect_attempted: bool, attempt: int) -> bool:
 
 def _terminal_effect(effect_attempted: bool) -> str:
     return "unknown" if effect_attempted else "none"
+
+
+def _error_code(error: Exception) -> str:
+    value = str(error)
+    for prefix in ("alpaca_cli_failed:", "alpaca_cli_timeout:"):
+        if value.startswith(prefix) and value.removeprefix(prefix) in CLI_OPERATIONS:
+            return value
+    return type(error).__name__
 
 
 def _deployment() -> str:
@@ -233,7 +241,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         }
         print(json.dumps(summary, separators=(",", ":")))
         return 0
-    except Exception:
+    except Exception as error:
         # Read/agent/report failures before an effect are transient-safe to retry. Once submit_order
         # was called, never retry: an unknown broker acknowledgement must reconcile on the next wake.
         if _retry_allowed(stage, effect_attempted, attempt):
@@ -255,6 +263,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         print(json.dumps({
             "blocker": "alpaca_pass_failed",
             "effect": _terminal_effect(effect_attempted),
+            "error_code": _error_code(error),
             "loop_id": "alpaca-investment",
             "mode": mode if mode in {"paper", "shadow", "live"} else "unknown",
             "stage": stage,

@@ -301,6 +301,18 @@ class PortablePassTest(unittest.TestCase):
 
 
 class FailureTelegramTest(unittest.TestCase):
+    @patch.object(CLI.subprocess, "run")
+    def test_cli_failure_code_identifies_only_the_safe_operation(self, run):
+        run.return_value.returncode = 1
+        with self.assertRaisesRegex(
+            ValueError, "^alpaca_cli_failed:account_get$"
+        ):
+            CLI._run(Path("/safe/alpaca"), ["account", "get", "--secret", "hidden"], {})
+
+    def test_prefixed_provider_payload_is_not_emitted(self):
+        error = ValueError("alpaca_cli_failed:account_get:provider-payload-SECRET")
+        self.assertEqual(MODULE._error_code(error), "ValueError")
+
     @patch.object(MODULE, "deliver_failure", create=True)
     @patch.object(MODULE, "observe", side_effect=RuntimeError("provider payload must stay private"))
     @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
@@ -311,13 +323,16 @@ class FailureTelegramTest(unittest.TestCase):
         with patch.dict(MODULE.os.environ, {
             "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
             "LIFE_MANAGER_INVESTMENT_MODE": "paper",
-        }):
+        }), redirect_stdout(StringIO()) as output:
             self.assertEqual(MODULE.main(), 78)
         self.assertEqual(observe.call_count, 3)
         deliver_failure.assert_called_once()
         self.assertEqual(deliver_failure.call_args.kwargs["stage"], "observe")
         self.assertFalse(deliver_failure.call_args.kwargs["effect_uncertain"])
         self.assertNotIn("provider payload", str(deliver_failure.call_args))
+        receipt = json.loads(output.getvalue())
+        self.assertEqual(receipt["error_code"], "RuntimeError")
+        self.assertNotIn("provider payload", output.getvalue())
 
     def test_telegram_delivery_failure_is_not_retried(self):
         self.assertFalse(MODULE._retry_allowed("telegram_deliver", False, 0))
