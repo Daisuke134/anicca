@@ -45,19 +45,27 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `18d27005ea553bb0-42383` ended `pass` with observed `5`, actionable `3`, readback `4`, failed `0`,
    and pending `1`. Talkroom `18180857` remains durably retry-owned because its TikTok recipient
    route is externally unavailable; it is not dropped and does not block unrelated buyers.
-3. [ ] `COCONALA-PAID-3` Restore continuous Paid health after the reference pass regressed.
+3. [x] `COCONALA-PAID-3` Restore continuous Paid health after the reference pass regressed.
    PASS = preserve every already-read-back effect, remove the current per-project
    `remote_builder/transient_timeout` failure boundary, and observe a fresh natural installed-release
    aggregate with `failed=0`; a following natural wake must retain Ryu's existing message with no
-   duplicate send and keep formal delivery off. Release
+   duplicate send and keep formal delivery off.
    The current installed Paid release `722dd7b5596f793661717297d66ac1014109ccad` produced natural
    PASS terminals `18d2bfb9ba468920-25690` and `18d2c08b7e999228-45593`. The latter ended at
    `2026-09-06T14:23:08Z`; its aggregate observes five rooms with `failed=0`, `pending=1`, effect `0`
    and readback `4`, without another `ENOSPC`, reconciliation `OSError`, exit 120 or exit 143. Ryu's
    newest revision and normal-message submission are complete and Dais confirmed the live result;
-   formal delivery remains off. The atom stays open only for all-client aggregate coverage and the
-   required following replay-zero natural pass on the current source-derived release. A process
-   status alone is not PASS.
+   formal delivery remains off. Two later natural terminals from the same installed release,
+   `18d2c19ecb1e4f58-78246` at `2026-09-06T14:32:53Z` and
+   `18d2c226e2d34698-94197` at `2026-09-06T14:42:06Z`, also ended `pass`. The latest aggregate
+   represented all five observed rooms exactly once with duplicate dropped `0`, failed `0`, pending
+   `1`, effect `0`, and readback `4`: `18223833` and `18171850` completed, `18211957` and `18211838`
+   awaited the buyer, and `18180857` remained durably retry-owned. Its official TikTok/Google Sheets
+   reconciliation receipt records a nonempty blocker and remaining work while both current-cycle
+   mutation counts stay zero. Authenticated room readback keeps Ryu in `取引中`, observes the existing
+   seller message, and records both formal-delivery controls false. These source-derived natural
+   terminals contain no `ENOSPC`, reconciliation `OSError`, exit 120, or exit 143; process liveness
+   was not used as acceptance evidence.
 
    Execute the remaining substeps in this order without waiting for another marketplace owner:
 
@@ -66,11 +74,11 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
      buyer-visible revision as a normal message in room `18211957`; Dais confirmed the live result.
      Formal delivery remains off. The next aggregate wake owns replay-zero proof; Ryu is no longer a
      separate unfinished production task.
-   - [ ] `COCONALA-PAID-3B` Cover every current client in one aggregate. PASS = every observed room
+   - [x] `COCONALA-PAID-3B` Cover every current client in one aggregate. PASS = every observed room
      appears exactly once as completed, awaiting buyer, or durably retry-owned; `failed=0`; one slow
      client does not prevent another client from progressing. “Observed” does not require a message
      when official state proves that waiting or no-op is correct.
-   - [ ] `COCONALA-PAID-3C` Prove continuous local ownership. PASS = no `ENOSPC`, reconciliation
+   - [x] `COCONALA-PAID-3C` Prove continuous local ownership. PASS = no `ENOSPC`, reconciliation
      `OSError`, exit 120 or exit 143, followed by two consecutive natural PASS terminals and zero
      duplicate external effects.
 4. [ ] `SHARED-PAID-1` Use Lancers as the second real Paid platform and extraction trigger.
