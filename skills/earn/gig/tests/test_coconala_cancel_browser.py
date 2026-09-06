@@ -332,30 +332,67 @@ def test_paid_accepts_only_exact_durable_cancellation_intent():
         ) is True
 
 
-def test_paid_aggregation_preserves_cancellation_effect(tmp_path, monkeypatch):
+def test_paid_aggregation_runs_cancellation_only_in_effect_child(tmp_path, monkeypatch):
     paid = load_module("paid_direct")
     prepared_path = tmp_path / "prepared.json"
+    effect_path = tmp_path / "effect.json"
+    calls = []
 
-    def run_prepare(*_args, **_kwargs):
-        paid._write(prepared_path, {
-            "status": "completed", "effect": 1, "readback": 1, "failed": 0,
-            "_paid_prepare_status": "terminal_effect",
-            "item": {
+    def run_child(command, **_kwargs):
+        calls.append(command)
+        if command == ["prepare"]:
+            paid._write(prepared_path, {
+                "talkroom_id": "18218780", "_paid_mode": "cancellation",
+                "_paid_prepare_status": "prepared",
+            })
+        else:
+            paid._write(effect_path, {
+                "status": "completed", "effect": 1, "readback": 1, "failed": 0,
+                "item": {
                 "send_performed": True, "deduplicated": False,
                 "formal_delivery_checkbox": False, "effect_key": "key",
                 "evidence_paths": {"official_readback": "/evidence.json"},
-            },
-        })
+                },
+            })
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(paid, "_prepare_command", lambda *_args: ["prepare"])
-    monkeypatch.setattr(paid, "_run_bounded", run_prepare)
+    monkeypatch.setattr(paid, "_effect_command", lambda *_args: ["effect"])
+    monkeypatch.setattr(paid, "_run_bounded", run_child)
+    monkeypatch.setattr(paid, "_effect_gate_reason", lambda _args: None)
 
     row, effect, readback, failed, step = paid._run_paid_item(
         SimpleNamespace(cdp_lock_dir=tmp_path), "18218780", tmp_path / "item.json",
-        prepared_path, tmp_path / "effect.json",
+        prepared_path, effect_path,
     )
 
+    assert calls == [["prepare"], ["effect"]]
     assert (row["status"], row["send_performed"], effect, readback, failed, step) == (
         "completed", True, 1, 1, 0, "",
     )
+
+
+def test_write_one_owns_cancellation_mutation_and_readback(tmp_path, monkeypatch):
+    paid = load_module("paid_direct")
+    item_path = tmp_path / "prepared.json"
+    output = tmp_path / "effect.json"
+    paid._write(item_path, {
+        "talkroom_id": "18218780", "buyer_feedback_sha256": "a" * 64,
+        "_paid_mode": "cancellation",
+    })
+    root = tmp_path / "project"
+    calls = []
+    monkeypatch.setenv("CLOAK_BROWSER_OWNER", "paid-direct-18218780")
+    monkeypatch.setattr(paid, "_account_owner_observe_only", lambda *_args: None)
+    monkeypatch.setattr(paid, "_effect_gate_reason", lambda _args: None)
+    monkeypatch.setattr(paid, "_paid_project_root", lambda *_args: root)
+    monkeypatch.setattr(paid, "_run_coconala_cancellation", lambda *_args: calls.append("cancel") or {
+        "send_performed": True, "deduplicated": False, "effect_key": "key",
+        "live_dom_path": "/official.json", "screenshot_path": "/screen.png",
+    })
+
+    assert paid._write_one(SimpleNamespace(evidence_dir=tmp_path), item_path, output) == 0
+    result = paid._load(output)
+    assert calls == ["cancel"]
+    assert result["effect"] == result["readback"] == 1
+    assert result["item"]["formal_delivery_checkbox"] is False
