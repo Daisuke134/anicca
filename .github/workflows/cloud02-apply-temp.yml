@@ -1,0 +1,121 @@
+name: TEMP apply CLOUD-02 timing patch
+
+on:
+  push:
+    branches:
+      - fix/cloud-02-timing-authority-20260906
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[cloud02-applied]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cloud-02-timing-authority-20260906
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply exact bounded source edits
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected exactly one match, got {count}: {old[:80]!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          reminder = 'apps/life-manager/lib/travel-reminder.js'
+          replace_once(
+              reminder,
+              'const { sendMessage } = require("./telegram.js");\n',
+              'const { sendMessage } = require("./telegram.js");\nconst { computeDoorDepartureMs, computeT5ReminderMs } = require("./travel-timing.js");\n',
+          )
+          replace_once(
+              reminder,
+              '''function routeDuration(route) {\n  const seconds = Number(route && route.durationSeconds);\n  return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;\n}\n\nfunction computeDepartureMs(event, route, { bufferMin = 5 } = {}) {\n  const start = startMs(event);\n  if (start === null || !physical(event)) return start;\n  const duration = routeDuration(route);\n  if (duration === null) return start;\n  const buffer = Number(bufferMin);\n  return start - duration * 1000 - (Number.isFinite(buffer) && buffer >= 0 ? buffer : 5) * 60000;\n}\n\nfunction computeReminderDueAt(event, { departureMs, route, bufferMin = 5 } = {}) {\n  const departure = toMs(departureMs) ?? computeDepartureMs(event, route, { bufferMin });\n  return departure === null ? null : departure - T5_MS;\n}\n''',
+              '''function computeDepartureMs(event, route, { bufferMin = 5 } = {}) {\n  const start = startMs(event);\n  if (start === null || !physical(event)) return start;\n  return computeDoorDepartureMs(start, route, { bufferMin }) ?? start;\n}\n\nfunction computeReminderDueAt(event, { departureMs, route, bufferMin = 5 } = {}) {\n  const departure = toMs(departureMs) ?? computeDepartureMs(event, route, { bufferMin });\n  return computeT5ReminderMs(departure);\n}\n''',
+          )
+
+          wake = 'apps/life-manager/lib/wake-filter.js'
+          replace_once(
+              wake,
+              '"use strict";\n',
+              '"use strict";\n\nconst { computeDoorDepartureMs } = require("./travel-timing.js");\n',
+          )
+          replace_once(
+              wake,
+              '''async function resolveDeparture(ev, allEvents, { home, mapsKey, nowMs = Date.now(), bufferMin = 5, directionsFn } = {}) {\n  const blockDep = departureMs(ev, allEvents);\n  if (blockDep !== ev.startMs) return blockDep;           // a travel block already pins the leave time\n  const origin = originFor(ev, allEvents, home);\n  if (!origin || !ev.location || typeof directionsFn !== "function") return ev.startMs;\n  let mins = null;\n  try { mins = await directionsFn(origin, ev.location, mapsKey, ev.startMs, nowMs); } catch { mins = null; }\n  if (mins == null) return ev.startMs;                    // can't compute → conservative event-start\n  return ev.startMs - (mins + bufferMin) * 60000;         // wake before the inline-computed leave time\n}\n''',
+              '''async function resolveDeparture(ev, allEvents, {\n  home, mapsKey, nowMs = Date.now(), bufferMin = 5, directionsFn, routeFn, uid, timezone,\n} = {}) {\n  const blockDep = departureMs(ev, allEvents);\n  if (blockDep !== ev.startMs) return blockDep;           // a Travel block already pins door departure\n  const origin = originFor(ev, allEvents, home);\n  if (!origin || !ev.location) return ev.startMs;\n  if (typeof routeFn === "function") {\n    let route = null;\n    try {\n      route = await routeFn(origin, ev.location, mapsKey, ev.startMs, nowMs, false, { uid, timezone });\n    } catch { route = null; }\n    const exact = computeDoorDepartureMs(ev.startMs, route, { bufferMin });\n    if (exact !== null) return exact;\n  }\n  if (typeof directionsFn !== "function") return ev.startMs;\n  let mins = null;\n  try { mins = await directionsFn(origin, ev.location, mapsKey, ev.startMs, nowMs); } catch { mins = null; }\n  if (mins == null) return ev.startMs;                    // provider unavailable → conservative event-start\n  return ev.startMs - (mins + bufferMin) * 60000;         // compatibility fallback only\n}\n''',
+          )
+
+          scheduler = 'apps/life-manager/scheduler.js'
+          replace_once(
+              scheduler,
+              'const { fillTravel, directionsMinutes } = require("./lib/travel.js");\n',
+              'const { fillTravel, directionsMinutes, directionsRoute } = require("./lib/travel.js");\n',
+          )
+          replace_once(
+              scheduler,
+              '''        directionsFn: deps.directionsMinutes || directionsMinutes,\n      });\n''',
+              '''        directionsFn: deps.directionsMinutes || directionsMinutes,\n        routeFn: deps.directionsRoute || directionsRoute, uid: u.uid,\n        timezone: u.call_time_zone || u.time_zone,\n      });\n''',
+          )
+
+          travel = 'apps/life-manager/lib/travel.js'
+          replace_once(
+              travel,
+              'const { interpretCalendarEvent } = require("./calendar-interpreter.js");\n',
+              'const { interpretCalendarEvent } = require("./calendar-interpreter.js");\nconst { computeDoorDepartureMs } = require("./travel-timing.js");\n',
+          )
+          replace_once(
+              travel,
+              'async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId } = {}) {\n  const directionsFn = _directionsMinutes || directionsMinutes;\n',
+              'async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsRoute, _directionsMinutes, gmailAccountId } = {}) {\n  const directionsFn = _directionsMinutes || directionsMinutes;\n  const routeFn = _directionsRoute || (!_directionsMinutes ? directionsRoute : null);\n',
+          )
+          replace_once(
+              travel,
+              '        let mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);\n',
+              '''        let route = null;\n        if (routeFn) {\n          try { route = await routeFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts); }\n          catch { route = null; }\n          if (routeDurationSeconds(route) == null) route = null;\n        }\n        let mins = route ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);\n''',
+          )
+          replace_once(
+              travel,
+              '              mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);\n',
+              '''              if (routeFn) {\n                try { route = await routeFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts); }\n                catch { route = null; }\n                if (routeDurationSeconds(route) == null) route = null;\n              }\n              mins = route ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);\n''',
+          )
+          replace_once(travel, '        if (mins == null) {\n', '        if (route == null && mins == null) {\n')
+          replace_once(
+              travel,
+              '          const leaveMs = arriveMs - (mins + bufferMin) * 60000;\n',
+              '          const leaveMs = route ? computeDoorDepartureMs(arriveMs, route, { bufferMin }) : arriveMs - (mins + bufferMin) * 60000;\n',
+          )
+          PY
+      - name: Install dependencies
+        working-directory: apps/life-manager
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify bounded timing slice before commit
+        working-directory: apps/life-manager
+        run: |
+          node --test lib/travel-timing.test.js lib/travel-reminder.test.js lib/travel-reminder-detail.test.js lib/wake-filter.test.js lib/travel-return.test.js
+      - name: Commit exact passing patch to the PR branch
+        run: |
+          set -euo pipefail
+          git config user.name "cloud-tdd-bot"
+          git config user.email "cloud-tdd-bot@users.noreply.github.com"
+          git add apps/life-manager/lib/travel-timing.js \
+            apps/life-manager/lib/travel-timing.test.js \
+            apps/life-manager/lib/travel-reminder.js \
+            apps/life-manager/lib/wake-filter.js \
+            apps/life-manager/lib/travel.js \
+            apps/life-manager/scheduler.js
+          git diff --cached --check
+          git commit -m "fix(cloud): share exact departure timing [cloud02-applied]"
+          git push origin HEAD:fix/cloud-02-timing-authority-20260906
