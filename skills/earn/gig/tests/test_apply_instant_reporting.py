@@ -6,10 +6,13 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
+import application_direct  # noqa: E402
 import application_parent  # noqa: E402
 import apply_telegram_report  # noqa: E402
 import report_envelope  # noqa: E402
@@ -174,16 +177,52 @@ def test_publish_redrives_only_unresolved_application_events(tmp_path, monkeypat
     assert rows[pending_key]["state"] == "pending"
 
 
-def test_apply_transport_timeout_with_provider_ack_persists_receipt(tmp_path):
-    event_key = "gig:telegram:instant-work-event:v1:timeout-ack"
+class _SendResult:
+    """The shape skills/_shared/marketplace-core/scripts/telegram_delivery.py returns."""
 
-    def timed_out(command, **_kwargs):
-        raise subprocess.TimeoutExpired(command, 180, output=b'{"messageId":"29117"}\n')
+    def __init__(self, started, provider_id, error=None):
+        self.started, self.provider_id, self.error = started, provider_id, error
 
-    transport = apply_telegram_report.OpenClawTelegramTransport(target="apply-test-chat", run=timed_out, receipt_dir=tmp_path, now_ms=lambda: 123456)
+
+def test_apply_transport_sends_through_shared_client_and_persists_receipt(tmp_path):
+    event_key = "gig:telegram:instant-work-event:v1:shared-ack"
+    calls = []
+
+    def sender(message, *, chat_id, env_file=None):
+        calls.append((message, chat_id))
+        return _SendResult(True, "29117")
+
+    transport = apply_telegram_report.ApplyTelegramTransport(
+        target="apply-test-chat", receipt_dir=tmp_path, now_ms=lambda: 123456, sender=sender,
+    )
     assert transport.send_report("verified application", event_key=event_key) == "29117"
+    assert calls == [("verified application", "apply-test-chat")]
     receipt = json.loads(next(tmp_path.glob("*.json")).read_text(encoding="utf-8"))
     assert (receipt["message_id"], receipt["event_key"]) == ("29117", event_key)
+
+
+def test_apply_transport_without_provider_id_is_never_reported_as_sent(tmp_path):
+    """No message_id means delivery is unknown, so dispatch_one must not mark the row sent."""
+
+    def sender(message, *, chat_id, env_file=None):
+        return _SendResult(True, None, "receipt_missing")
+
+    transport = apply_telegram_report.ApplyTelegramTransport(
+        target="apply-test-chat", receipt_dir=tmp_path, sender=sender,
+    )
+    with pytest.raises(RuntimeError):
+        transport.send_report("verified application", event_key="gig:telegram:v1:no-ack")
+    assert list(tmp_path.glob("*.json")) == []
+
+
+def test_apply_transport_source_holds_no_external_cli_dependency():
+    """APPLY-REPORT-1: a cloned repository must be able to run this without a Homebrew binary."""
+    source = (
+        Path(apply_telegram_report.__file__).read_text(encoding="utf-8")
+        + Path(application_direct.__file__).read_text(encoding="utf-8")
+    )
+    assert "openclaw" not in source.lower()
+    assert "/opt/homebrew" not in source
 
 
 def test_apply_redrive_reopens_one_row_per_wake(tmp_path):

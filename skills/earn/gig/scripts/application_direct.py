@@ -25,7 +25,7 @@ from b2_result_gate import (
 from b2_search_objective import checkpoint, finish, wake_plan
 import evidence_gc
 from telegram_outbox import TelegramOutbox, dispatch_one
-from apply_telegram_report import OpenClawTelegramTransport
+from apply_telegram_report import ApplyTelegramTransport
 from gig_paths import BROWSER_DIR, RUNNER_DIR
 from gig_release import pin_release_for_process
 
@@ -40,7 +40,6 @@ DEFAULT_OPERATOR_BRAKE = HERE / "gig_brake.sh"
 DEFAULT_RUNNER = RUNNER_DIR / "agent_runner.py"
 DEFAULT_TELEGRAM_DATABASE = Path.home() / "gig" / "telegram-outbox.sqlite3"
 DEFAULT_TELEGRAM_TARGET = os.environ.get("GIG_REPORT_CHAT", "")
-DEFAULT_OPENCLAW = Path("/opt/homebrew/bin/openclaw")
 DEFAULT_TELEGRAM_RECEIPT_DIR = Path.home() / "gig" / "telegram-delivery-receipts"
 SAME_WAKE_RECONCILE_DELAY_SECONDS = 60
 CONFIRMED = frozenset(("confirmed", "recovered_prepared_confirmed", "reconciled_confirmed"))
@@ -829,8 +828,8 @@ def _send_telegram(
         outbox,
         owner=f"gig-apply-direct:{safe_pass_id}",
         now=lambda: int(time.time()),
-        transport=OpenClawTelegramTransport(
-            target=args.telegram_target, executable=args.openclaw,
+        transport=ApplyTelegramTransport(
+            target=args.telegram_target,
             receipt_dir=args.telegram_receipt_dir,
         ),
         report_id=report_id,
@@ -964,8 +963,8 @@ def _publish_fresh_decision_notifications(
         )
         enqueued.append({"event_key": event_key, "report_id": int(row["report_id"])})
     dispatched: list[dict[str, Any]] = []
-    transport = OpenClawTelegramTransport(
-        target=args.telegram_target, executable=args.openclaw,
+    transport = ApplyTelegramTransport(
+        target=args.telegram_target,
         receipt_dir=args.telegram_receipt_dir,
     )
     for report_id in outbox.ready_report_ids(kind="apply-decision", now=now):
@@ -1154,7 +1153,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--telegram-database", type=Path, default=DEFAULT_TELEGRAM_DATABASE)
     parser.add_argument("--telegram-target", default=DEFAULT_TELEGRAM_TARGET)
-    parser.add_argument("--openclaw", type=Path, default=DEFAULT_OPENCLAW)
     parser.add_argument("--telegram-receipt-dir", type=Path, default=DEFAULT_TELEGRAM_RECEIPT_DIR)
     parser.add_argument(
         "--all-eligible",
