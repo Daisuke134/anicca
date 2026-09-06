@@ -154,6 +154,12 @@ Do not reorder or mark the Paid atoms below complete while local boot recovery i
 independent agents may continue read-only or disjoint work in parallel; this owner advances the host
 P0 first.
 
+Current audited state: `PANIC-1` is complete and `PANIC-2` is the first unfinished atom. The source
+contains most ownership/admission/retention bounds, but its immutable-release sustained-live gate is
+still open. The Mac still reports macOS `15.6` build `24G84`, so `PANIC-3` and its update-dependent
+reboot proof in `PANIC-4` did not happen. `PANIC-5` lacks its accepted pre-login alert, and the latest
+WindowServer watchdog is `2026-09-06`, so the seven-day recurrence gate in `PANIC-6` cannot yet pass.
+
 ## Active atomic cursor — marketplace kernel completion
 
 This is the only executable cursor for this owner. Older unchecked Coconala incident and customer

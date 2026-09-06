@@ -67,14 +67,12 @@ Execute exactly in this order:
    ChatGPT, Claude, or another loop. Treat finite idempotent wakes, unique resource ownership,
    host-headroom admission, durable cursors, bounded retry/backoff, and official effect receipts as
    the shared loop-development contract; do not create a Coconala-only or browser-only supervisor.
-   First source-control atom: one host-wide CDP-port lease now fail-closes a second owner with
-   `browser_port_owned`/exit `75`, while distinct ports remain concurrent. Both the Life Manager
-   daily-driver and Job Search browser enter through this same primitive. Focused ownership and
-   dispatch tests pass (28), Job Search browser tests pass (38), and host tests pass (5). This is not
-   yet released or applied; the two already-running `9222` owners remain untouched because applying
-   the new contract must not kill or restart a live browser. The remaining PANIC-2 work is owner
-   inventory reconciliation, unique profile/PID enforcement, finite retention, and host-headroom
-   admission under sustained load.
+   Source control now contains the shared host-wide port/profile/PID ownership, target/context and
+   renderer bounds, memory admission, scheduled-process deadline and owner-scoped cleanup contracts
+   detailed below. Their focused regressions and several source-driven probes pass, but this atom is
+   not complete: immutable-release application and sustained live readback still show legacy/unowned
+   pages and old-release owners, so host-wide browser/TCC pressure is not yet proved bounded. Running
+   browsers remain untouched because applying the contract must not kill or restart a live browser.
 3. [ ] `PANIC-3` Install the recommended macOS 15.7.9 maintenance update, not the Tahoe major
    upgrade, in an explicitly approved maintenance window. This step requires a restart and therefore
    waits for user approval immediately before execution. PASS = exact OS/build readback, no missing
@@ -91,6 +89,12 @@ Execute exactly in this order:
 6. [ ] `PANIC-6` Close recurrence. PASS = seven days of normal concurrent loop load with no new
    WindowServer/tccd/sandboxd watchdog panic, bounded memory/browser counts, no unowned boot gap, and
    no duplicate external effect across recovery.
+
+Current completion audit: only `PANIC-1` is complete. `PANIC-2` still lacks its aggregate live
+boundedness gate; `PANIC-3` is contradicted by the host still reporting macOS `15.6` build `24G84`;
+therefore the update-dependent `PANIC-4` has not run. `PANIC-5` has no accepted pre-login alert and
+the `2026-09-06` WindowServer watchdog means the seven-day no-recurrence window required by
+`PANIC-6` has not elapsed. These are missing acceptance receipts, not unchecked completed work.
 
 ### Active execution ownership
 
