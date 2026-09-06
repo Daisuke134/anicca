@@ -12,8 +12,9 @@ from allocator import build_candidates, choose, order_for
 from alpaca_cli import (CLI_OPERATIONS, SAFE_ERROR_CODES, find_order_by_client_id, observe,
                         read_allocator_snapshot, read_campaign_snapshot, submit_order)
 from campaign import CANDIDATE_REF, SYMBOLS, exit_order, reconcile
+from control import control_fence, read_control
 from effect_store import mark_started, reconcile_started, record_no_trade, seal
-from reporter import deliver, deliver_failure
+from reporter import deliver, deliver_control, deliver_failure
 from review_status import read_receipt as read_application_status
 from review_status import refresh as refresh_application_status
 
@@ -129,6 +130,19 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
                 client_order_id=client_order_id,
             ),
         )
+        stage = "control_read"
+        control = read_control(state / "control.json")
+        if control["paused"] or control["killed"]:
+            stage = "telegram_deliver"
+            telegram = deliver_control(
+                state, control=control, wake_id=wake_id, mode=mode)
+            print(json.dumps({
+                "effect": "none", "loop_id": "alpaca-investment", "mode": mode,
+                "reconciliation": reconciliation,
+                "status": "killed" if control["killed"] else "paused",
+                "telegram_message_id": telegram["message_id"],
+            }, separators=(",", ":")))
+            return 0
         stage = "observe"
         observation = observe(
             credentials_path=credentials_path,
@@ -163,11 +177,22 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
                     order = exit_order(campaign)
                     _atomic_json(exit_order_path, order)
                 stage = "campaign_exit_submit"
-                sealed = seal(state / "receipts.jsonl", exit_decision, order)
-                mark_started(state / "receipts.jsonl", sealed)
-                effect_attempted = True
-                submit_order(credentials_path=credentials_path, cli_path=cli_path,
-                             client_order_id=sealed["client_order_id"], order=order)
+                with control_fence(state) as current_control:
+                    if current_control["paused"] or current_control["killed"]:
+                        telegram = deliver_control(
+                            state, control=current_control, wake_id=wake_id, mode=mode)
+                        print(json.dumps({
+                            "effect": "none", "loop_id": "alpaca-investment", "mode": mode,
+                            "reconciliation": reconciliation,
+                            "status": "killed" if current_control["killed"] else "paused",
+                            "telegram_message_id": telegram["message_id"],
+                        }, separators=(",", ":")))
+                        return 0
+                    sealed = seal(state / "receipts.jsonl", exit_decision, order)
+                    mark_started(state / "receipts.jsonl", sealed)
+                    effect_attempted = True
+                    submit_order(credentials_path=credentials_path, cli_path=cli_path,
+                                 client_order_id=sealed["client_order_id"], order=order)
                 stage = "campaign_exit_reconcile"
                 reconcile_started(
                     state / "receipts.jsonl",
@@ -203,11 +228,22 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
             stage = "allocation_order_build"
             order = order_for(decision)
             stage = "allocation_submit"
-            sealed = seal(state / "receipts.jsonl", decision, order)
-            mark_started(state / "receipts.jsonl", sealed)
-            effect_attempted = True
-            submit_order(credentials_path=credentials_path, cli_path=cli_path,
-                         client_order_id=sealed["client_order_id"], order=order)
+            with control_fence(state) as current_control:
+                if current_control["paused"] or current_control["killed"]:
+                    telegram = deliver_control(
+                        state, control=current_control, wake_id=wake_id, mode=mode)
+                    print(json.dumps({
+                        "effect": "none", "loop_id": "alpaca-investment", "mode": mode,
+                        "reconciliation": reconciliation,
+                        "status": "killed" if current_control["killed"] else "paused",
+                        "telegram_message_id": telegram["message_id"],
+                    }, separators=(",", ":")))
+                    return 0
+                sealed = seal(state / "receipts.jsonl", decision, order)
+                mark_started(state / "receipts.jsonl", sealed)
+                effect_attempted = True
+                submit_order(credentials_path=credentials_path, cli_path=cli_path,
+                             client_order_id=sealed["client_order_id"], order=order)
             stage = "allocation_reconcile"
             reconcile_started(
                 state / "receipts.jsonl",
@@ -223,6 +259,7 @@ def main(*, attempt: int = 0, wake_id=None) -> int:
         decision["application_status"] = review.get("application_status", "unknown")
         stage = "state_write"
         _atomic_json(state / "allocation-latest.json", decision)
+        _atomic_json(state / "risk-latest.json", allocator_snapshot["risk"])
         _atomic_json(state / "observation-latest.json", observation)
         _atomic_json(state / "campaign.json", campaign)
         stage = "telegram_deliver"

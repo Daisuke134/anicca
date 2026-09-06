@@ -6,6 +6,17 @@
 "use strict";
 
 const BUCKET_MS = 10 * 60_000; // coarse 10-min bucket: a moved event lands in a new bucket → recompute.
+const NEGATIVE_TTL_MS = 30 * 60_000;
+const TRANSIENT_TTL_MS = 2 * 60_000;
+const CACHE_FAILURE = Symbol("route-cache-failure");
+
+function cacheFailure(failureClass = "no_route") {
+  return { [CACHE_FAILURE]: true, failureClass: String(failureClass || "no_route") };
+}
+
+function isCacheFailure(value) {
+  return Boolean(value && value[CACHE_FAILURE] === true);
+}
 
 // Round a departure epoch (ms) down to a coarse bucket index.
 function timeBucket(epochMs, bucketMs = BUCKET_MS) {
@@ -69,32 +80,114 @@ function cacheKey(uid, fromGeo, toGeo, bucket, context = {}) {
   ]);
 }
 
+function makeSupabaseRouteStore({ supaUrl, supaKey, fetchImpl = global.fetch } = {}) {
+  const base = String(supaUrl || "").replace(/\/$/, "");
+  const memory = new Map();
+  const headers = {
+    apikey: String(supaKey || ""),
+    Authorization: `Bearer ${String(supaKey || "")}`,
+    "Content-Type": "application/json",
+  };
+  return {
+    async get(key) {
+      if (memory.has(key)) return memory.get(key);
+      if (!base || !supaKey || typeof fetchImpl !== "function") return null;
+      try {
+        const url = `${base}/rest/v1/lm_route_cache?cache_key=eq.${encodeURIComponent(key)}`
+          + "&select=geometry,computed_at,ttl_secs,cache_state,failure_class&limit=1";
+        const response = await fetchImpl(url, { headers });
+        if (!response || response.ok !== true) return null;
+        const rows = await response.json();
+        const row = Array.isArray(rows) ? rows[0] : null;
+        const computedAt = Date.parse(row && row.computed_at);
+        if (!row || !Number.isFinite(computedAt)) return null;
+        const entry = {
+          value: row.geometry,
+          computedAt,
+          ttlMs: Number(row.ttl_secs) * 1000,
+          negative: row.cache_state === "negative",
+          failureClass: row.failure_class || null,
+        };
+        memory.set(key, entry);
+        return entry;
+      } catch { return null; }
+    },
+    async set(key, entry) {
+      memory.set(key, entry);
+      if (!base || !supaKey || typeof fetchImpl !== "function") return false;
+      let parts;
+      try { parts = JSON.parse(key); } catch { return false; }
+      if (!Array.isArray(parts) || parts.length < 10) return false;
+      const [uid, fromLat, fromLon, toLat, toLon, provider, , , , bucket] = parts;
+      const seconds = Number(entry && entry.value && (entry.value.durationSeconds
+        ?? entry.value.durationSecs ?? entry.value.duration_seconds));
+      const body = {
+        uid: String(uid || "anonymous"),
+        from_geo: `${fromLat},${fromLon}`,
+        to_geo: `${toLat},${toLon}`,
+        time_bucket: Number(bucket) || 0,
+        provider: String(provider || "unknown"),
+        duration_secs: Number.isFinite(seconds) ? Math.round(seconds) : 0,
+        geometry: entry.negative ? null : entry.value,
+        computed_at: new Date(entry.computedAt).toISOString(),
+        ttl_secs: Math.max(1, Math.round(entry.ttlMs / 1000)),
+        cache_key: key,
+        cache_state: entry.negative ? "negative" : "success",
+        failure_class: entry.failureClass || null,
+      };
+      try {
+        const response = await fetchImpl(`${base}/rest/v1/lm_route_cache?on_conflict=cache_key`, {
+          method: "POST",
+          headers: { ...headers, Prefer: "resolution=merge-duplicates,return=minimal" },
+          body: JSON.stringify(body),
+        });
+        return Boolean(response && response.ok === true);
+      } catch { return false; }
+    },
+  };
+}
+
 // makeRouteCache({ store: Map-like {get,set}, ttlMs, now }) → { getOrCompute }.
 // INVARIANT: accepted non-null routes are computed at most once per scoped route key within ttlMs;
 // concurrent same-key work still collapses, while null/undefined results retry on later calls/ticks.
-function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now } = {}) {
+function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, negativeTtlMs = NEGATIVE_TTL_MS,
+  transientTtlMs = TRANSIENT_TTL_MS, now = Date.now } = {}) {
   const inFlight = new Map();
   const reportedHits = new Set();
   async function getOrCompute(uid, fromGeo, toGeo, bucket, provider, context = {}, onCacheHit = null) {
     const key = cacheKey(uid, fromGeo, toGeo, bucket, context);
-    const t = now();
-    const hit = store && typeof store.get === "function" ? store.get(key) : null;
-    if (hit && Number.isFinite(hit.computedAt) && t - hit.computedAt < ttlMs) {
-      if (typeof onCacheHit === "function" && !reportedHits.has(key)) {
-        reportedHits.add(key);
-        await onCacheHit(hit.value);
-      }
-      return hit.value;
-    }
     if (inFlight.has(key)) return inFlight.get(key);
     const run = (async () => {
+      const t = now();
+      let hit = null;
+      try { hit = store && typeof store.get === "function" ? await store.get(key) : null; }
+      catch { hit = null; }
+      const hitTtlMs = hit && Number.isFinite(hit.ttlMs) ? hit.ttlMs : ttlMs;
+      if (hit && Number.isFinite(hit.computedAt) && t - hit.computedAt < hitTtlMs) {
+        if (typeof onCacheHit === "function" && !reportedHits.has(key)) {
+          reportedHits.add(key);
+          await onCacheHit(hit.negative ? null : hit.value, {
+            negative: hit.negative === true,
+            failureClass: hit.failureClass || null,
+          });
+        }
+        return hit.negative ? null : hit.value;
+      }
       const value = await provider();
       const computedAt = now();
       if (value != null && store && typeof store.set === "function") {
-        store.set(key, { value, computedAt });
+        const negative = isCacheFailure(value);
+        const transient = negative && ["network", "provider_5xx", "timeout"].includes(value.failureClass);
+        try { await store.set(key, {
+          value: negative ? null : value,
+          computedAt,
+          negative,
+          failureClass: negative ? value.failureClass : null,
+          ttlMs: negative ? (transient ? transientTtlMs : negativeTtlMs) : ttlMs,
+        }); } catch { /* cache persistence must not break required routing */ }
         reportedHits.delete(key);
       }
-      return value;
+      return isCacheFailure(value) ? null : value;
     })();
     inFlight.set(key, run);
     try {
@@ -106,4 +199,7 @@ function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now }
   return { getOrCompute };
 }
 
-module.exports = { timeBucket, cacheKey, makeRouteCache, BUCKET_MS };
+module.exports = {
+  timeBucket, cacheKey, makeRouteCache, makeSupabaseRouteStore, cacheFailure, isCacheFailure,
+  BUCKET_MS, NEGATIVE_TTL_MS, TRANSIENT_TTL_MS,
+};
