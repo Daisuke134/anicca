@@ -21,6 +21,17 @@ Measured incident evidence:
 - The associated WindowServer stack was blocked through TCC on `tccd`; `sandboxd` had reached its
   64-thread soft limit. Later WindowServer watchdog reports exist, including `2026-09-06`, so this
   is a live recurrence risk rather than a closed historical incident.
+- The `2026-09-06` incident was not a host reboot: `kern.boottime` and `last reboot` remain at
+  `2026-09-03 06:45:31 JST`. Jetsam reports at `14:09:05`, `14:14:47`, and `14:14:59` show about
+  `10.93-11.02 GiB` in the compressor with only `117-120 MiB` free. The first report contains 53
+  Node processes with about `20.0 GiB` aggregate resident-page footprint and 78 Chromium renderers
+  with about `9.8 GiB`; these are pressure attribution counters and can exceed physical RAM because
+  compressed/shared accounting overlaps, not additive physical-memory claims.
+- At `14:16:27`, WindowServer's main thread missed its check-in for 40 seconds while blocked through
+  TCC waiting for `tccd`; the console session ended at `14:16`. The host stayed booted but returned
+  to loginwindow. Manual console login at `18:18` recreated the Aqua session, after which user
+  LaunchAgents and Chromium owners resumed. Therefore the current failure boundary is GUI-session
+  loss under host-wide process/browser pressure, followed by an unowned pre-login gap.
 - FileVault is off. `sysadminctl` reports automatic login user `anicca`, `autoLoginUser=anicca`, and
   `/etc/kcpassword` exists with root-only permissions. Manual password entry after the panic was not
   caused by missing normal auto-login configuration.
@@ -49,7 +60,9 @@ Execute exactly in this order:
    browser owner has a finite context/tab/renderer retention contract, stale resources are reclaimed
    only after ownership/open-file checks, and a sustained real workload no longer grows browser or
    TCC pressure without bound. Do not globally kill Chromium, WindowServer, tccd, sandboxd, Remote,
-   ChatGPT, Claude, or another loop.
+   ChatGPT, Claude, or another loop. Treat finite idempotent wakes, unique resource ownership,
+   host-headroom admission, durable cursors, bounded retry/backoff, and official effect receipts as
+   the shared loop-development contract; do not create a Coconala-only or browser-only supervisor.
 3. [ ] `PANIC-3` Install the recommended macOS 15.7.9 maintenance update, not the Tahoe major
    upgrade, in an explicitly approved maintenance window. This step requires a restart and therefore
    waits for user approval immediately before execution. PASS = exact OS/build readback, no missing

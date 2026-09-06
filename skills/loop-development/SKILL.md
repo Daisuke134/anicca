@@ -54,6 +54,40 @@ locked worktree -> focused test -> merged main -> immutable release -> lm-loop a
 - Loaded `ProgramArguments` must contain one exact release directory, never a
   branch, worktree, mutable checkout, or `~/loops/current` symlink.
 
+## Sustainable 24/7 loops
+
+24/7 means durable progress across finite process lifetimes, not one immortal
+agent, Node process, browser, or tab. Each scheduled wake performs one bounded,
+idempotent transition from durable state, records a terminal receipt, and exits.
+Long waits belong in persisted `next_eligible_at` state and launchd cadence.
+
+- Put judgment in the model. Put leases, resource accounting, backoff, durable
+  cursors, effect fences, and receipt verification in deterministic shared code.
+- Every process, browser profile, CDP port, context, tab, renderer, worker, and
+  mutable state root has one registry owner. Starting a second owner for the same
+  resource fails closed; IPv4 and IPv6 listeners on one port are still one port.
+- Every owner declares finite run time, concurrency, child-process, browser
+  context/tab retention, artifact retention, and retry/backoff contracts. The
+  fleet admits new work only while host headroom remains; pressure delays work
+  instead of increasing concurrency or killing unrelated owners.
+- Reconcile from desired and observed state after every natural wake. A stale
+  heartbeat is evidence to inspect, not permission for blind restart. Recovery
+  is bounded, records the first failure separately, and never retries an
+  uncertain external effect without official readback.
+- Browser cleanup is owner-scoped: prove profile/port/PID ownership and open
+  resources before closing stale contexts or tabs. Never use a global Chromium,
+  WindowServer, loginwindow, GUI-session, or host restart as loop recovery.
+- Local macOS uses short launchd jobs plus external durable state. Cloud uses the
+  platform's equivalent scheduler and durable store; both implement the same
+  `observe -> decide -> act -> verify -> persist -> exit` contract. A second host
+  improves availability only after effect leases and receipts prevent two hosts
+  from acting on the same provider resource.
+
+Turn every production outage into one retained, secret-free regression fixture:
+trigger evidence, first failing component boundary, forbidden recovery actions,
+and the observable acceptance condition. Never claim “self-healing” from PID or
+restart counts; require resumed durable progress and official effect separation.
+
 ## Develop, merge, and deploy
 
 1. Write the focused failing test first. Cover the real failure boundary:
@@ -123,3 +157,6 @@ Record the incident and missing gate in the control-plane spec.
 - https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html
 - https://git-scm.com/docs/git-worktree
 - https://12factor.net/build-release-run
+- https://github.com/kubernetes-sigs/controller-runtime/blob/main/pkg/reconcile/reconcile.go
+- https://github.com/temporalio/temporal/blob/main/docs/architecture/README.md
+- https://github.com/systemd/systemd/blob/main/man/systemd.resource-control.xml
