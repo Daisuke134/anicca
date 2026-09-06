@@ -2661,6 +2661,34 @@ def _reseal_healed_contract(contract: dict) -> dict:
     return {**corrected, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
 
 
+def _family_has_unpublished_draft(
+    state_dir: Path, family_name: str, inventory_ids: set[str],
+) -> str | None:
+    """Name the draft this family already has in flight, if any.
+
+    A draft is built over more than one wake -- the blank draft is created, then filled, then
+    published -- because a wake spends exactly one effect. So a family can be two thirds of the
+    way to a listing while its most recent proposals were still being refused, and abandoning
+    the demand cluster then throws that real draft away. The conditions are the same ones the
+    create path already uses to offer a draft back for reuse.
+    """
+    ledger = state_dir / "new-listing-drafts.jsonl"
+    if not ledger.is_file():
+        return None
+    deleted = _observed_deleted_draft_ids(state_dir / "evidence")
+    for line in reversed(ledger.read_text(encoding="utf-8").splitlines()):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        draft_id = str(row.get("draft_service_id") or "")
+        if (row.get("capability_family") == family_name and draft_id.isdigit()
+                and draft_id not in inventory_ids and draft_id not in deleted
+                and int(row.get("public_effect") or 0) == 0
+                and row.get("status") in {"draft_created", "prepared"}):
+            return draft_id
+    return None
+
+
 def _recover_prepared_create_contract(
     state_dir: Path, family_name: str, demand_evidence_path: str,
 ) -> dict | None:
@@ -7566,8 +7594,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     # cluster selection advances to a different family instead of retrying this
                     # one forever -- the same composition `unsold_family`/`family_already_public`
                     # already use above.
+                    live_draft = _family_has_unpublished_draft(
+                        args.state_dir, create_family, inventory_ids)
                     cluster_key = str((unused_cluster or {}).get("cluster_key") or "")
-                    if cluster_key:
+                    # Skipping this wake's model call is always right once the same guard has
+                    # refused three times. Dismissing the cluster is not: a family with a draft
+                    # already created and waiting to be filled has proven the model can satisfy
+                    # every other gate, and dismissal is permanent, so it would strand a real
+                    # draft on the platform. Skip and let the next wake try; dismiss only a
+                    # family that has nothing in flight to lose.
+                    if cluster_key and live_draft is None:
                         _append_key_once(dismissal_ledger, "cluster_key", {
                             "version": 1, "cluster_key": cluster_key, "status": "dismissed",
                             "reason": f"three_strike_same_guard:{create_stuck_guard}"[:160],
@@ -7576,7 +7612,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     create_seller_snapshot = None
                     create_proposal = {
                         "decision": "no_op",
-                        "no_op_reason": f"three_strike_same_guard:{create_stuck_guard}"[:160],
+                        "no_op_reason": (
+                            f"three_strike_same_guard:{create_stuck_guard}"
+                            + (f":draft_{live_draft}_kept" if live_draft else ":cluster_dismissed")
+                        )[:160],
                     }
                     create_route = {"status": "skipped_three_strike_same_guard"}
                     create_allowed_refs = set()
