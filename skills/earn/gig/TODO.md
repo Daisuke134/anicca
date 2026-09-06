@@ -283,7 +283,7 @@ does not start them and does not reorder anyone's cursor to fit them:
   and `retainer_lane.py`. Same transport, same defect, different owner.
 - [ ] `STOREFRONT-REPORT-1` (Storefront owner) Retire the `openclaw` exec in `storefront_direct.py`.
 
-8. [ ] `APPLY-REPORT-8` Coconala Apply exits 1 in its report phase while its report succeeds.
+8. [x] `APPLY-REPORT-8` Coconala Apply exits 1 in its report phase while its report succeeds.
    Found while closing this cursor, and **not caused by it**. On release `7ddf271a` the lane's
    report is delivered (`message_id 62188`, `transport: sent`) and the pass still ends
    `entrypoint_exit_1`. The only non-empty stderr is `coverage.stderr`:
@@ -293,6 +293,21 @@ does not start them and does not reorder anyone's cursor to fit them:
    PASS = the lane either finds its `single:new` source or reports the discovery failure as its own
    blocker instead of failing the pass at the report phase, and the launchd exit says which one
    happened. Today an exit 1 is indistinguishable from a lane that never reported at all.
+   Root cause, measured: the wrapper already absorbed one kind of single-source failure and not the
+   other. `_temporary_source_denial` recognised only `source_access_denied:`, so a 403 was recorded,
+   the cursor moved to the next source, and the pass ended `ok`. `source_not_found:` matched nothing,
+   arrived as an unrecognised parent failure, and took the whole pass down at
+   `application_direct.py` — after the report had already been delivered. That is why one missing
+   source and a lane that never reported produced the same exit 1.
+   Fixed on both sides. The parent now carries the observed `document.title` into the error, because
+   the not-found decision is made from the title alone and without it a false positive on the
+   pattern and a genuinely missing page are indistinguishable. The wrapper recognises both kinds,
+   parses the source id from the first token so the appended diagnostic cannot corrupt it, records
+   `temporary: true` only for the 403 — a page that is not there will not clear on its own and must
+   not be retried forever under a label that says it will — and names the source and the kind in
+   `source_health` instead of printing only an exit code.
+   Seven guard tests, proven in both directions: 4 of them fail against the previous code and all 7
+   pass after.
 
 What is true once all five are checked: a stranger clones this repository, sets `TELEGRAM_BOT_TOKEN`
 and `TELEGRAM_CHAT_ID`, runs an Apply lane, and receives the same reporting Dais receives today —
