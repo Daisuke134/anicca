@@ -45,6 +45,28 @@ skills/
 Apply and Storefront remain independently owned while their parallel work is active. Shared runtime
 changes require an explicit conflict check; this cursor never replaces their business code.
 
+## Measured marketplace truth
+
+This table is the operational truth, not a map of files that happen to exist. `Working` requires a
+natural installed-owner terminal plus an official marketplace effect/readback for that lane. A green
+process, a report-only command, a fixture, retired code, or an historical canary is not a working
+money loop. Keep the active atomic cursor below in its fixed order; update this table when a named
+acceptance receipt changes a cell.
+
+| Marketplace | Apply | Reply | Storefront | Paid |
+|---|---|---|---|---|
+| Coconala | **Broken.** Installed every 60 seconds, but no verified application since 2026-09-02. `APPLY-REPORT-9` records that live listings reach the offer page but the form readback fails. | **Implemented, not currently accepted healthy.** The installed continuous owner has real reply capability, but the audit observed recent fail terminals and it is still Coconala-specific. | **Implemented, not currently accepted healthy.** It has one historical public publish/readback/replay-zero chain, but the audit observed a latest fail terminal and it remains provider-specific. | **Working reference only.** `COCONALA-PAID-1` through `3C` prove official readback, five-room classification, durable pending ownership, failed zero, formal delivery off and replay-zero. It is still a Coconala-specific orchestrator. |
+| Lancers | **Running but not producing current contracts.** The owner has a historical verified application/replay-zero receipt (`27861812`), while the current official snapshot has 86 proposal receipts, 31 open proposals, zero contracts and zero working projects; recent wakes submit nothing. | **Not implemented.** The registered `lancers-revenue-negotiate` command only runs `lane_report.py`; it does not observe and reply/estimate through a provider mutation adapter. | **Running without revenue proof.** The owner can apply `storefront_offer.py`, but the current official snapshot has zero storefront contract candidates and no attributed order or payment. | **Not implemented.** The registered Paid command only runs `lane_report.py`; current official state has zero working projects, zero payment history and JPY 0 received. |
+| CrowdWorks | **Application effects are proven, but no current contract/revenue.** The durable ledger contains 14 verified application receipts, most recently `304626890` on 2026-09-05. The latest completed owner snapshot inspected 40 jobs, found eligible zero and produced effect zero; the audit also observed a later fail followed by a new running cycle. | **Not implemented.** The only active companion is a Telegram report owner; the former negotiation label is disabled. | **Not implemented.** The former storefront label is disabled. | **Not implemented.** The former fulfillment label is disabled; there is no active Paid owner or official delivery/readback/replay-zero chain. |
+| Mercor | **Not actively owned.** Mercor is an independent gig-revenue marketplace, not a completed Job Hunter feature. Mercor-specific discovery, submit fencing and human gates exist under `apps/job-search-loop/`, but the dedicated Mercor labels are retired and no current managed owner proves recurring applications. | **Partial code, no active lane.** Calendar/Gmail and human-gate components exist, but there is no installed Mercor Reply owner with official message readback. | **Not applicable today.** No seller storefront workflow is implemented or evidenced for Mercor. | **Partial code, no active lane or revenue.** Work lifecycle and earnings readback code exist, but no installed Mercor Paid owner or settled payout receipt proves operation. Human attendance remains required for interviews/assessments that cannot truthfully be automated. |
+| Freelancer.com | **Off.** Historical bid-watch/application labels are disabled and no managed owner is active. | **Off.** No active Reply owner or official reply receipt. | **Not implemented.** No active storefront owner or official listing receipt. | **Off.** The historical work-sync label is disabled and there is no delivery/payout receipt chain. |
+| Upwork | **Off by current policy.** The old browser/free-loop labels are retired or disabled. Provider adapter code exists, but no installed owner proves current applications. | **Off.** Inbox, message and negotiation adapters exist as code only; no active owner proves recurring official readback. | **Not implemented as an active owner.** No Project Catalog/storefront receipt chain is installed. | **Off.** Delivery and finance adapter code exists, but no active Paid owner or current terminal/payout chain is installed. Human-only work remains a human gate, not an autonomous success. |
+
+The immediate Paid order therefore remains exactly `SHARED-PAID-1` -> `LANCERS-PAID-1` ->
+`CROWDWORKS-PAID-1` -> `NEXT-MARKETPLACE-PAID-1`. `NEXT-MARKETPLACE-PAID-1` must choose among
+Mercor, Freelancer.com, Fiverr, Upwork or another authorized marketplace from live contract
+availability and adapter feasibility; the name does not imply that any of them already works.
+
 ## Host P0 before this Paid cursor
 
 The current first work is `PANIC-1` through `PANIC-6` in
