@@ -14,7 +14,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from b2_result_gate import (
     ContractError as CursorContractError,
@@ -458,6 +458,48 @@ def _temporary_source_denial(
         if source_id:
             return source_id, kind
     return None
+
+
+def _restart_cursor_after_pagination_end(
+    cursor_path: Path, source_id: str, kind: str | None,
+) -> bool:
+    """Running off the last page is exhaustion, not a missing source.
+
+    The cursor walks `?page=N` forward until the provider stops rendering pages. Page 9 of a
+    listing with eight pages answers with `ご指定のページが見つかりませんでした`, which is a real
+    404 and not a stale URL -- page 8 loaded normally in the same pass. Treating that as a missing
+    source ends the pass, and when the source is the only required one there is no successor to
+    move to, so the lane fails every wake with nothing wrong with it.
+
+    Reset to the source's first page instead: for a newest-first firehose, starting over is what
+    reading it again means.
+    """
+    if kind != "source_not_found":
+        return False
+    try:
+        cursor = json.loads(Path(cursor_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(cursor, dict) or str(cursor.get("source_id") or "") != source_id:
+        return False
+    parts = urlsplit(str(cursor.get("next_url") or ""))
+    query = parse_qs(parts.query)
+    pages = query.get("page") or []
+    if not pages or not str(pages[0]).isdecimal() or int(pages[0]) < 2:
+        return False
+    query.pop("page", None)
+    first_page = urlunsplit((
+        parts.scheme, parts.netloc, parts.path,
+        urlencode({key: values[0] for key, values in sorted(query.items())}), "",
+    ))
+    _atomic_json(Path(cursor_path), {
+        "source_id": source_id,
+        "previous_url": "",
+        "next_url": first_page,
+        "reason": "restart_after_pagination_end",
+        "prior_inspected_request_ids": [],
+    })
+    return True
 
 
 def _record_temporary_source_failure(
@@ -1542,6 +1584,15 @@ def main(argv: list[str] | None = None) -> int:
                     skipped_source_ids=set(temporary_source_failures),
                 )
             except CursorContractError:
+                if _restart_cursor_after_pagination_end(
+                    coverage_cursor_path, denied_source_id,
+                    phase_source_failure_kinds.get(last_phase),
+                ):
+                    values["source_health"] = (
+                        f"{denied_source_id} は最終ページに到達しました。"
+                        "次wakeは先頭ページから読み直します"
+                    )
+                    return _finish(output, pass_id, values, status="ok", args=args)
                 values["source_health"] = "一時拒否sourceの後続位置を決められませんでした"
                 return _finish(
                     output, pass_id, values, status="failed", args=args,
