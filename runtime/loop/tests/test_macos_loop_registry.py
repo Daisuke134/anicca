@@ -196,6 +196,40 @@ class MacosLoopRegistryTest(unittest.TestCase):
         ])
         self.assertFalse(schema["additionalProperties"])
 
+    def test_registry_and_loop_schema_share_boundary_constraints(self):
+        schema = json.loads(render_loop_json_schema())
+        self.assertEqual(
+            schema["properties"]["entrypoint"]["pattern"],
+            r"^(?!/)(?!(?:\./)*\.?$)(?!.*(?:^|/)\.\.(?:/|$)).+$",
+        )
+        self.assertEqual(
+            schema["properties"]["browser_owner"]["properties"]["profile"]["pattern"],
+            r"^~/(?!.*(?:^|/)\.\.(?:/|$)).+",
+        )
+        invalid = []
+        for entrypoint in ("./", "bin/../other.sh"):
+            value = entry()
+            value["entrypoint"] = entrypoint
+            invalid.append(value)
+        for field in ("state_root", "log_root"):
+            value = entry()
+            value[field] = "~/"
+            invalid.append(value)
+        value = entry()
+        value["cadence"] = {"start_interval_seconds": True}
+        invalid.append(value)
+        value = entry()
+        value["cleanup"]["max_runs"] = True
+        invalid.append(value)
+        value = entry()
+        value["browser_owner"] = None
+        invalid.append(value)
+        value = browser_entry("ai.anicca.example", "~/.cloak/../shared", 9222)
+        invalid.append(value)
+        for row in invalid:
+            with self.subTest(row=row), self.assertRaises(ValueError):
+                validate_registry({"schema_version": 2, "loops": {"example": row}})
+
     def test_loop_entrypoints_do_not_select_auth_or_codex_home(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         forbidden = re.compile(r"CODEX_HOME|auth\.json|AGENT_RUNNER_PROVIDER")

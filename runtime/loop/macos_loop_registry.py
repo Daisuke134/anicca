@@ -65,22 +65,27 @@ def validate_registry(registry: dict) -> dict:
         if not isinstance(cadence, dict) or len(cadence) != 1 or set(cadence) - CADENCES:
             _fail(f"{loop_id}: cadence must contain exactly one allowed key")
         key, value = next(iter(cadence.items()))
-        if key == "start_interval_seconds" and (not isinstance(value, int) or value <= 0):
+        if key == "start_interval_seconds" and (
+            not isinstance(value, int) or isinstance(value, bool) or value <= 0
+        ):
             _fail(f"{loop_id}: invalid start_interval_seconds")
         if key in {"run_at_load", "keep_alive"} and value is not True:
             _fail(f"{loop_id}: {key} must be true")
         if key == "calendar_interval" and not isinstance(value, (dict, list)):
             _fail(f"{loop_id}: invalid calendar_interval")
         for root_field in ("state_root", "log_root"):
-            if not isinstance(row[root_field], str) or not row[root_field].startswith("~/"):
+            if (not isinstance(row[root_field], str)
+                    or not row[root_field].startswith("~/")
+                    or row[root_field] == "~/"):
                 _fail(f"{loop_id}: {root_field} must be home-relative")
         cleanup = row["cleanup"]
         if not isinstance(cleanup, dict) or set(cleanup) != {"max_runs", "max_age_days"}:
             _fail(f"{loop_id}: cleanup contract is incomplete")
-        if any(not isinstance(cleanup[key], int) or cleanup[key] <= 0 for key in cleanup):
+        if any(not isinstance(cleanup[key], int) or isinstance(cleanup[key], bool)
+               or cleanup[key] <= 0 for key in cleanup):
             _fail(f"{loop_id}: cleanup bounds must be positive integers")
         browser_owner = row.get("browser_owner")
-        if browser_owner is not None:
+        if "browser_owner" in row:
             if not isinstance(browser_owner, dict) or set(browser_owner) != {"profile", "cdp_port"}:
                 _fail(f"{loop_id}: browser_owner contract is incomplete")
             profile = browser_owner["profile"]
@@ -150,12 +155,12 @@ def loop_json_schema() -> dict:
         "required": ["loop_id", *sorted(FIELDS)],
         "properties": {
             "loop_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
-            "label": {"type": "string", "pattern": "^ai\\.anicca\\..+$"},
+            "label": {"type": "string", "pattern": "^ai\\.anicca\\..*$"},
             "domain": {"type": "string", "enum": sorted(DOMAINS)},
             "entrypoint": {
                 "type": "string",
                 "minLength": 1,
-                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+                "pattern": "^(?!/)(?!(?:\\./)*\\.?$)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
             },
             "cadence": cadence,
             "effect_class": {"type": "string", "enum": sorted(EFFECTS)},
@@ -176,7 +181,10 @@ def loop_json_schema() -> dict:
                 "required": ["cdp_port", "profile"],
                 "properties": {
                     "cdp_port": {"type": "integer", "minimum": 1, "maximum": 65535},
-                    "profile": {"type": "string", "pattern": "^~/.+"},
+                    "profile": {
+                        "type": "string",
+                        "pattern": "^~/(?!.*(?:^|/)\\.\\.(?:/|$)).+",
+                    },
                 },
                 "additionalProperties": False,
             },
