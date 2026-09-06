@@ -152,7 +152,7 @@ official receipts through `banked` and, eventually, `compute_paid`.
 
 🌐 **[日本語版 README はこちら →](README.ja.md)**
 
-**Repository SSOT:** this repository, [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager), is the only Life Manager code, spec, release, workflow, and deployment source. `Daisuke134/life-manager-v0` is a read-only migration source until its required-code and runtime-reference counts reach zero. The current ordered execution plan and remaining work are maintained in [`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md); repository consolidation history remains in [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md).
+**Repository SSOT:** this repository, [`Daisuke134/life-manager`](https://github.com/Daisuke134/life-manager), is the only Life Manager code, spec, release, workflow, and deployment source. `Daisuke134/life-manager-v0` is an archived historical repository, not a runtime or migration source. The current ordered execution plan and remaining work are maintained in [`docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md`](docs/superpowers/specs/2026-08-01-dais-life-manager-five-phase-execution-spec.md); repository consolidation history remains in [`docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md`](docs/superpowers/specs/2026-07-19-anicca-one-repo-consolidation-spec.md).
 
 ---
 
@@ -247,28 +247,37 @@ It is Life Manager's Financial capability: provider revenue must become `banked`
 
 Life Manager is one product in one repository. “Local Life Manager” and the web app are not separate products or repositories; they are two execution surfaces powered by the same core, capabilities, and state contracts.
 
+The target contract does not copy loops into separate local and cloud folders. The current lifecycle inventory
+contains 175 loop IDs in [`config/loop-registry.json`](config/loop-registry.json), with repository-relative
+entrypoints across the repository. The local Compose scheduler currently starts a smaller built-in set directly;
+making local and cloud schedulers consume the same complete registry is unfinished portability work. In the target,
+both dispatch the same entrypoints and only the scheduler, storage, secret, and browser adapters differ. The
+complete architecture and ordered portability work are tracked in
+[`docs/superpowers/specs/2026-09-06-life-manager-one-repo-two-runtimes-design.md`](docs/superpowers/specs/2026-09-06-life-manager-one-repo-two-runtimes-design.md).
+
 ```text
-                              LIFE MANAGER
-                    one product · one repository
-                                 │
-             ┌───────────────────┴───────────────────┐
-             │                                       │
-     LOCAL / SELF-HOSTED                      WEB / CLOUD
-     deploy/local/compose.yaml                 apps/landing
-          │                                  web entry
-          ▼                                       │
-     apps/life-manager                             ▼
-     api · scheduler · worker            apps/life-manager
-          │                              Telegram · voice
-          ▼                              scheduler · /panel
-     postgres · object store                       │
-     (your machine)                                ▼
-             │                              user-scoped services
-             └───────────────────┬───────────────────┘
-                                 │
-                shared economy and infrastructure
-        runtime/loop · runtime/compute-proxy · services/x402-*
+life-manager/                       # the only source repository
+├── apps/life-manager/              # shared API, Telegram, scheduler and worker core
+├── skills/ · runtime/ · services/  # capabilities, lifecycle and services
+├── bin/ · tools/                   # repository-owned commands and support entrypoints
+├── config/loop-registry.json       # one catalog for local and cloud loops
+├── deploy/local/compose.yaml       # self-hosted Docker profile
+├── deploy/cloud/                   # target: cloud services from the same image
+└── scripts/local-up.sh             # local lifecycle command
 ```
+
+| Runtime | What runs | Where private data lives |
+|---|---|---|
+| Local / self-hosted | Docker Compose starts Postgres, object store, API, scheduler, and worker on the owner's host | Local named volumes and the owner's secret store |
+| Cloud | The same commit/image runs as API, scheduler, and worker services with hosted browser capacity | Tenant-scoped managed database, object store, and vault |
+
+`launchd` is an optional macOS supervisor for device-bound loops, not the loop definition and not a requirement
+for the container server. Linux and Windows/WSL2 are portability targets for container-capable loops. Phones are
+clients: they use the cloud runtime or connect to another always-on self-hosted machine.
+
+The Docker server stack is available today, but the full loop catalog is not yet portable. Some production loops
+still rely on macOS browser profiles, OpenClaw, or legacy host paths. Until the clean-host acceptance matrix in the
+architecture spec passes, the README does not claim that every loop works on every device.
 
 | Path | Role | What it is not |
 |---|---|---|
