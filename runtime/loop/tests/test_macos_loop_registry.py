@@ -169,6 +169,16 @@ class MacosLoopRegistryTest(unittest.TestCase):
             "skills/earn/marketing-engine/report/scheduled_runner.py",
         )
 
+    def test_self_improve_evolve_uses_direct_python_adapter(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["self-improve-evolve"]
+        self.assertEqual(row["adapter"], "python")
+        self.assertEqual(row["command"], ["self-improve"])
+        self.assertEqual(
+            row["entrypoint"],
+            "skills/earn/marketing-engine/report/scheduled_runner.py",
+        )
+
     def test_external_labels_are_explicit_and_cannot_overlap_managed(self):
         value = {"schema_version": 2, "loops": {"example": entry()},
                  "external_labels": ["ai.anicca.tsbridge"]}

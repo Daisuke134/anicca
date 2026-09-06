@@ -127,7 +127,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "--application-log", str(lancers_state / "logs/application.out.log"),
             "--storefront-log", str(lancers_state / "logs/storefront.stdout.log"),
         ],
-        "self-improve-evolve": [python, str(scheduled), "self-improve"],
         "marketing-metrics": [str(root / "marketing/engine/bin/marketing"), "observe",
                               "--root", str(home / "Library/Application Support/AniccaMarketing")],
         "marketing-owner-events": [python, str(root / "skills/earn/marketing-engine/report/truth_pipeline.py"),
