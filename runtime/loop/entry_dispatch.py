@@ -66,21 +66,11 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     lancers = root / "skills/earn/lancers/scripts"
     lancers_state = home / ".local/state/anicca/lancers"
     python = sys.executable
-    cloak_python = str(home / ".openclaw/skills/_shared/venv-cloak/bin/python")
     memory_guard = [python, str(root / "runtime/host/memory_admission.py")]
     fixed = {
         "money-printer-symphony-bridge": [
             "/opt/homebrew/bin/node",
             str(root / "apps/life-manager/scripts/money-printer-symphony-bridge.js"),
-        ],
-        "life-manager-daily-driver": [
-            python, str(root / "runtime/host/browser_port_owner.py"),
-            "run", "--port", "9222",
-            "--profile", str(home / ".cloak/profiles/daily-driver"),
-            "--owner", "life-manager-daily-driver", "--",
-            cloak_python, str(root / "skills/browser/cdp_persistent_context.py"),
-            "--profile", str(home / ".cloak/profiles/daily-driver"),
-            "--port", "9222",
         ],
         "affiliate-loop": [str(affiliate), "loop", "wake"],
         "marketing-mine-daily": [python, str(scheduled), "mine"],

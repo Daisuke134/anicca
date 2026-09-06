@@ -111,7 +111,7 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
                 "STUB_CAPTURE": str(capture),
             }
             with patch.dict(os.environ, environment, clear=False):
-                self.assertTrue(MODULE._disk_preflight(home))
+                self.assertTrue(MODULE._disk_preflight(home, guard))
             record = json.loads(capture.read_text(encoding="utf-8"))
             self.assertEqual(record["argv"], [str(guard), "/usr/bin/true"])
             self.assertEqual(record["isolated"], 1)
@@ -136,14 +136,14 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
             home = root / "home"
             host_state = home / ".openclaw/state"
             host_state.mkdir(parents=True)
-            self.install_guard(home)
+            guard = self.install_guard(home)
             capture = root / "capture.json"
             (host_state / "disk-pressure.block").write_text("blocked\n", encoding="utf-8")
             with patch.dict(os.environ, {"STUB_CAPTURE": str(capture)}, clear=False):
-                self.assertTrue(MODULE._disk_preflight(home))
+                self.assertTrue(MODULE._disk_preflight(home, guard))
             (host_state / "disk-writers.stop").write_text("blocked\n", encoding="utf-8")
             with patch.dict(os.environ, {"STUB_CAPTURE": str(capture)}, clear=False):
-                self.assertFalse(MODULE._disk_preflight(home))
+                self.assertFalse(MODULE._disk_preflight(home, guard))
             receipt = json.loads(
                 (home / ".local/state/life-manager/browser-provision/state/disk-headroom.json").read_text()
             )
@@ -156,12 +156,12 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
             root = Path(temporary)
             home = root / "home"
             home.mkdir()
-            self.install_guard(home)
+            guard = self.install_guard(home)
             capture = root / "capture.json"
             with patch.dict(os.environ, {
                 "BROWSER_DISK_HEADROOM_KIB": "262144", "STUB_CAPTURE": str(capture)
             }, clear=False):
-                self.assertTrue(MODULE._disk_preflight(home))
+                self.assertTrue(MODULE._disk_preflight(home, guard))
             record = json.loads(capture.read_text(encoding="utf-8"))
             self.assertEqual(record["env"]["GIG_DISK_HEADROOM_KIB"], "262144")
 
@@ -208,11 +208,12 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
             root = Path(temporary)
             home = root / "home"
             home.mkdir()
-            self.install_guard(home)
+            guard = self.install_guard(home)
             capture = root / "capture.json"
             with (
                 patch.dict(os.environ, {"HOME": "/hostile/home", "STUB_CAPTURE": str(capture)}, clear=False),
                 patch.object(MODULE, "_canonical_home", return_value=home),
+                patch.object(MODULE, "_GUARD", guard),
                 patch("builtins.__import__", side_effect=self.reject_browser_import()),
             ):
                 self.assertEqual(
@@ -251,6 +252,7 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
                     self.install_guard(home).chmod(0)
                 with (patch.dict(os.environ, {"HOME": "/hostile/home"}, clear=False),
                       patch.object(MODULE, "_canonical_home", return_value=home),
+                      patch.object(MODULE, "_GUARD", guard),
                       patch("builtins.__import__", side_effect=self.reject_browser_import())):
                     self.assertEqual(MODULE.main(["--profile", str(root / "profile"), "--port", "9333"]), 1)
 

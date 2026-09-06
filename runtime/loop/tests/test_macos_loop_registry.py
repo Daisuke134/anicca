@@ -216,6 +216,17 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertEqual(row["command"], [])
         self.assertEqual(row["entrypoint"], "skills/affiliate/scripts/local-browser")
 
+    def test_daily_driver_uses_shared_owned_browser_adapter(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["life-manager-daily-driver"]
+        self.assertEqual(row["adapter"], "exec")
+        self.assertEqual(row["command"], [])
+        self.assertEqual(row["entrypoint"], "skills/browser/owned-persistent-context")
+        self.assertEqual(row["browser_owner"], {
+            "cdp_port": 9222,
+            "profile": "~/.cloak/profiles/daily-driver",
+        })
+
     def test_affiliate_composition_uses_direct_exec_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["affiliate-composition"]

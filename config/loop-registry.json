@@ -1739,6 +1739,7 @@
       "state_root": "~/.openclaw"
     },
     "life-manager-daily-driver": {
+      "adapter": "exec",
       "browser_owner": {
         "cdp_port": 9222,
         "profile": "~/.cloak/profiles/daily-driver"
@@ -1750,9 +1751,10 @@
         "max_age_days": 14,
         "max_runs": 100
       },
+      "command": [],
       "domain": "system",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/browser/owned-persistent-context",
       "label": "ai.anicca.life-manager-daily-driver",
       "log_root": "~/.local/state/life-manager/logs",
       "provider_route": "shared-agent-runner",

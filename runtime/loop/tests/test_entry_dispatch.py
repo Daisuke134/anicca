@@ -201,19 +201,9 @@ class EntryDispatchTest(unittest.TestCase):
             environment['CLOAK_TARGET_OWNERS_FILE'],
             '/home/.cloak/vault/gig-target-owners.json',
         )
-    def test_life_manager_daily_driver_uses_release_dispatch_with_exact_argv(self):
-        command = command_for('life-manager-daily-driver', Path('/release'), Path('/home'))
-        self.assertEqual(command, [
-            sys.executable,
-            '/release/runtime/host/browser_port_owner.py',
-            'run', '--port', '9222',
-            '--profile', '/home/.cloak/profiles/daily-driver',
-            '--owner', 'life-manager-daily-driver', '--',
-            '/home/.openclaw/skills/_shared/venv-cloak/bin/python',
-            '/release/skills/browser/cdp_persistent_context.py',
-            '--profile', '/home/.cloak/profiles/daily-driver',
-            '--port', '9222',
-        ])
+    def test_life_manager_daily_driver_no_longer_has_a_handwritten_dispatch(self):
+        with self.assertRaisesRegex(ValueError, 'no dispatch command'):
+            command_for('life-manager-daily-driver', Path('/release'), Path('/home'))
 
     def test_marketing_owner_state_is_outside_release(self):
         root=Path('/release'); command=command_for('marketing-owner-weekly',root,Path('/home'))
