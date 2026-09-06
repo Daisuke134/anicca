@@ -59,7 +59,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "--port", "4000",
             str(root / "ops/symphony/WORKFLOW.money-printer.md"),
         ]
-    affiliate = root / "skills/affiliate/affiliate"
     scheduled = root / "skills/earn/marketing-engine/report/scheduled_runner.py"
     writer = root / "skills/writer-agent/scripts"
     writer_state = home / ".local/state/life-manager/writer"
@@ -72,7 +71,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "/opt/homebrew/bin/node",
             str(root / "apps/life-manager/scripts/money-printer-symphony-bridge.js"),
         ],
-        "affiliate-loop": [str(affiliate), "loop", "wake"],
         "marketing-mine-daily": [python, str(scheduled), "mine"],
         "lancers-revenue-application": [
             python, str(lancers / "application_loop.py"), "--json", "--exhaustive",
