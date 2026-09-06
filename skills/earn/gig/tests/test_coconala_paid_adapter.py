@@ -70,3 +70,43 @@ def test_mutation_and_readback_remain_adapter_owned() -> None:
     adapter.mutate(intent)
     assert effects == [intent]
     assert adapter.readback(intent)["provider_receipt_id"] == "message-9"
+
+
+def test_shared_decision_preserves_coconala_effect_kind() -> None:
+    module = load()
+    base = {"context": {"_paid_prepare_status": "prepared",
+                        "_bridge_prepared_path": "/tmp/prepared.json"}}
+    assert module._decision({**base, "context": {**base["context"],
+                              "_paid_mode": "cancellation"}})["action"] == "cancel"
+    assert module._decision({**base, "context": {**base["context"],
+                              "_paid_mode": "file", "delivery_action": "progress"}})["action"] == "submit"
+    assert module._decision({**base, "context": {**base["context"],
+                              "_paid_mode": "file", "delivery_action": "formal"}})["action"] == "formal_delivery"
+    assert module._decision({**base, "context": {**base["context"],
+                              "_paid_mode": "answer"}})["action"] == "answer"
+
+
+def test_shared_decision_maps_existing_terminal_and_wait_states() -> None:
+    module = load()
+    assert module._decision({"context": {"_paid_prepare_status": "no_effect"}}) == {
+        "action": "noop"
+    }
+    assert module._decision({"context": {
+        "_paid_prepare_status": "pending", "reason": "external_access",
+        "remaining_work": ["obtain access"],
+    }}) == {"action": "wait", "reason": "external_access",
+           "remaining_work": ["obtain access"]}
+
+
+def test_default_build_reuses_paid_direct_runtime_without_copying_owner(tmp_path: Path) -> None:
+    module = load()
+    adapter, decide = module.build([
+        "--account-id", "seller-1",
+        "--bridge-root", str(tmp_path / "bridge"),
+        "--evidence-dir", str(tmp_path / "evidence"),
+        "--projects-root", str(tmp_path / "projects"),
+    ])
+    assert isinstance(adapter, module.CoconalaPaidAdapter)
+    assert adapter.account_id == "seller-1"
+    assert decide is module._decision
+    assert adapter.context_reader.__self__.paid.__file__.endswith("/paid_direct.py")

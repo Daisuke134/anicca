@@ -209,10 +209,14 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    Paid/kernel/adapter regression passes 51/51 with no external effect. The shared kernel now also
    performs official targeted refresh before context/decision and again before mutation, so a newer
    buyer event invalidates even a previously verified receipt instead of being mislabeled replay-zero;
-   its focused regression passes 37/37. The atom remains unchecked:
-   next wire the default `build()`, run the complete existing Coconala Paid regression, route the
-   installed entrypoint through the shared CLI, and obtain natural official evidence before merging
-   or marking complete.
+   its focused regression passes 37/37. Coconala's default `build()` now reuses `paid_direct.py`
+   directly for official inventory, targeted refresh, prepare, effect and readback, while mapping
+   no-op, durable wait, answer, progress submission, formal delivery and cancellation into the shared
+   contract. It does not copy buyer judgment, artifact production or the old admission lifecycle;
+   the shared kernel owns bounded concurrency. Focused shared/adapter tests pass 40/40 and the wider
+   Paid/Coconala delivery/project regression passes 147/147 with no external effect. The atom remains
+   unchecked: next route the installed entrypoint through the shared CLI and obtain natural official
+   terminal/readback/replay-zero evidence before merging or marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
