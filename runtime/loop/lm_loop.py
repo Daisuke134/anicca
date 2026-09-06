@@ -334,14 +334,20 @@ def _retire_labels(registry: dict, agents_dir: Path, launchctl_safe: Path,
                 bootout_rc, detail = _safe_launchctl(launchctl_safe, ["bootout", service])
                 if bootout_rc != 0:
                     raise RuntimeError(f"{label}: retirement bootout failed: {detail.strip()}")
-                verify_rc, verify_detail = _safe_launchctl(launchctl_safe, ["print", service])
-                if verify_rc == 0:
-                    raise RuntimeError(f"{label}: retirement readback still loaded")
-                if not re.search(
-                        r"(?i)(?:could not find service|service not found|\babsent\b)",
-                        verify_detail):
-                    raise RuntimeError(
-                        f"{label}: retirement absence readback failed: {verify_detail.strip()}")
+                for attempt in range(50):
+                    verify_rc, verify_detail = _safe_launchctl(
+                        launchctl_safe, ["print", service])
+                    if verify_rc != 0:
+                        if not re.search(
+                                r"(?i)(?:could not find service|service not found|\babsent\b)",
+                                verify_detail):
+                            raise RuntimeError(
+                                f"{label}: retirement absence readback failed: "
+                                f"{verify_detail.strip()}")
+                        break
+                    if attempt == 49:
+                        raise RuntimeError(f"{label}: retirement readback still loaded")
+                    time.sleep(0.1)
             plist = agents_dir / f"{label}.plist"
             removed = plist.is_file()
             if removed:

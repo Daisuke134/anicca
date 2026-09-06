@@ -1059,6 +1059,57 @@ class LmLoopApplyTest(unittest.TestCase):
             ["preflight"], ["print", service], ["bootout", service], ["print", service],
         ])
 
+    def test_retirement_waits_for_asynchronous_bootout_absence(self):
+        release = self._release("release-a").resolve()
+        value = json.loads((release / "config/loop-registry.json").read_text())
+        value["retired_labels"] = ["ai.anicca.retired-example"]
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        current = self.root / "current"
+        current.symlink_to(release)
+        agents = self.root / "LaunchAgents"
+        agents.mkdir()
+        retired_plist = agents / "ai.anicca.retired-example.plist"
+        retired_plist.write_text("old")
+        service = f"gui/{os.getuid()}/ai.anicca.retired-example"
+        expected = [str(release / "bin/lm-loop-run"), "example", str(release)]
+        calls = []
+        post_bootout_prints = 0
+
+        def safe(_executable, args):
+            nonlocal post_bootout_prints
+            calls.append(args)
+            if args == ["preflight"]:
+                return 0, "ok"
+            if args == ["print", service]:
+                if ["bootout", service] not in calls:
+                    return 0, "state = running"
+                post_bootout_prints += 1
+                return ((0, "state = running") if post_bootout_prints == 1
+                        else (1, "Could not find service"))
+            if args == ["bootout", service]:
+                return 0, ""
+            if args[:1] == ["print"]:
+                return 1, "absent"
+            if args[:1] == ["bootstrap"]:
+                return 0, ""
+            return 0, ""
+
+        with (
+            patch.object(lm_loop, "_safe_launchctl", side_effect=safe),
+            patch.object(lm_loop.time, "sleep"),
+        ):
+            results = apply_live(
+                release, agents, self.root / "launchctl-safe",
+                current=current, lock_path=self.root / "apply.lock",
+                preserve_unloaded=True,
+                event_writer=lambda *_: None,
+            )
+
+        retired = next(row for row in results if row.get("retired"))
+        self.assertTrue(retired["was_loaded"])
+        self.assertFalse(retired_plist.exists())
+        self.assertEqual(post_bootout_prints, 2)
+
     def test_retirement_fails_closed_when_presence_probe_is_not_an_absence(self):
         release = self._release("release-a").resolve()
         value = json.loads((release / "config/loop-registry.json").read_text())
