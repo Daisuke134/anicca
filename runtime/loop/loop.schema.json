@@ -12,7 +12,7 @@
           "type": "integer"
         },
         "profile": {
-          "pattern": "^~/.+",
+          "pattern": "^~/(?!.*(?:^|/)\\.\\.(?:/|$)).+",
           "type": "string"
         }
       },
@@ -121,11 +121,11 @@
     },
     "entrypoint": {
       "minLength": 1,
-      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+      "pattern": "^(?!/)(?!(?:\\./)*\\.?$)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
       "type": "string"
     },
     "label": {
-      "pattern": "^ai\\.anicca\\..+$",
+      "pattern": "^ai\\.anicca\\..*$",
       "type": "string"
     },
     "log_root": {
