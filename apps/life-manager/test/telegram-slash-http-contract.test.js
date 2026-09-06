@@ -32,6 +32,8 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
 
   const originalCreateServer = http.createServer;
   const originalFetch = global.fetch;
+  const pg = require("pg");
+  const OriginalPool = pg.Pool;
   let productionServer;
   http.createServer = (handler) => {
     productionServer = originalCreateServer(handler);
@@ -51,10 +53,23 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   const sent = [];
   const userPatches = [];
   const feedbackRows = [];
+  const investmentReads = [];
   let telegramSendOk = true;
   const logs = [];
   const originalConsoleLog = console.log;
   console.log = (...args) => logs.push(args.map(String).join(" "));
+  pg.Pool = class FixturePool {
+    query(sql, values) {
+      if (!/FROM public\.lm_investment_states/.test(sql)) throw new Error("unexpected runtime query");
+      investmentReads.push(values[0]);
+      return Promise.resolve({ rows: values[0] === "u1" ? [{
+        uid: "u1", lifecycle: "in_review", deployment: "cloud", mode: "paper",
+        paused: false, killed: false, core_digest: null, receipt_refs: [],
+        alpaca_api_key_ref: null, alpaca_api_secret_ref: null,
+      }] : [] });
+    }
+  };
+  process.env.LM_RUNTIME_DATABASE_URL = "postgresql://fixture.invalid/runtime";
 
   global.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
@@ -164,15 +179,17 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     }
 
     // 2b. /invest crosses the real authenticated webhook + tenant lookup + shared renderer +
-    //     Telegram transport. With no Cloud Investment profile yet it truthfully starts setup,
-    //     exposes the official signup URL, and records the provider's message id. The fake fetch
+    //     Telegram transport. It reads this exact tenant's Cloud Investment state and records the
+    //     provider's message id. The fake fetch
     //     rejects every unknown host, proving this path contacted neither Alpaca nor a scheduler.
     const investBefore = sent.length;
     assert.equal(await message("100", "/invest"), 200);
     assert.equal(sent.length, investBefore + 1, "one /invest update produces exactly one provider send");
     assert.equal(String(lastSent().chat_id), "100");
     assert.match(lastSent().text, /^Investment Loop/m);
-    assert.equal(lastSent().reply_markup.inline_keyboard[0][0].url, "https://app.alpaca.markets/signup");
+    assert.match(lastSent().text, /審査中/);
+    assert.deepEqual(investmentReads, ["u1"]);
+    assert.equal(lastSent().reply_markup, undefined);
     assert.ok(logs.some((line) => /command=invest .*provider_message_id=\d+/.test(line)),
       "the authenticated E2E must retain Telegram's provider message id");
 
@@ -182,6 +199,7 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.equal(sent.length, unlinkedBefore + 1);
     assert.equal(lastSent().text, "Complete Life Manager setup with /start before using /invest.");
     assert.equal(lastSent().reply_markup, undefined);
+    assert.deepEqual(investmentReads, ["u1"], "an unlinked chat must never read another tenant's Investment state");
 
     // 3. Ordering vs the typed payout-address intake: a pending awaiting_address intake must NOT
     //    swallow a slash command (and the slash reply must not be the address-rejection copy).
@@ -329,7 +347,9 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   } finally {
     console.log = originalConsoleLog;
     global.fetch = originalFetch;
+    pg.Pool = OriginalPool;
     http.createServer = originalCreateServer;
+    delete process.env.LM_RUNTIME_DATABASE_URL;
     delete process.env.LM_BROWSER_TASKS_ENABLED;
     delete process.env.LM_PANEL_BASE_URL;
     if (productionServer) await new Promise((resolve) => productionServer.close(resolve));
