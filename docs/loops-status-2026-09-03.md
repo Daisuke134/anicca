@@ -53,10 +53,22 @@
    進捗 2026-09-04:
    - a. **DONE** — 14 件 `受付休止中` → `公開中`（commit `665bd1acd`、effects.jsonl reopen 14 行、readback 受付休止 0）。根本原因: 一覧 scraper が `受付休止中` を読めず `state:None`、contract 検証が 14 件を毎 wake 捨てていた。
    - a'. **DONE** — `listing_contract_family_missing:4371816`。repo 外 state `~/gig/private/storefront-bundle/families.json` の family 欠落を復元。
-   - b. **進行中** — lane の create path が `storefront_create_proposal_failed`（#0 の provider 問題）。claude 経路を直して lane が自分で出品できる状態へ。
+   - b. **原因を訂正（2026-09-06 実測）** — `storefront_create_proposal_failed`（#0 の provider 問題）ではない。18:21〜20:13 の full wake 12連続が effect 0 で `failed`、同時間帯に `gpt-5.6-terra` へ 21 回到達している。落ちていたのは guard 拒否: `storefront_copy_names_prohibited_tool:スプレッドシート` と `storefront_create_title_stem_not_continuative`。
+     根本原因は guard ではなく拒否の扱い。IMPROVE 経路は `_seal_generated_proposal` の例外を catch して no-op に縮退していたが、CREATE 経路は `_seal_create_contract` を素で呼び wake ごと死んでいた。さらに拒否理由はどちらも捨てられ、次 wake が同じ context から同じ違反を再生成していた。
+     **DONE（PR #4222、main `3244ca535`）** — 拒否を `proposal-rejections.jsonl` に gap 単位で永続化 / CREATE 経路を catch して no-op receipt に縮退 / 両プロンプトへ直近拒否を差し戻し / 禁止語を `PROHIBITED_COPY_TERMS` から、連用形規則を新設 `TITLE_STEM_CONTINUATIVE_ENDINGS` からプロンプトへ注入（guard と定数を共有し drift 不可）/ 同一 guard 3連続で当該 gap を打ち切り。新規テスト 13 本 PASS、`test_storefront_direct.py` の既存 2 失敗は clean main と同一。
+     **残り** — main SHA から release を作り storefront label のみ差し替え、full wake が effect 1 / readback 1 で公開到達するのを本番実測する。
    - c. **競合調査 → 出品カタログ 20 本** — Coconala「システム開発・制作」「Web/業務システム」「AI」上位出品（売上件数・星5）を lane 既存の competitor 観測（`competitor-*.json`）で収集し、title/価格帯/構成/FAQ の共通パターンを抽出。雛形は `~/gig/applied.jsonl` 高単価案件（¥300,000/¥250,000/¥180,000）。asset は `skills/gig-work/profile/listings/*.json`（platform 非依存: title/body/価格tier/納期/FAQ/画像）に置き、skill で「出品 asset の作り方・流し方」を定義。
+   - c'. **成功出品データは既に収集済み。IMPROVE に渡っていないだけ（2026-09-06 実測）** — `_extract_search_demand`(`storefront_direct.py:1370`) が公式検索から `comparables`（`display_price_jpy`/`rating`/`review_count`）を作り、`_demand_score`(1430) が `median_price_jpy`/`sold_comparables` を出し `demand-evidence.jsonl` に残している。実測: `excel_vba_gas_automation` = ¥29,000/レビュー464件・¥3,000/428件（当方の Excel 3 件は ¥7,000/¥6,000/¥5,000 で販売 0）、`line_bot_dev` = median ¥35,000・12 件全て星5・検索結果 1,657 件（当方に該当出品なし）。
+     この構造化データは CREATE 経路（`_create_proposal_prompt` 3974）にしか渡らない。既存 15 件を支配する IMPROVE 経路 `_proposal_prompt`(3798) は競合ページ本文を 8,000 字に切って渡すだけで、プロンプトが「never copy their wording, images, reviews, sales, speed, guarantees or results」と使用を禁じている。
+     直す場所: `_proposal_prompt`(3798) と `_judgement_prompt` の CONTEXT_JSON に当該 family の `median_price_jpy`/`comparables`（価格・評価・レビュー数のみ）/`sold_comparables`/`visible_result_count` を追加し、禁止文を「表現・画像・実績の複製は禁止。観測された価格・評価・レビュー数の分布は公開事実として使用してよい」へ変更する。
+     DONE: IMPROVE 提案の evidence に demand-evidence の path が入り、価格提案が family median を根拠に説明され、公式読み戻しで価格が確認できる。
    - d. **公開** — カタログから順に公開（上限 20）、各 wake で公開状態と購入数を readback。
+   - e. **重複出品を畳めるようにする（RETIRE が構造上発火不能）** — 2026-09-06 実測: 公開 15 件は全て `sales_count 0`、30 日 views 441。うち 8 枠が 2 アイデアの反復（SNS 系 5 件 `4244556/4244912/4302213/4330105/4330753`、Excel 系 3 件 `4244910/4313386/4357844`）。
+     `_near_duplicate_listings`(`storefront_direct.py:2137`) は 2154 行の `ratio >= 0.9` でしか重複を認めないが実測最大ペアは **0.857**。もう一方の経路も 958 行 `capacity_pressure` が `15 >= 20` = false。結果 985 行 `retire_ready` が全 15 件で false → 6344-6399 の実行器が本番で死んでいる。
+     直し方: 閾値を上げるのではなく計器を替える。difflib を捨て `storefront-proposal-agent` に生カタログを渡して「買い手が代替品として比較する組」を判定させ strict schema で封印する。決定論コードはアーカイブ操作・読み戻し・復元・単一 effect fence を握り続ける。0.85 へ下げる案は棄却（正当に別物の出品を畳み始める）。
+     DONE: 重複組が `duplicate-listings.jsonl` に新規追記され、1 件が非公開へ落ちて公式読み戻しで確認でき、次 wake で重複 effect 0、復元も実測できる。
    DONE: 公開 ≥ 15 件、うちシステム開発系 ≥ 5 件が公開 URL で readback、wake exit 0、replay effect 0。
+   実測の棚と根拠 → spec `docs/superpowers/specs/2026-08-16-storefront-loop-ssot.md` 4A 節。
 1'. **Coconala paid lane: 全 client に返信・提出** — 実測未（Dais 報告: 一部 client に返信/提出していない、取りこぼしあり）。paid lane の state で「未返信 client 数」「未提出 見積り数」を実測し、取りこぼし 0 にする。
    DONE: paid lane の wake summary に unanswered_clients=0、未提出 0、かつ実際の返信 receipt ≥1。
 2. **Lancers 応募復旧 + 完全プロフィール応募** — `application_loop.py:320-350` `_validate()` が 1 行不正で batch 全滅（`planner_contract_invalid`、9/4 も継続、今日 fresh 判断 0）。不正 row は skip、健全 row だけで判断へ。profile は 9/4 に avatar 登録で 90%（残り電話認証のみ、blocker にしない）。
@@ -74,7 +86,22 @@
 10. **LM Cloud 出荷** — QR onboarding → X 配布 → Stripe 初 charge。 DONE: `new charges: 1`。
 11. **Alpaca 修復 + hackathon 提出** — DONE: 提出受領。
 12. **Capafy 販売再開** — postiz self-host 含む marketing 接続。 DONE: 新規注文 1 件。
-13. **共有 component / 「金を刷る loop を作る skill」化** — 実測: 共有 profile を読むのは Lancers のみ（`storefront_offer.py:20`）。Coconala/CrowdWorks は未接続。 DONE: skill で新 loop 1 本、既存資産再利用を実証。
+13. **共有 component / 「金を刷る loop を作る skill」化** — 実測: 共有 profile を読むのは Lancers のみ（`storefront_offer.py:20`）。Coconala/CrowdWorks は未接続。
+    3 platform の実測（2026-09-06）:
+
+    | | ココナラ | ランサーズ | クラウドワークス |
+    |---|---|---|---|
+    | 実装 | `skills/earn/gig` 282 ファイル / 114,057 行 | `skills/earn/lancers` 4,072 行 | repo 外 `~/.local/share/anicca/crowdworks-revenue-skill/` 3 ファイル・未 versioned |
+    | label / 間隔 | `hf-gig-storefront-direct` / 60s | `lancers-revenue-storefront` / 1800s | `crowdworks.storefront` / 300s |
+    | 生存 | 稼働中（1b 修正前は全 wake 失敗） | lane 専用ログが 9/1 23:03 で停止 | lane state が 8/15 `observed_status:failed` で凍結、plist 指定ログが未生成 |
+    | 出品 | 15 件・全て販売 0 | 1 件 `1338228` published | 0 件 |
+    | 需要実測 | 30 日 views 441 / 購入 0 | 検索表示 20・閲覧 0・相談 0・注文 0 | — |
+    | `_shared/marketplace-core` | 未使用 | 利用（唯一） | 未使用 |
+    | SKILL.md | なし | あり | なし |
+
+    共有層 `skills/_shared/marketplace-core` は 2,251 行 4 本（`ledger.py` 913 / `contracts.py` 549 / `application_transaction.py` 477 / `telegram_outbox.py` 312）= 帳簿と通知のみ。ココナラ側の資産（契約封印・公式読み戻し・重複 fence・capability family・KPI 帰属・コピー guard）は 1 行も共有されていない。
+    ランサーズの出品内容自体はココナラより良い（`B2B企業のSNS更新を止めず見込み客に伝わる投稿を毎月制作し` / ¥29,800・¥198,000・¥398,000 の月次 3 プラン / やらないことの明示あり）。欠けているのは露出と、出品を増やす能力 — `storefront_offer.py` は "Inspect or align one canonical Lancers storefront offer" で 1 件を整合させる以上のことをしない。
+    DONE: skill で新 loop 1 本、既存資産再利用を実証。
 14. **README を real-time status に** — DONE: loop が書き換えた README diff が commit される。
 
 ## 補足事実
