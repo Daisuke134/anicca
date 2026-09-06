@@ -40,15 +40,20 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    PASS = preserve every already-read-back effect, remove the current per-project
    `remote_builder/transient_timeout` failure boundary, and observe a fresh natural installed-release
    aggregate with `failed=0`; a following natural wake must retain Ryu's existing message with no
-   duplicate send and keep formal delivery off. Official runtime readback reports installed release
-   `5993c085ad66c11fea08ec91870a2d2362826459` running a new natural wake, while the latest completed
-   event remains release `eee65f8a1b998244ebd98622d262989e20d490fc`, terminal `fail`, blocker
-   `entrypoint_exit_1`. That completed aggregate observed five rooms and failed two project builders,
-   including Ryu `18211957`, without performing an external effect. The running wake is not a PASS
-   until it publishes its terminal receipt. Earlier writes also failed with `ENOSPC`, but current
-   filesystem readback has about 10 GiB available; disk exhaustion is therefore prior incident
-   evidence, not the current root-cause claim. Do not advance shared extraction from a presently
-   failing reference owner.
+   duplicate send and keep formal delivery off. Release
+   `5d905db62d50c755e20a8c4fb6716d96c5eab840` produced multiple natural PASS terminals. The latest
+   aggregate observes five rooms with `failed=0`, `pending=1`, effect `0`, readback `4`; Ryu
+   `18211957` is `awaiting_buyer`, `send_performed=false`, `deduplicated=true`, formal delivery off.
+   This proves the earlier two-project builder regression recovered without resending Ryu's effect.
+   The atom remains open because the newest terminal from the same release is `fail` with
+   `entrypoint_exit_143` after a roughly 20-minute wake, and the latest aggregate carries terminal
+   reconciliation `failed_step=terminal_reconciliation`, `error=OSError`. The Paid launchd log binds
+   recent `OSError` failures to `ENOSPC` while atomically writing `latest.json`; current filesystem
+   readback has recovered to about 23 GiB available, but recovery of free bytes does not prove the
+   producer/retention boundary is durable. First prove the next reconciliation write does not repeat
+   `ENOSPC`, then determine whether exit 143 remains independently. Close only after two consecutive
+   natural PASS terminals with `failed=0`, exact Ryu replay-zero and formal delivery off. A process
+   status alone is not PASS.
 4. [ ] `SHARED-PAID-1` Use Lancers as the second real Paid platform and extraction trigger.
    PASS = implement one provider-neutral Paid entrypoint from
    `skills/loop-engineering/references/marketplace-paid-lane.md`, moving only orchestration already

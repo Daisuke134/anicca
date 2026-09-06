@@ -36,10 +36,13 @@ while each provider spec owns its transport/runtime sequence.
 Current Paid status and order are therefore recorded only in that TODO. Coconala has the accepted
 reference receipt chain: its Paid owner completed the Ryu revision through a normal message with
 exact official readback, formal delivery off and replay-zero. That historical acceptance does not
-hide a later operational regression: the latest completed Paid wake reports `entrypoint_exit_1`
-after two project builders timed out. A newer installed release is running but has no terminal
-receipt yet, so restoring a natural aggregate with failed items zero is again the first Paid atom.
-After that health gate, the next extraction proof is
+hide later operational regressions. The two-project builder timeout has recovered: a newer local
+release produced multiple natural PASS terminals and the latest aggregate has failed items zero,
+with Ryu officially retained as replay-zero and formal delivery off. Continuous health is still
+open because the newest wake ended `entrypoint_exit_143` and terminal reconciliation separately
+reported `OSError`; recent Paid logs bind that error class to `ENOSPC`, although current free space
+has recovered. Durable no-ENOSPC reconciliation followed by two consecutive natural PASS terminals
+remains the first Paid atom. After that health gate, the next extraction proof is
 a real Lancers Paid lifecycle; CrowdWorks then adds a thin Paid adapter to the same entrypoint.
 Independent marketplace owners may continue concurrently because their accounts, work items and
 effect identities are disjoint; this ordering scopes shared-kernel changes and does not impose a
