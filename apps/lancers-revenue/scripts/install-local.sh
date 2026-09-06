@@ -9,7 +9,6 @@ LAUNCH_AGENT_DIR="${LANCERS_LAUNCH_AGENT_DIR:?LANCERS_LAUNCH_AGENT_DIR is requir
 STATE_ROOT="${LANCERS_STATE_ROOT:?LANCERS_STATE_ROOT is required}"
 INSTALL_MODE="${LANCERS_INSTALL_MODE:?LANCERS_INSTALL_MODE is required}"
 ACTIVATE="${LANCERS_ACTIVATE:?LANCERS_ACTIVATE is required}"
-LABEL="ai.anicca.lancers-revenue-application"
 REPORT_LABEL="ai.anicca.lancers-revenue-telegram-report"
 WORK_SYNC_LABEL="ai.anicca.lancers-revenue-work-sync"
 STOREFRONT_LABEL="ai.anicca.lancers-revenue-storefront"
@@ -49,14 +48,12 @@ mkdir -p "$RELEASES_ROOT"
 chmod 700 "$INSTALL_ROOT" "$RELEASES_ROOT"
 STAGING="$(mktemp -d "$RELEASES_ROOT/.${RELEASE_SHA}.staging.XXXXXX")"
 CHECK_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/lancers-install-check.XXXXXX")"
-PLIST_TEMP=""
 REPORT_PLIST_TEMP=""
 WORK_SYNC_PLIST_TEMP=""
 STOREFRONT_PLIST_TEMP=""
 BROWSER_PLIST_TEMP=""
 
 cleanup() {
-  [[ -z "$PLIST_TEMP" || ! -e "$PLIST_TEMP" ]] || rm -f "$PLIST_TEMP"
   [[ -z "$REPORT_PLIST_TEMP" || ! -e "$REPORT_PLIST_TEMP" ]] || rm -f "$REPORT_PLIST_TEMP"
   [[ -z "$WORK_SYNC_PLIST_TEMP" || ! -e "$WORK_SYNC_PLIST_TEMP" ]] || rm -f "$WORK_SYNC_PLIST_TEMP"
   [[ -z "$STOREFRONT_PLIST_TEMP" || ! -e "$STOREFRONT_PLIST_TEMP" ]] || rm -f "$STOREFRONT_PLIST_TEMP"
@@ -72,7 +69,6 @@ git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
   skills/earn/lancers/assets/monthly-sns-content-ops-v1.png \
   skills/gig-work/profile/avatar.jpg \
   skills/earn/lancers/scripts/storefront_offer.py \
-  skills/earn/lancers/scripts/application_loop.py \
   skills/earn/lancers/scripts/application_tick.py \
   skills/earn/lancers/scripts/work_sync.py \
   skills/earn/lancers/scripts/status.py \
@@ -96,7 +92,6 @@ git -C "$REPO_ROOT" archive --format=tar "$RELEASE_SHA" \
 chmod 755 "$STAGING/runtime/agent-runner/agent_runner.py"
 
 PYTHONDONTWRITEBYTECODE=1 "$PYTHON_BIN" - "$STAGING" "$CHECK_ROOT" <<'PY'
-import importlib.util
 import py_compile
 import sys
 from pathlib import Path
@@ -110,14 +105,6 @@ for index, path in enumerate(python_files):
         cfile=str(check_root / f"{index}.pyc"),
         doraise=True,
     )
-sys.dont_write_bytecode = True
-loop_path = root / "skills/earn/lancers/scripts/application_loop.py"
-spec = importlib.util.spec_from_file_location("lancers_release_application_loop_check", loop_path)
-if spec is None or spec.loader is None:
-    raise RuntimeError("application_loop_import_unavailable")
-module = importlib.util.module_from_spec(spec)
-sys.modules[spec.name] = module
-spec.loader.exec_module(module)
 PY
 
 RELEASE_PATH="$RELEASES_ROOT/$RELEASE_SHA"
@@ -155,40 +142,6 @@ find "$RELEASE_PATH" -type f -exec chmod a-w {} +
 
 mkdir -p "$LAUNCH_AGENT_DIR" "$STATE_ROOT/logs"
 chmod 700 "$LAUNCH_AGENT_DIR" "$STATE_ROOT" "$STATE_ROOT/logs"
-TEMPLATE="$SCRIPT_DIR/../launchd/$LABEL.plist"
-PLIST_PATH="$LAUNCH_AGENT_DIR/$LABEL.plist"
-PLIST_TEMP="$(mktemp "$LAUNCH_AGENT_DIR/.${LABEL}.plist.XXXXXX")"
-
-# Write through a same-directory temporary so the final plist replacement is atomic.
-"$PYTHON_BIN" - "$TEMPLATE" "$PLIST_TEMP" "$PYTHON_BIN" \
-  "$RELEASE_PATH/skills/earn/lancers/scripts/application_loop.py" \
-  "$STATE_ROOT/application.json" "$STATE_ROOT/logs/application.out.log" \
-  "$STATE_ROOT/logs/application.err.log" "$RELEASE_PATH" "$INSTALL_MODE" "$RUNTIME_PATH" <<'PY'
-import os
-import plistlib
-import sys
-from pathlib import Path
-
-template, output, python_bin, loop_path, state_path, stdout_path, stderr_path, working_dir, mode, runtime_path = sys.argv[1:]
-value = plistlib.loads(Path(template).read_bytes())
-arguments = [python_bin, loop_path, "--json"]
-if mode == "reconcile-only":
-    arguments.append("--reconcile-only")
-else:
-    arguments.append("--exhaustive")
-arguments.extend(("--state-path", state_path))
-value["ProgramArguments"] = arguments
-value["WorkingDirectory"] = working_dir
-value["StandardOutPath"] = stdout_path
-value["StandardErrorPath"] = stderr_path
-value["EnvironmentVariables"]["PATH"] = runtime_path
-Path(output).write_bytes(plistlib.dumps(value, fmt=plistlib.FMT_XML, sort_keys=False))
-os.chmod(output, 0o644)
-PY
-mv -f "$PLIST_TEMP" "$PLIST_PATH"
-PLIST_TEMP=""
-"$PLUTIL_BIN" -lint "$PLIST_PATH" >/dev/null
-
 WORK_SYNC_TEMPLATE="$SCRIPT_DIR/../launchd/$WORK_SYNC_LABEL.plist"
 WORK_SYNC_PLIST_PATH="$LAUNCH_AGENT_DIR/$WORK_SYNC_LABEL.plist"
 WORK_SYNC_PLIST_TEMP="$(mktemp "$LAUNCH_AGENT_DIR/.${WORK_SYNC_LABEL}.plist.XXXXXX")"
@@ -297,7 +250,6 @@ if [[ "$ACTIVATE" == "1" ]]; then
     [[ "$working" == "$RELEASE_PATH" ]] || fail "$label does not use the exact release working directory"
   }
   activate_owner "$BROWSER_LABEL" "$BROWSER_PLIST_PATH" "$CHROMIUM_BIN"
-  activate_owner "$LABEL" "$PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/application_loop.py"
   activate_owner "$REPORT_LABEL" "$REPORT_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/telegram_report.py"
   activate_owner "$WORK_SYNC_LABEL" "$WORK_SYNC_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/work_sync.py"
   activate_owner "$STOREFRONT_LABEL" "$STOREFRONT_PLIST_PATH" "$RELEASE_PATH/skills/earn/lancers/scripts/storefront_offer.py"
@@ -305,7 +257,7 @@ fi
 
 INSTALLED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 "$PYTHON_BIN" - "$STATE_ROOT/deployment.json" "$RELEASE_PATH" "$RELEASE_SHA" \
-  "$INSTALL_MODE" "$INSTALLED_AT" "$LABEL" "$REPORT_LABEL" "$WORK_SYNC_LABEL" "$STOREFRONT_LABEL" "$BROWSER_LABEL" <<'PY'
+  "$INSTALL_MODE" "$INSTALLED_AT" "$REPORT_LABEL" "$WORK_SYNC_LABEL" "$STOREFRONT_LABEL" "$BROWSER_LABEL" <<'PY'
 import hashlib
 import json
 import os
@@ -313,7 +265,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-manifest_path, release_path, deployed_sha, mode, installed_at, label, report_label, work_sync_label, storefront_label, browser_label = sys.argv[1:]
+manifest_path, release_path, deployed_sha, mode, installed_at, report_label, work_sync_label, storefront_label, browser_label = sys.argv[1:]
 release = Path(release_path)
 files = {}
 for path in sorted(path for path in release.rglob("*") if path.is_file()):
@@ -323,7 +275,6 @@ manifest = {
     "deployed_sha": deployed_sha,
     "files": files,
     "installed_at": installed_at,
-    "launchd_label": label,
     "report_launchd_label": report_label,
     "work_sync_launchd_label": work_sync_label,
     "storefront_launchd_label": storefront_label,

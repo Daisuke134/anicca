@@ -36,6 +36,27 @@ class CleanUserInstallTest(unittest.TestCase):
             f"{ROOT}/skills/earn/crowdworks/scripts/application_owner.py marker",
         )
 
+    def test_lancers_wrapper_uses_managed_python_state_and_exact_argv(self):
+        wrapper = ROOT / "skills/earn/lancers/scripts/application-owner"
+        self.assertTrue(os.access(wrapper, os.X_OK))
+        state_root = "/private/life-manager-state/lancers"
+        result = subprocess.run(
+            [str(wrapper)],
+            env={
+                **os.environ,
+                "LIFE_MANAGER_PYTHON": "/bin/echo",
+                "LIFE_MANAGER_STATE_ROOT": state_root,
+            },
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            result.stdout.strip(),
+            f"{ROOT}/skills/earn/lancers/scripts/application_loop.py "
+            f"--json --exhaustive --state-path {state_root}/application.json",
+        )
+
     def test_public_archive_contains_general_agent_release_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
