@@ -76,6 +76,22 @@ def test_verified_effect_replays_with_zero_mutations(tmp_path: Path) -> None:
     assert len(adapter.effects) == 1
 
 
+def test_new_buyer_event_invalidates_verified_receipt_before_decision(tmp_path: Path) -> None:
+    adapter = Adapter([observation("work-1")])
+    assert paid.run_wake(adapter=adapter, decide=submit, state_root=tmp_path)["effect"] == 1
+    adapter.current["work-1"]["latest_event_id"] = "message-2"
+    received = []
+
+    def noop(row: dict) -> dict:
+        received.append(row["latest_event_id"])
+        return {"action": "noop"}
+
+    result = paid.run_wake(adapter=adapter, decide=noop, state_root=tmp_path)
+    assert received == ["message-2"]
+    assert result["items"][0]["status"] == "noop"
+    assert len(adapter.effects) == 1
+
+
 def test_new_buyer_event_invalidates_intent_before_mutation(tmp_path: Path) -> None:
     adapter = Adapter([observation("work-1")])
 

@@ -206,7 +206,10 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    through checkpoint `7fcfa8fa1`. Extraction inspection found that Coconala cancellation alone
    still mutated inside `_prepare_one()`; it now emits only prepared state, while `_write_one()` owns
    its disk-gated mutation and official readback exactly like answer and file effects. The focused
-   Paid/kernel/adapter regression passes 51/51 with no external effect. The atom remains unchecked:
+   Paid/kernel/adapter regression passes 51/51 with no external effect. The shared kernel now also
+   performs official targeted refresh before context/decision and again before mutation, so a newer
+   buyer event invalidates even a previously verified receipt instead of being mislabeled replay-zero;
+   its focused regression passes 37/37. The atom remains unchecked:
    next wire the default `build()`, run the complete existing Coconala Paid regression, route the
    installed entrypoint through the shared CLI, and obtain natural official evidence before merging
    or marking complete.

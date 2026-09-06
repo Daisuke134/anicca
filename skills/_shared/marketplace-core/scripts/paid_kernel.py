@@ -141,8 +141,15 @@ def _run_one_locked(adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Map
     row = _observation(source)
     path = _state_path(state_root, row)
     state = _load(path)
+    refreshed = _observation(adapter.observe_one(row["work_id"]))
+    if any(refreshed[field] != row[field] for field in ("provider", "account_id", "work_id")):
+        raise ValueError("paid_work_identity_changed")
+    row = refreshed
     previous_intent = state.get("intent")
-    if isinstance(previous_intent, Mapping):
+    previous_observation = state.get("observation")
+    same_event = (isinstance(previous_observation, Mapping)
+                  and previous_observation.get("latest_event_id") == row["latest_event_id"])
+    if isinstance(previous_intent, Mapping) and same_event:
         official = adapter.readback(dict(previous_intent))
         if official.get("verified") is True:
             receipt = _verified_receipt(previous_intent, official)
@@ -177,6 +184,8 @@ def _run_one_locked(adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Map
     _write(path, {"version": 1, "observation": row, "intent": intent,
                   "status": "intent_persisted"})
     current = _observation(adapter.observe_one(row["work_id"]))
+    if any(current[field] != row[field] for field in ("provider", "account_id", "work_id")):
+        raise ValueError("paid_work_identity_changed")
     if current["latest_event_id"] != row["latest_event_id"]:
         _write(path, {"version": 1, "observation": current, "status": "context_stale"})
         return _pending(row, "newer_provider_event")
