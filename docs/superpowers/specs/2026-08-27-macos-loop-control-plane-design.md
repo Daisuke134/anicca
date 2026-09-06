@@ -198,16 +198,19 @@ completion remain separate.
      90-second collector timeout and 15-second owned-target cleanup budget (105 seconds worst case,
      below half the cadence); buyer-targeted readback retains its separate 180-second timeout.
      Paid-focused regression tests pass (108).
-   - [ ] Production observation after release `363b78ce`: the install-time wake at `21:31 JST`
+   - [x] Production observation after release `363b78ce`: the install-time wake at `21:31 JST`
      lost the per-label nonblocking apply lock and exited `78` once, then launchd naturally retried
      at `21:36:12 JST` (`runs=2`, PID `16514`) without a kick, restart or browser intervention.
-     Follow that exact run to a terminal receipt and require room `18180857` to leave `pending`;
-     the latest aggregate before this run is observed `5`, pending `1`, failed `0`.
+     That exact run terminated naturally at `21:53:54 JST` with `entrypoint_exit_1`: observed `5`,
+     actionable `3`, readback `4`, failed `1`, pending `0`. Room `18180857` produced an official
+     TikTok login-recovery readback but the old release misclassified its blocked owner as
+     `remote_builder` failure; Ryu `18211957` reconciled to `awaiting_buyer`, formal delivery off,
+     with no duplicate send. This is the production counterexample covered by the next source fix.
    - [x] Preserve a verified authentication-recovery blocker as retry-owned `pending`, not a
      mechanical Paid failure. An unauthenticated wait is accepted only when the result remains
      blocked with both required outcomes false and carries a provider-, URL- and readback-bound
      authentication/login recovery receipt; an unauthenticated generic blocker still fails closed.
-     Paid remote regression tests pass (88). This closes the production `18180857` failure where
+     Paid regression tests pass on latest merged main (110). This closes the production `18180857` failure where
      TikTok exposed neither an authenticated `@anicca.jp` owner view nor an available login form.
 3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
    accounting, every authorized application submitted, exact official readback and replay-zero.
