@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -224,6 +225,18 @@ def test_default_release_scope_is_only_the_four_coconala_business_lanes():
         "ai.anicca.hf-gig-reply-detector",
         "ai.anicca.hf-gig-paid-direct",
     }
+
+
+def test_paid_job_routes_through_shared_kernel_with_formal_delivery_off():
+    manifest = json.loads(gig_release.MANIFEST.read_text(encoding="utf-8"))
+    job = next(row for row in manifest["jobs"]
+               if row["label"] == "ai.anicca.hf-gig-paid-direct")
+    program = job["program"]
+    assert "{{RELEASE}}/skills/_shared/marketplace-core/scripts/paid_kernel.py" in program
+    assert "{{RELEASE}}/skills/earn/gig/scripts/coconala_paid_adapter.py" in program
+    assert "--provider-adapter" in program
+    assert "--allow-formal-delivery" not in program
+    assert gig_release.JOB_PROCESS_MARKERS[job["label"]] == "paid_kernel.py"
 
 
 def test_explicit_release_scope_is_preserved():

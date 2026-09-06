@@ -4712,28 +4712,13 @@ def _prepare_one(args, item_path: Path, output: Path) -> int:
             })
             return 0
         if _is_coconala_cancellation_block(semantic):
-            disk_reason = _effect_gate_reason(args)
-            if disk_reason is not None:
-                return _write_disk_pending(output, room, disk_reason, "before_cancellation_effect")
-            cancellation = _run_coconala_cancellation(
-                args, item_path, root, feedback, base / "cancellation",
-            )
-            result = {
-                "talkroom_id": room,
-                "send_performed": cancellation.get("send_performed") is True,
-                "deduplicated": cancellation.get("deduplicated") is True,
-                "formal_delivery_checkbox": False,
-                "effect_key": cancellation.get("effect_key"),
-                "evidence_paths": {
-                    "official_readback": cancellation.get("live_dom_path"),
-                    "screenshot": cancellation.get("screenshot_path"),
-                },
-            }
             _write(output, {
-                "status": "completed", "talkroom_id": room,
-                "effect": int(result["send_performed"]), "readback": 1, "failed": 0,
-                "semantic_decision": "cancellation", "formal_delivery_checkbox": False,
-                "item": result, "_paid_prepare_status": "terminal_effect",
+                **item,
+                "project_root": str(root),
+                "semantic_decision": "cancellation",
+                "formal_delivery_checkbox": False,
+                "_paid_mode": "cancellation",
+                "_paid_prepare_status": "prepared",
             })
             return 0
         if semantic.get("decision") == "blocked":
@@ -5013,6 +4998,28 @@ def _write_one(args, item_path: Path, output: Path) -> int:
         room, feedback = _text(item.get("talkroom_id")), _text(item.get("buyer_feedback_sha256"))
         root = _paid_project_root(args, item)
         base = args.evidence_dir / "paid-direct" / room
+        if prepared.get("_paid_mode") == "cancellation":
+            cancellation = _run_coconala_cancellation(
+                args, item_path, root, feedback, base / "cancellation",
+            )
+            result = {
+                "talkroom_id": room,
+                "send_performed": cancellation.get("send_performed") is True,
+                "deduplicated": cancellation.get("deduplicated") is True,
+                "formal_delivery_checkbox": False,
+                "effect_key": cancellation.get("effect_key"),
+                "evidence_paths": {
+                    "official_readback": cancellation.get("live_dom_path"),
+                    "screenshot": cancellation.get("screenshot_path"),
+                },
+            }
+            _write(output, {
+                "status": "completed", "talkroom_id": room,
+                "effect": int(result["send_performed"]), "readback": 1, "failed": 0,
+                "semantic_decision": "cancellation", "formal_delivery_checkbox": False,
+                "item": result,
+            })
+            return 0
         requirements_sha256 = _text(prepared.get("requirements_sha256"))
         if paid_remote_result.requirements_digest(root, feedback) != requirements_sha256:
             raise Failure("requirements_toctou")

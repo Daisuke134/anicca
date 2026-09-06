@@ -194,6 +194,34 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `skills/loop-engineering/references/marketplace-paid-lane.md`, moving only orchestration already
    proven identical on Coconala and Lancers into `skills/_shared/marketplace-core/`. Keep auth,
    selectors, provider states and mutations in thin adapters; do not copy `paid_direct.py`.
+   Shared-kernel implementation is in progress on pushed branch `feat/shared-paid-1-20260907`.
+   `paid_kernel.py` now owns per-work durable state, intent-before-effect persistence, same-item OS
+   fencing, different-item concurrency, mutation-time latest-event invalidation, official readback,
+   reconcile-unknown, external waits, process-boundary resume, replay-zero and item-failure isolation.
+   The generic CLI now loads any configured adapter without a provider branch. A thin Lancers adapter
+   reuses its existing seven-surface official inventory reader; its live read-only preflight records
+   `observed=0`, `effect=0`, `failed=0`, matching the current zero working-contract state. A thin
+   Coconala adapter now owns mapping, targeted refresh, cumulative-context, mutation and readback
+   seams without copying its business owner. Focused kernel plus both-adapter regressions pass 14/14
+   through checkpoint `7fcfa8fa1`. Extraction inspection found that Coconala cancellation alone
+   still mutated inside `_prepare_one()`; it now emits only prepared state, while `_write_one()` owns
+   its disk-gated mutation and official readback exactly like answer and file effects. The focused
+   Paid/kernel/adapter regression passes 51/51 with no external effect. The shared kernel now also
+   performs official targeted refresh before context/decision and again before mutation, so a newer
+   buyer event invalidates even a previously verified receipt instead of being mislabeled replay-zero;
+   its focused regression passes 37/37. Coconala's default `build()` now reuses `paid_direct.py`
+   directly for official inventory, targeted refresh, prepare, effect and readback, while mapping
+   no-op, durable wait, answer, progress submission, formal delivery and cancellation into the shared
+   contract. It does not copy buyer judgment, artifact production or the old admission lifecycle;
+   the shared kernel owns bounded concurrency. Focused shared/adapter tests pass 40/40 and the wider
+   Paid/Coconala delivery/project regression passes 147/147 with no external effect. The launchd
+   manifest now routes the unchanged Coconala Paid label through `paid_kernel.py` plus the thin
+   adapter, preserves the existing state/evidence/project roots, and omits the adapter's explicit
+   formal-delivery capability flag so formal delivery remains durably disabled. Manifest/release/
+   adapter regressions pass 28/28 (one unrelated stale `watch` CLI assertion is deselected). This
+   routing is pushed but not activated. The atom remains unchecked: next integrate current `main`,
+   release this route, and obtain natural official terminal/readback/replay-zero evidence before
+   merging or marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
