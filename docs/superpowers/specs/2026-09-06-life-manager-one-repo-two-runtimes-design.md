@@ -243,7 +243,7 @@ shared-component or legacy-retirement atom is active.
   - [x] `WT-04a` Add the repository-owned lease contract, heartbeat command, fail-closed audit and lifecycle runbook.
   - [x] `WT-04b` Re-audit `life-manager-alpaca-pr89-spec`; verify clean, merged, unlocked, open PR 0 and process/open file 0; retire it without force and confirm it is absent.
   - [x] `WT-04c` Resolve the ownerless lock on clean, merged `life-manager-alpaca-a11-spec`: its originating Codex session was terminal, the empty lock had not changed since creation, and process/tmux/open-file checks were zero; repeat the complete preflight, retire without force and confirm the path is absent.
-  - [ ] `WT-04d` Have each remaining legacy owner adopt a managed lease or retire its own merged clean worktree; never bulk-unlock or infer abandonment from age alone.
+  - [ ] `WT-04d` Have each remaining legacy owner adopt a managed lease or retire its own merged clean worktree; never bulk-unlock or infer abandonment from age alone. Current readback: 62 legacy unmanaged locks and 12 unlocked unmanaged worktrees; the unlocked set has zero removable candidates because every path is dirty/ignored, unmerged, open-PR, or the active main checkout.
 - [ ] `ARCH-01` Freeze the current 175 managed, 22 external, 48 retired and cloud-adapter inventory with owner and last receipt.
 - [ ] `ARCH-02` Add one `loop.json` schema generated from the current registry; do not create a second hand-edited source.
 - [ ] `ARCH-03` Add validated `command`/`adapter` fields and migrate one low-risk loop end to end.
