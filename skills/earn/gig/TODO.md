@@ -378,6 +378,33 @@ does not start them and does not reorder anyone's cursor to fit them:
    means starting from the newest. A not-found on the first page still fails loudly, because that
    one really is a missing source.
 
+9. [ ] `APPLY-REPORT-9` ★ Coconala has applied to nothing since 2026-09-02, and the reason is not
+   "no suitable work". Measured 2026-09-07: every listing the Apply lane observes is rejected on a
+   single condition — `form_state:absent` — and it is **100% of them**, in all 14 sampled runs back
+   to 2026-09-05 10:49, which is as far as retained evidence goes. The listings are open:
+   `page_state=present`, `accepting_control=present`, `deadline_state=future` (one sample deadline
+   is 2026-09-11). Only the application form is not found. Coconala is the only marketplace that has
+   ever earned money here (¥129,636 cumulative), so this is the most expensive open fault in the
+   Apply cursor.
+   `form_state="absent"` collapses two causes with opposite fixes: `application_form_redirected`
+   (session or routing) and `application_form_controls_missing` (the provider changed the markup).
+   Neither string appears anywhere in run evidence, so four days of zero applications carried no way
+   to tell which. Same evidence-discarding shape as `APPLY-REPORT-8`, where adding the observed
+   title is what corrected a wrong diagnosis.
+   Done as the first step: the reason, the landing URL and title, and which of `has_content` /
+   `has_price` / `has_date` was missing are appended to `form-state-failures.jsonl` in the run's
+   evidence directory — beside the lifecycle row, never inside it, because that row is content-hashed
+   over a fixed field list and an extra key there fails contract validation instead of helping.
+   PASS = one natural wake names which of the two it is, the cause is fixed, and a later natural wake
+   submits at least one application with an official readback.
+
+10. [x] `APPLY-REPORT-10` Name the marketplace in the submitted-application report. `report_envelope.py`
+   excluded `coconala` from the `[Platform][応募完了]` format, so Coconala fell through to a generic
+   `📨 新しい仕事へ応募しました` with no marketplace anywhere in it — the one report shape that did
+   not say who sent it. The body Dais asked to keep is unchanged; only the headline now carries the
+   name, taking `platform_display_name` when a lane sets one. Three tests pin it, including that the
+   name is not hardcoded to Coconala.
+
 What is true once all five are checked: a stranger clones this repository, sets `TELEGRAM_BOT_TOKEN`
 and `TELEGRAM_CHAT_ID`, runs an Apply lane, and receives the same reporting Dais receives today —
 no Homebrew binary, no second copy of the sentence. A new marketplace inherits reporting by naming
