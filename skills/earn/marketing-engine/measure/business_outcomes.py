@@ -27,8 +27,18 @@ from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ENV = Path("/Users/anicca/anicca/.env")
-DEFAULT_STATE = ROOT / "state" / "business-outcomes.jsonl"
-DEFAULT_EVIDENCE = ROOT / "evidence" / "business"
+
+
+def default_storage_paths(environment: dict[str, str] | None = None) -> tuple[Path, Path]:
+    env = os.environ if environment is None else environment
+    runtime_root = Path(env.get("LIFE_MANAGER_STATE_ROOT", str(ROOT)))
+    return (
+        runtime_root / "state" / "business-outcomes.jsonl",
+        runtime_root / "evidence" / "business",
+    )
+
+
+DEFAULT_STATE, DEFAULT_EVIDENCE = default_storage_paths()
 
 PRODUCTS = {
     "aniccaios": {

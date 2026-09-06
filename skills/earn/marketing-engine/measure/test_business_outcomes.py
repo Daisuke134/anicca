@@ -17,6 +17,19 @@ SPEC.loader.exec_module(outcomes)
 
 
 class RevenueCatContractTest(unittest.TestCase):
+    def test_managed_loop_storage_is_outside_the_immutable_release(self):
+        state, evidence = outcomes.default_storage_paths({
+            "LIFE_MANAGER_STATE_ROOT": "/tmp/marketing-metrics-daily",
+        })
+        self.assertEqual(
+            state,
+            Path("/tmp/marketing-metrics-daily/state/business-outcomes.jsonl"),
+        )
+        self.assertEqual(
+            evidence,
+            Path("/tmp/marketing-metrics-daily/evidence/business"),
+        )
+
     def test_realtime_app_filter_uses_verified_app_id_option(self):
         options = {
             "filters": [{
