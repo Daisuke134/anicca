@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["groups"],
+  "properties": {
+    "groups": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["service_ids", "keep_service_id", "reason"],
+        "properties": {
+          "service_ids": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 12,
+            "items": {"type": "string", "pattern": "^[0-9]+$"}
+          },
+          "keep_service_id": {"type": "string", "pattern": "^[0-9]+$"},
+          "reason": {"type": "string", "minLength": 1, "maxLength": 400}
+        }
+      }
+    }
+  }
+}

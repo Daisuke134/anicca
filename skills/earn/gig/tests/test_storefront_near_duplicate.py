@@ -1,4 +1,16 @@
-"""Two listings selling the same thing under nearly the same name are one too many."""
+"""Two listings selling the same thing under nearly the same name are one too many.
+
+`_near_duplicate_listings` used to declare a duplicate by a 0.9 title-similarity ratio -- the
+five tests this file used to carry directly against that ratio. That gate measured at most 0.857
+across the eight real listings it was supposed to catch and never fired in production, so
+whether two listings are substitutes is now a model judgement, not a string measure (see
+storefront_duplicate_judgement.schema.json). The mocked-model coverage this replaces --
+including the "same family, different offer" and "reworded pair" cases this file used to check --
+now lives in `test_storefront_duplicate_judgement.py`, which also carries the regression check
+that the old 0.9 ratio could never have caught the real case. The one test kept here, an
+unreadable title is never compared, still holds unchanged: it is a structural filter applied
+before the model is ever called, not part of what the model decides.
+"""
 
 import sys
 from pathlib import Path
@@ -13,43 +25,16 @@ FAMILIES = {
     "91000005": "excel_automation",
     "91000004": "presentation_design",
 }
-ROWS = [
-    {"service_id": "4357844", "title_stem": "請求書作成のExcel自動化要件を整理し"},
-    {"service_id": "4357869", "title_stem": "請求書作成のExcel自動化仕様を整理し"},
-    {"service_id": "91000005", "title_stem": "Excel作業の自動化を設計から支援し"},
-    {"service_id": "91000004", "title_stem": "請求書作成のExcel自動化要件を整理し"},
-]
 
 
-def test_the_two_listings_one_word_apart_are_reported():
-    pairs = storefront_direct._near_duplicate_listings(ROWS, FAMILIES)
-    assert [pair["service_ids"] for pair in pairs] == [["4357844", "4357869"]]
-    assert pairs[0]["title_similarity"] >= 0.9
-
-
-def test_a_different_offer_in_the_same_family_is_left_alone():
-    pairs = storefront_direct._near_duplicate_listings(ROWS, FAMILIES)
-    assert all("91000005" not in pair["service_ids"] for pair in pairs)
-
-
-def test_an_identical_title_in_another_family_is_not_a_duplicate():
-    pairs = storefront_direct._near_duplicate_listings(ROWS, FAMILIES)
-    assert all("91000004" not in pair["service_ids"] for pair in pairs)
-
-
-def test_a_listing_whose_title_could_not_be_read_is_not_compared():
+def test_a_listing_whose_title_could_not_be_read_is_not_compared(tmp_path):
     rows = [{"service_id": "4357844", "title_stem": None},
             {"service_id": "4357869", "title_stem": "請求書作成のExcel自動化仕様を整理し"}]
-    assert storefront_direct._near_duplicate_listings(rows, FAMILIES) == []
-
-
-def test_a_pair_stays_a_pair_after_one_of_them_is_reworded():
-    """Improving one listing pushed the titles apart and the pair stopped being reported."""
-    reworded = [
-        {"service_id": "4357844", "title_stem": "請求書の転記・集計をExcelマクロで自動化し"},
-        {"service_id": "4357869", "title_stem": "請求書作成のExcel自動化仕様を整理し"},
-    ]
-    assert storefront_direct._near_duplicate_listings(reworded, FAMILIES) == []
+    # Only one row survives the title_stem filter, so the function returns before it would ever
+    # need to call the model -- no mock required to prove this.
+    assert storefront_direct._near_duplicate_listings(
+        rows, FAMILIES, state_dir=tmp_path, evidence_dir=tmp_path / "evidence",
+    ) == []
 
 
 def test_a_withdrawn_listing_is_never_deleted_as_litter(tmp_path):

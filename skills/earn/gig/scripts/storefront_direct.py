@@ -46,6 +46,7 @@ DEFAULT_CATEGORY_CHILD_SCHEMA = GIG_DIR / "schemas" / "storefront_category_child
 DEFAULT_BOOTSTRAP_SELECTION_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_selection.schema.json"
 DEFAULT_BOOTSTRAP_LISTING_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_listing.schema.json"
 DEFAULT_BOOTSTRAP_IMPORT_SCHEMA = GIG_DIR / "schemas" / "storefront_bootstrap_import.schema.json"
+DEFAULT_DUPLICATE_JUDGEMENT_SCHEMA = GIG_DIR / "schemas" / "storefront_duplicate_judgement.schema.json"
 DEFAULT_STOREFRONT_ROOT = Path(
     os.environ.get("GIG_STOREFRONT_ROOT") or "/nonexistent/storefront-root-required"
 )
@@ -1415,23 +1416,31 @@ def _load_catalog_entries(path: Path = LISTING_CATALOG) -> dict[str, dict]:
     (skills/gig-work/profile/listings/catalog.json). CREATE grounds its generated proposal in
     the matching entry so buyer-facing copy stays anchored to what the owner actually decided
     to sell, instead of the model inventing scope, price or deliverables unsupervised.
+
+    Delegates to the shared skills/_shared/marketplace-core listing_catalog module, which is
+    the one place that reads and validates the catalog (it fails loud on a bad catalog rather
+    than returning empty). This production call site must not regress: it keeps returning the
+    same per-family subset of fields it always has, and still returns {} when the catalog is
+    unreadable/invalid — but it now reports why on stderr instead of swallowing the reason.
     """
+    SHARED_SCRIPTS = SCRIPTS.parent.parent.parent / "_shared" / "marketplace-core" / "scripts"
+    if str(SHARED_SCRIPTS) not in sys.path:
+        sys.path.insert(0, str(SHARED_SCRIPTS))
+    import listing_catalog
+
     try:
-        config = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        catalog = listing_catalog.load(path)
+    except listing_catalog.CatalogError as error:
+        print(f"catalog_load_failed: {type(error).__name__}: {error}", file=sys.stderr)
         return {}
-    listings = config.get("listings")
-    if not isinstance(listings, list):
-        return {}
-    catalog: dict[str, dict] = {}
-    for row in listings:
-        if not isinstance(row, dict) or not str(row.get("family") or ""):
-            continue
-        catalog[str(row["family"])] = {
+    entries = listing_catalog.entries_by_family(catalog)
+    return {
+        family: {
             key: row.get(key) for key in
             ("id", "title_ja", "value_prop", "tiers", "deliverables", "required_inputs", "faq")
         }
-    return catalog
+        for family, row in entries.items()
+    }
 
 
 def _validate_mutation_contract(contract: dict, capability_families: dict[str, str]) -> None:
@@ -2740,33 +2749,175 @@ def _recover_prepared_create_contract(
     return None
 
 
-def _near_duplicate_listings(rows: list[dict], families: dict[str, str]) -> list[dict]:
-    """Report live listings that sell the same thing under nearly the same name.
+def _invoke_duplicate_judgement_proposal(
+    *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
+    catalogue: list[dict], timeout_seconds: int,
+) -> tuple[dict, dict]:
+    """Ask which live listings a buyer would treat as substitutes for one another.
 
-    Two Excel listings went live one word apart, `…要件を整理します` and `…仕様を整理します`,
-    because the only duplicate guard compared titles for exact equality.
+    A character-overlap ratio cannot see that two differently-worded listings sell the same
+    thing, or that two similarly-worded ones sell different things -- whether two listings are
+    substitutes is a commercial judgement a buyer would make, not a string measure. This call
+    hands the model nothing but the seller's own catalogue facts and reads back a strict schema.
+    """
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    prompt = """Decide which of these live Coconala listings a buyer would treat as interchangeable
+substitutes for one another -- selling the same underlying outcome under different wording -- as
+opposed to listings that are genuinely different offers. Group only true substitutes: a listing
+with nothing else like it in CATALOGUE_JSON must not appear in any group, and every group needs at
+least two service_ids. For each group, name its service_ids copied exactly from CATALOGUE_JSON
+(never invent one), pick keep_service_id as the stronger listing to keep among that group's own
+service_ids using its price_jpy/views/purchases as evidence, and give a one-line reason a buyer
+could not tell the group's listings apart. An empty groups array is the correct answer when
+nothing in the catalogue duplicates anything else.
+CATALOGUE_JSON=""" + json.dumps(catalogue, ensure_ascii=False, separators=(",", ":"))
+    completed = subprocess.run(
+        [sys.executable, str(runner), "--task-class", "storefront-proposal-agent", "--prompt-stdin",
+         "--schema", str(schema), "--evidence-dir", str(evidence_dir),
+         "--task-label", "gig-storefront-duplicate-judgement", "--loop", "gig-storefront",
+         "--workdir", str(workdir), "--timeout-seconds", str(timeout_seconds)],
+        input=prompt, text=True, capture_output=True, env=os.environ.copy(),
+        timeout=timeout_seconds + 30, check=False,
+    )
+    if completed.returncode != 0:
+        raise RuntimeError(f"storefront_duplicate_judgement_failed:{completed.returncode}")
+    summary = json.loads((evidence_dir / "summary.json").read_text(encoding="utf-8"))
+    result_path = Path(str(summary["result_path"])).resolve()
+    result_path.relative_to(evidence_dir.resolve())
+    if (summary.get("status") != "success"
+            or summary.get("selected_provider") != "codex"
+            or summary.get("selected_model") != "gpt-5.6-terra"
+            or summary.get("selected_effort") != "medium"):
+        raise RuntimeError("storefront_duplicate_judgement_evidence_invalid")
+    return json.loads(result_path.read_text(encoding="utf-8")), {
+        "provider": summary.get("selected_provider"), "model": summary.get("selected_model"),
+        "effort": summary.get("selected_effort"),
+    }
+
+
+def _validate_duplicate_judgement_groups(result: object, live_ids: set[str]) -> list[dict]:
+    """Every mechanical guard over the model's answer lives here, never in the model's word alone.
+
+    Any single violation -- an invented id, a group of one, an id claimed by two groups, a keep
+    that is not a member of its own group, an empty reason -- invalidates the whole answer.
+    Nothing is partially salvaged: a judgement this loop cannot fully trust it does not trust at
+    all this wake.
+    """
+    if not isinstance(result, dict):
+        raise RuntimeError("storefront_duplicate_judgement_not_object")
+    groups = result.get("groups")
+    if not isinstance(groups, list):
+        raise RuntimeError("storefront_duplicate_judgement_groups_invalid")
+    claimed: set[str] = set()
+    validated: list[dict] = []
+    for group in groups:
+        if not isinstance(group, dict):
+            raise RuntimeError("storefront_duplicate_judgement_group_invalid")
+        ids = group.get("service_ids")
+        keep = group.get("keep_service_id")
+        reason = str(group.get("reason") or "").strip()
+        if (not isinstance(ids, list) or len(ids) < 2
+                or not all(isinstance(value, str) for value in ids)):
+            raise RuntimeError("storefront_duplicate_judgement_group_size_invalid")
+        if len(set(ids)) != len(ids):
+            raise RuntimeError("storefront_duplicate_judgement_group_has_repeated_id")
+        if not set(ids) <= live_ids:
+            raise RuntimeError("storefront_duplicate_judgement_unknown_service_id")
+        if claimed & set(ids):
+            raise RuntimeError("storefront_duplicate_judgement_id_in_two_groups")
+        claimed |= set(ids)
+        if not isinstance(keep, str) or keep not in ids:
+            raise RuntimeError("storefront_duplicate_judgement_keep_not_in_group")
+        # The portfolio selector below always retires the numerically later (newer) service_id of
+        # a pair and always spares the earlier one -- that sort is untouched by this feature. A
+        # keep the model names that is not the group's earliest id could never actually survive
+        # that sort, so the whole answer is invalid rather than silently retiring the model's pick.
+        if keep != min(ids):
+            raise RuntimeError("storefront_duplicate_judgement_keep_not_earliest_id")
+        if not reason:
+            raise RuntimeError("storefront_duplicate_judgement_reason_empty")
+        validated.append({"service_ids": sorted(ids), "keep_service_id": keep, "reason": reason})
+    return validated
+
+
+def _seal_duplicate_judgement(groups: list[dict]) -> dict:
+    unsigned = {"version": 1, "groups": groups}
+    canonical = json.dumps(unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {**unsigned, "content_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
+
+
+def _near_duplicate_listings(
+    rows: list[dict], families: dict[str, str], *, state_dir: Path, evidence_dir: Path,
+    price_by_service_id: dict[str, int] | None = None,
+    runner: Path = DEFAULT_RUNNER, schema: Path = DEFAULT_DUPLICATE_JUDGEMENT_SCHEMA,
+    workdir: Path = Path.home(), timeout_seconds: int = 180,
+) -> list[dict]:
+    """Report live listings a buyer would treat as substitutes for one another.
+
+    Two Excel listings went live one word apart, `…要件を整理します` and `…仕様を整理します`, because
+    the only duplicate guard once compared titles for exact equality, then for a 0.9 character-overlap
+    ratio -- both blind to the actual case that let eight listings covering two ideas stay live, which
+    measured at most 0.857 on that ratio. Whether two listings sell the same thing to a buyer is a
+    commercial judgement, not a string measure, so a model makes that call under a strict schema; this
+    function owns every mechanical guard over its answer and fails closed -- zero pairs, never a guess
+    -- on any invalid or missing result.
     """
     import difflib
 
-    pairs = []
     titled = [row for row in rows if row.get("title_stem")]
-    for index, first in enumerate(titled):
-        for second in titled[index + 1:]:
-            family = families.get(str(first["service_id"]))
-            if family is None or family != families.get(str(second["service_id"])):
+    if len(titled) < 2:
+        return []
+    metrics_by_id: dict[str, dict] = {}
+    rows_read, _ = _jsonl_rows(state_dir / "analytics.jsonl")
+    for row in rows_read:
+        if str(row.get("service_id") or "").isdigit():
+            metrics_by_id[str(row["service_id"])] = row.get("metrics") or {}
+    prices = price_by_service_id or {}
+    stems = {str(row["service_id"]): str(row["title_stem"]) for row in titled}
+    catalogue = [
+        {
+            "service_id": service_id, "title_stem": stems[service_id],
+            "capability_family": families.get(service_id),
+            "price_jpy": prices.get(service_id),
+            "views": (metrics_by_id.get(service_id, {}).get("views") or {}).get("value"),
+            "purchases": (metrics_by_id.get(service_id, {}).get("purchases") or {}).get("value"),
+        }
+        for service_id in stems
+    ]
+    live_ids = set(stems)
+    try:
+        result, _route = _invoke_duplicate_judgement_proposal(
+            runner=runner, schema=schema, workdir=workdir, evidence_dir=evidence_dir,
+            catalogue=catalogue, timeout_seconds=timeout_seconds,
+        )
+        groups = _validate_duplicate_judgement_groups(result, live_ids)
+        sealed = _seal_duplicate_judgement(groups)
+    except (RuntimeError, OSError, ValueError, TypeError, KeyError,
+            json.JSONDecodeError, subprocess.SubprocessError) as error:
+        _atomic_write(evidence_dir / "duplicate-judgement-error.json",
+                      {"error": f"{type(error).__name__}:{str(error)[:200]}"})
+        return []
+    _atomic_write(evidence_dir / "duplicate-judgement.json", sealed)
+    pairs = []
+    for group in groups:
+        keep = group["keep_service_id"]
+        family = families.get(keep)
+        for other in group["service_ids"]:
+            if other == keep:
                 continue
-            ratio = difflib.SequenceMatcher(
-                None, str(first["title_stem"]), str(second["title_stem"])).ratio()
-            if ratio >= 0.9:
-                pairs.append({"service_ids": [str(first["service_id"]), str(second["service_id"])],
-                              "capability_family": family, "title_similarity": round(ratio, 3),
-                              "titles": [first["title_stem"], second["title_stem"]]})
+            ratio = round(difflib.SequenceMatcher(None, stems[keep], stems[other]).ratio(), 3)
+            pairs.append({"service_ids": [keep, other], "capability_family": family,
+                          "title_similarity": ratio, "titles": [stems[keep], stems[other]],
+                          "reason": group["reason"]})
     return pairs
 
 
 def _scan_public_copy(
     state_dir: Path, evidence_dir: Path, now: int, service_ids: list[str],
     default_tab_script: Path = DEFAULT_TAB, capability_families: dict[str, str] | None = None,
+    *, price_by_service_id: dict[str, int] | None = None,
+    runner: Path = DEFAULT_RUNNER, duplicate_judgement_schema: Path = DEFAULT_DUPLICATE_JUDGEMENT_SCHEMA,
+    workdir: Path = Path.home(), timeout_seconds: int = 180,
 ) -> tuple[list[dict], list[dict]]:
     """Read the copy this seller wrote for each listing and report prohibited tool names.
 
@@ -2902,7 +3053,12 @@ def _scan_public_copy(
                            if service_id in set(service_ids) and service_id not in read_now]
     findings += [row for row in catalogue
                  if row.get("prohibited_terms") and str(row["service_id"]) not in read_now]
-    duplicates = _near_duplicate_listings(catalogue, capability_families or {})
+    duplicates = _near_duplicate_listings(
+        catalogue, capability_families or {}, state_dir=state_dir,
+        evidence_dir=evidence_dir / "duplicate-judgement",
+        price_by_service_id=price_by_service_id, runner=runner,
+        schema=duplicate_judgement_schema, workdir=workdir, timeout_seconds=timeout_seconds,
+    )
     # Rewriting one half of a pair pushes their titles apart, and the pair stopped being
     # reported the moment one listing was improved. Two listings selling the same thing do not
     # stop doing so because their wording diverged, so a pair once observed stays observed
@@ -6808,6 +6964,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             compliance_violations, duplicate_listings = _scan_public_copy(
                 args.state_dir, inventory_path.parent, int(time.time()), sorted(inventory_ids),
                 getattr(args, "default_tab_script", DEFAULT_TAB), scan_families,
+                price_by_service_id={str(row["service_id"]): row.get("price_jpy")
+                                     for row in validated_contracts},
+                runner=getattr(args, "runner", DEFAULT_RUNNER),
+                duplicate_judgement_schema=getattr(
+                    args, "duplicate_judgement_schema", DEFAULT_DUPLICATE_JUDGEMENT_SCHEMA),
+                workdir=args.workdir, timeout_seconds=args.timeout_seconds,
             )
             # Rewriting a listing that is about to come down is work nobody reads, and because
             # retirement only runs on a wake that changed nothing else, the rewrite would keep
@@ -8171,6 +8333,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--bootstrap-selection-schema", type=Path, default=DEFAULT_BOOTSTRAP_SELECTION_SCHEMA)
     parser.add_argument("--bootstrap-listing-schema", type=Path, default=DEFAULT_BOOTSTRAP_LISTING_SCHEMA)
     parser.add_argument("--bootstrap-import-schema", type=Path, default=DEFAULT_BOOTSTRAP_IMPORT_SCHEMA)
+    parser.add_argument("--duplicate-judgement-schema", type=Path, default=DEFAULT_DUPLICATE_JUDGEMENT_SCHEMA)
     parser.add_argument("--scorecard", type=Path, default=storefront["scorecard"])
     parser.add_argument("--image-contract", type=Path, default=storefront["image"])
     parser.add_argument("--gallery-contract", type=Path, default=storefront["gallery"])

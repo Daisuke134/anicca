@@ -57,3 +57,33 @@ def test_it_checks_a_page_that_requires_login(url):
     """A public page cannot tell logged in from logged out: Coconala sends anonymous users to /."""
     gig = SOURCE.split("gig browser (coconala:kosuke)", 1)[1].split("per-account clip browsers", 1)[0]
     assert url in gig
+
+
+def _gig_block() -> str:
+    return SOURCE.split("gig browser (coconala:kosuke)", 1)[1].split("per-account clip browsers", 1)[0]
+
+
+def test_the_gig_session_is_banked_not_only_warmed():
+    """Warming keeps a live session alive; only dump refreshes what the lane restores from.
+
+    Measured 2026-09-07: vault/gig-daily-driver/auth-state.json was last written 2026-09-02 02:17,
+    the day Coconala's applications stopped. The lane rehydrates its isolated contexts from that
+    file, so it was restoring expired cookies every wake and landing on /login.
+    """
+    assert 'python3 "$V" dump' in _gig_block()
+
+
+def test_the_dump_targets_the_gig_vault_not_the_default():
+    """SESSION_VAULT_DIR defaults to ~/.cloak/vault/daily-driver -- the human browser's jar.
+
+    Every dump this tick ever ran wrote there, which is why the gig vault went stale unnoticed.
+    """
+    gig = _gig_block()
+    assert 'SESSION_VAULT_DIR="$GIG_VAULT"' in gig
+    assert 'GIG_VAULT="$HOME/.cloak/vault/gig-daily-driver"' in gig
+
+
+def test_banking_happens_before_warming():
+    """Dump captures what is there now; warming afterwards keeps it from expiring."""
+    gig = _gig_block()
+    assert gig.index('python3 "$V" dump') < gig.index('python3 "$V" keepalive')
