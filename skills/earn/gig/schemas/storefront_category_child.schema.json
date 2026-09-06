@@ -5,7 +5,7 @@
   "required": ["sub_value", "type_value", "rationale"],
   "properties": {
     "sub_value": {"type": "string", "pattern": "^[0-9]+$"},
-    "type_value": {"type": "string", "pattern": "^[0-9]+$"},
+    "type_value": {"oneOf": [{"type": "string", "pattern": "^[0-9]+$"}, {"type": "null"}]},
     "rationale": {"type": "string", "minLength": 1, "maxLength": 400}
   }
 }
