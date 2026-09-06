@@ -16,6 +16,35 @@ offers from measured conversion, and Paid completes accepted work through offici
 readback and replay-zero. A marketplace-specific customer case is evidence for this kernel, not a
 separate architecture or the definition of completion.
 
+## End state — one marketplace money-printer kernel
+
+The goal is one self-hosted, no-human marketplace system whose Apply, Reply, Storefront and Paid
+owners keep acquiring, serving and completing paid work. Coconala, Lancers, CrowdWorks and each
+later marketplace reuse the same deterministic lifecycle. A new provider adds only its authenticated
+inventory, identity vocabulary, selectors, mutations and official readback; it does not copy a lane.
+
+The target ownership tree is:
+
+```text
+skills/
+├── _shared/marketplace-core/
+│   ├── scripts/
+│   │   ├── apply_kernel.py      # opportunity lifecycle, intent, submission receipt and replay
+│   │   ├── paid_kernel.py       # work-item lifecycle, resume, receipts, replay and backoff
+│   │   ├── reply_kernel.py      # event lifecycle, reply/estimate intent, receipts and replay
+│   │   ├── storefront_kernel.py # offer lifecycle, conversion evidence, mutation and rollback
+│   │   └── reporting.py         # one receipt-derived operator report for every provider and lane
+│   ├── schemas/                 # provider-neutral work-item, effect and receipt contracts
+│   └── tests/                   # adapter conformance and replay-zero fixtures
+├── earn/gig/scripts/            # thin Coconala Paid/Reply adapters
+├── earn/lancers/scripts/        # thin Lancers Paid/Reply adapters
+├── earn/crowdworks/scripts/      # thin CrowdWorks Paid/Reply adapters
+└── loop-development/SKILL.md    # canonical build, release, ownership and acceptance rules
+```
+
+Apply and Storefront remain independently owned while their parallel work is active. Shared runtime
+changes require an explicit conflict check; this cursor never replaces their business code.
+
 ## Host P0 before this Paid cursor
 
 The current first work is `PANIC-1` through `PANIC-6` in
@@ -25,7 +54,7 @@ Do not reorder or mark the Paid atoms below complete while local boot recovery i
 independent agents may continue read-only or disjoint work in parallel; this owner advances the host
 P0 first.
 
-## Active atomic cursor — marketplace Paid reuse
+## Active atomic cursor — marketplace kernel completion
 
 This is the only executable cursor for this owner. Older unchecked Coconala incident and customer
 case lists below are historical evidence and do not reopen completed work or reorder this list.
@@ -96,6 +125,22 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
 7. [ ] `NEXT-MARKETPLACE-PAID-1` Repeat adapter conformance for Fiverr or the next authorized
    marketplace without changing the shared Paid lifecycle. PASS = provider-only config/transport/
    effect/readback changes plus one real official receipt chain and replay-zero.
+8. [ ] `SHARED-REPLY-1` Use Lancers as the second real Reply platform and extraction trigger.
+   PASS = one provider-neutral Reply entrypoint owns event identity, durable intent, reply/estimate
+   selection, receipt persistence, retry/backoff and replay-zero in `skills/_shared/marketplace-core/`.
+   Coconala and Lancers keep only auth, selectors, provider state and actual mutation in adapters;
+   neither provider gets a copied Reply loop.
+9. [ ] `LANCERS-REPLY-1` Complete one real Lancers buyer-message or estimate lifecycle through the
+   shared Reply entrypoint. PASS = official event observation, one buyer-visible effect, same-session
+   official readback and a following natural replay with effect zero are receipt-bound.
+10. [ ] `CROWDWORKS-REPLY-1` Add only the CrowdWorks Reply adapter to the proven shared entrypoint.
+    PASS = one real buyer event reaches official reply/readback and replay-zero without forking the
+    shared event, decision, receipt or retry lifecycle.
+11. [ ] `LOOP-DEVELOPMENT-CANON-1` Make `skills/loop-development/SKILL.md` the concise canonical
+    rule set for building and operating these marketplace loops. PASS = it points to the shared Paid
+    and Reply contracts, defines the provider-adapter boundary and natural terminal/official readback
+    gates once, removes duplicate or stale instructions, and the final three-provider runtime table
+    shows each installed owner, release SHA, latest natural terminal and effect/readback status.
 
 ## Parallel Apply-owner cursor — one reporting standard, no external CLI
 
