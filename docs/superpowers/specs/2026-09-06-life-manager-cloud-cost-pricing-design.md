@@ -115,8 +115,12 @@ Sources:
 This track owns these atoms in the exact order below while the remote Cloud product agent separately
 owns `CLOUD-01` through `CLOUD-08`. Finish and integrate one cost atom before starting the next.
 
-1. **COST-01 — observe:** add one tenant/provider/feature usage-event contract and dashboard query;
-   record success, cache hit, failure class, provider units, and estimated direct cost without secrets.
+1. **COST-01 — observe (DONE):** add one tenant/provider/feature usage-event contract and dashboard
+   query; record success, cache hit, failure class, provider units, and estimated direct cost without
+   secrets. Integrated by PR #4282. Production RPC readback returned HTTP 200 and 17 natural Maps
+   usage events for 2026-09-06 UTC: Directions failure 5 / USD 0.025 estimated, Geocoding failure
+   5 / USD 0.025, and Geocoding success 7 / USD 0.035. The estimates are provider list-price
+   accounting events, not a replacement for the Google Cloud invoice.
 2. **COST-02 — stop paid failure replay:** wire `lm_route_cache` to production, add bounded negative
    cache for deterministic 4xx/no-route and short backoff for timeout/5xx, and prove a later valid route
    can recover.
