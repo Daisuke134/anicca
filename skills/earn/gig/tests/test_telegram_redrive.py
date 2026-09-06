@@ -154,18 +154,23 @@ def test_reply_wake_drain_never_selects_paid_rows(tmp_path):
     assert int(paid["report_id"]) not in selected
 
 
-def test_timeout_with_provider_ack_persists_receipt(tmp_path):
+class _Sent:
+    def __init__(self, provider_id, error=None):
+        self.started, self.provider_id, self.error = True, provider_id, error
+
+
+def test_a_delivered_send_persists_its_receipt(tmp_path):
+    """Was the openclaw timeout-with-stdout-ACK salvage; that CLI path no longer exists.
+
+    The receipt contract is unchanged and is what redrive reads, so it is still asserted exactly.
+    """
     event_key = "gig:telegram:reply:v2:412:6"
     message = "verified reply"
 
-    def timed_out(command, **_kwargs):
-        raise subprocess.TimeoutExpired(
-            command, 60, output=b'{"messageId":"29117"}\n',
-        )
-
     transport = OpenClawTelegramTransport(
-        target="8547730585", run=timed_out,
+        target="8547730585",
         receipt_dir=tmp_path / "receipts", now_ms=lambda: 123456,
+        sender=lambda body, chat_id, env_file=None: _Sent("29117"),
     )
 
     assert transport.send_report(message, event_key=event_key) == "29117"
