@@ -7,9 +7,11 @@ import os
 import re
 import stat
 import subprocess
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 
 CLI_VERSION = "0.0.14"
@@ -225,7 +227,8 @@ def read_allocator_snapshot(
     clock = _run(cli_path, [
         "clock", "get", "--quiet", "--jq", "{is_open:.is_open,timestamp:.timestamp}",
     ], env)
-    positions = _run(cli_path, ["position", "list", "--quiet", "--jq", "length"], env)
+    positions = _run(cli_path, ["position", "list", "--quiet", "--jq",
+        "[.[]|{symbol,market_value,unrealized_pl}]"], env)
     orders = _run(cli_path, [
         "order", "list", "--quiet", "--status", "open", "--limit", "500", "--jq", "length",
     ], env)
@@ -260,12 +263,29 @@ def read_allocator_snapshot(
     ], env)
     if not isinstance(account, dict) or not isinstance(clock, dict):
         raise ValueError("alpaca_allocator_shape_invalid")
-    if not isinstance(positions, int) or not isinstance(orders, int):
+    if not isinstance(positions, list) or not isinstance(orders, int):
         raise ValueError("alpaca_allocator_shape_invalid")
     if not isinstance(crypto, list) or not isinstance(options, list):
         raise ValueError("alpaca_allocator_shape_invalid")
+    try:
+        equity = Decimal(str(account["equity"]))
+        last_equity = Decimal(str(account["last_equity"]))
+        allocated = sum((abs(Decimal(str(row["market_value"]))) for row in positions), Decimal("0"))
+        unrealized = sum((Decimal(str(row["unrealized_pl"])) for row in positions), Decimal("0"))
+        observed = datetime.fromisoformat(str(clock["timestamp"]).replace("Z", "+00:00"))
+        values = (equity, last_equity, allocated, unrealized)
+        if observed.tzinfo is None or any(not value.is_finite() for value in values):
+            raise ValueError
+        realized = equity - last_equity - unrealized
+        risk = {"allocated_capital_usd": str(allocated),
+                "realized_pnl_ny_day_usd": str(realized),
+                "unrealized_pnl_usd": str(unrealized),
+                "observed_at": clock["timestamp"],
+                "ny_day": observed.astimezone(ZoneInfo("America/New_York")).date().isoformat()}
+    except (KeyError, InvalidOperation, TypeError, ValueError) as error:
+        raise ValueError("alpaca_allocator_risk_invalid") from error
     return {"account": account, "clock": clock, "crypto": crypto,
-            "open_orders": orders, "option_quotes": options, "positions": positions,
+            "open_orders": orders, "option_quotes": options, "positions": len(positions), "risk": risk,
             "qqq_asset": qqq_asset, "qqq_quote": qqq_quote, "spy": spy}
 
 
