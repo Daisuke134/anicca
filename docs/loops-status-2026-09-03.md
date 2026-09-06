@@ -65,7 +65,11 @@
    - b''. **競合ページの空読みで wake を殺さない** — 21:40:05 の wake が `competitor_source_empty` で失敗。実測: 21:35:59 の wake は 14 件中 **9 件**しか evidence を書けずに死亡、前後の wake（21:22 / 21:09 / 20:54 / 21:44 / 21:55）は全て 14 件読了 → 一過性の空読み。
      既存慣行に合わせた: `_read_official_catalog` は同じ理由で dashboard を5回 retry し「failing the whole wake on it costs a decision cycle for nothing」と書いてある。
      **DONE（PR #4239、main `3d737e7e0`）** — 空 body だけ5回 retry（`attempt<4` の3秒 sleep も既存と同一）/ `competitor_source_is_own_service`・`competitor_source_not_official`・`competitor_service_redirected` は初回で raise のまま（ページ自体の正しさの話で環境の話ではない）/ retry 後も空なら manifest の新 `unread` に記録して skip、`sources` に入れないので evidence count は正直なまま / **閾値は発明せず、読めた source が 0 のときだけ致命**。新規テスト 7 本 PASS。
-     **残り（1b の完了条件）** — full wake が `effect 1 / readback 1` で公開到達するのを本番実測する。2026-09-06 22:00 時点で未達。今日の3つの故障（guard 拒否 / カテゴリ第3階層 / 競合空読み）は全て独立で、1つ直すと次が出る状態。
+     **DONE（2026-09-07 08:25）** — 一晩で15件出荷。うち7件は**同じクラス**だった: 回復可能な1件の失敗が wake 全体を殺す。1件ずつ直して13段かかったのは私の誤りで、3段目でクラスを名指して全箇所を一度に潰すべきだった。#4374 でまとめて閉じた。
+     出荷分: #4222 guard拒否をwakeの死因にしない / #4237 二階層カテゴリ / #4239 競合空読み / #4245 タブopen timeout / #4250 schema の `oneOf`（自分の回帰） / #4269 3ストライクが実物の下書きを捨てる（自分の回帰） / #4272 seller form の retry が最弱 / #4278 プロンプトが助詞の規則を教えていない / #4280 公開ページ読み戻しの retry / #4287 prepare_draft の retry 不整合 / #4294 **下書き作成が wake の effect 予算を食って公開を止めていた** / #4307 RETIRE をモデル判定へ / #4308 共有カタログ / #4366 ログイン画面を「空の棚」と誤命名 / #4374 per-item 失敗クラスを一括 / #4376 封印済み契約を捨てて毎回作り直していた件
+     失敗の分類規則は `skills/loop-engineering/references/transient-vs-fatal.md` に切り出した。新しい raise を足す前に必ず読む。
+     **7時間の停止**: 00:51〜08:09 の 241 wake が completed 0。原因はセッション切れをループが `official_inventory_empty_or_invalid`（在庫が空）と誤って名指したこと。Apply lane は同じ失効を正しく名指したので次 wake で自力復帰した。**差はコードではなく名前だけだった**（#4366）。
+     **残り（1b の完了条件）** — full wake が `effect 1 / readback 1` で公開到達するのを本番実測する。2026-09-07 08:48 時点で未達。下書き2件（`4387924` LINE予約・定型応答 ¥100,000 / SEO記事 ¥3,000）が中身入りで公開待ち。直近 wake は `no_executable_unfenced_mutation_contract` — 落ちてはいないが下書きを公開候補として拾えていない。
    - c. **競合調査 → 出品カタログ 20 本** — Coconala「システム開発・制作」「Web/業務システム」「AI」上位出品（売上件数・星5）を lane 既存の competitor 観測（`competitor-*.json`）で収集し、title/価格帯/構成/FAQ の共通パターンを抽出。雛形は `~/gig/applied.jsonl` 高単価案件（¥300,000/¥250,000/¥180,000）。asset は `skills/gig-work/profile/listings/*.json`（platform 非依存: title/body/価格tier/納期/FAQ/画像）に置き、skill で「出品 asset の作り方・流し方」を定義。
    - c'. **成功出品データは既に収集済み。IMPROVE に渡っていないだけ（2026-09-06 実測）** — `_extract_search_demand`(`storefront_direct.py:1370`) が公式検索から `comparables`（`display_price_jpy`/`rating`/`review_count`）を作り、`_demand_score`(1430) が `median_price_jpy`/`sold_comparables` を出し `demand-evidence.jsonl` に残している。実測: `excel_vba_gas_automation` = ¥29,000/レビュー464件・¥3,000/428件（当方の Excel 3 件は ¥7,000/¥6,000/¥5,000 で販売 0）、`line_bot_dev` = median ¥35,000・12 件全て星5・検索結果 1,657 件（当方に該当出品なし）。
      この構造化データは CREATE 経路（`_create_proposal_prompt` 3974）にしか渡らない。既存 15 件を支配する IMPROVE 経路 `_proposal_prompt`(3798) は競合ページ本文を 8,000 字に切って渡すだけで、プロンプトが「never copy their wording, images, reviews, sales, speed, guarantees or results」と使用を禁じている。
@@ -110,7 +114,33 @@
 
     共有層 `skills/_shared/marketplace-core` は 2,251 行 4 本（`ledger.py` 913 / `contracts.py` 549 / `application_transaction.py` 477 / `telegram_outbox.py` 312）= 帳簿と通知のみ。ココナラ側の資産（契約封印・公式読み戻し・重複 fence・capability family・KPI 帰属・コピー guard）は 1 行も共有されていない。
     ランサーズの出品内容自体はココナラより良い（`B2B企業のSNS更新を止めず見込み客に伝わる投稿を毎月制作し` / ¥29,800・¥198,000・¥398,000 の月次 3 プラン / やらないことの明示あり）。欠けているのは露出と、出品を増やす能力 — `storefront_offer.py` は "Inspect or align one canonical Lancers storefront offer" で 1 件を整合させる以上のことをしない。
-    DONE: skill で新 loop 1 本、既存資産再利用を実証。
+
+    **あるべき形（2026-09-07 時点の差分）** — SKILL.md が既に宣言している依存方向は
+    `loop config → recipe → shared runtime → provider adapter → official provider`。
+    Apply と Paid はこの形になっている（`references/marketplace-apply-lane.md` / `marketplace-paid-lane.md` と `paid_kernel.py`）。
+    **Storefront だけが recipe も kernel も無く、全部 `earn/gig/scripts/storefront_direct.py` の中にある。**
+
+    ```
+    skills/loop-engineering/references/marketplace-storefront-lane.md   ★新規
+    skills/_shared/marketplace-core/scripts/
+      storefront_kernel.py       ★ 選定(KEEP/IMPROVE/RETIRE/REPLACE/CREATE)・契約封印と検証・
+                                    単一effect fence・重複fence・公式読み戻し照合・ロールバック・KPI帰属
+      listing_projection.py      ★ catalog → 各platformの出品形（project_lancers は listing_catalog.py に実装済）
+      transient.py               ★ 5回×3秒を1箇所に（今は5種類バラバラで、今夜落ちたのは全部弱い方）
+      listing_catalog.py            既存（#4308）。ココナラのみ接続
+    skills/_shared/marketplace-core/schemas/
+      listing_contract.schema.json      ★ platform非依存
+      duplicate_judgement.schema.json   ★ 今 earn/gig にある
+    skills/earn/gig/adapters/coconala_storefront.py       ★ DOM操作だけ
+    skills/earn/lancers/adapters/lancers_storefront.py    ★ DOM操作だけ
+    skills/earn/crowdworks/                                ★ repo外(~/.local/share/anicca/)から repo内へ
+    ```
+
+    **抽出条件は既に満たしている。** SKILL.md の「A new abstraction is prohibited for one speculative
+    consumer — the second real consumer is the extraction trigger」に対し、ランサーズという2つ目の
+    実消費者が存在する。`storefront_kernel.py` が無い限り、ランサーズとクラウドワークスは公式読み戻しも
+    重複fenceも単一effect fenceも自前で作り直す。今夜15回踏んだ穴を2platformがもう一度掘ることになる。
+    DONE: skill で新 loop 1 本、既存資産再利用を実証。カタログ1箇所の変更が3platformの出品に反映されることを実測。
 14. **README を real-time status に** — DONE: loop が書き換えた README diff が commit される。
 
 ## 補足事実
