@@ -197,8 +197,14 @@ def _work_event_messages(event: dict[str, Any]) -> tuple[str, str]:
             return ja, ja
         bucket = "継続" if attributes.get("bucket") == "retainer" else "単発"
         amount = _money(attributes.get("price_jpy"))
+        # Name the marketplace in the headline. Every other report already does -- only this
+        # branch did not, because it is the fallback the coconala exclusion above routes into --
+        # so three marketplaces sending the same sentence were indistinguishable at a glance.
+        platform = _clean(attributes.get("platform_display_name")) or _clean(
+            attributes.get("platform"), "Gig"
+        ).capitalize()
         ja = "\n".join((
-            "📨 新しい仕事へ応募しました",
+            f"{platform} 📨 新しい仕事へ応募しました",
             "",
             "状態",
             "応募の送信が完了しています。",
@@ -215,7 +221,7 @@ def _work_event_messages(event: dict[str, Any]) -> tuple[str, str]:
             "ユーザーの操作は必要ありません。",
         ))
         en = "\n".join((
-            "📨 A job application was submitted",
+            f"{platform} 📨 A job application was submitted",
             "",
             "Status",
             "The application was submitted successfully.",
