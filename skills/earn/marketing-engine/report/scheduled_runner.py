@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import pathlib
+import shutil
 import sys
 
 import run_contract
@@ -51,6 +52,29 @@ def default_roots(environment: dict[str, str] | None = None) -> tuple[pathlib.Pa
     return root / "state", root / "evidence" / "runs"
 
 
+def prepare_mine_command(command: list[str], state_root: pathlib.Path,
+                         evidence_root: pathlib.Path) -> list[str]:
+    """Seed mutable intel data outside the release and route daily writes there."""
+    source = HERE.parent / "intel"
+    target = pathlib.Path(state_root) / "intel"
+    target.mkdir(parents=True, exist_ok=True)
+    for path in source.rglob("*"):
+        if not path.is_file() or path.suffix not in {".json", ".jsonl"}:
+            continue
+        relative = path.relative_to(source)
+        destination = target / relative
+        if not destination.exists():
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, destination)
+    return [
+        *command,
+        "--source-registry", str(source / "sources.json"),
+        "--video-registry", str(source / "video-sources.json"),
+        "--intel-root", str(target),
+        "--evidence-root", str(pathlib.Path(evidence_root) / "intel-daily"),
+    ]
+
+
 def main(argv: list[str] | None = None) -> int:
     default_state, default_evidence = default_roots()
     parser = argparse.ArgumentParser(description=__doc__)
@@ -64,9 +88,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         item = load_registry()[args.runner]
+        command = resolve_command(item["command"])
+        if args.runner == "mine":
+            command = prepare_mine_command(command, args.state_root, args.evidence_root)
         result = run_with_contract.execute(
             runner_id=args.runner,
-            command=resolve_command(item["command"]),
+            command=command,
             state_root=args.state_root,
             evidence_root=args.evidence_root,
             environment="production",

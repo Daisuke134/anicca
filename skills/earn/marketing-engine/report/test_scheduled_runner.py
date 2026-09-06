@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import pathlib
+import tempfile
 import unittest
 
 import run_contract
@@ -40,6 +41,20 @@ class ScheduledRunnerTests(unittest.TestCase):
         })
         self.assertEqual(state, pathlib.Path("/tmp/marketing-dashboard/state"))
         self.assertEqual(evidence, pathlib.Path("/tmp/marketing-dashboard/evidence/runs"))
+
+    def test_mine_command_seeds_mutable_state_and_routes_all_writes_outside_release(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            command = scheduled_runner.prepare_mine_command(
+                ["lm", "intel", "daily"], root / "state", root / "evidence")
+            intel_root = root / "state" / "intel"
+            self.assertTrue((intel_root / "sources.json").is_file())
+            self.assertTrue((intel_root / "playbook.jsonl").is_file())
+            self.assertFalse((intel_root / "intel_daily.py").exists())
+            self.assertEqual(command[-4:], [
+                "--intel-root", str(intel_root),
+                "--evidence-root", str(root / "evidence" / "intel-daily"),
+            ])
 
 
 if __name__ == "__main__":
