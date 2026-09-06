@@ -132,7 +132,7 @@ after required credentials and host capabilities are configured.
 ### 4.1 Current reuse truth
 
 The loops do not yet follow one common physical folder shape. Source is distributed across `skills/`, `apps/`,
-`runtime/`, `services/` and `tools/`. All 175 managed registry entrypoints exist, and the main local lifecycle and
+`runtime/`, `services/` and `tools/`. All 174 managed registry entrypoints exist, and the main local lifecycle and
 agent runner are shared, but four declaration/execution systems remain:
 
 1. `config/loop-registry.json` + `runtime/loop` for macOS release and lifecycle;
@@ -244,7 +244,7 @@ shared-component or legacy-retirement atom is active.
   - [x] `WT-04b` Re-audit `life-manager-alpaca-pr89-spec`; verify clean, merged, unlocked, open PR 0 and process/open file 0; retire it without force and confirm it is absent.
   - [x] `WT-04c` Resolve the ownerless lock on clean, merged `life-manager-alpaca-a11-spec`: its originating Codex session was terminal, the empty lock had not changed since creation, and process/tmux/open-file checks were zero; repeat the complete preflight, retire without force and confirm the path is absent.
   - [x] `WT-04d` Retire every worktree that is not in current development. Dais explicitly authorized discarding stale dirty, ignored, unmerged and legacy-locked worktrees because `main` is the code source of truth; branch refs remain, while uncommitted files are intentionally unrecoverable. Three parallel read-only audits found zero process/open-file users for the stale set, then the primary rechecked each exact path and removed 57 worktrees, including the external Capafy checkout after confirming that no LaunchAgent, config or repository file referenced its absolute path. After retiring the audit worktree, the final readback is 11 retained development worktrees: the main checkout, the current GH-32 workspace, two unexpired managed leases, four open-PR worktrees and three worktrees newly created or recreated by concurrent development during the audit. No age-only or bulk-directory deletion was used.
-- [ ] `ARCH-01` Freeze the current 175 managed, 22 external, 48 retired and cloud-adapter inventory with owner and last receipt.
+- [x] `ARCH-01` Freeze the current inventory from one pinned immutable release: 174 managed, 22 external, 50 retired and 12 cloud adapters. `docs/loops/current-inventory.json` records the source commit and manifest hashes, inferred registry owner and last terminal receipt for all 246 local rows. It keeps the gaps explicit: four managed loops have no terminal receipt, all 66 effectful local loops lack a common official-receipt mapping, all 12 cloud adapters lack declarative owner/receipt-source fields, and retired `ai.anicca.job-search-browser` remains installed. The generated projection is evidence, not a second editable registry.
 - [ ] `ARCH-02` Add one `loop.json` schema generated from the current registry; do not create a second hand-edited source.
 - [ ] `ARCH-03` Add validated `command`/`adapter` fields and migrate one low-risk loop end to end.
 - [ ] `ARCH-04` Migrate the remaining handwritten dispatch entries one at a time; verify label, argv, state root and receipt after each; delete `entry_dispatch.py` when empty.
