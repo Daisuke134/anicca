@@ -6,16 +6,8 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { createHash } = require("node:crypto");
+const { spawnSync } = require("node:child_process");
 const {
-  parseRuntimeCommand,
-  validateComposeModel,
-  runRuntimeUp,
-  buildSchedulerHolderToken,
-  marketingGenerationDueDate,
-  listGenerationReceipts,
-  listHonneJaShadowGenerationReceipts,
-  listMarketingVideoPublicationReceipts,
-  listObservablePublicationReceipts,
   executeCapabilityJob,
   createScopedEnvironmentSecretProvider,
   createWorkerHandlers,
@@ -38,15 +30,10 @@ const {
 } = require("../lib/outbound-success.js");
 
 const ROOT = path.join(__dirname, "../../..");
-const COMPOSE_PATH = path.join(ROOT, "deploy/local/compose.yaml");
 const MONEY_TENANT = "tenant-a";
 const MONEY_OPPORTUNITY_ID = "a".repeat(64);
 const MONEY_GOAL_REF = `intent-entry://${MONEY_TENANT}/${MONEY_OPPORTUNITY_ID}`;
 const MONEY_JOB_ID = `goal:${MONEY_OPPORTUNITY_ID}`;
-const LEASE_MIGRATION = path.join(
-  __dirname,
-  "../migrations/20260729_runtime_scheduler_lease.sql",
-);
 
 test("active capability work refreshes worker liveness without starting a second claim", () => {
   const state = { lastPollAt: "2026-08-01T00:00:00.000Z" };
@@ -55,54 +42,6 @@ test("active capability work refreshes worker liveness without starting a second
   assert.equal(observeWorkerPoll(state, false, () => "2026-08-01T00:02:00.000Z"), true);
   assert.equal(state.lastPollAt, "2026-08-01T00:02:00.000Z");
 });
-
-function healthyService(environment = {}) {
-  return {
-    environment,
-    healthcheck: { test: ["CMD", "true"] },
-  };
-}
-
-function validModel() {
-  return {
-    services: {
-      postgres: {
-        ...healthyService(),
-        volumes: ["postgres-data:/var/lib/postgresql/data"],
-      },
-      "object-store": {
-        ...healthyService(),
-        volumes: ["object-data:/data"],
-      },
-      migrate: {
-        environment: {},
-        depends_on: { postgres: { condition: "service_healthy" } },
-      },
-      "runtime-init": {
-        environment: {},
-        depends_on: { migrate: { condition: "service_completed_successfully" } },
-      },
-      api: healthyService({
-        LM_DEPLOYMENT_ROLE: "api",
-        LIFE_RUN_LOOPS: "false",
-      }),
-      scheduler: healthyService({
-        LM_DEPLOYMENT_ROLE: "scheduler",
-        LM_SCHEDULER_OWNER: "local-primary",
-        LIFE_RUN_LOOPS: "true",
-      }),
-      worker: healthyService({
-        LM_DEPLOYMENT_ROLE: "worker",
-        LIFE_RUN_LOOPS: "false",
-      }),
-    },
-    volumes: {
-      "postgres-data": {},
-      "object-data": {},
-      "runtime-data": {},
-    },
-  };
-}
 
 async function verifiedOutboundReceipt(job) {
   const bytes = Buffer.alloc(5000, 0x61);
@@ -131,18 +70,6 @@ async function verifiedOutboundReceipt(job) {
   }, evidence);
 }
 
-test("runtime command accepts only the explicit local up contract", () => {
-  assert.deepEqual(
-    parseRuntimeCommand(["runtime", "up", "--mode", "local"]),
-    { command: "up", mode: "local" },
-  );
-  assert.throws(
-    () => parseRuntimeCommand(["runtime", "up", "--mode", "cloud"]),
-    /local/i,
-  );
-  assert.throws(() => parseRuntimeCommand(["up"]), /usage/i);
-});
-
 test("Railway start command routes the worker role to internal-worker", () => {
   const railway = fs.readFileSync(path.join(ROOT, "apps/life-manager/railway.toml"), "utf8");
   const match = railway.match(/^startCommand = "((?:\\.|[^"])*)"$/m);
@@ -151,6 +78,15 @@ test("Railway start command routes the worker role to internal-worker", () => {
     match[1].replace(/\\"/g, '"'),
     'if [ "$LM_DEPLOYMENT_ROLE" = "worker" ]; then exec node scripts/runtime-up.js internal-worker; else exec node server.js; fi',
   );
+});
+
+test("runtime worker entrypoint fails closed for every non-worker argv", () => {
+  const script = path.join(ROOT, "apps/life-manager/scripts/runtime-up.js");
+  for (const argv of [[], ["internal-scheduler"], ["internal-liveness"], ["runtime", "up"]]) {
+    const result = spawnSync(process.execPath, [script, ...argv], { encoding: "utf8" });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /usage: runtime-up\.js internal-worker/);
+  }
 });
 
 test("coverage worker capability receives the assembled Connector refresh services", () => {
@@ -425,281 +361,6 @@ test("coverage worker assembles production services from its query and connect b
   });
   assert.deepEqual(observedRuntime, { query, connect });
   assert.equal(observedServices, assembled);
-});
-
-test("compose topology has durable stores, health checks, distinct roles, and one scheduler owner", () => {
-  assert.deepEqual(validateComposeModel(validModel()), {
-    schedulerService: "scheduler",
-    schedulerOwner: "local-primary",
-    workerServices: ["worker"],
-  });
-
-  const duplicate = validModel();
-  duplicate.services["scheduler-copy"] = healthyService({
-    LM_DEPLOYMENT_ROLE: "scheduler",
-    LM_SCHEDULER_OWNER: "local-copy",
-    LIFE_RUN_LOOPS: "true",
-  });
-  assert.throws(() => validateComposeModel(duplicate), /exactly one scheduler/i);
-
-  const noVolume = validModel();
-  delete noVolume.volumes["object-data"];
-  assert.throws(() => validateComposeModel(noVolume), /object-data/i);
-});
-
-test("committed local compose is self-contained and never references a legacy runtime", () => {
-  const compose = fs.readFileSync(COMPOSE_PATH, "utf8");
-  for (const service of [
-    "postgres",
-    "object-store",
-    "migrate",
-    "runtime-init",
-    "api",
-    "scheduler",
-    "marketing-liveness",
-    "worker",
-  ]) {
-    assert.match(compose, new RegExp(`^  ${service}:`, "m"));
-  }
-  assert.match(compose, /healthcheck:/);
-  assert.match(compose, /condition: service_healthy/);
-  assert.match(compose, /condition: service_completed_successfully/);
-  assert.match(compose, /^  postgres-data:/m);
-  assert.match(compose, /^  object-data:/m);
-  assert.match(compose, /^  runtime-data:/m);
-  assert.match(compose, /LM_SCHEDULER_OWNER: local-primary/);
-  assert.match(compose, /LM_RUNTIME_TENANT_ID: \$\{LM_RUNTIME_TENANT_ID:-\}/);
-  assert.match(
-    compose,
-    /\$\{LM_LOCAL_WORKER_HEALTH_PORT:-18790\}:8790/,
-  );
-  assert.match(
-    compose,
-    /LM_FINANCIAL_REPORT_POLL_MS: \$\{LM_FINANCIAL_REPORT_POLL_MS:-300000\}/,
-  );
-  assert.match(
-    compose,
-    /LM_MARKETING_PUBLICATION_CHAIN_ENABLED: \$\{LM_MARKETING_PUBLICATION_CHAIN_ENABLED:-false\}/,
-  );
-  assert.match(
-    compose,
-    /LM_MARKETING_PUBLICATION_CHAIN_AFTER: \$\{LM_MARKETING_PUBLICATION_CHAIN_AFTER:-\}/,
-  );
-  assert.match(
-    compose,
-    /LM_MARKETING_OBSERVATION_ENABLED: \$\{LM_MARKETING_OBSERVATION_ENABLED:-false\}/,
-  );
-  assert.match(
-    compose,
-    /LM_MARKETING_OBSERVATION_PRODUCT_ID: \$\{LM_MARKETING_OBSERVATION_PRODUCT_ID:-\}/,
-  );
-  assert.match(
-    compose,
-    /LM_WORKER_CAPABILITIES: \$\{LM_WORKER_CAPABILITIES:-runtime\.noop,marketing\.liveness\.telegram,general-agent\.work\}/,
-  );
-  assert.match(compose, /command: \["node", "scripts\/runtime-up\.js", "internal-liveness"\]/);
-  assert.match(compose, /LM_MARKETING_LIVENESS_LANES_JSON: \$\{LM_MARKETING_LIVENESS_LANES_JSON:-\[\]\}/);
-  assert.match(compose, /LM_TELEGRAM_ALERT_CHAT_ID: \$\{LM_TELEGRAM_ALERT_CHAT_ID:-\}/);
-  assert.match(compose, /^  worker:\n(?:.*\n){0,4}    build: \*runtime-build/m);
-  assert.match(compose, /LM_TELEGRAM_BOT_TOKEN: \$\{LM_TELEGRAM_BOT_TOKEN:-\}/);
-  assert.doesNotMatch(
-    compose,
-    /\.openclaw|profitable-claude|life-manager-v0|\/Users\/anicca/i,
-  );
-});
-
-test("scheduler lease uses row ownership and atomic conflict handling without advisory locks", () => {
-  const sql = fs.readFileSync(LEASE_MIGRATION, "utf8");
-  assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.lm_runtime_scheduler_leases/i);
-  assert.match(sql, /scheduler_key text PRIMARY KEY|PRIMARY KEY \(scheduler_key\)/i);
-  assert.match(sql, /ON CONFLICT \(scheduler_key\) DO UPDATE/i);
-  assert.match(sql, /lease_expires_at <= clock_timestamp\(\)/i);
-  assert.match(sql, /RETURNING/i);
-  assert.doesNotMatch(sql, /advisory_(?:lock|xact_lock)/i);
-});
-
-test("runtime up validates docker compose JSON before starting the stack", () => {
-  const calls = [];
-  const spawnSync = (command, args) => {
-    calls.push({ command, args });
-    if (args.includes("config")) {
-      return {
-        status: 0,
-        stdout: JSON.stringify(validModel()),
-        stderr: "",
-      };
-    }
-    return { status: 0, stdout: "", stderr: "" };
-  };
-  const result = runRuntimeUp({
-    argv: ["runtime", "up", "--mode", "local"],
-    spawnSync,
-    repoRoot: ROOT,
-  });
-
-  assert.equal(result.ok, true);
-  assert.equal(result.schedulerOwner, "local-primary");
-  assert.deepEqual(calls.map(({ command }) => command), ["docker", "docker"]);
-  assert.deepEqual(calls[0].args.slice(-3), ["config", "--format", "json"]);
-  assert.deepEqual(calls[1].args.slice(-4), ["up", "-d", "--build", "--wait"]);
-});
-
-test("scheduler holder token changes on every process start even in the same container", () => {
-  const ids = ["start-a", "start-b"];
-  const randomUUID = () => ids.shift();
-  assert.equal(
-    buildSchedulerHolderToken("local-primary", "same-container", randomUUID),
-    "local-primary:same-container:start-a",
-  );
-  assert.equal(
-    buildSchedulerHolderToken("local-primary", "same-container", randomUUID),
-    "local-primary:same-container:start-b",
-  );
-});
-
-test("daily marketing generation becomes due at 10:15 JST and never before", () => {
-  assert.equal(
-    marketingGenerationDueDate(Date.parse("2026-07-30T01:14:59.000Z")),
-    null,
-  );
-  assert.equal(
-    marketingGenerationDueDate(Date.parse("2026-07-30T01:15:00.000Z")),
-    "2026-07-30",
-  );
-  assert.equal(
-    marketingGenerationDueDate(Date.parse("2026-07-30T14:59:00.000Z")),
-    "2026-07-30",
-  );
-});
-
-test("publication chain scans only one tenant and an explicit non-backfill window", async () => {
-  const calls = [];
-  const pool = {
-    async query(sql, params) {
-      calls.push({ sql, params });
-      return { rows: [{ receipt: { kind: "marketing_daily_generation" } }] };
-    },
-  };
-  const rows = await listGenerationReceipts(pool, {
-    tenantId: "tenant-a",
-    after: "2026-08-01T00:00:00.000Z",
-  });
-
-  assert.deepEqual(rows, [{ kind: "marketing_daily_generation" }]);
-  assert.match(calls[0].sql, /j\.tenant_id = \$1/);
-  assert.match(calls[0].sql, /r\.outcome = 'completed'/);
-  assert.match(calls[0].sql, /r\.created_at >= \$2::timestamptz/);
-  assert.match(calls[0].sql, /LIMIT 100/);
-  assert.deepEqual(calls[0].params, [
-    "tenant-a",
-    "2026-08-01T00:00:00.000Z",
-  ]);
-});
-
-test("observation chain scans only observable publication receipts in one tenant window", async () => {
-  const calls = [];
-  const pool = {
-    async query(sql, params) {
-      calls.push({ sql, params });
-      return {
-        rows: [{
-          job_id: `marketing-daily:${"c".repeat(64)}`,
-          receipt: { kind: "marketing_daily_distribution" },
-        }],
-      };
-    },
-  };
-  const rows = await listObservablePublicationReceipts(pool, {
-    tenantId: "tenant-a",
-    after: "2026-08-01T00:00:00.000Z",
-  });
-
-  assert.equal(rows.length, 1);
-  assert.match(calls[0].sql, /j\.tenant_id = \$1/);
-  assert.match(
-    calls[0].sql,
-    /j\.capability = 'marketing\.life-manager\.daily\.publish'/,
-  );
-  assert.match(calls[0].sql, /r\.outcome = 'completed'/);
-  assert.match(calls[0].sql, /provider_post_id/);
-  assert.match(calls[0].sql, /provider_route/);
-  assert.match(calls[0].sql, /r\.created_at >= \$2::timestamptz/);
-  assert.match(calls[0].sql, /ORDER BY r\.created_at DESC/);
-  assert.deepEqual(calls[0].params, [
-    "tenant-a",
-    "2026-08-01T00:00:00.000Z",
-  ]);
-});
-
-test("honne JA shadow scan is scoped to one tenant/product/format/locale and an explicit window", async () => {
-  const calls = [];
-  const pool = {
-    async query(sql, params) {
-      calls.push({ sql, params });
-      return { rows: [{ receipt: { kind: "marketing_video_artifact" } }] };
-    },
-  };
-  const rows = await listHonneJaShadowGenerationReceipts(pool, {
-    tenantId: "tenant-a",
-    productId: "honne-ai",
-    formatId: "reelclaw",
-    locale: "ja",
-    after: "2026-07-30T00:00:00.000Z",
-  });
-
-  assert.deepEqual(rows, [{ kind: "marketing_video_artifact" }]);
-  assert.match(calls[0].sql, /j\.tenant_id = \$1/);
-  assert.match(calls[0].sql, /j\.capability = 'marketing\.video\.generate'/);
-  assert.match(calls[0].sql, /r\.outcome = 'completed'/);
-  assert.match(calls[0].sql, /r\.receipt->>'status' = 'ready'/);
-  assert.match(calls[0].sql, /r\.created_at >= \$2::timestamptz/);
-  assert.deepEqual(calls[0].params, [
-    "tenant-a",
-    "2026-07-30T00:00:00.000Z",
-    "honne-ai",
-    "reelclaw",
-    "ja",
-  ]);
-
-  await assert.rejects(
-    listHonneJaShadowGenerationReceipts(pool, {
-      tenantId: "tenant-a",
-      productId: "honne-ai",
-      formatId: "reelclaw",
-      locale: "ja",
-      after: "not-a-boundary",
-    }),
-    /honne JA shadow scan boundary is invalid/,
-  );
-  await assert.rejects(
-    listHonneJaShadowGenerationReceipts(pool, {
-      tenantId: "tenant-a",
-      productId: "",
-      formatId: "reelclaw",
-      locale: "ja",
-      after: "2026-07-30T00:00:00.000Z",
-    }),
-    /honne JA shadow scan boundary is invalid/,
-  );
-});
-
-test("marketing liveness receipt scan ranks per lane so unrelated volume cannot create a false miss", async () => {
-  const calls = [];
-  const rows = [{ receipt: { product_id: "honne-ai", locale: "en", platform: "tiktok" } }];
-  const result = await listMarketingVideoPublicationReceipts({
-    async query(sql, params) { calls.push({ sql, params }); return { rows }; },
-  }, "tenant-a", "2026-08-20T00:00:00.000Z", [
-    { product: "honne-ai", locale: "en", platform: "tiktok" },
-    { product: "anicca", locale: "ja", platform: "tiktok" },
-  ]);
-  assert.deepEqual(result, rows.map(({ receipt }) => receipt));
-  assert.match(calls[0].sql, /row_number\(\) OVER[\s\S]*PARTITION BY[\s\S]*lane_rank <= 100/i);
-  assert.match(calls[0].sql, /jsonb_to_recordset\(\$3::jsonb\)/i);
-  assert.doesNotMatch(calls[0].sql, /LIMIT 1000/i);
-  assert.deepEqual(JSON.parse(calls[0].params[2]), [
-    { product: "honne-ai", locale: "en", platform: "tiktok" },
-    { product: "anicca", locale: "ja", platform: "tiktok" },
-  ]);
 });
 
 test("capability worker completes a registered financial report with only its safe receipt", async () => {

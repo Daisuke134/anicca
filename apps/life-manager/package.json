@@ -4,9 +4,6 @@
   "private": true,
   "description": "Life Manager cloud wake-call service: persistent Gemini-Charon bridge + T-15min scheduler (Railway)",
   "main": "server.js",
-  "bin": {
-    "life-manager": "scripts/runtime-up.js"
-  },
   "scripts": {
     "start": "node server.js",
     "eval": "node eval/run-calendar-eval.js && node eval/run-late-eval.js && node eval/run-context-onboarding-discovery-eval.js && node eval/run-score-semantics-eval.js && node eval/run-intent-eval.js && node eval/run-men-eval.js && node eval/run-phy-eval.js && node eval/run-relation-eval.js",

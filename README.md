@@ -42,7 +42,7 @@ implement and support these 14 loops.
 | 9 | Fundraiser | `fundraiser` | Discovers accelerators, fellowships, grants, and public investor intakes and applies when eligible |
 | 10 | Connector | `life-manager-connector-native` | Finds eligible events, applies, verifies registration, and reports Calendar and Telegram receipts |
 | 11 | Life Manager Cloud | `apps/life-manager` on Railway | Runs the always-on web, Telegram, reminder, scheduling, and hosted-agent surface |
-| 12 | Life Manager Mobile App | `life-manager-anicca-en-affirmation-instagram`, `life-manager-anicca-main-instagram`, `life-manager-anicca-main-tiktok`, and mobile metrics jobs | Operates product-owned acquisition, distribution, and measurement for the `anicca-ios` mobile app; the app build itself is not yet a registry-managed loop |
+| 12 | Life Manager Mobile Apps | Anicca iOS, Honne, and the other `life-manager-anicca-*` / `life-manager-honne-*` build, marketing, distribution, and metrics jobs | Builds and operates the portfolio of Life Manager-owned iOS apps, then markets and measures each app through shared product-aware components |
 | 13 | Capafy | `capafy-loop-daily`, `capafy-outcome-monitor`, `capafy-ig-account-manager`, `capafy-ig-marketing-daily` | Operates Capafy's separate product, sales, outcome, and audience-growth workflows |
 | 14 | CFO | `life-manager-cfo-hourly` | Reconciles verified revenue, cash flow, balances, payouts, and financial reports across the earning loops |
 
@@ -213,8 +213,8 @@ jq -r '.loops | keys[]' config/loop-registry.json
 Installing an effectful loop is an operator action performed from an immutable
 release after its credentials and host capabilities are configured; cloning the
 repository never starts every loop automatically. The repository does contain an
-experimental Docker Compose profile, but neither the current Mac production loops
-nor the selling cloud product use it. It is not the canonical quick-start path.
+retired the unused Docker Compose profile; neither the current Mac production loops
+nor the selling cloud product require Docker or Compose.
 
 ### Self-funding is part of the Financial Organ
 
@@ -242,8 +242,7 @@ life-manager/                       # the only source repository
 ├── bin/ · tools/                   # repository-owned commands and support entrypoints
 ├── config/loop-registry.json       # one catalog for local and cloud loops
 ├── apps/landing/                   # Netlify web frontend
-├── docs/                           # product, runtime and operations documentation
-└── deploy/local/compose.yaml       # experimental, currently inactive profile
+└── docs/                           # product, runtime and operations documentation
 ```
 
 | Runtime | What runs | Where private data lives |
@@ -262,7 +261,6 @@ architecture spec passes, the README does not claim that every loop works on eve
 | Path | Role | What it is not |
 |---|---|---|
 | `apps/life-manager/` | The cloud product core: Telegram, scheduling, calls, authenticated `/panel`, billing, and user workflows | Not the whole repository |
-| `deploy/local/` | A currently inactive experimental Compose profile | Not today's local production or the canonical self-host entry point |
 | `apps/landing/` | The Life Manager onboarding web subset | Not the old multi-product Anicca website |
 | `runtime/loop/`, `install.sh`, `start-local.sh` | Economic runtime supporting Life Manager's Financial Organ — see [`docs/agent-economy.md`](docs/agent-economy.md) | Not the whole product or the normal user entry point |
 | `runtime/compute-proxy/`, `services/` | Compute-payment and x402 settlement/API infrastructure for the same Financial capability | Not user-facing apps |
@@ -386,7 +384,6 @@ Current canonical acceptance: PR `#1936` established the production baseline at 
 |---|---|
 | **Mac production loops** | **Live** — `launchd` directly starts immutable-release `lm-loop-run`; no Docker/Colima daemon is running. |
 | **Cloud service** (Netlify + Railway `life-call`/worker) | **Deployed** — Railway builds `apps/life-manager` with Nixpacks/Railpack, without the repository Dockerfile or Compose. |
-| **Experimental Compose profile** (`deploy/local/compose.yaml`) | Present in source but **not currently running** and not the canonical runtime. |
 | **Telegram reporting with receipts** | **Live** — every report carries a message id, and a send that fails is not recorded as sent. |
 | **Calendar, connectors, coverage** (`lib/calendar-*`, `lib/connector-*`) | **Implemented, coverage still moving** — per-connector state and gaps are tracked in the execution spec rather than claimed here. |
 | **Financial loops** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
