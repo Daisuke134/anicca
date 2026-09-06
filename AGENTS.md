@@ -23,7 +23,7 @@ Entity-based storage organized by the PARA system (Projects, Areas, Resources, A
 ~/life/
 ├── projects/          # Active work with clear goals/deadlines
 ├── areas/             # Ongoing responsibilities (people, companies)
-├── resources/         # Topics of interest (research notes, references)
+├── resources/         # Topics of interest, reference material
 ├── archives/          # Inactive items
 └── index.md
 ```
