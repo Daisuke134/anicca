@@ -105,14 +105,54 @@ storefront / paid / Lancers 応募の 3 lane がこの 1 点で止まってい�
 1. **専用ブラウザ文脈と貸出識別子**（spec 6.2A PAR-1）。今は1台共有で兄弟 lane 由来の詰まりが出る。仕様違反状態
 2. **自主的な24時間制限を外す** — `storefront_direct.py:1488` `CREATE_MIN_INTERVAL_SECONDS=86400` は我々が決めた数字。ココナラの上限は20件、今15件で5枠空き
 3. **看板をシステム開発へ** — 公開プロフィールが「Kosuke｜教育研修PPT×AI活用」。開発案件が来ない
-4. **開発でない ¥55,000（4384702「顧客インタビューを意思決定メモに整理します」）を下ろす**
+4. ~~**開発でない ¥55,000（4384702「顧客インタビューを意思決定メモに整理します」）を下ろす**~~ DONE — 2026-09-06 の公式在庫15件に 4384702 は無い
 5. **カタログから開発系を公開**し、公開ページで題名・本文・価格を確認
+   - 5a. **guard 拒否を次回プロンプトへ差し戻す**（これが開くまで5は進まない）。2026-09-06 18:21〜20:13 の full wake 12連続が effect 0 で `failed`。Terra には到達している（同時間帯に `gpt-5.6-terra` 21回）ので #0 とは別物。
+     直す場所 — `skills/earn/gig/scripts/storefront_direct.py`
+     `_invoke_create_proposal`(3471) と `_invoke_proposal`(3297) は違反提案で raise して wake ごと落ちる。拒否理由は捨てられ、次wakeは同じ context から同じ違反を再生成する。
+     (a) 拒否を `state_dir/proposal-rejections.jsonl` へ `{gap_key, rejection, proposed_value, observed_at_epoch}` で追記する。
+     (b) `_proposal_prompt`(3236) と `_create_proposal_prompt`(3400) の CONTEXT_JSON に、同一 gap_key の直近拒否を `prior_rejections` として渡す。
+     (c) prompt 本文に guard の規則を明記する — `_prohibited_copy_terms` の禁止語（実測で「スプレッドシート」）と、3554行の連用形規則（`title_stem` の末尾は `いきしちにひみりぎじびぴえけせてねへめれげぜでべぺ` のいずれか。ココナラが `ます` を付けるため）。
+     (d) 同一 gap で同じ guard に3回連続で落ちたら、その gap を当該 evidence_cursor の間だけ選定対象から外し、次に価値の高い gap へ進む。無限に同じ穴を掘らせない。
+     DONE: `proposal-rejections.jsonl` に拒否行が残り、同一 gap の次wakeで同じ guard に落ちない。full wake が effect 1 / readback 1 で公開まで到達する。
 6. **全出品変更が公式読み戻しで確認でき、次wakeで重複ゼロ**を実証
+   - 6a. **RETIRE を発火可能にする** — 今は構造的に一度も発火できない。
+     `storefront_direct.py:2137` `_near_duplicate_listings` は 2154行の `ratio >= 0.9` でしか重複を認めないが、実測の最大ペアは **0.857**（4244912 × 4330105）。他は全て0.8未満。よって `duplicate_of` は空。
+     もう一方の経路も閉じている: 958行 `capacity_pressure = len(contract_by_id) >= policy["slot_limit"]` は `15 >= 20` = false。
+     結果 985行 `retire_ready` が全15件で false → `RETIRE`/`REPLACE` は選定されず、6344-6399 の実行器（実在し公式アーカイブ操作に束縛済み）が本番で死んでいる。
+     直し方: 閾値を上げるのではなく計器を替える。difflib を捨て、`storefront-proposal-agent` に生カタログ（service_id / title_stem / capability_family / price / views / purchases）を渡して「買い手が代替品として比較する組」を判定させ、strict schema で封印する。決定論コードはアーカイブ操作・読み戻し・復元・単一effect fence を握り続ける。閾値を0.85へ下げる案は棄却 — 正当に別物の出品を畳み始める。
+     実測対象の8件: SNS系5件 `4244556 / 4244912 / 4302213 / 4330105 / 4330753`、Excel系3件 `4244910 / 4313386 / 4357844`。
+     DONE: 重複組が `duplicate-listings.jsonl` に新規追記され、1件が `非公開` へ落ちて公式読み戻しで確認でき、次wakeで重複effect 0、復元も実測できる。
+   - 6b. **プラットフォーム上の成功出品を IMPROVE に届ける** — 収集済みなのに捨てている。
+     `_extract_search_demand`(1370) が公式検索から `comparables`（`display_price_jpy` / `rating` / `review_count`）を作り、`_demand_score`(1430) が `median_price_jpy` / `sold_comparables` / `reviewed_comparables` を出し、`demand-evidence.jsonl` に残っている。実測2件:
+     `excel_vba_gas_automation` = ¥29,000/レビュー464件、¥3,000/428件（当方のExcel3件は ¥7,000/¥6,000/¥5,000 で販売0）
+     `line_bot_dev` = median ¥35,000、12件全て評価5.0、¥20,000〜80,000、検索結果1,657件（当方は該当出品なし）
+     この構造化データは `CREATE` 経路（`_create_proposal_prompt` 3400 / blueprint 3459）にしか渡っていない。既存15件を支配する `IMPROVE` 経路 `_proposal_prompt`(3236) は、3254行で競合ページ本文を8,000字に切って渡すだけで、3272行が「Competitors supply generalized structure only: never copy their wording, images, reviews, sales, speed, guarantees or results」と使用を禁じている。
+     直す場所: `_proposal_prompt`(3236) と `_judgement_prompt`(3174) の CONTEXT_JSON に、当該 `capability_family` の `demand-evidence.jsonl` 行から `median_price_jpy` / `comparables`（価格・評価・レビュー数のみ）/ `sold_comparables` / `visible_result_count` を追加する。3272行の禁止文を「表現・画像・実績の複製は禁止。観測された価格・評価・レビュー数の分布は公開事実として使用してよい」へ書き換える。文言・画像・レビュー本文・実績主張の複製禁止はそのまま残す。
+     DONE: `IMPROVE` 提案の evidence に demand-evidence の path が入り、価格提案が family median を根拠に説明され、公式読み戻しで価格が確認できる。
 
-現在の棚（15件、¥15,000以上は3件）:
-`¥55,000 4384702 顧客インタビュー整理(非開発)` / `¥20,000 4330368 OpenCV画像認識実装` / `¥15,000 4371816 定型業務のAI自動化` / 残り12件は ¥3,000〜7,000
+現在の棚（2026-09-06 実測15件、全て sales_count 0、30日 views 441）:
+`¥200,000 4386009 iOS/Androidアプリ開発` / `¥20,000 4330368 OpenCV画像認識実装` / `¥15,000 4371816 定型業務のAI自動化` / `¥7,000 4244910 ExcelVBA` / `¥6,000 4313386 ExcelVBA` / `¥5,000 4357844 請求書Excel` / `¥5,000 4244556 SNS公開前確認` / `¥5,000 4244912 SNS引継ぎ手順` / `¥5,000 4302213 SNS AI導入確認表` / `¥5,000 4330105 SNS AI引継ぎ手順書` / `¥5,000 4308502 研修資料再設計` / `¥4,500 4312985 UIイタリア語翻訳` / `¥3,000 4330753 SNS公開前チェック表` / `¥3,000 4313100 Web画像差替` / `¥3,000 4355225 SEO記事執筆`
+15枠のうち8枠が2アイデアの反復（SNS系5・Excel系3）。詳細と根拠 → spec `docs/superpowers/specs/2026-08-16-storefront-loop-ssot.md` の 4A 節。
 
 #### 共有部品（gig 3 platform）
+
+3platform の実測（2026-09-06）— 共有できていない証拠:
+
+| | ココナラ | ランサーズ | クラウドワークス |
+|---|---|---|---|
+| 実装 | `skills/earn/gig` 282ファイル / 114,057行 | `skills/earn/lancers` 4,072行 | repo外 `~/.local/share/anicca/crowdworks-revenue-skill/` 3ファイル・未versioned |
+| label / 間隔 | `hf-gig-storefront-direct` / 60s | `lancers-revenue-storefront` / 1800s | `crowdworks.storefront` / 300s |
+| 生存 | 稼働中・全wake失敗（5a参照） | lane専用ログが 9/1 23:03 で停止 | lane state が 8/15 `observed_status:failed` で凍結、plist指定ログが未生成 |
+| 出品 | 15件・全て販売0 | 1件 `1338228` published | 0件 |
+| 需要実測 | 30日 views 441 / 購入0 | 検索表示20・閲覧0・お気に入り0・相談0・注文0 | — |
+| `_shared/marketplace-core` 利用 | なし | あり（唯一の利用者） | なし |
+| SKILL.md | なし | あり | なし |
+
+共有層 `skills/_shared/marketplace-core` は 2,251行4本（`ledger.py` 913 / `contracts.py` 549 / `application_transaction.py` 477 / `telegram_outbox.py` 312）= 帳簿と通知のみ。ココナラ側の資産（契約封印・公式読み戻し・重複fence・capability family・KPI帰属・コピーguard）は1行も共有されていない。
+
+ランサーズの出品内容自体はココナラより良い（`B2B企業のSNS更新を止めず見込み客に伝わる投稿を毎月制作し` / ¥29,800・¥198,000・¥398,000 の月次3プラン / やらないことの明示あり）。欠けているのは露出と、出品を増やす能力。`storefront_offer.py` は docstring の通り "Inspect or align one canonical Lancers storefront offer" で、1件を整合させる以上のことをしない。
+
 7. `capafy/catalog/` を出品候補から外す（誤出品の根本）
 8. 看板を `skills/gig-work/profile/positioning.md` に切り出し3platformで共有
 9. ランサーズの `products/` 独自定義を捨てカタログを読む

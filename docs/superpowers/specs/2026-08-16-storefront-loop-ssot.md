@@ -232,6 +232,121 @@ The owner-visible Telegram report is not yet a trustworthy KPI surface even thou
 
 Metric truth rule: `zero`, `unknown`, `not measured on this wake`, `stale last-known-good`, and `not applicable` are five different states. No owner-visible formatter may collapse them. Every headline number carries its source, observation window/cutoff, freshness, coverage and reconciliation status.
 
+## 4A. Measured shelf quality — 2026-09-06
+
+This section records what the fifteen live listings actually are, why the loop cannot fix them
+itself, and the exact defects that keep the platform's own successful listings out of the decision.
+Every number below is read from official state, not inferred.
+
+### The shelf as measured
+
+Official inventory `evidence/storefront-direct-1788693107498508000-90420/official-inventory.json`
+reads fifteen `公開中` services, all with `sales_count: 0`. Thirty-day analytics total 441 views.
+
+| Price | Service | Title stem |
+|---|---|---|
+| ¥200,000 | 4386009 | iOS/Android向け単機能アプリを開発し |
+| ¥20,000 | 4330368 | OpenCV画像認識を検証・手順書付きで実装し |
+| ¥15,000 | 4371816 | 定型業務のAI自動化を1フロー実装し |
+| ¥7,000 | 4244910 | 定型Excel作業をVBAマクロで自動化し |
+| ¥6,000 | 4313386 | 定型Excelの転記・集計をVBAで自動化し |
+| ¥5,000 | 4357844 | 請求書の転記・集計をExcelマクロで自動化し |
+| ¥5,000 | 4244556 | SNS投稿の公開前確認を設計し |
+| ¥5,000 | 4244912 | SNS投稿業務の引継ぎ手順を作成し |
+| ¥5,000 | 4302213 | SNS投稿のAI導入で試す工程と確認表を作成し |
+| ¥5,000 | 4330105 | SNS投稿のAI引継ぎ手順書を作成し |
+| ¥5,000 | 4308502 | 研修資料を受講者に伝わる構成とスライドに整え |
+| ¥4,500 | 4312985 | アプリUIのイタリア語翻訳・画像調整をし |
+| ¥3,000 | 4330753 | SNS投稿の公開前チェック表を設計し |
+| ¥3,000 | 4313100 | Webサイトの画像差し替えと公開表示確認を行い |
+| ¥3,000 | 4355225 | SEO記事を構成から丁寧に執筆し |
+
+Two TODO items are closed by this reading: the account now carries a ¥200,000 development listing,
+and the non-development ¥55,000 `4384702` is no longer live.
+
+Eight of fifteen slots are two ideas repeated. Five listings sell SNS posting hygiene
+(`4244556`, `4244912`, `4302213`, `4330105`, `4330753`) at ¥3,000–5,000 and three sell Excel/VBA
+automation (`4244910`, `4313386`, `4357844`). A buyer comparing them cannot tell them apart, and
+the pair splits whatever demand each page attracts.
+
+### Defect 1 — `RETIRE` is structurally unreachable, so the shelf cannot be pruned
+
+`_near_duplicate_listings` (`skills/earn/gig/scripts/storefront_direct.py:2137`) declares a duplicate
+only when `difflib.SequenceMatcher(...).ratio() >= 0.9` at line 2154. Measured ratios across the
+eight cannibalizing listings peak at **0.857** (`4244912` × `4330105`); every other pair is below
+0.8. No pair reaches the threshold, so `duplicate-listings.jsonl` still holds only the single pair
+recorded on 2026-08-18 and `duplicate_of` is empty for every live service.
+
+The second retirement path is closed independently: `capacity_pressure` at line 958 is
+`len(contract_by_id) >= policy["slot_limit"]`, which is `15 >= 20` = false. `retire_ready` at line
+985 is therefore false for all fifteen services, `RETIRE` and `REPLACE` are never selected, and the
+executor at lines 6344–6399 — which exists and binds the real archive control — is dead code in
+production.
+
+The instrument is wrong, not only its threshold. Whether two listings sell the same thing is a
+commercial judgement about what a buyer would substitute, not a character-overlap ratio. A string
+comparison cannot see that "SNS投稿の公開前確認を設計" and "SNS投稿の公開前チェック表を設計" are one
+product, and raising the ratio until they match would begin retiring genuinely distinct listings.
+
+### Defect 2 — the platform's successful listings are collected, then withheld from the decision
+
+The loop already reads what the account needs to learn from. `_extract_search_demand`
+(`storefront_direct.py:1370`) parses official Coconala search results into `comparables` carrying
+`display_price_jpy`, `rating` and `review_count`, and `_demand_score` (line 1430) derives
+`median_price_jpy`, `sold_comparables` and `reviewed_comparables`. `demand-evidence.jsonl` holds
+this for every capability family. Two rows read on 2026-09-06:
+
+- `excel_vba_gas_automation`: comparables include ¥29,000 with 464 reviews and ¥3,000 with 428
+  reviews. This account's three Excel listings sit at ¥7,000 / ¥6,000 / ¥5,000 with zero sales.
+- `line_bot_dev`: `median_price_jpy` ¥35,000 across twelve comparables rated 5.0, spanning
+  ¥20,000–80,000, from 1,657 visible results. The account has no listing in this family.
+
+That structured signal reaches only the `CREATE` path (`_create_proposal_prompt`, line 3400, via
+the blueprint at line 3459) and the demand score. The `IMPROVE` path — the one that governs all
+fifteen existing listings — is built by `_proposal_prompt` at line 3236, which passes competitors as
+raw page bodies truncated to 8,000 characters (line 3254) and then instructs the model at line 3272:
+"Competitors supply generalized structure only: never copy their wording, images, reviews, sales,
+speed, guarantees or results."
+
+So the model improving a ¥7,000 listing with zero sales never sees that the same family sells at
+¥29,000 with 464 reviews. It receives prose it is forbidden to use and no price, rating or review
+distribution at all. `_judgement_prompt` (line 3174) has the same shape.
+
+The correct boundary is not "ignore competitors" but "never copy expression, always use
+distribution." Observed price, rating and review counts are public facts about the market; a
+competitor's sentences, images and claims are theirs. Conflating the two is what produced a shelf
+priced at one fifth of its family median.
+
+### Defect 3 — guard rejections do not reach the generator, so full wakes livelock
+
+Twelve consecutive full wakes between 18:21 and 20:13 on 2026-09-06 exited `failed` with zero
+effect, cycling `storefront_copy_names_prohibited_tool:スプレッドシート` (line 3561),
+`storefront_create_title_stem_not_continuative` (line 3554),
+`storefront_draft_category_option_missing`, `storefront_category_children_not_loaded`,
+`seller_form_not_fully_hydrated` and `storefront_category_type_absent`. Terra is reached normally
+(21 `gpt-5.6-terra` route records in the same window), so this is not the router blocker.
+
+The guards are correct and must stay: a prohibited tool name in live copy has already cost this
+account a listing twice, and a stem ending in a particle rendered `…SEO構成からます` on a sealed
+contract. The defect is that the rejection is discarded. `_invoke_create_proposal` (line 3471) and
+`_invoke_proposal` (line 3297) raise on a violating proposal and the wake dies; the next wake builds
+the same prompt from the same context and the model reproduces the same violation. Nothing in the
+prompt states the prohibited-term list or the continuative-form rule.
+
+### What completion now requires
+
+Section 5's acceptance criteria are unchanged. These three defects are added to the definition of
+"the loop repeatedly performs the cycle without a coding session", because today it performs the
+cycle only in the directions that happen to be reachable:
+
+1. Duplicate detection MUST be a model judgement over the live catalogue with the same fail-closed
+   sealing every other proposal gets, not a similarity ratio. Deterministic code keeps ownership of
+   the archive control, the readback, the restore and the one-effect fence.
+2. `IMPROVE` and `CREATE` prompts MUST both carry the family's observed price/rating/review
+   distribution from `demand-evidence.jsonl`, with the copy-prohibition narrowed to expression.
+3. A guard rejection MUST be persisted against the wake and replayed into the next proposal prompt
+   for the same gap, so the generator sees its own last refusal.
+
 ## 5. Acceptance criteria
 
 The Storefront loop is complete only when all are true:
