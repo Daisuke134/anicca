@@ -2,6 +2,8 @@
 // (never-late). PURE/injectable, unit-tested in wake-filter.test.js. Used by scheduler.js tick().
 "use strict";
 
+const { computeDoorDepartureMs } = require("./travel-timing.js");
+
 // Anicca's own inserted blocks are not real commitments — never wake someone for them.
 function isHelperBlock(summary) {
   const s = summary || "";
@@ -64,16 +66,28 @@ function originFor(ev, allEvents, home) {
 // every 30 min, or the event was added late, or leaveMs was already past when travel ran), compute the
 // leave time INLINE — from the back-to-back previous venue when there is one, else home — so a
 // must-travel event still wakes before departure instead of (wrongly) anchoring to event start.
-// directionsFn is injected (the real travel.js directionsMinutes) so this stays testable.
-async function resolveDeparture(ev, allEvents, { home, mapsKey, nowMs = Date.now(), bufferMin = 5, directionsFn } = {}) {
+// Structured routing is authoritative when supplied. directionsFn is the legacy compatibility path
+// only for callers that do not have routeFn; it must never issue a second provider call after routeFn.
+async function resolveDeparture(ev, allEvents, {
+  home, mapsKey, nowMs = Date.now(), bufferMin = 5, directionsFn, routeFn, uid, timezone,
+} = {}) {
   const blockDep = departureMs(ev, allEvents);
-  if (blockDep !== ev.startMs) return blockDep;           // a travel block already pins the leave time
+  if (blockDep !== ev.startMs) return blockDep;           // a Travel block already pins door departure
   const origin = originFor(ev, allEvents, home);
-  if (!origin || !ev.location || typeof directionsFn !== "function") return ev.startMs;
+  if (!origin || !ev.location) return ev.startMs;
+  if (typeof routeFn === "function") {
+    let route = null;
+    try {
+      route = await routeFn(origin, ev.location, mapsKey, ev.startMs, nowMs, false, { uid, timezone });
+    } catch { route = null; }
+    const exact = computeDoorDepartureMs(ev.startMs, route, { bufferMin });
+    return exact === null ? ev.startMs : exact;
+  }
+  if (typeof directionsFn !== "function") return ev.startMs;
   let mins = null;
   try { mins = await directionsFn(origin, ev.location, mapsKey, ev.startMs, nowMs); } catch { mins = null; }
-  if (mins == null) return ev.startMs;                    // can't compute → conservative event-start
-  return ev.startMs - (mins + bufferMin) * 60000;         // wake before the inline-computed leave time
+  if (mins == null) return ev.startMs;                    // provider unavailable → conservative event-start
+  return ev.startMs - (mins + bufferMin) * 60000;         // compatibility fallback only
 }
 
 module.exports = { isHelperBlock, shouldWake, departureMs, resolveDeparture, originFor };
