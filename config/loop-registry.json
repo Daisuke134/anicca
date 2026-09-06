@@ -165,6 +165,7 @@
       "state_root": "~/.local/state/life-manager/affiliate-source-refresh"
     },
     "affiliate-x-browser": {
+      "adapter": "exec",
       "browser_owner": {
         "cdp_port": 9326,
         "profile": "~/.cloak/profiles/affiliate/x-en"
@@ -176,9 +177,10 @@
         "max_age_days": 14,
         "max_runs": 100
       },
+      "command": [],
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/affiliate/scripts/local-browser",
       "label": "ai.anicca.affiliate-x-browser",
       "log_root": "~/.local/state/life-manager/affiliate-x-browser/logs",
       "provider_route": "shared-agent-runner",
