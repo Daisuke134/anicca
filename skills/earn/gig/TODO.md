@@ -16,6 +16,15 @@ offers from measured conversion, and Paid completes accepted work through offici
 readback and replay-zero. A marketplace-specific customer case is evidence for this kernel, not a
 separate architecture or the definition of completion.
 
+## Host P0 before this Paid cursor
+
+The current first work is `PANIC-1` through `PANIC-6` in
+`docs/superpowers/specs/2026-08-27-macos-loop-control-plane-design.md`. The measured WindowServer
+watchdog kernel panic stopped the Aqua session and therefore every GUI/browser marketplace owner.
+Do not reorder or mark the Paid atoms below complete while local boot recovery is unproven. Other
+independent agents may continue read-only or disjoint work in parallel; this owner advances the host
+P0 first.
+
 ## Active atomic cursor — marketplace Paid reuse
 
 This is the only executable cursor for this owner. Older unchecked Coconala incident and customer
