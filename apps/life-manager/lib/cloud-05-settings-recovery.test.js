@@ -8,9 +8,13 @@ const path = require("node:path");
 const {
   validateCommand,
   executeUserCommand,
-  buildControlCenter,
+  parseUserCommand,
 } = require("./user-command.js");
-const { renderPanelPage } = require("./panel-ui.js");
+const {
+  parseSlashCommand,
+  slashAliasText,
+  handleSlashCommand,
+} = require("./slash-command.js");
 
 function commandStore(user = {}) {
   const current = {
@@ -18,18 +22,9 @@ function commandStore(user = {}) {
     telegram_chat_id: "101",
     home_address: "Old home",
     phone: "+819012345678",
-    call_language: "ja",
-    wake_policy: "travel-only",
-    calendar_provider: "composio_gcal",
-    payout_destination: null,
     ...user,
   };
-  const preferences = {
-    call_enabled: true,
-    notifications_enabled: true,
-    daily_automation_enabled: true,
-    call_time_zone: "Asia/Tokyo",
-  };
+  const preferences = { call_enabled: true };
   const receipts = new Map();
   const mutations = [];
   return {
@@ -40,11 +35,6 @@ function commandStore(user = {}) {
     async readUser(scope) {
       return scope.uid === current.uid && scope.chatId === current.telegram_chat_id ? { ...current } : null;
     },
-    async readPreferences(scope) {
-      if (scope.uid !== current.uid || scope.chatId !== current.telegram_chat_id) throw new Error("scope_mismatch");
-      return { ...preferences };
-    },
-    async readLocation() { return null; },
     async assertCurrentScope(scope) {
       return scope.uid === current.uid && scope.chatId === current.telegram_chat_id;
     },
@@ -133,25 +123,48 @@ test("CLOUD-05 profile mutation is tenant-scoped, idempotent, and phone removal 
   );
 });
 
-test("CLOUD-05 control center exposes only profile presence, never raw home or phone", async () => {
-  const store = commandStore({ home_address: "Very private address", phone: "+819012345678" });
-  const model = await buildControlCenter(SCOPE, { store, calendarStatus: async () => "ACTIVE" });
-  assert.deepEqual(model.profile, { homeConfigured: true, phoneConfigured: true });
-  const serialized = JSON.stringify(model);
-  assert.doesNotMatch(serialized, /Very private address/);
-  assert.doesNotMatch(serialized, /819012345678/);
-});
+test("CLOUD-05 Telegram keeps profile editing and support in the product surface without echoing PII", async () => {
+  const home = parseSlashCommand("/home  Shinjuku, Tokyo ");
+  assert.equal(slashAliasText(home), "set home Shinjuku, Tokyo");
+  assert.deepEqual(parseUserCommand(slashAliasText(home)), {
+    kind: "command",
+    command: { type: "profile.set", field: "home_address", value: "Shinjuku, Tokyo" },
+  });
 
-test("CLOUD-05 panel offers post-onboarding home/phone edits and truthful support/deletion guidance", () => {
-  const html = renderPanelPage({ csrf: "csrf-token" });
-  assert.match(html, /data-profile-home/);
-  assert.match(html, /data-profile-phone/);
-  assert.match(html, /data-action="save-home"/);
-  assert.match(html, /data-action="save-phone"/);
-  assert.match(html, /data-action="remove-phone"/);
-  assert.match(html, /https:\/\/aniccaai\.com\/support/);
-  assert.match(html, /data deletion|データ削除/i);
-  assert.doesNotMatch(html, /value="Very private address"/);
+  const phone = parseSlashCommand("/phone 090-1234-5678");
+  assert.equal(slashAliasText(phone), "set phone 090-1234-5678");
+  assert.deepEqual(parseUserCommand(slashAliasText(phone)), {
+    kind: "command",
+    command: { type: "profile.set", field: "phone", value: "+819012345678" },
+  });
+
+  const remove = parseSlashCommand("/phone off");
+  assert.equal(slashAliasText(remove), "remove phone");
+  assert.deepEqual(parseUserCommand(slashAliasText(remove)), {
+    kind: "command",
+    command: { type: "profile.set", field: "phone", value: null },
+  });
+
+  const sent = [];
+  const deps = { token: "t", chatId: "101", send: async (_token, _chatId, text) => { sent.push(text); return { ok: true }; } };
+  const row = { uid: "tenant-a", telegram_chat_id: "101" };
+  const noHome = await handleSlashCommand(parseSlashCommand("/home"), row, deps);
+  const noPhone = await handleSlashCommand(parseSlashCommand("/phone"), row, deps);
+  const support = await handleSlashCommand(parseSlashCommand("/support"), null, deps);
+  assert.equal(noHome.reason, "value_required");
+  assert.equal(noPhone.reason, "value_required");
+  assert.equal(support.ok, true);
+  assert.match(sent.join("\n"), /\/home <new home\/base address>/);
+  assert.match(sent.join("\n"), /\/phone <new number>/);
+  assert.match(sent.join("\n"), /https:\/\/aniccaai\.com\/support/);
+  assert.match(sent.join("\n"), /data deletion|データ削除/i);
+  assert.doesNotMatch(sent.join("\n"), /Shinjuku, Tokyo|090-1234-5678|819012345678/);
+
+  const helpSent = [];
+  await handleSlashCommand(parseSlashCommand("/help"), null, { ...deps, send: async (_t, _c, text) => { helpSent.push(text); return { ok: true }; } });
+  assert.match(helpSent[0], /\/home/);
+  assert.match(helpSent[0], /\/phone/);
+  assert.match(helpSent[0], /\/support/);
 });
 
 test("CLOUD-05 profile RPC is service-role-only, scope locked, and phone removal atomically disables calls", () => {
