@@ -1,0 +1,44 @@
+name: TEMP CLOUD-04 verification
+
+on:
+  push:
+    branches:
+      - verify/cloud-04-tenant-isolation-20260906
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/life-manager
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: CLOUD-04 auth, onboarding, cohort, and tenant contracts
+        run: |
+          node --test \
+            lib/panel-auth.test.js \
+            lib/panel-api.test.js \
+            lib/calendar-onboard.test.js \
+            lib/user-selector.test.js \
+            lib/daily-preflight.test.js \
+            lib/daily-preflight-production-wiring.test.js \
+            test/tenant-isolation.test.js \
+            test/wake-loop-isolation.test.js
+      - name: No Cloud daily runtime dependency on Mac-only primitives
+        run: |
+          set -eu
+          files="server.js scheduler.js lib/panel-auth.js lib/panel-api.js lib/calendar-onboard.js lib/telegram-onboard.js lib/travel-reminder.js lib/travel.js"
+          if grep -nE '(/Users/|\.openclaw|security[[:space:]]+find-generic-password|launchctl|localhost:[0-9]+|127\.0\.0\.1:[0-9]+)' $files; then
+            echo 'Cloud daily runtime contains a Mac/local runtime dependency' >&2
+            exit 1
+          fi
