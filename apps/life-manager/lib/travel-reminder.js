@@ -368,7 +368,9 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
     if (routeAttempted) {
       try {
         route = await (deps.directionsRoute || directionsRoute)(origin.value, destination, deps.mapsKey,
-          startMs(event), now, false, { uid: user.uid, timezone: deps.timezone || user.call_time_zone });
+          startMs(event), now, false, {
+            uid: user.uid, timezone: deps.timezone || user.call_time_zone, supaUrl, supaKey,
+          });
       } catch { route = null; }
     }
     const departureMs = computeDepartureMs(event, route, { bufferMin: deps.bufferMin });
