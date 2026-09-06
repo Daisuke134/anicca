@@ -52,6 +52,9 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   const userPatches = [];
   const feedbackRows = [];
   let telegramSendOk = true;
+  const logs = [];
+  const originalConsoleLog = console.log;
+  console.log = (...args) => logs.push(args.map(String).join(" "));
 
   global.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
@@ -156,9 +159,29 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
 
     // 2. /help → the command list, including the previously dropped kind:"help" NL actions.
     assert.equal(await message("100", "/help"), 200);
-    for (const expected of ["/status", "/where", "/stop", "/subscribe", "/connect", "/payout", "/reset", "connect calendar"]) {
+    for (const expected of ["/status", "/where", "/stop", "/subscribe", "/connect", "/payout", "/reset", "/invest", "connect calendar"]) {
       assert.ok(lastSent().text.includes(expected), `/help must list ${expected}`);
     }
+
+    // 2b. /invest crosses the real authenticated webhook + tenant lookup + shared renderer +
+    //     Telegram transport. With no Cloud Investment profile yet it truthfully starts setup,
+    //     exposes the official signup URL, and records the provider's message id. The fake fetch
+    //     rejects every unknown host, proving this path contacted neither Alpaca nor a scheduler.
+    const investBefore = sent.length;
+    assert.equal(await message("100", "/invest"), 200);
+    assert.equal(sent.length, investBefore + 1, "one /invest update produces exactly one provider send");
+    assert.equal(String(lastSent().chat_id), "100");
+    assert.match(lastSent().text, /^Investment Loop/m);
+    assert.equal(lastSent().reply_markup.inline_keyboard[0][0].url, "https://app.alpaca.markets/signup");
+    assert.ok(logs.some((line) => /command=invest .*provider_message_id=\d+/.test(line)),
+      "the authenticated E2E must retain Telegram's provider message id");
+
+    // An unlinked chat cannot reach Investment state or inherit the linked tenant's signup reply.
+    const unlinkedBefore = sent.length;
+    assert.equal(await message("200", "/invest"), 200);
+    assert.equal(sent.length, unlinkedBefore + 1);
+    assert.equal(lastSent().text, "Complete Life Manager setup with /start before using /invest.");
+    assert.equal(lastSent().reply_markup, undefined);
 
     // 3. Ordering vs the typed payout-address intake: a pending awaiting_address intake must NOT
     //    swallow a slash command (and the slash reply must not be the address-rejection copy).
@@ -304,6 +327,7 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     assert.ok(errors.some((line) => line.includes("onboarding web app button send failed")));
     assert.doesNotMatch(errors.join("\n"), /fixture-token|chat_id=200|token=|description/i);
   } finally {
+    console.log = originalConsoleLog;
     global.fetch = originalFetch;
     http.createServer = originalCreateServer;
     delete process.env.LM_BROWSER_TASKS_ENABLED;

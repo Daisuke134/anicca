@@ -230,8 +230,23 @@ async function handleSlashCommand(parsed, row, deps = {}) {
     }
     const ok = validInvestmentSnapshot(snapshot);
     const reply = buildInvestmentReply(ok ? snapshot : { lifecycle: "unknown" });
-    await send(deps.token, chatId, reply.text, telegramExtra(reply));
-    return { handled: true, action: "invest", ok, ...(ok ? {} : { reason: "state_unavailable" }) };
+    const delivery = await send(deps.token, chatId, reply.text, telegramExtra(reply));
+    const providerMessageId = delivery && delivery.ok === true &&
+      Number.isSafeInteger(delivery.result?.message_id) && delivery.result.message_id > 0
+      ? delivery.result.message_id : null;
+    if (delivery?.ok === false) {
+      return { handled: true, action: "invest", ok: false, reason: "delivery_failed" };
+    }
+    if (providerMessageId == null) {
+      return { handled: true, action: "invest", ok: false, reason: "delivery_unconfirmed" };
+    }
+    return {
+      handled: true,
+      action: "invest",
+      ok,
+      ...(providerMessageId == null ? {} : { providerMessageId }),
+      ...(ok ? {} : { reason: "state_unavailable" }),
+    };
   }
 
   if (name === "where") {
