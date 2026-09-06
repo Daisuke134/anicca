@@ -3,6 +3,7 @@
 const GEMINI_25_FLASH_INPUT_PER_M = 0.30;
 const GEMINI_25_FLASH_OUTPUT_PER_M = 2.50;
 const SEARCH_GROUNDING_PER_PROMPT = 0.035;
+const { recordUsageEvent } = require("./usage-event.js");
 
 function count(value) {
   const number = Number(value);
@@ -36,4 +37,15 @@ function geminiUsageEvents(response, context = {}) {
   return events;
 }
 
-module.exports = { geminiUsageEvents };
+async function persistGeminiUsage(response, context = {}, options = {}) {
+  const injected = options.recordUsageEvent;
+  if (!injected && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) return false;
+  const write = injected || recordUsageEvent;
+  let ok = true;
+  for (const event of geminiUsageEvents(response, context)) {
+    try { if (await write(event) === false) ok = false; } catch { ok = false; }
+  }
+  return ok;
+}
+
+module.exports = { geminiUsageEvents, persistGeminiUsage };

@@ -4,6 +4,7 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 const { buildHumanTask } = require("./money-printer-human-task.js");
+const { persistGeminiUsage } = require("./gemini-usage.js");
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
@@ -208,7 +209,12 @@ async function runGeminiQualification(input = {}, options = {}) {
       cloudUnavailable();
     }
     if (!response || response.ok !== true) cloudUnavailable();
-    return readGeminiBody(response);
+    const parsed = await readGeminiBody(response);
+    await persistGeminiUsage(parsed, {
+      tenantId, feature: "money_printer_specialist",
+      grounded: Boolean(body && Array.isArray(body.tools) && body.tools.some((tool) => tool && tool.google_search)),
+    }, options);
+    return parsed;
   };
 
   const research = await request({
@@ -266,6 +272,7 @@ function createMoneyPrinterSpecialist(options = {}) {
       }, {
         apiKey: geminiKey,
         fetchImpl: options.fetchImpl || globalThis.fetch,
+        recordUsageEvent: options.recordUsageEvent,
       })
       : options.runLocalAgentRunner || runLocalAgentRunner
   );

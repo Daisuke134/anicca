@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { geminiUsageEvents } = require("./gemini-usage.js");
+const { geminiUsageEvents, persistGeminiUsage } = require("./gemini-usage.js");
 
 test("separates Gemini token cost from Search grounding cost", () => {
   const events = geminiUsageEvents({
@@ -23,4 +23,16 @@ test("missing usage metadata stays explicitly unestimated", () => {
   assert.equal(event.providerUnits, 0);
   assert.equal(event.estimatedCostUsd, 0);
   assert.equal(event.meta.estimate_status, "unavailable");
+});
+
+test("persistGeminiUsage writes every normalized event through an injected writer", async () => {
+  const rows = [];
+  assert.equal(await persistGeminiUsage({
+    usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5, totalTokenCount: 15 },
+    candidates: [{}],
+  }, { tenantId: "t1", feature: "specialist", grounded: true }, {
+    recordUsageEvent: async (row) => { rows.push(row); return true; },
+  }), true);
+  assert.equal(rows.length, 2);
+  assert.deepEqual(rows.map((row) => row.provider), ["gemini", "google_search_grounding"]);
 });
