@@ -5201,7 +5201,12 @@ def _seller_snapshot_for(ws_url: str, service_id: str) -> dict:
     url = f"https://coconala.com/mypage/services/{service_id}"
     required = {"data[Service][overview]", "data[Service][head]", "data[Service][price]"}
     last = {}
-    for attempt in range(3):
+    # Three attempts a second apart gave this form two seconds to hydrate, which is the
+    # shortest settling window anywhere in this loop and the one production actually
+    # exhausted. `_read_official_catalog`, `_collect_competitors` and `open_tab_with_retry`
+    # all wait five attempts three seconds apart for the same class of transient, so this
+    # one does too rather than being the weakest link by accident.
+    for attempt in range(5):
         last = asyncio.run(listing_inventory._eval_json(ws_url, url, SELLER_FORM_EXPRESSION))
         names = {str(row.get("name") or "") for row in last.get("fields", []) if isinstance(row, dict)}
         if last.get("url") == url and required <= names:
@@ -5211,8 +5216,8 @@ def _seller_snapshot_for(ws_url: str, service_id: str) -> dict:
             # no amount of retrying fixes. Name it so the owner sees the real cause instead of
             # a hydration error repeating on every wake.
             raise RuntimeError(f"storefront_session_expired:{last.get('url')}")
-        if attempt < 2:
-            time.sleep(1)
+        if attempt < 4:
+            time.sleep(3)
     raise RuntimeError("seller_form_not_fully_hydrated")
 
 
