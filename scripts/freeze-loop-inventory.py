@@ -24,7 +24,9 @@ def build_projection(*, registry: dict, adapters: dict, status: list[dict],
         "retired": len(registry.get("retired_labels", [])),
     }
     actual = Counter(row["classification"] for row in status)
-    if any(actual.get(kind, 0) != count for kind, count in expected.items()):
+    if set(actual) != set(expected) or any(
+        actual.get(kind, 0) != count for kind, count in expected.items()
+    ):
         raise ValueError(f"classification counts do not match registry: expected={expected} actual={dict(actual)}")
 
     local_inventory = []
