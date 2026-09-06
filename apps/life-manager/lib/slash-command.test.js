@@ -9,6 +9,7 @@ const {
   helpMessage,
   handleSlashCommand,
 } = require("./slash-command.js");
+const { buildInvestmentReply } = require("./investment-chat.js");
 
 const NOW = Date.parse("2026-07-30T12:00:00.000Z");
 
@@ -16,6 +17,48 @@ const ROW = Object.freeze({
   uid: "u1", telegram_chat_id: "100", tg_onboard_stage: "done",
   calendar_provider: "composio_gcal", phone: "+819012345678", paid: true,
   gmail_skipped: true, payout_destination: null, name: "Fixture",
+});
+
+test("/invest sends the shared host-neutral reply including its signup button", async () => {
+  const snapshot = { lifecycle: "setup_required" };
+  const expected = buildInvestmentReply(snapshot);
+  const { sent, deps } = harness({ getInvestmentState: async () => snapshot });
+  const outcome = await handleSlashCommand(parseSlashCommand("/invest"), ROW, deps);
+  assert.deepEqual(outcome, { handled: true, action: "invest", ok: true });
+  assert.equal(sent[0].text, expected.text);
+  assert.equal(sent[0].extra.reply_markup.inline_keyboard[0][0].url, "https://app.alpaca.markets/signup");
+});
+
+test("/invest sends the shared balance and reason without Cloud-specific copy", async () => {
+  const snapshot = {
+    lifecycle: "in_review",
+    account: { equity: "99996.76", cash: "99996.76" },
+    decision: { approved: false, reason: "No fresh edge." },
+  };
+  const { sent, deps } = harness({ getInvestmentState: async () => snapshot });
+  await handleSlashCommand(parseSlashCommand("/invest"), ROW, deps);
+  assert.equal(sent[0].text, buildInvestmentReply(snapshot).text);
+  assert.match(sent[0].text, /資産 \$99996\.76/);
+  assert.match(sent[0].text, /No fresh edge\./);
+});
+
+test("/invest fails closed when Cloud investment state is unavailable", async () => {
+  for (const read of [
+    async () => { throw new Error("unavailable"); },
+    async () => null,
+    async () => ({ lifecycle: "unexpected-provider-state" }),
+    async () => ({ lifecycle: ["active"] }),
+    async () => ({ lifecycle: "in_review", account: null }),
+    async () => ({ lifecycle: "in_review", account: { equity: "0x10", cash: "1" } }),
+    async () => ({ lifecycle: "in_review", decision: { approved: true, reason: {} } }),
+    async () => ({ lifecycle: "in_review", decision: { approved: true } }),
+  ]) {
+    const { sent, deps } = harness({ getInvestmentState: read });
+    const outcome = await handleSlashCommand(parseSlashCommand("/invest"), ROW, deps);
+    assert.equal(outcome.ok, false);
+    assert.equal(outcome.reason, "state_unavailable");
+    assert.match(sent[0].text, /ライブ注文は出しません/);
+  }
 });
 
 function harness(overrides = {}) {

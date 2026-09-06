@@ -28,10 +28,11 @@ const { askPayoutQuestion } = require("./payout-question.js");
 const { compActive, compUntilMs } = require("./comp-window.js");
 const { getLastWakeMiss, wakeMissLine } = require("./wake-miss.js");
 const { TZ_ROW_KEYS } = require("./user-tz.js");
+const { buildInvestmentReply, telegramExtra, validInvestmentSnapshot } = require("./investment-chat.js");
 
 // Every /command this bot understands. start/panel are listed for /help but owned elsewhere.
 const KNOWN_COMMANDS = Object.freeze([
-  "start", "panel", "help", "status", "where", "stop", "subscribe", "connect", "payout", "reset",
+  "start", "panel", "help", "status", "where", "stop", "subscribe", "connect", "payout", "reset", "invest",
 ]);
 // INTENTIONAL CHANGE: matching is EXACT, so "/startfoo" is its own (unknown) command rather than the
 // start it used to be under telegram.js's startsWith("/start") check — Telegram deep links always
@@ -78,6 +79,7 @@ function helpMessage() {
     "  /connect — connect Google Calendar",
     "  /payout — set or change your payout destination",
     "  /reset — restart the onboarding announcements",
+    "  /invest — open Investment Loop",
     "",
     "You can also type:",
     ...help.availableActions.map((action) => `  ${action}`),
@@ -217,6 +219,19 @@ async function handleSlashCommand(parsed, row, deps = {}) {
   if (!row || !row.uid) {
     await send(deps.token, chatId, setupFirstMessage(name));
     return { handled: true, action: name, ok: false, reason: "unlinked" };
+  }
+
+  if (name === "invest") {
+    let snapshot;
+    try {
+      snapshot = deps.getInvestmentState ? await deps.getInvestmentState(row.uid) : { lifecycle: "unknown" };
+    } catch {
+      snapshot = { lifecycle: "unknown" };
+    }
+    const ok = validInvestmentSnapshot(snapshot);
+    const reply = buildInvestmentReply(ok ? snapshot : { lifecycle: "unknown" });
+    await send(deps.token, chatId, reply.text, telegramExtra(reply));
+    return { handled: true, action: "invest", ok, ...(ok ? {} : { reason: "state_unavailable" }) };
   }
 
   if (name === "where") {
