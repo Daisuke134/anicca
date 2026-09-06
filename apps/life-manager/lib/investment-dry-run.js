@@ -100,4 +100,14 @@ async function runInvestmentDryRun(now) {
   return makeInvestmentDryRun(stateStore, jobs)(now);
 }
 
-module.exports = { CAPABILITY, fiveMinuteSlot, runReadOnlyCore, makeInvestmentDryRun, runInvestmentDryRun };
+function startInvestmentDryRunLoop(opts = {}) {
+  const runOnce = opts.runOnce || runInvestmentDryRun;
+  const setTimer = opts.setTimer || setInterval;
+  const onError = opts.onError || ((error) => console.error(`[investment-dry-run] ${error.message}`));
+  const run = () => Promise.resolve(runOnce()).catch(onError);
+  run();
+  return setTimer(run, 300000);
+}
+
+module.exports = { CAPABILITY, fiveMinuteSlot, runReadOnlyCore, makeInvestmentDryRun,
+  runInvestmentDryRun, startInvestmentDryRunLoop };

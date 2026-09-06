@@ -7,7 +7,7 @@ const { maybeStartLoops, inngestConfigured, inProcessLoopsOn } = require("./mayb
 function counters() {
   // startWakeLoop is tracked like every other loop: the dial runs on its own timer (spec §3.1
   // method A), so "the scheduler process started its loops" is only true if the dial started too.
-  const c = { startScheduler: 0, startWakeLoop: 0, startReminderLoop: 0, startTravelLoop: 0, startAskLoop: 0, startOnboardLoop: 0, startDiscoveryLoop: 0 };
+  const c = { startScheduler: 0, startWakeLoop: 0, startReminderLoop: 0, startTravelLoop: 0, startAskLoop: 0, startOnboardLoop: 0, startDiscoveryLoop: 0, startInvestmentDryRunLoop: 0 };
   const starters = {
     startScheduler: () => c.startScheduler++,
     startWakeLoop: () => c.startWakeLoop++,
@@ -16,6 +16,7 @@ function counters() {
     startAskLoop: () => c.startAskLoop++,
     startOnboardLoop: () => c.startOnboardLoop++,
     startDiscoveryLoop: () => c.startDiscoveryLoop++,
+    startInvestmentDryRunLoop: () => c.startInvestmentDryRunLoop++,
   };
   return { c, starters };
 }
@@ -24,7 +25,7 @@ test("default standalone process keeps the current Railway behavior during migra
   const { c, starters } = counters();
   const r = maybeStartLoops({}, starters);
   assert.strictEqual(r.started, true);
-  assert.deepStrictEqual(c, { startScheduler: 1, startWakeLoop: 1, startReminderLoop: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 });
+  assert.deepStrictEqual(c, { startScheduler: 1, startWakeLoop: 1, startReminderLoop: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1, startInvestmentDryRunLoop: 1 });
 });
 
 test("the scheduler deployment starts all loops only with an explicit owner", () => {
@@ -36,7 +37,7 @@ test("the scheduler deployment starts all loops only with an explicit owner", ()
   }, starters);
   assert.strictEqual(r.started, true);
   assert.equal(r.owner, "local-primary");
-  assert.deepStrictEqual(c, { startScheduler: 1, startWakeLoop: 1, startReminderLoop: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 });
+  assert.deepStrictEqual(c, { startScheduler: 1, startWakeLoop: 1, startReminderLoop: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1, startInvestmentDryRunLoop: 1 });
 });
 
 for (const off of ["false", "FALSE", " False ", "0", "off"]) {
@@ -47,8 +48,8 @@ for (const off of ["false", "FALSE", " False ", "0", "off"]) {
     assert.strictEqual(r.owner, "standalone-inngest-missing-fallback");
     assert.match(r.reason, /standalone|fallback/i);
     assert.doesNotMatch(r.reason, /openclaw|INNGEST|secret|key/i);
-    assert.deepStrictEqual(c, { startScheduler: 1, startWakeLoop: 1, startReminderLoop: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1 },
-      "all seven existing loops start exactly once");
+    assert.deepStrictEqual(c, { startScheduler: 1, startWakeLoop: 1, startReminderLoop: 1, startTravelLoop: 1, startAskLoop: 1, startOnboardLoop: 1, startDiscoveryLoop: 1, startInvestmentDryRunLoop: 1 },
+      "all eight loops start exactly once");
   });
 }
 
