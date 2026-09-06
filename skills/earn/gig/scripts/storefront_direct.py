@@ -1856,6 +1856,23 @@ query is supported by an owned family.\nCONTEXT_JSON=""" + json.dumps(
     return proposal, route
 
 
+# Reasons `_crawl_demand_cluster` can raise that describe ONE query failing to read
+# (a tab that would not open, a redirect off coconala.com, an empty page after the
+# house retry) rather than a decision about our account or config. The exploration
+# loop over several proposed candidates skips a query that fails for one of these and
+# keeps exploring the rest; the single-query bootstrap sell-decision crawl never
+# consults this set because there the same failure IS the whole wake's answer.
+DEMAND_CRAWL_PER_QUERY_REASONS = frozenset({
+    "storefront_demand_tab_open_failed",
+    "storefront_demand_source_not_official",
+    "storefront_demand_source_empty",
+})
+
+
+def _demand_crawl_failure_is_per_query(error: RuntimeError) -> bool:
+    return str(error) in DEMAND_CRAWL_PER_QUERY_REASONS
+
+
 def _crawl_demand_cluster(default_tab_script: Path, evidence_dir: Path, query: str) -> dict:
     """Crawl one official search page and read the demand it states.
 
@@ -1871,14 +1888,32 @@ def _crawl_demand_cluster(default_tab_script: Path, evidence_dir: Path, query: s
          "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
     )
     tab = None
+    observed: dict = {}
     try:
         tab = json.loads(opened.stdout)
         if opened.returncode != 0 or tab.get("ok") is not True:
             raise RuntimeError("storefront_demand_tab_open_failed")
-        observed = asyncio.run(listing_inventory._eval_json(
-            str(tab["ws"]), url,
-            "JSON.stringify({url:location.href,body:document.body ? document.body.innerText.slice(0,120000) : ''})",
-        ))
+        # An empty body here is the same transient the competitor collector retries
+        # (the search results tab was still hydrating), so it gets the same house
+        # shape. This one function serves two very different callers: a bootstrap wake
+        # that crawls exactly one chosen query (there, exhausting retries IS the whole
+        # wake's answer and stays fatal -- see that call site) and an exploration loop
+        # over several proposed queries (there, the call site catches this and skips
+        # just that query). The retry belongs here so both callers get it; which
+        # failure is per-item versus whole-job is a caller decision, not this one's.
+        for attempt in range(5):
+            observed = asyncio.run(listing_inventory._eval_json(
+                str(tab["ws"]), url,
+                "JSON.stringify({url:location.href,body:document.body ? document.body.innerText.slice(0,120000) : ''})",
+            ))
+            final = urlsplit(str(observed.get("url") or ""))
+            body = str(observed.get("body") or "")
+            if final.scheme != "https" or final.hostname not in {"coconala.com", "www.coconala.com"}:
+                raise RuntimeError("storefront_demand_source_not_official")
+            if body.strip():
+                break
+            if attempt < 4:
+                time.sleep(3)
     finally:
         if isinstance(tab, dict) and tab.get("target_id"):
             subprocess.run(
@@ -1886,10 +1921,7 @@ def _crawl_demand_cluster(default_tab_script: Path, evidence_dir: Path, query: s
                  "close", str(tab["target_id"])], capture_output=True, text=True,
                 check=False, timeout=30,
             )
-    final = urlsplit(str(observed.get("url") or ""))
     body = str(observed.get("body") or "")
-    if final.scheme != "https" or final.hostname not in {"coconala.com", "www.coconala.com"}:
-        raise RuntimeError("storefront_demand_source_not_official")
     if not body.strip():
         raise RuntimeError("storefront_demand_source_empty")
     path = evidence_dir / f"demand-search-{hashlib.sha256(url.encode()).hexdigest()[:12]}.json"
@@ -3843,11 +3875,17 @@ def _collect_competitors(ws_url: str, evidence_dir: Path, own_ids: set[str]) -> 
         # An empty page body is a transient read (the tab was still hydrating, a slow
         # network blip, ...), not evidence the competitor's page vanished, so it is
         # retried like `_read_official_catalog` retries a half-hydrated dashboard.
-        # `competitor_source_not_official` and `competitor_service_redirected` are
-        # correctness signals about the page itself, not the environment, so they
-        # still raise on the first observation and are never retried.
+        # A redirect off coconala.com, or a service page redirected to a different
+        # service id, is an answer about THIS one competitor among fourteen (delisted,
+        # moved, or a listing that changed id) and says nothing about our own account
+        # or config, so it is recorded and skipped too -- retrying would not change a
+        # stable redirect, so it is not put through the empty-body retry loop.
+        # `competitor_source_is_own_service` above stays fatal: an id from our own
+        # catalogue showing up in the competitor list is a mistake in our own source
+        # list, not weather, and skipping it would hide a real config bug.
         succeeded = False
         attempts_used = 0
+        skip_reason = None
         for attempt in range(5):
             attempts_used = attempt + 1
             observed = asyncio.run(listing_inventory._eval_json(
@@ -3859,14 +3897,25 @@ def _collect_competitors(ws_url: str, evidence_dir: Path, own_ids: set[str]) -> 
             final = urlsplit(final_url)
             body = str(observed.get("body") or "")
             if final.scheme != "https" or final.hostname not in {"coconala.com", "www.coconala.com"}:
-                raise RuntimeError("competitor_source_not_official")
+                skip_reason = "competitor_source_not_official"
+                break
             if source_type == "service" and final.path.rstrip("/") != requested.path:
-                raise RuntimeError("competitor_service_redirected")
+                skip_reason = "competitor_service_redirected"
+                break
             if body.strip():
                 succeeded = True
                 break
             if attempt < 4:
                 time.sleep(3)
+        if skip_reason is not None:
+            unread.append({
+                "source_type": source_type,
+                "requested_url": requested_url,
+                "reason": skip_reason,
+                "attempts": attempts_used,
+                "observed_at_epoch": int(time.time()),
+            })
+            continue
         if not succeeded:
             # One unreadable source among fourteen is a per-source flake and must not
             # kill the wake; it is skipped and recorded honestly. Only zero readable
@@ -3895,6 +3944,14 @@ def _collect_competitors(ws_url: str, evidence_dir: Path, own_ids: set[str]) -> 
         _atomic_write(path, row)
         rows.append({"source_type": source_type, "url": final_url, "path": str(path), "content_sha256": digest})
     if not rows:
+        # Zero readable sources is the only systemic failure worth failing closed. If
+        # every source failed for the *same* non-empty reason (all fourteen redirected,
+        # say), name that reason so the wake does not report "empty" when the truth is
+        # "redirected" -- a uniform emptiness and a uniform redirect call for different
+        # fixes. A mixed bag of reasons, or an all-empty run, keeps the plain message.
+        reasons = {row["reason"] for row in unread}
+        if len(reasons) == 1 and next(iter(reasons)) != "competitor_source_empty":
+            raise RuntimeError(next(iter(reasons)))
         raise RuntimeError("competitor_source_empty")
     manifest = {"version": 1, "sources": rows, "unread": unread}
     _atomic_write(evidence_dir / "competitor-manifest.json", manifest)
@@ -6460,6 +6517,12 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         except (OSError, json.JSONDecodeError):
                             pass
                     if demand_record is None:
+                        # Left uncaught on purpose: this is the one query the bootstrap
+                        # wake selected to decide whether to sell that capability at
+                        # all, not one candidate among several, so a tab that will not
+                        # open, a redirect off coconala.com, or an empty read after the
+                        # house retry inside _crawl_demand_cluster IS the whole wake's
+                        # answer -- there is no "rest of the batch" to fall back to.
                         cluster = _crawl_demand_cluster(
                             getattr(args, "default_tab_script", DEFAULT_TAB),
                             inventory_path.parent / "bootstrap-demand",
@@ -7687,10 +7750,26 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         [str(row.get("title") or "") for row in inventory["services"]],
                     )
                     appended = 0
+                    skipped = []
                     for candidate in sealed:
-                        cluster = _crawl_demand_cluster(
-                            getattr(args, "default_tab_script", DEFAULT_TAB),
-                            inventory_path.parent, candidate["query"])
+                        try:
+                            cluster = _crawl_demand_cluster(
+                                getattr(args, "default_tab_script", DEFAULT_TAB),
+                                inventory_path.parent, candidate["query"])
+                        except RuntimeError as error:
+                            # This loop crawls several candidate queries the model just
+                            # proposed. One query's tab failing to open, redirecting off
+                            # coconala.com, or reading empty after the house retry is an
+                            # answer about that one query among several -- it is skipped
+                            # so the rest of the batch is still explored this wake,
+                            # unlike the single-query bootstrap crawl (see
+                            # _crawl_demand_cluster's docstring) where the same failure
+                            # IS the whole decision and stays fatal. Any other RuntimeError
+                            # is a real bug and still ends this exploration attempt.
+                            if not _demand_crawl_failure_is_per_query(error):
+                                raise
+                            skipped.append({"query": candidate["query"], "reason": str(error)})
+                            continue
                         scored = _score_demand_cluster(cluster)
                         row = {**cluster, **scored, "capability_family": candidate["capability_family"],
                                "rationale": candidate["rationale"], "route": route,
@@ -7702,6 +7781,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                                "cluster_key": _demand_cluster_key(candidate["query"], "")}
                         appended += int(_append_key_once(demand_ledger, "cluster_key", row))
                     demand_derivation = {"proposed": len(sealed), "appended": appended,
+                                         "skipped": len(skipped), "skipped_queries": skipped,
                                          "route": route.get("model")}
                 except Exception as error:  # exploration is optional; a wake must survive it
                     demand_derivation = {"proposed": 0, "appended": 0,
@@ -8275,6 +8355,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 listing_contracts_active=len(listing_contracts),
                 listing_contracts_total=listing_contract_total,
                 competitor_evidence_count=len(competitor_manifest["sources"]),
+                # A wake that skipped ten sources must not look identical to one that
+                # read all fourteen: the count alone cannot tell them apart, so the
+                # skip count rides in the same receipt rather than a new channel.
+                competitor_evidence_unread_count=len(competitor_manifest["unread"]),
                 inventory_content_sha256=inventory.get("content_sha256"),
                 judgement_path=str(judgement_path),
                 service_id=judgement.get("service_id"),

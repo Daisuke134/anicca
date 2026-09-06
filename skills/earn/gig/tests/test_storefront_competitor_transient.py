@@ -82,43 +82,30 @@ def test_all_sources_empty_raises_competitor_source_empty(tmp_path, monkeypatch)
         direct._collect_competitors("ws://leased", tmp_path, set())
 
 
-@pytest.mark.parametrize("case", [
-    ("own_service", "competitor_source_is_own_service"),
-    ("not_official", "competitor_source_not_official"),
-    ("redirected", "competitor_service_redirected"),
-])
-def test_correctness_guards_raise_on_first_observation_and_are_not_retried(tmp_path, monkeypatch, case):
-    scenario, expected_reason = case
+def test_own_service_in_competitor_list_raises_on_first_observation_and_is_not_retried(
+    tmp_path, monkeypatch,
+):
+    # An id from our own catalogue showing up in the competitor list is a mistake in
+    # our own source list, not weather -- unlike `competitor_source_not_official` and
+    # `competitor_service_redirected`, which are now recorded-and-skipped per-source
+    # (see test_storefront_per_item_failures.py), this one still fails the whole wake
+    # closed and is never retried.
     monkeypatch.setattr(direct.time, "sleep", lambda _seconds: None)
+    monkeypatch.setattr(direct, "COMPETITOR_SOURCES", (
+        ("service", "https://coconala.com/services/111"),
+    ))
     calls = []
 
-    if scenario == "own_service":
-        monkeypatch.setattr(direct, "COMPETITOR_SOURCES", (
-            ("service", "https://coconala.com/services/111"),
-        ))
-        own_ids = {"111"}
-
-        async def observed(_ws, url, _expression):
-            calls.append(url)
-            return {"url": url, "title": "official", "body": "fresh body"}
-    else:
-        monkeypatch.setattr(direct, "COMPETITOR_SOURCES", (
-            ("service", "https://coconala.com/services/222"),
-        ))
-        own_ids = set()
-
-        async def observed(_ws, url, _expression):
-            calls.append(url)
-            if scenario == "not_official":
-                return {"url": "https://example.com/services/222", "title": "x", "body": "fresh body"}
-            return {"url": "https://coconala.com/services/999", "title": "x", "body": "fresh body"}
+    async def observed(_ws, url, _expression):
+        calls.append(url)
+        return {"url": url, "title": "official", "body": "fresh body"}
 
     monkeypatch.setattr(listing_inventory, "_eval_json", observed)
 
-    with pytest.raises(RuntimeError, match=expected_reason):
-        direct._collect_competitors("ws://leased", tmp_path, own_ids)
+    with pytest.raises(RuntimeError, match="competitor_source_is_own_service"):
+        direct._collect_competitors("ws://leased", tmp_path, {"111"})
 
-    assert len(calls) == (0 if scenario == "own_service" else 1)
+    assert len(calls) == 0
 
 
 def test_manifest_unread_empty_and_all_sources_present_when_everything_reads(tmp_path, monkeypatch):
