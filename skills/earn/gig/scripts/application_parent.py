@@ -950,7 +950,11 @@ class CdpParentEffects:
         if page.get("access_denied") is True:
             raise ParentContractError(f"source_access_denied:{source_id}")
         if page.get("not_found") is True:
-            raise ParentContractError(f"source_not_found:{source_id}")
+            # Carry what was actually seen. The decision is made from document.title alone, so
+            # without the title a false positive on the pattern and a real missing page look
+            # identical -- and the authenticated title is the only one that can be checked later.
+            title = " ".join(str(page.get("title") or "").split())[:120]
+            raise ParentContractError(f"source_not_found:{source_id} title={title!r}")
         return page, screenshot
 
     def collect_source(
