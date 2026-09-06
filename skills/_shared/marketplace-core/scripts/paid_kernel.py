@@ -281,9 +281,16 @@ def main(argv: list[str] | None = None) -> int:
     if provider_argv[:1] == ["--"]:
         provider_argv = provider_argv[1:]
     adapter, decide = _load_provider(args.provider_adapter, provider_argv)
-    result = run_wake(adapter=adapter, decide=decide,
-                      state_root=args.state_root.expanduser().resolve(),
-                      max_workers=args.max_workers)
+    try:
+        result = run_wake(adapter=adapter, decide=decide,
+                          state_root=args.state_root.expanduser().resolve(),
+                          max_workers=args.max_workers)
+    except Exception as error:
+        result = {
+            "status": "failed", "observed": 0, "effect": 0, "readback": 0,
+            "failed": 1, "pending": 0, "failed_step": "provider_inventory",
+            "error_type": type(error).__name__, "items": [],
+        }
     _write(args.output.expanduser().resolve(), result)
     return int(result["failed"] > 0)
 
