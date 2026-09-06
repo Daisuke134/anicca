@@ -5352,6 +5352,29 @@ def _seller_snapshot(ws_url: str) -> dict:
     return _seller_snapshot_for(ws_url, TARGET_SERVICE_ID)
 
 
+def _dashboard_says_signed_out(ws_url: str) -> bool:
+    """True when the seller dashboard is really the login page.
+
+    `observe_storefront` reports a parsed count and no url, so a login wall reaches the
+    caller as a shelf with nothing on it. This asks the page directly, and answers False on
+    any error so a browser hiccup is never mistaken for a dead session.
+    """
+    import listing_inventory
+
+    try:
+        observed = asyncio.run(listing_inventory._eval_json(
+            ws_url, listing_inventory.LISTINGS_URL,
+            "JSON.stringify({url:location.href,body:document.body ? "
+            "document.body.innerText.slice(0,400) : ''})",
+        ))
+    except Exception:
+        return False
+    if _looks_signed_out(observed.get("url")):
+        return True
+    body = str(observed.get("body") or "")
+    return "メールアドレスでログイン" in body or "会員登録はこちら" in body
+
+
 def _looks_signed_out(observed_url: str | None) -> bool:
     """True when an authenticated page sent us somewhere that is not the seller area."""
     parts = urlsplit(str(observed_url or ""))
@@ -6291,7 +6314,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             and read.get("services") == [] and sources == []):
                         return read, [], 0
                     if count <= 0 or count != len(read.get("services") or []):
-                        failure = "official_inventory_empty_or_invalid"
+                        # An empty shelf and a login wall look identical from the parsed
+                        # count, and calling both "empty" is how a dead session went
+                        # unreported for seven hours: 241 wakes read a shelf that was really
+                        # a login page, while the Apply lane -- which names this failure --
+                        # recovered on its own next wake. Ask the page which one it is.
+                        failure = ("storefront_session_expired"
+                                   if _dashboard_says_signed_out(ws_url)
+                                   else "official_inventory_empty_or_invalid")
+                        if failure == "storefront_session_expired":
+                            break
                     else:
                         ids = [source.get("service_id") for source in sources] if isinstance(
                             sources, list) and all(isinstance(s, dict) for s in sources) else None
