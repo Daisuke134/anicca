@@ -362,6 +362,22 @@
       "provider_route": "shared-agent-runner",
       "state_root": "~/.openclaw"
     },
+    "boot-panic-evidence": {
+      "cadence": {
+        "run_at_load": true
+      },
+      "cleanup": {
+        "max_age_days": 30,
+        "max_runs": 20
+      },
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "runtime/host/boot_panic_collector.py",
+      "label": "ai.anicca.boot-panic-evidence",
+      "log_root": "~/.local/state/life-manager/boot-panic-evidence/logs",
+      "provider_route": "deterministic",
+      "state_root": "~/.local/state/life-manager/boot-panic-evidence"
+    },
     "bounty-core-healthcheck": {
       "cadence": {
         "start_interval_seconds": 300

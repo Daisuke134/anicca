@@ -27,6 +27,20 @@ def entry(label="ai.anicca.example"):
 
 
 class MacosLoopRegistryTest(unittest.TestCase):
+    def test_boot_panic_evidence_runs_once_when_the_aqua_session_loads(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        self.assertEqual(registry["loops"]["boot-panic-evidence"], {
+            "cadence": {"run_at_load": True},
+            "cleanup": {"max_age_days": 30, "max_runs": 20},
+            "domain": "system",
+            "effect_class": "none",
+            "entrypoint": "runtime/host/boot_panic_collector.py",
+            "label": "ai.anicca.boot-panic-evidence",
+            "log_root": "~/.local/state/life-manager/boot-panic-evidence/logs",
+            "provider_route": "deterministic",
+            "state_root": "~/.local/state/life-manager/boot-panic-evidence",
+        })
+
     def test_money_printer_symphony_is_retired_after_cloud_cutover(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         self.assertNotIn("money-printer-symphony", registry["loops"])
