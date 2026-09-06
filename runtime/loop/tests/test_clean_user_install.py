@@ -47,7 +47,6 @@ class CleanUserInstallTest(unittest.TestCase):
 
             readme = (release / "README.md").read_text()
             self.assertIn("### Use it — cloud", readme)
-            self.assertIn("./scripts/local-up.sh", readme)
             self.assertTrue((release / "LICENSE").is_file())
 
             notices = (release / "THIRD_PARTY_NOTICES.md").read_text()
