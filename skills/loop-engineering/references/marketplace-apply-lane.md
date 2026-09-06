@@ -25,10 +25,17 @@ defect this file exists to prevent.
 | Piece | Coconala | Lancers | CrowdWorks |
 |---|---|---|---|
 | transaction, ledger | own | shared | shared |
+| Telegram transport | **openclaw CLI at an absolute path** | shared, in-repo | shared, in-repo |
 | outbox | own diverged copy | shared | shared |
 | delivery loop + sender | own | own | shared |
 | wake summary | own | shared | shared |
 | per-decision message | hand-written | — | shared renderer |
+
+A transport that is an external binary is not a style difference. `/opt/homebrew/bin/openclaw`
+cannot exist in a stranger's clone, and it already cost this repository a full day of silent
+CrowdWorks reporting under launchd. The in-repo `_shared/telegram.py` needs only
+`TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Retiring the Coconala copy is `APPLY-REPORT-1`
+in `skills/earn/gig/TODO.md`.
 
 Coconala owns `report_envelope.py` and does not call it: its own
 `[ココナラ][応募判断]` is hand-written in `application_direct.py`. So the one

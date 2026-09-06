@@ -100,6 +100,60 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    marketplace without changing the shared Paid lifecycle. PASS = provider-only config/transport/
    effect/readback changes plus one real official receipt chain and replay-zero.
 
+## Parallel Apply-owner cursor — one reporting standard, no external CLI
+
+Owned by the Apply owner and executed in parallel with the Paid cursor above; it does not reorder
+that cursor. Measured 2026-09-06. All three lanes send the same kind of sentence, through two
+different transports, and only one of those survives being cloned by a stranger.
+
+| Piece | Coconala | Lancers | CrowdWorks |
+|---|---|---|---|
+| Transport | `OpenClawTelegramTransport` execs `/opt/homebrew/bin/openclaw` (`apply_telegram_report.py:74,76,211`) | shared | shared |
+| Shared path | — | `_shared/marketplace-core/scripts/telegram_delivery.py` -> `_shared/telegram.py` (420 lines) -> `api.telegram.org` | same |
+| Outbox | own copy, 543 lines, 794 lines differing from shared | shared (337) | shared |
+| Per-decision sentence | hand-written at `application_direct.py:923` | — | shared renderer |
+| Envelope | owns `report_envelope.py` (1,360 lines) and does not call it for Apply | — | imports it across skills |
+
+Two measured facts decide the standard, and they point in opposite directions:
+
+- **The envelope is the better content model and should win.** `report_envelope.py` is CloudEvents
+  1.0, platform-neutral (the display name is an argument), and renders human JA/EN text and the
+  agent JSON feed from one object byte-for-byte, so Telegram and self-healing cannot disagree about
+  what happened. `lane_summary.py` stays as one renderer over it, not a rival.
+- **The openclaw transport is the worse one and must lose.** It is an external Homebrew binary at an
+  absolute path, so a cloned repository cannot use it and the OSS goal is forfeited. It has already
+  failed in production: `telegram_delivery.py` records that the CrowdWorks copy shipped that
+  transport, launchd gave the job no PATH, and the lane reported nothing for a full day while
+  exiting 0. Silence that exits 0 is the failure this whole file exists to prevent.
+
+1. [ ] `APPLY-REPORT-1` Move Coconala Apply onto the in-repo transport. PASS = `apply_telegram_report.py`
+   holds no `openclaw` reference and no absolute binary path, one natural
+   `ai.anicca.hf-gig-apply-direct` wake delivers its report through `_shared/telegram.py`, and the
+   returned Telegram `message_id` is recorded in the outbox receipt. A local send is not PASS.
+2. [ ] `APPLY-REPORT-2` Remove the last CrowdWorks shell-out. PASS = `earn/crowdworks/scripts/account.py:422`
+   sends through `telegram_delivery.send_via_shared_client`, one natural credential-request wake
+   delivers with a recorded `message_id`, and no gig lane production source contains the string
+   `openclaw`.
+3. [ ] `APPLY-REPORT-3` Make the non-dependency machine-checked instead of remembered. PASS = the check
+   already proven at `earn/marketing-engine/intel/verify_gate9.py:192` — assert no source file
+   contains `openclaw`, record `openclaw_dependency: false` — runs over the Apply sources of all
+   three platforms and fails when one reappears.
+4. [ ] `APPLY-REPORT-4` Fold Coconala's diverged outbox back into the shared one. PASS = the 794-line
+   divergence is gone, `earn/gig/scripts/telegram_outbox.py` no longer exists as a second
+   implementation, and Coconala Apply still delivers exactly once across a restart.
+5. [ ] `APPLY-REPORT-5` One renderer for the per-decision sentence. PASS = `report_envelope.py` lives in
+   `_shared/marketplace-core/`, the hand-written `[ココナラ][応募判断]` at `application_direct.py:923`
+   is replaced by a call to it, and all three platforms render that sentence from one place.
+   **Sequencing constraint:** four Coconala scripts import this module and the Paid owner is editing
+   that lane concurrently, so start this only after `COCONALA-PAID-3A` settles. Load it by path in
+   the meantime; do not copy it. `APPLY-REPORT-1` through `4` carry no such constraint and do not wait.
+
+What is true once all five are checked: a stranger clones this repository, sets `TELEGRAM_BOT_TOKEN`
+and `TELEGRAM_CHAT_ID`, runs an Apply lane, and receives the same reporting Dais receives today —
+no Homebrew binary, no second copy of the sentence. A new marketplace inherits reporting by naming
+its platform, not by writing a reporter.
+
+
 ## Historical Coconala atomic cursor — evidence only
 
 One checkbox was one bounded change or one bounded
