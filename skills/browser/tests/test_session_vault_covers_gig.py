@@ -33,16 +33,24 @@ def test_it_warms_the_leased_port_not_a_hardcoded_one():
     assert ":9223" not in gig.split("per-account clip browsers", 1)[0].replace("(coconala:kosuke :9223", "")
 
 
-def test_it_takes_the_lease_and_gives_it_back():
+def test_it_resolves_the_port_without_taking_the_exclusive_lease():
+    """Gating on `acquire` meant the healer almost never ran.
+
+    Measured 2026-09-07 07:57:18: "lease BUSY ... skipping this tick", one second after the only
+    pass that got through. The four gig lanes hold that lease nearly all the time -- five isolated
+    contexts were live during the same measurement -- so the one job that can heal a dead session
+    was the one job that never got to run.
+    """
     gig = SOURCE.split("gig browser (coconala:kosuke)", 1)[1].split("per-account clip browsers", 1)[0]
-    assert "acquire coconala:kosuke" in gig
-    assert "release coconala:kosuke" in gig
+    assert "status coconala:kosuke" in gig
+    assert "acquire coconala:kosuke" not in gig
 
 
-def test_a_busy_lease_is_skipped_rather_than_forced():
-    """BUSY means a gig lane is driving that browser, which is itself traffic."""
+def test_no_lane_waits_for_this_and_this_waits_for_no_lane():
+    """dump/keepalive/relogin open their own tab; the lanes work in their own contexts."""
     gig = SOURCE.split("gig browser (coconala:kosuke)", 1)[1].split("per-account clip browsers", 1)[0]
-    assert "BUSY" in gig and "skipping" in gig
+    assert "release coconala:kosuke" not in gig
+    assert "not reachable, skipping" in gig
 
 
 def test_a_dead_gig_session_alerts_and_says_what_it_costs():
