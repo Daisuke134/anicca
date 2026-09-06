@@ -74,7 +74,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "/opt/homebrew/bin/node",
             str(root / "apps/life-manager/scripts/money-printer-symphony-bridge.js"),
         ],
-        "affiliate-impact-browser": [cloak_python, str(affiliate_browser)],
         "affiliate-x-browser": [cloak_python, str(affiliate_browser)],
         "life-manager-daily-driver": [
             python, str(root / "runtime/host/browser_port_owner.py"),

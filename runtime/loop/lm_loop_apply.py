@@ -45,6 +45,12 @@ def _plist(loop_id: str, entry: dict, release_root: Path, release_sha: str) -> b
         "StandardOutPath": str(Path(log_root) / "launchd.out.log"),
         "StandardErrorPath": str(Path(log_root) / "launchd.err.log"),
     }
+    browser_owner = entry.get("browser_owner")
+    if browser_owner:
+        value["EnvironmentVariables"].update({
+            "LIFE_MANAGER_BROWSER_CDP_PORT": str(browser_owner["cdp_port"]),
+            "LIFE_MANAGER_BROWSER_PROFILE": os.path.expanduser(browser_owner["profile"]),
+        })
     if loop_id == "alpaca-investment":
         value["EnvironmentVariables"].update({
             "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",

@@ -202,6 +202,13 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertEqual(row["command"], [])
         self.assertEqual(row["entrypoint"], "skills/affiliate/scripts/local-browser")
 
+    def test_affiliate_impact_browser_uses_repo_managed_runtime_python(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["affiliate-impact-browser"]
+        self.assertEqual(row["adapter"], "exec")
+        self.assertEqual(row["command"], [])
+        self.assertEqual(row["entrypoint"], "skills/affiliate/scripts/local-browser")
+
     def test_affiliate_composition_uses_direct_exec_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["affiliate-composition"]

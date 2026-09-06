@@ -155,6 +155,20 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(environment["ALPACA_INVESTMENT_PAPER_STATE_DIR"],
                          str(Path.home() / ".local/state/life-manager/example"))
 
+    def test_browser_owner_is_projected_into_shared_runtime_environment(self):
+        value = registry()
+        value["loops"]["example"]["browser_owner"] = {
+            "cdp_port": 9327,
+            "profile": "~/.cloak/profiles/affiliate/impact-en",
+        }
+        rendered = plistlib.loads(build_apply_plan(value, self.root, SHA)[0]["plist_bytes"])
+        environment = rendered["EnvironmentVariables"]
+        self.assertEqual(environment["LIFE_MANAGER_BROWSER_CDP_PORT"], "9327")
+        self.assertEqual(
+            environment["LIFE_MANAGER_BROWSER_PROFILE"],
+            str(Path.home() / ".cloak/profiles/affiliate/impact-en"),
+        )
+
     def test_storefront_plist_uses_daily_driver_auth_vault(self):
         value = registry()
         value["loops"]["hf-gig-storefront-direct"] = value["loops"].pop("example")

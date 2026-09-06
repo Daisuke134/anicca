@@ -53,6 +53,16 @@ raise SystemExit(1 if reason or os.environ.get("STUB_RESULT") == "1" else 0)
 
 
 class LocalBrowserPreflightTest(unittest.TestCase):
+    def test_shared_browser_owner_environment_selects_impact_runtime(self) -> None:
+        with patch.dict(os.environ, {
+            "LIFE_MANAGER_LOOP_ID": "affiliate-impact-browser",
+            "LIFE_MANAGER_BROWSER_CDP_PORT": "9327",
+            "LIFE_MANAGER_BROWSER_PROFILE": "/tmp/affiliate-impact-profile",
+        }, clear=True):
+            self.assertEqual(MODULE._cdp_port(), 9327)
+            self.assertEqual(MODULE._browser_profile(), Path("/tmp/affiliate-impact-profile"))
+            self.assertEqual(MODULE._start_url(), "https://app.impact.com/login.user")
+
     def test_browser_has_a_finite_renderer_process_limit(self) -> None:
         self.assertIn(
             'f"--renderer-process-limit={renderer_limit}"',
