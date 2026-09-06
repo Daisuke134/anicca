@@ -15,30 +15,38 @@ available and end suffering for humans and, ultimately, all living beings.
 
 [Open Life Manager](https://aniccaai.com/lm) · [Start in Telegram](https://t.me/LifeManagerBotbot?start=lp) · [View the source](https://github.com/Daisuke134/life-manager)
 
-Run the free, open-source, self-hosted Life Manager locally and keep your data on your machine; use the paid
-monthly cloud service when you want an always-on manager with only a phone. Both surfaces use the **same core**,
-evidence ledger, and human-readable reporting contract. Life
+The repository is open source and the target is a portable self-hosted Life Manager that keeps its data on the
+owner's machine; that full clean-host path is not finished yet. Use the paid monthly cloud service when you want an
+always-on manager with only a phone. Both surfaces come from this repository
+and converge on the same state, evidence, and human-readable reporting contracts. Life
 Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
 without a receipt.
 
-## Built-in loop catalog
+## The 13 main product loops
 
-Life Manager is shipped as one general-agent core plus specialist loops. These are
-the main user-facing loop families; helper, healthcheck, browser-owner, reporting,
-and reconciliation loops support them behind the same control plane.
+Life Manager has 13 user-facing product loops. A product loop is a capability,
+not necessarily one process: the lifecycle registry contains the smaller
+application, browser-owner, reporting, healthcheck, and reconciliation jobs that
+implement and support these 13 loops.
 
-| Capability | Canonical loop IDs | What it does |
-|---|---|---|
-| Connector | `life-manager-connector-native` | Finds eligible events, applies, verifies registration, and reports Calendar/Telegram receipts |
-| Fundraising | `fundraiser` | Continuously discovers new accelerators, fellowships, grants, and public investor intakes and applies without an arbitrary daily cap |
-| Job Hunter | `job-search-daily`, `job-search-browser`, `job-search-inbox`, `job-search-mercor` | Discovers and submits qualified job applications, then reconciles confirmation and reply mail |
-| Gig / Coconala | `hf-gig-apply-direct`, `hf-gig-paid-direct`, `gig-outcome-watch` | Applies, negotiates, tracks paid work, and separates attempts from provider-verified outcomes |
-| Money Printer | `money-printer-symphony`, `money-printer-symphony-bridge` | Moves public opportunities through the durable workroom and human-resume boundary |
-| Writer | `writer-opportunity-discovery`, `writer-opportunity-response`, `writer-money-sync`, `writer-report` | Finds paid writing work, responds, and records publisher/payment receipts |
-| Affiliate | `affiliate-loop`, `affiliate-source-refresh`, `affiliate-browser` | Finds and publishes attributable affiliate opportunities through the owned browser path |
-| CFO | `life-manager-cfo-hourly` | Reconciles verified financial data and sends evidence-backed financial briefings |
-| Agent Economy | `agent-economy-loop` | Tracks agent revenue, compute cost, and self-funding without mixing owner funds |
-| Investment | `alpaca-investment` | Runs a five-minute Alpaca paper-trading loop across eligible crypto, equities, and defined-risk option spreads; gates risk, reconciles each order, and reports every pass to Telegram |
+| # | Product loop | Representative current owners | What it does |
+|---:|---|---|---|
+| 1 | Gig — Coconala | `hf-gig-apply-direct`, `hf-gig-reply-detector`, `hf-gig-storefront-direct`, `hf-gig-paid-direct` | Finds suitable work, applies, negotiates, delivers, and verifies provider outcomes |
+| 2 | Gig — Lancers | `lancers-revenue-application`, `lancers-revenue-negotiate`, `lancers-revenue-storefront`, `lancers-revenue-paid`, `lancers-revenue-work-sync`, `lancers-revenue-telegram-report` | Runs the same earning lifecycle for Lancers and keeps applications, paid work, delivery, and reporting state consistent |
+| 3 | Gig — CrowdWorks | `crowdworks-revenue-application`, `crowdworks-revenue-report` | Applies to suitable CrowdWorks projects and reports evidence-backed outcomes |
+| 4 | Writer | `writer-opportunity-discovery`, `writer-opportunity-response`, `writer-money-sync`, `writer-report` | Finds paid writing work, responds, and records publisher and payment receipts |
+| 5 | Affiliate | `affiliate-loop`, `affiliate-source-refresh`, `affiliate-browser` | Finds and publishes attributable affiliate opportunities through an owned browser path |
+| 6 | Investment | `alpaca-investment` | Runs the risk-gated Alpaca paper-trading loop, reconciles orders, and reports every pass |
+| 7 | Agent Economy | `agent-economy-loop` plus x402 helpers | Tracks agent revenue, compute cost, and self-funding without mixing owner funds |
+| 8 | Job Hunter | `job-search-daily`, `job-search-browser`, `job-search-inbox` | Discovers and submits qualified applications, then reconciles confirmations and replies |
+| 9 | Fundraiser | `fundraiser` | Discovers accelerators, fellowships, grants, and public investor intakes and applies when eligible |
+| 10 | Connector | `life-manager-connector-native` | Finds eligible events, applies, verifies registration, and reports Calendar and Telegram receipts |
+| 11 | Life Manager Cloud | `apps/life-manager` on Railway | Runs the always-on web, Telegram, reminder, scheduling, and hosted-agent surface |
+| 12 | Mobile / Capafy | `capafy-loop-daily`, `capafy-outcome-monitor`, `capafy-ig-account-manager`, plus mobile marketing jobs | Produces and operates the mobile-product and audience-growth workflows |
+| 13 | Money Printer | Railway `life-call`, `money-printer-worker`, and `money-printer-symphony` services | Moves public opportunities through a durable workroom, agent execution, human handoff, and verified receipts |
+
+The CFO and other reporting jobs are shared support capabilities; they are not a
+fourteenth user-facing product loop.
 
 The complete lifecycle registry is [`config/loop-registry.json`](config/loop-registry.json).
 List every loop and inspect its live state through the canonical interfaces:
@@ -185,55 +193,26 @@ current production acceptance: dynamic discovery, fit-qualified application,
 descriptive loop-owned Telegram, official Gmail/Ledger proof and duplicate zero.
 Ashby, Greenhouse, Lever, Mercor and generic ATS lanes are not working products.
 
-### Run the server stack yourself
+### Inspect and operate local loops
 
-Requires Docker. The local stack is Postgres + an object store + the API, scheduler, and worker — the same core
-the cloud runs.
-
-```bash
-git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
-./scripts/local-up.sh
-```
-
-That is the whole thing. It writes `deploy/local/.env` if you don't have one (generating a password for the
-local object store instead of shipping one), brings up postgres · object store · api · scheduler · worker, and
-**waits until every service reports healthy** before printing anything — so "it started" means it can serve, not
-just that containers exist. First run builds the image and takes a few minutes.
-
-```
-./scripts/local-up.sh status    what is running
-./scripts/local-up.sh logs      follow the logs
-./scripts/local-up.sh down      stop it (your data survives)
-```
-
-On macOS, explicitly select repository loops to supervise with launchd. There
-is no default list: Life Manager never starts private-provider or external-effect
-loops merely because the repository was cloned.
+The current production Mac runtime is direct-process, not Docker. Pushed `main`
+is cut into an immutable release; `bin/lm-loop` installs and supervises selected
+registry jobs through macOS `launchd`. Mutable state, credentials, logs, browser
+profiles, and receipts stay outside the checkout and outside the release.
 
 ```bash
-./scripts/local-up.sh loops-init
-./scripts/local-up.sh loops-up <loop-id> [<loop-id> ...]
-./scripts/local-up.sh loops-status
-./scripts/local-up.sh loops-down
+git clone https://github.com/Daisuke134/life-manager ~/life-manager
+cd ~/life-manager
+jq -r '.loops | keys[]' config/loop-registry.json
+./bin/lm-loop status all
+./bin/lm-loop doctor
 ```
 
-`loops-init` creates or validates the canonical user-owned credential store
-without adding any secret values. The selection is saved in
-`~/.config/life-manager/loops`. Model-backed or
-effectful selections fail before installation unless the user's own
-`~/.local/share/anicca/credentials.json` exists with parent mode `700` and file
-mode `600`. `loops-status` reports the same launchd, release, provider, blocker,
-terminal-result, and effect fields as `lm-loop status`; process liveness is not
-reported as business success.
-
-The API listens on `http://localhost:18788` and the worker exposes health on `:18790` (both overridable in
-`deploy/local/.env`). Your data stays in the local Postgres and object store — nothing is shipped anywhere by
-running this.
-
-**Secrets are referenced, never inlined.** Jobs carry `secret://…` references and resolve them from the local
-keychain or a tenant vault; see [`apps/life-manager/.env.example`](apps/life-manager/.env.example) for the shape
-(`TELEGRAM_BOT_TOKEN_REF`, `POSTIZ_ACCESS_TOKEN_REF`, `REVENUECAT_API_KEY_REF`, …). Connect your own Telegram bot
-token this way to talk to a local instance.
+Installing an effectful loop is an operator action performed from an immutable
+release after its credentials and host capabilities are configured; cloning the
+repository never starts every loop automatically. The repository does contain an
+experimental Docker Compose profile, but neither the current Mac production loops
+nor the selling cloud product use it. It is not the canonical quick-start path.
 
 ### Self-funding is part of the Financial Organ
 
@@ -245,44 +224,43 @@ It is Life Manager's Financial capability: provider revenue must become `banked`
 
 ## One product, two execution surfaces
 
-Life Manager is one product in one repository. “Local Life Manager” and the web app are not separate products or repositories; they are two execution surfaces powered by the same core, capabilities, and state contracts.
+Life Manager is one product in one repository. “Local Life Manager” and the web app are not separate products or repositories; they are two execution surfaces built from the same source repository and product contracts.
 
 The target contract does not copy loops into separate local and cloud folders. The current lifecycle inventory
-contains 175 loop IDs in [`config/loop-registry.json`](config/loop-registry.json), with repository-relative
-entrypoints across the repository. The local Compose scheduler currently starts a smaller built-in set directly;
-making local and cloud schedulers consume the same complete registry is unfinished portability work. In the target,
-both dispatch the same entrypoints and only the scheduler, storage, secret, and browser adapters differ. The
+contains the implementation and support jobs in [`config/loop-registry.json`](config/loop-registry.json), with repository-relative
+entrypoints across the repository. The current Mac and cloud surfaces use different supervisors and not every loop
+is portable yet. In the target, both dispatch the same entrypoints and only the scheduler, storage, secret, and browser adapters differ. The
 complete architecture and ordered portability work are tracked in
 [`docs/superpowers/specs/2026-09-06-life-manager-one-repo-two-runtimes-design.md`](docs/superpowers/specs/2026-09-06-life-manager-one-repo-two-runtimes-design.md).
 
 ```text
 life-manager/                       # the only source repository
-├── apps/life-manager/              # shared API, Telegram, scheduler and worker core
+├── apps/life-manager/              # cloud web, Telegram, scheduler and worker core
 ├── skills/ · runtime/ · services/  # capabilities, lifecycle and services
 ├── bin/ · tools/                   # repository-owned commands and support entrypoints
 ├── config/loop-registry.json       # one catalog for local and cloud loops
-├── deploy/local/compose.yaml       # self-hosted Docker profile
-├── deploy/cloud/                   # target: cloud services from the same image
-└── scripts/local-up.sh             # local lifecycle command
+├── apps/landing/                   # Netlify web frontend
+├── docs/                           # product, runtime and operations documentation
+└── deploy/local/compose.yaml       # experimental, currently inactive profile
 ```
 
 | Runtime | What runs | Where private data lives |
 |---|---|---|
-| Local / self-hosted | Docker Compose starts Postgres, object store, API, scheduler, and worker on the owner's host | Local named volumes and the owner's secret store |
-| Cloud | The same commit/image runs as API, scheduler, and worker services with hosted browser capacity | Tenant-scoped managed database, object store, and vault |
+| Local / self-hosted today | Immutable release → `lm-loop-run` → repository-relative Python/Node/shell entrypoint; macOS uses `launchd` | Owner-controlled state, credential, log, receipt, and browser-profile directories outside Git |
+| Cloud today | Netlify serves the web frontend; Railway builds `apps/life-manager` with Nixpacks and runs `life-call`/worker roles | Tenant-scoped managed database, object store, and secrets |
 
-`launchd` is an optional macOS supervisor for device-bound loops, not the loop definition and not a requirement
-for the container server. Linux and Windows/WSL2 are portability targets for container-capable loops. Phones are
+`launchd` is the current macOS supervisor adapter, not the loop definition. Linux and Windows are portability targets
+that still need their own proven supervisor/install path. Phones are
 clients: they use the cloud runtime or connect to another always-on self-hosted machine.
 
-The Docker server stack is available today, but the full loop catalog is not yet portable. Some production loops
-still rely on macOS browser profiles, OpenClaw, or legacy host paths. Until the clean-host acceptance matrix in the
+The full loop catalog is not yet portable. Some production loops still rely on macOS browser profiles, OpenClaw,
+or legacy host paths. Until the clean-host acceptance matrix in the
 architecture spec passes, the README does not claim that every loop works on every device.
 
 | Path | Role | What it is not |
 |---|---|---|
-| `apps/life-manager/` | The product core: Telegram, scheduling, calls, authenticated `/panel`, billing, and user workflows. Runs both locally (compose) and in the cloud (Railway) | Not the whole repository |
-| `deploy/local/` | The local execution surface — compose stack, ports, local-only credentials | Not a separate “local edition” product |
+| `apps/life-manager/` | The cloud product core: Telegram, scheduling, calls, authenticated `/panel`, billing, and user workflows | Not the whole repository |
+| `deploy/local/` | A currently inactive experimental Compose profile | Not today's local production or the canonical self-host entry point |
 | `apps/landing/` | The Life Manager onboarding web subset | Not the old multi-product Anicca website |
 | `runtime/loop/`, `install.sh`, `start-local.sh` | Economic runtime supporting Life Manager's Financial Organ — see [`docs/agent-economy.md`](docs/agent-economy.md) | Not the whole product or the normal user entry point |
 | `runtime/compute-proxy/`, `services/` | Compute-payment and x402 settlement/API infrastructure for the same Financial capability | Not user-facing apps |
@@ -404,8 +382,9 @@ Current canonical acceptance: PR `#1936` established the production baseline at 
 
 | Capability | Status |
 |---|---|
-| **Local stack** (`deploy/local/compose.yaml`) — postgres · object store · api · scheduler · worker | **Runs** — the five services come up healthy and stay up (observed running for days on the maintainer's machine). |
-| **Cloud service** (`apps/life-manager`, `node server.js` on Railway) | **Deployed** — the scheduler and API are the same code the local stack runs. |
+| **Mac production loops** | **Live** — `launchd` directly starts immutable-release `lm-loop-run`; no Docker/Colima daemon is running. |
+| **Cloud service** (Netlify + Railway `life-call`/worker) | **Deployed** — Railway builds `apps/life-manager` with Nixpacks/Railpack, without the repository Dockerfile or Compose. |
+| **Experimental Compose profile** (`deploy/local/compose.yaml`) | Present in source but **not currently running** and not the canonical runtime. |
 | **Telegram reporting with receipts** | **Live** — every report carries a message id, and a send that fails is not recorded as sent. |
 | **Calendar, connectors, coverage** (`lib/calendar-*`, `lib/connector-*`) | **Implemented, coverage still moving** — per-connector state and gaps are tracked in the execution spec rather than claimed here. |
 | **Financial loops** (net worth, cash flow, payouts, ledgers) | **Partial** — the ledger and payout jobs exist; their current health is tracked in the execution spec. Nothing here is an investment guarantee. |
