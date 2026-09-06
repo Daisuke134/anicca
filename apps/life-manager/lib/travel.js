@@ -509,8 +509,8 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, now
           catch { route = null; }
           if (routeDurationSeconds(route) == null) route = null;
         }
-        let mins = route ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);
-        if (mins == null && geminiKey) {
+        let mins = routeFn ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);
+        if (route == null && mins == null && geminiKey) {
           // The location is a room name / unroutable string (e.g. "情報科学大講義室[L1]（IS）"). Let the
           // agent web-search the REAL venue address so a must-travel event still gets a block instead of a
           // silent skip — never-late beats clean code. (Lazy require avoids any load-order coupling.)
@@ -528,7 +528,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, now
                 catch { route = null; }
                 if (routeDurationSeconds(route) == null) route = null;
               }
-              mins = route ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);
+              mins = routeFn ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);
             }
           } catch { /* fall through to null-mins skip below */ }
         }
