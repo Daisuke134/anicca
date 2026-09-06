@@ -1,4 +1,5 @@
 import json
+import os
 import plistlib
 import subprocess
 import tarfile
@@ -13,6 +14,28 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CleanUserInstallTest(unittest.TestCase):
+    def test_bootstrap_installs_the_locked_runtime_python_dependencies(self):
+        requirements = (ROOT / "requirements-runtime.txt").read_text().splitlines()
+        self.assertIn("jsonschema==4.26.0", requirements)
+        self.assertIn("playwright==1.59.0", requirements)
+        bootstrap = (ROOT / "scripts/bootstrap.sh").read_text()
+        self.assertIn('-r "$TARGET/requirements-runtime.txt"', bootstrap)
+
+    def test_crowdworks_wrapper_uses_the_managed_python_and_preserves_argv(self):
+        wrapper = ROOT / "skills/earn/crowdworks/scripts/application-owner"
+        self.assertTrue(os.access(wrapper, os.X_OK))
+        result = subprocess.run(
+            [str(wrapper), "marker"],
+            env={**os.environ, "LIFE_MANAGER_PYTHON": "/bin/echo"},
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            result.stdout.strip(),
+            f"{ROOT}/skills/earn/crowdworks/scripts/application_owner.py marker",
+        )
+
     def test_public_archive_contains_general_agent_release_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

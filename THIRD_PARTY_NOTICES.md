@@ -8,6 +8,7 @@ general-agent architecture also studies the following open-source projects.
 | DeepAgentsJS | MIT | https://github.com/langchain-ai/deepagentsjs | Design reference for bounded specialists and durable agent state |
 | browser-use | MIT | https://github.com/browser-use/browser-use | Design reference for the model-owned browser tool loop |
 | OpenClaw | MIT | https://github.com/openclaw/openclaw | Design reference for local wakes and messaging channels |
+| Playwright for Python | Apache-2.0 | https://github.com/microsoft/playwright-python | Browser client used by self-hosted marketplace loops |
 | Steel Browser | Apache-2.0 | https://github.com/steel-dev/steel-browser | Design reference for the hosted browser runtime and session boundary |
 
 No source code from these projects is vendored by the general-agent slice. If a
