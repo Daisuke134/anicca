@@ -1,11 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+profile="${LANCERS_BROWSER_PROFILE:-$HOME/.local/state/anicca/lancers/browser-profile}"
+if [ "${LANCERS_BROWSER_PORT_OWNED:-0}" != 1 ]; then
+  port_owner="$script_dir/../../../runtime/host/browser_port_owner.py"
+  [ -f "$port_owner" ] && [ ! -L "$port_owner" ] && [ -r "$port_owner" ] || {
+    echo "lancers browser port owner is missing or unsafe" >&2
+    exit 1
+  }
+  exec /usr/bin/python3 -I "$port_owner" run \
+    --port 9227 --profile "$profile" --owner lancers-revenue-browser \
+    -- /usr/bin/env LANCERS_BROWSER_PORT_OWNED=1 "$0"
+fi
 browser="${LANCERS_CHROMIUM:-}"
 if [ -z "$browser" ]; then
   browser="$(find "$HOME/.cloakbrowser" -maxdepth 6 -type f -path '*/Chromium.app/Contents/MacOS/Chromium' -print 2>/dev/null | sort | tail -1)"
 fi
 [ -x "$browser" ] || { echo "lancers browser binary unavailable" >&2; exit 78; }
-profile="${LANCERS_BROWSER_PROFILE:-$HOME/.local/state/anicca/lancers/browser-profile}"
 mkdir -p "$profile"
 exec "$browser" --no-first-run --no-default-browser-check \
   --disable-features=MacAppCodeSignClone \

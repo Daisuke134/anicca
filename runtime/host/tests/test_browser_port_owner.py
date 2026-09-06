@@ -8,9 +8,16 @@ from pathlib import Path
 
 
 SCRIPT = Path(__file__).parents[1] / "browser_port_owner.py"
+LANCERS_LAUNCHER = Path(__file__).parents[3] / "runtime/legacy/lancers-revenue-browser/run.sh"
 
 
 class BrowserPortOwnerTests(unittest.TestCase):
+    def test_lancers_launcher_reexecutes_through_shared_owner(self):
+        launcher = LANCERS_LAUNCHER.read_text(encoding="utf-8")
+        self.assertIn('runtime/host/browser_port_owner.py', launcher)
+        self.assertIn('--owner lancers-revenue-browser', launcher)
+        self.assertIn('LANCERS_BROWSER_PORT_OWNED=1', launcher)
+
     def test_second_owner_for_same_port_fails_closed_while_first_is_alive(self):
         with tempfile.TemporaryDirectory() as temporary:
             state = Path(temporary) / "state"

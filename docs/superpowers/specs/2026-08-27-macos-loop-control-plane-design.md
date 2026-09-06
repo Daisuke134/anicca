@@ -137,6 +137,9 @@ completion remain separate.
      single shared launcher. Provider, Impact and X retain their distinct declared profile and port;
      focused launcher and ownership tests pass. Running browsers were not restarted, so enforcement
      begins on each owner's next source-derived natural launch.
+   - [x] Route the Lancers browser launcher through that same ownership primitive with its declared
+     profile, port and owner. Focused ownership tests and shell parsing pass. The running browser was
+     not restarted; enforcement begins on its next source-derived natural launch.
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
