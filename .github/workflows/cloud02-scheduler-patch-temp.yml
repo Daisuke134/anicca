@@ -1,0 +1,41 @@
+name: TEMP CLOUD-02 scheduler patch
+
+on:
+  push:
+    branches:
+      - fix/cloud-02-timing-authority-20260906
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cloud-02-timing-authority-20260906
+          fetch-depth: 1
+      - name: Apply scheduler test-seam compatibility patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('apps/life-manager/scheduler.js')
+          text = path.read_text()
+          old = 'routeFn: deps.directionsRoute || directionsRoute, uid: u.uid,'
+          new = 'routeFn: deps.directionsRoute || (deps.directionsMinutes ? undefined : directionsRoute), uid: u.uid,'
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one scheduler routeFn line, found {text.count(old)}')
+          path.write_text(text.replace(old, new))
+          PY
+          git diff --check
+          git diff -- apps/life-manager/scheduler.js
+      - name: Commit exact patch
+        run: |
+          git config user.name 'cloud-tdd-bot'
+          git config user.email 'cloud-tdd-bot@users.noreply.github.com'
+          git add apps/life-manager/scheduler.js
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'fix(cloud): preserve explicit legacy timing seams'
+          git push origin HEAD:fix/cloud-02-timing-authority-20260906
