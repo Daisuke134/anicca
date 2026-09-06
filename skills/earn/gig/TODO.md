@@ -308,6 +308,21 @@ does not start them and does not reorder anyone's cursor to fit them:
    `source_health` instead of printing only an exit code.
    Seven guard tests, proven in both directions: 4 of them fail against the previous code and all 7
    pass after.
+   **This change first shipped a worse bug than it fixed, and that is the lesson worth keeping.**
+   Renaming the call-site variable left `denied_source_id` bound only inside
+   `if source_failure is not None:`, while a later branch reads it on every phase. The ordinary case
+   — no source failure at all — raised `UnboundLocalError` and the lane died two seconds into every
+   wake. All seven new tests passed, because they covered the two helpers and not the control flow
+   between them. Hotfixed by binding it unconditionally at both call sites.
+   Guard added, and it costs nothing: CPython emits `LOAD_FAST_CHECK` only where the compiler cannot
+   prove a local is bound at the read, so the interpreter's own analysis is the check — no linter,
+   no dependency. `test_apply_no_new_unbound_locals.py` pins the set for
+   `application_direct.py`; a new one fails, and a fixed one must be removed from the pin so the
+   guard cannot quietly go stale. Proven in both directions.
+   Recorded, not fixed: four names in `main` are already possibly-unbound —
+   `continuing_after_source_failure`, `must_stop`, `next_cursor`, `next_cursor_path`. Each needs its
+   own reading of whether the unbound path is reachable, which is a different change from the one
+   that added the guard.
 
 What is true once all five are checked: a stranger clones this repository, sets `TELEGRAM_BOT_TOKEN`
 and `TELEGRAM_CHAT_ID`, runs an Apply lane, and receives the same reporting Dais receives today —
