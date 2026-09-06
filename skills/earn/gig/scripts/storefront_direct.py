@@ -1416,23 +1416,31 @@ def _load_catalog_entries(path: Path = LISTING_CATALOG) -> dict[str, dict]:
     (skills/gig-work/profile/listings/catalog.json). CREATE grounds its generated proposal in
     the matching entry so buyer-facing copy stays anchored to what the owner actually decided
     to sell, instead of the model inventing scope, price or deliverables unsupervised.
+
+    Delegates to the shared skills/_shared/marketplace-core listing_catalog module, which is
+    the one place that reads and validates the catalog (it fails loud on a bad catalog rather
+    than returning empty). This production call site must not regress: it keeps returning the
+    same per-family subset of fields it always has, and still returns {} when the catalog is
+    unreadable/invalid — but it now reports why on stderr instead of swallowing the reason.
     """
+    SHARED_SCRIPTS = SCRIPTS.parent.parent.parent / "_shared" / "marketplace-core" / "scripts"
+    if str(SHARED_SCRIPTS) not in sys.path:
+        sys.path.insert(0, str(SHARED_SCRIPTS))
+    import listing_catalog
+
     try:
-        config = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        catalog = listing_catalog.load(path)
+    except listing_catalog.CatalogError as error:
+        print(f"catalog_load_failed: {type(error).__name__}: {error}", file=sys.stderr)
         return {}
-    listings = config.get("listings")
-    if not isinstance(listings, list):
-        return {}
-    catalog: dict[str, dict] = {}
-    for row in listings:
-        if not isinstance(row, dict) or not str(row.get("family") or ""):
-            continue
-        catalog[str(row["family"])] = {
+    entries = listing_catalog.entries_by_family(catalog)
+    return {
+        family: {
             key: row.get(key) for key in
             ("id", "title_ja", "value_prop", "tiers", "deliverables", "required_inputs", "faq")
         }
-    return catalog
+        for family, row in entries.items()
+    }
 
 
 def _validate_mutation_contract(contract: dict, capability_families: dict[str, str]) -> None:
