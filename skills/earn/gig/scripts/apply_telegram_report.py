@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import time
 import uuid
@@ -18,6 +20,26 @@ from typing import Any, Callable
 import report_envelope
 from telegram_outbox import TelegramOutbox, dispatch_one
 from owner_notify import send_email_if_configured
+
+
+_DELIVERY_PATH = (
+    Path(__file__).resolve().parents[3]
+    / "_shared" / "marketplace-core" / "scripts" / "telegram_delivery.py"
+)
+_DELIVERY_MODULE_NAME = "anicca_apply_shared_telegram_delivery"
+
+
+def load_shared_delivery():
+    """The sender every marketplace lane shares. Never a CLI: launchd gives a job no PATH."""
+    if _DELIVERY_MODULE_NAME in sys.modules:
+        return sys.modules[_DELIVERY_MODULE_NAME]
+    spec = importlib.util.spec_from_file_location(_DELIVERY_MODULE_NAME, _DELIVERY_PATH)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("marketplace_telegram_delivery_unavailable")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[_DELIVERY_MODULE_NAME] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -71,51 +93,43 @@ def _write_seen(path: Path, keys: set[str]) -> None:
             pass
 
 
-class OpenClawTelegramTransport:
+class ApplyTelegramTransport:
+    """Apply's reporter, sending through the in-repo shared client.
+
+    It used to exec an external CLI at an absolute Homebrew path. A cloned repository has no such
+    binary, and launchd gives a job no PATH — that transport once left CrowdWorks reporting nothing
+    for a day while exiting 0. `sender` stays injectable so tests can drive delivery outcomes
+    without a network.
+    """
+
     def __init__(
-        self, *, target: str, executable: Path = Path("/opt/homebrew/bin/openclaw"),
+        self, *, target: str,
         receipt_dir: Path | None = None, run: Callable[..., Any] = subprocess.run,
         now_ms: Callable[[], int] | None = None,
+        sender: Callable[..., Any] | None = None,
+        env_file: Path | None = None,
     ):
         self.target = str(target)
-        self.executable = Path(executable)
         self.receipt_dir = Path(receipt_dir or Path.home() / "gig/telegram-delivery-receipts")
         self.run = run
         self.now_ms = now_ms or (lambda: int(time.time() * 1000))
+        self.sender = sender
+        self.env_file = env_file
+
+    def _send(self, message: str) -> str:
+        send = self.sender or load_shared_delivery().send_via_shared_client
+        result = send(message, chat_id=self.target, env_file=self.env_file)
+        provider_id = getattr(result, "provider_id", None)
+        if not provider_id:
+            # Any uncertainty is raised so dispatch_one records delivery_unknown rather than
+            # counting an unacknowledged message as sent.
+            raise RuntimeError(f"Telegram delivery unacknowledged: {getattr(result, 'error', None)}")
+        return str(provider_id)
 
     def send_report(self, message: str, *, event_key: str) -> str:
         message_id = send_email_if_configured(message, event_key=event_key, run=self.run)
         if message_id is None:
-            command = [
-                str(self.executable), "message", "send", "--channel", "telegram",
-                "--target", self.target, "--message", message, "--json",
-            ]
-            try:
-                completed = self.run(
-                    command, stdin=subprocess.DEVNULL, capture_output=True, text=True,
-                    timeout=180, check=False,
-                )
-                if completed.returncode != 0:
-                    raise RuntimeError(f"Telegram transport failed rc={completed.returncode}")
-                provider_output = completed.stdout
-            except subprocess.TimeoutExpired as error:
-                provider_output = error.stdout
-                if not provider_output:
-                    raise
-            if isinstance(provider_output, bytes):
-                provider_output = provider_output.decode("utf-8", errors="strict")
-            try:
-                result = json.loads(provider_output)
-            except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as error:
-                raise RuntimeError("Telegram transport returned invalid JSON") from error
-            payload = result.get("payload") if isinstance(result, dict) else None
-            if isinstance(payload, dict) and payload.get("ok") is False:
-                raise RuntimeError("Telegram provider rejected message")
-            message_id = result.get("messageId") if isinstance(result, dict) else None
-            if not message_id and isinstance(payload, dict):
-                message_id = payload.get("messageId")
-            if not message_id:
-                raise RuntimeError("Telegram ACK has no message ID")
+            message_id = self._send(message)
         self.receipt_dir.mkdir(parents=True, exist_ok=True)
         digest = hashlib.sha256(event_key.encode()).hexdigest()
         receipt = {
@@ -142,7 +156,7 @@ class OpenClawTelegramTransport:
         return str(message_id)
 
 
-def publish(gig_dir: Path, outbox: TelegramOutbox, transport: OpenClawTelegramTransport) -> dict:
+def publish(gig_dir: Path, outbox: TelegramOutbox, transport: ApplyTelegramTransport) -> dict:
     now_epoch = int(time.time())
     outbox.reconcile_receipts(
         receipt_dir=transport.receipt_dir,
@@ -208,12 +222,11 @@ def main() -> int:
     parser.add_argument("--telegram-database", type=Path,
                         default=Path.home() / "gig/telegram-outbox.sqlite3")
     parser.add_argument("--target", default=os.environ.get("GIG_REPORT_CHAT", ""))
-    parser.add_argument("--openclaw", type=Path, default=Path("/opt/homebrew/bin/openclaw"))
     args = parser.parse_args()
     outbox = TelegramOutbox(args.telegram_database)
     outbox.recover_expired(now=int(time.time()))
-    transport = OpenClawTelegramTransport(
-        target=args.target, executable=args.openclaw,
+    transport = ApplyTelegramTransport(
+        target=args.target,
         receipt_dir=args.gig_dir / "telegram-delivery-receipts",
     )
     print(json.dumps(publish(args.gig_dir, outbox, transport), separators=(",", ":")))
