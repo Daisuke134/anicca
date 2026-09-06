@@ -50,6 +50,7 @@ def evaluate_entry(snapshot: dict[str, Any], max_loss_usd: Any,
             raise ValueError
         loss = _number(max_loss_usd)
         allocated = _number(snapshot.get("allocated_capital_usd"))
+        _number(snapshot.get("cash_flow_ny_day_usd"))
         realized = _number(snapshot.get("realized_pnl_ny_day_usd"))
         unrealized = _number(snapshot.get("unrealized_pnl_usd"))
         observed = parse_instant(snapshot.get("observed_at"))

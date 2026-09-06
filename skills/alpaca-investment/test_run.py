@@ -61,7 +61,7 @@ class InvestmentModeTest(unittest.TestCase):
                 with patch.dict(MODULE.os.environ, {
                     "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
                     **({} if value is None else {"LIFE_MANAGER_INVESTMENT_MODE": value}),
-                }, clear=True), patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0}), \
+                }, clear=True), patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0, "unresolved": 0}), \
                         patch.object(MODULE, "observe", side_effect=RuntimeError("broker-called")) as observe, \
                         patch.object(MODULE, "deliver_failure", return_value={"status": "delivered"}):
                     MODULE.main(wake_id="mode-validation")
@@ -80,7 +80,7 @@ class InvestmentModeTest(unittest.TestCase):
                 "LIFE_MANAGER_INVESTMENT_MODE": "paper",
                 "ALPACA_INVESTMENT_PAPER_CREDENTIALS_FILE": str(credentials),
                 "ALPACA_INVESTMENT_PAPER_STATE_DIR": str(state),
-            }, clear=True), patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0}) as reconcile, \
+            }, clear=True), patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0, "unresolved": 0}) as reconcile, \
                     patch.object(MODULE, "observe", side_effect=broker_boundary), \
                     patch.object(MODULE, "deliver_failure", return_value={"status": "delivered"}):
                 MODULE.main(wake_id="paper-paths")
@@ -220,7 +220,7 @@ class ShadowReadOnlyTest(unittest.TestCase):
             "LIFE_MANAGER_INVESTMENT_MODE": "shadow", "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
             "ALPACA_INVESTMENT_SHADOW_CREDENTIALS_FILE": str(Path(directory) / "live.json"),
             "ALPACA_INVESTMENT_SHADOW_STATE_DIR": str(Path(directory) / "shadow-state"),
-        }, clear=True), patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0}), \
+        }, clear=True), patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0, "unresolved": 0}), \
                 patch.object(MODULE, "observe", return_value=observation), patch.object(MODULE, "read_campaign_snapshot"), \
                 patch.object(MODULE, "reconcile", return_value={"exit_status": "EXIT_READY", "exit_credit_usd": "0.50", "unrealized_pnl_usd": "0.00"}), \
                 patch.object(MODULE, "exit_order", return_value={"asset_class": "option_spread_close"}), \
@@ -233,7 +233,7 @@ class ShadowReadOnlyTest(unittest.TestCase):
 
 
 class PortablePassTest(unittest.TestCase):
-    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
+    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0, "unresolved": 0})
     @patch.object(MODULE, "observe")
     @patch.object(MODULE, "read_campaign_snapshot", return_value={})
     @patch.object(MODULE, "reconcile")
@@ -282,7 +282,7 @@ class PortablePassTest(unittest.TestCase):
             )
             self.assertEqual(decision_receipt["decision"]["deployment"], "local")
 
-    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
+    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0, "unresolved": 0})
     @patch.object(MODULE, "observe", side_effect=RuntimeError("provider unavailable"))
     @patch.object(MODULE, "deliver_failure", return_value={"message_id": "123", "status": "delivered"})
     def test_terminal_failure_has_no_dashboard_effect(self, _deliver, _observe, _reconcile):
@@ -321,7 +321,7 @@ class FailureTelegramTest(unittest.TestCase):
 
     @patch.object(MODULE, "deliver_failure", create=True)
     @patch.object(MODULE, "observe", side_effect=RuntimeError("provider payload must stay private"))
-    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0})
+    @patch.object(MODULE, "reconcile_started", return_value={"pending": 0, "reconciled": 0, "unresolved": 0})
     def test_terminal_failure_reports_once_after_internal_retries(
         self, _reconcile, observe, deliver_failure
     ):

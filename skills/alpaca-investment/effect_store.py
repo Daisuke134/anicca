@@ -97,19 +97,29 @@ def mark_started(ledger: Path, sealed: dict[str, str]) -> None:
     }, ("receipt_type", "effect_id", "status"))
 
 
-def reconcile_started(
-    ledger: Path,
-    find_order: Callable[[str], dict[str, Any] | None],
-) -> dict[str, int]:
-    rows = _rows(ledger)
+def _unresolved(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     outcomes = {row.get("effect_id") for row in rows if row.get("receipt_type") == "outcome"}
     latest: dict[str, dict[str, Any]] = {}
     for row in rows:
         if row.get("receipt_type") == "effect_intent" and isinstance(row.get("effect_id"), str):
             latest[row["effect_id"]] = row
-    pending = [row for effect_id, row in latest.items()
-               if row.get("status") in {"started", "reconciliation_blocked"}
-               and effect_id not in outcomes]
+    return [row for effect_id, row in latest.items()
+            if row.get("status") in {"started", "reconciliation_blocked", "applied"}
+            and effect_id not in outcomes]
+
+
+def unresolved_intent_count(ledger: Path) -> int:
+    return len(_unresolved(_rows(ledger)))
+
+
+def reconcile_started(
+    ledger: Path,
+    find_order: Callable[[str], dict[str, Any] | None],
+) -> dict[str, int]:
+    rows = _rows(ledger)
+    pending = _unresolved(rows)
+    if len(pending) > 1:
+        raise ValueError("multiple_unresolved_intents")
     reconciled = 0
     for intent in pending:
         mode = intent.get("mode")
@@ -139,4 +149,5 @@ def reconcile_started(
             "recorded_at": datetime.now(timezone.utc).isoformat(), "schema_version": 1,
         }, ("receipt_type", "effect_id"))
         reconciled += 1
-    return {"pending": len(pending), "reconciled": reconciled}
+    return {"pending": len(pending), "reconciled": reconciled,
+            "unresolved": unresolved_intent_count(ledger)}

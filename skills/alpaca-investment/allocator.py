@@ -15,8 +15,6 @@ from risk_policy import evaluate_entry
 MAX_QUOTE_AGE_SECONDS = 30
 MAX_SPREAD_FRACTION = .15
 MIN_CASH_FRACTION = .30
-MAX_POSITIONS = 5
-MAX_OPEN_ORDERS = 10
 
 
 def _age_seconds(timestamp: str) -> float:
@@ -134,8 +132,9 @@ def gate(snapshot: dict[str, Any], candidates: list[dict[str, Any]], decision: d
         "expected_value": 0 <= probability <= 1 and gain > 0 and probability * gain - (1 - probability) * loss > 0,
         "fixed_risk": fixed_risk["approved"],
         "cash_reserve": cash - loss >= equity * MIN_CASH_FRACTION,
-        "positions": snapshot["positions"] < MAX_POSITIONS,
-        "orders": snapshot["open_orders"] < MAX_OPEN_ORDERS,
+        "position_slot": snapshot["positions"] == 0,
+        "order_slot": snapshot["open_orders"] == 0,
+        "intent_slot": snapshot.get("unresolved_intents") == 0,
     }
     if candidate["asset_class"] == "option_spread":
         checks["bounded_upside"] = gain <= float(candidate["max_profit_usd"])

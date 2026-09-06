@@ -19,7 +19,8 @@ NOW = datetime(2026, 9, 6, 14, 0, tzinfo=timezone.utc)
 
 
 def risk(**changes):
-    value = {"allocated_capital_usd": "89.99", "realized_pnl_ny_day_usd": "-9.00",
+    value = {"allocated_capital_usd": "89.99", "cash_flow_ny_day_usd": "0",
+             "realized_pnl_ny_day_usd": "-9.00",
              "unrealized_pnl_usd": "-10.99", "observed_at": "2026-09-06T13:59:50Z",
              "ny_day": "2026-09-06"}
     value.update(changes)
@@ -27,13 +28,13 @@ def risk(**changes):
 
 
 class FixedRiskPolicyTest(unittest.TestCase):
-    def _provider_snapshot(self, timestamp="2026-09-06T13:59:50Z"):
+    def _provider_snapshot(self, timestamp="2026-09-06T13:59:50Z", open_orders=0):
         clock = {"is_open": True, "timestamp": timestamp}
         with patch.object(alpaca_cli, "_context", return_value={}), patch.object(
             alpaca_cli, "_run", side_effect=[
                 {"cash": "99980.01", "equity": "99980.01", "last_equity": "100000.00"},
-                clock, [{"symbol": "SPY", "market_value": "89.99", "unrealized_pl": "-10.99"}],
-                0, {"price": "500", "timestamp": clock["timestamp"]},
+                clock, [], [{"symbol": "SPY", "market_value": "89.99", "unrealized_pl": "-10.99"}],
+                open_orders, {"price": "500", "timestamp": clock["timestamp"]},
                 [{"symbol": "BTC/USD", "bid": "49999", "ask": "50000", "quote_at": clock["timestamp"]}],
                 {"tradable": True, "status": "active", "overnight_tradable": True,
                  "overnight_halted": False},
@@ -53,6 +54,10 @@ class FixedRiskPolicyTest(unittest.TestCase):
         snapshot = self._provider_snapshot("2026-09-06T09:59:50.123456789-04:00")
         self.assertTrue(evaluate_entry(snapshot["risk"], "10.00", now=NOW)["approved"])
 
+    def test_boolean_open_order_count_fails_closed(self):
+        with self.assertRaisesRegex(ValueError, "^alpaca_allocator_shape_invalid$"):
+            self._provider_snapshot(open_orders=False)
+
     def test_exact_owner_caps_allow_only_below_or_at_limits(self):
         result = evaluate_entry(risk(), "10.00", now=NOW)
         self.assertTrue(result["approved"])
@@ -71,7 +76,8 @@ class FixedRiskPolicyTest(unittest.TestCase):
                 self.assertFalse(evaluate_entry(snapshot, loss, now=NOW)["approved"])
 
     def test_unknown_nonfinite_stale_or_wrong_day_fail_closed(self):
-        cases = [({}, "1"), (risk(allocated_capital_usd=math.nan), "1"),
+        cases = [({}, "1"), (risk(cash_flow_ny_day_usd=None), "1"),
+                 (risk(allocated_capital_usd=math.nan), "1"),
                  (risk(observed_at="2026-09-06T13:58:00Z"), "1"),
                  (risk(ny_day="2026-09-05"), "1")]
         for snapshot, loss in cases:
@@ -108,7 +114,7 @@ class FixedRiskPolicyTest(unittest.TestCase):
             "LIFE_MANAGER_INVESTMENT_MODE": "paper",
             "LIFE_MANAGER_INVESTMENT_DEPLOYMENT": "local",
             "ALPACA_INVESTMENT_STATE_DIR": directory,
-        }), patch.object(investment_run, "reconcile_started", return_value={"pending": 0, "reconciled": 0}), \
+        }), patch.object(investment_run, "reconcile_started", return_value={"pending": 0, "reconciled": 0, "unresolved": 0}), \
                 patch.object(investment_run, "observe", return_value=observation), \
                 patch.object(investment_run, "read_campaign_snapshot", return_value={}), \
                 patch.object(investment_run, "reconcile", return_value=campaign), \
