@@ -21,6 +21,21 @@ Measured incident evidence:
 - The associated WindowServer stack was blocked through TCC on `tccd`; `sandboxd` had reached its
   64-thread soft limit. Later WindowServer watchdog reports exist, including `2026-09-06`, so this
   is a live recurrence risk rather than a closed historical incident.
+- The `2026-09-06` incident was not a host reboot: `kern.boottime` and `last reboot` remain at
+  `2026-09-03 06:45:31 JST`. Jetsam reports at `14:09:05`, `14:14:47`, and `14:14:59` show about
+  `10.93-11.02 GiB` in the compressor with only `117-120 MiB` free. The first report contains 53
+  Node processes with about `20.0 GiB` aggregate resident-page footprint and 78 Chromium renderers
+  with about `9.8 GiB`; these are pressure attribution counters and can exceed physical RAM because
+  compressed/shared accounting overlaps, not additive physical-memory claims.
+- At `14:16:27`, WindowServer's main thread missed its check-in for 40 seconds while blocked through
+  TCC waiting for `tccd`; the console session ended at `14:16`. The host stayed booted but returned
+  to loginwindow. Manual console login at `18:18` recreated the Aqua session, after which user
+  LaunchAgents and Chromium owners resumed. Therefore the current failure boundary is GUI-session
+  loss under host-wide process/browser pressure, followed by an unowned pre-login gap.
+- Disk capacity is a separate failure class. The September 6 Jetsam and WindowServer reports prove
+  memory/compressor exhaustion and a TCC wait; they do not identify disk-full I/O as the trigger.
+  Disk headroom remains independently guarded because a full volume can break atomic state writes,
+  release construction and browser profiles, but disk cleanup is not the repair for this incident.
 - FileVault is off. `sysadminctl` reports automatic login user `anicca`, `autoLoginUser=anicca`, and
   `/etc/kcpassword` exists with root-only permissions. Manual password entry after the panic was not
   caused by missing normal auto-login configuration.
@@ -49,7 +64,17 @@ Execute exactly in this order:
    browser owner has a finite context/tab/renderer retention contract, stale resources are reclaimed
    only after ownership/open-file checks, and a sustained real workload no longer grows browser or
    TCC pressure without bound. Do not globally kill Chromium, WindowServer, tccd, sandboxd, Remote,
-   ChatGPT, Claude, or another loop.
+   ChatGPT, Claude, or another loop. Treat finite idempotent wakes, unique resource ownership,
+   host-headroom admission, durable cursors, bounded retry/backoff, and official effect receipts as
+   the shared loop-development contract; do not create a Coconala-only or browser-only supervisor.
+   First source-control atom: one host-wide CDP-port lease now fail-closes a second owner with
+   `browser_port_owned`/exit `75`, while distinct ports remain concurrent. Both the Life Manager
+   daily-driver and Job Search browser enter through this same primitive. Focused ownership and
+   dispatch tests pass (28), Job Search browser tests pass (38), and host tests pass (5). This is not
+   yet released or applied; the two already-running `9222` owners remain untouched because applying
+   the new contract must not kill or restart a live browser. The remaining PANIC-2 work is owner
+   inventory reconciliation, unique profile/PID enforcement, finite retention, and host-headroom
+   admission under sustained load.
 3. [ ] `PANIC-3` Install the recommended macOS 15.7.9 maintenance update, not the Tahoe major
    upgrade, in an explicitly approved maintenance window. This step requires a restart and therefore
    waits for user approval immediately before execution. PASS = exact OS/build readback, no missing
@@ -66,6 +91,226 @@ Execute exactly in this order:
 6. [ ] `PANIC-6` Close recurrence. PASS = seven days of normal concurrent loop load with no new
    WindowServer/tccd/sandboxd watchdog panic, bounded memory/browser counts, no unowned boot gap, and
    no duplicate external effect across recovery.
+
+### Active execution ownership
+
+Parallel work continues; one agent must not absorb every lane merely to avoid a handoff. Isolation
+comes from exact ownership, dedicated worktrees and receipt-based integration:
+
+| Owner | Current scope | May edit | Must not edit |
+|---|---|---|---|
+| PANIC/Paid owner (current Codex session) | `PANIC-2`, shared all-domain runtime contracts, Coconala Paid buyer outcomes | `runtime/loop`, shared browser ownership/admission only when required by `PANIC-2`, Paid-owned files, this control-plane spec | Apply or Storefront business behavior |
+| Apply Claude owner | Coconala Apply discovery, eligibility, submission and official application readback | Apply-owned entrypoint, adapter, fixtures and acceptance notes | Paid, Storefront or host-wide runtime primitives |
+| Storefront Claude owner | Coconala listing analysis, mutation, publication and official listing readback | Storefront-owned entrypoint, adapter, fixtures and acceptance notes | Paid, Apply or host-wide runtime primitives |
+
+Each owner fetches current public `main`, works in its own locked worktree and pushes one focused
+branch. If Apply or Storefront discovers a missing shared primitive, it records the required contract
+and failing fixture instead of creating a lane-local scheduler, browser manager, retry framework,
+ledger or watchdog. The PANIC/Paid owner implements that shared boundary once. Integration preserves
+all owner commits, then proves each lane independently from one public-main immutable release. The
+Claude owners should continue unless they are editing outside these boundaries or cannot provide a
+focused pushed commit and acceptance evidence.
+
+### Durable completion map
+
+This map retains every requested outcome so later sessions cannot forget it. It does not replace or
+reorder the `PANIC-1` through `PANIC-6` sequence above or the established Gig TODO sequence. Only the
+first unfinished item in the controlling sequence is active; process health and buyer/business
+completion remain separate.
+
+1. [ ] Complete `PANIC-2`: attribute every Node/Python/browser owner; enforce unique profile/port/PID,
+   finite runtime/worker/context/tab/renderer retention and host memory admission; defer work durably
+   under pressure and reclaim only owner-proven stale resources. The current first defect is the two
+   owners bound to CDP port `9222`.
+   - [x] Add and test one shared host-wide CDP-port ownership primitive; route Life Manager
+     daily-driver and Job Search through it in source control.
+   - [x] Reconcile the historical active-label fixture: the removed Telegram bot is explicitly
+     retired after its gateway cutover; production doctor remains green.
+   - [x] Add registry-level browser profile/port ownership validation and record six unique owners:
+     Affiliate provider/Impact/X, Gig, Lancers and the shared daily-driver. Duplicate declared
+     profiles or ports now fail registry validation before apply.
+   - [x] Route the Gig/Coconala browser launcher through the shared host-wide ownership primitive.
+     The wrapper owns the entire launcher/Chromium process tree, while existing vault restore and
+     signal forwarding remain unchanged. Focused launcher and ownership tests pass. The live Gig
+     browser was not restarted; enforcement begins on its next source-derived natural launch.
+   - [x] Route all three Affiliate browser owners through that same ownership primitive from their
+     single shared launcher. Provider, Impact and X retain their distinct declared profile and port;
+     focused launcher and ownership tests pass. Running browsers were not restarted, so enforcement
+     begins on each owner's next source-derived natural launch.
+   - [x] Route the Lancers browser launcher through that same ownership primitive with its declared
+     profile, port and owner. Focused ownership tests and shell parsing pass. The running browser was
+     not restarted; enforcement begins on its next source-derived natural launch.
+   - [x] Enforce runtime profile ownership in addition to the port lease. A second owner using the
+     same canonical profile on a different port now fails closed with `browser_profile_owned`, and
+     each live receipt attributes both the lease supervisor PID and browser-root PID without exposing
+     the profile path. Focused ownership tests pass (5).
+   - [x] Enforce a finite per-owner tab admission limit in the shared target registry. The default
+     is one live claimed tab per owner (matching Coconala's connector contract); room-scoped Paid
+     owners remain parallel. A racing surplus target is immediately closed, while foreign and
+     unowned targets remain untouched. Focused target-ownership tests pass (8).
+   - [x] Release an owner's leased BrowserContext when its final claimed tab closes, including
+     normal close, close-owned and hidden-target teardown. Contexts remain live while another tab
+     from that owner exists. Shared lease/ownership regression tests pass (32), bounding the seed
+     target and renderer lifetime without touching another owner's work.
+   - [x] Add one domain-neutral macOS memory-admission primitive under `runtime/host`. It reads the
+     native `memory_pressure -Q` free percentage, defaults to a 15% floor, persists a mode-`0600`
+     pass/deferred receipt, and exits `75` without starting new work when pressure is unsafe or
+     unmeasurable. Unit tests pass (4); no running process is killed or restarted.
+   - [x] Route Coconala Paid, Apply, Reply and Storefront through memory admission before their
+     existing disk guard. Their business argv and modes remain unchanged; only a new unsafe-memory
+     wake is deferred. Dispatch, memory and browser-owner tests pass (24).
+   - [x] Preserve that deferral as non-failure across both scheduler classes. Exit `75` now produces
+     a `blocked` runtime event with `memory_admission_deferred`, while the KeepAlive Reply owner uses
+     the shared admission wait mode and remains alive until headroom recovers instead of triggering a
+     launchd restart loop. Focused admission, dispatch, runner and event tests pass (35).
+   - [x] Route Gig's legacy `cdp_nav_snapshot.hidden_page_target` through the shared target-owner
+     ledger. It claims immediately after creation and releases after close; a killed helper leaves
+     an attributable row instead of an unknowable tab. New and existing navigation/ownership tests
+     pass (19).
+   - [x] Route session-vault localStorage, keepalive and X re-login targets through the same owner
+     ledger and put close/release in `finally` beginning immediately after target creation. Attach,
+     evaluate or navigation failure can no longer bypass cleanup. Session and ownership tests pass
+     (18).
+   - [x] Make the shared raw-CDP CLI require an explicit or environment owner for `new` and `close`.
+     New targets are atomically claimed under the same per-owner limit and closed on claim failure;
+     foreign close fails before any CDP mutation. Browser CLI/session/ownership tests pass (22).
+   - [x] Route the shared authenticated-page scout through target ownership with cleanup beginning
+     immediately after create. Attach/evaluate failures now close and release the target. A production
+     source audit finds seven remaining `Target.createTarget` paths; each is governed by the shared
+     target ledger, context-lease ledger, and/or immediate `finally` teardown. Browser tests pass (23).
+   - [ ] Close the remaining live-retention gap. A source-driven 25-cycle open/close probe left zero
+     lease and target-owner rows and did not increase page count (2 before/after). A later 5x10 probe
+     also left both ledgers empty and reduced Chromium RSS from 1.21 GiB to 1.06 GiB, but concurrent
+     old-release lanes moved total pages 3→5 and renderers 6→9. Four stable unowned legacy pages and
+     transient unowned hidden targets remain, so sustained host-wide boundedness is not yet proved.
+   - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
+     browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
+     ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
+     Chromium bound only IPv6 `[::1]:9222` and held one blank target. Retire that unused Life Manager
+     owner in source and make Job Search healthcheck verify `ai.anicca.life-manager-daily-driver`.
+     Keep the standalone OSS launcher available outside the Life Manager registry. Production still
+     runs the old dedicated owner until a separately safe, approved retirement removes its loaded
+     plist; no browser was stopped or restarted during this source atom.
+   - [x] Inventory every remaining browser/Node/Python owner, then enforce bounded
+     context/tab/renderer retention. Registered browser profile/port/PID ownership is now enforced.
+     A `2026-09-06 22:xx JST` read-only host inventory found 12 Chromium roots: six registry-owned,
+     CrowdWorks `:9228`, the source-retired but still-loaded Job Search owner, and four external
+     provisioned/user owners. The Gig owner held 12 pages and 17 renderers; nine pages were live,
+     PID-bound Paid/Apply/Storefront context leases, so global tab deletion would break legitimate
+     parallel work. The shared context lease now admits at most 16 simultaneous contexts per browser
+     by default (override range 1..128), reuses an existing owner's lease at the ceiling, and rejects
+     only a new context with `browser_context_limit`. Focused lease/GC/hang regressions pass (24).
+     Every registry-owned Chromium launcher now also passes a validated finite renderer process
+     limit: 24 for the shared daily-driver and parallel Gig browser (the observed valid load was 17),
+     and 8 for each single-purpose Affiliate and Lancers browser. Invalid limits outside 1..64 fail
+     before browser launch. Related daily-driver (10), Affiliate (9), Lancers dispatch (16), and Gig
+     launcher (3) tests pass. These are source gates only until a future immutable-main release reaches
+     each owner through its normal lifecycle; no live browser was restarted for this change.
+     The same inventory found scheduled `lm_loop_run` owners retaining Node/Python descendants without
+     any wrapper deadline (for example Affiliate source refresh at 1h49m). The shared runner now gives
+     every scheduled/calendar/run-at-load wake a one-hour terminal safety bound, forwards TERM to that
+     wake's isolated process group, waits 15 seconds, then KILLs only that group and records exit 124.
+     Continuous keep-alive owners remain exempt. Runner/cleanup regressions pass (20); production remains
+     on older immutable releases until the complete gate is merged and applied without browser restart.
+     Descendant aggregation separates Life Manager from 26 external Node processes: continuous non-browser
+     Life Manager services currently retain about one service child each, while OpenClaw/Claude/ChatGPT MCP
+     and provision-browser processes are external ownership and are never killed by this control plane.
+     CrowdWorks and provision-browser labels are explicitly registered as external; Job Search is the sole
+     source-retired browser still loaded from an older production release. Full registry apply now retires every
+     declared obsolete label through `launchctl-safe`, verifies it absent, then removes its plist; targeted apply
+     never expands into retirement. Apply regressions pass (37 plus 6 subtests). This remains an apply-time
+     retirement, not permission for an ad-hoc stop.
+     The browser-port owner now starts each browser root in a dedicated process group, forwards signals to that
+     group, and does not release port/profile receipts until all descendants have received bounded TERM/KILL
+     cleanup. A real regression spawns a 60-second grandchild after its root exits and proves the group cannot
+     survive lease release. The shared CDP client also honors the acquired `CDP` lease endpoint, and target
+     ownership defaults to one tab even when a caller omits its limit. Combined browser regressions pass (41).
+     This completes the source inventory/bounds atom; immutable-release
+     application and live boundedness readback remain part of the aggregate production gate below.
+2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
+   completed and replay-zero; advance every other actionable purchased room independently to a useful
+   buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal
+   delivery remains off unless the separately defined authority condition becomes true.
+   - [x] Bound historical terminal-room reconciliation so it cannot consume the Paid five-minute
+     cadence. Each wake rotates through at most one absent/terminal candidate with a dedicated
+     90-second collector timeout and 15-second owned-target cleanup budget (105 seconds worst case,
+     below half the cadence); buyer-targeted readback retains its separate 180-second timeout.
+     Paid-focused regression tests pass (108).
+   - [x] Production observation after release `363b78ce`: the install-time wake at `21:31 JST`
+     lost the per-label nonblocking apply lock and exited `78` once, then launchd naturally retried
+     at `21:36:12 JST` (`runs=2`, PID `16514`) without a kick, restart or browser intervention.
+     That exact run terminated naturally at `21:53:54 JST` with `entrypoint_exit_1`: observed `5`,
+     actionable `3`, readback `4`, failed `1`, pending `0`. Room `18180857` produced an official
+     TikTok login-recovery readback but the old release misclassified its blocked owner as
+     `remote_builder` failure; Ryu `18211957` reconciled to `awaiting_buyer`, formal delivery off,
+     with no duplicate send. This is the production counterexample covered by the next source fix.
+   - [x] Preserve a verified authentication-recovery blocker as retry-owned `pending`, not a
+     mechanical Paid failure. An unauthenticated wait is accepted only when the result remains
+     blocked with both required outcomes false and carries a provider-, URL- and readback-bound
+     authentication/login recovery receipt; an unauthenticated generic blocker still fails closed.
+     Paid regression tests pass on latest merged main (110). This closes the result-mapping defect in the
+     production `18180857` cycle, whose owner had reported no authenticated identity or available login form;
+     the separate readback false negative behind that report is covered next.
+   - [x] Replace project-local TikTok authentication guessing with one shared, owner-scoped official
+     identity readback. Production evidence showed the registered `tiktok-anicca-jp` profile rendering
+     signed-in navigation and `@anicca.jp`, while the project script rejected it solely because the
+     localized `プロフィールを編集` body string was absent. `skills/browser/scripts/tiktok_identity_readback.py`
+     now requires the official navigation's own-profile href to match the expected handle and requires
+     login controls to be absent; merely visiting a public `/@handle` page never authenticates a result,
+     and a different signed-in handle fails closed. It creates and closes only a target claimed through
+     the shared CDP ownership ledger. Browser skill discovery now resolves both TikTok `login` and
+     `message` to this shared contract and the registered `tiktok-anicca-jp` session. Focused CDP,
+     identity and resolver regressions pass (14). This is source-only until the complete immutable-main
+     release gate below; the currently loaded Paid owner remains on release `363b78ce` and is not stopped
+     or restarted.
+   - [x] Remove the circular Coconala identity gate from the remote owner/verifier stage. A natural Paid
+     cycle for Ryu `18211957` completed the requested Netlify revision and exact production readback, but
+     withheld the buyer handoff because it treated talkroom buyer link `/users/6256167` as a mismatch with
+     an assumed seller profile `/users/2564121`. The latter is not a Paid authentication SSOT, and the
+     remote stage cannot prove a Coconala send that intentionally occurs only after its own PASS. The
+     shared prompt contract now defines `required_output_satisfied` at this stage as verified remote output
+     plus an accurate handoff ready for the downstream code-owned Coconala connector. Remote owner and
+     verifier never open Coconala, never require or guess a fixed Coconala profile ID, and never interpret
+     a buyer profile link as seller identity. The existing connector alone owns authenticated presend,
+     formal-delivery-off enforcement, exact send and seller-message readback. Paid remote regressions pass
+     (89). This remains source-only until immutable release application and the natural Ryu retry prove the
+     complete effect.
+   - [ ] Release/readback gate for the two remaining live liabilities. The natural old-release aggregate
+     observed five rooms and three actionable rooms with `effect=0`, `readback=3`, `failed=1`, `pending=1`:
+     `18180857` is the old `remote_builder` authentication-result mapping failure and Ryu `18211957` is the
+     newly measured circular Coconala-profile pending state; `18223833` and `18171850` are replay-zero with
+     formal delivery off, and `18211838` is a replay-zero satisfied no-op. From one immutable main release,
+     require `18180857` to become retry-owned pending or complete, require Ryu's verified handoff to be sent
+     by the Coconala connector with exact seller-message readback and formal delivery off, and require the
+     aggregate to end with `failed=0`. The old wake also demonstrated that parallel project execution can
+     keep the parent alive for more than 29 minutes, preventing a new five-minute observation wake; after
+     these liabilities clear, separate bounded discovery cadence from long project progress without
+     spawning unmanaged orphan workers.
+3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
+   accounting, every authorized application submitted, exact official readback and replay-zero.
+4. [ ] Integrate the Storefront owner's focused public-main commit and require one verified authorized
+   listing effect or a truthful evidence-backed no-op, complete catalog/KPI readback and replay-zero.
+5. [ ] Prove the four Coconala lanes together from one immutable public-main release: Paid has
+   `failed=0`, Reply has no unowned actionable message, Apply has complete accounting, Storefront has
+   verified effect/no-op, and no lane waits on or mutates a sibling owner.
+6. [ ] Prove all-domain reuse with two real consumers: route one Coconala path and one non-gig loop
+   (first candidate: Affiliate) through the same lifecycle, admission, ownership, durable cursor,
+   retry, event and effect-receipt contracts before extracting any further abstraction.
+7. [ ] Complete the provider-neutral gig contract with Coconala plus one second live marketplace;
+   then add Lancers and CrowdWorks only as provider session/discovery/message/effect/readback adapters.
+8. [ ] Move remaining Affiliate, trading, publishing, social, health and future loops onto the shared
+   runtime when each is next changed; remove a duplicated primitive only after its replacement passes
+   that loop's existing official outcome check.
+9. [ ] Prove local/cloud continuity: equivalent durable work-item and receipt schemas, distributed
+   effect lease before multi-host execution, safe resume after worker loss and duplicate effects zero.
+10. [ ] Complete `PANIC-5` and `PANIC-6`: detect GUI/login gaps externally, send one deduplicated alert,
+    record recovery, then observe seven days of normal concurrent load with bounded memory/browser and
+    disk headroom, no new WindowServer watchdog and no duplicate external effect.
+
+`PANIC-3` and `PANIC-4` retain their original positions and approval requirements above. Current work
+stops at that boundary after `PANIC-2`; it does not silently advance the P0 sequence while the explicit
+no-restart instruction remains active. No later item may claim that an OS update or controlled reboot
+occurred until those acceptance steps are actually authorized and measured.
 
 ## 1. Overview
 
@@ -87,6 +332,22 @@ The control plane manages lifecycle. Existing loop adapters continue to own
 business effects through `plan → execute → reconcile → verify → report`.
 Individual loops MUST NOT implement their own installer, account switcher,
 release selector, monitor, or global cleanup policy.
+
+The control plane is domain-neutral. Gig marketplaces, affiliate revenue,
+trading, publishing, health and future money/life loops reuse the same lifecycle,
+capacity admission, resource ownership, durable cursor, bounded retry, event,
+effect-receipt and recovery primitives. Domain modules add only behavior proven
+common to two real consumers. Provider adapters add only API/DOM/session terms
+and official effect/readback. A loop adds only its objective, model context and
+cursor. New domains must not copy these primitives into their own skill tree or
+introduce a second scheduler, watchdog, provider router, event format or ledger.
+
+```text
+runtime/loop (all domains)
+  -> domain kernel (only proven domain behavior)
+    -> provider adapter (API/DOM/session/effect readback)
+      -> loop objective and cursor
+```
 
 ```mermaid
 flowchart TD

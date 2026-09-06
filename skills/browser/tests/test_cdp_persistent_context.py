@@ -54,6 +54,12 @@ raise SystemExit(1 if reason else 0)
 
 
 class CdpPersistentContextPreflightTests(unittest.TestCase):
+    def test_browser_has_a_finite_renderer_process_limit(self) -> None:
+        self.assertIn(
+            'f"--renderer-process-limit={renderer_limit}"',
+            SCRIPT.read_text(encoding="utf-8"),
+        )
+
     def test_persistent_context_disables_code_sign_clone(self) -> None:
         self.assertIn(
             '"--disable-features=MacAppCodeSignClone"',

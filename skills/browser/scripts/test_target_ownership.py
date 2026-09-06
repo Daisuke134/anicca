@@ -31,11 +31,31 @@ def test_registry_release_refuses_foreign_owner(tmp_path, monkeypatch):
     assert ownership.targets_for_owner("article-loop") == {"other-target"}
 
 
+def test_registry_fails_closed_at_owner_target_limit(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    ownership.claim_target("first", "paid-room", max_targets=1)
+
+    with pytest.raises(RuntimeError, match="browser_tab_limit"):
+        ownership.claim_target("second", "paid-room", max_targets=1)
+
+    assert ownership.targets_for_owner("paid-room") == {"first"}
+
+
+def test_registry_defaults_to_one_target_per_owner(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    ownership.claim_target("first", "paid-room")
+
+    with pytest.raises(RuntimeError, match="browser_tab_limit"):
+        ownership.claim_target("second", "paid-room")
+
+
 def test_registry_prunes_only_targets_missing_from_cdp(tmp_path, monkeypatch):
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
-    ownership.claim_target("live-foreign", "article-loop")
-    ownership.claim_target("stale-foreign", "article-loop")
+    ownership.claim_target("live-foreign", "article-loop", max_targets=2)
+    ownership.claim_target("stale-foreign", "article-loop", max_targets=2)
     ownership.claim_target("stale-caller", "gig-pass")
 
     assert ownership.prune_missing_targets({"live-foreign", "unregistered"}) == 2
@@ -46,8 +66,8 @@ def test_registry_prunes_only_targets_missing_from_cdp(tmp_path, monkeypatch):
 def test_gc_selects_only_callers_owned_surplus_targets(tmp_path, monkeypatch):
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
-    ownership.claim_target("gig-keep", "gig-pass")
-    ownership.claim_target("gig-close", "gig-pass")
+    ownership.claim_target("gig-keep", "gig-pass", max_targets=2)
+    ownership.claim_target("gig-close", "gig-pass", max_targets=2)
     ownership.claim_target("foreign", "article-loop")
 
     tabs = [
@@ -82,6 +102,49 @@ def test_default_tab_close_refuses_target_owned_by_another_loop(
     assert calls == []
 
 
+def test_closing_last_owned_tab_releases_owner_context(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    ownership.claim_target("owned", "paid")
+    calls = []
+    released = []
+
+    async def fake_call(method, params=None):
+        calls.append((method, params))
+        return {}
+
+    monkeypatch.setattr(default_tab, "_call", fake_call)
+    monkeypatch.setattr(
+        default_tab.cdp_context_lease,
+        "release",
+        lambda owner: released.append(owner) or {"ok": True},
+    )
+
+    assert default_tab.close_tab("owned", owner="paid")["ok"] is True
+    assert calls == [("Target.closeTarget", {"targetId": "owned"})]
+    assert released == ["paid"]
+
+
+def test_closing_one_of_multiple_owned_tabs_keeps_context(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    ownership.claim_target("first", "paid", max_targets=2)
+    ownership.claim_target("second", "paid", max_targets=2)
+
+    async def fake_call(_method, _params=None):
+        return {}
+
+    monkeypatch.setattr(default_tab, "_call", fake_call)
+    monkeypatch.setattr(
+        default_tab.cdp_context_lease,
+        "release",
+        lambda _owner: pytest.fail("context released while another tab remained"),
+    )
+
+    assert default_tab.close_tab("first", owner="paid")["ok"] is True
+    assert ownership.targets_for_owner("paid") == {"second"}
+
+
 def test_visible_tab_uses_owned_browser_context(tmp_path, monkeypatch):
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
@@ -110,6 +173,29 @@ def test_visible_tab_uses_owned_browser_context(tmp_path, monkeypatch):
     assert ownership.owner_for_target("visible-1") == "paid"
 
 
+def test_visible_tab_closes_new_target_when_owner_is_at_limit(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    monkeypatch.setenv("CLOAK_BROWSER_MAX_TABS_PER_OWNER", "1")
+    ownership.claim_target("existing", "paid")
+    monkeypatch.setattr(default_tab, "_lease", lambda owner: {
+        "ok": True, "context_id": f"context-{owner}",
+    })
+    calls = []
+
+    async def fake_call(method, params=None):
+        calls.append((method, params))
+        return {"targetId": "surplus"}
+
+    monkeypatch.setattr(default_tab, "_call", fake_call)
+
+    with pytest.raises(RuntimeError, match="browser_tab_limit"):
+        default_tab.open_tab("https://coconala.com/talkrooms/2", owner="paid")
+
+    assert calls[-1] == ("Target.closeTarget", {"targetId": "surplus"})
+    assert ownership.targets_for_owner("paid") == {"existing"}
+
+
 def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypatch):
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
@@ -126,6 +212,9 @@ def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypat
             raise
 
     monkeypatch.setattr(default_tab, "_lease", nested_lease)
+    monkeypatch.setattr(
+        default_tab.cdp_context_lease, "release", lambda _owner: {"ok": True}
+    )
 
     class FakeWebSocket:
         async def send(self, payload):

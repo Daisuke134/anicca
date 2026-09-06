@@ -12,6 +12,8 @@ Run: python3 -m pytest test_session_vault.py -v
 """
 import os
 import sys
+import asyncio
+import json
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import session_vault as sv  # noqa: E402
@@ -64,3 +66,101 @@ def test_instagram_sessionid_on_wrong_domain_does_not_count():
     final = "https://www.instagram.com/"
     cookies = [_cookie("sessionid", ".some-other-site.com")]
     assert sv._logged_out_for(url, final, cookies) is True
+
+
+def test_localstorage_attach_failure_still_closes_and_releases_target(monkeypatch):
+    events = []
+
+    class Socket:
+        last = None
+
+        async def send(self, payload):
+            self.last = json.loads(payload)
+            events.append(("send", self.last["method"]))
+
+        async def recv(self):
+            if self.last["method"] == "Target.createTarget":
+                return json.dumps({"id": self.last["id"], "result": {"targetId": "vault-tab"}})
+            if self.last["method"] == "Target.attachToTarget":
+                return json.dumps({"id": self.last["id"], "error": {"message": "attach failed"}})
+            return json.dumps({"id": self.last["id"], "result": {"success": True}})
+
+    class Connection:
+        async def __aenter__(self):
+            return Socket()
+
+        async def __aexit__(self, *_args):
+            return None
+
+    monkeypatch.setattr(sv, "LS_ORIGINS", ["https://coconala.com"])
+    monkeypatch.setattr(sv, "_browser_ws", lambda: "ws://browser")
+    monkeypatch.setattr(sv.websockets, "connect", lambda *_a, **_k: Connection())
+    monkeypatch.setattr(
+        sv.target_ownership,
+        "claim_target",
+        lambda target, owner: events.append(("claim", target, owner)),
+    )
+    monkeypatch.setattr(
+        sv.target_ownership,
+        "release_target",
+        lambda target, owner: events.append(("release", target, owner)),
+    )
+
+    assert asyncio.run(sv._localstorage("read")) == {}
+    assert events == [
+        ("send", "Target.createTarget"),
+        ("claim", "vault-tab", "session-vault-localstorage"),
+        ("send", "Target.attachToTarget"),
+        ("send", "Target.closeTarget"),
+        ("release", "vault-tab", "session-vault-localstorage"),
+    ]
+
+
+def test_keepalive_attach_failure_still_closes_and_releases_target(monkeypatch):
+    events = []
+
+    class Socket:
+        last = None
+
+        async def send(self, payload):
+            self.last = json.loads(payload)
+            events.append(("send", self.last["method"]))
+
+        async def recv(self):
+            if self.last["method"] == "Target.createTarget":
+                return json.dumps({"id": self.last["id"], "result": {"targetId": "keepalive-tab"}})
+            if self.last["method"] == "Target.attachToTarget":
+                return json.dumps({"id": self.last["id"], "error": {"message": "attach failed"}})
+            return json.dumps({"id": self.last["id"], "result": {"success": True}})
+
+    class Connection:
+        async def __aenter__(self):
+            return Socket()
+
+        async def __aexit__(self, *_args):
+            return None
+
+    monkeypatch.setattr(sv, "_browser_ws", lambda: "ws://browser")
+    monkeypatch.setattr(sv.websockets, "connect", lambda *_a, **_k: Connection())
+    monkeypatch.setattr(
+        sv.target_ownership,
+        "claim_target",
+        lambda target, owner: events.append(("claim", target, owner)),
+    )
+    monkeypatch.setattr(
+        sv.target_ownership,
+        "release_target",
+        lambda target, owner: events.append(("release", target, owner)),
+    )
+
+    try:
+        asyncio.run(sv._keepalive(["https://coconala.com"]))
+    except RuntimeError:
+        pass
+    assert events == [
+        ("send", "Target.createTarget"),
+        ("claim", "keepalive-tab", "session-vault-keepalive"),
+        ("send", "Target.attachToTarget"),
+        ("send", "Target.closeTarget"),
+        ("release", "keepalive-tab", "session-vault-keepalive"),
+    ]

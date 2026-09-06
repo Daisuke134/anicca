@@ -25,17 +25,18 @@ for NAME in ai.anicca.job-search-daily ai.anicca.job-search-inbox ai.anicca.job-
   fi
 done
 
-BROWSER_STATUS=$("$JOB_SEARCH_LAUNCHCTL" print "gui/$JOB_UID/ai.anicca.job-search-browser" 2>/dev/null | awk '
+BROWSER_LABEL="${JOB_SEARCH_BROWSER_OWNER_LABEL:-ai.anicca.life-manager-daily-driver}"
+BROWSER_STATUS=$("$JOB_SEARCH_LAUNCHCTL" print "gui/$JOB_UID/$BROWSER_LABEL" 2>/dev/null | awk '
   /^[[:space:]]*state =/ {state=$3}
   /^[[:space:]]*pid =/ {pid=$3}
   END {printf "state=%s pid=%s", state, pid}
 ')
 if [[ "$BROWSER_STATUS" != *"state=running"* || "$BROWSER_STATUS" == *"pid= " || "$BROWSER_STATUS" == *"pid=" ]]; then
-  echo "ai.anicca.job-search-browser unhealthy: $BROWSER_STATUS" >&2
+  echo "$BROWSER_LABEL unhealthy: $BROWSER_STATUS" >&2
   exit 1
 fi
 curl -fsS --max-time 5 http://127.0.0.1:9222/json/version >/dev/null
-echo "ai.anicca.job-search-browser $BROWSER_STATUS"
+echo "$BROWSER_LABEL $BROWSER_STATUS"
 
 "$JOB_SEARCH_PYTHON" - "$JOB_SEARCH_STATE_ROOT" "$JOB_SEARCH_PROFILE" <<'PY'
 import json

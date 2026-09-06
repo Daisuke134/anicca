@@ -258,6 +258,10 @@ Path(os.environ["GUARD_CAPTURE"]).write_text(
                     "GUARD_CAPTURE": str(guard_capture),
                     "CHROMIUM_CAPTURE": str(chromium_capture),
                     "LIFE_MANAGER_LOOP_ID": "job-search-mercor-browser",
+                    "JOB_SEARCH_BROWSER_PORT_OWNER": str(
+                        Path(__file__).parents[3] / "runtime/host/browser_port_owner.py"
+                    ),
+                    "JOB_SEARCH_BROWSER_PORT_STATE_DIR": str(root / "port-state"),
                 }
             )
             completed = subprocess.run(
@@ -369,7 +373,7 @@ raise SystemExit(1)
             'mkdir -p "$PROFILE"',
             'chmod 700 "$PROFILE"',
             "CHROMIUM_BIN=",
-            'exec "$CHROMIUM_BIN"',
+            'exec /usr/bin/python3 -I "$PORT_OWNER" run',
         ):
             self.assertLess(guard, TEXT.index(effect))
         self.assertIn(guard_invocation, TEXT)
@@ -400,6 +404,18 @@ raise SystemExit(1)
             "about:blank",
         ):
             self.assertIn(argument, TEXT)
+
+    def test_executes_chromium_through_shared_port_owner(self) -> None:
+        self.assertIn(
+            'PORT_OWNER="${JOB_SEARCH_BROWSER_PORT_OWNER-${SCRIPT_DIR:h:h:h}/runtime/host/browser_port_owner.py}"',
+            TEXT,
+        )
+        self.assertIn(
+            'exec /usr/bin/python3 -I "$PORT_OWNER" run',
+            TEXT,
+        )
+        self.assertIn('--owner "$BROWSER_STATE_NAME"', TEXT)
+        self.assertIn('-- "$CHROMIUM_BIN"', TEXT)
 
 
 if __name__ == "__main__":

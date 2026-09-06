@@ -7,6 +7,7 @@ import os
 import pwd
 import stat
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -19,6 +20,20 @@ _REMOVED_ENV = (
     "GIG_IGNORE_DISK_PRESSURE_BLOCK", "GIG_IGNORE_DISK_WRITERS_STOP",
     "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR", "LIFE_MANAGER_HOST_STATE_DIR",
 )
+
+
+def _exec_with_owner(port: int, profile: Path, owner: str) -> None:
+    owner_script = Path(__file__).resolve().parents[3] / "runtime/host/browser_port_owner.py"
+    if owner_script.is_symlink() or not owner_script.is_file() or not os.access(owner_script, os.R_OK):
+        raise RuntimeError("browser port owner is missing or unsafe")
+    environment = os.environ.copy()
+    environment["AFFILIATE_BROWSER_PORT_OWNED"] = "1"
+    argv = [
+        "/usr/bin/python3", "-I", str(owner_script), "run",
+        "--port", str(port), "--profile", str(profile), "--owner", owner,
+        "--", sys.executable, str(Path(__file__).resolve()),
+    ]
+    os.execve(argv[0], argv, environment)
 
 
 def _canonical_home() -> Path | None:
@@ -70,22 +85,41 @@ def _cdp_port() -> int | None:
     return port if 1 <= port <= 65_535 else None
 
 
+def _renderer_limit() -> int | None:
+    try:
+        limit = int(os.environ.get("AFFILIATE_BROWSER_RENDERER_LIMIT", "8"))
+    except (TypeError, ValueError):
+        return None
+    return limit if 1 <= limit <= 64 else None
+
+
 def main() -> int:
     if not _disk_preflight():
         return 1
     port = _cdp_port()
-    if port is None:
+    renderer_limit = _renderer_limit()
+    if port is None or renderer_limit is None:
         return 1
-    from cloakbrowser import launch_persistent_context
-
     profile = Path(
         os.environ.get("AFFILIATE_BROWSER_PROFILE", "~/.cloak/profiles/affiliate/en")
     ).expanduser()
+    if not profile.is_absolute():
+        return 1
+    if os.environ.get("AFFILIATE_BROWSER_PORT_OWNED") != "1":
+        owner = os.environ.get("LIFE_MANAGER_LOOP_ID", "affiliate-browser")
+        try:
+            _exec_with_owner(port, profile, owner)
+        except (OSError, RuntimeError):
+            return 1
+        return 1
+    from cloakbrowser import launch_persistent_context
+
     profile.mkdir(mode=0o700, parents=True, exist_ok=True)
     context = launch_persistent_context(
         str(profile), headless=False,
         args=[f"--remote-debugging-port={port}", "--remote-allow-origins=*",
-              "--disable-features=MacAppCodeSignClone"],
+              "--disable-features=MacAppCodeSignClone",
+              f"--renderer-process-limit={renderer_limit}"],
     )
     pages = context.pages
     page = pages[0] if pages else context.new_page()

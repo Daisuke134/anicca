@@ -100,6 +100,14 @@ class RuntimeEventTest(unittest.TestCase):
         self.assertEqual(event["effect_status"], "not_applicable")
         self.assertEqual(event["status"], "fail")
 
+    def test_deferred_work_is_blocked_not_failed(self):
+        event = build_runtime_event(
+            loop_id="example", domain="earn", run_id="run-1", release_sha="b" * 40,
+            provider="deterministic", profile_alias=None, effect_class="message",
+            succeeded=False, deferred=True, blocker="memory_admission_deferred",
+        )
+        self.assertEqual(event["status"], "blocked")
+
     def test_install_event_is_plan_truth_not_external_effect_truth(self):
         event = build_install_event(
             loop_id="example", domain="earn", release_sha="b" * 40,

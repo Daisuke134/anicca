@@ -23,8 +23,32 @@ fi
 GIG_BROWSER_PORT="${GIG_BROWSER_PORT:-9223}"
 GIG_BROWSER_PROFILE="${GIG_BROWSER_PROFILE:-$HOME/.cloak/profiles/gig-daily-driver}"
 GIG_BROWSER_FINGERPRINT="${GIG_BROWSER_FINGERPRINT:-80136}"
+GIG_BROWSER_RENDERER_LIMIT="${GIG_BROWSER_RENDERER_LIMIT:-24}"
 
 case "$GIG_BROWSER_PORT" in ''|*[!0-9]*) exit 64 ;; esac
+case "$GIG_BROWSER_RENDERER_LIMIT" in ''|*[!0-9]*) exit 64 ;; esac
+[ "$GIG_BROWSER_RENDERER_LIMIT" -ge 1 ] && [ "$GIG_BROWSER_RENDERER_LIMIT" -le 64 ] || exit 64
+if [ "${GIG_BROWSER_PORT_OWNED:-0}" != 1 ]; then
+  PORT_OWNER="${GIG_BROWSER_PORT_OWNER:-$GIG_SCRIPT_DIR/../../../../runtime/host/browser_port_owner.py}"
+  [ -f "$PORT_OWNER" ] && [ ! -L "$PORT_OWNER" ] && [ -r "$PORT_OWNER" ] || {
+    echo "Gig browser port owner is missing or unsafe" >&2
+    exit 1
+  }
+  if [ -n "${GIG_BROWSER_PORT_STATE_DIR:-}" ]; then
+    case "$GIG_BROWSER_PORT_STATE_DIR" in /*) ;; *) exit 64 ;; esac
+    exec /usr/bin/python3 -I "$PORT_OWNER" run \
+      --state-dir "$GIG_BROWSER_PORT_STATE_DIR" \
+      --port "$GIG_BROWSER_PORT" \
+      --profile "$GIG_BROWSER_PROFILE" \
+      --owner hf-gig-browser \
+      -- /usr/bin/env GIG_BROWSER_PORT_OWNED=1 "$0"
+  fi
+  exec /usr/bin/python3 -I "$PORT_OWNER" run \
+    --port "$GIG_BROWSER_PORT" \
+    --profile "$GIG_BROWSER_PROFILE" \
+    --owner hf-gig-browser \
+    -- /usr/bin/env GIG_BROWSER_PORT_OWNED=1 "$0"
+fi
 mkdir -p "$GIG_BROWSER_PROFILE"
 chromium_bin="$(
   ls -d "$HOME"/.cloakbrowser/chromium-*/Chromium.app/Contents/MacOS/Chromium \
@@ -86,6 +110,7 @@ esac
   --fingerprint-platform=macos \
   --remote-debugging-address=127.0.0.1 \
   --remote-allow-origins='*' \
+  --renderer-process-limit="$GIG_BROWSER_RENDERER_LIMIT" \
   --remote-debugging-port="$GIG_BROWSER_PORT" \
   --user-data-dir="$GIG_BROWSER_PROFILE" \
   about:blank &

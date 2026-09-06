@@ -32,8 +32,12 @@ from urllib.parse import urlparse
 SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
+BROWSER_SCRIPTS_DIR = SCRIPTS_DIR.parents[2] / "browser/scripts"
+if str(BROWSER_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(BROWSER_SCRIPTS_DIR))
 from application_eligibility import evaluate_application
 from market_snapshot import parse_market
+import target_ownership
 
 try:
     import websockets
@@ -119,6 +123,9 @@ def _browser_ws_url():
 @asynccontextmanager
 async def hidden_page_target(url):
     """Own one authenticated default-context target without adding a browser window tab."""
+    owner = target_ownership.require_owner(
+        os.environ.get("CLOAK_BROWSER_OWNER") or f"gig-nav-snapshot-{os.getpid()}"
+    )
     async with websockets.connect(
         _browser_ws_url(),
         ping_interval=None,
@@ -136,7 +143,10 @@ async def hidden_page_target(url):
         target_id = opened.get("result", {}).get("targetId")
         if not target_id:
             raise RuntimeError("hidden_target_create_missing_id")
+        claimed = False
         try:
+            target_ownership.claim_target(target_id, owner)
+            claimed = True
             yield (
                 f"ws://{urlparse(_cdp_base()).netloc}"
                 f"/devtools/page/{target_id}"
@@ -151,6 +161,9 @@ async def hidden_page_target(url):
                 )
             except Exception:
                 pass
+            finally:
+                if claimed:
+                    target_ownership.release_target(target_id, owner)
 
 
 async def _connect():

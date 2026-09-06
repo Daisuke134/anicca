@@ -126,9 +126,12 @@ def validate_runtime_event(event: dict) -> dict:
 def build_runtime_event(*, loop_id: str, domain: str, run_id: str, release_sha: str,
                         provider: str, profile_alias: str | None, effect_class: str,
                         succeeded: bool, blocker: str | None,
+                        deferred: bool = False,
                         evidence_scheme: str = "agent-runner") -> dict:
     timestamp = datetime.now(timezone.utc).isoformat()
-    status = "pass" if succeeded else "fail"
+    if succeeded and deferred:
+        raise ValueError("runtime event cannot be both succeeded and deferred")
+    status = "blocked" if deferred else ("pass" if succeeded else "fail")
     material = f"{release_sha}:{loop_id}:{run_id}:report:{status}"
     event = {
         "version": 1,

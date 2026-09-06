@@ -207,10 +207,29 @@ def validate_wait(root, feedback, digest, pass_start=0):
             or not _digest_matches(observed, digest)
             or not canonical_equal(desired, observed)):
         raise ValueError("remote wait state mismatch")
-    if (not intent.get("target") or result.get("target") != intent.get("target")
-            or result.get("authenticated") is not True):
-        raise ValueError("remote wait target mismatch")
     outcome = result.get("business_outcome")
+    receipts = outcome.get("official_receipts") if isinstance(outcome, dict) else None
+    authentication_wait = (
+        result.get("authenticated") is False
+        and isinstance(receipts, list)
+        and any(
+            isinstance(receipt, dict)
+            and receipt.get("kind") in {
+                "authentication_readback", "login_recovery_readback",
+                "seller_login_recovery_readback",
+            }
+            and isinstance(receipt.get("provider"), str)
+            and bool(receipt["provider"].strip())
+            and isinstance(receipt.get("url") or receipt.get("official_url"), str)
+            and bool((receipt.get("url") or receipt.get("official_url")).strip())
+            and isinstance(receipt.get("readback"), str)
+            and bool(receipt["readback"].strip())
+            for receipt in receipts
+        )
+    )
+    if (not intent.get("target") or result.get("target") != intent.get("target")
+            or result.get("authenticated") is not True and not authentication_wait):
+        raise ValueError("remote wait target mismatch")
     effect_done = outcome.get("required_effect_satisfied") if isinstance(outcome, dict) else None
     output_done = outcome.get("required_output_satisfied") if isinstance(outcome, dict) else None
     if (result.get("status") != "blocked" or not isinstance(outcome, dict)
@@ -221,7 +240,6 @@ def validate_wait(root, feedback, digest, pass_start=0):
             or not isinstance(result.get("blocker"), str)
             or not result["blocker"].strip()):
         raise ValueError("not an external wait")
-    receipts = outcome.get("official_receipts")
     if not isinstance(receipts, list) or not receipts:
         raise ValueError("remote wait receipt missing")
     readback_present = False

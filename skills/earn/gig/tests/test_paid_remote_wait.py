@@ -641,6 +641,37 @@ def test_paid_direct_maps_valid_blocked_owner_to_pending(tmp_path):
     ) == "pending"
 
 
+def test_paid_direct_maps_verified_authentication_blocker_to_pending(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    result_path = root / "delivery/paid-remote-result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["authenticated"] = False
+    result["business_outcome"]["official_receipts"] = [{
+        "provider": "provider.example",
+        "kind": "seller_login_recovery_readback",
+        "url": "https://provider.example/login",
+        "readback": "The provider rendered no authenticated owner view or login form.",
+    }]
+    write_json(result_path, result)
+
+    assert paid._remote_owner_checkpoint(
+        "blocked", root, feedback, digest, pass_start=0,
+    ) == "pending"
+
+
+def test_remote_wait_rejects_unauthenticated_non_authentication_blocker(tmp_path):
+    remote = load("paid_remote_result")
+    root, feedback, digest = blocked_project(tmp_path)
+    result_path = root / "delivery/paid-remote-result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["authenticated"] = False
+    write_json(result_path, result)
+
+    with pytest.raises(ValueError, match="remote wait target mismatch"):
+        remote.validate_wait(root, feedback, digest, pass_start=0)
+
+
 def test_normalizer_repairs_missing_blocker_from_first_remaining_work(tmp_path):
     paid = load("paid_direct")
     root, feedback, digest = blocked_project(tmp_path)
@@ -723,6 +754,21 @@ def test_remote_owner_prompt_searches_complete_repo_and_valid_shared_tools(tmp_p
     assert "write status=blocked and a nonempty blocker in paid-remote-result.json" in prompt
     assert "every wait receipt include nonempty provider, kind, and url or official_url fields" in prompt
     assert "readback_source and exact_readback=true" in prompt
+
+
+def test_remote_stage_leaves_coconala_delivery_to_verified_connector(tmp_path):
+    paid = load("paid_direct")
+    root, feedback, _digest = blocked_project(tmp_path)
+    requirements_sha = paid.paid_remote_result.requirements_digest(root, feedback)
+
+    for verifier in (False, True):
+        prompt = paid._repair_prompt(
+            root, tmp_path / "item.json", feedback, requirements_sha,
+            verifier, tmp_path / "cdp.py",
+        )
+        assert "does not mean the Coconala message is already sent" in prompt
+        assert "Never require or guess a fixed Coconala profile ID" in prompt
+        assert "code-owned Coconala connector" in prompt
 
 
 def test_paid_clients_use_independent_parallel_readbacks_and_browser_targets(tmp_path, monkeypatch):

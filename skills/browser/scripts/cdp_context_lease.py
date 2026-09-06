@@ -51,6 +51,19 @@ def _leases_path():
     )
 
 
+def _max_contexts():
+    raw = os.environ.get("CLOAK_BROWSER_MAX_CONTEXTS", "16")
+    try:
+        limit = int(raw)
+    except (TypeError, ValueError) as error:
+        raise ValueError(
+            "CLOAK_BROWSER_MAX_CONTEXTS must be an integer from 1 to 128"
+        ) from error
+    if not 1 <= limit <= 128:
+        raise ValueError("CLOAK_BROWSER_MAX_CONTEXTS must be an integer from 1 to 128")
+    return limit
+
+
 def _operation_lock_path(target_id):
     leases_dir = os.path.dirname(_leases_path())
     return os.path.join(leases_dir, "operations", f"{target_id}.lock")
@@ -281,6 +294,9 @@ def acquire(task, url="about:blank", no_seed=False):
                 leases[task] = held
                 _save(leases)
             return {"ok": True, "reused": True, **held}
+
+        if len(leases) >= _max_contexts():
+            raise RuntimeError("browser_context_limit")
 
         cookies = []
         vault_path = _vault_path()

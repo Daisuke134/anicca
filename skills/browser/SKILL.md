@@ -1,6 +1,6 @@
 ---
 name: browser-foundation
-description: Shared browser foundation every loop that drives the logged-in daily-driver Chromium (CDP :9222) must call FIRST — gig, clip, IG posting, Life Manager marketing, promote, warmup. Heals a dead browser, restores logins from the cookie vault so no human ever re-authenticates, and closes the tabs that pile up and kill Chromium. Read this before writing any new browser loop.
+description: Use when a Life Manager loop drives a registered Chromium identity, needs TikTok login, message, or authenticated-identity readback, leases CDP tabs or contexts, restores sessions, or handles browser resource pressure.
 disable-model-invocation: true
 ---
 
@@ -96,3 +96,18 @@ never releases, so run `cdp_context_lease.py gc --idle-min 45` from the healthch
 left holding.
 
 Rules: one context per task, always `release` when done, never touch another task's context.
+
+## TikTok authenticated identity readback
+
+Do not infer authentication from page body text or a public `/@handle` URL. Under the
+registered identity lease, use the shared adapter; it verifies the official navigation's
+own-profile link, rejects a different signed-in identity, and closes only its owned tab.
+
+```bash
+bash skills/browser/with-browser.sh tiktok-anicca-jp -- \
+  python3 skills/browser/scripts/tiktok_identity_readback.py \
+  --expected-handle @anicca.jp --owner paid-tiktok-readback
+```
+
+Exit `0` means the expected identity is authenticated. Exit `2` means logged out,
+indeterminate, or a different identity; consume its JSON status as an exact retry blocker.

@@ -10,12 +10,24 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from websocket import create_connection
 
+import target_ownership
 
-HOST = os.environ.get("CDP_HOST", "127.0.0.1")
-PORT = os.environ.get("CDP_PORT", "9222")
+
+def _endpoint() -> tuple[str, str]:
+    guarded = os.environ.get("CDP", "").strip()
+    if guarded:
+        parsed = urlsplit(guarded)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.port is None:
+            raise ValueError("CDP must be an absolute http(s) URL with an explicit port")
+        return parsed.hostname, str(parsed.port)
+    return os.environ.get("CDP_HOST", "127.0.0.1"), os.environ.get("CDP_PORT", "9222")
+
+
+HOST, PORT = _endpoint()
 BASE = f"http://{HOST}:{PORT}"
 
 
@@ -41,6 +53,31 @@ def _browser_call(method: str, params: dict) -> dict:
         return _rpc(ws, 1, method, params)
     finally:
         ws.close()
+
+
+def new_target(url: str = "about:blank", owner: str | None = None) -> str:
+    """Create one page and bind its lifecycle to the declared owner."""
+    owner = target_ownership.require_owner(owner)
+    target_id = _browser_call("Target.createTarget", {"url": url})["targetId"]
+    try:
+        target_ownership.claim_target(
+            target_id,
+            owner,
+            max_targets=int(os.environ.get("CLOAK_BROWSER_MAX_TABS_PER_OWNER", "1")),
+        )
+    except Exception:
+        _browser_call("Target.closeTarget", {"targetId": target_id})
+        raise
+    return target_id
+
+
+def close_target(target_id: str, owner: str | None = None) -> None:
+    """Close only a page proven to belong to the declared owner."""
+    owner = target_ownership.require_owner(owner)
+    if not target_ownership.owns_target(target_id, owner):
+        raise PermissionError(f"target {target_id} is not owned by {owner}")
+    _browser_call("Target.closeTarget", {"targetId": target_id})
+    target_ownership.release_target(target_id, owner)
 
 
 def _page(tid: str):
@@ -142,7 +179,10 @@ def main(argv: list[str]) -> int:
         raise SystemExit("usage: cdp.py new|nav|eval|screenshot|clickxy|insert|key|setfile|close ...")
     command, *args = argv
     if command == "new":
-        print(_browser_call("Target.createTarget", {"url": args[0] if args else "about:blank"})["targetId"])
+        print(new_target(
+            args[0] if args else "about:blank",
+            args[1] if len(args) > 1 else os.environ.get("CLOAK_BROWSER_OWNER"),
+        ))
     elif command == "nav":
         navigate(args[0], args[1]); print("OK")
     elif command == "eval":
@@ -159,7 +199,10 @@ def main(argv: list[str]) -> int:
     elif command == "setfile":
         print(json.dumps(set_file(args[0], args[1], args[2], int(args[3]) if len(args) > 3 else 0)))
     elif command == "close":
-        _browser_call("Target.closeTarget", {"targetId": args[0]}); print("CLOSED")
+        close_target(
+            args[0], args[1] if len(args) > 1 else os.environ.get("CLOAK_BROWSER_OWNER")
+        )
+        print("CLOSED")
     else:
         raise SystemExit(f"unknown command: {command}")
     return 0

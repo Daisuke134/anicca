@@ -72,13 +72,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--profile", required=True)
     parser.add_argument("--port", required=True)
+    parser.add_argument("--renderer-limit", default="24")
     parser.add_argument("--preflight-only", action="store_true")
     args = parser.parse_args(argv)
     try:
         port = int(args.port)
+        renderer_limit = int(args.renderer_limit)
     except (TypeError, ValueError):
         return 1
-    if not 0 <= port <= 65_535 or not _disk_preflight():
+    if not 0 <= port <= 65_535 or not 1 <= renderer_limit <= 64 or not _disk_preflight():
         return 1
     if args.preflight_only:
         return 0
@@ -93,6 +95,7 @@ def main(argv: list[str] | None = None) -> int:
             "--remote-debugging-address=127.0.0.1",
             "--remote-allow-origins=*",
             "--disable-features=MacAppCodeSignClone",
+            f"--renderer-process-limit={renderer_limit}",
             "--disk-cache-size=67108864",
             "--media-cache-size=33554432",
             f"--disk-cache-dir={_canonical_home() / '.cache' / 'life-manager-daily-driver'}",

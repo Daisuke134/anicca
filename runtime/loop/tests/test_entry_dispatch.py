@@ -11,6 +11,10 @@ from runtime.loop.entry_dispatch import command_for
 
 
 class EntryDispatchTest(unittest.TestCase):
+    def test_lancers_browser_has_a_finite_renderer_process_limit(self):
+        script = Path(__file__).parents[3] / 'runtime/legacy/lancers-revenue-browser/run.sh'
+        self.assertIn('--renderer-process-limit="$renderer_limit"', script.read_text())
+
     def _symphony_fixture(self, home: Path, content: bytes = b"symphony fixture") -> Path:
         artifact_dir = (
             home / '.local/libexec/openai-symphony/'
@@ -160,6 +164,11 @@ class EntryDispatchTest(unittest.TestCase):
     def test_life_manager_daily_driver_uses_release_dispatch_with_exact_argv(self):
         command = command_for('life-manager-daily-driver', Path('/release'), Path('/home'))
         self.assertEqual(command, [
+            sys.executable,
+            '/release/runtime/host/browser_port_owner.py',
+            'run', '--port', '9222',
+            '--profile', '/home/.cloak/profiles/daily-driver',
+            '--owner', 'life-manager-daily-driver', '--',
             '/home/.openclaw/skills/_shared/venv-cloak/bin/python',
             '/release/skills/browser/cdp_persistent_context.py',
             '--profile', '/home/.cloak/profiles/daily-driver',
@@ -183,6 +192,8 @@ class EntryDispatchTest(unittest.TestCase):
         command=command_for('hf-gig-paid-direct',Path('/release'),Path('/home'))
         self.assertEqual(command,[
             sys.executable,
+            '/release/runtime/host/memory_admission.py',
+            sys.executable,
             '/release/skills/earn/gig/scripts/gig_disk_guard.py',
             sys.executable,
             '/release/skills/earn/gig/scripts/paid_direct.py',
@@ -198,6 +209,10 @@ class EntryDispatchTest(unittest.TestCase):
         apply=command_for('hf-gig-apply-direct',root,home)
         reply=command_for('hf-gig-reply-detector',root,home)
         storefront=command_for('hf-gig-storefront-direct',root,home)
+        guard = [sys.executable, '/release/runtime/host/memory_admission.py']
+        self.assertEqual(apply[:2], guard)
+        self.assertEqual(reply[:5], guard + ['--wait-seconds','30','--'])
+        self.assertEqual(storefront[:2], guard)
         self.assertIn('--all-eligible',apply)
         self.assertEqual(reply[-5:],['--continuous','--poll-seconds','30','--workers','2'])
         self.assertEqual(storefront[-4:],['--effect','--auto-cadence','--full-interval-seconds','60'])

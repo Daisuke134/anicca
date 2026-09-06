@@ -79,6 +79,8 @@ class LaunchdTests(unittest.TestCase):
         self.assertIn('candidate / "workday-fast-path.json"', script)
         self.assertIn('candidate / "wake-report.json"', script)
         self.assertIn('"$STATUS" == *"state=running"*', script)
+        self.assertIn("ai.anicca.life-manager-daily-driver", script)
+        self.assertNotIn("ai.anicca.job-search-browser unhealthy", script)
         self.assertNotIn("ashby-fast-path-combined.json", script)
         self.assertNotIn("cat /Users/anicca/.openclaw/.env", script)
 

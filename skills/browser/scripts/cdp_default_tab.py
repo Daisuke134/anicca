@@ -50,6 +50,26 @@ def _lease(owner):
     return lease
 
 
+def _max_tabs_per_owner():
+    raw = os.environ.get("CLOAK_BROWSER_MAX_TABS_PER_OWNER", "1")
+    try:
+        limit = int(raw)
+    except ValueError as error:
+        raise ValueError("CLOAK_BROWSER_MAX_TABS_PER_OWNER must be a positive integer") from error
+    if limit < 1:
+        raise ValueError("CLOAK_BROWSER_MAX_TABS_PER_OWNER must be a positive integer")
+    return limit
+
+
+def _release_context_if_idle(owner):
+    if target_ownership.targets_for_owner(owner):
+        return None
+    released = cdp_context_lease.release(owner)
+    if not released.get("ok"):
+        raise RuntimeError(released.get("reason", "browser_context_release_failed"))
+    return released
+
+
 async def _call(method, params=None, timeout=20.0):
     """One CDP call on a fresh browser connection, bounded by `timeout`.
 
@@ -76,7 +96,13 @@ def open_tab(url, background=False, owner=None):
         "background": background,
     }))
     tid = opened["targetId"]
-    target_ownership.claim_target(tid, owner)
+    try:
+        target_ownership.claim_target(
+            tid, owner, max_targets=_max_tabs_per_owner()
+        )
+    except Exception:
+        asyncio.run(_call("Target.closeTarget", {"targetId": tid}))
+        raise
     return {
         "ok": True,
         "target_id": tid,
@@ -104,7 +130,17 @@ async def _serve_hidden_tab(url, owner=None):
                     raise RuntimeError(f"Target.createTarget: {msg['error']}")
                 target_id = msg["result"]["targetId"]
                 break
-        target_ownership.claim_target(target_id, owner)
+        try:
+            target_ownership.claim_target(
+                target_id, owner, max_targets=_max_tabs_per_owner()
+            )
+        except Exception:
+            await ws.send(json.dumps({
+                "id": 2,
+                "method": "Target.closeTarget",
+                "params": {"targetId": target_id},
+            }))
+            raise
         print(json.dumps({
             "ok": True,
             "target_id": target_id,
@@ -134,6 +170,7 @@ async def _serve_hidden_tab(url, owner=None):
                         break
             finally:
                 target_ownership.release_target(target_id, owner)
+                _release_context_if_idle(owner)
 
 
 def close_tab(target_id, owner=None):
@@ -145,6 +182,7 @@ def close_tab(target_id, owner=None):
         )
     asyncio.run(_call("Target.closeTarget", {"targetId": target_id}))
     target_ownership.release_target(target_id, owner)
+    _release_context_if_idle(owner)
     return {"ok": True, "closed": target_id, "owner": owner}
 
 
@@ -170,6 +208,11 @@ def close_owned_tabs(owner=None):
             closed.append(target_id)
         except Exception as error:
             errors.append({"target_id": target_id, "reason": str(error)[:160]})
+    if not errors:
+        try:
+            _release_context_if_idle(owner)
+        except Exception as error:
+            errors.append({"target_id": None, "reason": str(error)[:160]})
     return {
         "ok": not errors,
         "owner": owner,

@@ -33,6 +33,8 @@ import sys
 import time
 import urllib.request
 
+import target_ownership
+
 CDP_PORT = os.environ.get("SESSION_VAULT_PORT", "9222")
 CDP = f"http://127.0.0.1:{CDP_PORT}"
 VAULT_DIR = os.path.expanduser(os.environ.get("SESSION_VAULT_DIR", "~/.cloak/vault/daily-driver"))
@@ -95,9 +97,13 @@ async def _localstorage(op, data=None):
 
         origins = LS_ORIGINS if op == "read" else list((data or {}).keys())
         for origin in origins:
+            tid = None
+            claimed = False
             try:
                 t = await call("Target.createTarget", {"url": origin})
                 tid = t["targetId"]
+                target_ownership.claim_target(tid, "session-vault-localstorage")
+                claimed = True
                 sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
                 await asyncio.sleep(2)
                 if op == "read":
@@ -112,9 +118,19 @@ async def _localstorage(op, data=None):
                     expr = "".join(f"localStorage.setItem({json.dumps(k)},{json.dumps(v)});" for k, v in kv.items())
                     if expr:
                         await call("Runtime.evaluate", {"expression": expr}, sess=sess)
-                await call("Target.closeTarget", {"targetId": tid})
             except Exception:
-                continue  # one bad origin must not abort the whole snapshot
+                pass  # one bad origin must not abort the whole snapshot
+            finally:
+                if tid:
+                    try:
+                        await call("Target.closeTarget", {"targetId": tid})
+                    except Exception:
+                        pass
+                    finally:
+                        if claimed:
+                            target_ownership.release_target(
+                                tid, "session-vault-localstorage"
+                            )
     return out
 
 
@@ -285,24 +301,35 @@ async def _keepalive(urls):
         for url in urls:
             t = await call("Target.createTarget", {"url": url})
             tid = t["targetId"]
-            sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
-            await asyncio.sleep(4)  # let redirects/JS settle
-            hist = await call("Page.getNavigationHistory", sess=sess)
-            entries = hist.get("entries", [])
-            final = entries[hist.get("currentIndex", len(entries) - 1)]["url"] if entries else url
-            cookies = []
-            if "instagram.com" in url.lower():
-                cookies_res = await call("Storage.getCookies", {})
-                cookies = cookies_res.get("cookies", [])
-            page_text = ""
-            if "x.com" in url.lower():
-                r = await call("Runtime.evaluate",
-                               {"expression": "document.body ? document.body.innerText : ''",
-                                "returnByValue": True}, sess=sess)
-                page_text = r.get("result", {}).get("value", "") or ""
-            logged_out = _logged_out_for(url, final, cookies, page_text)
-            results.append({"url": url, "final": final, "logged_out": logged_out})
-            await call("Target.closeTarget", {"targetId": tid})
+            claimed = False
+            try:
+                target_ownership.claim_target(tid, "session-vault-keepalive")
+                claimed = True
+                sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
+                await asyncio.sleep(4)  # let redirects/JS settle
+                hist = await call("Page.getNavigationHistory", sess=sess)
+                entries = hist.get("entries", [])
+                final = entries[hist.get("currentIndex", len(entries) - 1)]["url"] if entries else url
+                cookies = []
+                if "instagram.com" in url.lower():
+                    cookies_res = await call("Storage.getCookies", {})
+                    cookies = cookies_res.get("cookies", [])
+                page_text = ""
+                if "x.com" in url.lower():
+                    r = await call("Runtime.evaluate",
+                                   {"expression": "document.body ? document.body.innerText : ''",
+                                    "returnByValue": True}, sess=sess)
+                    page_text = r.get("result", {}).get("value", "") or ""
+                logged_out = _logged_out_for(url, final, cookies, page_text)
+                results.append({"url": url, "final": final, "logged_out": logged_out})
+            finally:
+                try:
+                    await call("Target.closeTarget", {"targetId": tid})
+                finally:
+                    if claimed:
+                        target_ownership.release_target(
+                            tid, "session-vault-keepalive"
+                        )
     return results
 
 
@@ -356,8 +383,11 @@ async def _relogin_x():
 
         t = await call("Target.createTarget", {"url": "https://x.com/login"})
         tid = t["targetId"]
-        sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
+        claimed = False
         try:
+            target_ownership.claim_target(tid, "session-vault-relogin-x")
+            claimed = True
+            sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
             await asyncio.sleep(4)
 
             async def type_and_enter(x, y, text):
@@ -399,7 +429,13 @@ async def _relogin_x():
 
             return {"ok": True, "final_url": url}
         finally:
-            await call("Target.closeTarget", {"targetId": tid})
+            try:
+                await call("Target.closeTarget", {"targetId": tid})
+            finally:
+                if claimed:
+                    target_ownership.release_target(
+                        tid, "session-vault-relogin-x"
+                    )
 
 
 def relogin_x():

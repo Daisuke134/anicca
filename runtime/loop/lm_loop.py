@@ -215,11 +215,15 @@ def _release_from_plist(path: Path) -> str | None:
     return None
 
 
-def collect_live(registry: dict) -> tuple[dict, dict, dict, set[str], set[str]]:
+def collect_live(registry: dict, *, full_inventory: bool = True
+                 ) -> tuple[dict, dict, dict, set[str], set[str]]:
     loaded = parse_loaded(_launchctl("list"))
     disabled = parse_disabled(_launchctl("print-disabled", f"gui/{os.getuid()}"))
     plist_dir = Path.home() / "Library/LaunchAgents"
-    installed_paths = list(plist_dir.glob("ai.anicca.*.plist"))
+    installed_paths = (list(plist_dir.glob("ai.anicca.*.plist")) if full_inventory else [
+        plist_dir / f"{entry['label']}.plist" for entry in registry["loops"].values()
+        if (plist_dir / f"{entry['label']}.plist").is_file()
+    ])
     installed = {path.stem for path in installed_paths}
     releases, events = {}, {}
     for path in installed_paths:
@@ -244,6 +248,13 @@ def _select(rows: list[dict], target: str) -> list[dict]:
 
 
 def snapshot(registry: dict, target: str) -> list[dict]:
+    if target != "all" and target in registry["loops"]:
+        selected_registry = {**registry, "loops": {target: registry["loops"][target]}}
+        loaded, disabled, events, releases, _ = collect_live(
+            selected_registry, full_inventory=False)
+        return status_rows(
+            selected_registry, loaded=loaded, disabled=disabled, events=events,
+            installed_releases=releases)
     loaded, disabled, events, releases, installed = collect_live(registry)
     rows = resolver_rows(
         registry, loaded=loaded, disabled=disabled, events=events,
@@ -306,6 +317,41 @@ def _skip_if_not_loaded_idle(item: dict, release_sha: str,
             "skipped": "loaded-running"}
 
 
+def _retire_labels(registry: dict, agents_dir: Path, launchctl_safe: Path,
+                   current: Path, lock_path: Path | None) -> list[dict]:
+    results = []
+    domain = f"gui/{os.getuid()}"
+    for label in sorted(registry.get("retired_labels", [])):
+        with _apply_lock(current, _label_apply_lock_path(current, label, lock_path)):
+            service = f"{domain}/{label}"
+            present_rc, present_detail = _safe_launchctl(launchctl_safe, ["print", service])
+            absent = present_rc != 0 and bool(re.search(
+                r"(?i)(?:could not find service|service not found|\babsent\b)", present_detail))
+            if present_rc != 0 and not absent:
+                raise RuntimeError(
+                    f"{label}: retirement presence readback failed: {present_detail.strip()}")
+            if present_rc == 0:
+                bootout_rc, detail = _safe_launchctl(launchctl_safe, ["bootout", service])
+                if bootout_rc != 0:
+                    raise RuntimeError(f"{label}: retirement bootout failed: {detail.strip()}")
+                verify_rc, verify_detail = _safe_launchctl(launchctl_safe, ["print", service])
+                if verify_rc == 0:
+                    raise RuntimeError(f"{label}: retirement readback still loaded")
+                if not re.search(
+                        r"(?i)(?:could not find service|service not found|\babsent\b)",
+                        verify_detail):
+                    raise RuntimeError(
+                        f"{label}: retirement absence readback failed: {verify_detail.strip()}")
+            plist = agents_dir / f"{label}.plist"
+            removed = plist.is_file()
+            if removed:
+                plist.unlink()
+            results.append({"ok": True, "label": label, "retired": True,
+                            "was_loaded": present_rc == 0,
+                            "removed_plist": removed})
+    return results
+
+
 def activate_current(current: Path, release_root: Path,
                      lock_path: Path | None = None) -> None:
     current = Path(current).expanduser()
@@ -340,7 +386,8 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
     preflight_rc, detail = _safe_launchctl(launchctl_safe, ["preflight"])
     if preflight_rc:
         raise RuntimeError(f"launchctl-safe preflight failed: {detail.strip()}")
-    results = []
+    results = (_retire_labels(registry, agents_dir, launchctl_safe, current, lock_path)
+               if target is None else [])
     for item in plan:
         item_lock = (None if reload_running else
                      _label_apply_lock_path(current, item["label"], lock_path))

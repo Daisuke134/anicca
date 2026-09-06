@@ -362,6 +362,9 @@ def test_browser_script_preflights_before_profile_and_chromium_with_fixed_policy
     assert "GIG_DISK_HEADROOM_KIB=524288" in script
     assert 'GIG_HOST_STATE_DIR="$HOME/.openclaw/state"' in script
     assert 'GIG_STATE_DIR="$HOME/gig"' in script
+    assert 'runtime/host/browser_port_owner.py' in script
+    assert '--owner hf-gig-browser' in script
+    assert 'GIG_BROWSER_PORT_OWNED=1' in script
     assert "unset GIG_IGNORE_DISK_PRESSURE_BLOCK GIG_IGNORE_DISK_WRITERS_STOP" in script
     assert "unset DISK_CONTROL_STATE_DIR OPENCLAW_STATE_DIR LIFE_MANAGER_HOST_STATE_DIR" in script
     assert "export GIG_DISK_HEADROOM_KIB GIG_HOST_STATE_DIR GIG_STATE_DIR" in script
@@ -641,6 +644,11 @@ def test_all_coconala_chromium_launches_disable_code_sign_clone():
     ]
     for script in scripts:
         assert "--disable-features=MacAppCodeSignClone" in script.read_text()
+
+
+def test_coconala_browser_has_a_finite_renderer_process_limit():
+    source = (GIG_ROOT / "scripts" / "launch_gig_browser.sh").read_text()
+    assert '--renderer-process-limit="$GIG_BROWSER_RENDERER_LIMIT"' in source
 
 
 def test_browser_launcher_restores_vault_after_cdp_is_ready(tmp_path):
