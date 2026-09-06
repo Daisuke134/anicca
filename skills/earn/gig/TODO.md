@@ -130,14 +130,25 @@ Two measured facts decide the standard, and they point in opposite directions:
    holds no `openclaw` reference and no absolute binary path, one natural
    `ai.anicca.hf-gig-apply-direct` wake delivers its report through `_shared/telegram.py`, and the
    returned Telegram `message_id` is recorded in the outbox receipt. A local send is not PASS.
-2. [ ] `APPLY-REPORT-2` Remove the last CrowdWorks shell-out. PASS = `earn/crowdworks/scripts/account.py:422`
-   sends through `telegram_delivery.send_via_shared_client`, one natural credential-request wake
-   delivers with a recorded `message_id`, and no gig lane production source contains the string
-   `openclaw`.
+2. [ ] `APPLY-REPORT-2` Remove the last CrowdWorks Apply shell-out. PASS = `earn/crowdworks/scripts/account.py`
+   sends through `telegram_delivery.send_via_shared_client` and resolves its chat from
+   `CROWDWORKS_REPORT_CHAT` rather than a repository literal, and one natural credential-request
+   wake delivers with a recorded `message_id`.
+   **Scope correction, measured 2026-09-06:** the original wording said *no gig lane production
+   source* contains `openclaw`. That is not reachable by this owner. Coconala holds a second
+   `OpenClawTelegramTransport` at `telegram_report.py:2033` used by `paid_direct.py`,
+   `ask_buyer_pass.py`, `checkpoint_via_tg.py` and `retainer_lane.py`, plus a third exec in
+   `storefront_direct.py`. Those belong to the Paid and Storefront owners and are not touched here.
+   The Apply sources are the scope; retiring the Paid and Storefront copies is `PAID-REPORT-1` and
+   `STOREFRONT-REPORT-1` below, for those owners to take.
 3. [ ] `APPLY-REPORT-3` Make the non-dependency machine-checked instead of remembered. PASS = the check
-   already proven at `earn/marketing-engine/intel/verify_gate9.py:192` — assert no source file
-   contains `openclaw`, record `openclaw_dependency: false` — runs over the Apply sources of all
-   three platforms and fails when one reappears.
+   already proven at `earn/marketing-engine/intel/verify_gate9.py:192` — assert the named sources
+   contain no `openclaw` and no `/opt/homebrew`, record `openclaw_dependency: false` — runs over the
+   Apply sources of all three platforms (`earn/gig/scripts/apply_telegram_report.py`,
+   `earn/gig/scripts/application_direct.py`, `earn/lancers/scripts/application_tick.py`,
+   `earn/crowdworks/scripts/account.py`, `earn/crowdworks/scripts/application_tick.py`,
+   `earn/crowdworks/scripts/telegram_report.py`) and fails when one reappears. An allow-list of
+   files, not a repository-wide scan, because other owners' lanes are mid-flight.
 4. [ ] `APPLY-REPORT-4` Fold Coconala's diverged outbox back into the shared one. PASS = the 794-line
    divergence is gone, `earn/gig/scripts/telegram_outbox.py` no longer exists as a second
    implementation, and Coconala Apply still delivers exactly once across a restart.
@@ -147,6 +158,14 @@ Two measured facts decide the standard, and they point in opposite directions:
    **Sequencing constraint:** four Coconala scripts import this module and the Paid owner is editing
    that lane concurrently, so start this only after `COCONALA-PAID-3A` settles. Load it by path in
    the meantime; do not copy it. `APPLY-REPORT-1` through `4` carry no such constraint and do not wait.
+
+Two items measured here belong to other owners and are recorded so they are not lost. This owner
+does not start them and does not reorder anyone's cursor to fit them:
+
+- [ ] `PAID-REPORT-1` (Paid owner) Retire `earn/gig/scripts/telegram_report.py:2033`
+  `OpenClawTelegramTransport`, used by `paid_direct.py`, `ask_buyer_pass.py`, `checkpoint_via_tg.py`
+  and `retainer_lane.py`. Same transport, same defect, different owner.
+- [ ] `STOREFRONT-REPORT-1` (Storefront owner) Retire the `openclaw` exec in `storefront_direct.py`.
 
 What is true once all five are checked: a stranger clones this repository, sets `TELEGRAM_BOT_TOKEN`
 and `TELEGRAM_CHAT_ID`, runs an Apply lane, and receives the same reporting Dais receives today —

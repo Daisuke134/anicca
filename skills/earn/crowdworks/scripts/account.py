@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import errno, fcntl
+import importlib.util
 import json, os, re, shlex, signal, subprocess, sys, tempfile, time, uuid
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Sequence, TextIO
@@ -16,7 +17,7 @@ PROFILE_DIR=str(Path("~/.local/state/anicca/crowdworks/browser-profile").expandu
 SESSION_VAULT_DIR=str(Path("~/.local/state/anicca/crowdworks/session-vault").expanduser()); SESSION_VAULT_PORT=str(CDP_PORT); VAULT_DIR=SESSION_VAULT_DIR
 LOGIN_URL="https://crowdworks.jp/login"; DASHBOARD_URL="https://crowdworks.jp/dashboard"; PASSWORD_RESET_URL="https://crowdworks.jp/password_reset_requests/new"; PASSWORD_RESET_COMPLETE_URL="https://crowdworks.jp/password_reset_requests/complete"; SIGNUP_URL="https://crowdworks.jp/user/new_email"
 SIGNUP_STEP1_URL="https://crowdworks.jp/user/register/step/1"; SIGNUP_STEP2_URL="https://crowdworks.jp/user/register/step/2"; PROFILE_SSOT=Path("~/.config/anicca/job-search/profile.json").expanduser()
-KEYCHAIN_SERVICE="ai.anicca.crowdworks.login"; TELEGRAM_TARGET="8547730585"; BROWSER_ROOT=Path("~/.cloakbrowser").expanduser(); BROWSER_BINARY=str(BROWSER_ROOT/"Chromium.app/Contents/MacOS/Chromium")
+KEYCHAIN_SERVICE="ai.anicca.crowdworks.login"; BROWSER_ROOT=Path("~/.cloakbrowser").expanduser(); BROWSER_BINARY=str(BROWSER_ROOT/"Chromium.app/Contents/MacOS/Chromium")
 CREDENTIALS_PATH=Path("~/.local/share/anicca/credentials.json").expanduser()
 ACCOUNT_RESULT_FIELDS=("ok","platform","authenticated","status","role","request_id","error")
 ACCOUNT_INTERFACES={"run_status":"(*, ownership_checker, browser_factory) -> AccountResult","run_ensure":"(*, state_path: Path, allow_signup: bool, ownership_checker, browser_factory, vault_restorer, vault_dumper, credential_loader, notifier, now) -> AccountResult","answer_request":"(*, request_id: str, state_path: Path, input_stream, credential_writer) -> AccountResult","run_signup":"(*, state_path: Path, ownership_checker, browser_factory, mail_reader, profile_reader, password_generator, credential_writer, now) -> AccountResult"}
@@ -417,11 +418,36 @@ def _write_credential(service:str,account:str,value:str)->None:
     try:
         import keyring;keyring.set_password(service,account,value)
     except Exception:raise _Error("credential_write_failed") from None
+ROOT=Path(__file__).resolve().parents[4]
+DELIVERY_PATH=ROOT/"skills"/"_shared"/"marketplace-core"/"scripts"/"telegram_delivery.py"
+CHAT_CONFIG=Path("~/.config/anicca/crowdworks/telegram.env").expanduser()
+def _report_chat()->str:
+    """Where the credential request goes; never a repository literal, so a clone cannot message a stranger."""
+    for key in ("CROWDWORKS_REPORT_CHAT","GIG_REPORT_CHAT"):
+        value=os.environ.get(key,"").strip()
+        if value:return value
+    try:lines=CHAT_CONFIG.read_text(encoding="utf-8").splitlines()
+    except OSError:return ""
+    for raw in lines:
+        name,_,value=raw.partition("=")
+        if name.strip() in ("CROWDWORKS_REPORT_CHAT","GIG_REPORT_CHAT"):return value.strip()
+    return ""
+def _delivery():
+    """The sender Lancers and the CrowdWorks reporter already share. Never a CLI: launchd gives a
+    job no PATH, so shelling out to a Homebrew binary fails as process_not_started and this lane
+    stops asking for the credentials it is blocked on -- silently, while exiting 0."""
+    name="crowdworks_account_delivery"
+    if name in sys.modules:return sys.modules[name]
+    spec=importlib.util.spec_from_file_location(name,DELIVERY_PATH)
+    if spec is None or spec.loader is None:raise _Error("notification_failed")
+    module=importlib.util.module_from_spec(spec);sys.modules[name]=module
+    spec.loader.exec_module(module);return module
 def _notify(message:str)->Mapping[str,str]:
     try:
-        r=subprocess.run(["openclaw","message","send","--channel","telegram","--target",TELEGRAM_TARGET,"--message",message,"--json"],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,check=False)
-        if getattr(r,"returncode",1)!=0:raise RuntimeError
-        value=json.loads(getattr(r,"stdout",""));receipt=_receipt(value) or _receipt(value.get("result") if isinstance(value,Mapping) else None)
+        target=_report_chat()
+        if not target:raise RuntimeError
+        result=_delivery().send_via_shared_client(message,chat_id=target)
+        receipt=_receipt(getattr(result,"provider_id",None))
         if receipt is None:raise RuntimeError
         return {"message_id":receipt}
     except Exception:raise _Error("notification_failed") from None
