@@ -54,6 +54,27 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `ENOSPC`, then determine whether exit 143 remains independently. Close only after two consecutive
    natural PASS terminals with `failed=0`, exact Ryu replay-zero and formal delivery off. A process
    status alone is not PASS.
+
+   Execute the remaining substeps in this order without waiting for another marketplace owner:
+
+   - [ ] `COCONALA-PAID-3A` Finish Ryu's current revision cycle. The authenticated talkroom snapshot
+     at `2026-09-06T09:19:43Z` contains ten recent buyer messages, reports
+     `buyer_feedback_pending_artifact=true`, and includes corrections newer than the last seller
+     response to the survey, usage guide and schedule display. Project state has an active
+     `resubmit` effect for feedback digest
+     `b23a26d974fe49eb9e5d1021773496770f048c3917c413e947a70a48fdf2d67c`; Paid wake
+     `18d2b0bdd57803a0-11535` is running, but no terminal or new seller-send receipt exists yet.
+     PASS = Paid itself compiles the complete current feedback, repairs and independently verifies the public
+     site, sends one truthful review URL in room `18211957`, reads that exact message back, leaves
+     formal delivery off, and replays the same feedback with effect zero. Previous seller messages
+     do not satisfy this newer feedback cycle.
+   - [ ] `COCONALA-PAID-3B` Cover every current client in one aggregate. PASS = every observed room
+     appears exactly once as completed, awaiting buyer, or durably retry-owned; `failed=0`; one slow
+     client does not prevent another client from progressing. “Observed” does not require a message
+     when official state proves that waiting or no-op is correct.
+   - [ ] `COCONALA-PAID-3C` Prove continuous local ownership. PASS = no `ENOSPC`, reconciliation
+     `OSError`, exit 120 or exit 143, followed by two consecutive natural PASS terminals and zero
+     duplicate external effects.
 4. [ ] `SHARED-PAID-1` Use Lancers as the second real Paid platform and extraction trigger.
    PASS = implement one provider-neutral Paid entrypoint from
    `skills/loop-engineering/references/marketplace-paid-lane.md`, moving only orchestration already
