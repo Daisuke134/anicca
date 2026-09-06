@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
+import argparse
 import fcntl
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -25,6 +27,7 @@ MUTATIONS = frozenset({"answer", "submit", "formal_delivery", "cancel"})
 class PaidAdapter(Protocol):
     def observe_active(self) -> list[dict[str, Any]]: ...
     def observe_one(self, work_id: str) -> dict[str, Any]: ...
+    def context(self, work_id: str) -> dict[str, Any]: ...
     def mutate(self, intent: dict[str, Any]) -> None: ...
     def readback(self, intent: dict[str, Any]) -> dict[str, Any]: ...
 
@@ -150,7 +153,10 @@ def _run_one_locked(adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Map
         if official.get("authoritative_absent") is not True:
             return _pending(row, "reconcile_unknown")
 
-    decision = decide(dict(row))
+    context = adapter.context(row["work_id"])
+    if not isinstance(context, Mapping):
+        raise ValueError("paid_context_invalid")
+    decision = decide({**row, "context": dict(context)})
     if not isinstance(decision, Mapping):
         raise ValueError("paid_decision_invalid")
     action = _text(decision.get("action"), "action")
@@ -231,3 +237,47 @@ def run_wake(*, adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Mapping
         "pending": sum(item["status"] == "pending" for item in items),
         "items": items,
     }
+
+
+def _load_provider(path: Path, argv: list[str]):
+    candidate = path.expanduser().resolve()
+    if path.is_symlink() or not candidate.is_file():
+        raise ValueError("paid_provider_adapter_invalid")
+    name = "marketplace_paid_provider_" + hashlib.sha256(str(candidate).encode()).hexdigest()
+    spec = importlib.util.spec_from_file_location(name, candidate)
+    if spec is None or spec.loader is None:
+        raise ValueError("paid_provider_adapter_invalid")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    build = getattr(module, "build", None)
+    if not callable(build):
+        raise ValueError("paid_provider_adapter_invalid")
+    built = build(argv)
+    if not isinstance(built, tuple) or len(built) != 2 or not callable(built[1]):
+        raise ValueError("paid_provider_adapter_invalid")
+    adapter, decide = built
+    for method in ("observe_active", "observe_one", "context", "mutate", "readback"):
+        if not callable(getattr(adapter, method, None)):
+            raise ValueError("paid_provider_adapter_invalid")
+    return adapter, decide
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--provider-adapter", required=True, type=Path)
+    parser.add_argument("--state-root", required=True, type=Path)
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--max-workers", type=int, default=4)
+    args, provider_argv = parser.parse_known_args(argv)
+    if provider_argv[:1] == ["--"]:
+        provider_argv = provider_argv[1:]
+    adapter, decide = _load_provider(args.provider_adapter, provider_argv)
+    result = run_wake(adapter=adapter, decide=decide,
+                      state_root=args.state_root.expanduser().resolve(),
+                      max_workers=args.max_workers)
+    _write(args.output.expanduser().resolve(), result)
+    return int(result["failed"] > 0)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 import threading
 import time
+import json
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "paid_kernel.py"
@@ -39,6 +40,9 @@ class Adapter:
 
     def observe_one(self, work_id: str) -> dict:
         return dict(self.current[work_id])
+
+    def context(self, work_id: str) -> dict:
+        return {"requirements": "complete " + work_id, "attachments": []}
 
     def mutate(self, intent: dict) -> None:
         with getattr(self, "lock", _NullLock()):
@@ -140,4 +144,44 @@ def test_one_failed_decision_does_not_stop_ready_sibling(tmp_path: Path) -> None
     assert result["items"][0] == {
         "work_id": "bad", "status": "failed", "reason": "RuntimeError",
         "effect": 0, "readback": 0, "failed": 1,
+    }
+
+
+def test_model_decision_receives_provider_neutral_cumulative_context(tmp_path: Path) -> None:
+    adapter = Adapter([observation("work-1")])
+    received = []
+
+    def decide(row: dict) -> dict:
+        received.append(row)
+        return {"action": "noop"}
+
+    paid.run_wake(adapter=adapter, decide=decide, state_root=tmp_path)
+    assert received == [{**observation("work-1"), "context": {
+        "requirements": "complete work-1", "attachments": []
+    }}]
+
+
+def test_one_cli_loads_provider_without_provider_branching(tmp_path: Path) -> None:
+    provider = tmp_path / "provider.py"
+    provider.write_text("""
+class Adapter:
+    def observe_active(self): return []
+    def observe_one(self, work_id): raise AssertionError
+    def context(self, work_id): raise AssertionError
+    def mutate(self, intent): raise AssertionError
+    def readback(self, intent): raise AssertionError
+def decide(row): raise AssertionError
+def build(argv):
+    assert argv == ["--account", "seller-1"]
+    return Adapter(), decide
+""", encoding="utf-8")
+    output = tmp_path / "result.json"
+    rc = paid.main([
+        "--provider-adapter", str(provider), "--state-root", str(tmp_path / "state"),
+        "--output", str(output), "--", "--account", "seller-1",
+    ])
+    assert rc == 0
+    assert json.loads(output.read_text(encoding="utf-8")) == {
+        "effect": 0, "failed": 0, "items": [], "observed": 0,
+        "pending": 0, "readback": 0, "status": "ok",
     }
