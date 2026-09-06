@@ -91,7 +91,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         "affiliate-loop": [str(affiliate), "loop", "wake"],
         "affiliate-source-refresh": [str(affiliate), "sources", "wake"],
         "clip-loop": [python, str(scheduled), "clip"],
-        "marketing-dashboard": [python, str(scheduled), "dashboard"],
         "marketing-metrics-daily": [python, str(scheduled), "metrics"],
         "marketing-mine-daily": [python, str(scheduled), "mine"],
         "marketing-score-daily": [python, str(scheduled), "score"],

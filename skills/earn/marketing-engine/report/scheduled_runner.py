@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import sys
 
@@ -44,13 +45,20 @@ def resolve_command(command: list[str]) -> list[str]:
     return [part.format(**values) for part in command]
 
 
+def default_roots(environment: dict[str, str] | None = None) -> tuple[pathlib.Path, pathlib.Path]:
+    env = os.environ if environment is None else environment
+    root = pathlib.Path(env.get("LIFE_MANAGER_STATE_ROOT", str(HERE.parent)))
+    return root / "state", root / "evidence" / "runs"
+
+
 def main(argv: list[str] | None = None) -> int:
+    default_state, default_evidence = default_roots()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("runner", choices=sorted(run_contract.RUNNERS))
     parser.add_argument("--state-root", type=pathlib.Path,
-                        default=HERE.parent / "state")
+                        default=default_state)
     parser.add_argument("--evidence-root", type=pathlib.Path,
-                        default=HERE.parent / "evidence" / "runs")
+                        default=default_evidence)
     parser.add_argument("--no-send", action="store_true")
     parser.add_argument("--timeout", type=int)
     args = parser.parse_args(argv)

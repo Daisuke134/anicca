@@ -15,7 +15,7 @@ FIELDS = {
     "label", "domain", "entrypoint", "cadence", "effect_class", "state_root",
     "log_root", "cleanup", "provider_route",
 }
-OPTIONAL_FIELDS = {"browser_owner"}
+OPTIONAL_FIELDS = {"adapter", "browser_owner", "command"}
 SECRET_FIELD = re.compile(r"token|secret|password|credential|auth|api.?key", re.I)
 
 
@@ -57,6 +57,18 @@ def validate_registry(registry: dict) -> dict:
             _fail(f"{loop_id}: invalid effect_class")
         if row["provider_route"] not in ROUTES:
             _fail(f"{loop_id}: invalid provider_route")
+        adapter_present = "adapter" in row
+        command_present = "command" in row
+        if adapter_present != command_present:
+            _fail(f"{loop_id}: adapter and command must be declared together")
+        if adapter_present:
+            adapter = row["adapter"]
+            command = row["command"]
+            if adapter != "python":
+                _fail(f"{loop_id}: invalid adapter")
+            if (not isinstance(command, list) or not command
+                    or any(not isinstance(part, str) or not part for part in command)):
+                _fail(f"{loop_id}: command must contain non-empty strings")
         entrypoint = row["entrypoint"]
         path = PurePosixPath(entrypoint) if isinstance(entrypoint, str) else PurePosixPath("/")
         if path.is_absolute() or ".." in path.parts or str(path) in {"", "."}:
@@ -176,6 +188,12 @@ def loop_json_schema() -> dict:
                 "additionalProperties": False,
             },
             "provider_route": {"type": "string", "enum": sorted(ROUTES)},
+            "adapter": {"type": "string", "enum": ["python"]},
+            "command": {
+                "type": "array",
+                "minItems": 1,
+                "items": {"type": "string", "minLength": 1},
+            },
             "browser_owner": {
                 "type": "object",
                 "required": ["cdp_port", "profile"],
@@ -188,6 +206,10 @@ def loop_json_schema() -> dict:
                 },
                 "additionalProperties": False,
             },
+        },
+        "dependentRequired": {
+            "adapter": ["command"],
+            "command": ["adapter"],
         },
         "additionalProperties": False,
     }

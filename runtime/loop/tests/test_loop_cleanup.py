@@ -100,6 +100,25 @@ class LoopCleanupTest(unittest.TestCase):
             self.assertFalse((state/'runs/old').exists())
             self.assertGreaterEqual(receipt['reclaimed_bytes'],128)
 
+    def test_loop_run_preserves_python_adapter_argv(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entrypoint = root / 'scheduled_runner.py'
+            entrypoint.write_text('#!/usr/bin/env python3\n')
+            entrypoint.chmod(0o755)
+            registry = {"schema_version": 2, "loops": {"job": {
+                "label": "ai.anicca.job", "domain": "growth",
+                "entrypoint": "scheduled_runner.py", "adapter": "python",
+                "command": ["dashboard"], "cadence": {"run_at_load": True},
+                "effect_class": "none", "state_root": "~/state",
+                "log_root": "~/state/logs",
+                "cleanup": {"max_runs": 1, "max_age_days": 1},
+                "provider_route": "deterministic"}}}
+            with mock.patch.dict(os.environ, {"HOME": str(root / 'home')}):
+                argv, _ = prepare_loop_run(
+                    registry, "job", root, active_run_ids=set())
+            self.assertEqual(argv, [sys.executable, str(entrypoint.resolve()), "dashboard"])
+
     def test_loaded_plist_release_is_discovered_as_protected(self):
         import plistlib
         with tempfile.TemporaryDirectory() as directory:

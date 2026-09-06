@@ -2,7 +2,21 @@
   "$id": "https://github.com/Daisuke134/life-manager/runtime/loop/loop.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "dependentRequired": {
+    "adapter": [
+      "command"
+    ],
+    "command": [
+      "adapter"
+    ]
+  },
   "properties": {
+    "adapter": {
+      "enum": [
+        "python"
+      ],
+      "type": "string"
+    },
     "browser_owner": {
       "additionalProperties": false,
       "properties": {
@@ -95,6 +109,14 @@
         "max_runs"
       ],
       "type": "object"
+    },
+    "command": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
     },
     "domain": {
       "enum": [
