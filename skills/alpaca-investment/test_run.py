@@ -224,7 +224,7 @@ class ShadowReadOnlyTest(unittest.TestCase):
                 patch.object(MODULE, "observe", return_value=observation), patch.object(MODULE, "read_campaign_snapshot"), \
                 patch.object(MODULE, "reconcile", return_value={"exit_status": "EXIT_READY", "exit_credit_usd": "0.50", "unrealized_pnl_usd": "0.00"}), \
                 patch.object(MODULE, "exit_order", return_value={"asset_class": "option_spread_close"}), \
-                patch.object(MODULE, "read_allocator_snapshot", return_value={}), patch.object(MODULE, "build_candidates", return_value=[]), \
+                patch.object(MODULE, "read_allocator_snapshot", return_value={"risk": {}}), patch.object(MODULE, "build_candidates", return_value=[]), \
                 patch.object(MODULE, "choose", return_value={"approved": True, "candidate_ref": "crypto://BTC/USD", "candidate": {"asset_class": "crypto"}, "gate": "approved", "observed_at": "2026-09-05T00:00:00Z"}), \
                 patch.object(MODULE, "order_for", return_value={"asset_class": "crypto"}), patch.object(MODULE, "submit_order") as submit, \
                 patch.object(MODULE, "deliver", return_value={"message_id": "123"}):
@@ -237,7 +237,7 @@ class PortablePassTest(unittest.TestCase):
     @patch.object(MODULE, "observe")
     @patch.object(MODULE, "read_campaign_snapshot", return_value={})
     @patch.object(MODULE, "reconcile")
-    @patch.object(MODULE, "read_allocator_snapshot", return_value={})
+    @patch.object(MODULE, "read_allocator_snapshot", return_value={"risk": {}})
     @patch.object(MODULE, "build_candidates", return_value=[])
     @patch.object(MODULE, "choose")
     @patch.object(MODULE, "deliver", return_value={"message_id": "123"})
