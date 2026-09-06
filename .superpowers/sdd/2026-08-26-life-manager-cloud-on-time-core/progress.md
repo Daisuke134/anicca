@@ -9,7 +9,7 @@ Baseline: focused Life Manager suite 175/175 PASS.
 この節だけが現在の実行順序を定義する。下位の Task 1–16 は完了履歴と過去の未完条件であり、この順序を変更しない。ElizaOS、local revenue/business loops、Docker/self-host experiments は対象外。Friend UAT は全operator作業の後にだけ行う。
 
 1. [x] **CLOUD-05 clean merge** — `user-command.js`、CLOUD-05 test、settings-recovery migration の3製品ファイルだけをmerge済み。一時workflowはmainに存在しない。tenant scope、idempotency、cross-chat rejection、phone removalによる`call_enabled=false`、row-shaped RPC returnを検証済み。旧PR #4276はclosed。
-2. [ ] **CLOUD-05 production migration/readback** — approved migrationだけをproduction Supabaseへ適用する。authorized test tenantでhome変更、phone変更、phone削除、`phone=null`、`call_enabled=false`、通知維持、cross-tenant mutation拒否、同一idempotency key replayの重複mutation 0をsanitized readbackする。
+2. [x] **CLOUD-05 production migration/readback** — approved migrationだけをproduction Supabaseへ適用済み。transaction内のsanitized test tenantでhome変更、phone変更、phone削除、`phone=null`、`call_enabled=false`、通知維持、cross-tenant mutation拒否、同一idempotency key replayの重複mutation 0をreadback済み。fixtureはROLLBACK後0行。
 3. [ ] **CLOUD-03 live onboarding** — QR/deep linkからTelegram actor、本人のGoogle Calendar consent、same-tenant resume、home、Telegram通知、phone/call optional、one-time 3-day trial、Readyまでをproductionで証明する。既に通るsource contractを再実装しない。
 4. [ ] **CLOUD-04 cloud runtime** — real tenant A/Bの分離、Railway restart/redeploy後の永続化、production SHA/health、Mac mini・localhost・launchctl・Keychain依存0をlive readbackする。既に通る156/156 source contractを再実装しない。
 5. [ ] **CLOUD-07 Stripe test mode** — current checkout/payment link、webhook endpoint/secret設定、trialing、active、past_due、cancel、duplicate、out-of-order、`lm_users` entitlementをTEST MODE / TEST CLOCKだけで検証する。real charge 0、Stripeだけがpaid authority。
@@ -18,7 +18,7 @@ Baseline: focused Life Manager suite 175/175 PASS.
 8. [ ] **Google Cloud cost incident closure** — billing accountのJuly/Augustをproject/service/SKU/dayで確定し、September MTD/forecast/current daily burnをreadbackする。Gemini、Search grounding、Live API、Maps/Routes/Geocoding、Cloud Run/compute/storage/network、abandoned project、retry/schedule trafficをrepo/runtimeと対応づける。ROOT_CAUSE、CURRENT_DAILY_BURN、SAFE_FIX、POST_FIX_EXPECTED_COSTを出し、production DAILY機能を壊さない安全な削減だけを適用する。COST-03 PR #4300はこの項目まで未mergeで保持する。
 9. [ ] **FRIEND-BETA READY gate** — 上記を全て閉じた後だけ、actual public URL、Telegram link、QR、friend DM、5分onboarding、test checklist、成功条件を一つのpackageとして渡す。最後に残る作業をreal friend UATだけにする。
 
-Current atom: **2. CLOUD-05 production migration/readback**.
+Current atom: **3. CLOUD-03 live onboarding**.
 
 ### CLOUD-05 inherited CI evidence
 
@@ -30,6 +30,7 @@ Current atom: **2. CLOUD-05 production migration/readback**.
   - OSS boundary: `runtime/`と`skills/`等の既存finding。PR runは20件、current mainは21件。
 - Baseline findingをscanner無効化やCLOUD-05への無関係修正で隠さない。clean replacementでは関連checkとexact diffだけを再検証する。
 - CLOUD-05 product mergeはPR #4295 / `5d19290a8f12d054e90f466dbd1e5a6590a3efa1`。PR #4305 / `c951851cbaab87dff078681f89d2d7873cd87757`は同時進行を検出する前にmergeされ、同じ3 product filesのtree差分0の空commit。mainにはtemporary workflow 0、product behavior重複0。focused/regression 170/170、Travel、Loop、Python、Shell、TruffleHog PASS。
+- Production migration preflightは同じDB transactionでPASS後ROLLBACK。COMMIT readbackはRPC 1、home/phone/call-disable/row-return contract true、service role execute true、anon/authenticated false。sanitized tenant transactionはhome/phone/remove/call-disable/notification-preserve/cross-scope/replay-zero/receipt-exactly-oneが全true、rollback後user/receipt fixture各0。
 
 ## Pre-flight conflict and interface scan
 
