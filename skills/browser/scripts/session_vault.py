@@ -27,6 +27,7 @@ Google passkey and Apple-ID-SMS are NOT solvable in-browser; earn accounts must 
 with app-based 2FA, never Dais's passkey-locked Google.
 """
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 import sys
@@ -171,7 +172,7 @@ def _guard_degraded_site_cookies(new_cookies):
 
 
 def dump():
-    res = asyncio.run(_call("Storage.getCookies"))
+    res = _run(_call("Storage.getCookies"))
     cookies = res.get("cookies", [])
     if not cookies:
         # never overwrite a good vault with an empty snapshot from a half-dead browser
@@ -180,7 +181,7 @@ def dump():
     cookies, degraded_sites = _guard_degraded_site_cookies(cookies)
 
     try:
-        local_storage = asyncio.run(_localstorage("read"))
+        local_storage = _run(_localstorage("read"))
     except Exception:
         local_storage = {}
 
@@ -204,6 +205,23 @@ def dump():
     if degraded_sites:
         result["degraded_sites_preserved_from_prior_vault"] = degraded_sites
     return result
+
+
+def _run(coro):
+    """Run one coroutine whether or not a caller already has a loop running.
+
+    `dump()` and `restore()` are called both from plain scripts and from inside async
+    callers -- the CrowdWorks account flow drives a page and then asks for a dump, and
+    `asyncio.run` refuses with "cannot be called from a running event loop", which reached
+    that lane as the single word vault_dump_failed. Handing the coroutine to a worker thread
+    with its own loop keeps one entry point working for both callers.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coro).result()
 
 
 def _restorable_cookie(cookie):
@@ -234,11 +252,11 @@ def restore():
     if not cookies:
         return {"ok": False, "reason": "vault is empty"}
     cookies = [_restorable_cookie(cookie) for cookie in cookies]
-    asyncio.run(_call("Storage.setCookies", {"cookies": cookies}))
+    _run(_call("Storage.setCookies", {"cookies": cookies}))
     ls = saved.get("localStorage", {})
     if ls:
         try:
-            asyncio.run(_localstorage("write", ls))
+            _run(_localstorage("write", ls))
         except Exception:
             pass
     return {"ok": True, "restored": len(cookies), "localStorage_origins": len(ls),
@@ -357,7 +375,7 @@ async def _keepalive(urls):
 def keepalive(urls):
     if not urls:
         return {"ok": False, "reason": "usage: keepalive <url> [url...]"}
-    res = asyncio.run(_keepalive(urls))
+    res = _run(_keepalive(urls))
     any_out = any(r["logged_out"] for r in res)
     return {"ok": not any_out, "logged_out": any_out, "pages": res}
 
@@ -476,7 +494,7 @@ def relogin_x():
         f.write(str(now))  # write BEFORE attempting so a crash mid-attempt still enforces cooldown
 
     try:
-        result = asyncio.run(_relogin_x())
+        result = _run(_relogin_x())
     except Exception as e:
         return {"ok": False, "reason": f"{type(e).__name__}: {e}"}
 
