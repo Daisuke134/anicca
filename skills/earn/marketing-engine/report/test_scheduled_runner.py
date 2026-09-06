@@ -50,11 +50,48 @@ class ScheduledRunnerTests(unittest.TestCase):
             intel_root = root / "state" / "intel"
             self.assertTrue((intel_root / "sources.json").is_file())
             self.assertTrue((intel_root / "playbook.jsonl").is_file())
+            self.assertEqual((intel_root / "sources.json").stat().st_mode & 0o777, 0o600)
             self.assertFalse((intel_root / "intel_daily.py").exists())
             self.assertEqual(command[-4:], [
                 "--intel-root", str(intel_root),
                 "--evidence-root", str(root / "evidence" / "intel-daily"),
             ])
+
+    def test_mine_seed_repairs_read_only_files_without_overwriting_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            intel_root = root / "state" / "intel"
+            intel_root.mkdir(parents=True)
+            state = intel_root / "source-cache.json"
+            state.write_text('{"preserved": true}\n')
+            state.chmod(0o400)
+            scheduled_runner.prepare_mine_command(
+                ["lm", "intel", "daily"], root / "state", root / "evidence")
+            self.assertEqual(state.read_text(), '{"preserved": true}\n')
+            self.assertEqual(state.stat().st_mode & 0o777, 0o600)
+
+    def test_mine_seed_refuses_symlinked_target_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / "state").mkdir()
+            outside = root / "outside"
+            outside.mkdir()
+            (root / "state" / "intel").symlink_to(outside, target_is_directory=True)
+            with self.assertRaisesRegex(OSError, "symlinked mutable intel directory"):
+                scheduled_runner.prepare_mine_command(
+                    ["lm", "intel", "daily"], root / "state", root / "evidence")
+
+    def test_mine_seed_refuses_symlinked_intermediate_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            intel_root = root / "state" / "intel"
+            intel_root.mkdir(parents=True)
+            outside = root / "outside"
+            outside.mkdir()
+            (intel_root / "schemas").symlink_to(outside, target_is_directory=True)
+            with self.assertRaisesRegex(OSError, "symlinked mutable intel directory"):
+                scheduled_runner.prepare_mine_command(
+                    ["lm", "intel", "daily"], root / "state", root / "evidence")
 
 
 if __name__ == "__main__":
