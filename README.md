@@ -22,12 +22,12 @@ and converge on the same state, evidence, and human-readable reporting contracts
 Manager never guarantees wealth or investment returns, and it never reports an attempted action as completed
 without a receipt.
 
-## The 13 main product loops
+## The 14 main product loops
 
-Life Manager has 13 user-facing product loops. A product loop is a capability,
+Life Manager has 14 user-facing product loops. A product loop is a capability,
 not necessarily one process: the lifecycle registry contains the smaller
 application, browser-owner, reporting, healthcheck, and reconciliation jobs that
-implement and support these 13 loops.
+implement and support these 14 loops.
 
 | # | Product loop | Representative current owners | What it does |
 |---:|---|---|---|
@@ -42,11 +42,13 @@ implement and support these 13 loops.
 | 9 | Fundraiser | `fundraiser` | Discovers accelerators, fellowships, grants, and public investor intakes and applies when eligible |
 | 10 | Connector | `life-manager-connector-native` | Finds eligible events, applies, verifies registration, and reports Calendar and Telegram receipts |
 | 11 | Life Manager Cloud | `apps/life-manager` on Railway | Runs the always-on web, Telegram, reminder, scheduling, and hosted-agent surface |
-| 12 | Mobile / Capafy | `capafy-loop-daily`, `capafy-outcome-monitor`, `capafy-ig-account-manager`, plus mobile marketing jobs | Produces and operates the mobile-product and audience-growth workflows |
-| 13 | Money Printer | Railway `life-call`, `money-printer-worker`, and `money-printer-symphony` services | Moves public opportunities through a durable workroom, agent execution, human handoff, and verified receipts |
+| 12 | Life Manager Mobile App | `life-manager-anicca-en-affirmation-instagram`, `life-manager-anicca-main-instagram`, `life-manager-anicca-main-tiktok`, and mobile metrics jobs | Operates product-owned acquisition, distribution, and measurement for the `anicca-ios` mobile app; the app build itself is not yet a registry-managed loop |
+| 13 | Capafy | `capafy-loop-daily`, `capafy-outcome-monitor`, `capafy-ig-account-manager`, `capafy-ig-marketing-daily` | Operates Capafy's separate product, sales, outcome, and audience-growth workflows |
+| 14 | CFO | `life-manager-cfo-hourly` | Reconciles verified revenue, cash flow, balances, payouts, and financial reports across the earning loops |
 
-The CFO and other reporting jobs are shared support capabilities; they are not a
-fourteenth user-facing product loop.
+**Money Printer is not another loop.** It is the umbrella for all revenue-producing
+loops. The `/money-printer` control room shows their shared opportunity-to-receipt
+system; it does not compete with them as a fifteenth loop.
 
 The complete lifecycle registry is [`config/loop-registry.json`](config/loop-registry.json).
 List every loop and inspect its live state through the canonical interfaces:
@@ -106,13 +108,13 @@ The architecture is converging by copying and adapting proven boundaries from
 `EffectIntent` and `ConnectorOutbox` rails remain the only path for irreversible money actions. The completion
 signal is an official `banked` receipt—not an application, click, model claim, contract, or pending balance.
 
-## Money Printer — WebMCP control room
+## Money Printer — cross-loop control room
 
 [Open the live Money Printer](https://aniccaai.com/money-printer) · [60-second judge guide](docs/webmcp-judge-guide.md)
 
-Money Printer is Life Manager's general earning-work surface. Its cloud scout searches the public Web for
-current paid opportunities, admits only citation-backed public URLs, deduplicates them in Railway Postgres,
-and hands each one to the same durable capability worker. The person sees one six-column board and is asked
+Money Printer is the shared earning-work surface across Life Manager's revenue-producing loops, not a separate
+loop. Its cloud scout searches the public Web for current paid opportunities, admits only citation-backed public
+URLs, deduplicates them in Railway Postgres, and hands each one to the relevant durable capability worker. The person sees one six-column board and is asked
 only when identity, authority, judgment, payment information, or a physical action is genuinely required.
 The zero-login judge tenant cannot perform external application, delivery, payment, or money effects.
 

@@ -2,7 +2,7 @@
 
 状態: CURRENT RUNTIME VERIFIED — portability implementation remains incomplete
 
-正本範囲: Life Managerのsource、13 product loops、local/self-hosted runtime、cloud runtime、portable install boundary
+正本範囲: Life Managerのsource、14 product loops、Money Printer umbrella、local/self-hosted runtime、cloud runtime、portable install boundary
 
 本書は既存の実装順序を変更しない。進捗の正本は既存spec/task listのままとする。
 
@@ -61,8 +61,7 @@ life-manager/                         # one GitHub repository
 ├── tools/                           # support entrypoints
 ├── config/loop-registry.json        # implementation/support job registry
 ├── scripts/                         # onboarding and operational scripts
-├── docs/                            # specs and runbooks
-└── deploy/local/compose.yaml        # inactive experimental profile; not canonical
+└── docs/                            # specs and runbooks
 
 outside Git (local)                  managed by cloud providers
 ├── ~/.local/state/life-manager/     ├── tenant-scoped database/object state
@@ -71,15 +70,19 @@ outside Git (local)                  managed by cloud providers
 └── browser profiles
 ```
 
+This is the target tree. The current repository still contains the inactive
+`deploy/local/compose.yaml`, `apps/life-manager/Dockerfile.runtime`, and Compose-only startup paths; they are
+legacy-retirement candidates, not target architecture.
+
 The desired developer filesystem is one working folder, `life-manager-main`, connected to the one
 `Daisuke134/life-manager` repository. Dedicated temporary worktrees may exist while a change is being developed;
 they are removed after merge and are never runtime dependencies.
 
-## 3. The 13 product loops and their jobs
+## 3. The 14 product loops and Money Printer umbrella
 
-The owner has selected 13 as the product catalog by retaining the historical 12-loop operations list and adding
-Money Printer. The 13 count is a product catalog, not a process count. `config/loop-registry.json` contains many smaller lifecycle
-IDs because one product loop can need application, browser, reporting, reconciliation and health jobs.
+The product catalog contains 14 user-facing loops. The count is not a process count: `config/loop-registry.json`
+contains many smaller lifecycle IDs because one product loop can need application, browser, reporting,
+reconciliation and health jobs.
 
 1. Gig — Coconala
 2. Gig — Lancers
@@ -92,11 +95,18 @@ IDs because one product loop can need application, browser, reporting, reconcili
 9. Fundraiser
 10. Connector
 11. Life Manager Cloud
-12. Mobile / Capafy
-13. Money Printer
+12. Life Manager Mobile App
+13. Capafy
+14. CFO
 
 The README owns the human-readable purpose and representative current runtime owners for each product loop. The
-registry owns executable loop IDs. CFO/reporting is shared support and does not create a fourteenth product loop.
+registry owns executable loop IDs.
+
+**Money Printer is not a fifteenth loop.** It is the umbrella name for the system in which all revenue-producing
+loops discover work or demand, execute it, verify the provider outcome, reconcile revenue through CFO, and improve.
+The `/money-printer` control room is the cross-loop view of that system, not a separate business loop competing with
+Coconala, Lancers, Writer, Capafy, Cloud, or the other earning loops. Connector and shared infrastructure may support
+the system without being independently revenue-producing.
 
 ## 4. Where loop code lives and how it starts
 
@@ -130,6 +140,11 @@ OpenClaw-dependent and absolute-path production jobs are current migration debt,
 inactive Compose profile is also not evidence of portability; it must either be proven as an intentionally supported
 optional profile or retired during the existing legacy-retirement work.
 
+Unused runtime choices must not remain presented as active architecture. The checked-in Compose profile,
+`Dockerfile.runtime`, and their Compose-only startup paths are deletion candidates. Before deletion, a repository
+reference check must prove that no active local or cloud runtime invokes them; after deletion, Mac and Railway
+readback must remain unchanged.
+
 ## 6. Ordered implementation TODO
 
 The established order remains unchanged:
@@ -154,7 +169,7 @@ BROWSER-MATRIX-1
 | `LOCAL-CLOUD-PARITY-1` | prove the same pushed source, product behavior and receipt contract on both surfaces |
 | `CLOUD-LOOPS-1` | converge supported cloud jobs on repository-owned entrypoints without a second implementation |
 | `LIFE-OUTCOMES-1` | prove owner-visible outcomes from official provider receipts on both runtimes |
-| `LEGACY-RETIRE-1` | remove required OpenClaw, Hermes, migration-folder, worktree, absolute-source and unchosen runtime dependencies; retire or explicitly support the inactive Compose profile |
+| `LEGACY-RETIRE-1` | remove required OpenClaw, Hermes, migration-folder, worktree, absolute-source and unchosen runtime dependencies; delete the inactive Compose profile unless a real supported owner is proven |
 | `DEV-E2E-1` | prove clean clone-to-healthy on each host before claiming support |
 | `OPS-PANEL-1` | expose runtime, blocker, receipt and version truth without creating a second authority |
 
