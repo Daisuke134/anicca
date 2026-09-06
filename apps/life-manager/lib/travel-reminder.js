@@ -370,6 +370,7 @@ async function travelReminderOnce(user, nowMs = Date.now(), deps = {}) {
         route = await (deps.directionsRoute || directionsRoute)(origin.value, destination, deps.mapsKey,
           startMs(event), now, false, {
             uid: user.uid, timezone: deps.timezone || user.call_time_zone, supaUrl, supaKey,
+            eventId: key, purpose: "go",
           });
       } catch { route = null; }
     }

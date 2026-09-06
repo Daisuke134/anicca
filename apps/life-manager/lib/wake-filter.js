@@ -78,7 +78,10 @@ async function resolveDeparture(ev, allEvents, {
   if (typeof routeFn === "function") {
     let route = null;
     try {
-      route = await routeFn(origin, ev.location, mapsKey, ev.startMs, nowMs, false, { uid, timezone });
+      const eventId = String(ev.id || `${ev.startMs}:${ev.summary || ""}`);
+      route = await routeFn(origin, ev.location, mapsKey, ev.startMs, nowMs, false, {
+        uid, timezone, eventId, purpose: "go",
+      });
     } catch { route = null; }
     const exact = computeDoorDepartureMs(ev.startMs, route, { bufferMin });
     return exact === null ? ev.startMs : exact;

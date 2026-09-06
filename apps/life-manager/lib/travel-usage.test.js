@@ -102,3 +102,35 @@ test("un-geocodable raw endpoints still negative-cache the paid Directions fallb
   assert.equal(second, null);
   assert.equal(calls, 1);
 });
+
+test("Calendar, Telegram, and call consumers share one event-version route fact", async () => {
+  let calls = 0;
+  const cache = makeRouteCache({ store: new Map(), now: () => 1000 });
+  const common = {
+    uid: "tenant-shared", eventId: "calendar-event-1", purpose: "go", _routeCache: cache,
+    _directionsMinutesGoogle: async () => { calls += 1; return 12; },
+    _recordUsageEvent: async () => true,
+  };
+  for (const consumer of ["calendar", "telegram", "call"]) {
+    await directionsRoute("geo:40.730,-73.930", "geo:40.740,-73.980", "key",
+      2_000_000, 1000, false, { ...common, consumer });
+  }
+  assert.equal(calls, 1);
+});
+
+test("exact schedule, location, event, and purpose changes invalidate the shared route fact", async () => {
+  let calls = 0;
+  const cache = makeRouteCache({ store: new Map(), now: () => 1000 });
+  const route = (dst, anchor, eventId, purpose = "go") => directionsRoute(
+    "geo:40.730,-73.930", dst, "key", anchor, 1000, false,
+    { uid: "tenant-version", eventId, purpose, _routeCache: cache,
+      _directionsMinutesGoogle: async () => { calls += 1; return 12; },
+      _recordUsageEvent: async () => true },
+  );
+  await route("geo:40.740,-73.980", 2_000_000, "event-1");
+  await route("geo:40.740,-73.980", 2_060_000, "event-1"); // same 10-minute bucket, exact time changed
+  await route("geo:40.741,-73.980", 2_060_000, "event-1");
+  await route("geo:40.741,-73.980", 2_060_000, "event-2");
+  await route("geo:40.741,-73.980", 2_060_000, "event-2", "return");
+  assert.equal(calls, 5);
+});

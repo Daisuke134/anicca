@@ -149,3 +149,15 @@ test("resolveDeparture: back-to-back → inline uses PREV venue as origin (not h
   assert.equal(originSeen, "横浜");                 // computed FROM the previous venue, not home
   assert.equal(dep, at(14) - (40 + 5) * 60000);     // leave 45min before = never-late from the far venue
 });
+
+test("resolveDeparture passes the stable event identity and go purpose to the shared route fact", async () => {
+  const ev = { id: "gcal-event-1", summary: "次", location: "渋谷", startMs: at(14) };
+  let options;
+  await resolveDeparture(ev, [ev], {
+    home: HOME,
+    routeFn: async (...args) => { options = args[6]; return { durationSeconds: 600 }; },
+    uid: "tenant", timezone: "Asia/Tokyo",
+  });
+  assert.equal(options.eventId, "gcal-event-1");
+  assert.equal(options.purpose, "go");
+});
