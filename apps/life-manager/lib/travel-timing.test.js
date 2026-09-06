@@ -68,6 +68,23 @@ test("wake inline fallback uses the same structured-route second precision as Te
   assert.equal(departure, computeDoorDepartureMs(START, route, { bufferMin: 5 }));
 });
 
+test("structured wake route failure fails closed without a second rounded provider call", async () => {
+  const ev = { id: "call-route-fail", summary: "会議", location: VENUE, startMs: START, endMs: START + 60 * MINUTE };
+  let structuredCalls = 0;
+  let minuteCalls = 0;
+  const departure = await resolveDeparture(ev, [ev], {
+    home: HOME,
+    mapsKey: "maps",
+    nowMs: START - 2 * 60 * MINUTE,
+    bufferMin: 5,
+    routeFn: async () => { structuredCalls += 1; return null; },
+    directionsFn: async () => { minuteCalls += 1; return 30; },
+  });
+  assert.equal(structuredCalls, 1);
+  assert.equal(minuteCalls, 0, "structured route authority must not issue a second provider call on failure");
+  assert.equal(departure, START, "without an accepted route, fail closed to event start rather than inventing another route");
+});
+
 test("Calendar outbound Travel block starts at the same exact door departure as Telegram/calls", async () => {
   const cal = fakeCalendar([rawEvent()]);
   const route = { durationSeconds: 31 * 60 + 20 };
