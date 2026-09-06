@@ -5,7 +5,11 @@ import time
 import unittest
 from pathlib import Path
 
-from runtime.loop.macos_loop_registry import render_job_models, validate_registry
+from runtime.loop.macos_loop_registry import (
+    render_job_models,
+    render_loop_json_schema,
+    validate_registry,
+)
 from runtime.loop.lm_loop import status_rows
 
 
@@ -178,6 +182,19 @@ class MacosLoopRegistryTest(unittest.TestCase):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         expected = (ROOT / "runtime/loop/tests/fixtures/macos-loop-jobs.json").read_bytes()
         self.assertEqual(render_job_models(registry), expected)
+
+    def test_loop_json_schema_is_generated_from_the_registry_contract(self):
+        schema_path = ROOT / "runtime/loop/loop.schema.json"
+        self.assertEqual(schema_path.read_bytes(), render_loop_json_schema())
+        schema = json.loads(schema_path.read_text())
+        self.assertEqual(schema["required"], ["loop_id", *sorted(entry())])
+        self.assertEqual(schema["properties"]["domain"]["enum"], [
+            "earn", "financial", "growth", "mental", "physical", "system",
+        ])
+        self.assertEqual(schema["properties"]["effect_class"]["enum"], [
+            "account_mutation", "application", "message", "money", "none", "publish", "trade",
+        ])
+        self.assertFalse(schema["additionalProperties"])
 
     def test_loop_entrypoints_do_not_select_auth_or_codex_home(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())

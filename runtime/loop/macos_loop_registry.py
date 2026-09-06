@@ -120,3 +120,70 @@ def render_job_models(registry: dict) -> bytes:
         for loop_id in sorted(registry["loops"])
     ]
     return (json.dumps(models, sort_keys=True, separators=(",", ":")) + "\n").encode()
+
+
+def loop_json_schema() -> dict:
+    positive_integer = {"type": "integer", "minimum": 1}
+    calendar = {"type": ["object", "array"]}
+    cadence_variants = {
+        "calendar_interval": calendar,
+        "keep_alive": {"const": True},
+        "run_at_load": {"const": True},
+        "start_interval_seconds": positive_integer,
+    }
+    cadence = {
+        "oneOf": [
+            {
+                "type": "object",
+                "required": [name],
+                "properties": {name: contract},
+                "additionalProperties": False,
+            }
+            for name, contract in cadence_variants.items()
+        ],
+    }
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "https://github.com/Daisuke134/life-manager/runtime/loop/loop.schema.json",
+        "title": "Life Manager loop.json",
+        "type": "object",
+        "required": ["loop_id", *sorted(FIELDS)],
+        "properties": {
+            "loop_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+            "label": {"type": "string", "pattern": "^ai\\.anicca\\..+$"},
+            "domain": {"type": "string", "enum": sorted(DOMAINS)},
+            "entrypoint": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+            },
+            "cadence": cadence,
+            "effect_class": {"type": "string", "enum": sorted(EFFECTS)},
+            "state_root": {"type": "string", "pattern": "^~/.+"},
+            "log_root": {"type": "string", "pattern": "^~/.+"},
+            "cleanup": {
+                "type": "object",
+                "required": ["max_age_days", "max_runs"],
+                "properties": {
+                    "max_age_days": positive_integer,
+                    "max_runs": positive_integer,
+                },
+                "additionalProperties": False,
+            },
+            "provider_route": {"type": "string", "enum": sorted(ROUTES)},
+            "browser_owner": {
+                "type": "object",
+                "required": ["cdp_port", "profile"],
+                "properties": {
+                    "cdp_port": {"type": "integer", "minimum": 1, "maximum": 65535},
+                    "profile": {"type": "string", "pattern": "^~/.+"},
+                },
+                "additionalProperties": False,
+            },
+        },
+        "additionalProperties": False,
+    }
+
+
+def render_loop_json_schema() -> bytes:
+    return (json.dumps(loop_json_schema(), indent=2, sort_keys=True) + "\n").encode()
