@@ -9,14 +9,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from risk_policy import evaluate_entry
+
 
 MAX_QUOTE_AGE_SECONDS = 30
 MAX_SPREAD_FRACTION = .15
-MAX_TRADE_RISK_FRACTION = .005
-MAX_OPEN_RISK_FRACTION = .03
 MIN_CASH_FRACTION = .30
-MAX_DAILY_LOSS_FRACTION = .015
-MAX_DRAWDOWN_FRACTION = .04
 MAX_POSITIONS = 5
 MAX_OPEN_ORDERS = 10
 
@@ -46,7 +44,7 @@ def build_candidates(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
             candidates.append({
                 "asset_class": "crypto", "ask": ask, "bid": bid,
                 "candidate_ref": f"crypto://{quote['symbol']}",
-                "max_loss_usd": 100.0, "quote_age_seconds": _age_seconds(quote["quote_at"]),
+                "max_loss_usd": 10.0, "quote_age_seconds": _age_seconds(quote["quote_at"]),
                 "spread_fraction": (ask - bid) / ask, "symbol": quote["symbol"],
             })
     asset, quote = snapshot["qqq_asset"], snapshot["qqq_quote"]
@@ -56,7 +54,7 @@ def build_candidates(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
         bid, ask = float(quote["bid"]), float(quote["ask"])
         candidates.append({
             "asset_class": "equity", "ask": ask, "bid": bid,
-            "candidate_ref": "equity://QQQ", "max_loss_usd": 100.0,
+            "candidate_ref": "equity://QQQ", "max_loss_usd": 10.0,
             "quote_age_seconds": _age_seconds(quote["quote_at"]),
             "spread_fraction": (ask - bid) / ask, "symbol": "QQQ",
         })
@@ -127,18 +125,15 @@ def gate(snapshot: dict[str, Any], candidates: list[dict[str, Any]], decision: d
     if candidate is None:
         return {**decision, "approved": False, "gate": "candidate_not_offered"}
     equity, cash = float(snapshot["account"]["equity"]), float(snapshot["account"]["cash"])
-    last_equity = float(snapshot["account"]["last_equity"])
     probability, gain = float(decision["probability_profit"]), float(decision["expected_gain_usd"])
     loss = float(candidate["max_loss_usd"])
+    fixed_risk = evaluate_entry(snapshot.get("risk"), candidate["max_loss_usd"])
     checks = {
         "quote_fresh": 0 <= candidate["quote_age_seconds"] <= MAX_QUOTE_AGE_SECONDS,
         "spread": candidate["spread_fraction"] <= MAX_SPREAD_FRACTION,
         "expected_value": 0 <= probability <= 1 and gain > 0 and probability * gain - (1 - probability) * loss > 0,
-        "trade_risk": loss <= equity * MAX_TRADE_RISK_FRACTION,
-        "open_risk": 29 + loss <= equity * MAX_OPEN_RISK_FRACTION,
+        "fixed_risk": fixed_risk["approved"],
         "cash_reserve": cash - loss >= equity * MIN_CASH_FRACTION,
-        "daily_loss": last_equity - equity < last_equity * MAX_DAILY_LOSS_FRACTION,
-        "drawdown": last_equity - equity < last_equity * MAX_DRAWDOWN_FRACTION,
         "positions": snapshot["positions"] < MAX_POSITIONS,
         "orders": snapshot["open_orders"] < MAX_OPEN_ORDERS,
     }
@@ -147,7 +142,8 @@ def gate(snapshot: dict[str, Any], candidates: list[dict[str, Any]], decision: d
         checks["regular_session"] = snapshot["clock"].get("is_open") is True
     approved = all(checks.values()) and candidate["asset_class"] in {"crypto", "option_spread"}
     return {**decision, "approved": approved, "candidate": candidate,
-            "checks": checks, "gate": "approved" if approved else "risk_rejected"}
+            "checks": checks, "fixed_risk": fixed_risk,
+            "gate": "approved" if approved else "risk_rejected"}
 
 
 def order_for(decision: dict[str, Any]) -> dict[str, Any]:
