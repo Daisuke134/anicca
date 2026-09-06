@@ -36,7 +36,7 @@ receiptのない試行を「完了」と報告しません。
 | 9 | Fundraiser | `fundraiser` | accelerator、fellowship、grant、投資家受付を発見し条件を満たせば応募 |
 | 10 | Connector | `life-manager-connector-native` | event発見・応募・登録確認・Calendar/Telegram receipt報告 |
 | 11 | Life Manager Cloud | Railway上の`apps/life-manager` | 常時稼働web、Telegram、reminder、schedule、hosted-agent面 |
-| 12 | Life Manager Mobile App | `life-manager-anicca-en-affirmation-instagram`, `life-manager-anicca-main-instagram`, `life-manager-anicca-main-tiktok`とmobile metrics job | `anicca-ios` mobile appの獲得・配信・計測を運用。app build自体はまだregistry-managed loopではない |
+| 12 | Life Manager Mobile Apps | Anicca iOS、Honne、その他の`life-manager-anicca-*` / `life-manager-honne-*` build・marketing・distribution・metrics job | Life Manager所有のiOS app群をbuild・運用し、product-awareな共通componentで各appをmarketing・計測する |
 | 13 | Capafy | `capafy-loop-daily`, `capafy-outcome-monitor`, `capafy-ig-account-manager`, `capafy-ig-marketing-daily` | Capafyという別productの販売・outcome・audience-growth workflowを運用 |
 | 14 | CFO | `life-manager-cfo-hourly` | 全earning loopのverified revenue、cash flow、残高、payout、財務報告を照合 |
 
@@ -93,8 +93,8 @@ jq -r '.loops | keys[]' config/loop-registry.json
 ```
 
 cloneだけでは外部作用のあるloopを自動installしません。credentialとhost capabilityを設定後、operatorが
-immutable releaseから選択したloopをapply/startします。repoには実験的なDocker Compose profileもありますが、
-現在のMac production loopにも販売中cloud productにも使われておらず、canonical quick startではありません。
+immutable releaseから選択したloopをapply/startします。未使用だったDocker Compose profileは撤去済みで、
+現在のMac production loopにも販売中cloud productにもDocker/Composeは不要です。
 
 ### 自己資金化はFinancial Organの一部
 
@@ -118,8 +118,7 @@ life-manager/                         # 1つだけのGitHub repository
 ├── bin/                             # lm-loopとrepo-owned command
 ├── config/loop-registry.json        # implementation/support job registry
 ├── scripts/                         # onboarding・運用script
-├── docs/                            # spec・runbook
-└── deploy/local/compose.yaml        # 非稼働の実験profile。canonicalではない
+└── docs/                            # spec・runbook
 
 ローカルproduction                    cloud production
 main由来immutable release             Netlify frontend
@@ -131,7 +130,6 @@ main由来immutable release             Netlify frontend
 | パス | 役割 | 誤解しないための境界 |
 |---|---|---|
 | `apps/life-manager/` | cloud製品のcore: Telegram、schedule、通話、認証付き`/panel`、課金、ユーザーworkflow | これ単体がリポジトリ全体ではない |
-| `deploy/local/` | 現在非稼働の実験的Compose profile | 現在のlocal productionでもcanonical self-host入口でもない |
 | `apps/landing/` | Life Manager用オンボーディング Web UI の必要部分 | 旧Anicca複数製品サイト全体ではない |
 | `runtime/loop/`, `install.sh`, `start-local.sh` | Life ManagerのFinancial Organを支えるeconomic runtime → [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) | 製品全体でも通常のuser入口でもない |
 | `runtime/compute-proxy/`, `services/` | 同じFinancial capabilityのcompute支払い、x402 settlement、paid API 基盤 | ユーザー向けアプリではない |
@@ -149,7 +147,6 @@ main由来immutable release             Netlify frontend
 |---|---|
 | **Mac production loops** | **稼働中** — immutable release内の`lm-loop-run`を`launchd`が直接起動。Docker/Colima daemonは稼働していない |
 | **クラウドサービス**（Netlify + Railway `life-call`/worker） | **デプロイ済** — `apps/life-manager`をNixpacks/Railpackでbuild。repoのDockerfile/Composeは使わない |
-| **実験的Compose profile**（`deploy/local/compose.yaml`） | sourceには存在するが**現在非稼働**。canonical runtimeではない |
 | **証拠つき Telegram 報告** | **稼働中** — 全報告が message id を伴い、送信に失敗したものを「送信済み」として記録しない |
 | **Calendar・connector・カバレッジ**（`lib/calendar-*`, `lib/connector-*`） | **実装済、カバレッジは移動中** — connector ごとの状態と欠落はここで主張せず実行 spec で追跡 |
 | **Financial organ**（総資産・収支・payout・台帳） | **部分的** — 台帳と payout の job は存在する。現在の健康状態は実行 spec で追跡。ここに書かれた内容は投資の保証ではない |

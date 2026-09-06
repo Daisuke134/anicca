@@ -16,10 +16,10 @@ currently run through Docker Compose or one identical container image.
 |---|---|---|
 | Mac production loops | immutable main-derived release → `lm-loop-run` → Python/Node/shell entrypoint, supervised by `launchd` | no Docker/Colima daemon or socket; no loaded loop references Docker |
 | Selling cloud product | Netlify web frontend; Railway `life-call` and worker roles built from `apps/life-manager` with Nixpacks/Railpack; managed state and hosted browser services | Railway exports OCI images internally, but the product uses neither the checked-in runtime Dockerfile nor Compose |
-| `deploy/local/compose.yaml` | optional experimental self-host profile | present in source, currently inactive and not the canonical start path |
+| Retired local Compose profile | no runtime owner | removed because neither Mac production nor the selling cloud product invoked it |
 
-Some supporting Railway services use checked-in Dockerfiles. That does not make Docker Compose the Life Manager
-web/Telegram runtime.
+Some supporting Railway services retain their own checked-in Dockerfiles. They are separate deployment owners and
+do not make Docker or Compose a Life Manager local requirement.
 
 ## 1. One product, two execution surfaces
 
@@ -70,9 +70,8 @@ outside Git (local)                  managed by cloud providers
 └── browser profiles
 ```
 
-This is the target tree. The current repository still contains the inactive
-`deploy/local/compose.yaml`, `apps/life-manager/Dockerfile.runtime`, and Compose-only startup paths; they are
-legacy-retirement candidates, not target architecture.
+This is both the target source boundary and the post-cleanup repository shape. Product state, credentials, logs,
+browser sessions, receipts and ledgers stay outside Git by design; they are not stray source folders.
 
 The desired developer filesystem is one working folder, `life-manager-main`, connected to the one
 `Daisuke134/life-manager` repository. Dedicated temporary worktrees may exist while a change is being developed;
@@ -95,7 +94,7 @@ reconciliation and health jobs.
 9. Fundraiser
 10. Connector
 11. Life Manager Cloud
-12. Life Manager Mobile App
+12. Life Manager Mobile Apps — Anicca iOS, Honne and the other owned iOS apps; build, marketing, distribution and measurement
 13. Capafy
 14. CFO
 
@@ -130,20 +129,74 @@ jq -r '.loops | keys[]' config/loop-registry.json
 Cloning does not automatically install effectful loops. Apply/start is an operator action from an immutable release
 after required credentials and host capabilities are configured.
 
+### 4.1 Current reuse truth
+
+The loops do not yet follow one common physical folder shape. Source is distributed across `skills/`, `apps/`,
+`runtime/`, `services/` and `tools/`. All 175 managed registry entrypoints exist, and the main local lifecycle and
+agent runner are shared, but four declaration/execution systems remain:
+
+1. `config/loop-registry.json` + `runtime/loop` for macOS release and lifecycle;
+2. `apps/life-manager/config/loop-adapters.json` + the Postgres job store for cloud adapters;
+3. `skills/registry.json` + `runtime/loop/index.mjs` for agent-economy slots;
+4. five legacy `loops/*/loop.toml` declarations + `bin/plistgen.py`.
+
+Reuse already working:
+
+- immutable main-derived releases, `lm-loop`, runtime events and the shared agent runner;
+- repository-relative entrypoints and explicit state roots;
+- marketing generation/publication components for multiple Anicca iOS and Honne lanes;
+- the shared marketplace profile/contracts layer used by part of the gig family.
+
+Reuse still missing:
+
+- one manifest and one lifecycle owner for every loop;
+- one job/effect/receipt/outbox contract across file, SQLite and Postgres backends;
+- one browser lease/target-owner contract across Connector, Gig and Job Hunter;
+- one generic mobile-app build/marketing boot path instead of many nearly identical wrappers;
+- one gig adapter shape across Coconala, Lancers and CrowdWorks;
+- removal of legacy installers, handwritten dispatch maps and external source paths.
+
+### 4.2 Ideal common loop structure
+
+Every product loop uses the same shell. Domain differences live only in a thin adapter and business skill.
+
+```text
+loops/
+└── <domain>/<loop-id>/
+    ├── loop.json                 # ID, cadence, deployment, command/adapter, state, effects
+    └── adapter.{py,js,sh}        # thin domain/provider adapter
+
+runtime/
+├── control/                      # registry, immutable release, lifecycle, supervisor adapters
+├── agent-runner/                 # model-agnostic agent execution
+├── browser/                      # lease, target ownership, local/hosted browser adapters
+├── contracts/
+│   ├── loop-event.schema.json
+│   ├── job.schema.json
+│   ├── effect.schema.json
+│   ├── receipt.schema.json
+│   └── outbox.schema.json
+└── durable/
+    ├── file/                     # local JSONL/SQLite backend adapters
+    └── postgres/                 # cloud backend adapter
+
+skills/<domain>/                  # business judgment, prompts and provider-specific tools only
+apps/life-manager/adapters/       # cloud API/UI adapters only
+```
+
+`loop.json` becomes the only hand-edited declaration. Local and cloud use the same loop ID, adapter, agent/tool
+contract and receipt vocabulary. They may use different supervisor, browser and storage backends. Existing mutable
+ledgers are not bulk-moved merely to make folders look uniform.
+
 ## 5. Dependency boundary
 
 Every required executable, adapter, schema, prompt and lockfile must live in this repository. An active runtime may
 not import code from OpenClaw, Hermes, an Eliza migration folder, another checkout, a worktree or a home-directory
 skills tree. External services are allowed only through explicit APIs or host adapters with repository-owned code.
 
-OpenClaw-dependent and absolute-path production jobs are current migration debt, not part of the target. The
-inactive Compose profile is also not evidence of portability; it must either be proven as an intentionally supported
-optional profile or retired during the existing legacy-retirement work.
-
-Unused runtime choices must not remain presented as active architecture. The checked-in Compose profile,
-`Dockerfile.runtime`, and their Compose-only startup paths are deletion candidates. Before deletion, a repository
-reference check must prove that no active local or cloud runtime invokes them; after deletion, Mac and Railway
-readback must remain unchanged.
+OpenClaw-dependent and absolute-path production jobs are current migration debt, not part of the target. Unused
+runtime choices must not remain presented as active architecture. The unowned local Compose stack and its orphaned
+container guardian are removed; Railway `internal-worker` and independently owned service Dockerfiles remain.
 
 ## 6. Ordered implementation TODO
 
@@ -173,6 +226,34 @@ BROWSER-MATRIX-1
 | `DEV-E2E-1` | prove clean clone-to-healthy on each host before claiming support |
 | `OPS-PANEL-1` | expose runtime, blocker, receipt and version truth without creating a second authority |
 
+### 6.1 Atomic shared-architecture and cleanup checklist
+
+This checklist does not reorder the product TODO above. It is the fixed internal order used when the corresponding
+shared-component or legacy-retirement atom is active.
+
+- [x] `CLEAN-01` Verify Mac loops use immutable releases/launchd and Cloud uses Netlify + Railway Nixpacks/Railpack.
+- [x] `CLEAN-02` Correct the 14-loop catalog; define Money Printer as the earning-loop umbrella.
+- [x] `CLEAN-03` Classify the local Compose stack, runtime image and container guardian as unowned.
+- [x] `CLEAN-04` Remove Compose YAML/env, runtime Dockerfile, Compose CLI, Compose-only scheduler/liveness code and orphan guardian while retaining Railway `internal-worker`.
+- [x] `CLEAN-05` Pass focused Node/Python tests, static reference fence and Mac `lm-loop doctor`; confirm Railway `life-call` health and Netlify `/lm` both return HTTP 200 after the source cleanup.
+- [x] `WT-01` Inventory all 75 registered worktrees with path, branch, lock, dirty state, PR, merge status and active process owner.
+- [x] `WT-02` Attempt exact-path cleanup only after a same-command preflight. The two audit candidates became locked before execution, so fail closed and remove zero; never force-remove, unlock or delete dirty/unmerged/active paths.
+- [x] `WT-03` Confirm dry-run prune has no eligible metadata and retain 75 paths: 65 locked plus 10 active/open-PR/unmerged/ignored-state paths.
+- [ ] `WT-04` Add an owner/expiry/heartbeat policy for task worktree locks, then have each owner retire its merged clean worktree; re-audit before every exact removal.
+- [ ] `ARCH-01` Freeze the current 175 managed, 22 external, 48 retired and cloud-adapter inventory with owner and last receipt.
+- [ ] `ARCH-02` Add one `loop.json` schema generated from the current registry; do not create a second hand-edited source.
+- [ ] `ARCH-03` Add validated `command`/`adapter` fields and migrate one low-risk loop end to end.
+- [ ] `ARCH-04` Migrate the remaining handwritten dispatch entries one at a time; verify label, argv, state root and receipt after each; delete `entry_dispatch.py` when empty.
+- [ ] `ARCH-05` Migrate the five legacy `loop.toml` declarations; delete the second plist generator/declaration path.
+- [ ] `ARCH-06` Define common job, event, effect, receipt and outbox schemas without moving existing databases.
+- [ ] `ARCH-07` Extract one browser lease/target-owner contract; migrate Connector, then Gig and Job Hunter after live readback.
+- [ ] `ARCH-08` Adapt file/JSONL, SQLite and Postgres persistence behind the common contracts.
+- [ ] `ARCH-09` Replace the Anicca iOS/Honne per-lane boot wrappers with one product-aware mobile-app command and manifest.
+- [ ] `ARCH-10` Retire Lancers and other legacy installers after registry-only ownership is proven; align all gig providers to the same adapter shell.
+- [ ] `ARCH-11` Remove external checkout/worktree/OpenClaw/Hermes code dependencies and move required source into this repository.
+- [ ] `ARCH-12` Prove clean local and cloud runs use the same loop contracts with replay-zero and official provider receipts.
+- [x] `DOC-01` Update English/Japanese README architecture and status from measured output; remove the Compose runtime claim and describe Mobile Apps as Anicca iOS, Honne and the other owned iOS build/marketing loops.
+
 ## 7. Acceptance
 
 Complete means all of the following are measured:
@@ -193,8 +274,8 @@ Complete means all of the following are measured:
 - live Railway deployment metadata: `life-call` uses `NIXPACKS` with no repository Dockerfile path and starts
   `node server.js`; the worker uses Railpack/Nixpacks with no repository Dockerfile path;
 - live cloud readback: the Life Manager endpoints are healthy and the web response is served through Netlify;
-- repository declarations: `apps/life-manager/railway.toml` selects Nixpacks; `scripts/local-up.sh` and
-  `apps/life-manager/scripts/runtime-up.js` can explicitly start the optional Compose profile.
+- repository declarations: `apps/life-manager/railway.toml` selects Nixpacks and retains
+  `node scripts/runtime-up.js internal-worker`; the removed local Compose paths had no production owner.
 
 Railway internally producing an OCI container image is an infrastructure implementation detail. It does not mean
 that users or operators run Docker Compose, and it does not justify documenting Compose as the canonical runtime.

@@ -83,6 +83,3 @@ skills/capafy-autopublish/vendor/capafy-publisher/config.json
 skills/capafy-autopublish/vendor/capafy-user/config.json
 skills/capafy-autopublish/vendor/capafy-publisher/.temp/
 skills/capafy-autopublish/vendor/capafy-user/.temp/
-
-# Deliberate local-only compose enablement (never a repo default).
-deploy/local/compose.override.yaml

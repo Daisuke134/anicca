@@ -23,7 +23,7 @@ function fixture() {
   for (const label of LABELS) {
     fs.writeFileSync(path.join(agents, `${label}.plist`), `plist:${label}\n`, { mode: 0o600 });
   }
-  fs.writeFileSync(path.join(agents, "ai.anicca.outbound-runtime-healthcheck.plist"), "guardian\n");
+  fs.writeFileSync(path.join(agents, "ai.anicca.unrelated.plist"), "unrelated\n");
   fs.writeFileSync(fake, `#!/bin/bash\nprintf '%s\\n' "$*" >> ${JSON.stringify(calls)}\nexit 0\n`, { mode: 0o700 });
   return {
     root, agents, archive, calls, fake,
@@ -49,8 +49,8 @@ test("retires only the two fixed legacy Connector jobs with a recoverable manife
     assert.equal(fs.existsSync(path.join(fx.archive, `${label}.plist`)), true);
   }
   assert.equal(fs.readFileSync(
-    path.join(fx.agents, "ai.anicca.outbound-runtime-healthcheck.plist"), "utf8",
-  ), "guardian\n");
+    path.join(fx.agents, "ai.anicca.unrelated.plist"), "utf8",
+  ), "unrelated\n");
   const manifest = JSON.parse(fs.readFileSync(path.join(fx.archive, "manifest.json"), "utf8"));
   assert.deepEqual(manifest.labels.map((row) => row.label), LABELS);
   assert.equal(manifest.labels.every((row) => /^[a-f0-9]{64}$/.test(row.sha256)), true);
