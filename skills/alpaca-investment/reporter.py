@@ -148,6 +148,20 @@ def deliver(state: Path, observation: dict[str, Any], campaign: dict[str, Any],
     )
 
 
+def deliver_control(state: Path, *, control: dict[str, Any], wake_id: str,
+                    mode: str) -> dict[str, Any]:
+    killed = control.get("killed") is True
+    heading = "⛔ Investment Loopは停止済みです" if killed else "⏸️ Investment Loopは一時停止中です"
+    action = "再開するには /invest resume を送ってください。" if not killed else \
+        "停止は自動解除しません。新しい注文も出しません。"
+    message = "\n".join((
+        "[Investment Loop][運転状態]", heading, "", f"モード: {mode}",
+        "新しい市場判断と注文は実行していません。",
+        _latest_financial_text(state, mode=mode), "", "次に行うこと", action,
+    ))
+    return _deliver_message(state, f"alpaca-control-wake:{wake_id}", message, wake_id)
+
+
 def render_failure(*, stage: str, effect_uncertain: bool, wake_id: str,
                    financial_text: str = "", mode: str = "unknown") -> str:
     effect_text = (
