@@ -130,6 +130,7 @@
       "state_root": "~/.local/state/life-manager/affiliate-loop"
     },
     "affiliate-source-refresh": {
+      "adapter": "exec",
       "cadence": {
         "start_interval_seconds": 600
       },
@@ -137,9 +138,13 @@
         "max_age_days": 14,
         "max_runs": 100
       },
+      "command": [
+        "sources",
+        "wake"
+      ],
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/affiliate/affiliate",
       "label": "ai.anicca.affiliate-source-refresh",
       "log_root": "~/.local/state/life-manager/affiliate-source-refresh/logs",
       "provider_route": "deterministic",
