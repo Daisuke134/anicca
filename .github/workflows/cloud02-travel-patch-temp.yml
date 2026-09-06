@@ -1,0 +1,62 @@
+name: TEMP CLOUD-02 travel patch
+
+on:
+  push:
+    branches:
+      - fix/cloud-02-timing-authority-20260906
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cloud-02-timing-authority-20260906
+          fetch-depth: 1
+      - name: Apply exact bounded travel timing patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('apps/life-manager/lib/travel.js')
+          text = path.read_text()
+          replacements = [
+              (
+                  'let mins = route ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);',
+                  'let mins = routeFn ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);',
+                  1,
+              ),
+              (
+                  'if (mins == null && geminiKey) {',
+                  'if (route == null && mins == null && geminiKey) {',
+                  1,
+              ),
+              (
+                  'mins = route ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);',
+                  'mins = routeFn ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);',
+                  1,
+              ),
+          ]
+          for old, new, expected in replacements:
+              actual = text.count(old)
+              if actual != expected:
+                  raise SystemExit(f'expected {expected} occurrence(s) of {old!r}, found {actual}')
+              text = text.replace(old, new)
+          path.write_text(text)
+          PY
+          git diff --check
+          git diff -- apps/life-manager/lib/travel.js
+      - name: Commit exact patch
+        run: |
+          if git diff --quiet -- apps/life-manager/lib/travel.js; then
+            echo 'No patch needed.'
+            exit 0
+          fi
+          git config user.name 'cloud-tdd-bot'
+          git config user.email 'cloud-tdd-bot@users.noreply.github.com'
+          git add apps/life-manager/lib/travel.js
+          git commit -m 'fix(cloud): avoid duplicate outbound route fallback'
+          git push origin HEAD:fix/cloud-02-timing-authority-20260906
