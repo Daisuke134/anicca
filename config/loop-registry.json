@@ -642,6 +642,7 @@
       "state_root": "~/.openclaw"
     },
     "clip-loop": {
+      "adapter": "python",
       "cadence": {
         "start_interval_seconds": 86400
       },
@@ -649,9 +650,12 @@
         "max_age_days": 14,
         "max_runs": 100
       },
+      "command": [
+        "clip"
+      ],
       "domain": "growth",
       "effect_class": "publish",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/earn/marketing-engine/report/scheduled_runner.py",
       "label": "ai.anicca.clip-loop",
       "log_root": "~/.openclaw/logs",
       "provider_route": "shared-agent-runner",

@@ -90,7 +90,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         "affiliate-composition": [str(affiliate), "compose", "wake"],
         "affiliate-loop": [str(affiliate), "loop", "wake"],
         "affiliate-source-refresh": [str(affiliate), "sources", "wake"],
-        "clip-loop": [python, str(scheduled), "clip"],
         "marketing-mine-daily": [python, str(scheduled), "mine"],
         "lancers-revenue-application": [
             python, str(lancers / "application_loop.py"), "--json", "--exhaustive",
