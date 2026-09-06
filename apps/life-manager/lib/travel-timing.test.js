@@ -86,7 +86,10 @@ test("Calendar outbound Travel block starts at the same exact door departure as 
       assert.equal(anchorAtMs, START);
       return route;
     },
-    _directionsMinutes: async () => { throw new Error("Calendar must not round a structured outbound route before computing departure"); },
+    _directionsMinutes: async (_origin, _destination, _key, _anchorAtMs, _nowMs, departureMode) => {
+      if (departureMode) return 20;
+      throw new Error("Calendar must not round a structured outbound route before computing departure");
+    },
   });
 
   assert.ok(routeCalls >= 1);
