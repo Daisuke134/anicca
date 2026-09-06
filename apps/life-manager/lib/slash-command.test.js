@@ -24,7 +24,7 @@ test("/invest sends the shared host-neutral reply including its signup button", 
   const expected = buildInvestmentReply(snapshot);
   const { sent, deps } = harness({ getInvestmentState: async () => snapshot });
   const outcome = await handleSlashCommand(parseSlashCommand("/invest"), ROW, deps);
-  assert.deepEqual(outcome, { handled: true, action: "invest", ok: true });
+  assert.deepEqual(outcome, { handled: true, action: "invest", ok: true, providerMessageId: 1 });
   assert.equal(sent[0].text, expected.text);
   assert.equal(sent[0].extra.reply_markup.inline_keyboard[0][0].url, "https://app.alpaca.markets/signup");
 });
@@ -40,6 +40,26 @@ test("/invest sends the shared balance and reason without Cloud-specific copy", 
   assert.equal(sent[0].text, buildInvestmentReply(snapshot).text);
   assert.match(sent[0].text, /資産 \$99996\.76/);
   assert.match(sent[0].text, /No fresh edge\./);
+});
+
+test("/invest does not claim delivery without a Telegram provider message id", async () => {
+  for (const delivery of [
+    undefined,
+    null,
+    { ok: false },
+    { ok: true, result: {} },
+    { ok: true, result: { message_id: 0 } },
+    { ok: true, result: { message_id: -1 } },
+  ]) {
+    const { deps } = harness({
+      getInvestmentState: async () => ({ lifecycle: "setup_required" }),
+      send: async () => delivery,
+    });
+    const outcome = await handleSlashCommand(parseSlashCommand("/invest"), ROW, deps);
+    assert.equal(outcome.ok, false);
+    assert.equal(outcome.reason, delivery?.ok === false ? "delivery_failed" : "delivery_unconfirmed");
+    assert.equal(Object.hasOwn(outcome, "providerMessageId"), false);
+  }
 });
 
 test("/invest fails closed when Cloud investment state is unavailable", async () => {

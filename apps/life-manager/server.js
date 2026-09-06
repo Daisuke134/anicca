@@ -1034,9 +1034,13 @@ const server = http.createServer(async (req, res) => {
             const outcome = await handleSlashCommand(slash, row, {
               token: LM_TG_TOKEN, chatId: u.chatId, base: PUBLIC_BASE,
               supaUrl: SUPA_URL, supaKey: SUPA_KEY,
+              // L04.5 has no tenant Investment profile yet (that is L04.6). A linked Cloud tenant
+              // therefore starts at the truthful onboarding state; no broker or scheduler is
+              // reachable from this command path.
+              getInvestmentState: async () => ({ lifecycle: "setup_required" }),
             });
             if (outcome.handled) {
-              console.log(`[slash] command=${slash.name} action=${outcome.action}${outcome.ok === false ? ` reason=${outcome.reason || "failed"}` : ""}`);
+              console.log(`[slash] command=${slash.name} action=${outcome.action}${outcome.ok === false ? ` reason=${outcome.reason || "failed"}` : ""}${outcome.providerMessageId == null ? "" : ` provider_message_id=${outcome.providerMessageId}`}`);
               res.writeHead(200); res.end("ok");
               return;
             }
