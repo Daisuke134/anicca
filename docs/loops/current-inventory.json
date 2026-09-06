@@ -1,0 +1,3892 @@
+{
+  "cloud_inventory": [
+    {
+      "adapter_id": "connector-coverage-refresh",
+      "capability": "connector.coverage.refresh",
+      "effect_classes": [
+        "none"
+      ],
+      "loop_id": "connector.coverage",
+      "module_ref": "lib/connector-coverage-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "financial-report-telegram",
+      "capability": "report.financial.telegram",
+      "effect_classes": [
+        "message"
+      ],
+      "loop_id": "financial.report",
+      "module_ref": "lib/report-job-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "general-agent-work",
+      "capability": "general-agent.work",
+      "effect_classes": [
+        "none"
+      ],
+      "loop_id": "life-manager.general-agent",
+      "module_ref": "lib/general-agent-work-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "marketing-life-manager-daily",
+      "capability": "marketing.life-manager.daily.publish",
+      "effect_classes": [
+        "publish"
+      ],
+      "loop_id": "marketing.life-manager.daily",
+      "module_ref": "lib/marketing-daily-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "marketing-life-manager-daily-generation",
+      "capability": "marketing.life-manager.daily.generate",
+      "effect_classes": [
+        "none"
+      ],
+      "loop_id": "marketing.life-manager.daily.generate",
+      "module_ref": "lib/marketing-daily-generation-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "marketing-liveness-telegram",
+      "capability": "marketing.liveness.telegram",
+      "effect_classes": [
+        "message"
+      ],
+      "loop_id": "marketing.liveness",
+      "module_ref": "lib/marketing-liveness-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "marketing-platform-observation",
+      "capability": "marketing.observation.collect",
+      "effect_classes": [
+        "none"
+      ],
+      "loop_id": "marketing.observation",
+      "module_ref": "lib/marketing-observation-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "marketing-video-generation",
+      "capability": "marketing.video.generate",
+      "effect_classes": [
+        "none"
+      ],
+      "loop_id": "marketing.video.generate",
+      "module_ref": "lib/marketing-video-generation-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "marketing-video-publication",
+      "capability": "marketing.video.publish",
+      "effect_classes": [
+        "publish"
+      ],
+      "loop_id": "marketing.video.publish",
+      "module_ref": "lib/marketing-video-publication-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "marketplace-application",
+      "capability": "marketplace.application",
+      "effect_classes": [
+        "publish"
+      ],
+      "loop_id": "life-manager.manager",
+      "module_ref": "lib/marketplace-application-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "money-printer-scout",
+      "capability": "money-printer.scout",
+      "effect_classes": [
+        "none"
+      ],
+      "loop_id": "money-printer-scout",
+      "module_ref": "lib/money-printer-scout.js",
+      "owner": null,
+      "receipt_source": null
+    },
+    {
+      "adapter_id": "outbound-luma-rsvp",
+      "capability": "outbound.event.apply",
+      "effect_classes": [
+        "publish"
+      ],
+      "loop_id": "outbound.events",
+      "module_ref": "lib/luma-rsvp-adapter.js",
+      "owner": null,
+      "receipt_source": null
+    }
+  ],
+  "counts": {
+    "cloud_adapters": 12,
+    "external": 22,
+    "managed": 174,
+    "retired": 50
+  },
+  "gaps": {
+    "cloud_adapters_without_owner": [
+      "connector-coverage-refresh",
+      "financial-report-telegram",
+      "general-agent-work",
+      "marketing-life-manager-daily",
+      "marketing-life-manager-daily-generation",
+      "marketing-liveness-telegram",
+      "marketing-platform-observation",
+      "marketing-video-generation",
+      "marketing-video-publication",
+      "marketplace-application",
+      "money-printer-scout",
+      "outbound-luma-rsvp"
+    ],
+    "cloud_adapters_without_receipt_source": [
+      "connector-coverage-refresh",
+      "financial-report-telegram",
+      "general-agent-work",
+      "marketing-life-manager-daily",
+      "marketing-life-manager-daily-generation",
+      "marketing-liveness-telegram",
+      "marketing-platform-observation",
+      "marketing-video-generation",
+      "marketing-video-publication",
+      "marketplace-application",
+      "money-printer-scout",
+      "outbound-luma-rsvp"
+    ],
+    "missing_terminal_receipts": [
+      "agentmail-nudge",
+      "agentmail-replier",
+      "agentmail-webhook",
+      "franklin2-loop"
+    ],
+    "retired_labels_still_present": [
+      "ai.anicca.job-search-browser"
+    ],
+    "unmapped_effect_receipts": [
+      "affiliate-loop",
+      "agentmail-nudge",
+      "agentmail-replier",
+      "agentmail-webhook",
+      "alpaca-investment",
+      "clip-loop",
+      "crowdworks-revenue-application",
+      "crowdworks-revenue-report",
+      "fundraiser",
+      "hf-gig-apply-direct",
+      "hf-gig-storefront-direct",
+      "job-search-health",
+      "job-search-learning",
+      "lancers-revenue-application",
+      "lancers-revenue-negotiate",
+      "lancers-revenue-paid",
+      "lancers-revenue-storefront",
+      "lancers-revenue-telegram-report",
+      "life-manager-anicca-affirmation-youtube",
+      "life-manager-anicca-ai-youtube",
+      "life-manager-anicca-buddha-tiktok",
+      "life-manager-anicca-en-affirmation-instagram",
+      "life-manager-anicca-en-affirmation-tiktok",
+      "life-manager-anicca-en-card-instagram",
+      "life-manager-anicca-en-slideshow-tiktok",
+      "life-manager-anicca-en-widget-instagram",
+      "life-manager-anicca-he",
+      "life-manager-anicca-ja-widget-instagram",
+      "life-manager-anicca-jp1-tiktok",
+      "life-manager-anicca-jp4",
+      "life-manager-anicca-larry-ja-instagram",
+      "life-manager-anicca-main-instagram",
+      "life-manager-anicca-main-tiktok",
+      "life-manager-anicca-obou-instagram",
+      "life-manager-cfo-hourly",
+      "life-manager-daily",
+      "life-manager-financial-report",
+      "life-manager-honne-en",
+      "life-manager-honne-ja",
+      "life-manager-instagram-metrics",
+      "life-manager-payout",
+      "life-manager-tiktok-metrics",
+      "marketing-daily-report",
+      "marketing-mine-daily",
+      "marketing-owner-daily",
+      "marketing-owner-weekly",
+      "marketing-weekly-review",
+      "phone-conversation",
+      "pipecat-phone",
+      "pm-live-trade",
+      "reinvest",
+      "slack-bridge",
+      "the402-provider",
+      "the402-worker",
+      "warmup-flip-daily",
+      "writer-opportunity-response",
+      "writer-report",
+      "x-repost",
+      "x-repost-digest",
+      "x-repost-healthcheck",
+      "x-repost-ja-healthcheck",
+      "x-repost-ja-pass",
+      "x-tweeter",
+      "x-tweeter-healthcheck",
+      "x402-seller-8404",
+      "x402-settlement-recorder"
+    ]
+  },
+  "local_inventory": [
+    {
+      "classification": "managed",
+      "label": "ai.anicca.affiliate-browser",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.168279+00:00",
+        "release_sha": "152ed566d82063732b681a2398f29cc995a9fc8c",
+        "result": "fail"
+      },
+      "loop_id": "affiliate-browser",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.affiliate-composition",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:57:39.237582+00:00",
+        "release_sha": "152ed566d82063732b681a2398f29cc995a9fc8c",
+        "result": "pass"
+      },
+      "loop_id": "affiliate-composition",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.affiliate-impact-browser",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.167840+00:00",
+        "release_sha": "152ed566d82063732b681a2398f29cc995a9fc8c",
+        "result": "fail"
+      },
+      "loop_id": "affiliate-impact-browser",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.affiliate-loop",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:54:59.627222+00:00",
+        "release_sha": "152ed566d82063732b681a2398f29cc995a9fc8c",
+        "result": "pass"
+      },
+      "loop_id": "affiliate-loop",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.affiliate-source-refresh",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T13:24:36.958936+00:00",
+        "release_sha": "152ed566d82063732b681a2398f29cc995a9fc8c",
+        "result": "pass"
+      },
+      "loop_id": "affiliate-source-refresh",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.affiliate-x-browser",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.170696+00:00",
+        "release_sha": "152ed566d82063732b681a2398f29cc995a9fc8c",
+        "result": "fail"
+      },
+      "loop_id": "affiliate-x-browser",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.agent-economy-loop",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:05.223685+00:00",
+        "release_sha": "152ed566d82063732b681a2398f29cc995a9fc8c",
+        "result": "fail"
+      },
+      "loop_id": "agent-economy-loop",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.agentmail-nudge",
+      "last_terminal_receipt": null,
+      "loop_id": "agentmail-nudge",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.agentmail-replier",
+      "last_terminal_receipt": null,
+      "loop_id": "agentmail-replier",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.agentmail-webhook",
+      "last_terminal_receipt": null,
+      "loop_id": "agentmail-webhook",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.agents-skills-sync",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:53:20.116569+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "agents-skills-sync",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.alpaca-investment",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:10.741178+00:00",
+        "release_sha": "1988b3e38e052b1017226a4c1e1e505c049dc2e0",
+        "result": "pass"
+      },
+      "loop_id": "alpaca-investment",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.article-audit-7day",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T13:10:51.260572+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "article-audit-7day",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.article-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T09:19:47.973598+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "article-daily",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.article-healthcheck",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:40.778757+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "article-healthcheck",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.article-learn-whitelist",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T18:00:12.663840+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "article-learn-whitelist",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.article-resume",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:06.693173+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "article-resume",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.article-self-improve",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T13:45:14.113673+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "article-self-improve",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.article-zenn-retry",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:44.315129+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "article-zenn-retry",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.autohedge",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.autohedge",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.boot-panic-evidence",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T10:04:28.875677+00:00",
+        "release_sha": "a3c77aafe372c8c3434e4e5122c3bb51c7514850",
+        "result": "pass"
+      },
+      "loop_id": "boot-panic-evidence",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.bounty-core-healthcheck",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:19.065114+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "bounty-core-healthcheck",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.bounty-proactive",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.bounty-proactive",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.browser-state-backup",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T09:23:00.463039+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "browser-state-backup",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.cadence-deadline-check",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T12:05:26.022536+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "cadence-deadline-check",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.capafy-goal-monitor",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T00:32:43.121295+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "capafy-goal-monitor",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.capafy-goal-monitor-daily-close",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:52:47.876873+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "capafy-goal-monitor-daily-close",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.capafy-goal-monitor-hourly",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:00:27.517655+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "capafy-goal-monitor-hourly",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.capafy-ig-account-manager",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:08.595015+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "capafy-ig-account-manager",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.capafy-ig-marketing-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:10:38.902639+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "capafy-ig-marketing-daily",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.capafy-loop-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:20:51.284127+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "capafy-loop-daily",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.capafy-loop-healthcheck",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:36.818997+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "capafy-loop-healthcheck",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.capafy-outcome-monitor",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:58.151194+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "capafy-outcome-monitor",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.ceo-runner",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-04T11:23:09.553813+00:00",
+        "release_sha": "19a1d873c842969b32dc52060ebffb6e7ccedfba",
+        "result": "fail"
+      },
+      "loop_id": "ceo-runner",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.cfo-daily",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.cfo-daily",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.citizen-refill",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:22:07.517076+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "citizen-refill",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.citizens-diff-monitor",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.069504+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "citizens-diff-monitor",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.claude-projects-backup",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T09:23:16.679199+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "claude-projects-backup",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.clawrouter",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.clawrouter",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.clip-loop",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T09:19:58.042362+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "clip-loop",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.crowdworks-revenue-application",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:52:15.393826+00:00",
+        "release_sha": "c92368cac63a24b5d59495f4c8614aae5cdca1e1",
+        "result": "pass"
+      },
+      "loop_id": "crowdworks-revenue-application",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.crowdworks-revenue-report",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:26.172594+00:00",
+        "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
+        "result": "pass"
+      },
+      "loop_id": "crowdworks-revenue-report",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.crowdworks.acquisition",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.crowdworks.acquisition",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.crowdworks.fulfillment",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.crowdworks.fulfillment",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.crowdworks.negotiation",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.crowdworks.negotiation",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.crowdworks.storefront",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.crowdworks.storefront",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.daily-nl-report",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T12:00:15.814097+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "daily-nl-report",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.dd-keepalive-healthcheck",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.dd-keepalive-healthcheck",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.earn-watch",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:51:16.569414+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "earn-watch",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.earning-health-allslots",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:02:07.585933+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "earning-health-allslots",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.effect-watch",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T03:00:05.776874+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "effect-watch",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.f7-silence-check",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:07:09.257102+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "f7-silence-check",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.fleet-daily",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.fleet-daily",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.founder-loop-cadence",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:57:59.611336+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "founder-loop-cadence",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.franklin-loop",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:30.866458+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "franklin-loop",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.franklin2-loop",
+      "last_terminal_receipt": null,
+      "loop_id": "franklin2-loop",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.freelancer-bid-watch",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.freelancer-bid-watch",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.freelancer-revenue-application",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.freelancer-revenue-application",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.freelancer-revenue-work-sync",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.freelancer-revenue-work-sync",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.fuel-watch",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:51:06.516059+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "fuel-watch",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.fundraiser",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:05.019356+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "fundraiser",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.gig-outcome-watch",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:18:41.311891+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "gig-outcome-watch",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.hf-bounty-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T00:32:59.395529+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "hf-bounty-daily",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.hf-gig-apply-direct",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:59:58.444594+00:00",
+        "release_sha": "c92368cac63a24b5d59495f4c8614aae5cdca1e1",
+        "result": "pass"
+      },
+      "loop_id": "hf-gig-apply-direct",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.hf-gig-browser",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T05:41:53.221721+00:00",
+        "release_sha": "aa06c1b57f6b13659f0c10dab449b72303ade9b3",
+        "result": "fail"
+      },
+      "loop_id": "hf-gig-browser",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.hf-gig-daily-report",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T00:11:11.592960+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "hf-gig-daily-report",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.hf-gig-paid-direct",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:56:28.045734+00:00",
+        "release_sha": "722dd7b5596f793661717297d66ac1014109ccad",
+        "result": "pass"
+      },
+      "loop_id": "hf-gig-paid-direct",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.hf-gig-release-watch",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.hf-gig-release-watch",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.hf-gig-reply-detector",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:43.158750+00:00",
+        "release_sha": "159a9d62167a402ea247aeac17a0c30e43f5a97f",
+        "result": "pass"
+      },
+      "loop_id": "hf-gig-reply-detector",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.hf-gig-storefront-direct",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:12.127795+00:00",
+        "release_sha": "74a6269e59389c191cb8c6ef7f9552bd43539489",
+        "result": "fail"
+      },
+      "loop_id": "hf-gig-storefront-direct",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.hf-reddit-loop-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T23:35:11.021874+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "hf-reddit-loop-daily",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.hf-reddit-loop-healthcheck",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:15.776087+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "hf-reddit-loop-healthcheck",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.image-claude-p",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.355101+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "image-claude-p",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.image-franklin1",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.246961+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "image-franklin1",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.image-franklin2",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.355293+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "image-franklin2",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.job-search-browser",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.job-search-browser",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.job-search-camofox",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.job-search-camofox",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.job-search-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:51:05.213010+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "job-search-daily",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.job-search-health",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:00:36.885595+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "job-search-health",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.job-search-inbox",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:49:39.941856+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "job-search-inbox",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.job-search-learning",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T09:19:36.578631+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "job-search-learning",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.job-search-mercor",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.job-search-mercor",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.job-search-mercor-browser",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.job-search-mercor-browser",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.job-search-observability",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.job-search-observability",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.lancers-revenue-application",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:44.760784+00:00",
+        "release_sha": "c92368cac63a24b5d59495f4c8614aae5cdca1e1",
+        "result": "pass"
+      },
+      "loop_id": "lancers-revenue-application",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.lancers-revenue-browser",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T05:42:19.793043+00:00",
+        "release_sha": "af04c0dab1415a6f3f1179b0bfa4b2dbc2f8a6e1",
+        "result": "pass"
+      },
+      "loop_id": "lancers-revenue-browser",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.lancers-revenue-negotiate",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:27.977088+00:00",
+        "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
+        "result": "pass"
+      },
+      "loop_id": "lancers-revenue-negotiate",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.lancers-revenue-paid",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:55.272402+00:00",
+        "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
+        "result": "pass"
+      },
+      "loop_id": "lancers-revenue-paid",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.lancers-revenue-storefront",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:45:25.290263+00:00",
+        "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
+        "result": "pass"
+      },
+      "loop_id": "lancers-revenue-storefront",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.lancers-revenue-telegram-report",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:34.224347+00:00",
+        "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
+        "result": "pass"
+      },
+      "loop_id": "lancers-revenue-telegram-report",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.lancers-revenue-work-sync",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:23.278623+00:00",
+        "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
+        "result": "pass"
+      },
+      "loop_id": "lancers-revenue-work-sync",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-anicca-en-v1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-anicca-en-v1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-anicca-en-v2",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-anicca-en-v2",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-anicca-en-v3",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-anicca-en-v3",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-anicca-ja-v1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-anicca-ja-v1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-anicca-ja-v2",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-anicca-ja-v2",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-en-female-reel-replace-1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-en-female-reel-replace-1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-en-v1-library-post",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-en-v1-library-post",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-ja-male-buddha-reel-replace-1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-ja-male-buddha-reel-replace-1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-ja-male-cta-reel-replace-1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-ja-male-cta-reel-replace-1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-ja-v1-library-post",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-ja-v1-library-post",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-jp-sunset-reel-replace-1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-jp-sunset-reel-replace-1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-library-filler",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-library-filler",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.larry-strategy-updater",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.larry-strategy-updater",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.lateness-heartbeat",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:29.398153+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "lateness-heartbeat",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-affirmation-youtube",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T11:17:52.201811+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-affirmation-youtube",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-ai-youtube",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T10:48:12.945635+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-ai-youtube",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-buddha-tiktok",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T11:01:54.658153+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-buddha-tiktok",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-en-affirmation-instagram",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T11:02:12.404182+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-en-affirmation-instagram",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-en-affirmation-tiktok",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T11:17:59.525246+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-en-affirmation-tiktok",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-en-card-instagram",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T12:35:42.866194+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-en-card-instagram",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-en-slideshow-tiktok",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T12:04:06.804304+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-en-slideshow-tiktok",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-en-widget-instagram",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T10:02:44.412782+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-en-widget-instagram",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-he",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T04:45:58.963132+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-he",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-ja-widget-instagram",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T09:22:56.270354+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-ja-widget-instagram",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-jp1-tiktok",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T03:01:30.616843+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-jp1-tiktok",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-jp4",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T11:54:43.683020+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-jp4",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-larry-ja-instagram",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T13:40:08.753756+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-larry-ja-instagram",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-main-instagram",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T10:11:48.158481+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-main-instagram",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-main-tiktok",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T13:44:14.136252+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-anicca-main-tiktok",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-anicca-obou-instagram",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T11:00:09.172201+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-anicca-obou-instagram",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-cfo-hourly",
+      "last_terminal_receipt": {
+        "observed_at": "2026-08-30T23:30:12.596930+00:00",
+        "release_sha": "6466fea309ce3df48b32975bf61a5ade4f4f1fb3",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-cfo-hourly",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.life-manager-connector-healer-shadow",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.life-manager-connector-healer-shadow",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.life-manager-connector-host-bridge",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.life-manager-connector-host-bridge",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-connector-native",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:37:31.374087+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-connector-native",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.life-manager-connector-native-healthcheck",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.life-manager-connector-native-healthcheck",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T01:15:07.599248+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-daily",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-daily-driver",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T05:43:17.709850+00:00",
+        "release_sha": "af04c0dab1415a6f3f1179b0bfa4b2dbc2f8a6e1",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-daily-driver",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-dev",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T19:14:37.126951+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-dev",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-disk-cleanup",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:04.602984+00:00",
+        "release_sha": "159a9d62167a402ea247aeac17a0c30e43f5a97f",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-disk-cleanup",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-financial-report",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:03.745890+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-financial-report",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-honne-en",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T11:35:19.765018+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-honne-en",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-honne-ja",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T12:33:45.635806+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-honne-ja",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-instagram-metrics",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:41:02.489193+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-instagram-metrics",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.life-manager-money-printer-symphony",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.life-manager-money-printer-symphony",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.life-manager-money-printer-symphony-bridge",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.life-manager-money-printer-symphony-bridge",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-payout",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:02:14.659766+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-payout",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-release-reconciler",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:57:04.744469+00:00",
+        "release_sha": "c259cc6e1e3cf653cef5220bb1819c103fcc3678",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-release-reconciler",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-selfbuild",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T19:10:07.597476+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-selfbuild",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-taskmarket-ledger",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:24.308058+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-taskmarket-ledger",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-tiktok-metrics",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:31.039294+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-tiktok-metrics",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-ugig-invoice-observer",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:00:21.198732+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "life-manager-ugig-invoice-observer",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.life-manager-upwork-browser",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.life-manager-upwork-browser",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.life-manager-upwork-free-loop",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.life-manager-upwork-free-loop",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.life-manager-x402-ledger",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:00:50.016458+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "life-manager-x402-ledger",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.lm-recording-store",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:56:58.473440+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "lm-recording-store",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.marketing-account-audit",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.marketing-account-audit",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-daily-report",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T13:00:16.864248+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "marketing-daily-report",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-dashboard",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:51:53.512673+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "marketing-dashboard",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-metrics",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:51:52.871467+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "marketing-metrics",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-metrics-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T22:00:06.195600+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "marketing-metrics-daily",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-mine-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T20:30:07.363925+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "marketing-mine-daily",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-owner-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T13:00:42.111908+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "marketing-owner-daily",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-owner-events",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:18:41.093622+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "marketing-owner-events",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-owner-weekly",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T12:00:13.363761+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "marketing-owner-weekly",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.marketing-post-metrics",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.marketing-post-metrics",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.marketing-post-notify",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.marketing-post-notify",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-score-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T23:00:04.368232+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "marketing-score-daily",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.marketing-weekly-review",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T12:00:18.393799+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "marketing-weekly-review",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.mcp-claude-p",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.353600+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "mcp-claude-p",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.mcp-franklin1",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.352119+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "mcp-franklin1",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.mcp-franklin2",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.354858+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "mcp-franklin2",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.monkey-watchdog",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T19:00:06.979426+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "monkey-watchdog",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.openclaw-conformity-monkey",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:00:31.714978+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "openclaw-conformity-monkey",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.openclaw-core-backup",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T09:21:33.535718+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "openclaw-core-backup",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.openclaw-janitor-monkey",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T18:02:06.893210+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "openclaw-janitor-monkey",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.phone-conversation",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T11:17:02.979067+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "phone-conversation",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.phone-tunnel",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.098759+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "phone-tunnel",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.phone-tunnel-watcher",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.083625+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "phone-tunnel-watcher",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.pipecat-phone",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:22.894779+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "pipecat-phone",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.pm-decision-loop",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:41:38.443751+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "pm-decision-loop",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.pm-live-trade",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:42:27.724119+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "pm-live-trade",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.probe-rollback-1782857566-85245-proactive",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.probe-rollback-1782857566-85245-proactive",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.provision-browser.buyma.na-l5-client",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.provision-browser.buyma.na-l5-client",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.provision-browser.instagram.capafy-provision",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.provision-browser.instagram.capafy-provision",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.provision-browser.tiktok-anicca-jp",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.provision-browser.tiktok-anicca-jp",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.provision-browser.tiktok.anicca",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.provision-browser.tiktok.anicca",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.provision-browser.x.anicca",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.provision-browser.x.anicca",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.provision-browser.x.diceai0",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.provision-browser.x.diceai0",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.realtime-guide",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.095921+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "realtime-guide",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-en-card-1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-en-card-1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-en-card-2",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-en-card-2",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-en-card-3",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-en-card-3",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-en-widget-1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-en-widget-1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-en-widget-2",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-en-widget-2",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-honne-en",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-honne-en",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-honne-ja",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-honne-ja",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-honne-ja-fresh",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-honne-ja-fresh",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-ja-card-1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-ja-card-1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-ja-card-2",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-ja-card-2",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-ja-widget-1",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-ja-widget-1",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.reelclaw-ja-widget-2",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.reelclaw-ja-widget-2",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.reinvest",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T23:44:52.791444+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "reinvest",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.runtime-loop-healthcheck",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.runtime-loop-healthcheck",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.sbi-usdc-monitor",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:07:07.157542+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "sbi-usdc-monitor",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.self-improve-evolve",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T23:44:58.119330+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "self-improve-evolve",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.session-vault",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:22.245440+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "session-vault",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.slack-bridge",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:27.471894+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "slack-bridge",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.slack-metrics-poller",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.slack-metrics-poller",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.sol-trade-earning-healthcheck",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.sol-trade-earning-healthcheck",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.stripe-revenue-listener",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:35.443621+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "stripe-revenue-listener",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.stripe-revenue-poller",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T09:19:02.805255+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "stripe-revenue-poller",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.sync-memory",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.sync-memory",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.telegram-bot",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.telegram-bot",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.the402-provider",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T05:45:11.018843+00:00",
+        "release_sha": "8a343b57ed63107fca23aa4d5245a5d43269ba41",
+        "result": "pass"
+      },
+      "loop_id": "the402-provider",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.the402-worker",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-04T12:08:34.043639+00:00",
+        "release_sha": "8a343b57ed63107fca23aa4d5245a5d43269ba41",
+        "result": "pass"
+      },
+      "loop_id": "the402-worker",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.tier1-remediate",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.tier1-remediate",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.tier2-agent-diagnose",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:18:45.842149+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "tier2-agent-diagnose",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.token-daily-report",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T00:15:59.578461+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "token-daily-report",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "external",
+      "label": "ai.anicca.tsbridge",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.tsbridge",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "external"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.verify-loops-audit",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T00:02:09.078153+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "verify-loops-audit",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.warmup-flip-daily",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-05T21:30:10.914150+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "warmup-flip-daily",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.watchdog",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:41.697259+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "watchdog",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.watercolor-jp-evening",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.watercolor-jp-evening",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.watercolor-jp-morning",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.watercolor-jp-morning",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.watercolor-jp-noon",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.watercolor-jp-noon",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.writer-claim-loop",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:54:16.944689+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "writer-claim-loop",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.writer-craft-train",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:12:32.706800+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "writer-craft-train",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.writer-money-sync",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:10.376783+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "writer-money-sync",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.writer-opportunity-discovery",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T09:21:53.487110+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "writer-opportunity-discovery",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.writer-opportunity-response",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:00:15.155592+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "writer-opportunity-response",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.writer-report",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:51.154676+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "writer-report",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.writer-sales-measure",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:24:57.487249+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "writer-sales-measure",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x-repost-digest",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T00:12:53.612400+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "x-repost-digest",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x-repost-healthcheck",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:05.070981+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x-repost-healthcheck",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x-repost-ja-healthcheck",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:41.480952+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x-repost-ja-healthcheck",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x-repost-ja-pass",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:41:08.973015+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x-repost-ja-pass",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x-repost-pass",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:00:58.112423+00:00",
+        "release_sha": "e9d59c327bcae0f3cfa07e3544c85af8349d80be",
+        "result": "pass"
+      },
+      "loop_id": "x-repost",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x-tweeter-healthcheck",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:14.457337+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x-tweeter-healthcheck",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x-tweeter-pass",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T14:21:18.591415+00:00",
+        "release_sha": "7942f22419803fa5e0f0d4ef71f914cc7ce2e9af",
+        "result": "pass"
+      },
+      "loop_id": "x-tweeter",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-acquisition-controller",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:43.142305+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x402-acquisition-controller",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-claude-p",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.093829+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "x402-claude-p",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-experiment-franklin1",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:17.112918+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x402-experiment-franklin1",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-franklin1",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:04:13.807887+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "x402-franklin1",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-franklin2",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.159702+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "x402-franklin2",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-inflow-watch",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:18.250686+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x402-inflow-watch",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-inflow-watch-claude-p",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:18.322561+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x402-inflow-watch-claude-p",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-inflow-watch-franklin1",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:18.319139+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x402-inflow-watch-franklin1",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-inflow-watch-franklin2",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:05:18.323034+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x402-inflow-watch-franklin2",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-monitor",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-02T04:07:14.684683+00:00",
+        "release_sha": "439dc71da7a0c5adb1fd479e3dad5c38d5b5cb68",
+        "result": "fail"
+      },
+      "loop_id": "x402-monitor",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-research-serve",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.357204+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "x402-research-serve",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-sale-observer",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:03:58.696245+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "pass"
+      },
+      "loop_id": "x402-sale-observer",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-seller-8404",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T05:16:29.159531+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "x402-seller-8404",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "retired",
+      "label": "ai.anicca.x402-seller-8412",
+      "last_terminal_receipt": null,
+      "loop_id": "ai.anicca.x402-seller-8412",
+      "official_effect_receipt": {
+        "reason": "not_a_managed_effect",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "retired"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-settlement-recorder",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-06T15:01:49.635492+00:00",
+        "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
+        "result": "fail"
+      },
+      "loop_id": "x402-settlement-recorder",
+      "official_effect_receipt": {
+        "reason": "no_common_receipt_mapping",
+        "ref": null,
+        "status": "unknown"
+      },
+      "owner": "life-manager"
+    },
+    {
+      "classification": "managed",
+      "label": "ai.anicca.x402-tunnel",
+      "last_terminal_receipt": {
+        "observed_at": "2026-09-02T04:07:14.669653+00:00",
+        "release_sha": "439dc71da7a0c5adb1fd479e3dad5c38d5b5cb68",
+        "result": "fail"
+      },
+      "loop_id": "x402-tunnel",
+      "official_effect_receipt": {
+        "reason": "effect_class_none",
+        "ref": null,
+        "status": "not_applicable"
+      },
+      "owner": "life-manager"
+    }
+  ],
+  "schema_version": 1,
+  "sources": {
+    "cloud_adapters": "apps/life-manager/config/loop-adapters.json",
+    "cloud_adapters_sha256": "dc143ff1604f817ddf1327adb610f5a880335ec321c2ca8d72c7c759214acacf",
+    "git_head": "f7b109ab30caa3be6903d13e3afabc7919856183",
+    "registry": "config/loop-registry.json",
+    "registry_sha256": "38347498d98287402beeedd29769121a3ef2df5643b1c405f98127c354edd4e3",
+    "runtime_projection": "bin/lm-loop status all"
+  }
+}
