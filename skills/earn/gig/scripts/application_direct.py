@@ -1302,8 +1302,11 @@ def main(argv: list[str] | None = None) -> int:
         stem = "parent" if phase == "main" else phase
         completed = _run_parent(command, env, run_dir / f"{stem}.stdout", run_dir / f"{stem}.stderr")
         source_failure = _temporary_source_denial(completed)
+        # Bind unconditionally: a later branch reads denied_source_id on every phase, so leaving it
+        # assigned only inside the `if` makes an ordinary pass raise UnboundLocalError.
+        denied_source_id = source_failure[0] if source_failure is not None else None
         if source_failure is not None:
-            denied_source_id, failure_kind = source_failure
+            failure_kind = source_failure[1]
             phase_source_denials[phase] = denied_source_id
             phase_source_failure_kinds[phase] = failure_kind
             _record_temporary_source_failure(
@@ -1623,8 +1626,11 @@ def main(argv: list[str] | None = None) -> int:
             command, env, run_dir / f"{phase}.stdout", run_dir / f"{phase}.stderr"
         )
         source_failure = _temporary_source_denial(completed)
+        # Bind unconditionally: a later branch reads denied_source_id on every phase, so leaving it
+        # assigned only inside the `if` makes an ordinary pass raise UnboundLocalError.
+        denied_source_id = source_failure[0] if source_failure is not None else None
         if source_failure is not None:
-            denied_source_id, failure_kind = source_failure
+            failure_kind = source_failure[1]
             phase_source_denials[phase] = denied_source_id
             phase_source_failure_kinds[phase] = failure_kind
             _record_temporary_source_failure(
