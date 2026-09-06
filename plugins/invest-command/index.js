@@ -20,7 +20,7 @@ function localRoot() {
 function apply(action) {
   const script = fileURLToPath(new URL("../../skills/alpaca-investment/control.py", import.meta.url));
   const result = spawnSync("/usr/bin/python3", [script, "--state-root", localRoot(), "--action", action], {
-    encoding: "utf8", timeout: 5000,
+    encoding: "utf8", timeout: 60000,
   });
   if (result.status !== 0) throw new Error("investment_control_write_failed");
 }
