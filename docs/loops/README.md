@@ -19,10 +19,8 @@ SHA-256 hashes of both manifests. Regenerate it from one pinned release status c
 
 ```bash
 release="$(readlink "$HOME/loops/current")"
-"$release/bin/lm-loop" status all > /tmp/life-manager-loop-status.json
 python3 scripts/freeze-loop-inventory.py \
-  --status /tmp/life-manager-loop-status.json \
-  --source-head "$(jq -r .sha "$release/RELEASE.json")" \
+  --release "$release" \
   --output docs/loops/current-inventory.json
 ```
 

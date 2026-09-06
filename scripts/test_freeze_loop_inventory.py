@@ -15,7 +15,7 @@ class FreezeLoopInventoryTest(unittest.TestCase):
         registry = {
             "schema_version": 2,
             "loops": {
-                "alpha": {"label": "ai.anicca.alpha"},
+                "alpha": {"label": "ai.anicca.alpha", "effect_class": "money"},
             },
             "external_labels": ["ai.anicca.external"],
             "retired_labels": ["ai.anicca.retired"],
@@ -113,6 +113,38 @@ class FreezeLoopInventoryTest(unittest.TestCase):
                 registry_sha256="b" * 64,
                 adapters_sha256="c" * 64,
             )
+
+    def test_rejects_spoofed_managed_identity_owner_or_effect(self):
+        registry = {
+            "schema_version": 2,
+            "loops": {"alpha": {"label": "ai.anicca.alpha", "effect_class": "money"}},
+            "external_labels": [],
+            "retired_labels": [],
+        }
+        base = {
+            "classification": "managed",
+            "owner": "life-manager",
+            "loop_id": "alpha",
+            "label": "ai.anicca.alpha",
+            "effect_class": "money",
+            "effect_status": "unknown",
+            "last_terminal_result": None,
+        }
+        for replacement in (
+            {"loop_id": "spoofed"},
+            {"label": "ai.anicca.spoofed"},
+            {"owner": "external"},
+            {"effect_class": "none"},
+        ):
+            with self.subTest(replacement=replacement), self.assertRaisesRegex(ValueError, "managed row mismatch"):
+                MODULE.build_projection(
+                    registry=registry,
+                    adapters={"schema_version": 1, "adapters": []},
+                    status=[{**base, **replacement}],
+                    source_head="a" * 40,
+                    registry_sha256="b" * 64,
+                    adapters_sha256="c" * 64,
+                )
 
 
 if __name__ == "__main__":

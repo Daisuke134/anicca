@@ -267,7 +267,7 @@
       "classification": "managed",
       "label": "ai.anicca.affiliate-composition",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:57:39.237582+00:00",
+        "observed_at": "2026-09-06T15:07:54.173966+00:00",
         "release_sha": "152ed566d82063732b681a2398f29cc995a9fc8c",
         "result": "pass"
       },
@@ -347,7 +347,7 @@
       "classification": "managed",
       "label": "ai.anicca.agent-economy-loop",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:05:05.223685+00:00",
+        "observed_at": "2026-09-06T15:13:12.500876+00:00",
         "release_sha": "152ed566d82063732b681a2398f29cc995a9fc8c",
         "result": "fail"
       },
@@ -415,8 +415,8 @@
       "classification": "managed",
       "label": "ai.anicca.alpaca-investment",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:10.741178+00:00",
-        "release_sha": "1988b3e38e052b1017226a4c1e1e505c049dc2e0",
+        "observed_at": "2026-09-06T15:11:27.296353+00:00",
+        "release_sha": "f7b109ab30caa3be6903d13e3afabc7919856183",
         "result": "pass"
       },
       "loop_id": "alpaca-investment",
@@ -463,7 +463,7 @@
       "classification": "managed",
       "label": "ai.anicca.article-healthcheck",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:04:40.778757+00:00",
+        "observed_at": "2026-09-06T15:09:44.370371+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -495,7 +495,7 @@
       "classification": "managed",
       "label": "ai.anicca.article-resume",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:06.693173+00:00",
+        "observed_at": "2026-09-06T15:11:17.115563+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -527,7 +527,7 @@
       "classification": "managed",
       "label": "ai.anicca.article-zenn-retry",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:44.315129+00:00",
+        "observed_at": "2026-09-06T15:11:55.002083+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -571,7 +571,7 @@
       "classification": "managed",
       "label": "ai.anicca.bounty-core-healthcheck",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:05:19.065114+00:00",
+        "observed_at": "2026-09-06T15:10:24.661798+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -679,7 +679,7 @@
       "classification": "managed",
       "label": "ai.anicca.capafy-ig-account-manager",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:08.595015+00:00",
+        "observed_at": "2026-09-06T15:13:17.464038+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -727,7 +727,7 @@
       "classification": "managed",
       "label": "ai.anicca.capafy-loop-healthcheck",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:36.818997+00:00",
+        "observed_at": "2026-09-06T15:08:40.994128+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -743,7 +743,7 @@
       "classification": "managed",
       "label": "ai.anicca.capafy-outcome-monitor",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:04:58.151194+00:00",
+        "observed_at": "2026-09-06T15:13:23.112725+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -863,9 +863,9 @@
       "classification": "managed",
       "label": "ai.anicca.crowdworks-revenue-application",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:52:15.393826+00:00",
+        "observed_at": "2026-09-06T15:08:05.493815+00:00",
         "release_sha": "c92368cac63a24b5d59495f4c8614aae5cdca1e1",
-        "result": "pass"
+        "result": "fail"
       },
       "loop_id": "crowdworks-revenue-application",
       "official_effect_receipt": {
@@ -879,7 +879,7 @@
       "classification": "managed",
       "label": "ai.anicca.crowdworks-revenue-report",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:26.172594+00:00",
+        "observed_at": "2026-09-06T15:11:34.398206+00:00",
         "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
         "result": "pass"
       },
@@ -987,7 +987,7 @@
       "classification": "managed",
       "label": "ai.anicca.earning-health-allslots",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:02:07.585933+00:00",
+        "observed_at": "2026-09-06T15:12:15.028952+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -1019,7 +1019,7 @@
       "classification": "managed",
       "label": "ai.anicca.f7-silence-check",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:07:09.257102+00:00",
+        "observed_at": "2026-09-06T15:07:08.992920+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -1127,7 +1127,7 @@
       "classification": "managed",
       "label": "ai.anicca.fuel-watch",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:51:06.516059+00:00",
+        "observed_at": "2026-09-06T15:06:11.651230+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -1143,7 +1143,7 @@
       "classification": "managed",
       "label": "ai.anicca.fundraiser",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:05:05.019356+00:00",
+        "observed_at": "2026-09-06T15:13:32.495170+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -1191,9 +1191,9 @@
       "classification": "managed",
       "label": "ai.anicca.hf-gig-apply-direct",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:59:58.444594+00:00",
-        "release_sha": "c92368cac63a24b5d59495f4c8614aae5cdca1e1",
-        "result": "pass"
+        "observed_at": "2026-09-06T15:13:10.745708+00:00",
+        "release_sha": "d1bb624e4939a35b99e4725d2b602794929fcad8",
+        "result": "fail"
       },
       "loop_id": "hf-gig-apply-direct",
       "official_effect_receipt": {
@@ -1239,7 +1239,7 @@
       "classification": "managed",
       "label": "ai.anicca.hf-gig-paid-direct",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:56:28.045734+00:00",
+        "observed_at": "2026-09-06T15:07:47.650819+00:00",
         "release_sha": "722dd7b5596f793661717297d66ac1014109ccad",
         "result": "pass"
       },
@@ -1267,8 +1267,8 @@
       "classification": "managed",
       "label": "ai.anicca.hf-gig-reply-detector",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:43.158750+00:00",
-        "release_sha": "159a9d62167a402ea247aeac17a0c30e43f5a97f",
+        "observed_at": "2026-09-06T15:12:52.965688+00:00",
+        "release_sha": "74a6269e59389c191cb8c6ef7f9552bd43539489",
         "result": "pass"
       },
       "loop_id": "hf-gig-reply-detector",
@@ -1283,9 +1283,9 @@
       "classification": "managed",
       "label": "ai.anicca.hf-gig-storefront-direct",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:12.127795+00:00",
-        "release_sha": "74a6269e59389c191cb8c6ef7f9552bd43539489",
-        "result": "fail"
+        "observed_at": "2026-09-06T15:12:05.873905+00:00",
+        "release_sha": "f7b109ab30caa3be6903d13e3afabc7919856183",
+        "result": "pass"
       },
       "loop_id": "hf-gig-storefront-direct",
       "official_effect_receipt": {
@@ -1315,7 +1315,7 @@
       "classification": "managed",
       "label": "ai.anicca.hf-reddit-loop-healthcheck",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:15.776087+00:00",
+        "observed_at": "2026-09-06T15:11:21.648511+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -1419,9 +1419,9 @@
       "classification": "managed",
       "label": "ai.anicca.job-search-health",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:00:36.885595+00:00",
+        "observed_at": "2026-09-06T15:10:58.277882+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
-        "result": "pass"
+        "result": "fail"
       },
       "loop_id": "job-search-health",
       "official_effect_receipt": {
@@ -1435,9 +1435,9 @@
       "classification": "managed",
       "label": "ai.anicca.job-search-inbox",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:49:39.941856+00:00",
+        "observed_at": "2026-09-06T15:06:15.920564+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
-        "result": "pass"
+        "result": "fail"
       },
       "loop_id": "job-search-inbox",
       "official_effect_receipt": {
@@ -1503,8 +1503,8 @@
       "classification": "managed",
       "label": "ai.anicca.lancers-revenue-application",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:04:44.760784+00:00",
-        "release_sha": "c92368cac63a24b5d59495f4c8614aae5cdca1e1",
+        "observed_at": "2026-09-06T15:13:41.283082+00:00",
+        "release_sha": "d1bb624e4939a35b99e4725d2b602794929fcad8",
         "result": "pass"
       },
       "loop_id": "lancers-revenue-application",
@@ -1535,7 +1535,7 @@
       "classification": "managed",
       "label": "ai.anicca.lancers-revenue-negotiate",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:27.977088+00:00",
+        "observed_at": "2026-09-06T15:11:41.239253+00:00",
         "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
         "result": "pass"
       },
@@ -1551,7 +1551,7 @@
       "classification": "managed",
       "label": "ai.anicca.lancers-revenue-paid",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:55.272402+00:00",
+        "observed_at": "2026-09-06T15:12:26.936760+00:00",
         "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
         "result": "pass"
       },
@@ -1583,7 +1583,7 @@
       "classification": "managed",
       "label": "ai.anicca.lancers-revenue-telegram-report",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:34.224347+00:00",
+        "observed_at": "2026-09-06T15:08:59.560239+00:00",
         "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
         "result": "pass"
       },
@@ -1599,7 +1599,7 @@
       "classification": "managed",
       "label": "ai.anicca.lancers-revenue-work-sync",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:23.278623+00:00",
+        "observed_at": "2026-09-06T15:08:51.917807+00:00",
         "release_sha": "7ddf271a93003774f75bd8d2621504eae2e70e96",
         "result": "pass"
       },
@@ -1771,7 +1771,7 @@
       "classification": "managed",
       "label": "ai.anicca.lateness-heartbeat",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:04:29.398153+00:00",
+        "observed_at": "2026-09-06T15:09:31.560751+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -2159,9 +2159,9 @@
       "classification": "managed",
       "label": "ai.anicca.life-manager-disk-cleanup",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:04.602984+00:00",
+        "observed_at": "2026-09-06T15:10:36.831841+00:00",
         "release_sha": "159a9d62167a402ea247aeac17a0c30e43f5a97f",
-        "result": "fail"
+        "result": "pass"
       },
       "loop_id": "life-manager-disk-cleanup",
       "official_effect_receipt": {
@@ -2175,7 +2175,7 @@
       "classification": "managed",
       "label": "ai.anicca.life-manager-financial-report",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:03.745890+00:00",
+        "observed_at": "2026-09-06T15:13:20.983149+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -2223,7 +2223,7 @@
       "classification": "managed",
       "label": "ai.anicca.life-manager-instagram-metrics",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:41:02.489193+00:00",
+        "observed_at": "2026-09-06T15:11:05.244949+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -2263,7 +2263,7 @@
       "classification": "managed",
       "label": "ai.anicca.life-manager-payout",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:02:14.659766+00:00",
+        "observed_at": "2026-09-06T15:12:37.838914+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -2279,7 +2279,7 @@
       "classification": "managed",
       "label": "ai.anicca.life-manager-release-reconciler",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:57:04.744469+00:00",
+        "observed_at": "2026-09-06T15:10:49.869255+00:00",
         "release_sha": "c259cc6e1e3cf653cef5220bb1819c103fcc3678",
         "result": "pass"
       },
@@ -2311,7 +2311,7 @@
       "classification": "managed",
       "label": "ai.anicca.life-manager-taskmarket-ledger",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:24.308058+00:00",
+        "observed_at": "2026-09-06T15:08:34.435134+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -2343,7 +2343,7 @@
       "classification": "managed",
       "label": "ai.anicca.life-manager-ugig-invoice-observer",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:00:21.198732+00:00",
+        "observed_at": "2026-09-06T15:10:47.698953+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -2383,7 +2383,7 @@
       "classification": "managed",
       "label": "ai.anicca.life-manager-x402-ledger",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:00:50.016458+00:00",
+        "observed_at": "2026-09-06T15:11:13.990386+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -2443,7 +2443,7 @@
       "classification": "managed",
       "label": "ai.anicca.marketing-dashboard",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:51:53.512673+00:00",
+        "observed_at": "2026-09-06T15:06:56.017933+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -2459,7 +2459,7 @@
       "classification": "managed",
       "label": "ai.anicca.marketing-metrics",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:51:52.871467+00:00",
+        "observed_at": "2026-09-06T15:06:55.495291+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -2771,7 +2771,7 @@
       "classification": "managed",
       "label": "ai.anicca.pipecat-phone",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:05:22.894779+00:00",
+        "observed_at": "2026-09-06T15:13:15.895028+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3091,7 +3091,7 @@
       "classification": "managed",
       "label": "ai.anicca.sbi-usdc-monitor",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:07:07.157542+00:00",
+        "observed_at": "2026-09-06T15:07:07.032052+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -3139,7 +3139,7 @@
       "classification": "managed",
       "label": "ai.anicca.slack-bridge",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:05:27.471894+00:00",
+        "observed_at": "2026-09-06T15:13:42.106871+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -3179,7 +3179,7 @@
       "classification": "managed",
       "label": "ai.anicca.stripe-revenue-listener",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:05:35.443621+00:00",
+        "observed_at": "2026-09-06T15:13:44.292404+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3355,7 +3355,7 @@
       "classification": "managed",
       "label": "ai.anicca.watchdog",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:41.697259+00:00",
+        "observed_at": "2026-09-06T15:12:22.807757+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3407,7 +3407,7 @@
       "classification": "managed",
       "label": "ai.anicca.writer-claim-loop",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:54:16.944689+00:00",
+        "observed_at": "2026-09-06T15:09:36.934909+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3439,7 +3439,7 @@
       "classification": "managed",
       "label": "ai.anicca.writer-money-sync",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:04:10.376783+00:00",
+        "observed_at": "2026-09-06T15:10:02.602633+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3487,7 +3487,7 @@
       "classification": "managed",
       "label": "ai.anicca.writer-report",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:51.154676+00:00",
+        "observed_at": "2026-09-06T15:12:06.029534+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3535,7 +3535,7 @@
       "classification": "managed",
       "label": "ai.anicca.x-repost-healthcheck",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:05.070981+00:00",
+        "observed_at": "2026-09-06T15:11:09.798968+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3551,7 +3551,7 @@
       "classification": "managed",
       "label": "ai.anicca.x-repost-ja-healthcheck",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:04:41.480952+00:00",
+        "observed_at": "2026-09-06T15:09:45.365825+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3567,7 +3567,7 @@
       "classification": "managed",
       "label": "ai.anicca.x-repost-ja-pass",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T14:41:08.973015+00:00",
+        "observed_at": "2026-09-06T15:12:54.394589+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3599,7 +3599,7 @@
       "classification": "managed",
       "label": "ai.anicca.x-tweeter-healthcheck",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:14.457337+00:00",
+        "observed_at": "2026-09-06T15:11:18.303875+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3631,7 +3631,7 @@
       "classification": "managed",
       "label": "ai.anicca.x402-acquisition-controller",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:43.142305+00:00",
+        "observed_at": "2026-09-06T15:08:49.012291+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3663,7 +3663,7 @@
       "classification": "managed",
       "label": "ai.anicca.x402-experiment-franklin1",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:04:17.112918+00:00",
+        "observed_at": "2026-09-06T15:10:10.296871+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3679,7 +3679,7 @@
       "classification": "managed",
       "label": "ai.anicca.x402-franklin1",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:04:13.807887+00:00",
+        "observed_at": "2026-09-06T15:10:05.798374+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },
@@ -3807,7 +3807,7 @@
       "classification": "managed",
       "label": "ai.anicca.x402-sale-observer",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:03:58.696245+00:00",
+        "observed_at": "2026-09-06T15:09:06.265303+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "pass"
       },
@@ -3851,7 +3851,7 @@
       "classification": "managed",
       "label": "ai.anicca.x402-settlement-recorder",
       "last_terminal_receipt": {
-        "observed_at": "2026-09-06T15:01:49.635492+00:00",
+        "observed_at": "2026-09-06T15:12:18.198318+00:00",
         "release_sha": "1969be1d0c6e2e6e800b81d43da909139f1cf410",
         "result": "fail"
       },

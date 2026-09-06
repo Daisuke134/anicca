@@ -24,10 +24,35 @@ def build_projection(*, registry: dict, adapters: dict, status: list[dict],
         "retired": len(registry.get("retired_labels", [])),
     }
     actual = Counter(row["classification"] for row in status)
-    if set(actual) != set(expected) or any(
+    if set(actual) - set(expected) or any(
         actual.get(kind, 0) != count for kind, count in expected.items()
     ):
         raise ValueError(f"classification counts do not match registry: expected={expected} actual={dict(actual)}")
+
+    rows_by_class = {
+        kind: {row["loop_id"]: row for row in status if row["classification"] == kind}
+        for kind in expected
+    }
+    for loop_id, entry in registry["loops"].items():
+        row = rows_by_class["managed"].get(loop_id)
+        expected_identity = (
+            entry["label"], "life-manager", entry["effect_class"]
+        )
+        if row is None or (
+            row.get("label"), row.get("owner"), row.get("effect_class")
+        ) != expected_identity:
+            raise ValueError(f"managed row mismatch: {loop_id}")
+    for classification, owner, labels in (
+        ("external", "external", registry.get("external_labels", [])),
+        ("retired", "retired", registry.get("retired_labels", [])),
+    ):
+        expected_labels = set(labels)
+        actual_labels = set(rows_by_class[classification])
+        if actual_labels != expected_labels or any(
+            row.get("label") != loop_id or row.get("owner") != owner
+            for loop_id, row in rows_by_class[classification].items()
+        ):
+            raise ValueError(f"{classification} row mismatch")
 
     local_inventory = []
     missing_terminal = []
@@ -121,22 +146,34 @@ def build_projection(*, registry: dict, adapters: dict, status: list[dict],
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument("--status", type=Path, required=True)
+    parser.add_argument("--release", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--source-head")
     args = parser.parse_args()
 
     root = args.root.resolve()
-    registry_path = root / "config/loop-registry.json"
-    adapters_path = root / "apps/life-manager/config/loop-adapters.json"
-    source_head = args.source_head or subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "HEAD"],
+    release = args.release.resolve()
+    release_metadata = json.loads((release / "RELEASE.json").read_text())
+    source_head = release_metadata["sha"]
+    registry_path = release / "config/loop-registry.json"
+    adapters_path = release / "apps/life-manager/config/loop-adapters.json"
+    for relative, release_path in (
+        ("config/loop-registry.json", registry_path),
+        ("apps/life-manager/config/loop-adapters.json", adapters_path),
+    ):
+        committed = subprocess.run(
+            ["git", "-C", str(root), "show", f"{source_head}:{relative}"],
+            check=True, capture_output=True,
+        ).stdout
+        if hashlib.sha256(committed).hexdigest() != sha256(release_path):
+            raise ValueError(f"release manifest does not match source commit: {relative}")
+    status = json.loads(subprocess.run(
+        [str(release / "bin/lm-loop"), "status", "all"],
         check=True, capture_output=True, text=True,
-    ).stdout.strip()
+    ).stdout)
     projection = build_projection(
         registry=json.loads(registry_path.read_text()),
         adapters=json.loads(adapters_path.read_text()),
-        status=json.loads(args.status.read_text()),
+        status=status,
         source_head=source_head,
         registry_sha256=sha256(registry_path),
         adapters_sha256=sha256(adapters_path),
