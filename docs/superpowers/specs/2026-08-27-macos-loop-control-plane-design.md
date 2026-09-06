@@ -129,6 +129,10 @@ completion remain separate.
    - [x] Add registry-level browser profile/port ownership validation and record six unique owners:
      Affiliate provider/Impact/X, Gig, Lancers and the shared daily-driver. Duplicate declared
      profiles or ports now fail registry validation before apply.
+   - [x] Route the Gig/Coconala browser launcher through the shared host-wide ownership primitive.
+     The wrapper owns the entire launcher/Chromium process tree, while existing vault restore and
+     signal forwarding remain unchanged. Focused launcher and ownership tests pass. The live Gig
+     browser was not restarted; enforcement begins on its next source-derived natural launch.
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
