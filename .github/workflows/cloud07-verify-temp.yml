@@ -1,0 +1,44 @@
+name: TEMP CLOUD-07 Stripe verification
+
+on:
+  push:
+    branches:
+      - verify/cloud-07-stripe-20260906
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/life-manager
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Billing, trial, webhook, and entitlement contracts
+        run: |
+          set -eu
+          node --test \
+            lib/billing.test.js \
+            lib/user-selector.test.js \
+            lib/panel-api.test.js \
+            lib/telegram-onboard.test.js \
+            lib/payment-link.test.js \
+            test/stripe-webhook-http-contract.test.js
+      - name: Real PostgreSQL trial-once contract
+        run: bash test/postgres/lm-trial-first.integration.sh
+      - name: Stripe webhook fail-closed source contract
+        run: |
+          set -eu
+          grep -F 'stripe.webhooks.constructEvent(raw, req.headers["stripe-signature"], process.env.STRIPE_WEBHOOK_SECRET || "")' server.js
+          grep -F 'const raw = await readRawBody(req)' server.js
+          grep -F 'STRIPE_WEBHOOK_SECRET' server.js
+          grep -F 'lm_stripe_events' lib/billing.js
