@@ -3205,6 +3205,7 @@
     "ai.anicca.slack-metrics-poller",
     "ai.anicca.sol-trade-earning-healthcheck",
     "ai.anicca.sync-memory",
+    "ai.anicca.telegram-bot",
     "ai.anicca.tier1-remediate",
     "ai.anicca.watercolor-jp-evening",
     "ai.anicca.watercolor-jp-morning",

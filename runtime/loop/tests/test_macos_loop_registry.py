@@ -51,6 +51,11 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertNotIn("money-printer-symphony-bridge", registry["loops"])
         self.assertIn("ai.anicca.life-manager-money-printer-symphony-bridge", registry["retired_labels"])
 
+    def test_legacy_telegram_bot_is_retired_after_gateway_cutover(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        self.assertNotIn("telegram-bot", registry["loops"])
+        self.assertIn("ai.anicca.telegram-bot", registry["retired_labels"])
+
     def test_release_reconciler_is_an_independent_system_owner(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["life-manager-release-reconciler"]
