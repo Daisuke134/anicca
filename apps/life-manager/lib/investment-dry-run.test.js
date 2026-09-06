@@ -18,6 +18,24 @@ test("production fixture is packaged inside the Railway app root with the sealed
     "a123789d7306f1551dc8e8637fc15e2af732f756b57170fe2a1928aeb2375592");
 });
 
+test("a Local/Cloud parity mismatch fails closed before the durable receipt", async () => {
+  let completed = false;
+  let enqueued;
+  const jobs = { enqueueJob: async (job) => (enqueued = job, { created: true, job }),
+    claimJobs: async () => [{ job_id: enqueued.jobId, tenant_id: "owner-1",
+      loop_id: enqueued.loopId, capability: enqueued.capability, effect_class: "none",
+      effect_key: null, attempt: 1, input_refs: enqueued.inputRefs }],
+    completeJob: async () => { completed = true; } };
+  const fixture = { no_trade: { approved: false, candidate_ref: "NO_TRADE",
+    gate: "model_no_trade", reason: "No edge", observed_at: "2026-09-06T00:00:00Z" },
+    observation: { account: { cash: "100000.00", equity: "100000.00" } } };
+  const run = makeInvestmentDryRun({ listRunnable: async () => [state] }, jobs, {
+    getEnv: () => ({ LM_INVESTMENT_CLOUD_DRY_RUN_ENABLED: "true" }), fixture,
+    fixtureDigest: "d".repeat(64), expectedParity: {}, workerId: "worker-1" });
+  await assert.rejects(() => run(new Date("2026-09-06T12:00:00Z")), /parity mismatch/);
+  assert.equal(completed, false);
+});
+
 test("in-process owner starts immediately and repeats every five minutes", async () => {
   let runs = 0;
   let timer;
@@ -63,7 +81,7 @@ test("enabled dry-run writes one effect-none receipt and replay creates no dupli
   };
   const run = makeInvestmentDryRun({ listRunnable: async () => [state] }, jobs, {
     getEnv: () => ({ LM_INVESTMENT_CLOUD_DRY_RUN_ENABLED: "true" }),
-    fixture: { no_trade: { candidate_ref: "NO_TRADE", gate: "model_no_trade", reason: "No edge" },
+    fixture: { no_trade: { approved: false, candidate_ref: "NO_TRADE", gate: "model_no_trade", reason: "No edge", observed_at: "2026-09-06T00:00:00Z" },
       observation: { account: { cash: "100000.00", equity: "100000.00" } } },
     fixtureDigest: "a".repeat(64), workerId: "worker-1",
   });
@@ -99,7 +117,7 @@ test("an older claimed slot completes with its own immutable lineage", async () 
   };
   const run = makeInvestmentDryRun({ listRunnable: async () => [state] }, jobs, {
     getEnv: () => ({ LM_INVESTMENT_CLOUD_DRY_RUN_ENABLED: "true" }), fixtureDigest: digest,
-    fixture: { no_trade: { candidate_ref: "NO_TRADE", gate: "model_no_trade", reason: "No edge" },
+    fixture: { no_trade: { approved: false, candidate_ref: "NO_TRADE", gate: "model_no_trade", reason: "No edge", observed_at: "2026-09-06T00:00:00Z" },
       observation: { account: { cash: "1.00", equity: "1.00" } } }, workerId: "worker-1",
   });
   const result = await run(new Date("2026-09-06T12:05:00Z"));
@@ -123,7 +141,7 @@ test("claimed job with foreign state lineage fails closed before completion", as
   };
   const run = makeInvestmentDryRun({ listRunnable: async () => [state] }, jobs, {
     getEnv: () => ({ LM_INVESTMENT_CLOUD_DRY_RUN_ENABLED: "true" }), fixtureDigest: digest,
-    fixture: { no_trade: { candidate_ref: "NO_TRADE", gate: "model_no_trade", reason: "No edge" },
+    fixture: { no_trade: { approved: false, candidate_ref: "NO_TRADE", gate: "model_no_trade", reason: "No edge", observed_at: "2026-09-06T00:00:00Z" },
       observation: { account: { cash: "1.00", equity: "1.00" } } }, workerId: "worker-1",
   });
   await assert.rejects(() => run(new Date("2026-09-06T12:05:00Z")), /claimed job invalid/);
