@@ -286,16 +286,6 @@ completion remain separate.
      keep the parent alive for more than 29 minutes, preventing a new five-minute observation wake; after
      these liabilities clear, separate bounded discovery cadence from long project progress without
      spawning unmanaged orphan workers.
-     Current rollout truth (`2026-09-06 23:22 JST`): PR `#4256` is merged; source regressions pass
-     (runtime 121, host/browser 51, Paid-focused 124) and a fresh read-only review returned `ship`.
-     Immutable main release `84a30dc5` is cut and selected by `~/loops/current`, but Paid PID `45593`
-     is still finishing a natural run from old release `722dd7b5`; it is deliberately not interrupted.
-     `loaded-idle-only` therefore skipped the target. The latest durable aggregate still reports
-     `failed=0`, `pending=1`, Ryu `18211957=satisfied_noop`, but official talkroom evidence contains
-     buyer feedback newer than the last seller reply (`アンケートのバナーが写メ日記`, red-text removal,
-     and the waiting-area item 5 correction). Therefore Ryu is not complete: after the old run exits,
-     apply only `hf-gig-paid-direct` to `84a30dc5`, require its natural pass to process that newer
-     feedback, then require exact seller-message readback and `formal_delivery_checkbox=false`.
 3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
    accounting, every authorized application submitted, exact official readback and replay-zero.
 4. [ ] Integrate the Storefront owner's focused public-main commit and require one verified authorized
