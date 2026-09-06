@@ -73,6 +73,48 @@ print('1' if d.get('stopped') else '')" 2>/dev/null || true)"
   fi
 fi
 
+# ── gig browser (coconala:kosuke) ──
+# The gig Apply/Paid/Storefront lanes do not work in the daily-driver: browser-guard resolves
+# coconala:kosuke to its own Chrome on its own profile. :9222 and that browser were once the same
+# process behind a proxy, so warming :9222 warmed both; once they were split, nothing warmed the
+# gig one and its Coconala session rotted exactly the way a cold clip profile does.
+#
+# Measured 2026-09-07: /mypage and /offers/add/<id> both redirected to the top page on the gig
+# browser while :9222 stayed logged in, so this keepalive reported healthy for four days while
+# Coconala applied to nothing. The lane itself said so on every listing -- "公式ページで募集受付中の
+# 応募フォームを確認できなかったためです" -- but nothing ever tied that to the session.
+#
+# The lease is the concurrency contract: BUSY means a gig lane is driving that browser right now,
+# which is itself traffic, so skipping is correct and never forces a tab into a live pass.
+GIG_GUARD="$HOME/.config/ai/bin/browser-guard.sh"
+if [ -x "$GIG_GUARD" ]; then
+  log "gig browser: acquire coconala:kosuke"
+  if GIG_CDP="$("$GIG_GUARD" acquire coconala:kosuke 2>/dev/null)"; then
+    GIG_PORT="$(printf '%s' "$GIG_CDP" | sed -n 's|.*:\([0-9][0-9]*\)/*$|\1|p')"
+    if [ -n "$GIG_PORT" ]; then
+      log "gig browser: keepalive on :$GIG_PORT"
+      GIG_OUT="$(SESSION_VAULT_PORT="$GIG_PORT" python3 "$V" keepalive \
+        "https://coconala.com/mypage/dashboard" || true)"
+      echo "$GIG_OUT"
+      GIG_DEAD="$(printf '%s' "$GIG_OUT" | python3 -c "
+import json,sys
+try: d = json.load(sys.stdin)
+except Exception: sys.exit(0)
+print(','.join(p['url'] for p in d.get('pages', []) if p.get('logged_out')))
+" 2>/dev/null || true)"
+      if [ -n "$GIG_DEAD" ]; then
+        log "ALERT: gig browser session dead for: $GIG_DEAD"
+        telegram_notify "session_vault keepalive: GIG browser (coconala:kosuke :$GIG_PORT) session DEAD for: $GIG_DEAD. This is the browser Apply/Paid/Storefront actually use, so every Coconala application stops until it is logged in again." || true
+      fi
+    else
+      log "gig browser: could not read a port from the lease, skipping"
+    fi
+    "$GIG_GUARD" release coconala:kosuke >/dev/null 2>&1 || true
+  else
+    log "gig browser: lease BUSY or unreachable, skipping this tick"
+  fi
+fi
+
 # ── per-account clip browsers (clip-en, clip-en2, clip-en3, ...) ──
 # Guard: clip_pass.sh drives these same Chrome profiles concurrently (posting via instagrapi,
 # some CDP use). Opening extra tabs on the same IG-authenticated profile while a pass is live
