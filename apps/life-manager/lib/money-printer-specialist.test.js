@@ -323,12 +323,14 @@ test("cloud qualification rejects empty or failed Gemini responses without updat
   for (const mode of ["empty", "transport"]) {
     let calls = 0;
     let updates = 0;
+    const usage = [];
     const specialist = createMoneyPrinterSpecialist({
       geminiKey: "gemini-secret-key",
       dataDir: fs.mkdtempSync(path.join(os.tmpdir(), `lm-money-specialist-cloud-${mode}-`)),
       repoRoot: "/repo",
       readOpportunity: async () => opportunity(),
       updateOpportunity: async () => { updates += 1; return opportunity({ status: "QUALIFIED" }); },
+      recordUsageEvent: async (event) => { usage.push(event); return true; },
       fetchImpl: async () => {
         calls += 1;
         if (mode === "transport") throw new Error("transport body must stay private");
@@ -338,6 +340,12 @@ test("cloud qualification rejects empty or failed Gemini responses without updat
     await assert.rejects(specialist(expected()), /cloud|qualification|unavailable/i);
     assert.equal(calls, 1);
     assert.equal(updates, 0);
+    if (mode === "transport") {
+      assert.equal(usage.length, 1);
+      assert.equal(usage[0].outcome, "failure");
+      assert.equal(usage[0].failureClass, "transport");
+      assert.equal(usage[0].customerUsage, undefined);
+    }
   }
 });
 

@@ -1,7 +1,7 @@
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { geminiUsageEvents, persistGeminiUsage } = require("./gemini-usage.js");
+const { geminiUsageEvents, persistGeminiUsage, persistGeminiFailure } = require("./gemini-usage.js");
 
 test("separates Gemini token cost from Search grounding cost", () => {
   const events = geminiUsageEvents({
@@ -42,4 +42,19 @@ test("uses the 2026 Gemini 3.7 Flash and grounding rates", () => {
     usageMetadata: { promptTokenCount: 1000, candidatesTokenCount: 100, totalTokenCount: 1100 },
   }, { tenantId: "t1", feature: "scout", model: "gemini-3.7-flash", grounded: true, success: true });
   assert.deepEqual(events.map((event) => event.estimatedCostUsd), [0.001125, 0.014]);
+});
+
+test("provider failure is observable without inventing token or grounding cost", async () => {
+  const rows = [];
+  await persistGeminiFailure({ tenantId: "t1", feature: "scout", model: "gemini-3.7-flash",
+    grounded: true, failureClass: "provider_5xx" }, {
+    recordUsageEvent: async (row) => { rows.push(row); return true; },
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].provider, "gemini");
+  assert.equal(rows[0].outcome, "failure");
+  assert.equal(rows[0].failureClass, "provider_5xx");
+  assert.equal(rows[0].providerUnits, 0);
+  assert.equal(rows[0].estimatedCostUsd, 0);
+  assert.equal(rows[0].meta.estimate_status, "unavailable");
 });

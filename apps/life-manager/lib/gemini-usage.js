@@ -52,4 +52,11 @@ async function persistGeminiUsage(response, context = {}, options = {}) {
   return ok;
 }
 
-module.exports = { geminiUsageEvents, persistGeminiUsage };
+async function persistGeminiFailure(context = {}, options = {}) {
+  return persistGeminiUsage({}, {
+    ...context, success: false, grounded: false,
+    failureClass: context.failureClass || "provider_failure",
+  }, options);
+}
+
+module.exports = { geminiUsageEvents, persistGeminiUsage, persistGeminiFailure };

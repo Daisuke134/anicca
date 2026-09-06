@@ -3,7 +3,7 @@
 const { createHash } = require("node:crypto");
 const path = require("node:path");
 const { canonicalOpportunityInput, createOpportunity } = require("./money-printer-opportunity.js");
-const { persistGeminiUsage } = require("./gemini-usage.js");
+const { persistGeminiUsage, persistGeminiFailure } = require("./gemini-usage.js");
 
 const CAPABILITY = "money-printer.scout";
 const ADAPTER_ID = "money-printer-scout";
@@ -230,20 +230,33 @@ async function groundedSources(uris, expected, options) {
 
 async function discover(expected, options) {
   const request = async (url, body) => {
+    const interaction = url === INTERACTIONS;
+    const context = { tenantId: expected.tenant_id, feature: "money_printer_scout",
+      model: interaction ? "gemini-3.7-flash" : "gemini-2.5-flash", grounded: interaction };
     let response;
     try {
       response = await options.fetchImpl(url, {
         method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": options.apiKey }, body: JSON.stringify(body),
         signal: options.nextSignal(),
       });
-    } catch { invalid("cloud"); }
-    if (!response || response.ok !== true) invalid("cloud");
-    const parsed = await geminiBody(response);
-    const interaction = url === INTERACTIONS;
+    } catch {
+      await persistGeminiFailure({ ...context, failureClass: "transport" }, options);
+      invalid("cloud");
+    }
+    if (!response || response.ok !== true) {
+      const status = Number(response && response.status);
+      await persistGeminiFailure({ ...context, failureClass: status >= 400 && status < 500
+        ? "provider_4xx" : status >= 500 ? "provider_5xx" : "provider_failure" }, options);
+      invalid("cloud");
+    }
+    let parsed;
+    try { parsed = await geminiBody(response); }
+    catch (error) {
+      await persistGeminiFailure({ ...context, failureClass: "response_body" }, options);
+      throw error;
+    }
     await persistGeminiUsage(parsed, {
-      tenantId: expected.tenant_id, feature: "money_printer_scout",
-      model: interaction ? "gemini-3.7-flash" : "gemini-2.5-flash",
-      grounded: interaction, success: interaction ? parsed && parsed.status === "completed" : undefined,
+      ...context, success: interaction ? parsed && parsed.status === "completed" : undefined,
     }, options);
     return parsed;
   };
