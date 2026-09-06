@@ -140,6 +140,10 @@ completion remain separate.
    - [x] Route the Lancers browser launcher through that same ownership primitive with its declared
      profile, port and owner. Focused ownership tests and shell parsing pass. The running browser was
      not restarted; enforcement begins on its next source-derived natural launch.
+   - [x] Enforce runtime profile ownership in addition to the port lease. A second owner using the
+     same canonical profile on a different port now fails closed with `browser_profile_owned`, and
+     each live receipt attributes both the lease supervisor PID and browser-root PID without exposing
+     the profile path. Focused ownership tests pass (5).
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
@@ -148,8 +152,8 @@ completion remain separate.
      Keep the standalone OSS launcher available outside the Life Manager registry. Production still
      runs the old dedicated owner until a separately safe, approved retirement removes its loaded
      plist; no browser was stopped or restarted during this source atom.
-   - [ ] Inventory every remaining browser/Node/Python owner, then enforce PID ownership and bounded
-     context/tab/renderer retention.
+   - [ ] Inventory every remaining browser/Node/Python owner, then enforce bounded
+     context/tab/renderer retention. Registered browser profile/port/PID ownership is now enforced.
 2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
    completed and replay-zero; advance every other actionable purchased room independently to a useful
    buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal

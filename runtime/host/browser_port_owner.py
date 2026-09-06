@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import re
@@ -56,54 +57,83 @@ def run(args: argparse.Namespace) -> int:
 
     state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(state_dir, 0o700)
+    profile_digest = hashlib.sha256(
+        str(Path(args.profile).resolve()).encode("utf-8")
+    ).hexdigest()
+    profile_lock_path = state_dir / f"profile-{profile_digest}.lock"
+    profile_receipt_path = state_dir / f"profile-{profile_digest}.json"
     lock_path = state_dir / f"{args.port}.lock"
     receipt_path = state_dir / f"{args.port}.json"
-    with lock_path.open("a+", encoding="utf-8") as lock:
-        os.chmod(lock_path, 0o600)
+    with profile_lock_path.open("a+", encoding="utf-8") as profile_lock:
+        os.chmod(profile_lock_path, 0o600)
         try:
-            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(profile_lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             current_owner = "unknown"
             try:
-                current = json.loads(receipt_path.read_text(encoding="utf-8"))
+                current = json.loads(profile_receipt_path.read_text(encoding="utf-8"))
                 if _OWNER.fullmatch(str(current.get("owner", ""))):
                     current_owner = str(current["owner"])
             except (OSError, ValueError, TypeError):
                 pass
             print(json.dumps({
                 "ok": False,
-                "reason": "browser_port_owned",
-                "port": args.port,
+                "reason": "browser_profile_owned",
                 "current_owner": current_owner,
             }, sort_keys=True), file=sys.stderr)
             return 75
-
-        _write_receipt(receipt_path, {
-            "owner": args.owner,
-            "pid": os.getpid(),
-            "port": args.port,
-            "profile_name": Path(args.profile).name,
-        })
-        child = subprocess.Popen(command)
-
-        def forward(signum: int, _frame: object) -> None:
-            if child.poll() is None:
-                child.send_signal(signum)
-
-        previous = {}
-        for signum in (signal.SIGTERM, signal.SIGINT):
-            previous[signum] = signal.signal(signum, forward)
-        try:
-            return child.wait()
-        finally:
-            for signum, handler in previous.items():
-                signal.signal(signum, handler)
+        with lock_path.open("a+", encoding="utf-8") as lock:
+            os.chmod(lock_path, 0o600)
             try:
-                current = json.loads(receipt_path.read_text(encoding="utf-8"))
-            except (OSError, ValueError, TypeError):
-                current = {}
-            if current.get("pid") == os.getpid() and current.get("owner") == args.owner:
-                receipt_path.unlink(missing_ok=True)
+                fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                current_owner = "unknown"
+                try:
+                    current = json.loads(receipt_path.read_text(encoding="utf-8"))
+                    if _OWNER.fullmatch(str(current.get("owner", ""))):
+                        current_owner = str(current["owner"])
+                except (OSError, ValueError, TypeError):
+                    pass
+                print(json.dumps({
+                    "ok": False,
+                    "reason": "browser_port_owned",
+                    "port": args.port,
+                    "current_owner": current_owner,
+                }, sort_keys=True), file=sys.stderr)
+                return 75
+
+            child = subprocess.Popen(command)
+            payload = {
+                "owner": args.owner,
+                "pid": os.getpid(),
+                "supervisor_pid": os.getpid(),
+                "browser_root_pid": child.pid,
+                "port": args.port,
+                "profile_name": Path(args.profile).name,
+            }
+            _write_receipt(receipt_path, payload)
+            _write_receipt(profile_receipt_path, payload)
+
+            def forward(signum: int, _frame: object) -> None:
+                if child.poll() is None:
+                    child.send_signal(signum)
+
+            previous = {}
+            for signum in (signal.SIGTERM, signal.SIGINT):
+                previous[signum] = signal.signal(signum, forward)
+            try:
+                return child.wait()
+            finally:
+                for signum, handler in previous.items():
+                    signal.signal(signum, handler)
+                for owned_receipt in (receipt_path, profile_receipt_path):
+                    try:
+                        current = json.loads(owned_receipt.read_text(encoding="utf-8"))
+                    except (OSError, ValueError, TypeError):
+                        current = {}
+                    if (current.get("supervisor_pid") == os.getpid()
+                            and current.get("owner") == args.owner):
+                        owned_receipt.unlink(missing_ok=True)
 
 
 def main(argv: list[str] | None = None) -> int:
