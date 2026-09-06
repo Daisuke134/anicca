@@ -938,10 +938,18 @@ remains disabled. A missing newer receipt is not evidence of rejection or approv
 
 This status does not stop all work. It divides the unchanged ordered queue into the following executable bands:
 
+The execution policy is **zero idle time, not Cloud deferral**. While provider review remains pending, complete
+every effect-disabled task whose truth does not depend on Live approval on both hosts: Local paper durability,
+Telegram control/risk contracts, shadow-readiness fixtures, Cloud `/invest`, tenant state and secret references,
+disabled Cloud scheduling, and cross-host parity. Preparation may exercise sealed fixtures and paper/read-only
+adapters, but it cannot mark a later live atom accepted without that atom's official Live evidence. Once all such
+pre-approval work is exhausted, monitoring review is the only wait. After approval, finish and measure the complete
+Local live lifecycle first; only then transfer single ownership and prove the complete Cloud live lifecycle.
+
 | Band | Fixed atoms | What may happen now |
 |---|---|---|
 | Completed foundation | L01–L04.4 | Preserve the portable finite pass, deployment/mode separation, local review monitor, Local `/invest`, replay fixture, and shared chat contract. |
-| Active now, no live effects | L04.5–L04.8 | Close the owner-originated Cloud `/invest` receipt, then add tenant-scoped state/secret references, disabled five-minute Cloud dry-run, and Local/Cloud parity fixture. Broker submit permission remains zero. |
+| Active now, no live effects | L04.5–L04.8 plus readiness work for L05–L08 | Close the owner-originated Cloud `/invest` receipt, then add tenant-scoped state/secret references, disabled five-minute Cloud dry-run, and Local/Cloud parity fixture. In the same fixed sequence, harden Local paper durability and prepare fixture-backed live read-only, risk, Telegram-control, and shadow contracts. Broker submit permission remains zero, and L05–L08 remain unaccepted until their own post-approval evidence exists. |
 | Provider transition | L04.9 | Continue authenticated monitoring. Advance only after official `approved` or selected `Live - <id>` readback and at most `$100` owner-authorized initial funding. |
 | Local live proof | L05–L12 | After L04.9, perform read-only preflight, freeze risk, complete Telegram controls, shadow, one canary, its close, repeatability, and measured net-performance gate. |
 | Cloud live proof | L13–L16 | Wire the frozen core, transfer single ownership from Local to Cloud, prove shadow parity, then execute and reconcile one Cloud canary and bounded campaign. Local and Cloud never submit concurrently for one account. |
