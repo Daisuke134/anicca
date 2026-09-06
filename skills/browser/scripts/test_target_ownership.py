@@ -93,6 +93,49 @@ def test_default_tab_close_refuses_target_owned_by_another_loop(
     assert calls == []
 
 
+def test_closing_last_owned_tab_releases_owner_context(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    ownership.claim_target("owned", "paid")
+    calls = []
+    released = []
+
+    async def fake_call(method, params=None):
+        calls.append((method, params))
+        return {}
+
+    monkeypatch.setattr(default_tab, "_call", fake_call)
+    monkeypatch.setattr(
+        default_tab.cdp_context_lease,
+        "release",
+        lambda owner: released.append(owner) or {"ok": True},
+    )
+
+    assert default_tab.close_tab("owned", owner="paid")["ok"] is True
+    assert calls == [("Target.closeTarget", {"targetId": "owned"})]
+    assert released == ["paid"]
+
+
+def test_closing_one_of_multiple_owned_tabs_keeps_context(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    ownership.claim_target("first", "paid")
+    ownership.claim_target("second", "paid")
+
+    async def fake_call(_method, _params=None):
+        return {}
+
+    monkeypatch.setattr(default_tab, "_call", fake_call)
+    monkeypatch.setattr(
+        default_tab.cdp_context_lease,
+        "release",
+        lambda _owner: pytest.fail("context released while another tab remained"),
+    )
+
+    assert default_tab.close_tab("first", owner="paid")["ok"] is True
+    assert ownership.targets_for_owner("paid") == {"second"}
+
+
 def test_visible_tab_uses_owned_browser_context(tmp_path, monkeypatch):
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
@@ -160,6 +203,9 @@ def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypat
             raise
 
     monkeypatch.setattr(default_tab, "_lease", nested_lease)
+    monkeypatch.setattr(
+        default_tab.cdp_context_lease, "release", lambda _owner: {"ok": True}
+    )
 
     class FakeWebSocket:
         async def send(self, payload):

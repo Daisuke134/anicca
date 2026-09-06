@@ -148,6 +148,10 @@ completion remain separate.
      is one live claimed tab per owner (matching Coconala's connector contract); room-scoped Paid
      owners remain parallel. A racing surplus target is immediately closed, while foreign and
      unowned targets remain untouched. Focused target-ownership tests pass (8).
+   - [x] Release an owner's leased BrowserContext when its final claimed tab closes, including
+     normal close, close-owned and hidden-target teardown. Contexts remain live while another tab
+     from that owner exists. Shared lease/ownership regression tests pass (32), bounding the seed
+     target and renderer lifetime without touching another owner's work.
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
