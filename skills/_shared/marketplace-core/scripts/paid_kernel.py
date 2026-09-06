@@ -9,6 +9,8 @@ Provider adapters own observation, mutation and official readback mechanics.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+import fcntl
 import hashlib
 import json
 import os
@@ -45,6 +47,19 @@ def _item_key(row: Mapping[str, Any]) -> str:
 
 def _state_path(root: Path, row: Mapping[str, Any]) -> Path:
     return root / "items" / _item_key(row) / "state.json"
+
+
+@contextmanager
+def _item_lock(path: Path):
+    lock_path = path.with_suffix(".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+", encoding="utf-8") as handle:
+        os.chmod(lock_path, 0o600)
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -118,8 +133,8 @@ def _pending(row: Mapping[str, Any], reason: str) -> dict[str, Any]:
             "effect": 0, "readback": 0, "failed": 0}
 
 
-def _run_one(adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Mapping[str, Any]],
-             state_root: Path, source: Mapping[str, Any]) -> dict[str, Any]:
+def _run_one_locked(adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Mapping[str, Any]],
+                    state_root: Path, source: Mapping[str, Any]) -> dict[str, Any]:
     row = _observation(source)
     path = _state_path(state_root, row)
     state = _load(path)
@@ -178,6 +193,13 @@ def _run_one(adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Mapping[st
                   "receipt": receipt, "status": "verified"})
     return {"work_id": row["work_id"], "status": "verified", "reason": "submitted",
             "effect": 1, "readback": 1, "failed": 0}
+
+
+def _run_one(adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Mapping[str, Any]],
+             state_root: Path, source: Mapping[str, Any]) -> dict[str, Any]:
+    row = _observation(source)
+    with _item_lock(_state_path(state_root, row)):
+        return _run_one_locked(adapter, decide, state_root, row)
 
 
 def run_wake(*, adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Mapping[str, Any]],

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import importlib.util
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import sys
+import threading
+import time
 
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "paid_kernel.py"
@@ -38,15 +41,22 @@ class Adapter:
         return dict(self.current[work_id])
 
     def mutate(self, intent: dict) -> None:
-        self.effects.append(dict(intent))
-        self.readbacks[intent["effect_key"]] = {
-            "verified": True,
-            "provider_receipt_id": "receipt-" + intent["work_id"],
-            "observed_at": "2026-09-07T00:01:00Z",
-        }
+        with getattr(self, "lock", _NullLock()):
+            self.effects.append(dict(intent))
+            time.sleep(getattr(self, "mutation_delay", 0))
+            self.readbacks[intent["effect_key"]] = {
+                "verified": True,
+                "provider_receipt_id": "receipt-" + intent["work_id"],
+                "observed_at": "2026-09-07T00:01:00Z",
+            }
 
     def readback(self, intent: dict) -> dict:
         return dict(self.readbacks.get(intent["effect_key"], {"verified": False}))
+
+
+class _NullLock:
+    def __enter__(self): return self
+    def __exit__(self, *_args): return None
 
 
 def submit(row: dict) -> dict:
@@ -100,3 +110,15 @@ def test_state_survives_a_new_adapter_process_boundary(tmp_path: Path) -> None:
     assert result["effect"] == 0
     assert result["readback"] == 1
     assert second_adapter.effects == []
+
+
+def test_two_overlapping_wakes_mutate_same_effect_once(tmp_path: Path) -> None:
+    adapter = Adapter([observation("work-1")])
+    adapter.lock = threading.Lock()
+    adapter.mutation_delay = 0.05
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: paid.run_wake(
+            adapter=adapter, decide=submit, state_root=tmp_path
+        ), range(2)))
+    assert len(adapter.effects) == 1
+    assert sorted(result["effect"] for result in results) == [0, 1]
