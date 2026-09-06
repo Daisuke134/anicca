@@ -124,6 +124,12 @@ class MacosLoopRegistryTest(unittest.TestCase):
             validate_registry({"schema_version": 2, "loops": {"example": value}})["loops"]["example"],
             value,
         )
+        executable = entry()
+        executable.update({"adapter": "exec", "command": ["sources", "wake"]})
+        self.assertEqual(
+            validate_registry({"schema_version": 2, "loops": {"example": executable}})["loops"]["example"],
+            executable,
+        )
         for adapter, command in ((None, ["dashboard"]), ("python", None),
                                  ("shell", ["dashboard"]), ("python", []),
                                  ("python", [""])):
@@ -148,6 +154,13 @@ class MacosLoopRegistryTest(unittest.TestCase):
             row["entrypoint"],
             "skills/earn/marketing-engine/report/scheduled_runner.py",
         )
+
+    def test_affiliate_source_refresh_uses_direct_exec_adapter(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["affiliate-source-refresh"]
+        self.assertEqual(row["adapter"], "exec")
+        self.assertEqual(row["command"], ["sources", "wake"])
+        self.assertEqual(row["entrypoint"], "skills/affiliate/affiliate")
 
     def test_marketing_metrics_daily_uses_direct_python_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
@@ -266,7 +279,7 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertEqual(schema["properties"]["effect_class"]["enum"], [
             "account_mutation", "application", "message", "money", "none", "publish", "trade",
         ])
-        self.assertEqual(schema["properties"]["adapter"]["enum"], ["python"])
+        self.assertEqual(schema["properties"]["adapter"]["enum"], ["exec", "python"])
         self.assertEqual(schema["properties"]["command"]["items"], {
             "type": "string", "minLength": 1,
         })

@@ -64,7 +64,7 @@ def validate_registry(registry: dict) -> dict:
         if adapter_present:
             adapter = row["adapter"]
             command = row["command"]
-            if adapter != "python":
+            if adapter not in {"exec", "python"}:
                 _fail(f"{loop_id}: invalid adapter")
             if (not isinstance(command, list) or not command
                     or any(not isinstance(part, str) or not part for part in command)):
@@ -188,7 +188,7 @@ def loop_json_schema() -> dict:
                 "additionalProperties": False,
             },
             "provider_route": {"type": "string", "enum": sorted(ROUTES)},
-            "adapter": {"type": "string", "enum": ["python"]},
+            "adapter": {"type": "string", "enum": ["exec", "python"]},
             "command": {
                 "type": "array",
                 "minItems": 1,

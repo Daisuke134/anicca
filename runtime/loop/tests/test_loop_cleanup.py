@@ -119,6 +119,25 @@ class LoopCleanupTest(unittest.TestCase):
                     registry, "job", root, active_run_ids=set())
             self.assertEqual(argv, [sys.executable, str(entrypoint.resolve()), "dashboard"])
 
+    def test_loop_run_preserves_exec_adapter_argv(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entrypoint = root / 'affiliate'
+            entrypoint.write_text('#!/bin/sh\n')
+            entrypoint.chmod(0o755)
+            registry = {"schema_version": 2, "loops": {"job": {
+                "label": "ai.anicca.job", "domain": "growth",
+                "entrypoint": "affiliate", "adapter": "exec",
+                "command": ["sources", "wake"], "cadence": {"run_at_load": True},
+                "effect_class": "none", "state_root": "~/state",
+                "log_root": "~/state/logs",
+                "cleanup": {"max_runs": 1, "max_age_days": 1},
+                "provider_route": "deterministic"}}}
+            with mock.patch.dict(os.environ, {"HOME": str(root / 'home')}):
+                argv, _ = prepare_loop_run(
+                    registry, "job", root, active_run_ids=set())
+            self.assertEqual(argv, [str(entrypoint.resolve()), "sources", "wake"])
+
     def test_loaded_plist_release_is_discovered_as_protected(self):
         import plistlib
         with tempfile.TemporaryDirectory() as directory:
