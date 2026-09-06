@@ -289,3 +289,43 @@ def test_fresh_event_precedes_reopened_event_already_in_work_log(tmp_path):
 
     assert transport.calls[0][0].endswith(":fresh")
     assert transport.calls[1][0] == old_key
+
+
+def _submitted_application(platform: str) -> dict:
+    return {
+        "kind": "application", "event_key": f"gig:application:{platform}:p-1",
+        "entity_id": "5247633", "occurred_at": datetime.now(timezone.utc).isoformat(),
+        "state": "applied", "evidence": [], "next_action": "返信を確認する",
+        "attributes": {
+            "platform": platform, "bucket": "single", "price_jpy": 9000,
+            "title": "商用イラスト制作を担うデザイナーを募集します",
+        },
+    }
+
+
+def test_a_submitted_application_names_its_marketplace():
+    """Every other report already names the platform; this fallback branch did not, so three
+    marketplaces sending the same sentence were indistinguishable at a glance."""
+    message = report_envelope.render_human_ja(report_envelope.build_work_event_envelope(
+        work_event=_submitted_application("coconala"), observed_at=datetime.now(timezone.utc),
+    ))
+    assert message.startswith("Coconala 📨 新しい仕事へ応募しました")
+    # The body Dais asked to keep, unchanged.
+    assert "- [単発] 商用イラスト制作を担うデザイナーを募集します" in message
+    assert "- 提案金額: 9,000円" in message
+
+
+def test_the_marketplace_name_is_not_hardcoded_to_coconala():
+    message = report_envelope.render_human_ja(report_envelope.build_work_event_envelope(
+        work_event=_submitted_application("crowdworks"), observed_at=datetime.now(timezone.utc),
+    ))
+    assert message.startswith("Crowdworks 📨 新しい仕事へ応募しました")
+
+
+def test_an_explicit_display_name_wins_over_the_platform_id():
+    event = _submitted_application("crowdworks")
+    event["attributes"]["platform_display_name"] = "CrowdWorks"
+    message = report_envelope.render_human_ja(report_envelope.build_work_event_envelope(
+        work_event=event, observed_at=datetime.now(timezone.utc),
+    ))
+    assert message.startswith("CrowdWorks 📨 新しい仕事へ応募しました")

@@ -7,7 +7,7 @@ import os
 import re
 import stat
 import subprocess
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
@@ -249,6 +249,23 @@ def read_allocator_snapshot(
     clock = _run(cli_path, [
         "clock", "get", "--quiet", "--jq", "{is_open:.is_open,timestamp:.timestamp}",
     ], env)
+    if not isinstance(account, dict) or not isinstance(clock, dict):
+        raise ValueError("alpaca_allocator_shape_invalid")
+    try:
+        observed = parse_instant(clock["timestamp"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("alpaca_allocator_risk_invalid") from error
+    ny_day = observed.astimezone(ZoneInfo("America/New_York")).date().isoformat()
+    ny_zone = ZoneInfo("America/New_York")
+    day_start = datetime.combine(observed.astimezone(ny_zone).date(), time.min, ny_zone)
+    day_end = day_start + timedelta(days=1)
+    cash_activities = _run(cli_path, [
+        "account", "activity", "list", "--activity-types", "CSD,CSW",
+        "--after", day_start.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "--until", day_end.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "--direction", "asc", "--quiet", "--jq",
+        "[.[]|{activity_type,date,net_amount}]",
+    ], env)
     positions = _run(cli_path, ["position", "list", "--quiet", "--jq",
         "[.[]|{symbol,market_value,unrealized_pl}]"], env)
     orders = _run(cli_path, [
@@ -283,27 +300,30 @@ def read_allocator_snapshot(
         "--strike-price-lte", f"{price * 1.03:.2f}",
         "--type", "call", "--limit", "100", "--quiet", "--jq", option_query,
     ], env)
-    if not isinstance(account, dict) or not isinstance(clock, dict):
+    if (not isinstance(positions, list) or isinstance(orders, bool)
+            or not isinstance(orders, int) or orders < 0):
         raise ValueError("alpaca_allocator_shape_invalid")
-    if not isinstance(positions, list) or not isinstance(orders, int):
-        raise ValueError("alpaca_allocator_shape_invalid")
-    if not isinstance(crypto, list) or not isinstance(options, list):
+    if not isinstance(cash_activities, list) or not isinstance(crypto, list) or not isinstance(options, list):
         raise ValueError("alpaca_allocator_shape_invalid")
     try:
         equity = Decimal(str(account["equity"]))
         last_equity = Decimal(str(account["last_equity"]))
         allocated = sum((abs(Decimal(str(row["market_value"]))) for row in positions), Decimal("0"))
         unrealized = sum((Decimal(str(row["unrealized_pl"])) for row in positions), Decimal("0"))
-        observed = parse_instant(clock["timestamp"])
-        values = (equity, last_equity, allocated, unrealized)
-        if observed.tzinfo is None or any(not value.is_finite() for value in values):
+        if any(not isinstance(row, dict) or row.get("activity_type") not in {"CSD", "CSW"}
+               for row in cash_activities):
             raise ValueError
-        realized = equity - last_equity - unrealized
+        cash_flow = sum((Decimal(str(row["net_amount"])) for row in cash_activities), Decimal("0"))
+        values = (equity, last_equity, allocated, unrealized, cash_flow)
+        if any(not value.is_finite() for value in values):
+            raise ValueError
+        realized = equity - last_equity - cash_flow - unrealized
         risk = {"allocated_capital_usd": str(allocated),
+                "cash_flow_ny_day_usd": str(cash_flow),
                 "realized_pnl_ny_day_usd": str(realized),
                 "unrealized_pnl_usd": str(unrealized),
                 "observed_at": clock["timestamp"],
-                "ny_day": observed.astimezone(ZoneInfo("America/New_York")).date().isoformat()}
+                "ny_day": ny_day}
     except (KeyError, InvalidOperation, TypeError, ValueError) as error:
         raise ValueError("alpaca_allocator_risk_invalid") from error
     return {"account": account, "clock": clock, "crypto": crypto,

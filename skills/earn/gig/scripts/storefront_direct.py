@@ -3815,15 +3815,18 @@ def _observe_own_page(
             str(expected_image_count if expected_image_count is not None else -1),
         )
     observed = {}
-    for attempt in range(3):
+    # A public page that has not finished rendering is weather, not a verdict on the listing,
+    # so it gets the same settling window every other transient reader in this loop uses --
+    # see `references/transient-vs-fatal.md` in the loop-engineering skill.
+    for attempt in range(5):
         observed = asyncio.run(listing_inventory._eval_json(ws_url, url, expression))
         body = str(observed.get("body") or "")
         image_ids = observed.get("service_image_ids")
         valid = _own_page_readback_valid(observed, service_id, expected_image_count)
         if valid:
             break
-        if attempt < 2:
-            time.sleep(2)
+        if attempt < 4:
+            time.sleep(3)
     else:
         raise RuntimeError("own_candidate_readback_invalid")
     row = {
@@ -4166,7 +4169,15 @@ must be one of these characters, which is exactly what Coconala can attach `ま�
 {TITLE_STEM_CONTINUATIVE_ENDINGS} -- e.g. `...を開発し`,
 `...を執筆し`, `...を実装し`. It must never end in a bare noun such as `...アプリ` or `...システム`
 (that would render as the ungrammatical `...アプリます`); if the offer is naturally noun-shaped,
-add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. head must state
+add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. A stem that ends in a
+particle is the same mistake wearing different clothes: it is a noun phrase whose verb is
+missing. `...FAQ自動応答Botを` would render as `...FAQ自動応答Botをます`. The particles
+`を`, `の`, `が`, `は`, `と` are refused outright. Do not read the character list above as
+permission for `に`, `で` or `へ` either: those appear in it only because they are the
+continuative of verbs like 死に and 出で, so they are correct only when they genuinely are your
+verb's continuative, never when they are a particle. When the stem you want ends in a particle,
+the verb is the word you left out, so append it: `...Botを構築し`, `...応答を自動化し`,
+`...設定を代行し`. Read your own final word before returning and confirm it is a verb. head must state
 outcome, exact inclusions, exclusions, required inputs and support
 boundary. Write head and body as buyer-facing Japanese prose: never emit a schema field name or an
 English label such as `outcome:`, and never prefix a sentence with a bare label like `含むもの:`. body must state purchase inputs and unsupported work. image_copy is exactly three non-empty
@@ -5201,7 +5212,12 @@ def _seller_snapshot_for(ws_url: str, service_id: str) -> dict:
     url = f"https://coconala.com/mypage/services/{service_id}"
     required = {"data[Service][overview]", "data[Service][head]", "data[Service][price]"}
     last = {}
-    for attempt in range(3):
+    # Three attempts a second apart gave this form two seconds to hydrate, which is the
+    # shortest settling window anywhere in this loop and the one production actually
+    # exhausted. `_read_official_catalog`, `_collect_competitors` and `open_tab_with_retry`
+    # all wait five attempts three seconds apart for the same class of transient, so this
+    # one does too rather than being the weakest link by accident.
+    for attempt in range(5):
         last = asyncio.run(listing_inventory._eval_json(ws_url, url, SELLER_FORM_EXPRESSION))
         names = {str(row.get("name") or "") for row in last.get("fields", []) if isinstance(row, dict)}
         if last.get("url") == url and required <= names:
@@ -5211,8 +5227,8 @@ def _seller_snapshot_for(ws_url: str, service_id: str) -> dict:
             # no amount of retrying fixes. Name it so the owner sees the real cause instead of
             # a hydration error repeating on every wake.
             raise RuntimeError(f"storefront_session_expired:{last.get('url')}")
-        if attempt < 2:
-            time.sleep(1)
+        if attempt < 4:
+            time.sleep(3)
     raise RuntimeError("seller_form_not_fully_hydrated")
 
 
@@ -5237,6 +5253,10 @@ def _seller_snapshot_from_fresh_tab(default_tab_script: Path, service_id: str) -
             last_error = error
             if attempt >= 2:
                 raise RuntimeError(f"storefront_create_source_snapshot_failed:{type(error).__name__}") from error
+            # Deliberately short, and deliberately not the loop's five-by-three shape: the call
+            # this wraps is `_seller_snapshot_for`, which already waits that long by itself.
+            # Widening here would nest one retry inside another and spend a minute of the wake
+            # on a single service.
             time.sleep(1)
         finally:
             if isinstance(tab, dict) and tab.get("target_id"):

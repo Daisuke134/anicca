@@ -1096,6 +1096,9 @@ class CdpParentEffects:
                 await self._form_state_async(request_id, navigate=True)
             except Exception as error:
                 form_state = "absent" if str(error) in {"application_form_redirected", "application_form_controls_missing"} else "unknown"
+                # Written beside the lifecycle row, never inside it: that row is content-hashed
+                # over a fixed field list, so an extra key there fails contract validation.
+                self._record_form_failure(request_id, error)
             else:
                 form_state = "present"
         accepting = (page_state == "present" and accepting_control == "present" and deadline_state == "future" and form_state == "present") if structured else page.get("accepting") is True
@@ -1171,13 +1174,43 @@ class CdpParentEffects:
                 call_id,
             )
             screenshot, _ = await self._screenshot(ws, call_id)
+        # Carry what was seen on the failing form. The caller collapses both of these into
+        # form_state="absent", and the two have opposite fixes -- a redirect is a session or
+        # routing problem, missing controls mean the provider changed the markup -- so without
+        # this the lane can report "no listing is applicable" for days with no way to tell which.
         if not _is_expected_offer_form_url(request_id, state.get("url")):
-            raise ParentContractError("application_form_redirected")
+            error = ParentContractError("application_form_redirected")
+            error.observed = {"url": str(state.get("url") or "")[:300],
+                              "title": str(state.get("title") or "")[:150]}
+            raise error
         if not all(state.get(key) is True for key in ("has_content", "has_price", "has_date")):
-            raise ParentContractError("application_form_controls_missing")
+            error = ParentContractError("application_form_controls_missing")
+            error.observed = {
+                "url": str(state.get("url") or "")[:300],
+                "title": str(state.get("title") or "")[:150],
+                **{key: bool(state.get(key)) for key in ("has_content", "has_price", "has_date")},
+            }
+            raise error
         form_path = self.evidence_dir / f"gig-{self.pass_id}-B2-{request_id}-form.png"
         _atomic_bytes(form_path, screenshot)
         return state
+
+    def _record_form_failure(self, request_id: str, error: BaseException) -> None:
+        """Append one line naming why a listing's form was unusable. Never raises."""
+        try:
+            row = {
+                "request_id": str(request_id),
+                "error": str(error)[:120],
+                "error_type": type(error).__name__,
+                "observed": getattr(error, "observed", None),
+                "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+            }
+            path = self.evidence_dir / "form-state-failures.jsonl"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "a", encoding="utf-8") as handle:
+                handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+        except Exception:
+            return
 
     def open_form(self, request_id: str) -> None:
         self._form_state_async_result = asyncio.run(
