@@ -1,6 +1,4 @@
 import importlib.util
-import json
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -100,6 +98,17 @@ class FreezeLoopInventoryTest(unittest.TestCase):
                 registry={"schema_version": 2, "loops": {"alpha": {}}, "external_labels": [], "retired_labels": []},
                 adapters={"schema_version": 1, "adapters": []},
                 status=[],
+                source_head="a" * 40,
+                registry_sha256="b" * 64,
+                adapters_sha256="c" * 64,
+            )
+
+    def test_rejects_unmanaged_status_rows(self):
+        with self.assertRaisesRegex(ValueError, "classification counts"):
+            MODULE.build_projection(
+                registry={"schema_version": 2, "loops": {}, "external_labels": [], "retired_labels": []},
+                adapters={"schema_version": 1, "adapters": []},
+                status=[{"classification": "unmanaged"}],
                 source_head="a" * 40,
                 registry_sha256="b" * 64,
                 adapters_sha256="c" * 64,
