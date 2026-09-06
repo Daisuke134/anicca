@@ -156,6 +156,9 @@ completion remain separate.
      native `memory_pressure -Q` free percentage, defaults to a 15% floor, persists a mode-`0600`
      pass/deferred receipt, and exits `75` without starting new work when pressure is unsafe or
      unmeasurable. Unit tests pass (4); no running process is killed or restarted.
+   - [x] Route Coconala Paid, Apply, Reply and Storefront through memory admission before their
+     existing disk guard. Their business argv and modes remain unchanged; only a new unsafe-memory
+     wake is deferred. Dispatch, memory and browser-owner tests pass (24).
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search

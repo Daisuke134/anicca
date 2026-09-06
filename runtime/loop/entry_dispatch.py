@@ -69,6 +69,7 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
     crowdworks = root / "skills/earn/crowdworks/scripts"
     python = sys.executable
     cloak_python = str(home / ".openclaw/skills/_shared/venv-cloak/bin/python")
+    memory_guard = [python, str(root / "runtime/host/memory_admission.py")]
     fixed = {
         "money-printer-symphony-bridge": [
             "/opt/homebrew/bin/node",
@@ -137,6 +138,7 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         "marketing-weekly-review": [str(root / "skills/earn/marketing-engine/bin/lm"),
                                     "intel", "gap", "--telegram"],
         "hf-gig-paid-direct": [
+            *memory_guard,
             python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
             python, str(root / "skills/earn/gig/scripts/paid_direct.py"),
             "--output", str(home / "gig/evidence/paid-direct-live/latest.json"),
@@ -146,12 +148,14 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "--cdp-lock-dir", str(home / "gig/.cdp-gig.lock"),
         ],
         "hf-gig-apply-direct": [
+            *memory_guard,
             python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
             python, str(root / "skills/earn/gig/scripts/application_direct.py"),
             "--all-eligible", "--planner-runner",
             str(root / "runtime/agent-runner/agent_runner.py"),
         ],
         "hf-gig-reply-detector": [
+            *memory_guard,
             python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
             python, str(root / "skills/earn/gig/scripts/reply_detector.py"),
             "--trigger", "fallback", "--runner",
@@ -160,6 +164,7 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "--continuous", "--poll-seconds", "30", "--workers", "2",
         ],
         "hf-gig-storefront-direct": [
+            *memory_guard,
             python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
             python, str(root / "skills/earn/gig/scripts/storefront_direct.py"),
             "--effect", "--auto-cadence", "--full-interval-seconds", "60",

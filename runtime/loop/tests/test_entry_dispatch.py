@@ -188,6 +188,8 @@ class EntryDispatchTest(unittest.TestCase):
         command=command_for('hf-gig-paid-direct',Path('/release'),Path('/home'))
         self.assertEqual(command,[
             sys.executable,
+            '/release/runtime/host/memory_admission.py',
+            sys.executable,
             '/release/skills/earn/gig/scripts/gig_disk_guard.py',
             sys.executable,
             '/release/skills/earn/gig/scripts/paid_direct.py',
@@ -203,6 +205,10 @@ class EntryDispatchTest(unittest.TestCase):
         apply=command_for('hf-gig-apply-direct',root,home)
         reply=command_for('hf-gig-reply-detector',root,home)
         storefront=command_for('hf-gig-storefront-direct',root,home)
+        guard = [sys.executable, '/release/runtime/host/memory_admission.py']
+        self.assertEqual(apply[:2], guard)
+        self.assertEqual(reply[:2], guard)
+        self.assertEqual(storefront[:2], guard)
         self.assertIn('--all-eligible',apply)
         self.assertEqual(reply[-5:],['--continuous','--poll-seconds','30','--workers','2'])
         self.assertEqual(storefront[-4:],['--effect','--auto-cadence','--full-interval-seconds','60'])
