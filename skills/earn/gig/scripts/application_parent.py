@@ -1077,8 +1077,15 @@ class CdpParentEffects:
                     '[class*="category" i],a[href*="category" i]'
                   )].map(e=>(e.innerText||'').trim()).find(Boolean)||null;
                   const title=(document.querySelector('h1')?.innerText||document.title||'').trim();
-                  const accepting_control=[...document.querySelectorAll('button,a,[role="button"]')]
-                    .some(e=>visible(e)&&(e.innerText||'').trim()==='応募する');
+                  const control=[...document.querySelectorAll('button,a,[role="button"]')]
+                    .find(e=>visible(e)&&(e.innerText||'').trim()==='応募する')||null;
+                  const accepting_control=!!control;
+                  // The route Coconala itself points the apply button at. Only its existence was
+                  // ever read, so when /offers/add/<id> stopped working there was no way to tell a
+                  // changed route from an account that may no longer offer.
+                  const accepting_control_href=control?(control.getAttribute('href')||
+                    control.closest('a')?.getAttribute('href')||''):'';
+                  const accepting_control_tag=control?control.tagName.toLowerCase():'';
                   const row=[...document.querySelectorAll('.c-requestOutlineRow')].find(e=>
                     [...e.querySelectorAll('*')].some(child=>(child.innerText||'').trim()==='募集期限'))||null;
                   const deadline_text=row?.innerText||'';
@@ -1088,6 +1095,7 @@ class CdpParentEffects:
                     `${date[1]}-${date[2].padStart(2,'0')}-${date[3].padStart(2,'0')}`:null;
                   const not_found=/^(404\\b|ページが見つかりません|お探しのページ|ご指定のページが見つかりませんでした)/u.test(title);
                   return {url:location.href,title,text,category,accepting:accepting_control,
+                    accepting_control_href,accepting_control_tag,
                     accepting_control:accepting_control?'present':'absent',
                     page_state:not_found?'not_found':'present',deadline_value,deadline_text};
                 })())""",
@@ -1130,7 +1138,10 @@ class CdpParentEffects:
                 form_state = "absent" if str(error) in {"application_form_redirected", "application_form_controls_missing"} else "unknown"
                 # Written beside the lifecycle row, never inside it: that row is content-hashed
                 # over a fixed field list, so an extra key there fails contract validation.
-                self._record_form_failure(request_id, error)
+                self._record_form_failure(request_id, error, control={
+                    "href": str(page.get("accepting_control_href") or "")[:300],
+                    "tag": str(page.get("accepting_control_tag") or "")[:20],
+                })
             else:
                 form_state = "present"
         accepting = (page_state == "present" and accepting_control == "present" and deadline_state == "future" and form_state == "present") if structured else page.get("accepting") is True
@@ -1228,7 +1239,9 @@ class CdpParentEffects:
         _atomic_bytes(form_path, screenshot)
         return state
 
-    def _record_form_failure(self, request_id: str, error: BaseException) -> None:
+    def _record_form_failure(
+        self, request_id: str, error: BaseException, control: dict[str, str] | None = None
+    ) -> None:
         """Append one line naming why a listing's form was unusable. Never raises."""
         try:
             row = {
@@ -1236,6 +1249,9 @@ class CdpParentEffects:
                 "error": str(error)[:120],
                 "error_type": type(error).__name__,
                 "observed": getattr(error, "observed", None),
+                # What the listing page itself offers. If this disagrees with the route we
+                # navigate to, the provider moved the form; if it agrees, the account cannot use it.
+                "accepting_control": control,
                 "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
             }
             path = self.evidence_dir / "form-state-failures.jsonl"
