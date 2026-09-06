@@ -209,7 +209,8 @@ def _decision(row: Mapping[str, Any], *, allow_formal_delivery: bool = False) ->
         raise RuntimeError("coconala_paid_context_unavailable")
     status = context.get("_paid_prepare_status")
     if status == "no_effect":
-        return {"action": "noop"}
+        classification = str(context.get("status") or "satisfied_noop")
+        return {"action": "noop", "classification": classification}
     if status == "pending":
         remaining = context.get("remaining_work") or context.get("unresolved") or ["resume prepared work"]
         return {"action": "wait", "reason": str(context.get("reason") or context.get("status") or "pending"),
