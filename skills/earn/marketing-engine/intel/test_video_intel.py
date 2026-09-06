@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 from video_intel import (VideoIntelError, discover_videos, ingest_transcripts,
-                         load_video_registry, yt_dlp_downloader)
+                         load_video_registry, whisper_transcriber, yt_dlp_downloader)
 
 
 def registry_payload():
@@ -68,6 +68,20 @@ def playlist():
 
 
 class VideoIntelTest(unittest.TestCase):
+    def test_transcriber_uses_segment_timestamps_without_expensive_word_timestamps(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            media = root / "source.mp4"
+            media.write_bytes(b"media")
+            generated = root / "source.json"
+            generated.write_text('{"segments": []}\n')
+            completed = mock.Mock(returncode=0, stdout="", stderr="")
+            with mock.patch("video_intel.subprocess.run", return_value=completed) as run:
+                target = whisper_transcriber(
+                    media, root, {"model": "base", "device": "cpu"}, "ja")
+            self.assertEqual(target, root / "transcript.json")
+            self.assertNotIn("--word_timestamps", run.call_args.args[0])
+
     def test_downloader_prefers_small_mp4_and_reports_success_without_a_file(self):
         completed = mock.Mock(returncode=0, stdout="larger than max-filesize", stderr="")
         with tempfile.TemporaryDirectory() as temp, \
