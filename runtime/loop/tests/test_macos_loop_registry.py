@@ -212,6 +212,16 @@ class MacosLoopRegistryTest(unittest.TestCase):
             "skills/earn/crowdworks/scripts/application-owner",
         )
 
+    def test_crowdworks_report_uses_direct_python_adapter(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["crowdworks-revenue-report"]
+        self.assertEqual(row["adapter"], "python")
+        self.assertEqual(row["command"], ["--json"])
+        self.assertEqual(
+            row["entrypoint"],
+            "skills/earn/crowdworks/scripts/telegram_report.py",
+        )
+
     def test_marketing_metrics_daily_uses_direct_python_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["marketing-metrics-daily"]
