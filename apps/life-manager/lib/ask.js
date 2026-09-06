@@ -23,25 +23,45 @@ const { newReplyToken } = require("./reply-token.js");
 const { sendAsk } = require("./mail-resend.js");
 const { mailAvailable } = require("./mail-availability.js");
 const { interpretCalendarEvent, PLACE_QUESTION } = require("./calendar-interpreter.js");
+const { recordUsageEvent } = require("./usage-event.js");
+const { geminiUsageEvents } = require("./gemini-usage.js");
+
+async function recordGeminiUsage(response, context = {}) {
+  const injected = context.recordUsageEvent;
+  if (!injected && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) return;
+  const write = injected || recordUsageEvent;
+  for (const event of geminiUsageEvents(response, context)) {
+    try { await write(event); } catch { /* observability must not break the ask loop */ }
+  }
+}
 
 // Raw Gemini generateContent. Key goes in the x-goog-api-key HEADER, never the URL (so it can't leak
 // into logs/referrers). Returns the parsed response, or {} on failure.
-async function geminiRaw(body, geminiKey) {
+async function geminiRaw(body, geminiKey, context = {}) {
   try {
     const r = await fetch(GEMINI, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey },
       body: JSON.stringify(body),
     });
-    return await r.json();
-  } catch { return {}; }
+    const response = await r.json();
+    await recordGeminiUsage(response, {
+      ...context,
+      grounded: Boolean(body && Array.isArray(body.tools) && body.tools.some((tool) => tool && tool.google_search)),
+      failureClass: r.ok === false ? `provider_${Math.floor(Number(r.status) / 100)}xx` : null,
+    });
+    return response;
+  } catch {
+    await recordGeminiUsage({}, { ...context, failureClass: "network" });
+    return {};
+  }
 }
 // One-shot JSON call (no tools) — for tasks that are a single judgment, not a search.
-async function geminiJson(prompt, geminiKey) {
+async function geminiJson(prompt, geminiKey, context = {}) {
   const j = await geminiRaw({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: { responseMimeType: "application/json", temperature: 0 },
-  }, geminiKey);
+  }, geminiKey, context);
   try { return JSON.parse(j?.candidates?.[0]?.content?.parts?.[0]?.text || "{}"); } catch { return {}; }
 }
 
@@ -79,7 +99,8 @@ async function agentSearchCandidate(event, deps = {}) {
       `Find the physical venue for this calendar event. Use Google Search and the optional Gmail snippets as evidence. Do not guess.\nEvent title: ${JSON.stringify(event.summary || "")}\nDescription: ${JSON.stringify(event.description || "")}\n${available ? `Gmail snippets: ${JSON.stringify(compactMail)}` : "Gmail unavailable: use web_search directly."}` }] }],
     tools: [{ google_search: {} }],
     generationConfig: { temperature: 0 },
-  }, deps.geminiKey);
+  }, deps.geminiKey, { tenantId: deps.uid, feature: "ask_candidate_search",
+    recordUsageEvent: deps.recordUsageEvent });
   const groundedText = responseText(grounded);
   if (!groundedText) return empty;
   const extracted = await raw({
@@ -99,7 +120,8 @@ async function agentSearchCandidate(event, deps = {}) {
     }] }],
     toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["submit_candidate"] } },
     generationConfig: { temperature: 0 },
-  }, deps.geminiKey);
+  }, deps.geminiKey, { tenantId: deps.uid, feature: "ask_candidate_extract",
+    recordUsageEvent: deps.recordUsageEvent });
   const args = responseFunctionArgs(extracted, "submit_candidate");
   const candidate = String(args.candidate || "").trim();
   const source = args.source === "gmail" ? "gmail" : "web_search";
@@ -187,7 +209,7 @@ const RESOLVE_TOOLS = [{
 // (real venue found) | { kind: "ask" } (a human must tell us). The agent classifies online itself —
 // "they are LLM agents, they should know" (Dais 2026-06-23): an event like "藤井さんと電話オンライン"
 // is online and must never trigger a where-is-it question.
-async function agentResolveLocation(event, { home, mapsKey, geminiKey }) {
+async function agentResolveLocation(event, { home, mapsKey, geminiKey, uid, recordUsageEvent: usageWriter }) {
   const contents = [{
     role: "user",
     parts: [{ text:
@@ -229,7 +251,8 @@ Start: ${JSON.stringify((event.start || {}).dateTime || "")}
 User's home address: ${JSON.stringify(home || "")}` }],
   }];
   for (let turn = 0; turn < 5; turn++) {
-    const j = await geminiRaw({ contents, tools: RESOLVE_TOOLS, generationConfig: { temperature: 0 } }, geminiKey);
+    const j = await geminiRaw({ contents, tools: RESOLVE_TOOLS, generationConfig: { temperature: 0 } }, geminiKey,
+      { tenantId: uid, feature: "ask_resolve_location", recordUsageEvent: usageWriter });
     const parts = j?.candidates?.[0]?.content?.parts || [];
     const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
     if (!calls.length) return { kind: "ask" };
@@ -361,7 +384,8 @@ async function recallOrResolve(event, opts) {
   let mem = await recall(opts.uid, seriesPhrase, opts.supaUrl, opts.supaKey);
   if (!mem && event.recurringEventId) mem = await recall(opts.uid, placeKey(event.summary), opts.supaUrl, opts.supaKey);
   if (mem) return { kind: "filled", location: mem, fromMemory: true };
-  return await resolve(event, { home: opts.home, mapsKey: opts.mapsKey, geminiKey: opts.geminiKey });
+  return await resolve(event, { home: opts.home, mapsKey: opts.mapsKey, geminiKey: opts.geminiKey,
+    uid: opts.uid, recordUsageEvent: opts.recordUsageEvent });
 }
 
 // Returns { autofilled, asked, resolved }.
@@ -390,7 +414,7 @@ async function askTick(uid, opts) {
     // PC-1 (C3 REQ-45): memory FIRST (a hit fills WITHOUT calling the model, never asks); else agentic resolve.
     const res = await recallOrResolve(event, {
       uid, supaUrl, supaKey, home: opts.home, mapsKey, geminiKey,
-      recall: opts.recall,
+      recall: opts.recall, recordUsageEvent: opts.recordUsageEvent,
       resolve: interpretation.decision === "ask_closed" ? async () => ({ kind: "ask" }) : opts.resolve,
     });
     if (res.kind === "online") {
@@ -412,7 +436,7 @@ async function askTick(uid, opts) {
     // the failure mode, not the fallback of first resort — a found candidate autofills directly, same as
     // the "filled" branch above). Only a genuinely unresolvable event reaches the actual ask below.
     const candidate = await agentSearchCandidate(event, {
-      geminiKey, geminiRaw: opts.geminiRaw, mail: opts.mail,
+      uid, geminiKey, geminiRaw: opts.geminiRaw, recordUsageEvent: opts.recordUsageEvent, mail: opts.mail,
       gmailAccountId: opts.gmailAccountId, unipileToken: opts.unipileToken, unipileDsn: opts.unipileDsn,
     });
     if (candidate.found) {

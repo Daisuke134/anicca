@@ -46,9 +46,10 @@ function geminiResponse(value) {
   return { ok: true, text: async () => JSON.stringify(value) };
 }
 
-function interactionResponse(urls, text = "Grounded public listings.", steps = []) {
+function interactionResponse(urls, text = "Grounded public listings.", steps = [], usageMetadata = null) {
   return geminiResponse({
     status: "completed",
+    ...(usageMetadata ? { usageMetadata } : {}),
     steps: steps.length ? steps : [
       { type: "google_search_call", id: "search-1", arguments: { query: "paid agent work" } },
       { type: "model_output", content: [{
@@ -103,15 +104,19 @@ test("scout uses two Gemini stages, canonical URL dedupe, and safe durable recei
   const created = [];
   const reads = [];
   const requests = [];
+  const usage = [];
   const runScout = createMoneyPrinterScout({
     apiKey: "test-gemini-key",
+    recordUsageEvent: async (event) => { usage.push(event); return true; },
     fetchImpl: async (url, options) => {
       const body = JSON.parse(options.body);
       requests.push({ url, body });
       if (requests.length === 1) return interactionResponse([
         "https://example.com/work", "https://fresh.example/paid-work",
-      ], "Grounded public listings with citations.");
+      ], "Grounded public listings with citations.", [],
+      { promptTokenCount: 1000, candidatesTokenCount: 100, totalTokenCount: 1100 });
       return geminiResponse({
+        usageMetadata: { promptTokenCount: 500, candidatesTokenCount: 100, totalTokenCount: 600 },
         candidates: [{ content: { parts: [{ text: JSON.stringify({ candidates: [
           candidate("https://Example.com:443/work#tracking"),
           candidate("https://example.com/work", "Duplicate URL"),
@@ -133,6 +138,11 @@ test("scout uses two Gemini stages, canonical URL dedupe, and safe durable recei
   const receipt = await runScout(jobFor());
 
   assert.equal(requests.length, 2);
+  assert.deepEqual(usage.map((event) => [event.provider, event.meta.model]), [
+    ["gemini", "gemini-3.7-flash"],
+    ["google_search_grounding", "gemini-3.7-flash"],
+    ["gemini", "gemini-2.5-flash"],
+  ]);
   assert.equal(requests[0].url, "https://generativelanguage.googleapis.com/v1beta/interactions");
   assert.deepEqual(requests[0].body, {
     model: "gemini-3.7-flash", input: requests[0].body.input, tools: [{ type: "google_search" }],

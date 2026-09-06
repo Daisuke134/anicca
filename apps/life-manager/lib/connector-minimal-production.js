@@ -510,7 +510,8 @@ function createMinimalProductionDependencies(options = {}) {
       title: candidate.title,
       body: candidate.body || candidate.description,
       now: nowIso(),
-    }, { apiKey: requiredText(options.geminiApiKey, 2_000) })
+    }, { apiKey: requiredText(options.geminiApiKey, 2_000), tenantId,
+      recordUsageEvent: options.recordUsageEvent })
   ));
   const talkFactsPath = path.resolve(options.talkFactsPath || path.join(
     repoRoot, "apps", "life-manager", "config", "connector", "life-manager-talk-facts.json",
@@ -524,7 +525,8 @@ function createMinimalProductionDependencies(options = {}) {
     },
     facts: readConnectorTalkFacts(talkFactsPath),
     opportunity,
-  }, { apiKey: requiredText(options.geminiApiKey, 2_000) }));
+  }, { apiKey: requiredText(options.geminiApiKey, 2_000), tenantId,
+    recordUsageEvent: options.recordUsageEvent }));
   const talkBrowserProvider = options.talkBrowserProvider || createTalkBrowserProvider();
   const talkApplicationWorkflow = options.talkApplicationWorkflow || createTalkApplicationWorkflow(talkBrowserProvider);
   const talkEvidenceChain = options.talkEvidenceChain || createTalkEvidenceChain({ stateDir, now });

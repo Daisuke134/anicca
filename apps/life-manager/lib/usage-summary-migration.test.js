@@ -1,0 +1,21 @@
+"use strict";
+
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+
+test("COST-01 migration exposes bounded daily tenant/provider/feature aggregates", () => {
+  const sql = fs.readFileSync(path.join(__dirname,
+    "../migrations/2026-09-06-lm-usage-cost-summary.sql"), "utf8");
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.lm_usage_cost_summary/i);
+  assert.match(sql, /date_trunc\('day',\s*ts\)/i);
+  assert.match(sql, /meta->>'provider'/i);
+  assert.match(sql, /meta->>'feature'/i);
+  assert.match(sql, /meta->>'outcome'/i);
+  assert.match(sql, /meta->>'failure_class'/i);
+  assert.match(sql, /meta->>'cache_hit'/i);
+  assert.match(sql, /kind = 'provider_usage'/i);
+  assert.match(sql, /GRANT EXECUTE[\s\S]*service_role/i);
+  assert.doesNotMatch(sql, /GRANT EXECUTE[\s\S]*(anon|authenticated)/i);
+});
