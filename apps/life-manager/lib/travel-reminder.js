@@ -5,6 +5,7 @@ const crypto = require("node:crypto");
 const { directionsRoute, claimTravel, unclaimTravel, recordTravelTelegramReceipt } = require("./travel.js");
 const { isHelperBlock } = require("./wake-filter.js");
 const { sendMessage } = require("./telegram.js");
+const { computeDoorDepartureMs, computeT5ReminderMs } = require("./travel-timing.js");
 
 const T5_MS = 5 * 60 * 1000;
 const CATCH_UP_MS = 15 * 60 * 1000;
@@ -129,23 +130,15 @@ function resolveReminderOrigin(event, { events = [], liveLocation, home, nowMs =
   return address ? { kind: "home", value: address } : null;
 }
 
-function routeDuration(route) {
-  const seconds = Number(route && route.durationSeconds);
-  return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
-}
-
 function computeDepartureMs(event, route, { bufferMin = 5 } = {}) {
   const start = startMs(event);
   if (start === null || !physical(event)) return start;
-  const duration = routeDuration(route);
-  if (duration === null) return start;
-  const buffer = Number(bufferMin);
-  return start - duration * 1000 - (Number.isFinite(buffer) && buffer >= 0 ? buffer : 5) * 60000;
+  return computeDoorDepartureMs(start, route, { bufferMin }) ?? start;
 }
 
 function computeReminderDueAt(event, { departureMs, route, bufferMin = 5 } = {}) {
   const departure = toMs(departureMs) ?? computeDepartureMs(event, route, { bufferMin });
-  return departure === null ? null : departure - T5_MS;
+  return computeT5ReminderMs(departure);
 }
 
 function isReminderDue(nowMs, dueAt) {

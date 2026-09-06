@@ -9,6 +9,7 @@ const { getCalendar } = require("./transport/index.js");
 const { chooseRouter, parseTransitPlan } = require("./transit.js");
 const { makeRouteCache, timeBucket } = require("./route-cache.js");
 const { interpretCalendarEvent } = require("./calendar-interpreter.js");
+const { computeDoorDepartureMs } = require("./travel-timing.js");
 
 // C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
 // route it already has (~30 paid provider calls/event → 1). Keyed on (from_geo, to_geo, time_bucket).
@@ -460,8 +461,9 @@ async function recordTravelTelegramReceipt(uid, eventKey, leg, messageId, supaUr
   return { ok: true, matched };
 }
 
-async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsMinutes, gmailAccountId } = {}) {
+async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, nowMs = Date.now(), bufferMin = 5, calendar, supaUrl, supaKey, _directionsRoute, _directionsMinutes, gmailAccountId } = {}) {
   const directionsFn = _directionsMinutes || directionsMinutes;
+  const routeFn = _directionsRoute || (!_directionsMinutes ? directionsRoute : null);
   const cal = calendar || getCalendar({ apiKey, gmailAccountId });
   const events = await listEvents7d(uid, apiKey, nowMs, cal, gmailAccountId);
   let inserted = 0, checked = 0, skipped = 0;
@@ -501,7 +503,13 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, now
       } else {
         let dest = ev.location;
         const routeOpts = { uid, timezone: routeTimezone };
-        let mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);
+        let route = null;
+        if (routeFn) {
+          try { route = await routeFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts); }
+          catch { route = null; }
+          if (routeDurationSeconds(route) == null) route = null;
+        }
+        let mins = route ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);
         if (mins == null && geminiKey) {
           // The location is a room name / unroutable string (e.g. "情報科学大講義室[L1]（IS）"). Let the
           // agent web-search the REAL venue address so a must-travel event still gets a block instead of a
@@ -515,16 +523,21 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, now
             }
             if (res && res.kind === "filled" && res.location) {
               dest = res.location;
-              mins = await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);
+              if (routeFn) {
+                try { route = await routeFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts); }
+                catch { route = null; }
+                if (routeDurationSeconds(route) == null) route = null;
+              }
+              mins = route ? null : await directionsFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts);
             }
           } catch { /* fall through to null-mins skip below */ }
         }
-        if (mins == null) {
+        if (route == null && mins == null) {
           skipped++;
           // Cannot route outbound — still evaluate return leg in case it is independently resolvable
         } else {
           const arriveMs = ev.startMs;
-          const leaveMs = arriveMs - (mins + bufferMin) * 60000;
+          const leaveMs = route ? computeDoorDepartureMs(arriveMs, route, { bufferMin }) : arriveMs - (mins + bufferMin) * 60000;
           if (leaveMs < nowMs) {
             skipped++; // REQ-18: past GO leave time → no outbound block; return leg still evaluated below
           } else {
