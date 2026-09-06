@@ -50,33 +50,22 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `remote_builder/transient_timeout` failure boundary, and observe a fresh natural installed-release
    aggregate with `failed=0`; a following natural wake must retain Ryu's existing message with no
    duplicate send and keep formal delivery off. Release
-   `5d905db62d50c755e20a8c4fb6716d96c5eab840` produced multiple natural PASS terminals. The latest
-   aggregate observes five rooms with `failed=0`, `pending=1`, effect `0`, readback `4`; Ryu
-   `18211957` is `awaiting_buyer`, `send_performed=false`, `deduplicated=true`, formal delivery off.
-   This proves the earlier two-project builder regression recovered without resending Ryu's effect.
-   The atom remains open because the newest terminal from the same release is `fail` with
-   `entrypoint_exit_143` after a roughly 20-minute wake, and the latest aggregate carries terminal
-   reconciliation `failed_step=terminal_reconciliation`, `error=OSError`. The Paid launchd log binds
-   recent `OSError` failures to `ENOSPC` while atomically writing `latest.json`; current filesystem
-   readback has recovered to about 23 GiB available, but recovery of free bytes does not prove the
-   producer/retention boundary is durable. First prove the next reconciliation write does not repeat
-   `ENOSPC`, then determine whether exit 143 remains independently. Close only after two consecutive
-   natural PASS terminals with `failed=0`, exact Ryu replay-zero and formal delivery off. A process
+   The current installed Paid release `722dd7b5596f793661717297d66ac1014109ccad` produced natural
+   PASS terminals `18d2bfb9ba468920-25690` and `18d2c08b7e999228-45593`. The latter ended at
+   `2026-09-06T14:23:08Z`; its aggregate observes five rooms with `failed=0`, `pending=1`, effect `0`
+   and readback `4`, without another `ENOSPC`, reconciliation `OSError`, exit 120 or exit 143. Ryu's
+   newest revision and normal-message submission are complete and Dais confirmed the live result;
+   formal delivery remains off. The atom stays open only for all-client aggregate coverage and the
+   required following replay-zero natural pass on the current source-derived release. A process
    status alone is not PASS.
 
    Execute the remaining substeps in this order without waiting for another marketplace owner:
 
-   - [ ] `COCONALA-PAID-3A` Finish Ryu's current revision cycle. The authenticated talkroom snapshot
-     at `2026-09-06T09:19:43Z` contains ten recent buyer messages, reports
-     `buyer_feedback_pending_artifact=true`, and includes corrections newer than the last seller
-     response to the survey, usage guide and schedule display. Project state has an active
-     `resubmit` effect for feedback digest
-     `b23a26d974fe49eb9e5d1021773496770f048c3917c413e947a70a48fdf2d67c`; Paid wake
-     `18d2b0bdd57803a0-11535` is running, but no terminal or new seller-send receipt exists yet.
-     PASS = Paid itself compiles the complete current feedback, repairs and independently verifies the public
-     site, sends one truthful review URL in room `18211957`, reads that exact message back, leaves
-     formal delivery off, and replays the same feedback with effect zero. Previous seller messages
-     do not satisfy this newer feedback cycle.
+   - [x] `COCONALA-PAID-3A` Finish Ryu's current revision cycle. Paid consumed the cumulative survey,
+     usage-guide and schedule-display corrections, repaired the public result, and submitted the
+     buyer-visible revision as a normal message in room `18211957`; Dais confirmed the live result.
+     Formal delivery remains off. The next aggregate wake owns replay-zero proof; Ryu is no longer a
+     separate unfinished production task.
    - [ ] `COCONALA-PAID-3B` Cover every current client in one aggregate. PASS = every observed room
      appears exactly once as completed, awaiting buyer, or durably retry-owned; `failed=0`; one slow
      client does not prevent another client from progressing. “Observed” does not require a message
