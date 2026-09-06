@@ -4,6 +4,7 @@ const path = require("node:path");
 const { createHash } = require("node:crypto");
 const { runLocalAgentRunner } = require("./connector-luna-judgment.js");
 const { buildHumanTask } = require("./money-printer-human-task.js");
+const { persistGeminiUsage, persistGeminiFailure } = require("./gemini-usage.js");
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 const TENANT_ID = /^[a-z0-9][a-z0-9._-]{0,199}$/;
@@ -196,6 +197,8 @@ async function runGeminiQualification(input = {}, options = {}) {
   ) cloudUnavailable();
 
   const request = async (body) => {
+    const context = { tenantId, feature: "money_printer_specialist",
+      grounded: Boolean(body && Array.isArray(body.tools) && body.tools.some((tool) => tool && tool.google_search)) };
     let response;
     try {
       response = await fetchImpl(GEMINI, {
@@ -205,10 +208,24 @@ async function runGeminiQualification(input = {}, options = {}) {
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch {
+      await persistGeminiFailure({ ...context, failureClass: "transport" }, options);
       cloudUnavailable();
     }
-    if (!response || response.ok !== true) cloudUnavailable();
-    return readGeminiBody(response);
+    if (!response || response.ok !== true) {
+      const status = Number(response && response.status);
+      const failureClass = status >= 400 && status < 500 ? "provider_4xx"
+        : status >= 500 ? "provider_5xx" : "provider_failure";
+      await persistGeminiFailure({ ...context, failureClass }, options);
+      cloudUnavailable();
+    }
+    let parsed;
+    try { parsed = await readGeminiBody(response); }
+    catch (error) {
+      await persistGeminiFailure({ ...context, failureClass: "response_body" }, options);
+      throw error;
+    }
+    await persistGeminiUsage(parsed, context, options);
+    return parsed;
   };
 
   const research = await request({
@@ -266,6 +283,7 @@ function createMoneyPrinterSpecialist(options = {}) {
       }, {
         apiKey: geminiKey,
         fetchImpl: options.fetchImpl || globalThis.fetch,
+        recordUsageEvent: options.recordUsageEvent,
       })
       : options.runLocalAgentRunner || runLocalAgentRunner
   );

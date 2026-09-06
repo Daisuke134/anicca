@@ -5,6 +5,7 @@ const { isIP } = require("node:net");
 const { canonicalEventUrl } = require("./canonical-event-url.js");
 
 const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const { persistGeminiUsage, persistGeminiFailure } = require("./gemini-usage.js");
 const PARTICIPATION_KINDS = Object.freeze(["audience_only", "talk_application", "both", "unknown"]);
 const TALK_FORMATS = Object.freeze(["lightning_talk", "cfp", "demo", "pitch", "workshop", "other"]);
 const APPLICATION_STATUSES = Object.freeze(["open", "closed", "invite_only", "not_offered", "unknown"]);
@@ -140,26 +141,32 @@ async function inferEventTalkOpportunity(input, options = {}) {
     "Keep reason under 400 characters and explain the semantic distinction, not keyword matching.",
     `EVENT_DATA_START\n${JSON.stringify(source)}\nEVENT_DATA_END`,
   ].join("\n");
-  const response = await fetchImpl(GEMINI, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: RESPONSE_SCHEMA,
-        temperature: 0,
-      },
-    }),
-    signal: AbortSignal.timeout(20_000),
-  });
+  const usage = { tenantId: options.tenantId, feature: "event_talk_opportunity" };
+  let response;
+  try {
+    response = await fetchImpl(GEMINI, {
+      method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json", responseSchema: RESPONSE_SCHEMA, temperature: 0 } }),
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch (error) {
+    await persistGeminiFailure({ ...usage, failureClass: "transport" }, options);
+    throw error;
+  }
   if (!response || !response.ok) {
+    const status = Number(response && response.status);
+    await persistGeminiFailure({ ...usage, failureClass: status >= 400 && status < 500
+      ? "provider_4xx" : status >= 500 ? "provider_5xx" : "provider_failure" }, options);
     throw new Error(`event talk classifier failed (${response ? response.status : "no response"})`);
   }
-  const body = await response.json();
+  let body;
+  try { body = await response.json(); }
+  catch (error) {
+    await persistGeminiFailure({ ...usage, failureClass: "response_body" }, options);
+    throw error;
+  }
+  await persistGeminiUsage(body, usage, options);
   const raw = body?.candidates?.[0]?.content?.parts?.[0]?.text;
   let parsed;
   try { parsed = JSON.parse(raw || ""); } catch { throw new Error("event talk classifier returned invalid JSON"); }

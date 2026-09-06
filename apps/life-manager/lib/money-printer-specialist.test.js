@@ -243,11 +243,13 @@ test("specialist rejects scope, malformed model output, and failed opportunity r
 test("cloud qualification grounds research, then extracts a completed qualification receipt", async () => {
   const calls = [];
   const updates = [];
+  const usage = [];
   const geminiKey = "gemini-secret-key";
   const specialist = createMoneyPrinterSpecialist({
     geminiKey,
     dataDir: fs.mkdtempSync(path.join(os.tmpdir(), "lm-money-specialist-cloud-")),
     repoRoot: "/repo",
+    recordUsageEvent: async (event) => { usage.push(event); return true; },
     readOpportunity: async () => opportunity(),
     updateOpportunity: async (_expected, status) => {
       updates.push(status);
@@ -257,9 +259,9 @@ test("cloud qualification grounds research, then extracts a completed qualificat
       calls.push({ url: String(url), init });
       assert.equal(init.headers["x-goog-api-key"], geminiKey);
       if (calls.length === 1) {
-        return response({ candidates: [{ content: { parts: [{ text: "Grounded public research." }] } }] });
+        return response({ usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 20, totalTokenCount: 120 }, candidates: [{ content: { parts: [{ text: "Grounded public research." }] } }] });
       }
-      return response({ candidates: [{ content: { parts: [{ text: '{"status":"completed"}' }] } }] });
+      return response({ usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 10, totalTokenCount: 60 }, candidates: [{ content: { parts: [{ text: '{"status":"completed"}' }] } }] });
     },
   });
 
@@ -269,6 +271,11 @@ test("cloud qualification grounds research, then extracts a completed qualificat
   assert.match(result.execution_id, /^gemini-qualification-[a-f0-9]{64}$/);
   assert.deepEqual(updates, ["QUALIFIED"]);
   assert.equal(calls.length, 2);
+  assert.deepEqual(usage.map((event) => [event.provider, event.feature]), [
+    ["gemini", "money_printer_specialist"],
+    ["google_search_grounding", "money_printer_specialist"],
+    ["gemini", "money_printer_specialist"],
+  ]);
   assert.match(calls[0].url, /gemini-2\.5-flash:generateContent$/);
   assert.deepEqual(JSON.parse(calls[0].init.body).tools, [{ google_search: {} }]);
   const extraction = JSON.parse(calls[1].init.body);
@@ -316,12 +323,14 @@ test("cloud qualification rejects empty or failed Gemini responses without updat
   for (const mode of ["empty", "transport"]) {
     let calls = 0;
     let updates = 0;
+    const usage = [];
     const specialist = createMoneyPrinterSpecialist({
       geminiKey: "gemini-secret-key",
       dataDir: fs.mkdtempSync(path.join(os.tmpdir(), `lm-money-specialist-cloud-${mode}-`)),
       repoRoot: "/repo",
       readOpportunity: async () => opportunity(),
       updateOpportunity: async () => { updates += 1; return opportunity({ status: "QUALIFIED" }); },
+      recordUsageEvent: async (event) => { usage.push(event); return true; },
       fetchImpl: async () => {
         calls += 1;
         if (mode === "transport") throw new Error("transport body must stay private");
@@ -331,6 +340,12 @@ test("cloud qualification rejects empty or failed Gemini responses without updat
     await assert.rejects(specialist(expected()), /cloud|qualification|unavailable/i);
     assert.equal(calls, 1);
     assert.equal(updates, 0);
+    if (mode === "transport") {
+      assert.equal(usage.length, 1);
+      assert.equal(usage[0].outcome, "failure");
+      assert.equal(usage[0].failureClass, "transport");
+      assert.equal(usage[0].customerUsage, undefined);
+    }
   }
 });
 
