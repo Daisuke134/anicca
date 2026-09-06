@@ -234,9 +234,16 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    route; read-only target inventory shows Coconala login pages. Reapplying the existing 0600 session
    vault did not restore the server-side session. One normal login attempt used the active private
    credential SSOT without exposing values, showed no SMS challenge, but returned to `/login`; no
-   customer effect or formal delivery occurred. The atom remains unchecked: recover Coconala auth
-   without restarting the browser, then obtain a natural five-room official aggregate and following
-   replay-zero before marking complete.
+   customer effect or formal delivery occurred. A second natural wake at `2026-09-07T01:07 JST`
+   reproduced the same sanitized `provider_inventory` terminal with effect zero. Concurrent Apply
+   evidence then showed another owner had restored and dumped 1,370 cookies into the gig vault at
+   `01:02:29`; the subsequent Paid diagnosis dumped 1,371 cookies at `01:05:04`, including one extra
+   Coconala cookie from its unsuccessful login attempt. The pre-diagnosis mode-0600 backup remains at
+   `~/.cloak/vault/gig-daily-driver/auth-state.1788710549.json`. It has not been restored because the
+   vault is a concurrently shared auth resource and requires owner coordination before overwrite.
+   The atom remains unchecked: coordinate that exact backup/owner state, recover Coconala auth without
+   restarting the browser, then obtain a natural five-room official aggregate and following replay-zero
+   before marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
