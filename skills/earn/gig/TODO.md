@@ -166,9 +166,28 @@ Two measured facts decide the standard, and they point in opposite directions:
    rejecting `/usr/local/bin/`, with a second test that fails if an allow-listed file is renamed
    away. Proven in both directions: 9 passed clean, appending `openclaw` to
    `crowdworks/account.py` failed 2 of them, removing it passed again.
-4. [ ] `APPLY-REPORT-4` Fold Coconala's diverged outbox back into the shared one. PASS = the 794-line
-   divergence is gone, `earn/gig/scripts/telegram_outbox.py` no longer exists as a second
-   implementation, and Coconala Apply still delivers exactly once across a restart.
+4. [ ] `APPLY-REPORT-4` One outbox implementation, in the direction measurement supports.
+   **Direction reversed, measured 2026-09-06.** The original wording — fold Coconala's "diverged
+   copy" into the shared one and delete it — was wrong, and the 794-line diff that motivated it was
+   read wrongly. These were never one implementation that drifted. Coconala's is a `TelegramOutbox`
+   class with lease and fencing tokens (`_fenced` validates state + owner + token + lease expiry),
+   provider-receipt reconciliation, and a redrive policy. The shared one is module-level functions
+   whose `mark_delivered` updated `WHERE event_key = ?` with no owner or fence at all. Migrating
+   Coconala Apply onto it would have been a safety regression, and it would have broken
+   `paid_direct.py` and `storefront_direct.py`, which import the Coconala outbox and belong to other
+   owners who are editing them now.
+   Done as the first step, because a shared component nothing should migrate onto is not shared:
+   the shared outbox gained a `StaleClaim` fence on all three resolvers, opt-in via `claimed_at` so
+   lanes migrate one at a time, wired into `deliver_pending` — the loop CrowdWorks already uses.
+   Four tests drive the real race (claim, backdate, `reclaim_stale`, re-claim) and prove the stale
+   worker can no longer mark delivered, re-queue an in-flight message, or quarantine the row.
+   PASS for the remainder = the Coconala implementation's fencing, receipt reconciliation and
+   redrive live in `_shared/marketplace-core/`, all three marketplaces resolve through them, and
+   `earn/gig/scripts/telegram_outbox.py` is gone. Sequenced with the Paid and Storefront owners,
+   because two of the importers are theirs; this owner does not do it unilaterally.
+   Still owed inside this owner's scope: `earn/lancers/scripts/telegram_report.py:548-558` keeps a
+   private copy of the delivery loop and calls the shared resolvers unfenced. Moving it onto
+   `deliver_pending` needs no other owner.
 5. [ ] `APPLY-REPORT-5` One renderer for the per-decision sentence. PASS = `report_envelope.py` lives in
    `_shared/marketplace-core/`, the hand-written `[ココナラ][応募判断]` at `application_direct.py:923`
    is replaced by a call to it, and all three platforms render that sentence from one place.

@@ -625,6 +625,55 @@ def _append_key_once(path: Path, field: str, value: dict) -> bool:
     return True
 
 
+def _append_proposal_rejection(
+    state_dir: Path, *, gap_key: str, rejection: str, proposed_value: object, pass_id: str,
+) -> None:
+    """Persist one rejected proposal so a later wake's prompt can see why it failed.
+
+    Unlike `_append_key_once`, every rejection is a distinct event: the whole point is that a
+    gap can be rejected more than once, for the same or a different reason, and the three-strike
+    check needs all of the recent ones -- deduplicating on gap_key would keep only the first.
+    """
+    _append(state_dir / "proposal-rejections.jsonl", {
+        "version": 1, "gap_key": gap_key, "rejection": str(rejection)[:160],
+        "proposed_value": proposed_value, "observed_at_epoch": int(time.time()), "pass_id": pass_id,
+    })
+
+
+def _recent_proposal_rejections(state_dir: Path, gap_key: str) -> list[dict]:
+    """Return up to the 3 most recent rejections recorded for gap_key, newest last."""
+    path = state_dir / "proposal-rejections.jsonl"
+    if not path.exists():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as error:
+            raise RuntimeError(f"{path.stem}_ledger_invalid") from error
+        if row.get("gap_key") == gap_key:
+            rows.append(row)
+    return rows[-3:]
+
+
+def _rejection_guard_name(rejection: object) -> str:
+    """The guard identity is the text before the first `:`, e.g. the RuntimeError's own message
+    prefix. `storefront_copy_names_prohibited_tool:スプレッドシート` and
+    `storefront_copy_names_prohibited_tool:Dropbox` are the same guard finding two different
+    terms, not two different guards."""
+    return str(rejection or "").split(":", 1)[0]
+
+
+def _three_strike_same_guard(rejections: list[dict]) -> str | None:
+    """Name the guard if the 3 most recent rejections for a gap all came from it, else None."""
+    if len(rejections) < 3:
+        return None
+    guards = {_rejection_guard_name(row.get("rejection")) for row in rejections}
+    return next(iter(guards)) if len(guards) == 1 else None
+
+
 def _jsonl_rows(path: Path) -> tuple[list[dict], str | None]:
     if not path.is_file():
         return [], f"{path.name}_missing"
@@ -1256,6 +1305,12 @@ PROHIBITED_COPY_TERMS = (
     "Googleスプレッドシート", "スプレッドシート", "Google Docs", "Google Drive",
     "Googleフォーム", "Dropbox", "ギガファイル", "ギガファイル便", "firestorage",
 )
+
+# Coconala renders a new listing's title as `{title_stem}ます`, so the stem's last character
+# must be a verb continuative (i-form) ending for that to read as grammatical Japanese. A stem
+# ending in a particle instead produced the ungrammatical `…SEO構成からます` on a sealed
+# contract. The guard and the CREATE prompt both read this one constant so they cannot drift.
+TITLE_STEM_CONTINUATIVE_ENDINGS = "いきしちにひみりぎじびぴえけせてねへめれげぜでべぺ"
 
 
 def _prohibited_copy_terms(*texts: str) -> list[str]:
@@ -3797,7 +3852,7 @@ def _invoke_judge(
 
 def _proposal_prompt(
     hypothesis: dict, source: dict, seller_snapshot: dict, family_name: str, family: dict,
-    manifest: dict, capability_paths: set[str],
+    manifest: dict, capability_paths: set[str], prior_rejections: list[dict] | None = None,
 ) -> tuple[str, set[str]]:
     competitor_rows = []
     allowed_refs = {
@@ -3831,7 +3886,25 @@ def _proposal_prompt(
         "owned_capability_evidence": capabilities,
         "allowed_evidence_refs": sorted(allowed_refs),
     }
-    prompt = """Create exactly one Coconala Storefront improvement proposal from CONTEXT_JSON.
+    if prior_rejections:
+        context["prior_rejections"] = prior_rejections
+    prohibited_terms_prose = (
+        "Buyer-visible copy (title, catchphrase, body, image copy, FAQ, package option title) must "
+        "never contain any of these platform-prohibited terms, in exactly the spelling listed: "
+        + "、".join(PROHIBITED_COPY_TERMS)
+        + ". Coconala has withdrawn a live listing twice for naming one of these because a file "
+        "service the platform cannot see reads as an off-platform contact channel."
+    )
+    prior_rejections_prose = (
+        (
+            " prior_rejections in CONTEXT_JSON lists this exact gap's own previous rejected "
+            "attempts, oldest first. Each `rejection` names the guard that refused it and the "
+            "`proposed_value` that triggered it. Do not repeat any of them: produce a proposal "
+            "that is genuinely different and does not trigger the same guard again."
+        ) if prior_rejections else ""
+    )
+    prompt = prohibited_terms_prose + prior_rejections_prose + """
+Create exactly one Coconala Storefront improvement proposal from CONTEXT_JSON.
 Return only the strict schema object. The selected service_id, changed_field and success_metric must
 exactly equal gap.service_id, gap.field and gap.success_metric. Use only claims supported by the
 owned capability family/offer. Competitors supply generalized structure only: never copy their
@@ -3859,11 +3932,12 @@ improvement.\nCONTEXT_JSON=""" + json.dumps(context, ensure_ascii=False, separat
 def _invoke_proposal(
     *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path, hypothesis: dict,
     source: dict, seller_snapshot: dict, family_name: str, family: dict, manifest: dict,
-    capability_paths: set[str], timeout_seconds: int,
+    capability_paths: set[str], timeout_seconds: int, prior_rejections: list[dict] | None = None,
 ) -> tuple[dict, dict, set[str]]:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     prompt, allowed_refs = _proposal_prompt(
         hypothesis, source, seller_snapshot, family_name, family, manifest, capability_paths,
+        prior_rejections=prior_rejections,
     )
     started = time.time()
     completed = subprocess.run(
@@ -3974,6 +4048,7 @@ def _paid_demand_price_floor(demand: dict) -> int | None:
 def _create_proposal_prompt(
     source: dict, family_name: str, family: dict, demand: dict,
     capability_paths: set[str], catalog_titles: list[str], listing_catalog_entry: dict | None = None,
+    prior_rejections: list[dict] | None = None,
 ) -> tuple[str, set[str]]:
     offer_ref = f"official:offer-contract:{source['service_id']}:{source['service_version_sha256']}"
     family_ref = f"owned:capability-family:{family_name}"
@@ -3996,6 +4071,23 @@ def _create_proposal_prompt(
         "paid_demand_price_floor_jpy": _paid_demand_price_floor(demand),
         "owner_listing_catalog_entry": listing_catalog_entry,
     }
+    if prior_rejections:
+        context["prior_rejections"] = prior_rejections
+    prohibited_terms_prose = (
+        "Buyer-visible copy (title_stem, catchphrase, head, body, paid_option_title, image_copy) "
+        "must never contain any of these platform-prohibited terms, in exactly the spelling "
+        "listed: " + "、".join(PROHIBITED_COPY_TERMS)
+        + ". Coconala has withdrawn a live listing twice for naming one of these because a file "
+        "service the platform cannot see reads as an off-platform contact channel."
+    )
+    prior_rejections_prose = (
+        (
+            " prior_rejections in CONTEXT_JSON lists this exact family's own previous rejected "
+            "attempts, oldest first. Each `rejection` names the guard that refused it and the "
+            "`proposed_value` that triggered it. Do not repeat any of them: produce a proposal "
+            "that is genuinely different and does not trigger the same guard again."
+        ) if prior_rejections else ""
+    )
     catalog_instruction = (
         "owner_listing_catalog_entry is the owner's pre-decided spec for this capability_family "
         "(scope tiers, prices, deliverables, required_inputs, FAQ). When present, build the proposal "
@@ -4003,15 +4095,16 @@ def _create_proposal_prompt(
         "required_inputs, and display_price_jpy/paid_option_price_jpy must land within its tiers' "
         "price range rather than inventing unrelated scope or price. "
     ) if listing_catalog_entry else ""
-    prompt = catalog_instruction + """Create one distinct Coconala service proposal from CONTEXT_JSON and return only the
+    prompt = prohibited_terms_prose + prior_rejections_prose + " " + catalog_instruction + f"""Create one distinct Coconala service proposal from CONTEXT_JSON and return only the
 strict schema object. The source_service_id must equal source_offer.service_id; that existing service
 supplies the seller-form adapter, not proof of the new capability. The new service must sell a bounded
 buyer-visible outcome supported by the owned capability family; it must not
 duplicate or merely rephrase any current_catalog_titles. Use the demand page only as demand evidence,
 never copy seller wording, reviews, sales, guarantees or unsupported claims. Include exact evidence
 refs for the official offer, owned family and demand evidence. The title_stem excludes the final
-Japanese `ます`, so it must end in the continuative (i-form) of a Japanese verb -- the character
-right before the implicit `ます` has to be one Coconala can attach `ます` to, e.g. `...を開発し`,
+Japanese `ます`, so it must end in the continuative (i-form) of a Japanese verb -- its last character
+must be one of these characters, which is exactly what Coconala can attach `ます` to:
+{TITLE_STEM_CONTINUATIVE_ENDINGS} -- e.g. `...を開発し`,
 `...を執筆し`, `...を実装し`. It must never end in a bare noun such as `...アプリ` or `...システム`
 (that would render as the ungrammatical `...アプリます`); if the offer is naturally noun-shaped,
 add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. head must state
@@ -4085,11 +4178,12 @@ def _invoke_create_proposal(
     *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path, source: dict,
     family_name: str, family: dict, demand: dict, capability_paths: set[str],
     catalog_titles: list[str], timeout_seconds: int, listing_catalog_entry: dict | None = None,
+    prior_rejections: list[dict] | None = None,
 ) -> tuple[dict, dict, set[str]]:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     prompt, allowed_refs = _create_proposal_prompt(
         source, family_name, family, demand, capability_paths, catalog_titles,
-        listing_catalog_entry=listing_catalog_entry,
+        listing_catalog_entry=listing_catalog_entry, prior_rejections=prior_rejections,
     )
     started = time.time()
     completed = subprocess.run(
@@ -4122,6 +4216,12 @@ def _invoke_create_proposal(
              "provider": summary["selected_provider"], "model": summary["selected_model"],
              "effort": summary["selected_effort"], "summary_path": str(summary_path)}
     return proposal, route, allowed_refs
+
+
+def _create_rejected_proposed_value(proposal: dict) -> dict:
+    """The buyer-visible fields the CREATE guards check, truncated for the rejection ledger."""
+    fields = ("title_stem", "catchphrase", "head", "body", "paid_option_title", "image_copy")
+    return {field: str(proposal[field])[:400] for field in fields if proposal.get(field) is not None}
 
 
 def _seal_create_contract(
@@ -4166,7 +4266,7 @@ def _seal_create_contract(
         raise RuntimeError("storefront_create_content_invalid")
     # Coconala renders the title as `{title_stem}ます`, so the stem must end in a verb continuative
     # form. A stem ending in a particle produced `…SEO構成からます` in a sealed contract.
-    if title_stem[-1] not in "いきしちにひみりぎじびぴえけせてねへめれげぜでべぺ":
+    if title_stem[-1] not in TITLE_STEM_CONTINUATIVE_ENDINGS:
         raise RuntimeError("storefront_create_title_stem_not_continuative")
     # Buyer-visible copy must not leak the schema: an English `outcome:` prefix reached a live listing.
     if any(re.match(r"^[A-Za-z_]{3,}\s*[:：]", line.strip())
@@ -6726,7 +6826,37 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 proposal_noop = None
                 if (next_hypothesis is not None
                         and next_hypothesis.get("guard_reason") == "proposal_contract_required"):
+                    stuck_guard = _three_strike_same_guard(_recent_proposal_rejections(
+                        args.state_dir,
+                        f"improve:{next_hypothesis['service_id']}:{next_hypothesis['field']}",
+                    ))
+                    if stuck_guard is not None:
+                        # Three consecutive rejections for the same guard on this gap mean the
+                        # model will regenerate the same violation forever: stop asking for this
+                        # gap and let the existing supersede mechanism surface the next one,
+                        # exactly like a precondition-superseded candidate already does below.
+                        refused_service = str(next_hypothesis["service_id"])
+                        refused_field = str(next_hypothesis["field"])
+                        refused_version = versions_by_service.get(refused_service, "")
+                        _append_key_once(args.state_dir / "superseded-candidates.jsonl", "candidate_key", {
+                            "version": 1,
+                            "candidate_key": f"{refused_service}:{refused_field}:{refused_version}",
+                            "service_id": refused_service, "field": refused_field,
+                            "listing_version": refused_version,
+                            "reason": f"three_strike_same_guard:{stuck_guard}"[:160],
+                            "observed_at_epoch": int(time.time()),
+                        })
+                        next_hypothesis = _prepare_next_hypothesis(
+                            getattr(args, "scorecard", DEFAULT_SCORECARD),
+                            args.state_dir / "effects.jsonl", args.state_dir / "outcomes.jsonl",
+                            validated_contracts, int(time.time()), mutation_contracts,
+                            compliance_violations, offer_refresh, unread_traffic,
+                        )
+                if (next_hypothesis is not None
+                        and next_hypothesis.get("guard_reason") == "proposal_contract_required"):
                     proposal_service_id = str(next_hypothesis["service_id"])
+                    improve_gap_key = f"improve:{proposal_service_id}:{next_hypothesis['field']}"
+                    improve_prior_rejections = _recent_proposal_rejections(args.state_dir, improve_gap_key)
                     proposal_source = next(
                         (row for row in validated_contracts if row["service_id"] == proposal_service_id), None,
                     )
@@ -6755,6 +6885,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         source=proposal_source, seller_snapshot=proposal_snapshot,
                         family_name=family_name, family=family, manifest=competitor_manifest,
                         capability_paths=capability_paths, timeout_seconds=args.timeout_seconds,
+                        prior_rejections=improve_prior_rejections,
                     )
                     proposal_rejected = None
                     try:
@@ -6768,6 +6899,10 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         # guards did their job, so record why and let the next wake try another gap.
                         generated_contract = None
                         proposal_rejected = str(error)[:160]
+                        _append_proposal_rejection(
+                            args.state_dir, gap_key=improve_gap_key, rejection=proposal_rejected,
+                            proposed_value=proposal.get("proposed_value"), pass_id=pass_id,
+                        )
                     _atomic_write(inventory_path.parent / "proposal-record.json", {
                         "version": 1, "proposal": proposal, "route": proposal_agent,
                         "service_id": proposal_service_id, "changed_field": next_hypothesis["field"],
@@ -7370,10 +7505,34 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 recovered_create_contract = _recover_prepared_create_contract(
                     args.state_dir, create_family, str(demand["evidence_path"]),
                 )
+                create_gap_key = f"create:{create_family}"
+                create_prior_rejections = _recent_proposal_rejections(args.state_dir, create_gap_key)
+                create_stuck_guard = _three_strike_same_guard(create_prior_rejections)
                 if recovered_create_contract is not None:
                     create_seller_snapshot = None
                     create_proposal = {"decision": "create"}
                     create_route = {"status": "recovered_prepared_contract"}
+                    create_allowed_refs = set()
+                elif create_stuck_guard is not None:
+                    # Three consecutive rejections for the same guard on this family mean the
+                    # model will regenerate the same violation every wake: stop asking it, and
+                    # dismiss the cluster (when this family came from one) so a later wake's
+                    # cluster selection advances to a different family instead of retrying this
+                    # one forever -- the same composition `unsold_family`/`family_already_public`
+                    # already use above.
+                    cluster_key = str((unused_cluster or {}).get("cluster_key") or "")
+                    if cluster_key:
+                        _append_key_once(dismissal_ledger, "cluster_key", {
+                            "version": 1, "cluster_key": cluster_key, "status": "dismissed",
+                            "reason": f"three_strike_same_guard:{create_stuck_guard}"[:160],
+                            "observed_at_epoch": int(time.time()),
+                        })
+                    create_seller_snapshot = None
+                    create_proposal = {
+                        "decision": "no_op",
+                        "no_op_reason": f"three_strike_same_guard:{create_stuck_guard}"[:160],
+                    }
+                    create_route = {"status": "skipped_three_strike_same_guard"}
                     create_allowed_refs = set()
                 else:
                     create_seller_snapshot = _seller_snapshot_from_fresh_tab(
@@ -7389,6 +7548,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         catalog_titles=[str(row.get("title") or "") for row in inventory["services"]],
                         timeout_seconds=args.timeout_seconds,
                         listing_catalog_entry=_load_catalog_entries().get(str(create_family)),
+                        prior_rejections=create_prior_rejections,
                     )
                 proposal_agent = create_route
                 if create_proposal.get("decision") == "create" and args.effect:
@@ -7505,14 +7665,36 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         blueprint = {**blueprint, "category_specific": {
                             **blueprint["category_specific"], "facets": resolved_facets,
                         }}
-                    new_listing_contract = recovered_create_contract or _seal_create_contract(
-                        create_proposal, source=create_source, family_name=create_family,
-                        family=create_template,
-                        allowed_refs=create_allowed_refs, blueprint=blueprint,
-                        seller_snapshot=create_seller_snapshot,
-                        draft_service_id=str(create_draft_claim["draft_service_id"]),
-                        evidence_dir=inventory_path.parent / "create-contract",
-                    )
+                    try:
+                        new_listing_contract = recovered_create_contract or _seal_create_contract(
+                            create_proposal, source=create_source, family_name=create_family,
+                            family=create_template,
+                            allowed_refs=create_allowed_refs, blueprint=blueprint,
+                            seller_snapshot=create_seller_snapshot,
+                            draft_service_id=str(create_draft_claim["draft_service_id"]),
+                            evidence_dir=inventory_path.parent / "create-contract",
+                        )
+                    except RuntimeError as error:
+                        # A malformed CREATE candidate is a rejected candidate, not a broken
+                        # wake, exactly like a rejected IMPROVE proposal above: the guards did
+                        # their job (a prohibited tool name or a non-continuative title stem has
+                        # cost this account a live listing before), so record why and let the
+                        # wake complete as a no-op instead of dying the way the unguarded call
+                        # used to -- twelve full wakes in a row did exactly that on
+                        # 2026-09-06. The blank draft claimed above is not lost: it is a real
+                        # untitled draft on the platform, and `create_or_claim_blank_draft`
+                        # discovers and reclaims it directly from the seller's own drafts list on
+                        # a later wake, so no ledger row is needed to remember it here.
+                        create_rejected = str(error)[:160]
+                        _append_proposal_rejection(
+                            args.state_dir, gap_key=create_gap_key, rejection=create_rejected,
+                            proposed_value=_create_rejected_proposed_value(create_proposal),
+                            pass_id=pass_id,
+                        )
+                        return 0, _persist_receipt(args, output, _receipt(
+                            pass_id, status="completed", reason=create_rejected,
+                            effect=0, readback=0,
+                        ))
                     if new_listing_contract is None:
                         raise RuntimeError("storefront_create_contract_missing")
                     _atomic_write(inventory_path.parent / "generated-create-contract.json",
