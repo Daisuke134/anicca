@@ -2746,8 +2746,20 @@ def _recover_prepared_create_contract(
             continue
         row = json.loads(line)
         draft = row.get("new_listing_draft") if isinstance(row.get("new_listing_draft"), dict) else {}
-        if (row.get("status") != "completed" or draft.get("status") != "prepared"
-                or int(draft.get("readback") or 0) != 1 or int(draft.get("public_effect") or 0) != 0
+        # `draft_created` is accepted alongside `prepared` because a draft created before a
+        # wake could fill and publish in one pass never reaches `prepared`, so its sealed
+        # contract was never offered back and every later wake generated a fresh proposal and
+        # re-rolled the dice against every content guard. Draft 4387924 sat filled and
+        # unpublished through three such rounds. The contract is re-validated below either way,
+        # so accepting the earlier stage widens what can be recovered, not what can be trusted.
+        stage = draft.get("status")
+        # A prepared draft was read back, so that readback is still required of it. A
+        # draft_created row is from before the form was filled and has none to require --
+        # dropping the check for both stages would have quietly weakened the older path.
+        if (row.get("status") != "completed"
+                or stage not in {"prepared", "draft_created"}
+                or (stage == "prepared" and int(draft.get("readback") or 0) != 1)
+                or int(draft.get("public_effect") or 0) != 0
                 or draft.get("capability_family") != family_name
                 or str(draft.get("demand_evidence_path") or "") != demand_evidence_path
                 or str(draft.get("draft_service_id") or "") in deleted_draft_ids):
@@ -4382,7 +4394,10 @@ must be one of these characters, which is exactly what Coconala can attach `ま�
 {TITLE_STEM_CONTINUATIVE_ENDINGS} -- e.g. `...を開発し`,
 `...を執筆し`, `...を実装し`. It must never end in a bare noun such as `...アプリ` or `...システム`
 (that would render as the ungrammatical `...アプリます`); if the offer is naturally noun-shaped,
-add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. A stem that ends in a
+add a closing verb like `...アプリを開発し` or `...システムを構築し` instead. A する-verb written
+as its bare noun is the same mistake once more: `...応答を自動化` is a noun, and Coconala would
+render `...自動化ます`. Write the continuative -- `...応答を自動化し`, `...業務を効率化し`,
+`...環境を構築し`, `...機能を実装し`. A stem that ends in a
 particle is the same mistake wearing different clothes: it is a noun phrase whose verb is
 missing. `...FAQ自動応答Botを` would render as `...FAQ自動応答Botをます`. The particles
 `を`, `の`, `が`, `は`, `と` are refused outright. Do not read the character list above as
