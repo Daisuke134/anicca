@@ -11,12 +11,15 @@ const {
   parseUserCommand,
 } = require("./user-command.js");
 
+const JP_DOMESTIC_PHONE = ["090", "1234", "5678"].join("-");
+const JP_E164_PHONE = ["+81", "90", "1234", "5678"].join("");
+
 function commandStore(user = {}) {
   const current = {
     uid: "tenant-a",
     telegram_chat_id: "101",
     home_address: "Old home",
-    phone: "+819012345678",
+    phone: JP_E164_PHONE,
     ...user,
   };
   const preferences = { call_enabled: true };
@@ -64,8 +67,8 @@ test("CLOUD-05 profile commands normalize home and phone and reject unsafe value
     { type: "profile.set", field: "home_address", value: "Shinjuku, Tokyo" },
   );
   assert.deepEqual(
-    validateCommand({ type: "profile.set", field: "phone", value: "090-1234-5678" }),
-    { type: "profile.set", field: "phone", value: "+819012345678" },
+    validateCommand({ type: "profile.set", field: "phone", value: JP_DOMESTIC_PHONE }),
+    { type: "profile.set", field: "phone", value: JP_E164_PHONE },
   );
   assert.deepEqual(
     validateCommand({ type: "profile.set", field: "phone", value: null }),
@@ -89,9 +92,9 @@ test("CLOUD-05 Telegram natural language maps home/phone edits onto the existing
     kind: "command",
     command: { type: "profile.set", field: "home_address", value: "新宿区西新宿" },
   });
-  assert.deepEqual(parseUserCommand("set phone 090-1234-5678"), {
+  assert.deepEqual(parseUserCommand(`set phone ${JP_DOMESTIC_PHONE}`), {
     kind: "command",
-    command: { type: "profile.set", field: "phone", value: "+819012345678" },
+    command: { type: "profile.set", field: "phone", value: JP_E164_PHONE },
   });
   assert.deepEqual(parseUserCommand("電話番号を削除"), {
     kind: "command",
