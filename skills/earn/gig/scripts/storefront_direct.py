@@ -7892,7 +7892,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     getattr(args, "default_tab_script", DEFAULT_TAB),
                     inventory_path.parent,
                 )
-                if (args.effect and not platform_withdrawn and not create_effect_this_wake
+                if (args.effect and not platform_withdrawn
                         and pending_effect is None and not retire_attempted_this_wake) else {
                     "version": 1,
                     "candidate_key": new_listing_contract["candidate_key"],
@@ -7904,14 +7904,21 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     "public_effect": 0,
                 }
             ))
+            # Creating the blank draft is worth recording, but it must not overwrite what
+            # filling the draft just reported. Before this wake could fill and publish in one
+            # pass, `prepare_draft` never ran alongside a create, so relabelling was safe; now
+            # it does, and clobbering its status would hide the real stage the draft reached.
             if create_effect_this_wake:
                 draft_result = {
-                    **draft_result, "status": "draft_created", "effect": 1,
-                    "public_effect": 0,
+                    "status": "draft_created", "effect": 1, "public_effect": 0,
+                    **draft_result, "draft_created_this_wake": True,
                 }
-            draft_effect_this_wake = int(
-                draft_result.get("effect") or draft_result.get("public_effect") or 0
-            ) == 1
+            # A blank draft and a filled draft are both invisible to buyers -- only publication
+            # is an effect the market can see, and the one-effect fence exists to bound what the
+            # market sees. Counting the draft stages meant a wake spent its whole budget creating
+            # a page nobody could reach, then two more wakes to fill and publish it, and a draft
+            # that sits unpublished earns nothing.
+            draft_effect_this_wake = int(draft_result.get("public_effect") or 0) == 1
             conflicting_hypothesis = (
                 next_hypothesis
                 if next_hypothesis is not None
@@ -7925,9 +7932,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 else "duplicate_listing_title" if duplicate_title
                 else "catalog_capacity_exhausted" if observed >= 20
                     else "existing_listing_effect_open" if pending_effect is not None
-                else "effect_already_this_wake" if create_effect_this_wake
                 else "effect_already_this_wake" if retire_attempted_this_wake
-                else "effect_already_this_wake" if draft_effect_this_wake
                 else str(conflicting_hypothesis["guard_reason"])
                 if conflicting_hypothesis is not None else None
             )
