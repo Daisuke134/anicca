@@ -10,6 +10,26 @@ const { chooseRouter, parseTransitPlan } = require("./transit.js");
 const { makeRouteCache, timeBucket } = require("./route-cache.js");
 const { interpretCalendarEvent } = require("./calendar-interpreter.js");
 const { computeDoorDepartureMs } = require("./travel-timing.js");
+const { recordUsageEvent } = require("./usage-event.js");
+
+const GOOGLE_DIRECTIONS_EST_USD = 0.005; // list price per request after free cap, checked 2026-09-06
+const GOOGLE_GEOCODING_EST_USD = 0.005;
+const GOOGLE_ROUTES_PRO_EST_USD = 0.010;
+
+function providerFailureClass(response, providerStatus) {
+  const status = Number(response && response.status);
+  if (Number.isFinite(status) && status >= 400 && status < 500) return "provider_4xx";
+  if (Number.isFinite(status) && status >= 500) return "provider_5xx";
+  if (providerStatus && providerStatus !== "OK") return "no_route";
+  return "network";
+}
+
+async function emitUsage(options, event) {
+  const injected = options && options._recordUsageEvent;
+  if (!injected && (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) return;
+  const write = injected || recordUsageEvent;
+  try { await write(event); } catch { /* observability must not break routing */ }
+}
 
 // C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
 // route it already has (~30 paid provider calls/event → 1). Keyed on (from_geo, to_geo, time_bucket).
@@ -110,7 +130,7 @@ function clampDepartIso(departAtMs, nowMs) {
   return new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs) {
+async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs, usage = {}) {
   const body = JSON.stringify(buildDriveBody(src, dst, clampDepartIso(departAtMs, nowMs)));
   try {
     const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
@@ -122,16 +142,33 @@ async function routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs) {
       },
       body,
     });
-    if (!r.ok) return null;
+    if (!r.ok) {
+      await emitUsage(usage.options, { tenantId: usage.tenantId || "anonymous", provider: "google_maps",
+        feature: "routes_pro", outcome: "failure", failureClass: providerFailureClass(r),
+        providerUnits: 1, providerUnit: "request", estimatedCostUsd: GOOGLE_ROUTES_PRO_EST_USD,
+        meta: { sku: "Routes: Compute Routes Pro", pricing_basis: "list_price_after_free_cap" } });
+      return null;
+    }
     const j = await r.json();
     const sec = parseDurationSeconds((((j.routes || [])[0]) || {}).duration);
+    await emitUsage(usage.options, { tenantId: usage.tenantId || "anonymous", provider: "google_maps",
+      feature: "routes_pro", outcome: sec == null ? "failure" : "success",
+      failureClass: sec == null ? "no_route" : null, providerUnits: 1, providerUnit: "request",
+      estimatedCostUsd: GOOGLE_ROUTES_PRO_EST_USD,
+      meta: { sku: "Routes: Compute Routes Pro", pricing_basis: "list_price_after_free_cap" } });
     return sec == null ? null : minutesFromSeconds(sec);
-  } catch { return null; }
+  } catch {
+    await emitUsage(usage.options, { tenantId: usage.tenantId || "anonymous", provider: "google_maps",
+      feature: "routes_pro", outcome: "failure", failureClass: "network", providerUnits: 1,
+      providerUnit: "request", estimatedCostUsd: GOOGLE_ROUTES_PRO_EST_USD,
+      meta: { sku: "Routes: Compute Routes Pro", pricing_basis: "list_price_after_free_cap" } });
+    return null;
+  }
 }
 
 // arriveByMs: used for outbound (arrive-by event start). departAtMs: used for return legs (depart at
 // event end). Only one should be non-null; if neither is a future time, falls back to departure_time="now".
-async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.now(), departAtMs = null) {
+async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.now(), departAtMs = null, usage = {}) {
   const p = new URLSearchParams({ origin: src, destination: dst, mode: "transit", key: mapsKey });
   // NEVER-LATE: anchor transit to the EVENT, not "now". Future event → arrival_time = event start, so
   // the train time reflects the schedule the user will actually ride. Past/missing → fall back to now.
@@ -146,9 +183,26 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
   try {
     const r = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${p}`);
     const j = await r.json();
-    if (j.status !== "OK" || !j.routes || !j.routes[0] || !j.routes[0].legs || !j.routes[0].legs[0]) return null;
+    const accepted = r.ok !== false && j.status === "OK" && j.routes && j.routes[0]
+      && j.routes[0].legs && j.routes[0].legs[0];
+    await emitUsage(usage.options, {
+      tenantId: usage.tenantId || "anonymous", provider: "google_maps", feature: "directions",
+      outcome: accepted ? "success" : "failure",
+      failureClass: accepted ? null : providerFailureClass(r, j.status),
+      providerUnits: 1, providerUnit: "request", estimatedCostUsd: GOOGLE_DIRECTIONS_EST_USD,
+      meta: { sku: "Directions", pricing_basis: "list_price_after_free_cap" },
+    });
+    if (!accepted) return null;
     return minutesFromSeconds(j.routes[0].legs[0].duration.value);
-  } catch { return null; }
+  } catch {
+    await emitUsage(usage.options, {
+      tenantId: usage.tenantId || "anonymous", provider: "google_maps", feature: "directions",
+      outcome: "failure", failureClass: "network", providerUnits: 1, providerUnit: "request",
+      estimatedCostUsd: GOOGLE_DIRECTIONS_EST_USD,
+      meta: { sku: "Directions", pricing_basis: "list_price_after_free_cap" },
+    });
+    return null;
+  }
 }
 
 // Query BOTH transit (anchored to event start) and traffic-aware drive, then take the LARGER —
@@ -160,13 +214,13 @@ async function legacyTransitMinutes(src, dst, mapsKey, arriveByMs, nowMs = Date.
 // Outbound (default false): transit uses arrival_time = event start (arrive-by).
 // Return (true): transit uses departure_time = ev.endMs (depart-at, not arrive-by).
 // The Google path (Routes Pro drive + legacy transit, never-late MAX bias). This is the FALLBACK now.
-async function directionsMinutesGoogle(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false) {
+async function directionsMinutesGoogle(src, dst, mapsKey, departAtMs = Date.now(), nowMs = Date.now(), departureMode = false, usage = {}) {
   if (!mapsKey || !src || !dst) return null;
   const [transit, drive] = await Promise.all([
     departureMode
-      ? legacyTransitMinutes(src, dst, mapsKey, null, nowMs, departAtMs)
-      : legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs),
-    routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs),
+      ? legacyTransitMinutes(src, dst, mapsKey, null, nowMs, departAtMs, usage)
+      : legacyTransitMinutes(src, dst, mapsKey, departAtMs, nowMs, null, usage),
+    routesDriveMinutes(src, dst, mapsKey, departAtMs, nowMs, usage),
   ]);
   return acceptRouteResults({ legacyTransit: transit, routesDrive: drive }).minutes;
 }
@@ -177,15 +231,27 @@ const _geoMemo = new Map();
 
 // C2: geocode a JP address ONCE via Google Geocoding (cheap, one-time; NOT the Routes-Pro cost driver).
 // Returns {lat,lon} or null. Injected in tests via opts._geocode.
-async function geocodeAddress(addr, mapsKey) {
+async function geocodeAddress(addr, mapsKey, usage = {}) {
   if (!addr || !mapsKey) return null;
   if (_geoMemo.has(addr)) return _geoMemo.get(addr);
   try {
     const u = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(addr)}&key=${mapsKey}`;
-    const j = await (await fetch(u)).json();
+    const response = await fetch(u);
+    const j = await response.json();
     const loc = j && j.results && j.results[0] && j.results[0].geometry && j.results[0].geometry.location;
+    await emitUsage(usage.options, { tenantId: usage.tenantId || "anonymous", provider: "google_maps",
+      feature: "geocoding", outcome: loc ? "success" : "failure",
+      failureClass: loc ? null : providerFailureClass(response, j && j.status), providerUnits: 1,
+      providerUnit: "request", estimatedCostUsd: GOOGLE_GEOCODING_EST_USD,
+      meta: { sku: "Geocoding", pricing_basis: "list_price_after_free_cap" } });
     return loc ? { lat: loc.lat, lon: loc.lng } : null;
-  } catch { return null; }
+  } catch {
+    await emitUsage(usage.options, { tenantId: usage.tenantId || "anonymous", provider: "google_maps",
+      feature: "geocoding", outcome: "failure", failureClass: "network", providerUnits: 1,
+      providerUnit: "request", estimatedCostUsd: GOOGLE_GEOCODING_EST_USD,
+      meta: { sku: "Geocoding", pricing_basis: "list_price_after_free_cap" } });
+    return null;
+  }
 }
 
 // C2: real FREE JP transit fetch (api.transit.ls8h.com /plan). Injected in tests via opts._transitFetch.
@@ -312,6 +378,7 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
   const googleMinutesFn = options._directionsMinutesGoogle || directionsMinutesGoogle;
   const cache = options._routeCache || _routeCache; // tests inject a fresh cache to avoid cross-test leakage
   const uid = options.uid ?? options.tenantId ?? options.userId ?? "anonymous";
+  const usage = { tenantId: uid, options };
   const timeoutOption = options._transitTimeoutMs ?? options.transitTimeoutMs;
   const transitTimeoutMs = Number.isFinite(Number(timeoutOption)) && Number(timeoutOption) >= 0
     ? Number(timeoutOption) : DEFAULT_TRANSIT_TIMEOUT_MS;
@@ -321,7 +388,7 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
   const googleSrc = srcLiteral ? `${srcLiteral.lat},${srcLiteral.lon}` : src;
   const googleDst = dstLiteral ? `${dstLiteral.lat},${dstLiteral.lon}` : dst;
   const [srcGeo, dstGeo] = await Promise.all([
-    srcLiteral || geocode(src, mapsKey), dstLiteral || geocode(dst, mapsKey),
+    srcLiteral || geocode(src, mapsKey, usage), dstLiteral || geocode(dst, mapsKey, usage),
   ]);
   const routeMode = srcGeo && dstGeo && chooseRouter(srcGeo, dstGeo) === "transit" ? "transit" : "google";
   const query = wallAnchor(call.anchorAtMs, call.timezone, call.nowMs, call.departureMode);
@@ -330,10 +397,10 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
       const value = googleRouteFn
         ? await googleRouteFn(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
         : options._directionsMinutesGoogle
-          ? await googleMinutesFn(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode)
+          ? await googleMinutesFn(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs, call.departureMode, usage)
           : await (call.departureMode
-            ? legacyTransitMinutes(googleSrc, googleDst, mapsKey, null, call.nowMs, query.anchorAtMs)
-            : legacyTransitMinutes(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs));
+            ? legacyTransitMinutes(googleSrc, googleDst, mapsKey, null, call.nowMs, query.anchorAtMs, usage)
+            : legacyTransitMinutes(googleSrc, googleDst, mapsKey, query.anchorAtMs, call.nowMs, null, usage));
       return googleRoute(value);
     } catch { return null; }
   };
@@ -368,7 +435,12 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
       serviceDate: query.date,
       anchorType: query.type,
     };
-    return cache.getOrCompute(uid, srcGeo, dstGeo, timeBucket(query.anchorAtMs), compute, context);
+    return cache.getOrCompute(uid, srcGeo, dstGeo, timeBucket(query.anchorAtMs), compute, context,
+      (value) => emitUsage(options, {
+        tenantId: uid, provider: value && value.provider === "google" ? "google_maps" : "transit_api",
+        feature: "travel_route", outcome: "cache_hit", cacheHit: true,
+        providerUnits: 0, providerUnit: "request", estimatedCostUsd: 0,
+      }));
   }
   return compute(); // un-geocodable address → uncached (rare)
 }

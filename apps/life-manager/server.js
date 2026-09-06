@@ -82,6 +82,7 @@ const { startInvestmentDryRunLoop } = require("./lib/investment-dry-run.js");
 const { makeSteelCdpClient } = require("./lib/steel-cdp-client.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
 const { recordCost } = require("./lib/ledger.js");
+const { recordUsageEvent } = require("./lib/usage-event.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
 const SUPA_URL = process.env.SUPABASE_URL, SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const COMPOSIO_KEY = process.env.COMPOSIO_API_KEY;
@@ -1336,8 +1337,15 @@ wss.on("connection", (carrierWs, req) => {
         // Duration proxy from spec §13's measured ~$0.023/min. Google bills Live API by actual
         // token usage, not wall time (https://ai.google.dev/gemini-api/docs/live-api/best-practices#pricing-billing),
         // but this bridge does not receive billable token totals, so the ledger stores this explicit estimate.
+        // Keep the legacy kind for existing panels, but put estimated cost on the normalized event
+        // only so aggregate cost is not counted twice.
         recordCost({ uid: wakeUid || null, kind: "gemini_live", quantity, unit: "seconds",
-          estUsd: quantity / 60 * 0.023, meta: { reconnect: geminiReconnects } });
+          estUsd: 0, meta: { reconnect: geminiReconnects, cost_source: "provider_usage" } });
+        recordUsageEvent({ tenantId: wakeUid || "unknown", provider: "gemini",
+          feature: "live_api", outcome: gotAudio ? "success" : "failure",
+          failureClass: gotAudio ? null : "no_audio", providerUnits: quantity,
+          providerUnit: "seconds_proxy", estimatedCostUsd: quantity / 60 * 0.023,
+          meta: { reconnects: geminiReconnects, estimate_basis: "audio_duration_proxy" } });
       }
       onGeminiEnd("closed");
     });

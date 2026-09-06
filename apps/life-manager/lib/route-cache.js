@@ -74,11 +74,14 @@ function cacheKey(uid, fromGeo, toGeo, bucket, context = {}) {
 // concurrent same-key work still collapses, while null/undefined results retry on later calls/ticks.
 function makeRouteCache({ store = new Map(), ttlMs = BUCKET_MS, now = Date.now } = {}) {
   const inFlight = new Map();
-  async function getOrCompute(uid, fromGeo, toGeo, bucket, provider, context = {}) {
+  async function getOrCompute(uid, fromGeo, toGeo, bucket, provider, context = {}, onCacheHit = null) {
     const key = cacheKey(uid, fromGeo, toGeo, bucket, context);
     const t = now();
     const hit = store && typeof store.get === "function" ? store.get(key) : null;
-    if (hit && Number.isFinite(hit.computedAt) && t - hit.computedAt < ttlMs) return hit.value;
+    if (hit && Number.isFinite(hit.computedAt) && t - hit.computedAt < ttlMs) {
+      if (typeof onCacheHit === "function") await onCacheHit(hit.value);
+      return hit.value;
+    }
     if (inFlight.has(key)) return inFlight.get(key);
     const run = (async () => {
       const value = await provider();
