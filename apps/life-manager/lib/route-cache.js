@@ -48,6 +48,8 @@ function normalizeContext(context = {}) {
     anchorType: contextValue(source, ["anchorType"]),
     timezone: contextValue(source, ["timezone"]),
     serviceDate: contextValue(source, ["serviceDate"]),
+    fromKey: contextValue(source, ["fromKey"]),
+    toKey: contextValue(source, ["toKey"]),
   };
 }
 
@@ -77,6 +79,8 @@ function cacheKey(uid, fromGeo, toGeo, bucket, context = {}) {
     resolved.context.serviceDate,
     resolved.context.anchorType,
     resolved.bucket,
+    resolved.context.fromKey,
+    resolved.context.toKey,
   ]);
 }
 

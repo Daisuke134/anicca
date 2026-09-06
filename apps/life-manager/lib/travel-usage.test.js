@@ -85,3 +85,20 @@ test("Geocoding 4xx is not replayed during negative TTL and a later valid respon
     globalThis.fetch = oldFetch;
   }
 });
+
+test("un-geocodable raw endpoints still negative-cache the paid Directions fallback", async () => {
+  let calls = 0;
+  const cache = makeRouteCache({ store: new Map(), now: () => 1000 });
+  const options = {
+    uid: "tenant-raw-negative",
+    _routeCache: cache,
+    _geocode: async () => null,
+    _directionsMinutesGoogle: async () => { calls += 1; return null; },
+    _recordUsageEvent: async () => true,
+  };
+  const first = await directionsRoute("raw start", "raw destination", "key", 2_000_000, 1000, false, options);
+  const second = await directionsRoute("raw start", "raw destination", "key", 2_000_000, 1000, false, options);
+  assert.equal(first, null);
+  assert.equal(second, null);
+  assert.equal(calls, 1);
+});
