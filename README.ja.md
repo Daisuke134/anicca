@@ -18,9 +18,9 @@ repositoryはopen sourceで、dataをowner端末に置くportable self-host版�
 phoneだけで常時稼働させたい時はpaid monthly cloudを使います。どちらもこのrepositoryから作り、同じstate・証拠・人間向け報告contractへ収束させます。資産増加や投資収益を保証せず、
 receiptのない試行を「完了」と報告しません。
 
-## 13本の主要product loop
+## 14本の主要product loop
 
-13本はuser-facingな製品能力の数です。process数ではありません。registryには、各product loopを実装する
+14本はuser-facingな製品能力の数です。process数ではありません。registryには、各product loopを実装する
 応募・browser owner・報告・照合・healthcheckなどの小さいjobが多数あります。
 
 | # | Product loop | 現在の代表owner | 役割 |
@@ -36,10 +36,12 @@ receiptのない試行を「完了」と報告しません。
 | 9 | Fundraiser | `fundraiser` | accelerator、fellowship、grant、投資家受付を発見し条件を満たせば応募 |
 | 10 | Connector | `life-manager-connector-native` | event発見・応募・登録確認・Calendar/Telegram receipt報告 |
 | 11 | Life Manager Cloud | Railway上の`apps/life-manager` | 常時稼働web、Telegram、reminder、schedule、hosted-agent面 |
-| 12 | Mobile / Capafy | `capafy-loop-daily`, `capafy-outcome-monitor`, `capafy-ig-account-manager`ほか | mobile productとaudience-growth workflowの運用 |
-| 13 | Money Printer | Railwayの`life-call`, `money-printer-worker`, `money-printer-symphony` | 公開機会をworkroom、agent実行、人間handoff、verified receiptへ進める |
+| 12 | Life Manager Mobile App | `life-manager-anicca-en-affirmation-instagram`, `life-manager-anicca-main-instagram`, `life-manager-anicca-main-tiktok`とmobile metrics job | `anicca-ios` mobile appの獲得・配信・計測を運用。app build自体はまだregistry-managed loopではない |
+| 13 | Capafy | `capafy-loop-daily`, `capafy-outcome-monitor`, `capafy-ig-account-manager`, `capafy-ig-marketing-daily` | Capafyという別productの販売・outcome・audience-growth workflowを運用 |
+| 14 | CFO | `life-manager-cfo-hourly` | 全earning loopのverified revenue、cash flow、残高、payout、財務報告を照合 |
 
-CFOと報告jobは共通supportであり、14本目のproduct loopではありません。実行IDの正本は
+**Money Printerは追加loopではありません。** すべての収益loopを束ねるumbrellaです。
+`/money-printer`は共通のopportunity-to-receipt systemを表示するcontrol roomであり、15本目のloopではありません。実行IDの正本は
 [`config/loop-registry.json`](config/loop-registry.json)です。
 
 ## 現在構築しているgeneral agent

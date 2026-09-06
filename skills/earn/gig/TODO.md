@@ -137,7 +137,9 @@ Two measured facts decide the standard, and they point in opposite directions:
    lm-loop apply` repointed the label (`changed: true`, install event `384c8616248e74c8f5994094`).
    Natural pass `gig-apply-direct-1788695849598369000-63171` on that SHA delivered
    `message_id 62135`, written to `~/gig/telegram-delivery-receipts/`. The installed release holds
-   zero `openclaw` references in both Apply files.
+   zero `openclaw` references in both Apply files. Re-confirmed on the later release `7ddf271a`:
+   pass `gig-apply-direct-1788698159382209000-16112` delivered `message_id 62188` with
+   `transport: sent`.
 2. [x] `APPLY-REPORT-2` Remove the last CrowdWorks Apply shell-out. PASS = `earn/crowdworks/scripts/account.py`
    sends through `telegram_delivery.send_via_shared_client` and resolves its chat from
    `CROWDWORKS_REPORT_CHAT` rather than a repository literal, and one natural credential-request
@@ -185,6 +187,11 @@ Two measured facts decide the standard, and they point in opposite directions:
    redrive live in `_shared/marketplace-core/`, all three marketplaces resolve through them, and
    `earn/gig/scripts/telegram_outbox.py` is gone. Sequenced with the Paid and Storefront owners,
    because two of the importers are theirs; this owner does not do it unilaterally.
+   Proven in production: release `20260906T212050-363b78ce`, nine labels repointed onto it
+   (Coconala Apply, six Lancers lanes, two CrowdWorks lanes), and Lancers then delivered three wake
+   reports through the migrated shared loop — `message_id` 62166 (application), 62168 (paid), 62170
+   (negotiate). Consolidating those nine labels onto one release also made three old releases
+   collectable, reclaiming 1.77 GB with free space back from 9.9 GiB to 11 GiB.
    The Lancers private delivery loop is now closed too: `earn/lancers/scripts/telegram_report.py`
    drains through the shared `deliver_pending`, adapting only its `SendResult` shape. All three
    outcomes were checked against the old behaviour — a numeric ack lands `delivered` with the id
@@ -203,12 +210,70 @@ Two measured facts decide the standard, and they point in opposite directions:
    that lane concurrently, so start this only after `COCONALA-PAID-3A` settles. Load it by path in
    the meantime; do not copy it. `APPLY-REPORT-1` through `4` carry no such constraint and do not wait.
 
-6. [ ] `APPLY-REPORT-6` Make the Lancers reporting suite able to fail. PASS =
+6. [x] `APPLY-REPORT-6` Make the Lancers reporting suite able to fail. PASS =
    `apps/lancers-revenue/tests/test_telegram_report.py` is green against the message the lane
    actually sends, with no assertion weakened to pass — each of the 12 either asserts the Japanese
    narrative the renderer now produces or is deleted as testing a format that no longer exists.
    Measured 2026-09-06: 12 failed, and they have been failing since the renderer was rewritten, so
    a real reporting regression would not have been visible.
+   Closed: `test_telegram_report.py` is green, 23 passed. Nothing was weakened — two of the twelve
+   were failing because the renderer had a real defect, and the renderer was fixed rather than the
+   assertion:
+   - a wake carrying a blocker rendered `⚠️ 確認が必要な項目があります` without naming it, so every
+     warning read the same. It now names the blocker, matching `lane_summary`'s convention.
+   - a pass that reported `ok: false` rendered the same `✅` as a healthy one. `build_snapshot` knew
+     (`complete` was false) but dropped `ok` before the renderer could see it. It is now carried as
+     `application_ok`, beside the stages rather than inside them, because `stages` feeds `app_ok`
+     and every member of that must be non-None.
+   The other five asserted a telemetry format the renderer no longer emits (`observed 13`,
+   `blocker none`, `source_observed_at: unknown`). Each now asserts the same invariant against the
+   message the lane actually sends, or against the snapshot where the value lives — separable
+   stages, receipts never rendered as revenue, a resolved blocker not carried forward, and `now`
+   never passed off as the moment the source was observed.
+
+7. [x] `APPLY-REPORT-7` The Lancers Apply loop's own guards are red. PASS = the five remaining
+   failures in `apps/lancers-revenue/tests/` are green against the loop's real behaviour, or deleted
+   as guarding a contract that was deliberately changed. Measured 2026-09-06, and unlike
+   `APPLY-REPORT-6` these are behaviour, not wording:
+   `test_normal_tick_submits_only_first_ranked_eligible_project` expects one submission and observes
+   three; `test_normal_tick_preserves_coconala_planner_order` observes a different order;
+   `test_capacity_uses_fresh_official_snapshot_and_japan_day_receipts` and
+   `test_hard_prohibition_requires_exact_public_evidence` observe `None` where they expect
+   `daily_quota_reached` and `planner_contract_invalid`;
+   `test_budget_qualified_cards_only_are_detail_enriched_and_failures_remain_teasers` observes two
+   enriched cards where it expects one. The head-of-line guard this file exists to hold — stop at the
+   first new job, do not fan out — is therefore not holding, and that is the guard the union-discovery
+   attempt was withdrawn to protect. Diagnose before changing either side: a test that expects one
+   submission and gets three is either a stale contract or a live over-submission, and those have
+   opposite fixes.
+   Diagnosed, and all five were stale contracts left behind by deliberate changes — no live defect.
+   `apps/lancers-revenue/tests/` is now 72 passed. Each was traced to the change that replaced it
+   before the test was touched:
+   - one tick submits **every** eligible project, not the first. The result shape is built for it
+     (`_batch_summary`, `verified`/`blocked` lists). Ranking still holds, so the rewritten test
+     asserts the ranked head goes first and no project is submitted twice.
+   - a planner handed two rows must decide two rows. Returning one is `planner_contract_invalid`
+     with `planner_expected_count` and `planner_returned_count`, so a planner that silently drops
+     work is visible rather than looking like a thin day.
+   - `_capacity_reason` no longer counts ledger applications per day. It reads `contracts.json` and
+     refuses while work is in flight (`capacity_details_required`) or when the snapshot is
+     unfinished or unreadable (`capacity_source_unavailable`). `daily_quota_reached` can no longer
+     be produced, yet still sits in `telegram_report.py`'s `healthy_reasons` and message table as
+     dead strings.
+   - the fabricated-quote check survives (`_public_excerpt` in `_validate`); PR #4086 moved its
+     report from a batch-wide `error` to a per-row `decision_reports` entry, so one bad decision no
+     longer discards good ones. The rewritten test asserts nothing is submitted **and** that the row
+     is reported `invalid` / `failed` / `planner_contract_invalid`.
+   - the 98,000 JPY teaser floor that skipped cheap cards before fetching their detail page was
+     removed on purpose in `02e1e5494` "plan from full project details": the search teaser is not a
+     reliable budget, so judging on it rejected work the planner could have taken. Every card inside
+     the page limit is now enriched.
+   Three tests were also renamed, because a name asserting the opposite of what the body checks is
+   the same defect in a different place.
+   **The general lesson, and why this kept happening:** every one of these changes was correct, and
+   every one left its guard asserting the old contract. A red suite cannot fail, so the next real
+   regression in any of these paths would have been invisible. Changing a contract means changing
+   its test in the same commit — otherwise the guard silently stops guarding.
 
 Two items measured here belong to other owners and are recorded so they are not lost. This owner
 does not start them and does not reorder anyone's cursor to fit them:
@@ -217,6 +282,17 @@ does not start them and does not reorder anyone's cursor to fit them:
   `OpenClawTelegramTransport`, used by `paid_direct.py`, `ask_buyer_pass.py`, `checkpoint_via_tg.py`
   and `retainer_lane.py`. Same transport, same defect, different owner.
 - [ ] `STOREFRONT-REPORT-1` (Storefront owner) Retire the `openclaw` exec in `storefront_direct.py`.
+
+8. [ ] `APPLY-REPORT-8` Coconala Apply exits 1 in its report phase while its report succeeds.
+   Found while closing this cursor, and **not caused by it**. On release `7ddf271a` the lane's
+   report is delivered (`message_id 62188`, `transport: sent`) and the pass still ends
+   `entrypoint_exit_1`. The only non-empty stderr is `coverage.stderr`:
+   `{"ok":false,"error":"source_not_found:single:new","error_type":"ParentContractError",`
+   `"error_at":"application_parent.py:953"}` — a discovery failure, not a reporting one. It has
+   occurred 30 times since 2026-09-05 07:48, a day before any change here.
+   PASS = the lane either finds its `single:new` source or reports the discovery failure as its own
+   blocker instead of failing the pass at the report phase, and the launchd exit says which one
+   happened. Today an exit 1 is indistinguishable from a lane that never reported at all.
 
 What is true once all five are checked: a stranger clones this repository, sets `TELEGRAM_BOT_TOKEN`
 and `TELEGRAM_CHAT_ID`, runs an Apply lane, and receives the same reporting Dais receives today —

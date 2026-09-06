@@ -31,6 +31,20 @@ function normalizeInvestmentState(value, expectedUid) {
 function createInvestmentStateStore({ query } = {}) {
   if (typeof query !== "function") throw new Error("investment state store unavailable");
   return Object.freeze({
+    async listRunnable(limit = 1) {
+      if (!Number.isInteger(limit) || limit < 1 || limit > 50) invalid();
+      const result = await query(`
+        SELECT ${ROW_KEYS.join(", ")}
+        FROM public.lm_investment_states
+        WHERE deployment = 'cloud' AND mode IN ('paper', 'shadow')
+          AND paused = false AND killed = false
+        ORDER BY uid
+        LIMIT $1
+      `, [limit]).catch(() => null);
+      const rows = result && result.rows;
+      if (!Array.isArray(rows) || rows.length > limit) throw new Error("investment state store unavailable");
+      return Object.freeze(rows.map((row) => normalizeInvestmentState(row, row.uid)));
+    },
     async read(uid) {
       if (!UID.test(String(uid || ""))) invalid();
       const result = await query(`

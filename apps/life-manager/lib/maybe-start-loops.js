@@ -52,6 +52,7 @@ function maybeStartLoops(env, starters) {
   starters.startAskLoop();
   starters.startOnboardLoop();
   starters.startDiscoveryLoop();
+  starters.startInvestmentDryRunLoop();
   return {
     started: true,
     owner: role === "scheduler" ? owner : standaloneFallback ? "standalone-inngest-missing-fallback" : "standalone-transition",

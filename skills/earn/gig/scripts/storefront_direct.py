@@ -6278,16 +6278,25 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         typed = storefront_draft.read_category_children(
                             getattr(args, "default_tab_script", DEFAULT_TAB),
                             draft_id, master["value"], sub["value"])
-                        type_options = typed.get("data[Service][master_category_type_id]") or []
-                        picked_type, type_route = _invoke_category_child_proposal(
-                            runner=getattr(args, "runner", DEFAULT_RUNNER),
-                            schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
-                            workdir=args.workdir,
-                            evidence_dir=inventory_path.parent / "bootstrap-category-type",
-                            cluster=cluster, master=master,
-                            children={**typed, "data[Service][master_sub_category]": [sub]},
-                            timeout_seconds=args.timeout_seconds,
-                        )
+                        # A disabled, empty type select (see `read_category_children`) means this
+                        # category genuinely has no third level -- skip the type-picking agent
+                        # call entirely rather than let it fabricate a value with no real options.
+                        category_type_absent = bool(typed.get("master_category_type_absent"))
+                        if category_type_absent:
+                            category_type, type_route = None, {"model": None}
+                        else:
+                            type_options = typed.get("data[Service][master_category_type_id]") or []
+                            picked_type, type_route = _invoke_category_child_proposal(
+                                runner=getattr(args, "runner", DEFAULT_RUNNER),
+                                schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
+                                workdir=args.workdir,
+                                evidence_dir=inventory_path.parent / "bootstrap-category-type",
+                                cluster=cluster, master=master,
+                                children={**typed, "data[Service][master_sub_category]": [sub]},
+                                timeout_seconds=args.timeout_seconds,
+                            )
+                            category_type = _validate_category_choice(
+                                picked_type.get("type_value"), type_options, "type")
                         category_record = {
                             "version": 1,
                             "demand_evidence_sha256": demand_record["evidence_sha256"],
@@ -6296,9 +6305,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             "category": {
                                 "master": master,
                                 "sub": sub,
-                                "type": _validate_category_choice(
-                                    picked_type.get("type_value"), type_options, "type"),
+                                "type": category_type,
                             },
+                            "category_type_absent": category_type_absent,
                             "routes": {
                                 "master": master_route.get("model"),
                                 "sub": child_route.get("model"),
@@ -7610,26 +7619,35 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                             getattr(args, "default_tab_script", DEFAULT_TAB),
                             draft_id, blueprint["category"]["master"]["value"], sub["value"],
                         )
-                        type_options = typed.get("data[Service][master_category_type_id]") or []
-                        picked_type, _ = _invoke_category_child_proposal(
-                            runner=getattr(args, "runner", DEFAULT_RUNNER),
-                            schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
-                            workdir=args.workdir,
-                            evidence_dir=inventory_path.parent / "category-type-agent",
-                            cluster=unused_cluster, master=blueprint["category"]["master"],
-                            children={**typed, "data[Service][master_sub_category]": [sub]},
-                            timeout_seconds=args.timeout_seconds,
-                        )
+                        # A disabled, empty type select (see `read_category_children`) means this
+                        # category genuinely has no third level -- skip the type-picking agent
+                        # call entirely rather than let it fabricate a value with no real options.
+                        category_type_absent = bool(typed.get("master_category_type_absent"))
+                        if category_type_absent:
+                            category_type = None
+                        else:
+                            type_options = typed.get("data[Service][master_category_type_id]") or []
+                            # The site rejects a listing whose type is offered but left unset, so
+                            # whenever the form does offer a type it is always read and chosen.
+                            picked_type, _ = _invoke_category_child_proposal(
+                                runner=getattr(args, "runner", DEFAULT_RUNNER),
+                                schema=getattr(args, "category_child_schema", DEFAULT_CATEGORY_CHILD_SCHEMA),
+                                workdir=args.workdir,
+                                evidence_dir=inventory_path.parent / "category-type-agent",
+                                cluster=unused_cluster, master=blueprint["category"]["master"],
+                                children={**typed, "data[Service][master_sub_category]": [sub]},
+                                timeout_seconds=args.timeout_seconds,
+                            )
+                            category_type = _validate_category_choice(
+                                picked_type.get("type_value"), type_options, "type")
                         blueprint = {**blueprint, "category": {
                             "master": blueprint["category"]["master"],
                             "sub": sub,
-                            # The site rejects a listing whose type is unset, so the type the
-                            # form offers is always read and always chosen from what it offers.
-                            "type": _validate_category_choice(picked_type.get("type_value"),
-                                                              type_options, "type"),
+                            "type": category_type,
                         }}
                         demand_derivation = {**(demand_derivation or {}),
                                              "category_triple": blueprint["category"],
+                                             "category_type_absent": category_type_absent,
                                              "category_child_route": child_route.get("model")}
                         # The bound category's own live form is the only source of its facet
                         # groups: the writing category's ids never apply to a development
