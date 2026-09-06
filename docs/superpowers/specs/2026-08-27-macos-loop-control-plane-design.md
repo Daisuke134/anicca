@@ -5,6 +5,60 @@
 **Canonical registry:** `config/loop-registry.json`  
 **Scope:** macOS launchd only
 
+## Active P0 — prevent WindowServer panic and recover local loops after boot
+
+This P0 precedes marketplace repair. “The Mac never restarts” is not a truthful acceptance
+criterion: hardware, power and the operating system can always force a reboot. The required outcome
+is no recurrence of the measured panic under normal loop load, automatic recovery after an ordinary
+boot, and an explicit pre-login alert when macOS itself refuses automatic login after a panic.
+
+Measured incident evidence:
+
+- The latest boot is `2026-09-03 06:45:31 JST`; `last` has no preceding orderly shutdown.
+- `/Library/Logs/DiagnosticReports/panic-full-2026-09-03-064551.0002.panic` records a userspace
+  watchdog panic after WindowServer missed check-ins for 120 seconds and suffered two induced
+  crashes. The compressor had reached 100% of its segment limit.
+- The associated WindowServer stack was blocked through TCC on `tccd`; `sandboxd` had reached its
+  64-thread soft limit. Later WindowServer watchdog reports exist, including `2026-09-06`, so this
+  is a live recurrence risk rather than a closed historical incident.
+- FileVault is off. `sysadminctl` reports automatic login user `anicca`, `autoLoginUser=anicca`, and
+  `/etc/kcpassword` exists with root-only permissions. Manual password entry after the panic was not
+  caused by missing normal auto-login configuration.
+- The host runs macOS 15.6 build `24G84`. The local official updater offers recommended macOS
+  15.7.9 build `24G830` and separately offers the larger Tahoe 26 major upgrade.
+- Current memory pressure reports 40% free, but cumulative swap/compressor activity is high and many
+  Chromium renderer processes are active. This is correlation evidence; no individual loop is yet
+  proven to have caused the watchdog.
+
+Execute exactly in this order:
+
+1. [ ] `PANIC-1` Add one read-only boot/panic evidence collector to the existing control plane.
+   PASS = on every boot it records boot ID/time, prior orderly-shutdown presence, panic/reset report
+   identity, WindowServer/tccd/sandboxd watchdog evidence, memory/compressor counters, disk free
+   bytes, and browser-owner/process/tab counts without credentials or customer data. It identifies
+   the failing component boundary; it does not kill or restart a process.
+2. [ ] `PANIC-2` Measure and bound GUI-browser ownership at the source. PASS = every registered
+   browser owner has a finite context/tab/renderer retention contract, stale resources are reclaimed
+   only after ownership/open-file checks, and a sustained real workload no longer grows browser or
+   TCC pressure without bound. Do not globally kill Chromium, WindowServer, tccd, sandboxd, Remote,
+   ChatGPT, Claude, or another loop.
+3. [ ] `PANIC-3` Install the recommended macOS 15.7.9 maintenance update, not the Tahoe major
+   upgrade, in an explicitly approved maintenance window. This step requires a restart and therefore
+   waits for user approval immediately before execution. PASS = exact OS/build readback, no missing
+   loop state or credentials, and the panic evidence collector starts on the new boot.
+4. [ ] `PANIC-4` Prove ordinary-boot automatic recovery. PASS = controlled restart, automatic login
+   reaches the `anicca` Aqua session without manual typing, every enabled managed loop returns from
+   its immutable release, `lm-loop doctor` is green, and representative effect-owning loops emit
+   natural terminal receipts with replay-zero. A PID alone is insufficient.
+5. [ ] `PANIC-5` Make panic/login failure visible without weakening login security. PASS = a minimal
+   pre-login boot-gap owner detects that the expected Aqua session and loop heartbeat did not return,
+   sends one deduplicated alert through a repository-owned credential-safe path, and sends a recovery
+   receipt after login. It must not store or type the account password, disable secure login, or claim
+   that panic-path auto-login is guaranteed.
+6. [ ] `PANIC-6` Close recurrence. PASS = seven days of normal concurrent loop load with no new
+   WindowServer/tccd/sandboxd watchdog panic, bounded memory/browser counts, no unowned boot gap, and
+   no duplicate external effect across recovery.
+
 ## 1. Overview
 
 Life Manager will operate hundreds of loops across physical life, mental life,
