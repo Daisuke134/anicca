@@ -11,7 +11,7 @@ CREDENTIALS = Path(os.environ.get("ANICCA_CREDENTIALS_FILE") or Path.home() / ".
 
 
 def credential_value(ref, field):
-    if not ref.startswith("credentials:") or field not in {"password", "passcode", "token", "api_key"}:
+    if not ref.startswith("credentials:") or field not in {"email", "password", "passcode", "token", "api_key"}:
         raise ValueError("invalid credential reference")
     rows = json.loads(CREDENTIALS.read_text(encoding="utf-8")).get("credentials", [])
     value = rows[int(ref.split(":", 1)[1])].get(field)

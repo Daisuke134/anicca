@@ -226,8 +226,17 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    reported `authenticated tab did not finish navigation`. That run exposed a shared terminal bug:
    provider-inventory exceptions exited one without replacing the prior aggregate. The kernel now
    persists a sanitized `provider_inventory` failure aggregate for this path; focused tests pass
-   16/16. The atom remains unchecked: merge/release this terminal fix, then obtain a natural official
-   aggregate and following replay-zero before marking complete.
+   16/16. That fix merged through PR `#4306` and release
+   `8bc3b025ffe22e88955e525bdb94bd9ef8ffc6aa` produced a natural terminal aggregate with
+   `observed=0`, `effect=0`, `readback=0`, `failed=1`, and `failed_step=provider_inventory`, proving
+   stale output is no longer retained. The authenticated surface is now the blocker: the live Gig
+   browser responds on CDP `:9223`, but the official orders collector twice reaches no authenticated
+   route; read-only target inventory shows Coconala login pages. Reapplying the existing 0600 session
+   vault did not restore the server-side session. One normal login attempt used the active private
+   credential SSOT without exposing values, showed no SMS challenge, but returned to `/login`; no
+   customer effect or formal delivery occurred. The atom remains unchecked: recover Coconala auth
+   without restarting the browser, then obtain a natural five-room official aggregate and following
+   replay-zero before marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
