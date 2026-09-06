@@ -239,7 +239,11 @@ shared-component or legacy-retirement atom is active.
 - [x] `WT-01` Inventory all 75 registered worktrees with path, branch, lock, dirty state, PR, merge status and active process owner.
 - [x] `WT-02` Attempt exact-path cleanup only after a same-command preflight. The two audit candidates became locked before execution, so fail closed and remove zero; never force-remove, unlock or delete dirty/unmerged/active paths.
 - [x] `WT-03` Confirm dry-run prune has no eligible metadata and retain 75 paths: 65 locked plus 10 active/open-PR/unmerged/ignored-state paths.
-- [ ] `WT-04` Add an owner/expiry/heartbeat policy for task worktree locks, then have each owner retire its merged clean worktree; re-audit before every exact removal. The repository-owned lease contract and runbook are implemented. Of the two previously identified candidates, `life-manager-alpaca-pr89-spec` passed the repeated exact-path preflight and was retired without force; `life-manager-alpaca-a11-spec` remains clean and merged but locked with no recorded owner/reason, so it was retained fail-closed. Completion still requires that lock owner and the other legacy owners to adopt the lease or safely retire their paths.
+- [ ] `WT-04` Adopt owner/expiry/heartbeat leases and retire each merged clean task worktree only after an exact-path re-audit.
+  - [x] `WT-04a` Add the repository-owned lease contract, heartbeat command, fail-closed audit and lifecycle runbook.
+  - [x] `WT-04b` Re-audit `life-manager-alpaca-pr89-spec`; verify clean, merged, unlocked, open PR 0 and process/open file 0; retire it without force and confirm it is absent.
+  - [ ] `WT-04c` Resolve the ownerless lock on clean, merged `life-manager-alpaca-a11-spec`; retain it until ownership is proven, then repeat the complete preflight before exact removal.
+  - [ ] `WT-04d` Have each remaining legacy owner adopt a managed lease or retire its own merged clean worktree; never bulk-unlock or infer abandonment from age alone.
 - [ ] `ARCH-01` Freeze the current 175 managed, 22 external, 48 retired and cloud-adapter inventory with owner and last receipt.
 - [ ] `ARCH-02` Add one `loop.json` schema generated from the current registry; do not create a second hand-edited source.
 - [ ] `ARCH-03` Add validated `command`/`adapter` fields and migrate one low-risk loop end to end.
