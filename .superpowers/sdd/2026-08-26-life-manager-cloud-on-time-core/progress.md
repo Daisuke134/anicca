@@ -20,6 +20,14 @@ Baseline: focused Life Manager suite 175/175 PASS.
 
 Current atom: **5. CLOUD-07 Stripe test mode**.
 
+### CLOUD-07 current evidence and exact blocker
+
+- Production Railway `life-call` has the current Life Manager payment link and `STRIPE_WEBHOOK_SECRET` configured; deployment `4fcf17b0-4b42-4023-8e44-30d2f76a1643` is `SUCCESS` and health reports build `580cbb8a285dd8d33d63f7dc90c79ed1a0a167a6`.
+- The public payment link returns HTTP 200. The production webhook rejects an invalid signature with HTTP 400 and causes no billing mutation.
+- Stripe billing/lifecycle contracts pass for `trialing`/`active`/`past_due`/cancel, duplicate claim, out-of-order/stale events, release, dunning, and Stripe-only paid authority. The production event ledger has zero rows; its primary key and RLS are enabled. Browser roles have table SELECT grants, but zero RLS policies, so they cannot read rows.
+- The remaining provider-side TEST MODE / TEST CLOCK readback requires Stripe dashboard authentication. Existing Stripe CLI credentials are expired. Google sign-in reaches Stripe 2FA; the only offered methods are an existing passkey protected by the macOS login keychain password or an authenticator-app code. No email/SMS/Google Prompt recovery option is offered, and the private credential SSOT contains no Stripe TOTP credential. Apple credential-store use, credential reset, and recovery are outside the authorized path. No real card charge was attempted.
+- Do not advance to CLOUD-08 until this human-only Stripe 2FA step is completed and provider-side TEST MODE evidence is captured.
+
 ### CLOUD-05 inherited CI evidence
 
 - PR #4295 dedicated verification run `34043179303` is PASS; changed CLOUD-05 PII fixture scan is clean.
