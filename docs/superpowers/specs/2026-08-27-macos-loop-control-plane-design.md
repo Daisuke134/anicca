@@ -163,6 +163,10 @@ completion remain separate.
      ledger. It claims immediately after creation and releases after close; a killed helper leaves
      an attributable row instead of an unknowable tab. New and existing navigation/ownership tests
      pass (19).
+   - [x] Route session-vault localStorage, keepalive and X re-login targets through the same owner
+     ledger and put close/release in `finally` beginning immediately after target creation. Attach,
+     evaluate or navigation failure can no longer bypass cleanup. Session and ownership tests pass
+     (18).
    - [ ] Close the remaining live-retention gap. A source-driven 25-cycle open/close probe left zero
      lease and target-owner rows and did not increase page count (2 before/after). A later 5x10 probe
      also left both ledgers empty and reduced Chromium RSS from 1.21 GiB to 1.06 GiB, but concurrent
