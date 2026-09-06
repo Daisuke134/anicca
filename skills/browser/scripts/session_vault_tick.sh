@@ -92,8 +92,17 @@ if [ -x "$GIG_GUARD" ]; then
   if GIG_CDP="$("$GIG_GUARD" acquire coconala:kosuke 2>/dev/null)"; then
     GIG_PORT="$(printf '%s' "$GIG_CDP" | sed -n 's|.*:\([0-9][0-9]*\)/*$|\1|p')"
     if [ -n "$GIG_PORT" ]; then
+      # Bank into the gig browser's OWN vault. SESSION_VAULT_DIR defaults to
+      # ~/.cloak/vault/daily-driver, so every dump this tick ever ran wrote the human browser's
+      # jar and never the gig one. Measured 2026-09-07: vault/gig-daily-driver/auth-state.json was
+      # last written 2026-09-02 02:17 -- the day Coconala's applications stopped. The lane restores
+      # its isolated contexts from that file, so it was rehydrating expired cookies every wake and
+      # landing on /login. Warming without banking would let it go stale again.
+      GIG_VAULT="$HOME/.cloak/vault/gig-daily-driver"
+      log "gig browser: dump into $GIG_VAULT"
+      SESSION_VAULT_PORT="$GIG_PORT" SESSION_VAULT_DIR="$GIG_VAULT" python3 "$V" dump || true
       log "gig browser: keepalive on :$GIG_PORT"
-      GIG_OUT="$(SESSION_VAULT_PORT="$GIG_PORT" python3 "$V" keepalive \
+      GIG_OUT="$(SESSION_VAULT_PORT="$GIG_PORT" SESSION_VAULT_DIR="$GIG_VAULT" python3 "$V" keepalive \
         "https://coconala.com/mypage/dashboard" || true)"
       echo "$GIG_OUT"
       GIG_DEAD="$(printf '%s' "$GIG_OUT" | python3 -c "
