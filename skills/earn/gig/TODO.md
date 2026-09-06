@@ -243,9 +243,11 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    vault is a concurrently shared auth resource and requires owner coordination before overwrite.
    A value-free recheck proves that backup contains exactly one unexpired `.coconala.com`
    `_coconala_session` cookie with Secure and HttpOnly set, while the current vault contains none.
-   The concurrent Apply parent PID `38734` and its current coverage child were observed live, so Paid
-   did not stop Apply, overwrite the vault, restart the browser, or claim that process liveness was an
-   acceptance terminal.
+   The concurrent Apply parent PID `38734` later ended naturally with official result `status=ok`,
+   observed `75`, actionable/effect/failed/pending all zero, and Telegram receipt `62578`; no Apply or
+   Paid business process then remained. Its owning Claude PID `91603` and two monitoring shells remain
+   live and can still touch the same browser/vault, so Paid still does not overwrite the vault or
+   restart the browser until that shared-resource owner is stopped or explicitly hands it off.
    While auth remains gated, the shared aggregate stopped collapsing every zero-effect room into
    generic `noop`: it now preserves `completed`, `awaiting_buyer`, `reserved_for_owner` and
    `satisfied_noop`, and reports provider-neutral `observed`, `actionable`, `readback`, `failed` and
