@@ -1854,9 +1854,10 @@ def _crawl_demand_cluster(default_tab_script: Path, evidence_dir: Path, query: s
     and reusing the leased page's socket is what made a whole wake die on HTTP 500.
     """
     import listing_inventory
+    import storefront_draft
 
     url = "https://coconala.com/search?keyword=" + quote(query)
-    opened = subprocess.run(
+    opened = storefront_draft.open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", url], capture_output=True, text=True, check=False, timeout=30,
     )
@@ -2418,12 +2419,13 @@ def _observe_draft_controls(
     element behind it, which is not something to act on.
     """
     import listing_inventory
+    import storefront_draft
 
     if not draft_ids:
         return {"observed": 0}
     service_id = sorted(draft_ids)[0]
     url = f"https://coconala.com/mypage/services/{service_id}"
-    opened = subprocess.run(
+    opened = storefront_draft.open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", "about:blank"],
         capture_output=True, text=True, check=False, timeout=30,
@@ -2465,9 +2467,10 @@ def _delete_one_draft(
     is recorded, and nothing else is clicked, because a deletion cannot be undone.
     """
     import listing_inventory
+    import storefront_draft
 
     url = f"https://coconala.com/mypage/services/{service_id}"
-    opened = subprocess.run(
+    opened = storefront_draft.open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", "about:blank"],
         capture_output=True, text=True, check=False, timeout=30,
@@ -5186,10 +5189,12 @@ def _seller_snapshot_for(ws_url: str, service_id: str) -> dict:
 
 
 def _seller_snapshot_from_fresh_tab(default_tab_script: Path, service_id: str) -> dict:
+    import storefront_draft
+
     last_error: Exception | None = None
     url = f"https://coconala.com/mypage/services/{service_id}"
     for attempt in range(3):
-        opened = subprocess.run(
+        opened = storefront_draft.open_tab_with_retry(
             [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
              "--background", "open", url], capture_output=True, text=True,
             check=False, timeout=30,
@@ -5683,6 +5688,8 @@ def _reopen_suspended_listings(
     Each listing gets its own tab, mirroring the retire effect's own-tab pattern: reusing
     the wake's shared leased socket after a full pass of browsing is what returns HTTP 500.
     """
+    import storefront_draft
+
     targets = sorted({
         str(row.get("service_id")) for row in inventory_services
         if isinstance(row, dict) and str(row.get("state") or "") == SUSPENDED_LISTING_STATE
@@ -5690,7 +5697,7 @@ def _reopen_suspended_listings(
     })
     effect_count = 0
     for service_id in targets:
-        opened = subprocess.run(
+        opened = storefront_draft.open_tab_with_retry(
             [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
              "--background", "open", "about:blank"],
             capture_output=True, text=True, check=False, timeout=30,
@@ -7224,7 +7231,9 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     # Its own tab: reusing the wake's leased socket after a full pass of
                     # browsing is what returns HTTP 500, which is the same fault the demand
                     # crawl hit and the same fix.
-                    retire_opened = subprocess.run(
+                    import storefront_draft
+
+                    retire_opened = storefront_draft.open_tab_with_retry(
                         [sys.executable, str(getattr(args, "default_tab_script", DEFAULT_TAB)),
                          "--owner", "gig-storefront-direct", "--background", "open", "about:blank"],
                         capture_output=True, text=True, check=False, timeout=30,
