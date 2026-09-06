@@ -31,6 +31,17 @@ def test_registry_release_refuses_foreign_owner(tmp_path, monkeypatch):
     assert ownership.targets_for_owner("article-loop") == {"other-target"}
 
 
+def test_registry_fails_closed_at_owner_target_limit(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    ownership.claim_target("first", "paid-room", max_targets=1)
+
+    with pytest.raises(RuntimeError, match="browser_tab_limit"):
+        ownership.claim_target("second", "paid-room", max_targets=1)
+
+    assert ownership.targets_for_owner("paid-room") == {"first"}
+
+
 def test_registry_prunes_only_targets_missing_from_cdp(tmp_path, monkeypatch):
     registry = tmp_path / "target-owners.json"
     monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
@@ -108,6 +119,29 @@ def test_visible_tab_uses_owned_browser_context(tmp_path, monkeypatch):
     assert row["target_id"] == "visible-1"
     assert row["context"] == "context-paid"
     assert ownership.owner_for_target("visible-1") == "paid"
+
+
+def test_visible_tab_closes_new_target_when_owner_is_at_limit(tmp_path, monkeypatch):
+    registry = tmp_path / "target-owners.json"
+    monkeypatch.setenv("CLOAK_TARGET_OWNERS_FILE", str(registry))
+    monkeypatch.setenv("CLOAK_BROWSER_MAX_TABS_PER_OWNER", "1")
+    ownership.claim_target("existing", "paid")
+    monkeypatch.setattr(default_tab, "_lease", lambda owner: {
+        "ok": True, "context_id": f"context-{owner}",
+    })
+    calls = []
+
+    async def fake_call(method, params=None):
+        calls.append((method, params))
+        return {"targetId": "surplus"}
+
+    monkeypatch.setattr(default_tab, "_call", fake_call)
+
+    with pytest.raises(RuntimeError, match="browser_tab_limit"):
+        default_tab.open_tab("https://coconala.com/talkrooms/2", owner="paid")
+
+    assert calls[-1] == ("Target.closeTarget", {"targetId": "surplus"})
+    assert ownership.targets_for_owner("paid") == {"existing"}
 
 
 def test_hidden_tab_closes_target_before_releasing_ownership(tmp_path, monkeypatch):

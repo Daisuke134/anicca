@@ -55,10 +55,14 @@ def _mutate(callback):
             fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
 
 
-def claim_target(target_id, owner=None):
+def claim_target(target_id, owner=None, max_targets=None):
     owner = require_owner(owner)
     if not target_id:
         raise ValueError("target_id is required")
+    if max_targets is not None and (
+        isinstance(max_targets, bool) or not isinstance(max_targets, int) or max_targets < 1
+    ):
+        raise ValueError("max_targets must be a positive integer")
 
     def claim(targets):
         existing = targets.get(target_id)
@@ -66,6 +70,13 @@ def claim_target(target_id, owner=None):
             raise PermissionError(
                 f"target {target_id} is already owned by {existing.get('owner')}"
             )
+        owned_count = sum(
+            isinstance(record, dict) and record.get("owner") == owner
+            for current_id, record in targets.items()
+            if current_id != target_id
+        )
+        if max_targets is not None and owned_count >= max_targets:
+            raise RuntimeError("browser_tab_limit")
         targets[target_id] = {"owner": owner, "claimed_at": int(time.time())}
         return True, True
 

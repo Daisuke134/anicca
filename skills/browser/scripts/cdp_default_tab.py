@@ -50,6 +50,17 @@ def _lease(owner):
     return lease
 
 
+def _max_tabs_per_owner():
+    raw = os.environ.get("CLOAK_BROWSER_MAX_TABS_PER_OWNER", "1")
+    try:
+        limit = int(raw)
+    except ValueError as error:
+        raise ValueError("CLOAK_BROWSER_MAX_TABS_PER_OWNER must be a positive integer") from error
+    if limit < 1:
+        raise ValueError("CLOAK_BROWSER_MAX_TABS_PER_OWNER must be a positive integer")
+    return limit
+
+
 async def _call(method, params=None, timeout=20.0):
     """One CDP call on a fresh browser connection, bounded by `timeout`.
 
@@ -76,7 +87,13 @@ def open_tab(url, background=False, owner=None):
         "background": background,
     }))
     tid = opened["targetId"]
-    target_ownership.claim_target(tid, owner)
+    try:
+        target_ownership.claim_target(
+            tid, owner, max_targets=_max_tabs_per_owner()
+        )
+    except Exception:
+        asyncio.run(_call("Target.closeTarget", {"targetId": tid}))
+        raise
     return {
         "ok": True,
         "target_id": tid,
@@ -104,7 +121,17 @@ async def _serve_hidden_tab(url, owner=None):
                     raise RuntimeError(f"Target.createTarget: {msg['error']}")
                 target_id = msg["result"]["targetId"]
                 break
-        target_ownership.claim_target(target_id, owner)
+        try:
+            target_ownership.claim_target(
+                target_id, owner, max_targets=_max_tabs_per_owner()
+            )
+        except Exception:
+            await ws.send(json.dumps({
+                "id": 2,
+                "method": "Target.closeTarget",
+                "params": {"targetId": target_id},
+            }))
+            raise
         print(json.dumps({
             "ok": True,
             "target_id": target_id,
