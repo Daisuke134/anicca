@@ -77,6 +77,7 @@ def _load(name: str, path: Path) -> Any:
     return module
 outbox = _load("lancers_report_outbox", OUTBOX_PATH)
 summary = _load("lancers_lane_summary", OUTBOX_PATH.with_name("lane_summary.py"))
+shared_delivery = _load("lancers_report_delivery", OUTBOX_PATH.with_name("telegram_delivery.py"))
 
 
 def _inventory_item(locator: Any, code: str, visible: bool = True) -> Any:
@@ -528,36 +529,26 @@ def _provider_payload(text: str) -> object:
 
 
 def deliver_pending(database: Path, notifier: Callable[[str], object], now: object) -> DeliveryResult:
-    result = DeliveryResult()
-    # A sender killed between claiming and resolving leaves its claim in 'sending' forever, and
-    # claim_next only reads 'pending', so one abandoned claim silently stops the whole queue.
-    # Measured on CrowdWorks 2026-09-05: three of them blocked every later report.
-    try: outbox.reclaim_stale(Path(database))
-    except Exception: pass
-    for _ in range(20):
-        item = outbox.claim_next(Path(database))
-        if item is None:
-            break
-        try:
-            sent = notifier(item.message)
-            attempted = sent.attempted if isinstance(sent, SendResult) else True
-            error = sent.error_code if isinstance(sent, SendResult) else "receipt_missing"
-        except Exception:
-            attempted, error, sent = True, "provider_error", None
-        if not attempted:
-            outbox.mark_pre_send_failed(Path(database), item.event_key, error or "process_not_started")
-            result = DeliveryResult(result.attempted, result.delivered, result.delivery_uncertain, result.pre_send_failed + 1)
-            break
-        else:
-            result = DeliveryResult(result.attempted + 1, result.delivered, result.delivery_uncertain, result.pre_send_failed)
-            provider_id = _provider_id(sent)
-            if provider_id:
-                outbox.mark_delivered(Path(database), item.event_key, provider_id, _timestamp(now) or "unknown")
-                result = DeliveryResult(result.attempted, result.delivered + 1, result.delivery_uncertain, result.pre_send_failed)
-            else:
-                outbox.mark_delivery_uncertain(Path(database), item.event_key, error or "receipt_missing")
-                result = DeliveryResult(result.attempted, result.delivered, result.delivery_uncertain + 1, result.pre_send_failed)
-    return result
+    """Drain the outbox through the shared loop.
+
+    This function used to be a private copy of it. The copy claimed and resolved without passing the
+    claim back, so a worker that lost its row to reclaim_stale could still resolve it -- the race
+    _shared/marketplace-core/scripts/telegram_outbox.py now fences. Only the SendResult shape is
+    Lancers-specific, so only the shape is adapted here.
+    """
+    def send(message: str) -> object:
+        sent = notifier(message)
+        started = sent.attempted if isinstance(sent, SendResult) else True
+        error = sent.error_code if isinstance(sent, SendResult) else "receipt_missing"
+        return shared_delivery.SendResult(started, _provider_id(sent), error)
+
+    delivered = shared_delivery.deliver_pending(
+        outbox, Path(database), send, _timestamp(now) or "unknown", limit=20,
+    )
+    return DeliveryResult(
+        delivered.attempted, delivered.delivered,
+        delivered.delivery_uncertain, delivered.pre_send_failed,
+    )
 
 
 def render_application_wake(result: Mapping[str, object]) -> str:
