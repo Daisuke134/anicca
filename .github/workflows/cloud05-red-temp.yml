@@ -1,4 +1,4 @@
-name: TEMP CLOUD-05 RED
+name: TEMP CLOUD-05 verification
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  red:
+  verify:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,5 +23,16 @@ jobs:
           node-version: 22
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: CLOUD-05 RED
-        run: node --test lib/cloud-05-settings-recovery.test.js
+      - name: CLOUD-05 settings and recovery contracts
+        run: |
+          node --test \
+            lib/cloud-05-settings-recovery.test.js \
+            lib/user-command.test.js \
+            lib/panel-control-center.test.js \
+            lib/panel-api.test.js \
+            lib/telegram-onboard.test.js \
+            test/tenant-isolation.test.js \
+            test/wake-loop-isolation.test.js
+      - name: Diff hygiene
+        working-directory: .
+        run: git diff --check HEAD~4..HEAD
