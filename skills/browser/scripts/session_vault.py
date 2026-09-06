@@ -206,6 +206,26 @@ def dump():
     return result
 
 
+def _restorable_cookie(cookie):
+    """Return one saved cookie in the shape the running browser will accept.
+
+    A partitioned cookie was stored with `partitionKey` as the site string. Chrome now wants
+    an object, and rejects the entire `Storage.setCookies` call when one cookie disagrees --
+    `Failed to deserialize params.cookies.partitionKey` -- so sixteen cookies out of a hundred
+    and twenty made a whole session unrestorable. A key that is neither shape carries nothing
+    the browser can use and is dropped rather than guessed at.
+    """
+    if not isinstance(cookie, dict) or "partitionKey" not in cookie:
+        return cookie
+    partition = cookie["partitionKey"]
+    if isinstance(partition, dict):
+        return cookie
+    if isinstance(partition, str) and partition:
+        return {**cookie, "partitionKey": {"topLevelSite": partition,
+                                           "hasCrossSiteAncestor": False}}
+    return {key: value for key, value in cookie.items() if key != "partitionKey"}
+
+
 def restore():
     if not os.path.exists(VAULT):
         return {"ok": False, "reason": "no vault yet — run dump while logged in"}
@@ -213,6 +233,7 @@ def restore():
     cookies = saved.get("cookies", [])
     if not cookies:
         return {"ok": False, "reason": "vault is empty"}
+    cookies = [_restorable_cookie(cookie) for cookie in cookies]
     asyncio.run(_call("Storage.setCookies", {"cookies": cookies}))
     ls = saved.get("localStorage", {})
     if ls:
