@@ -204,8 +204,12 @@ class MacosLoopRegistryTest(unittest.TestCase):
         )
         self.assertEqual(
             schema["properties"]["browser_owner"]["properties"]["profile"]["pattern"],
-            r"^~/(?!.*(?:^|/)\.\.(?:/|$)).+",
+            r"^~/(?!\.\.(?:/|$))(?!.*\/\.\.(?:/|$)).+",
         )
+        browser_pattern = schema["properties"]["browser_owner"]["properties"]["profile"]["pattern"]
+        self.assertIsNotNone(re.fullmatch(browser_pattern, "~/.cloak/profiles/example"))
+        self.assertIsNone(re.fullmatch(browser_pattern, "~/../shared"))
+        self.assertIsNone(re.fullmatch(browser_pattern, "~/.cloak/../shared"))
         invalid = []
         for entrypoint in ("./", "bin/../other.sh"):
             value = entry()
@@ -225,6 +229,8 @@ class MacosLoopRegistryTest(unittest.TestCase):
         value["browser_owner"] = None
         invalid.append(value)
         value = browser_entry("ai.anicca.example", "~/.cloak/../shared", 9222)
+        invalid.append(value)
+        value = browser_entry("ai.anicca.example", "~/../shared", 9222)
         invalid.append(value)
         for row in invalid:
             with self.subTest(row=row), self.assertRaises(ValueError):

@@ -183,7 +183,7 @@ def loop_json_schema() -> dict:
                     "cdp_port": {"type": "integer", "minimum": 1, "maximum": 65535},
                     "profile": {
                         "type": "string",
-                        "pattern": "^~/(?!.*(?:^|/)\\.\\.(?:/|$)).+",
+                        "pattern": "^~/(?!\\.\\.(?:/|$))(?!.*\\/\\.\\.(?:/|$)).+",
                     },
                 },
                 "additionalProperties": False,
