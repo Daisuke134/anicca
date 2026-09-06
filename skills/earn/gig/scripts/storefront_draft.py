@@ -490,12 +490,33 @@ async def _readback(ws_url: str, contract: dict[str, Any]) -> dict[str, Any]:
     raise RuntimeError("storefront_draft_readback_mismatch:" + ",".join(mismatches[:6]))
 
 
+def open_tab_with_retry(argv: list[str], **run_kwargs: Any) -> subprocess.CompletedProcess:
+    """Run a `cdp_default_tab.py open` subprocess, retrying only a timeout.
+
+    A tab that never answers within the timeout is the browser failing to respond under
+    load, not an outcome the tab helper produced, so it is retried like
+    `_read_official_catalog` retries a half-hydrated dashboard. A non-zero return code or
+    a payload the caller cannot parse is an answer the tab helper actually gave, not the
+    environment failing to answer, so it is handed back unchanged for the caller's own
+    checks rather than retried here.
+    """
+    last_timeout: subprocess.TimeoutExpired | None = None
+    for attempt in range(5):
+        try:
+            return subprocess.run(argv, **run_kwargs)
+        except subprocess.TimeoutExpired as error:
+            last_timeout = error
+            if attempt < 4:
+                time.sleep(3)
+    raise last_timeout
+
+
 def prepare_draft(contract: dict[str, Any], default_tab_script: Path, evidence_dir: Path) -> dict[str, Any]:
     snapshot = None
     changed = False
     last_error = None
     for attempt in range(3):
-        opened = subprocess.run(
+        opened = open_tab_with_retry(
             [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
              "--background", "open", contract["draft_url"]], capture_output=True, text=True,
             check=False, timeout=30,
@@ -523,7 +544,7 @@ def prepare_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
     if snapshot is None:
         raise last_error or RuntimeError("storefront_draft_readback_missing")
     if changed:
-        opened = subprocess.run(
+        opened = open_tab_with_retry(
             [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
              "--background", "open", contract["draft_url"]], capture_output=True, text=True,
             check=False, timeout=30,
@@ -654,7 +675,7 @@ async def _public_readback(
 
 
 def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_dir: Path) -> dict[str, Any]:
-    opened = subprocess.run(
+    opened = open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", contract["draft_url"]], capture_output=True, text=True,
         check=False, timeout=30,
@@ -672,7 +693,7 @@ def publish_draft(contract: dict[str, Any], default_tab_script: Path, evidence_d
                  "close", str(tab["target_id"])], capture_output=True, text=True,
                 check=False, timeout=30,
             )
-    public_opened = subprocess.run(
+    public_opened = open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", contract["expected_public_url"]], capture_output=True, text=True,
         check=False, timeout=30,
@@ -720,7 +741,7 @@ def readback_published_draft(
     image_identity = known_image_identity
     last_error = None
     for attempt in range(3) if image_identity is None else ():
-        draft_opened = subprocess.run(
+        draft_opened = open_tab_with_retry(
             [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
              "--background", "open", contract["draft_url"]], capture_output=True, text=True,
             check=False, timeout=30,
@@ -751,7 +772,7 @@ def readback_published_draft(
         time.sleep(2)
     if image_identity is None:
         raise last_error or RuntimeError("storefront_published_draft_readback_missing")
-    public_opened = subprocess.run(
+    public_opened = open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", contract["expected_public_url"]], capture_output=True, text=True,
         check=False, timeout=30,
@@ -872,7 +893,7 @@ def create_or_claim_blank_draft(
     if ledger_draft is not None:
         return {"draft_service_id": ledger_draft, "effect": 0, "recovered": True,
                 "abandoned_drafts": []}
-    list_opened = subprocess.run(
+    list_opened = open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", "https://coconala.com/mypage/services_lists"],
         capture_output=True, text=True, check=False, timeout=30,
@@ -901,7 +922,7 @@ def create_or_claim_blank_draft(
         return {"draft_service_id": blank_ids[0], "effect": 0, "recovered": True,
                 "abandoned_drafts": abandoned}
 
-    add_opened = subprocess.run(
+    add_opened = open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", "https://coconala.com/services/add"],
         capture_output=True, text=True, check=False, timeout=30,
@@ -1014,7 +1035,7 @@ def read_category_children(
     [master_category_type_id]` as an empty list plus `"master_category_type_absent": True` --
     see `_read_category_children_async` for how the two are told apart.
     """
-    opened = subprocess.run(
+    opened = open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", f"https://coconala.com/mypage/services/{draft_service_id}"],
         capture_output=True, text=True, check=False, timeout=30,
@@ -1081,7 +1102,7 @@ def read_category_form(
     default_tab_script: Path, draft_service_id: str, category: dict[str, dict[str, str]],
 ) -> dict[str, Any]:
     """Read official category-specific form choices without saving the draft."""
-    opened = subprocess.run(
+    opened = open_tab_with_retry(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", f"https://coconala.com/mypage/services/{draft_service_id}"],
         capture_output=True, text=True, check=False, timeout=30,
