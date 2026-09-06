@@ -124,8 +124,17 @@ completion remain separate.
    owners bound to CDP port `9222`.
    - [x] Add and test one shared host-wide CDP-port ownership primitive; route Life Manager
      daily-driver and Job Search through it in source control.
-   - [ ] Reconcile the current active-label/registry drift, inventory every browser/Node/Python
-     owner, then enforce unique profile/PID ownership and bounded resource retention.
+   - [x] Reconcile the historical active-label fixture: the removed Telegram bot is explicitly
+     retired after its gateway cutover; production doctor remains green.
+   - [x] Add registry-level browser profile/port ownership validation and record six unique owners:
+     Affiliate provider/Impact/X, Gig, Lancers and the shared daily-driver. Duplicate declared
+     profiles or ports now fail registry validation before apply.
+   - [ ] Resolve Job Search ownership from official consumer readback. Its dedicated Chromium binds
+     IPv6 `:9222`, while its source consumers address IPv4 `127.0.0.1:9222` and therefore reach the
+     shared daily-driver. Do not guess between retiring the unused dedicated owner and migrating all
+     consumers to a new dedicated port.
+   - [ ] Inventory every remaining browser/Node/Python owner, then enforce PID ownership and bounded
+     context/tab/renderer retention.
 2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
    completed and replay-zero; advance every other actionable purchased room independently to a useful
    buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal

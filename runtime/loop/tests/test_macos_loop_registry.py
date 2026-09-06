@@ -26,6 +26,12 @@ def entry(label="ai.anicca.example"):
     }
 
 
+def browser_entry(label: str, profile: str, port: int):
+    value = entry(label)
+    value["browser_owner"] = {"profile": profile, "cdp_port": port}
+    return value
+
+
 class MacosLoopRegistryTest(unittest.TestCase):
     def test_boot_panic_evidence_runs_once_when_the_aqua_session_loads(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
@@ -109,6 +115,33 @@ class MacosLoopRegistryTest(unittest.TestCase):
         value["external_labels"] = ["ai.anicca.example"]
         with self.assertRaisesRegex(ValueError, "overlap"):
             validate_registry(value)
+
+    def test_browser_owner_contract_accepts_unique_profile_and_port(self):
+        value = {
+            "schema_version": 2,
+            "loops": {
+                "first": browser_entry("ai.anicca.first", "~/.cloak/profiles/first", 9222),
+                "second": browser_entry("ai.anicca.second", "~/.cloak/profiles/second", 9223),
+            },
+        }
+        self.assertEqual(validate_registry(value), value)
+
+    def test_browser_owner_contract_rejects_duplicate_profile_or_port(self):
+        duplicate_profile = {
+            "schema_version": 2,
+            "loops": {
+                "first": browser_entry("ai.anicca.first", "~/.cloak/profiles/shared", 9222),
+                "second": browser_entry("ai.anicca.second", "~/.cloak/profiles/shared", 9223),
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "duplicate browser profile"):
+            validate_registry(duplicate_profile)
+        duplicate_port = copy.deepcopy(duplicate_profile)
+        duplicate_port["loops"]["second"]["browser_owner"] = {
+            "profile": "~/.cloak/profiles/second", "cdp_port": 9222,
+        }
+        with self.assertRaisesRegex(ValueError, "duplicate browser CDP port"):
+            validate_registry(duplicate_port)
 
     def test_render_is_byte_stable_for_loop_insertion_order(self):
         left = {"schema_version": 2, "loops": {"b": entry("ai.anicca.b"), "a": entry("ai.anicca.a")}}
