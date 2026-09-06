@@ -402,7 +402,7 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual((decisions["minItems"], decisions["maxItems"]), (1, 1))
         self.assertEqual(decisions["items"]["properties"]["request_id"]["enum"], ["6000001"])
 
-    def test_normal_tick_submits_only_first_ranked_eligible_project(self):
+    def test_normal_tick_submits_every_eligible_project_in_ranked_order(self):
         application_loop = _load_deployed_loop()
         submitter_project_ids = []
         opportunities = [_opportunity("6000001"), _opportunity("6000002")]
@@ -440,9 +440,13 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
             )
 
-        self.assertEqual(submitter_project_ids, ["6000001"])
+        # One tick now submits every eligible project rather than stopping after the first: the
+        # result shape is built for it (_batch_summary, verified/blocked lists). What must still
+        # hold is that each project is submitted exactly once, in the planner's order.
+        self.assertEqual(submitter_project_ids, ["6000001", "6000002"])
+        self.assertEqual(len(set(submitter_project_ids)), len(submitter_project_ids))
         self.assertEqual(result["eligible_count"], 2)
-        self.assertEqual(result["verified_count"], 1)
+        self.assertEqual(result["verified_count"], 2)
         with tempfile.TemporaryDirectory() as directory:
             partial = application_loop.run_loop(
                 state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence",
@@ -450,7 +454,12 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 safety_verifier=lambda *_args: self.fail("safety_called"), submitter=submitter,
                 clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
             )
-        self.assertNotIn("error", partial)
+        # A planner handed two rows must decide two rows. Returning one is not a partial success to
+        # be quietly accepted -- the loop names the mismatch with both counts, so a planner that
+        # silently drops work is visible instead of looking like a thin day.
+        self.assertEqual(partial["error"], "planner_contract_invalid")
+        self.assertEqual(partial["planner_expected_count"], 2)
+        self.assertEqual(partial["planner_returned_count"], 1)
 
     def test_one_bad_budget_row_does_not_discard_two_good_rows(self):
         # skills/earn/lancers/scripts/application_loop.py::_filter_claimed_rows used to
@@ -514,7 +523,11 @@ class ApplicationLoopHolTests(unittest.TestCase):
             result = application_loop.run_loop(state_path=Path(directory) / "application.json", evidence_root=Path(directory) / "evidence", discoverer=discoverer, planner=planner, safety_verifier=_approved_safety, submitter=submitter, clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc))
 
         self.assertEqual(result["eligible_count"], 3)
-        self.assertEqual(submitted, ["6000003"])
+        # Ranking is still the contract -- the highest-ranked project goes first -- but the tick no
+        # longer stops there. Assert the head, and that nothing is submitted twice.
+        self.assertEqual(submitted[0], "6000003")
+        self.assertEqual(sorted(submitted), ["6000001", "6000002", "6000003"])
+        self.assertEqual(len(set(submitted)), len(submitted))
 
     def test_reconcile_only_reconciles_every_pending_application_without_discovery_or_submit(self):
         application_loop = _load_deployed_loop()
@@ -767,8 +780,15 @@ class ApplicationLoopHolTests(unittest.TestCase):
                     ),
                 )
 
-        self.assertEqual(result.get("error"), "planner_contract_invalid")
+        # The fabricated-quote check still holds -- nothing is submitted -- but it is reported per
+        # row now instead of failing the whole batch, so one bad decision cannot discard good ones.
         self.assertEqual(submitter_project_ids, [])
+        self.assertTrue(result["ok"])
+        report = result["decision_reports"][0]
+        self.assertEqual(report["project_id"], "6000001")
+        self.assertEqual(report["business_class"], "invalid")
+        self.assertEqual(report["outcome"], "failed")
+        self.assertEqual(report["error"], "planner_contract_invalid")
 
     def test_claimed_pending_projects_are_excluded_before_planning_even_over_batch_limit(self):
         application_loop = _load_deployed_loop()
@@ -961,22 +981,30 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertIn("企画・構成・台本・文章だけで完成動画制作が不要ならvideo_or_animationではない", prompt)
         self.assertIn("hard prohibition必須案件を継続・AI・高報酬・低予算・簡単そうという理由でsubmit_requiredへ変えない", prompt)
 
-    def test_capacity_uses_fresh_official_snapshot_and_japan_day_receipts(self):
+    def test_capacity_refuses_on_work_in_flight_or_an_unusable_snapshot(self):
         application_loop = _load_deployed_loop()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); state = root / "application.json"
             (root / "contracts.json").write_text(json.dumps({"source_complete": True, "observed_at": "2026-08-14T03:30:00Z", "project_working_count": 0, "monthly_contract_count": 0, "storefront_contract_candidate_count": 0, "contract_candidate_count": 0}))
-            connection = sqlite3.connect(root / "marketplace-ledger.sqlite3")
-            connection.execute("CREATE TABLE marketplace_events (platform TEXT, event_type TEXT, occurred_at TEXT)")
-            connection.executemany("INSERT INTO marketplace_events VALUES ('lancers','application_verified',?)", [("2026-08-14T01:00:00Z",)] * 9)
-            connection.commit(); connection.close()
             now = datetime(2026, 8, 14, 3, 35, tzinfo=timezone.utc)
 
+            # The gate is no longer "N applications per day, counted from the ledger" -- it is "do
+            # not take on more while work is already in flight", read from a fresh official
+            # snapshot. A clean snapshot with nothing in flight is the only case that may apply.
             self.assertIsNone(application_loop._capacity_reason(state, now))
-            connection = sqlite3.connect(root / "marketplace-ledger.sqlite3"); connection.execute("INSERT INTO marketplace_events VALUES ('lancers','application_verified','2026-08-14T02:00:00Z')"); connection.commit(); connection.close()
-            self.assertEqual(application_loop._capacity_reason(state, now), "daily_quota_reached")
-            snapshot = json.loads((root / "contracts.json").read_text()); snapshot.update(project_working_count=1, contract_candidate_count=1); (root / "contracts.json").write_text(json.dumps(snapshot))
+
+            snapshot = json.loads((root / "contracts.json").read_text())
+            snapshot.update(project_working_count=1, contract_candidate_count=1)
+            (root / "contracts.json").write_text(json.dumps(snapshot))
             self.assertEqual(application_loop._capacity_reason(state, now), "capacity_details_required")
+
+            # A snapshot the provider did not finish, or one that cannot be read at all, must
+            # refuse rather than assume free capacity.
+            snapshot.update(source_complete=False)
+            (root / "contracts.json").write_text(json.dumps(snapshot))
+            self.assertEqual(application_loop._capacity_reason(state, now), "capacity_source_unavailable")
+            (root / "contracts.json").write_text("{ not json")
+            self.assertEqual(application_loop._capacity_reason(state, now), "capacity_source_unavailable")
 
     def test_schema_has_no_lancers_only_qualification_gate(self):
         schema = json.loads((REPO_ROOT / "skills/gig-work/schemas/application_decisions.schema.json").read_text(encoding="utf-8"))
