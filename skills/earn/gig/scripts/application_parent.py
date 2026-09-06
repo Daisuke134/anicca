@@ -853,6 +853,38 @@ class CdpParentEffects:
         await self._call(ws, "Page.navigate", {"url": url}, call_id)
         return await self._ready(ws, call_id + 1)
 
+    async def _settle_on_offer_form(
+        self, ws: Any, request_id: str, call_id: int, *, seconds: float = 8.0
+    ) -> int:
+        """Wait until the document is the one we navigated to, not the one we are leaving.
+
+        `_ready` polls document.readyState, which is still 'complete' for the previous document
+        until Page.navigate commits. The first evaluate after navigating therefore reads the old
+        page's location, and the offer form was judged 'redirected' against it.
+
+        Measured 2026-09-07: every observed Coconala listing reported form_state:absent with
+        url='https://coconala.com/' and **an empty title** -- the real top page has a title, so
+        the document had not rendered. Coconala had applied to nothing since 2026-09-02.
+
+        Returning at the deadline is deliberate: a genuine redirect must still be reported, and
+        the caller then records the settled URL and title rather than a half-navigated one.
+        """
+        deadline = asyncio.get_running_loop().time() + seconds
+        while True:
+            state, call_id = await self._eval_json(
+                ws,
+                "JSON.stringify({url:location.href,ready:document.readyState})",
+                call_id,
+            )
+            if (
+                _is_expected_offer_form_url(request_id, state.get("url"))
+                and state.get("ready") in {"interactive", "complete"}
+            ):
+                return call_id
+            if asyncio.get_running_loop().time() >= deadline:
+                return call_id
+            await asyncio.sleep(0.25)
+
     async def _navigate_retry_once(self, ws: Any, url: str, call_id: int) -> int:
         """Retry ONE hung navigate before giving up on it.
 
@@ -1158,6 +1190,7 @@ class CdpParentEffects:
             await self._call(ws, "Page.enable", {}, call_id)
             if navigate:
                 call_id = await self._navigate(ws, expected_url, call_id + 1)
+                call_id = await self._settle_on_offer_form(ws, request_id, call_id + 1)
             else:
                 call_id += 1
             state, call_id = await self._eval_json(
