@@ -117,3 +117,34 @@ test("Calendar outbound Travel block starts at the same exact door departure as 
   assert.equal(Date.parse(`${outbound.start_datetime}Z`), expectedDeparture);
   assert.equal(result.outboundReports[0].leaveMs, expectedDeparture);
 });
+
+test("Calendar structured-route failure does not re-call the rounded outbound provider", async () => {
+  const cal = fakeCalendar([rawEvent({ id: "calendar-route-fail" })]);
+  let structuredOutboundCalls = 0;
+  let minuteOutboundCalls = 0;
+  const result = await fillTravel("timing-route-fail", {
+    apiKey: "calendar",
+    mapsKey: "maps",
+    home: HOME,
+    timezone: "Asia/Tokyo",
+    nowMs: START - 3 * 60 * MINUTE,
+    bufferMin: 5,
+    calendar: cal,
+    _directionsRoute: async (_origin, _destination, _key, _anchorAtMs, _nowMs, departureMode) => {
+      if (!departureMode) structuredOutboundCalls += 1;
+      return null;
+    },
+    _directionsMinutes: async (_origin, _destination, _key, _anchorAtMs, _nowMs, departureMode) => {
+      if (!departureMode) {
+        minuteOutboundCalls += 1;
+        return 30;
+      }
+      return 20;
+    },
+  });
+
+  assert.equal(structuredOutboundCalls, 1);
+  assert.equal(minuteOutboundCalls, 0, "Calendar must not run a second outbound route provider after structured routing failed");
+  assert.equal(cal.created.some((row) => String(row.summary || "").includes("→東京タワー")), false);
+  assert.equal(result.outboundReports.length, 0);
+});
