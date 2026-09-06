@@ -1,0 +1,26 @@
+"use strict";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { geminiUsageEvents } = require("./gemini-usage.js");
+
+test("separates Gemini token cost from Search grounding cost", () => {
+  const events = geminiUsageEvents({
+    usageMetadata: { promptTokenCount: 1000, candidatesTokenCount: 200, totalTokenCount: 1200 },
+    candidates: [{ content: { parts: [{ text: "ok" }] } }],
+  }, { tenantId: "t1", feature: "ask_location", grounded: true });
+  assert.equal(events.length, 2);
+  assert.deepEqual(events.map((e) => [e.provider, e.providerUnits, e.estimatedCostUsd]), [
+    ["gemini", 1200, 0.0008],
+    ["google_search_grounding", 1, 0.035],
+  ]);
+  assert.equal(events[0].meta.input_tokens, 1000);
+  assert.equal(events[0].meta.output_tokens, 200);
+});
+
+test("missing usage metadata stays explicitly unestimated", () => {
+  const [event] = geminiUsageEvents({}, { tenantId: "t1", feature: "ask_location" });
+  assert.equal(event.outcome, "failure");
+  assert.equal(event.providerUnits, 0);
+  assert.equal(event.estimatedCostUsd, 0);
+  assert.equal(event.meta.estimate_status, "unavailable");
+});
