@@ -1,13 +1,26 @@
-import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { promisify } from "node:util";
+import chat from "../../apps/life-manager/lib/investment-chat.js";
 
-const execFileAsync = promisify(execFile);
+function readJson(path) {
+  try {
+    const value = JSON.parse(readFileSync(path, "utf8"));
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  } catch { return {}; }
+}
 
-function statusScript() {
-  const root = process.env.LIFE_MANAGER_REPO || join(homedir(), "loops", "current");
-  return join(root, "skills", "anicca-life-manager", "scripts", "investment_status.py");
+function localSnapshot() {
+  const root = join(process.env.LIFE_MANAGER_STATE_ROOT || join(homedir(), ".local", "state", "life-manager"), "alpaca-investment");
+  let account;
+  try { account = JSON.parse(readFileSync(join(root, "account-status.json"), "utf8")); }
+  catch (error) { return { lifecycle: error.code === "ENOENT" ? "setup_required" : "unknown" }; }
+  if (!account || typeof account !== "object" || Array.isArray(account)) return { lifecycle: "unknown" };
+  return {
+    lifecycle: account.application_status,
+    account: readJson(join(root, "observation-latest.json")).account,
+    decision: readJson(join(root, "allocation-latest.json")),
+  };
 }
 
 export default {
@@ -23,17 +36,7 @@ export default {
       requireAuth: true,
       acceptsArgs: false,
       async handler() {
-        try {
-          const { stdout } = await execFileAsync("python3", [statusScript()], {
-            timeout: 10_000,
-            maxBuffer: 256 * 1024,
-          });
-          return { text: stdout.trim() };
-        } catch {
-          return {
-            text: "Investment Loop\n\n状態を取得できませんでした。次の5分周期で再確認します。",
-          };
-        }
+        return chat.buildInvestmentReply(localSnapshot());
       },
     });
   },
