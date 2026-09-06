@@ -400,6 +400,10 @@ def build_snapshot(*, application: object, pending_count: object, cumulative_ver
         resolved_blocker = str(store["error"])
     return {
         "application": stages, "pending": pending, "cumulative_verified": verified,
+        # Kept beside the stages rather than inside them: stages feeds app_ok, which requires every
+        # member to be non-None. The renderer dropped ok entirely, so a pass that reported ok:false
+        # was known to be incomplete here and still rendered as a ✅ success to the reader.
+        "application_ok": app.get("ok") if isinstance(app.get("ok"), bool) else None,
         "storefront": store, "sales": dict(sales) if isinstance(sales, Mapping) else None, "blocker": resolved_blocker or None,
         "source_observed_at": _timestamp(source_observed_at),
         "official_readback_observed_at": _timestamp(official_readback_observed_at),
@@ -417,8 +421,15 @@ def render_snapshot(snapshot: Mapping[str, object]) -> str:
     pending = snapshot.get("pending") if type(snapshot.get("pending")) is int else None
     blocker = snapshot.get("blocker") if isinstance(snapshot.get("blocker"), str) else None
     incomplete = any(type(app.get(key)) is not int for key in ("observed_count", "eligible_count", "submitted", "verified_count")) or pending is None
-    icon = "📨" if verified else ("⚠️" if blocker or incomplete or store.get("error") else "✅")
-    headline = f"{verified}件の応募を公式確認しました" if verified else ("確認が必要な項目があります" if icon == "⚠️" else "今回の確認を安全に完了しました")
+    # An application that reported ok:false is not a safe wake. The icon used to ignore it, so a
+    # failed pass rendered the same ✅ as a healthy one -- the snapshot already knew (complete is
+    # false) but the reader could not see it.
+    failed = snapshot.get("application_ok") is False
+    icon = "📨" if verified else ("⚠️" if failed or blocker or incomplete or store.get("error") else "✅")
+    # A warning that does not name what is wrong reads the same as a healthy wake, which is the
+    # ambiguity the shared lane summary already avoids ("⚠️ <code>で完了できませんでした").
+    warning = f"{blocker}のため確認が必要です" if blocker else "確認が必要な項目があります"
+    headline = f"{verified}件の応募を公式確認しました" if verified else (warning if icon == "⚠️" else "今回の確認を安全に完了しました")
 
     def count(value: object) -> str:
         return f"{value}件" if type(value) is int else "取得できませんでした"

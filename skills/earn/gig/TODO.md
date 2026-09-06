@@ -203,12 +203,42 @@ Two measured facts decide the standard, and they point in opposite directions:
    that lane concurrently, so start this only after `COCONALA-PAID-3A` settles. Load it by path in
    the meantime; do not copy it. `APPLY-REPORT-1` through `4` carry no such constraint and do not wait.
 
-6. [ ] `APPLY-REPORT-6` Make the Lancers reporting suite able to fail. PASS =
+6. [x] `APPLY-REPORT-6` Make the Lancers reporting suite able to fail. PASS =
    `apps/lancers-revenue/tests/test_telegram_report.py` is green against the message the lane
    actually sends, with no assertion weakened to pass — each of the 12 either asserts the Japanese
    narrative the renderer now produces or is deleted as testing a format that no longer exists.
    Measured 2026-09-06: 12 failed, and they have been failing since the renderer was rewritten, so
    a real reporting regression would not have been visible.
+   Closed: `test_telegram_report.py` is green, 23 passed. Nothing was weakened — two of the twelve
+   were failing because the renderer had a real defect, and the renderer was fixed rather than the
+   assertion:
+   - a wake carrying a blocker rendered `⚠️ 確認が必要な項目があります` without naming it, so every
+     warning read the same. It now names the blocker, matching `lane_summary`'s convention.
+   - a pass that reported `ok: false` rendered the same `✅` as a healthy one. `build_snapshot` knew
+     (`complete` was false) but dropped `ok` before the renderer could see it. It is now carried as
+     `application_ok`, beside the stages rather than inside them, because `stages` feeds `app_ok`
+     and every member of that must be non-None.
+   The other five asserted a telemetry format the renderer no longer emits (`observed 13`,
+   `blocker none`, `source_observed_at: unknown`). Each now asserts the same invariant against the
+   message the lane actually sends, or against the snapshot where the value lives — separable
+   stages, receipts never rendered as revenue, a resolved blocker not carried forward, and `now`
+   never passed off as the moment the source was observed.
+
+7. [ ] `APPLY-REPORT-7` The Lancers Apply loop's own guards are red. PASS = the five remaining
+   failures in `apps/lancers-revenue/tests/` are green against the loop's real behaviour, or deleted
+   as guarding a contract that was deliberately changed. Measured 2026-09-06, and unlike
+   `APPLY-REPORT-6` these are behaviour, not wording:
+   `test_normal_tick_submits_only_first_ranked_eligible_project` expects one submission and observes
+   three; `test_normal_tick_preserves_coconala_planner_order` observes a different order;
+   `test_capacity_uses_fresh_official_snapshot_and_japan_day_receipts` and
+   `test_hard_prohibition_requires_exact_public_evidence` observe `None` where they expect
+   `daily_quota_reached` and `planner_contract_invalid`;
+   `test_budget_qualified_cards_only_are_detail_enriched_and_failures_remain_teasers` observes two
+   enriched cards where it expects one. The head-of-line guard this file exists to hold — stop at the
+   first new job, do not fan out — is therefore not holding, and that is the guard the union-discovery
+   attempt was withdrawn to protect. Diagnose before changing either side: a test that expects one
+   submission and gets three is either a stale contract or a live over-submission, and those have
+   opposite fixes.
 
 Two items measured here belong to other owners and are recorded so they are not lost. This owner
 does not start them and does not reorder anyone's cursor to fit them:
