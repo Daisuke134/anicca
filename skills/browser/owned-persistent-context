@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+PYTHON="${LIFE_MANAGER_PYTHON:-$HOME/.local/share/life-manager/venv/bin/python}"
+PORT="${LIFE_MANAGER_BROWSER_CDP_PORT:?browser_owner cdp_port is required}"
+PROFILE="${LIFE_MANAGER_BROWSER_PROFILE:?browser_owner profile is required}"
+OWNER="${LIFE_MANAGER_LOOP_ID:?loop id is required}"
+if [[ ! -x "$PYTHON" ]]; then
+  echo "Life Manager runtime Python is missing; run scripts/bootstrap.sh first" >&2
+  exit 69
+fi
+exec /usr/bin/python3 -I "$ROOT/runtime/host/browser_port_owner.py" run \
+  --port "$PORT" --profile "$PROFILE" --owner "$OWNER" -- \
+  "$PYTHON" "$ROOT/skills/browser/cdp_persistent_context.py" \
+  --profile "$PROFILE" --port "$PORT"
