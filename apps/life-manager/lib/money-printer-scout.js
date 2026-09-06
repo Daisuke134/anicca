@@ -3,6 +3,7 @@
 const { createHash } = require("node:crypto");
 const path = require("node:path");
 const { canonicalOpportunityInput, createOpportunity } = require("./money-printer-opportunity.js");
+const { persistGeminiUsage } = require("./gemini-usage.js");
 
 const CAPABILITY = "money-printer.scout";
 const ADAPTER_ID = "money-printer-scout";
@@ -237,7 +238,14 @@ async function discover(expected, options) {
       });
     } catch { invalid("cloud"); }
     if (!response || response.ok !== true) invalid("cloud");
-    return geminiBody(response);
+    const parsed = await geminiBody(response);
+    const interaction = url === INTERACTIONS;
+    await persistGeminiUsage(parsed, {
+      tenantId: expected.tenant_id, feature: "money_printer_scout",
+      model: interaction ? "gemini-3.7-flash" : "gemini-2.5-flash",
+      grounded: interaction, success: interaction ? parsed && parsed.status === "completed" : undefined,
+    }, options);
+    return parsed;
   };
   const research = interactionResearch(await request(INTERACTIONS, {
     model: "gemini-3.7-flash", input: scoutPrompt(expected), tools: [{ type: "google_search" }],
@@ -339,7 +347,8 @@ function createMoneyPrinterScout(options = {}) {
     const observedAt = String(now());
     if (!Number.isFinite(Date.parse(observedAt))) invalid("observed time");
     const deadline = createScoutDeadline(clock, timeoutMs, abortSignalTimeout);
-    const discovered = await discover(expected, { apiKey, fetchImpl, nextSignal: deadline.nextSignal });
+    const discovered = await discover(expected, { apiKey, fetchImpl, nextSignal: deadline.nextSignal,
+      recordUsageEvent: options.recordUsageEvent });
     deadline.check();
     const found = candidates(discovered.value, observedAt, expected.tenant_id, discovered.allowedSources);
     const opportunityRefs = [];

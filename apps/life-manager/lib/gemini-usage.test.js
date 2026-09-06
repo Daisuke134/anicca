@@ -36,3 +36,10 @@ test("persistGeminiUsage writes every normalized event through an injected write
   assert.equal(rows.length, 2);
   assert.deepEqual(rows.map((row) => row.provider), ["gemini", "google_search_grounding"]);
 });
+
+test("uses the 2026 Gemini 3.7 Flash and grounding rates", () => {
+  const events = geminiUsageEvents({ status: "completed",
+    usageMetadata: { promptTokenCount: 1000, candidatesTokenCount: 100, totalTokenCount: 1100 },
+  }, { tenantId: "t1", feature: "scout", model: "gemini-3.7-flash", grounded: true, success: true });
+  assert.deepEqual(events.map((event) => event.estimatedCostUsd), [0.001125, 0.014]);
+});
