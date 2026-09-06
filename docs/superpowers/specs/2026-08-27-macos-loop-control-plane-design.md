@@ -202,6 +202,12 @@ completion remain separate.
      before browser launch. Related daily-driver (10), Affiliate (9), Lancers dispatch (16), and Gig
      launcher (3) tests pass. These are source gates only until a future immutable-main release reaches
      each owner through its normal lifecycle; no live browser was restarted for this change.
+     The same inventory found scheduled `lm_loop_run` owners retaining Node/Python descendants without
+     any wrapper deadline (for example Affiliate source refresh at 1h49m). The shared runner now gives
+     every scheduled/calendar/run-at-load wake a one-hour terminal safety bound, forwards TERM to that
+     wake's isolated process group, waits 15 seconds, then KILLs only that group and records exit 124.
+     Continuous keep-alive owners remain exempt. Runner/cleanup regressions pass (20); production remains
+     on older immutable releases until the complete gate is merged and applied without browser restart.
 2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
    completed and replay-zero; advance every other actionable purchased room independently to a useful
    buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal

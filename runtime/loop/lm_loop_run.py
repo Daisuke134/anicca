@@ -64,7 +64,13 @@ def _atomic_json(path: Path, value: dict) -> None:
         except FileNotFoundError: pass
 
 
-def _run_entrypoint(command: list[str], env: dict[str, str] | None = None) -> int:
+def _runtime_limit(entry: dict) -> int | None:
+    return None if entry.get("cadence") == {"keep_alive": True} else 3600
+
+
+def _run_entrypoint(command: list[str], env: dict[str, str] | None = None, *,
+                    timeout_seconds: float | None = None,
+                    termination_grace_seconds: float = 15) -> int:
     process = subprocess.Popen(command, start_new_session=True, env=env)
     previous = {}
 
@@ -78,7 +84,20 @@ def _run_entrypoint(command: list[str], env: dict[str, str] | None = None) -> in
     for signum in (signal.SIGTERM, signal.SIGINT):
         previous[signum] = signal.signal(signum, forward)
     try:
-        return_code = process.wait()
+        try:
+            return_code = process.wait(timeout=timeout_seconds)
+        except subprocess.TimeoutExpired:
+            forward(signal.SIGTERM, None)
+            try:
+                process.wait(timeout=termination_grace_seconds)
+            except subprocess.TimeoutExpired:
+                if process.poll() is None:
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                process.wait()
+            return 124
     finally:
         for signum, handler in previous.items():
             signal.signal(signum, handler)
@@ -128,6 +147,7 @@ def main(argv: list[str] | None = None) -> int:
                     "TMPDIR": f"{scratch}/",
                     "NPM_CONFIG_CACHE": str(scratch / "npm-cache"),
                 },
+                timeout_seconds=_runtime_limit(entry),
             )
         finally:
             # Scratch is never evidence. Every loop owns and removes its temporary
