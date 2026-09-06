@@ -219,9 +219,15 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    adapter, preserves the existing state/evidence/project roots, and omits the adapter's explicit
    formal-delivery capability flag so formal delivery remains durably disabled. Manifest/release/
    adapter regressions pass 28/28 (one unrelated stale `watch` CLI assertion is deselected). This
-   routing is pushed but not activated. The atom remains unchecked: next integrate current `main`,
-   release this route, and obtain natural official terminal/readback/replay-zero evidence before
-   merging or marking complete.
+   route merged through PR `#4302` as public-main SHA `3beede0ccd3e6c8bae4bc4a69fca7562211e9cb6`
+   and was targeted to the idle Paid label without restarting the Mac, Aqua session or browser.
+   Loaded argv proves `paid_kernel.py` plus `coconala_paid_adapter.py`, with no formal-delivery flag.
+   Its first natural run terminated with effect zero after the official orders collector twice
+   reported `authenticated tab did not finish navigation`. That run exposed a shared terminal bug:
+   provider-inventory exceptions exited one without replacing the prior aggregate. The kernel now
+   persists a sanitized `provider_inventory` failure aggregate for this path; focused tests pass
+   16/16. The atom remains unchecked: merge/release this terminal fix, then obtain a natural official
+   aggregate and following replay-zero before marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.

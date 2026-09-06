@@ -201,3 +201,27 @@ def build(argv):
         "effect": 0, "failed": 0, "items": [], "observed": 0,
         "pending": 0, "readback": 0, "status": "ok",
     }
+
+
+def test_cli_persists_terminal_aggregate_when_provider_inventory_fails(tmp_path: Path) -> None:
+    provider = tmp_path / "provider.py"
+    provider.write_text("""
+class Adapter:
+    def observe_active(self): raise RuntimeError("private provider detail")
+    def observe_one(self, work_id): raise AssertionError
+    def context(self, work_id): raise AssertionError
+    def mutate(self, intent): raise AssertionError
+    def readback(self, intent): raise AssertionError
+def decide(row): raise AssertionError
+def build(argv): return Adapter(), decide
+""", encoding="utf-8")
+    output = tmp_path / "result.json"
+    assert paid.main([
+        "--provider-adapter", str(provider), "--state-root", str(tmp_path / "state"),
+        "--output", str(output),
+    ]) == 1
+    assert json.loads(output.read_text(encoding="utf-8")) == {
+        "status": "failed", "observed": 0, "effect": 0, "readback": 0,
+        "failed": 1, "pending": 0, "failed_step": "provider_inventory",
+        "error_type": "RuntimeError", "items": [],
+    }
