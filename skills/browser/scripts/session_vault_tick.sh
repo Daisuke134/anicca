@@ -113,7 +113,28 @@ print(','.join(p['url'] for p in d.get('pages', []) if p.get('logged_out')))
 " 2>/dev/null || true)"
       if [ -n "$GIG_DEAD" ]; then
         log "ALERT: gig browser session dead for: $GIG_DEAD"
-        telegram_notify "session_vault keepalive: GIG browser (coconala:kosuke :$GIG_PORT) session DEAD for: $GIG_DEAD. This is the browser Apply/Paid/Storefront actually use, so every Coconala application stops until it is logged in again." || true
+        # Heal it. keepalive only extends a session that is still alive; before this there was no
+        # re-login path for Coconala at all, only for x.com, so the 2026-09-01 expiry alarmed
+        # correctly every 30 minutes for five days and nothing could act on it. Apply, Paid,
+        # Storefront and Reply share this one browser and one session, so one login restores all
+        # four. relogin_coconala enforces its own 6h cooldown, so calling it every tick is safe:
+        # it no-ops with skipped:true until the cooldown expires.
+        log "gig browser: attempting relogin_coconala (rate-limited to 1/6h)"
+        GIG_RELOGIN="$(SESSION_VAULT_PORT="$GIG_PORT" SESSION_VAULT_DIR="$GIG_VAULT" \
+          python3 "$V" relogin_coconala || true)"
+        echo "$GIG_RELOGIN"
+        GIG_HEALED="$(printf '%s' "$GIG_RELOGIN" | python3 -c "
+import json,sys
+try: d=json.load(sys.stdin)
+except Exception: sys.exit(0)
+print('1' if d.get('ok') else '')
+" 2>/dev/null || true)"
+        if [ -n "$GIG_HEALED" ]; then
+          log "gig browser: relogin succeeded, session restored"
+          telegram_notify "session_vault: GIG browser (coconala:kosuke) was logged out and has been logged back in automatically. Coconala Apply/Paid/Storefront/Reply resume on the next wake." || true
+        else
+          telegram_notify "session_vault keepalive: GIG browser (coconala:kosuke :$GIG_PORT) session DEAD for: $GIG_DEAD and automatic relogin did not restore it: $GIG_RELOGIN. This is the browser Apply/Paid/Storefront actually use, so every Coconala application stops until it is logged in again." || true
+        fi
       fi
     else
       log "gig browser: could not read a port from the lease, skipping"

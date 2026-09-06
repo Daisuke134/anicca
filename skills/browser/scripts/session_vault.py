@@ -388,6 +388,8 @@ def keepalive(urls):
 # (not after) enforces "try once, then wait" even across overlapping/retried tick invocations.
 RELOGIN_COOLDOWN_SEC = 6 * 3600
 X_RELOGIN_MARKER = os.path.join(VAULT_DIR, ".x-relogin-attempted")
+COCONALA_RELOGIN_MARKER = os.path.join(VAULT_DIR, ".coconala-relogin-attempted")
+COCONALA_CREDENTIALS = os.path.expanduser("~/.local/share/anicca/credentials.json")
 X_LOGIN_USERNAME = os.environ.get("X_LOGIN_USERNAME", "aniccaen")
 
 
@@ -477,6 +479,139 @@ async def _relogin_x():
                     )
 
 
+def _coconala_credentials():
+    payload = json.load(open(COCONALA_CREDENTIALS))
+    item = next(c for c in payload["credentials"]
+                if "coconala" in str(c.get("service", "")).lower())
+    email = item.get("email") or item.get("username")
+    password = item["password"]
+    if not email or not password:
+        raise RuntimeError("coconala credentials incomplete")
+    return email, password
+
+
+async def _relogin_coconala():
+    """Log the shared gig browser back into Coconala.
+
+    keepalive only extends a session that is still alive; it cannot raise a dead one, and Coconala
+    had no re-login path at all -- only x.com did. So when the session expired on 2026-09-01 the
+    alarm fired correctly every 30 minutes for five days and nothing could act on it. Apply, Paid,
+    Storefront and Reply all share this one browser and one session, so this single path restores
+    all four.
+
+    Verified by hand 2026-09-07: the same fill-and-click lands on /mypage/dashboard with the
+    account's own menu rendered. The form carries a reCAPTCHA widget that a normal submit passes.
+    """
+    email, password = _coconala_credentials()
+    async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
+        mid = [0]
+
+        async def call(method, params=None, sess=None):
+            mid[0] += 1
+            i = mid[0]
+            message = {"id": i, "method": method, "params": params or {}}
+            if sess:
+                message["sessionId"] = sess
+            await ws.send(json.dumps(message))
+            while True:
+                msg = json.loads(await ws.recv())
+                if msg.get("id") == i:
+                    return msg
+
+        async def ev(expr, sess):
+            got = await call("Runtime.evaluate",
+                             {"expression": expr, "returnByValue": True}, sess)
+            return ((got.get("result") or {}).get("result") or {}).get("value")
+
+        made = await call("Target.createTarget", {"url": "about:blank"})
+        target = (made.get("result") or {}).get("targetId")
+        if not target:
+            return {"ok": False, "reason": "could not open a tab"}
+        attached = await call("Target.attachToTarget", {"targetId": target, "flatten": True})
+        sess = (attached.get("result") or {}).get("sessionId")
+        try:
+            await call("Page.enable", {}, sess)
+            await call("Page.navigate", {"url": "https://coconala.com/login"}, sess)
+            for _ in range(40):
+                if await ev("document.readyState", sess) in ("interactive", "complete"):
+                    break
+                await asyncio.sleep(0.3)
+            await asyncio.sleep(2.5)
+
+            filled = await ev("""(function(email,pw){
+              var set=function(el,v){var s=Object.getOwnPropertyDescriptor(el.constructor.prototype,'value').set;
+                s.call(el,v);
+                el.dispatchEvent(new Event('input',{bubbles:true}));
+                el.dispatchEvent(new Event('change',{bubbles:true}));
+                el.dispatchEvent(new Event('blur',{bubbles:true}));};
+              var e=document.querySelector('#UserLoginEmail'), p=document.querySelector('#UserLoginPassword');
+              if(!e||!p) return 'fields_missing';
+              e.focus(); set(e,email); p.focus(); set(p,pw); return 'filled';
+            })(%s,%s)""" % (json.dumps(email), json.dumps(password)), sess)
+            if filled != "filled":
+                return {"ok": False, "reason": "login form not found"}
+
+            clicked = await ev("""(function(){
+              var b=[].slice.call(document.querySelectorAll('button'))
+                .filter(function(x){return (x.innerText||'').trim()==='メールアドレスでログインする';})[0];
+              if(!b) return 'button_missing';
+              if(b.disabled) return 'button_disabled';
+              b.click(); return 'clicked';})()""", sess)
+            if clicked != "clicked":
+                return {"ok": False, "reason": clicked}
+
+            for _ in range(40):
+                await asyncio.sleep(1)
+                here = await ev("location.href", sess)
+                if here and "/login" not in here:
+                    break
+
+            # Prove it on a page that only a logged-in account renders, not on the landing
+            # redirect: Coconala sends anonymous users to the top page, so "not /login" is not proof.
+            await call("Page.navigate", {"url": "https://coconala.com/mypage/dashboard"}, sess)
+            for _ in range(40):
+                if await ev("document.readyState", sess) in ("interactive", "complete"):
+                    break
+                await asyncio.sleep(0.3)
+            await asyncio.sleep(2)
+            url = await ev("location.href", sess)
+            title = await ev("document.title", sess)
+            ok = isinstance(url, str) and "/mypage/dashboard" in url and "/login" not in url
+            return {"ok": ok, "url": url, "title": title,
+                    "reason": None if ok else "dashboard did not render after login"}
+        finally:
+            await call("Target.closeTarget", {"targetId": target})
+
+
+def relogin_coconala():
+    """Rate-limited to one attempt per cooldown, same contract as relogin_x."""
+    now = time.time()
+    if os.path.exists(COCONALA_RELOGIN_MARKER):
+        try:
+            last = float(open(COCONALA_RELOGIN_MARKER).read().strip())
+        except Exception:
+            last = 0
+        age = now - last
+        if age < RELOGIN_COOLDOWN_SEC:
+            return {"ok": False, "skipped": True,
+                    "reason": f"relogin attempted {round(age/60)}min ago, cooldown is {RELOGIN_COOLDOWN_SEC//3600}h"}
+
+    os.makedirs(VAULT_DIR, exist_ok=True)
+    with open(COCONALA_RELOGIN_MARKER, "w") as handle:
+        handle.write(str(now))  # before the attempt, so a crash still enforces the cooldown
+
+    try:
+        result = _run(_relogin_coconala())
+    except Exception as error:
+        return {"ok": False, "reason": f"{type(error).__name__}: {error}"}
+
+    # Bank immediately. The lanes seed their isolated contexts from the vault, not from this tab,
+    # so a login that is not dumped is a login they never see.
+    if result.get("ok"):
+        result["dump"] = dump()
+    return result
+
+
 def relogin_x():
     now = time.time()
     if os.path.exists(X_RELOGIN_MARKER):
@@ -533,7 +668,8 @@ if __name__ == "__main__":
         elif cmd == "totp":
             out = totp(rest[0]) if rest else {"ok": False, "reason": "usage: totp <secret|@service>"}
         else:
-            out = {"dump": dump, "restore": restore, "status": status, "relogin_x": relogin_x}[cmd]()
+            out = {"dump": dump, "restore": restore, "status": status,
+                   "relogin_x": relogin_x, "relogin_coconala": relogin_coconala}[cmd]()
     except KeyError:
         out = {"ok": False, "reason": f"unknown command {cmd}"}
     except Exception as e:
