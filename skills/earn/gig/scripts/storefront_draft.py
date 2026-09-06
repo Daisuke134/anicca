@@ -595,7 +595,19 @@ async def _submit_public(ws_url: str, contract: dict[str, Any], evidence_dir: Pa
         (evidence_dir / "new-listing-publish-submit.json").write_text(
             json.dumps(answer, ensure_ascii=False, indent=2), encoding="utf-8",
         )
-        return image_identity, str(answer.get("url") or "")
+        submit_url = str(answer.get("url") or "")
+        accepted = submit_url.startswith(
+            f"https://coconala.com/services/new_open/{contract['draft_service_id']}"
+        )
+        # A rejection for an unset/wrong category type is a distinct, greppable failure: it is
+        # the signal that a category this loop inferred was two-level actually needed a type, and
+        # must not be folded into the generic public-readback mismatch below (which would name a
+        # pile of missing fields instead of the one thing that actually went wrong).
+        if not accepted and any(
+            "カテゴリタイプを正しく選択してください" in str(text) for text in answer.get("errors") or []
+        ):
+            raise RuntimeError("storefront_publish_category_type_rejected")
+        return image_identity, submit_url
 
 
 async def _public_readback(
@@ -947,6 +959,7 @@ async def _read_category_children_async(
         wanted = ("data[Service][master_category_type_id]" if sub_value
                   else "data[Service][master_sub_category]")
         deadline = asyncio.get_running_loop().time() + 12
+        type_disabled = False
         while asyncio.get_running_loop().time() < deadline:
             raw, cid = await _evaluate(ws, (
                 "JSON.stringify(Object.fromEntries(['data[Service][master_sub_category]',"
@@ -957,6 +970,11 @@ async def _read_category_children_async(
             children = json.loads(str(raw or "{}"))
             if children.get(wanted):
                 return children
+            if sub_value:
+                type_disabled, cid = await _evaluate(ws, (
+                    "(()=>{const s=document.querySelector('[name=\"data[Service][master_category_type_id]\"]');"
+                    "return !!s&&!!s.disabled})()"
+                ), cid)
             selects, cid = await _evaluate(ws, (
                 "JSON.stringify([...document.querySelectorAll('select')].map(s=>"
                 "s.name+':'+s.options.length+(s.disabled?'D':'')))"
@@ -966,7 +984,20 @@ async def _read_category_children_async(
     # not evidence that the category has no third level, only that this one is still empty.
     # Every select on the form is named, because the field carrying the type is a guess until
     # the page says otherwise.
+    #
+    # An earlier fix treated "no type options yet" as "this category has no third level" and
+    # returned early with the type left unset. That was wrong for a genuinely three-level
+    # category still hydrating: every publication was rejected with
+    # 「カテゴリタイプを正しく選択してください」 (commit 3f5b4848e replaced that early return with
+    # the raise below). So an ENABLED-but-empty select still means "still loading" and must keep
+    # raising exactly as before. Only after the full wait above has elapsed AND the select is
+    # both DISABLED and empty do we conclude the category genuinely has no third level -- this
+    # form's existing convention for "not applicable" (see fix_limit/proposal_limit, which the
+    # same form disables when they do not apply to the chosen category).
     if sub_value:
+        if type_disabled and not children.get("data[Service][master_category_type_id]"):
+            return {**children, "data[Service][master_category_type_id]": [],
+                    "master_category_type_absent": True}
         raise RuntimeError(f"storefront_category_type_absent:{sub_value}:{selects}")
     raise RuntimeError("storefront_category_children_not_loaded")
 
@@ -975,7 +1006,14 @@ def read_category_children(
     default_tab_script: Path, draft_service_id: str, master_value: str,
     sub_value: str | None = None,
 ) -> dict[str, Any]:
-    """Read the sub and type options an official category offers, without saving anything."""
+    """Read the sub and type options an official category offers, without saving anything.
+
+    When `sub_value` is given, the returned dict is either the normal shape (both
+    `data[Service][master_sub_category]` and `data[Service][master_category_type_id]` populated
+    from the live form) or, for a genuinely two-level category, `data[Service]
+    [master_category_type_id]` as an empty list plus `"master_category_type_absent": True` --
+    see `_read_category_children_async` for how the two are told apart.
+    """
     opened = subprocess.run(
         [sys.executable, str(default_tab_script), "--owner", "gig-storefront-direct",
          "--background", "open", f"https://coconala.com/mypage/services/{draft_service_id}"],
