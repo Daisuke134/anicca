@@ -87,7 +87,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "--profile", str(home / ".cloak/profiles/daily-driver"),
             "--port", "9222",
         ],
-        "affiliate-composition": [str(affiliate), "compose", "wake"],
         "affiliate-loop": [str(affiliate), "loop", "wake"],
         "marketing-mine-daily": [python, str(scheduled), "mine"],
         "lancers-revenue-application": [

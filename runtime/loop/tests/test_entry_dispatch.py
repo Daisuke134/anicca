@@ -35,6 +35,10 @@ class EntryDispatchTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no dispatch command'):
             command_for('affiliate-source-refresh', Path('/release'), Path('/home'))
 
+    def test_affiliate_composition_no_longer_has_a_handwritten_dispatch(self):
+        with self.assertRaisesRegex(ValueError, 'no dispatch command'):
+            command_for('affiliate-composition', Path('/release'), Path('/home'))
+
     def test_lancers_browser_has_a_finite_renderer_process_limit(self):
         script = Path(__file__).parents[3] / 'runtime/legacy/lancers-revenue-browser/run.sh'
         self.assertIn('--renderer-process-limit="$renderer_limit"', script.read_text())
@@ -198,10 +202,6 @@ class EntryDispatchTest(unittest.TestCase):
             '--profile', '/home/.cloak/profiles/daily-driver',
             '--port', '9222',
         ])
-
-    def test_affiliate_subcommand_is_preserved_inside_release(self):
-        root=Path('/release'); command=command_for('affiliate-composition',root,Path('/home'))
-        self.assertEqual(command,[str(root/'skills/affiliate/affiliate'),'compose','wake'])
 
     def test_marketing_owner_state_is_outside_release(self):
         root=Path('/release'); command=command_for('marketing-owner-weekly',root,Path('/home'))
