@@ -224,7 +224,7 @@ Two measured facts decide the standard, and they point in opposite directions:
    stages, receipts never rendered as revenue, a resolved blocker not carried forward, and `now`
    never passed off as the moment the source was observed.
 
-7. [ ] `APPLY-REPORT-7` The Lancers Apply loop's own guards are red. PASS = the five remaining
+7. [x] `APPLY-REPORT-7` The Lancers Apply loop's own guards are red. PASS = the five remaining
    failures in `apps/lancers-revenue/tests/` are green against the loop's real behaviour, or deleted
    as guarding a contract that was deliberately changed. Measured 2026-09-06, and unlike
    `APPLY-REPORT-6` these are behaviour, not wording:
@@ -239,6 +239,34 @@ Two measured facts decide the standard, and they point in opposite directions:
    attempt was withdrawn to protect. Diagnose before changing either side: a test that expects one
    submission and gets three is either a stale contract or a live over-submission, and those have
    opposite fixes.
+   Diagnosed, and all five were stale contracts left behind by deliberate changes — no live defect.
+   `apps/lancers-revenue/tests/` is now 72 passed. Each was traced to the change that replaced it
+   before the test was touched:
+   - one tick submits **every** eligible project, not the first. The result shape is built for it
+     (`_batch_summary`, `verified`/`blocked` lists). Ranking still holds, so the rewritten test
+     asserts the ranked head goes first and no project is submitted twice.
+   - a planner handed two rows must decide two rows. Returning one is `planner_contract_invalid`
+     with `planner_expected_count` and `planner_returned_count`, so a planner that silently drops
+     work is visible rather than looking like a thin day.
+   - `_capacity_reason` no longer counts ledger applications per day. It reads `contracts.json` and
+     refuses while work is in flight (`capacity_details_required`) or when the snapshot is
+     unfinished or unreadable (`capacity_source_unavailable`). `daily_quota_reached` can no longer
+     be produced, yet still sits in `telegram_report.py`'s `healthy_reasons` and message table as
+     dead strings.
+   - the fabricated-quote check survives (`_public_excerpt` in `_validate`); PR #4086 moved its
+     report from a batch-wide `error` to a per-row `decision_reports` entry, so one bad decision no
+     longer discards good ones. The rewritten test asserts nothing is submitted **and** that the row
+     is reported `invalid` / `failed` / `planner_contract_invalid`.
+   - the 98,000 JPY teaser floor that skipped cheap cards before fetching their detail page was
+     removed on purpose in `02e1e5494` "plan from full project details": the search teaser is not a
+     reliable budget, so judging on it rejected work the planner could have taken. Every card inside
+     the page limit is now enriched.
+   Three tests were also renamed, because a name asserting the opposite of what the body checks is
+   the same defect in a different place.
+   **The general lesson, and why this kept happening:** every one of these changes was correct, and
+   every one left its guard asserting the old contract. A red suite cannot fail, so the next real
+   regression in any of these paths would have been invisible. Changing a contract means changing
+   its test in the same commit — otherwise the guard silently stops guarding.
 
 Two items measured here belong to other owners and are recorded so they are not lost. This owner
 does not start them and does not reorder anyone's cursor to fit them:

@@ -32,7 +32,7 @@ DETAIL_HTML = """
 
 
 class LancersStatusTests(unittest.TestCase):
-    def test_budget_qualified_cards_only_are_detail_enriched_and_failures_remain_teasers(self):
+    def test_every_card_in_the_page_is_enriched_and_failures_remain_teasers(self):
         status = _load_status()
         requested = []
 
@@ -52,21 +52,26 @@ class LancersStatusTests(unittest.TestCase):
             )
 
         self.assertTrue(result["ok"])
+        # Every card inside the page limit is enriched. The 98,000 teaser floor that used to skip
+        # cheap cards was removed deliberately in 02e1e5494 "plan from full project details": the
+        # search teaser is not a reliable budget, so judging on it rejected work the planner could
+        # have taken. 1000004 is absent because limit=3 bounds the page, not because of its price.
         self.assertEqual(
             requested,
             [
                 ("https://www.lancers.jp/work/detail/1000001", 1.0),
+                ("https://www.lancers.jp/work/detail/1000002", 1.0),
                 ("https://www.lancers.jp/work/detail/1000003", 1.0),
             ],
         )
         descriptions = {row["external_id"]: row["description"] for row in result["opportunities"]}
-        self.assertEqual(
-            descriptions["1000001"],
-            "依頼主の業種: 情報通信業\n依頼概要: SNS運用を毎月、外部委託でお願いしたいです。",
-        )
-        self.assertEqual(descriptions["1000002"], "低額teaser")
+        detail = "依頼主の業種: 情報通信業\n依頼概要: SNS運用を毎月、外部委託でお願いしたいです。"
+        self.assertEqual(descriptions["1000001"], detail)
+        self.assertEqual(descriptions["1000002"], detail)
+        # A detail fetch that fails leaves the card on its teaser rather than dropping it or
+        # inventing a description.
         self.assertEqual(descriptions["1000003"], "失敗teaser")
-        self.assertEqual(result["detail_enriched_count"], 1)
+        self.assertEqual(result["detail_enriched_count"], 2)
         self.assertEqual(result["detail_failed_count"], 1)
 
 
