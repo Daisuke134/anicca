@@ -84,6 +84,66 @@ Execute exactly in this order:
    WindowServer/tccd/sandboxd watchdog panic, bounded memory/browser counts, no unowned boot gap, and
    no duplicate external effect across recovery.
 
+### Active execution ownership
+
+Parallel work continues; one agent must not absorb every lane merely to avoid a handoff. Isolation
+comes from exact ownership, dedicated worktrees and receipt-based integration:
+
+| Owner | Current scope | May edit | Must not edit |
+|---|---|---|---|
+| PANIC/Paid owner (current Codex session) | `PANIC-2`, shared all-domain runtime contracts, Coconala Paid buyer outcomes | `runtime/loop`, shared browser ownership/admission only when required by `PANIC-2`, Paid-owned files, this control-plane spec | Apply or Storefront business behavior |
+| Apply Claude owner | Coconala Apply discovery, eligibility, submission and official application readback | Apply-owned entrypoint, adapter, fixtures and acceptance notes | Paid, Storefront or host-wide runtime primitives |
+| Storefront Claude owner | Coconala listing analysis, mutation, publication and official listing readback | Storefront-owned entrypoint, adapter, fixtures and acceptance notes | Paid, Apply or host-wide runtime primitives |
+
+Each owner fetches current public `main`, works in its own locked worktree and pushes one focused
+branch. If Apply or Storefront discovers a missing shared primitive, it records the required contract
+and failing fixture instead of creating a lane-local scheduler, browser manager, retry framework,
+ledger or watchdog. The PANIC/Paid owner implements that shared boundary once. Integration preserves
+all owner commits, then proves each lane independently from one public-main immutable release. The
+Claude owners should continue unless they are editing outside these boundaries or cannot provide a
+focused pushed commit and acceptance evidence.
+
+### Durable completion map
+
+This map retains every requested outcome so later sessions cannot forget it. It does not replace or
+reorder the `PANIC-1` through `PANIC-6` sequence above or the established Gig TODO sequence. Only the
+first unfinished item in the controlling sequence is active; process health and buyer/business
+completion remain separate.
+
+1. [ ] Complete `PANIC-2`: attribute every Node/Python/browser owner; enforce unique profile/port/PID,
+   finite runtime/worker/context/tab/renderer retention and host memory admission; defer work durably
+   under pressure and reclaim only owner-proven stale resources. The current first defect is the two
+   owners bound to CDP port `9222`.
+2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
+   completed and replay-zero; advance every other actionable purchased room independently to a useful
+   buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal
+   delivery remains off unless the separately defined authority condition becomes true.
+3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
+   accounting, every authorized application submitted, exact official readback and replay-zero.
+4. [ ] Integrate the Storefront owner's focused public-main commit and require one verified authorized
+   listing effect or a truthful evidence-backed no-op, complete catalog/KPI readback and replay-zero.
+5. [ ] Prove the four Coconala lanes together from one immutable public-main release: Paid has
+   `failed=0`, Reply has no unowned actionable message, Apply has complete accounting, Storefront has
+   verified effect/no-op, and no lane waits on or mutates a sibling owner.
+6. [ ] Prove all-domain reuse with two real consumers: route one Coconala path and one non-gig loop
+   (first candidate: Affiliate) through the same lifecycle, admission, ownership, durable cursor,
+   retry, event and effect-receipt contracts before extracting any further abstraction.
+7. [ ] Complete the provider-neutral gig contract with Coconala plus one second live marketplace;
+   then add Lancers and CrowdWorks only as provider session/discovery/message/effect/readback adapters.
+8. [ ] Move remaining Affiliate, trading, publishing, social, health and future loops onto the shared
+   runtime when each is next changed; remove a duplicated primitive only after its replacement passes
+   that loop's existing official outcome check.
+9. [ ] Prove local/cloud continuity: equivalent durable work-item and receipt schemas, distributed
+   effect lease before multi-host execution, safe resume after worker loss and duplicate effects zero.
+10. [ ] Complete `PANIC-5` and `PANIC-6`: detect GUI/login gaps externally, send one deduplicated alert,
+    record recovery, then observe seven days of normal concurrent load with bounded memory/browser and
+    disk headroom, no new WindowServer watchdog and no duplicate external effect.
+
+`PANIC-3` and `PANIC-4` retain their original positions and approval requirements above. Current work
+stops at that boundary after `PANIC-2`; it does not silently advance the P0 sequence while the explicit
+no-restart instruction remains active. No later item may claim that an OS update or controlled reboot
+occurred until those acceptance steps are actually authorized and measured.
+
 ## 1. Overview
 
 Life Manager will operate hundreds of loops across physical life, mental life,
