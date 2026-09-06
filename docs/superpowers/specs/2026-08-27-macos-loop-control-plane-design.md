@@ -198,6 +198,11 @@ completion remain separate.
      90-second collector timeout and 15-second owned-target cleanup budget (105 seconds worst case,
      below half the cadence); buyer-targeted readback retains its separate 180-second timeout.
      Paid-focused regression tests pass (108).
+   - [ ] Production observation after release `363b78ce`: the install-time wake at `21:31 JST`
+     lost the per-label nonblocking apply lock and exited `78` once, then launchd naturally retried
+     at `21:36:12 JST` (`runs=2`, PID `16514`) without a kick, restart or browser intervention.
+     Follow that exact run to a terminal receipt and require room `18180857` to leave `pending`;
+     the latest aggregate before this run is observed `5`, pending `1`, failed `0`.
 3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
    accounting, every authorized application submitted, exact official readback and replay-zero.
 4. [ ] Integrate the Storefront owner's focused public-main commit and require one verified authorized
