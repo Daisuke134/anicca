@@ -66,14 +66,21 @@ def deliver_pending(outbox: Any, database: Path, notifier: Callable[[str], SendR
         if item is None: break
         try: result = notifier(item.message)
         except Exception: result = SendResult(True, None, "provider_error")
-        if not result.started:
-            outbox.mark_pre_send_failed(Path(database), item.event_key, result.error or "process_not_started"); pre_send += 1
+        # Resolve under the claim this iteration was handed. If reclaim_stale returned the row and
+        # another worker took it while the provider call was in flight, this raises StaleClaim
+        # rather than overwriting the live worker's record.
+        fence = {"claimed_at": item.claimed_at}
+        try:
+            if not result.started:
+                outbox.mark_pre_send_failed(Path(database), item.event_key, result.error or "process_not_started", **fence); pre_send += 1
+                break
+            attempted += 1
+            if result.provider_id:
+                outbox.mark_delivered(Path(database), item.event_key, result.provider_id, now, **fence); delivered += 1
+            else:
+                outbox.mark_delivery_uncertain(Path(database), item.event_key, result.error or "receipt_missing", **fence); uncertain += 1
+        except getattr(outbox, "StaleClaim", ()):
             break
-        attempted += 1
-        if result.provider_id:
-            outbox.mark_delivered(Path(database), item.event_key, result.provider_id, now); delivered += 1
-        else:
-            outbox.mark_delivery_uncertain(Path(database), item.event_key, result.error or "receipt_missing"); uncertain += 1
     return Delivery(attempted, delivered, uncertain, pre_send)
 
 
