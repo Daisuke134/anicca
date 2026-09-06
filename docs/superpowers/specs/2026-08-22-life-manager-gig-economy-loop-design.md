@@ -48,6 +48,14 @@ Independent marketplace owners may continue concurrently because their accounts,
 effect identities are disjoint; this ordering scopes shared-kernel changes and does not impose a
 cross-market runtime barrier.
 
+Ryu's earlier receipt chain is not the current buyer outcome. The latest authenticated room
+snapshot reports pending buyer feedback and includes corrections newer than the last seller
+response. Paid has admitted that feedback as a new `resubmit` cycle and is running, but has not yet produced a new official
+seller-send receipt. Therefore Ryu remains active until Paid verifies the revised public site,
+sends one review URL with formal delivery off, reads it back, and proves replay-zero. The aggregate
+coverage gate requires every current room to be represented, but does not invent a reply for a room
+whose correct official outcome is waiting or no-op.
+
 The target receipt contract is not implemented end-to-end today. The tracked shared marketplace
 contract has Application/Delivery/Payment-shaped records but no mandatory Contract,
 Authorization, or QA receipt, and its payment record does not prove actual costs or a bank/payout
