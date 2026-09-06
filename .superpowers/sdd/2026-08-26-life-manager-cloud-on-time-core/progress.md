@@ -4,6 +4,32 @@ Spec authority: docs/superpowers/specs/2026-08-26-life-manager-cloud-on-time-cor
 Start commit: a570ed078
 Baseline: focused Life Manager suite 175/175 PASS.
 
+## Active release TODO SSOT
+
+この節だけが現在の実行順序を定義する。下位の Task 1–16 は完了履歴と過去の未完条件であり、この順序を変更しない。ElizaOS、local revenue/business loops、Docker/self-host experiments は対象外。Friend UAT は全operator作業の後にだけ行う。
+
+1. [ ] **CLOUD-05 clean merge** — current `origin/main` から、`user-command.js`、CLOUD-05 test、settings-recovery migration の3製品ファイルだけを載せた clean PR を作る。一時workflowを含めない。tenant scope、idempotency、cross-chat rejection、phone removalによる`call_enabled=false`、row-shaped RPC returnを検証し、fresh read-only review後にmergeする。旧PR #4276を閉じ、PR #4295はclean replacementへ置換またはclean化する。
+2. [ ] **CLOUD-05 production migration/readback** — approved migrationだけをproduction Supabaseへ適用する。authorized test tenantでhome変更、phone変更、phone削除、`phone=null`、`call_enabled=false`、通知維持、cross-tenant mutation拒否、同一idempotency key replayの重複mutation 0をsanitized readbackする。
+3. [ ] **CLOUD-03 live onboarding** — QR/deep linkからTelegram actor、本人のGoogle Calendar consent、same-tenant resume、home、Telegram通知、phone/call optional、one-time 3-day trial、Readyまでをproductionで証明する。既に通るsource contractを再実装しない。
+4. [ ] **CLOUD-04 cloud runtime** — real tenant A/Bの分離、Railway restart/redeploy後の永続化、production SHA/health、Mac mini・localhost・launchctl・Keychain依存0をlive readbackする。既に通る156/156 source contractを再実装しない。
+5. [ ] **CLOUD-07 Stripe test mode** — current checkout/payment link、webhook endpoint/secret設定、trialing、active、past_due、cancel、duplicate、out-of-order、`lm_users` entitlementをTEST MODE / TEST CLOCKだけで検証する。real charge 0、Stripeだけがpaid authority。
+6. [ ] **CLOUD-08 public surface** — `anicca-products`の`/lm`と`/life-manager`をDAILY機能の真実なcopyへ更新する。QR/deep link、本人Calendar consent、Telegram通知、phone/call optional、3日trial、Cloud userのMac不要、privacy/support/disconnectを表示し、test/lint/build、PR、merge、実deployを確認する。
+7. [ ] **Full production acceptance** — physical、online、locationless、multiple physical、changed/cancelled、phone off/onをprovider receiptとreplay追加effect 0で証明する。exact deployed main SHA、Railway health/restart/persistence、tenant A/B分離を記録する。
+8. [ ] **Google Cloud cost incident closure** — billing accountのJuly/Augustをproject/service/SKU/dayで確定し、September MTD/forecast/current daily burnをreadbackする。Gemini、Search grounding、Live API、Maps/Routes/Geocoding、Cloud Run/compute/storage/network、abandoned project、retry/schedule trafficをrepo/runtimeと対応づける。ROOT_CAUSE、CURRENT_DAILY_BURN、SAFE_FIX、POST_FIX_EXPECTED_COSTを出し、production DAILY機能を壊さない安全な削減だけを適用する。COST-03 PR #4300はこの項目まで未mergeで保持する。
+9. [ ] **FRIEND-BETA READY gate** — 上記を全て閉じた後だけ、actual public URL、Telegram link、QR、friend DM、5分onboarding、test checklist、成功条件を一つのpackageとして渡す。最後に残る作業をreal friend UATだけにする。
+
+Current atom: **1. CLOUD-05 clean merge**.
+
+### CLOUD-05 inherited CI evidence
+
+- PR #4295 dedicated verification run `34043179303` is PASS; changed CLOUD-05 PII fixture scan is clean.
+- Security run `34043181678`の赤4件はcurrent mainでも再現し、CLOUD-05の3製品ファイル由来ではない。
+  - Startup context drift: public README既存3 test。
+  - gitleaks: `apps/life-manager/lib/fixtures/investment-parity-expected.json`と`apps/life-manager/scripts/honne-ja-cycle.js`。
+  - PII: `docs/superpowers/specs/2026-07-29-life-manager-finance-marketing-platform-design.md`の既存1件。
+  - OSS boundary: `runtime/`と`skills/`等の既存finding。PR runは20件、current mainは21件。
+- Baseline findingをscanner無効化やCLOUD-05への無関係修正で隠さない。clean replacementでは関連checkとexact diffだけを再検証する。
+
 ## Pre-flight conflict and interface scan
 
 | Tasks | Producer → consumer / internal agreement | Finding and ruling |

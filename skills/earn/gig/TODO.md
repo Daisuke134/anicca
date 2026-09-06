@@ -549,6 +549,29 @@ does not start them and does not reorder anyone's cursor to fit them:
    `GIG_APPLICATION_EFFECT_WORKERS`, so the hypothesis is testable in production both ways without
    cutting a release. Serial is how the lane worked on the day it last applied.
    PASS is unchanged and still owed: a natural wake submits an application with an official readback.
+   **Root cause, confirmed outside the loop, and both earlier hypotheses were wrong.** A single
+   serial navigation taken with the `coconala:kosuke` lease reproduces it exactly: `/requests/<id>`
+   loads normally, `/offers/add/<id>` and `/mypage` both land on the top page, and `/login` renders
+   the login form. Coconala sends anonymous users to `/`, not to `/login`, which is why the redirect
+   looked like a routing change. **The gig browser's Coconala session is simply logged out.** The
+   `応募する` control the lane sees is on the public page and shows to everyone, which is why
+   `accepting_control: present` sat next to `form_state: absent` for four days. Parallelism was not
+   the cause — the reproduction is serial and outside the lane — and the route has not moved.
+   **Why the keepalive did not catch it.** `session_vault_tick.sh` warms
+   `coconala.com/mypage/dashboard` every 30 minutes, but `SESSION_VAULT_PORT` defaults to `9222`,
+   the human daily-driver, and the extra roster comes from `clip-accounts.json`, which holds only
+   clip profiles. The gig lanes work in the browser `browser-guard` resolves for `coconala:kosuke`,
+   which is a different Chrome. Those two were once one process behind a proxy, so warming `:9222`
+   warmed both; once they were split, nothing warmed the gig one and its session rotted exactly the
+   way the script's own comment says a cold clip profile does. The keepalive reported healthy
+   throughout, because the browser it checks really was logged in.
+   Fixed: the tick now warms the gig browser too, on the port `browser-guard` hands out rather than
+   a hardcoded one, taking and returning the lease and skipping when it is BUSY — busy means a gig
+   lane is driving that browser, which is itself traffic. A logged-out gig session now alerts and
+   says what it costs. Six tests.
+   Still owed for PASS: the session itself. A programmatic login was attempted and did not
+   authenticate; the form carries `g-recaptcha-response`. Until that session is restored, no fix in
+   this repo can make Coconala apply.
 
 10. [x] `APPLY-REPORT-10` Name the marketplace in the submitted-application report. `report_envelope.py`
    excluded `coconala` from the `[Platform][応募完了]` format, so Coconala fell through to a generic
