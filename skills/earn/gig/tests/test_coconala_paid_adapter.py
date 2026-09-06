@@ -118,3 +118,56 @@ def test_default_build_reuses_paid_direct_runtime_without_copying_owner(tmp_path
         "action": "noop", "classification": "satisfied_noop"
     }
     assert adapter.context_reader.__self__.paid.__file__.endswith("/paid_direct.py")
+
+
+def test_bridge_maps_only_auth_navigation_failure_to_inventory_wait(tmp_path: Path) -> None:
+    module = load()
+
+    class Failure(RuntimeError):
+        def __init__(self, step: str, detail: str):
+            self.step = step
+            self.detail = detail
+
+    class Paid:
+        def observe_orders(self, args, evidence_dir):
+            raise Failure("orders_observation", "authenticated tab did not finish navigation")
+
+    Paid.Failure = Failure
+
+    bridge = module._CoconalaPaidBridge(Paid(), type("Args", (), {
+        "evidence_dir": tmp_path,
+    })(), tmp_path)
+    try:
+        bridge.inventory()
+    except module.CoconalaPaidInventoryWait as error:
+        assert error.paid_wait_reason == "provider_authentication_required"
+        assert error.paid_remaining_work == [
+            "restore the authenticated Coconala session and retry official inventory"
+        ]
+    else:
+        raise AssertionError("authentication wait was not classified")
+
+
+def test_bridge_does_not_hide_non_auth_inventory_failure(tmp_path: Path) -> None:
+    module = load()
+
+    class Failure(RuntimeError):
+        def __init__(self):
+            self.step = "orders_observation"
+            self.detail = "selector mismatch"
+
+    class Paid:
+        def observe_orders(self, args, evidence_dir):
+            raise Failure()
+
+    Paid.Failure = Failure
+
+    bridge = module._CoconalaPaidBridge(Paid(), type("Args", (), {
+        "evidence_dir": tmp_path,
+    })(), tmp_path)
+    try:
+        bridge.inventory()
+    except Failure:
+        pass
+    else:
+        raise AssertionError("unexpected inventory failure was hidden")

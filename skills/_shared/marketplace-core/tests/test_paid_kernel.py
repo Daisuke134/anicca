@@ -227,6 +227,38 @@ def build(argv): return Adapter(), decide
     }
 
 
+def test_cli_persists_provider_inventory_wait_as_durable_pending(tmp_path: Path) -> None:
+    provider = tmp_path / "provider.py"
+    provider.write_text("""
+class InventoryWait(RuntimeError):
+    paid_wait_reason = "provider_authentication_required"
+    paid_remaining_work = ["restore provider session and retry official inventory"]
+class Adapter:
+    def observe_active(self): raise InventoryWait()
+    def observe_one(self, work_id): raise AssertionError
+    def context(self, work_id): raise AssertionError
+    def mutate(self, intent): raise AssertionError
+    def readback(self, intent): raise AssertionError
+def decide(row): raise AssertionError
+def build(argv): return Adapter(), decide
+""", encoding="utf-8")
+    output = tmp_path / "result.json"
+    assert paid.main([
+        "--provider-adapter", str(provider), "--state-root", str(tmp_path / "state"),
+        "--output", str(output),
+    ]) == 0
+    assert json.loads(output.read_text(encoding="utf-8")) == {
+        "status": "pending", "observed": 0, "actionable": 0, "effect": 0,
+        "readback": 0, "failed": 0, "pending": 1,
+        "items": [{
+            "work_id": "__provider_inventory__", "status": "pending",
+            "reason": "provider_authentication_required",
+            "remaining_work": ["restore provider session and retry official inventory"],
+            "effect": 0, "readback": 0, "failed": 0,
+        }],
+    }
+
+
 def test_no_effect_preserves_shared_lifecycle_classification(tmp_path: Path) -> None:
     adapter = Adapter([observation("done"), observation("buyer")])
 

@@ -18,6 +18,13 @@ from typing import Any, Callable, Mapping
 HERE = Path(__file__).resolve().parent
 
 
+class CoconalaPaidInventoryWait(RuntimeError):
+    def __init__(self, reason: str, remaining_work: list[str]):
+        super().__init__(reason)
+        self.paid_wait_reason = reason
+        self.paid_remaining_work = remaining_work
+
+
 class CoconalaPaidAdapter:
     def __init__(
         self,
@@ -114,9 +121,17 @@ class _CoconalaPaidBridge:
         self.prepared: dict[str, dict[str, Any]] = {}
 
     def inventory(self) -> list[dict[str, Any]]:
-        rows, _ = self.paid._unique_orders(
-            self.paid.observe_orders(self.args, self.args.evidence_dir / "orders")
-        )
+        try:
+            observed = self.paid.observe_orders(self.args, self.args.evidence_dir / "orders")
+        except self.paid.Failure as error:
+            if (error.step == "orders_observation"
+                    and "authenticated tab did not finish navigation" in error.detail):
+                raise CoconalaPaidInventoryWait(
+                    "provider_authentication_required",
+                    ["restore the authenticated Coconala session and retry official inventory"],
+                ) from error
+            raise
+        rows, _ = self.paid._unique_orders(observed)
         return rows
 
     def refresh(self, item: dict[str, Any]) -> Mapping[str, Any]:

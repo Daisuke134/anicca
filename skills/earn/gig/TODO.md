@@ -244,7 +244,12 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    While auth remains gated, the shared aggregate stopped collapsing every zero-effect room into
    generic `noop`: it now preserves `completed`, `awaiting_buyer`, `reserved_for_owner` and
    `satisfied_noop`, and reports provider-neutral `observed`, `actionable`, `readback`, `failed` and
-   `pending` counts. Focused Coconala/Lancers/kernel regressions pass 20/20. The atom remains unchecked:
+   `pending` counts. The kernel now also preserves a recognized provider-auth inventory interruption
+   as one durable `provider_authentication_required` pending item (`failed=0`, `effect=0`) instead of
+   misreporting it as a business failure; unknown inventory errors still terminate as sanitized
+   failures. The Coconala adapter maps only the exact authenticated-navigation interruption to that
+   shared wait contract and does not hide selector or other provider errors. Focused kernel and
+   Coconala-adapter regressions pass 20/20 with no external effect. The atom remains unchecked:
    coordinate that exact backup/owner state, recover Coconala auth without restarting the browser,
    then obtain a natural five-room official aggregate and following replay-zero before marking complete.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
