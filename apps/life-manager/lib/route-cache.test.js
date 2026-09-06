@@ -6,7 +6,9 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 
-const { cacheKey, timeBucket, makeRouteCache } = require("./route-cache.js"); // missing → RED
+const {
+  cacheKey, timeBucket, makeRouteCache, makeSupabaseRouteStore, cacheFailure,
+} = require("./route-cache.js");
 
 const G = (lat, lon) => ({ lat, lon });
 
@@ -82,6 +84,10 @@ test("cacheKey: provider, endpoints, mode, anchor type, timezone/service date, a
   assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42, { ...base, timezone: "America/New_York" }));
   assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42, { ...base, serviceDate: "20260828" }));
   assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 43, base));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42,
+    { ...base, fromKey: "opaque-a" }));
+  assert.notEqual(key, cacheKey("tenant-a", G(35.68, 139.76), G(35.69, 139.70), 42,
+    { ...base, toKey: "opaque-b" }));
 });
 
 test("getOrCompute: provider-scoped contexts do not share a cached route", async () => {
@@ -121,6 +127,7 @@ test("getOrCompute: concurrent null calls share in-flight work, then a later cal
 
   const first = cache.getOrCompute(...args, provider);
   const second = cache.getOrCompute(...args, provider);
+  await Promise.resolve(); // async stores may yield once during the shared cache lookup
   assert.equal(calls, 1);
   release();
   assert.deepEqual(await Promise.all([first, second]), [null, null]);
@@ -137,4 +144,91 @@ test("getOrCompute: an undefined route is not cached", async () => {
   assert.equal(await cache.getOrCompute(...args, provider), undefined);
   assert.deepEqual(await cache.getOrCompute(...args, provider), { durationSecs: 1029 });
   assert.equal(calls, 2);
+});
+
+test("getOrCompute: deterministic failure blocks paid replay until negative TTL, then recovers", async () => {
+  let calls = 0, now = 1_000;
+  const cache = makeRouteCache({ store: new Map(), now: () => now, negativeTtlMs: 30 * 60_000 });
+  const provider = async () => ++calls === 1 ? cacheFailure("provider_4xx") : { durationSeconds: 600 };
+  const args = ["u1", G(35.68, 139.76), G(35.69, 139.70), 100];
+
+  assert.equal(await cache.getOrCompute(...args, provider), null);
+  assert.equal(await cache.getOrCompute(...args, provider), null);
+  assert.equal(calls, 1);
+  now += 30 * 60_000 + 1;
+  assert.deepEqual(await cache.getOrCompute(...args, provider), { durationSeconds: 600 });
+  assert.equal(calls, 2);
+});
+
+test("getOrCompute: transient failure uses the shorter backoff", async () => {
+  let calls = 0, now = 1_000;
+  const cache = makeRouteCache({ store: new Map(), now: () => now, transientTtlMs: 2 * 60_000 });
+  const provider = async () => ++calls === 1 ? cacheFailure("provider_5xx") : { durationSeconds: 600 };
+  const args = ["u1", G(35.68, 139.76), G(35.69, 139.70), 100];
+
+  assert.equal(await cache.getOrCompute(...args, provider), null);
+  now += 119_999;
+  assert.equal(await cache.getOrCompute(...args, provider), null);
+  assert.equal(calls, 1);
+  now += 2;
+  assert.deepEqual(await cache.getOrCompute(...args, provider), { durationSeconds: 600 });
+  assert.equal(calls, 2);
+});
+
+test("Supabase route store persists and reads a scoped negative entry without exposing credentials", async () => {
+  const calls = [];
+  const fetchImpl = async (url, init = {}) => {
+    calls.push({ url, init });
+    if (init.method === "POST") return { ok: true };
+    return { ok: true, json: async () => [] };
+  };
+  const store = makeSupabaseRouteStore({ supaUrl: "https://db.example", supaKey: "service-secret", fetchImpl });
+  const key = cacheKey("tenant", G(35.68, 139.76), G(35.69, 139.70), 42, { provider: "google" });
+  await store.set(key, { value: null, computedAt: 1000, ttlMs: 1800000, negative: true,
+    failureClass: "provider_4xx" });
+  const hit = await store.get(key);
+
+  assert.equal(hit.negative, true);
+  assert.equal(hit.failureClass, "provider_4xx");
+  const body = JSON.parse(calls[0].init.body);
+  assert.equal(body.cache_state, "negative");
+  assert.equal(body.ttl_secs, 1800);
+  assert.equal(body.duration_secs, 0);
+  assert.equal(calls[0].url.includes("service-secret"), false);
+});
+
+test("a persisted deterministic failure suppresses paid replay after a process restart and later recovers", async () => {
+  const rows = new Map();
+  const fetchImpl = async (url, init = {}) => {
+    if (init.method === "POST") {
+      const body = JSON.parse(init.body);
+      rows.set(body.cache_key, body);
+      return { ok: true };
+    }
+    const encoded = new URL(url).searchParams.get("cache_key").slice(3);
+    const row = rows.get(encoded);
+    return { ok: true, json: async () => row ? [row] : [] };
+  };
+  let now = 1_000, providerCalls = 0;
+  const args = ["tenant", G(35.68, 139.76), G(35.69, 139.70), 42];
+  const context = { provider: "google", mode: "drive" };
+  const firstProcess = makeRouteCache({
+    store: makeSupabaseRouteStore({ supaUrl: "https://db.example", supaKey: "secret", fetchImpl }),
+    now: () => now,
+  });
+  assert.equal(await firstProcess.getOrCompute(...args,
+    async () => { providerCalls += 1; return cacheFailure("provider_4xx"); }, context), null);
+
+  const restartedProcess = makeRouteCache({
+    store: makeSupabaseRouteStore({ supaUrl: "https://db.example", supaKey: "secret", fetchImpl }),
+    now: () => now,
+  });
+  assert.equal(await restartedProcess.getOrCompute(...args,
+    async () => { providerCalls += 1; return { durationSeconds: 600 }; }, context), null);
+  assert.equal(providerCalls, 1);
+
+  now += 30 * 60_000 + 1;
+  assert.deepEqual(await restartedProcess.getOrCompute(...args,
+    async () => { providerCalls += 1; return { durationSeconds: 600 }; }, context), { durationSeconds: 600 });
+  assert.equal(providerCalls, 2);
 });

@@ -89,3 +89,29 @@ def test_recording_never_raises_into_the_lane(tmp_path):
     unwritable = tmp_path / "file-not-a-dir"
     unwritable.write_text("x", encoding="utf-8")
     _Recorder(unwritable).record("5247633", RuntimeError("boom"))
+
+
+def test_the_listing_page_apply_route_is_recorded_beside_the_failure(tmp_path):
+    """Coconala's own apply button is the tiebreaker.
+
+    Measured 2026-09-07: `/offers/add/<id>` redirects to the fully-rendered top page for every
+    listing. If the button points somewhere else, the provider moved the form; if it points at the
+    same route, the account cannot use it. Those have opposite fixes, and only its existence was
+    ever read.
+    """
+    error = application_parent.ParentContractError("application_form_redirected")
+    error.observed = {"url": "https://coconala.com/", "title": "ココナラ"}
+
+    _Recorder(tmp_path).record(
+        "5256493", error, control={"href": "/requests/5256493/offers/new", "tag": "a"},
+    )
+
+    row = _rows(tmp_path)[0]
+    assert row["accepting_control"]["href"] == "/requests/5256493/offers/new"
+    assert row["accepting_control"]["tag"] == "a"
+
+
+def test_a_failure_without_a_control_still_records(tmp_path):
+    error = application_parent.ParentContractError("application_form_controls_missing")
+    _Recorder(tmp_path).record("5256493", error)
+    assert _rows(tmp_path)[0]["accepting_control"] is None

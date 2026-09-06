@@ -1,0 +1,165 @@
+{
+  "$id": "https://github.com/Daisuke134/life-manager/runtime/loop/loop.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "browser_owner": {
+      "additionalProperties": false,
+      "properties": {
+        "cdp_port": {
+          "maximum": 65535,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "profile": {
+          "pattern": "^~/(?!\\.\\.(?:/|$))(?!.*\\/\\.\\.(?:/|$)).+",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cdp_port",
+        "profile"
+      ],
+      "type": "object"
+    },
+    "cadence": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "calendar_interval": {
+              "type": [
+                "object",
+                "array"
+              ]
+            }
+          },
+          "required": [
+            "calendar_interval"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "keep_alive": {
+              "const": true
+            }
+          },
+          "required": [
+            "keep_alive"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "run_at_load": {
+              "const": true
+            }
+          },
+          "required": [
+            "run_at_load"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "start_interval_seconds": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "start_interval_seconds"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "cleanup": {
+      "additionalProperties": false,
+      "properties": {
+        "max_age_days": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_runs": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_age_days",
+        "max_runs"
+      ],
+      "type": "object"
+    },
+    "domain": {
+      "enum": [
+        "earn",
+        "financial",
+        "growth",
+        "mental",
+        "physical",
+        "system"
+      ],
+      "type": "string"
+    },
+    "effect_class": {
+      "enum": [
+        "account_mutation",
+        "application",
+        "message",
+        "money",
+        "none",
+        "publish",
+        "trade"
+      ],
+      "type": "string"
+    },
+    "entrypoint": {
+      "minLength": 1,
+      "pattern": "^(?!/)(?!(?:\\./)*\\.?$)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+      "type": "string"
+    },
+    "label": {
+      "pattern": "^ai\\.anicca\\..*$",
+      "type": "string"
+    },
+    "log_root": {
+      "pattern": "^~/.+",
+      "type": "string"
+    },
+    "loop_id": {
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "type": "string"
+    },
+    "provider_route": {
+      "enum": [
+        "deterministic",
+        "shared-agent-runner"
+      ],
+      "type": "string"
+    },
+    "state_root": {
+      "pattern": "^~/.+",
+      "type": "string"
+    }
+  },
+  "required": [
+    "loop_id",
+    "cadence",
+    "cleanup",
+    "domain",
+    "effect_class",
+    "entrypoint",
+    "label",
+    "log_root",
+    "provider_route",
+    "state_root"
+  ],
+  "title": "Life Manager loop.json",
+  "type": "object"
+}
