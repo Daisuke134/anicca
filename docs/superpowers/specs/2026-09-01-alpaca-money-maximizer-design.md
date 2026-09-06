@@ -1022,6 +1022,25 @@ before approval always means the complete pre-approval path and must not be repo
 | L04.8 | Local/Cloud parity fixture | Local core is portable; no cross-host Investment parity receipt exists | Identical sealed inputs produce the same decision, risk result, report fields, core digest, and idempotency key locally and in the Cloud adapter. Any mismatch fails the Cloud job closed. |
 | L04.9 | Approval transition — **WAITING ON PROVIDER** | Forced authenticated refresh at `2026-09-06T11:16:22.088017Z` returned `in_review`, `checked=true`, `changed=false`; no Live account is verified | Authenticated provider readback proves `approved` or selected `Live - <id>`, then verifies initial owner-authorized funding is at most `$100`. Only this closes L04 and advances the cursor to L05. |
 
+#### L04 Local pre-approval readiness audit
+
+This is the actual Local work that can be completed without provider approval. It refines the readiness work named
+above; it does not reorder or prematurely complete L05–L08. Execute the unfinished rows after L04.8 and before
+declaring that review is the only remaining wait.
+
+| Seq | Local readiness atom | Current implementation evidence | Pre-approval acceptance |
+|---:|---|---|---|
+| LP01 | Existing finite Local paper pass — **DONE** | `run.py`, `allocator.py`, `effect_store.py`, and `reporter.py` already observe crypto/options/equity inputs, call the model, persist decisions before effects, reconcile started effects by stable `client_order_id`, and deliver one outbox-backed Telegram report per wake. | Preserve the natural 300-second paper pass and its provider message receipt while the remaining rows change no live effect. |
+| LP02 | Fixed capital/loss policy | `allocator.py` still uses paper-era percentage limits (`0.5%` trade risk, `1.5%` daily loss, `3%` open risk) and candidate risk up to `$100`; this is not the required owner policy. | One fail-closed deterministic contract enforces total allocated capital `≤$100`, per-trade maximum loss `≤$10`, and New-York-day realised-plus-unrealised loss halt at `$20`; unknown/non-finite/stale inputs reject entry. Fixture tests reach no broker submit. |
+| LP03 | One-position, one-intent, cash-flow state | Current limits allow five positions and ten open orders; reconciliation fences a started effect but does not yet prove the final one-position/one-unresolved-intent or deposit/withdrawal-adjusted daily baseline. | Durable state and replay enforce at most one open position and one unresolved intent, distinguish owner cash flow from P&L, survive restart, and add zero duplicate orders. Fixture tests use paper/read-only adapters only. |
+| LP04 | Local Telegram control surface | The Local OpenClaw plugin registers only `/invest`; the per-wake reporter already has natural-language reason, balance, P&L, mode, review state, and next action. | Owner-authenticated `/status`, `/why`, `/risk`, `/pause`, `/resume`, and `/kill` reuse the same state/renderer. Pause/resume/kill survive restart; replay produces no duplicate control effect or message. No command can enable Live mode or increase capital. |
+| LP05 | Net-performance accounting | Current reports expose realised/unrealised values, but no one canonical pre-live contract proves fees, slippage, drawdown, exposure, and benchmark fields across restart. | A pure receipt projection calculates the same fields from sealed fixtures, never counts deposits as profit, and blocks expansion when a required value is missing. It does not claim a profitable strategy from paper results. |
+| LP06 | Local pre-live replay and natural readback | Shadow submit paths already fail closed and the existing replay covers setup-to-review plus paper intent reconciliation; the combined final Local readiness proof is missing. | One sealed replay covers paper `NO_TRADE`, risk rejection, approved paper intent, uncertain acknowledgement, restart reconciliation, pause/resume/kill, and shadow proposal with broker effects zero. After merge/release/apply, one natural paper wake from the installed SHA yields one durable receipt and one Telegram provider message. |
+
+LP02–LP06 are implementation TODOs, not claims that Local pre-approval work is already complete. Once all five pass,
+the Local side has exhausted everything possible before approval; only official Live-account facts and effects remain
+for L04.9 and L05–L12.
+
 The pre-approval user journeys are therefore:
 
 ```mermaid
