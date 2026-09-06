@@ -67,6 +67,14 @@ Execute exactly in this order:
    ChatGPT, Claude, or another loop. Treat finite idempotent wakes, unique resource ownership,
    host-headroom admission, durable cursors, bounded retry/backoff, and official effect receipts as
    the shared loop-development contract; do not create a Coconala-only or browser-only supervisor.
+   First source-control atom: one host-wide CDP-port lease now fail-closes a second owner with
+   `browser_port_owned`/exit `75`, while distinct ports remain concurrent. Both the Life Manager
+   daily-driver and Job Search browser enter through this same primitive. Focused ownership and
+   dispatch tests pass (28), Job Search browser tests pass (38), and host tests pass (5). This is not
+   yet released or applied; the two already-running `9222` owners remain untouched because applying
+   the new contract must not kill or restart a live browser. The remaining PANIC-2 work is owner
+   inventory reconciliation, unique profile/PID enforcement, finite retention, and host-headroom
+   admission under sustained load.
 3. [ ] `PANIC-3` Install the recommended macOS 15.7.9 maintenance update, not the Tahoe major
    upgrade, in an explicitly approved maintenance window. This step requires a restart and therefore
    waits for user approval immediately before execution. PASS = exact OS/build readback, no missing
@@ -114,6 +122,10 @@ completion remain separate.
    finite runtime/worker/context/tab/renderer retention and host memory admission; defer work durably
    under pressure and reclaim only owner-proven stale resources. The current first defect is the two
    owners bound to CDP port `9222`.
+   - [x] Add and test one shared host-wide CDP-port ownership primitive; route Life Manager
+     daily-driver and Job Search through it in source control.
+   - [ ] Reconcile the current active-label/registry drift, inventory every browser/Node/Python
+     owner, then enforce unique profile/PID ownership and bounded resource retention.
 2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
    completed and replay-zero; advance every other actionable purchased room independently to a useful
    buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal

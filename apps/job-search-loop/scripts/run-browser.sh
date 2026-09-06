@@ -22,6 +22,7 @@ export HOME="$CANONICAL_HOME"
 
 SCRIPT_DIR="${0:A:h}"
 DISK_GUARD="${SCRIPT_DIR:h:h:h}/skills/earn/gig/scripts/gig_disk_guard.py"
+PORT_OWNER="${JOB_SEARCH_BROWSER_PORT_OWNER-${SCRIPT_DIR:h:h:h}/runtime/host/browser_port_owner.py}"
 if [[ ! -f "$DISK_GUARD" || -L "$DISK_GUARD" || ! -r "$DISK_GUARD" ]]; then
   print -u2 "job-search browser: disk guard is missing or unsafe"
   exit 1
@@ -118,6 +119,18 @@ if [[ "$BROWSER_STATE_NAME" == "mercor-browser" ]]; then
     exit 2
   fi
 fi
+if [[ ! -f "$PORT_OWNER" || -L "$PORT_OWNER" || ! -r "$PORT_OWNER" ]]; then
+  print -u2 "job-search browser: port owner is missing or unsafe"
+  exit 1
+fi
+PORT_OWNER_STATE_ARGUMENT=()
+if [[ -n "${JOB_SEARCH_BROWSER_PORT_STATE_DIR:-}" ]]; then
+  if [[ "$JOB_SEARCH_BROWSER_PORT_STATE_DIR" != /* ]]; then
+    print -u2 "job-search browser: port state dir must be absolute"
+    exit 2
+  fi
+  PORT_OWNER_STATE_ARGUMENT=(--state-dir "$JOB_SEARCH_BROWSER_PORT_STATE_DIR")
+fi
 if ! /usr/bin/pgrep -f -- "--user-data-dir=$PROFILE" >/dev/null 2>&1; then
   /bin/rm -f "$PROFILE/SingletonLock" "$PROFILE/SingletonSocket" "$PROFILE/SingletonCookie" 2>/dev/null || true
 fi
@@ -141,7 +154,12 @@ CHROMIUM_BIN=$(ls -d "$HOME"/.cloakbrowser/chromium-*/Chromium.app/Contents/MacO
   exit 69
 }
 
-exec "$CHROMIUM_BIN" \
+exec /usr/bin/python3 -I "$PORT_OWNER" run \
+  "${PORT_OWNER_STATE_ARGUMENT[@]}" \
+  --port "$BROWSER_PORT" \
+  --profile "$PROFILE" \
+  --owner "$BROWSER_STATE_NAME" \
+  -- "$CHROMIUM_BIN" \
   --no-first-run \
   --no-default-browser-check \
   --password-store=basic \
