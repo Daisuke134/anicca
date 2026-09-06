@@ -5,6 +5,7 @@
 // Idempotent: never inserts a second [Travel] for an event that already has one.
 "use strict";
 
+const { createHash } = require("node:crypto");
 const { getCalendar } = require("./transport/index.js");
 const { chooseRouter, parseTransitPlan } = require("./transit.js");
 const {
@@ -40,6 +41,11 @@ function noteProviderFailure(usage, failureClass) {
   if (!usage || typeof usage !== "object") return;
   if (!Array.isArray(usage.failureClasses)) usage.failureClasses = [];
   usage.failureClasses.push(String(failureClass || "no_route"));
+}
+
+function opaqueEndpointKey(value) {
+  const normalized = String(value || "").normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
+  return createHash("sha256").update(normalized).digest("hex");
 }
 
 // C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
@@ -477,24 +483,23 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
     }
     return google(); // non-JP/unresolvable or Transit failure → exactly one Google fallback
   };
-  if (srcGeo && dstGeo) {
-    const context = {
-      provider: routeMode,
-      mode: routeMode,
-      timezone: call.timezone,
-      serviceDate: query.date,
-      anchorType: query.type,
-    };
-    return cache.getOrCompute(uid, srcGeo, dstGeo, timeBucket(query.anchorAtMs), compute, context,
-      (value, cacheEntry) => emitUsage(options, {
-        tenantId: uid, provider: routeMode === "google" || (value && value.provider === "google")
-          ? "google_maps" : "transit_api",
-        feature: "travel_route", outcome: "cache_hit", failureClass: cacheEntry.failureClass,
-        cacheHit: true,
-        providerUnits: 0, providerUnit: "request", estimatedCostUsd: 0,
-      }));
-  }
-  return compute(); // un-geocodable address → uncached (rare)
+  const context = {
+    provider: routeMode,
+    mode: routeMode,
+    timezone: call.timezone,
+    serviceDate: query.date,
+    anchorType: query.type,
+    fromKey: srcGeo ? "" : opaqueEndpointKey(src),
+    toKey: dstGeo ? "" : opaqueEndpointKey(dst),
+  };
+  return cache.getOrCompute(uid, srcGeo || {}, dstGeo || {}, timeBucket(query.anchorAtMs), compute, context,
+    (value, cacheEntry) => emitUsage(options, {
+      tenantId: uid, provider: routeMode === "google" || (value && value.provider === "google")
+        ? "google_maps" : "transit_api",
+      feature: "travel_route", outcome: "cache_hit", failureClass: cacheEntry.failureClass,
+      cacheHit: true,
+      providerUnits: 0, providerUnit: "request", estimatedCostUsd: 0,
+    }));
 }
 
 // Existing callers consume integer minutes. Keep this as a thin adapter over the structured route so
