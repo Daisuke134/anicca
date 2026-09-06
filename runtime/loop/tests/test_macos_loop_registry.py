@@ -162,6 +162,13 @@ class MacosLoopRegistryTest(unittest.TestCase):
         self.assertEqual(row["command"], ["sources", "wake"])
         self.assertEqual(row["entrypoint"], "skills/affiliate/affiliate")
 
+    def test_affiliate_composition_uses_direct_exec_adapter(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["affiliate-composition"]
+        self.assertEqual(row["adapter"], "exec")
+        self.assertEqual(row["command"], ["compose", "wake"])
+        self.assertEqual(row["entrypoint"], "skills/affiliate/affiliate")
+
     def test_marketing_metrics_daily_uses_direct_python_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["marketing-metrics-daily"]
