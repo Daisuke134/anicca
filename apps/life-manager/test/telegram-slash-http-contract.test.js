@@ -32,6 +32,8 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
 
   const originalCreateServer = http.createServer;
   const originalFetch = global.fetch;
+  const pg = require("pg");
+  const OriginalPool = pg.Pool;
   let productionServer;
   http.createServer = (handler) => {
     productionServer = originalCreateServer(handler);
@@ -56,6 +58,18 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   const logs = [];
   const originalConsoleLog = console.log;
   console.log = (...args) => logs.push(args.map(String).join(" "));
+  pg.Pool = class FixturePool {
+    query(sql, values) {
+      if (!/FROM public\.lm_investment_states/.test(sql)) throw new Error("unexpected runtime query");
+      investmentReads.push(values[0]);
+      return Promise.resolve({ rows: values[0] === "u1" ? [{
+        uid: "u1", lifecycle: "in_review", deployment: "cloud", mode: "paper",
+        paused: false, killed: false, core_digest: null, receipt_refs: [],
+        alpaca_api_key_ref: null, alpaca_api_secret_ref: null,
+      }] : [] });
+    }
+  };
+  process.env.LM_RUNTIME_DATABASE_URL = "postgresql://fixture.invalid/runtime";
 
   global.fetch = async (input, init = {}) => {
     const url = new URL(String(input));
@@ -101,15 +115,6 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
     if (url.pathname === "/rest/v1/lm_feedback_intake" && method === "POST") {
       feedbackRows.push(JSON.parse(init.body || "{}"));
       return response(201, [{ id: `feedback-${feedbackRows.length}` }]);
-    }
-    if (url.pathname === "/rest/v1/lm_investment_states" && method === "GET") {
-      const uid = String(url.searchParams.get("uid") || "").replace(/^eq\./, "");
-      investmentReads.push(uid);
-      return response(200, uid === "u1" ? [{
-        uid: "u1", lifecycle: "in_review", deployment: "cloud", mode: "paper",
-        paused: false, killed: false, core_digest: null, receipt_refs: [],
-        alpaca_api_key_ref: null, alpaca_api_secret_ref: null,
-      }] : []);
     }
     if (url.pathname === "/rest/v1/lm_panel_device_challenges" && method === "POST") {
       return response(201, []);
@@ -342,7 +347,9 @@ test("POST /telegram routes the legacy-parity slash surface without disturbing e
   } finally {
     console.log = originalConsoleLog;
     global.fetch = originalFetch;
+    pg.Pool = OriginalPool;
     http.createServer = originalCreateServer;
+    delete process.env.LM_RUNTIME_DATABASE_URL;
     delete process.env.LM_BROWSER_TASKS_ENABLED;
     delete process.env.LM_PANEL_BASE_URL;
     if (productionServer) await new Promise((resolve) => productionServer.close(resolve));

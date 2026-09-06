@@ -28,19 +28,18 @@ function normalizeInvestmentState(value, expectedUid) {
   return Object.freeze({ ...value, receipt_refs: Object.freeze([...value.receipt_refs]) });
 }
 
-function createInvestmentStateStore({ supaUrl, supaKey, fetchImpl = fetch } = {}) {
-  const base = String(supaUrl || "").replace(/\/$/, "");
-  if (!base || !supaKey || typeof fetchImpl !== "function") throw new Error("investment state store unavailable");
-  const headers = { apikey: supaKey, Authorization: `Bearer ${supaKey}` };
+function createInvestmentStateStore({ query } = {}) {
+  if (typeof query !== "function") throw new Error("investment state store unavailable");
   return Object.freeze({
     async read(uid) {
       if (!UID.test(String(uid || ""))) invalid();
-      const response = await fetchImpl(
-        `${base}/rest/v1/lm_investment_states?uid=eq.${encodeURIComponent(uid)}&select=${ROW_KEYS.join(",")}&limit=1`,
-        { headers },
-      );
-      if (!response.ok) throw new Error("investment state store unavailable");
-      const rows = await response.json().catch(() => null);
+      const result = await query(`
+        SELECT ${ROW_KEYS.join(", ")}
+        FROM public.lm_investment_states
+        WHERE uid = $1
+        LIMIT 1
+      `, [uid]).catch(() => null);
+      const rows = result && result.rows;
       if (!Array.isArray(rows) || rows.length > 1) throw new Error("investment state store unavailable");
       return rows.length === 0 ? Object.freeze({ lifecycle: "setup_required" }) : normalizeInvestmentState(rows[0], uid);
     },
@@ -48,16 +47,22 @@ function createInvestmentStateStore({ supaUrl, supaKey, fetchImpl = fetch } = {}
     async upsert(uid, state) {
       if (!UID.test(String(uid || ""))) invalid();
       const body = normalizeInvestmentState({ ...state, uid }, uid);
-      const response = await fetchImpl(
-        `${base}/rest/v1/lm_investment_states?on_conflict=uid&select=${ROW_KEYS.join(",")}`,
-        {
-        method: "POST",
-        headers: { ...headers, "content-type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
-        body: JSON.stringify(body),
-        },
-      );
-      if (!response.ok) throw new Error("investment state store unavailable");
-      const rows = await response.json().catch(() => null);
+      const result = await query(`
+        INSERT INTO public.lm_investment_states (
+          uid, lifecycle, deployment, mode, paused, killed, core_digest, receipt_refs,
+          alpaca_api_key_ref, alpaca_api_secret_ref
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10)
+        ON CONFLICT (uid) DO UPDATE SET
+          lifecycle = EXCLUDED.lifecycle, deployment = EXCLUDED.deployment, mode = EXCLUDED.mode,
+          paused = EXCLUDED.paused, killed = EXCLUDED.killed, core_digest = EXCLUDED.core_digest,
+          receipt_refs = EXCLUDED.receipt_refs, alpaca_api_key_ref = EXCLUDED.alpaca_api_key_ref,
+          alpaca_api_secret_ref = EXCLUDED.alpaca_api_secret_ref, updated_at = clock_timestamp()
+        RETURNING ${ROW_KEYS.join(", ")}
+      `, [
+        body.uid, body.lifecycle, body.deployment, body.mode, body.paused, body.killed,
+        body.core_digest, JSON.stringify(body.receipt_refs), body.alpaca_api_key_ref, body.alpaca_api_secret_ref,
+      ]).catch(() => null);
+      const rows = result && result.rows;
       if (!Array.isArray(rows) || rows.length !== 1) throw new Error("investment state store unavailable");
       return normalizeInvestmentState(rows[0], uid);
     },

@@ -20,46 +20,44 @@ const STATE = Object.freeze({
   alpaca_api_secret_ref: "secret://alpaca/api-secret",
 });
 
-function response(rows, ok = true) {
-  return { ok, json: async () => rows };
-}
-
 test("missing tenant state truthfully starts at setup_required", async () => {
   const calls = [];
-  const store = createInvestmentStateStore({ supaUrl: "https://db.example", supaKey: "service", fetchImpl: async (...args) => {
-    calls.push(args); return response([]);
+  const store = createInvestmentStateStore({ query: async (...args) => {
+    calls.push(args); return { rows: [] };
   } });
   assert.deepEqual(await store.read(UID), { lifecycle: "setup_required" });
-  assert.match(calls[0][0], /uid=eq\.tenant-a/);
-  assert.doesNotMatch(calls[0][0], /tenant-b/);
+  assert.match(calls[0][0], /WHERE uid = \$1/);
+  assert.deepEqual(calls[0][1], [UID]);
 });
 
 test("read is exactly tenant scoped and accepts only the persisted allowlist", async () => {
-  const store = createInvestmentStateStore({ supaUrl: "https://db.example/", supaKey: "service", fetchImpl: async (url) => {
-    assert.match(url, /uid=eq\.tenant-a/);
-    return response([STATE]);
+  const store = createInvestmentStateStore({ query: async (sql, values) => {
+    assert.match(sql, /WHERE uid = \$1/);
+    assert.deepEqual(values, [UID]);
+    return { rows: [STATE] };
   } });
   assert.deepEqual(await store.read(UID), STATE);
 });
 
 test("cross-tenant or schema-drift rows fail closed", async () => {
   for (const row of [{ ...STATE, uid: "tenant-b" }, { ...STATE, api_secret: "raw" }]) {
-    const store = createInvestmentStateStore({ supaUrl: "https://db.example", supaKey: "service", fetchImpl: async () => response([row]) });
+    const store = createInvestmentStateStore({ query: async () => ({ rows: [row] }) });
     await assert.rejects(store.read(UID), /invalid|unavailable/);
   }
 });
 
-test("upsert sends references only and rejects raw credentials before fetch", async () => {
+test("upsert parameterizes references only and rejects raw credentials before query", async () => {
   const calls = [];
-  const store = createInvestmentStateStore({ supaUrl: "https://db.example", supaKey: "service", fetchImpl: async (url, options) => {
-    assert.match(url, /on_conflict=uid&select=alpaca_api_key_ref,/);
-    assert.doesNotMatch(url, /created_at|updated_at/);
-    calls.push(options); return response([STATE]);
+  const store = createInvestmentStateStore({ query: async (sql, values) => {
+    calls.push({ sql, values }); return { rows: [STATE] };
   } });
   assert.deepEqual(await store.upsert(UID, STATE), STATE);
-  const written = JSON.parse(calls[0].body);
-  assert.deepEqual(Object.keys(written).sort(), Object.keys(STATE).sort());
-  assert.equal(JSON.stringify(written).includes("raw-secret"), false);
+  assert.match(calls[0].sql, /ON CONFLICT \(uid\) DO UPDATE/);
+  assert.equal(calls[0].sql.includes(STATE.alpaca_api_secret_ref), false);
+  assert.deepEqual(calls[0].values, [
+    UID, "in_review", "cloud", "paper", false, false, "a".repeat(64),
+    '["provider-receipt://alpaca/application/abc"]', "secret://alpaca/api-key", "secret://alpaca/api-secret",
+  ]);
   await assert.rejects(store.upsert(UID, { ...STATE, alpaca_api_secret_ref: "raw-secret" }), /invalid/);
   await assert.rejects(store.upsert(UID, { ...STATE, api_key: "raw-secret" }), /invalid/);
   assert.equal(calls.length, 1);
@@ -76,7 +74,7 @@ test("invalid lifecycle, deployment, mode, refs, and digests fail closed", () =>
 test("migration is service-only and has no raw credential columns", () => {
   const sql = fs.readFileSync(path.join(__dirname, "../migrations/2026-09-06-lm-investment-states.sql"), "utf8");
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.lm_investment_states/i);
-  assert.match(sql, /uid text PRIMARY KEY REFERENCES public\.lm_users\(uid\)/i);
+  assert.match(sql, /uid text PRIMARY KEY CHECK \(uid ~/i);
   assert.match(sql, /ENABLE ROW LEVEL SECURITY/i);
   assert.match(sql, /REVOKE ALL ON TABLE public\.lm_investment_states FROM PUBLIC/i);
   assert.match(sql, /GRANT SELECT, INSERT, UPDATE ON TABLE public\.lm_investment_states TO service_role/i);

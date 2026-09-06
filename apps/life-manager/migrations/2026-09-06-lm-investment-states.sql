@@ -1,7 +1,7 @@
 -- L04.6: tenant-scoped Investment Loop control state. Secrets stay in the secret provider;
 -- this table contains references only and is service-role-only.
 CREATE TABLE IF NOT EXISTS public.lm_investment_states (
-  uid text PRIMARY KEY REFERENCES public.lm_users(uid) ON DELETE CASCADE,
+  uid text PRIMARY KEY CHECK (uid ~ '^[A-Za-z0-9._-]{1,200}$'),
   lifecycle text NOT NULL CHECK (lifecycle IN ('setup_required', 'in_review', 'approved', 'active', 'rejected', 'action_required')),
   deployment text NOT NULL CHECK (deployment IN ('local', 'cloud')),
   mode text NOT NULL CHECK (mode IN ('paper', 'shadow', 'live')),
