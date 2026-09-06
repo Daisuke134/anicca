@@ -85,11 +85,20 @@ def _cdp_port() -> int | None:
     return port if 1 <= port <= 65_535 else None
 
 
+def _renderer_limit() -> int | None:
+    try:
+        limit = int(os.environ.get("AFFILIATE_BROWSER_RENDERER_LIMIT", "8"))
+    except (TypeError, ValueError):
+        return None
+    return limit if 1 <= limit <= 64 else None
+
+
 def main() -> int:
     if not _disk_preflight():
         return 1
     port = _cdp_port()
-    if port is None:
+    renderer_limit = _renderer_limit()
+    if port is None or renderer_limit is None:
         return 1
     profile = Path(
         os.environ.get("AFFILIATE_BROWSER_PROFILE", "~/.cloak/profiles/affiliate/en")
@@ -109,7 +118,8 @@ def main() -> int:
     context = launch_persistent_context(
         str(profile), headless=False,
         args=[f"--remote-debugging-port={port}", "--remote-allow-origins=*",
-              "--disable-features=MacAppCodeSignClone"],
+              "--disable-features=MacAppCodeSignClone",
+              f"--renderer-process-limit={renderer_limit}"],
     )
     pages = context.pages
     page = pages[0] if pages else context.new_page()

@@ -2,6 +2,9 @@
 set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 profile="${LANCERS_BROWSER_PROFILE:-$HOME/.local/state/anicca/lancers/browser-profile}"
+renderer_limit="${LANCERS_BROWSER_RENDERER_LIMIT:-8}"
+case "$renderer_limit" in ''|*[!0-9]*) exit 64 ;; esac
+[ "$renderer_limit" -ge 1 ] && [ "$renderer_limit" -le 64 ] || exit 64
 if [ "${LANCERS_BROWSER_PORT_OWNED:-0}" != 1 ]; then
   port_owner="$script_dir/../../../runtime/host/browser_port_owner.py"
   [ -f "$port_owner" ] && [ ! -L "$port_owner" ] && [ -r "$port_owner" ] || {
@@ -20,5 +23,6 @@ fi
 mkdir -p "$profile"
 exec "$browser" --no-first-run --no-default-browser-check \
   --disable-features=MacAppCodeSignClone \
+  --renderer-process-limit="$renderer_limit" \
   --remote-debugging-address=127.0.0.1 --remote-allow-origins='*' \
   --remote-debugging-port=9227 --user-data-dir="$profile" about:blank

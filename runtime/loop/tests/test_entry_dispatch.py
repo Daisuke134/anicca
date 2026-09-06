@@ -11,6 +11,10 @@ from runtime.loop.entry_dispatch import command_for
 
 
 class EntryDispatchTest(unittest.TestCase):
+    def test_lancers_browser_has_a_finite_renderer_process_limit(self):
+        script = Path(__file__).parents[3] / 'runtime/legacy/lancers-revenue-browser/run.sh'
+        self.assertIn('--renderer-process-limit="$renderer_limit"', script.read_text())
+
     def _symphony_fixture(self, home: Path, content: bytes = b"symphony fixture") -> Path:
         artifact_dir = (
             home / '.local/libexec/openai-symphony/'

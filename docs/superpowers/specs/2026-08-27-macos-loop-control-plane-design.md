@@ -196,6 +196,12 @@ completion remain separate.
      parallel work. The shared context lease now admits at most 16 simultaneous contexts per browser
      by default (override range 1..128), reuses an existing owner's lease at the ceiling, and rejects
      only a new context with `browser_context_limit`. Focused lease/GC/hang regressions pass (24).
+     Every registry-owned Chromium launcher now also passes a validated finite renderer process
+     limit: 24 for the shared daily-driver and parallel Gig browser (the observed valid load was 17),
+     and 8 for each single-purpose Affiliate and Lancers browser. Invalid limits outside 1..64 fail
+     before browser launch. Related daily-driver (10), Affiliate (9), Lancers dispatch (16), and Gig
+     launcher (3) tests pass. These are source gates only until a future immutable-main release reaches
+     each owner through its normal lifecycle; no live browser was restarted for this change.
 2. [ ] Complete Coconala Paid current liabilities: preserve Ryu `18211957` official send/readback as
    completed and replay-zero; advance every other actionable purchased room independently to a useful
    buyer-visible artifact or an exact retry-owned blocker; require aggregate `failed=0`. Formal

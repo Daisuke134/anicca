@@ -646,6 +646,11 @@ def test_all_coconala_chromium_launches_disable_code_sign_clone():
         assert "--disable-features=MacAppCodeSignClone" in script.read_text()
 
 
+def test_coconala_browser_has_a_finite_renderer_process_limit():
+    source = (GIG_ROOT / "scripts" / "launch_gig_browser.sh").read_text()
+    assert '--renderer-process-limit="$GIG_BROWSER_RENDERER_LIMIT"' in source
+
+
 def test_browser_launcher_restores_vault_after_cdp_is_ready(tmp_path):
     (tmp_path / ".openclaw" / "state").mkdir(parents=True, exist_ok=True)
     (tmp_path / "gig" / "state").mkdir(parents=True, exist_ok=True)
