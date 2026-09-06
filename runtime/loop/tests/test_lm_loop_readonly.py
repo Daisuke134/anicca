@@ -4,8 +4,9 @@ import subprocess
 import tempfile
 import plistlib
 from pathlib import Path
+from unittest.mock import patch
 
-from runtime.loop.lm_loop import _last_event, _release_from_plist, doctor_report, status_rows
+from runtime.loop.lm_loop import _last_event, _release_from_plist, doctor_report, snapshot, status_rows
 
 
 REGISTRY = {"schema_version": 2, "loops": {"example": {
@@ -76,6 +77,31 @@ class LmLoopReadonlyTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)[0]["loop_id"], "fundraiser")
+
+    def test_single_managed_status_collects_only_the_requested_loop(self):
+        registry = {
+            "schema_version": 2,
+            "loops": {
+                "example": REGISTRY["loops"]["example"],
+                "second": {
+                    **REGISTRY["loops"]["example"],
+                    "label": "ai.anicca.second",
+                    "state_root": "~/.local/state/life-manager/second",
+                    "log_root": "~/.local/state/life-manager/second/logs",
+                },
+            },
+        }
+        captured = []
+
+        def collect(value, **options):
+            captured.append((value, options))
+            return {}, {}, {}, {}, set()
+
+        with patch("runtime.loop.lm_loop.collect_live", side_effect=collect):
+            rows = snapshot(registry, "example")
+        self.assertEqual([row["loop_id"] for row in rows], ["example"])
+        self.assertEqual(list(captured[0][0]["loops"]), ["example"])
+        self.assertEqual(captured[0][1], {"full_inventory": False})
 
     def test_invalid_event_cannot_spoof_pass_or_verified_effect(self):
         with tempfile.TemporaryDirectory() as directory:

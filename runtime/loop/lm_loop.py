@@ -215,11 +215,15 @@ def _release_from_plist(path: Path) -> str | None:
     return None
 
 
-def collect_live(registry: dict) -> tuple[dict, dict, dict, set[str], set[str]]:
+def collect_live(registry: dict, *, full_inventory: bool = True
+                 ) -> tuple[dict, dict, dict, set[str], set[str]]:
     loaded = parse_loaded(_launchctl("list"))
     disabled = parse_disabled(_launchctl("print-disabled", f"gui/{os.getuid()}"))
     plist_dir = Path.home() / "Library/LaunchAgents"
-    installed_paths = list(plist_dir.glob("ai.anicca.*.plist"))
+    installed_paths = (list(plist_dir.glob("ai.anicca.*.plist")) if full_inventory else [
+        plist_dir / f"{entry['label']}.plist" for entry in registry["loops"].values()
+        if (plist_dir / f"{entry['label']}.plist").is_file()
+    ])
     installed = {path.stem for path in installed_paths}
     releases, events = {}, {}
     for path in installed_paths:
@@ -244,6 +248,13 @@ def _select(rows: list[dict], target: str) -> list[dict]:
 
 
 def snapshot(registry: dict, target: str) -> list[dict]:
+    if target != "all" and target in registry["loops"]:
+        selected_registry = {**registry, "loops": {target: registry["loops"][target]}}
+        loaded, disabled, events, releases, _ = collect_live(
+            selected_registry, full_inventory=False)
+        return status_rows(
+            selected_registry, loaded=loaded, disabled=disabled, events=events,
+            installed_releases=releases)
     loaded, disabled, events, releases, installed = collect_live(registry)
     rows = resolver_rows(
         registry, loaded=loaded, disabled=disabled, events=events,
