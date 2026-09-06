@@ -30,6 +30,7 @@ const {
   getUserByUid,
 } = require("../scheduler.js");
 const { inProcessLoopsOn } = require("../lib/maybe-start-loops.js");
+const { runInvestmentDryRun } = require("../lib/investment-dry-run.js");
 
 // ── Single-writer guard ───────────────────────────────────────────────────────
 // The startup module owns this predicate. Sweepers no-op whenever in-process loops own writes,
@@ -140,6 +141,10 @@ function makeAskUserHandler(askOnce, getUser) {
   };
 }
 
+function makeInvestmentDryRunHandler(runOnce = runInvestmentDryRun) {
+  return async ({ step }) => step.run("investment-dry-run", () => runOnce());
+}
+
 // ── Wired Inngest functions (real scheduler.js per-user fns) ──────────────────
 
 const sweepWake = inngest.createFunction(
@@ -193,7 +198,12 @@ const askUser = inngest.createFunction(
   makeAskUserHandler(askUserOnce, getUserByUid)
 );
 
-const functions = [sweepWake, wakeUser, sweepTravel, travelUser, sweepAsk, askUser];
+const investmentCloudDryRun = inngest.createFunction(
+  { id: "investment-cloud-dry-run", triggers: [{ cron: "*/5 * * * *" }] },
+  makeInvestmentDryRunHandler()
+);
+
+const functions = [sweepWake, wakeUser, sweepTravel, travelUser, sweepAsk, askUser, investmentCloudDryRun];
 
 module.exports = {
   functions,
@@ -204,6 +214,7 @@ module.exports = {
   makeWakeUserHandler,
   makeTravelUserHandler,
   makeAskUserHandler,
+  makeInvestmentDryRunHandler,
   // exported for tests
   inProcessLoopsOn,
 };

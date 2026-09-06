@@ -75,7 +75,10 @@ test("server.js imports serve from inngest/node (not inngest/express) — FIND-0
 test("inngest/functions.js exports a functions array", () => {
   const mod = require("../inngest/functions.js");
   assert.ok(Array.isArray(mod.functions), "functions export must be an array");
-  assert.strictEqual(mod.functions.length, 6, "must export exactly 6 Inngest functions");
+  assert.strictEqual(mod.functions.length, 7, "must export exactly 7 Inngest functions");
+  const investment = mod.functions.find((fn) => fn.opts && fn.opts.id === "investment-cloud-dry-run");
+  assert.ok(investment);
+  assert.deepStrictEqual(investment.opts.triggers, [{ cron: "*/5 * * * *" }]);
 });
 
 // Helper: build a fake step object that records calls
