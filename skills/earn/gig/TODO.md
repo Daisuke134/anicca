@@ -569,9 +569,21 @@ does not start them and does not reorder anyone's cursor to fit them:
    a hardcoded one, taking and returning the lease and skipping when it is BUSY — busy means a gig
    lane is driving that browser, which is itself traffic. A logged-out gig session now alerts and
    says what it costs. Six tests.
-   Still owed for PASS: the session itself. A programmatic login was attempted and did not
-   authenticate; the form carries `g-recaptcha-response`. Until that session is restored, no fix in
-   this repo can make Coconala apply.
+   **The session was the symptom; the vault was the cause.** The lane does not use the live tab — it
+   rehydrates isolated contexts from `~/.cloak/vault/gig-daily-driver/auth-state.json`. That file was
+   last written **2026-09-02 02:17**, the day applications stopped, while `vault/daily-driver`
+   rotated a fresh backup every 30 minutes throughout. `session_vault.py` defaults
+   `SESSION_VAULT_DIR` to `~/.cloak/vault/daily-driver` — the human browser's jar — so every `dump`
+   the keepalive tick has ever run wrote there and never touched the gig vault. The lane restored
+   expired cookies on every wake and landed on `/login`, and the keepalive reported healthy because
+   the browser and vault it checks really were fine.
+   Restored and closed: logged in (verified on `/mypage/services_lists`), dumped 1,370 cookies into
+   the gig vault, restored `vault/daily-driver` from its own backup after the default path sent one
+   dump to the wrong jar, and taught the tick to bank the gig vault **before** warming it (#4310) on
+   top of warming the gig browser at all (#4301). Warming keeps a live session alive; only the dump
+   refreshes what the lane actually restores from, which is why the first fix was only half of it.
+   Release `20260907T010438-7f5efc15`; `session-vault` and `hf-gig-apply-direct` repointed.
+   Still owed for PASS: a natural wake submits an application with an official readback.
 
 10. [x] `APPLY-REPORT-10` Name the marketplace in the submitted-application report. `report_envelope.py`
    excluded `coconala` from the `[Platform][応募完了]` format, so Coconala fell through to a generic
