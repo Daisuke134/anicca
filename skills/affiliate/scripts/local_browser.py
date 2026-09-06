@@ -7,6 +7,7 @@ import os
 import pwd
 import stat
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -19,6 +20,20 @@ _REMOVED_ENV = (
     "GIG_IGNORE_DISK_PRESSURE_BLOCK", "GIG_IGNORE_DISK_WRITERS_STOP",
     "DISK_CONTROL_STATE_DIR", "OPENCLAW_STATE_DIR", "LIFE_MANAGER_HOST_STATE_DIR",
 )
+
+
+def _exec_with_owner(port: int, profile: Path, owner: str) -> None:
+    owner_script = Path(__file__).resolve().parents[3] / "runtime/host/browser_port_owner.py"
+    if owner_script.is_symlink() or not owner_script.is_file() or not os.access(owner_script, os.R_OK):
+        raise RuntimeError("browser port owner is missing or unsafe")
+    environment = os.environ.copy()
+    environment["AFFILIATE_BROWSER_PORT_OWNED"] = "1"
+    argv = [
+        "/usr/bin/python3", "-I", str(owner_script), "run",
+        "--port", str(port), "--profile", str(profile), "--owner", owner,
+        "--", sys.executable, str(Path(__file__).resolve()),
+    ]
+    os.execve(argv[0], argv, environment)
 
 
 def _canonical_home() -> Path | None:
@@ -76,11 +91,20 @@ def main() -> int:
     port = _cdp_port()
     if port is None:
         return 1
-    from cloakbrowser import launch_persistent_context
-
     profile = Path(
         os.environ.get("AFFILIATE_BROWSER_PROFILE", "~/.cloak/profiles/affiliate/en")
     ).expanduser()
+    if not profile.is_absolute():
+        return 1
+    if os.environ.get("AFFILIATE_BROWSER_PORT_OWNED") != "1":
+        owner = os.environ.get("LIFE_MANAGER_LOOP_ID", "affiliate-browser")
+        try:
+            _exec_with_owner(port, profile, owner)
+        except (OSError, RuntimeError):
+            return 1
+        return 1
+    from cloakbrowser import launch_persistent_context
+
     profile.mkdir(mode=0o700, parents=True, exist_ok=True)
     context = launch_persistent_context(
         str(profile), headless=False,

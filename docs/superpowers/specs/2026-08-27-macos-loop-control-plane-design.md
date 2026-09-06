@@ -133,6 +133,10 @@ completion remain separate.
      The wrapper owns the entire launcher/Chromium process tree, while existing vault restore and
      signal forwarding remain unchanged. Focused launcher and ownership tests pass. The live Gig
      browser was not restarted; enforcement begins on its next source-derived natural launch.
+   - [x] Route all three Affiliate browser owners through that same ownership primitive from their
+     single shared launcher. Provider, Impact and X retain their distinct declared profile and port;
+     focused launcher and ownership tests pass. Running browsers were not restarted, so enforcement
+     begins on each owner's next source-derived natural launch.
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search

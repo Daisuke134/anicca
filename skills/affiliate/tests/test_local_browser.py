@@ -3,6 +3,7 @@ import importlib.util
 import json
 import os
 import stat
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -58,6 +59,26 @@ class LocalBrowserPreflightTest(unittest.TestCase):
             '"--disable-features=MacAppCodeSignClone"',
             SCRIPT.read_text(encoding="utf-8"),
         )
+
+    def test_browser_reexecutes_through_shared_port_owner(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            profile = Path(temporary) / "impact-en"
+            with (
+                patch.dict(os.environ, {}, clear=True),
+                patch.object(MODULE.os, "execve", side_effect=SystemExit) as execute,
+            ):
+                with self.assertRaises(SystemExit):
+                    MODULE._exec_with_owner(9327, profile, "affiliate-impact-browser")
+            executable, argv, environment = execute.call_args.args
+            owner_script = SCRIPT.parents[3] / "runtime/host/browser_port_owner.py"
+            self.assertEqual(executable, "/usr/bin/python3")
+            self.assertEqual(argv, [
+                "/usr/bin/python3", "-I", str(owner_script), "run",
+                "--port", "9327", "--profile", str(profile),
+                "--owner", "affiliate-impact-browser", "--",
+                sys.executable, str(SCRIPT),
+            ])
+            self.assertEqual(environment["AFFILIATE_BROWSER_PORT_OWNED"], "1")
 
     def install_guard(self, home: Path) -> Path:
         guard = home / GUARD_RELATIVE
