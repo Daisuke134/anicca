@@ -19,6 +19,11 @@ PAPER_ENDPOINT = "https://paper-api.alpaca.markets/v2"
 LIVE_ENDPOINT = "https://api.alpaca.markets/v2"
 MAX_CREDENTIAL_BYTES = 1_048_576
 MAX_OUTPUT_BYTES = 64 * 1024
+CLI_OPERATIONS = frozenset({
+    "account_activity", "account_get", "asset_get", "clock_get", "data_crypto",
+    "data_latest-quotes", "data_latest-trade", "data_option", "order_list",
+    "order_submit", "position_list",
+})
 
 
 def _selected_mode(mode: str | None = None) -> str:
@@ -80,12 +85,18 @@ def _context(credentials_path: Path, cli_path: Path, mode: str | None = None) ->
 
 
 def _run(cli: Path, args: list[str], env: dict[str, str]) -> Any:
-    result = subprocess.run(
-        [str(cli), *args], env=env, stdin=subprocess.DEVNULL,
-        capture_output=True, timeout=30, check=False,
-    )
+    operation = "_".join(args[:2])
+    if operation not in CLI_OPERATIONS:
+        operation = "unknown"
+    try:
+        result = subprocess.run(
+            [str(cli), *args], env=env, stdin=subprocess.DEVNULL,
+            capture_output=True, timeout=30, check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise ValueError(f"alpaca_cli_timeout:{operation}") from error
     if result.returncode != 0:
-        raise ValueError("alpaca_cli_failed")
+        raise ValueError(f"alpaca_cli_failed:{operation}")
     if len(result.stdout) > MAX_OUTPUT_BYTES:
         raise ValueError("alpaca_cli_output_too_large")
     try:

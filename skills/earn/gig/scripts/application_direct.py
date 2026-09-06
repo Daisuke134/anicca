@@ -433,24 +433,44 @@ def _run_parent(
     return retried
 
 
-def _temporary_source_denial(completed: subprocess.CompletedProcess[str]) -> str | None:
+# One unreachable source must not take the pass down with it. A 403 was already absorbed this
+# way; a page whose title matches the not-found pattern was not, so it reached the wrapper as an
+# unrecognised parent failure and ended the pass at the report phase -- after the report had
+# already been delivered. An exit 1 that means "one source is missing" then looked identical to
+# an exit 1 that means "this lane never reported".
+_SOURCE_FAILURE_KINDS = ("source_access_denied", "source_not_found")
+
+
+def _temporary_source_denial(
+    completed: subprocess.CompletedProcess[str],
+) -> tuple[str, str] | None:
+    """Return (source_id, kind) for a single-source failure the pass can survive."""
     payload = _last_json(completed.stderr)
     if not isinstance(payload, dict) or payload.get("error_type") != "ParentContractError":
         return None
     error = str(payload.get("error") or "")
-    prefix = "source_access_denied:"
-    source_id = error.removeprefix(prefix).strip() if error.startswith(prefix) else ""
-    return source_id or None
+    for kind in _SOURCE_FAILURE_KINDS:
+        prefix = f"{kind}:"
+        if not error.startswith(prefix):
+            continue
+        # The message may carry diagnostic detail after the id, so take the first token only.
+        source_id = error.removeprefix(prefix).strip().split(" ", 1)[0].strip()
+        if source_id:
+            return source_id, kind
+    return None
 
 
 def _record_temporary_source_failure(
     run_dir: Path, failures: dict[str, dict[str, Any]], source_id: str, phase: str,
+    kind: str = "source_access_denied",
 ) -> None:
     failures[source_id] = {
         "source_id": source_id,
         "phase": phase,
-        "error": "source_access_denied",
-        "temporary": True,
+        "error": kind,
+        # A 403 is expected to clear on its own. A page that is not there will not, so it is
+        # recorded as persistent rather than retried forever under a "temporary" label.
+        "temporary": kind == "source_access_denied",
         "exhausted": False,
     }
     _atomic_json(run_dir / "temporary-source-failures.json", {
@@ -1267,6 +1287,7 @@ def main(argv: list[str] | None = None) -> int:
     phases: list[tuple[str, Path, int]] = []
     phase_cursor_paths: dict[str, Path] = {}
     phase_source_denials: dict[str, str] = {}
+    phase_source_failure_kinds: dict[str, str] = {}
     temporary_source_failures: dict[str, dict[str, Any]] = {}
     refresh_safe_counts: dict[str, int] | None = None
     refresh_exhausted = False
@@ -1280,11 +1301,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         stem = "parent" if phase == "main" else phase
         completed = _run_parent(command, env, run_dir / f"{stem}.stdout", run_dir / f"{stem}.stderr")
-        denied_source_id = _temporary_source_denial(completed)
-        if denied_source_id is not None:
+        source_failure = _temporary_source_denial(completed)
+        if source_failure is not None:
+            denied_source_id, failure_kind = source_failure
             phase_source_denials[phase] = denied_source_id
+            phase_source_failure_kinds[phase] = failure_kind
             _record_temporary_source_failure(
-                run_dir, temporary_source_failures, denied_source_id, phase,
+                run_dir, temporary_source_failures, denied_source_id, phase, failure_kind,
             )
         invocation = "parent.invocation.json" if phase == "main" else f"parent.invocation-{phase}.json"
         _atomic_json(run_dir / invocation, {"argv": command})
@@ -1464,7 +1487,16 @@ def main(argv: list[str] | None = None) -> int:
                 error="refresh_count_incoherent",
             )
         if last_rc != 0 and phase_source_denials.get("refresh") is not None:
-            values["source_health"] = "新着sourceは一時access denial。既存intentを保持して次wakeで再試行"
+            failed_source = phase_source_denials["refresh"]
+            if phase_source_failure_kinds.get("refresh") == "source_not_found":
+                values["source_health"] = (
+                    f"新着source {failed_source} が見つかりません（公式ページが404扱い）。"
+                    "既存intentを保持し、他sourceの処理は継続します"
+                )
+            else:
+                values["source_health"] = (
+                    f"新着source {failed_source} は一時access denial。既存intentを保持して次wakeで再試行"
+                )
             return _finish(output, pass_id, values, status="ok", args=args)
         if last_rc != 0:
             values["source_health"] = f"新着情報の取得に失敗したため深掘りを停止（終了コード {last_rc}）"
@@ -1488,7 +1520,15 @@ def main(argv: list[str] | None = None) -> int:
         if last_rc != 0:
             denied_source_id = phase_source_denials.get(last_phase)
             if denied_source_id is None or len(temporary_source_failures) >= max_parent_turns:
-                values["source_health"] = f"深掘り情報の取得に失敗しました（終了コード {last_rc}）"
+                if denied_source_id is None:
+                    values["source_health"] = f"深掘り情報の取得に失敗しました（終了コード {last_rc}）"
+                else:
+                    # Name the source and the kind. "exit code 2" alone cannot tell a reader
+                    # whether one source is missing or the whole lane is broken.
+                    kind = phase_source_failure_kinds.get(last_phase, "source_access_denied")
+                    values["source_health"] = (
+                        f"深掘りsourceの失敗が上限に達しました（最後は {denied_source_id} の {kind}）"
+                    )
                 return _finish(
                     output, pass_id, values, status="failed", args=args,
                     error=f"parent_failed_rc_{last_rc}",
@@ -1582,11 +1622,13 @@ def main(argv: list[str] | None = None) -> int:
         completed = _run_parent(
             command, env, run_dir / f"{phase}.stdout", run_dir / f"{phase}.stderr"
         )
-        denied_source_id = _temporary_source_denial(completed)
-        if denied_source_id is not None:
+        source_failure = _temporary_source_denial(completed)
+        if source_failure is not None:
+            denied_source_id, failure_kind = source_failure
             phase_source_denials[phase] = denied_source_id
+            phase_source_failure_kinds[phase] = failure_kind
             _record_temporary_source_failure(
-                run_dir, temporary_source_failures, denied_source_id, phase,
+                run_dir, temporary_source_failures, denied_source_id, phase, failure_kind,
             )
         _atomic_json(run_dir / f"parent.invocation-{phase}.json", {"argv": command})
         parent_rc = completed.returncode
