@@ -3647,25 +3647,51 @@ def _collect_competitors(ws_url: str, evidence_dir: Path, own_ids: set[str]) -> 
     import listing_inventory
 
     rows = []
+    unread = []
     for source_type, requested_url in COMPETITOR_SOURCES:
         requested = urlsplit(requested_url)
         requested_id = requested.path.removeprefix("/services/") if source_type == "service" else None
         if requested_id in own_ids:
             raise RuntimeError("competitor_source_is_own_service")
-        observed = asyncio.run(listing_inventory._eval_json(
-            ws_url,
-            requested_url,
-            "JSON.stringify({url:location.href,title:document.title,body:document.body ? document.body.innerText.slice(0,120000) : ''})",
-        ))
-        final_url = str(observed.get("url") or "")
-        final = urlsplit(final_url)
-        body = str(observed.get("body") or "")
-        if final.scheme != "https" or final.hostname not in {"coconala.com", "www.coconala.com"}:
-            raise RuntimeError("competitor_source_not_official")
-        if source_type == "service" and final.path.rstrip("/") != requested.path:
-            raise RuntimeError("competitor_service_redirected")
-        if not body.strip():
-            raise RuntimeError("competitor_source_empty")
+        # An empty page body is a transient read (the tab was still hydrating, a slow
+        # network blip, ...), not evidence the competitor's page vanished, so it is
+        # retried like `_read_official_catalog` retries a half-hydrated dashboard.
+        # `competitor_source_not_official` and `competitor_service_redirected` are
+        # correctness signals about the page itself, not the environment, so they
+        # still raise on the first observation and are never retried.
+        succeeded = False
+        attempts_used = 0
+        for attempt in range(5):
+            attempts_used = attempt + 1
+            observed = asyncio.run(listing_inventory._eval_json(
+                ws_url,
+                requested_url,
+                "JSON.stringify({url:location.href,title:document.title,body:document.body ? document.body.innerText.slice(0,120000) : ''})",
+            ))
+            final_url = str(observed.get("url") or "")
+            final = urlsplit(final_url)
+            body = str(observed.get("body") or "")
+            if final.scheme != "https" or final.hostname not in {"coconala.com", "www.coconala.com"}:
+                raise RuntimeError("competitor_source_not_official")
+            if source_type == "service" and final.path.rstrip("/") != requested.path:
+                raise RuntimeError("competitor_service_redirected")
+            if body.strip():
+                succeeded = True
+                break
+            if attempt < 4:
+                time.sleep(3)
+        if not succeeded:
+            # One unreadable source among fourteen is a per-source flake and must not
+            # kill the wake; it is skipped and recorded honestly. Only zero readable
+            # sources (checked after the loop) is a systemic failure worth failing closed.
+            unread.append({
+                "source_type": source_type,
+                "requested_url": requested_url,
+                "reason": "competitor_source_empty",
+                "attempts": attempts_used,
+                "observed_at_epoch": int(time.time()),
+            })
+            continue
         digest = hashlib.sha256(body.encode()).hexdigest()
         path = evidence_dir / f"competitor-{source_type}-{hashlib.sha256(requested_url.encode()).hexdigest()[:12]}.json"
         row = {
@@ -3681,7 +3707,9 @@ def _collect_competitors(ws_url: str, evidence_dir: Path, own_ids: set[str]) -> 
         }
         _atomic_write(path, row)
         rows.append({"source_type": source_type, "url": final_url, "path": str(path), "content_sha256": digest})
-    manifest = {"version": 1, "sources": rows}
+    if not rows:
+        raise RuntimeError("competitor_source_empty")
+    manifest = {"version": 1, "sources": rows, "unread": unread}
     _atomic_write(evidence_dir / "competitor-manifest.json", manifest)
     return manifest
 
