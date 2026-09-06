@@ -14,9 +14,33 @@
 
 [Life Managerを開く](https://aniccaai.com/lm) · [Telegramで始める](https://t.me/LifeManagerBotbot?start=lp) · [sourceを見る](https://github.com/Daisuke134/life-manager)
 
-free・open source・self-hosted版をローカルで動かしてdataを自分の端末に置き、phoneだけで常時稼働させたい時は
-paid monthly cloudを使います。どちらも**同じcore**、証拠台帳、人間向け報告contractを使います。資産増加や投資収益を保証せず、
+repositoryはopen sourceで、dataをowner端末に置くportable self-host版がtargetですが、clean-hostからの完全な起動経路は未完成です。
+phoneだけで常時稼働させたい時はpaid monthly cloudを使います。どちらもこのrepositoryから作り、同じstate・証拠・人間向け報告contractへ収束させます。資産増加や投資収益を保証せず、
 receiptのない試行を「完了」と報告しません。
+
+## 13本の主要product loop
+
+13本はuser-facingな製品能力の数です。process数ではありません。registryには、各product loopを実装する
+応募・browser owner・報告・照合・healthcheckなどの小さいjobが多数あります。
+
+| # | Product loop | 現在の代表owner | 役割 |
+|---:|---|---|---|
+| 1 | Gig — Coconala | `hf-gig-apply-direct`, `hf-gig-reply-detector`, `hf-gig-storefront-direct`, `hf-gig-paid-direct` | 案件発見、応募、交渉、納品、provider結果確認 |
+| 2 | Gig — Lancers | `lancers-revenue-application`, `lancers-revenue-negotiate`, `lancers-revenue-storefront`, `lancers-revenue-paid`, `lancers-revenue-work-sync`, `lancers-revenue-telegram-report` | Lancersの応募からpaid work・納品・報告までを同期 |
+| 3 | Gig — CrowdWorks | `crowdworks-revenue-application`, `crowdworks-revenue-report` | 適合案件へ応募し、証拠つき結果を報告 |
+| 4 | Writer | `writer-opportunity-discovery`, `writer-opportunity-response`, `writer-money-sync`, `writer-report` | 有償執筆案件を探し、応答し、publisher・支払receiptを記録 |
+| 5 | Affiliate | `affiliate-loop`, `affiliate-source-refresh`, `affiliate-browser` | attribution可能なaffiliate機会を発見・公開 |
+| 6 | Investment | `alpaca-investment` | risk gate付きAlpaca paper trading、注文照合、各passの報告 |
+| 7 | Agent Economy | `agent-economy-loop`とx402 helper | agent revenue、compute費用、owner資金と分離した自己資金化を追跡 |
+| 8 | Job Hunter | `job-search-daily`, `job-search-browser`, `job-search-inbox` | 適合求人の発見・応募と確認・返信mailの照合 |
+| 9 | Fundraiser | `fundraiser` | accelerator、fellowship、grant、投資家受付を発見し条件を満たせば応募 |
+| 10 | Connector | `life-manager-connector-native` | event発見・応募・登録確認・Calendar/Telegram receipt報告 |
+| 11 | Life Manager Cloud | Railway上の`apps/life-manager` | 常時稼働web、Telegram、reminder、schedule、hosted-agent面 |
+| 12 | Mobile / Capafy | `capafy-loop-daily`, `capafy-outcome-monitor`, `capafy-ig-account-manager`ほか | mobile productとaudience-growth workflowの運用 |
+| 13 | Money Printer | Railwayの`life-call`, `money-printer-worker`, `money-printer-symphony` | 公開機会をworkroom、agent実行、人間handoff、verified receiptへ進める |
+
+CFOと報告jobは共通supportであり、14本目のproduct loopではありません。実行IDの正本は
+[`config/loop-registry.json`](config/loop-registry.json)です。
 
 ## 現在構築しているgeneral agent
 
@@ -52,43 +76,23 @@ founder証言ではLife Managerはapproximately $1,000の収益を生み出し�
 
 [Telegram で始める](https://t.me/LifeManagerBotbot?start=lp)、または [Web アプリ](https://aniccaai.com/lm)を開きます。常時稼働のサービスが scheduler・connector・認証付き `/panel` を回し、あなたは Telegram で話しかけ、Telegram に証拠つきで返ってきます。
 
-### 自分で動かす — ローカル（dataは自分の端末に残る）
+### ローカルloopを確認・運用する
 
-Docker が必要です。ローカルスタックは Postgres + object store + API・scheduler・worker で、**クラウドと同じ core** です。
-
-```bash
-git clone https://github.com/Daisuke134/life-manager ~/life-manager && cd ~/life-manager
-./scripts/local-up.sh
-```
-
-これだけです。`deploy/local/.env` が無ければ作り（object store のパスワードは同梱せずその場で生成）、postgres · object store · api · scheduler · worker を起動し、**全サービスが healthy になるまで待ってから**結果を表示します。つまり「起動した」は「リクエストを処理できる」の意味で、コンテナが存在するだけの状態を成功と呼びません。初回はイメージのビルドで数分かかります。
-
-```
-./scripts/local-up.sh status    何が動いているか
-./scripts/local-up.sh logs      ログを追う
-./scripts/local-up.sh down      止める（dataは残る）
-```
-
-macOSでは、launchdで常駐させるrepository loopを明示選択します。cloneした
-だけでprivate providerや外部作用のあるloopを起動しないため、default選択は0件です。
+現在のproduction Mac runtimeはDockerではなく、pushed `main`から作るimmutable releaseを
+`bin/lm-loop`とmacOS `launchd`で直接実行します。state、credential、log、browser profile、receiptは
+checkoutとreleaseの外に置きます。
 
 ```bash
-./scripts/local-up.sh loops-init
-./scripts/local-up.sh loops-up <loop-id> [<loop-id> ...]
-./scripts/local-up.sh loops-status
-./scripts/local-up.sh loops-down
+git clone https://github.com/Daisuke134/life-manager ~/life-manager
+cd ~/life-manager
+jq -r '.loops | keys[]' config/loop-registry.json
+./bin/lm-loop status all
+./bin/lm-loop doctor
 ```
 
-`loops-init`はsecret値を追加せず、canonicalなuser-owned credential storeを
-作成または検証します。選択は`~/.config/life-manager/loops`へ保存します。model利用または外部作用の
-あるloopは、ユーザー自身の`~/.local/share/anicca/credentials.json`が存在し、
-親directoryがmode `700`、fileがmode `600`でなければinstall前に停止します。
-`loops-status`は`lm-loop status`と同じlaunchd、release、provider、blocker、
-terminal result、effectを表示し、process稼働をbusiness成功として扱いません。
-
-API は `http://localhost:18788`、worker の health は `:18790`（どちらも `deploy/local/.env` で変更可）。data はローカルの Postgres と object store に置かれ、**これを動かすだけでは何もどこにも送信されません**。
-
-**secret は参照であって直書きではありません。** job は `secret://…` の参照だけを持ち、実体はローカルの keychain か tenant vault から解決します。形式は [`apps/life-manager/.env.example`](apps/life-manager/.env.example) を参照（`TELEGRAM_BOT_TOKEN_REF` / `POSTIZ_ACCESS_TOKEN_REF` / `REVENUECAT_API_KEY_REF` など）。ローカル個体と話すには、自分の Telegram bot token をこの形で繋ぎます。
+cloneだけでは外部作用のあるloopを自動installしません。credentialとhost capabilityを設定後、operatorが
+immutable releaseから選択したloopをapply/startします。repoには実験的なDocker Compose profileもありますが、
+現在のMac production loopにも販売中cloud productにも使われておらず、canonical quick startではありません。
 
 ### 自己資金化はFinancial Organの一部
 
@@ -99,35 +103,33 @@ provider revenueを`banked`へ到達させてから`compute_paid`へ使い、own
 
 ## 1つの製品、2つの実行面
 
-Life Manager は1つの製品であり、正本リポジトリもここ1つです。「ローカル Life Manager」と Web アプリは別製品・別リポジトリではなく、同じcore、能力、状態契約を使う2つの実行面です。
+Life Manager は1つの製品であり、正本リポジトリもここ1つです。「ローカル Life Manager」と Web アプリは別製品・別リポジトリではなく、同じsource repositoryと製品contractから作る2つの実行面です。
 
 ```text
-                              LIFE MANAGER
-                       1製品 · 1リポジトリ
-                                 │
-             ┌───────────────────┴───────────────────┐
-             │                                       │
-      ローカル / 自己ホスト                    Web / クラウド
-   deploy/local/compose.yaml                   apps/landing
-             │                              オンボーディングUI
-             ▼                                       │
-      apps/life-manager                               ▼
-   api · scheduler · worker              apps/life-manager
-             │                          Telegram · 音声通話
-             ▼                          scheduler · /panel
-   postgres · object store                          │
-   （あなたの端末）                                   ▼
-             │                               ユーザー別サービス
-             └───────────────────┬───────────────────┘
-                                 │
-                    共通の経済・基盤レイヤー
-      runtime/loop · runtime/compute-proxy · services/x402-*
+life-manager/                         # 1つだけのGitHub repository
+├── apps/
+│   ├── life-manager/                # cloud web・Telegram・scheduler・worker core
+│   └── landing/                     # Netlify frontend
+├── skills/                          # product capability・provider adapter
+├── runtime/loop/                    # lifecycle・dispatch・runtime event
+├── services/                        # 独立deployするsupport service
+├── bin/                             # lm-loopとrepo-owned command
+├── config/loop-registry.json        # implementation/support job registry
+├── scripts/                         # onboarding・運用script
+├── docs/                            # spec・runbook
+└── deploy/local/compose.yaml        # 非稼働の実験profile。canonicalではない
+
+ローカルproduction                    cloud production
+main由来immutable release             Netlify frontend
+└── lm-loop-run                      Railway Nixpacks/Railpack
+    └── launchd                      └── life-call・worker roles
+        └── repo内entrypoint         managed state・hosted browser
 ```
 
 | パス | 役割 | 誤解しないための境界 |
 |---|---|---|
-| `apps/life-manager/` | 製品の core: Telegram、schedule、通話、認証付き `/panel`、課金、ユーザーworkflow。ローカル（compose）でもクラウド（Railway）でも同じコードが動く | これ単体がリポジトリ全体ではない |
-| `deploy/local/` | ローカル実行面 — compose スタック、port、ローカル専用の認証情報 | 別の「ローカル版」製品ではない |
+| `apps/life-manager/` | cloud製品のcore: Telegram、schedule、通話、認証付き`/panel`、課金、ユーザーworkflow | これ単体がリポジトリ全体ではない |
+| `deploy/local/` | 現在非稼働の実験的Compose profile | 現在のlocal productionでもcanonical self-host入口でもない |
 | `apps/landing/` | Life Manager用オンボーディング Web UI の必要部分 | 旧Anicca複数製品サイト全体ではない |
 | `runtime/loop/`, `install.sh`, `start-local.sh` | Life ManagerのFinancial Organを支えるeconomic runtime → [`docs/agent-economy.ja.md`](docs/agent-economy.ja.md) | 製品全体でも通常のuser入口でもない |
 | `runtime/compute-proxy/`, `services/` | 同じFinancial capabilityのcompute支払い、x402 settlement、paid API 基盤 | ユーザー向けアプリではない |
@@ -143,8 +145,9 @@ Life Manager は1つの製品であり、正本リポジトリもここ1つで�
 
 | 能力 | 状態 |
 |---|---|
-| **ローカルスタック**（`deploy/local/compose.yaml`）— postgres · object store · api · scheduler · worker | **動く** — 5サービスが healthy で立ち上がり、そのまま維持される（開発機で数日連続稼働を実測） |
-| **クラウドサービス**（`apps/life-manager`、Railway で `node server.js`） | **デプロイ済** — scheduler と API はローカルと同じコード |
+| **Mac production loops** | **稼働中** — immutable release内の`lm-loop-run`を`launchd`が直接起動。Docker/Colima daemonは稼働していない |
+| **クラウドサービス**（Netlify + Railway `life-call`/worker） | **デプロイ済** — `apps/life-manager`をNixpacks/Railpackでbuild。repoのDockerfile/Composeは使わない |
+| **実験的Compose profile**（`deploy/local/compose.yaml`） | sourceには存在するが**現在非稼働**。canonical runtimeではない |
 | **証拠つき Telegram 報告** | **稼働中** — 全報告が message id を伴い、送信に失敗したものを「送信済み」として記録しない |
 | **Calendar・connector・カバレッジ**（`lib/calendar-*`, `lib/connector-*`） | **実装済、カバレッジは移動中** — connector ごとの状態と欠落はここで主張せず実行 spec で追跡 |
 | **Financial organ**（総資産・収支・payout・台帳） | **部分的** — 台帳と payout の job は存在する。現在の健康状態は実行 spec で追跡。ここに書かれた内容は投資の保証ではない |
