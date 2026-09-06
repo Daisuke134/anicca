@@ -32,3 +32,11 @@ def test_installed_skill_matches_hyphenated_capability_tokens(tmp_path, monkeypa
 
     assert resolved[0]["skill"] == "google-login"
     assert resolved[0]["skill_path"] == "skills/google-login/SKILL.md"
+
+
+def test_browser_skill_advertises_tiktok_login_readback():
+    login = resource_resolver.installed_skill_refs("tiktok.com", "login")
+    message = resource_resolver.installed_skill_refs("tiktok.com", "message")
+
+    assert any(row["skill"] == "browser-foundation" for row in login)
+    assert any(row["skill"] == "browser-foundation" for row in message)

@@ -236,8 +236,21 @@ completion remain separate.
      mechanical Paid failure. An unauthenticated wait is accepted only when the result remains
      blocked with both required outcomes false and carries a provider-, URL- and readback-bound
      authentication/login recovery receipt; an unauthenticated generic blocker still fails closed.
-     Paid regression tests pass on latest merged main (110). This closes the production `18180857` failure where
-     TikTok exposed neither an authenticated `@anicca.jp` owner view nor an available login form.
+     Paid regression tests pass on latest merged main (110). This closes the result-mapping defect in the
+     production `18180857` cycle, whose owner had reported no authenticated identity or available login form;
+     the separate readback false negative behind that report is covered next.
+   - [x] Replace project-local TikTok authentication guessing with one shared, owner-scoped official
+     identity readback. Production evidence showed the registered `tiktok-anicca-jp` profile rendering
+     signed-in navigation and `@anicca.jp`, while the project script rejected it solely because the
+     localized `プロフィールを編集` body string was absent. `skills/browser/scripts/tiktok_identity_readback.py`
+     now requires the official navigation's own-profile href to match the expected handle and requires
+     login controls to be absent; merely visiting a public `/@handle` page never authenticates a result,
+     and a different signed-in handle fails closed. It creates and closes only a target claimed through
+     the shared CDP ownership ledger. Browser skill discovery now resolves both TikTok `login` and
+     `message` to this shared contract and the registered `tiktok-anicca-jp` session. Focused CDP,
+     identity and resolver regressions pass (14). This is source-only until the complete immutable-main
+     release gate below; the currently loaded Paid owner remains on release `363b78ce` and is not stopped
+     or restarted.
 3. [ ] Integrate the Apply owner's focused public-main commit and require complete eligible-set
    accounting, every authorized application submitted, exact official readback and replay-zero.
 4. [ ] Integrate the Storefront owner's focused public-main commit and require one verified authorized

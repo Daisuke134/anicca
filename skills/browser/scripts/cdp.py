@@ -45,6 +45,31 @@ def _browser_call(method: str, params: dict) -> dict:
         ws.close()
 
 
+def new_target(url: str = "about:blank", owner: str | None = None) -> str:
+    """Create one page and bind its lifecycle to the declared owner."""
+    owner = target_ownership.require_owner(owner)
+    target_id = _browser_call("Target.createTarget", {"url": url})["targetId"]
+    try:
+        target_ownership.claim_target(
+            target_id,
+            owner,
+            max_targets=int(os.environ.get("CLOAK_BROWSER_MAX_TABS_PER_OWNER", "1")),
+        )
+    except Exception:
+        _browser_call("Target.closeTarget", {"targetId": target_id})
+        raise
+    return target_id
+
+
+def close_target(target_id: str, owner: str | None = None) -> None:
+    """Close only a page proven to belong to the declared owner."""
+    owner = target_ownership.require_owner(owner)
+    if not target_ownership.owns_target(target_id, owner):
+        raise PermissionError(f"target {target_id} is not owned by {owner}")
+    _browser_call("Target.closeTarget", {"targetId": target_id})
+    target_ownership.release_target(target_id, owner)
+
+
 def _page(tid: str):
     return create_connection(
         f"ws://{HOST}:{PORT}/devtools/page/{tid}", timeout=30, max_size=None, suppress_origin=True
@@ -144,22 +169,10 @@ def main(argv: list[str]) -> int:
         raise SystemExit("usage: cdp.py new|nav|eval|screenshot|clickxy|insert|key|setfile|close ...")
     command, *args = argv
     if command == "new":
-        owner = target_ownership.require_owner(
-            args[1] if len(args) > 1 else os.environ.get("CLOAK_BROWSER_OWNER")
-        )
-        target_id = _browser_call(
-            "Target.createTarget", {"url": args[0] if args else "about:blank"}
-        )["targetId"]
-        try:
-            target_ownership.claim_target(
-                target_id,
-                owner,
-                max_targets=int(os.environ.get("CLOAK_BROWSER_MAX_TABS_PER_OWNER", "1")),
-            )
-        except Exception:
-            _browser_call("Target.closeTarget", {"targetId": target_id})
-            raise
-        print(target_id)
+        print(new_target(
+            args[0] if args else "about:blank",
+            args[1] if len(args) > 1 else os.environ.get("CLOAK_BROWSER_OWNER"),
+        ))
     elif command == "nav":
         navigate(args[0], args[1]); print("OK")
     elif command == "eval":
@@ -176,13 +189,9 @@ def main(argv: list[str]) -> int:
     elif command == "setfile":
         print(json.dumps(set_file(args[0], args[1], args[2], int(args[3]) if len(args) > 3 else 0)))
     elif command == "close":
-        owner = target_ownership.require_owner(
-            args[1] if len(args) > 1 else os.environ.get("CLOAK_BROWSER_OWNER")
+        close_target(
+            args[0], args[1] if len(args) > 1 else os.environ.get("CLOAK_BROWSER_OWNER")
         )
-        if not target_ownership.owns_target(args[0], owner):
-            raise PermissionError(f"target {args[0]} is not owned by {owner}")
-        _browser_call("Target.closeTarget", {"targetId": args[0]})
-        target_ownership.release_target(args[0], owner)
         print("CLOSED")
     else:
         raise SystemExit(f"unknown command: {command}")
