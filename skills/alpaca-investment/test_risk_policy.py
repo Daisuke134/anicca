@@ -27,8 +27,8 @@ def risk(**changes):
 
 
 class FixedRiskPolicyTest(unittest.TestCase):
-    def _provider_snapshot(self):
-        clock = {"is_open": True, "timestamp": "2026-09-06T13:59:50Z"}
+    def _provider_snapshot(self, timestamp="2026-09-06T13:59:50Z"):
+        clock = {"is_open": True, "timestamp": timestamp}
         with patch.object(alpaca_cli, "_context", return_value={}), patch.object(
             alpaca_cli, "_run", side_effect=[
                 {"cash": "99980.01", "equity": "99980.01", "last_equity": "100000.00"},
@@ -48,6 +48,10 @@ class FixedRiskPolicyTest(unittest.TestCase):
         self.assertEqual(snapshot["positions"], 1)
         self.assertEqual(snapshot["risk"], risk())
         self.assertEqual(allocator.build_candidates(snapshot)[0]["max_loss_usd"], 10.0)
+
+    def test_provider_nanoseconds_and_utc_offset_are_valid_risk_time(self):
+        snapshot = self._provider_snapshot("2026-09-06T09:59:50.123456789-04:00")
+        self.assertTrue(evaluate_entry(snapshot["risk"], "10.00", now=NOW)["approved"])
 
     def test_exact_owner_caps_allow_only_below_or_at_limits(self):
         result = evaluate_entry(risk(), "10.00", now=NOW)

@@ -7,11 +7,13 @@ import os
 import re
 import stat
 import subprocess
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
+
+from risk_policy import parse_instant
 
 
 CLI_VERSION = "0.0.14"
@@ -292,7 +294,7 @@ def read_allocator_snapshot(
         last_equity = Decimal(str(account["last_equity"]))
         allocated = sum((abs(Decimal(str(row["market_value"]))) for row in positions), Decimal("0"))
         unrealized = sum((Decimal(str(row["unrealized_pl"])) for row in positions), Decimal("0"))
-        observed = datetime.fromisoformat(str(clock["timestamp"]).replace("Z", "+00:00"))
+        observed = parse_instant(clock["timestamp"])
         values = (equity, last_equity, allocated, unrealized)
         if observed.tzinfo is None or any(not value.is_finite() for value in values):
             raise ValueError
