@@ -241,6 +241,11 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    Coconala cookie from its unsuccessful login attempt. The pre-diagnosis mode-0600 backup remains at
    `~/.cloak/vault/gig-daily-driver/auth-state.1788710549.json`. It has not been restored because the
    vault is a concurrently shared auth resource and requires owner coordination before overwrite.
+   A value-free recheck proves that backup contains exactly one unexpired `.coconala.com`
+   `_coconala_session` cookie with Secure and HttpOnly set, while the current vault contains none.
+   The concurrent Apply parent PID `38734` and its current coverage child were observed live, so Paid
+   did not stop Apply, overwrite the vault, restart the browser, or claim that process liveness was an
+   acceptance terminal.
    While auth remains gated, the shared aggregate stopped collapsing every zero-effect room into
    generic `noop`: it now preserves `completed`, `awaiting_buyer`, `reserved_for_owner` and
    `satisfied_noop`, and reports provider-neutral `observed`, `actionable`, `readback`, `failed` and
