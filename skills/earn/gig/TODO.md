@@ -156,7 +156,12 @@ P0 first.
 
 Current audited state: `PANIC-1` is complete and `PANIC-2` is the first unfinished atom. The source
 contains most ownership/admission/retention bounds, but its immutable-release sustained-live gate is
-still open. The Mac still reports macOS `15.6` build `24G84`, so `PANIC-3` and its update-dependent
+still open. The retired duplicate Job Search browser is now officially absent and `lm-loop doctor`
+is green; an idle-only full apply updated 135 owners and skipped all 37 running owners without a
+browser restart. The remaining live gap is exact: Gig `:9223` and Lancers `:9227` still run their
+old release without the new renderer/process-group bounds and require an authorized controlled
+restart or natural terminal before sustained readback can close PANIC-2. The Mac still reports
+macOS `15.6` build `24G84`, so `PANIC-3` and its update-dependent
 reboot proof in `PANIC-4` did not happen. `PANIC-5` lacks its accepted pre-login alert, and the latest
 WindowServer watchdog is `2026-09-06`, so the seven-day recurrence gate in `PANIC-6` cannot yet pass.
 

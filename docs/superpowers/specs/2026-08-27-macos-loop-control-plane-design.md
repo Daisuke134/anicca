@@ -187,6 +187,17 @@ completion remain separate.
      also left both ledgers empty and reduced Chromium RSS from 1.21 GiB to 1.06 GiB, but concurrent
      old-release lanes moved total pages 3→5 and renderers 6→9. Four stable unowned legacy pages and
      transient unowned hidden targets remain, so sustained host-wide boundedness is not yet proved.
+     The source-retired Job Search browser has now been removed through the full-registry retirement
+     path: its service, two PIDs and plist are absent, the shared daily-driver PID stayed unchanged,
+     and `lm-loop doctor` is green with 174 entries and zero missing, unmanaged or retired-installed
+     labels. Production exposed that launchd `bootout` can return before `print` reports absence; PR
+     `#4363` adds a bounded five-second absence readback and keeps unknown errors fail-closed. The
+     idle-only full apply from immutable release `6d7e08c636452f314894a98243a2079574568571`
+     changed 135 idle owners and skipped 37 running owners without restarting a browser. Live argv
+     now proves the shared daily-driver has renderer limit 24, but the still-running old-release Gig
+     `:9223` and Lancers `:9227` roots have no renderer-limit/process-group contract. PANIC-2 therefore
+     remains open until those exact owners reach the new immutable release through an authorized
+     controlled restart or a natural terminal, followed by sustained count/ledger readback.
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
