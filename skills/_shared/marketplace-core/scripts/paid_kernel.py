@@ -214,7 +214,14 @@ def run_wake(*, adapter: PaidAdapter, decide: Callable[[dict[str, Any]], Mapping
     workers = max(1, min(max_workers, len(normalized) or 1))
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = [pool.submit(_run_one, adapter, decide, Path(state_root), row) for row in normalized]
-        items = [future.result() for future in futures]
+        items = []
+        for row, future in zip(normalized, futures):
+            try:
+                items.append(future.result())
+            except Exception as error:
+                items.append({"work_id": row["work_id"], "status": "failed",
+                              "reason": type(error).__name__, "effect": 0,
+                              "readback": 0, "failed": 1})
     return {
         "status": "ok",
         "observed": len(items),

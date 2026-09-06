@@ -122,3 +122,22 @@ def test_two_overlapping_wakes_mutate_same_effect_once(tmp_path: Path) -> None:
         ), range(2)))
     assert len(adapter.effects) == 1
     assert sorted(result["effect"] for result in results) == [0, 1]
+
+
+def test_one_failed_decision_does_not_stop_ready_sibling(tmp_path: Path) -> None:
+    adapter = Adapter([observation("bad"), observation("ready")])
+
+    def decide(row: dict) -> dict:
+        if row["work_id"] == "bad":
+            raise RuntimeError("private detail must not enter aggregate")
+        return submit(row)
+
+    result = paid.run_wake(adapter=adapter, decide=decide, state_root=tmp_path)
+    assert result["observed"] == 2
+    assert result["effect"] == 1
+    assert result["readback"] == 1
+    assert result["failed"] == 1
+    assert result["items"][0] == {
+        "work_id": "bad", "status": "failed", "reason": "RuntimeError",
+        "effect": 0, "readback": 0, "failed": 1,
+    }
