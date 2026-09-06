@@ -397,6 +397,18 @@ does not start them and does not reorder anyone's cursor to fit them:
    over a fixed field list and an extra key there fails contract validation instead of helping.
    PASS = one natural wake names which of the two it is, the cause is fixed, and a later natural wake
    submits at least one application with an official readback.
+   **Named, and fixed.** The first natural wake on the recording release reported
+   `application_form_redirected` with `url='https://coconala.com/'` and `title=''`. The empty title
+   is the whole diagnosis: the real top page has one, so the document had not rendered. `_ready`
+   polls `document.readyState`, which is still `complete` for the document being left until
+   `Page.navigate` commits, so the first evaluate read the previous page's location and the offer
+   form was judged redirected against it. Not a session failure, not a markup change, not a removed
+   route -- a missing settling window, the same class another owner fixed for the storefront
+   readback in #4280 the same day.
+   `_settle_on_offer_form` now polls until `location.href` is the offer form and the document has
+   rendered, returning at a bounded deadline so a genuine redirect is still reported -- with the
+   settled page's identity rather than a half-navigated one. Four tests, including the exact
+   production sequence.
 
 10. [x] `APPLY-REPORT-10` Name the marketplace in the submitted-application report. `report_envelope.py`
    excluded `coconala` from the `[Platform][応募完了]` format, so Coconala fell through to a generic
