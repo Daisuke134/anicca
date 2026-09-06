@@ -1,14 +1,15 @@
 # Life Manager Cloud cost・pricing・legacy cleanup design
 
-status: AUDITED — implementation is ordered after the active Cloud shipping checklist
+status: COST TRACK ACTIVE — implemented independently, one atom at a time
 owner: Dais / Life Manager Cloud
 scope: provider cost control, tenant usage metering, Stripe packaging decision, Cloud daily-runtime cleanup
 
 ## 0. Ordering and exclusions
 
-- The active order remains `CLOUD-01` through `CLOUD-08` in
-  `2026-08-28-life-manager-cloud-telegram-product-ux-design.md`. This document does not reorder or
-  block that checklist.
+- The remote Cloud product agent owns `CLOUD-01` through `CLOUD-08` in
+  `2026-08-28-life-manager-cloud-telegram-product-ux-design.md`. This cost track runs independently
+  and does not edit, reorder, or wait for that checklist. If the Cloud agent requests verification,
+  this track may inspect its tests and evidence read-only without taking over its implementation.
 - Do not use ElizaOS, replace the Life Manager runtime, stop Telegram/Calendar/routing, or modify
   local loops and Alpaca worktrees.
 - Do not change Stripe prices before per-tenant production usage is measured. Existing Stripe remains
@@ -111,8 +112,8 @@ Sources:
 
 ## 6. Ordered TODO owned by this track
 
-These atoms begin only after the active `CLOUD-01` through `CLOUD-08` order, unless Dais explicitly
-reorders that SSOT.
+This track owns these atoms in the exact order below while the remote Cloud product agent separately
+owns `CLOUD-01` through `CLOUD-08`. Finish and integrate one cost atom before starting the next.
 
 1. **COST-01 — observe:** add one tenant/provider/feature usage-event contract and dashboard query;
    record success, cache hit, failure class, provider units, and estimated direct cost without secrets.
