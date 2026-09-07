@@ -4090,9 +4090,15 @@ def _hero_font_path() -> Path:
     detail = "storefront_generated_image_font_missing"
     for attempt in range(5):
         try:
+            # The font this renders with is at `/System/Library/Fonts/ヒラギノ角ゴシック W4.ttc`.
+            # `text=True` decodes with the locale's encoding, and launchd sets no LANG, so
+            # under the scheduler that name came back mangled and named a file that does not
+            # exist -- while the identical command in a shell answered correctly in 0.2s.
+            # The bytes fc-match writes are UTF-8; say so rather than letting the environment
+            # decide.
             found = subprocess.run(
                 ["fc-match", "-f", "%{file}", "Hiragino Sans"], capture_output=True,
-                text=True, check=False, timeout=10,
+                encoding="utf-8", errors="strict", check=False, timeout=10,
             )
         except subprocess.SubprocessError:
             if attempt < 4:
