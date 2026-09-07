@@ -75,6 +75,10 @@ class EntryDispatchTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no dispatch command'):
             command_for('lancers-revenue-work-sync', Path('/release'), Path('/home'))
 
+    def test_lancers_negotiate_no_longer_has_a_handwritten_dispatch(self):
+        with self.assertRaisesRegex(ValueError, 'no dispatch command'):
+            command_for('lancers-revenue-negotiate', Path('/release'), Path('/home'))
+
     def test_lancers_browser_has_a_finite_renderer_process_limit(self):
         script = Path(__file__).parents[3] / 'runtime/legacy/lancers-revenue-browser/run.sh'
         self.assertIn('--renderer-process-limit="$renderer_limit"', script.read_text())
