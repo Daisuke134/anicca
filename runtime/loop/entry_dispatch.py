@@ -68,8 +68,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "/opt/homebrew/bin/node",
             str(root / "apps/life-manager/scripts/money-printer-symphony-bridge.js"),
         ],
-        "marketing-weekly-review": [str(root / "skills/earn/marketing-engine/bin/lm"),
-                                    "intel", "gap", "--telegram"],
         "hf-gig-paid-direct": [
             *memory_guard,
             python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),

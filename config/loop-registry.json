@@ -2217,6 +2217,7 @@
       "state_root": "~/.local/state/life-manager/marketing-score-daily"
     },
     "marketing-weekly-review": {
+      "adapter": "exec",
       "cadence": {
         "calendar_interval": {
           "Hour": 21,
@@ -2230,7 +2231,8 @@
       },
       "domain": "growth",
       "effect_class": "message",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "command": [],
+      "entrypoint": "skills/earn/marketing-engine/intel/weekly-review-owner",
       "label": "ai.anicca.marketing-weekly-review",
       "log_root": "~/.local/state/life-manager/marketing-weekly-review/logs",
       "provider_route": "shared-agent-runner",

@@ -27,6 +27,10 @@ class EntryDispatchTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no dispatch command'):
             command_for('marketing-owner-events', Path('/release'), Path('/home'))
 
+    def test_marketing_weekly_review_no_longer_has_a_handwritten_dispatch(self):
+        with self.assertRaisesRegex(ValueError, 'no dispatch command'):
+            command_for('marketing-weekly-review', Path('/release'), Path('/home'))
+
     def test_marketing_score_daily_no_longer_has_a_handwritten_dispatch(self):
         with self.assertRaisesRegex(ValueError, 'no dispatch command'):
             command_for('marketing-score-daily', Path('/release'), Path('/home'))

@@ -361,6 +361,16 @@ class MacosLoopRegistryTest(unittest.TestCase):
             "skills/earn/marketing-engine/report/events-owner",
         )
 
+    def test_marketing_weekly_review_uses_repo_owned_exec_adapter(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["marketing-weekly-review"]
+        self.assertEqual(row["adapter"], "exec")
+        self.assertEqual(row["command"], [])
+        self.assertEqual(
+            row["entrypoint"],
+            "skills/earn/marketing-engine/intel/weekly-review-owner",
+        )
+
     def test_marketing_score_daily_uses_direct_python_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["marketing-score-daily"]
