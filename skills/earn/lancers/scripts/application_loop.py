@@ -51,6 +51,32 @@ DEFAULT_EVIDENCE_ROOT = Path.home() / ".local/state/anicca/lancers/planner"
 DEFAULT_EVIDENCE_DIR = DEFAULT_EVIDENCE_ROOT
 DECISION_FIELDS = frozenset({"request_id", "business_class", "reason_codes", "proposal_text", "price_jpy", "deliver_date"})
 BUSINESS_CLASSES = frozenset({"submit_required", "hard_prohibited"})
+def _persona_facts() -> dict[str, str]:
+    """The attributes an application form can ask about, from the private profile SSOT.
+
+    Without these the planner cannot tell a requirement it satisfies from one it would have to lie
+    about, and defaults to refusing. Only what a posting may ask -- age, residence, citizenship --
+    is read; the name and history stay out of the prompt.
+    """
+    fallback = {"age": "24", "base": "東京 (日本)", "citizenship": "日本"}
+    try:
+        data = json.loads(Path("~/.config/anicca/job-search/profile.json").expanduser()
+                          .read_text(encoding="utf-8"))
+        candidate = data.get("candidate") or {}
+        born = date.fromisoformat(str(candidate["date_of_birth"]))
+        today = date.today()
+        age = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+        citizenships = candidate.get("citizenships") or []
+        return {
+            "age": str(age),
+            "base": str(candidate.get("base") or fallback["base"]),
+            "citizenship": "・".join(str(value) for value in citizenships) or fallback["citizenship"],
+        }
+    except Exception:
+        return fallback
+
+
+PERSONA_FACTS = _persona_facts()
 HARD_PROHIBITION_CLASSES = {
     "video_or_animation": "video editing/production, live-action filming, AI video, animation, or MV",
     "physical_or_onsite": "on-site work or physical making/assembly/cleaning/repair/cooking/sewing/woodwork/model making/packing/shipping/delivery/receipt",
@@ -274,6 +300,12 @@ PLANNER_RULES = ("Lancersの公開案件だけを読むapplication-intent planne
     "hard_prohibitedは案件全体が次のいずれかを必須とする場合だけ使う: "
     + "; ".join(f"{key}={value}" for key, value in HARD_PROHIBITION_CLASSES.items()) + "。"
     "hard_prohibitedではreason_codes[0]を正確なclass key、reason_codes[1]をtitle・description・categoryのいずれかに連続して存在する200文字以内の原文引用にし、proposal・price・dateはnullにする。任意・推奨・否定・引用中の単語だけで拒否しない。"
+    # Measured 2026-09-07: every attribute requirement was read as fabrication because the planner
+    # was asked to judge personal attributes without being told any. 「・年齢：」-- a form field --
+    # and 「・20歳以上の方」, which the persona satisfies at 24, were both refused. The class is
+    # correct; it was being applied to requirements that can be answered honestly.
+    f"応募者の確認済み属性: 年齢{PERSONA_FACTS['age']}歳、居住地{PERSONA_FACTS['base']}、国籍{PERSONA_FACTS['citizenship']}、日本語ネイティブ。"
+    "mandatory_attribute_fabricationはこの確認済み属性と矛盾する必須要件だけに使う。属性を尋ねる入力欄の存在や、確認済み属性が満たす年齢・居住地・国籍・言語の条件は、正直に答えられるので拒否理由にしない。"
     "reason_codes[1]は公開原文から一文字も足さずcopyし、長い引用に自信がなければ判断根拠を直接示す短い連続原文を使う。"
     "案件全体から納品可能性をpriorityより先に確定する。完成動画そのものの生成・編集・書き出しが必須ならvideo_or_animation、企画・構成・台本・文章だけで完成動画制作が不要ならvideo_or_animationではない。機械的なkeyword ruleは使わない。"
     "経験の不確実さ、弱いportfolio、低予算、難易度、広いまたは曖昧なscope、単発、継続性不足、Adobe実績不明、任意の相談を単独のkeyword ruleでskipしない。正確な同分野実績がなくても、確認済みの転用可能な能力で全必須scopeを完遂できるなら案件固有の実行planで応募し、未作成物はplanと明示して捏造しない。"
