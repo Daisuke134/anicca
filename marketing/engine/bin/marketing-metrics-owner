@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+STATE_ROOT="${LIFE_MANAGER_STATE_ROOT:?LIFE_MANAGER_STATE_ROOT is required}"
+MARKETING="${MARKETING_METRICS_EXECUTABLE:-$ROOT/marketing/engine/bin/marketing}"
+
+if [[ ! -x "$MARKETING" ]]; then
+  echo "marketing-metrics-owner: marketing executable is unavailable: $MARKETING" >&2
+  exit 69
+fi
+
+exec "$MARKETING" observe --root "$STATE_ROOT" "$@"

@@ -61,8 +61,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
         ]
     writer = root / "skills/writer-agent/scripts"
     writer_state = home / ".local/state/life-manager/writer"
-    lancers = root / "skills/earn/lancers/scripts"
-    lancers_state = home / ".local/state/anicca/lancers"
     python = sys.executable
     memory_guard = [python, str(root / "runtime/host/memory_admission.py")]
     fixed = {
@@ -70,8 +68,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "/opt/homebrew/bin/node",
             str(root / "apps/life-manager/scripts/money-printer-symphony-bridge.js"),
         ],
-        "marketing-metrics": [str(root / "marketing/engine/bin/marketing"), "observe",
-                              "--root", str(home / "Library/Application Support/AniccaMarketing")],
         "marketing-owner-events": [python, str(root / "skills/earn/marketing-engine/report/truth_pipeline.py"),
                                    "--repo-root", str(root), "--home", str(home)],
         "marketing-weekly-review": [str(root / "skills/earn/marketing-engine/bin/lm"),
