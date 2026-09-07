@@ -25,11 +25,18 @@ if str(SCRIPTS) not in sys.path:
 import storefront_direct as direct  # noqa: E402
 
 SOURCE = (SCRIPTS / "storefront_direct.py").read_text(encoding="utf-8")
+# `_recover_prepared_create_contract`'s body moved to
+# skills/_shared/marketplace-core/scripts/storefront_kernel.py (as `recover_prepared_create_contract`)
+# so a second marketplace consumer can reuse the recovery logic; storefront_direct.py now only
+# keeps a thin alias. The guard conditions this file pins therefore live in the kernel's source.
+KERNEL_SOURCE = (
+    SCRIPTS.parent.parent.parent / "_shared" / "marketplace-core" / "scripts" / "storefront_kernel.py"
+).read_text(encoding="utf-8")
 
 
 def _recovery_block() -> str:
-    start = SOURCE.index("def _recover_prepared_create_contract")
-    return SOURCE[start:start + 2200]
+    start = KERNEL_SOURCE.index("def recover_prepared_create_contract")
+    return KERNEL_SOURCE[start:start + 2200]
 
 
 def test_both_stages_can_be_recovered():
