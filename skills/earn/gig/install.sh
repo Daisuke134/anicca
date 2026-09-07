@@ -125,7 +125,6 @@ if [ "${1:-}" = "stop" ] || [ "${1:-}" = "uninstall" ]; then
   labels=(
     ai.anicca.hf-gig-browser ai.anicca.hf-gig-apply-direct
     ai.anicca.hf-gig-reply-detector ai.anicca.hf-gig-storefront-direct
-    ai.anicca.hf-gig-paid-direct
   )
   domain="gui/$(id -u)"
   for label in "${labels[@]}"; do
@@ -134,7 +133,7 @@ if [ "${1:-}" = "stop" ] || [ "${1:-}" = "uninstall" ]; then
       rm -f "$HOME/Library/LaunchAgents/$label.plist"
     fi
   done
-  printf '{"status":"%s","jobs":5,"private_state":"preserved"}\n' "$1"
+  printf '{"status":"%s","jobs":4,"private_state":"preserved"}\n' "$1"
   exit 0
 fi
 
