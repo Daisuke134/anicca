@@ -15,10 +15,21 @@ Baseline: focused Life Manager suite 175/175 PASS.
 5. [x] **CLOUD-07 Stripe test mode** — current checkout/payment link、Railway test webhook、trialing、active、past_due、cancel、duplicate、out-of-order、`lm_users` entitlementをTEST MODE / TEST CLOCKだけでlive検証済み。real charge 0、Stripeだけがpaid authority。fixture customer/Test Clock/Supabase user/event ledgerは対象限定で削除済み。
 6. [x] **CLOUD-08 public surface** — `anicca-products`の`/lm`と`/life-manager`をDAILY機能の真実なcopyへ更新済み。QR/deep link、本人Calendar consent、Telegram通知、phone/call optional、3日trial、Cloud userのMac不要、privacy/support/disconnectを本番でreadback済み。旧Web signup・電話必須・全予定2回電話・Maps限定・OpenClaw・whole-life・固定月額claimは0件。
 7. [x] **Full production acceptance** — physicalのGoogle Travel往復、Transit経路、Telegram provider receiptとreplay追加送信0、locationless/phone off/on、複数候補の独立処理を検証済み。online/locationlessはroute call 0、変更時はevent-versionでroute cacheを無効化し、cancelledは実行対象外。生成helperを含むcontrolled eventsはGoogle `cancelled`までreadback済み。exact deployed SHA/health、restart後永続化、Mac依存0、tenant A/B分離も記録済み。
-8. [ ] **Google Cloud cost incident closure** — billing accountのJuly/Augustをproject/service/SKU/dayで確定し、September MTD/forecast/current daily burnをreadbackする。Gemini、Search grounding、Live API、Maps/Routes/Geocoding、Cloud Run/compute/storage/network、abandoned project、retry/schedule trafficをrepo/runtimeと対応づける。ROOT_CAUSE、CURRENT_DAILY_BURN、SAFE_FIX、POST_FIX_EXPECTED_COSTを出し、production DAILY機能を壊さない安全な削減だけを適用する。COST-03 PR #4300はこの項目まで未mergeで保持する。
-9. [ ] **FRIEND-BETA READY gate** — 上記を全て閉じた後だけ、actual public URL、Telegram link、QR、friend DM、5分onboarding、test checklist、成功条件を一つのpackageとして渡す。最後に残る作業をreal friend UATだけにする。
+8. [x] **Google Cloud cost incident closure** — July/Augustをproject/service/SKU/dayで確定し、September MTD/forecast/current burnをreadback済み。原因は単一Railway scheduler内のMaps有料失敗/retryとconsumer間route重複で、abandoned Cloud runtimeではない。COST-01/02/03、¥35,000 budget alertsを本番反映し、DAILY機能を維持した。
+9. [x] **FRIEND-BETA READY gate** — engineering/operator/cost作業を閉じ、actual public URL、Telegram link/QR、friend DM、5分onboarding、test checklist、成功条件を最終packageとして渡せる状態。残りはreal friend UATだけ。
 
-Current atom: **8. Google Cloud cost incident closure**.
+Current atom: **FRIEND-BETA READY — real friend UAT only**.
+
+### Google Cloud cost incident closeout
+
+- Invoice truth: July subtotal ¥28,568 / total ¥31,425; August subtotal ¥78,306 / total ¥86,137. Subtotal increase is ¥49,738、+174.1%、2.741x.
+- Project truth: `anicca-461216` ¥23,009→¥64,853 (+¥41,844; 82.82% of August); `gen-lang-client-0072731773` ¥5,550→¥13,444 (+¥7,894; 17.17%); the remaining charged project stayed ¥10. No abandoned project produced material August spend.
+- Service/SKU truth: Geocoding ¥17,885→¥40,095 (+¥22,210; 51.20% of August), Directions ¥0→¥9,549 (+¥9,549; 12.19%), Routes Pro ¥727→¥7,924 (+¥7,197; 10.12%), Gemini API ¥5,550→¥13,444 (+¥7,894; 17.17%), Places ¥4,397→¥5,054 (+¥657; 6.45%), Vertex AI ¥0→¥2,227 (+¥2,227; 2.84%). Cloud Run/Storage were ¥0.
+- Exact Gemini SKU readback: August 2.5 Flash short-text output ¥8,933 and input ¥3,973 dominate. Gemini Live Bidi SKUs total about ¥12 in August versus ¥70 in July, so Live is not the increase. Google Search grounding query SKUs were ¥0 (186 August queries); it is not the invoice driver. Vertex AI is separate Veo generation (¥1,310 + ¥917), not Life Manager DAILY routing.
+- Daily evidence: July Maps spend begins mid-month and peaks around ¥2.7k/day; August Geocoding reaches ¥3,141/day, Directions ¥1,501/day, Gemini ¥2,420/day. Monitoring attributed about 21,524 Directions 4xx and 22,751 Geocoding 4xx to the `lateness-directions` credential. The single Railway scheduler owns the 60-second reminder and 30-minute Travel paths; Cloud Run/Scheduler duplicate owners cost ¥0.
+- September readback: current provider-posted MTD is ¥8,034.22 through the latest partial day; observed daily totals are approximately ¥409、¥430、¥685、¥3,811、¥1,876、then ¥822 partial. Google forecast is ¥11,065. Because billing posts with delay, the post-fix invoice slope is not yet a full-day causal proof; runtime readback already shows deterministic Maps failures add zero provider calls during the 30-minute TTL.
+- Safe fixes: COST-01 usage facts, COST-02 durable success/negative cache, and COST-03 one event-version route fact are all production. PR #4419 merged as `d69b21ee5773f4629a15d226008be7095d68cf02`; Railway `/health` serves the same build. Focused current-main route/travel/reminder/wake verification is 129/129 PASS.
+- Guardrails: the ¥35,000 monthly budget sends 50/75/90/100% alerts but does not stop spend. Maps effective quota remains 3,000/min with no daily cap; it was not blindly lowered because that can disable required friend routing. Gemini keys are API-restricted to Generative Language, but not IP/referrer-restricted; Railway has no stable source IP, so application restriction requires an auth-key migration rather than a blind console toggle.
 
 ### Full production acceptance closeout
 
