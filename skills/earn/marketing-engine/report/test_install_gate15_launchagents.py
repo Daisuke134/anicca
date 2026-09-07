@@ -17,7 +17,6 @@ import install_gate15_launchagents as installer
 
 
 LABELS = {
-    "events": "ai.anicca.marketing-owner-events",
     "daily": "ai.anicca.marketing-owner-daily",
     "weekly": "ai.anicca.marketing-owner-weekly",
 }
@@ -29,35 +28,18 @@ def _plist(payload: bytes) -> dict:
 
 
 class BuildPlistsTests(unittest.TestCase):
-    def test_returns_exactly_three_owner_report_jobs(self):
+    def test_returns_exactly_two_remaining_owner_report_jobs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "repo"
             home = pathlib.Path(tmp) / "home"
             plists = installer.build_plists(root, home)
 
         self.assertEqual(set(plists), set(LABELS.values()))
-        self.assertEqual(len(plists), 3)
+        self.assertEqual(len(plists), 2)
         self.assertEqual(
             {plistlib.loads(payload)["Label"] for payload in plists.values()},
             set(LABELS.values()),
         )
-
-    def test_event_job_runs_serialized_truth_pipeline_hourly(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "repo"
-            home = pathlib.Path(tmp) / "home"
-            job = _plist(installer.build_plists(root, home)[LABELS["events"]])
-
-        self.assertEqual(job["Label"], LABELS["events"])
-        self.assertEqual(job["StartInterval"], 3600)
-        self.assertNotIn("StartCalendarInterval", job)
-        self.assertEqual(job["WorkingDirectory"], str(root))
-        command = " ".join(job["ProgramArguments"])
-        pipeline = root / "skills/earn/marketing-engine/report/truth_pipeline.py"
-        self.assertEqual(job["ProgramArguments"][1], str(pipeline))
-        self.assertIn(str(pipeline), command)
-        self.assertNotIn("/bin/sh", command)
-        self.assertNotIn("apify", command.lower())
 
     def test_daily_and_weekly_calendar_intervals_and_arguments(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -121,7 +103,7 @@ class PlanTests(unittest.TestCase):
 
             no_change = launch_dir / f"{LABELS['daily']}.plist"
             no_change.write_bytes(targets[LABELS["daily"]])
-            update = launch_dir / f"{LABELS['events']}.plist"
+            update = launch_dir / f"{LABELS['weekly']}.plist"
             old = b"legacy bytes that must remain untouched"
             update.write_bytes(old)
 
@@ -151,7 +133,7 @@ class PlanTests(unittest.TestCase):
                 sorted(
                     [
                         f"{LABELS['daily']}.plist",
-                        f"{LABELS['events']}.plist",
+                        f"{LABELS['weekly']}.plist",
                     ]
                 ),
             )
@@ -164,9 +146,8 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(
                 {row["label"]: row["status"] for row in plan["rows"]},
                 {
-                    LABELS["events"]: "update",
                     LABELS["daily"]: "no-change",
-                    LABELS["weekly"]: "create",
+                    LABELS["weekly"]: "update",
                 },
             )
 
@@ -230,7 +211,7 @@ class ApplyTests(unittest.TestCase):
                         installer._readback_matches(_matching_readback(root, home, label), payload, label)
                     )
 
-    def test_apply_writes_atomically_and_controls_only_three_owner_labels(self):
+    def test_apply_writes_atomically_and_controls_only_two_owner_labels(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "repo"
             home = pathlib.Path(tmp) / "home"
@@ -245,7 +226,7 @@ class ApplyTests(unittest.TestCase):
                 rows = installer.apply(root, home, launch_dir)
 
             self.assertEqual([row["label"] for row in rows], list(LABELS.values()))
-            self.assertEqual(atomic_write.call_count, 3)
+            self.assertEqual(atomic_write.call_count, 2)
             self.assertEqual(
                 {
                     path.name.removesuffix(".plist")
@@ -300,15 +281,6 @@ class ApplyTests(unittest.TestCase):
         with mock.patch.object(installer, "_run_launchctl", side_effect=run):
             with self.assertRaisesRegex(RuntimeError, "readback mismatch"):
                 installer.apply(root, home, launch_dir)
-
-    def test_event_interval_wrong_value_is_rejected_even_if_3600_appears_elsewhere(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root, home, launch_dir = (pathlib.Path(tmp) / name for name in ("repo", "home", "LaunchAgents"))
-            label = LABELS["events"]
-            readback = _matching_readback(root, home, label).replace(
-                "run interval = 3600 seconds", "run interval = 120 seconds"
-            ) + "\nUnrelated = 3600"
-            self._assert_schedule_readback_rejected(root, home, launch_dir, label, readback)
 
     def test_daily_hour_wrong_value_is_rejected_even_if_22_appears_elsewhere(self):
         with tempfile.TemporaryDirectory() as tmp:

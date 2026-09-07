@@ -2156,6 +2156,7 @@
       "state_root": "~/.local/state/life-manager/marketing-owner-daily"
     },
     "marketing-owner-events": {
+      "adapter": "exec",
       "cadence": {
         "start_interval_seconds": 3600
       },
@@ -2163,9 +2164,10 @@
         "max_age_days": 14,
         "max_runs": 100
       },
+      "command": [],
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/earn/marketing-engine/report/events-owner",
       "label": "ai.anicca.marketing-owner-events",
       "log_root": "~/.local/state/life-manager/marketing-owner-events/logs",
       "provider_route": "shared-agent-runner",
