@@ -712,6 +712,47 @@ What preceded it: **806 applications cumulative, 26 on 2026-09-02 alone, from a 
    same way, the site will say why.
 
 
+## Apply-owner cursor — Lancers submits nothing, and the reason was thrown away
+
+Measured 2026-09-07. Lancers reports every wake and looks healthy: it observes the board, judges
+fresh projects, and sends a per-decision line for each. It has submitted **nothing today**, and the
+ledger agrees — 5 applications on 09-05, 4 on 09-06, **0 on 09-07**.
+
+The wake summaries say why, once they are counted rather than read one at a time:
+
+| skip reason | count |
+|---|---|
+| **`proposal_form_changed`** | **81** |
+| `account_unavailable` | 6 |
+| `unsupported_application_workflow` | 5 |
+| `planner_contract_invalid` (alone or paired) | 10 |
+
+Against that, the genuine declines a reader actually notices — `video_or_animation`,
+`mandatory_human_presence` — are 7 each. **The lane is not short of suitable work. It cannot fill
+the proposal form.**
+
+`application_tick.py` matches the form through `_one` / `_visible_one`, which require exactly one
+match for each of `form#ProposalProposeForm`, `textarea#ProposalDescription[name=...]`,
+`#FeeApp input[type=number][step=1000][max=100000000]`, `#FeeApp input[type=text]`, `#form_end`,
+the milestone hidden inputs, and more. **Every one of them raises the same bare
+`proposal_form_changed`**, so a single changed attribute anywhere in that form produces an error
+that names nothing — the third time today the same shape has hidden a root cause, after
+`source_not_found` and `form_state:absent`.
+
+1. [x] `LANCERS-FORM-1` Make the failure name the field. `_one` and `_visible_one` append the
+   selector, the reason (`count_not_one` / `not_visible` / `visibility_check_failed`) and the match
+   count to `~/.local/state/anicca/lancers/proposal-form-changes.jsonl`. The visibility probe is now
+   separate from the verdict: the old shape re-raised any `RuntimeError` before recording, so a
+   locator that threw on `is_visible()` — a detached node, the usual sign of a re-render — was the
+   one case that stayed anonymous. Six tests, including that recording can never fail a submission.
+2. [ ] `LANCERS-FORM-2` Read one natural wake's `proposal-form-changes.jsonl`, update the selectors
+   it names, and confirm. PASS = a natural wake submits a Lancers application with an official
+   proposal receipt. Do not guess at selectors before that file exists; it costs one wake.
+3. [ ] `LANCERS-FORM-3` Fold the same evidence discipline into the shared apply recipe. Three
+   platforms have now each lost days to a strict matcher that discarded which matcher it was, so
+   `marketplace-apply-lane.md` should carry it as a rule rather than three separate lessons.
+
+
 ## Historical Coconala atomic cursor — evidence only
 
 One checkbox was one bounded change or one bounded
