@@ -352,6 +352,12 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    inventory remains stable and authenticated: 94 proposals, working `0`, contract candidates `0`,
    incoming monthly offers `0`, payment history `0`, balance JPY `0`. Contract-detail promotion and
    the real mutation/readback/replay receipt chain remain open and keep this atom unchecked.
+   Targeted production apply receipt `f7a0313480a0b69c2596032c` binds only
+   `lancers-revenue-paid` to main-derived immutable release
+   `5037a5ac844d35ac88412276147e6027a19fdc8e`; no browser or other business lane restarted. Its
+   natural wake ended `pass` at `2026-09-07T02:32:12Z`, and the persisted shared-kernel terminal is
+   observed `0`, actionable `0`, effect `0`, readback `0`, failed `0`, pending `0`. Thus production
+   wiring is live and idle correctly; it does not substitute for the missing real-contract acceptance.
 6. [ ] `CROWDWORKS-PAID-1` Add only the CrowdWorks Paid adapter to the proven shared entrypoint.
    PASS = no shared planner/worker/reviewer/lifecycle fork; one real contracted-work item reaches
    official submission readback and replay-zero. The existing CrowdWorks Apply owner remains
