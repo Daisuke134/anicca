@@ -14,11 +14,19 @@ Baseline: focused Life Manager suite 175/175 PASS.
 4. [x] **CLOUD-04 cloud runtime** — tenant A/B分離、Railway対象service restart後の永続化、production SHA/health、Mac mini・localhost・launchctl・Keychain依存0をlive readback済み。既存source contractを再実装していない。
 5. [x] **CLOUD-07 Stripe test mode** — current checkout/payment link、Railway test webhook、trialing、active、past_due、cancel、duplicate、out-of-order、`lm_users` entitlementをTEST MODE / TEST CLOCKだけでlive検証済み。real charge 0、Stripeだけがpaid authority。fixture customer/Test Clock/Supabase user/event ledgerは対象限定で削除済み。
 6. [x] **CLOUD-08 public surface** — `anicca-products`の`/lm`と`/life-manager`をDAILY機能の真実なcopyへ更新済み。QR/deep link、本人Calendar consent、Telegram通知、phone/call optional、3日trial、Cloud userのMac不要、privacy/support/disconnectを本番でreadback済み。旧Web signup・電話必須・全予定2回電話・Maps限定・OpenClaw・whole-life・固定月額claimは0件。
-7. [ ] **Full production acceptance** — physical、online、locationless、multiple physical、changed/cancelled、phone off/onをprovider receiptとreplay追加effect 0で証明する。exact deployed main SHA、Railway health/restart/persistence、tenant A/B分離を記録する。
+7. [x] **Full production acceptance** — physicalのGoogle Travel往復、Transit経路、Telegram provider receiptとreplay追加送信0、locationless/phone off/on、複数候補の独立処理を検証済み。online/locationlessはroute call 0、変更時はevent-versionでroute cacheを無効化し、cancelledは実行対象外。生成helperを含むcontrolled eventsはGoogle `cancelled`までreadback済み。exact deployed SHA/health、restart後永続化、Mac依存0、tenant A/B分離も記録済み。
 8. [ ] **Google Cloud cost incident closure** — billing accountのJuly/Augustをproject/service/SKU/dayで確定し、September MTD/forecast/current daily burnをreadbackする。Gemini、Search grounding、Live API、Maps/Routes/Geocoding、Cloud Run/compute/storage/network、abandoned project、retry/schedule trafficをrepo/runtimeと対応づける。ROOT_CAUSE、CURRENT_DAILY_BURN、SAFE_FIX、POST_FIX_EXPECTED_COSTを出し、production DAILY機能を壊さない安全な削減だけを適用する。COST-03 PR #4300はこの項目まで未mergeで保持する。
 9. [ ] **FRIEND-BETA READY gate** — 上記を全て閉じた後だけ、actual public URL、Telegram link、QR、friend DM、5分onboarding、test checklist、成功条件を一つのpackageとして渡す。最後に残る作業をreal friend UATだけにする。
 
-Current atom: **7. Full production acceptance**.
+Current atom: **8. Google Cloud cost incident closure**.
+
+### Full production acceptance closeout
+
+- Physical production receipt: Google Calendar confirmed one outbound and one return Travel helper; Supabase retained `go`、`return`、`telegram-t5`; Railway recorded Transit and Telegram message ID `981`. The following scheduler tick kept the Telegram send count at one, the three ledger rows unchanged, and both helper IDs/timestamps unchanged.
+- Phone production receipt: the accepted physical event and a no-location event each retained exactly one T-10 and one T-5 row. All four rows have Telnyx control/session/leg plus signed webhook receipts, and official Telnyx readback reports every call ended. Phone-disabled paths are strict call0 in batch/direct/Inngest contracts.
+- Scenario contracts: the focused current-main travel/reminder suite is 80/80. It proves online route-call 0 with a computer reminder, locationless no invented route, multiple due events continue independently when one is duplicate/claimed, and Travel/return/reply replay produces no additional effect.
+- Change/cancel safety: the shared route fact is keyed by exact event ID, schedule, endpoints, and purpose, so an exact schedule/location change invalidates it. Cancelled events are rejected by the Calendar interpreter before routing. Exact controlled primary/helper IDs were deleted with updates disabled and all read back `cancelled`; unrelated real events stayed confirmed.
+- Cloud authority: life-call serves immutable build `7ca6f48b9cbb78312873ef309a77c680de7ffb20`; Railway restart/deploy and Supabase persistence readbacks passed, production Cloud paths have no required Mac/localhost/launchctl/Keychain dependency, and the live/synthetic tenant A/B isolation proof remains unchanged.
 
 ### CLOUD-08 production evidence
 
