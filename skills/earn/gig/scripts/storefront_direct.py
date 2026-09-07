@@ -15,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import quote, urlsplit
@@ -647,10 +648,31 @@ def _rejection_guard_name(rejection: object) -> str:
     return _storefront_kernel().rejection_guard_name(rejection)
 
 
-def _three_strike_same_guard(rejections: list[dict]) -> str | None:
-    # Moved to storefront_kernel.three_strike_same_guard; see _append_proposal_rejection.
-    return _storefront_kernel().three_strike_same_guard(rejections)
+def _running_release_epoch() -> int | None:
+    """When the release this wake is running from was cut, if it can be read.
 
+    Used to decide which past rejections still describe the generator that exists now.
+    Answers None on anything unreadable, so an unknown configuration age never silently
+    discards evidence.
+    """
+    root = os.environ.get("LIFE_MANAGER_RELEASE_ROOT") or os.environ.get("LIFE_MANAGER_REPO")
+    if not root:
+        return None
+    try:
+        cut = json.loads((Path(root) / "RELEASE.json").read_text(encoding="utf-8"))["cut_at"]
+        return int(datetime.strptime(cut, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc).timestamp())
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
+        return None
+
+
+def _three_strike_same_guard(rejections: list[dict]) -> str | None:
+    # Moved to storefront_kernel.three_strike_same_guard. The release cut time is supplied
+    # here rather than in the kernel: which release is running is this loop's business, and
+    # the kernel must stay usable by a caller whose configuration is versioned differently.
+    return _storefront_kernel().three_strike_same_guard(
+        rejections, since_epoch=_running_release_epoch(),
+    )
 
 def _jsonl_rows(path: Path) -> tuple[list[dict], str | None]:
     if not path.is_file():

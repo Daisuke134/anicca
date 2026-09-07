@@ -71,17 +71,24 @@
      **7時間の停止**: 00:51〜08:09 の 241 wake が completed 0。原因はセッション切れをループが `official_inventory_empty_or_invalid`（在庫が空）と誤って名指したこと。Apply lane は同じ失効を正しく名指したので次 wake で自力復帰した。**差はコードではなく名前だけだった**（#4366）。
      **残り（1b の完了条件）** — full wake が `effect 1 / readback 1` で公開到達するのを本番実測する。2026-09-07 08:48 時点で未達。下書き2件（`4387924` LINE予約・定型応答 ¥100,000 / SEO記事 ¥3,000）が中身入りで公開待ち。直近 wake は `no_executable_unfenced_mutation_contract` — 落ちてはいないが下書きを公開候補として拾えていない。
    - c. **競合調査 → 出品カタログ 20 本** — Coconala「システム開発・制作」「Web/業務システム」「AI」上位出品（売上件数・星5）を lane 既存の competitor 観測（`competitor-*.json`）で収集し、title/価格帯/構成/FAQ の共通パターンを抽出。雛形は `~/gig/applied.jsonl` 高単価案件（¥300,000/¥250,000/¥180,000）。asset は `skills/gig-work/profile/listings/*.json`（platform 非依存: title/body/価格tier/納期/FAQ/画像）に置き、skill で「出品 asset の作り方・流し方」を定義。
-   - c'. **成功出品データは既に収集済み。IMPROVE に渡っていないだけ（2026-09-06 実測）** — `_extract_search_demand`(`storefront_direct.py:1370`) が公式検索から `comparables`（`display_price_jpy`/`rating`/`review_count`）を作り、`_demand_score`(1430) が `median_price_jpy`/`sold_comparables` を出し `demand-evidence.jsonl` に残している。実測: `excel_vba_gas_automation` = ¥29,000/レビュー464件・¥3,000/428件（当方の Excel 3 件は ¥7,000/¥6,000/¥5,000 で販売 0）、`line_bot_dev` = median ¥35,000・12 件全て星5・検索結果 1,657 件（当方に該当出品なし）。
+   - c'. ~~**成功出品データは既に収集済み。IMPROVE に渡っていないだけ**~~ **DONE（#4406）** — `family_market()` が需要台帳から公開事実だけを両判断プロンプトへ渡す（中央値 / 販売実績数 / レビュー済み数 / 検索結果数 / evidence path、各比較対象は価格・評価・レビュー数のみ）。クエリ文言も理由文も他者の言い回しも渡さない。指示を「知識の禁止」から「表現の禁止」へ変更: 他者の文言・画像・レビュー本文・主張・実績の複製は禁止、観測された分布は公開事実として使用必須、価格提案は現在価格ではなく分布に対して根拠を示す。コードは価格を計算しない。実測 `29000`/`464` がプロンプトに入ることを変異テストで固定。
+     以下は当初の記録:
+   - c'-orig. **成功出品データは既に収集済み。IMPROVE に渡っていないだけ（2026-09-06 実測）** — `_extract_search_demand`(`storefront_direct.py:1370`) が公式検索から `comparables`（`display_price_jpy`/`rating`/`review_count`）を作り、`_demand_score`(1430) が `median_price_jpy`/`sold_comparables` を出し `demand-evidence.jsonl` に残している。実測: `excel_vba_gas_automation` = ¥29,000/レビュー464件・¥3,000/428件（当方の Excel 3 件は ¥7,000/¥6,000/¥5,000 で販売 0）、`line_bot_dev` = median ¥35,000・12 件全て星5・検索結果 1,657 件（当方に該当出品なし）。
      この構造化データは CREATE 経路（`_create_proposal_prompt` 3974）にしか渡らない。既存 15 件を支配する IMPROVE 経路 `_proposal_prompt`(3798) は競合ページ本文を 8,000 字に切って渡すだけで、プロンプトが「never copy their wording, images, reviews, sales, speed, guarantees or results」と使用を禁じている。
      直す場所: `_proposal_prompt`(3798) と `_judgement_prompt` の CONTEXT_JSON に当該 family の `median_price_jpy`/`comparables`（価格・評価・レビュー数のみ）/`sold_comparables`/`visible_result_count` を追加し、禁止文を「表現・画像・実績の複製は禁止。観測された価格・評価・レビュー数の分布は公開事実として使用してよい」へ変更する。
      DONE: IMPROVE 提案の evidence に demand-evidence の path が入り、価格提案が family median を根拠に説明され、公式読み戻しで価格が確認できる。
    - d. **公開** — カタログから順に公開（上限 20）、各 wake で公開状態と購入数を readback。
-   - e. **重複出品を畳めるようにする（RETIRE が構造上発火不能）** — 2026-09-06 実測: 公開 15 件は全て `sales_count 0`、30 日 views 441。うち 8 枠が 2 アイデアの反復（SNS 系 5 件 `4244556/4244912/4302213/4330105/4330753`、Excel 系 3 件 `4244910/4313386/4357844`）。
+   - e. ~~**重複出品を畳めるようにする（RETIRE が構造上発火不能）**~~ **DONE（2026-09-07 09:01 本番実測）** — モデル判定へ置き換え（#4307）。`duplicate-listings.jsonl` に 8/18 以来はじめて新規行 `['4313386','4357844']`（理由: 両方とも Excel/VBA の定型転記自動化）。`4357844` が公開棚から消え 15 → 14 件。difflib の 0.9 では実測 0.533 で永久に発火しなかったペア。残りは SNS 系 5 件と Excel 残り 2 件で、1 wake 1 効果なので順に落ちる。復元の実測は未。
+     以下は当初の記録:
+   - e-orig. **重複出品を畳めるようにする（RETIRE が構造上発火不能）** — 2026-09-06 実測: 公開 15 件は全て `sales_count 0`、30 日 views 441。うち 8 枠が 2 アイデアの反復（SNS 系 5 件 `4244556/4244912/4302213/4330105/4330753`、Excel 系 3 件 `4244910/4313386/4357844`）。
      `_near_duplicate_listings`(`storefront_direct.py:2137`) は 2154 行の `ratio >= 0.9` でしか重複を認めないが実測最大ペアは **0.857**。もう一方の経路も 958 行 `capacity_pressure` が `15 >= 20` = false。結果 985 行 `retire_ready` が全 15 件で false → 6344-6399 の実行器が本番で死んでいる。
      直し方: 閾値を上げるのではなく計器を替える。difflib を捨て `storefront-proposal-agent` に生カタログを渡して「買い手が代替品として比較する組」を判定させ strict schema で封印する。決定論コードはアーカイブ操作・読み戻し・復元・単一 effect fence を握り続ける。0.85 へ下げる案は棄却（正当に別物の出品を畳み始める）。
      DONE: 重複組が `duplicate-listings.jsonl` に新規追記され、1 件が非公開へ落ちて公式読み戻しで確認でき、次 wake で重複 effect 0、復元も実測できる。
    DONE: 公開 ≥ 15 件、うちシステム開発系 ≥ 5 件が公開 URL で readback、wake exit 0、replay effect 0。
    実測の棚と根拠 → spec `docs/superpowers/specs/2026-08-16-storefront-loop-ssot.md` 4A 節。
+   - f. **共有カーネル抽出（項目13の前提）DONE（#4394）** — `skills/_shared/marketplace-core/scripts/storefront_kernel.py` に判断の中核を移した: 選定(KEEP/IMPROVE/RETIRE/REPLACE)・契約検証と封印・需要抽出とスコアリング・REPLACE 計画・進行中の下書き・契約回収・拒否台帳とガード同一性。platform も禁止語リストも引数で、カーネルに `coconala` の文字列は無く `skills/earn/gig` を import しないことをテストで固定。Apply と Paid が既に持つ構造に Storefront が並んだ。ランサーズ/クラウドワークスの接続は項目13。
+   - g. **1b が止まっていた本当の理由（2026-09-07 実測）** — CREATE ゲート5条件はすべて開いていた（`blocked_by: []`）。止めていたのは私が #4222 で入れた3ストライク規則で、`create:line_bot_dev` の3件はいずれもプロンプト修正(#4278/#4376)より前の古い証拠だった。打ち切りに解除が無く、下書き `4387924` は永久に埋まらない状態だった。#4409 で wake が5条件を自己申告するようにし、本 PR でストライクを「稼働 release より新しい拒否だけ」で数えるようにした（修正の出荷が解除になる自己修復規則）。
+
 1'. **Coconala paid lane: 全 client に返信・提出** — 実測未（Dais 報告: 一部 client に返信/提出していない、取りこぼしあり）。paid lane の state で「未返信 client 数」「未提出 見積り数」を実測し、取りこぼし 0 にする。
    DONE: paid lane の wake summary に unanswered_clients=0、未提出 0、かつ実際の返信 receipt ≥1。
 2. **Lancers 応募復旧 + 完全プロフィール応募** — `application_loop.py:320-350` `_validate()` が 1 行不正で batch 全滅（`planner_contract_invalid`、9/4 も継続、今日 fresh 判断 0）。不正 row は skip、健全 row だけで判断へ。profile は 9/4 に avatar 登録で 90%（残り電話認証のみ、blocker にしない）。

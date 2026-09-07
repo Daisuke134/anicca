@@ -648,8 +648,27 @@ def rejection_guard_name(rejection: object) -> str:
     return str(rejection or "").split(":", 1)[0]
 
 
-def three_strike_same_guard(rejections: list[dict]) -> str | None:
-    """Name the guard if the 3 most recent rejections for a gap all came from it, else None."""
+def three_strike_same_guard(
+    rejections: list[dict], *, since_epoch: int | None = None,
+) -> str | None:
+    """Name the guard if the 3 most recent rejections for a gap all came from it, else None.
+
+    A rejection is evidence that the generator, as it was configured then, kept producing
+    something a guard refuses. It stops being evidence once that configuration changes. The
+    title guard refused `line_bot_dev` three times, and all three predated the two prompt
+    changes that taught the model the shapes it was getting wrong -- so the gap was closed
+    permanently on the strength of a claim that had already been answered, and the filled
+    draft behind it could never be finished.
+
+    `since_epoch` is the moment the running configuration began, normally when its release
+    was cut. Rejections older than that describe a generator that no longer exists and are
+    not counted, which makes shipping a fix the thing that clears the count. Without it the
+    old behaviour stands, because a caller that cannot say when its configuration changed
+    has no basis for discarding evidence.
+    """
+    if since_epoch is not None:
+        rejections = [row for row in rejections
+                      if int(row.get("observed_at_epoch") or 0) >= since_epoch]
     if len(rejections) < 3:
         return None
     guards = {rejection_guard_name(row.get("rejection")) for row in rejections}
