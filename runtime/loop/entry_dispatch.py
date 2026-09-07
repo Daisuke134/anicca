@@ -68,16 +68,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "/opt/homebrew/bin/node",
             str(root / "apps/life-manager/scripts/money-printer-symphony-bridge.js"),
         ],
-        "hf-gig-paid-direct": [
-            *memory_guard,
-            python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
-            python, str(root / "skills/earn/gig/scripts/paid_direct.py"),
-            "--output", str(home / "gig/evidence/paid-direct-live/latest.json"),
-            "--evidence-dir", str(home / "gig/evidence/paid-direct-live"),
-            "--projects-root", str(home / "gig/projects"),
-            "--lock-file", str(home / "gig/.paid-direct.lock"),
-            "--cdp-lock-dir", str(home / "gig/.cdp-gig.lock"),
-        ],
         "hf-gig-apply-direct": [
             *memory_guard,
             python, str(root / "skills/earn/gig/scripts/gig_disk_guard.py"),
@@ -132,11 +122,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
 
 def environment_for(loop_id: str, home: Path, base: dict[str, str]) -> dict[str, str]:
     environment = dict(base)
-    if loop_id == "hf-gig-paid-direct":
-        environment["CLOAK_TARGET_OWNERS_FILE"] = str(
-            home / ".cloak/vault/gig-target-owners.json"
-        )
-        return environment
     if loop_id == "money-printer-symphony":
         private = home / ".local/share/anicca"
         credentials = private / "credentials.json"

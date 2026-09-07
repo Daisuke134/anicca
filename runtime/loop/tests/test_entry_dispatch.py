@@ -233,18 +233,9 @@ class EntryDispatchTest(unittest.TestCase):
             self.assertNotIn('GH_ENTERPRISE_TOKEN', environment)
             self.assertNotIn('GITHUB_ENTERPRISE_TOKEN', environment)
 
-    def test_paid_direct_uses_the_shared_gig_target_registry(self):
-        home = Path('/home')
-        base = {'KEEP': 'value'}
-
-        environment = entry_dispatch.environment_for('hf-gig-paid-direct', home, base)
-
-        self.assertEqual(base, {'KEEP': 'value'})
-        self.assertEqual(environment['KEEP'], 'value')
-        self.assertEqual(
-            environment['CLOAK_TARGET_OWNERS_FILE'],
-            '/home/.cloak/vault/gig-target-owners.json',
-        )
+    def test_hf_gig_paid_direct_no_longer_has_a_handwritten_dispatch(self):
+        with self.assertRaisesRegex(ValueError, 'no dispatch command'):
+            command_for('hf-gig-paid-direct', Path('/release'), Path('/home'))
     def test_life_manager_daily_driver_no_longer_has_a_handwritten_dispatch(self):
         with self.assertRaisesRegex(ValueError, 'no dispatch command'):
             command_for('life-manager-daily-driver', Path('/release'), Path('/home'))
@@ -257,22 +248,6 @@ class EntryDispatchTest(unittest.TestCase):
     def test_unknown_loop_fails_closed(self):
         with self.assertRaisesRegex(ValueError,'no dispatch command'):
             command_for('missing',Path('/release'),Path('/home'))
-
-    def test_paid_lane_dispatches_complete_legacy_argv(self):
-        command=command_for('hf-gig-paid-direct',Path('/release'),Path('/home'))
-        self.assertEqual(command,[
-            sys.executable,
-            '/release/runtime/host/memory_admission.py',
-            sys.executable,
-            '/release/skills/earn/gig/scripts/gig_disk_guard.py',
-            sys.executable,
-            '/release/skills/earn/gig/scripts/paid_direct.py',
-            '--output','/home/gig/evidence/paid-direct-live/latest.json',
-            '--evidence-dir','/home/gig/evidence/paid-direct-live',
-            '--projects-root','/home/gig/projects',
-            '--lock-file','/home/gig/.paid-direct.lock',
-            '--cdp-lock-dir','/home/gig/.cdp-gig.lock',
-        ])
 
     def test_other_coconala_lanes_keep_production_modes(self):
         root=Path('/release'); home=Path('/home')

@@ -218,25 +218,18 @@ def test_coconala_browser_running_fence_uses_process_fallback(monkeypatch):
     assert gig_release.is_running(label) is True
 
 
-def test_default_release_scope_is_only_the_four_coconala_business_lanes():
+def test_default_release_scope_is_only_the_three_unmigrated_coconala_business_lanes():
     assert gig_release.activation_labels(None) == {
         "ai.anicca.hf-gig-apply-direct",
         "ai.anicca.hf-gig-storefront-direct",
         "ai.anicca.hf-gig-reply-detector",
-        "ai.anicca.hf-gig-paid-direct",
     }
 
 
-def test_paid_job_routes_through_shared_kernel_with_formal_delivery_off():
+def test_migrated_paid_job_is_not_owned_by_legacy_manifest():
     manifest = json.loads(gig_release.MANIFEST.read_text(encoding="utf-8"))
-    job = next(row for row in manifest["jobs"]
-               if row["label"] == "ai.anicca.hf-gig-paid-direct")
-    program = job["program"]
-    assert "{{RELEASE}}/skills/_shared/marketplace-core/scripts/paid_kernel.py" in program
-    assert "{{RELEASE}}/skills/earn/gig/scripts/coconala_paid_adapter.py" in program
-    assert "--provider-adapter" in program
-    assert "--allow-formal-delivery" not in program
-    assert gig_release.JOB_PROCESS_MARKERS[job["label"]] == "paid_kernel.py"
+    assert all(row["label"] != "ai.anicca.hf-gig-paid-direct" for row in manifest["jobs"])
+    assert "ai.anicca.hf-gig-paid-direct" not in gig_release.JOB_PROCESS_MARKERS
 
 
 def test_explicit_release_scope_is_preserved():

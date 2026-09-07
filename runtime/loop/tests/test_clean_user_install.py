@@ -14,6 +14,31 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CleanUserInstallTest(unittest.TestCase):
+    def test_hf_gig_paid_direct_wrapper_preserves_argv_and_target_registry(self):
+        wrapper = ROOT / "skills/earn/gig/scripts/paid-direct-owner"
+        self.assertTrue(os.access(wrapper, os.X_OK))
+        self.assertIn(
+            'export CLOAK_TARGET_OWNERS_FILE="${CLOAK_TARGET_OWNERS_FILE:-$HOME/.cloak/vault/gig-target-owners.json}"',
+            wrapper.read_text(),
+        )
+        result = subprocess.run(
+            [str(wrapper)],
+            env={**os.environ, "HF_GIG_PYTHON": "/bin/echo", "HOME": "/home/owner"},
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            result.stdout.strip(),
+            f"{ROOT}/runtime/host/memory_admission.py /bin/echo "
+            f"{ROOT}/skills/earn/gig/scripts/gig_disk_guard.py /bin/echo "
+            f"{ROOT}/skills/earn/gig/scripts/paid_direct.py "
+            "--output /home/owner/gig/evidence/paid-direct-live/latest.json "
+            "--evidence-dir /home/owner/gig/evidence/paid-direct-live "
+            "--projects-root /home/owner/gig/projects "
+            "--lock-file /home/owner/gig/.paid-direct.lock "
+            "--cdp-lock-dir /home/owner/gig/.cdp-gig.lock",
+        )
     def test_marketing_weekly_review_wrapper_preserves_behavior_and_external_state(self):
         wrapper = ROOT / "skills/earn/marketing-engine/intel/weekly-review-owner"
         self.assertTrue(os.access(wrapper, os.X_OK))

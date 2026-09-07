@@ -54,14 +54,13 @@ PIN_PATTERN = re.compile(r"(?P<pid>[1-9][0-9]*)-(?P<sha>[0-9a-f]{40})")
 PUBLISH_LOCK = RELEASE_ROOT / ".publish.lock"
 LAUNCHD_PREFLIGHT = REPO_ROOT / "skills" / "_shared" / "lib" / "launchd_preflight.py"
 LAUNCHD_PREFLIGHT_RECEIPT = Path.home() / ".local/state/life-manager/launchd-control-plane-preflight.json"
-# The Coconala bootstrap owns exactly these four business lanes. Browser and
+# The legacy Coconala bootstrap owns exactly these three unmigrated business lanes. Browser and
 # release-watcher activation are explicit; unrelated product jobs must never be
 # pulled in merely because they share the repository manifest.
 COCONALA_BUSINESS_LANES = {
     "ai.anicca.hf-gig-apply-direct",
     "ai.anicca.hf-gig-storefront-direct",
     "ai.anicca.hf-gig-reply-detector",
-    "ai.anicca.hf-gig-paid-direct",
 }
 # These long-lived owners are excluded from release garbage collection unless
 # their loaded argv is inspected explicitly.
@@ -79,7 +78,6 @@ JOB_PROCESS_MARKERS = {
     "ai.anicca.hf-gig-browser": "--remote-debugging-port=9223",
     "ai.anicca.hf-gig-apply-direct": "application_direct.py",
     "ai.anicca.hf-gig-storefront-direct": "storefront_direct.py",
-    "ai.anicca.hf-gig-paid-direct": "paid_kernel.py",
     "ai.anicca.hf-gig-reply-detector": "reply_detector.py",
     "ai.anicca.article-daily": "article-daily.sh",
     "ai.anicca.article-resume": "article-resume-pending.sh",

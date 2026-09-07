@@ -946,6 +946,7 @@
       "state_root": "~/.openclaw"
     },
     "hf-gig-paid-direct": {
+      "adapter": "exec",
       "cadence": {
         "start_interval_seconds": 300
       },
@@ -955,7 +956,8 @@
       },
       "domain": "earn",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "command": [],
+      "entrypoint": "skills/earn/gig/scripts/paid-direct-owner",
       "label": "ai.anicca.hf-gig-paid-direct",
       "log_root": "~/.local/state/life-manager/coconala/paid/logs",
       "provider_route": "deterministic",

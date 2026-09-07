@@ -371,6 +371,13 @@ class MacosLoopRegistryTest(unittest.TestCase):
             "skills/earn/marketing-engine/intel/weekly-review-owner",
         )
 
+    def test_hf_gig_paid_direct_uses_repo_owned_exec_adapter(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["hf-gig-paid-direct"]
+        self.assertEqual(row["adapter"], "exec")
+        self.assertEqual(row["command"], [])
+        self.assertEqual(row["entrypoint"], "skills/earn/gig/scripts/paid-direct-owner")
+
     def test_marketing_score_daily_uses_direct_python_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["marketing-score-daily"]
