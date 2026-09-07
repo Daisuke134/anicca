@@ -57,7 +57,7 @@ class InstallLocalTests(unittest.TestCase):
             text=True,
         ).stdout.strip()
 
-    def _run_install(self, root: Path, mode: str) -> tuple[Path, dict, dict, dict]:
+    def _run_install(self, root: Path, mode: str) -> tuple[Path, dict, dict]:
         install_root = root / "install"
         launch_agent_dir = root / "LaunchAgents"
         state_root = root / "state"
@@ -84,17 +84,16 @@ class InstallLocalTests(unittest.TestCase):
         release = install_root / "releases" / self.release_sha
         manifest_path = state_root / "deployment.json"
         reporter_plist_path = launch_agent_dir / REPORTER_PLIST_NAME
-        work_sync_plist_path = launch_agent_dir / WORK_SYNC_PLIST_NAME
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         reporter_plist = plistlib.loads(reporter_plist_path.read_bytes())
-        work_sync_plist = plistlib.loads(work_sync_plist_path.read_bytes())
         self.assertFalse((launch_agent_dir / PLIST_NAME).exists())
-        return release, manifest, reporter_plist, work_sync_plist
+        self.assertFalse((launch_agent_dir / WORK_SYNC_PLIST_NAME).exists())
+        return release, manifest, reporter_plist
 
     def test_installs_immutable_exact_sha_release_and_reconcile_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            release, manifest, reporter_plist, work_sync_plist = self._run_install(root / "reconcile", "reconcile-only")
+            release, manifest, reporter_plist = self._run_install(root / "reconcile", "reconcile-only")
             self.assertEqual(release, root / "reconcile/install/releases" / self.release_sha)
             for relative in RELEASE_FILES:
                 self.assertTrue((release / relative).is_file(), relative)
@@ -104,7 +103,7 @@ class InstallLocalTests(unittest.TestCase):
             self.assertEqual(manifest["mode"], "reconcile-only")
             self.assertNotIn("launchd_label", manifest)
             self.assertEqual(manifest["report_launchd_label"], REPORTER_PLIST_NAME.removesuffix(".plist"))
-            self.assertEqual(manifest["work_sync_launchd_label"], WORK_SYNC_PLIST_NAME.removesuffix(".plist"))
+            self.assertNotIn("work_sync_launchd_label", manifest)
             self.assertEqual(list(manifest["files"]), sorted(manifest["files"]))
             self.assertEqual(
                 set(manifest["files"]), set(RELEASE_FILES)
@@ -123,16 +122,6 @@ class InstallLocalTests(unittest.TestCase):
                 reporter_plist["ProgramArguments"],
             )
             self.assertNotIn("__LANCERS_", str(reporter_plist))
-            self.assertEqual(work_sync_plist["Label"], WORK_SYNC_PLIST_NAME.removesuffix(".plist"))
-            self.assertEqual(work_sync_plist["StartInterval"], 300)
-            self.assertEqual(work_sync_plist["ProcessType"], "Background")
-            self.assertEqual(work_sync_plist["Umask"], 63)
-            self.assertNotIn("RunAtLoad", work_sync_plist)
-            self.assertIn(str(release / "skills/earn/lancers/scripts/work_sync.py"), work_sync_plist["ProgramArguments"])
-            self.assertIn("--json", work_sync_plist["ProgramArguments"])
-            self.assertEqual(work_sync_plist["WorkingDirectory"], str(release))
-            self.assertNotIn("__LANCERS_", str(work_sync_plist))
-            self.assertEqual([path.name for path in (root / "reconcile/LaunchAgents").glob("*work-sync*.plist")], [WORK_SYNC_PLIST_NAME])
 
             state_root = root / "reconcile/state"
             for path in state_root.rglob("*"):
@@ -146,13 +135,16 @@ class InstallLocalTests(unittest.TestCase):
                 "ai.anicca.lancers-revenue-application",
                 INSTALLER.read_text(encoding="utf-8"),
             )
+            self.assertNotIn(
+                "ai.anicca.lancers-revenue-work-sync",
+                INSTALLER.read_text(encoding="utf-8"),
+            )
 
     def test_normal_owner_keeps_json_without_reconcile_flag(self):
         with tempfile.TemporaryDirectory() as directory:
-            _, manifest, reporter_plist, work_sync_plist = self._run_install(Path(directory), "normal")
+            _, manifest, reporter_plist = self._run_install(Path(directory), "normal")
             self.assertEqual(manifest["mode"], "normal")
             self.assertIn("--json", reporter_plist["ProgramArguments"])
-            self.assertIn("--json", work_sync_plist["ProgramArguments"])
 
 
 if __name__ == "__main__":

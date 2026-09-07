@@ -281,6 +281,16 @@ class MacosLoopRegistryTest(unittest.TestCase):
             "skills/earn/lancers/scripts/application-owner",
         )
 
+    def test_lancers_work_sync_uses_repo_managed_runtime_python(self):
+        registry = json.loads((ROOT / "config/loop-registry.json").read_text())
+        row = registry["loops"]["lancers-revenue-work-sync"]
+        self.assertEqual(row["adapter"], "exec")
+        self.assertEqual(row["command"], [])
+        self.assertEqual(
+            row["entrypoint"],
+            "skills/earn/lancers/scripts/work-sync-owner",
+        )
+
     def test_marketing_metrics_daily_uses_direct_python_adapter(self):
         registry = json.loads((ROOT / "config/loop-registry.json").read_text())
         row = registry["loops"]["marketing-metrics-daily"]
