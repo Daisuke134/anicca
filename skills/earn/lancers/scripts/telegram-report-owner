@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
+PYTHON="${LIFE_MANAGER_PYTHON:-$HOME/.local/share/life-manager/venv/bin/python}"
+STATE_ROOT="${LIFE_MANAGER_STATE_ROOT:?LIFE_MANAGER_STATE_ROOT is required}"
+
+if [[ ! -x "$PYTHON" ]]; then
+  echo "telegram-report-owner: managed Python is unavailable: $PYTHON" >&2
+  exit 69
+fi
+
+exec "$PYTHON" "$ROOT/skills/earn/lancers/scripts/telegram_report.py" \
+  --json \
+  --database "$STATE_ROOT/telegram.sqlite3" \
+  --ledger-database "$STATE_ROOT/marketplace-ledger.sqlite3" \
+  --state-path "$STATE_ROOT/application.json" \
+  --application-log "$STATE_ROOT/logs/application.out.log" \
+  --storefront-log "$STATE_ROOT/logs/storefront.stdout.log" \
+  "$@"
