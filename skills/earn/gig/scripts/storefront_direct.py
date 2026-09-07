@@ -4072,6 +4072,41 @@ def _invoke_proposal(
     return proposal, route, allowed_refs
 
 
+_HERO_FONT_PATH: Path | None = None
+
+
+def _hero_font_path() -> Path:
+    """Resolve the hero image's font once, retrying a machine too busy to answer.
+
+    `fc-match` names a file that does not change between wakes, but it was run on every
+    render with a ten-second timeout, and under load that timeout ended the whole wake --
+    after the proposal had been generated and sealed, so a font lookup threw away the most
+    expensive work the loop does. The answer is cached for the life of the process and the
+    lookup is retried like every other transient here.
+    """
+    global _HERO_FONT_PATH
+    if _HERO_FONT_PATH is not None:
+        return _HERO_FONT_PATH
+    detail = "storefront_generated_image_font_missing"
+    for attempt in range(5):
+        try:
+            found = subprocess.run(
+                ["fc-match", "-f", "%{file}", "Hiragino Sans"], capture_output=True,
+                text=True, check=False, timeout=10,
+            )
+        except subprocess.SubprocessError:
+            if attempt < 4:
+                time.sleep(3)
+            continue
+        candidate = Path(found.stdout.strip())
+        if found.returncode == 0 and candidate.is_file():
+            _HERO_FONT_PATH = candidate
+            return candidate
+        if attempt < 4:
+            time.sleep(3)
+    raise RuntimeError(detail)
+
+
 def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: Path) -> dict:
     from PIL import Image, ImageDraw, ImageFont
 
@@ -4081,13 +4116,7 @@ def _render_generated_image_asset(proposed: str, service_id: str, evidence_dir: 
     badges = [value.strip() for value in lines[2].split("｜") if value.strip()]
     if len(badges) not in {2, 3} or any(len(value) > 24 for value in badges):
         raise RuntimeError("storefront_generated_image_badges_invalid")
-    font_result = subprocess.run(
-        ["fc-match", "-f", "%{file}", "Hiragino Sans"], capture_output=True, text=True,
-        check=False, timeout=10,
-    )
-    font_path = Path(font_result.stdout.strip())
-    if font_result.returncode != 0 or not font_path.is_file():
-        raise RuntimeError("storefront_generated_image_font_missing")
+    font_path = _hero_font_path()
     image = Image.new("RGB", (1220, 1016), "#111c50")
     draw = ImageDraw.Draw(image)
     for y in range(1016):
