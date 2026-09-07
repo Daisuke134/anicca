@@ -81,7 +81,6 @@ HARD_PROHIBITION_CLASSES = {
     "video_or_animation": "video editing/production, live-action filming, AI video, animation, or MV",
     "physical_or_onsite": "on-site work or physical making/assembly/cleaning/repair/cooking/sewing/woodwork/model making/packing/shipping/delivery/receipt",
     "mandatory_human_presence": "human face appearance/performance/voice recording/phone support/mandatory live call or mandatory video interview",
-    "explicit_ai_prohibition": "explicit prohibition on AI use",
     "illegal_or_unsafe": "illegal or unsafe work",
     # 2026-09-07: applied to 整理収納アドバイザー監修 and 防災士監修. Both name a certification the
     # persona does not hold, and both were read as allowed because the wording said "legally
@@ -644,7 +643,13 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
     returned = len(planned.get("decisions")) if isinstance(planned, Mapping) and isinstance(planned.get("decisions"), list) else None
     try:
         items = planned.get("decisions") if isinstance(planned, Mapping) and set(planned) == {"decisions"} else None
-        if not isinstance(items, list) or len(items) != len(rows): raise ValueError
+        # Measured 2026-09-07: planner_contract_invalid 1235 times, more than every other
+        # failure combined, and every one of them threw away decisions the planner had
+        # actually made.  A model that returns 19 judgements for 20 rows has judged 19
+        # rows; the loop below already matches on request_id and books whatever is missing
+        # or unrecognised into invalid_ids.  Requiring the counts to match on top of that
+        # converts a partial answer into a total loss, and a lane that applies to nothing.
+        if not isinstance(items, list): raise ValueError
         rows_by_id = {str(row["external_id"]): row for row in rows}
         decisions = {}; invalid_ids = []
         for item in items:
