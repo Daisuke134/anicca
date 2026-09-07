@@ -107,6 +107,14 @@ provider revenueを`banked`へ到達させてから`compute_paid`へ使い、own
 
 Life Manager は1つの製品であり、正本リポジトリもここ1つです。「ローカル Life Manager」と Web アプリは別製品・別リポジトリではなく、同じsource repositoryと製品contractから作る2つの実行面です。
 
+両runtimeは、同じ1つの論理loop実装を使います。loop ID、business recipe、
+agent/tool・provider contract、replay防止、effect規則、receipt語彙、testは共通です。
+環境ごとに変えてよいのはsupervisor、durable-storage adapter、secret store、browser
+transportだけです。同じbusiness workflowのlocal版とcloud版を別々に作ることは、
+対応方式ではなくarchitecture上の不具合です。変更時は最初に
+[`skills/loop-engineering/SKILL.md`](skills/loop-engineering/SKILL.md)を読み、理想folder
+shapeと固定順の統合作業はarchitecture specに従います。
+
 ```text
 life-manager/                         # 1つだけのGitHub repository
 ├── apps/

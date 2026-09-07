@@ -250,6 +250,16 @@ life-manager/                       # the only source repository
 | Local / self-hosted today | Immutable release → `lm-loop-run` → repository-relative Python/Node/shell entrypoint; macOS uses `launchd` | Owner-controlled state, credential, log, receipt, and browser-profile directories outside Git |
 | Cloud today | Netlify serves the web frontend; Railway builds `apps/life-manager` with Nixpacks and runs `life-call`/worker roles | Tenant-scoped managed database, object store, and secrets |
 
+Both surfaces run one logical loop implementation. They share the loop ID,
+business recipe, agent/tool and provider contracts, replay protection, effect
+rules, receipt vocabulary, and tests. Only host infrastructure changes:
+supervision, durable-storage adapter, secret store, and browser transport. A
+local-only or cloud-only copy of the same business workflow is an architecture
+bug, not a supported deployment pattern. Contributors start with
+[`skills/loop-engineering/SKILL.md`](skills/loop-engineering/SKILL.md); the
+target folder shape and ordered convergence work live in the architecture spec
+linked above.
+
 `launchd` is the current macOS supervisor adapter, not the loop definition. Linux and Windows are portability targets
 that still need their own proven supervisor/install path. Phones are
 clients: they use the cloud runtime or connect to another always-on self-hosted machine.

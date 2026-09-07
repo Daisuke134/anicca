@@ -21,6 +21,21 @@ owns only official observation, mutation and readback. A loop config selects a
 recipe, provider, cadence and policy — it never implements a second runner,
 retry engine, ledger, browser launcher or model client.
 
+## One loop, two host adapters
+
+Local/self-hosted and cloud run one logical loop from the same repository-owned
+implementation. They share the loop ID, recipe, model/tool and provider
+contracts, job/event/effect/receipt/outbox schemas, replay fence and tests. Only
+the supervisor, durable-storage adapter, secret store and browser transport vary.
+
+Host adapters implement the shared contracts; they do not own business
+decisions, retry/replay policy or a second runner. Do not create local/cloud
+copies, including temporary copies, and do not add deployment machinery such as
+a Dockerfile unless the measured target runtime requires it. An unavailable host
+capability fails closed instead of forking the workflow. The target shape and
+migration status live in
+`docs/superpowers/specs/2026-09-06-life-manager-one-repo-two-runtimes-design.md`.
+
 ## Route by task
 
 | Task | Read |
@@ -38,6 +53,10 @@ retry engine, ledger, browser launcher or model client.
 Search `runtime/`, existing recipes, provider adapters and `skills/_shared/`.
 Reuse what is there. A new abstraction is prohibited for one speculative
 consumer — the second real consumer is the extraction trigger.
+
+For a new or migrated loop, name the shared core and smallest host adapters
+before editing. Mixed business and host code is a boundary to extract, not a
+reason to duplicate the loop.
 
 ## Lane ownership
 
