@@ -34,6 +34,13 @@ test("parseStripeEvent: subscription.updated → status, currentPeriodEnd, creat
   assert.deepStrictEqual([p.kind, p.customerId, p.subscriptionId, p.status, p.currentPeriodEnd, p.created],
     ["subscription", "cus_1", "sub_1", "past_due", 1750000000, 1700000005]);
 });
+test("parseStripeEvent: current Stripe subscription item period supplies currentPeriodEnd", () => {
+  const p = parseStripeEvent({ id: "e", type: "customer.subscription.updated", created: 1700000005,
+    data: { object: { id: "sub_1", customer: "cus_1", status: "active", items: { data: [
+      { current_period_end: 1750000000 }, { current_period_end: 1750003600 },
+    ] } } } });
+  assert.strictEqual(p.currentPeriodEnd, 1750003600);
+});
 test("parseStripeEvent: deleted → canceled; unknown → null", () => {
   assert.strictEqual(parseStripeEvent({ id: "e", type: "customer.subscription.deleted", data: { object: { status: "canceled" } } }).status, "canceled");
   assert.strictEqual(parseStripeEvent({ id: "x", type: "ping", data: { object: {} } }), null);

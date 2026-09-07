@@ -53,12 +53,14 @@ function parseStripeEvent(event) {
     };
   }
   if (SUBSCRIPTION_TYPES.has(type)) {
+    const itemPeriodEnds = (((o.items || {}).data) || [])
+      .map((item) => Number(item && item.current_period_end) || 0);
     return {
       kind: "subscription",
       customerId: o.customer || null,
       subscriptionId: o.id || null,
       status: o.status || null,
-      currentPeriodEnd: o.current_period_end || 0,
+      currentPeriodEnd: Number(o.current_period_end) || Math.max(0, ...itemPeriodEnds),
       created,
     };
   }
