@@ -267,9 +267,32 @@ async def _wait_for_load(ws, deadline: float, start_cid: int) -> tuple[bool, int
         await asyncio.sleep(0.5)
     return False, cid
 
-async def _eval_json(ws_url: str, url: str, expression: str) -> dict:
+async def _cdp_connect(ws_url: str):
+    """Open one CDP socket, retrying the browser's refusal to upgrade.
+
+    Four lanes share this browser, and under that contention the endpoint answers the
+    websocket upgrade with HTTP 500 or drops the connection before the first frame. It is
+    the browser declining to talk right now, not an answer about the page, so it is retried
+    like every other transient read in this loop -- five attempts three seconds apart. A
+    refusal that survives all five is raised unchanged, so the wake still reports what it
+    saw. See skills/loop-engineering/references/transient-vs-fatal.md.
+    """
     import websockets
-    async with websockets.connect(ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024) as ws:
+
+    last: Exception | None = None
+    for attempt in range(5):
+        try:
+            return await websockets.connect(
+                ws_url, ping_interval=None, open_timeout=10, max_size=40 * 1024 * 1024)
+        except (OSError, asyncio.TimeoutError, websockets.exceptions.WebSocketException) as error:
+            last = error
+            if attempt < 4:
+                await asyncio.sleep(3)
+    raise last
+
+
+async def _eval_json(ws_url: str, url: str, expression: str) -> dict:
+    async with await _cdp_connect(ws_url) as ws:
         cid = 1
         await _call(ws, "Page.enable", {}, cid); cid += 1
         await ws.send(json.dumps({"id": cid, "method": "Page.navigate", "params": {"url": url}})); cid += 1
