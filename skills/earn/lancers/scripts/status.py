@@ -216,8 +216,10 @@ def _public_budget_type(value: object) -> str:
     if not isinstance(value, str):
         return "unknown"
     normalized = value.strip().lower()
-    if normalized in {"プロジェクト", "タスク", "固定", "fixed", "project"}:
+    if normalized in {"プロジェクト", "固定", "fixed", "project"}:
         return "fixed"
+    if normalized in {"タスク", "bounty"}:
+        return "bounty"
     if normalized in {"コンペ", "contest", "competition"}:
         return "contest"
     if normalized in {"時間報酬", "時間単価", "hourly", "time"}:

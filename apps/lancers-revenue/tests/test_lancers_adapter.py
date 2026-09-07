@@ -157,6 +157,15 @@ class LancersAdapterJudgmentTests(unittest.TestCase):
         card.update(overrides)
         return card
 
+    def test_task_budget_type_is_not_collapsed_into_project(self):
+        adapter = _load()
+        normalized, rejected = adapter.normalize_projects(
+            [self._card(7999, budget_type="タスク")],
+            observed_at="2026-08-31T00:00:00Z",
+        )
+        self.assertEqual(rejected, [])
+        self.assertEqual(normalized[0]["budget_type"], "bounty")
+
     def test_no_listing_is_dropped_or_moved_for_being_unattractive(self):
         adapter = _load()
 
