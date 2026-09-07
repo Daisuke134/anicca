@@ -336,6 +336,41 @@ def extract_search_demand(body: str) -> dict:
     }
 
 
+def family_market(state_dir: Path, family_name: str) -> dict | None:
+    """The public market facts this account has already measured for one capability family.
+
+    Reduces the newest `demand-evidence.jsonl` row naming `family_name` to the price/rating/
+    review distribution a proposal is allowed to see and cite -- never the query text, the
+    model's own rationale, a competitor's title, or any url beyond `evidence_path` (the local
+    JSON file backing the row, not a page the model could read seller wording from). This is
+    the same distinction `extract_search_demand`'s docstring draws: what the marketplace states
+    as fact versus what a seller or this loop wrote about it.
+
+    Returns None when the family has no row yet, or when the ledger is missing or unreadable --
+    `allocate_portfolio` above treats its own ledger reads the same way (via `_jsonl_rows`)
+    rather than raising, so an IMPROVE prompt with no measured market still gets built instead
+    of failing the wake.
+    """
+    rows, _ = _jsonl_rows(state_dir / "demand-evidence.jsonl")
+    for row in reversed(rows):
+        if row.get("capability_family") != family_name:
+            continue
+        comparables = [
+            {"display_price_jpy": comparable.get("display_price_jpy"),
+             "rating": comparable.get("rating"), "review_count": comparable.get("review_count")}
+            for comparable in row.get("comparables") or [] if isinstance(comparable, dict)
+        ]
+        return {
+            "median_price_jpy": row.get("median_price_jpy"),
+            "sold_comparables": row.get("sold_comparables"),
+            "reviewed_comparables": row.get("reviewed_comparables"),
+            "visible_result_count": row.get("visible_result_count"),
+            "evidence_path": row.get("evidence_path"),
+            "comparables": comparables,
+        }
+    return None
+
+
 def score_demand_cluster(cluster: dict) -> dict:
     """Score one official demand cluster from what the marketplace actually shows.
 

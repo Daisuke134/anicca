@@ -1477,6 +1477,12 @@ def _score_demand_cluster(cluster: dict) -> dict:
     return _storefront_kernel().score_demand_cluster(cluster)
 
 
+def _family_market(state_dir: Path, family_name: str) -> dict | None:
+    # Moved to storefront_kernel.family_market; see _validate_mutation_contract for why this
+    # stays as an alias.
+    return _storefront_kernel().family_market(state_dir, family_name)
+
+
 def _seal_demand_proposal(proposal: dict, family_names: set[str], catalog_titles: list[str]) -> list[dict]:
     """Accept only query candidates tied to an owned capability family.
 
@@ -3843,7 +3849,9 @@ def _observe_own_page(
     return row
 
 
-def _judgement_prompt(own_page: dict, manifest: dict, capability_paths: set[str]) -> str:
+def _judgement_prompt(
+    own_page: dict, manifest: dict, capability_paths: set[str], family_market: dict | None = None,
+) -> str:
     competitors = []
     for reference in manifest["sources"]:
         row = json.loads(Path(reference["path"]).read_text(encoding="utf-8"))
@@ -3857,6 +3865,8 @@ def _judgement_prompt(own_page: dict, manifest: dict, capability_paths: set[str]
         "competitors": competitors,
         "capability_evidence": capabilities,
     }
+    if family_market:
+        context["family_market"] = family_market
     return """Judge one Coconala Storefront experiment from the JSON evidence below.
 Return only the strict schema object. Model judgement may choose change or no_op; code owns every
 mechanical guard and no seller effect occurs in this turn. The only supported change is the
@@ -3871,6 +3881,7 @@ and no_op_reason is nonempty.\nCONTEXT_JSON=""" + json.dumps(context, ensure_asc
 def _invoke_judge(
     *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path,
     own_page: dict, manifest: dict, capability_paths: set[str], timeout_seconds: int,
+    family_market: dict | None = None,
 ) -> dict:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     started = time.time()
@@ -3880,7 +3891,7 @@ def _invoke_judge(
          "--schema", str(schema), "--evidence-dir", str(evidence_dir),
          "--task-label", "gig-storefront-judge", "--loop", "gig", "--workdir", str(workdir),
          "--timeout-seconds", str(timeout_seconds)],
-        input=_judgement_prompt(own_page, manifest, capability_paths),
+        input=_judgement_prompt(own_page, manifest, capability_paths, family_market=family_market),
         text=True,
         capture_output=True,
         env=child_env,
@@ -3908,6 +3919,7 @@ def _invoke_judge(
 def _proposal_prompt(
     hypothesis: dict, source: dict, seller_snapshot: dict, family_name: str, family: dict,
     manifest: dict, capability_paths: set[str], prior_rejections: list[dict] | None = None,
+    family_market: dict | None = None,
 ) -> tuple[str, set[str]]:
     competitor_rows = []
     allowed_refs = {
@@ -3915,6 +3927,8 @@ def _proposal_prompt(
         f"official:offer-contract:{source['service_id']}:{source['service_version_sha256']}",
         f"owned:capability-family:{family_name}",
     }
+    if family_market and family_market.get("evidence_path"):
+        allowed_refs.add(str(family_market["evidence_path"]))
     for reference in manifest.get("sources", []):
         path = str(reference.get("path") or "")
         try:
@@ -3943,6 +3957,8 @@ def _proposal_prompt(
     }
     if prior_rejections:
         context["prior_rejections"] = prior_rejections
+    if family_market:
+        context["family_market"] = family_market
     prohibited_terms_prose = (
         "Buyer-visible copy (title, catchphrase, body, image copy, FAQ, package option title) must "
         "never contain any of these platform-prohibited terms, in exactly the spelling listed: "
@@ -3962,8 +3978,11 @@ def _proposal_prompt(
 Create exactly one Coconala Storefront improvement proposal from CONTEXT_JSON.
 Return only the strict schema object. The selected service_id, changed_field and success_metric must
 exactly equal gap.service_id, gap.field and gap.success_metric. Use only claims supported by the
-owned capability family/offer. Competitors supply generalized structure only: never copy their
-wording, images, reviews, sales, speed, guarantees or results. evidence entries must be exact values
+owned capability family/offer. Never copy a competitor's wording, images, review text, claims or
+results. The observed price, rating and review-count distribution in family_market is public fact
+about this market and MUST be used: say what the family's median price is and where this listing
+sits against it, and when proposing a price, justify it against that distribution rather than
+against the current price. evidence entries must be exact values
 from allowed_evidence_refs and must include the official offer ref and owned capability-family ref.
 gap.executable=false with guard_reason=proposal_contract_required means this proposal must create the
 missing contract; it is not a no-op reason and mutation_contract_sha256 is intentionally absent.
@@ -3988,11 +4007,12 @@ def _invoke_proposal(
     *, runner: Path, schema: Path, workdir: Path, evidence_dir: Path, hypothesis: dict,
     source: dict, seller_snapshot: dict, family_name: str, family: dict, manifest: dict,
     capability_paths: set[str], timeout_seconds: int, prior_rejections: list[dict] | None = None,
+    family_market: dict | None = None,
 ) -> tuple[dict, dict, set[str]]:
     evidence_dir.mkdir(parents=True, exist_ok=True)
     prompt, allowed_refs = _proposal_prompt(
         hypothesis, source, seller_snapshot, family_name, family, manifest, capability_paths,
-        prior_rejections=prior_rejections,
+        prior_rejections=prior_rejections, family_market=family_market,
     )
     started = time.time()
     completed = subprocess.run(
@@ -6996,6 +7016,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                     family = capability_templates.get(str(family_name or ""))
                     if proposal_source is None or not isinstance(family_name, str) or not isinstance(family, dict):
                         raise RuntimeError("storefront_proposal_context_missing")
+                    improve_family_market = _family_market(args.state_dir, family_name)
                     proposal_snapshot = (
                         presentation_snapshot if proposal_service_id == PRESENTATION_SERVICE_ID
                         else scope_snapshot if proposal_service_id == SCOPE_SERVICE_ID
@@ -7018,6 +7039,7 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         family_name=family_name, family=family, manifest=competitor_manifest,
                         capability_paths=capability_paths, timeout_seconds=args.timeout_seconds,
                         prior_rejections=improve_prior_rejections,
+                        family_market=improve_family_market,
                     )
                     proposal_rejected = None
                     try:
@@ -7143,11 +7165,16 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                         next_hypothesis, mutation_contract, args.state_dir / "effects.jsonl", int(time.time()),
                     )
                 else:
+                    target_family_name = capability_families.get(TARGET_SERVICE_ID)
+                    target_family_market = (
+                        _family_market(args.state_dir, target_family_name)
+                        if isinstance(target_family_name, str) else None
+                    )
                     raw_judgement = _invoke_judge(
                         runner=args.runner, schema=args.schema, workdir=args.workdir,
                         evidence_dir=inventory_path.parent / "judge", own_page=own_page,
                         manifest=competitor_manifest, capability_paths=capability_paths,
-                        timeout_seconds=args.timeout_seconds,
+                        timeout_seconds=args.timeout_seconds, family_market=target_family_market,
                     )
                     judgement = _guard_judgement(
                         raw_judgement,
