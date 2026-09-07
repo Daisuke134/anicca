@@ -1786,6 +1786,69 @@ def _next_unused_demand_cluster(clusters: list[dict], dismissed: set[str]) -> di
     )
 
 
+def _select_demand_cluster_for_wake(
+    known_clusters: list[dict], dismissed_clusters: set[str],
+    stranded_drafts: dict[str, tuple[str, int]],
+) -> tuple[dict | None, dict | None]:
+    """Pick this wake's demand cluster, finishing a draft already in flight before another.
+
+    `_next_unused_demand_cluster` alone lets the cluster selector land on any family with score,
+    even while a different family already has a filled draft sitting unpublished -- draft
+    4387924 ("LINE公式アカウントの予約・定型応答を構築します", capability family `line_bot_dev`) sat
+    for hours this way while the loop kept starting new drafts elsewhere. An unpublished draft
+    earns nothing, and finishing one already started is always worth more than starting another,
+    so a family in `stranded_drafts` is selected here before the normal pick ever runs. When
+    more than one family has a draft in flight, the oldest one (smallest `first_seen_index`)
+    goes first, since it has waited longest.
+    """
+    if stranded_drafts:
+        stranded_family, (stranded_draft_id, _) = min(
+            stranded_drafts.items(), key=lambda item: item[1][1])
+        matched_cluster = next(
+            (row for row in known_clusters
+             if row.get("status") == "known"
+             and str(row.get("capability_family") or "") == stranded_family),
+            None,
+        )
+        if matched_cluster is None:
+            # Do not invent a cluster and do not fall through to starting a new listing: that
+            # would strand a second draft while the first one is still waiting.
+            return None, {
+                "proposed": 0, "appended": 0,
+                "selected_cluster": None, "selected_score": None,
+                "selected_family": stranded_family,
+                "reason": "unpublished_draft_awaiting_known_cluster",
+                "unpublished_draft_service_id": stranded_draft_id,
+            }
+        derivation = {
+            "proposed": 0, "appended": 0,
+            "selected_cluster": matched_cluster.get("query"),
+            "selected_score": matched_cluster.get("score"),
+            "selected_family": matched_cluster.get("capability_family"),
+            "reason": "unpublished_draft_awaiting_publication",
+            "unpublished_draft_service_id": stranded_draft_id,
+        }
+        # A dismissal is permanent so a later wake never reselects that market -- but a
+        # stranded draft is real work already sitting on the platform, and finishing it
+        # outranks a dismissal that was only ever about starting something new. The draft
+        # wins; the dismissal ledger is append-only and keyed by cluster_key so it is not
+        # rewritten, but the override is named here so this wake is distinguishable from one
+        # that honoured the dismissal.
+        if str(matched_cluster.get("cluster_key") or "") in dismissed_clusters:
+            derivation["overrides_dismissal"] = True
+        return matched_cluster, derivation
+    unused_cluster = _next_unused_demand_cluster(known_clusters, dismissed_clusters)
+    # A no-op must name the market it would go after next, not just say it did nothing.
+    demand_derivation = None if unused_cluster is None else {
+        "proposed": 0, "appended": 0,
+        "selected_cluster": unused_cluster.get("query"),
+        "selected_score": unused_cluster.get("score"),
+        "selected_family": unused_cluster.get("capability_family"),
+        "reason": "unused_demand_cluster_available",
+    }
+    return unused_cluster, demand_derivation
+
+
 def _capability_inventory_needs_market_probe(clusters: list[dict], digest: str) -> bool:
     return not any(
         row.get("capability_inventory_sha256") == digest
@@ -2702,32 +2765,58 @@ def _reseal_healed_contract(contract: dict) -> dict:
     return {**corrected, "contract_sha256": hashlib.sha256(canonical.encode()).hexdigest()}
 
 
-def _family_has_unpublished_draft(
-    state_dir: Path, family_name: str, inventory_ids: set[str],
-) -> str | None:
-    """Name the draft this family already has in flight, if any.
+def _families_with_unpublished_drafts(
+    state_dir: Path, inventory_ids: set[str],
+) -> dict[str, tuple[str, int]]:
+    """Map every capability family to the draft it already has in flight, if any.
 
     A draft is built over more than one wake -- the blank draft is created, then filled, then
     published -- because a wake spends exactly one effect. So a family can be two thirds of the
     way to a listing while its most recent proposals were still being refused, and abandoning
     the demand cluster then throws that real draft away. The conditions are the same ones the
     create path already uses to offer a draft back for reuse.
+
+    Each value is `(draft_id, first_seen_index)`. `first_seen_index` is the row's position in
+    the append-only ledger the first time that draft id appears there -- the ledger carries no
+    per-row timestamp, but earlier lines were always appended in earlier wakes, so this stands
+    in for "how long has this draft been waiting" when more than one family has one in flight.
+
+    Reads the ledger once, however many families are checked, rather than re-reading it per
+    family: the file is scanned newest-first exactly once, and a family's answer is fixed the
+    first time (i.e. the most recent time) a row for it satisfies the conditions -- the same
+    result the old per-family reversed scan gave, one family at a time.
     """
     ledger = state_dir / "new-listing-drafts.jsonl"
     if not ledger.is_file():
-        return None
+        return {}
     deleted = _observed_deleted_draft_ids(state_dir / "evidence")
-    for line in reversed(ledger.read_text(encoding="utf-8").splitlines()):
-        if not line.strip():
+    rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines() if line.strip()]
+    first_seen_index: dict[str, int] = {}
+    for index, row in enumerate(rows):
+        first_seen_index.setdefault(str(row.get("draft_service_id") or ""), index)
+    result: dict[str, tuple[str, int]] = {}
+    for row in reversed(rows):
+        family = row.get("capability_family")
+        if not isinstance(family, str) or family in result:
             continue
-        row = json.loads(line)
         draft_id = str(row.get("draft_service_id") or "")
-        if (row.get("capability_family") == family_name and draft_id.isdigit()
-                and draft_id not in inventory_ids and draft_id not in deleted
+        if (draft_id.isdigit() and draft_id not in inventory_ids and draft_id not in deleted
                 and int(row.get("public_effect") or 0) == 0
                 and row.get("status") in {"draft_created", "prepared"}):
-            return draft_id
-    return None
+            result[family] = (draft_id, first_seen_index[draft_id])
+    return result
+
+
+def _family_has_unpublished_draft(
+    state_dir: Path, family_name: str, inventory_ids: set[str],
+) -> str | None:
+    """Name the draft `family_name` already has in flight, if any.
+
+    Thin wrapper around `_families_with_unpublished_drafts` for the single-family call sites;
+    see that function for the conditions and the reasoning behind them.
+    """
+    match = _families_with_unpublished_drafts(state_dir, inventory_ids).get(family_name)
+    return match[0] if match is not None else None
 
 
 def _recover_prepared_create_contract(
@@ -7653,15 +7742,11 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 str(row.get("cluster_key") or "") for row in _jsonl_rows(dismissal_ledger)[0]
                 if row.get("status") == "dismissed"
             } if dismissal_ledger.exists() else set()
-            unused_cluster = _next_unused_demand_cluster(known_clusters, dismissed_clusters)
-            # A no-op must name the market it would go after next, not just say it did nothing.
-            demand_derivation = None if unused_cluster is None else {
-                "proposed": 0, "appended": 0,
-                "selected_cluster": unused_cluster.get("query"),
-                "selected_score": unused_cluster.get("score"),
-                "selected_family": unused_cluster.get("capability_family"),
-                "reason": "unused_demand_cluster_available",
-            }
+            # A family that already has a filled, unpublished draft is finished before any new
+            # demand cluster is chosen -- see `_select_demand_cluster_for_wake`.
+            stranded_drafts = _families_with_unpublished_drafts(args.state_dir, inventory_ids)
+            unused_cluster, demand_derivation = _select_demand_cluster_for_wake(
+                known_clusters, dismissed_clusters, stranded_drafts)
             # Choosing a category reads official options only, so it does not wait on the
             # publication brake: a waiting cluster gets its category as soon as it exists.
             category_ledger = args.state_dir / "demand-category.jsonl"
