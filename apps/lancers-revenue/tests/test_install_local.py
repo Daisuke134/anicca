@@ -14,12 +14,12 @@ INSTALLER = REPO_ROOT / "apps/lancers-revenue/scripts/install-local.sh"
 PLIST_NAME = "ai.anicca.lancers-revenue-application.plist"
 REPORTER_PLIST_NAME = "ai.anicca.lancers-revenue-telegram-report.plist"
 WORK_SYNC_PLIST_NAME = "ai.anicca.lancers-revenue-work-sync.plist"
+STOREFRONT_PLIST_NAME = "ai.anicca.lancers-revenue-storefront.plist"
 RELEASE_FILES = (
     "skills/earn/lancers/SKILL.md",
     "skills/earn/lancers/products/monthly-sns-content-ops-v1.json",
     "skills/earn/lancers/assets/monthly-sns-content-ops-v1.png",
     "skills/gig-work/profile/avatar.jpg",
-    "skills/earn/lancers/scripts/storefront_offer.py",
     "skills/earn/lancers/scripts/application_tick.py",
     "skills/earn/lancers/scripts/work_sync.py",
     "skills/earn/lancers/scripts/status.py",
@@ -88,6 +88,7 @@ class InstallLocalTests(unittest.TestCase):
         reporter_plist = plistlib.loads(reporter_plist_path.read_bytes())
         self.assertFalse((launch_agent_dir / PLIST_NAME).exists())
         self.assertFalse((launch_agent_dir / WORK_SYNC_PLIST_NAME).exists())
+        self.assertFalse((launch_agent_dir / STOREFRONT_PLIST_NAME).exists())
         return release, manifest, reporter_plist
 
     def test_installs_immutable_exact_sha_release_and_reconcile_owner(self):
@@ -104,6 +105,7 @@ class InstallLocalTests(unittest.TestCase):
             self.assertNotIn("launchd_label", manifest)
             self.assertEqual(manifest["report_launchd_label"], REPORTER_PLIST_NAME.removesuffix(".plist"))
             self.assertNotIn("work_sync_launchd_label", manifest)
+            self.assertNotIn("storefront_launchd_label", manifest)
             self.assertEqual(list(manifest["files"]), sorted(manifest["files"]))
             self.assertEqual(
                 set(manifest["files"]), set(RELEASE_FILES)
@@ -137,6 +139,10 @@ class InstallLocalTests(unittest.TestCase):
             )
             self.assertNotIn(
                 "ai.anicca.lancers-revenue-work-sync",
+                INSTALLER.read_text(encoding="utf-8"),
+            )
+            self.assertNotIn(
+                "ai.anicca.lancers-revenue-storefront",
                 INSTALLER.read_text(encoding="utf-8"),
             )
 
