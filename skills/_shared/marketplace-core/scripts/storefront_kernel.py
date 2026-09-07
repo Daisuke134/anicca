@@ -412,6 +412,7 @@ def render_replace_plan(
 def families_with_unpublished_drafts(
     state_dir: Path, inventory_ids: set[str], *,
     observed_deleted_draft_ids: Callable[[Path], set[str]],
+    live_draft_ids: set[str] | None = None,
 ) -> dict[str, tuple[str, int]]:
     """Map every capability family to the draft it already has in flight, if any.
 
@@ -439,6 +440,13 @@ def families_with_unpublished_drafts(
     first_seen_index: dict[str, int] = {}
     for index, row in enumerate(rows):
         first_seen_index.setdefault(str(row.get("draft_service_id") or ""), index)
+    # The ledger outlives the drafts it describes. A draft deleted on an earlier wake leaves
+    # its row behind as soon as the evidence directory naming that deletion is collected, and
+    # `observed_deleted_draft_ids` can only report deletions it can still see. Four such rows
+    # were live in production, and because the caller prefers the longest-waiting draft, the
+    # stalest row -- the one most likely to name something that no longer exists -- won every
+    # time. When the caller can say which drafts the seller's own card census shows, that
+    # census decides; without it the ledger is all there is and the old behaviour stands.
     result: dict[str, tuple[str, int]] = {}
     for row in reversed(rows):
         family = row.get("capability_family")
@@ -446,6 +454,7 @@ def families_with_unpublished_drafts(
             continue
         draft_id = str(row.get("draft_service_id") or "")
         if (draft_id.isdigit() and draft_id not in inventory_ids and draft_id not in deleted
+                and (live_draft_ids is None or draft_id in live_draft_ids)
                 and int(row.get("public_effect") or 0) == 0
                 and row.get("status") in {"draft_created", "prepared"}):
             result[family] = (draft_id, first_seen_index[draft_id])

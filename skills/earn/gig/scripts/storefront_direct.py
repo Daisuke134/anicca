@@ -2527,7 +2527,7 @@ def _reseal_healed_contract(contract: dict) -> dict:
 
 
 def _families_with_unpublished_drafts(
-    state_dir: Path, inventory_ids: set[str],
+    state_dir: Path, inventory_ids: set[str], live_draft_ids: set[str] | None = None,
 ) -> dict[str, tuple[str, int]]:
     # Moved to storefront_kernel.families_with_unpublished_drafts, generalized to take the
     # deleted-draft-ids lookup as a parameter: `_observed_deleted_draft_ids` itself stays here
@@ -2536,6 +2536,7 @@ def _families_with_unpublished_drafts(
     # rather than imported into or duplicated inside the kernel.
     return _storefront_kernel().families_with_unpublished_drafts(
         state_dir, inventory_ids, observed_deleted_draft_ids=_observed_deleted_draft_ids,
+        live_draft_ids=live_draft_ids,
     )
 
 
@@ -7422,7 +7423,13 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
             } if dismissal_ledger.exists() else set()
             # A family that already has a filled, unpublished draft is finished before any new
             # demand cluster is chosen -- see `_select_demand_cluster_for_wake`.
-            stranded_drafts = _families_with_unpublished_drafts(args.state_dir, inventory_ids)
+        # The ledger outlives the drafts it describes: a draft deleted on an earlier wake leaves
+            # its row behind once the evidence directory naming the deletion is collected. Four
+            # such rows were live here, and "oldest first" then picked the stalest -- which is the
+            # one most likely to be gone. The seller's own card census, read above, is what says
+            # a draft exists.
+            stranded_drafts = _families_with_unpublished_drafts(
+                args.state_dir, inventory_ids, live_draft_ids=set(draft_ids))
             unused_cluster, demand_derivation = _select_demand_cluster_for_wake(
                 known_clusters, dismissed_clusters, stranded_drafts)
             # Choosing a category reads official options only, so it does not wait on the
