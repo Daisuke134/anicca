@@ -48,6 +48,13 @@ function opaqueEndpointKey(value) {
   return createHash("sha256").update(normalized).digest("hex");
 }
 
+function routeEventVersion({ eventId, anchorAtMs, src, dst, purpose }) {
+  return createHash("sha256").update(JSON.stringify([
+    String(eventId || ""), Number(anchorAtMs) || 0,
+    opaqueEndpointKey(src), opaqueEndpointKey(dst), String(purpose || "go"),
+  ])).digest("hex");
+}
+
 // C3 (FIND-002): a process-lifetime route-result cache so the 60s scheduler tick does NOT recompute a
 // route it already has (~30 paid provider calls/event → 1). Keyed on (from_geo, to_geo, time_bucket).
 const _memoryRouteCache = makeRouteCache({ store: new Map(), ttlMs: 10 * 60_000 });
@@ -491,6 +498,14 @@ async function directionsRoute(src, dst, mapsKey, anchorAtMs = null, nowMs = Dat
     anchorType: query.type,
     fromKey: srcGeo ? "" : opaqueEndpointKey(src),
     toKey: dstGeo ? "" : opaqueEndpointKey(dst),
+    eventVersion: routeEventVersion({
+      eventId: options.eventId,
+      anchorAtMs: query.anchorAtMs,
+      src,
+      dst,
+      purpose: options.purpose || (call.departureMode ? "return" : "go"),
+    }),
+    purpose: options.purpose || (call.departureMode ? "return" : "go"),
   };
   return cache.getOrCompute(uid, srcGeo || {}, dstGeo || {}, timeBucket(query.anchorAtMs), compute, context,
     (value, cacheEntry) => emitUsage(options, {
@@ -631,7 +646,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, now
         // outbound block already exists — fall through to return-leg so it can backfill a missing return block
       } else {
         let dest = ev.location;
-        const routeOpts = { uid, timezone: routeTimezone, supaUrl, supaKey };
+        const routeOpts = { uid, timezone: routeTimezone, supaUrl, supaKey, eventId: evKey, purpose: "go" };
         let route = null;
         if (routeFn) {
           try { route = await routeFn(origin, dest, mapsKey, ev.startMs, nowMs, false, routeOpts); }
@@ -730,7 +745,7 @@ async function fillTravel(uid, { apiKey, mapsKey, geminiKey, home, timezone, now
     const venue = resolvedDest;
     if (!home) { skipped++; continue; }
     const retMins = await directionsFn(venue, home, mapsKey, ev.endMs, nowMs, /* departureMode= */ true, {
-      uid, timezone: routeTimezone, supaUrl, supaKey,
+      uid, timezone: routeTimezone, supaUrl, supaKey, eventId: evKey, purpose: "return",
     });
     if (retMins == null) { skipped++; continue; }
     const retLeaveMs = ev.endMs;                           // depart immediately after event ends
