@@ -72,6 +72,7 @@ No deletion — decay only affects retrieval priority.
 - Do not probe or reproduce launchd 141 through the same GUI-domain path. If 141 appears, identify the exact call path entering `gui/$UID`; do not classify the whole loop, `lm-loop`, release tooling, restart, PGlite, or app-server as forbidden without that evidence. Terminal/AppleScript is not an allowed workaround for the prohibited GUI-domain operation.
 - Durable rationale and the canonical failure example live in `MEMORY.md` under “Codex loop runtime boundary.”
 - Sources: [OpenAI non-interactive mode](https://developers.openai.com/codex/noninteractive), [Scheduled tasks](https://developers.openai.com/codex/automations), [Follow a goal](https://developers.openai.com/codex/use-cases/follow-goals), [openai/codex issue #32321](https://github.com/openai/codex/issues/32321).
+- Local/self-hosted and cloud are two host adapters for one loop implementation, never separate loop codebases. Share the loop ID, business recipe, agent/tool contract, provider adapter, effect fence and receipt vocabulary; vary only supervisor, storage, secrets and browser transport. Before adding a local-only or cloud-only implementation, follow `skills/loop-engineering/SKILL.md` and prove the shared core cannot support it.
 - Before creating, changing, migrating, debugging, or retiring a Life Manager loop, MUST read and follow `skills/loop-development/SKILL.md`.
 
 ## Life Manager Cloud development

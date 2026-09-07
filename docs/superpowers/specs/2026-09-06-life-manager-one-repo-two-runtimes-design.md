@@ -188,6 +188,12 @@ apps/life-manager/adapters/       # cloud API/UI adapters only
 contract and receipt vocabulary. They may use different supervisor, browser and storage backends. Existing mutable
 ledgers are not bulk-moved merely to make folders look uniform.
 
+This is an enforced contributor rule, not only a target diagram. `AGENTS.md`
+states the invariant for every agent, `skills/loop-engineering/SKILL.md` owns the
+implementation boundary, and the English/Japanese READMEs explain it to users.
+No contributor adds a local-only or cloud-only copy before proving that a thin
+host adapter cannot implement the shared contract.
+
 ## 5. Dependency boundary
 
 Every required executable, adapter, schema, prompt and lockfile must live in this repository. An active runtime may
@@ -275,6 +281,7 @@ shared-component or legacy-retirement atom is active.
 - [ ] `ARCH-11` Remove external checkout/worktree/OpenClaw/Hermes code dependencies and move required source into this repository. The unused 763 MiB `life-manager-eliza-money-live-report` migration copy is deleted after confirming it was not a Git checkout and had no launchd reference, repository reference or runtime PID; other external dependencies remain to be migrated before this atom can close.
 - [ ] `ARCH-12` Prove clean local and cloud runs use the same loop contracts with replay-zero and official provider receipts.
 - [x] `DOC-01` Update English/Japanese README architecture and status from measured output; remove the Compose runtime claim and describe Mobile Apps as Anicca iOS, Honne and the other owned iOS build/marketing loops.
+- [x] `DOC-02` Bake the one-loop/two-host-adapter rule into `AGENTS.md`, make `skills/loop-engineering/SKILL.md` the implementation-boundary authority, and expose the same local/cloud reuse rule in both READMEs without duplicating the detailed spec.
 
 ## 7. Acceptance
 
