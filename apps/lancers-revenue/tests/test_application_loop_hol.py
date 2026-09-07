@@ -8,7 +8,7 @@ import sqlite3
 import sys
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -305,7 +305,12 @@ class ApplicationLoopHolTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            slots = [datetime(2026, 8, 13, 3 + index // 2, (index % 2) * 30, tzinfo=timezone.utc) for index in range(10)]
+            # One slot per query, whatever the list length. Hard-coding ten broke the moment the
+            # queries were re-derived from the catalogue, which is a change this test should not
+            # have an opinion about.
+            total = len(application_loop.DISCOVERY_QUERIES)
+            slots = [datetime(2026, 8, 13, 3, 0, tzinfo=timezone.utc) + timedelta(minutes=30 * index)
+                     for index in range(total)]
             for slot in slots:
                 application_loop.run_loop(state_path=root / "application.json", evidence_root=root / "evidence", discoverer=discoverer, clock=clock_for(slot))
             same_slot = slots[3]
@@ -313,9 +318,15 @@ class ApplicationLoopHolTests(unittest.TestCase):
                 application_loop.run_loop(state_path=root / "application.json", evidence_root=root / "evidence", discoverer=discoverer, clock=clock_for(same_slot))
             application_loop.run_loop(state_path=root / "application.json", evidence_root=root / "evidence", discoverer=discoverer, clock=clock_for(same_slot), query="explicit-query")
 
-        self.assertEqual([call["query"] for call in calls[:10]], list(application_loop.DISCOVERY_QUERIES))
-        self.assertEqual(calls[10]["query"], calls[11]["query"])
-        self.assertEqual(calls[12]["query"], "explicit-query")
+        # Every query is used exactly once across consecutive half-hour slots, starting wherever
+        # the slot arithmetic lands rather than at index 0.
+        used = [call["query"] for call in calls[:total]]
+        assert sorted(used) == sorted(application_loop.DISCOVERY_QUERIES)
+        start = application_loop.DISCOVERY_QUERIES.index(used[0])
+        expected = [application_loop.DISCOVERY_QUERIES[(start + i) % total] for i in range(total)]
+        self.assertEqual(used, expected)
+        self.assertEqual(calls[total]["query"], calls[total + 1]["query"])
+        self.assertEqual(calls[total + 2]["query"], "explicit-query")
         self.assertEqual(len(calls), len(clock_calls))
         self.assertTrue(all(call["limit"] == 20 for call in calls))
 
@@ -330,7 +341,11 @@ class ApplicationLoopHolTests(unittest.TestCase):
             return responses.pop(0)
         with patch.object(application_loop.status, "run_discovery", side_effect=discover), patch.object(application_loop.application_tick, "state_has_claim", side_effect=lambda _path, project_id: project_id == "5583089"):
             result = application_loop._run_default_discovery(datetime(2026, 8, 13, 3, 0, tzinfo=timezone.utc), 20.0, Path("/tmp/application.json"))
-        self.assertEqual(calls, list(application_loop.DISCOVERY_QUERIES[:2]))
+        # Two consecutive queries from wherever the slot lands: the first is skipped because every
+        # project in it is already claimed, the second supplies the fresh one.
+        total = len(application_loop.DISCOVERY_QUERIES)
+        start = application_loop.DISCOVERY_QUERIES.index(calls[0])
+        self.assertEqual(calls, [application_loop.DISCOVERY_QUERIES[(start + i) % total] for i in range(2)])
         self.assertEqual(result["opportunities"][0]["external_id"], "5587000")
 
     def test_empty_normalized_discovery_is_noop_but_other_errors_fail(self):
