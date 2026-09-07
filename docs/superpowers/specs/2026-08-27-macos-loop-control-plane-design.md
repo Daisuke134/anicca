@@ -194,10 +194,17 @@ completion remain separate.
      `#4363` adds a bounded five-second absence readback and keeps unknown errors fail-closed. The
      idle-only full apply from immutable release `6d7e08c636452f314894a98243a2079574568571`
      changed 135 idle owners and skipped 37 running owners without restarting a browser. Live argv
-     now proves the shared daily-driver has renderer limit 24, but the still-running old-release Gig
-     `:9223` and Lancers `:9227` roots have no renderer-limit/process-group contract. PANIC-2 therefore
-     remains open until those exact owners reach the new immutable release through an authorized
-     controlled restart or a natural terminal, followed by sustained count/ledger readback.
+     proves the shared daily-driver has renderer limit 24. After Dais explicitly authorized the two
+     browser-only restarts, Lancers `:9227` and Gig `:9223` were reconciled sequentially from immutable
+     release `a283fb8d27bc5c50ac443f367c36ef1cd8bc8fd7`; live root argv now proves process-group ownership
+     and renderer limits 8 and 24 respectively. Mac, loginwindow and the Aqua session were not
+     restarted. The first post-restart Gig readback found seven pages and 18 renderers, below its
+     declared limits, but the durable target ledger held six pre-restart rows matching zero live
+     target IDs while all 15 live targets were unclaimed. An owner-scoped Coconala orders-only probe
+     created no external effect and cleaned its live hidden target, but official navigation ended
+     `authenticated tab did not finish navigation`. PANIC-2 therefore remains open: distinguish
+     required profile-restored pages from reclaimable stale resources, clear only owner-proven stale
+     rows/pages, and obtain sustained count/ledger readback without unbounded growth.
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search
