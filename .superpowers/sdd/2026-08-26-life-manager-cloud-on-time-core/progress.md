@@ -13,12 +13,19 @@ Baseline: focused Life Manager suite 175/175 PASS.
 3. [x] **CLOUD-03 live onboarding** — production Telegram署名sessionとsame-tenant resume、real tenantのGoogle Calendar接続/home/Telegram通知/Ready、transaction actorのhome→notifications→phone skip、phone/call optional、exact one-time 3-day trial contractを証明済み。real friendのQR操作だけを最終UATに保持する。
 4. [x] **CLOUD-04 cloud runtime** — tenant A/B分離、Railway対象service restart後の永続化、production SHA/health、Mac mini・localhost・launchctl・Keychain依存0をlive readback済み。既存source contractを再実装していない。
 5. [x] **CLOUD-07 Stripe test mode** — current checkout/payment link、Railway test webhook、trialing、active、past_due、cancel、duplicate、out-of-order、`lm_users` entitlementをTEST MODE / TEST CLOCKだけでlive検証済み。real charge 0、Stripeだけがpaid authority。fixture customer/Test Clock/Supabase user/event ledgerは対象限定で削除済み。
-6. [ ] **CLOUD-08 public surface** — `anicca-products`の`/lm`と`/life-manager`をDAILY機能の真実なcopyへ更新する。QR/deep link、本人Calendar consent、Telegram通知、phone/call optional、3日trial、Cloud userのMac不要、privacy/support/disconnectを表示し、test/lint/build、PR、merge、実deployを確認する。
+6. [x] **CLOUD-08 public surface** — `anicca-products`の`/lm`と`/life-manager`をDAILY機能の真実なcopyへ更新済み。QR/deep link、本人Calendar consent、Telegram通知、phone/call optional、3日trial、Cloud userのMac不要、privacy/support/disconnectを本番でreadback済み。旧Web signup・電話必須・全予定2回電話・Maps限定・OpenClaw・whole-life・固定月額claimは0件。
 7. [ ] **Full production acceptance** — physical、online、locationless、multiple physical、changed/cancelled、phone off/onをprovider receiptとreplay追加effect 0で証明する。exact deployed main SHA、Railway health/restart/persistence、tenant A/B分離を記録する。
 8. [ ] **Google Cloud cost incident closure** — billing accountのJuly/Augustをproject/service/SKU/dayで確定し、September MTD/forecast/current daily burnをreadbackする。Gemini、Search grounding、Live API、Maps/Routes/Geocoding、Cloud Run/compute/storage/network、abandoned project、retry/schedule trafficをrepo/runtimeと対応づける。ROOT_CAUSE、CURRENT_DAILY_BURN、SAFE_FIX、POST_FIX_EXPECTED_COSTを出し、production DAILY機能を壊さない安全な削減だけを適用する。COST-03 PR #4300はこの項目まで未mergeで保持する。
 9. [ ] **FRIEND-BETA READY gate** — 上記を全て閉じた後だけ、actual public URL、Telegram link、QR、friend DM、5分onboarding、test checklist、成功条件を一つのpackageとして渡す。最後に残る作業をreal friend UATだけにする。
 
-Current atom: **6. CLOUD-08 public surface**.
+Current atom: **7. Full production acceptance**.
+
+### CLOUD-08 production evidence
+
+- `Daisuke134/anicca-products` PR #403 merged as `e1f278b055278385489e11416c4719292ef431e6`. Product diff is limited to `apps/landing/app/life-manager/LifeManagerBody.tsx` and `apps/landing/lib/launchStrings.ts`; runtime, Stripe, Railway, and Life Manager server behavior are unchanged.
+- Focused public relationship contracts 3/3 PASS. `npm run build` PASS and statically generated 131 routes including `/lm` and `/life-manager`; only unrelated existing wallet dependency warnings remained. `git diff --check` and focused stale-copy/secret scans PASS.
+- Netlify production workflow `34071913130` PASS, including build, deploy, and post-deploy money-path smoke. Production URL is `https://aniccaai.com`; immutable deploy URL is `https://6a9e0edafe2df337efc2374b--anicca2.netlify.app`.
+- Live `/life-manager` and `/lm` readback shows the same `https://t.me/LifeManagerBotbot?start=lp` handoff, QR/tap start, own Google Calendar consent, home/base, Telegram departure route, optional phone/calls, one-time 3-day trial, cloud/no-Mac runtime, tenant separation, and privacy/support/disconnect guidance. Old stale copy readback is 0.
 
 ### CLOUD-07 live evidence and closeout
 
