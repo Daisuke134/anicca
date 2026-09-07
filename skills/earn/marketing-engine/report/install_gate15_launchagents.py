@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plan or install the three Gate 15 owner-report LaunchAgents.
+"""Plan or install the remaining two Gate 15 owner-report LaunchAgents.
 
 The installer deliberately owns only the ``marketing-owner-*`` labels.  Gate
 16 is responsible for retiring the legacy aggregate reporters after shadow
@@ -15,7 +15,6 @@ import os
 import pathlib
 import plistlib
 import re
-import shlex
 import subprocess
 import sys
 import tempfile
@@ -28,16 +27,13 @@ DEFAULT_HOME = pathlib.Path.home()
 DEFAULT_LAUNCH_DIR = DEFAULT_HOME / "Library" / "LaunchAgents"
 PYTHON = sys.executable
 CLI_RELATIVE = pathlib.Path("skills/earn/marketing-engine/report/owner_report_cli.py")
-PIPELINE_RELATIVE = pathlib.Path("skills/earn/marketing-engine/report/truth_pipeline.py")
 STATE_RELATIVE = pathlib.Path("skills/earn/marketing-engine/state")
 LOG_RELATIVE = pathlib.Path("Library/Logs/anicca")
 
 LABELS = (
-    "ai.anicca.marketing-owner-events",
     "ai.anicca.marketing-owner-daily",
     "ai.anicca.marketing-owner-weekly",
 )
-EVENT_KINDS = ("action", "checkpoint", "incident", "experiment")
 
 
 def _sha256(payload: bytes) -> str:
@@ -89,27 +85,8 @@ def _sweep_args(
     ]
 
 
-def _event_command(
-    *,
-    python: str,
-    cli: pathlib.Path,
-    state_root: pathlib.Path,
-) -> str:
-    # owner_report_cli intentionally accepts one report kind per invocation.
-    # A small shell sequence keeps one 15-minute LaunchAgent while preserving
-    # the CLI's bounded, directly testable interface for each of the four
-    # event sweeps.
-    commands = [shlex.join(_sweep_args(
-        python=python,
-        cli=cli,
-        state_root=state_root,
-        kind=kind,
-    )) for kind in EVENT_KINDS]
-    return "set -eu; " + "; ".join(commands)
-
-
 def build_plists(repo_root: pathlib.Path, home: pathlib.Path) -> dict[str, bytes]:
-    """Return exactly the three Gate 15 LaunchAgent plist payloads.
+    """Return exactly the two remaining Gate 15 LaunchAgent plist payloads.
 
     ``repo_root`` is explicit so callers can inspect a canonical checkout
     without accidentally embedding this disposable worktree.  This function
@@ -121,21 +98,8 @@ def build_plists(repo_root: pathlib.Path, home: pathlib.Path) -> dict[str, bytes
     home = pathlib.Path(home)
     cli, state_root, log_dir = _paths(repo_root, home)
 
-    events = _common_job(
-        label=LABELS[0], repo_root=repo_root, home=home, log_dir=log_dir
-    )
-    events["StartInterval"] = 3600
-    events["ProgramArguments"] = [
-        PYTHON,
-        str(repo_root / PIPELINE_RELATIVE),
-        "--repo-root",
-        str(repo_root),
-        "--home",
-        str(home),
-    ]
-
     daily = _common_job(
-        label=LABELS[1], repo_root=repo_root, home=home, log_dir=log_dir
+        label=LABELS[0], repo_root=repo_root, home=home, log_dir=log_dir
     )
     daily["StartCalendarInterval"] = {"Hour": 22, "Minute": 0}
     daily["ProgramArguments"] = _sweep_args(
@@ -143,7 +107,7 @@ def build_plists(repo_root: pathlib.Path, home: pathlib.Path) -> dict[str, bytes
     )
 
     weekly = _common_job(
-        label=LABELS[2], repo_root=repo_root, home=home, log_dir=log_dir
+        label=LABELS[1], repo_root=repo_root, home=home, log_dir=log_dir
     )
     # launchd uses Sunday == 0 for StartCalendarInterval.  No timezone is
     # embedded; calendar values therefore use the host's local timezone.
@@ -152,7 +116,7 @@ def build_plists(repo_root: pathlib.Path, home: pathlib.Path) -> dict[str, bytes
         python=PYTHON, cli=cli, state_root=state_root, kind="portfolio_weekly"
     )
 
-    jobs = (events, daily, weekly)
+    jobs = (daily, weekly)
     return {
         job["Label"]: plistlib.dumps(job, fmt=plistlib.FMT_XML, sort_keys=True)
         for job in jobs
@@ -176,7 +140,7 @@ def plan(
     home: pathlib.Path = DEFAULT_HOME,
     launch_dir: pathlib.Path | None = None,
 ) -> list[dict[str, Any]]:
-    """Describe create/update/no-change status for the three target files."""
+    """Describe create/update/no-change status for the two target files."""
 
     launch_dir = pathlib.Path(launch_dir) if launch_dir is not None else pathlib.Path(home) / "Library" / "LaunchAgents"
     payloads = build_plists(repo_root, home)
@@ -384,7 +348,7 @@ def apply(
     home: pathlib.Path = DEFAULT_HOME,
     launch_dir: pathlib.Path | None = None,
 ) -> list[dict[str, Any]]:
-    """Atomically install and read back only the three owned labels."""
+    """Atomically install and read back only the two remaining owned labels."""
 
     repo_root = pathlib.Path(repo_root)
     home = pathlib.Path(home)

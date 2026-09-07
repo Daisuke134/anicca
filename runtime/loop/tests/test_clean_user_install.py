@@ -14,6 +14,22 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CleanUserInstallTest(unittest.TestCase):
+    def test_marketing_owner_events_wrapper_preserves_repo_and_home_argv(self):
+        wrapper = ROOT / "skills/earn/marketing-engine/report/events-owner"
+        self.assertTrue(os.access(wrapper, os.X_OK))
+        result = subprocess.run(
+            [str(wrapper)],
+            env={**os.environ, "LIFE_MANAGER_PYTHON": "/bin/echo"},
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            result.stdout.strip(),
+            f"{ROOT}/skills/earn/marketing-engine/report/truth_pipeline.py "
+            f"--repo-root {ROOT} --home {Path.home()}",
+        )
+
     def test_marketing_metrics_wrapper_preserves_state_argv(self):
         wrapper = ROOT / "marketing/engine/bin/marketing-metrics-owner"
         self.assertTrue(os.access(wrapper, os.X_OK))
