@@ -354,6 +354,13 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--account-registry", type=Path, default=root / "registry/accounts")
     result.add_argument("--product-registry", type=Path, default=root / "registry/products")
     result.add_argument("--bind-existing-only", action="store_true")
+    result.add_argument(
+        "--quality-gate-exit-code",
+        type=int,
+        choices=(1, 3),
+        default=1,
+        help="exit code used when evidence is written but the 95%% quality gate misses",
+    )
     return result
 
 
@@ -390,7 +397,7 @@ def main(argv: list[str] | None = None) -> int:
                 ensure_ascii=False,
             )
         )
-        return 0 if report["passes_95_percent_gate"] else 1
+        return 0 if report["passes_95_percent_gate"] else args.quality_gate_exit_code
 
     env = load_env(args.env_file)
     if args.posts_fixture:
@@ -439,7 +446,7 @@ def main(argv: list[str] | None = None) -> int:
     atomic_write(args.output, "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in rows))
     atomic_write(args.report, json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"status": "written", "output": str(args.output), "report": str(args.report), **report}, ensure_ascii=False))
-    return 0 if report["passes_95_percent_gate"] else 1
+    return 0 if report["passes_95_percent_gate"] else args.quality_gate_exit_code
 
 
 if __name__ == "__main__":
