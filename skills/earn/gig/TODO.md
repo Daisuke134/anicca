@@ -374,7 +374,9 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `0`, effect `0`, failed `0`. Positive contract normalization, provider mutation, official readback,
    and one real replay-zero receipt chain remain open, so the atom stays unchecked. Main-derived
    immutable release `6f0b91bf9e87d2efb14e25ac4c358a4a3366a8ca` is installed only for the new
-   Paid owner under apply receipt `2ed176d67addebd77ae86fef`; its first natural terminal is pending.
+   Paid owner under apply receipt `2ed176d67addebd77ae86fef`; its first natural wake ended `pass`
+   at `2026-09-07T02:52:05Z` with the persisted aggregate observed `0`, actionable `0`, effect `0`,
+   readback `0`, failed `0`, pending `0`. Production monitoring is therefore live and safely idle.
 7. [ ] `NEXT-MARKETPLACE-PAID-1` Repeat adapter conformance for Fiverr or the next authorized
    marketplace without changing the shared Paid lifecycle. PASS = provider-only config/transport/
    effect/readback changes plus one real official receipt chain and replay-zero.
