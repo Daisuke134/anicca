@@ -57,6 +57,27 @@ class CleanUserInstallTest(unittest.TestCase):
             f"--json --exhaustive --state-path {state_root}/application.json",
         )
 
+    def test_lancers_work_sync_wrapper_preserves_managed_state_argv(self):
+        wrapper = ROOT / "skills/earn/lancers/scripts/work-sync-owner"
+        self.assertTrue(os.access(wrapper, os.X_OK))
+        state_root = "/private/life-manager-state/lancers"
+        result = subprocess.run(
+            [str(wrapper)],
+            env={
+                **os.environ,
+                "LIFE_MANAGER_PYTHON": "/bin/echo",
+                "LIFE_MANAGER_STATE_ROOT": state_root,
+            },
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            result.stdout.strip(),
+            f"{ROOT}/skills/earn/lancers/scripts/work_sync.py "
+            f"--json --state-path {state_root}/work-sync.json",
+        )
+
     def test_public_archive_contains_general_agent_release_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
