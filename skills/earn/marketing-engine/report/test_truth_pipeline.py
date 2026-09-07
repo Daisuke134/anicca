@@ -23,6 +23,7 @@ class TruthPipelineTest(unittest.TestCase):
         commands = truth_pipeline.build_commands(root, home, python="/python")
         rendered = [" ".join(command) for command in commands]
         self.assertIn("publication_ledger.py", rendered[0])
+        self.assertIn("--quality-gate-exit-code 3", rendered[0])
         self.assertIn("native_metrics.py", rendered[1])
         self.assertEqual(
             [command[command.index("--kind") + 1] for command in commands[2:]],
@@ -96,6 +97,37 @@ class TruthPipelineTest(unittest.TestCase):
         self.assertEqual(calls, ["reconcile", "collect", "report"])
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["failed_stages"], ["collect"])
+
+    def test_reconcile_quality_gate_is_attention_not_pipeline_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = truth_pipeline.run_pipeline(
+                [["publication_ledger.py"], ["native_metrics.py"]],
+                lock_path=pathlib.Path(tmp) / "truth.lock",
+                run_command=lambda command: 3 if "publication_ledger.py" in command else 0,
+            )
+
+        self.assertEqual(result["status"], "completed")
+        self.assertEqual(result["failed_stages"], [])
+        self.assertEqual(result["attention_stages"], ["reconcile"])
+        self.assertEqual(
+            result["stages"],
+            [
+                {"stage": "reconcile", "returncode": 3, "result": "attention"},
+                {"stage": "collect", "returncode": 0, "result": "pass"},
+            ],
+        )
+
+    def test_reconcile_runtime_error_remains_pipeline_failure(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = truth_pipeline.run_pipeline(
+                [["publication_ledger.py"]],
+                lock_path=pathlib.Path(tmp) / "truth.lock",
+                run_command=lambda _command: 1,
+            )
+
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["failed_stages"], ["reconcile"])
+        self.assertEqual(result["attention_stages"], [])
 
 
 if __name__ == "__main__":

@@ -45,6 +45,8 @@ def build_commands(
             str(publication_ledger),
             "--report",
             str(evidence / "publication-reconcile-latest.json"),
+            "--quality-gate-exit-code",
+            "3",
         ],
         [
             python,
@@ -104,18 +106,33 @@ def run_pipeline(
         try:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            return {"status": "locked", "failed_stages": [], "stages": []}
+            return {
+                "status": "locked",
+                "failed_stages": [],
+                "attention_stages": [],
+                "stages": [],
+            }
         stages = []
         failed = []
+        attention = []
         for command in commands:
             stage = _stage_name(command)
             returncode = int(run_command(command))
-            stages.append({"stage": stage, "returncode": returncode})
-            if returncode != 0:
+            if stage == "reconcile" and returncode == 3:
+                result = "attention"
+                attention.append(stage)
+            elif returncode != 0:
+                result = "fail"
                 failed.append(stage)
+            else:
+                result = "pass"
+            stages.append(
+                {"stage": stage, "returncode": returncode, "result": result}
+            )
         return {
             "status": "failed" if failed else "completed",
             "failed_stages": failed,
+            "attention_stages": attention,
             "stages": stages,
         }
 

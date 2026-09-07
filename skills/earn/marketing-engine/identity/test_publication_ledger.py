@@ -69,6 +69,21 @@ def unbound_row(identifier: str, integration_id: str = "integration-ebook-ja") -
 
 
 class PublicationLedgerTest(unittest.TestCase):
+    def test_quality_gate_can_use_distinct_attention_exit_code(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / "publication-identity.jsonl"
+            report = root / "report.json"
+
+            result = ledger.main([
+                "--bind-existing-only",
+                "--output", str(output),
+                "--report", str(report),
+                "--quality-gate-exit-code", "3",
+            ])
+
+        self.assertEqual(result, 3)
+
     def test_live_reconcile_of_exact_tiktok_receipt_requires_no_paid_scraper(self):
         value = post(platform="tiktok")
         value["releaseId"] = "7669159327655054613"
