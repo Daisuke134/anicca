@@ -70,10 +70,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             "/opt/homebrew/bin/node",
             str(root / "apps/life-manager/scripts/money-printer-symphony-bridge.js"),
         ],
-        "lancers-revenue-paid": [
-            python, str(lancers / "lane_report.py"), "--lane", "paid",
-            "--state-path", str(lancers_state / "contracts.json"),
-        ],
         "lancers-revenue-storefront": [
             python, str(lancers / "storefront_offer.py"), "--apply",
             "--product", str(lancers.parent / "products/monthly-sns-content-ops-v1.json"),

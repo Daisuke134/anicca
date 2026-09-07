@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
+PYTHON="${LIFE_MANAGER_PYTHON:-$HOME/.local/share/life-manager/venv/bin/python}"
+STATE_ROOT="${LIFE_MANAGER_STATE_ROOT:?LIFE_MANAGER_STATE_ROOT is required}"
+
+if [[ ! -x "$PYTHON" ]]; then
+  echo "paid-owner: managed Python is unavailable: $PYTHON" >&2
+  exit 69
+fi
+
+exec "$PYTHON" "$ROOT/skills/earn/lancers/scripts/lane_report.py" \
+  --lane paid \
+  --state-path "$STATE_ROOT/contracts.json" \
+  "$@"
