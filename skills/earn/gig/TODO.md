@@ -232,7 +232,7 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    - [x] `COCONALA-PAID-3C` Prove continuous local ownership. PASS = no `ENOSPC`, reconciliation
      `OSError`, exit 120 or exit 143, followed by two consecutive natural PASS terminals and zero
      duplicate external effects.
-4. [ ] `SHARED-PAID-1` Use Lancers as the second real Paid platform and extraction trigger.
+4. [x] `SHARED-PAID-1` Use Lancers as the second real Paid platform and extraction trigger.
    PASS = implement one provider-neutral Paid entrypoint from
    `skills/loop-engineering/references/marketplace-paid-lane.md`, moving only orchestration already
    proven identical on Coconala and Lancers into `skills/_shared/marketplace-core/`. Keep auth,
@@ -329,7 +329,12 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    and duplicate dropped `0`. Rooms `18223833` and `18171850` are completed; Ryu `18211957` and
    `18211838` are satisfied no-ops; `18180857` is the sole durable pending item with a nonempty
    blocker, one remaining-work entry and one official authentication receipt. The following natural
-   wake still owes replay-zero before this atom can close.
+   wake then ended naturally from the same installed release with the identical five-room
+   classification, failed `0`, pending `1`, effect `0`, readback `4` and duplicate dropped `0`.
+   It reused `18180857`'s fresh durable wait without starting its remote builder, and both no-op rooms
+   retained official readback without another seller effect. Together with the thin Lancers adapter's
+   live zero-inventory preflight and the shared conformance regressions above, this closes the kernel
+   extraction atom. A real Lancers submission remains the separate next atom.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
