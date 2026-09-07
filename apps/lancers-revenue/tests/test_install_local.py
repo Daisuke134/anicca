@@ -17,28 +17,6 @@ WORK_SYNC_PLIST_NAME = "ai.anicca.lancers-revenue-work-sync.plist"
 STOREFRONT_PLIST_NAME = "ai.anicca.lancers-revenue-storefront.plist"
 RELEASE_FILES = (
     "skills/earn/lancers/SKILL.md",
-    "skills/earn/lancers/products/monthly-sns-content-ops-v1.json",
-    "skills/earn/lancers/assets/monthly-sns-content-ops-v1.png",
-    "skills/gig-work/profile/avatar.jpg",
-    "skills/earn/lancers/scripts/application_tick.py",
-    "skills/earn/lancers/scripts/work_sync.py",
-    "skills/earn/lancers/scripts/status.py",
-    "skills/earn/lancers/scripts/lancers_adapter.py",
-    "skills/_shared/marketplace-core/scripts/application_transaction.py",
-    "skills/_shared/marketplace-core/scripts/contracts.py",
-    "skills/_shared/marketplace-core/scripts/ledger.py",
-    "skills/_shared/marketplace-core/schemas/event.schema.json",
-    "skills/_shared/marketplace-core/schemas/opportunity.schema.json",
-    "skills/_shared/marketplace-core/schemas/payment.schema.json",
-    "skills/gig-work/schemas/application_decisions.schema.json",
-    "skills/gig-work/schemas/reply_composition.schema.json",
-    "runtime/agent-runner/agent_runner.py",
-    "runtime/agent-runner/config.json",
-    "runtime/agent-runner/token_budget.py",
-    "runtime/loop/macos_loop_registry.py",
-    "runtime/loop/runtime_event.py",
-    "skills/earn/lancers/scripts/telegram_report.py",
-    "skills/_shared/marketplace-core/scripts/telegram_outbox.py",
 )
 
 
@@ -57,7 +35,7 @@ class InstallLocalTests(unittest.TestCase):
             text=True,
         ).stdout.strip()
 
-    def _run_install(self, root: Path, mode: str) -> tuple[Path, dict, dict]:
+    def _run_install(self, root: Path, mode: str) -> tuple[Path, dict]:
         install_root = root / "install"
         launch_agent_dir = root / "LaunchAgents"
         state_root = root / "state"
@@ -83,27 +61,25 @@ class InstallLocalTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
         release = install_root / "releases" / self.release_sha
         manifest_path = state_root / "deployment.json"
-        reporter_plist_path = launch_agent_dir / REPORTER_PLIST_NAME
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        reporter_plist = plistlib.loads(reporter_plist_path.read_bytes())
         self.assertFalse((launch_agent_dir / PLIST_NAME).exists())
         self.assertFalse((launch_agent_dir / WORK_SYNC_PLIST_NAME).exists())
         self.assertFalse((launch_agent_dir / STOREFRONT_PLIST_NAME).exists())
-        return release, manifest, reporter_plist
+        self.assertFalse((launch_agent_dir / REPORTER_PLIST_NAME).exists())
+        return release, manifest
 
     def test_installs_immutable_exact_sha_release_and_reconcile_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            release, manifest, reporter_plist = self._run_install(root / "reconcile", "reconcile-only")
+            release, manifest = self._run_install(root / "reconcile", "reconcile-only")
             self.assertEqual(release, root / "reconcile/install/releases" / self.release_sha)
             for relative in RELEASE_FILES:
                 self.assertTrue((release / relative).is_file(), relative)
-            self.assertTrue((release / "runtime/agent-runner").is_dir())
 
             self.assertEqual(manifest["deployed_sha"], self.release_sha)
             self.assertEqual(manifest["mode"], "reconcile-only")
             self.assertNotIn("launchd_label", manifest)
-            self.assertEqual(manifest["report_launchd_label"], REPORTER_PLIST_NAME.removesuffix(".plist"))
+            self.assertNotIn("report_launchd_label", manifest)
             self.assertNotIn("work_sync_launchd_label", manifest)
             self.assertNotIn("storefront_launchd_label", manifest)
             self.assertEqual(list(manifest["files"]), sorted(manifest["files"]))
@@ -114,16 +90,6 @@ class InstallLocalTests(unittest.TestCase):
                 self.assertEqual(digest, sha256(release / relative), relative)
             mode = stat.S_IMODE((root / "reconcile/state/deployment.json").stat().st_mode)
             self.assertEqual(mode, 0o600)
-
-            self.assertEqual(reporter_plist["Label"], REPORTER_PLIST_NAME.removesuffix(".plist"))
-            self.assertEqual(reporter_plist["StartInterval"], 300)
-            self.assertNotIn("RunAtLoad", reporter_plist)
-            self.assertIn("--json", reporter_plist["ProgramArguments"])
-            self.assertIn(
-                str(release / "skills/earn/lancers/scripts/telegram_report.py"),
-                reporter_plist["ProgramArguments"],
-            )
-            self.assertNotIn("__LANCERS_", str(reporter_plist))
 
             state_root = root / "reconcile/state"
             for path in state_root.rglob("*"):
@@ -145,12 +111,15 @@ class InstallLocalTests(unittest.TestCase):
                 "ai.anicca.lancers-revenue-storefront",
                 INSTALLER.read_text(encoding="utf-8"),
             )
+            self.assertNotIn(
+                "ai.anicca.lancers-revenue-telegram-report",
+                INSTALLER.read_text(encoding="utf-8"),
+            )
 
     def test_normal_owner_keeps_json_without_reconcile_flag(self):
         with tempfile.TemporaryDirectory() as directory:
-            _, manifest, reporter_plist = self._run_install(Path(directory), "normal")
+            _, manifest = self._run_install(Path(directory), "normal")
             self.assertEqual(manifest["mode"], "normal")
-            self.assertIn("--json", reporter_plist["ProgramArguments"])
 
 
 if __name__ == "__main__":
