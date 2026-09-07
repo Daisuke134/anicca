@@ -318,26 +318,6 @@
       "log_basename": "article-healthcheck"
     },
     {
-      "label": "ai.anicca.writer-claim-loop",
-      "lane": "writer-demand",
-      "summary": "Supplies demand cards for the Writer creator.",
-      "env_profile": "writer",
-      "program": [
-        "{{PYTHON}}",
-        "{{RELEASE}}/skills/earn/gig/scripts/gig_disk_guard.py",
-        "{{PYTHON}}",
-        "{{RELEASE}}/skills/writer-agent/scripts/claim_loop.py",
-        "--skill-dir",
-        "{{RELEASE}}/skills/writer-agent",
-        "--state-dir",
-        "{{WRITER_STATE_DIR}}"
-      ],
-      "StartInterval": 900,
-      "RunAtLoad": true,
-      "ProcessType": "Background",
-      "log_basename": "writer-claim-loop"
-    },
-    {
       "label": "ai.anicca.writer-money-sync",
       "lane": "writer-money",
       "summary": "Joins verified publisher and payment receipts into the Writer ledger.",

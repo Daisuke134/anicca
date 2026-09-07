@@ -91,8 +91,6 @@ def command_for(loop_id: str, root: Path, home: Path) -> list[str]:
             python, str(root / "skills/earn/gig/scripts/storefront_direct.py"),
             "--effect", "--auto-cadence", "--full-interval-seconds", "60",
         ],
-        "writer-claim-loop": [python, str(writer / "claim_loop.py"),
-                              "--state-dir", str(writer_state)],
         "writer-money-sync": [python, str(writer / "money_sync.py"),
                               "--state-dir", str(writer_state),
                               "--db", str(writer_state / "money.sqlite3")],
