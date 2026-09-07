@@ -345,6 +345,13 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    Therefore a future contract would not yet be fulfilable. First complete those provider-only
    boundaries against Lancers' existing official sources without touching Apply-owned files; then
    keep the atom open until one real funded contract proves submit, same-session readback and replay-zero.
+   The scheduled `paid-owner` now enters the shared `paid_kernel.py` with the Lancers adapter and a
+   provider-scoped durable state root before emitting its existing lane report; it no longer reports
+   without running Paid. Owner ordering plus adapter/kernel regressions pass 16/16, and a live
+   read-only zero-inventory smoke returns observed `0`, effect `0`, failed `0`. The official two-pass
+   inventory remains stable and authenticated: 94 proposals, working `0`, contract candidates `0`,
+   incoming monthly offers `0`, payment history `0`, balance JPY `0`. Contract-detail promotion and
+   the real mutation/readback/replay receipt chain remain open and keep this atom unchecked.
 6. [ ] `CROWDWORKS-PAID-1` Add only the CrowdWorks Paid adapter to the proven shared entrypoint.
    PASS = no shared planner/worker/reviewer/lifecycle fork; one real contracted-work item reaches
    official submission readback and replay-zero. The existing CrowdWorks Apply owner remains
