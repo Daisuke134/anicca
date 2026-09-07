@@ -83,7 +83,16 @@ HARD_PROHIBITION_CLASSES = {
     "mandatory_human_presence": "human face appearance/performance/voice recording/phone support/mandatory live call or mandatory video interview",
     "explicit_ai_prohibition": "explicit prohibition on AI use",
     "illegal_or_unsafe": "illegal or unsafe work",
-    "missing_legal_qualification": "legally required qualification that Kosuke does not hold",
+    # 2026-09-07: applied to 整理収納アドバイザー監修 and 防災士監修. Both name a certification the
+    # persona does not hold, and both were read as allowed because the wording said "legally
+    # required" and a 監修 credential is not a licence. Supervising under a credential you lack is
+    # lending a name, which is the thing the honesty rules exist to prevent.
+    "missing_legal_qualification": "a named qualification, certification, licence or 監修者 credential that Kosuke does not hold, whether or not the law requires it",
+    # 2026-09-07: applied to 「バイマで出品作業」 at roughly ¥50 per item. The catalogue sells built
+    # software and automation; this is the buyer's own account operated by hand, forever. The
+    # capability list already says web/browser operation, which is true of a tool we build and not
+    # of standing in for staff. maintenance_retainer is unaffected: it operates systems we built.
+    "manual_marketplace_operation": "ongoing manual work inside the buyer's own account or marketplace (出品代行, 受発注, 在庫更新, 投稿代行, 反復データ入力) where the deliverable is worked hours rather than software, automation or a built artifact",
     "mandatory_attribute_fabrication": "mandatory personal attribute that cannot be answered truthfully without fabrication",
 }
 PUBLIC_FIELDS = ("schema_version", "record_type", "platform", "external_id", "title", "description", "url", "category", "budget_type", "budget_min_minor", "budget_max_minor", "currency", "buyer_external_id", "observed_at")
