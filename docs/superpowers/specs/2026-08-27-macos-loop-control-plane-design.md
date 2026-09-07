@@ -60,7 +60,7 @@ Execute exactly in this order:
    and aggregate browser owner/process/renderer/endpoint/tab counts. A receipt scan found zero URLs,
    user paths, bearer tokens, or API-key-shaped values. `lm-loop doctor` remains green with 175
    managed entries and zero missing, unmanaged, or installed-retired labels.
-2. [ ] `PANIC-2` Measure and bound GUI-browser ownership at the source. PASS = every registered
+2. [x] `PANIC-2` Measure and bound GUI-browser ownership at the source. PASS = every registered
    browser owner has a finite context/tab/renderer retention contract, stale resources are reclaimed
    only after ownership/open-file checks, and a sustained real workload no longer grows browser or
    TCC pressure without bound. Do not globally kill Chromium, WindowServer, tccd, sandboxd, Remote,
@@ -69,10 +69,10 @@ Execute exactly in this order:
    the shared loop-development contract; do not create a Coconala-only or browser-only supervisor.
    Source control now contains the shared host-wide port/profile/PID ownership, target/context and
    renderer bounds, memory admission, scheduled-process deadline and owner-scoped cleanup contracts
-   detailed below. Their focused regressions and several source-driven probes pass, but this atom is
-   not complete: immutable-release application and sustained live readback still show legacy/unowned
-   pages and old-release owners, so host-wide browser/TCC pressure is not yet proved bounded. Running
-   browsers remain untouched because applying the contract must not kill or restart a live browser.
+   detailed below. Their focused regressions, source-driven probes, immutable-release application and
+   the authorized Gig/Lancers browser-only restart now pass. The sustained real Paid workload stayed
+   inside both renderer limits and released all temporary target/context claims. Profile-restored
+   default pages remain bounded by the one process-group browser owner; no global cleanup was used.
 3. [ ] `PANIC-3` Install the recommended macOS 15.7.9 maintenance update, not the Tahoe major
    upgrade, in an explicitly approved maintenance window. This step requires a restart and therefore
    waits for user approval immediately before execution. PASS = exact OS/build readback, no missing
@@ -90,8 +90,8 @@ Execute exactly in this order:
    WindowServer/tccd/sandboxd watchdog panic, bounded memory/browser counts, no unowned boot gap, and
    no duplicate external effect across recovery.
 
-Current completion audit: only `PANIC-1` is complete. `PANIC-2` still lacks its aggregate live
-boundedness gate; `PANIC-3` is contradicted by the host still reporting macOS `15.6` build `24G84`;
+Current completion audit: `PANIC-1` and `PANIC-2` are complete. `PANIC-3` is contradicted by the host
+still reporting macOS `15.6` build `24G84`;
 therefore the update-dependent `PANIC-4` has not run. `PANIC-5` has no accepted pre-login alert and
 the `2026-09-06` WindowServer watchdog means the seven-day no-recurrence window required by
 `PANIC-6` has not elapsed. These are missing acceptance receipts, not unchecked completed work.
@@ -182,7 +182,7 @@ completion remain separate.
      immediately after create. Attach/evaluate failures now close and release the target. A production
      source audit finds seven remaining `Target.createTarget` paths; each is governed by the shared
      target ledger, context-lease ledger, and/or immediate `finally` teardown. Browser tests pass (23).
-   - [ ] Close the remaining live-retention gap. A source-driven 25-cycle open/close probe left zero
+   - [x] Close the remaining live-retention gap. A source-driven 25-cycle open/close probe left zero
      lease and target-owner rows and did not increase page count (2 before/after). A later 5x10 probe
      also left both ledgers empty and reduced Chromium RSS from 1.21 GiB to 1.06 GiB, but concurrent
      old-release lanes moved total pages 3→5 and renderers 6→9. Four stable unowned legacy pages and
@@ -198,13 +198,17 @@ completion remain separate.
      browser-only restarts, Lancers `:9227` and Gig `:9223` were reconciled sequentially from immutable
      release `a283fb8d27bc5c50ac443f367c36ef1cd8bc8fd7`; live root argv now proves process-group ownership
      and renderer limits 8 and 24 respectively. Mac, loginwindow and the Aqua session were not
-     restarted. The first post-restart Gig readback found seven pages and 18 renderers, below its
-     declared limits, but the durable target ledger held six pre-restart rows matching zero live
-     target IDs while all 15 live targets were unclaimed. An owner-scoped Coconala orders-only probe
-     created no external effect and cleaned its live hidden target, but official navigation ended
-     `authenticated tab did not finish navigation`. PANIC-2 therefore remains open: distinguish
-     required profile-restored pages from reclaimable stale resources, clear only owner-proven stale
-     rows/pages, and obtain sustained count/ledger readback without unbounded growth.
+     restarted. Across the following real five-room Paid workload, Gig pages moved 7→5→4→7→5 and
+     renderers 18→7→4→16, always below its limit 24; Lancers renderers remained at or below 6 against
+     limit 8. Six pre-restart target-ledger rows matched zero official live target IDs and were pruned
+     only after that absence readback; no live page was closed. The workload then claimed two live
+     targets and released them, leaving zero target and context-lease rows. Profile-restored default
+     pages remain owned by the bounded browser process root rather than falsely attributed to a
+     short-lived lane owner. An owner-scoped Coconala orders-only probe created no external effect;
+     its separate `authenticated tab did not finish navigation` result is a marketplace-auth/readback
+     failure, not browser growth. The installed Paid wake reached a natural terminal from the same
+     release with effect zero, while browser counts returned inside their finite contracts. This
+     closes the live-retention gate without restarting Mac, loginwindow, Aqua or another owner.
    - [x] Resolve Job Search ownership from official consumer readback. The latest Job Search daily
      browser receipt at `2026-09-06T20:35 JST` names `http://127.0.0.1:9222` and the exact websocket
      ID exposed by the shared daily-driver; that endpoint held 13 targets. The dedicated Job Search

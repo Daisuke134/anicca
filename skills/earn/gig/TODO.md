@@ -154,16 +154,18 @@ Do not reorder or mark the Paid atoms below complete while local boot recovery i
 independent agents may continue read-only or disjoint work in parallel; this owner advances the host
 P0 first.
 
-Current audited state: `PANIC-1` is complete and `PANIC-2` is the first unfinished atom. The retired
+Current audited state: `PANIC-1` and `PANIC-2` are complete; `PANIC-3` is the first unfinished atom. The retired
 duplicate Job Search browser is officially absent and `lm-loop doctor` is green. After an idle-only
 full apply, Dais explicitly authorized browser-only controlled restarts; Lancers `:9227` and Gig
 `:9223` now run immutable release `a283fb8d27bc5c50ac443f367c36ef1cd8bc8fd7` through the shared
 process-group owner with renderer limits 8 and 24. Mac, loginwindow and Aqua were not restarted.
-The first post-restart Gig snapshot remained within the renderer limit, but six durable target-ledger
-rows matched no live target and none of the 15 live targets were claimed; the owner-scoped read-only
-Coconala orders probe also ended `authenticated tab did not finish navigation`. The exact remaining
-PANIC-2 gate is therefore owner-safe stale-resource reconciliation plus sustained count/ledger
-readback, not another browser restart. The Mac still reports
+The following real five-room Paid workload kept Gig pages at 4–7 and renderers at 4–18 against limit
+24; Lancers renderers stayed at or below 6 against limit 8. Six pre-restart ledger rows matched no
+official live target and were pruned without closing a live page. Two workload targets were then
+claimed and released, leaving target and context ledgers empty at natural terminal. Profile-restored
+default pages remain bounded by their browser process root. The separate owner-scoped Coconala probe
+ended `authenticated tab did not finish navigation`, and the Paid aggregate failed, but neither path
+grew browser resources or produced an external effect. The Mac still reports
 macOS `15.6` build `24G84`, so `PANIC-3` and its update-dependent
 reboot proof in `PANIC-4` did not happen. `PANIC-5` lacks its accepted pre-login alert, and the latest
 WindowServer watchdog is `2026-09-06`, so the seven-day recurrence gate in `PANIC-6` cannot yet pass.
@@ -294,6 +296,12 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    Coconala-adapter regressions pass 20/20 with no external effect. The atom remains unchecked:
    coordinate that exact backup/owner state, recover Coconala auth without restarting the browser,
    then obtain a natural five-room official aggregate and following replay-zero before marking complete.
+   After the authorized Gig browser restart, a natural installed-release wake did observe all five
+   rooms and re-proved Ryu `18211957` plus `18211838` as `satisfied_noop` with effect zero and official
+   readback. It nevertheless ended `failed`: `18180857` failed at `remote_builder`, while `18223833`
+   and `18171850` failed targeted readback; aggregate was observed `5`, actionable `3`, effect `0`,
+   readback `2`, failed `3`, pending `0`. This is the current Paid truth and does not satisfy the
+   required failed-zero aggregate or following replay-zero, so `SHARED-PAID-1` remains unchecked.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
