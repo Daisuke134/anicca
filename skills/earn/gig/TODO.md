@@ -672,6 +672,46 @@ no Homebrew binary, no second copy of the sentence. A new marketplace inherits r
 its platform, not by writing a reporter.
 
 
+## Apply-owner cursor — Coconala's refusal, and the pace that likely caused it
+
+Measured 2026-09-07. Everything below the application step is healthy; the application step itself
+is refused by Coconala, silently.
+
+**What was ruled out, each with a reproduction:**
+
+| suspected | measurement |
+|---|---|
+| session | a fresh isolated context seeded exactly the way the lane seeds it renders `/mypage/dashboard` authenticated |
+| discovery | the live board's newest posting is `5256609` — the same id the lane observes. There were no newer postings to miss |
+| silent realtime | `apply-decision` fires once per new request id; with no new ids there is nothing to send. Working as designed |
+| 受注/発注 mode | not a persistent session state, just two pages. `/mypage/dashboard_provider` shows the seller view and the next page reverts |
+| our code | between the last application (09-02 15:05) and the first change of this session (09-06 20:50), **no commit touched the apply path**. `application_parent.py` was untouched for four days |
+| the click | the button fires. `handleOfferClick(){window.open(this.offerUrl,"_blank")}` with `offerUrl` = `/offers/add/<id>` — the same route the lane already uses. Under `userGesture` a second tab really opens |
+
+**What is actually happening:** the server redirects the offer page straight back, with no error and
+the button left in place. The redirect target even tracks the referer — no referer lands on `/`,
+a referer of the request page lands on `/requests/<id>` — so the request is being processed and
+declined, not lost. Silence with the affordance left visible is the shape of throttling.
+
+What preceded it: **806 applications cumulative, 26 on 2026-09-02 alone, from a lane waking every
+60 seconds.** The last successful application is 2026-09-02 15:05, the same day.
+
+1. [x] `APPLY-PACE-1` Wake Apply every 30 minutes instead of every 60 seconds.
+   Thirty minutes costs nothing measurable: postings stay open for days (the one measured on 09-07
+   had 14 days left), and 806 applications produced 6 contracts — 0.74%, so fit decides outcomes,
+   not speed. Only the lane that submits applications is slowed; Storefront (60s) and Paid (300s)
+   do not submit and are unchanged.
+2. [ ] `APPLY-PACE-2` Confirm or refute the throttling read. PASS = after the slower cadence has run
+   for several hours, either an application succeeds with an official readback — which confirms it —
+   or `/offers/add/<id>` still bounces, which rules pace out and leaves an account-side condition
+   (rank, verification, category eligibility, an application cap) as the remaining explanation.
+   Do not add more probing traffic while waiting; extra requests are the thing under suspicion.
+3. [ ] `APPLY-PACE-3` If the refusal survives, ask Coconala rather than the DOM. One manual
+   application attempt by Dais in an ordinary browser settles in a minute what the automation
+   cannot see from outside: if it succeeds, the difference is in our client; if it is refused the
+   same way, the site will say why.
+
+
 ## Historical Coconala atomic cursor — evidence only
 
 One checkbox was one bounded change or one bounded
