@@ -12,21 +12,22 @@ Baseline: focused Life Manager suite 175/175 PASS.
 2. [x] **CLOUD-05 production migration/readback** — approved migrationだけをproduction Supabaseへ適用済み。transaction内のsanitized test tenantでhome変更、phone変更、phone削除、`phone=null`、`call_enabled=false`、通知維持、cross-tenant mutation拒否、同一idempotency key replayの重複mutation 0をreadback済み。fixtureはROLLBACK後0行。
 3. [x] **CLOUD-03 live onboarding** — production Telegram署名sessionとsame-tenant resume、real tenantのGoogle Calendar接続/home/Telegram通知/Ready、transaction actorのhome→notifications→phone skip、phone/call optional、exact one-time 3-day trial contractを証明済み。real friendのQR操作だけを最終UATに保持する。
 4. [x] **CLOUD-04 cloud runtime** — tenant A/B分離、Railway対象service restart後の永続化、production SHA/health、Mac mini・localhost・launchctl・Keychain依存0をlive readback済み。既存source contractを再実装していない。
-5. [ ] **CLOUD-07 Stripe test mode** — current checkout/payment link、webhook endpoint/secret設定、trialing、active、past_due、cancel、duplicate、out-of-order、`lm_users` entitlementをTEST MODE / TEST CLOCKだけで検証する。real charge 0、Stripeだけがpaid authority。
+5. [x] **CLOUD-07 Stripe test mode** — current checkout/payment link、Railway test webhook、trialing、active、past_due、cancel、duplicate、out-of-order、`lm_users` entitlementをTEST MODE / TEST CLOCKだけでlive検証済み。real charge 0、Stripeだけがpaid authority。fixture customer/Test Clock/Supabase user/event ledgerは対象限定で削除済み。
 6. [ ] **CLOUD-08 public surface** — `anicca-products`の`/lm`と`/life-manager`をDAILY機能の真実なcopyへ更新する。QR/deep link、本人Calendar consent、Telegram通知、phone/call optional、3日trial、Cloud userのMac不要、privacy/support/disconnectを表示し、test/lint/build、PR、merge、実deployを確認する。
 7. [ ] **Full production acceptance** — physical、online、locationless、multiple physical、changed/cancelled、phone off/onをprovider receiptとreplay追加effect 0で証明する。exact deployed main SHA、Railway health/restart/persistence、tenant A/B分離を記録する。
 8. [ ] **Google Cloud cost incident closure** — billing accountのJuly/Augustをproject/service/SKU/dayで確定し、September MTD/forecast/current daily burnをreadbackする。Gemini、Search grounding、Live API、Maps/Routes/Geocoding、Cloud Run/compute/storage/network、abandoned project、retry/schedule trafficをrepo/runtimeと対応づける。ROOT_CAUSE、CURRENT_DAILY_BURN、SAFE_FIX、POST_FIX_EXPECTED_COSTを出し、production DAILY機能を壊さない安全な削減だけを適用する。COST-03 PR #4300はこの項目まで未mergeで保持する。
 9. [ ] **FRIEND-BETA READY gate** — 上記を全て閉じた後だけ、actual public URL、Telegram link、QR、friend DM、5分onboarding、test checklist、成功条件を一つのpackageとして渡す。最後に残る作業をreal friend UATだけにする。
 
-Current atom: **5. CLOUD-07 Stripe test mode**.
+Current atom: **6. CLOUD-08 public surface**.
 
-### CLOUD-07 current evidence and exact blocker
+### CLOUD-07 live evidence and closeout
 
-- Production Railway `life-call` has the current Life Manager payment link and `STRIPE_WEBHOOK_SECRET` configured; deployment `4fcf17b0-4b42-4023-8e44-30d2f76a1643` is `SUCCESS` and health reports build `580cbb8a285dd8d33d63f7dc90c79ed1a0a167a6`.
-- The public payment link returns HTTP 200. The production webhook rejects an invalid signature with HTTP 400 and causes no billing mutation.
-- Stripe billing/lifecycle contracts pass for `trialing`/`active`/`past_due`/cancel, duplicate claim, out-of-order/stale events, release, dunning, and Stripe-only paid authority. The production event ledger has zero rows; its primary key and RLS are enabled. Browser roles have table SELECT grants, but zero RLS policies, so they cannot read rows.
-- The remaining provider-side TEST MODE / TEST CLOCK readback requires Stripe dashboard authentication. Existing Stripe CLI credentials are expired. Google sign-in reaches Stripe 2FA; the only offered methods are an existing passkey protected by the macOS login keychain password or an authenticator-app code. No email/SMS/Google Prompt recovery option is offered, and the private credential SSOT contains no Stripe TOTP credential. Apple credential-store use, credential reset, and recovery are outside the authorized path. No real card charge was attempted.
-- Do not advance to CLOUD-08 until this human-only Stripe 2FA step is completed and provider-side TEST MODE evidence is captured.
+- Production Railway `life-call` preserves the live `STRIPE_WEBHOOK_SECRET` and current public payment link. A separate test-mode endpoint `we_1UCqTdEeDsUAcaLSDUzw4dcy` targets `/api/stripe/webhook`; only the four subscription lifecycle events are enabled. `STRIPE_TEST_WEBHOOK_SECRET` is configured independently, so test verification cannot replace or break live webhook verification.
+- Dual-secret fail-closed verification shipped in PR #4389 / `c7c720df1512adc8f2803d4048d81448c4ba5674`; focused billing/signature 24/24 PASS. Latest Stripe item-level `current_period_end` compatibility shipped in PR #4396 / `7ca6f48fccd1a185b4f0c2208ba3c47802b87df3`; focused billing/signature 25/25 PASS. Railway deployment `080e9e65-ae61-4189-8ce4-22d2c00a00cc` is `SUCCESS` at that exact SHA.
+- Stripe Test Clock live sequence is PASS: exact 3-day `trialing` → successful renewal `active` → failure-card renewal `past_due` → cancel `canceled`. Supabase entitlement readback followed provider truth: paid true for trialing/active/past_due, then paid false for canceled. No live-mode object or real card charge was used.
+- Duplicate delivery proof: the same signed real canceled event replayed twice returned HTTP 200 `duplicate`; state remained canceled/false. Out-of-order proof: an older signed active event was replayed after cancellation and returned HTTP 200 while state remained canceled/false; its event claim stayed exactly one.
+- Latest Stripe API returned period end on subscription items with top-level null. After PR #4396, a fresh test subscription read back non-null `current_period_end` in Supabase and cancellation again synchronized to canceled/false.
+- Cleanup PASS: the test customer and Test Clock report deleted, the dedicated Supabase fixture user count is 0, and all fixture-related event-ledger rows are 0. Existing production users, live subscriptions, and the live webhook secret were not changed. The restricted test credential remains only in the private local credential SSOT and is never recorded in repo/log evidence.
 
 ### CLOUD-05 inherited CI evidence
 
