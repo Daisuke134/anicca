@@ -130,8 +130,10 @@ owns `CLOUD-01` through `CLOUD-08`. Finish and integrate one cost atom before st
    `google/no_route` negative rows with TTL 1800 seconds, and the next readback kept paid Directions
    failures at 5 (zero increase). Network/5xx uses a 120-second backoff. Raw addresses are represented
    only by opaque SHA-256 cache scopes and are not persisted.
-3. **COST-03 — one route fact:** make travel block, Telegram reminder, and optional call reuse one
-   event/version-scoped route result; prove schedule/location changes invalidate it.
+3. **COST-03 — one route fact (DONE):** travel block, Telegram reminder, and optional call reuse one
+   event/version-scoped route result. Exact event ID、schedule、endpoints、go/return purpose changes
+   invalidate it. PR #4419 merged as `d69b21ee5773f4629a15d226008be7095d68cf02`; focused
+   current-main route/travel/reminder/wake verification passed 129/129 and Railway health serves that SHA.
 4. **COST-04 — owner and spend guard:** prove exactly one Cloud scheduler owner, add tenant/provider
    daily circuit breakers that preserve cached/read/settings behavior, and alert before rejection.
 5. **COST-05 — beta unit economics:** run two to four weeks, calculate p50/p95 direct cost per active
