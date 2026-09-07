@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
 PYTHON="${LIFE_MANAGER_PYTHON:-$HOME/.local/share/life-manager/venv/bin/python}"
+STATE_ROOT="${LIFE_MANAGER_STATE_ROOT:?LIFE_MANAGER_STATE_ROOT is required}"
 
 if [[ ! -x "$PYTHON" ]]; then
   echo "events-owner: managed Python is unavailable: $PYTHON" >&2
@@ -12,4 +13,5 @@ fi
 exec "$PYTHON" "$ROOT/skills/earn/marketing-engine/report/truth_pipeline.py" \
   --repo-root "$ROOT" \
   --home "$HOME" \
+  --state-root "$STATE_ROOT" \
   "$@"

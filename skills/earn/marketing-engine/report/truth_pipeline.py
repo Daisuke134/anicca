@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -18,13 +19,19 @@ ENGINE_ROOT = HERE.parent
 
 
 def build_commands(
-    repo_root: pathlib.Path, home: pathlib.Path, *, python: str = sys.executable
+    repo_root: pathlib.Path,
+    home: pathlib.Path,
+    *,
+    state_root: pathlib.Path | None = None,
+    python: str = sys.executable,
 ) -> list[list[str]]:
     repo_root = pathlib.Path(repo_root)
     home = pathlib.Path(home)
     engine = repo_root / "skills/earn/marketing-engine"
-    state = engine / "state"
-    evidence = engine / "evidence/metrics"
+    mutable_root = pathlib.Path(state_root) if state_root is not None else engine
+    state = mutable_root / "state"
+    evidence = mutable_root / "evidence/metrics"
+    publication_ledger = state / "publication-identity.jsonl"
     env = home / "anicca/.env"
     commands = [
         [
@@ -34,15 +41,23 @@ def build_commands(
             "8",
             "--env-file",
             str(env),
+            "--output",
+            str(publication_ledger),
             "--report",
             str(evidence / "publication-reconcile-latest.json"),
         ],
         [
             python,
             str(engine / "measure/native_metrics.py"),
+            "--ledger",
+            str(publication_ledger),
+            "--state",
+            str(state / "post-metrics.jsonl"),
             "--env",
             str(env),
             "collect",
+            "--raw-evidence",
+            str(evidence / "provider-responses.jsonl"),
             "--report",
             str(evidence / "native-metrics-latest.json"),
         ],
@@ -110,11 +125,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo-root", type=pathlib.Path, default=REPO_ROOT)
     parser.add_argument("--home", type=pathlib.Path, default=pathlib.Path.home())
     parser.add_argument(
-        "--lock-path", type=pathlib.Path, default=ENGINE_ROOT / "state/.truth-pipeline.lock"
+        "--state-root",
+        type=pathlib.Path,
+        default=pathlib.Path(os.environ.get("LIFE_MANAGER_STATE_ROOT", str(ENGINE_ROOT))),
+    )
+    parser.add_argument(
+        "--lock-path", type=pathlib.Path
     )
     args = parser.parse_args(argv)
+    lock_path = args.lock_path or args.state_root / "state/.truth-pipeline.lock"
     result = run_pipeline(
-        build_commands(args.repo_root, args.home), lock_path=args.lock_path
+        build_commands(args.repo_root, args.home, state_root=args.state_root),
+        lock_path=lock_path,
     )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 1 if result["status"] == "failed" else 0
