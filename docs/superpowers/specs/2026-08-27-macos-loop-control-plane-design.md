@@ -45,7 +45,9 @@ Measured incident evidence:
   Chromium renderer processes are active. This is correlation evidence; no individual loop is yet
   proven to have caused the watchdog.
 
-Execute exactly in this order:
+Host-track atoms retain this internal order. Dais explicitly pauses this track after `PANIC-2` and
+places `PANIC-3` through `PANIC-6` after the four remaining Paid atoms in
+`skills/earn/gig/TODO.md`; an OS restart is not a repair for the current Paid failure.
 
 1. [x] `PANIC-1` Add one read-only boot/panic evidence collector to the existing control plane.
    PASS = on every boot it records boot ID/time, prior orderly-shutdown presence, panic/reset report
@@ -333,10 +335,11 @@ completion remain separate.
     record recovery, then observe seven days of normal concurrent load with bounded memory/browser and
     disk headroom, no new WindowServer watchdog and no duplicate external effect.
 
-`PANIC-3` and `PANIC-4` retain their original positions and approval requirements above. Current work
-stops at that boundary after `PANIC-2`; it does not silently advance the P0 sequence while the explicit
-no-restart instruction remains active. No later item may claim that an OS update or controlled reboot
-occurred until those acceptance steps are actually authorized and measured.
+`PANIC-3` through `PANIC-6` retain their internal order and approval requirements above, but the
+controlling Gig cursor now completes `SHARED-PAID-1`, `LANCERS-PAID-1`, `CROWDWORKS-PAID-1` and
+`NEXT-MARKETPLACE-PAID-1` first. No Mac, loginwindow or Aqua restart is authorized while Dais is away
+from the machine. No later item may claim that an OS update or controlled reboot occurred until those
+acceptance steps are explicitly authorized and measured.
 
 ## 1. Overview
 
