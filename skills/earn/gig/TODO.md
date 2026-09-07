@@ -324,6 +324,12 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    `50151d6ea204863ce09989fd` proves the exact loaded argv and release; Mac, browser, Apply and
    Storefront were not restarted. Its first natural wake is in progress and is not acceptance until
    the terminal aggregate and following replay are read back.
+   That first installed-release wake now ended naturally with runtime `pass` and aggregate
+   `status=pending`: observed `5`, actionable `3`, readback `4`, failed `0`, pending `1`, effect `0`
+   and duplicate dropped `0`. Rooms `18223833` and `18171850` are completed; Ryu `18211957` and
+   `18211838` are satisfied no-ops; `18180857` is the sole durable pending item with a nonempty
+   blocker, one remaining-work entry and one official authentication receipt. The following natural
+   wake still owes replay-zero before this atom can close.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
