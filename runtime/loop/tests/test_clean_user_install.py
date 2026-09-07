@@ -14,6 +14,23 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CleanUserInstallTest(unittest.TestCase):
+    def test_marketing_metrics_wrapper_preserves_state_argv(self):
+        wrapper = ROOT / "marketing/engine/bin/marketing-metrics-owner"
+        self.assertTrue(os.access(wrapper, os.X_OK))
+        state_root = "/private/life-manager-state/marketing"
+        result = subprocess.run(
+            [str(wrapper)],
+            env={
+                **os.environ,
+                "LIFE_MANAGER_STATE_ROOT": state_root,
+                "MARKETING_METRICS_EXECUTABLE": "/bin/echo",
+            },
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.stdout.strip(), f"observe --root {state_root}")
+
     def test_bootstrap_installs_the_locked_runtime_python_dependencies(self):
         requirements = (ROOT / "requirements-runtime.txt").read_text().splitlines()
         self.assertIn("jsonschema==4.26.0", requirements)

@@ -2073,6 +2073,7 @@
       "state_root": "~/Library/Application Support/AniccaMarketing"
     },
     "marketing-metrics": {
+      "adapter": "exec",
       "cadence": {
         "start_interval_seconds": 900
       },
@@ -2080,9 +2081,10 @@
         "max_age_days": 14,
         "max_runs": 100
       },
+      "command": [],
       "domain": "growth",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "marketing/engine/bin/marketing-metrics-owner",
       "label": "ai.anicca.marketing-metrics",
       "log_root": "~/Library/Application Support/AniccaMarketing/logs",
       "provider_route": "shared-agent-runner",
