@@ -7651,9 +7651,23 @@ def run_once(args: argparse.Namespace) -> tuple[int, dict]:
                 except RuntimeError as error:
                     demand_derivation = {**(demand_derivation or {}),
                                          "blueprint_blocked": str(error)[:120]}
-            if (fixed_candidate_public and create_spacing_open and next_hypothesis is None
-                    and observed < 20
-                    and (not demand_already_sold or cluster_blueprint is not None)):
+            # Five conditions decide whether this wake may start or finish a listing, and when
+            # the answer was no the wake said only that it had no executable contract. Working
+            # out which one closed meant reproducing each by hand against live state, once per
+            # question. The wake states it instead, so one receipt answers what an afternoon of
+            # reverse-engineering did.
+            create_gate = {
+                "fixed_candidate_public": bool(fixed_candidate_public),
+                "create_spacing_open": bool(create_spacing_open),
+                "no_open_improve_hypothesis": next_hypothesis is None,
+                "slots_available": observed < 20,
+                "demand_unspent_or_blueprint": bool(
+                    not demand_already_sold or cluster_blueprint is not None),
+            }
+            create_blocked_by = sorted(name for name, open_ in create_gate.items() if not open_)
+            demand_derivation = {**(demand_derivation or {}), "create_gate": create_gate,
+                                 "create_blocked_by": create_blocked_by}
+            if not create_blocked_by:
                 source_service_id = new_listing_contract["draft_service_id"]
                 if cluster_blueprint is not None:
                     # The source listing must belong to the market's own capability family.
