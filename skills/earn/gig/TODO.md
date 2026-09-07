@@ -748,6 +748,28 @@ that names nothing — the third time today the same shape has hidden a root cau
 2. [ ] `LANCERS-FORM-2` Read one natural wake's `proposal-form-changes.jsonl`, update the selectors
    it names, and confirm. PASS = a natural wake submits a Lancers application with an official
    proposal receipt. Do not guess at selectors before that file exists; it costs one wake.
+4. [x] `LANCERS-QUERY-1` Search for what the catalogue sells. Measured 2026-09-07: Lancers applied
+   to nothing all day, and it was neither the form nor the session. The planner judged 10 fresh
+   projects per wake and found zero it could honestly take — the last 60 decisions were 17
+   `mandatory_attribute_fabrication`, 14 `mandatory_human_presence`, 14 `video_or_animation`,
+   against a board of short-video editing, on-site filming in 錦糸町, and Threads management.
+   **The lane had fetched that board itself.** Half of `DISCOVERY_QUERIES` was SNS and content
+   marketing — `SNS運用`, `SNS投稿`, `コンテンツ制作`, `X運用`, `B2Bマーケティング` — while all 20
+   catalogue listings are system and automation build work, and one query runs per pass. The lane
+   was fetching work it is honest enough to refuse, then reporting "適合する新規案件がなかった",
+   which reads as a quiet market rather than a mis-aimed search.
+   Replaced with twelve noun phrases taken from catalogue titles: `業務自動化`, `業務システム`,
+   `Webアプリ`, `システム開発`, `LINE Bot`, `スクレイピング`, `Excel VBA`, `ダッシュボード`,
+   `Chrome拡張`, `RPA`, `ECサイト`, `不具合修正`. Noun phrases rather than titles, per the recipe:
+   `業務自動化システムを開発` finds nothing while `業務自動化` returns a live board.
+   Nineteen tests hold them to the catalogue — each query must appear in it, the five marketing
+   terms cannot return, and if the catalogue ever does sell video or SNS work the test that asserts
+   it does not is the one that fails first, so reinstating those queries would be correct rather
+   than a regression.
+   This is the same root as `APPLY-REPORT-4`'s catalogue gap: Lancers still reads
+   `earn/lancers/products/` rather than the shared catalogue, so these terms are hand-derived and
+   will drift again unless that connection is made.
+
 3. [x] `LANCERS-FORM-3` Fold the same evidence discipline into the shared apply recipe. Three
    platforms have now each lost days to a strict matcher that discarded which matcher it was, so
    `marketplace-apply-lane.md` should carry it as a rule rather than three separate lessons.

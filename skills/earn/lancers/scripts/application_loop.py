@@ -23,9 +23,21 @@ PRODUCT_PATH = HERE.parent / "products" / "monthly-sns-content-ops-v1.json"
 PLATFORM = "lancers"
 MAX_OPPORTUNITIES = 20
 DEFAULT_DISCOVERY_QUERY = "SNS運用"
+# Search for what the catalogue actually sells. Measured 2026-09-07: half of the previous list was
+# SNS and content marketing ("SNS運用", "SNS投稿", "コンテンツ制作", "X運用", "B2Bマーケティング"),
+# and one query runs per pass, so the board the lane saw was short-video editing, on-site filming and
+# Threads management. It then declined all of it -- 17 mandatory_attribute_fabrication,
+# 14 mandatory_human_presence, 14 video_or_animation in the last 60 decisions -- and applied to
+# nothing. The lane was fetching work it is honest enough to refuse.
+#
+# All 20 catalogue listings are system and automation build work, so every term below is a noun
+# phrase taken from one of their titles. Noun phrases, not titles: the recipe records that
+# "業務自動化システムを開発" finds nothing while "業務自動化" returns a live board.
+# test_lancers_queries_match_the_catalogue keeps them tied to what we sell.
 DISCOVERY_QUERIES = (
-    "SNS運用", "SNS投稿", "コンテンツ制作", "X運用", "Python",
-    "B2Bマーケティング", "AI活用", "システム開発", "ChatGPT", "月額",
+    "業務自動化", "業務システム", "Webアプリ", "システム開発",
+    "LINE Bot", "スクレイピング", "Excel VBA", "ダッシュボード",
+    "Chrome拡張", "RPA", "ECサイト", "不具合修正",
 )
 PUBLIC_SOFTWARE_PROOF = {
     "source_url": "https://github.com/Daisuke134/life-manager", "title": "Life Manager", "license": "MIT",
