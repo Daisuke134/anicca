@@ -338,6 +338,13 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
+   Current truth: the official read-only preflight has zero contract candidates, zero payment history
+   and JPY 0, but lack of inventory is not the only remaining condition. The thin adapter currently
+   implements complete-source inventory normalization only; `decide()` always waits for contract
+   detail, `mutate()` raises `lancers_paid_effect_not_implemented`, and `readback()` can never verify.
+   Therefore a future contract would not yet be fulfilable. First complete those provider-only
+   boundaries against Lancers' existing official sources without touching Apply-owned files; then
+   keep the atom open until one real funded contract proves submit, same-session readback and replay-zero.
 6. [ ] `CROWDWORKS-PAID-1` Add only the CrowdWorks Paid adapter to the proven shared entrypoint.
    PASS = no shared planner/worker/reviewer/lifecycle fork; one real contracted-work item reaches
    official submission readback and replay-zero. The existing CrowdWorks Apply owner remains
