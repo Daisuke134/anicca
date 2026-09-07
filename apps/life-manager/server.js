@@ -81,6 +81,7 @@ const { completeBrowserHandoff, startBrowserJobLoop } = require("./lib/browser-j
 const { startInvestmentDryRunLoop } = require("./lib/investment-dry-run.js");
 const { makeSteelCdpClient } = require("./lib/steel-cdp-client.js");
 const { claimEvent, unclaimEvent, applyBilling } = require("./lib/billing.js");
+const { constructStripeWebhookEvent, stripeWebhookAllowed } = require("./lib/stripe-webhook-signature.js");
 const { recordCost } = require("./lib/ledger.js");
 const { recordUsageEvent } = require("./lib/usage-event.js");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY || "sk_test_placeholder"); // apiKey unused by constructEvent
@@ -297,14 +298,6 @@ function rejectUpgrade(socket, status) {
 // Exported for testing (FIND-005).
 function inngestServeAllowed(env) {
   return inngestConfigured(env);
-}
-
-// stripeWebhookAllowed: mirrors inngestServeAllowed — dev (STRIPE_DEV=1) serves without a secret; prod
-// requires STRIPE_WEBHOOK_SECRET else 503 fail-closed (REQ-41). Exported-shape pure helper for testing.
-function stripeWebhookAllowed(env) {
-  const isDev = String((env || {}).STRIPE_DEV || "").trim() === "1";
-  if (isDev) return true;
-  return Boolean((env || {}).STRIPE_WEBHOOK_SECRET);
 }
 
 // dunningNotify(uid): best-effort ONE message when a subscription goes past_due (REQ-40). Telegram if we
@@ -1201,7 +1194,7 @@ const server = http.createServer(async (req, res) => {
       const raw = await readRawBody(req); // EXACT bytes (Buffer) for signature verification (FIND-005)
       let event;
       try {
-        event = stripe.webhooks.constructEvent(raw, req.headers["stripe-signature"], process.env.STRIPE_WEBHOOK_SECRET || "");
+        event = constructStripeWebhookEvent(raw, req.headers["stripe-signature"], process.env, stripe);
       } catch (e) {
         console.error("[stripe] bad signature", e.message);
         res.writeHead(400); res.end("invalid signature"); return; // REQ-35: reject, no billing side effect
