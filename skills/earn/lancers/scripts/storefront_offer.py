@@ -389,8 +389,14 @@ def run(apply: bool, product_path: Path, state_path: Path) -> dict[str, Any]:
                 if apply: _write_receipt(Path(state_path), product, result["demand"])
     except OfferError as error: result = {"ok": False, "logged_in": logged_in, "error": str(error)}
     except Exception as error:
-        print(f"storefront_offer:{type(error).__name__}", file=sys.stderr)
-        result = {"ok": False, "logged_in": logged_in, "error": "account_lock_busy" if "LockBusy" in type(error).__name__ else "offer_unavailable"}
+        # The type alone is not diagnosable. This lane spent six days reporting
+        # storefront_offer:TimeoutError and storefront_offer:TargetClosedError with nothing
+        # to act on, while the same class of browser failure was being fixed by name on the
+        # sibling Coconala lane. The message says which page and which operation.
+        print(f"storefront_offer:{type(error).__name__}: {str(error)[:400]}", file=sys.stderr)
+        result = {"ok": False, "logged_in": logged_in,
+                  "error": "account_lock_busy" if "LockBusy" in type(error).__name__ else "offer_unavailable",
+                  "failure": f"{type(error).__name__}: {str(error)[:200]}"}
     finally:
         try:
             closed = page is None or bool(tick._close_owned_page(page))
