@@ -500,8 +500,13 @@ def _write_skip_cache(state_path: Path, decisions: Mapping[str, Mapping[str, obj
 def _filter_claimed_rows(rows: Sequence[Mapping[str, object]], state_path: Path) -> tuple[list[Mapping[str, object]], Optional[str], list[dict[str, str]]]:
     # ponytail: a malformed row (bad budget shape) is skipped individually instead of
     # discarding every other row observed this tick alongside it.
-    good_rows = [row for row in rows if _valid_observed_budget(row)]
+    valid_rows = [row for row in rows if _valid_observed_budget(row)]
     skipped = [{"project_id": str(row.get("external_id")) if isinstance(row, Mapping) and isinstance(row.get("external_id"), str) else "unknown", "reason": "invalid_observed_budget"} for row in rows if not _valid_observed_budget(row)]
+    skipped.extend({
+        "project_id": str(row.get("external_id")),
+        "reason": "unsupported_application_workflow",
+    } for row in valid_rows if row.get("budget_type") == "bounty")
+    good_rows = [row for row in valid_rows if row.get("budget_type") != "bounty"]
     ids = [row.get("external_id") if isinstance(row, Mapping) else None for row in good_rows]
     duplicate_ids = {project_id for project_id in ids if isinstance(project_id, str) and ids.count(project_id) > 1}
     skip_cache = _read_skip_cache(state_path)
@@ -577,7 +582,8 @@ def _plan_and_submit(rows: Sequence[Mapping[str, object]], today: date, evidence
             "business_class": "invalid", "reason_codes": [], "outcome": "failed", "error": item["reason"],
         } for item in budget_skips]
         if not rows:
-            return _batch_summary(ApplicationLoopResult(True, reason="duplicate_project", project_id=claimed_project_id, decision_reports=tuple(skip_reports) or None), observed_count, 0, (), ())
+            reason = "duplicate_project" if claimed_project_id is not None else "no_eligible_project"
+            return _batch_summary(ApplicationLoopResult(True, reason=reason, project_id=claimed_project_id, decision_reports=tuple(skip_reports) or None), observed_count, 0, (), ())
         prompt = build_planner_prompt(rows, today)
     except Exception: return _batch_summary(ApplicationLoopResult(False, error="planner_contract_invalid"), observed_count, 0, (), ())
     try: planned = (planner or _default_planner)(prompt, evidence)

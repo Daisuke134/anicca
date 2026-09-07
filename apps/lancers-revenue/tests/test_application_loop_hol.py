@@ -498,6 +498,35 @@ class ApplicationLoopHolTests(unittest.TestCase):
         self.assertEqual(judged["6000001"]["business_class"], "hard_prohibited")
         self.assertEqual(judged["6000002"]["business_class"], "hard_prohibited")
 
+    def test_non_proposal_task_does_not_reach_the_proposal_planner(self):
+        application_loop = _load_deployed_loop()
+        task = _opportunity("6000004")
+        task["budget_type"] = "bounty"
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = application_loop.run_loop(
+                state_path=root / "application.json",
+                evidence_root=root / "evidence",
+                discoverer=lambda **_kwargs: {
+                    "ok": True,
+                    "error": None,
+                    "opportunities": [task],
+                },
+                planner=lambda *_args: self.fail("planner_called"),
+                safety_verifier=lambda *_args: self.fail("safety_called"),
+                submitter=lambda **_kwargs: self.fail("submitter_called"),
+                clock=lambda: datetime(2026, 8, 13, 12, 0, tzinfo=timezone.utc),
+            )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["reason"], "no_eligible_project")
+        self.assertEqual(result["eligible_count"], 0)
+        self.assertEqual(
+            result["decision_reports"][0]["error"],
+            "unsupported_application_workflow",
+        )
+
     def test_normal_tick_preserves_coconala_planner_order(self):
         application_loop = _load_deployed_loop()
         project_ids = ["6000001", "6000002", "6000003"]

@@ -32,6 +32,10 @@ DETAIL_HTML = """
 
 
 class LancersStatusTests(unittest.TestCase):
+    def test_task_cards_keep_their_non_proposal_workflow_type(self):
+        status = _load_status()
+        self.assertEqual(status._public_budget_type("タスク"), "bounty")
+
     def test_every_card_in_the_page_is_enriched_and_failures_remain_teasers(self):
         status = _load_status()
         requested = []

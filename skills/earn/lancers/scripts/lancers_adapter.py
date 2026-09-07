@@ -218,13 +218,13 @@ def _budget_type(value: object) -> str:
     if not isinstance(value, str):
         _fail("project_type_invalid")
     normalized = value.strip().lower()
-    if normalized in {"fixed", "project", "プロジェクト", "タスク", "固定"}:
+    if normalized in {"fixed", "project", "プロジェクト", "固定"}:
         return "fixed"
     if normalized in {"hourly", "time", "時間報酬", "時間単価"}:
         return "hourly"
     if normalized in {"contest", "competition", "コンペ"}:
         return "contest"
-    if normalized in {"bounty", "懸賞"}:
+    if normalized in {"bounty", "懸賞", "タスク"}:
         return "bounty"
     return "unknown"
 
