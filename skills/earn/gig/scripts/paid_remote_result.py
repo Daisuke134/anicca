@@ -214,10 +214,12 @@ def validate_wait(root, feedback, digest, pass_start=0):
         and isinstance(receipts, list)
         and any(
             isinstance(receipt, dict)
-            and receipt.get("kind") in {
-                "authentication_readback", "login_recovery_readback",
-                "seller_login_recovery_readback",
-            }
+                and receipt.get("kind") in {
+                    "authentication_readback", "login_recovery_readback",
+                    "seller_login_recovery_readback",
+                    "authenticated_identity_readback",
+                    "official_authenticated_identity_readback",
+                }
             and isinstance(receipt.get("provider"), str)
             and bool(receipt["provider"].strip())
             and isinstance(receipt.get("url") or receipt.get("official_url"), str)
