@@ -240,6 +240,14 @@ def test_migrated_writer_claim_job_is_not_owned_by_legacy_manifest():
     assert not installer.exists()
 
 
+def test_migrated_writer_money_sync_job_is_not_owned_by_legacy_manifest():
+    manifest = json.loads(gig_release.MANIFEST.read_text(encoding="utf-8"))
+    assert all(row["label"] != "ai.anicca.writer-money-sync" for row in manifest["jobs"])
+    assert "ai.anicca.writer-money-sync" not in gig_release.JOB_PROCESS_MARKERS
+    installer = gig_release.REPO_ROOT / "skills/writer-agent/scripts/install-money-sync-worker.sh"
+    assert not installer.exists()
+
+
 def test_explicit_release_scope_is_preserved():
     assert gig_release.activation_labels({"example.job"}) == {"example.job"}
 
