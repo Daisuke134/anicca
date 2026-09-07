@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
+STATE_ROOT="${LIFE_MANAGER_STATE_ROOT:?LIFE_MANAGER_STATE_ROOT is required}"
+EXECUTABLE="${MARKETING_WEEKLY_REVIEW_EXECUTABLE:-$ROOT/skills/earn/marketing-engine/bin/lm}"
+
+exec "$EXECUTABLE" \
+  intel gap --telegram \
+  --evidence-root "$STATE_ROOT/evidence/intel/gaps" \
+  "$@"

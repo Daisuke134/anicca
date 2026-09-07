@@ -14,6 +14,26 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class CleanUserInstallTest(unittest.TestCase):
+    def test_marketing_weekly_review_wrapper_preserves_behavior_and_external_state(self):
+        wrapper = ROOT / "skills/earn/marketing-engine/intel/weekly-review-owner"
+        self.assertTrue(os.access(wrapper, os.X_OK))
+        state_root = "/private/life-manager-state/marketing-weekly-review"
+        result = subprocess.run(
+            [str(wrapper)],
+            env={
+                **os.environ,
+                "LIFE_MANAGER_STATE_ROOT": state_root,
+                "MARKETING_WEEKLY_REVIEW_EXECUTABLE": "/bin/echo",
+            },
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            result.stdout.strip(),
+            f"intel gap --telegram --evidence-root {state_root}/evidence/intel/gaps",
+        )
+
     def test_marketing_owner_events_wrapper_preserves_repo_and_home_argv(self):
         wrapper = ROOT / "skills/earn/marketing-engine/report/events-owner"
         self.assertTrue(os.access(wrapper, os.X_OK))
