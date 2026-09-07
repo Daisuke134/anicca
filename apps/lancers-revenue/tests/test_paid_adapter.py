@@ -8,6 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[3]
 PATH = ROOT / "skills/earn/lancers/scripts/paid_adapter.py"
+OWNER = ROOT / "skills/earn/lancers/scripts/paid-owner"
 
 
 def load():
@@ -20,6 +21,17 @@ def load():
 
 
 class LancersPaidAdapterTests(unittest.TestCase):
+    def test_owner_enters_shared_kernel_before_reporting(self):
+        source = OWNER.read_text(encoding="utf-8")
+        kernel = 'skills/_shared/marketplace-core/scripts/paid_kernel.py'
+        adapter = 'skills/earn/lancers/scripts/paid_adapter.py'
+        reporter = 'skills/earn/lancers/scripts/lane_report.py'
+        self.assertIn(kernel, source)
+        self.assertIn(adapter, source)
+        self.assertLess(source.index(kernel), source.index(reporter))
+        self.assertIn('--state-root "$STATE_ROOT/paid"', source)
+        self.assertIn('--output "$PAID_OUTPUT"', source)
+
     def test_maps_every_contract_candidate_without_claiming_funding(self):
         module = load()
         snapshot = {
