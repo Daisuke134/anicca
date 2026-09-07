@@ -126,8 +126,9 @@ availability and adapter feasibility; the name does not imply that any of them a
 
 Why this order is fixed:
 
-1. Close the host P0 first because no browser marketplace owner can be continuously trusted while
-   the Aqua/WindowServer control plane can still disappear.
+1. `PANIC-1` and `PANIC-2` close the immediate host-pressure boundary before more browser work.
+   They do not prove that macOS can never restart, but the sustained live workload now stays inside
+   finite browser/process contracts.
 2. Close `SHARED-PAID-1` before adding another provider so Coconala's proven lifecycle becomes the
    one reusable kernel instead of another copied `paid_direct.py`.
 3. Complete Lancers next because it is the measured second Paid boundary and therefore proves the
@@ -136,25 +137,30 @@ Why this order is fixed:
    mutation and readback only, never another lifecycle.
 5. Add one further marketplace to prove that onboarding a provider is repeatable rather than a
    three-platform special case. Human-required steps become durable human waits, not provider forks.
-6. Build shared Reply only after Paid is closed because Paid is the revenue-critical terminal lane and
+6. After Paid is closed, perform `PANIC-3` through `PANIC-6` in their unchanged internal order.
+   The macOS update/reboot is not a Paid repair and runs only while Dais is physically available to
+   recover loginwindow; until then no Mac, loginwindow or Aqua restart is authorized.
+7. Build shared Reply after that maintenance proof because Paid is the revenue-critical terminal lane and
    its work-item, receipt, replay-zero and retry contracts are the proven primitives Reply should reuse.
-7. Canonicalize `loop-development/SKILL.md` last from measured Paid and Reply behavior; writing the
+8. Canonicalize `loop-development/SKILL.md` last from measured Paid and Reply behavior; writing the
    canon earlier would preserve guesses rather than the implementation that actually passed.
 
 Zero live contracts never permits skipping an adapter atom or checking it complete. It proves only
 the empty official inventory path. The atom stays open until a real contract produces submission,
 same-session official readback and a following replay with effect zero.
 
-## Host P0 before this Paid cursor
+## Host safety track and its explicit pause
 
-The current first work is `PANIC-1` through `PANIC-6` in
-`docs/superpowers/specs/2026-08-27-macos-loop-control-plane-design.md`. The measured WindowServer
-watchdog kernel panic stopped the Aqua session and therefore every GUI/browser marketplace owner.
-Do not reorder or mark the Paid atoms below complete while local boot recovery is unproven. Other
-independent agents may continue read-only or disjoint work in parallel; this owner advances the host
-P0 first.
+`PANIC-1` and `PANIC-2` are complete. Dais explicitly changes the controlling order: repair and
+complete every Paid adapter before the restart-dependent host atoms. `PANIC-3` through `PANIC-6`
+remain required and retain their internal order, but they resume only after
+`NEXT-MARKETPLACE-PAID-1`. The measured WindowServer panic remains a real availability risk; this
+reorder states that an OS restart is not a repair for the current Coconala authentication,
+targeted-readback or remote-builder failures. Do not restart Mac, loginwindow or Aqua while Dais is
+away from the machine.
 
-Current audited state: `PANIC-1` and `PANIC-2` are complete; `PANIC-3` is the first unfinished atom. The retired
+Current audited state: `PANIC-1` and `PANIC-2` are complete; `PANIC-3` is the first unfinished host
+atom but is not the active controlling atom. The retired
 duplicate Job Search browser is officially absent and `lm-loop doctor` is green. After an idle-only
 full apply, Dais explicitly authorized browser-only controlled restarts; Lancers `:9227` and Gig
 `:9223` now run immutable release `a283fb8d27bc5c50ac443f367c36ef1cd8bc8fd7` through the shared
@@ -312,18 +318,27 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
 7. [ ] `NEXT-MARKETPLACE-PAID-1` Repeat adapter conformance for Fiverr or the next authorized
    marketplace without changing the shared Paid lifecycle. PASS = provider-only config/transport/
    effect/readback changes plus one real official receipt chain and replay-zero.
-8. [ ] `SHARED-REPLY-1` Use Lancers as the second real Reply platform and extraction trigger.
+8. [ ] `PANIC-3` In an explicitly approved maintenance window with Dais physically available,
+   install macOS 15.7.9 rather than Tahoe and read back the exact build after restart. This is an
+   availability proof, not a fix for Paid authentication or delivery.
+9. [ ] `PANIC-4` From that controlled restart, prove automatic Aqua login, immutable-release owner
+   recovery, green doctor and representative natural replay-zero terminals. PID existence is not PASS.
+10. [ ] `PANIC-5` Detect a pre-login boot gap through a credential-safe external path and send one
+    deduplicated failure alert plus one recovery receipt without storing or typing the Mac password.
+11. [ ] `PANIC-6` Observe seven days of normal concurrent load with bounded browser/memory counts,
+    no new WindowServer/tccd/sandboxd watchdog panic, no unowned boot gap and no duplicate effect.
+12. [ ] `SHARED-REPLY-1` Use Lancers as the second real Reply platform and extraction trigger.
    PASS = one provider-neutral Reply entrypoint owns event identity, durable intent, reply/estimate
    selection, receipt persistence, retry/backoff and replay-zero in `skills/_shared/marketplace-core/`.
    Coconala and Lancers keep only auth, selectors, provider state and actual mutation in adapters;
    neither provider gets a copied Reply loop.
-9. [ ] `LANCERS-REPLY-1` Complete one real Lancers buyer-message or estimate lifecycle through the
+13. [ ] `LANCERS-REPLY-1` Complete one real Lancers buyer-message or estimate lifecycle through the
    shared Reply entrypoint. PASS = official event observation, one buyer-visible effect, same-session
    official readback and a following natural replay with effect zero are receipt-bound.
-10. [ ] `CROWDWORKS-REPLY-1` Add only the CrowdWorks Reply adapter to the proven shared entrypoint.
+14. [ ] `CROWDWORKS-REPLY-1` Add only the CrowdWorks Reply adapter to the proven shared entrypoint.
     PASS = one real buyer event reaches official reply/readback and replay-zero without forking the
     shared event, decision, receipt or retry lifecycle.
-11. [ ] `LOOP-DEVELOPMENT-CANON-1` Make `skills/loop-development/SKILL.md` the concise canonical
+15. [ ] `LOOP-DEVELOPMENT-CANON-1` Make `skills/loop-development/SKILL.md` the concise canonical
     rule set for building and operating these marketplace loops. PASS = it points to the shared Paid
     and Reply contracts, defines the provider-adapter boundary and natural terminal/official readback
     gates once, removes duplicate or stale instructions, and the final three-provider runtime table
