@@ -372,10 +372,16 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    sections empty, and turns an unnormalized positive contract into explicit resumable pending instead
    of zero or failure. Adapter/kernel regressions pass 15/15; a live read-only smoke returns observed
    `0`, effect `0`, failed `0`. Positive contract normalization, provider mutation, official readback,
-   production apply and one real replay-zero receipt chain remain open, so the atom stays unchecked.
+   and one real replay-zero receipt chain remain open, so the atom stays unchecked. Main-derived
+   immutable release `6f0b91bf9e87d2efb14e25ac4c358a4a3366a8ca` is installed only for the new
+   Paid owner under apply receipt `2ed176d67addebd77ae86fef`; its first natural terminal is pending.
 7. [ ] `NEXT-MARKETPLACE-PAID-1` Repeat adapter conformance for Fiverr or the next authorized
    marketplace without changing the shared Paid lifecycle. PASS = provider-only config/transport/
    effect/readback changes plus one real official receipt chain and replay-zero.
+   Mercor is selected as this adapter. It is an independent gig marketplace, not a Job Hunter lane:
+   the existing repo-owned human gates, work-state transitions and earnings readback are reusable,
+   while its former resident owners are retired. Freelancer.com remains entirely disabled with an
+   old repo-external work-sync and empty observed state, so selecting it first would recreate more wheel.
 8. [ ] `PANIC-3` In an explicitly approved maintenance window with Dais physically available,
    install macOS 15.7.9 rather than Tahoe and read back the exact build after restart. This is an
    availability proof, not a fix for Paid authentication or delivery.
