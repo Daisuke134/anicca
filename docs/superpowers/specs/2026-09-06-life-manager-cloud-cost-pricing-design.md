@@ -158,3 +158,56 @@ owns `CLOUD-01` through `CLOUD-08`. Finish and integrate one cost atom before st
 - Internal failures and retries never consume customer allowance or enter Stripe usage.
 - Plus p95 direct monthly cost is at most JPY 1,000 before enabling the JPY 4,980 Stripe price.
 - No local loop, Alpaca state/worktree, ElizaOS component, or unrelated production route is modified.
+
+## 8. Friend beta launch and pricing validation
+
+Cloud engineering and operator acceptance are complete. Real friend UAT is the next action. The
+public entrypoint is `https://aniccaai.com/life-manager`, and the fastest mobile entrypoint is
+`https://t.me/LifeManagerBotbot?start=lp`.
+
+### Product promise
+
+予定のたびにGoogle Calendarと地図・乗換案内を行き来し、出発時刻を逆算する手間をなくす。
+Life ManagerはGoogle Calendarの次の予定に合わせて移動時間を確保し、出発前に経路を
+Telegramへ送る。「Google Calendarや地図を二度と見なくてよい」とは表現しない。予定の登録・変更、
+経路変更の確認は引き続き必要になる場合があるため、「毎回開いて調べなくていい」を正本の表現とする。
+
+### Friend DM
+
+> 今、Life Managerの少人数βを始めてるんだけど、5分だけ試してもらえない？
+> Google Calendarをつなぐと、次の予定までの移動時間を自動で予定に入れて、
+> 出発前に電車や乗換案内をTelegramで送ってくれる。
+> 毎回カレンダーと地図アプリを行き来して、出発時間を逆算しなくてよくなるものです。
+> 電話通知は任意で、3日間無料。
+> https://t.me/LifeManagerBotbot?start=lp
+> 使って詰まったところだけ教えてほしい！
+
+### X launch post
+
+> 次の予定に間に合うために、カレンダーを確認して、乗換案内を検索して、
+> 逆算して出発時間を決める。この作業を、毎回やらなくてよくしました。
+>
+> Life ManagerはGoogle Calendarを読み、移動時間を予定として自動で確保。
+> 出発前になると、乗る電車と乗換案内をTelegramへ送ります。
+>
+> 電話通知は任意。3日間無料で試せます。
+> https://t.me/LifeManagerBotbot?start=lp
+
+公開画像には実在の予定名、住所、現在地、個人名を残さない。Telegramの経路通知は、これらを
+トリミングまたはぼかした画像だけを使用する。旧投稿の「生活をまるごと管理」「電話で起こす」は、
+現在のDAILY機能より広く、電話が必須に見えるため再利用しない。
+
+### Ordered post-release TODO
+
+1. Daisが上記DMを友人へ送り、同じTelegramリンクをXへ投稿する。
+2. 友人UATで、開始、Google Calendar接続、home設定、Travel block、Telegram経路通知までを確認する。
+3. 本番usage ledgerを2〜4週間集計し、active tenantごとのp50/p95直接原価と成功action単価を確定する。
+4. Plusのp95直接原価が月額JPY 1,000以下なら、月額JPY 4,980を確定する。超える場合は、機能を止めずにprovider wasteと含有量を先に調整する。
+5. 価格確定後にだけ既存Stripeの価格・allowanceを変更し、test modeでentitlementとwebhook replayを再確認する。
+
+現時点の単一推奨価格は月額JPY 4,980。JPY 10,000 MRRを明確に超えるには有料会員3人が必要で、
+MRRはJPY 14,940になる。2人ではJPY 9,960で目標を40円下回る。正常化後の直接原価を
+1人月JPY 1,000以下に保てた場合、3人の直接原価上限はJPY 3,000、決済手数料・support・固定費前の
+粗利はJPY 11,940、粗利率は約79.9%になる。現在のGoogle Cloudアカウント全体のforecastを
+「1人当たり原価」とは扱わない。そこには製品外利用と請求lagが含まれるため、正確なunit economicsは
+手順3のtenant別実測で確定する。
