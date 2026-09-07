@@ -319,6 +319,11 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    regressions pass 178/178. Production still owes a main-derived natural five-room aggregate mapping
    `18180857` to durable pending with failed zero, followed by replay-zero; no external effect was
    created by this repair.
+   Main-derived immutable release `237bf1b6e9054c607b44b3046d1e3cfd0e479e79`, which contains the
+   identity-auth wait repair, is now targeted to the idle `hf-gig-paid-direct` label. Apply receipt
+   `50151d6ea204863ce09989fd` proves the exact loaded argv and release; Mac, browser, Apply and
+   Storefront were not restarted. Its first natural wake is in progress and is not acceptance until
+   the terminal aggregate and following replay are read back.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.
