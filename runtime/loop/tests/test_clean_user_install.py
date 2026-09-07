@@ -120,6 +120,28 @@ class CleanUserInstallTest(unittest.TestCase):
             f"--lane paid --state-path {state_root}/contracts.json",
         )
 
+    def test_lancers_storefront_wrapper_preserves_managed_state_argv(self):
+        wrapper = ROOT / "skills/earn/lancers/scripts/storefront-owner"
+        self.assertTrue(os.access(wrapper, os.X_OK))
+        state_root = "/private/life-manager-state/lancers"
+        result = subprocess.run(
+            [str(wrapper)],
+            env={
+                **os.environ,
+                "LIFE_MANAGER_PYTHON": "/bin/echo",
+                "LIFE_MANAGER_STATE_ROOT": state_root,
+            },
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            result.stdout.strip(),
+            f"{ROOT}/skills/earn/lancers/scripts/storefront_offer.py --apply "
+            f"--product {ROOT}/skills/earn/lancers/products/monthly-sns-content-ops-v1.json "
+            f"--state-path {state_root}/application.json",
+        )
+
     def test_public_archive_contains_general_agent_release_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
