@@ -236,6 +236,11 @@ class EntryDispatchTest(unittest.TestCase):
     def test_hf_gig_paid_direct_no_longer_has_a_handwritten_dispatch(self):
         with self.assertRaisesRegex(ValueError, 'no dispatch command'):
             command_for('hf-gig-paid-direct', Path('/release'), Path('/home'))
+
+    def test_writer_claim_loop_no_longer_has_a_handwritten_dispatch(self):
+        with self.assertRaisesRegex(ValueError, 'no dispatch command'):
+            command_for('writer-claim-loop', Path('/release'), Path('/home'))
+
     def test_life_manager_daily_driver_no_longer_has_a_handwritten_dispatch(self):
         with self.assertRaisesRegex(ValueError, 'no dispatch command'):
             command_for('life-manager-daily-driver', Path('/release'), Path('/home'))
@@ -265,7 +270,7 @@ class EntryDispatchTest(unittest.TestCase):
     def test_writer_jobs_keep_mutable_state_outside_release(self):
         root=Path('/release'); home=Path('/home')
         for loop_id in (
-            'writer-claim-loop', 'writer-money-sync', 'writer-opportunity-discovery',
+            'writer-money-sync', 'writer-opportunity-discovery',
             'writer-opportunity-response', 'writer-report',
         ):
             command=command_for(loop_id,root,home)

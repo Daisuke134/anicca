@@ -83,7 +83,6 @@ JOB_PROCESS_MARKERS = {
     "ai.anicca.article-resume": "article-resume-pending.sh",
     "ai.anicca.article-zenn-retry": "zenn-deferred-worker.sh",
     "ai.anicca.article-healthcheck": "article-healthcheck.sh",
-    "ai.anicca.writer-claim-loop": "claim_loop.py",
     "ai.anicca.writer-money-sync": "money_sync.py",
     "ai.anicca.writer-opportunity-discovery": "opportunity_discovery.py",
     "ai.anicca.writer-opportunity-response": "opportunity_response.py",

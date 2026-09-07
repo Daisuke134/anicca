@@ -2740,16 +2740,18 @@
       "state_root": "~/.local/state/life-manager/watchdog"
     },
     "writer-claim-loop": {
+      "adapter": "exec",
       "cadence": {
         "start_interval_seconds": 900
       },
+      "command": [],
       "cleanup": {
         "max_age_days": 14,
         "max_runs": 100
       },
       "domain": "earn",
       "effect_class": "none",
-      "entrypoint": "runtime/loop/entry_dispatch.py",
+      "entrypoint": "skills/writer-agent/scripts/claim-loop-owner",
       "label": "ai.anicca.writer-claim-loop",
       "log_root": "~/.openclaw/logs",
       "provider_route": "shared-agent-runner",

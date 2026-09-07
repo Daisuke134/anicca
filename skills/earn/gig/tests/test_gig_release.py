@@ -232,6 +232,14 @@ def test_migrated_paid_job_is_not_owned_by_legacy_manifest():
     assert "ai.anicca.hf-gig-paid-direct" not in gig_release.JOB_PROCESS_MARKERS
 
 
+def test_migrated_writer_claim_job_is_not_owned_by_legacy_manifest():
+    manifest = json.loads(gig_release.MANIFEST.read_text(encoding="utf-8"))
+    assert all(row["label"] != "ai.anicca.writer-claim-loop" for row in manifest["jobs"])
+    assert "ai.anicca.writer-claim-loop" not in gig_release.JOB_PROCESS_MARKERS
+    installer = gig_release.REPO_ROOT / "skills/writer-agent/scripts/install-claim-loop-worker.sh"
+    assert not installer.exists()
+
+
 def test_explicit_release_scope_is_preserved():
     assert gig_release.activation_labels({"example.job"}) == {"example.job"}
 
