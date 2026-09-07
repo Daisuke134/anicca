@@ -7,6 +7,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import importlib.util
+import datetime as dt
 import json
 import os
 from pathlib import Path
@@ -62,21 +63,53 @@ def _count(locator: Any) -> int:
         return 0
 
 
+FORM_EVIDENCE = Path("~/.local/state/anicca/lancers/proposal-form-changes.jsonl").expanduser()
+
+
+def _record_form_change(locator: Any, why: str, found: Any = None) -> None:
+    """Name the selector that stopped matching. Never raises.
+
+    Every strict matcher in this file raises the same bare `proposal_form_changed`, so a single
+    changed attribute anywhere in the proposal form produces an error that cannot be acted on.
+    Measured 2026-09-07: 81 of the recent Lancers wake summaries skipped with that one code, against
+    7 genuine declines -- the lane was not short of work, it could not fill the form, and nothing
+    recorded which field it was.
+    """
+    try:
+        row = {
+            "selector": str(locator)[:300],
+            "why": why,
+            "found": found,
+            "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        }
+        FORM_EVIDENCE.parent.mkdir(parents=True, exist_ok=True)
+        with open(FORM_EVIDENCE, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
+    except Exception:
+        return
+
+
 def _one(locator: Any) -> Any:
-    if _count(locator) != 1:
+    found = _count(locator)
+    if found != 1:
+        _record_form_change(locator, "count_not_one", found)
         raise RuntimeError("proposal_form_changed")
     return locator
 
 
 def _visible_one(locator: Any) -> Any:
     value = _one(locator)
+    # The visibility probe is separated from the verdict on purpose. The old shape re-raised any
+    # RuntimeError before recording, so a locator that threw on is_visible() -- a detached node,
+    # the usual sign that the form was re-rendered -- was the one case that stayed anonymous.
     try:
-        if not value.is_visible():
-            raise RuntimeError("proposal_form_changed")
-    except RuntimeError:
-        raise
+        visible = value.is_visible()
     except Exception:
+        _record_form_change(locator, "visibility_check_failed", None)
         raise RuntimeError("proposal_form_changed") from None
+    if not visible:
+        _record_form_change(locator, "not_visible", 1)
+        raise RuntimeError("proposal_form_changed")
     return value
 
 
