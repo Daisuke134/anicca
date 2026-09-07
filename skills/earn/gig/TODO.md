@@ -748,9 +748,18 @@ that names nothing — the third time today the same shape has hidden a root cau
 2. [ ] `LANCERS-FORM-2` Read one natural wake's `proposal-form-changes.jsonl`, update the selectors
    it names, and confirm. PASS = a natural wake submits a Lancers application with an official
    proposal receipt. Do not guess at selectors before that file exists; it costs one wake.
-3. [ ] `LANCERS-FORM-3` Fold the same evidence discipline into the shared apply recipe. Three
+3. [x] `LANCERS-FORM-3` Fold the same evidence discipline into the shared apply recipe. Three
    platforms have now each lost days to a strict matcher that discarded which matcher it was, so
    `marketplace-apply-lane.md` should carry it as a rule rather than three separate lessons.
+   Done: `_shared/marketplace-core/scripts/dom_contract.py` provides `exactly_one` / `visible_one`,
+   recording selector, match count and the page's own identity to `dom-contract-failures.jsonl`
+   before raising, with `DomContractError` carrying the same fields so an adapter can re-raise its
+   own stable reason code without losing them. Eleven tests, including that an ambiguous match is a
+   failure too, that a detached node no longer stays anonymous, and that recording can never fail a
+   lane. The recipe now opens with it as a rule that outranks its own fault list.
+   Adoption is per-platform and deliberate — Lancers first once `LANCERS-FORM-2` names its
+   selectors, then CrowdWorks (which already passes the selector as an argument and only needs to
+   stop dropping it), then Coconala's 23 in-page `querySelector` calls, which are a larger change.
 
 
 ## Historical Coconala atomic cursor — evidence only

@@ -16,6 +16,7 @@ marketplace adapter — each one costs a day to rediscover.
 | The per-wake lane summary | `skills/_shared/marketplace-core/scripts/lane_summary.py` (Lancers and CrowdWorks both render through it) |
 | Sending, and draining the outbox | `.../telegram_delivery.py` (never a CLI: launchd gives a job no PATH) |
 | What to sell, at what price, per platform | `skills/gig-work/profile/listings/catalog.json` |
+| Matching exactly one element, and saying what you saw when you don't | `skills/_shared/marketplace-core/scripts/dom_contract.py` |
 
 An adapter that adds its own ledger, its own outbox or its own wording is the
 defect this file exists to prevent.
@@ -48,6 +49,30 @@ editing the same files.
 being worked on concurrently, so moving it is the extraction step to take when
 that work settles — not while two sessions would both be editing it. Load it by
 path in the meantime; do not copy it.
+
+## The rule that outranks the fault list: refuse loudly
+
+Every fault below was found late for the same reason. A strict matcher raised a generic code and
+discarded what it had just seen, so the lane reported "nothing was suitable" for days while the real
+message was "one selector moved".
+
+Measured 2026-09-07, three marketplaces, three separately written matchers, each costing days:
+
+| lane | code it raised | what it threw away |
+|---|---|---|
+| Coconala | `source_not_found` | the observed page title -- which turned out to name a real 404 |
+| Coconala | `form_state:absent` | which of two causes, whose fixes are opposite |
+| Lancers | `proposal_form_changed` | which of ten selectors; 81 skips in one day against 7 real declines |
+| CrowdWorks | `selector_unobserved` | the selector, which it was holding as an argument |
+
+Keep the strictness. A field that matches twice is as broken as one that matches zero times, and a
+lane that submits into an ambiguous form is worse than one that refuses. What must change is the
+refusal: use `dom_contract.exactly_one` / `visible_one`, which record the selector, the match count
+and the page's own identity to `dom-contract-failures.jsonl` before raising. A lane built on it is
+repaired from one wake's evidence instead of a day of archaeology.
+
+Pass `observe=` when a page identity is available. A selector alone cannot say "you were on the
+login page", which is how an expired session reads as a markup change -- and did, for five days.
 
 ## The eight silent faults
 
