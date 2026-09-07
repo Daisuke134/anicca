@@ -30,6 +30,41 @@ class TruthPipelineTest(unittest.TestCase):
         )
         self.assertNotIn("apify", " ".join(rendered).lower())
 
+    def test_commands_put_all_mutable_outputs_under_explicit_state_root(self):
+        root = pathlib.Path("/read-only-release")
+        home = pathlib.Path("/home/owner")
+        state_root = pathlib.Path("/writable/marketing-owner-events")
+
+        commands = truth_pipeline.build_commands(
+            root, home, state_root=state_root, python="/python"
+        )
+
+        rendered = "\n".join(" ".join(command) for command in commands)
+        self.assertEqual(
+            commands[0][commands[0].index("--output") + 1],
+            str(state_root / "state/publication-identity.jsonl"),
+        )
+        self.assertIn(str(state_root / "evidence/metrics/publication-reconcile-latest.json"), rendered)
+        self.assertEqual(
+            commands[1][commands[1].index("--ledger") + 1],
+            str(state_root / "state/publication-identity.jsonl"),
+        )
+        self.assertEqual(
+            commands[1][commands[1].index("--state") + 1],
+            str(state_root / "state/post-metrics.jsonl"),
+        )
+        self.assertEqual(
+            commands[1][commands[1].index("--raw-evidence") + 1],
+            str(state_root / "evidence/metrics/provider-responses.jsonl"),
+        )
+        self.assertIn(str(state_root / "evidence/metrics/native-metrics-latest.json"), rendered)
+        self.assertEqual(
+            [command[command.index("--state-root") + 1] for command in commands[2:]],
+            [str(state_root / "state")] * 4,
+        )
+        self.assertNotIn("/read-only-release/skills/earn/marketing-engine/state", rendered)
+        self.assertNotIn("/read-only-release/skills/earn/marketing-engine/evidence", rendered)
+
     def test_nonblocking_lock_prevents_overlapping_external_calls(self):
         with tempfile.TemporaryDirectory() as tmp:
             lock_path = pathlib.Path(tmp) / "truth.lock"
