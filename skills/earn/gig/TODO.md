@@ -308,6 +308,17 @@ own worktrees and resource scopes; “top to bottom” orders only this owner's 
    and `18171850` failed targeted readback; aggregate was observed `5`, actionable `3`, effect `0`,
    readback `2`, failed `3`, pending `0`. This is the current Paid truth and does not satisfy the
    required failed-zero aggregate or following replay-zero, so `SHARED-PAID-1` remains unchecked.
+   A later natural wake improved that aggregate to observed `5`, readback `4`, failed `1`, effect `0`:
+   both completed rooms returned, Ryu and `18211838` remained replay-zero, and only `18180857`
+   failed. Its intent and result agreed on the TikTok target and recorded `authenticated=false` with
+   a nonempty official identity readback and remaining work, but the wait validator accepted three
+   older authentication receipt kinds and rejected the producer's established
+   `authenticated_identity_readback` vocabulary as `remote wait target mismatch`. The validator now
+   accepts exactly the two existing authenticated-identity receipt kinds while continuing to reject
+   unauthenticated non-authentication blockers. Paid remote, shared-kernel and Coconala-adapter
+   regressions pass 178/178. Production still owes a main-derived natural five-room aggregate mapping
+   `18180857` to durable pending with failed zero, followed by replay-zero; no external effect was
+   created by this repair.
 5. [ ] `LANCERS-PAID-1` Complete one real Lancers contracted-work lifecycle through that shared
    entrypoint. PASS = active-order inventory, independent resumable work, buyer-visible submission,
    same-session official readback, and a second natural replay with effect zero are all receipt-bound.

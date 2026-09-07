@@ -660,6 +660,30 @@ def test_paid_direct_maps_verified_authentication_blocker_to_pending(tmp_path):
     ) == "pending"
 
 
+@pytest.mark.parametrize("kind", [
+    "authenticated_identity_readback",
+    "official_authenticated_identity_readback",
+])
+def test_paid_direct_maps_verified_identity_authentication_blocker_to_pending(
+        tmp_path, kind):
+    paid = load("paid_direct")
+    root, feedback, digest = blocked_project(tmp_path)
+    result_path = root / "delivery/paid-remote-result.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["authenticated"] = False
+    result["business_outcome"]["official_receipts"] = [{
+        "provider": "provider.example",
+        "kind": kind,
+        "url": "https://provider.example/identity",
+        "readback": "The official identity surface is not authenticated.",
+    }]
+    write_json(result_path, result)
+
+    assert paid._remote_owner_checkpoint(
+        "blocked", root, feedback, digest, pass_start=0,
+    ) == "pending"
+
+
 def test_remote_wait_rejects_unauthenticated_non_authentication_blocker(tmp_path):
     remote = load("paid_remote_result")
     root, feedback, digest = blocked_project(tmp_path)
