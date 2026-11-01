@@ -46,7 +46,7 @@ def _source_origin_key(url: str) -> tuple:
     )
 
 
-_DATE_INTERVAL = re.compile(r"^(\\d{4}-\\d{2}-\\d{2})/(\\d{4}-\\d{2}-\\d{2})$")
+_DATE_INTERVAL = re.compile(r"^(\d{4}-\d{2}-\d{2})/(\d{4}-\d{2}-\d{2})$")
 
 
 def _overlapping_iso_date_windows(first: str, second: str) -> bool:
