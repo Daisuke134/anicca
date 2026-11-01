@@ -1,0 +1,75 @@
+name: ios-build-test
+
+on:
+  pull_request:
+    paths:
+      - "apps/mobile/anicca-ios/**"
+      - ".github/workflows/ios-build-test.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: apps/mobile/anicca-ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$XC" ] || XC=$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+
+      - name: Placeholder xcconfigs (no secrets in CI)
+        run: |
+          for c in Staging Production; do
+            [ -f Configs/$c.xcconfig ] || cp Configs/$c.xcconfig.example Configs/$c.xcconfig
+          done
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: ~/spm
+          key: spm-${{ runner.os }}-${{ hashFiles('apps/mobile/anicca-ios/aniccaios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Resolve packages
+        run: xcodebuild -resolvePackageDependencies -project aniccaios.xcodeproj -scheme aniccaios -clonedSourcePackagesDirPath ~/spm
+
+      - name: Pick iPhone simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];c=[(k,x) for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')];c.sort(key=lambda t:t[0]);print(c[-1][1]['udid'])")
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build and run unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project aniccaios.xcodeproj \
+            -scheme aniccaios \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -clonedSourcePackagesDirPath ~/spm \
+            -only-testing:aniccaiosTests \
+            -resultBundlePath "$RUNNER_TEMP/tests.xcresult" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            | tee "$RUNNER_TEMP/xcodebuild.log" | grep -E "error:|warning: .*ReviewPrompt|Test Case|Executed|passed|failed|TEST (SUCCEEDED|FAILED)|BUILD" || true
+          grep -q "TEST SUCCEEDED" "$RUNNER_TEMP/xcodebuild.log"
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: |
+            ${{ runner.temp }}/tests.xcresult
+            ${{ runner.temp }}/xcodebuild.log
+          if-no-files-found: ignore
