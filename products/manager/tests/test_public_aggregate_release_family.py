@@ -308,5 +308,29 @@ class ReleaseFamilyTest(unittest.TestCase):
         self.assertNotIn("Fictional broader area", json.dumps(result))
 
 
+    def test_temporal_overlap_warning_propagates_across_release_family(self):
+        a, b, c = self.family()
+        a["population"]["window"] = "2026-01-01/2026-01-31"
+        b["population"]["window"] = "2026-01-15/2026-02-15"
+        c["population"]["window"] = "2026-03-01/2026-03-31"
+        result = preflight_release_family([a, b, c])
+        self.assertEqual(result["status"], "REVIEW_REQUIRED")
+        self.assertIn("FAMILY_SCOPE_NOT_COMPARABLE", result["reason_codes"])
+        self.assertIn("FAMILY_POSSIBLE_TEMPORAL_DIFFERENCING",
+                      result["reason_codes"])
+        self.assertNotIn("FAMILY_SINGLE_HIDDEN_CELL", result["reason_codes"])
+        self.assertFalse(result["can_ingest"])
+        self.assertFalse(result["can_publish"])
+        self.assertFalse(result["can_execute"])
+        self.assertFalse(result["disclosure_certified"])
+        rendered = json.dumps(result)
+        for window in (
+            "2026-01-01/2026-01-31",
+            "2026-01-15/2026-02-15",
+            "2026-03-01/2026-03-31",
+        ):
+            self.assertNotIn(window, rendered)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -337,5 +337,41 @@ class CrossReleaseTest(unittest.TestCase):
         )
 
 
+    def test_overlapping_iso_date_windows_warn_without_subtraction(self):
+        cases = (
+            ("2026-01-01/2026-01-31", "2026-01-15/2026-02-15", True),
+            ("2026-01-01/2026-02-01", "2026-01-15/2026-01-20", True),
+            # Date-only endpoints are treated inclusively for conservative screening.
+            ("2026-01-01/2026-01-31", "2026-01-31/2026-02-10", True),
+            ("2026-01-01/2026-01-31", "2026-02-01/2026-02-28", False),
+            ("2026-01-01/2026-02-30", "2026-01-15/2026-02-15", False),
+            ("2026-02-01/2026-01-01", "2026-01-15/2026-02-15", False),
+            ("opaque window A", "opaque window B", False),
+        )
+        for left, right, expected in cases:
+            with self.subTest(left=left, right=right):
+                a, b = self.pair()
+                a["population"]["window"] = left
+                b["population"]["window"] = right
+                result = preflight_cross_release(a, b)
+                self.assertEqual(result["status"], "REVIEW_REQUIRED")
+                self.assertIn("COHORT_OR_CONSTRUCT_NOT_COMPARABLE",
+                              result["reason_codes"])
+                if expected:
+                    self.assertIn("CROSS_RELEASE_POSSIBLE_TEMPORAL_DIFFERENCING",
+                                  result["reason_codes"])
+                else:
+                    self.assertNotIn("CROSS_RELEASE_POSSIBLE_TEMPORAL_DIFFERENCING",
+                                     result["reason_codes"])
+                self.assertNotIn("CROSS_RELEASE_SINGLE_HIDDEN_CELL",
+                                 result["reason_codes"])
+                self.assertFalse(result["can_ingest"])
+                self.assertFalse(result["can_publish"])
+                self.assertFalse(result["can_execute"])
+                self.assertFalse(result["disclosure_certified"])
+                self.assertNotIn(left, json.dumps(result))
+                self.assertNotIn(right, json.dumps(result))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -10,6 +10,8 @@ differencing. Other disclosure mechanisms remain outside this narrow screen.
 """
 from __future__ import annotations
 
+from datetime import date
+import re
 from typing import Mapping
 from urllib.parse import urlsplit
 
@@ -42,6 +44,40 @@ def _source_origin_key(url: str) -> tuple:
         parsed.path,
         parsed.query,
     )
+
+
+_DATE_INTERVAL = re.compile(r"^(\\d{4}-\\d{2}-\\d{2})/(\\d{4}-\\d{2}-\\d{2})$")
+
+
+def _overlapping_iso_date_windows(first: str, second: str) -> bool:
+    """Return True only for distinct, valid, overlapping inclusive ISO date ranges.
+
+    This is a conservative warning screen. It does not establish that two
+    releases share records, nor does it calculate a temporal difference.
+    Unrecognized free-text windows are left for independent human/statistical
+    review and are never treated as evidence of non-overlap.
+    """
+    if type(first) is not str or type(second) is not str or first == second:
+        return False
+
+    def parse(value: str):
+        match = _DATE_INTERVAL.fullmatch(value)
+        if match is None:
+            return None
+        try:
+            start = date.fromisoformat(match.group(1))
+            end = date.fromisoformat(match.group(2))
+        except ValueError:
+            return None
+        if start > end:
+            return None
+        return start, end
+
+    left, right = parse(first), parse(second)
+    if left is None or right is None:
+        return False
+    # Inclusive endpoints are deliberately conservative for date-only windows.
+    return left[0] <= right[1] and right[0] <= left[1]
 
 
 def preflight_cross_release(first: Mapping, second: Mapping) -> dict:
@@ -103,6 +139,18 @@ def preflight_cross_release(first: Mapping, second: Mapping) -> dict:
             # scope MAY be linkable by differencing (ONS R5). We cannot
             # establish nesting from metadata, so never subtract their cells.
             reasons.add("CROSS_RELEASE_POSSIBLE_SCOPE_DIFFERENCING")
+        if (
+            first["route"] == second["route"]
+            and first["outcome"] == second["outcome"]
+            and a_pop["description"] == b_pop["description"]
+            and a_pop["unit"] == b_pop["unit"]
+            and a_pop["geography"] == b_pop["geography"]
+            and _overlapping_iso_date_windows(a_pop["window"], b_pop["window"])
+        ):
+            # Frequent overlapping releases can expose small net changes.
+            # This warning is not proof of shared records and performs no
+            # subtraction; opaque window labels remain review-only.
+            reasons.add("CROSS_RELEASE_POSSIBLE_TEMPORAL_DIFFERENCING")
     else:
         a_partition, b_partition = first["partition"], second["partition"]
         a_cells = {cell["category"]: cell for cell in a_partition["cells"]}
