@@ -62,3 +62,18 @@ test("stats summarize legacy and tracked keys", () => {
   assert.deepEqual(detail.platforms, { legacy: 1, x: 2, article: 1 });
   assert.deepEqual(detail.agents["1"].posts, { "x/p1": 2, "article/a1": 1 });
 });
+
+
+test("stats separate only the officially verified synthetic campaign and retain raw accounting", () => {
+  const probes = Array.from({ length: 9 }, (_, i) => `clicks/1/x/test_hq_4a481d/${i}-u`);
+  const keys = [...probes, "clicks/1/10-u", "clicks/1/x/real-post/11-u",
+    "clicks/1/x/test_hq_4a481d_extra/12-u", "clicks/1/article/test_hq_4a481d/13-u"];
+  const before = [...keys];
+  const { counts, detail } = summarize(keys, ["1", "2"]);
+  assert.deepEqual(counts, { 1: 4, 2: 0 });
+  assert.equal(detail.total, 4);
+  assert.deepEqual(detail.excluded_synthetic, { total: 9, posts: { "x/test_hq_4a481d": 9 } });
+  assert.deepEqual(detail.platforms, { legacy: 1, x: 2, article: 1 });
+  assert.equal(detail.agents["1"].posts["x/test_hq_4a481d"], undefined);
+  assert.deepEqual(keys, before);
+});

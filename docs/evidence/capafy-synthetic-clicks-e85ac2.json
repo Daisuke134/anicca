@@ -1,0 +1,76 @@
+{
+  "task_id": "e85ac2183688f309e25242db",
+  "owner_id": "home-codex-e85ac2",
+  "observed_at": "2026-11-02T17:53:03.972930+00:00",
+  "remote_thread": {
+    "url": "https://app.slack.com/archives/C0CBLBGSBJN/p1793635811853779",
+    "official_readback": true,
+    "messages": 2,
+    "person_ack_start_result_delta": false,
+    "reason_accepted_queued": "not_started",
+    "followup_sent": false
+  },
+  "before": {
+    "site_id": "41c8e52e-b163-442a-84ff-fd866269bf6c",
+    "published_deploy": {
+      "id": "6ae89aeeb7fd12e6a76e6305",
+      "state": "ready",
+      "published_at": "2026-11-02T14:15:18.483Z",
+      "commit_ref": null
+    },
+    "total": 114,
+    "known_probe_count": 9,
+    "index_sha256": "058da54732280dd7147ff707140d2e0ab56e3b3c4188ad9d7b9ae92d3723fe68",
+    "source_index_sha256": "ce8bf327336a80a312cc85ee760f69e292affa3b160e5d913caf1a7ff9c6be46"
+  },
+  "validation": {
+    "red": "13 actual vs 4 expected; 1 failing regression",
+    "node": "6/6 PASS",
+    "python": "3.12 existing 4/4 PASS; default 3.9 cannot load pre-existing union annotation",
+    "source_boundary": "PASS",
+    "diff_check": "PASS"
+  },
+  "business_result": "unverified",
+  "next": "CI/review PASS then merge; deploy ownership and immutable artifact comparison before targeted deployment; official stats must separate 9 probes without new click requests",
+  "review": {
+    "verdict": "SHIP",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "verified_head": "4e339220c6453d8a0ab3a60565592bf1f9f76109",
+    "read_only": true,
+    "counter_decrease_direct_check": "PASS: None"
+  },
+  "preserved_owner": {
+    "owner_id": "capafy-ig-marketing-daily",
+    "launchd_state": "disabled",
+    "pid": null,
+    "effect_status": "unknown",
+    "occurrence_id": "capafy-ig-marketing-daily:18db7caff1178a88-68028",
+    "reason": "active_ig_handle_unresolvable",
+    "next_action": "preserve fence; existing posting owner must obtain exact official readback before any retry",
+    "mutation": false
+  },
+  "handoff": {
+    "repo": "/Users/anicca/Projects/life-manager-main",
+    "worktree": "/Users/anicca/Projects/life-manager-main/.worktrees/revenue-attribution-e85ac2",
+    "branch": "fix/revenue-attribution-e85ac2",
+    "pr": "https://github.com/Daisuke134/life-manager/pull/9097",
+    "implementation_commit": "2a123cfe44727719d51f92aa1d4d26688e2f8ae5",
+    "remaining_todo_ssot": "/Users/anicca/Projects/life-manager-main/.worktrees/revenue-attribution-e85ac2/docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md CAPAFY-SYNTHETIC-CLICKS",
+    "cursor": "exact-head required CI -> main -> official static inventory preserving live landing -> function-only deployment -> official stats GET; no /go probe",
+    "process_result": "local tests PASS; business_result unverified"
+  },
+  "security_adjudication": {
+    "scope": "exact historical fingerprint only",
+    "finding_commit": "0df40a8ea9bc605742fca4c04a1bcaf8bb3811fb",
+    "file": "docs/evidence/capafy-legacy-c23d68.json",
+    "line": 13,
+    "rule": "generic-api-key",
+    "field": "legacy_key_set_sha256",
+    "kind": "public audit inventory SHA-256 content digest, not authentication credential",
+    "source": "PR9099 docs/evidence/capafy-legacy-c23d68.md describes hash of the legacy record key set",
+    "global_rule_or_path_exclusion": false,
+    "status": "await independent review and latest CI"
+  }
+}
