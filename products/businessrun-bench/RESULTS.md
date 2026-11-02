@@ -14,10 +14,12 @@
 | Business Process / 全9課題、oracle、seed0 | 9 | 9/9成功、実行invalid0 |
 | Business Process / 全9課題、null、seed0 | 9 | 0/9成功、実行invalid0。無行動を採点器が弾く |
 | Business Process / payment-run、oracle、lost-writes、seed0 | 1 | 1/1成功 |
-| Business Process / payment-run、native Codex、clean、seed0 | 1 | 2業務日、1/1成功、112.391秒 |
+| Business Process / payment-run、native Codex、clean、seed0,1,2 | 3 | 各2業務日、3/3成功。112.391 / 102.375 / 108.392秒 |
 | Business Process / payment-run、native Codex、lost-writes、seed0 | 1 | 2業務日、1/1成功、150.380秒。全10必須check通過、重複effect無し |
 
-native2試行は同じseedのclean/fault条件であり、独立な2seedではない。モデル優劣・成功確率・一般収益性は結論しない。モデルは現在のCodex account/runtime既定で、UI設定やモデル指定を変更していない。設定名だけをproviderの実応答modelと同一視しない。Claude CLIもpreflightしたが、OAuth session expiredで失敗し、benchmark本体は実行していない。第二モデルの成績は無い。
+nativeはcleanのseed0–2で3試行、faultのseed0で1試行。同じseed0の2条件を独立な2seedと数えない。モデル優劣・成功確率・一般収益性は結論しない。モデルは現在のCodex account/runtime既定で、UI設定やモデル指定を変更していない。設定名だけをproviderの実応答modelと同一視しない。Claude CLIもpreflightしたが、OAuth session expiredで失敗し、benchmark本体は実行していない。第二モデルの成績は無い。
+
+障害ログにはlost_response5件とfail_before2件の発火を確認した。公式validatorのpayment-run seed0 --strict --faults lost-writesもPASSし、参照2反復・無行動・指定negative controlを検証した。新規venvをsetupしてYC throughput seed1を再実行し、探索用venvと同じ結果を確認する。
 
 ## 上流と手順
 
@@ -56,3 +58,17 @@ python3.12 bench.py run --suite business-process --policy native-codex --task pa
 ## 次の実験
 
 優先順は①専用の答案隔離hostと正規model認証 ②同一task/seed/予算で第二model/Naïve harness ③複数seedと未見task family ④Coffeeの能動背景actorと総費用 ⑤非公開Clipping/Short Formの公式利用条件 ⑥上流で測れない納品/復旧/人間介入だけを独自課題化、である。実顧客の継続運用、managed tenant、Naïve orgの残高/readbackは別の受入条件。
+
+## 公開sourceとcloud確認
+
+[公開repo](https://github.com/Daisuke134/businessrun-bench)はPUBLIC、初版sourceはcanonical main8140b781からexportしたb238f88。
+
+- [Coffee cloud](https://github.com/Daisuke134/businessrun-bench/actions/runs/41472322390): Ubuntu、6 baseline試行を完走、receipt取得済み。
+- [YC cloud](https://github.com/Daisuke134/businessrun-bench/actions/runs/41472358835): Ubuntu、12 script試行を完走、receipt取得済み。
+- [Business初回cloud](https://github.com/Daisuke134/businessrun-bench/actions/runs/41472362299): 起動後13秒でexit1、attempt0/missing9。モデル採点ではなく環境起動不成立。raw logを公開せず、有限の例外型/source_file/行番号を診断へ追加。後述のPoppler導入で修復。
+
+一般の利用者はforkからActionsを実行できる。これでモデル付きmanaged SaaSや顧客別の継続運転を提供できたとは言わない。cloudの失敗もevidence/cloudへ残す。
+
+修正後の[Business cloud試行](https://github.com/Daisuke134/businessrun-bench/actions/runs/41474301821)は13contract testsと全9taskのoracle9/9・null0/9で成功。workflowの導入前probeはpdftotext_before_install=false。公式PDF202件の比較でpdftotext202/202、pdfplumber194/202（8 ValueError）を再現し、Ubuntuへpoppler-utilsを導入して解消する。課題・正解・採点は変更しない。これは診断branchの成功で、公開mainはcanonical統合版とsource hashを合わせて同期する。
+
+追加のroot CI修復: 公開receiptを増やすとgit ls-files -s -zがNode既定1MiBを超え、既存OSS verifierがENOBUFSで落ちた。元のCLIで再現後、同じ検証の出力buffer上限だけ16MiBへ変更しPASSを確認する。検出ルール/許可対象/基準値は変更しない。

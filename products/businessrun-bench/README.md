@@ -8,7 +8,7 @@
 
 ## 始める
 
-Python **3.12**、Git、LinuxまたはmacOSを使います。上流sourceとvenvはrepo外へ保存します。
+Python **3.12**、Git、LinuxまたはmacOSを使います。Business Processは列配置を保つPDF抽出のため `pdftotext` が必要です（Linux: `sudo apt-get install poppler-utils`、macOS: `brew install poppler`）。Actionsは自動導入します。上流sourceとvenvはrepo外へ保存します。
 
 ```bash
 python3.12 bench.py catalog

@@ -49,6 +49,7 @@ function git(root, args, encoding = "utf8") {
   return execFileSync("git", args, {
     cwd: root,
     encoding,
+    maxBuffer: 16 * 1024 * 1024, // Tracked inventory exceeds Node's 1 MiB default.
     stdio: ["ignore", "pipe", "pipe"],
   });
 }

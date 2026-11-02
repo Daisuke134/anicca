@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "run_id": "coffee-passive-s0",
+  "suite": "coffee",
+  "policy": "passive",
+  "command": [
+    "$PYTHON",
+    "-m",
+    "coffeebench.main",
+    "--model",
+    "passive",
+    "--max_days",
+    "90",
+    "--seed",
+    "0",
+    "--main_agent",
+    "roaster_A",
+    "--output",
+    "$RUN/trajectory.json"
+  ],
+  "python_version": "3.12.15",
+  "seed": 0,
+  "task": null,
+  "faults": null,
+  "protocol": "environment_baseline_passive_background",
+  "source": {
+    "repository": "https://github.com/SakanaAI/CoffeeBench.git",
+    "commit": "9e2f3950b5812c8753de81ede9c68babc024b5c8",
+    "dirty": false
+  },
+  "runner_sha256": "2506c4deaf9935c4bff2e8cff3f46d93be8318ceb6b4c437596c581995480e90",
+  "adapter_sha256": "ebd68fe55edf392d60eeaef1bca39a8e98162ad393f523dc809b6f6e7cbb8838",
+  "started_at": "2026-11-02T15:31:03.106722+00:00",
+  "wall_seconds": 0.344,
+  "exit_code": 0,
+  "artifact_present": true,
+  "error_class": null,
+  "summary": {
+    "completed": true,
+    "bankrupt_day": null,
+    "net_income_simulated_usd": -2764.68,
+    "days_recorded": 90,
+    "background_policy": "passive",
+    "model_cost_usd": 0.0,
+    "llm_calls": 0
+  },
+  "host_cost_usd": null,
+  "artifact_hashes": [
+    {
+      "name": "trajectory.json",
+      "sha256": "cc5d960fc542aabcf56c5fced927c9e4bd530eb581b66e42dee305c924fc5786"
+    }
+  ]
+}

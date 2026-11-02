@@ -1,0 +1,9 @@
+{
+  "run_id": "payment-native-fault-s0-20261103",
+  "raw_sha256": "2c864deda6867f8e749dd9099c717ce4077d32b2d04baa00c01f3716380547a3",
+  "event_count": 7,
+  "counts": {
+    "lost_response": 5,
+    "fail_before": 2
+  }
+}

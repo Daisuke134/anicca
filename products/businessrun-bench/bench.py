@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import shutil
 import subprocess
 import sys
 import time
@@ -73,6 +74,8 @@ def source_info(suite, source_root):
 def setup(args):
     if sys.version_info[:2] != (3, 12):
         raise ValueError("Use Python 3.12 for pinned upstream dependencies")
+    if args.suite == "business-process" and not shutil.which("pdftotext"):
+        raise ValueError("Business Process requires pdftotext (Linux: poppler-utils; macOS: poppler)")
     spec = catalog()["runnable"][args.suite]
     args.sources.mkdir(parents=True, exist_ok=True)
     path = args.sources / spec["directory"]
@@ -174,6 +177,39 @@ def stop_tree(process):
     process.wait()
 
 
+def failure_diagnostics(run):
+    """Publish types and missing import names, never exception messages or log text."""
+    allowed_types = {"ModuleNotFoundError", "ImportError", "RuntimeError", "ValueError", "TypeError",
+                     "FileNotFoundError", "PermissionError", "OSError", "OperationalError", "AssertionError",
+                     "AttributeError", "KeyError", "CalledProcessError", "TimeoutExpired", "ZeroDivisionError"}
+    allowed_modules = {"requests", "httpx", "yaml", "fastapi", "uvicorn", "pandas", "numpy", "openpyxl",
+                       "bberp", "procgen", "PIL", "sqlalchemy", "pydantic", "typer", "rich", "dotenv",
+                       "litellm", "psutil", "xlsxwriter", "pypdf", "aiohttp", "tabulate"}
+    allowed_files = {"process_run.py", "process_grade.py", "core.py", "server.py", "episode.py", "gen.py",
+                     "oracle.py", "api.py", "sim.py", "payables.py", "receiving.py", "thread.py", "_base.py",
+                     "threading.py", "request.py", "parse.py", "company.py", "history.py", "northgate.py"}
+    found = []
+    for path in sorted(run.rglob("*.log")):
+        if path.stat().st_size > 2_000_000:
+            continue
+        for line in path.read_text(errors="replace").splitlines():
+            frame = re.match(r'^  File "([^"\n]+)", line ([0-9]{1,6}), in ', line)
+            if frame:
+                name = Path(frame[1]).name
+                item = {"source_file": name if name in allowed_files else "other", "line": int(frame[2])}
+                if item not in found:
+                    found.append(item)
+            match = re.match(r"^([A-Za-z][A-Za-z0-9_]*(?:Error|Exception)):", line)
+            if match:
+                item = {"log_role": "upstream", "exception": match[1] if match[1] in allowed_types else "other"}
+                missing = re.match(r"^ModuleNotFoundError: No module named '([A-Za-z0-9_.]+)'$", line)
+                if missing:
+                    item["missing_module"] = missing[1] if missing[1] in allowed_modules else "other"
+                if item not in found:
+                    found.append(item)
+    return found[-30:]
+
+
 def execute(args):
     source, info = source_info(args.suite, args.sources)
     name = args.run_id or dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ-") + uuid.uuid4().hex[:8]
@@ -226,6 +262,8 @@ def execute(args):
             rows = [dict(r, cost_usd=None) for r in rows]
         summary = summarize_process(rows, expected, "unknown" if args.policy == "native-codex" else "script_llm_zero")
         evidence = sorted(root.glob("*/result.json"))
+    if code and error_class is None:
+        error_class = "upstream_exit"
     public_command = [str(c).replace(str(source), "$SOURCE").replace(str(run), "$RUN").replace(str(HERE), "$RUNNER") for c in cmd]
     try:
         python_version = subprocess.check_output([cmd[0], "-c", "import platform; print(platform.python_version())"], text=True, timeout=5).strip()
@@ -240,6 +278,7 @@ def execute(args):
                "started_at": started, "wall_seconds": round(time.monotonic() - begin, 3),
                "exit_code": code, "artifact_present": bool(evidence), "error_class": error_class,
                "summary": summary, "host_cost_usd": None,
+               "failure_diagnostics": failure_diagnostics(run) if code or not evidence else [],
                "artifact_hashes": [{"name": p.name, "sha256": digest(p)} for p in evidence]}
     (run / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
     print(json.dumps(receipt, indent=2))

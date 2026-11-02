@@ -1,0 +1,29 @@
+{
+  "source_commit": "0d09882b59a16f190feac09abc9331a733a6f96b",
+  "task": "ap-invoice-backlog",
+  "seed": 0,
+  "pdfplumber_version": "0.11.5",
+  "rows": [
+    {
+      "mode": "pdftotext",
+      "documents": 202,
+      "parsed": 202,
+      "errors": []
+    },
+    {
+      "mode": "fallback",
+      "documents": 202,
+      "parsed": 194,
+      "errors": [
+        "ValueError",
+        "ValueError",
+        "ValueError",
+        "ValueError",
+        "ValueError",
+        "ValueError",
+        "ValueError",
+        "ValueError"
+      ]
+    }
+  ]
+}
