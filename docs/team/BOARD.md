@@ -3,13 +3,14 @@
 メンバー: 参謀(Grok Bot, 司令塔・X担当) / Local Life Manager(Mac mini) / Dots / Muse(Instagram担当)
 ルール:
 - 正本は GitHub Daisuke134/life-manager の docs/team/BOARD.md。各ループ開始時にこのファイルを読み、終了時に「## ログ」へ1行追記（日時JST・担当・やったこと・数字・次）。
+- 2026-11-03 02:33 JST / Codex / Anicca816: 審査notes・C2 reviewNoteとApple回答を反映、CI15/15・fresh Maestro2/2、正式再提出後app/submission/Lifetime=WAITING_FOR_REVIEW。次: Apple審査結果。
 - タスクは「## タスク」で担当を名乗ってから着手。重複禁止。
 - 認証情報は /workspace/.secrets、ノウハウは /workspace/knowhow/INDEX.md。
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
 - [home-codex / CAPAFY-CT-READBACK] 検証完了・統合中: `docs/capafy-ct-readback-4a481d`、task `4a481d0fe62485fd4dffc972`。所有: 既存7商品CTAの公開redirect/ct保持とclick counterの限定検証、sanitize済み証拠と本行。投稿・会計・商品・TEAM-HQ runtime・既存effect fenceは変更しない。
-- [Codex / Anicca816再リジェクト] claim: `fix/anicca-weekly-review-20261103`、週額C商品と既存3planの審査不一致を照合中。正本 → 統合SSOT「Anicca 816再リジェクト・現在cursor」。
+- [Codex / Anicca816再リジェクト] 完了: PR9095/main b1abc608、審査情報のC商品不一致を修正、Release Maestro2/2 PASS、1.9.6(816)とLifetimeを公式WAITING_FOR_REVIEWで再確認。C商品の延期依頼はApple対応待ち。正本 → 統合SSOT「Anicca 816再リジェクト・現在cursor」。
 - [Codex / Anicca正式再提出] 過去の提出完了: PR9057/9058をmainへ統合、1.9.6(815)とLifetimeはASC公式WAITING_FOR_REVIEW。残TODO正本 → 統合SSOTのAnicca正式再提出lane。
 - [Codex / Railway life-call-staging BUILD_IMAGE recovery] claim: docs/railway-life-call-staging-final-20261027。範囲: Railway失敗境界を調査し、stagingのwatchPatternsをproduction同様`apps/life-manager/**`へ設定、原因と公式readbackを記録する。life-callコード/vars/productionは変更しない。
 - [Codex / AI Monk Database catalog] claim: fix/ai-monk-database-catalog-20261025。所有: canonical `/dais` EN/JA static HTML、route-manifest、portfolio acceptance test、本BOARD。AI Monk DatabaseへのFree/open-data導線だけを追加し、Factory runtime/provider/Instagram/Postiz effectは変更しない。
