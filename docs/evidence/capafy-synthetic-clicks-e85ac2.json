@@ -31,5 +31,34 @@
     "diff_check": "PASS"
   },
   "business_result": "unverified",
-  "next": "CI/review PASS then merge; deploy ownership and immutable artifact comparison before targeted deployment; official stats must separate 9 probes without new click requests"
+  "next": "CI/review PASS then merge; deploy ownership and immutable artifact comparison before targeted deployment; official stats must separate 9 probes without new click requests",
+  "review": {
+    "verdict": "SHIP",
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "verified_head": "4e339220c6453d8a0ab3a60565592bf1f9f76109",
+    "read_only": true,
+    "counter_decrease_direct_check": "PASS: None"
+  },
+  "preserved_owner": {
+    "owner_id": "capafy-ig-marketing-daily",
+    "launchd_state": "disabled",
+    "pid": null,
+    "effect_status": "unknown",
+    "occurrence_id": "capafy-ig-marketing-daily:18db7caff1178a88-68028",
+    "reason": "active_ig_handle_unresolvable",
+    "next_action": "preserve fence; existing posting owner must obtain exact official readback before any retry",
+    "mutation": false
+  },
+  "handoff": {
+    "repo": "/Users/anicca/Projects/life-manager-main",
+    "worktree": "/Users/anicca/Projects/life-manager-main/.worktrees/revenue-attribution-e85ac2",
+    "branch": "fix/revenue-attribution-e85ac2",
+    "pr": "https://github.com/Daisuke134/life-manager/pull/9097",
+    "implementation_commit": "2a123cfe44727719d51f92aa1d4d26688e2f8ae5",
+    "remaining_todo_ssot": "/Users/anicca/Projects/life-manager-main/.worktrees/revenue-attribution-e85ac2/docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md CAPAFY-SYNTHETIC-CLICKS",
+    "cursor": "exact-head required CI -> main -> official static inventory preserving live landing -> function-only deployment -> official stats GET; no /go probe",
+    "process_result": "local tests PASS; business_result unverified"
+  }
 }
