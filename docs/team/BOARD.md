@@ -8,6 +8,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / CAPAFY-CT-READBACK] claim: `docs/capafy-ct-readback-4a481d`、task `4a481d0fe62485fd4dffc972`。所有: 既存7商品CTAの公開redirect/ct保持とclick counterの限定検証、sanitize済み証拠と本行。投稿・会計・商品・TEAM-HQ runtime・既存effect fenceは変更しない。
 - [Codex / Anicca正式再提出] 完了: PR9057/9058をmainへ統合、1.9.6(815)とLifetimeはASC公式WAITING_FOR_REVIEW。残TODO正本 → 統合SSOTのAnicca正式再提出lane。
 - [Codex / Railway life-call-staging BUILD_IMAGE recovery] claim: docs/railway-life-call-staging-final-20261027。範囲: Railway失敗境界を調査し、stagingのwatchPatternsをproduction同様`apps/life-manager/**`へ設定、原因と公式readbackを記録する。life-callコード/vars/productionは変更しない。
 - [Codex / AI Monk Database catalog] claim: fix/ai-monk-database-catalog-20261025。所有: canonical `/dais` EN/JA static HTML、route-manifest、portfolio acceptance test、本BOARD。AI Monk DatabaseへのFree/open-data導線だけを追加し、Factory runtime/provider/Instagram/Postiz effectは変更しない。

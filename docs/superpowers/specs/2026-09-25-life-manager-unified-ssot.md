@@ -33,6 +33,14 @@ remote実測: DotsはReasonで受領→着手→独立監査/GO確認→新し�
 
 公開成果: article source PR #9085/main5b874ffc、products bridge PR #842/maina50f6c15、公開workflow41464586193はsuccess。https://aniccaai.com/blog/manager-shared-room-real-work-en はHTTP200、図の公開hashとrelease manifest一致を確認する。desktop1440/mobile390の実ブラウザ画面で本文/図/末尾を確認し、横はみ出しなし。物理iPhoneの受入とは区別する。記事は実装checkpointと未達の限界を明記し、全remote稼働や収益を捏造しない。公開URLは既存HQthreadへ共有し公式readbackを確認する。
 
+## CAPAFY-CT-READBACK — 既存購入導線の計測支援
+
+目的: 既存7商品に対し公開`/go/<id>/x/<probe>?ct=<probe>`のHTTP Locationを公式readbackし、対象ID・ct保持・click counterを照合する。配信や会計のownerを代行せず、投稿/価格/購入/ledger/fence/HQ runtimeを変更しない。
+所有: home-codex-4a481d、task 4a481d0fe62485fd4dffc972、branch docs/capafy-ct-readback-4a481d。origin/main 41bb93191b由来の専用worktree。BOARD/lease/open PRを確認し、既存ownerを再割当しない。
+完了条件: 商品設定7件との照合、実HTTP redirectと計測readbackの証拠を永続化し、既存関連テストとdiff check、commit/push/PRでレビュー可能にする。失敗経路があれば具体的URLと修正先を残す。合成clickを売上/購入/実ユーザー流入に含めない。legacy blob全件や購入決済完了はこの7件の証明範囲外。
+順序/現在cursor: claim → 7経路readback → 既存テスト → 証拠/正本更新 → PR/CI/main。既存TODO順は変更しない。
+Slack remote差分: 公式conversations.repliesで指定thread1793635811.853779を完読、parent1件/返信0/has_more=false。受領・着手・結果の新差分なし、Reason accepted/queuedは未着手、催促送信0。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
