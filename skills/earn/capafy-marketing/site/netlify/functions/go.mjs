@@ -62,6 +62,6 @@ export default async (request) => {
   if (!allowedAgents.has(click.agentId)) return redirect("https://capafy.ai/");
 
   const store = getStore("capafy-attribution-clicks");
-  await store.set(clickKey(click), "1");
+  await store.set(clickKey(click), JSON.stringify({ schema_version: 1, ...click }));
   return redirect(targetUrl(click));
 };

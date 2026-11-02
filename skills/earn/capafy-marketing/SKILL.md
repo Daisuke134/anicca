@@ -153,7 +153,10 @@ NOT @aniccaxxx as `$LIFE_MANAGER_REPO/skills/x-poster/SKILL.md` claims.
 Function records one immutable Netlify Blob per valid click and redirects to the
 Capafy listing with the Instagram bio UTM parameters. `/go-stats` returns cumulative
 counts excluding the exact verified synthetic campaign `x/test_hq_4a481d`;
-`?detail=1` exposes its retained raw-record count as `excluded_synthetic`. Raw blobs
+`?detail=1` exposes its retained raw-record count as `excluded_synthetic`. New click bodies save only schema_version, agentId, platform, post and ct.
+`?detail=1&attribution=1` explicitly reads bodies and adds per-agent ct counts with
+recorded/unavailable totals; old scalar bodies remain unavailable, never guessed.
+Storage errors fail the readback. Raw blobs
 are preserved. Other legacy or test-looking names are not automatically excluded.
 A corrected cumulative count below an older ledger baseline produces an unknown
 window delta, rather than a negative count. Immediately after `ig_metrics.py`, the daily caller runs

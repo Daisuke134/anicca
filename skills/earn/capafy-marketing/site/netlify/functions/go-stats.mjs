@@ -6,7 +6,8 @@ const allowedAgents = JSON.parse(
 );
 
 // Keys: clicks/<agent>/<ts>-<uuid> (legacy) or clicks/<agent>/<platform>/<post>/<ts>-<uuid>.
-export const summarize = (keys, agents = allowedAgents) => {
+export const summarize = (keys, agents = allowedAgents, bodies) => {
+  const attribution = { recorded: 0, unavailable: 0, agents: {} };
   const counts = Object.fromEntries(agents.map((agentId) => [agentId, 0]));
   const byAgent = Object.fromEntries(
     agents.map((agentId) => [agentId, { total: 0, platforms: {}, posts: {} }]),
@@ -27,6 +28,20 @@ export const summarize = (keys, agents = allowedAgents) => {
       excluded_synthetic.posts[post] = (excluded_synthetic.posts[post] || 0) + 1;
       continue;
     }
+    if (bodies) {
+      const body = bodies.get(key);
+      const token = (value) => typeof value === "string" && /^(?:[A-Za-z0-9_-]{1,80})?$/.test(value);
+      if (body?.schema_version === 1 && body.agentId === agentId &&
+          [body.platform, body.post, body.ct].every(token) &&
+          body.platform === (parts.length >= 5 ? parts[2] : "") &&
+          (body.platform ? (body.post || "_") === parts[3] : true)) {
+        attribution.recorded += 1;
+        if (body.ct) {
+          const row = (attribution.agents[agentId] ||= Object.create(null));
+          row[body.ct] = (row[body.ct] || 0) + 1;
+        }
+      } else attribution.unavailable += 1;
+    }
     counts[agentId] = (counts[agentId] || 0) + 1;
     const row = (byAgent[agentId] ||= { total: 0, platforms: {}, posts: {} });
     row.total += 1;
@@ -35,7 +50,7 @@ export const summarize = (keys, agents = allowedAgents) => {
     platforms[platform] = (platforms[platform] || 0) + 1;
     total += 1;
   }
-  return { counts, detail: { total, platforms, agents: byAgent, excluded_synthetic } };
+  return { counts, detail: { total, platforms, agents: byAgent, excluded_synthetic, ...(bodies ? { attribution } : {}) } };
 };
 
 export default async (request) => {
@@ -51,8 +66,19 @@ export default async (request) => {
     cursor = page.cursor;
   } while (cursor);
 
-  const { counts, detail } = summarize(keys);
+  const params = new URL(request.url).searchParams;
+  const detailed = params.get("detail") === "1";
+  let bodies;
+  if (detailed && params.get("attribution") === "1") {
+    bodies = new Map();
+    for (const key of keys) {
+      const text = await store.get(key);
+      try { bodies.set(key, JSON.parse(text)); }
+      catch { bodies.set(key, null); }
+    }
+  }
+  const { counts, detail } = summarize(keys, allowedAgents, bodies);
   // Default body stays the flat {agent_id: clicks} map for existing readers.
-  const body = new URL(request.url).searchParams.get("detail") === "1" ? detail : counts;
+  const body = detailed ? detail : counts;
   return Response.json(body, { headers: { "cache-control": "no-store" } });
 };

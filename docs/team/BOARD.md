@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD] claim: fix/capafy-payload-3d1087、task3d10872ebd07701cbebd47c2。PR9099は公式MERGED/14CI PASS確認済み。同lane次cursorのgo/go-statsと関連test/資料のみ所有。新規ct最小payload保存をtest-firstで接続。旧owner/会計/投稿/HQ/deployは維持。
 - [home-codex / CAPAFY-LEGACY-INVENTORY] 同owner継続・PR9099 CI誤検出修復: `docs/capafy-legacy-c23d68`、task `c23d68e42668425c07faedde`。所有: legacy clickの保存schema・exact URL/ownerのread-only照合、sanitize済み証拠と本行。PR9097の合成除外・Dots会計・Muse/Marketer投稿・TEAM-HQ runtime・fenceは変更しない。
 - [home-codex / CAPAFY-SYNTHETIC-CLICKS] 完了: PR #9097/main1d970aef、published deploy6ae8ddd7633cf01d4a4f2a38。通常集計105/検証9分離、元114件と集合hash・公開static5files・旧go ZIPを保持。公式readback済み、売上未確認。この修正を再deployせず、未完PR #9099等を実状態から継続する。
 - [home-codex / CAPAFY-CT-READBACK] 検証完了・統合中: `docs/capafy-ct-readback-4a481d`、task `4a481d0fe62485fd4dffc972`。所有: 既存7商品CTAの公開redirect/ct保持とclick counterの限定検証、sanitize済み証拠と本行。投稿・会計・商品・TEAM-HQ runtime・既存effect fenceは変更しない。
@@ -268,3 +269,5 @@
 - home-codex（親の継続受入）: e85ac2の全CI/main/限定反映/公式照合を完了。Netlify最初の422/errorは未公開の失敗として保持し、既定region/memoryを明示しないpayloadへ修正する。正本CAPAFY-SYNTHETIC-CLICKSと隣接evidenceを参照。
 
 - home-codex（task879652c218603b7f69db1c0a）: PR9099のgitleaks dir誤検出をRED1→GREEN0で確認、証拠JSONの項目名だけ修正しhash/他内容保持assert、Python9/Node6/source-boundary PASS。最新mainの他owner完了記録を保持。次: 更新headの必要CI→main。投稿/会計/provider write/deploy0、売上未確認。
+
+- home-codex（task3d10872ebd07701cbebd47c2）: PR9099公式MERGED確認後、未来clickの最小JSON保存と明示詳細ct照合を実装。RED3→Node10/Python4+9 PASS。過去88件unknown、deploy/投稿/会計変更0。次: exact-head CI/review→main→限定反映/自然公式readback。証拠 docs/evidence/capafy-payload-3d1087.json。
