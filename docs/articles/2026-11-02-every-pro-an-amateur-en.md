@@ -4,7 +4,7 @@ subtitle: "The End of Productive Activity"
 date: "2026-11-02"
 language: en
 status: editorial-draft
-description: "Why AGI may eliminate the economic need for professionals—and what remains when productivity is no longer the point."
+description: "Why becoming more productive with AI is not a permanent career defense, and why AGI could turn every professional into an amateur."
 ---
 
 # What Will AI Do to Us? It Will Turn Every Pro Into an Amateur.
@@ -18,6 +18,16 @@ People answer with a list. It will write software. Discover medicines. Prove the
 I think that misses the point.
 
 **AI will turn every pro into an amateur.**
+
+And here is the trap: **if your strategy for surviving AI is to become more productive with AI, you're optimizing the very thing AI is making obsolete.**
+
+### TL;DR
+
+Most people are hired because they can produce an outcome better, faster, or cheaper than the customer can. That is a productivity relationship. When sufficiently capable AI lets customers obtain that outcome directly, the reason to hire the human disappears. Becoming the employee who uses AI most efficiently can help you today—but it is not a permanent defense. You are helping demonstrate that the output can be separated from the person.
+
+Chess is not a counterexample: professional chess survives superhuman engines because its audience buys human rivalry and entertainment, not the mathematically strongest move. Even that emotional market is not guaranteed to remain immune to AI.
+
+**The endgame is not a world where the most productive human wins. It is a world in which productive activity no longer needs a human.**
 
 Not because you will forget how to do your work. Not because you will stop loving it. But because the world will no longer need to pay you to produce what intelligence can produce on demand.
 
@@ -89,6 +99,28 @@ We have been trained to ask: What did you accomplish? What did you produce? How 
 
 What if those are no longer the important questions?
 
+## The most dangerous career advice in the AI era
+
+You've heard it everywhere: *AI won't replace you. Someone using AI will.*
+
+For the present transition, that can be practical advice. An engineer using AI may outperform an engineer who refuses it. A marketer using AI may produce more campaigns. A consultant using AI may serve more clients.
+
+But look at the direction of travel.
+
+First, one employee with AI does the work of five. The company celebrates. Then one employee with better agents does the work of fifty. Then the customer uses those agents directly.
+
+The productivity improvement you proudly demonstrated becomes evidence that the company needs fewer people—including you.
+
+This is the paradox: **you are training yourself to compete on the dimension where AI's advantage is growing fastest.**
+
+In Japan, we praise someone as *shigoto ga dekiru*—a person who is exceptionally good at getting work done. We celebrate efficiency, speed, reliability, output. These qualities matter today. But in a world where the work itself can be performed autonomously, being the most productive human does not guarantee that the human is still needed.
+
+Imagine saying, “I'll keep my job because I'm better at using AI than my colleagues.” What happens when the AI no longer needs you to operate it?
+
+You may win the competition against your coworkers and lose the competition against the need for a coworker at all.
+
+**Using AI to increase productivity is a strategy for the transition. It is not a strategy for surviving the destination.**
+
 ## The twenty-second illusion
 
 People like to rank jobs by how long they think they will survive.
@@ -136,6 +168,20 @@ A human chess tournament is closer to live sport than to consulting. Identity, p
 Imagine hundreds of competitors with devices that let them play at superhuman strength. Their moves might be extraordinary. But their tournament would not automatically be more compelling than the human rivalry people already care about.
 
 More skill is not the same thing as more desire to watch.
+
+## Chess is entertainment, not a productivity service
+
+The crucial distinction is the business you are actually in.
+
+A professional chess player looks, superficially, like a knowledge worker: sitting at a board, calculating moves, using extraordinary intelligence. But the paying audience is not purchasing the most accurate calculation. It is purchasing entertainment, suspense, identity, and the unfolding story of particular people.
+
+A tournament of the strongest chess agents might be fascinating to researchers, engine developers, or benchmark enthusiasts. It would not automatically command the same emotional audience as a match between recognizable human rivals. That is not a claim that nobody watches computer chess; it is a claim that stronger play alone does not create the same product.
+
+Now consider a bakery. Most customers want bread that tastes good, is convenient, and is worth the price. If autonomous systems can consistently make better bread more cheaply, the ordinary bakery competes on those outcomes. A bakery might also sell a ritual, a neighborhood identity, or affection for a particular baker—but those are distinct reasons to choose it, and a good story does not rescue bad bread for customers primarily buying bread.
+
+This applies far beyond office work. **The test is not whether the worker uses their hands or their brain. The test is what the buyer is paying for.**
+
+Is it the result? Or is the experience of this particular person doing it part of the result?
 
 ## Your consultancy is not a chess tournament
 
@@ -222,6 +268,20 @@ Even community, emotional connection, and authenticity must face the same questi
 What desire is being satisfied? Why does this person need to pay *you* to satisfy it?
 
 If the answer is only that you currently provide the best experience, a better experience can replace you.
+
+## Distribution is not just getting attention
+
+For builders, this changes the meaning of distribution.
+
+A feature comparison can persuade someone to try your software. A benchmark can show it performs better. But if that is the entire reason people stay, another model can take them away as soon as it wins the benchmark.
+
+A story is not a slogan on an About page. It has to shape what people actually come to experience.
+
+For Manager, this is a strategic challenge, not an exemption from our thesis. If Manager promises only more effective behavioral interventions, a more capable AI can compete on intervention quality. If it promises only a faster way to accomplish goals, users can compare it on speed. Distribution cannot magically transform an outcome-based product into an irreplaceable relationship.
+
+What we can do is make our purpose legible through concrete work: publicly document the questions we investigate, show what we build and test, disclose failures, explain decisions, and let people follow an ongoing intellectual and human journey rather than only a feature list. The product must still work. The story must be real. And neither is a guarantee of permanent immunity.
+
+**A strong story may win attention and loyalty when functional performance converges. It is not a substitute for performance, and AI may eventually compete for that loyalty too.**
 
 ## What should you build?
 
