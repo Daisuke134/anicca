@@ -128,9 +128,9 @@ class RunnerContract(unittest.TestCase):
         b = self.implementation()
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            (root / "PRIVATE_FILE.log").write_text("ModuleNotFoundError: No module named 'PRIVATE_MODULE'\nPRIVATE_CLASSError: confidential\n")
+            (root / "PRIVATE_FILE.log").write_text("ModuleNotFoundError: No module named 'PRIVATE_MODULE'\nPRIVATE_CLASSError: confidential\n  File \"/private/PRIVATE_SOURCE.py\", line 12, in main\n")
             result = json.dumps(b.failure_diagnostics(root))
-            for value in ["PRIVATE_FILE", "PRIVATE_MODULE", "PRIVATE_CLASS", "confidential"]:
+            for value in ["PRIVATE_FILE", "PRIVATE_MODULE", "PRIVATE_CLASS", "PRIVATE_SOURCE", "confidential"]:
                 self.assertNotIn(value, result)
             self.assertIn("other", result)
 

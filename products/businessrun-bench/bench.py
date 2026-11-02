@@ -182,11 +182,20 @@ def failure_diagnostics(run):
     allowed_modules = {"requests", "httpx", "yaml", "fastapi", "uvicorn", "pandas", "numpy", "openpyxl",
                        "bberp", "procgen", "PIL", "sqlalchemy", "pydantic", "typer", "rich", "dotenv",
                        "litellm", "psutil", "xlsxwriter", "pypdf", "aiohttp", "tabulate"}
+    allowed_files = {"process_run.py", "process_grade.py", "core.py", "server.py", "episode.py", "gen.py",
+                     "oracle.py", "api.py", "sim.py", "payables.py", "receiving.py", "thread.py", "_base.py",
+                     "threading.py", "request.py", "parse.py", "company.py", "history.py", "northgate.py"}
     found = []
     for path in sorted(run.rglob("*.log")):
         if path.stat().st_size > 2_000_000:
             continue
         for line in path.read_text(errors="replace").splitlines():
+            frame = re.match(r'^  File "([^"\n]+)", line ([0-9]{1,6}), in ', line)
+            if frame:
+                name = Path(frame[1]).name
+                item = {"source_file": name if name in allowed_files else "other", "line": int(frame[2])}
+                if item not in found:
+                    found.append(item)
             match = re.match(r"^([A-Za-z][A-Za-z0-9_]*(?:Error|Exception)):", line)
             if match:
                 item = {"log_role": "upstream", "exception": match[1] if match[1] in allowed_types else "other"}
@@ -195,7 +204,7 @@ def failure_diagnostics(run):
                     item["missing_module"] = missing[1] if missing[1] in allowed_modules else "other"
                 if item not in found:
                     found.append(item)
-    return found[:20]
+    return found[-30:]
 
 
 def execute(args):
