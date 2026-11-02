@@ -71,6 +71,31 @@
     "kind": "public audit inventory SHA-256 content digest, not authentication credential",
     "source": "PR9099 docs/evidence/capafy-legacy-c23d68.md describes hash of the legacy record key set",
     "global_rule_or_path_exclusion": false,
-    "status": "await independent review and latest CI"
+    "status": "independent review SHIP, content digest reproduced from official strong-consistency store, latest CI all PASS"
+  },
+  "completion": {
+    "ci_head": "a658a88bb258040d44cd264d4f147acfaefd6e6c",
+    "ci_run": 41502248394,
+    "ci_checks": 15,
+    "ci": "all SUCCESS",
+    "main": "1d970aefda8eda97af44052de25d14e8bc166dd2",
+    "review": "SHIP; corrected defaults payload also SHIP",
+    "deploy_id": "6ae8ddd7633cf01d4a4f2a38",
+    "state": "ready",
+    "published_at": "2026-11-02T19:02:24.413Z",
+    "static_files_unchanged": 5,
+    "go_digest_unchanged": true,
+    "function_defaults_unchanged": true,
+    "normal_aggregate": 105,
+    "excluded_synthetic": 9,
+    "raw_records": 114,
+    "legacy_records": 88,
+    "raw_inventory_unchanged": true,
+    "new_redirect_probes": 0,
+    "failed_draft_preserved": "6ae8dd5df84d97d38e7a2109",
+    "failure_cause": "plan does not support explicit function regions; output defaults omitted to preserve original TOML behavior",
+    "business_revenue": "unverified",
+    "slack_result": "https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793646217888829?thread_ts=1793641745.962019&cid=C0CBLBGSBJN",
+    "next": "Do not redeploy this fix; resume next unfinished work from current official state"
   }
 }
