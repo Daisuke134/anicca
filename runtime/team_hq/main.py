@@ -25,12 +25,14 @@ class HQError(RuntimeError):
 
 
 class SlackRejected(HQError):
-    pass
+    def __init__(self, error=None):
+        super().__init__("Slack API が成功を返していません")
+        self.ambiguous = error in ("internal_error", "fatal_error")
 
 
 def checked(response):
     if not isinstance(response, dict) or response.get("ok") is not True:
-        raise SlackRejected("Slack API が成功を返していません")
+        raise SlackRejected(response.get("error") if isinstance(response, dict) else None)
     return response
 
 
@@ -189,7 +191,9 @@ class HQ:
             """)
             # The private DB may already have been prepared by an earlier source build.
             for table, column, definition in (("tasks", "proof", "TEXT NOT NULL DEFAULT '[]'"),
-                                              ("threads", "polled", "REAL NOT NULL DEFAULT 0")):
+                                              ("threads", "polled", "REAL NOT NULL DEFAULT 0"),
+                                              ("threads", "ready", "INTEGER NOT NULL DEFAULT 0"),
+                                              ("threads", "task_cutoff", "TEXT NOT NULL DEFAULT '0'")):
                 if column not in {row[1] for row in database.execute("PRAGMA table_info(" + table + ")")}:
                     database.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition)
             database.commit()
@@ -255,20 +259,27 @@ class HQ:
               instant, instant, "[hq:" + task_id + "]"))
         return cursor.rowcount
 
-    def store_messages(self, messages):
+    def store_messages(self, messages, *, task_cutoff=None, discovery_cutoff=None):
         added = 0
         with self.connect() as database:
             cutoff_row = database.execute("SELECT value FROM meta WHERE key='legacy_cutoff'").fetchone()
             cutoff = slack_time(cutoff_row[0]) if cutoff_row else Decimal(0)
+            if task_cutoff is not None:
+                cutoff = max(cutoff, slack_time(task_cutoff))
             for message in messages:
                 ts = str(message["ts"])
                 timestamp = slack_time(ts)
                 thread = str(message.get("thread_ts") or ts)
                 slack_time(thread)
                 text = self.clean(message.get("text", ""))
+                previous = database.execute("SELECT thread_ts,text FROM messages WHERE ts=?", (ts,)).fetchone()
                 database.execute("INSERT OR REPLACE INTO messages VALUES (?,?,?)", (ts, thread, text))
-                database.execute("INSERT OR IGNORE INTO threads(ts,cursor) VALUES (?,?)", (thread, thread))
-                if timestamp <= cutoff or database.execute("SELECT 1 FROM legacy_done WHERE ts=?", (ts,)).fetchone():
+                database.execute("INSERT OR IGNORE INTO threads(ts,cursor,task_cutoff) VALUES (?,?,?)",
+                                 (thread, thread, str(discovery_cutoff or "0")))
+                if previous is None or previous["thread_ts"] != thread or previous["text"] != text:
+                    database.execute("UPDATE threads SET ready=0 WHERE ts=?", (thread,))
+                if (discovery_cutoff is not None or timestamp <= cutoff
+                        or database.execute("SELECT 1 FROM legacy_done WHERE ts=?", (ts,)).fetchone()):
                     continue
                 for identity, agent in self.agents.items():
                     prefix = str(agent.get("prefix", identity))
@@ -282,10 +293,14 @@ class HQ:
                                                   identity, text, source_ts=ts, thread_ts=thread)
         return added
 
-    def receive_scan(self, method, key, oldest, maximum, deadline, **parameters):
+    def receive_scan(self, method, key, oldest, maximum, deadline, *,
+                     discovery_cutoff=None, task_cutoff=None, **parameters):
         with self.connect() as database:
             saved = database.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         scan = json.loads(saved[0]) if saved else {"oldest": oldest, "cursor": "", "newest": oldest}
+        cutoff = None
+        if method == "conversations.replies":
+            cutoff = str(max(slack_time(scan["oldest"]), slack_time(task_cutoff or "0")))
         queued = 0
         for _ in range(maximum):
             if time.monotonic() >= deadline:
@@ -295,7 +310,7 @@ class HQ:
             messages = payload.get("messages")
             if not isinstance(messages, list):
                 raise HQError("Slack message一覧が不正です")
-            queued += self.store_messages(messages)
+            queued += self.store_messages(messages, task_cutoff=cutoff, discovery_cutoff=discovery_cutoff)
             scan["newest"] = str(max([slack_time(scan["newest"])] + [slack_time(message["ts"]) for message in messages]))
             next_cursor = payload.get("response_metadata", {}).get("next_cursor", "").strip()
             if next_cursor and next_cursor == scan["cursor"]:
@@ -317,23 +332,37 @@ class HQ:
             deadline = time.monotonic() + self.receive_budget
             with self.connect() as database:
                 cursor = database.execute("SELECT value FROM meta WHERE key='history_cursor'").fetchone()
-            oldest = cursor[0] if cursor else str(max(0, int(time.time() - self.lookback_days * 86400)))
+                database.execute("INSERT OR IGNORE INTO meta VALUES ('history_start', ?)",
+                                 (str(max(0, int(time.time() - self.lookback_days * 86400))),))
+                start = database.execute("SELECT value FROM meta WHERE key='history_start'").fetchone()[0]
+                backfilled = database.execute("SELECT 1 FROM meta WHERE key='history_backfilled'").fetchone()
+            oldest = cursor[0] if cursor else start
             queued, newest, complete = self.receive_scan("conversations.history", "scan:history", oldest,
                                                          self.max_history_pages, deadline)
             if complete:
                 with self.connect() as database:
                     database.execute("INSERT OR REPLACE INTO meta VALUES ('history_cursor', ?)", (newest,))
+                if not backfilled:
+                    _, _, finished = self.receive_scan("conversations.history", "scan:backfill", "0",
+                                                        self.max_history_pages, deadline,
+                                                        discovery_cutoff=start, latest=start)
+                    if finished:
+                        with self.connect() as database:
+                            database.execute("INSERT OR REPLACE INTO meta VALUES ('history_backfilled', '1')")
             with self.connect() as database:
                 threads = [dict(row) for row in database.execute("SELECT * FROM threads ORDER BY polled,ts LIMIT ?", (self.max_threads_per_poll,))]
             for thread in threads:
                 if time.monotonic() >= deadline:
                     break
+                with self.connect() as database:
+                    database.execute("UPDATE threads SET ready=0 WHERE ts=?", (thread["ts"],))
                 added, latest, finished = self.receive_scan("conversations.replies", "scan:thread:" + thread["ts"],
-                                                            thread["cursor"], self.max_thread_pages, deadline, ts=thread["ts"])
+                                                            thread["cursor"], self.max_thread_pages, deadline,
+                                                            task_cutoff=thread["task_cutoff"], ts=thread["ts"])
                 queued += added
                 with self.connect() as database:
-                    database.execute("UPDATE threads SET cursor=?,polled=? WHERE ts=?",
-                                     (latest if finished else thread["cursor"], time.time(), thread["ts"]))
+                    database.execute("UPDATE threads SET cursor=?,polled=?,ready=? WHERE ts=?",
+                                     (latest if finished else thread["cursor"], time.time(), int(finished), thread["ts"]))
             with self.connect() as database:
                 database.execute("INSERT OR REPLACE INTO meta VALUES ('last_poll', ?)", (str(time.time()),))
             return {"ok": True, "queued": queued}
@@ -341,7 +370,9 @@ class HQ:
     def claim(self):
         with self.connect() as database:
             database.execute("BEGIN IMMEDIATE")
-            row = database.execute("SELECT * FROM tasks WHERE status='queued' ORDER BY created,id LIMIT 1").fetchone()
+            row = database.execute("""SELECT * FROM tasks WHERE status='queued'
+                AND (thread_ts IS NULL OR EXISTS (SELECT 1 FROM threads WHERE ts=tasks.thread_ts AND ready=1))
+                ORDER BY created,id LIMIT 1""").fetchone()
             if row is None:
                 return None
             database.execute("UPDATE tasks SET status='working',updated=?,checkpoint='executing',next='await_execution_receipt' WHERE id=?",
@@ -406,7 +437,8 @@ class HQ:
                     previous[signum] = signal.signal(signum, interrupted)
                 process = subprocess.Popen(command, cwd=Path(agent["cwd"]).expanduser(), stdin=subprocess.PIPE,
                                            stdout=stdout, stderr=subprocess.DEVNULL, start_new_session=True,
-                                           shell=False)
+                                           shell=False, env={key: value for key, value in os.environ.items()
+                                                             if not key.startswith("LIFE_MANAGER_")})
                 process.communicate(self.prompt(task).encode(), timeout=self.timeout)
                 code = process.returncode
                 status = "succeeded" if code == 0 else "failed"
@@ -526,11 +558,12 @@ class HQ:
                 parameters["thread_ts"] = task["thread_ts"]
             try:
                 checked(self.api.call("chat.postMessage", **parameters))
-            except SlackRejected:
-                with self.connect() as database:
-                    database.execute("UPDATE tasks SET reply_state='delivery_failed',delivery_error='slack_rejected',updated=? WHERE id=?",
-                                     (time.time(), task["id"]))
-                return {"ok": False, "task_id": task["id"], "reply_state": "delivery_failed"}
+            except SlackRejected as error:
+                if not error.ambiguous:
+                    with self.connect() as database:
+                        database.execute("UPDATE tasks SET reply_state='delivery_failed',delivery_error='slack_rejected',updated=? WHERE id=?",
+                                         (time.time(), task["id"]))
+                    return {"ok": False, "task_id": task["id"], "reply_state": "delivery_failed"}
             except Exception:
                 pass  # A network exception cannot prove that Slack did not accept the post.
             with self.connect() as database:

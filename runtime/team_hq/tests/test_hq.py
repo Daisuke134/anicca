@@ -108,7 +108,8 @@ class HQTests(unittest.TestCase):
         self.assertEqual(self.slack.posts,[])
 
     def test_rejected_reply_does_not_starve_independent_task(self):
-        self.runtime.store_messages([self.message(),self.message('102.000001')])
+        self.slack.history[""]["messages"] = [self.message(),self.message('102.000001')]
+        self.runtime.receive()
         call=self.slack.call
         def reject_one(method,**parameters):
             if method=='chat.postMessage' and parameters.get('thread_ts')=='101.000001':
@@ -120,7 +121,8 @@ class HQTests(unittest.TestCase):
         self.assertEqual(self.tasks()[1]['status'],'succeeded')
 
     def test_corrupt_receipt_isolated_without_reexecution_or_loss(self):
-        self.runtime.store_messages([self.message(),self.message('102.000001')])
+        self.slack.history[""]["messages"] = [self.message(),self.message('102.000001')]
+        self.runtime.receive()
         task=self.runtime.claim();path=self.runtime.task_directory(task)/'result.json'
         path.write_text('broken original receipt')
         self.runtime.work();self.runtime.work()
@@ -185,7 +187,8 @@ class HQTests(unittest.TestCase):
         }
         self.runtime.receive()
         self.runtime.receive()
-        history_calls = [parameters for method, parameters in self.slack.calls if method == "conversations.history"]
+        history_calls = [parameters for method, parameters in self.slack.calls
+                         if method == "conversations.history" and "latest" not in parameters]
         self.assertEqual(len(history_calls), 2)
         self.assertEqual(history_calls[1].get("cursor"), "second")
         thread_calls = [parameters["ts"] for method, parameters in self.slack.calls if method == "conversations.replies"]
@@ -197,6 +200,105 @@ class HQTests(unittest.TestCase):
         with mock.patch.object(hq.time, "time", return_value=2000000):
             self.runtime.receive()
         self.assertEqual(self.slack.calls[0][1]["oldest"], "1913600")
+
+    def test_initial_backfill_finds_new_reply_on_old_root_without_replaying_old_work(self):
+        self.config.update(max_history_pages=1, max_threads_per_poll=1)
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        cutoff = 2000000 - 7 * 86400
+        call = self.slack.call
+
+        def history(method, **parameters):
+            if method == "conversations.history":
+                self.slack.calls.append((method, dict(parameters)))
+                if "latest" not in parameters:
+                    return {"ok": True, "messages": []}
+                if not parameters.get("cursor"):
+                    return {"ok": True, "messages": [self.message("20", "@codex old root")],
+                            "response_metadata": {"next_cursor": "older"}}
+                return {"ok": True, "messages": [self.message("10", "older root")]}
+            if method == "conversations.replies":
+                self.slack.calls.append((method, dict(parameters)))
+                messages = [self.message("21", "@codex old work", parameters["ts"])]
+                if parameters["ts"] == "10":
+                    messages.append(self.message("22", "old clarification: preserve the agreed scope", "10"))
+                    messages.append(self.message(str(cutoff + 1), "@codex new reply", "10"))
+                messages = [message for message in messages if float(message["ts"]) > float(parameters["oldest"])]
+                return {"ok": True, "messages": messages}
+            return call(method, **parameters)
+
+        self.slack.call = history
+        with mock.patch.object(hq.time, "time", return_value=2000000):
+            self.assertEqual(self.runtime.receive()["queued"], 0)
+            self.assertIsNone(self.runtime.claim())
+            self.runtime = hq.HQ(self.config, api=self.slack)
+            self.assertEqual(self.runtime.receive()["queued"], 1)
+            self.assertEqual(self.runtime.receive()["queued"], 0)
+        self.assertEqual([task["source_ts"] for task in self.tasks()], [str(cutoff + 1)])
+        backfill = [p for method, p in self.slack.calls if method == "conversations.history" and "latest" in p]
+        self.assertEqual(len(backfill), 2)
+        self.assertEqual(backfill[0]["oldest"], "0")
+        self.assertEqual(backfill[0]["latest"], str(cutoff))
+        self.assertEqual(backfill[1]["cursor"], "older")
+        task = self.runtime.claim()
+        self.assertIsNotNone(task)
+        self.assertIn("old clarification: preserve the agreed scope", self.runtime.prompt(task))
+
+    def test_task_waits_for_all_thread_pages_before_claim(self):
+        self.config["max_thread_pages"] = 1
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        self.slack.threads[("101.000001", "")] = {
+            "ok": True, "messages": [self.message("102", "first clarification", "101.000001")],
+            "response_metadata": {"next_cursor": "more"},
+        }
+        self.slack.threads[("101.000001", "more")] = {
+            "ok": True, "messages": [self.message("103", "final clarification", "101.000001")],
+        }
+        self.enqueue()
+        self.assertIsNone(self.runtime.claim())
+        self.runtime.receive()
+        task = self.runtime.claim()
+        self.assertIsNotNone(task)
+        self.assertIn("first clarification", self.runtime.prompt(task))
+        self.assertIn("final clarification", self.runtime.prompt(task))
+
+    def test_task_waits_until_its_thread_is_selected(self):
+        self.config["max_threads_per_poll"] = 1
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        self.slack.history[""]["messages"] = [self.message("100", "ordinary root"), self.message()]
+        self.runtime.receive()
+        self.assertIsNone(self.runtime.claim())
+        self.runtime.receive()
+        self.assertIsNotNone(self.runtime.claim())
+
+    def test_new_reply_invalidates_previously_complete_thread_context(self):
+        self.slack.history[""]["messages"] = [self.message("100", "ordinary root")]
+        self.runtime.receive()
+        self.slack.history[""]["messages"] = [self.message("101", "@codex new request", "100")]
+        call, claims = self.slack.call, []
+
+        def during_scan(method, **parameters):
+            if method == "conversations.replies":
+                claims.append(self.runtime.claim())
+            return call(method, **parameters)
+
+        self.slack.call = during_scan
+        self.runtime.receive()
+        self.assertEqual(claims, [None])
+        self.assertIsNotNone(self.runtime.claim())
+
+    def test_claim_waits_during_rescan_of_previously_ready_thread(self):
+        self.enqueue()
+        call, claims = self.slack.call, []
+
+        def during_scan(method, **parameters):
+            if method == "conversations.replies":
+                claims.append(self.runtime.claim())
+            return call(method, **parameters)
+
+        self.slack.call = during_scan
+        self.runtime.receive()
+        self.assertEqual(claims, [None])
+        self.assertIsNotNone(self.runtime.claim())
 
     def test_plain_mention_does_not_route_a_different_identifier(self):
         self.slack.history[""]["messages"] = [self.message(text="@codex_other is a different recipient")]
@@ -261,6 +363,23 @@ class HQTests(unittest.TestCase):
         self.assertIn("BOARD", (self.root / "prompt").read_text())
         self.assertEqual(self.runtime.status()["tasks"][0].get("proof"), ["artifact"])
 
+    def test_agent_process_does_not_inherit_trusted_runtime_hint_or_identity(self):
+        script = self.root / "environment.py"
+        script.write_text("import json,os,pathlib\npathlib.Path('child-env.json').write_text(json.dumps({'trusted_keys':[k for k in os.environ if k.startswith('LIFE_MANAGER_')],'context':os.environ.get('HQ_TEST_CONTEXT')}))\n")
+        self.config["agents"][0]["command"] = [sys.executable, str(script)]
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        self.enqueue()
+        environment = {"LIFE_MANAGER_RESULT_HINT_PATH": str(self.root / "hint.json"),
+                       "LIFE_MANAGER_LOOP_ID": "team-hq-work", "LIFE_MANAGER_OCCURRENCE_ID": "work:one",
+                       "LIFE_MANAGER_RUN_ID": "trusted-run", "LIFE_MANAGER_RELEASE_SHA": "trusted-release",
+                       "HQ_TEST_CONTEXT": "keep"}
+        with mock.patch.dict(os.environ, environment):
+            self.runtime.work()
+        child = json.loads((self.root / "child-env.json").read_text())
+        self.assertEqual(child["trusted_keys"], [])
+        self.assertEqual(child["context"], "keep")
+        self.assertEqual(json.loads((self.root / "hint.json").read_text())["status"], "verified")
+
     def test_artifact_symlink_cannot_overwrite_another_file(self):
         victim = self.root / "preserve"
         victim.write_text("preserved")
@@ -294,6 +413,44 @@ class HQTests(unittest.TestCase):
         self.assertTrue(self.runtime.work()["ok"])
         self.assertEqual(self.tasks()[0]["reply_state"], "posted")
         self.assertEqual(len(self.slack.posts), 1)
+
+    def test_ambiguous_slack_rejection_accepts_official_marker_readback(self):
+        for error in ("internal_error", "fatal_error"):
+            with self.subTest(error=error):
+                self.slack = Slack()
+                self.runtime = hq.HQ(dict(self.config, state_dir=str(self.root / error)), api=self.slack)
+                self.enqueue()
+                call = self.slack.call
+
+                def rejected(method, **parameters):
+                    response = call(method, **parameters)
+                    return {"ok": False, "error": error} if method == "chat.postMessage" else response
+
+                self.slack.call = rejected
+                self.assertTrue(self.runtime.work()["ok"])
+                self.assertEqual(self.tasks()[0]["reply_state"], "posted")
+                self.assertEqual(len(self.slack.posts), 1)
+
+    def test_ambiguous_slack_rejection_is_reconciled_later_without_resend(self):
+        for error in ("internal_error", "fatal_error"):
+            with self.subTest(error=error):
+                self.slack = Slack()
+                self.runtime = hq.HQ(dict(self.config, state_dir=str(self.root / error)), api=self.slack)
+                self.enqueue()
+                call = self.slack.call
+
+                def rejected(method, **parameters):
+                    response = call(method, **parameters)
+                    return {"ok": False, "error": error} if method == "chat.postMessage" else response
+
+                self.slack.call = rejected
+                self.slack.hide_posts = True
+                self.assertFalse(self.runtime.work()["ok"])
+                self.assertEqual(self.tasks()[0]["reply_state"], "post_unknown")
+                self.slack.hide_posts = False
+                self.assertTrue(self.runtime.work()["ok"])
+                self.assertEqual(self.tasks()[0]["reply_state"], "posted")
+                self.assertEqual(len(self.slack.posts), 1)
 
     def test_unknown_reply_does_not_stop_a_different_queued_task(self):
         self.enqueue()

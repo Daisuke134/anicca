@@ -21,9 +21,11 @@
 
 HQ-01 source進捗: PR #9083、receiver/worker/schedulerを分離。fresh read-only reviewは3件FIX-FIRST（他人のechoを公式返信として誤認、明示Slack拒否で後続停止、破損receiptで全worker停止）。3件を各RED→GREENで修復し、HQ25件PASS。auth.testで送信者を拘束し、拒否/破損は当該cardだけ保持して隔離。registry/receipt関連154件とNode adapter15件PASS。全loop suite再実行1097件は12 failures/1 error（未展開tools、旧192件固定assert、host profileを読む既存テストの環境差分）。CIのLoop control失敗は195≠192の2件のみと公式job logで確認し、195へ更新。残るCIと限定再検証を継続。private scheduleは未有効化、本番切替前。
 
-HQ-02現行readback: DotsはReasonで受領→着手→監査結果まで返信。Slackの該当taskはconnection未設定で明示未送信。terminalの返信は60秒Reason/Slack wake設定を自己申告するが、Muse本人identityの不一致と直接Slack送信のprompt制約があり、本人の自然Slack応答は未実証。参謀本人宛cursorへクラウド受信経路の修復を依頼。
+HQ-01追加review: GitHub review 5737346545は39607eee1cを対象に4件を指摘。trusted result hint/occurrence環境を子processから除き、7日超rootの有限backfill、context取得cursorとenqueue cutoffの分離、thread完読前claim禁止、Slack internal_error/fatal_errorのpost_unknown照合を実装する。追加8件をRED→GREEN、HQ33+receipt5の38件PASS。古いclarificationもpromptへ含め、古い仕事はreplayしない。親の限定再検証と新HEAD CI後にmainへ進め、旧CI成功だけで有効化しない。
 
-収益の独立監査: Dotsのread-only結果で、既存14:45依頼の対象hostはcapafy-skills-daily.netlify.app（aniccaai.comは別host）と訂正。PR #9067のmain tracking実装に9425449917のallowlist追加はなく、liveはhomeへ302。監査は実装/配信0、現修正owner不明。既存担当/PR照合では修正executorの受領証拠が無い。HQのCI待ちと独立して、primaryが既存14:45依頼の修正を引き取る。理由は別ファイルの許可リスト欠落だけで購入導線を復旧でき、HQの完了を待つ必要がないため。旧順序HQ完了後→新順序HQ検証と並列。sourceは専用worktree、商品内容/価格を変更せず、Dotsが公式到達先の再検証を行う。
+HQ-02現行readback: DotsはReasonで受領→着手→監査結果まで返信。Slackの該当taskはconnection未設定で明示未送信。MuseはSlackの正式mention検出を修復し12fixture PASSと報告したが、新規parent1793626106.871059への自然60秒受信テストは複数周期後も公式thread返信0。Reasonで起こした返信を自然成功へ数えず、hookの境界診断を担当へ返す。参謀本人宛cursorへクラウド受信経路の修復を依頼。
+
+収益の独立監査: Dotsのread-only結果で、既存14:45依頼の対象hostはcapafy-skills-daily.netlify.app（aniccaai.comは別host）と訂正。liveはhomeへ302。並列PR #9084のstatic-only修正は次buildで消えるためdraftへ戻す。追加の公式GET /agent/agents（2026-11-02T13:44:02Z、code0）はagentStatus under_reviewだがhasOnlineVersion true、latestVersionName v1.0.5、autoPublish falseと返す。従って公開旧版と最新審査版を分離する。恒久修正はlandingの新規promotion対象を変えず、tracking allowlistだけonlineまたはhasOnlineVersionが厳密trueの既存公開IDから再生成する。under_reviewかつ公開版なし、false、文字列trueは追加しない。新規公開/価格/内容/自動公開/IG fenceは変更しない。generatorのRED→GREENと既存route回帰後、main由来のsite artifactを対象siteへ限定deployし、Dotsがread-onlyでLocation/ct/unknown/既存sellerを照合する。販売成立や収益は未確認。
 
 
 
