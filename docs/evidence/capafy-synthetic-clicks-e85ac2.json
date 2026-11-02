@@ -1,0 +1,35 @@
+{
+  "task_id": "e85ac2183688f309e25242db",
+  "owner_id": "home-codex-e85ac2",
+  "observed_at": "2026-11-02T17:53:03.972930+00:00",
+  "remote_thread": {
+    "url": "https://app.slack.com/archives/C0CBLBGSBJN/p1793635811853779",
+    "official_readback": true,
+    "messages": 2,
+    "person_ack_start_result_delta": false,
+    "reason_accepted_queued": "not_started",
+    "followup_sent": false
+  },
+  "before": {
+    "site_id": "41c8e52e-b163-442a-84ff-fd866269bf6c",
+    "published_deploy": {
+      "id": "6ae89aeeb7fd12e6a76e6305",
+      "state": "ready",
+      "published_at": "2026-11-02T14:15:18.483Z",
+      "commit_ref": null
+    },
+    "total": 114,
+    "known_probe_count": 9,
+    "index_sha256": "058da54732280dd7147ff707140d2e0ab56e3b3c4188ad9d7b9ae92d3723fe68",
+    "source_index_sha256": "ce8bf327336a80a312cc85ee760f69e292affa3b160e5d913caf1a7ff9c6be46"
+  },
+  "validation": {
+    "red": "13 actual vs 4 expected; 1 failing regression",
+    "node": "6/6 PASS",
+    "python": "3.12 existing 4/4 PASS; default 3.9 cannot load pre-existing union annotation",
+    "source_boundary": "PASS",
+    "diff_check": "PASS"
+  },
+  "business_result": "unverified",
+  "next": "CI/review PASS then merge; deploy ownership and immutable artifact comparison before targeted deployment; official stats must separate 9 probes without new click requests"
+}
