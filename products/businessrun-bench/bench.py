@@ -30,7 +30,7 @@ def new_run(root, name):
     return path
 
 
-def summarize_process(rows, expected):
+def summarize_process(rows, expected, model_cost_basis="recorded"):
     if not isinstance(expected, int) or expected < 1 or len(rows) > expected:
         raise ValueError("invalid campaign denominator")
     ids = [r["run_id"] for r in rows if "run_id" in r]
@@ -45,7 +45,8 @@ def summarize_process(rows, expected):
         valid.append(execution_ok)
     passed = sum(ok and row.get("passed") is True for ok, row in zip(valid, rows))
     costs = [r.get("cost_usd") for r in rows]
-    known = (len(rows) == expected and all(type(c) in (int, float) and math.isfinite(c) and c >= 0 for c in costs))
+    known = (model_cost_basis != "unknown" and len(rows) == expected
+             and all(type(c) in (int, float) and math.isfinite(c) and c >= 0 for c in costs))
     cost = sum(costs) if known else None
     return {"attempts": len(rows), "expected_attempts": expected, "missing": expected - len(rows),
             "passed": passed, "invalid": len(rows) - sum(valid),
@@ -90,6 +91,17 @@ def setup(args):
     print(json.dumps({"suite": args.suite, "ready": True, "scope": "baseline dependencies; model access is separate"}))
 
 
+def process_workspace(source, run):
+    """Reuse immutable code while keeping upstream's ROOT-relative cache/results per run."""
+    root = run / "upstream"
+    root.mkdir()
+    for name in ["bench", "tasks", "erp"]:
+        (root / name).symlink_to(source / name, target_is_directory=True)
+    (root / "harnesses").mkdir()
+    (root / "harnesses/businessrun-native.sh").symlink_to(HERE / "native_adapter.sh")
+    return root
+
+
 def command_for(args, source, run):
     python = str(args.python or args.state / "venvs" / args.suite / "bin/python")
     if args.suite == "coffee":
@@ -109,21 +121,14 @@ def command_for(args, source, run):
     label = "businessrun-" + run.name
     harness = args.policy
     if harness == "native-codex":
-        adapter = source / "harnesses/businessrun-native.sh"
-        target = HERE / "native_adapter.sh"
-        if adapter.is_symlink() and adapter.resolve() != target:
-            raise ValueError("another owner installed this adapter")
-        if not adapter.exists():
-            adapter.symlink_to(target)
-        elif not adapter.is_symlink():
-            raise ValueError("refusing to replace an upstream adapter")
         harness = "businessrun-native"  # not 'codex': upstream guesses a model when trace omits it
-    cmd = [python, str(source / "bench/process_run.py"), "--task", args.task, "--harness", harness,
+    runtime = process_workspace(source, run)
+    cmd = [python, str(runtime / "bench/process_run.py"), "--task", args.task, "--harness", harness,
            "--seed", str(args.seed), "--runs", "1", "--parallel", "1", "--label", label,
            "--timeout", str(args.timeout)]
     if args.faults:
         cmd += ["--faults", args.faults]
-    return cmd, source, "local_development_not_answer_isolated"
+    return cmd, runtime, "local_development_not_answer_isolated"
 
 
 def execute(args):
@@ -167,7 +172,7 @@ def execute(args):
             summary["model_cost_usd"] = 0.0
             evidence.extend([path, *sorted((run / "results").glob("*.json"))])
     else:
-        root = source / "results" / ("businessrun-" + name)
+        root = run / "upstream/results" / ("businessrun-" + name)
         path = root / "summary.json"
         expected = len(list((source / "tasks/process").glob("*/task.yaml"))) if args.task == "all" else len(args.task.split(","))
         rows = json.loads(path.read_text()) if path.exists() else []
@@ -176,7 +181,7 @@ def execute(args):
         else:
             # Native subscription: retain unknown cost; do not inherit upstream's fallback model/rate card.
             rows = [dict(r, cost_usd=None) for r in rows]
-        summary = summarize_process(rows, expected)
+        summary = summarize_process(rows, expected, "unknown" if args.policy == "native-codex" else "script_llm_zero")
         evidence = sorted(root.glob("*/result.json"))
     public_command = [str(c).replace(str(source), "$SOURCE").replace(str(run), "$RUN").replace(str(HERE), "$RUNNER") for c in cmd]
     public_command[0] = "python3.12"

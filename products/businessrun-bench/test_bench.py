@@ -1,5 +1,7 @@
 import importlib.util
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -64,5 +66,27 @@ class RunnerContract(unittest.TestCase):
         r = b.summarize_process([row], expected=1)
         self.assertTrue(r["campaign_complete"])
         self.assertIsNone(r["cost_per_success_usd"])
+
+    def test_upstream_zero_with_unknown_basis_is_not_free_model_usage(self):
+        b = self.implementation()
+        row = {"passed": True, "error": None, "grader_errors": [], "turns": [{"exit_code": 0, "timed_out": False}], "cost_usd": 0}
+        self.assertIsNone(b.summarize_process([row], expected=1, model_cost_basis="unknown")["model_cost_usd"])
+
+    def test_process_cache_and_outputs_are_separate_for_identical_task_seed(self):
+        b = self.implementation()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            source = root / "source"
+            for part in ["bench", "tasks", "erp"]: (source / part).mkdir(parents=True)
+            (source / "bench/write.py").write_text("import pathlib,sys\np=pathlib.Path(__file__).absolute().parent.parent / '.cache'\np.mkdir(exist_ok=True)\n(p/'seed0').write_text(sys.argv[1])\n")
+            paths = []
+            for name in ["first", "second"]:
+                run = b.new_run(root, name)
+                p = b.process_workspace(source, run)
+                subprocess.run([sys.executable, str(p / "bench/write.py"), name], cwd=p, check=True)
+                paths.append(p / ".cache/seed0")
+            self.assertEqual(paths[0].read_text(), "first")
+            self.assertEqual(paths[1].read_text(), "second")
+            self.assertFalse((source / ".cache").exists())
 
 if __name__ == "__main__": unittest.main()
