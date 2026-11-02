@@ -376,6 +376,9 @@ class HQ:
             database.execute("BEGIN IMMEDIATE")
             row = database.execute("""SELECT * FROM tasks WHERE status='queued'
                 AND (thread_ts IS NULL OR EXISTS (SELECT 1 FROM threads WHERE ts=tasks.thread_ts AND ready=1))
+                AND NOT EXISTS (SELECT 1 FROM tasks parent
+                    WHERE tasks.source_key='handoff:' || parent.id AND parent.thread_ts IS NULL
+                    AND parent.reply_state IN ('reply_pending','posting','post_unknown'))
                 ORDER BY created,id LIMIT 1""").fetchone()
             if row is None:
                 return None
@@ -523,6 +526,8 @@ class HQ:
             working = [dict(row) for row in database.execute("SELECT * FROM tasks WHERE status='working'")]
             database.execute("UPDATE tasks SET reply_state='post_unknown',updated=? WHERE reply_state='posting'", (time.time(),))
         for task in working:
+            if (self.task_directory(task) / "start.json").exists():
+                self.announce_start(task)
             path = self.task_directory(task) / "result.json"
             if path.is_file():
                 try:
@@ -568,6 +573,11 @@ class HQ:
 
     def deliver(self, task):
         task = dict(task)
+        start_path = self.task_directory(task) / "start.json"
+        if start_path.exists():
+            self.announce_start(task)
+            if not task["thread_ts"] and json.loads(start_path.read_text())["state"] == "post_unknown":
+                return {"ok": False, "task_id": task["id"], "reply_state": "start_post_unknown"}
         if task["reply_state"] == "reply_pending":
             with self.connect() as database:
                 database.execute("UPDATE tasks SET reply_state='posting',updated=? WHERE id=?", (time.time(), task["id"]))
@@ -636,6 +646,8 @@ class HQ:
             task["thread_ts"] = notice["message_ts"]
             with self.connect() as database:
                 database.execute("UPDATE tasks SET thread_ts=? WHERE id=?", (task["thread_ts"], task["id"]))
+                database.execute("UPDATE tasks SET thread_ts=? WHERE source_key=? AND thread_ts IS NULL",
+                                 (task["thread_ts"], "handoff:" + task["id"]))
 
     def hint(self, *, task_id=None, message_ts=None):
         path = os.environ.get("LIFE_MANAGER_RESULT_HINT_PATH")

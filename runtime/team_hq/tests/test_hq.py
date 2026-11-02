@@ -180,6 +180,45 @@ class HQTests(unittest.TestCase):
         self.runtime.store_messages([dict(ts='9999.000001',thread_ts=task['thread_ts'],text=reply,user='U_BOT')])
         self.assertEqual(len(self.tasks()),1)
 
+    def test_scheduled_unknown_start_defers_only_its_final_and_reconciles_next_wake(self):
+        self.config['announce_start']=True
+        self.config['schedules']=[{'id':'daily','agent':'codex','interval_seconds':3600,'prompt':'work'}]
+        self.runtime.schedule(now=3600)
+        self.slack.lose_post_response=True
+        self.slack.hide_posts=True
+        first=self.runtime.work()
+        self.assertFalse(first['ok'])
+        self.assertEqual(len(self.slack.posts),1)
+        self.assertEqual(self.tasks()[0]['status'],'succeeded')
+        self.slack.hide_posts=False
+        result=self.runtime.work()
+        self.assertTrue(result['ok'])
+        self.assertEqual(len(self.slack.posts),2)
+        self.assertEqual(self.slack.posts[1]['thread_ts'],self.slack.posts[0]['ts'])
+        self.runtime.work()
+        self.assertEqual(len(self.slack.posts),2)
+
+    def test_recovery_keeps_unknown_start_and_handoff_on_original_scheduled_thread(self):
+        self.config['announce_start']=True
+        self.config['agents'].append(dict(self.config['agents'][0],id='helper',mention=['@helper']))
+        self.config['handoff_agent']='helper'
+        self.config['schedules']=[{'id':'daily','agent':'codex','interval_seconds':3600,'prompt':'work'}]
+        self.runtime=hq.HQ(self.config,api=self.slack)
+        self.runtime.schedule(now=3600)
+        task=self.runtime.claim()
+        self.slack.lose_post_response=True
+        self.slack.hide_posts=True
+        self.runtime.announce_start(task)
+        self.runtime.work()  # no execution receipt: interrupted recovery
+        self.assertEqual(len(self.slack.posts),1)
+        handoff=next(x for x in self.tasks() if x['source_key'].startswith('handoff:'))
+        self.assertEqual(handoff['status'],'queued')
+        self.slack.hide_posts=False
+        self.runtime.work()
+        handoff=next(x for x in self.tasks() if x['source_key'].startswith('handoff:'))
+        self.assertEqual(handoff['thread_ts'],self.slack.posts[0]['ts'])
+        self.assertEqual(self.slack.posts[1]['thread_ts'],self.slack.posts[0]['ts'])
+
     def test_foreign_echo_cannot_verify_our_post(self):
         self.enqueue()
         task=self.runtime.claim()
