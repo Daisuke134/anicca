@@ -33,3 +33,9 @@ Slack指定threadはparentとhome-codex更新の計2件で全件取得、本人�
 repo: `/Users/anicca/Projects/life-manager-main`。worktree: `/Users/anicca/Projects/life-manager-main/.worktrees/capafy-legacy-c23d68`。branch: `docs/capafy-legacy-c23d68`。結果commit: `0df40a8ea9bc605742fca4c04a1bcaf8bb3811fb`（後続はcheckpoint文書のみ）。PR: https://github.com/Daisuke134/life-manager/pull/9099 。owner/lease: `home-codex-c23d68` / `CAPAFY-LEGACY-INVENTORY`。
 
 正本spec/残TODO: `/Users/anicca/Projects/life-manager-main/.worktrees/capafy-legacy-c23d68/docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md` のCAPAFY-LEGACY-INVENTORY節。現在cursor: 最新PR headの必要CI全件を公式readbackし、全PASS後にmainへ統合する。18:10Z初回readbackはSecurity Scan 14 checks QUEUEDであり、PASSへ読み替えない。`--admin`で未完CIを迂回しない。未来のpayload保存は未実装、過去88件の帰属と売上は未確認。
+
+## 同ownerの継続照合
+
+現行公式statsは通常105件・除外済み検証9件・legacy88件。上記114件は監査時のraw記録であり、現行通常集計と混同しない。PR9097の修正は反映済みで再deployしない。指定threadは公式完読し、dr eggbot本人の2時間sweep/wake_me未接続という差分を確認。Muse本人自然wakeとDots Slack接続は未確認、催促は追加しない。親所有PR9100/TEAM-HQは変更しない。
+
+既存lockのowner home-codex-c23d68を維持してleaseを更新する。最新mainを取り込みBOARDは両方のowner記録を保持する。再検証はPython9/9・Node6/6 PASS。Nodeの初回起動失敗はworktreeの依存不在であり、既存package-lockのnpm ciで解消する。必要CI全PASS後にPR9099を統合する。未来の最小payload保存と旧receipt照合は残TODOであり、帰属欠損や売上が復旧済みとはしない。

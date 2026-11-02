@@ -468,5 +468,39 @@
     "go_function_tests": "5/5 PASS",
     "same_key_counterexample": "PASS: same agent/time/id with missing platform produces identical legacy key with or without hooklab_ig; targetUrl separately preserves registered CT",
     "new_runtime_code": false
+  },
+  "continuation": {
+    "task_id": "c5b2046dbd90b64f5f06acae",
+    "owner_id": "home-codex-c23d68",
+    "observed_at": "2026-11-02T19:10:17.178982+00:00",
+    "phase": "source_integration",
+    "readback": {
+      "slack_thread": "https://app.slack.com/archives/C0CBLBGSBJN/p1793635811853779",
+      "complete": true,
+      "messages": 5,
+      "latest_ts": "1793646429.349149",
+      "person_delta": "dr eggbot本人記録: 2時間sweep、wake_me未接続。Muse本人自然wakeとDots Slack接続は未確認。",
+      "reason_accepted_queued": "not_started",
+      "followup_sent": false,
+      "stats_url": "https://capafy-skills-daily.netlify.app/go-stats?detail=1",
+      "normal_click_records": 105,
+      "legacy_records": 88,
+      "excluded_synthetic": {
+        "total": 9,
+        "posts": {
+          "x/test_hq_4a481d": 9
+        }
+      },
+      "original_inventory_rows": 114
+    },
+    "validation": {
+      "python": "9/9 PASS",
+      "node": "6/6 PASS after existing package-lock npm ci",
+      "node_initial_error": "worktree dependency absent: @netlify/blobs",
+      "ci": "pending on pushed head"
+    },
+    "effect": "read_only; no redirects, posts, accounting writes, deployments, or TEAM-HQ changes",
+    "business_result": "unverified",
+    "next_action": "PR9099 exact-head required CI PASS then main integration; preserve unknown legacy attribution; next source cursor minimal validated payload storage"
   }
 }
