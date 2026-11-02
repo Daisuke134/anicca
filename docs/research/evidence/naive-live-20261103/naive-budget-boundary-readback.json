@@ -1,0 +1,22 @@
+[
+  {
+    "session_id": "ses_m8080nhvm5tktk2es7h5zc126q",
+    "event_seq": 10,
+    "code": "budget_exceeded",
+    "scope_terms": [
+      "agent",
+      "cap"
+    ],
+    "amount_numbers": []
+  },
+  {
+    "session_id": "ses_jdkfs0qcm0cyrsv7b11teh49pc",
+    "event_seq": 48,
+    "code": "budget_exceeded",
+    "scope_terms": [
+      "session",
+      "cap"
+    ],
+    "amount_numbers": []
+  }
+]

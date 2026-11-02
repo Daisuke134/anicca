@@ -1,0 +1,184 @@
+{
+  "observed_at": "2026-11-02T16:16:45.717396+00:00",
+  "route": "/v1/agents/agt_ac0hkqm9ybvrt12kjfadmghbe4/versions?limit=50",
+  "request_id": "req_fr40yz00dgnkzm1eed1z0ggw34",
+  "has_more": false,
+  "versions": [
+    {
+      "version": 16,
+      "created_at": "2026-10-31T08:02:10.885Z",
+      "budget": {
+        "period": "month",
+        "cap_micro_usd": 1000000,
+        "max_task_micro_usd": 250000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 15,
+      "created_at": "2026-10-31T07:37:33.541Z",
+      "budget": {
+        "period": "month",
+        "cap_micro_usd": 10000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 14,
+      "created_at": "2026-10-31T07:27:26.277Z",
+      "budget": {
+        "period": "month",
+        "cap_micro_usd": 10000000,
+        "max_task_micro_usd": 10000000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 13,
+      "created_at": "2026-10-30T10:56:55.425Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 12,
+      "created_at": "2026-10-30T10:56:09.247Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3250000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 11,
+      "created_at": "2026-10-30T06:04:51.009Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 10,
+      "created_at": "2026-10-30T06:04:43.711Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 9,
+      "created_at": "2026-10-30T06:04:39.216Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 8,
+      "created_at": "2026-10-30T06:04:38.368Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 7,
+      "created_at": "2026-10-30T06:04:34.446Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 6,
+      "created_at": "2026-10-30T06:04:29.178Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 5,
+      "created_at": "2026-10-30T06:04:25.840Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 4,
+      "created_at": "2026-10-30T06:04:18.441Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 3,
+      "created_at": "2026-10-27T05:11:25.948Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "zai-org/GLM-5.2-FP8",
+      "id": null
+    },
+    {
+      "version": 2,
+      "created_at": "2026-10-27T05:09:46.389Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "~deepseek/deepseek-flash-latest",
+      "id": null
+    },
+    {
+      "version": 1,
+      "created_at": "2026-10-27T05:09:09.116Z",
+      "budget": {
+        "period": "week",
+        "cap_micro_usd": 3000000,
+        "max_task_micro_usd": 500000
+      },
+      "model": "~deepseek/deepseek-flash-latest",
+      "id": null
+    }
+  ]
+}

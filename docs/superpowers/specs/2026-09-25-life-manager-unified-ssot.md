@@ -25579,23 +25579,23 @@ ASC CLIの正式upload/build730477a4-dcdc-48ce-a73d-d1c83a1e8903はCOMPLETE/erro
 | ID | 状態 | 成果と受入条件 |
 |---|---|---|
 | BR01 | 完了 | Naïve全9評価のscore、slice、seed、費用、除外、公開code/license、再現可能性を一覧化。元benchmarkの継続catalogを機械可読で保存 |
-| BR02 | 実行中 | Grok/Museへ最新配置・SDK・VM・credential保管先を照会し、返答を実readbackと照合。送信queuedを受領/実行成功にしない |
+| BR02 | org公式readback完了/チーム返信未取得 | Grok/Museへ最新配置・SDK・VM・credential保管先を照会し、返答を実readbackと照合。送信queuedを受領/実行成功にしない |
 | BR03 | 一部実行済 | 公式上流環境を隔離して動かし、実コマンド、commit、config、seed、終了理由、状態/trajectory、費用根拠を保存。非公開suiteは具体的なaccess条件を記録 |
 | BR04 | runner完了/独自課題未完 | 最小の独自事業課題とrunnerを公開可能な形で実装。test-first、agent-visible observationとhidden graderを分離し、baselineと実modelを実行 |
 | BR05 | 未完 | 複数model/harnessを同条件で比較。失敗/欠測/費用unknownを保持し、trial数・分散・適用範囲と共に出す |
 | BR06 | benchmark cloud完了/managed tenant未完 | 既存cloudへtenant分離・実行上限・隔離workspace・永続結果を持つ一般利用可能な実行経路を接続し、実ユーザー経路を確認。ローカルHTTP成功をcloud公開と呼ばない |
-| BR07 | 初版公開済/修正版同期中 | OSSの公開source/ライセンス/再現手順を整え、main→公開先のreadbackと独立実行を確認。private repoへのpushをOSS公開と呼ばない |
-| BR08 | 記事公開済/実測追記中 | 全評価の具体的な読み方・実行した結果/失敗・限界を含む詳細記事と比較図を更新し、残TODOを報告 |
+| BR07 | 完了 | OSSの公開source/ライセンス/再現手順を整え、main→公開先のreadbackと独立実行を確認。private repoへのpushをOSS公開と呼ばない |
+| BR08 | 完了 | 全評価の具体的な読み方・実行した結果/失敗・限界を含む詳細記事と比較図を更新し、残TODOを報告 |
 
 完了判定: 単なるテスト成功・環境install・資料作成では全体完了にしない。未取得のNaïve org、非公開benchmark、実model試行、cloud/公開の各境界を独立して記録する。実装/検証/統合を継続し、不足条件は具体的なprovider/owner/権限として狭める。
 
 実行証拠の更新: products/businessrun-bench/{catalog.json,RESULTS.md,evidence/}に20項目/全9Naïve原典の条件と公式上流pinを保存する。Coffee90日の全passive対照、YCの4script×3seed(12/12破産)、Business全9processのoracle9/9とnull0/9、payment-runのnative Codex clean/fault各1/1成功を実行。モデル比較は第二model未実行で未完。nativeは同seed0の2条件で、答案隔離・一般的優劣は未実証。公式validatorは13条件後にmargin-bridge seed3生成器のゼロ除算で停止し、成功45/45へ読み替えない。
 
-Grok/Muse: sanbou-opsのSDK0.10系/10月末実inference/5役割配置/残高約$0.7/live demo未完の履歴を取得し旧10/28メモ依存を訂正。Reason照会とSlack #agents-hq thread 1793631334.314609へ直接送信済み。返答・現在のorg/VM/provider/tenant規約は未取得。送信を受領/着手としない。既存loopと他ownerは変更しない。
+Grok/Muse: sanbou-opsのSDK0.10系/10月末実inference/5役割配置/残高約$0.7/live demo未完の履歴を取得し旧10/28メモ依存を訂正。Reason照会とSlack #agents-hq thread 1793631334.314609へ直接送信済み。本人返答・VM/provider・個別契約の適用範囲は未取得。現在orgは本節末尾の公式readbackを使う。送信を受領/着手としない。既存loopと他ownerは変更しない。
 
 source acceptance: per-run cache/results、既存ID上書き禁止、費用unknown、欠測分母、別session子孫timeout停止、実Python version記録を実装。10contract testsとshell構文PASS。独立read-only reviewerが2blockingを再現し、修正後blocking0で研究用OSS公開可を確認。ps失敗時のreceipt欠落、任意daemon隔離、公開trace完全監査は未保証。
 
-現在cursor: 専用branchをPR/main統合→main由来製品のみpublic repoへ公開→GitHub Actionsで独立cloud baseline readback。その後BR02のlive org、BR05の同条件複数model、BR06のmanaged tenant/継続loop、BR04の未被覆独自familyとBR08の記事公開が残る。既存Business Processと同等の第二simulatorは作らない。
+現在cursorと残TODOは本節末尾を正本とする。旧公開/Ubuntu起動失敗の経過は下記の解消証拠と区別する。既存Business Processと同等の第二simulatorは作らない。
 
 公開と反復の追記: PR9088はmain8140b781へ統合。public Daisuke134/businessrun-benchはb238f88（製品だけをmainからexport、PROVENANCE付き）。Ubuntu ActionsでCoffee6runとYC12runが成功しartifactを取得する。Business cloud41472362299はattempt0/missing9で起動失敗し、例外型/欠落module名だけを出す診断を追加中。ローカルのnative payment clean seed1/2も成功し、clean3/3・fault seed0 1/1。lost-writesの実ログに応答喪失5・処理前失敗2を確認、公式strict validatorも同条件PASS。Grok/Muse返答無し。現在cursorはBusinessのUbuntu起動失敗の診断・修正→main/公開同期→cloud再実行。
 
@@ -25603,4 +25603,10 @@ cloud失敗の解消: Ubuntu41474301821は導入前pdftotext=falseを確認し�
 
 必要CI修復: root OSS verifierはgit indexがNode既定1MiBを超えENOBUFSで停止。CLIで再現し、子process出力bufferだけ16MiBへ変更してPASS。検査/allowlist/baselineは緩めない。前回PR9088の14CIは後続readbackで全PASS、今回PR9089はこの修復込みで必要チェックを再実行する。
 
-残TODOの依存順: (1)BR02 Grok/Muse live org・VM/provider・残高・session/費用を取得（Reasonはpull/idle、Slack返答なし） (2)BR05 専用認証と答案隔離hostで同model/予算/seedのNaïve/他harness比較、複数seedと未見family (3)BR03 Clipping/Short Formの公式実行accessと残container suiteの実行、正確なslice/trial rowsの取得 (4)BR04 上流に無い納品・復旧・人間介入だけを独自課題化 (5)BR06 Naïve規約4.2の書面許諾と既存契約適用を確認し、顧客tenant/権限/予算/永続結果/継続運転を接続 (6)ハッカソンのlive一業務と事前開発開示を完成。既存他laneのeffectは変更しない。
+残TODOの順序は本節末尾へ集約する。
+
+最終source/readback: 修復PR9089はmain e8738b6b、公開mainは02d60c8（PUBLIC）。canonical製品45filesとGitHubのblob SHAが全一致し、追加はPROVENANCE.jsonだけ。公開mainのUbuntu ActionsはCoffee41476435973、Business41476518470、YC41477185839が全SUCCESS。13contract tests、Business oracle9/9/null0/9、Coffee6対照、YC12scriptを確認する。PR9088/9089のCI14件は後続readbackで全PASS。BR07/BR08は完了し、独自課題・複数model・managed tenantを完了へ読み替えない。
+
+Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private SSOT service naiveへ保存→公式API通常login成功。Anicca balance11.590718 USD/Standard active/6agent/Computer0、CEOの毎朝9JSTdeployment enabled/scheduledをGETで確認する。直近10sessionはbudget_paused7/end_turn3。CEO現cap月1USD/max_task0.25、他4役割月2/max_task0.25。CEOはagent cap、builderはsession capのbudget.exceeded。builder残額220483 microUSDに対して、最後の成功callで観測されたquote222884は2401大きい。ただし拒否された次callのquoteは未記録で、確定原因の差額にしない。CEO v14月10/max_task10→v15月10/max_task0.5→v16月1/max_task0.25の公式履歴を確認し、古いDEMO-PROOFの10USDへ戻さない。11/1 00:00Z以降CEO実費0.835543USDは問い合わせ区間の値で、内部budget台帳と分離する。資格情報・raw会話はrepoへ保存しない。private allowlist証拠はdocs/research/evidence/naive-live-20261103/。
+
+最新の残TODO順（旧順序を上書き、変更理由は実測したpause境界がハッカソンの業務完走を妨げるため）: 旧順はチーム返信→複数model→非公開suite→独自family→managed tenant。新順は(1)Naïveのagent/session予算・予約見積・version pinを診断し、既存spend cap内で一業務の完走を作る。残高top-upだけで直さない。既存owner/sourceとGrok/MuseのVM/providerを照合する (2)同じtask/seed/model/予算でNaïve/他harnessを比較し、複数modelは同一harnessで比較 (3)Clipping/Short Form access、残container suiteの正確なsliceと実行 (4)未被覆の納品/復旧/介入familyだけを独自課題にする (5)規約4.2の許諾範囲とtenant/権限/予算/永続結果/継続運転を接続 (6)ハッカソンlive demoと事前開発の開示。現在cursorは(1)。既存の外部effectと他ownerのloopは変更しない。
