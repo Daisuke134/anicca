@@ -1,5 +1,47 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
+## TEAM-HQ — 24時間の共同運営とCodex実行
+
+目的: Slack #agents-hq を全員の共有部屋にし、依頼の保存・受領・着手・進捗・証拠付き完了・枠切れ/停止時の引き継ぎを追跡する。Codexは売上導線修正、計測、Manager開発を継続し、確認した実験を公開する。現在の会話が自動再開するとは約束せず、schedulerが有限のCodex実行を起こす。
+
+ユーザーの委任: 通常の技術/運用判断、実装・検証・PR/main統合・限定反映・記事公開を自律実行する。担当は壁ではなく重複防止の目印。引き継ぎは途中成果と次操作を保存し、既存ownerの生存/外部effectを確認する。本人手続き・権限・支出上限はコードで越えず、具体的な不足として共有して独立作業を続ける。利用枠を勝手にリセットできるとは扱わない。
+
+方式: 既存Slack room、Reasonの宛先、既存業務カードとLoop runtimeを再利用する。Python標準ライブラリの受信/状態管理と設定可能なagent CLIを使い、モデルの判断をkeyword分類で代替しない。モデル選択はUI/account既定を尊重し、Codex起動時のmodel固定は追加しない。host資源admissionと業務タスクのowner状態を混同しない。
+
+比較: 新チャット製品は移行負担が増え、全員のLLM常時pollは費用が増える。既存roomの軽量受信+必要時wakeを採用する。Paperclip heartbeatの単一owner/永続進捗/次操作、Slack Events API、Anthropic multi-agent researchの明確な委譲と成果物参照を模倣する。根拠: https://github.com/paperclipai/paperclip/blob/master/docs/guides/agent-developer/heartbeat-protocol.md 、https://docs.slack.dev/apis/events-api/ 、https://www.anthropic.com/engineering/multi-agent-research-system 。成果指標は受領/着手の遅延、未受領/停止の件数、重複effect件数、確認済み売上と費用であり、会話数を成果としない。
+
+順序変更: 旧順序はREADME/Mac導入と既存事業の修復。新順序は本明示依頼に従いTEAM-HQの受信/引き継ぎ→Codex定期実行→公開記事→既存収益/Managerタスク。理由は、委譲が未着手のまま消える境界を先に閉じるため。既存ownerの進行中effectは中断しない。他節の履歴を消さず、本依頼の現在cursorはここに置く。
+
+1. [ ] HQ-01: 現行Slack pollerのsource化と受信/実行/送信の永続状態。Slack成功応答を検証し、実行失敗/送信不確実時に消失や自動再実行を起こさない。公式thread readbackと再巡回で重複0を確認。
+2. [ ] HQ-02: 既存カードのowner/着手/最終活動/次操作と、各agentの実受信経路を統合する。未受領/停止/枠切れはboundedな引き継ぎにし、未確認effectは照合を先行。Dots/Muse/Grok Bot本人の往復を受入に使う。
+3. [ ] HQ-03: Codexの収益/Manager日次実行を既存runtimeで登録し、main由来releaseから自然run・成果物・Slack readbackを確認。09:00優先順位、14:00Manager、21:00成果/費用、毎時収益仕事を既存ownerと重複しない形へ統合。
+4. [ ] HQ-04: 実証範囲と失敗を公開記事へまとめる。対象読者は複数agentを運用する開発者/小規模事業者。導入→失敗→構成図→証拠→再現手順→限界の順を成功例から学ぶ。秘密/個人情報を除外し、実稼働や売上を誇張しない。canonical sourceと既存blog bridgeで公開し、desktop/mobileの公開画面と図を目視確認。
+
+現在cursor: HQ-01。worktree `.worktrees/team-hq-20261102`、branch `feat/team-hq-20261102`、owner `home-codex-team-hq`。現行roomでCodexの自動返信1回とDotsのReason往復は確認済み。他の全員の即時wake/引き継ぎは未実証。旧hq_pollerはhomeのmutable codeを実行し、Slack API失敗検査・durable task状態・定期収益仕事が不足する。
+
+HQ-01 source進捗: PR #9083、receiver/worker/schedulerを分離。fresh read-only reviewは3件FIX-FIRST（他人のechoを公式返信として誤認、明示Slack拒否で後続停止、破損receiptで全worker停止）。3件を各RED→GREENで修復し、HQ25件PASS。auth.testで送信者を拘束し、拒否/破損は当該cardだけ保持して隔離。registry/receipt関連154件とNode adapter15件PASS。全loop suite再実行1097件は12 failures/1 error（未展開tools、旧192件固定assert、host profileを読む既存テストの環境差分）。CIのLoop control失敗は195≠192の2件のみと公式job logで確認し、195へ更新。残るCIと限定再検証を継続。private scheduleは未有効化、本番切替前。
+
+HQ-01追加review: GitHub review 5737346545は39607eee1cを対象に4件を指摘。trusted result hint/occurrence環境を子processから除き、7日超rootの有限backfill、context取得cursorとenqueue cutoffの分離、thread完読前claim禁止、Slack internal_error/fatal_errorのpost_unknown照合を実装する。追加8件をRED→GREEN、HQ33+receipt5の38件PASS。古いclarificationもpromptへ含め、古い仕事はreplayしない。親の限定再検証と新HEAD CI後にmainへ進め、旧CI成功だけで有効化しない。
+
+容量の依存修復: live中央cleanupは54,543件を前処理した後にroot_candidate_budgetとなり、evaluated0/scanned0を反復する。空き容量は既存worker floor4GiB未満。旧順序HQ反映→記事に対し、新順序はHQ CIと並列で既存scratch GCの有界進行を修復→自然cleanupで容量を実測→HQ切替とする。上限の撤去、保護store削除、稼働owner解除はしない。private Git一時コピーの同一pack2件は独立hash/trailer/owner/open検証後に共有化し約1.4GBを回復したが、単独でfloor達成とはしない。現在の追加cursorはscratch GCの準備段階での飢餓で、sourceは別worktreeに限定する。
+
+HQ-01可視化の受入追加: private設定 announce_start=true のownerはclaim直後、子agent起動前に元threadへtask ID付きの受領・着手を通知する。送信前にprivate receiptを保存し、不確実応答はmarker/readback照合だけ行い盲目的に再送しない。既存の最終返信と業務effect境界は分離する。DB状態だけで全員に着手が見えるとは扱わない。
+
+HQ-02限定handoff: private設定handoff_agentで明示した別の実在agentへ、failed/interrupted cardのreceipt/元依頼/次操作を照合する新cardを一度だけ作る。元仕事を再実行するカードではなく、公式effect確認を先行する引き継ぎ仕事とする。handoff card失敗時に再帰的な再委譲を作らず、枠のリセットやtransferを装わない。
+
+HQ-02反復防止の回帰: local helper追加時、最終結果が別local agentへのmentionを引用すると新依頼を誤生成することをREDで再現。既知outboxのreply_textと完全一致するechoは文脈保存のみとし、新cardを作らない。HQ focused40件PASS。
+
+HQ-01最終review修復: scheduled着手の応答消失→一時的readback不可で最終結果が別rootへ出る不具合を独立reviewで確認。scheduledとcrash-recoveryの2件をRED→GREENにし、保存済み着手をrecovery/最終送信前に再照合する。未照合なら当該最終返信と依存handoffのclaimだけ保留し、別cardは進める。親のthread確定を依存handoffにも継承する。
+
+HQ-02現行readback: DotsはReasonで受領→着手→監査結果まで返信。Slackの該当taskはconnection未設定で明示未送信。MuseはSlackの正式mention検出を修復し12fixture PASSと報告したが、新規parent1793626106.871059への自然60秒受信テストは複数周期後も公式thread返信0。Reasonで起こした返信を自然成功へ数えず、hookの境界診断を担当へ返す。参謀本人宛cursorへクラウド受信経路の修復を依頼。
+
+収益の独立監査: Dotsのread-only結果で、既存14:45依頼の対象hostはcapafy-skills-daily.netlify.app（aniccaai.comは別host）と訂正。liveはhomeへ302。並列PR #9084のstatic-only修正は次buildで消えるためdraftへ戻す。追加の公式GET /agent/agents（2026-11-02T13:44:02Z、code0）はagentStatus under_reviewだがhasOnlineVersion true、latestVersionName v1.0.5、autoPublish falseと返す。従って公開旧版と最新審査版を分離する。恒久修正はlandingの新規promotion対象を変えず、tracking allowlistだけonlineまたはhasOnlineVersionが厳密trueの既存公開IDから再生成する。under_reviewかつ公開版なし、false、文字列trueは追加しない。新規公開/価格/内容/自動公開/IG fenceは変更しない。generatorのRED→GREENと既存route回帰後、main由来のsite artifactを対象siteへ限定deployし、Dotsがread-onlyでLocation/ct/unknown/既存sellerを照合する。販売成立や収益は未確認。
+
+現行受入更新: HQの00bf4537は全CI PASS。着手通知の追加は3件RED→GREEN、既存33件と合わせ36件PASS、scheduled notice/resultの同thread回帰1件PASS。PR #9086はfe2538efでmain統合され、同SHA自然cleanup run 18e441829bb6f240-64432はexit0/pass。worker floor達成は別途追跡する。PR #9084は1021b363でmain統合・対象Netlify deploy 6ae89aeeb7fd12e6a76e6305 ready、公式HTTP5経路とindex hash一致、Dots独立QA PASS。販売成立は未確認。検証用ctを顧客/売上へ数えず、既存click blobにはctが保存されないため全raw clickの自動除外済みとはしない。記事source PR #9085は5b874ffc、公開bridge PR #842はa50f6c15へ統合され公開workflow中。Muse自然wakeは未確認。cursorの自己申告identityはdr eggbotで参謀とは別と訂正し、参謀sanboとMuse relayの実経路を照会済み。
+
+
+
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。

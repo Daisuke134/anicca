@@ -1091,7 +1091,8 @@ def _verified_effect_result(path: Path, loop_id: str,
 
 
 def _effect_result_hint_allowed(loop_id: str, entrypoint: str | None) -> bool:
-    return (entrypoint in EFFECT_RESULT_HINT_ENTRYPOINTS
+    return ((loop_id == "team-hq-work" and entrypoint == "bin/team-hq.py")
+            or entrypoint in EFFECT_RESULT_HINT_ENTRYPOINTS
             or (entrypoint == "skills/alpaca-investment/run.py"
                 and loop_id in {"alpaca-investment-paper", "alpaca-investment-live"})
             or EFFECT_RESULT_HINT_LOOP_ENTRYPOINTS.get(loop_id) == entrypoint
@@ -1162,9 +1163,38 @@ def _verified_no_effect_result(path: Path, loop_id: str, occurrence_id: str,
     return "not_applicable", f"lm-no-effect://{loop_id}/{occurrence_id}/{value['reason']}"
 
 
+def _verified_team_hq_result(value: object, loop_id: str, occurrence_id: str,
+                             entrypoint: str | None) -> tuple[str, str] | None:
+    """Accept only the HQ driver's exact Slack readback or explicit idle result."""
+    fields = {"schema_version", "kind", "owner_id", "occurrence_id", "status",
+              "channel_id", "message_ts", "task_id"}
+    if (loop_id != "team-hq-work" or entrypoint != "bin/team-hq.py"
+            or not isinstance(value, dict) or set(value) != fields
+            or type(value.get("schema_version")) is not int or value["schema_version"] != 1
+            or value.get("kind") != "team_hq_result"
+            or value.get("owner_id") != loop_id
+            or value.get("occurrence_id") != occurrence_id
+            or not isinstance(value.get("channel_id"), str)
+            or not re.fullmatch(r"[CG][A-Z0-9]{8,20}", value["channel_id"])):
+        return None
+    if value.get("status") == "no_effect":
+        if value.get("message_ts") is not None or value.get("task_id") is not None:
+            return None
+        return "not_applicable", f"lm-no-effect://{loop_id}/{occurrence_id}/no_hq_task"
+    if (value.get("status") != "verified"
+            or not isinstance(value.get("task_id"), str) or not value["task_id"]
+            or not isinstance(value.get("message_ts"), str)
+            or not re.fullmatch(r"[0-9]{10,}\.[0-9]{6}", value["message_ts"])):
+        return None
+    return ("verified", f"slack://channels/{value['channel_id']}/messages/{value['message_ts']}")
+
+
 def _verified_terminal_effect_result(
         path: Path, loop_id: str, occurrence_id: str,
         entrypoint: str | None) -> tuple[str, ...] | None:
+    if loop_id == "team-hq-work" and entrypoint == "bin/team-hq.py":
+        return _verified_team_hq_result(
+            _read_private_result_hint(path), loop_id, occurrence_id, entrypoint)
     if not _effect_result_hint_allowed(loop_id, entrypoint):
         return None
     if _no_effect_result_hint_allowed(loop_id, entrypoint):
@@ -1221,7 +1251,7 @@ def _apply_verified_effect_result(
         else:
             updated["effect_status"] = result[0]
             provider = result[1].partition("://")[0]
-            if provider in {"postiz", "telegram", "writer"}:
+            if provider in {"postiz", "telegram", "writer", "slack"}:
                 updated["provider"] = provider
             receipt_id = result[1].rsplit("/", 1)[-1]
             if "provider_receipt_id" in updated:
