@@ -4,6 +4,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -28,6 +29,7 @@ class Slack:
         self.posts = []
         self.lose_post_response = False
         self.hide_posts = False
+        self.autolink_urls = False
         self.error = False
         self.calls = []
 
@@ -56,6 +58,12 @@ class Slack:
             return page
         if method == "chat.postMessage":
             message = dict(parameters, ts=f"9000.{len(self.posts) + 1:06d}", user="U_BOT", bot_id="B_BOT")
+            if self.autolink_urls:
+                parts = re.split(r"(<[^>]*>)", message["text"])
+                message["text"] = "".join(
+                    part if index % 2 else re.sub(r"https?://[^\s<>|]+", r"<\g<0>>", part)
+                    for index, part in enumerate(parts)
+                )
             self.posts.append(message)
             if self.lose_post_response:
                 raise TimeoutError("private provider details must not be printed")
@@ -179,6 +187,42 @@ class HQTests(unittest.TestCase):
         reply=self.tasks()[0]['reply_text']
         self.runtime.store_messages([dict(ts='9999.000001',thread_ts=task['thread_ts'],text=reply,user='U_BOT')])
         self.assertEqual(len(self.tasks()),1)
+
+    def test_autolinked_outbox_echo_does_not_assign_quoted_claude(self):
+        self.config["agents"].append(dict(self.config["agents"][0], id="claude", mention=["@claude"]))
+        self.config["agents"][0]["command"] = [
+            sys.executable, "-c", "print('引用: @claude https://example.test/result')",
+        ]
+        self.slack.autolink_urls = True
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        self.enqueue()
+        self.runtime.work()
+        echo = dict(self.slack.posts[0], ts="9999.000001")
+        self.assertEqual(self.runtime.store_messages([echo]), 0)
+        self.assertEqual(len(self.tasks()), 1)
+
+    def test_changed_outbox_body_still_assigns_quoted_claude(self):
+        self.config["agents"].append(dict(self.config["agents"][0], id="claude", mention=["@claude"]))
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        self.enqueue()
+        task = self.runtime.claim()
+        self.runtime.finish(task, {
+            "task_id": task["id"], "owner_id": "codex", "status": "succeeded",
+            "checkpoint": "done", "output": "引用: @claude https://example.test/result", "agent_state": {},
+        })
+        reply = self.tasks()[0]["reply_text"]
+        variants = [
+            reply.replace("https://example.test/result", "<https://example.test/other>"),
+            reply.replace("https://example.test/result", "<https://example.test/result|https://example.test/result>"),
+            reply + "\n追加本文",
+            reply.replace(task["marker"], ""),
+        ]
+        for index, text in enumerate(variants):
+            with self.subTest(index=index):
+                self.assertEqual(self.runtime.store_messages([
+                    dict(ts=f"9999.{index + 1:06d}", thread_ts=task["thread_ts"], text=text, user="U_BOT"),
+                ]), 1)
+        self.assertEqual([row["owner_id"] for row in self.tasks()[1:]], ["claude"] * len(variants))
 
     def test_scheduled_unknown_start_defers_only_its_final_and_reconciles_next_wake(self):
         self.config['announce_start']=True
@@ -538,6 +582,65 @@ class HQTests(unittest.TestCase):
         self.assertTrue(self.runtime.work()["ok"])
         self.assertEqual(self.tasks()[0]["reply_state"], "posted")
         self.assertEqual(len(self.slack.posts), 1)
+
+    def test_slack_autolinks_verify_one_post_and_emit_trusted_hint(self):
+        output = "証拠 https://example.test/result?ct=hq_1 http://example.test/source https://example.test/log#done"
+        self.config["agents"][0]["command"] = [sys.executable, "-c", f"print({output!r})"]
+        self.slack.autolink_urls = True
+        self.enqueue()
+        hint = self.root / "hint.json"
+        with mock.patch.dict(os.environ, {"LIFE_MANAGER_RESULT_HINT_PATH": str(hint)}):
+            result = self.runtime.work()
+        self.assertTrue(result["ok"])
+        self.assertEqual(self.tasks()[0]["reply_state"], "posted")
+        self.assertEqual(self.tasks()[0]["reply_ts"], "9000.000001")
+        self.assertEqual(json.loads(hint.read_text())["status"], "verified")
+        self.runtime.work()
+        self.assertEqual(len(self.slack.posts), 1)
+
+    def test_unknown_autolinked_reply_reconciles_without_resend_or_rerun(self):
+        self.config["agents"][0]["command"] = [
+            sys.executable, "-c", "print('証拠 https://example.test/result')",
+        ]
+        self.slack.autolink_urls = True
+        self.slack.lose_post_response = True
+        self.slack.hide_posts = True
+        self.enqueue()
+        self.assertFalse(self.runtime.work()["ok"])
+        self.assertEqual(self.tasks()[0]["reply_state"], "post_unknown")
+        self.slack.hide_posts = False
+        with mock.patch.object(self.runtime, "execute", side_effect=AssertionError("再実行は禁止")):
+            self.assertTrue(self.runtime.work()["ok"])
+        self.assertEqual(self.tasks()[0]["reply_state"], "posted")
+        self.assertEqual(len(self.slack.posts), 1)
+
+    def test_autolink_readback_rejects_changed_body_and_foreign_sender(self):
+        variants = [
+            ("different_url", "<https://example.test/other>", "U_BOT", "B_BOT", ""),
+            ("labelled_url", "<https://example.test/result|https://example.test/result>", "U_BOT", "B_BOT", ""),
+            ("label_spoof", "<https://example.test/other|https://example.test/result>", "U_BOT", "B_BOT", ""),
+            ("extra_body", "<https://example.test/result>", "U_BOT", "B_BOT", "\n追加本文"),
+            ("foreign_sender", "<https://example.test/result>", "U_FOREIGN", "B_FOREIGN", ""),
+        ]
+        for name, link, user, bot, suffix in variants:
+            with self.subTest(name=name):
+                self.slack = Slack()
+                self.runtime = hq.HQ(dict(self.config, state_dir=str(self.root / name)), api=self.slack)
+                self.enqueue()
+                task = self.runtime.claim()
+                self.runtime.finish(task, {
+                    "task_id": task["id"], "owner_id": "codex", "status": "succeeded",
+                    "checkpoint": "done", "output": "証拠 https://example.test/result", "agent_state": {},
+                })
+                with self.runtime.connect() as database:
+                    database.execute("UPDATE tasks SET reply_state='post_unknown' WHERE id=?", (task["id"],))
+                reply = self.tasks()[0]["reply_text"].replace("https://example.test/result", link) + suffix
+                self.slack.threads[(task["thread_ts"], "")] = {
+                    "ok": True, "messages": [dict(ts="9001.000001", text=reply, user=user, bot_id=bot)],
+                }
+                self.assertFalse(self.runtime.work()["ok"])
+                self.assertEqual(self.tasks()[0]["reply_state"], "post_unknown")
+                self.assertEqual(self.slack.posts, [])
 
     def test_ambiguous_slack_rejection_accepts_official_marker_readback(self):
         for error in ("internal_error", "fatal_error"):

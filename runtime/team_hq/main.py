@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import sqlite3
 import subprocess
@@ -76,6 +77,15 @@ def atomic_text(path, value):
 
 def atomic_json(path, value):
     atomic_text(path, json.dumps(value, ensure_ascii=False, sort_keys=True))
+
+
+def canonical_slack_text(text):
+    # Slack wraps bare HTTP(S) URLs; preserve labelled links and all other text.
+    return re.sub(
+        r"<(https?://[^<>\s|]+)>|<[^>]*>",
+        lambda match: match[1] if match[1] is not None else match[0],
+        text,
+    )
 
 
 def slack_time(value):
@@ -283,7 +293,10 @@ class HQ:
                     continue
                 # A saved runtime result may quote another local agent's mention.
                 # It is an outbox echo, not a fresh delegation to execute again.
-                if database.execute("SELECT 1 FROM tasks WHERE reply_text=? LIMIT 1", (text,)).fetchone():
+                canonical = canonical_slack_text(text)
+                replies = database.execute(
+                    "SELECT reply_text FROM tasks WHERE reply_text IS NOT NULL AND instr(?,marker)>0", (text,))
+                if any(canonical_slack_text(row["reply_text"]) == canonical for row in replies):
                     continue
                 for identity, agent in self.agents.items():
                     prefix = str(agent.get("prefix", identity))
@@ -567,7 +580,7 @@ class HQ:
                 own_sender = ((bool(user) and message.get("user") == user)
                               or (bool(bot) and message.get("bot_id") == bot))
                 if (own_sender and task["marker"] in message.get("text", "")
-                        and message.get("text") == task["reply_text"]):
+                        and canonical_slack_text(message["text"]) == canonical_slack_text(task["reply_text"])):
                     return str(message["ts"])
         return None
 
