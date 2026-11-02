@@ -1,5 +1,25 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
+## TEAM-HQ — 24時間の共同運営とCodex実行
+
+目的: Slack #agents-hq を全員の共有部屋にし、依頼の保存・受領・着手・進捗・証拠付き完了・枠切れ/停止時の引き継ぎを追跡する。Codexは売上導線修正、計測、Manager開発を継続し、確認した実験を公開する。現在の会話が自動再開するとは約束せず、schedulerが有限のCodex実行を起こす。
+
+ユーザーの委任: 通常の技術/運用判断、実装・検証・PR/main統合・限定反映・記事公開を自律実行する。担当は壁ではなく重複防止の目印。引き継ぎは途中成果と次操作を保存し、既存ownerの生存/外部effectを確認する。本人手続き・権限・支出上限はコードで越えず、具体的な不足として共有して独立作業を続ける。利用枠を勝手にリセットできるとは扱わない。
+
+方式: 既存Slack room、Reasonの宛先、既存業務カードとLoop runtimeを再利用する。Python標準ライブラリの受信/状態管理と設定可能なagent CLIを使い、モデルの判断をkeyword分類で代替しない。モデル選択はUI/account既定を尊重し、Codex起動時のmodel固定は追加しない。host資源admissionと業務タスクのowner状態を混同しない。
+
+比較: 新チャット製品は移行負担が増え、全員のLLM常時pollは費用が増える。既存roomの軽量受信+必要時wakeを採用する。Paperclip heartbeatの単一owner/永続進捗/次操作、Slack Events API、Anthropic multi-agent researchの明確な委譲と成果物参照を模倣する。根拠: https://github.com/paperclipai/paperclip/blob/master/docs/guides/agent-developer/heartbeat-protocol.md 、https://docs.slack.dev/apis/events-api/ 、https://www.anthropic.com/engineering/multi-agent-research-system 。成果指標は受領/着手の遅延、未受領/停止の件数、重複effect件数、確認済み売上と費用であり、会話数を成果としない。
+
+順序変更: 旧順序はREADME/Mac導入と既存事業の修復。新順序は本明示依頼に従いTEAM-HQの受信/引き継ぎ→Codex定期実行→公開記事→既存収益/Managerタスク。理由は、委譲が未着手のまま消える境界を先に閉じるため。既存ownerの進行中effectは中断しない。他節の履歴を消さず、本依頼の現在cursorはここに置く。
+
+1. [ ] HQ-01: 現行Slack pollerのsource化と受信/実行/送信の永続状態。Slack成功応答を検証し、実行失敗/送信不確実時に消失や自動再実行を起こさない。公式thread readbackと再巡回で重複0を確認。
+2. [ ] HQ-02: 既存カードのowner/着手/最終活動/次操作と、各agentの実受信経路を統合する。未受領/停止/枠切れはboundedな引き継ぎにし、未確認effectは照合を先行。Dots/Muse/Grok Bot本人の往復を受入に使う。
+3. [ ] HQ-03: Codexの収益/Manager日次実行を既存runtimeで登録し、main由来releaseから自然run・成果物・Slack readbackを確認。09:00優先順位、14:00Manager、21:00成果/費用、毎時収益仕事を既存ownerと重複しない形へ統合。
+4. [ ] HQ-04: 実証範囲と失敗を公開記事へまとめる。対象読者は複数agentを運用する開発者/小規模事業者。導入→失敗→構成図→証拠→再現手順→限界の順を成功例から学ぶ。秘密/個人情報を除外し、実稼働や売上を誇張しない。canonical sourceと既存blog bridgeで公開し、desktop/mobileの公開画面と図を目視確認。
+
+現在cursor: HQ-01。worktree `.worktrees/team-hq-20261102`、branch `feat/team-hq-20261102`、owner `home-codex-team-hq`。現行roomでCodexの自動返信1回とDotsのReason往復は確認済み。他の全員の即時wake/引き継ぎは未実証。旧hq_pollerはhomeのmutable codeを実行し、Slack API失敗検査・durable task状態・定期収益仕事が不足する。
+
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
