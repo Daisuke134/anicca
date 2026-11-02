@@ -80,9 +80,33 @@ def atomic_json(path, value):
 
 
 def canonical_slack_text(text):
-    # Keep URL/text boundaries while removing only Slack's HTTP(S) autolink brackets.
-    parts = re.split(r"(<[^>]*>|https?://[^<>\s|]+)", text)
-    return tuple(re.sub(r"^<(https?://[^<>\s|]+)>$", r"\1", part) for part in parts)
+    # Preserve URL/text boundaries, including prose, JSON quotes and Markdown brackets.
+    parts, cursor = [], 0
+    scan = re.compile(r"<[^>]*>|https?://")
+    url_characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~:/?#[]@!$&'()*+,;=%"
+    closing = {")": "(", "]": "["}
+    while match := scan.search(text, cursor):
+        end = match.end()
+        value = match[0]
+        if value.startswith("<"):
+            link = re.fullmatch(r"<(https?://[^<>\s|]+)>", value)
+            token = ("url", link[1]) if link else ("markup", value)
+        else:
+            brackets = []
+            while end < len(text) and text[end] in url_characters:
+                character = text[end]
+                if character in "([":
+                    brackets.append(character)
+                elif character in closing:
+                    if not brackets or brackets.pop() != closing[character]:
+                        break
+                end += 1
+            value = text[match.start():end].rstrip(".,;:!?'")
+            end = match.start() + len(value)
+            token = ("url", value)
+        parts.extend((text[cursor:match.start()], token))
+        cursor = end
+    return (*parts, text[cursor:])
 
 
 def slack_time(value):

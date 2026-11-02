@@ -20,6 +20,16 @@ except ModuleNotFoundError:
     hq = None
 
 
+AUTOLINK_BOUNDARIES = (
+    ("markdown_japanese", "[PR](https://example.test/result)でmainへ保存。",
+     "[PR](<https://example.test/result>)でmainへ保存。"),
+    ("json_proof", 'STATE {"proof":["https://example.test/result","/Users/example/artifact","https://example.test/evidence"]}',
+     'STATE {"proof":["<https://example.test/result>","/Users/example/artifact","<https://example.test/evidence>"]}'),
+    ("balanced_parentheses", "[資料](https://example.test/a_(b))で完了。 https://example.test/result, 次へ。",
+     "[資料](<https://example.test/a_(b)>)で完了。 <https://example.test/result>, 次へ。"),
+)
+
+
 class Slack:
     """Only the network boundary is replaced; queue and subprocesses are real."""
 
@@ -245,6 +255,23 @@ class HQTests(unittest.TestCase):
                     dict(ts="9999.000001", thread_ts=task["thread_ts"], text=reply, user="U_BOT"),
                 ]), 1)
                 self.assertEqual(self.tasks()[1]["owner_id"], "claude")
+
+    def test_autolinks_in_markdown_and_json_are_known_outbox_echoes(self):
+        self.config["agents"].append(dict(self.config["agents"][0], id="claude", mention=["@claude"]))
+        for name, expected, actual in AUTOLINK_BOUNDARIES:
+            with self.subTest(name=name):
+                self.runtime = hq.HQ(dict(self.config, state_dir=str(self.root / name)), api=self.slack)
+                self.enqueue()
+                task = self.runtime.claim()
+                self.runtime.finish(task, {
+                    "task_id": task["id"], "owner_id": "codex", "status": "succeeded",
+                    "checkpoint": "done", "output": "引用: @claude " + expected, "agent_state": {},
+                })
+                reply = self.tasks()[0]["reply_text"].replace(expected, actual)
+                self.assertEqual(self.runtime.store_messages([
+                    dict(ts="9999.000001", thread_ts=task["thread_ts"], text=reply, user="U_BOT"),
+                ]), 0)
+                self.assertEqual(len(self.tasks()), 1)
 
     def test_scheduled_unknown_start_defers_only_its_final_and_reconciles_next_wake(self):
         self.config['announce_start']=True
@@ -691,6 +718,28 @@ class HQTests(unittest.TestCase):
                     self.assertFalse(self.runtime.work()["ok"])
                 self.assertEqual(self.tasks()[0]["reply_state"], "post_unknown")
                 self.assertFalse(hint.exists())
+                self.assertEqual(self.slack.posts, [])
+
+    def test_autolinks_in_markdown_and_json_reconcile_without_resend(self):
+        for name, expected, actual in AUTOLINK_BOUNDARIES:
+            with self.subTest(name=name):
+                self.slack = Slack()
+                self.runtime = hq.HQ(dict(self.config, state_dir=str(self.root / name)), api=self.slack)
+                self.enqueue()
+                task = self.runtime.claim()
+                self.runtime.finish(task, {
+                    "task_id": task["id"], "owner_id": "codex", "status": "succeeded",
+                    "checkpoint": "done", "output": expected, "agent_state": {},
+                })
+                with self.runtime.connect() as database:
+                    database.execute("UPDATE tasks SET reply_state='post_unknown' WHERE id=?", (task["id"],))
+                reply = self.tasks()[0]["reply_text"].replace(expected, actual)
+                self.slack.threads[(task["thread_ts"], "")] = {
+                    "ok": True, "messages": [dict(ts="9001.000001", text=reply, user="U_BOT", bot_id="B_BOT")],
+                }
+                self.assertTrue(self.runtime.work()["ok"])
+                self.assertEqual(self.tasks()[0]["reply_state"], "posted")
+                self.runtime.work()
                 self.assertEqual(self.slack.posts, [])
 
     def test_ambiguous_slack_rejection_accepts_official_marker_readback(self):
