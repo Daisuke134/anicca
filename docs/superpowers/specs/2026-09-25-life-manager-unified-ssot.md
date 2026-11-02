@@ -25520,14 +25520,20 @@ Manager v1は「大きなモデルを作った時」ではなく、(1)既存研�
 
 目的・範囲: app6755129214の最新Guideline2.1(b)を解消し、実購入導線をMaestroで検証して正式なWAITING_FOR_REVIEWを確認する。認証情報や技術判断をDaisへ質問しない。owner=codex-anicca-weekly-20261103、branch=fix/anicca-weekly-review-20261103、worktree=/Users/anicca/Projects/life-manager-main/.worktrees/anicca-weekly-review-20261103、base=b941bc11644821f37ab9d66cfa2be544dbec3258。
 
-公式事実: Gmail1a19ccb75df64444の11/2審査通知はiPhone17ProMax、1.9.6(816)、Weekly Premium($6.99/week)を発見できないという情報要求。submission7e3f5574-6458-4abd-9994-5875dbdd3630=UNRESOLVED_ISSUES、version677ae249-da6e-4105-a469-cf0d0521ba92=REJECTED、build4e642697-7289-42df-946b-98e026ddfd85=VALID。現行mainは月/年/Lifetimeを描画し、weekly.bはDEVELOPER_REMOVED_FROM_SALEだが、weekly.c6829088753/yearly.c6829088945はWAITING_FOR_REVIEW。この不一致が現時点の診断cursorであり、購入処理故障とはまだ断定しない。
+受付時の公式事実: Gmail1a19ccb75df64444の11/2審査通知はiPhone17ProMax、1.9.6(816)、Weekly Premium($6.99/week)を発見できないという情報要求。submission7e3f5574-6458-4abd-9994-5875dbdd3630=UNRESOLVED_ISSUES、version677ae249-da6e-4105-a469-cf0d0521ba92=REJECTED、build4e642697-7289-42df-946b-98e026ddfd85=VALID。現行mainは月/年/Lifetimeを描画し、weekly.bはDEVELOPER_REMOVED_FROM_SALEだが、weekly.c6829088753/yearly.c6829088945はWAITING_FOR_REVIEW。この不一致が現時点の診断cursorであり、購入処理故障とはまだ断定しない。
 
-旧順序=10/30 build815提出完了。新順序=(1)816の由来・C商品審査/metadata/契約の照合、(2)既存設計に整合する最小修正と審査回答を準備、(3)現行Release購入導線Maestro、必要な回帰test/review/CI/main、(4)正式提出とapp/IAPの公式readback。変更理由=新しい公式拒否理由が以前のLifetime発見不能とは異なるため。配信/他app/共有RevenueCat defaultは変更しない。現在cursor=(1)。paid purchase完了と有料権利restoreは前回未検証であり成功と表現しない。
+旧順序=10/30 build815提出完了。新順序=(1)816の由来・C商品審査/metadata/契約の照合、(2)既存設計に整合する最小修正と審査回答を準備、(3)現行Release購入導線Maestro、必要な回帰test/review/CI/main、(4)正式提出とapp/IAPの公式readback。変更理由=新しい公式拒否理由が以前のLifetime発見不能とは異なるため。配信/他app/共有RevenueCat defaultは変更しない。受付時cursor=(1)。paid purchase完了と有料権利restoreは前回未検証であり成功と表現しない。
 
 追加の公式観測: Appleの添付Screenshot-1102-150420.pngは月/年/Lifetimeを全て表示し、paywall欠落ではない。live RCの明示anicca_variant_bもB年/月/Lifetime（週Bは描画しない）を返し、C2はdefault_v2だけ。Paid Applications契約はActive/inEffect/latest=true。native22/Python21 PASS。fresh独立read-only検証はmetadata-only修正・816維持を支持する。web authは同一accountで復旧し、最新thread4737ed8f-2b98-311f-b482-f63cfb370bf6へ回答可能。公開APIのapp提出11件にもC version itemは0件、web next-version attachも0件だがC2はinProgress=true/WFR。既存CLIとApple現行JSのDELETE /iris/v1/subscriptionSubmissions/6829088753を一回だけ試すと404 NOT_FOUND、後続readbackもWFRのまま。取り下げ成功とはせず、未使用商品reviewNoteとResolution Centerで延期/取り下げをAppleへ依頼する。商品本体/availability/既存Bの権利は変更しない。
 
-検証環境の境界: fresh Release sim依存取得中にENOSPCを観測し、今回のxcodebuildのみINT→TERM、terminal確認後に今回のSimulatorDerivedDataだけ回収する。今回作成のSimulator4C4AE18C-9D87-484D-9A7A-257A72FC91D8もshutdown/deleteし、build完了後に再生成する順へ変更。実機DDIはDeviceLocked、iPhone MirroringはMac認証を要求し、CUAはLocalAuthenticationRemoteServiceをsafety理由で拒否するため迂回しない。fresh Maestro PASSにはまだしない。現在cursor=Release sim再buildと審査情報修正のCI/main。
+検証環境の境界: fresh Release sim依存取得中にENOSPCを観測し、今回のxcodebuildのみINT→TERM、terminal確認後に今回のSimulatorDerivedDataだけ回収する。今回作成のSimulator4C4AE18C-9D87-484D-9A7A-257A72FC91D8もshutdown/deleteし、build完了後に再生成する順へ変更。実機DDIはDeviceLocked、iPhone MirroringはMac認証を要求し、CUAはLocalAuthenticationRemoteServiceをsafety理由で拒否するため迂回しない。この時点ではfresh Maestro未完。再試行前に今回取得の未使用SwiftPM cacheと自所有の再生成可能物だけを確認して回収し、Release buildと元のMaestro flowを再実行する。
 
+
+完了証拠: PR9095はexact-head481f0653ff95e0d382593cb46a977adc14726d9cのCI15/15 PASS後、main b1abc608aa10838cd6e8c3d0e26f443d83b0df8eへ統合。審査notesはmain由来本文とASC公式GETが終端改行1字以外一致し、C2商品reviewNoteも完全一致。既存approved yearly.retentionが購入取消後に表示され得ることを回答へ含め、主画面3planを全購入商品と誤記しない。独立read-only最終検証はblocking0/GO。
+
+fresh検証: Release -O/WMO simulator build成功、native22/Python21 PASS。元flow11/12のMaestroは2/2 PASS、55.513秒/35.541秒、JUnit fresh-final.xml、fresh-acceptance.json。初回MaestroはENOSPCで失敗し、容量回復後の再実行で成功。コードtree38aba1307117c42253fc0c96c7a3bf3bdc9992b6の現行main sourceを検証するが、local simulator build391であり、upload済み816そのもののartifact/source由来証明ではない。有料購入完了・有料権利restoreは未検証。今回作成Simulator2台とDerivedData/一時copyだけを終了後に回収。
+
+正式再提出: Resolution Center thread4737ed8f-2b98-311f-b482-f63cfb370bf6へmessage5090e6c3-9f18-4e18-a078-19422f19a011を一回送信し公式再取得で存在確認。未使用C2の延期/取り下げをAppleへ依頼済みだが、C2は依然WAITING_FOR_REVIEWで取り下げ完了ではない。app itemをresolved=true、validate errors0/blocking0を確認後、同じsubmission7e3f5574-6458-4abd-9994-5875dbdd3630を正式submit。2026-11-02T17:32:33.11Zの公式receiptと後続GETでsubmissionとapp version677ae249-da6e-4105-a469-cf0d0521ba92はWAITING_FOR_REVIEW、添付build4e642697-7289-42df-946b-98e026ddfd85は816/VALID、itemsはappとLifetimeの2件のみ。Lifetime review version73f8e0bd-4673-4f49-abbf-b6b354d51ad9もWAITING_FOR_REVIEW。証拠=/Users/anicca/.local/state/anicca-weekly-review-20261103/{reply-receipt,submission-final,version-final,build-final,items-final,lifetime-final,validation-final}.json。現在cursor=依頼成果の正式WAITING_FOR_REVIEW完了。Appleの審査通過・公開済みとは主張しない。
 
 ### Anicca正式再提出・現在cursor
 
