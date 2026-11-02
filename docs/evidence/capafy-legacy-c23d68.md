@@ -27,3 +27,9 @@
 `python3 skills/earn/capafy-marketing/tests/test_build_landing.py` 9/9 PASS、`node --test skills/earn/capafy-marketing/tests/go_functions.test.mjs` 5/5 PASS、同一legacy keyのct反例assert PASS、source-boundary PASS。すべて既存codeの確認であり新しいruntime実装や本番修復ではない。公式GET/list/getのみ、provider書込0、追加redirect request0、投稿0、会計変更0、購入/売上未確認。
 
 Slack指定threadはparentとhome-codex更新の計2件で全件取得、本人の受領/着手/結果の新差分なし。Reason accepted/queuedは未着手、催促0。
+
+## CI待ちの再開点
+
+repo: `/Users/anicca/Projects/life-manager-main`。worktree: `/Users/anicca/Projects/life-manager-main/.worktrees/capafy-legacy-c23d68`。branch: `docs/capafy-legacy-c23d68`。結果commit: `0df40a8ea9bc605742fca4c04a1bcaf8bb3811fb`（後続はcheckpoint文書のみ）。PR: https://github.com/Daisuke134/life-manager/pull/9099 。owner/lease: `home-codex-c23d68` / `CAPAFY-LEGACY-INVENTORY`。
+
+正本spec/残TODO: `/Users/anicca/Projects/life-manager-main/.worktrees/capafy-legacy-c23d68/docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md` のCAPAFY-LEGACY-INVENTORY節。現在cursor: 最新PR headの必要CI全件を公式readbackし、全PASS後にmainへ統合する。18:10Z初回readbackはSecurity Scan 14 checks QUEUEDであり、PASSへ読み替えない。`--admin`で未完CIを迂回しない。未来のpayload保存は未実装、過去88件の帰属と売上は未確認。
