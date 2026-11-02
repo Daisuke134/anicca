@@ -25541,9 +25541,9 @@ ASC CLIの正式upload/build730477a4-dcdc-48ce-a73d-d1c83a1e8903はCOMPLETE/erro
 | BR03 | 一部実行済 | 公式上流環境を隔離して動かし、実コマンド、commit、config、seed、終了理由、状態/trajectory、費用根拠を保存。非公開suiteは具体的なaccess条件を記録 |
 | BR04 | runner完了/独自課題未完 | 最小の独自事業課題とrunnerを公開可能な形で実装。test-first、agent-visible observationとhidden graderを分離し、baselineと実modelを実行 |
 | BR05 | 未完 | 複数model/harnessを同条件で比較。失敗/欠測/費用unknownを保持し、trial数・分散・適用範囲と共に出す |
-| BR06 | 未完 | 既存cloudへtenant分離・実行上限・隔離workspace・永続結果を持つ一般利用可能な実行経路を接続し、実ユーザー経路を確認。ローカルHTTP成功をcloud公開と呼ばない |
-| BR07 | 未完 | OSSの公開source/ライセンス/再現手順を整え、main→公開先のreadbackと独立実行を確認。private repoへのpushをOSS公開と呼ばない |
-| BR08 | 草稿更新済/公開未完 | 全評価の具体的な読み方・実行した結果/失敗・限界を含む詳細記事と比較図を更新し、残TODOを報告 |
+| BR06 | benchmark cloud完了/managed tenant未完 | 既存cloudへtenant分離・実行上限・隔離workspace・永続結果を持つ一般利用可能な実行経路を接続し、実ユーザー経路を確認。ローカルHTTP成功をcloud公開と呼ばない |
+| BR07 | 初版公開済/修正版同期中 | OSSの公開source/ライセンス/再現手順を整え、main→公開先のreadbackと独立実行を確認。private repoへのpushをOSS公開と呼ばない |
+| BR08 | 記事公開済/実測追記中 | 全評価の具体的な読み方・実行した結果/失敗・限界を含む詳細記事と比較図を更新し、残TODOを報告 |
 
 完了判定: 単なるテスト成功・環境install・資料作成では全体完了にしない。未取得のNaïve org、非公開benchmark、実model試行、cloud/公開の各境界を独立して記録する。実装/検証/統合を継続し、不足条件は具体的なprovider/owner/権限として狭める。
 
@@ -25556,3 +25556,9 @@ source acceptance: per-run cache/results、既存ID上書き禁止、費用unkno
 現在cursor: 専用branchをPR/main統合→main由来製品のみpublic repoへ公開→GitHub Actionsで独立cloud baseline readback。その後BR02のlive org、BR05の同条件複数model、BR06のmanaged tenant/継続loop、BR04の未被覆独自familyとBR08の記事公開が残る。既存Business Processと同等の第二simulatorは作らない。
 
 公開と反復の追記: PR9088はmain8140b781へ統合。public Daisuke134/businessrun-benchはb238f88（製品だけをmainからexport、PROVENANCE付き）。Ubuntu ActionsでCoffee6runとYC12runが成功しartifactを取得する。Business cloud41472362299はattempt0/missing9で起動失敗し、例外型/欠落module名だけを出す診断を追加中。ローカルのnative payment clean seed1/2も成功し、clean3/3・fault seed0 1/1。lost-writesの実ログに応答喪失5・処理前失敗2を確認、公式strict validatorも同条件PASS。Grok/Muse返答無し。現在cursorはBusinessのUbuntu起動失敗の診断・修正→main/公開同期→cloud再実行。
+
+cloud失敗の解消: Ubuntu41474301821は導入前pdftotext=falseを確認し、Poppler導入後に全9task oracle9/9・null0/9、contract13/13で成功。source/正解/graderは変更しない。PDF202件のpdftotext202成功 vs fallback194成功/8ValueErrorのprobeをevidenceへ保存。Coffee41472322390は6対照、YC41472358835は12scriptがcloud成功し、public receiptを取得する。public mainへはcanonical修正版を同期し、同じrunner hashを確認する。全体完了ではない。
+
+必要CI修復: root OSS verifierはgit indexがNode既定1MiBを超えENOBUFSで停止。CLIで再現し、子process出力bufferだけ16MiBへ変更してPASS。検査/allowlist/baselineは緩めない。前回PR9088の14CIは後続readbackで全PASS、今回PR9089はこの修復込みで必要チェックを再実行する。
+
+残TODOの依存順: (1)BR02 Grok/Muse live org・VM/provider・残高・session/費用を取得（Reasonはpull/idle、Slack返答なし） (2)BR05 専用認証と答案隔離hostで同model/予算/seedのNaïve/他harness比較、複数seedと未見family (3)BR03 Clipping/Short Formの公式実行accessと残container suiteの実行、正確なslice/trial rowsの取得 (4)BR04 上流に無い納品・復旧・人間介入だけを独自課題化 (5)BR06 Naïve規約4.2の書面許諾と既存契約適用を確認し、顧客tenant/権限/予算/永続結果/継続運転を接続 (6)ハッカソンのlive一業務と事前開発開示を完成。既存他laneのeffectは変更しない。

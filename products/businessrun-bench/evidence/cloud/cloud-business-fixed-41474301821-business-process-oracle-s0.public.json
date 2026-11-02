@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "run_id": "business-process-oracle-s0",
+  "suite": "business-process",
+  "policy": "oracle",
+  "command": [
+    "$PYTHON",
+    "$RUN/upstream/bench/process_run.py",
+    "--task",
+    "all",
+    "--harness",
+    "oracle",
+    "--seed",
+    "0",
+    "--runs",
+    "1",
+    "--parallel",
+    "1",
+    "--label",
+    "businessrun-business-process-oracle-s0",
+    "--timeout",
+    "300"
+  ],
+  "python_version": "3.12.15",
+  "seed": 0,
+  "task": "all",
+  "faults": null,
+  "protocol": "local_development_not_answer_isolated",
+  "source": {
+    "repository": "https://github.com/erphq/business-bench.git",
+    "commit": "0d09882b59a16f190feac09abc9331a733a6f96b",
+    "dirty": false
+  },
+  "runner_sha256": "29bc17854e4e8a08918fbeaf2c63aa67b74e22f5a75ad81096b2f812c6cf9558",
+  "adapter_sha256": "ebd68fe55edf392d60eeaef1bca39a8e98162ad393f523dc809b6f6e7cbb8838",
+  "started_at": "2026-11-02T15:43:32.882375+00:00",
+  "wall_seconds": 57.553,
+  "exit_code": 0,
+  "artifact_present": true,
+  "error_class": null,
+  "summary": {
+    "attempts": 9,
+    "expected_attempts": 9,
+    "missing": 0,
+    "passed": 9,
+    "invalid": 0,
+    "campaign_complete": true,
+    "model_cost_usd": 0.0,
+    "cost_per_success_usd": 0.0
+  },
+  "host_cost_usd": null,
+  "failure_diagnostics": [],
+  "artifact_hashes": [
+    {
+      "name": "result.json",
+      "sha256": "13f0983da5aca58a44a510f21eeb7663e921bda4f4a511b92729be9bbfa6f836"
+    },
+    {
+      "name": "result.json",
+      "sha256": "7fdfe130d365df26bbf691ba023d10c5ea8995b41bcf77cd8fcd334fa3b31c6e"
+    },
+    {
+      "name": "result.json",
+      "sha256": "87ff4d52ba0d6e2adcab89a64cad2498229a930120db02f0988259329ae7a6cb"
+    },
+    {
+      "name": "result.json",
+      "sha256": "e143d9c4cc0444c8df455f0cdd9004abc973ff62dbf911d91f08198f99df06fe"
+    },
+    {
+      "name": "result.json",
+      "sha256": "db2a89fc35973fb6129553c507e16bb019933ef1a6a6364c69ee85b3be61327a"
+    },
+    {
+      "name": "result.json",
+      "sha256": "bcd02bfaea30879574b251d6630b7f631e30598959690ddcb7f59914bfb9df53"
+    },
+    {
+      "name": "result.json",
+      "sha256": "6786b14212900198646efca9fd580e4806bd8f52f4c37a00715516aeb38d2f1b"
+    },
+    {
+      "name": "result.json",
+      "sha256": "3414ca2a4582aab33c90a557541e637f1ed4e9dceb29590213d38c6f6284b0ba"
+    },
+    {
+      "name": "result.json",
+      "sha256": "b4197f79bf93fa1be27823bb5bf09e05448d350f54f643743abbe473e2186fe1"
+    }
+  ]
+}

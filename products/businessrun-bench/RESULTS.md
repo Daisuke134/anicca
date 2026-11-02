@@ -65,6 +65,10 @@ python3.12 bench.py run --suite business-process --policy native-codex --task pa
 
 - [Coffee cloud](https://github.com/Daisuke134/businessrun-bench/actions/runs/41472322390): Ubuntu、6 baseline試行を完走、receipt取得済み。
 - [YC cloud](https://github.com/Daisuke134/businessrun-bench/actions/runs/41472358835): Ubuntu、12 script試行を完走、receipt取得済み。
-- [Business初回cloud](https://github.com/Daisuke134/businessrun-bench/actions/runs/41472362299): 起動後13秒でexit1、attempt0/missing9。モデル採点ではなく環境起動不成立。raw logを公開せず、例外型のみ診断へ追加して原因調査中。
+- [Business初回cloud](https://github.com/Daisuke134/businessrun-bench/actions/runs/41472362299): 起動後13秒でexit1、attempt0/missing9。モデル採点ではなく環境起動不成立。raw logを公開せず、有限の例外型/source_file/行番号を診断へ追加。後述のPoppler導入で修復。
 
 一般の利用者はforkからActionsを実行できる。これでモデル付きmanaged SaaSや顧客別の継続運転を提供できたとは言わない。cloudの失敗もevidence/cloudへ残す。
+
+修正後の[Business cloud試行](https://github.com/Daisuke134/businessrun-bench/actions/runs/41474301821)は13contract testsと全9taskのoracle9/9・null0/9で成功。workflowの導入前probeはpdftotext_before_install=false。公式PDF202件の比較でpdftotext202/202、pdfplumber194/202（8 ValueError）を再現し、Ubuntuへpoppler-utilsを導入して解消する。課題・正解・採点は変更しない。これは診断branchの成功で、公開mainはcanonical統合版とsource hashを合わせて同期する。
+
+追加のroot CI修復: 公開receiptを増やすとgit ls-files -s -zがNode既定1MiBを超え、既存OSS verifierがENOBUFSで落ちた。元のCLIで再現後、同じ検証の出力buffer上限だけ16MiBへ変更しPASSを確認する。検出ルール/許可対象/基準値は変更しない。

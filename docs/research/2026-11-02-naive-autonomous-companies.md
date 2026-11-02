@@ -85,3 +85,7 @@ Firecrawl skillを読んでconnector検索を試みるが、空link_id拒否後�
 取得したBusiness sourceには9つのprocess task.yamlが存在する。READMEの7件という概要より、固定commitの実ファイルとall実行の9件を採用する。35件という旧予定の数字ではなく、9task×5seedなら45条件。strict validatorは13条件の成功後にmargin-bridge seed3で生成器のゼロ除算が発生し、一括検証は未完である。公式graderの変更や失敗seedの隠蔽はしない。
 
 設計上の最優先学習は、①modelとharness比較を分ける ②期間/seed/背景actorを揃える ③成功単価にhost/背景費用を含むか示す ④tuningと未見課題を分ける ⑤選択した比較だけで全順位を名乗らない ⑥インフラ障害を分類し全attemptを残す、である。
+
+## 一般提供の追加確認
+
+公式terms §4.2はサービスアクセスの共有/再販/再許諾に書面同意を要求する。[原典](https://usenaive.ai/terms)。LM-on-Naïveの顧客向け構成の適用範囲と既存契約許諾を確認する必要がある。既存許諾が無いと断定せず、Grok/Museへ存在と適用範囲のみ照会する。これは自社コードのbenchmark OSS公開とは別の境界。Computerは公式docsからLinux micro-VM・turn間pause/resumeを確認し、V8 isolate予定と提供済みを分ける。[Computer](https://usenaive.ai/docs/capabilities/computer)。
