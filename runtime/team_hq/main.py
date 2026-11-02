@@ -477,8 +477,20 @@ class HQ:
             if path.is_file():
                 try:
                     receipt = json.loads(path.read_text(encoding="utf-8"))
-                except (OSError, ValueError):
-                    raise HQError("実行receiptを読み取れません。自動再実行はしません") from None
+                    if (not isinstance(receipt, dict)
+                            or receipt.get("task_id") != task["id"]
+                            or receipt.get("owner_id") != task["owner_id"]
+                            or receipt.get("status") not in {"succeeded", "failed", "interrupted"}
+                            or not isinstance(receipt.get("checkpoint"), str)
+                            or not isinstance(receipt.get("agent_state", {}), dict)):
+                        raise ValueError("invalid receipt")
+                except (OSError, ValueError, TypeError):
+                    # Preserve the original receipt as evidence; quarantine only this card.
+                    receipt = {"task_id": task["id"], "owner_id": task["owner_id"],
+                               "status": "interrupted", "checkpoint": "invalid_receipt_handoff_required",
+                               "business_outcome": "unverified", "agent_state": {},
+                               "output": "結果ファイルが不正です。元ファイルを保持し、外部effect照合後に引き継いでください。"}
+                    atomic_json(path.with_name("recovery.json"), receipt)
             else:
                 receipt = {"task_id": task["id"], "owner_id": task["owner_id"], "status": "interrupted",
                            "checkpoint": "crash_handoff_required", "business_outcome": "unverified",
@@ -491,9 +503,16 @@ class HQ:
         parameters = {"channel": self.channel, "limit": 100}
         if task["thread_ts"]:
             parameters["ts"] = task["thread_ts"]
+        identity = checked(self.api.call("auth.test"))
+        user, bot = identity.get("user_id"), identity.get("bot_id")
+        if not user and not bot:
+            raise HQError("Slack送信者identityを確認できません")
         for messages in self.pages(method, **parameters):
             for message in messages:
-                if task["marker"] in message.get("text", "") and message.get("text") == task["reply_text"]:
+                own_sender = ((bool(user) and message.get("user") == user)
+                              or (bool(bot) and message.get("bot_id") == bot))
+                if (own_sender and task["marker"] in message.get("text", "")
+                        and message.get("text") == task["reply_text"]):
                     return str(message["ts"])
         return None
 
@@ -509,9 +528,9 @@ class HQ:
                 checked(self.api.call("chat.postMessage", **parameters))
             except SlackRejected:
                 with self.connect() as database:
-                    database.execute("UPDATE tasks SET reply_state='reply_pending',delivery_error='slack_rejected',updated=? WHERE id=?",
+                    database.execute("UPDATE tasks SET reply_state='delivery_failed',delivery_error='slack_rejected',updated=? WHERE id=?",
                                      (time.time(), task["id"]))
-                return {"ok": False, "task_id": task["id"], "reply_state": "reply_pending"}
+                return {"ok": False, "task_id": task["id"], "reply_state": "delivery_failed"}
             except Exception:
                 pass  # A network exception cannot prove that Slack did not accept the post.
             with self.connect() as database:
@@ -553,8 +572,6 @@ class HQ:
                 result = self.deliver(pending)
                 if result["ok"]:
                     self.hint(task_id=pending["id"], message_ts=result["message_ts"])
-                    return result
-                if pending["reply_state"] == "reply_pending":
                     return result
                 unresolved = result
             task = self.claim()

@@ -35,6 +35,8 @@ class Slack:
         self.calls.append((method, dict(parameters)))
         if self.error:
             return {"ok": False, "error": "not_authed"}
+        if method == "auth.test":
+            return {"ok": True, "user_id": "U_BOT", "bot_id": "B_BOT"}
         cursor = parameters.get("cursor", "")
         if method == "conversations.history":
             page = dict(self.history[cursor])
@@ -53,7 +55,7 @@ class Slack:
                 ]
             return page
         if method == "chat.postMessage":
-            message = dict(parameters, ts=f"9000.{len(self.posts) + 1:06d}")
+            message = dict(parameters, ts=f"9000.{len(self.posts) + 1:06d}", user="U_BOT", bot_id="B_BOT")
             self.posts.append(message)
             if self.lose_post_response:
                 raise TimeoutError("private provider details must not be printed")
@@ -91,6 +93,41 @@ class HQTests(unittest.TestCase):
     def enqueue(self):
         self.slack.history[""]["messages"] = [self.message()]
         self.runtime.receive()
+
+    def test_foreign_echo_cannot_verify_our_post(self):
+        self.enqueue()
+        task=self.runtime.claim()
+        self.runtime.finish(task,self.runtime.execute(task))
+        with self.runtime.connect() as db:
+            db.execute("UPDATE tasks SET reply_state='post_unknown' WHERE id=?",(task['id'],))
+        task=self.tasks()[0]
+        self.slack.threads[(task['thread_ts'],'')]={'ok':True,'messages':[
+            dict(ts='9001.000001',text=task['reply_text'],user='U_FOREIGN',bot_id='B_FOREIGN')]}
+        self.runtime.work()
+        self.assertNotEqual(self.tasks()[0]['reply_state'],'posted')
+        self.assertEqual(self.slack.posts,[])
+
+    def test_rejected_reply_does_not_starve_independent_task(self):
+        self.runtime.store_messages([self.message(),self.message('102.000001')])
+        call=self.slack.call
+        def reject_one(method,**parameters):
+            if method=='chat.postMessage' and parameters.get('thread_ts')=='101.000001':
+                return {'ok':False,'error':'thread_not_found'}
+            return call(method,**parameters)
+        self.slack.call=reject_one
+        self.runtime.work();self.runtime.work()
+        self.assertEqual(self.tasks()[0]['reply_state'],'delivery_failed')
+        self.assertEqual(self.tasks()[1]['status'],'succeeded')
+
+    def test_corrupt_receipt_isolated_without_reexecution_or_loss(self):
+        self.runtime.store_messages([self.message(),self.message('102.000001')])
+        task=self.runtime.claim();path=self.runtime.task_directory(task)/'result.json'
+        path.write_text('broken original receipt')
+        self.runtime.work();self.runtime.work()
+        self.assertEqual(path.read_text(),'broken original receipt')
+        self.assertEqual(self.tasks()[0]['status'],'interrupted')
+        self.assertEqual(self.tasks()[0]['checkpoint'],'invalid_receipt_handoff_required')
+        self.assertEqual(self.tasks()[1]['status'],'succeeded')
 
     def test_http_200_ok_false_is_failure_without_secret(self):
         response = io.BytesIO(b'{"ok":false,"error":"not_authed"}')

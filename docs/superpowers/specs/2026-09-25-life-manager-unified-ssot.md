@@ -19,7 +19,7 @@
 
 現在cursor: HQ-01。worktree `.worktrees/team-hq-20261102`、branch `feat/team-hq-20261102`、owner `home-codex-team-hq`。現行roomでCodexの自動返信1回とDotsのReason往復は確認済み。他の全員の即時wake/引き継ぎは未実証。旧hq_pollerはhomeのmutable codeを実行し、Slack API失敗検査・durable task状態・定期収益仕事が不足する。
 
-HQ-01 source進捗: receiver/worker/schedulerを分離する実装と公式Slack receiptの限定検証を追加中。registry+receipt関連153件とNode adapter15件PASS。全loop suiteは実行中。private configの毎時収益/09時優先順位/14時Manager/21時成果照合は作成済み、未有効化。CodexはChatGPT認証を確認、既存UI設定は変更していない。未使用Swift cacheを回収、更新cacheの一部は途中でdirectory変化を検出し残りを保持。private receiptに失敗境界を保存。空き容量は約5.1GiBへ回復。
+HQ-01 source進捗: PR #9083、receiver/worker/schedulerを分離。fresh read-only reviewは3件FIX-FIRST（他人のechoを公式返信として誤認、明示Slack拒否で後続停止、破損receiptで全worker停止）。3件を各RED→GREENで修復し、HQ25件PASS。auth.testで送信者を拘束し、拒否/破損は当該cardだけ保持して隔離。registry/receipt関連154件とNode adapter15件PASS。全loop suite再実行1097件は12 failures/1 error（未展開tools、旧192件固定assert、host profileを読む既存テストの環境差分）。CIのLoop control失敗は195≠192の2件のみと公式job logで確認し、195へ更新。残るCIと限定再検証を継続。private scheduleは未有効化、本番切替前。
 
 HQ-02現行readback: DotsはReasonで受領→着手→監査結果まで返信。Slackの該当taskはconnection未設定で明示未送信。terminalの返信は60秒Reason/Slack wake設定を自己申告するが、Muse本人identityの不一致と直接Slack送信のprompt制約があり、本人の自然Slack応答は未実証。参謀本人宛cursorへクラウド受信経路の修復を依頼。
 
