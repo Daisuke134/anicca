@@ -19,6 +19,8 @@
 
 所有: `.worktrees/team-hq-20261102`、branch `docs/team-hq-runtime-20261103`、owner `home-codex-team-hq24h`。コードはPR #9083 head260a97c0からmain cb01fb5c6a0ee8d04d46b982b8b28ddd06828094へ統合。HQ42テスト、receipt5、関連runner/registry検証、必要CI全件、fresh read-only最終reviewをPASSする。source/main統合とruntime成功は分ける。
 
+HQ-01 Slack本文照合の修復: 自然の定期仕事4a481d0fe62485fd4dffc972と確認仕事48ebac567d00b7df5836709dはCLI成功/成果物保存を確認する。公式Slackには最終返信が1回存在するが、Slackがbare HTTP(S) URLを `<URL>` へ自動変換し、保存本文とのraw完全一致が外れる。sender/markerを公式GETで照合した差分はURL両端の山括弧6文字のみであり、post_unknownを再送しない。変更は本文のこの非labelled HTTP(S) autolink表記だけを比較用に正規化し、既知outbox echoにも同じ比較を適用する。URLそのもの、label付きlink、別sender、marker-only、追加本文は一致と扱わない。先にこのprovider fixtureをREDで再現し、HQ suite/fresh review/必要CI→main→immutable release→HQ限定apply後に、既存2返信の公式照合と再巡回の送信0で受け入れる。予約待ちの修復PR #9093とはファイル所有を分ける。
+
 HQ-01の契約: receiver/workerは別lock、SQLiteにcardと送信状態を永続化する。auth.testの送信者+text+markerで公式返信を照合し、応答不確実時は盲目的再送をしない。明示拒否/破損receiptを当該cardへ隔離する。trusted result hint/occurrence環境を子から除き、古いrootの有限backfill、contextとenqueue cutoff分離、thread完読前claim禁止を保つ。announce_startは受領・着手を通知するが業務成果とは扱わない。scheduled着手のthreadが不確実なら最終結果と依存handoffだけを保留して照合する。
 
 HQ-02の契約: failed/interruptedの元依頼/receipt/次操作を別の設定済みagentへ一度だけ渡す。元仕事の再実行や再帰handoffを作らない。既知outbox echoの他agent mentionから新cardを作らない。helperの利用可能枠は未確認のまま推定しない。
