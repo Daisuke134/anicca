@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import shutil
 import subprocess
 import sys
 import time
@@ -73,6 +74,8 @@ def source_info(suite, source_root):
 def setup(args):
     if sys.version_info[:2] != (3, 12):
         raise ValueError("Use Python 3.12 for pinned upstream dependencies")
+    if args.suite == "business-process" and not shutil.which("pdftotext"):
+        raise ValueError("Business Process requires pdftotext (Linux: poppler-utils; macOS: poppler)")
     spec = catalog()["runnable"][args.suite]
     args.sources.mkdir(parents=True, exist_ok=True)
     path = args.sources / spec["directory"]
@@ -259,6 +262,8 @@ def execute(args):
             rows = [dict(r, cost_usd=None) for r in rows]
         summary = summarize_process(rows, expected, "unknown" if args.policy == "native-codex" else "script_llm_zero")
         evidence = sorted(root.glob("*/result.json"))
+    if code and error_class is None:
+        error_class = "upstream_exit"
     public_command = [str(c).replace(str(source), "$SOURCE").replace(str(run), "$RUN").replace(str(HERE), "$RUNNER") for c in cmd]
     try:
         python_version = subprocess.check_output([cmd[0], "-c", "import platform; print(platform.python_version())"], text=True, timeout=5).strip()

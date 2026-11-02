@@ -22,6 +22,12 @@ jobs:
           python-version: '3.12'
       - name: Contract checks
         run: python -m unittest discover -p 'test_*.py'
+      - name: Install ERP PDF layout tool
+        if: inputs.suite == 'business-process'
+        run: |
+          if command -v pdftotext >/dev/null; then echo 'pdftotext_before_install=true'; else echo 'pdftotext_before_install=false'; fi
+          sudo apt-get update -qq
+          sudo apt-get install -y poppler-utils
       - name: Set up pinned upstream
         env:
           SUITE: ${{ inputs.suite || 'coffee' }}

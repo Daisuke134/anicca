@@ -134,6 +134,12 @@ class RunnerContract(unittest.TestCase):
                 self.assertNotIn(value, result)
             self.assertIn("other", result)
 
+    def test_process_setup_requires_layout_preserving_pdf_tool(self):
+        b = self.implementation()
+        with patch.object(b.sys, "version_info", (3, 12)), patch("shutil.which", return_value=None):
+            with self.assertRaisesRegex(ValueError, "pdftotext"):
+                b.setup(SimpleNamespace(suite="business-process"))
+
     def test_process_cache_and_outputs_are_separate_for_identical_task_seed(self):
         b = self.implementation()
         with tempfile.TemporaryDirectory() as d:
