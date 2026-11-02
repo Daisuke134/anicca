@@ -10,14 +10,14 @@
 
 比較: 新チャットへの移行と全LLMの常時pollは採らず、既存roomの軽量受信+必要時wakeを使う。Paperclipの単一owner/永続進捗/次操作、Slack Events、Anthropicの明確な委譲/成果物参照を模倣する。根拠: https://github.com/paperclipai/paperclip/blob/master/docs/guides/agent-developer/heartbeat-protocol.md 、https://docs.slack.dev/apis/events-api/ 、https://www.anthropic.com/engineering/multi-agent-research-system 。成果指標は受領/着手遅延、未受領/停止、重複effect、公式売上/費用であり会話数ではない。
 
-順序: 旧README/Mac導入/既存事業修復に対し、明示依頼に従い共有受信/引き継ぎ→Codex定期実行→公開記事→既存収益/Managerを優先する。容量依存の間に記事と購入導線を並行完了し、進行中owner/effectを中断しない。現在cursorはHQ-01のSlack本文照合修復と対象限定release反映、容量回復後の自然再巡回である。
+順序: 旧README/Mac導入/既存事業修復に対し、明示依頼に従い共有受信/引き継ぎ→Codex定期実行→公開記事→既存収益/Managerを優先する。容量依存の間に記事と購入導線を並行完了し、進行中owner/effectを中断しない。HQ-01の修復・対象限定反映・自然再巡回を完了し、現在cursorはHQ-02のremote本人wakeとHQ-03の継続する業務成果である。TODO順序は維持する。
 
-1. [ ] HQ-01: main由来releaseの自然受信→card→着手→CLI成果物→公式thread返信を確認し、次wakeで重複0を確認する。
+1. [x] HQ-01: main由来releaseの自然受信→card→着手→CLI成果物→公式thread返信を確認し、次wakeで重複0を確認する。
 2. [ ] HQ-02: 各agent本人の実受信/wakeを実証する。停止/枠切れはbounded handoffとし、未確認effectの照合を先行する。
 3. [ ] HQ-03: 登録した収益/Manager定期仕事の自然run・成果物・Slack readbackを確認する。登録やloadedを実行成功と同一視しない。
 4. [x] HQ-04: 検証範囲と失敗を公開記事にし、公開desktop/mobile幅で本文と図を目視確認する。
 
-所有: runtime本文照合は `.worktrees/team-hq-slack-readback-20261103`、branch `fix/hq-slack-autolink-20261103`、owner `home-codex-hq-slack-readback`、PR #9094。primaryはTEAM-HQ-24X7と反映/受入を所有する。初版PR #9083/main cb01fb5c、予約消費修復PR #9093/main b941bc11は必要CI全件とfresh reviewをPASSして統合する。source/main統合とruntime成功は分ける。
+所有: runtime本文照合PR #9094はmain 813695b3へ統合済み。受入記録は `.worktrees/team-hq-slack-readback-20261103`、branch `docs/hq-natural-acceptance-20261103`、owner `home-codex-hq-slack-readback`。primaryはTEAM-HQ-24X7と反映/受入を所有する。初版PR #9083/main cb01fb5c、予約消費修復PR #9093/main b941bc11は必要CI全件とfresh reviewをPASSして統合する。source/main統合とruntime成功は分ける。
 
 HQ-01 Slack本文照合の修復: 自然の定期仕事4a481d0fe62485fd4dffc972と確認仕事48ebac567d00b7df5836709dはCLI成功/成果物保存を確認する。公式Slackには最終返信が1回存在するが、Slackがbare HTTP(S) URLを `<URL>` へ自動変換し、保存本文とのraw完全一致が外れる。sender/markerを公式GETで照合した差分はURL両端の山括弧6文字のみであり、post_unknownを再送しない。変更は本文のこの非labelled HTTP(S) autolink表記だけを比較用に正規化し、既知outbox echoにも同じ比較を適用する。URLそのもの、label付きlink、別sender、marker-only、追加本文は一致と扱わない。provider fixtureのREDに加え、単純な括弧除去ではURL分割を誤受理するfresh review反例をREDで再現する。URL/本文のtoken境界を保持し、日本語/Markdown/JSON/対応する括弧/末尾句読点を扱う比較へ修正する。実際の既存2投稿をfresh GETし、sender+marker+本文一致を各1件、POST0で確認する。HQ51テスト・独立境界18件・fresh review SHIPを確認する。テスト内のMac風pathによるOSS CI失敗は汎用fixtureへ直し、同検証をPASSする。必要CI→main→immutable release→HQ限定apply後に、既存2返信の公式照合と再巡回の送信0で受け入れる。予約待ちの修復PR #9093とはファイル所有を分ける。
 
@@ -27,7 +27,7 @@ HQ-02の契約: failed/interruptedの元依頼/receipt/次操作を別の設定�
 
 切替の実測: 旧ai.anicca.hq-pollerのidleをlock下で確認し、対象だけdisable/bootout、公式disabled/unloadedと旧state hash保持を確認する。main固定release `20261103T005612-cb01fb5c` を非currentで作成し、新HQ3ownerだけにapplyする。別ownerのfleet反映/配信/会計は操作しない。Slack parent1793635034.953579にbounded読み取り確認を1件送信する。最初の自然runでは受信側もworkerも共通のdisk_floor_lowでexit75となり、CLI未開始/card未受信である。受信だけ先に稼働できるという見込みは実測で否定される。Slack上の元依頼を保持して再送せず、capacity回復後の自然runを追う。
 
-HQ-01自己予約の修復: 空き容量回復後の自然runはcapacity_busy/fifo_waitを反復する。schedulerは自然passだが、receiver自身の有効予約中に元controllerがrunningでdispatchを省略し、60秒leaseが次の自然tick前に失効する順序を観測する。既存のrunning ownerを別起動しない保護は維持する。変更範囲は共有 `_run_admitted` のclaim失敗後だけとし、同wakeで自分に予約が回った時に同じidentity/kwargsで一度だけclaimを再試行する。他ownerだけを通常dispatchし、成功後は既存のoccurrence検証・disk/memory/swap再検査・transfer/heartbeat/terminal経路を通す。新pool、上限/lease延長、DB直接変更、他owner停止は行わない。実DBと実子processの回帰4件はRED→GREEN。関連runner/admission/HQの560件と4subtests、Node15件、registry195jobをPASSし、fresh read-only source reviewはSHIP。必要CI→main→HQ限定apply→自然実行/公式thread/再巡回は未完了である。
+HQ-01自己予約の修復: 空き容量回復後の自然runはcapacity_busy/fifo_waitを反復する。schedulerは自然passだが、receiver自身の有効予約中に元controllerがrunningでdispatchを省略し、60秒leaseが次の自然tick前に失効する順序を観測する。既存のrunning ownerを別起動しない保護は維持する。変更範囲は共有 `_run_admitted` のclaim失敗後だけとし、同wakeで自分に予約が回った時に同じidentity/kwargsで一度だけclaimを再試行する。他ownerだけを通常dispatchし、成功後は既存のoccurrence検証・disk/memory/swap再検査・transfer/heartbeat/terminal経路を通す。新pool、上限/lease延長、DB直接変更、他owner停止は行わない。実DBと実子processの回帰4件はRED→GREEN。関連runner/admission/HQの560件と4subtests、Node15件、registry195jobをPASSし、fresh read-only source reviewはSHIP。必要CI全PASS→main b941bc11→HQ限定applyを完了し、後続813695b3で自然実行/公式thread/再巡回を確認する。
 
 容量cursor: PR #9086/main fe2538efの自然cleanupはexit0/pass、scanned/evaluated6000で旧evaluated0飢餓を解消するが、metadata不在の旧scratch6000件は保持し削除0。private同一pack2件、閉じたcache、閉じたsession26件の可逆圧縮、private一時cloneの同一素材1042件のnative COWを検証する。内容/属性/ACL/旧inodeを照合し、禁止storeや稼働ownerを削除しない。空きが4GiB基準を一度超えた後、macOS新規swapfile12の1GiB割当を観測し約3.5GBへ戻る。swap削除/基盤restart/基準引下げをしない。未使用worktreeの同一素材1706件・約2.62GiB割当相当を追加inventoryし、双方worktreeのargv/CWD再確認付き共有化をfresh review後に実施する。追加COWは774件照合済み、使用中へ変化した1件は保持、完了時free4,835,188,736 bytesを実測する。logical重複量を実回収容量へ置換しない。
 
@@ -37,11 +37,19 @@ remote実測: DotsはReasonで受領→着手→独立監査/GO確認→新し�
 
 公開成果: article source PR #9085/main5b874ffc、products bridge PR #842/maina50f6c15、公開workflow41464586193はsuccess。https://aniccaai.com/blog/manager-shared-room-real-work-en はHTTP200、図の公開hashとrelease manifest一致を確認する。desktop1440/mobile390の実ブラウザ画面で本文/図/末尾を確認し、横はみ出しなし。物理iPhoneの受入とは区別する。記事は実装checkpointと未達の限界を明記し、全remote稼働や収益を捏造しない。公開URLは既存HQthreadへ共有し公式readbackを確認する。
 
-自然実行の実測: 定期仕事4a481d0fe62485fd4dffc972は既存Capafy CTA7件を検証し成果物を保存する。PR #9092/main6adf842bはCI完了前の統合となり、x86の既存fleet継続testが3 != 4で失敗する。後続PR #9093の同testを含む全CIはPASSするが、#9092をPASSと書き換えない。全schedule promptにCI公式PASS前の統合禁止と有限runの未完checkpointを追記する。検証GET/HEAD9件はsyntheticとして区別し売上に数えない。読み取り確認48ebac567d00b7df5836709dは公開記事HTTP200/title/release SHAを実取得する。両taskはCLI succeeded、公式Slack最終返信各1件、本文整形の照合待ちであり再送しない。
+自然実行の実測: 定期仕事4a481d0fe62485fd4dffc972は既存Capafy CTA7件を検証し成果物を保存する。PR #9092/main6adf842bはCI完了前の統合となり、x86の既存fleet継続testが3 != 4で失敗する。後続PR #9093の同testを含む全CIはPASSするが、#9092をPASSと書き換えない。全schedule promptにCI公式PASS前の統合禁止と有限runの未完checkpointを追記する。検証GET/HEAD9件はsyntheticとして区別し売上に数えない。読み取り確認48ebac567d00b7df5836709dは公開記事HTTP200/title/release SHAを実取得する。両taskはCLI succeeded、公式Slack最終返信各1件。後続813695b3の自然再巡回でpostedとなり、公式sender+marker+正規化本文一致を各1件、確認操作POST0で照合する。
 
 remote追加実測: muse-relay本人はMuse本人/mention hook ownerではないと訂正し、本人連絡先terminal@htch-runtimeを示す。dr eggbot本人は2時間ごとのinbox-sweepを持つがnative Slack mention hookは無いと回答する。本人所有のsupported wake routeによる修復を同じ担当へ渡し、自然受領/着手/同thread返信を待つ。Muse Relay提案のct別click/sales/円照合表は、既存会計ownerと入力schema/正本への書込経路を確認中であり未稼働のまま保持する。
 
 容量追加実測: 未使用worktree素材のCOWは先行774件と追加346件の内容/属性照合を確認するが、追加処理は空き不足でreceipt書込がENOSPCとなる。既存receipt対象の残存backup/tempは0で、確認済み対象は再処理しない。閉じた大型session2件のcopy圧縮もtemporary_space/ditto失敗で原本保持する。容量は約0.4〜4.9GBへ変動し、macOS swap totalも12〜14.5GiBへ変動する。閾値引下げ/スワップ削除/他owner停止をせず、残り素材の共有化と原本を直接変更しないprivate COW copyの圧縮で回復する。回収logical量を実空き増分と同一視しない。
+
+HQ-01反映・自然受入: PR #9094/head079bbadeの必要CI run41488656361全PASS、HQ51件・独立境界18件・fresh review SHIPを確認し、main813695b31506ef80030da752652888caca564a7dへ統合する。main由来immutable release `20261103T022815-813695b3`を非currentで作成し、team-hq-receive/work/scheduleだけをsupported applyで反映する。install eventはreceive36ae7f26b002c3744bd40ff0/work7e71c855771a621c6e70cc99/scheduleeadc10809512068a43ee1483、loaded argvは同releaseを指す。fleet currentや他ownerを変更しない。自然receive18e44b80de2b22b0-84701、schedule18e44b59a4d72238-76553、work18e44b470bdba408-46492と18e44b9626037b40-89041は同SHAでpass/exit0。既存2件の最終返信ts1793637649.841299/1793637445.901099は保存済み本文と公式sender/markerを照合し各1件、重複0、確認POST0。private receiptは `~/.local/state/life-manager/team-hq/natural-outbox-acceptance.json`。次の毎時仕事e85ac2183688f309e25242dbも自然にqueued→working、着手thread1793641745.962019を作成する。これを完了や売上とは数えない。
+
+継続運用の境界: 受信60秒、worker60秒、定期投入300秒を登録し、毎時収益・09時優先順位・14時Manager R&D・21時成果/費用を設定する。毎時仕事1件は実成果物と公式thread返信まで確認済み、次の毎時仕事は実行中。他3種の時刻到来後の自然業務成果は未確認でHQ-03を開いたままにする。agent枠4/4の一時resource_capacity_busyから自然PASSへ復帰するため、上限増加/他owner予約cancelはしない。plist欠落のstripe-revenue-poller予約が短時間1枠を消費した債務は残るが、予約入替とworker進行を確認し永久停止と断定しない。
+
+容量回復の確定範囲: 閉じた大型session2件はprivate COW copyを圧縮し全内容/属性を検証、割当888434688 bytes減を確認する。閉じたworktreeの同一asset266件とtext83件を追加共有化し、RENAME_SWAPによるatomic-save競合保護を9fixtureとfresh review SHIPで確認する。使用中/競合候補は保持する。完了済み自所有2checkoutと未管理・clean・main祖先・未使用の4checkoutはGit sparse-checkoutでmemory/state内容と属性を保持して縮小する。未使用worktreeの再生成可能pyc2167件をsource存在/owner不使用確認後に除去する。実空きは約7.5GBを観測するが他processの割当と混在するため全差分を自分の回収量へ帰属させない。別owner codex-anicca-weekly-20261103のiOS作業/Simulator/leaseは保護し、swap/runtime/deviceの削除やrestartはしない。
+
+remote本人・予算の追加境界: Muse RelayはMuse本人でもmention hook ownerでもない。本人terminal@htch-runtimeへ既存修復を引き継ぎ、自然同thread返信は未確認。Reason cursorの返答は以前dr eggbot、後続Fuckerと自己識別し、同じaddressを同一agent/予算と推定しない。後者は有料2回/日・02:35/14:35 sweepと自己報告するため上限を保ち、24時間即時wakeと数えない。本人所有webhookによるReason wake_meは候補であり、未作成/費用cap未検証のまま有効化しない。承認待ちではなく本人identity/receiver owner/実際の受信証拠を次操作とする。DotsのReason共同作業は実証済みだがSlack未設定、Rockwellの実経路は未確認。Muse Relay提案のct別click/sales/円表は既存会計owner/schema/正本確認待ち。共有Slack bot表示名や登録105席を独立予算/稼働105人と数えない。
 
 ## CAPAFY-CT-READBACK — 既存購入導線の計測支援
 
