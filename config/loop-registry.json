@@ -4906,6 +4906,91 @@
       "resource_class": "deterministic",
       "state_root": "~/.local/state/life-manager/x402-sell",
       "priority": "support"
+    },
+    "team-hq-receive": {
+      "adapter": "python",
+      "admission_class": "revenue",
+      "cadence": {
+        "start_interval_seconds": 60
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "coalesce_queued_wakes": true,
+      "reconcile_queued_release": true,
+      "coalesce_reserved_wakes": true,
+      "command": [
+        "receive"
+      ],
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "bin/team-hq.py",
+      "label": "ai.anicca.team-hq-receive",
+      "log_root": "~/.local/state/life-manager/team-hq-receive/logs",
+      "priority": "revenue",
+      "provider_route": "deterministic",
+      "resource_class": "deterministic",
+      "runtime_timeout_seconds": 180,
+      "state_root": "~/.local/state/life-manager/team-hq-receive",
+      "system_role": "control"
+    },
+    "team-hq-work": {
+      "adapter": "python",
+      "admission_effect_scope": "occurrence",
+      "admission_class": "revenue",
+      "cadence": {
+        "start_interval_seconds": 60
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "coalesce_queued_wakes": true,
+      "reconcile_queued_release": true,
+      "coalesce_reserved_wakes": true,
+      "command": [
+        "work"
+      ],
+      "domain": "system",
+      "effect_class": "message",
+      "entrypoint": "bin/team-hq.py",
+      "label": "ai.anicca.team-hq-work",
+      "log_root": "~/.local/state/life-manager/team-hq-work/logs",
+      "priority": "revenue",
+      "provider_route": "shared-agent-runner",
+      "resource_class": "agent",
+      "runtime_timeout_seconds": 1500,
+      "state_root": "~/.local/state/life-manager/team-hq-work",
+      "system_role": "shared"
+    },
+    "team-hq-schedule": {
+      "adapter": "python",
+      "admission_class": "revenue",
+      "cadence": {
+        "start_interval_seconds": 300
+      },
+      "cleanup": {
+        "max_age_days": 14,
+        "max_runs": 100
+      },
+      "coalesce_queued_wakes": true,
+      "reconcile_queued_release": true,
+      "coalesce_reserved_wakes": true,
+      "command": [
+        "schedule"
+      ],
+      "domain": "system",
+      "effect_class": "none",
+      "entrypoint": "bin/team-hq.py",
+      "label": "ai.anicca.team-hq-schedule",
+      "log_root": "~/.local/state/life-manager/team-hq-schedule/logs",
+      "priority": "revenue",
+      "provider_route": "deterministic",
+      "resource_class": "deterministic",
+      "runtime_timeout_seconds": 180,
+      "state_root": "~/.local/state/life-manager/team-hq-schedule",
+      "system_role": "control"
     }
   },
   "guarded_retired_labels": {

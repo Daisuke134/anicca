@@ -1,0 +1,628 @@
+"""Finite Slack receive, single-task work, and schedule entrypoints."""
+
+from __future__ import annotations
+
+import argparse
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import signal
+import sqlite3
+import subprocess
+import tempfile
+import time
+import urllib.parse
+import urllib.request
+
+
+class HQError(RuntimeError):
+    """A bounded diagnostic that never includes provider payloads or secrets."""
+
+
+class SlackRejected(HQError):
+    pass
+
+
+def checked(response):
+    if not isinstance(response, dict) or response.get("ok") is not True:
+        raise SlackRejected("Slack API が成功を返していません")
+    return response
+
+
+class SlackAPI:
+    def __init__(self, token):
+        self.token = token
+
+    def call(self, method, **parameters):
+        request = urllib.request.Request(
+            "https://slack.com/api/" + method,
+            data=urllib.parse.urlencode(parameters).encode(),
+            headers={"Authorization": "Bearer " + self.token},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=20) as response:
+                payload = json.load(response)
+        except Exception:
+            raise HQError("Slack API の応答を確認できません") from None
+        return checked(payload)
+
+
+def atomic_text(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    descriptor, temporary = tempfile.mkstemp(prefix=".hq-", dir=path.parent)
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(value)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+        directory = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def atomic_json(path, value):
+    atomic_text(path, json.dumps(value, ensure_ascii=False, sort_keys=True))
+
+
+def slack_time(value):
+    try:
+        timestamp = Decimal(str(value))
+        if not timestamp.is_finite() or timestamp < 0:
+            raise ValueError
+        return timestamp
+    except (InvalidOperation, ValueError):
+        raise HQError("Slack timestamp が不正です") from None
+
+
+def load_config(path):
+    path = Path(path).expanduser().resolve()
+    try:
+        config = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise HQError("HQ 設定を読み取れません") from None
+    for field in ("token_file", "state_dir", "legacy_state_file"):
+        if field in config:
+            value = Path(config[field]).expanduser()
+            config[field] = str(value if value.is_absolute() else path.parent / value)
+    config.setdefault("legacy_state_file", str(path.parent / "state.json"))
+    return config
+
+
+class HQ:
+    def __init__(self, config, *, api=None):
+        self.config = config
+        try:
+            self.channel = config["channel_id"]
+            self.root = Path(config["state_dir"]).expanduser()
+            self.agents = {agent["id"]: agent for agent in config["agents"]}
+            if (not isinstance(self.channel, str) or not self.channel or not self.agents
+                    or len(self.agents) != len(config["agents"])):
+                raise ValueError
+            for identity, agent in self.agents.items():
+                mentions = agent["mention"]
+                if isinstance(mentions, str):
+                    mentions = [mentions]
+                if (not isinstance(identity, str) or not identity
+                        or not isinstance(mentions, list) or not mentions
+                        or not all(isinstance(item, str) and item for item in mentions)
+                        or not isinstance(agent["command"], list) or not agent["command"]
+                        or not all(isinstance(item, str) and item for item in agent["command"])
+                        or not Path(agent["cwd"]).expanduser().is_dir()):
+                    raise ValueError
+            token = Path(config["token_file"]).expanduser().read_text(encoding="utf-8").strip()
+            if not token:
+                raise ValueError
+            self.token = token
+            self.timeout = float(config.get("timeout_seconds", 900))
+            if not 0 < self.timeout <= 86400:
+                raise ValueError
+            for field, default in (("max_history_pages", 5), ("max_threads_per_poll", 10), ("max_thread_pages", 2)):
+                value = config.get(field, default)
+                if type(value) is not int or value <= 0:
+                    raise ValueError
+                setattr(self, field, value)
+            self.lookback_days = float(config.get("lookback_days", 7))
+            self.receive_budget = float(config.get("receive_budget_seconds", 100))
+            if not 0 < self.lookback_days <= 365 or not 0 < self.receive_budget <= 120:
+                raise ValueError
+        except (KeyError, TypeError, ValueError, OSError):
+            raise HQError("HQ 設定またはprivate credential参照が不正です") from None
+        if self.root.is_symlink():
+            raise HQError("HQ state directory は実directoryが必要です")
+        self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.root.chmod(0o700)
+        self.database = self.root / "tasks.sqlite3"
+        self.api = api or SlackAPI(token)
+        self.initialize()
+
+    @contextmanager
+    def connect(self):
+        database = sqlite3.connect(self.database, timeout=30)
+        database.row_factory = sqlite3.Row
+        try:
+            with database:
+                yield database
+        finally:
+            database.close()
+
+    @contextmanager
+    def lock(self, role):
+        descriptor = os.open(self.root / (role + ".lock"), os.O_CREAT | os.O_RDWR, 0o600)
+        try:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                raise HQError("同じHQ ownerが実行中です") from None
+            yield
+        finally:
+            os.close(descriptor)
+
+    def initialize(self):
+        with self.connect() as database:
+            database.executescript("""
+                CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS legacy_done (ts TEXT PRIMARY KEY);
+                CREATE TABLE IF NOT EXISTS threads (ts TEXT PRIMARY KEY, cursor TEXT NOT NULL, polled REAL NOT NULL DEFAULT 0);
+                CREATE TABLE IF NOT EXISTS messages (
+                    ts TEXT PRIMARY KEY, thread_ts TEXT NOT NULL, text TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id TEXT PRIMARY KEY, source_key TEXT NOT NULL, source_ts TEXT,
+                    thread_ts TEXT, owner_id TEXT NOT NULL, body TEXT NOT NULL,
+                    status TEXT NOT NULL, created REAL NOT NULL, updated REAL NOT NULL,
+                    checkpoint TEXT NOT NULL, next TEXT NOT NULL, result_path TEXT,
+                    exit_code INTEGER, reply_state TEXT NOT NULL DEFAULT 'none',
+                    reply_text TEXT, marker TEXT NOT NULL, reply_ts TEXT, delivery_error TEXT,
+                    proof TEXT NOT NULL DEFAULT '[]',
+                    UNIQUE(source_key, owner_id));
+            """)
+            # The private DB may already have been prepared by an earlier source build.
+            for table, column, definition in (("tasks", "proof", "TEXT NOT NULL DEFAULT '[]'"),
+                                              ("threads", "polled", "REAL NOT NULL DEFAULT 0")):
+                if column not in {row[1] for row in database.execute("PRAGMA table_info(" + table + ")")}:
+                    database.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition)
+            database.commit()
+            database.execute("BEGIN IMMEDIATE")
+            if not database.execute("SELECT 1 FROM meta WHERE key='legacy_imported'").fetchone():
+                legacy = Path(self.config.get("legacy_state_file", self.root / "state.json")).expanduser()
+                if legacy.exists():
+                    try:
+                        previous = json.loads(legacy.read_text(encoding="utf-8"))
+                        cutoff = str(previous.get("last", "0"))
+                        slack_time(cutoff)
+                        done = previous.get("done", [])
+                        if not isinstance(done, list):
+                            raise ValueError
+                        database.executemany("INSERT OR IGNORE INTO legacy_done VALUES (?)", [(str(ts),) for ts in done])
+                        database.execute("INSERT INTO meta VALUES ('legacy_cutoff', ?)", (cutoff,))
+                    except (OSError, ValueError, TypeError):
+                        raise HQError("旧HQ stateの移行を確認できません") from None
+                database.execute("INSERT INTO meta VALUES ('legacy_imported', '1')")
+        self.database.chmod(0o600)
+
+    def pages(self, method, **parameters):
+        cursor, seen = "", set()
+        while True:
+            payload = checked(self.api.call(method, **parameters, **({"cursor": cursor} if cursor else {})))
+            messages = payload.get("messages")
+            if not isinstance(messages, list):
+                raise HQError("Slack message一覧が不正です")
+            yield messages
+            cursor = payload.get("response_metadata", {}).get("next_cursor", "").strip()
+            if not cursor:
+                if payload.get("has_more"):
+                    raise HQError("Slack pagination cursorが不足しています")
+                return
+            if cursor in seen:
+                raise HQError("Slack pagination cursorが循環しています")
+            seen.add(cursor)
+
+    def clean(self, text):
+        return str(text).replace(self.token, "[秘密値を除去]")
+
+    @staticmethod
+    def addressed(text, mention):
+        if mention.startswith("<@"):
+            return mention in text
+        start = 0
+        word = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+        while (index := text.find(mention, start)) >= 0:
+            end = index + len(mention)
+            if (index == 0 or text[index - 1] not in word) and (end == len(text) or text[end] not in word):
+                return True
+            start = end
+        return False
+
+    def insert_task(self, database, source_key, agent, body, *, source_ts=None, thread_ts=None):
+        task_id = hashlib.sha256((source_key + "\0" + agent).encode()).hexdigest()[:24]
+        instant = time.time()
+        cursor = database.execute("""
+            INSERT OR IGNORE INTO tasks
+              (id,source_key,source_ts,thread_ts,owner_id,body,status,created,updated,checkpoint,next,marker)
+              VALUES (?,?,?,?,?,?,'queued',?,?,'received','claim_and_execute',?)
+        """, (task_id, source_key, source_ts, thread_ts, agent, self.clean(body),
+              instant, instant, "[hq:" + task_id + "]"))
+        return cursor.rowcount
+
+    def store_messages(self, messages):
+        added = 0
+        with self.connect() as database:
+            cutoff_row = database.execute("SELECT value FROM meta WHERE key='legacy_cutoff'").fetchone()
+            cutoff = slack_time(cutoff_row[0]) if cutoff_row else Decimal(0)
+            for message in messages:
+                ts = str(message["ts"])
+                timestamp = slack_time(ts)
+                thread = str(message.get("thread_ts") or ts)
+                slack_time(thread)
+                text = self.clean(message.get("text", ""))
+                database.execute("INSERT OR REPLACE INTO messages VALUES (?,?,?)", (ts, thread, text))
+                database.execute("INSERT OR IGNORE INTO threads(ts,cursor) VALUES (?,?)", (thread, thread))
+                if timestamp <= cutoff or database.execute("SELECT 1 FROM legacy_done WHERE ts=?", (ts,)).fetchone():
+                    continue
+                for identity, agent in self.agents.items():
+                    prefix = str(agent.get("prefix", identity))
+                    if text.casefold().startswith(("[" + prefix + "]").casefold()):
+                        continue
+                    mentions = agent["mention"]
+                    if isinstance(mentions, str):
+                        mentions = [mentions]
+                    if any(self.addressed(text, mention) for mention in mentions):
+                        added += self.insert_task(database, "slack:" + self.channel + ":" + ts,
+                                                  identity, text, source_ts=ts, thread_ts=thread)
+        return added
+
+    def receive_scan(self, method, key, oldest, maximum, deadline, **parameters):
+        with self.connect() as database:
+            saved = database.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+        scan = json.loads(saved[0]) if saved else {"oldest": oldest, "cursor": "", "newest": oldest}
+        queued = 0
+        for _ in range(maximum):
+            if time.monotonic() >= deadline:
+                break
+            payload = checked(self.api.call(method, channel=self.channel, oldest=scan["oldest"], limit=100,
+                                           **parameters, **({"cursor": scan["cursor"]} if scan["cursor"] else {})))
+            messages = payload.get("messages")
+            if not isinstance(messages, list):
+                raise HQError("Slack message一覧が不正です")
+            queued += self.store_messages(messages)
+            scan["newest"] = str(max([slack_time(scan["newest"])] + [slack_time(message["ts"]) for message in messages]))
+            next_cursor = payload.get("response_metadata", {}).get("next_cursor", "").strip()
+            if next_cursor and next_cursor == scan["cursor"]:
+                raise HQError("Slack pagination cursorが循環しています")
+            if not next_cursor and payload.get("has_more"):
+                raise HQError("Slack pagination cursorが不足しています")
+            scan["cursor"] = next_cursor
+            with self.connect() as database:
+                if next_cursor:
+                    database.execute("INSERT OR REPLACE INTO meta VALUES (?,?)", (key, json.dumps(scan)))
+                else:
+                    database.execute("DELETE FROM meta WHERE key=?", (key,))
+            if not next_cursor:
+                return queued, scan["newest"], True
+        return queued, scan["newest"], False
+
+    def receive(self):
+        with self.lock("receive"):
+            deadline = time.monotonic() + self.receive_budget
+            with self.connect() as database:
+                cursor = database.execute("SELECT value FROM meta WHERE key='history_cursor'").fetchone()
+            oldest = cursor[0] if cursor else str(max(0, int(time.time() - self.lookback_days * 86400)))
+            queued, newest, complete = self.receive_scan("conversations.history", "scan:history", oldest,
+                                                         self.max_history_pages, deadline)
+            if complete:
+                with self.connect() as database:
+                    database.execute("INSERT OR REPLACE INTO meta VALUES ('history_cursor', ?)", (newest,))
+            with self.connect() as database:
+                threads = [dict(row) for row in database.execute("SELECT * FROM threads ORDER BY polled,ts LIMIT ?", (self.max_threads_per_poll,))]
+            for thread in threads:
+                if time.monotonic() >= deadline:
+                    break
+                added, latest, finished = self.receive_scan("conversations.replies", "scan:thread:" + thread["ts"],
+                                                            thread["cursor"], self.max_thread_pages, deadline, ts=thread["ts"])
+                queued += added
+                with self.connect() as database:
+                    database.execute("UPDATE threads SET cursor=?,polled=? WHERE ts=?",
+                                     (latest if finished else thread["cursor"], time.time(), thread["ts"]))
+            with self.connect() as database:
+                database.execute("INSERT OR REPLACE INTO meta VALUES ('last_poll', ?)", (str(time.time()),))
+            return {"ok": True, "queued": queued}
+
+    def claim(self):
+        with self.connect() as database:
+            database.execute("BEGIN IMMEDIATE")
+            row = database.execute("SELECT * FROM tasks WHERE status='queued' ORDER BY created,id LIMIT 1").fetchone()
+            if row is None:
+                return None
+            database.execute("UPDATE tasks SET status='working',updated=?,checkpoint='executing',next='await_execution_receipt' WHERE id=?",
+                             (time.time(), row["id"]))
+            return dict(database.execute("SELECT * FROM tasks WHERE id=?", (row["id"],)).fetchone())
+
+    def task_directory(self, task):
+        directory = self.root / "results" / task["id"]
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        return directory
+
+    def prompt(self, task):
+        with self.connect() as database:
+            messages = [dict(row) for row in database.execute("SELECT * FROM messages WHERE thread_ts=?", (task["thread_ts"],))]
+        context = "\n".join(row["text"] for row in sorted(messages, key=lambda row: slack_time(row["ts"]))[-30:])[-12000:]
+        return (
+            f"あなたは共同創業チームの {task['owner_id']}。既存の共有部屋 #agents-hq から有限の仕事を引き受けます。\n"
+            "単なる返信ではなく、依頼に必要な実仕事を進め、成果物と検証根拠を残してください。まず対象repoのAGENTS、"
+            "正本spec、docs/team/BOARDと既存owner/leaseを確認し、重複する仕事や進行中effectを保護してください。"
+            "大きな仕事の選択と優先順位はあなたが判断し、通常の技術判断や既に依頼された作業で承認待ちにしません。"
+            "秘密値を読者向け出力へ含めず、未確認の外部効果や売上を成功と断定しません。外部effectが不明な仕事は"
+            "blind retryやownerの自動再割当をせず、既存receiptを照合して具体的な次操作を残してください。\n"
+            "結果は日本語で簡潔に報告し、最後に STATE {\"status\":\"現在状態\",\"next\":\"次の操作\","
+            "\"proof\":[\"成果物pathまたは確認済みURL\"]} の1行を付けてください。"
+            "プロセスの正常終了と事業成果の確認を分けてください。返信は自動で元threadへ送信されます。\n"
+            f"task_id: {task['id']}\n依頼:\n{task['body']}\n\n保存済みthread:\n{context}\n"
+        )
+
+    def execute(self, task):
+        directory = self.task_directory(task)
+        artifact = directory / "artifact.txt"
+        agent = self.agents[task["owner_id"]]
+        command = [part.replace("{artifact}", str(artifact)) for part in agent["command"]]
+        code, status, checkpoint, output = None, "failed", "launch_failed_handoff_required", ""
+        process = None
+        previous = {}
+
+        def interrupted(_signum, _frame):
+            raise InterruptedError
+
+        def stop():
+            if process is None:
+                return
+            try:
+                os.killpg(process.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            try:
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                pass
+            # The leader may have exited before a descendant. Retire the entire owned group.
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait()
+
+        with tempfile.TemporaryFile() as stdout:
+            try:
+                for signum in (signal.SIGTERM, signal.SIGINT):
+                    previous[signum] = signal.signal(signum, interrupted)
+                process = subprocess.Popen(command, cwd=Path(agent["cwd"]).expanduser(), stdin=subprocess.PIPE,
+                                           stdout=stdout, stderr=subprocess.DEVNULL, start_new_session=True,
+                                           shell=False)
+                process.communicate(self.prompt(task).encode(), timeout=self.timeout)
+                code = process.returncode
+                status = "succeeded" if code == 0 else "failed"
+                checkpoint = "execution_recorded" if code == 0 else "exit_failed_handoff_required"
+            except subprocess.TimeoutExpired:
+                stop()
+                code, checkpoint = process.returncode, "timeout_handoff_required"
+            except InterruptedError:
+                stop()
+                code = process.returncode if process else None
+                status, checkpoint = "interrupted", "interrupted_handoff_required"
+            except OSError:
+                stop()
+            finally:
+                for signum, handler in previous.items():
+                    signal.signal(signum, handler)
+            if artifact.is_symlink():
+                status, checkpoint = "failed", "artifact_invalid_handoff_required"
+            elif artifact.is_file():
+                with artifact.open("rb") as stream:
+                    stream.seek(max(0, artifact.stat().st_size - 20000))
+                    output = stream.read().decode("utf-8", "replace")
+            else:
+                stdout.seek(0, os.SEEK_END)
+                stdout.seek(max(0, stdout.tell() - 20000))
+                output = stdout.read().decode("utf-8", "replace")
+        output = self.clean(output).strip()
+        atomic_text(artifact, output)
+        state = {}
+        for line in reversed(output.splitlines()):
+            if line.startswith("STATE "):
+                try:
+                    reported = json.loads(line[6:])
+                    if isinstance(reported, dict):
+                        state = reported
+                except ValueError:
+                    pass
+                break
+        receipt = {"task_id": task["id"], "owner_id": task["owner_id"], "status": status,
+                   "execution_status": status, "exit_code": code, "checkpoint": checkpoint,
+                   "business_outcome": "unverified", "agent_state": state,
+                   "artifact_path": str(artifact), "output": output, "updated": time.time()}
+        atomic_json(directory / "result.json", receipt)
+        return receipt
+
+    def finish(self, task, receipt):
+        if receipt.get("task_id") != task["id"] or receipt.get("owner_id") != task["owner_id"]:
+            raise HQError("実行receiptとcardの本人が一致しません")
+        outcome = receipt["status"]
+        summary = "実行終了（事業成果は未検証）" if outcome == "succeeded" else "実行失敗・要引き継ぎ（外部効果は未確定）"
+        prefix = self.agents[task["owner_id"]].get("prefix", task["owner_id"])
+        reply = f"[{prefix}] {summary}\ntask: {task['id']}\n{receipt.get('output', '')[-2800:]}\n{task['marker']}"
+        next_action = receipt.get("agent_state", {}).get("next") or (
+            "verify_business_outcome" if outcome == "succeeded" else "inspect_receipt_before_handoff")
+        with self.connect() as database:
+            database.execute("""UPDATE tasks SET status=?,updated=?,checkpoint=?,next=?,result_path=?,exit_code=?,
+                reply_state='reply_pending',reply_text=?,proof=? WHERE id=? AND status='working'""",
+                (outcome, time.time(), receipt["checkpoint"], str(next_action),
+                 str(self.task_directory(task) / "result.json"), receipt.get("exit_code"), self.clean(reply),
+                 json.dumps(receipt.get("agent_state", {}).get("proof", []), ensure_ascii=False), task["id"]))
+
+    def recover(self):
+        with self.connect() as database:
+            working = [dict(row) for row in database.execute("SELECT * FROM tasks WHERE status='working'")]
+            database.execute("UPDATE tasks SET reply_state='post_unknown',updated=? WHERE reply_state='posting'", (time.time(),))
+        for task in working:
+            path = self.task_directory(task) / "result.json"
+            if path.is_file():
+                try:
+                    receipt = json.loads(path.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    raise HQError("実行receiptを読み取れません。自動再実行はしません") from None
+            else:
+                receipt = {"task_id": task["id"], "owner_id": task["owner_id"], "status": "interrupted",
+                           "checkpoint": "crash_handoff_required", "business_outcome": "unverified",
+                           "agent_state": {}, "output": "前ownerが中断しています。外部effectを照合してから引き継いでください。"}
+                atomic_json(path, receipt)
+            self.finish(task, receipt)
+
+    def marker_readback(self, task):
+        method = "conversations.replies" if task["thread_ts"] else "conversations.history"
+        parameters = {"channel": self.channel, "limit": 100}
+        if task["thread_ts"]:
+            parameters["ts"] = task["thread_ts"]
+        for messages in self.pages(method, **parameters):
+            for message in messages:
+                if task["marker"] in message.get("text", "") and message.get("text") == task["reply_text"]:
+                    return str(message["ts"])
+        return None
+
+    def deliver(self, task):
+        task = dict(task)
+        if task["reply_state"] == "reply_pending":
+            with self.connect() as database:
+                database.execute("UPDATE tasks SET reply_state='posting',updated=? WHERE id=?", (time.time(), task["id"]))
+            parameters = {"channel": self.channel, "text": task["reply_text"]}
+            if task["thread_ts"]:
+                parameters["thread_ts"] = task["thread_ts"]
+            try:
+                checked(self.api.call("chat.postMessage", **parameters))
+            except SlackRejected:
+                with self.connect() as database:
+                    database.execute("UPDATE tasks SET reply_state='reply_pending',delivery_error='slack_rejected',updated=? WHERE id=?",
+                                     (time.time(), task["id"]))
+                return {"ok": False, "task_id": task["id"], "reply_state": "reply_pending"}
+            except Exception:
+                pass  # A network exception cannot prove that Slack did not accept the post.
+            with self.connect() as database:
+                database.execute("UPDATE tasks SET reply_state='post_unknown',updated=? WHERE id=?", (time.time(), task["id"]))
+        try:
+            timestamp = self.marker_readback(task)
+        except Exception:
+            timestamp = None
+        if not timestamp:
+            with self.connect() as database:
+                database.execute("UPDATE tasks SET updated=?,delivery_error='marker_not_verified' WHERE id=?", (time.time(), task["id"]))
+            return {"ok": False, "task_id": task["id"], "reply_state": "post_unknown"}
+        with self.connect() as database:
+            database.execute("UPDATE tasks SET reply_state='posted',reply_ts=?,delivery_error=NULL,updated=? WHERE id=?",
+                             (timestamp, time.time(), task["id"]))
+            database.execute("INSERT OR IGNORE INTO threads(ts,cursor) VALUES (?,?)", (task["thread_ts"] or timestamp, timestamp))
+        return {"ok": True, "task_id": task["id"], "execution_status": task["status"],
+                "business_outcome": "unverified", "reply_state": "posted", "message_ts": timestamp}
+
+    def hint(self, *, task_id=None, message_ts=None):
+        path = os.environ.get("LIFE_MANAGER_RESULT_HINT_PATH")
+        if path:
+            atomic_json(path, {"schema_version": 1, "kind": "team_hq_result",
+                              "owner_id": os.environ.get("LIFE_MANAGER_LOOP_ID"),
+                              "occurrence_id": os.environ.get("LIFE_MANAGER_OCCURRENCE_ID"),
+                              "status": "verified" if message_ts else "no_effect",
+                              "channel_id": self.channel, "message_ts": message_ts, "task_id": task_id})
+
+    def work(self):
+        with self.lock("work"):
+            hint_path = os.environ.get("LIFE_MANAGER_RESULT_HINT_PATH")
+            if hint_path:
+                Path(hint_path).unlink(missing_ok=True)
+            self.recover()
+            with self.connect() as database:
+                pending = database.execute("SELECT * FROM tasks WHERE reply_state IN ('reply_pending','post_unknown') ORDER BY updated,id LIMIT 1").fetchone()
+            unresolved = None
+            if pending:
+                result = self.deliver(pending)
+                if result["ok"]:
+                    self.hint(task_id=pending["id"], message_ts=result["message_ts"])
+                    return result
+                if pending["reply_state"] == "reply_pending":
+                    return result
+                unresolved = result
+            task = self.claim()
+            if task is None:
+                if unresolved:
+                    return unresolved
+                self.hint()
+                return {"ok": True, "task_id": None, "status": "idle"}
+            if task["status"] == "working":
+                self.finish(task, self.execute(task))
+                with self.connect() as database:
+                    task = dict(database.execute("SELECT * FROM tasks WHERE id=?", (task["id"],)).fetchone())
+            result = self.deliver(task)
+            if result["ok"] and result.get("message_ts"):
+                self.hint(task_id=task["id"], message_ts=result["message_ts"])
+            return result
+
+    def schedule(self, *, now=None):
+        instant = time.time() if now is None else now
+        local = datetime.fromtimestamp(instant, timezone(timedelta(hours=9)))
+        queued = 0
+        with self.lock("schedule"), self.connect() as database:
+            for schedule in self.config.get("schedules", []):
+                if schedule.get("agent") not in self.agents or not isinstance(schedule.get("id"), str):
+                    raise HQError("scheduleのownerまたはidが不正です")
+                if ("interval_seconds" in schedule) == ("hours_jst" in schedule):
+                    raise HQError("scheduleはinterval_secondsまたはhours_jstの一方が必要です")
+                if "interval_seconds" in schedule:
+                    interval = schedule["interval_seconds"]
+                    if not isinstance(interval, int) or isinstance(interval, bool) or interval <= 0:
+                        raise HQError("schedule intervalが不正です")
+                    slots = [str(int(instant // interval))]
+                else:
+                    hours = schedule["hours_jst"]
+                    if not isinstance(hours, list) or not hours or not all(type(hour) is int and 0 <= hour <= 23 for hour in hours):
+                        raise HQError("schedule hours_jstが不正です")
+                    slots = [f"{local.date().isoformat()}T{hour:02d}" for hour in hours if hour <= local.hour]
+                for slot in slots:
+                    queued += self.insert_task(database, "schedule:" + schedule["id"] + ":" + slot,
+                                               schedule["agent"], schedule.get("prompt", "共同創業者として現在最優先の実仕事を選び進めてください。"))
+        return {"ok": True, "queued": queued}
+
+    def status(self):
+        with self.connect() as database:
+            counts = dict(database.execute("SELECT status,count(*) FROM tasks GROUP BY status"))
+            last = database.execute("SELECT value FROM meta WHERE key='last_poll'").fetchone()
+            tasks = [dict(row) for row in database.execute("""SELECT id,owner_id,status,updated,checkpoint,next,result_path,reply_state,proof
+                FROM tasks ORDER BY updated DESC LIMIT 50""")]
+            handoff = database.execute("SELECT count(*) FROM tasks WHERE status IN ('failed','interrupted')").fetchone()[0]
+        for task in tasks:
+            task["proof"] = json.loads(task["proof"])
+        return {"ok": True, "counts": counts, "handoff_required": handoff,
+                "last_poll": float(last[0]) if last else None, "tasks": tasks}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="既存チーム部屋の有限HQ runtime")
+    parser.add_argument("command", choices=("receive", "work", "schedule", "status"))
+    args = parser.parse_args(argv)
+    try:
+        config = load_config(os.environ.get("TEAM_HQ_CONFIG", "~/.config/anicca-hq/team.json"))
+        runtime = HQ(config)
+        result = getattr(runtime, args.command)()
+    except Exception as error:
+        result = {"ok": False, "error": str(error) if isinstance(error, HQError) else "HQ runtimeで内部エラーが発生しました"}
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+    return 0 if result["ok"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -38,6 +38,8 @@ CONTROL_PLANE_SAFETY_LOOPS = frozenset({
     "life-manager-release-reconciler",
 })
 OCCURRENCE_SCOPED_ENTRYPOINTS = {
+    # HQ fences each durable task/reply; one uncertain reply must not stop other work.
+    "bin/team-hq.py",
     "skills/cfo/run.sh",
     "apps/life-manager/scripts/mobile-app",
     "apps/life-manager/scripts/instagram-metrics-production-boot.sh",
