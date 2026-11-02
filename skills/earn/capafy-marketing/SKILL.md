@@ -152,7 +152,11 @@ NOT @aniccaxxx as `$LIFE_MANAGER_REPO/skills/x-poster/SKILL.md` claims.
 `build_landing.py` links every online listing card to `/go/<agent_id>`. The Netlify
 Function records one immutable Netlify Blob per valid click and redirects to the
 Capafy listing with the Instagram bio UTM parameters. `/go-stats` returns cumulative
-counts. Immediately after `ig_metrics.py`, the daily caller runs
+counts excluding the exact verified synthetic campaign `x/test_hq_4a481d`;
+`?detail=1` exposes its retained raw-record count as `excluded_synthetic`. Raw blobs
+are preserved. Other legacy or test-looking names are not automatically excluded.
+A corrected cumulative count below an older ledger baseline produces an unknown
+window delta, rather than a negative count. Immediately after `ig_metrics.py`, the daily caller runs
 `scripts/pull_attribution.py` non-fatally; it joins those counts to the current
 `GET /agent/agents` sales snapshot and appends at most one dated row per day to
 `~/.local/state/life-manager/state/capafy-attribution.jsonl`.
