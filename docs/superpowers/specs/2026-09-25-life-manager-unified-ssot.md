@@ -51,6 +51,14 @@ HQ-01反映・自然受入: PR #9094/head079bbadeの必要CI run41488656361全PA
 
 remote本人・予算の追加境界: Muse RelayはMuse本人でもmention hook ownerでもない。本人terminal@htch-runtimeへ既存修復を引き継ぎ、自然同thread返信は未確認。Reason cursorの返答は以前dr eggbot、後続Fuckerと自己識別し、同じaddressを同一agent/予算と推定しない。後者は有料2回/日・02:35/14:35 sweepと自己報告するため上限を保ち、24時間即時wakeと数えない。本人所有webhookによるReason wake_meは候補であり、未作成/費用cap未検証のまま有効化しない。承認待ちではなく本人identity/receiver owner/実際の受信証拠を次操作とする。DotsのReason共同作業は実証済みだがSlack未設定、Rockwellの実経路は未確認。Muse Relay提案のct別click/sales/円表は既存会計owner/schema/正本確認待ち。共有Slack bot表示名や登録105席を独立予算/稼働105人と数えない。
 
+## CAPAFY-SYNTHETIC-CLICKS — 検証クリックの分離
+
+目的/範囲: 既存公式証拠 `docs/evidence/capafy-ct-readback-4a481d.json` で確定した9件のprobeを配信先計測から分離する。owner=home-codex-e85ac2、task=e85ac2183688f309e25242db、branch=fix/revenue-attribution-e85ac2、worktree=.worktrees/revenue-attribution-e85ac2。BOARD既存担当と専用worktree lockを照合し、CT readback laneは検証完了、HQ/会計/投稿は他ownerのまま保持する。
+
+契約: exact `x/test_hq_4a481d` だけを通常total/counts/platforms/postsから除き、detail.excluded_syntheticへ件数を出す。legacy・類似名・別platformは推測で除外しない。raw blobと過去ledgerを変更しない。既存counter低下時のwindow_clicks=Noneを保持し、負数や実流入0と断定しない。
+
+完了条件/順序: focused RED→最小修正→関連tests→CI公式全PASS→main統合→対象Netlifyの既存deploy手順/owner照合→限定反映→GET go-stats公式readbackでprobe9件の分離とraw保存を確認する。新probe・購入・投稿・会計変更0。有限run内にCI/反映が終わらなければbranch/PR/evidence/残TODOを永続化する。全体TODO順序は不変。現在cursor=focused RED。
+
 ## CAPAFY-CT-READBACK — 既存購入導線の計測支援
 
 目的: 既存7商品に対し公開`/go/<id>/x/<probe>?ct=<probe>`のHTTP Locationを公式readbackし、対象ID・ct保持・click counterを照合する。配信や会計のownerを代行せず、投稿/価格/購入/ledger/fence/HQ runtimeを変更しない。

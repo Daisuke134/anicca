@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / CAPAFY-SYNTHETIC-CLICKS] claim: `fix/revenue-attribution-e85ac2`、task `e85ac2183688f309e25242db`。所有: go-stats集計・既存test・関連skill記述・本行・正本の本laneのみ。公式照合済みprobe `x/test_hq_4a481d` 9件を通常クリックから分離する。raw blob・会計・投稿・TEAM-HQ・他owner/effectは変更しない。
 - [home-codex / CAPAFY-CT-READBACK] 検証完了・統合中: `docs/capafy-ct-readback-4a481d`、task `4a481d0fe62485fd4dffc972`。所有: 既存7商品CTAの公開redirect/ct保持とclick counterの限定検証、sanitize済み証拠と本行。投稿・会計・商品・TEAM-HQ runtime・既存effect fenceは変更しない。
 - [Codex / Anicca816再リジェクト] 完了: PR9095/main b1abc608、審査情報のC商品不一致を修正、Release Maestro2/2 PASS、1.9.6(816)とLifetimeを公式WAITING_FOR_REVIEWで再確認。C商品の延期依頼はApple対応待ち。正本 → 統合SSOT「Anicca 816再リジェクト・現在cursor」。
 - [Codex / Anicca正式再提出] 過去の提出完了: PR9057/9058をmainへ統合、1.9.6(815)とLifetimeはASC公式WAITING_FOR_REVIEW。残TODO正本 → 統合SSOTのAnicca正式再提出lane。
