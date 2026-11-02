@@ -1123,3 +1123,5 @@ ad3ac0ccecf2762a922853133bcaf253b1448a96:apps/landing/netlify/functions/_lib/__t
 # 2026-11-01: public client-side SDK keys shipped in the iOS binary by design (PostHogConfig apiKey = PostHog project key; SingularConfig apiKey/andSecret = Singular SDK key). Exact fingerprints only.
 c760488bdc2c2f40dac93b28c7ef972b946e3b6d:aniccaios/aniccaios/AppDelegate.swift:generic-api-key:38
 c760488bdc2c2f40dac93b28c7ef972b946e3b6d:aniccaios/aniccaios/Services/SingularManager.swift:generic-api-key:19
+# Public audit inventory content digest (legacy_key_set_sha256), not an authentication key. Exact historical fingerprint only.
+0df40a8ea9bc605742fca4c04a1bcaf8bb3811fb:docs/evidence/capafy-legacy-c23d68.json:generic-api-key:13
