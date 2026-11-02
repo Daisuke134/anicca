@@ -4,7 +4,7 @@
 
 現在は既存suiteを実行する研究用ツールです。新しい汎用能力の実証、managed Life Manager SaaS、Naïveの非公開ベンチマークの複製ではありません。独自課題は未実装です。旧LM-EABは経済記録の契約検証という別部品で、agent性能のランキングには使いません。
 
-実測と失敗の台帳は [RESULTS.md](RESULTS.md)、公開済みの集計は [evidence/](evidence/) にあります。
+[Naïveの全9評価を読む詳細記事](ARTICLE.ja.md)も公開しています。実測と失敗の台帳は [RESULTS.md](RESULTS.md)、公開済みの集計は [evidence/](evidence/) にあります。
 
 ## 始める
 
