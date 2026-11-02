@@ -4,6 +4,8 @@
 
 現在は既存suiteを実行する研究用ツールです。新しい汎用能力の実証、managed Life Manager SaaS、Naïveの非公開ベンチマークの複製ではありません。独自課題は未実装です。旧LM-EABは経済記録の契約検証という別部品で、agent性能のランキングには使いません。
 
+実測と失敗の台帳は [RESULTS.md](RESULTS.md)、公開済みの集計は [evidence/](evidence/) にあります。
+
 ## 始める
 
 Python **3.12**、Git、LinuxまたはmacOSを使います。上流sourceとvenvはrepo外へ保存します。
@@ -19,7 +21,7 @@ python3.12 bench.py run --suite business-process --policy oracle --task payment-
 python3.12 bench.py run --suite business-process --policy null --task payment-run --seed 0
 ```
 
-`--state` は結果/venv、`--sources` は上流checkoutの保存先です。既存checkoutを使う場合もcatalogの固定commitとの一致を検査します。各runは新しいdirectoryとIDを持ち、既存の結果を上書きしません。Coffee/YCは上流の固定出力名による衝突を避けるため、runごとに新しいcwdで実行します。Business Processは上流の固有labelで結果を分離します。
+`--state` は結果/venv、`--sources` は上流checkoutの保存先です。既存checkoutを使う場合もcatalogの固定commitとの一致を検査します。各runは新しいdirectoryとIDを持ち、既存の結果を上書きしません。Coffee/YCは上流の固定出力名による衝突を避けるため、runごとに新しいcwdで実行します。Business Processはrunごとにcache/resultsも分離し、上流の固有labelを使います。wall timeoutでは別sessionの子孫も停止します。自らdaemon化して親子関係を失う任意コードの隔離を保証するものではありません。
 
 ## 何が実行されるか
 
@@ -66,3 +68,5 @@ bash -n native_adapter.sh
 新しいbenchmarkは元実装・ライセンス・score・horizon・実行条件をcatalogへ追加します。新しいseedは未見のtask familyとは限りません。比較ではmodel、harness、background actors、sampling、予算、timeout、task/seed、graderを固定し、一度に変える条件を明記してください。
 
 私たちのsourceはMITです。上流はそれぞれの条件に従います。第三者sourceはvendoringせず、固定commitから別に取得します。上流コード・データ・モデルのライセンスが同一とは限りません。
+
+上流license: Business BenchはMIT、CoffeeBenchはApache-2.0。YC-BenchはREADMEがMITと記載する一方、このpinにはLICENSE本文を確認できません。sourceは再配布しません。実行前に上流の利用条件も確認してください。

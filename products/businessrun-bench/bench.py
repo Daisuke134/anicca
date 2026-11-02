@@ -131,6 +131,49 @@ def command_for(args, source, run):
     return cmd, runtime, "local_development_not_answer_isolated"
 
 
+def stop_tree(process):
+    """Freeze the owned tree, including new sessions, before terminating it (POSIX)."""
+    owned = {process.pid}
+    identities = {}
+    def identity(pid):
+        return subprocess.run(["ps", "-p", str(pid), "-o", "lstart="], capture_output=True, text=True, check=False).stdout.strip()
+    def send(pid, sig):
+        initial = identities.setdefault(pid, identity(pid))
+        if not initial or identity(pid) != initial:
+            return
+        try:
+            os.kill(pid, sig)
+        except ProcessLookupError:
+            pass
+    send(process.pid, signal.SIGSTOP)
+    while True:
+        rows = subprocess.check_output(["ps", "-axo", "pid=,ppid="], text=True)
+        pairs = [tuple(map(int, line.split())) for line in rows.splitlines()]
+        expanded = set(owned)
+        while True:
+            children = {pid for pid, parent in pairs if parent in expanded}
+            if children <= expanded:
+                break
+            expanded |= children
+        new = expanded - owned
+        for pid in new:
+            send(pid, signal.SIGSTOP)
+        owned = expanded
+        if not new:
+            break
+    # SIGCONT delivers pending SIGTERM to stopped processes. A surviving child gets SIGKILL.
+    for pid in owned:
+        send(pid, signal.SIGTERM)
+        send(pid, signal.SIGCONT)
+    try:
+        process.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        pass
+    for pid in owned:
+        send(pid, signal.SIGKILL)
+    process.wait()
+
+
 def execute(args):
     source, info = source_info(args.suite, args.sources)
     name = args.run_id or dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ-") + uuid.uuid4().hex[:8]
@@ -140,18 +183,18 @@ def execute(args):
     env = dict(os.environ, PYTHONPATH=os.pathsep.join([str(source / "src"), str(source), os.environ.get("PYTHONPATH", "")]))
     started = dt.datetime.now(dt.timezone.utc).isoformat()
     begin = time.monotonic()
+    error_class = None
     with (run / "stdout.log").open("w") as out, (run / "stderr.log").open("w") as err:
         try:
             process = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=out, stderr=err, start_new_session=True)
             code = process.wait(timeout=args.wall_seconds)
+        except OSError as exc:
+            code = 127 if isinstance(exc, FileNotFoundError) else 126
+            error_class = "executable_not_found" if code == 127 else "process_start_failed"
         except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGTERM)
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                os.killpg(process.pid, signal.SIGKILL)
-                process.wait()
+            stop_tree(process)
             code = 124
+            error_class = "wall_timeout"
     summary = None
     evidence = []
     if args.suite == "coffee":
@@ -184,14 +227,18 @@ def execute(args):
         summary = summarize_process(rows, expected, "unknown" if args.policy == "native-codex" else "script_llm_zero")
         evidence = sorted(root.glob("*/result.json"))
     public_command = [str(c).replace(str(source), "$SOURCE").replace(str(run), "$RUN").replace(str(HERE), "$RUNNER") for c in cmd]
-    public_command[0] = "python3.12"
+    try:
+        python_version = subprocess.check_output([cmd[0], "-c", "import platform; print(platform.python_version())"], text=True, timeout=5).strip()
+    except (OSError, subprocess.SubprocessError):
+        python_version = None
+    public_command[0] = "$PYTHON"
     receipt = {"schema_version": 1, "run_id": name, "suite": args.suite, "policy": args.policy,
-               "command": public_command,
+               "command": public_command, "python_version": python_version,
                "seed": args.seed, "task": args.task if args.suite == "business-process" else None,
                "faults": args.faults, "protocol": protocol, "source": info,
                "runner_sha256": digest(__file__), "adapter_sha256": digest(HERE / "native_adapter.sh"),
                "started_at": started, "wall_seconds": round(time.monotonic() - begin, 3),
-               "exit_code": code, "artifact_present": summary is not None,
+               "exit_code": code, "artifact_present": bool(evidence), "error_class": error_class,
                "summary": summary, "host_cost_usd": None,
                "artifact_hashes": [{"name": p.name, "sha256": digest(p)} for p in evidence]}
     (run / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")

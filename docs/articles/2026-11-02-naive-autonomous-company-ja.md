@@ -1,6 +1,6 @@
 # AIが会社を動かす時代、何を測るべきか――Naïveから学ぶ自律企業のつくり方
 
-編集状態: 出典付き草稿。未公開。公開情報を確認した時点は2026-11-02。企業の自己申告と、私たちの解釈を分けて記載する。
+編集状態: 出典付き草稿。未公開。公開情報・実行結果の確認時点は2026-11-03。企業の自己申告と、私たちの解釈を分けて記載する。
 
 AIが一つの動画を作ることと、動画を売る会社を運営することには距離がある。会社は、誰に何を届けるかを選び、支出を管理し、顧客に応答し、失敗の後にも仕事を続けなければならない。
 
@@ -36,27 +36,100 @@ flowchart TB
 
 採用判断でも同じだ。SDKを導入した件数より、実行が中断しても戻れるか、費用を上限内に収められるか、成果物を顧客へ届けられるかを確かめたい。
 
-## ベンチマークで会社を運転する
+## 全9評価を読むと、二つの実験が見えてくる
 
-NaïveのClipping Benchでは、エージェントが約1か月の動画切り抜き事業を運営する。これはコードで決定的に動くシミュレーションだ。初期資金を与え、終端で精算する。何もしない戦略、ルールに沿う固定戦略、内部状態を読むoracleとの比較も示す。[Clipping Bench](https://usenaive.ai/benchmark/clipping-bench)
+Naïveの評価には、同じ運転環境で**モデルを替える実験**と、モデルを揃えて**実行基盤を替える実験**がある。前者は判断能力、後者はツール接続・記憶・実行の効率を中心に見る。両者の順位を合算すると、何が改善したのか分からなくなる。
 
-Short Form Benchは、短尺動画ブランドの運営を扱う。投稿だけでなく、商品、営業、問い合わせ、銀行を含み、現金・在庫・債権債務から事業価値を計算する。視聴者はシミュレーションされるため、その結果を実際の市場反応とは呼べない。[Short Form Bench](https://usenaive.ai/benchmark/short-form-bench)
+以下は各公式ページの実験条件を読んだ整理だ。公表された全試行の第三者再現を意味しない。元の環境が公開されていても、Naïveが使ったブランチ・試行行・請求明細が揃うとは限らない。
 
-この形式が有用なのは、失敗の積み重なりを測れることだ。今日は小さく見える在庫判断や記憶の欠落が、数日後の納品や資金に影響する。短い質問への回答精度だけでは、この能力は見えにくい。
+### 1. Clipping Bench――売上が確定するまで会社を回せるか
 
-さらに、環境に設定されたSNSのcooldownを守れたという結果は、その環境でルールを理解し実行した証拠である。実SNSにも同じ時間制約や倍率があるという発見にはならない。
+最初に与えられるのは資金300ドルと3アカウント。1日に使える運用時間は8時間、返信は30件、tool callは120回まで。事業は27–33日目の予告しない時点で止まり、その後14日間の精算を経る。19モデルを各3シーズン走らせ、平均と標準誤差を示す。決定的シミュレータ上の利益であり、実際の動画収入ではない。[公式Clipping Bench](https://usenaive.ai/benchmark/clipping-bench)
 
-## 一つのランキングで全部を語らない
+ここで学ぶべきは、投稿数よりも**遅れて確定するお金**を測ることだ。アカウントの状態、保留金、維持費、手数料を無視すると、途中の現金だけで誤った判断をする。毎日の継続記憶をnotebookへ限定するので、翌日に必要な情報を残せるかも試される。何もしないpolicy、ルールに従うscript、内部状態を知るoracleを置く点も再利用したい。
 
-比較では、何を固定して何を変えたかが重要になる。
+一方、ページのcash表記とpromptの「cashから初期300ドルを引く」利益定義は区別して読む必要がある。SNSの5時間cooldownは環境内の規則で、実SNSの普遍的な攻略法ではない。公開promptは読めたが、実行可能なsimulatorは今回の公開repo調査で取得していない。
 
-| 問い | 比較の単位 | 読み取れる範囲 |
+### 2. Short Form Bench――利益と誠実さを別々に測る
+
+7日間のブランド運営を9モデル、各3シーズンで評価する。初期現金1,500ドルと在庫40個を持ち、現金・原価評価の在庫・売掛金から買掛金を引いて価値を計算する。投稿以外に営業、仕入れ、顧客対応、銀行業務がある。視聴者と購買もシミュレーションだ。[公式Short Form Bench](https://usenaive.ai/benchmark/short-form-bench)
+
+重複したスポンサー入金を知らせるか、仕入先の誤りをどう扱うか、安全上の問題がある商品を売り続けるか。こうした判断を利益と分けて観察できるのが特徴だ。5モデルの30日試行もあるが各1回の探索であり、7日ランキングの確定的な延長ではない。seed12/13は共通でも、seed14のブランド・視聴者条件はrunごとに変わるため、完全な対応比較とも呼べない。
+
+私たちの評価にも、利益を上げたが誤入金を隠した試行と、利益は低くても正しく精算した試行を別の結果として残す必要がある。独自simulatorを一から作る前に、公式が掲載する自分のagent向けの利用窓口でアクセス条件を確認する。公開ページを保存しただけでは実行環境を入手したことにならない。
+
+### 3. Long Horizon Terminal Bench――時間の条件を揃える
+
+8つのterminal課題について、GLM-5.2を固定し、5つのharnessと3つの完了時間窓を組み合わせる。原則1セル16試行、Hermesの一部は15試行だ。比較するなら同じ時間窓で見る。インフラ不成立の試行は除外され、請求訂正後の費用を使い、請求が欠けたセルは0ドル扱いしない。[公式Terminal評価](https://usenaive.ai/benchmarks/long-horizon-terminal-bench)
+
+重要なのは、説明されている製品機能を全て勝因にしないこと。この評価ビルドはalarm loop・毎turnのcommit・task boardを含まない。私たちも「記憶機能があるから勝った」と書く前に、その機能を無効にした比較が必要だ。元のTerminal Benchが公開されていても、選択sliceと全trialが揃わなければ当該表の完全再現ではない。
+
+### 4. SWE-Bench Pro――解ける割合と安さは別の成果
+
+GLM-5.3-Flashを共通に使い、15 issue×5 harnessの75有効試行を比較する。Claudeは15/15、Naïveは10/15、Codexは8/15を解決した。一方、確認されたmodel費用の成功1件あたりはNaïveが約0.0398ドル、Codexが約0.046ドル。解決率の首位と安い成功単価は同じではない。[公式SWE評価](https://usenaive.ai/benchmarks/swe-bench-pro)
+
+Hermesの金額はcached discountを反映しないtoken由来の上限推定。ClaudeとStock Piは費用記録に不整合があり、費用表から外れる。費用が不明な相手に「何倍安い」とは言えない。また15件の結果をSWE-Bench Pro全体の順位へ広げてはいけない。
+
+### 5. Business Bench――試行の分母からtimeoutを消さない
+
+7カテゴリからseed20260928で層化抽出した25 desk課題を使い、5 harnessを125回試す。固定モデルはGLM-5.3-Flash、reasoningはlow。必要な決定的チェックを全て通ると成功となる。Naïveは12/25でPi・Hermesと同数だ。8件のtask-limit timeoutも失敗として残す。[公式Business評価](https://usenaive.ai/benchmarks/business-bench)
+
+費用は同じOpenRouter rate cardでtokenを再計算したものなので、hostや全サービスの請求を含む総原価ではない。元のBusiness Benchには、今回取得したcommitで187 desk課題、20 build課題、9 process課題がある。特にprocessは継続する調達・支払・照合を既に扱っている。ここを再実装する理由は薄い。
+
+### 6. TheAgentCompany――開発に使った課題で勝った結果を識別する
+
+v1.0.0の10課題、1課題90分、5 harnessの50試行。部分rewardと、reward=1の完全完了を分ける。選択されたE00ビルドは10課題中6件完了、以前のビルドは3件だった。ただし、その同じ10課題でビルドを選んでおり、独立した未見課題の結果ではない。掲載ブランチも当時未出荷だ。[公式TheAgentCompany評価](https://usenaive.ai/benchmarks/the-agent-company)
+
+使い捨てcontainer内の広いファイルアクセスが認められることも条件に含まれる。自社評価では「tuning課題」「公開dev課題」「未見の評価」を区別したい。seedだけを変えても、既知の課題テンプレートが未見になるわけではない。
+
+### 7. PRDBench――表に載らなかった比較対象を読む
+
+課題ID41・32・11・24・16を45分で実行した25試行を、DeepSeek V3.2 judgeで再採点する。agent自体の再実行ではない。平均normalized rubricと、0.25以上を成功とする値を使う。[公式PRDBench評価](https://usenaive.ai/benchmarks/prd-bench)
+
+選ばれたのは最も良かったE05ブランチで、held-out評価は未実行。さらに比較表は、Naïveが平均scoreと費用の両方で上回らなかったharnessを掲載しない。したがって表を全参加者の総合順位として紹介できない。私たちが取り入れるべきは、この選択条件まで明示することだ。公開評価では全ての事前登録cellと失敗を一覧に残す。
+
+### 8. YC-Bench――生存率と成功単価を両方見る
+
+元のYC-Benchは20万ドルから開発会社を1年回す世界。採用、給与、顧客の信頼、締切、難しい顧客対応が資金に影響する。Naïveの比較は共通seed1・2・3を使う。NaïveとPiは3/3で完走、Codexは2/3。ただし完走1年あたりのmodel費用はCodex約0.357ドル、Naïve約0.825ドルだった。[公式YC評価](https://usenaive.ai/benchmarks/yc-bench)、[元実装](https://github.com/collinear-ai/yc-bench)
+
+破産・途中終了と、1turnも始まらない起動障害を区別する必要がある。Naïveの表では起動障害もattempt数に数えるが、資金・時間・token平均からは外す。私たちはそれぞれの分母を表に書く。
+
+### 9. CoffeeBench――14日と90日を同じ完走と呼ばない
+
+元のCoffeeBenchは6社が取引する90日の経済環境。Naïveは14日へ変更し、GLM-5.3-Flashを使っている。さらにNaïveはseed10–14、参照harnessはseed0–4。各社の仕入れ先・売り先の行動も経済を変えるので、これは同じ5世界での対応比較ではない。[公式Coffee評価](https://usenaive.ai/benchmarks/coffee-bench)、[元実装](https://github.com/SakanaAI/CoffeeBench)
+
+最も良い調整ブランチを使い、decisionごとにsessionを新規作成、medium effort、verificationなし。費用はfocal agentだけで、背景5社の費用は含まない。以前の、より安かったCodex試行は表から除かれる。したがって掲載値から6社全体の運営原価や一般的な優越を主張できない。
+
+## 実際に動かして、何が分かったか
+
+私たちは元実装のcommitを固定し、Business Bench Process、CoffeeBench、YC-Benchを実行する小さなツール **BusinessRun Bench** を作った。略語を覚える必要がなく、目的は「AIは事業を何日回せるか」と説明する。今の段階では既存課題を再利用する実行・記録のsuiteであり、独自の新しい能力評価を実証したとは言わない。
+
+最初の実行結果は次の通り。モデル、script、採点器の検証を混ぜていない。
+
+| 実行 | 観測 | 言える範囲 |
 |---|---|---|
-| どのモデルが判断に強いか | 同じ環境・toolsでモデルを変更 | その環境でのモデル差 |
-| どの実行基盤が効率的か | モデルを固定して基盤を変更 | 基盤による完了率・費用の差 |
-| 実際に事業が成立するか | 顧客・納品・決済・実費を追う | その事業と期間の実績 |
+| Coffee、90日、6社passive、seed0 | focal roasterの純利益は模擬USD -2,764.68、取引0 | 環境の無行動対照。LLM性能ではない |
+| Coffee、focalのみheuristic、他5社passive、seed0 | 同じ純損失、取引0 | 固定戦略も相手が全く動かなければ経済を動かせない |
+| YC、4つの公式script×seed1–3 | 12/12で破産。throughput seed1は16turn、6件完了・3件失敗 | script baseline。Naïveのモデル成績との直接比較ではない |
+| Business公式validator、seed0–4、strict | 13 task×seed条件通過後、14条件目の生成器で停止 | margin-bridge seed3に上流のゼロ除算。モデル失敗ではない |
+| Business payment-run、oracle、lost-writes、seed0 | 1/1成功 | 応答喪失を含む環境と参照policyが動作 |
+| Business全9課題、oracle/null、seed0 | 参照policyは9/9成功、無行動は0/9 | 全taskでgraderの対照が成立 |
+| Business payment-run、現在のCodex CLI、lost-writes、seed0 | 1/1成功、全10必須check通過、重複effect無し | 応答喪失からの回復を含む開発試行 |
+| Business payment-run、現在のCodex CLI、障害なし、seed0 | 2つの業務日を処理、全turn正常終了、公式grader成功 | 実モデルの開発試行1件。統計的なモデル優劣は不明 |
 
-Naïveはmodel比較とharness比較を分けて公開する。ただし、Managed Agentsの説明は試行行が内部DBにあり未公開とも記す。ページに順位があることと、第三者が同じ結果を再現できることも別だ。[評価一覧](https://usenaive.ai/benchmarks)、[Managed Agentsの説明](https://usenaive.ai/blogs/introducing-naive-managed-agents)
+出典は本稿に付随する[実行台帳](../../products/businessrun-bench/RESULTS.md)。模擬USDを実売上に読み替えない。Codexのsubscription実費、host費用は未測定で、0ドルとしない。既存CLIの設定を引き継いでおり、答案隔離を保証する公式leaderboard試行でもない。
+
+Coffeeの元のbaseline説明では、focalだけをpassive/heuristicへ変え、背景5社にはSonnetを使う。今回の全passive対照はそれと異なる。公式の90日例はAPI費用200ドル超・5時間超を示すため、背景費用と予算を決めずに大量実行すべきではない。ここを省くと、安く見える実験が単に市場の相手を止めた実験になってしまう。
+
+実行系にも不具合があった。最初は複数試行が上流checkoutの同じscenario cacheを生成し、SQLiteのdisk I/O/readonlyエラーでモデル起動前に止まった。runごとにcacheとresultsを分離して修正し、失敗記録は残した。再実行ではoracleと実モデルが通った。生成器不良・実験基盤不良・モデルの判断ミスを分けること自体が、benchmark運用の仕事である。
+
+## SDK統合は、どこまで進んでいるのか
+
+社内調査も更新した。古い会社状態メモだけでは、その後のGrok側の作業を捉えられなかった。`sanbou-ops`のSDKメモとデモ証跡によると、Vetta SDK0.10.0/CLI0.10.1を導入し、10月末に実際のsessionがend_turnまで進んでいる。5つの役割を配置した記録もある。
+
+ただし、これは現在の全役割の稼働確認ではない。10/31の残高記録は約0.7ドル、デモのlive実行には2ドルの下限があり、ローカルrehearsalは定型文を使うものだった。domainもpending_dnsという記録がある。Grok・Museへ現行残高、VM/provider、直近sessionと費用、顧客tenantへの提供条件を問い合わせた。送信済みを返答済みに置き換えず、現在のreadbackは[実行台帳](../../products/businessrun-bench/RESULTS.md)と正本specへ記録する。
+
+ここで分かるのは「SDKが動いた」と「一般顧客が安全に会社を運用できる」は違う受入条件だということ。cloudの一時runnerでbenchmarkを動かせることも、managed SaaSのtenant分離や継続運転の完成を意味しない。
 
 ## 自律企業の研究はNaïveだけではない
 
@@ -74,7 +147,7 @@ Conwayのautomatonsは、agentの暗号学的identityとcreatorの登録を扱�
 
 自社製品だけに有利な採点をつくれば、見栄えのよい順位は得られる。しかし、顧客の仕事を改善したかは分からない。逆に、外部の一つの模擬環境だけを目標にすれば、自分たちの納品・費用・人間介入の問題を取りこぼす。
 
-AniccaにはすでにLM-EABという経済的自律性の採点基盤がある。現在の5個の公開合成ケースは、金額、費用の欠測、人間介入、重複した証拠などの扱いを検証する。これは採点器のテストであり、エージェントが自律的に利益を出した証明ではない。[再現手順](../evals/lm-economic-autonomy.md)
+Aniccaには経済記録の契約を検証する採点器がある。旧名LM-EABは読者に役割が伝わらないため、公開する評価群の名称には使わない。現在の5個の公開合成ケースは、金額、費用の欠測、人間介入、重複した証拠などの扱いを検証する。これは採点器のテストであり、エージェントが自律的に利益を出した証明ではない。[再現手順](../evals/lm-economic-autonomy.md)
 
 次に必要なのは、実際にagentが実行する課題だ。たとえば、同じ依頼から受入条件を読み、成果物を納め、請求と費用を照合する。固定script、現行agent、別の実行基盤を同条件で比べる。その際、次の値を一つの点数へ埋め込まずに出したい。
 

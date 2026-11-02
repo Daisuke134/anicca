@@ -177,12 +177,12 @@
       "url": "https://github.com/erphq/business-bench",
       "upstream": "https://github.com/erphq/business-bench",
       "score": "ERP state, audit-log, reconciliations and required notes",
-      "horizon": "multi-date processes; 7 implemented tasks",
+      "horizon": "multi-date processes; 9 task definitions",
       "lesson": "Reuse existing continuing business work, oracle/null/negative controls and transport-fault profiles.",
       "access": "public_upstream",
       "conditions": [
         "local runner is not an answer-isolation boundary",
-        "six-task historical pilot differs from current7 tasks",
+        "six-task historical pilot differs from current9 task definitions",
         "new seed is not a genuinely unseen task template"
       ],
       "reviewed_on": "2026-11-03"

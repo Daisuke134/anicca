@@ -1,9 +1,14 @@
 import importlib.util
 import json
+import os
+import signal
+import time
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 from pathlib import Path
 
 HERE = Path(__file__).parent
@@ -71,6 +76,42 @@ class RunnerContract(unittest.TestCase):
         b = self.implementation()
         row = {"passed": True, "error": None, "grader_errors": [], "turns": [{"exit_code": 0, "timed_out": False}], "cost_usd": 0}
         self.assertIsNone(b.summarize_process([row], expected=1, model_cost_basis="unknown")["model_cost_usd"])
+
+    def test_missing_executable_still_records_missing_artifact(self):
+        b = self.implementation()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            args = SimpleNamespace(suite="business-process", sources=root, state=root,
+                                   run_id="no-executable", seed=0, policy="oracle", task="payment-run",
+                                   faults=None, wall_seconds=1)
+            with patch.object(b, "source_info", return_value=(root, {"commit": "test"})), patch.object(b, "command_for", return_value=(["/nonexistent-businessrun-executable"], root, "test")):
+                code = b.execute(args)
+            receipt = json.loads((root / "runs/no-executable/receipt.json").read_text())
+            self.assertEqual(code, 127)
+            self.assertFalse(receipt["artifact_present"])
+            self.assertEqual(receipt["summary"]["missing"], 1)
+            self.assertEqual(receipt["error_class"], "executable_not_found")
+
+    def test_wall_timeout_stops_child_in_a_separate_session(self):
+        b = self.implementation()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            pidfile = root / "child.pid"
+            script = root / "spawn.py"
+            script.write_text("import subprocess,sys,time,pathlib\np=subprocess.Popen([sys.executable,'-c', 'import time; time.sleep(60)'],start_new_session=True)\npathlib.Path(sys.argv[1]).write_text(str(p.pid))\ntime.sleep(60)\n")
+            args = SimpleNamespace(suite="business-process", sources=root, state=root, run_id="timeout",
+                                   seed=0, policy="oracle", task="payment-run", faults=None, wall_seconds=1)
+            try:
+                with patch.object(b, "source_info", return_value=(root, {"commit": "test"})), patch.object(b, "command_for", return_value=([sys.executable, str(script), str(pidfile)], root, "test")):
+                    code = b.execute(args)
+                pid = int(pidfile.read_text())
+                state = subprocess.run(["ps", "-o", "stat=", "-p", str(pid)], capture_output=True, text=True).stdout.strip()
+                self.assertTrue(not state or state.startswith("Z"), "detached child is still running")
+                self.assertEqual(code, 124)
+            finally:
+                if pidfile.exists():
+                    try: os.kill(int(pidfile.read_text()), signal.SIGKILL)
+                    except ProcessLookupError: pass
 
     def test_process_cache_and_outputs_are_separate_for_identical_task_seed(self):
         b = self.implementation()
