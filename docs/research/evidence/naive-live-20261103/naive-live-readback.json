@@ -1,0 +1,209 @@
+{
+  "observed_at": "2026-11-02T16:03:24.898311+00:00",
+  "transport": "official REST API; read-only after normal login",
+  "routes": {
+    "/v1/agents?limit=50": {
+      "status": 200,
+      "request_id": "req_f041cn0hptc4xnahtwnnevj0ey",
+      "selected": [
+        {
+          "id": "agt_3b7pjzk133jd5tcjjxp54fbr66",
+          "name": "n1-verification",
+          "created_at": "2026-10-30T10:57:05.644Z",
+          "model": "~deepseek/deepseek-flash-latest",
+          "budget": {
+            "period": "day",
+            "cap_micro_usd": 100000,
+            "max_task_micro_usd": 50000
+          }
+        },
+        {
+          "id": "agt_s9sh5260xc8p1fp564xac6masj",
+          "name": "anicca-cfo",
+          "created_at": "2026-10-27T05:09:19.965Z",
+          "model": "zai-org/GLM-5.2-FP8",
+          "budget": {
+            "period": "month",
+            "cap_micro_usd": 2000000,
+            "max_task_micro_usd": 250000
+          }
+        },
+        {
+          "id": "agt_kmbbqj94f4yvvj6m7jnagfrvpr",
+          "name": "anicca-sales",
+          "created_at": "2026-10-27T05:09:16.198Z",
+          "model": "zai-org/GLM-5.2-FP8",
+          "budget": {
+            "period": "month",
+            "cap_micro_usd": 2000000,
+            "max_task_micro_usd": 250000
+          }
+        },
+        {
+          "id": "agt_sbe8xc706rs1vfk8c0dbx7ny6m",
+          "name": "anicca-builder",
+          "created_at": "2026-10-27T05:09:13.886Z",
+          "model": "zai-org/GLM-5.2-FP8",
+          "budget": {
+            "period": "month",
+            "cap_micro_usd": 2000000,
+            "max_task_micro_usd": 250000
+          }
+        },
+        {
+          "id": "agt_9pdaefnp7ymzrns15p79zhmsra",
+          "name": "anicca-growth",
+          "created_at": "2026-10-27T05:09:11.329Z",
+          "model": "zai-org/GLM-5.2-FP8",
+          "budget": {
+            "period": "month",
+            "cap_micro_usd": 2000000,
+            "max_task_micro_usd": 250000
+          }
+        },
+        {
+          "id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "name": "anicca-ceo",
+          "created_at": "2026-10-27T05:09:08.888Z",
+          "model": "zai-org/GLM-5.2-FP8",
+          "budget": {
+            "period": "month",
+            "cap_micro_usd": 1000000,
+            "max_task_micro_usd": 250000
+          }
+        }
+      ],
+      "has_more": false
+    },
+    "/v1/sessions?limit=10": {
+      "status": 200,
+      "request_id": "req_t8t7fj5918v56j7brfrfeqfvtw",
+      "selected": [
+        {
+          "id": "ses_m8080nhvm5tktk2es7h5zc126q",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "budget_paused",
+          "created_at": "2026-11-02T00:20:35.030Z"
+        },
+        {
+          "id": "ses_7tbyztrta49ffq7xhcwkjs1adn",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "budget_paused",
+          "created_at": "2026-11-02T00:19:40.994Z"
+        },
+        {
+          "id": "ses_jdkfs0qcm0cyrsv7b11teh49pc",
+          "agent_id": "agt_sbe8xc706rs1vfk8c0dbx7ny6m",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "budget_paused",
+          "created_at": "2026-11-02T00:04:58.918Z"
+        },
+        {
+          "id": "ses_gz7y5t4rpqmm3wd00d9bk5fvpd",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "budget_paused",
+          "created_at": "2026-11-02T00:01:36.653Z"
+        },
+        {
+          "id": "ses_pwk4vszkj3cc17et1qqzveqcp3",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "end_turn",
+          "created_at": "2026-11-02T00:00:44.976Z"
+        },
+        {
+          "id": "ses_07g60pjkxv3hyctnvmvg4m0yyd",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "budget_paused",
+          "created_at": "2026-11-01T00:07:35.991Z"
+        },
+        {
+          "id": "ses_z5zdhe2jpb58qwe8qj4vdv9b6k",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "budget_paused",
+          "created_at": "2026-11-01T00:07:27.461Z"
+        },
+        {
+          "id": "ses_3k3za9nf65mdqnyrta6c0xbw3g",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "end_turn",
+          "created_at": "2026-11-01T00:06:37.023Z"
+        },
+        {
+          "id": "ses_zng7wk1ttd4jes4zebzqegzrjy",
+          "agent_id": "agt_sbe8xc706rs1vfk8c0dbx7ny6m",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "end_turn",
+          "created_at": "2026-11-01T00:04:59.798Z"
+        },
+        {
+          "id": "ses_d6nthkdnbbatsdn9evpxbpze44",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "computer_id": null,
+          "model": null,
+          "status": "idle",
+          "stop_reason": "budget_paused",
+          "created_at": "2026-11-01T00:04:34.230Z"
+        }
+      ],
+      "has_more": true
+    },
+    "/v1/computers?limit=50": {
+      "status": 200,
+      "request_id": "req_vz9q86cgqj75k8hwbf05qzg38y",
+      "selected": {},
+      "has_more": false
+    },
+    "/v1/deployments?limit=50": {
+      "status": 200,
+      "request_id": "req_gbsbqrp5wwddw6kmkb852feqbb",
+      "selected": [
+        {
+          "id": "dep_vdp9aysrvbn4k2z7knzs84ktyd",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "cron": "0 9 * * *",
+          "timezone": "Asia/Tokyo",
+          "created_at": "2026-10-27T05:16:05.436Z"
+        }
+      ],
+      "has_more": false
+    },
+    "/v1/organizations/org_f4sbaytm23npykwsjpzzgt0gjf": {
+      "status": 200,
+      "request_id": "req_vsgr811pn0wm7nxrb0f74zrm6g",
+      "selected": {
+        "id": "org_f4sbaytm23npykwsjpzzgt0gjf",
+        "name": "Anicca",
+        "balance_micro_usd": 11590718,
+        "timezone": "America/New_York",
+        "setting_up": false,
+        "created_at": "2026-10-27T01:33:33.246Z"
+      },
+      "has_more": null
+    }
+  }
+}

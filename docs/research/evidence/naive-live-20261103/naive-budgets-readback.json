@@ -1,0 +1,403 @@
+{
+  "/v1/credits/subscription": {
+    "object": "subscription",
+    "status": "active",
+    "plan": "standard",
+    "price_micro_usd": 20000000,
+    "included_credit_micro_usd": 20000000,
+    "current_period_end": "2026-11-03T05:05:32.000Z",
+    "grace_until": null,
+    "cancel_at_period_end": false,
+    "trial_end": "2026-11-03T05:05:35.000Z",
+    "pending_plan": null,
+    "trial_eligible": false,
+    "trial_days": 7,
+    "trial_credit_micro_usd": 10000000,
+    "plans_available": [
+      "standard",
+      "pro"
+    ],
+    "plans": [
+      {
+        "plan": "standard",
+        "price_micro_usd": 20000000,
+        "included_credit_micro_usd": 20000000
+      },
+      {
+        "plan": "pro",
+        "price_micro_usd": 200000000,
+        "included_credit_micro_usd": 200000000
+      }
+    ],
+    "action_url": null
+  },
+  "/v1/credits/balance": {
+    "object": "credit_balance",
+    "balance_micro_usd": 11590718,
+    "mode": "live"
+  },
+  "/v1/credits/spend": {
+    "spent_micro_usd": 18409282,
+    "by_tier": {
+      "cache_read": 7584756,
+      "cache_write": 0,
+      "computer": 600419,
+      "input": 5210145,
+      "output": 2096128,
+      "reasoning": 2736064,
+      "search": 181770
+    },
+    "by_agent": [
+      {
+        "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+        "spent_micro_usd": 9651796
+      },
+      {
+        "agent_id": "agt_sbe8xc706rs1vfk8c0dbx7ny6m",
+        "spent_micro_usd": 3286205
+      },
+      {
+        "agent_id": "agt_kmbbqj94f4yvvj6m7jnagfrvpr",
+        "spent_micro_usd": 2240198
+      },
+      {
+        "agent_id": "agt_s9sh5260xc8p1fp564xac6masj",
+        "spent_micro_usd": 1867404
+      },
+      {
+        "agent_id": "agt_9pdaefnp7ymzrns15p79zhmsra",
+        "spent_micro_usd": 1362680
+      },
+      {
+        "agent_id": "agt_3b7pjzk133jd5tcjjxp54fbr66",
+        "spent_micro_usd": 999
+      }
+    ],
+    "by_session": [
+      {
+        "session_id": "ses_bsd40ff1v9bayqn7538r57aq5e",
+        "spent_micro_usd": 583968
+      },
+      {
+        "session_id": "ses_1k4ygzvt7xkcp8h1tt2zfdzyp7",
+        "spent_micro_usd": 452434
+      },
+      {
+        "session_id": "ses_pwk4vszkj3cc17et1qqzveqcp3",
+        "spent_micro_usd": 405272
+      },
+      {
+        "session_id": "ses_14r3hhcfy8p6tnyy250c9r3vf4",
+        "spent_micro_usd": 320343
+      },
+      {
+        "session_id": "ses_gwh6apa9d3p9z1n6vwyx47hhwn",
+        "spent_micro_usd": 315606
+      },
+      {
+        "session_id": "ses_rcmn399ddh9m1eweb5g0exgpjn",
+        "spent_micro_usd": 286113
+      },
+      {
+        "session_id": "ses_q62njqjy1nnnzfj06rn82vrh4q",
+        "spent_micro_usd": 279606
+      },
+      {
+        "session_id": "ses_xe2peq1skc071m1zhdfn4exjza",
+        "spent_micro_usd": 277221
+      },
+      {
+        "session_id": "ses_qdy5t0z3pm4e3pa5jy1c23ktbr",
+        "spent_micro_usd": 275950
+      },
+      {
+        "session_id": "ses_sbqdwfqk7ezv9wec286p4b0gky",
+        "spent_micro_usd": 273574
+      },
+      {
+        "session_id": "ses_y75h1d23j3fwcq2r4tc77ndd70",
+        "spent_micro_usd": 270731
+      },
+      {
+        "session_id": "ses_n36z8k8me4g6krtdb7fqwhhbb7",
+        "spent_micro_usd": 255433
+      },
+      {
+        "session_id": "ses_ct7nm8pam550r9yw8j37ee223e",
+        "spent_micro_usd": 249742
+      },
+      {
+        "session_id": "ses_dfvsx39vh6yhsymab3yhbj4rv2",
+        "spent_micro_usd": 243990
+      },
+      {
+        "session_id": "ses_jf34shwhxjrpz77cf33hs7j0ke",
+        "spent_micro_usd": 240314
+      },
+      {
+        "session_id": "ses_2nz7fx9wwzz4a63frcmtsxtntk",
+        "spent_micro_usd": 234541
+      },
+      {
+        "session_id": "ses_n9wz8secra9ags0s3xp76ek2aa",
+        "spent_micro_usd": 232645
+      },
+      {
+        "session_id": "ses_nttka4dyx8kj0vymysawm8jegb",
+        "spent_micro_usd": 229565
+      },
+      {
+        "session_id": "ses_xenz08h9qytjaxk0gr8r8qam4n",
+        "spent_micro_usd": 227318
+      },
+      {
+        "session_id": "ses_9e2g5h800qene4mbd43gvzpvd1",
+        "spent_micro_usd": 220646
+      },
+      {
+        "session_id": "ses_qz70v01dk3qrbvhsxap3gmsww4",
+        "spent_micro_usd": 217247
+      },
+      {
+        "session_id": "ses_scmezym0cn8hezv0zmz52ka1sh",
+        "spent_micro_usd": 216653
+      },
+      {
+        "session_id": "ses_985wn806rsmr7aahzqpgs77fg9",
+        "spent_micro_usd": 211192
+      },
+      {
+        "session_id": "ses_7gc6vepjwvf46h43315evf8hbn",
+        "spent_micro_usd": 205373
+      },
+      {
+        "session_id": "ses_0krh6bz57nbesy7y5nchks0p0e",
+        "spent_micro_usd": 202689
+      },
+      {
+        "session_id": "ses_apga24c1aqzdzba42phs7qj9e0",
+        "spent_micro_usd": 199675
+      },
+      {
+        "session_id": "ses_2wpgqpmbj02xr972e1padpq2b8",
+        "spent_micro_usd": 179345
+      },
+      {
+        "session_id": "ses_fs1c8kdptewqvgwfdwt06a9d4k",
+        "spent_micro_usd": 178980
+      },
+      {
+        "session_id": "ses_0fvngyc4ae4wdjqv5myxe2mjbn",
+        "spent_micro_usd": 176940
+      },
+      {
+        "session_id": "ses_8ygafanmx5hg05t0rxgccmm43r",
+        "spent_micro_usd": 176656
+      },
+      {
+        "session_id": "ses_23y7q8zehmm39ck49am0hv2s3p",
+        "spent_micro_usd": 172151
+      },
+      {
+        "session_id": "ses_echr5t6aynprngd43czywyh5xp",
+        "spent_micro_usd": 164103
+      },
+      {
+        "session_id": "ses_4e92k1t0b7x94393zgv7pp3qjd",
+        "spent_micro_usd": 161672
+      },
+      {
+        "session_id": "ses_npyp5s04an7th3brp8csbbkc51",
+        "spent_micro_usd": 157165
+      },
+      {
+        "session_id": "ses_a87a4f26jn2nsnx36kpbdf0a5r",
+        "spent_micro_usd": 152073
+      },
+      {
+        "session_id": "ses_caghhwekrr6amqam8kcv2em486",
+        "spent_micro_usd": 151884
+      },
+      {
+        "session_id": "ses_jkg20y65dykfv0ja92wnw8k8sf",
+        "spent_micro_usd": 149903
+      },
+      {
+        "session_id": "ses_0b8hah8zykvwgxf5bpg3dczf7c",
+        "spent_micro_usd": 147989
+      },
+      {
+        "session_id": "ses_5tynhrdxh19z454115sw4931jv",
+        "spent_micro_usd": 144881
+      },
+      {
+        "session_id": "ses_7pvf7wp1k60qy13zx12tdhswg3",
+        "spent_micro_usd": 144363
+      },
+      {
+        "session_id": "ses_81mfmwzw6q65np8bc1rk42knma",
+        "spent_micro_usd": 143262
+      },
+      {
+        "session_id": "ses_j56z8aqfakdfcn45jy27pd6xyj",
+        "spent_micro_usd": 140300
+      },
+      {
+        "session_id": "ses_qr27910b1qcptz95h8gbqae8an",
+        "spent_micro_usd": 135673
+      },
+      {
+        "session_id": "ses_srd2dn3kcebz9e24frjz6k5ajw",
+        "spent_micro_usd": 132632
+      },
+      {
+        "session_id": "ses_ba1rnyeakh9jf1tacdb2jxg9dz",
+        "spent_micro_usd": 130870
+      },
+      {
+        "session_id": "ses_revqqjw25wr62zwvykdsxbq14v",
+        "spent_micro_usd": 129327
+      },
+      {
+        "session_id": "ses_ne81j06b8ge0e7fjbgp510wa67",
+        "spent_micro_usd": 129139
+      },
+      {
+        "session_id": "ses_qnks31w9129zpde89qq1h500pe",
+        "spent_micro_usd": 128446
+      },
+      {
+        "session_id": "ses_6q7e7bcmmzzskvr443vt1jsg2s",
+        "spent_micro_usd": 127277
+      },
+      {
+        "session_id": "ses_8hkzeer02p5y7hgqcw2my8mtgh",
+        "spent_micro_usd": 124494
+      }
+    ]
+  },
+  "/v1/deployments?limit=50": [
+    {
+      "id": "dep_vdp9aysrvbn4k2z7knzs84ktyd",
+      "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "enabled": true,
+      "cron": "0 9 * * *",
+      "timezone": "Asia/Tokyo",
+      "budget_micro_usd": 1000000,
+      "next_run_at": "2026-11-03T00:00:00.000Z",
+      "schedule_status": "scheduled"
+    }
+  ],
+  "/v1/sessions?limit=10": [
+    {
+      "id": "ses_m8080nhvm5tktk2es7h5zc126q",
+      "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "status": "idle",
+      "stop_reason": "budget_paused",
+      "stop_code": null,
+      "budget_micro_usd": 250000,
+      "consumed_micro_usd": 0,
+      "started_at": "2026-11-02T00:20:37.236Z",
+      "ended_at": null
+    },
+    {
+      "id": "ses_7tbyztrta49ffq7xhcwkjs1adn",
+      "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "status": "idle",
+      "stop_reason": "budget_paused",
+      "stop_code": null,
+      "budget_micro_usd": 250000,
+      "consumed_micro_usd": 51192,
+      "started_at": "2026-11-02T00:19:43.840Z",
+      "ended_at": null
+    },
+    {
+      "id": "ses_jdkfs0qcm0cyrsv7b11teh49pc",
+      "agent_id": "agt_sbe8xc706rs1vfk8c0dbx7ny6m",
+      "status": "idle",
+      "stop_reason": "budget_paused",
+      "stop_code": null,
+      "budget_micro_usd": 250000,
+      "consumed_micro_usd": 29517,
+      "started_at": "2026-11-02T00:05:01.111Z",
+      "ended_at": null
+    },
+    {
+      "id": "ses_gz7y5t4rpqmm3wd00d9bk5fvpd",
+      "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "status": "idle",
+      "stop_reason": "budget_paused",
+      "stop_code": null,
+      "budget_micro_usd": 250000,
+      "consumed_micro_usd": 29910,
+      "started_at": "2026-11-02T00:01:38.632Z",
+      "ended_at": null
+    },
+    {
+      "id": "ses_pwk4vszkj3cc17et1qqzveqcp3",
+      "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "status": "idle",
+      "stop_reason": "end_turn",
+      "stop_code": null,
+      "budget_micro_usd": 1000000,
+      "consumed_micro_usd": 405272,
+      "started_at": "2026-11-02T00:00:47.085Z",
+      "ended_at": null
+    },
+    {
+      "id": "ses_07g60pjkxv3hyctnvmvg4m0yyd",
+      "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "status": "idle",
+      "stop_reason": "budget_paused",
+      "stop_code": null,
+      "budget_micro_usd": 250000,
+      "consumed_micro_usd": 29222,
+      "started_at": "2026-11-01T00:07:40.745Z",
+      "ended_at": null
+    },
+    {
+      "id": "ses_z5zdhe2jpb58qwe8qj4vdv9b6k",
+      "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "status": "idle",
+      "stop_reason": "budget_paused",
+      "stop_code": null,
+      "budget_micro_usd": 250000,
+      "consumed_micro_usd": 36734,
+      "started_at": "2026-11-01T00:07:29.614Z",
+      "ended_at": null
+    },
+    {
+      "id": "ses_3k3za9nf65mdqnyrta6c0xbw3g",
+      "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "status": "idle",
+      "stop_reason": "end_turn",
+      "stop_code": null,
+      "budget_micro_usd": 250000,
+      "consumed_micro_usd": 21346,
+      "started_at": "2026-11-01T00:06:39.150Z",
+      "ended_at": null
+    },
+    {
+      "id": "ses_zng7wk1ttd4jes4zebzqegzrjy",
+      "agent_id": "agt_sbe8xc706rs1vfk8c0dbx7ny6m",
+      "status": "idle",
+      "stop_reason": "end_turn",
+      "stop_code": null,
+      "budget_micro_usd": 250000,
+      "consumed_micro_usd": 25143,
+      "started_at": "2026-11-01T00:05:02.414Z",
+      "ended_at": null
+    },
+    {
+      "id": "ses_d6nthkdnbbatsdn9evpxbpze44",
+      "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "status": "idle",
+      "stop_reason": "budget_paused",
+      "stop_code": null,
+      "budget_micro_usd": 250000,
+      "consumed_micro_usd": 29660,
+      "started_at": "2026-11-01T00:04:37.503Z",
+      "ended_at": null
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "observed_at": "2026-11-02T16:16:32.299051+00:00",
+  "records": [
+    {
+      "route": "/computers?limit=50",
+      "request_id": "req_szcmdbq73w6tyxw06pbn82y1se",
+      "status": 200,
+      "data_count": 0,
+      "has_more": false
+    },
+    {
+      "route": "/agents/agt_ac0hkqm9ybvrt12kjfadmghbe4",
+      "request_id": "req_7gf8f95n632rf467jq6tp1dd49",
+      "status": 200,
+      "selected": {
+        "id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+        "budget": {
+          "period": "month",
+          "cap_micro_usd": 1000000,
+          "max_task_micro_usd": 250000
+        },
+        "current_version": 16,
+        "updated_at": null,
+        "created_at": "2026-10-27T05:09:08.888Z"
+      }
+    },
+    {
+      "route": "/deployments?limit=50",
+      "request_id": "req_t5pc3whxay9bwxmnwdbq46m7q0",
+      "status": 200,
+      "selected": [
+        {
+          "id": "dep_vdp9aysrvbn4k2z7knzs84ktyd",
+          "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+          "agent_version": null,
+          "enabled": true,
+          "budget_micro_usd": 1000000,
+          "updated_at": null
+        }
+      ]
+    },
+    {
+      "route": "/credits/spend?agent_id=agt_ac0hkqm9ybvrt12kjfadmghbe4&from=2026-11-01T00%3A00%3A00Z&to=2026-11-02T16%3A16%3A25.190649%2B00%3A00",
+      "request_id": "req_qmy4j03byg1n0fp6h2jtyehntm",
+      "status": 200,
+      "selected": {
+        "spent_micro_usd": 835543,
+        "by_tier": {
+          "input": 414398,
+          "cache_read": 256088,
+          "cache_write": 0,
+          "computer": 27051,
+          "output": 58334,
+          "reasoning": 79672
+        },
+        "by_agent": [
+          {
+            "agent_id": "agt_ac0hkqm9ybvrt12kjfadmghbe4",
+            "spent_micro_usd": 835543
+          }
+        ],
+        "by_session": [
+          {
+            "session_id": "ses_pwk4vszkj3cc17et1qqzveqcp3",
+            "spent_micro_usd": 405272
+          },
+          {
+            "session_id": "ses_0b8hah8zykvwgxf5bpg3dczf7c",
+            "spent_micro_usd": 147989
+          },
+          {
+            "session_id": "ses_7tbyztrta49ffq7xhcwkjs1adn",
+            "spent_micro_usd": 51192
+          },
+          {
+            "session_id": "ses_z5zdhe2jpb58qwe8qj4vdv9b6k",
+            "spent_micro_usd": 36734
+          },
+          {
+            "session_id": "ses_gz7y5t4rpqmm3wd00d9bk5fvpd",
+            "spent_micro_usd": 29910
+          },
+          {
+            "session_id": "ses_d6nthkdnbbatsdn9evpxbpze44",
+            "spent_micro_usd": 29660
+          },
+          {
+            "session_id": "ses_07g60pjkxv3hyctnvmvg4m0yyd",
+            "spent_micro_usd": 29222
+          },
+          {
+            "session_id": "ses_10ztdmxmqjxpfvaggzzzy5f080",
+            "spent_micro_usd": 28845
+          },
+          {
+            "session_id": "ses_cd5rfd48vk3jef1fv5av6rwa7t",
+            "spent_micro_usd": 28322
+          },
+          {
+            "session_id": "ses_3k3za9nf65mdqnyrta6c0xbw3g",
+            "spent_micro_usd": 21346
+          }
+        ]
+      }
+    }
+  ]
+}
