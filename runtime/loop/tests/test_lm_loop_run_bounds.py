@@ -4537,6 +4537,80 @@ def test_busy_resource_admission_defers_without_waiting_or_starting_child(tmp_pa
     }
 
 
+@pytest.mark.parametrize(("effect_scope", "outcome", "expected_code", "expected_reason"), (
+    ("owner", "run", 0, "resource_slot_acquired"),
+    ("occurrence", "run", 0, "resource_slot_acquired"),
+    ("owner", "unknown", 75, "resource_effect_unknown"),
+    ("occurrence", "interrupted", 75, "resource_admission_interrupted"),
+))
+def test_self_reservation_is_consumed_in_the_same_wake(
+        tmp_path, monkeypatch, effect_scope, outcome, expected_code, expected_reason):
+    root = tmp_path / "admission"
+    monkeypatch.setenv("LIFE_MANAGER_RESOURCE_ADMISSION_ROOT", str(root))
+    monkeypatch.setenv("LIFE_MANAGER_HOST_MAX_FINITE_RUNS", "2")
+    monkeypatch.setenv("LIFE_MANAGER_HOST_MIN_REVENUE_RUNS", "0")
+    admission.activate_durable_v2()
+    instant = time.time()
+    clock = {"now": instant}
+    for owner in ("ahead-1", "ahead-2"):
+        admission.enqueue_durable("deterministic", owner, admission_class="revenue",
+                                  occurrence_id=f"{owner}:wake", now=instant)
+    assert admission.reserve_available(now=instant) == ["ahead-1", "ahead-2"]
+    # Their leases expire between this wake's first claim and reservation scan.
+    # A sibling must still receive its grant while this controller claims itself.
+    def enqueue(*args, **kwargs):
+        result = admission.enqueue_durable(*args, **kwargs, now=clock["now"])
+        admission.enqueue_durable("deterministic", "sibling", admission_class="revenue",
+                                  occurrence_id="sibling:wake", now=instant + 0.1)
+        return result
+
+    def reserve():
+        clock["now"] = instant + 61
+        reserved = admission.reserve_available(now=clock["now"])
+        assert reserved == ["candidate", "sibling"]
+        if outcome == "unknown":
+            with sqlite3.connect(root / "admission-v2.sqlite3") as db:
+                db.execute("UPDATE occurrences SET effect_unknown=1 WHERE occurrence_id=?",
+                           ("candidate:wake-one",))
+        elif outcome == "interrupted":
+            signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
+        return reserved
+
+    dispatched = []
+    monkeypatch.setattr(loop_runner, "memory_free_percent", lambda: 50)
+    monkeypatch.setattr(loop_runner, "swap_pressure", lambda: None)
+    monkeypatch.setattr(loop_runner, "enqueue_durable_resource", enqueue)
+    monkeypatch.setattr(loop_runner, "claim_durable_resource",
+                        lambda *args, **kwargs: admission.claim_durable(
+                            *args, **kwargs, now=clock["now"]))
+    monkeypatch.setattr(loop_runner, "reserve_available_resource", reserve)
+    # Only the OS launchd boundary is replaced; queue, claim, child and release are real.
+    monkeypatch.setattr(loop_runner, "_dispatch_reserved", lambda owners: dispatched.extend(owners))
+    output = tmp_path / "executions.txt"
+    script = ("import os,pathlib; "
+              f"p=pathlib.Path({str(output)!r}); "
+              "p.open('a').write(os.environ['LIFE_MANAGER_OCCURRENCE_ID']+'\\n')")
+    entry = {"cadence": {"start_interval_seconds": 60},
+             "provider_route": "deterministic", "resource_class": "deterministic",
+             "admission_class": "revenue", "effect_class": "none",
+             "coalesce_queued_wakes": True, "admission_effect_scope": effect_scope}
+    receipt = tmp_path / "host-admission.json"
+    assert _run_admitted([sys.executable, "-c", script], entry, "candidate", {}, receipt,
+                         occurrence_id="candidate:wake-one") == expected_code
+    assert json.loads(receipt.read_text())["reason"] == expected_reason
+    assert dispatched == ["sibling"]
+    with sqlite3.connect(root / "admission-v2.sqlite3") as db:
+        actual = db.execute("SELECT state,effect_unknown FROM occurrences WHERE occurrence_id=?",
+                            ("candidate:wake-one",)).fetchone()
+    if outcome == "run":
+        assert output.read_text().splitlines() == ["candidate:wake-one"]
+        assert actual == ("released", 0)
+        assert list((root / "owners").glob("*.json")) == []
+    else:
+        assert not output.exists()
+        assert actual == ("queued", int(outcome == "unknown"))
+
+
 def test_all_coconala_lanes_enter_revenue_admission(tmp_path):
     registry = json.loads(
         (Path(__file__).parents[3] / "config/loop-registry.json").read_text()
