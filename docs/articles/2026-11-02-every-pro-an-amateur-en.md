@@ -53,7 +53,7 @@ You describe the software you want. It builds, tests, deploys, and maintains it.
 
 **Desire → your AI → result.**
 
-> **VISUAL 1 — Two-panel diagram:** Before AGI: customer → professional → result. With AGI: customer → personal AI → result. The transaction disappears.
+![Before AGI the customer pays a professional; with AGI the customer gets the result through personal AI.](./assets/pro-to-amateur-transaction.svg)
 
 The striking part is not that a machine has taken the specialist's seat. It is that the buyer may no longer need to hire a specialist at all.
 
