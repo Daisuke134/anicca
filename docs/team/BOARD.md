@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / CAPAFY-LEGACY-INVENTORY] 同owner継続・PR9099 CI誤検出修復: `docs/capafy-legacy-c23d68`、task `c23d68e42668425c07faedde`。所有: legacy clickの保存schema・exact URL/ownerのread-only照合、sanitize済み証拠と本行。PR9097の合成除外・Dots会計・Muse/Marketer投稿・TEAM-HQ runtime・fenceは変更しない。
 - [home-codex / CAPAFY-SYNTHETIC-CLICKS] 完了: PR #9097/main1d970aef、published deploy6ae8ddd7633cf01d4a4f2a38。通常集計105/検証9分離、元114件と集合hash・公開static5files・旧go ZIPを保持。公式readback済み、売上未確認。この修正を再deployせず、未完PR #9099等を実状態から継続する。
 - [home-codex / CAPAFY-CT-READBACK] 検証完了・統合中: `docs/capafy-ct-readback-4a481d`、task `4a481d0fe62485fd4dffc972`。所有: 既存7商品CTAの公開redirect/ct保持とclick counterの限定検証、sanitize済み証拠と本行。投稿・会計・商品・TEAM-HQ runtime・既存effect fenceは変更しない。
 - [Codex / Anicca816再リジェクト] 完了: PR9095/main b1abc608、審査情報のC商品不一致を修正、Release Maestro2/2 PASS、1.9.6(816)とLifetimeを公式WAITING_FOR_REVIEWで再確認。C商品の延期依頼はApple対応待ち。正本 → 統合SSOT「Anicca 816再リジェクト・現在cursor」。
@@ -46,6 +47,7 @@
 - [Codex / Manager] prepared shadowの既存host/CLI/Actions接続。所有: feat/manager-host-shadow-connection-20261023の限定host/CLI/workflow/tests/docs。既定・schedule OFF、単一owner、P0比較のみ。本番推論・新規課金・他laneは変更しない。
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
+- 2026-11-03 03:09 JST home-codex（c23d68）: 公式Blob114件/legacy30商品88件/本文全件1とstats一致、公開landing60裸リンクを取得。ct有無が同一legacy keyとなる反例PASSで旧ct/owner復元不能を特定。generator9/go5/境界PASS、追加click・投稿・台帳変更0。次: 必要CI→main、最小ct payload保存は別source task。証拠 docs/evidence/capafy-legacy-c23d68.md。
 - 2026-11-03 02:55 JST home-codex（e85ac2）: remote thread公式2messageに本人受領/着手/結果の新規差分なし、催促0。確定合成probe9件の通常計測混入をREDで再現して最小修正、Node6/Python3.12既存4 PASS。PR #9097でCI/review中。公式total114/probe9、公開index/sourceのhash不一致を記録し本番deploy0。次: exact-head CI→main→公開staticを保持した関数反映→公式stats。売上未確認。
 - 2026-11-03 01:27 JST home-codex（4a481d）: remote追跡threadを公式完読し返信0・催促0。既存Capafy7商品すべて302/対象ID/ct/utm_content保持、遅延後go-statsのexact probe7商品を公式照合。GET7＋診断HEAD2もclickとなり合計9件の合成記録を除外対象として証拠へ記録。generator9件/source-boundary PASS。投稿・会計・価格・HQ runtime変更0、売上未確認。次: legacy blobのexact URL/owner inventory（本検証の対象外）。証拠 docs/evidence/capafy-ct-readback-4a481d.json。
 - 2026-10-30 10:36 JST Codex（Anicca正式再提出）: Guideline2.1(b)のoffering/設定購入入口とSwift Release compilerを修正、PR9057/9058は各CI15/15 PASS・main統合。Maestro最適化版2/2、iPad実画面、native22/Python21を確認。main e24aa053由来1.9.6(815)とLifetimeをASC CLIで同時提出し両方WAITING_FOR_REVIEW。Apple承認/公開・有料購入完了は未確認。次: Apple審査結果待ち、今回の依頼範囲は完了。
@@ -264,3 +266,5 @@
 
 - 2026-11-01 08:34 JST Codex: claim `/lm` title-only SEO publication; source title + manifest, merged-main immutable overlay verified against live ccf57e9, both products workflow pins; preserve all claims/description.
 - home-codex（親の継続受入）: e85ac2の全CI/main/限定反映/公式照合を完了。Netlify最初の422/errorは未公開の失敗として保持し、既定region/memoryを明示しないpayloadへ修正する。正本CAPAFY-SYNTHETIC-CLICKSと隣接evidenceを参照。
+
+- home-codex（task879652c218603b7f69db1c0a）: PR9099のgitleaks dir誤検出をRED1→GREEN0で確認、証拠JSONの項目名だけ修正しhash/他内容保持assert、Python9/Node6/source-boundary PASS。最新mainの他owner完了記録を保持。次: 更新headの必要CI→main。投稿/会計/provider write/deploy0、売上未確認。

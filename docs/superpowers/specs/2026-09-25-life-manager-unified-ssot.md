@@ -78,6 +78,16 @@ remote最新証拠: dr eggbot本人のReason返信1Z46YA5HJC2TXG1WEY36T4X8QJと�
 検証結果: 全7商品302/対象ID/ct/utm_content保持。最初の公式statsはexact probe未反映、後続readbackで全7商品を確認する。GET7に加え診断HEAD2もclick記録となり合計9件、実流入/会計から除外すべき合成probeは`test_hq_4a481d`。公式deploy6ae89aeeb7fd12e6a76e6305/readyを確認しdeploy変更0。generator9件とsource-boundary PASS、購入/売上は未確認。証拠 → docs/evidence/capafy-ct-readback-4a481d.json。legacy blob全件のct保持は未検証で、次操作はexact URLと既存ownerのinventoryから始める。HEADをread-only無副作用と仮定せず、同probeを再送しない。
 Slack remote差分: 公式conversations.repliesで指定thread1793635811.853779を完読、parent1件/返信0/has_more=false。受領・着手・結果の新差分なし、Reason accepted/queuedは未着手、催促送信0。
 
+## CAPAFY-LEGACY-INVENTORY — 旧クリックの計測境界
+
+目的・範囲: CAPAFY-CT-READBACKの残課題を引き継ぎ、legacy blobの保存schema、復元できるURL/owner、ct保持の証明範囲を調べる。owner=home-codex-c23d68、task=c23d68e42668425c07faedde、branch=docs/capafy-legacy-c23d68、base=ec4c989577。既存PR9097のコード、台帳、配信、商品、HQ、effect fenceは変更しない。
+完了条件: 公式readbackと実sourceから旧記録の欠損/復元可能性を切り分け、検証根拠とexactな次操作を永続化、必要CIの公式PASS後にmainへ統合する。未確認ctや売上は成功に置換しない。
+現在cursor: 同ownerのread-only inventory継続確認とmain同期を完了、PR9099の最新head必要CI→main統合。公式Blob114件/legacy30商品88件/本文全88件が1、公式stats114/88一致、公開landing60リンクは全件bare route。実codeの反例でct有無が同一legacy keyになるため、legacy=ct欠落とは判定しない。旧query/ct/post/本人ownerは保存されず復元不能、売上は未確認。証拠 → docs/evidence/capafy-legacy-c23d68.{md,json}。generator9/9・go5/5・反例assert・source-boundary PASS。追加click/投稿/会計変更0。次のsource作業はgo.mjsの最小ct/platform/post保存とgo-stats readbackをtest-firstで接続することで、既存receiptのexact一致が無い過去88件はunknownを維持する。既存全体TODO順は維持する。
+remote差分: 指定Slack threadを公式完読。parentとhome-codexの更新のみ、本人受領/着手/結果の新差分なし。Reason accepted/queuedは未着手、催促0。
+継続照合: 現行公式通常105/検証除外9/legacy88、監査時raw114との関係を明記。再検証Python9/Node6 PASS。remoteはdr eggbot本人の2時間sweep/wake_me未接続という差分のみ確認、他本人の自然wake未確認。PR9097再deploy0、親PR9100/TEAM-HQ変更0、Dots会計/Muse・Marketer投稿を維持する。
+
+CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。PR9099/head19ef706537の必要CIはgitleaks dirのみFAIL、他13jobsはPASS。集合hashの項目名だけをlegacy_record_set_sha256へ変更し、値と監査内容を保持する。旧historyのexact baselineはmain由来を維持し、除外追加0。focused RED→GREENと関連検証後pushし、更新head全CI→mainを次操作とする。過去88件の帰属と売上、未来payload保存は未完。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
