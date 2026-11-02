@@ -29,9 +29,8 @@ if str(ROOT) not in sys.path:
 RECONCILE_CALL_TAIL_BYTES = 4 * 1024 * 1024
 SCRATCH_GC_CANDIDATE_BUDGET = 6000
 SCRATCH_GC_TIME_BUDGET_SECONDS = 60
-# The 60-second budget applies to candidate evaluation. Preflight has separate
-# size caps; the largest observed host has 105 roots, 76,979 candidates total,
-# and 11,090 candidates in one root. Oversized inventories defer before deletion.
+# The 60-second budget applies to candidate evaluation. Preflight size caps
+# bound each candidate page; the cursor resumes oversized inventories next wake.
 SCRATCH_GC_ROOT_LIMIT = 128
 SCRATCH_GC_DIRECTORY_ENTRY_LIMIT = 20_000
 SCRATCH_GC_ROOT_CANDIDATE_LIMIT = 20_000
@@ -398,34 +397,45 @@ def scratch_gc(roots: set[Path], *, snapshot_started_ns: int | None = None,
     last_cursor = None
     stop_reason = None
 
-    # Inventory candidates before deleting anything, then apply one cursor to
-    # the complete ordered set so nested loop/run boundaries cannot starve.
-    for root_key in root_keys:
-        root = root_map[root_key]
-        root_fd = scratch_fd = -1
-        try:
-            root_fd = os.open(root_key, flags)
-            scratch_fd = os.open("loop-tmp", flags, dir_fd=root_fd)
-            loop_names, inventory_reason, entry_count = _scratch_gc_directory_names(
-                scratch_fd)
-            result["preprocessed_entries"] += entry_count
-        except FileNotFoundError:
-            continue
-        except OSError:
-            result["errors"] += 1
-            continue
-        finally:
-            if scratch_fd >= 0:
-                os.close(scratch_fd)
-            if root_fd >= 0:
-                os.close(root_fd)
-        if inventory_reason is not None:
-            stop_reason = inventory_reason
-            break
+    root_scopes = [(root_key, None, None) for root_key in root_keys]
+    if cursor is not None:
+        index = root_keys.index(cursor[0])
+        root_scopes = ([(cursor[0], cursor, None)] + root_scopes[index + 1:]
+                       + root_scopes[:index] + [(cursor[0], None, cursor)])
 
-        run_names_by_loop: dict[str, list[str]] = {}
-        root_candidate_count = 0
+    # Prepare only a bounded page after the cursor, wrapping after later roots.
+    # Directory and event coverage checks remain fail-closed.
+    for root_key, lower, upper in root_scopes:
+        root = root_map[root_key]
+        if root_key not in inventories:
+            root_fd = scratch_fd = -1
+            try:
+                root_fd = os.open(root_key, flags)
+                scratch_fd = os.open("loop-tmp", flags, dir_fd=root_fd)
+                loop_names, inventory_reason, entry_count = _scratch_gc_directory_names(
+                    scratch_fd)
+                result["preprocessed_entries"] += entry_count
+            except FileNotFoundError:
+                continue
+            except OSError:
+                result["errors"] += 1
+                continue
+            finally:
+                if scratch_fd >= 0:
+                    os.close(scratch_fd)
+                if root_fd >= 0:
+                    os.close(root_fd)
+            if inventory_reason is not None:
+                stop_reason = inventory_reason
+                break
+            inventories[root_key] = (loop_names, {})
+
+        loop_names, run_names_by_loop = inventories[root_key]
+        root_candidate_count = sum(len(names) for names in run_names_by_loop.values())
         for loop_name in loop_names:
+            if ((lower is not None and loop_name < lower[1])
+                    or (upper is not None and loop_name > upper[1])):
+                continue
             root_fd = scratch_fd = loop_fd = -1
             try:
                 root_fd = os.open(root_key, flags)
@@ -446,34 +456,29 @@ def scratch_gc(roots: set[Path], *, snapshot_started_ns: int | None = None,
             if inventory_reason is not None:
                 stop_reason = inventory_reason
                 break
-            root_candidate_count += len(run_names)
-            if root_candidate_count > SCRATCH_GC_ROOT_CANDIDATE_LIMIT:
-                stop_reason = "root_candidate_budget"
+            run_names = [name for name in run_names
+                         if (lower is None or (root_key, loop_name, name) > lower)
+                         and (upper is None or (root_key, loop_name, name) <= upper)]
+            root_remaining = SCRATCH_GC_ROOT_CANDIDATE_LIMIT - root_candidate_count
+            total_remaining = SCRATCH_GC_TOTAL_CANDIDATE_LIMIT - len(candidates)
+            remaining = min(root_remaining, total_remaining)
+            selected = run_names[:remaining]
+            run_names_by_loop.setdefault(loop_name, []).extend(selected)
+            candidates.extend((root_key, loop_name, name) for name in selected)
+            root_candidate_count += len(selected)
+            if len(selected) < len(run_names):
+                stop_reason = ("root_candidate_budget" if root_remaining <= total_remaining
+                               else "total_candidate_budget")
                 break
-            run_names_by_loop[loop_name] = run_names
 
         if stop_reason is not None:
             break
-        if len(candidates) + root_candidate_count > SCRATCH_GC_TOTAL_CANDIDATE_LIMIT:
-            stop_reason = "total_candidate_budget"
-            break
-        inventories[root_key] = (loop_names, run_names_by_loop)
-        candidates.extend(
-            (root_key, loop_name, run_name)
-            for loop_name, run_names in run_names_by_loop.items()
-            for run_name in run_names
-        )
 
+    page_reason = None
+    if (cursor_path is not None
+            and stop_reason in {"root_candidate_budget", "total_candidate_budget"}):
+        page_reason, stop_reason = stop_reason, None
     if stop_reason is None and candidates:
-        candidates.sort()
-        if cursor is not None:
-            start_index = next(
-                (index for index, candidate in enumerate(candidates)
-                 if candidate > cursor),
-                0,
-            )
-            candidates = candidates[start_index:] + candidates[:start_index]
-
         cursor_metadata = None
         cursor_metadata_loaded = False
         current_root_key = None
@@ -694,9 +699,11 @@ def scratch_gc(roots: set[Path], *, snapshot_started_ns: int | None = None,
             for descriptor in (current_loop_fd, current_scratch_fd, current_root_fd):
                 if descriptor >= 0:
                     os.close(descriptor)
+    stop_reason = stop_reason or page_reason
     if stop_reason is not None:
         result["deferred"] = True
-        result["blocking_defer"] = stop_reason not in {"candidate_budget", "time_budget"}
+        result["blocking_defer"] = (stop_reason not in {"candidate_budget", "time_budget"}
+                                    and stop_reason != page_reason)
         result["budget_reason"] = stop_reason
         last_cursor = last_cursor or cursor
     try:
