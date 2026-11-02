@@ -124,6 +124,16 @@ class RunnerContract(unittest.TestCase):
             self.assertNotIn("secret-token-private", json.dumps(result))
             self.assertNotIn(str(root), json.dumps(result))
 
+    def test_diagnostics_mask_arbitrary_identifiers(self):
+        b = self.implementation()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "PRIVATE_FILE.log").write_text("ModuleNotFoundError: No module named 'PRIVATE_MODULE'\nPRIVATE_CLASSError: confidential\n")
+            result = json.dumps(b.failure_diagnostics(root))
+            for value in ["PRIVATE_FILE", "PRIVATE_MODULE", "PRIVATE_CLASS", "confidential"]:
+                self.assertNotIn(value, result)
+            self.assertIn("other", result)
+
     def test_process_cache_and_outputs_are_separate_for_identical_task_seed(self):
         b = self.implementation()
         with tempfile.TemporaryDirectory() as d:

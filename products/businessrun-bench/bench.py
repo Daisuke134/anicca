@@ -176,6 +176,12 @@ def stop_tree(process):
 
 def failure_diagnostics(run):
     """Publish types and missing import names, never exception messages or log text."""
+    allowed_types = {"ModuleNotFoundError", "ImportError", "RuntimeError", "ValueError", "TypeError",
+                     "FileNotFoundError", "PermissionError", "OSError", "OperationalError", "AssertionError",
+                     "AttributeError", "KeyError", "CalledProcessError", "TimeoutExpired", "ZeroDivisionError"}
+    allowed_modules = {"requests", "httpx", "yaml", "fastapi", "uvicorn", "pandas", "numpy", "openpyxl",
+                       "bberp", "procgen", "PIL", "sqlalchemy", "pydantic", "typer", "rich", "dotenv",
+                       "litellm", "psutil", "xlsxwriter", "pypdf", "aiohttp", "tabulate"}
     found = []
     for path in sorted(run.rglob("*.log")):
         if path.stat().st_size > 2_000_000:
@@ -183,10 +189,10 @@ def failure_diagnostics(run):
         for line in path.read_text(errors="replace").splitlines():
             match = re.match(r"^([A-Za-z][A-Za-z0-9_]*(?:Error|Exception)):", line)
             if match:
-                item = {"log": path.name, "exception": match[1]}
+                item = {"log_role": "upstream", "exception": match[1] if match[1] in allowed_types else "other"}
                 missing = re.match(r"^ModuleNotFoundError: No module named '([A-Za-z0-9_.]+)'$", line)
                 if missing:
-                    item["missing_module"] = missing[1]
+                    item["missing_module"] = missing[1] if missing[1] in allowed_modules else "other"
                 if item not in found:
                     found.append(item)
     return found[:20]
