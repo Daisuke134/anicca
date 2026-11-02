@@ -95,6 +95,8 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 完了条件: 実handler境界のRED→GREEN、既存Node/Python関連テスト、diff/source-boundary、commit/push/PR、必要CI公式PASS後のmain統合。反映と自然クリックの公式readbackは別cursorとし、CI待ちで有限runを消費しない。過去88件の帰属/購入/売上は未確認。
 現在cursor: RED3件→Node10/10、Python pull-attribution4/4・landing9/9・diff/source-boundary PASS。証拠 → docs/evidence/capafy-payload-3d1087.json。commit/push/PR→必要CI/review→main、反映/公式readbackは未完。Dots会計/Muse・Marketer投稿、HQ runtime、既存effect、PR9097 deployは変更0。remote追跡thread公式完読、新しい本人受領/着手/結果差分なし、催促0。
 
+継続修復（task a4a1953ed490e9caf61e10c3）: PR9101旧head b86f14fの必要CI14jobs/CodeRabbitは公式SUCCESS。GitHub reviewの2指摘を実コードで確認し、legacy keyのplatform空/post有り本文をunavailableへ分類し、日次pullの明示attribution取得と返却ct集計の保存を同PRで接続する。既存日次行を再送/上書きせず、売上因果の未確認と欠損unknownを維持する。順序は2件RED→最小修正→関連GREEN→push→fresh review/更新head必要CI→main→限定反映。旧headのCIを新headへ流用しない。2件はPython2 assertions/Node1 assertionのREDを確認し、最小修正後Node11/Python marketing全39 GREEN、diff/source-boundary PASS。Python既存HTTPError fixtureのResourceWarningは保持し、失敗0。現在cursorは更新headのfresh review/必要CIであり、deploy/投稿/会計変更0。指定remote threadは公式完読、本人の新差分なし、催促0。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。

@@ -140,3 +140,12 @@ test("attribution readback does not turn storage failure into zero or success", 
   });
   await assert.rejects(stats(new Request("https://landing.test/go-stats?detail=1&attribution=1")));
 });
+
+
+test("legacy body with a post is unavailable rather than attributed", () => {
+  const key = "clicks/1/1-u";
+  const bodies = new Map([[key, { schema_version: 1, agentId: "1", platform: "", post: "orphan", ct: "campaign" }]]);
+  const { detail } = summarize([key], ["1"], bodies);
+  assert.deepEqual(detail.attribution, { recorded: 0, unavailable: 1, agents: {} });
+  assert.equal(detail.total, 1);
+});

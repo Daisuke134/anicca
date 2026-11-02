@@ -160,7 +160,8 @@ Storage errors fail the readback. Raw blobs
 are preserved. Other legacy or test-looking names are not automatically excluded.
 A corrected cumulative count below an older ledger baseline produces an unknown
 window delta, rather than a negative count. Immediately after `ig_metrics.py`, the daily caller runs
-`scripts/pull_attribution.py` non-fatally; it joins those counts to the current
+`scripts/pull_attribution.py` non-fatally with `?detail=1&attribution=1`; it retains
+the returned ct summary as `click_attribution` (null if unavailable) and joins counts to the current
 `GET /agent/agents` sales snapshot and appends at most one dated row per day to
 `~/.local/state/life-manager/state/capafy-attribution.jsonl`.
 

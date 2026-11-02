@@ -37,9 +37,10 @@ class PullAttributionTests(unittest.TestCase):
 
             urlopen.assert_called_once()
             request_arg = urlopen.call_args.args[0]
-            self.assertEqual(request_arg.full_url, "https://landing.example/go-stats?detail=1")
+            self.assertEqual(request_arg.full_url, "https://landing.example/go-stats?detail=1&attribution=1")
             self.assertEqual(result["date"], "2026-07-19")
             self.assertFalse(result["causal_claim"])
+            self.assertIsNone(result["click_attribution"])
             self.assertEqual(result["attribution_status"], "candidate_no_order_level_source")
             self.assertEqual(
                 result["agents"],
@@ -71,6 +72,21 @@ class PullAttributionTests(unittest.TestCase):
                 ],
             )
             self.assertEqual(len(output.read_text(encoding="utf-8").splitlines()), 1)
+
+    def test_retains_ct_summary_in_daily_row_without_claiming_order_attribution(self):
+        summary = {"recorded": 2, "unavailable": 1, "agents": {"1": {"hooklab_x": 2}}}
+        payload = {"total": 3, "agents": {"1": {"total": 3}}, "attribution": summary}
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "out.jsonl"
+            with (
+                patch.object(pull_attribution.request, "urlopen", return_value=io.BytesIO(json.dumps(payload).encode())),
+                patch.object(pull_attribution, "_fetch_agents", return_value={"data": []}),
+            ):
+                result = pull_attribution.pull(output_file=output, today=date(2026, 7, 19))
+            self.assertEqual(result.get("click_attribution"), summary)
+            self.assertEqual(json.loads(output.read_text())["click_attribution"], summary)
+            self.assertFalse(result["causal_claim"])
+            self.assertIsNone(result["agents"][0]["subscription_orders"])
 
     def test_second_pull_on_same_date_does_not_append(self):
         existing = {"date": "2026-07-19", "agents": []}

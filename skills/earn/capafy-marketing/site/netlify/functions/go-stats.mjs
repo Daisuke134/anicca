@@ -34,7 +34,7 @@ export const summarize = (keys, agents = allowedAgents, bodies) => {
       if (body?.schema_version === 1 && body.agentId === agentId &&
           [body.platform, body.post, body.ct].every(token) &&
           body.platform === (parts.length >= 5 ? parts[2] : "") &&
-          (body.platform ? (body.post || "_") === parts[3] : true)) {
+          (body.platform ? (body.post || "_") === parts[3] : body.post === "")) {
         attribution.recorded += 1;
         if (body.ct) {
           const row = (attribution.agents[agentId] ||= Object.create(null));

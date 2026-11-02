@@ -34,5 +34,24 @@
     "owner-coordinated functions-only immutable deployment preserving current static and prior go ZIP",
     "official readback of natural new JSON body and ct aggregation; do not replay old synthetic probe"
   ],
-  "source_contract": "New sanitized click JSON; opt-in detail=1&attribution=1; old scalar attribution unavailable; storage errors fail readback"
+  "source_contract": "New sanitized click JSON; opt-in detail=1&attribution=1; old scalar attribution unavailable; storage errors fail readback",
+  "continuation": {
+    "task_id": "a4a1953ed490e9caf61e10c3",
+    "prior_head_ci": "b86f14f: 14 jobs + CodeRabbit SUCCESS",
+    "review_findings": [
+      4448386165,
+      4448386180
+    ],
+    "red": "Python URL opt-in and missing persisted ct summary: 2 assertion failures; Node malformed legacy: 1 assertion failure",
+    "environment_probe": "Node initially missing @netlify/blobs; reused installed dependency via ignored symlink after exact package-lock byte comparison",
+    "green": {
+      "node": 11,
+      "python_marketing_suite": 39,
+      "diff_check": "PASS",
+      "source_boundary": "PASS"
+    },
+    "warnings": "Existing test HTTPError fixtures emit ResourceWarning; suite OK",
+    "next": "fresh review, exact updated-head CI, then merge, coordinated functions-only promotion and natural official readback",
+    "effects": "no deploy, click, post, accounting mutation"
+  }
 }

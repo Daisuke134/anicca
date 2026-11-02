@@ -271,3 +271,5 @@
 - home-codex（task879652c218603b7f69db1c0a）: PR9099のgitleaks dir誤検出をRED1→GREEN0で確認、証拠JSONの項目名だけ修正しhash/他内容保持assert、Python9/Node6/source-boundary PASS。最新mainの他owner完了記録を保持。次: 更新headの必要CI→main。投稿/会計/provider write/deploy0、売上未確認。
 
 - home-codex（task3d10872ebd07701cbebd47c2）: PR9099公式MERGED確認後、未来clickの最小JSON保存と明示詳細ct照合を実装。RED3→Node10/Python4+9 PASS。過去88件unknown、deploy/投稿/会計変更0。次: exact-head CI/review→main→限定反映/自然公式readback。証拠 docs/evidence/capafy-payload-3d1087.json。
+
+- home-codex（task a4a1953ed490e9caf61e10c3）: 同owner PR9101を継続。公式旧head CI全成功後のreview2件をRED再現し、日次ct取得/保存と不正legacy本文の除外を修正。Node11/Python39 PASS。更新head CI/review待ち、deploy/投稿/会計変更0。次cursorは同PR統合→限定反映→自然公式照合。
