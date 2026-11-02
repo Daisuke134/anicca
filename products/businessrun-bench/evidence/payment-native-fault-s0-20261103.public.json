@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "run_id": "payment-native-fault-s0-20261103",
+  "suite": "business-process",
+  "policy": "native-codex",
+  "command": [
+    "python3.12",
+    "$RUN/upstream/bench/process_run.py",
+    "--task",
+    "payment-run",
+    "--harness",
+    "businessrun-native",
+    "--seed",
+    "0",
+    "--runs",
+    "1",
+    "--parallel",
+    "1",
+    "--label",
+    "businessrun-payment-native-fault-s0-20261103",
+    "--timeout",
+    "240",
+    "--faults",
+    "lost-writes"
+  ],
+  "seed": 0,
+  "task": "payment-run",
+  "faults": "lost-writes",
+  "protocol": "local_development_not_answer_isolated",
+  "source": {
+    "repository": "https://github.com/erphq/business-bench.git",
+    "commit": "0d09882b59a16f190feac09abc9331a733a6f96b",
+    "dirty": true
+  },
+  "runner_sha256": "4ae21837a525bb7db5b66b26c13a77b9909d475054d8641c9053fcccd35f6dce",
+  "adapter_sha256": "ebd68fe55edf392d60eeaef1bca39a8e98162ad393f523dc809b6f6e7cbb8838",
+  "started_at": "2026-11-02T15:12:05.309803+00:00",
+  "wall_seconds": 150.38,
+  "exit_code": 0,
+  "artifact_present": true,
+  "summary": {
+    "attempts": 1,
+    "expected_attempts": 1,
+    "missing": 0,
+    "passed": 1,
+    "invalid": 0,
+    "campaign_complete": true,
+    "model_cost_usd": null,
+    "cost_per_success_usd": null
+  },
+  "host_cost_usd": null,
+  "artifact_hashes": [
+    {
+      "name": "result.json",
+      "sha256": "13633b75fcf97c91949bf955dde90a82ccbd0325a0508e55c7cbdc756a22a755"
+    }
+  ]
+}

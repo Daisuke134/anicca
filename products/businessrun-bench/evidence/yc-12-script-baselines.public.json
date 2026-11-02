@@ -1,0 +1,137 @@
+{
+  "log_sha256": "c3894b0a9872e51d0c13d2a8e19cbfac6581f9a2ef46661865be7dc44a2fb138",
+  "rows": [
+    {
+      "config": "default",
+      "seed": 1,
+      "bot": "greedy_bot",
+      "turns": 9,
+      "final_balance_cents": -2438278,
+      "bankrupt": true,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "max_prestige": 1.215
+    },
+    {
+      "config": "default",
+      "seed": 1,
+      "bot": "random_bot",
+      "turns": 9,
+      "final_balance_cents": -1143065,
+      "bankrupt": true,
+      "tasks_completed": 2,
+      "tasks_failed": 1,
+      "max_prestige": 1.176
+    },
+    {
+      "config": "default",
+      "seed": 1,
+      "bot": "throughput_bot",
+      "turns": 16,
+      "final_balance_cents": -391880,
+      "bankrupt": true,
+      "tasks_completed": 6,
+      "tasks_failed": 3,
+      "max_prestige": 1.468
+    },
+    {
+      "config": "default",
+      "seed": 1,
+      "bot": "prestige_bot",
+      "turns": 14,
+      "final_balance_cents": -1978037,
+      "bankrupt": true,
+      "tasks_completed": 5,
+      "tasks_failed": 2,
+      "max_prestige": 1.297
+    },
+    {
+      "config": "default",
+      "seed": 2,
+      "bot": "greedy_bot",
+      "turns": 15,
+      "final_balance_cents": -2853827,
+      "bankrupt": true,
+      "tasks_completed": 5,
+      "tasks_failed": 2,
+      "max_prestige": 1.098
+    },
+    {
+      "config": "default",
+      "seed": 2,
+      "bot": "random_bot",
+      "turns": 9,
+      "final_balance_cents": -1369573,
+      "bankrupt": true,
+      "tasks_completed": 2,
+      "tasks_failed": 1,
+      "max_prestige": 1.249
+    },
+    {
+      "config": "default",
+      "seed": 2,
+      "bot": "throughput_bot",
+      "turns": 16,
+      "final_balance_cents": -3212093,
+      "bankrupt": true,
+      "tasks_completed": 5,
+      "tasks_failed": 3,
+      "max_prestige": 1.139
+    },
+    {
+      "config": "default",
+      "seed": 2,
+      "bot": "prestige_bot",
+      "turns": 9,
+      "final_balance_cents": -2573157,
+      "bankrupt": true,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "max_prestige": 1.249
+    },
+    {
+      "config": "default",
+      "seed": 3,
+      "bot": "greedy_bot",
+      "turns": 12,
+      "final_balance_cents": -3017422,
+      "bankrupt": true,
+      "tasks_completed": 3,
+      "tasks_failed": 2,
+      "max_prestige": 1.242
+    },
+    {
+      "config": "default",
+      "seed": 3,
+      "bot": "random_bot",
+      "turns": 7,
+      "final_balance_cents": -3088417,
+      "bankrupt": true,
+      "tasks_completed": 0,
+      "tasks_failed": 1,
+      "max_prestige": 1.0
+    },
+    {
+      "config": "default",
+      "seed": 3,
+      "bot": "throughput_bot",
+      "turns": 9,
+      "final_balance_cents": -2505298,
+      "bankrupt": true,
+      "tasks_completed": 1,
+      "tasks_failed": 2,
+      "max_prestige": 1.0
+    },
+    {
+      "config": "default",
+      "seed": 3,
+      "bot": "prestige_bot",
+      "turns": 9,
+      "final_balance_cents": -1819337,
+      "bankrupt": true,
+      "tasks_completed": 2,
+      "tasks_failed": 1,
+      "max_prestige": 1.25
+    }
+  ]
+}

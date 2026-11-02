@@ -1,0 +1,52 @@
+name: Benchmark baselines
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Upstream environment
+        type: choice
+        options: [coffee, yc, business-process]
+        default: coffee
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Contract checks
+        run: python -m unittest discover -p 'test_*.py'
+      - name: Set up pinned upstream
+        env:
+          SUITE: ${{ inputs.suite || 'coffee' }}
+        run: python bench.py setup --suite "$SUITE"
+      - name: Run baseline controls
+        env:
+          SUITE: ${{ inputs.suite || 'coffee' }}
+        shell: bash
+        run: |
+          case "$SUITE" in
+            coffee) policies="passive heuristic"; seeds="0 1 2" ;;
+            yc) policies="greedy random throughput prestige"; seeds="1 2 3" ;;
+            business-process) policies="oracle null"; seeds="0" ;;
+          esac
+          extra=()
+          if [ "$SUITE" = "business-process" ]; then extra=(--task all); fi
+          for policy in $policies; do
+            for seed in $seeds; do
+              python bench.py run --suite "$SUITE" --policy "$policy" --seed "$seed" "${extra[@]}" --run-id "${SUITE}-${policy}-s${seed}" > "${SUITE}-${policy}-s${seed}.public.json"
+            done
+          done
+      - name: Preserve public receipts only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: businessrun-receipts-${{ inputs.suite || 'coffee' }}
+          path: '*.public.json'
+          if-no-files-found: warn

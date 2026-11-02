@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "run_id": "process-all-null-s0-20261103",
+  "suite": "business-process",
+  "policy": "null",
+  "command": [
+    "python3.12",
+    "$RUN/upstream/bench/process_run.py",
+    "--task",
+    "all",
+    "--harness",
+    "null",
+    "--seed",
+    "0",
+    "--runs",
+    "1",
+    "--parallel",
+    "1",
+    "--label",
+    "businessrun-process-all-null-s0-20261103",
+    "--timeout",
+    "120"
+  ],
+  "seed": 0,
+  "task": "all",
+  "faults": null,
+  "protocol": "local_development_not_answer_isolated",
+  "source": {
+    "repository": "https://github.com/erphq/business-bench.git",
+    "commit": "0d09882b59a16f190feac09abc9331a733a6f96b",
+    "dirty": true
+  },
+  "runner_sha256": "4ae21837a525bb7db5b66b26c13a77b9909d475054d8641c9053fcccd35f6dce",
+  "adapter_sha256": "ebd68fe55edf392d60eeaef1bca39a8e98162ad393f523dc809b6f6e7cbb8838",
+  "started_at": "2026-11-02T15:12:42.396627+00:00",
+  "wall_seconds": 35.399,
+  "exit_code": 0,
+  "artifact_present": true,
+  "error_class": null,
+  "summary": {
+    "attempts": 9,
+    "expected_attempts": 9,
+    "missing": 0,
+    "passed": 0,
+    "invalid": 0,
+    "campaign_complete": true,
+    "model_cost_usd": 0.0,
+    "cost_per_success_usd": null
+  },
+  "host_cost_usd": null,
+  "artifact_hashes": [
+    {
+      "name": "result.json",
+      "sha256": "3d08069436169a669c8b06123af0e0b6ef22083c49bc0b9ce16534dfa765cc4b"
+    },
+    {
+      "name": "result.json",
+      "sha256": "bc93542974222b25da4e39ed0b13829abf7c7c82b0ac2facc29af3dbe93f119b"
+    },
+    {
+      "name": "result.json",
+      "sha256": "0fda28549eed54b76ecf631720aeb2a90c08ae86022335ab8fc66084e5d3d888"
+    },
+    {
+      "name": "result.json",
+      "sha256": "3303939bab6003bf2214c3c0c17906cb2fbe0ee8ac832ed8f894709f74acf52e"
+    },
+    {
+      "name": "result.json",
+      "sha256": "ff811072285dfc04d1fb9075393365ebf110ea02f7e3586320d97f3160d30fa9"
+    },
+    {
+      "name": "result.json",
+      "sha256": "e640435d69273d67a0b959cffcf1f9c4441326806ec080559f91e6a36b7b447e"
+    },
+    {
+      "name": "result.json",
+      "sha256": "f6a1fb458c3e446bb71ef96f67bd66a3226a04105f7622dde94284c0865a75fd"
+    },
+    {
+      "name": "result.json",
+      "sha256": "4d5f6c1406530057a78c208a558be75f2141294794a95f9156f7fc6977f24a18"
+    },
+    {
+      "name": "result.json",
+      "sha256": "00aa57a5955031f240001ef9364b0bd9e939346b325f0b3aabc4c028b4dc4a39"
+    }
+  ]
+}

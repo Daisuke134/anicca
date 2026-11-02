@@ -25521,3 +25521,36 @@ ASC CLIの正式upload/build730477a4-dcdc-48ce-a73d-d1c83a1e8903はCOMPLETE/erro
 - 全体TODOの順序は維持する。今回のcursorは調査と草稿。統合・稼働の残作業は調査資料を参照し、実装完了へ読み替えない。
 - 調査資料: `docs/research/2026-11-02-naive-autonomous-companies.md`。記事草稿: `docs/articles/2026-11-02-naive-autonomous-company-ja.md`。
 - 調査と草稿は作成済み。現行mainの会社記録は10/28の設計初版・セットアップ着手までで、remote goalとlive Naïve orgの後続readbackは未取得。既存LM-EABは5 public synthetic fixtures、今回のfocused testsは42/42 PASS。YC event本文はcrwlで取得しSDK必須・参加承認・実稼働demoを確認、事前完成品の持込許可は未確認。SDK/runtime・外部公開・本番effectは変更しない。文書のPR統合を終えて今回の調査を閉じ、実装laneは未完のまま保持する。
+
+### BusinessRun Bench — 自律企業の実行・比較・公開
+
+目的: Daisの追加指示により、文献調査だけの範囲を実装・実行へ広げる。Naïveの全9評価を原典/元実装まで読み、利用可能な既存環境を実行する。分かりにくいLM-EABの表示名を置き換え、既存採点器を部品として再利用し、agentが実際に判断する持続的な事業評価を作る。モデル/基盤比較、一般利用できるcloud、OSS、実測記事までを目標とする。
+
+名称判断: CompanyBenchとEarnBenchは既存同名repoがあるため棄却。作業名は **BusinessRun Bench — AIは事業を何日回せるか**。略語を要求せず、費用/利益/介入/完走を個別表示する。名称衝突調査は商標クリアランスを意味しない。
+
+採用構成: 既存ベンチマークをfork再実装せず、commitを固定した上流環境と独立adapterから実行する。独自課題は上流で測れない納品・精算・再開・人間介入の一familyから始める。既存record scorerはcontract-test trackと明示し、モデル性能の点数にしない。大規模な第二agent基盤と全社loopの移植は作らず、既存cloudを再利用する。初回の公式full protocol、短縮pilot、script baseline、実model試行、失敗/未実行を区別する。
+
+資源: 既存spend-capとcredential scopeを維持し、別商品の専用keyを流用しない。大容量containerが必要なsuiteは既存cloud/VMの所有者を照合する。host空き約2.8GiB、Docker daemon未稼働の初回観測を記録し、共有基盤を再起動しない。自所有の実験だけを隔離stateに置く。native CLI利用はモデルIDを強制せず実際のreadbackを保存する。
+
+本laneの実行順（他laneの進行中effectは変更しない）:
+
+| ID | 状態 | 成果と受入条件 |
+|---|---|---|
+| BR01 | 完了 | Naïve全9評価のscore、slice、seed、費用、除外、公開code/license、再現可能性を一覧化。元benchmarkの継続catalogを機械可読で保存 |
+| BR02 | 実行中 | Grok/Museへ最新配置・SDK・VM・credential保管先を照会し、返答を実readbackと照合。送信queuedを受領/実行成功にしない |
+| BR03 | 一部実行済 | 公式上流環境を隔離して動かし、実コマンド、commit、config、seed、終了理由、状態/trajectory、費用根拠を保存。非公開suiteは具体的なaccess条件を記録 |
+| BR04 | runner完了/独自課題未完 | 最小の独自事業課題とrunnerを公開可能な形で実装。test-first、agent-visible observationとhidden graderを分離し、baselineと実modelを実行 |
+| BR05 | 未完 | 複数model/harnessを同条件で比較。失敗/欠測/費用unknownを保持し、trial数・分散・適用範囲と共に出す |
+| BR06 | 未完 | 既存cloudへtenant分離・実行上限・隔離workspace・永続結果を持つ一般利用可能な実行経路を接続し、実ユーザー経路を確認。ローカルHTTP成功をcloud公開と呼ばない |
+| BR07 | 未完 | OSSの公開source/ライセンス/再現手順を整え、main→公開先のreadbackと独立実行を確認。private repoへのpushをOSS公開と呼ばない |
+| BR08 | 草稿更新済/公開未完 | 全評価の具体的な読み方・実行した結果/失敗・限界を含む詳細記事と比較図を更新し、残TODOを報告 |
+
+完了判定: 単なるテスト成功・環境install・資料作成では全体完了にしない。未取得のNaïve org、非公開benchmark、実model試行、cloud/公開の各境界を独立して記録する。実装/検証/統合を継続し、不足条件は具体的なprovider/owner/権限として狭める。
+
+実行証拠の更新: products/businessrun-bench/{catalog.json,RESULTS.md,evidence/}に20項目/全9Naïve原典の条件と公式上流pinを保存する。Coffee90日の全passive対照、YCの4script×3seed(12/12破産)、Business全9processのoracle9/9とnull0/9、payment-runのnative Codex clean/fault各1/1成功を実行。モデル比較は第二model未実行で未完。nativeは同seed0の2条件で、答案隔離・一般的優劣は未実証。公式validatorは13条件後にmargin-bridge seed3生成器のゼロ除算で停止し、成功45/45へ読み替えない。
+
+Grok/Muse: sanbou-opsのSDK0.10系/10月末実inference/5役割配置/残高約$0.7/live demo未完の履歴を取得し旧10/28メモ依存を訂正。Reason照会とSlack #agents-hq thread 1793631334.314609へ直接送信済み。返答・現在のorg/VM/provider/tenant規約は未取得。送信を受領/着手としない。既存loopと他ownerは変更しない。
+
+source acceptance: per-run cache/results、既存ID上書き禁止、費用unknown、欠測分母、別session子孫timeout停止、実Python version記録を実装。10contract testsとshell構文PASS。独立read-only reviewerが2blockingを再現し、修正後blocking0で研究用OSS公開可を確認。ps失敗時のreceipt欠落、任意daemon隔離、公開trace完全監査は未保証。
+
+現在cursor: 専用branchをPR/main統合→main由来製品のみpublic repoへ公開→GitHub Actionsで独立cloud baseline readback。その後BR02のlive org、BR05の同条件複数model、BR06のmanaged tenant/継続loop、BR04の未被覆独自familyとBR08の記事公開が残る。既存Business Processと同等の第二simulatorは作らない。

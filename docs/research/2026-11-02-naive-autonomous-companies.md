@@ -1,35 +1,31 @@
 # Naïve・自律企業・評価基盤の調査記録
 
-観測日: 2026-11-02。実行順と状態の正本は unified SSOT。本資料は根拠と提案であり、別の実行キューではない。
+観測日: 2026-11-03。実行順と状態の正本は unified SSOT。本資料は根拠と提案であり、別の実行キューではない。
 
-## 要点
+## 要点と訂正
 
-Naïveは自律企業向けの実行基盤・会社テンプレート・Studio・ベンチマークをまとめる会社。SDKはその接続面である。「Naïve自身が社員ゼロ」「公開スコアが実利益」「AniccaのNaïve統合が稼働済み」のいずれも今回の根拠からは主張できない。
+旧調査の会社状態メモは10/28の記録で止まり、Grok側の後続作業を捉えていなかった。今回 `Daisuke134/sanbou-ops` の `team/naive-sdk/NOTES.md`、`team/opportunities/naive-hackathon/DEMO-PROOF.md`、demo source/README/recordings、LM-ON-NAIVE-EVALを取得し訂正する。**SDK導入と実inferenceは10月末の記録で確認できる。現在の残高・全役割の稼働・顧客提供は別途live readbackが必要。**
 
-推奨は、既存の一事業をNaïveから完走させる限定統合と、既存LM-EABの拡張。会社全体の移植や新しい評価プラットフォームの新設は先行させない。
+評価は旧LM-EABの拡張だけで済ませず、公開名 **BusinessRun Bench** の実行suiteを作る。既存record scorerは「経済記録の契約検証」と表示し、モデルの事業遂行能力と混同しない。既存Business Processが継続業務と通信障害を既に扱うため、同等の自社simulatorを再実装しない。
 
-## 社内の現在地
+## 社内状況の根拠
 
-| 対象 | 今回確認した根拠 | 言えること・残る穴 |
+| 対象 | 新たに確認した記録 | 現在の限界 |
 |---|---|---|
-| Naïve統合 | GitHub現行mainの `docs/company-state/SPEC.md` §6.7 | 10/28記録はチーム設計書初版と新規セットアップ着手を記載。セットアップ不在の調査はその時点のVM/repoについての記録。現在の全環境不在の証明ではない |
-| 設計書 | 同資料は `lm-cloud-naive-team-spec-2026-10-28.md` をremote goalのhidden_filesとして参照 | その本文、後続ログ、agent/session ID、deploy receipt、請求のreadbackを今回取得していない。Grok/Museの実装完了は未確認 |
-| 担当 | 同資料は `anicca-lm-cloud-loop` を担当として記載 | Grok Botの停止・Muse引継ぎも10/28記録。現時点のプロセス停止と断定しない。参謀Grokと配信Grok Botも別の役割 |
-| ローカル検索 | canonical mainのdocs/specsと主な関連repoをSDK名・domain名で検索 | 稼働済みNaïve appの配置を発見できない。検索は全remote VMを含まず、存在しないことの証明ではない |
-| LM-EAB | `apps/life-manager/eval/economic-autonomy/`、`docs/evals/lm-economic-autonomy.md` | scorer、record契約、runner、5個のpublic synthetic fixturesが存在。tuning3 / held_out2。ラベルheld_outは秘匿テストを意味しない |
-| 今回の検証 | records/score/runの3 test filesを `node --test` で実行 | 42/42成功。実agent実行・実利益・provider動作の試験ではない |
+| SDK | Grok VMのVetta SDK0.10.0/CLI0.10.1導入記録 | npmの現在最新や全VM導入の確認ではない |
+| 実inference | 10/30頃の修復後に約20 session、10/31のsales応答OK、約$0.007986という記録 | 当該履歴。今のsession成功を保証しない |
+| 組織 | Anicca、CEO/growth/builder/sales/CFOの5役割とboard・cronの配置記録 | 登録済みと現在稼働中を区別 |
+| 予算 | 10/31の残高約$0.68–0.72、CEO cap到達と後続cap変更の履歴 | fresh balance/capは未取得。新規支出や他サービスkey流用をしない |
+| デモ | local rehearsal記録。live版はMIN_BALANCE_USD=2で止める設計 | localは定型文、real board APIを使ってもmodel推論の証明にならない。Capafyはread-only、公開/投稿を完了としない |
+| domain | agents.aniccaai.comのpending_dns記録 | 現在のDNS・inbox・tenant提供は未確認 |
+| 顧客向け | LM-ON-NAIVE-EVALの軽量顧客$1–3/月等の見積り | 推定。実費・ToS/resale・tenant分離・継続運用を未検証 |
+| credential | remoteの既存保管場所をowner記録で特定。Macの正本全件にservice naive/vetta完全一致は発見せず | 会社にaccountが無いという意味ではない。秘密値を取得/複製/公開しない |
 
-旧設計資料の「branch-only」「4ケース」「41 tests」は当時の記録であり、現在mainの5ケース・42 testsより古い。過去の記録を消さず、現在の判定にはmainと今回の実行を使う。
+Grok・MuseへReason Networkで直接照会し、さらにSlack #agents-hqで両者をmentionしてlive readbackを依頼した。[照会thread](https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793631334314609)。最新の確認時点で返信なし。ReasonのqueuedとSlack送信成功は、担当の受領や作業開始ではない。
 
 ## SDKの新旧
 
-旧スターターのREADMEは `@usenaive-sdk/node ^0.3.0`、`NAIVE_API_KEY`、`naive.forUser(id)`、Account Kit、`agentTools()` を示す。[公式旧スターター](https://github.com/usenaive/naive-starter-template)
-
-現在docsはManaged AgentsのSDKを `@usenaive-sdk/vetta`、APIを `api.vetta.sh`、CLIを `vetta` と明記する。その上の会社層はblueprintと `naive.config.ts` / `naive up`。[公式docs](https://usenaive.ai/docs)
-
-現行media-blueprintのpackage.jsonはblueprints `^0.12.1`、vetta-cli `^0.6.0`、app `^0.1.0` を宣言する。これは取得したmanifestの範囲指定で、npm最新versionやAnicca導入versionの確認ではない。[manifest](https://github.com/usenaive/media-blueprint/blob/main/package.json)
-
-旧API keyと新runtimeの互換性・workspace対応・権限を推測しない。Naïve/Vettaを示すcredentialのmetadata一致をprivate SSOTの全件読込から探索したが該当serviceを発見できない。別名・別vault・remote保持の可能性を残し、「会社として未登録」とは結論しない。秘密値は出力しない。今回は認証・key作成・signupをしない。
+旧starterは `@usenaive-sdk/node` / forUser / Account Kit、現在のManaged Agentsは `@usenaive-sdk/vetta`、api.vetta.sh、vetta CLI。会社層はblueprintとnaive.config.ts/naive up。[旧starter](https://github.com/usenaive/naive-starter-template)、[公式docs](https://usenaive.ai/docs)。旧keyの互換性は推測しない。今回の実装範囲はbenchmark runnerで、既存Naïve org・配信loop・production設定は変更しない。
 
 ## ベンチマークの使い分け
 
@@ -42,9 +38,9 @@ Naïveは自律企業向けの実行基盤・会社テンプレート・Studio�
 
 根拠: [Clipping](https://usenaive.ai/benchmark/clipping-bench)、[Short Form](https://usenaive.ai/benchmark/short-form-bench)、[一覧](https://usenaive.ai/benchmarks)、[Managed Agents説明](https://usenaive.ai/blogs/introducing-naive-managed-agents)。Managed Agents記事はtrial rowsを内部DBに保持し未公開と明記。Short Formは自分のagentを走らせたい場合の連絡先を掲載する。今回公開GitHubに両media simulatorの実行コードを確認できず、公開ページがあるだけで手元で再現可能としない。
 
-推奨する評価は三層。①外部の既存benchで比較する。②LM-EABで自社業務の未見課題を比較する。③限定本番運用で実売上・費用・介入を確認する。これらは別の証拠として報告する。
+推奨する評価は三層。①外部の既存benchで比較する。②未見の自社業務を比較する。③限定本番運用で実売上・費用・介入を確認する。これらは別の証拠として報告する。
 
-LM-EABの最初の実行可能family案は、既存販売事業の「依頼→受入条件→納品→請求照合」。同じ入力・予算・制限で、固定script、現行Life Manager、Naïve経由を比較する。課題成功率、成功1件あたり費用、完走時間、介入回数/秒、重複・不明effect、費用控除後成果を分けて出す。提案であり実装済みではない。平均だけでなく試行数・分散・失敗例を公開する。反復回数はpilot分散と費用から定め、3回を統計的十分性としない。
+独自課題の候補は、既存販売事業の「依頼→受入条件→納品→請求照合」。同じ入力・予算・制限で、固定script、現行Life Manager、Naïve経由を比較する。課題成功率、成功1件あたり費用、完走時間、介入回数/秒、重複・不明effect、費用控除後成果を分けて出す。提案であり実装済みではない。平均だけでなく試行数・分散・失敗例を公開する。反復回数はpilot分散と費用から定め、3回を統計的十分性としない。
 
 ## ハッカソンまでの残作業案
 
@@ -78,6 +74,14 @@ LM-EABの最初の実行可能family案は、既存販売事業の「依頼→�
 
 ## 取得と検証の限界
 
-Firecrawl skillを読んでconnector検索を試みるが、空link_id拒否後、非空IDによる実行は `Unknown tool(firecrawl.firecrawl_search)`。成功や収集credits=0を主張しない。代替の公式ページ取得、crwlによるYC event本文取得、ghによる公式repo/現行mainを使う。remote goalのhidden_filesとlive Naïve orgは未取得。
+Firecrawl skillを読んでconnector検索を試みるが、空link_id拒否後、非空IDによる実行は `Unknown tool(firecrawl.firecrawl_search)`。成功や収集credits=0を主張しない。代替の公式ページ取得、crwlによるYC event本文取得、ghによる公式repo/現行mainを使う。Grokの別repoの実装/証跡は取得済み。live Naïve orgは未取得。
 
-変更は文書だけ。SDK導入、投稿、営業連絡、決済、運営への問い合わせ、production loop変更は行わない。
+今回の追加指示により製品runner・catalog・Actionsと実行証跡を追加する。投稿・決済・既存production loopは変更しない。詳細は下記の実測資料を参照する。
+
+## 全9評価の詳細と実測
+
+全ての公式ページを取得してscore/期間/seed/選択条件/分母/欠測費用まで読み、機械可読一覧20項目にした。各評価の詳しい解釈と引用は[記事](../articles/2026-11-02-naive-autonomous-company-ja.md)、pinと全一覧は[catalog](../../products/businessrun-bench/catalog.json)、実行は[RESULTS](../../products/businessrun-bench/RESULTS.md)に集約する。
+
+取得したBusiness sourceには9つのprocess task.yamlが存在する。READMEの7件という概要より、固定commitの実ファイルとall実行の9件を採用する。35件という旧予定の数字ではなく、9task×5seedなら45条件。strict validatorは13条件の成功後にmargin-bridge seed3で生成器のゼロ除算が発生し、一括検証は未完である。公式graderの変更や失敗seedの隠蔽はしない。
+
+設計上の最優先学習は、①modelとharness比較を分ける ②期間/seed/背景actorを揃える ③成功単価にhost/背景費用を含むか示す ④tuningと未見課題を分ける ⑤選択した比較だけで全順位を名乗らない ⑥インフラ障害を分類し全attemptを残す、である。

@@ -1,0 +1,311 @@
+{
+  "schema_version": 1,
+  "name": "BusinessRun Bench",
+  "description_ja": "AIは事業を何日回せるか。上流のscoreを保持する実行・比較suite。",
+  "runnable": {
+    "business-process": {
+      "directory": "business-bench",
+      "repository": "https://github.com/erphq/business-bench.git",
+      "commit": "0d09882b59a16f190feac09abc9331a733a6f96b",
+      "baseline_requirements": []
+    },
+    "coffee": {
+      "directory": "CoffeeBench",
+      "repository": "https://github.com/SakanaAI/CoffeeBench.git",
+      "commit": "9e2f3950b5812c8753de81ede9c68babc024b5c8",
+      "baseline_requirements": []
+    },
+    "yc": {
+      "directory": "yc-bench",
+      "repository": "https://github.com/collinear-ai/yc-bench.git",
+      "commit": "97ca2b809ea6fee92e3e5cc6240f5b0186221c51",
+      "baseline_requirements": [
+        "SQLAlchemy==2.1.6",
+        "pydantic==2.14.2",
+        "typer==0.27.3",
+        "python-dotenv==1.2.4",
+        "rich==15.0.0"
+      ]
+    }
+  },
+  "benchmarks": [
+    {
+      "id": "naive-clipping",
+      "name": "Clipping Bench",
+      "url": "https://usenaive.ai/benchmark/clipping-bench",
+      "upstream": null,
+      "score": "settled simulated cash; prompt defines profit as cash minus $300",
+      "horizon": "27-33 days plus 14-day settlement",
+      "lesson": "Delayed settlement, account condition cost, notebook-only daily memory; compare null/script/oracle. Simulator cooldown is not an empirical SNS rule.",
+      "access": "provider_access_required",
+      "conditions": [
+        "19 models x 3 completed seasons; mean +/- SE",
+        "public prompt; executable simulator not found in public org repos"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "naive-short-form",
+      "name": "Short Form Bench",
+      "url": "https://usenaive.ai/benchmark/short-form-bench",
+      "upstream": null,
+      "score": "cash + inventory at cost + receivables - payables",
+      "horizon": "7 days; exploratory 30-day runs",
+      "lesson": "Score economics and honesty separately; duplicate payments, supplier mistakes and product safety create distinct decisions.",
+      "access": "provider_access_required",
+      "conditions": [
+        "3 seasons/model; seeds12/13 shared, seed14 brand/audience varies per run",
+        "all models use same harness and notebook; public executable not found"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "naive-terminal",
+      "name": "Naïve Long Horizon Terminal Bench",
+      "url": "https://usenaive.ai/benchmarks/long-horizon-terminal-bench",
+      "upstream": "https://github.com/harbor-framework/terminal-bench-1",
+      "score": "binary tests and model dollars/success",
+      "horizon": "8 selected tasks; 16 attempts/cell",
+      "lesson": "Same model AND same completion window. Do not attribute benchmark results to unmeasured alarm/commit/board runtime.",
+      "access": "public_upstream",
+      "conditions": [
+        "GLM-5.2; immediate/priority/loose",
+        "infrastructure-invalid attempts excluded; one Hermes cell n=15",
+        "trial rows and exact slice pin not public"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "naive-swe",
+      "name": "Naïve SWE-Bench Pro study",
+      "url": "https://usenaive.ai/benchmarks/swe-bench-pro",
+      "upstream": "https://github.com/scaleapi/SWE-bench_Pro-os",
+      "score": "hidden-test solve rate and model dollars/success",
+      "horizon": "15 issue slice",
+      "lesson": "Keep higher resolve rate and lower price separate. Preserve absent invoices and estimated upper bounds.",
+      "access": "public_upstream",
+      "conditions": [
+        "75 usable trials; infrastructure failures repaired and rerun",
+        "Hermes dollars are uncached token upper bound",
+        "Claude/Stock Pi cost withheld as inconsistent"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "naive-business",
+      "name": "Naïve Business Bench study",
+      "url": "https://usenaive.ai/benchmarks/business-bench",
+      "upstream": "https://github.com/erphq/business-bench",
+      "score": "all required checks pass; model dollars/success",
+      "horizon": "25 desk tasks from 7 categories",
+      "lesson": "Count timeouts as failures; denominator is all attempts, not only successful trials.",
+      "access": "public_upstream",
+      "conditions": [
+        "5 harnesses; sample seed20260928; GLM-5.3-Flash low",
+        "125 graded attempts; 8 task-limit timeouts retained",
+        "cost from one pinned OpenRouter rate card; not whole provider bill"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "naive-workplace",
+      "name": "Naïve TheAgentCompany study",
+      "url": "https://usenaive.ai/benchmarks/the-agent-company",
+      "upstream": "https://github.com/TheAgentCompany/TheAgentCompany",
+      "score": "reward=1 full completion plus weighted partial reward",
+      "horizon": "10 tasks; 90min/task",
+      "lesson": "Separate tuning from held-out evidence. Container host access is an explicit experimental condition.",
+      "access": "public_upstream",
+      "conditions": [
+        "E00 selected on same 10tasks; previous build 3 completions, selected build6",
+        "branch build not shipped; access to files anywhere in disposable container",
+        "50 attempts; model fixed, low reasoning"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "naive-prd",
+      "name": "Naïve PRDBench study",
+      "url": "https://usenaive.ai/benchmarks/prd-bench",
+      "upstream": "https://github.com/AGI-Eval-Official/PRDBench",
+      "score": "mean normalized rubric; success threshold0.25",
+      "horizon": "tasks41,32,11,24,16; 45min/task",
+      "lesson": "Disclose model-judge, regrading, strongest-build selection and filtered comparison table.",
+      "access": "public_upstream",
+      "conditions": [
+        "DeepSeek V3.2 judge regrades25 trials without agent reruns",
+        "strongest E05 branch; held-out not run",
+        "table omits harnesses Naïve did not beat on both cost and mean score"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "naive-yc",
+      "name": "Naïve YC-Bench study",
+      "url": "https://usenaive.ai/benchmarks/yc-bench",
+      "upstream": "https://github.com/collinear-ai/yc-bench",
+      "score": "completed-year rate; cost/completed year; funds descriptive",
+      "horizon": "canonical simulated year; seeds1,2,3",
+      "lesson": "Bankruptcy, partial runs and zero-turn infrastructure failure need separate denominators.",
+      "access": "public_upstream",
+      "conditions": [
+        "GLM-5.3-Flash; 3 matched seeds",
+        "Codex2/3 complete and lower $/completed year than Naïve3/3",
+        "zero-turn failures count as attempts but excluded from funds/time/token averages"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "naive-coffee",
+      "name": "Naïve CoffeeBench study",
+      "url": "https://usenaive.ai/benchmarks/coffee-bench",
+      "upstream": "https://github.com/SakanaAI/CoffeeBench",
+      "score": "focal model dollars/completed 14-day simulation",
+      "horizon": "modified14 days; original90 days",
+      "lesson": "Do not claim matched superiority from different seeds. Focal spend is not total six-agent spend.",
+      "access": "public_upstream",
+      "conditions": [
+        "Naïve seeds10-14 vs reference0-4; tuned strongest branch",
+        "fresh decision sessions, medium effort, verification off",
+        "earlier cheaper Codex run omitted; raw trial rows not public"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "business-process",
+      "name": "Business Bench Process",
+      "url": "https://github.com/erphq/business-bench",
+      "upstream": "https://github.com/erphq/business-bench",
+      "score": "ERP state, audit-log, reconciliations and required notes",
+      "horizon": "multi-date processes; 9 task definitions",
+      "lesson": "Reuse existing continuing business work, oracle/null/negative controls and transport-fault profiles.",
+      "access": "public_upstream",
+      "conditions": [
+        "local runner is not an answer-isolation boundary",
+        "six-task historical pilot differs from current9 task definitions",
+        "new seed is not a genuinely unseen task template"
+      ],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "business-desk",
+      "name": "Business Bench Desk",
+      "url": "https://businessbench.org",
+      "upstream": "https://github.com/erphq/business-bench",
+      "score": "executable file checks; all required checks",
+      "horizon": "187tasks",
+      "lesson": "Native spreadsheet recalculation and task-family bootstrap; retain scorer version and development exposure.",
+      "access": "public_upstream",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "business-build",
+      "name": "Business Bench Build",
+      "url": "https://businessbench.org",
+      "upstream": "https://github.com/erphq/business-bench",
+      "score": "application baseline and changing requirements",
+      "horizon": "20apps;3changes",
+      "lesson": "A responding app or generated checklist is not an acceptance test.",
+      "access": "public_upstream",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "yc-bench",
+      "name": "YC-Bench: Your Company Bench",
+      "url": "https://collinear-ai.github.io/yc-bench/",
+      "upstream": "https://github.com/collinear-ai/yc-bench",
+      "score": "funds, bankruptcy, tasks and deadline penalties",
+      "horizon": "1year; $200k start",
+      "lesson": "Payroll compounds; salary increases, client trust and adversarial clients require memory. Not the unrelated startup forecasting YC Bench.",
+      "access": "public_upstream",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "coffee-bench",
+      "name": "CoffeeBench",
+      "url": "https://pub.sakana.ai/coffeebench/index.html",
+      "upstream": "https://github.com/SakanaAI/CoffeeBench",
+      "score": "true net income from environment ledger",
+      "horizon": "90days;6firms",
+      "lesson": "Cash differs from income/equity. Background agents are part of experimental condition; include their costs.",
+      "access": "public_upstream",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "vending2",
+      "name": "Vending-Bench 2",
+      "url": "https://andonlabs.com/evals/vending-bench-2",
+      "upstream": null,
+      "score": "simulated terminal bank balance",
+      "horizon": "1year",
+      "lesson": "Long-horizon coherence with supplier messiness; confirm executable access before scheduling.",
+      "access": "access_unverified",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "vending-arena",
+      "name": "Vending-Bench Arena",
+      "url": "https://andonlabs.com/evals/vending-bench-arena",
+      "upstream": null,
+      "score": "individual business outcome in competitive economy",
+      "horizon": "multi-agent season",
+      "lesson": "Competition/collusion changes incentives; profitable does not imply honest.",
+      "access": "access_unverified",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "tau",
+      "name": "tau-bench",
+      "url": "https://github.com/sierra-research/tau-bench",
+      "upstream": "https://github.com/sierra-research/tau-bench",
+      "score": "final state/task success and repeated reliability",
+      "horizon": "customer service episodes",
+      "lesson": "Useful for customer-service policy consistency; not company profitability.",
+      "access": "public_upstream",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "workarena",
+      "name": "WorkArena",
+      "url": "https://github.com/ServiceNow/WorkArena",
+      "upstream": "https://github.com/ServiceNow/WorkArena",
+      "score": "browser knowledge-work task success",
+      "horizon": "enterprise workflows",
+      "lesson": "Requires configured service environment; public code alone is not ready access.",
+      "access": "public_upstream",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "browsergym",
+      "name": "BrowserGym",
+      "url": "https://github.com/ServiceNow/BrowserGym",
+      "upstream": "https://github.com/ServiceNow/BrowserGym",
+      "score": "environment API; task-specific rewards",
+      "horizon": "browser interaction",
+      "lesson": "Reuse browser observation/action interfaces; environment framework is not one economic score.",
+      "access": "public_upstream",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    },
+    {
+      "id": "osworld",
+      "name": "OSWorld",
+      "url": "https://github.com/xlang-ai/OSWorld",
+      "upstream": "https://github.com/xlang-ai/OSWorld",
+      "score": "desktop task evaluator",
+      "horizon": "real OS tasks",
+      "lesson": "VM access and state reset matter; command execution is not necessarily task success.",
+      "access": "public_upstream",
+      "conditions": [],
+      "reviewed_on": "2026-11-03"
+    }
+  ]
+}

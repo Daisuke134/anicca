@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "run_id": "payment-oracle-isolated-s0-20261103",
+  "suite": "business-process",
+  "policy": "oracle",
+  "command": [
+    "python3.12",
+    "$RUN/upstream/bench/process_run.py",
+    "--task",
+    "payment-run",
+    "--harness",
+    "oracle",
+    "--seed",
+    "0",
+    "--runs",
+    "1",
+    "--parallel",
+    "1",
+    "--label",
+    "businessrun-payment-oracle-isolated-s0-20261103",
+    "--timeout",
+    "300",
+    "--faults",
+    "lost-writes"
+  ],
+  "seed": 0,
+  "task": "payment-run",
+  "faults": "lost-writes",
+  "protocol": "local_development_not_answer_isolated",
+  "source": {
+    "repository": "https://github.com/erphq/business-bench.git",
+    "commit": "0d09882b59a16f190feac09abc9331a733a6f96b",
+    "dirty": true
+  },
+  "runner_sha256": "141aaf8e0948a81dfb04d59ae82436be194c19b376f03408f4ea4d3513897190",
+  "adapter_sha256": "ebd68fe55edf392d60eeaef1bca39a8e98162ad393f523dc809b6f6e7cbb8838",
+  "started_at": "2026-11-02T15:07:44.770406+00:00",
+  "wall_seconds": 6.333,
+  "exit_code": 0,
+  "artifact_present": true,
+  "summary": {
+    "attempts": 1,
+    "expected_attempts": 1,
+    "missing": 0,
+    "passed": 1,
+    "invalid": 0,
+    "campaign_complete": true,
+    "model_cost_usd": 0.0,
+    "cost_per_success_usd": 0.0
+  },
+  "host_cost_usd": null,
+  "artifact_hashes": [
+    {
+      "name": "result.json",
+      "sha256": "36e1cc415f8fd172f5704e6bf4fff37231d9af3d8e50790d6c5b40b4a34d1dcc"
+    }
+  ]
+}
