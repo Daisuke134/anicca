@@ -10,7 +10,7 @@
   "legacy_body_shapes": {
     "literal_one": 88
   },
-  "legacy_key_set_sha256": "e8c73d9867f40d61422bfeb9a5c776a6ba15e3eb9fbb0e5023726e43fc38e737",
+  "legacy_record_set_sha256": "e8c73d9867f40d61422bfeb9a5c776a6ba15e3eb9fbb0e5023726e43fc38e737",
   "legacy_agents": [
     {
       "agent_id": "1037238583",

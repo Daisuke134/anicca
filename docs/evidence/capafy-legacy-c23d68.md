@@ -39,3 +39,7 @@ repo: `/Users/anicca/Projects/life-manager-main`。worktree: `/Users/anicca/Proj
 現行公式statsは通常105件・除外済み検証9件・legacy88件。上記114件は監査時のraw記録であり、現行通常集計と混同しない。PR9097の修正は反映済みで再deployしない。指定threadは公式完読し、dr eggbot本人の2時間sweep/wake_me未接続という差分を確認。Muse本人自然wakeとDots Slack接続は未確認、催促は追加しない。親所有PR9100/TEAM-HQは変更しない。
 
 既存lockのowner home-codex-c23d68を維持してleaseを更新する。最新mainを取り込みBOARDは両方のowner記録を保持する。再検証はPython9/9・Node6/6 PASS。Nodeの初回起動失敗はworktreeの依存不在であり、既存package-lockのnpm ciで解消する。必要CI全PASS後にPR9099を統合する。未来の最小payload保存と旧receipt照合は残TODOであり、帰属欠損や売上が復旧済みとはしない。
+
+## CI誤検出の継続修復
+
+必要CI run41507477501はgitleaks dirだけFAIL、他13jobsはPASS。証拠JSONの集合hash項目名がgeneric-api-keyに誤検出されることを既定設定で再現する。項目名を`legacy_record_set_sha256`へ変更し、hash値とその他のJSON全内容をassertで保持する。検査rule/pathの除外追加は行わない。最新mainの既存history fingerprint baselineを保持する。指定remote threadは公式で全件を取得し、本人の新規受領/着手/結果差分なし、催促0。PR9097/9100は完了済みで再deployしない。現在cursorは更新headの必要CI全PASS→main、未来のpayload保存と過去88件のexact receipt照合は未完。

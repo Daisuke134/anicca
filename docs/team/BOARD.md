@@ -9,8 +9,8 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [home-codex / CAPAFY-LEGACY-INVENTORY] 同owner継続・PR9099最新CI待ち: `docs/capafy-legacy-c23d68`、task `c23d68e42668425c07faedde`。所有: legacy clickの保存schema・exact URL/ownerのread-only照合、sanitize済み証拠と本行。PR9097の合成除外・Dots会計・Muse/Marketer投稿・TEAM-HQ runtime・fenceは変更しない。
-- [home-codex / CAPAFY-SYNTHETIC-CLICKS] claim: `fix/revenue-attribution-e85ac2`、task `e85ac2183688f309e25242db`。所有: go-stats集計・既存test・関連skill記述・本行・正本の本laneのみ。公式照合済みprobe `x/test_hq_4a481d` 9件を通常クリックから分離する。raw blob・会計・投稿・TEAM-HQ・他owner/effectは変更しない。
+- [home-codex / CAPAFY-LEGACY-INVENTORY] 同owner継続・PR9099 CI誤検出修復: `docs/capafy-legacy-c23d68`、task `c23d68e42668425c07faedde`。所有: legacy clickの保存schema・exact URL/ownerのread-only照合、sanitize済み証拠と本行。PR9097の合成除外・Dots会計・Muse/Marketer投稿・TEAM-HQ runtime・fenceは変更しない。
+- [home-codex / CAPAFY-SYNTHETIC-CLICKS] 完了: PR #9097/main1d970aef、published deploy6ae8ddd7633cf01d4a4f2a38。通常集計105/検証9分離、元114件と集合hash・公開static5files・旧go ZIPを保持。公式readback済み、売上未確認。この修正を再deployせず、未完PR #9099等を実状態から継続する。
 - [home-codex / CAPAFY-CT-READBACK] 検証完了・統合中: `docs/capafy-ct-readback-4a481d`、task `4a481d0fe62485fd4dffc972`。所有: 既存7商品CTAの公開redirect/ct保持とclick counterの限定検証、sanitize済み証拠と本行。投稿・会計・商品・TEAM-HQ runtime・既存effect fenceは変更しない。
 - [Codex / Anicca816再リジェクト] 完了: PR9095/main b1abc608、審査情報のC商品不一致を修正、Release Maestro2/2 PASS、1.9.6(816)とLifetimeを公式WAITING_FOR_REVIEWで再確認。C商品の延期依頼はApple対応待ち。正本 → 統合SSOT「Anicca 816再リジェクト・現在cursor」。
 - [Codex / Anicca正式再提出] 過去の提出完了: PR9057/9058をmainへ統合、1.9.6(815)とLifetimeはASC公式WAITING_FOR_REVIEW。残TODO正本 → 統合SSOTのAnicca正式再提出lane。
@@ -265,3 +265,6 @@
 - 2026-10-27 16:04 JST Codex（再割当項目8）: ローカルrepo/specにMuse Sparkのhackathon対象submission/demo、Capafy listing ID、公開/草稿境界を特定する記述なし。daisuke/cursorへフルbrief再送を依頼（Reason `01M5Y2QAF2T2818H9XXYVDN8DM`）。Fucker所有のCapafy v1.0.3 upsellを含め、外部掲載変更は未実施。
 
 - 2026-11-01 08:34 JST Codex: claim `/lm` title-only SEO publication; source title + manifest, merged-main immutable overlay verified against live ccf57e9, both products workflow pins; preserve all claims/description.
+- home-codex（親の継続受入）: e85ac2の全CI/main/限定反映/公式照合を完了。Netlify最初の422/errorは未公開の失敗として保持し、既定region/memoryを明示しないpayloadへ修正する。正本CAPAFY-SYNTHETIC-CLICKSと隣接evidenceを参照。
+
+- home-codex（task879652c218603b7f69db1c0a）: PR9099のgitleaks dir誤検出をRED1→GREEN0で確認、証拠JSONの項目名だけ修正しhash/他内容保持assert、Python9/Node6/source-boundary PASS。最新mainの他owner完了記録を保持。次: 更新headの必要CI→main。投稿/会計/provider write/deploy0、売上未確認。
