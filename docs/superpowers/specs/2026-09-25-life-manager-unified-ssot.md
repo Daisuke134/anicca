@@ -29,6 +29,8 @@ HQ-01可視化の受入追加: private設定 announce_start=true のownerはclai
 
 HQ-02限定handoff: private設定handoff_agentで明示した別の実在agentへ、failed/interrupted cardのreceipt/元依頼/次操作を照合する新cardを一度だけ作る。元仕事を再実行するカードではなく、公式effect確認を先行する引き継ぎ仕事とする。handoff card失敗時に再帰的な再委譲を作らず、枠のリセットやtransferを装わない。
 
+HQ-02反復防止の回帰: local helper追加時、最終結果が別local agentへのmentionを引用すると新依頼を誤生成することをREDで再現。既知outboxのreply_textと完全一致するechoは文脈保存のみとし、新cardを作らない。HQ focused40件PASS。
+
 HQ-02現行readback: DotsはReasonで受領→着手→監査結果まで返信。Slackの該当taskはconnection未設定で明示未送信。MuseはSlackの正式mention検出を修復し12fixture PASSと報告したが、新規parent1793626106.871059への自然60秒受信テストは複数周期後も公式thread返信0。Reasonで起こした返信を自然成功へ数えず、hookの境界診断を担当へ返す。参謀本人宛cursorへクラウド受信経路の修復を依頼。
 
 収益の独立監査: Dotsのread-only結果で、既存14:45依頼の対象hostはcapafy-skills-daily.netlify.app（aniccaai.comは別host）と訂正。liveはhomeへ302。並列PR #9084のstatic-only修正は次buildで消えるためdraftへ戻す。追加の公式GET /agent/agents（2026-11-02T13:44:02Z、code0）はagentStatus under_reviewだがhasOnlineVersion true、latestVersionName v1.0.5、autoPublish falseと返す。従って公開旧版と最新審査版を分離する。恒久修正はlandingの新規promotion対象を変えず、tracking allowlistだけonlineまたはhasOnlineVersionが厳密trueの既存公開IDから再生成する。under_reviewかつ公開版なし、false、文字列trueは追加しない。新規公開/価格/内容/自動公開/IG fenceは変更しない。generatorのRED→GREENと既存route回帰後、main由来のsite artifactを対象siteへ限定deployし、Dotsがread-onlyでLocation/ct/unknown/既存sellerを照合する。販売成立や収益は未確認。

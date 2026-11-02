@@ -170,6 +170,16 @@ class HQTests(unittest.TestCase):
         self.runtime.finish(task,{'task_id':task['id'],'owner_id':'codex','status':'failed','checkpoint':'failed','output':'no capacity','agent_state':{}})
         self.assertEqual(len(self.tasks()),1)
 
+    def test_our_final_output_quoting_another_agent_is_not_a_new_assignment(self):
+        self.config['agents'].append(dict(self.config['agents'][0],id='helper',mention=['@helper']))
+        self.runtime=hq.HQ(self.config,api=self.slack)
+        self.enqueue()
+        task=self.runtime.claim()
+        self.runtime.finish(task,{'task_id':task['id'],'owner_id':'codex','status':'succeeded','checkpoint':'done','output':'元依頼の引用: @helper investigate','agent_state':{}})
+        reply=self.tasks()[0]['reply_text']
+        self.runtime.store_messages([dict(ts='9999.000001',thread_ts=task['thread_ts'],text=reply,user='U_BOT')])
+        self.assertEqual(len(self.tasks()),1)
+
     def test_foreign_echo_cannot_verify_our_post(self):
         self.enqueue()
         task=self.runtime.claim()

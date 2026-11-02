@@ -281,6 +281,10 @@ class HQ:
                 if (discovery_cutoff is not None or timestamp <= cutoff
                         or database.execute("SELECT 1 FROM legacy_done WHERE ts=?", (ts,)).fetchone()):
                     continue
+                # A saved runtime result may quote another local agent's mention.
+                # It is an outbox echo, not a fresh delegation to execute again.
+                if database.execute("SELECT 1 FROM tasks WHERE reply_text=? LIMIT 1", (text,)).fetchone():
+                    continue
                 for identity, agent in self.agents.items():
                     prefix = str(agent.get("prefix", identity))
                     if text.casefold().startswith(("[" + prefix + "]").casefold()):
