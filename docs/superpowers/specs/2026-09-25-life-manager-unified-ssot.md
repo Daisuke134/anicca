@@ -17,7 +17,7 @@
 3. [ ] HQ-03: 登録した収益/Manager定期仕事の自然run・成果物・Slack readbackを確認する。登録やloadedを実行成功と同一視しない。
 4. [x] HQ-04: 検証範囲と失敗を公開記事にし、公開desktop/mobile幅で本文と図を目視確認する。
 
-所有: `.worktrees/team-hq-20261102`、branch `docs/team-hq-runtime-20261103`、owner `home-codex-team-hq24h`。コードはPR #9083 head260a97c0からmain cb01fb5c6a0ee8d04d46b982b8b28ddd06828094へ統合。HQ42テスト、receipt5、関連runner/registry検証、必要CI全件、fresh read-only最終reviewをPASSする。source/main統合とruntime成功は分ける。
+所有: `.worktrees/team-hq-20261102`、branch `fix/hq-self-reservation-20261103`、owner `home-codex-team-hq`。コードはPR #9083 head260a97c0からmain cb01fb5c6a0ee8d04d46b982b8b28ddd06828094へ統合。HQ42テスト、receipt5、関連runner/registry検証、必要CI全件、fresh read-only最終reviewをPASSする。source/main統合とruntime成功は分ける。
 
 HQ-01 Slack本文照合の修復: 自然の定期仕事4a481d0fe62485fd4dffc972と確認仕事48ebac567d00b7df5836709dはCLI成功/成果物保存を確認する。公式Slackには最終返信が1回存在するが、Slackがbare HTTP(S) URLを `<URL>` へ自動変換し、保存本文とのraw完全一致が外れる。sender/markerを公式GETで照合した差分はURL両端の山括弧6文字のみであり、post_unknownを再送しない。変更は本文のこの非labelled HTTP(S) autolink表記だけを比較用に正規化し、既知outbox echoにも同じ比較を適用する。URLそのもの、label付きlink、別sender、marker-only、追加本文は一致と扱わない。先にこのprovider fixtureをREDで再現し、HQ suite/fresh review/必要CI→main→immutable release→HQ限定apply後に、既存2返信の公式照合と再巡回の送信0で受け入れる。予約待ちの修復PR #9093とはファイル所有を分ける。
 
@@ -27,9 +27,11 @@ HQ-02の契約: failed/interruptedの元依頼/receipt/次操作を別の設定�
 
 切替の実測: 旧ai.anicca.hq-pollerのidleをlock下で確認し、対象だけdisable/bootout、公式disabled/unloadedと旧state hash保持を確認する。main固定release `20261103T005612-cb01fb5c` を非currentで作成し、新HQ3ownerだけにapplyする。別ownerのfleet反映/配信/会計は操作しない。Slack parent1793635034.953579にbounded読み取り確認を1件送信する。最初の自然runでは受信側もworkerも共通のdisk_floor_lowでexit75となり、CLI未開始/card未受信である。受信だけ先に稼働できるという見込みは実測で否定される。Slack上の元依頼を保持して再送せず、capacity回復後の自然runを追う。
 
-容量cursor: PR #9086/main fe2538efの自然cleanupはexit0/pass、scanned/evaluated6000で旧evaluated0飢餓を解消するが、metadata不在の旧scratch6000件は保持し削除0。private同一pack2件、閉じたcache、閉じたsession26件の可逆圧縮、private一時cloneの同一素材1042件のnative COWを検証する。内容/属性/ACL/旧inodeを照合し、禁止storeや稼働ownerを削除しない。空きが4GiB基準を一度超えた後、macOS新規swapfile12の1GiB割当を観測し約3.5GBへ戻る。swap削除/基盤restart/基準引下げをしない。未使用worktreeの同一素材1706件・約2.62GiB割当相当を追加inventoryし、双方worktreeのargv/CWD再確認付き共有化をfresh review後に実施する。logical重複量を実回収容量へ置換しない。
+HQ-01自己予約の修復: 空き容量回復後の自然runはcapacity_busy/fifo_waitを反復する。schedulerは自然passだが、receiver自身の有効予約中に元controllerがrunningでdispatchを省略し、60秒leaseが次の自然tick前に失効する順序を観測する。既存のrunning ownerを別起動しない保護は維持する。変更範囲は共有 `_run_admitted` のclaim失敗後だけとし、同wakeで自分に予約が回った時に同じidentity/kwargsで一度だけclaimを再試行する。他ownerだけを通常dispatchし、成功後は既存のoccurrence検証・disk/memory/swap再検査・transfer/heartbeat/terminal経路を通す。新pool、上限/lease延長、DB直接変更、他owner停止は行わない。実DBと実子processの回帰4件はRED→GREEN。関連runner/admission/HQの560件と4subtests、Node15件、registry195jobをPASSし、fresh read-only source reviewはSHIP。必要CI→main→HQ限定apply→自然実行/公式thread/再巡回は未完了である。
 
-remote実測: DotsはReasonで受領→着手→独立監査/GO確認→新しい共同調査の往復を確認する。Slack接続は本人が未設定と返し、自動wake成功と数えない。Museは正式mention修復/12fixture PASSを自己報告するが、parent1793626106.871059への自然Slack返信は0のままであり担当へ診断を返す。cursor本人はdr eggbotと識別し、参謀とは別と訂正する。sanboとmuse-relayへ実経路修復を依頼するが返信未確認。Reasonのturn/pullをidle時pushと混同せず、全員24時間実稼働済みとはしない。
+容量cursor: PR #9086/main fe2538efの自然cleanupはexit0/pass、scanned/evaluated6000で旧evaluated0飢餓を解消するが、metadata不在の旧scratch6000件は保持し削除0。private同一pack2件、閉じたcache、閉じたsession26件の可逆圧縮、private一時cloneの同一素材1042件のnative COWを検証する。内容/属性/ACL/旧inodeを照合し、禁止storeや稼働ownerを削除しない。空きが4GiB基準を一度超えた後、macOS新規swapfile12の1GiB割当を観測し約3.5GBへ戻る。swap削除/基盤restart/基準引下げをしない。未使用worktreeの同一素材1706件・約2.62GiB割当相当を追加inventoryし、双方worktreeのargv/CWD再確認付き共有化をfresh review後に実施する。追加COWは774件照合済み、使用中へ変化した1件は保持、完了時free4,835,188,736 bytesを実測する。logical重複量を実回収容量へ置換しない。
+
+remote実測: DotsはReasonで受領→着手→独立監査/GO確認→新しい共同調査の往復を確認する。Slack接続は本人が未設定と返し、自動wake成功と数えない。Museは正式mention修復/12fixture PASSを自己報告するが、parent1793626106.871059への自然Slack返信は0のままであり担当へ診断を返す。cursor本人はdr eggbotと識別し、参謀とは別と訂正する。sanboとmuse-relayへ実経路修復を依頼するが返信未確認。Reasonのturn/pullをidle時pushと混同せず、全員24時間実稼働済みとはしない。 共有追跡thread1793635811.853779へ既存受信修復の担当/未確認事項をまとめ、毎時仕事が公式差分を読む。変化のない催促は反復しない。Dotsがterminal宛にもqueued/未受領と照合し、自動wakeの不足を共有する。
 
 収益成果: PR #9084/main1021b363のgenerator恒久修正により、既存公開版hasOnlineVersionが厳密trueのIDをtracking allowlistへ含める。新規promotion対象はonlineのまま、価格/内容/autoPublish/IG fenceは変えない。対象hostはcapafy-skills-daily.netlify.app、/go/9425449917を対象Netlify deploy6ae89aeeb7fd12e6a76e6305へ反映し、公式5経路/index hashとDots独立QAをPASSする。販売成立は未確認。検証clickを売上に数えず、ct不保持のlegacy blob全件を自動除外済みとはしない。
 

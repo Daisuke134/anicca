@@ -1925,15 +1925,33 @@ def _run_admitted(command: list[str], entry: dict, loop_id: str, env: dict[str, 
             _atomic_json(receipt, {"status": "deferred", "effect": 0,
                                   "reason": "resource_admission_unavailable"})
             return 75
-        if claim is None:
-            _atomic_json(receipt, {"status": "deferred", "effect": 0,
-                                  "reason": f"resource_{admission_reason}"})
-            if durable and not interrupted:
+        if claim is None and durable and not interrupted:
+            try:
+                reserved = reserve_available_resource()
+            except (OSError, RuntimeError, sqlite3.Error) as error:
+                print(f"lm-loop-run: reservation dispatch deferred: {error}",
+                      file=sys.stderr)
+            else:
+                # A self-kick is skipped while this controller runs; its lease
+                # can expire before the next tick, so consume it in this wake.
+                if loop_id in reserved:
+                    try:
+                        claim, admission_reason = _admission_with_retry(
+                            lambda: claim_durable_resource(
+                                resource_class, loop_id, **claim_kwargs),
+                            cancelled=lambda: interrupted,
+                        )
+                    except (OSError, RuntimeError, sqlite3.Error):
+                        admission_reason = "admission_unavailable"
                 try:
-                    _dispatch_reserved(reserve_available_resource())
+                    _dispatch_reserved([owner for owner in reserved if owner != loop_id])
                 except (OSError, RuntimeError, sqlite3.Error) as error:
                     print(f"lm-loop-run: reservation dispatch deferred: {error}",
                           file=sys.stderr)
+        if claim is None:
+            _atomic_json(receipt, {"status": "deferred", "effect": 0,
+                                  "reason": ("resource_admission_interrupted" if interrupted
+                                             else f"resource_{admission_reason}")})
             return 75
         claimed_occurrence_id = occurrence_id
         if durable and occurrence_id is not None:
