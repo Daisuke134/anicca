@@ -10,14 +10,16 @@
 
 比較: 新チャットへの移行と全LLMの常時pollは採らず、既存roomの軽量受信+必要時wakeを使う。Paperclipの単一owner/永続進捗/次操作、Slack Events、Anthropicの明確な委譲/成果物参照を模倣する。根拠: https://github.com/paperclipai/paperclip/blob/master/docs/guides/agent-developer/heartbeat-protocol.md 、https://docs.slack.dev/apis/events-api/ 、https://www.anthropic.com/engineering/multi-agent-research-system 。成果指標は受領/着手遅延、未受領/停止、重複effect、公式売上/費用であり会話数ではない。
 
-順序: 旧README/Mac導入/既存事業修復に対し、明示依頼に従い共有受信/引き継ぎ→Codex定期実行→公開記事→既存収益/Managerを優先する。容量依存の間に記事と購入導線を並行完了し、進行中owner/effectを中断しない。現在cursorはHQ-01の自然受信/実行である。
+順序: 旧README/Mac導入/既存事業修復に対し、明示依頼に従い共有受信/引き継ぎ→Codex定期実行→公開記事→既存収益/Managerを優先する。容量依存の間に記事と購入導線を並行完了し、進行中owner/effectを中断しない。現在cursorはHQ-01のSlack本文照合修復と対象限定release反映、容量回復後の自然再巡回である。
 
 1. [ ] HQ-01: main由来releaseの自然受信→card→着手→CLI成果物→公式thread返信を確認し、次wakeで重複0を確認する。
 2. [ ] HQ-02: 各agent本人の実受信/wakeを実証する。停止/枠切れはbounded handoffとし、未確認effectの照合を先行する。
 3. [ ] HQ-03: 登録した収益/Manager定期仕事の自然run・成果物・Slack readbackを確認する。登録やloadedを実行成功と同一視しない。
 4. [x] HQ-04: 検証範囲と失敗を公開記事にし、公開desktop/mobile幅で本文と図を目視確認する。
 
-所有: `.worktrees/team-hq-20261102`、branch `fix/hq-self-reservation-20261103`、owner `home-codex-team-hq`。コードはPR #9083 head260a97c0からmain cb01fb5c6a0ee8d04d46b982b8b28ddd06828094へ統合。HQ42テスト、receipt5、関連runner/registry検証、必要CI全件、fresh read-only最終reviewをPASSする。source/main統合とruntime成功は分ける。
+所有: runtime本文照合は `.worktrees/team-hq-slack-readback-20261103`、branch `fix/hq-slack-autolink-20261103`、owner `home-codex-hq-slack-readback`、PR #9094。primaryはTEAM-HQ-24X7と反映/受入を所有する。初版PR #9083/main cb01fb5c、予約消費修復PR #9093/main b941bc11は必要CI全件とfresh reviewをPASSして統合する。source/main統合とruntime成功は分ける。
+
+HQ-01 Slack本文照合の修復: 自然の定期仕事4a481d0fe62485fd4dffc972と確認仕事48ebac567d00b7df5836709dはCLI成功/成果物保存を確認する。公式Slackには最終返信が1回存在するが、Slackがbare HTTP(S) URLを `<URL>` へ自動変換し、保存本文とのraw完全一致が外れる。sender/markerを公式GETで照合した差分はURL両端の山括弧6文字のみであり、post_unknownを再送しない。変更は本文のこの非labelled HTTP(S) autolink表記だけを比較用に正規化し、既知outbox echoにも同じ比較を適用する。URLそのもの、label付きlink、別sender、marker-only、追加本文は一致と扱わない。provider fixtureのREDに加え、単純な括弧除去ではURL分割を誤受理するfresh review反例をREDで再現する。URL/本文のtoken境界を保持し、日本語/Markdown/JSON/対応する括弧/末尾句読点を扱う比較へ修正する。実際の既存2投稿をfresh GETし、sender+marker+本文一致を各1件、POST0で確認する。HQ51テスト・独立境界18件・fresh review SHIPを確認する。テスト内のMac風pathによるOSS CI失敗は汎用fixtureへ直し、同検証をPASSする。必要CI→main→immutable release→HQ限定apply後に、既存2返信の公式照合と再巡回の送信0で受け入れる。予約待ちの修復PR #9093とはファイル所有を分ける。
 
 HQ-01の契約: receiver/workerは別lock、SQLiteにcardと送信状態を永続化する。auth.testの送信者+text+markerで公式返信を照合し、応答不確実時は盲目的再送をしない。明示拒否/破損receiptを当該cardへ隔離する。trusted result hint/occurrence環境を子から除き、古いrootの有限backfill、contextとenqueue cutoff分離、thread完読前claim禁止を保つ。announce_startは受領・着手を通知するが業務成果とは扱わない。scheduled着手のthreadが不確実なら最終結果と依存handoffだけを保留して照合する。
 
@@ -34,6 +36,12 @@ remote実測: DotsはReasonで受領→着手→独立監査/GO確認→新し�
 収益成果: PR #9084/main1021b363のgenerator恒久修正により、既存公開版hasOnlineVersionが厳密trueのIDをtracking allowlistへ含める。新規promotion対象はonlineのまま、価格/内容/autoPublish/IG fenceは変えない。対象hostはcapafy-skills-daily.netlify.app、/go/9425449917を対象Netlify deploy6ae89aeeb7fd12e6a76e6305へ反映し、公式5経路/index hashとDots独立QAをPASSする。販売成立は未確認。検証clickを売上に数えず、ct不保持のlegacy blob全件を自動除外済みとはしない。
 
 公開成果: article source PR #9085/main5b874ffc、products bridge PR #842/maina50f6c15、公開workflow41464586193はsuccess。https://aniccaai.com/blog/manager-shared-room-real-work-en はHTTP200、図の公開hashとrelease manifest一致を確認する。desktop1440/mobile390の実ブラウザ画面で本文/図/末尾を確認し、横はみ出しなし。物理iPhoneの受入とは区別する。記事は実装checkpointと未達の限界を明記し、全remote稼働や収益を捏造しない。公開URLは既存HQthreadへ共有し公式readbackを確認する。
+
+自然実行の実測: 定期仕事4a481d0fe62485fd4dffc972は既存Capafy CTA7件を検証し成果物を保存する。PR #9092/main6adf842bはCI完了前の統合となり、x86の既存fleet継続testが3 != 4で失敗する。後続PR #9093の同testを含む全CIはPASSするが、#9092をPASSと書き換えない。全schedule promptにCI公式PASS前の統合禁止と有限runの未完checkpointを追記する。検証GET/HEAD9件はsyntheticとして区別し売上に数えない。読み取り確認48ebac567d00b7df5836709dは公開記事HTTP200/title/release SHAを実取得する。両taskはCLI succeeded、公式Slack最終返信各1件、本文整形の照合待ちであり再送しない。
+
+remote追加実測: muse-relay本人はMuse本人/mention hook ownerではないと訂正し、本人連絡先terminal@htch-runtimeを示す。dr eggbot本人は2時間ごとのinbox-sweepを持つがnative Slack mention hookは無いと回答する。本人所有のsupported wake routeによる修復を同じ担当へ渡し、自然受領/着手/同thread返信を待つ。Muse Relay提案のct別click/sales/円照合表は、既存会計ownerと入力schema/正本への書込経路を確認中であり未稼働のまま保持する。
+
+容量追加実測: 未使用worktree素材のCOWは先行774件と追加346件の内容/属性照合を確認するが、追加処理は空き不足でreceipt書込がENOSPCとなる。既存receipt対象の残存backup/tempは0で、確認済み対象は再処理しない。閉じた大型session2件のcopy圧縮もtemporary_space/ditto失敗で原本保持する。容量は約0.4〜4.9GBへ変動し、macOS swap totalも12〜14.5GiBへ変動する。閾値引下げ/スワップ削除/他owner停止をせず、残り素材の共有化と原本を直接変更しないprivate COW copyの圧縮で回復する。回収logical量を実空き増分と同一視しない。
 
 ## CAPAFY-CT-READBACK — 既存購入導線の計測支援
 
