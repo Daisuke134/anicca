@@ -1,7 +1,31 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseClick, targetUrl, clickKey } from "../site/netlify/functions/go.mjs";
+import { setEnvironmentContext } from "@netlify/blobs";
+import go, { parseClick, targetUrl, clickKey } from "../site/netlify/functions/go.mjs";
 import { summarize } from "../site/netlify/functions/go-stats.mjs";
+
+test("go handler routes the continuity planner, preserves tracking, and rejects unknown IDs", async (t) => {
+  const previousContext = process.env.NETLIFY_BLOBS_CONTEXT;
+  t.after(() => {
+    if (previousContext === undefined) delete process.env.NETLIFY_BLOBS_CONTEXT;
+    else process.env.NETLIFY_BLOBS_CONTEXT = previousContext;
+  });
+  setEnvironmentContext({ siteID: "test", token: "test", edgeURL: "https://blobs.test" });
+  t.mock.method(globalThis, "fetch", async () => new Response(null, { status: 200 }));
+
+  const cases = [
+    ["8123079349?ct=hooklab_x", "https://capafy.ai/agent/8123079349?utm_source=instagram_bio&utm_medium=bio_link&utm_campaign=capafy_marketing&ct=hooklab_x"],
+    ["0000000000?ct=unknown", "https://capafy.ai/"],
+    ["9425449917?ct=tiktok_series_blog", "https://capafy.ai/agent/9425449917?utm_source=instagram_bio&utm_medium=bio_link&utm_campaign=capafy_marketing&ct=tiktok_series_blog"],
+    ["9425449917/x/continuity-20261102?ct=tiktok_series_x", "https://capafy.ai/agent/9425449917?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=continuity-20261102&ct=tiktok_series_x"],
+  ];
+  for (const [path, location] of cases) {
+    const response = await go(new Request(`https://capafy-skills-daily.netlify.app/go/${path}`));
+    assert.equal(response.status, 302, path);
+    assert.equal(response.headers.get("location"), location, path);
+    assert.equal(response.headers.get("cache-control"), "no-store", path);
+  }
+});
 
 test("legacy link keeps the exact old redirect and key shape", () => {
   const click = parseClick("https://x.app/.netlify/functions/go/8123079349");

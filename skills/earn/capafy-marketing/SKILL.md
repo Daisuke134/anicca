@@ -25,6 +25,12 @@ the root tweet.** (research MD: `anicca-project/docs/earn/2026-07-17-capafy-mark
 
 ## Historical pipeline (X line, not runnable here): B1 select → B2 copy → B5 post
 
+The landing generator keeps new promotion cards restricted to `agentStatus == "online"`.
+Tracking redirects also retain IDs whose seller response has `hasOnlineVersion: true`:
+a newer revision can be under review while an older version remains public. This routing
+rule does not approve, publish, or promote the pending revision. Listings without an
+online version stay excluded; seller content, pricing, and `autoPublish` are unchanged.
+
 ```
 select_listing.py         # B1: pick an online listing (rotation/dedup), emit {agent_id,name,desc,url}
    → agent writes copy    # B2: the running LLM writes the native tweet + reply CTA from name+desc
