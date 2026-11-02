@@ -52,6 +52,13 @@ remote追加実測: muse-relay本人はMuse本人/mention hook ownerではない
 検証結果: 全7商品302/対象ID/ct/utm_content保持。最初の公式statsはexact probe未反映、後続readbackで全7商品を確認する。GET7に加え診断HEAD2もclick記録となり合計9件、実流入/会計から除外すべき合成probeは`test_hq_4a481d`。公式deploy6ae89aeeb7fd12e6a76e6305/readyを確認しdeploy変更0。generator9件とsource-boundary PASS、購入/売上は未確認。証拠 → docs/evidence/capafy-ct-readback-4a481d.json。legacy blob全件のct保持は未検証で、次操作はexact URLと既存ownerのinventoryから始める。HEADをread-only無副作用と仮定せず、同probeを再送しない。
 Slack remote差分: 公式conversations.repliesで指定thread1793635811.853779を完読、parent1件/返信0/has_more=false。受領・着手・結果の新差分なし、Reason accepted/queuedは未着手、催促送信0。
 
+## CAPAFY-LEGACY-INVENTORY — 旧クリックの計測境界
+
+目的・範囲: CAPAFY-CT-READBACKの残課題を引き継ぎ、legacy blobの保存schema、復元できるURL/owner、ct保持の証明範囲を調べる。owner=home-codex-c23d68、task=c23d68e42668425c07faedde、branch=docs/capafy-legacy-c23d68、base=ec4c989577。既存PR9097のコード、台帳、配信、商品、HQ、effect fenceは変更しない。
+完了条件: 公式readbackと実sourceから旧記録の欠損/復元可能性を切り分け、検証根拠とexactな次操作を永続化、必要CIの公式PASS後にmainへ統合する。未確認ctや売上は成功に置換しない。
+現在cursor: 保存schemaと公式stats/既存receiptのread-only inventory。既存全体TODO順は維持する。
+remote差分: 指定Slack threadを公式完読。parentとhome-codexの更新のみ、本人受領/着手/結果の新差分なし。Reason accepted/queuedは未着手、催促0。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
