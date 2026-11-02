@@ -25513,3 +25513,11 @@ ASC CLIの正式upload/build730477a4-dcdc-48ce-a73d-d1c83a1e8903はCOMPLETE/erro
 - Owner: Codex; scope: change only the English `/lm` HTML title to `Life Manager — AI life manager for work, income, body & mind | Anicca`. Keep description, Open Graph, body, claims, all other routes unchanged.
 - References: https://yutile.com title `Yutile — AI life manager for health, money, habits & home`; https://remindion.com title `Remindion - AI Life Manager`. GSC position 6.0 is Marketer-reported, not independently verified; no competitor performance claim.
 - Acceptance: canonical source change, immutable overlay from merged main (live release and remote workflows use ccf57e9e6756246b41ee2b0c22cb014a63bbc986; marketing file comparison confirms only the title changes), both anicca-products workflows aligned, CI/deploy success and live HTML equal baseline except title. Existing TODO order unchanged; cursor: title source then overlay pin/deploy/readback. Local anicca-products checkout had a stale pin; live manager-release.json and fresh remote source supersede it.
+
+### Naïve SDK・自律企業調査と記事草稿
+
+- 目的・範囲: Naïveの公式情報と既存SDK統合・LM-EABを照合し、ハッカソンの残作業、評価方針、出典付き日本語記事草稿を作成する。公開・SDK移行・本番設定変更は今回の調査に含めない。
+- 完了条件: 公式SDKの新旧、simulated outcomeと実事業成果、確認済み実装と未確認のremote稼働を区別した報告を残し、草稿を専用branchへ保存・push・PR統合する。
+- 全体TODOの順序は維持する。今回のcursorは調査と草稿。統合・稼働の残作業は調査資料を参照し、実装完了へ読み替えない。
+- 調査資料: `docs/research/2026-11-02-naive-autonomous-companies.md`。記事草稿: `docs/articles/2026-11-02-naive-autonomous-company-ja.md`。
+- 調査と草稿は作成済み。現行mainの会社記録は10/28の設計初版・セットアップ着手までで、remote goalとlive Naïve orgの後続readbackは未取得。既存LM-EABは5 public synthetic fixtures、今回のfocused testsは42/42 PASS。YC event本文はcrwlで取得しSDK必須・参加承認・実稼働demoを確認、事前完成品の持込許可は未確認。SDK/runtime・外部公開・本番effectは変更しない。文書のPR統合を終えて今回の調査を閉じ、実装laneは未完のまま保持する。
