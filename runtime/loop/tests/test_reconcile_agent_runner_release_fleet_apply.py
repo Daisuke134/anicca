@@ -19,6 +19,13 @@ SCRIPT = ROOT / "bin/reconcile-agent-runner-release.sh"
 # tell which owner each call was for.
 FAKE_LM_LOOP = """#!/bin/sh
 set -eu
+slow_owner() {
+  if [ -n "${FAKE_BUDGET_CLOCK:-}" ]; then
+    printf '%s\\n' "$(( $(cat "$FAKE_BUDGET_CLOCK") + 2 ))" > "$FAKE_BUDGET_CLOCK"
+  else
+    sleep 2.2
+  fi
+}
 target="${LIFE_MANAGER_APPLY_TARGET:-}"
 echo "$@ target=$target" >> "$FAKE_LM_LOOP_CALLS_LOG"
 if [ "$1" = "reconcile" ]; then
@@ -134,7 +141,7 @@ if [ "$1" = "apply" ]; then
       ;;
     slow_first)
       if [ "$target" = "${FAKE_SLOW_LOOP_ID:-}" ]; then
-        sleep 2.2
+        slow_owner
       fi
       echo "[{\\"ok\\":true,\\"label\\":\\"$target\\",\\"release_sha\\":\\"x\\",\\"changed\\":true}]"
       exit 0
@@ -177,7 +184,7 @@ if [ "$1" = "apply" ]; then
         exit 1
       fi
       if [ "$target" = "${FAKE_SLOW_LOOP_ID:-}" ]; then
-        sleep 2.2
+        slow_owner
       fi
       echo '[{"ok":true,"changed":true}]'
       exit 0
@@ -401,6 +408,22 @@ class ReconcileAgentRunnerReleaseFleetApplyTest(unittest.TestCase):
     def _run(self, env):
         return subprocess.run(["/bin/bash", str(SCRIPT)], env=env,
                               capture_output=True, text=True, check=False)
+
+    def _use_budget_clock(self, root, env):
+        # Fixture overhead must not consume the narrow 4s fleet / 3s owner budget.
+        clock = root / "fleet-budget.epoch"
+        clock.write_text(f"{int(time.time())}\n")
+        bash_env = root / "fleet-budget.bash"
+        bash_env.write_text(
+            "date() {\n"
+            '  if [ "$*" = "-u +%s" ]; then\n'
+            '    cat "$FAKE_BUDGET_CLOCK"\n'
+            '  else\n'
+            '    command /bin/date "$@"\n'
+            '  fi\n'
+            '}\n'
+        )
+        env.update(BASH_ENV=str(bash_env), FAKE_BUDGET_CLOCK=str(clock))
 
     def _apply_call_count(self, calls_log):
         if not calls_log.exists():
@@ -1700,6 +1723,7 @@ exit "$fixture_status"
             env["FAKE_SLOW_LOOP_ID"] = "first-earn"
             env["LIFE_MANAGER_FLEET_APPLY_TIMEOUT_SECONDS"] = "4"
             env["LIFE_MANAGER_FLEET_APPLY_PER_OWNER_TIMEOUT_SECONDS"] = "3"
+            self._use_budget_clock(root, env)
 
             result = self._run(env)
 
@@ -1736,6 +1760,7 @@ exit "$fixture_status"
                 LIFE_MANAGER_FLEET_APPLY_CONTINUE_SECONDS="0",
                 LIFE_MANAGER_LAUNCH_AGENTS_DIR=str(root / "agents"))
             (root / "agents").mkdir()
+            self._use_budget_clock(root, env)
             first = self._run(env)
             self.assertNotEqual(first.returncode, 0)
             state = self._state(root)
@@ -1777,6 +1802,7 @@ exit "$fixture_status"
             env["LIFE_MANAGER_FLEET_APPLY_TIMEOUT_SECONDS"] = "4"
             env["LIFE_MANAGER_FLEET_APPLY_PER_OWNER_TIMEOUT_SECONDS"] = "3"
             env["LIFE_MANAGER_FLEET_APPLY_CONTINUE_SECONDS"] = "30"
+            self._use_budget_clock(root, env)
 
             self._run(env)
             state = self._state(root)
@@ -1803,6 +1829,7 @@ exit "$fixture_status"
             env["LIFE_MANAGER_FLEET_APPLY_TIMEOUT_SECONDS"] = "4"
             env["LIFE_MANAGER_FLEET_APPLY_PER_OWNER_TIMEOUT_SECONDS"] = "3"
             env["LIFE_MANAGER_FLEET_APPLY_CONTINUE_SECONDS"] = "0"
+            self._use_budget_clock(root, env)
 
             first = self._run(env)
             self.assertEqual(first.returncode, 0, first.stderr)
@@ -1871,6 +1898,7 @@ exit "$fixture_status"
             env["LIFE_MANAGER_FLEET_APPLY_PER_OWNER_TIMEOUT_SECONDS"] = "3"
             env["LIFE_MANAGER_FLEET_APPLY_BACKOFF_SECONDS"] = "120"
             env["LIFE_MANAGER_FLEET_APPLY_CONTINUE_SECONDS"] = "0"
+            self._use_budget_clock(root, env)
 
             first = self._run(env)
             self.assertNotEqual(first.returncode, 0)
@@ -1931,6 +1959,7 @@ exit "$fixture_status"
             env["FAKE_SLOW_LOOP_ID"] = "first-earn"
             env["LIFE_MANAGER_FLEET_APPLY_TIMEOUT_SECONDS"] = "4"
             env["LIFE_MANAGER_FLEET_APPLY_PER_OWNER_TIMEOUT_SECONDS"] = "3"
+            self._use_budget_clock(root, env)
 
             first = self._run(env)
             self.assertEqual(first.returncode, 0, first.stderr)
