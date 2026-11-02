@@ -8,7 +8,7 @@ No demo account, app sign-in, or paid entitlement is required to locate the purc
 
 Lifetime product: ai.anicca.app.ios.lifetime (non-consumable, one-time purchase). Monthly: ai.anicca.app.ios.monthly.b. Annual: ai.anicca.app.ios.yearly.b.
 
-There is no Japanese-language or Japan-only eligibility restriction. Products and localized prices depend on the current App Store storefront and the available StoreKit offering. The old language/Japan-only instructions and references to build 812 are superseded by these instructions. Please review the new build attached to this submission.
+There is no Japanese-language or Japan-only eligibility restriction. Products and localized prices depend on the current App Store storefront and the available StoreKit offering. The old language/Japan-only instructions and references to build 812 are superseded by these instructions. Please review build 816 attached to this submission.
 
 Clarification for the November 2 review of build 816:
 The Weekly Premium product ai.anicca.app.ios.weekly.c ($6.99/week), and the Annual Premium product ai.anicca.app.ios.yearly.c, are not offered in this version. Their separate pending product reviews should be deferred. They are not alternatives hidden by language, storefront, onboarding answers, or device settings. The current app submission contains the app version and Lifetime; its purchase screen offers the Monthly B, Annual B, and Lifetime products listed above. The review screenshot Screenshot-1102-150420.png already shows these three plans.
