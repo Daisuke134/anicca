@@ -25554,3 +25554,5 @@ Grok/Muse: sanbou-opsのSDK0.10系/10月末実inference/5役割配置/残高約$
 source acceptance: per-run cache/results、既存ID上書き禁止、費用unknown、欠測分母、別session子孫timeout停止、実Python version記録を実装。10contract testsとshell構文PASS。独立read-only reviewerが2blockingを再現し、修正後blocking0で研究用OSS公開可を確認。ps失敗時のreceipt欠落、任意daemon隔離、公開trace完全監査は未保証。
 
 現在cursor: 専用branchをPR/main統合→main由来製品のみpublic repoへ公開→GitHub Actionsで独立cloud baseline readback。その後BR02のlive org、BR05の同条件複数model、BR06のmanaged tenant/継続loop、BR04の未被覆独自familyとBR08の記事公開が残る。既存Business Processと同等の第二simulatorは作らない。
+
+公開と反復の追記: PR9088はmain8140b781へ統合。public Daisuke134/businessrun-benchはb238f88（製品だけをmainからexport、PROVENANCE付き）。Ubuntu ActionsでCoffee6runとYC12runが成功しartifactを取得する。Business cloud41472362299はattempt0/missing9で起動失敗し、例外型/欠落module名だけを出す診断を追加中。ローカルのnative payment clean seed1/2も成功し、clean3/3・fault seed0 1/1。lost-writesの実ログに応答喪失5・処理前失敗2を確認、公式strict validatorも同条件PASS。Grok/Muse返答無し。現在cursorはBusinessのUbuntu起動失敗の診断・修正→main/公開同期→cloud再実行。

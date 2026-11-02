@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "run_id": "yc-greedy-s3",
+  "suite": "yc",
+  "policy": "greedy",
+  "command": [
+    "$PYTHON",
+    "$RUNNER/bench.py",
+    "_yc",
+    "$SOURCE",
+    "3",
+    "greedy"
+  ],
+  "python_version": "3.12.15",
+  "seed": 3,
+  "task": null,
+  "faults": null,
+  "protocol": "script_baseline_default_year",
+  "source": {
+    "repository": "https://github.com/collinear-ai/yc-bench.git",
+    "commit": "97ca2b809ea6fee92e3e5cc6240f5b0186221c51",
+    "dirty": false
+  },
+  "runner_sha256": "2506c4deaf9935c4bff2e8cff3f46d93be8318ceb6b4c437596c581995480e90",
+  "adapter_sha256": "ebd68fe55edf392d60eeaef1bca39a8e98162ad393f523dc809b6f6e7cbb8838",
+  "started_at": "2026-11-02T15:31:32.240104+00:00",
+  "wall_seconds": 1.44,
+  "exit_code": 0,
+  "artifact_present": true,
+  "error_class": null,
+  "summary": {
+    "bankrupt": true,
+    "tasks_completed": 3,
+    "tasks_failed": 2,
+    "turns": 12,
+    "final_balance_cents": -3017422,
+    "model_cost_usd": 0.0
+  },
+  "host_cost_usd": null,
+  "artifact_hashes": [
+    {
+      "name": "baseline.json",
+      "sha256": "bac92daba7875c6684b958b662f2359b4a14809515ed3da2225d7371898d6a87"
+    },
+    {
+      "name": "yc_bench_result_default_3_greedy_bot.json",
+      "sha256": "81ad680d9a77b8421cc2d377189a9b4a3481c822c63fea9573c5a932789fcda0"
+    }
+  ]
+}

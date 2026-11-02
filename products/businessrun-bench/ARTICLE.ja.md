@@ -34,6 +34,8 @@ flowchart TB
 
 古い公式スターターには `@usenaive-sdk/node` が登場する。一方、現在のdocsは `@usenaive-sdk/vetta` を案内する。旧スターターを動かせたことと、現行の会社実行基盤へ移行できたことは、別々に確認する必要がある。[旧スターター](https://github.com/usenaive/naive-starter-template)、[現行docs](https://usenaive.ai/docs)
 
+Naïveのcomputerは、ファイル・shell・任意のbrowserを持つLinux micro-VMだ。turn間ではpauseし、次のturnで再開する。pause中はcomputeではなく保存diskの費用が残る。常時動くMac Miniと同じ課金構造ではない。顧客向けにはVMだけでなく、状態保存、予算、権限、顧客ごとの実行環境をまとめる必要がある。将来予定のV8 isolateを提供済み機能として紹介しない。[公式Computer](https://usenaive.ai/docs/capabilities/computer)
+
 採用判断でも同じだ。SDKを導入した件数より、実行が中断しても戻れるか、費用を上限内に収められるか、成果物を顧客へ届けられるかを確かめたい。
 
 ## 全9評価を読むと、二つの実験が見えてくる
@@ -114,8 +116,8 @@ v1.0.0の10課題、1課題90分、5 harnessの50試行。部分rewardと、rewa
 | Business公式validator、seed0–4、strict | 13 task×seed条件通過後、14条件目の生成器で停止 | margin-bridge seed3に上流のゼロ除算。モデル失敗ではない |
 | Business payment-run、oracle、lost-writes、seed0 | 1/1成功 | 応答喪失を含む環境と参照policyが動作 |
 | Business全9課題、oracle/null、seed0 | 参照policyは9/9成功、無行動は0/9 | 全taskでgraderの対照が成立 |
-| Business payment-run、現在のCodex CLI、lost-writes、seed0 | 1/1成功、全10必須check通過、重複effect無し | 応答喪失からの回復を含む開発試行 |
-| Business payment-run、現在のCodex CLI、障害なし、seed0 | 2つの業務日を処理、全turn正常終了、公式grader成功 | 実モデルの開発試行1件。統計的なモデル優劣は不明 |
+| Business payment-run、現在のCodex CLI、lost-writes、seed0 | 1/1成功、全10必須check通過、重複effect無し | 応答喪失5回・処理前失敗2回の実発火を確認した開発試行 |
+| Business payment-run、現在のCodex CLI、障害なし、seed0–2 | 各2つの業務日、3/3で全turn正常終了・公式grader成功 | 実モデル3 seedの開発試行。統計的なモデル優劣は不明 |
 
 出典は本稿に付随する[実行台帳](RESULTS.md)。模擬USDを実売上に読み替えない。Codexのsubscription実費、host費用は未測定で、0ドルとしない。既存CLIの設定を引き継いでおり、答案隔離を保証する公式leaderboard試行でもない。
 

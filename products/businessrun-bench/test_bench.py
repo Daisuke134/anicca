@@ -113,6 +113,17 @@ class RunnerContract(unittest.TestCase):
                     try: os.kill(int(pidfile.read_text()), signal.SIGKILL)
                     except ProcessLookupError: pass
 
+    def test_diagnostics_expose_only_exception_type_and_module_name(self):
+        b = self.implementation()
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            (root / "stderr.log").write_text("secret-token-private\nModuleNotFoundError: No module named 'requests'\nRuntimeError: api token secret-token-private\n")
+            result = b.failure_diagnostics(root)
+            self.assertIn("requests", json.dumps(result))
+            self.assertIn("RuntimeError", json.dumps(result))
+            self.assertNotIn("secret-token-private", json.dumps(result))
+            self.assertNotIn(str(root), json.dumps(result))
+
     def test_process_cache_and_outputs_are_separate_for_identical_task_seed(self):
         b = self.implementation()
         with tempfile.TemporaryDirectory() as d:

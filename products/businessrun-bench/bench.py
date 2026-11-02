@@ -174,6 +174,24 @@ def stop_tree(process):
     process.wait()
 
 
+def failure_diagnostics(run):
+    """Publish types and missing import names, never exception messages or log text."""
+    found = []
+    for path in sorted(run.rglob("*.log")):
+        if path.stat().st_size > 2_000_000:
+            continue
+        for line in path.read_text(errors="replace").splitlines():
+            match = re.match(r"^([A-Za-z][A-Za-z0-9_]*(?:Error|Exception)):", line)
+            if match:
+                item = {"log": path.name, "exception": match[1]}
+                missing = re.match(r"^ModuleNotFoundError: No module named '([A-Za-z0-9_.]+)'$", line)
+                if missing:
+                    item["missing_module"] = missing[1]
+                if item not in found:
+                    found.append(item)
+    return found[:20]
+
+
 def execute(args):
     source, info = source_info(args.suite, args.sources)
     name = args.run_id or dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ-") + uuid.uuid4().hex[:8]
@@ -240,6 +258,7 @@ def execute(args):
                "started_at": started, "wall_seconds": round(time.monotonic() - begin, 3),
                "exit_code": code, "artifact_present": bool(evidence), "error_class": error_class,
                "summary": summary, "host_cost_usd": None,
+               "failure_diagnostics": failure_diagnostics(run) if code or not evidence else [],
                "artifact_hashes": [{"name": p.name, "sha256": digest(p)} for p in evidence]}
     (run / "receipt.json").write_text(json.dumps(receipt, indent=2) + "\n")
     print(json.dumps(receipt, indent=2))
