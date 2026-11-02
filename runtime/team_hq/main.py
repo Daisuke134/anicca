@@ -80,12 +80,9 @@ def atomic_json(path, value):
 
 
 def canonical_slack_text(text):
-    # Slack wraps bare HTTP(S) URLs; preserve labelled links and all other text.
-    return re.sub(
-        r"<(https?://[^<>\s|]+)>|<[^>]*>",
-        lambda match: match[1] if match[1] is not None else match[0],
-        text,
-    )
+    # Keep URL/text boundaries while removing only Slack's HTTP(S) autolink brackets.
+    parts = re.split(r"(<[^>]*>|https?://[^<>\s|]+)", text)
+    return tuple(re.sub(r"^<(https?://[^<>\s|]+)>$", r"\1", part) for part in parts)
 
 
 def slack_time(value):

@@ -224,6 +224,28 @@ class HQTests(unittest.TestCase):
                 ]), 1)
         self.assertEqual([row["owner_id"] for row in self.tasks()[1:]], ["claude"] * len(variants))
 
+    def test_url_token_changes_are_not_suppressed_as_outbox_echoes(self):
+        self.config["agents"].append(dict(self.config["agents"][0], id="claude", mention=["@claude"]))
+        variants = [
+            ("split_urls", "https://example.test/resulthttps://different.test/other",
+             "<https://example.test/result><https://different.test/other>"),
+            ("url_suffix", "https://example.test/resultsuffix", "<https://example.test/result>suffix"),
+        ]
+        for name, expected, actual in variants:
+            with self.subTest(name=name):
+                self.runtime = hq.HQ(dict(self.config, state_dir=str(self.root / name)), api=self.slack)
+                self.enqueue()
+                task = self.runtime.claim()
+                self.runtime.finish(task, {
+                    "task_id": task["id"], "owner_id": "codex", "status": "succeeded",
+                    "checkpoint": "done", "output": "引用: @claude " + expected, "agent_state": {},
+                })
+                reply = self.tasks()[0]["reply_text"].replace(expected, actual)
+                self.assertEqual(self.runtime.store_messages([
+                    dict(ts="9999.000001", thread_ts=task["thread_ts"], text=reply, user="U_BOT"),
+                ]), 1)
+                self.assertEqual(self.tasks()[1]["owner_id"], "claude")
+
     def test_scheduled_unknown_start_defers_only_its_final_and_reconciles_next_wake(self):
         self.config['announce_start']=True
         self.config['schedules']=[{'id':'daily','agent':'codex','interval_seconds':3600,'prompt':'work'}]
@@ -640,6 +662,35 @@ class HQTests(unittest.TestCase):
                 }
                 self.assertFalse(self.runtime.work()["ok"])
                 self.assertEqual(self.tasks()[0]["reply_state"], "post_unknown")
+                self.assertEqual(self.slack.posts, [])
+
+    def test_url_token_changes_cannot_verify_an_unknown_post(self):
+        variants = [
+            ("split_urls", "https://example.test/resulthttps://different.test/other",
+             "<https://example.test/result><https://different.test/other>"),
+            ("url_suffix", "https://example.test/resultsuffix", "<https://example.test/result>suffix"),
+        ]
+        for name, expected, actual in variants:
+            with self.subTest(name=name):
+                self.slack = Slack()
+                self.runtime = hq.HQ(dict(self.config, state_dir=str(self.root / name)), api=self.slack)
+                self.enqueue()
+                task = self.runtime.claim()
+                self.runtime.finish(task, {
+                    "task_id": task["id"], "owner_id": "codex", "status": "succeeded",
+                    "checkpoint": "done", "output": "証拠 " + expected, "agent_state": {},
+                })
+                with self.runtime.connect() as database:
+                    database.execute("UPDATE tasks SET reply_state='post_unknown' WHERE id=?", (task["id"],))
+                reply = self.tasks()[0]["reply_text"].replace(expected, actual)
+                self.slack.threads[(task["thread_ts"], "")] = {
+                    "ok": True, "messages": [dict(ts="9001.000001", text=reply, user="U_BOT", bot_id="B_BOT")],
+                }
+                hint = self.root / "hint.json"
+                with mock.patch.dict(os.environ, {"LIFE_MANAGER_RESULT_HINT_PATH": str(hint)}):
+                    self.assertFalse(self.runtime.work()["ok"])
+                self.assertEqual(self.tasks()[0]["reply_state"], "post_unknown")
+                self.assertFalse(hint.exists())
                 self.assertEqual(self.slack.posts, [])
 
     def test_ambiguous_slack_rejection_accepts_official_marker_readback(self):
