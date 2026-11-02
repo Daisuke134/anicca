@@ -23,8 +23,8 @@ except ModuleNotFoundError:
 AUTOLINK_BOUNDARIES = (
     ("markdown_japanese", "[PR](https://example.test/result)でmainへ保存。",
      "[PR](<https://example.test/result>)でmainへ保存。"),
-    ("json_proof", 'STATE {"proof":["https://example.test/result","/Users/example/artifact","https://example.test/evidence"]}',
-     'STATE {"proof":["<https://example.test/result>","/Users/example/artifact","<https://example.test/evidence>"]}'),
+    ("json_proof", 'STATE {"proof":["https://example.test/result","/fixture/artifact","https://example.test/evidence"]}',
+     'STATE {"proof":["<https://example.test/result>","/fixture/artifact","<https://example.test/evidence>"]}'),
     ("balanced_parentheses", "[資料](https://example.test/a_(b))で完了。 https://example.test/result, 次へ。",
      "[資料](<https://example.test/a_(b)>)で完了。 <https://example.test/result>, 次へ。"),
 )
