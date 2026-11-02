@@ -52,6 +52,13 @@
     },
     "warnings": "Existing test HTTPError fixtures emit ResourceWarning; suite OK",
     "next": "fresh review, exact updated-head CI, then merge, coordinated functions-only promotion and natural official readback",
-    "effects": "no deploy, click, post, accounting mutation"
+    "effects": "no deploy, click, post, accounting mutation",
+    "ci_failure": {
+      "head": "6338ee233056af608ececa90aa89b424fef7771f",
+      "run": 41543183396,
+      "job": 125612160774,
+      "error": "symlink_escape skills/earn/capafy-marketing/node_modules",
+      "repair": "Remove accidentally tracked dependency symlink; copy installed matching-lock dependencies into ignored real directory. Functional source unchanged."
+    }
   }
 }
