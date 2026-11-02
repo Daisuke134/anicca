@@ -56,7 +56,7 @@ Slack remote差分: 公式conversations.repliesで指定thread1793635811.853779�
 
 目的・範囲: CAPAFY-CT-READBACKの残課題を引き継ぎ、legacy blobの保存schema、復元できるURL/owner、ct保持の証明範囲を調べる。owner=home-codex-c23d68、task=c23d68e42668425c07faedde、branch=docs/capafy-legacy-c23d68、base=ec4c989577。既存PR9097のコード、台帳、配信、商品、HQ、effect fenceは変更しない。
 完了条件: 公式readbackと実sourceから旧記録の欠損/復元可能性を切り分け、検証根拠とexactな次操作を永続化、必要CIの公式PASS後にmainへ統合する。未確認ctや売上は成功に置換しない。
-現在cursor: 保存schemaと公式stats/既存receiptのread-only inventory。既存全体TODO順は維持する。
+現在cursor: read-only inventory完了、必要CI→main統合。公式Blob114件/legacy30商品88件/本文全88件が1、公式stats114/88一致、公開landing60リンクは全件bare route。実codeの反例でct有無が同一legacy keyになるため、legacy=ct欠落とは判定しない。旧query/ct/post/本人ownerは保存されず復元不能、売上は未確認。証拠 → docs/evidence/capafy-legacy-c23d68.{md,json}。generator9/9・go5/5・反例assert・source-boundary PASS。追加click/投稿/会計変更0。次のsource作業はgo.mjsの最小ct/platform/post保存とgo-stats readbackをtest-firstで接続することで、既存receiptのexact一致が無い過去88件はunknownを維持する。既存全体TODO順は維持する。
 remote差分: 指定Slack threadを公式完読。parentとhome-codexの更新のみ、本人受領/着手/結果の新差分なし。Reason accepted/queuedは未着手、催促0。
 
 ## README整理とMac導入の継続修復
