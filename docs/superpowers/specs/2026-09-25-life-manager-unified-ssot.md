@@ -23,9 +23,16 @@ HQ-01 source進捗: PR #9083、receiver/worker/schedulerを分離。fresh read-o
 
 HQ-01追加review: GitHub review 5737346545は39607eee1cを対象に4件を指摘。trusted result hint/occurrence環境を子processから除き、7日超rootの有限backfill、context取得cursorとenqueue cutoffの分離、thread完読前claim禁止、Slack internal_error/fatal_errorのpost_unknown照合を実装する。追加8件をRED→GREEN、HQ33+receipt5の38件PASS。古いclarificationもpromptへ含め、古い仕事はreplayしない。親の限定再検証と新HEAD CI後にmainへ進め、旧CI成功だけで有効化しない。
 
+容量の依存修復: live中央cleanupは54,543件を前処理した後にroot_candidate_budgetとなり、evaluated0/scanned0を反復する。空き容量は既存worker floor4GiB未満。旧順序HQ反映→記事に対し、新順序はHQ CIと並列で既存scratch GCの有界進行を修復→自然cleanupで容量を実測→HQ切替とする。上限の撤去、保護store削除、稼働owner解除はしない。private Git一時コピーの同一pack2件は独立hash/trailer/owner/open検証後に共有化し約1.4GBを回復したが、単独でfloor達成とはしない。現在の追加cursorはscratch GCの準備段階での飢餓で、sourceは別worktreeに限定する。
+
+HQ-01可視化の受入追加: private設定 announce_start=true のownerはclaim直後、子agent起動前に元threadへtask ID付きの受領・着手を通知する。送信前にprivate receiptを保存し、不確実応答はmarker/readback照合だけ行い盲目的に再送しない。既存の最終返信と業務effect境界は分離する。DB状態だけで全員に着手が見えるとは扱わない。
+
 HQ-02現行readback: DotsはReasonで受領→着手→監査結果まで返信。Slackの該当taskはconnection未設定で明示未送信。MuseはSlackの正式mention検出を修復し12fixture PASSと報告したが、新規parent1793626106.871059への自然60秒受信テストは複数周期後も公式thread返信0。Reasonで起こした返信を自然成功へ数えず、hookの境界診断を担当へ返す。参謀本人宛cursorへクラウド受信経路の修復を依頼。
 
 収益の独立監査: Dotsのread-only結果で、既存14:45依頼の対象hostはcapafy-skills-daily.netlify.app（aniccaai.comは別host）と訂正。liveはhomeへ302。並列PR #9084のstatic-only修正は次buildで消えるためdraftへ戻す。追加の公式GET /agent/agents（2026-11-02T13:44:02Z、code0）はagentStatus under_reviewだがhasOnlineVersion true、latestVersionName v1.0.5、autoPublish falseと返す。従って公開旧版と最新審査版を分離する。恒久修正はlandingの新規promotion対象を変えず、tracking allowlistだけonlineまたはhasOnlineVersionが厳密trueの既存公開IDから再生成する。under_reviewかつ公開版なし、false、文字列trueは追加しない。新規公開/価格/内容/自動公開/IG fenceは変更しない。generatorのRED→GREENと既存route回帰後、main由来のsite artifactを対象siteへ限定deployし、Dotsがread-onlyでLocation/ct/unknown/既存sellerを照合する。販売成立や収益は未確認。
+
+現行受入更新: HQの00bf4537は全CI PASS。着手通知の追加は3件RED→GREEN、既存33件と合わせ36件PASS、scheduled notice/resultの同thread回帰1件PASS。PR #9086はfe2538efでmain統合され、同SHA自然cleanup run 18e441829bb6f240-64432はexit0/pass。worker floor達成は別途追跡する。PR #9084は1021b363でmain統合・対象Netlify deploy 6ae89aeeb7fd12e6a76e6305 ready、公式HTTP5経路とindex hash一致、Dots独立QA PASS。販売成立は未確認。検証用ctを顧客/売上へ数えず、既存click blobにはctが保存されないため全raw clickの自動除外済みとはしない。記事source PR #9085は5b874ffc、公開bridge PR #842はa50f6c15へ統合され公開workflow中。Muse自然wakeは未確認。cursorの自己申告identityはdr eggbotで参謀とは別と訂正し、参謀sanboとMuse relayの実経路を照会済み。
+
 
 
 

@@ -583,6 +583,42 @@ class HQ:
         return {"ok": True, "task_id": task["id"], "execution_status": task["status"],
                 "business_outcome": "unverified", "reply_state": "posted", "message_ts": timestamp}
 
+    def announce_start(self, task):
+        if self.config.get("announce_start") is not True:
+            return
+        path = self.task_directory(task) / "start.json"
+        prefix = self.agents[task["owner_id"]].get("prefix", task["owner_id"])
+        marker = task["marker"] + ":start"
+        text = self.clean(f"[{prefix}] 受領・着手\ntask: {task['id']}\n担当: {task['owner_id']}\n結果と次の操作をこのthreadへ報告します。\n{marker}")
+        notice = json.loads(path.read_text()) if path.exists() else {"state": "pending"}
+        if notice["state"] == "pending":
+            notice = {"state": "post_unknown", "task_id": task["id"]}
+            atomic_json(path, notice)  # A crash after this point must never resend blindly.
+            parameters = {"channel": self.channel, "text": text}
+            if task["thread_ts"]:
+                parameters["thread_ts"] = task["thread_ts"]
+            try:
+                checked(self.api.call("chat.postMessage", **parameters))
+            except SlackRejected as error:
+                if not error.ambiguous:
+                    notice["state"] = "delivery_failed"
+                    atomic_json(path, notice)
+                    return
+            except Exception:
+                pass
+        if notice["state"] == "post_unknown":
+            try:
+                timestamp = self.marker_readback(dict(task, marker=marker, reply_text=text))
+            except Exception:
+                timestamp = None
+            if timestamp:
+                notice.update(state="posted", message_ts=timestamp)
+                atomic_json(path, notice)
+        if notice["state"] == "posted" and not task["thread_ts"]:
+            task["thread_ts"] = notice["message_ts"]
+            with self.connect() as database:
+                database.execute("UPDATE tasks SET thread_ts=? WHERE id=?", (task["thread_ts"], task["id"]))
+
     def hint(self, *, task_id=None, message_ts=None):
         path = os.environ.get("LIFE_MANAGER_RESULT_HINT_PATH")
         if path:
@@ -614,6 +650,7 @@ class HQ:
                 self.hint()
                 return {"ok": True, "task_id": None, "status": "idle"}
             if task["status"] == "working":
+                self.announce_start(task)
                 self.finish(task, self.execute(task))
                 with self.connect() as database:
                     task = dict(database.execute("SELECT * FROM tasks WHERE id=?", (task["id"],)).fetchone())

@@ -94,6 +94,55 @@ class HQTests(unittest.TestCase):
         self.slack.history[""]["messages"] = [self.message()]
         self.runtime.receive()
 
+    def test_start_notice_precedes_execution_and_is_not_repeated(self):
+        self.config['announce_start'] = True
+        self.enqueue()
+        execute = self.runtime.execute
+        def observed(task):
+            self.assertEqual(len(self.slack.posts), 1)
+            self.assertIn('受領・着手', self.slack.posts[0]['text'])
+            self.assertEqual(self.slack.posts[0]['thread_ts'], task['thread_ts'])
+            return execute(task)
+        with mock.patch.object(self.runtime, 'execute', side_effect=observed):
+            self.runtime.work()
+        self.runtime.work()
+        self.assertEqual(len(self.slack.posts), 2)
+        notice = json.loads((self.runtime.task_directory(self.tasks()[0])/'start.json').read_text())
+        self.assertEqual(notice['state'], 'posted')
+
+    def test_lost_start_response_is_verified_without_reposting(self):
+        self.config['announce_start'] = True
+        self.enqueue()
+        self.slack.lose_post_response = True
+        self.runtime.work()
+        task=self.tasks()[0]
+        self.runtime.announce_start(task)
+        self.assertEqual(len(self.slack.posts), 2)
+        notice=json.loads((self.runtime.task_directory(task)/'start.json').read_text())
+        self.assertEqual(notice['state'], 'posted')
+
+    def test_unknown_start_notice_never_blindly_reposts(self):
+        self.config['announce_start'] = True
+        self.enqueue()
+        self.slack.lose_post_response = True
+        self.slack.hide_posts = True
+        self.runtime.work()
+        task=self.tasks()[0]
+        self.runtime.announce_start(task)
+        self.assertEqual(len(self.slack.posts), 2)
+        notice=json.loads((self.runtime.task_directory(task)/'start.json').read_text())
+        self.assertEqual(notice['state'], 'post_unknown')
+
+    def test_scheduled_start_and_result_share_one_thread(self):
+        self.config['announce_start'] = True
+        self.config['schedules'] = [{'id':'daily','agent':'codex','interval_seconds':3600,'prompt':'bounded work'}]
+        self.runtime.schedule(now=3600)
+        self.runtime.work()
+        self.assertEqual(len(self.slack.posts),2)
+        self.assertNotIn('thread_ts', self.slack.posts[0])
+        self.assertEqual(self.slack.posts[1]['thread_ts'], self.slack.posts[0]['ts'])
+        self.assertEqual(self.tasks()[0]['thread_ts'], self.slack.posts[0]['ts'])
+
     def test_foreign_echo_cannot_verify_our_post(self):
         self.enqueue()
         task=self.runtime.claim()

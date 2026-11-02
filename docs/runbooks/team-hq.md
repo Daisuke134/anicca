@@ -6,6 +6,8 @@ The canonical work order and acceptance state are in the unified SSOT, TEAM-HQ s
 
 `team-hq-receive` reads the existing Slack room and saves messages/cards. `team-hq-work` claims one card, starts one configured agent CLI, stores its result, and posts the result to the original thread. `team-hq-schedule` creates due cards. All three are finite wakes of the existing Life Manager runtime; no new chat service or model provider is required.
 
+With `announce_start: true`, a claimed card posts its task ID and owner before starting the child agent. The notice has its own durable receipt and is reconciled by exact sender/text/marker after an uncertain response; it is never blindly resent. Scheduled work starts a room thread and reports its result there. A notice confirms runtime claim, not business completion.
+
 Receive and work have separate locks. Cards and replies are durable in a private SQLite database. A task's process result is distinct from its business outcome. An uncertain reply is reconciled by its marker before it can be considered posted; an uncertain business effect is not repeated automatically. Host resource admission is separate from card ownership.
 
 ## Private configuration
@@ -19,6 +21,7 @@ Create `~/.config/anicca-hq/team.json` with directory mode 0700 and file mode 06
   "state_dir": "~/.local/state/life-manager/team-hq",
   "legacy_state_file": "~/.config/anicca-hq/state.json",
   "timeout_seconds": 1200,
+  "announce_start": true,
   "agents": [{
     "id": "home-codex",
     "prefix": "home-codex",
