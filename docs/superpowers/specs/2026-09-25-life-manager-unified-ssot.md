@@ -23,7 +23,7 @@ HQ-01 source進捗: PR #9083、receiver/worker/schedulerを分離。fresh read-o
 
 HQ-02現行readback: DotsはReasonで受領→着手→監査結果まで返信。Slackの該当taskはconnection未設定で明示未送信。terminalの返信は60秒Reason/Slack wake設定を自己申告するが、Muse本人identityの不一致と直接Slack送信のprompt制約があり、本人の自然Slack応答は未実証。参謀本人宛cursorへクラウド受信経路の修復を依頼。
 
-収益の独立監査: Dotsのread-only結果で、既存14:45依頼の対象hostはcapafy-skills-daily.netlify.app（aniccaai.comは別host）と訂正。PR #9067のmain tracking実装に9425449917のallowlist追加はなく、liveはhomeへ302。監査は実装/配信0、現修正owner不明。HQ稼働後の収益cursor候補として、既存担当/PR照合を先行する。
+収益の独立監査: Dotsのread-only結果で、既存14:45依頼の対象hostはcapafy-skills-daily.netlify.app（aniccaai.comは別host）と訂正。PR #9067のmain tracking実装に9425449917のallowlist追加はなく、liveはhomeへ302。監査は実装/配信0、現修正owner不明。既存担当/PR照合では修正executorの受領証拠が無い。HQのCI待ちと独立して、primaryが既存14:45依頼の修正を引き取る。理由は別ファイルの許可リスト欠落だけで購入導線を復旧でき、HQの完了を待つ必要がないため。旧順序HQ完了後→新順序HQ検証と並列。sourceは専用worktree、商品内容/価格を変更せず、Dotsが公式到達先の再検証を行う。
 
 
 
