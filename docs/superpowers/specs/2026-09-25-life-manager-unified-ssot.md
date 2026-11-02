@@ -25508,6 +25508,14 @@ Manager v1は「大きなモデルを作った時」ではなく、(1)既存研�
 - **Remote state:** PR #8986 remains at `d720021bc`; this correction is local and unpushed. No production changes or earnings are verified.
 
 
+### Anicca 816再リジェクト・現在cursor
+
+目的・範囲: app6755129214の最新Guideline2.1(b)を解消し、実購入導線をMaestroで検証して正式なWAITING_FOR_REVIEWを確認する。認証情報や技術判断をDaisへ質問しない。owner=codex-anicca-weekly-20261103、branch=fix/anicca-weekly-review-20261103、worktree=/Users/anicca/Projects/life-manager-main/.worktrees/anicca-weekly-review-20261103、base=b941bc11644821f37ab9d66cfa2be544dbec3258。
+
+公式事実: Gmail1a19ccb75df64444の11/2審査通知はiPhone17ProMax、1.9.6(816)、Weekly Premium($6.99/week)を発見できないという情報要求。submission7e3f5574-6458-4abd-9994-5875dbdd3630=UNRESOLVED_ISSUES、version677ae249-da6e-4105-a469-cf0d0521ba92=REJECTED、build4e642697-7289-42df-946b-98e026ddfd85=VALID。現行mainは月/年/Lifetimeを描画し、weekly.bはDEVELOPER_REMOVED_FROM_SALEだが、weekly.c6829088753/yearly.c6829088945はWAITING_FOR_REVIEW。この不一致が現時点の診断cursorであり、購入処理故障とはまだ断定しない。
+
+旧順序=10/30 build815提出完了。新順序=(1)816の由来・C商品審査/metadata/契約の照合、(2)既存設計に整合する最小修正と審査回答を準備、(3)現行Release購入導線Maestro、必要な回帰test/review/CI/main、(4)正式提出とapp/IAPの公式readback。変更理由=新しい公式拒否理由が以前のLifetime発見不能とは異なるため。配信/他app/共有RevenueCat defaultは変更しない。現在cursor=(1)。paid purchase完了と有料権利restoreは前回未検証であり成功と表現しない。
+
 ### Anicca正式再提出・現在cursor
 
 Daisの明示依頼: 最新リジェクトを修正し、Maestro E2E後に正式提出してWAITING_FOR_REVIEWまで完了する。質問・認証情報の再要求は行わない。scopeはapp6755129214、iOS1.9.6と購入導線・審査情報だけ。owner=codex-anicca-review-20261030、branch=fix/anicca-review-resubmit-20261030、worktree=/Users/anicca/Projects/life-manager-main/.worktrees/anicca-review-resubmit-20261030、base=93fd0b42160a38fb78987f67f03948248382df5d。
