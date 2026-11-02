@@ -46,6 +46,8 @@ Slack app permissions must allow the configured room's history, thread readback,
 
 Stop only the old HQ poller after proving it is idle and holding its lock. Preserve its token, state, and logs. The new receiver imports the old processed IDs/cutoff so old work is not replayed. Deploy the canonical source through reviewed main and an immutable release. Apply only the three named HQ owners; do not reload the fleet or change another agent's posting schedule.
 
+An optional `handoff_agent` in an agent entry (or the top-level default) names another configured agent. A failed/interrupted execution creates one separate receipt/effect-inspection card for that helper, retaining the original request and thread. It does not requeue the original work. Handoff cards never create another automatic handoff, so exhausted helpers cannot bounce a task forever. Helper CLI availability and quota still need runtime evidence.
+
 The scheduler saves task slots so the same due slot is not recreated. A working card is never silently requeued after a crash. Its execution receipt is recovered if present; otherwise it becomes a concrete handoff item. A fresh agent must inspect the effect boundary before resuming it.
 
 ## Verify

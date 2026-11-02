@@ -494,11 +494,25 @@ class HQ:
         next_action = receipt.get("agent_state", {}).get("next") or (
             "verify_business_outcome" if outcome == "succeeded" else "inspect_receipt_before_handoff")
         with self.connect() as database:
-            database.execute("""UPDATE tasks SET status=?,updated=?,checkpoint=?,next=?,result_path=?,exit_code=?,
+            changed = database.execute("""UPDATE tasks SET status=?,updated=?,checkpoint=?,next=?,result_path=?,exit_code=?,
                 reply_state='reply_pending',reply_text=?,proof=? WHERE id=? AND status='working'""",
                 (outcome, time.time(), receipt["checkpoint"], str(next_action),
                  str(self.task_directory(task) / "result.json"), receipt.get("exit_code"), self.clean(reply),
                  json.dumps(receipt.get("agent_state", {}).get("proof", []), ensure_ascii=False), task["id"]))
+            if changed.rowcount != 1:
+                return
+            helper = self.agents[task["owner_id"]].get("handoff_agent", self.config.get("handoff_agent"))
+            if (outcome in {"failed", "interrupted"} and isinstance(helper, str) and helper in self.agents
+                    and helper != task["owner_id"] and not task["source_key"].startswith("handoff:")):
+                body = (f"元task {task['id']} の限定引き継ぎ。元担当 {task['owner_id']} の実行は {outcome}。"
+                        "元仕事を盲目的に再実行せず、receipt・途中成果と公式の外部effectを先に照合する。"
+                        "既存owner/leaseを確認し、未完の安全な次操作を進め、証拠と残る不足を元threadへ報告する。\n"
+                        f"receipt: {self.task_directory(task) / 'result.json'}\n"
+                        f"次操作: {next_action}\n元依頼: {task['body'][-6000:]}\n"
+                        f"途中成果: {receipt.get('output', '')[-2800:]}")
+                self.insert_task(database, "handoff:" + task["id"], helper, body,
+                                 source_ts=task["source_ts"], thread_ts=task["thread_ts"])
+                database.execute("UPDATE tasks SET next=? WHERE id=?", ("handoff_to:" + helper, task["id"]))
 
     def recover(self):
         with self.connect() as database:

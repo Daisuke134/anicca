@@ -143,6 +143,33 @@ class HQTests(unittest.TestCase):
         self.assertEqual(self.slack.posts[1]['thread_ts'], self.slack.posts[0]['ts'])
         self.assertEqual(self.tasks()[0]['thread_ts'], self.slack.posts[0]['ts'])
 
+    def test_failed_work_queues_one_bounded_cross_agent_handoff(self):
+        self.config['agents'].append(dict(self.config['agents'][0],id='helper',mention=['@helper']))
+        self.config['handoff_agent']='helper'
+        self.runtime=hq.HQ(self.config,api=self.slack)
+        self.enqueue()
+        task=self.runtime.claim()
+        receipt={'task_id':task['id'],'owner_id':'codex','status':'failed','checkpoint':'failed_handoff_required','output':'partial evidence','agent_state':{'next':'inspect provider receipt'},'exit_code':1}
+        self.runtime.finish(task,receipt)
+        self.runtime.finish(task,receipt)
+        cards=self.tasks()
+        handoffs=[x for x in cards if x['source_key'].startswith('handoff:')]
+        self.assertEqual(len(handoffs),1)
+        self.assertEqual(handoffs[0]['owner_id'],'helper')
+        self.assertEqual(handoffs[0]['thread_ts'],task['thread_ts'])
+        self.assertIn(task['id'],handoffs[0]['body'])
+        self.assertIn('照合',handoffs[0]['body'])
+        self.assertIn('partial evidence',handoffs[0]['body'])
+        self.assertEqual(next(x for x in cards if x['id']==task['id'])['status'],'failed')
+
+    def test_handoff_failure_does_not_create_an_infinite_chain(self):
+        self.config['handoff_agent']='codex'
+        with self.runtime.connect() as db:
+            self.runtime.insert_task(db,'handoff:prior','codex','inspect prior effect')
+        task=self.runtime.claim()
+        self.runtime.finish(task,{'task_id':task['id'],'owner_id':'codex','status':'failed','checkpoint':'failed','output':'no capacity','agent_state':{}})
+        self.assertEqual(len(self.tasks()),1)
+
     def test_foreign_echo_cannot_verify_our_post(self):
         self.enqueue()
         task=self.runtime.claim()
