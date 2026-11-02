@@ -38,7 +38,8 @@ remote実測: DotsはReasonで受領→着手→独立監査/GO確認→新し�
 目的: 既存7商品に対し公開`/go/<id>/x/<probe>?ct=<probe>`のHTTP Locationを公式readbackし、対象ID・ct保持・click counterを照合する。配信や会計のownerを代行せず、投稿/価格/購入/ledger/fence/HQ runtimeを変更しない。
 所有: home-codex-4a481d、task 4a481d0fe62485fd4dffc972、branch docs/capafy-ct-readback-4a481d。origin/main 41bb93191b由来の専用worktree。BOARD/lease/open PRを確認し、既存ownerを再割当しない。
 完了条件: 商品設定7件との照合、実HTTP redirectと計測readbackの証拠を永続化し、既存関連テストとdiff check、commit/push/PRでレビュー可能にする。失敗経路があれば具体的URLと修正先を残す。合成clickを売上/購入/実ユーザー流入に含めない。legacy blob全件や購入決済完了はこの7件の証明範囲外。
-順序/現在cursor: claim → 7経路readback → 既存テスト → 証拠/正本更新 → PR/CI/main。既存TODO順は変更しない。
+順序/現在cursor: claim・7経路readback・既存テスト・証拠/正本更新は完了、現在PR/CI/main。既存TODO順は変更しない。
+検証結果: 全7商品302/対象ID/ct/utm_content保持。最初の公式statsはexact probe未反映、後続readbackで全7商品を確認する。GET7に加え診断HEAD2もclick記録となり合計9件、実流入/会計から除外すべき合成probeは`test_hq_4a481d`。公式deploy6ae89aeeb7fd12e6a76e6305/readyを確認しdeploy変更0。generator9件とsource-boundary PASS、購入/売上は未確認。証拠 → docs/evidence/capafy-ct-readback-4a481d.json。legacy blob全件のct保持は未検証で、次操作はexact URLと既存ownerのinventoryから始める。HEADをread-only無副作用と仮定せず、同probeを再送しない。
 Slack remote差分: 公式conversations.repliesで指定thread1793635811.853779を完読、parent1件/返信0/has_more=false。受領・着手・結果の新差分なし、Reason accepted/queuedは未着手、催促送信0。
 
 ## README整理とMac導入の継続修復

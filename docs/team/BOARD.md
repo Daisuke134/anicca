@@ -8,7 +8,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [home-codex / CAPAFY-CT-READBACK] claim: `docs/capafy-ct-readback-4a481d`、task `4a481d0fe62485fd4dffc972`。所有: 既存7商品CTAの公開redirect/ct保持とclick counterの限定検証、sanitize済み証拠と本行。投稿・会計・商品・TEAM-HQ runtime・既存effect fenceは変更しない。
+- [home-codex / CAPAFY-CT-READBACK] 検証完了・統合中: `docs/capafy-ct-readback-4a481d`、task `4a481d0fe62485fd4dffc972`。所有: 既存7商品CTAの公開redirect/ct保持とclick counterの限定検証、sanitize済み証拠と本行。投稿・会計・商品・TEAM-HQ runtime・既存effect fenceは変更しない。
 - [Codex / Anicca正式再提出] 完了: PR9057/9058をmainへ統合、1.9.6(815)とLifetimeはASC公式WAITING_FOR_REVIEW。残TODO正本 → 統合SSOTのAnicca正式再提出lane。
 - [Codex / Railway life-call-staging BUILD_IMAGE recovery] claim: docs/railway-life-call-staging-final-20261027。範囲: Railway失敗境界を調査し、stagingのwatchPatternsをproduction同様`apps/life-manager/**`へ設定、原因と公式readbackを記録する。life-callコード/vars/productionは変更しない。
 - [Codex / AI Monk Database catalog] claim: fix/ai-monk-database-catalog-20261025。所有: canonical `/dais` EN/JA static HTML、route-manifest、portfolio acceptance test、本BOARD。AI Monk DatabaseへのFree/open-data導線だけを追加し、Factory runtime/provider/Instagram/Postiz effectは変更しない。
@@ -43,6 +43,7 @@
 - [Codex / Manager] prepared shadowの既存host/CLI/Actions接続。所有: feat/manager-host-shadow-connection-20261023の限定host/CLI/workflow/tests/docs。既定・schedule OFF、単一owner、P0比較のみ。本番推論・新規課金・他laneは変更しない。
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
+- 2026-11-03 01:27 JST home-codex（4a481d）: remote追跡threadを公式完読し返信0・催促0。既存Capafy7商品すべて302/対象ID/ct/utm_content保持、遅延後go-statsのexact probe7商品を公式照合。GET7＋診断HEAD2もclickとなり合計9件の合成記録を除外対象として証拠へ記録。generator9件/source-boundary PASS。投稿・会計・価格・HQ runtime変更0、売上未確認。次: legacy blobのexact URL/owner inventory（本検証の対象外）。証拠 docs/evidence/capafy-ct-readback-4a481d.json。
 - 2026-10-30 10:36 JST Codex（Anicca正式再提出）: Guideline2.1(b)のoffering/設定購入入口とSwift Release compilerを修正、PR9057/9058は各CI15/15 PASS・main統合。Maestro最適化版2/2、iPad実画面、native22/Python21を確認。main e24aa053由来1.9.6(815)とLifetimeをASC CLIで同時提出し両方WAITING_FOR_REVIEW。Apple承認/公開・有料購入完了は未確認。次: Apple審査結果待ち、今回の依頼範囲は完了。
 - 2026-10-27 00:13 JST Codex(Railway life-call-staging): docs-only main commits #9028–#9031も全repo buildした運用原因はstagingのwatchPatterns未設定（productionは`apps/life-manager/**`）で、stagingにも同条件をlive設定。9c9dedf3/0bb02098はRailpack v4開始後、037e3717はsource snapshot upload後にBUILD_IMAGE失敗したがRailwayログ/APIに内部原因なし。`apps/life-manager/**`はknown-good SHA `0a9facc`からmainまで差分0。`c2774225`をredeployし公式readback SUCCESS・Online 1/1、pendingなし。
 - Codex(CrowdWorks公開導入): PR8840/main e9479629のCI13成功/公開2files一致を受入。継続観測は旧76ccへ戻りhost admission待機、fleet actorの05:16Z再applyを特定。通常reconcileと異なる祖先確認欠落を共通fleetで修復し、Lancers方式の公開installerを並行実装する。source検証で本番owner/本人値/未確定effectを変更しない。正本 → MAC03-CROWDWORKS-SETUP。
