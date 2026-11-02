@@ -28,6 +28,8 @@ canonical `products/businessrun-bench/` がsource。公開repoはこのsubdirect
 6. native model試行は上流のtask提示とgraderを使用。oracle/null/negative controlsはLLM評価に数えない。whole-model rolloutが未実行ならそのまま未実行と表示する。
 7. 上流にpublic runnerがないClipping/Short Formはaccess-requiredとし、promptから似た環境を捏造して再現と呼ばない。
 
+独立builder checkの反映: Coffee/YCはrunごとに新規cwdを使う。Coffeeの全社passive/heuristic条件は公式のSonnet背景baselineと別controlとして記録する。Business Benchのmodel欠落補完とYCの欠落response_cost由来0を実model/既知費用に採用しない。native subscription費用はnull、Actionsの一時hostと答案隔離は別項目とする。
+
 ## CloudとNaïveの境界
 
 Grok側sanbou-opsのSDK/agent/session記録をcanonical側の現在地に取り込むが、teamのsecretや稼働ownerを複製しない。現行Naïve orgのlive readbackと残高/権限が確認できた範囲だけ実行する。一般顧客へはtenantごとのidentity、権限、spend cap、effect lease、成果/削除/費用のreadbackが必要。既存チーム向けorgを無条件に共有SaaSとして公開しない。課金top-upとresale可否は既存spend-cap/公式規約/ownerと照合する。

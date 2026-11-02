@@ -54,3 +54,5 @@ Owned files: `docs/research/2026-11-02-naive-autonomous-companies.md`, `docs/art
 
 - 設計判断: Business Bench Processに相当課題があるため、新しい事業simulatorは作らず上流を利用する。無駄な再実装を避ける。独自課題/managed SaaS全体の未完は保持する。
 - 初回probe: Claude CLIはOAuth expiredで認証不能。CoffeeBenchの90日passive/heuristic baselineは完走。YCの初回direct invocationはSTRATEGIES値のtupleをcallableとして渡して失敗したため、型を確認して修正して再実行する。
+- 訂正/進行: Coffeeの2試行は全5背景actorをpassiveにした環境controlであり、公式Sonnet背景baselineとは別条件。YCはtupleを展開してdefault世界・4script×3seedsを再実行し全12試行のterminalを取得。Codex native probeは成功、ClaudeはOAuth expiredを保持する。
+- Task1: runner欠落をassertする6テストがRED→最小runnerで6/6 GREEN。独立builder checkの新規cwd・費用unknown・背景条件・答案隔離の4点を設計と実装へ反映する。
