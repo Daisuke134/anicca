@@ -113,7 +113,7 @@ The productivity improvement you proudly demonstrated becomes evidence that the 
 
 This is the paradox: **you are training yourself to compete on the dimension where AI's advantage is growing fastest.**
 
-In Japan, we praise someone as *shigoto ga dekiru*—a person who is exceptionally good at getting work done. We celebrate efficiency, speed, reliability, output. These qualities matter today. But in a world where the work itself can be performed autonomously, being the most productive human does not guarantee that the human is still needed.
+Silicon Valley has built an entire culture around meritocracy: reward the people who ship faster, solve harder problems, and produce more value. The best engineer, the most effective operator, the founder who executes relentlessly—these are the people we celebrate. And for good reason: in today's economy, results matter. But that is precisely the trap. If the work itself can be performed autonomously, being the most productive human does not guarantee that a human is needed at all.
 
 Imagine saying, “I'll keep my job because I'm better at using AI than my colleagues.” What happens when the AI no longer needs you to operate it?
 
