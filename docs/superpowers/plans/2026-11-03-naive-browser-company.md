@@ -756,7 +756,7 @@ cancel→GETcancelled/pending0、43sessions active0、Computer pause→GETpaused
 
 現在cursorはTODO2の通常の収益業務へ戻す。旧順序は「予約余力修復→1業務のstate保存→条件付きrollout」、新順序は「買い手側の未解決source→実依頼→native納品→第三者入金/費用」。理由は予約と保存の失敗が同じnative engineで解消し、seller/tutorial検索を需要と呼ばない学習が永続化したため。元7TODOの順序は変更しない。次の通常業務は固定mainのproduction inputを使い、本人offer/sample/payment metadataと既存stateを読み、public intakeを1回確認する。依頼が無ければ販売者の解説を再検索せず、公開の未解決質問/open issueを先に調べて新出所本文を最大1件読む。既に回答済みforum5003/解決済みMedium/過去投稿の再送を避ける。
 
-次業務の実行枠（まだ未実施）: 同じagent22/Identity/priority/既存source、finite0.40USD＋browser/Computer等0.05の計画総0.45、8分、全tools最大16/browser hosted最大4。最大出力予約は実費と分け、直前agent残額/creditが計画未満なら作成0でledgerを読む。新topup/agent/key/inbox/model変更0。同じ失敗の診断canaryを追加するのでなく、通常の顧客獲得/受注を進める。実依頼があれば元offerのpublic/匿名化/20calls以内/公開同意/重複照合からnativeの納品を進める。新需要や有用な新知見が無ければ募集を言い換えて投稿せず、根拠不足と次行動をstateへwrite/readする。既存productionで許可済みのPostizだけ、同じUTC日/自分のpostとの重複を確認した新規post最大1件を維持する。DM/他者issue返信/他owner変更/資金送金は0。本人通常browser/mail/MCPだけで業務を行いscript/APIへ置換しない。finallyはsession terminal/pending0/Computer paused/全費用、production22全fields維持を公式照合する。自然run/実第三者売上/本人サービス登録/連続録画/phone-only/黒字/USD10K/月/移植は未完である。
+通常業務1件目の開始時契約（下記に実測/修復/終了結果）: 同じagent22/Identity/priority/既存source、finite0.40USD＋browser/Computer等0.05の計画総0.45、8分、全tools最大16/browser hosted最大4。最大出力予約は実費と分け、直前agent残額/creditが計画未満なら作成0でledgerを読む。新topup/agent/key/inbox/model変更0。同じ失敗の診断canaryを追加するのでなく、通常の顧客獲得/受注を進める。実依頼があれば元offerのpublic/匿名化/20calls以内/公開同意/重複照合からnativeの納品を進める。新需要や有用な新知見が無ければ募集を言い換えて投稿せず、根拠不足と次行動をstateへwrite/readする。既存productionで許可済みのPostizだけ、同じUTC日/自分のpostとの重複を確認した新規post最大1件を維持する。DM/他者issue返信/他owner変更/資金送金は0。本人通常browser/mail/MCPだけで業務を行いscript/APIへ置換しない。finallyはsession terminal/pending0/Computer paused/全費用、production22全fields維持を公式照合する。自然run/実第三者売上/本人サービス登録/連続録画/phone-only/黒字/USD10K/月/移植は未完である。
 
 
 ### 通常業務1件目の進行中の境界修復
@@ -767,4 +767,21 @@ cancel→GETcancelled/pending0、43sessions active0、Computer pause→GETpaused
 
 primaryは稼働中の同sessionを破棄せず、終了照合のwall deadlineだけ開始時8分から12分へ修復する。finite400000/agent月9000000/task1000000は変更しない。後計上の計画余力は50000から100000（計画総500000）へ増やし、残額/creditを公式GETで再確認してから延長する。新session/モデル変更/入金/追加入力は0。元native入力のmax16toolsを遡って変更したとは呼ばず、実数と逸脱の有無を結果へ残す。未確認の投稿/記録保存/売上は認定しない。最終成果・費用・終了照合は未実施。
 
-次の通常入力は、会社側の公式時刻観測を出所付きで渡し、Postizのstart/endをそのUTC日1日分へ固定して、未来90日読取や時刻サイトへの余分な依存を防ぐ。今回の実数から必要な操作数を見直し、16という小さい指示で保存や公式照合を妨げない。新しい業務script/controllerは作らない。現在cursorは同sessionの終了・送信有無・保存・全台帳の照合であり、元7TODOと収益goalは維持する。
+次の通常入力は、会社側の公式時刻観測を出所付きで渡し、Postizのstart/endをそのUTC日1日分へ固定して、未来90日読取や時刻サイトへの余分な依存を防ぐ。今回の実数から必要な操作数を見直し、16という小さい指示で保存や公式照合を妨げない。新しい業務script/controllerは作らない。当該sessionは下記の確定結果で終了し、現在cursorは保存先行/日付範囲のsource修復である。元7TODOと収益goalは維持する。
+
+
+### 通常業務1件目の確定結果と入力の最小修復
+
+公式SDK0.10.0 sessions.createは201/request req_a420p6mwbh29vgppjcad4vned1を返す。ses_4cdhj518v7y92ajcq90j4zck4eは本人browserでpublic intake（検索該当なし）→LangGraph open issues→issue9001本文を読み、未解決の静的interruptの反復を観測する。公式GitHub GETもissue9001 open/closed_at null/更新10月16日を確認する。これは私たちへの依頼でも価格受容でもなく、公開issueを顧客獲得や売上へ昇格しない。
+
+nativeは調査後のwrite/readを行わず、Postiz postsList/integrationSchema/UTC時計の読取へ進む。postsListの約90日範囲/69055bytesは必要最小の期間というsource契約を満たさない。15tools/4extract/確認0/primary追加message0、人間0で最初の処理区切りmax_iterationsに達し、同じsessionがprovider側で自動継続する。その後はinternal_errorがattempt1/2/3（2秒/5秒/60秒backoff）で再発し、新しいtool callは0。429/timeout/context上限という公式理由は取得していない。大きな応答やcontinuationとの因果は未分離であり、以下の入力修復でprovider内部エラーが直るとは断定しない。
+
+primaryのwall延長前readback17:50:37UTCは残866972/credit23447150、remaining finite＋後計上余力100000を収容する。元finite400000/月9000000/task1000000は変更0、入力追送0/新session0。12分deadline17:54:53UTC後にcancelを開始し、公式cancelled/pending0、全44sessions active0、Computer paused、本番22/priority/既存全source fields一致を確認する。実cancelのeventは17:55:14（開始から約741秒、延長deadlineから約21秒後）。12分以内に完走したとは呼ばない。確定session帰属費132224microUSD/全ledger15件一致、GET consumed123891とusage83891は別snapshot。月spent8146354/残853646は最終照合時点値で後計上を保証しない。
+
+全events EOFにwrite0/投稿schedule call0、完了した保存/公開/納品/入金は未確認。旧state10553bytesの読取を確認しただけで、今回の成果をnative保存済みとしない。証拠はprivate v22-business-one-{sdk-create,before,attempt,events,artifacts,issue9001-official,failure-boundary,completion-window,terminal-readback,ledger,spend-readback,production-readback,agent-readback,final-resources}.json。failure-boundaryはoccurrence/owner/release/phase/SDK receipt/error code/backoff/効果/次操作を秘密値なしで構造化する。
+
+ここで修復する自所有の問題は、(1)重要な出所を読んでも次の外部作業前にwrite/readせず未保存になる順序、(2)Postiz期間の曖昧さから90日を取得したこと。source差分はdeployment.input_templateだけ。最も収益に近い未完の1成果をモデルが選び、過去の未照合送信や保存済みの次行動を優先する。新しい根拠を得たらPostiz等へ進む前に既存stateを保持してwrite→readし、今回の1成果を終えたら次行動を記してend_turnする。モデルに経路/対象/適合の判断を任せ、固定phase machineやcontroller/新frameworkを作らない。Postizは出所付きUTC時刻（無ければ本人browserで観測）の暦日00:00Z〜翌日00:00Zの1日分だけにし、月初〜未来数か月へ拡大しない。投稿最大1/UTC日、既存の重複照合とcheckpoint/公式照合、DM/他owner/送金禁止は保持する。
+
+agent/model/window/Identity/vault/cron/月9/task1/専用mail/既存出力先は変更しない。次source acceptanceはJSON比較でinput_templateの1fieldだけ/他全fields不変、元実行の保存0/範囲違反を外部RED、fresh read-only review/最新head CI/main固定。runtime GREENはnativeによる根拠の先行write/readと、Postizを使う場合の実start/endが観測UTC日1日だけであること。文字列assertをモデルの遵守証明にしない。provider内部エラーの解消は別の未実証事項として残す。
+
+main固定後は旧production inputを保持したまま、同agent22/Identity/priorityに新inputで通常業務1件（finite0.40＋後計上余力0.10/計画0.50、12分、全tools最大24/browser hosted最大4）を進める。直前残/creditが計画未満なら作成0。元issue9001は親が読んだだけなので、本人が必要な根拠を実UIで確認してstateへ残すことを許すが、新規顧客と数えない。人間への承認待ち/業務script/新agent/key/model/増枠/追加入力は追加しない。完了と終了/費用を公式照合してからdesired inputだけをproductionへ反映し、失敗なら旧inputを維持して原因と原本を保存する。元7TODO/登録/第三者売上/録画/phone-only/黒字/USD10K/月/移植は未完のまま保持する。
