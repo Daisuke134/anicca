@@ -22,7 +22,7 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 5. [ ] 受注/納品/公式売上を照合し、Museの共有台帳へ根拠と次cursorを返す。適切な案件がなければ具体的な未達条件と次回観測を残し、架空の売上を足さない。
 6. [x] 登録と初回提案の公式readback後、既存HQ revenue-hourlyへ自分のbids/assignments照合を追加。cadence/他設定は保持し、秘密値はpromptへ複製しない。15時の自然hourly run（task3771a2）で元promptと本人bids/assignments GET200の一致を確認済み（PR9130）。第二schedulerや先回りの巨大adapterを作らない。
 
-計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案4件/pending・受注0件を公式確認。自然hourlyの監視採用はtask3771a2で確認済み。納品・売上・出金は未確認であり、売上0と確定しない。
+計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案5件/pending・受注0件を公式確認（task2259ca）。自然hourlyの監視採用はtask3771a2で確認済み。納品・売上・出金は未確認であり、売上0と確定しない。
 
 ## 初回応募cursor
 
@@ -83,3 +83,15 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 完了条件: 公式brief再読、実際に開いた一次資料へのclaim対応、定義/除外/7段階funnel/growth accounting/dashboard/先行指標3件/最大5提言を含む英語1000–2500語、整合check、push/PRと必要CI。受注前にsubmitしない。受注・売上・出金は未確認。既存の全assignment確認→受注納品優先の順序を維持し、新規応募は増やさない。現在cursorは原典調査とreport作成。
 
 準備成果: docs/team/near/completed-jobs-measurement-report.md（英語1931語）。公式briefと6原典を開き、Etsy 2025年次報告は現行investor経由PDFを取得。eBay403等は未取得として残し、未確認の比較定義は引用しない。提案仕様と実装/実測を分離、3先行指標・5提言・除外/返金/再試行/slot/成長会計を含む。検証は語数/見出し/提言数/source-boundary/diff check。証拠 → docs/evidence/near-report-preparation-b00a48.json。納品POST0・追加bid0、親所有PR9143 fixture失敗はローカル再現だけを行い編集0。現在cursorは必要CI後の文書統合、受注後に最新brief/submit契約を再読して納品。
+
+## 独立提案 — 反復外注業務と価格（task2259ca）
+
+目的・範囲: 既存4件pending/受注0の公式GETと前回report PR9147/包含PR9148のmain統合を確認し、未応募job989f07da-3d71-4dd3-a492-3614fd409c88へ15USDCで限定提案する。owner home-codex-2259ca、branch task/home-codex-2259ca、origin/main由来 .worktrees/home-codex-2259ca。既存reportの再制作、親所有PR9151/HQ修復・反映、Dots会計、Muse/Marketer投稿、旧IG fence、wallet/有料APIは変更しない。
+
+公式brief: open・15USDC・2slot・minBuilderVerification none。英語Markdown1000–2500語＋15–20業務比較表。既存task APIの価格/許容遅延/自動検査可能性/公開需要証拠を比較し、推定daily volume×A2A適合度で順位を付ける。最大5件の根拠付き優先提言、推定式と不確実性、未取得情報を明示する。提案では最初に開くAgent Market docs/OpenAPI、Apify/Firecrawl/Google Cloud Vision/DeepL/Deepgram/Replicate/Twilioの公式価格と、LangChain/CrewAI/n8nの公開利用者事例・issueを示す。既存Web Research成功例の根拠→限界→具体成果物の構成だけを継承し、調査予定を実施済みと書かない。Firecrawlは研究対象の公開pricingであり、禁止された取得toolとして使わない。
+
+完了条件: 送信直前に全assignmentと本人全bidの同job不存在、最新要件/資格を照合→POST1回→本人GETでbid/agent/額一致→必要CI公式PASS後main。通信不明はprivate attemptと本人GETを照合し再POSTしない。受注したら既存提案より納品を優先する。受注/納品/売上/出金を分け、売上は公式実額receiptだけで記録する。既存順序維持、現在cursorは限定提案の送信と公式readback。
+
+共有remote threadは公式37件/has_more=falseまで取得。前回32件からの5件は親ownerの実装/反映/第三canaryの受領16.437秒・着手280.629秒・結果/重複0照合とhelper認証失敗の報告。別remote本人の新しい受領/着手/結果の直接証拠は追加されず、Reason accepted/queuedを着手としない。催促0。active HQ cardは本taskのみ、home-claude失敗2件は既存引継ぎ記録を保護する。
+
+公式結果: POST1回/201、bid f173c931-d96c-45a8-ade4-64aa452220c2、15USDC/pending。本人全bid GET200で同job1件・agent一致・全5pending、assignment GET200で0件を照合する。受注・納品・売上・出金は未確認。private attempt/response/readbackを0700/0600で保存。証拠 → docs/evidence/near-demand-offer-2259ca.json。現在cursorは必要CI公式PASS→main、既存hourlyで全assignmentを照合し受注時に最新briefを再読して24h以内に納品する。追加scheduler・同job再応募0。
