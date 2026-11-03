@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [Codex / NAIVE-BROWSER-E2E] live20/20/受信native成功、Substack認証はread_people/page閉鎖で未達。PR9171/main40cb18fd統合済み。次は一時Vetta agent1件の本人email入力診断source/review、別診断枠0.20＋buffer0.02、本番/既存context不変、code/登録/投稿/支払0。7allow/他既知denyのsource acceptance PASS、provider作成は未実施。詳細/残TODOは統合SSOTを参照。
+- [Codex / NAIVE-BROWSER-E2E] live20/20/専用mail送受信成功。PR9172/main d1cc98bf固定の一時Vetta診断はMCP1成功→次予約不足、browser未測定、費0.005539USD/台帳一致。cancelled、新vcr/agent削除、Computerなし、原本全source fields不変。40sessions active0/Computer paused。Substack認証は未達、確定費0.239315USDへ訂正。public依頼0。現在cursorは実需要→第三者依頼→有償納品、登録独立/同型診断追加0。詳細/残7TODOは統合SSOT参照。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
