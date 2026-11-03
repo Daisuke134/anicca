@@ -17,8 +17,13 @@ SCHEMA = "manager.public-aggregate-preflight.v1"
 MIN_CELL = 10  # Internal screening heuristic; NOT a statutory anonymity threshold.
 
 
-def _exact(value, fields, what):
-    if not isinstance(value, Mapping) or set(value) != set(fields):
+def _exact(value, fields, what, optional=()):
+    if not isinstance(value, Mapping):
+        raise ValueError(f"invalid {what} fields")
+    required = set(fields)
+    allowed = required | set(optional)
+    keys = set(value)
+    if not required <= keys or not keys <= allowed:
         raise ValueError(f"invalid {what} fields")
     return value
 
@@ -59,7 +64,8 @@ def preflight_public_aggregate(packet: Mapping) -> dict:
     """
     p = _exact(packet, ("schema", "route", "release_state", "granularity",
                         "source", "population", "outcome", "partition",
-                        "cross_release_review"), "packet")
+                        "cross_release_review"), "packet",
+               optional=("disclosure_control",))
     if p["schema"] != SCHEMA:
         raise ValueError("unsupported public aggregate schema")
     route = _choice(p["route"], {"existing_public", "partner_public"})
@@ -67,6 +73,13 @@ def preflight_public_aggregate(packet: Mapping) -> dict:
     granularity = _choice(p["granularity"], {"public_aggregate", "individual", "unknown"})
     overlap_review = _choice(p["cross_release_review"],
                              {"not_assessed", "externally_documented"})
+    disclosure = _exact(
+        p.get("disclosure_control", {"method": "unknown"}),
+        ("method",), "disclosure control")
+    disclosure_method = _choice(
+        disclosure["method"],
+        {"exact_unmodified", "rounded", "perturbed", "mixed", "unknown"})
+    declares_unmodified_counts = disclosure_method == "exact_unmodified"
 
     s = _exact(p["source"], ("source_id", "url", "license_id", "rights",
                               "content_sha256", "retrieved_at", "privacy_class"), "source")
@@ -98,7 +111,12 @@ def preflight_public_aggregate(packet: Mapping) -> dict:
     known_sum = 0
     suppressed = 0
     reasons = set()
-    if total < MIN_CELL:
+    if not declares_unmodified_counts:
+        if disclosure_method == "unknown":
+            reasons.add("DISCLOSURE_METHOD_NOT_DOCUMENTED")
+        else:
+            reasons.add("DISCLOSURE_METHOD_ALTERS_COUNTS")
+    if declares_unmodified_counts and total < MIN_CELL:
         reasons.add("SMALL_TOTAL")
     for cell in cells:
         c = _exact(cell, ("category", "count", "sensitive"), "partition cell")
@@ -112,24 +130,25 @@ def preflight_public_aggregate(packet: Mapping) -> dict:
             suppressed += 1
             continue
         count = _count(c["count"])
-        known_sum += count
-        if 0 < count < MIN_CELL:
-            reasons.add("SMALL_RELEASED_CELL")
-        if count == 0 and c["sensitive"]:
-            reasons.add("SENSITIVE_ZERO_CELL_REVIEW")
-    if known_sum > total:
-        reasons.add("INCONSISTENT_PARTITION")
-    if suppressed == 0 and known_sum != total:
-        reasons.add("INCONSISTENT_PARTITION")
-    if suppressed == 1 and total >= known_sum:
-        # A released exact total reveals the only hidden count by subtraction,
-        # even when the hidden count would exceed the basic size threshold.
-        reasons.add("SINGLE_SUPPRESSED_CELL_RECONSTRUCTABLE")
-    if suppressed >= 2:
-        if total >= known_sum and total - known_sum < MIN_CELL:
-            reasons.add("SUPPRESSED_COMPLEMENT_BELOW_MINIMUM")
-        else:
-            reasons.add("SUPPRESSED_GROUP_REQUIRES_REVIEW")
+        if declares_unmodified_counts:
+            known_sum += count
+            if 0 < count < MIN_CELL:
+                reasons.add("SMALL_RELEASED_CELL")
+            if count == 0 and c["sensitive"]:
+                reasons.add("SENSITIVE_ZERO_CELL_REVIEW")
+    if declares_unmodified_counts:
+        if known_sum > total:
+            reasons.add("INCONSISTENT_PARTITION")
+        if suppressed == 0 and known_sum != total:
+            reasons.add("INCONSISTENT_PARTITION")
+        if suppressed == 1 and total >= known_sum:
+            # A declared exact total reveals the only hidden count by subtraction.
+            reasons.add("SINGLE_SUPPRESSED_CELL_RECONSTRUCTABLE")
+        if suppressed >= 2:
+            if total >= known_sum and total - known_sum < MIN_CELL:
+                reasons.add("SUPPRESSED_COMPLEMENT_BELOW_MINIMUM")
+            else:
+                reasons.add("SUPPRESSED_GROUP_REQUIRES_REVIEW")
     if release_state != "published":
         reasons.add("NOT_PUBLICLY_RELEASED")
     if granularity != "public_aggregate":
@@ -161,6 +180,7 @@ def preflight_public_aggregate(packet: Mapping) -> dict:
         "disclosure_certified": False,
         "consent_or_ethics_approved": False,
         "causal_effect_verified": False,
+        "declares_unmodified_counts": declares_unmodified_counts,
         "beneficiary_effect": "NOT_MEASURED",
         "next_action": ("NO_ACTION" if status != "PRELIMINARY_METADATA_ONLY"
                         else "INDEPENDENT_SOURCE_AND_DISCLOSURE_REVIEW"),
