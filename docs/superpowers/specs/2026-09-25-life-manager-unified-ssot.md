@@ -123,6 +123,10 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 NEAR自然監視の限定受入（task3771a2d0493dbb6ec52ecb85、home-codex）: 既存revenue-hourlyの自然cardと元promptからagent専用bids/assignmentsの公式GETまでを照合する。範囲は読取・限定証拠・BOARD、本段落のみ。親root所有PR9129の編集/mergeを重複しない。完了条件は自然schedule採用・正しいagent認証・pending/受注/売上の分離・秘密値非記録・必要CI後main。新scheduler/再登録/再応募/送金は行わない。順序変更なし、自然card schedule:revenue-hourly:498246 の元promptと実GET200を照合し、自然監視の採用を確認。本人agent一致・入札1件15USDC/pending・受注0件、売上/出金はnullを保持。Capafy公式GET200はcount114、既知synthetic除外9、valid payload9のうち非空ctは1件、欠損105。過去日次台帳を上書きせずhash不変を確認する。証拠→docs/evidence/hq-revenue-3771a2.json。現在cursorは本証拠の必要CI→main、次自然hourlyで受注時だけ納品着手。親rootのPR9129統合は引き続き専有しない。
 
+## NEAR-FIRST-OFFER — 初回販売の既存レーン移管
+
+→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market。登録201・初回15USDC提案201/pending・本人bid公式照合を確認済み。現在cursorは既存hourlyでの受注監視と自然採用確認、受注後の納品。Capafy/Guru/Apifyの既存ownerを維持する。
+
 ## CAPAFY-ATTRIBUTION-PAYLOAD — 未来クリックの帰属保存
 
 目的・範囲: PR9099の統合済み監査に続き、go handlerが失っているct/platform/postを新規Blob本文へ保存する。owner=home-codex-3d1087、task=3d10872ebd07701cbebd47c2、branch=fix/capafy-payload-3d1087、base=58009a3a96。専用worktree・leaseを取得。旧監査owner/HQのactive leaseは保持する。
@@ -25750,7 +25754,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 目的: Grok/Muse/Dots/Codexと同じLLM＋Computer/browserの形をNaïve自身の実行環境へ接続し、画面を観測→判断→click/type→結果確認で収益業務を完走する。業務script、業務API、固定workflowを収益判断の主経路にする案を上書きする。SDK/APIはagent設定、予算、session、証拠取得という基盤操作にだけ使う。
 範囲: config/naive-browser-company.jsonの専用担当、同じsourceのhosted適用、browser toolの実操作、認証/保存状態、既存ownerとの調整、公式readback。既存のCEO/builder等の設定・cron・Mac/browser/他VMは変更しない。売れている商品は変更しない。
-設計: pi＋実callでbrowser/mail/Postizの動作を確認したanthropic/claude-haiku-4.5、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTPは与えない。MCPは明示依頼されたPostizのintegrationList/integrationSchema/postsListTool/integrationSchedulePostToolだけを許可し、指定Xの新規campaignに限定する。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月3USD/max_task0.75USD、既存残高内・追加入金なし、cron未登録から開始する。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
+設計: pi＋reportで実callを確認したanthropic/claude-sonnet-4.6（browser完走は別途検証）、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTPは与えない。MCPは明示依頼されたPostizのintegrationList/integrationSchema/postsListTool/integrationSchedulePostToolだけを許可し、指定Xの新規campaignに限定する。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月5USD/max_task1USD、既存残高内・追加入金なし、cron未登録から開始する。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
 比較した案: 既存script移植はDaisの明示指示に反するため不採用。Macのbrowserを遠隔操作する案はNaïve自身のComputerという条件を満たさないため初回方式にしない。Naïve標準browser toolをモデルが使う方式を採用する。
 完了条件: (1)Grok/Muse/Dotsの実手順/ownerを照合 (2)Naïve側のagent・browser/Computer・モデル・予算を公式readback (3)実際の画面観測とclick/typeをtool eventと変化後の画面で確認 (4)認証済み業務と外部結果を確認 (5)同じ担当の再開と所有する継続運転を確認。市場調査だけを公開/売上完了にしない。秘密値はmodel prompt、Git、chatへ出さない。
 実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。旧Google診断時点のcursorはBROWSER03のmanaged-browser Google OAuth境界。BROWSER02の実操作と、BROWSER04の別sessionメモ再読取は確認済み。収益業務と継続deploymentは未完。
@@ -25835,3 +25839,6 @@ Postizの新規英語進捗1件をNaïve内MCPで作成し、公式posts readbac
 運用修復readback: 旧有限session7件は全てidleを所有照合してcancel→cancelledを確認。削除/他agent変更なし。標準deployment sessionでもPostiz postsListTool実成功とjournal write/readの実eventを確認し、actual Haiku span4件を取得。初回turnの予定文だけの停止から、primary AI訂正後の実callとして区別する。offer/sampleはprimary事実限定版のnative復元/readを進行中。次の独立作業はinbound配送の実証・詳細英語記事とoffer公開・実顧客獲得で、承認待ちへ置換しない。
 
 公開作業の予算修復: 詳細英語記事のnative writeは成功し、続くread前にagent period capの見積拒否。専用agent実費1809584 microUSD、公式org残高9781134 microUSD/liveを確認。Daisが今回のNaïve事業と通常資源判断を委任している範囲で、初期実験の月2USDを3USDへ1USDだけ拡張し、max_task0.75USD/追加入金なし/他agent設定不変を維持する。旧probeはcancel済みでauto-resume対象外、現在article sessionのread/editor観測を再開する。現在設定はv8/月3USDが正本、過去2USDの記録は当時の実験条件。
+
+Rich-text公開の実測修復: v8 Haiku publisherはタイトルのみ入力し、本文未入力のまま580013 microUSDでbudget_paused。担当累計2756158 microUSD、月3USDの残りは次quoteに不足。公開先HTML/JSを読取し、Telegraphのh1/addressはwrapper、editable_text内にtextarea.editable_inputを作り、保存時はtextarea.valueを使うと確認。typeのtext引数はNaïve公式schema通りで、引数名違いではない。selectorの推測反復と成功応答だけの誤判定を修復対象にする。
+現在scope: 既存3件（v6 Postiz完了、v7記事作成完了、v8未完publisher）を所有/idle確認してcancelし、予算変更による再開を防ぐ。専用v9は月5USD/task1USD・既存残高内/入金なし・Sonnet4.6を既定とする。旧月3USDから増やす支出権限は2USDだけ。11tool/default deny/送金禁止/他owner保護は不変。修正済み英語記事を同Computerから読み、実textareaと本文要素を通常browser操作し、新規公開を有限1USDで検証。改善を事前に断定せず実tool/公開本文/費用で判定する。
