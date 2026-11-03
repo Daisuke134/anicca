@@ -146,3 +146,12 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 次は自分のactive inboxから公開の自動検査宛先check-auth@verifier.port25.comへnonce付き診断mailをnative email.sendで1通。公式PowerMTA forumはauth-checkerがreplyすると案内（https://forum.port25.com/general-discussion-1/pmta-help-to-use-dkim-signature/）、現MXも存在。checker本体の現ページは空で本文未取得のため、現稼働/返信先選択は試験結果で判定する。addressは検査サービスの既知アドレスで、サービス生存は未証明。個人やsupport担当へは送らない。
 - 有限v10 session予算0.4USD、月5/task1は上げない。own inbox確認→1send→provider id/nonceをjournal保存→email.read1回→未着なら終了しprimaryの後続readbackへ。SMTP受付と到達/返信/収益を分け、同じ診断mailを再送しない。外部返信が来ても顧客/売上とは数えない。
 - 次の収益cursor: publicpilot offer/sample/受注→実納品→第三者決済。メール不着をGoogle必須へ置換せず、外部送信段階/受信routeを具体的に切り分ける。
+
+### 受注窓口を先行公開する順序
+
+- Port25へのnative1通はaccepted、単発返信checkでも未着。v10実modelHaiku/実tool確認、最初の有限job費用30813microUSD（後続readは別累計）。SMTP/inboundと顧客売上を分離する。
+- AgentMail orgのread-only preflightはinbox_count=3/limit=3、suspended無し。既存3箱に今回ownerの証拠無し。削除/借用/新箱作成/有料upgradeは行わない。組織/一覧の読取だけで他ownerの内容は未読。
+- 旧順序「メール実配送→public offer」から、新順序「公開trace用GitHub Issues窓口/offer/sample→Naïve browserで読取→Postiz公開レポート納品→第三者29USDC入金、メール配送は独立切り分け」へ。メール配送を売り出しの追加gateにせず、既存のbrowser+Postiz機能だけで公開pilotを完走するため。
+- pilotはpublic-redacted-trace限定、20toolcalls以下。顧客は公開依頼と公開レポートに同意し、秘密・個人/顧客data・private URLは入力不可。AIがscopeを自律判定し、人間承認は不要。納品は指定Xの英語articleにissue番号を明記。24hはaccepted scope後の目標、subscription/実績/性能保証無し。29USDC Baseは納品後のみ。現在verified sales0。
+- v11 sourceは受注URLを既存deployment inputへ追加、systemにpublic scope/untrusted-input/dedup/order evidenceを追加するだけ。modelHaiku/cap5/task1/11allow/Identity/cron不変。Computerのorders/issue-数字.jsonでreport postid/state/paid receiptを記録。既存同番号の公開reportがあれば再納品せず状態照合。支払済みはBase nativeUSDC/専用recipient/29USDC/成功txをブラウザ公式explorerで一致確認した場合のみ。
+- 公開物はBusinessRun Benchのpilot offer/sample、public receiver metadata、GitHub issue form。Naïveが読むのはpublic issuesのみ、GitHubのAPI/CLIで業務を自動化しない。運営側のリポジトリへのspec/商品説明/issue-formの保存は通常の開発作業。既存benchmark issue/他writer/既存投稿を変更しない。追加の内部mock発注は完了gateにしない。
