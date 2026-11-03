@@ -365,3 +365,33 @@ model/11allow/default deny/browser options/Identity/wake=false/cron/task1は不�
 結果: 専用Computer `cmp_01a1a0d2e4de7c0fb167ba8d4446df71` はcreate202/ready200、保存browser flagsはallow_writes/extract=true、context_name無し/persist=false。gotoは200/performed true（6.334秒）、browser GETでcontext_backed=false/context_id=null。既存credential sealed-loginは403 read-only/param allow_writes（req_bkrk4y2r9hertgjcea56f7xhes、7.417秒）。保存context単独原因という仮説を棄却する。screenshotは200/performed true（fil_6aa5mcz4er63k5eqkyawzbsb2p）でprimaryが実画像を開き、DEV login formのemail/passwordが空・未ログインを確認。context無しのscreenshotはextract guard対象外なので、これをallow_extract伝播の成功証明にはしない。
 
 browser close200/closed、Computer destroy200→GETdestroyed、稼働課金資源は残していない。公式balance 25716972→25715305microUSD、差1667microUSD（約0.001667USD）、SDK browser診断累計5001microUSD。agentの月7USDを変更・迂回せず、既存native設定・他owner・signup・vault・メールは不変。private証拠はbrowser-contextless-boundary-verification.jsonとprobe4-*.json/probe4-login-cloud.jpg。次は同じloginを反復せず、Computer API側の実行policy伝播とnative helperを別境界として扱う。DEV登録dispatchやnative helper一般の原因まで、このSDK結果から断定しない。
+
+### 専用メールによるpasswordless登録の限定実行
+
+目的は利用者個人のGoogle/mail/passwordを使わず、Naïve本人のmailで新規所有accountと受信認証を実証すること。DEVの同じsealed入力失敗は繰り返さず、Substack公式helpが提供するemail verification code/login linkを使う。一次資料 https://support.substack.com/hc/en-us/articles/360059542452-How-do-I-log-into-my-Substack-account 、signup https://substack.com/signup 、Terms https://substack.com/tos 、Publisher Agreement https://substack.com/pa 、Content Guidelines https://substack.com/content を確認。組織利用・正確な登録情報・非なりすまし・オリジナル記事・opt-in/no spamを守り、単なる外部商品広告のpublicationにはしない。今回はaccount作成とprofile/readbackまで、記事publish・課金・Stripe接続・購読/連絡先importは0。
+
+既存agent/deployment v13を変更せず、専用Identity/mail/contextとnative browser/emailだけで有限run最大0.35USD。Google/Apple/GitHub/OAuth、個人account、password取得/転記、業務script/APIは使わない。専用credential SSOT exactservice naive:browser-operator:substackとbrowser registryに既存登録無しを確認済み。新accountはAniccaの組織用途BusinessRun AIとして正確に登録し、無料mail-codeを最大1回要求。既存の本人inbound baselineは0、email.readは新着確認最大2回。認証メールのcode/linkは対象substack.comの通常画面にだけ使用し、chat/repo/journal/一般logへ残さない。取得イベントの保存も認証本文・秘密付きURL・入力codeを除く。
+
+本人mailでのログイン後画面/profile保存をaccount成功の根拠とし、単なるcode要求画面やtool doneは成功としない。新規取得したaccount metadataはcanonical SSOTへ保存、sessionはNaïve context内に保持。個人情報/phoneが必須で既存本人データに無ければ捏造せず不足境界を記録する。原稿/公開・売上は今回未実施。UIの実状態・到着messageid/時刻・確認範囲・費用をsecret抜きで本人journalにwrite/read、有限session終了/cancel→GETまで行う。全体cursor（実依頼→納品→入金）は変えず、メール/登録という明示未完項目を受注待ちと並行して進める。
+
+実行1結果: native `ses_jht7qev3r27smr3g0b969c9b83` は同formにtype textを複数回呼び、成功応答後もevent61の実画像でemail空/terms checked/Continue disabled。primaryも画像確認した。code要求成立・Substack dispatch・本人inbound・accountは未確認、email.readは観測したtool eventsに0。task0.35USDに次call quoteを収容できずevent202 budget.exceeded/param budget_micro_usd、公式statusのconsumed186237microUSD（個別session.usageの部分値との合算禁止）。primary補正messageは402で受理未確認、補正が実行されたとはしない。budget_paused原本保存後cancel→GETcancelled/pending0。秘密code/linkを保存せずeventはmetadata/hashのみ、原稿/課金/公開は0。
+
+次の最小比較: 同じ本人mail・同じ/signup・同じv13の新finiteで、typeの代わりにbrowser.actによる実email inputへの入力1回を試す。submit前に表示値とContinue有効を照合。反映しなければ同じクリックを繰り返さずwrite/readで終了。反映しcode要求を進める場合も、前runのcode要求不明を補わず、現在画面と本人新着を先に確認し、今回診断全体のcode要求最大1を維持する。新finite上限0.30USD、前実費0.186237との最大合計0.486237USDとなるため、診断全体枠を0.35→0.50USDへ明示更新。月7/task1は不変。理由は実費だけでなく次call quoteを入場時に必要とする実測と、同selector type成功応答が実入力を証明しなかったためであり、signup連打/上限自動拡大ではない。code/tokenを出力しないことと公式画面で成功判定する条件は不変。
+
+解釈の訂正と次の観測: 先の「画像空欄＝実入力失敗」という断定は取り下げる。公式Browser guide https://usenaive.ai/docs/computer/browser のsaved-login read policyはextract/observe/links/screenshotがemail等をredactすると明記し、sessionが入力待ちにpauseするとbrowserを閉じるとも説明する。今回のcontext付き画像/抽出だけでは、未入力と伏せ処理を分離できない。画像の空欄/Continue無効自体と登録未確認は保持するが、入力破壊・maskによるDOM変更を既知原因にしない。
+
+act比較run `ses_rwvbs16frhgxev1ppekrjxja41` は初回email.read→signupへのgotoでread_people cardが発生、primary AIがexactcall1件をallow。次の「本人emailへ入力、submitしない」actでもread_people cardが発生し、exactcall1件をallow。再開actはcould not perform、次画像のみ取得し診断mdを書いてend_turn。実費63746microUSD。入力待ち前後のpage lifetimeと入力方法が交絡しているため、これをactの一般的な入力不能の証明にしない。human介入0、primary AIのcall確認2件。
+
+今回のauth診断総枠0.50USDの残りで、次の比較は最大0.25USD（先行実費186237+63746との最大計499983microUSD）。先に画面からemail/Continueの実selectorを取得し、type本人email→既知Continueを1回クリックの間にextract/observe/screenshotを挟まない。code要求の実UIと本人受信を結果の観測とする。メール・個人情報を観測のために公開せず、秘匿値を返さない。新規signupを増やすのでなく同じ専用Identity/mailの同じ通常flowを検証し、既存のaccount/code成功を推定しない。追加の支払/上限変更/公開なし。同じ失敗を観測無しに繰り返す比較にはしない。
+
+文書差分: API Browser pageにはsignupはperson確認とある一方、最新Tools page https://usenaive.ai/docs/capabilities/tools はask_actionsの既定signupを明示し、allow下でask_actionsに無いactionは実行されると説明する。今回設定ask_actions=[]を維持し、signupに必ず人間が必要とは断定しない。観測したread_people cardは別に記録し、未公開server内部の発生原因/解除設定を推測して変更しない。
+
+直接submit比較結果: native `ses_rr4bfjqv04d265yw2sybcn6mxm` はobserve由来selectorのtypeがerror（event34）、fallback actの後にもscreenshotを挟み、意図した「中間read無しtype→Continue」は完遂していない。このrunからredaction仮説の真偽を判定しない。code要求成立・本人受信・accountは未確認。event96 budget.exceeded/param budget_micro_usd、status consumed86613microUSD、primary steering messageは402で拒否。原本保存後cancel→GETcancelled/pending0。先行3runの実費合計336596microUSD。
+
+### 登録診断の残枠内で行うmodel比較
+
+同じ指示を守らないケースが続いたため、同じdefaultの失敗反復を止め、モデルだけを変える比較を最大1回行う。公式GET /modelsの全366件をEOFまで確認し、literal id `z-ai/glm-5.3-flash` のimmediate対応を確認。価格/品質の優位はカタログから推定しない。live spanと結果を見て判定し、1例をbenchmark能力値や一般優位にしない。
+
+SDKと現在API docsはcreate時model overrideを提供せず、sendからのmodel指定は可能だが既存3sessionはcancelled terminalで再利用しない。新agent/Identityを増やして月capを迂回する代わりに、専用既存agentへconfig/naive-browser-company-model-probe.jsonのmodel-only PATCHを適用する。expected_version13→候補v14、他source fields完全不変、deploymentはv13固定のままで触らない。patch/restoreはreview済みmain固定SHAから適用する。候補v14で同じ最新の登録指示をfinite最大160000microUSDにして1回実行。先行実費との最大合計496596microUSDで既存診断総枠0.50USD内、月7/task1も不変。入場quoteが収まらなければ新runを増やさず結果を記録する。
+
+終了/失敗/入場拒否のいずれでもfinite停止/cancel/GETの後、config/naive-browser-company-model-restore.json（to_version13/expected_version14）からrollbackし、履歴を消さず新versionで元の全source fieldsをGET一致させる。production deployment pinned13/cron/Identity/11allow/既存外部effectは不変。登録成功でも直ちにmodelを本番昇格せず、raw code/linkは保存しない。今回の変更はNaïve runtime比較だけで、Codex UIの選択modelは変更しない。署名済み画像・inbox本文・code・private URLをrepoへ置かず、結果/費用/未達/現在cursorを正本へ戻す。
