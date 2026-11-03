@@ -62,6 +62,8 @@ The Manager offline test job ran the canonical command, python -m unittest disco
 
 Earlier per-file commits in this sequence produced intermediate failing CI runs while code and test fixtures were being updated in separate commits. The complete disclosure-method tree at commit 91e804d is the verified state; the weighted-count guard was added in one atomic commit and passed its own hosted run. The latest tasks.json update below is separately checked by its own subsequent workflow run.
 
+That final canonical roadmap update completed successfully in workflow run #315 for commit 0b69e2af57917268648f2dfa2b76a125cb683309: https://github.com/Daisuke134/life-manager/actions/runs/41551837694. It again passed 584 tests with 5 skips and the 113-task roadmap consistency check.
+
 This is hosted offline engineering verification only. The workflow did not authenticate a publisher, review a real aggregate release, activate a partner protocol, perform an intervention, or measure beneficiary effects.
 
 
