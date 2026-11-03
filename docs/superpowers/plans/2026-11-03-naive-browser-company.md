@@ -79,3 +79,12 @@ MCP実catalog診断: 公式紹介文のschedulePostToolと異なり、認証済�
 - [ ] 独立した通常メール送信元または実サイトの認証mail dispatchから本人inboundを確認し、wakeを有効化。共有production mailboxの借用/変更はしない。
 - [ ] 投稿本文/実画面素材の検証後に英語offerと記事を公開、実第三者の受注/納品/決済/純収支を確認。
 Ruling: v6のSonnetは予約見積で実行できず、実成功したHaikuへ既定を戻す。費用capを維持し継続運転を動かすため。誤りなら高難度の判断品質が低い可能性を実traceで診断し、未測定の高性能主張で補わない。過去v6設計のチェック欄は履歴、現在は本節を正本とする。
+
+## 最新の実行状態と残TODO
+- [x] main320a4624のv7/既定Haikuとdeployment pin7の公式完全一致、本人mail wake=true、標準deploymentの手動run/read4+email.read/Haiku actual span確認。自然runは未確認。
+- [x] Naïve内Postizで英語進捗1件作成、公式PUBLISHEDとX release URL確認。売上実証ではない。
+- [ ] 現在cursor: 自動再開した旧reportを含む、この担当だけの終了済み有限sessionをcancelして再開・成果物競合を防ぐ。
+- [ ] 最新offer/sampleは旧reportのSonnet5実callで書換済み。公開前に内容/根拠/価格を再照合し、担当のjournalから根拠なく人間作業待ちへ逃げないよう修正。
+- [ ] 独立送信元からの本人mail受信と自然wakeを確認。Grok/Museへ既存Slack threadで内部test1通を依頼済み、返信/送信は未確認。
+- [ ] 英語の詳細記事/実画面demo/offer公開、実顧客の受注/納品/支払/実費を照合、USD10K monthly revenue目標へ進める。
+Ruling: 予算変更の自動resumeは公式仕様であり、古いreportの再開/書込を実eventで確認。旧probeのcancelは成果物を消さず、他ownerへ触らず、自分の重複業務だけを防ぐ。Sonnet成功の遅延eventを追加して旧未実行説明を訂正する。
