@@ -112,6 +112,78 @@ class HQTests(unittest.TestCase):
         self.slack.history[""]["messages"] = [self.message()]
         self.runtime.receive()
 
+    def oauth_fixture(self, entries=None):
+        private = self.root / ".local/share/anicca"
+        private.mkdir(parents=True, exist_ok=True, mode=0o700)
+        private.chmod(0o700)
+        credentials = private / "credentials.json"
+        credentials.write_text(json.dumps({"credentials": entries if entries is not None else [
+            {"service": "claude-remote-control", "token": "fixture-oauth-not-a-secret"}]}))
+        credentials.chmod(0o600)
+        cli = self.root / "claude"
+        cli.write_text(f"#!{sys.executable}\nimport os,sys\nsys.stdin.read()\n"
+                       "print('auth-attached' if os.environ.get('CLAUDE_CODE_OAUTH_TOKEN') == "
+                       "'fixture-oauth-not-a-secret' else 'auth-missing')\n")
+        cli.chmod(0o755)
+        self.config["agents"][0].update(command=[str(cli)], credential_service="claude-remote-control")
+        return credentials
+
+    def test_opted_in_claude_reads_ssot_only_into_its_child_environment(self):
+        self.oauth_fixture()
+        self.enqueue()
+        with mock.patch.dict(os.environ, {"HOME": str(self.root)}):
+            os.environ.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
+            receipt = self.runtime.execute(self.runtime.claim())
+            self.assertNotIn("CLAUDE_CODE_OAUTH_TOKEN", os.environ)
+        self.assertIn("auth-attached", receipt["output"])
+        self.assertNotIn("fixture-oauth-not-a-secret", json.dumps(receipt))
+        self.assertEqual(receipt["status"], "succeeded")
+
+    def test_claude_preserves_explicit_auth_environment(self):
+        self.oauth_fixture(entries=[])
+        self.enqueue()
+        with mock.patch.dict(os.environ, {"HOME": str(self.root),
+                                        "CLAUDE_CODE_OAUTH_TOKEN": "fixture-oauth-not-a-secret"}):
+            receipt = self.runtime.execute(self.runtime.claim())
+        self.assertIn("auth-attached", receipt["output"])
+
+    def test_invalid_ssot_never_starts_opted_in_claude(self):
+        for case in ("missing", "wrong_mode", "duplicate", "unrelated", "symlink"):
+            with self.subTest(case=case):
+                credentials = self.oauth_fixture()
+                if case == "missing":
+                    credentials.unlink()
+                elif case == "wrong_mode":
+                    credentials.chmod(0o644)
+                elif case == "duplicate":
+                    credentials.write_text(json.dumps({"credentials": [
+                        {"service": "claude-remote-control", "token": "one"},
+                        {"service": "claude-remote-control", "token": "two"}]}))
+                elif case == "unrelated":
+                    credentials.write_text(json.dumps({"credentials": [
+                        {"service": "claude-remote-control-extra", "token": "fixture-oauth-not-a-secret"}]}))
+                elif case == "symlink":
+                    original = credentials.with_suffix(".original")
+                    credentials.rename(original)
+                    credentials.symlink_to(original)
+                task = {"id": "oauth-" + case, "owner_id": "codex", "body": "bounded auth check", "thread_ts": "oauth-test"}
+                with mock.patch.dict(os.environ, {"HOME": str(self.root)}):
+                    os.environ.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
+                    receipt = self.runtime.execute(task)
+                self.assertEqual(receipt["checkpoint"], "credential_unavailable_handoff_required")
+                self.assertEqual(receipt["status"], "failed")
+                self.assertEqual(receipt["output"], "")
+                if credentials.is_symlink():
+                    credentials.unlink()
+
+    def test_credential_opt_in_is_restricted_to_the_named_claude_service(self):
+        for command, service in (([sys.executable], "claude-remote-control"),
+                                 (["claude"], "unrelated-service")):
+            with self.subTest(command=command, service=service):
+                self.config["agents"][0].update(command=command, credential_service=service)
+                with self.assertRaises(hq.HQError):
+                    hq.HQ(self.config, api=self.slack)
+
     def test_start_notice_precedes_execution_and_is_not_repeated(self):
         self.config['announce_start'] = True
         self.enqueue()

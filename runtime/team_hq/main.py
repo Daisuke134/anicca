@@ -14,6 +14,7 @@ from pathlib import Path
 import re
 import signal
 import sqlite3
+import stat
 import subprocess
 import tempfile
 import time
@@ -133,6 +134,37 @@ def load_config(path):
     return config
 
 
+def agent_environment(agent):
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith("LIFE_MANAGER_")}
+    if (agent.get("credential_service") != "claude-remote-control"
+            or environment.get("CLAUDE_CODE_OAUTH_TOKEN")):
+        return environment
+    private = Path.home() / ".local/share/anicca"
+    credentials = private / "credentials.json"
+    try:
+        if private.is_symlink() or credentials.is_symlink():
+            raise ValueError
+        if (private.stat().st_uid != os.getuid()
+                or stat.S_IMODE(private.stat().st_mode) != 0o700):
+            raise ValueError
+        descriptor = os.open(credentials, os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0))
+        with os.fdopen(descriptor, "r", encoding="utf-8") as handle:
+            info = os.fstat(handle.fileno())
+            if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid()
+                    or stat.S_IMODE(info.st_mode) != 0o600 or info.st_size > 2 * 1024**2):
+                raise ValueError
+            payload = json.load(handle)
+        rows = [row for row in payload["credentials"]
+                if isinstance(row, dict) and row.get("service") == "claude-remote-control"]
+        if len(rows) != 1 or not isinstance(rows[0].get("token"), str) or not rows[0]["token"]:
+            raise ValueError
+    except (OSError, ValueError, KeyError, TypeError):
+        raise HQError("指定されたagent認証を正本から読み取れません") from None
+    environment["CLAUDE_CODE_OAUTH_TOKEN"] = rows[0]["token"]
+    return environment
+
+
 class HQ:
     def __init__(self, config, *, api=None):
         self.config = config
@@ -153,6 +185,10 @@ class HQ:
                         or not isinstance(agent["command"], list) or not agent["command"]
                         or not all(isinstance(item, str) and item for item in agent["command"])
                         or not Path(agent["cwd"]).expanduser().is_dir()):
+                    raise ValueError
+                service = agent.get("credential_service")
+                if service is not None and (service != "claude-remote-control"
+                                             or Path(agent["command"][0]).name != "claude"):
                     raise ValueError
             token = Path(config["token_file"]).expanduser().read_text(encoding="utf-8").strip()
             if not token:
@@ -482,8 +518,7 @@ class HQ:
                     previous[signum] = signal.signal(signum, interrupted)
                 process = subprocess.Popen(command, cwd=Path(agent["cwd"]).expanduser(), stdin=subprocess.PIPE,
                                            stdout=stdout, stderr=subprocess.DEVNULL, start_new_session=True,
-                                           shell=False, env={key: value for key, value in os.environ.items()
-                                                             if not key.startswith("LIFE_MANAGER_")})
+                                           shell=False, env=agent_environment(agent))
                 process.communicate(self.prompt(task).encode(), timeout=self.timeout)
                 code = process.returncode
                 status = "succeeded" if code == 0 else "failed"
@@ -495,6 +530,9 @@ class HQ:
                 stop()
                 code = process.returncode if process else None
                 status, checkpoint = "interrupted", "interrupted_handoff_required"
+            except HQError:
+                stop()
+                checkpoint = "credential_unavailable_handoff_required"
             except OSError:
                 stop()
             finally:
