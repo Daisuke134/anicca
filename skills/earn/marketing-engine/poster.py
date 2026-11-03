@@ -481,7 +481,7 @@ def verify_only_main(
     return res
 
 
-def write_dispatch_marker(marker_path, occurrence_id=None, status="pre_effect", effect=None):
+def write_dispatch_marker(marker_path, occurrence_id=None, status="pre_effect", effect=None, *, handle=None):
     # Durable pre-effect marker (T5-G-4): written immediately before the publish call (status=
     # "pre_effect") so a run that dies right after (no report, no ledger row) leaves a bound
     # signal behind. Overwritten to status="completed" with effect=1 only once clip_upload/
@@ -494,7 +494,8 @@ def write_dispatch_marker(marker_path, occurrence_id=None, status="pre_effect", 
     # only callers that pass --dispatch-marker get this; other marketing loops are unaffected.
     if not marker_path:
         return
-    row = {"version": 1, "occurrence_id": occurrence_id, "status": status, "effect": effect,
+    row = {"version": 1, "occurrence_id": occurrence_id or os.environ.get("LIFE_MANAGER_OCCURRENCE_ID"),
+           "handle": handle, "status": status, "effect": effect,
            "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")}
     path = os.path.expanduser(marker_path)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
@@ -615,12 +616,12 @@ def main():
         if a.video:
             thumb = a.video + ".jpg"
             subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", a.video, "-ss", "1", "-vframes", "1", thumb], check=True)
-            write_dispatch_marker(a.dispatch_marker, a.occurrence_id)
+            write_dispatch_marker(a.dispatch_marker, a.occurrence_id, handle=a.handle)
             media = cl.clip_upload(a.video, caption, thumbnail=thumb)
         else:
-            write_dispatch_marker(a.dispatch_marker, a.occurrence_id)
+            write_dispatch_marker(a.dispatch_marker, a.occurrence_id, handle=a.handle)
             media = cl.album_upload(image_paths, caption)
-        write_dispatch_marker(a.dispatch_marker, a.occurrence_id, status="completed", effect=1)
+        write_dispatch_marker(a.dispatch_marker, a.occurrence_id, status="completed", effect=1, handle=a.handle)
         d = media.model_dump() if hasattr(media, "model_dump") else media.dict()
         code = d.get("code")
         url = f"https://www.instagram.com/{'reel' if a.video else 'p'}/{code}/"

@@ -143,6 +143,10 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 継続診断（task17679f4e146bb3b4be52268e、owner=home-codex-17679f）: PR9117の統合は親ownerが所有するため変更しない。専用branch docs/capafy-ig-receipt-17679fで、旧occurrence18db7caff1178a88-68028の元本人・journal・receiptの欠落をread-onlyで照合し、現行reconcilerが別active accountを対象に選ぶ危険を隔離fixtureで検証する。完了条件は実DBの対象1行・対象ファイル存在・残存状態の時刻・実code反例をsanitizeした証拠に保存し、CI後の統合まで追跡する。投稿/認証/再起動/fence解除/会計/PR9117統合は所有しない。既存TODO順は維持する。診断結果: mode=roで旧fence保持、専用4artifact不在、残存3artifactは全てqueueより前。隔離fixtureで別ready accountの空一覧でもverified=true/effected=falseになるsource反例を再現（provider0/resolve=false）。本番で誤解除が起きた証明ではない。現在cursor=本診断記録の必要CI/統合、次source作業は元run本人を拘束する証拠なしにprovider照合を進めないための最小修正。成果物 → docs/evidence/capafy-ig-receipt-17679f.json。
 
+継続source修復（task fd096c4b2e6f13ad548eabd0、owner home-codex-fd096c）: PR9120は親rootによりmain18131ea9へ統合済みと公式確認し、同診断の次cursorで元occurrence本人拘束を修正する。範囲はIG reconciler/既存posterのdispatch markerと関連tests/docs。本番投稿・認証・fence・会計・HQ・他ownerの変更0。既存capafy-reelのoccurrence-bound dispatch markerを先例とし、元runとhandle・dispatch時刻の一致をprovider読取前に必須にする。証拠なし/別occurrence/別handle/古い時刻/不正JSONはHELD、現在ready accountへ代替しない。既存posterはhandleをmarkerへ保存する。過去artifactの補造はしない。完了条件: 隔離RED→GREEN、関連テスト、独立review、必要CI公式PASS後main。反映・旧公式receipt・収益は別未完cursor。順序は診断→本人拘束source→元archive/公式receipt照合を維持する。実測は3件RED→carousel回帰込み28tests GREEN、PR9125でexact-head独立review/必要CI待ち。
+
+追加review修正（primary所有の最終統合）: completed/effect=1の元dispatch記録と空listingが矛盾してもno-effectとして解放できる反例を再現。元markerを一度だけ検証してeffectを保持し、公式listingがno-effectを示す場合はHELD・resolve/ledger書込0とする。一致する公式Reelがある場合のeffected closeとreplay-zeroは維持する。元実装head e1a888dはSHIP不可。最小回帰RED→GREEN、修正headの独立review・CI・main由来限定反映を現在cursorにする。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
