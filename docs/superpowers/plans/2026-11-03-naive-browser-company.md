@@ -101,3 +101,11 @@ Ruling: 実費1.809584USD時点で次callの上限見積が月2USDに入らず�
 - [ ] 現在cursor: 月5USD/task1USD/既定Sonnetのv9をmain適用し、修正原稿と正しい実入力要素で1USD以内の有限公開runを行う。browser.observe instruction/textarea wrapperの理解をgeneric promptへ反映。
 - [ ] 公開URL/本文全9評価/末尾/編集権限を公式状態で照合し、図版と実画面demo・offer公開・実受注/決済へ進む。
 Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、前のSonnet report5callsは0.137808USDで完了した。課題が異なるので性能順位にはせず、今回のUI公開をSonnetで有限検証する。費用権限は既存残高内で月3→5USD/task0.75→1USDへ限定、他agentと追加入金は変更しない。旧jobを先に終了してauto-resume競合を防ぐ。
+
+### v9本文欄の境界診断
+
+- PR #9131 / main `4b9e9d5f3533b12685b90c1a299f8693aa46ce7c` 由来のagent/deployment v9をGET全payload一致で確認。Sonnet/月5USD/task1USD、旧12session一覧に再開待ち無し。
+- 新session `ses_9y6gzbmp2e4dje7rs7mw926q49` は同Computerで原稿修正保存と画面表示に成功、Sonnet実14call確認。費用440092microUSD、次call見積りがsession残枠に収まらずbudget_paused。予算を使い切ったとの主張はしない。
+- extractはheading等の意味要素を返し、textarea/input/contenteditable無しと応答したが、実画像にはTitle/Your name/Your story/Publishが存在。DOM不存在の証明ではない。公開本文/URL/売上は未達。
+- 次cursor: この有限sessionをcancel→GETし、長文readより先に、公開HTML/JSで確認した `#_tl_editor h1 textarea.editable_input` / `#_tl_editor address textarea.editable_input` / `#_tl_editor p` を実browser.typeで短文検証する新しい有限runを1USD枠で実行。著者任意の失敗を繰り返さない。type結果だけで成功判定せず画像/本文readbackで照合。短文入力が成功した場合のみ原稿read→本文入力→Publish1回。新規入金/上限変更/他owner変更なし。
+- 順序変更理由: 旧順序の全文read/全文writeが入力可否の証明より先で費用を使った。新順序は短文入力可否→原稿read→公開。現在cursorは短文probe。

@@ -25840,3 +25840,6 @@ Postizの新規英語進捗1件をNaïve内MCPで作成し、公式posts readbac
 
 Rich-text公開の実測修復: v8 Haiku publisherはタイトルのみ入力し、本文未入力のまま580013 microUSDでbudget_paused。担当累計2756158 microUSD、月3USDの残りは次quoteに不足。公開先HTML/JSを読取し、Telegraphのh1/addressはwrapper、editable_text内にtextarea.editable_inputを作り、保存時はtextarea.valueを使うと確認。typeのtext引数はNaïve公式schema通りで、引数名違いではない。selectorの推測反復と成功応答だけの誤判定を修復対象にする。
 現在scope: 既存3件（v6 Postiz完了、v7記事作成完了、v8未完publisher）を所有/idle確認してcancelし、予算変更による再開を防ぐ。専用v9は月5USD/task1USD・既存残高内/入金なし・Sonnet4.6を既定とする。旧月3USDから増やす支出権限は2USDだけ。11tool/default deny/送金禁止/他owner保護は不変。修正済み英語記事を同Computerから読み、実textareaと本文要素を通常browser操作し、新規公開を有限1USDで検証。改善を事前に断定せず実tool/公開本文/費用で判定する。
+
+#### Naïve v9の公開診断cursor
+main `4b9e9d5f3533b12685b90c1a299f8693aa46ce7c` のagent/deployment v9を公式GET一致確認。Sonnet実14call、専用Computerの原稿保存と編集画面表示は成功、本文入力/公開は未達。有限session費用440092microUSDで次call見積りによるbudget_paused。次は全文readより先に公開source由来の実入力selectorを短文で試す1USD有限run。詳細/順序変更/残TODO → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`。実売上/メールinbound/画面連続録画は未確認。
