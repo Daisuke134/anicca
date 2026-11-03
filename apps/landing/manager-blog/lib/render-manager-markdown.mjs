@@ -59,3 +59,14 @@ export function renderManagerMarkdown(md) {
  }
  return out.join('\n');
 }
+
+// Use the reviewed article's first image for sharing; legacy articles retain their metadata.
+export function managerShareMetadata(post) {
+ if(post.project !== 'Manager') return {};
+ const image=post.markdown.match(/!\[([^\]]*)\]\((https?:\/\/[^\s<>"')]+)\)/);
+ if(!image) return {};
+ return {
+  openGraph: {title:post.title,description:post.description,url:`https://aniccaai.com/blog/${post.slug}`,siteName:'Anicca Articles',type:'article',publishedTime:post.date,locale:post.lang==='ja'?'ja_JP':'en_US',images:[{url:image[2],alt:image[1]}]},
+  twitter: {card:'summary_large_image',title:post.title,description:post.description,images:[image[2]]},
+ };
+}

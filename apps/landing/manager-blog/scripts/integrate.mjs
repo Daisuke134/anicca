@@ -41,8 +41,9 @@ export async function integrateManagerBlog(root) {
  if(!index.includes(' {groups.map(')||!index.includes('<h1>Explore by topic.</h1>')||/latest-heading|const posts=|ArticleList/.test(index))throw new Error('Legacy blog topic-directory contract changed');
  await writeFile(indexPath,index);
  await patch(root,'app/blog/[slug]/page.tsx',[
+  ['    alternates: { canonical: `https://aniccaai.com/blog/${post.slug}` },', '    ...managerShareMetadata(post),\n    alternates: { canonical: `https://aniccaai.com/blog/${post.slug}` },'],
   ['import { BUSINESSES, businessOf }','import { BUSINESSES, businessOf, businessHubPath }'],
-  ['import { affiliatePlacement, renderMarkdown }', 'import { renderManagerMarkdown } from "../../../lib/render-manager-markdown.mjs";\nimport { affiliatePlacement, renderMarkdown }'],
+  ['import { affiliatePlacement, renderMarkdown }', 'import { renderManagerMarkdown, managerShareMetadata } from "../../../lib/render-manager-markdown.mjs";\nimport { affiliatePlacement, renderMarkdown }'],
   ['const html = renderMarkdown(articleMarkdown);','const html = post.project === "Manager" ? renderManagerMarkdown(articleMarkdown) : renderMarkdown(articleMarkdown);'],
   ['`https://aniccaai.com/blog/c/${business}`','`https://aniccaai.com${businessHubPath(business)}`'],
   ['href={`/blog/c/${business}`}','href={businessHubPath(business)}'],
@@ -58,5 +59,5 @@ export async function integrateManagerBlog(root) {
  const route=join(root,'app/blog/manager/page.tsx');await mkdir(dirname(route),{recursive:true});
  await copyFile(new URL('../templates/manager-collection.tsx',import.meta.url),route);
  await copyFile(new URL('../lib/render-manager-markdown.mjs',import.meta.url),join(root,'lib/render-manager-markdown.mjs'));
- await writeFile(join(root,'lib/render-manager-markdown.d.mts'),'export function renderManagerMarkdown(markdown: string): string;\n');
+ await writeFile(join(root,'lib/render-manager-markdown.d.mts'),'export function renderManagerMarkdown(markdown: string): string;\nexport function managerShareMetadata(post: { project: string; slug: string; title: string; description?: string; date: string; lang?: string; markdown: string }): import("next").Metadata;\n');
 }
