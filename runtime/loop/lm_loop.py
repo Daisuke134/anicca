@@ -1271,6 +1271,23 @@ def _owner_has_pending_admission(owner_id: str) -> bool:
     return bool(rows and rows[0][0])
 
 
+def _owner_has_effect_unknown(owner_id: str) -> bool:
+    database = admission_root() / "admission-v2.sqlite3"
+    try:
+        database.stat()
+    except FileNotFoundError:
+        return False
+    rows = _read_admission_rows(
+        database,
+        """SELECT 1 FROM priorities WHERE owner_id=? AND effect_unknown=1
+           UNION ALL
+           SELECT 1 FROM occurrences WHERE owner_id=? AND effect_unknown=1
+           LIMIT 1""",
+        (owner_id, owner_id),
+    )
+    return bool(rows)
+
+
 def _entry_effect_scope(entry: dict) -> str:
     return admission_effect_scope(entry)
 
@@ -1560,6 +1577,7 @@ def _admission_rebind_guard(
     installed_path: Path | None = None,
     replace_reserved_policy_drift: bool = False,
     allow_reserved_release_rebind: bool = False,
+    skip_effect_unknown: bool = False,
 ):
     if not enabled:
         yield None
@@ -1567,6 +1585,8 @@ def _admission_rebind_guard(
     with owner_deploy_lock(loop_id) as acquired:
         if not acquired:
             raise RuntimeError("owner deploy busy")
+        if skip_effect_unknown and _owner_has_effect_unknown(loop_id):
+            raise RuntimeError("admission rebind refused: effect_unknown")
         if installed_path is not None and item is not None and release_sha:
             try:
                 installed_path.lstat()
@@ -1636,11 +1656,11 @@ def _admission_rebind_guard(
         if _entry_effect_scope(entry) == "occurrence":
             rebind_kwargs["effect_scope"] = "occurrence"
         result = rebind_queued_owner(loop_id, **rebind_kwargs)
-        if (result == "effect_unknown" and loaded_idle_verified
+        if (result == "effect_unknown" and not skip_effect_unknown and loaded_idle_verified
                 and entry.get("effect_class") == "none"):
             clear_no_effect_unknown(loop_id)
             result = rebind_queued_owner(loop_id, **rebind_kwargs)
-        elif (result == "effect_unknown" and loaded_idle_verified
+        elif (result == "effect_unknown" and not skip_effect_unknown and loaded_idle_verified
               and _resolve_pre_effect_admission_unknown(loop_id, entry)):
             result = rebind_queued_owner(loop_id, **rebind_kwargs)
         if result == "resource_class_reserved":
@@ -1661,14 +1681,14 @@ def _admission_rebind_guard(
             return
         if result == "not_queued":
             # A drained queue row has no policy to migrate.
-            if loaded_idle_verified and entry.get("effect_class") != "none":
+            if not skip_effect_unknown and loaded_idle_verified and entry.get("effect_class") != "none":
                 # Queue drain can happen before reconciliation observes the
                 # terminal event. Only the exact pre-effect proof may close
                 # that stale fence; an evidence-free external-effect fence
                 # must remain blocked.
                 _resolve_pre_effect_admission_rows(
                     loop_id, entry, max_rows=PRE_EFFECT_RECONCILE_MAX_ROWS)
-            elif loaded_idle_verified:
+            elif not skip_effect_unknown and loaded_idle_verified:
                 clear_no_effect_unknown(loop_id)
             yield None
             return
@@ -3091,6 +3111,7 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                preserve_pending_admission: bool = False,
                replace_reserved_policy_drift: bool = False,
                allow_reserved_release_rebind: bool = False,
+               skip_effect_unknown: bool = False,
                reload_running: bool = False,
                require_current: bool = False,
                protocol_reader: Callable[[], int] = _protocol_v1,
@@ -3107,6 +3128,7 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                 preserve_pending_admission=preserve_pending_admission,
                 replace_reserved_policy_drift=replace_reserved_policy_drift,
                 allow_reserved_release_rebind=allow_reserved_release_rebind,
+                skip_effect_unknown=skip_effect_unknown,
                 reload_running=reload_running, require_current=require_current,
                 protocol_reader=protocol_reader,
                 event_writer=event_writer, admission_resume=admission_resume,
@@ -3164,6 +3186,7 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                                     if require_current else None),
                     replace_reserved_policy_drift=replace_reserved_policy_drift,
                     allow_reserved_release_rebind=allow_reserved_release_rebind,
+                    skip_effect_unknown=skip_effect_unknown,
             ) as pending_admission:
                 if isinstance(pending_admission, dict):
                     results.append(pending_admission)
@@ -3322,7 +3345,7 @@ def main(argv: list[str] | None = None) -> int:
         "health", "reconcile", "start", "stop", "restart", "status", "watch",
     }
     if not args or args[0] not in commands:
-        print("usage: lm-loop admission-v2-enable|apply [--all] [--loaded-idle-only]|browser resolve <loop-id> --json|doctor|health [--json|--skill] [--loop NAME --explain]|pre-effect-reconcile <loop-id> [--dry-run]|reconcile <provider-route> [--loaded-idle-only] [--max-owners N] [--loop-id <loop-id>]...|start|stop|restart <loop-id|all>|status|watch [<loop-id|all>]", file=sys.stderr)
+        print("usage: lm-loop admission-v2-enable|apply [--all] [--loaded-idle-only]|browser resolve <loop-id> --json|doctor|health [--json|--skill] [--loop NAME --explain]|pre-effect-reconcile <loop-id> [--dry-run]|reconcile <provider-route> [--loaded-idle-only] [--skip-effect-unknown] [--max-owners N] [--loop-id <loop-id>]...|start|stop|restart <loop-id|all>|status|watch [<loop-id|all>]", file=sys.stderr)
         return 2
     command = args[0]
     if command == "apply":
@@ -3481,6 +3504,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if command == "reconcile":
         positionals, loop_ids, loaded_idle_only, include_running = [], [], False, False
+        skip_effect_unknown = False
         max_owners = None
         reconcile_args = args[1:]
         index = 0
@@ -3488,6 +3512,8 @@ def main(argv: list[str] | None = None) -> int:
             value = reconcile_args[index]
             if value == "--loaded-idle-only":
                 loaded_idle_only = True
+            elif value == "--skip-effect-unknown":
+                skip_effect_unknown = True
             elif value == "--include-running":
                 include_running = True
             elif value == "--max-owners":
@@ -3695,6 +3721,7 @@ def main(argv: list[str] | None = None) -> int:
                     allow_reserved_release_rebind=(
                         row["loop_id"] in pending_release_rebinds
                     ),
+                    skip_effect_unknown=skip_effect_unknown,
                     require_current=True,
                     reload_running=row["launchd_state"] == "loaded-running",
                     protocol_reader=durable_protocol_version)
@@ -3712,7 +3739,8 @@ def main(argv: list[str] | None = None) -> int:
                 else:
                     failed.append({"loop_id": row["loop_id"], "error": str(exc)})
         pre_effect_reconciled: list[dict] = []
-        if automatic_release_reconciler and AUTO_PRE_EFFECT_RECONCILE_ENABLED:
+        if (automatic_release_reconciler and AUTO_PRE_EFFECT_RECONCILE_ENABLED
+                and not skip_effect_unknown):
             loaded_running = {row["loop_id"] for row in rows
                                if row.get("launchd_state") == "loaded-running"}
             budget = PRE_EFFECT_RECONCILE_MAX_ROWS

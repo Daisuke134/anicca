@@ -3803,6 +3803,143 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(receipt["applied"], [])
         self.assertEqual(receipt["skipped_pending"], ["example"])
 
+    def _strict_reconcile_case(self, *, effect_class="none", unknown_source="both",
+                               late_unknown=False):
+        from runtime.host import resource_admission
+
+        home = patch.dict(os.environ, {"HOME": str(self.root)})
+        home.start()
+        self.addCleanup(home.stop)
+        release = self._release("release-strict-reconcile").resolve()
+        current = self.root / "current-strict-reconcile"
+        current.symlink_to(release)
+        agents = self.root / "strict-LaunchAgents"
+        agents.mkdir()
+        state = self.root / ".local/state/life-manager/strict-reconcile"
+        state.parent.mkdir(parents=True)
+        value = registry()
+        value["loops"]["example"].update({
+            "provider_route": "shared-agent-runner", "resource_class": "agent",
+            "admission_class": "borrow", "priority": "support",
+            "effect_class": effect_class,
+            "state_root": "~/.local/state/life-manager/strict-reconcile",
+        })
+        entry = value["loops"]["example"]
+        (release / "config/loop-registry.json").write_text(json.dumps(value))
+        occurrence = "example:wake-fenced"
+        resource_admission.enqueue_durable(
+            "agent", "example", occurrence_id=occurrence)
+        resource_admission.enqueue_durable(
+            "agent", "example", occurrence_id="example:wake-next")
+        database = self.root / "admission/admission-v2.sqlite3"
+
+        def dump():
+            with sqlite3.connect(database) as connection:
+                return list(connection.iterdump())
+
+        def fence():
+            with sqlite3.connect(database) as connection:
+                if unknown_source in {"both", "owner"}:
+                    connection.execute("UPDATE priorities SET effect_unknown=1 WHERE owner_id='example'")
+                if unknown_source in {"both", "occurrence", "released"}:
+                    connection.execute(
+                        "UPDATE occurrences SET state=?,effect_unknown=1 WHERE occurrence_id=?",
+                        ("released" if unknown_source == "released" else "claimed", occurrence))
+                if unknown_source == "released":
+                    connection.execute("DELETE FROM queue WHERE owner_id='example'")
+
+        if unknown_source and not late_unknown:
+            fence()
+        if effect_class == "money":
+            summary = "lm-loop://example/wake-fenced/summary.json"
+            self._write_events(state, [
+                self._start_event("example", "wake-fenced", "a" * 24,
+                                  "2026-09-17T03:41:01+00:00", summary),
+                self._terminal_event("example", "wake-fenced", "b" * 24,
+                                     "2026-09-17T03:41:02+00:00", summary),
+            ])
+            self.assertIsNotNone(lm_loop._pre_effect_admission_proof("example", entry))
+        before = dump()
+        original_lock = lm_loop.owner_deploy_lock
+
+        @contextmanager
+        def deploy_lock(owner):
+            nonlocal before
+            with original_lock(owner) as acquired:
+                if acquired and late_unknown:
+                    fence()  # The old run finishes after the outer snapshot.
+                    before = dump()
+                yield acquired
+
+        def isolated_apply(root, _agents, _safe, target=None, **kwargs):
+            kwargs.update(current=current, lock_path=self.root / "strict-apply.lock",
+                          event_writer=lambda *_: None)
+            return apply_live(
+                root, agents, self.root / "fake-launchctl-safe", target=target, **kwargs)
+
+        row = {
+            "classification": "managed", "provider_route": "shared-agent-runner",
+            "launchd_state": "loaded-idle", "installed_release_sha": "b" * 40,
+            "event_release_sha": "b" * 40, "loop_id": "example",
+            "admission_effect_unknown": False,
+        }
+        with (
+            patch.object(lm_loop, "ROOT", release),
+            patch.object(lm_loop, "targeted_snapshot", return_value=[row]),
+            patch.object(lm_loop, "_loaded_sha_is_ancestor", return_value=True),
+            patch.object(lm_loop, "_safe_launchctl", return_value=(0, "disabled services = {}")),
+            patch.object(lm_loop, "_skip_if_not_loaded_idle", return_value=None),
+            patch.object(lm_loop, "owner_deploy_lock", deploy_lock),
+            patch.object(lm_loop, "apply_live", side_effect=isolated_apply),
+            patch.object(lm_loop, "install_one", return_value={"ok": True, "label": entry["label"]}) as install,
+            patch.object(lm_loop, "rebind_queued_owner", wraps=lm_loop.rebind_queued_owner) as rebind,
+            patch.object(lm_loop, "clear_no_effect_unknown", wraps=lm_loop.clear_no_effect_unknown) as clear,
+            patch.object(lm_loop, "_resolve_pre_effect_admission_rows",
+                         wraps=lm_loop._resolve_pre_effect_admission_rows) as resolve,
+            patch.object(lm_loop, "AUTO_PRE_EFFECT_RECONCILE_ENABLED", True),
+            patch.dict(os.environ, {"LIFE_MANAGER_RELEASE_ROOT": str(release),
+                                    "LIFE_MANAGER_LOOP_ID": "life-manager-release-reconciler"}),
+            redirect_stdout(io.StringIO()) as output,
+        ):
+            self.assertEqual(lm_loop.main([
+                "reconcile", "shared-agent-runner", "--loaded-idle-only",
+                "--loop-id", "example", "--max-owners", "1", "--skip-effect-unknown",
+            ]), 0, output.getvalue())
+        result = json.loads(output.getvalue())
+        self.assertEqual(result["failed"], [])
+        self.assertEqual(result["pre_effect_reconciled"], [])
+        clear.assert_not_called()
+        resolve.assert_not_called()
+        if unknown_source:
+            self.assertEqual(result["skipped_effect_unknown"], ["example"])
+            self.assertEqual(result["applied"], [])
+            self.assertEqual(dump(), before)
+            install.assert_not_called()
+            rebind.assert_not_called()
+        else:
+            self.assertEqual(result["skipped_effect_unknown"], [])
+            self.assertEqual(len(result["applied"]), 1)
+            self.assertTrue(result["applied"][0]["changed"])
+            install.assert_called_once()
+
+    def test_strict_reconcile_preserves_no_effect_owner_unknown(self):
+        self._strict_reconcile_case(unknown_source="owner")
+
+    def test_strict_reconcile_preserves_no_effect_occurrence_unknown(self):
+        self._strict_reconcile_case(unknown_source="occurrence")
+
+    def test_strict_reconcile_preserves_provable_pre_effect_unknown(self):
+        self._strict_reconcile_case(effect_class="money")
+
+    def test_strict_reconcile_preserves_released_unknown_without_queue(self):
+        self._strict_reconcile_case(unknown_source="released")
+
+    def test_strict_reconcile_rechecks_unknown_after_outer_snapshot(self):
+        self._strict_reconcile_case(late_unknown=True)
+
+    def test_strict_reconcile_applies_idle_owner_without_unknown(self):
+        self._strict_reconcile_case(unknown_source=None)
+
     def test_reconcile_treats_effect_unknown_rebind_as_fenced_skip(self):
         release = self._release("release-effect-unknown-reconcile").resolve()
         value = two_loop_registry()
