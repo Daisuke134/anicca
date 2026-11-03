@@ -54,9 +54,15 @@
     "last_report_error": "host_admission_deferred:resource_effect_unknown",
     "official_effect_receipt": null,
     "usable_active_handle_resolves": false,
-    "private_accounts_path": "~/.cloak/clip-accounts-capafy.json"
+    "private_accounts_path": "~/.cloak/clip-accounts-capafy.json",
+    "account_status_counts": {
+      "poisoned": 1,
+      "session_failed": 12,
+      "provision_failed": 74
+    },
+    "next_readback": "Identify original account from occurrence18db7caff1178a88-68028 saved journal/session; current 87-row account list has no usable handle, do not substitute account."
   },
-  "sales": "unverified",
+  "sales": "Official since-launch gross USD162.69; click-to-order attribution, cost and net profit remain unverified",
   "visitor_identity": "unknown; do not infer human or organic visitor",
   "error_class": "daily_caller_disabled_with_unresolved_publish_effect",
   "retryable": false,
@@ -73,5 +79,41 @@
     "net_revenue": null,
     "cost": null,
     "note": "SSOT token read succeeded; provider payload omits sales field, do not interpret sum as zero"
+  },
+  "official_seller_money": {
+    "observed_at": "2026-11-03T00:18:40.650188+00:00",
+    "period": "sinceLaunch",
+    "sources_ok": {
+      "seller_sales": true,
+      "seller_ranking": true,
+      "statements": true
+    },
+    "money": {
+      "gross": "162.69",
+      "orders": 77,
+      "refunds": "0.00",
+      "one_time": "9.99",
+      "mrr": null,
+      "ending_balance": "83.78",
+      "payable": "0.00",
+      "winner": {
+        "agent_id": "8123079349",
+        "name": "Hook Lab — Win the First 3 Seconds",
+        "sales_usd": "34.88",
+        "sku_type": "subscription_day",
+        "revenue_kind": "subscription",
+        "source": "official_publisher_console"
+      }
+    },
+    "cost": null,
+    "settled_net_profit": null,
+    "note": "Gross sales and statement payable differ from cash received; costs and net profit unverified."
+  },
+  "remote_thread": {
+    "ts": "1793635811.853779",
+    "read_complete": true,
+    "message_count": 6,
+    "new_native_receipt_start_result": false,
+    "reminders_sent": 0
   }
 }
