@@ -155,3 +155,6 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - pilotはpublic-redacted-trace限定、20toolcalls以下。顧客は公開依頼と公開レポートに同意し、秘密・個人/顧客data・private URLは入力不可。AIがscopeを自律判定し、人間承認は不要。納品は指定Xの英語articleにissue番号を明記。24hはaccepted scope後の目標、subscription/実績/性能保証無し。29USDC Baseは納品後のみ。現在verified sales0。
 - v11 sourceは受注URLを既存deployment inputへ追加、systemにpublic scope/untrusted-input/dedup/order evidenceを追加するだけ。modelHaiku/cap5/task1/11allow/Identity/cron不変。Computerのorders/issue-数字.jsonでreport postid/state/paid receiptを記録。既存同番号の公開reportがあれば再納品せず状態照合。支払済みはBase nativeUSDC/専用recipient/29USDC/成功txをブラウザ公式explorerで一致確認した場合のみ。
 - 公開物はBusinessRun Benchのpilot offer/sample、public receiver metadata、GitHub issue form。Naïveが読むのはpublic issuesのみ、GitHubのAPI/CLIで業務を自動化しない。運営側のリポジトリへのspec/商品説明/issue-formの保存は通常の開発作業。既存benchmark issue/他writer/既存投稿を変更しない。追加の内部mock発注は完了gateにしない。
+
+- v11のsingle-writer運用: 自分のinbox wakeだけfalseへ変更し、12時間定期deploymentの1run最大1件に集約。旧有限probeはcancelして外部公開を重複させない。model/budget/11allow/Identity/cronは維持。native注文メモとPostiz同番号reportで再送を防ぎ、支払txも二重充当しない。メール受付の高速wakeはこのpublic-only pilotでは成果条件にしない。
+- 既存skillの質問・design承認gateは、Daisが明示的に質問を省略し実行判断を委任済みのためbrainstormingのopt-out例外に従う。追加mock発注や内部購入を成果gateにしない。public issue form/offerの公開、nativeファイル契約一致、v11全payload/owned wake GET一致、native browserで実intake画面読取を最小受入とし、実売上は第三者receiptまで未達のままにする。

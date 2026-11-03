@@ -25851,3 +25851,7 @@ main `4b9e9d5f3533b12685b90c1a299f8693aa46ce7c` のagent/deployment v9を公式G
 英語全文と実cloud画像はBusinessRun Bench main `f6cf6c0512a2ea24eb179fb83968965d8d42fde0` で公開/固定SHA readback一致。native短縮版は同sessionのHaiku overrideから実配信、review済みHTML/settingsと完全一致。Postiz post `cmw0bopr401gjt807mh7zk65f` は公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117508306130362806 。元の長文callはJSON不正Not run（切断原因は未確定）、旧sessionはcancel。第三者売上/メールinbound/連続録画は未達。
 
 v10の既定はHaiku4.5へ戻す。短縮版Sonnetはmonthly quote gateで推論前拒否・費用0、同jobのHaiku overrideはnative公開/記録まで116878microUSD。taskやseedが違うため品質順位は主張しない。月5USD/task1USD・11allow/default deny・Identity・12時間毎cron不変、agent/deployment v10をmain固定SHAから適用しGET一致で確認する。次cursorは本人mailでTLDR AI無料研究newsletterをbrowserから1回登録し、外部confirmation受信/必要なメール確認/公式messagesとwakeの観測。個人Google、他owner inbox、支払、余分な購読、不要な返信は行わない。購読はAI業界調査目的と外部mail配送試験を兼ねる。結果をjournalへ記録し、顧客intake/受注/納品/第三者決済へ進む。
+
+#### Public trace pilot v11の実行契約
+
+public受注を先行し、メールの不着を発売gateにしない。対象/価格/納品条件は公開BusinessRun Bench `pilot/README.md` とissue form、native実行順は `docs/superpowers/plans/2026-11-03-naive-browser-company.md`。v11は同agent/IdentityのHaiku・月5/task1・11allow/default denyを維持し、public trace-review issue→browser読取→英語X article納品→BaseUSDC receiptの一経路を標準deploymentへ固定する。public consent、匿名化、20calls、1run最大1issue、issue番号/txの重複照合、送信不明fence、untrusted-inputをsystemへ明示。owned mailboxだけwake=falseにし定期runへ集約（inbound未確認/診断mailを業務再開にしない）。既存他owner/商品/投稿/受信箱は不変。自然run/受注/第三者入金は未確認。
