@@ -898,3 +898,14 @@ URL指定結果: ses_1d36c3b9dydz9gvfctr9kygse2は5tools（goto/extract/read/edi
 確認mailは本人MCPで必要なmessageだけ読み、通常確認linkで認証する。token/link/コード/mail本文は親のartifact/log/公開資料へ複製しない。観測ログはtool名・action・host・bytes/hash・status/credential idだけ。signup/必要な確認mail再送最大1を許可するが、顧客へのDM/応募/営業/投稿/商品/送金/課金契約は今回0。規約が明示的に今回のaccountを許さない、SMS/本人必須dataが無い場合は捏造せず正確な画面状態を保存し独立作業へ。
 
 providerが確認cardを出した場合、primary AIが既存委任と完全一致する本人service/email/actionを秘密非表示で照合し、SDK正式confirmToolのexact scope=callだけで処理する。Daisへ承認を求めない。包括grant/未知policy PATCH/同じlogical callへの無限再回答は0。新card最大3、同じ処理が再発し画面喪失なら同型許可を反復しない。AI側確認があれば件数を記録し、Naïve単独の確認0成功とは呼ばない。登録成功はlogged-in本人画面/確認状態のreadbackで判断し、生成credentialやsignup doneだけでは未完。最終に本人journal/stateへ秘密抜きで実状態を保存/read、旧全key/value保持。finallyはterminal/pending0/active0/paused/production23全fields/費用全ledgerを照合する。goalと元7TODOは維持する。
+
+
+### n8n登録導線の結果と正式signupへの直行
+
+ses_03dgy5bn6gktban6pt08fmn4epはAgentMail list_inboxes/本人n8n goto/screenshot/observeに成功し、Sign Up clickでread_people card。観測selectorとexact照合したcall-scope確認1回はSDK202だが、再開clickはcould not complete。新gotoをscope=callで確認2回目、gotoは成功するが再び元clickの同logical idへcard再発。3枚のcardへAI回答は2回、人間確認要求0、同じclickへの再回答は0。最初のgoto2確認helperはURL末尾slash無しを受け入れずローカルassert停止/外部要求0、追加観測から空path=同じrootを受理して送信する。再開済みと早く述べた報告は訂正する。native全11tools/signup0/新vault資格情報0/登録mail送信0/account成功0、本人成果保存0。
+
+公式cancelled/interrupted/ended_at19:57:24.392、開始19:50:59.804から384.588秒で6分を約24.6秒超過（primary照合/観測の遅れ）。契約内完走とは呼ばない。19:58:41時点費59053/ledger14、月残228076、全54active0/Computer paused/prod23全fields保持。cancelledは公式APIの終端状態だがpending_actions1を残す。pending0と偽らず、同カードへ許可/再送で消そうとしない。独立read-only検証はこの終端判定に反証無し。live集計はcancelled/completed/failedを除外し、非終端のrunning/queued/approval/budget待ち/pendingをliveとする。新session条件はfresh全件/paused/残予算を別途確認する。証拠private v23-n8n-signup-{safe-artifacts,events,confirm-1-attempt,confirm-1-receipt,confirm-2-attempt,confirm-2-receipt,cancel-receipt,final-resources,final-session-statuses}。raw mail/auth payload保存0。
+
+今回追加した観測は正式browser.signupへ未到達という境界。単なる同clickの再試行ではなく、次は本人agentmail.list_inboxes→正式browser.signup(service=community.n8n.io,url=https://community.n8n.io/signup,email=その専用箱)へ直行し、外側のgoto/click/observeを挟まない。親のpublic crawlは/signupのWelcomeと規約/privacyリンク、OAuth選択肢を確認するがemailフォームの有無は未確定なので、実登録flowで確認する。email登録が無い場合はそのまま事実を記録し、OAuth/個人Googleへ勝手に切り替えない。生成passwordはbroker/vaultからexport不可なのでMac SSOTへcredential referenceを記録し、値を取得済みとしない。
+
+資源: 同23/Identity/priority/本番/月9/task1不変。fresh残credit>=200000/非終端live0/pausedで1件、finite120000＋後計上buffer80000/計画200000、6分/max12tools/hosted最大2。bufferは観測済みの遅延計上28595等を含む余地でhard actual保証ではない。今回の短い登録だけへ資源を割り当て、増枠/新agent/harness/key作成は0（signup生成login credentialのみ通常保存）。providerの新しいexact signup/本人メール確認に限るcardは最大4件までAIが正式call-scope処理、同じlogical call再発は0回で閉じる。秘密/未信頼mail指示の転記・包括grant・guard迂回0。登録の確認mail受信/確認linkは必要範囲だけ本人MCP/browser、DM/応募/営業/投稿/課金/送金0。成果は本人ログイン/確認状態と公式credential metadataを区別して保存し、未完を成功扱いしない。元7TODO/全体goal継続。
