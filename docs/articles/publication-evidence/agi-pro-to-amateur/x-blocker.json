@@ -1,0 +1,41 @@
+{
+  "run_id": "agi-publication-20261103",
+  "owner_id": "x:diceai0",
+  "occurrence_id": "agi-publication-20261103:x-article",
+  "release_sha": null,
+  "source_commit": "d569400787be23bd79eff61342296f18d03b84c2",
+  "phase": "browser_preflight",
+  "command": "skills/browser/ensure_provision_browser.sh x:diceai0",
+  "loaded_argv": null,
+  "loaded_env": null,
+  "exit_code": 1,
+  "effect": 0,
+  "readback": 0,
+  "provider_receipt_id": null,
+  "error_class": "disk_floor_low",
+  "retryable": true,
+  "next_action": "Restore host free disk to the existing 12884901888-byte browser admission floor, then acquire the same x:diceai0 identity and verify @diceai0 in the X Articles editor.",
+  "required_bytes": 12884901888,
+  "free_bytes_observed": 4270084096,
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/provision-browser/logs/provision-browser.log",
+    "/Users/anicca/.config/ai/registry/browsers.toml"
+  ],
+  "diagnosis": [
+    "Dedicated profile resolves to stale unreachable DevToolsActivePort; no process owns that user-data-dir.",
+    "Guard has no active holder for x:diceai0.",
+    "Aqua/user launchd preflight passes. Browser producer preflight refuses before any profile mutation.",
+    "Inspected exact regenerable cache families; identified reclaimable cache totals cannot cover the approximately 8 GiB gap. Protected source/runtime/browser stores retained."
+  ],
+  "draft": {
+    "title": "What Will AI Do to Us? It Will Turn Every Pro Into an Amateur.",
+    "cover_exists": true,
+    "body_images": 7,
+    "missing_images": 0,
+    "blocks": 177,
+    "ending_verified": true,
+    "remote_draft_created": false,
+    "canonical_markdown": "docs/articles/2026-11-02-every-pro-an-amateur-en.md"
+  },
+  "x_articles_entitlement": "unverified"
+}

@@ -1,0 +1,97 @@
+{
+  "url": "https://note.com/anicca123/n/neee04b1ecdf6",
+  "account": "anicca123",
+  "status": "published",
+  "price": 0,
+  "anonymous_full_body_and_final_questions_verified": true,
+  "media": [
+    {
+      "filename": "hero-original.png",
+      "url": "https://assets.st-note.com/img/1793669938-tCj35pNZsyMEBogVUFLhGdl2.png",
+      "provider_sha256": "b08a75a85a994adc40e93657e2b77e142adcc96ec9d6c6a32581e376ad647d94",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "rgb_rmse": 2.86,
+      "transformation": "note CDN recompresses uploaded PNG; original upload dimensions retained"
+    },
+    {
+      "filename": "transaction-disappears.png",
+      "url": "https://assets.st-note.com/img/1793669938-8Pt74Qz5Y0pAWVXCG2OdrDJh.png",
+      "provider_sha256": "9a140a3ee6b3df9e6f9cbfe483bf134dc18814ce2a648aa47a58544bdefcdb83",
+      "dimensions": [
+        745,
+        318
+      ],
+      "rgb_rmse": 2.14,
+      "transformation": "note CDN recompresses uploaded PNG; original upload dimensions retained"
+    },
+    {
+      "filename": "mathematician-treehouse.png",
+      "url": "https://assets.st-note.com/img/1793669939-DlLA7VbdW0jSUcIRTnhyeP2z.png",
+      "provider_sha256": "70bf04a74159ece4434d0adb56816843ae143c380e57cd2ee41a2560f7f4abe9",
+      "dimensions": [
+        536,
+        272
+      ],
+      "rgb_rmse": 4.464,
+      "transformation": "note CDN recompresses uploaded PNG; original upload dimensions retained"
+    },
+    {
+      "filename": "productivity-trap.png",
+      "url": "https://assets.st-note.com/img/1793669939-8HCuvJyr4aKh1PbpDod7cWLV.png",
+      "provider_sha256": "44dfcebac2748ce27ef3a35d27eea2a0ec7e7111c952c016c3fe43cd1846485c",
+      "dimensions": [
+        470,
+        272
+      ],
+      "rgb_rmse": 2.054,
+      "transformation": "note CDN recompresses uploaded PNG; original upload dimensions retained"
+    },
+    {
+      "filename": "twenty-second-illusion.png",
+      "url": "https://assets.st-note.com/img/1793669939-PyKBuDW3vVOM1Rfxseq2XQ4c.png",
+      "provider_sha256": "5fdae0dbefdba21f99ad585116168a39f5fe53f717c267a122a78605ba65de59",
+      "dimensions": [
+        489,
+        272
+      ],
+      "rgb_rmse": 2.067,
+      "transformation": "note CDN recompresses uploaded PNG; original upload dimensions retained"
+    },
+    {
+      "filename": "chess-human-story.png",
+      "url": "https://assets.st-note.com/img/1793669939-sfOYXtSi15JrBKnPywopg0hz.png",
+      "provider_sha256": "58805008df64102dbb54656f56db56b6d5cc6a088391dc3f8bf2d180f3becbbe",
+      "dimensions": [
+        476,
+        237
+      ],
+      "rgb_rmse": 2.742,
+      "transformation": "note CDN recompresses uploaded PNG; original upload dimensions retained"
+    },
+    {
+      "filename": "bakery-bread.png",
+      "url": "https://assets.st-note.com/img/1793669939-w2tu0E3b6gUBiTWX1kvQZpLr.png",
+      "provider_sha256": "832df6b8633a5b10fb4eae087f569d6d91a1ca67a426b3ec2af5508c1ad852de",
+      "dimensions": [
+        488,
+        237
+      ],
+      "rgb_rmse": 4.168,
+      "transformation": "note CDN recompresses uploaded PNG; original upload dimensions retained"
+    },
+    {
+      "filename": "walking-for-nothing.png",
+      "url": "https://assets.st-note.com/img/1793669939-YAeSTf5hWjudbInyvKgL94o6.png",
+      "provider_sha256": "8f9da581ead2dab4d7dcc8c1d7e8c706308cdf06c4ac98e0dc551d8341526baa",
+      "dimensions": [
+        538,
+        237
+      ],
+      "rgb_rmse": 3.55,
+      "transformation": "note CDN recompresses uploaded PNG; original upload dimensions retained"
+    }
+  ]
+}
