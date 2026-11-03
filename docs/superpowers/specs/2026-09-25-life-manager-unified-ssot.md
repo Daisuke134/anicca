@@ -19,6 +19,11 @@ Grokbot実業務の引継ぎ: 本人dr eggbotのReason返信3FZYT4EYA21PM454HV6Q
 
 復旧実測: native sparse6件を1件ずつ実行し、全件Git HEAD/main/clean保持、全memory/memories/state subtreeの内容/inode/mtime/mode保持を確認する。private receipt capacity-tmp-sparse-1793676963.jsonのfreeは2.409→4.142GiB、後続4.30GiBを観測する。他processの割当差分を全て自分の回収へ帰属させない。旧binary COW/pack共有を再実行せず、dirty/未統合copyは保持する。自然schedule18e46bbbe42fc3e0-49458は8bd07954でPASS、元helper依頼はcard4db7d7462367afcad7ec144cとしてhome-claude/queuedまで到達。queuedを実行終了とは数えない。代役認証のfresh reviewは当初Blocking2件（子stdout/artifact経由の注入token保存とNULでtyped failureを抜ける点）を再現し、追加REDで確認する。token読取時のNUL拒否と、保存/STATE解析前の固定長mask・tail境界保護を追加し、HQ60tests GREEN、stdout/artifact/Slack/cardと不正正本のfocused検証も行う。再reviewで親環境の非UTF8 surrogateescape値がredaction生成時にtyped receiptを抜ける点を追加REDで再現し、UnicodeErrorを秘密を含まないHQErrorへ変換する。HQ61testsで既存の認証失敗handoffへ収める。fresh再review/新headの必要CI/main/限定反映を終えてからhome-claude opt-inへ進む。
 
+
+代役認証の統合: PR #9113/head41b9ae66c976783c5ff44002eb035dfb2e7481f5はHQ61tests GREEN・独立review SHIP/Blocking0・必要CI15件SUCCESSでmain93c5af261c0d20807785cef145dd251ded2968cbへ統合する。現在cursorはmain由来immutable releaseの本文一致→helper単独opt-in→元cardの自然実行であり、本番推論/実代役/売上とはまだ数えない。
+
+容量復旧の追加範囲: 自然workerはdisk_floor_low再発、空きは約2.8GiBへ再低下する。順序は容量回復→元helper受信/実行→Grok実務移管を維持する。既存6件の回収を再計上せず、追加の独立clone lmg-1793637778/ap-seo/ap-rss2-1793672074をread-only独立監査し、tracked/untracked/ignored各0・argv/CWD/FD参照0・既存lease/Git lockなしを確認する。lmgはmain/ローカルorigin同一、残り2件はlocal-only commit1/2件を持つため削除/移動/GCは禁止。前段の未統合copy保持はGit内の全object/ref/HEADとlocal-only commitを完全保持することで満たし、Git native sparse-checkoutの可逆縮小だけを適用可能とする。保護対象memory/memories/stateの内容/inode/mtime/mode、全refs/HEADとclean状態を前後比較し、専用lock取得/使用中再確認、復元commandと実空き差分をprivate receiptへ残す。既存COWを含む割当上限1.48GiBは実回収保証ではない。dirty/使用中/未保存のcopyと稼働runtimeは引き続き保持する。
+
 目的: Slack #agents-hq を共有部屋にし、依頼保存・受領・着手・進捗・証拠付き完了・停止/枠切れの引き継ぎを追跡する。Codexは収益阻害、計測、Manager開発を継続し、確認した実験を公開する。schedulerが有限のagent実行を起こし、この対話が無期限に自己再開するとは扱わない。
 
 ユーザーの委任: 通常の技術/運用判断、実装・検証・main統合・対象限定反映・記事公開は自律実行する。担当は重複防止の目印であり壁ではない。途中成果・次操作・effect境界を渡して助け合う。本人手続き、provider権限、支出上限、利用枠は事実上の境界として保持し、枠のreset/transferを装わない。
