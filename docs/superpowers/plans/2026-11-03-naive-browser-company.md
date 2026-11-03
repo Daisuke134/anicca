@@ -456,3 +456,16 @@ email.inboxes成功、直接click4回のcould not completeを保持、act経路�
 canonical contentをreview/関連checks/mainへ統合後、publishing repo anicca-productsの最新mainから専用worktreeを作り、既存2workflowのMANAGER_BLOG_CONTENT_REVISIONだけを固定canonical SHAへ更新する。renderer/install hash/他記事/決済/既存配信は変更しない。関連checksと通常build/deploy後、live記事本文・画像hash・public release.jsonのrevisionを公式readbackして完了。preview/local buildは公開成果としない。mainの最新記事を落とす古いcontent pinへ戻さず、並行更新時は最新のreview済みbundleを含める。
 
 録画経路の独立診断: Computer Use inventoryはMac appsあり/browser0、browser registryにNaive route0。指定cua-driver SKILLはlocal2roots/cacheおよびai-config main treeで見つからない。Naive live-viewはdashboard-onlyの秘密URLで、録画APIと同一視しない。録画未完を保持し、他者のChrome/profile/sessionを借用しない。新規Mac UI操作を追加せず、ブログ掲載という独立項目を進める。
+
+
+### 英語記事の自社ブログ公開完了と本人inboundの1通検査
+
+canonical PR9162は全16checks PASS・fresh read-only SHIP/Blocking0後main982fb15e47286af910728eddb08b51912f301693へ統合。publication76記事/44媒体、既存75/43 entry完全保持、source/package/manifest本文一致、既存adapter12tests PASS。publishing PR849は2workflowのcontent pinだけを982fb15eへ更新し、build成功後main e5cff3c0c5d3a439f08575c8020562e37d3898f5へ統合。renderer d569400は不変。後続のmain014262a5はe5cffのdescendantで、実公開provider deploy6ae9c8b0c529125fd14c707a/ready、GHA41629113267 success/既存money-path smoke successを確認。
+
+実URL https://aniccaai.com/blog/manager-naive-autonomous-companies-en の取得本文33332bytesにtitle/Capafy未認証/0.243640/累計6.634284/売上未確認の要点が存在。public release.jsonはcontent982fb15e/記事hash888bd14a5cd08497d647c53dbbccf7435d133763208aabe1393cc411776459b6/76記事、画像HTTP200/hash1f06d359be84a6adcdaaf9e5f847ddfeb874c3fc0d181bb8113b7b1fb8eb0561と一致。記事の自社blog公開は完了、実売上/受注/登録/連続録画とは分離する。private blog-live-publication-readback.jsonが公式readback。旧cua-driver不在とbrowser0は録画経路の未完条件で、Mac/他者Chromeへ入力しない。正式browser_sessions APIはclosed含むと記すが、実session Computerとagent Computerは同一cmp/履歴0であり、別Computerを見ていたという仮説は棄却。次は実稼働中の履歴と照合する。
+
+Substack最後のobserve106はCreate your account、113はSign in to Substack/email/Continueで、code送信画面ではない。したがって未着をSMTP受信故障と断定しない。現在の初期課題は実外部dispatchを伴う受信検証。private SSOTのresend-life-manager-productionに設定済み会社from_address/送信専用keyを確認。GET domainsは401/restricted_api_key/only send emailsで、失効ではない。権限拡大・キー作成・新サービス契約は行わない。
+
+次の1通はこの設定済み会社送信元→同じNaive本人inboxだけ、件名/本文にDIAGNOSTIC-NOT-ORDERと固有nonceを付ける。顧客注文/認証コード/指示ではないことを明示、秘密・個人データ・払出情報・リンクは0。最大1送信・固定Idempotency-Key、timeout/不確実時は再送せずreceipt/inbound readbackを調査。acceptedと受信を分離し、届けば同nonce/送信元/受取Identityのmetadata照合、provider raw本文や認証秘密を一般logへ保存しない。専用inboxのwakefalseを保持し、この検査で新agent/cron/枠/既存担当/販売済商品を変更しない。既存送信サービス内の1通であり、請求費用は未計測なら0とせず、新規契約/top-up無しと区別する。
+
+全体goalはactive。実顧客依頼→納品→29USDC receipt/費用が現在cursor、本人inbound検査と自然run12UTCを並行する。既存deploymentはno-order時に終了する限定pilotであり、自律的な顧客獲得/学習のseller loopはまだ完成していない。今後これを自所有configの改善対象とし、他者返信待ちだけを阻害理由にしない。phone-only入口/採算/移植/compute自費/10Kは未達。

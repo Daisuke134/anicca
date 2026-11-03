@@ -25852,3 +25852,6 @@ NaïveのCapafy接続は、同一運営者1Publisherという公式規約 https:
 
 
 NaïveのCapafy無料user認証はfinite0.30USD内で実費243640microUSD、end_turn→cancelled/pending0。sealed signupで専用credential参照を生成/正本保存したが、browser実行失敗で無料user認証/dispatchは未確認、本人inbound0/EOF。primaryの4call scope確認・session model override/補正を含み、単独無介入完走ではない。current17/production13/元全source fields公式GET一致、担当累計6634284microUSD/SDKbrowser別5001。既存Publisher内正式team経路のowner照会は返信未確認、重複Publisher/課金/既存商品変更無し。全体cursorは実第三者依頼→納品→29USDC receipt/費用、残TODOと具体的な失敗境界 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の正本」「Capafy無料user認証の実測と終了」。
+
+
+Naïve英語記事は自社blog https://aniccaai.com/blog/manager-naive-autonomous-companies-en へ実公開。canonical982fb15e/publishing e5cff、後続main014262a5由来provider6ae9c8b0 ready、実本文・画像hash・release.json記事hashを照合、GHA/money-path smoke成功。既存75記事保持、新1記事/1画像だけ追加。実売上/登録/動画は未達。本人受信は、既存会社Resend送信専用キーから本人inboxへ非注文の検査1通で切り分ける（GET domains401はrestricted_api_keyで失効ではない）。詳細・資源上限・再送禁止・現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「英語記事の自社ブログ公開完了と本人inboundの1通検査」。自律的な顧客獲得seller loopは別の自所有未完項目であり、限定pilot intake稼働を完全な会社運転としない。
