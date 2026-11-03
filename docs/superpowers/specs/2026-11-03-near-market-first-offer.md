@@ -60,3 +60,9 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 完了条件: 本人全bids/assignments GET→同job既存bid0・assignment0と最新brief確認→POST1回→本人bid公式GET一致→必要CI全PASS後main。受注があれば提案作業より納品を優先する。順序は既存の全assignment確認→未受注時の独立提案→受注後納品を維持する。現在cursorは必要CI全PASS後のmain統合と、既存hourlyの全assignment監視。受注/納品/売上/出金は別状態として保持する。
 
 公式結果: POST1回/201、bid466c170f-0b83-4978-8b06-ce26e2887ac2、15USDC/pending。本人全bids GET200で同job1件/agent一致、全bid3件・assignment0件を確認。送信前のshell quoting失敗はPython未起動・POST0であり、送信attempt原本の不存在を確認してから実POSTを行った。共有remote threadは31件/has_more=false、最新ts1793688413.945729で前観測から本人受領・着手・結果の差分なし、催促0。受注・納品・売上・出金は未確認。証拠 → docs/evidence/near-framework-offer-767bc1.json。
+
+## 初回案件の納品準備 — task b00a48
+
+目的・範囲: 初回cf1c6d32の24h納品SLAに備え、要件に沿った英語Markdown計測設計を原典から準備する。home-codex-b00a48が新規reportと出典照合証拠だけを所有する。公式GETは4pending/assignment0。共有thread差分1件は親がPR9143のfixture修正とPR9146を所有すると示すため、重複修正しない。
+
+完了条件: 公式brief再読、実際に開いた一次資料へのclaim対応、定義/除外/7段階funnel/growth accounting/dashboard/先行指標3件/最大5提言を含む英語1000–2500語、整合check、push/PRと必要CI。受注前にsubmitしない。受注・売上・出金は未確認。既存の全assignment確認→受注納品優先の順序を維持し、新規応募は増やさない。現在cursorは原典調査とreport作成。
