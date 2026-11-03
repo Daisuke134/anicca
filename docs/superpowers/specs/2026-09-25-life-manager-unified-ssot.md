@@ -25235,6 +25235,14 @@ Managerは、苦しみを終わらせることを目指し、行動変容を通�
 - **調査・出版:** [Manager記事collection](https://aniccaai.com/blog/manager)は67記事（英語38・日本語29）を掲載し、AI Economist、MiroFish、AgentSociety、Aaru、Simile、Humans&のBoba / Ampersand / Persimmon、Numerai、Goodfire、人口合成、behavior evaluation、EBAを扱う。2026-10-25のGETで記事collectionと代表記事はHTTP 200。記事数・研究量は人への効果の証明ではない。
 - **公開copyの差分:** source updateはLife Manager PR [#8940](https://github.com/Daisuke134/life-manager/pull/8940)でmain `f1926301087199fd319d60a36769ce27dc517e12`へmerge済み。公開側PR [#739](https://github.com/Daisuke134/anicca-products/pull/739)で両workflowをこのimmutable revisionにpinし、記事installer/contentの独立pinとadapter SHA256を維持してmerge済み。Netlify Deploy (Landing) [run #869](https://github.com/Daisuke134/anicca-products/actions/runs/40187310935)とpost-deploy money-path smokeはsuccess。Netlify deploy `6adde2d512f600b350f31ca6`後のproduction GETで`/`・`/en`・`/ja`・`/blog/manager`はHTTP 200。EN/JAに441,570世帯、EBA、Ampersand / Persimmon / Boba、67記事の案内があり、旧`docs/manager-learning-20261017` branch linkはない。archiveは67 article destinationsを描画し、featured Manager linksと代表archive linksもHTTP 200。`/manager-release.json`のcanonical source revisionは`f1926301087199fd319d60a36769ce27dc517e12`。これはsource公開・到達性の証拠であり、人への行動効果、苦しみの低減、traffic、install、revenueは示さない。publisher側の記録は[`CANONICAL-MARKETING.md`](https://github.com/Daisuke134/anicca-products/blob/b4d8f245800a3f68e147122b636b999a4774227b/apps/landing/CANONICAL-MARKETING.md)。
 
+### E16自然検証のrunner互換性修復（task d26c0c5310218fcdf4ec750a）
+
+目的/所有: home-codex-d26c0c は既存E16 workflowのrunner互換性だけを所有する。専用worktree `.worktrees/manager-runner-d26c0c`、branch `fix/manager-runner-d26c0c`、base `7b7e90ef2f18c9e36ea42757106c0738713b5355`。既存BOARD/lease/共有threadを確認し、親root所有PR9125とNaïve担当を変更しない。YC提出receiptは未確認のまま、順序を変えず継続可能な次の技術項目E16の阻害境界を修復する。
+
+根拠: 自然main run 41548925146 はPython202tests PASS後、Playwright1.56.1がubuntu26.04-x64非対応でverify失敗、publisher SKIPPED。直前成功run 41363246265の実imageはubuntu-24.04。固定依存のupstream v1.56.1 nativeDepsにもubuntu24.04-x64がある。対応既知の24.04へverify/publisherの両runnerを固定し、同じブラウザ検証を保持する。新dispatcher/依存更新/model変更/手動run-once/外部再送/STOP変更は行わない。
+
+完了条件/現在cursor: 既存focused workflow契約・source-boundary・diff検証→push/PR→必要CI公式PASS→main。main後の既存scheduleによる自然verify/publisherと公式summaryを追跡する。E16 positive canary/STOP/rollback/receiptおよび人の便益はこのrunner修復だけで完了としない。証拠 → `docs/evidence/manager-runner-d26c0c.json`。
+
 ### To-be — Manager v1の完了条件
 
 Manager v1は「大きなモデルを作った時」ではなく、(1)既存研究・公開データを権利と分割を保って再利用し、(2)行動予測と介入効果を研究単位holdoutでbaseline以上に再現し、(3)境界付き実行を外部の公式状態でreadbackし、(4)人の同意と適切な研究統治の下で行動・継続・害・費用を比較し、(5)その結果を公開できた時に技術的な限定版として受け入れる。技術実行の成功、文章の説得力、合成人口の規模、売上を人の便益と混同しない。「苦しみを終える」は長期missionであり、一つのbenchmarkやreleaseをもって完了と判定しない。
