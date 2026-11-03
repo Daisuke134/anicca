@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans。primaryが単独実装し、最後にfresh read-only reviewを使う。
 
 **Goal:** Naïve自身のbrowserをLLMが操作して既存の会社業務を完走する。
-**Architecture:** 標準pi agentの外部操作はbrowserと本人専用のemail.inboxes/read/send、Computer read/writeは作業メモと成果物に使い、判断は自然言語promptへ置く。APIは基盤設定/実行/証拠読取に限定する。
+**Architecture:** 標準pi agentの外部操作はbrowser、本人専用のemail.inboxes/read/send、指定Postiz4tools、Computer read/writeは作業メモと成果物に使い、判断は自然言語promptへ置く。APIは基盤設定/実行/証拠読取に限定する。
 **Tech Stack:** Naïve標準agent/session/browser、JSON設定。追加依存なし。
 **Spec:** docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md の Naïve browser company 節。
 
@@ -11,7 +11,7 @@
 - 既存owner・共有profile・既存6agent/cronを変更しない。
 - 専用cap月2USD/max_task0.75USD、既存残高内・追加入金なし。
 - 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
-- business script/APIはagentへ与えない。scopeはbrowserによる画面操作と本人専用メール3機能。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
+- business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
 ## Review Focus
 - deny defaultでもask-default toolが残るため既知の追加能力を明示disableする。
@@ -63,7 +63,7 @@ MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し�
 - [x] v5をmain7d702ce7から適用し完全一致readback。
 - [x] 専用receiving-only Base EOAの鍵をCredential SSOTへ保存し、offline署名/復元とmainnet chain8453/native USDC6桁/初期0残高を確認。Naïve native walletはorg mainnet無効403のため未作成。支出signer・入金・送金は未実施。
 - [ ] v6のSonnet4.6/max_task0.75USD/月2USD・view_image・指定Postiz4toolsをsource/mainへ統合して適用。
-- [ ] 専用vaultにPostiz bearerをagent限定封入し、指定channelのnative MCP readbackを確認。
+- [ ] 専用vaultにPostiz bearerをagent限定封入し、指定channelのnative MCP readbackを確認。封入とagent/url一致GETは完了、runtime呼出は未完。
 - [ ] 実イベントだけの英語sample/offer修正・本人mailのself-send/read・payment-receiver.jsonの実write/read。
 - [ ] 固定v6/同IdentityのNaïve標準deploymentを接続し、自然実行/本人inbox wakeを確認。
 - [ ] 英語offer/実画面demoを指定Xとblogへ公開し、実顧客の決済/納品/実費を公式照合。
