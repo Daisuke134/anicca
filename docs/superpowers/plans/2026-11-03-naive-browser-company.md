@@ -174,7 +174,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v12稼働・公開募集・実依頼待ち
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv12/月6USD/task1USD、担当累計5135524microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv12/月6USD/task1USD、担当累計5656872microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -228,3 +228,12 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 正しいフォームURLの短いprobeはlogin doneを返したが、実画像ではUsernameへ本人emailが入っただけでName/Email/Password/Confirmationは空。native記録のwrite/readは一致、実費40379microUSD。原因を「全く操作しない」と断定せず、複数段フォームの部分操作/再navigationによる状態初期化の仮説へ絞る。次の限定probeは同一turn内で既存credential login→同じフォームURLの通常fragment付きloginを最大2回追加し、DOMを再読込せず次のprotected欄へ進めるかを画像で検証。新signup/credential再生成/秘密export/一般actでのpassword代入は無し。両protected欄が実際に埋まる場合だけ非secret欄と同一account submit1回へ進む。未反映なら記録して終了。これは新規account追加でなく、未完の1accountの呼び出し元修復。月6/task1/finite0.5内を維持する。
 
 同一documentのfragmentで既存loginを進めてもprotected fieldsは空のまま、当該probeは終了/cancelし成果を保持。次の検証はloginによる登録代替ではなく、本来のsignup helperを正しい登録フォームへ適用する。旧login:dev.toは削除/上書きせず保持し、service=dev.to-businessrun-registrationの専用保管名を1つ使う（SDK serviceはcredential key名、対象サイト/本人メールは同じDEVの未完1account）。この1回以外のsignup/新service名追加はしない。まず実フォームの非secret Name/Username/Emailを通常UIで埋め、同一URLにfragmentを付けて既存画面を保ちsignup helperを1回呼ぶ。生成credentialは直ちに同じprivate SSOT serviceのattempt参照として追記し、未検証accountを有効と扱わない。protected欄が埋まった場合だけ同一accountのsubmit1回/本人確認へ進め、空のままなら真のsignup postcondition未達として記録する。source/API/backendの原因は未確定であり、SDK全般の欠陥や個人Google必須を断定しない。月6/task1/finite0.5内、旧値の秘密export/他owner変更無し。
+
+#### DEV登録の現在の実測と次の境界
+
+- 正しいsignup helperの実引数はservice=dev.to-businessrun-registration、url=https://dev.to/users/sign_up?state=email_signup#businessrun-signup（event44）。通常typeは実HTMLのCSS idによりName/Username/本人Emailの3欄を順番に入力し、画像で反映を確認。helper返答はsignup doneだが、直後画像50はPassword/Confirmationが空に見え、登録/ログイン成立・確認mail dispatchの公式証拠は無い。native記録の「no submission occurred」はmodel側の判断であり、helper内部network不存在まで証明したとは扱わない。
+- 正しいsignup runはnative write60/read65 exact、timestamp=null。有効なアカウントのproofは未達。資格情報の生成/封入とアカウント作成を区別する。旧login:dev.toと新login:dev.to-businessrun-registrationの2つのsealed参照はprivate credential SSOT同一serviceのattemptsへ保存/readback、元の秘密は削除/上書き/公開無し。両参照のaccount stateはnot_verified。一般act/typeでpasswordを入れない。
+- 初回有限run330802microUSD、exact/fragment run86933microUSD、正しいsignup run82315microUSD。いずれもownerでcancel→GET cancelled。担当累計5656872microUSD、月6/task1不変。既存記事/募集/定期deployment/他owner変更無し。公開顧客からの売上は未確認。
+- 既存owner Computerのfresh GETはpaused/browser=null、Computer browser GETは404。これは有限run終了後の観測であり、native browserが別Computerであることや、今回の未反映の原因を証明しない。
+- 次の技術cursor: 同一の自分用credentialと通常のComputer SDK browser interfaceを使い、native helperの短いdone文字列と公式browser_action応答を比較する。ウェブサイトの登録API/業務scriptへ置換しない。追加のsignup/credential名を増やす前にこの境界を診断する。既存Computerのowner/設定を確認し、必要なら専用browser付きComputer1台・timeout1分・own scopeの終了/readbackを正本へ具体化してから実行する。SDK API経由の費用はagent累計に含むかを確認し、別なら別計測。個人Google/人間メールへの切替は行わない。
+- ネットワーク補足: Reason Primaryのowned devicesは0、home-codex/muse-relay宛て既存照会はqueued/返信未確認。登録済みrelayを実稼働Museと呼ばず、別accountへ切替えて迂回しない。全体goalと実顧客→納品→第三者receipt/費用のcursorは維持する。
