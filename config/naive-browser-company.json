@@ -241,7 +241,7 @@
         "enabled": true,
         "permission": "allow"
       },
-      "postiz.schedulePostTool": {
+      "postiz.integrationSchedulePostTool": {
         "enabled": true,
         "permission": "allow"
       }
