@@ -667,8 +667,55 @@ PR9171は15checks終了/失敗0（CodeRabbitはreview skippedをpass表示）で
 
 資源/権限: これは既存production月8USDとは別の独立診断枠、inference ceiling0.20USD＋metering/終了までのbuffer0.02USD（計画上限0.22USD）。新規topup/課金契約/銀行・wallet操作0。provider capは過去の実費超過を踏まえhard actual保証とせず、公式spend/全ledgerで実額を報告する。budget_paused/再確認/失敗は同runを増殖/上限拡大せず閉じる。新agentは業務継続による既存月capの回避には使わない。専用AgentMailの既存inbox/keyをこの1診断のreadにだけ一時委任し、新mail signup/key発行/会社旧共有mail借用は0。新agent専用static_bearerを同Identity vaultに1件封入する。create時にagent_id=今回作成した新agent IDとmcp_server_url=https://mcp.agentmail.to/mcpを必ず指定し、GETで両fieldが完全一致することを確認してからsessionを作成する。agent_idの省略または読戻し不一致ならsessionを実行せず、今回の新vcrだけをcleanupする。元vcr_danh3k10ya66etyp7mkkc3cv5mは変更しない。秘密は既存Credential SSOTから直接封入し、prompt/config/repo/logへ出さない。新credentialのID/新agent IDだけをSSOTの診断serviceへ保存する。
 
-受入/終了: 最新main固定configのbyte一致/7allow/他既知deny/単一MCP/model不変/0.20予算/source diffを確認し、fresh read-only reviewerで資源/credential/cleanup境界を検証してから作成する。create/credential/session各attempt fenceを先に置き、応答不明は再作成せず公式GETで照合。最初の本人browser cardだけscope=sessionでprimary AIが処理する。後続cardが出たらdenyして結果write/readへ終了し、秘密を符号化してguardを避けない。入力成功はnative type応答と実フォームの値観測で判断し、read_people0だけでは認証成功にしない。code/認証link/個人mailは扱わず、本人addressは報告ファイルへ残さない。native artifact write/read/hash、公式時刻、費用/介入を照合。finallyは当該session cancel→GET terminal/pending0→一時vcrだけDELETE/404→一時agentだけDELETE/404→当該Computerがあればdestroyedを確認し、元agent/deployment全source fieldsが20のまま一致することを読む。agent deletion API契約とexact ownerを作成前に再確認。新principalのownerが不明なら既存principalへ広げず診断を実行しない。
+受入/終了: 最新main固定configのbyte一致/7allow/他既知deny/単一MCP/model不変/0.20予算/source diffを確認し、fresh read-only reviewerで資源/credential/cleanup境界を検証してから作成する。create/credential/session各attempt fenceを先に置き、応答不明は再作成せず公式GETで照合。最初の本人browser cardだけscope=sessionでprimary AIが処理する。後続cardが出たらdenyして結果write/readへ終了し、秘密を符号化してguardを避けない。入力成功はnative type応答と実フォームの値観測で判断し、read_people0だけでは認証成功にしない。code/認証link/個人mailは扱わず、本人addressは報告ファイルへ残さない。native artifact write/read/hash、公式時刻、費用/介入を照合。finallyは当該session cancel→GET terminal/pending0→一時vcrだけDELETE/削除receiptと公式全page一覧の不在確認（個別GETは未提供405）→一時agentだけDELETE/404→当該Computerがあればdestroyedを確認し、元agent/deployment全source fieldsが20のまま一致することを読む。agent deletion API契約とexact ownerを作成前に再確認。新principalのownerが不明なら既存principalへ広げず診断を実行しない。
 
-現在cursorはこのsource/独立review/main反映後の1回診断。bestは同ページの本人mail入力を確認し、通常認証へ進む根拠を得ること。baseは確認継承/ページ寿命の実測、worstは診断費だけを使い未解決で終了すること。最有力の失敗筋はread_peopleがharness共通層で再評価され、Vettaでも同じ確認が残ること。新framework/controller/公開投稿/旧業務stateの移行は作らず、元goalの実売上/費用/英語デモ/10Kを維持する。
+当該1回診断は下記結果で終了し、再実行しない。実行前の想定: bestは同ページの本人mail入力を確認し、通常認証へ進む根拠を得ること。baseは確認継承/ページ寿命の実測、worstは診断費だけを使い未解決で終了すること。最有力の失敗筋はread_peopleがharness共通層で再評価され、Vettaでも同じ確認が残ること。新framework/controller/公開投稿/旧業務stateの移行は作らず、元goalの実売上/費用/英語デモ/10Kを維持する。
 
 source acceptance: 診断config未定義のREDから、JSON parse/7allow/他既知deny/単一AgentMail MCP/既定model一致/200000microUSD両cap/非永続新contextをassertしてPASS。production agent/deploymentのconfig bytesはHEADと完全一致、diff check PASS。恒久テスト/新driverは追加せず、既存piでの確認再発を外部RED、当該診断の実操作を未実施として区別する。
+
+
+### 一時Vetta診断の確定結果と残cursor
+
+PR9172はfresh read-only reviewの指摘1件（agent_id省略時の全agent注入）をcreate時field固定/GET完全一致必須へ修正して再確認0件、15checks失敗0からmain d1cc98bf5dc45a995067d25df367f42d2e568167へ統合する。固定mainのconfig bytes/hash一致を確認して一時agent agt_w50192cvx14sdhrfhrd8xbg605/version1を作成し、元Identityへのgrantと新agent専用static_bearerのagent_id/MCP URLを公式一覧で照合してからsession ses_1hd3zyf1e2cgwc20cwjp53bek2を起動する。元vcr/本番agent/deployment20は変更しない。
+
+実測: Vetta/Haiku4.5はagentmail.list_inboxesを1回実行して成功し、続く呼出しの予約が残finite budgetに収まらずbudget_pausedとなる。実使用5539microUSDとcap200000の差だけでは次の予約を許容できない。イベントはparam=budget_micro_usd/has no room for this callで、必要な予約額そのものは返さない。browser.started0/確認0/人間0/primary followup0、入力・submit・code要求・登録・売上0。別harnessへの本人mail接続は実証するが、browser入力/確認継承/ページ寿命は未測定。harnessの改善/無確認認証/公平なmodel比較とは主張しない。予算を増やさず同run/同診断の追加実行をしない。native write/readへ到達せず、成果物とhashの代わりに公式events/tool outputのmetadata/hashをprimaryが保存する。MCP応答原文やaddressを公開しない。
+
+終了: cancelled/pending0。spend5539microUSDと全ledger1件のdebit合計一致（0.005539USD）。独立診断計画0.22USD内で、未使用枠を収益/利益としない。isolateのComputer GETはnullでVM作成なし。最初のcleanupはnullをdict扱いしたprimaryの処理を修正し、session再実行0で続ける。新vcrのDELETE応答deleted=trueを保存するが、個別GETは404ではなく405（未提供）となるため削除を再送せず、公式credential一覧の全pageから当該IDが消えたことを確認する。新agent DELETE→GET404。元vcrのID/agent bindingを再照合し、元agent/deploymentの全source fieldsは作成前と一致、20/20を維持する。Credential SSOTの診断serviceはresource ID/referenceのみをdeleted/cleanup_verifiedに更新し、元keyは変更しない。
+
+元本番の最終readbackは40sessions/active0/Computer paused、agent月spend7765103microUSD/8USD枠残234897、次自然11/04 00UTC。前のSubstack認証費230982は直後snapshotであり、遅延計上後239315microUSD/ledger19件へ訂正し全debit照合済み。session usage200982や直後18件の記録は履歴として残すが、確定費用へ使わない。今回の一時agent5539は別枠で、元agent月費へ混ぜない。Muse本人daisuke/terminalからmessage01M6H0XA6WS81HJSFWNX3TFX2Xで、正式read_people設定/同メール無確認認証のsession証拠はMuse側にもないと返信を得る（不可能の証拠ではない）。公開pilotのopen trace-review依頼は公式GitHub照合0件で、未納品/未入金を維持する。
+
+残TODOの順序は統合SSOTの7項目を維持、現在cursorは2の実需要→第三者依頼→有償納品。登録は4の独立作業であり、売上獲得のgateへ戻さない。診断の旧cursor「別harnessで入力を1回試す」は実行終了へ更新し、新cursorは既存source/公式資料から予約予算境界とread_peopleの正式契約を確認しつつ、既存pilotの新しい実需要1件をnativeで検証すること。理由はbrowser未測定のまま同型診断を反復しても売上の証拠が増えず、受付0件という別の未解決があるため。新しい診断資源/上限拡大を暗黙に追加せず、個人メール/Googleへの依存へ戻らない。goalの本人登録/実第三者売上/連続録画/phone-only/黒字/USD10K/月/compute自費/2拠点移植は未完。自分の送金やテストを第三者売上にしない。
+
+証拠はprivate vetta-input-{original-before,agent-readback,identity-grant,credential-readback,events,terminal-readback,spend-readback,ledger,credential-delete,credential-absent-readback,agent-delete,cleanup-readback,final-original-resources}.json、auth-v20-late-metering-{ledger,spend}.json、muse-read-people-reply-v20.json。新driver/framework/test体系/本番設定変更/追加mail signup/公開投稿/支払は0。
+
+
+### 本番v20の実需要確認を同じ有限枠で続ける
+
+登録診断とは別のTODO2の通常業務として、元agent20/Identityでsession ses_1445nm0378s6nfzhg5p8427565を0.20USD/月8USD内に作成する。過去seller-state read1成功後、実使用44102microUSDで次予約が残finiteを超えbudget_paused。browser/新需要/投稿/売上はまだ0、nativeは再実行していない。予約境界を追加観測してから、以前のseller有限で使用済みのgoogle/gemini-2.5-flash-liteが今回も公式models全365件のcatalogにありimmediate対応と確認する。これはmodelの公平比較ではなく、同じ残予算で通常業務を続けるprimaryの判断である。
+
+現在cursorはこの同sessionへのmodel指定send1回。月cap8/task1/session0.20は一切増やさず、新sessionも作らない。send契約はsession内modelだけ変更し、production既定Haiku/agent20/pin20/Identity/cronを変えない。nativeが本人browserで検索→新規出所1件→記録write/readを順次行い、投稿/営業送信/メール/登録/支払をしない。既読/回答済みforum5003を新需要に数えず、購買意思は未観測null。同じ失敗や追加model変更は重ねず、再びbudget_pausedなら全台帳/記録の有無/終了/Computer pauseを照合して閉じる。元の需要獲得goal/残7TODOは維持する。
+
+
+当該sendはaccepted_seq22で受理されるが、Lite側はrate_limitedを4回（初回/2秒/5秒/60秒待機後）返す。別account/新session/追加model変更/予算増額は0。60秒backoff後の同code再発を追加観測してcancelled/pending0へ終了、Computer pause200→GETpaused、全41sessions active0。本人browser開始0/新需要0/write-read成果物0/投稿0/有償依頼・売上未確認。初回Haiku read1は4183bytes、cache_write34927tokens/消費44102microUSD。当該session帰属spend44102と全ledger1件は一致するが、Computer等のagent側費用をこの1件へ推測配賦しない。直近公式snapshot16:20:11UTCの元agent月費7812591/8USD残187409、20/20/既定Haiku/cron/input維持。遅延計上があり得るため残額を固定保証しない。
+
+公式Models資料はmax_output_tokensがpreflight quoteの出力側上限で、実消費が小さくても大きいreply allowanceは予約額を増やすと明記する。catalogはpriceを返さずcheapest published input rate順、全365件取得/ページ境界を確認する。一覧にあることはその時点の推論供給や商業能力の証明ではない。今回の予約不足と429を混ぜず、最小必要予約額/供給復旧は未確認。資料: https://vetta.sh/docs/api/models.md と https://vetta.sh/docs/concepts/budgets.md 。新しいcache/quote override fieldや秘匿guard回避は作らない。
+
+本有限runは終了。次のcursorは同じHaiku予算失敗/Lite429を繰り返すことではなく、既存configを含むcontext費用と、公式catalog/公開pricingで予算に適合するnative tool-use model/供給経路を確認し、最小source差分で通常業務へ戻すこと。月枠の残額は小さいため無制限なmodel総当たりはしない。目的は依然TODO2の新しい実需要→第三者有償納品であり、モデル評価やインフラ調査そのものを売上goalへ置き換えない。登録とphone-only入口/録画/実売上/黒字/10K/月/移植も未完。証拠はprivate v20-public-demand-one-{attempt,events,terminal-readback,spend-readback,ledger,computer-before-pause,pause-receipt,final-resources}.json、v20-public-demand-lite-{model-catalog,send-attempt,send-receipt,retry-metadata}.json。元モデル/元tools/本番設定は変更しない。
+
+
+### v21候補: native需要確認をcompletion-window poolへ戻す
+
+目的はTODO2の通常業務を既存月8USD内で再開すること。旧cursor「予約/context費と供給を絞る」から新cursor「対応済みGLM-5.2/priorityの2field候補をmain固定→1業務canary」に進む。理由: Haiku/immediateの次予約不足とLite/immediateの429は実測済みで、同じlaneの反復を止める。公式routerはimmediateをaggregated network、priority/looseを別completion-window poolとし、後者はwindow対応modelだけを受理する。公式Models by-IDはzai-org/GLM-5.2-FP8のpriority対応/max_output32768/efforts highを返す。model/windowともvendorの公式例を流用し、prompt・tools・機能は変更しない。資料は https://vetta.sh/docs/concepts/model-router.md / https://vetta.sh/docs/concepts/completion-window.md / https://vetta.sh/docs/platform/pricing.md 。vendorの16課題研究でpriorityが13完了/16・0.2332USD/完了だったことはvendor内の小標本としてのみ使い、自社の能力/単価/成功保証へ移さない。
+
+選択肢は(1)同じHaiku/immediateを再試行、(2)Liteの429だけを継続待機、(3)公式に別laneとして提供されるpool対応model/priority。採用は3、1は同じ予約を反復し、2は直前の60秒backoff後にも同じ制限だったため今回は選ばない。bestは公開需要1件を実UIで読み成果物をwrite/read、baseは別laneが業務を開始できるかと費用/介入の実測、worstは供給または予約で未達。最有力の失敗筋はpool側にも供給制限があること、またはGLMのtool操作/記録精度がこの仕事に不足すること。catalog掲載や最低input rateの並びを、出力費や供給・完了能力の保証にしない。
+
+source差分はconfig/naive-browser-company.jsonのmodel= zai-org/GLM-5.2-FP8 とwindow=priorityだけ。deployment sourceはpin20/window immediateのまま保持する（target21への自動rolloutはしない）。適用前は元agent20/deployment20の全source fields、全sessions active/pending0、直近spendと残額、Computer paused、grant/vaultのownerを公式GETで再確認する。agent updateはcurrent pinも21へ自動追随する契約なので、最初に当該deploymentだけ一時pauseし、expected_version20の2field PATCH→agent21全source fields一致を確認、続いてdeployment pin20/window immediateを明示的に戻す。canary中はscheduleをpausedに保ち、finallyは元deployment全source fields（pin20/window immediate/enabled true/既存cron/input/Identity/budget）を復元して公式GETで照合する。agent21は候補として保持し、production20と区別する。patch応答不明はGETで照合し同じupdateを再送しない。新agent/key/inbox/vault/cronは作成しない。agent/model/version/Identity/timezoneは値を推測しない。
+
+受入: main固定configとlocal bytes一致、変更2fieldだけ/他field byte相当不変、live model priority対応、read-only apply payload差分、fresh read-only review、CI全部終了失敗0から適用する。これはlocal launchd/registryの変更ではなくNaïve providerの既存agent1件のconfig更新であり、Mac fleet applyやsibling loopを実行しない。商業操作はnative model/browserだけ、コードはconfiguration/台帳/終了照合のみ。予算は元月8/task1を維持、canary session cap0.14USD＋browser2 hosted actions0.02/最大5分0.008335/Computer最大8分約0.00888を見込み計画0.18USD。後計上のためhard actual保証とせず、直前残額が0.18USD未満なら作成せず原因を公式ledgerで読む。新topup/課金契約/診断枠の追加は0。8分のwall deadline、同じ失敗/追加model変更/増枠/追加sessionを重ねず終了する。
+
+native canaryはagent21/既存Identity/window priority/finite140000で、seller-stateを1回読んで既調査・forum5003等の回答済み候補を避け、本人browserで公開検索→新しい出所最大1件→問題/未解決根拠/29USDC商品の適合/購買意思null/限界をv21-public-demand-result.jsonへwriteし同pathをreadする。検索を含めbrowser hosted act/observe/instruction-extractは合計最大2回、全tools最大8回。営業/投稿/返信/DM/メール/登録/支払0、他者trace/codeは実行しない。本人の公開閲覧の確認があればprimary AIがexact対象を確認してcall-scope処理し、人間介入/primary確認/追加入力を別々に記録する。Naïve単独無確認とは自動で呼ばない。成功判定は実ページを読んだevents/成果物write-read一致と公式台帳、顧客需要や支払意思は観測内容に限る。browser停止/429/予約不足なら未達を保存し、model総当たりをしない。
+
+finallyは当該session cancel→GET terminal/pending0、費用/全ledger/成果物の有無、全sessionのactive0を確認し、元Computerだけpause→GETpaused、deployment20/immediate/元enabledを復元する。売上/登録/録画/phone-only/利益/10K/移植は別の未完要件として保持する。canary合格後のproduction pin21/window priorityへの変更は次のsource差分として明示し、今回の候補成功だけで自然runや売上を達成扱いしない。
+
+
+v21 source acceptance: 元Haiku/immediateとの差分をREDとして確認し、candidate model/windowの2fieldだけ変更したJSON比較がGREEN。他の全source fields/月8/task1/deployment bytes不変、live model by-ID priority対応、diff check PASS。read-only apply preflight16:27:23UTCは41sessions active0/Computer paused/20-20/残187409microUSD/credit23767587、effect none。fresh read-only reviewerは原本差分・算術・公開公式契約を独立確認しBlocking/Nit/Pre-existing各0、source/canary実行契約SHIP。実適用/供給/需要成果は未検証。適用時のfresh残額判定を省略せず、CI全終了失敗0とmain固定を維持する。
