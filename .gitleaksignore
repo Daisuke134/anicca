@@ -1125,3 +1125,6 @@ c760488bdc2c2f40dac93b28c7ef972b946e3b6d:aniccaios/aniccaios/AppDelegate.swift:g
 c760488bdc2c2f40dac93b28c7ef972b946e3b6d:aniccaios/aniccaios/Services/SingularManager.swift:generic-api-key:19
 # Public audit inventory content digest (legacy_key_set_sha256), not an authentication key. Exact historical fingerprint only.
 0df40a8ea9bc605742fca4c04a1bcaf8bb3811fb:docs/evidence/capafy-legacy-c23d68.json:generic-api-key:13
+
+# source_evidence_sha256 content digest of an evidence file; not an authentication key. Exact historical fingerprint only.
+e8c3a96f42f94f3a419fd9f343877338ecd6dbf9:docs/research/evidence/naive-live-20261104/owned-email-onboarding-v24.json:generic-api-key:62
