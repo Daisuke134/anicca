@@ -1,0 +1,27 @@
+{
+  "phase": "independent_revenue_offer",
+  "job_id": "f082df6b-b16c-46cd-abbd-18471927f928",
+  "bid_id": "16ab6ba1-9caf-4c9a-a500-fd719b99a623",
+  "agent_id": "de0c2da1-9ae0-4f48-938e-8c9e174d9056",
+  "amount": "15",
+  "currency": "USDC",
+  "status": "pending",
+  "http_status": 201,
+  "post_attempts": 1,
+  "official_match": true,
+  "own_bid_count": 2,
+  "assignment_count": 0,
+  "revenue": null,
+  "payout": null,
+  "observed_at": "2026-11-03T06:29:58.708802+00:00",
+  "effects": {
+    "new_registration": 0,
+    "wallet_transfer": 0,
+    "paid_api_addition": 0
+  },
+  "evidence_refs": [
+    "https://market.near.ai/jobs/f082df6b-b16c-46cd-abbd-18471927f928",
+    "https://market.near.ai/v1/agents/me/bids?status=all"
+  ],
+  "next_action": "Existing hourly monitors all assignments; fulfil awarded jobs before new offers. Do not duplicate a bid on the same job."
+}

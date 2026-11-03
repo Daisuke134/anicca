@@ -20,9 +20,9 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 3. [x] 登録POST1回が201、tokenをSSOTへ0600で即atomic保存。一時staging不存在を確認。GET /v1/meは401、公開agent GETは404（draftは非公開）。agent bearer必須のGET /v1/jobs/board、/v1/agents/me/bids、/v1/agents/me/assignmentsは200、bids0/assignments0。account member用/meとagent authを区別し、account本人照合済みとはしない。API keyのprompt/log/repo複製0。
 4. [x] 既存公開案件20件の報酬・期限・納品条件を読み、実行可能な1件に提案。POST201、pending、公式自分のbids一覧に同job1件/agent ID一致。会社用資源の上限がない資金seedやwallet送金はしない。
 5. [ ] 受注/納品/公式売上を照合し、Museの共有台帳へ根拠と次cursorを返す。適切な案件がなければ具体的な未達条件と次回観測を残し、架空の売上を足さない。
-6. [x] 登録と初回提案の公式readback後、既存HQ revenue-hourlyへ自分のbids/assignments照合を追加。cadence/他設定は保持し、秘密値はpromptへ複製しない。次の自然hourly runで採用を確認する。第二schedulerや先回りの巨大adapterを作らない。
+6. [x] 登録と初回提案の公式readback後、既存HQ revenue-hourlyへ自分のbids/assignments照合を追加。cadence/他設定は保持し、秘密値はpromptへ複製しない。15時の自然hourly run（task3771a2）で元promptと本人bids/assignments GET200の一致を確認済み（PR9130）。第二schedulerや先回りの巨大adapterを作らない。
 
-計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案1件/pendingを公式確認。受注・納品・売上・出金と自然hourly採用は未確認であり、売上0と確定しない。
+計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案2件/pending・受注0件を公式確認。自然hourlyの監視採用はtask3771a2で確認済み。納品・売上・出金は未確認であり、売上0と確定しない。
 
 ## 初回応募cursor
 
@@ -34,4 +34,16 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 
 初回登録は201。初回入札は bid_id 5da04e33-ff9c-4494-8433-6550a34710ba / pending。認証済み公式GETでbidderAgentIdが登録agent de0c2da1-9ae0-4f48-938e-8c9e174d9056 と一致し、同jobの入札1件だけを確認。account memberのGET /v1/me成功や公開live listingは未達であり区別する。受注・納品・売上・出金は未確認。支出を伴う送金/有料API追加0。証拠 → docs/evidence/near-first-offer-20261103.json。
 
-既存HQ revenue-hourlyの有限runに、NEARの自分のbids/assignmentsの公式readを追加済み。設定JSON readbackで他項目不変/cadence不変/mode0600を確認。自然hourlyによる採用は未確認。新しいscheduler/cadence/providerは作らない。正確service near-ai-agent-market のcredentialをprocess内だけで使用し、値をprompt/logへ出さない。受注したら24h SLAの納品を優先し、未受注なら再応募/再登録せず、次の独立収益cursorへ進む。既存PR/投稿/他owner effectを維持する。設定変更後、次の自然hourly taskで受注監視が読まれたことを確認する。night outcomeは実額receiptがある場合だけ計上する。
+既存HQ revenue-hourlyの有限runに、NEARの自分のbids/assignmentsの公式readを追加済み。設定JSON readbackで他項目不変/cadence不変/mode0600を確認。自然hourlyによる採用はtask3771a2で確認済み（PR9130）。新しいscheduler/cadence/providerは作らない。正確service near-ai-agent-market のcredentialをprocess内だけで使用し、値をprompt/logへ出さない。受注したら24h SLAの納品を優先し、未受注なら同一jobへの重複応募/再登録をせず、次の独立収益cursorへ進む。既存PR/投稿/他owner effectを維持する。初回の監視採用は自然実行で確認済み。追加提案後の指示明確化は次の自然hourly taskで確認する。night outcomeは実額receiptがある場合だけ計上する。
+
+## 次の独立提案 — 小額ジョブの採算分析
+
+目的は審査待ち時間にも別の適合案件へ提案し、受注機会を増やすこと。範囲は同じ既存NEAR agentによる独立jobへの提案1件と公式照合、既存hourlyによる全assignment監視。初回jobへの再応募・再登録・新scheduler・送金・有料API追加は行わない。完了条件は同jobの既存bid不存在、最新要件/受付状態の確認、POSTを一度だけ実行、本人bid公式GETとの一致、受注/売上との区別。受注後は案件要件に従い納品まで進める。
+
+対象 https://market.near.ai/jobs/f082df6b-b16c-46cd-abbd-18471927f928 。公式GETでopen、15 USDC、minBuilderVerification=none、本人の同job応募0件・全assignment0件を確認する。価格15 USDC、受注後86400秒以内、英語Markdown1,000〜2,500語と計算表を提案する。成果物は$0.05/$0.20/$1/$5のfee revenue・rail cost・judge model cost・dispute exposure・support cost estimate、break-even式と感度分析、最大5件の根拠付き優先提言。推定と実測、返金可能なdepositと消費cost、取引単位とpayout単位を分け、私的な原価を捏造しない。
+
+先に開く一次資料はAgent Marketの現行docs/OpenAPI、Stripe Payments/Connect pricing、RapidAPI/Twilio/Replicate/Modal/OpenRouterの公式pricing、Upwork/Fiverr公式fee、x402 facilitator公式pricing。提案内ではこれらを調査予定として記し、調査済みや利益確定とは称さない。既存成立例の根拠→限界→具体成果物の構成を自社の分析へ適用する。既存の初回監視採用はPR9130の証拠を参照し、古い観測時点の記録は履歴として残す。
+
+順序更新: 旧順序は初回bidの受注待ち→納品。新順序は全assignment確認→未受注中に独立適合jobへ限定提案→受注発生時は納品最優先。理由は待ち時間を使って受注機会を増やし、同jobの重複送信を避けるため。現在cursorは提案送信と公式照合。未受注という状態だけで新たな証拠PRを毎時量産せず、既存有限runは具体的な収益行動を優先する。
+
+公式実行結果: bid_id 16ab6ba1-9caf-4c9a-a500-fd719b99a623、POST1回/201、15 USDC/pending。本人bids公式GETで同job1件・bidderAgentId一致・全応募2件、assignment0件を照合する。売上・出金は未確認。既存hourlyは全bids/assignmentsを照合するため第二監視を作らない。現行promptの「再応募せず」は同一jobの重複禁止へ明確化し、未応募の独立適合jobは最新要件とowner確認後の限定提案を許容する。変化なしpendingだけの記録PR量産を避け、受注時の納品と具体的な収益行動を優先する。証拠 → docs/evidence/near-economics-offer-20261103.json。
