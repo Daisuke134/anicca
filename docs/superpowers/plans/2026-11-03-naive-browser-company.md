@@ -757,3 +757,14 @@ cancel→GETcancelled/pending0、43sessions active0、Computer pause→GETpaused
 現在cursorはTODO2の通常の収益業務へ戻す。旧順序は「予約余力修復→1業務のstate保存→条件付きrollout」、新順序は「買い手側の未解決source→実依頼→native納品→第三者入金/費用」。理由は予約と保存の失敗が同じnative engineで解消し、seller/tutorial検索を需要と呼ばない学習が永続化したため。元7TODOの順序は変更しない。次の通常業務は固定mainのproduction inputを使い、本人offer/sample/payment metadataと既存stateを読み、public intakeを1回確認する。依頼が無ければ販売者の解説を再検索せず、公開の未解決質問/open issueを先に調べて新出所本文を最大1件読む。既に回答済みforum5003/解決済みMedium/過去投稿の再送を避ける。
 
 次業務の実行枠（まだ未実施）: 同じagent22/Identity/priority/既存source、finite0.40USD＋browser/Computer等0.05の計画総0.45、8分、全tools最大16/browser hosted最大4。最大出力予約は実費と分け、直前agent残額/creditが計画未満なら作成0でledgerを読む。新topup/agent/key/inbox/model変更0。同じ失敗の診断canaryを追加するのでなく、通常の顧客獲得/受注を進める。実依頼があれば元offerのpublic/匿名化/20calls以内/公開同意/重複照合からnativeの納品を進める。新需要や有用な新知見が無ければ募集を言い換えて投稿せず、根拠不足と次行動をstateへwrite/readする。既存productionで許可済みのPostizだけ、同じUTC日/自分のpostとの重複を確認した新規post最大1件を維持する。DM/他者issue返信/他owner変更/資金送金は0。本人通常browser/mail/MCPだけで業務を行いscript/APIへ置換しない。finallyはsession terminal/pending0/Computer paused/全費用、production22全fields維持を公式照合する。自然run/実第三者売上/本人サービス登録/連続録画/phone-only/黒字/USD10K/月/移植は未完である。
+
+
+### 通常業務1件目の進行中の境界修復
+
+同じmain a716050/agent22/production22を公式GETで再確認し、agent残999196microUSD/creditが計画450000を超えることを確認して、公式SDK sessions.createからses_4cdhj518v7y92ajcq90j4zck4eを起動する。モデル/権限/メール/設定変更0。nativeはoffer/sample/payment/journal/stateの5read、public intake（該当なし）、LangGraph open issues一覧、issue9001本文へ進む。公式GitHubの独立readもissue9001 open/未closeを確認するが、私たちへの依頼/支払意思とはしない。
+
+実測中にpostiz.postsListToolがstartDate2026-11-01/endDate2027-01-31の約90日を要求し、69055bytesの応答を読んだ。sourceの必要最小期間という要件を満たしたとは呼ばない。UTC確認のtime.is/UTC抽出には約105秒を要する。15toolsの最初の処理区切りはmax_iterationsで、providerが同じsessionを自動継続する。これはend_turnやprimaryの再開指示ではない。
+
+primaryは稼働中の同sessionを破棄せず、終了照合のwall deadlineだけ開始時8分から12分へ修復する。finite400000/agent月9000000/task1000000は変更しない。後計上の計画余力は50000から100000（計画総500000）へ増やし、残額/creditを公式GETで再確認してから延長する。新session/モデル変更/入金/追加入力は0。元native入力のmax16toolsを遡って変更したとは呼ばず、実数と逸脱の有無を結果へ残す。未確認の投稿/記録保存/売上は認定しない。最終成果・費用・終了照合は未実施。
+
+次の通常入力は、会社側の公式時刻観測を出所付きで渡し、Postizのstart/endをそのUTC日1日分へ固定して、未来90日読取や時刻サイトへの余分な依存を防ぐ。今回の実数から必要な操作数を見直し、16という小さい指示で保存や公式照合を妨げない。新しい業務script/controllerは作らない。現在cursorは同sessionの終了・送信有無・保存・全台帳の照合であり、元7TODOと収益goalは維持する。
