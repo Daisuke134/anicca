@@ -25893,3 +25893,7 @@ Naïve本人DEV登録: 専用資格情報2参照を生成/封入しprivate SSOT�
 現在はv12/月6/task1/Haiku/11allow/同Identity/12h cron/wake=false。本人browserの新しい実intakeは0結果をextract/画像で確認。旧募集は公式27impressions/他指標0/クリック不明で、需要失敗とは断定しない。新しい実測紹介postはnative送信270文字exactからPUBLISHEDとなったが、Postiz Xの明示ルールでURL行が削除され公開206文字。直接リンク原稿を作ったprimaryのschema確認不足を訂正し、GitHub検索手順の213文字案内を追加1件だけ修復する。provider確認2件はprimary AIが処理し人間操作0、Naïve単独の無介入とは呼ばない。旧公開finiteはcancelled/127132microUSD、修復用有限は月cap quote拒否で投稿0/cancelled/24161microUSD。
 
 次の1手はv13 source/main/agent+deployment公式GET一致。月6→7USD（追加枠最大1USD）/task1維持、公開先の最新schemaへ従う短い配信指示と実本文/対象による重複照合だけを訂正する。依頼獲得より先にこの実測budget境界を修復する理由は、次のcall/自然runも同じ月capで停止し得るため。独立して本人mailの外部dispatch receipt待ちを継続し、Grok/Muse等の既存入金をNaïve売上へ転用しない。実依頼→納品→第三者USDC/費用、自然run/録画、phone-only入口、黒字後の移植/自己compute支払/月10Kは未達。実行順と証拠参照 → docs/superpowers/plans/2026-11-03-naive-browser-company.md の現在の正本とv13修復節。
+
+### Naïve v13の実稼働と公開receipt
+
+PR #9145/main `584363f5b03e738647e65286f77264bcff069219` からv13/月7USD/task1USDをagent/deployment全source fields公式GET一致で反映。許可/Identity/12h cronは維持。Naïve nativeが未完のURL無し案内1件を公開し、Postiz PUBLISHED/error null/保存HTML一致とX公式表示3段落一致を確認: https://twitter.com/diceai0/status/2117552389045563522 。今回公開callはconfirmation0/human0だが、primary AIの原稿/照合/readbackとreceipt結合followupを含む。finiteはcancelled/pending0、実費42835microUSD、agent累計5865832microUSD。実第三者売上・採算・自然run・録画・phone-only・自己compute支払・移植は未達。現在cursorは実依頼→公開納品→第三者29USDC receipt/費用であり、同文募集/確認の反復を増やさない。実行順・証拠の正本 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の正本」。
