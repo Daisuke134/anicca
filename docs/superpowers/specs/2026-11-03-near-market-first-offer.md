@@ -75,3 +75,11 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 完了条件: 送信直前の全assignment/本人bid不存在/最新job照合→POST1回→本人bidの公式一致→必要CI公式PASS後main。通信不明時は保存attemptと本人GETを照合し再POSTしない。受注・納品・売上・出金は別状態。現在cursorは限定提案の送信と公式照合。
 
 公式結果: POST1回/201、bid6e1b21c1-44a0-49cc-b5c3-ae6c99a3791c、15USDC/pending。本人GET200で同job1件・agent一致・全bid4件、assignment0件を照合する。受注/納品/売上/出金は未確認。証拠 → docs/evidence/near-discovery-offer-e12b38.json。現在cursorは必要CI公式PASS後main、その後既存hourlyの全assignment照合と受注時納品。
+
+## 初回案件の納品準備 — task b00a48
+
+目的・範囲: 初回cf1c6d32の24h納品SLAに備え、要件に沿った英語Markdown計測設計を原典から準備する。home-codex-b00a48が新規reportと出典照合証拠だけを所有する。公式GETは4pending/assignment0。共有thread差分1件は親がPR9143のfixture修正とPR9146を所有すると示すため、重複修正しない。
+
+完了条件: 公式brief再読、実際に開いた一次資料へのclaim対応、定義/除外/7段階funnel/growth accounting/dashboard/先行指標3件/最大5提言を含む英語1000–2500語、整合check、push/PRと必要CI。受注前にsubmitしない。受注・売上・出金は未確認。既存の全assignment確認→受注納品優先の順序を維持し、新規応募は増やさない。現在cursorは原典調査とreport作成。
+
+準備成果: docs/team/near/completed-jobs-measurement-report.md（英語1931語）。公式briefと6原典を開き、Etsy 2025年次報告は現行investor経由PDFを取得。eBay403等は未取得として残し、未確認の比較定義は引用しない。提案仕様と実装/実測を分離、3先行指標・5提言・除外/返金/再試行/slot/成長会計を含む。検証は語数/見出し/提言数/source-boundary/diff check。証拠 → docs/evidence/near-report-preparation-b00a48.json。納品POST0・追加bid0、親所有PR9143 fixture失敗はローカル再現だけを行い編集0。現在cursorは必要CI後の文書統合、受注後に最新brief/submit契約を再読して納品。

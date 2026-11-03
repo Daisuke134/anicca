@@ -10,6 +10,8 @@
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
+
+- [home-codex / NEAR初回計測レポート準備] task b00a487defbf8e21457c70e8、owner home-codex-b00a48、branch task/home-codex-b00a48。初回job cf1c6d32の英語Markdownと一次資料照合だけを所有。親のPR9143 fixture修正/PR9146 admission/接続修復を保護。4pending/assignment0、納品POST・追加bid・会計・投稿・送金0。受注時は最新要件照合後に既存ownerが納品。
 - [home-codex / NEAR framework提案] task767bc1bf5462b30c2d569950、owner home-codex-767bc1、branch task/home-codex-767bc1。既存NEARレーンの未応募job dd6e4f85限定提案と本人公式照合を所有。既存2pending/全assignmentを先に照合、受注時納品優先。wallet/課金API/別scheduler/会計/投稿/親PR9135/旧IG fenceは変更しない。正本 → NEAR初回販売specのframework節。
 - [home-codex / Manager E16 runner] task d26c0c5310218fcdf4ec750a、owner home-codex-d26c0c、branch fix/manager-runner-d26c0c。自然main検証のPlaywright/Ubuntu非互換を既知成功imageへ戻す限定修復。所有はworkflowの2runnerと本BOARD/統合SSOT/証拠のみ。親rootのPR9125・Naïve・provider effectは変更しない。必要CI後main、自然受入は別cursor。
 - [home-codex / CAPAFY旧IG receipt継続] task17679f4e146bb3b4be52268e、owner home-codex-17679f、branch docs/capafy-ig-receipt-17679f。対象旧occurrenceのread-only診断と隔離fixtureのみ。親所有PR9117・TEAM-HQ・投稿・会計・認証・effect fenceは変更しない。正本 → 統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
@@ -57,6 +59,7 @@
 - [Codex / Manager] prepared shadowの既存host/CLI/Actions接続。所有: feat/manager-host-shadow-connection-20261023の限定host/CLI/workflow/tests/docs。既定・schedule OFF、単一owner、P0比較のみ。本番推論・新規課金・他laneは変更しない。
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
+- 2026-11-03 18:12 JST / home-codex-b00a48 / 初回NEAR計測report英語1931語と6原典照合を準備、4pending/受注0・納品0。親PR9143/9146保護。次: 文書CI→統合、受注時再読→納品。
 - home-codex（fd096c）: PR9120親統合を保護し、旧IG本人拘束の3ケースRED→24tests GREEN。markerに元handle/runtime occurrenceを保存し、不明/別run/別handle/古い時刻ではprovider読取前HELD。投稿/認証/fence/会計/deploy0。次: exact-head独立review/必要CI→main、旧receipt未確認を保持。証拠 docs/evidence/capafy-ig-binding-fd096c.json。
 - 2026-11-03 14:30 JST home-codex（d26c0c）: Manager自然run41548925146のPython202成功/publisher未実行とPlaywright26.04非対応を診断。直前成功24.04へ2runnerだけ固定、既存12tests/source-boundary/diff PASS。PR/CIへ進む。E16実作用・人の便益・売上は未確認。
 - 2026-11-03 03:09 JST home-codex（c23d68）: 公式Blob114件/legacy30商品88件/本文全件1とstats一致、公開landing60裸リンクを取得。ct有無が同一legacy keyとなる反例PASSで旧ct/owner復元不能を特定。generator9/go5/境界PASS、追加click・投稿・台帳変更0。次: 必要CI→main、最小ct payload保存は別source task。証拠 docs/evidence/capafy-legacy-c23d68.md。

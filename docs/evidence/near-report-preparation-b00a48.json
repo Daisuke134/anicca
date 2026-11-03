@@ -1,0 +1,82 @@
+{
+  "run_id": "b00a487defbf8e21457c70e8",
+  "owner_id": "home-codex-b00a48",
+  "observed_at": "2026-11-03T09:11:20.157938+00:00",
+  "phase": "pre_award_report_preparation",
+  "report": "docs/team/near/completed-jobs-measurement-report.md",
+  "report_words": 1931,
+  "report_sha256": "a2813780b735b7e4da8c021b6f5bed4294e90f690dddf8d0860cdd8c4c001f77",
+  "source_checks": [
+    {
+      "url": "https://docs.market.near.ai",
+      "http_status": 200,
+      "sha256": "28c4a8c4cb78666c7af9d299591df08f45ef9eb821987e1075edea999a3e1be5"
+    },
+    {
+      "url": "https://market.near.ai/openapi.json",
+      "http_status": 200,
+      "sha256": null
+    },
+    {
+      "url": "https://docs.stripe.com/api/idempotent_requests",
+      "http_status": 200,
+      "sha256": "c9fd36d40084319588500fd1dfb63f51efd2541e789c5ba6597d7a395b3280d2"
+    },
+    {
+      "url": "https://docs.stripe.com/refunds",
+      "http_status": 200,
+      "sha256": "664a1ced46d90464b499ca6a6cb767658a4e00bf641321c9f0df8eb9d823f660"
+    },
+    {
+      "url": "https://amplitude.com/docs/analytics/charts/lifecycle/lifecycle-interpret",
+      "http_status": 200,
+      "sha256": "9525122ab5571b8e7cd3594af391187227497af87f10b1fc40c38a426f7c3dbc"
+    },
+    {
+      "url": "https://investors.etsy.com/_assets/_9bb344225cb404039577b245ea686f33/etsy/db/1016/10068/pdf/ETSY+12.31.2025+10K.pdf",
+      "http_status": 200,
+      "sha256": "9dad14d8c4682b86c3a223b9d7828a29e852c2628b065febf97c36ff5e33272e"
+    }
+  ],
+  "near": {
+    "bids_http_status": 200,
+    "bid_count": 4,
+    "bid_statuses": [
+      "pending",
+      "pending",
+      "pending",
+      "pending"
+    ],
+    "assignments_http_status": 200,
+    "assignment_count": 0,
+    "submission_attempts": 0,
+    "revenue": null,
+    "payout": null
+  },
+  "remote_thread": {
+    "official_method": "conversations.replies",
+    "messages": 33,
+    "has_more": false,
+    "latest_ts": "1793696665.543419",
+    "new_messages": 1,
+    "result": "Parent owns PR9143 fixture fix and PR9146; no remote personal receipt/start/result delta established; no reminders sent."
+  },
+  "ci_failure_probe": {
+    "pr": 9143,
+    "test": "runtime.loop.tests.test_loop_cleanup.LoopCleanupTest.test_git_maintenance_timeout_allows_its_private_child_to_clean_its_lock",
+    "result": "reproduced FileNotFoundError terminated; parent repair preserved"
+  },
+  "verification": [
+    "1000-2500 words",
+    "three leading indicators",
+    "five ranked recommendations",
+    "claims linked to opened primary sources",
+    "proposals separated from measured implementation"
+  ],
+  "provider_receipt_id": null,
+  "effect": "local draft only; no delivery or new bid",
+  "exit_code": 0,
+  "error_class": null,
+  "retryable": false,
+  "next_action": "CI pass then merge documentation; existing hourly checks assignments; only after award reread brief and verify submission contract before delivery."
+}
