@@ -15,7 +15,7 @@ async function setup(){
  await fs.writeFile(path.join(root,'lib/blog-business.d.mts'),'export function businessOf(slug: string, project?: string | null): string;\n');
  await fs.mkdir(path.join(root,'data/research'),{recursive:true});await fs.writeFile(path.join(root,'data/research/other.json'),'preserved');
  await fs.writeFile(path.join(root,'tailwind.config.ts'),"const config = { content: [\n    './app/**/*.{js,ts,jsx,tsx,mdx}',\n] };");
- const body='# Example\n\nContent.', article={slug:'manager-example-en',title:'Example',lang:'en',project:'Manager',date:'2026-10-19',package_path:'en/manager-example-en.md',sha256:digest(body),markdown:body,canonical_url:'https://aniccaai.com/blog/manager-example-en',n_papers_cited:0,word_count:3};
+ const body='# Example\n\nContent.', article={slug:'manager-example-en',title:'Example',lang:'en',project:'Manager',date:'2026-10-19',package_path:'en/manager-example-en.md',sha256:digest(body),markdown:body,canonical_url:'https://aniccaai.com/blog/manager-example-en',n_papers_cited:0,word_count:3,character_count:19};
  const media=Buffer.from('image bytes'),hash=digest(media);
  const m={package_path:`media/${hash}.png`,sha256:hash,public_url:`https://aniccaai.com/blog/manager/media/${hash}.png`};
  const base='docs/research/manager/publication/2026-10-19/';
@@ -26,7 +26,7 @@ async function setup(){
 test('stages verified content before integration, preserves unrelated articles, and writes an auditable receipt',async()=>{
  const c=await setup();const receipt=await installManagerBlog({...c,revision:'a'.repeat(40)});
  assert.equal(receipt.articles.length,1);assert.equal(await fs.readFile(path.join(c.root,'data/research/other.json'),'utf8'),'preserved');
- const post=JSON.parse(await fs.readFile(path.join(c.root,'data/research/manager-example-en.json')));assert.equal(post.markdown,c.article.markdown);
+ const post=JSON.parse(await fs.readFile(path.join(c.root,'data/research/manager-example-en.json')));assert.equal(post.markdown,c.article.markdown);assert.equal(post.character_count,c.article.character_count);
  assert.match(await fs.readFile(path.join(c.root,'app/blog/manager/page.tsx'),'utf8'),/English/);
  await fs.rm(c.root,{recursive:true});
 });
