@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [Codex / NAIVE-OWNED-MAIL] 継続: docs/naive-owned-mail-runtime-20261103。PR9116/main95aee29fから本人mail3機能・signup承認待ちなしのv4を適用、本人inbox active/専用vaultの個人Google複製削除を公式readback。本人mail登録job running、登録/公開/売上は未確認。専用Naïve担当の本人メール・人間承認なし設定・Capafy新規登録と新規所有商品の実画面成果を担当。既存Google/他agent/稼働loop/販売済商品は変更しない。正本は統合SSOTのNaïve節。
+- [Codex / NAIVE-OWNED-MAIL] 継続: feat/naive-manager-revenue-20261103。Naïve一件の実売上・費用・継続運転・英語demoを先行、移植/複製は実証後。PR9116/main95aee29fから本人mail3機能・signup承認待ちなしのv4を適用、本人inbox active/専用vaultの個人Google複製削除を公式readback。本人mail登録job running、登録/公開/売上は未確認。専用Naïve担当の本人メール・人間承認なし設定・Capafy新規登録と新規所有商品の実画面成果を担当。既存Google/他agent/稼働loop/販売済商品は変更しない。正本は統合SSOTのNaïve節。
 - [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD] source/main/公開反映完了: PR9101/main f6eef8eadb、deploy6ae925af58c2cba944c2be18 ready。PR9103はCI14件とCodeRabbit成功後main735660764dへ統合済み。次: PR9104のmain同期後CI/統合、旧日次callerの本人journal/公式receipt照合。owner home-codex-3d1087を継続、投稿/会計/HQ変更0、売上未確認。
 
 - [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD継続] task95bef89b、branch docs/home-codex-95bef89b。PR9103統合済み、PR9104の競合を双方保持で解消し、公式新規JSON帰属1件と日次caller未接続をread-only照合。既存publish owner/fence/HQ/会計/配信は維持。証拠 → docs/evidence/capafy-natural-95bef89b.json。
@@ -283,3 +283,4 @@
 - home-codex（task7c9269）: PR9103/head394a000070の必要CI14件/CodeRabbit公式成功を確認してmain735660764dへ統合。PR9104は同owner/leaseでmain同期し、文書競合は双方の証拠を保持して解消。次: 更新head全CI→統合、旧occurrence本人journal照合。deploy/投稿/会計変更0。
 
 - 2026-11-03 13:45 JST Codex: AGI flagship essayを4/4媒体で公開・実確認。本人@diceai0のX Article 2117478259654897939は全文177ブロック一致、8画像loaded、最後2問あり。旧capacity blockerをresolvedへ。公式英日・note無料を維持、収益は未測定。次: 公開証拠のCI/main統合。
+- home-codex（task e90c688b773a9f9fd3c76149）: PR9104公式MERGED後の計測継続。既存main由来collectorで当日1行を保存し106click/ct1/欠損105、sales76行null・replay追加0を確認。旧IG fenceは10/5発生、現存journal10/24以降・元本人bindなしで保持。停止publisher/投稿/会計/HQ変更0。証拠 docs/evidence/capafy-effect-e90c68.json、残cursorは統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
