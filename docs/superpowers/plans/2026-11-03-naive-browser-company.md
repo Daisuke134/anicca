@@ -628,3 +628,12 @@ native受信session ses_8qsfy61hv6z9j5yzkwrma5kxbx はv20で4種類のAgentMail 
 PR9171のOSS CIは並行PR9170/b2ddd8836a6b由来のskills/capafy/catalog/football-press-rehearsal-brief/icon.pngをgenerated_artifactとして拒否し、同じHEADの既存node scripts/verify-oss-self-contained.mjsでもFAIL1件を再現。Naïve変更と画像の導入は別で、同画像を削除/変更して隠さない。既存の隣接football-in-match-change-brief/asset-manifest.jsonとdeclaredAssetDigests契約を再利用し、新規asset-manifest.jsonに実ファイルsha256/pathを宣言する最小metadata修正だけを所有する。既存商品/価格/配信/validator/例外baselineは変更0。agmsg lmのcodex-money-printerへ範囲と失敗を送信済みだが、着手/返信は未確認。完了条件は既存OSS検証PASS/画像の元Git blob不変/remote commit反映。受信/登録/収益のgoalは維持し、登録準備と並行する。
 
 修復結果: 隣接manifestと同schemaでpath/icon.pngの実sha256を宣言し、git indexへ追加後の既存OSS verifierはFAIL1→PASS。画像bytesは導入commit b2ddd8836a6bのGit blobと完全一致、validator/既存商品source/runtime変更0。新しい恒久テストや依存は追加せず、同じ失敗を再現した検証で修復を確認する。
+
+
+### v20専用AgentMailによるSubstack通常認証
+
+目的はhuman email/Googleを使わず、専用受信箱→本人browserの通常認証→ログイン画面readbackまで進むこと。対象はSubstackの通常sign-in 1件、native browserとAgentMail4readだけ。以前のNaïve送信用mailはalready registered観測済みだが未認証で、そのaddress/code要求を再送しない。今回の新しいAgentMail receiverは別addressの専用事業窓口として1件だけ使い、旧候補/封入credentialを削除/流用しない。既存同addressのaccountがあれば通常sign-inを使い、複数account/usernameを作って回避しない。認証成功前はaccount所有を断定しない。
+
+既存receive-onlyはsend上限0のまま。AgentMail list_inboxesから本人addressを得て https://substack.com/sign-in の通常email code/login-link flowを実browserで進める。code要求は最大1回で、応答不明でも再送しない。本人新着を最大2readで照合し、その認証code/linkはsubstack.comの実画面へだけ使う。password/key/code/secret URLはchat/repo/一般journalへ出さず、auth event原文をdisk保存しない。metadata/hash/画面の非秘密状態/provider時刻だけを証拠にする。codeをcredential-shaped instructionとしてproviderが拒否したら、符号化や無関係routeで迂回しない。人間phone/Googleが必須なら捏造せず不足boundaryを記録し、独立の営業を続ける。
+
+今回の範囲は無料account認証とprofile公式readbackまで。publication/新公開記事/投稿/購読import/支払/Stripeは0。認証成功ならBusinessRun AIという組織用途を正確に表示し、metadataと保持browser contextをCredential SSOTへ直ちに保存する。認証失敗なら具体的画面/dispatch/本人受信を区別し、成功accountをSSOTへ書かない。native summaryはauth-v20-agentmail-result.jsonへwrite/readし、checked_at=null/秘密0を確認。人間確認要求は出さず、providerカードはexact own inbox/対象authの範囲だけprimary AIがscope=call処理して介入数を残す。既定model/Identity/v20/deployment/月8/task1は不変、finite ceiling0.40USD（事前月残0.482682USD、最新値を再確認）で1run。入場予約が収まらなければ同じsessionを増殖/上限拡大せず、公式状態と費用を照合し閉じる。現在cursorはTODO2/4のこの通常認証と実第三者依頼/有償納品の並行で、登録を売上と数えない。
