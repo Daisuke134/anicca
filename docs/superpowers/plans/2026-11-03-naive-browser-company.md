@@ -218,3 +218,9 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - まず本人browserで実フォームを確認し通常のsignupを1回。確認要求があれば本人email.read1回→届いた自分用確認リンクをbrowserで処理し、メール本文/秘密リンクは一般journalや公開物へ保存しない。不要な再送/別account/有料登録/Google・既存個人credentialsは使わない。サイトの送信表示とSMTP配送/本人受信を区別する。
 - 完了判定は公式の登録/ログイン状態と本人受信の実内容。未完なら正確な画面/field/dispatch表示/受信stateと次の一手をprivate記録へ保存する。AI自己申告時計は使わず、時刻を取得できなければnull、primaryはprovider event時計を照合する。
 - finite予算最大0.5USD、月6/task1とcronは不変。実顧客受注と12UTC自然runは先のTODO順を維持し、まだ依頼が無い待機中に独立した登録要件を進める。既存記事/募集の再送や新しい公開投稿は行わない。
+
+#### DEV登録の呼び出し元修正
+
+初回native helperはsignup/loginともurl=https://dev.toを渡していた（events24/172/223）。返答はsignup done/login doneだが、実フォームのpassword等は空で登録完了の証拠無し。own login:dev.to credentialは生成され、private SSOTへsealed参照を保存/readback。context grantは同agentへ存在し、権限拡張の根拠無し。2回目signupは既存keyと競合し、追加credentialは作らない。
+
+予算見積りでpausedの旧finiteをownerとしてcancel→GETし、資格情報は維持する。旧finite実費330802microUSD。修正は短い新runから既存credentialのlogin helperを実フォームURL https://dev.to/users/sign_up?state=email_signup へ明示適用すること。トップURLへのhelperや新signup/password再生成は行わない。画面でprotected fieldsの反映を確認し、必要な非secret欄だけ埋め、可能なら同一accountの最終submitと本人確認を進める。正しいURLでもprotected fieldが空なら具体的境界を保存し、秘密export/一般actへのpassword入力で置換しない。各finiteは既存最大0.5USD/月6/task1内、追加メール送信/公開投稿/他owner変更無し。
