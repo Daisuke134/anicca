@@ -1205,7 +1205,7 @@ class ReasonInboxTests(unittest.TestCase):
         self.assertEqual(notice["to"], "daisuke/muse@remote")
         self.assertEqual(notice["reply_to"], self.message_id)
         self.assertIn("受領", notice["body"])
-        self.assertIn("未着手", notice["body"])
+        self.assertIn("キューへ保存", notice["body"])
         self.assertTrue(notice["key"].endswith(":received"))
 
     def test_reason_receipt_timeout_reuses_the_durable_idempotency_key(self):
@@ -1356,3 +1356,12 @@ class ReasonInboxTests(unittest.TestCase):
                          {"daisuke/muse@remote":"refused", "daisuke/dots-one":"posted"})
         self.runtime.receive()
         self.assertEqual(self.reason.send.call_count,2)
+
+    def test_late_received_notice_does_not_claim_completed_work_is_unstarted(self):
+        self.enabled()
+        self.reason.ack.side_effect=lambda ids:self.runtime.work()
+        self.runtime.receive()
+        self.assertEqual(self.tasks()[0]["status"], "succeeded")
+        received=[c.kwargs["body"] for c in self.reason.send.call_args_list if c.kwargs["key"].endswith(":received")]
+        self.assertEqual(len(received),1)
+        self.assertNotIn("未着手",received[0])

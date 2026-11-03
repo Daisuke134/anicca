@@ -551,7 +551,7 @@ class HQ:
                                  ("reason_task:" + task["id"], json.dumps(metadata)))
                 notice = {"state": "pending", "task_id": task["id"], "phase": "received",
                           "to": metadata["sender"], "reply_to": metadata["message_id"],
-                          "body": "受領して保存しました。現在は未着手・待機中です。実着手と結果は別に通知します。返信不要。task: " + task["id"],
+                          "body": "受領時にキューへ保存しました。実着手と結果は別に通知します。返信不要。task: " + task["id"],
                           "key": "hq:" + task["id"] + ":received"}
                 database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)",
                                  ("reason_outbox:" + task["id"] + ":received", json.dumps(notice)))
