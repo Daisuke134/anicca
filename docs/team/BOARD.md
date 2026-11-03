@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [Codex / NAIVE-BROWSER-E2E] main048a837/15checks/SDKtools-onlyでcurrent23、本番22旧input保持。23もinternal_error2回/6read/edit0、cancel後usageで0.034265USD/ledger4、47active0。state17964bytesの訂正現物は確認するが旧cancel後mtime/対応event不在で帰属不明。journal8657bytesは未訂正。親readbackでwake後pause409、19:00 Computer running。cursor2は使用状態照合→休止後journalだけnative edit→独立照合→合格時23採用→有料需要。モデル/mail/月9/task1/計画0.50維持。売上/登録/録画/phone-only/黒字/10K/移植未達。
+- [Codex / NAIVE-BROWSER-E2E] main048a837/15checks/SDKtools-onlyでcurrent23、本番22旧input保持。23もinternal_error2回/6read/edit0、cancel後usageで0.034265USD/ledger4、47active0。state17964bytesの訂正現物は確認するが旧cancel後mtime/対応event不在で帰属不明。journal8657bytesは未訂正。親readbackでwake後pause409、19:00 Computer running。cursor2は使用状態照合→休止後journalだけnative edit→独立照合→合格時23採用→有料需要。モデル/mail/月9/task1/計画0.50維持。売上/登録/録画/phone-only/黒字/10K/移植未達。 journal-onlyは4tools/end_turn・費27665。内訳削除Blocking1件で23/input未採用。Computer paused確認、native内訳追補→独立照合→採用→有料需要。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 

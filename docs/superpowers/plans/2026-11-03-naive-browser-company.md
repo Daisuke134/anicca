@@ -836,3 +836,12 @@ Grok/Museへ既存Slack threadで、約126秒の内部エラー、標準editで�
 finallyはsession terminal/pending0/全active0/旧production22全fields、全ledgerと追加usage、Computer状態を公式照合する。file読取でwakeした場合も状態を正確に記録し、共有使用中の強制解除や同じpauseの盲目的な再試行をしない。合格判定はnative editの実event/読み戻し内容/元journal保持/数値と日時の出所の一致。state現物の訂正は確認できても帰属不明を維持する。合格時だけ別のfresh read-only検証から固定main desired23/inputを反映し、採用してもprovider内部エラーやcancel後効果の問題が恒久解消したとしない。
 
 証拠はprivate v23-{sdk-edit-transport-selfcheck,sdk-agent-update,agent-readback,production-held-readback}、v23-native-edit-repair-{sdk-create,attempt,events,artifacts,terminal-readback,ledger,spend-readback,production-readback,final-resources}、v23-{official-state-readback,official-file-metadata-readback,post-cancel-files-readback,post-cancel-final-resources,post-read-pause-recovery}。final-resourcesの早期値とpost-cancelの最新値を混同しない。
+
+
+### journal最小訂正の実測と内訳保持の追補
+
+journal-only ses_k6ezzgkys65x89ze92ean6szq0は23/同Identity/priority/finite400000でread→edit→edit→readの4tools、確認/追加入力/retry0、19:07:59UTCの自然end_turnを確認する。旧6126bytes prefixを保持し、全文8657→8826bytesは2editからの再構成と公式fs/readがexact。費27665microUSD/ledger5件一致、production22旧全fieldsを保持する。ただし独立reviewは、2つ目のeditが元のbrowser screenshot1/extract1の観測内訳を削除したことをMEDIUM Blockingとする。本番23/inputは未採用。親fs/read後running/409から19:14:35UTCのGETで自然pausedを確認する。state訂正の帰属不明は残る。
+
+cursor2内部を「journal訂正→採用」から「欠落した使用内訳だけnative追補→独立照合→合格時のみ固定main048 desired23/input採用→有料需要」へ更新する。理由は実差分で確認した履歴欠落1箇所。screenshot1/extract1を保存し、元の『2 of 4 combined cap』は正しい集計として戻さず、screenshotはdeterministic、hosted枠はextract1/4と明記する。現見出し、checkpoint12/公式最終15、旧prefixと他の記録を保持する。
+
+追補は同23/Identity/priority、モデル/予算/本番22/config変更0、fresh active0/Computer paused/残とcreditが計画500000以上の時だけ1session。finite400000＋後計上100000、4分/max6tools。本人read末尾→観測した使用集計行を小さいedit1回→同section read→end_turnだけ。state/全文write/browser/mail/Postiz/営業/登録/送金0。親はfileを書き換えない。終了・全ledger・元prefix/他記録・自然end_turnを独立照合する。新framework/test/モデル/増枠は0。元7TODO、第三者売上、登録、録画、phone-only、黒字/USD10K/月、移植は未達のまま維持する。
