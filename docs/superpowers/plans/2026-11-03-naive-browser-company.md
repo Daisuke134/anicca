@@ -971,3 +971,20 @@ Grok/Museへの既存Slack threadへ具体的なservice/url引数schemaを照会
 英語記事sourceのCurrent Stateを24/GLM5.2/priority/月10へ訂正し、今回の未完登録・費用・介入・予約見積・公式templateからの学びを追記する。空の公開登録フォーム画像と秘密を含まない観測JSONをrepo内へ用意する。公開blogへの反映・画像/JSON公開routeは未実施なので、記事公開済み/連続録画/paid demoとは呼ばない。source: docs/research/manager/articles/2026-11-03-naive-autonomous-companies-en.md、画像../assets/n8n-owned-email-signup-form.jpg、観測docs/research/evidence/naive-live-20261104/owned-email-onboarding-v24.json。
 
 現在cursor2は、同型の有償signupを反復せず、実際のnative入力schema/引数処理境界を確定して通常登録を修復し、実需要への限定提案→第三者依頼/納品/公式入金へ進む。登録の問題と独立して、既に動く本人browserの需要読取・先行保存や既許可の会社発信を捨てない。必要な先行データや既存ownerを観測してから次の収益作業を選ぶ。元7TODO・USD10K/月・phone-only・移植の全体goalを維持する。予算修正を完了としても商品/収益goalを縮小しない。
+
+
+### native schema取得境界とAgentMailによる通常コード認証
+
+SDK0.10.0のProxyCallTraceSchemaはtool schema hashとrequest.toolsを表せるが、今回GET /v1/proxy/calls?limit=10は200/data0/has_morefalse。公開proxy API仕様はproxied呼出しの保存を説明し、今回のinline native harnessのtool定義が読めるとは確認できない。推論traceから必ず取得できると早く述べた説明は訂正する。取得処理はschemaとtool-call引数名だけを対象にし、system/messages/response.text/reasoning/他session原文の保存・表示0。private v24-native-browser-schema-readback.json とv24-proxy-call-list-metadata.jsonが根拠。Museは公開SDKの必須4fieldsを独立確認するがnative schema/成功実例は未保有と返信。明示後も3fieldsだったこちらの実測を返し、追加操作を依頼しない。native入力処理の原因は引き続き未分離、n8n同型有償再送0。
+
+全体7TODOの順序は変えない。primary TODO2のn8n入力境界調査/実需要は保持し、独立したTODO4の登録確認を既存の正常な受信路で進める。旧Substack試行はv20専用AgentMail受信実証より前で、Naïve原inboxの受信未達を伴う。新しい根拠は専用AgentMailを本人MCPが受信/readで照合できたこと。公式helpはemail verification code/login linkを明記し、signup画面は通常account作成を提供する。 https://support.substack.com/hc/en-us/articles/360059542452-How-do-I-log-into-my-Substack-account 、https://substack.com/signup 。最新tosは本人/組織利用・正確な情報・16歳未満禁止を確認する。今回のaccountはAnicca事業自身のもの、利用者や第三者へ譲渡するaccountではない。成人の実ownerの委任で会社名を使い、人間の経歴や私的事実を捏造しない。spam/scraping/購読者import/投稿/課金/Stripe/支払は0。
+
+次の単一仕事は同agent24/Identity/priority/本番24、source mainfec447b/月10/task1/model/tools変更0。fresh残/credit>=300000、全live0/pausedで1件だけ、finite200000＋後計上100000/計画300000、6分/max14tools/hosted最大2。本人AgentMail.list_inboxesで取得する専用箱だけを使い、Substack/signupの公式email Continue→必要な通常確認コード/リンク→本人profileの認証状態へ進む。既登録なら同じ専用mailのsign-inへ1回だけ移り、別account/個人Google/旧Naïve mail/他owner profile/新inboxへ替えない。既存の未確認Substack accountを書き換えない。正式passwordlessフローを使い、既知にservice不足のnative browser.signup、passwordの生成やtype/actへの転記、業務HTTP、DOM script、API代行、未知guard設定は使わない。ツールguardが拒否する操作を別表記/別fieldで迂回しない。足りないSMS/本人確認は捏造せず具体的境界を記録する。
+
+確認mailはSubstack操作後の本人箱に届く対象だけをnative MCPで読み、通常link/codeを同browserで使う。OTP/認証URL/path token/mail本文/passwordはroot artifact/state/journal/repo/報告へ複製0。観測はtool/action/host/bytes/hash/statusだけ、認証後の画像にcodeや非redacted個人dataを含めない。通常email/受信OTPの入力は公式passwordlessフロー内だけで行う。primary AIは正式SDKで、既委任の本人箱/対象host/現在画面と一致するcallを確認する。公式sessions APIはscope=sessionで当該tool名だけを当該session終了まで許可し、他session/agentへの永続grantを作らない。browserはinput pauseで閉じるという公式仕様を踏まえ、この6分のSubstack認証だけでは最初の対象一致browser確認にscope=sessionを1回使い、callごとのpauseによるページ喪失を避ける。https://vetta.sh/docs/api/sessions.md 、https://vetta.sh/docs/computer/browser.md 。guard独立適用は維持し、禁止操作を許可する変更ではない。browser以外はexact scope=call最大3件、同logical card再発は再回答0、session間grant/agent永続grant/未知policy PATCHは0。確認があればAI介入件数を記録し、Naïve単独無確認成功へ置換しない。人間確認は進行条件にしない。
+
+成果は実ログイン/profile確認と、本人が既存state全値を保持したsubstack_agentmail_auth新key追記/readで判定し、mail dispatchやリンク取得だけをaccount成功にしない。公開profile/username/idとbrowser context参照のmetadataだけをCredential SSOTの新exact service substack:naive-agentmail-operatorへ保存し、password取得済みとはしない。SSOT全体事前readでSubstack service0件/新exactservice無しを確認済み。finallyはterminal/pendingの実数/全live0/Computer休止/本番24全source fields/全ledger・後計上を確認する。元7TODO/実受注納品入金/記事公開/録画/phone-only/黒字/USD10K/月/移植は未達を保持する。
+
+作業branchは記事PR9178のreview済みhead e8c3a96を継ぐ別記録branchとし、9178のCIをcancelしない。runtime configは既存mainfec447bと同じbyteであり、新たな未統合コードを実行する変更ではない。新しい実行契約をcommit/pushしてremoteへ保存してからmanual業務を起動し、9178統合後にこの記録もmainへ統合する。
+
+独立read-only reviewは必須指摘0。session grantはhost限定ではなく、credential guard解除でもページ保持保証でもない。6分はprovider TTLではなくprimaryの終了責任であり、作成時刻から330秒でcancelを開始して360秒前の終端確認を目指す。観測の都度deadlineを照合し、手順や別作業を挟んで終了を遅らせない。
