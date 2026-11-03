@@ -813,3 +813,146 @@ nativeは5readを並列に取得し、intakeをgoto/screenshot/view_imageで0件
 適用契約: fresh current22/production22旧input/active0/Computer paused/残creditが計画500000以上を確認→deployment一時pauseし古いpin22を保持→公式SDK agents.update expected22/tools全objectだけで23→自動追随があれば旧pin22/priority/旧inputをpausedで明示復元して公式照合→23/同Identity/priorityの通常記録訂正1件を実行する。finite0.40＋後計上0.10/計画0.50/12分/max12tools、業務は本人read/editだけ、file全文write・browser/Postiz/mail/営業/登録/送金0。元2値archive/未観測時刻nullまたは提供公式時刻の出所区別/checkpoint12と最終15の区分を小さいeditで直し、両file全文readで元履歴と訂正を照合してend_turnする。モデル/増枠/新agent/key/inbox/追加sessionを反復しない。
 
 finallyはterminal/pending0/全active0/Computer paused/全ledgerを確認し、旧production22/priority/旧input/元enabledの全fieldsを一度復元する。修復の独立照合に合格した場合だけ同じ固定mainのdesired23/priority/先行保存inputへ反映し全fieldsを読み戻す。不合格時は旧production22を保持する。元7TODO/収益goalは維持、現在cursor2の内部を「native全文write訂正」から「標準editで最小訂正→合格時採用→有料需要」へ変更する。原因は設定上のedit無効を確認し、native小変更を直接行えるため。費用・権限・業務方式を変える新frameworkは足さない。
+
+
+### v23適用・native失敗・終了後の公式file照合
+
+PR9176はhead95582b7c7b70568ce105599ab5aa6569cf1ac49fで独立review指摘0、15checks終了失敗0からmain048a837adbd1c56f65e5df1f380a7c86e3e11d01へ統合する。SDK0.10.0 agents.updateはexpected22/tools全objectだけを送り23へ更新、全agent source fields一致を別GETで確認する。月9/task1/model/Identity/mail/systemは変更0。deployment一時pause→23への自動追随を旧22/priority/旧inputへ明示してpausedで保持する。
+
+SDK sessions.create201でses_sg6r6t0pg6vyfxk1djca0rd1pwを23/同Identity/priority/finite400000で起動する。直前残725331は計画500000を収容する。nativeはstate17964bytes/journal8657bytesをreadするが、その後のmodel requestでinternal_errorが2回、providerの同session再試行で全6read。最後のEOF seq53までwrite/edit/browser/Postiz/mail0、確認0、親追加入力0、人間0。自然end_turnは0、editのruntime GREENは未達で、edit有効化による内部エラー解消とは認定しない。モデル/増枠/新agent/key/inboxの追加をしない。cancelled/pending0、全47sessions active0を確認する。
+
+ただしsession cancelとfilesystem効果の不在を同一視しない。23の最初のreadは17964bytesで、旧v22訂正runが読んだ15953bytesから既に変わっている。公式fs/readもhash26e0b986964e8f69c6ea45d958e26d4d1510e5c572affd1b048db54fe1f43941と一致。公式fs/listはstate.modified_at=18:28:31.013UTCを返し、旧v22 cancel確認18:27頃より後である。一方、旧v22 sessionのevents EOF seq42には対応writeが増えず、費10640/ledger2も変わっていない。state内の旧github_check/next_actionの退避は提供原本とexact、root観測時刻null、checkpoint12と最終15の区分は存在する。現状態の正しさと、誰がいつ書いたかの帰属を分ける。遅れた旧in-flight処理の可能性はあるが未確定であり、23本人のedit成功とも、旧cancelがすべての副作用を止めたとも呼ばない。
+
+23のcancel後もusage seq53（18:58:37UTC）が遅れて追加され、session costは27590から34265microUSDへ更新する。最新spend/全ledger4件とdebit合計が一致。先の27590/ledger3は途中snapshotである。Computer pauseは最初409、全active0の追加観測後に通過し、18:58:17のofficial readbackではpaused/旧production22全fields復元/scheduled/次11/04 00UTCを確認する。旧production維持は成功だが、業務訂正成功とはしない。
+
+親による終了後の公式readbackは書込代行ではなく、現物とeventsの不一致を切り分けるためのもの。inspectで確認したhome配下の2fileをfs/readし、fs/listを照合する。19:00:07UTCのfile readbackはstate17964bytes/hash上記、journal8657bytes/hashb0a67c3f486d3114c07af60e18e0f702404f921c346412c0215fc801a43fdb85、journal.modified_at18:17:56.582のまま。fileへの親write/業務scriptは0。読み取りでComputerが起動し、直後のpauseは409 computer_unavailable「a session or a person is using the agent's computer; try again when it rests」。その時点は47sessions active0だがComputer runningで、pausedとは報告しない。共有中のperson/leaseを推測して奪わず、同じComputerの公式状態を観測し、休止後だけ次へ進む。月spent8308934/残691066は同時点snapshotで後計上を保証しない。
+
+Grok/Museへ既存Slack threadで、約126秒の内部エラー、標準editでも未達、cancel後のfile mtimeと対応event不在を共有し、正式な診断/readback経路だけ照会する。返信や着手を受領前に稼働中と呼ばない。秘密・mail原文・credentialは送信0。message permalinkはprivate receiptに保持する。公式Observabilityの公開経路はsession eventsで、追加のroot error詳細endpointは確認できない。SDKのmax_tokens/max_completion_tokensはclient-managed proxy用で、managed agent/sessionへ未定義overrideを追加しない。
+
+現在cursor2の内部順序を「2fileの訂正を一度に再試行」から「現物のstate訂正を帰属不明のまま保持→Computer使用状態を確認→残るjournalだけの小さいnative訂正→現物/ledger/自然終了を独立照合→合格時のみdesired23/input採用→有料需要」へ修復する。理由は旧2値/null/集計のstate現物が既に正しく、元2file入力を繰返す必要がなくなったため。元7TODO/全体goal/第三者売上/登録/録画/phone-only/黒字/USD10K/月/移植の未達は変更しない。
+
+次業務は同23/同Identity/priority/旧production22維持/新main config変更0、finite0.40＋後計上0.10/計画0.50、4分、最大6tools。fresh残/creditが計画未満、active session有り、Computer/person使用中ならcreate0でその境界の公式観測を続ける。休止を確認したら本人がjournalの最後のsection（既観測offset130以降）をreadし、観測した18:2X見出しを「時刻未観測」へedit、Used12をstate確認時の小計・公式最終15と区分する小さいeditだけを直列で行い、同sectionをreadして終了する。stateを読み直して上書きせず、旧journal prefixと他の記録を保持。全文write/browser/新需要検索/Postiz/mail/営業/登録/送金/新fileは0。旧2fileの同じ失敗を再送するのでなく、公式現物から残る1fileの作業を完了する。これを前runの無介入成功へ合算しない。
+
+finallyはsession terminal/pending0/全active0/旧production22全fields、全ledgerと追加usage、Computer状態を公式照合する。file読取でwakeした場合も状態を正確に記録し、共有使用中の強制解除や同じpauseの盲目的な再試行をしない。合格判定はnative editの実event/読み戻し内容/元journal保持/数値と日時の出所の一致。state現物の訂正は確認できても帰属不明を維持する。合格時だけ別のfresh read-only検証から固定main desired23/inputを反映し、採用してもprovider内部エラーやcancel後効果の問題が恒久解消したとしない。
+
+証拠はprivate v23-{sdk-edit-transport-selfcheck,sdk-agent-update,agent-readback,production-held-readback}、v23-native-edit-repair-{sdk-create,attempt,events,artifacts,terminal-readback,ledger,spend-readback,production-readback,final-resources}、v23-{official-state-readback,official-file-metadata-readback,post-cancel-files-readback,post-cancel-final-resources,post-read-pause-recovery}。final-resourcesの早期値とpost-cancelの最新値を混同しない。
+
+
+### journal最小訂正の実測と内訳保持の追補
+
+journal-only ses_k6ezzgkys65x89ze92ean6szq0は23/同Identity/priority/finite400000でread→edit→edit→readの4tools、確認/追加入力/retry0、19:07:59UTCの自然end_turnを確認する。旧6126bytes prefixを保持し、全文8657→8826bytesは2editからの再構成と公式fs/readがexact。費27665microUSD/ledger5件一致、production22旧全fieldsを保持する。ただし独立reviewは、2つ目のeditが元のbrowser screenshot1/extract1の観測内訳を削除したことをMEDIUM Blockingとする。本番23/inputは未採用。親fs/read後running/409から19:14:35UTCのGETで自然pausedを確認する。state訂正の帰属不明は残る。
+
+cursor2内部を「journal訂正→採用」から「欠落した使用内訳だけnative追補→独立照合→合格時のみ固定main048 desired23/input採用→有料需要」へ更新する。理由は実差分で確認した履歴欠落1箇所。screenshot1/extract1を保存し、元の『2 of 4 combined cap』は正しい集計として戻さず、screenshotはdeterministic、hosted枠はextract1/4と明記する。現見出し、checkpoint12/公式最終15、旧prefixと他の記録を保持する。
+
+追補は同23/Identity/priority、モデル/予算/本番22/config変更0、fresh active0/Computer paused/残とcreditが計画500000以上の時だけ1session。finite400000＋後計上100000、4分/max6tools。本人read末尾→観測した使用集計行を小さいedit1回→同section read→end_turnだけ。state/全文write/browser/mail/Postiz/営業/登録/送金0。親はfileを書き換えない。終了・全ledger・元prefix/他記録・自然end_turnを独立照合する。新framework/test/モデル/増枠は0。元7TODO、第三者売上、登録、録画、phone-only、黒字/USD10K/月、移植は未達のまま維持する。
+
+
+追補結果: ses_cxtpmt64v8q0e8praqp14y5m13は本人read→edit→readの3toolsで19:16:03.855UTCに自然end_turn。確認/追加入力/retry0。固有の集計1行へscreenshot1（deterministic/hosted cap外）・extract1/hosted1of4を追加し、他文字列を保持する。元の公式全文8826bytes＋実editから再構成8983bytes/hash a98f08d9f734650549a8249250df24c7dfb22ce6b66a30ea61a4ea2e40aa7ed6、旧6126prefix保持、本人の末尾1174bytes readとexact。追加wakeを避け親のfs全文再読取0で、再構成を公式全文再読取済とは呼ばない。19:16:45UTCにcancelled/pending0/全49sessions active0/Computer paused/旧production22全fields維持、費18662microUSD/ledger4件一致、月残624352を確認する。証拠はprivate v23-journal-usage-{events,artifacts,verification,final-resources,ledger}。既存reviewer再開はagent thread limitで失敗し、別fresh read-only reviewerが同じ欠落修復だけを照合する。本番23/inputは合格照合まで未採用、元7TODO/収益未達は保持する。
+
+
+独立reviewはSHIP/追加Blocking0。19:17:55UTC、固定main048由来desiredへの差分agent_version/input_templateの2fieldだけをPATCHし、production23/priority/enabled/scheduled/次00UTC・全source fields一致/Computer paused/active0を公式確認する。モデル/月9/task1/Identity/mail変更0。providerエラー恒久解消や実売上成功とは呼ばない。証拠private v23-desired-rollout-{attempt,receipt,deployment-readback,final}。
+
+現在cursor2は有料需要へ戻る。次の本人通常業務1件はdesired inputに従い、既存stateと商品を把握→新しい未解決の公開需要/支払い意思を本人browserで観測→他作業前に既存履歴を保持して本人保存/読戻し→end_turn。自己解決済みissue9001/解決済みtutorial/seller宣伝を買い手扱いせず、過去journalの修復を反復しない。fresh active0/paused/残credit>=計画500000、finite400000＋後計上100000、12分/max24tools/hosted最大4、DM/他者issueへの営業送信0、追加input/model/増枠0。未獲得なら正直に記録して次行動を残す。元7TODO・第三者入金・録画・登録・phone-only・黒字/USD10K/月・移植は未達。
+
+
+### 本番23の通常業務・ブラウザtimeout境界
+
+ses_9vck0c0h2324nvfn3ag4972w0aは本人5read→pilot intake goto/extractで0件を確認するが、その後の時刻取得でupstream120秒timeout。extract再試行/screenshot/別時刻サイト/example.com/DuckDuckGo/observeもbrowser30秒timeoutになる。全19tools/hosted4attempts/7errors、確認/primary追加入力0。本人state edit→read（17964→21608bytes/hash05710ef65a82990bd57d898b64af0772e9226e1510dacd9f1199add35cc40df7）とjournal edit/readで未獲得/故障を保存するが自然end_turnは0。max_iterationsで同session継続後、12分終了境界でcancel、公式interrupted時刻19:30:34.948UTCは開始19:18:34.172から720.776秒（約0.8秒超過）。19:30:58時点cancelled/pending0/全50active0/Computer paused/production23全fields保持、費138158microUSD/ledger14一致、残485301。後計上を固定保証しない。新需要検索/依頼/売上0。自己記録hosted3/4は誤り（events4/4）、旧root next_actionもstate内未退避で更新され、正しい原値は公式edit/read artifactに保持する。自己申告を評価得点や履歴保持成功へ昇格しない。新たな記録訂正loopを業務に置き換えず、この限界を正本に残す。
+
+親のComputer browser GETは404/no browser、browser_sessionsは0件。一方本人browser.session.openedはbrw IDを持ちcomputer_id空文字。別のbrowser帰属の可能性があるのでComputer側404だけで本人browser消失と断定せず、wrong-target DELETE/強制takeover/環境再作成0。source本番23/input維持。証拠private v23-demand-next-{events,artifacts,verification,browser-diagnostic,browser-events,spend-readback,ledger,final-resources}。
+
+次の1件は残内で短い本人browser復旧確認→新しい公開需要1出所。finite250000＋後計上100000/計画350000、4分/max12tools/hosted最大2。fresh残credit>=350000/active0/paused、同23/Identity/priority/既存月9/task1。既知の商品は公開trace20calls以下の英語診断29USDC納品後払い、売上0/受付0/過去除外済みsourceは再調査しない。時刻サイト・intake再確認・最初の5file再読取を行わず、本人goto example.com1回で復旧可否を判定。まだtimeoutなら別サイトretryを反復せず、既存stateの末尾へ今回の観測だけを小さいedit/readで追記してend_turn。応答したら未解決のagent trace/tool-loopについて新しい買い手側sourceを本人検索/本文観測し、支払意思の有無を正直に同じ追記で保存する。root next_action等の旧keyは変更しない。未知時刻/費用はnull、現在runの最終回数を推測しない。営業送信/DM/Postiz/mail/signup/送金0、script業務/追加input/model/増枠0。全体goal/元7TODOを縮小せず、この診断を収益成功に数えない。
+
+
+### 短い復旧実測と支払い意思を優先する次行動
+
+ses_7sr1amcbm052ey7kahk1pr6r5tはexample.com goto約2.3秒成功、DuckDuckGo検索とn8n thread174472本文観測も成功する。2025年のaccepted solution有り/支払意思無しを本人が確認し、新需要から除外。9tools/hosted2/errors0/確認retry追加入力0、19:34:55.131自然end_turn。余分なjournal read1はあるがjournal書換0、state21608→25698bytes/hash00825510091abc2d87124ee57d008499056a41d8d95b61403e2290866545166cは全旧key/value保持＋demand_research_v23追記だけでedit再構成とreadback exact。19:35:49にcancelled/pending0/全51active0/paused/prod23保持、費92136/ledger13、月残351371。browser応答回復はこのrunでの実測で恒久解消ではない。前runは後計上で費166753/ledger17へ更新（先の138158/14は途中snapshot）。実依頼/売上は未獲得。証拠private v23-browser-recovery-{events,artifacts,verification,final-resources,ledger}、v23-demand-next-late-metering。
+
+cursor2内部の次は、解決済みの一般help検索から、支払い意思が明示される公開募集へ絞る。理由は同種の古い解決済み質問を2件以上確認しても買い手を得ていないため。既存商品29USDC/public trace診断に適合する現行の有償agent/n8nデバッグ募集1件だけを本人browserで探し、日付/未解決/依頼内容/予算/応募条件の本文を観測して適否を保存する。価格不明/募集終了/無償相談なら正直に除外、値を捏造しない。今回の公開読取・保存だけで応募/受注/売上としない。
+
+次の有限枠は残内でfinite200000＋後計上100000/計画300000、4分/max10tools/hosted最大2、fresh残credit>=300000/active0/paused、同23/Identity/priority/月9/task1。時刻/health/intakeを反復せず、直前に健康を確認した本人browserで有償募集の検索へ直行。初回goto timeoutなら反復せず観測追記して終了。stateは既観測257行の末尾offset202から必要な範囲だけread、旧root全key/valueを変更せず新key追記/edit/read、journal読取/書換0、未知時刻/費用/最終回数は推測0。DM/営業送信/投稿/mail/signup/送金0、追加input/model/増枠0。元7TODOは維持し、有償需要1件の探索を会社収益達成へ縮小しない。
+
+
+### 有償募集の一次資料と短いURL指定handoff
+
+有償検索ses_nxajjnymegmn17cj872vx6pqxzは最初のmodel requestで約126秒後internal_error、tool0/確認0/追加入力0。既知の失敗境界で自動retryを重ねずcancel、19:39:43時点全52active0/paused/prod23保持、費0/ledger0/残351371を公式確認する（後計上保証ではない）。営業/登録/投稿/需要観測0。private v23-paid-demand-{events,artifacts,final-resources}。
+
+primaryの公開一次資料読取で https://community.n8n.io/t/looking-for-n8n-ai-automation-specialist-paid-qa-stress-testing/319256 を確認する。依頼者cobasuyiは既存n8n/AI agentのQA/stress-test、Vapi/Twilio/ElevenLabs/OpenAI/Claude/API/webhook、作り直しでなく1agentの有償trialを募集し、興味があればDMとrate/経験/sampleを求める。本文はOct7表示、明示価格無し、現在の充足/契約状況は未確認。302posts等の応募の多さを需要消失や受注確定に置換しない。これは支払意思の一次根拠で私たちへの依頼ではない。旧paid-debug thread276670はnot found/private、検索snippetを有効案件扱いしない。https://openbounty.ai/ はMock-payments mode/no real fundsと明記、実収益の経路から除外する。
+
+次の通常業務は上記319256のURLを本人browserで直接goto/extract→有償trial/価格不明/最新の充足不明を区分してstate新key追記/read→end_turnだけ。探索検索/health/時計/intake/journalを反復しない。provider初手失敗を狭めるためmanual messageは単一URLとこの仕事に必要な短い入力だけにし、schedulerのmain048 input/agent model/tools/Identity/mail/budgetは変更しない。finite200000＋後計上100000/計画300000、4分/max8tools/hosted1、fresh残credit>=300000/active0/pausedの時だけ1件。旧state全key/value保持、末尾offset202から必要範囲read/小さいedit/read。応募/DM/送信/signup/送金0。本人観測前はprimary資料の読取と本人実行を分ける。実売上/登録/録画/phone-only/黒字/10K/月/移植は未達を保持する。
+
+
+URL指定結果: ses_1d36c3b9dydz9gvfctr9kygse2は5tools（goto/extract/read/edit/read）/hosted1/errors0/確認retry追加入力0、19:43:20.333UTCに自然end_turn。本人の有償trial観測をpaid_qa_source_319256へ追記する。旧25698bytes全文＋固有editから27797bytes/hashf8b5593140698e3cbea47fcff18fb055c26028bc05f1b8f8b0fb7171553fd844を再構成、本人before6051/after8150bytes suffixとexact、再構成上の旧全key/value保持。全文再読取は0なので新全文公式read済とは呼ばない。価格/予算/充足はnull、本人も私たちへの発注・売上ではないと明記する。primary表示Oct7とnative extractのOct6は不一致で投稿日未確定、市場需要判定に使わない。19:44:15にcancelled/pending0/全53active0/paused/prod23全fields一致、費45906microUSD/ledger8、月spent8711223/残288777を確認する。前のinternal_error runも後計上14738/ledger2へ更新し、0は19:39時点の途中値。全て後計上固定保証ではない。private v23-paid-source-{events,artifacts,verification,ledger,final-resources}、v23-paid-demand-late-metering。
+
+現在cursor2は「有償QA候補の現在の募集/適合と担当重複を確認→専用AgentMailだけで通常登録/連絡経路を開通→本人が実績を捏造しない限定提案→第三者の有料依頼→本人納品→公式入金と費用」。公開trace pilotは維持するが、隣接の有償QA募集を既受注/確定適合にしない。一般help検索や過去journal訂正を反復しない。既存のDM/外部送信0の今回境界を将来の恒久禁止に拡大せず、次の具体的な相手/内容/自己所有account/規約/既存ownerを確認して送信scopeを正本へ記録してから、依頼済みの商業業務として進める。個人Google/個人mailのworker注入は0、利用者資格情報無しの登録・受注・入金/phone-onlyのE2Eは未実証。元7TODOとUSD10K/月の全体goalは継続する。今回source記録PR9177はCI進行中でmain未統合、runtime configは既存main048由来で本番反映済みと分ける。
+
+
+### 専用AgentMailでn8n通常登録を進める
+
+前turnはprogress（本番23採用・本人の有償trial本文観測/state追記）。現liveは23/23/enabled/active0/paused/月残288777を再確認する。前のprovider read_people問題は解決済みとせず、Substackの同型probeは再実行しない。今回の対象は実際の応募先n8n Communityの新規会社用accountで、登録・確認mail受信を本人browser/MCPで行う。個人Google・個人メール・既存他owner profileの借用0。Mac Credential SSOT全体からexactservice naive/専用AgentMailを確認、n8n/n8n-community exactservice無し、Mac browser registryのn8n/naive既存route一致無し。Naïve専用Identity/専用vault/同agent contextだけを使う。
+
+一次資料: 募集319256/306は公開返信Closed、運営がemail/form/DMを案内する。jobs guidelines941はDM招待がある場合DMで応募、新accountは通常のtopic閲覧を経てDM権限を得ると明記し、無意味な返信は不要とする。現在client充足は依然未確認。競合の39USD/150USD提案はあるが成約証拠ではない。Naïve Browser API docsはsignup時person confirm必須、Tools docsはallow/ask_actions契約があるため差異を隠さず実挙動を観測する。guardを秘密の符号化/HTTP signup直叩き/別profileへ逃がして迂回しない。
+
+実行契約: 同23/Identity/priority/本番設定・月9/task1は不変。fresh残とcredit>=270000/active0/pausedで1sessionだけ。finite170000＋後計上100000/計画270000、6分/max18tools/hosted最大3。本人agentmail.list_inboxesで得る専用受信箱だけを使い、community.n8n.ioの実signup画面と規約を観測して通常email登録を実行する。既存accountがそのmailにあれば重複作成せず通常login/recoveryへ。表示名BusinessRun Manager、AI運営を偽らず、人間の経歴・expert実績・私的事実を捏造しない。必要なpassword生成/保存は正式browser.signup/専用vault、秘密をtype/act/prompt/journalへ転記0。新credential metadataをprivate Credential SSOTへvault参照として保存し、API非exportable値を取得済みと称さない。
+
+確認mailは本人MCPで必要なmessageだけ読み、通常確認linkで認証する。token/link/コード/mail本文は親のartifact/log/公開資料へ複製しない。観測ログはtool名・action・host・bytes/hash・status/credential idだけ。signup/必要な確認mail再送最大1を許可するが、顧客へのDM/応募/営業/投稿/商品/送金/課金契約は今回0。規約が明示的に今回のaccountを許さない、SMS/本人必須dataが無い場合は捏造せず正確な画面状態を保存し独立作業へ。
+
+providerが確認cardを出した場合、primary AIが既存委任と完全一致する本人service/email/actionを秘密非表示で照合し、SDK正式confirmToolのexact scope=callだけで処理する。Daisへ承認を求めない。包括grant/未知policy PATCH/同じlogical callへの無限再回答は0。新card最大3、同じ処理が再発し画面喪失なら同型許可を反復しない。AI側確認があれば件数を記録し、Naïve単独の確認0成功とは呼ばない。登録成功はlogged-in本人画面/確認状態のreadbackで判断し、生成credentialやsignup doneだけでは未完。最終に本人journal/stateへ秘密抜きで実状態を保存/read、旧全key/value保持。finallyはterminal/pending0/active0/paused/production23全fields/費用全ledgerを照合する。goalと元7TODOは維持する。
+
+
+### n8n登録導線の結果と正式signupへの直行
+
+ses_03dgy5bn6gktban6pt08fmn4epはAgentMail list_inboxes/本人n8n goto/screenshot/observeに成功し、Sign Up clickでread_people card。観測selectorとexact照合したcall-scope確認1回はSDK202だが、再開clickはcould not complete。新gotoをscope=callで確認2回目、gotoは成功するが再び元clickの同logical idへcard再発。3枚のcardへAI回答は2回、人間確認要求0、同じclickへの再回答は0。最初のgoto2確認helperはURL末尾slash無しを受け入れずローカルassert停止/外部要求0、追加観測から空path=同じrootを受理して送信する。再開済みと早く述べた報告は訂正する。native全11tools/signup0/新vault資格情報0/登録mail送信0/account成功0、本人成果保存0。
+
+公式cancelled/interrupted/ended_at19:57:24.392、開始19:50:59.804から384.588秒で6分を約24.6秒超過（primary照合/観測の遅れ）。契約内完走とは呼ばない。19:58:41時点費59053/ledger14、月残228076、全54active0/Computer paused/prod23全fields保持。cancelledは公式APIの終端状態だがpending_actions1を残す。pending0と偽らず、同カードへ許可/再送で消そうとしない。独立read-only検証はこの終端判定に反証無し。live集計はcancelled/completed/failedを除外し、非終端のrunning/queued/approval/budget待ち/pendingをliveとする。新session条件はfresh全件/paused/残予算を別途確認する。証拠private v23-n8n-signup-{safe-artifacts,events,confirm-1-attempt,confirm-1-receipt,confirm-2-attempt,confirm-2-receipt,cancel-receipt,final-resources,final-session-statuses}。raw mail/auth payload保存0。
+
+今回追加した観測は正式browser.signupへ未到達という境界。単なる同clickの再試行ではなく、次は本人agentmail.list_inboxes→正式browser.signup(service=community.n8n.io,url=https://community.n8n.io/signup,email=その専用箱)へ直行し、外側のgoto/click/observeを挟まない。親のpublic crawlは/signupのWelcomeと規約/privacyリンク、OAuth選択肢を確認するがemailフォームの有無は未確定なので、実登録flowで確認する。email登録が無い場合はそのまま事実を記録し、OAuth/個人Googleへ勝手に切り替えない。生成passwordはbroker/vaultからexport不可なのでMac SSOTへcredential referenceを記録し、値を取得済みとしない。
+
+資源: 同23/Identity/priority/本番/月9/task1不変。fresh残credit>=200000/非終端live0/pausedで1件、finite120000＋後計上buffer80000/計画200000、6分/max12tools/hosted最大2。bufferは観測済みの遅延計上28595等を含む余地でhard actual保証ではない。今回の短い登録だけへ資源を割り当て、増枠/新agent/harness/key作成は0（signup生成login credentialのみ通常保存）。providerの新しいexact signup/本人メール確認に限るcardは最大4件までAIが正式call-scope処理、同じlogical call再発は0回で閉じる。秘密/未信頼mail指示の転記・包括grant・guard迂回0。登録の確認mail受信/確認linkは必要範囲だけ本人MCP/browser、DM/応募/営業/投稿/課金/送金0。成果は本人ログイン/確認状態と公式credential metadataを区別して保存し、未完を成功扱いしない。元7TODO/全体goal継続。
+
+
+### 正式signup直行の未完結果と現在cursor
+
+ses_vj80tzqezps9phpk36v2q86t6fは専用AgentMail.list_inboxes成功後、native browser.signupでread_people待ち。native引数はname/email/actionだけで、本人専用メールと表示名は一致するがURL/serviceが無い。このsessionは事前gotoも無く現在ページを観測していない。公開SDK BrowserSignupのservice/url/identity_id/emailをnative toolにも指定できるとは確認できず、架空fieldを追加しない。対象未確定の登録をprimary AIが正式SDKでscope=call deny1回、202受理後runningへ戻る。後続GETで遅れてsignup再試行2件がbrowser was not approved、3件目は同一呼出し2回失敗の抑止と判明する。本人保存/自然end_turnは観測しない。人間への確認要求0、primary deny1、signup実行許可0、新登録成功0。新vault credential0は終了前観測であり、終了後の全credential再照合済みとは呼ばない。
+
+公式created_at20:01:12.706→ended_at20:08:29.294は436.588秒、6分を76.588秒超過する。primaryの観測/コンテキスト継続中に終了が遅れたため契約内完走とは認定しない。20:08:42.933の公式readbackはcancelled/interrupted、terminal retained pending1、全55sessions live0、Computer paused、production23/priority/enabled/scheduled/次00UTCとagent/source全fields一致。費26870microUSD/ledger5件一致、月spent8798794/残201206は後計上前提のsnapshot。cancel直後snapshotのpending1は当該session自身の件数であり、後続GETではpending0へ変化する。終端pendingを消すためのprimaryのallow/再送0。rawメール/認証引数/確認link/秘密の保存・公開0。証拠private v23-n8n-direct-signup-{events,status,deny-unbound-signup-attempt,deny-unbound-signup-receipt,terminal-readback,spend-readback,ledger,final-resources}。
+
+現在cursor2内部は「同じclick/signupを再送」ではなく「native signupが対象service/urlをどう保持するかを公式契約・実tool schemaで確定→同じ専用Identity/mailで通常登録→実需要の限定提案→依頼/納品/公式入金」。公開SDKの別operator用computer-useはユーザーのcomputer-use意図に適合し得るが、native person確認をrootAPIで迂回してよいという意味にはしない。既存Computer.browser=null、native browserのcomputer_idも空であり、両経路の同一性未証明。別Computer作成/signup/act/takeoverは未実行。新resourceで月capを迂回しない。独立read-only検証もSDK経路は条件付き評価で、実行可能/AI担当/同一browserとは未認定。現残予算で同型の有償再試行を反復しない。
+
+Grok/Museへの既存Slack threadを最新まで再読し、親＋8返信・前回照会以降の新返信無し。送信済みを協業着手や解決と呼ばない。元7TODO・第三者売上・登録・連続録画・phone-only・黒字・USD10K/月・移植の全体goalは維持する。本人の実需要読取/保存/自然終了は成功済みだが、専用mailによる登録から売上までの無介入E2Eは未実証。
+
+
+次の切分けはnative signupの前に本人browser.gotoで登録先を確定する1件。前回のgoto禁止を解除し、専用AgentMail.list_inboxes→exact https://community.n8n.io/signup goto→同一browserの到達URL/ページ状態を観測→native signupへ進む。click selectorの反復はしない。signup payloadがname/email/actionのみでも、同一browserと直前の到達先を公式出力で照合できる場合だけ正規call-scope確認を処理する。到達/同一browserが曖昧ならdenyして閉じる。root browserAPIや未知field、別Computer作成、Google依存へ逃がさない。
+
+資源は本番23/同Identity/priority/設定不変、fresh全live0/paused/残とcredit>=180000、finite100000＋後計上80000/計画180000。1件/4分/max10tools/hosted1。signupと本人確認mailの必要範囲のみ、DM/営業/投稿/課金/送金0、秘密値保存0。create前/操作時に実時刻を追い、deadline前にcancel開始する。成功は実ログイン/確認状態、未達なら正確な境界を残す。元7TODOと全体goalは変えない。
+
+追補: direct signupの遅延eventsはseq33/35/39に上記の拒否済みsignup再試行を記録し、seq52最終usage26870と一致する。終了後の追加tool eventを新登録実行成功に数えない。独立reviewのpending帰属疑義に対し、helperの当該session集計と最新GET pending0の両方を区分する。
+
+独立review追補は、最新status保存へpending_actions_field_present=true/count=0/checked_atを含めた公式GETで先のpending疑義を解消する。旧snapshotの当該session1件と最新0件を区別する。provider ended_atも旧20:08:29.294から最新20:08:27.311へ変化し、6分超過は旧76.588秒/最新74.605秒、いずれも超過である。target-aware試行は同一native browserの対象証拠が得られた時だけ確認し、根拠不足なら許可0という範囲に具体的反証無し。
+
+
+### 対象ページ確定runの結果と予約余力の修正cursor
+
+ses_gmds1f6qsa5htpm4zqyht8g4szは20:10:33.746開始、本人browser.goto(community.n8n.io/signup)とAgentMail.list_inboxesを並列に開始し両方成功する。指示の順番どおり直列ではなく、goto後の別observe/同一browser照合/正式signupには未到達。seq16でbudget_exceeded「this session's budget cap has no room for this call」、browser session opened/closed、20:11:49.877 budget_paused。finite100000は実消費19521でも次予約を収容できず、actual costとreservationを混同した小さすぎる枠であった。新しく判明した初手gotoは確認card0で通る。今回signup/確認mail/credential作成/登録成功/DM/投稿/売上0、本人保存/自然end_turn0。到達の成功を登録成功へ置換しない。
+
+20:12:36.796の公式readbackはcancelled/pending0/全56live0/Computer paused、本番23/priority/enabled/scheduled/次00UTC/全agent-source fields保持。費19521microUSD/ledger2一致、月spent8818315/残181685（後計上あり）。4分deadlineより前に閉じる。証拠private v23-n8n-target-signup-{before,attempt,created,events,status,terminal-readback,spend-readback,ledger,final-resources}。このsessionから第三者サービスへの外部signup送信は観測0。
+
+現在cursor2内部は「対象を観測してsignup」から、その依存である「次モデルcallの予約を収容する有限枠をsourceで復元→対象を観測してsignup→専用mail確認→連絡/提案→実依頼/納品/公式入金」へ修正する。理由は新たな公式budget_exceeded。次枠を100000のまま再送しない。直近の5tools完走finite200000等と実予約を比較し、同一model/Identity/同一browser経路を維持して必要最小のsession枠を確保する。月残181685では以前の計画300000を満たさない。必要なら既存credit内の最小agent-cap差分を正本/source/必要検証/main経由で反映する。新入金/新wallet/人間Googleは不要だが、cap変更はまだ実施0である。rootAPIのsignup迂回や未知policy追加もしない。元7TODO/全体goalの未達は維持する。
+
+
+### 予約見積から既存cap内へ有限枠を修正
+
+target-run公式span.model_request.startの初回quoteは83183microUSD、同call実費17854、run全費19521。次の拒否call自体のquoteは公開eventに無く、83183をその確定値とはしない。finite100000の実費後残80479は初回quote83183より2704不足し、次予約不足と整合する。月cap9の変更を先に必要条件へ拡大しない。次はfinite160000＋後計上余地20000/計画180000をfresh残/credit内で確保する。直近月残181685なら収容可能だが、fresh値が不足ならcreate0。sourceの月9/task1/model/本番pin23は変更0。新たな拒否call見積がこれ以上なら同じ160000を反復せず、実見積から再診断する。
+
+実行は同じ専用Identityのnativeブラウザだけ、1件/6分/max12tools/hosted1。専用AgentMail取得→exact n8n/signup goto→同browserのページをobserve/screenshotで確認→signup→必要な受信確認→実ログイン状態。target-aware前runと違うのはsession有限枠100000→160000で、業務API代行/別profile/未知flag/包括確認0。確認cardは照合済み対象と本人専用mailだけcall-scope、同じlogical card再発には再回答0。6分前にcloseを開始し、すべての確認・retry・根拠不足・未完を保存する。DM/応募/営業/投稿/課金/送金0。元7TODOと全体goalを維持する。
+
+
+### v24: 予約余力とservice必須エラーを分離して修復
+
+reserved-signup ses_xsa6c1qh7xk8anzktnmja4cwveはfinite160000で予約不足の境界を越え、本人AgentMail/goto/screenshot/view_image/observe/signupの6tools。goto公式出力はexact /signup、132792bytesの公式screenshot fil_6cqahnx43sh148mkq4mst5ewxpをprimaryも閲覧しEmail/Username/Passwordの通常登録フォームを確認する。Googleは必須ではない。native署名URLはprivate診断へ一時含まれたため、その後proof出力/保存をquery除去へ修正し、公開/repo転記0。SDKの画像downloadは初回fetch未指定でローカルTypeError/外部GET0、globalThis.fetchを明示して公式bytesを取得する。
+
+正式signup cardはname/email/actionだけ、同native browserの実フォームと専用mail一致を照合してscope=call allow1。SDK202/request req_jwf8pgmdzggqb3z5bsmzgckz14後、再開signupは正確に「signup needs service」。本人が同じ不完全引数で再試行し同logical card再発、primary再回答0で閉じる。これはページ喪失が原因という証拠ではなく、service欠落という新たな具体的runtime入力エラーである。8tools/signup実送信成功0/新登録・確認mail・本人保存・自然end_turn未観測。20:19:14.986公式readbackはcancelled、当該終端pending1、全57live0/paused/prod23全fields保持、費52254microUSD/ledger9、月spent8870569/残129431（後計上あり）。6分前にcloseする。
+
+現cursor2は「service必須の正しいnative引数で通常登録」。予算自体も残129431では完走実績の有限200000/計画300000を収容しないため、先にsource月cap9→10USDだけを変更する。deployment希望pin23→24、task1/model/priority/tools/Identity/mail/system/inputは不変。既存credit直前22761863microUSD内、追加入金0。source差分を最小JSON照合/diff-check/必要CI/fresh read-only review→main固定後、official SDK expected23/budget-only updateで24へ。更新直後のdeployment auto-followを観測し、短い試験中は旧production23を保持する。cap修復の反映と登録成功は別判定で、登録が未完でもagent24 cap10を正しい本番sourceとして扱う判断は明記し、業務成功へ置換しない。
+
+次nativeは同Identity/priority、本番旧23を保持し1件、fresh残とcredit>=300000/全live0/paused、finite200000＋後計上100000/計画300000、6分/max12tools/hosted1。専用AgentMail取得→exact signup goto→正式signup(action=signup,service=community.n8n.io,url=https://community.n8n.io/signup,email=取得した本人専用mail,identity_id=本人Identity)。serviceはruntime自身が必須と返し、url/identity_idは公開SDKの正式SignupSchemaで確認済み。nativeが実引数へ渡せない場合は値を捏造/別fieldへ符号化せず、許可0でschema不整合を記録する。前のように同じ不完全name/emailだけを許可しない。対象が明示されたsignupだけexact call確認、同logical card再発は再回答0。生成credentialは専用vaultへ、非exportable秘密を取得済みとしない。成功時は本人確認mailの必要範囲だけ読み、通常link/実ログイン状態を確認し、private SSOTへcredential referenceを保存。DM/応募/営業/投稿/課金/送金/別Computer/別profile/業務HTTP/API代行0。rootはSDK設定/確認/診断と同じ範囲だけ。元7TODO・全体goal・未実証の収益を維持する。
