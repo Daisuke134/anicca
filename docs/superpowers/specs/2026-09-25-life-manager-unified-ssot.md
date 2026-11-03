@@ -121,6 +121,10 @@ remote差分: 指定Slack threadを公式完読。parentとhome-codexの更新�
 
 CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。PR9099/head19ef706537の必要CIはgitleaks dirのみFAIL、他13jobsはPASS。集合hashの項目名だけをlegacy_record_set_sha256へ変更し、値と監査内容を保持する。旧historyのexact baselineはmain由来を維持し、除外追加0。focused RED→GREENと関連検証後pushし、更新head全CI→mainを次操作とする。過去88件の帰属と売上、未来payload保存は未完。
 
+## NEAR-FIRST-OFFER — 初回販売の既存レーン移管
+
+→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market。登録201・初回15USDC提案201/pending・本人bid公式照合を確認済み。現在cursorは既存hourlyでの受注監視と自然採用確認、受注後の納品。Capafy/Guru/Apifyの既存ownerを維持する。
+
 ## CAPAFY-ATTRIBUTION-PAYLOAD — 未来クリックの帰属保存
 
 目的・範囲: PR9099の統合済み監査に続き、go handlerが失っているct/platform/postを新規Blob本文へ保存する。owner=home-codex-3d1087、task=3d10872ebd07701cbebd47c2、branch=fix/capafy-payload-3d1087、base=58009a3a96。専用worktree・leaseを取得。旧監査owner/HQのactive leaseは保持する。
