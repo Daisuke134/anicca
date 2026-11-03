@@ -42,7 +42,8 @@ class PublicAggregatePreflightTest(unittest.TestCase):
                     {"category": "treatment", "count": 40, "sensitive": False},
                 ],
             },
-            "cross_release_review": "externally_documented",
+            "disclosure_control": {"method": "exact_unmodified"},
+        "cross_release_review": "externally_documented",
         }
 
     def test_screen_pass_does_not_grant_authority_or_benefit(self):
@@ -171,6 +172,44 @@ class PublicAggregatePreflightTest(unittest.TestCase):
         self.assertNotIn("official_aggregate", text)
         self.assertNotIn("www.ons.gov.uk", text)
         self.assertNotIn('"total": 100', text)
+
+
+    def test_missing_disclosure_method_is_unknown_and_skips_exact_arithmetic(self):
+        p = self.packet()
+        p.pop("disclosure_control")
+        p["partition"]["cells"][0]["count"] = None
+        result = preflight_public_aggregate(p)
+        self.assertEqual(result["status"], "REVIEW_REQUIRED")
+        self.assertIn("DISCLOSURE_METHOD_NOT_DOCUMENTED", result["reason_codes"])
+        self.assertNotIn("SINGLE_SUPPRESSED_CELL_RECONSTRUCTABLE", result["reason_codes"])
+        self.assertFalse(result["declares_unmodified_counts"])
+        self.assertFalse(result["can_ingest"])
+        self.assertFalse(result["can_publish"])
+
+    def test_rounded_perturbed_and_mixed_counts_skip_exact_arithmetic(self):
+        for method in ("rounded", "perturbed", "mixed"):
+            with self.subTest(method=method):
+                p = self.packet()
+                p["disclosure_control"]["method"] = method
+                p["partition"]["cells"][0]["count"] = 7
+                p["partition"]["cells"][1]["count"] = 92
+                result = preflight_public_aggregate(p)
+                self.assertEqual(result["status"], "REVIEW_REQUIRED")
+                self.assertIn("DISCLOSURE_METHOD_ALTERS_COUNTS", result["reason_codes"])
+                self.assertNotIn("SMALL_RELEASED_CELL", result["reason_codes"])
+                self.assertNotIn("INCONSISTENT_PARTITION", result["reason_codes"])
+                self.assertFalse(result["declares_unmodified_counts"])
+                self.assertFalse(result["disclosure_certified"])
+
+    def test_disclosure_method_schema_rejects_unknown_values_and_extra_fields(self):
+        p = self.packet()
+        p["disclosure_control"]["method"] = "invented"
+        with self.assertRaises(ValueError):
+            preflight_public_aggregate(p)
+        p = self.packet()
+        p["disclosure_control"]["rounding_base"] = 5
+        with self.assertRaises(ValueError):
+            preflight_public_aggregate(p)
 
 
 if __name__ == "__main__":
