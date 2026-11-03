@@ -848,3 +848,8 @@ cursor2内部を「journal訂正→採用」から「欠落した使用内訳だ
 
 
 追補結果: ses_cxtpmt64v8q0e8praqp14y5m13は本人read→edit→readの3toolsで19:16:03.855UTCに自然end_turn。確認/追加入力/retry0。固有の集計1行へscreenshot1（deterministic/hosted cap外）・extract1/hosted1of4を追加し、他文字列を保持する。元の公式全文8826bytes＋実editから再構成8983bytes/hash a98f08d9f734650549a8249250df24c7dfb22ce6b66a30ea61a4ea2e40aa7ed6、旧6126prefix保持、本人の末尾1174bytes readとexact。追加wakeを避け親のfs全文再読取0で、再構成を公式全文再読取済とは呼ばない。19:16:45UTCにcancelled/pending0/全49sessions active0/Computer paused/旧production22全fields維持、費18662microUSD/ledger4件一致、月残624352を確認する。証拠はprivate v23-journal-usage-{events,artifacts,verification,final-resources,ledger}。既存reviewer再開はagent thread limitで失敗し、別fresh read-only reviewerが同じ欠落修復だけを照合する。本番23/inputは合格照合まで未採用、元7TODO/収益未達は保持する。
+
+
+独立reviewはSHIP/追加Blocking0。19:17:55UTC、固定main048由来desiredへの差分agent_version/input_templateの2fieldだけをPATCHし、production23/priority/enabled/scheduled/次00UTC・全source fields一致/Computer paused/active0を公式確認する。モデル/月9/task1/Identity/mail変更0。providerエラー恒久解消や実売上成功とは呼ばない。証拠private v23-desired-rollout-{attempt,receipt,deployment-readback,final}。
+
+現在cursor2は有料需要へ戻る。次の本人通常業務1件はdesired inputに従い、既存stateと商品を把握→新しい未解決の公開需要/支払い意思を本人browserで観測→他作業前に既存履歴を保持して本人保存/読戻し→end_turn。自己解決済みissue9001/解決済みtutorial/seller宣伝を買い手扱いせず、過去journalの修復を反復しない。fresh active0/paused/残credit>=計画500000、finite400000＋後計上100000、12分/max24tools/hosted最大4、DM/他者issueへの営業送信0、追加input/model/増枠0。未獲得なら正直に記録して次行動を残す。元7TODO・第三者入金・録画・登録・phone-only・黒字/USD10K/月・移植は未達。

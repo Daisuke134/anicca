@@ -25911,3 +25911,5 @@ Naïve v22の通常業務1件目はSDK sessions.create201から15tools/4extract/
 Naïve現在cursor2: journal-onlyは4tools/end_turn/費27665で完了するがbrowser使用内訳削除の独立Blocking1件によりdesired23/input未採用。19:14:35UTCのGETでComputer paused。内訳screenshot1/extract1を本人read/edit/readで追補し、hosted枠extract1/4と区分、独立照合後だけmain048の2fieldを採用する。手順・有限枠・残7TODO → docs/superpowers/plans/2026-11-03-naive-browser-company.md「journal最小訂正の実測と内訳保持の追補」。
 
 Naïve内訳追補は3tools/end_turn/確認retry0、費18662/ledger4、Computer paused/active0/旧production22を公式確認。本人editと末尾readの照合は通過、fresh独立review待ち。収益は未実証。→同plan「journal最小訂正の実測と内訳保持の追補」。
+
+Naïve現行: 内訳追補の独立review SHIP後、19:17:55UTCにmain048 desired23/inputを本番採用、全source fields公式一致/paused/active0。旧production22保持は履歴。現在cursor2は公開の有料需要の観測→本人先行保存→初回有料納品へ戻る。実売上等は未達。詳細・有限次業務 → 同plan。
