@@ -9,7 +9,7 @@
 
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用cap月5USD/max_task1USD、既存残高内・追加入金なし。
+- 専用cap月6USD/max_task1USD、既存残高内・追加入金なし。
 - 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
 - business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
@@ -162,3 +162,12 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - offerの隣接成功例: https://www.coderabbit.ai/ はfirst-partyで17K customers/6M repositoriesを掲示。独立検証した数字ではなく、public単発trace-reviewの販売実績でもない。同じ価格/商品/媒体での成功例は未取得の穴として残し、29USDCは1件単位の仮説pilot。模倣するのは具体的な失敗例→修正案→再検証→明確なCTAと低い初期負担の構成で、文章/コード/画像/成果数字を自社へ流用しない。計測は依頼数/適合数/公開納品数/第三者USDC receipt/直接費用、traffic分母未取得のconversionはunknown。
 - 現cadenceのcapacity: 1run最大1件×12時間毎では最大2件/日、30日×29USDCで理論上1740USDC（需要/稼働/支払が全て成立した上限で予測ではない）。USD10K月売上にはこの初期設定のままでは届かない。最初の有償納品と費用を実証後、実受注に合わせて頻度/単価/並列性/資源配分を自律更新する。まず需要ゼロ/赤字の複製を増やさない。
 - Grok/Muse本人DMはSlack connectorのrestricted_action_read_only_channelで拒否、送信0。既存team threadへの送信は成功しているが返信未確認。別accountや非対応APIで制限を迂回しない。
+
+### 公開pilotの反映とv12予算修復
+
+- Public PR #3/main `041bc1f2f81f6d468dff075fa8b998f675cff02c` のoffer/sample/receiver/issue formを固定SHAで4/4byte一致確認。trace-review label作成済み。native offer write/read一致、見積り契約との差は引用符正規化だけで、相対article linkは絶対URLへ修正read済み。
+- PR #9135/main `2b87217bf43b75a47233d21790d4feb62677c519` のagent/deployment v11全payload GET一致、本人wake=false/owner一致。旧Port25有限sessionはcancel→GET。秘密検査/関連CI PASS、無関係loop2件は反映時点で実行中。
+- native browser goto実callはpublic intakeへ到達、observeは空配列。空画面/zero requestsを区別するvisual追加probeは推論前にbudget quoteで停止。依頼ゼロの実画面確認成功とは扱わない。旧session累計108481microUSD、当該追加probe/募集は未実行。
+- 既存agent実費4843496microUSD、org live残高26742594microUSD。短い新sessionもagent capで停止/費用0、150000microUSDのtask枠は作成時pre-flight quote未満で402、400000枠では作成できたがagent capで停止。実費消費と予約見積を区別する。無送信をeventで確認し同sessionをcancel→GET。
+- 現在cursor: 月5→6USD（追加支出権限は最大1USD）、task1USDを維持するv12をmain固定SHAへ反映→agent/deployment GET一致→新しい短い有限runで募集1postとnative browser実画面確認。旧停止sessionは先にcancel済み、auto-resume競合を防ぐ。追加入金/他agent変更無し。以降は実依頼→納品→第三者USDC receipt/費用、自然run/録画、黒字後の移植/複製。実売上/USD10K/自己compute支払は未達。
+- 順序は募集/実intake→受注→納品→決済を維持。予算修復を現在cursorに挿入する理由は現残枠が次call見積り未満で、自然runも停止するため。追加1USDの効果を実費/receiptで判定し、無制限増額にしない。
