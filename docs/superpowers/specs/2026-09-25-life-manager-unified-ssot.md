@@ -6,10 +6,13 @@
 
 ### 現在の残TODOとcursor
 
-0. **容量の再低下を先に回復する**。自然receive/workのdisk_floor_lowを再観測し、実free3.883GiB・swap使用約17.1GiBを確認する。旧順は本人wake/収益、新順は自所有の容量回復→同じ本人wake/収益。理由は4GiB未満で自動実行自体が延期されるため。既存のidle browser整理と完了済みsource/cacheの安全条件を再観測し、使用中owner/認証/profile/memory/stateを保持した最小候補だけを実行する。swap削除・基盤restart・床/上限変更はしない。復帰未完のaffiliate:elevenlabsを増やさず、自然receive/workの再開を確認する。
-1. **HQ-02 本人の自動wakeと引継ぎ**。Dots/Muse/Grokbotそれぞれの元message→自然受領→実着手→結果を本人経路で照合する。接続待ちで独立した収益/開発を止めず、同じ催促を反復しない。現cursorは本人wake/予備枠の不足と既存業務の具体的引継ぎ。
-2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。最新19JST task2259ca496dfc66dc3906826fはCLI succeeded/posted/exit0、新規提案1回201・本人GET一致、全5pending/assignment0。売上/出金は未確認。証拠PR9153は必要CI全PASS後にmain統合する。21JST報告は初回自然run未観測として、実時刻到来後の結果を確認する。
-3. **既存復旧責務**。rootが整理したaffiliate:elevenlabsの旧PIDは終了し、ownerはsupported restart/idle apply済みだが、12GiBのdisk条件で復帰未完。profile/認証を保持し、容量条件を満たした自然復帰を確認する。Muse専用browserの登録だけを本人account/binding/wake成功としない。FIRST1000は既存担当の元受付PNG/portal照合を継続し、Nov4 16:59 JST期限・再送HOLDを維持する。
+今回の範囲は、この節の実行方式・残TODO・観測済み状態を実設定/永続receiptへ合わせる文書更新。runtime・cadence・閾値・認証・外部effectは変更しない。完了条件は該当節以外を保持し、source差分を検証してmainへ統合すること。
+
+順序変更: 旧順は容量回復→本人wake/収益、新順は本人wake/引継ぎ→業務継続→実際に延期された処理の限定復旧。理由は、容量の少なさ自体を全業務の停止理由にせず、独立して進められる成果を先に出すため。容量条件を無視した起動や安全床の引下げを意味しない。現在cursorは本人経路の追跡欠落と有効な引継ぎ先の確認。進行中owner/effectは維持する。
+
+1. **HQ-02 本人の自動wakeと引継ぎ**。Dots/Muse/Grokbotそれぞれの元message→自然受領→実着手→結果を本人経路で照合する。Museは既存60秒hookの自然発火を報告するが、previewのみで元message IDを渡さないため相関が未完。既存hookでIDを保持する最小修復を本人ownerへ依頼済みで、修復済みとはしない。home-claudeは認証失敗のため有効な予備席へ数えず、実際に使える担当による枠切れ引継ぎ1件の完遂・重複0まで確認する。接続待ちで独立した収益/開発を止めず、同じ催促を反復しない。
+2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。最新完了task ebec4e1647a41eae7cb29516はsucceeded/posted、公式照合5pending/assignment0。売上/出金は未確認。PR9153はmain統合済み。採算計算PR9161は未統合で、同ownerが必要CI→main→成果物照合を継続する。21JST task e5dd86428fd216251594c40bもsucceeded/postedであり、初回未観測へ戻さない。新たな毎時task6d595da59b3f3a49dae55bb3はqueuedで、登録を着手としない。
+3. **実際に延期された処理の限定復旧**。観測時のreceive/work/scheduleはmain fec447bb由来releaseで自然起動するが、終端receiptはdisk_floor_low/exit75。容量問題を全社の停止理由に拡張せず、該当ownerの再生成可能な不要物だけを安全条件下で整理し、次の自然実行を確認する。swap削除・基盤restart・床/上限変更はしない。既存のaffiliate:elevenlabs復帰責務、Muse専用browserのaccount/binding/wake未確認は保持する。FIRST1000は既存担当の元受付PNG/portal照合・再送HOLDを維持し、期限経過を提出成功へ置換しない。
 
 HQ-01のMac自然受信→一意card→着手→元送信先への結果→再巡回重複0と、HQ-04の公開記事/画面確認は受入済み。全agentの24時間/1分応答と、収益成立は未達のまま保持する。
 
@@ -20,10 +23,14 @@ HQ-01のMac自然受信→一意card→着手→元送信先への結果→再�
 | 共有受信 | 15秒 | Slack/Reasonを既存SQLiteへ保存。実plist/自然run確認済み。資源待ちがある |
 | 作業worker | 15秒 | card claim後だけ着手。有限CLIと成果物/公式返信まで確認済み |
 | 定期投入 | 300秒 | due仕事を一意登録。時刻ぴったりの着手保証ではない |
-| 収益 | 毎時 | 19JST task2259caが自然登録→実着手→成果物→公式結果返信 |
+| 収益 | 毎時 | 最新完了ebec4eはsucceeded/posted。次6d595dはqueued |
 | 優先順位/計測 | 09JST | task95bef89b6d4246ed4290d57d succeeded/posted/exit0 |
 | Manager R&D | 14JST | taskd26c0c5310218fcdf4ec750a。Ubuntu/Playwright検証修正PR9127/main ee837f8d40c4d109c234ed698a071952e11b688c |
-| 成果/費用 | 21JST | private設定に登録済み。初回自然runは未観測 |
+| 成果/費用 | 21JST | taske5dd86428fd216251594c40b succeeded/posted。売上成立とは別 |
+
+実行場所はMac mini。macOSのlaunchdが3つの有限job（ai.anicca.team-hq-receive/work/schedule）を起こし、main由来immutable releaseのbin/lm-loop-run→bin/team-hq.pyを実行する。観測したplistは `/Users/anicca/loops/releases/20261104T053926-fec447bb` を固定参照する。受信/workはStartInterval=15、scheduleは毎時03/08/13/18/23/28/33/38/43/48/53/58分で5分間隔。現在の対話session、SSH接続、Desktop Scheduled Tasksを起動源にはしない。
+
+workerは仕事がある時だけ `/opt/homebrew/bin/codex exec --skip-git-repo-check -o {artifact} -` をcwd `/Users/anicca` で実行する。CLI runはtimeout_seconds設定内で終了し、結果/次cursorを永続化する。常駐LLMや7本の独立sessionではない。Macの電源/ログイン・通信・認証・実行条件に依存するため、登録を24時間無停止の証明にしない。
 
 設定は `~/.config/anicca-hq/team.json`、業務card/receiptは `~/.local/state/life-manager/team-hq/`。7種を独立LLM常駐7個と数えず、空の受信/投入ではモデルを起動しない。09時の過去累計gross、14時のCI修復、提案額を新規純利益や自分が稼いだ額へ置換しない。18JSTの1931語reportは受注前準備で未納品。詳細はNEAR-FIRST-OFFERの参照先。
 
