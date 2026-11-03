@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 - [home-codex / NEAR framework提案] task767bc1bf5462b30c2d569950、owner home-codex-767bc1、branch task/home-codex-767bc1。既存NEARレーンの未応募job dd6e4f85限定提案と本人公式照合を所有。既存2pending/全assignmentを先に照合、受注時納品優先。wallet/課金API/別scheduler/会計/投稿/親PR9135/旧IG fenceは変更しない。正本 → NEAR初回販売specのframework節。
 - [home-codex / Manager E16 runner] task d26c0c5310218fcdf4ec750a、owner home-codex-d26c0c、branch fix/manager-runner-d26c0c。自然main検証のPlaywright/Ubuntu非互換を既知成功imageへ戻す限定修復。所有はworkflowの2runnerと本BOARD/統合SSOT/証拠のみ。親rootのPR9125・Naïve・provider effectは変更しない。必要CI後main、自然受入は別cursor。
 - [home-codex / CAPAFY旧IG receipt継続] task17679f4e146bb3b4be52268e、owner home-codex-17679f、branch docs/capafy-ig-receipt-17679f。対象旧occurrenceのread-only診断と隔離fixtureのみ。親所有PR9117・TEAM-HQ・投稿・会計・認証・effect fenceは変更しない。正本 → 統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
