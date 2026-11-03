@@ -25816,4 +25816,4 @@ Naïve継続運転の追加実測: PR9124 main7b7e90ef2f18c9e36ea42757106c073871
 
 ## NEAR-FIRST-OFFER — 初回販売の既存レーン移管
 
-→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market、現在cursorは現行API契約確認後の一度だけの登録・秘密即保存・公開案件照合。Capafy/Guru/Apifyの既存ownerを維持する。
+→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market。登録201・初回15USDC提案201/pending・本人bid公式照合を確認済み。現在cursorは既存hourlyでの受注監視と自然採用確認、受注後の納品。Capafy/Guru/Apifyの既存ownerを維持する。
