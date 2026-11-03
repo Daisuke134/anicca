@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "run_label": "v24-n8n-service-signup",
+  "release_sha": "fec447bb56b19c938812914879b8cd79f9e6ef8c",
+  "model": "zai-org/GLM-5.2-FP8",
+  "harness": "pi",
+  "target_url": "https://community.n8n.io/signup",
+  "observation_time_utc": "2026-11-03T20:39:13.697294+00:00",
+  "observed": {
+    "tool_calls": 4,
+    "owned_inbox_lookup_succeeded": true,
+    "goto_succeeded": true,
+    "signup_form_fields": [
+      "Email",
+      "Username",
+      "Password",
+      "Name (optional)"
+    ],
+    "signup_argument_keys": [
+      "name",
+      "email",
+      "action"
+    ],
+    "service_argument_present": false,
+    "url_argument_present": false,
+    "session_identity_matched": true,
+    "owned_email_matched": true,
+    "primary_ai_confirmations": 0,
+    "human_approval_requests": 0,
+    "primary_followup_messages": 0,
+    "natural_end_turn": false,
+    "terminal_status": "cancelled",
+    "terminal_pending_count": 1,
+    "active_sessions": 0,
+    "computer_status": "paused",
+    "exact_service_credential_count": 0,
+    "credential_readback_time_utc": "2026-11-03T20:39:16.761633+00:00"
+  },
+  "cost": {
+    "session_attributed_micro_usd": 45072,
+    "ledger_entries": 5,
+    "ledger_matches_spend": true,
+    "complete_company_cost": false
+  },
+  "outcomes": {
+    "registration_verified": false,
+    "customer_order_verified": false,
+    "customer_payment_verified": false,
+    "model_omission_vs_schema_filtering": "unresolved"
+  },
+  "production": {
+    "readback_time_utc": "2026-11-03T20:40:55.267494+00:00",
+    "agent_version": 24,
+    "production_pin": 24,
+    "all_source_fields_equal": true,
+    "change": "monthly cap USD 9 to USD 10 only; desired version 23 to 24",
+    "registration_success_inferred": false
+  },
+  "source_evidence_sha256": {
+    "v24-n8n-service-signup-events.json": "3c922d3d089280a0a6c13a623b08aef7847179b67392129ab581413fe0fd6d5a",
+    "v24-n8n-service-signup-browser-proof.json": "1acf1fe5ba208cbb4f4cb1aa2d5095f2cdc6a16bb6fd5360ad5d4be9f96b6d2d",
+    "v24-n8n-service-signup-credentials.json": "ebcf4bd92f311d4f07d6cdf1334e77a6660cdfb1f96a27fde14f407e663ae7a8",
+    "v24-n8n-service-signup-final-resources.json": "1bb46965cb4574add65d680e5e8d982de510ac7354eeabea3968eb7502b2bd63",
+    "v24-desired-rollout-final-resources.json": "83a13cf6d8516ca76f92b2b6099805a33c41cad84b980b6e85fa62012f230885"
+  },
+  "source_evidence_hash_scope": "Sanitized private observation snapshot frozen for this export; no raw mailbox or credential values."
+}

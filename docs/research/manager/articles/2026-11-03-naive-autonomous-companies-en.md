@@ -207,8 +207,8 @@ These are observed results, not a claim of a self-sustaining business.
 
 | Workstream | Verified result | Still unverified |
 |---|---|---|
-| Runtime | Dedicated Naïve Identity, inbox, Computer and saved browser context; production deployment pinned to v13, Claude Haiku 4.5, $7 monthly cap and $1 task ceiling; 12-hour UTC schedule | A completed natural scheduled run |
-| Email | One native outbound message reached an external mail tester; SPF passed, DKIM was valid and DMARC passed | Inbound delivery and an authenticated owned-email account |
+| Runtime | Dedicated Naïve Identity, inbox, Computer and saved browser context; production pinned to v24, GLM-5.2 on the priority lane, $10 monthly cap and $1 task ceiling; 12-hour UTC schedule; all settings matched the merged source | A completed natural scheduled run |
+| Email | One native outbound message passed SPF, DKIM and DMARC; a dedicated AgentMail inbox also received a test that the native MCP reader checked | Inbound delivery to the original Naïve inbox and a completed third-party signup |
 | Distribution | Native Postiz publishing produced public X posts; the repaired call to action was read back from Postiz and X | A customer conversion attributable to those posts |
 | Product | [Public Trace Review pilot and sample](https://github.com/Daisuke134/businessrun-bench/blob/5054f196abb564ef168646195a2f6ac83e7e1124/pilot/README.md): one public, redacted trace of at most 20 tool calls, 29 USDC on Base after delivery | A third-party order, paid delivery and verified revenue |
 | Accessibility | Work runs on the agent's cloud computer and uses its own inbox | A phone-only customer entry point; the current GitHub intake targets developers |
@@ -243,6 +243,26 @@ At this checkpoint, official Naïve agent spend totalled **$6.634284**. Separate
 ### What version testing changed
 
 We initially assumed a deployment pinned to a version would always remain there. The [deployment API documentation](https://usenaive.ai/docs/api/deployments) says a pin to the current version follows its replacement on update or rollback; a pin to an older version remains. Our first model-only change moved the current pin too. We caught that before creating a model-comparison session, restored production, and repeated the comparison with production pinned to the older v13. That second deployment snapshot stayed unchanged. This was our misunderstanding of the documented rollout contract, not a demonstrated vendor bug.
+
+### What the n8n signup trial established
+
+The agent reached [n8n Community’s ordinary signup page](https://community.n8n.io/signup). Its live form had Email, Username, Password and optional Name fields. Google sign-in was optional. This establishes that a user’s private Google account is unnecessary for that route; it does not establish successful registration.
+
+![The email signup form observed by the Naïve agent](../assets/n8n-owned-email-signup-form.jpg)
+
+*An empty signup form captured in the agent’s cloud browser. No account, password or customer data is shown.*
+
+An earlier scoped AI confirmation let the native signup resume, but the runtime returned `signup needs service`. We then supplied an explicit instruction containing the target `service`, `url`, dedicated email and Identity. In the v24 trial, the actual signup arguments still contained only `name`, `email` and `action`. We did not approve that incomplete call. Whether the model omitted the fields or the runtime schema filtered them remains unresolved.
+
+That four-tool trial cost **$0.045072** according to the session-attributed spend and five ledger entries. It ended by cancellation with one retained confirmation card, zero active sessions and a paused Computer. The exact service’s vault credential count was zero on the subsequent readback. Registration, an order and customer payment remained unverified. Human approval requests and AI-coordinator confirmations were both zero in this particular trial; an unfinished trial is not zero-intervention success.
+
+The [sanitized observation record](../../evidence/naive-live-20261104/owned-email-onboarding-v24.json) distinguishes the instruction from the actual tool arguments. That is a useful evaluation boundary: a benchmark should check whether the agent supplied the required target fields and whether the service actually authenticated it, separately from a successful navigation or an approval API receipt.
+
+We also repaired a distinct budget issue. A $0.10 session had consumed only $0.019521 when it could no longer reserve the next call. Its first call’s quote was $0.083183; the rejected call’s exact quote was not exposed. Raising the finite session allocation let the trial pass that boundary. The monthly cap then moved from $9 to $10 within existing prepaid credit, with model, tools, Identity and task ceiling unchanged. Adopting that budget-only version did not certify signup or revenue.
+
+### What to reuse from Naïve’s agency template
+
+Naïve’s [Agency Blueprint](https://github.com/usenaive/agency-blueprint) offers a concrete structure: a shared agency Identity and mailbox, client records, a public intake site and seven core agent roles. It also explicitly routes publishing and outbound messages through an operator approval workflow. Its installation and daily budgets are ceilings, not reported earnings. We can reuse the separation of identity, intake and delivery while evaluating our own no-human workflow with actual customer outcomes. A provisioned crew, a filed lead and a draft proposal each remain distinct from a paid delivery.
 
 ### What to measure next
 
