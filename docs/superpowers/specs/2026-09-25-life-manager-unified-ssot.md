@@ -25723,10 +25723,10 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 目的: Grok/Muse/Dots/Codexと同じLLM＋Computer/browserの形をNaïve自身の実行環境へ接続し、画面を観測→判断→click/type→結果確認で収益業務を完走する。業務script、業務API、固定workflowを収益判断の主経路にする案を上書きする。SDK/APIはagent設定、予算、session、証拠取得という基盤操作にだけ使う。
 範囲: config/naive-browser-company.jsonの専用担当、同じsourceのhosted適用、browser toolの実操作、認証/保存状態、既存ownerとの調整、公式readback。既存のCEO/builder等の設定・cron・Mac/browser/他VMは変更しない。売れている商品は変更しない。
-設計: pi＋画像後の継続を実測したgoogle/gemini-2.5-flash-lite、外部業務操作はbrowser、Computerのread/writeは作業メモと成果物だけに使い、shell/API/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用検証budgetは月0.50USD/max_task0.50USD、追加入金なし、cron未登録から開始する。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
+設計: pi＋画像後の継続を実測したgoogle/gemini-2.5-flash-lite、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTP/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月2USD/max_task0.50USD、既存残高内・追加入金なし、cron未登録から開始する。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
 比較した案: 既存script移植はDaisの明示指示に反するため不採用。Macのbrowserを遠隔操作する案はNaïve自身のComputerという条件を満たさないため初回方式にしない。Naïve標準browser toolをモデルが使う方式を採用する。
 完了条件: (1)Grok/Muse/Dotsの実手順/ownerを照合 (2)Naïve側のagent・browser/Computer・モデル・予算を公式readback (3)実際の画面観測とclick/typeをtool eventと変化後の画面で確認 (4)認証済み業務と外部結果を確認 (5)同じ担当の再開と所有する継続運転を確認。市場調査だけを公開/売上完了にしない。秘密値はmodel prompt、Git、chatへ出さない。
-実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。現在cursorはBROWSER03のmanaged-browser Google OAuth境界。BROWSER02の実操作と、BROWSER04の別sessionメモ再読取は確認済み。収益業務と継続deploymentは未完。
+実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。旧Google診断時点のcursorはBROWSER03のmanaged-browser Google OAuth境界。BROWSER02の実操作と、BROWSER04の別sessionメモ再読取は確認済み。収益業務と継続deploymentは未完。
 チーム証拠: Muse Relayは返答済みで、Naïve統合ownerではなく最小推論N1のみ確認できると回答。Grok/Muse/Dotsへ改めて自身のcomputer/browser操作手順・最近の結果・owner・skillをReason照会し、Slack既存threadにも訂正を送る。queuedを担当本人の実行証拠にしない。
 
 
@@ -25740,7 +25740,22 @@ Browser実操作の修復: ターン終了でbrowserが閉じるため、次タ�
 認証誤報の診断: 専用loginがlogin doneを返しても、extractではWelcome to Capafy、メール形式エラー、ログインformが残っていた。agentの成功報告と誤記メモを訂正し、認証未完を保持する。資格情報metadataのhost=googleは実際のaccounts.google.comと不一致だった。公式APIのservice例はfigma.comというhostnameであるため、accounts.google.com名で保存しhost完全一致をGET確認後、自己作成した旧login:googleだけを削除した。raw秘密値はmodel/ログへ渡さない。次はGoogle実画面のhostとservice一致を確認してから専用loginを使い、別sessionでjournalと保存contextを再開する。login done単独を成功にせず、ログイン済み本人画面を必須の結果として扱う。
 
 Hosted最終readback: PR9112 main265bab69から専用agent v3を適用し、model/system/owner/source SHA/予算/contextをGET照合。Computerは同一idで別sessionのメモreadに成功し、自然idle後pausedを確認。公開市場検索30件は実画面結果、認証/公開/売上の成功ではない。専用agentの公式spend集計は405957 microUSD、月cap500000を維持。session瞬間値と後続の公式集計には差があるため、初回38786は当時の観測として保持し、最終費用はhosted-readback.jsonのquery区間/内訳を使う。資格情報host修復後も専用loginのprovider error、またはlogin done後の未認証画面を記録。最後のact失敗後の画像はCapafyログイン画面で、ボタンdisabledや本人確認challengeの存在は確定しない。UI/APIの状態を文章の成功報告より優先する。複数のprimary再指示・修復を含むため介入ゼロ評価ではない。
-残TODO正本: (1)providerのGoogle OAuth実画面操作を診断できるsupported route/本人担当の成功手順を取得し、同じidentity/contextで認証結果を確認 (2)Grok/Museのwrite ownerと新規の担当対象を照合し一業務を完走 (3)公開/納品/費用/実売上を個別readback (4)同identity・固定versionのNaïve標準deploymentへ接続し自然実行を確認 (5)同条件benchmark比較へ戻る。既存6agent/cron/Mac profile/販売済商品は未変更。Grok/Muse/Dotsへ照会済みだが実手順の返答は未取得、relayの最小inference確認をVM本人の業務証拠へ昇格しない。
+旧Google経路の診断時点の残作業（下記の本人mail順序に置換）: (1)providerのGoogle OAuth実画面操作を診断できるsupported route/本人担当の成功手順を取得し、同じidentity/contextで認証結果を確認 (2)Grok/Museのwrite ownerと新規の担当対象を照合し一業務を完走 (3)公開/納品/費用/実売上を個別readback (4)同identity・固定versionのNaïve標準deploymentへ接続し自然実行を確認 (5)同条件benchmark比較へ戻る。既存6agent/cron/Mac profile/販売済商品は未変更。Grok/Muse/Dotsへ照会済みだが実手順の返答は未取得、relayの最小inference確認をVM本人の業務証拠へ昇格しない。
+
+
+Naïve本人の登録・無人運用への訂正: Daisは専用メール/資格情報で新規登録し、承認構造を置かず会社業務を進めるよう明示する。既存個人Googleへのログインを必須経路から外す。通常の登録、認証メール処理、所有する新規商品の作成/公開/対応は委任済みで、人間承認を求めない。受取口座や本人確認など本人に属する不足事実はprivate SSOTと既存文脈を検索し、捏造せず具体的な不足を記録して独立業務を続ける。
+実測した設定不足: 専用Identityのinbox0、org domainはexternal/pending_dnsの1件だけ。configはemail.inboxes/read/sendをdisable、browser.ask_actions=[signup]としていた。公式mail仕様には標準system domainの即時利用経路があり、createDomain(kind=system)を使って専用受信箱を作る。既存external domain/個人Google/他6agent/稼働loopは変更しない。
+新範囲と完了条件: (1)専用mailのdomain/inbox readinessを公式照合しprivate SSOTへ参照を登録 (2)email.inboxes/read/sendを明示allow、browser.ask_actions=[]、日常業務で承認を求めないpromptをmainから適用 (3)担当がCapafyの通常email登録とメール確認をブラウザで完走し、本人用画面を確認 (4)新規所有商品一件の公開/成果物と収益化導線を確認 (5)本人Identity/context/状態を保つ標準deploymentへ接続。登録や確認のprovider側要求は、Daisへ承認転送する構造にせず、委任済みの範囲をAI担当側で処理する。
+順序更新: 旧=既存Google OAuth修復→owner→一業務→定期運転。新=本人mail/system domain→無人登録設定→email登録/本人画面→新規所有商品→継続運転/実収支。変更理由はDaisが本人mailによる新規登録を指定し、mail権限不足とsignup承認停止を実測したため。現在cursorはMAIL03の本人email登録/本人画面。browserの公開web到達は標準allowed_domains=[*]へ戻し、登録先の通常リンクやメール認証redirectを固定domain列挙で止めない。個人Googleの専用vault複製は除去し本人mailだけを使う。shell/業務HTTP/MCP/wallet能力は追加しない。費用枠は今回の登録/商品作成への範囲拡張に合わせ、専用担当の月cap0.50→2USD（既存制作担当と同枠）、max_task0.50USDを維持し、既存残高内・追加入金なし。inboxは準備中wake=falseで同一signup担当のemail.readを使い、登録後にwake=trueと継続実行を接続する。これは承認gateではなく重複writer防止の起動順である。
+
+本人mail/無人設定の実反映: MAIL01/02完了。system domainは再verifyでactive・dns provisioned・inbound verified、専用inbox activeを公式GET照合しprivate SSOTへ参照を保存。個人Googleの専用vault複製を削除し不在をGET確認。PR9116/main95aee29fccf1bc6ae920465dca0eba009d47bc98の固定configから専用agent v4を適用しsystem/tools/budget/metadataを完全一致readback。signup ask_actions=[]、本人email3機能allow。MAIL03の実jobはv4/同Identity/contextでrunning、read/browser goto/observeを確認。登録・認証・公開・売上・継続deploymentは未確認。Slack既存threadへ無人方針と本人mail準備完了を共有しGrok/Museの実経路を再照会、返答は未取得。
+
+MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し、存在しないgoto toolを呼んでidleになった。承認要求やmail不足ではない。primary AIから既に成功済みのbrowser(action=act,instruction=...)とbrowser.linksの実形式を伝えて同sessionを再開。続くemail.inboxesは成功、browser gotoは最初の入力エラーから次callで成功した。登録/認証済み本人画面は未確認。primary AIの修正を含むため、無介入ベンチマーク成功とは扱わない。
+
+継続診断: 軽量modelは最後のgoto後の未観測画面を登録不能と誤判定したため、公式catalogで存在を確認したgoogle/gemini-2.5-flashへsession overrideしGETのmodel一致を確認。既定agent v4のmodelは変更しない。実observeはWelcome to Capafy/Continue with Emailボタンを返し、登録導線なしという旧判断を棄却。次turnのact前にgotoがなくobserveが空だったため、ブラウザのturn毎closeに合わせて再open→観測→操作へ修正を送信。登録/認証/公開/売上は引き続き未確認。PR9116のCIは後続確認で全15check PASS。
+
+
+
 
 
 ## AGI flagship essay publication
