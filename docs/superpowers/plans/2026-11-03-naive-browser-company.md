@@ -174,6 +174,8 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v12稼働・公開募集・実依頼待ち
 
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv12/月6USD/task1USD、担当累計5135524microUSD、実第三者売上は未確認。
+
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
 - [x] 同finite runで本人browserがGitHub公開依頼一覧をログイン無しでgoto。extract初回はJSON不正でNot run、短い正規JSONに直した再試行は成功し「0 results / No results matched your search」。native screenshot/view_image、primaryの実画像も同状態。Computer public-pilot-intake.jsonはnative write/read exact、extract完了のprovider時刻2026-11-03T07:32:04.820Z、public依頼0（ファイル内の自己申告時刻を計測時計には使わない）。空observeからゼロ件を推測した主張を置換する。
@@ -183,9 +185,26 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 残TODO（現在cursorは1、全体goalはactive）:
 1. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点で反復募集や同じ画面巡回を増やさず、顧客反応/チーム返信/自然runを次の観測とする。
 2. 次の標準自然runは2026-11-03T12:00:00Z（JST21時）。manual≠natural。実runの版/費用/入力量/介入点/公式納品receiptを記録。初回の実有償業務を連続画面録画で保存する。いま保存した単一スクリーンショットを動画と呼ばない。
-3. 本人inbound配送は独立切り分け。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
+3. 本人inbound配送は独立切り分け。送信方向は後続のmail-tester1通で実受信10/10とSPFpass/DKIMvalid/DMARCpassを確認済み（詳細は末尾の実測結果）。受信方向/登録完了は未達。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
 4. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
 5. 利用者向けiPhone入口を設け、利用者個人のGoogle/メール入力/password/PCを要求せずManagerを利用できる導線を実装・実機確認する。現在のdeveloper向けGitHub依頼フォームはこのconsumer入口ではない。infrastructure契約と利用者本人確認/引出条件を区別し、銀行情報以外不要と未確認で約束しない。
 6. 黒字の手順/評価/最小stateを他のVMへ移植し2拠点で実証。専用Identity/credential所有/資源上限/仕事重複を維持する。receiving-only walletにoutgoing signerは未接続、compute自費支払/自己複製/任意cloud互換は未達。USD10K月売上/MRR・YC採択・優勝は目標であり未達。
 
 証拠正本: repo外private `/Users/anicca/.local/state/naive-browser-company` のagent/deployment-readback-v12.json、public-pilot-promo-provider-readback.json、public-pilot-promo-v12-events.json、public-pilot-intake-v12-events.json、public-pilot-intake-cloud.jpg、public-pilot-v12-finite-cancel-readback.json、own-agent-spend-after-pilot-launch.json。署名付き画面URL/メール原文/秘密値は公開しない。
+
+### 受注待ちと並行する本人メール配送の境界診断
+
+目的: 新しい個人メール依存を加えず、本人Naïveメールの外部到達と送信認証を切り分ける。範囲: 自動メール検査 https://www.mail-tester.com/ の通常browser画面で自分用の一時検査宛先を取得し、native email.sendを最大1通、画面から結果と認証情報を読む。公式homepage取得は「First, send your email to」を確認したが動的本文は未取得、無料枠/実行可否は実UIで確認し、購入・有料plan・上限変更は行わない。完了条件: 実送信acceptedと外部受信を区別し、受信した場合はprovider結果/headersのSPF/DKIM/DMARCと画像を確認、未着なら未着の正確な境界を保存する。認証passやscoreを捏造せず、新probeも送信成功だけで受信/登録完了にしない。
+
+既存Inbox/個人Googleは使わない。Inkbox2identity（managerjghh/aiclips-agent）はlive active/mailactiveだが今回ownerの証拠無し、作成toolも無いため借用・変更無し。Naïve本人messagesはfresh GETで0/has_more=false。既存Port25/TLDR宛先へ再送せず、検査本文に個人/顧客data・秘密・本番URLを入れない。宛先/原文/署名付き画面URLはprivate evidenceだけに保存する。
+
+全体TODO順は変更しない。現在の受注待ちと自然run12UTCまでに独立実行でき、登録要件の本人mail経路の未確認を狭めるためTODO3を並行する。native有限runは同じv12/Identity/11tools、予算最大0.6USD・月6/task1内。定期deployment/他ownerは不変、1通の不確実な再送はしない。既存募集・記事を再公開しない。
+
+#### 本人メール外部到達の実測結果
+
+- native v12有限run `ses_c35jfm02r3v865kqqnrs5amjg9` が、mail-testerの通常browserから取得した宛先へ本人inboxのemail.sendを1通実行。外部画面が同一subject/nonceの受信を示し10/10、本人browser extract155はSPF=pass/DKIM=valid/DMARC=pass。受信レポート一次HTMLのAuthentication-Results（DMARC/DKIM pass）とSpamAssassin SPF_PASSも整合。送信受付だけの主張を、今回1通の外部実受信と認証結果まで進める。全宛先への到達保証/返信/本人inboundの証明にはしない。
+- 認証panelの自然言語act失敗を、実HTMLで確認した `.test-result.signature .header` のclickで回復。native browser screenshot/view_image、最終file write184/read187 exact。画像は10/10の上部を示し、SPF等の詳細はnative extractと一次headerの証拠であり、画像内に全詳細が写るとは言わない。
+- read-only検証で、nativeファイル自己申告のextraction_timestampとprovider event155時刻の不一致を確認。rawファイルは監査のため保持し、自己申告時刻を公式時計として使わない。`mail-tester-verification.json` にprovider event25/58/155/187.created_atを実際の観測時刻として結合する。外部の正確な受信時刻は未取得でnull。内容read/write一致と時刻の真偽を区別する。
+- 有限runはend_turn→cancel→GET cancelled、実費221926microUSD、担当累計5135524microUSD。月6/task1不変、追加入金/他owner変更/追加メール送信なし。本人messagesはchannel=emailを明示したfresh GETでも0/has_more=false。本人inbound/サイト登録/売上成功は未達。Grok/Muse返信は引き続き未確認、12UTCの自然runはまだ開始前。
+- Amazon SES公式 https://docs.aws.amazon.com/ses/latest/dg/send-an-email-from-console.html のOOTO simulatorはReturn-Path/envelope senderへ返信し、外部源には応答しない。今回headerにSES署名はあるが、自分の表示Fromへの返信を証明しないため追加sendを実行しない。宛先/私有reportURL/rawheaders/署名付き画像URLはprivate evidenceのみ。
+- 全体cursorは実第三者依頼→公開納品→成功USDC tx/費用。本人mailの残境界は外部到達ではなく、実送信が確認できた第三者から本人inboundへの到着と登録確認リンクの処理。先のTLDR Subscribing…やPort25 acceptedを、第三者dispatch/本人受信として補わない。
