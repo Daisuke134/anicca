@@ -7,10 +7,30 @@
 **Tech Stack:** Naïve標準agent/session/browser、JSON設定。追加依存なし。
 **Spec:** docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md の Naïve browser company 節。
 
+## 現在の状態と残TODO（実行順の正本）
+
+目的は、利用者の個人メール/Googleを要求せず、Manager自身のIdentity・メール・Computerで登録、商品販売、納品、実入金まで完走すること。月USD10,000は目標であり達成値ではない。月額売上とMRRは分ける。
+
+本番はmainfec447b由来agent24/production24、pi/GLM-5.2/priority、月10USD/task1USD。専用AgentMailの実受信、本人browserの公開需要読取、状態保存は確認済み。直近own-contact試行は会社自身の住所を初期設定として渡しメール欄入力まで確認0で進むが、Substackが「This email has been blocked.」と表示し、登録/認証は未達。当該アドレスの拒否をAgentMail全体/ドメイン全体/他サービスへ一般化せず、別アドレスでこの拒否を迂回しない。n8nのnative signup必須field不足、mail読取後のread_people確認は別問題。claude_code/hermesは最新APIでrunnable=false。
+
+直近公式照合は60sessions/live0/pending0/Computer paused/本番24保持、費248095microUSD・全ledger34件一致、月残786750（後計上あり）。6分内終了だが要求18toolsに対し実20toolsで、tool数契約は未達。登録・第三者依頼/納品/入金・黒字・連続録画は未達。
+
+1. **専用基盤の未完部分を閉じる。** 本人Identity/mail/Computerと公開pilotを保持。記事・証拠PR9178/9179のCIを修復→main統合→英語公開記事更新。9件のbenchmark catalogは仕様読了/ローカル試験/公式実行/モデル比較を区別し、未実行を実行済みにしない。
+2. **現在cursor：初回の実受注→納品→第三者入金。** 新規アカウント作成を収益全体の前提にせず、既存pilotと許可済み会社発信で実需要へ限定提案。依頼・納品物・29USDCの第三者receipt・費用を同一案件で照合。内部送金は売上にしない。
+3. **自然運転と実業務の連続デモ。** 定期実行による需要取得から仕事完了まで録画。AI coordinator介入/人間介入/エラー/費用を実数表示。登録画面やtool成功だけを入金デモにしない。
+4. **専用メールの通常登録・認証。** 対象が正式に受け入れる経路を確認し、n8nのnative引数契約を解決。Substackの当該拒否は再送しない。受信/code取得/signup doneだけでは未完。個人Google/人間メールへ戻さない。
+5. **黒字化→月USD10,000。** 顧客売上、返金/手数料、推論/Computer/配信費を照合。29USDC単発商品と現処理能力だけで10K達成とせず、実需要から単価/商品/供給能力を改善。継続契約がなければMRRと呼ばない。
+6. **iPhoneだけの利用入口。** 個人メール・パスワード・PC入力なしで開始できる入口を実機で検証。銀行/本人手続き等、実サービスが要求する未充足条件は隠さない。
+7. **黒字手順の移植と拡大。** まず2拠点で資格情報・仕事所有権・費用を分離し、重複営業/納品/請求を防いで利益を比較。compute自費支払と復旧を確認後に拠点を増やす。複製数を利益の証拠にしない。
+
+従来7TODOの順序を維持し、主作業は2。登録4の独立probeは新しい失敗境界を分離できる場合だけ。同型有償再試行や未提供harnessへの新agent作成はしない。次の一手は最新記録とCI修復を統合し、既存pilotの需要・発信状態をreadbackして重複のない収益行動を選ぶこと。
+
+以下の設計・cursor・費用・チェック欄は各版の履歴。現在値と残TODOはこの節を正本とする。
+
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用capは修復sourceで月8USD/max_task1USD、既存残高内・追加入金なし。現在の稼働値と未反映targetは「現在の実行詳細」を参照。
-- 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
+- 専用capは現行sourceで月10USD/max_task1USD、既存残高内・追加入金なし。現在の稼働値と未反映targetは「現在の実行詳細」を参照。
+- 秘密値（API key/password/OTP等）は専用credential経路で扱い、root prompt・記録へ複製しない。非秘密の自己連絡先は必要なprivate初期設定だけに渡し、会話・repoへ表示しない。
 - business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
 ## Review Focus
@@ -1022,3 +1042,12 @@ Muse返信01M6HKRVEVV6Z7WFHXC7J85APYは「正式pi＋自己所有受信箱の無
 実ログイン/profile確認と本人stateの既存全値保持＋新key追記/readが成功条件。送信/受信/リンク取得だけを成功にせず、AI確認件数を記録する。投稿/配信/購読者import/課金/Stripe/送金は0。永続credentialが作成されるならprivate SSOTへ参照metadataを保存、秘密値の取得を偽らない。元7TODO/primary2/実受注納品入金/英語記事公開更新/録画/phone-only/黒字/USD10K/月/移植は保持する。
 
 同一own-contact runの追加観測: goto/extract/本人email typeはcard0、抽出では値がREDACTEDとなり入力反映の直接確認とはしない。actへのcredential-shaped instructionはguardが拒否し、別field/別表記で再送しない。11tools時点でbudget_paused、公式status消費120071/同turn usage60071はsnapshot差として保持する。次予約が残79929へ入らないため同sessionの有限capだけ200000→350000へ正式SDKで1回増枠し、同じ6分deadline/max18tools/月10/source24/production24を保持する。追加session0・新しい月cap/入金0、総計画枠450000はfresh残内。再開inputは既存taskを継続しguard拒否を反復しないこと、現在画面と実状態を保存することだけ。期限は延長せず330秒までにcancel開始する。
+
+
+### own-contact試行の終了結果
+
+ses_r2rf9jafe133waznrqcdhc2fjaは公式created_at21:10:23.196→ended_at21:15:21.575、298.379秒でcancelled/interrupted/pending0。AgentMail MCP呼出し0、primary確認0、メール欄type成功/規約checked/Continue操作後、seq79の実画面抽出は「This email has been blocked.」。当該アドレスの拒否を確認し、domain全体の拒否や理由は未確認。認証メール送信は未確認、本文/OTP/link取得0、新credential0、本人成果state保存0。credential-shaped actはguard拒否として保持し、登録成功にしない。
+
+finite200000は次予約でbudget_paused。増枠helper初回はSDK不存在のcredits.spendでmutation前停止、型定義のagents.spendへ修正。正式setBudget350000は200で同session自動resume、直後sendは409 session_runningで未受理/再送0。要求18toolsに対し実20toolsとなり2件超過。自然end_turn未達。21:15:37.920公式照合は費248095/全ledger34件一致、月spent9213250/残786750（後計上あり）、全60live0/paused/本番24全source fields・scheduled次00UTC。証拠private v24-substack-own-contact-{events,status,browser-proof,budget350-attempt,budget350-receipt,terminal-readback,spend-readback,ledger,final-resources}。
+
+記事PR9178 run41715366768はgitleaks dirで1件失敗、他14checks成功。検出値は凍結sanitized観測fileのSHA256と再計算一致し秘密ではない。現JSONをfile/sha256の別fieldへ整理し、旧commit/path/rule/lineのexact fingerprintだけ既存security baselineへ根拠付き追加。scanner/path規則の緩和0。main統合/公開記事更新は未完。

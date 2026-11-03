@@ -270,6 +270,12 @@ The trial incurred $0.041840 in session-attributed charges, reconciled against s
 
 An alternative harness is not a proven fix. The [official harness documentation](https://vetta.sh/docs/concepts/harnesses.md) says `claude_code` and `hermes` run on their own computers, but do not receive the managed browser. Moving there would require a supported browser tool and a new, measured integration. We have not deployed or validated that replacement.
 
+### Follow-up: own contact first, then a service-side refusal
+
+A follow-up supplied the Manager's own non-secret contact address as private configuration. It did not look up the inbox before filling the form. Navigation and email typing ran without approval cards. After the terms checkbox and Continue action, the page reported: “This email has been blocked.” This establishes rejection of the tested address, not every AgentMail address or domain. We did not switch addresses to evade that refusal. Authentication and customer revenue remain unverified.
+
+Session-attributed charges were $0.248095, reconciled against 34 ledger entries. The same session's finite cap increased from $0.20 to $0.35 when its next-call reservation did not fit. It ended within six minutes, but executed 20 tools against a requested limit of 18. The tool-count limit failed. There was no coordinating AI approval, but the budget adjustment was an intervention. This was not an unattended end-to-end success.
+
 ## What to reuse from Naïve’s agency template
 
 Naïve’s [Agency Blueprint](https://github.com/usenaive/agency-blueprint) offers a concrete structure: a shared agency Identity and mailbox, client records, a public intake site and seven core agent roles. It also explicitly routes publishing and outbound messages through an operator approval workflow. Its installation and daily budgets are ceilings, not reported earnings. We can reuse the separation of identity, intake and delivery while evaluating our own no-human workflow with actual customer outcomes. A provisioned crew, a filed lead and a draft proposal each remain distinct from a paid delivery.
