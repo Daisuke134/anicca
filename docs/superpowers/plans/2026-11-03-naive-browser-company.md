@@ -9,7 +9,7 @@
 
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用cap月3USD/max_task0.75USD、既存残高内・追加入金なし。
+- 専用cap月5USD/max_task1USD、既存残高内・追加入金なし。
 - 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
 - business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
@@ -94,3 +94,10 @@ Ruling: 予算変更の自動resumeは公式仕様であり、古いreportの再
 - [ ] v8/月3USDをmain反映し、既存残高内でarticle read/editor観測を再開。1task0.75USD、追加入金なし、旧probe7件はcancel済み。
 - [ ] 記事の数字/出典/秘密/実績をfresh AI reviewで照合し、本人資格情報不要の通常browser編集で公開する。
 Ruling: 実費1.809584USD時点で次callの上限見積が月2USDに入らず、公式org残高9.781134USDを確認。公開作業へ既存残高から追加1USDの上限だけ割り当て、月3USDとする。誤りなら追加費用は最大1USD、他agent上限や入金を変更しない。
+
+## v9 rich-text公開cursor
+- [x] v8/月3USD適用とdeployment明示PATCH/GET。英語確定稿のnative write入力全文一致、head/tail readを確認。公開画面の到達とタイトル入力は実画像で確認。
+- [ ] v6 Postiz完了/v7記事完了/v8未完publisherの3sessionをcancelしてからv9へ移る。
+- [ ] 現在cursor: 月5USD/task1USD/既定Sonnetのv9をmain適用し、修正原稿と正しい実入力要素で1USD以内の有限公開runを行う。browser.observe instruction/textarea wrapperの理解をgeneric promptへ反映。
+- [ ] 公開URL/本文全9評価/末尾/編集権限を公式状態で照合し、図版と実画面demo・offer公開・実受注/決済へ進む。
+Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、前のSonnet report5callsは0.137808USDで完了した。課題が異なるので性能順位にはせず、今回のUI公開をSonnetで有限検証する。費用権限は既存残高内で月3→5USD/task0.75→1USDへ限定、他agentと追加入金は変更しない。旧jobを先に終了してauto-resume競合を防ぐ。
