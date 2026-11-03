@@ -28,5 +28,9 @@
   "payout": null,
   "wallet_transfers": 0,
   "additional_paid_api_calls": 0,
-  "next_action": "existing revenue-hourly finite run reads own bids/assignments; if awarded fulfil 86400-second SLA"
+  "next_action": "existing revenue-hourly finite run reads own bids/assignments; if awarded fulfil 86400-second SLA",
+  "existing_hourly_schedule_configured": true,
+  "cadence_changed": false,
+  "other_config_fields_preserved": true,
+  "natural_hourly_adoption_verified": null
 }
