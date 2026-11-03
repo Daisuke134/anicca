@@ -438,6 +438,10 @@ class HQ:
             "blind retryやownerの自動再割当をせず、既存receiptを照合して具体的な次操作を残してください。\n"
             "結果は日本語で簡潔に報告し、最後に STATE {\"status\":\"現在状態\",\"next\":\"次の操作\","
             "\"proof\":[\"成果物pathまたは確認済みURL\"]} の1行を付けてください。"
+            "利用枠が尽きて継続不能で、他担当への引継ぎが必要と判断した場合は、途中成果と未確認effectを保存し、"
+            "STATE {\"status\":\"blocked\",\"blocker\":\"quota_exhausted\",\"handoff_required\":true,"
+            "\"next\":\"安全な次操作\",\"proof\":[\"保存済み成果物path\"]} と明示してください。"
+            "CI待ちなど枠切れ以外の未完は、その状態と次操作を通常のSTATEで報告してください。"
             "プロセスの正常終了と事業成果の確認を分けてください。返信は自動で元threadへ送信されます。\n"
             f"task_id: {task['id']}\n依頼:\n{task['body']}\n\n保存済みthread:\n{context}\n"
         )
@@ -518,8 +522,12 @@ class HQ:
                 except ValueError:
                     pass
                 break
+        execution_status = status
+        if (status == "succeeded" and state.get("status") == "blocked"
+                and state.get("blocker") == "quota_exhausted" and state.get("handoff_required") is True):
+            status, checkpoint = "interrupted", "quota_exhausted_handoff_required"
         receipt = {"task_id": task["id"], "owner_id": task["owner_id"], "status": status,
-                   "execution_status": status, "exit_code": code, "checkpoint": checkpoint,
+                   "execution_status": execution_status, "exit_code": code, "checkpoint": checkpoint,
                    "business_outcome": "unverified", "agent_state": state,
                    "artifact_path": str(artifact), "output": output, "updated": time.time()}
         atomic_json(directory / "result.json", receipt)
