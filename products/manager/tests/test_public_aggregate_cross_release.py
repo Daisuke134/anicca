@@ -43,6 +43,7 @@ def packet(suffix):
                 {"category": "beta", "count": 40, "sensitive": False},
             ],
         },
+        "disclosure_control": {"method": "exact_unmodified"},
         "cross_release_review": "externally_documented",
     }
 
@@ -371,6 +372,35 @@ class CrossReleaseTest(unittest.TestCase):
                 self.assertFalse(result["disclosure_certified"])
                 self.assertNotIn(left, json.dumps(result))
                 self.assertNotIn(right, json.dumps(result))
+
+
+    def test_rounded_and_perturbed_counts_never_enter_pair_arithmetic(self):
+        for method in ("rounded", "perturbed"):
+            with self.subTest(method=method):
+                a, b = self.pair()
+                a["disclosure_control"]["method"] = method
+                b["disclosure_control"]["method"] = method
+                a["partition"]["cells"] = cells(alpha=60, beta=None, gamma=None)
+                b["partition"]["cells"] = cells(alpha=None, beta=None, gamma=35)
+                result = preflight_cross_release(a, b)
+                self.assertEqual(result["status"], "REVIEW_REQUIRED")
+                self.assertIn("CROSS_RELEASE_DISCLOSURE_METHOD_UNCERTAIN",
+                              result["reason_codes"])
+                self.assertNotIn("CROSS_RELEASE_SINGLE_HIDDEN_CELL", result["reason_codes"])
+                self.assertNotIn("CROSS_RELEASE_SUPPRESSION_UNDONE", result["reason_codes"])
+                self.assertFalse(result["can_publish"])
+                self.assertFalse(result["disclosure_certified"])
+
+    def test_one_unknown_method_disables_pair_arithmetic_but_keeps_source_review(self):
+        a, b = self.pair()
+        b.pop("disclosure_control")
+        a["partition"]["cells"] = cells(alpha=60, beta=None, gamma=None)
+        b["partition"]["cells"] = cells(alpha=None, beta=None, gamma=35)
+        result = preflight_cross_release(a, b)
+        self.assertIn("CROSS_RELEASE_DISCLOSURE_METHOD_UNCERTAIN", result["reason_codes"])
+        self.assertNotIn("CROSS_RELEASE_SINGLE_HIDDEN_CELL", result["reason_codes"])
+        self.assertFalse(result["cross_release_independence_verified"])
+        self.assertEqual(result["next_action"], "NO_ACTION")
 
 
 if __name__ == "__main__":
