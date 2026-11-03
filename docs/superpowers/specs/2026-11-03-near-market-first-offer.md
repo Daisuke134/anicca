@@ -101,3 +101,5 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 目的・範囲: 応募済みf082df6bの受注後24h納品を短縮する。owner home-codex-a4d5da、branch task/home-codex-a4d5da。初回report/提案5件の既存統合を確認済み、公式GETは5pending/assignment0。所有は英語経済性report、再計算表とその出典証拠、BOARD/本節のみ。親のHQ修復/Naïve/他PR、Dots会計、Muse/Marketer投稿、旧IG fenceは保持する。追加応募・納品POST・送金・有料API追加0。
 
 完了条件: 最新briefと公式価格を実取得し、$0.05/$0.20/$1/$5でfee/rail/judge/dispute/supportを分離した再計算表、break-evenと感度、1000–2500語の英語Markdownと最大5推奨を作成。推定/未取得/地域/請求単位を明記し、計算assert/語数/source-boundary/diffを確認、push/PRと必要CI全PASS後main。未受注なのでsubmitしない。既存順序は変更なし。現在cursorは一次資料取得と経済性モデル準備。
+
+準備成果: docs/team/near/micro-job-economics-report.md（英語1615語）とmicro-job-economics.csv、標準Decimal再計算script。13の原典artifactを保存し、$0.05/$0.20/$1/$5・判定/サポート/損失・返金depositを分離。US Stripe料率は日本redirectにより未取得、Upwork/Fiverrは直GET403後crwl本文取得、floor未確認は明示する。仮定baseの損益分岐$0.176375は当社/市場の実測採算ではない。brief24hとacceptanceWindowDays3の不一致を納品前cursorに残す。Decimal表4点/閾値両側/感度3件/deposit/月tier、語数、source-boundary、diff PASS。未受注/未納品、追加bid/投稿/会計write0。証拠→docs/evidence/near-economics-preparation-a4d5da.json。現在cursorは独立原典/計算reviewと必要CI→main、受注時は契約再読→SLA内納品。

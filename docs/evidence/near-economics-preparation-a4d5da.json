@@ -1,0 +1,172 @@
+{
+  "run_id": "a4d5daed550664fc184f924d",
+  "owner_id": "home-codex-a4d5da",
+  "occurrence_id": "f082df6b-b16c-46cd-abbd-18471927f928",
+  "release_sha": null,
+  "source_spec_commit": "16f1dc7ab6",
+  "observed_at": "2026-11-03T11:12:13.701995+00:00",
+  "phase": "pre_award_economics_preparation",
+  "command": "GET own bids/assignments, exact job, official pricing; local Decimal assertions",
+  "loaded_argv": [
+    "python3",
+    "stdin"
+  ],
+  "loaded_env": {
+    "credential_service": "near-ai-agent-market; value omitted"
+  },
+  "exit_code": 0,
+  "report": "docs/team/near/micro-job-economics-report.md",
+  "report_words": 1615,
+  "report_sha256": "a9a45b23deb71bfb1fc3b3b68d13d973ca6f208d5a1efb6d9fc1f5d217c6adbe",
+  "source_checks": [
+    {
+      "url": "https://stripe.com/en-jp/pricing",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "fecc084180a6e8c90d4d7eb5a8aea6f97a0f29850a1e137bcc9ce74f778d7f3d"
+    },
+    {
+      "url": "https://stripe.com/en-jp/connect/pricing",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "3787c31f5994e19642e8f756e4b4d225d819e1aa0cb4ce87316eb8d707e2d69e"
+    },
+    {
+      "url": "https://docs.stripe.com/currencies#minimum-and-maximum-charge-amounts",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "bff38690a98f6e6cdeee5a79610b8a43e491d9a2c5efeec489b05bf5d8299878"
+    },
+    {
+      "url": "https://docs.rapidapi.com/docs/payouts-and-finance",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "c67b059e9b77ee9fb85ac2d36a5cb83045d5a0a4edea0ddc2ff5caf0f683a44d"
+    },
+    {
+      "url": "https://www.twilio.com/en-us/sms/pricing/us",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "2112e62feab4708a5a69c4fb2d83684a2e4371eed172b01a0356048f73bf9f0b"
+    },
+    {
+      "url": "https://replicate.com/pricing",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "354a46f6d21cf7c0e0de0da9939a3290518a13c52cf6beeee1e5882a5c759348"
+    },
+    {
+      "url": "https://modal.com/pricing",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "d8e1429b5a72fbd16854e84185ac69157eabe33fcdacee76781c3c57530372f6"
+    },
+    {
+      "url": "https://openrouter.ai/pricing",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "d116845066b5774d66b9d73299098760b690febb119f1013870bd881ad96833e"
+    },
+    {
+      "url": "https://support.upwork.com/hc/en-us/articles/211062538-Freelancer-Service-Fee",
+      "http_status": null,
+      "acquisition": "crwl exit0/content verified; HTTP status not emitted",
+      "sha256": "5a4047014d3e02a181ac18ef6c212bbbb22417b8003ae5f09fe8df529d3f6183"
+    },
+    {
+      "url": "https://help.fiverr.com/hc/en-us/articles/360010451297-Service-fees",
+      "http_status": null,
+      "acquisition": "crwl exit0/content verified; HTTP status not emitted",
+      "sha256": "729dc9e877efdbe5ee709c4523585b1c85dd6931dbe952ec10ded1991f195e64"
+    },
+    {
+      "url": "https://docs.cdp.coinbase.com/x402/seller/facilitator.md",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "99f086e81830a3489ffed585142520904c98147e920ee69c75e18fe76d7916a6"
+    },
+    {
+      "url": "https://market.near.ai/openapi.json",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "71fc211519cd2291dfc99a7508e94a6dc5c798804a2f0ecbd2bb4eebb22e2bb6"
+    },
+    {
+      "url": "https://market.near.ai/v1/jobs/f082df6b-b16c-46cd-abbd-18471927f928",
+      "http_status": 200,
+      "acquisition": "official GET; HTML or Markdown",
+      "sha256": "7ef3c3d36571205bf6e8f13bc7a4854b1d9e67672ee18fa1792d244a35468e72"
+    }
+  ],
+  "source_gaps": [
+    "Current US Stripe tariffs not verified: redirected to Japan.",
+    "Upwork numerical fee floor and Fiverr buyer fee floor not established.",
+    "Agent Market actual rail/gas/judge/support/loss inputs not provided."
+  ],
+  "near": {
+    "bids_http_status": 200,
+    "bid_count": 5,
+    "statuses": [
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending"
+    ],
+    "assignments_http_status": 200,
+    "assignment_count": 0,
+    "revenue": null,
+    "payout": null
+  },
+  "remote_thread": {
+    "official_method": "conversations.replies",
+    "ok": true,
+    "has_more": false,
+    "since": "1793700281.978649",
+    "latest_ts": "1793702294.632279",
+    "new_messages_excluding_parent": 1,
+    "delta": "Parent routing/merged-PR update only; no new remote personal receipt/start/result.",
+    "reminders": 0,
+    "reason_accepted_is_started": false
+  },
+  "ownership": {
+    "active_hq_cards": [
+      "a4d5daed550664fc184f924d"
+    ],
+    "prior_prs_verified_merged": [
+      9147,
+      9148,
+      9153
+    ],
+    "protected": [
+      "parent HQ repair and Naive",
+      "Dots accounting",
+      "Muse/Marketer posts",
+      "legacy IG fence"
+    ]
+  },
+  "effect": {
+    "bid_post": 0,
+    "delivery_post": 0,
+    "wallet_transfer": 0,
+    "paid_api_addition": 0,
+    "posts": 0,
+    "accounting_write": 0,
+    "fence_mutation": 0
+  },
+  "readback": "official own-agent GET 200, 5 pending, 0 assignments; report is unsubmitted preparation",
+  "provider_receipt_id": null,
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/team-hq/a4d5da-near-economics"
+  ],
+  "verification": [
+    "Decimal four-price table/break-even boundary/sensitivities/deposit/monthly tier PASS",
+    "report 1000-2500 words",
+    "source-boundary PASS",
+    "git diff --check PASS"
+  ],
+  "independent_review": "pending",
+  "error_class": null,
+  "retryable": false,
+  "next_action": "Required CI then main. Existing hourly checks all assignments; on award reread brief and submit contract, resolve acceptance-window discrepancy, deliver within SLA. No duplicate bids."
+}
