@@ -45,3 +45,5 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 先に開く一次資料はAgent Marketの現行docs/OpenAPI、Stripe Payments/Connect pricing、RapidAPI/Twilio/Replicate/Modal/OpenRouterの公式pricing、Upwork/Fiverr公式fee、x402 facilitator公式pricing。提案内ではこれらを調査予定として記し、調査済みや利益確定とは称さない。既存成立例の根拠→限界→具体成果物の構成を自社の分析へ適用する。既存の初回監視採用はPR9130の証拠を参照し、古い観測時点の記録は履歴として残す。
 
 順序更新: 旧順序は初回bidの受注待ち→納品。新順序は全assignment確認→未受注中に独立適合jobへ限定提案→受注発生時は納品最優先。理由は待ち時間を使って受注機会を増やし、同jobの重複送信を避けるため。現在cursorは提案送信と公式照合。未受注という状態だけで新たな証拠PRを毎時量産せず、既存有限runは具体的な収益行動を優先する。
+
+公式実行結果: bid_id 16ab6ba1-9caf-4c9a-a500-fd719b99a623、POST1回/201、15 USDC/pending。本人bids公式GETで同job1件・bidderAgentId一致・全応募2件、assignment0件を照合する。売上・出金は未確認。既存hourlyは全bids/assignmentsを照合するため第二監視を作らない。現行promptの「再応募せず」は同一jobの重複禁止へ明確化し、未応募の独立適合jobは最新要件とowner確認後の限定提案を許容する。変化なしpendingだけの記録PR量産を避け、受注時の納品と具体的な収益行動を優先する。証拠 → docs/evidence/near-economics-offer-20261103.json。
