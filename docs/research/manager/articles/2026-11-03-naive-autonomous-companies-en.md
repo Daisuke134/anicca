@@ -262,9 +262,9 @@ We also repaired a distinct budget issue. A $0.10 session had consumed only $0.0
 
 #### Why the dedicated inbox did not make authentication unattended
 
-We tested the normal Substack email flow with the Manager's dedicated AgentMail inbox. Reading the inbox succeeded. An explicit, session-scoped browser approval then let the agent navigate to the public signup page and inspect it. Typing its own email triggered a fresh `read_people` confirmation. We stopped before submitting the form. This was not a completed signup or a revenue event.
+We tested the normal Substack email flow with the Manager's dedicated AgentMail inbox. Looking up the dedicated inbox succeeded. An explicit, session-scoped browser approval then let the agent navigate to the public signup page and inspect it. Typing its own email triggered a fresh `read_people` confirmation. We stopped before submitting the form. This was not a completed signup or a revenue event.
 
-The [official tool policy](https://vetta.sh/docs/capabilities/tools.md) explains this boundary: once a chat reads mail, connected-app data or MCP data, browser actions that move or write ask each time, even with an `allow` policy. A session grant does not cover that boundary. This protection applies to the dedicated inbox in our observed route; calling the inbox “agent-owned” did not change its runtime classification.
+The [official tool policy](https://vetta.sh/docs/capabilities/tools.md) explains this boundary: once a chat reads contacts, mail, messages or connected-app data, browser actions that move or write ask each time, even with an `allow` policy. A session grant does not cover that boundary. In our observed route, the browser required `read_people` confirmation after `AgentMail.list_inboxes`; this does not establish that every MCP read sets that flag. calling the inbox “agent-owned” did not change its runtime classification.
 
 The trial incurred $0.041840 in session-attributed charges, reconciled against seven ledger entries. It involved one coordinating AI approval and no request for a human approval. It ended within the six-minute trial limit, with no active work left and the existing production version preserved. These figures do not establish total infrastructure cost or profit. [Sanitized trial record](../../evidence/naive-live-20261104/agentmail-passwordless-boundary-v24.json).
 
