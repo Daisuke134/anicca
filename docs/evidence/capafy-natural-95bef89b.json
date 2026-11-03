@@ -42,11 +42,27 @@
     "disabled_plist": "~/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist.disabled-20261031-cloud-retakeover",
     "ledger_exists": false,
     "sole_source_caller": "skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh:122",
-    "loaded_state": "awaiting bounded status diagnostic; disabled filename alone is not runtime proof"
+    "loaded_state": "disabled; pid null; installed release null",
+    "diagnostic_complete": true,
+    "status_command_exit_code": 1,
+    "held_occurrence": "capafy-ig-marketing-daily:18db7caff1178a88-68028",
+    "fence_state": "claimed; history_incomplete; official_readback_required:no_journal_row",
+    "last_report_run": "18e35707b0269318-23482",
+    "last_report_release_sha": "ccf57e9e6756246b41ee2b0c22cb014a63bbc986",
+    "last_report_timestamp": "2026-10-30T15:06:08.564170+00:00",
+    "last_report_exit_code": 75,
+    "last_report_error": "host_admission_deferred:resource_effect_unknown",
+    "official_effect_receipt": null
   },
   "sales": "unverified",
   "visitor_identity": "unknown; do not infer human or organic visitor",
-  "error_class": null,
+  "error_class": "daily_caller_disabled_with_unresolved_publish_effect",
   "retryable": false,
-  "next_action": "Finish PR9103 required CI and merge. Reconcile disabled daily publication owner and existing effect fence before any apply. Do not enable publisher just to collect read-only metrics."
+  "next_action": "PR9103 exact-head CI then merge. Preserve disabled publisher and occurrence18db7caff1178a88-68028 until exact official receipt reconciliation; locate its original active IG handle/account and durable journal before provider readback. No restart, fence release, replay or redeploy.",
+  "sales_probe": {
+    "provider": "Capafy GET /agent/agents",
+    "result": "RuntimeError from existing authenticated helper; separate bounded diagnostic pending",
+    "net_revenue": "unknown",
+    "cost": "unknown"
+  }
 }

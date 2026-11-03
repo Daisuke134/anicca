@@ -274,3 +274,5 @@
 - home-codex（task3d10872ebd07701cbebd47c2）: PR9099公式MERGED確認後、未来clickの最小JSON保存と明示詳細ct照合を実装。RED3→Node10/Python4+9 PASS。過去88件unknown、deploy/投稿/会計変更0。次: exact-head CI/review→main→限定反映/自然公式readback。証拠 docs/evidence/capafy-payload-3d1087.json。
 
 - home-codex（task a4a1953ed490e9caf61e10c3）: 同owner PR9101を継続。公式旧head CI全成功後のreview2件をRED再現し、日次ct取得/保存と不正legacy本文の除外を修正。Node11/Python39 PASS。更新head CI/review待ち、deploy/投稿/会計変更0。次cursorは同PR統合→限定反映→自然公式照合。
+
+- home-codex（task95bef89b）: 公式go-stats通常106/除外9、JSON帰属1(ct=c1103d1)/旧105unavailableを確認。日次callerはdisabled・投稿effect18db7caff1178a88-68028がhistory_incomplete/receipt不在、日次ledgerなし。再起動/投稿/検証click/deploy/会計write0。次: PR9103 CI→統合、元IG本人handle/journalと公式receipt照合。証拠 docs/evidence/capafy-natural-95bef89b.json。
