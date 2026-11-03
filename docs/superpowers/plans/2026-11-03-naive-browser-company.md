@@ -70,3 +70,12 @@ MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し�
 Sonnet比較はmodel設定受理だけでは実行済みにしない。初回は予約枠でbudget.exceededし実model spanはHaikuのみだった。Capafy個人Googleを必須にせず、既存owner/許諾は照合中。本文の過去cap/モデルは当時の実測であり、現在設定は本節とGlobal Constraintsを正本にする。
 
 MCP実catalog診断: 公式紹介文のschedulePostToolと異なり、認証済み標準MCPのtools/listはintegrationSchedulePostToolを返す。source allowlistは実catalog名へ修正する。これはtools/listの能力確認であり、Naïve内での接続/投稿成功ではない。
+
+## v6実行後の修復cursor
+- [x] PR9124統合/main固定v6適用・全15CI PASS・専用Postiz vault封入・標準12h deployment登録。
+- [x] native Postiz integrationList/postsListTool/integrationSchemaをHaiku overrideで実行。Sonnetはagent月cap見積拒否、実推論なし。
+- [x] 事実限定offer/sample/public受取先をnative write/readで照合。mail self-send acceptedだがinbound未確認。Hashnodeは未解決verification checkで有限probeをcancel、成果物は保持。
+- [ ] 現在cursor: 既定Haikuのv7をmain適用し既存deploymentをv7へ更新、手動実行後に自然runを確認。月2USD/task0.75USDを維持し、Sonnet必要枠を測定せず増額しない。
+- [ ] 独立した通常メール送信元または実サイトの認証mail dispatchから本人inboundを確認し、wakeを有効化。共有production mailboxの借用/変更はしない。
+- [ ] 投稿本文/実画面素材の検証後に英語offerと記事を公開、実第三者の受注/納品/決済/純収支を確認。
+Ruling: v6のSonnetは予約見積で実行できず、実成功したHaikuへ既定を戻す。費用capを維持し継続運転を動かすため。誤りなら高難度の判断品質が低い可能性を実traceで診断し、未測定の高性能主張で補わない。過去v6設計のチェック欄は履歴、現在は本節を正本とする。
