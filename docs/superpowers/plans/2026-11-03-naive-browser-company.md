@@ -174,7 +174,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v13稼働・実依頼と納品収益の検証
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6390644microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6634284microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -432,3 +432,16 @@ main固定restore artifact（to_version15/expected16）を適用しcurrent17、�
 現在owner daisuke/terminal（Muse）はReason公式list_teamでidle/tierturnとして存在するが、受付/着手とは別。既存Publisher内の公式team invite/agent専用email認証/正式権限の有無と実画面をread-only照会、message6TKH6DR7DA2ZKPWZ3NM4WQT9CAはqueued/repliedfalse。既存accountの変更・reset・credential転記・公開商品/収益変更は依頼しない。返信を待つ間は公開pilotの第三者依頼と自然runを維持し、追加の重複signup/決済/Naïve診断消費は0。通常mail認証が技術的に可能であることと、そのサイトのPublisher権限を取得したことを分離する。
 
 この追加確認は全体TODOのreorderではなくMAIL03の具体化。現在cursorは実第三者依頼→公開納品→29USDC receipt/費用、自然run12UTC/本人inbound・認証/録画/phone-only/採算/移植は未達。最後の公式open trace-review依頼一覧は0、agmsg/Reason新返信0。記事はpublic main5054f196へ反映済み、実売上/10K/月黒字/無介入完走を断定しない。
+
+
+### Capafy無料user認証の実測と終了
+
+既存Publisherを新設せず、無料user認証だけをnative finite `ses_7se2dh2qqgxssweha4mtf1z081` / current17で実施。有限cap0.30USD/月7/task1内、Publisher申請/0.99USD/有料/Google/既存商品/既存owner変更は0。初回Haikuは16tools後にmax_iterations、その後quoteが残finiteに収まらずbudget_paused/134582microUSD。公式agent/session schemaにmax_output_tokens設定は確認できず、proxy trace用の同名fieldをagentへ流用しない。公式catalog/以前の画像確認に基づき、同sessionのsend model overrideだけをGemini2.5FlashLiteへ変更、本番agent/deploymentは不変。これを同条件のモデルランキングにしない。
+
+email.inboxes成功、直接click4回のcould not completeを保持、act経路からemail入力まで進む。email.read169は0件で、コード送信成立は未確認。以後read_people確認が出て、primaryは元の依頼範囲とpayload/本人emailを照合しContinue/goto/一括act/signupの4callだけscope=call allow、人間確認要求0・sessionwide grant0。Continue再開act208は失敗、observe213=[]、入力待ちpauseのpage喪失が交絡する。navigationから同意/Continueまで含む一括act280はcredential-shaped instructionとして拒否。文言の隠蔽/符号化で迂回せず正式signupへ進む。
+
+正式signupはservice capafy.ai/url capafy.ai/専用本人email/本人Identityだけを照合して1回実行。実行前vaultのkey/hostで既存Capafy credential0/EOFを確認し、他のcredentialは置換しない。新login:capafy.ai参照1件が専用vaultに生成されたことを公式metadataで確認、canonical private Credential SSOTへcredential_generated_account_not_verifiedとして直ちに保存した。値はmodel/chat/repoへ出さない。signup318はthe browser could not perform that instruction、observe321はTerms linkのみで本人画面を実証せず、helper成功/登録済みとは扱わない。今回の単独結果からメール未所持が原因、Capafy一般で登録不能、または全helperの共通原因とは結論しない。
+
+終了指示後nativeの最終write368/read371は1580bytesで完全一致、秘密形状無し。end_turn→cancel→公式GETcancelled/pending0、実費243640microUSD。agent累計6634284microUSD、SDKbrowser累計5001は別、利益/全社費用ではない。本人inboundは公式0/EOF、コードdispatch・無料user認証・Publisher・売上は未確認。agent current17/元Haikuの全source fieldsとproduction deployment13/全source fieldsは公式GET一致、次の自然run12UTCは未検証。private capafy-free-user-auth-{event-metadata,pre-cancel-status,cancel-readback,journal-check,generated-credential-metadata,final-readback,boundary}.jsonとspend-after-capafy-free-user-auth.jsonが証拠。
+
+追加の登録/送信/枠拡大を反復せず、既存Publisher内の正式team権限のowner回答を確認する。公開pilotの実第三者依頼→納品→29USDC receipt/費用、自然run/実録画、phone-only/採算/移植という残TODO順は不変。PR #9158/#9159の後追い全15checks PASSを確認、公開記事main5054f196のbyte一致は保持。今回の追加は運用結果docsのみで新しいruntime設定/loop/API実装は無い。
