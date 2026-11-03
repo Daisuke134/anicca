@@ -162,6 +162,70 @@
             "signup"
           ]
         }
+      },
+      "legal.verify": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "legal.resend_link": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "legal.form": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "legal.submit": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "wallet.pay": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "wallet.transfer": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "card.issue": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "card.credentials": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "card.cancel": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "trading.place_order": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "trading.cancel_order": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "trading.close_position": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "company.set_timezone": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "company.set_logo": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "company.set_brand": {
+        "enabled": false,
+        "permission": "deny"
+      },
+      "edit_video": {
+        "enabled": false,
+        "permission": "deny"
       }
     }
   },

@@ -25703,7 +25703,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 設計: pi＋既存で使われるGLM-5.2-FP8、browserだけallow、shell/API/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用検証budgetは月0.50USD/max_task0.25USD、追加入金なし、cron未登録から開始する。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
 比較した案: 既存script移植はDaisの明示指示に反するため不採用。Macのbrowserを遠隔操作する案はNaïve自身のComputerという条件を満たさないため初回方式にしない。Naïve標準browser toolをモデルが使う方式を採用する。
 完了条件: (1)Grok/Muse/Dotsの実手順/ownerを照合 (2)Naïve側のagent・browser/Computer・モデル・予算を公式readback (3)実際の画面観測とclick/typeをtool eventと変化後の画面で確認 (4)認証済み業務と外部結果を確認 (5)同じ担当の再開と所有する継続運転を確認。市場調査だけを公開/売上完了にしない。秘密値はmodel prompt、Git、chatへ出さない。
-実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03認証・owner調整・一業務→BROWSER04保存/再開/継続運転→既存benchmark比較。現在cursorはBROWSER01。
+実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。現在cursorはBROWSER01。
 チーム証拠: Muse Relayは返答済みで、Naïve統合ownerではなく最小推論N1のみ確認できると回答。Grok/Muse/Dotsへ改めて自身のcomputer/browser操作手順・最近の結果・owner・skillをReason照会し、Slack既存threadにも訂正を送る。queuedを担当本人の実行証拠にしない。
 
 
