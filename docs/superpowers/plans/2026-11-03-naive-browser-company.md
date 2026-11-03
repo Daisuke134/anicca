@@ -174,7 +174,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v12稼働・公開募集・実依頼待ち
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv12/月6USD/task1USD、担当累計5135524microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv12/月6USD/task1USD、担当累計5656872microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -208,3 +208,74 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 有限runはend_turn→cancel→GET cancelled、実費221926microUSD、担当累計5135524microUSD。月6/task1不変、追加入金/他owner変更/追加メール送信なし。本人messagesはchannel=emailを明示したfresh GETでも0/has_more=false。本人inbound/サイト登録/売上成功は未達。Grok/Muse返信は引き続き未確認、12UTCの自然runはまだ開始前。
 - Amazon SES公式 https://docs.aws.amazon.com/ses/latest/dg/send-an-email-from-console.html のOOTO simulatorはReturn-Path/envelope senderへ返信し、外部源には応答しない。今回headerにSES署名はあるが、自分の表示Fromへの返信を証明しないため追加sendを実行しない。宛先/私有reportURL/rawheaders/署名付き画像URLはprivate evidenceのみ。
 - 全体cursorは実第三者依頼→公開納品→成功USDC tx/費用。本人mailの残境界は外部到達ではなく、実送信が確認できた第三者から本人inboundへの到着と登録確認リンクの処理。先のTLDR Subscribing…やPort25 acceptedを、第三者dispatch/本人受信として補わない。
+
+### 本人メールによるDEV登録の実行範囲
+
+目的: 個人Googleを使わず、本人mailへの実登録通知と本人browserでの登録完了を確認する。対象はDEV CommunityのAI運営BusinessRunアカウント1件。Google不要の公式email signup linkと実HTML（user[name]/user[username]/user[email]/password/password_confirmation）を確認。https://dev.to/enter?state=new-user → https://dev.to/users/sign_up?state=email_signup 。Terms https://dev.to/terms は自分が権利を持つ内容の投稿を要求し、実験本文/画像は自分の検証素材だけ。guidelines URLは404で未取得、今回の範囲は登録だけで投稿しない。
+
+- credential SSOT全体の既存DEV/forem相当行は無し。本人vaultのlogin:dev.toもfresh GETで無し。既存個人/他agentのaccountを流用せず、新規1accountだけ。公開表示はBusinessRun AI、usernameはbusinessrunai（使用済なら自分用suffixを1回選ぶ）で人間を装わない。
+- 同じv12/Identity/本人browserとemailだけ。ブラウザ登録helperがpasswordを生成・封入し、plaintextをmodel/chat/repoへ出さない。取得後はMac credential SSOTへ専用service naive:browser-operator:dev.to のsealed credential参照/identity/context/登録状態を保存する。providerはpassword write-onlyで返却しないため、秘密をexport/複製しない。
+- まず本人browserで実フォームを確認し通常のsignupを1回。確認要求があれば本人email.read1回→届いた自分用確認リンクをbrowserで処理し、メール本文/秘密リンクは一般journalや公開物へ保存しない。不要な再送/別account/有料登録/Google・既存個人credentialsは使わない。サイトの送信表示とSMTP配送/本人受信を区別する。
+- 完了判定は公式の登録/ログイン状態と本人受信の実内容。未完なら正確な画面/field/dispatch表示/受信stateと次の一手をprivate記録へ保存する。AI自己申告時計は使わず、時刻を取得できなければnull、primaryはprovider event時計を照合する。
+- finite予算最大0.5USD、月6/task1とcronは不変。実顧客受注と12UTC自然runは先のTODO順を維持し、まだ依頼が無い待機中に独立した登録要件を進める。既存記事/募集の再送や新しい公開投稿は行わない。
+
+#### DEV登録の呼び出し元修正
+
+初回native helperはsignup/loginともurl=https://dev.toを渡していた（events24/172/223）。返答はsignup done/login doneだが、実フォームのpassword等は空で登録完了の証拠無し。own login:dev.to credentialは生成され、private SSOTへsealed参照を保存/readback。context grantは同agentへ存在し、権限拡張の根拠無し。2回目signupは既存keyと競合し、追加credentialは作らない。
+
+予算見積りでpausedの旧finiteをownerとしてcancel→GETし、資格情報は維持する。旧finite実費330802microUSD。修正は短い新runから既存credentialのlogin helperを実フォームURL https://dev.to/users/sign_up?state=email_signup へ明示適用すること。トップURLへのhelperや新signup/password再生成は行わない。画面でprotected fieldsの反映を確認し、必要な非secret欄だけ埋め、可能なら同一accountの最終submitと本人確認を進める。正しいURLでもprotected fieldが空なら具体的境界を保存し、秘密export/一般actへのpassword入力で置換しない。各finiteは既存最大0.5USD/月6/task1内、追加メール送信/公開投稿/他owner変更無し。
+
+正しいフォームURLの短いprobeはlogin doneを返したが、実画像ではUsernameへ本人emailが入っただけでName/Email/Password/Confirmationは空。native記録のwrite/readは一致、実費40379microUSD。原因を「全く操作しない」と断定せず、複数段フォームの部分操作/再navigationによる状態初期化の仮説へ絞る。次の限定probeは同一turn内で既存credential login→同じフォームURLの通常fragment付きloginを最大2回追加し、DOMを再読込せず次のprotected欄へ進めるかを画像で検証。新signup/credential再生成/秘密export/一般actでのpassword代入は無し。両protected欄が実際に埋まる場合だけ非secret欄と同一account submit1回へ進む。未反映なら記録して終了。これは新規account追加でなく、未完の1accountの呼び出し元修復。月6/task1/finite0.5内を維持する。
+
+同一documentのfragmentで既存loginを進めてもprotected fieldsは空のまま、当該probeは終了/cancelし成果を保持。次の検証はloginによる登録代替ではなく、本来のsignup helperを正しい登録フォームへ適用する。旧login:dev.toは削除/上書きせず保持し、service=dev.to-businessrun-registrationの専用保管名を1つ使う（SDK serviceはcredential key名、対象サイト/本人メールは同じDEVの未完1account）。この1回以外のsignup/新service名追加はしない。まず実フォームの非secret Name/Username/Emailを通常UIで埋め、同一URLにfragmentを付けて既存画面を保ちsignup helperを1回呼ぶ。生成credentialは直ちに同じprivate SSOT serviceのattempt参照として追記し、未検証accountを有効と扱わない。protected欄が埋まった場合だけ同一accountのsubmit1回/本人確認へ進め、空のままなら真のsignup postcondition未達として記録する。source/API/backendの原因は未確定であり、SDK全般の欠陥や個人Google必須を断定しない。月6/task1/finite0.5内、旧値の秘密export/他owner変更無し。
+
+#### DEV登録の現在の実測と次の境界
+
+- 正しいsignup helperの実引数はservice=dev.to-businessrun-registration、url=https://dev.to/users/sign_up?state=email_signup#businessrun-signup（event44）。通常typeは実HTMLのCSS idによりName/Username/本人Emailの3欄を順番に入力し、画像で反映を確認。helper返答はsignup doneだが、直後画像50はPassword/Confirmationが空に見え、登録/ログイン成立・確認mail dispatchの公式証拠は無い。native記録の「no submission occurred」はmodel側の判断であり、helper内部network不存在まで証明したとは扱わない。
+- 正しいsignup runはnative write60/read65 exact、timestamp=null。有効なアカウントのproofは未達。資格情報の生成/封入とアカウント作成を区別する。旧login:dev.toと新login:dev.to-businessrun-registrationの2つのsealed参照はprivate credential SSOT同一serviceのattemptsへ保存/readback、元の秘密は削除/上書き/公開無し。両参照のaccount stateはnot_verified。一般act/typeでpasswordを入れない。
+- 初回有限run330802microUSD、exact/fragment run86933microUSD、正しいsignup run82315microUSD。いずれもownerでcancel→GET cancelled。担当累計5656872microUSD、月6/task1不変。既存記事/募集/定期deployment/他owner変更無し。公開顧客からの売上は未確認。
+- 既存owner Computerのfresh GETはpaused/browser=null、Computer browser GETは404。これは有限run終了後の観測であり、native browserが別Computerであることや、今回の未反映の原因を証明しない。
+- 次の技術cursor: 同一の自分用credentialと通常のComputer SDK browser interfaceを使い、native helperの短いdone文字列と公式browser_action応答を比較する。ウェブサイトの登録API/業務scriptへ置換しない。追加のsignup/credential名を増やす前にこの境界を診断する。既存Computerのowner/設定を確認し、必要なら専用browser付きComputer1台・timeout1分・own scopeの終了/readbackを正本へ具体化してから実行する。SDK API経由の費用はagent累計に含むかを確認し、別なら別計測。個人Google/人間メールへの切替は行わない。
+- ネットワーク補足: Reason Primaryのowned devicesは0、home-codex/muse-relay宛て既存照会はqueued/返信未確認。登録済みrelayを実稼働Museと呼ばず、別accountへ切替えて迂回しない。全体goalと実顧客→納品→第三者receipt/費用のcursorは維持する。
+
+
+### Computer browser SDK応答の限定診断
+
+目的はnative helperのdoneと公式browser_actionの差を同じ本人credentialで比較すること。業務サイトAPI/scriptに置換せず、Naïveのcomputer browserだけを操作する。既存agent Computerはpaused/browser=nullなので変更せず、診断名codex-naive-dev-browser-boundaryの専用Computerを1台、1vCPU/1024MiB/disk5GiB、browser timeout1分/keep_alive=false、dev.toだけ、allow_writes/extract=true/ask_actions=[]で作る。同じ本人contextを指定し、新しいsignup/credential/公開投稿は行わない。
+
+1. 自分のcredential SSOT全体を読みnaiveを完全一致、組織残高と直近ledger境界を保存。封入値は読まずログインの本人Identityを明示する。
+2. 実signupフォームgoto→既存login:dev.to-businessrun-registrationのloginを最大1回→正式応答/画像をprivate保存。モデル判断やdoneを登録成立にしない。公開登録の再送は指示しない。
+3. finallyで当該browser終了→当該Computer削除→GETの終了状態、組織残高/ledgerの後値を保存。API診断費はagent直接累計と別枠で計測し、差分が不明ならnull。既存runtime/定期deployment/他ownerは不変。
+
+作成費は公式docsで0、computeは1vCPU/1GiB毎秒0.0000185USD、browserは開始から終了の分単位・action別計上で単価は未取得。診断は1browser/1login、timeout1分、全体2分以内を目標に閉じる。追加資金移動なし。既存月6/task1は維持する。初回誤りを再現せず、意味のない繰返しをしない。Inkboxの既存managerjghhはread-only hosted configでinstructions未設定、登録ownerの根拠は増えず、借用/変更/送信しない。
+
+
+初回SDK診断の差分: createはOpenAPIの200/201例に対して実202で受付成功。診断側が202を失敗扱いしたため同一IDをrecoverし、runningをGETで確認。最初のgotoは400 validation_failed、Idempotency-Key必須とproviderが明示し、ログイン/登録操作へは進んでいない。browser DELETEは204空応答で、診断側JSON parseが失敗したが、同一Computerを別read-only確認後DELETE→GET destroyedまで完了。新規credential/サイト送信無し。残高25930244microUSDは前後同値、独立診断費用の確定ledgerは未取得で0確定としない。
+
+再試行前の修正: HTTP202/204を正しく扱い、必須Idempotency-Keyを各mutationの固定operation IDとして保存して同一操作に再使用する。元Computerは破棄済みなので置換Computerを同条件で1台だけ作る（同時1台）。provider postconditionを先に保存し、cleanup各段は互いのparse失敗でskipしない。新signup無し、既存sealed login最大1回の範囲は不変。
+
+home-codex本人返信でInkbox managerjghhのowner/用途も未確認、Museの現在返信元はdaisuke/terminal@htch-runtimeと判明。既存Coconala入金receiptの所在は既存別業務の証拠であり、今回pilotの売上へ転用しない。NEARの15USDC提案3件はpending/assignment0で収益未確認。以後Museは本人稼働経路を確認して照会し、idle relayへのqueueを着手と呼ばない。
+
+
+Idempotency-Key付き置換probe2はComputer202/running、browser context_backed=trueで開始したが、gotoのclient read timeout20秒で応答未取得。sealed loginは未呼出。cleanupのbrowser closed→Computer destroyedをGET、組織残高差1667microUSDと同時刻browser debit led_hyhh0zty6189rdd6mkcf1n8p80一致。これはAPI browser分の独立費でありagent累計5656872へ無根拠に合算しない。過去ledgerがlimit差で追加された行を今回費用と誤認しない。browser opened08:42:36.171Z/closed08:42:55.585Z、同期待ちの打切りが診断側制約だったことを記録する。
+
+次はgotoの読み取り猶予を60秒、browser TTL3分/全体4分目標にし、操作開始/終了/単調時計elapsed/transport errorをprivateに記録する。20秒打切りの同じ再試行はせず、初回cold startの応答境界を観測する。置換1台・既存credential login最大1回・新signupなし・cleanup finallyと各独立readbackは維持。goto応答が取れなければその場で再送せず公式browser状態をGETし閉じる。費用は独立ledger、現org残高25.928577USD内。実顧客/自然runのcursorは不変。
+
+
+#### SDK診断の実測結果と残境界
+
+- probe3は専用Computer create202/running→GET browser.allow_writes=true/allow_extract=true/同contextを確認。gotoは27.699秒で200 browser_action/performed=true/指定DEV signup URLへ成功し、20秒timeoutは診断側の不足だったと判明。sealed loginは23.198秒後403 forbidden/param allow_writes（req_nt6kzxx8hgjxjcvk482kf4r7dv）、screenshotも403/param allow_extract（req_1dh0jp7e9dhvrycjqe7n20h3nh）。両設定がtrueで保存されたことと、実行層がread-onlyと判定したことの不整合まで絞れた。SDK全般の故障やnative signup未完の根因と断定しない。権限を迂回/拡大した再試行はしない。
+- browser closeのcontext_backed=true/同context/status closed、Computer GET destroyedを公式確認。今回もsignupは呼んでいない、loginは拒否され、登録成立/確認mail dispatchの証明無し。新credential/公開投稿/既存agent/deploymentの変更無し。計3台は全て破棄済み、最初の誤判定202/204も診断側のミスとして記録する。204と20秒例外はtool実行ログのみで、保存JSONだけでは独立照合できない限界を維持。
+- probe3残高差1667microUSDとbrowser debit led_warvrsrcp1a14tda3tgknm7rqw一致。API診断2件のbrowser明細合計3334microUSD、組織残高25.926910USD。agent直接累計5.656872USDと別表示、全社費用/利益へ置換しない。関連JSONと構造化boundary verificationはprivate evidenceに保存。
+- 既存native v12は公開受注pilotとして継続し、この独立したDEV/SDK診断を受注/納品の追加gateにしない。current cursorは実依頼→英語レポート→第三者USDC receipt/費用、次の自然runは12UTC/JST21時で未実測。v12は単一商品の初期収益loopで、任意事業を自律選択して移植/自己compute支払/複製するfull Managerの完成とは呼ばない。SDK側の残境界は保存optionsから実行policyへの伝播で、正式な修復経路をsource/docsで調べる。
+- Museの既知返信先daisuke/terminalはReason一覧でhtch-runtime/tier turnを確認。本人経路へ既存方法/owner/receiptの照会を送信しqueued、返信は未確認。idle/queuedを稼働・着手とは呼ばず、他agent mailbox/accountを借用しない。
+
+
+SDKsourceの追加照合: npm公式公開package @usenaive-sdk/vetta 0.10.0をignore-scriptsで取得。computer.browser.loginは同じPOST /v1/computers/{id}/browser/loginへbodyを渡し、screenshotは同じactionsへ送る。requestは全2xxを受理/空応答を{}扱い、mutationにIdempotency-Keyを付与する実装で、今回の初期client不備はSDK自体には無い。browser methodは独自のallow_writes/allow_extract overrideを付けず、create済みbrowser blockを使う契約と整合する。公開SDKsourceに今回403guardのserver実装は含まれず、repository metadataのusenaive/vetta-monoは現在のgh経路でresolve不可。すべてopen sourceと仮定せず、server側根因/修復は未取得として残す。出所 https://www.npmjs.com/package/@usenaive-sdk/vetta 、package SHA1 263630c4977a4a42e4865ba7fe77fd02396f3f0e。
+
+
+#### Muse本人の回答と受信診断の引継ぎ
+
+Reason daisuke/terminalの本人回答01M6G9HHRXZCB4F371G5A0CP7Eを受領。上のqueued/返信未確認は送信時の履歴で、現在は回答済み。Museの説明ではCapafy既存線は本人側パブリッシャー/KYC/精算が実体、cloud Postiz未接続とMac橋渡し3jobが残る。過去のNaïve線はAPI/CLIのみで本人browserの実績ではない。回答内のAPI先行という一般則は今回のDaisのbrowser明示指示を上書きしない。自分の既存session/vault、単一writer、公開URLまで1回成功してからloop化、公式dashboardと費用照合という再利用部分だけ採る。Capafyowner/許諾/収益を今回pilotへ流用しない。
+
+本人回答のagent用mail経路から、自分がownerであるmailだけを使いNaïve本人宛てにnonceのみの診断1通を送るよう追加照会。Reason message508B1FY1ZXBH5CGSQWAZYSRVZKはqueued、実メール送信/受付idは未確認。新account/設定変更/個人Gmail/他owner借用/再送/本文転送は禁止し、送信可能な本人経路が無ければ不足を返信する範囲。自分のinboundはその後の公式channel=email/limit20 GETで0/has_more=false、同nonce0。外部dispatch未証明なのでNaïve受信不良とは判断しない。private journal muse-inbound-diagnostic.jsonとowned-inbound-after-muse-request.jsonに残す。次は本人の送信receipt→同nonce本人受信の照合、既存受注/自然runと並行しこの診断を売上gateにしない。

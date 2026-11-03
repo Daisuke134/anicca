@@ -2,6 +2,29 @@
 
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
+### HQ-02 受信前の資源予約churnを除去する
+
+本番70fa939bの受信/worker15秒反映後、receiverはentrypoint前capacity_busy/fifo_waitとdisk_floor_lowで延期する。観測08:40はlive4＋予約6でglobal10/10・deterministic5/5。borrow予約ownerは既存resumerから起動するが12GiB条件を満たさず延期し、60秒lease/60秒cooldownで予約を入れ替える。unknown fenceや停止resumerではなく、実行不能候補をreserve前に除外していない共通選択経路が原因である。
+
+範囲は既存queue/reserve経路のlive disk eligibility反映。free/floor/対象registryをlock外で一度観測し、_next_durable_candidateの容量選択前に既知の不適格候補を除外する。reserve_available/release_and_reserveを同じ契約へ接続し、queue age/occurrence/公平性を保持する。global10/det5・producer floor・spend cap・既存owner/予約は勝手に変更しない。実測free5GiBではrevenue可/borrow不可、4GiB未満ではrevenueも不可。既存fixtureの『不適格borrowを起動後に延期する』期待値をREDから修正し、必要test/review/CI/main/限定反映/自然受信と1分応答・replay-zeroまでをDONEとする。
+
+実行順は旧: 接続main反映→他agent応答待ち。新: 自所有の予約eligibility欠落→自然受領→全員の本人経路追跡。理由はreceiver自身が共有枠で実測延期され、他agent待ちでは改善しないため。予約選択は5件RED→関連28件GREEN→disk/resource/runner全600件PASS。変更は共通snapshotと候補除外に限定し、claim/reserve/releaseの各lock取得前に観測する。rootのcleanup fixture全84件もPASS。現在cursorは統合差分のfresh read-only review→CI→main→限定反映→自然canary。rootはCI fixture/readinessと正本・統合を所有し、workerはresource_admissionおよびdisk snapshot/関連testsを所有する。capacity回収は完了済み・remote保持済みsourceと再生成cacheだけを対象に継続し、memory/state/credentials/active sourceは保持する。
+
+### HQ-CI 子process起動とtimeout検証
+
+PR9143のx86 CI run41603551487/job125807762097は1098件中test_git_maintenance_timeout_allows_its_private_child_to_clean_its_lockだけがterminated marker不存在で失敗する。fixtureはPython起動・signal handler準備前から0.3秒のtimeoutを測り、productionの15秒graceを0.3秒へ縮めるため、遅い起動を本体のcleanup失敗と混同する。範囲は当testのprivate child readiness同期と本来のtermination grace維持だけ。本番timeout、Git cleanup、資源上限は変更しない。意図的な遅いfixture起動でRED→ready同期後GREEN、diff/review/CI/main統合を完了条件とする。意図的な0.4秒startupで同じmarker不存在をRED再現し、gate解放後の最初のpolling待機でprivate cleanup handlerと同期してGREENを確認する。Popen内の待機はexec gate解放前になるため使わない。関連するnative成功・timeout時unknown保持の既存2testもPASS。production同様15秒termination graceを保持し、timeout本体と既存cleanupは変更しない。現在cursorは予約eligibility修正と合わせた必要CI/main統合。
+
+### HQ-02 受信を1分以内に応答可能にする
+
+目的はSSHに依存せず、チームのメッセージを常時受信し、受領・待機・実着手・結果を区別して共有すること。着手時のMac HQ receiverはSlack専用で、この対話のReason受信はpullであった。Reason frontend0.2.665のinboxはcli:terminal固定、既存home-codexと同じ箱ではない。engine0.12.17のlistenはstdout後にDeliveredするため、外部queue保存前の既読化を安全な取り込みとしない。native serve codexは別executorを起動し、既存HQ queueを通さないため、そのまま第二dispatcherにしない。
+
+所有はhome-codex-quota-takeover。native ingressはPR9141/main70fa939b、専用clientはPR9142/main0296cf3eへ統合済み。現在は同owner worktreeのbranch fix/hq-admission-eligibility-20261103で共有予約の修正を継続する。範囲は公開OSS Reason Networkの既存Link/Requestを使う最小CLI拡張（構造化peek・箱を検証するack）、既存HQ受信/単一task queueへの接続、必要なregistry cadence、関連テストと証拠。専用HQ入口を正規登録し、既存home-codex・Dots・Museのidentityを奪取/代理化しない。秘密・本文の生ログ、別モデルprocess/別queue、SSH迂回、既存仕事の再送、quota/model変更は行わない。
+
+完了条件は、受信IDの永続保存→同一source_keyの一意task受入→同じ箱のIDだけack、crash/replayで欠落・二重cardなし、公式canary受信から受領応答まで60秒未満の自然実測、実着手前に着手済みと報告しないこと。API/資源の障害は遅延として残し、常時の絶対保証は捏造しない。関連RED/GREEN、source review、CI、main由来immutable反映と自然結果まで進める。
+
+順序は旧: 他agentの返信/SSH/容量待ち→HQ-02。新: 自分の受信経路の欠落を修復→本人native経路を接続→全員の自然応答と引継ぎ確認。理由は、自分のReason受信が常時処理されていない以上、他agentだけを待っても1分以内の応答にならないため。既存収益ループは止めず、受注発生時の納品を優先する。専用native CLIと既存HQ queue接続は独立review/必要CIをPASSし、main由来のsealed binaryとruntime release20261103T173651-70fa939bへ反映する。receiver/workerの実plistは15秒で、receiverの自然空受信は08:50:54ZにPASS。ただし容量/予約待ちを観測し、1分応答canaryは未計測。現在cursorは上記の予約eligibility修正と自然往復。受信・worker間隔を60秒から15秒へ変更し、定型受領は既存SQLite保存後だけ、着手はclaim後だけ、結果は元送信元@machineへ返す。受信はmessage effect/occurrenceへ分類し、owner/occurrence一致のnative send receiptだけを採用する。受信失敗・返信応答喪失はno_effectへ置換しない。FYIは保存だけで新model実行/返信を起こさない。ACKはdurable保存後、再送はnative idempotency keyを固定する。1分以内は本番自然runの元messageと受領readbackの時間差で確認し、未確認の全員常時稼働を断定しない。
+
+
 利用枠枯渇時の継続: DaisはGrokbotの枠回復までCodex/Dots/Museが業務を引き取るよう委任する。Rockwellは誤記で存在せずGrokbotを指す。4日後resetはDais申告であり実残量を捏造しない。既存cloud担当正本WHO-OWNS-WHAT.md/LOOPS.mdと各仕事のcheckpoint/期限/receipt/未確定effectを本人経路で取得し、既存Slack task取込と単一queueへ移管する。コード修正は、CLIが正常終了してもagent自身が構造化STATEで利用枠枯渇と引継ぎ必要を明示した時だけ既存の一度限りhandoffに接続する。自然文の語句判定、枠reset、新dispatcher、既存外部処理の再送は行わない。目的/範囲はTEAM-HQの停止・枠切れ継続と容量復旧、DONEはtyped状態のRED/GREEN・通常成功/一般的未完との区別・再帰/重複0・fresh review・最新CI・main由来限定反映・自然実行/公式返信である。実有限CLI exit0のtyped枯渇STATEを用いたREDを確認し、54HQ testsはGREEN。artifact/resultとCLI execution_statusを保持し、元cardをinterruptedとして既存helperへ1件だけ渡す。fresh reviewでdeliver/work戻り値の再混同を発見し、追加RED→checkpoint/exit_codeに基づく返却の最小修正を行う。通常成功・CI待ち・不正boolean等8状態・非zero終了7は既存動作を保持する。重複/再帰handoffは0。容量は未使用Camoufox取得cacheを使用中0確認/atomic退避/再確認後に回収し、uv/SwiftPM/pipの標準cache整理を実行、認証/profile/memory/state削除0。容量基準を通過後もresource_control_busyは別の待機として追跡する。PR #9106/head42369fa3e4ecc5f617f5e2e9f8a091faa6c6eda6はHQ54件・fresh review SHIP/Blocking0・必要CI15件をPASSし、main c7c07e8bdb86167ea7c45164fa8099b5b4304540へ統合する。既存release reconcilerがimmutable release `20261103T111939-c7c07e8b`へ反映し、HQ3plistとレビュー済みruntime本文のSHA256一致79a65e2167082da8e724b2e2598021946114dfb1cdc6d02c0b6e7fb61a242934を確認する。コード配置を自然handoff成功とは数えない。現在cursorは容量回復→既存helper依頼の自然受信/実行→現行cloud仕事の具体的移管/公式照合。既存HQ-02/03と進行中owner/effectを保持する。
 
 
@@ -25861,3 +25884,5 @@ Naïve publicpilot更新: 公開offer/sample/receiver/issue formはBusinessRun B
 Naïveの現在readback: v12/main326fc27a agent/deployment全payload一致、月6USD/task1USD/Haiku/11allow/Identity/12h維持、owned wake=false。本人native Postiz募集は https://twitter.com/diceai0/status/2117519919034077664 でPUBLISHED/errornull、257文字送信/保存本文一致。本人browserの公開GitHub依頼一覧はextract/画像双方0件、native intake write/read一致。有限runはcancelled、募集+画面確認60211microUSD、担当累計4908335microUSD。次の自然runは12UTC/JST21時、まだ未検証。実第三者売上/受注/有償納品/動画/自己compute支払/移植複製/利用者向けiPhone入口/月10Kは未達。Grok/Muse既存threadへの窓口共有は送信成功・返信未確認。残TODOと現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md` 最終節。
 
 Naïve本人mailの追加証拠: native browser/本人email.send1通が外部mail-testerで実受信され、subject/nonce一致・10/10、native認証extractはSPFpass/DKIMvalid/DMARCpass、一次受信headerとも整合。これは今回の送信方向だけの証拠で、本人inbound/登録/売上は未達。nativeファイルの自己申告時刻にずれがあり、rawを保持し公式イベント時刻をprivate mail-tester-verification.jsonへ結合、自己申告時計は非authoritativeとする。有限runcancelled、費用221926microUSD、担当累計5135524microUSD。月6/task1/定期runは不変。現在cursor/残TODO → `docs/superpowers/plans/2026-11-03-naive-browser-company.md` 最終節。
+
+Naïve本人DEV登録: 専用資格情報2参照を生成/封入しprivate SSOTへ保存、いずれもaccount not_verified。初回helperのURLがトップだった点を修正し、正しいsignupフォームで非secret3欄の入力を実画像確認したが、helper done後もprotected2欄は空に見え、登録/確認mail dispatchの公式証拠無し。SDK全般の欠陥や本人inbound不能の証明にしない。有限3runはcancelled、担当累計5656872microUSD/月6/task1、runtime/deployment v12は不変。次は通常Computer SDK browser_actionの応答境界を診断し、一般actでのpassword入力/秘密export/追加signupで代替しない。残TODO/現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md` の現在正本と末尾の技術境界。

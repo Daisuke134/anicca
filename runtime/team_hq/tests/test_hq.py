@@ -1128,3 +1128,240 @@ class HQTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReasonInboxTests(unittest.TestCase):
+    setUp = HQTests.setUp
+    tasks = HQTests.tasks
+
+    def enabled(self):
+        self.config["announce_start"] = True
+        self.config["reason_network"] = {
+            "binary": "/fixture/reason-network-hq", "name": "hq-codex", "agent": "codex",
+        }
+        self.reason = mock.Mock()
+        self.reason.send.return_value = {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"],
+                                         "recipients": [{"address": "daisuke/muse@remote", "state": "delivered"}]}
+        self.message_id = "01M6G37N2HYGRZ2JAJ4KC98QBY"
+        self.reason.inbox.return_value = {
+            "session_key": "cli:hq-codex", "address": "daisuke/hq-codex",
+            "messages": [{"id": self.message_id, "from": "daisuke/muse@remote",
+                          "to": "daisuke/hq-codex", "body": "read-only canary", "reply_to": None}],
+        }
+        self.runtime = hq.HQ(self.config, api=self.slack, reason_api=self.reason)
+
+    def test_reason_commits_the_single_task_before_ack(self):
+        self.enabled()
+        def ack(ids):
+            rows = self.tasks()
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["source_key"], "reason:" + self.message_id)
+            self.assertEqual(rows[0]["owner_id"], "codex")
+            self.assertIn("read-only canary", rows[0]["body"])
+            self.assertEqual(ids, [self.message_id])
+        self.reason.ack.side_effect = ack
+        self.assertEqual(self.runtime.receive()["queued"], 1)
+        self.reason.ack.assert_called_once()
+
+    def test_reason_ack_failure_replay_does_not_duplicate_work(self):
+        self.enabled()
+        self.reason.ack.side_effect = hq.HQError("transport unavailable")
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.reason.ack.side_effect = None
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertEqual(self.reason.ack.call_count, 2)
+
+    def test_reason_queue_failure_never_acknowledges(self):
+        self.enabled()
+        with mock.patch.object(self.runtime, "insert_task", side_effect=OSError("disk full")):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        self.assertEqual(self.tasks(), [])
+
+    def test_reason_wrong_session_never_acknowledges(self):
+        self.enabled()
+        self.reason.inbox.return_value["session_key"] = "cli:someone-else"
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        self.assertEqual(self.tasks(), [])
+
+    def test_reason_failure_does_not_stop_slack_receive(self):
+        self.enabled()
+        self.reason.inbox.side_effect = hq.HQError("transport unavailable")
+        self.slack.history[""]["messages"] = [HQTests.message(self)]
+        result = self.runtime.receive()
+        self.assertFalse(result["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertTrue(self.tasks()[0]["source_key"].startswith("slack:"))
+
+    def test_reason_receipt_is_sent_without_starting_the_model(self):
+        self.enabled()
+        self.runtime.receive()
+        self.assertEqual(self.tasks()[0]["status"], "queued")
+        self.reason.send.assert_called_once()
+        notice = self.reason.send.call_args.kwargs
+        self.assertEqual(notice["to"], "daisuke/muse@remote")
+        self.assertEqual(notice["reply_to"], self.message_id)
+        self.assertIn("受領", notice["body"])
+        self.assertIn("キューへ保存", notice["body"])
+        self.assertTrue(notice["key"].endswith(":received"))
+
+    def test_reason_receipt_timeout_reuses_the_durable_idempotency_key(self):
+        self.enabled()
+        self.reason.send.side_effect = hq.HQError("response lost")
+        self.assertFalse(self.runtime.receive()["ok"])
+        first = dict(self.reason.send.call_args.kwargs)
+        self.reason.inbox.return_value["messages"] = []
+        self.reason.send.side_effect = None
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(self.reason.send.call_args.kwargs, first)
+        self.assertEqual(len(self.tasks()), 1)
+
+    def test_reason_fyi_is_saved_without_a_reply_or_new_work(self):
+        self.enabled()
+        self.reason.inbox.return_value["messages"][0]["wake"] = False
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(self.tasks(), [])
+        self.reason.send.assert_not_called()
+        self.reason.ack.assert_called_once()
+        with self.runtime.connect() as database:
+            note = database.execute("SELECT value FROM meta WHERE key=?", ("reason_fyi:" + self.message_id,)).fetchone()
+        self.assertIn("read-only canary", note[0])
+
+    def test_reason_result_is_returned_to_its_original_sender(self):
+        self.enabled()
+        self.runtime.receive()
+        self.assertTrue(self.runtime.work()["ok"])
+        result = [x.kwargs for x in self.reason.send.call_args_list if x.kwargs["key"].endswith(":result")]
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["reply_to"], self.message_id)
+        self.assertIn("worked", result[0]["body"])
+
+    def test_reason_start_notice_follows_the_actual_queue_claim(self):
+        self.enabled()
+        def send(**notice):
+            if notice["key"].endswith(":started"):
+                self.assertEqual(self.tasks()[0]["status"], "working")
+            return {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients": [{"address":"daisuke/muse@remote", "state":"queued"}]}
+        self.reason.send.side_effect = send
+        self.runtime.receive()
+        self.runtime.work()
+        self.assertTrue(any(x.kwargs["key"].endswith(":started") for x in self.reason.send.call_args_list))
+
+    def test_reason_result_retry_does_not_execute_the_work_again(self):
+        self.enabled()
+        def send(**notice):
+            if notice["key"].endswith(":result"):
+                raise hq.HQError("lost reply receipt")
+            return {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients": [{"address":"daisuke/muse@remote", "state":"queued"}]}
+        self.reason.send.side_effect = send
+        self.runtime.receive()
+        self.assertFalse(self.runtime.work()["ok"])
+        task = self.tasks()[0]
+        result_path = self.runtime.task_directory(task) / "result.json"
+        original = result_path.read_bytes()
+        self.reason.send.side_effect = None
+        self.assertTrue(self.runtime.work()["ok"])
+        self.assertEqual(result_path.read_bytes(), original)
+        results = [x.kwargs for x in self.reason.send.call_args_list if x.kwargs["key"].endswith(":result")]
+        self.assertEqual(results[0], results[1])
+
+    def test_reason_pending_receipt_can_be_completed_by_the_next_receive(self):
+        self.enabled()
+        self.reason.send.side_effect = hq.HQError("temporarily unavailable")
+        self.runtime.receive()
+        self.reason.inbox.return_value["messages"] = []
+        self.reason.send.side_effect = None
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(self.tasks()[0]["status"], "queued")
+
+    def test_receive_records_native_receipts_before_slack_failure(self):
+        self.enabled()
+        path = self.root / "receive-hint.json"
+        self.slack.error = True
+        with mock.patch.dict(os.environ, {"LIFE_MANAGER_RESULT_HINT_PATH":str(path),
+                 "LIFE_MANAGER_LOOP_ID":"team-hq-receive", "LIFE_MANAGER_OCCURRENCE_ID":"occ-1"}):
+            with self.assertRaises(hq.HQError):
+                self.runtime.receive()
+        value=json.loads(path.read_text())
+        self.assertEqual(value["kind"], "team_hq_reason_receive_result")
+        self.assertEqual(value["status"], "verified")
+        self.assertEqual(value["message_ids"], self.reason.send.return_value["ids"])
+
+    def test_receive_cannot_claim_no_effect_after_lost_reply(self):
+        self.enabled()
+        self.reason.send.side_effect=hq.HQError("lost response")
+        path=self.root / "receive-hint.json"
+        path.write_text("stale hint")
+        with mock.patch.dict(os.environ, {"LIFE_MANAGER_RESULT_HINT_PATH":str(path)}):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.assertFalse(path.exists())
+
+    def test_reason_refusal_or_missing_recipient_is_not_posted(self):
+        self.enabled()
+        for recipients in [[],
+                           [{"address":"daisuke/other@remote","state":"queued"}],
+                           [{"address":"daisuke/muse@remote","state":"unknown"}]]:
+            with self.subTest(recipients=recipients):
+                self.reason.send.return_value={"ids":["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients":recipients}
+                self.assertFalse(self.runtime.receive()["ok"])
+                with self.runtime.connect() as db:
+                    notice=json.loads(db.execute("SELECT value FROM meta WHERE key LIKE 'reason_outbox:%:received'").fetchone()[0])
+                self.assertEqual(notice["state"], "pending")
+
+    def test_reason_result_is_sent_even_if_slack_final_post_is_rejected(self):
+        self.enabled();self.runtime.receive()
+        original=self.slack.call
+        def call(method, **parameters):
+            if method == "chat.postMessage" and not parameters["text"].endswith(":start"):
+                return {"ok":False,"error":"thread_not_found"}
+            return original(method, **parameters)
+        with mock.patch.object(self.slack,"call",side_effect=call):
+            self.assertFalse(self.runtime.work()["ok"])
+        result=[c.kwargs for c in self.reason.send.call_args_list if c.kwargs["key"].endswith(":result")]
+        self.assertEqual(len(result),1)
+        self.assertIn("worked",result[0]["body"])
+        self.assertEqual(self.tasks()[0]["reply_state"],"delivery_failed")
+
+    def test_reason_result_is_sent_even_if_slack_start_is_unknown(self):
+        self.enabled();self.runtime.receive();self.slack.hide_posts=True
+        self.assertFalse(self.runtime.work()["ok"])
+        result=[c.kwargs for c in self.reason.send.call_args_list if c.kwargs["key"].endswith(":result")]
+        self.assertEqual(len(result),1)
+        self.assertIn("worked",result[0]["body"])
+
+    def test_reason_durable_accepted_recovery_is_not_resent(self):
+        self.enabled()
+        self.reason.send.return_value["recipients"][0]["state"]="accepted"
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.reason.send.assert_called_once()
+
+    def test_one_native_refusal_does_not_starve_another_recipient(self):
+        self.enabled()
+        other=dict(self.reason.inbox.return_value["messages"][0],
+                   id="01M6G11XSHQTVE7JPSSAEE34JA", **{"from":"daisuke/dots-one"})
+        self.reason.inbox.return_value["messages"].append(other)
+        def send(**notice):
+            state="refused" if notice["to"]=="daisuke/muse@remote" else "queued"
+            return {"ids":["01M6G11XSHQTVE7JPSSAEE34JA"],
+                    "recipients":[{"address":notice["to"],"state":state}]}
+        self.reason.send.side_effect=send
+        self.assertFalse(self.runtime.receive()["ok"])
+        with self.runtime.connect() as db:
+            notices=[json.loads(row[0]) for row in db.execute("SELECT value FROM meta WHERE key LIKE 'reason_outbox:%:received'")]
+        self.assertEqual({n["to"]:n["state"] for n in notices},
+                         {"daisuke/muse@remote":"refused", "daisuke/dots-one":"posted"})
+        self.runtime.receive()
+        self.assertEqual(self.reason.send.call_count,2)
+
+    def test_late_received_notice_does_not_claim_completed_work_is_unstarted(self):
+        self.enabled()
+        self.reason.ack.side_effect=lambda ids:self.runtime.work()
+        self.runtime.receive()
+        self.assertEqual(self.tasks()[0]["status"], "succeeded")
+        received=[c.kwargs["body"] for c in self.reason.send.call_args_list if c.kwargs["key"].endswith(":received")]
+        self.assertEqual(len(received),1)
+        self.assertNotIn("未着手",received[0])

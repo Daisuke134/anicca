@@ -1091,7 +1091,7 @@ def _verified_effect_result(path: Path, loop_id: str,
 
 
 def _effect_result_hint_allowed(loop_id: str, entrypoint: str | None) -> bool:
-    return ((loop_id == "team-hq-work" and entrypoint == "bin/team-hq.py")
+    return ((loop_id in {"team-hq-work", "team-hq-receive"} and entrypoint == "bin/team-hq.py")
             or entrypoint in EFFECT_RESULT_HINT_ENTRYPOINTS
             or (entrypoint == "skills/alpaca-investment/run.py"
                 and loop_id in {"alpaca-investment-paper", "alpaca-investment-live"})
@@ -1189,9 +1189,34 @@ def _verified_team_hq_result(value: object, loop_id: str, occurrence_id: str,
     return ("verified", f"slack://channels/{value['channel_id']}/messages/{value['message_ts']}")
 
 
+def _verified_team_hq_reason_result(value: object, loop_id: str, occurrence_id: str,
+                                    entrypoint: str | None) -> tuple[str, ...] | None:
+    """Native durable send receipts prove acceptance, not remote agent execution."""
+    fields = {"schema_version", "kind", "owner_id", "occurrence_id", "status", "message_ids"}
+    if (loop_id != "team-hq-receive" or entrypoint != "bin/team-hq.py"
+            or not isinstance(value, dict) or set(value) != fields
+            or type(value.get("schema_version")) is not int or value["schema_version"] != 1
+            or value.get("kind") != "team_hq_reason_receive_result"
+            or value.get("owner_id") != loop_id or value.get("occurrence_id") != occurrence_id):
+        return None
+    ids = value.get("message_ids")
+    if (not isinstance(ids, list) or len(ids) > 100 or any(
+            not isinstance(mid, str) or not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", mid) for mid in ids)
+            or len(set(ids)) != len(ids)):
+        return None
+    if value.get("status") == "no_effect" and not ids:
+        return "not_applicable", f"lm-no-effect://{loop_id}/{occurrence_id}/no_reason_reply"
+    if value.get("status") == "verified" and ids:
+        return ("verified", *("reason://messages/" + mid for mid in ids))
+    return None
+
+
 def _verified_terminal_effect_result(
         path: Path, loop_id: str, occurrence_id: str,
         entrypoint: str | None) -> tuple[str, ...] | None:
+    if loop_id == "team-hq-receive" and entrypoint == "bin/team-hq.py":
+        return _verified_team_hq_reason_result(
+            _read_private_result_hint(path), loop_id, occurrence_id, entrypoint)
     if loop_id == "team-hq-work" and entrypoint == "bin/team-hq.py":
         return _verified_team_hq_result(
             _read_private_result_hint(path), loop_id, occurrence_id, entrypoint)
