@@ -25855,3 +25855,5 @@ NaïveのCapafy無料user認証はfinite0.30USD内で実費243640microUSD、end_
 
 
 Naïve英語記事は自社blog https://aniccaai.com/blog/manager-naive-autonomous-companies-en へ実公開。canonical982fb15e/publishing e5cff、後続main014262a5由来provider6ae9c8b0 ready、実本文・画像hash・release.json記事hashを照合、GHA/money-path smoke成功。既存75記事保持、新1記事/1画像だけ追加。実売上/登録/動画は未達。本人受信は、既存会社Resend送信専用キーから本人inboxへ非注文の検査1通で切り分ける（GET domains401はrestricted_api_keyで失効ではない）。詳細・資源上限・再送禁止・現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「英語記事の自社ブログ公開完了と本人inboundの1通検査」。自律的な顧客獲得seller loopは別の自所有未完項目であり、限定pilot intake稼働を完全な会社運転としない。
+
+Naïve追加実測: 本人inbound検査1通はResend HTTP200/acceptedのみ。12:05公式message0件、inbox active/wake=false、送信専用キーの配送状態GET401でdelivery未確認。再送しない。12UTCの自然runも12:05時点で未作成、enabled/scheduled/next12:00のまま、手動runだけ。担当累計6638031microUSD、差分3747の帰属未特定。設定変更やmanual代替で自然完走を主張しない。seller loopのno-order早期終了は自所有未完として改善を進める。詳細/証拠/残TODO → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「本人inboundと定刻runの追加観測」。

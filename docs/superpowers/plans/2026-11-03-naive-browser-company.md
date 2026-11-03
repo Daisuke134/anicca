@@ -469,3 +469,11 @@ Substack最後のobserve106はCreate your account、113はSign in to Substack/em
 次の1通はこの設定済み会社送信元→同じNaive本人inboxだけ、件名/本文にDIAGNOSTIC-NOT-ORDERと固有nonceを付ける。顧客注文/認証コード/指示ではないことを明示、秘密・個人データ・払出情報・リンクは0。最大1送信・固定Idempotency-Key、timeout/不確実時は再送せずreceipt/inbound readbackを調査。acceptedと受信を分離し、届けば同nonce/送信元/受取Identityのmetadata照合、provider raw本文や認証秘密を一般logへ保存しない。専用inboxのwakefalseを保持し、この検査で新agent/cron/枠/既存担当/販売済商品を変更しない。既存送信サービス内の1通であり、請求費用は未計測なら0とせず、新規契約/top-up無しと区別する。
 
 全体goalはactive。実顧客依頼→納品→29USDC receipt/費用が現在cursor、本人inbound検査と自然run12UTCを並行する。既存deploymentはno-order時に終了する限定pilotであり、自律的な顧客獲得/学習のseller loopはまだ完成していない。今後これを自所有configの改善対象とし、他者返信待ちだけを阻害理由にしない。phone-only入口/採算/移植/compute自費/10Kは未達。
+
+### 本人inboundと定刻runの追加観測
+
+既存Resend送信専用キーから本人inboxへの検査は1通だけPOSTしHTTP200/accepted、provider id `01a1a148-21fd-7247-b412-96935d0fa703`。固定idempotency/事前attempt fenceを保存し再送しない。2026-11-03T12:05:48Zの公式identity messagesは0件/has_more=falseで、受信成功ではない。送信側の単一message GETも401/restricted_api_key/only send emailsで、accepted以降の配送状態はこのキーでは見えない。キー失効や配送失敗とも断定しない。inboxのraw公式GETはactive/wake=false/同Identity/同agentで、前節のwake=falseをfresh確認。Auto-Submitted付き検査は非注文で、届いても通常mailによるwakeや顧客獲得の証拠にしない。
+
+12UTC予定を過ぎた12:05時点でもdeploymentはenabled/schedule_status=scheduled/next_run_at=12:00のまま、runsは05:30のcancelled手動run1件だけ。agent別sessions一覧の最新も10:44のcancelled試験で、新しい自然runを確認できない。公式deployment docsはscheduledをclockが監視する状態と定義するが、この遅延原因は未特定。cron/pin/Identityを変更したりmanual runを自然実行と数えたりせず、時刻・公式runs・sessionを合わせて追う。担当spend公式GETは6638031microUSDへ増加（前回+3747）。自然runが無いのでこの差分を自然run費用へ帰属しない。別SDKbrowser5001microUSD/全社利益/売上とも分ける。
+
+証拠はprivate `inbound-one-mail-{send-receipt,sender-status,receive-readback-latest}.json`、`natural-1200-{deployment,runs,spend,session-summary}.json`。Reason新着0、Slack既存照会threadも新返信無し。全体goal active、外部返信待ちと別にseller loopのno-order早期終了を次の自所有改善対象とする。
