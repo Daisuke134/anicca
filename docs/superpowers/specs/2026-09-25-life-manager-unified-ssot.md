@@ -121,6 +121,10 @@ remote差分: 指定Slack threadを公式完読。parentとhome-codexの更新�
 
 CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。PR9099/head19ef706537の必要CIはgitleaks dirのみFAIL、他13jobsはPASS。集合hashの項目名だけをlegacy_record_set_sha256へ変更し、値と監査内容を保持する。旧historyのexact baselineはmain由来を維持し、除外追加0。focused RED→GREENと関連検証後pushし、更新head全CI→mainを次操作とする。過去88件の帰属と売上、未来payload保存は未完。
 
+## NEAR-FIRST-OFFER — 初回販売の既存レーン移管
+
+→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market。登録201・初回15USDC提案201/pending・本人bid公式照合を確認済み。現在cursorは既存hourlyでの受注監視と自然採用確認、受注後の納品。Capafy/Guru/Apifyの既存ownerを維持する。
+
 ## CAPAFY-ATTRIBUTION-PAYLOAD — 未来クリックの帰属保存
 
 目的・範囲: PR9099の統合済み監査に続き、go handlerが失っているct/platform/postを新規Blob本文へ保存する。owner=home-codex-3d1087、task=3d10872ebd07701cbebd47c2、branch=fix/capafy-payload-3d1087、base=58009a3a96。専用worktree・leaseを取得。旧監査owner/HQのactive leaseは保持する。
@@ -143,10 +147,9 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 継続診断（task17679f4e146bb3b4be52268e、owner=home-codex-17679f）: PR9117の統合は親ownerが所有するため変更しない。専用branch docs/capafy-ig-receipt-17679fで、旧occurrence18db7caff1178a88-68028の元本人・journal・receiptの欠落をread-onlyで照合し、現行reconcilerが別active accountを対象に選ぶ危険を隔離fixtureで検証する。完了条件は実DBの対象1行・対象ファイル存在・残存状態の時刻・実code反例をsanitizeした証拠に保存し、CI後の統合まで追跡する。投稿/認証/再起動/fence解除/会計/PR9117統合は所有しない。既存TODO順は維持する。診断結果: mode=roで旧fence保持、専用4artifact不在、残存3artifactは全てqueueより前。隔離fixtureで別ready accountの空一覧でもverified=true/effected=falseになるsource反例を再現（provider0/resolve=false）。本番で誤解除が起きた証明ではない。現在cursor=本診断記録の必要CI/統合、次source作業は元run本人を拘束する証拠なしにprovider照合を進めないための最小修正。成果物 → docs/evidence/capafy-ig-receipt-17679f.json。
 
+継続source修復（task fd096c4b2e6f13ad548eabd0、owner home-codex-fd096c）: PR9120は親rootによりmain18131ea9へ統合済みと公式確認し、同診断の次cursorで元occurrence本人拘束を修正する。範囲はIG reconciler/既存posterのdispatch markerと関連tests/docs。本番投稿・認証・fence・会計・HQ・他ownerの変更0。既存capafy-reelのoccurrence-bound dispatch markerを先例とし、元runとhandle・dispatch時刻の一致をprovider読取前に必須にする。証拠なし/別occurrence/別handle/古い時刻/不正JSONはHELD、現在ready accountへ代替しない。既存posterはhandleをmarkerへ保存する。過去artifactの補造はしない。完了条件: 隔離RED→GREEN、関連テスト、独立review、必要CI公式PASS後main。反映・旧公式receipt・収益は別未完cursor。順序は診断→本人拘束source→元archive/公式receipt照合を維持する。実測は3件RED→carousel回帰込み28tests GREEN、PR9125でexact-head独立review/必要CI待ち。
 
-## NEAR-FIRST-OFFER — 初回販売の既存レーン移管
-
-→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market。登録201・初回15USDC提案201/pending・本人bid公式照合を確認済み。現在cursorは既存hourlyでの受注監視と自然採用確認、受注後の納品。Capafy/Guru/Apifyの既存ownerを維持する。
+追加review修正（primary所有の最終統合）: completed/effect=1の元dispatch記録と空listingが矛盾してもno-effectとして解放できる反例を再現。元markerを一度だけ検証してeffectを保持し、公式listingがno-effectを示す場合はHELD・resolve/ledger書込0とする。一致する公式Reelがある場合のeffected closeとreplay-zeroは維持する。元実装head e1a888dはSHIP不可。最小回帰RED→GREEN、修正headの独立review・CI・main由来限定反映を現在cursorにする。
 
 ## README整理とMac導入の継続修復
 

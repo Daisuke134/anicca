@@ -23,6 +23,17 @@ is web-researched: **IG/TikTok comment URLs are not clickable and link-in-body i
 down-ranked on X → bio-led on IG, and on X the link goes in the FIRST self-reply, never
 the root tweet.** (research MD: `anicca-project/docs/earn/2026-07-17-capafy-marketing-link-placement-research.md`)
 
+## IG fence reconciliation identity contract
+
+`capafy_ig_fence_reconcile.py` requires the exact occurrence's original dispatch
+marker (`--dispatch-marker-path` for a preserved original archive). The marker
+must carry the original handle and a dispatch timestamp inside that run's window.
+The shared poster records the handle and explicit `--occurrence-id`, falling back
+to `LIFE_MANAGER_OCCURRENCE_ID`. Missing, stale or conflicting evidence stays HELD
+before provider access. `--handle` checks that binding; it cannot replace it.
+Never rewrite historical markers or select a replacement ready account to close
+an old fence. A successful source test does not resolve an existing effect.
+
 ## Historical pipeline (X line, not runnable here): B1 select → B2 copy → B5 post
 
 The landing generator keeps new promotion cards restricted to `agentStatus == "online"`.
