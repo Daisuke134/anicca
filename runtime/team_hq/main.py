@@ -26,6 +26,10 @@ class HQError(RuntimeError):
     """A bounded diagnostic that never includes provider payloads or secrets."""
 
 
+class ReasonRejected(HQError):
+    """A durable refusal needs diagnosis, never a new key to evade the guard."""
+
+
 class SlackRejected(HQError):
     def __init__(self, error=None):
         super().__init__("Slack API が成功を返していません")
@@ -463,6 +467,8 @@ class HQ:
                       "body": self.clean(text), "key": "hq:" + task["id"] + ":" + phase}
             database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)", (key, json.dumps(notice)))
             notice = json.loads(database.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()[0])
+        if notice["state"] == "refused":
+            raise ReasonRejected("Reason送信が拒否されています。保存済みreceiptの照合が必要です")
         if notice["state"] != "posted":
             receipt = self.reason.send(**{field: notice[field] for field in ("to", "reply_to", "body", "key")})
             if (not isinstance(receipt, dict) or not isinstance(receipt.get("ids"), list)
@@ -470,6 +476,21 @@ class HQ:
                     or not all(isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_-]{16,128}", value)
                                for value in receipt["ids"])):
                 raise HQError("Reason送信receiptを確認できません")
+            recipients = receipt.get("recipients")
+            if (isinstance(recipients, list) and len(recipients) == 1
+                    and isinstance(recipients[0], dict) and recipients[0].get("address") == notice["to"]
+                    and recipients[0].get("state") == "refused"):
+                notice.update(state="refused", error_class="reason_send_refused", retryable=False,
+                              next_action="inspect_original_native_receipt_and_route_without_resend",
+                              receipt={"ids": receipt["ids"], "recipients": [{"address": notice["to"], "state": "refused"}]})
+                with self.connect() as database:
+                    database.execute("UPDATE meta SET value=? WHERE key=?", (json.dumps(notice), key))
+                raise ReasonRejected("Reason送信が拒否されています。保存済みreceiptの照合が必要です")
+            if (not isinstance(recipients, list) or len(recipients) != 1 or len(receipt["ids"]) != 1
+                    or not isinstance(recipients[0], dict)
+                    or recipients[0].get("address") != notice["to"]
+                    or recipients[0].get("state") not in {"queued", "delivered", "accepted"}):
+                raise HQError("Reason送信先の受理を確認できません")
             notice.update(state="posted", receipt=receipt)
             with self.connect() as database:
                 database.execute("UPDATE meta SET value=? WHERE key=?", (json.dumps(notice), key))
@@ -490,7 +511,7 @@ class HQ:
                 ids.extend(receipt["ids"])
             except HQError:
                 ok = False
-                break
+                continue  # One unavailable peer must not starve the other bounded notices.
         return ids, ok
 
     def receive_reason(self):
@@ -832,6 +853,11 @@ class HQ:
 
     def deliver(self, task):
         task = dict(task)
+        reason_receipt, reason_pending = None, False
+        try:
+            reason_receipt = self.reason_reply(task, "result", task["reply_text"])
+        except HQError:
+            reason_pending = True  # Receive retries the native outbox independently of Slack.
         start_path = self.task_directory(task) / "start.json"
         if start_path.exists():
             self.announce_start(task)
@@ -863,10 +889,7 @@ class HQ:
             with self.connect() as database:
                 database.execute("UPDATE tasks SET updated=?,delivery_error='marker_not_verified' WHERE id=?", (time.time(), task["id"]))
             return {"ok": False, "task_id": task["id"], "reply_state": "post_unknown"}
-        reason_receipt = None
-        try:
-            reason_receipt = self.reason_reply(task, "result", task["reply_text"])
-        except HQError:
+        if reason_pending:
             return {"ok": False, "task_id": task["id"], "reply_state": "reason_post_unknown"}
         with self.connect() as database:
             database.execute("UPDATE tasks SET reply_state='posted',reply_ts=?,delivery_error=NULL,updated=? WHERE id=?",

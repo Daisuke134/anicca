@@ -1244,7 +1244,7 @@ class ReasonInboxTests(unittest.TestCase):
         def send(**notice):
             if notice["key"].endswith(":started"):
                 self.assertEqual(self.tasks()[0]["status"], "working")
-            return {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients": []}
+            return {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients": [{"address":"daisuke/muse@remote", "state":"queued"}]}
         self.reason.send.side_effect = send
         self.runtime.receive()
         self.runtime.work()
@@ -1255,7 +1255,7 @@ class ReasonInboxTests(unittest.TestCase):
         def send(**notice):
             if notice["key"].endswith(":result"):
                 raise hq.HQError("lost reply receipt")
-            return {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients": []}
+            return {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients": [{"address":"daisuke/muse@remote", "state":"queued"}]}
         self.reason.send.side_effect = send
         self.runtime.receive()
         self.assertFalse(self.runtime.work()["ok"])
@@ -1298,3 +1298,61 @@ class ReasonInboxTests(unittest.TestCase):
         with mock.patch.dict(os.environ, {"LIFE_MANAGER_RESULT_HINT_PATH":str(path)}):
             self.assertFalse(self.runtime.receive()["ok"])
         self.assertFalse(path.exists())
+
+    def test_reason_refusal_or_missing_recipient_is_not_posted(self):
+        self.enabled()
+        for recipients in [[],
+                           [{"address":"daisuke/other@remote","state":"queued"}],
+                           [{"address":"daisuke/muse@remote","state":"unknown"}]]:
+            with self.subTest(recipients=recipients):
+                self.reason.send.return_value={"ids":["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients":recipients}
+                self.assertFalse(self.runtime.receive()["ok"])
+                with self.runtime.connect() as db:
+                    notice=json.loads(db.execute("SELECT value FROM meta WHERE key LIKE 'reason_outbox:%:received'").fetchone()[0])
+                self.assertEqual(notice["state"], "pending")
+
+    def test_reason_result_is_sent_even_if_slack_final_post_is_rejected(self):
+        self.enabled();self.runtime.receive()
+        original=self.slack.call
+        def call(method, **parameters):
+            if method == "chat.postMessage" and not parameters["text"].endswith(":start"):
+                return {"ok":False,"error":"thread_not_found"}
+            return original(method, **parameters)
+        with mock.patch.object(self.slack,"call",side_effect=call):
+            self.assertFalse(self.runtime.work()["ok"])
+        result=[c.kwargs for c in self.reason.send.call_args_list if c.kwargs["key"].endswith(":result")]
+        self.assertEqual(len(result),1)
+        self.assertIn("worked",result[0]["body"])
+        self.assertEqual(self.tasks()[0]["reply_state"],"delivery_failed")
+
+    def test_reason_result_is_sent_even_if_slack_start_is_unknown(self):
+        self.enabled();self.runtime.receive();self.slack.hide_posts=True
+        self.assertFalse(self.runtime.work()["ok"])
+        result=[c.kwargs for c in self.reason.send.call_args_list if c.kwargs["key"].endswith(":result")]
+        self.assertEqual(len(result),1)
+        self.assertIn("worked",result[0]["body"])
+
+    def test_reason_durable_accepted_recovery_is_not_resent(self):
+        self.enabled()
+        self.reason.send.return_value["recipients"][0]["state"]="accepted"
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.reason.send.assert_called_once()
+
+    def test_one_native_refusal_does_not_starve_another_recipient(self):
+        self.enabled()
+        other=dict(self.reason.inbox.return_value["messages"][0],
+                   id="01M6G11XSHQTVE7JPSSAEE34JA", **{"from":"daisuke/dots-one"})
+        self.reason.inbox.return_value["messages"].append(other)
+        def send(**notice):
+            state="refused" if notice["to"]=="daisuke/muse@remote" else "queued"
+            return {"ids":["01M6G11XSHQTVE7JPSSAEE34JA"],
+                    "recipients":[{"address":notice["to"],"state":state}]}
+        self.reason.send.side_effect=send
+        self.assertFalse(self.runtime.receive()["ok"])
+        with self.runtime.connect() as db:
+            notices=[json.loads(row[0]) for row in db.execute("SELECT value FROM meta WHERE key LIKE 'reason_outbox:%:received'")]
+        self.assertEqual({n["to"]:n["state"] for n in notices},
+                         {"daisuke/muse@remote":"refused", "daisuke/dots-one":"posted"})
+        self.runtime.receive()
+        self.assertEqual(self.reason.send.call_count,2)
