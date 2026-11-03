@@ -1,0 +1,96 @@
+{
+  "run_id": "17679f4e146bb3b4be52268e",
+  "owner_id": "home-codex-17679f",
+  "occurrence_id": "capafy-ig-marketing-daily:18db7caff1178a88-68028",
+  "release_sha": "f9cd6242e7beabd87adf332c88db5587e3feedde",
+  "observed_at": "2026-11-03T04:38:12.673948+00:00",
+  "phase": "read_only_identity_boundary_diagnosis",
+  "command": "exact SQLite SELECT mode=ro; four path existence probes; three stale-state metadata checks; injected reconcile(resolve=False)",
+  "loaded_argv": [
+    "python3",
+    "isolated fixture"
+  ],
+  "loaded_env": {
+    "provider_credentials": "not loaded"
+  },
+  "exit_code": 0,
+  "effect": {
+    "post": 0,
+    "deploy": 0,
+    "authentication": 0,
+    "fence_mutation": 0,
+    "accounting_write": 0
+  },
+  "readback": {
+    "admission": {
+      "occurrence_id": "capafy-ig-marketing-daily:18db7caff1178a88-68028",
+      "owner_id": "capafy-ig-marketing-daily",
+      "state": "claimed",
+      "queued_at": 1791162361.926294,
+      "effect_unknown": 1
+    },
+    "queued_at_utc": "2026-10-05T01:06:01.926294+00:00",
+    "paths_exist": {
+      "logs/capafy-ig-marketing-daily.log": false,
+      "state/capafy-marketing-rotation.jsonl": false,
+      "state/capafy-marketing-ig-ledger.jsonl": false,
+      "state/capafy-ig-post-dispatch-marker.json": false
+    },
+    "stale_state": [
+      {
+        "path": "/Users/anicca/.local/state/life-manager/state/capafy-marketing-result.json",
+        "mtime_utc": "2026-09-29T00:19:48.527898+00:00",
+        "predates_occurrence": true,
+        "content_sha256": "8349e0db926f6cbc74d729b3484a4148a528427d29005939799719a40aea7e5f",
+        "identity_bound_to_occurrence": false
+      },
+      {
+        "path": "/Users/anicca/.local/state/life-manager/state/capafy-ig-lifecycle.json",
+        "mtime_utc": "2026-10-03T04:20:33.402789+00:00",
+        "predates_occurrence": true,
+        "content_sha256": "b1cbe2547bca168dc12afbc9f5eebb304082d1607738fb9dccb5599bb5612e42",
+        "identity_bound_to_occurrence": false
+      },
+      {
+        "path": "/Users/anicca/.local/state/life-manager/state/.capafy-ig-reach-healthy",
+        "mtime_utc": "2026-09-28T22:44:07.850382+00:00",
+        "predates_occurrence": true,
+        "content_sha256": "8982d1b70114e33b3762e2b4870af2a527c30df07ab03af3076fdb3ffd694c0c",
+        "identity_bound_to_occurrence": false
+      }
+    ],
+    "offline_counterexample": {
+      "input": "different synthetic active account; no occurrence identity evidence; empty injected listing",
+      "verified": true,
+      "effected": false,
+      "resolve": false,
+      "provider_calls": 0,
+      "production_writes": 0,
+      "finding": "current account identity authentication does not bind that identity to the historical occurrence"
+    }
+  },
+  "provider_receipt_id": null,
+  "error_class": "historical_identity_not_bound_to_occurrence",
+  "retryable": false,
+  "next_action": "Before any provider read or resolve, bind original handle/account to this exact occurrence using original run journal/dispatch evidence. Source correction must reject absent/mismatched binding and prove a replacement ready account cannot close a historical fence. Parent owns PR9117 integration. No automatic account selection, auth recovery or posting replay.",
+  "evidence_refs": [
+    "skills/earn/capafy-marketing/scripts/capafy_ig_fence_reconcile.py:reconcile",
+    "skills/earn/capafy-marketing/scripts/capafy_ig_fence_reconcile.py:resolve_handle",
+    "docs/evidence/capafy-effect-e90c68.json"
+  ],
+  "remote_delta": {
+    "thread": "1793635811.853779",
+    "helper_old_task": "4db7d7462367afcad7ec144c",
+    "started": true,
+    "result": "OAuth expired; failure reported",
+    "handoff_task": "67f3ba72c8b47e28ed1f33f9",
+    "handoff_result": "read-only audit finished; no retry",
+    "Reason_accepted_queued_is_started": false,
+    "reminders_sent": 0
+  },
+  "limits": [
+    "Offline counterexample is a source defect, not evidence a production fence was actually released.",
+    "Original publisher identity and official effect remain unknown.",
+    "Stale artifacts cannot prove no post on October 5."
+  ]
+}

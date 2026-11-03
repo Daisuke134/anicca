@@ -23,9 +23,10 @@
   },
   "readback": {
     "red": "3 cases verified=True instead of False",
-    "green": "24 passed",
+    "green": "28 passed including carousel regression",
     "remote_thread": "1793635811.853779 official read; review helper result received; original remote native wake still unconfirmed",
-    "pr9120_merge_owner": "parent root; not modified"
+    "pr9120_merge_owner": "parent root; not modified",
+    "pr9120": "official MERGED main18131ea9; parent integration preserved"
   },
   "provider_receipt_id": null,
   "evidence_refs": [
