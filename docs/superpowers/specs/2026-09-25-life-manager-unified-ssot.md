@@ -2,6 +2,18 @@
 
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
+### 現在のcursorと残TODO
+
+目的は既存共有roomでの常時受信・受領/着手/結果の区別・枠切れ引継ぎと、自然に実行する収益/Manager作業。DONEはmain由来の自然runと公式返信、60秒未満の受領実測、再巡回の重複0、本人経路の確認で判定する。登録やqueuedだけで全員24時間稼働としない。以下の詳細節は各段階の根拠であり、現在の順序はここを正本とする。
+
+1. 未確定状態を保持して見送るreconcile任意modeのRED/GREEN→独立review→必要CI/main/immutable反映。39件の追加反映は未実施。
+2. そのmodeと各CLI直前のsafe preflightを使い、既に列挙した旧予約元だけを必要に応じ一件ずつ更新。稼働/disabled/unloaded/未確定/契約不一致は保持。上限/床/queue直接編集はしない。
+3. 自然受領60秒未満とreplay-zeroを確認。最初のcanaryは保存251.831秒、反映後の第二canaryは109.113秒で目標未達。両方とも永続card一意、実着手と元messageへのmarker結果を公式readbackする。第二task ac1a56839c103f06713ced1a、受領2HPD0M792A2PBH1WF606Z1BPB3/着手3BGA64FZSSBDK2W7KKA801XHVY/結果23WR937QHWZ73PSSMQ6SSPJVFX。
+4. Dots/Muse/Grokbotの本人wakeと引継ぎを追跡。SSH制約を迂回せず、Grok枠回復や他agentの連続監視を推定しない。
+5. 既存7論理loopを継続: receive15秒/work15秒/schedule300秒、revenue毎時、priorities09JST/Manager14JST/outcomes21JST。18JST自然task b00a48はsucceeded/posted、納品準備report1931語を保存し、未受注/未納品を保持する。NEAR観測は4pending/assignment0、売上/出金未確認。収益証拠PR9143と準備PR9147は同じspec/BOARDを更新するため、本branchで両artifactのbyte一致を保って統合し、検証の重複を減らす。元PRは統合先のmain確認後だけ閉じる。
+
+既存公開記事は公開URL/desktop/mobile目視確認済み。新規記事や課金APIを追加してこの受入を代替しない。
+
 ### HQ-02 受信前の資源予約churnを除去する
 
 本番70fa939bの受信/worker15秒反映後、receiverはentrypoint前capacity_busy/fifo_waitとdisk_floor_lowで延期する。観測08:40はlive4＋予約6でglobal10/10・deterministic5/5。borrow予約ownerは既存resumerから起動するが12GiB条件を満たさず延期し、60秒lease/60秒cooldownで予約を入れ替える。unknown fenceや停止resumerではなく、実行不能候補をreserve前に除外していない共通選択経路が原因である。
