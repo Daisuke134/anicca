@@ -785,3 +785,18 @@ primaryのwall延長前readback17:50:37UTCは残866972/credit23447150、remainin
 agent/model/window/Identity/vault/cron/月9/task1/専用mail/既存出力先は変更しない。次source acceptanceはJSON比較でinput_templateの1fieldだけ/他全fields不変、元実行の保存0/範囲違反を外部RED、fresh read-only review/最新head CI/main固定。runtime GREENはnativeによる根拠の先行write/readと、Postizを使う場合の実start/endが観測UTC日1日だけであること。文字列assertをモデルの遵守証明にしない。provider内部エラーの解消は別の未実証事項として残す。
 
 main固定後は旧production inputを保持したまま、同agent22/Identity/priorityに新inputで通常業務1件（finite0.40＋後計上余力0.10/計画0.50、12分、全tools最大24/browser hosted最大4）を進める。直前残/creditが計画未満なら作成0。元issue9001は親が読んだだけなので、本人が必要な根拠を実UIで確認してstateへ残すことを許すが、新規顧客と数えない。人間への承認待ち/業務script/新agent/key/model/増枠/追加入力は追加しない。完了と終了/費用を公式照合してからdesired inputだけをproductionへ反映し、失敗なら旧inputを維持して原因と原本を保存する。元7TODO/登録/第三者売上/録画/phone-only/黒字/USD10K/月/移植は未完のまま保持する。
+
+
+### 先行保存の実測と記録内容の最小訂正
+
+PR9175はhead a0d336844f0e81c34650c09f60996f7d8a5f6f67でfresh read-only review指摘0、15checks終了失敗0からmain a7c8085e93aab4dffd48d02f55a4a9e31c951dcbへ統合する。source configはinput_templateの1fieldだけ変更し、旧production inputはa716050のまま保持する。公式SDK0.10.0で通常業務ses_dz815zvey4nkhx7rz47mcc7n60を22/priority/同Identity/finite400000で作成する。直前残853646は計画500000を収容する。
+
+nativeは5readを並列に取得し、intakeをgoto/screenshot/view_imageで0件と確認、issue9001をgoto/extractで全文観測する。本文には投稿者自身の原因分析・修正案・テストとissue割当依頼があり、Naïve本人は自力解決済みの貢献で買い手ではないと判断し、需要候補から除外する。新規の実依頼/価格受容/納品/売上は0。Postiz call0、先行state write→readは10553→15953bytes/hash354015fc76a08c78c72f966d52504513b83d7d6391b6db342fbe9b55a74ef3fbで完全一致。journalは旧6126bytesを完全prefixに保持して2531bytes追記し、追記suffixをreadで照合する。全15tools/hosted extract1/確認0/primary追加入力0/人間0、自然end_turnを18:18:15UTCに確認する。provider internal_error再発0だが原因解消を証明しない。
+
+内容の独立照合で、元stateのgithub_check/next_actionの2値は更新され、原値のarchiveが無い。またroot github_check.observation_windowとjournalの新見出しは未観測の18:2Xという表記で実event18:16〜18:18と一致しない。journalの12tool表記はstate照合までの小計で、run最終15とは区別が必要。保存exactだけでproduction採用しない。fresh reviewerはこのままNO-SHIP、旧2値の追記保存と不明時刻訂正だけのnative修復を推奨する。旧research/provenance/payment fieldsは保持するが、元全field/value不変とは呼ばない。
+
+当該sessionはcancelled/pending0、45sessions active0、Computer paused、production22/priority/旧input全source fields維持を公式GETで確認する。費109244microUSD/全ledger14件とdebit合計一致。月spent8255598/残744402は18:18:45UTCのsnapshotで後計上を保証しない。証拠はprivate v22-checkpoint-business-{before,attempt,sdk-create,events,artifacts,state-verification,spend-readback,ledger,terminal-readback,final-resources,production-readback}.json。
+
+次の通常業務は記録訂正1件に限定する。agent22/同Identity/priority/旧production input/モデル/メール/月9/task1を維持。新source/営業/Postiz/登録/送金0、本人のread/writeだけで既存state/journalを読み、旧2値をprovided公式原本から履歴として追記し、18:2X表記を未観測null（提供済みAPI観測UTCは出所を区別）へ訂正、12はcheckpoint小計・公式eventsの最終15は別値とする。history/payment/provenanceと今回の正直な需要判定は保持し、訂正write→同path readを照合してend_turnする。親は業務scriptでfileを書き換えない。finite0.40＋後計上0.10/計画0.50/12分/max12tools、fresh残/creditが計画未満なら作成0。新session1件をこの原因への修復として明記し、前runの追加入力0や会社全体無介入成功に合算しない。
+
+順序は元7TODOのcursor2を維持し、その内部を「新input通常業務→合格時採用」から「記録内容の訂正→独立照合→合格時だけ同じmain由来input採用→買い手需要/初回有料納品」へ修復する。理由は実際の保存内容に履歴/日時の欠落を確認したため。新framework/controllerやモデル/予算の変更を追加しない。合格前は本番inputを旧版で保持。失敗時は原本/原因を記録し、成功や0へ置換しない。登録/録画/phone-only/黒字/USD10K/月/移植と実第三者売上は引き続き未完。
