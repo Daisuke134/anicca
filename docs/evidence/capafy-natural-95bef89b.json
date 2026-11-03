@@ -52,7 +52,9 @@
     "last_report_timestamp": "2026-10-30T15:06:08.564170+00:00",
     "last_report_exit_code": 75,
     "last_report_error": "host_admission_deferred:resource_effect_unknown",
-    "official_effect_receipt": null
+    "official_effect_receipt": null,
+    "usable_active_handle_resolves": false,
+    "private_accounts_path": "~/.cloak/clip-accounts-capafy.json"
   },
   "sales": "unverified",
   "visitor_identity": "unknown; do not infer human or organic visitor",
@@ -61,8 +63,15 @@
   "next_action": "PR9103 exact-head CI then merge. Preserve disabled publisher and occurrence18db7caff1178a88-68028 until exact official receipt reconciliation; locate its original active IG handle/account and durable journal before provider readback. No restart, fence release, replay or redeploy.",
   "sales_probe": {
     "provider": "Capafy GET /agent/agents",
-    "result": "RuntimeError from existing authenticated helper; separate bounded diagnostic pending",
-    "net_revenue": "unknown",
-    "cost": "unknown"
+    "initial_helper": "unauthorized using default token source",
+    "ssot_exact_service": "capafy-publisher",
+    "ssot_field": "token",
+    "ssot_probe_exit_code": 0,
+    "agent_rows": 89,
+    "sales_field_rows": 0,
+    "sales_count": null,
+    "net_revenue": null,
+    "cost": null,
+    "note": "SSOT token read succeeded; provider payload omits sales field, do not interpret sum as zero"
   }
 }
