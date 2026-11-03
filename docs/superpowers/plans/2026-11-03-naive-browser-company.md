@@ -9,7 +9,7 @@
 
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用cap月6USD/max_task1USD、既存残高内・追加入金なし。
+- 専用cap月7USD/max_task1USD、既存残高内・追加入金なし。現在値は「現在の正本」を参照。
 - 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
 - business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
@@ -174,7 +174,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v13稼働・実依頼と納品収益の検証
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v15はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6217550microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6390644microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -405,3 +405,16 @@ PR #9152/main `650d5a668e9a89a27668c9887ba56ea7683d5198` のmodel-only PATCHはa
 現在agent15/production deployment13となり、比較candidateを適用してもdeployment13は古いversionとして固定される条件が整った。比較artifactのexpected_versionを15→候補16、restoreをto_version15/expected16へ更新する。model以外の全agent fieldsとdeployment全fields不変をGETで確認して初めてfiniteを作成し、不一致なら作成せず復元。候補16のfinite上限160000microUSD、既存3run実費336596との最大496596は不変。終了/入場拒否/失敗ならfinite terminal確認後、復元artifactで元のv15内容をcloneして新version17とし、全source fields/production deployment13のGET一致で閉じる。新modelの価格/画像対応/品質は未確認で、比較結果前に昇格しない。Codex UIのmodelは不変。
 
 現在cursorは実第三者依頼→公開納品→29USDC receipt/費用で変わらず、本人登録/inboundは独立の未完項目。先行3finiteは全cancelled/pending0、runtime.jsonはagent15/production deployment13を区別。担当累計6217550microUSD、API診断browser累計5001microUSDは別計測。未測定増分を各componentや利益へ帰属しない。
+
+
+### model比較の実測結果と復元完了
+
+固定main `9b385a50029554ccbdc14a038286e83518edad98` のmodel-only probeからcandidate16を適用、agentのmodel以外のsource fields不変・deployment全snapshot不変/13をGET一致して有限session `ses_65ehm42mdnpf0at373sx1kf494` を作成した。20 model spansのresolved_modelは全てz-ai/glm-5.3-flash、tool started20件、screenshot0/email.read0。quoteは約0.003USDだったが、同じ条件の完走比較でも画像対応測定でもなく価格/能力の一般優位を主張しない。
+
+実UIはevent40でThis email is already registered with Substack.、event48でSign in to Substack/Email/Continue/Sign in with passwordを返した。email欄は[REDACTED]と明示され、空欄画像から入力失敗を断定した以前の解釈を再確認して訂正する。already registeredは同じ専用メールの通常sign-inへ進む根拠であり、本人認証/account所有の証明ではない。以後は/signupの再送や別メール追加ではなく通常email-code/login-linkを使う。最終確認メールdispatch成立は未確認、root本人messages readbackも0/EOF、accountはnot_verified。SSOTへ未取得accountを成功登録しない。
+
+event128 budget.exceeded/param budget_micro_usd、event131 idle/budget_paused。公式session status consumed166809microUSD、設定ceiling160000microUSDに対し6809超過、先行3run336596との計503405microUSDは診断総枠500000を3405超過する。設定capがhard actual上限と証明されたとは言わない。session.usage26809と公式status166809の差を未照合の費目へ帰属せず、それぞれの範囲を保持する。追加入金/上限変更/診断再実行は0。budget_paused原本保存後cancel→GETcancelled/pending0。
+
+main固定restore artifact（to_version15/expected16）を適用しcurrent17、元config/naive-browser-company.jsonの全source fieldsを公式GET一致。production deploymentはbaseline snapshot全体と完全一致/13、cron/input/Identity/cap不変。runtime.jsonもcurrent17/production13を区別。private証拠はpasswordless-model-isolated-{source,baseline-agent,baseline-deployment,patch,candidate-readback,deployment-check,restore,restored-readback,deployment-restored}.json、substack-passwordless-model-{session,native-status,pre-cancel-status,cancel-readback,event-metadata}.json、substack-inbound-metadata-after-model.json、spend-after-passwordless-model.json。authイベントのcode/本文/秘密URLは保存せずmetadata/hashのみ。担当累計6390644microUSD、別SDKbrowser累計5001microUSD、全社利益/売上ではない。
+
+現在cursor/全体TODO順は変わらない。実第三者依頼→納品→入金の前に、個人Googleを再導入しない。公開英語記事のCurrent Stateが旧v9/商品draftのままなので、公開済みpilot/CTA・送信方向の実配送・今回の失敗境界・未達を修正する。過去probe値は履歴として保持し、広告/同文募集の追加送信はしない。次の自然deploymentは12UTC、本人受信/通常sign-in・録画・phone-only・黒字・10K/移植は未達。
