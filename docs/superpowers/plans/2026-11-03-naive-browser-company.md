@@ -716,3 +716,6 @@ source差分はconfig/naive-browser-company.jsonのmodel= zai-org/GLM-5.2-FP8 �
 native canaryはagent21/既存Identity/window priority/finite140000で、seller-stateを1回読んで既調査・forum5003等の回答済み候補を避け、本人browserで公開検索→新しい出所最大1件→問題/未解決根拠/29USDC商品の適合/購買意思null/限界をv21-public-demand-result.jsonへwriteし同pathをreadする。検索を含めbrowser hosted act/observe/instruction-extractは合計最大2回、全tools最大8回。営業/投稿/返信/DM/メール/登録/支払0、他者trace/codeは実行しない。本人の公開閲覧の確認があればprimary AIがexact対象を確認してcall-scope処理し、人間介入/primary確認/追加入力を別々に記録する。Naïve単独無確認とは自動で呼ばない。成功判定は実ページを読んだevents/成果物write-read一致と公式台帳、顧客需要や支払意思は観測内容に限る。browser停止/429/予約不足なら未達を保存し、model総当たりをしない。
 
 finallyは当該session cancel→GET terminal/pending0、費用/全ledger/成果物の有無、全sessionのactive0を確認し、元Computerだけpause→GETpaused、deployment20/immediate/元enabledを復元する。売上/登録/録画/phone-only/利益/10K/移植は別の未完要件として保持する。canary合格後のproduction pin21/window priorityへの変更は次のsource差分として明示し、今回の候補成功だけで自然runや売上を達成扱いしない。
+
+
+v21 source acceptance: 元Haiku/immediateとの差分をREDとして確認し、candidate model/windowの2fieldだけ変更したJSON比較がGREEN。他の全source fields/月8/task1/deployment bytes不変、live model by-ID priority対応、diff check PASS。read-only apply preflight16:27:23UTCは41sessions active0/Computer paused/20-20/残187409microUSD/credit23767587、effect none。fresh read-only reviewerは原本差分・算術・公開公式契約を独立確認しBlocking/Nit/Pre-existing各0、source/canary実行契約SHIP。実適用/供給/需要成果は未検証。適用時のfresh残額判定を省略せず、CI全終了失敗0とmain固定を維持する。
