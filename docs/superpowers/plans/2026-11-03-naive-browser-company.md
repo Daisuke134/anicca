@@ -174,7 +174,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v13稼働・実依頼と納品収益の検証
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6638031microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6683934microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -185,7 +185,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 残TODO（現在cursorは2、全体goalはactive）:
 1. [完了] 実行予算と導線の修復。PR #9145/main `584363f5b03e738647e65286f77264bcff069219` からv13を適用、agent/deploymentの全source fieldsを公式GETで一致確認。月7/task1、同Identity/11allow/cronを維持。未完CTA案内はnative1callから公開し、Postiz保存HTML exact・X本文3段落の一致・native journal write/readを確認。現在cursorは次項の実依頼獲得。
 2. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点では同文募集や同じ画面巡回を増やさず、下記seller loopで新しい公開需要の根拠を最大1件調べ、提案を改善する。単なる待機だけで終わらせない。
-3. 次の標準自然runは2026-11-03T12:00:00Z（JST21時）。manual≠natural。実runの版/費用/入力量/介入点/公式納品receiptを記録。初回の実有償業務を連続画面録画で保存する。いま保存した単一スクリーンショットを動画と呼ばない。
+3. 標準自然runは12UTC予定→12:09:39作成、pin13/同Identity、7tools/45903microUSD/確認0/primary追加入力0でidle end_turnを公式確認。実画面は適合依頼0件、記録して終了。次の自然runは2026-11-04T00:00:00Z（JST9時）。今回の無受注確認を有償業務の無介入完走と呼ばない。初回の実有償業務は連続画面録画を保存し、単一スクリーンショットを動画と呼ばない。
 4. 本人inbound配送は独立切り分け。送信方向は後続のmail-tester1通で実受信10/10とSPFpass/DKIMvalid/DMARCpassを確認済み（詳細は末尾の実測結果）。受信方向/登録完了は未達。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
 5. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
 6. 利用者向けiPhone入口を設け、利用者個人のGoogle/メール入力/password/PCを要求せずManagerを利用できる導線を実装・実機確認する。現在のdeveloper向けGitHub依頼フォームはこのconsumer入口ではない。infrastructure契約と利用者本人確認/引出条件を区別し、銀行情報以外不要と未確認で約束しない。
@@ -489,3 +489,11 @@ Substack最後のobserve106はCreate your account、113はSign in to Substack/em
 順序変更: 旧「依頼ゼロ→記録して終了→外部反応待ち」を、新「既存依頼処理→ゼロなら新しい需要1件の調査→有用な新知見がある時だけ日1件の獲得実験→結果保存」へ。受注ゼロで停止する原因が自所有inputにあるためで、既存進行中effectは中断/再送しない。現在cursorはsource/main固定→既存deployment inputのみPATCH/GET一致→既存残枠内最大0.30USDの有限run1回。自然run未作成の調査は独立に継続し、手動検証を自然完走や収益の証拠にしない。完了条件はsource反映・nativeの新分岐/永続stateの実行証拠であり、投稿や調査だけを売上達成にしない。
 
 独立read-only reviewは入力以外不変/既存契約と重複防止保持を確認したが、「需要1件」と「source1件」の曖昧さを指摘。inputを「検索結果から開く公開需要ソースは1run最大1件」へ明示し、対応箇所を再照合する。他の機能/権限は追加しない。
+
+### 初回の標準自然runが無受注確認まで完走
+
+12UTC予定のrun `run_8k5kfy836y4aeg0sy0gne5tvj1` / session `ses_5j5eant4wkhpyzqe8h9rav5txs` は12:09:39.435Zに作成、12:10:57.667Zにsession.idle/end_turn。deployment_id一致・pin13・同Identity、初期user inputは元input_templateを含み、付加された予定時刻は12:00:00.000Zで作成時刻と異なる。rootの手動runは05:30以降0回。以上からこのrunを定刻起点と照合し、約9分39秒の起動遅延を残す。起動遅延の原因は未特定だが「自然run未作成」は当該観測時点の履歴となる。次回は2026-11-04T00:00:00Zへ進んだ。
+
+nativeはoffer/sample/receiver/journalの4read→本人browser GitHub goto→screenshot→journal writeの計7tools、Haiku4.5実5model spans、実費45903microUSD、pending0。tool.confirm0、primary追加入力0/confirm0、手動中断0。journal write成功eventはあるが同run内readbackは無く、次runの再読取で永続化を照合する。公式file fil_tkzekjvve2c92tmha9bd5p0qpk/122065bytesのbytes・sha256・agent/session一致を確認し、primaryも実画像で0 results/No results matched your searchを確認。これが証明するのは今回の自動起動→本人browserで無受注確認→記録まで。有償納品・第三者売上・新規signup・mail受信・連続録画・会社全体の無介入運営は未達。
+
+公式agent累計6683934microUSD。private `natural-1200-final-readback.json`、`natural-1200-native-event-metadata.json`、`natural-1200-intake-screen.jpg` が証拠。稼働中runの設定は変更せず自然end_turn後まで待った。source seller入力の反映はこのrun後に行い、旧inputの自然run結果と新seller分岐の検証を混ぜない。
