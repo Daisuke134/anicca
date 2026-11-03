@@ -269,3 +269,6 @@ Idempotency-Key付き置換probe2はComputer202/running、browser context_backed
 - probe3残高差1667microUSDとbrowser debit led_warvrsrcp1a14tda3tgknm7rqw一致。API診断2件のbrowser明細合計3334microUSD、組織残高25.926910USD。agent直接累計5.656872USDと別表示、全社費用/利益へ置換しない。関連JSONと構造化boundary verificationはprivate evidenceに保存。
 - 既存native v12は公開受注pilotとして継続し、この独立したDEV/SDK診断を受注/納品の追加gateにしない。current cursorは実依頼→英語レポート→第三者USDC receipt/費用、次の自然runは12UTC/JST21時で未実測。v12は単一商品の初期収益loopで、任意事業を自律選択して移植/自己compute支払/複製するfull Managerの完成とは呼ばない。SDK側の残境界は保存optionsから実行policyへの伝播で、正式な修復経路をsource/docsで調べる。
 - Museの既知返信先daisuke/terminalはReason一覧でhtch-runtime/tier turnを確認。本人経路へ既存方法/owner/receiptの照会を送信しqueued、返信は未確認。idle/queuedを稼働・着手とは呼ばず、他agent mailbox/accountを借用しない。
+
+
+SDKsourceの追加照合: npm公式公開package @usenaive-sdk/vetta 0.10.0をignore-scriptsで取得。computer.browser.loginは同じPOST /v1/computers/{id}/browser/loginへbodyを渡し、screenshotは同じactionsへ送る。requestは全2xxを受理/空応答を{}扱い、mutationにIdempotency-Keyを付与する実装で、今回の初期client不備はSDK自体には無い。browser methodは独自のallow_writes/allow_extract overrideを付けず、create済みbrowser blockを使う契約と整合する。公開SDKsourceに今回403guardのserver実装は含まれず、repository metadataのusenaive/vetta-monoは現在のgh経路でresolve不可。すべてopen sourceと仮定せず、server側根因/修復は未取得として残す。出所 https://www.npmjs.com/package/@usenaive-sdk/vetta 、package SHA1 263630c4977a4a42e4865ba7fe77fd02396f3f0e。
