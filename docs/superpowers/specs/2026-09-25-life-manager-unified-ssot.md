@@ -25754,6 +25754,8 @@ MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し�
 
 目的: Adria/Managerの利用者はiPhoneだけで目標を伝え、個人メールの入力・password・Google・自前PCを用意せず、agent自身のIdentity/mail/vault/Computerで事業を運営する。Naïve契約/基盤のcontrol planeと、働くagentのruntime資格情報を分離し、DaisのNaïve契約があることを個人Googleへの依存と混同しない。まずNaïveで一件のend-to-end実例と採算を作り、月額売上USD10,000以上を目指す。目標額・推計・platform残高・入金済み売上・MRRは別に表示する。収益・利益・勝利・YC採択を保証した表現を使わない。
 
+受取基盤の具体化: Naïve IdentityのBase mainnet walletをnative APIで準備し、公開受取先/残高/上限制約を公式readbackする。per-tx0.50USD/day2USDで作成し、入金・送金・sweepは実施しない。org creditsとUSDCは別勘定。受取準備を売上と数えない。 mainnetのcreateは403: mainnet wallets are not enabled for this organization。本人Identityに既存mainnet walletがないことをGET確認し、org ownerの公式設定経路を追加調査する。testnet faucet資金を実収益にしない。Capafyの重複account/automation許諾記録は公式termsと既存provider mailから照合し、未解決中は本人mailによる受注・native browser調査・email納品の自社サービス準備を独立して進める。価格/納品範囲は同市場の一次成功例を調べて決め、成功例の実績が未取得なら小規模な検証offerと明示する。
+
 今回の完了条件: (1)本人mailで正規登録/認証/本人画面 (2)新規所有商品と販売導線 (3)第三者の実売上とcompute/platform等の実費の公式照合 (4)本人Identity/context/checkpointを保つNaïve標準継続運転 (5)秘密を含まない実画面記録と2–4分の英語live demo、英語blog/X素材。通常業務の人間承認は設けず、業務script/API置換もしない。本人/KYC/受取先の不足事実は捏造せず、不足する場所を特定して他の業務を続ける。platformが受取先登録前に売上を留保するかは当該providerの公式仕様と実画面で確認し、未確認を一般化しない。
 
 公式条件: https://events.ycombinator.com/naive-autonomous-companies-hackathon と https://usenaive.ai/hackathon を直接取得。11月7–8日SF現地、全teamがNaïve SDKを使用、実際の顧客獲得/納品/運営と介入箇所をlive demoで示す。Naïve側FAQは2–4分。YC側は1位へのYC interviewとスポンサーcreditsを記載するが、YC採択を約束しない。事前制作物の審査対象範囲は公開本文に明記されていないため、事前準備と当日成果を区別して記録する。
@@ -25762,7 +25764,7 @@ MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し�
 
 モデルの採用判断: 同session/Identity/context/権限でGemini2.5FlashからClaude Haiku4.5へ比較override。Geminiは画像後に未呼出のactを実行済みと述べて停止し、Haikuはgoto→screenshot→act→screenshot→links/observe→本人mail入力の実tool chainを実行した。primaryが取得した遷移後画像はGoogle/GitHubではなくemail+Terms/Privacy+ContinueのCapafyフォーム。一般的なmodel優劣へ広げず、このbrowser担当の既定だけHaikuへ変更する。v5のsource統合/完全一致readbackと標準deployment接続を次に行う。
 
-現在cursor: MAIL03。v4の本人mailと承認待ちなしは稼働済み。現sessionはGemini2.5Flash比較。前ログのUsername or email address/Sign inはGitHub誤遷移を疑う。Capafy Terms §3.4/Publisher Agreement §2.9の所有者制限と§6.2のautomation条件を確認し、既存担当へ権限/許諾記録を照会中。個人mailなしという製品要件は維持し、同じ所有者の重複登録はしない。XPathのbutton[3]→CSS nth-child(3)は非同値であり、認証hostの実確認を先行させる。次はcloud screenshotを直接確認して正しいemail経路を操作する。売上/公開/定期deploymentは未確認。disk不足は現状未観測で、不要な全体cleanupは実施しない。
+現在cursor: MAIL03。v4の本人mailと承認待ちなしは稼働済み。現sessionはClaude Haiku4.5へ比較override済み。前ログのUsername or email address/Sign inはGitHub誤遷移を疑う。Capafy Terms §3.4/Publisher Agreement §2.9の所有者制限と§6.2のautomation条件を確認し、既存担当へ権限/許諾記録を照会中。個人mailなしという製品要件は維持し、同じ所有者の重複登録はしない。XPathのbutton[3]→CSS nth-child(3)は非同値であり、認証hostの実確認を先行させる。cloud screenshotの直接確認とHaikuによる正しいemail経路の操作は成功し、本人mail入力まで確認。次はv5を適用し、既存Capafy担当/許諾記録を照合しながら独立した受注・商品準備と標準deploymentへ進む。売上/公開/定期deploymentは未確認。Macの空きは7.9GiB。cloudの現作業を妨げておらず、不要な全体cleanupは実施しない。
 
 ## AGI flagship essay publication
 
