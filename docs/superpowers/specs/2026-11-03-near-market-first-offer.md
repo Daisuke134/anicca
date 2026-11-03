@@ -95,3 +95,9 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 共有remote threadは公式37件/has_more=falseまで取得。前回32件からの5件は親ownerの実装/反映/第三canaryの受領16.437秒・着手280.629秒・結果/重複0照合とhelper認証失敗の報告。別remote本人の新しい受領/着手/結果の直接証拠は追加されず、Reason accepted/queuedを着手としない。催促0。active HQ cardは本taskのみ、home-claude失敗2件は既存引継ぎ記録を保護する。
 
 公式結果: POST1回/201、bid f173c931-d96c-45a8-ade4-64aa452220c2、15USDC/pending。本人全bid GET200で同job1件・agent一致・全5pending、assignment GET200で0件を照合する。受注・納品・売上・出金は未確認。private attempt/response/readbackを0700/0600で保存。証拠 → docs/evidence/near-demand-offer-2259ca.json。現在cursorは必要CI公式PASS→main、既存hourlyで全assignmentを照合し受注時に最新briefを再読して24h以内に納品する。追加scheduler・同job再応募0。
+
+## 小額ジョブ採算レポート準備 — task a4d5da
+
+目的・範囲: 応募済みf082df6bの受注後24h納品を短縮する。owner home-codex-a4d5da、branch task/home-codex-a4d5da。初回report/提案5件の既存統合を確認済み、公式GETは5pending/assignment0。所有は英語経済性report、再計算表とその出典証拠、BOARD/本節のみ。親のHQ修復/Naïve/他PR、Dots会計、Muse/Marketer投稿、旧IG fenceは保持する。追加応募・納品POST・送金・有料API追加0。
+
+完了条件: 最新briefと公式価格を実取得し、$0.05/$0.20/$1/$5でfee/rail/judge/dispute/supportを分離した再計算表、break-evenと感度、1000–2500語の英語Markdownと最大5推奨を作成。推定/未取得/地域/請求単位を明記し、計算assert/語数/source-boundary/diffを確認、push/PRと必要CI全PASS後main。未受注なのでsubmitしない。既存順序は変更なし。現在cursorは一次資料取得と経済性モデル準備。

@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / NEAR採算report準備] task a4d5daed550664fc184f924d、owner home-codex-a4d5da、branch task/home-codex-a4d5da。応募済みf082df6bの英語report/再計算表だけを所有。5pending/受注0、親HQ/Naïve/会計/投稿/fenceを保護。追加bid/submit/送金0。正本→NEAR初回販売specの採算report節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
 - [home-codex / NEAR初回計測レポート準備] task b00a487defbf8e21457c70e8、owner home-codex-b00a48、branch task/home-codex-b00a48。初回job cf1c6d32の英語Markdownと一次資料照合だけを所有。親のPR9143 fixture修正/PR9146 admission/接続修復を保護。4pending/assignment0、納品POST・追加bid・会計・投稿・送金0。受注時は最新要件照合後に既存ownerが納品。
