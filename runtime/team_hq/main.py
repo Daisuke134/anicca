@@ -650,7 +650,9 @@ class HQ:
             database.execute("UPDATE tasks SET reply_state='posted',reply_ts=?,delivery_error=NULL,updated=? WHERE id=?",
                              (timestamp, time.time(), task["id"]))
             database.execute("INSERT OR IGNORE INTO threads(ts,cursor) VALUES (?,?)", (task["thread_ts"] or timestamp, timestamp))
-        return {"ok": True, "task_id": task["id"], "execution_status": task["status"],
+        execution_status = ("succeeded" if task["checkpoint"] == "quota_exhausted_handoff_required"
+                            and task["exit_code"] == 0 else task["status"])
+        return {"ok": True, "task_id": task["id"], "execution_status": execution_status,
                 "business_outcome": "unverified", "reply_state": "posted", "message_ts": timestamp}
 
     def announce_start(self, task):

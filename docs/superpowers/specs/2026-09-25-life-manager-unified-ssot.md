@@ -2,7 +2,7 @@
 
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
-利用枠枯渇時の継続: DaisはGrokbotの枠回復までCodex/Dots/Museが業務を引き取るよう委任する。Rockwellは誤記で存在せずGrokbotを指す。4日後resetはDais申告であり実残量を捏造しない。既存cloud担当正本WHO-OWNS-WHAT.md/LOOPS.mdと各仕事のcheckpoint/期限/receipt/未確定effectを本人経路で取得し、既存Slack task取込と単一queueへ移管する。コード修正は、CLIが正常終了してもagent自身が構造化STATEで利用枠枯渇と引継ぎ必要を明示した時だけ既存の一度限りhandoffに接続する。自然文の語句判定、枠reset、新dispatcher、既存外部処理の再送は行わない。目的/範囲はTEAM-HQの停止・枠切れ継続と容量復旧、DONEはtyped状態のRED/GREEN・通常成功/一般的未完との区別・再帰/重複0・fresh review・最新CI・main由来限定反映・自然実行/公式返信である。現cursorは容量基準回復→この修正→現行cloud仕事を既存queueへ引継ぎ。既存HQ-02/03と進行中owner/effectを保持する。
+利用枠枯渇時の継続: DaisはGrokbotの枠回復までCodex/Dots/Museが業務を引き取るよう委任する。Rockwellは誤記で存在せずGrokbotを指す。4日後resetはDais申告であり実残量を捏造しない。既存cloud担当正本WHO-OWNS-WHAT.md/LOOPS.mdと各仕事のcheckpoint/期限/receipt/未確定effectを本人経路で取得し、既存Slack task取込と単一queueへ移管する。コード修正は、CLIが正常終了してもagent自身が構造化STATEで利用枠枯渇と引継ぎ必要を明示した時だけ既存の一度限りhandoffに接続する。自然文の語句判定、枠reset、新dispatcher、既存外部処理の再送は行わない。目的/範囲はTEAM-HQの停止・枠切れ継続と容量復旧、DONEはtyped状態のRED/GREEN・通常成功/一般的未完との区別・再帰/重複0・fresh review・最新CI・main由来限定反映・自然実行/公式返信である。実有限CLI exit0のtyped枯渇STATEを用いたREDを確認し、54HQ testsはGREEN。artifact/resultとCLI execution_statusを保持し、元cardをinterruptedとして既存helperへ1件だけ渡す。fresh reviewでdeliver/work戻り値の再混同を発見し、追加RED→checkpoint/exit_codeに基づく返却の最小修正を行う。通常成功・CI待ち・不正boolean等8状態・非zero終了7は既存動作を保持する。重複/再帰handoffは0。容量は未使用Camoufox取得cacheを使用中0確認/atomic退避/再確認後に回収し、uv/SwiftPM/pipの標準cache整理を実行、認証/profile/memory/state削除0。容量基準を通過後もresource_control_busyは別の待機として追跡する。現cursorはfresh review→必要CI→main/限定反映→自然実行、並行して現行cloud仕事を既存queueへ引継ぎ。既存HQ-02/03と進行中owner/effectを保持する。
 
 目的: Slack #agents-hq を共有部屋にし、依頼保存・受領・着手・進捗・証拠付き完了・停止/枠切れの引き継ぎを追跡する。Codexは収益阻害、計測、Manager開発を継続し、確認した実験を公開する。schedulerが有限のagent実行を起こし、この対話が無期限に自己再開するとは扱わない。
 
