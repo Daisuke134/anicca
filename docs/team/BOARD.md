@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [Codex / NAIVE-BROWSER-E2E] main048a837/15checks/SDKtools-onlyでcurrent23、本番22旧input保持。23もinternal_error2回/6read/edit0、cancel後usageで0.034265USD/ledger4、47active0。state17964bytesの訂正現物は確認するが旧cancel後mtime/対応event不在で帰属不明。journal8657bytesは未訂正。親readbackでwake後pause409、19:00 Computer running。cursor2は使用状態照合→休止後journalだけnative edit→独立照合→合格時23採用→有料需要。モデル/mail/月9/task1/計画0.50維持。売上/登録/録画/phone-only/黒字/10K/移植未達。 journal-onlyは4tools/end_turn・費27665。内訳削除Blocking1件で23/input未採用。Computer paused確認、native内訳追補→独立照合→採用→有料需要。 内訳追補SHIP、本番23/inputをmain048から2field反映・公式一致/paused/active0。現在cursor2有料需要へ復帰、売上未実証。 通常業務19tools/7browsererrors・需要0、費138158/ledger14、paused/active0/prod23。次は350000計画内の短い本人browser復旧→新需要1出所。
+- [Codex / NAIVE-BROWSER-E2E] 本番main048/agent23/priority、専用Identity、個人Google注入0。本人5tools/end_turn/errors0で有償QA募集319256を観測・state追記/read、費45906/ledger8。最新53active0/paused/prod23全fields、月残288777。価格/充足/発注/売上未確認。cursor2=候補の募集状況・重複・適合→専用mail登録/連絡→限定提案→実依頼/納品/入金。元7TODO/登録/録画/phone-only/黒字/10K/月/移植は未達。運用記録PR9177はCI待ち。履歴・現在cursor正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
