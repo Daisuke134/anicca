@@ -25715,7 +25715,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 目的: Grok/Muse/Dots/Codexと同じLLM＋Computer/browserの形をNaïve自身の実行環境へ接続し、画面を観測→判断→click/type→結果確認で収益業務を完走する。業務script、業務API、固定workflowを収益判断の主経路にする案を上書きする。SDK/APIはagent設定、予算、session、証拠取得という基盤操作にだけ使う。
 範囲: config/naive-browser-company.jsonの専用担当、同じsourceのhosted適用、browser toolの実操作、認証/保存状態、既存ownerとの調整、公式readback。既存のCEO/builder等の設定・cron・Mac/browser/他VMは変更しない。売れている商品は変更しない。
-設計: pi＋画像後の継続を実測したgoogle/gemini-2.5-flash-lite、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTP/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月2USD/max_task0.50USD、既存残高内・追加入金なし、cron未登録から開始する。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
+設計: pi＋画像/実tool操作を比較確認したanthropic/claude-haiku-4.5、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTP/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月2USD/max_task0.50USD、既存残高内・追加入金なし、cron未登録から開始する。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
 比較した案: 既存script移植はDaisの明示指示に反するため不採用。Macのbrowserを遠隔操作する案はNaïve自身のComputerという条件を満たさないため初回方式にしない。Naïve標準browser toolをモデルが使う方式を採用する。
 完了条件: (1)Grok/Muse/Dotsの実手順/ownerを照合 (2)Naïve側のagent・browser/Computer・モデル・予算を公式readback (3)実際の画面観測とclick/typeをtool eventと変化後の画面で確認 (4)認証済み業務と外部結果を確認 (5)同じ担当の再開と所有する継続運転を確認。市場調査だけを公開/売上完了にしない。秘密値はmodel prompt、Git、chatへ出さない。
 実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。旧Google診断時点のcursorはBROWSER03のmanaged-browser Google OAuth境界。BROWSER02の実操作と、BROWSER04の別sessionメモ再読取は確認済み。収益業務と継続deploymentは未完。
@@ -25760,7 +25760,9 @@ MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し�
 
 実行順: MAIL03のauth実画面診断→本人mail登録/認証→新規商品の制作/販売→実収支/継続運転→英語demo/公開→実証した構成の移植/複製。旧順のままNaïve一社の成果を先行させる。複製数を増やすだけで利益が増えるとは扱わず、各個体の実収支とcompute費用を持つ。既存config/goal/checkpoint/owned credential参照を移植単位とし、第二frameworkを先に作らない。共有vaultは所有者/対象serviceを照合し、秘密をprompt/Gitへ複製しない。別cloudへの展開とcrypto決済はprovider対応・所有資金・既定spend-cap内で進め、現時点では実証済みとしない。既存Mac/他担当/共有profile/販売済商品は変更しない。
 
-現在cursor: MAIL03。v4の本人mailと承認待ちなしは稼働済み。現sessionはGemini2.5Flash比較。前ログのUsername or email address/Sign inはGitHub誤遷移を疑う。XPathのbutton[3]→CSS nth-child(3)は非同値であり、認証hostの実確認を先行させる。次はcloud screenshotを直接確認して正しいemail経路を操作する。売上/公開/定期deploymentは未確認。disk不足は現状未観測で、不要な全体cleanupは実施しない。
+モデルの採用判断: 同session/Identity/context/権限でGemini2.5FlashからClaude Haiku4.5へ比較override。Geminiは画像後に未呼出のactを実行済みと述べて停止し、Haikuはgoto→screenshot→act→screenshot→links/observe→本人mail入力の実tool chainを実行した。primaryが取得した遷移後画像はGoogle/GitHubではなくemail+Terms/Privacy+ContinueのCapafyフォーム。一般的なmodel優劣へ広げず、このbrowser担当の既定だけHaikuへ変更する。v5のsource統合/完全一致readbackと標準deployment接続を次に行う。
+
+現在cursor: MAIL03。v4の本人mailと承認待ちなしは稼働済み。現sessionはGemini2.5Flash比較。前ログのUsername or email address/Sign inはGitHub誤遷移を疑う。Capafy Terms §3.4/Publisher Agreement §2.9の所有者制限と§6.2のautomation条件を確認し、既存担当へ権限/許諾記録を照会中。個人mailなしという製品要件は維持し、同じ所有者の重複登録はしない。XPathのbutton[3]→CSS nth-child(3)は非同値であり、認証hostの実確認を先行させる。次はcloud screenshotを直接確認して正しいemail経路を操作する。売上/公開/定期deploymentは未確認。disk不足は現状未観測で、不要な全体cleanupは実施しない。
 
 ## AGI flagship essay publication
 
