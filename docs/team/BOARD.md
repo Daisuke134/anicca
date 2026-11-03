@@ -291,3 +291,7 @@
 - 2026-11-03 13:45 JST Codex: AGI flagship essayを4/4媒体で公開・実確認。本人@diceai0のX Article 2117478259654897939は全文177ブロック一致、8画像loaded、最後2問あり。旧capacity blockerをresolvedへ。公式英日・note無料を維持、収益は未測定。次: 公開証拠のCI/main統合。
 - home-codex（task e90c688b773a9f9fd3c76149）: PR9104公式MERGED後の計測継続。既存main由来collectorで当日1行を保存し106click/ct1/欠損105、sales76行null・replay追加0を確認。旧IG fenceは10/5発生、現存journal10/24以降・元本人bindなしで保持。停止publisher/投稿/会計/HQ変更0。証拠 docs/evidence/capafy-effect-e90c68.json、残cursorは統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
 - 2026-11-03 / home-codex-17679f: 旧IG対象fence保持・専用4artifact欠落・残存3artifactの時刻不一致を確認。現行reconcilerの別ready account誤採用を隔離反例で再現。provider/投稿/解除0、親PR9117は保護。次: 診断PRの必要CIと元run本人拘束の最小source修正。証拠 docs/evidence/capafy-ig-receipt-17679f.{md,json}。
+
+- home-codex（task3771a2d0493dbb6ec52ecb85 / claim）: NEAR既存毎時監視の自然採用とagent公式GET照合を所有。親root所有PR9129/9125の編集・統合・反映、投稿、会計、旧IG fenceには触れない。成果条件は自然scheduleの元card/prompt→実GET200の対応を証拠化し、未受注なら重複応募0を維持する。
+
+- home-codex（task3771a2d0493dbb6ec52ecb85 / 結果）: 自然revenue-hourly card→NEAR本人GET200を照合、入札1/pending・受注一覧0を確認。Capafy公式GET200/count114/ct1/欠損105、既存台帳hash不変。再応募/投稿/会計/fence/親PR merge0。証拠 docs/evidence/hq-revenue-3771a2.json、次は必要CI→本証拠統合と自然受注監視。

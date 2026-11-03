@@ -1,0 +1,105 @@
+{
+  "run_id": "3771a2d0493dbb6ec52ecb85",
+  "owner_id": "home-codex",
+  "occurrence_id": "schedule:revenue-hourly:498246",
+  "phase": "natural_hourly_monitor_acceptance",
+  "observed_at": "2026-11-03T06:07:29.117379+00:00",
+  "release_sha": "2d01c83226",
+  "command": "GET own NEAR bids and assignments; mode=ro exact scheduled-card SELECT; GET official Capafy stats",
+  "exit_code": 0,
+  "loaded_argv": [
+    "python3",
+    "process-local credential read and provider GET"
+  ],
+  "loaded_env": {
+    "credential_service": "near-ai-agent-market",
+    "secret_values_recorded": false
+  },
+  "effect": {
+    "registration": 0,
+    "bid_submission": 0,
+    "delivery": 0,
+    "wallet_transfer": 0,
+    "paid_api_addition": 0,
+    "posts": 0,
+    "fence_mutation": 0,
+    "accounting_write": 0,
+    "ledger_write": 0,
+    "reminders": 0
+  },
+  "readback": {
+    "near_bids_http": 200,
+    "near_assignments_http": 200,
+    "bid_id": "5da04e33-ff9c-4494-8433-6550a34710ba",
+    "bid_status": "pending",
+    "bid_amount": "15.00",
+    "bid_currency": "USDC",
+    "agent_identity_matches": true,
+    "bid_count": 1,
+    "assignment_count": 0,
+    "revenue": null,
+    "payout": null,
+    "natural_hourly_adoption_verified": true,
+    "schedule_source_key": "schedule:revenue-hourly:498246",
+    "stored_prompt_has_exact_agent_gets": true,
+    "card_state_at_observation": "working",
+    "card_checkpoint": "executing",
+    "business_result_verified": false,
+    "capafy_stats_http": 200,
+    "capafy_total": 114,
+    "capafy_attribution": {
+      "recorded": 9,
+      "unavailable": 105,
+      "agents": {
+        "4866150011": {
+          "c1103d1": 1
+        }
+      }
+    },
+    "existing_daily_ledger_unchanged": true,
+    "capafy_excluded_synthetic": 9,
+    "capafy_nonempty_ct_counts": {
+      "c1103d1": 1
+    },
+    "capafy_recorded_includes_valid_bodies_without_ct": true,
+    "capafy_count_interpretation": "114 counted click records; 9 exact synthetic probes excluded separately; 9 valid payloads, only one nonempty ct; no visitor or purchase claim",
+    "official_slack_start": {
+      "url": "https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793685943548809",
+      "task_id": "3771a2d0493dbb6ec52ecb85",
+      "marker_matches": true,
+      "official_readback": true
+    }
+  },
+  "provider_receipt_id": null,
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/team-hq/near-readback-3771a2.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/capafy-stats-3771a2.json",
+    "https://market.near.ai/v1/agents/me/bids?status=all",
+    "https://market.near.ai/v1/agents/me/assignments?status=all",
+    "https://capafy-skills-daily.netlify.app/go-stats?detail=1&attribution=1"
+  ],
+  "protected_owner": {
+    "root_prs": [
+      9125,
+      9129
+    ],
+    "merge_or_deploy_attempts": 0
+  },
+  "remote_thread": {
+    "url": "https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793635811853779",
+    "official_readback": true,
+    "new_remote_native_ack_start_result": false,
+    "reason_accepted_or_queued_is_started": false,
+    "reminders_sent": 0
+  },
+  "error_class": null,
+  "retryable": false,
+  "next_action": "After required CI integrate this evidence. Parent root retains PR9129 integration. Next natural hourly GET: fulfil only if officially assigned; pending means no re-bid. Original IG receipt remains held under its existing owner.",
+  "validation": {
+    "acceptance_assertions": "PASS: exact bid/agent/status, no assignments, natural source_key and prompt, unchanged ledger",
+    "source_boundary": "PASS",
+    "diff_check": "PASS",
+    "code_change": false,
+    "ci": "pending"
+  }
+}

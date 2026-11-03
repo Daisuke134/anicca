@@ -121,6 +121,8 @@ remote差分: 指定Slack threadを公式完読。parentとhome-codexの更新�
 
 CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。PR9099/head19ef706537の必要CIはgitleaks dirのみFAIL、他13jobsはPASS。集合hashの項目名だけをlegacy_record_set_sha256へ変更し、値と監査内容を保持する。旧historyのexact baselineはmain由来を維持し、除外追加0。focused RED→GREENと関連検証後pushし、更新head全CI→mainを次操作とする。過去88件の帰属と売上、未来payload保存は未完。
 
+NEAR自然監視の限定受入（task3771a2d0493dbb6ec52ecb85、home-codex）: 既存revenue-hourlyの自然cardと元promptからagent専用bids/assignmentsの公式GETまでを照合する。範囲は読取・限定証拠・BOARD、本段落のみ。親root所有PR9129の編集/mergeを重複しない。完了条件は自然schedule採用・正しいagent認証・pending/受注/売上の分離・秘密値非記録・必要CI後main。新scheduler/再登録/再応募/送金は行わない。順序変更なし、自然card schedule:revenue-hourly:498246 の元promptと実GET200を照合し、自然監視の採用を確認。本人agent一致・入札1件15USDC/pending・受注0件、売上/出金はnullを保持。Capafy公式GET200はcount114、既知synthetic除外9、valid payload9のうち非空ctは1件、欠損105。過去日次台帳を上書きせずhash不変を確認する。証拠→docs/evidence/hq-revenue-3771a2.json。現在cursorは本証拠の必要CI→main、次自然hourlyで受注時だけ納品着手。親rootのPR9129統合は引き続き専有しない。
+
 ## CAPAFY-ATTRIBUTION-PAYLOAD — 未来クリックの帰属保存
 
 目的・範囲: PR9099の統合済み監査に続き、go handlerが失っているct/platform/postを新規Blob本文へ保存する。owner=home-codex-3d1087、task=3d10872ebd07701cbebd47c2、branch=fix/capafy-payload-3d1087、base=58009a3a96。専用worktree・leaseを取得。旧監査owner/HQのactive leaseは保持する。
