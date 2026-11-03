@@ -445,3 +445,14 @@ email.inboxes成功、直接click4回のcould not completeを保持、act経路�
 終了指示後nativeの最終write368/read371は1580bytesで完全一致、秘密形状無し。end_turn→cancel→公式GETcancelled/pending0、実費243640microUSD。agent累計6634284microUSD、SDKbrowser累計5001は別、利益/全社費用ではない。本人inboundは公式0/EOF、コードdispatch・無料user認証・Publisher・売上は未確認。agent current17/元Haikuの全source fieldsとproduction deployment13/全source fieldsは公式GET一致、次の自然run12UTCは未検証。private capafy-free-user-auth-{event-metadata,pre-cancel-status,cancel-readback,journal-check,generated-credential-metadata,final-readback,boundary}.jsonとspend-after-capafy-free-user-auth.jsonが証拠。
 
 追加の登録/送信/枠拡大を反復せず、既存Publisher内の正式team権限のowner回答を確認する。公開pilotの実第三者依頼→納品→29USDC receipt/費用、自然run/実録画、phone-only/採算/移植という残TODO順は不変。PR #9158/#9159の後追い全15checks PASSを確認、公開記事main5054f196のbyte一致は保持。今回の追加は運用結果docsのみで新しいruntime設定/loop/API実装は無い。
+
+
+### 受注待ちと並行する英語記事の自社ブログ掲載
+
+目的は既存の英語調査記事をGitHubだけでなく自社aniccaai.comの既存Manager blogへ公開し、読者が実測と公開pilotへ辿れる入口を作ること。実売上/認証/録画を記事公開で代替しない。現在GitHub open trace-review依頼0、Reason/Slack返信0、production13 enabled/次12UTCで実run未観測。新規signupや費用試験は反復しない。既存phone入口はapps/life-manager/lib/web-auth.jsのhasVerifiedGoogleIdentityを必須としており、個人Google不要の新利用者入口は別設計が必要。既存Google認証の緩和や他ownerのUI変更は0。
+
+自社ブログは既存apps/landing/manager-blog adapterとreviewed publication manifestを再利用。所有は新規英語slug manager-naive-autonomous-companies-enのsource/package/media1点、manifestへの同記事追加、当plan/統合SSOT/BOARDのみ。公開済みEnglish記事5054f196を元に、相対リンクを公開先へ解決し、Capafyの実測未認証/費用だけ追加する。画像は既存公開済みの本人cloud編集失敗画面を実見してhash固定、生成/加工しない。比較対象の勝ち筋は記事中のNaive公式9evalの条件・実測・図・根拠という構成。記事自体のtraffic/売上という公開成果指標は取得できず、その穴を残して1articleだけで試す。自社の計測は既存site指標と第三者依頼/receipt、未測定を成功へ変換しない。
+
+canonical contentをreview/関連checks/mainへ統合後、publishing repo anicca-productsの最新mainから専用worktreeを作り、既存2workflowのMANAGER_BLOG_CONTENT_REVISIONだけを固定canonical SHAへ更新する。renderer/install hash/他記事/決済/既存配信は変更しない。関連checksと通常build/deploy後、live記事本文・画像hash・public release.jsonのrevisionを公式readbackして完了。preview/local buildは公開成果としない。mainの最新記事を落とす古いcontent pinへ戻さず、並行更新時は最新のreview済みbundleを含める。
+
+録画経路の独立診断: Computer Use inventoryはMac appsあり/browser0、browser registryにNaive route0。指定cua-driver SKILLはlocal2roots/cacheおよびai-config main treeで見つからない。Naive live-viewはdashboard-onlyの秘密URLで、録画APIと同一視しない。録画未完を保持し、他者のChrome/profile/sessionを借用しない。新規Mac UI操作を追加せず、ブログ掲載という独立項目を進める。
