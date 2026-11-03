@@ -3,15 +3,15 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans。primaryが単独実装し、最後にfresh read-only reviewを使う。
 
 **Goal:** Naïve自身のbrowserをLLMが操作して既存の会社業務を完走する。
-**Architecture:** 標準pi agentの外部操作はbrowser、Computer read/writeは作業メモと成果物に使い、判断は自然言語promptへ置く。APIは基盤設定/実行/証拠読取に限定する。
+**Architecture:** 標準pi agentの外部操作はbrowserと本人専用のemail.inboxes/read/send、Computer read/writeは作業メモと成果物に使い、判断は自然言語promptへ置く。APIは基盤設定/実行/証拠読取に限定する。
 **Tech Stack:** Naïve標準agent/session/browser、JSON設定。追加依存なし。
 **Spec:** docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md の Naïve browser company 節。
 
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用cap月0.50USD/max_task0.50USD、追加入金なし。
+- 専用cap月2USD/max_task0.50USD、既存残高内・追加入金なし。
 - 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
-- business script/APIはagentへ与えない。scopeはbrowserによる画面操作。
+- business script/APIはagentへ与えない。scopeはbrowserによる画面操作と本人専用メール3機能。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
 ## Review Focus
 - deny defaultでもask-default toolが残るため既知の追加能力を明示disableする。
