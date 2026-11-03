@@ -178,6 +178,16 @@ class HQTests(unittest.TestCase):
         self.assertNotIn("fixture-oauth-not-a-secret"[5:], receipt["output"])
         self.assertLessEqual(len(receipt["output"]), 20000)
 
+    def test_unencodable_explicit_oauth_returns_typed_failure(self):
+        self.oauth_fixture()
+        self.enqueue()
+        with mock.patch.dict(os.environ, {"HOME": str(self.root),
+                                        "CLAUDE_CODE_OAUTH_TOKEN": "fixture-" + chr(0xDCFF)}):
+            receipt = self.runtime.execute(self.runtime.claim())
+        self.assertEqual(receipt["status"], "failed")
+        self.assertEqual(receipt["checkpoint"], "credential_unavailable_handoff_required")
+        self.assertEqual(receipt["output"], "")
+
     def test_claude_preserves_explicit_auth_environment(self):
         self.oauth_fixture(entries=[])
         self.enqueue()

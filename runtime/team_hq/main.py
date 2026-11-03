@@ -531,8 +531,11 @@ class HQ:
                 environment = agent_environment(agent)
                 if agent.get("credential_service") == "claude-remote-control":
                     token = environment["CLAUDE_CODE_OAUTH_TOKEN"]
-                    secrets = tuple({value.encode("utf-8") for value in (
-                        token, json.dumps(token, ensure_ascii=False)[1:-1], json.dumps(token)[1:-1])})
+                    try:
+                        secrets = tuple({value.encode("utf-8") for value in (
+                            token, json.dumps(token, ensure_ascii=False)[1:-1], json.dumps(token)[1:-1])})
+                    except UnicodeError:
+                        raise HQError("helper credential encoding is invalid") from None
                 process = subprocess.Popen(command, cwd=Path(agent["cwd"]).expanduser(), stdin=subprocess.PIPE,
                                            stdout=stdout, stderr=subprocess.DEVNULL, start_new_session=True,
                                            shell=False, env=environment)
