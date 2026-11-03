@@ -143,6 +143,11 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 継続診断（task17679f4e146bb3b4be52268e、owner=home-codex-17679f）: PR9117の統合は親ownerが所有するため変更しない。専用branch docs/capafy-ig-receipt-17679fで、旧occurrence18db7caff1178a88-68028の元本人・journal・receiptの欠落をread-onlyで照合し、現行reconcilerが別active accountを対象に選ぶ危険を隔離fixtureで検証する。完了条件は実DBの対象1行・対象ファイル存在・残存状態の時刻・実code反例をsanitizeした証拠に保存し、CI後の統合まで追跡する。投稿/認証/再起動/fence解除/会計/PR9117統合は所有しない。既存TODO順は維持する。診断結果: mode=roで旧fence保持、専用4artifact不在、残存3artifactは全てqueueより前。隔離fixtureで別ready accountの空一覧でもverified=true/effected=falseになるsource反例を再現（provider0/resolve=false）。本番で誤解除が起きた証明ではない。現在cursor=本診断記録の必要CI/統合、次source作業は元run本人を拘束する証拠なしにprovider照合を進めないための最小修正。成果物 → docs/evidence/capafy-ig-receipt-17679f.json。
 
+
+## NEAR-FIRST-OFFER — 初回販売の既存レーン移管
+
+→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market。登録201・初回15USDC提案201/pending・本人bid公式照合を確認済み。現在cursorは既存hourlyでの受注監視と自然採用確認、受注後の納品。Capafy/Guru/Apifyの既存ownerを維持する。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
@@ -25235,6 +25240,14 @@ Managerは、苦しみを終わらせることを目指し、行動変容を通�
 - **調査・出版:** [Manager記事collection](https://aniccaai.com/blog/manager)は67記事（英語38・日本語29）を掲載し、AI Economist、MiroFish、AgentSociety、Aaru、Simile、Humans&のBoba / Ampersand / Persimmon、Numerai、Goodfire、人口合成、behavior evaluation、EBAを扱う。2026-10-25のGETで記事collectionと代表記事はHTTP 200。記事数・研究量は人への効果の証明ではない。
 - **公開copyの差分:** source updateはLife Manager PR [#8940](https://github.com/Daisuke134/life-manager/pull/8940)でmain `f1926301087199fd319d60a36769ce27dc517e12`へmerge済み。公開側PR [#739](https://github.com/Daisuke134/anicca-products/pull/739)で両workflowをこのimmutable revisionにpinし、記事installer/contentの独立pinとadapter SHA256を維持してmerge済み。Netlify Deploy (Landing) [run #869](https://github.com/Daisuke134/anicca-products/actions/runs/40187310935)とpost-deploy money-path smokeはsuccess。Netlify deploy `6adde2d512f600b350f31ca6`後のproduction GETで`/`・`/en`・`/ja`・`/blog/manager`はHTTP 200。EN/JAに441,570世帯、EBA、Ampersand / Persimmon / Boba、67記事の案内があり、旧`docs/manager-learning-20261017` branch linkはない。archiveは67 article destinationsを描画し、featured Manager linksと代表archive linksもHTTP 200。`/manager-release.json`のcanonical source revisionは`f1926301087199fd319d60a36769ce27dc517e12`。これはsource公開・到達性の証拠であり、人への行動効果、苦しみの低減、traffic、install、revenueは示さない。publisher側の記録は[`CANONICAL-MARKETING.md`](https://github.com/Daisuke134/anicca-products/blob/b4d8f245800a3f68e147122b636b999a4774227b/apps/landing/CANONICAL-MARKETING.md)。
 
+### E16自然検証のrunner互換性修復（task d26c0c5310218fcdf4ec750a）
+
+目的/所有: home-codex-d26c0c は既存E16 workflowのrunner互換性だけを所有する。専用worktree `.worktrees/manager-runner-d26c0c`、branch `fix/manager-runner-d26c0c`、base `7b7e90ef2f18c9e36ea42757106c0738713b5355`。既存BOARD/lease/共有threadを確認し、親root所有PR9125とNaïve担当を変更しない。YC提出receiptは未確認のまま、順序を変えず継続可能な次の技術項目E16の阻害境界を修復する。
+
+根拠: 自然main run 41548925146 はPython202tests PASS後、Playwright1.56.1がubuntu26.04-x64非対応でverify失敗、publisher SKIPPED。直前成功run 41363246265の実imageはubuntu-24.04。固定依存のupstream v1.56.1 nativeDepsにもubuntu24.04-x64がある。対応既知の24.04へverify/publisherの両runnerを固定し、同じブラウザ検証を保持する。新dispatcher/依存更新/model変更/手動run-once/外部再送/STOP変更は行わない。
+
+完了条件/現在cursor: 既存focused workflow契約・source-boundary・diff検証→push/PR→必要CI公式PASS→main。main後の既存scheduleによる自然verify/publisherと公式summaryを追跡する。E16 positive canary/STOP/rollback/receiptおよび人の便益はこのrunner修復だけで完了としない。証拠 → `docs/evidence/manager-runner-d26c0c.json`。
+
 ### To-be — Manager v1の完了条件
 
 Manager v1は「大きなモデルを作った時」ではなく、(1)既存研究・公開データを権利と分割を保って再利用し、(2)行動予測と介入効果を研究単位holdoutでbaseline以上に再現し、(3)境界付き実行を外部の公式状態でreadbackし、(4)人の同意と適切な研究統治の下で行動・継続・害・費用を比較し、(5)その結果を公開できた時に技術的な限定版として受け入れる。技術実行の成功、文章の説得力、合成人口の規模、売上を人の便益と混同しない。「苦しみを終える」は長期missionであり、一つのbenchmarkやreleaseをもって完了と判定しない。
@@ -25736,7 +25749,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 目的: Grok/Muse/Dots/Codexと同じLLM＋Computer/browserの形をNaïve自身の実行環境へ接続し、画面を観測→判断→click/type→結果確認で収益業務を完走する。業務script、業務API、固定workflowを収益判断の主経路にする案を上書きする。SDK/APIはagent設定、予算、session、証拠取得という基盤操作にだけ使う。
 範囲: config/naive-browser-company.jsonの専用担当、同じsourceのhosted適用、browser toolの実操作、認証/保存状態、既存ownerとの調整、公式readback。既存のCEO/builder等の設定・cron・Mac/browser/他VMは変更しない。売れている商品は変更しない。
-設計: pi＋実callでbrowser/mail/Postizの動作を確認したanthropic/claude-haiku-4.5、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTPは与えない。MCPは明示依頼されたPostizのintegrationList/integrationSchema/postsListTool/integrationSchedulePostToolだけを許可し、指定Xの新規campaignに限定する。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月2USD/max_task0.75USD、既存残高内・追加入金なし、cron未登録から開始する。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
+設計: pi＋実callでbrowser/mail/Postizの動作を確認したanthropic/claude-haiku-4.5、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTPは与えない。MCPは明示依頼されたPostizのintegrationList/integrationSchema/postsListTool/integrationSchedulePostToolだけを許可し、指定Xの新規campaignに限定する。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月3USD/max_task0.75USD、既存残高内・追加入金なし、cron未登録から開始する。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
 比較した案: 既存script移植はDaisの明示指示に反するため不採用。Macのbrowserを遠隔操作する案はNaïve自身のComputerという条件を満たさないため初回方式にしない。Naïve標準browser toolをモデルが使う方式を採用する。
 完了条件: (1)Grok/Muse/Dotsの実手順/ownerを照合 (2)Naïve側のagent・browser/Computer・モデル・予算を公式readback (3)実際の画面観測とclick/typeをtool eventと変化後の画面で確認 (4)認証済み業務と外部結果を確認 (5)同じ担当の再開と所有する継続運転を確認。市場調査だけを公開/売上完了にしない。秘密値はmodel prompt、Git、chatへ出さない。
 実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。旧Google診断時点のcursorはBROWSER03のmanaged-browser Google OAuth境界。BROWSER02の実操作と、BROWSER04の別sessionメモ再読取は確認済み。収益業務と継続deploymentは未完。
@@ -25813,7 +25826,11 @@ X完了証拠: Postizの既存@diceai0接続からpost_type=articleで公開し�
 Naïve継続運転の追加実測: PR9124 main7b7e90ef2f18c9e36ea42757106c0738713b5355からv6を完全一致適用。CI15件は最終確認で全PASS。Postiz bearerは専用vaultのagent/url限定で封入し、実tools/listのintegrationSchedulePostToolへallow名を合わせた。Sonnet v6の最初の推論はbudget.cap_micro_usdで拒否（consumed0、月capがtaskより先に検査されるため、task0.75で足りるとは未証明）。同sessionをHaikuへoverrideするとPostiz integrationList/postsListTool/integrationSchemaが実成功した。現在の既定は実動したHaikuへ戻しv7へ固定する。月2USD/task0.75USDは維持。標準deployment dep_aqf597v5eqa3e25ff2z22rq9j8 は12時間毎UTC・専用Identity・enabledで登録済み、次はv7へのpin更新と手動/自然run。inbox wakeはfalseで未接続。
 本人mail self-sendはaccepted、email.read3回と公式messagesは0件で受信未確認。Hashnode email signupは実画面にverification checkが残り、mail dispatch/登録は未証明。反復をprimary AIがcancelし公式cancelledを確認。通常業務の人間承認待ちではない。英語offer（29 USDCの納品後払いpilot）/sample/receiving-only payment-receiver.jsonはNaïve write→read3件一致（引用符/末尾空白を除く）で保存済み、未公開・実顧客/売上0件。架空customer/費用/改善率を削除し、内部sampleはcoordinator-assistedであることを明記。YCの正式参加確定メールを確認、11/7 11:00開始。メール本文に事前開発の追加規則なし、ログイン付き個人リンクやticketは公開資料へ含めない。
 
+Naïve追加診断と現在状態: PR9126 main320a4624cc88d55454976e51858078386754fef2からv7/既定Haikuを適用し、既存deploymentもv7/同Identity/12h/有効の完全一致GETを確認した。本人inbox wake=trueを公式照合、受信実証は未完。標準deploymentの手動run（自然runではない）はv7・同Computerで4ファイルreadと本人email.readを実行しidle、actual spanはHaiku。自然runの次回予定は12:00 UTC。
+Postizの新規英語進捗1件をNaïve内MCPで作成し、公式posts readbackでPUBLISHED/errorなし/releaseURL https://twitter.com/diceai0/status/2117488811580035223 を確認した。指定integrationだけ、既存投稿変更なし。これは発信の実証であり顧客売上ではない。
+訂正: Sonnetが未実行なのは初回比較と新規MCP probeの各拒否時点だけ。max_task引上げにより古い予算停止report sessionが05:21:48Zに自動再開し、05:21:52Z〜05:23:00Zの実model span5件でSonnet4.6が成功していた。追加model費用合計137808 microUSD、session累計173184 microUSD。旧sessionはoffer/sampleをwriteし、新しいprimary供給文の後で内容が変更された。新MCP probeの月cap拒否は公式事実だが、そのquote額と同時hold寄与は未取得のため断定しない。継続のHaiku既定は実成功と費用節約を理由に維持し、Sonnet全般が動かないとは扱わない。
+運用修復spec: 今回の担当agentだけの旧有限probe/report/product/auth/bootstrap sessionを終了済みとしてcancelし、予算変更で古い業務が再開しないようにする。最新v7 deployment sessionとPostiz publication session、他agent/ownerは対象外。削除/送金/既存account変更は行わない。現在全own sessionはidleまたはterminalであることを確認し、cancel後の公式状態を保存する。現時点で英語offer/sampleの最新内容は自動再開report由来なので、公開前に再照合する。
 
-## NEAR-FIRST-OFFER — 初回販売の既存レーン移管
+運用修復readback: 旧有限session7件は全てidleを所有照合してcancel→cancelledを確認。削除/他agent変更なし。標準deployment sessionでもPostiz postsListTool実成功とjournal write/readの実eventを確認し、actual Haiku span4件を取得。初回turnの予定文だけの停止から、primary AI訂正後の実callとして区別する。offer/sampleはprimary事実限定版のnative復元/readを進行中。次の独立作業はinbound配送の実証・詳細英語記事とoffer公開・実顧客獲得で、承認待ちへ置換しない。
 
-→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market。登録201・初回15USDC提案201/pending・本人bid公式照合を確認済み。現在cursorは既存hourlyでの受注監視と自然採用確認、受注後の納品。Capafy/Guru/Apifyの既存ownerを維持する。
+公開作業の予算修復: 詳細英語記事のnative writeは成功し、続くread前にagent period capの見積拒否。専用agent実費1809584 microUSD、公式org残高9781134 microUSD/liveを確認。Daisが今回のNaïve事業と通常資源判断を委任している範囲で、初期実験の月2USDを3USDへ1USDだけ拡張し、max_task0.75USD/追加入金なし/他agent設定不変を維持する。旧probeはcancel済みでauto-resume対象外、現在article sessionのread/editor観測を再開する。現在設定はv8/月3USDが正本、過去2USDの記録は当時の実験条件。
