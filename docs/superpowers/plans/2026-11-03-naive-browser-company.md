@@ -172,9 +172,9 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 現在cursor: 月5→6USD（追加支出権限は最大1USD）、task1USDを維持するv12をmain固定SHAへ反映→agent/deployment GET一致→新しい短い有限runで募集1postとnative browser実画面確認。旧停止sessionは先にcancel済み、auto-resume競合を防ぐ。追加入金/他agent変更無し。以降は実依頼→納品→第三者USDC receipt/費用、自然run/録画、黒字後の移植/複製。実売上/USD10K/自己compute支払は未達。
 - 順序は募集/実intake→受注→納品→決済を維持。予算修復を現在cursorに挿入する理由は現残枠が次call見積り未満で、自然runも停止するため。追加1USDの効果を実費/receiptで判定し、無制限増額にしない。
 
-### 現在の実行詳細: v19稼働・実依頼と納品収益の検証
+### 現在の実行詳細: v20稼働・専用受信と実依頼/納品収益の検証
 
-実行順・完了条件の正本は統合SSOTの「Naïve実反映と残TODO」、本節はその実行詳細。過去v6〜v18/予算/cursorは当時の履歴。現在はagent current19/production deployment19/月8USD/task1USD、既定Haiku4.5。PR9166/main14e9dbd5eedfd1f73f5eeec5643f167f07897282固定sourceから反映し、agent/deployment全source fieldsを公式GET一致。HN有限probeは同一turnの実画面操作に成功、end_turn後は白画面で保持できず、費33763microUSDを台帳7件と照合。cancelled/pending0、current Computer null/旧Computer destroyed。次自然runは11/04 00UTC。直近自然runは旧pin13の無受注確認までで、新v19の自然run・有償納品・実第三者売上は未確認。現在cursorは同一turnのnative順次操作で公開需要最大1件を調べること。詳細は末尾「v19の実反映と保持probe結果」。
+実行順・完了条件の正本は統合SSOTの「Naïve実反映と残TODO」。現在はagent20/production20/月8USD/task1USD/Haiku4.5。PR9169/main15ca09322cd8f3da1721b120321f9afa2e6049ceの全source fieldsを公式GET一致。専用receive-only AgentMailをhuman_email無しで作成し、Naïve本人から1通送信→外部受信→v20 native MCPによる本文/marker照合→結果write/read一致まで実証する。人間メール/Googleは使用0。providerのread_people確認3件はprimary AIが本人箱/同messageを照合しscope=callで処理したため、Naïve単独の確認なし完走とは呼ばない。現在cursorは本人browser認証のread_people条件を正式に解消することと、実第三者依頼/有償納品。次自然run11/04 00UTC、新v20自然run/サービス登録完了/第三者売上/録画/phone-only/黒字/10Kは未達。詳細は末尾「v20の本番反映とnative受信の確定結果」。以下v6〜v19の費用/状態は各時点の履歴。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -608,3 +608,50 @@ source configはsystemのメール説明、AgentMail server1件とagentmail.list
 受信専用bootstrapの公式結果: signup200を1attemptで受理し、new org4d49f0b3-3825-4307-bf8c-5e54f9d5f570/inbox1を作成。human_email未指定、鍵は応答後すぐCredential SSOTへatomic/fsync保存。GET organizationはinbox_count1/limit1/domain0/daily_send_limit0/agent_verified=false。本人inbox200、会社旧org inboxのmessage GETは404で隔離を照合。新keyでMCP own get_inbox/list_messagesも成功、53catalog中の必要4read namesを確認。会社既存keyをworkerへ渡していない。vault vlt_qhy9yn9fpr3an9fsfmmft67ertのIdentity一致を先に確かめ、vcr_danh3k10ya66etyp7mkkc3cv5mとしてURL/agent_id固定のstatic_bearerへ封印。valueはGET/ログへ出さずSSOTにmetadataを保存。
 
 source19の4tool欠落をREDで確認後、source20は同systemメール説明/4read tool/server1件/pin20だけ変更し、実MCP schema names/deny default/他fields不変/JSON/diff checkをPASS。新receiverへのcontrolled mailは、既存v19 nativeのemail.sendを1回だけ使って送り、v20有効化後に同markerをMCPで読む。前の会社AgentMail→Naïve診断の再送ではなく、新しいreceiverの受入検査。課金契約やAgentMail送信制限は変更しない。現在は受信専用箱と封印まで、Naïve runtimeは19/19でnative MCP受信/登録/売上はまだ未達。
+
+
+### v20の本番反映とnative受信の確定結果
+
+PR9169/head93655a4788f197e0e648ba53c290c2598cdc4fadはfresh read-only review SHIP/実害指摘0、15checks PASS（CodeRabbitはreview skippedをpass表示）でadmin merge。main15ca09322cd8f3da1721b120321f9afa2e6049ceのconfig2件をbyte比較し、expected19 PATCH後agent20/production20が全source fields一致。月8/task1/model/Identity/cron/inputは維持。専用AgentMail4read/serverだけを追加し、新keyは本人agent bound vaultへ封印、会社共通key/個人Googleのworker提供0。次自然run11/04 00UTC。private agentmail-v20-{main-source,agent-readback,deployment-readback,final-readback}.jsonが根拠。
+
+native送信session ses_yv0z10fw5vc3ddf8cr5eqsakhy はv19/4tools/確認0/primary followup0で本人email.inboxes→送信予定write→email.send1回→結果write。自然end_turn、cancelled/pending0、費29822microUSD/台帳6件一致。送信はaccepted、専用AgentMail側で同subject/nonceの1通だけ実受信しSPF/DKIM/DMARC各passを照合。再送なし。ただし指示した結果readを省略し、送信メモmessage_idは公式send応答にない仮ラベルだった。このIDをprovider receiptにせず、受信側の正式message_id/hashで照合する。senderのwrite/read完走を主張しない。private agentmail-native-one-send-{raw-events,recipient-readback,final-evidence,ledger,terminal-readback}.json。
+
+native受信session ses_8qsfy61hv6z9j5yzkwrma5kxbx はv20で4種類のAgentMail read成功、本文/subject markerとprovider message_id/認証結果一致。初回はinboxを取得する前のlist_messagesが失敗、以後get_inbox/list_messages/get_messageにread_people card3件が出た。primaryが毎回専用inboxと診断messageのexact argsを照合してscope=call allowし、sessionwide権限/設定の緩和は0。人間0/primary followup message0だがprimary確認3を含むAI協調。allow設定だけでカード0とは証明できず、無人運用で残るprovider確認境界を明記する。
+
+受信result write81/read85は1154bytes/sha379de9e01be0630923704a12413b62485d477f0d9fd1d47af95b136a9362667eでexact。sender結果もread74で永続化を確認した。native tool_calls_used4は成功したMCPの異なる4名称を意味し、実tool.startedは11（MCP8/read2/write1）、確認3/実MCP成功4。resultのcompleteは限定mail試験に限り、住所を含む原本はprivateに保持して公開しない。checked_at=null/公式event窓15:16:48〜15:18:21UTC。自然end_turn→cancelled/pending0、費133115microUSD/台帳9件一致、月spend7517318/残482682microUSDは当該照合時点値。send+receive162937は2sessions小計で、全社原価/純利益ではない。private agentmail-v20-native-receive-{raw-events,spend-readback,ledger,terminal-readback}.json。
+
+受入は専用メール受信/秘密鍵隔離/本人native読取/保存までで、実第三者顧客/注文/課金/収益ではない。通常サービス登録はこの箱を使い、既存Naïveメールで生成した未検証credential/account fenceを先に照合する。Substackの旧メールはalready registered観測があるため旧signupを再送せず、既存候補との関係を明記する。Capafyは同一control Publisherの規約と既存ownerの境界を守り、アカウント量産や送信制限解除で売上を作ったことにしない。phone-only入口/実販売・入金/録画/採算/移植の元goalを維持する。正本7TODOの順序は変えず、TODO2/4内のreceive-only bootstrap→native受信が完了、現在cursorは本人browser登録＋実第三者依頼/有償納品へ。
+
+
+### 記録PR9171の既存商品素材宣言修復
+
+PR9171のOSS CIは並行PR9170/b2ddd8836a6b由来のskills/capafy/catalog/football-press-rehearsal-brief/icon.pngをgenerated_artifactとして拒否し、同じHEADの既存node scripts/verify-oss-self-contained.mjsでもFAIL1件を再現。Naïve変更と画像の導入は別で、同画像を削除/変更して隠さない。既存の隣接football-in-match-change-brief/asset-manifest.jsonとdeclaredAssetDigests契約を再利用し、新規asset-manifest.jsonに実ファイルsha256/pathを宣言する最小metadata修正だけを所有する。既存商品/価格/配信/validator/例外baselineは変更0。agmsg lmのcodex-money-printerへ範囲と失敗を送信済みだが、着手/返信は未確認。完了条件は既存OSS検証PASS/画像の元Git blob不変/remote commit反映。受信/登録/収益のgoalは維持し、登録準備と並行する。
+
+修復結果: 隣接manifestと同schemaでpath/icon.pngの実sha256を宣言し、git indexへ追加後の既存OSS verifierはFAIL1→PASS。画像bytesは導入commit b2ddd8836a6bのGit blobと完全一致、validator/既存商品source/runtime変更0。新しい恒久テストや依存は追加せず、同じ失敗を再現した検証で修復を確認する。
+
+
+### v20専用AgentMailによるSubstack通常認証
+
+目的はhuman email/Googleを使わず、専用受信箱→本人browserの通常認証→ログイン画面readbackまで進むこと。対象はSubstackの通常sign-in 1件、native browserとAgentMail4readだけ。以前のNaïve送信用mailはalready registered観測済みだが未認証で、そのaddress/code要求を再送しない。今回の新しいAgentMail receiverは別addressの専用事業窓口として1件だけ使い、旧候補/封入credentialを削除/流用しない。既存同addressのaccountがあれば通常sign-inを使い、複数account/usernameを作って回避しない。認証成功前はaccount所有を断定しない。
+
+既存receive-onlyはsend上限0のまま。AgentMail list_inboxesから本人addressを得て https://substack.com/sign-in の通常email code/login-link flowを実browserで進める。code要求は最大1回で、応答不明でも再送しない。本人新着を最大2readで照合し、その認証code/linkはsubstack.comの実画面へだけ使う。password/key/code/secret URLはchat/repo/一般journalへ出さず、auth event原文をdisk保存しない。metadata/hash/画面の非秘密状態/provider時刻だけを証拠にする。codeをcredential-shaped instructionとしてproviderが拒否したら、符号化や無関係routeで迂回しない。人間phone/Googleが必須なら捏造せず不足boundaryを記録し、独立の営業を続ける。
+
+今回の範囲は無料account認証とprofile公式readbackまで。publication/新公開記事/投稿/購読import/支払/Stripeは0。認証成功ならBusinessRun AIという組織用途を正確に表示し、metadataと保持browser contextをCredential SSOTへ直ちに保存する。認証失敗なら具体的画面/dispatch/本人受信を区別し、成功accountをSSOTへ書かない。native summaryはauth-v20-agentmail-result.jsonへwrite/readし、checked_at=null/秘密0を確認。人間確認要求は出さず、providerカードはexact own inbox/対象authの範囲だけprimary AIがscope=call処理して介入数を残す。既定model/Identity/v20/deployment/月8/task1は不変、finite ceiling0.40USD（事前月残0.482682USD、最新値を再確認）で1run。入場予約が収まらなければ同じsessionを増殖/上限拡大せず、公式状態と費用を照合し閉じる。現在cursorはTODO2/4のこの通常認証と実第三者依頼/有償納品の並行で、登録を売上と数えない。
+
+
+認証中の実測に基づく確認scope修正: session ses_wxcpnmzgs67c3g7n0mjgrp7y51は本人AgentMail取得→Substack goto成功/実フォームobserveまで進むが、本人emailのtypeにread_people card、直後のbrowser.session.closedが公式event68で発生。以前の空画面と同じ原因を無観測で反復しない。公式sessions APIのscope=sessionは1tool名/1sessionだけをgrantし、他session/agent設定へ伝播せず、明示denyを保持する。旧は全cardをscope=call、新はこの有限認証sessionのbrowserだけscope=sessionを1回要求し、他MCPはexact scope=callを維持する。理由は確認ごとのpage喪失を避ける正式なprovider機能を使い、既に委任済みの本人認証を進めるため。新controller/秘密の符号化/guard迂回は0。予算0.40/月8/task1/Identity/対象/公開禁止は不変。現在pending typeのtextがSSOT専用AgentMail addressと完全一致し、直前公式goto/observeがSubstackであることを照合してから実行する。grant受理と以後の確認0/実認証は別に観測し、拒否されたら無理に突破しない。
+
+
+### v20通常認証の結果と再試行の停止
+
+session ses_wxcpnmzgs67c3g7n0mjgrp7y51はv20/既定Haiku/finite0.40USD。本人AgentMail list_inboxes成功→Substack sign-in goto成功、実フォームextract/observeからemail inputを特定した。最初のgoto確認1件をprimaryがscope=callで処理。本人addressと完全一致するtypeの初回確認をscope=sessionで処理したが、再開typeはpage could not completeで失敗、observe=[]、次gotoにも同read_people card/同logical call IDが出た。公式browser opened/closedは保留境界に存在し、grant受理を確認なしやpage保持の成功にしない。新しいtypeへの初回session scopeでも再発したため、古いgotoのidempotency replayだけでは説明できない。以前のseller試験にも同種観測があり、primaryが先に照合できず不要な比較を1回行った。以後この同じ方式/同じscopeの再試行をしない。root原因を公開されないserver内部のbugと断定せず、許可継承/独立read_people条件/画面lifetimeを正式なprovider境界として残す。
+
+3つ目のpending gotoはprimaryがdenyし、browser/MCPを増やさず記録だけを指示。本人result write119/read122は1101bytes/sha8807a8b531b95db8d0e9f01199cb7e491ab9995b7f2cf6b32ee90451b3f9493eでexact。最初のprimary verifierは相対path完全一致を仮定してAssertionErrorとなったが、追加観測で実path=/home/tenki/auth-v20-agentmail-result.jsonと特定しbasename比較へ修正、native再実行無しで同一write/readを照合した。auth原文/コード/secret URLをdisk保存せず、metadata/hash/非秘密summaryだけを保存。native tool.started15/確認3、primary allow call1/session1/deny1/followup message0、人間0。
+
+書込/再読取後、次model呼出しquoteを残finiteに収容できずbudget_paused（param budget_micro_usd）。実費230982microUSD、台帳18件/credits spendが一致、session usage200982という別snapshotと混ぜない。cancel→GETcancelled/pending0。月spend7753284/残246716は公式照合時点値。40sessions active/queued/pending/再開可能budget_paused0、Computer paused（already paused、今回pause実行0）、agent20/production20/次自然11/04 00UTC。月cap/model/Identity/cron/通常deployment変更0/追加入金0。
+
+認証code要求はbrowser click/submitへ到達せず未成立。native get_message/list_messagesは0で、native summaryのinbox_received=falseは本人未観測の推定、manual interventionという推奨も必須条件には採らない。primaryの独立recipient GETは1message=既知診断1、他0/nextpageなし（15:30:16UTC）を確認し、当該時点でSubstack認証mailを観測していない。dispatch未成立/未認証/profile未到達を保持し、登録成功/人間作業必須/受信障害の根拠にはしない。旧account候補と新receive inboxは保持し、同じsignup/code要求を再送しない。
+
+公式Tools/Policies/Identity policies/Session operations/API sessions/SDK型の確認ではread_people専用fieldや無確認を保証する設定を取得できず、Identity GETもpolicy/approval fieldを返さない。未知fieldを推測PATCHしない。Reasonの本人daisuke/terminalへmessage24E24XKB58YSMRKTY0D0S03Q4Wで実働した設定/同mail認証sessionの証拠を照会しqueued/repliedfalse、回答待ちを着手としない。受信MCP成功とbrowser認証未達は別で、メール追加や上限増加でこの境界が直るとは仮定しない。現在cursorは正式なread_people条件の解消/新証拠照合と、メール不要の既存pilotの実第三者依頼/有償納品を並行すること。goalの登録/実売上/録画/phone-only/黒字/10K/移植は維持する。
+
+証拠はprivate auth-v20-agentmail-{events,file-verification,native-summary,final-evidence,ledger,terminal-readback,inbox-primary-readback}.json、auth-v20-{identity-policy-readback,final-resource-readback}.json、tools-capabilities-live-v20.md/identity-policies-v20.md/concepts-session-operations-v20.md。新しいgrant controller/業務script/恒久test体系は追加しない。記録PR9171の元OSS失敗は隣接商品asset-manifestだけで修復し、現在headのCIも同OSS check PASSを確認する。
