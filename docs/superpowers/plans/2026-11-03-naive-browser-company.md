@@ -172,9 +172,9 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 現在cursor: 月5→6USD（追加支出権限は最大1USD）、task1USDを維持するv12をmain固定SHAへ反映→agent/deployment GET一致→新しい短い有限runで募集1postとnative browser実画面確認。旧停止sessionは先にcancel済み、auto-resume競合を防ぐ。追加入金/他agent変更無し。以降は実依頼→納品→第三者USDC receipt/費用、自然run/録画、黒字後の移植/複製。実売上/USD10K/自己compute支払は未達。
 - 順序は募集/実intake→受注→納品→決済を維持。予算修復を現在cursorに挿入する理由は現残枠が次call見積り未満で、自然runも停止するため。追加1USDの効果を実費/receiptで判定し、無制限増額にしない。
 
-### 現在の正本: v12稼働・公開募集・実依頼待ち
+### 現在の正本: v13稼働・実依頼と納品収益の検証
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv12/月6USD/task1USD、担当累計5656872microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv13/月7USD/task1USD、担当累計5865832microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -182,13 +182,14 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - [x] native public-pilot-promo.jsonのread、intakeファイルwrite/read成功。有限session `ses_35xzd8a1ad2anyqv9j0rcr3v8e` はend_turn後cancel→GET cancelled。合計60211microUSD（募集と受注画面確認）、担当累計4908335microUSD。直接費であり全社費用/利益ではない。副作用不明の再送や内部偽注文は無し。定期deploymentはenabledのまま。
 - [x] Grok/Museへ既存Slack threadで公開窓口と具体的な再利用手順/provider receiptの照会を送信成功。https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793690848660309 。返信は未確認、本人DM制限は迂回しない。
 
-残TODO（現在cursorは1、全体goalはactive）:
-1. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点で反復募集や同じ画面巡回を増やさず、顧客反応/チーム返信/自然runを次の観測とする。
-2. 次の標準自然runは2026-11-03T12:00:00Z（JST21時）。manual≠natural。実runの版/費用/入力量/介入点/公式納品receiptを記録。初回の実有償業務を連続画面録画で保存する。いま保存した単一スクリーンショットを動画と呼ばない。
-3. 本人inbound配送は独立切り分け。送信方向は後続のmail-tester1通で実受信10/10とSPFpass/DKIMvalid/DMARCpassを確認済み（詳細は末尾の実測結果）。受信方向/登録完了は未達。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
-4. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
-5. 利用者向けiPhone入口を設け、利用者個人のGoogle/メール入力/password/PCを要求せずManagerを利用できる導線を実装・実機確認する。現在のdeveloper向けGitHub依頼フォームはこのconsumer入口ではない。infrastructure契約と利用者本人確認/引出条件を区別し、銀行情報以外不要と未確認で約束しない。
-6. 黒字の手順/評価/最小stateを他のVMへ移植し2拠点で実証。専用Identity/credential所有/資源上限/仕事重複を維持する。receiving-only walletにoutgoing signerは未接続、compute自費支払/自己複製/任意cloud互換は未達。USD10K月売上/MRR・YC採択・優勝は目標であり未達。
+残TODO（現在cursorは2、全体goalはactive）:
+1. [完了] 実行予算と導線の修復。PR #9145/main `584363f5b03e738647e65286f77264bcff069219` からv13を適用、agent/deploymentの全source fieldsを公式GETで一致確認。月7/task1、同Identity/11allow/cronを維持。未完CTA案内はnative1callから公開し、Postiz保存HTML exact・X本文3段落の一致・native journal write/readを確認。現在cursorは次項の実依頼獲得。
+2. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点で反復募集や同じ画面巡回を増やさず、顧客反応/チーム返信/自然runを次の観測とする。
+3. 次の標準自然runは2026-11-03T12:00:00Z（JST21時）。manual≠natural。実runの版/費用/入力量/介入点/公式納品receiptを記録。初回の実有償業務を連続画面録画で保存する。いま保存した単一スクリーンショットを動画と呼ばない。
+4. 本人inbound配送は独立切り分け。送信方向は後続のmail-tester1通で実受信10/10とSPFpass/DKIMvalid/DMARCpassを確認済み（詳細は末尾の実測結果）。受信方向/登録完了は未達。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
+5. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
+6. 利用者向けiPhone入口を設け、利用者個人のGoogle/メール入力/password/PCを要求せずManagerを利用できる導線を実装・実機確認する。現在のdeveloper向けGitHub依頼フォームはこのconsumer入口ではない。infrastructure契約と利用者本人確認/引出条件を区別し、銀行情報以外不要と未確認で約束しない。
+7. 黒字の手順/評価/最小stateを他のVMへ移植し2拠点で実証。専用Identity/credential所有/資源上限/仕事重複を維持する。receiving-only walletにoutgoing signerは未接続、compute自費支払/自己複製/任意cloud互換は未達。USD10K月売上/MRR・YC採択・優勝は目標であり未達。
 
 証拠正本: repo外private `/Users/anicca/.local/state/naive-browser-company` のagent/deployment-readback-v12.json、public-pilot-promo-provider-readback.json、public-pilot-promo-v12-events.json、public-pilot-intake-v12-events.json、public-pilot-intake-cloud.jpg、public-pilot-v12-finite-cancel-readback.json、own-agent-spend-after-pilot-launch.json。署名付き画面URL/メール原文/秘密値は公開しない。
 
@@ -279,3 +280,76 @@ SDKsourceの追加照合: npm公式公開package @usenaive-sdk/vetta 0.10.0をig
 Reason daisuke/terminalの本人回答01M6G9HHRXZCB4F371G5A0CP7Eを受領。上のqueued/返信未確認は送信時の履歴で、現在は回答済み。Museの説明ではCapafy既存線は本人側パブリッシャー/KYC/精算が実体、cloud Postiz未接続とMac橋渡し3jobが残る。過去のNaïve線はAPI/CLIのみで本人browserの実績ではない。回答内のAPI先行という一般則は今回のDaisのbrowser明示指示を上書きしない。自分の既存session/vault、単一writer、公開URLまで1回成功してからloop化、公式dashboardと費用照合という再利用部分だけ採る。Capafyowner/許諾/収益を今回pilotへ流用しない。
 
 本人回答のagent用mail経路から、自分がownerであるmailだけを使いNaïve本人宛てにnonceのみの診断1通を送るよう追加照会。Reason message508B1FY1ZXBH5CGSQWAZYSRVZKはqueued、実メール送信/受付idは未確認。新account/設定変更/個人Gmail/他owner借用/再送/本文転送は禁止し、送信可能な本人経路が無ければ不足を返信する範囲。自分のinboundはその後の公式channel=email/limit20 GETで0/has_more=false、同nonce0。外部dispatch未証明なのでNaïve受信不良とは判断しない。private journal muse-inbound-diagnostic.jsonとowned-inbound-after-muse-request.jsonに残す。次は本人の送信receipt→同nonce本人受信の照合、既存受注/自然runと並行しこの診断を売上gateにしない。
+
+
+### 実表示に基づく受注獲得の限定試験
+
+目的はNaïve本人の実依頼→納品→第三者入金を進めること。旧募集の公式Postiz post analytics（7日指定、当日行）はImpressions27、Likes/Retweets/Replies/Quotes/Bookmarks各0。クリック数は取得無し、27表示だけで需要/旧copy失敗を断定しない。投稿cmw0dbzbq01gxoc0703wetiwiだけを読取り、他channelは触らない。出所 https://docs.postiz.com/public-api/analytics/post.md 、https://docs.postiz.com/general/analytics.md 。native 11allowにはanalyticsが無く、primaryは公式readbackだけ実施し、業務投稿は本人Postiz toolで行う。
+
+最新agent GETはv12、月6/task1、直接spend5660474microUSD、deployment enabled/次12UTCを再確認。前の5656872は当時値、差3602microUSDの内訳/原因は未確認で勝手に帰属させない。API診断browser3334microUSDとは別表示。公式auditは当該browserのopen/closeが存在する一方、403 request IDsの絞込は0/has_more=false、該当時間窓はopen/close2行だけ。監査詳細から拒否根因は得られず、SDK権限不整合の同じ操作を再試行しない。
+
+順序は受注獲得の中で、本人browserで新規適合依頼1回確認→あれば既存契約通り1件納品→無ければ実測例＋直接リンクの下記英語投稿1件を本人Postizで公開→終了。従来の汎用募集から、実測した失敗例→証拠の区別→sample/明確なCTAという隣接成功例の構造を採る限定試験で、同一商品/価格/媒体の成功事例未取得という穴は維持。新copyの優位や売上は仮説。既存募集/記事の再送、別channel/他owner変更、継続的な自動投稿は行わない。
+
+公開予定文（270文字、下記exact。旧postとは別内容）:
+
+```text
+A browser agent said "signup done." Password fields were still blank. We kept the account unverified.
+
+Our trace review separates tool replies, screen evidence and provider receipts.
+Sample + 29 USDC pilot:
+https://github.com/Daisuke134/businessrun-bench/tree/main/pilot
+```
+
+本人browserで実依頼画面をextract/画像確認。空observeだけから依頼0としない。依頼が無い場合のみ、公開前にPostiz当日一覧と本人file proof-led-pilot-promo.jsonを確認し、同一copy/既存postがあれば再送しない。新規1postだけX @diceai0へ。送信payload/公式保存本文/PUBLISHED/error/releaseURLを照合し、provider取得無しなら公開成功とは言わない。原稿/画像/価格/商品契約は追加変更無し。
+
+同じv12/Identity/context/model/11allow、有限task最大0.4USD、既存月6/task1/12h cron/wake=falseを維持。予算見積りで拒否ならその正式結果を保存し、無送信と旧session終了を確認してから必要最小の修復を正本化する。自己申告時計を使わずprovider event時計を記録する。有限runはend/cancel/公式GETで終了確認。metricsと依頼・入金は別に記録し、conversion分母/帰属が不明ならnull。画像未生成、新signup/サイト登録再送なし。全体goalはactive、phone-only/移植/自己compute支払/10K売上は未達。
+
+
+#### 受注確認とduplicate判定の実測修正
+
+native finite ses_ztb2n5fa55ya9b6sqmhyjpmqqnは起動/agent v12で実行、browser extract15と画像は0 results/No results matchedで一致。Postiz当日一覧も取得し、write38/read43はbyte exact、end_turn/idle/68071microUSD/pending0。投稿callは0で、nativeは旧257文字の募集を新270文字とEXACT MATCHと誤分類して見送った。rootは保存済み本人Postiz一覧の文字列をexact照合し、旧copy1件、新copy0件/部分一致0、旧!=新を確認。取得済み一覧の範囲の比較であり、全internetや将来の投稿不存在の保証ではない。
+
+同じfiniteのfollow-upで、旧先頭Agent says "done"と新先頭A browser agent said "signup done."の相違、270文字exact payload、新copy未検出の保存済み証拠を明示し、意味が近いことを完全一致としない修正を渡す。再一覧/再intakeを繰返さず、既存の新copy postidがあれば停止、無ければ承認済み1post→journal訂正/write/readで終了。旧journalはraw証拠としてprivateに保持。自己申告screen時計はprovider event15へ結合し置換、release URLの...を実URLとして使わない。月6/task1/finite0.4内でquote拒否なら送信せず正式状態を記録し、同一不確実投稿を再送しない。
+
+
+訂正follow-up後、nativeはpostiz.integrationSchedulePostToolを1回呼んだが、tool error94はwaiting for approval、session idle/awaiting_approval、pending tc_086ddc8daf10af17d3de699755aff18d（read_people=true）で実公開はまだ未確認。pending本文を原稿と厳密比較し270文字/改行4/文字列exact一致、対象integration/type/settingsも元の承認済み範囲と一致。Daisの既存公開依頼とfresh content PASSに基づき、primary AIが当該1callだけscope=callでtool_confirmation allowを処理する。Daisの追加承認は要求しない。provider確認カードが存在したことを隠さず、Naïve単独の無介入成功とは呼ばない。AI coordinator付きのhuman0操作として区別し、権限設定を拡大したり他call/sessionへ包括許可しない。返答不明時は同一postの再送禁止、pending/公式投稿を先に照合する。
+
+
+#### 実公開・リンク削除の根因と導線修復
+
+- primary AIが承認済みpublish1callと直後の15分readback1callをscope=callで確認し、人間への承認依頼0。native publish110は270文字/対象integration/リンクまで原稿exact。Postiz新post cmw0gwaol021voc07nfgk35vfは公式PUBLISHED/error null/publish09:10UTC、https://twitter.com/diceai0/status/2117545009490624995 。native write142/read145はbyte exact。実依頼画面はextract15/実画像0、自己申告時計は使わずprovider event15で結合する。
+- 公開本文は206文字でGitHub URL行だけ欠け、原稿270文字とのexact一致はfalse。X公式oEmbedでも同じリンク無し本文を確認。model journalのcontent_verified=trueは実保存本文を読んだ意味で、原稿全体一致の証拠にはしない。native未取得の実release URLはprimary公式readbackで補完。本文再送は無し。
+- Postiz公式integrationSchema(x,false)の現在のrulesはdo not add links, they will be stripped from the postと明示。公開source e424fb587e0ae87a2428a0586cb00af6facd0d1dのx.provider.tsはSTRIP_LINKS_FROM_X_POSTSがtruthyなら同文言/stripLinks=true、posts.service.tsは作成時stripLinks(content)を適用。今回の欠落はこの明示仕様と実測が整合し、HTML不良/Naïve改変と断定する必要はない。cloud環境変数自体は読んでいない。新稿前に最新schemaの当該ruleを確認しなかったprimaryの手順不足を訂正する。bare domainもstrip対象であり、変数変更や迂回URLを試さない。
+- したがって直接リンクcopyの獲得試験は意図した導線を作れなかった。既存の本文とledgerを残し、同じ投稿を再送せず、リンクを含まない明確なGitHub検索経路の案内を最大1件だけ追加する。これは不足したCTAの修復で、定期広告や旧募集の再送に広げない。scopeにこの1修復postを追加する理由は、実公開されたsample案内に場所が欠けたため。公開済み投稿の更新/返信機能は現在のMCP schedule toolの契約に無く、API業務投稿/別ownerログインで代替しない。
+- 有限sessionはcancel→GET cancelled/pending0、合計127132microUSD。最新agent直接spend5791814microUSD、月6/task1維持。API診断browser明細3334microUSDは別表示。合計の増分を未確認のcomponentへ帰属させず、全社費用/利益としない。本人mailの外部送信依頼は引き続きqueued/実送信未確認。全体goal/実売上は未達。
+
+修復公開予定文（213文字、リンク無し）:
+
+```text
+BusinessRun Trace Review: sample and requests
+
+On GitHub, search "businessrun-bench" by Daisuke134, then open pilot.
+
+Public redacted traces only (20 tool calls max). 29 USDC after delivery. No verified sales yet.
+```
+
+MCP契約に合わせ各段落をpで包むHTMLをraw送信payloadとし、Xの期待表示文は上記。primaryは直近の公式投稿一覧でこの新copy未検出を確認し、nativeは専用journalと既存postidを照合して新しい1postだけ実行。既存公開copyを複製しない。新finite最大0.4USD/同v12/月6/task1で1回だけ起動し、cap quoteで拒否なら無送信・終了を確認してから必要最小の予算修復をsource化する。native自身のPostiz投稿→公式PUBLISHED/保存HTML/期待表示のX oEmbed→記録write/read→有限終了の順。primaryによる必要な1call確認を含むAI協調であり、Naïve単独の無介入完走はまだ主張しない。既存顧客納品が発生すれば販促より優先する。追加画像/新signup/新しいメール送信/他channel変更/環境変数変更は行わない。
+
+
+#### v13の最小修復範囲（適用前）
+
+失敗の根拠はCTA runのevent23/26 quote167195/173404microUSD、event29 budget.exceededのparam budget.cap_micro_usd/message the agent's budget cap has no room for this call。task予算400000に対し実費24161で止まったため、単なるtask実費枠消費ではなくagent月capの見積り拒否とproviderが特定している。native publishは0。cancel→GET cancelled/pending0、過去の公開post/明細/本人資格情報は保持済み。
+
+旧順序は実依頼獲得→自然run→メール診断、新順序はこの月cap/CTA修復→実依頼獲得→自然run→メール診断。既存月残枠では公開/自然runの次callも拒否され得る実測依存を解消するためであり、需要0を理由とする頻度増加ではない。現在cursorはv13 source/受入/review/main反映、未完の1案内の公開。別のloop/他owner/既存外部effectは中断しない。
+
+所有変更はconfig/naive-browser-company.jsonのbudget.cap_micro_usd=7000000と、Postiz段落2文の最小訂正、config/naive-browser-company-deployment.jsonのagent_version=13と月7の説明、当plan/統一SSOTだけ。文面は最新schemaに従いXの公開原稿/CTAへURLを入れず、GitHub商品名・repo/issue番号等で場所を伝えること、同テーマだけで重複扱いせず対象/本文の一致と実postidを照合すること、同作業で取得済みの対象/原稿/照合結果を再利用し不足する範囲だけ読むこと。モデルが判断し、regex分類/新しい判定wrapperは追加しない。
+
+model/11allow/default deny/browser options/Identity/wake=false/cron/task1は不変。追加資金移動/カード/支出signer/他サービス設定変更無し。budget上限は実費/利益ではなく最大許容枠。原本v12との構造差分で変更範囲をassert、JSON/diff検査・既存関連CI・fresh read-only reviewを行い、main固定SHAから同owner agent/deploymentへ適用→全source fieldsの公式GET一致→前の未完CTAのみ新有限runで検証する。既存の停止runは再開せずcancelledのまま。v13適用と実公開が確認されるまで実施済みとしない。長いMac loop suite/新scheduler/新依存は対象外で、外部REDはこの本物のbudget.exceeded、GREENは同目的のnative完遂/公式表示で測る。
+
+### v13反映と未完CTAの公開結果
+
+- 固定main `584363f5b03e738647e65286f77264bcff069219` の設定2ファイルはworktreeとbyte一致。agent PATCH後GET v13/全field一致。deploymentへの初回全設定PATCHは400 `unknown body field: agent_id`（req_hgyb801t2z0xs8vp2w35rgta1a）で拒否され、agentはv13・deploymentは旧版のままをreadbackで分離。変更対象のagent_version/input_templateだけをPATCHし、全source fields GET一致で反映を閉じた。SDK自体の不具合とはしない。
+- native finite `ses_w3j66dykg8c5dqt9mpg6hw6t97` は同文投稿0を公式一覧で照合後、本人Postiz1callでpost `cmw0hy0a502o6t807zkekfsy1` を作成。公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117552389045563522 。保存HTML230文字は実送信payload完全一致。公式X oEmbedは213文字原稿の3段落それぞれが一致し、段落間空行のみ単一改行表示。URL無し検索案内で旧投稿のCTA欠落を補った。旧投稿は削除/再送していない。
+- 初回nativeはprovider公開確認前に台帳をpublishedと記したため、その自己申告を証拠にせずprimary公式一覧とX表示を取得。primary followup1回でreceiptを本人journalへ結合しwrite/read、parsed JSON argsはexpected payloadとdict完全一致。公開callの途中confirmationは0、human操作0。ただし原稿/事前照合/公式readback/receipt結合はprimary AIが担当し、Naïve単独で全工程無介入とは呼ばない。
+- 初回end_turn26934microUSD、receipt結合を含む有限run合計42835microUSD。cancel→GET cancelled/pending0。最新agent累計5865832microUSD、別SDKbrowser診断3334microUSD。全社費用/利益ではなく、顧客/第三者入金は未確認。証拠はprivateのagent/deployment-readback-v13.json、pilot-cta-v13-native-events*.json、pilot-cta-v13-provider-readback.json、pilot-cta-v13-x-oembed.json、pilot-cta-v13-final-native-record.json、pilot-cta-v13-cancel-readback.json、spend-after-cta-v13.json。
+- PR #9145統合時は関連checks/TruffleHog/gitleaks PASS、無関係Loop control2件はpendingで全PASSと主張しない。定期deployment次回2026-11-03T12:00:00Z/JST21時、自然runは未実証。順序は前節どおり修復完了→実依頼/納品/入金→自然run/録画→inbound→採算/phone-only/移植。投稿増加や内部送金を売上の代用にせず、同じ確認・募集を反復しない。
