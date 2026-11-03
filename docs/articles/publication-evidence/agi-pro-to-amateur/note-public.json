@@ -93,5 +93,12 @@
       "rgb_rmse": 3.55,
       "transformation": "note CDN recompresses uploaded PNG; original upload dimensions retained"
     }
-  ]
+  ],
+  "anonymous_published_text_matches_complete_source_after_whitespace_normalization": true,
+  "mobile": {
+    "viewport_width": 390,
+    "scroll_width": 390,
+    "all_15_sections_and_final_questions_visible": true,
+    "all_8_article_images_loaded": true
+  }
 }

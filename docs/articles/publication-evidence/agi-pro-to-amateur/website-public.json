@@ -1,0 +1,82 @@
+{
+  "revision": "d569400787be23bd79eff61342296f18d03b84c2",
+  "content_revision": "eaf9684c115646ee35b47711490d2645e77600af",
+  "articles": [
+    {
+      "url": "https://aniccaai.com/blog/manager-every-pro-an-amateur-en",
+      "lang": "en",
+      "body_exact_match": true,
+      "content_sha256": "adb11a2c7a16664d74ace7dbae280071951b780738adf419da82a9a2db4cc0b9",
+      "image_count": 8,
+      "canonical_and_social_metadata": true,
+      "mobile": {
+        "viewport_width": 390,
+        "scroll_width": 390,
+        "loaded_article_images": 8,
+        "final_questions_visible": true
+      }
+    },
+    {
+      "url": "https://aniccaai.com/blog/manager-every-pro-an-amateur-ja",
+      "lang": "ja",
+      "body_exact_match": true,
+      "content_sha256": "3f19436485fca511996c6d1d8257ab4e2fbe3cf8f7fcd4e8f1ebbcdfc3ac19e4",
+      "image_count": 8,
+      "canonical_and_social_metadata": true,
+      "mobile": {
+        "viewport_width": 390,
+        "scroll_width": 390,
+        "loaded_article_images": 8,
+        "final_questions_visible": true
+      }
+    }
+  ],
+  "media": [
+    {
+      "url": "https://aniccaai.com/blog/manager/media/ea2cbfe7316702b92f3544b12fc9de0b8fdb840c6d739158a718138f2f865193.png",
+      "sha256": "ea2cbfe7316702b92f3544b12fc9de0b8fdb840c6d739158a718138f2f865193",
+      "original_bytes_match": true
+    },
+    {
+      "url": "https://aniccaai.com/blog/manager/media/efc066ddfe6a24739ff29c0cef05431910b28a5a63a89fcea0c2e7acd8d4c0a8.png",
+      "sha256": "efc066ddfe6a24739ff29c0cef05431910b28a5a63a89fcea0c2e7acd8d4c0a8",
+      "original_bytes_match": true
+    },
+    {
+      "url": "https://aniccaai.com/blog/manager/media/2d3dd83cda9192da5c444e3afb7d90d715e73fc499c2119c9033bcd594aae333.png",
+      "sha256": "2d3dd83cda9192da5c444e3afb7d90d715e73fc499c2119c9033bcd594aae333",
+      "original_bytes_match": true
+    },
+    {
+      "url": "https://aniccaai.com/blog/manager/media/e5ee77077b6b2b9f5b6c59c613b3d47e70fb08255adc0e9f534f5de054f69786.png",
+      "sha256": "e5ee77077b6b2b9f5b6c59c613b3d47e70fb08255adc0e9f534f5de054f69786",
+      "original_bytes_match": true
+    },
+    {
+      "url": "https://aniccaai.com/blog/manager/media/69321e23d114ebe2d682040c7d619aa41412a54cffd9a29c6180ee766cef2e8f.png",
+      "sha256": "69321e23d114ebe2d682040c7d619aa41412a54cffd9a29c6180ee766cef2e8f",
+      "original_bytes_match": true
+    },
+    {
+      "url": "https://aniccaai.com/blog/manager/media/fab621fa2335434280929f94215363f1aa71093375ba6f37dc8d0fbc66ec4b8e.png",
+      "sha256": "fab621fa2335434280929f94215363f1aa71093375ba6f37dc8d0fbc66ec4b8e",
+      "original_bytes_match": true
+    },
+    {
+      "url": "https://aniccaai.com/blog/manager/media/ecd3992d32e52658e32e12f135b942a4a95614a2c77486ba6ac021af8a1b86ee.png",
+      "sha256": "ecd3992d32e52658e32e12f135b942a4a95614a2c77486ba6ac021af8a1b86ee",
+      "original_bytes_match": true
+    },
+    {
+      "url": "https://aniccaai.com/blog/manager/media/e97b2b55375c4f5f6df965e04edca600b6ae7bf3a83e3c9210ce561e0449ed60.png",
+      "sha256": "e97b2b55375c4f5f6df965e04edca600b6ae7bf3a83e3c9210ce561e0449ed60",
+      "original_bytes_match": true
+    }
+  ],
+  "publishing_commit": "98edd3125201e352c55af3dc37803f94c3d72a6d",
+  "canonical_content_commit": "eaf9684c115646ee35b47711490d2645e77600af",
+  "netlify_run": "https://github.com/Daisuke134/anicca-products/actions/runs/41567504809",
+  "netlify_deploy_url": "https://6ae94a5e5514fb2bfd731721--anicca2.netlify.app",
+  "netlify_status": "success",
+  "money_path_smoke": "PASS"
+}
