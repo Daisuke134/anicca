@@ -1,0 +1,24 @@
+{
+  "session_id": "ses_3497enxamwskj89czrwe88vgg5",
+  "model": "google/gemini-2.5-flash-lite",
+  "operations": [
+    "browser.goto",
+    "browser.screenshot"
+  ],
+  "status": "idle",
+  "stop_reason": "end_turn",
+  "session_total_micro_usd": 7432,
+  "bootstrap_micro_usd": 4941,
+  "comparison_increment_micro_usd": 2491,
+  "assistant_after_image": true,
+  "business_write_effect": 0,
+  "login_effect": 0,
+  "source_events_seq": [
+    25,
+    26,
+    29,
+    30,
+    46,
+    50
+  ]
+}
