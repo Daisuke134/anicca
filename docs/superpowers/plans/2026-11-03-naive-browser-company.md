@@ -260,3 +260,12 @@ home-codex本人返信でInkbox managerjghhのowner/用途も未確認、Museの
 Idempotency-Key付き置換probe2はComputer202/running、browser context_backed=trueで開始したが、gotoのclient read timeout20秒で応答未取得。sealed loginは未呼出。cleanupのbrowser closed→Computer destroyedをGET、組織残高差1667microUSDと同時刻browser debit led_hyhh0zty6189rdd6mkcf1n8p80一致。これはAPI browser分の独立費でありagent累計5656872へ無根拠に合算しない。過去ledgerがlimit差で追加された行を今回費用と誤認しない。browser opened08:42:36.171Z/closed08:42:55.585Z、同期待ちの打切りが診断側制約だったことを記録する。
 
 次はgotoの読み取り猶予を60秒、browser TTL3分/全体4分目標にし、操作開始/終了/単調時計elapsed/transport errorをprivateに記録する。20秒打切りの同じ再試行はせず、初回cold startの応答境界を観測する。置換1台・既存credential login最大1回・新signupなし・cleanup finallyと各独立readbackは維持。goto応答が取れなければその場で再送せず公式browser状態をGETし閉じる。費用は独立ledger、現org残高25.928577USD内。実顧客/自然runのcursorは不変。
+
+
+#### SDK診断の実測結果と残境界
+
+- probe3は専用Computer create202/running→GET browser.allow_writes=true/allow_extract=true/同contextを確認。gotoは27.699秒で200 browser_action/performed=true/指定DEV signup URLへ成功し、20秒timeoutは診断側の不足だったと判明。sealed loginは23.198秒後403 forbidden/param allow_writes（req_nt6kzxx8hgjxjcvk482kf4r7dv）、screenshotも403/param allow_extract（req_1dh0jp7e9dhvrycjqe7n20h3nh）。両設定がtrueで保存されたことと、実行層がread-onlyと判定したことの不整合まで絞れた。SDK全般の故障やnative signup未完の根因と断定しない。権限を迂回/拡大した再試行はしない。
+- browser closeのcontext_backed=true/同context/status closed、Computer GET destroyedを公式確認。今回もsignupは呼んでいない、loginは拒否され、登録成立/確認mail dispatchの証明無し。新credential/公開投稿/既存agent/deploymentの変更無し。計3台は全て破棄済み、最初の誤判定202/204も診断側のミスとして記録する。204と20秒例外はtool実行ログのみで、保存JSONだけでは独立照合できない限界を維持。
+- probe3残高差1667microUSDとbrowser debit led_warvrsrcp1a14tda3tgknm7rqw一致。API診断2件のbrowser明細合計3334microUSD、組織残高25.926910USD。agent直接累計5.656872USDと別表示、全社費用/利益へ置換しない。関連JSONと構造化boundary verificationはprivate evidenceに保存。
+- 既存native v12は公開受注pilotとして継続し、この独立したDEV/SDK診断を受注/納品の追加gateにしない。current cursorは実依頼→英語レポート→第三者USDC receipt/費用、次の自然runは12UTC/JST21時で未実測。v12は単一商品の初期収益loopで、任意事業を自律選択して移植/自己compute支払/複製するfull Managerの完成とは呼ばない。SDK側の残境界は保存optionsから実行policyへの伝播で、正式な修復経路をsource/docsで調べる。
+- Museの既知返信先daisuke/terminalはReason一覧でhtch-runtime/tier turnを確認。本人経路へ既存方法/owner/receiptの照会を送信しqueued、返信は未確認。idle/queuedを稼働・着手とは呼ばず、他agent mailbox/accountを借用しない。
