@@ -9,7 +9,7 @@
 
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用cap月2USD/max_task0.75USD、既存残高内・追加入金なし。
+- 専用cap月3USD/max_task0.75USD、既存残高内・追加入金なし。
 - 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
 - business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
@@ -88,3 +88,9 @@ Ruling: v6のSonnetは予約見積で実行できず、実成功したHaikuへ�
 - [ ] 独立送信元からの本人mail受信と自然wakeを確認。Grok/Museへ既存Slack threadで内部test1通を依頼済み、返信/送信は未確認。
 - [ ] 英語の詳細記事/実画面demo/offer公開、実顧客の受注/納品/支払/実費を照合、USD10K monthly revenue目標へ進める。
 Ruling: 予算変更の自動resumeは公式仕様であり、古いreportの再開/書込を実eventで確認。旧probeのcancelは成果物を消さず、他ownerへ触らず、自分の重複業務だけを防ぐ。Sonnet成功の遅延eventを追加して旧未実行説明を訂正する。
+
+## v8公開作業の現cursor
+- [x] 事実限定offer/sampleのnative復元/read2件一致。詳細英語記事のwrite完了。
+- [ ] v8/月3USDをmain反映し、既存残高内でarticle read/editor観測を再開。1task0.75USD、追加入金なし、旧probe7件はcancel済み。
+- [ ] 記事の数字/出典/秘密/実績をfresh AI reviewで照合し、本人資格情報不要の通常browser編集で公開する。
+Ruling: 実費1.809584USD時点で次callの上限見積が月2USDに入らず、公式org残高9.781134USDを確認。公開作業へ既存残高から追加1USDの上限だけ割り当て、月3USDとする。誤りなら追加費用は最大1USD、他agent上限や入金を変更しない。
