@@ -1,0 +1,53 @@
+[package]
+name = "reason-network"
+version = "0.12.17"
+edition = "2024"
+description = "Reason Network: the team directory and message bus behind reason network, for coding agents across machines"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/reason-machines/reason-network"
+publish = false
+
+[[bin]]
+name = "reason-network"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+blake3 = "1"
+clap = { version = "4", features = ["derive"] }
+cliclack = "0.5"
+data-encoding = "2"
+deunicode = { version = "=1.6.2", default-features = false }
+futures-lite = "2"
+getrandom = "0.4"
+iroh = "1.4"
+iroh-mdns-address-lookup = "0.6"
+ring = "0.17"
+rmcp = { version = "3.5", features = ["server", "macros", "transport-io"] }
+rusqlite = { version = "0.40", default-features = false, features = ["bundled", "cache"] }
+schemars = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["full"] }
+toml = "1.1"
+toml_edit = "0.25"
+tracing-core = { version = "0.1", default-features = false, features = ["std"] }
+ulid = "3"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+console = "0.16"
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Pipes", "Win32_System_Threading"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+tray-icon = { version = "0.26", default-features = false }
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSResponder", "NSEvent", "NSImage", "NSStatusItem", "NSStatusBarButton", "NSButton", "NSControl", "NSView", "NSCell", "NSRunningApplication"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSDate", "NSString", "NSRunLoop", "NSObjCRuntime"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

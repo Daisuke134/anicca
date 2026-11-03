@@ -1,0 +1,8 @@
+Reason Network
+Copyright 2026 Reason Machines, Inc.
+
+This product includes software originally developed as tincan
+(https://github.com/larstalian/tincan), Copyright (c) 2026 the tincan contributors,
+licensed under the Apache License, Version 2.0 (LICENSE-APACHE) or the MIT license
+(LICENSE-MIT), at your option. Reason Machines has modified it: it is renamed Reason Network,
+moves its state to ~/.reason/network, and is installed and updated by the Reason CLI.
