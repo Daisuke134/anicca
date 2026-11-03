@@ -353,3 +353,11 @@ model/11allow/default deny/browser options/Identity/wake=false/cron/task1は不�
 - 初回nativeはprovider公開確認前に台帳をpublishedと記したため、その自己申告を証拠にせずprimary公式一覧とX表示を取得。primary followup1回でreceiptを本人journalへ結合しwrite/read、parsed JSON argsはexpected payloadとdict完全一致。公開callの途中confirmationは0、human操作0。ただし原稿/事前照合/公式readback/receipt結合はprimary AIが担当し、Naïve単独で全工程無介入とは呼ばない。
 - 初回end_turn26934microUSD、receipt結合を含む有限run合計42835microUSD。cancel→GET cancelled/pending0。最新agent累計5865832microUSD、別SDKbrowser診断3334microUSD。全社費用/利益ではなく、顧客/第三者入金は未確認。証拠はprivateのagent/deployment-readback-v13.json、pilot-cta-v13-native-events*.json、pilot-cta-v13-provider-readback.json、pilot-cta-v13-x-oembed.json、pilot-cta-v13-final-native-record.json、pilot-cta-v13-cancel-readback.json、spend-after-cta-v13.json。
 - PR #9145統合時は関連checks/TruffleHog/gitleaks PASS、無関係Loop control2件はpendingで全PASSと主張しない。定期deployment次回2026-11-03T12:00:00Z/JST21時、自然runは未実証。順序は前節どおり修復完了→実依頼/納品/入金→自然run/録画→inbound→採算/phone-only/移植。投稿増加や内部送金を売上の代用にせず、同じ確認・募集を反復しない。
+
+### 受注待ちと並行するcontext有無のpolicy切り分け
+
+目的は本人agentmailでの登録を妨げるsealed browser入力の境界特定。以前のSDK実測はcontext_name付きComputerでallow_writes/allow_extract=trueの保存・ready readbackにもかかわらずloginがread-only、screenshotがextract権限不足。保存contextに伴うruntime policyが原因なのか、Computer API一般でoptionsが失われるのかは区別できていない。次はcontext_nameを省くことだけを主要な差分とし、専用Computer1台を作る。dev.toのみ許可、allow_writes/allow_extract=true、persist_context=false、TTL3分・操作timeout60秒。既存本人credential login:dev.toと実login画面だけを使用し、sealedlogin最大1回・screenshot最大1回、新signup/新vault/新credential/メール送信は0。passwordを取得・表示・type/actに渡さない。Computer作成/ready/browser options、各HTTP status/requestid/経過時間をprivateに保存し、browser close→Computer destroy→GETでcleanupを確認する。最大診断枠0.02USD、既存agent/deployment/capと他ownerのstateは変更しない。
+
+判定は、context無しでも同じread-only拒否なら保存context単独原因という仮説を棄却し、context有無で変わるならその差だけを次の修正候補にする。200/performedをaccount loginや登録完了とは呼ばず、公式画面も照合する。文書上のsignup自体には確認停止があるため、未観測の無介入登録を約束しない。実依頼/自然run/inbound待ちの順序は変更せず、同じ受注画面や募集を繰り返す代わりの独立診断とする。
+
+並行した現在readback: v13のdeployment runsに新しい起動は0、最後は05:30Zのcancelled run。本人email inboundは公式0件。agmsg lmにcodex-naive-browser-1103を登録しturn受信で既存codex-money-printerへread-only手順照会を送信。相手のpeekはtmux server無し・pane取得不可（exit12）で、送信を着手証明にしない。Reasonへの既存Muse照会は返信未確認。既存webはGoogle identity/メール報告、古いbrowser onboardingはretired。既存DO self-spawn sourceもNaïve互換やphone-onlyの証明ではなく、他ownerのflowは変更しない。
