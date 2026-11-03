@@ -550,3 +550,9 @@ PR9166は15checks PASS、fresh read-only review SHIP（source差分のみ）。m
 終了はcancel200→GET cancelled/pending0。公式browser.session.opened/closedは2組、current agent Computerはnull、直前に使った旧ComputerはGET destroyed。pause前のlocal probeがNone subscriptで止まった箇所は、cancel/費用照合後のローカル分岐不足と切り分け、nullをpausedへ置換せず、再起動/再生成/無用なpause再試行をしない。全probe費33763microUSD=0.033763USD、credits/spendと台帳7件/has_morefalseの符号反転sumが完全一致。private `keepalive-v19-finite-final-evidence.json`、`keepalive-v19-finite-events.json`、2画像・ledgerが証拠。登録/メール受信/顧客/納品/売上/録画はこの試験に無い。
 
 TODO2内の実行順を実測で更新。旧は「browser再開保持/確認処理を先に解消→実需要→有償納品」。新は「v19 nativeを同一turnで順次操作し実需要を最大1件調べる→有用な提案/第三者依頼→有償納品、idle後は実確認URLを再度開く」。理由は、end_turnでbrowserが閉じる仕様と同一turnの実画面成功が確認でき、未実証の長時間保持や新controllerを顧客獲得の前提にすると全体成果を遅らせるため。確認処理は新しいnative runで実際に再発したcallを具体的に扱う。現在cursorは統合SSOT TODO2、native sellerの現実需要調査。進行中effectは0、旧投稿/メールを再送しない。全体goal active。
+
+### v19 native需要調査の予約枠修復
+
+有限session ses_zw7s4h0bm7k174x53z93b377jv はv19/Haikuで旧seller-state1695bytesを同hash再読取、HN検索→候補WildMoose→検索結果の順次browser操作まで実行。15tools/Haiku実15spans、確認0/primary followup0のまま、cap300000・session GET消費136539（最後usage76539は別snapshot）で次呼出しの予約枠不足となりbudget_paused。writeは未実行、需要/支払意思/売上/完走は未確認。primaryも検索画面を実見し、競合紹介が含まれることを確認。
+
+自所有の有限runを過小な予約枠で記録前に止めたため、同じsessionだけcap300000→500000へ上げ、追加browser/新しい調査/投稿/送信は行わせず、既観測の出所・限界・次の実験を本人ファイルへwrite/readして終了する。月8USD/既定task1USD/model/Identity/定期deploymentは維持。現在cursorは当該runの記録完了/台帳照合/cancelled確認で、設定や予約枠受理を顧客需要としない。providerの次予約に必要な最小上限を実測から修復し、別modelへ変えて比較を混ぜない。
