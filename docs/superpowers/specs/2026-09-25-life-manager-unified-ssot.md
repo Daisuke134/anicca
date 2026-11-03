@@ -25865,3 +25865,18 @@ Naïve初回自然runを実証: 12UTC予定→12:09:39作成、deployment/pin13/
 Naïve seller inputはPR9164/main b4e61ec3→既存deployment input-only PATCH→全field公式readback一致。15checks PASS/独立review SHIP。自然runのメモ6126bytes完全一致とpause200→pausedを確認。有限seller試験はstate保存まで進むが、投稿一覧67073bytesを需要調査前に読み、Haiku実費129172/上限300000でも次予約枠不足でpaused。primary AIのcall確認1、人間0、新規投稿/実需要/売上未確認。上限を増やさず同finiteだけcatalog Gemini2.5FlashLite send指定で補正し、sourceもstate→需要→投稿候補時だけ最小の履歴照合へ直す。production既定Haiku/Identity/cron/予算は不変。契約・実測・理由・現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「seller入力の本番反映と有限検証の予約予算境界」。
 
 Naïve seller有限はcancelled/pending0、26tools/Haiku8+Gemini13spans、state1695bytes write/read exact。primary followup4/確認3、人間0、需要/新規投稿/売上未確認。初回freshなbrowser session-scope許可後もtypeでread_people確認、pin13のallow/ask_actions[]/allow_extract等はsource一致。確認継承は未解決。台帳総費用187824microUSD（30件一致）、session GET171158/usage151158は別snapshotとして保持。担当累計6892309、残107691ではHaiku予約に届かないため、既存live credit24693408内で専用月cap7→8/task1維持のv18 sourceを作成。全33sessionsにactive/再開可能budget_paused0。既定model/Identity/権限/cronは維持し、source inputの投稿履歴遅延読取と依存browser直列化、明示production pin18をmain固定から反映する。現状はまだ17/13、未反映target18を実運用成功としない。全体goal active、残TODOと現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「seller有限の終了結果とv18の実行枠修復」。
+
+### Naïve v18実反映と残TODO
+
+現行はagent18/production pin18/月8USD/task1USD/Haiku4.5。PR9165/main9ae119a7272dfc9d423656726eed63c14d6e108e固定source→budget-only更新とdeployment pin/input更新→全source fields公式GET一致。月spent6892309は保持、残1107691。追加入金0、Computer paused、次自然11/04 00UTC。旧v13自然runは7tools/確認0/primary追加入力0で無受注確認→記録まで実証し、v18自然実行/有償納品/売上の証明にはしない。seller有限はstate1695bytes write/read exact、台帳187824microUSD、cancelled/pending0。詳細/各receipt → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の実行詳細」「v18の公式実反映と次の最小probe」。
+
+残TODOの順序は本節、現在cursorは2、全体goal active:
+1. [完了] 専用Identity/inbox/Computer・公開pilot/英語blog・定期deployment・v18実行枠/読取順/依存browser操作順のsourceと公式反映。source受理と本番の事業成果は区別する。
+2. [進行中] 実需要→第三者依頼→native分析→英語公開report→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引き。現在はbrowserの再開保持とread_people確認処理の解消が前提作業。keep_aliveの小さい設定比較を先行し、会社側AIの制御でDaisへの承認待ちを作らない。需要/売上は未確認、内部送金/自己テスト/投稿/クリックを代用しない。scope=session受理でも次typeに確認が出た実測を保持し、全工程無介入としない。重複した募集を増やさず、新しい公開需要1件と有用な新知見を根拠に提案を改善する。
+3. v18の通常自然runと、初回有償業務の連続画面録画を確認。単一screenshot/再現用replayを連続録画と呼ばない。live-viewはcontrol-bearing secretとして扱い、URLをagent/chat/repoへ渡さない。
+4. 本人inbound/登録完了は独立に進める。送信方向のmail-tester受信/SPF/DKIM/DMARCは確認済み。会社Resend検査1通はacceptedのみで本人受信未確認、再送しない。専用送信keyではdelivery GET不可のため既存ownerへ同一receipt照会済み・返信未確認。個人Google/共有inboxの借用へ戻さず、public pilot販売のgateにも戻さない。
+5. 少なくとも1件の有償納品/実費からunit economicsを測り、需要に合わせ単価/仕事/処理件数を改める。初期29USDC×日2件×30日=1740USDC/月は満枠を仮定したcapacityで、実売上予測やMRRではない。USD10K/月は未達。
+6. 利用者のGoogle/メール入力/password/自前PCを要求しないiPhone入口を実装・確認する。現GitHub intakeは開発者向けで、既存WebのGoogle認証必須入口をconsumer入口達成としない。MCP identity_idは現仕様でlabelのみのため、会社側で対象agent/Computerを固定し、既存他ownerへ権限を広げない。
+7. 黒字の手順/評価/最小stateを他VMへ移植し2拠点で実証。専用Identity/credential・資源上限・仕事の一重処理を維持。受取専用walletにoutgoing signerは未接続、compute自費/自己複製/任意cloud互換は未達。Naïve固有のvault/inbox/session参照をそのまま他cloudでも使えるとはしない。
+
+benchmark研究は並行項目: 公開BusinessRun Benchの9eval catalogと3再利用環境の実測を維持し、独自課題・複数modelの同条件比較・採点/費用/介入/公式成果の記録を増やす。既存3環境のscript baselineをモデル順位や全9evalの独立再現としない。英語記事は https://aniccaai.com/blog/manager-naive-autonomous-companies-en で公開済み。ハッカソンは公式の11/7–8/SF/SDK/ライブデモ条件に合わせ、事前開発と当日成果、介入点を分けて実証する。優勝/YC採択は未達の目標。
