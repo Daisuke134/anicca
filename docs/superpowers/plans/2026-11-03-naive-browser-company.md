@@ -174,7 +174,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v13稼働・実依頼と納品収益の検証
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv13/月7USD/task1USD、担当累計5865832microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v15はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6217550microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -348,7 +348,7 @@ model/11allow/default deny/browser options/Identity/wake=false/cron/task1は不�
 
 ### v13反映と未完CTAの公開結果
 
-- 固定main `584363f5b03e738647e65286f77264bcff069219` の設定2ファイルはworktreeとbyte一致。agent PATCH後GET v13/全field一致。deploymentへの初回全設定PATCHは400 `unknown body field: agent_id`（req_hgyb801t2z0xs8vp2w35rgta1a）で拒否され、agentはv13・deploymentは旧版のままをreadbackで分離。変更対象のagent_version/input_templateだけをPATCHし、全source fields GET一致で反映を閉じた。SDK自体の不具合とはしない。
+- 固定main `584363f5b03e738647e65286f77264bcff069219` の設定2ファイルはworktreeとbyte一致。agent PATCH後GET v13/全field一致。deploymentへの初回全設定PATCHは400 `unknown body field: agent_id`（req_hgyb801t2z0xs8vp2w35rgta1a）で拒否され、agent更新後の保存済みdeployment-prepatch-v13.jsonもagent_version13で、旧版12のままではなかった（後の照合で解釈を訂正）。初回拒否でinput_templateの更新は未反映だったため、変更対象のagent_version/input_templateだけをPATCHし、全source fields GET一致で反映を閉じた。SDK自体の不具合とはしない。
 - native finite `ses_w3j66dykg8c5dqt9mpg6hw6t97` は同文投稿0を公式一覧で照合後、本人Postiz1callでpost `cmw0hy0a502o6t807zkekfsy1` を作成。公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117552389045563522 。保存HTML230文字は実送信payload完全一致。公式X oEmbedは213文字原稿の3段落それぞれが一致し、段落間空行のみ単一改行表示。URL無し検索案内で旧投稿のCTA欠落を補った。旧投稿は削除/再送していない。
 - 初回nativeはprovider公開確認前に台帳をpublishedと記したため、その自己申告を証拠にせずprimary公式一覧とX表示を取得。primary followup1回でreceiptを本人journalへ結合しwrite/read、parsed JSON argsはexpected payloadとdict完全一致。公開callの途中confirmationは0、human操作0。ただし原稿/事前照合/公式readback/receipt結合はprimary AIが担当し、Naïve単独で全工程無介入とは呼ばない。
 - 初回end_turn26934microUSD、receipt結合を含む有限run合計42835microUSD。cancel→GET cancelled/pending0。最新agent累計5865832microUSD、別SDKbrowser診断3334microUSD。全社費用/利益ではなく、顧客/第三者入金は未確認。証拠はprivateのagent/deployment-readback-v13.json、pilot-cta-v13-native-events*.json、pilot-cta-v13-provider-readback.json、pilot-cta-v13-x-oembed.json、pilot-cta-v13-final-native-record.json、pilot-cta-v13-cancel-readback.json、spend-after-cta-v13.json。
@@ -395,3 +395,13 @@ act比較run `ses_rwvbs16frhgxev1ppekrjxja41` は初回email.read→signupへの
 SDKと現在API docsはcreate時model overrideを提供せず、sendからのmodel指定は可能だが既存3sessionはcancelled terminalで再利用しない。新agent/Identityを増やして月capを迂回する代わりに、専用既存agentへconfig/naive-browser-company-model-probe.jsonのmodel-only PATCHを適用する。expected_version13→候補v14、他source fields完全不変、deploymentはv13固定のままで触らない。patch/restoreはreview済みmain固定SHAから適用する。候補v14で同じ最新の登録指示をfinite最大160000microUSDにして1回実行。先行実費との最大合計496596microUSDで既存診断総枠0.50USD内、月7/task1も不変。入場quoteが収まらなければ新runを増やさず結果を記録する。
 
 終了/失敗/入場拒否のいずれでもfinite停止/cancel/GETの後、config/naive-browser-company-model-restore.json（to_version13/expected_version14）からrollbackし、履歴を消さず新versionで元の全source fieldsをGET一致させる。production deployment pinned13/cron/Identity/11allow/既存外部effectは不変。登録成功でも直ちにmodelを本番昇格せず、raw code/linkは保存しない。今回の変更はNaïve runtime比較だけで、Codex UIの選択modelは変更しない。署名済み画像・inbox本文・code・private URLをrepoへ置かず、結果/費用/未達/現在cursorを正本へ戻す。
+
+### model比較前の復元とdeployment pinの正確な仕様
+
+PR #9152/main `650d5a668e9a89a27668c9887ba56ea7683d5198` のmodel-only PATCHはagent13→14となり、他の全agent fields不変。ただしdeploymentも13→14へ更新されたため、同一snapshot比較assertが検出してsession createより前に中止。GLMのinference/session/性能測定は0で、比較済みとはしない。version13へのrollbackでagent15（全元source fields一致）となり、deploymentも15へ追随したため、明示PATCHでdeployment13へ戻し全source fields一致。新deployment runは0、次回12UTC。private passwordless-model-{baseline-agent,baseline-deployment,patch,candidate-readback,deployment-check,restore,restored-readback,deployment-after-rollback,deployment-restored-readback,deployment-runs-after}.jsonが根拠。
+
+一次資料 https://usenaive.ai/docs/api/deployments は「pinが置換される現在版を指す場合は更新/rollbackの新versionへ移動し、古いversionへのpinは残る」と明記。vendor bugではなくprimaryのpin理解不足だった。agent更新全般が全ての古いpinを動かすとの一般化もしない。古いprepatch-v13の記録にあった「deploymentは旧版のまま」も保存済みGETで13だったため、本節と該当箇所で訂正する。
+
+現在agent15/production deployment13となり、比較candidateを適用してもdeployment13は古いversionとして固定される条件が整った。比較artifactのexpected_versionを15→候補16、restoreをto_version15/expected16へ更新する。model以外の全agent fieldsとdeployment全fields不変をGETで確認して初めてfiniteを作成し、不一致なら作成せず復元。候補16のfinite上限160000microUSD、既存3run実費336596との最大496596は不変。終了/入場拒否/失敗ならfinite terminal確認後、復元artifactで元のv15内容をcloneして新version17とし、全source fields/production deployment13のGET一致で閉じる。新modelの価格/画像対応/品質は未確認で、比較結果前に昇格しない。Codex UIのmodelは不変。
+
+現在cursorは実第三者依頼→公開納品→29USDC receipt/費用で変わらず、本人登録/inboundは独立の未完項目。先行3finiteは全cancelled/pending0、runtime.jsonはagent15/production deployment13を区別。担当累計6217550microUSD、API診断browser累計5001microUSDは別計測。未測定増分を各componentや利益へ帰属しない。
