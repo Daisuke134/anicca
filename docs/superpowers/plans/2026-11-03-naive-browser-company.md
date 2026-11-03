@@ -862,3 +862,12 @@ ses_9vck0c0h2324nvfn3ag4972w0aは本人5read→pilot intake goto/extractで0件�
 親のComputer browser GETは404/no browser、browser_sessionsは0件。一方本人browser.session.openedはbrw IDを持ちcomputer_id空文字。別のbrowser帰属の可能性があるのでComputer側404だけで本人browser消失と断定せず、wrong-target DELETE/強制takeover/環境再作成0。source本番23/input維持。証拠private v23-demand-next-{events,artifacts,verification,browser-diagnostic,browser-events,spend-readback,ledger,final-resources}。
 
 次の1件は残内で短い本人browser復旧確認→新しい公開需要1出所。finite250000＋後計上100000/計画350000、4分/max12tools/hosted最大2。fresh残credit>=350000/active0/paused、同23/Identity/priority/既存月9/task1。既知の商品は公開trace20calls以下の英語診断29USDC納品後払い、売上0/受付0/過去除外済みsourceは再調査しない。時刻サイト・intake再確認・最初の5file再読取を行わず、本人goto example.com1回で復旧可否を判定。まだtimeoutなら別サイトretryを反復せず、既存stateの末尾へ今回の観測だけを小さいedit/readで追記してend_turn。応答したら未解決のagent trace/tool-loopについて新しい買い手側sourceを本人検索/本文観測し、支払意思の有無を正直に同じ追記で保存する。root next_action等の旧keyは変更しない。未知時刻/費用はnull、現在runの最終回数を推測しない。営業送信/DM/Postiz/mail/signup/送金0、script業務/追加input/model/増枠0。全体goal/元7TODOを縮小せず、この診断を収益成功に数えない。
+
+
+### 短い復旧実測と支払い意思を優先する次行動
+
+ses_7sr1amcbm052ey7kahk1pr6r5tはexample.com goto約2.3秒成功、DuckDuckGo検索とn8n thread174472本文観測も成功する。2025年のaccepted solution有り/支払意思無しを本人が確認し、新需要から除外。9tools/hosted2/errors0/確認retry追加入力0、19:34:55.131自然end_turn。余分なjournal read1はあるがjournal書換0、state21608→25698bytes/hash00825510091abc2d87124ee57d008499056a41d8d95b61403e2290866545166cは全旧key/value保持＋demand_research_v23追記だけでedit再構成とreadback exact。19:35:49にcancelled/pending0/全51active0/paused/prod23保持、費92136/ledger13、月残351371。browser応答回復はこのrunでの実測で恒久解消ではない。前runは後計上で費166753/ledger17へ更新（先の138158/14は途中snapshot）。実依頼/売上は未獲得。証拠private v23-browser-recovery-{events,artifacts,verification,final-resources,ledger}、v23-demand-next-late-metering。
+
+cursor2内部の次は、解決済みの一般help検索から、支払い意思が明示される公開募集へ絞る。理由は同種の古い解決済み質問を2件以上確認しても買い手を得ていないため。既存商品29USDC/public trace診断に適合する現行の有償agent/n8nデバッグ募集1件だけを本人browserで探し、日付/未解決/依頼内容/予算/応募条件の本文を観測して適否を保存する。価格不明/募集終了/無償相談なら正直に除外、値を捏造しない。今回の公開読取・保存だけで応募/受注/売上としない。
+
+次の有限枠は残内でfinite200000＋後計上100000/計画300000、4分/max10tools/hosted最大2、fresh残credit>=300000/active0/paused、同23/Identity/priority/月9/task1。時刻/health/intakeを反復せず、直前に健康を確認した本人browserで有償募集の検索へ直行。初回goto timeoutなら反復せず観測追記して終了。stateは既観測257行の末尾offset202から必要な範囲だけread、旧root全key/valueを変更せず新key追記/edit/read、journal読取/書換0、未知時刻/費用/最終回数は推測0。DM/営業送信/投稿/mail/signup/送金0、追加input/model/増枠0。元7TODOは維持し、有償需要1件の探索を会社収益達成へ縮小しない。

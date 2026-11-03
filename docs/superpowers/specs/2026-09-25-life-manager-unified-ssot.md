@@ -25915,3 +25915,5 @@ Naïve内訳追補は3tools/end_turn/確認retry0、費18662/ledger4、Computer 
 Naïve現行: 内訳追補の独立review SHIP後、19:17:55UTCにmain048 desired23/inputを本番採用、全source fields公式一致/paused/active0。旧production22保持は履歴。現在cursor2は公開の有料需要の観測→本人先行保存→初回有料納品へ戻る。実売上等は未達。詳細・有限次業務 → 同plan。
 
 Naïve cursor2: 本番23通常業務はintake0件、browser7timeoutsで新需要0。本人state/journal保存は実測するが自然終了0、19:30:34.948にcancel。費138158/ledger14、active0/paused/prod23保持、残485301。自己集計誤りと旧next_action未退避は公式原本を保持して未解消と明示。次は計画350000内の短いbrowser復旧→新需要1出所、時刻/intake再読取を反復しない。→同plan「本番23の通常業務・ブラウザtimeout境界」。
+
+Naïve現在cursor2: 短いbrowser復旧→候補本文観測→旧state全値保持の追記/readは9tools/end_turn/errors0/費92136で成功。n8n候補は解決済み/支払意思無しで除外、依頼売上0。前run後計上166753/ledger17。次は計画300000内で現行の有償募集1件へ絞る（同plan）。本番23/全51active0/paused、登録/録画/phone-only/黒字/10K/月/移植は未達。
