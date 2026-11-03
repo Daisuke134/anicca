@@ -302,3 +302,10 @@ https://github.com/Daisuke134/businessrun-bench/tree/main/pilot
 本人browserで実依頼画面をextract/画像確認。空observeだけから依頼0としない。依頼が無い場合のみ、公開前にPostiz当日一覧と本人file proof-led-pilot-promo.jsonを確認し、同一copy/既存postがあれば再送しない。新規1postだけX @diceai0へ。送信payload/公式保存本文/PUBLISHED/error/releaseURLを照合し、provider取得無しなら公開成功とは言わない。原稿/画像/価格/商品契約は追加変更無し。
 
 同じv12/Identity/context/model/11allow、有限task最大0.4USD、既存月6/task1/12h cron/wake=falseを維持。予算見積りで拒否ならその正式結果を保存し、無送信と旧session終了を確認してから必要最小の修復を正本化する。自己申告時計を使わずprovider event時計を記録する。有限runはend/cancel/公式GETで終了確認。metricsと依頼・入金は別に記録し、conversion分母/帰属が不明ならnull。画像未生成、新signup/サイト登録再送なし。全体goalはactive、phone-only/移植/自己compute支払/10K売上は未達。
+
+
+#### 受注確認とduplicate判定の実測修正
+
+native finite ses_ztb2n5fa55ya9b6sqmhyjpmqqnは起動/agent v12で実行、browser extract15と画像は0 results/No results matchedで一致。Postiz当日一覧も取得し、write38/read43はbyte exact、end_turn/idle/68071microUSD/pending0。投稿callは0で、nativeは旧257文字の募集を新270文字とEXACT MATCHと誤分類して見送った。rootは保存済み本人Postiz一覧の文字列をexact照合し、旧copy1件、新copy0件/部分一致0、旧!=新を確認。取得済み一覧の範囲の比較であり、全internetや将来の投稿不存在の保証ではない。
+
+同じfiniteのfollow-upで、旧先頭Agent says "done"と新先頭A browser agent said "signup done."の相違、270文字exact payload、新copy未検出の保存済み証拠を明示し、意味が近いことを完全一致としない修正を渡す。再一覧/再intakeを繰返さず、既存の新copy postidがあれば停止、無ければ承認済み1post→journal訂正/write/readで終了。旧journalはraw証拠としてprivateに保持。自己申告screen時計はprovider event15へ結合し置換、release URLの...を実URLとして使わない。月6/task1/finite0.4内でquote拒否なら送信せず正式状態を記録し、同一不確実投稿を再送しない。
