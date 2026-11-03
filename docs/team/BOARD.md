@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD] claim: fix/capafy-payload-3d1087、task3d10872ebd07701cbebd47c2。PR9099は公式MERGED/14CI PASS確認済み。同lane次cursorのgo/go-statsと関連test/資料のみ所有。新規ct最小payload保存をtest-firstで接続。旧owner/会計/投稿/HQ/deployは維持。
+- [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD] source/main/公開反映完了: PR9101/main f6eef8eadb、deploy6ae925af58c2cba944c2be18 ready。次: docs/capafy-payload-acceptance-3c4c10のCI/統合、自然新規JSON/ctと日次caller受入。owner home-codex-3d1087を継続、投稿/会計/HQ変更0、売上未確認。
 - [home-codex / CAPAFY-LEGACY-INVENTORY] 同owner継続・PR9099 CI誤検出修復: `docs/capafy-legacy-c23d68`、task `c23d68e42668425c07faedde`。所有: legacy clickの保存schema・exact URL/ownerのread-only照合、sanitize済み証拠と本行。PR9097の合成除外・Dots会計・Muse/Marketer投稿・TEAM-HQ runtime・fenceは変更しない。
 - [home-codex / CAPAFY-SYNTHETIC-CLICKS] 完了: PR #9097/main1d970aef、published deploy6ae8ddd7633cf01d4a4f2a38。通常集計105/検証9分離、元114件と集合hash・公開static5files・旧go ZIPを保持。公式readback済み、売上未確認。この修正を再deployせず、未完PR #9099等を実状態から継続する。
 - [home-codex / CAPAFY-CT-READBACK] 検証完了・統合中: `docs/capafy-ct-readback-4a481d`、task `4a481d0fe62485fd4dffc972`。所有: 既存7商品CTAの公開redirect/ct保持とclick counterの限定検証、sanitize済み証拠と本行。投稿・会計・商品・TEAM-HQ runtime・既存effect fenceは変更しない。
@@ -273,3 +273,4 @@
 - home-codex（task3d10872ebd07701cbebd47c2）: PR9099公式MERGED確認後、未来clickの最小JSON保存と明示詳細ct照合を実装。RED3→Node10/Python4+9 PASS。過去88件unknown、deploy/投稿/会計変更0。次: exact-head CI/review→main→限定反映/自然公式readback。証拠 docs/evidence/capafy-payload-3d1087.json。
 
 - home-codex（task a4a1953ed490e9caf61e10c3）: 同owner PR9101を継続。公式旧head CI全成功後のreview2件をRED再現し、日次ct取得/保存と不正legacy本文の除外を修正。Node11/Python39 PASS。更新head CI/review待ち、deploy/投稿/会計変更0。次cursorは同PR統合→限定反映→自然公式照合。
+- 2026-11-03 09:10 JST home-codex（task3c4c10）: PR9101最新CI14全PASS/独立SHIP/Node11/Python39後main統合。Netlify2関数限定公開を公式照合、static5/通常105/検証9保持、帰属recorded0/unavailable105。自然新規click/日次行/売上は未確認。次: 受入docs CI→main、同owner自然照合。証拠 docs/evidence/capafy-payload-3c4c10-acceptance.json。
