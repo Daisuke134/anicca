@@ -35,6 +35,10 @@ We accessed Ampersand. We did not run Persimmon, inspect its private training ex
 
 That separation matters for interpreting the story. A scheduling response can illustrate how a model approaches collaboration. It cannot tell us whether the underlying simulations accurately predict an unfamiliar person's choices.
 
+### We also tried the public Tutor model
+
+humans& also lists **Ampersand Tutor**, a separate public model intended for teaching. In a [new authenticated run on November 3](https://github.com/Daisuke134/life-manager/actions/runs/41630422469), we asked **ampersand-tutor-v0.1** to explain why 120 answers from 40 people are not the same as 120 independent people. The service completed the fictional educational request and returned 2,526 characters of output. We recorded completion, not a graded measure of teaching quality. The same run also completed another two-turn Ampersand collaboration session. **Ampersand Tutor is not Persimmon**: the former is a publicly callable teaching variant; the latter is the separately described model of simulated users. We did not call Persimmon.
+
 ## The first call: a conflict worth mentioning
 
 On November 3, 2026, we made an authenticated request to Ampersand v0.1. An API, short for application programming interface, is the doorway software uses to talk to another service. Instead of typing into a chat window, our program sent the fictional scenario to humans&'s servers and read the response.
