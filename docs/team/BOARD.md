@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [Codex / NAIVE-BROWSER-E2E] live19/19、PR9167/main6c8fd1d。明示help forum5003はnative7tools/確認0/保存exact/費69648、回答受諾済みで有償候補外。全37session active0/Computer paused。現在は実需要確認と、会社AgentMail→専用Naïve inboxの独立診断1通/polling配送証拠を並行。既存owner/元Resend/共有箱/課金を変更しない。詳細は統合SSOT Naïve残TODO。
+- [Codex / NAIVE-BROWSER-E2E] live19/19、PR9168/main5586d2d。独立mailはAgentMail sent/delivered/Naïve保存0、polling204→404/失効済み。現在は公式human_emailなしreceive-only箱1件とMCP4readのv20 bootstrap。旧会社箱/keys/owner/課金は変更0、月8/task1/model/Identity/cron/input維持。詳細は統合SSOT Naïve残TODO。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
