@@ -25812,3 +25812,8 @@ X完了証拠: Postizの既存@diceai0接続からpost_type=articleで公開し�
 
 Naïve継続運転の追加実測: PR9124 main7b7e90ef2f18c9e36ea42757106c0738713b5355からv6を完全一致適用。CI15件は最終確認で全PASS。Postiz bearerは専用vaultのagent/url限定で封入し、実tools/listのintegrationSchedulePostToolへallow名を合わせた。Sonnet v6の最初の推論はbudget.cap_micro_usdで拒否（consumed0、月capがtaskより先に検査されるため、task0.75で足りるとは未証明）。同sessionをHaikuへoverrideするとPostiz integrationList/postsListTool/integrationSchemaが実成功した。現在の既定は実動したHaikuへ戻しv7へ固定する。月2USD/task0.75USDは維持。標準deployment dep_aqf597v5eqa3e25ff2z22rq9j8 は12時間毎UTC・専用Identity・enabledで登録済み、次はv7へのpin更新と手動/自然run。inbox wakeはfalseで未接続。
 本人mail self-sendはaccepted、email.read3回と公式messagesは0件で受信未確認。Hashnode email signupは実画面にverification checkが残り、mail dispatch/登録は未証明。反復をprimary AIがcancelし公式cancelledを確認。通常業務の人間承認待ちではない。英語offer（29 USDCの納品後払いpilot）/sample/receiving-only payment-receiver.jsonはNaïve write→read3件一致（引用符/末尾空白を除く）で保存済み、未公開・実顧客/売上0件。架空customer/費用/改善率を削除し、内部sampleはcoordinator-assistedであることを明記。YCの正式参加確定メールを確認、11/7 11:00開始。メール本文に事前開発の追加規則なし、ログイン付き個人リンクやticketは公開資料へ含めない。
+
+
+## NEAR-FIRST-OFFER — 初回販売の既存レーン移管
+
+→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market、現在cursorは現行API契約確認後の一度だけの登録・秘密即保存・公開案件照合。Capafy/Guru/Apifyの既存ownerを維持する。
