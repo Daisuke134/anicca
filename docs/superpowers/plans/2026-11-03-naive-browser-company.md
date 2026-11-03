@@ -913,9 +913,9 @@ ses_03dgy5bn6gktban6pt08fmn4epはAgentMail list_inboxes/本人n8n goto/screensho
 
 ### 正式signup直行の未完結果と現在cursor
 
-ses_vj80tzqezps9phpk36v2q86t6fは専用AgentMail.list_inboxes成功後、native browser.signupでread_people待ち。native引数はname/email/actionだけで、本人専用メールと表示名は一致するがURL/serviceが無い。このsessionは事前gotoも無く現在ページを観測していない。公開SDK BrowserSignupのservice/url/identity_id/emailをnative toolにも指定できるとは確認できず、架空fieldを追加しない。対象未確定の登録をprimary AIが正式SDKでscope=call deny1回、202受理後runningへ戻るが新tool/本人保存/自然end_turnは観測しない。人間への確認要求0、primary deny1、signup実行許可0、新登録成功0。新vault credential0は終了前観測であり、終了後の全credential再照合済みとは呼ばない。
+ses_vj80tzqezps9phpk36v2q86t6fは専用AgentMail.list_inboxes成功後、native browser.signupでread_people待ち。native引数はname/email/actionだけで、本人専用メールと表示名は一致するがURL/serviceが無い。このsessionは事前gotoも無く現在ページを観測していない。公開SDK BrowserSignupのservice/url/identity_id/emailをnative toolにも指定できるとは確認できず、架空fieldを追加しない。対象未確定の登録をprimary AIが正式SDKでscope=call deny1回、202受理後runningへ戻る。後続GETで遅れてsignup再試行2件がbrowser was not approved、3件目は同一呼出し2回失敗の抑止と判明する。本人保存/自然end_turnは観測しない。人間への確認要求0、primary deny1、signup実行許可0、新登録成功0。新vault credential0は終了前観測であり、終了後の全credential再照合済みとは呼ばない。
 
-公式created_at20:01:12.706→ended_at20:08:29.294は436.588秒、6分を76.588秒超過する。primaryの観測/コンテキスト継続中に終了が遅れたため契約内完走とは認定しない。20:08:42.933の公式readbackはcancelled/interrupted、terminal retained pending1、全55sessions live0、Computer paused、production23/priority/enabled/scheduled/次00UTCとagent/source全fields一致。費26870microUSD/ledger5件一致、月spent8798794/残201206は後計上前提のsnapshot。終端pendingを消すためのallow/再送0。rawメール/認証引数/確認link/秘密の保存・公開0。証拠private v23-n8n-direct-signup-{events,status,deny-unbound-signup-attempt,deny-unbound-signup-receipt,terminal-readback,spend-readback,ledger,final-resources}。
+公式created_at20:01:12.706→ended_at20:08:29.294は436.588秒、6分を76.588秒超過する。primaryの観測/コンテキスト継続中に終了が遅れたため契約内完走とは認定しない。20:08:42.933の公式readbackはcancelled/interrupted、terminal retained pending1、全55sessions live0、Computer paused、production23/priority/enabled/scheduled/次00UTCとagent/source全fields一致。費26870microUSD/ledger5件一致、月spent8798794/残201206は後計上前提のsnapshot。cancel直後snapshotのpending1は当該session自身の件数であり、後続GETではpending0へ変化する。終端pendingを消すためのprimaryのallow/再送0。rawメール/認証引数/確認link/秘密の保存・公開0。証拠private v23-n8n-direct-signup-{events,status,deny-unbound-signup-attempt,deny-unbound-signup-receipt,terminal-readback,spend-readback,ledger,final-resources}。
 
 現在cursor2内部は「同じclick/signupを再送」ではなく「native signupが対象service/urlをどう保持するかを公式契約・実tool schemaで確定→同じ専用Identity/mailで通常登録→実需要の限定提案→依頼/納品/公式入金」。公開SDKの別operator用computer-useはユーザーのcomputer-use意図に適合し得るが、native person確認をrootAPIで迂回してよいという意味にはしない。既存Computer.browser=null、native browserのcomputer_idも空であり、両経路の同一性未証明。別Computer作成/signup/act/takeoverは未実行。新resourceで月capを迂回しない。独立read-only検証もSDK経路は条件付き評価で、実行可能/AI担当/同一browserとは未認定。現残予算で同型の有償再試行を反復しない。
 
@@ -925,3 +925,16 @@ Grok/Museへの既存Slack threadを最新まで再読し、親＋8返信・前�
 次の切分けはnative signupの前に本人browser.gotoで登録先を確定する1件。前回のgoto禁止を解除し、専用AgentMail.list_inboxes→exact https://community.n8n.io/signup goto→同一browserの到達URL/ページ状態を観測→native signupへ進む。click selectorの反復はしない。signup payloadがname/email/actionのみでも、同一browserと直前の到達先を公式出力で照合できる場合だけ正規call-scope確認を処理する。到達/同一browserが曖昧ならdenyして閉じる。root browserAPIや未知field、別Computer作成、Google依存へ逃がさない。
 
 資源は本番23/同Identity/priority/設定不変、fresh全live0/paused/残とcredit>=180000、finite100000＋後計上80000/計画180000。1件/4分/max10tools/hosted1。signupと本人確認mailの必要範囲のみ、DM/営業/投稿/課金/送金0、秘密値保存0。create前/操作時に実時刻を追い、deadline前にcancel開始する。成功は実ログイン/確認状態、未達なら正確な境界を残す。元7TODOと全体goalは変えない。
+
+追補: direct signupの遅延eventsはseq33/35/39に上記の拒否済みsignup再試行を記録し、seq52最終usage26870と一致する。終了後の追加tool eventを新登録実行成功に数えない。独立reviewのpending帰属疑義に対し、helperの当該session集計と最新GET pending0の両方を区分する。
+
+独立review追補は、最新status保存へpending_actions_field_present=true/count=0/checked_atを含めた公式GETで先のpending疑義を解消する。旧snapshotの当該session1件と最新0件を区別する。provider ended_atも旧20:08:29.294から最新20:08:27.311へ変化し、6分超過は旧76.588秒/最新74.605秒、いずれも超過である。target-aware試行は同一native browserの対象証拠が得られた時だけ確認し、根拠不足なら許可0という範囲に具体的反証無し。
+
+
+### 対象ページ確定runの結果と予約余力の修正cursor
+
+ses_gmds1f6qsa5htpm4zqyht8g4szは20:10:33.746開始、本人browser.goto(community.n8n.io/signup)とAgentMail.list_inboxesを並列に開始し両方成功する。指示の順番どおり直列ではなく、goto後の別observe/同一browser照合/正式signupには未到達。seq16でbudget_exceeded「this session's budget cap has no room for this call」、browser session opened/closed、20:11:49.877 budget_paused。finite100000は実消費19521でも次予約を収容できず、actual costとreservationを混同した小さすぎる枠であった。新しく判明した初手gotoは確認card0で通る。今回signup/確認mail/credential作成/登録成功/DM/投稿/売上0、本人保存/自然end_turn0。到達の成功を登録成功へ置換しない。
+
+20:12:36.796の公式readbackはcancelled/pending0/全56live0/Computer paused、本番23/priority/enabled/scheduled/次00UTC/全agent-source fields保持。費19521microUSD/ledger2一致、月spent8818315/残181685（後計上あり）。4分deadlineより前に閉じる。証拠private v23-n8n-target-signup-{before,attempt,created,events,status,terminal-readback,spend-readback,ledger,final-resources}。このsessionから第三者サービスへの外部signup送信は観測0。
+
+現在cursor2内部は「対象を観測してsignup」から、その依存である「次モデルcallの予約を収容する有限枠をsourceで復元→対象を観測してsignup→専用mail確認→連絡/提案→実依頼/納品/公式入金」へ修正する。理由は新たな公式budget_exceeded。次枠を100000のまま再送しない。直近の5tools完走finite200000等と実予約を比較し、同一model/Identity/同一browser経路を維持して必要最小のsession枠を確保する。月残181685では以前の計画300000を満たさない。必要なら既存credit内の最小agent-cap差分を正本/source/必要検証/main経由で反映する。新入金/新wallet/人間Googleは不要だが、cap変更はまだ実施0である。rootAPIのsignup迂回や未知policy追加もしない。元7TODO/全体goalの未達は維持する。
