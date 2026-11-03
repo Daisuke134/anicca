@@ -1,6 +1,6 @@
 {
   "agent_id": "agt_e1hvkwgrdrx119zh22qthavwt4",
-  "agent_version": 19,
+  "agent_version": 20,
   "identity": "idn_538nccw222rx6f1q8qh5hyjeeh",
   "cron": "0 */12 * * *",
   "timezone": "UTC",
