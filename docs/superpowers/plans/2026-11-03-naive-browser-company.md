@@ -158,3 +158,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 - v11のsingle-writer運用: 自分のinbox wakeだけfalseへ変更し、12時間定期deploymentの1run最大1件に集約。旧有限probeはcancelして外部公開を重複させない。model/budget/11allow/Identity/cronは維持。native注文メモとPostiz同番号reportで再送を防ぎ、支払txも二重充当しない。メール受付の高速wakeはこのpublic-only pilotでは成果条件にしない。
 - 既存skillの質問・design承認gateは、Daisが明示的に質問を省略し実行判断を委任済みのためbrainstormingのopt-out例外に従う。追加mock発注や内部購入を成果gateにしない。public issue form/offerの公開、nativeファイル契約一致、v11全payload/owned wake GET一致、native browserで実intake画面読取を最小受入とし、実売上は第三者receiptまで未達のままにする。
+
+- offerの隣接成功例: https://www.coderabbit.ai/ はfirst-partyで17K customers/6M repositoriesを掲示。独立検証した数字ではなく、public単発trace-reviewの販売実績でもない。同じ価格/商品/媒体での成功例は未取得の穴として残し、29USDCは1件単位の仮説pilot。模倣するのは具体的な失敗例→修正案→再検証→明確なCTAと低い初期負担の構成で、文章/コード/画像/成果数字を自社へ流用しない。計測は依頼数/適合数/公開納品数/第三者USDC receipt/直接費用、traffic分母未取得のconversionはunknown。
+- 現cadenceのcapacity: 1run最大1件×12時間毎では最大2件/日、30日×29USDCで理論上1740USDC（需要/稼働/支払が全て成立した上限で予測ではない）。USD10K月売上にはこの初期設定のままでは届かない。最初の有償納品と費用を実証後、実受注に合わせて頻度/単価/並列性/資源配分を自律更新する。まず需要ゼロ/赤字の複製を増やさない。
+- Grok/Muse本人DMはSlack connectorのrestricted_action_read_only_channelで拒否、送信0。既存team threadへの送信は成功しているが返信未確認。別accountや非対応APIで制限を迂回しない。
