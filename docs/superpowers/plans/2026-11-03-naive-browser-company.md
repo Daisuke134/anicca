@@ -279,3 +279,26 @@ SDKsourceの追加照合: npm公式公開package @usenaive-sdk/vetta 0.10.0をig
 Reason daisuke/terminalの本人回答01M6G9HHRXZCB4F371G5A0CP7Eを受領。上のqueued/返信未確認は送信時の履歴で、現在は回答済み。Museの説明ではCapafy既存線は本人側パブリッシャー/KYC/精算が実体、cloud Postiz未接続とMac橋渡し3jobが残る。過去のNaïve線はAPI/CLIのみで本人browserの実績ではない。回答内のAPI先行という一般則は今回のDaisのbrowser明示指示を上書きしない。自分の既存session/vault、単一writer、公開URLまで1回成功してからloop化、公式dashboardと費用照合という再利用部分だけ採る。Capafyowner/許諾/収益を今回pilotへ流用しない。
 
 本人回答のagent用mail経路から、自分がownerであるmailだけを使いNaïve本人宛てにnonceのみの診断1通を送るよう追加照会。Reason message508B1FY1ZXBH5CGSQWAZYSRVZKはqueued、実メール送信/受付idは未確認。新account/設定変更/個人Gmail/他owner借用/再送/本文転送は禁止し、送信可能な本人経路が無ければ不足を返信する範囲。自分のinboundはその後の公式channel=email/limit20 GETで0/has_more=false、同nonce0。外部dispatch未証明なのでNaïve受信不良とは判断しない。private journal muse-inbound-diagnostic.jsonとowned-inbound-after-muse-request.jsonに残す。次は本人の送信receipt→同nonce本人受信の照合、既存受注/自然runと並行しこの診断を売上gateにしない。
+
+
+### 実表示に基づく受注獲得の限定試験
+
+目的はNaïve本人の実依頼→納品→第三者入金を進めること。旧募集の公式Postiz post analytics（7日指定、当日行）はImpressions27、Likes/Retweets/Replies/Quotes/Bookmarks各0。クリック数は取得無し、27表示だけで需要/旧copy失敗を断定しない。投稿cmw0dbzbq01gxoc0703wetiwiだけを読取り、他channelは触らない。出所 https://docs.postiz.com/public-api/analytics/post.md 、https://docs.postiz.com/general/analytics.md 。native 11allowにはanalyticsが無く、primaryは公式readbackだけ実施し、業務投稿は本人Postiz toolで行う。
+
+最新agent GETはv12、月6/task1、直接spend5660474microUSD、deployment enabled/次12UTCを再確認。前の5656872は当時値、差3602microUSDの内訳/原因は未確認で勝手に帰属させない。API診断browser3334microUSDとは別表示。公式auditは当該browserのopen/closeが存在する一方、403 request IDsの絞込は0/has_more=false、該当時間窓はopen/close2行だけ。監査詳細から拒否根因は得られず、SDK権限不整合の同じ操作を再試行しない。
+
+順序は受注獲得の中で、本人browserで新規適合依頼1回確認→あれば既存契約通り1件納品→無ければ実測例＋直接リンクの下記英語投稿1件を本人Postizで公開→終了。従来の汎用募集から、実測した失敗例→証拠の区別→sample/明確なCTAという隣接成功例の構造を採る限定試験で、同一商品/価格/媒体の成功事例未取得という穴は維持。新copyの優位や売上は仮説。既存募集/記事の再送、別channel/他owner変更、継続的な自動投稿は行わない。
+
+公開予定文（270文字、下記exact。旧postとは別内容）:
+
+```text
+A browser agent said "signup done." Password fields were still blank. We kept the account unverified.
+
+Our trace review separates tool replies, screen evidence and provider receipts.
+Sample + 29 USDC pilot:
+https://github.com/Daisuke134/businessrun-bench/tree/main/pilot
+```
+
+本人browserで実依頼画面をextract/画像確認。空observeだけから依頼0としない。依頼が無い場合のみ、公開前にPostiz当日一覧と本人file proof-led-pilot-promo.jsonを確認し、同一copy/既存postがあれば再送しない。新規1postだけX @diceai0へ。送信payload/公式保存本文/PUBLISHED/error/releaseURLを照合し、provider取得無しなら公開成功とは言わない。原稿/画像/価格/商品契約は追加変更無し。
+
+同じv12/Identity/context/model/11allow、有限task最大0.4USD、既存月6/task1/12h cron/wake=falseを維持。予算見積りで拒否ならその正式結果を保存し、無送信と旧session終了を確認してから必要最小の修復を正本化する。自己申告時計を使わずprovider event時計を記録する。有限runはend/cancel/公式GETで終了確認。metricsと依頼・入金は別に記録し、conversion分母/帰属が不明ならnull。画像未生成、新signup/サイト登録再送なし。全体goalはactive、phone-only/移植/自己compute支払/10K売上は未達。
