@@ -1,0 +1,71 @@
+{
+  "run_id": "e90c688b773a9f9fd3c76149",
+  "owner_id": "home-codex",
+  "occurrence_id": "CAPAFY-ATTRIBUTION-PAYLOAD",
+  "release_sha": "265bab69",
+  "observed_at": "2026-11-03T04:15:05.078235+00:00",
+  "phase": "official_collection_and_replay",
+  "command": "main-derived pull_attribution.py; exact admission SELECT mode=ro",
+  "exit_code": 0,
+  "loaded_argv": [
+    "python",
+    "skills/earn/capafy-marketing/scripts/pull_attribution.py"
+  ],
+  "loaded_env": {
+    "LIFE_MANAGER_REPO": "/Users/anicca/loops/releases/20261103T123534-265bab69",
+    "CAPAFY_ACCESS_TOKEN": "SSOT capafy-publisher; value omitted"
+  },
+  "effect": {
+    "attribution_daily_rows_added": 1,
+    "replay_rows_added": 0,
+    "post": 0,
+    "deploy": 0,
+    "fence_mutation": 0,
+    "accounting_write": 0
+  },
+  "readback": {
+    "clicks_total": 106,
+    "recorded": 1,
+    "unavailable": 105,
+    "agent_rows": 76,
+    "sales_known": 0,
+    "sales_missing_value": null,
+    "today_rows": 1,
+    "ledger_unchanged_on_replay": true
+  },
+  "provider_receipt_id": null,
+  "provider_readback_url": "https://capafy-skills-daily.netlify.app/go-stats?detail=1&attribution=1",
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/team-hq/e90c68-readback/collector-result.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/e90c68-readback/fence-readonly.json",
+    "/Users/anicca/.local/state/life-manager/state/capafy-attribution.jsonl"
+  ],
+  "prior_pr": {
+    "number": 9104,
+    "state": "MERGED",
+    "main": "e4612c2869d84384e049c54014816fd4d0d422d3"
+  },
+  "held_ig": {
+    "occurrence": "capafy-ig-marketing-daily:18db7caff1178a88-68028",
+    "queued_at": "2026-10-05T01:06:01.926294+00:00",
+    "state": "claimed",
+    "effect_unknown": 1,
+    "earliest_retained_archive": "events-20261024T213628944839Z.jsonl.gz",
+    "original_identity_verified": false,
+    "provider_receipt_id": null
+  },
+  "remote_thread_delta": {
+    "thread": "1793635811.853779",
+    "reply_count": 12,
+    "start_ts": "1793678699.764019",
+    "failure_ts": "1793678738.461919",
+    "owner": "home-claude",
+    "task": "4db7d7462367afcad7ec144c",
+    "error": "OAuth session expired and could not be refreshed",
+    "reason_accepted_is_started": false,
+    "reminders_sent": 0
+  },
+  "error_class": "original_ig_identity_binding_missing",
+  "retryable": false,
+  "next_action": "CI then merge this evidence. Continue exact original IG account/run archive readback without current-account substitution or replay. Daily collector natural schedule remains unverified; no publisher re-enable."
+}

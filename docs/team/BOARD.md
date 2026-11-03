@@ -280,3 +280,5 @@
 
 - home-codex（task95bef89b）: 公式go-stats通常106/除外9、JSON帰属1(ct=c1103d1)/旧105unavailableを確認。日次callerはdisabled・投稿effect18db7caff1178a88-68028がhistory_incomplete/receipt不在、日次ledgerなし。再起動/投稿/検証click/deploy/会計write0。次: PR9103 CI→統合、元IG本人handle/journalと公式receipt照合。証拠 docs/evidence/capafy-natural-95bef89b.json。
 - home-codex（task7c9269）: PR9103/head394a000070の必要CI14件/CodeRabbit公式成功を確認してmain735660764dへ統合。PR9104は同owner/leaseでmain同期し、文書競合は双方の証拠を保持して解消。次: 更新head全CI→統合、旧occurrence本人journal照合。deploy/投稿/会計変更0。
+
+- home-codex（task e90c688b773a9f9fd3c76149）: PR9104公式MERGED後の計測継続。既存main由来collectorで当日1行を保存し106click/ct1/欠損105、sales76行null・replay追加0を確認。旧IG fenceは10/5発生、現存journal10/24以降・元本人bindなしで保持。停止publisher/投稿/会計/HQ変更0。証拠 docs/evidence/capafy-effect-e90c68.json、残cursorは統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
