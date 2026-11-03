@@ -126,3 +126,5 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 次cursor: 全文は公開済みのまま、約8,900文字のHTMLへ短縮したX editionを別途reviewし、同じ既許可native MCPで1回配信。9eval名と比較限界/実測結果/未達/全文参照を保持。exact payloadと受理されたpayloadの差分を照合し、公式posts一覧でPUBLISHED/URLを確認する。tool引数が不正なら外部未送信かreceiptから判断し、盲目的に再送しない。設定/月5USD/task1USDは不変。
 - 新しい観測: browser.session.openedイベントのcomputer_idは空文字、専用Computerのbrowser一覧0と整合するが因果は未確認。連続録画/Computer紐付けを成功扱いにしない。
 - 順序変更理由: 旧cursorの全文X配信は長い引数のJSON不正で失敗。新cursorはGitHub全文+X要約。ブラウザ編集の再試行や全原稿の再生成を増やさず、次の本人mail実配送/受注/納品/第三者入金へ進む。
+
+- 短縮版session `ses_6sf2vnd4xrt2mkw8rv9xaq3wzs` は最初の推論前にagent monthly cap見積りで拒否（consumed0）。予算を増やさず、既にPostiz実投稿成功のHaiku4.5をこの有限sessionのmessage model overrideとして選ぶ。agent/deployment v9既定Sonnetやcap5/task1は変更しない。設定とactual spanを区別し、短縮版exact payloadは再著述しない。
