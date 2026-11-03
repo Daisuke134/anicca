@@ -885,3 +885,16 @@ primaryの公開一次資料読取で https://community.n8n.io/t/looking-for-n8n
 URL指定結果: ses_1d36c3b9dydz9gvfctr9kygse2は5tools（goto/extract/read/edit/read）/hosted1/errors0/確認retry追加入力0、19:43:20.333UTCに自然end_turn。本人の有償trial観測をpaid_qa_source_319256へ追記する。旧25698bytes全文＋固有editから27797bytes/hashf8b5593140698e3cbea47fcff18fb055c26028bc05f1b8f8b0fb7171553fd844を再構成、本人before6051/after8150bytes suffixとexact、再構成上の旧全key/value保持。全文再読取は0なので新全文公式read済とは呼ばない。価格/予算/充足はnull、本人も私たちへの発注・売上ではないと明記する。primary表示Oct7とnative extractのOct6は不一致で投稿日未確定、市場需要判定に使わない。19:44:15にcancelled/pending0/全53active0/paused/prod23全fields一致、費45906microUSD/ledger8、月spent8711223/残288777を確認する。前のinternal_error runも後計上14738/ledger2へ更新し、0は19:39時点の途中値。全て後計上固定保証ではない。private v23-paid-source-{events,artifacts,verification,ledger,final-resources}、v23-paid-demand-late-metering。
 
 現在cursor2は「有償QA候補の現在の募集/適合と担当重複を確認→専用AgentMailだけで通常登録/連絡経路を開通→本人が実績を捏造しない限定提案→第三者の有料依頼→本人納品→公式入金と費用」。公開trace pilotは維持するが、隣接の有償QA募集を既受注/確定適合にしない。一般help検索や過去journal訂正を反復しない。既存のDM/外部送信0の今回境界を将来の恒久禁止に拡大せず、次の具体的な相手/内容/自己所有account/規約/既存ownerを確認して送信scopeを正本へ記録してから、依頼済みの商業業務として進める。個人Google/個人mailのworker注入は0、利用者資格情報無しの登録・受注・入金/phone-onlyのE2Eは未実証。元7TODOとUSD10K/月の全体goalは継続する。今回source記録PR9177はCI進行中でmain未統合、runtime configは既存main048由来で本番反映済みと分ける。
+
+
+### 専用AgentMailでn8n通常登録を進める
+
+前turnはprogress（本番23採用・本人の有償trial本文観測/state追記）。現liveは23/23/enabled/active0/paused/月残288777を再確認する。前のprovider read_people問題は解決済みとせず、Substackの同型probeは再実行しない。今回の対象は実際の応募先n8n Communityの新規会社用accountで、登録・確認mail受信を本人browser/MCPで行う。個人Google・個人メール・既存他owner profileの借用0。Mac Credential SSOT全体からexactservice naive/専用AgentMailを確認、n8n/n8n-community exactservice無し、Mac browser registryのn8n/naive既存route一致無し。Naïve専用Identity/専用vault/同agent contextだけを使う。
+
+一次資料: 募集319256/306は公開返信Closed、運営がemail/form/DMを案内する。jobs guidelines941はDM招待がある場合DMで応募、新accountは通常のtopic閲覧を経てDM権限を得ると明記し、無意味な返信は不要とする。現在client充足は依然未確認。競合の39USD/150USD提案はあるが成約証拠ではない。Naïve Browser API docsはsignup時person confirm必須、Tools docsはallow/ask_actions契約があるため差異を隠さず実挙動を観測する。guardを秘密の符号化/HTTP signup直叩き/別profileへ逃がして迂回しない。
+
+実行契約: 同23/Identity/priority/本番設定・月9/task1は不変。fresh残とcredit>=270000/active0/pausedで1sessionだけ。finite170000＋後計上100000/計画270000、6分/max18tools/hosted最大3。本人agentmail.list_inboxesで得る専用受信箱だけを使い、community.n8n.ioの実signup画面と規約を観測して通常email登録を実行する。既存accountがそのmailにあれば重複作成せず通常login/recoveryへ。表示名BusinessRun Manager、AI運営を偽らず、人間の経歴・expert実績・私的事実を捏造しない。必要なpassword生成/保存は正式browser.signup/専用vault、秘密をtype/act/prompt/journalへ転記0。新credential metadataをprivate Credential SSOTへvault参照として保存し、API非exportable値を取得済みと称さない。
+
+確認mailは本人MCPで必要なmessageだけ読み、通常確認linkで認証する。token/link/コード/mail本文は親のartifact/log/公開資料へ複製しない。観測ログはtool名・action・host・bytes/hash・status/credential idだけ。signup/必要な確認mail再送最大1を許可するが、顧客へのDM/応募/営業/投稿/商品/送金/課金契約は今回0。規約が明示的に今回のaccountを許さない、SMS/本人必須dataが無い場合は捏造せず正確な画面状態を保存し独立作業へ。
+
+providerが確認cardを出した場合、primary AIが既存委任と完全一致する本人service/email/actionを秘密非表示で照合し、SDK正式confirmToolのexact scope=callだけで処理する。Daisへ承認を求めない。包括grant/未知policy PATCH/同じlogical callへの無限再回答は0。新card最大3、同じ処理が再発し画面喪失なら同型許可を反復しない。AI側確認があれば件数を記録し、Naïve単独の確認0成功とは呼ばない。登録成功はlogged-in本人画面/確認状態のreadbackで判断し、生成credentialやsignup doneだけでは未完。最終に本人journal/stateへ秘密抜きで実状態を保存/read、旧全key/value保持。finallyはterminal/pending0/active0/paused/production23全fields/費用全ledgerを照合する。goalと元7TODOは維持する。
