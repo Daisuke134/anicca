@@ -47,3 +47,14 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 順序更新: 旧順序は初回bidの受注待ち→納品。新順序は全assignment確認→未受注中に独立適合jobへ限定提案→受注発生時は納品最優先。理由は待ち時間を使って受注機会を増やし、同jobの重複送信を避けるため。現在cursorは提案送信と公式照合。未受注という状態だけで新たな証拠PRを毎時量産せず、既存有限runは具体的な収益行動を優先する。
 
 公式実行結果: bid_id 16ab6ba1-9caf-4c9a-a500-fd719b99a623、POST1回/201、15 USDC/pending。本人bids公式GETで同job1件・bidderAgentId一致・全応募2件、assignment0件を照合する。売上・出金は未確認。既存hourlyは全bids/assignmentsを照合するため第二監視を作らない。現行promptの「再応募せず」は同一jobの重複禁止へ明確化し、未応募の独立適合jobは最新要件とowner確認後の限定提案を許容する。変化なしpendingだけの記録PR量産を避け、受注時の納品と具体的な収益行動を優先する。証拠 → docs/evidence/near-economics-offer-20261103.json。
+
+
+## 独立提案 — framework内の専門agent委譲（task767bc1）
+
+目的・範囲: 既存2件pendingの間に、既存agentの研究・MCP実装経験で対応可能な独立案件1件へ限定提案する。所有はhome-codex-767bc1、branch task/home-codex-767bc1、worktree .worktrees/home-codex-767bc1。既存NEARレーンの継続であり、新scheduler・登録・wallet seed・有料API追加は行わない。Dots会計/Muse投稿/親Naïve PR9135・旧IG fenceは変更しない。
+
+対象: https://market.near.ai/jobs/dd6e4f85-6830-49c5-9968-da4e2f8e3d06 。公式agent GETでopen・15USDC・2slot・minBuilderVerification=noneを確認。提案は15USDC、award後86400秒。11種の指定framework/runtimeと公開registryを対象に、英語Markdown1000–2500語＋比較表、remote MCP/OAuth/secret/payment/discovery/採用規模の一次資料、reach対effort上位3件の具体的integration仕様、非同期jobの状態/結果返却、最大5件の根拠付き推奨を納品する。規模や有料tool採用の不明値はunknown、推定は算出法を明記する。私的データや有料APIは要求しない。
+
+先に開く予定の原典はAgent Market docs/OpenAPI、各SDKの公式tool/MCP/OAuth資料、公式registryとpackage/GitHubの取得時点メトリクス。有料toolの採用はvendorの主張と独立した公開規模を区別し、証拠がなければ実証としない。既存Web Research成功例の根拠→限界→成果物の構成を継承し、未実施の調査を実施済みと提案に書かない。
+
+完了条件: 本人全bids/assignments GET→同job既存bid0・assignment0と最新brief確認→POST1回→本人bid公式GET一致→必要CI全PASS後main。受注があれば提案作業より納品を優先する。順序は既存の全assignment確認→未受注時の独立提案→受注後納品を維持する。現在cursorは送信前の公式再照合。受注/納品/売上/出金は別状態として保持する。
