@@ -733,7 +733,7 @@ canaryは増枠/モデル変更/再runせずcancelled/pending0へ閉じ、Comput
 
 次の変更は同じmodel/laneを維持した予約余力の修復。小さい実消費だけを根拠にfinite0.14を選んだprimaryの見積もりでは、残額が次の最大出力予約を下回り、記録まで完了できなかった。公式routerがinput全量＋model max_output32768のworst caseを予約すると明記するため、実費の上限見積もりと次callの予約余力を同じものとして扱わない。未知のmax_tokens overrideや外部script agent loopを作らず、同じmanaged native engineで直す。
 
-source target22はbudget.cap_micro_usdだけ8→9USD、max_task1/period month/GLM-5.2/priority/system/tools/Identityは維持。既存org credit約23.77USD内で新topup/課金契約/資源/key追加0。production sourceは22/priorityを希望targetとして明示するが、実20をcanary前に採用しない。旧cursor「2fieldの別lane試験」から新cursor「予約余力修復→通常業務1件のnative state保存→合格時だけproduction22」へ更新する。理由は別laneのbrowser実操作は成立し、残る最初の失敗が明確なsession予約不足へ変わったためであり、model総当たりをしない。
+source target22はbudget.cap_micro_usdだけ8→9USD、max_task1/period month/GLM-5.2/priority/system/tools/Identityは維持。既存org credit約23.77USD内で新topup/課金契約/資源/key追加0。production sourceは22/priorityを希望targetとして明示するが、実20をcanary前に採用しない。 deployment input末尾の固定月8USD/task1USD表記は「設定済みの月次/task予算内」へ揃え、agent設定との予算契約を一致させる。旧cursor「2fieldの別lane試験」から新cursor「予約余力修復→通常業務1件のnative state保存→合格時だけproduction22」へ更新する。理由は別laneのbrowser実操作は成立し、残る最初の失敗が明確なsession予約不足へ変わったためであり、model総当たりをしない。
 
 実行契約: fresh reviewer/関連assert/全CI失敗0/main固定→元21/production20/全session terminal/Computer pausedとsource全fieldsを確認→deployment一時pause→公式SDK agents.update(expected_version21,budget全field)で22→同じIdentity/priorityの通常業務session1件/finite0.40USD、8分、browser hosted最大2/全tools最大8。計画総0.45USD（model ceiling0.40＋browser/Computer等の後計上余力0.05）とし、fresh agent残額0.45未満/credit不足なら作成0で公式台帳を読む。providerの後計上を踏まえhard actual保証とせず、全台帳で実額を読む。42件の旧paused runを再開せず、旧runのcancelledを再確認してからcapを変える。pin20はcurrent21より古いためbudget更新で22へ自動追随しないが、公式GETで20のままと確認する。
 
