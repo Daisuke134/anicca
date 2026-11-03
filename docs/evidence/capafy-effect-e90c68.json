@@ -67,5 +67,17 @@
   },
   "error_class": "original_ig_identity_binding_missing",
   "retryable": false,
-  "next_action": "CI then merge this evidence. Continue exact original IG account/run archive readback without current-account substitution or replay. Daily collector natural schedule remains unverified; no publisher re-enable."
+  "next_action": "CI then merge this evidence. Continue exact original IG account/run archive readback without current-account substitution or replay. Daily collector natural schedule remains unverified; no publisher re-enable.",
+  "validation": {
+    "runtime_python": "/Users/anicca/.local/share/life-manager/venv/bin/python",
+    "existing_pull_attribution_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "default_xcode_python": "3.9 incompatible with existing date | None annotation; no source change",
+    "source_boundary": "PASS",
+    "diff_check": "PASS",
+    "ci": "pending exact-head official readback"
+  },
+  "pull_request": "https://github.com/Daisuke134/life-manager/pull/9117"
 }
