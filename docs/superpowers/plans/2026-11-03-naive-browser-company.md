@@ -687,3 +687,10 @@ PR9172はfresh read-only reviewの指摘1件（agent_id省略時の全agent注�
 残TODOの順序は統合SSOTの7項目を維持、現在cursorは2の実需要→第三者依頼→有償納品。登録は4の独立作業であり、売上獲得のgateへ戻さない。診断の旧cursor「別harnessで入力を1回試す」は実行終了へ更新し、新cursorは既存source/公式資料から予約予算境界とread_peopleの正式契約を確認しつつ、既存pilotの新しい実需要1件をnativeで検証すること。理由はbrowser未測定のまま同型診断を反復しても売上の証拠が増えず、受付0件という別の未解決があるため。新しい診断資源/上限拡大を暗黙に追加せず、個人メール/Googleへの依存へ戻らない。goalの本人登録/実第三者売上/連続録画/phone-only/黒字/USD10K/月/compute自費/2拠点移植は未完。自分の送金やテストを第三者売上にしない。
 
 証拠はprivate vetta-input-{original-before,agent-readback,identity-grant,credential-readback,events,terminal-readback,spend-readback,ledger,credential-delete,credential-absent-readback,agent-delete,cleanup-readback,final-original-resources}.json、auth-v20-late-metering-{ledger,spend}.json、muse-read-people-reply-v20.json。新driver/framework/test体系/本番設定変更/追加mail signup/公開投稿/支払は0。
+
+
+### 本番v20の実需要確認を同じ有限枠で続ける
+
+登録診断とは別のTODO2の通常業務として、元agent20/Identityでsession ses_1445nm0378s6nfzhg5p8427565を0.20USD/月8USD内に作成する。過去seller-state read1成功後、実使用44102microUSDで次予約が残finiteを超えbudget_paused。browser/新需要/投稿/売上はまだ0、nativeは再実行していない。予約境界を追加観測してから、以前のseller有限で使用済みのgoogle/gemini-2.5-flash-liteが今回も公式models全365件のcatalogにありimmediate対応と確認する。これはmodelの公平比較ではなく、同じ残予算で通常業務を続けるprimaryの判断である。
+
+現在cursorはこの同sessionへのmodel指定send1回。月cap8/task1/session0.20は一切増やさず、新sessionも作らない。send契約はsession内modelだけ変更し、production既定Haiku/agent20/pin20/Identity/cronを変えない。nativeが本人browserで検索→新規出所1件→記録write/readを順次行い、投稿/営業送信/メール/登録/支払をしない。既読/回答済みforum5003を新需要に数えず、購買意思は未観測null。同じ失敗や追加model変更は重ねず、再びbudget_pausedなら全台帳/記録の有無/終了/Computer pauseを照合して閉じる。元の需要獲得goal/残7TODOは維持する。
