@@ -111,3 +111,10 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 順序変更理由: 旧順序の全文read/全文writeが入力可否の証明より先で費用を使った。新順序は短文入力可否→原稿read→公開。現在cursorは短文probe。
 
 - 一次code訂正: `updateEditableText` のtextarea生成は `.editable_text` 対象。確認したclass追加箇所は画像captionであり、TitleBlot=h1/AuthorBlot=addressの子textareaを証明しない。primaryの一般化を撤回し、nativeへ訂正送信。`#_tl_editor p` のtypeは応答成功でも画像の本文は空、抽出結果はaccessibility概略。次probeはclickでフォーカス→type→実画像の順に1回、未成功なら具体的記録で有限runを終了する。
+
+### 編集経路の試験を閉じ、既存Postiz記事機能で配信
+
+- 短文probe `ses_1rykwwdetswjcd50fe80asfvj1` はclick→type後も画像に本文が反映されず、具体的な証拠を保存してcancel→GET cancelled。費用496773microUSD。Telegra.ph公開成功/DOM属性取得成功は未達。
+- Postiz公式posts一覧で同じ指定Xに既存の別担当記事が `post_type=article` / PUBLISHEDであることを確認（既存記事は変更しない）。article_title/article_status=published/HTML本文、cover任意の公式schemaが利用可能。
+- 次cursor: review済み英語原稿を情報を落とさずHTMLへ整え、X新規campaignとしてNaïve自身の既許可MCP integrationSchedulePostToolから1回配信。本人ブラウザ問題の解決とは区別する。事前native schema/target/重複確認→1送信→公式posts一覧でreadback。native runは現在の1USD ceiling内、新規入金/月5USD変更なし。英語記事と実画像の公開用ファイルもBusinessRun Benchで保存する。
+- 順序変更: 旧cursorはTelegra.ph本文入力、実測はtype成功応答と空画面の不一致。新cursorは既に実投稿成功し長文記事もproviderで確認できた許可済みPostiz機能。顧客獲得と未完収益化の前に、記事配信の無駄な再試行を減らす。
