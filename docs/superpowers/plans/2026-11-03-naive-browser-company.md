@@ -385,3 +385,13 @@ act比較run `ses_rwvbs16frhgxev1ppekrjxja41` は初回email.read→signupへの
 今回のauth診断総枠0.50USDの残りで、次の比較は最大0.25USD（先行実費186237+63746との最大計499983microUSD）。先に画面からemail/Continueの実selectorを取得し、type本人email→既知Continueを1回クリックの間にextract/observe/screenshotを挟まない。code要求の実UIと本人受信を結果の観測とする。メール・個人情報を観測のために公開せず、秘匿値を返さない。新規signupを増やすのでなく同じ専用Identity/mailの同じ通常flowを検証し、既存のaccount/code成功を推定しない。追加の支払/上限変更/公開なし。同じ失敗を観測無しに繰り返す比較にはしない。
 
 文書差分: API Browser pageにはsignupはperson確認とある一方、最新Tools page https://usenaive.ai/docs/capabilities/tools はask_actionsの既定signupを明示し、allow下でask_actionsに無いactionは実行されると説明する。今回設定ask_actions=[]を維持し、signupに必ず人間が必要とは断定しない。観測したread_people cardは別に記録し、未公開server内部の発生原因/解除設定を推測して変更しない。
+
+直接submit比較結果: native `ses_rr4bfjqv04d265yw2sybcn6mxm` はobserve由来selectorのtypeがerror（event34）、fallback actの後にもscreenshotを挟み、意図した「中間read無しtype→Continue」は完遂していない。このrunからredaction仮説の真偽を判定しない。code要求成立・本人受信・accountは未確認。event96 budget.exceeded/param budget_micro_usd、status consumed86613microUSD、primary steering messageは402で拒否。原本保存後cancel→GETcancelled/pending0。先行3runの実費合計336596microUSD。
+
+### 登録診断の残枠内で行うmodel比較
+
+同じ指示を守らないケースが続いたため、同じdefaultの失敗反復を止め、モデルだけを変える比較を最大1回行う。公式GET /modelsの全366件をEOFまで確認し、literal id `z-ai/glm-5.3-flash` のimmediate対応を確認。価格/品質の優位はカタログから推定しない。live spanと結果を見て判定し、1例をbenchmark能力値や一般優位にしない。
+
+SDKと現在API docsはcreate時model overrideを提供せず、sendからのmodel指定は可能だが既存3sessionはcancelled terminalで再利用しない。新agent/Identityを増やして月capを迂回する代わりに、専用既存agentへconfig/naive-browser-company-model-probe.jsonのmodel-only PATCHを適用する。expected_version13→候補v14、他source fields完全不変、deploymentはv13固定のままで触らない。patch/restoreはreview済みmain固定SHAから適用する。候補v14で同じ最新の登録指示をfinite最大160000microUSDにして1回実行。先行実費との最大合計496596microUSDで既存診断総枠0.50USD内、月7/task1も不変。入場quoteが収まらなければ新runを増やさず結果を記録する。
+
+終了/失敗/入場拒否のいずれでもfinite停止/cancel/GETの後、config/naive-browser-company-model-restore.json（to_version13/expected_version14）からrollbackし、履歴を消さず新versionで元の全source fieldsをGET一致させる。production deployment pinned13/cron/Identity/11allow/既存外部effectは不変。登録成功でも直ちにmodelを本番昇格せず、raw code/linkは保存しない。今回の変更はNaïve runtime比較だけで、Codex UIの選択modelは変更しない。署名済み画像・inbox本文・code・private URLをrepoへ置かず、結果/費用/未達/現在cursorを正本へ戻す。
