@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / Manager E16 runner] task d26c0c5310218fcdf4ec750a、owner home-codex-d26c0c、branch fix/manager-runner-d26c0c。自然main検証のPlaywright/Ubuntu非互換を既知成功imageへ戻す限定修復。所有はworkflowの2runnerと本BOARD/統合SSOT/証拠のみ。親rootのPR9125・Naïve・provider effectは変更しない。必要CI後main、自然受入は別cursor。
 - [home-codex / CAPAFY旧IG receipt継続] task17679f4e146bb3b4be52268e、owner home-codex-17679f、branch docs/capafy-ig-receipt-17679f。対象旧occurrenceのread-only診断と隔離fixtureのみ。親所有PR9117・TEAM-HQ・投稿・会計・認証・effect fenceは変更しない。正本 → 統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
 - [Codex / NAIVE-OWNED-MAIL] 継続: feat/naive-manager-revenue-20261103。Naïve一件の実売上・費用・継続運転・英語demoを先行、移植/複製は実証後。PR9116/main95aee29fから本人mail3機能・signup承認待ちなしのv4を適用、本人inbox active/専用vaultの個人Google複製削除を公式readback。本人mail登録job running、登録/公開/売上は未確認。専用Naïve担当の本人メール・人間承認なし設定・Capafy新規登録と新規所有商品の実画面成果を担当。既存Google/他agent/稼働loop/販売済商品は変更しない。正本は統合SSOTのNaïve節。
 - [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD] source/main/公開反映完了: PR9101/main f6eef8eadb、deploy6ae925af58c2cba944c2be18 ready。PR9103はCI14件とCodeRabbit成功後main735660764dへ統合済み。次: PR9104のmain同期後CI/統合、旧日次callerの本人journal/公式receipt照合。owner home-codex-3d1087を継続、投稿/会計/HQ変更0、売上未確認。
@@ -52,6 +53,7 @@
 - [Codex / Manager] prepared shadowの既存host/CLI/Actions接続。所有: feat/manager-host-shadow-connection-20261023の限定host/CLI/workflow/tests/docs。既定・schedule OFF、単一owner、P0比較のみ。本番推論・新規課金・他laneは変更しない。
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
+- 2026-11-03 14:30 JST home-codex（d26c0c）: Manager自然run41548925146のPython202成功/publisher未実行とPlaywright26.04非対応を診断。直前成功24.04へ2runnerだけ固定、既存12tests/source-boundary/diff PASS。PR/CIへ進む。E16実作用・人の便益・売上は未確認。
 - 2026-11-03 03:09 JST home-codex（c23d68）: 公式Blob114件/legacy30商品88件/本文全件1とstats一致、公開landing60裸リンクを取得。ct有無が同一legacy keyとなる反例PASSで旧ct/owner復元不能を特定。generator9/go5/境界PASS、追加click・投稿・台帳変更0。次: 必要CI→main、最小ct payload保存は別source task。証拠 docs/evidence/capafy-legacy-c23d68.md。
 - 2026-11-03 02:55 JST home-codex（e85ac2）: remote thread公式2messageに本人受領/着手/結果の新規差分なし、催促0。確定合成probe9件の通常計測混入をREDで再現して最小修正、Node6/Python3.12既存4 PASS。PR #9097でCI/review中。公式total114/probe9、公開index/sourceのhash不一致を記録し本番deploy0。次: exact-head CI→main→公開staticを保持した関数反映→公式stats。売上未確認。
 - 2026-11-03 01:27 JST home-codex（4a481d）: remote追跡threadを公式完読し返信0・催促0。既存Capafy7商品すべて302/対象ID/ct/utm_content保持、遅延後go-statsのexact probe7商品を公式照合。GET7＋診断HEAD2もclickとなり合計9件の合成記録を除外対象として証拠へ記録。generator9件/source-boundary PASS。投稿・会計・価格・HQ runtime変更0、売上未確認。次: legacy blobのexact URL/owner inventory（本検証の対象外）。証拠 docs/evidence/capafy-ct-readback-4a481d.json。
