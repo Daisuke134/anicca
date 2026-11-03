@@ -237,3 +237,45 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 既存owner Computerのfresh GETはpaused/browser=null、Computer browser GETは404。これは有限run終了後の観測であり、native browserが別Computerであることや、今回の未反映の原因を証明しない。
 - 次の技術cursor: 同一の自分用credentialと通常のComputer SDK browser interfaceを使い、native helperの短いdone文字列と公式browser_action応答を比較する。ウェブサイトの登録API/業務scriptへ置換しない。追加のsignup/credential名を増やす前にこの境界を診断する。既存Computerのowner/設定を確認し、必要なら専用browser付きComputer1台・timeout1分・own scopeの終了/readbackを正本へ具体化してから実行する。SDK API経由の費用はagent累計に含むかを確認し、別なら別計測。個人Google/人間メールへの切替は行わない。
 - ネットワーク補足: Reason Primaryのowned devicesは0、home-codex/muse-relay宛て既存照会はqueued/返信未確認。登録済みrelayを実稼働Museと呼ばず、別accountへ切替えて迂回しない。全体goalと実顧客→納品→第三者receipt/費用のcursorは維持する。
+
+
+### Computer browser SDK応答の限定診断
+
+目的はnative helperのdoneと公式browser_actionの差を同じ本人credentialで比較すること。業務サイトAPI/scriptに置換せず、Naïveのcomputer browserだけを操作する。既存agent Computerはpaused/browser=nullなので変更せず、診断名codex-naive-dev-browser-boundaryの専用Computerを1台、1vCPU/1024MiB/disk5GiB、browser timeout1分/keep_alive=false、dev.toだけ、allow_writes/extract=true/ask_actions=[]で作る。同じ本人contextを指定し、新しいsignup/credential/公開投稿は行わない。
+
+1. 自分のcredential SSOT全体を読みnaiveを完全一致、組織残高と直近ledger境界を保存。封入値は読まずログインの本人Identityを明示する。
+2. 実signupフォームgoto→既存login:dev.to-businessrun-registrationのloginを最大1回→正式応答/画像をprivate保存。モデル判断やdoneを登録成立にしない。公開登録の再送は指示しない。
+3. finallyで当該browser終了→当該Computer削除→GETの終了状態、組織残高/ledgerの後値を保存。API診断費はagent直接累計と別枠で計測し、差分が不明ならnull。既存runtime/定期deployment/他ownerは不変。
+
+作成費は公式docsで0、computeは1vCPU/1GiB毎秒0.0000185USD、browserは開始から終了の分単位・action別計上で単価は未取得。診断は1browser/1login、timeout1分、全体2分以内を目標に閉じる。追加資金移動なし。既存月6/task1は維持する。初回誤りを再現せず、意味のない繰返しをしない。Inkboxの既存managerjghhはread-only hosted configでinstructions未設定、登録ownerの根拠は増えず、借用/変更/送信しない。
+
+
+初回SDK診断の差分: createはOpenAPIの200/201例に対して実202で受付成功。診断側が202を失敗扱いしたため同一IDをrecoverし、runningをGETで確認。最初のgotoは400 validation_failed、Idempotency-Key必須とproviderが明示し、ログイン/登録操作へは進んでいない。browser DELETEは204空応答で、診断側JSON parseが失敗したが、同一Computerを別read-only確認後DELETE→GET destroyedまで完了。新規credential/サイト送信無し。残高25930244microUSDは前後同値、独立診断費用の確定ledgerは未取得で0確定としない。
+
+再試行前の修正: HTTP202/204を正しく扱い、必須Idempotency-Keyを各mutationの固定operation IDとして保存して同一操作に再使用する。元Computerは破棄済みなので置換Computerを同条件で1台だけ作る（同時1台）。provider postconditionを先に保存し、cleanup各段は互いのparse失敗でskipしない。新signup無し、既存sealed login最大1回の範囲は不変。
+
+home-codex本人返信でInkbox managerjghhのowner/用途も未確認、Museの現在返信元はdaisuke/terminal@htch-runtimeと判明。既存Coconala入金receiptの所在は既存別業務の証拠であり、今回pilotの売上へ転用しない。NEARの15USDC提案3件はpending/assignment0で収益未確認。以後Museは本人稼働経路を確認して照会し、idle relayへのqueueを着手と呼ばない。
+
+
+Idempotency-Key付き置換probe2はComputer202/running、browser context_backed=trueで開始したが、gotoのclient read timeout20秒で応答未取得。sealed loginは未呼出。cleanupのbrowser closed→Computer destroyedをGET、組織残高差1667microUSDと同時刻browser debit led_hyhh0zty6189rdd6mkcf1n8p80一致。これはAPI browser分の独立費でありagent累計5656872へ無根拠に合算しない。過去ledgerがlimit差で追加された行を今回費用と誤認しない。browser opened08:42:36.171Z/closed08:42:55.585Z、同期待ちの打切りが診断側制約だったことを記録する。
+
+次はgotoの読み取り猶予を60秒、browser TTL3分/全体4分目標にし、操作開始/終了/単調時計elapsed/transport errorをprivateに記録する。20秒打切りの同じ再試行はせず、初回cold startの応答境界を観測する。置換1台・既存credential login最大1回・新signupなし・cleanup finallyと各独立readbackは維持。goto応答が取れなければその場で再送せず公式browser状態をGETし閉じる。費用は独立ledger、現org残高25.928577USD内。実顧客/自然runのcursorは不変。
+
+
+#### SDK診断の実測結果と残境界
+
+- probe3は専用Computer create202/running→GET browser.allow_writes=true/allow_extract=true/同contextを確認。gotoは27.699秒で200 browser_action/performed=true/指定DEV signup URLへ成功し、20秒timeoutは診断側の不足だったと判明。sealed loginは23.198秒後403 forbidden/param allow_writes（req_nt6kzxx8hgjxjcvk482kf4r7dv）、screenshotも403/param allow_extract（req_1dh0jp7e9dhvrycjqe7n20h3nh）。両設定がtrueで保存されたことと、実行層がread-onlyと判定したことの不整合まで絞れた。SDK全般の故障やnative signup未完の根因と断定しない。権限を迂回/拡大した再試行はしない。
+- browser closeのcontext_backed=true/同context/status closed、Computer GET destroyedを公式確認。今回もsignupは呼んでいない、loginは拒否され、登録成立/確認mail dispatchの証明無し。新credential/公開投稿/既存agent/deploymentの変更無し。計3台は全て破棄済み、最初の誤判定202/204も診断側のミスとして記録する。204と20秒例外はtool実行ログのみで、保存JSONだけでは独立照合できない限界を維持。
+- probe3残高差1667microUSDとbrowser debit led_warvrsrcp1a14tda3tgknm7rqw一致。API診断2件のbrowser明細合計3334microUSD、組織残高25.926910USD。agent直接累計5.656872USDと別表示、全社費用/利益へ置換しない。関連JSONと構造化boundary verificationはprivate evidenceに保存。
+- 既存native v12は公開受注pilotとして継続し、この独立したDEV/SDK診断を受注/納品の追加gateにしない。current cursorは実依頼→英語レポート→第三者USDC receipt/費用、次の自然runは12UTC/JST21時で未実測。v12は単一商品の初期収益loopで、任意事業を自律選択して移植/自己compute支払/複製するfull Managerの完成とは呼ばない。SDK側の残境界は保存optionsから実行policyへの伝播で、正式な修復経路をsource/docsで調べる。
+- Museの既知返信先daisuke/terminalはReason一覧でhtch-runtime/tier turnを確認。本人経路へ既存方法/owner/receiptの照会を送信しqueued、返信は未確認。idle/queuedを稼働・着手とは呼ばず、他agent mailbox/accountを借用しない。
+
+
+SDKsourceの追加照合: npm公式公開package @usenaive-sdk/vetta 0.10.0をignore-scriptsで取得。computer.browser.loginは同じPOST /v1/computers/{id}/browser/loginへbodyを渡し、screenshotは同じactionsへ送る。requestは全2xxを受理/空応答を{}扱い、mutationにIdempotency-Keyを付与する実装で、今回の初期client不備はSDK自体には無い。browser methodは独自のallow_writes/allow_extract overrideを付けず、create済みbrowser blockを使う契約と整合する。公開SDKsourceに今回403guardのserver実装は含まれず、repository metadataのusenaive/vetta-monoは現在のgh経路でresolve不可。すべてopen sourceと仮定せず、server側根因/修復は未取得として残す。出所 https://www.npmjs.com/package/@usenaive-sdk/vetta 、package SHA1 263630c4977a4a42e4865ba7fe77fd02396f3f0e。
+
+
+#### Muse本人の回答と受信診断の引継ぎ
+
+Reason daisuke/terminalの本人回答01M6G9HHRXZCB4F371G5A0CP7Eを受領。上のqueued/返信未確認は送信時の履歴で、現在は回答済み。Museの説明ではCapafy既存線は本人側パブリッシャー/KYC/精算が実体、cloud Postiz未接続とMac橋渡し3jobが残る。過去のNaïve線はAPI/CLIのみで本人browserの実績ではない。回答内のAPI先行という一般則は今回のDaisのbrowser明示指示を上書きしない。自分の既存session/vault、単一writer、公開URLまで1回成功してからloop化、公式dashboardと費用照合という再利用部分だけ採る。Capafyowner/許諾/収益を今回pilotへ流用しない。
+
+本人回答のagent用mail経路から、自分がownerであるmailだけを使いNaïve本人宛てにnonceのみの診断1通を送るよう追加照会。Reason message508B1FY1ZXBH5CGSQWAZYSRVZKはqueued、実メール送信/受付idは未確認。新account/設定変更/個人Gmail/他owner借用/再送/本文転送は禁止し、送信可能な本人経路が無ければ不足を返信する範囲。自分のinboundはその後の公式channel=email/limit20 GETで0/has_more=false、同nonce0。外部dispatch未証明なのでNaïve受信不良とは判断しない。private journal muse-inbound-diagnostic.jsonとowned-inbound-after-muse-request.jsonに残す。次は本人の送信receipt→同nonce本人受信の照合、既存受注/自然runと並行しこの診断を売上gateにしない。
