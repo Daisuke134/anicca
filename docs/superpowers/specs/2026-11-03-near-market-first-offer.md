@@ -114,3 +114,5 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 ### 採算reportの統合継続 — task ebec4e
 
 同owner/worktree/PR9161を継続し、未完を増やさない。範囲は既存report/CSV/scriptをbyte不変で保持し、BOARDのmain側Naive行と自分のclaimを両方保持する競合解消、必要CI公式PASS後main統合。元head0c11ed7dのCI14件/CodeRabbit成功、既存独立原典検証SHIP/Blocking0を確認する。公式threadは38件/has_more=false・前観測1793702294.632279から差分0、催促0。本人専用GETは5pending・assignment0、active HQは本taskだけ。親Naive/接続修復/会計/投稿/fence/課金を変更しない。現在cursorは更新headのCI→main公式照合。受注時は最新briefと24h/API3日の差異を再読してSLA内納品し、受注/納品/売上/出金を区別する。private公式readback→~/.local/state/life-manager/team-hq/ebec4e/readback.json。
+
+統合前に親mainのNaive行が再更新され、先頭隣接行の競合が再発する。main最新Naive行を採用して古い状態を重複させず、自分のclaimを既存NEAR担当行の近くへ移動する。report/CSV/scriptは不変。新headのCIを再確認し、全PASSまでmergeしない。有限run終了時は未統合branch/commit/PRとprivate checkpointを保持し、次回も本PRを優先する。

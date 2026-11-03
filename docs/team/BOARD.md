@@ -9,12 +9,12 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [home-codex / NEAR採算report準備] task a4d5daed550664fc184f924d、owner home-codex-a4d5da、branch task/home-codex-a4d5da。応募済みf082df6bの英語report/再計算表だけを所有。5pending/受注0、親HQ/Naïve/会計/投稿/fenceを保護。追加bid/submit/送金0。正本→NEAR初回販売specの採算report節。継続task ebec4e1647a41eae7cb29516が同ownerのPR9161競合解消と必要CI→mainを引き継ぐ。
-- [Codex / NAIVE-BROWSER-E2E] live19/19、PR9167/main6c8fd1d。明示help forum5003はnative7tools/確認0/保存exact/費69648、回答受諾済みで有償候補外。全37session active0/Computer paused。現在は実需要確認と、会社AgentMail→専用Naïve inboxの独立診断1通/polling配送証拠を並行。既存owner/元Resend/共有箱/課金を変更しない。詳細は統合SSOT Naïve残TODO。
+- [Codex / NAIVE-BROWSER-E2E] live19/19、PR9168/main5586d2d。独立mailはAgentMail sent/delivered/Naïve保存0、polling204→404/失効済み。現在は公式human_emailなしreceive-only箱1件とMCP4readのv20 bootstrap。旧会社箱/keys/owner/課金は変更0、月8/task1/model/Identity/cron/input維持。詳細は統合SSOT Naïve残TODO。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
 - [home-codex / NEAR初回計測レポート準備] task b00a487defbf8e21457c70e8、owner home-codex-b00a48、branch task/home-codex-b00a48。初回job cf1c6d32の英語Markdownと一次資料照合だけを所有。親のPR9143 fixture修正/PR9146 admission/接続修復を保護。4pending/assignment0、納品POST・追加bid・会計・投稿・送金0。受注時は最新要件照合後に既存ownerが納品。
+- [home-codex / NEAR採算report準備] task a4d5daed550664fc184f924d、owner home-codex-a4d5da、branch task/home-codex-a4d5da。応募済みf082df6bの英語report/再計算表だけを所有。5pending/受注0、親HQ/Naïve/会計/投稿/fenceを保護。追加bid/submit/送金0。正本→NEAR初回販売specの採算report節。継続task ebec4e1647a41eae7cb29516が同ownerのPR9161競合解消と必要CI→mainを引き継ぐ。
 - [home-codex / NEAR framework提案] task767bc1bf5462b30c2d569950、owner home-codex-767bc1、branch task/home-codex-767bc1。既存NEARレーンの未応募job dd6e4f85限定提案と本人公式照合を所有。既存2pending/全assignmentを先に照合、受注時納品優先。wallet/課金API/別scheduler/会計/投稿/親PR9135/旧IG fenceは変更しない。正本 → NEAR初回販売specのframework節。
 - [home-codex / Manager E16 runner] task d26c0c5310218fcdf4ec750a、owner home-codex-d26c0c、branch fix/manager-runner-d26c0c。自然main検証のPlaywright/Ubuntu非互換を既知成功imageへ戻す限定修復。所有はworkflowの2runnerと本BOARD/統合SSOT/証拠のみ。親rootのPR9125・Naïve・provider effectは変更しない。必要CI後main、自然受入は別cursor。
 - [home-codex / CAPAFY旧IG receipt継続] task17679f4e146bb3b4be52268e、owner home-codex-17679f、branch docs/capafy-ig-receipt-17679f。対象旧occurrenceのread-only診断と隔離fixtureのみ。親所有PR9117・TEAM-HQ・投稿・会計・認証・effect fenceは変更しない。正本 → 統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
