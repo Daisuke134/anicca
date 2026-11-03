@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [Codex / NAIVE-BROWSER-E2E] live22/production22/priority、native短い業務のstate保存と本番反映は確認済み。通常業務1はissue9001本文まで15tools/確認0だが保存前にPostiz約90日を読取→max_iterations継続でinternal_error3回、write/投稿call0。0.132224USD/ledger15一致、44sessions active0/Computer paused/production全fields維持。cursor2はinput_templateだけ先行write/read＋UTC日1日の期間へ修復（未反映）、同model/mail/月9/task1維持、次通常業務0.40＋後計上0.10/12分1件をmain固定後に実測。売上/登録/録画/phone-only/黒字/10K/移植は未達。
+- [Codex / NAIVE-BROWSER-E2E] live22/production22/priority/旧input保持。先行保存は15953bytes一致/自然end_turnだが旧2値未退避/18:2X表記でNO-SHIP。native訂正もinternal_error2回/6read/write0、0.010640USD/ledger2/46active0/paused。cursor2は標準editのみ有効化候補（他agent fields不変/desired23）→review/CI/main→小さいnative訂正→合格時採用→有料需要。モデル/mail/月9/task1維持/計画0.50USD。売上/登録/録画/phone-only/黒字/10K/移植未達。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
