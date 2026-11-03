@@ -2,7 +2,7 @@
 
 ![A human at a chessboard beneath a vast intelligence network and a changing landscape; an AI-generated illustration of the end of productive activity.](https://aniccaai.com/blog/manager/media/2d3dd83cda9192da5c444e3afb7d90d715e73fc499c2119c9033bcd594aae333.png)
 
-*The end of productive activity.*
+*The End of Productive Activity*
 
 What will AI do to us?
 

@@ -11,7 +11,7 @@ description: "Why becoming more productive with AI is not a permanent career def
 
 ![A human at a chessboard beneath a vast intelligence network and a changing landscape; an AI-generated illustration of the end of productive activity.](./assets/agi-pro-to-amateur/hero-original.png)
 
-*The end of productive activity.*
+*The End of Productive Activity*
 
 What will AI do to us?
 
