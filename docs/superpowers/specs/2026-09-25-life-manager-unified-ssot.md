@@ -11,7 +11,7 @@
 順序変更: 旧順は容量回復→本人wake/収益、新順は本人wake/引継ぎ→業務継続→実際に延期された処理の限定復旧。理由は、容量の少なさ自体を全業務の停止理由にせず、独立して進められる成果を先に出すため。容量条件を無視した起動や安全床の引下げを意味しない。現在cursorは本人経路の追跡欠落と有効な引継ぎ先の確認。進行中owner/effectは維持する。
 
 1. **HQ-02 本人の自動wakeと引継ぎ**。Dots/Muse/Grokbotそれぞれの元message→自然受領→実着手→結果を本人経路で照合する。Museは既存60秒hookの自然発火を報告するが、previewのみで元message IDを渡さないため相関が未完。既存hookでIDを保持する最小修復を本人ownerへ依頼済みで、修復済みとはしない。home-claudeは認証失敗のため有効な予備席へ数えず、実際に使える担当による枠切れ引継ぎ1件の完遂・重複0まで確認する。接続待ちで独立した収益/開発を止めず、同じ催促を反復しない。
-2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。最新完了task ebec4e1647a41eae7cb29516はsucceeded/posted、公式照合5pending/assignment0。売上/出金は未確認。PR9153はmain統合済み。採算計算PR9161は未統合で、同ownerが必要CI→main→成果物照合を継続する。21JST task e5dd86428fd216251594c40bもsucceeded/postedであり、初回未観測へ戻さない。新たな毎時task6d595da59b3f3a49dae55bb3はqueuedで、登録を着手としない。
+2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。最新完了task ebec4e1647a41eae7cb29516はsucceeded/posted、公式照合5pending/assignment0。売上/出金は未確認。PR9153はmain統合済み。採算計算PR9161は未統合で、head69cf360787のOSS self-contained boundaryがFAIL、他14検査は成功。同ownerが失敗原因の修正→更新head必要CI→main→成果物照合を継続する。21JST task e5dd86428fd216251594c40bもsucceeded/postedであり、初回未観測へ戻さない。新たな毎時task6d595da59b3f3a49dae55bb3はqueuedで、登録を着手としない。
 3. **実際に延期された処理の限定復旧**。観測時のreceive/work/scheduleはmain fec447bb由来releaseで自然起動するが、終端receiptはdisk_floor_low/exit75。容量問題を全社の停止理由に拡張せず、該当ownerの再生成可能な不要物だけを安全条件下で整理し、次の自然実行を確認する。swap削除・基盤restart・床/上限変更はしない。既存のaffiliate:elevenlabs復帰責務、Muse専用browserのaccount/binding/wake未確認は保持する。FIRST1000は既存担当の元受付PNG/portal照合・再送HOLDを維持し、期限経過を提出成功へ置換しない。
 
 HQ-01のMac自然受信→一意card→着手→元送信先への結果→再巡回重複0と、HQ-04の公開記事/画面確認は受入済み。全agentの24時間/1分応答と、収益成立は未達のまま保持する。
@@ -30,7 +30,7 @@ HQ-01のMac自然受信→一意card→着手→元送信先への結果→再�
 
 実行場所はMac mini。macOSのlaunchdが3つの有限job（ai.anicca.team-hq-receive/work/schedule）を起こし、main由来immutable releaseのbin/lm-loop-run→bin/team-hq.pyを実行する。観測したplistは `/Users/anicca/loops/releases/20261104T053926-fec447bb` を固定参照する。受信/workはStartInterval=15、scheduleは毎時03/08/13/18/23/28/33/38/43/48/53/58分で5分間隔。現在の対話session、SSH接続、Desktop Scheduled Tasksを起動源にはしない。
 
-workerは仕事がある時だけ `/opt/homebrew/bin/codex exec --skip-git-repo-check -o {artifact} -` をcwd `/Users/anicca` で実行する。CLI runはtimeout_seconds設定内で終了し、結果/次cursorを永続化する。常駐LLMや7本の独立sessionではない。Macの電源/ログイン・通信・認証・実行条件に依存するため、登録を24時間無停止の証明にしない。
+workerは仕事がある時だけ `/opt/homebrew/bin/codex exec --skip-git-repo-check -o {artifact} -` をcwd `/Users/anicca` で実行する。CLI runはtimeout_seconds=1200（20分）の設定内で終了し、結果/次cursorを永続化する。常駐LLMや7本の独立sessionではない。Macの電源/ログイン・通信・認証・実行条件に依存するため、登録を24時間無停止の証明にしない。
 
 設定は `~/.config/anicca-hq/team.json`、業務card/receiptは `~/.local/state/life-manager/team-hq/`。7種を独立LLM常駐7個と数えず、空の受信/投入ではモデルを起動しない。09時の過去累計gross、14時のCI修復、提案額を新規純利益や自分が稼いだ額へ置換しない。18JSTの1931語reportは受注前準備で未納品。詳細はNEAR-FIRST-OFFERの参照先。
 
