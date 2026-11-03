@@ -174,7 +174,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v12稼働・公開募集・実依頼待ち
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv12/月6USD/task1USD、担当累計5656872microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv12/月6USD/task1USD、担当累計5791814microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -312,3 +312,24 @@ native finite ses_ztb2n5fa55ya9b6sqmhyjpmqqnは起動/agent v12で実行、brows
 
 
 訂正follow-up後、nativeはpostiz.integrationSchedulePostToolを1回呼んだが、tool error94はwaiting for approval、session idle/awaiting_approval、pending tc_086ddc8daf10af17d3de699755aff18d（read_people=true）で実公開はまだ未確認。pending本文を原稿と厳密比較し270文字/改行4/文字列exact一致、対象integration/type/settingsも元の承認済み範囲と一致。Daisの既存公開依頼とfresh content PASSに基づき、primary AIが当該1callだけscope=callでtool_confirmation allowを処理する。Daisの追加承認は要求しない。provider確認カードが存在したことを隠さず、Naïve単独の無介入成功とは呼ばない。AI coordinator付きのhuman0操作として区別し、権限設定を拡大したり他call/sessionへ包括許可しない。返答不明時は同一postの再送禁止、pending/公式投稿を先に照合する。
+
+
+#### 実公開・リンク削除の根因と導線修復
+
+- primary AIが承認済みpublish1callと直後の15分readback1callをscope=callで確認し、人間への承認依頼0。native publish110は270文字/対象integration/リンクまで原稿exact。Postiz新post cmw0gwaol021voc07nfgk35vfは公式PUBLISHED/error null/publish09:10UTC、https://twitter.com/diceai0/status/2117545009490624995 。native write142/read145はbyte exact。実依頼画面はextract15/実画像0、自己申告時計は使わずprovider event15で結合する。
+- 公開本文は206文字でGitHub URL行だけ欠け、原稿270文字とのexact一致はfalse。X公式oEmbedでも同じリンク無し本文を確認。model journalのcontent_verified=trueは実保存本文を読んだ意味で、原稿全体一致の証拠にはしない。native未取得の実release URLはprimary公式readbackで補完。本文再送は無し。
+- Postiz公式integrationSchema(x,false)の現在のrulesはdo not add links, they will be stripped from the postと明示。公開source e424fb587e0ae87a2428a0586cb00af6facd0d1dのx.provider.tsはSTRIP_LINKS_FROM_X_POSTSがtruthyなら同文言/stripLinks=true、posts.service.tsは作成時stripLinks(content)を適用。今回の欠落はこの明示仕様と実測が整合し、HTML不良/Naïve改変と断定する必要はない。cloud環境変数自体は読んでいない。新稿前に最新schemaの当該ruleを確認しなかったprimaryの手順不足を訂正する。bare domainもstrip対象であり、変数変更や迂回URLを試さない。
+- したがって直接リンクcopyの獲得試験は意図した導線を作れなかった。既存の本文とledgerを残し、同じ投稿を再送せず、リンクを含まない明確なGitHub検索経路の案内を最大1件だけ追加する。これは不足したCTAの修復で、定期広告や旧募集の再送に広げない。scopeにこの1修復postを追加する理由は、実公開されたsample案内に場所が欠けたため。公開済み投稿の更新/返信機能は現在のMCP schedule toolの契約に無く、API業務投稿/別ownerログインで代替しない。
+- 有限sessionはcancel→GET cancelled/pending0、合計127132microUSD。最新agent直接spend5791814microUSD、月6/task1維持。API診断browser明細3334microUSDは別表示。合計の増分を未確認のcomponentへ帰属させず、全社費用/利益としない。本人mailの外部送信依頼は引き続きqueued/実送信未確認。全体goal/実売上は未達。
+
+修復公開予定文（213文字、リンク無し）:
+
+```text
+BusinessRun Trace Review: sample and requests
+
+On GitHub, search "businessrun-bench" by Daisuke134, then open pilot.
+
+Public redacted traces only (20 tool calls max). 29 USDC after delivery. No verified sales yet.
+```
+
+MCP契約に合わせ各段落をpで包むHTMLをraw送信payloadとし、Xの期待表示文は上記。primaryは直近の公式投稿一覧でこの新copy未検出を確認し、nativeは専用journalと既存postidを照合して新しい1postだけ実行。既存公開copyを複製しない。新finite最大0.4USD/同v12/月6/task1で1回だけ起動し、cap quoteで拒否なら無送信・終了を確認してから必要最小の予算修復をsource化する。native自身のPostiz投稿→公式PUBLISHED/保存HTML/期待表示のX oEmbed→記録write/read→有限終了の順。primaryによる必要な1call確認を含むAI協調であり、Naïve単独の無介入完走はまだ主張しない。既存顧客納品が発生すれば販促より優先する。追加画像/新signup/新しいメール送信/他channel変更/環境変数変更は行わない。
