@@ -133,6 +133,9 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 継続統合（task7c9269e102d2886ee18ccbb6）: Slack指定remote threadを公式GETで全6件照合し、本人受領/着手/結果の新差分なし、催促0。保存済みHQ receiptで前2runの終了と現在run単独workingを確認する。PR9103/head394a000070は必要CI14件＋CodeRabbit成功後main735660764dへ統合済み。PR9104を同owner/既存leaseで継続し、main同期のBOARD/本section競合を双方保持で解消する。旧順=PR9103→PR9104→旧IG receipt、新順は同じ。現在cursor=PR9104更新head必要CI全PASS→main、その後元IG本人journal/session/公式receipt照合。停止publisher/fence/会計/投稿/HQ runtimeは変更0。証拠 → docs/evidence/capafy-continuation-7c9269.json。
 
+
+継続計測（task e90c688b773a9f9fd3c76149、owner=home-codex）: PR9104の公式MERGED/main e4612c2869を確認。所有範囲は本section/BOARD/限定evidenceと、既存main由来pull_attribution.pyによる当日1行の公式readback保存のみ。旧IG occurrence18db7caff1178a88-68028は10月5日、現存共有journalは10月24日以降で元本人bind未取得。現在accountへ置換せず、fence/停止publisher/他ownerを保持する。collectorは投稿を起動せず、欠損salesをnullに保ち、既存当日行を上書きしない。実測=mainとbyte一致のrelease265bab69 collectorで当日1行を保存、click106/recorded1/unavailable105、商品76行すべてsales欠損null。即時replayはledger byte不変・追加0・当日1行。証拠→docs/evidence/capafy-effect-e90c68.json。現在cursor=証拠PRの必要CI→main。その後旧IG元本人bind/原本archive照合、日次自然取得の既存owner接続。自然日次実行・旧IG効果・購入因果/純利益の証明は別未完cursorとする。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
