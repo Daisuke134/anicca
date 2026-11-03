@@ -25849,3 +25849,6 @@ PR #9145/main `584363f5b03e738647e65286f77264bcff069219` からv13/月7USD/task1
 
 
 NaïveのCapafy接続は、同一運営者1Publisherという公式規約 https://capafy.ai/publisher-agreement/ 2.9に合わせ、既存Anicca Publisher内の正式team/専用agentmail権限を既存ownerへread-only照会する。別メール/VMを別Publisher所有者と見なさず、既存account/reset/商品/収益は変更しない。Muse向け照会はqueued/repliedfalseで着手未確認。MAIL03をこの正しい対象へ訂正、詳細/現在cursorは `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「Capafyの同一Publisher内接続を優先する」。
+
+
+NaïveのCapafy無料user認証はfinite0.30USD内で実費243640microUSD、end_turn→cancelled/pending0。sealed signupで専用credential参照を生成/正本保存したが、browser実行失敗で無料user認証/dispatchは未確認、本人inbound0/EOF。primaryの4call scope確認・session model override/補正を含み、単独無介入完走ではない。current17/production13/元全source fields公式GET一致、担当累計6634284microUSD/SDKbrowser別5001。既存Publisher内正式team経路のowner照会は返信未確認、重複Publisher/課金/既存商品変更無し。全体cursorは実第三者依頼→納品→29USDC receipt/費用、残TODOと具体的な失敗境界 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の正本」「Capafy無料user認証の実測と終了」。
