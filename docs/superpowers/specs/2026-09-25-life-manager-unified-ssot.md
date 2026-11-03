@@ -25700,11 +25700,15 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 目的: Grok/Muse/Dots/Codexと同じLLM＋Computer/browserの形をNaïve自身の実行環境へ接続し、画面を観測→判断→click/type→結果確認で収益業務を完走する。業務script、業務API、固定workflowを収益判断の主経路にする案を上書きする。SDK/APIはagent設定、予算、session、証拠取得という基盤操作にだけ使う。
 範囲: config/naive-browser-company.jsonの専用担当、同じsourceのhosted適用、browser toolの実操作、認証/保存状態、既存ownerとの調整、公式readback。既存のCEO/builder等の設定・cron・Mac/browser/他VMは変更しない。売れている商品は変更しない。
-設計: pi＋既存で使われるGLM-5.2-FP8、browserだけallow、shell/API/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用検証budgetは月0.50USD/max_task0.25USD、追加入金なし、cron未登録から開始する。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
+設計: pi＋既存で使われるGLM-5.2-FP8、外部業務操作はbrowser、Computerのread/writeは作業メモと成果物だけに使い、shell/API/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用検証budgetは月0.50USD/max_task0.50USD、追加入金なし、cron未登録から開始する。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
 比較した案: 既存script移植はDaisの明示指示に反するため不採用。Macのbrowserを遠隔操作する案はNaïve自身のComputerという条件を満たさないため初回方式にしない。Naïve標準browser toolをモデルが使う方式を採用する。
 完了条件: (1)Grok/Muse/Dotsの実手順/ownerを照合 (2)Naïve側のagent・browser/Computer・モデル・予算を公式readback (3)実際の画面観測とclick/typeをtool eventと変化後の画面で確認 (4)認証済み業務と外部結果を確認 (5)同じ担当の再開と所有する継続運転を確認。市場調査だけを公開/売上完了にしない。秘密値はmodel prompt、Git、chatへ出さない。
-実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。現在cursorはBROWSER01。
+実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。現在cursorはBROWSER02の実測修復とBROWSER03の保存context準備。
 チーム証拠: Muse Relayは返答済みで、Naïve統合ownerではなく最小推論N1のみ確認できると回答。Grok/Muse/Dotsへ改めて自身のcomputer/browser操作手順・最近の結果・owner・skillをReason照会し、Slack既存threadにも訂正を送る。queuedを担当本人の実行証拠にしない。
+
+
+Naïve browser実測: PR9108はmain8bd07954へ統合、14CIは後続readbackで全PASS。固定版から専用anicca-browser-operatorを作成し公式readbackでpi/GLM-5.2/予算/owner/source SHAを確認。初回ses_0vs0t2t3bjsf227mmyw9a87pw5はgotoとscreenshotが成功、署名付き画像をprivateで取得して実画面を確認した後、次のmodel呼出がvalidation_failed。画像原因の仮説を保持し、モデル全般のvision非対応とは断定しない。画像を返さないses_btpr03yvgetc1vbbt4538rm2w6はgoto/extract/observeで商品/価格/検索欄の実表示取得に成功したがsession capでbudget_paused。実消費38786/250000 microUSD、残211214。次call予約額はイベントで確認できる範囲だけを使う。API業務呼出・shellは0、公開/購入/登録effectは0。
+修復判断: 月cap0.50USDを維持し、max_taskだけ0.25→0.50へ揃える。Computer read/writeを作業メモと成果物に限定して追加し、外部の業務操作はbrowserのまま。Google loginが選ばれた場合に備えてaccounts.google.comだけをdomainへ追加。Browser contextはlogin前に準備する。既存Grok/6agent/cron/販売商品は変更しない。
 
 
 ## AGI flagship essay publication

@@ -1,0 +1,50 @@
+{
+  "observed_at": "2026-11-03T03:00:03.474429+00:00",
+  "runs": [
+    {
+      "owner_id": "codex-naive-browser",
+      "release_sha": "8bd079548554ad8e293a3efe299bc0b413619aee",
+      "exit_code": null,
+      "effect": "browser_read_only",
+      "readback": "official_session_events",
+      "retryable": true,
+      "run_id": "browser-market-20261103-01",
+      "occurrence_id": "ses_0vs0t2t3bjsf227mmyw9a87pw5",
+      "phase": "image_observation",
+      "command": "Naive hosted pi/browser",
+      "provider_receipt_id": "brw_a637wgfjjgsyvft1kxbc2cg69m",
+      "evidence_refs": [
+        "tool seq4-7: goto/screenshot",
+        "file fil_4dk1bfmbesm1mvrzaam4szfhc0",
+        "session seq22"
+      ],
+      "error_class": "validation_failed",
+      "consumed_micro_usd": 8289,
+      "computer_id": null,
+      "next_action": "same model/browser with text observation and no image"
+    },
+    {
+      "owner_id": "codex-naive-browser",
+      "release_sha": "8bd079548554ad8e293a3efe299bc0b413619aee",
+      "exit_code": null,
+      "effect": "browser_read_only",
+      "readback": "official_session_events",
+      "retryable": true,
+      "run_id": "browser-market-20261103-text-02",
+      "occurrence_id": "ses_btpr03yvgetc1vbbt4538rm2w6",
+      "phase": "text_observation",
+      "command": "Naive hosted pi/browser",
+      "provider_receipt_id": null,
+      "evidence_refs": [
+        "tool seq6-13: goto/extract/observe",
+        "budget.exceeded seq28",
+        "session.idle seq32"
+      ],
+      "error_class": "budget_exceeded_session",
+      "consumed_micro_usd": 38786,
+      "budget_micro_usd": 250000,
+      "computer_id": null,
+      "next_action": "keep monthly cap 500000; increase own max_task to 500000; persist work notes on own Computer"
+    }
+  ]
+}
