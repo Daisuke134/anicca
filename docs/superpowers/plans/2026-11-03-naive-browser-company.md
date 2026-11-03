@@ -3,15 +3,15 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:executing-plans。primaryが単独実装し、最後にfresh read-only reviewを使う。
 
 **Goal:** Naïve自身のbrowserをLLMが操作して既存の会社業務を完走する。
-**Architecture:** 標準pi agentの外部操作はbrowserと本人専用のemail.inboxes/read/send、Computer read/writeは作業メモと成果物に使い、判断は自然言語promptへ置く。APIは基盤設定/実行/証拠読取に限定する。
+**Architecture:** 標準pi agentの外部操作はbrowser、本人専用のemail.inboxes/read/send、指定Postiz4tools、Computer read/writeは作業メモと成果物に使い、判断は自然言語promptへ置く。APIは基盤設定/実行/証拠読取に限定する。
 **Tech Stack:** Naïve標準agent/session/browser、JSON設定。追加依存なし。
 **Spec:** docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md の Naïve browser company 節。
 
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用cap月2USD/max_task0.50USD、既存残高内・追加入金なし。
+- 専用cap月2USD/max_task0.75USD、既存残高内・追加入金なし。
 - 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
-- business script/APIはagentへ与えない。scopeはbrowserによる画面操作と本人専用メール3機能。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
+- business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
 ## Review Focus
 - deny defaultでもask-default toolが残るため既知の追加能力を明示disableする。
@@ -58,3 +58,15 @@ BROWSER03診断: login doneとログイン済み画面は別。agentの誤報を
 MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し、存在しないgoto toolを呼んでidleになった。承認要求やmail不足ではない。primary AIから既に成功済みのbrowser(action=act,instruction=...)とbrowser.linksの実形式を伝えて同sessionを再開。続くemail.inboxesは成功、browser gotoは最初の入力エラーから次callで成功した。登録/認証済み本人画面は未確認。primary AIの修正を含むため、無介入ベンチマーク成功とは扱わない。
 
 継続診断: 軽量modelは最後のgoto後の未観測画面を登録不能と誤判定したため、公式catalogで存在を確認したgoogle/gemini-2.5-flashへsession overrideしGETのmodel一致を確認。既定agent v4のmodelは変更しない。実observeはWelcome to Capafy/Continue with Emailボタンを返し、登録導線なしという旧判断を棄却。次turnのact前にgotoがなくobserveが空だったため、ブラウザのturn毎closeに合わせて再open→観測→操作へ修正を送信。登録/認証/公開/売上は引き続き未確認。PR9116のCIは後続確認で全15check PASS。
+
+## Manager継続運転
+- [x] v5をmain7d702ce7から適用し完全一致readback。
+- [x] 専用receiving-only Base EOAの鍵をCredential SSOTへ保存し、offline署名/復元とmainnet chain8453/native USDC6桁/初期0残高を確認。Naïve native walletはorg mainnet無効403のため未作成。支出signer・入金・送金は未実施。
+- [ ] v6のSonnet4.6/max_task0.75USD/月2USD・view_image・指定Postiz4toolsをsource/mainへ統合して適用。
+- [ ] 専用vaultにPostiz bearerをagent限定封入し、指定channelのnative MCP readbackを確認。封入とagent/url一致GETは完了、runtime呼出は未完。
+- [ ] 実イベントだけの英語sample/offer修正・本人mailのself-send/read・payment-receiver.jsonの実write/read。
+- [ ] 固定v6/同IdentityのNaïve標準deploymentを接続し、自然実行/本人inbox wakeを確認。
+- [ ] 英語offer/実画面demoを指定Xとblogへ公開し、実顧客の決済/納品/実費を公式照合。
+Sonnet比較はmodel設定受理だけでは実行済みにしない。初回は予約枠でbudget.exceededし実model spanはHaikuのみだった。Capafy個人Googleを必須にせず、既存owner/許諾は照合中。本文の過去cap/モデルは当時の実測であり、現在設定は本節とGlobal Constraintsを正本にする。
+
+MCP実catalog診断: 公式紹介文のschedulePostToolと異なり、認証済み標準MCPのtools/listはintegrationSchedulePostToolを返す。source allowlistは実catalog名へ修正する。これはtools/listの能力確認であり、Naïve内での接続/投稿成功ではない。
