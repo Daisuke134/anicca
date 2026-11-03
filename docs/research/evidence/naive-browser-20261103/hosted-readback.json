@@ -1,0 +1,82 @@
+{
+  "observed_at": "2026-11-03T03:31:59.507863+00:00",
+  "agent_id": "agt_e1hvkwgrdrx119zh22qthavwt4",
+  "agent_version": 3,
+  "source_sha": "265bab69b8137be09f46b081bffe8a62fa06b844",
+  "config_sha256": "95f04daba85650aa161df7fd57ce0e82c5e6140ea2b1b298debb5330cd75e821",
+  "model": "google/gemini-2.5-flash-lite",
+  "monthly_cap_micro_usd": 500000,
+  "max_task_micro_usd": 500000,
+  "allowed_tools": [
+    "read",
+    "write",
+    "browser"
+  ],
+  "context_name": "anicca-browser-capafy",
+  "persist_context": true,
+  "computer": {
+    "id": "cmp_01a19f68c37072e1bb69d78d3d45de50",
+    "agent_id": "agt_e1hvkwgrdrx119zh22qthavwt4",
+    "status": "paused",
+    "vcpu": 1,
+    "memory_mb": 1024
+  },
+  "cross_session_journal_read_confirmed": true,
+  "last_auth_session": {
+    "id": "ses_jmxpsdnqv0vgpxebdq3fzsm7de",
+    "agent_version": 2,
+    "status": "idle",
+    "stop_reason": "end_turn",
+    "consumed_micro_usd": 83257
+  },
+  "spend": {
+    "spent_micro_usd": 405957,
+    "by_tier": {
+      "input": 84467,
+      "cache_read": 44808,
+      "cache_write": 0,
+      "computer": 11566,
+      "output": 15393,
+      "browser": 238336,
+      "reasoning": 11387
+    },
+    "by_agent": [
+      {
+        "agent_id": "agt_e1hvkwgrdrx119zh22qthavwt4",
+        "spent_micro_usd": 405957
+      }
+    ],
+    "by_session": [
+      {
+        "session_id": "ses_btpr03yvgetc1vbbt4538rm2w6",
+        "spent_micro_usd": 138153
+      },
+      {
+        "session_id": "ses_eytwvnz9tdjt089qjwwwk62972",
+        "spent_micro_usd": 100301
+      },
+      {
+        "session_id": "ses_jmxpsdnqv0vgpxebdq3fzsm7de",
+        "spent_micro_usd": 83257
+      },
+      {
+        "session_id": "ses_3497enxamwskj89czrwe88vgg5",
+        "spent_micro_usd": 64391
+      },
+      {
+        "session_id": "ses_0vs0t2t3bjsf227mmyw9a87pw5",
+        "spent_micro_usd": 8289
+      }
+    ]
+  },
+  "authentication_verified": false,
+  "revenue_verified": false,
+  "deployment_created": false,
+  "controller_interventions": "multiple task steering and config/auth corrections; not zero-intervention",
+  "remaining_order": [
+    "supported Google/Capafy browser authentication",
+    "confirm owner and complete one business operation",
+    "verify publication/delivery and actual revenue/cost evidence",
+    "native hosted recurring deployment with same identity and persisted state"
+  ]
+}

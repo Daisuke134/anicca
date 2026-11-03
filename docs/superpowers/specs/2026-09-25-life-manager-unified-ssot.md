@@ -25708,7 +25708,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 設計: pi＋画像後の継続を実測したgoogle/gemini-2.5-flash-lite、外部業務操作はbrowser、Computerのread/writeは作業メモと成果物だけに使い、shell/API/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用検証budgetは月0.50USD/max_task0.50USD、追加入金なし、cron未登録から開始する。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
 比較した案: 既存script移植はDaisの明示指示に反するため不採用。Macのbrowserを遠隔操作する案はNaïve自身のComputerという条件を満たさないため初回方式にしない。Naïve標準browser toolをモデルが使う方式を採用する。
 完了条件: (1)Grok/Muse/Dotsの実手順/ownerを照合 (2)Naïve側のagent・browser/Computer・モデル・予算を公式readback (3)実際の画面観測とclick/typeをtool eventと変化後の画面で確認 (4)認証済み業務と外部結果を確認 (5)同じ担当の再開と所有する継続運転を確認。市場調査だけを公開/売上完了にしない。秘密値はmodel prompt、Git、chatへ出さない。
-実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。現在cursorはBROWSER02の画像対応model修復版適用とBROWSER03の認証。
+実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。現在cursorはBROWSER03のmanaged-browser Google OAuth境界。BROWSER02の実操作と、BROWSER04の別sessionメモ再読取は確認済み。収益業務と継続deploymentは未完。
 チーム証拠: Muse Relayは返答済みで、Naïve統合ownerではなく最小推論N1のみ確認できると回答。Grok/Muse/Dotsへ改めて自身のcomputer/browser操作手順・最近の結果・owner・skillをReason照会し、Slack既存threadにも訂正を送る。queuedを担当本人の実行証拠にしない。
 
 
@@ -25720,6 +25720,9 @@ Naïve browser実測: PR9108はmain8bd07954へ統合、14CIは後続readbackで�
 Browser実操作の修復: ターン終了でbrowserが閉じるため、次ターンは最終URLへgotoしてから観測する。observeが返したxpathで直接type/clickするとpage could not completeとなる例を記録。公式browser仕様は直接操作のselectorをCSSと記載するため、xpathとの互換境界を疑うがprovider実装の原因とは断定しない。検索はbrowser.actで入力と送信に成功、extractで動画30件と3商品の価格/販売数表示を照合した。作業メモはsandbox内の相対パスanicca-browser-journal.mdを使う。絶対/home/userはagent toolではsandbox外として拒否された。Computer割当、write成功、次ターンread成功を確認した。
 
 認証誤報の診断: 専用loginがlogin doneを返しても、extractではWelcome to Capafy、メール形式エラー、ログインformが残っていた。agentの成功報告と誤記メモを訂正し、認証未完を保持する。資格情報metadataのhost=googleは実際のaccounts.google.comと不一致だった。公式APIのservice例はfigma.comというhostnameであるため、accounts.google.com名で保存しhost完全一致をGET確認後、自己作成した旧login:googleだけを削除した。raw秘密値はmodel/ログへ渡さない。次はGoogle実画面のhostとservice一致を確認してから専用loginを使い、別sessionでjournalと保存contextを再開する。login done単独を成功にせず、ログイン済み本人画面を必須の結果として扱う。
+
+Hosted最終readback: PR9112 main265bab69から専用agent v3を適用し、model/system/owner/source SHA/予算/contextをGET照合。Computerは同一idで別sessionのメモreadに成功し、自然idle後pausedを確認。公開市場検索30件は実画面結果、認証/公開/売上の成功ではない。専用agentの公式spend集計は405957 microUSD、月cap500000を維持。session瞬間値と後続の公式集計には差があるため、初回38786は当時の観測として保持し、最終費用はhosted-readback.jsonのquery区間/内訳を使う。資格情報host修復後も専用loginのprovider error、またはlogin done後の未認証画面を記録。最後のact失敗後の画像はCapafyログイン画面で、ボタンdisabledや本人確認challengeの存在は確定しない。UI/APIの状態を文章の成功報告より優先する。複数のprimary再指示・修復を含むため介入ゼロ評価ではない。
+残TODO正本: (1)providerのGoogle OAuth実画面操作を診断できるsupported route/本人担当の成功手順を取得し、同じidentity/contextで認証結果を確認 (2)Grok/Museのwrite ownerと新規の担当対象を照合し一業務を完走 (3)公開/納品/費用/実売上を個別readback (4)同identity・固定versionのNaïve標準deploymentへ接続し自然実行を確認 (5)同条件benchmark比較へ戻る。既存6agent/cron/Mac profile/販売済商品は未変更。Grok/Muse/Dotsへ照会済みだが実手順の返答は未取得、relayの最小inference確認をVM本人の業務証拠へ昇格しない。
 
 
 ## AGI flagship essay publication
