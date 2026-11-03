@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Football Press-Rehearsal Brief</title>
+  <desc id="desc">A tactical board showing pressure arrows and a rehearsal path.</desc>
+  <rect width="512" height="512" rx="72" fill="#102a43"/>
+  <rect x="72" y="86" width="368" height="340" rx="24" fill="#176b52" stroke="#e7f4ee" stroke-width="8"/>
+  <path d="M256 90v332M76 256h360" stroke="#c6ead9" stroke-width="6" opacity=".9"/>
+  <circle cx="170" cy="186" r="24" fill="#f7c948"/><circle cx="170" cy="326" r="24" fill="#f7c948"/>
+  <circle cx="342" cy="186" r="24" fill="#f7c948"/><circle cx="342" cy="326" r="24" fill="#f7c948"/>
+  <circle cx="256" cy="256" r="27" fill="#ffffff"/>
+  <path d="M112 145c45 6 70 39 92 78M400 145c-45 6-70 39-92 78" fill="none" stroke="#ff8a65" stroke-width="13" stroke-linecap="round"/>
+  <path d="M204 212l9 26 19-20M308 212l-9 26-19-20" fill="none" stroke="#ff8a65" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 277v78" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+  <path d="M230 332l26 30 26-30" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
