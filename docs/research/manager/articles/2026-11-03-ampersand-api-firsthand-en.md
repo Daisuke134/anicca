@@ -1,71 +1,89 @@
-# We Actually Ran Ampersand v0.1: A Firsthand API Walkthrough and What It Does Not Prove
+# We Asked an AI When to Speak Up. Then We Changed the Story.
 
-**Anicca / Manager Research — November 3, 2026**
+**Anicca Research | November 3, 2026**
 
-Reading a model card is useful. Calling a model yourself is different. We ran a fresh, authenticated request to **humans& Ampersand v0.1** through its documented Agents API on November 3, 2026. This article explains the observable integration steps and what we learned without claiming we reproduced humans&'s training or benchmark suite.
+Sam cannot make Friday, and the team is about to schedule the meeting for Friday anyway. We asked an AI whether it should speak up, then changed the situation: Friday might work for Sam, but nobody has confirmed it.
 
-## What we executed
+The distinction is small enough to disappear in a busy group chat. It is also the difference between correcting a known mistake and treating uncertainty as permission to decide for someone else. An assistant that remembers the first message too firmly could become the person in the room who keeps explaining your own availability to you.
 
-**Public execution receipt:** [GitHub Actions run 41618299490](https://github.com/Daisuke134/life-manager/actions/runs/41618299490). Our earlier [October 22 research run](https://github.com/Daisuke134/life-manager/actions/runs/39710166900) independently demonstrated that the same repository can authenticate and fetch one completed model response.
+This was a fictional scheduling exercise, conducted through a real AI service. Its subject was Ampersand, a model from the company humans&. Our first response advised flagging the known conflict while leaving the scheduling decision to the team. Our follow-up exercise established something more modest than a successful change of mind: the service accepted a changed situation and completed another turn in the same conversation. The saved public record does not contain that second answer's wording.
 
-We used the official OpenAI Python client `openai==3.24.0`, changed its base URL to `https://ampersand.humansand.ai/v1`, and used the model ID `ampersand-v0.1`. The GitHub Actions workflow injects an existing API key via a protected repository secret. No key is committed or copied into this article.
+![Two versions of a meeting conflict: known unavailability versus uncertain availability. Both turns completed, but only the first response has a publicly described recommendation.](https://aniccaai.com/blog/manager/media/6bcbad0efcf28550d6fd62d008b23ab671d897f7ffe7925fc72b1f87afc61c3e.png)
 
-The code first called `GET /models` and checked that the model was accessible. Then it created one *fictional* session with `environment={"type":"none"}`, no tools, and a simple collaboration question about a teammate who had already disclosed they could not attend a proposed meeting. We consumed the event stream until the session returned to `agent.session.idle`.
 
-The outcome was unambiguous at the **API-operation level**:
+## An AI company interested in the room around the task
 
-| Check | November 3, 2026 |
-|---|---|
-| Credential and model listing | PASS |
-| Real Agents API session | Created |
-| Terminal stream event | `agent.session.idle` |
-| Assistant output text | 359 characters |
-| Provider status / workflow | GitHub Actions success |
-| External tools or real people contacted | None |
-| Comparative model benchmark | Not run |
-| Independent long-term human outcome | Not measured |
+If you know ChatGPT, the familiar interaction is straightforward: ask a question, receive an answer. A group conversation makes that arrangement harder. The person asking may have forgotten something another participant said. Two people may want different outcomes. An answer that sounds helpful to one could make extra work for someone else.
 
-We observed that the response recommended raising a known meeting conflict without taking the scheduling decision away from the team. This is our **paraphrase of one fictional response**, not a reprint of the provider's output. One example is not a quantitative quality estimate, and an authenticated response is not evidence of superior social intelligence.
+[humans& introduces Ampersand](https://ampersand.humansand.ai/blog/) around this problem of collaboration. Its stated ambition is to build AI that helps people achieve goals together, taking account of what happens after a message is sent. That gives the company a different design problem from simply producing a polished response to the latest instruction.
 
-## A second live run: real follow-up in the same session
+Consider the Friday meeting. Finding an open calendar slot would be a scheduling task. Deciding whether to mention Sam's earlier objection involves memory, timing and social judgment. The group may welcome a short reminder. It may resent a lecture. And if Sam has already corrected the information, repeating the objection could actively confuse everyone.
 
-We subsequently ran a second, separately dispatched **two-turn** educational session via the same official service. [GitHub Actions run 41619141514](https://github.com/Daisuke134/life-manager/actions/runs/41619141514) is the exact independent execution receipt. The first fictional response completed with 546 characters. We then submitted an updated scheduling scenario to **the same session** through the officially documented `sessions.events.create` method, using an idempotency key, and streamed the follow-up turn to completion (465 characters). The provider returned **four saved conversation items and two completed turns**.
+Those are ordinary human complications, which is why they matter. An assistant embedded in daily work would encounter them amid messages about deadlines, dinner plans and unfinished documents. Its behavior would be experienced as a sequence of interruptions and omissions, rather than a score on a single impressive answer.
 
-This additionally establishes real session persistence, event submission and saved-turn readback in our integration. It does not establish long-term collaboration quality, human simulation accuracy, or other experimental effects. The run was not a comparative benchmark and was never given personal customer information or external action tools. We preserved completion metadata rather than publishing the provider's entire output.
+The company's purpose is intelligible even before one accepts any performance claim: build an assistant capable of participating in that ongoing situation. Our exercise was a way to examine a small piece of the idea firsthand.
 
-## What Ampersand is technically designed to do
+## Persimmon plays the people; Ampersand learns to collaborate
 
-The developers' official [model card](https://ampersand.humansand.ai/blog/model-card.html) describes a model trained to collaborate across extended interactions, including when it is better to ask, wait, or decline to intrude. Their companion human-simulation research, **Persimmon**, supplies simulated user interactions for aspects of training and evaluation. This is not the same as showing that the model predicts unknown real customers' purchases or that its interventions improve a real person's welfare.
+There are two names to keep straight. [Persimmon](https://persimmon.humansand.ai/blog/persimmon.html) is humans&'s model for simulating user behavior. It generates how people might respond across conversations. Ampersand is the collaborator being trained through such interactions.
 
-The integration is also not a generic chat-completions-only interface. The [Agents API documentation](https://ampersand.humansand.ai/docs/GUIDES.html) describes sessions, events, function tools, persisted items and turns, reconnection, cancellation and billing. Notable operational details include:
+A useful analogy is a rehearsal. Actors play people with different concerns; a participant tries an intervention and sees how the scene develops. In humans&'s approach, simulated users supply the other side of that interaction. The analogy explains the roles, without establishing how faithfully the rehearsal represents life outside it.
 
-- A server-side session has a lifecycle; reaching an idle event means the service has stopped working, not that your real-world goal has been achieved.
-- Tools, if enabled, run in the **client's own application**. `environment={"type":"none"}` does not provide hosted browsing or access to private company services.
-- Event submissions support idempotency keys; this does not make external financial or messaging effects automatically idempotent.
-- A model can finish silently. Applications must not equate absence of text with a network failure.
-- Session history and context compaction are different from updating a model's learned weights.
+According to the [Ampersand model card](https://ampersand.humansand.ai/blog/model-card.html), training uses extended social scenarios with feedback on the consequences of the model's actions. Its intended behavior includes contributing information, asking questions and waiting without posting. The stated aim is to support human judgment.
 
-These distinctions are essential when developing a dependable agent, whether or not the reasoning model is developed in-house.
+We accessed Ampersand. We did not run Persimmon, inspect its private training examples or reproduce the simulation process. Calling the collaborator gives us an observable answer from that service; it does not let us see the simulated people behind its training.
 
-## What about Persimmon and comparative evaluation?
+That separation matters for interpreting the story. A scheduling response can illustrate how a model approaches collaboration. It cannot tell us whether the underlying simulations accurately predict an unfamiliar person's choices.
 
-The public Persimmon and Ampersand research introduces a promising separation of **simulated user behavior** and an **agent policy trained to cooperate**. But we have not downloaded proprietary weights, trained Ampersand ourselves, reproduced its private Persimmon simulations, or performed an independent long-horizon comparison.
+## The first call: a conflict worth mentioning
 
-The published [terms of service](https://ampersand.humansand.ai/terms) impose restrictions on competitive benchmarking and the use of outputs for competing-model training. Our one-shot use was a normal, fictional API tutorial, not a competitive benchmark. We do not reuse the model's output as training material. We have requested clarification about permissions for separately authorized comparative research; that permission should not be assumed.
+On November 3, 2026, we made an authenticated request to Ampersand v0.1. An API, short for application programming interface, is the doorway software uses to talk to another service. Instead of typing into a chat window, our program sent the fictional scenario to humans&'s servers and read the response.
 
-## What this teaches us about Manager
+The [execution record for the first run](https://github.com/Daisuke134/life-manager/actions/runs/41618299490) records a completed request and 359 characters of assistant output. We used the documented model identifier, `ampersand-v0.1`, after checking that our account could access it. The credential stayed in a protected repository secret.
 
-We want an auditable loop connecting response prediction, permissible decisions, execution and independently observed outcomes. The Ampersand API exercise helped clarify the **execution/session** part, not validate a general human-behavior predictor.
+We created a session with no external tools. There was no calendar for the model to change and no real Sam to contact. It could only answer the collaboration question we supplied. That makes the scene safely fictional while leaving the service interaction real.
 
-A rigorous follow-up would require a documented task definition, permitted access, independent human-reference evidence, matched baselines and a fixed evaluation procedure. If the tested provider's terms prohibit a use, permission must come first. Competitive model results should be presented separately from this engineering demonstration.
+In our reading of the authenticated response, Ampersand recommended surfacing the already-known conflict and allowing the team to choose what to do. This is a paraphrase, rather than a reproduction of its output. The interesting detail is the division of responsibility: the assistant can make relevant information visible while the people retain the decision.
 
-Our conclusion is deliberately narrow: **Ampersand v0.1 can be called from our GitHub-hosted environment using its documented Agents API, and a fictional session returned a completed answer on November 3, 2026.** The response was usable as an example of a collaboration-oriented recommendation; it was not a measurement of general intelligence, causal intervention ability or real-world welfare impact.
+That sounds simple until the alternatives are made concrete. Silence lets the group proceed with an avoidable mistake. An automatic reschedule assumes authority the assistant has not been given. A long explanation could bury the relevant fact beneath advice nobody requested. Our one response occupied a sensible middle ground for the scenario as presented.
 
-## Original sources
+It remains one response. We did not measure whether a real team would find it useful, whether Sam would feel represented fairly, or how the system would behave after weeks of conflicting messages. Those are questions the example helps formulate, rather than questions it settles.
 
-- [Ampersand model card](https://ampersand.humansand.ai/blog/model-card.html)
-- [Ampersand API integration guide](https://ampersand.humansand.ai/docs/GUIDES.html)
-- [Ampersand API reference](https://ampersand.humansand.ai/docs/API_REFERENCE.html)
-- [Ampersand terms](https://ampersand.humansand.ai/terms)
-- [Persimmon model research](https://persimmon.humansand.ai/blog/persimmon.html)
-- [The exact November 3 execution record](https://github.com/Daisuke134/life-manager/actions/runs/41618299490)
+## The second call: the facts move
+
+We then ran a separate, two-turn session on the same day. In that session, the scheduling story changed from a definite conflict to a possibility: Friday might work, but it was not confirmed. The [second execution record](https://github.com/Daisuke134/life-manager/actions/runs/41619141514) shows a first response of 546 characters and a follow-up response of 465 characters.
+
+The follow-up went into the same session. Readback from the provider returned four saved conversation items and two completed turns. We therefore verified that the integration could continue a conversation, submit updated information and retrieve its saved history.
+
+Character counts cannot tell us whether the model handled the revision well. The public logs preserve completion metadata, without the answer bodies needed to judge its language. We cannot report that it withdrew its earlier advice, asked Sam for clarification or selected exactly the right tone. Each would be an appealing story detail, and each would require evidence we are not publishing here.
+
+The contrast still gives the exercise its purpose. “Cannot attend” and “might attend” call for different reasoning. Any assistant used in an ongoing conversation needs a way to receive that correction. Our second run established the working conversation machinery; judging the correction itself would require reviewing the actual content under an appropriate evaluation procedure.
+
+It also separates two things often compressed into the word “memory.” A service can save the messages in a session. Whether the model uses those messages appropriately is a behavioral question. Four saved items prove the former, while leaving the latter open.
+
+## Why a quiet assistant needs a visible completion signal
+
+The [integration guide](https://ampersand.humansand.ai/docs/GUIDES.html) makes silence a meaningful possibility. In a group chat, the assistant may have nothing useful to add. Software surrounding it must therefore be able to distinguish a finished turn from a failed connection.
+
+We consumed the service's event stream until it reported `agent.session.idle`: the session had stopped working on that turn. Think of it as a light showing that the microphone has been put down. It says nothing about whether the meeting was scheduled successfully.
+
+This distinction affects the experience of using an assistant. If an application treats every quiet turn as a technical failure, it may keep retrying until the model finally interrupts. The surrounding software would then punish the very restraint the product is supposed to allow.
+
+Our runs produced text, so they do not demonstrate a successful silent intervention. They did make the completion boundary explicit. The same boundary lets a developer keep “the model finished” separate from “the people achieved their goal.”
+
+For a founder considering an AI in team chat, that is a practical design issue. A product needs both a place for the assistant to speak and a way for the conversation to continue comfortably without it.
+
+## What one scheduling story can teach
+
+A benchmark is a defined test with a scoring procedure, intended to make performance measurable and, where permitted, comparable. Our fictional provider demonstration was ordinary API use, rather than a comparative benchmark. [Ampersand's terms](https://ampersand.humansand.ai/terms) restrict competitive benchmarking and competing-model training; access to the service should not be mistaken for permission to perform either.
+
+The strongest observation we can make is local to this story. In the first run, the response supported raising relevant information without taking control of the decision. In the second, the service completed a continued conversation after we changed the information. We have no basis here for ranking its social intelligence or claiming improved outcomes for real groups.
+
+For our Manager research, the more useful lesson concerns what to observe next. We would want to know whether an assistant notices a correction, how confidently it treats uncertain facts, and whether the people involved retain room to disagree. Counting completed answers would miss those qualities.
+
+Sam's Friday is deliberately mundane. That is what gives it force. People revise plans, soften refusals and leave things unresolved. A collaborator has to make room for those changes. The next useful evidence would be the words it chooses when a once-certain fact becomes uncertain, and what the team does after hearing them.
+
+
+---
+
+**Continue reading:** [What happens when an AI pretends to be 48 different people?](https://aniccaai.com/blog/manager-artificial-societies-jordan-pilot-en)
