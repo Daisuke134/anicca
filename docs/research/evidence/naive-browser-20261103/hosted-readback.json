@@ -78,5 +78,18 @@
     "confirm owner and complete one business operation",
     "verify publication/delivery and actual revenue/cost evidence",
     "native hosted recurring deployment with same identity and persisted state"
-  ]
+  ],
+  "spend_query": {
+    "from": "2026-11-03T00:00:00Z",
+    "to": null,
+    "to_omitted": true,
+    "agent_id_filter": "agt_e1hvkwgrdrx119zh22qthavwt4",
+    "observed_at": "2026-11-03T03:31:59.507863+00:00"
+  },
+  "spend_reconciliation": {
+    "session_subtotal_micro_usd": 394391,
+    "total_minus_session_subtotal_micro_usd": 11566,
+    "computer_tier_micro_usd": 11566,
+    "note": "The arithmetic gap equals computer tier. Provider attribution mechanism was not independently verified; preserve all provider values."
+  }
 }
