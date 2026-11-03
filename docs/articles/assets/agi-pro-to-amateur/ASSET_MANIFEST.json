@@ -1,0 +1,45 @@
+{
+  "origin": "Original hero generated in chat; seven additional images cropped from a newly generated editorial storyboard in this chat. Chess image is AI-generated illustrative fictional player, not an authentic photograph of Magnus Carlsen. No external stock photographs copied.",
+  "assets": [
+    {
+      "filename": "bakery-bread.png",
+      "sha256": "ea2cbfe7316702b92f3544b12fc9de0b8fdb840c6d739158a718138f2f865193",
+      "bytes": 247341
+    },
+    {
+      "filename": "chess-human-story.png",
+      "sha256": "efc066ddfe6a24739ff29c0cef05431910b28a5a63a89fcea0c2e7acd8d4c0a8",
+      "bytes": 184724
+    },
+    {
+      "filename": "hero-original.png",
+      "sha256": "2d3dd83cda9192da5c444e3afb7d90d715e73fc499c2119c9033bcd594aae333",
+      "bytes": 3299893
+    },
+    {
+      "filename": "mathematician-treehouse.png",
+      "sha256": "e5ee77077b6b2b9f5b6c59c613b3d47e70fb08255adc0e9f534f5de054f69786",
+      "bytes": 308942
+    },
+    {
+      "filename": "productivity-trap.png",
+      "sha256": "69321e23d114ebe2d682040c7d619aa41412a54cffd9a29c6180ee766cef2e8f",
+      "bytes": 207621
+    },
+    {
+      "filename": "transaction-disappears.png",
+      "sha256": "fab621fa2335434280929f94215363f1aa71093375ba6f37dc8d0fbc66ec4b8e",
+      "bytes": 353229
+    },
+    {
+      "filename": "twenty-second-illusion.png",
+      "sha256": "ecd3992d32e52658e32e12f135b942a4a95614a2c77486ba6ac021af8a1b86ee",
+      "bytes": 213497
+    },
+    {
+      "filename": "walking-for-nothing.png",
+      "sha256": "e97b2b55375c4f5f6df965e04edca600b6ae7bf3a83e3c9210ce561e0449ed60",
+      "bytes": 217138
+    }
+  ]
+}

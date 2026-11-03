@@ -25688,3 +25688,13 @@ cloud失敗の解消: Ubuntu41474301821は導入前pdftotext=falseを確認し�
 Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private SSOT service naiveへ保存→公式API通常login成功。Anicca balance11.590718 USD/Standard active/6agent/Computer0、CEOの毎朝9JSTdeployment enabled/scheduledをGETで確認する。直近10sessionはbudget_paused7/end_turn3。CEO現cap月1USD/max_task0.25、他4役割月2/max_task0.25。CEOはagent cap、builderはsession capのbudget.exceeded。builder残額220483 microUSDに対して、最後の成功callで観測されたquote222884は2401大きい。ただし拒否された次callのquoteは未記録で、確定原因の差額にしない。CEO v14月10/max_task10→v15月10/max_task0.5→v16月1/max_task0.25の公式履歴を確認し、古いDEMO-PROOFの10USDへ戻さない。11/1 00:00Z以降CEO実費0.835543USDは問い合わせ区間の値で、内部budget台帳と分離する。資格情報・raw会話はrepoへ保存しない。private allowlist証拠はdocs/research/evidence/naive-live-20261103/。
 
 最新の残TODO順（旧順序を上書き、変更理由は実測したpause境界がハッカソンの業務完走を妨げるため）: 旧順はチーム返信→複数model→非公開suite→独自family→managed tenant。新順は(1)Naïveのagent/session予算・予約見積・version pinを診断し、既存spend cap内で一業務の完走を作る。残高top-upだけで直さない。既存owner/sourceとGrok/MuseのVM/providerを照合する (2)同じtask/seed/model/予算でNaïve/他harnessを比較し、複数modelは同一harnessで比較 (3)Clipping/Short Form access、残container suiteの正確なsliceと実行 (4)未被覆の納品/復旧/介入familyだけを独自課題にする (5)規約4.2の許諾範囲とtenant/権限/予算/永続結果/継続運転を接続 (6)ハッカソンlive demoと事前開発の開示。現在cursorは(1)。既存の外部effectと他ownerのloopは変更しない。
+
+
+## AGI flagship essay publication
+
+目的・範囲: 承認済み英語原稿を保持し、日本語全文版と原本PNG8点を既存Manager出版パッケージへ組み込み、aniccaai.com英日・@diceai0 X Articles・既存note無料記事を公開する。別の配信基盤、通常post/thread、課金記事は作らない。
+完了条件: 4つの公開URLで本文末尾・画像・account・無料公開を直接確認し、GitHubのsource/media SHA-256とNetlifyの固定revisionを照合する。draft/CIだけを完了扱いしない。
+実行順（初期順序）: 原本・ZIP検証 → 日英本文とpackage → focused validationと原稿検証 → canonical PR/merge → bridge pins/PR/build/merge/deploy → website readback → X Article → note → 最終readback。独立したplatform診断は並行して進める。
+現在cursor: 原本全文を読了。PR #9102のhead b5ff7ec8f44223b096de2e887ee76178f912325dを原稿基準とし、最新origin/main由来のpublish/agi-four-platforms-20261103で進める。
+設計判断: 既存Manager publication manifestとflat /blog/manager-...-en/ja routeを再利用。新CMS・別route体系は不要。本文は英語最新meritocracy節を維持し、結論後に指定の2問を再掲する。8画像を各editionで1回ずつ用いる。
+TODO: [ ] source/assets/package [ ] source validation/review/merge [ ] bridge/deploy [ ] website EN/JA readback [ ] X public readback [ ] note free public readback。
