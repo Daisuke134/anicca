@@ -248,3 +248,10 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 3. finallyで当該browser終了→当該Computer削除→GETの終了状態、組織残高/ledgerの後値を保存。API診断費はagent直接累計と別枠で計測し、差分が不明ならnull。既存runtime/定期deployment/他ownerは不変。
 
 作成費は公式docsで0、computeは1vCPU/1GiB毎秒0.0000185USD、browserは開始から終了の分単位・action別計上で単価は未取得。診断は1browser/1login、timeout1分、全体2分以内を目標に閉じる。追加資金移動なし。既存月6/task1は維持する。初回誤りを再現せず、意味のない繰返しをしない。Inkboxの既存managerjghhはread-only hosted configでinstructions未設定、登録ownerの根拠は増えず、借用/変更/送信しない。
+
+
+初回SDK診断の差分: createはOpenAPIの200/201例に対して実202で受付成功。診断側が202を失敗扱いしたため同一IDをrecoverし、runningをGETで確認。最初のgotoは400 validation_failed、Idempotency-Key必須とproviderが明示し、ログイン/登録操作へは進んでいない。browser DELETEは204空応答で、診断側JSON parseが失敗したが、同一Computerを別read-only確認後DELETE→GET destroyedまで完了。新規credential/サイト送信無し。残高25930244microUSDは前後同値、独立診断費用の確定ledgerは未取得で0確定としない。
+
+再試行前の修正: HTTP202/204を正しく扱い、必須Idempotency-Keyを各mutationの固定operation IDとして保存して同一操作に再使用する。元Computerは破棄済みなので置換Computerを同条件で1台だけ作る（同時1台）。provider postconditionを先に保存し、cleanup各段は互いのparse失敗でskipしない。新signup無し、既存sealed login最大1回の範囲は不変。
+
+home-codex本人返信でInkbox managerjghhのowner/用途も未確認、Museの現在返信元はdaisuke/terminal@htch-runtimeと判明。既存Coconala入金receiptの所在は既存別業務の証拠であり、今回pilotの売上へ転用しない。NEARの15USDC提案3件はpending/assignment0で収益未確認。以後Museは本人稼働経路を確認して照会し、idle relayへのqueueを着手と呼ばない。
