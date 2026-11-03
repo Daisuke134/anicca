@@ -333,6 +333,32 @@ class ReleaseFamilyTest(unittest.TestCase):
             self.assertNotIn(window, rendered)
 
 
+    def test_unknown_temporal_window_propagates_as_unresolved_review(self):
+        a, b, c = self.family()
+        a["population"]["window"] = "monthly publication; dates unavailable"
+        b["population"]["window"] = "quarterly release Q1"
+        c["population"]["window"] = "2026-03-01/2026-03-31"
+        result = preflight_release_family([a, b, c])
+        self.assertEqual(result["status"], "REVIEW_REQUIRED")
+        self.assertIn("FAMILY_SCOPE_NOT_COMPARABLE", result["reason_codes"])
+        self.assertIn("FAMILY_TEMPORAL_WINDOW_UNRESOLVED",
+                      result["reason_codes"])
+        self.assertNotIn("FAMILY_POSSIBLE_TEMPORAL_DIFFERENCING",
+                         result["reason_codes"])
+        self.assertNotIn("FAMILY_SINGLE_HIDDEN_CELL", result["reason_codes"])
+        self.assertFalse(result["can_ingest"])
+        self.assertFalse(result["can_publish"])
+        self.assertFalse(result["can_execute"])
+        self.assertFalse(result["disclosure_certified"])
+        rendered = json.dumps(result)
+        for window in (
+            "monthly publication; dates unavailable",
+            "quarterly release Q1",
+            "2026-03-01/2026-03-31",
+        ):
+            self.assertNotIn(window, rendered)
+
+
     def test_perturbed_or_weighted_family_skips_three_way_exact_arithmetic(self):
         for method in ("perturbed", "weighted"):
             with self.subTest(method=method):
