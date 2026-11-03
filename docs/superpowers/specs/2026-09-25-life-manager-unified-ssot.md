@@ -13,6 +13,10 @@ Grokbot実業務の引継ぎ: 本人dr eggbotのReason返信3FZYT4EYA21PM454HV6Q
 
 代役認証の修復範囲: home-claudeの素のauth statusはloggedIn=falseだが、Credential SSOTの完全一致service claude-remote-controlから既存OAuth tokenを環境へ渡すとoauth_token/loggedIn=trueになる。これは認証設定の認識でありprovider推論/残量の証明ではない。HQ agent設定の明示的credential_service opt-in時だけ、そのClaude CLI子processへ起動時に正本からtokenを読み込む。親env・他agent・private設定・repo・receiptへの秘密値複製は行わない。既存env値は維持し、未指定のagentは従来動作を維持する。正本のsymlink/権限/owner/重複service/欠落tokenはCLI起動前に秘密を含まないcheckpointで失敗し、既存の一度限りhandoffへ渡す。モデル/課金方式/利用枠を切り替えない。実有限CLIで環境注入と秘密非記録のRED/GREENを確認し、必要CI/独立review/main由来反映後にhome-claudeだけopt-in、元Slack依頼の自然実行で検証する。tmp cloneは未push変更を含むため削除せず、過去に共有済みのpack/binaryを再計上しない。追加textのnative COW候補だけを完全一致・使用中参照で確認する。
 
+容量の次操作: /private/tmpの独立clone6件 ap-lm-pin/ap-mahana/ax0005/faqap/seo1102/x402disc はmain・tracked/untracked/ignored変更0・local-only commit0・ローカルmain祖先・argv/CWD/FD参照0を独立read-only監査で確認する。GitHub公式main祖先を追加照合し、既存owner/lease/lock不在と使用中参照をprimaryが再確認した対象だけを容量回復のownerとして取得する。Git sparse-checkoutの可逆縮小でGit全履歴/branch/HEADと全memory・memories・state subtreeを保持し、保護対象の内容/inode/mtimeを前後照合する。元のsparse設定と復元commandをprivate receiptに保存し、sourceとmetadataを破棄しない。dirty/未統合/local-only/使用中copyは保持。上限2.95GiBは既存COWを含むため実空き増を保証せず、1件ずつ実測し目標に届いたら追加操作を止める。少量text COW（上限470MiB）を2GiB回復策として過大計上しない。
+
+顧客18521371の状態訂正: rootがCoconala公式通知本文をGmail connectorで確認し、承諾1a1924b3fdb5620e（10/31 23:09 JST）、評価完了1a19251f22f5c97d（23:16）、評価到着1a192b1176af1f40（11/1 01:00）を照合する。11/1以降の同注文通知検索は0件。本人の修正待ち申告より新しい公式根拠として3ZAE323DJ4VD17ST6KG16Q8QE9で訂正を共有する。現在talkroom UIは未確認のため、承諾後の新規修正有無の確認へcursorを絞り、過去の修正待ちだけを根拠とする再制作/再送を行わない。新しいCodex売上とは数えない。
+
 目的: Slack #agents-hq を共有部屋にし、依頼保存・受領・着手・進捗・証拠付き完了・停止/枠切れの引き継ぎを追跡する。Codexは収益阻害、計測、Manager開発を継続し、確認した実験を公開する。schedulerが有限のagent実行を起こし、この対話が無期限に自己再開するとは扱わない。
 
 ユーザーの委任: 通常の技術/運用判断、実装・検証・main統合・対象限定反映・記事公開は自律実行する。担当は重複防止の目印であり壁ではない。途中成果・次操作・effect境界を渡して助け合う。本人手続き、provider権限、支出上限、利用枠は事実上の境界として保持し、枠のreset/transferを装わない。
