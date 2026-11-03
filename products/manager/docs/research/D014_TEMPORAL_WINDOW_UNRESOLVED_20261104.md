@@ -45,3 +45,14 @@ The check does not establish that two releases actually share records, that thei
 **Research vs simulation vs field effect:** this is a software rule tested with synthetic metadata (P0). No empirical study result, real-world intervention, downstream benefit, income change, or reduction in human/animal suffering is measured.
 
 **Safety:** no human/animal participant data, personal data, external messages, payment, physical actuation, or Life Manager runtime/main files were touched. H005 remains blocked; no HeartSteps study-day values or original paper numbers were imputed.
+
+
+## Hosted CI readback (2026-11-04 JST)
+
+The final roadmap commit `d9c52c1ab62dc307a6fba2fa57c6a2ef63a3afd8` triggered three hosted workflows on the requested research branch:
+
+- **Manager Independent Offline Research #322 — success:** https://github.com/Daisuke134/life-manager/actions/runs/41740549152 . Its job log reports `Ran 585 tests`, `OK (skipped=5)`, the new `test_unknown_temporal_window_propagates_as_unresolved_review` passed, the Life Manager import boundary passed, and `PASS 113 tasks; task JSON untouched`.
+- **Manager EBA v0 Open Benchmark #91 — success:** https://github.com/Daisuke134/life-manager/actions/runs/41740548982 . Its two jobs succeeded; the offline benchmark also reports 585 tests and 5 skips. EBA values are synthetic-only.
+- **Manager Phase06 Digital Environment #228 — failure:** https://github.com/Daisuke134/life-manager/actions/runs/41740549132 . Its Manager unit contracts, boundaries, registry check and service bundle build succeeded. It failed later while installing Playwright 1.56.1 browser dependencies because the hosted runner resolved to `ubuntu26.04-x64`, which that Playwright version does not support. Browser/live verification steps were skipped. This is an environment/toolchain blocker, not evidence of a failure in the D014 unit tests; nevertheless the overall Phase06 workflow is not green.
+
+The offline code/test validation is therefore green, EBA is green, and Phase06 remains red for an upstream runner/browser compatibility reason. No workflow establishes an actual disclosure event, partner collaboration, public outcome, intervention or beneficiary improvement.
