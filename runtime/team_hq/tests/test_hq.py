@@ -139,6 +139,45 @@ class HQTests(unittest.TestCase):
         self.assertNotIn("fixture-oauth-not-a-secret", json.dumps(receipt))
         self.assertEqual(receipt["status"], "succeeded")
 
+    def test_injected_oauth_is_redacted_before_artifact_state_and_slack(self):
+        for index, mode in enumerate(("stdout", "artifact")):
+            with self.subTest(mode=mode):
+                self.oauth_fixture()
+                cli = self.root / "claude"
+                cli.write_text(f"#!{sys.executable}\nimport os,sys,json,pathlib\nsys.stdin.read()\n"
+                               "token=os.environ.get('CLAUDE_CODE_OAUTH_TOKEN','fixture-oauth-not-a-secret')\n"
+                               "output=token+'\\nSTATE '+json.dumps({'proof':[token]})\n"
+                               "if len(sys.argv)>1: pathlib.Path(sys.argv[1]).write_text(output)\n"
+                               "else: print(output)\n")
+                if mode == "artifact":
+                    self.config["agents"][0]["command"].append("{artifact}")
+                self.slack.history[""]["messages"] = [self.message(ts=f"12{index}.000001")]
+                self.runtime.receive()
+                with mock.patch.dict(os.environ, {"HOME": str(self.root)}):
+                    os.environ.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
+                    self.runtime.work()
+                directory = self.runtime.task_directory(self.tasks()[-1])
+                receipt = json.loads((directory / "result.json").read_text())
+                self.assertEqual(receipt["status"], "succeeded")
+                self.assertTrue(receipt["agent_state"].get("proof"))
+                for name in ("artifact.txt", "result.json"):
+                    self.assertNotIn("fixture-oauth-not-a-secret", (directory / name).read_text())
+                self.assertNotIn("fixture-oauth-not-a-secret", json.dumps(self.slack.posts))
+                self.assertNotIn("fixture-oauth-not-a-secret", json.dumps(self.tasks()))
+
+    def test_oauth_redaction_does_not_leave_a_tail_boundary_fragment(self):
+        self.oauth_fixture()
+        cli = self.root / "claude"
+        cli.write_text(f"#!{sys.executable}\nimport os,sys\nsys.stdin.read()\n"
+                       "token=os.environ.get('CLAUDE_CODE_OAUTH_TOKEN','fixture-oauth-not-a-secret')\n"
+                       "print(token+'X'*(20000-2*len(token)+5)+token,end='')\n")
+        self.enqueue()
+        with mock.patch.dict(os.environ, {"HOME": str(self.root)}):
+            os.environ.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
+            receipt = self.runtime.execute(self.runtime.claim())
+        self.assertNotIn("fixture-oauth-not-a-secret"[5:], receipt["output"])
+        self.assertLessEqual(len(receipt["output"]), 20000)
+
     def test_claude_preserves_explicit_auth_environment(self):
         self.oauth_fixture(entries=[])
         self.enqueue()
@@ -148,7 +187,7 @@ class HQTests(unittest.TestCase):
         self.assertIn("auth-attached", receipt["output"])
 
     def test_invalid_ssot_never_starts_opted_in_claude(self):
-        for case in ("missing", "wrong_mode", "duplicate", "unrelated", "symlink"):
+        for case in ("missing", "wrong_mode", "duplicate", "unrelated", "nul", "symlink"):
             with self.subTest(case=case):
                 credentials = self.oauth_fixture()
                 if case == "missing":
@@ -162,6 +201,9 @@ class HQTests(unittest.TestCase):
                 elif case == "unrelated":
                     credentials.write_text(json.dumps({"credentials": [
                         {"service": "claude-remote-control-extra", "token": "fixture-oauth-not-a-secret"}]}))
+                elif case == "nul":
+                    credentials.write_text(json.dumps({"credentials": [
+                        {"service": "claude-remote-control", "token": "bad\x00token"}]}))
                 elif case == "symlink":
                     original = credentials.with_suffix(".original")
                     credentials.rename(original)

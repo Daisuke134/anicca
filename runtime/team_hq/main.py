@@ -157,8 +157,10 @@ def agent_environment(agent):
             payload = json.load(handle)
         rows = [row for row in payload["credentials"]
                 if isinstance(row, dict) and row.get("service") == "claude-remote-control"]
-        if len(rows) != 1 or not isinstance(rows[0].get("token"), str) or not rows[0]["token"]:
+        if (len(rows) != 1 or not isinstance(rows[0].get("token"), str)
+                or not rows[0]["token"] or "\x00" in rows[0]["token"]):
             raise ValueError
+        rows[0]["token"].encode("utf-8")
     except (OSError, ValueError, KeyError, TypeError):
         raise HQError("指定されたagent認証を正本から読み取れません") from None
     environment["CLAUDE_CODE_OAUTH_TOKEN"] = rows[0]["token"]
@@ -490,6 +492,16 @@ class HQ:
         code, status, checkpoint, output = None, "failed", "launch_failed_handoff_required", ""
         process = None
         previous = {}
+        secrets = ()
+
+        def redacted_tail(stream):
+            stream.seek(0, os.SEEK_END)
+            stream.seek(max(0, stream.tell() - 20000 - max(map(len, secrets), default=0)))
+            data = stream.read()
+            # Fixed-length masking preserves the cutoff; a split token cannot leak a suffix.
+            for secret in secrets:
+                data = data.replace(secret, b"*" * len(secret))
+            return data[-20000:].decode("utf-8", "replace")
 
         def interrupted(_signum, _frame):
             raise InterruptedError
@@ -516,9 +528,14 @@ class HQ:
             try:
                 for signum in (signal.SIGTERM, signal.SIGINT):
                     previous[signum] = signal.signal(signum, interrupted)
+                environment = agent_environment(agent)
+                if agent.get("credential_service") == "claude-remote-control":
+                    token = environment["CLAUDE_CODE_OAUTH_TOKEN"]
+                    secrets = tuple({value.encode("utf-8") for value in (
+                        token, json.dumps(token, ensure_ascii=False)[1:-1], json.dumps(token)[1:-1])})
                 process = subprocess.Popen(command, cwd=Path(agent["cwd"]).expanduser(), stdin=subprocess.PIPE,
                                            stdout=stdout, stderr=subprocess.DEVNULL, start_new_session=True,
-                                           shell=False, env=agent_environment(agent))
+                                           shell=False, env=environment)
                 process.communicate(self.prompt(task).encode(), timeout=self.timeout)
                 code = process.returncode
                 status = "succeeded" if code == 0 else "failed"
@@ -542,12 +559,9 @@ class HQ:
                 status, checkpoint = "failed", "artifact_invalid_handoff_required"
             elif artifact.is_file():
                 with artifact.open("rb") as stream:
-                    stream.seek(max(0, artifact.stat().st_size - 20000))
-                    output = stream.read().decode("utf-8", "replace")
+                    output = redacted_tail(stream)
             else:
-                stdout.seek(0, os.SEEK_END)
-                stdout.seek(max(0, stdout.tell() - 20000))
-                output = stdout.read().decode("utf-8", "replace")
+                output = redacted_tail(stdout)
         output = self.clean(output).strip()
         atomic_text(artifact, output)
         state = {}
