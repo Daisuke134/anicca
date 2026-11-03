@@ -25698,3 +25698,5 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 現在cursor: 原本全文を読了。PR #9102のhead b5ff7ec8f44223b096de2e887ee76178f912325dを原稿基準とし、最新origin/main由来のpublish/agi-four-platforms-20261103で進める。
 設計判断: 既存Manager publication manifestとflat /blog/manager-...-en/ja routeを再利用。新CMS・別route体系は不要。本文は英語最新meritocracy節を維持し、結論後に指定の2問を再掲する。8画像を各editionで1回ずつ用いる。
 TODO: [ ] source/assets/package [ ] source validation/review/merge [ ] bridge/deploy [ ] website EN/JA readback [ ] X public readback [ ] note free public readback。
+
+AGI publication cursor: 日英全文・PNG8点・package検証済み。独立read-only検証は重大指摘0、meritocracy段落488 bytes一致、GitHub rawから8PNG hash一致。Manager関連12テストPASS。PR #9105へsourceをpush済み。既存本番repoへのinstaller適用は70記事43画像で成功。noteは既存本人anicca123で重複85件確認後、全文8画像・価格0の公式previewを確認して公開: https://note.com/anicca123/n/neee04b1ecdf6。匿名公式readbackを照合中。X専用profileは起動前disk floor（空き約3.5GiB / required12GiB）でdeferred。既存sessionや他ownerを変更せず容量診断中。残TODO: source CI/merge → bridge pins/CI/build/merge/deploy → website EN/JA直接readback、X公開、最終note readback。
