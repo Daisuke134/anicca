@@ -97,6 +97,10 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 継続修復（task a4a1953ed490e9caf61e10c3）: PR9101旧head b86f14fの必要CI14jobs/CodeRabbitは公式SUCCESS。GitHub reviewの2指摘を実コードで確認し、legacy keyのplatform空/post有り本文をunavailableへ分類し、日次pullの明示attribution取得と返却ct集計の保存を同PRで接続する。既存日次行を再送/上書きせず、売上因果の未確認と欠損unknownを維持する。順序は2件RED→最小修正→関連GREEN→push→fresh review/更新head必要CI→main→限定反映。旧headのCIを新headへ流用しない。2件はPython2 assertions/Node1 assertionのREDを確認し、最小修正後Node11/Python marketing全39 GREEN、diff/source-boundary PASS。Python既存HTTPError fixtureのResourceWarningは保持し、失敗0。現在cursorは更新headのfresh review/必要CIであり、deploy/投稿/会計変更0。指定remote threadは公式完読、本人の新差分なし、催促0。
 
+継続受入（task3c4c1098fc075eb8a57ac221）: PR9101/head df3237f849の必要CI14jobs＋CodeRabbit公式SUCCESS、独立SHIP、source Node11/Python39再PASS後、admin mergeでmain f6eef8eadbfd91877e68c1334a6220be4f8d724cへ統合。公式fetchの対象4filesとsourceがbyte一致する。同owner/leaseを継続し、公開current-IDを確認してmain由来2関数だけを同じSDK/bootstrapでbundle、ZIPからNode11 PASS、独立read-only検証SHIP/重要0。公開static5files・72件allowlist・SDK10files・bootstrap・runtime設定を保持する。旧go ZIPそのものの保持はこのlaneでは行わず、今回のmain由来JSON保存handlerへ更新する。前PR9097の再実行ではない。
+反映: Netlify deploy6ae925af58c2cba944c2be18はready/published、公式site readbackと公開statsを確認。通常105/合成除外9/公開index hashは不変、明示attributionはrecorded0/unavailable105。既存記録を推測復元せず追加click0/投稿0/会計変更0。初回uploadはLanguage不足HTTP400、draft state/required2を公式照合後、公式OpenAPIのruntime=js/stream/sizeで補正しaccepted。公開不明やblind retryはない。自然新規JSONと売上は未確認。
+現在cursor: source/main/Netlify公開反映は完了。~/loops/currentは20261103T090718-f6eef8eaでpull_attribution.pyはmainとbyte一致するが、日次ownerのloaded状態/自然日次行は未確認。次はこの受入記録の必要CI→main、および同ownerで自然新規clickのJSON/ctと日次click_attribution行を公式照合する。別deploy・合成probe再送・過去日次行上書きはしない。証拠 → docs/evidence/capafy-payload-3c4c10-acceptance.json。remote threadは本人の新差分なし、催促0。Dots会計/Muse・Marketer投稿/HQ runtimeを維持する。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
