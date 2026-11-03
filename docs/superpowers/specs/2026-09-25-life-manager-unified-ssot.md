@@ -25719,6 +25719,8 @@ Naïve browser実測: PR9108はmain8bd07954へ統合、14CIは後続readbackで�
 
 Browser実操作の修復: ターン終了でbrowserが閉じるため、次ターンは最終URLへgotoしてから観測する。observeが返したxpathで直接type/clickするとpage could not completeとなる例を記録。公式browser仕様は直接操作のselectorをCSSと記載するため、xpathとの互換境界を疑うがprovider実装の原因とは断定しない。検索はbrowser.actで入力と送信に成功、extractで動画30件と3商品の価格/販売数表示を照合した。作業メモはsandbox内の相対パスanicca-browser-journal.mdを使う。絶対/home/userはagent toolではsandbox外として拒否された。Computer割当、write成功、次ターンread成功を確認した。
 
+認証誤報の診断: 専用loginがlogin doneを返しても、extractではWelcome to Capafy、メール形式エラー、ログインformが残っていた。agentの成功報告と誤記メモを訂正し、認証未完を保持する。資格情報metadataのhost=googleは実際のaccounts.google.comと不一致だった。公式APIのservice例はfigma.comというhostnameであるため、accounts.google.com名で保存しhost完全一致をGET確認後、自己作成した旧login:googleだけを削除した。raw秘密値はmodel/ログへ渡さない。次はGoogle実画面のhostとservice一致を確認してから専用loginを使い、別sessionでjournalと保存contextを再開する。login done単独を成功にせず、ログイン済み本人画面を必須の結果として扱う。
+
 
 ## AGI flagship essay publication
 
