@@ -25880,3 +25880,5 @@ Naïve seller有限はcancelled/pending0、26tools/Haiku8+Gemini13spans、state1
 7. 黒字の手順/評価/最小stateを他VMへ移植し2拠点で実証。専用Identity/credential・資源上限・仕事の一重処理を維持。受取専用walletにoutgoing signerは未接続、compute自費/自己複製/任意cloud互換は未達。Naïve固有のvault/inbox/session参照をそのまま他cloudでも使えるとはしない。
 
 benchmark研究は並行項目: 公開BusinessRun Benchの9eval catalogと3再利用環境の実測を維持し、独自課題・複数modelの同条件比較・採点/費用/介入/公式成果の記録を増やす。既存3環境のscript baselineをモデル順位や全9evalの独立再現としない。英語記事は https://aniccaai.com/blog/manager-naive-autonomous-companies-en で公開済み。ハッカソンは公式の11/7–8/SF/SDK/ライブデモ条件に合わせ、事前開発と当日成果、介入点を分けて実証する。優勝/YC採択は未達の目標。
+
+Naïve browser保持の次sourceはv19未反映。既存browser.keep_aliveだけtrueにし、必ずturn毎に閉じるというsystem文を実画面確認へ整合、production pin19も明示する。liveは18/18のまま。月8/task1/model/Identity/他権限/cron/input不変。残TODO順は本節の7項目、cursor2。main固定→全field公式GET一致→公開HNだけ最大0.30USDの有限native probe、画面/URL/非秘密入力の保持・確認/primary介入/実費を実測する。設定受理を売上/復旧成功にしない。実行契約 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「browser保持のv19最小変更」。

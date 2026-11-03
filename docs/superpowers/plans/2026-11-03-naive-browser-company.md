@@ -528,3 +528,13 @@ PR9165は15checks全PASS/独立read-only review SHIPでmain `9ae119a7272dfc9d423
 次は公開ページだけの短いbrowser再開probe。現sourceはkeep_alive=false、公式 https://usenaive.ai/docs/computer/browser.md はtrueをbrief disconnectをまたぐresumable flow用とする。これは確認待ち後の白画面/状態喪失に関係し得るが、解除の実証はまだ無い。最小の設定比較と実画面/URL/非秘密の検索入力保持を確認し、確認イベント数・primary AI操作・実費を別々に記録する。signup/mail/決済/他owner profileを混ぜず、同じ失敗の盲目反復や未測定の改善率を出さない。source/main固定の後にだけruntimeを変更し、1仕事1USD/月8USD内で次の有限probeを閉じる。
 
 MCPのresource境界もfirst-partyで確認: https://usenaive.ai/docs/api/mcp-sessions.md はidentity_idを現状未enforcedなlabelと明記。allowed_toolsはmethodの制限で、対象agent/computerの固定ではない。したがって会社全体へ届くtokenを業務workerへ渡す形にせず、必要な制御は所有agent/Computerを照合する会社側の狭い窓口に保持する。新MCP key/sessionの発行は0。repoのapps/runtime/scriptsにはNaïve/vetta/confirmTool/awaiting_approvalを扱う既存コードを今回の検索で取得できなかったため、既存対応の稼働済みとはしない。まず小さいbrowser再開設定の観測を進め、必要な確認処理は会社側AI運用としてDaisへの承認待ち無しで組む。private `mcp-resource-scope-findings.json` と各first-party docsが根拠。全体goal active。
+
+### browser保持のv19最小変更
+
+目的は確認待ちや短い切断後に白画面になる境界を狭めること。範囲は既存agentのbrowser.keep_alive=false→true、前画面が必ず閉じるというsystem説明を現在画面の観測へ整合、同deployment pin18→19だけ。費用上限8USD/月・1USD/task、model、Identity、その他権限、cron/inputは維持。設定の受理を改善成功にしない。
+
+公式tools/browser資料ではkeep_aliveはagent tools.configs.browser.configにある。native toolのper-call設定は確認できず、未記載argsを捏造しない。現行18を参照するdeploymentは更新時19へ追随するため、pin19も同sourceで扱う。実行時の旧版sessionsは維持する。
+
+完了条件はmain固定sourceの公式GET一致と、公開https://news.ycombinator.com/だけの有限native probe。最大0.30USD、同browser依存操作は直列、まずgoto→screenshot/必要なobserveで実画面があるかを確認する。入力欄が実在するときだけ非秘密検索語を入力し、短いidle/再開をまたぐ画面/URL/入力値を比較する。確認が出た場合は会社側AIが当該公開browser操作を検査して回答し、確認数/primary追加入力/台帳費用を記録する。signup/mail/公開送信/決済はこのprobeに混ぜない。失敗時もcancel/pending0とComputer停止まで照合し、未実証の連続録画や無介入成功を主張しない。
+
+旧順序も新順序も統合SSOT TODO2（browser復旧→実需要→有償納品）。新framework/controllerを先に作らず、実測失敗に対応する単一設定を先行する。現在はv19未反映、live18/18。Reason inboxとSlack既存照会threadの再確認でも新返信は未取得。
