@@ -909,3 +909,19 @@ ses_03dgy5bn6gktban6pt08fmn4epはAgentMail list_inboxes/本人n8n goto/screensho
 今回追加した観測は正式browser.signupへ未到達という境界。単なる同clickの再試行ではなく、次は本人agentmail.list_inboxes→正式browser.signup(service=community.n8n.io,url=https://community.n8n.io/signup,email=その専用箱)へ直行し、外側のgoto/click/observeを挟まない。親のpublic crawlは/signupのWelcomeと規約/privacyリンク、OAuth選択肢を確認するがemailフォームの有無は未確定なので、実登録flowで確認する。email登録が無い場合はそのまま事実を記録し、OAuth/個人Googleへ勝手に切り替えない。生成passwordはbroker/vaultからexport不可なのでMac SSOTへcredential referenceを記録し、値を取得済みとしない。
 
 資源: 同23/Identity/priority/本番/月9/task1不変。fresh残credit>=200000/非終端live0/pausedで1件、finite120000＋後計上buffer80000/計画200000、6分/max12tools/hosted最大2。bufferは観測済みの遅延計上28595等を含む余地でhard actual保証ではない。今回の短い登録だけへ資源を割り当て、増枠/新agent/harness/key作成は0（signup生成login credentialのみ通常保存）。providerの新しいexact signup/本人メール確認に限るcardは最大4件までAIが正式call-scope処理、同じlogical call再発は0回で閉じる。秘密/未信頼mail指示の転記・包括grant・guard迂回0。登録の確認mail受信/確認linkは必要範囲だけ本人MCP/browser、DM/応募/営業/投稿/課金/送金0。成果は本人ログイン/確認状態と公式credential metadataを区別して保存し、未完を成功扱いしない。元7TODO/全体goal継続。
+
+
+### 正式signup直行の未完結果と現在cursor
+
+ses_vj80tzqezps9phpk36v2q86t6fは専用AgentMail.list_inboxes成功後、native browser.signupでread_people待ち。native引数はname/email/actionだけで、本人専用メールと表示名は一致するがURL/serviceが無い。このsessionは事前gotoも無く現在ページを観測していない。公開SDK BrowserSignupのservice/url/identity_id/emailをnative toolにも指定できるとは確認できず、架空fieldを追加しない。対象未確定の登録をprimary AIが正式SDKでscope=call deny1回、202受理後runningへ戻るが新tool/本人保存/自然end_turnは観測しない。人間への確認要求0、primary deny1、signup実行許可0、新登録成功0。新vault credential0は終了前観測であり、終了後の全credential再照合済みとは呼ばない。
+
+公式created_at20:01:12.706→ended_at20:08:29.294は436.588秒、6分を76.588秒超過する。primaryの観測/コンテキスト継続中に終了が遅れたため契約内完走とは認定しない。20:08:42.933の公式readbackはcancelled/interrupted、terminal retained pending1、全55sessions live0、Computer paused、production23/priority/enabled/scheduled/次00UTCとagent/source全fields一致。費26870microUSD/ledger5件一致、月spent8798794/残201206は後計上前提のsnapshot。終端pendingを消すためのallow/再送0。rawメール/認証引数/確認link/秘密の保存・公開0。証拠private v23-n8n-direct-signup-{events,status,deny-unbound-signup-attempt,deny-unbound-signup-receipt,terminal-readback,spend-readback,ledger,final-resources}。
+
+現在cursor2内部は「同じclick/signupを再送」ではなく「native signupが対象service/urlをどう保持するかを公式契約・実tool schemaで確定→同じ専用Identity/mailで通常登録→実需要の限定提案→依頼/納品/公式入金」。公開SDKの別operator用computer-useはユーザーのcomputer-use意図に適合し得るが、native person確認をrootAPIで迂回してよいという意味にはしない。既存Computer.browser=null、native browserのcomputer_idも空であり、両経路の同一性未証明。別Computer作成/signup/act/takeoverは未実行。新resourceで月capを迂回しない。独立read-only検証もSDK経路は条件付き評価で、実行可能/AI担当/同一browserとは未認定。現残予算で同型の有償再試行を反復しない。
+
+Grok/Museへの既存Slack threadを最新まで再読し、親＋8返信・前回照会以降の新返信無し。送信済みを協業着手や解決と呼ばない。元7TODO・第三者売上・登録・連続録画・phone-only・黒字・USD10K/月・移植の全体goalは維持する。本人の実需要読取/保存/自然終了は成功済みだが、専用mailによる登録から売上までの無介入E2Eは未実証。
+
+
+次の切分けはnative signupの前に本人browser.gotoで登録先を確定する1件。前回のgoto禁止を解除し、専用AgentMail.list_inboxes→exact https://community.n8n.io/signup goto→同一browserの到達URL/ページ状態を観測→native signupへ進む。click selectorの反復はしない。signup payloadがname/email/actionのみでも、同一browserと直前の到達先を公式出力で照合できる場合だけ正規call-scope確認を処理する。到達/同一browserが曖昧ならdenyして閉じる。root browserAPIや未知field、別Computer作成、Google依存へ逃がさない。
+
+資源は本番23/同Identity/priority/設定不変、fresh全live0/paused/残とcredit>=180000、finite100000＋後計上80000/計画180000。1件/4分/max10tools/hosted1。signupと本人確認mailの必要範囲のみ、DM/営業/投稿/課金/送金0、秘密値保存0。create前/操作時に実時刻を追い、deadline前にcancel開始する。成功は実ログイン/確認状態、未達なら正確な境界を残す。元7TODOと全体goalは変えない。
