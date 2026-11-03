@@ -281,3 +281,5 @@
 
 - home-codex（task95bef89b）: 公式go-stats通常106/除外9、JSON帰属1(ct=c1103d1)/旧105unavailableを確認。日次callerはdisabled・投稿effect18db7caff1178a88-68028がhistory_incomplete/receipt不在、日次ledgerなし。再起動/投稿/検証click/deploy/会計write0。次: PR9103 CI→統合、元IG本人handle/journalと公式receipt照合。証拠 docs/evidence/capafy-natural-95bef89b.json。
 - home-codex（task7c9269）: PR9103/head394a000070の必要CI14件/CodeRabbit公式成功を確認してmain735660764dへ統合。PR9104は同owner/leaseでmain同期し、文書競合は双方の証拠を保持して解消。次: 更新head全CI→統合、旧occurrence本人journal照合。deploy/投稿/会計変更0。
+
+- 2026-11-03 13:45 JST Codex: AGI flagship essayを4/4媒体で公開・実確認。本人@diceai0のX Article 2117478259654897939は全文177ブロック一致、8画像loaded、最後2問あり。旧capacity blockerをresolvedへ。公式英日・note無料を維持、収益は未測定。次: 公開証拠のCI/main統合。

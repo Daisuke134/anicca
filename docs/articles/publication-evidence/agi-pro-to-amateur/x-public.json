@@ -1,0 +1,134 @@
+{
+  "run_id": "agi-publication-20261103",
+  "owner_id": "x:diceai0",
+  "occurrence_id": "agi-publication-20261103:x-article",
+  "phase": "public_verified",
+  "effect": 1,
+  "readback": 1,
+  "provider_receipt_id": "2117478259654897939",
+  "error_class": null,
+  "retryable": false,
+  "next_action": null,
+  "public_url": "https://x.com/diceai0/status/2117478259654897939",
+  "article_url": "https://x.com/i/article/2117478257016598528",
+  "account": "diceai0",
+  "account_display_name": "Anicca",
+  "article": {
+    "cover_media": {
+      "id": "QXBpTWVkaWE6DAABCgABHWLLKFdXIAAKAAIAAAAAAAAAAAAA",
+      "media_info": {
+        "__typename": "ApiImage",
+        "original_img_height": 563,
+        "original_img_url": "https://pbs.twimg.com/media/HWLLKFdXIAAT_7k.jpg",
+        "original_img_width": 1000
+      }
+    },
+    "id": "QXJ0aWNsZUVudGl0eToyMTE3NDc4MjU3MDE2NTk4NTI4",
+    "preview_text": "The End of Productive Activity\nWhat will AI do to us?\nPeople answer with a list. It will write software. Discover medicines. Prove theorems. Run companies. Replace junior engineers, then senior",
+    "rest_id": "2117478257016598528",
+    "title": "What Will AI Do to Us? It Will Turn Every Pro Into an Amateur."
+  },
+  "state": "PUBLISHED",
+  "postiz_post_id": "cmw078pqq00kzoc07ipdk4xvt",
+  "postiz_release_id": "2117478259654897939",
+  "all_text_blocks_exact_match": true,
+  "source_blocks": 177,
+  "published_blocks": 177,
+  "anonymous_full_article_verified": true,
+  "last_questions_verified": true,
+  "image_count": 8,
+  "all_images_loaded": true,
+  "images": [
+    {
+      "name": "hero-original.png",
+      "provider_url": "https://pbs.twimg.com/media/HWLLKFdXIAAT_7k?format=webp&name=medium",
+      "provider_sha256": "e49b4b3dd5257e65aad8696439ec94438d7a9c81c33a15b1a8f8a7529083398c",
+      "original_sha256": "2d3dd83cda9192da5c444e3afb7d90d715e73fc499c2119c9033bcd594aae333",
+      "provider_dimensions": [
+        1000,
+        563
+      ],
+      "rmse": 8.307
+    },
+    {
+      "name": "transaction-disappears.png",
+      "provider_url": "https://pbs.twimg.com/media/HWLLKRvWsAAWOpq.jpg",
+      "provider_sha256": "2b4713adc09ec1daab74aad25f991203c3cddb86e0abf7d8cc399a19cf082cc5",
+      "original_sha256": "fab621fa2335434280929f94215363f1aa71093375ba6f37dc8d0fbc66ec4b8e",
+      "provider_dimensions": [
+        1000,
+        427
+      ],
+      "rmse": 14.069
+    },
+    {
+      "name": "mathematician-treehouse.png",
+      "provider_url": "https://pbs.twimg.com/media/HWLLKcvXcAM2UqC.jpg",
+      "provider_sha256": "f3f3bbff36e3b0d3a30eb8c4b9a3606d53cb10c5c2c9a91fc55a3d9af0f90ff5",
+      "original_sha256": "e5ee77077b6b2b9f5b6c59c613b3d47e70fb08255adc0e9f534f5de054f69786",
+      "provider_dimensions": [
+        1000,
+        507
+      ],
+      "rmse": 14.757
+    },
+    {
+      "name": "productivity-trap.png",
+      "provider_url": "https://pbs.twimg.com/media/HWLLKo3WsAANDGc.jpg",
+      "provider_sha256": "63615063ba7cb5a03e617ab64e1a84f8ed1ae6212adf4e757f5441ae2579df10",
+      "original_sha256": "69321e23d114ebe2d682040c7d619aa41412a54cffd9a29c6180ee766cef2e8f",
+      "provider_dimensions": [
+        1000,
+        579
+      ],
+      "rmse": 10.668
+    },
+    {
+      "name": "twenty-second-illusion.png",
+      "provider_url": "https://pbs.twimg.com/media/HWLLK0HWUAA1bje.jpg",
+      "provider_sha256": "93c5e4f0b4dc1ffce1d827d8cd14e644fd7b31dd443de065b927da8c431c0590",
+      "original_sha256": "ecd3992d32e52658e32e12f135b942a4a95614a2c77486ba6ac021af8a1b86ee",
+      "provider_dimensions": [
+        1000,
+        556
+      ],
+      "rmse": 13.782
+    },
+    {
+      "name": "chess-human-story.png",
+      "provider_url": "https://pbs.twimg.com/media/HWLLK_dXEAAThGv.jpg",
+      "provider_sha256": "15219150df97c4a3a2bc82781c833a2a6cfa92f726c73afdb6c57a603acc64bf",
+      "original_sha256": "efc066ddfe6a24739ff29c0cef05431910b28a5a63a89fcea0c2e7acd8d4c0a8",
+      "provider_dimensions": [
+        1000,
+        498
+      ],
+      "rmse": 7.029
+    },
+    {
+      "name": "bakery-bread.png",
+      "provider_url": "https://pbs.twimg.com/media/HWLLLJ8XgAAoQNq.jpg",
+      "provider_sha256": "41ce0beed94b4f460952268365ba42a420411dc8a18e1fe4d52ed1d527cfff53",
+      "original_sha256": "ea2cbfe7316702b92f3544b12fc9de0b8fdb840c6d739158a718138f2f865193",
+      "provider_dimensions": [
+        1000,
+        486
+      ],
+      "rmse": 9.296
+    },
+    {
+      "name": "walking-for-nothing.png",
+      "provider_url": "https://pbs.twimg.com/media/HWLLLUGXEAAdFJQ.jpg",
+      "provider_sha256": "cf1af1f2bc0aedf52dc4d3a1e57853eecd7649b9d0d01626f352b623398380af",
+      "original_sha256": "e97b2b55375c4f5f6df965e04edca600b6ae7bf3a83e3c9210ce561e0449ed60",
+      "provider_dimensions": [
+        1000,
+        441
+      ],
+      "rmse": 5.863
+    }
+  ],
+  "provider_image_transformation": "Postiz resizes to width 1000 and JPEG; X may serve WebP. Original PNG hashes remain unchanged.",
+  "review": "Independent read-only verifier: PASS, 177 blocks match source, account/title/cover/eight images/ending confirmed.",
+  "remaining_blockers": []
+}
