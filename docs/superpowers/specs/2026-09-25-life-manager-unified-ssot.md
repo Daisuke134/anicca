@@ -25791,16 +25791,18 @@ MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し�
 
 目的・範囲: 承認済み英語原稿を保持し、日本語全文版と原本PNG8点を既存Manager出版パッケージへ組み込み、aniccaai.com英日・@diceai0 X Articles・既存note無料記事を公開する。別の配信基盤、通常post/thread、課金記事は作らない。
 完了条件: 4つの公開URLで本文末尾・画像・account・無料公開を直接確認し、GitHubのsource/media SHA-256とNetlifyの固定revisionを照合する。draft/CIだけを完了扱いしない。
-現在cursor: **3/4媒体を公開・実確認済み。X Articlesは未公開。** 同じx:diceai0のbrowser起動前disk_floor_lowを解消し、正しいaccount/editorを開いて全文を公開する。X上のdraftも未作成であり、local公開用データをremote draftと数えない。
-TODO: [x] source/assets/package [x] source validation/review/merge [x] bridge/deploy [x] website EN/JA full readback/mobile/media hash [x] note free public readback [ ] X public full-article/account/image readback。
+現在cursor: **4/4媒体を公開・実確認済み。依頼された公開作業は完了。** 英語X Articleも@diceai0の同一accountで公開し、匿名のX公開ページの全文177ブロック・8画像・最後の2問を照合する。公開は収益や読者数の証明ではない。
+TODO: [x] source/assets/package [x] source validation/review/merge [x] bridge/deploy [x] website EN/JA full readback/mobile/media hash [x] note free public readback [x] X public full-article/account/image readback。
 設計判断: 既存Manager publication manifestとflat /blog/manager-...-en/ja routeを再利用。新CMS・別route体系は作らない。英語meritocracy段落は原稿PR #9102の488 bytesと完全一致。日英全文は段落対照の独立read-only検証で重大指摘0件。原本PNG8点はZIP manifest・GitHub raw・本番owned mediaのSHA-256が一致する。各版に8点を1回ずつ置き、思考実験とAI生成チェスイメージを明記する。
-順序: 旧順序はsource → canonical merge → bridge/deploy → website → X → note → 最終readback。Xの起動前容量blockerを観測したため、独立して進められるnoteを先行する。実行順はsource/package → note公開 → canonical/bridge merge → website公開/readback → X復旧。進行中の外部effectを中断・重複せず、現在cursorはXのみ。
+順序: 旧順序はsource → canonical merge → bridge/deploy → website → X → note → 最終readback。Xの起動前容量blockerを観測したため、独立して進められるnoteを先行する。実行順はsource/package → note公開 → canonical/bridge merge → website公開/readback → X復旧。進行中の外部effectを中断・重複せず、最後に同一accountの既存Postiz OAuth経路でX Articleを公開・実確認し、この依頼のcursorを閉じる。
 
 公開済みURL:
 - EN: https://aniccaai.com/blog/manager-every-pro-an-amateur-en
 - JA: https://aniccaai.com/blog/manager-every-pro-an-amateur-ja
 - note: https://note.com/anicca123/n/neee04b1ecdf6
+- X Article (@diceai0): https://x.com/diceai0/status/2117478259654897939
+- X article entity: https://x.com/i/article/2117478257016598528
 
 証拠: 両websiteの公開HTML内に正本の全文描画が完全一致し、言語・canonical URL・heroのOpen Graph/Twitter画像を確認。390px mobileで横overflowなし・原本8画像loaded・最終2問あり。noteは本人anicca123、price=0、匿名公式APIの本文が日本語原稿と空白正規化後に完全一致。noteのPNG再圧縮はdocs/articles/publication-evidence/agi-pro-to-amateur/note-public.jsonへprovider hashと寸法を記録する。websiteのraw PNG8点は原本バイトと完全一致し、website-public.jsonへ記録する。
 統合: #9105と#9107はmerged、元の編集用#9102はsuperseded/closed。承認済みcontent commitはeaf9684c115646ee35b47711490d2645e77600af。installer/modulesはd569400787be23bd79eff61342296f18d03b84c2。配信repoの#844と#845はmerged、最終publishing commitは98edd3125201e352c55af3dc37803f94c3d72a6d。Netlify run https://github.com/Daisuke134/anicca-products/actions/runs/41567504809 はsuccess、既存money-path smoke PASS。Manager関連12 tests、source CI16 checks、各bridge CI2 checks PASS。
-X診断: guard holderなし・専用profileのbrowser PIDなし・endpoint unavailable。Aqua/user preflightはPASSするが正式immutable release 20261103T104620-9e3044fcの起動前容量検査が12GiBを要求する。現行mainでも条件は有効で、古い通常checkoutの異なる条件をfallbackにしない。read-onlyで調べた既存allow-list回収候補は、unsafe/active候補まで過大に含めても約3.45GiBで不足を埋めない。追加のtemp Git-copy調査では未push commitやdirty copyも見つかり、保護する。閾値override・別account/profile・他ownerデータ削除・別post/threadへの代替は行わない。effect=0、provider receiptなし、X Articles利用権限は未確認。exact evidenceと同identityでの再開経路はdocs/articles/publication-evidence/agi-pro-to-amateur/x-blocker.jsonに残す。
+X完了証拠: Postizの既存@diceai0接続からpost_type=articleで公開し、公式Xの匿名syndicationでhandle・title・article ID・coverを照合する。公開Xページの非空177本文ブロックは原HTMLと順序・文字列とも一致し、全8画像の読み込みと最終2問を確認する。独立read-only verifierもPASS。公開証拠はdocs/articles/publication-evidence/agi-pro-to-amateur/x-public.json。X/ Postiz側の画像は幅1000pxへの縮小・JPEG/WebP化があるため原PNGとのbyte一致とは扱わず、原本hashとprovider hashを別々に保持する。旧disk_floor_lowは解消し専用browserを起動できたが、browser loginはメール確認challengeに到達した。このchallengeを未解決のまま、既存の本人OAuth接続から公開を完了する。Postizのリンク除去が本文img srcも空にした問題は、同じCDNを指す有効なURL表記に正規化し、同じdraftを更新・preview確認してから一度だけ公開する。通常post/threadへの代替や別accountでの投稿はない。Grok CLIの公式binaryは復旧したがagent session起動は失敗し、Grokから助言・投稿があったとは主張しない。旧blockerはx-blocker.json内でhistorical_only/resolvedとして残す。残る公開blockerなし。
