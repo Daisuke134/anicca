@@ -24,6 +24,9 @@ Grokbot実業務の引継ぎ: 本人dr eggbotのReason返信3FZYT4EYA21PM454HV6Q
 
 容量復旧の追加範囲: 自然workerはdisk_floor_low再発、空きは約2.8GiBへ再低下する。順序は容量回復→元helper受信/実行→Grok実務移管を維持する。既存6件の回収を再計上せず、追加の独立clone lmg-1793637778/ap-seo/ap-rss2-1793672074をread-only独立監査し、tracked/untracked/ignored各0・argv/CWD/FD参照0・既存lease/Git lockなしを確認する。lmgはmain/ローカルorigin同一、残り2件はlocal-only commit1/2件を持つため削除/移動/GCは禁止。前段の未統合copy保持はGit内の全object/ref/HEADとlocal-only commitを完全保持することで満たし、Git native sparse-checkoutの可逆縮小だけを適用可能とする。保護対象memory/memories/stateの内容/inode/mtime/mode、全refs/HEADとclean状態を前後比較し、専用lock取得/使用中再確認、復元commandと実空き差分をprivate receiptへ残す。既存COWを含む割当上限1.48GiBは実回収保証ではない。dirty/使用中/未保存のcopyと稼働runtimeは引き続き保持する。
 
+
+追加容量の実測: private capacity-extra-sparse-1793678633.jsonで3件すべてsparse_verified、Git HEAD/全refs/clean保持と全memory/memories/stateの内容/inode/mtime/mode保持を確認する。最初は自分のmaintenance lock FDまでactiveと判定して対象変更0で停止し、PIDを観測して自己lockのみ除外・他PID参照拒否を維持し再dry-run後に実行する。freeは操作全体2.255→4.109GiB、後続4.116GiB。他processの割当変動を含むため全差分を自己回収へ帰属させない。current releaseは265bab69、HQ source未反映、元helper card4db7d7462367afcad7ec144cと毎時carde90c688b773a9f9fd3c76149はqueued/received。容量の安定とCLI実着手を引き続き分離して確認する。
+
 目的: Slack #agents-hq を共有部屋にし、依頼保存・受領・着手・進捗・証拠付き完了・停止/枠切れの引き継ぎを追跡する。Codexは収益阻害、計測、Manager開発を継続し、確認した実験を公開する。schedulerが有限のagent実行を起こし、この対話が無期限に自己再開するとは扱わない。
 
 ユーザーの委任: 通常の技術/運用判断、実装・検証・main統合・対象限定反映・記事公開は自律実行する。担当は重複防止の目印であり壁ではない。途中成果・次操作・effect境界を渡して助け合う。本人手続き、provider権限、支出上限、利用枠は事実上の境界として保持し、枠のreset/transferを装わない。
