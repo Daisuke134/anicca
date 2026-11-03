@@ -50,7 +50,7 @@ A domain-general intervention system uses *lawfully public information* to ident
 
 `Public sources -> source rights / provenance -> world state -> causal hypotheses -> action options -> optional behavioral simulation -> authority and safety -> effect executor -> independent public readback -> preregistered causal evaluation -> calibrated learning or rollback`.
 
-- **Evidence:** No source without URL, version/hash, date and reuse/PII status; a research claim is not a measured intervention result. For public-aggregate comparisons, record the declared disclosure-control method; exact arithmetic screening is skipped for rounded, perturbed, mixed or undocumented counts, and even an unmodified-count declaration is not independent disclosure clearance.
+- **Evidence:** No source without URL, version/hash, date and reuse/PII status; a research claim is not a measured intervention result. For public-aggregate comparisons, record the declared disclosure-control method; exact arithmetic screening is skipped for rounded, perturbed, weighted, mixed or undocumented counts, and even an unmodified-count declaration is not independent disclosure clearance.
 - **Rights:** `docs/research-rights.md` and `docs/research/source-rights.json` are the R006 reference. `hold` means no dataset ingestion, model packaging, redistribution, public publishing or personal inference for that use.
 - **Safety:** Model predictions cannot authorize money transfers, changes to a shared environment, messages, medical advice, or published content. Strict role/scope, budget, time, owner authorization, `UNKNOWN_EFFECT`, and idempotency.
 - **Outcomes:** Record execution receipt P1, independent world change P2, human benefit P3, causal P4 and replication P5 separately.

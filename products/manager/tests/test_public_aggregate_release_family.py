@@ -333,17 +333,19 @@ class ReleaseFamilyTest(unittest.TestCase):
             self.assertNotIn(window, rendered)
 
 
-    def test_perturbed_family_skips_three_way_exact_arithmetic(self):
-        releases = list(self._disclosive_triple())
-        for release in releases:
-            release["disclosure_control"]["method"] = "perturbed"
-        result = preflight_release_family(releases)
-        self.assertEqual(result["status"], "REVIEW_REQUIRED")
-        self.assertIn("FAMILY_DISCLOSURE_METHOD_UNCERTAIN", result["reason_codes"])
-        self.assertNotIn("FAMILY_SINGLE_HIDDEN_CELL", result["reason_codes"])
-        self.assertNotIn("FAMILY_SUPPRESSION_UNDONE", result["reason_codes"])
-        self.assertFalse(result["can_publish"])
-        self.assertEqual(result["beneficiary_effect"], "NOT_MEASURED")
+    def test_perturbed_or_weighted_family_skips_three_way_exact_arithmetic(self):
+        for method in ("perturbed", "weighted"):
+            with self.subTest(method=method):
+                releases = list(self._disclosive_triple())
+                for release in releases:
+                    release["disclosure_control"]["method"] = method
+                result = preflight_release_family(releases)
+                self.assertEqual(result["status"], "REVIEW_REQUIRED")
+                self.assertIn("FAMILY_DISCLOSURE_METHOD_UNCERTAIN", result["reason_codes"])
+                self.assertNotIn("FAMILY_SINGLE_HIDDEN_CELL", result["reason_codes"])
+                self.assertNotIn("FAMILY_SUPPRESSION_UNDONE", result["reason_codes"])
+                self.assertFalse(result["can_publish"])
+                self.assertEqual(result["beneficiary_effect"], "NOT_MEASURED")
 
     def test_exact_three_release_subfamily_still_checked_when_fourth_is_rounded(self):
         a, b, c = self._disclosive_triple()

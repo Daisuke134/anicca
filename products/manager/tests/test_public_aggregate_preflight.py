@@ -187,7 +187,7 @@ class PublicAggregatePreflightTest(unittest.TestCase):
         self.assertFalse(result["can_publish"])
 
     def test_rounded_perturbed_and_mixed_counts_skip_exact_arithmetic(self):
-        for method in ("rounded", "perturbed", "mixed"):
+        for method in ("rounded", "perturbed", "weighted", "mixed"):
             with self.subTest(method=method):
                 p = self.packet()
                 p["disclosure_control"]["method"] = method

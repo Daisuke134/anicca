@@ -96,8 +96,11 @@ A `PRELIMINARY_METADATA_ONLY` output **never** sets `can_ingest`, `can_publish`,
 
 ## 9. Disclosure-method metadata gate (2026-11-03)
 
-The offline D014 preflight now accepts a bounded disclosure-control method classification: exact_unmodified, rounded, perturbed, mixed or unknown. If the field is absent it is treated as unknown; it is never inferred from displayed counts. Only an explicit exact_unmodified declaration permits the narrow arithmetic screening in the current code. Rounded, perturbed, mixed or undocumented values receive a review reason and are not added, subtracted or used to reconstruct a suppressed cell by this helper.
+The offline D014 preflight now accepts a bounded disclosure-control method classification: exact_unmodified, rounded, perturbed, weighted, mixed or unknown. If the field is absent it is treated as unknown; it is never inferred from displayed counts. Only an explicit exact_unmodified declaration permits the narrow arithmetic screening in the current code. Rounded, perturbed, weighted, mixed or undocumented values receive a review reason and are not added, subtracted or used to reconstruct a suppressed cell by this helper.
 
 This is deliberately conservative. ONS describes rounding and cell-key perturbation as distinct post-tabular disclosure controls; perturbation adds controlled noise and is designed to impede differencing, while rounding can make displayed cell totals non-additive. Therefore the preflight must not apply exact-count arithmetic to altered outputs. The classification does not establish that a publisher applied its method correctly, that all cells were treated consistently, or that a release is safe. Even an exact_unmodified declaration is an unverified publisher statement and does not clear disclosure risk.
 
 Record only the method family needed to decide whether exact arithmetic is applicable. Do not add secret perturbation parameters, cell keys, random seeds, or suppressed values to Manager metadata. Independent statistical-disclosure review, source authentication, applicable rights and ethics/consent determinations remain separate gates. Missing or ambiguous method metadata means NO_ACTION / REVIEW_REQUIRED, not permission to infer.
+
+
+A weighted-count declaration is treated as adjusted rather than exact. The ONS SRS guidance distinguishes weighted counts from underlying unweighted counts; Manager does not request or store those underlying records, so this metadata-only preflight cannot independently validate the weighting basis.

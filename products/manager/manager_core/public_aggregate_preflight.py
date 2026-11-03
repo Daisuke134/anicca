@@ -78,7 +78,7 @@ def preflight_public_aggregate(packet: Mapping) -> dict:
         ("method",), "disclosure control")
     disclosure_method = _choice(
         disclosure["method"],
-        {"exact_unmodified", "rounded", "perturbed", "mixed", "unknown"})
+        {"exact_unmodified", "rounded", "perturbed", "weighted", "mixed", "unknown"})
     declares_unmodified_counts = disclosure_method == "exact_unmodified"
 
     s = _exact(p["source"], ("source_id", "url", "license_id", "rights",

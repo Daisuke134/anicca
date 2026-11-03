@@ -375,7 +375,7 @@ class CrossReleaseTest(unittest.TestCase):
 
 
     def test_rounded_and_perturbed_counts_never_enter_pair_arithmetic(self):
-        for method in ("rounded", "perturbed"):
+        for method in ("rounded", "perturbed", "weighted"):
             with self.subTest(method=method):
                 a, b = self.pair()
                 a["disclosure_control"]["method"] = method
