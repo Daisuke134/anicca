@@ -621,3 +621,10 @@ native受信session ses_8qsfy61hv6z9j5yzkwrma5kxbx はv20で4種類のAgentMail 
 受信result write81/read85は1154bytes/sha379de9e01be0630923704a12413b62485d477f0d9fd1d47af95b136a9362667eでexact。sender結果もread74で永続化を確認した。native tool_calls_used4は成功したMCPの異なる4名称を意味し、実tool.startedは11（MCP8/read2/write1）、確認3/実MCP成功4。resultのcompleteは限定mail試験に限り、住所を含む原本はprivateに保持して公開しない。checked_at=null/公式event窓15:16:48〜15:18:21UTC。自然end_turn→cancelled/pending0、費133115microUSD/台帳9件一致、月spend7517318/残482682microUSDは当該照合時点値。send+receive162937は2sessions小計で、全社原価/純利益ではない。private agentmail-v20-native-receive-{raw-events,spend-readback,ledger,terminal-readback}.json。
 
 受入は専用メール受信/秘密鍵隔離/本人native読取/保存までで、実第三者顧客/注文/課金/収益ではない。通常サービス登録はこの箱を使い、既存Naïveメールで生成した未検証credential/account fenceを先に照合する。Substackの旧メールはalready registered観測があるため旧signupを再送せず、既存候補との関係を明記する。Capafyは同一control Publisherの規約と既存ownerの境界を守り、アカウント量産や送信制限解除で売上を作ったことにしない。phone-only入口/実販売・入金/録画/採算/移植の元goalを維持する。正本7TODOの順序は変えず、TODO2/4内のreceive-only bootstrap→native受信が完了、現在cursorは本人browser登録＋実第三者依頼/有償納品へ。
+
+
+### 記録PR9171の既存商品素材宣言修復
+
+PR9171のOSS CIは並行PR9170/b2ddd8836a6b由来のskills/capafy/catalog/football-press-rehearsal-brief/icon.pngをgenerated_artifactとして拒否し、同じHEADの既存node scripts/verify-oss-self-contained.mjsでもFAIL1件を再現。Naïve変更と画像の導入は別で、同画像を削除/変更して隠さない。既存の隣接football-in-match-change-brief/asset-manifest.jsonとdeclaredAssetDigests契約を再利用し、新規asset-manifest.jsonに実ファイルsha256/pathを宣言する最小metadata修正だけを所有する。既存商品/価格/配信/validator/例外baselineは変更0。agmsg lmのcodex-money-printerへ範囲と失敗を送信済みだが、着手/返信は未確認。完了条件は既存OSS検証PASS/画像の元Git blob不変/remote commit反映。受信/登録/収益のgoalは維持し、登録準備と並行する。
+
+修復結果: 隣接manifestと同schemaでpath/icon.pngの実sha256を宣言し、git indexへ追加後の既存OSS verifierはFAIL1→PASS。画像bytesは導入commit b2ddd8836a6bのGit blobと完全一致、validator/既存商品source/runtime変更0。新しい恒久テストや依存は追加せず、同じ失敗を再現した検証で修復を確認する。
