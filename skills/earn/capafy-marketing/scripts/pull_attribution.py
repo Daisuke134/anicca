@@ -102,7 +102,7 @@ def _counter_delta(current, previous):
 
 
 def _detail_url(stats_url: str) -> str:
-    return stats_url + ("&" if "?" in stats_url else "?") + "detail=1"
+    return stats_url + ("&" if "?" in stats_url else "?") + "detail=1&attribution=1"
 
 
 def _tracked_clicks(stats_url: str, agent_id: str, row) -> list[dict]:
@@ -188,6 +188,7 @@ def pull(
         "agents": joined,
         "clicks_total": (detail or {}).get("total", sum(int(v) for v in stats.values())),
         "clicks_by_platform": (detail or {}).get("platforms", {}),
+        "click_attribution": (detail or {}).get("attribution"),
     }
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with output_file.open("a", encoding="utf-8") as ledger:

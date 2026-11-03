@@ -88,6 +88,15 @@ remote差分: 指定Slack threadを公式完読。parentとhome-codexの更新�
 
 CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。PR9099/head19ef706537の必要CIはgitleaks dirのみFAIL、他13jobsはPASS。集合hashの項目名だけをlegacy_record_set_sha256へ変更し、値と監査内容を保持する。旧historyのexact baselineはmain由来を維持し、除外追加0。focused RED→GREENと関連検証後pushし、更新head全CI→mainを次操作とする。過去88件の帰属と売上、未来payload保存は未完。
 
+## CAPAFY-ATTRIBUTION-PAYLOAD — 未来クリックの帰属保存
+
+目的・範囲: PR9099の統合済み監査に続き、go handlerが失っているct/platform/postを新規Blob本文へ保存する。owner=home-codex-3d1087、task=3d10872ebd07701cbebd47c2、branch=fix/capafy-payload-3d1087、base=58009a3a96。専用worktree・leaseを取得。旧監査owner/HQのactive leaseは保持する。
+契約: 検証済みagentId/platform/post/ctとschema_versionだけをJSON本文へ保存し、URL/query全体・私的情報は保存しない。既存key/redirect/flat stats/合成除外は保持。明示的な`?detail=1&attribution=1`だけ本文を読み、agent別ct集計とrecorded/unavailableを返す。旧本文1・不正schema・欠損はunavailableとして残し、storage取得エラーは成功へ置換しない。
+完了条件: 実handler境界のRED→GREEN、既存Node/Python関連テスト、diff/source-boundary、commit/push/PR、必要CI公式PASS後のmain統合。反映と自然クリックの公式readbackは別cursorとし、CI待ちで有限runを消費しない。過去88件の帰属/購入/売上は未確認。
+現在cursor: RED3件→Node10/10、Python pull-attribution4/4・landing9/9・diff/source-boundary PASS。証拠 → docs/evidence/capafy-payload-3d1087.json。commit/push/PR→必要CI/review→main、反映/公式readbackは未完。Dots会計/Muse・Marketer投稿、HQ runtime、既存effect、PR9097 deployは変更0。remote追跡thread公式完読、新しい本人受領/着手/結果差分なし、催促0。
+
+継続修復（task a4a1953ed490e9caf61e10c3）: PR9101旧head b86f14fの必要CI14jobs/CodeRabbitは公式SUCCESS。GitHub reviewの2指摘を実コードで確認し、legacy keyのplatform空/post有り本文をunavailableへ分類し、日次pullの明示attribution取得と返却ct集計の保存を同PRで接続する。既存日次行を再送/上書きせず、売上因果の未確認と欠損unknownを維持する。順序は2件RED→最小修正→関連GREEN→push→fresh review/更新head必要CI→main→限定反映。旧headのCIを新headへ流用しない。2件はPython2 assertions/Node1 assertionのREDを確認し、最小修正後Node11/Python marketing全39 GREEN、diff/source-boundary PASS。Python既存HTTPError fixtureのResourceWarningは保持し、失敗0。現在cursorは更新headのfresh review/必要CIであり、deploy/投稿/会計変更0。指定remote threadは公式完読、本人の新差分なし、催促0。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
