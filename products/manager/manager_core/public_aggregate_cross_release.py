@@ -49,35 +49,39 @@ def _source_origin_key(url: str) -> tuple:
 _DATE_INTERVAL = re.compile(r"^(\d{4}-\d{2}-\d{2})/(\d{4}-\d{2}-\d{2})$")
 
 
-def _overlapping_iso_date_windows(first: str, second: str) -> bool:
-    """Return True only for distinct, valid, overlapping inclusive ISO date ranges.
+def _parse_iso_date_window(value: str) -> tuple | None:
+    """Parse one bounded inclusive YYYY-MM-DD/YYYY-MM-DD window, else None."""
+    if type(value) is not str:
+        return None
+    match = _DATE_INTERVAL.fullmatch(value)
+    if match is None:
+        return None
+    try:
+        start = date.fromisoformat(match.group(1))
+        end = date.fromisoformat(match.group(2))
+    except ValueError:
+        return None
+    if start > end:
+        return None
+    return start, end
 
-    This is a conservative warning screen. It does not establish that two
-    releases share records, nor does it calculate a temporal difference.
-    Unrecognized free-text windows are left for independent human/statistical
-    review and are never treated as evidence of non-overlap.
-    """
-    if type(first) is not str or type(second) is not str or first == second:
-        return False
 
-    def parse(value: str):
-        match = _DATE_INTERVAL.fullmatch(value)
-        if match is None:
-            return None
-        try:
-            start = date.fromisoformat(match.group(1))
-            end = date.fromisoformat(match.group(2))
-        except ValueError:
-            return None
-        if start > end:
-            return None
-        return start, end
-
-    left, right = parse(first), parse(second)
+def _iso_date_window_relation(first: str, second: str) -> str:
+    """Classify two different windows without treating unknown syntax as disjoint."""
+    if type(first) is not str or type(second) is not str:
+        return "unknown"
+    if first == second:
+        return "same"
+    left, right = _parse_iso_date_window(first), _parse_iso_date_window(second)
     if left is None or right is None:
-        return False
+        return "unknown"
     # Inclusive endpoints are deliberately conservative for date-only windows.
-    return left[0] <= right[1] and right[0] <= left[1]
+    return "overlap" if left[0] <= right[1] and right[0] <= left[1] else "disjoint"
+
+
+def _overlapping_iso_date_windows(first: str, second: str) -> bool:
+    """Return True only for distinct, valid, overlapping inclusive ISO date ranges."""
+    return _iso_date_window_relation(first, second) == "overlap"
 
 
 def preflight_cross_release(first: Mapping, second: Mapping) -> dict:
@@ -151,12 +155,19 @@ def preflight_cross_release(first: Mapping, second: Mapping) -> dict:
             and a_pop["description"] == b_pop["description"]
             and a_pop["unit"] == b_pop["unit"]
             and a_pop["geography"] == b_pop["geography"]
-            and _overlapping_iso_date_windows(a_pop["window"], b_pop["window"])
+            and a_pop["window"] != b_pop["window"]
         ):
-            # Frequent overlapping releases can expose small net changes.
-            # This warning is not proof of shared records and performs no
-            # subtraction; opaque window labels remain review-only.
-            reasons.add("CROSS_RELEASE_POSSIBLE_TEMPORAL_DIFFERENCING")
+            window_relation = _iso_date_window_relation(a_pop["window"], b_pop["window"])
+            if window_relation == "overlap":
+                # Frequent overlapping releases can expose small net changes.
+                # This warning is not proof of shared records and performs no
+                # subtraction.
+                reasons.add("CROSS_RELEASE_POSSIBLE_TEMPORAL_DIFFERENCING")
+            elif window_relation == "unknown":
+                # An opaque or malformed period is not evidence of non-overlap.
+                # Keep the release family in review until its time semantics
+                # are independently established.
+                reasons.add("CROSS_RELEASE_TEMPORAL_WINDOW_UNRESOLVED")
     else:
         if declares_unmodified_counts:
             a_partition, b_partition = first["partition"], second["partition"]
