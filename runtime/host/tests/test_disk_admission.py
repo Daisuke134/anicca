@@ -721,3 +721,73 @@ def test_revenue_lanes_keep_running_at_5_gib_but_stop_below_4_gib(tmp_path, monk
     assert guard._producer_gate("batch")[0] == "disk_floor_low"  # non-revenue still needs the 12 GiB floor
     monkeypatch.setattr(guard, "disk_free_bytes", lambda _path: 4 * 1024**3 - 1)
     assert guard._producer_gate("earner")[0] == "disk_floor_low"
+
+
+@pytest.mark.parametrize(("available", "floor"), (
+    (0, 12), (4 * 1024**3 - 1, 12), (4 * 1024**3, 12),
+    (5 * 1024**3, 12), (12 * 1024**3, 12), (2 * 1024**3, 2), (None, 12),
+))
+def test_reservation_disk_snapshot_preserves_producer_floors_and_recovery_exemptions(
+        tmp_path, monkeypatch, available, floor):
+    guard = load_guard()
+    registry = tmp_path / "config/loop-registry.json"
+    registry.parent.mkdir()
+    registry.write_text(json.dumps({"loops": {
+        "earner": {"admission_class": "revenue"}, "batch": {"admission_class": "borrow"}}}))
+    monkeypatch.setenv("LIFE_MANAGER_REPO", str(tmp_path))
+    monkeypatch.setenv("LIFE_MANAGER_PRODUCER_FLOOR_BYTES", str(floor * 1024**3))
+    monkeypatch.setattr(guard, "disk_free_bytes", lambda _path: available)
+
+    snapshot = guard.producer_disk_eligibility_snapshot()
+
+    for owner in ("earner", "batch", *guard._CONTROL_PLANE_LOOPS):
+        gate = guard._producer_gate(owner)
+        if available is None and owner not in guard._CONTROL_PLANE_LOOPS:
+            assert snapshot[owner] is None
+            assert gate is None  # Preserve the execution gate's existing unknown policy.
+        else:
+            assert snapshot[owner] is (gate is None)
+    assert snapshot.get("unregistered") is None
+
+
+def test_reservation_disk_snapshot_is_read_only_and_reads_inputs_once(tmp_path, monkeypatch):
+    guard = load_guard()
+    registry = tmp_path / "config/loop-registry.json"
+    registry.parent.mkdir()
+    registry.write_text(json.dumps({"loops": {
+        "earner": {"admission_class": "revenue"}, "batch": {"admission_class": "borrow"}}}))
+    state = tmp_path / "not-created/state"
+    monkeypatch.setenv("LIFE_MANAGER_REPO", str(tmp_path))
+    monkeypatch.setenv("LIFE_MANAGER_HOST_STATE_DIR", str(state))
+    reads, probes, floors = [], [], []
+    read_text = Path.read_text
+    monkeypatch.setattr(Path, "read_text", lambda path, *args, **kwargs: (
+        reads.append(path) or read_text(path, *args, **kwargs)))
+    monkeypatch.setattr(guard, "disk_free_bytes", lambda path: (
+        probes.append(path) or 5 * 1024**3))
+    monkeypatch.setattr(guard, "_producer_floor_bytes", lambda: (
+        floors.append(True) or 12 * 1024**3))
+    monkeypatch.setattr(guard, "_producer_gate", lambda *_args, **_kwargs:
+                        pytest.fail("snapshot must not run the mutating producer gate"))
+
+    snapshot = guard.producer_disk_eligibility_snapshot()
+
+    assert snapshot["earner"] is True and snapshot["batch"] is False
+    assert reads == [registry] and probes == [state] and floors == [True]
+    assert not state.parent.exists()
+
+
+@pytest.mark.parametrize("payload", (None, "{invalid", '{"loops":[]}', '{"loops":{"batch":null}}'))
+def test_reservation_disk_snapshot_keeps_registry_unknown(tmp_path, monkeypatch, payload):
+    guard = load_guard()
+    registry = tmp_path / "config/loop-registry.json"
+    if payload is not None:
+        registry.parent.mkdir()
+        registry.write_text(payload)
+    monkeypatch.setenv("LIFE_MANAGER_REPO", str(tmp_path))
+    monkeypatch.setattr(guard, "disk_free_bytes", lambda _path: 0)
+
+    snapshot = guard.producer_disk_eligibility_snapshot()
+
+    assert snapshot.get("batch") is None
+    assert all(snapshot[owner] is True for owner in guard._CONTROL_PLANE_LOOPS)
