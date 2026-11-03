@@ -118,3 +118,11 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - Postiz公式posts一覧で同じ指定Xに既存の別担当記事が `post_type=article` / PUBLISHEDであることを確認（既存記事は変更しない）。article_title/article_status=published/HTML本文、cover任意の公式schemaが利用可能。
 - 次cursor: review済み英語原稿を情報を落とさずHTMLへ整え、X新規campaignとしてNaïve自身の既許可MCP integrationSchedulePostToolから1回配信。本人ブラウザ問題の解決とは区別する。事前native schema/target/重複確認→1送信→公式posts一覧でreadback。native runは現在の1USD ceiling内、新規入金/月5USD変更なし。英語記事と実画像の公開用ファイルもBusinessRun Benchで保存する。
 - 順序変更: 旧cursorはTelegra.ph本文入力、実測はtype成功応答と空画面の不一致。新cursorは既に実投稿成功し長文記事もproviderで確認できた許可済みPostiz機能。顧客獲得と未完収益化の前に、記事配信の無駄な再試行を減らす。
+
+### 英語全文公開と長文tool引数の境界
+
+- BusinessRun Bench PR #2 / main `f6cf6c0512a2ea24eb179fb83968965d8d42fde0` に `ARTICLE.en.md` と実cloud画面を公開。raw固定SHAから全文・画像を再取得しbyte一致。fresh公開前review PASS。本文25,761文字、HTML版の22ドル記号/31出所link/数値保持確認。
+- Personal Postizへ実画像をuploadしready、生成画像ではない。native長文session `ses_45z2wmn9aswkk3rv3b34wtww91` は指定X/記事schema/直近重複照合成功、長いJSON引数がmodel output limitで切れ、integrationSchedulePostToolはNot runと明示。未送信を成功扱いせずsessionをcancel→GET。
+- 次cursor: 全文は公開済みのまま、約8,900文字のHTMLへ短縮したX editionを別途reviewし、同じ既許可native MCPで1回配信。9eval名と比較限界/実測結果/未達/全文参照を保持。exact payloadと受理されたpayloadの差分を照合し、公式posts一覧でPUBLISHED/URLを確認する。tool引数が不正なら外部未送信かreceiptから判断し、盲目的に再送しない。設定/月5USD/task1USDは不変。
+- 新しい観測: browser.session.openedイベントのcomputer_idは空文字、専用Computerのbrowser一覧0と整合するが因果は未確認。連続録画/Computer紐付けを成功扱いにしない。
+- 順序変更理由: 旧cursorの全文X配信は引数出力長で失敗。新cursorはGitHub全文+X要約。ブラウザ編集の再試行や全原稿の再生成を増やさず、次の本人mail実配送/受注/納品/第三者入金へ進む。
