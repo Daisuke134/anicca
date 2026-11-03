@@ -204,6 +204,11 @@ class HQ:
                 if type(value) is not int or value <= 0:
                     raise ValueError
                 setattr(self, field, value)
+            self.priority_thread = config.get("priority_thread")
+            if self.priority_thread is not None:
+                if not isinstance(self.priority_thread, str) or not self.priority_thread or self.max_threads_per_poll < 2:
+                    raise ValueError
+                slack_time(self.priority_thread)
             self.lookback_days = float(config.get("lookback_days", 7))
             self.receive_budget = float(config.get("receive_budget_seconds", 100))
             if not 0 < self.lookback_days <= 365 or not 0 < self.receive_budget <= 120:
@@ -426,7 +431,9 @@ class HQ:
                         with self.connect() as database:
                             database.execute("INSERT OR REPLACE INTO meta VALUES ('history_backfilled', '1')")
             with self.connect() as database:
-                threads = [dict(row) for row in database.execute("SELECT * FROM threads ORDER BY polled,ts LIMIT ?", (self.max_threads_per_poll,))]
+                threads = [dict(row) for row in database.execute(
+                    "SELECT * FROM threads ORDER BY (ts=?) DESC,polled,ts LIMIT ?",
+                    (self.priority_thread or "", self.max_threads_per_poll))]
             for thread in threads:
                 if time.monotonic() >= deadline:
                     break

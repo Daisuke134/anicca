@@ -19,6 +19,17 @@ Grokbot実業務の引継ぎ: 本人dr eggbotのReason返信3FZYT4EYA21PM454HV6Q
 
 復旧実測: native sparse6件を1件ずつ実行し、全件Git HEAD/main/clean保持、全memory/memories/state subtreeの内容/inode/mtime/mode保持を確認する。private receipt capacity-tmp-sparse-1793676963.jsonのfreeは2.409→4.142GiB、後続4.30GiBを観測する。他processの割当差分を全て自分の回収へ帰属させない。旧binary COW/pack共有を再実行せず、dirty/未統合copyは保持する。自然schedule18e46bbbe42fc3e0-49458は8bd07954でPASS、元helper依頼はcard4db7d7462367afcad7ec144cとしてhome-claude/queuedまで到達。queuedを実行終了とは数えない。代役認証のfresh reviewは当初Blocking2件（子stdout/artifact経由の注入token保存とNULでtyped failureを抜ける点）を再現し、追加REDで確認する。token読取時のNUL拒否と、保存/STATE解析前の固定長mask・tail境界保護を追加し、HQ60tests GREEN、stdout/artifact/Slack/cardと不正正本のfocused検証も行う。再reviewで親環境の非UTF8 surrogateescape値がredaction生成時にtyped receiptを抜ける点を追加REDで再現し、UnicodeErrorを秘密を含まないHQErrorへ変換する。HQ61testsで既存の認証失敗handoffへ収める。fresh再review/新headの必要CI/main/限定反映を終えてからhome-claude opt-inへ進む。
 
+
+代役認証の統合: PR #9113/head41b9ae66c976783c5ff44002eb035dfb2e7481f5はHQ61tests GREEN・独立review SHIP/Blocking0・必要CI15件SUCCESSでmain93c5af261c0d20807785cef145dd251ded2968cbへ統合する。現在cursorはmain由来immutable releaseの本文一致→helper単独opt-in→元cardの自然実行であり、本番推論/実代役/売上とはまだ数えない。
+
+容量復旧の追加範囲: 自然workerはdisk_floor_low再発、空きは約2.8GiBへ再低下する。順序は容量回復→元helper受信/実行→Grok実務移管を維持する。既存6件の回収を再計上せず、追加の独立clone lmg-1793637778/ap-seo/ap-rss2-1793672074をread-only独立監査し、tracked/untracked/ignored各0・argv/CWD/FD参照0・既存lease/Git lockなしを確認する。lmgはmain/ローカルorigin同一、残り2件はlocal-only commit1/2件を持つため削除/移動/GCは禁止。前段の未統合copy保持はGit内の全object/ref/HEADとlocal-only commitを完全保持することで満たし、Git native sparse-checkoutの可逆縮小だけを適用可能とする。保護対象memory/memories/stateの内容/inode/mtime/mode、全refs/HEADとclean状態を前後比較し、専用lock取得/使用中再確認、復元commandと実空き差分をprivate receiptへ残す。既存COWを含む割当上限1.48GiBは実回収保証ではない。dirty/使用中/未保存のcopyと稼働runtimeは引き続き保持する。
+
+
+追加容量の実測: private capacity-extra-sparse-1793678633.jsonで3件すべてsparse_verified、Git HEAD/全refs/clean保持と全memory/memories/stateの内容/inode/mtime/mode保持を確認する。最初は自分のmaintenance lock FDまでactiveと判定して対象変更0で停止し、PIDを観測して自己lockのみ除外・他PID参照拒否を維持し再dry-run後に実行する。freeは操作全体2.255→4.109GiB、後続4.116GiB。他processの割当変動を含むため全差分を自己回収へ帰属させない。current releaseは265bab69、HQ source未反映、元helper card4db7d7462367afcad7ec144cと毎時carde90c688b773a9f9fd3c76149はqueued/received。容量の安定とCLI実着手を引き続き分離して確認する。
+
+
+共有部屋の受信遅延修復: 認証修正後の新しいreadonly依頼は公式Slackに存在するが未cardであり、自然receive PASSと分けて診断する。threads97件・max_threads_per_poll既定10・共有thread待機順位59を実測し、古いthread全件のround-robinが新依頼を少なくとも6回分の受信run待ちにする。旧順=容量回復→元helper実行→Grok実務移管、新順=容量回復/旧helper失敗と自動handoff確認済み→共有thread受信遅延修復→認証修正後の実helperレビュー→Grok実務移管。理由は自所有の受信経路が代役実業務の着手を直接遅らせるため。priority_threadのREDでは新依頼queued=0を再現し、SQLの選択順と設定検証だけを最小変更する。指定thread先頭・残りthread進行・総poll数不変・重複card0・未発見thread時の従来順・不正設定の検証を含めHQ64tests GREEN。現在cursorはfresh review/必要CI→main/immutable反映→private設定と自然受信の照合。任意のprivate priority_threadを既存threadから先頭選択し、既存max_threads_per_poll/ページ数/100秒budget/API呼数上限/履歴cursor/ready条件を維持する。未指定は従来順序のまま、指定時も残りthreadへ最低1枠を残しround-robinを継続する。新dispatcher・追加LLM poll・DB task手挿入・再送・model変更は行わない。source test/review/CI/main/immutable反映後に共有thread1793635811.853779だけ設定し、自然pollのcursor/受信card/重複0を確認する。現行認証fixはrelease95aee29fへ本文SHA256 c020ec959584889607fae7d67cf1f79779c6d16e53147ee9d618fff2ef335669一致で限定applyし、helper単独credential_service opt-in済み。新実務はPR9117/head a56758a0ae9b0c8878eee492a8e1f18ae78ad6f6のreadonlyレビュー依頼ts1793679690.698479で、元失敗依頼の再送ではない。
+
 目的: Slack #agents-hq を共有部屋にし、依頼保存・受領・着手・進捗・証拠付き完了・停止/枠切れの引き継ぎを追跡する。Codexは収益阻害、計測、Manager開発を継続し、確認した実験を公開する。schedulerが有限のagent実行を起こし、この対話が無期限に自己再開するとは扱わない。
 
 ユーザーの委任: 通常の技術/運用判断、実装・検証・main統合・対象限定反映・記事公開は自律実行する。担当は重複防止の目印であり壁ではない。途中成果・次操作・effect境界を渡して助け合う。本人手続き、provider権限、支出上限、利用枠は事実上の境界として保持し、枠のreset/transferを装わない。
@@ -122,6 +133,8 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 継続統合（task7c9269e102d2886ee18ccbb6）: Slack指定remote threadを公式GETで全6件照合し、本人受領/着手/結果の新差分なし、催促0。保存済みHQ receiptで前2runの終了と現在run単独workingを確認する。PR9103/head394a000070は必要CI14件＋CodeRabbit成功後main735660764dへ統合済み。PR9104を同owner/既存leaseで継続し、main同期のBOARD/本section競合を双方保持で解消する。旧順=PR9103→PR9104→旧IG receipt、新順は同じ。現在cursor=PR9104更新head必要CI全PASS→main、その後元IG本人journal/session/公式receipt照合。停止publisher/fence/会計/投稿/HQ runtimeは変更0。証拠 → docs/evidence/capafy-continuation-7c9269.json。
 
+
+継続計測（task e90c688b773a9f9fd3c76149、owner=home-codex）: PR9104の公式MERGED/main e4612c2869を確認。所有範囲は本section/BOARD/限定evidenceと、既存main由来pull_attribution.pyによる当日1行の公式readback保存のみ。旧IG occurrence18db7caff1178a88-68028は10月5日、現存共有journalは10月24日以降で元本人bind未取得。現在accountへ置換せず、fence/停止publisher/他ownerを保持する。collectorは投稿を起動せず、欠損salesをnullに保ち、既存当日行を上書きしない。実測=mainとbyte一致のrelease265bab69 collectorで当日1行を保存、click106/recorded1/unavailable105、商品76行すべてsales欠損null。即時replayはledger byte不変・追加0・当日1行。証拠→docs/evidence/capafy-effect-e90c68.json。現在cursor=証拠PRの必要CI→main。その後旧IG元本人bind/原本archive照合、日次自然取得の既存owner接続。自然日次実行・旧IG効果・購入因果/純利益の証明は別未完cursorとする。
 
 継続診断（task17679f4e146bb3b4be52268e、owner=home-codex-17679f）: PR9117の統合は親ownerが所有するため変更しない。専用branch docs/capafy-ig-receipt-17679fで、旧occurrence18db7caff1178a88-68028の元本人・journal・receiptの欠落をread-onlyで照合し、現行reconcilerが別active accountを対象に選ぶ危険を隔離fixtureで検証する。完了条件は実DBの対象1行・対象ファイル存在・残存状態の時刻・実code反例をsanitizeした証拠に保存し、CI後の統合まで追跡する。投稿/認証/再起動/fence解除/会計/PR9117統合は所有しない。既存TODO順は維持する。診断結果: mode=roで旧fence保持、専用4artifact不在、残存3artifactは全てqueueより前。隔離fixtureで別ready accountの空一覧でもverified=true/effected=falseになるsource反例を再現（provider0/resolve=false）。本番で誤解除が起きた証明ではない。現在cursor=本診断記録の必要CI/統合、次source作業は元run本人を拘束する証拠なしにprovider照合を進めないための最小修正。成果物 → docs/evidence/capafy-ig-receipt-17679f.json。
 
@@ -25718,7 +25731,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 目的: Grok/Muse/Dots/Codexと同じLLM＋Computer/browserの形をNaïve自身の実行環境へ接続し、画面を観測→判断→click/type→結果確認で収益業務を完走する。業務script、業務API、固定workflowを収益判断の主経路にする案を上書きする。SDK/APIはagent設定、予算、session、証拠取得という基盤操作にだけ使う。
 範囲: config/naive-browser-company.jsonの専用担当、同じsourceのhosted適用、browser toolの実操作、認証/保存状態、既存ownerとの調整、公式readback。既存のCEO/builder等の設定・cron・Mac/browser/他VMは変更しない。売れている商品は変更しない。
-設計: pi＋画像後の継続を実測したgoogle/gemini-2.5-flash-lite、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTP/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月2USD/max_task0.50USD、既存残高内・追加入金なし、cron未登録から開始する。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
+設計: pi＋画像/実tool操作を比較確認したanthropic/claude-haiku-4.5、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTP/MCP等は与えない。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月2USD/max_task0.50USD、既存残高内・追加入金なし、cron未登録から開始する。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
 比較した案: 既存script移植はDaisの明示指示に反するため不採用。Macのbrowserを遠隔操作する案はNaïve自身のComputerという条件を満たさないため初回方式にしない。Naïve標準browser toolをモデルが使う方式を採用する。
 完了条件: (1)Grok/Muse/Dotsの実手順/ownerを照合 (2)Naïve側のagent・browser/Computer・モデル・予算を公式readback (3)実際の画面観測とclick/typeをtool eventと変化後の画面で確認 (4)認証済み業務と外部結果を確認 (5)同じ担当の再開と所有する継続運転を確認。市場調査だけを公開/売上完了にしない。秘密値はmodel prompt、Git、chatへ出さない。
 実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。旧Google診断時点のcursorはBROWSER03のmanaged-browser Google OAuth境界。BROWSER02の実操作と、BROWSER04の別sessionメモ再読取は確認済み。収益業務と継続deploymentは未完。
@@ -25752,6 +25765,22 @@ MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し�
 
 
 
+
+#### Naïve Manager: 電話だけで始める収益運転
+
+目的: Adria/Managerの利用者はiPhoneだけで目標を伝え、個人メールの入力・password・Google・自前PCを用意せず、agent自身のIdentity/mail/vault/Computerで事業を運営する。Naïve契約/基盤のcontrol planeと、働くagentのruntime資格情報を分離し、DaisのNaïve契約があることを個人Googleへの依存と混同しない。まずNaïveで一件のend-to-end実例と採算を作り、月額売上USD10,000以上を目指す。目標額・推計・platform残高・入金済み売上・MRRは別に表示する。収益・利益・勝利・YC採択を保証した表現を使わない。
+
+受取基盤の具体化: Naïve IdentityのBase mainnet walletをnative APIで準備し、公開受取先/残高/上限制約を公式readbackする。per-tx0.50USD/day2USDで作成し、入金・送金・sweepは実施しない。org creditsとUSDCは別勘定。受取準備を売上と数えない。 mainnetのcreateは403: mainnet wallets are not enabled for this organization。本人Identityに既存mainnet walletがないことをGET確認し、org ownerの公式設定経路を追加調査する。testnet faucet資金を実収益にしない。Capafyの重複account/automation許諾記録は公式termsと既存provider mailから照合し、未解決中は本人mailによる受注・native browser調査・email納品の自社サービス準備を独立して進める。価格/納品範囲は同市場の一次成功例を調べて決め、成功例の実績が未取得なら小規模な検証offerと明示する。
+
+今回の完了条件: (1)本人mailで正規登録/認証/本人画面 (2)新規所有商品と販売導線 (3)第三者の実売上とcompute/platform等の実費の公式照合 (4)本人Identity/context/checkpointを保つNaïve標準継続運転 (5)秘密を含まない実画面記録と2–4分の英語live demo、英語blog/X素材。通常業務の人間承認は設けず、業務script/API置換もしない。本人/KYC/受取先の不足事実は捏造せず、不足する場所を特定して他の業務を続ける。platformが受取先登録前に売上を留保するかは当該providerの公式仕様と実画面で確認し、未確認を一般化しない。
+
+公式条件: https://events.ycombinator.com/naive-autonomous-companies-hackathon と https://usenaive.ai/hackathon を直接取得。11月7–8日SF現地、全teamがNaïve SDKを使用、実際の顧客獲得/納品/運営と介入箇所をlive demoで示す。Naïve側FAQは2–4分。YC側は1位へのYC interviewとスポンサーcreditsを記載するが、YC採択を約束しない。事前制作物の審査対象範囲は公開本文に明記されていないため、事前準備と当日成果を区別して記録する。
+
+実行順: MAIL03のauth実画面診断→本人mail登録/認証→新規商品の制作/販売→実収支/継続運転→英語demo/公開→実証した構成の移植/複製。旧順のままNaïve一社の成果を先行させる。複製数を増やすだけで利益が増えるとは扱わず、各個体の実収支とcompute費用を持つ。既存config/goal/checkpoint/owned credential参照を移植単位とし、第二frameworkを先に作らない。共有vaultは所有者/対象serviceを照合し、秘密をprompt/Gitへ複製しない。別cloudへの展開とcrypto決済はprovider対応・所有資金・既定spend-cap内で進め、現時点では実証済みとしない。既存Mac/他担当/共有profile/販売済商品は変更しない。
+
+モデルの採用判断: 同session/Identity/context/権限でGemini2.5FlashからClaude Haiku4.5へ比較override。Geminiは画像後に未呼出のactを実行済みと述べて停止し、Haikuはgoto→screenshot→act→screenshot→links/observe→本人mail入力の実tool chainを実行した。primaryが取得した遷移後画像はGoogle/GitHubではなくemail+Terms/Privacy+ContinueのCapafyフォーム。一般的なmodel優劣へ広げず、このbrowser担当の既定だけHaikuへ変更する。v5のsource統合/完全一致readbackと標準deployment接続を次に行う。
+
+現在cursor: MAIL03。v4の本人mailと承認待ちなしは稼働済み。現sessionはClaude Haiku4.5へ比較override済み。前ログのUsername or email address/Sign inはGitHub誤遷移を疑う。Capafy Terms §3.4/Publisher Agreement §2.9の所有者制限と§6.2のautomation条件を確認し、既存担当へ権限/許諾記録を照会中。個人mailなしという製品要件は維持し、同じ所有者の重複登録はしない。XPathのbutton[3]→CSS nth-child(3)は非同値であり、認証hostの実確認を先行させる。cloud screenshotの直接確認とHaikuによる正しいemail経路の操作は成功し、本人mail入力まで確認。次はv5を適用し、既存Capafy担当/許諾記録を照合しながら独立した受注・商品準備と標準deploymentへ進む。売上/公開/定期deploymentは未確認。Macの空きは7.9GiB。cloudの現作業を妨げておらず、不要な全体cleanupは実施しない。
 
 ## AGI flagship essay publication
 
