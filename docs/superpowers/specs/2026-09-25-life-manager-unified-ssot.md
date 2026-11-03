@@ -25913,3 +25913,5 @@ Naïve journal追補前の履歴: journal-onlyは4tools/end_turn/費27665で完�
 Naïve内訳追補は3tools/end_turn/確認retry0、費18662/ledger4、Computer paused/active0/旧production22を公式確認。本人editと末尾readの照合は通過、fresh独立review待ち。収益は未実証。→同plan「journal最小訂正の実測と内訳保持の追補」。
 
 Naïve現行: 内訳追補の独立review SHIP後、19:17:55UTCにmain048 desired23/inputを本番採用、全source fields公式一致/paused/active0。旧production22保持は履歴。現在cursor2は公開の有料需要の観測→本人先行保存→初回有料納品へ戻る。実売上等は未達。詳細・有限次業務 → 同plan。
+
+Naïve cursor2: 本番23通常業務はintake0件、browser7timeoutsで新需要0。本人state/journal保存は実測するが自然終了0、19:30:34.948にcancel。費138158/ledger14、active0/paused/prod23保持、残485301。自己集計誤りと旧next_action未退避は公式原本を保持して未解消と明示。次は計画350000内の短いbrowser復旧→新需要1出所、時刻/intake再読取を反復しない。→同plan「本番23の通常業務・ブラウザtimeout境界」。

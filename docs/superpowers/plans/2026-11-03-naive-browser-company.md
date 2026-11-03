@@ -853,3 +853,12 @@ cursor2内部を「journal訂正→採用」から「欠落した使用内訳だ
 独立reviewはSHIP/追加Blocking0。19:17:55UTC、固定main048由来desiredへの差分agent_version/input_templateの2fieldだけをPATCHし、production23/priority/enabled/scheduled/次00UTC・全source fields一致/Computer paused/active0を公式確認する。モデル/月9/task1/Identity/mail変更0。providerエラー恒久解消や実売上成功とは呼ばない。証拠private v23-desired-rollout-{attempt,receipt,deployment-readback,final}。
 
 現在cursor2は有料需要へ戻る。次の本人通常業務1件はdesired inputに従い、既存stateと商品を把握→新しい未解決の公開需要/支払い意思を本人browserで観測→他作業前に既存履歴を保持して本人保存/読戻し→end_turn。自己解決済みissue9001/解決済みtutorial/seller宣伝を買い手扱いせず、過去journalの修復を反復しない。fresh active0/paused/残credit>=計画500000、finite400000＋後計上100000、12分/max24tools/hosted最大4、DM/他者issueへの営業送信0、追加input/model/増枠0。未獲得なら正直に記録して次行動を残す。元7TODO・第三者入金・録画・登録・phone-only・黒字/USD10K/月・移植は未達。
+
+
+### 本番23の通常業務・ブラウザtimeout境界
+
+ses_9vck0c0h2324nvfn3ag4972w0aは本人5read→pilot intake goto/extractで0件を確認するが、その後の時刻取得でupstream120秒timeout。extract再試行/screenshot/別時刻サイト/example.com/DuckDuckGo/observeもbrowser30秒timeoutになる。全19tools/hosted4attempts/7errors、確認/primary追加入力0。本人state edit→read（17964→21608bytes/hash05710ef65a82990bd57d898b64af0772e9226e1510dacd9f1199add35cc40df7）とjournal edit/readで未獲得/故障を保存するが自然end_turnは0。max_iterationsで同session継続後、12分終了境界でcancel、公式interrupted時刻19:30:34.948UTCは開始19:18:34.172から720.776秒（約0.8秒超過）。19:30:58時点cancelled/pending0/全50active0/Computer paused/production23全fields保持、費138158microUSD/ledger14一致、残485301。後計上を固定保証しない。新需要検索/依頼/売上0。自己記録hosted3/4は誤り（events4/4）、旧root next_actionもstate内未退避で更新され、正しい原値は公式edit/read artifactに保持する。自己申告を評価得点や履歴保持成功へ昇格しない。新たな記録訂正loopを業務に置き換えず、この限界を正本に残す。
+
+親のComputer browser GETは404/no browser、browser_sessionsは0件。一方本人browser.session.openedはbrw IDを持ちcomputer_id空文字。別のbrowser帰属の可能性があるのでComputer側404だけで本人browser消失と断定せず、wrong-target DELETE/強制takeover/環境再作成0。source本番23/input維持。証拠private v23-demand-next-{events,artifacts,verification,browser-diagnostic,browser-events,spend-readback,ledger,final-resources}。
+
+次の1件は残内で短い本人browser復旧確認→新しい公開需要1出所。finite250000＋後計上100000/計画350000、4分/max12tools/hosted最大2。fresh残credit>=350000/active0/paused、同23/Identity/priority/既存月9/task1。既知の商品は公開trace20calls以下の英語診断29USDC納品後払い、売上0/受付0/過去除外済みsourceは再調査しない。時刻サイト・intake再確認・最初の5file再読取を行わず、本人goto example.com1回で復旧可否を判定。まだtimeoutなら別サイトretryを反復せず、既存stateの末尾へ今回の観測だけを小さいedit/readで追記してend_turn。応答したら未解決のagent trace/tool-loopについて新しい買い手側sourceを本人検索/本文観測し、支払意思の有無を正直に同じ追記で保存する。root next_action等の旧keyは変更しない。未知時刻/費用はnull、現在runの最終回数を推測しない。営業送信/DM/Postiz/mail/signup/送金0、script業務/追加input/model/増枠0。全体goal/元7TODOを縮小せず、この診断を収益成功に数えない。
