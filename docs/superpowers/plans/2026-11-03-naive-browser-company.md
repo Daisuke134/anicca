@@ -480,7 +480,7 @@ Substack最後のobserve106はCreate your account、113はSign in to Substack/em
 
 ### no-order時のseller loopを既存deploymentへ追加する
 
-目的: 公開依頼ゼロで即終了する自所有の不足を直し、受注対応と並行して顧客獲得を進める。対象は既存agent17相当/production pin13のdeployment input_templateだけ。新agent/model/tool/credential/cron/予算/サイトaccountは追加しない。未処理依頼があるときの既存納品・支払照合を優先し、その契約は不変。
+目的: 公開依頼ゼロで即終了する自所有の不足を直し、受注対応と並行して顧客獲得を進める。対象は既存agent17相当/production pin13のdeployment input_templateだけ。新agent/tool/credential/cron/予算/サイトaccountは追加せず、production既定modelも変更しない。既存finite会話のmodel指定補正は後述の実測budget境界に従う。未処理依頼があるときの既存納品・支払照合を優先し、その契約は不変。
 
 依頼ゼロの場合は本人Computerのseller-state.jsonと直近の許可済みPostiz投稿を読み、既に調べた証拠と公開済み原稿を照合する。本人browserでAI agentのtrace/debuggingに関する公開の需要を最大1件調べ、出所URL・確認した困り事・商品との適合・次に試す提案を記録する。公開一次資料が得られなければ需要を捏造せず、取得失敗と次の最小の確認だけを残す。競合の有料planや星数だけを購買需要の証拠にしない。
 
@@ -497,3 +497,13 @@ Substack最後のobserve106はCreate your account、113はSign in to Substack/em
 nativeはoffer/sample/receiver/journalの4read→本人browser GitHub goto→screenshot→journal writeの計7tools、Haiku4.5実5model spans、実費45903microUSD、pending0。tool.confirm0、primary追加入力0/confirm0、手動中断0。journal write成功eventはあるが同run内readbackは無く、次runの再読取で永続化を照合する。公式file fil_tkzekjvve2c92tmha9bd5p0qpk/122065bytesのbytes・sha256・agent/session一致を確認し、primaryも実画像で0 results/No results matched your searchを確認。これが証明するのは今回の自動起動→本人browserで無受注確認→記録まで。有償納品・第三者売上・新規signup・mail受信・連続録画・会社全体の無介入運営は未達。
 
 公式agent累計6683934microUSD。private `natural-1200-final-readback.json`、`natural-1200-native-event-metadata.json`、`natural-1200-intake-screen.jpg` が証拠。稼働中runの設定は変更せず自然end_turn後まで待った。source seller入力の反映はこのrun後に行い、旧inputの自然run結果と新seller分岐の検証を混ぜない。
+
+### seller入力の本番反映と有限検証の予約予算境界
+
+PR #9164は15checks全PASS、source inputの独立reviewは指摘1件修正後SHIP。main `b4e61ec33e1519ec0ac95b4b17df3f5d4059065c` 固定sourceのbytes/hashを照合して既存deploymentへinput_templateだけPATCH、公式GET完全一致、その他全field不変。source config sha256 `bb9fd02746c950ddc0478d6f029083d9a6b8d93b4d9bfaaf94df5bac990cecc9`。pin13/Identity/cron/予算は維持、次自然run11/04 00UTC。自然runのjournalは同run/current agentのComputerを動的に引き直し、provider fs/readで6126bytes/sha256完全一致。古いcmpはdestroyed/409で、current endpointは別cmpを返す。fs/readの再起動とpauseの使用中409を観測した後、追加観測でactive session無しを照合しpause200→GETpausedへ戻した。次finiteのjournal readはoffset/limit付きでtruncation markerがあり、全file不一致/喪失と断定しない。private `natural-1200-{computer-correlation,journal-persistence-readback,readback-pause-after-idle}.json` が証拠。
+
+有限検証session `ses_httvvkdan6wwn9wt1fchsvvnxy` は同pin13/Identity、300000microUSD枠。依頼0件画面→seller-state初期未作成の確認→Postiz postsList 67073bytes→state1405bytes保存→公開HN検索pageへのgotoまで進む。read_people確認はprimary AIがscope=callで1回処理、人間0。実需要の内容確認・新規投稿・売上は未達。Haiku8実model spans後、実費129172microUSDでbudget_paused/pending0。残枠170828に対し次呼出し予約が大きく、実費cap超過ではない。確認後の再開で42039tokensがcache_writeに入り1span53012microUSDを消費したことも記録する。投稿一覧を需要の確認より前に読む順序が、依頼ゼロでも大きなcontextを作った自所有原因である。
+
+次の最小補正は二つ。既存finiteは上限300000/月7/task1を変えず、同会話へのsendでlive catalog掲載の `google/gemini-2.5-flash-lite` を1回だけ指定し、現在画面→残作業→state/readbackへ進める。新session/agent/入金/上限変更/production model変更はしない。catalogはimmediate対応/max_output32768を確認、価格は掲載されず安価や品質優位を未測定で断定しない。拒否なら費用/原因を残し、再作成/増額で代用しない。この変更は既存finiteの運用補正で、source既定Haikuと定期runのmodelを変更するものではない。
+
+次回以降のsourceは、旧「state+投稿一覧→需要調査」から、新「state→需要1件→有用な新規投稿候補がある時だけ必要最小期間の投稿一覧で重複照合→投稿」へ変更する。需要が無い時の不要な大量読取を無くし、既存投稿の重複防止/日1件/送信不明fenceは維持。現在cursorは同finiteの残枠内補正、続いてsource順序修正/main反映/自然runの検証。旧のモデル変更無し契約はproduction既定を指すよう具体化し、有限補正の理由/旧新順序を本節へ記録する。全体goal active、有償納品/第三者receipt/利益/10Kは未達。
