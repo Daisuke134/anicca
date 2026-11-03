@@ -92,3 +92,44 @@ jobs:
               print("MODEL_ANSWER_CONTENT_NOT_EXPORTED=TRUE")
               print("RESULT=AUTHENTICATED_TWO_TURN_TUTORIAL_COMPLETE")
           PY
+  tutor-educational:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check --no-input 'openai==3.24.0'
+      - name: Normal fictional tutoring call, not a competitive benchmark
+        env:
+          AMPERSAND_API_KEY: ${{ secrets.AMPERSAND_API_KEY }}
+        run: |
+          python - <<'PY'
+          import os,sys
+          from openai import OpenAI
+          key=os.getenv("AMPERSAND_API_KEY","")
+          if not key:
+              print("TUTOR_RESULT=MISSING_SECRET");sys.exit(2)
+          with OpenAI(base_url="https://ampersand.humansand.ai/v1",
+                          api_key=key,max_retries=0,timeout=90) as c:
+              available={x.id for x in c.models.list().data}
+              if "ampersand-tutor-v0.1" not in available:
+                  print("TUTOR_RESULT=MODEL_UNAVAILABLE");sys.exit(3)
+              with c.beta.agents.sessions.create(
+                 agent={"model":"ampersand-tutor-v0.1",
+                        "instructions":"Explain in plain language to fictional learner Hana. Do not act externally."},
+                 environment={"type":"none"},
+                 input="Why are 120 survey answers from 40 people not the same as 120 independent people?",
+                 stream=True
+              ).with_result_collection() as stream:
+                  state="STREAM_ENDED"
+                  for event in stream:
+                      if event.type in {"agent.session.idle","agent.session.failed",
+                                        "agent.session.requires_action"}:
+                          state=event.type;break
+                  answer=(stream.get_final_result().output_text or "").strip()
+              print("TUTOR_STATUS",state)
+              print("TUTOR_ANSWER_CHARACTERS",len(answer))
+              print("TUTOR_RESULT", "REAL_TUTOR_INFERENCE_COMPLETED" if state=="agent.session.idle" and answer else "INCOMPLETE")
+              if state!="agent.session.idle" or not answer:sys.exit(4)
+          PY
