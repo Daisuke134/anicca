@@ -990,3 +990,16 @@ SDK0.10.0のProxyCallTraceSchemaはtool schema hashとrequest.toolsを表せる�
 独立read-only reviewは必須指摘0。session grantはhost限定ではなく、credential guard解除でもページ保持保証でもない。6分はprovider TTLではなくprimaryの終了責任であり、作成時刻から330秒でcancelを開始して360秒前の終端確認を目指す。観測の都度deadlineを照合し、手順や別作業を挟んで終了を遅らせない。
 
 起動前の追加観測: 全58sessionsに非終端稼働/確認待ち0、idle/end_turn/pending0は稼働中へ数えない。agent Computerは公式GET nullであり、休止済みobject必須というhelper assertionでsession POST前に停止する。nullは未稼働資源なのでpausedと同様に受け入れ、native必要時の通常provisionを使う。別Computerをrootから作らない。月残1084331microUSD/credit22664509、create送信0。finallyもnullを休止と偽らずabsentとして記録する。
+
+
+### AgentMail認証runの結果とread_people境界の確定
+
+mainfec447b由来agent24/本番24/同Identity/priority/finite200000でses_1qecwdqytfyzhjrknc62bbqkhxを20:59:44.272に開始。本人state readと専用AgentMail.list_inboxesに成功し、最初のSubstack/signup gotoがread_people card。primaryはexact公開gotoを照合して正式SDK scope=session allow1回、202受理・pending0へ戻る。続くgoto/observeは成功するが、本人専用emailと完全一致するtypeが別read_people cardで再停止する。scope=sessionが全確認を解消するとは実証できず、今回の無介入認証対策には不足と確定する。同card再回答0、type許可0、signup送信/確認mail/実ログイン/新credential/本人成果保存0、全6tools。人間への確認要求0だがprimary AI確認1なのでNaïve単独無介入成功ではない。
+
+21:02:16.888にcancelled/interrupted（開始から152.616秒、6分内）。21:02:40.167の公式GETは全59sessions live0/当該終端pending1/Computer paused/本番24・priority・enabled・scheduled・次00UTC/全source fields一致。費41840microUSD/全ledger7件一致、月spent8957509/残1042491（後計上あり）。既存24/24を保持し、追加run/新agent/別Computer/追加入金0。証拠private v24-substack-agentmail-auth-{before,attempt,sdk-create,created,events,status,confirm-1-attempt,confirm-1-receipt,pending-type-diagnosis,terminal-readback,spend-readback,ledger,final-resources}。認証mail/code/link/raw browser内容の保存0。起動helperの最初のassert停止はComputer nullによるPOST前で、新session重複0。
+
+公式tools仕様『Once a chat has read people's data』は、contacts/mail/messages/connected app/MCPを読んだchatではbrowser moves/writes等がpolicy allowでも毎回ask、chat grantは適用されないと明記する。今回の専用AgentMail MCPも実際にread_peopleを伴う。これは人間Googleが必要という制約ではなく、現pi/managed browser経路のプラットフォーム保護境界であり、scope/sessionやpromptで解除しない。 https://vetta.sh/docs/capabilities/tools.md 。harness公式仕様ではclaude_code/hermesはown computerで動きMCPは渡るがmanaged browserは提供されない。単なるharness field切替で現browserが動くとはしない。https://vetta.sh/docs/concepts/harnesses.md 、https://vetta.sh/docs/concepts/harness-capabilities.md 。別harnessはcreate-onlyで新agent/別native browserの実装・予算検証が必要、まだ切替/成功とは扱わない。
+
+Museへ既存Reason会話で、この独立境界と正式に動く自己所有mail＋無人browserの実例があるかを根拠限定で照会する（message6Y1BW1CT05RBQSFRTT5QFBZC30、送信queued/着手と呼ばない）。既存n8n schema照会への返信はSDK必須fieldsの確認とnative実例なしであり、修正済みではない。
+
+元7TODOとprimary2は維持する。次の技術cursorは、同じ有償メール→browser cardを繰返さず、正式なown-computer/browser実行経路が既存環境にあるかを一次仕様・実呼出しで確認すること。別実行基盤を使うならNaïve内の本人Computerによる画面操作、専用資格情報、全体spend-cap、業務スクリプト代行0を先に仕様化し、現在本番を置換せず小さい独立probeで可否を確定する。現在本番の公開需要読取/保存と、既に許可された会社発信は独立して維持する。登録・実受注/納品/入金・英語記事公開更新・連続録画・phone-only・黒字・USD10K/月・移植は未達のまま。
