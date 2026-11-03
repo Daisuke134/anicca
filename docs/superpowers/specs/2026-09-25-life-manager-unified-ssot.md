@@ -25846,3 +25846,6 @@ PR #9145/main `584363f5b03e738647e65286f77264bcff069219` からv13/月7USD/task1
 ### Naïve登録診断とpin仕様の訂正
 
 本人Substack登録は4有限runで実受信/認証を未確認。GLM5.3flash candidate16は実20spans/20toolsでalready registered→sign-in画面に到達したがaccount所有は未実証、本人inbound0/EOF。公式status166809microUSDはfinite cap160000を6809超過し、4run計503405は診断総枠500000を3405超過する。予算停止原本を保持してcancelled/pending0、cap増額/再実行無し。保存contextのredactionとpauseによるpage喪失を入力不能一般へ拡大しない。restoreでcurrent17は元v13設定全source fields公式GET一致、production deployment13はbaseline全snapshot一致。現在版pinの追随は公式仕様、vendor bugとはしない。担当累計6390644microUSD/SDKbrowser別5001、実第三者売上未確認。全体cursorは実依頼→納品→29USDC receipt/費用。公開英語記事の古い現状説明を修正し、自然run12UTC/本人通常sign-in/録画/phone-only/黒字/移植は未完。正本 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`。
+
+
+NaïveのCapafy接続は、同一運営者1Publisherという公式規約 https://capafy.ai/publisher-agreement/ 2.9に合わせ、既存Anicca Publisher内の正式team/専用agentmail権限を既存ownerへread-only照会する。別メール/VMを別Publisher所有者と見なさず、既存account/reset/商品/収益は変更しない。Muse向け照会はqueued/repliedfalseで着手未確認。MAIL03をこの正しい対象へ訂正、詳細/現在cursorは `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「Capafyの同一Publisher内接続を優先する」。

@@ -48,7 +48,7 @@ BROWSER03診断: login doneとログイン済み画面は別。agentの誤報を
 ## 本人mail・人間承認なしの実行
 - [x] MAIL01: system domainと専用inboxを用意し、公式readbackとprivate SSOTへ保存。
 - [x] MAIL02: signupのaskを除去、本人email toolsをallow、通常業務を人間承認待ちにしないpromptをmainへ統合して適用。
-- [ ] MAIL03: 本人mailでCapafyへブラウザ登録、認証メールを処理し本人画面を確認。
+- [ ] MAIL03: Capafyは同一controlの既存Publisher内で公式の専用agentmail認証/team権限があるか既存ownerへread-only確認。正式経路が判明したら同じPublisherへ接続し本人画面を確認。別メールで重複Publisherを作成しない。本人mailの一般登録/受信検証は独立項目。
 - [ ] MAIL04: 新規所有商品をブラウザで作成/公開し、受取設定と実収支の境界を確認。
 - [ ] MAIL05: 標準deploymentと本人inbox wakeを接続し自然実行を確認。
 旧Google経路への固定を外す。順序/費用枠と残TODOの正本は統合SSOT。各操作は画面を見てモデルが判断し、業務scriptを作らない。
@@ -423,3 +423,12 @@ main固定restore artifact（to_version15/expected16）を適用しcurrent17、�
 公開記事反映: BusinessRun Bench PR #4はmain `5054f196abb564ef168646195a2f6ac83e7e1124` へ統合。ARTICLE.en.mdの固定main raw30264bytesとreviewedローカル本文がbyte exact。Current Stateをv13 production/current17復元・月7/task1/wakefalse、public pilot/CTA、外部送信配送、Substack未認証、cap実費超過、単価capacity上限/売上未確認へ更新し、過去測定値は保持した。URL https://github.com/Daisuke134/businessrun-bench/blob/5054f196abb564ef168646195a2f6ac83e7e1124/ARTICLE.en.md 。新SNS送信は0。private current-english-article-main-readback.jsonが根拠。
 
 独立fresh read-only検証はpublic be51f54/private8c52deb2eaにSHIP/Blocking0。session thread limitとAGMSG plain terminal起動失敗後、モデル指定無しの有限codex exec/read-onlyで実データ比較を行った。current-results-independent-review.txtをprivate保存、先行3run合計はprimaryが各cancelled公式readbackから再照合して336596と一致。AGMSGの送信を稼働証明にせず、本人inbox/Reason返信はいずれも新着0。全体goal active、現在cursorは実第三者依頼と有償納品/receipt、残TODOは「現在の正本」に一本化する。
+
+
+### Capafyの同一Publisher内接続を優先する
+
+次の目的は既存の収益手順をNaïve browserへ再利用すること。取得済み一次資料 https://capafy.ai/publisher-agreement/ の2.9は同一controlのPublisher Accountを原則1つ、2.7はアカウント非譲渡、2.5は認証料0.99USDとする。メールやVMの追加を別の法的Publisherや売上増加の根拠にしない。MAIL03の旧「本人mailで新規Capafy登録」は、この既存Anicca Publisherとの関係を無視して実行しない。個人Googleが一般利用者に必須という意味でもない。
+
+現在owner daisuke/terminal（Muse）はReason公式list_teamでidle/tierturnとして存在するが、受付/着手とは別。既存Publisher内の公式team invite/agent専用email認証/正式権限の有無と実画面をread-only照会、message6TKH6DR7DA2ZKPWZ3NM4WQT9CAはqueued/repliedfalse。既存accountの変更・reset・credential転記・公開商品/収益変更は依頼しない。返信を待つ間は公開pilotの第三者依頼と自然runを維持し、追加の重複signup/決済/Naïve診断消費は0。通常mail認証が技術的に可能であることと、そのサイトのPublisher権限を取得したことを分離する。
+
+この追加確認は全体TODOのreorderではなくMAIL03の具体化。現在cursorは実第三者依頼→公開納品→29USDC receipt/費用、自然run12UTC/本人inbound・認証/録画/phone-only/採算/移植は未達。最後の公式open trace-review依頼一覧は0、agmsg/Reason新返信0。記事はpublic main5054f196へ反映済み、実売上/10K/月黒字/無介入完走を断定しない。
