@@ -609,6 +609,43 @@ class HQTests(unittest.TestCase):
             self.runtime.receive()
         self.assertIsNone(self.runtime.status()["last_poll"])
 
+    def test_priority_thread_receives_before_backlog_without_extra_poll_calls(self):
+        priority = "999.000001"
+        self.config.update(priority_thread=priority, max_threads_per_poll=2)
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        self.runtime.store_messages([self.message(f"{index}.000001", "ordinary root")
+                                     for index in (100, 101, 102, 999)])
+        with self.runtime.connect() as database:
+            database.execute("UPDATE threads SET polled=50 WHERE ts=?", (priority,))
+        self.slack.threads[(priority, "")] = {
+            "ok": True, "messages": [self.message("1000.000001", "@codex review", priority)],
+        }
+        self.assertEqual(self.runtime.receive()["queued"], 1)
+        self.assertEqual(self.runtime.receive()["queued"], 0)
+        self.assertEqual(self.runtime.receive()["queued"], 0)
+        calls = [parameters["ts"] for method, parameters in self.slack.calls
+                 if method == "conversations.replies"]
+        self.assertEqual(calls, [priority, "100.000001", priority, "101.000001", priority, "102.000001"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertIsNotNone(self.runtime.claim())
+
+    def test_undiscovered_priority_thread_preserves_existing_poll_order(self):
+        self.config.update(priority_thread="999.000001", max_threads_per_poll=2)
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        self.runtime.store_messages([self.message(f"{index}.000001", "ordinary root")
+                                     for index in (100, 101)])
+        self.runtime.receive()
+        calls = [parameters["ts"] for method, parameters in self.slack.calls
+                 if method == "conversations.replies"]
+        self.assertEqual(calls, ["100.000001", "101.000001"])
+
+    def test_priority_thread_requires_valid_timestamp_and_other_thread_capacity(self):
+        for priority in (True, [], "", "NaN", "not-a-timestamp"):
+            with self.subTest(priority=priority), self.assertRaises(hq.HQError):
+                hq.HQ(dict(self.config, priority_thread=priority), api=self.slack)
+        with self.assertRaises(hq.HQError):
+            hq.HQ(dict(self.config, priority_thread="999.000001", max_threads_per_poll=1), api=self.slack)
+
     def test_receive_preserves_bounded_page_continuations_and_rotates_threads(self):
         self.config.update(max_history_pages=1, max_threads_per_poll=1, max_thread_pages=1)
         self.runtime = hq.HQ(self.config, api=self.slack)
