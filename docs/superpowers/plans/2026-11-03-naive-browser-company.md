@@ -9,7 +9,7 @@
 
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用capは修復sourceで月8USD/max_task1USD、既存残高内・追加入金なし。現在の稼働値と未反映targetは「現在の正本」を参照。
+- 専用capは修復sourceで月8USD/max_task1USD、既存残高内・追加入金なし。現在の稼働値と未反映targetは「現在の実行詳細」を参照。
 - 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
 - business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
@@ -172,9 +172,9 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 現在cursor: 月5→6USD（追加支出権限は最大1USD）、task1USDを維持するv12をmain固定SHAへ反映→agent/deployment GET一致→新しい短い有限runで募集1postとnative browser実画面確認。旧停止sessionは先にcancel済み、auto-resume競合を防ぐ。追加入金/他agent変更無し。以降は実依頼→納品→第三者USDC receipt/費用、自然run/録画、黒字後の移植/複製。実売上/USD10K/自己compute支払は未達。
 - 順序は募集/実intake→受注→納品→決済を維持。予算修復を現在cursorに挿入する理由は現残枠が次call見積り未満で、自然runも停止するため。追加1USDの効果を実費/receiptで判定し、無制限増額にしない。
 
-### 現在の正本: v13稼働・実依頼と納品収益の検証
+### 現在の実行詳細: v18稼働・実依頼と納品収益の検証
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致。最新担当累計6892309microUSD、修復sourceはcurrent17→18/月8USD/production pin18を目指すが、この記述時点では未適用。実第三者売上は未確認。
+実行順・完了条件の正本は統合SSOTの「Naïve v18実反映と残TODO」、本節はその実行詳細。過去v6〜v17/予算/cursorは当時の履歴。現在はagent current18/production deployment18/月8USD/task1USD、既定Haiku4.5。PR9165/main9ae119a7272dfc9d423656726eed63c14d6e108e固定sourceから反映し、agent/deployment全source fieldsを公式GET一致。担当累計6892309microUSDは月11/01開始のまま保持、残1107691microUSD。Computerはpaused。直近の自然runは旧pin13の無受注確認までで、新v18の自然run・有償納品・実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -182,14 +182,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - [x] native public-pilot-promo.jsonのread、intakeファイルwrite/read成功。有限session `ses_35xzd8a1ad2anyqv9j0rcr3v8e` はend_turn後cancel→GET cancelled。合計60211microUSD（募集と受注画面確認）、担当累計4908335microUSD。直接費であり全社費用/利益ではない。副作用不明の再送や内部偽注文は無し。定期deploymentはenabledのまま。
 - [x] Grok/Museへ既存Slack threadで公開窓口と具体的な再利用手順/provider receiptの照会を送信成功。https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793690848660309 。返信は未確認、本人DM制限は迂回しない。
 
-残TODO（現在cursorは2、全体goalはactive）:
-1. [完了] 実行予算と導線の修復。PR #9145/main `584363f5b03e738647e65286f77264bcff069219` からv13を適用、agent/deploymentの全source fieldsを公式GETで一致確認。月7/task1、同Identity/11allow/cronを維持。未完CTA案内はnative1callから公開し、Postiz保存HTML exact・X本文3段落の一致・native journal write/readを確認。現在cursorは次項の実依頼獲得（v18実行枠修復と確認継承の診断を含む）。
-2. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点では同文募集や同じ画面巡回を増やさず、下記seller loopで新しい公開需要の根拠を最大1件調べ、提案を改善する。単なる待機だけで終わらせない。
-3. 標準自然runは12UTC予定→12:09:39作成、pin13/同Identity、7tools/45903microUSD/確認0/primary追加入力0でidle end_turnを公式確認。実画面は適合依頼0件、記録して終了。次の自然runは2026-11-04T00:00:00Z（JST9時）。今回の無受注確認を有償業務の無介入完走と呼ばない。初回の実有償業務は連続画面録画を保存し、単一スクリーンショットを動画と呼ばない。
-4. 本人inbound配送は独立切り分け。送信方向は後続のmail-tester1通で実受信10/10とSPFpass/DKIMvalid/DMARCpassを確認済み（詳細は末尾の実測結果）。受信方向/登録完了は未達。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
-5. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
-6. 利用者向けiPhone入口を設け、利用者個人のGoogle/メール入力/password/PCを要求せずManagerを利用できる導線を実装・実機確認する。現在のdeveloper向けGitHub依頼フォームはこのconsumer入口ではない。infrastructure契約と利用者本人確認/引出条件を区別し、銀行情報以外不要と未確認で約束しない。
-7. 黒字の手順/評価/最小stateを他のVMへ移植し2拠点で実証。専用Identity/credential所有/資源上限/仕事重複を維持する。receiving-only walletにoutgoing signerは未接続、compute自費支払/自己複製/任意cloud互換は未達。USD10K月売上/MRR・YC採択・優勝は目標であり未達。
+残TODOの順序・現在cursor → `docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md`「Naïve v18実反映と残TODO」。本planの以後のcursor・budget記述は各診断時点の履歴として読む。
 
 証拠正本: repo外private `/Users/anicca/.local/state/naive-browser-company` のagent/deployment-readback-v12.json、public-pilot-promo-provider-readback.json、public-pilot-promo-v12-events.json、public-pilot-intake-v12-events.json、public-pilot-intake-cloud.jpg、public-pilot-v12-finite-cancel-readback.json、own-agent-spend-after-pilot-launch.json。署名付き画面URL/メール原文/秘密値は公開しない。
 
@@ -422,7 +415,7 @@ main固定restore artifact（to_version15/expected16）を適用しcurrent17、�
 
 公開記事反映: BusinessRun Bench PR #4はmain `5054f196abb564ef168646195a2f6ac83e7e1124` へ統合。ARTICLE.en.mdの固定main raw30264bytesとreviewedローカル本文がbyte exact。Current Stateをv13 production/current17復元・月7/task1/wakefalse、public pilot/CTA、外部送信配送、Substack未認証、cap実費超過、単価capacity上限/売上未確認へ更新し、過去測定値は保持した。URL https://github.com/Daisuke134/businessrun-bench/blob/5054f196abb564ef168646195a2f6ac83e7e1124/ARTICLE.en.md 。新SNS送信は0。private current-english-article-main-readback.jsonが根拠。
 
-独立fresh read-only検証はpublic be51f54/private8c52deb2eaにSHIP/Blocking0。session thread limitとAGMSG plain terminal起動失敗後、モデル指定無しの有限codex exec/read-onlyで実データ比較を行った。current-results-independent-review.txtをprivate保存、先行3run合計はprimaryが各cancelled公式readbackから再照合して336596と一致。AGMSGの送信を稼働証明にせず、本人inbox/Reason返信はいずれも新着0。全体goal active、現在cursorは実第三者依頼と有償納品/receipt、残TODOは「現在の正本」に一本化する。
+独立fresh read-only検証はpublic be51f54/private8c52deb2eaにSHIP/Blocking0。session thread limitとAGMSG plain terminal起動失敗後、モデル指定無しの有限codex exec/read-onlyで実データ比較を行った。current-results-independent-review.txtをprivate保存、先行3run合計はprimaryが各cancelled公式readbackから再照合して336596と一致。AGMSGの送信を稼働証明にせず、本人inbox/Reason返信はいずれも新着0。全体goal active、現在cursorは実第三者依頼と有償納品/receipt、残TODOは「現在の実行詳細」に一本化する。
 
 
 ### Capafyの同一Publisher内接続を優先する
@@ -527,3 +520,21 @@ PR #9164は15checks全PASS、source inputの独立reviewは指摘1件修正後SH
 ### ハッカソンの公式条件を再照合
 
 一次資料 https://events.ycombinator.com/naive-autonomous-companies-hackathon の公開data-pageを取得。11/7–8/SF、Naïve SDK必須/ライブデモ、実際の納品・判断・人の介入を説明する条件。売上必須とは記載されず、当社の実売上目標と区別する。事前開発の可否は明記無しで、準備した部分を当日開発成果と偽らない。匿名公開ページのrsvp nullは本人参加承認の確認ではなく、不参加判定にも使わない。private `hackathon-official-conditions-current.json` が根拠。優勝/YC interview/YC採択/10Kは未達の目標。
+
+### v18の公式実反映と次の最小probe
+
+PR9165は15checks全PASS/独立read-only review SHIPでmain `9ae119a7272dfc9d423656726eed63c14d6e108e` へ統合。GitHub GraphQLの一時502はNaïveへのmutation前の取得段階で発生し、RESTのPR merged/merge_commit_shaとgit fetchで照合して経路を切り替えた。固定mainの2configをlocal bytes/hashと比較して、同agentへexpected17/budget-only PATCH→18、旧pin13が不変なことを確認後、同deploymentのpin18/inputだけ更新。agent/deployment全source fieldsのGET一致、その他deployment fields不変。追加入金0、既定model/Identity/11allow/12h cronは維持。新次回は11/04 00UTC（JST9時）、旧naturalの成果をv18の実行成果に置換しない。private `budget-v18-{main-source,agent-readback,deployment-readback,final-readback}.json`、`v18-post-apply-spend-computer.json` が証拠。担当spent6892309/新残1107691、Computer pausedを再確認。private runtime.jsonのagent_version/production_deployment_version/source_shaを公式結果へ合わせた。
+
+次は公開ページだけの短いbrowser再開probe。現sourceはkeep_alive=false、公式 https://usenaive.ai/docs/computer/browser.md はtrueをbrief disconnectをまたぐresumable flow用とする。これは確認待ち後の白画面/状態喪失に関係し得るが、解除の実証はまだ無い。最小の設定比較と実画面/URL/非秘密の検索入力保持を確認し、確認イベント数・primary AI操作・実費を別々に記録する。signup/mail/決済/他owner profileを混ぜず、同じ失敗の盲目反復や未測定の改善率を出さない。source/main固定の後にだけruntimeを変更し、1仕事1USD/月8USD内で次の有限probeを閉じる。
+
+MCPのresource境界もfirst-partyで確認: https://usenaive.ai/docs/api/mcp-sessions.md はidentity_idを現状未enforcedなlabelと明記。allowed_toolsはmethodの制限で、対象agent/computerの固定ではない。したがって会社全体へ届くtokenを業務workerへ渡す形にせず、必要な制御は所有agent/Computerを照合する会社側の狭い窓口に保持する。新MCP key/sessionの発行は0。repoのapps/runtime/scriptsにはNaïve/vetta/confirmTool/awaiting_approvalを扱う既存コードを今回の検索で取得できなかったため、既存対応の稼働済みとはしない。まず小さいbrowser再開設定の観測を進め、必要な確認処理は会社側AI運用としてDaisへの承認待ち無しで組む。private `mcp-resource-scope-findings.json` と各first-party docsが根拠。全体goal active。
+
+### browser保持のv19最小変更
+
+目的は確認待ちや短い切断後に白画面になる境界を狭めること。範囲は既存agentのbrowser.keep_alive=false→true、前画面が必ず閉じるというsystem説明を現在画面の観測へ整合、同deployment pin18→19だけ。費用上限8USD/月・1USD/task、model、Identity、その他権限、cron/inputは維持。設定の受理を改善成功にしない。
+
+公式tools/browser資料ではkeep_aliveはagent tools.configs.browser.configにある。native toolのper-call設定は確認できず、未記載argsを捏造しない。現行18を参照するdeploymentは更新時19へ追随するため、pin19も同sourceで扱う。実行時の旧版sessionsは維持する。
+
+完了条件はmain固定sourceの公式GET一致と、公開https://news.ycombinator.com/だけの有限native probe。最大0.30USD、同browser依存操作は直列、まずgoto→screenshot/必要なobserveで実画面があるかを確認する。入力欄が実在するときだけ非秘密検索語を入力し、短いidle/再開をまたぐ画面/URL/入力値を比較する。確認が出た場合は会社側AIが当該公開browser操作を検査して回答し、確認数/primary追加入力/台帳費用を記録する。signup/mail/公開送信/決済はこのprobeに混ぜない。失敗時もcancel/pending0とComputer停止まで照合し、未実証の連続録画や無介入成功を主張しない。
+
+旧順序も新順序も統合SSOT TODO2（browser復旧→実需要→有償納品）。新framework/controllerを先に作らず、実測失敗に対応する単一設定を先行する。現在はv19未反映、live18/18。Reason inboxとSlack既存照会threadの再確認でも新返信は未取得。

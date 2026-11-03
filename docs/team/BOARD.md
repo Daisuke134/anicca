@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [Codex / NAIVE-BROWSER-E2E] live18/18、browser保持v19最小sourceを所有。keep_alive/system/pinだけ、月8/task1/model/Identity/cron/input不変。公開HN有限probe→実需要/有償納品、詳細は統合SSOT Naïve残TODO。既存他owner/profile/投稿は変更しない。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
@@ -18,7 +19,7 @@
 - [home-codex / CAPAFY旧IG receipt継続] task17679f4e146bb3b4be52268e、owner home-codex-17679f、branch docs/capafy-ig-receipt-17679f。対象旧occurrenceのread-only診断と隔離fixtureのみ。親所有PR9117・TEAM-HQ・投稿・会計・認証・effect fenceは変更しない。正本 → 統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
 
 - [home-codex / CAPAFY-IG-IDENTITY-BINDING] task fd096c、owner home-codex-fd096c、branch fix/capafy-ig-binding-fd096c。PR9120親root統合を保護し、次cursorの本人拘束source/testsを所有。本番投稿/認証/fence/会計/HQ変更0。
-- [Codex / NAIVE-OWNED-MAIL] 継続: production13/current17。自然runの無受注確認とメモ保存は実証、seller有限はstate exact/cancelled・台帳187824microUSD、需要/売上/認証/受信/動画/phone-onlyは未達。残月枠107691がHaiku予約未満のため月8/task1・pin18の修復sourceを準備（未適用）。公開読取の確認継承も未解決。既存他owner/販売済商品/Google/cronを変更しない。正本→統合SSOT Naive節。
+- [Codex / NAIVE-OWNED-MAIL] 継続: PR9165/main9ae119a7からcurrent18/production18・月8/task1を実反映し全field GET一致、Computer paused。旧13の自然無受注確認とstate保存、seller有限1695bytes exact/cancelled・台帳187824microUSD。次cursorはbrowser再開保持の設定probeと確認処理→実需要/第三者receipt。受信/認証/売上/動画/phone-onlyは未達。既存他owner/販売済商品/Google/cronを変更しない。正本→統合SSOT Naive節。
 - [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD] source/main/公開反映完了: PR9101/main f6eef8eadb、deploy6ae925af58c2cba944c2be18 ready。PR9103はCI14件とCodeRabbit成功後main735660764dへ統合済み。次: PR9104のmain同期後CI/統合、旧日次callerの本人journal/公式receipt照合。owner home-codex-3d1087を継続、投稿/会計/HQ変更0、売上未確認。
 
 - [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD継続] task95bef89b、branch docs/home-codex-95bef89b。PR9103統合済み、PR9104の競合を双方保持で解消し、公式新規JSON帰属1件と日次caller未接続をread-only照合。既存publish owner/fence/HQ/会計/配信は維持。証拠 → docs/evidence/capafy-natural-95bef89b.json。
