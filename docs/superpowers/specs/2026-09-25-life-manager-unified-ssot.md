@@ -9,6 +9,8 @@
 
 Grokbot実業務の引継ぎ: 本人dr eggbotのReason返信3FZYT4EYA21PM454HV6Q2GMSMKは、inbox-sweep2時間、coconala-lancers-loop3時間の:30、gig-store10:30、gig-audit09/15/21、transcript平日08:44、routine-health月曜08:49と、停止済み5routineを申告する。これはroutine一覧であり、quota残量/全処理の自然稼働を証明しない。既存applications.csvはGitHub anicca-ops/team/metricsのsha6b96bf78296f73f17bc081b2eca43316fa838582・57行を確認し、既に辞退返信したCrowdWorks案件を再送しない。顧客18521371は本人が修正待ち・11:36 JST時点の未確定送信0と申告する。Codexは修正制作/診断、Coconala送信は既存参謀browser ownerを維持する方式で、最新修正指示・成果物・期限・owner/leaseを本人へ7289HX02C6VKJKFK7HWYAG3CM3で依頼しdelivered、具体的移管完了/新規納品とは数えない。過去settled receiptは現在の修正指示やCodex売上の証拠に流用しない。Dotsは台帳監査を実行してReasonで返答するがSlack connection未設定を再確認する。FIRST1000の提出済/未提出矛盾はNov4 16:59 JST期限、再送HOLDを維持し、本人へ元受付receipt/portalのread-only照合6NN2K1FVKX7YVCJV35VZ8R8JX7を渡す。X Operatorの投稿所有、予約済Postiz、既存iOS owner、停止済routineを重複起動しない。TODO HQ-02→HQ-03の順序は維持し、容量回復と実業務移管を並行する。
 
+容量復旧の継続範囲: 自然HQ3処理は8bd07954由来releaseでもdisk_floor_lowを確認し、現在free約2GiB。先頭TODOは引き続き容量回復で順序変更なし。旧scratchの実行記録は圧縮archiveへ移り、現在events.jsonlのみを読む清掃が一部の終了記録を見失う実例を診断するが、effect確認なしの削除や追加dispatcherは行わない。先に新規観測した/private/tmp（計測下限14GiB）の開発用copyをowner/lease/argv/CWD/FDとGit登録の両面で確認し、未使用かつlockfileから再生成可能なnode_modules/取得cacheだけに限定して容量を回収する。ソース・未push変更・仕様・成果物・認証/profile・不可侵store・使用中runtimeは保持する。操作前後のpath identity/使用中参照/実空きと再生成根拠をprivate receiptへ記録し、free>=4GiB後の既存HQ自然受信/workerと元helper依頼の実行を確認する。容量基準やagent枠の引下げ/迂回は行わない。
+
 目的: Slack #agents-hq を共有部屋にし、依頼保存・受領・着手・進捗・証拠付き完了・停止/枠切れの引き継ぎを追跡する。Codexは収益阻害、計測、Manager開発を継続し、確認した実験を公開する。schedulerが有限のagent実行を起こし、この対話が無期限に自己再開するとは扱わない。
 
 ユーザーの委任: 通常の技術/運用判断、実装・検証・main統合・対象限定反映・記事公開は自律実行する。担当は重複防止の目印であり壁ではない。途中成果・次操作・effect境界を渡して助け合う。本人手続き、provider権限、支出上限、利用枠は事実上の境界として保持し、枠のreset/transferを装わない。
