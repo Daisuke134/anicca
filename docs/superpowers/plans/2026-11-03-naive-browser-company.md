@@ -189,3 +189,11 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 6. 黒字の手順/評価/最小stateを他のVMへ移植し2拠点で実証。専用Identity/credential所有/資源上限/仕事重複を維持する。receiving-only walletにoutgoing signerは未接続、compute自費支払/自己複製/任意cloud互換は未達。USD10K月売上/MRR・YC採択・優勝は目標であり未達。
 
 証拠正本: repo外private `/Users/anicca/.local/state/naive-browser-company` のagent/deployment-readback-v12.json、public-pilot-promo-provider-readback.json、public-pilot-promo-v12-events.json、public-pilot-intake-v12-events.json、public-pilot-intake-cloud.jpg、public-pilot-v12-finite-cancel-readback.json、own-agent-spend-after-pilot-launch.json。署名付き画面URL/メール原文/秘密値は公開しない。
+
+### 受注待ちと並行する本人メール配送の境界診断
+
+目的: 新しい個人メール依存を加えず、本人Naïveメールの外部到達と送信認証を切り分ける。範囲: 自動メール検査 https://www.mail-tester.com/ の通常browser画面で自分用の一時検査宛先を取得し、native email.sendを最大1通、画面から結果と認証情報を読む。公式homepage取得は「First, send your email to」を確認したが動的本文は未取得、無料枠/実行可否は実UIで確認し、購入・有料plan・上限変更は行わない。完了条件: 実送信acceptedと外部受信を区別し、受信した場合はprovider結果/headersのSPF/DKIM/DMARCと画像を確認、未着なら未着の正確な境界を保存する。認証passやscoreを捏造せず、新probeも送信成功だけで受信/登録完了にしない。
+
+既存Inbox/個人Googleは使わない。Inkbox2identity（managerjghh/aiclips-agent）はlive active/mailactiveだが今回ownerの証拠無し、作成toolも無いため借用・変更無し。Naïve本人messagesはfresh GETで0/has_more=false。既存Port25/TLDR宛先へ再送せず、検査本文に個人/顧客data・秘密・本番URLを入れない。宛先/原文/署名付き画面URLはprivate evidenceだけに保存する。
+
+全体TODO順は変更しない。現在の受注待ちと自然run12UTCまでに独立実行でき、登録要件の本人mail経路の未確認を狭めるためTODO3を並行する。native有限runは同じv12/Identity/11tools、予算最大0.6USD・月6/task1内。定期deployment/他ownerは不変、1通の不確実な再送はしない。既存募集・記事を再公開しない。
