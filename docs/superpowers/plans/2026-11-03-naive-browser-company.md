@@ -719,3 +719,24 @@ finallyは当該session cancel→GET terminal/pending0、費用/全ledger/成果
 
 
 v21 source acceptance: 元Haiku/immediateとの差分をREDとして確認し、candidate model/windowの2fieldだけ変更したJSON比較がGREEN。他の全source fields/月8/task1/deployment bytes不変、live model by-ID priority対応、diff check PASS。read-only apply preflight16:27:23UTCは41sessions active0/Computer paused/20-20/残187409microUSD/credit23767587、effect none。fresh read-only reviewerは原本差分・算術・公開公式契約を独立確認しBlocking/Nit/Pre-existing各0、source/canary実行契約SHIP。実適用/供給/需要成果は未検証。適用時のfresh残額判定を省略せず、CI全終了失敗0とmain固定を維持する。
+
+
+### v21の実行結果とv22の予約余力修復
+
+PR9173は全15checks/独立review指摘0でmain645daaf7e7b33ac326d7131087eaff08ba0b716eへ統合する。公式SDK @usenaive-sdk/vetta0.10.0はnpm cacheのintegrity照合済みpackageとzod4.4.3を使い、get agent/deploymentの実200を確認する。agents.updateの送信がexpected_version20/model/windowのexact payloadと安定idempotency headerになるlocal fixtureを確認後、同SDKでPATCH200/request req_erg0jwr2gq4fy0f917n2ys214v→current21を実行し、別公式GETで全source fields一致を確認する。秘密はCredential SSOTからメモリだけへ読み、SDKが業務をscript化したものではない。
+
+当該deployment pause→agent21自動追随→pin20/immediate明示復元/pausedを照合し、session ses_5tydehbrsv6tjz77k2hx926e56をagent21/GLM-5.2/priority/finite0.14で起動する。nativeはseller-state read1→DuckDuckGo goto/extract→検索結果のMedium出所goto/extractの5toolsを直列に完了する。確認0/primary followup0/人間0/429再発0。ここは前のimmediateの制限を越えた実挙動で、予約の恒久解消や公平なmodel順位の証明ではない。次model予約を残sessionへ収容できず16:47:20UTC budget_paused。write/read成果物は0であり、canaryの完了条件は未達。native使用47991は部分snapshot、最終session帰属spend67991microUSD/全ledger8件一致。model input33214/output415/reasoning4654/cache_read128128/cache_write0を記録する。tool応答4183bytesを元ファイル自体のbyte数と混同しない。
+
+保存できたMedium抽出は、hackathon用AI agentのobservability問題と既に行った修正を紹介する記事である。未解決の買い手依頼/価格受容と確認できず、新需要や売上へ昇格しない。nativeの最終判断/継続state保存は未取得。primaryが公開抽出のevent13/metadata/hashを保存するが、nativeが報告fileを完成したとは呼ばない。source/SDK/phaseの役割を分け、APIの成功応答だけを顧客成果としない。
+
+canaryは増枠/モデル変更/再runせずcancelled/pending0へ閉じ、Computer pause→GETpaused、42sessions active0。finallyでdeploymentの全source fieldsを旧20/immediate/enabled trueへ復元しscheduled/next11/04 00UTCを照合する。current agent21は候補GLM/priority、production20は旧Haiku/immediate。月spend7880582/残119418は16:49:50の公式snapshotで後計上を固定保証しない。SDK/control-planeのread/update以外の業務はmodel/browserが実行する。直近hackathon一次ページもSDK使用/実達成と介入を示すlive demoの条件を維持し、売上必須/事前開発可否は未明記。証拠はprivate v21-sdk-{live-readback,update-transport-selfcheck}.json、v21-pool-{sdk-agent-update,agent-readback,autofollow-readback,production-held-readback,canary-events,medium-extract-readback,canary-terminal-readback,canary-spend-readback,canary-ledger,schedule-restored-readback,final-resources}.json。
+
+次の変更は同じmodel/laneを維持した予約余力の修復。小さい実消費だけを根拠にfinite0.14を選んだprimaryの見積もりでは、残額が次の最大出力予約を下回り、記録まで完了できなかった。公式routerがinput全量＋model max_output32768のworst caseを予約すると明記するため、実費の上限見積もりと次callの予約余力を同じものとして扱わない。未知のmax_tokens overrideや外部script agent loopを作らず、同じmanaged native engineで直す。
+
+source target22はbudget.cap_micro_usdだけ8→9USD、max_task1/period month/GLM-5.2/priority/system/tools/Identityは維持。既存org credit約23.77USD内で新topup/課金契約/資源/key追加0。production sourceは22/priorityを希望targetとして明示するが、実20をcanary前に採用しない。 deployment input末尾の固定月8USD/task1USD表記は「設定済みの月次/task予算内」へ揃え、agent設定との予算契約を一致させる。旧cursor「2fieldの別lane試験」から新cursor「予約余力修復→通常業務1件のnative state保存→合格時だけproduction22」へ更新する。理由は別laneのbrowser実操作は成立し、残る最初の失敗が明確なsession予約不足へ変わったためであり、model総当たりをしない。
+
+実行契約: fresh reviewer/関連assert/全CI失敗0/main固定→元21/production20/全session terminal/Computer pausedとsource全fieldsを確認→deployment一時pause→公式SDK agents.update(expected_version21,budget全field)で22→同じIdentity/priorityの通常業務session1件/finite0.40USD、8分、browser hosted最大2/全tools最大8。計画総0.45USD（model ceiling0.40＋browser/Computer等の後計上余力0.05）とし、fresh agent残額0.45未満/credit不足なら作成0で公式台帳を読む。providerの後計上を踏まえhard actual保証とせず、全台帳で実額を読む。42件の旧paused runを再開せず、旧runのcancelledを再確認してからcapを変える。pin20はcurrent21より古いためbudget更新で22へ自動追随しないが、公式GETで20のままと確認する。
+
+nativeはseller-stateをreadし、既調査と今回Mediumの解決済みtutorialを未解決依頼に数えず、本人browserで公開検索→新出所最大1件を調べる。記録は別reportを増やさず既存seller-state.jsonへ今回の出所・問題・未解決の根拠/根拠不足・商品の適合仮説・購買意思null・限界/次行動を追記し、元の記録と他fieldを保持してwrite/read一致を確認する。新記録のchecked_atは未観測ならnull、時刻は公式eventと結合する。営業/投稿/DM/メール/登録/支払0、同じ失敗の反復/追加model/増枠/追加session0。需要なしという正直な結果も業務記録の完了になり得るが、顧客獲得/売上達成とは別である。
+
+finallyは当該session終了/全active0/Computer pause/全ledgerを確認し、旧deployment20/immediate/enabled trueの全fieldsを一度復元する。技術受入は、nativeが実ページを読み、元stateを保持した追記write/readがexact、内容が取得した出所と整合し、支払意思/売上の未確認を補っていないこと。primaryが公式events/bytes/hashを照合する。合格時だけ同じ固定mainの希望production22/priorityをPATCHして全fieldsを読み戻す。不合格ならproduction20へ復元した状態を維持し、希望targetの未反映を正本に残す。mainにdesired targetがあるだけではrollout成功にしない。自然run/本人登録/第三者売上/録画/phone-only/利益/USD10K/月/移植は未完のまま保持する。
