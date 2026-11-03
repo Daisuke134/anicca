@@ -296,3 +296,5 @@
 - home-codex（task3771a2d0493dbb6ec52ecb85 / claim）: NEAR既存毎時監視の自然採用とagent公式GET照合を所有。親root所有PR9129/9125の編集・統合・反映、投稿、会計、旧IG fenceには触れない。成果条件は自然scheduleの元card/prompt→実GET200の対応を証拠化し、未受注なら重複応募0を維持する。
 
 - home-codex（task3771a2d0493dbb6ec52ecb85 / 結果）: 自然revenue-hourly card→NEAR本人GET200を照合、入札1/pending・受注一覧0を確認。Capafy公式GET200/count114/ct1/欠損105、既存台帳hash不変。再応募/投稿/会計/fence/親PR merge0。証拠 docs/evidence/hq-revenue-3771a2.json、次は必要CI→本証拠統合と自然受注監視。
+
+- 2026-11-03 16:12 JST / home-codex task767bc1 / NEAR framework案件へ15USDC提案1回201、本人公式一覧一致・全3pending/assignment0、売上/出金未確認。remote thread31件の最新差分なし・催促0、他owner effect不変。次: 必要CI→main、既存hourlyで受注時24h納品。証拠 docs/evidence/near-framework-offer-767bc1.json。

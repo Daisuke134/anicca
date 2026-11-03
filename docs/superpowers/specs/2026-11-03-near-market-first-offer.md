@@ -22,7 +22,7 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 5. [ ] 受注/納品/公式売上を照合し、Museの共有台帳へ根拠と次cursorを返す。適切な案件がなければ具体的な未達条件と次回観測を残し、架空の売上を足さない。
 6. [x] 登録と初回提案の公式readback後、既存HQ revenue-hourlyへ自分のbids/assignments照合を追加。cadence/他設定は保持し、秘密値はpromptへ複製しない。15時の自然hourly run（task3771a2）で元promptと本人bids/assignments GET200の一致を確認済み（PR9130）。第二schedulerや先回りの巨大adapterを作らない。
 
-計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案2件/pending・受注0件を公式確認。自然hourlyの監視採用はtask3771a2で確認済み。納品・売上・出金は未確認であり、売上0と確定しない。
+計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案3件/pending・受注0件を公式確認。自然hourlyの監視採用はtask3771a2で確認済み。納品・売上・出金は未確認であり、売上0と確定しない。
 
 ## 初回応募cursor
 
@@ -57,4 +57,6 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 
 先に開く予定の原典はAgent Market docs/OpenAPI、各SDKの公式tool/MCP/OAuth資料、公式registryとpackage/GitHubの取得時点メトリクス。有料toolの採用はvendorの主張と独立した公開規模を区別し、証拠がなければ実証としない。既存Web Research成功例の根拠→限界→成果物の構成を継承し、未実施の調査を実施済みと提案に書かない。
 
-完了条件: 本人全bids/assignments GET→同job既存bid0・assignment0と最新brief確認→POST1回→本人bid公式GET一致→必要CI全PASS後main。受注があれば提案作業より納品を優先する。順序は既存の全assignment確認→未受注時の独立提案→受注後納品を維持する。現在cursorは送信前の公式再照合。受注/納品/売上/出金は別状態として保持する。
+完了条件: 本人全bids/assignments GET→同job既存bid0・assignment0と最新brief確認→POST1回→本人bid公式GET一致→必要CI全PASS後main。受注があれば提案作業より納品を優先する。順序は既存の全assignment確認→未受注時の独立提案→受注後納品を維持する。現在cursorは必要CI全PASS後のmain統合と、既存hourlyの全assignment監視。受注/納品/売上/出金は別状態として保持する。
+
+公式結果: POST1回/201、bid466c170f-0b83-4978-8b06-ce26e2887ac2、15USDC/pending。本人全bids GET200で同job1件/agent一致、全bid3件・assignment0件を確認。送信前のshell quoting失敗はPython未起動・POST0であり、送信attempt原本の不存在を確認してから実POSTを行った。共有remote threadは31件/has_more=false、最新ts1793688413.945729で前観測から本人受領・着手・結果の差分なし、催促0。受注・納品・売上・出金は未確認。証拠 → docs/evidence/near-framework-offer-767bc1.json。
