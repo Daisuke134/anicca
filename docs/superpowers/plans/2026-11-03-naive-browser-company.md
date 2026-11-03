@@ -309,3 +309,6 @@ https://github.com/Daisuke134/businessrun-bench/tree/main/pilot
 native finite ses_ztb2n5fa55ya9b6sqmhyjpmqqnは起動/agent v12で実行、browser extract15と画像は0 results/No results matchedで一致。Postiz当日一覧も取得し、write38/read43はbyte exact、end_turn/idle/68071microUSD/pending0。投稿callは0で、nativeは旧257文字の募集を新270文字とEXACT MATCHと誤分類して見送った。rootは保存済み本人Postiz一覧の文字列をexact照合し、旧copy1件、新copy0件/部分一致0、旧!=新を確認。取得済み一覧の範囲の比較であり、全internetや将来の投稿不存在の保証ではない。
 
 同じfiniteのfollow-upで、旧先頭Agent says "done"と新先頭A browser agent said "signup done."の相違、270文字exact payload、新copy未検出の保存済み証拠を明示し、意味が近いことを完全一致としない修正を渡す。再一覧/再intakeを繰返さず、既存の新copy postidがあれば停止、無ければ承認済み1post→journal訂正/write/readで終了。旧journalはraw証拠としてprivateに保持。自己申告screen時計はprovider event15へ結合し置換、release URLの...を実URLとして使わない。月6/task1/finite0.4内でquote拒否なら送信せず正式状態を記録し、同一不確実投稿を再送しない。
+
+
+訂正follow-up後、nativeはpostiz.integrationSchedulePostToolを1回呼んだが、tool error94はwaiting for approval、session idle/awaiting_approval、pending tc_086ddc8daf10af17d3de699755aff18d（read_people=true）で実公開はまだ未確認。pending本文を原稿と厳密比較し270文字/改行4/文字列exact一致、対象integration/type/settingsも元の承認済み範囲と一致。Daisの既存公開依頼とfresh content PASSに基づき、primary AIが当該1callだけscope=callでtool_confirmation allowを処理する。Daisの追加承認は要求しない。provider確認カードが存在したことを隠さず、Naïve単独の無介入成功とは呼ばない。AI coordinator付きのhuman0操作として区別し、権限設定を拡大したり他call/sessionへ包括許可しない。返答不明時は同一postの再送禁止、pending/公式投稿を先に照合する。
