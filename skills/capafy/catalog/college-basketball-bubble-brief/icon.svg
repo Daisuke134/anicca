@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">College Basketball Bubble Brief</title>
+  <desc id="desc">A basketball and tournament bracket card on a deep blue background.</desc>
+  <rect width="512" height="512" rx="96" fill="#102A43"/>
+  <circle cx="170" cy="210" r="104" fill="#E98632" stroke="#F9C784" stroke-width="8"/>
+  <path d="M66 210h208M170 106v208M96 136c56 28 92 120 0 148M244 136c-56 28-92 120 0 148" fill="none" stroke="#102A43" stroke-width="9" stroke-linecap="round"/>
+  <g fill="none" stroke="#E8F1F5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M316 126h54v48h44v48h-44v48h-54"/>
+    <path d="M316 338h54v-48h44v-48h-44v-48h-54"/>
+    <path d="M316 198h-24M316 314h-24"/>
+  </g>
+  <rect x="74" y="396" width="364" height="48" rx="24" fill="#1F5A82"/>
+  <text x="256" y="428" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="23" font-weight="700" letter-spacing="1.2">BUBBLE BRIEF</text>
+</svg>
