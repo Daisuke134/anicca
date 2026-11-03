@@ -122,6 +122,9 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 継続統合（task7c9269e102d2886ee18ccbb6）: Slack指定remote threadを公式GETで全6件照合し、本人受領/着手/結果の新差分なし、催促0。保存済みHQ receiptで前2runの終了と現在run単独workingを確認する。PR9103/head394a000070は必要CI14件＋CodeRabbit成功後main735660764dへ統合済み。PR9104を同owner/既存leaseで継続し、main同期のBOARD/本section競合を双方保持で解消する。旧順=PR9103→PR9104→旧IG receipt、新順は同じ。現在cursor=PR9104更新head必要CI全PASS→main、その後元IG本人journal/session/公式receipt照合。停止publisher/fence/会計/投稿/HQ runtimeは変更0。証拠 → docs/evidence/capafy-continuation-7c9269.json。
 
+
+継続診断（task17679f4e146bb3b4be52268e、owner=home-codex-17679f）: PR9117の統合は親ownerが所有するため変更しない。専用branch docs/capafy-ig-receipt-17679fで、旧occurrence18db7caff1178a88-68028の元本人・journal・receiptの欠落をread-onlyで照合し、現行reconcilerが別active accountを対象に選ぶ危険を隔離fixtureで検証する。完了条件は実DBの対象1行・対象ファイル存在・残存状態の時刻・実code反例をsanitizeした証拠に保存し、CI後の統合まで追跡する。投稿/認証/再起動/fence解除/会計/PR9117統合は所有しない。既存TODO順は維持する。診断結果: mode=roで旧fence保持、専用4artifact不在、残存3artifactは全てqueueより前。隔離fixtureで別ready accountの空一覧でもverified=true/effected=falseになるsource反例を再現（provider0/resolve=false）。本番で誤解除が起きた証明ではない。現在cursor=本診断記録の必要CI/統合、次source作業は元run本人を拘束する証拠なしにprovider照合を進めないための最小修正。成果物 → docs/evidence/capafy-ig-receipt-17679f.json。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
