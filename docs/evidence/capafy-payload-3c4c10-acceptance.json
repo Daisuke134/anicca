@@ -1,0 +1,61 @@
+{
+  "run_id": "3c4c1098fc075eb8a57ac221",
+  "owner_id": "home-codex-3d1087",
+  "occurrence_id": "CAPAFY-ATTRIBUTION-PAYLOAD",
+  "release_sha": "f6eef8eadbfd91877e68c1334a6220be4f8d724c",
+  "loaded_argv_env": "Netlify nodejs24.x stream 1024MB us-east-2 bootstrap2.18.0; unchanged",
+  "phase": "published_official_readback",
+  "command": "Netlify restore; GET site/deploy/files; public go-stats",
+  "exit_code": 0,
+  "effect": "functions2 published; static5 preserved; click0 post0 accounting0",
+  "readback": {
+    "published": "6ae925af58c2cba944c2be18",
+    "ready": true,
+    "total": 105,
+    "excluded": 9,
+    "attribution": {
+      "recorded": 0,
+      "unavailable": 105,
+      "agents": {}
+    },
+    "index_sha256": "058da54732280dd7147ff707140d2e0ab56e3b3c4188ad9d7b9ae92d3723fe68",
+    "prior_stats_equal": true
+  },
+  "provider_receipt_id": "6ae925af58c2cba944c2be18",
+  "evidence_refs": [
+    "docs/evidence/capafy-payload-3c4c10-acceptance.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/9101-promotion-3c4c10"
+  ],
+  "error_class": null,
+  "retryable": false,
+  "next_action": "Same owner: merge acceptance docs only after exact-head CI; observe natural JSON click/ct and loaded daily caller. Do not redeploy or replay probes.",
+  "local_release": {
+    "path": "/Users/anicca/loops/releases/20261103T090718-f6eef8ea",
+    "pull_source_byte_match": true,
+    "loaded_owner_and_natural_daily_run": "not verified"
+  },
+  "tests": {
+    "source_node": 11,
+    "source_python": 39,
+    "bundled_node": 11,
+    "ci_jobs_success": 14,
+    "ci_run": 41543366757,
+    "independent_review": "SHIP; important findings0"
+  },
+  "remote_thread": {
+    "ts": "1793635811.853779",
+    "new_native_receipt_start_result": false,
+    "reminders_sent": 0
+  },
+  "upload_diagnosis": {
+    "initial": "HTTP400 Language missing; draft unpublished",
+    "official_schema": "https://github.com/netlify/open-api/blob/master/swagger.yml",
+    "correction": "runtime=js invocation_mode=stream size; official both outstanding before corrected upload",
+    "corrected": "accepted; ready"
+  },
+  "remaining": [
+    "natural new JSON click and exact ct aggregation",
+    "loaded daily caller release and natural daily click_attribution row",
+    "old105 attribution and sales remain unknown"
+  ]
+}
