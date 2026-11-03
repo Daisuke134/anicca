@@ -64,6 +64,8 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 
 ## 独立提案 — tool発見・配信経路（task e12b38）
 
+証拠provenanceの範囲・完了条件: `9f5acee1fb553fada158fd9289acd6d8bae902e7` は投稿前の仕様・BOARD更新だけを含むGit commitで、`source_spec_commit` に記録する。実runtimeのrelease SHAはprivate task resultでも確認できないため、証拠JSONの `release_sha` は `null` とする。taskの `succeeded` はruntime provenanceを証明しない。この訂正ではbid・公式receipt・事業結果を変更しない。
+
 目的・範囲: 既存3提案の受注待ち時間に、未応募の適合research job 4d2d67b4-3683-4e47-b6c3-39278fdd54cbへ15USDCで限定提案する。owner home-codex-e12b38、branch task/home-codex-e12b38、origin/main由来worktree .worktrees/home-codex-e12b38。全assignment確認→未受注時の独立提案→受注時納品という既存順序を維持する。親ownerのHQ PR9141/9142、Dots会計、Muse/Marketer投稿、旧IG fence、wallet/有料APIは変更しない。
 
 公式preflight: agent専用GETはbids200/3件pending、assignments200/0件。remote追跡threadは32件/has_more=false、前回31件から親ownerの修復継続報告1件のみ、他本人の受領/着手/結果の新証拠なし。Reason accepted/queuedを着手としない。active HQ taskは本task1件、対象jobの既存本人bid0件。公開jobはopen・15USDC・2slot・verification none。

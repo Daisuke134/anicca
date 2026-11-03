@@ -31,7 +31,8 @@
     "latest_ts": "1793693439.698219",
     "new_count": 1
   },
-  "release_sha": "9f5acee1fb553fada158fd9289acd6d8bae902e7",
+  "release_sha": null,
+  "source_spec_commit": "9f5acee1fb553fada158fd9289acd6d8bae902e7",
   "provider_receipt_id": "6e1b21c1-44a0-49cc-b5c3-ae6c99a3791c",
   "exit_code": 0,
   "error_class": null,
