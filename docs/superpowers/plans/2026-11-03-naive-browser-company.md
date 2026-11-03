@@ -800,3 +800,16 @@ nativeは5readを並列に取得し、intakeをgoto/screenshot/view_imageで0件
 次の通常業務は記録訂正1件に限定する。agent22/同Identity/priority/旧production input/モデル/メール/月9/task1を維持。新source/営業/Postiz/登録/送金0、本人のread/writeだけで既存state/journalを読み、旧2値をprovided公式原本から履歴として追記し、18:2X表記を未観測null（提供済みAPI観測UTCは出所を区別）へ訂正、12はcheckpoint小計・公式eventsの最終15は別値とする。history/payment/provenanceと今回の正直な需要判定は保持し、訂正write→同path readを照合してend_turnする。親は業務scriptでfileを書き換えない。finite0.40＋後計上0.10/計画0.50/12分/max12tools、fresh残/creditが計画未満なら作成0。新session1件をこの原因への修復として明記し、前runの追加入力0や会社全体無介入成功に合算しない。
 
 順序は元7TODOのcursor2を維持し、その内部を「新input通常業務→合格時採用」から「記録内容の訂正→独立照合→合格時だけ同じmain由来input採用→買い手需要/初回有料納品」へ修復する。理由は実際の保存内容に履歴/日時の欠落を確認したため。新framework/controllerやモデル/予算の変更を追加しない。合格前は本番inputを旧版で保持。失敗時は原本/原因を記録し、成功や0へ置換しない。登録/録画/phone-only/黒字/USD10K/月/移植と実第三者売上は引き続き未完。
+
+
+### native記録訂正の内部エラー再発と標準editの候補
+
+記録訂正ses_a1tng21mevtq60apvgw236sh4vはagent22/priority/finite400000で作成し、state15953bytesとjournal8657bytesを本人readする。その後のmodel requestは18:21:55開始→18:24:01 internal_error（約126秒）、再試行後18:24:14頃→18:26:20に同じinternal_errorとなる。providerは同sessionを自動再試行して同じ2readを繰り返し、全6read/write0。親の追加入力/新session/モデル変更0。公式eventのerror code以外の原因詳細は未取得で、timeout/JSON不正/長文生成が原因と断定しない。新しい観測を増やせない同じ処理を重ねず、12分の最大枠内でcancel→pending0/46sessions active0/Computer paused/旧production22全fieldsを確認する。費10640microUSD/ledger2一致、月spent8268844/残731156は18:27:23UTCのsnapshot。先の通常runの原本とNO-SHIP2件は未修復のまま保持し、訂正成功としない。receiptはprivate v22-record-repair-{attempt,events,model-boundary,spend-readback,ledger,terminal-readback,final-resources}.json。
+
+自所有の設定ではnative標準editをdisabled/denyにしており、小さな文字列訂正でもwriteでfile全文を再生成する構成である。最新公式 https://vetta.sh/docs/capabilities/tools.md はread/write/editを標準の読取/書込/文字列置換として明記する。edit有効化はroot cause確定の主張ではなく、今回必要な小さい訂正を少量のnative操作で行うための候補である。業務script/HTTP fs書換え/新driverを導入しない。
+
+次source差分はagent tools.configs.editだけenabled false→true/permission deny→allow。他tool/モデル/予算/mail/Identity/system文はbyte相当不変。desired deployment agent_versionは23へ明示するが、現live22の成功と混同しない。inputはmain a7c808由来の先行保存/UTC日1日版のまま。source REDはedit disabled/deny、GREENはeditの2leafだけ変更/agent他fields不変/deploymentはdesired pinだけ22→23とJSON比較し、fresh read-only review/CI全終了失敗0/main固定後に適用する。native実挙動は別判定である。
+
+適用契約: fresh current22/production22旧input/active0/Computer paused/残creditが計画500000以上を確認→deployment一時pauseし古いpin22を保持→公式SDK agents.update expected22/tools全objectだけで23→自動追随があれば旧pin22/priority/旧inputをpausedで明示復元して公式照合→23/同Identity/priorityの通常記録訂正1件を実行する。finite0.40＋後計上0.10/計画0.50/12分/max12tools、業務は本人read/editだけ、file全文write・browser/Postiz/mail/営業/登録/送金0。元2値archive/未観測時刻nullまたは提供公式時刻の出所区別/checkpoint12と最終15の区分を小さいeditで直し、両file全文readで元履歴と訂正を照合してend_turnする。モデル/増枠/新agent/key/inbox/追加sessionを反復しない。
+
+finallyはterminal/pending0/全active0/Computer paused/全ledgerを確認し、旧production22/priority/旧input/元enabledの全fieldsを一度復元する。修復の独立照合に合格した場合だけ同じ固定mainのdesired23/priority/先行保存inputへ反映し全fieldsを読み戻す。不合格時は旧production22を保持する。元7TODO/収益goalは維持、現在cursor2の内部を「native全文write訂正」から「標準editで最小訂正→合格時採用→有料需要」へ変更する。原因は設定上のedit無効を確認し、native小変更を直接行えるため。費用・権限・業務方式を変える新frameworkは足さない。
