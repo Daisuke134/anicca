@@ -3804,7 +3804,7 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(receipt["skipped_pending"], ["example"])
 
     def _strict_reconcile_case(self, *, effect_class="none", unknown_source="both",
-                               late_unknown=False):
+                               late_unknown=False, capacity_sweep_after_check=False):
         from runtime.host import resource_admission
 
         home = patch.dict(os.environ, {"HOME": str(self.root)})
@@ -3850,6 +3850,11 @@ class LmLoopApplyTest(unittest.TestCase):
 
         if unknown_source and not late_unknown:
             fence()
+        if capacity_sweep_after_check:
+            with sqlite3.connect(database) as connection:
+                connection.execute(
+                    "UPDATE occurrences SET state='claimed' WHERE occurrence_id=?", (occurrence,))
+                connection.execute("DELETE FROM queue WHERE owner_id='example'")
         if effect_class == "money":
             summary = "lm-loop://example/wake-fenced/summary.json"
             self._write_events(state, [
@@ -3861,6 +3866,18 @@ class LmLoopApplyTest(unittest.TestCase):
             self.assertIsNotNone(lm_loop._pre_effect_admission_proof("example", entry))
         before = dump()
         original_lock = lm_loop.owner_deploy_lock
+        original_unknown_check = lm_loop._owner_has_effect_unknown
+        sweep_observation = {}
+
+        def unknown_check(owner):
+            unknown = original_unknown_check(owner)
+            if capacity_sweep_after_check and not sweep_observation:
+                with original_lock(owner) as acquired:
+                    sweep_observation["same_owner_lock_held"] = not acquired
+                sweep_observation["unknown_at_check"] = unknown
+                sweep_observation["reserved"] = resource_admission.reserve_available()
+                sweep_observation["unknown_after_real_sweep"] = original_unknown_check(owner)
+            return unknown
 
         @contextmanager
         def deploy_lock(owner):
@@ -3890,6 +3907,7 @@ class LmLoopApplyTest(unittest.TestCase):
             patch.object(lm_loop, "_safe_launchctl", return_value=(0, "disabled services = {}")),
             patch.object(lm_loop, "_skip_if_not_loaded_idle", return_value=None),
             patch.object(lm_loop, "owner_deploy_lock", deploy_lock),
+            patch.object(lm_loop, "_owner_has_effect_unknown", side_effect=unknown_check),
             patch.object(lm_loop, "apply_live", side_effect=isolated_apply),
             patch.object(lm_loop, "install_one", return_value={"ok": True, "label": entry["label"]}) as install,
             patch.object(lm_loop, "rebind_queued_owner", wraps=lm_loop.rebind_queued_owner) as rebind,
@@ -3921,6 +3939,9 @@ class LmLoopApplyTest(unittest.TestCase):
             self.assertEqual(len(result["applied"]), 1)
             self.assertTrue(result["applied"][0]["changed"])
             install.assert_called_once()
+        return {**sweep_observation, "install_count": install.call_count,
+                "applied_count": len(result["applied"]),
+                "skipped_effect_unknown": result["skipped_effect_unknown"]}
 
     def test_strict_reconcile_preserves_no_effect_owner_unknown(self):
         self._strict_reconcile_case(unknown_source="owner")
@@ -3939,6 +3960,13 @@ class LmLoopApplyTest(unittest.TestCase):
 
     def test_strict_reconcile_applies_idle_owner_without_unknown(self):
         self._strict_reconcile_case(unknown_source=None)
+
+    def test_strict_reconcile_serializes_real_capacity_sweep_after_unknown_check(self):
+        observation = self._strict_reconcile_case(
+            unknown_source=None, capacity_sweep_after_check=True)
+        self.assertTrue(observation["same_owner_lock_held"])
+        self.assertFalse(observation["unknown_at_check"])
+        self.assertFalse(observation["unknown_after_real_sweep"], json.dumps(observation, sort_keys=True))
 
     def test_reconcile_treats_effect_unknown_rebind_as_fenced_skip(self):
         release = self._release("release-effect-unknown-reconcile").resolve()

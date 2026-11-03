@@ -1,0 +1,42 @@
+{
+  "schema_version": "hq-strict-reconcile-real-sweep-red.v1",
+  "scope": "isolated_fixture",
+  "runtime_release_sha": null,
+  "source_code_commit": "7abb30799f88da5beae4c0b00fd661b49bc0ca87",
+  "tested_checkout_commit": "eb9e06733580aa6231585a7c02718f5932348d06",
+  "source_spec_commit": "35467108903426be7d0926e392ba6c3124469da1",
+  "source_sha256": {
+    "runtime/loop/lm_loop.py": "932897a1753ead192e9cc6853ad106f00d47422f97ac1c49889e0f32d4939ccf",
+    "runtime/host/resource_admission.py": "d09431a336b8789f304fb89fe019ce8dee095e6d3cbcb5d9da3880da2306b9ae"
+  },
+  "test_sha256": "4175d9216e9b2906ba38a7d5f7e63d99c9c0f28474ee5b325417dadc7a3295f2",
+  "test": "runtime/loop/tests/test_lm_loop_apply.py::LmLoopApplyTest::test_strict_reconcile_serializes_real_capacity_sweep_after_unknown_check",
+  "boundary": "owner deploy lock保持中、実SQL False直後に実reserve_available→_durable_capacityを呼ぶ",
+  "observed": {
+    "applied_count": 1,
+    "install_count": 1,
+    "reserved": [],
+    "same_owner_lock_held": true,
+    "skipped_effect_unknown": [],
+    "unknown_after_real_sweep": true,
+    "unknown_at_check": false
+  },
+  "red": {
+    "exit_code": 1,
+    "failed": 1,
+    "passed": 6,
+    "elapsed_seconds": 4.580923208035529
+  },
+  "controls": {
+    "exit_code": 0,
+    "passed": 26,
+    "elapsed_seconds": 6.11498745798599
+  },
+  "decision": "optional strict modeをmainへmerge・deployしない。原子境界の追加実装を保留する",
+  "limits": [
+    "7abbのowner lockと一度のSQL照合は、別ownerの容量sweepによるunknown化を防がない。",
+    "global control.lockをGUI反映全体で保持する方式とnested rebind/resumeの変更は実装しない。",
+    "回帰testは反証を保持する意図的なREDであり、mainのgreen suiteへ取り込まない。",
+    "本証拠はfixtureだけを対象とし、本番owner・provider・credentials・launchctlを操作しない。"
+  ]
+}
