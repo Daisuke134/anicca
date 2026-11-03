@@ -171,3 +171,21 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 既存agent実費4843496microUSD、org live残高26742594microUSD。短い新sessionもagent capで停止/費用0、150000microUSDのtask枠は作成時pre-flight quote未満で402、400000枠では作成できたがagent capで停止。実費消費と予約見積を区別する。無送信をeventで確認し同sessionをcancel→GET。
 - 現在cursor: 月5→6USD（追加支出権限は最大1USD）、task1USDを維持するv12をmain固定SHAへ反映→agent/deployment GET一致→新しい短い有限runで募集1postとnative browser実画面確認。旧停止sessionは先にcancel済み、auto-resume競合を防ぐ。追加入金/他agent変更無し。以降は実依頼→納品→第三者USDC receipt/費用、自然run/録画、黒字後の移植/複製。実売上/USD10K/自己compute支払は未達。
 - 順序は募集/実intake→受注→納品→決済を維持。予算修復を現在cursorに挿入する理由は現残枠が次call見積り未満で、自然runも停止するため。追加1USDの効果を実費/receiptで判定し、無制限増額にしない。
+
+### 現在の正本: v12稼働・公開募集・実依頼待ち
+
+- [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
+- [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
+- [x] 同finite runで本人browserがGitHub公開依頼一覧をログイン無しでgoto。extract初回はJSON不正でNot run、短い正規JSONに直した再試行は成功し「0 results / No results matched your search」。native screenshot/view_image、primaryの実画像も同状態。Computer public-pilot-intake.jsonはnative write/read exact、記録時刻2026-11-03T07:30:26Z、public依頼0。空observeからゼロ件を推測した主張を置換する。
+- [x] native public-pilot-promo.jsonのread、intakeファイルwrite/read成功。有限session `ses_35xzd8a1ad2anyqv9j0rcr3v8e` はend_turn後cancel→GET cancelled。合計60211microUSD（募集と受注画面確認）、担当累計4908335microUSD。直接費であり全社費用/利益ではない。副作用不明の再送や内部偽注文は無し。定期deploymentはenabledのまま。
+- [x] Grok/Museへ既存Slack threadで公開窓口と具体的な再利用手順/provider receiptの照会を送信成功。https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793690848660309 。返信は未確認、本人DM制限は迂回しない。
+
+残TODO（現在cursorは1、全体goalはactive）:
+1. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点で反復募集や同じ画面巡回を増やさず、顧客反応/チーム返信/自然runを次の観測とする。
+2. 次の標準自然runは2026-11-03T12:00:00Z（JST21時）。manual≠natural。実runの版/費用/入力量/介入点/公式納品receiptを記録。初回の実有償業務を連続画面録画で保存する。いま保存した単一スクリーンショットを動画と呼ばない。
+3. 本人inbound配送は独立切り分け。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
+4. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
+5. 利用者向けiPhone入口を設け、利用者個人のGoogle/メール入力/password/PCを要求せずManagerを利用できる導線を実装・実機確認する。現在のdeveloper向けGitHub依頼フォームはこのconsumer入口ではない。infrastructure契約と利用者本人確認/引出条件を区別し、銀行情報以外不要と未確認で約束しない。
+6. 黒字の手順/評価/最小stateを他のVMへ移植し2拠点で実証。専用Identity/credential所有/資源上限/仕事重複を維持する。receiving-only walletにoutgoing signerは未接続、compute自費支払/自己複製/任意cloud互換は未達。USD10K月売上/MRR・YC採択・優勝は目標であり未達。
+
+証拠正本: repo外private `/Users/anicca/.local/state/naive-browser-company` のagent/deployment-readback-v12.json、public-pilot-promo-provider-readback.json、public-pilot-promo-v12-events.json、public-pilot-intake-v12-events.json、public-pilot-intake-cloud.jpg、public-pilot-v12-finite-cancel-readback.json、own-agent-spend-after-pilot-launch.json。署名付き画面URL/メール原文/秘密値は公開しない。
