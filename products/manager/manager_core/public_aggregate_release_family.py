@@ -120,6 +120,8 @@ def preflight_release_family(releases: list | tuple) -> dict:
             reasons.add("FAMILY_POSSIBLE_SCOPE_DIFFERENCING")
         if "CROSS_RELEASE_POSSIBLE_TEMPORAL_DIFFERENCING" in pair["reason_codes"]:
             reasons.add("FAMILY_POSSIBLE_TEMPORAL_DIFFERENCING")
+        if "CROSS_RELEASE_TEMPORAL_WINDOW_UNRESOLVED" in pair["reason_codes"]:
+            reasons.add("FAMILY_TEMPORAL_WINDOW_UNRESOLVED")
         if "CROSS_RELEASE_DISCLOSURE_METHOD_UNCERTAIN" in pair["reason_codes"]:
             reasons.add("FAMILY_DISCLOSURE_METHOD_UNCERTAIN")
 
