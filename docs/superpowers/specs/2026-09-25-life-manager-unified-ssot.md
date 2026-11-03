@@ -2,6 +2,18 @@
 
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
+### 現在のcursorと残TODO
+
+目的は既存共有roomでの常時受信・受領/着手/結果の区別・枠切れ引継ぎと、自然に実行する収益/Manager作業。DONEはmain由来の自然runと公式返信、60秒未満の受領実測、再巡回の重複0、本人経路の確認で判定する。登録やqueuedだけで全員24時間稼働としない。以下の詳細節は各段階の根拠であり、現在の順序はここを正本とする。
+
+1. 未確定状態を保持して見送るreconcile任意modeのRED/GREEN→独立review→必要CI/main/immutable反映。39件の追加反映は未実施。
+2. そのmodeと各CLI直前のsafe preflightを使い、既に列挙した旧予約元だけを必要に応じ一件ずつ更新。稼働/disabled/unloaded/未確定/契約不一致は保持。上限/床/queue直接編集はしない。
+3. 自然受領60秒未満とreplay-zeroを確認。最初のcanaryは保存251.831秒、反映後の第二canaryは109.113秒で目標未達。両方とも永続card一意、実着手と元messageへのmarker結果を公式readbackする。第二task ac1a56839c103f06713ced1a、受領2HPD0M792A2PBH1WF606Z1BPB3/着手3BGA64FZSSBDK2W7KKA801XHVY/結果23WR937QHWZ73PSSMQ6SSPJVFX。
+4. Dots/Muse/Grokbotの本人wakeと引継ぎを追跡。SSH制約を迂回せず、Grok枠回復や他agentの連続監視を推定しない。
+5. 既存7論理loopを継続: receive15秒/work15秒/schedule300秒、revenue毎時、priorities09JST/Manager14JST/outcomes21JST。18JST自然task b00a48はsucceeded/posted、納品準備report1931語を保存し、未受注/未納品を保持する。NEAR観測は4pending/assignment0、売上/出金未確認。収益証拠PR9143と準備PR9147は同じspec/BOARDを更新するため、本branchで両artifactのbyte一致を保って統合し、検証の重複を減らす。元PRは統合先のmain確認後だけ閉じる。
+
+既存公開記事は公開URL/desktop/mobile目視確認済み。新規記事や課金APIを追加してこの受入を代替しない。
+
 ### HQ-02 受信前の資源予約churnを除去する
 
 本番70fa939bの受信/worker15秒反映後、receiverはentrypoint前capacity_busy/fifo_waitとdisk_floor_lowで延期する。観測08:40はlive4＋予約6でglobal10/10・deterministic5/5。borrow予約ownerは既存resumerから起動するが12GiB条件を満たさず延期し、60秒lease/60秒cooldownで予約を入れ替える。unknown fenceや停止resumerではなく、実行不能候補をreserve前に除外していない共通選択経路が原因である。
@@ -9,6 +21,22 @@
 範囲は既存queue/reserve経路のlive disk eligibility反映。free/floor/対象registryをlock外で一度観測し、_next_durable_candidateの容量選択前に既知の不適格候補を除外する。reserve_available/release_and_reserveを同じ契約へ接続し、queue age/occurrence/公平性を保持する。global10/det5・producer floor・spend cap・既存owner/予約は勝手に変更しない。実測free5GiBではrevenue可/borrow不可、4GiB未満ではrevenueも不可。既存fixtureの『不適格borrowを起動後に延期する』期待値をREDから修正し、必要test/review/CI/main/限定反映/自然受信と1分応答・replay-zeroまでをDONEとする。
 
 実行順は旧: 接続main反映→他agent応答待ち。新: 自所有の予約eligibility欠落→自然受領→全員の本人経路追跡。理由はreceiver自身が共有枠で実測延期され、他agent待ちでは改善しないため。予約選択は5件RED→関連28件GREEN→disk/resource/runner全600件PASS。変更は共通snapshotと候補除外に限定し、claim/reserve/releaseの各lock取得前に観測する。rootのcleanup fixture全84件もPASS。現在cursorは統合差分のfresh read-only review→CI→main→限定反映→自然canary。rootはCI fixture/readinessと正本・統合を所有し、workerはresource_admissionおよびdisk snapshot/関連testsを所有する。capacity回収は完了済み・remote保持済みsourceと再生成cacheだけを対象に継続し、memory/state/credentials/active sourceは保持する。
+
+### HQ-02 main反映後の予約元を限定更新する
+
+PR9146は独立review SHIP/Blocking0、関連600・cleanup84・Node15・registry195および必要CI全PASS後、main a4f11f39へ統合する。固定release20261103T181546-a4f11f39をcurrentへ反映し、receiver install e1343bd808938a13f975b1c7、worker install058216b8a35e0027d360d91cのloaded argv/SHAを確認する。worker初回はrunningでskipし、終了後の限定applyだけを行う。受信15秒/作業15秒は維持する。
+
+修正前canary27864QTK385FFMP3W77H4T3D39は自然受信でtask c2b546c30c7d880d5cbccf16へ一意保存、元messageに受領返信2XN6BHAE5KM5JS43GJPT297FP7を公式readbackする。送信→保存251.831秒で60秒目標は未達、受領と実着手を混同しない。同依頼の再送はしない。
+
+新receiverにもcapacity_busyが残り、旧releaseのborrow予約元がdisk_floor_lowで延期しながら予約を繰り返す。観測したbounty-core-healthcheckは既存の反映経路で既にa4f11f39へ移行している。残る具体的対象x402-inflow-watch-franklin2（8bd07954）とhf-gig-daily-report（70fa939b）を、effect_unknown=false・loaded-idle・同owner deploy lockの既存reconcile契約で一件ずつ同じmain修正へ更新する。これは共有runtime原因の限定反映であり、全fleet再起動・上限変更・予約の手動取消・provider再送は行わない。稼働中ならskipし、自然runと予約元のreleaseを再観測する。旧順序の単純な返信待ちから、新順序の旧予約元の限定反映→自然受領/実着手/結果→新しい副作用なしcanaryの60秒計測へ進める。対象2ownerは限定reconcileで更新し、install eventはdbac08b2ca3f15e6649e7496と75cb247def53049a216c2d1e。後続でも別の旧callerが不適格予約を作るため、現在queue内・knownFalse・managed plistのowner/argv一致・旧releaseという条件で39ownerを固定列挙する（private evidence admission-known-false-rollout-candidates.json）。次は当snapshotだけを上限39件・一件ずつ・loaded-idle-only/max-owners1で更新する。事前の独立read-only検証後、sourceが変化済み/稼働中/effect_unknown/disabled/unloaded/契約不一致は既存reconcileでskipし、対象を自動拡張しない。保存済みmessage/外部effect/ownerの順序は維持する。全fleetの一斉reloadは行わず、反映後に現在予約のeligibility/releaseとHQ自然結果を確認する。現在cursorは39対象の限定反映計画の独立検証。
+
+### HQ-ROLL 未確定状態を保持した限定反映
+
+39対象の独立read-only検証はBLOCKを返す。全件effect_class=none・現時点unknown/claimed0でも、既存_admission_rebind_guardはnoneのunknownをclearし、他のexact pre-effect proofでもresolveしてapplyを続ける。外側DB読取後の旧run終了という競合を防げないため、既存reconcileがunknownを必ずskipするという上記計画の仮定は採用しない。39件の一括反映は未実施である。
+
+範囲は既存reconcileの任意flag --skip-effect-unknown と同owner deploy lock内の最終guard。指定時だけowner/occurrenceの未確定状態を変更せずskipped_effect_unknownへ返し、既定のno-effect/pre-effect recoveryは維持する。rootは正本・統合・運用、workerはlm_loop.pyと関連既存testだけを所有する。queue/cap/floor/priority/モデル/providerを変えない。既知none、effectful/proof、外側観測後のrace、通常idle適用の最小RED→GREEN、独立review/必要CI/main/immutable後にだけ実運用へ使う。初回GUI readには既存CLIのraw経路があるため、各CLIの直前にlaunchctl-safe preflightを外側で明示実行し、失敗時はstatus/reconcile自体を発行しない。新しい未検証の運用modeを旧releaseへinjectしない。
+
+順序は旧: 外側unknown確認→39限定反映。新: lock内の厳格skip修正→review/CI/main→必要な限定反映→自然受領/着手/結果と60秒測定。理由は状態解除の競合が実コードと隔離fixtureで反証されたため。現在cursorはstrict modeの最小RED/GREEN。第二canary7JF3S88J1G0986MNZ0DA6ERER9はmain反映後の自然受信を追跡し、未受領を成功扱いしない。
 
 ### HQ-CI 子process起動とtimeout検証
 

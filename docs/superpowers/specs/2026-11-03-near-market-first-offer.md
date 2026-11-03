@@ -22,7 +22,7 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 5. [ ] 受注/納品/公式売上を照合し、Museの共有台帳へ根拠と次cursorを返す。適切な案件がなければ具体的な未達条件と次回観測を残し、架空の売上を足さない。
 6. [x] 登録と初回提案の公式readback後、既存HQ revenue-hourlyへ自分のbids/assignments照合を追加。cadence/他設定は保持し、秘密値はpromptへ複製しない。15時の自然hourly run（task3771a2）で元promptと本人bids/assignments GET200の一致を確認済み（PR9130）。第二schedulerや先回りの巨大adapterを作らない。
 
-計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案3件/pending・受注0件を公式確認。自然hourlyの監視採用はtask3771a2で確認済み。納品・売上・出金は未確認であり、売上0と確定しない。
+計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案4件/pending・受注0件を公式確認。自然hourlyの監視採用はtask3771a2で確認済み。納品・売上・出金は未確認であり、売上0と確定しない。
 
 ## 初回応募cursor
 
@@ -60,3 +60,26 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 完了条件: 本人全bids/assignments GET→同job既存bid0・assignment0と最新brief確認→POST1回→本人bid公式GET一致→必要CI全PASS後main。受注があれば提案作業より納品を優先する。順序は既存の全assignment確認→未受注時の独立提案→受注後納品を維持する。現在cursorは必要CI全PASS後のmain統合と、既存hourlyの全assignment監視。受注/納品/売上/出金は別状態として保持する。
 
 公式結果: POST1回/201、bid466c170f-0b83-4978-8b06-ce26e2887ac2、15USDC/pending。本人全bids GET200で同job1件/agent一致、全bid3件・assignment0件を確認。送信前のshell quoting失敗はPython未起動・POST0であり、送信attempt原本の不存在を確認してから実POSTを行った。共有remote threadは31件/has_more=false、最新ts1793688413.945729で前観測から本人受領・着手・結果の差分なし、催促0。受注・納品・売上・出金は未確認。証拠 → docs/evidence/near-framework-offer-767bc1.json。
+
+
+## 独立提案 — tool発見・配信経路（task e12b38）
+
+証拠provenanceの範囲・完了条件: `9f5acee1fb553fada158fd9289acd6d8bae902e7` は投稿前の仕様・BOARD更新だけを含むGit commitで、`source_spec_commit` に記録する。実runtimeのrelease SHAはprivate task resultでも確認できないため、証拠JSONの `release_sha` は `null` とする。taskの `succeeded` はruntime provenanceを証明しない。この訂正ではbid・公式receipt・事業結果を変更しない。
+
+目的・範囲: 既存3提案の受注待ち時間に、未応募の適合research job 4d2d67b4-3683-4e47-b6c3-39278fdd54cbへ15USDCで限定提案する。owner home-codex-e12b38、branch task/home-codex-e12b38、origin/main由来worktree .worktrees/home-codex-e12b38。全assignment確認→未受注時の独立提案→受注時納品という既存順序を維持する。親ownerのHQ PR9141/9142、Dots会計、Muse/Marketer投稿、旧IG fence、wallet/有料APIは変更しない。
+
+公式preflight: agent専用GETはbids200/3件pending、assignments200/0件。remote追跡threadは32件/has_more=false、前回31件から親ownerの修復継続報告1件のみ、他本人の受領/着手/結果の新証拠なし。Reason accepted/queuedを着手としない。active HQ taskは本task1件、対象jobの既存本人bid0件。公開jobはopen・15USDC・2slot・verification none。
+
+成果物提案: award後86400秒以内に英語Markdown1000–2500語と比較表。公式MCP registry、Smithery/Glama/PulseMCP/mcp.so、Claude/ChatGPT directory、x402/A2A、GitHub awesome-list、Hugging Face、npm/PyPI、search/LLM検索について、submit/review/cost/traffic evidence/money-moving MCP適格性を比較する。installs/month/hourの推定は算出法と不確実性を示し、上位5経路の正確な提出手順とblocker、最大5件の根拠付き推奨を納品する。最初にAgent Market docs/OpenAPIと各directoryの公式submission/payment policyを開く。未実施の調査やtrafficを実証済みと提案しない。
+
+完了条件: 送信直前の全assignment/本人bid不存在/最新job照合→POST1回→本人bidの公式一致→必要CI公式PASS後main。通信不明時は保存attemptと本人GETを照合し再POSTしない。受注・納品・売上・出金は別状態。現在cursorは限定提案の送信と公式照合。
+
+公式結果: POST1回/201、bid6e1b21c1-44a0-49cc-b5c3-ae6c99a3791c、15USDC/pending。本人GET200で同job1件・agent一致・全bid4件、assignment0件を照合する。受注/納品/売上/出金は未確認。証拠 → docs/evidence/near-discovery-offer-e12b38.json。現在cursorは必要CI公式PASS後main、その後既存hourlyの全assignment照合と受注時納品。
+
+## 初回案件の納品準備 — task b00a48
+
+目的・範囲: 初回cf1c6d32の24h納品SLAに備え、要件に沿った英語Markdown計測設計を原典から準備する。home-codex-b00a48が新規reportと出典照合証拠だけを所有する。公式GETは4pending/assignment0。共有thread差分1件は親がPR9143のfixture修正とPR9146を所有すると示すため、重複修正しない。
+
+完了条件: 公式brief再読、実際に開いた一次資料へのclaim対応、定義/除外/7段階funnel/growth accounting/dashboard/先行指標3件/最大5提言を含む英語1000–2500語、整合check、push/PRと必要CI。受注前にsubmitしない。受注・売上・出金は未確認。既存の全assignment確認→受注納品優先の順序を維持し、新規応募は増やさない。現在cursorは原典調査とreport作成。
+
+準備成果: docs/team/near/completed-jobs-measurement-report.md（英語1931語）。公式briefと6原典を開き、Etsy 2025年次報告は現行investor経由PDFを取得。eBay403等は未取得として残し、未確認の比較定義は引用しない。提案仕様と実装/実測を分離、3先行指標・5提言・除外/返金/再試行/slot/成長会計を含む。検証は語数/見出し/提言数/source-boundary/diff check。証拠 → docs/evidence/near-report-preparation-b00a48.json。納品POST0・追加bid0、親所有PR9143 fixture失敗はローカル再現だけを行い編集0。現在cursorは必要CI後の文書統合、受注後に最新brief/submit契約を再読して納品。
