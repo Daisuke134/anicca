@@ -25866,14 +25866,14 @@ Naïve seller inputはPR9164/main b4e61ec3→既存deployment input-only PATCH�
 
 Naïve seller有限はcancelled/pending0、26tools/Haiku8+Gemini13spans、state1695bytes write/read exact。primary followup4/確認3、人間0、需要/新規投稿/売上未確認。初回freshなbrowser session-scope許可後もtypeでread_people確認、pin13のallow/ask_actions[]/allow_extract等はsource一致。確認継承は未解決。台帳総費用187824microUSD（30件一致）、session GET171158/usage151158は別snapshotとして保持。担当累計6892309、残107691ではHaiku予約に届かないため、既存live credit24693408内で専用月cap7→8/task1維持のv18 sourceを作成。全33sessionsにactive/再開可能budget_paused0。既定model/Identity/権限/cronは維持し、source inputの投稿履歴遅延読取と依存browser直列化、明示production pin18をmain固定から反映する。現状はまだ17/13、未反映target18を実運用成功としない。全体goal active、残TODOと現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「seller有限の終了結果とv18の実行枠修復」。
 
-### Naïve v18実反映と残TODO
+### Naïve実反映と残TODO
 
-現行はagent18/production pin18/月8USD/task1USD/Haiku4.5。PR9165/main9ae119a7272dfc9d423656726eed63c14d6e108e固定source→budget-only更新とdeployment pin/input更新→全source fields公式GET一致。月spent6892309は保持、残1107691。追加入金0、Computer paused、次自然11/04 00UTC。旧v13自然runは7tools/確認0/primary追加入力0で無受注確認→記録まで実証し、v18自然実行/有償納品/売上の証明にはしない。seller有限はstate1695bytes write/read exact、台帳187824microUSD、cancelled/pending0。詳細/各receipt → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の実行詳細」「v18の公式実反映と次の最小probe」。
+現行はagent19/production pin19/月8USD/task1USD/Haiku4.5。PR9166/main14e9dbd5eedfd1f73f5eeec5643f167f07897282固定source→keep_alive/system更新と同deployment自動追随19→全source fields公式GET一致。他権限/Identity/cron/input不変、追加入金0、次自然11/04 00UTC。旧v13自然runは7tools/確認0/primary追加入力0で無受注確認→記録まで実証し、v19自然実行/有償納品/売上の証明にはしない。v19 HN有限は初回実画面→end_turn後白画面、費33763microUSD台帳一致/cancelled/pending0。current Computer null/旧Computer destroyed。詳細/各receipt → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の実行詳細」「v19の実反映と保持probe結果」。
 
 残TODOの順序は本節、現在cursorは2、全体goal active:
 1. [完了] 専用Identity/inbox/Computer・公開pilot/英語blog・定期deployment・v18実行枠/読取順/依存browser操作順のsourceと公式反映。source受理と本番の事業成果は区別する。
-2. [進行中] 実需要→第三者依頼→native分析→英語公開report→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引き。現在はbrowserの再開保持とread_people確認処理の解消が前提作業。keep_aliveの小さい設定比較を先行し、会社側AIの制御でDaisへの承認待ちを作らない。需要/売上は未確認、内部送金/自己テスト/投稿/クリックを代用しない。scope=session受理でも次typeに確認が出た実測を保持し、全工程無介入としない。重複した募集を増やさず、新しい公開需要1件と有用な新知見を根拠に提案を改善する。
-3. v18の通常自然runと、初回有償業務の連続画面録画を確認。単一screenshot/再現用replayを連続録画と呼ばない。live-viewはcontrol-bearing secretとして扱い、URLをagent/chat/repoへ渡さない。
+2. [進行中] 実需要→第三者依頼→native分析→英語公開report→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引き。v19の同一turn内goto/screenshotは実画面まで成功。end_turn後の画面保持は未達だが、これを顧客獲得の前提gateにせず、nativeを順次操作して公開需要を最大1件調べる。idle後は実確認URLを開き直し、実際に再発した確認callは会社側AIが具体的に扱い、Daisへの承認待ちを作らない。需要/売上は未確認、内部送金/自己テスト/投稿/クリックを代用しない。scope=session受理でも次typeに確認が出た実測を保持し、全工程無介入としない。重複した募集を増やさず、新しい公開需要1件と有用な新知見を根拠に提案を改善する。
+3. 現行v19の通常自然runと、初回有償業務の連続画面録画を確認。単一screenshot/再現用replayを連続録画と呼ばない。live-viewはcontrol-bearing secretとして扱い、URLをagent/chat/repoへ渡さない。
 4. 本人inbound/登録完了は独立に進める。送信方向のmail-tester受信/SPF/DKIM/DMARCは確認済み。会社Resend検査1通はacceptedのみで本人受信未確認、再送しない。専用送信keyではdelivery GET不可のため既存ownerへ同一receipt照会済み・返信未確認。個人Google/共有inboxの借用へ戻さず、public pilot販売のgateにも戻さない。
 5. 少なくとも1件の有償納品/実費からunit economicsを測り、需要に合わせ単価/仕事/処理件数を改める。初期29USDC×日2件×30日=1740USDC/月は満枠を仮定したcapacityで、実売上予測やMRRではない。USD10K/月は未達。
 6. 利用者のGoogle/メール入力/password/自前PCを要求しないiPhone入口を実装・確認する。現GitHub intakeは開発者向けで、既存WebのGoogle認証必須入口をconsumer入口達成としない。MCP identity_idは現仕様でlabelのみのため、会社側で対象agent/Computerを固定し、既存他ownerへ権限を広げない。
@@ -25882,3 +25882,11 @@ Naïve seller有限はcancelled/pending0、26tools/Haiku8+Gemini13spans、state1
 benchmark研究は並行項目: 公開BusinessRun Benchの9eval catalogと3再利用環境の実測を維持し、独自課題・複数modelの同条件比較・採点/費用/介入/公式成果の記録を増やす。既存3環境のscript baselineをモデル順位や全9evalの独立再現としない。英語記事は https://aniccaai.com/blog/manager-naive-autonomous-companies-en で公開済み。ハッカソンは公式の11/7–8/SF/SDK/ライブデモ条件に合わせ、事前開発と当日成果、介入点を分けて実証する。優勝/YC採択は未達の目標。
 
 Naïve browser保持の次sourceはv19未反映。既存browser.keep_aliveだけtrueにし、必ずturn毎に閉じるというsystem文を実画面確認へ整合、production pin19も明示する。liveは18/18のまま。月8/task1/model/Identity/他権限/cron/input不変。残TODO順は本節の7項目、cursor2。main固定→全field公式GET一致→公開HNだけ最大0.30USDの有限native probe、画面/URL/非秘密入力の保持・確認/primary介入/実費を実測する。設定受理を売上/復旧成功にしない。実行契約 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「browser保持のv19最小変更」。
+
+Naïveの現行はagent19/production pin19。PR9166/15checks PASS/独立source review SHIP→main14e9dbd5eedfd1f73f5eeec5643f167f07897282固定→expected18/system-tools更新→deployment自動追随19→全source fields公式GET一致。月8/task1/model/Identity/cron/input不変。有限HN試験はHaiku5spans/3tools/確認0、人間0/primary AI再開指示1。初回は実HN画面、end_turn後の移動なし再開は白画面をprimaryも確認。turnをまたぐページ保持は改善できず、短い接続切断/確認待ち後/検索入力保持は未測定。cancelled/pending0、browser closed2組、current Computer null/旧Computer destroyedを照合。台帳7件と総費33763microUSD一致。売上/受信/登録/録画は未達。残TODOは本節の7項目、cursor2。旧「保持解消を前提」から新「同一turnのnative順次操作で実需要へ」に更新し、未実証の保持/controllerを前提gateにしない。変更理由・実行詳細/receipt → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「v19の実反映と保持probe結果」。
+
+Naïve v19のnative需要調査は15tools/Haiku15spans/確認0で検索・候補確認まで進むが、cap0.30USDの次予約不足で記録前budget_paused。実需要/売上未確認。既存月8/task1内の同sessionだけcap0.50へ修復し、追加閲覧せずwrite/readで観測と限界を保存→台帳/終了照合する。現在cursorはTODO2の当該記録完了。実行契約 → plan「v19 native需要調査の予約枠修復」。
+
+Naïve v19需要調査の確定: Haiku31spans/30tools/確認0、台帳42件/278622microUSD。原本4500bytes write/read一致、seller-state2336bytesは後続session再読取で永続化確認。予約枠0.30→0.50修復後の保存指示でも追加browserが続き、明示interrupt後もGET runningとなったためcancelled/pending0へ閉じた。API受理と実挙動は別で、入力配送/再開/model追従の原因は未分離。元調査の未来時刻・費用推定・市場飽和断定/顧客探索停止は訂正。新しい訂正専用sessionは6read/write/外部0/Haiku5spans/確認0で自然end_turn、2files exact readback、費55287/台帳5件/cancelled。残るmetadataはprimaryのowned fs bookkeeping2write/readで正し、介入を隠さない。3session費小計367672、公式agent月7269834/残730166、月8/task1/既定model/Identity/deployment19/cron/input不変。売上/価格受容/有償依頼は未確認。Computer in-use409を追加観測して終了照合中、現在cursorはTODO2の明示public help request1件の需要/商品適合検証。一次vendor説明を買い手の依頼にしない。詳細/訂正hash/各receipt → plan「v19需要調査の確定結果と記録訂正」。
+
+Naïve最終資源照合: pause200→Computer paused、全36sessionsのactive/pending/再開可能budget_paused0、agent19/production19/月spent7269834/残730166/次自然11/04 00UTC。強制停止なし。Computer終了照合は完了し、現在cursorはTODO2の明示public help request1件の需要/29USDC適合/支払意思の検証。第三者売上未達、全体goal active。確定receipt → plan「v19需要調査の確定結果と記録訂正」末尾。
