@@ -237,3 +237,14 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 既存owner Computerのfresh GETはpaused/browser=null、Computer browser GETは404。これは有限run終了後の観測であり、native browserが別Computerであることや、今回の未反映の原因を証明しない。
 - 次の技術cursor: 同一の自分用credentialと通常のComputer SDK browser interfaceを使い、native helperの短いdone文字列と公式browser_action応答を比較する。ウェブサイトの登録API/業務scriptへ置換しない。追加のsignup/credential名を増やす前にこの境界を診断する。既存Computerのowner/設定を確認し、必要なら専用browser付きComputer1台・timeout1分・own scopeの終了/readbackを正本へ具体化してから実行する。SDK API経由の費用はagent累計に含むかを確認し、別なら別計測。個人Google/人間メールへの切替は行わない。
 - ネットワーク補足: Reason Primaryのowned devicesは0、home-codex/muse-relay宛て既存照会はqueued/返信未確認。登録済みrelayを実稼働Museと呼ばず、別accountへ切替えて迂回しない。全体goalと実顧客→納品→第三者receipt/費用のcursorは維持する。
+
+
+### Computer browser SDK応答の限定診断
+
+目的はnative helperのdoneと公式browser_actionの差を同じ本人credentialで比較すること。業務サイトAPI/scriptに置換せず、Naïveのcomputer browserだけを操作する。既存agent Computerはpaused/browser=nullなので変更せず、診断名codex-naive-dev-browser-boundaryの専用Computerを1台、1vCPU/1024MiB/disk5GiB、browser timeout1分/keep_alive=false、dev.toだけ、allow_writes/extract=true/ask_actions=[]で作る。同じ本人contextを指定し、新しいsignup/credential/公開投稿は行わない。
+
+1. 自分のcredential SSOT全体を読みnaiveを完全一致、組織残高と直近ledger境界を保存。封入値は読まずログインの本人Identityを明示する。
+2. 実signupフォームgoto→既存login:dev.to-businessrun-registrationのloginを最大1回→正式応答/画像をprivate保存。モデル判断やdoneを登録成立にしない。公開登録の再送は指示しない。
+3. finallyで当該browser終了→当該Computer削除→GETの終了状態、組織残高/ledgerの後値を保存。API診断費はagent直接累計と別枠で計測し、差分が不明ならnull。既存runtime/定期deployment/他ownerは不変。
+
+作成費は公式docsで0、computeは1vCPU/1GiB毎秒0.0000185USD、browserは開始から終了の分単位・action別計上で単価は未取得。診断は1browser/1login、timeout1分、全体2分以内を目標に閉じる。追加資金移動なし。既存月6/task1は維持する。初回誤りを再現せず、意味のない繰返しをしない。Inkboxの既存managerjghhはread-only hosted configでinstructions未設定、登録ownerの根拠は増えず、借用/変更/送信しない。
