@@ -1,0 +1,119 @@
+{
+  "run_id": "95bef89b6d4246ed4290d57d",
+  "owner_id": "home-codex",
+  "occurrence_id": "CAPAFY-ATTRIBUTION-PAYLOAD",
+  "release_sha": "f6eef8eadbfd91877e68c1334a6220be4f8d724c",
+  "observed_at": "2026-11-03T00:15:50.029512+00:00",
+  "phase": "read_only_natural_attribution",
+  "command": "GET /go-stats?detail=1&attribution=1; inspect registered daily caller and private ledger existence",
+  "exit_code": 0,
+  "effect": {
+    "deploy": 0,
+    "click": 0,
+    "post": 0,
+    "accounting_write": 0
+  },
+  "readback": {
+    "total": 106,
+    "excluded_synthetic": {
+      "total": 9,
+      "posts": {
+        "x/test_hq_4a481d": 9
+      }
+    },
+    "attribution": {
+      "recorded": 1,
+      "unavailable": 105,
+      "agents": {
+        "4866150011": {
+          "c1103d1": 1
+        }
+      }
+    }
+  },
+  "provider_receipt_id": null,
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/team-hq/95bef89b-readback/official-stats.json",
+    "https://capafy-skills-daily.netlify.app/go-stats?detail=1&attribution=1"
+  ],
+  "daily_caller": {
+    "loop_id": "capafy-ig-marketing-daily",
+    "active_plist_exists": false,
+    "disabled_plist": "~/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist.disabled-20261031-cloud-retakeover",
+    "ledger_exists": false,
+    "sole_source_caller": "skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh:122",
+    "loaded_state": "disabled; pid null; installed release null",
+    "diagnostic_complete": true,
+    "status_command_exit_code": 1,
+    "held_occurrence": "capafy-ig-marketing-daily:18db7caff1178a88-68028",
+    "fence_state": "claimed; history_incomplete; official_readback_required:no_journal_row",
+    "last_report_run": "18e35707b0269318-23482",
+    "last_report_release_sha": "ccf57e9e6756246b41ee2b0c22cb014a63bbc986",
+    "last_report_timestamp": "2026-10-30T15:06:08.564170+00:00",
+    "last_report_exit_code": 75,
+    "last_report_error": "host_admission_deferred:resource_effect_unknown",
+    "official_effect_receipt": null,
+    "usable_active_handle_resolves": false,
+    "private_accounts_path": "~/.cloak/clip-accounts-capafy.json",
+    "account_status_counts": {
+      "poisoned": 1,
+      "session_failed": 12,
+      "provision_failed": 74
+    },
+    "next_readback": "Identify original account from occurrence18db7caff1178a88-68028 saved journal/session; current 87-row account list has no usable handle, do not substitute account."
+  },
+  "sales": "Official since-launch gross USD162.69; click-to-order attribution, cost and net profit remain unverified",
+  "visitor_identity": "unknown; do not infer human or organic visitor",
+  "error_class": "daily_caller_disabled_with_unresolved_publish_effect",
+  "retryable": false,
+  "next_action": "PR9103 exact-head CI then merge. Preserve disabled publisher and occurrence18db7caff1178a88-68028 until exact official receipt reconciliation; locate its original active IG handle/account and durable journal before provider readback. No restart, fence release, replay or redeploy.",
+  "sales_probe": {
+    "provider": "Capafy GET /agent/agents",
+    "initial_helper": "unauthorized using default token source",
+    "ssot_exact_service": "capafy-publisher",
+    "ssot_field": "token",
+    "ssot_probe_exit_code": 0,
+    "agent_rows": 89,
+    "sales_field_rows": 0,
+    "sales_count": null,
+    "net_revenue": null,
+    "cost": null,
+    "note": "SSOT token read succeeded; provider payload omits sales field, do not interpret sum as zero"
+  },
+  "official_seller_money": {
+    "observed_at": "2026-11-03T00:18:40.650188+00:00",
+    "period": "sinceLaunch",
+    "sources_ok": {
+      "seller_sales": true,
+      "seller_ranking": true,
+      "statements": true
+    },
+    "money": {
+      "gross": "162.69",
+      "orders": 77,
+      "refunds": "0.00",
+      "one_time": "9.99",
+      "mrr": null,
+      "ending_balance": "83.78",
+      "payable": "0.00",
+      "winner": {
+        "agent_id": "8123079349",
+        "name": "Hook Lab — Win the First 3 Seconds",
+        "sales_usd": "34.88",
+        "sku_type": "subscription_day",
+        "revenue_kind": "subscription",
+        "source": "official_publisher_console"
+      }
+    },
+    "cost": null,
+    "settled_net_profit": null,
+    "note": "Gross sales and statement payable differ from cash received; costs and net profit unverified."
+  },
+  "remote_thread": {
+    "ts": "1793635811.853779",
+    "read_complete": true,
+    "message_count": 6,
+    "new_native_receipt_start_result": false,
+    "reminders_sent": 0
+  }
+}
