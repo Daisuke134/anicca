@@ -25855,3 +25855,5 @@ v10の既定はHaiku4.5へ戻す。短縮版Sonnetはmonthly quote gateで推論
 #### Public trace pilot v11の実行契約
 
 public受注を先行し、メールの不着を発売gateにしない。対象/価格/納品条件は公開BusinessRun Bench `pilot/README.md` とissue form、native実行順は `docs/superpowers/plans/2026-11-03-naive-browser-company.md`。v11は同agent/IdentityのHaiku・月5/task1・11allow/default denyを維持し、public trace-review issue→browser読取→英語X article納品→BaseUSDC receiptの一経路を標準deploymentへ固定する。public consent、匿名化、20calls、1run最大1issue、issue番号/txの重複照合、送信不明fence、untrusted-inputをsystemへ明示。owned mailboxだけwake=falseにし定期runへ集約（inbound未確認/診断mailを業務再開にしない）。既存他owner/商品/投稿/受信箱は不変。自然run/受注/第三者入金は未確認。
+
+Naïve publicpilot更新: 公開offer/sample/receiver/issue formはBusinessRun Bench main041bc1f2、4/4固定SHA readback一致。Naïve v11/main2b87217b agent/deployment全payload一致・本人wake=false。実browser観測は空配列でvisual追加未実行、受注ゼロ実画面の証明ではない。agent実費4.843496USD/live org残高26.742594USD、短い有限runもcap予約見積り拒否/0USD。旧finiteをcancel→GET後、v12は月cap5→6USDだけ拡張しtask1USD/Haiku/11allow/Identity/cron維持、source→main→GET照合して募集とintakeを完遂する。追加入金/他owner変更無し。公開英語記事は済み、募集post/実受注/第三者売上/自然run/録画/自己compute支払/複製/月10Kは未達。残TODO/現在cursor正本 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md` 最終節。

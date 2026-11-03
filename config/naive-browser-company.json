@@ -257,7 +257,7 @@
   "multiagent": false,
   "handoffs": false,
   "budget": {
-    "cap_micro_usd": 5000000,
+    "cap_micro_usd": 6000000,
     "max_task_micro_usd": 1000000,
     "period": "month"
   },
