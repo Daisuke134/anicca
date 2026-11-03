@@ -1135,10 +1135,13 @@ class ReasonInboxTests(unittest.TestCase):
     tasks = HQTests.tasks
 
     def enabled(self):
+        self.config["announce_start"] = True
         self.config["reason_network"] = {
             "binary": "/fixture/reason-network-hq", "name": "hq-codex", "agent": "codex",
         }
         self.reason = mock.Mock()
+        self.reason.send.return_value = {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"],
+                                         "recipients": [{"address": "daisuke/muse@remote", "state": "delivered"}]}
         self.message_id = "01M6G37N2HYGRZ2JAJ4KC98QBY"
         self.reason.inbox.return_value = {
             "session_key": "cli:hq-codex", "address": "daisuke/hq-codex",
@@ -1192,3 +1195,106 @@ class ReasonInboxTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(len(self.tasks()), 1)
         self.assertTrue(self.tasks()[0]["source_key"].startswith("slack:"))
+
+    def test_reason_receipt_is_sent_without_starting_the_model(self):
+        self.enabled()
+        self.runtime.receive()
+        self.assertEqual(self.tasks()[0]["status"], "queued")
+        self.reason.send.assert_called_once()
+        notice = self.reason.send.call_args.kwargs
+        self.assertEqual(notice["to"], "daisuke/muse@remote")
+        self.assertEqual(notice["reply_to"], self.message_id)
+        self.assertIn("受領", notice["body"])
+        self.assertIn("未着手", notice["body"])
+        self.assertTrue(notice["key"].endswith(":received"))
+
+    def test_reason_receipt_timeout_reuses_the_durable_idempotency_key(self):
+        self.enabled()
+        self.reason.send.side_effect = hq.HQError("response lost")
+        self.assertFalse(self.runtime.receive()["ok"])
+        first = dict(self.reason.send.call_args.kwargs)
+        self.reason.inbox.return_value["messages"] = []
+        self.reason.send.side_effect = None
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(self.reason.send.call_args.kwargs, first)
+        self.assertEqual(len(self.tasks()), 1)
+
+    def test_reason_fyi_is_saved_without_a_reply_or_new_work(self):
+        self.enabled()
+        self.reason.inbox.return_value["messages"][0]["wake"] = False
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(self.tasks(), [])
+        self.reason.send.assert_not_called()
+        self.reason.ack.assert_called_once()
+        with self.runtime.connect() as database:
+            note = database.execute("SELECT value FROM meta WHERE key=?", ("reason_fyi:" + self.message_id,)).fetchone()
+        self.assertIn("read-only canary", note[0])
+
+    def test_reason_result_is_returned_to_its_original_sender(self):
+        self.enabled()
+        self.runtime.receive()
+        self.assertTrue(self.runtime.work()["ok"])
+        result = [x.kwargs for x in self.reason.send.call_args_list if x.kwargs["key"].endswith(":result")]
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["reply_to"], self.message_id)
+        self.assertIn("worked", result[0]["body"])
+
+    def test_reason_start_notice_follows_the_actual_queue_claim(self):
+        self.enabled()
+        def send(**notice):
+            if notice["key"].endswith(":started"):
+                self.assertEqual(self.tasks()[0]["status"], "working")
+            return {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients": []}
+        self.reason.send.side_effect = send
+        self.runtime.receive()
+        self.runtime.work()
+        self.assertTrue(any(x.kwargs["key"].endswith(":started") for x in self.reason.send.call_args_list))
+
+    def test_reason_result_retry_does_not_execute_the_work_again(self):
+        self.enabled()
+        def send(**notice):
+            if notice["key"].endswith(":result"):
+                raise hq.HQError("lost reply receipt")
+            return {"ids": ["01M6G11XSHQTVE7JPSSAEE34JA"], "recipients": []}
+        self.reason.send.side_effect = send
+        self.runtime.receive()
+        self.assertFalse(self.runtime.work()["ok"])
+        task = self.tasks()[0]
+        result_path = self.runtime.task_directory(task) / "result.json"
+        original = result_path.read_bytes()
+        self.reason.send.side_effect = None
+        self.assertTrue(self.runtime.work()["ok"])
+        self.assertEqual(result_path.read_bytes(), original)
+        results = [x.kwargs for x in self.reason.send.call_args_list if x.kwargs["key"].endswith(":result")]
+        self.assertEqual(results[0], results[1])
+
+    def test_reason_pending_receipt_can_be_completed_by_the_next_receive(self):
+        self.enabled()
+        self.reason.send.side_effect = hq.HQError("temporarily unavailable")
+        self.runtime.receive()
+        self.reason.inbox.return_value["messages"] = []
+        self.reason.send.side_effect = None
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(self.tasks()[0]["status"], "queued")
+
+    def test_receive_records_native_receipts_before_slack_failure(self):
+        self.enabled()
+        path = self.root / "receive-hint.json"
+        self.slack.error = True
+        with mock.patch.dict(os.environ, {"LIFE_MANAGER_RESULT_HINT_PATH":str(path),
+                 "LIFE_MANAGER_LOOP_ID":"team-hq-receive", "LIFE_MANAGER_OCCURRENCE_ID":"occ-1"}):
+            with self.assertRaises(hq.HQError):
+                self.runtime.receive()
+        value=json.loads(path.read_text())
+        self.assertEqual(value["kind"], "team_hq_reason_receive_result")
+        self.assertEqual(value["status"], "verified")
+        self.assertEqual(value["message_ids"], self.reason.send.return_value["ids"])
+
+    def test_receive_cannot_claim_no_effect_after_lost_reply(self):
+        self.enabled()
+        self.reason.send.side_effect=hq.HQError("lost response")
+        path=self.root / "receive-hint.json"
+        path.write_text("stale hint")
+        with mock.patch.dict(os.environ, {"LIFE_MANAGER_RESULT_HINT_PATH":str(path)}):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.assertFalse(path.exists())

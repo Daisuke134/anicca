@@ -4911,7 +4911,7 @@
       "adapter": "python",
       "admission_class": "revenue",
       "cadence": {
-        "start_interval_seconds": 60
+        "start_interval_seconds": 15
       },
       "cleanup": {
         "max_age_days": 14,
@@ -4924,7 +4924,8 @@
         "receive"
       ],
       "domain": "system",
-      "effect_class": "none",
+      "effect_class": "message",
+      "admission_effect_scope": "occurrence",
       "entrypoint": "bin/team-hq.py",
       "label": "ai.anicca.team-hq-receive",
       "log_root": "~/.local/state/life-manager/team-hq-receive/logs",
@@ -4940,7 +4941,7 @@
       "admission_effect_scope": "occurrence",
       "admission_class": "revenue",
       "cadence": {
-        "start_interval_seconds": 60
+        "start_interval_seconds": 15
       },
       "cleanup": {
         "max_age_days": 14,

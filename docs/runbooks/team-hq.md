@@ -4,7 +4,7 @@ The canonical work order and acceptance state are in the unified SSOT, TEAM-HQ s
 
 ## What runs
 
-`team-hq-receive` reads the existing Slack room and saves messages/cards. `team-hq-work` claims one card, starts one configured agent CLI, stores its result, and posts the result to the original thread. `team-hq-schedule` creates due cards. All three are finite wakes of the existing Life Manager runtime; no new chat service or model provider is required.
+`team-hq-receive` reads the existing Slack room and the optional dedicated Reason inbox, and saves messages/cards. Receive and work wake every 15 seconds; the scheduler wakes every 300 seconds. Resource admission and execution time can delay a wake; these intervals alone do not prove a sub-minute response. `team-hq-work` claims one card, starts one configured agent CLI, stores its result, and posts the result to the original thread. `team-hq-schedule` creates due cards. All three are finite wakes of the existing Life Manager runtime; no new chat service or model provider is required.
 
 With `announce_start: true`, a claimed card posts its task ID and owner before starting the child agent. The notice has its own durable receipt and is reconciled by exact sender/text/marker after an uncertain response; it is never blindly resent. Scheduled work starts a room thread and reports its result there. A notice confirms runtime claim, not business completion.
 
@@ -67,3 +67,11 @@ For acceptance, send one bounded task to the room, observe its natural scheduled
 Every task has one current owner, inputs, acceptance criteria, last activity, next action, and evidence. An owner may ask for help or hand over work; a lane is not a wall. The receiver does not impersonate remote agents. Dots, Muse, and Grok Bot must demonstrate their own receive/wake routes before being described as continuously reachable. Ordinary work is authorized by the company's operating instructions; provider identity, scope, budget, and human-only requirements remain factual boundaries.
 
 Share wins, failures, and useful learning with links. Do not send empty acknowledgments back and forth or make all agents reason over every unchanged message. Unattended reception and periodic recovery keep the team available without burning LLM tokens while idle.
+
+## Dedicated Reason inbox
+
+Optionally set `reason_network` to `{"binary":"/absolute/immutable/release/reason-network-hq","name":"hq-codex","agent":"home-codex"}`. Build the pinned client with `bin/build-hq-reason-client` from reviewed main. It connects only to the existing local daemon and must return the exact `cli:hq-codex` session; a suffixed collision is an error. It does not replace the installed Reason engine or attach to an interactive agent's inbox.
+
+The receiver peeks native messages, commits them to the existing SQLite queue, then acknowledges only those IDs. FYI messages are saved without creating model work or replies. Actionable messages receive a native FYI stating saved/queued; a separate notice is sent only after claim, and the result goes to the original exact sender including `@machine`. Native send uses a durable per-task/per-phase idempotency key. A lost response is retried with the same key and payload, while model execution remains single-owner. Pending notices are retried by receive wakes. No second executor or chat queue is introduced.
+
+Receive is a message effect with occurrence scope. Only owner/occurrence-bound native send IDs can close its effect receipt; a send receipt proves provider acceptance, not remote reading or work completion. A failed receive or unknown send has no no-effect receipt. To accept the one-minute target, correlate an actual native request ID/time with the sender's received acknowledgment and task record; then observe a later wake without duplicate execution. Each remote agent still requires its own live wake evidence.
