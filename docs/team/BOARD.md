@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD継続] task95bef89b、branch docs/home-codex-95bef89b。PR9103必要CI→統合を先行し、公式新規JSON帰属1件と日次caller未接続をread-only照合。既存publish owner/fence/HQ/会計/配信は維持。証拠 → docs/evidence/capafy-natural-95bef89b.json。
 - [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD] claim: fix/capafy-payload-3d1087、task3d10872ebd07701cbebd47c2。PR9099は公式MERGED/14CI PASS確認済み。同lane次cursorのgo/go-statsと関連test/資料のみ所有。新規ct最小payload保存をtest-firstで接続。旧owner/会計/投稿/HQ/deployは維持。
 - [home-codex / CAPAFY-LEGACY-INVENTORY] 同owner継続・PR9099 CI誤検出修復: `docs/capafy-legacy-c23d68`、task `c23d68e42668425c07faedde`。所有: legacy clickの保存schema・exact URL/ownerのread-only照合、sanitize済み証拠と本行。PR9097の合成除外・Dots会計・Muse/Marketer投稿・TEAM-HQ runtime・fenceは変更しない。
 - [home-codex / CAPAFY-SYNTHETIC-CLICKS] 完了: PR #9097/main1d970aef、published deploy6ae8ddd7633cf01d4a4f2a38。通常集計105/検証9分離、元114件と集合hash・公開static5files・旧go ZIPを保持。公式readback済み、売上未確認。この修正を再deployせず、未完PR #9099等を実状態から継続する。

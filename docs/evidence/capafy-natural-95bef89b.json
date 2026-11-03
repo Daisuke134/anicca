@@ -1,0 +1,52 @@
+{
+  "run_id": "95bef89b6d4246ed4290d57d",
+  "owner_id": "home-codex",
+  "occurrence_id": "CAPAFY-ATTRIBUTION-PAYLOAD",
+  "release_sha": "f6eef8eadbfd91877e68c1334a6220be4f8d724c",
+  "observed_at": "2026-11-03T00:15:50.029512+00:00",
+  "phase": "read_only_natural_attribution",
+  "command": "GET /go-stats?detail=1&attribution=1; inspect registered daily caller and private ledger existence",
+  "exit_code": 0,
+  "effect": {
+    "deploy": 0,
+    "click": 0,
+    "post": 0,
+    "accounting_write": 0
+  },
+  "readback": {
+    "total": 106,
+    "excluded_synthetic": {
+      "total": 9,
+      "posts": {
+        "x/test_hq_4a481d": 9
+      }
+    },
+    "attribution": {
+      "recorded": 1,
+      "unavailable": 105,
+      "agents": {
+        "4866150011": {
+          "c1103d1": 1
+        }
+      }
+    }
+  },
+  "provider_receipt_id": null,
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/team-hq/95bef89b-readback/official-stats.json",
+    "https://capafy-skills-daily.netlify.app/go-stats?detail=1&attribution=1"
+  ],
+  "daily_caller": {
+    "loop_id": "capafy-ig-marketing-daily",
+    "active_plist_exists": false,
+    "disabled_plist": "~/Library/LaunchAgents/ai.anicca.capafy-ig-marketing-daily.plist.disabled-20261031-cloud-retakeover",
+    "ledger_exists": false,
+    "sole_source_caller": "skills/earn/capafy-marketing/capafy-ig-marketing-daily.sh:122",
+    "loaded_state": "awaiting bounded status diagnostic; disabled filename alone is not runtime proof"
+  },
+  "sales": "unverified",
+  "visitor_identity": "unknown; do not infer human or organic visitor",
+  "error_class": null,
+  "retryable": false,
+  "next_action": "Finish PR9103 required CI and merge. Reconcile disabled daily publication owner and existing effect fence before any apply. Do not enable publisher just to collect read-only metrics."
+}
