@@ -9,8 +9,8 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [home-codex / NEAR採算report準備] task a4d5daed550664fc184f924d、owner home-codex-a4d5da、branch task/home-codex-a4d5da。応募済みf082df6bの英語report/再計算表だけを所有。5pending/受注0、親HQ/Naïve/会計/投稿/fenceを保護。追加bid/submit/送金0。正本→NEAR初回販売specの採算report節。継続task0edd7448が同ownerのPR9161競合解消と必要CI→mainを引き継ぐ。
-- [Codex / NAIVE-BLOG-PUBLICATION] claim: docs/naive-company-blog-20261103。新規英語slug manager-naive-autonomous-companies-enのsource/package/mediaとmanifest追加、plan/SSOT/BOARDだけを所有。既存Manager blog adapter経由で自社blogへ公開、他記事/renderer/決済/loop/既存配信/認証は変更0。成果はlive本文・画像・release revisionのreadback。正本→Naïve planの自社ブログ掲載節。
+- [home-codex / NEAR採算report準備] task a4d5daed550664fc184f924d、owner home-codex-a4d5da、branch task/home-codex-a4d5da。応募済みf082df6bの英語report/再計算表だけを所有。5pending/受注0、親HQ/Naïve/会計/投稿/fenceを保護。追加bid/submit/送金0。正本→NEAR初回販売specの採算report節。継続task a28e9fa3が同ownerのPR9161競合解消と必要CI→mainを引き継ぐ。
+- [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
 - [home-codex / NEAR初回計測レポート準備] task b00a487defbf8e21457c70e8、owner home-codex-b00a48、branch task/home-codex-b00a48。初回job cf1c6d32の英語Markdownと一次資料照合だけを所有。親のPR9143 fixture修正/PR9146 admission/接続修復を保護。4pending/assignment0、納品POST・追加bid・会計・投稿・送金0。受注時は最新要件照合後に既存ownerが納品。
@@ -19,7 +19,7 @@
 - [home-codex / CAPAFY旧IG receipt継続] task17679f4e146bb3b4be52268e、owner home-codex-17679f、branch docs/capafy-ig-receipt-17679f。対象旧occurrenceのread-only診断と隔離fixtureのみ。親所有PR9117・TEAM-HQ・投稿・会計・認証・effect fenceは変更しない。正本 → 統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
 
 - [home-codex / CAPAFY-IG-IDENTITY-BINDING] task fd096c、owner home-codex-fd096c、branch fix/capafy-ig-binding-fd096c。PR9120親root統合を保護し、次cursorの本人拘束source/testsを所有。本番投稿/認証/fence/会計/HQ変更0。
-- [Codex / NAIVE-OWNED-MAIL] 継続: feat/naive-manager-revenue-20261103。Naïve一件の実売上・費用・継続運転・英語demoを先行、移植/複製は実証後。PR9116/main95aee29fから本人mail3機能・signup承認待ちなしのv4を適用、本人inbox active/専用vaultの個人Google複製削除を公式readback。本人mail登録job running、登録/公開/売上は未確認。専用Naïve担当の本人メール・人間承認なし設定・Capafy新規登録と新規所有商品の実画面成果を担当。既存Google/他agent/稼働loop/販売済商品は変更しない。正本は統合SSOTのNaïve節。
+- [Codex / NAIVE-OWNED-MAIL] 継続: production13 enabled/current17、本人mail/Computer/公開pilot/英語blogを確認。認証/受信/第三者売上/自然run/動画/phone-onlyは未達。会社Resend→本人inbox検査1通を並行、既存他owner/販売済商品/Google/cronを変更しない。正本→統合SSOT Naive節。
 - [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD] source/main/公開反映完了: PR9101/main f6eef8eadb、deploy6ae925af58c2cba944c2be18 ready。PR9103はCI14件とCodeRabbit成功後main735660764dへ統合済み。次: PR9104のmain同期後CI/統合、旧日次callerの本人journal/公式receipt照合。owner home-codex-3d1087を継続、投稿/会計/HQ変更0、売上未確認。
 
 - [home-codex / CAPAFY-ATTRIBUTION-PAYLOAD継続] task95bef89b、branch docs/home-codex-95bef89b。PR9103統合済み、PR9104の競合を双方保持で解消し、公式新規JSON帰属1件と日次caller未接続をread-only照合。既存publish owner/fence/HQ/会計/配信は維持。証拠 → docs/evidence/capafy-natural-95bef89b.json。
@@ -62,6 +62,7 @@
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
 - 2026-11-03 20:15 JST / home-codex-a4d5da / 応募済みNEAR採算report英語1615語・再計算CSV/Decimal assertionsと13原典を準備。5pending/受注0、remote差分は親案内1件で催促0。追加bid/納品/送金0。独立SHIP/Blocking0。次: 必要CI→main、受注時契約再読。
+- 2026-11-03 20:57 JST / Codex / Naive英語記事を自社Manager blogへ公開、既存75記事保持・76記事/44媒体、live本文/画像/hash/provider ready/money-path smoke一致。売上未確認。次: 本人inbound1通検査と自然run。
 - 2026-11-03 18:12 JST / home-codex-b00a48 / 初回NEAR計測report英語1931語と6原典照合を準備、4pending/受注0・納品0。親PR9143/9146保護。次: 文書CI→統合、受注時再読→納品。
 - home-codex（fd096c）: PR9120親統合を保護し、旧IG本人拘束の3ケースRED→24tests GREEN。markerに元handle/runtime occurrenceを保存し、不明/別run/別handle/古い時刻ではprovider読取前HELD。投稿/認証/fence/会計/deploy0。次: exact-head独立review/必要CI→main、旧receipt未確認を保持。証拠 docs/evidence/capafy-ig-binding-fd096c.json。
 - 2026-11-03 14:30 JST home-codex（d26c0c）: Manager自然run41548925146のPython202成功/publisher未実行とPlaywright26.04非対応を診断。直前成功24.04へ2runnerだけ固定、既存12tests/source-boundary/diff PASS。PR/CIへ進む。E16実作用・人の便益・売上は未確認。
@@ -311,3 +312,5 @@
 - home-codex task2259ca（claim）: 既存NEAR4pending/assignment0・PR9147/9148統合を確認。未応募の反復外注調査job989f07daへ15USDC提案1回と公式照合のみ所有。親PR9151/HQ修復、既存report、投稿/会計/fence不変。現在cursorは直前preflight→提案→本人GET→必要CI。
 
 - home-codex task2259ca（結果）: 反復外注調査job989f07daに15USDC提案1回/201、本人bid f173c931公式一致、全5pending/assignment0。売上・出金未確認、納品POST0。既存owner/effect維持。証拠 docs/evidence/near-demand-offer-2259ca.json。次cursorは必要CI→main、既存hourly受注時納品。
+
+- home-codex task a28e9fa3（継続）: PR9161旧headのCI15件成功を公式確認。mainのNaive完了記録を保ってBOARD競合を解消。Decimal再計算/source-boundary/diff PASS、本人GETは5pending/受注0、remote差分0。次: 同PRの新head必要CI→main。納品/再応募/会計/投稿/送金0。

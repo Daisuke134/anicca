@@ -105,3 +105,7 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 準備成果: docs/team/near/micro-job-economics-report.md（英語1615語）とmicro-job-economics.csv、標準Decimal再計算script。13の原典artifactを保存し、$0.05/$0.20/$1/$5・判定/サポート/損失・返金depositを分離。US Stripe料率は日本redirectにより未取得、Upwork/Fiverrは直GET403後crwl本文取得、floor未確認は明示する。仮定baseの損益分岐$0.176375は当社/市場の実測採算ではない。brief24hとacceptanceWindowDays3の不一致を納品前cursorに残す。Decimal表4点/閾値両側/感度3件/deposit/月tier、語数、source-boundary、diff PASS。未受注/未納品、追加bid/投稿/会計write0。証拠→docs/evidence/near-economics-preparation-a4d5da.json。独立fresh-context検証は原典/全計算/CSV byte一致を確認しSHIP・Blocking0（本文のみ1132語・推奨5件）。Connect追加料金は実費照合時の未取得入力として保持。現在cursorは必要CI→main、受注時は契約再読→SLA内納品。
 
 継続task0edd74482e7425e7b1cacba5は同owner/worktree/PR9161の統合を所有する。旧head f1384371e4は必要CI14件とCodeRabbit成功だがBOARDの独立claim追加で競合し、両ownerの行を保持してmain同期する。受注公式GETは5pending/assignment0、remote差分は親の返送先・既存統合報告のみで本人着手の追加証拠なし。report/CSV/scriptは旧headとbyte一致を検証する。現在cursorは更新head必要CI→main公式照合、受注時は最新briefと24h/API3日差異を確認して納品。新規bid/納品/投稿/会計/反映0。
+
+### 採算reportの統合継続 — task a28e9fa3
+
+同owner home-codexのPR9161を優先し、新案件は増やさない。旧head d9a66530の公式CI15件成功・保存済み独立SHIP/Blocking0を確認。最新origin/mainとのBOARD競合は自分の採算report行と他ownerのNaive完了行を両方保持して解消する。再計算/source-boundary/diffを確認し、新headの必要CI公式PASS後にmainへ統合する。thread1793635811.853779は前回1793702294.632279以降の返信差分0。本人専用GETは5pending・assignment0、納品/追加bid/送金0。既存hourlyの受注監視と受注時SLA納品へ戻す。現在cursorは競合解消後の新head CI→main。旧順序から変更なし。

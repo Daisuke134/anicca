@@ -25852,3 +25852,12 @@ NaïveのCapafy接続は、同一運営者1Publisherという公式規約 https:
 
 
 NaïveのCapafy無料user認証はfinite0.30USD内で実費243640microUSD、end_turn→cancelled/pending0。sealed signupで専用credential参照を生成/正本保存したが、browser実行失敗で無料user認証/dispatchは未確認、本人inbound0/EOF。primaryの4call scope確認・session model override/補正を含み、単独無介入完走ではない。current17/production13/元全source fields公式GET一致、担当累計6634284microUSD/SDKbrowser別5001。既存Publisher内正式team経路のowner照会は返信未確認、重複Publisher/課金/既存商品変更無し。全体cursorは実第三者依頼→納品→29USDC receipt/費用、残TODOと具体的な失敗境界 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の正本」「Capafy無料user認証の実測と終了」。
+
+
+Naïve英語記事は自社blog https://aniccaai.com/blog/manager-naive-autonomous-companies-en へ実公開。canonical982fb15e/publishing e5cff、後続main014262a5由来provider6ae9c8b0 ready、実本文・画像hash・release.json記事hashを照合、GHA/money-path smoke成功。既存75記事保持、新1記事/1画像だけ追加。実売上/登録/動画は未達。本人受信は、既存会社Resend送信専用キーから本人inboxへ非注文の検査1通で切り分ける（GET domains401はrestricted_api_keyで失効ではない）。詳細・資源上限・再送禁止・現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「英語記事の自社ブログ公開完了と本人inboundの1通検査」。自律的な顧客獲得seller loopは別の自所有未完項目であり、限定pilot intake稼働を完全な会社運転としない。
+
+Naïve追加実測: 本人inbound検査1通はResend HTTP200/acceptedのみ。12:05公式message0件、inbox active/wake=false、送信専用キーの配送状態GET401でdelivery未確認。再送しない。12UTCの自然runも12:05時点で未作成、enabled/scheduled/next12:00のまま、手動runだけ。担当累計6638031microUSD、差分3747の帰属未特定。設定変更やmanual代替で自然完走を主張しない。seller loopのno-order早期終了は自所有未完として改善を進める。詳細/証拠/残TODO → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「本人inboundと定刻runの追加観測」。
+
+Naïve seller loopのsource変更: 依頼ゼロで即終了するdeployment inputのみを、公開需要最大1件の調査→仮説と永続seller-state→有用な新知見がある場合だけ日1件の英語獲得実験へ変更する。既存受注/納品/tx照合を優先し、agent17相当/production pin13/Identity/cron/月7/task1/tool権限は不変。過去募集の言換え、送信不明の再送、DM、他owner変更はしない。現在cursorはmain固定→input-only PATCH/GET一致→既存残枠内最大0.30USDの有限native検証1回。12UTC自然run未作成/検査mail未着は別診断、実売上/無介入完走は未達。契約と順序変更理由 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「no-order時のseller loopを既存deploymentへ追加する」。
+
+Naïve初回自然runを実証: 12UTC予定→12:09:39作成、deployment/pin13/Identityと初期入力の予定時刻12:00を公式照合。native7tools・Haiku実5spans・45903microUSD、確認0/primary追加入力0/中断0でidle end_turn。本人browser画像も0件、journal write成功。無受注確認の自律実行であり、有償納品/売上/全社無介入/動画の証明ではない。担当累計6683934microUSD、次自然run11/04 00UTC。約9分39秒の起動遅延原因とjournal次run再読取は未確認。新seller inputはこの自然run後の別変更。詳細/残TODO → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「初回の標準自然runが無受注確認まで完走」。
