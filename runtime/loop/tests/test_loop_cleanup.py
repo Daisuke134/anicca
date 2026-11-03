@@ -341,6 +341,7 @@ class LoopCleanupTest(unittest.TestCase):
             terminated = repo / "terminated"
             script = (
                 "import pathlib,signal,sys,time\n"
+                "time.sleep(.4)  # Exercise slow interpreter startup before the cleanup handler.\n"
                 "lock=pathlib.Path(sys.argv[1])\n"
                 "def stop(*_):\n"
                 " lock.unlink()\n"
@@ -360,6 +361,10 @@ class LoopCleanupTest(unittest.TestCase):
                 process = native_popen(command, **kwargs)
                 if script in command:
                     children.append(process)
+                    ready_deadline = time.monotonic() + 10
+                    while not lock.exists() and process.poll() is None and time.monotonic() < ready_deadline:
+                        time.sleep(.01)
+                    self.assertTrue(lock.exists(), "private fixture did not install its cleanup handler")
                 return process
             def run(command, **kwargs):
                 if command[-2:] == ["count-objects", "-v"]:
@@ -374,8 +379,7 @@ class LoopCleanupTest(unittest.TestCase):
                 self.assertEqual(kwargs["timeout_seconds"], 15)
                 self.assertEqual(kwargs.get("termination_grace_seconds", 15), 15)
                 self.assertEqual(kwargs["env"]["LC_ALL"], "C")
-                return native_entrypoint(child, **{**kwargs, "timeout_seconds": .3,
-                                                    "termination_grace_seconds": .3})
+                return native_entrypoint(child, **{**kwargs, "timeout_seconds": .3})
             try:
                 with mock.patch.object(subprocess, "run", side_effect=run), \
                      mock.patch.object(subprocess, "Popen", side_effect=start), \

@@ -2,6 +2,18 @@
 
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
+### HQ-02 受信前の資源予約churnを除去する
+
+本番70fa939bの受信/worker15秒反映後、receiverはentrypoint前capacity_busy/fifo_waitとdisk_floor_lowで延期する。観測08:40はlive4＋予約6でglobal10/10・deterministic5/5。borrow予約ownerは既存resumerから起動するが12GiB条件を満たさず延期し、60秒lease/60秒cooldownで予約を入れ替える。unknown fenceや停止resumerではなく、実行不能候補をreserve前に除外していない共通選択経路が原因である。
+
+範囲は既存queue/reserve経路のlive disk eligibility反映。free/floor/対象registryをlock外で一度観測し、_next_durable_candidateの容量選択前に既知の不適格候補を除外する。reserve_available/release_and_reserveを同じ契約へ接続し、queue age/occurrence/公平性を保持する。global10/det5・producer floor・spend cap・既存owner/予約は勝手に変更しない。実測free5GiBではrevenue可/borrow不可、4GiB未満ではrevenueも不可。既存fixtureの『不適格borrowを起動後に延期する』期待値をREDから修正し、必要test/review/CI/main/限定反映/自然受信と1分応答・replay-zeroまでをDONEとする。
+
+実行順は旧: 接続main反映→他agent応答待ち。新: 自所有の予約eligibility欠落→自然受領→全員の本人経路追跡。理由はreceiver自身が共有枠で実測延期され、他agent待ちでは改善しないため。現在cursorは予約選択のREDと最小実装。rootはCI fixture/readinessと正本を所有し、workerはresource_admissionおよびそのreserve呼び出し/関連testsだけを所有する。capacity回収は完了済み・remote保持済みsourceと再生成cacheだけを対象に継続し、memory/state/credentials/active sourceは保持する。
+
+### HQ-CI 子process起動とtimeout検証
+
+PR9143のx86 CI run41603551487/job125807762097は1098件中test_git_maintenance_timeout_allows_its_private_child_to_clean_its_lockだけがterminated marker不存在で失敗する。fixtureはPython起動・signal handler準備前から0.3秒のtimeoutを測り、productionの15秒graceを0.3秒へ縮めるため、遅い起動を本体のcleanup失敗と混同する。範囲は当testのprivate child readiness同期と本来のtermination grace維持だけ。本番timeout、Git cleanup、資源上限は変更しない。意図的な遅いfixture起動でRED→ready同期後GREEN、diff/review/CI/main統合を完了条件とする。意図的な0.4秒startupで同じmarker不存在をRED再現し、ready同期後GREEN。production同様15秒termination graceを保持し、timeout本体と既存cleanupは変更しない。現在cursorは予約eligibility修正と合わせた必要CI/main統合。
+
 ### HQ-02 受信を1分以内に応答可能にする
 
 目的はSSHに依存せず、チームのメッセージを常時受信し、受領・待機・実着手・結果を区別して共有すること。現在のMac HQ receiverはSlack専用で、この対話のReason受信はpullである。Reason frontend0.2.665のinboxはcli:terminal固定、既存home-codexと同じ箱ではない。engine0.12.17のlistenはstdout後にDeliveredするため、外部queue保存前の既読化を安全な取り込みとしない。native serve codexは別executorを起動し、既存HQ queueを通さないため、そのまま第二dispatcherにしない。
