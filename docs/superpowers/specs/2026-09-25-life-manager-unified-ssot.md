@@ -25742,6 +25742,9 @@ Naïve本人の登録・無人運用への訂正: Daisは専用メール/資格�
 
 本人mail/無人設定の実反映: MAIL01/02完了。system domainは再verifyでactive・dns provisioned・inbound verified、専用inbox activeを公式GET照合しprivate SSOTへ参照を保存。個人Googleの専用vault複製を削除し不在をGET確認。PR9116/main95aee29fccf1bc6ae920465dca0eba009d47bc98の固定configから専用agent v4を適用しsystem/tools/budget/metadataを完全一致readback。signup ask_actions=[]、本人email3機能allow。MAIL03の実jobはv4/同Identity/contextでrunning、read/browser goto/observeを確認。登録・認証・公開・売上・継続deploymentは未確認。Slack既存threadへ無人方針と本人mail準備完了を共有しGrok/Museの実経路を再照会、返答は未取得。
 
+MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し、存在しないgoto toolを呼んでidleになった。承認要求やmail不足ではない。primary AIから既に成功済みのbrowser(action=act,instruction=...)とbrowser.linksの実形式を伝えて同sessionを再開。続くemail.inboxesは成功、browser gotoは最初の入力エラーから次callで成功した。登録/認証済み本人画面は未確認。primary AIの修正を含むため、無介入ベンチマーク成功とは扱わない。
+
+
 
 
 ## AGI flagship essay publication
