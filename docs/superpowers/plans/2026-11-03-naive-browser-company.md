@@ -172,7 +172,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 現在cursor: 月5→6USD（追加支出権限は最大1USD）、task1USDを維持するv12をmain固定SHAへ反映→agent/deployment GET一致→新しい短い有限runで募集1postとnative browser実画面確認。旧停止sessionは先にcancel済み、auto-resume競合を防ぐ。追加入金/他agent変更無し。以降は実依頼→納品→第三者USDC receipt/費用、自然run/録画、黒字後の移植/複製。実売上/USD10K/自己compute支払は未達。
 - 順序は募集/実intake→受注→納品→決済を維持。予算修復を現在cursorに挿入する理由は現残枠が次call見積り未満で、自然runも停止するため。追加1USDの効果を実費/receiptで判定し、無制限増額にしない。
 
-### 現在の正本: v12稼働・公開募集・実依頼待ち
+### 現在の正本: v12稼働・受注導線と残予算の修復
 
 現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はv12/月6USD/task1USD、担当累計5791814microUSD、実第三者売上は未確認。
 
@@ -183,12 +183,13 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - [x] Grok/Museへ既存Slack threadで公開窓口と具体的な再利用手順/provider receiptの照会を送信成功。https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793690848660309 。返信は未確認、本人DM制限は迂回しない。
 
 残TODO（現在cursorは1、全体goalはactive）:
-1. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点で反復募集や同じ画面巡回を増やさず、顧客反応/チーム返信/自然runを次の観測とする。
-2. 次の標準自然runは2026-11-03T12:00:00Z（JST21時）。manual≠natural。実runの版/費用/入力量/介入点/公式納品receiptを記録。初回の実有償業務を連続画面録画で保存する。いま保存した単一スクリーンショットを動画と呼ばない。
-3. 本人inbound配送は独立切り分け。送信方向は後続のmail-tester1通で実受信10/10とSPFpass/DKIMvalid/DMARCpassを確認済み（詳細は末尾の実測結果）。受信方向/登録完了は未達。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
-4. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
-5. 利用者向けiPhone入口を設け、利用者個人のGoogle/メール入力/password/PCを要求せずManagerを利用できる導線を実装・実機確認する。現在のdeveloper向けGitHub依頼フォームはこのconsumer入口ではない。infrastructure契約と利用者本人確認/引出条件を区別し、銀行情報以外不要と未確認で約束しない。
-6. 黒字の手順/評価/最小stateを他のVMへ移植し2拠点で実証。専用Identity/credential所有/資源上限/仕事重複を維持する。receiving-only walletにoutgoing signerは未接続、compute自費支払/自己複製/任意cloud互換は未達。USD10K月売上/MRR・YC採択・優勝は目標であり未達。
+1. 実行予算と導線の修復。v12のCTA修復runはevent29 budget.exceeded/param budget.cap_micro_usdで停止し、投稿0/pending0/cancelled。v13は月6→7USD（追加枠最大1USD）、task1維持と、実測した配信ルール/重複比較の短い指示をsource/main/公式GETへ反映。同じ未完CTA案内を1件だけnative公開し、保存HTMLとX表示を照合して終了。
+2. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点で反復募集や同じ画面巡回を増やさず、顧客反応/チーム返信/自然runを次の観測とする。
+3. 次の標準自然runは2026-11-03T12:00:00Z（JST21時）。manual≠natural。実runの版/費用/入力量/介入点/公式納品receiptを記録。初回の実有償業務を連続画面録画で保存する。いま保存した単一スクリーンショットを動画と呼ばない。
+4. 本人inbound配送は独立切り分け。送信方向は後続のmail-tester1通で実受信10/10とSPFpass/DKIMvalid/DMARCpassを確認済み（詳細は末尾の実測結果）。受信方向/登録完了は未達。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
+5. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
+6. 利用者向けiPhone入口を設け、利用者個人のGoogle/メール入力/password/PCを要求せずManagerを利用できる導線を実装・実機確認する。現在のdeveloper向けGitHub依頼フォームはこのconsumer入口ではない。infrastructure契約と利用者本人確認/引出条件を区別し、銀行情報以外不要と未確認で約束しない。
+7. 黒字の手順/評価/最小stateを他のVMへ移植し2拠点で実証。専用Identity/credential所有/資源上限/仕事重複を維持する。receiving-only walletにoutgoing signerは未接続、compute自費支払/自己複製/任意cloud互換は未達。USD10K月売上/MRR・YC採択・優勝は目標であり未達。
 
 証拠正本: repo外private `/Users/anicca/.local/state/naive-browser-company` のagent/deployment-readback-v12.json、public-pilot-promo-provider-readback.json、public-pilot-promo-v12-events.json、public-pilot-intake-v12-events.json、public-pilot-intake-cloud.jpg、public-pilot-v12-finite-cancel-readback.json、own-agent-spend-after-pilot-launch.json。署名付き画面URL/メール原文/秘密値は公開しない。
 
@@ -333,3 +334,14 @@ Public redacted traces only (20 tool calls max). 29 USDC after delivery. No veri
 ```
 
 MCP契約に合わせ各段落をpで包むHTMLをraw送信payloadとし、Xの期待表示文は上記。primaryは直近の公式投稿一覧でこの新copy未検出を確認し、nativeは専用journalと既存postidを照合して新しい1postだけ実行。既存公開copyを複製しない。新finite最大0.4USD/同v12/月6/task1で1回だけ起動し、cap quoteで拒否なら無送信・終了を確認してから必要最小の予算修復をsource化する。native自身のPostiz投稿→公式PUBLISHED/保存HTML/期待表示のX oEmbed→記録write/read→有限終了の順。primaryによる必要な1call確認を含むAI協調であり、Naïve単独の無介入完走はまだ主張しない。既存顧客納品が発生すれば販促より優先する。追加画像/新signup/新しいメール送信/他channel変更/環境変数変更は行わない。
+
+
+#### v13の最小修復範囲（適用前）
+
+失敗の根拠はCTA runのevent23/26 quote167195/173404microUSD、event29 budget.exceededのparam budget.cap_micro_usd/message the agent's budget cap has no room for this call。task予算400000に対し実費24161で止まったため、単なるtask実費枠消費ではなくagent月capの見積り拒否とproviderが特定している。native publishは0。cancel→GET cancelled/pending0、過去の公開post/明細/本人資格情報は保持済み。
+
+旧順序は実依頼獲得→自然run→メール診断、新順序はこの月cap/CTA修復→実依頼獲得→自然run→メール診断。既存月残枠では公開/自然runの次callも拒否され得る実測依存を解消するためであり、需要0を理由とする頻度増加ではない。現在cursorはv13 source/受入/review/main反映、未完の1案内の公開。別のloop/他owner/既存外部effectは中断しない。
+
+所有変更はconfig/naive-browser-company.jsonのbudget.cap_micro_usd=7000000と、Postiz段落2文の最小訂正、config/naive-browser-company-deployment.jsonのagent_version=13と月7の説明、当plan/統一SSOTだけ。文面は最新schemaに従いXの公開原稿/CTAへURLを入れず、GitHub商品名・repo/issue番号等で場所を伝えること、同テーマだけで重複扱いせず対象/本文の一致と実postidを照合すること、同作業で取得済みの対象/原稿/照合結果を再利用し不足する範囲だけ読むこと。モデルが判断し、regex分類/新しい判定wrapperは追加しない。
+
+model/11allow/default deny/browser options/Identity/wake=false/cron/task1は不変。追加資金移動/カード/支出signer/他サービス設定変更無し。budget上限は実費/利益ではなく最大許容枠。原本v12との構造差分で変更範囲をassert、JSON/diff検査・既存関連CI・fresh read-only reviewを行い、main固定SHAから同owner agent/deploymentへ適用→全source fieldsの公式GET一致→前の未完CTAのみ新有限runで検証する。既存の停止runは再開せずcancelledのまま。v13適用と実公開が確認されるまで実施済みとしない。長いMac loop suite/新scheduler/新依存は対象外で、外部REDはこの本物のbudget.exceeded、GREENは同目的のnative完遂/公式表示で測る。
