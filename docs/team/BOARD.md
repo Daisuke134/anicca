@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [Codex / NAIVE-BLOG-PUBLICATION] claim: docs/naive-company-blog-20261103。新規英語slug manager-naive-autonomous-companies-enのsource/package/mediaとmanifest追加、plan/SSOT/BOARDだけを所有。既存Manager blog adapter経由で自社blogへ公開、他記事/renderer/決済/loop/既存配信/認証は変更0。成果はlive本文・画像・release revisionのreadback。正本→Naïve planの自社ブログ掲載節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
 - [home-codex / NEAR初回計測レポート準備] task b00a487defbf8e21457c70e8、owner home-codex-b00a48、branch task/home-codex-b00a48。初回job cf1c6d32の英語Markdownと一次資料照合だけを所有。親のPR9143 fixture修正/PR9146 admission/接続修復を保護。4pending/assignment0、納品POST・追加bid・会計・投稿・送金0。受注時は最新要件照合後に既存ownerが納品。
