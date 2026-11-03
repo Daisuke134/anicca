@@ -694,3 +694,10 @@ PR9172はfresh read-only reviewの指摘1件（agent_id省略時の全agent注�
 登録診断とは別のTODO2の通常業務として、元agent20/Identityでsession ses_1445nm0378s6nfzhg5p8427565を0.20USD/月8USD内に作成する。過去seller-state read1成功後、実使用44102microUSDで次予約が残finiteを超えbudget_paused。browser/新需要/投稿/売上はまだ0、nativeは再実行していない。予約境界を追加観測してから、以前のseller有限で使用済みのgoogle/gemini-2.5-flash-liteが今回も公式models全365件のcatalogにありimmediate対応と確認する。これはmodelの公平比較ではなく、同じ残予算で通常業務を続けるprimaryの判断である。
 
 現在cursorはこの同sessionへのmodel指定send1回。月cap8/task1/session0.20は一切増やさず、新sessionも作らない。send契約はsession内modelだけ変更し、production既定Haiku/agent20/pin20/Identity/cronを変えない。nativeが本人browserで検索→新規出所1件→記録write/readを順次行い、投稿/営業送信/メール/登録/支払をしない。既読/回答済みforum5003を新需要に数えず、購買意思は未観測null。同じ失敗や追加model変更は重ねず、再びbudget_pausedなら全台帳/記録の有無/終了/Computer pauseを照合して閉じる。元の需要獲得goal/残7TODOは維持する。
+
+
+当該sendはaccepted_seq22で受理されるが、Lite側はrate_limitedを4回（初回/2秒/5秒/60秒待機後）返す。別account/新session/追加model変更/予算増額は0。60秒backoff後の同code再発を追加観測してcancelled/pending0へ終了、Computer pause200→GETpaused、全41sessions active0。本人browser開始0/新需要0/write-read成果物0/投稿0/有償依頼・売上未確認。初回Haiku read1は4183bytes、cache_write34927tokens/消費44102microUSD。当該session帰属spend44102と全ledger1件は一致するが、Computer等のagent側費用をこの1件へ推測配賦しない。直近公式snapshot16:20:11UTCの元agent月費7812591/8USD残187409、20/20/既定Haiku/cron/input維持。遅延計上があり得るため残額を固定保証しない。
+
+公式Models資料はmax_output_tokensがpreflight quoteの出力側上限で、実消費が小さくても大きいreply allowanceは予約額を増やすと明記する。catalogはpriceを返さずcheapest published input rate順、全365件取得/ページ境界を確認する。一覧にあることはその時点の推論供給や商業能力の証明ではない。今回の予約不足と429を混ぜず、最小必要予約額/供給復旧は未確認。資料: https://vetta.sh/docs/api/models.md と https://vetta.sh/docs/concepts/budgets.md 。新しいcache/quote override fieldや秘匿guard回避は作らない。
+
+本有限runは終了。次のcursorは同じHaiku予算失敗/Lite429を繰り返すことではなく、既存configを含むcontext費用と、公式catalog/公開pricingで予算に適合するnative tool-use model/供給経路を確認し、最小source差分で通常業務へ戻すこと。月枠の残額は小さいため無制限なmodel総当たりはしない。目的は依然TODO2の新しい実需要→第三者有償納品であり、モデル評価やインフラ調査そのものを売上goalへ置き換えない。登録とphone-only入口/録画/実売上/黒字/10K/月/移植も未完。証拠はprivate v20-public-demand-one-{attempt,events,terminal-readback,spend-readback,ledger,computer-before-pause,pause-receipt,final-resources}.json、v20-public-demand-lite-{model-catalog,send-attempt,send-receipt,retry-metadata}.json。元モデル/元tools/本番設定は変更しない。
