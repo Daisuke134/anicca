@@ -137,3 +137,28 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 残TODO順: ①本人メール実配送 ②公開pilot offer/sampleと受注経路 ③受注・納品・第三者USDC receipt/費用 ④自然deployment/wakeの実証と本物の連続録画 ⑤1件あたり黒字を確認して移植/複製。USD10K月売上/MRRは目標であり未達。
 
 - 実行順の短縮: 旧「v10 main/適用待ち→mail probe」から、新「確認済みv9+Haiku overrideで本人mail配送probeをCIと独立実行→v10 main/固定反映」へ。email/browser/Identity/capが同一であり待ち時間を減らせるため。既存記事はPUBLISHED公式URLをjournalへ記録してから新しいmail cursorへ進み、外部発信を重複しない。v10へ新機能や追加権限は入れない。
+
+### v10実反映・メール受信の次の切り分け
+
+- main `05ba1e3f591d0146981b5fb8985815e02788c9b0` からagent/deployment v10を適用し全payloadGET一致。modelHaiku4.5、月5/task1、Identity/cron/11allow維持。有限記事+TLDR sessionはcancel→GET、履歴保持。
+- TLDRは有効メール入力とSubscribing…表示まで。外部購読の完了/受信は未確認。session累計491167microUSD（記事116878を含む）。再登録は行わない。本人受信domainのMXはreceive.forge.rmta.netで存在確認。
+- 公開後の限界: Postiz保存本文では本文img src URLとGitHub全文参照anchorが欠ける。native送信payload一致とPUBLISHED/error nullは確認したが、Xでの全文/画像表示一致は未確認。publicXのcrwl取得は空。GitHub全文と実画像はbyte一致公開済み。
+- 次は自分のactive inboxから公開の自動検査宛先check-auth@verifier.port25.comへnonce付き診断mailをnative email.sendで1通。公式PowerMTA forumはauth-checkerがreplyすると案内（https://forum.port25.com/general-discussion-1/pmta-help-to-use-dkim-signature/）、現MXも存在。checker本体の現ページは空で本文未取得のため、現稼働/返信先選択は試験結果で判定する。addressは検査サービスの既知アドレスで、サービス生存は未証明。個人やsupport担当へは送らない。
+- 有限v10 session予算0.4USD、月5/task1は上げない。own inbox確認→1send→provider id/nonceをjournal保存→email.read1回→未着なら終了しprimaryの後続readbackへ。SMTP受付と到達/返信/収益を分け、同じ診断mailを再送しない。外部返信が来ても顧客/売上とは数えない。
+- 次の収益cursor: publicpilot offer/sample/受注→実納品→第三者決済。メール不着をGoogle必須へ置換せず、外部送信段階/受信routeを具体的に切り分ける。
+
+### 受注窓口を先行公開する順序
+
+- Port25へのnative1通はaccepted、単発返信checkでも未着。v10実modelHaiku/実tool確認、最初の有限job費用30813microUSD（後続readは別累計）。SMTP/inboundと顧客売上を分離する。
+- AgentMail orgのread-only preflightはinbox_count=3/limit=3、suspended無し。既存3箱に今回ownerの証拠無し。削除/借用/新箱作成/有料upgradeは行わない。組織/一覧の読取だけで他ownerの内容は未読。
+- 旧順序「メール実配送→public offer」から、新順序「公開trace用GitHub Issues窓口/offer/sample→Naïve browserで読取→Postiz公開レポート納品→第三者29USDC入金、メール配送は独立切り分け」へ。メール配送を売り出しの追加gateにせず、既存のbrowser+Postiz機能だけで公開pilotを完走するため。
+- pilotはpublic-redacted-trace限定、20toolcalls以下。顧客は公開依頼と公開レポートに同意し、秘密・個人/顧客data・private URLは入力不可。AIがscopeを自律判定し、人間承認は不要。納品は指定Xの英語articleにissue番号を明記。24hはaccepted scope後の目標、subscription/実績/性能保証無し。29USDC Baseは納品後のみ。現在verified sales0。
+- v11 sourceは受注URLを既存deployment inputへ追加、systemにpublic scope/untrusted-input/dedup/order evidenceを追加するだけ。modelHaiku/cap5/task1/11allow/Identity/cron不変。Computerのorders/issue-数字.jsonでreport postid/state/paid receiptを記録。既存同番号の公開reportがあれば再納品せず状態照合。支払済みはBase nativeUSDC/専用recipient/29USDC/成功txをブラウザ公式explorerで一致確認した場合のみ。
+- 公開物はBusinessRun Benchのpilot offer/sample、public receiver metadata、GitHub issue form。Naïveが読むのはpublic issuesのみ、GitHubのAPI/CLIで業務を自動化しない。運営側のリポジトリへのspec/商品説明/issue-formの保存は通常の開発作業。既存benchmark issue/他writer/既存投稿を変更しない。追加の内部mock発注は完了gateにしない。
+
+- v11のsingle-writer運用: 自分のinbox wakeだけfalseへ変更し、12時間定期deploymentの1run最大1件に集約。旧有限probeはcancelして外部公開を重複させない。model/budget/11allow/Identity/cronは維持。native注文メモとPostiz同番号reportで再送を防ぎ、支払txも二重充当しない。メール受付の高速wakeはこのpublic-only pilotでは成果条件にしない。
+- 既存skillの質問・design承認gateは、Daisが明示的に質問を省略し実行判断を委任済みのためbrainstormingのopt-out例外に従う。追加mock発注や内部購入を成果gateにしない。public issue form/offerの公開、nativeファイル契約一致、v11全payload/owned wake GET一致、native browserで実intake画面読取を最小受入とし、実売上は第三者receiptまで未達のままにする。
+
+- offerの隣接成功例: https://www.coderabbit.ai/ はfirst-partyで17K customers/6M repositoriesを掲示。独立検証した数字ではなく、public単発trace-reviewの販売実績でもない。同じ価格/商品/媒体での成功例は未取得の穴として残し、29USDCは1件単位の仮説pilot。模倣するのは具体的な失敗例→修正案→再検証→明確なCTAと低い初期負担の構成で、文章/コード/画像/成果数字を自社へ流用しない。計測は依頼数/適合数/公開納品数/第三者USDC receipt/直接費用、traffic分母未取得のconversionはunknown。
+- 現cadenceのcapacity: 1run最大1件×12時間毎では最大2件/日、30日×29USDCで理論上1740USDC（需要/稼働/支払が全て成立した上限で予測ではない）。USD10K月売上にはこの初期設定のままでは届かない。最初の有償納品と費用を実証後、実受注に合わせて頻度/単価/並列性/資源配分を自律更新する。まず需要ゼロ/赤字の複製を増やさない。
+- Grok/Muse本人DMはSlack connectorのrestricted_action_read_only_channelで拒否、送信0。既存team threadへの送信は成功しているが返信未確認。別accountや非対応APIで制限を迂回しない。
