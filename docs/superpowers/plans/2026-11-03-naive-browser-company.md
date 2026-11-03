@@ -174,7 +174,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v13稼働・実依頼と納品収益の検証
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6634284microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6638031microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -184,7 +184,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 残TODO（現在cursorは2、全体goalはactive）:
 1. [完了] 実行予算と導線の修復。PR #9145/main `584363f5b03e738647e65286f77264bcff069219` からv13を適用、agent/deploymentの全source fieldsを公式GETで一致確認。月7/task1、同Identity/11allow/cronを維持。未完CTA案内はnative1callから公開し、Postiz保存HTML exact・X本文3段落の一致・native journal write/readを確認。現在cursorは次項の実依頼獲得。
-2. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点で反復募集や同じ画面巡回を増やさず、顧客反応/チーム返信/自然runを次の観測とする。
+2. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点では同文募集や同じ画面巡回を増やさず、下記seller loopで新しい公開需要の根拠を最大1件調べ、提案を改善する。単なる待機だけで終わらせない。
 3. 次の標準自然runは2026-11-03T12:00:00Z（JST21時）。manual≠natural。実runの版/費用/入力量/介入点/公式納品receiptを記録。初回の実有償業務を連続画面録画で保存する。いま保存した単一スクリーンショットを動画と呼ばない。
 4. 本人inbound配送は独立切り分け。送信方向は後続のmail-tester1通で実受信10/10とSPFpass/DKIMvalid/DMARCpassを確認済み（詳細は末尾の実測結果）。受信方向/登録完了は未達。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
 5. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
@@ -477,3 +477,13 @@ Substack最後のobserve106はCreate your account、113はSign in to Substack/em
 12UTC予定を過ぎた12:05時点でもdeploymentはenabled/schedule_status=scheduled/next_run_at=12:00のまま、runsは05:30のcancelled手動run1件だけ。agent別sessions一覧の最新も10:44のcancelled試験で、新しい自然runを確認できない。公式deployment docsはscheduledをclockが監視する状態と定義するが、この遅延原因は未特定。cron/pin/Identityを変更したりmanual runを自然実行と数えたりせず、時刻・公式runs・sessionを合わせて追う。担当spend公式GETは6638031microUSDへ増加（前回+3747）。自然runが無いのでこの差分を自然run費用へ帰属しない。別SDKbrowser5001microUSD/全社利益/売上とも分ける。
 
 証拠はprivate `inbound-one-mail-{send-receipt,sender-status,receive-readback-latest}.json`、`natural-1200-{deployment,runs,spend,session-summary}.json`。Reason新着0、Slack既存照会threadも新返信無し。全体goal active、外部返信待ちと別にseller loopのno-order早期終了を次の自所有改善対象とする。
+
+### no-order時のseller loopを既存deploymentへ追加する
+
+目的: 公開依頼ゼロで即終了する自所有の不足を直し、受注対応と並行して顧客獲得を進める。対象は既存agent17相当/production pin13のdeployment input_templateだけ。新agent/model/tool/credential/cron/予算/サイトaccountは追加しない。未処理依頼があるときの既存納品・支払照合を優先し、その契約は不変。
+
+依頼ゼロの場合は本人Computerのseller-state.jsonと直近の許可済みPostiz投稿を読み、既に調べた証拠と公開済み原稿を照合する。本人browserでAI agentのtrace/debuggingに関する公開の需要を最大1件調べ、出所URL・確認した困り事・商品との適合・次に試す提案を記録する。公開一次資料が得られなければ需要を捏造せず、取得失敗と次の最小の確認だけを残す。競合の有料planや星数だけを購買需要の証拠にしない。
+
+新しく確認した具体例があり、過去募集の言換えでなく顧客が使える新しい知見を含む場合だけ、許可された@diceai0へ英語の新規postを最大1件/UTC日で公開できる。最新schemaに従いURLの除去仕様を迂回せず、商品/repo名で受付を案内する。画像/動画の自動生成・DM・他者issueへの返信・他owner投稿変更はしない。事前checkpoint後の送信不明は再送せずprovider照合へ進む。seller-stateは最後の調査URL/仮説/投稿id/state/UTC日を持ち、次runで重複と費用を減らす。顧客の反応・クリック・申込・売上は公式に確認できた値だけ記録し、未取得はunknown。
+
+順序変更: 旧「依頼ゼロ→記録して終了→外部反応待ち」を、新「既存依頼処理→ゼロなら新しい需要1件の調査→有用な新知見がある時だけ日1件の獲得実験→結果保存」へ。受注ゼロで停止する原因が自所有inputにあるためで、既存進行中effectは中断/再送しない。現在cursorはsource/main固定→既存deployment inputのみPATCH/GET一致→既存残枠内最大0.30USDの有限run1回。自然run未作成の調査は独立に継続し、手動検証を自然完走や収益の証拠にしない。完了条件はsource反映・nativeの新分岐/永続stateの実行証拠であり、投稿や調査だけを売上達成にしない。
