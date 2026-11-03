@@ -137,3 +137,12 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 残TODO順: ①本人メール実配送 ②公開pilot offer/sampleと受注経路 ③受注・納品・第三者USDC receipt/費用 ④自然deployment/wakeの実証と本物の連続録画 ⑤1件あたり黒字を確認して移植/複製。USD10K月売上/MRRは目標であり未達。
 
 - 実行順の短縮: 旧「v10 main/適用待ち→mail probe」から、新「確認済みv9+Haiku overrideで本人mail配送probeをCIと独立実行→v10 main/固定反映」へ。email/browser/Identity/capが同一であり待ち時間を減らせるため。既存記事はPUBLISHED公式URLをjournalへ記録してから新しいmail cursorへ進み、外部発信を重複しない。v10へ新機能や追加権限は入れない。
+
+### v10実反映・メール受信の次の切り分け
+
+- main `05ba1e3f591d0146981b5fb8985815e02788c9b0` からagent/deployment v10を適用し全payloadGET一致。modelHaiku4.5、月5/task1、Identity/cron/11allow維持。有限記事+TLDR sessionはcancel→GET、履歴保持。
+- TLDRは有効メール入力とSubscribing…表示まで。外部購読の完了/受信は未確認。session累計491167microUSD（記事116878を含む）。再登録は行わない。本人受信domainのMXはreceive.forge.rmta.netで存在確認。
+- 公開後の限界: Postiz保存本文では本文img src URLとGitHub全文参照anchorが欠ける。native送信payload一致とPUBLISHED/error nullは確認したが、Xでの全文/画像表示一致は未確認。publicXのcrwl取得は空。GitHub全文と実画像はbyte一致公開済み。
+- 次は自分のactive inboxから公開の自動検査宛先check-auth@verifier.port25.comへnonce付き診断mailをnative email.sendで1通。公式PowerMTA forumはauth-checkerがreplyすると案内（https://forum.port25.com/general-discussion-1/pmta-help-to-use-dkim-signature/）、現MXも存在。checker本体の現ページは空で本文未取得のため、現稼働/返信先選択は試験結果で判定する。addressは検査サービスの既知アドレスで、サービス生存は未証明。個人やsupport担当へは送らない。
+- 有限v10 session予算0.4USD、月5/task1は上げない。own inbox確認→1send→provider id/nonceをjournal保存→email.read1回→未着なら終了しprimaryの後続readbackへ。SMTP受付と到達/返信/収益を分け、同じ診断mailを再送しない。外部返信が来ても顧客/売上とは数えない。
+- 次の収益cursor: publicpilot offer/sample/受注→実納品→第三者決済。メール不着をGoogle必須へ置換せず、外部送信段階/受信routeを具体的に切り分ける。
