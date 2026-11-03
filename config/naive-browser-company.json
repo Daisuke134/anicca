@@ -157,11 +157,12 @@
           "timeout_minutes": 5,
           "allow_writes": true,
           "allow_extract": true,
-          "persist_context": false,
+          "persist_context": true,
           "keep_alive": false,
           "ask_actions": [
             "signup"
-          ]
+          ],
+          "context_name": "anicca-browser-capafy"
         }
       },
       "legal.verify": {
