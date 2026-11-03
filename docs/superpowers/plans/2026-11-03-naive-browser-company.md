@@ -507,3 +507,5 @@ PR #9164は15checks全PASS、source inputの独立reviewは指摘1件修正後SH
 次の最小補正は二つ。既存finiteは上限300000/月7/task1を変えず、同会話へのsendでlive catalog掲載の `google/gemini-2.5-flash-lite` を1回だけ指定し、現在画面→残作業→state/readbackへ進める。新session/agent/入金/上限変更/production model変更はしない。catalogはimmediate対応/max_output32768を確認、価格は掲載されず安価や品質優位を未測定で断定しない。拒否なら費用/原因を残し、再作成/増額で代用しない。この変更は既存finiteの運用補正で、source既定Haikuと定期runのmodelを変更するものではない。
 
 次回以降のsourceは、旧「state+投稿一覧→需要調査」から、新「state→需要1件→有用な新規投稿候補がある時だけ必要最小期間の投稿一覧で重複照合→投稿」へ変更する。需要が無い時の不要な大量読取を無くし、既存投稿の重複防止/日1件/送信不明fenceは維持。現在cursorは同finiteの残枠内補正、続いてsource順序修正/main反映/自然runの検証。旧のモデル変更無し契約はproduction既定を指すよう具体化し、有限補正の理由/旧新順序を本節へ記録する。全体goal active、有償納品/第三者receipt/利益/10Kは未達。
+
+有限model補正のlive観測: Gemini2.5FlashLiteのsend202後、実model2spansでquote16181/16357microUSD、累計135016（Haiku終了点129172から+5844、モデル費用以外の増分も含む）。今回のquote低下は実測、品質優位/公平なmodel比較ではない。screenshot後の同じ公開HN gotoが再びread_people確認となり、pendingのtool_call_idは同値、parked_seqだけ128へ変化。既存の一般browser操作は委任済みであり、今回の有限会話/公開需要1件という目的を維持して、このpendingをscope=sessionで許可する。これはbrowserという同名toolの当該会話内の継続許可で、production policyや他toolを変更せず、今回以降の確認イベントと実操作を実測する。過去のcall-scope実績を書き換えず、新しいsession-scopeのprimary AI判断として別記する。全体の人間承認は0、primary AIの介入回数は0としない。
