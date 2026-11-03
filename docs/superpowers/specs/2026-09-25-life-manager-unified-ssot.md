@@ -25868,7 +25868,7 @@ Naïve seller有限はcancelled/pending0、26tools/Haiku8+Gemini13spans、state1
 
 ### Naïve実反映と残TODO
 
-現行はagent20/production pin20/月8USD/task1USD/Haiku4.5。PR9169/main15ca09322cd8f3da1721b120321f9afa2e6049ce固定sourceと全fields公式GET一致。human_emailなし専用receive-only AgentMailを本人vaultへ接続し、本人Naïve送信1通→外部受信→v20 nativeの本文marker/正式message_id照合→1154bytes write/read exactまで実証。read_people確認3件はprimary AIのscope=call処理、人間0で、Naïve単独確認なしとは呼ばない。送受信2sessions費162937microUSD/各台帳一致、senderの仮message_idはreceiptへ使わない。月spend7517318は照合時点値。次自然11/04 00UTC、v20自然run/本人サービス登録/実第三者売上/録画/phone-only/黒字/10Kは未達。現在cursorは本人browser登録＋実依頼/有償納品。実行詳細/失敗/費用/証拠 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「v20の本番反映とnative受信の確定結果」。
+現行はagent20/production pin20/月8USD/task1USD/Haiku4.5。PR9169/main15ca09322cd8f3da1721b120321f9afa2e6049ce固定sourceと全fields公式GET一致。human_emailなし専用receive-only AgentMailを本人vaultへ接続し、本人Naïve送信1通→外部受信→v20 nativeの本文marker/正式message_id照合→1154bytes write/read exactまで実証。read_people確認3件はprimary AIのscope=call処理、人間0で、Naïve単独確認なしとは呼ばない。送受信2sessions費162937microUSD/各台帳一致、senderの仮message_idはreceiptへ使わない。月spend7753284/残246716は最新照合時点値。40sessions active0/Computer paused。次自然11/04 00UTC、v20自然run/本人サービス登録/実第三者売上/録画/phone-only/黒字/10Kは未達。Substack認証は確認待ちでpageが閉じtype失敗、初回scope=session後もread_people再発。code要求前に終了、1101bytes write/read exact、費230982/台帳18一致/cancelled/pending0。nativeの未読mail=false/人間作業推奨は成功/必須条件にせず、primary独立箱readbackは既知診断1/他0。現在cursorは正式なread_people条件の解消＋実依頼/有償納品。同じgrant/登録試行を反復しない。実行詳細/失敗/費用/証拠 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「v20の本番反映とnative受信の確定結果」「v20通常認証の結果と再試行の停止」。
 
 残TODOの順序は本節、現在cursorは2、全体goal active:
 1. [完了] 専用Identity/inbox/Computer・公開pilot/英語blog・定期deployment・v18実行枠/読取順/依存browser操作順のsourceと公式反映。source受理と本番の事業成果は区別する。
