@@ -377,3 +377,11 @@ browser close200/closed、Computer destroy200→GETdestroyed、稼働課金資�
 実行1結果: native `ses_jht7qev3r27smr3g0b969c9b83` は同formにtype textを複数回呼び、成功応答後もevent61の実画像でemail空/terms checked/Continue disabled。primaryも画像確認した。code要求成立・Substack dispatch・本人inbound・accountは未確認、email.readは観測したtool eventsに0。task0.35USDに次call quoteを収容できずevent202 budget.exceeded/param budget_micro_usd、公式statusのconsumed186237microUSD（個別session.usageの部分値との合算禁止）。primary補正messageは402で受理未確認、補正が実行されたとはしない。budget_paused原本保存後cancel→GETcancelled/pending0。秘密code/linkを保存せずeventはmetadata/hashのみ、原稿/課金/公開は0。
 
 次の最小比較: 同じ本人mail・同じ/signup・同じv13の新finiteで、typeの代わりにbrowser.actによる実email inputへの入力1回を試す。submit前に表示値とContinue有効を照合。反映しなければ同じクリックを繰り返さずwrite/readで終了。反映しcode要求を進める場合も、前runのcode要求不明を補わず、現在画面と本人新着を先に確認し、今回診断全体のcode要求最大1を維持する。新finite上限0.30USD、前実費0.186237との最大合計0.486237USDとなるため、診断全体枠を0.35→0.50USDへ明示更新。月7/task1は不変。理由は実費だけでなく次call quoteを入場時に必要とする実測と、同selector type成功応答が実入力を証明しなかったためであり、signup連打/上限自動拡大ではない。code/tokenを出力しないことと公式画面で成功判定する条件は不変。
+
+解釈の訂正と次の観測: 先の「画像空欄＝実入力失敗」という断定は取り下げる。公式Browser guide https://usenaive.ai/docs/computer/browser のsaved-login read policyはextract/observe/links/screenshotがemail等をredactすると明記し、sessionが入力待ちにpauseするとbrowserを閉じるとも説明する。今回のcontext付き画像/抽出だけでは、未入力と伏せ処理を分離できない。画像の空欄/Continue無効自体と登録未確認は保持するが、入力破壊・maskによるDOM変更を既知原因にしない。
+
+act比較run `ses_rwvbs16frhgxev1ppekrjxja41` は初回email.read→signupへのgotoでread_people cardが発生、primary AIがexactcall1件をallow。次の「本人emailへ入力、submitしない」actでもread_people cardが発生し、exactcall1件をallow。再開actはcould not perform、次画像のみ取得し診断mdを書いてend_turn。実費63746microUSD。入力待ち前後のpage lifetimeと入力方法が交絡しているため、これをactの一般的な入力不能の証明にしない。human介入0、primary AIのcall確認2件。
+
+今回のauth診断総枠0.50USDの残りで、次の比較は最大0.25USD（先行実費186237+63746との最大計499983microUSD）。先に画面からemail/Continueの実selectorを取得し、type本人email→既知Continueを1回クリックの間にextract/observe/screenshotを挟まない。code要求の実UIと本人受信を結果の観測とする。メール・個人情報を観測のために公開せず、秘匿値を返さない。新規signupを増やすのでなく同じ専用Identity/mailの同じ通常flowを検証し、既存のaccount/code成功を推定しない。追加の支払/上限変更/公開なし。同じ失敗を観測無しに繰り返す比較にはしない。
+
+文書差分: API Browser pageにはsignupはperson確認とある一方、最新Tools page https://usenaive.ai/docs/capabilities/tools はask_actionsの既定signupを明示し、allow下でask_actionsに無いactionは実行されると説明する。今回設定ask_actions=[]を維持し、signupに必ず人間が必要とは断定しない。観測したread_people cardは別に記録し、未公開server内部の発生原因/解除設定を推測して変更しない。
