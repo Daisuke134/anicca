@@ -174,7 +174,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 ### 現在の正本: v13稼働・実依頼と納品収益の検証
 
-現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6634284microUSD、実第三者売上は未確認。
+現在の状態・残TODO順は本節、以後の診断節は追加証拠。前のv6〜v11/cursor/予算記述は当時の履歴。現在はproduction deployment v13/月7USD/task1USD、agent current v17はv13同内容のrollback版。全source fields/dep v13をGET一致、担当累計6683934microUSD、実第三者売上は未確認。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -184,8 +184,8 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 
 残TODO（現在cursorは2、全体goalはactive）:
 1. [完了] 実行予算と導線の修復。PR #9145/main `584363f5b03e738647e65286f77264bcff069219` からv13を適用、agent/deploymentの全source fieldsを公式GETで一致確認。月7/task1、同Identity/11allow/cronを維持。未完CTA案内はnative1callから公開し、Postiz保存HTML exact・X本文3段落の一致・native journal write/readを確認。現在cursorは次項の実依頼獲得。
-2. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点で反復募集や同じ画面巡回を増やさず、顧客反応/チーム返信/自然runを次の観測とする。
-3. 次の標準自然runは2026-11-03T12:00:00Z（JST21時）。manual≠natural。実runの版/費用/入力量/介入点/公式納品receiptを記録。初回の実有償業務を連続画面録画で保存する。いま保存した単一スクリーンショットを動画と呼ばない。
+2. 実依頼の獲得。公開pilot https://github.com/Daisuke134/businessrun-bench/blob/main/pilot/README.md と英語募集が稼働。適合した第三者依頼→native分析→英語公開レポート→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引きの順。最初の第三者売上は未達、内部送金/クリック/投稿を代用しない。依頼数0の時点では同文募集や同じ画面巡回を増やさず、下記seller loopで新しい公開需要の根拠を最大1件調べ、提案を改善する。単なる待機だけで終わらせない。
+3. 標準自然runは12UTC予定→12:09:39作成、pin13/同Identity、7tools/45903microUSD/確認0/primary追加入力0でidle end_turnを公式確認。実画面は適合依頼0件、記録して終了。次の自然runは2026-11-04T00:00:00Z（JST9時）。今回の無受注確認を有償業務の無介入完走と呼ばない。初回の実有償業務は連続画面録画を保存し、単一スクリーンショットを動画と呼ばない。
 4. 本人inbound配送は独立切り分け。送信方向は後続のmail-tester1通で実受信10/10とSPFpass/DKIMvalid/DMARCpassを確認済み（詳細は末尾の実測結果）。受信方向/登録完了は未達。Port25 accepted/返信未着、TLDR送信完了不明、AgentMail3/3で今回owner未確認。個人Google必須にはせず、既存共有箱の借用/変更や同じ診断送信はしない。public pilot発売のgateに戻さない。
 5. 少なくとも1件の有償納品と実費からunit economicsを検証し、実需要に合わせ価格/頻度/資源を更新。12h×1件×29×30日の初期理論capacityは1740USDC/月で10Kに届かない。需要/稼働/入金を実証する前にこの上限を売上予測と呼ばない。
 6. 利用者向けiPhone入口を設け、利用者個人のGoogle/メール入力/password/PCを要求せずManagerを利用できる導線を実装・実機確認する。現在のdeveloper向けGitHub依頼フォームはこのconsumer入口ではない。infrastructure契約と利用者本人確認/引出条件を区別し、銀行情報以外不要と未確認で約束しない。
@@ -456,3 +456,44 @@ email.inboxes成功、直接click4回のcould not completeを保持、act経路�
 canonical contentをreview/関連checks/mainへ統合後、publishing repo anicca-productsの最新mainから専用worktreeを作り、既存2workflowのMANAGER_BLOG_CONTENT_REVISIONだけを固定canonical SHAへ更新する。renderer/install hash/他記事/決済/既存配信は変更しない。関連checksと通常build/deploy後、live記事本文・画像hash・public release.jsonのrevisionを公式readbackして完了。preview/local buildは公開成果としない。mainの最新記事を落とす古いcontent pinへ戻さず、並行更新時は最新のreview済みbundleを含める。
 
 録画経路の独立診断: Computer Use inventoryはMac appsあり/browser0、browser registryにNaive route0。指定cua-driver SKILLはlocal2roots/cacheおよびai-config main treeで見つからない。Naive live-viewはdashboard-onlyの秘密URLで、録画APIと同一視しない。録画未完を保持し、他者のChrome/profile/sessionを借用しない。新規Mac UI操作を追加せず、ブログ掲載という独立項目を進める。
+
+
+### 英語記事の自社ブログ公開完了と本人inboundの1通検査
+
+canonical PR9162は全16checks PASS・fresh read-only SHIP/Blocking0後main982fb15e47286af910728eddb08b51912f301693へ統合。publication76記事/44媒体、既存75/43 entry完全保持、source/package/manifest本文一致、既存adapter12tests PASS。publishing PR849は2workflowのcontent pinだけを982fb15eへ更新し、build成功後main e5cff3c0c5d3a439f08575c8020562e37d3898f5へ統合。renderer d569400は不変。後続のmain014262a5はe5cffのdescendantで、実公開provider deploy6ae9c8b0c529125fd14c707a/ready、GHA41629113267 success/既存money-path smoke successを確認。
+
+実URL https://aniccaai.com/blog/manager-naive-autonomous-companies-en の取得本文33332bytesにtitle/Capafy未認証/0.243640/累計6.634284/売上未確認の要点が存在。public release.jsonはcontent982fb15e/記事hash888bd14a5cd08497d647c53dbbccf7435d133763208aabe1393cc411776459b6/76記事、画像HTTP200/hash1f06d359be84a6adcdaaf9e5f847ddfeb874c3fc0d181bb8113b7b1fb8eb0561と一致。記事の自社blog公開は完了、実売上/受注/登録/連続録画とは分離する。private blog-live-publication-readback.jsonが公式readback。旧cua-driver不在とbrowser0は録画経路の未完条件で、Mac/他者Chromeへ入力しない。正式browser_sessions APIはclosed含むと記すが、実session Computerとagent Computerは同一cmp/履歴0であり、別Computerを見ていたという仮説は棄却。次は実稼働中の履歴と照合する。
+
+Substack最後のobserve106はCreate your account、113はSign in to Substack/email/Continueで、code送信画面ではない。したがって未着をSMTP受信故障と断定しない。現在の初期課題は実外部dispatchを伴う受信検証。private SSOTのresend-life-manager-productionに設定済み会社from_address/送信専用keyを確認。GET domainsは401/restricted_api_key/only send emailsで、失効ではない。権限拡大・キー作成・新サービス契約は行わない。
+
+次の1通はこの設定済み会社送信元→同じNaive本人inboxだけ、件名/本文にDIAGNOSTIC-NOT-ORDERと固有nonceを付ける。顧客注文/認証コード/指示ではないことを明示、秘密・個人データ・払出情報・リンクは0。最大1送信・固定Idempotency-Key、timeout/不確実時は再送せずreceipt/inbound readbackを調査。acceptedと受信を分離し、届けば同nonce/送信元/受取Identityのmetadata照合、provider raw本文や認証秘密を一般logへ保存しない。専用inboxのwakefalseを保持し、この検査で新agent/cron/枠/既存担当/販売済商品を変更しない。既存送信サービス内の1通であり、請求費用は未計測なら0とせず、新規契約/top-up無しと区別する。
+
+全体goalはactive。実顧客依頼→納品→29USDC receipt/費用が現在cursor、本人inbound検査と自然run12UTCを並行する。既存deploymentはno-order時に終了する限定pilotであり、自律的な顧客獲得/学習のseller loopはまだ完成していない。今後これを自所有configの改善対象とし、他者返信待ちだけを阻害理由にしない。phone-only入口/採算/移植/compute自費/10Kは未達。
+
+### 本人inboundと定刻runの追加観測
+
+既存Resend送信専用キーから本人inboxへの検査は1通だけPOSTしHTTP200/accepted、provider id `01a1a148-21fd-7247-b412-96935d0fa703`。固定idempotency/事前attempt fenceを保存し再送しない。2026-11-03T12:05:48Zの公式identity messagesは0件/has_more=falseで、受信成功ではない。送信側の単一message GETも401/restricted_api_key/only send emailsで、accepted以降の配送状態はこのキーでは見えない。キー失効や配送失敗とも断定しない。inboxのraw公式GETはactive/wake=false/同Identity/同agentで、前節のwake=falseをfresh確認。Auto-Submitted付き検査は非注文で、届いても通常mailによるwakeや顧客獲得の証拠にしない。
+
+12UTC予定を過ぎた12:05時点でもdeploymentはenabled/schedule_status=scheduled/next_run_at=12:00のまま、runsは05:30のcancelled手動run1件だけ。agent別sessions一覧の最新も10:44のcancelled試験で、新しい自然runを確認できない。公式deployment docsはscheduledをclockが監視する状態と定義するが、この遅延原因は未特定。cron/pin/Identityを変更したりmanual runを自然実行と数えたりせず、時刻・公式runs・sessionを合わせて追う。担当spend公式GETは6638031microUSDへ増加（前回+3747）。自然runが無いのでこの差分を自然run費用へ帰属しない。別SDKbrowser5001microUSD/全社利益/売上とも分ける。
+
+証拠はprivate `inbound-one-mail-{send-receipt,sender-status,receive-readback-latest}.json`、`natural-1200-{deployment,runs,spend,session-summary}.json`。Reason新着0、Slack既存照会threadも新返信無し。全体goal active、外部返信待ちと別にseller loopのno-order早期終了を次の自所有改善対象とする。
+
+### no-order時のseller loopを既存deploymentへ追加する
+
+目的: 公開依頼ゼロで即終了する自所有の不足を直し、受注対応と並行して顧客獲得を進める。対象は既存agent17相当/production pin13のdeployment input_templateだけ。新agent/model/tool/credential/cron/予算/サイトaccountは追加しない。未処理依頼があるときの既存納品・支払照合を優先し、その契約は不変。
+
+依頼ゼロの場合は本人Computerのseller-state.jsonと直近の許可済みPostiz投稿を読み、既に調べた証拠と公開済み原稿を照合する。本人browserでAI agentのtrace/debuggingに関する公開の需要を最大1件調べ、出所URL・確認した困り事・商品との適合・次に試す提案を記録する。公開一次資料が得られなければ需要を捏造せず、取得失敗と次の最小の確認だけを残す。競合の有料planや星数だけを購買需要の証拠にしない。
+
+新しく確認した具体例があり、過去募集の言換えでなく顧客が使える新しい知見を含む場合だけ、許可された@diceai0へ英語の新規postを最大1件/UTC日で公開できる。最新schemaに従いURLの除去仕様を迂回せず、商品/repo名で受付を案内する。画像/動画の自動生成・DM・他者issueへの返信・他owner投稿変更はしない。事前checkpoint後の送信不明は再送せずprovider照合へ進む。seller-stateは最後の調査URL/仮説/投稿id/state/UTC日を持ち、次runで重複と費用を減らす。顧客の反応・クリック・申込・売上は公式に確認できた値だけ記録し、未取得はunknown。
+
+順序変更: 旧「依頼ゼロ→記録して終了→外部反応待ち」を、新「既存依頼処理→ゼロなら新しい需要1件の調査→有用な新知見がある時だけ日1件の獲得実験→結果保存」へ。受注ゼロで停止する原因が自所有inputにあるためで、既存進行中effectは中断/再送しない。現在cursorはsource/main固定→既存deployment inputのみPATCH/GET一致→既存残枠内最大0.30USDの有限run1回。自然run未作成の調査は独立に継続し、手動検証を自然完走や収益の証拠にしない。完了条件はsource反映・nativeの新分岐/永続stateの実行証拠であり、投稿や調査だけを売上達成にしない。
+
+独立read-only reviewは入力以外不変/既存契約と重複防止保持を確認したが、「需要1件」と「source1件」の曖昧さを指摘。inputを「検索結果から開く公開需要ソースは1run最大1件」へ明示し、対応箇所を再照合する。他の機能/権限は追加しない。
+
+### 初回の標準自然runが無受注確認まで完走
+
+12UTC予定のrun `run_8k5kfy836y4aeg0sy0gne5tvj1` / session `ses_5j5eant4wkhpyzqe8h9rav5txs` は12:09:39.435Zに作成、12:10:57.667Zにsession.idle/end_turn。deployment_id一致・pin13・同Identity、初期user inputは元input_templateを含み、付加された予定時刻は12:00:00.000Zで作成時刻と異なる。rootの手動runは05:30以降0回。以上からこのrunを定刻起点と照合し、約9分39秒の起動遅延を残す。起動遅延の原因は未特定だが「自然run未作成」は当該観測時点の履歴となる。次回は2026-11-04T00:00:00Zへ進んだ。
+
+nativeはoffer/sample/receiver/journalの4read→本人browser GitHub goto→screenshot→journal writeの計7tools、Haiku4.5実5model spans、実費45903microUSD、pending0。tool.confirm0、primary追加入力0/confirm0、手動中断0。journal write成功eventはあるが同run内readbackは無く、次runの再読取で永続化を照合する。公式file fil_tkzekjvve2c92tmha9bd5p0qpk/122065bytesのbytes・sha256・agent/session一致を確認し、primaryも実画像で0 results/No results matched your searchを確認。これが証明するのは今回の自動起動→本人browserで無受注確認→記録まで。有償納品・第三者売上・新規signup・mail受信・連続録画・会社全体の無介入運営は未達。
+
+公式agent累計6683934microUSD。private `natural-1200-final-readback.json`、`natural-1200-native-event-metadata.json`、`natural-1200-intake-screen.jpg` が証拠。稼働中runの設定は変更せず自然end_turn後まで待った。source seller入力の反映はこのrun後に行い、旧inputの自然run結果と新seller分岐の検証を混ぜない。
