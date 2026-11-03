@@ -945,3 +945,14 @@ ses_gmds1f6qsa5htpm4zqyht8g4szは20:10:33.746開始、本人browser.goto(communi
 target-run公式span.model_request.startの初回quoteは83183microUSD、同call実費17854、run全費19521。次の拒否call自体のquoteは公開eventに無く、83183をその確定値とはしない。finite100000の実費後残80479は初回quote83183より2704不足し、次予約不足と整合する。月cap9の変更を先に必要条件へ拡大しない。次はfinite160000＋後計上余地20000/計画180000をfresh残/credit内で確保する。直近月残181685なら収容可能だが、fresh値が不足ならcreate0。sourceの月9/task1/model/本番pin23は変更0。新たな拒否call見積がこれ以上なら同じ160000を反復せず、実見積から再診断する。
 
 実行は同じ専用Identityのnativeブラウザだけ、1件/6分/max12tools/hosted1。専用AgentMail取得→exact n8n/signup goto→同browserのページをobserve/screenshotで確認→signup→必要な受信確認→実ログイン状態。target-aware前runと違うのはsession有限枠100000→160000で、業務API代行/別profile/未知flag/包括確認0。確認cardは照合済み対象と本人専用mailだけcall-scope、同じlogical card再発には再回答0。6分前にcloseを開始し、すべての確認・retry・根拠不足・未完を保存する。DM/応募/営業/投稿/課金/送金0。元7TODOと全体goalを維持する。
+
+
+### v24: 予約余力とservice必須エラーを分離して修復
+
+reserved-signup ses_xsa6c1qh7xk8anzktnmja4cwveはfinite160000で予約不足の境界を越え、本人AgentMail/goto/screenshot/view_image/observe/signupの6tools。goto公式出力はexact /signup、132792bytesの公式screenshot fil_6cqahnx43sh148mkq4mst5ewxpをprimaryも閲覧しEmail/Username/Passwordの通常登録フォームを確認する。Googleは必須ではない。native署名URLはprivate診断へ一時含まれたため、その後proof出力/保存をquery除去へ修正し、公開/repo転記0。SDKの画像downloadは初回fetch未指定でローカルTypeError/外部GET0、globalThis.fetchを明示して公式bytesを取得する。
+
+正式signup cardはname/email/actionだけ、同native browserの実フォームと専用mail一致を照合してscope=call allow1。SDK202/request req_jwf8pgmdzggqb3z5bsmzgckz14後、再開signupは正確に「signup needs service」。本人が同じ不完全引数で再試行し同logical card再発、primary再回答0で閉じる。これはページ喪失が原因という証拠ではなく、service欠落という新たな具体的runtime入力エラーである。8tools/signup実送信成功0/新登録・確認mail・本人保存・自然end_turn未観測。20:19:14.986公式readbackはcancelled、当該終端pending1、全57live0/paused/prod23全fields保持、費52254microUSD/ledger9、月spent8870569/残129431（後計上あり）。6分前にcloseする。
+
+現cursor2は「service必須の正しいnative引数で通常登録」。予算自体も残129431では完走実績の有限200000/計画300000を収容しないため、先にsource月cap9→10USDだけを変更する。deployment希望pin23→24、task1/model/priority/tools/Identity/mail/system/inputは不変。既存credit直前22761863microUSD内、追加入金0。source差分を最小JSON照合/diff-check/必要CI/fresh read-only review→main固定後、official SDK expected23/budget-only updateで24へ。更新直後のdeployment auto-followを観測し、短い試験中は旧production23を保持する。cap修復の反映と登録成功は別判定で、登録が未完でもagent24 cap10を正しい本番sourceとして扱う判断は明記し、業務成功へ置換しない。
+
+次nativeは同Identity/priority、本番旧23を保持し1件、fresh残とcredit>=300000/全live0/paused、finite200000＋後計上100000/計画300000、6分/max12tools/hosted1。専用AgentMail取得→exact signup goto→正式signup(action=signup,service=community.n8n.io,url=https://community.n8n.io/signup,email=取得した本人専用mail,identity_id=本人Identity)。serviceはruntime自身が必須と返し、url/identity_idは公開SDKの正式SignupSchemaで確認済み。nativeが実引数へ渡せない場合は値を捏造/別fieldへ符号化せず、許可0でschema不整合を記録する。前のように同じ不完全name/emailだけを許可しない。対象が明示されたsignupだけexact call確認、同logical card再発は再回答0。生成credentialは専用vaultへ、非exportable秘密を取得済みとしない。成功時は本人確認mailの必要範囲だけ読み、通常link/実ログイン状態を確認し、private SSOTへcredential referenceを保存。DM/応募/営業/投稿/課金/送金/別Computer/別profile/業務HTTP/API代行0。rootはSDK設定/確認/診断と同じ範囲だけ。元7TODO・全体goal・未実証の収益を維持する。

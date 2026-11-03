@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [Codex / NAIVE-BROWSER-E2E] 本番main048/agent23/priority、専用Identity、個人Google注入0。有償QA募集の本人読取・保存/end_turn成功。n8n登録未完: click再発→対象不明signup deny→対象goto/ownmail取得成功だがfinite0.10の次call予約不足。実費0.019521、全56live0/paused/prod23全fields、月残181685（後計上あり）。cursor2=sourceで最小予約余力修復→対象観測/専用mail登録→連絡/限定提案→依頼/納品/入金。同型低予算再送0。元7TODO/売上/録画/phone-only/黒字/10K/月/移植未達。PR9177 CI待ち。正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md
+- [Codex / NAIVE-BROWSER-E2E] 本番main048/agent23/priority/月9、個人Google注入0。有償QA本人読取/保存成功。n8nは通常emailフォーム確認、正式確認1回後signup needs service、同card再発で再回答0/cancel。57live0/paused/prod23全fields、費52254/ledger9、月残129431（後計上あり）。cursor2=source cap9→10/desired24の最小差分→CI/review/main→budget-only24適用→service/url明示の通常signup→確認/連絡→有料依頼/納品/入金。元7TODO/売上等未達。PR9177。正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
