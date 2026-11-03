@@ -25717,6 +25717,8 @@ Naïve browser実測: PR9108はmain8bd07954へ統合、14CIは後続readbackで�
 
 画像比較の実測: GLMの失敗sessionはterminalで再開不可（409 session_terminal）。空contextを作ったidle sessionへmodel overrideを使い、Gemini 2.5 Flash Liteでgoto→screenshot→画像内容の返答→end_turnを確認した。session総消費7432 microUSD（bootstrap4941を含む）、比較追加2491。公開/購入/loginは0。画像後のモデル呼出が通ることを根拠に、専用担当modelをGeminiへ切替しscreenshotを再許可する。モデル能力の一般順位や利益の証拠とはしない。空context作成と専用agent限定grantも完了。
 
+Browser実操作の修復: ターン終了でbrowserが閉じるため、次ターンは最終URLへgotoしてから観測する。observeが返したxpathで直接type/clickするとpage could not completeとなる例を記録。公式browser仕様は直接操作のselectorをCSSと記載するため、xpathとの互換境界を疑うがprovider実装の原因とは断定しない。検索はbrowser.actで入力と送信に成功、extractで動画30件と3商品の価格/販売数表示を照合した。作業メモはsandbox内の相対パスanicca-browser-journal.mdを使う。絶対/home/userはagent toolではsandbox外として拒否された。Computer割当、write成功、次ターンread成功を確認した。
+
 
 ## AGI flagship essay publication
 
