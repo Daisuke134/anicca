@@ -1,0 +1,44 @@
+{
+  "run_id": "fd096c4b2e6f13ad548eabd0",
+  "owner_id": "home-codex-fd096c",
+  "occurrence_id": "capafy-ig-marketing-daily:18db7caff1178a88-68028",
+  "release_sha": "8e37a3aa853112b2906bda8b71746bf14503fb08",
+  "phase": "source_identity_gate",
+  "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q <IG reconciler + poster dispatch tests>",
+  "loaded_argv": [
+    "python3",
+    "isolated pytest fixtures"
+  ],
+  "loaded_env": {
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+    "provider_credentials": "not read"
+  },
+  "exit_code": 0,
+  "effect": {
+    "provider_calls": 0,
+    "posts": 0,
+    "fence_mutations": 0,
+    "deploys": 0,
+    "accounting_writes": 0
+  },
+  "readback": {
+    "red": "3 cases verified=True instead of False",
+    "green": "24 passed",
+    "remote_thread": "1793635811.853779 official read; review helper result received; original remote native wake still unconfirmed",
+    "pr9120_merge_owner": "parent root; not modified"
+  },
+  "provider_receipt_id": null,
+  "evidence_refs": [
+    "skills/earn/capafy-marketing/tests/test_capafy_ig_fence_reconcile.py",
+    "skills/earn/marketing-engine/test_poster_dispatch_marker.py",
+    "docs/evidence/capafy-ig-receipt-17679f.json"
+  ],
+  "error_class": "historical_identity_not_bound_to_occurrence",
+  "retryable": false,
+  "next_action": "independent source review and required exact-head CI, then main; immutable promotion and historical identity/official receipt remain separate owner-scoped steps",
+  "limits": [
+    "No historical publisher identity fabricated.",
+    "No live fence resolved.",
+    "No revenue or natural posting claim."
+  ]
+}

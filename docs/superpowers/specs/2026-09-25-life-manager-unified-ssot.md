@@ -141,6 +141,8 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 継続計測（task e90c688b773a9f9fd3c76149、owner=home-codex）: PR9104の公式MERGED/main e4612c2869を確認。所有範囲は本section/BOARD/限定evidenceと、既存main由来pull_attribution.pyによる当日1行の公式readback保存のみ。旧IG occurrence18db7caff1178a88-68028は10月5日、現存共有journalは10月24日以降で元本人bind未取得。現在accountへ置換せず、fence/停止publisher/他ownerを保持する。collectorは投稿を起動せず、欠損salesをnullに保ち、既存当日行を上書きしない。実測=mainとbyte一致のrelease265bab69 collectorで当日1行を保存、click106/recorded1/unavailable105、商品76行すべてsales欠損null。即時replayはledger byte不変・追加0・当日1行。証拠→docs/evidence/capafy-effect-e90c68.json。現在cursor=証拠PRの必要CI→main。その後旧IG元本人bind/原本archive照合、日次自然取得の既存owner接続。自然日次実行・旧IG効果・購入因果/純利益の証明は別未完cursorとする。
 
+継続source修復（task fd096c4b2e6f13ad548eabd0、owner home-codex-fd096c）: PR9120統合は親root所有のまま、同診断の次cursorで元occurrence本人拘束を修正する。範囲はIG reconciler/既存posterのdispatch markerと関連tests/docs。本番投稿・認証・fence・会計・HQ・他ownerの変更0。既存capafy-reelのoccurrence-bound dispatch markerを先例とし、元runとhandle・dispatch時刻の一致をprovider読取前に必須にする。証拠なし/別occurrence/別handle/古い時刻/不正JSONはHELD、現在ready accountへ代替しない。既存posterはhandleをmarkerへ保存する。過去artifactの補造はしない。完了条件: 隔離RED→GREEN、関連テスト、独立review、必要CI公式PASS後main。反映・旧公式receipt・収益は別未完cursor。順序は診断→本人拘束source→元archive/公式receipt照合を維持する。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。

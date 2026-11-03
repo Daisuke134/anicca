@@ -8,6 +8,10 @@ authenticated media list -- the same instagrapi session (loaded read-only via
 ``Client.load_settings``) the poster and ``ig_metrics.py`` already use --
 never a fresh login and never a mutating call.
 
+Identity gate: the exact occurrence dispatch marker must bind the original handle
+and dispatch time before any provider read. Missing or conflicting identity stays
+fenced; a currently ready account and --handle alone are never proof.
+
 Decision (2026-09-26 CrowdWorks incident: a reconciler falsely closed 179/180
 fences that had actually executed -- this adapter never repeats that):
   - A Reel whose ``taken_at`` falls inside [queued_at, queued_at + max run
@@ -31,6 +35,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -55,6 +60,7 @@ ACCOUNTS_PATH = Path("~/.cloak/clip-accounts-capafy.json").expanduser()
 IG_LEDGER_PATH = Path(
     "~/.local/state/life-manager/state/capafy-marketing-ig-ledger.jsonl"
 ).expanduser()
+DISPATCH_MARKER_PATH = Path("~/.local/state/life-manager/state/capafy-ig-post-dispatch-marker.json").expanduser()
 POSTER_PATH = REPO_ROOT / "skills/earn/marketing-engine/poster.py"
 # CAPAFY_IG_PORT is the same env var capafy-ig-marketing-daily.sh exports for ig_metrics.py's
 # identical self-heal (see that script's module docstring) -- the dedicated browser's live CDP
@@ -88,34 +94,25 @@ def fenced_row(owner_id: str, occurrence_id: str) -> tuple[str, dt.datetime]:
     return str(row[0]), queued
 
 
-def resolve_handle(accounts_path: Path) -> str | None:
-    """Pick the same 'active' account clip-accounts-capafy.json resolution the
-    bash helper (account_state.sh -> resolve_ig_handle) uses."""
+def original_handle(marker_path: Path, occurrence_id: str, queued_at: dt.datetime) -> str | None:
+    """Only the exact run's dispatch marker binds its original publisher."""
     try:
-        accounts = json.loads(accounts_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+        if not isinstance(marker, dict):
+            return None
+        handle = marker.get("handle")
+        timestamp = dt.datetime.fromisoformat(marker["ts"])
+        if (not occurrence_id.startswith(OWNER_ID + ":")
+                or marker.get("occurrence_id") != occurrence_id
+                or marker.get("status") not in {"pre_effect", "completed"}
+                or not isinstance(handle, str)
+                or not re.fullmatch(r"[A-Za-z0-9_.]{1,30}", handle)
+                or timestamp.tzinfo is None
+                or not queued_at.replace(microsecond=0) <= timestamp <= queued_at + dt.timedelta(seconds=MAX_RUN_SECONDS)):
+            return None
+        return handle
+    except (OSError, ValueError, TypeError, KeyError):
         return None
-    if not isinstance(accounts, list):
-        return None
-    usable = []
-    for account in accounts:
-        if not isinstance(account, Mapping):
-            continue
-        status = str(account.get("status") or "").lower()
-        if not (status.startswith("ready") or status.startswith("warming")
-                or status.endswith("_ready")):
-            continue
-        if any(word in status for word in ("poison", "frozen", "blocked")):
-            continue
-        if any(account.get(key) for key in
-               ("poisoned", "poisoned_at", "frozen_at", "blocked_at")):
-            continue
-        if not account.get("handle"):
-            continue
-        usable.append(account)
-    if not usable:
-        return None
-    return str(usable[-1]["handle"])
 
 
 def _fetch_media(client: Any, handle: str) -> tuple[dict[str, Any] | None, list[Any] | None]:
@@ -291,12 +288,16 @@ def reconcile(
     now: dt.datetime | None = None,
     resolve: bool = False,
     port: str | int | None = None,
+    dispatch_marker_path: Path | None = None,
 ) -> dict[str, Any]:
     state, queued_at = fenced_row_fn(OWNER_ID, occurrence_id)
-    resolved_handle = handle or resolve_handle(accounts_path)
+    resolved_handle = original_handle(dispatch_marker_path or DISPATCH_MARKER_PATH, occurrence_id, queued_at)
     if not resolved_handle:
         return {"owner_id": OWNER_ID, "occurrence_id": occurrence_id, "verified": False,
-                "reason": "active_ig_handle_unresolvable"}
+                "reason": "original_ig_identity_unbound"}
+    if handle is not None and handle.casefold() != resolved_handle.casefold():
+        return {"owner_id": OWNER_ID, "occurrence_id": occurrence_id, "verified": False,
+                "reason": "original_ig_identity_mismatch"}
     resolved_settings = settings_path or Path(
         f"~/.cloak/instagrapi-{resolved_handle}.json"
     ).expanduser()
@@ -331,6 +332,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--occurrence", required=True)
     parser.add_argument("--accounts-path", type=Path, default=ACCOUNTS_PATH)
+    parser.add_argument("--dispatch-marker-path", type=Path, default=DISPATCH_MARKER_PATH)
     parser.add_argument("--handle")
     parser.add_argument("--settings-path", type=Path)
     parser.add_argument("--ledger-path", type=Path, default=IG_LEDGER_PATH)
@@ -343,7 +345,7 @@ def main(argv: list[str] | None = None) -> int:
         result = reconcile(
             args.occurrence, accounts_path=args.accounts_path, handle=args.handle,
             settings_path=args.settings_path, ledger_path=args.ledger_path,
-            resolve=args.resolve, port=args.port,
+            resolve=args.resolve, port=args.port, dispatch_marker_path=args.dispatch_marker_path,
         )
     except (OSError, ValueError, sqlite3.Error) as exc:
         print(json.dumps({

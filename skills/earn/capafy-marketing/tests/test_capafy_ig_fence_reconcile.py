@@ -10,6 +10,7 @@ import datetime as dt
 import importlib.util
 import json
 import sys
+import pytest
 from pathlib import Path
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "capafy_ig_fence_reconcile.py"
@@ -22,6 +23,13 @@ _spec.loader.exec_module(reconciler)
 OWNER = reconciler.OWNER_ID
 OCCURRENCE = f"{OWNER}:18d9196be46174b0-5558"
 QUEUED_AT = dt.datetime(2026, 9, 27, 6, 23, 36, tzinfo=dt.timezone.utc)
+
+
+def _marker(tmp_path):
+    path = tmp_path / "dispatch.json"
+    path.write_text(json.dumps({"occurrence_id": OCCURRENCE, "handle": "capafy.skills8m4q2z",
+                                "ts": QUEUED_AT.isoformat(), "status": "pre_effect"}))
+    return path
 
 
 def _fenced_row_fn(state="claimed", queued_at=QUEUED_AT):
@@ -42,6 +50,7 @@ def test_effected_appends_ledger_and_closes(tmp_path):
     result = reconciler.reconcile(
         OCCURRENCE,
         handle="capafy.skills8m4q2z",
+        dispatch_marker_path=_marker(tmp_path),
         settings_path=tmp_path / "unused-settings.json",
         ledger_path=ledger_path,
         fenced_row_fn=_fenced_row_fn(),
@@ -66,6 +75,7 @@ def test_effected_appends_ledger_and_closes(tmp_path):
     result2 = reconciler.reconcile(
         OCCURRENCE,
         handle="capafy.skills8m4q2z",
+        dispatch_marker_path=_marker(tmp_path),
         settings_path=tmp_path / "unused-settings.json",
         ledger_path=ledger_path,
         fenced_row_fn=_fenced_row_fn(),
@@ -95,6 +105,7 @@ def test_no_effect_complete_listing_closes(tmp_path):
     result = reconciler.reconcile(
         OCCURRENCE,
         handle="capafy.skills8m4q2z",
+        dispatch_marker_path=_marker(tmp_path),
         settings_path=tmp_path / "unused-settings.json",
         ledger_path=tmp_path / "ig-ledger.jsonl",
         fenced_row_fn=_fenced_row_fn(),
@@ -123,6 +134,7 @@ def test_incomplete_listing_stays_fenced(tmp_path):
     result = reconciler.reconcile(
         OCCURRENCE,
         handle="capafy.skills8m4q2z",
+        dispatch_marker_path=_marker(tmp_path),
         settings_path=tmp_path / "unused-settings.json",
         ledger_path=tmp_path / "ig-ledger.jsonl",
         fenced_row_fn=_fenced_row_fn(),
@@ -151,6 +163,7 @@ def test_too_recent_stays_fenced(tmp_path):
     result = reconciler.reconcile(
         OCCURRENCE,
         handle="capafy.skills8m4q2z",
+        dispatch_marker_path=_marker(tmp_path),
         settings_path=tmp_path / "unused-settings.json",
         ledger_path=tmp_path / "ig-ledger.jsonl",
         fenced_row_fn=_fenced_row_fn(),
@@ -282,9 +295,57 @@ def test_active_ig_handle_unresolvable_stays_fenced(tmp_path):
         resolve=True,
     )
     assert result["verified"] is False
-    assert result["reason"] == "active_ig_handle_unresolvable"
+    assert result["reason"] == "original_ig_identity_unbound"
 
 
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-v"]))
+
+
+@pytest.mark.parametrize("marker", [None, {}, {"occurrence_id": "another-run", "handle": "replacement_fixture"}])
+def test_unbound_identity_never_reads_or_resolves(tmp_path, marker, monkeypatch):
+    accounts = tmp_path / "accounts.json"
+    accounts.write_text(json.dumps([{"handle": "replacement_fixture", "status": "ready"}]))
+    marker_path = tmp_path / "dispatch.json"
+    if marker is not None:
+        marker_path.write_text(json.dumps(marker))
+    monkeypatch.setattr(reconciler, "DISPATCH_MARKER_PATH", marker_path, raising=False)
+    calls = []
+    result = reconciler.reconcile(
+        OCCURRENCE, accounts_path=accounts,
+        fenced_row_fn=_fenced_row_fn(), now=QUEUED_AT + dt.timedelta(days=2),
+        read_media_fn=lambda *a, **k: calls.append("provider") or {"ok": True, "media": []},
+        resolve_fn=lambda *a, **k: calls.append("resolve") or True, resolve=True,
+    )
+    assert result["verified"] is False
+    assert calls == []
+
+
+@pytest.mark.parametrize("changes,requested", [
+    ({"handle": "other_fixture"}, "capafy.skills8m4q2z"),
+    ({"handle": "../unsafe"}, None),
+    ({"ts": (QUEUED_AT - dt.timedelta(days=1)).isoformat()}, None),
+    ({"ts": "bad"}, None),
+    ({"status": "invalid"}, None),
+])
+def test_conflicting_identity_stays_held(tmp_path, changes, requested):
+    marker = _marker(tmp_path)
+    row = json.loads(marker.read_text()); row.update(changes); marker.write_text(json.dumps(row))
+    def forbidden(*a, **k):
+        raise AssertionError("must reject before provider/resolve")
+    result = reconciler.reconcile(OCCURRENCE, dispatch_marker_path=marker, handle=requested,
+                                  fenced_row_fn=_fenced_row_fn(), read_media_fn=forbidden,
+                                  resolve_fn=forbidden, resolve=True)
+    assert result["verified"] is False
+
+
+def test_bound_original_ignores_replacement_ready_account(tmp_path):
+    accounts = tmp_path / "accounts.json"
+    accounts.write_text('[{"handle":"replacement_fixture","status":"ready"}]')
+    seen = []
+    result = reconciler.reconcile(OCCURRENCE, dispatch_marker_path=_marker(tmp_path),
+        accounts_path=accounts, fenced_row_fn=_fenced_row_fn(),
+        read_media_fn=lambda handle, *a, **k: seen.append(handle) or {"ok": False, "reason": "no_saved_session"})
+    assert seen == ["capafy.skills8m4q2z"]
+    assert result["verified"] is False
