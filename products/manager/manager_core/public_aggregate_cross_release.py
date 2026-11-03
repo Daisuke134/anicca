@@ -89,7 +89,13 @@ def preflight_cross_release(first: Mapping, second: Mapping) -> dict:
     """
     first_gate = preflight_public_aggregate(first)
     second_gate = preflight_public_aggregate(second)
+    declares_unmodified_counts = (
+        first_gate["declares_unmodified_counts"]
+        and second_gate["declares_unmodified_counts"]
+    )
     reasons = set()
+    if not declares_unmodified_counts:
+        reasons.add("CROSS_RELEASE_DISCLOSURE_METHOD_UNCERTAIN")
     hard = {
         "MEMBER_RELEASE_REJECTED",
         "CROSS_RELEASE_INCONSISTENT_TOTAL",
@@ -152,55 +158,56 @@ def preflight_cross_release(first: Mapping, second: Mapping) -> dict:
             # subtraction; opaque window labels remain review-only.
             reasons.add("CROSS_RELEASE_POSSIBLE_TEMPORAL_DIFFERENCING")
     else:
-        a_partition, b_partition = first["partition"], second["partition"]
-        a_cells = {cell["category"]: cell for cell in a_partition["cells"]}
-        b_cells = {cell["category"]: cell for cell in b_partition["cells"]}
-        a = {name: cell["count"] for name, cell in a_cells.items()}
-        b = {name: cell["count"] for name, cell in b_cells.items()}
-        if set(a) != set(b):
-            reasons.add("CROSS_RELEASE_CATEGORIES_DIFFER")
-        elif any(
-            a_cells[name]["sensitive"] != b_cells[name]["sensitive"]
-            for name in a
-        ):
-            # Sensitivity describes a category, not whether this edition
-            # suppressed its count. A conflicting declaration means the
-            # partition semantics cannot be safely aligned for subtraction.
-            reasons.add("CROSS_RELEASE_SENSITIVITY_NOT_COMPARABLE")
-        elif a_partition["total"] != b_partition["total"]:
-            # A rolling window or genuinely changing population might differ;
-            # do not infer a residual from two inconsistent denominators.
-            reasons.add("CROSS_RELEASE_TOTALS_DIFFER")
-        elif any(
-            a[name] is not None and b[name] is not None and a[name] != b[name]
-            for name in a
-        ):
-            reasons.add("CROSS_RELEASE_COUNTS_CONFLICT")
-        else:
-            # Only under the unverified SAME population and SAME partition
-            # assumption can disclosed cells be unioned arithmetically.
-            if any(
-                (a[name] is None and b[name] is not None)
-                or (b[name] is None and a[name] is not None)
+        if declares_unmodified_counts:
+            a_partition, b_partition = first["partition"], second["partition"]
+            a_cells = {cell["category"]: cell for cell in a_partition["cells"]}
+            b_cells = {cell["category"]: cell for cell in b_partition["cells"]}
+            a = {name: cell["count"] for name, cell in a_cells.items()}
+            b = {name: cell["count"] for name, cell in b_cells.items()}
+            if set(a) != set(b):
+                reasons.add("CROSS_RELEASE_CATEGORIES_DIFFER")
+            elif any(
+                a_cells[name]["sensitive"] != b_cells[name]["sensitive"]
                 for name in a
             ):
-                # A suppression in one release was undone by the other.
-                reasons.add("CROSS_RELEASE_SUPPRESSION_UNDONE")
-            merged = {
-                name: a[name] if a[name] is not None else b[name]
+                # Sensitivity describes a category, not whether this edition
+                # suppressed its count. A conflicting declaration means the
+                # partition semantics cannot be safely aligned for subtraction.
+                reasons.add("CROSS_RELEASE_SENSITIVITY_NOT_COMPARABLE")
+            elif a_partition["total"] != b_partition["total"]:
+                # A rolling window or genuinely changing population might differ;
+                # do not infer a residual from two inconsistent denominators.
+                reasons.add("CROSS_RELEASE_TOTALS_DIFFER")
+            elif any(
+                a[name] is not None and b[name] is not None and a[name] != b[name]
                 for name in a
-            }
-            known_sum = sum(value for value in merged.values() if value is not None)
-            hidden_count = sum(value is None for value in merged.values())
-            residual = a_partition["total"] - known_sum
-            if residual < 0:
-                reasons.add("CROSS_RELEASE_INCONSISTENT_TOTAL")
-            elif hidden_count == 1:
-                # A single hidden count is computable from the published total,
-                # even if its inferred value is above our heuristic threshold.
-                reasons.add("CROSS_RELEASE_SINGLE_HIDDEN_CELL")
-            elif hidden_count >= 2 and residual < MIN_CELL:
-                reasons.add("CROSS_RELEASE_SMALL_COMPLEMENT")
+            ):
+                reasons.add("CROSS_RELEASE_COUNTS_CONFLICT")
+            else:
+                # Only under the unverified SAME population and SAME partition
+                # assumption can disclosed cells be unioned arithmetically.
+                if any(
+                    (a[name] is None and b[name] is not None)
+                    or (b[name] is None and a[name] is not None)
+                    for name in a
+                ):
+                    # A suppression in one release was undone by the other.
+                    reasons.add("CROSS_RELEASE_SUPPRESSION_UNDONE")
+                merged = {
+                    name: a[name] if a[name] is not None else b[name]
+                    for name in a
+                }
+                known_sum = sum(value for value in merged.values() if value is not None)
+                hidden_count = sum(value is None for value in merged.values())
+                residual = a_partition["total"] - known_sum
+                if residual < 0:
+                    reasons.add("CROSS_RELEASE_INCONSISTENT_TOTAL")
+                elif hidden_count == 1:
+                    # A single hidden count is computable from the published total,
+                    # even if its inferred value is above our heuristic threshold.
+                    reasons.add("CROSS_RELEASE_SINGLE_HIDDEN_CELL")
+                elif hidden_count >= 2 and residual < MIN_CELL:
+                    reasons.add("CROSS_RELEASE_SMALL_COMPLEMENT")
 
     # Even an arithmetically unremarkable pair needs an independent
     # multi-publication disclosure/rights review. Never self-certify.
