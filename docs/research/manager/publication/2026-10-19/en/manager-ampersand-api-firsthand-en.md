@@ -27,6 +27,12 @@ The outcome was unambiguous at the **API-operation level**:
 
 We observed that the response recommended raising a known meeting conflict without taking the scheduling decision away from the team. This is our **paraphrase of one fictional response**, not a reprint of the provider's output. One example is not a quantitative quality estimate, and an authenticated response is not evidence of superior social intelligence.
 
+## A second live run: real follow-up in the same session
+
+We subsequently ran a second, separately dispatched **two-turn** educational session via the same official service. [GitHub Actions run 41619141514](https://github.com/Daisuke134/life-manager/actions/runs/41619141514) is the exact independent execution receipt. The first fictional response completed with 546 characters. We then submitted an updated scheduling scenario to **the same session** through the officially documented `sessions.events.create` method, using an idempotency key, and streamed the follow-up turn to completion (465 characters). The provider returned **four saved conversation items and two completed turns**.
+
+This additionally establishes real session persistence, event submission and saved-turn readback in our integration. It does not establish long-term collaboration quality, human simulation accuracy, or other experimental effects. The run was not a comparative benchmark and was never given personal customer information or external action tools. We preserved completion metadata rather than publishing the provider's entire output.
+
 ## What Ampersand is technically designed to do
 
 The developers' official [model card](https://ampersand.humansand.ai/blog/model-card.html) describes a model trained to collaborate across extended interactions, including when it is better to ask, wait, or decline to intrude. Their companion human-simulation research, **Persimmon**, supplies simulated user interactions for aspects of training and evaluation. This is not the same as showing that the model predicts unknown real customers' purchases or that its interventions improve a real person's welfare.
