@@ -1005,3 +1005,5 @@ Museへ既存Reason会話で、この独立境界と正式に動く自己所有m
 元7TODOとprimary2は維持する。次の技術cursorは、同じ有償メール→browser cardを繰返さず、正式なown-computer/browser実行経路が既存環境にあるかを一次仕様・実呼出しで確認すること。別実行基盤を使うならNaïve内の本人Computerによる画面操作、専用資格情報、全体spend-cap、業務スクリプト代行0を先に仕様化し、現在本番を置換せず小さい独立probeで可否を確定する。現在本番の公開需要読取/保存と、既に許可された会社発信は独立して維持する。登録・実受注/納品/入金・英語記事公開更新・連続録画・phone-only・黒字・USD10K/月・移植は未達のまま。
 
 結果の独立read-only reviewで指摘されたinterruptイベントと終端時刻の区別、公式flag契機の列挙とAgentMail実測の区別、list_inboxesをinbox本文読取と呼んだ記事表現を修正する。再確認は3点すべて解消・未解消0。JSON構文/記事の全local参照/diff-checkを確認する。記事PR9178のgitleaksはcheckout実行中であり成功と呼ばず、既存14成功の同runを追う。
+
+Muse返信01M6HKRVEVV6Z7WFHXC7J85APYは「正式pi＋自己所有受信箱の無人browser signupを証明した実例/構成は見つからない」。own-computer文言も未検証メモであり解決済みとしない。新記録はPR9179（base=記事PR9178のbranch、head047ee33e55時点で作成）へ提出する。親9178の14checks成功・gitleaks checkout継続中、親統合後9179のbaseをmainへ変更して検証・統合する。未push差分0、untracked .codex/は他用途のまま触らない。
