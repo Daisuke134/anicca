@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "owner_id": "home-codex",
+  "observed_at": 1793681126.395724,
+  "release_sha": "c67844fbb44269087a1863c96d221318ab7f22f4",
+  "source_pr": 9119,
+  "reviewed_head": "b679e9bbf91ad8df63f739095ba79161159d8e86",
+  "validation": {
+    "hq_tests": 64,
+    "independent_review": "SHIP Blocking0",
+    "ci_success": 15,
+    "loaded_source_sha256": "ecb7a3bf586fa34ae0504affa972f8708af8d52ec719d13092a8c1983de2e78a"
+  },
+  "readback": {
+    "receiver_install_event": "05a3ef7fc624c7c2d6855da2",
+    "priority_thread": "1793635811.853779",
+    "status_post_ts": "1793681008.102869",
+    "first_poll_at": 1793681025.625705,
+    "delay_seconds": 17.523,
+    "second_poll_at": 1793681091.73663,
+    "cursor": "1793681008.102869",
+    "task_count_before_after": [
+      18,
+      18
+    ],
+    "helper_task": "6ec8a53d0bafc89a9059f260",
+    "helper_exit_code": 1,
+    "helper_api_error": "401 OAuth access token invalid",
+    "handoff_task": "83c045e42d60f8febdc4d39b",
+    "handoff_count": 1
+  },
+  "limits": [
+    "All teammates native 24/7 reception is unproven.",
+    "Claude settings recognition did not establish valid inference.",
+    "Muse profile startup and affiliate-browser recovery remain deferred below 12GiB producer floor.",
+    "No new revenue demonstrated.",
+    "14JST R&D and 21JST outcomes natural results not yet observed."
+  ],
+  "evidence_refs": [
+    "https://github.com/Daisuke134/life-manager/pull/9119",
+    "https://github.com/Daisuke134/agent-core-rules/pull/31",
+    "https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793681008102869"
+  ],
+  "next_action": "Restore capacity without threshold changes, recover existing affiliate browser, establish exact-account Claude/Muse native auth and remote wake, observe natural schedules."
+}
