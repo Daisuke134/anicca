@@ -44,6 +44,7 @@ def packet(suffix):
                 {"category": "beta", "count": 40, "sensitive": False},
             ],
         },
+        "disclosure_control": {"method": "exact_unmodified"},
         "cross_release_review": "externally_documented",
     }
 
@@ -330,6 +331,31 @@ class ReleaseFamilyTest(unittest.TestCase):
             "2026-03-01/2026-03-31",
         ):
             self.assertNotIn(window, rendered)
+
+
+    def test_perturbed_family_skips_three_way_exact_arithmetic(self):
+        releases = list(self._disclosive_triple())
+        for release in releases:
+            release["disclosure_control"]["method"] = "perturbed"
+        result = preflight_release_family(releases)
+        self.assertEqual(result["status"], "REVIEW_REQUIRED")
+        self.assertIn("FAMILY_DISCLOSURE_METHOD_UNCERTAIN", result["reason_codes"])
+        self.assertNotIn("FAMILY_SINGLE_HIDDEN_CELL", result["reason_codes"])
+        self.assertNotIn("FAMILY_SUPPRESSION_UNDONE", result["reason_codes"])
+        self.assertFalse(result["can_publish"])
+        self.assertEqual(result["beneficiary_effect"], "NOT_MEASURED")
+
+    def test_exact_three_release_subfamily_still_checked_when_fourth_is_rounded(self):
+        a, b, c = self._disclosive_triple()
+        fourth = packet("d")
+        fourth["population"]["window"] = "unrelated fictional interval"
+        fourth["disclosure_control"]["method"] = "rounded"
+        result = preflight_release_family([a, b, c, fourth])
+        self.assertIn("FAMILY_DISCLOSURE_METHOD_UNCERTAIN", result["reason_codes"])
+        self.assertIn("FAMILY_SINGLE_HIDDEN_CELL", result["reason_codes"])
+        self.assertIn("FAMILY_SUPPRESSION_UNDONE", result["reason_codes"])
+        self.assertFalse(result["can_publish"])
+        self.assertEqual(result["next_action"], "NO_ACTION")
 
 
 if __name__ == "__main__":
