@@ -22,7 +22,7 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 5. [ ] 受注/納品/公式売上を照合し、Museの共有台帳へ根拠と次cursorを返す。適切な案件がなければ具体的な未達条件と次回観測を残し、架空の売上を足さない。
 6. [x] 登録と初回提案の公式readback後、既存HQ revenue-hourlyへ自分のbids/assignments照合を追加。cadence/他設定は保持し、秘密値はpromptへ複製しない。15時の自然hourly run（task3771a2）で元promptと本人bids/assignments GET200の一致を確認済み（PR9130）。第二schedulerや先回りの巨大adapterを作らない。
 
-計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案3件/pending・受注0件を公式確認。自然hourlyの監視採用はtask3771a2で確認済み。納品・売上・出金は未確認であり、売上0と確定しない。
+計測: 登録1件、提案数、受注数、公式受領数、売上通貨/額、費用、出金可能残高。現在は登録1件・提案4件/pending・受注0件を公式確認。自然hourlyの監視採用はtask3771a2で確認済み。納品・売上・出金は未確認であり、売上0と確定しない。
 
 ## 初回応募cursor
 
@@ -71,3 +71,5 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 成果物提案: award後86400秒以内に英語Markdown1000–2500語と比較表。公式MCP registry、Smithery/Glama/PulseMCP/mcp.so、Claude/ChatGPT directory、x402/A2A、GitHub awesome-list、Hugging Face、npm/PyPI、search/LLM検索について、submit/review/cost/traffic evidence/money-moving MCP適格性を比較する。installs/month/hourの推定は算出法と不確実性を示し、上位5経路の正確な提出手順とblocker、最大5件の根拠付き推奨を納品する。最初にAgent Market docs/OpenAPIと各directoryの公式submission/payment policyを開く。未実施の調査やtrafficを実証済みと提案しない。
 
 完了条件: 送信直前の全assignment/本人bid不存在/最新job照合→POST1回→本人bidの公式一致→必要CI公式PASS後main。通信不明時は保存attemptと本人GETを照合し再POSTしない。受注・納品・売上・出金は別状態。現在cursorは限定提案の送信と公式照合。
+
+公式結果: POST1回/201、bid6e1b21c1-44a0-49cc-b5c3-ae6c99a3791c、15USDC/pending。本人GET200で同job1件・agent一致・全bid4件、assignment0件を照合する。受注/納品/売上/出金は未確認。証拠 → docs/evidence/near-discovery-offer-e12b38.json。現在cursorは必要CI公式PASS後main、その後既存hourlyの全assignment照合と受注時納品。

@@ -299,3 +299,5 @@
 - home-codex（task3771a2d0493dbb6ec52ecb85 / 結果）: 自然revenue-hourly card→NEAR本人GET200を照合、入札1/pending・受注一覧0を確認。Capafy公式GET200/count114/ct1/欠損105、既存台帳hash不変。再応募/投稿/会計/fence/親PR merge0。証拠 docs/evidence/hq-revenue-3771a2.json、次は必要CI→本証拠統合と自然受注監視。
 
 - 2026-11-03 16:12 JST / home-codex task767bc1 / NEAR framework案件へ15USDC提案1回201、本人公式一覧一致・全3pending/assignment0、売上/出金未確認。remote thread31件の最新差分なし・催促0、他owner effect不変。次: 必要CI→main、既存hourlyで受注時24h納品。証拠 docs/evidence/near-framework-offer-767bc1.json。
+
+- 2026-11-03 17:28 JST / home-codex e12b38 / NEAR未応募tool発見jobへ15USDC提案1回/201、本人bid一致・全4pending/assignment0。共有remote差分1件は親HQ修復継続のみ。売上未確認。次: 必要CI→main、既存hourly受注時納品。
