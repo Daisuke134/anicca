@@ -871,3 +871,12 @@ ses_7sr1amcbm052ey7kahk1pr6r5tはexample.com goto約2.3秒成功、DuckDuckGo検
 cursor2内部の次は、解決済みの一般help検索から、支払い意思が明示される公開募集へ絞る。理由は同種の古い解決済み質問を2件以上確認しても買い手を得ていないため。既存商品29USDC/public trace診断に適合する現行の有償agent/n8nデバッグ募集1件だけを本人browserで探し、日付/未解決/依頼内容/予算/応募条件の本文を観測して適否を保存する。価格不明/募集終了/無償相談なら正直に除外、値を捏造しない。今回の公開読取・保存だけで応募/受注/売上としない。
 
 次の有限枠は残内でfinite200000＋後計上100000/計画300000、4分/max10tools/hosted最大2、fresh残credit>=300000/active0/paused、同23/Identity/priority/月9/task1。時刻/health/intakeを反復せず、直前に健康を確認した本人browserで有償募集の検索へ直行。初回goto timeoutなら反復せず観測追記して終了。stateは既観測257行の末尾offset202から必要な範囲だけread、旧root全key/valueを変更せず新key追記/edit/read、journal読取/書換0、未知時刻/費用/最終回数は推測0。DM/営業送信/投稿/mail/signup/送金0、追加input/model/増枠0。元7TODOは維持し、有償需要1件の探索を会社収益達成へ縮小しない。
+
+
+### 有償募集の一次資料と短いURL指定handoff
+
+有償検索ses_nxajjnymegmn17cj872vx6pqxzは最初のmodel requestで約126秒後internal_error、tool0/確認0/追加入力0。既知の失敗境界で自動retryを重ねずcancel、19:39:43時点全52active0/paused/prod23保持、費0/ledger0/残351371を公式確認する（後計上保証ではない）。営業/登録/投稿/需要観測0。private v23-paid-demand-{events,artifacts,final-resources}。
+
+primaryの公開一次資料読取で https://community.n8n.io/t/looking-for-n8n-ai-automation-specialist-paid-qa-stress-testing/319256 を確認する。依頼者cobasuyiは既存n8n/AI agentのQA/stress-test、Vapi/Twilio/ElevenLabs/OpenAI/Claude/API/webhook、作り直しでなく1agentの有償trialを募集し、興味があればDMとrate/経験/sampleを求める。本文はOct7表示、明示価格無し、現在の充足/契約状況は未確認。302posts等の応募の多さを需要消失や受注確定に置換しない。これは支払意思の一次根拠で私たちへの依頼ではない。旧paid-debug thread276670はnot found/private、検索snippetを有効案件扱いしない。https://openbounty.ai/ はMock-payments mode/no real fundsと明記、実収益の経路から除外する。
+
+次の通常業務は上記319256のURLを本人browserで直接goto/extract→有償trial/価格不明/最新の充足不明を区分してstate新key追記/read→end_turnだけ。探索検索/health/時計/intake/journalを反復しない。provider初手失敗を狭めるためmanual messageは単一URLとこの仕事に必要な短い入力だけにし、schedulerのmain048 input/agent model/tools/Identity/mail/budgetは変更しない。finite200000＋後計上100000/計画300000、4分/max8tools/hosted1、fresh残credit>=300000/active0/pausedの時だけ1件。旧state全key/value保持、末尾offset202から必要範囲read/小さいedit/read。応募/DM/送信/signup/送金0。本人観測前はprimary資料の読取と本人実行を分ける。実売上/登録/録画/phone-only/黒字/10K/月/移植は未達を保持する。
