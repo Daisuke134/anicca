@@ -28,6 +28,12 @@ def _comparable_subfamily_arithmetic(releases: tuple) -> set[str]:
     that the real cohorts coincide or a disclosure risk has materialized.
     Never return reconstructed counts.
     """
+    if any(
+        not preflight_public_aggregate(release)["declares_unmodified_counts"]
+        for release in releases
+    ):
+        return set()
+
     reference = releases[0]
     if any(
         release["population"] != reference["population"]
@@ -98,6 +104,11 @@ def preflight_release_family(releases: list | tuple) -> dict:
     reasons = set()
     if any(member["status"] == "REJECT" for member in members):
         reasons.add("FAMILY_MEMBER_REJECTED")
+    all_counts_unmodified = all(
+        member["declares_unmodified_counts"] for member in members
+    )
+    if not all_counts_unmodified:
+        reasons.add("FAMILY_DISCLOSURE_METHOD_UNCERTAIN")
 
     for first, second in combinations(releases, 2):
         pair = preflight_cross_release(first, second)
@@ -109,6 +120,8 @@ def preflight_release_family(releases: list | tuple) -> dict:
             reasons.add("FAMILY_POSSIBLE_SCOPE_DIFFERENCING")
         if "CROSS_RELEASE_POSSIBLE_TEMPORAL_DIFFERENCING" in pair["reason_codes"]:
             reasons.add("FAMILY_POSSIBLE_TEMPORAL_DIFFERENCING")
+        if "CROSS_RELEASE_DISCLOSURE_METHOD_UNCERTAIN" in pair["reason_codes"]:
+            reasons.add("FAMILY_DISCLOSURE_METHOD_UNCERTAIN")
 
     reference = releases[0]
     same_scope = all(
@@ -119,7 +132,7 @@ def preflight_release_family(releases: list | tuple) -> dict:
     )
     if not same_scope:
         reasons.add("FAMILY_SCOPE_NOT_COMPARABLE")
-    else:
+    elif all_counts_unmodified:
         partitions = [packet["partition"] for packet in releases]
         cells = [
             {cell["category"]: cell for cell in partition["cells"]}
