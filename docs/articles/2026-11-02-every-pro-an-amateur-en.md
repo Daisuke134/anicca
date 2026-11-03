@@ -9,6 +9,8 @@ description: "Why becoming more productive with AI is not a permanent career def
 
 # What Will AI Do to Us? It Will Turn Every Pro Into an Amateur.
 
+![Editorial hero: the end of productive activity](./assets/pro-to-amateur-hero.svg)
+
 *The end of productive activity.*
 
 What will AI do to us?
@@ -61,6 +63,8 @@ This is what makes AGI different from another productivity tool. The tool does n
 
 ## You can still be a mathematician
 
+![A remote mathematical retreat in Norway](./assets/norway-mathematician.svg)
+
 Imagine living alone in a treehouse in Norway.
 
 No internet. A shelf of mathematics books. A notebook. Years of uninterrupted thought.
@@ -101,6 +105,8 @@ What if those are no longer the important questions?
 
 ## The most dangerous career advice in the AI era
 
+![The productivity trap: five workers, one worker, and autonomous AI](./assets/productivity-trap.svg)
+
 You've heard it everywhere: *AI won't replace you. Someone using AI will.*
 
 For the present transition, that can be practical advice. An engineer using AI may outperform an engineer who refuses it. A marketer using AI may produce more campaigns. A consultant using AI may serve more clients.
@@ -122,6 +128,8 @@ You may win the competition against your coworkers and lose the competition agai
 **Using AI to increase productivity is a strategy for the transition. It is not a strategy for surviving the destination.**
 
 ## The twenty-second illusion
+
+![The imagined twenty-second progression from junior engineer to founder](./assets/twenty-second-illusion.svg)
 
 People like to rank jobs by how long they think they will survive.
 
@@ -145,6 +153,8 @@ Do you want to build your identity around being the last person whose job become
 
 ## Why does Magnus Carlsen still get paid?
 
+![Chess is entertainment, not only calculation](./assets/chess-story.svg)
+
 Here is the strongest objection.
 
 Chess engines surpassed human players long ago. Yet people still watch Magnus Carlsen. They still care who wins. Sponsors still support tournaments. Human players still have careers.
@@ -161,7 +171,7 @@ Now imagine watching Magnus face a rival in a championship. You do not tune in f
 
 **The engine sells strength. The human match sells a story.**
 
-> **VISUAL 2 — Licensed documentary photograph:** Human chess competition. Caption: “The audience is not buying the best move.”
+*The audience is not buying the best move.*
 
 A human chess tournament is closer to live sport than to consulting. Identity, presence, constraint, and narrative are part of the experience.
 
@@ -176,6 +186,8 @@ The crucial distinction is the business you are actually in.
 A professional chess player looks, superficially, like a knowledge worker: sitting at a board, calculating moves, using extraordinary intelligence. But the paying audience is not purchasing the most accurate calculation. It is purchasing entertainment, suspense, identity, and the unfolding story of particular people.
 
 A tournament of the strongest chess agents might be fascinating to researchers, engine developers, or benchmark enthusiasts. It would not automatically command the same emotional audience as a match between recognizable human rivals. That is not a claim that nobody watches computer chess; it is a claim that stronger play alone does not create the same product.
+
+![What is the customer buying: bread or the baker's story?](./assets/bakery-productivity.svg)
 
 Now consider a bakery. Most customers want bread that tastes good, is convenient, and is worth the price. If autonomous systems can consistently make better bread more cheaply, the ordinary bakery competes on those outcomes. A bakery might also sell a ritual, a neighborhood identity, or affection for a particular baker—but those are distinct reasons to choose it, and a good story does not rescue bad bread for customers primarily buying bread.
 
@@ -315,7 +327,7 @@ I don't need to beat an AI at jiu-jitsu to enjoy practicing.
 
 I don't need to invent the world's most effective meditation protocol to sit and meditate.
 
-> **VISUAL 3 — Original or licensed image:** A person walking alone in a quiet landscape. Lots of space. No productivity dashboard, no charts.
+![Walking simply because you want to](./assets/walking-for-nothing.svg)
 
 These are not things I do primarily because someone wants to purchase the result.
 
