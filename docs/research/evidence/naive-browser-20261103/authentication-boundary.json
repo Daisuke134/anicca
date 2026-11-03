@@ -1,0 +1,27 @@
+{
+  "run_id": "browser-auth-domain-resume-20261103-10",
+  "owner_id": "codex-naive-browser",
+  "occurrence_id": "tool_browser_bQIQIC5obAcdTodfNBb1",
+  "release_sha": "90c48ca11a7e8fd796d4186735631090d7bff3e7",
+  "agent_version": 2,
+  "loaded_argv": null,
+  "loaded_env": "provider-managed; raw environment not exposed",
+  "phase": "browser_authentication",
+  "command": "browser.login(service=accounts.google.com), followed by page readback",
+  "exit_code": null,
+  "effect": "authentication_unconfirmed",
+  "readback": "Google sign-in email field / Capafy login page remains",
+  "provider_receipt_id": null,
+  "error_class": "tool_error",
+  "provider_error_message": "the browser automation provider could not complete that action",
+  "retryable": false,
+  "next_action": "obtain supported Google OAuth browser route or provider-side diagnostic; do not repeat the same login action",
+  "evidence_refs": [
+    "auth-domain-events-after33.json:98",
+    "oauth-boundary-events.json:151-153",
+    "private screenshot oauth-boundary-current.jpg"
+  ],
+  "source_boundary": "Google OAuth at managed-browser provider; host metadata corrected and verified",
+  "business_publication_verified": false,
+  "revenue_verified": false
+}

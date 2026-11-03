@@ -1,0 +1,47 @@
+{
+  "kind": "hosted_browser_probe",
+  "source": "locally redacted official provider API readback; account-scoped endpoints are not public",
+  "observed_at": "2026-11-03T03:31:59.507863+00:00",
+  "query_from": "2026-11-03T00:00:00Z",
+  "query_to_omitted": true,
+  "total_micro_usd": 405957,
+  "by_tier_micro_usd": {
+    "input": 84467,
+    "cache_read": 44808,
+    "cache_write": 0,
+    "computer": 11566,
+    "output": 15393,
+    "browser": 238336,
+    "reasoning": 11387
+  },
+  "session_costs_micro_usd": [
+    138153,
+    100301,
+    83257,
+    64391,
+    8289
+  ],
+  "reconciliation": {
+    "session_subtotal_micro_usd": 394391,
+    "total_minus_session_subtotal_micro_usd": 11566,
+    "computer_tier_micro_usd": 11566,
+    "note": "The arithmetic gap equals computer tier. Provider attribution mechanism was not independently verified; preserve all provider values."
+  },
+  "monthly_cap_micro_usd": 500000,
+  "model_used_for_successful_image_and_search": "google/gemini-2.5-flash-lite",
+  "confirmed": [
+    "image returned and subsequent model response completed",
+    "browser.act searched for 動画; resulting page displayed 30 results",
+    "Computer note written and read in another session",
+    "Computer naturally paused after idle"
+  ],
+  "not_confirmed": [
+    "Google/Capafy authentication",
+    "customer delivery or publication",
+    "real revenue",
+    "unattended recurring deployment"
+  ],
+  "multiple_controller_interventions": true,
+  "scope": "diagnostic probes, not a leaderboard or a zero-intervention business success price",
+  "credentials_or_signed_urls_in_export": false
+}

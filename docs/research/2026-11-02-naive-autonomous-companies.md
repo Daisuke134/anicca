@@ -74,7 +74,7 @@ Grok・MuseへReason Networkで直接照会し、さらにSlack #agents-hqで両
 
 ## 取得と検証の限界
 
-Firecrawl skillを読んでconnector検索を試みるが、空link_id拒否後、非空IDによる実行は `Unknown tool(firecrawl.firecrawl_search)`。成功や収集credits=0を主張しない。代替の公式ページ取得、crwlによるYC event本文取得、ghによる公式repo/現行mainを使う。Grokの別repoの実装/証跡は取得済み。live Naïve orgは未取得。
+Firecrawl skillを読んでconnector検索を試みるが、空link_id拒否後、非空IDによる実行は `Unknown tool(firecrawl.firecrawl_search)`。成功や収集credits=0を主張しない。代替の公式ページ取得、crwlによるYC event本文取得、ghによる公式repo/現行mainを使う。Grokの別repoの実装/証跡は取得済み。live Naïve orgは下記の公式readbackで取得済み。
 
 今回の追加指示により製品runner・catalog・Actionsと実行証跡を追加する。投稿・決済・既存production loopは変更しない。詳細は下記の実測資料を参照する。
 
@@ -90,7 +90,7 @@ Firecrawl skillを読んでconnector検索を試みるが、空link_id拒否後�
 
 公式terms §4.2はサービスアクセスの共有/再販/再許諾に書面同意を要求する。[原典](https://usenaive.ai/terms)。LM-on-Naïveの顧客向け構成の適用範囲と既存契約許諾を確認する必要がある。既存許諾が無いと断定せず、Grok/Museへ存在と適用範囲のみ照会する。これは自社コードのbenchmark OSS公開とは別の境界。Computerは公式docsからLinux micro-VM・turn間pause/resumeを確認し、V8 isolate予定と提供済みを分ける。[Computer](https://usenaive.ai/docs/capabilities/computer)。
 
-## 現在の公式API readback
+## 初回の公式API readback
 
 取得時点: 2026-11-03 JST。Codex自身の1Password接続のnaive項目からloginを回収し、private SSOT exact service naiveへmode600で登録。現行API keyではなくメール/passwordの記録だった。公式POST /v1/auth/sessionで同じAniccaへ通常login成功し、得たvt_ sessionも正本へ保存する。秘密値・raw会話・promptはrepoへ入れない。以下はread-only GETのallowlist。[取得証拠](evidence/naive-live-20261103/)。
 
@@ -102,6 +102,10 @@ Firecrawl skillを読んでconnector検索を試みるが、空link_id拒否後�
 - 現在のCEO budgetは月$1、max_task$0.25。他4役割は月$2/max_task$0.25。deployment budgetは$1。異なる層の値を混ぜない。
 - builderはsession capのbudget.exceededで停止する。session budget250000、consumed29517なので残220483 microUSD。最後に観測できた成功callのquote222884はこの残額より2401大きく、予約見積による拒否という説明と整合する。ただし拒否された次callのquote自体は記録に無く、2401を当該拒否の確定差額とは扱わない。CEOのbudget.exceededは別のagent cap境界。実消費$0.029517だけを見て『$0.25未満なのに不具合』とも、残高を見て『資金不足』とも結論しない。公式budget.exceededの境界を使って次の修正を決める。
 - CEOの公式version履歴は、v14が月$10/max_task$10、v15が月$10/max_task$0.50、v16が月$1/max_task$0.25。DEMO-PROOF.mdの$10記録はv14と一致し、その後に設定変更がある。古い値を意図せぬdriftと断定して復元しない。現在deploymentのagent_versionはnull、current_versionは16。11/1 00:00Z以降のCEO費用は$0.835543。これは問い合わせ区間の実費であり、組織timezone基準のbudget内部台帳や次call予約額そのものとは区別する。
-- この調査で既存agent/model/budget/cron/computerを変更せず、新しい推論支出は発生させない。RESTのloginと読み取りであり、SDK経由benchmarkや顧客向けtenant運用が完了したわけではない。
+- この初回調査では既存agent/model/budget/cron/computerを変更せず、新しい推論支出を発生させない。後続の専用browser担当の有料実行は次節へ分ける。RESTのloginと読み取りであり、SDK経由benchmarkや顧客向けtenant運用が完了したわけではない。
 
 Reason/SlackのGrok/Muse返信は未取得。Reasonはpull/idle、ローカルAGMSGのlm/anicca-dev/capafyには対象名を発見せず、remote bindingもnone。新sessionを相手本人として捏造/起動しない。公式API readbackで現在値は自力確認し、Grok/Muse自身のVM/provider・source owner・demoの後続証拠は別途残す。
+
+## 専用ブラウザ担当の現在位置
+
+既存6agentに加えて専用担当を作成し、main265bab69由来のv3を適用する。画像観測、actによる動画検索30件の確認、同Computerのメモwrite/別session read、自然idleのpausedを確認する。公式spendは405957 microUSD。業務shell/APIは与えない。Google認証はservice/hostを修復しても専用login/provider操作の境界が残り、未完。成功文章と実画面の矛盾を記録し、売上や完全自律運転へ昇格しない。詳細は[実測証拠](evidence/naive-browser-20261103/hosted-readback.json)と[記事](../articles/2026-11-02-naive-autonomous-company-ja.md)。Muse Relayは最小inferenceのみ返答し、Grok/Muse/Dots本人の実ブラウザ業務手順は未取得。

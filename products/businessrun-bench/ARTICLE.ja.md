@@ -34,7 +34,7 @@ flowchart TB
 
 古い公式スターターには `@usenaive-sdk/node` が登場する。一方、現在のdocsは `@usenaive-sdk/vetta` を案内する。旧スターターを動かせたことと、現行の会社実行基盤へ移行できたことは、別々に確認する必要がある。[旧スターター](https://github.com/usenaive/naive-starter-template)、[現行docs](https://usenaive.ai/docs)
 
-Naïveのcomputerは、ファイル・shell・任意のbrowserを持つLinux micro-VMだ。turn間ではpauseし、次のturnで再開する。pause中はcomputeではなく保存diskの費用が残る。常時動くMac Miniと同じ課金構造ではない。顧客向けにはVMだけでなく、状態保存、予算、権限、顧客ごとの実行環境をまとめる必要がある。将来予定のV8 isolateを提供済み機能として紹介しない。[公式Computer](https://usenaive.ai/docs/capabilities/computer)
+Naïveのcomputerは、ファイル・shell・任意のbrowserを持つLinux micro-VMだ。turn間ではpauseし、次のturnで再開する。現在の料金資料ではpause中のcompute/storage課金はなく、diskも非課金と記載される。常時動くMac Miniと同じ課金構造ではない。顧客向けにはVMだけでなく、状態保存、予算、権限、顧客ごとの実行環境をまとめる必要がある。将来予定のV8 isolateを提供済み機能として紹介しない。[公式Computer](https://usenaive.ai/docs/capabilities/computer)
 
 一般顧客へ提供する際には契約条件も確認する。公式利用規約4.2は、サービスへのアクセスを共有・再販・再許諾する場合に書面の同意を求める。SDKを使えることから、Naïveのアクセスを自由に再販できるとは導けない。自社サービスの構成がどこまで該当するかと、既存契約の許諾範囲は別途確認が必要だ。[公式規約4.2](https://usenaive.ai/terms)
 
@@ -174,3 +174,17 @@ NaïveとYCのイベントは、11月7–8日にSan Franciscoで開催する。�
 事前開発した成果物の持込みが無条件で認められるとは、確認した公開規約からは言えない。準備を進めつつ、既存部分と会期中の変更を明示する必要がある。
 
 私たちがNaïveから取り入れたいのは、会社を再現可能な実行単位として扱い、その性能を測る姿勢だ。事業の実行、比較評価、現実の顧客成果を一つずつ接続する。その積み重ねが、「AIが働いた」という記録を、「人間の追加作業を減らし、価値を届けた」という証拠へ変える。
+
+## 実際にクラウドのブラウザで働かせて分かったこと
+
+会社業務の実行方式も試した。SDKはagent/session/予算/証拠の管理に使い、仕事そのものはAIがNaïveの管理ブラウザで画面を見て判断する。業務shell、業務API、固定公開スクリプトは与えない。Computerのファイルは作業メモに使う。
+
+公開マーケットで画像を取得し、検索欄を観測し、「動画」を入力・検索した後の30件表示を取得した。直接のtypeは失敗したが、自然言語で画面を操作するbrowser.actで検索できた。Computerへのメモ保存と、別sessionで同じメモを読むことも確認した。GLMで画像返却直後に次のモデル呼出が拒否された一試行は、Gemini 2.5 Flash Liteでは画像後の返答まで進んだ。この小さな比較をモデル全体の順位にはしない。
+
+ここには三つの落とし穴がある。第一に、browserはターン終了で閉じる。保存contextがあっても前のページがそのまま残るとは限らず、次のターンはURLを開き直してから観測する。第二に、observeが返したxpathを直接click/typeへ渡すと操作エラーとなる例があった。公式仕様は直接操作をCSS selectorと記載するため、互換の境界が疑われるが、provider実装の原因までは確認できていない。第三に、資格情報のserviceは実際の送信先hostnameと照合する。こちらの設定ミスも実行基盤の失敗と分けて残す。[ブラウザ仕様](https://usenaive.ai/docs/computer/browser)、[専用ログインAPI](https://usenaive.ai/docs/api/browser)
+
+もっと重大なのは、専用loginが「login done」を返し、agentが成功と報告した一方、取得した画面にはログインフォームとメール形式エラーが残っていたことだ。誤った成功メモを訂正した。その後、送信先の設定を修復しても、Googleの入力画面が残る例とbrowser automation providerの操作エラーがあり、認証の完走は確認できていない。エラー後の画面だけで、ボタンが無効だった、本人確認が必要だった、とは断定しない。
+
+この調査区間の専用agentの公式費用集計は0.405957ドルで、月上限は0.50ドルのまま。[匿名化した費用・結果](<evidence/browser-company-probe.public.json>)も公開する。総額とsession内訳の差11566 microUSDはcomputer項目と一致するが、providerの配賦処理までは独立検証していない。これは複数の診断・再指示・設定修復を含む試行費用であり、自律的な顧客業務一件の成功単価ではない。公開・納品・実売上も未確認だ。sessionの途中の消費表示と、後で取得した公式費用集計を混ぜない。現在の料金資料ではpause中のcompute/storage課金はなく、動作中のComputer時間、browser時間/モデル駆動操作、モデル推論を分ける。[料金仕様](https://usenaive.ai/docs/computer/limits-and-billing)
+
+独自benchmarkへ取り込むべき問いは具体的だ。「会話をまたいで正しい状態を再開できるか」「操作失敗から画面を見て復旧できるか」「成功という文章と実状態が矛盾したときに誤報を止められるか」。市場シミュレーションを一から作り直す必要はない。既存の経営評価を再利用し、こうした実業務の不足部分を、画面・成果物・公式receiptで採点する課題として足す。今回の調査は、その課題候補を得た段階であり、新しいleaderboardを確立した段階ではない。
