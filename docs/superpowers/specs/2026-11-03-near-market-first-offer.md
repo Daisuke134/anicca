@@ -109,3 +109,8 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 ### 採算reportの統合継続 — task a28e9fa3
 
 同owner home-codexのPR9161を優先し、新案件は増やさない。旧head d9a66530の公式CI15件成功・保存済み独立SHIP/Blocking0を確認。最新origin/mainとのBOARD競合は自分の採算report行と他ownerのNaive完了行を両方保持して解消する。再計算/source-boundary/diffを確認し、新headの必要CI公式PASS後にmainへ統合する。thread1793635811.853779は前回1793702294.632279以降の返信差分0。本人専用GETは5pending・assignment0、納品/追加bid/送金0。既存hourlyの受注監視と受注時SLA納品へ戻す。現在cursorは競合解消後の新head CI→main。旧順序から変更なし。
+
+
+### 採算reportの統合継続 — task ebec4e
+
+同owner/worktree/PR9161を継続し、未完を増やさない。範囲は既存report/CSV/scriptをbyte不変で保持し、BOARDのmain側Naive行と自分のclaimを両方保持する競合解消、必要CI公式PASS後main統合。元head0c11ed7dのCI14件/CodeRabbit成功、既存独立原典検証SHIP/Blocking0を確認する。公式threadは38件/has_more=false・前観測1793702294.632279から差分0、催促0。本人専用GETは5pending・assignment0、active HQは本taskだけ。親Naive/接続修復/会計/投稿/fence/課金を変更しない。現在cursorは更新headのCI→main公式照合。受注時は最新briefと24h/API3日の差異を再読してSLA内納品し、受注/納品/売上/出金を区別する。private公式readback→~/.local/state/life-manager/team-hq/ebec4e/readback.json。
