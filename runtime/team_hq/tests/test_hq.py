@@ -188,6 +188,96 @@ class HQTests(unittest.TestCase):
         self.runtime.finish(task,{'task_id':task['id'],'owner_id':'codex','status':'failed','checkpoint':'failed','output':'no capacity','agent_state':{}})
         self.assertEqual(len(self.tasks()),1)
 
+    def test_exit_zero_quota_state_preserves_artifact_and_hands_off_once(self):
+        state = {"status": "blocked", "blocker": "quota_exhausted", "handoff_required": True,
+                 "next": "既存receiptを照合して未完操作を継続", "proof": ["/fixture/checkpoint"]}
+        output = "途中成果は保存済み\nSTATE " + json.dumps(state, ensure_ascii=False)
+        command = [sys.executable, "-c", f"import sys; sys.stdin.read(); print({output!r})"]
+        self.config["agents"][0].update(command=command, handoff_agent="helper")
+        self.config["agents"].append(dict(self.config["agents"][0], id="helper", mention=["@helper"],
+                                          handoff_agent="codex"))
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        self.enqueue()
+        task = self.runtime.claim()
+        receipt = self.runtime.execute(task)
+        self.assertEqual(receipt["exit_code"], 0)
+        self.assertEqual(receipt["execution_status"], "succeeded")
+        self.assertEqual(receipt["status"], "interrupted")
+        self.assertEqual(receipt["checkpoint"], "quota_exhausted_handoff_required")
+        self.assertEqual(receipt["agent_state"], state)
+        artifact = Path(receipt["artifact_path"])
+        self.assertEqual(artifact.read_text(), output)
+        self.assertEqual(json.loads((artifact.parent / "result.json").read_text()), receipt)
+        self.runtime.finish(task, receipt)
+        self.runtime.finish(task, receipt)
+        cards = self.tasks()
+        handoff = next(row for row in cards if row["source_key"].startswith("handoff:"))
+        self.assertEqual(len(cards), 2)
+        self.assertEqual(handoff["owner_id"], "helper")
+        self.assertEqual(handoff["thread_ts"], task["thread_ts"])
+        self.assertIn(state["next"], handoff["body"])
+        self.assertIn(output, handoff["body"])
+        self.assertIn(str(artifact.parent / "result.json"), handoff["body"])
+        original = next(row for row in cards if row["id"] == task["id"])
+        self.assertEqual(original["status"], "interrupted")
+        self.assertEqual(json.loads(original["proof"]), state["proof"])
+        delivered = self.runtime.work()
+        self.assertEqual(delivered["execution_status"], "succeeded")
+        self.assertEqual(delivered["reply_state"], "posted")
+        helper = self.runtime.claim()
+        self.assertEqual(helper["id"], handoff["id"])
+        helper_receipt = self.runtime.execute(helper)
+        self.assertEqual(helper_receipt["status"], "interrupted")
+        self.runtime.finish(helper, helper_receipt)
+        self.assertEqual(len(self.tasks()), 2)
+        self.assertEqual(artifact.read_text(), output)
+
+    def test_incomplete_or_untyped_quota_reports_do_not_handoff(self):
+        self.config["agents"].append(dict(self.config["agents"][0], id="helper", mention=["@helper"]))
+        self.config["handoff_agent"] = "helper"
+        states = [
+            {"status": "blocked", "blocker": "quota_exhausted", "handoff_required": False},
+            {"status": "blocked", "blocker": "quota_exhausted", "handoff_required": "true"},
+            {"status": "blocked", "blocker": "quota_exhausted", "handoff_required": 1},
+            {"status": "blocked", "blocker": "quota_exhausted"},
+            {"status": "blocked", "blocker": "ci_pending", "handoff_required": True},
+            {"status": "reported", "blocker": "quota_exhausted", "handoff_required": True},
+            {"status": "CI待ち。利用枠切れなら他担当へ引継ぎ", "next": "最新CIを確認"},
+            {"status": "succeeded", "next": "公式照合"},
+        ]
+        for index, state in enumerate(states):
+            with self.subTest(state=state):
+                output = "STATE " + json.dumps(state, ensure_ascii=False)
+                self.config["agents"][0]["command"] = [
+                    sys.executable, "-c", f"import sys; sys.stdin.read(); print({output!r})"]
+                self.runtime = hq.HQ(self.config, api=self.slack)
+                self.slack.history[""]["messages"] = [self.message(ts=f"101.{index + 1:06d}")]
+                self.runtime.receive()
+                task = self.runtime.claim()
+                receipt = self.runtime.execute(task)
+                self.assertEqual(receipt["status"], "succeeded")
+                self.assertEqual(receipt["execution_status"], "succeeded")
+                self.assertEqual(receipt["checkpoint"], "execution_recorded")
+                self.runtime.finish(task, receipt)
+                self.assertFalse(any(row["source_key"].startswith("handoff:") for row in self.tasks()))
+
+    def test_nonzero_quota_state_keeps_execution_failure(self):
+        output = 'STATE {"status":"blocked","blocker":"quota_exhausted","handoff_required":true}'
+        self.config["agents"][0]["command"] = [
+            sys.executable, "-c", f"import sys; sys.stdin.read(); print({output!r}); sys.exit(7)"]
+        self.config["agents"].append(dict(self.config["agents"][0], id="helper", mention=["@helper"]))
+        self.config["handoff_agent"] = "helper"
+        self.runtime = hq.HQ(self.config, api=self.slack)
+        self.enqueue()
+        task = self.runtime.claim()
+        receipt = self.runtime.execute(task)
+        self.assertEqual(receipt["exit_code"], 7)
+        self.assertEqual(receipt["execution_status"], "failed")
+        self.assertEqual(receipt["status"], "failed")
+        self.assertEqual(receipt["checkpoint"], "exit_failed_handoff_required")
+        self.runtime.finish(task, receipt)
+        self.assertEqual(len(self.tasks()), 2)
+
     def test_our_final_output_quoting_another_agent_is_not_a_new_assignment(self):
         self.config['agents'].append(dict(self.config['agents'][0],id='helper',mention=['@helper']))
         self.runtime=hq.HQ(self.config,api=self.slack)
