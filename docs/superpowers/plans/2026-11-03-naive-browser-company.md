@@ -938,3 +938,10 @@ ses_gmds1f6qsa5htpm4zqyht8g4szは20:10:33.746開始、本人browser.goto(communi
 20:12:36.796の公式readbackはcancelled/pending0/全56live0/Computer paused、本番23/priority/enabled/scheduled/次00UTC/全agent-source fields保持。費19521microUSD/ledger2一致、月spent8818315/残181685（後計上あり）。4分deadlineより前に閉じる。証拠private v23-n8n-target-signup-{before,attempt,created,events,status,terminal-readback,spend-readback,ledger,final-resources}。このsessionから第三者サービスへの外部signup送信は観測0。
 
 現在cursor2内部は「対象を観測してsignup」から、その依存である「次モデルcallの予約を収容する有限枠をsourceで復元→対象を観測してsignup→専用mail確認→連絡/提案→実依頼/納品/公式入金」へ修正する。理由は新たな公式budget_exceeded。次枠を100000のまま再送しない。直近の5tools完走finite200000等と実予約を比較し、同一model/Identity/同一browser経路を維持して必要最小のsession枠を確保する。月残181685では以前の計画300000を満たさない。必要なら既存credit内の最小agent-cap差分を正本/source/必要検証/main経由で反映する。新入金/新wallet/人間Googleは不要だが、cap変更はまだ実施0である。rootAPIのsignup迂回や未知policy追加もしない。元7TODO/全体goalの未達は維持する。
+
+
+### 予約見積から既存cap内へ有限枠を修正
+
+target-run公式span.model_request.startの初回quoteは83183microUSD、同call実費17854、run全費19521。次の拒否call自体のquoteは公開eventに無く、83183をその確定値とはしない。finite100000の実費後残80479は初回quote83183より2704不足し、次予約不足と整合する。月cap9の変更を先に必要条件へ拡大しない。次はfinite160000＋後計上余地20000/計画180000をfresh残/credit内で確保する。直近月残181685なら収容可能だが、fresh値が不足ならcreate0。sourceの月9/task1/model/本番pin23は変更0。新たな拒否call見積がこれ以上なら同じ160000を反復せず、実見積から再診断する。
+
+実行は同じ専用Identityのnativeブラウザだけ、1件/6分/max12tools/hosted1。専用AgentMail取得→exact n8n/signup goto→同browserのページをobserve/screenshotで確認→signup→必要な受信確認→実ログイン状態。target-aware前runと違うのはsession有限枠100000→160000で、業務API代行/別profile/未知flag/包括確認0。確認cardは照合済み対象と本人専用mailだけcall-scope、同じlogical card再発には再回答0。6分前にcloseを開始し、すべての確認・retry・根拠不足・未完を保存する。DM/応募/営業/投稿/課金/送金0。元7TODOと全体goalを維持する。
