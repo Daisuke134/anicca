@@ -51,3 +51,15 @@
 D014 remains todo until the applicable ethics determination, partner cooperation, source rights and disclosure-approved public aggregates are available. H005 remains blocked because the original 2019 HeartSteps study-day/analytic exclusions cannot be reconstructed from the public release; no original paper number is fitted or imputed. F004/F007 remain blocked by third-party authority requirements.
 
 **Product principle:** End suffering through lawful public non-personal macro-environment evidence. No human is required in the routine loop for a bounded, properly authorized action; this does not remove consent, rights, governance or independent safety review.
+
+
+## Hosted verification (2026-11-03)
+
+GitHub Actions workflow run #311 for commit 565187acd9146bc9696f4b0fe55a82f069d8d899 completed successfully:
+https://github.com/Daisuke134/life-manager/actions/runs/41550440067
+
+The Manager offline test job ran the canonical command, python -m unittest discover -s tests -v, from products/manager: **584 tests, 5 skipped, 0 failures**. The five skips are the existing optional pinned DoWhy dependency tests; they are not reported as completed tests. All seven newly added D014 disclosure-method regression methods appear as passing in the job log. The same run passed python -m manager_core and scripts/make_roadmap.py --check (113 tasks; task JSON untouched at that commit).
+
+Earlier per-file commits in this sequence produced intermediate failing CI runs while code and test fixtures were being updated in separate commits. The completed tree at commit 565187a is the verified state; no intermediate run is presented as a successful final validation. The latest tasks.json update below is separately checked by its own subsequent workflow run.
+
+This is hosted offline engineering verification only. The workflow did not authenticate a publisher, review a real aggregate release, activate a partner protocol, perform an intervention, or measure beneficiary effects.
