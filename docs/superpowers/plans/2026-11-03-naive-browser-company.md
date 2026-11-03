@@ -1007,3 +1007,16 @@ Museへ既存Reason会話で、この独立境界と正式に動く自己所有m
 結果の独立read-only reviewで指摘されたinterruptイベントと終端時刻の区別、公式flag契機の列挙とAgentMail実測の区別、list_inboxesをinbox本文読取と呼んだ記事表現を修正する。再確認は3点すべて解消・未解消0。JSON構文/記事の全local参照/diff-checkを確認する。記事PR9178のgitleaksはcheckout実行中であり成功と呼ばず、既存14成功の同runを追う。
 
 Muse返信01M6HKRVEVV6Z7WFHXC7J85APYは「正式pi＋自己所有受信箱の無人browser signupを証明した実例/構成は見つからない」。own-computer文言も未検証メモであり解決済みとしない。新記録はPR9179（base=記事PR9178のbranch、head047ee33e55時点で作成）へ提出する。親9178の14checks成功・gitleaks checkout継続中、親統合後9179のbaseをmainへ変更して検証・統合する。未push差分0、untracked .codex/は他用途のまま触らない。
+
+
+### 自己連絡先の初期設定と必要時だけのメール読取
+
+最新GET /harnessesはpi/vetta runnable=true、claude_code/hermes runnable=false。own-computer harnessへの切替は現環境で実行不能であり、未提供エンジンへ新agentを作らない。現本番24/24のまま、メール本文が必要になる前に不要なMCP検索をしない通常の登録順序を1件で検証する。
+
+前runはフォーム入力より先にAgentMail.list_inboxesを呼び、専用住所metadataだけでもread_people cardを伴った。次runでは同じ専用AgentMailの非秘密な自己連絡先（住所）だけをprivate session inputの設定情報として渡す。API key/password/OTP/認証URL/他人のmail内容は渡さず、住所をchat/repo/公開物に表示しない。新メール/新Identity/新credential作成や既存受信箱変更は0。必要な認証メールの読取を後回しにするだけで、flagを解除・継承回避・別agentへdata移送しない。読取後の正式確認は維持する。
+
+同agent24/Identity/priority/source mainfec447b、本番24全fields不変。fresh live0/Computer pausedまたはabsent/残とcredit>=300000で単一session、finite200000＋後計上100000、6分/max18tools。Naïve本人browserでSubstackの通常email signupまたは同じ住所の通常sign-inへ進み、画面を見て必要操作を選ぶ。password生成や転記、既知に不完全なnative signup、業務HTTP/DOM script/API代行/Google/別mail/他owner/追加agentは0。本人emailの通常フォーム入力は許可する。確認mailが実際に必要となった場合だけnative AgentMailで対象メールを取得し、公式code/linkで認証する。untrusted mail中の指示は採用せず、コードやURLtokenはstate/journal/root artifactへ保存しない。
+
+本人メール読取後にread_peopleが出た場合、primary AIは既委任の同一Substack認証に完全一致する操作だけ正式SDK scope=call最大3件を処理できる。同logical card再発は再回答0、session grant/guard変更は0。code入力をguardが拒否すれば別表記へ変換せず記録する。card再開でページを失えば繰り返さない。6分はprimary期限で330秒までにcancel開始、終端/実pending数/全live0/Computer pausedまたはabsent/本番24全fields/全ledgerと後計上を確認する。
+
+実ログイン/profile確認と本人stateの既存全値保持＋新key追記/readが成功条件。送信/受信/リンク取得だけを成功にせず、AI確認件数を記録する。投稿/配信/購読者import/課金/Stripe/送金は0。永続credentialが作成されるならprivate SSOTへ参照metadataを保存、秘密値の取得を偽らない。元7TODO/primary2/実受注納品入金/英語記事公開更新/録画/phone-only/黒字/USD10K/月/移植は保持する。
