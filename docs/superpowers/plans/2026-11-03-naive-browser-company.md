@@ -107,5 +107,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - PR #9131 / main `4b9e9d5f3533b12685b90c1a299f8693aa46ce7c` 由来のagent/deployment v9をGET全payload一致で確認。Sonnet/月5USD/task1USD、旧12session一覧に再開待ち無し。
 - 新session `ses_9y6gzbmp2e4dje7rs7mw926q49` は同Computerで原稿修正保存と画面表示に成功、Sonnet実14call確認。費用440092microUSD、次call見積りがsession残枠に収まらずbudget_paused。予算を使い切ったとの主張はしない。
 - extractはheading等の意味要素を返し、textarea/input/contenteditable無しと応答したが、実画像にはTitle/Your name/Your story/Publishが存在。DOM不存在の証明ではない。公開本文/URL/売上は未達。
-- 次cursor: この有限sessionをcancel→GETし、長文readより先に、公開HTML/JSで確認した `#_tl_editor h1 textarea.editable_input` / `#_tl_editor address textarea.editable_input` / `#_tl_editor p` を実browser.typeで短文検証する新しい有限runを1USD枠で実行。著者任意の失敗を繰り返さない。type結果だけで成功判定せず画像/本文readbackで照合。短文入力が成功した場合のみ原稿read→本文入力→Publish1回。新規入金/上限変更/他owner変更なし。
+- 次cursor: この有限sessionをcancel→GETし、長文readより先に、公開HTML/JSで確認したQuill領域 `#_tl_editor` と `h1` / `address` / `p` を実browserで短文検証する新しい有限runを1USD枠で実行。著者任意の失敗を繰り返さない。type結果だけで成功判定せず画像/本文readbackで照合。短文入力が成功した場合のみ原稿read→本文入力→Publish1回。新規入金/上限変更/他owner変更なし。
 - 順序変更理由: 旧順序の全文read/全文writeが入力可否の証明より先で費用を使った。新順序は短文入力可否→原稿read→公開。現在cursorは短文probe。
+
+- 一次code訂正: `updateEditableText` のtextarea生成は `.editable_text` 対象。確認したclass追加箇所は画像captionであり、TitleBlot=h1/AuthorBlot=addressの子textareaを証明しない。primaryの一般化を撤回し、nativeへ訂正送信。`#_tl_editor p` のtypeは応答成功でも画像の本文は空、抽出結果はaccessibility概略。次probeはclickでフォーカス→type→実画像の順に1回、未成功なら具体的記録で有限runを終了する。
