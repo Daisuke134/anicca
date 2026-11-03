@@ -145,6 +145,8 @@ CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。P
 
 継続source修復（task fd096c4b2e6f13ad548eabd0、owner home-codex-fd096c）: PR9120は親rootによりmain18131ea9へ統合済みと公式確認し、同診断の次cursorで元occurrence本人拘束を修正する。範囲はIG reconciler/既存posterのdispatch markerと関連tests/docs。本番投稿・認証・fence・会計・HQ・他ownerの変更0。既存capafy-reelのoccurrence-bound dispatch markerを先例とし、元runとhandle・dispatch時刻の一致をprovider読取前に必須にする。証拠なし/別occurrence/別handle/古い時刻/不正JSONはHELD、現在ready accountへ代替しない。既存posterはhandleをmarkerへ保存する。過去artifactの補造はしない。完了条件: 隔離RED→GREEN、関連テスト、独立review、必要CI公式PASS後main。反映・旧公式receipt・収益は別未完cursor。順序は診断→本人拘束source→元archive/公式receipt照合を維持する。実測は3件RED→carousel回帰込み28tests GREEN、PR9125でexact-head独立review/必要CI待ち。
 
+追加review修正（primary所有の最終統合）: completed/effect=1の元dispatch記録と空listingが矛盾してもno-effectとして解放できる反例を再現。元markerを一度だけ検証してeffectを保持し、公式listingがno-effectを示す場合はHELD・resolve/ledger書込0とする。一致する公式Reelがある場合のeffected closeとreplay-zeroは維持する。元実装head e1a888dはSHIP不可。最小回帰RED→GREEN、修正headの独立review・CI・main由来限定反映を現在cursorにする。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。

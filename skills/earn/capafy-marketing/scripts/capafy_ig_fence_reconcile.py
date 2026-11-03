@@ -94,7 +94,7 @@ def fenced_row(owner_id: str, occurrence_id: str) -> tuple[str, dt.datetime]:
     return str(row[0]), queued
 
 
-def original_handle(marker_path: Path, occurrence_id: str, queued_at: dt.datetime) -> str | None:
+def original_dispatch_marker(marker_path: Path, occurrence_id: str, queued_at: dt.datetime) -> dict[str, Any] | None:
     """Only the exact run's dispatch marker binds its original publisher."""
     try:
         marker = json.loads(marker_path.read_text(encoding="utf-8"))
@@ -110,7 +110,7 @@ def original_handle(marker_path: Path, occurrence_id: str, queued_at: dt.datetim
                 or timestamp.tzinfo is None
                 or not queued_at.replace(microsecond=0) <= timestamp <= queued_at + dt.timedelta(seconds=MAX_RUN_SECONDS)):
             return None
-        return handle
+        return marker
     except (OSError, ValueError, TypeError, KeyError):
         return None
 
@@ -291,10 +291,11 @@ def reconcile(
     dispatch_marker_path: Path | None = None,
 ) -> dict[str, Any]:
     state, queued_at = fenced_row_fn(OWNER_ID, occurrence_id)
-    resolved_handle = original_handle(dispatch_marker_path or DISPATCH_MARKER_PATH, occurrence_id, queued_at)
-    if not resolved_handle:
+    marker = original_dispatch_marker(dispatch_marker_path or DISPATCH_MARKER_PATH, occurrence_id, queued_at)
+    if marker is None:
         return {"owner_id": OWNER_ID, "occurrence_id": occurrence_id, "verified": False,
                 "reason": "original_ig_identity_unbound"}
+    resolved_handle = marker["handle"]
     if handle is not None and handle.casefold() != resolved_handle.casefold():
         return {"owner_id": OWNER_ID, "occurrence_id": occurrence_id, "verified": False,
                 "reason": "original_ig_identity_mismatch"}
@@ -307,6 +308,10 @@ def reconcile(
         port=resolved_port, accounts_path=accounts_path,
     )
     proof, reel_url = build_proof(OWNER_ID, occurrence_id, queued_at, media_readback, now=now)
+    if proof.get("verified") and proof.get("effected") is False and marker.get("effect") == 1:
+        # Positive dispatch evidence cannot be negated by a later empty listing.
+        proof = {"owner_id": OWNER_ID, "occurrence_id": occurrence_id, "verified": False,
+                 "reason": "dispatch_effect_conflicts_with_no_effect_readback"}
     result: dict[str, Any] = {**proof, "admission_state": state, "handle": resolved_handle}
     if not proof.get("verified") or not resolve:
         return result

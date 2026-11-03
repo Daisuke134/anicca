@@ -36,7 +36,13 @@ def _fenced_row_fn(state="claimed", queued_at=QUEUED_AT):
     return lambda owner, occurrence: (state, queued_at)
 
 
-def test_effected_appends_ledger_and_closes(tmp_path):
+@pytest.mark.parametrize("completed", [False, True])
+def test_effected_appends_ledger_and_closes(tmp_path, completed):
+    marker = _marker(tmp_path)
+    if completed:
+        data = json.loads(marker.read_text())
+        data.update(status="completed", effect=1)
+        marker.write_text(json.dumps(data))
     reel_taken_at = QUEUED_AT + dt.timedelta(minutes=20)
     media_readback = {"ok": True, "media": [{"code": "Da7EXAMPLE", "taken_at": reel_taken_at}]}
     ledger_path = tmp_path / "ig-ledger.jsonl"
@@ -50,7 +56,7 @@ def test_effected_appends_ledger_and_closes(tmp_path):
     result = reconciler.reconcile(
         OCCURRENCE,
         handle="capafy.skills8m4q2z",
-        dispatch_marker_path=_marker(tmp_path),
+        dispatch_marker_path=marker,
         settings_path=tmp_path / "unused-settings.json",
         ledger_path=ledger_path,
         fenced_row_fn=_fenced_row_fn(),
@@ -75,7 +81,7 @@ def test_effected_appends_ledger_and_closes(tmp_path):
     result2 = reconciler.reconcile(
         OCCURRENCE,
         handle="capafy.skills8m4q2z",
-        dispatch_marker_path=_marker(tmp_path),
+        dispatch_marker_path=marker,
         settings_path=tmp_path / "unused-settings.json",
         ledger_path=ledger_path,
         fenced_row_fn=_fenced_row_fn(),
@@ -88,6 +94,34 @@ def test_effected_appends_ledger_and_closes(tmp_path):
     rows_after = ledger_path.read_text().splitlines()
     assert len(rows_after) == 1
 
+
+
+def test_completed_effect_cannot_close_as_no_effect(tmp_path):
+    marker = _marker(tmp_path)
+    data = json.loads(marker.read_text())
+    data.update(status="completed", effect=1)
+    marker.write_text(json.dumps(data))
+    closed_calls = []
+    ledger = tmp_path / "ig-ledger.jsonl"
+
+    def fake_resolve(*args, **kwargs):
+        closed_calls.append((args, kwargs))
+        return True
+
+    result = reconciler.reconcile(
+        OCCURRENCE, dispatch_marker_path=marker,
+        settings_path=tmp_path / "unused-settings.json", ledger_path=ledger,
+        fenced_row_fn=_fenced_row_fn(),
+        read_media_fn=lambda *args, **kwargs: {"ok": True, "media": []},
+        resolve_fn=fake_resolve, now=QUEUED_AT + dt.timedelta(hours=3), resolve=True,
+    )
+
+    assert result["verified"] is False
+    assert result["reason"] == "dispatch_effect_conflicts_with_no_effect_readback"
+    assert "closed" not in result
+    assert "provider_receipt_id" not in result
+    assert closed_calls == []
+    assert not ledger.exists()
 
 def test_no_effect_complete_listing_closes(tmp_path):
     # Full account history, nothing in the occurrence window, well past the

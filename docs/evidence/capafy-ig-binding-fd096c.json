@@ -41,5 +41,13 @@
     "No historical publisher identity fabricated.",
     "No live fence resolved.",
     "No revenue or natural posting claim."
-  ]
+  ],
+  "additional_review_correction": {
+    "rejected_head": "e1a888d1a0c1045357d9c055cd83f487fd024731",
+    "blocking": "completed/effect=1 marker contradicted by empty official listing incorrectly allowed no-effect closure",
+    "red": "isolated completed_effect_cannot_close_as_no_effect failed: verified True",
+    "green": "30 passed: reconciler, poster dispatch, carousel; includes completed-marker positive receipt and replay-zero",
+    "effect": "fixture only; no provider or production state operations",
+    "next_action": "independent corrected-head review, CI, main and limited immutable promotion"
+  }
 }
