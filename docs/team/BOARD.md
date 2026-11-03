@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / NEAR framework提案] task767bc1bf5462b30c2d569950、owner home-codex-767bc1、branch task/home-codex-767bc1。既存NEARレーンの未応募job dd6e4f85限定提案と本人公式照合を所有。既存2pending/全assignmentを先に照合、受注時納品優先。wallet/課金API/別scheduler/会計/投稿/親PR9135/旧IG fenceは変更しない。正本 → NEAR初回販売specのframework節。
 - [home-codex / Manager E16 runner] task d26c0c5310218fcdf4ec750a、owner home-codex-d26c0c、branch fix/manager-runner-d26c0c。自然main検証のPlaywright/Ubuntu非互換を既知成功imageへ戻す限定修復。所有はworkflowの2runnerと本BOARD/統合SSOT/証拠のみ。親rootのPR9125・Naïve・provider effectは変更しない。必要CI後main、自然受入は別cursor。
 - [home-codex / CAPAFY旧IG receipt継続] task17679f4e146bb3b4be52268e、owner home-codex-17679f、branch docs/capafy-ig-receipt-17679f。対象旧occurrenceのread-only診断と隔離fixtureのみ。親所有PR9117・TEAM-HQ・投稿・会計・認証・effect fenceは変更しない。正本 → 統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
 
@@ -295,3 +296,5 @@
 - home-codex（task3771a2d0493dbb6ec52ecb85 / claim）: NEAR既存毎時監視の自然採用とagent公式GET照合を所有。親root所有PR9129/9125の編集・統合・反映、投稿、会計、旧IG fenceには触れない。成果条件は自然scheduleの元card/prompt→実GET200の対応を証拠化し、未受注なら重複応募0を維持する。
 
 - home-codex（task3771a2d0493dbb6ec52ecb85 / 結果）: 自然revenue-hourly card→NEAR本人GET200を照合、入札1/pending・受注一覧0を確認。Capafy公式GET200/count114/ct1/欠損105、既存台帳hash不変。再応募/投稿/会計/fence/親PR merge0。証拠 docs/evidence/hq-revenue-3771a2.json、次は必要CI→本証拠統合と自然受注監視。
+
+- 2026-11-03 16:12 JST / home-codex task767bc1 / NEAR framework案件へ15USDC提案1回201、本人公式一覧一致・全3pending/assignment0、売上/出金未確認。remote thread31件の最新差分なし・催促0、他owner effect不変。次: 必要CI→main、既存hourlyで受注時24h納品。証拠 docs/evidence/near-framework-offer-767bc1.json。
