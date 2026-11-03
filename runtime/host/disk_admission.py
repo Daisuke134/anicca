@@ -244,6 +244,37 @@ def _floor_bytes(loop_id: str | None) -> int:
     return min(floor, REVENUE_FLOOR_BYTES) if _is_revenue_loop(loop_id) else floor
 
 
+def producer_disk_eligibility_snapshot() -> dict[str, bool | None]:
+    """Read numeric floor eligibility once, without creating state or running preflight.
+
+    Missing owners/registry or unavailable capacity remain unknown (None); callers
+    may exclude known False candidates but must retain the execution gate.
+    """
+    eligibility: dict[str, bool | None] = dict.fromkeys(_CONTROL_PLANE_LOOPS, True)
+    try:
+        registry = json.loads((Path(os.environ["LIFE_MANAGER_REPO"])
+                               / "config/loop-registry.json").read_text())
+        loops = registry["loops"]
+        if not isinstance(loops, dict):
+            return eligibility
+    except (KeyError, OSError, ValueError, TypeError):
+        return eligibility
+    try:
+        available = disk_free_bytes(_host_state_dir())
+    except (KeyError, OSError):
+        available = None
+    floor = _producer_floor_bytes()
+    for owner_id, entry in loops.items():
+        if owner_id in _CONTROL_PLANE_LOOPS:
+            continue
+        if available is None or not isinstance(entry, dict):
+            eligibility[owner_id] = None
+            continue
+        required = min(floor, REVENUE_FLOOR_BYTES) if entry.get("admission_class") == "revenue" else floor
+        eligibility[owner_id] = available >= required
+    return eligibility
+
+
 def _producer_gate(
     loop_id: str | None = None, *, check_capacity: bool = True,
 ) -> tuple[str, Path] | None:

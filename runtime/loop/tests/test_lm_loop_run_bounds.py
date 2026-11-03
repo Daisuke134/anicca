@@ -4950,17 +4950,23 @@ def test_disk_floor_defers_before_queue_and_provider_child(tmp_path):
 
 
 @pytest.mark.parametrize(("free_gib", "expected_kicks"), (
-    (11, ["support-1", "support-2", "daily-revenue"]),
+    (5, ["daily-revenue"]),
     (3, []),  # below the 4 GiB revenue floor (was 6 against the 7 GiB floor)
 ))
 def test_disk_floor_deferral_hands_slot_to_runnable_revenue_owner(
         tmp_path, monkeypatch, free_gib, expected_kicks):
-    # 2026-10-19: three aged support browser owners above the 10 GiB revenue floor but
-    # below the 12 GiB producer floor were reserved, kicked and disk-deferred ~1,000
-    # times in five hours. Each re-won the next reserve pass, so promptbase-loop-daily
-    # (runnable) never got the single browser slot and its 04:20 occurrence sat queued.
+    # Aged support waiters below their disk floor must not consume reservations
+    # before a runnable revenue owner, even when the first reservation predates the drop.
     admission_root = tmp_path / "admission"
     monkeypatch.setenv("LIFE_MANAGER_RESOURCE_ADMISSION_ROOT", str(admission_root))
+    registry = tmp_path / "config/loop-registry.json"
+    registry.parent.mkdir()
+    registry.write_text(json.dumps({"loops": {
+        **{f"support-{index}": {"admission_class": "borrow"} for index in range(3)},
+        "daily-revenue": {"admission_class": "revenue"},
+    }}))
+    monkeypatch.setenv("LIFE_MANAGER_REPO", str(tmp_path))
+    monkeypatch.setattr("runtime.host.disk_admission.disk_free_bytes", lambda _path: 16 * 1024**3)
     admission.activate_durable_v2()
     aged = time.time() - 3 * 3600
     for owner in ("support-0", "support-1", "support-2"):
@@ -4987,6 +4993,7 @@ def test_disk_floor_deferral_hands_slot_to_runnable_revenue_owner(
 
     with (patch("runtime.loop.lm_loop_run._producer_gate", side_effect=gate),
           patch("runtime.loop.lm_loop_run.disk_free_bytes", return_value=free_gib * 1024**3),
+          patch("runtime.host.disk_admission.disk_free_bytes", return_value=free_gib * 1024**3),
           patch("runtime.loop.lm_loop_run.memory_free_percent", return_value=50),
           patch("runtime.loop.lm_loop_run._dispatch_reserved", side_effect=kick),
           patch("runtime.loop.lm_loop_run._run_entrypoint_with_stderr_capture") as child):

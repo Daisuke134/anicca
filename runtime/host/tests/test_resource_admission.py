@@ -1211,6 +1211,78 @@ def test_dispatch_defer_skips_head_after_its_reservation_was_swept(
     ]
 
 
+@pytest.mark.parametrize("release_slot", (False, True))
+@pytest.mark.parametrize(("free_gib", "expected"), ((5, ["earner"]), (3, [])))
+def test_reservation_skips_disk_ineligible_waiters_without_changing_their_age(
+        tmp_path, monkeypatch, release_slot, free_gib, expected):
+    isolated(tmp_path, monkeypatch)
+    admission.activate_durable_v2()
+    claim = None
+    if release_slot:
+        admission.enqueue_durable("browser", "running")
+        claim, reason = admission.claim_durable("browser", "running")
+        assert claim is not None and reason == "acquired"
+    registry = tmp_path / "config/loop-registry.json"
+    registry.parent.mkdir()
+    registry.write_text(json.dumps({"loops": {
+        "support": {"admission_class": "borrow"},
+        "earner": {"admission_class": "revenue"},
+    }}))
+    monkeypatch.setenv("LIFE_MANAGER_REPO", str(tmp_path))
+    probes = []
+
+    def free_bytes(path):
+        descriptor = os.open(tmp_path / "control.lock", os.O_RDWR)
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            probes.append(path)
+        finally:
+            os.close(descriptor)
+        return free_gib * 1024**3
+
+    monkeypatch.setattr("runtime.host.disk_admission.disk_free_bytes", free_bytes)
+    base = time.time()
+    admission.enqueue_durable("browser", "support", admission_class="borrow",
+                              occurrence_id="support:wake", now=base - 3 * 3600)
+    admission.enqueue_durable("browser", "earner", admission_class="revenue",
+                              occurrence_id="earner:wake", now=base)
+    before = {table: durable_rows(tmp_path, table) for table in ("queue", "priorities", "occurrences")}
+
+    selected = (admission.release_and_reserve(claim, now=base) if release_slot
+                else admission.reserve_available(now=base))
+
+    assert selected == expected
+    assert len(probes) == 1  # One disk snapshot, taken outside control.lock.
+    assert {table: durable_rows(tmp_path, table) for table in before} == before
+    assert [row["owner_id"] for row in durable_rows(tmp_path, "reservations")] == expected
+
+
+@pytest.mark.parametrize("already_reserved", (False, True))
+def test_claim_uses_disk_eligible_head_without_revoking_existing_grants(
+        tmp_path, monkeypatch, already_reserved):
+    isolated(tmp_path, monkeypatch)
+    admission.activate_durable_v2()
+    registry = tmp_path / "config/loop-registry.json"
+    registry.parent.mkdir()
+    registry.write_text(json.dumps({"loops": {
+        "support": {"admission_class": "borrow"}, "earner": {"admission_class": "revenue"}}}))
+    monkeypatch.setenv("LIFE_MANAGER_REPO", str(tmp_path))
+    monkeypatch.setattr("runtime.host.disk_admission.disk_free_bytes", lambda _path: 16 * 1024**3)
+    base = time.time()
+    admission.enqueue_durable("browser", "support", now=base - 3 * 3600)
+    admission.enqueue_durable("browser", "earner", admission_class="revenue", now=base)
+    if already_reserved:
+        assert admission.reserve_available(now=base) == ["support"]
+    monkeypatch.setattr("runtime.host.disk_admission.disk_free_bytes", lambda _path: 5 * 1024**3)
+
+    claim, reason = admission.claim_durable(
+        "browser", "support" if already_reserved else "earner",
+        admission_class="borrow" if already_reserved else "revenue", now=base)
+
+    assert claim is not None and reason == "acquired"
+    admission.release_and_reserve(claim, reserve=False)
+
+
 def test_reservation_that_leaks_without_dispatch_cools_down_before_re_reserving(
         tmp_path, monkeypatch):
     """A reservation nobody ever claims must not let the same owner re-win forever.

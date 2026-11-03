@@ -21,6 +21,8 @@ import time
 from pathlib import Path
 from typing import Callable, Mapping
 
+from runtime.host.disk_admission import producer_disk_eligibility_snapshot
+
 
 ADMISSION_CLASSES = {"borrow", "revenue"}
 ADMISSION_POLICY = "revenue-floor-v1"
@@ -854,11 +856,14 @@ def _next_durable_candidate(connection: sqlite3.Connection, owners: Path,
                             tickets: Path, resource_class: str, now: float,
                             starts: dict[int, str | None],
                             snapshot_started_ns: int, *,
+                            disk_eligibility: Mapping[str, bool | None],
                             excluded_claim: Path | None = None) -> dict[str, object] | None:
     """Choose the first waiter that both wins ordering and fits capacity."""
     if _legacy_waiter_exists(tickets, resource_class, starts, snapshot_started_ns):
         return None
     for row in _durable_queue_rows(connection, resource_class, now):
+        if disk_eligibility.get(str(row["owner_id"])) is False:
+            continue
         available, _ = _durable_capacity(
             connection, owners, resource_class,
             str(row.get("admission_class", "borrow")), now,
@@ -1301,6 +1306,7 @@ def claim_durable(resource_class: str, owner_id: str, *,
     coalesced_name = _normalize_occurrence_id(coalesced_occurrence_id)
     root, owners, tickets, database = _durable_paths()
     starts, snapshot_started_ns = _identity_snapshot(owners, tickets)
+    disk_eligibility = producer_disk_eligibility_snapshot()
     started = process_start(os.getpid())
     if not started:
         raise RuntimeError("process identity unavailable")
@@ -1361,7 +1367,7 @@ def claim_durable(resource_class: str, owner_id: str, *,
                             and reservation[1] > instant)
             head = _next_durable_candidate(
                 connection, owners, tickets, resource_class, instant,
-                starts, snapshot_started_ns)
+                starts, snapshot_started_ns, disk_eligibility=disk_eligibility)
             if any(item.get("owner_id") == owner_id for item in (
                     _row(path) or {} for path in owners.glob("*.json"))):
                 return None, "owner_busy"
@@ -1774,6 +1780,7 @@ def _reserve_locked(connection: sqlite3.Connection, owners: Path, tickets: Path,
                     instant: float, lease_seconds: int,
                     starts: dict[int, str | None],
                     snapshot_started_ns: int,
+                    disk_eligibility: Mapping[str, bool | None],
                     excluded_claim: Path | None = None) -> list[str]:
     dispatched = []
     while True:
@@ -1786,7 +1793,8 @@ def _reserve_locked(connection: sqlite3.Connection, owners: Path, tickets: Path,
         for resource_class in RESOURCE_CLASSES:
             candidate = _next_durable_candidate(
                 connection, owners, tickets, resource_class, instant,
-                starts, snapshot_started_ns, excluded_claim=excluded_claim)
+                starts, snapshot_started_ns, disk_eligibility=disk_eligibility,
+                excluded_claim=excluded_claim)
             if candidate:
                 owner_id = str(candidate["owner_id"])
                 sequence = int(candidate["sequence"])
@@ -1806,6 +1814,7 @@ def reserve_available(*, now: float | None = None,
     """Reserve every currently free slot without requiring a releasing owner."""
     root, owners, tickets, database = _durable_paths()
     starts, snapshot_started_ns = _identity_snapshot(owners, tickets)
+    disk_eligibility = producer_disk_eligibility_snapshot()
     descriptor = os.open(root / "control.lock", os.O_RDWR | os.O_CREAT, 0o600)
     try:
         try:
@@ -1817,7 +1826,8 @@ def reserve_available(*, now: float | None = None,
                 connection, owners, tickets,
                 instant=time.time() if now is None else now,
                 lease_seconds=lease_seconds, starts=starts,
-                snapshot_started_ns=snapshot_started_ns)
+                snapshot_started_ns=snapshot_started_ns,
+                disk_eligibility=disk_eligibility)
     finally:
         os.close(descriptor)
 
@@ -1835,6 +1845,7 @@ def release_and_reserve(claim: Path, *, requeue: bool = False,
         raise RuntimeError("resource claim ownership mismatch")
     root, owners, tickets, database = _durable_paths()
     starts, snapshot_started_ns = _identity_snapshot(owners, tickets)
+    disk_eligibility = producer_disk_eligibility_snapshot() if reserve else {}
     descriptor = os.open(root / "control.lock", os.O_RDWR | os.O_CREAT, 0o600)
     try:
         if not _acquire_bounded(descriptor, timeout_seconds=5.0):
@@ -1927,6 +1938,7 @@ def release_and_reserve(claim: Path, *, requeue: bool = False,
                     connection, owners, tickets, instant=instant,
                     lease_seconds=lease_seconds, starts=starts,
                     snapshot_started_ns=snapshot_started_ns,
+                    disk_eligibility=disk_eligibility,
                     excluded_claim=claim)
         claim.unlink(missing_ok=True)
         return dispatched
