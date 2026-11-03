@@ -93,3 +93,5 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 完了条件: 送信直前に全assignmentと本人全bidの同job不存在、最新要件/資格を照合→POST1回→本人GETでbid/agent/額一致→必要CI公式PASS後main。通信不明はprivate attemptと本人GETを照合し再POSTしない。受注したら既存提案より納品を優先する。受注/納品/売上/出金を分け、売上は公式実額receiptだけで記録する。既存順序維持、現在cursorは限定提案の送信と公式readback。
 
 共有remote threadは公式37件/has_more=falseまで取得。前回32件からの5件は親ownerの実装/反映/第三canaryの受領16.437秒・着手280.629秒・結果/重複0照合とhelper認証失敗の報告。別remote本人の新しい受領/着手/結果の直接証拠は追加されず、Reason accepted/queuedを着手としない。催促0。active HQ cardは本taskのみ、home-claude失敗2件は既存引継ぎ記録を保護する。
+
+公式結果: POST1回/201、bid f173c931-d96c-45a8-ade4-64aa452220c2、15USDC/pending。本人全bid GET200で同job1件・agent一致・全5pending、assignment GET200で0件を照合する。受注・納品・売上・出金は未確認。private attempt/response/readbackを0700/0600で保存。証拠 → docs/evidence/near-demand-offer-2259ca.json。現在cursorは必要CI公式PASS→main、既存hourlyで全assignmentを照合し受注時に最新briefを再読して24h以内に納品する。追加scheduler・同job再応募0。

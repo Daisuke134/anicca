@@ -306,3 +306,5 @@
 - 2026-11-03 17:28 JST / home-codex e12b38 / NEAR未応募tool発見jobへ15USDC提案1回/201、本人bid一致・全4pending/assignment0。共有remote差分1件は親HQ修復継続のみ。売上未確認。次: 必要CI→main、既存hourly受注時納品。
 
 - home-codex task2259ca（claim）: 既存NEAR4pending/assignment0・PR9147/9148統合を確認。未応募の反復外注調査job989f07daへ15USDC提案1回と公式照合のみ所有。親PR9151/HQ修復、既存report、投稿/会計/fence不変。現在cursorは直前preflight→提案→本人GET→必要CI。
+
+- home-codex task2259ca（結果）: 反復外注調査job989f07daに15USDC提案1回/201、本人bid f173c931公式一致、全5pending/assignment0。売上・出金未確認、納品POST0。既存owner/effect維持。証拠 docs/evidence/near-demand-offer-2259ca.json。次cursorは必要CI→main、既存hourly受注時納品。
