@@ -1128,3 +1128,67 @@ class HQTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReasonInboxTests(unittest.TestCase):
+    setUp = HQTests.setUp
+    tasks = HQTests.tasks
+
+    def enabled(self):
+        self.config["reason_network"] = {
+            "binary": "/fixture/reason-network-hq", "name": "hq-codex", "agent": "codex",
+        }
+        self.reason = mock.Mock()
+        self.message_id = "01M6G37N2HYGRZ2JAJ4KC98QBY"
+        self.reason.inbox.return_value = {
+            "session_key": "cli:hq-codex", "address": "daisuke/hq-codex",
+            "messages": [{"id": self.message_id, "from": "daisuke/muse@remote",
+                          "to": "daisuke/hq-codex", "body": "read-only canary", "reply_to": None}],
+        }
+        self.runtime = hq.HQ(self.config, api=self.slack, reason_api=self.reason)
+
+    def test_reason_commits_the_single_task_before_ack(self):
+        self.enabled()
+        def ack(ids):
+            rows = self.tasks()
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["source_key"], "reason:" + self.message_id)
+            self.assertEqual(rows[0]["owner_id"], "codex")
+            self.assertIn("read-only canary", rows[0]["body"])
+            self.assertEqual(ids, [self.message_id])
+        self.reason.ack.side_effect = ack
+        self.assertEqual(self.runtime.receive()["queued"], 1)
+        self.reason.ack.assert_called_once()
+
+    def test_reason_ack_failure_replay_does_not_duplicate_work(self):
+        self.enabled()
+        self.reason.ack.side_effect = hq.HQError("transport unavailable")
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.reason.ack.side_effect = None
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertEqual(self.reason.ack.call_count, 2)
+
+    def test_reason_queue_failure_never_acknowledges(self):
+        self.enabled()
+        with mock.patch.object(self.runtime, "insert_task", side_effect=OSError("disk full")):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        self.assertEqual(self.tasks(), [])
+
+    def test_reason_wrong_session_never_acknowledges(self):
+        self.enabled()
+        self.reason.inbox.return_value["session_key"] = "cli:someone-else"
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        self.assertEqual(self.tasks(), [])
+
+    def test_reason_failure_does_not_stop_slack_receive(self):
+        self.enabled()
+        self.reason.inbox.side_effect = hq.HQError("transport unavailable")
+        self.slack.history[""]["messages"] = [HQTests.message(self)]
+        result = self.runtime.receive()
+        self.assertFalse(result["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertTrue(self.tasks()[0]["source_key"].startswith("slack:"))
