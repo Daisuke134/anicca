@@ -361,11 +361,20 @@ class LoopCleanupTest(unittest.TestCase):
                 process = native_popen(command, **kwargs)
                 if script in command:
                     children.append(process)
-                    ready_deadline = time.monotonic() + 10
-                    while not lock.exists() and process.poll() is None and time.monotonic() < ready_deadline:
-                        time.sleep(.01)
-                    self.assertTrue(lock.exists(), "private fixture did not install its cleanup handler")
                 return process
+            native_sleep = time.sleep
+            ready_checked = False
+            def wait_after_gate(delay):
+                nonlocal ready_checked
+                # Popen returns before the exec gate opens. Synchronize the first
+                # polling wait, after the gate, with the private cleanup handler.
+                if children and not ready_checked:
+                    ready_checked = True
+                    ready_deadline = time.monotonic() + 10
+                    while not lock.exists() and children[0].poll() is None and time.monotonic() < ready_deadline:
+                        native_sleep(.01)
+                    self.assertTrue(lock.exists(), "private fixture did not install its cleanup handler")
+                native_sleep(delay)
             def run(command, **kwargs):
                 if command[-2:] == ["count-objects", "-v"]:
                     return subprocess.CompletedProcess(command, 0, "prune-packable: 0\nsize: 0\n", "")
@@ -383,6 +392,7 @@ class LoopCleanupTest(unittest.TestCase):
             try:
                 with mock.patch.object(subprocess, "run", side_effect=run), \
                      mock.patch.object(subprocess, "Popen", side_effect=start), \
+                     mock.patch.object(time, "sleep", side_effect=wait_after_gate), \
                      mock.patch.object(lm_loop_run, "_run_entrypoint", side_effect=owned):
                     result = central_cleanup.git_duplicate_cleanup(repo)
                 self.assertFalse(lock.exists(), "timeout hard-killed the child before its lock cleanup")
