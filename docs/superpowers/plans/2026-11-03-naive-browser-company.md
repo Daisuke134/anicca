@@ -208,3 +208,13 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 有限runはend_turn→cancel→GET cancelled、実費221926microUSD、担当累計5135524microUSD。月6/task1不変、追加入金/他owner変更/追加メール送信なし。本人messagesはchannel=emailを明示したfresh GETでも0/has_more=false。本人inbound/サイト登録/売上成功は未達。Grok/Muse返信は引き続き未確認、12UTCの自然runはまだ開始前。
 - Amazon SES公式 https://docs.aws.amazon.com/ses/latest/dg/send-an-email-from-console.html のOOTO simulatorはReturn-Path/envelope senderへ返信し、外部源には応答しない。今回headerにSES署名はあるが、自分の表示Fromへの返信を証明しないため追加sendを実行しない。宛先/私有reportURL/rawheaders/署名付き画像URLはprivate evidenceのみ。
 - 全体cursorは実第三者依頼→公開納品→成功USDC tx/費用。本人mailの残境界は外部到達ではなく、実送信が確認できた第三者から本人inboundへの到着と登録確認リンクの処理。先のTLDR Subscribing…やPort25 acceptedを、第三者dispatch/本人受信として補わない。
+
+### 本人メールによるDEV登録の実行範囲
+
+目的: 個人Googleを使わず、本人mailへの実登録通知と本人browserでの登録完了を確認する。対象はDEV CommunityのAI運営BusinessRunアカウント1件。Google不要の公式email signup linkと実HTML（user[name]/user[username]/user[email]/password/password_confirmation）を確認。https://dev.to/enter?state=new-user → https://dev.to/users/sign_up?state=email_signup 。Terms https://dev.to/terms は自分が権利を持つ内容の投稿を要求し、実験本文/画像は自分の検証素材だけ。guidelines URLは404で未取得、今回の範囲は登録だけで投稿しない。
+
+- credential SSOT全体の既存DEV/forem相当行は無し。本人vaultのlogin:dev.toもfresh GETで無し。既存個人/他agentのaccountを流用せず、新規1accountだけ。公開表示はBusinessRun AI、usernameはbusinessrunai（使用済なら自分用suffixを1回選ぶ）で人間を装わない。
+- 同じv12/Identity/本人browserとemailだけ。ブラウザ登録helperがpasswordを生成・封入し、plaintextをmodel/chat/repoへ出さない。取得後はMac credential SSOTへ専用service naive:browser-operator:dev.to のsealed credential参照/identity/context/登録状態を保存する。providerはpassword write-onlyで返却しないため、秘密をexport/複製しない。
+- まず本人browserで実フォームを確認し通常のsignupを1回。確認要求があれば本人email.read1回→届いた自分用確認リンクをbrowserで処理し、メール本文/秘密リンクは一般journalや公開物へ保存しない。不要な再送/別account/有料登録/Google・既存個人credentialsは使わない。サイトの送信表示とSMTP配送/本人受信を区別する。
+- 完了判定は公式の登録/ログイン状態と本人受信の実内容。未完なら正確な画面/field/dispatch表示/受信stateと次の一手をprivate記録へ保存する。AI自己申告時計は使わず、時刻を取得できなければnull、primaryはprovider event時計を照合する。
+- finite予算最大0.5USD、月6/task1とcronは不変。実顧客受注と12UTC自然runは先のTODO順を維持し、まだ依頼が無い待機中に独立した登録要件を進める。既存記事/募集の再送や新しい公開投稿は行わない。
