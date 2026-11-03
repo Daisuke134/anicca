@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [Codex / NAIVE-BROWSER-E2E] live18/18、browser保持v19最小sourceを所有。keep_alive/system/pinだけ、月8/task1/model/Identity/cron/input不変。公開HN有限probe→実需要/有償納品、詳細は統合SSOT Naïve残TODO。既存他owner/profile/投稿は変更しない。
+- [Codex / NAIVE-BROWSER-E2E] live19/19/main14e9dbd、全source公式一致。HN同一turn実画面、end_turn後白画面、費33763microUSD台帳一致/cancelled。保持を顧客獲得のgateにせずnative実需要→有償納品へ。月8/task1/model/Identity/cron/input不変。詳細は統合SSOT Naïve残TODO。既存他owner/profile/投稿は変更しない。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 

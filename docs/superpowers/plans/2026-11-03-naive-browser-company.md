@@ -172,9 +172,9 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - 現在cursor: 月5→6USD（追加支出権限は最大1USD）、task1USDを維持するv12をmain固定SHAへ反映→agent/deployment GET一致→新しい短い有限runで募集1postとnative browser実画面確認。旧停止sessionは先にcancel済み、auto-resume競合を防ぐ。追加入金/他agent変更無し。以降は実依頼→納品→第三者USDC receipt/費用、自然run/録画、黒字後の移植/複製。実売上/USD10K/自己compute支払は未達。
 - 順序は募集/実intake→受注→納品→決済を維持。予算修復を現在cursorに挿入する理由は現残枠が次call見積り未満で、自然runも停止するため。追加1USDの効果を実費/receiptで判定し、無制限増額にしない。
 
-### 現在の実行詳細: v18稼働・実依頼と納品収益の検証
+### 現在の実行詳細: v19稼働・実依頼と納品収益の検証
 
-実行順・完了条件の正本は統合SSOTの「Naïve v18実反映と残TODO」、本節はその実行詳細。過去v6〜v17/予算/cursorは当時の履歴。現在はagent current18/production deployment18/月8USD/task1USD、既定Haiku4.5。PR9165/main9ae119a7272dfc9d423656726eed63c14d6e108e固定sourceから反映し、agent/deployment全source fieldsを公式GET一致。担当累計6892309microUSDは月11/01開始のまま保持、残1107691microUSD。Computerはpaused。直近の自然runは旧pin13の無受注確認までで、新v18の自然run・有償納品・実第三者売上は未確認。
+実行順・完了条件の正本は統合SSOTの「Naïve実反映と残TODO」、本節はその実行詳細。過去v6〜v18/予算/cursorは当時の履歴。現在はagent current19/production deployment19/月8USD/task1USD、既定Haiku4.5。PR9166/main14e9dbd5eedfd1f73f5eeec5643f167f07897282固定sourceから反映し、agent/deployment全source fieldsを公式GET一致。HN有限probeは同一turnの実画面操作に成功、end_turn後は白画面で保持できず、費33763microUSDを台帳7件と照合。cancelled/pending0、current Computer null/旧Computer destroyed。次自然runは11/04 00UTC。直近自然runは旧pin13の無受注確認までで、新v19の自然run・有償納品・実第三者売上は未確認。現在cursorは同一turnのnative順次操作で公開需要最大1件を調べること。詳細は末尾「v19の実反映と保持probe結果」。
 
 - [x] PR #9137/main `326fc27a46acc3501940f9f095c835c7250c76cf` を反映。agent/deployment v12全payload GET一致、Haiku4.5/月6USD/task1USD/11allow/default deny/同Identity/12h cron、本人wake=falseを維持。反映時は関連チェック・秘密検査PASS、無関係loop2件は実行中（全PASSと主張しない）。v11 PR #9135は後続確認で全15checks PASS。
 - [x] Naïve本人のnative Postiz1callから英語募集を公開。post `cmw0dbzbq01gxoc0703wetiwi`、公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117519919034077664 。257文字の送信payload/公式保存本文ともreviewed exact一致。3model spansはHaiku4.5。初回投稿部分22726microUSD。rootによる業務投稿の代行ではない。
@@ -182,7 +182,7 @@ Ruling: Haikuのタイトル/著者入力反復は0.580013USDで完走せず、�
 - [x] native public-pilot-promo.jsonのread、intakeファイルwrite/read成功。有限session `ses_35xzd8a1ad2anyqv9j0rcr3v8e` はend_turn後cancel→GET cancelled。合計60211microUSD（募集と受注画面確認）、担当累計4908335microUSD。直接費であり全社費用/利益ではない。副作用不明の再送や内部偽注文は無し。定期deploymentはenabledのまま。
 - [x] Grok/Museへ既存Slack threadで公開窓口と具体的な再利用手順/provider receiptの照会を送信成功。https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793690848660309 。返信は未確認、本人DM制限は迂回しない。
 
-残TODOの順序・現在cursor → `docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md`「Naïve v18実反映と残TODO」。本planの以後のcursor・budget記述は各診断時点の履歴として読む。
+残TODOの順序・現在cursor → `docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md`「Naïve実反映と残TODO」。本planの以後のcursor・budget記述は各診断時点の履歴として読む。
 
 証拠正本: repo外private `/Users/anicca/.local/state/naive-browser-company` のagent/deployment-readback-v12.json、public-pilot-promo-provider-readback.json、public-pilot-promo-v12-events.json、public-pilot-intake-v12-events.json、public-pilot-intake-cloud.jpg、public-pilot-v12-finite-cancel-readback.json、own-agent-spend-after-pilot-launch.json。署名付き画面URL/メール原文/秘密値は公開しない。
 
@@ -538,3 +538,15 @@ MCPのresource境界もfirst-partyで確認: https://usenaive.ai/docs/api/mcp-se
 完了条件はmain固定sourceの公式GET一致と、公開https://news.ycombinator.com/だけの有限native probe。最大0.30USD、同browser依存操作は直列、まずgoto→screenshot/必要なobserveで実画面があるかを確認する。入力欄が実在するときだけ非秘密検索語を入力し、短いidle/再開をまたぐ画面/URL/入力値を比較する。確認が出た場合は会社側AIが当該公開browser操作を検査して回答し、確認数/primary追加入力/台帳費用を記録する。signup/mail/公開送信/決済はこのprobeに混ぜない。失敗時もcancel/pending0とComputer停止まで照合し、未実証の連続録画や無介入成功を主張しない。
 
 旧順序も新順序も統合SSOT TODO2（browser復旧→実需要→有償納品）。新framework/controllerを先に作らず、実測失敗に対応する単一設定を先行する。現在はv19未反映、live18/18。Reason inboxとSlack既存照会threadの再確認でも新返信は未取得。
+
+### v19の実反映と保持probe結果
+
+PR9166は15checks PASS、fresh read-only review SHIP（source差分のみ）。main `14e9dbd5eedfd1f73f5eeec5643f167f07897282` 固定の2configをbytes/hash比較後、expected18でsystem/toolsだけ更新→agent19。旧current18を参照した同deploymentも公式に19へ自動追随し、agent/deployment全source fields GET一致・deploymentの版以外不変を確認。月8/task1/model/Identity/cron/input不変。次自然runは11/04 00UTC。private `keepalive-v19-final-readback.json` が反映証拠。
+
+有限session `ses_c1se1rskbk76ha3f65y33h80a2` はv19/同Identity/Haiku4.5実5spans。第1turnにnative browser goto HN home→screenshotを順次実行し、primaryも実際のHN画面を確認。end_turn後、primary AIの再開指示1回で移動なしscreenshotを取得すると白画面となった。初回画像211892bytes/sha256 `2e5eddae1e6e8702bc9934cdac1e6c7c459527efdbe9ada451f86e095a10e0c7`、再開画像58227bytes/sha256 `53dddc9013da523227fbb65d8e1357478161c9e8d1f3fcd5d99445dcad4a3828`。再開画像は以前の白画面と同hash。計3native tools、tool.confirm0、人間0、primary followup1。入力保持は、再開時に実ページが無いため実施しない。
+
+結論は「今回のend_turnをまたぐページ保持はできない」。keep_alive=trueで短い接続切断自体が保持されるか、確認待ちの後も同じかは今回未測定。前seller試験とはmodel/URL/操作順も違うため、確認0をkeep_alive単独の効果や公平なmodel比較としない。一方、同一turn内の順次goto/screenshotは実画面まで動き、これを理由に実需要調査を止める必要は無い。
+
+終了はcancel200→GET cancelled/pending0。公式browser.session.opened/closedは2組、current agent Computerはnull、直前に使った旧ComputerはGET destroyed。pause前のlocal probeがNone subscriptで止まった箇所は、cancel/費用照合後のローカル分岐不足と切り分け、nullをpausedへ置換せず、再起動/再生成/無用なpause再試行をしない。全probe費33763microUSD=0.033763USD、credits/spendと台帳7件/has_morefalseの符号反転sumが完全一致。private `keepalive-v19-finite-final-evidence.json`、`keepalive-v19-finite-events.json`、2画像・ledgerが証拠。登録/メール受信/顧客/納品/売上/録画はこの試験に無い。
+
+TODO2内の実行順を実測で更新。旧は「browser再開保持/確認処理を先に解消→実需要→有償納品」。新は「v19 nativeを同一turnで順次操作し実需要を最大1件調べる→有用な提案/第三者依頼→有償納品、idle後は実確認URLを再度開く」。理由は、end_turnでbrowserが閉じる仕様と同一turnの実画面成功が確認でき、未実証の長時間保持や新controllerを顧客獲得の前提にすると全体成果を遅らせるため。確認処理は新しいnative runで実際に再発したcallを具体的に扱う。現在cursorは統合SSOT TODO2、native sellerの現実需要調査。進行中effectは0、旧投稿/メールを再送しない。全体goal active。
