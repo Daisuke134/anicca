@@ -44,3 +44,11 @@ BROWSER02実測完了: PR9111 main90c48ca1、hosted agent v2のmodel/権限/cont
 BROWSER03診断: login doneとログイン済み画面は別。agentの誤報を訂正、メモ修正を依頼。credentialのservice/host完全一致を修復し、自己作成した誤host資格情報は削除した。source promptに現在host照合とform残存時の未完判定を追加。別sessionで保存メモと認証を検証中。PR9111の15checkは全PASS。
 
 最終cursorはBROWSER03のGoogle OAuth provider境界。v3をmerged main265bab69から適用、GET完全一致。BROWSER04のうち同Computer/別sessionメモ再読取は成功、自然idleでpaused。認証、一業務、売上、native deploymentは未完。405957 microUSDは専用agentの公式spend集計。次の順序と不足する外部経路は正本specの残TODO節に記載。raw資格情報や署名URLはrepoへ保存しない。
+
+## 本人mail・人間承認なしの実行
+- [ ] MAIL01: system domainと専用inboxを用意し、公式readbackとprivate SSOTへ保存。
+- [ ] MAIL02: signupのaskを除去、本人email toolsをallow、通常業務を人間承認待ちにしないpromptをmainへ統合して適用。
+- [ ] MAIL03: 本人mailでCapafyへブラウザ登録、認証メールを処理し本人画面を確認。
+- [ ] MAIL04: 新規所有商品をブラウザで作成/公開し、受取設定と実収支の境界を確認。
+- [ ] MAIL05: 標準deploymentと本人inbox wakeを接続し自然実行を確認。
+旧Google経路への固定を外す。順序/費用枠と残TODOの正本は統合SSOT。各操作は画面を見てモデルが判断し、業務scriptを作らない。

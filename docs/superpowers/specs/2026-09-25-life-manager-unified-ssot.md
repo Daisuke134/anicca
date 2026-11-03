@@ -25725,6 +25725,12 @@ Hosted最終readback: PR9112 main265bab69から専用agent v3を適用し、mode
 残TODO正本: (1)providerのGoogle OAuth実画面操作を診断できるsupported route/本人担当の成功手順を取得し、同じidentity/contextで認証結果を確認 (2)Grok/Museのwrite ownerと新規の担当対象を照合し一業務を完走 (3)公開/納品/費用/実売上を個別readback (4)同identity・固定versionのNaïve標準deploymentへ接続し自然実行を確認 (5)同条件benchmark比較へ戻る。既存6agent/cron/Mac profile/販売済商品は未変更。Grok/Muse/Dotsへ照会済みだが実手順の返答は未取得、relayの最小inference確認をVM本人の業務証拠へ昇格しない。
 
 
+Naïve本人の登録・無人運用への訂正: Daisは専用メール/資格情報で新規登録し、承認構造を置かず会社業務を進めるよう明示する。既存個人Googleへのログインを必須経路から外す。通常の登録、認証メール処理、所有する新規商品の作成/公開/対応は委任済みで、人間承認を求めない。受取口座や本人確認など本人に属する不足事実はprivate SSOTと既存文脈を検索し、捏造せず具体的な不足を記録して独立業務を続ける。
+実測した設定不足: 専用Identityのinbox0、org domainはexternal/pending_dnsの1件だけ。configはemail.inboxes/read/sendをdisable、browser.ask_actions=[signup]としていた。公式mail仕様には標準system domainの即時利用経路があり、createDomain(kind=system)を使って専用受信箱を作る。既存external domain/個人Google/他6agent/稼働loopは変更しない。
+新範囲と完了条件: (1)専用mailのdomain/inbox readinessを公式照合しprivate SSOTへ参照を登録 (2)email.inboxes/read/sendを明示allow、browser.ask_actions=[]、日常業務で承認を求めないpromptをmainから適用 (3)担当がCapafyの通常email登録とメール確認をブラウザで完走し、本人用画面を確認 (4)新規所有商品一件の公開/成果物と収益化導線を確認 (5)本人Identity/context/状態を保つ標準deploymentへ接続。登録や確認のprovider側要求は、Daisへ承認転送する構造にせず、委任済みの範囲をAI担当側で処理する。
+順序更新: 旧=既存Google OAuth修復→owner→一業務→定期運転。新=本人mail/system domain→無人登録設定→email登録/本人画面→新規所有商品→継続運転/実収支。変更理由はDaisが本人mailによる新規登録を指定し、mail権限不足とsignup承認停止を実測したため。現在cursorは本人mailと無人設定。browserの公開web到達は標準allowed_domains=[*]へ戻し、登録先の通常リンクやメール認証redirectを固定domain列挙で止めない。個人Googleの専用vault複製は除去し本人mailだけを使う。shell/業務HTTP/MCP/wallet能力は追加しない。費用枠は今回の登録/商品作成への範囲拡張に合わせ、専用担当の月cap0.50→2USD（既存制作担当と同枠）、max_task0.50USDを維持し、既存残高内・追加入金なし。inboxは準備中wake=falseで同一signup担当のemail.readを使い、登録後にwake=trueと継続実行を接続する。これは承認gateではなく重複writer防止の起動順である。
+
+
 ## AGI flagship essay publication
 
 目的・範囲: 承認済み英語原稿を保持し、日本語全文版と原本PNG8点を既存Manager出版パッケージへ組み込み、aniccaai.com英日・@diceai0 X Articles・既存note無料記事を公開する。別の配信基盤、通常post/thread、課金記事は作らない。
