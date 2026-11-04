@@ -118,6 +118,26 @@ class HqCliTest(unittest.TestCase):
                 self.assertEqual({k: fixture.requests[1][k] for k in ("key", "wait_secs", "peek")},
                                  {"key": "cli:hq-codex", "wait_secs": 7, "peek": True})
 
+    def test_paged_inbox_returns_complete_messages_with_bounded_bytes(self):
+        messages = [{**MESSAGE, "id": f"message-{i:04d}", "sent_at": i,
+                     "body": "x" * 65536} for i in range(33)]
+        def many(request):
+            if request["op"] == "inbox":
+                return {"ok": True, "result": {"messages": messages,
+                        "text": "\n".join(message["body"] for message in messages)}}
+            return replies(request)
+        with Fixture(many) as fixture:
+            result = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "1048576")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertLessEqual(len(result.stdout.encode()), 1048576)
+            page = json.loads(result.stdout)
+            self.assertTrue(page["messages"])
+            self.assertLessEqual(len(page["messages"]), 20)
+            self.assertTrue(all(len(message["body"]) == 65536 for message in page["messages"]))
+            self.assertNotIn("text", page)
+            self.assertIsNotNone(page["next_cursor"])
+            self.assertFalse(any(request["op"] == "delivered" for request in fixture.requests))
+
     def test_ack_only_delivers_after_peeking_the_same_box(self):
         with Fixture(replies) as fixture:
             result = fixture.run("ack", "--as", "hq-codex", "--json", "message-one")
