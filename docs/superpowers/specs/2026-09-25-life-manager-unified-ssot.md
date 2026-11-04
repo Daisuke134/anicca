@@ -26003,6 +26003,10 @@ handoffs:false/multiagent:falseでも、read完了報告/end_turnの後に別mod
 
 次の有限probeは同じIdentityを一時agentへattachし、保存済みbrowser contextとmail/vaultを使わず、public https://capafy.ai/ のnative browser goto一件にread_people:trueを指定する。browser以外のtool/defaultはdeny、handoffs:false/multiagent:false、allow_writes:false、ask_actionsはSDKが受ける全browser actionsを列挙して予定外login/save_context等もparkさせ、allowed_domainsはcapafy.ai/www.capafy.ai、timeout2分、period/task/session cap200000microUSD。専用exact service naive:browser-policy-probeの会社API keyはagents:read/sessions:read/sessions:writeのみ。pendingがbrowser/goto/当該URL/read_people:trueと完全一致した一件だけをscope:callでconfirmし、他の要求・繰り返しには許可せず停止する。bootstrap owner tokenでconfirmを代行しない。認証/メール入力/登録/公開/購入/送金はしない。通常browser action gateとread_people privacy gateは理由/公式eventが識別できる場合だけ区別し、汎用action gateの成功だけでprivacy gate成功と判定しない。API keyによる実browser実行の結果を記録し、通常read成功も今回の公開goto成功も認証成功へ拡張しない。終了後key revoke/秘密除去/session cancel/Identity detach/一時agent削除/原本不変を確認する。上限は既知試験費を控除した残枠内に置く。
 
+browser key probeのVetta実測: agt_3nqzm3bfb1pdmsddfgnnrraccx / ses_w46cnx1p9wre1v26es1f4fmq7rは231microUSDでidle/end_turn。browser.goto/read_people:trueのtool結果はis_error=true、「action goto needs a person approval ... harness cannot ask ... not run」。pending_actions空・tool.confirm無し・ページ未開封で、API key confirm自体を試せる状態に到達しない。live harnesses.listのvetta.approvals=trueだけではbrowser内部ask_actionsの可否を証明しない。
+
+次は一変数だけを変える比較として一時agentのharnessをpiにする。Vetta試験はcancel/detach/deleteしてから、同じ専用keyを使う別Pi/Flash試験を作成する。全browser actions ask・公開goto一件・他tool deny・保存context/mail/vault不使用・Identity限定・単一scope:call/追加要求は不許可・cap200000microUSDの条件を維持する。原本月残からVetta231microUSDと既知費用を控除して枠内に収める。キーはこの有限比較の終了時に失効/SSOT秘密除去し、両試験agentの削除と原本不変を確認する。ブラウザ操作成功とprivacy gate/実認証成功を引き続き区別する。
+
 #### 最新SDK・モデル・費用の一次資料再照合
 
 npmのlatestを再取得し、@usenaive-sdk/vetta=0.10.0、repository=usenaive/vetta-mono/packages/sdkを確認する。公式docs index https://vetta.sh/docs/llms.txt を起点にSDK/models/model-router/completion-window/pricing/harness-capabilities/budgets/policies/browser/email/sessionsを再取得し、会社APIで7モデルのretrieveとharnesses.listを照合する。取得証拠はprivate state/research-refresh-20261104に保存する。これは新規有償benchmark実行ではない。
