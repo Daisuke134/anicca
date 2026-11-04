@@ -222,3 +222,16 @@ Research code: `docs/research/manager/masterclass/2026-11-04-p04-causal/experime
 ### After this implementation
 
 Proceed with P06-1 (first low-risk owned workflow + fixed comparator). The real S1/S2 activation is an **independent operational gate**; leaving it pending must not block education progress, but software tests cannot authorize it.
+
+
+## 13. P06-2 behavior model and field-measurement reuse decision (2026-11-04)
+
+Research and reuse evidence: [P06-2 Japanese lesson and reproducible experiment](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/P06-2_JA.md), and [Behavior AI ecosystem/source inventory](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/BEHAVIOR_AI_REUSE_ECOSYSTEM_20261104_JA.md). **No change to production publisher, rights, cost budget, authority or loop implementation is authorized by this section.**
+
+A 24k/16k/40k completely synthetic training-validation-RCT ablation found a +0.014224 mean net utility difference against a strong baseline chosen on separate validation, CI[0.004916,0.023532] and p=0.002743. All results are **toy DGP-specific**; in particular they do not establish human behavior forecasting accuracy, extra sales, reduced rumination or the right to alter live company policies.
+
+**Reuse first:** SOCRATES Qwen-derived SFT/DPO and experimental held-out design, BehaviorBench MIT evaluator (Mac suite 41 PASS / 3 SKIP) and Be.FM 1.5 Qwen LoRA (NOT locally run), HumanStudy-Bench protocol-execution/analysis, DoWhy/EconML/OBP for causal analysis and bandit OPE, BCIO and PROV-O for semantics, existing Manager Core outbox/authority/verification. Data rights are separate: BehaviorBench benchmark data is CC BY-NC-ND, not automatically available for commercial training despite MIT evaluator code or Apache model card.
+
+**External vendor limitation:** Listen Labs Public Study API auth GETs were verified in prior P05-2. Public Listen Twins website/TinyFish's ‘Run a Simulation’ button reached a sales booking form, not a functional inference endpoint; no Twin inference/benchmark was run. Company claims (e.g. distribution agreement) must not become model evidence without common held-out human ground truth.
+
+**Scientific deployment gate:** independent person/study/time-heldout outcome metrics, calibrated uncertainty, rights, cost accounting, and real-world strong-comparator policy measurement. Training a tiny HelpSteer2/private Qwen adapter does not itself produce an evaluated Behavior Foundation Model or releasable open weights. P05-5 real-company shadow and one bounded live action remain an independent pending permission/release gate. Next lesson P06-3 is experimental power / preregistration / stop conditions.

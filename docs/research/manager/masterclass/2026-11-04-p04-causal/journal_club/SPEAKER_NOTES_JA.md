@@ -798,16 +798,16 @@ Ampersand：模擬ユーザーから協働の「方策」を学ぶ
 共通ベンチマークは、すでに存在する
 想定 1〜1.5分
 
-まず今日の質問に答えます。共通のベンチマークはあります。SimBenchは20データセットを統一形式にし、人口の回答分布を採点します。Artificial Societies Benchmarkは20の人間データ源を使い、11検査で人間らしい測定構造を診断します。Human Behavior Benchは2026年の米国実成人1,244人に基づく1,199課題を含み、うち960課題を非公開にしています。SSDataBenchは回答間の関連や生活イベントの系列を扱います。Socratesは研究単位のholdoutが重要です。Social Simulation Arenaは未来の実際の集計値を先に予測して、後日採点します。どれも役割が異なるので、同じ一枚の世界一ランキングへ混ぜません。
+共通ベンチマークは既に存在します。例えばSimBenchは20の人間行動データセットを使い、人間の分布への忠実さを評価します。Human Behavior Benchは米国の実成人1,244人の回答に基づく1,199課題を用意し、うち960問は非公開です。これは未来の購買や介入効果を直接測るものではありません。重要な進展としてBehaviorBenchが、個人予測と集団分布の20シナリオを評価し、Qwen3-4Bを元にしたBe.FM 1.5-4Bの公開LoRAも提供しています。ただし評価コードはMITでも、公開データセットの利用条件はCC BY-NC-NDです。Artificial Societies Benchmarkは複数の妥当性診断を、HumanStudy-Benchは実験の元手順と統計的な結果の再現を扱い、Socratesは研究単位で未見の回答予測を検査します。一つの数字をそのまま個人・集団・因果・実利益の世界順位とみなさないことが重要です。
+
 B01 https://simbench.tiancheng.hu/
 B02 https://arxiv.org/abs/2609.30030
-B03 https://www.tryrehearsals.com/human-behavior-bench
-B04 https://doi.org/10.1073/pnas.2538145123
+B03 https://www.getrehearsals.com/human-behavior-bench
 B05 https://social-simulation-arena.com/
 B06 https://aclanthology.org/2025.emnlp-main.1530/
+B07 https://github.com/umich-foreseer/behaviorbench_eval | https://huggingface.co/befm/BeFM1.5-4B
 
-一次資料：
-[B01] [B02] [B03] [B04] [B05] [B06]
+一次資料: [B01] [B02] [B03] [B07] [B05] [B06]
 
 ---
 
