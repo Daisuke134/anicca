@@ -3,7 +3,7 @@
 
 進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。
 
-並行cursor **HQ-REASON-MACOS-ARTIFACT**: 受信ページ化はmain 0ac0f558に統合済みだが、対応する専用Mac binaryはmain CIで構築・artifact発行、公式run/head・SHA256・arm64とMac隔離socket14件を検証後、3つのHQ owner lock下で専用pathに配置しpage_enabled=trueをreadback済み。自然受信・処理結果は未確認。ローカルcargo buildは空き容量を圧迫したため自分のbuildを停止済み。既存のReason CIにarm64 Mac buildと実socket試験を追加し、main push由来のみSHA付き専用artifactを保存する。受入はPR CI・独立review・main統合後、main runのcommitとartifact SHA・architecture・socket testを照合し、既存ownerと競合しない時に専用binaryと設定を反映して自然受信を確認する。既存Reason engineのbinaryは置換しない。
+並行cursor **HQ-REASON-MACOS-ARTIFACT**: 受信ページ化はmain 0ac0f558に統合済みだが、対応する専用Mac binaryはmain CIで構築・artifact発行、公式run/head・SHA256・arm64とMac隔離socket14件を検証後、3つのHQ owner lock下で専用pathに配置しpage_enabled=trueをreadback済み。後続の自然受信・処理結果は本節「自然復旧の実測」を参照。ローカルcargo buildは空き容量を圧迫したため自分のbuildを停止済み。既存のReason CIにarm64 Mac buildと実socket試験を追加し、main push由来のみSHA付き専用artifactを保存する。受入はPR CI・独立review・main統合後、main runのcommitとartifact SHA・architecture・socket testを照合し、既存ownerと競合しない時に専用binaryと設定を反映して自然受信を確認する。既存Reason engineのbinaryは置換しない。
 
 並行cursor **HQ-REASON-INBOX-PAGES**: Reason daemonは本文上限64KiBだがHQ clientは全未読と表示用textを重複出力し、33件×64KiBの隔離fixtureで4,327,967文字となりHQの4MiB制限で全受信を拒否する。未読ACKはしないが後続依頼が停止する。旧順=容量bounded化後に受信継続、新順=旧senderとの互換性を維持してHQ専用受信をページ化し、添付保持・予約修正と並行して進める。実DB・既存daemon・他sessionは変更しない。
 
@@ -23,9 +23,24 @@ HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維�
 受入: 添付の正本を期限切れ前に受信taskへ耐久保存してworkerが読めること、保存不可能な依頼はACKしないこと、別の受信依頼を継続できること、再取得が重複しないこと。提供pathの安全境界・symlink・UTF-8/上限・秘密値とfile消失を検証し、ACK前の保存失敗を実SQLiteで確認する。CI、独立review、main由来release、自然受信/ACK/実作業の公式readbackを経て初めて完了とする。
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
+自然復旧の実測: 空き容量は約1.8 GiBから5.3 GiBまで回復し、Reason受信はmain由来release `408700b04e91b7ea22bb2937bd68e63cb241d0f9`の自然run `18e4d4e229f791c0-64647`でexit 0、4件のmessage IDと公式receiptを記録した。以降も `resource_capacity_busy` により延期があり、継続性・1分以内応答は未証明。待機task `8f85fb48168d851460be2b9b` は自然claim後にCodexが照合を完了し、Slackはposted、Reasonの結果receipt `057SFNE3M6NYWD02N9YZ536QXX` はqueuedで本人受領未確認。CloudRiftはDots担当を維持し、提出・付与は未確認。実機添付と再走重複0、本人受領、資源待ちからの継続受信、収益/Managerの待機タスクの自然完了は残る。直近のNEAR本人API GETは5件pending・assignments 0、売上/入金は未確認。保存記録: `~/.local/state/life-manager/team-hq/results/8f85fb48168d851460be2b9b/result.json`、`~/.local/state/life-manager/team-hq-receive/events.jsonl`、同DBのoutbox。容量は変動するため、その値を将来の稼働保証にしない。
+
 目的は、既存の共有部屋で依頼を保存し、受領・着手・結果・枠切れ時の引継ぎを区別しながら、収益とManager開発を継続すること。schedulerが有限runを起こす。この対話自体の無期限再開、登録席の常時稼働、売上を保証するという意味ではない。primaryは正本・統合・運用受入、各writerは明示したsource/業務effectを所有する。
 
 ### Anicca会社の目標アーキテクチャと現在の実測
+
+#### 実行基盤の比較と次の原子TODO
+
+判断: 既存Slack/Reason/HQの永続queueとeffect fenceを正本として継続し、HermesとOpenClawは互換runner候補として隔離比較する。移行の前提は本人identity・subscription認証・利用枠・send/receive・元ID・時刻・重複0・費用/成果が実測できること。runner切替だけで1分応答・利益・24時間稼働を保証しない。Macの `hermes --version` はvenv Python不在でexit 126、OpenClaw CLIは2026.6.1を返すが本人のCodex認証・gateway・送受信は未検証。異なるharnessに同じaccountを追加してもquotaが独立するとは限らない。既存owner・receipt・待機/実行中task・認証情報を守り、失敗時は既存routeに戻す。
+
+一次資料: [Hermes Codex provider](https://hermes-agent.nousresearch.com/docs/integrations/providers), [Hermes cron](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron), [OpenClaw routing](https://docs.openclaw.ai/concepts/multi-agent), [Andon Pion](https://andonlabs.com/pion), [Anthropic multi-agent research](https://www.anthropic.com/research/multi-agent-research-system), [naïve tournament](https://usenaive.ai/tournament)。Pionは研究previewでwaitlistから段階提供され、一般即時利用は未確認。公開記述は継続agentと管理agent、個別business toolを示す。Anthropicはcheckpoint、追跡、並列agentの同期待ち問題を報告する。どれもAniccaの実際のprofitや1分応答の証明ではない。
+
+1. **通信測定:** 各本人の元message ID、送信・受領・着手・結果・ack時刻を保存し、2人以上の自然双方向で60秒未満を繰り返し測定する。queuedは本人受領ではない。Dots/Muse/Grokbotの既存hookにIDを渡し、idle wakeと作業中の受信を別々に確認する。
+2. **継続復旧:** Macの空き容量は一時5.3 GiBから約2 GiBに再低下し、最新受信はdisk_floor_lowで延期。swap変動とproducerを観測し、安全な再生成物の整理を続ける。床・既存owner・未確定effectは変更しない。自然受信・claim・結果・replay-zeroを再確認する。
+3. **Hermes隔離比較:** 壊れた既存launcherの参照先/所有者を確認し、別環境で公式versionと依存関係を構築。既存credentialを露出/複製せず対応認証を検証し、まず外部effectなしで有限Codex task、復帰、実行時間と利用量を測る。成功した場合のみ本人channel連携とidempotent配送を既存queue経由で試す。失敗は元routeを維持する。
+4. **OpenClaw比較:** 現在versionの機能と設定を読み取り、公式docの新機能が同versionにあると仮定しない。隔離profileで同一の無副作用taskと送受信を測り、Hermes・既存Codexと起動/受領遅延、失敗復帰、費用を比較する。
+5. **収益・費用:** agent/task/providerごとに受注・納品・入金・API費・subscription配賦を証拠付きで区別し、未知はunknown。毎時の既存案件確認と実受注後の納品を完遂し、agent別の実証粗利を `/open` の集計と照合する。現状NEAR 5 pending/assignment 0は時点値、収入未確認。
+6. **公開と改善:** 本人wake・引継ぎ・自然収益を確認後、結果/失敗/費用の実測を既存公開記事へ反映し、公開ページ・画像・mobileを確認する。Pionとnaïveの公開事例を比較するが、他社の売上や運営実績を自社の成果と扱わない。
 
 目標: 人による定常的な中継なしに、顧客価値・収益・費用・Manager研究開発を継続する。Slackは共有履歴と人が見られる業務報告、Reason Networkは本人agentへの配送とreceipt、Life Manager/HQは永続queue・有限実行・担当lease・重複防止・結果照合を担う。常駐モデルの会話を24時間実行の証拠とせず、外部scheduler・監視・再起動・別host・認証・利用枠に依存する。全員1分以内の自動受信/着手と無停止は未実証。
 
@@ -33,10 +48,10 @@ HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維�
 
 仕事の循環: ①需要/案件・顧客反応を収集 ②売上、受注、conversion、費用、利益を実測 ③product/Manager開発と研究を優先順位付け ④担当が実行し証拠を保存 ⑤配信・納品の公式結果を照合 ⑥毎日の改善を次のqueueへ反映する。売上や利益は決済等の正式readbackなしに0や成功と断定しない。公開記事は実証済みの事実と未完を分け、公開ページと画像を実際に確認する。
 
-現在の証拠: HQはMac mini上のlaunchdによる受信/worker各15秒・投入5分の有限実行で、7種の論理仕事を共有する。受信/投入のloaded SHAはebc75aba、workerはac59c14e。reason pageはmain 0ac0f558、Mac artifact修正はmain 9f4431d0、main CI run 41777259782はMac/Linux build・socket testをPASSしartifact発行済み。専用binaryの配置とpage_enabled=trueは3 owner lock下で完了、公式run/head・SHA256・arm64・Mac隔離socket14件を確認。自然受信・結果は未確認。受信/実行は空き容量により延期され、定常24時間や1分SLAは未達。task df9d4d48は自然着手・exit0・Slack結果確認、Reason結果receiptはqueuedで本人既読未確認。task 8f85fbはqueued。Museは公開鍵によるMac SSH成功を本人側で報告、こちらの独立実測ではない。home-claudeの401は有効な代役ではなく、Grokbot枠切れ時の完全な自動引継ぎは未証明。
+現在の証拠: HQはMac mini上のlaunchdによる受信/worker各15秒・投入5分の有限実行で、7種の論理仕事を共有する。受信/投入のloaded SHAはebc75aba、workerはac59c14e。reason pageはmain 0ac0f558、Mac artifact修正はmain 9f4431d0、main CI run 41777259782はMac/Linux build・socket testをPASSしartifact発行済み。専用binaryの配置とpage_enabled=trueは3 owner lock下で完了、公式run/head・SHA256・arm64・Mac隔離socket14件を確認。自然受信1回と後続task処理は本節「自然復旧の実測」を参照。受信/実行に資源待ちがあり、定常24時間や1分SLAは未達。task df9d4d48は自然着手・exit0・Slack結果確認、Reason結果receiptはqueuedで本人既読未確認。task 8f85fbはqueued。Museは公開鍵によるMac SSH成功を本人側で報告、こちらの独立実測ではない。home-claudeの401は有効な代役ではなく、Grokbot枠切れ時の完全な自動引継ぎは未証明。
 
 残TODO（成果順）:
-1. 専用binaryとpage設定の反映は完了。main由来releaseのloaded SHA、自然受信、添付、ACKと再走重複0を確認する。daemon内部の全件メモリは別途残す。
+1. 専用binaryとpage設定の反映、main由来releaseの自然受信1回は完了。添付、ACKと再走重複0、継続受信を確認する。daemon内部の全件メモリは別途残す。
 2. 容量変動とFIFO待ちの原因を実測し、安全に受信/workerを自然復帰させる。共通床や他ownerの保護を安易に変更しない。待機task 8f85fbの着手・元messageへの結果・本人側受領まで追う。
 3. Dots/Muse/Grokbotそれぞれの元ID→自然wake→着手→結果を本人経路で測り、1分以内を繰り返し実証。停止/利用枠枯渇時は有効な別担当への一度限りの引継ぎ・重複0・戻し方を検証する。未認証helperを稼働人数に数えない。
 4. 毎時の受注照合、毎日の優先順位/収益/費用、14時Manager R&Dを自然実行し、案件の実受注・納品・現金収入を公式readbackで計測。確認できた実験を既存公開記事へ反映する際は公開ページ・画像・mobileを確認する。
