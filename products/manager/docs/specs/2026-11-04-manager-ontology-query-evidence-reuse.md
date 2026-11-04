@@ -150,3 +150,38 @@ On Python **3.12**, selected `products/manager/tests/` fixtures were **44 passed
 - Actual pinned code commit IDs and license hashes: `evidence/UPSTREAM_CODE_AND_LICENSE_AUDIT.json`.
 
 **Design judgment:** The domain model and external adapter network will become complex. The computationally hard, scientifically novel part remains **causal model calibration and policy improvement validated against independent outcomes**; schema/tool plumbing is only infrastructure.
+
+
+## 11. P05-2: existing schema -> read-only correlation trace (2026-11-04)
+
+**Research implementation (completed on synthetic inputs):** `docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p05_2_evidence_trace.py`. This is an adapter and test harness, **not** a new authority/SSOT, event producer, provider implementation or migration.
+
+Existing source contracts are loaded directly from `runtime/contracts/common-record.schema.json` and validated using JSON Schema Draft 2020-12. Runtime events additionally pass the existing `runtime.loop.runtime_event.validate_runtime_event()`. Existing Manager Core `Prediction` maintains `proof_level=P0`/`causal_support=False`; existing `InterventionPlan` chooses `NO_ACTION` for unsupported effects.
+
+**Identity joins: distinguished keys are mandatory, not guessed:**
+
+| Relation | Existing source checks | Research status |
+|---|---|---|
+| Job → Effect | `job.effect_key == effect.idempotency_key`, identical `loop_id` and `effect_class` | Verified synthetic |
+| Effect → Receipt | `effect_id`, `run_id`, `loop_id`, `provider`, record time | Verified synthetic |
+| RuntimeEvent → Job/Effect | `run_id`, `loop_id`, `owner_id == tenant_id`, `job_id`, `provider` | Verified synthetic |
+| RuntimeEvent → Receipt | `provider_receipt_id == receipt.receipt_id` when both available | Verified synthetic |
+| Prediction/Decision → job | Existing job's `input_refs` may contain refs; there is no shared mandatory `prediction_id` or `decision_id` across four operational source types | **Unresolved** |
+| Experiment → all stages | No shared mandatory `experiment_id` across four source types | **Unresolved** |
+| Outcome / causal effect | A Receipt or an `official_readback_ref` string is not an independently verified psychological or business outcome; no RCT links here | **Not proven** |
+
+`StampedRecord` adds only a research-reader `known_at` and source URI. The Job lacks a native `run_id` and its own timestamp; the reader does **not** associate a previously known Job with a particular run before an Effect record gives a validated identity link. Replaying the fixture at 09:00:00/09:00:10/09:04:00 gives safely correlated records 0/2/4, rather than pretending later receipts were already known. `known_at` must have an offset-aware timestamp. Conflicts/foreign tenants/mismatched providers run IDs and receipt IDs fail closed. Source content is hashed and changes post-validation are rejected.
+
+**Correctness evidence:** 40 new Trace tests + 8 safe API probe tests = 48 new P05-2 tests; historical P04→P05-1 had 145, so **193/193 passed** (`evidence/TEST_RESULTS_P04_TO_P05_2.txt`). These are local fixture tests. **No integration with real production event logs or actual external effect receipts has been performed.** Existing common-record and runtime/authority/outbox files were not changed.
+
+**Live external API connectivity (GET-only):** Listen Labs documented Public Study API on `https://listenlabs.ai`; TinyFish browser inspected [official documentation](https://docs.listenlabs.com/api-v2/overview), [run](https://agent.tinyfish.ai/runs/73a88093-eeb9-4fd0-8f4c-a524d8978921). On the user's authorized Mac mini a supplied credential was used **transiently in process memory only** to GET `/api/public/v1/wallets` (**HTTP 200**, 1 wallet) and `/api/public/v1/studies` (**HTTP 200**, response is a JSON list). No identifiers, balances, titles, transcripts, responses, or credential bytes/hashes were written to files or GitHub. No POST, study creation, launch, funding, participant recruitment, deletion or mutation. Publicly documented Study API ≠ a verified direct Listen Twins predictor API. Source code and anonymous status summary under P05-2 research directory.
+
+**Deployment gate / next step P05-3:**
+
+1. Define consent, tenant/owner scope, authorized action set, credential ownership, expiration, revocation and explicit NO_ACTION.
+2. Preserve existing authority/outbox/reconciliation and independent verification code. Graph/Trace cannot issue privileges or count a receipt as human benefit.
+3. Resolve missing canonical prediction/decision/experiment IDs at producer boundaries only after compatibility and rollback plans, not by forging IDs in read-only consumers.
+4. Use authorized, minimized real logs with privacy protections for a future read-only replay before any permissioned execution. No new provider calls or paid actions are needed to complete this study.
+5. Define strong baseline and external randomized or otherwise identifiable effect measurements separately from the code trace.
+
+**Research archive slides:** P05-2 was appended only as slides 88–89 of the full deck; the 33-slide / 60-minute public journal club talk is unchanged.
