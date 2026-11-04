@@ -1,41 +1,42 @@
-# Manager Masterclass｜P04-1〜P05-2 因果推論・Ontology・行動と実行の接続
+# Manager Masterclass｜P04-1〜P05-5 因果推論・Ontology・行動と実行の接続
 
 **更新：2026-11-04（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
 
-**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6、P05-1、P05-2は講義・人工実験まで進み、次はP05-3。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
+**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。次の講義はP06-1。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
 
 
 ## Managerの中核仮説と実証すべき価値
 
 [What-if Machine × Executor：中核仮説と科学的証拠の階段](MANAGER_WHAT_IF_EXECUTOR_THESIS_JA.md) に、製品・流通・本人の便益を**結果から独立検証する**研究方針を整理した。Managerそのものを企業へ売ることを先に必須にせず、Managerが作る製品やサービスの実際の成果で価値を示す。外向きの名称は「Manager」とするが、既存リポジトリ・APIの破壊的リネームは行わない。オープンソースと将来のオープンウェイトを目指し、第三者データの権利・個人の健康情報・同意・安全性は優先して保護する。
 
-**60分発表の最後の3枚（31〜33）** と、詳細版の対応する3枚（46〜48）をこの構想に合わせて更新した。世界最大の利益、完全自動バズ、精神疾患の治療などは実証済みの成果として扱わない。発表では反証可能な研究仮説として紹介する。
+**60分発表の最後の4枚（31〜34）** と、詳細版の対応する3枚（46〜48）をこの構想に合わせて更新した。世界最大の利益、完全自動バズ、精神疾患の治療などは実証済みの成果として扱わない。発表では反証可能な研究仮説として紹介する。
 
 ## 2026年11月5日 13:00–14:00｜神経科学ジャーナルクラブ
 
-**本番ではこちらの厳選33枚版を使う。** 来場者は神経科学・計算論的神経科学の研究者とM1/M2。人間行動シミュレーションの専門知識を前提とせず、歴史、モデルの種類、代表的な研究・企業、ベンチマーク、因果と限界を基礎から説明し、Managerは最後の3枚に留める。
+**本番ではこちらの厳選34枚版を使う。** 来場者は学術/業界/専門知識に関係なく理解できるように、初学者・研究者・起業家・投資家を想定する。人間行動シミュレーションの専門知識を前提とせず、歴史、モデルの種類、代表的な研究・企業、ベンチマーク、因果と限界を基礎から説明し、Managerは最後の4枚・約6.3分に留める。
 
 | ファイル | 内容 |
 | --- | --- |
-| [60分発表 PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pptx) | **33枚**、編集可能・全ページに日本語発表者ノート |
-| [60分発表 PDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf) | **33ページ**、発表画面用 |
-| [全33枚日本語読み上げ原稿](journal_club/SPEAKER_SCRIPT_60MIN_JA.md) | 1ページごとの自然な読み上げ文と元スライド・時間 |
-| [60分の進行表](journal_club/RUN_OF_SHOW_60MIN_JA.md) | **41.7分講演＋15分質疑＋約3分の余裕**、章別時間・重要スライド・短縮ルート |
-| [発表版を再生成](journal_club/build_60min_journal_club.py) | 正本の89枚と対応PDFから再構築。別々に管理し、元ファイルを破壊しない |
+| [60分発表 PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pptx) | **34枚**、編集可能・全ページに日本語発表者ノート |
+| [60分発表 PDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf) | **34ページ**、発表画面用 |
+| [全34枚日本語読み上げ原稿](journal_club/SPEAKER_SCRIPT_60MIN_JA.md) | 1ページごとの自然な読み上げ文と元スライド・時間 |
+| [60分の進行表](journal_club/RUN_OF_SHOW_60MIN_JA.md) | **43.0分講演＋15分質疑＋約2分の余裕**、章別時間・重要スライド・短縮ルート |
+| [発表版を再生成](journal_club/build_60min_journal_club.py) | 過去の33枚を構築した歴史的script。現在の34枚は`build_p05_phase5_decks.py`の改訂が正本。別々に管理し、元ファイルを破壊しない |
 
 **優先順位：** ①基礎と研究史 ②どの対象にどの模型を使うか ③既存研究・企業は何を主張しているか ④何を検証して何をまだ検証していないか ⑤最後にManagerが目指すこと。数式の厳密な導出・企業の細かい数字・P04-6の全シミュレーションは本番で列挙しない。質疑用の長い資料に残す。
 
-## 全89枚の詳細保存版（本番で一挙上映しない）
+## 全93枚の詳細保存版（本番で一挙上映しない）
 
 | ファイル | 内容 |
 | --- | --- |
-| [詳細89枚PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | 元82枚のManager対応46〜48を研究仮説に更新し、P04-6付録3＋P05-1付録2＋P05-2付録2＝89枚。既存本文は維持 |
-| [詳細89ページPDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf) | 89ページ（元82＋P04-6研究3＋P05-1研究2＋P05-2研究2）。新しい付録は画像レンダリングで統合し、元のページを維持 |
-| [全89枚の日本語発表ノート](journal_club/SPEAKER_NOTES_JA.md) | 1〜89の全ページ分。PowerPoint内部にも全89枚のノートを保存 |
-| `journal_club/build_p05_2_appendix.py` | **87枚→89枚のP05-2研究付録追加**。本番33枚は不変 |
+| [詳細93枚PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | 元82枚のManager対応46〜48を研究仮説に更新し、P04-6付録3＋P05-1付録2＋P05-2付録2＋P05-3〜5/展開付録4＝93枚。既存本文は維持 |
+| [詳細93ページPDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf) | 93ページ（元82＋P04-6研究3＋P05-1研究2＋P05-2研究2＋P05-3〜5/展開研究4）。新しい付録は画像レンダリングで統合し、元のページを維持 |
+| [全93枚の日本語発表ノート](journal_club/SPEAKER_NOTES_JA.md) | 1〜93の全ページ分。PowerPoint内部にも全93枚のノートを保存 |
+| `journal_club/build_p05_phase5_decks.py` | **研究89→93枚、本番33→34枚、一般向け用語とManager段階ロードマップ**。再実行は入力版の確認後 |
+| `journal_club/build_p05_2_appendix.py` | **87枚→89枚のP05-2研究付録追加**。旧本番33枚は本アップデートで34枚に改訂 |
 | `journal_club/build_p05_1_appendix.py` | **85枚→87枚の研究付録追加**。本番用33枚は不変 |
 | `journal_club/build_p04_6_appendix.py` | 82枚版→85枚版への追加作成に使用。すでに85枚なら二重追加しない |
-| `journal_club/build_p04_45_appendix.py` | **歴史的な74枚→82枚作成スクリプト**。現在89枚版への再実行はしない |
+| `journal_club/build_p04_45_appendix.py` | **歴史的な74枚→82枚作成スクリプト**。現在93枚版への再実行はしない |
 | `journal_club/export_p04_45_pdf.py` | **歴史的な74ページ→82ページPDF結合スクリプト** |
 | `journal_club/RUN_OF_SHOW_JA.md` | 元のフル講義の履歴上の進行表。**2026-11-05本番は60MIN版の進行表を優先** |
 
@@ -51,6 +52,10 @@
 | `P04-6_JA.md` | 事前登録・方策対方策RCT・意思決定価値・無計画な途中解析 | 架空40,000人＋A/A 750試行、16テスト。**実研究の事前登録・実介入は未実施** |
 | `P05-1_JA.md` | Ontology・状態・時点・知識グラフ・Digital Twin・既存技術の徹底調査 | 既存Manager Coreを再利用し人工5イベントのread-only投影、26テスト成功。実行権限・実人間は未接続 |
 | `P05-2_JA.md` | 既存Job/Effect/Receipt/RuntimeEventのID・証拠Trace、Listen Labs実API | 人工時点別Trace・39テスト／API安全性8テスト。TinyFish公式画面＋認証GET 2件HTTP 200。予測ID/判断ID未接続、実サービス改変なし |
+| `P05-3_JA.md` | 複数エージェントの役割、権限・期限・撤回 | 既存Manager Coreで人工Grantによる6拒否条件の確認、本番は未受入 |
+| `P05-4_JA.md` | 不明状態・二重実行防止・独立確認・復旧 | DurableOutboxの人工送信とUNKNOWN→PRESENT、P0のみ |
+| `P05-5_JA.md` | Shadow・限定1回実行の条件と学習 | 既存Shadow41テスト成功、実務Shadow/本番S2未実施 |
+| `MANAGER_MODEL_COMPANY_IMPACT_MILESTONES_JA.md` | モデル訓練・公開・会社への導入・人の便益の3本線 | **日付は条件付き仮目標であり実績・保証ではない** |
 
 基礎単体テストは **122/122件成功**（P04-1〜6：96件／P05-1：26件）。さらに比較ベンチマークの23件が成功し、**P05-1時点の合計は145/145件成功**。基礎のログは`evidence/TEST_RESULTS_P04_1_TO_P05_1.txt`、旧P04-1〜6ログも保存。教材のテスト合格を実世界への有効性の証明と混同しない。
 
@@ -85,7 +90,7 @@ python3 p04_6_preregistered_policy_value.py
 python3 p05_1_ontology_readonly.py
 ```
 
-本番発表版は`journal_club/build_60min_journal_club.py`で再生成。**詳細マスターを消す／発表で全89枚を使う運用はしない**。全33枚の構成・書式と89枚の正規教材を保持する。最後の3枚は update_manager_thesis_slides.py で仮説に沿う内容へ同期する。
+本番発表版は`journal_club/build_60min_journal_club.py`で再生成。**詳細マスターを消す／発表で全93枚を使う運用はしない**。厳選34枚／詳細93枚を保持する。最後の3枚は update_manager_thesis_slides.py で仮説に沿う内容へ同期する。
 
 ## 監査
 
@@ -109,3 +114,14 @@ python3 p05_1_ontology_readonly.py
 [講義全文](P05-2_JA.md)、[共通スキーマを再利用する読み取り専用Trace](experiments/p05_2_evidence_trace.py)、[人工Traceの全結果](evidence/P05-2_SYNTHETIC_TRACE_RESULTS.json)、[安全なListen Labs API GETプローブ](experiments/p05_2_listenlabs_readonly_probe.py)、[API実認証GETの匿名結果](evidence/P05-2_LISTENLABS_AUTH_READONLY_SUMMARY.json)、[193件の全テストログ](evidence/TEST_RESULTS_P04_TO_P05_2.txt)。
 
 **P05-2新規48件、旧P04〜P05-1の145件を含む193/193件成功。** APIキー・ウォレットID/残高・調査名/ID・参加者回答はGitHub・ログに保存しない。外部へのPOST/公開/料金・実参加者への介入はゼロ。**研究保存版89枚・89ページ**、本番発表版33枚は変更なし。次はP05-3。
+
+
+## 2026-11-04 Phase 5最後のP05-3〜P05-5
+
+[役割・権限](P05-3_JA.md)、[復旧・独立証拠](P05-4_JA.md)、[Shadowと実務導入](P05-5_JA.md)を既存Manager Coreの実コードで検証した。サンドボックスで6種類の権限外操作拒否、Outboxの二重実行0、処理後TimeoutのUNKNOWN→PRESENT照合、1回の人工provider送信と独立した人工sensor確認を再現。Liveの外部操作・有料呼出・本人への介入は0。Shadow無効はモデル呼出0、既存Shadow本体のユニットテスト41件成功。
+
+[実行コード](experiments/p05_3_5_end_to_end.py)、[テストコード](experiments/test_p05_3_5_end_to_end.py)、[結果JSON](evidence/P05-3_5_EXISTING_CORE_OFFLINE_RESULTS.json)、[テスト229件](evidence/TEST_RESULTS_P04_TO_P05_PHASE5.txt)、[既存Shadow41件](evidence/P05_3_5_EXISTING_SHADOW_TESTS.txt)。
+
+[独自モデルの訓練・Open-weight公開・会社運営・人間の行動変容の条件付き高速ロードマップ](MANAGER_MODEL_COMPANY_IMPACT_MILESTONES_JA.md)。**P05の講義は完了。P05-5の実会社S1/S2は未達**。学習はP06-1へ進み、別の根拠/許可Gateが整うまで会社の実権限を増やさない。
+
+**34枚の本番プレゼン**：第6枚の一般向け概念解説と第33枚の3本並行ロードマップを加え、旧33枚目の締めは第34枚へ。43分＋15分質疑＋2分余裕。**93枚の詳細保存版**：P05-3/4/5とマイルストーンの4枚（90〜93）を追加し、全93枚の日本語原稿を維持。
