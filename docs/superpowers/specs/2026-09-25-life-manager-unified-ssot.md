@@ -26091,6 +26091,8 @@ liveでdeepseek/deepseek-v4.1-flash、openai/gpt-6.1-terra、google/gemini-3.5-f
 
 #### 原子的な残TODOと現在cursor
 
+2026-11-05の追加公式readback: Appは`active`、最新deploymentは`ready`、permissionsは空、`NAIVE_API_KEY`なし。`GET /v1/apps/{id}/payments`は404で、公式docs上ownerのStripe onboarding前は404となり、card checkoutはowner Stripe accountを使う。`list_as_template`はowner/admin確認とNaïve審査を必須とするため、どちらも現状の完全無人収益経路ではない。別途保存済みのBase receiver-wallet proofは所有確認だけで、Naïve native wallet/runtime signerなし、ETH/USDC残高0、送金・funding 0、売上null、第三者receipt 0。orgのmainnet wallet作成は`forbidden`。これらを収益に数えず、x402も対応wallet/署名/買い手を確認するまでは未検証候補とする。秘密を除いた証跡 → `/Users/anicca/.local/state/naive-browser-company/naive-finance-wallet-readback-20261105.json`。
+
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-00**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
 
 現在のprovider readbackはApp active、permissions empty、`NAIVE_API_KEY`未設定、Computer paused、Appに束縛されたoperatorなし。既存deploymentはbranch由来でmainのimmutable releaseではないため、browser/business callの実行対象にしない。原因境界も確認済み: `anicca-ceo` の9時日次deploymentはscheduledだが、CEO agentの`browser`/`apps`はdisabledで、最新runは`budget_paused`・消費0・computerなし。既存`anicca-browser-operator`はbrowserを持つが`apps`がdisabled/denyでこのAppに未接続。既存CEO/browser operatorは変更せず、NHC-00で専用agentを作る。`GET /v1/blueprints/installs`と`GET /v1/listings`は空配列、`GET /v1/listings/checks`は`404 not_found`。org credits約20.14 USDはcompute残高であり売上ではない。第三者注文・支払・精算・着金の証拠は0。
