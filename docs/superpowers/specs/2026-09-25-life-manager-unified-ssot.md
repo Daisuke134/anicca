@@ -26039,6 +26039,14 @@ Computer configはconfig/naive-browser-company-computer-probe.json。1vCPU/1024M
 
 次の単一仮説は、公式tools.configsでMCP catalog全toolを明示denyし、computer.computers_browser_run_actionだけpermission:askにすることで必要toolがnative登録へ届くか、である。unlisted MCPがdefault denyでもaskになる仕様に対応する。tools_search/tools_executeも明示deny、全件名は同じlive catalogから取得し、target以外enabled:false/permission:deny。通常会社key driver・CEO正式登録・原本非変更・mail無しpublic3actionsは維持。期間8分、agent cap150000、infra50000（public3 deterministic actionのみ、VM/browser8分約22216で留保内）、上限合計200000を残枠内で再計算する。first100切捨て後のpolicy適用であればこの案も不成立なので、同じ有償再試行を繰り返さない。MCPsession driverのallowlist継承は文書保証なし、確認routeもlive catalogにないため現時点では採用しない。
 
+明示deny比較の結果: agt_6jvb3sq1wxd5y7mwbb6d8wngf3 / ses_3ywdtdwz28bf34399hje5besta、live366件中365をenabled:false/permission:deny、対象一件だけask、agent readbackでもenabledは一件。しかしmodelはDSML風のtool呼出を本文に書いたのみで、公式eventのtool_calls=0、browserGET404、費用279microUSD。これは実行ではなく未達である。native登録前の100件打切りと整合するが、内部集合は未観測。session cancel、Computer paused、binding/agent/作成vaultのみ削除、CEO null、key live一覧不在、秘密除去、原本27/pi保持の11checks trueをformal-ceo-filtered-cleanup-readback-20261105.jsonに保存する。同型の再試行をしない。両正式CEO比較のmodel累計10358microUSD、Computer代は別途公式精算を照合し、0と置かない。
+
+ハッカソン既存chat https://messages.ycombinator.com/messages/282272 にDaisuke Naritaとしてexact native検索/dispatch不一致、public-only/mail無し、live366件/対象index208、100件上限は仮説、auth/revenue未達を一度追記し、ページ再読込後found=true/本文/著者を確認した。private yc-mcp-followup-readback-20261105.json。追加の重複送信をしない。
+
+次の正式経路の調査候補: Naive fullstack Appが所有する限定browser tool。公式 https://vetta.sh/docs/api/apps.md#app-mcp-tools はAppの独自MCP endpoint、VETTA_MCP_TOKENのserver-side自動注入、通常tool policyを明記する。同じページのWhat an app can do with Naiveは承認済app用keyと@usenaive-sdk/appのnaive(env)を明記する。固定した当方Computer一台のpublic goto/extract/screenshotだけを専用application toolとして提供し、SDK computers.browserのみをserverで呼ぶ案を評価する。raw control-plane /v1/mcpの別名・全API転送・CEO注入例外の迂回は採用しない。agentはbrowser操作を選び、serverは認証/入力/Computer固定/Capafy域/deadlineだけを機械検査する。既存mail flagとnative askを維持し、root会社controllerが各callを照合する。App独自MCPの認証、server secretの非公開保持、hosting/server実行形式、費用/cleanup、正規権限委譲としての妥当性を一次資料とfresh read-only検証で確認してから実装/資源作成へ進む。現在はAppもそのkeyも作成せず、コード未実装。agent browser開通の代替ではなく開通候補として扱う。
+
+現在cursor=NHC-01: 正式App tool経路の成立条件を確認→専用Computerの同一page継続を実測→専用mail認証/Publisher→新規商品公開→第三者注文/納品/受領→全費用と純利益→実画面英語録画。売上確認$0、signup/login/公開/配信/入金/成功デモは未達のまま。
+
 Reason Networkではlive rosterのdaisuke/dots-one@htch-runtimeへmessage7ZRZ6P8SN7SSDC18WDWP36KKA9をdelivered確認。Slack Muse/Grok threadへts1793804032.348049を送信しprovider link取得。既存loop/account変更は頼まず、成功browser方式とCAPAFY参照先のみ問い合わせる。公式会社template ai-automation-agencyはGmail/毎send人の承認を明記しており、no-human収益の成功例とは呼ばない。既存capafy-autopublish/BEST_PRACTICESのHook Lab34.88USD等は過去記録として読むだけで、今回Naiveの売上へ足さない。
 
 #### 最新SDK・モデル・費用の一次資料再照合
