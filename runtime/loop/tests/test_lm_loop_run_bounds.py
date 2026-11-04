@@ -1341,7 +1341,9 @@ def _assert_entrypoint_terminal_fixture(
                 cancelled=lambda: terminal_kind == "cancel" and owned.exists() and detached.exists(),
             )
         assert result == {"normal": 0, "timeout": 124, "cancel": 75}[terminal_kind]
-        assert time.monotonic() - started < 2
+        # Leave room for the real 2-second macOS process-group probe on loaded CI hosts,
+        # while still catching an accidental wait through the 15-second grace period.
+        assert time.monotonic() - started < 5
         if terminal_kind != "normal" or parent_stays_after_term:
             assert parent_terminated.read_text() == "TERM"
         owned_pid, owned_start = json.loads(owned.read_text())
