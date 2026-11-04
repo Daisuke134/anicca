@@ -1272,6 +1272,31 @@ class ReasonInboxTests(unittest.TestCase):
                                    ("reason_fyi:" + self.message_id,)).fetchone()
         self.assertEqual(json.loads(row[0])["body"].count("fyi attachment"), 1)
 
+    def test_unavailable_attachment_remains_unacked_if_provider_drops_files(self):
+        self.enabled()
+        message = self.reason.inbox.return_value["messages"][0]
+        message["files"] = [{"name": "lost.txt", "path": str(self.root / "missing.txt"), "content": ""}]
+        self.assertFalse(self.runtime.receive()["ok"])
+        message["files"] = []
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        self.assertEqual(self.tasks(), [])
+
+    def test_attachment_for_existing_working_task_remains_unacked(self):
+        self.enabled()
+        with self.runtime.connect() as database:
+            self.runtime.insert_task(database, "reason:" + self.message_id, "codex", "old body")
+            database.execute("UPDATE tasks SET status='working'")
+        inbox = self.root / "reason" / "inbox" / "fixture"
+        inbox.mkdir(parents=True)
+        attachment = inbox / "brief.txt"
+        attachment.write_text("worker cannot see this", encoding="utf-8")
+        self.reason.inbox.return_value["messages"][0]["files"] = [
+            {"name": "brief.txt", "path": str(attachment), "content": ""}]
+        with mock.patch.dict(os.environ, {"REASON_NETWORK_HOME": str(self.root / "reason")}):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+
     def test_reason_rejects_attachment_outside_inbox_or_through_symlink(self):
         for kind in ("outside", "symlink"):
             with self.subTest(kind=kind):
