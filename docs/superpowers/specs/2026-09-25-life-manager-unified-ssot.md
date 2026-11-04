@@ -25945,6 +25945,16 @@ ownerのCapafy許可取得済みという最新情報を保持し、許可を再
 
 完了証拠は本人native write/read、export後の原稿/語数/offer事実/六成果物の照合と永続保存。promptの合格自己申告だけでは合格にしない。rootはSDKで有限開始/状態/成果物exportと保存だけを行う。商品の完成を認証・Capafy公開・実注文・実売上に置換しない。現在cursor=NHC-01のbrowser確認境界、並行=NHC-02の原稿完成/試用。
 
+NHC-02結果: ses_k2m7c55m8ev2mvmtz4fbr8cv84はagent26/immediate、公式resolved model=openai/gpt-6.1-terra、15tools、idle/end_turnで自然終了。公式消費184947microUSD。native read/edit/write/readによりSKILL5768bytes、例2898bytes、販売文865bytes、試用3669bytesを保存。root再検算は例57語/試用57語・各六部・販売本文128語・入力に無いoffer条件なしで合格。spokenの実時間・Capafy実呼出し・顧客売上は未試験。四原稿をNaïve Filesの組織内published scopeへ永続保存し、公式GET/SHA256/download全件一致。これはCapafy公開ではない。file IDs: SKILL fil_e8ngzktpfsv8cb0kgk2zbgwsfw、例 fil_fpjrz3ks4qewgzvt6d0c5ak7ks、販売文 fil_yk70mnmm5y9c0d0acmmvdkanw7、試用 fil_csazv3zsj8xc57t50cms5esjxr。私有export/capafy-native-products-final-20261104に同じ原稿と検算/クラウドreceiptを保存する。
+
+#### NHC-01: 実行方式だけを変える有限診断
+
+公式harnesses.listでpiとvettaがrunnable=true、claude_code/hermesはfalse。liveのvettaはapprovals=trueを返し、静的docsのfalseと異なるためliveを優先する。SDK0.10.0のAgentPatchはharnessを受け取り、古いdocsのcreate-only記述だけで変更不可と断定しない。hypothesis=pi側のtool呼出し/再開でsession許可の継承が失われている。rootはproviderの実コードを持たないため原因確定とはしない。
+
+同じagent/Identity/vault/MCP/browser context/月12USD/task1USDのまま、agent26→一時診断version27はharness=vettaだけをpartial patchする。他の振る舞いfieldを変更しない。production deploymentは26/enabled=falseを維持し、診断versionを本番pinへ昇格しない。モデルとwindowは前回比較と同じsession override Terra/immediate。一件cap300000microUSD/最大4分、最初の再確認発生時は新たな包括許可を足して再現を隠さず閉じる。利用者の個人認証/別Agent/新しい権限/資金移動/追加購入/新Publisherなし。月残とcreditをfresh照合し、足りなければcreateしない。調査はbrowserで実ログインへの次操作を進めるが、未確認の成果を成功扱いしない。
+
+これは一時的な診断versionであり本番releaseではない。実行方式の採用/既定modelの恒久変更は結果を見てsource差分・検証・main由来版から行う。診断結果が出るまで新旧harnessの性能や費用順位を断定しない。owner許可取得済みのinputは維持し、古いsystemの許諾未確認文を別の同時変更で差し替えないことで、今回の因果比較をharnessに限定する。次の本番sourceでは既に無効となった許諾未確認文も最新のowner情報に一致させる。
+
 #### 一次資料と調査の限界
 
 - Naïve [Identity](https://vetta.sh/docs/capabilities/identity.md)、[Email](https://vetta.sh/docs/identity/email.md)、[Wallet](https://vetta.sh/docs/identity/wallet.md)、[Legal](https://vetta.sh/docs/identity/legal.md)、[Runtime](https://vetta.sh/docs/concepts/runtime.md)、[Browser](https://vetta.sh/docs/computer/browser.md)。Identity overviewはinbound wakeのavailability noteと本文が矛盾し、Email詳細はwake対応を記載するため実環境readbackを優先。Walletはtestnet既定/mainnet org有効化、creditsとUSDC別。legalは人の本人確認を含むので無人販売の必須経路にしない。
