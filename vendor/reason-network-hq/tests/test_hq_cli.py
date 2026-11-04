@@ -153,6 +153,22 @@ class HqCliTest(unittest.TestCase):
             self.assertEqual(page["holds"], [])
             self.assertIsNone(page["next_cursor"])
 
+    def test_oversized_page_hold_records_attachment_presence(self):
+        for files in ([], [{"name": "brief.txt", "content": "", "path": "/inbox/brief.txt"}]):
+            with self.subTest(has_files=bool(files)):
+                message = {**MESSAGE, "id": "01M6G37N2HYGRZ2JAJ4KC98QBY", "body": "x" * 5000, "files": files}
+                def one(request):
+                    if request["op"] == "inbox":
+                        return {"ok": True, "result": {"messages": [message], "text": ""}}
+                    return replies(request)
+                with Fixture(one) as fixture:
+                    result = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "4096")
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    page = json.loads(result.stdout)
+                    self.assertEqual(page["messages"], [])
+                    self.assertEqual(page["holds"][0]["has_files"], bool(files))
+                    self.assertFalse(any(request["op"] == "delivered" for request in fixture.requests))
+
     def test_page_continues_after_ack_removes_anchor_and_revisits_old_arrival(self):
         messages = [{**MESSAGE, "id": f"message-{i:04d}", "sent_at": i,
                      "body": "x" * 65536} for i in range(33)]
