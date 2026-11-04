@@ -6,6 +6,10 @@
 
 ### 現在の残TODOとcursor
 
+現在cursor **HQ-UNLOADED-DISPATCH**: disk-watchdogの旧release実行先が消失しexit 78となっていたため、既存main由来releaseのinstallerで同ownerを復旧した。自然receiptは回収3,034,472 bytes、errors 0、protected_deletions 0。receive/work/scheduleはそれぞれ自然成功したが、その後も資源待ちが発生する。admissionには古いqueued ownerがあり、複数の停止中ownerが60秒予約を繰り返すことを確認した。これが遅延への寄与候補であり、唯一の原因とは未確定。
+
+次の限定修正は、plist不在かつlaunchd未登録を正しく確認したownerだけの予約を安全に保留し、実行中・未確定effectと元queueを維持する。ownerのapply/start/restartとの競合、確認不能時の扱い、再開失敗を実SQLiteと隔離fixtureで検証する。既存ownerや外部effectを削除・再送しない。本人wakeと業務継続の優先順は維持し、この修正は受信遅延の依存作業とする。全agentの1分以内応答は実測まで未達。
+
 今回の範囲は、同ownerの直前task23cd35が完了したPR9161の公式統合/成果物照合と、NEAR受注・接続修復threadの差分を反映する文書訂正（task e204c5）。runtime・cadence・閾値・認証・外部effect・親PR9178/9179は変更しない。完了条件は公式根拠を保存し、必要CI全PASS後mainへ統合すること。
 
 順序変更: 旧順は容量回復→本人wake/収益、新順は本人wake/引継ぎ→業務継続→実際に延期された処理の限定復旧。理由は、容量の少なさ自体を全業務の停止理由にせず、独立して進められる成果を先に出すため。容量条件を無視した起動や安全床の引下げを意味しない。現在cursorは本人経路の追跡欠落と有効な引継ぎ先の確認。進行中owner/effectは維持する。
