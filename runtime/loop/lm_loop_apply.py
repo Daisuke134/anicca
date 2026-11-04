@@ -633,9 +633,12 @@ def install_one(item: dict, target: Path,
                         admission_resumed = bool(admission_resume(item["loop_id"]))
                     except Exception:
                         admission_resumed = False
-                return {"ok": True, "label": label, "loaded_arguments": loaded,
+                return {"ok": admission_resume is None or admission_resumed,
+                        "label": label, "loaded_arguments": loaded,
                         "release_sha": item["release_sha"],
-                        "admission_resumed": admission_resumed}
+                        "admission_resumed": admission_resumed,
+                        "detail": "admission resume failed" if (
+                            admission_resume is not None and not admission_resumed) else ""}
             if loaded == item["expected_arguments"] and not environment_ok:
                 last_detail = "loaded browser environment disagrees"
         launchctl(["bootout", service])

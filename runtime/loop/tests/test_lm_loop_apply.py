@@ -2890,7 +2890,7 @@ class LmLoopApplyTest(unittest.TestCase):
             )
         self.assertEqual(resumed, [])
 
-    def test_admission_resume_failure_does_not_fail_apply(self):
+    def test_admission_resume_failure_is_reported_by_apply(self):
         target = self.root / "installed.plist"
         rendered = build_apply_plan(registry(), self.root, SHA)[0]
 
@@ -2906,7 +2906,7 @@ class LmLoopApplyTest(unittest.TestCase):
             rendered, target, launchctl, attempts=1, sleeper=lambda _: None,
             admission_resume=raising_resume,
         )
-        self.assertTrue(result["ok"])
+        self.assertFalse(result["ok"])
         self.assertFalse(result["admission_resumed"])
 
         def false_resume(loop_id):
@@ -2916,7 +2916,7 @@ class LmLoopApplyTest(unittest.TestCase):
             rendered, target, launchctl, attempts=1, sleeper=lambda _: None,
             admission_resume=false_resume,
         )
-        self.assertTrue(result["ok"])
+        self.assertFalse(result["ok"])
         self.assertFalse(result["admission_resumed"])
 
     def test_swap_increases_settle_time_before_retry(self):
