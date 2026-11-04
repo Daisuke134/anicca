@@ -10,7 +10,7 @@
 
 ### 現在の残TODOとcursor
 
-現在cursor **HQ-BOUNDED-RECEIVE**: PR9182はCI全PASS・main d939c077へ統合、完全release d939c077を受信/work/scheduleへ反映した。受信・投入は新releaseから自然起動するが、disk_floor_lowで延期されており成功/SLAは未証明。受信以外のownerや進行中effectは維持する。収益task fcdfddは完了・結果Slack読み戻し済み、PR9183はmain 85746442へ統合・report blob一致。5 pending/受注0は確認時点の値で、納品/売上は未確認。Dotsの状態照会task a9879fは登録→着手約1116秒、結果のReason送信receiptはqueuedで本人受領未確認。
+次cursor **HQ-BOUNDED-RECEIVE**: PR9182はCI全PASS・main d939c077へ統合、完全release d939c077を受信/work/scheduleへ反映した。受信・投入は新releaseから自然起動するが、disk_floor_lowで延期されており成功/SLAは未証明。受信以外のownerや進行中effectは維持する。収益task fcdfddは完了・結果Slack読み戻し済み、PR9183はmain 85746442へ統合・report blob一致。5 pending/受注0は確認時点の値で、納品/売上は未確認。Dotsの状態照会task a9879fは登録→着手約1116秒、結果のReason送信receiptはqueuedで本人受領未確認。
 
 受信継続の診断: 現行HQ受信は共通4GiB床で止まり、Reason保存後ACK・source一意制約とSlack cursor再読がある一方、個別本文/累積page/DB journalの書込み上限は未確定。VM領域は観測間に約2GiB増加し、現行swap-in監視はallocation増加そのものを抑える証明ではない。まず既存経路で受信のbytes/page/DB journalと失敗時ACK/cursor挙動を隔離実測し、極端な本文やENOSPCでも無損失・重複0・他メッセージ継続を満たす限定修正を設計する。上限値は証拠とowner用途から決定し、黙った切詰めや保存前ACKを禁止。受信専用の条件緩和はswap成長・必要余裕の測定と検証を満たすまで実装しない。現在の床と他ownerの設定は維持する。
 
