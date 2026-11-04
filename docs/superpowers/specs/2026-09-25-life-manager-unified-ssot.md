@@ -26047,7 +26047,19 @@ Computer configはconfig/naive-browser-company-computer-probe.json。1vCPU/1024M
 
 独立review naive-app-scope-review-1105はApp resource delegationを公式支持と評価するが、VETTA_MCP_TOKENのorg全共有とsession承認相関をHIGHと指摘した。最小修正はApp.mcp=nullを維持して自動共有を使わず、専用BROWSER_TOOL_TOKENをserver write-only secretへ保存し、同tokenはprivateSSOTと対象agent_idだけに束縛する通常external MCP vaultへ保存する方式とする。native mcp_serversはApp独自/mcpへ接続し、raw platform /v1/mcpを別名化しない。fresh再確認は自動共有HIGH解消、承認相関はcontrollerが公式tool.confirmのagent/session/tool_call_id/args hashを実行前照合して不一致deny・一許可一実行を守る条件で解消とした。tokenはagent限定でsession限定ではないため、一つの有限sessionだけを駆動し、並列session/cronは作らない。operation_idの再送重複をprovider Idempotency-Keyで防げるか公式仕様/実呼出元を次に確認し、receipt事後照合だけで未承認実行予防を証明したとは言わない。App hostingの実行形式/秘密非露出/SDK互換/費用/cleanupは実装と有限cloud試験で確かめる残条件。既存apps/monk-mcp/src/server.mjsの標準Request/Response型MCPを再利用候補にし、新しい汎用agent frameworkは作らない。
 
-現在cursor=NHC-01: 正式App tool経路の成立条件を確認→専用Computerの同一page継続を実測→専用mail認証/Publisher→新規商品公開→第三者注文/納品/受領→全費用と純利益→実画面英語録画。売上確認$0、signup/login/公開/配信/入金/成功デモは未達のまま。
+#### NHC-01の公式REST Browser契約とCapafy account制約 (2026-11-05)
+
+公式Browser API https://vetta.sh/docs/api/browser.md は専用Computerに対するREST `goto/click/type/extract/act/observe/links/screenshot`、Identity Vaultへ生成passwordを封印する`signup`、保存済credentialを使う`login`を提供する。通常agent browser toolのsignupはperson confirmでpauseするが、`ask_actions`はRESTで開いたbrowserには適用されないと公式browser guideが明記する。これは制御されたcloud serviceから使える別経路の根拠であり、no-human完走やCapafy登録の実測証拠ではない。Browser sessionの`session_id:null`とComputer browser statusを保存し、agent入力pause後も同一pageが残るかを次に有限実測する。
+
+公式API overview https://vetta.sh/docs/api/overview.md#idempotency はmutating POSTが`Idempotency-Key`を受け付け、同key/同bodyの24時間以内の再送は元応答を返す、同key/別bodyは409、処理中の同keyは409と規定する。Browser APIはgoto/actにkey必須。SDK 0.10.0のclientはidempotencyKey providerを受け取るため、App toolはagentが選ぶoperation_idを同一論理呼出しのkeyに結び、args変更を再利用拒否にする。
+
+公式Apps API https://vetta.sh/docs/api/apps.md#app-mcp-tools はfullstack Appの独自MCP endpoint、server-side `VETTA_MCP_TOKEN`、toolをagentの通常allow/ask/deny policyで渡す動作を定義する。`apps.allowed_apps`を指定しないと全org appが見える。`@usenaive-sdk/app@0.1.0`の`naive(env)`はowner-approved app API keyをserver-sideで使い、Fetch `Request/Response`型に対応する。fullstack runtimeの個別guide URLは404のため、最小App deployで実際のentrypoint・server secret・browser SDK呼出しを確認する。browser toolは固定Computer IDとCapafy domainに制限し、raw `/v1/mcp` proxyを作らない。
+
+Capafy公式Terms v1.2 (2026-09-28) https://capafy.ai/terms-of-service は自動tool/bot/scriptアクセスに事前の書面許可を要求し、偽accountを禁止する。Publisher Agreement https://capafy.ai/publisher-agreement/ §2.9は同一control下のPublisherごとに一accountとし、追加は書面承認を要する。payoutには正確なidentity/contact/payout/tax情報が必要で、未解決KYC review中は送金保留となり得る。Daisはautomation permissionを取得済みと申告しているが、その書面receiptは今回repo内で未確認。既存Publisher accountがあるという保存済み証拠を優先し、二つ目のPublisher accountや架空identityは作らない。利用者の個人Gmail/Google資格情報は使わず、camera KYCは迂回しない。
+
+2026-11-05のNaïve公式GET: 組織残高20,137,415 micro-USD、CEO null。Computer `cmp_01a1a71b6fb47481a21961262681fc2a`はstandalone/agent_id null/paused、Capafy domain allow-list。原本agent `agt_e1hvkwgrdrx119zh22qthavwt4`はpi・GPT-6.1 Terra、deployment `dep_aqf597v5eqa3e25ff2z22rq9j8`はdisabled。これらはこのreadで変更していない。
+
+現在cursor=NHC-01: 固定済み専用ComputerでREST goto→extract/screenshotを実行し、API browser sessionが同一Computer/pageに残ることと実費を公式GETで確認→一agentだけに公開するApp MCP toolから同じAPIを使う→既存Publisher accountの認証/権限→新商品公開→第三者注文/納品/入金→全費用と純利益→実運転の英語録画。売上確認$0、signup/login/公開/配信/支払い/成功デモは未達。
 
 Reason Networkではlive rosterのdaisuke/dots-one@htch-runtimeへmessage7ZRZ6P8SN7SSDC18WDWP36KKA9をdelivered確認。Slack Muse/Grok threadへts1793804032.348049を送信しprovider link取得。既存loop/account変更は頼まず、成功browser方式とCAPAFY参照先のみ問い合わせる。公式会社template ai-automation-agencyはGmail/毎send人の承認を明記しており、no-human収益の成功例とは呼ばない。既存capafy-autopublish/BEST_PRACTICESのHook Lab34.88USD等は過去記録として読むだけで、今回Naiveの売上へ足さない。
 
@@ -26071,7 +26083,7 @@ liveでdeepseek/deepseek-v4.1-flash、openai/gpt-6.1-terra、google/gemini-3.5-f
 
 | ID | 一つの作業 | 完了の証拠 |
 |---|---|---|
-| NHC-01 | 取得済みowner許可のもと専用AgentMailで実認証し、同社Publisher販売権限を確認する | 認証済みaccountと販売画面のreadback。個人Gmail借用・普通利用loginだけで代用しない |
+| NHC-01 | 取得済みautomation許可のもと専用AgentMail/Identityで既存の単一Publisher accountへ認証し、販売権限を確認する | 同一既存Publisherの認証・販売画面readbackと書面automation許可の記録。二つ目のPublisher account、偽identity、個人Gmail/Google credentialを使わない |
 | NHC-02 | Capafyの短尺動画制作分野の成功商品の需要・成果物・価格・配信を調べ、一商品を選ぶ | 一次URL/観測指標/模倣する仕組み/自社素材/実行費の記録。売れている既存商品は変更しない |
 | NHC-03・完了 | 選んだCapafy業務を既存Naïve設定/定期inputへ反映する | PR9196/main b412c1c0cd→公式agent25/deployment25一致、不変チェック全PASS。予算増額なし |
 | NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、自社/利用者の人間承認0、Capafy側の審査は別記録。自社側に必須人間手順があれば無人完了としない |
