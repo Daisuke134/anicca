@@ -218,8 +218,8 @@ def add_pdf_footer(writer, p, number, total, background=(1.0,1.0,1.0)):
 def build():
     source=Presentation(str(FULL_PPTX))
     prior=len(source.slides)
-    if prior not in (82,85):
-        raise RuntimeError(f"Expected 82/85-source deck, found {prior}; inspect before building")
+    if prior not in (82,85,87):
+        raise RuntimeError(f"Expected 82/85/87-source deck, found {prior}; inspect before building")
     if len(PdfReader(str(FULL_PDF)).pages)!=prior:
         raise RuntimeError("Full PDF not aligned with source slide count")
     create_history(source)

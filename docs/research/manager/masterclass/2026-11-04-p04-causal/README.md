@@ -1,8 +1,8 @@
-# Manager Masterclass｜P04-1〜P04-6 因果推論と行動介入
+# Manager Masterclass｜P04-1〜P05-1 因果推論・Ontology・行動と実行の接続
 
 **更新：2026-11-04（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
 
-**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6は講義・人工実験まで進み、次はP05-1。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
+**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1は講義・人工実験まで進み、次はP05-2。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
 
 
 ## Managerの中核仮説と実証すべき価値
@@ -21,19 +21,20 @@
 | [60分発表 PDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf) | **33ページ**、発表画面用 |
 | [全33枚日本語読み上げ原稿](journal_club/SPEAKER_SCRIPT_60MIN_JA.md) | 1ページごとの自然な読み上げ文と元スライド・時間 |
 | [60分の進行表](journal_club/RUN_OF_SHOW_60MIN_JA.md) | **41.7分講演＋15分質疑＋約3分の余裕**、章別時間・重要スライド・短縮ルート |
-| [発表版を再生成](journal_club/build_60min_journal_club.py) | 正本の85枚版＋85ページPDFから再構築。別々に管理し、元ファイルを破壊しない |
+| [発表版を再生成](journal_club/build_60min_journal_club.py) | 正本の85枚（P05-1追加後は87枚）と対応PDFから再構築。別々に管理し、元ファイルを破壊しない |
 
 **優先順位：** ①基礎と研究史 ②どの対象にどの模型を使うか ③既存研究・企業は何を主張しているか ④何を検証して何をまだ検証していないか ⑤最後にManagerが目指すこと。数式の厳密な導出・企業の細かい数字・P04-6の全シミュレーションは本番で列挙しない。質疑用の長い資料に残す。
 
-## 全85枚の詳細保存版（本番で一挙上映しない）
+## 全87枚の詳細保存版（本番で一挙上映しない）
 
 | ファイル | 内容 |
 | --- | --- |
-| [詳細85枚PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | 既存82枚のうちManager対応の46〜48枚を今回の研究仮説に更新し、P04-6研究付録3枚を追加 |
-| [詳細85ページPDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf) | 85ページ。元82ページを基礎に、P04-6追加3ページとManager対応ページ46〜48を画像レンダリングして統合 |
-| [全85枚の日本語発表ノート](journal_club/SPEAKER_NOTES_JA.md) | 1〜85の全ページ分。PowerPoint内部にも全85枚のノートを保存 |
+| [詳細87枚PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | 既存82枚のうちManager対応の46〜48枚を今回の研究仮説に更新し、P04-6研究付録3枚を追加 |
+| [詳細87ページPDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf) | 87ページ。元82ページ＋P04-6付録3ページ＋P05-1付録2ページ。Manager対応ページ46〜48と付録を必要に応じ画像レンダリングして統合 |
+| [全87枚の日本語発表ノート](journal_club/SPEAKER_NOTES_JA.md) | 1〜87の全ページ分。PowerPoint内部にも全87枚のノートを保存 |
+| `journal_club/build_p05_1_appendix.py` | **85枚→87枚の研究付録追加**。本番用33枚は不変 |
 | `journal_club/build_p04_6_appendix.py` | 82枚版→85枚版への追加作成に使用。すでに85枚なら二重追加しない |
-| `journal_club/build_p04_45_appendix.py` | **歴史的な74枚→82枚作成スクリプト**。現在85枚版への再実行はしない |
+| `journal_club/build_p04_45_appendix.py` | **歴史的な74枚→82枚作成スクリプト**。現在87枚版への再実行はしない |
 | `journal_club/export_p04_45_pdf.py` | **歴史的な74ページ→82ページPDF結合スクリプト** |
 | `journal_club/RUN_OF_SHOW_JA.md` | 元のフル講義の履歴上の進行表。**2026-11-05本番は60MIN版の進行表を優先** |
 
@@ -47,8 +48,19 @@
 | `P04-4_JA.md` | CATE・効果異質性・方策選択・媒介 | 架空24,000人＋媒介20,000人、12テスト |
 | `P04-5_JA.md` | study holdout・予測凍結・介入効果予測 | 架空180研究、11テスト。**実公開RCTの未見予測は未実施** |
 | `P04-6_JA.md` | 事前登録・方策対方策RCT・意思決定価値・無計画な途中解析 | 架空40,000人＋A/A 750試行、16テスト。**実研究の事前登録・実介入は未実施** |
+| `P05-1_JA.md` | Ontology・状態・時点・知識グラフ・Digital Twin・既存技術の徹底調査 | 既存Manager Coreを再利用し人工5イベントのread-only投影、26テスト成功。実行権限・実人間は未接続 |
 
-単体テストは合計 **96/96件成功**（14 + 17 + 26 + 12 + 11 + 16）。`evidence/TEST_RESULTS_P04_1_TO_P04_6.txt` に最新のログを保存。教材のテスト合格を実世界への有効性の証明と混同しない。
+単体テストは合計 **122/122件成功**（P04-1〜6：96件／P05-1：26件）。最新ログは`evidence/TEST_RESULTS_P04_1_TO_P05_1.txt`、旧P04-1〜6ログも保存。教材のテスト合格を実世界への有効性の証明と混同しない。
+
+## P05-1の調査と実装結果
+
+**結論：巨大なOntologyを一から作らず、既存のBCIO・PROV-O・JSON-LD・JITAI・既存Manager Coreを再利用する。** [日本語講義全文](P05-1_JA.md) には一次資料、先行研究の限界、プロトコル、既存コードのマッピング、将来の評価基準を整理。
+
+- [既存のGraph Skill](https://github.com/Daisuke134/life-manager/blob/main/skills/graph-engineering/SKILL.md) はGraphを証拠のread-only projectionと位置付けているので、その方針を守った。
+- `experiments/p05_1_ontology_readonly.py`は既存Manager Coreの`StateMachine`と`InterventionPlan`を再利用し、人工5イベントの知識グラフを構築する。実行・事業・個人情報とは接続しない。
+- 26件の単体テスト、出典SHA、時系列、知らないことを知らないまま扱う制約、実行権限をGraphから生成しない制約を検証した。
+- [実行結果](evidence/P05-1_READONLY_SYNTHETIC_PROJECTION.json)、[全122件のテストログ](evidence/TEST_RESULTS_P04_1_TO_P05_1.txt)。
+- 実行・モデルの実世界の改善は未検証。**次の講義：P05-2「実験ID・行動ID・証拠の共通形式」。**
 
 ## P04-6の新規実行結果（完全架空）
 
@@ -66,11 +78,12 @@ Python 3.11+とNumPy、PowerPoint編集はpython-pptx、PDF/追加スライド�
 
 ```bash
 cd docs/research/manager/masterclass/2026-11-04-p04-causal/experiments
-python3 -m unittest discover -p 'test_p04_*.py' -v
+python3 -m unittest discover -p 'test_p0*.py' -v
 python3 p04_6_preregistered_policy_value.py
+python3 p05_1_ontology_readonly.py
 ```
 
-本番発表版は`journal_club/build_60min_journal_club.py`で再生成。**詳細マスターを消す／発表で全85枚を使う運用はしない**。全33枚の構成・書式と85枚の正規教材を保持する。最後の3枚は update_manager_thesis_slides.py で仮説に沿う内容へ同期する。
+本番発表版は`journal_club/build_60min_journal_club.py`で再生成。**詳細マスターを消す／発表で全85枚を使う運用はしない**。全33枚の構成・書式と87枚の正規教材を保持する。最後の3枚は update_manager_thesis_slides.py で仮説に沿う内容へ同期する。
 
 ## 監査
 
