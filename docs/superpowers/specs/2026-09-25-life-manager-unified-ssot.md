@@ -1,6 +1,8 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
 
+並行cursor **HQ-REASON-MACOS-ARTIFACT**: 受信ページ化はmain 0ac0f558に統合済みだが、対応する専用Mac binaryの未構築とpage_enabled=falseにより本番未有効。ローカルcargo buildは空き容量を圧迫したため自分のbuildを停止済み。既存のReason CIにarm64 Mac buildと実socket試験を追加し、main push由来のみSHA付き専用artifactを保存する。受入はPR CI・独立review・main統合後、main runのcommitとartifact SHA・architecture・socket testを照合し、既存ownerと競合しない時に専用binaryと設定を反映して自然受信を確認する。既存Reason engineのbinaryは置換しない。
+
 並行cursor **HQ-REASON-INBOX-PAGES**: Reason daemonは本文上限64KiBだがHQ clientは全未読と表示用textを重複出力し、33件×64KiBの隔離fixtureで4,327,967文字となりHQの4MiB制限で全受信を拒否する。未読ACKはしないが後続依頼が停止する。旧順=容量bounded化後に受信継続、新順=旧senderとの互換性を維持してHQ専用受信をページ化し、添付保持・予約修正と並行して進める。実DB・既存daemon・他sessionは変更しない。
 
 独立調査: daemonは現在全未読を読み、CLIにmessagesとrendered textを返すため、CLI出力だけのページ化ではdaemon〜client間メモリはboundedにならない。offsetや前回IDの配列検索はACKでanchorが消えると欠落する。検討する限定修正は既存wire互換のopt-inで本文を切らずUTF-8 bytes上限のmessage単位出力、(sent_at,id)の安定keyと周回終端、保存・保留とcursorの原子的記録。timestampが同じID、遅着・ACK失敗・保留先頭を跨ぐ回帰で確認し、daemon側全量メモリは別の未解決課題として残す。
