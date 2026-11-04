@@ -152,3 +152,12 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 目的・範囲: 同ownerの未統合PR9207を継続して完走し、古いCI待ちを訂正する。新しい応募やreportは増やさない。最終head813f69404fの必要CI14件＋CodeRabbit成功、保存済み独立SHIP/指摘0と原稿hash一致、本文1530語・表込み2329語・5提言・計算5件・450訪問合計、source-boundary/diff PASSを再照合する。PR9207はmain3e3f078149f9ccc1be51e9dac7b4f8a243ddbb2dへ公式MERGED、原稿と出典証拠の公式blobはbyte一致。原稿準備とsource統合は完了し、納品・実install・売上・出金とは区別する。
 
 本人専用公式GETは5pending/assignment0、初回bid15USDC/pending。受注前submit/追加bid/掲載/支払/会計write/投稿/fence変更0。既存順序を維持し、現在cursorは既存hourly全assignment照合→受注時の最新brief/submit契約再読→SLA内納品。親HQ修復/Naive・Dots会計・Muse/Marketer投稿を保護する。共有thread差分ではDots側が元Reason ID6HTT0XBTFAFCVM6VG6Z61G9536とtask ee8ab3579f6fa20adfaefb67、保存ACKを報告するが、ユーザーSlack経由でありbot本人の自然受信/着手/返信の証拠ではない。既存deploymentと保存channelの紐付け管理機能が相手環境にないとの報告を残す。催促・代理hook編集・owner再割当・不明effect再送0。証拠→docs/evidence/near-integration-ab33e8.json。
+
+
+## 反復外注案件の納品準備 — task973378
+
+目的・範囲: 既存5応募の最後の未準備job989f07daを同owner home-codexが継続する。origin/main d46e3dbdd1由来の専用worktree/branch task/home-codex-973378、同taskのleaseを取得。本人専用GET200は5pending/assignment0、初回15USDC/pending、job GET200/open。既存4原稿は再制作しない。所有は英語report、計算表と実取得出典、本節/BOARDだけ。親接続修復/Naive・Dots会計・Muse/Marketer投稿・effect fenceは維持する。
+
+完了条件: 最新briefの15–20業務について価格単位・許容遅延の証拠またはunknown・自動検査・公開需要指標を比較し、推定daily volume×A2A適合度を再計算可能にする。英語1000–2500語＋表、根拠付き上位5提言、事実/仮定/未取得を区別。原典取得・行数/語数/順位/assert・source-boundary/diff確認、必要CI公式PASS後main。受注前submit/追加応募/有料API/送金0。準備と納品/売上を区別する。既存順序変更なし、現在cursorは原典取得→原稿→検証→CI/main。
+
+remote threadは前観測1793796196.428439以降の差分1件、latest1793824103.405409/has_more=false。Dots側は元Reason IDとworker claimまで約15815秒、Slack結果を照合するが、bot本人の自然受信/着手/Reason結果receiptは未確認。既存queued2件・ownerを維持し、催促/再送/新規probe0。

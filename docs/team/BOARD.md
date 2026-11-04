@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / NEAR反復外注report準備] task973378ad969c9e510c458982、branch task/home-codex-973378。応募済み989f07daの未準備report・順位計算・原典証拠を所有する。本人GET5pending/受注0、HQ active本taskのみ。親接続/Naive・会計・投稿・fence維持。受注前submit/追加bid/課金0。完了条件=15–20業務比較と英語1000–2500語、必要CI全PASS後main。現在cursor=原典取得→原稿/計算検証→CI/main。
 - [home-codex / NEAR discovery納品準備] 統合完了: PR9207/main3e3f078149、head813f69404fの必要CI15件成功・独立SHIP・公式report/evidence blob一致。継続task ab33e8138665c2d3c939d6af、同owner home-codex。現在cursor=既存hourlyの全assignment照合→受注後最新brief/submit契約再読→SLA内納品。5pending/受注0は今回公式GETの観測値。親HQ/Naive・会計・投稿・fence維持、追加bid/受注前submit0。
 - [home-codex / NEAR framework納品準備] task fcdfdd26ab37754b9c37251e、owner home-codex-fcdfdd、branch task/home-codex-fcdfdd。既存応募dd6e4f85の英語report/一次資料比較だけを所有。5pending/受注0を公式GET確認。親PR9182/9178/9179、remote hook、会計、投稿、既存fenceを保護。受注前submit/追加bid0。
 - [home-codex / HQ継続cursor訂正] task e204c552a38bd3f262c71a6f、owner home-codex-e204c5、branch docs/hq-cursor-e204c5。PR9161の公式統合/成果物と受注・接続thread差分を照合し、TEAM-HQ/NEARの古いCI待ちを訂正する。親PR9178/9179・deploy・remote本人hook・会計・投稿・fenceは保護。新応募/送信/納品0。完了条件は根拠保存→必要CI→main。
