@@ -11,7 +11,7 @@
 ## タスク
 - [home-codex / NEAR framework納品準備] task fcdfdd26ab37754b9c37251e、owner home-codex-fcdfdd、branch task/home-codex-fcdfdd。既存応募dd6e4f85の英語report/一次資料比較だけを所有。5pending/受注0を公式GET確認。親PR9182/9178/9179、remote hook、会計、投稿、既存fenceを保護。受注前submit/追加bid0。
 - [home-codex / HQ継続cursor訂正] task e204c552a38bd3f262c71a6f、owner home-codex-e204c5、branch docs/hq-cursor-e204c5。PR9161の公式統合/成果物と受注・接続thread差分を照合し、TEAM-HQ/NEARの古いCI待ちを訂正する。親PR9178/9179・deploy・remote本人hook・会計・投稿・fenceは保護。新応募/送信/納品0。完了条件は根拠保存→必要CI→main。
-- [Codex / NAIVE-BROWSER-E2E] 本番main048/agent23/priority/月9、個人Google注入0。有償QA本人読取/保存成功。n8nは通常emailフォーム確認、正式確認1回後signup needs service、同card再発で再回答0/cancel。57live0/paused/prod23全fields、費52254/ledger9、月残129431（後計上あり）。cursor2=source cap9→10/desired24の最小差分→CI/review/main→budget-only24適用→service/url明示の通常signup→確認/連絡→有料依頼/納品/入金。元7TODO/売上等未達。PR9177。正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md
+- [Codex / NAIVE-BROWSER-E2E] live agent26/pi/月12USD/task1、production26/enabled=false。Terraのnative原稿修正/試用が15tools/end_turn、費184947microUSD、例57語/試用57語・六部・販売文128語を再検算。四原稿はNaïve組織FilesのGET/hash/download一致。Capafy認証/公開/売上未達。harness PATCHは受理後も26/piで未反映。candidate27は古い許諾未確認のsystem禁止をowner許可取得済みへ修正し、Terra/immediateを既定化、停止中のscheduleをsourceに一致させる。次はCI/main→公式27反映→専用メール認証。正本・残TODO→統合SSOT「Naïve browser company」、現在NHC-01。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
@@ -320,7 +320,3 @@
 - home-codex task a28e9fa3（継続）: PR9161旧headのCI15件成功を公式確認。mainのNaive完了記録を保ってBOARD競合を解消。Decimal再計算/source-boundary/diff PASS、本人GETは5pending/受注0、remote差分0。次: 同PRの新head必要CI→main。納品/再応募/会計/投稿/送金0。
 
 - home-codex task e204c5: PR9161公式MERGED/main9f930f5c・必要CI15件/3成果物byte一致を確認し、古いCI待ちcursorを訂正。本人NEAR5pending/受注0、remote差分0（parent除外）。売上/費用は既存collectorの観測時刻/期間を保持し利益未確定。親PR/運用/effect変更0。次: 本訂正の必要CI→main、受注時納品/本人修復receiptの元ID照合。証拠 docs/evidence/hq-continuation-e204c5.json。
-
-- Codex / Naïve Capafy: PR9194ランキング・PR9196/main b412c1c0cd統合、公式agent25/deployment25一致・既存権限/予算不変。本人原稿3ファイル保存、2ファイルread成功。YC紹介4人へ依頼/履歴一致、返答未確認。認証/公開/売上未達、file-onlyもinternal_error再現。正本・残TODO→統合SSOT「Naïve browser company」、現在NHC-01。
-
-- Codex / Naïve v26候補: 既存credit内の月12USD/task1維持と、Capafy Terms3.4/6.2の許諾未確認時にbrowser/account操作を行わない境界をsource化。現在live25、売上未達。次はCI/main→公式反映→Computer内の商品修正/試用。正本→統合SSOT Naïve節。
