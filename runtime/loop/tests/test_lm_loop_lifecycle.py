@@ -1,10 +1,13 @@
 import tempfile
+import fcntl
+import sqlite3
 from unittest.mock import patch
 import unittest
 from pathlib import Path
 
 from runtime.loop.lm_loop_lifecycle import lifecycle, lifecycle_one
 from runtime.host.resource_admission import owner_deploy_lock
+from runtime.host import resource_admission as admission
 
 
 REGISTRY = {"schema_version": 2, "loops": {
@@ -101,6 +104,40 @@ class LmLoopLifecycleTest(unittest.TestCase):
 
             self.assertEqual(result["return_code"], 0)
             self.assertEqual(actions, ["bootstrap", "resume"])
+
+    def test_stop_does_not_assume_unloaded_on_preflight_error(self):
+        actions = []
+        result = lifecycle_one(
+            "stop", "a", REGISTRY["loops"]["a"], Path(self.state_directory.name),
+            lambda args: (77, "preflight failed"), admission=actions.append,
+        )
+        self.assertNotEqual(result["return_code"], 0)
+        self.assertEqual(actions, [])
+
+    def test_stop_retries_suspend_after_control_busy_and_unloaded_readback(self):
+        root = Path(self.state_directory.name)
+        admission.activate_durable_v2()
+        admission.enqueue_durable("deterministic", "a", admission_class="revenue",
+                                  occurrence_id="a:wake")
+        loaded = True
+        def launchctl(args):
+            nonlocal loaded
+            if args[0] == "bootout" and loaded:
+                loaded = False
+                return 0, ""
+            return 113, "Could not find service"
+        callback = lambda action: admission.suspend_durable("a")
+        with (root / "control.lock").open("a+") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            first = lifecycle_one("stop", "a", REGISTRY["loops"]["a"], root,
+                                  launchctl, admission=callback)
+        self.assertNotEqual(first["return_code"], 0)
+        second = lifecycle_one("stop", "a", REGISTRY["loops"]["a"], root,
+                               launchctl, admission=callback)
+        self.assertEqual(second["return_code"], 0)
+        with sqlite3.connect(root / "admission-v2.sqlite3") as db:
+            eligible = db.execute("SELECT next_eligible_at FROM priorities WHERE owner_id='a'").fetchone()[0]
+        self.assertEqual(eligible, float("inf"))
 
     def test_stop_reports_a_failed_admission_suspend(self):
         with tempfile.TemporaryDirectory() as directory:

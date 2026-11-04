@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Callable
 
@@ -40,6 +41,10 @@ def _lifecycle_one_locked(action: str, loop_id: str, entry: dict, agents_dir: Pa
 
     if action == "stop":
         rc, detail = run(["bootout", service])
+        if rc != 0:
+            print_rc, printed = run(["print", service])
+            if print_rc == 113 and re.search(r"(?i)could not find service", printed):
+                rc, detail = 0, printed
         if rc == 0 and admission is not None:
             try:
                 suspended = admission("suspend")
