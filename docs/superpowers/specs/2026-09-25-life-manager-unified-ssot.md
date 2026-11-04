@@ -25914,6 +25914,12 @@ DaisはGLM固定の継続を見直し、Codex/Muse/Grokbot/Dotsも含め、実�
 
 実測追記: Terraの同sessionはbudget750000microUSD反映後にresumeし、専用AgentMail.list_messages成功を確認したが、browser.goto/actの確認待ちが再発し、ログイン後のaccount readbackに届かない。最終cancelledの公式消費418865microUSD（うち初回GLM bootstrap64238microUSD、残354627microUSDはTerra側の実行とtool費用）。Terra切替時刻12:01:34UTC→停止readback12:09:27UTC。rootの補助steering2件・browser確認解除1件を含み、無介入成功ではない。GLM trial176882microUSDも未完走。どちらもcompleted-task単価を算出できず、モデル性能ランキングとして比較しない。SDK公式npm latestは0.10.0で、使用版と一致する。Context7はNaive/Vettaで該当SDKが得られず、Firecrawlは接続link_id不足で取得失敗、上記一次資料は公式URLから直接取得する。次の診断対象は、browser permission=allow/ask_actions空かつsession-scope grant済みにもかかわらず再度tool.confirmとなる境界と、画面状態を保持した入力/checkbox操作。この未完の認証trialだけを根拠に最安modelへ固定しない。後続の原稿完走後の既定model候補とsource反映順は後段v27節を正本とし、定期起動は本人認証の結果を見て復帰する。
 
+#### v27のmain反映と専用メール認証run
+
+PR9210は独立read-only review blocking 0、全CI PASSの後、main f27886f200f470bcc17448265804c1c53941ac6fへ統合する。同SHAのimmutable sourceからexpected_version=26のpartial updateで公式agent27へ反映し、deployment27/window immediate/enabled=falseをreadbackする。system/model/window/source_shaはsource一致、tools/MCP/skills/multiagent/handoffs/harness pi/月cap12USD/task上限1USD、deploymentのIdentity/cron/timezone/input/task予算/agent所有は全て維持する。公式照合は21項目全PASS。証拠はprivate v27-main-runtime-readback-20261104.json。旧v26/GLM/priorityの記述は履歴で、現在既定はopenai/gpt-6.1-terra/immediate。
+
+次の実行はses_xa86qma13pwkjr7b793qjazhkh、agent27、同Identity、session上限750000microUSD。Daisの許可取得済みを保持し、個人Google/Gmail/passwordを借りず、専用AgentMail受信箱で認証済みaccountとPublisher roleを分けて確認する。別Publisher・既存seller変更・購入/送金は行わない。起動後にrunningと最初のbrowser observe/screenshotのtool.completed（is_error=false）を公式確認した。認証成功や売上は未確認。主cursor=NHC-01を維持し、このrunのterminal/readbackを次の更新点にする。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
