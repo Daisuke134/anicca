@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / HQ継続cursor訂正] task e204c552a38bd3f262c71a6f、owner home-codex-e204c5、branch docs/hq-cursor-e204c5。PR9161の公式統合/成果物と受注・接続thread差分を照合し、TEAM-HQ/NEARの古いCI待ちを訂正する。親PR9178/9179・deploy・remote本人hook・会計・投稿・fenceは保護。新応募/送信/納品0。完了条件は根拠保存→必要CI→main。
 - [Codex / NAIVE-BROWSER-E2E] 本番main048/agent23/priority/月9、個人Google注入0。有償QA本人読取/保存成功。n8nは通常emailフォーム確認、正式確認1回後signup needs service、同card再発で再回答0/cancel。57live0/paused/prod23全fields、費52254/ledger9、月残129431（後計上あり）。cursor2=source cap9→10/desired24の最小差分→CI/review/main→budget-only24適用→service/url明示の通常signup→確認/連絡→有料依頼/納品/入金。元7TODO/売上等未達。PR9177。正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
@@ -315,3 +316,5 @@
 - home-codex task2259ca（結果）: 反復外注調査job989f07daに15USDC提案1回/201、本人bid f173c931公式一致、全5pending/assignment0。売上・出金未確認、納品POST0。既存owner/effect維持。証拠 docs/evidence/near-demand-offer-2259ca.json。次cursorは必要CI→main、既存hourly受注時納品。
 
 - home-codex task a28e9fa3（継続）: PR9161旧headのCI15件成功を公式確認。mainのNaive完了記録を保ってBOARD競合を解消。Decimal再計算/source-boundary/diff PASS、本人GETは5pending/受注0、remote差分0。次: 同PRの新head必要CI→main。納品/再応募/会計/投稿/送金0。
+
+- home-codex task e204c5: PR9161公式MERGED/main9f930f5c・必要CI15件/3成果物byte一致を確認し、古いCI待ちcursorを訂正。本人NEAR5pending/受注0、remote差分0（parent除外）。売上/費用は既存collectorの観測時刻/期間を保持し利益未確定。親PR/運用/effect変更0。次: 本訂正の必要CI→main、受注時納品/本人修復receiptの元ID照合。証拠 docs/evidence/hq-continuation-e204c5.json。
