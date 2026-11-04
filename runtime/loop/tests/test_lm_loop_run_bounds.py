@@ -5564,6 +5564,7 @@ def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path, monkeypatch
     (0, "state = running\npid = 123", "", "running"),
     (77, "", "preflight failed", "deferred"),
     (113, "", "Could not find service", "locked"),
+    (113, "", "Could not find service", "scan_error"),
 ])
 def test_missing_plist_dispatch_respects_launchd_state(
         tmp_path, monkeypatch, code, stdout, stderr, expected):
@@ -5594,7 +5595,10 @@ def test_missing_plist_dispatch_respects_launchd_state(
     }))
     observed = subprocess.CompletedProcess([], code, stdout, stderr)
     guard = admission.owner_deploy_lock("example") if expected == "locked" else nullcontext()
-    with guard, patch("runtime.loop.lm_loop_run.subprocess.run", return_value=observed) as run:
+    scan = (patch("runtime.loop.lm_loop_run.reserve_available_resource",
+                  side_effect=sqlite3.OperationalError("control busy"))
+            if expected == "scan_error" else nullcontext())
+    with guard, scan, patch("runtime.loop.lm_loop_run.subprocess.run", return_value=observed) as run:
         _dispatch_reserved(["example"], current=current, agents_dir=agents)
         if expected == "locked":
             run.assert_not_called()
@@ -5606,7 +5610,7 @@ def test_missing_plist_dispatch_respects_launchd_state(
         reservation = db.execute("SELECT owner_id FROM reservations WHERE owner_id=?",
                                  ("example",)).fetchone()
     assert occurrence is not None
-    if expected == "suspended":
+    if expected in {"suspended", "scan_error"}:
         assert priority == float("inf")
         assert reservation is None
     elif expected in {"running", "locked"}:

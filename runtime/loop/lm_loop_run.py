@@ -1689,7 +1689,10 @@ def _dispatch_reserved(loop_ids: list[str], *, current: Path | None = None,
             except (OSError, RuntimeError, sqlite3.Error, subprocess.TimeoutExpired):
                 defer(loop_id)
             if suspended:
-                pending.extend(reserve_available_resource())
+                try:
+                    pending.extend(reserve_available_resource())
+                except (OSError, RuntimeError, sqlite3.Error):
+                    pass
             continue
         except (OSError, ValueError, plistlib.InvalidFileException):
             defer(loop_id)
