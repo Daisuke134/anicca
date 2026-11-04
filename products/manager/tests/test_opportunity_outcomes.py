@@ -88,6 +88,15 @@ class OpportunityOutcomeTests(unittest.TestCase):
             self.assertEqual(result.evidence_status, "SETTLEMENT_INCOMPLETE")
             self.assertIsNone(result.declared_received_minor)
             self.assertEqual(result.income_status, "NOT_VERIFIED")
+        for state in ("refund_pending", "refund_failed", "partially_refunded", "refunded",
+                      "chargeback", "chargeback_reversed"):
+            with self.subTest(adjustment_state=state):
+                result = m.reconcile_opportunity(
+                    replace(item, receipt=replace(item.receipt, state=state)), costs())
+                self.assertEqual(result.evidence_status, "SETTLEMENT_ADJUSTMENT_REQUIRES_REVIEW")
+                self.assertIsNone(result.declared_received_minor)
+                self.assertEqual(result.income_status, "NOT_VERIFIED")
+                self.assertIsNone(result.verified_income_minor)
 
     def test_receipt_must_match_exact_opportunity_group_artifact_and_currency(self):
         m = module()

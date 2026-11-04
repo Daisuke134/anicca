@@ -20,6 +20,16 @@ from .outcome_bench import _currency, _minor
 
 STAGES = ("posting", "delivery", "approval", "settlement")
 
+SETTLEMENT_STATES = frozenset({
+    "settled", "pending", "reversed", "disputed",
+    "refund_pending", "refund_failed", "partially_refunded", "refunded",
+    "chargeback", "chargeback_reversed",
+})
+SETTLEMENT_ADJUSTMENT_STATES = frozenset({
+    "refund_pending", "refund_failed", "partially_refunded", "refunded",
+    "chargeback", "chargeback_reversed",
+})
+
 
 def _identifier(value):
     if type(value) is not str or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", value) is None:
@@ -144,7 +154,7 @@ class SettlementClaim:
         _hash(self.artifact_sha256)
         _currency(self.currency)
         _minor(self.amount_minor)
-        if self.state not in {"settled", "pending", "reversed", "disputed"}:
+        if type(self.state) is not str or self.state not in SETTLEMENT_STATES:
             raise ValueError("explicit payment lifecycle state required")
         if type(self.source) is not Source:
             raise ValueError("public nonpersonal receipt source required")
@@ -248,6 +258,8 @@ def reconcile_opportunity(record: OpportunityRecord, costs: OpportunityCosts, *,
     received = None
     if receipt is None:
         status = "RECEIPT_MISSING"
+    elif receipt.state in SETTLEMENT_ADJUSTMENT_STATES:
+        status = "SETTLEMENT_ADJUSTMENT_REQUIRES_REVIEW"
     elif receipt.state != "settled":
         status = "SETTLEMENT_INCOMPLETE"
     elif any(stage.visibility != "public" for stage in stages):

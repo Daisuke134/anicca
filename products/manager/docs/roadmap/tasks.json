@@ -1269,8 +1269,9 @@
       "docs/research/D011_CROSS_OPPORTUNITY_STAGE_ALIAS_20261027.md"
     ],
     "implementation_status": "RESEARCH_2026_10_23_COMPLETE; SOURCE_ID_URL_SHA256_REUSE_GUARD_IMPLEMENTED; D011_CROSS_OPPORTUNITY_RECEIPT_COLLISION_PREFLIGHT_TESTED_2026_10_25; CROSS_OPPORTUNITY_STAGE_RECEIPT_ALIAS_SCREEN_CI_GREEN_2026_10_27; HOSTED_CI_541_TESTS_5_SKIPPED_GREEN; LIVE_PAYMENT_NOT_VERIFIED; ORIGINAL_ACCEPTANCE_INCOMPLETE",
-    "last_reviewed": "2026-10-27 JST",
-    "ci_verification_url": "https://github.com/Daisuke134/life-manager/actions/runs/40422285572"
+    "last_reviewed": "2026-11-05",
+    "ci_verification_url": "https://github.com/Daisuke134/life-manager/actions/runs/40422285572",
+    "latest_atomic_increment": "Added explicit refund, partial-refund, refund-pending/failed, chargeback and chargeback-reversed states. Such states fail closed for declared-receipt arithmetic and portfolio screening. D011 remains todo until an independent authentic settlement receipt and provider identity are externally verified."
   },
   {
     "section": "09. 領域横断の祝福・成果証拠",

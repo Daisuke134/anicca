@@ -7,7 +7,9 @@ amounts, beneficiary names or source URLs.
 """
 from __future__ import annotations
 
-from .opportunity_outcomes import OpportunityRecord, _resource_url
+from .opportunity_outcomes import (
+    OpportunityRecord, SETTLEMENT_ADJUSTMENT_STATES, _resource_url,
+)
 
 SCHEMA = "manager.opportunity-receipt-portfolio-preflight.v1"
 MAX_RECORDS = 128
@@ -65,7 +67,9 @@ def preflight_receipt_portfolio(records: list | tuple) -> dict:
             reasons.add("RECEIPT_MISSING")
             continue
         _resource_url(receipt.source.url)
-        if receipt.state != "settled":
+        if receipt.state in SETTLEMENT_ADJUSTMENT_STATES:
+            reasons.add("RECEIPT_ADJUSTMENT_REQUIRES_REVIEW")
+        elif receipt.state != "settled":
             reasons.add("RECEIPT_NOT_SETTLED")
         if record.settlement.visibility != "public" or record.settlement.source != receipt.source:
             reasons.add("SETTLEMENT_SOURCE_NOT_BOUND")

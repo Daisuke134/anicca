@@ -98,6 +98,16 @@ class ReceiptPortfolioTests(unittest.TestCase):
             with self.subTest(state=state):
                 result = preflight_receipt_portfolio([record("job_a", "receipt_a", state=state)])
                 self.assertIn("RECEIPT_NOT_SETTLED", result["reason_codes"])
+        for state in ("refund_pending", "refund_failed", "partially_refunded", "refunded",
+                      "chargeback", "chargeback_reversed"):
+            with self.subTest(adjustment_state=state):
+                result = preflight_receipt_portfolio([
+                    record("job_a", "receipt_a", state=state)])
+                self.assertEqual(result["status"], "REVIEW_REQUIRED")
+                self.assertIn("RECEIPT_ADJUSTMENT_REQUIRES_REVIEW", result["reason_codes"])
+                self.assertFalse(result["can_count_declared_receipts_as_income"])
+                self.assertFalse(result["independent_payment_verified"])
+                self.assertIsNone(result["verified_income_minor"])
         unbound = replace(first, settlement=OpportunityStage(
             "settlement", "public", source("mismatched_receipt")))
         self.assertIn("SETTLEMENT_SOURCE_NOT_BOUND",
