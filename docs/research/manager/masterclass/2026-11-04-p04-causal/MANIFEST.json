@@ -22,10 +22,6 @@
   "real_human_interventions": false,
   "external_preregistration": false,
   "files": {
-    "MANAGER_WHAT_IF_EXECUTOR_THESIS_JA.md": {
-      "size": 10384,
-      "sha256": "5137104e7ee6c4643df54f56186aaed2bdf06920b09119ec965dcf080fbb2c05"
-    },
     "P04-1_JA.md": {
       "size": 14148,
       "sha256": "f1532b87872b11cf4ee2feb7e069853be908fd04d46526c9e030e11d3c2a21b5"
