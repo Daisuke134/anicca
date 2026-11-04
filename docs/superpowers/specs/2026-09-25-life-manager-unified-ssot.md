@@ -25902,6 +25902,16 @@ v26はPR9203/main 077394a8689746ba617a50dff697e3178e553347から公式agent26/de
 
 旧順=許諾記録の照会＋本人Computer内の商品完成。新順=取得済みowner申告を反映→専用メールの実認証→正式な販売権限→新商品修正/試用/公開→配信→第三者注文/納品/入金/費用→英語デモ。理由=ownerの最新明示情報で許諾確認待ちは解消し、認証が次の収益行動の依存条件となるため。現在cursor=NHC-01、商品完成=NHC-02。上限増額そのものや残高は収益ではない。次の費用/時間不足は実測を残してscope/完了条件を縮めず診断する。
 
+#### ブラウザ業務のmodel費用対効果の実測
+
+DaisはGLM固定の継続を見直し、Codex/Muse/Grokbot/Dotsも含め、実際に完走する最も費用効率のよいmodelを求める。最新公式catalogueでopenai/gpt-6.1-terra、deepseek/deepseek-v4.1-flashを確認し、両者はimmediateのみ対応する。公式LHTBはGLM5.2固定のharness/window比較で、loose=10/16・0.1709USD/solve、priority=13/16・0.2332、immediate=12/16・0.2976。August実施・16件程度のterminal試験であり、最新modelの比較やCapafy認証成功率に外挿しない。source: https://vetta.sh/benchmarks/long-horizon-terminal-bench ; https://vetta.sh/docs/api/models.md ; https://vetta.sh/docs/platform/pricing.md 。
+
+実行中のv26認証trialは176882microUSDを消費し、ログイン未完了のままcancelled。browser allow/ask_actions空、session-scope allowを返しても同toolに再確認が出るprovider挙動と、直接/login経路の空画面/クリック失敗を分けて記録する。rootの確認4件・復旧steeringは外部AI介入で、人間の質問0と混同しない。同じ失敗を無制限再試行せず、owned deploymentだけenabled=falseへ一時停止し、他ownerは維持する。
+
+有限比較は本番設定の置換に先立つ診断trial。一件最大500000microUSD/8分、同じagent26/Identity/context/tools、window=immediateで開始する。SDKのcreateはmodel overrideを持たないため、初回は保存journalの最小readだけでend_turnし、公式sessions.sendのmodelでTerraへ切り替え、通常のCapafyメール認証を完走させる。GLMによるbootstrapの費用は比較の別項に記す。最初のworking baselineを優先し、成功前に複数agent/accountを増やさない。Terraが完走した後だけFlashを同等の安全な認証済み状態確認/下書き作業で比較し、実際のアカウント登録やメール送信を比較目的で重複させない。失敗時はtool/model/provider境界を分けて診断し、未達を成功として母数から除かない。月cap12USD・追加購入なし・task上限1USDは維持する。
+
+判定値は実結果の完了、model/browser/computer/失敗試行を含む総費用、時間、人間への質問数、root/他AI介入数。公式料金はbrowserのmodel駆動action0.01USD、minute0.001667USDで、成功済みの観測selectorを使うclick/type等は追加action料金なし。実際に観測したlocatorだけ使い、失敗済みselectorを盲目的に繰り返さない。model変更だけでprovider確認待ちが消えると断定しない。最終的な定期model/window変更はsource変更/検証/main/公式反映で固定し、owned scheduleを復帰する。現在cursor=NHC-01のmodel診断、次=Terraの有限baseline。一般的な最安modelという断定は未測定。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
