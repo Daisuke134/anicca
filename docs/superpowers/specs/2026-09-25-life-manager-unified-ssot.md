@@ -25854,6 +25854,8 @@ CapafyのSalesは7日Dispute Window中のpending表示で、Proceedsも精算前
 
 **Capafyの無人適合条件:** 公式[Publisher Certification](https://capafy.ai/developer/doc/1.3)は初回公開前の本人/事業書類提出、審査、0.99 USDの返金不可手数料を定める。[Publisher Agreement](https://capafy.ai/publisher-agreement/)ではPublisher accountの譲渡禁止、正確な本人/支払/税情報、原則1 accountを定める。Daisが得たと申告するautomation許可は記録するが、これ単独で本人確認・account所有権・委任権限を満たすとは扱わない。既存認証済みPublisherに対し、Capafyが明示的に認めるagent/team委任と個別権限が公式readbackで確認できる場合だけ継続する。経路が確認できない場合は、新規account作成・人の書類/認証情報の代理使用・KYC回避をせず、Capafyを「無人販売未適合/未確認」とし、順位2の自社直販/x402を先に検証する。ライブcamera手順の有無は実画面で未確認。
 
+**Naïve Marketplaceの収益条件:** 公式[Apps/API docs](https://vetta.sh/docs/api/apps.md#list-the-running-company-in-the-marketplace)によると、running companyのtemplate listingはowner/adminの明示approvalとNaïve reviewが必要で、新規company plan支払額の15%を12か月shareする。各shareは30日保留、精算可能額USD100以上、初回payoutはownerのStripe setupと本人情報入力が必要。これはCapafyよりプラットフォーム内配信だが、現在のstrict no-human-in-the-loop公開/受取条件を満たさないため、無人収益の証拠には数えない。`GET /v1/listings` の現readbackは空配列で、Naïve listing収益も確認できない。owner setupを許す別モードへ目的を変えない。
+
 根拠: [x402](https://docs.x402.org/introduction)、[Bazaar](https://docs.x402.org/extensions/bazaar)、[Olas市場](https://olas.network/mech-marketplace)、[Masumi](https://www.masumi.network/dev/masumi/documentation)、[Sokosumi](https://www.sokosumi.com/)、[Nevermined](https://nevermined.ai/)、[Nostr/Zaps](https://nostr.how/en/zaps)、[Bittensor](https://docs.bittensor.com/)、[Golem](https://docs.golem.network/docs/golem/overview)。KYC/ライブ本人操作は各providerの実経路で判定する。未取得の販売者条件は適合済みとしない。
 
 #### UXと構成
@@ -26089,7 +26091,7 @@ liveでdeepseek/deepseek-v4.1-flash、openai/gpt-6.1-terra、google/gemini-3.5-f
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-00**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
 
-現在のprovider readbackはApp active、permissions empty、`NAIVE_API_KEY`未設定、Computer paused、専用operatorなし。既存deploymentはbranch由来でmainのimmutable releaseではないため、browser/business callの実行対象にしない。org credits約20.14 USDはcompute残高であり売上ではない。第三者注文・支払・精算・着金の証拠は0。
+現在のprovider readbackはApp active、permissions empty、`NAIVE_API_KEY`未設定、Computer paused、専用operatorなし。既存deploymentはbranch由来でmainのimmutable releaseではないため、browser/business callの実行対象にしない。org credits約20.14 USDはcompute残高であり売上ではない。`GET /v1/listings` は空配列。第三者注文・支払・精算・着金の証拠は0。
 
 | ID | 一つの作業 | 完了の証拠 |
 |---|---|---|
