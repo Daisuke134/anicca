@@ -1,0 +1,60 @@
+{
+  "task_id": "ab33e8138665c2d3c939d6af",
+  "owner_id": "home-codex",
+  "phase": "integration_readback",
+  "release_sha": null,
+  "source_merge_sha": "3e3f078149f9ccc1be51e9dac7b4f8a243ddbb2d",
+  "pr": "https://github.com/Daisuke134/life-manager/pull/9207",
+  "head": "813f69404f01b38899e937b0a5721a94b7ab5809",
+  "command": "official GET bids/assignments; gh pr checks/view; contents GET; hash/formula/word assertions; source-boundary/diff",
+  "exit_code": 0,
+  "ci": {
+    "success": 15,
+    "run": "https://github.com/Daisuke134/life-manager/actions/runs/41825994421",
+    "required_bypass": false
+  },
+  "readback": {
+    "bids_http": 200,
+    "pending": 5,
+    "assignments_http": 200,
+    "assignments": 0,
+    "report_and_evidence_blob_equal": true,
+    "report_sha256": "f713d365af5700289c65e066fcd760afa8400ae0e8101ff2491da30c8012054e",
+    "words": 1530,
+    "with_tables": 2329,
+    "recommendations": 5,
+    "formula_assertions": 5,
+    "independent_review": "SHIP; findings0; exact hash"
+  },
+  "effect": {
+    "merge": 9207,
+    "bid": 0,
+    "submit": 0,
+    "payment": 0,
+    "listing": 0,
+    "posting": 0,
+    "accounting": 0,
+    "fence": 0
+  },
+  "provider_receipt_id": null,
+  "error_class": null,
+  "retryable": false,
+  "remote": {
+    "channel": "C0CBLBGSBJN",
+    "thread": "1793635811.853779",
+    "bounded_oldest": "1793791200.000000",
+    "replies": 2,
+    "has_more": false,
+    "delta": "Dots側のユーザーSlack経由診断2件。bot本人wakeを証明せず、元Reason ID/task/保存ACKとdeployment-channel紐付け修復不足を保持。",
+    "reminders": 0
+  },
+  "next_action": "既存hourlyで全assignment照合。受注時に最新brief/submit契約を読みSLA内納品。",
+  "unknown": [
+    "award",
+    "delivery acceptance",
+    "revenue",
+    "withdrawal",
+    "incremental installs",
+    "remote bot natural wake"
+  ]
+}

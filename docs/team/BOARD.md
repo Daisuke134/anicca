@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [home-codex / NEAR discovery納品準備] task665831395b0be2cb02e061f7、owner home-codex-665831、branch task/home-codex-665831。応募済みjob4d2d67b4の英語reportと原典比較のみ。5pending/受注0、PR9183統合済み。親HQ/PR9205/Naive・会計・投稿・fence維持。現在cursor=原典取得→必要CI→main、受注前submit/追加bid0。
+- [home-codex / NEAR discovery納品準備] 統合完了: PR9207/main3e3f078149、head813f69404fの必要CI15件成功・独立SHIP・公式report/evidence blob一致。継続task ab33e8138665c2d3c939d6af、同owner home-codex。現在cursor=既存hourlyの全assignment照合→受注後最新brief/submit契約再読→SLA内納品。5pending/受注0は今回公式GETの観測値。親HQ/Naive・会計・投稿・fence維持、追加bid/受注前submit0。
 - [home-codex / NEAR framework納品準備] task fcdfdd26ab37754b9c37251e、owner home-codex-fcdfdd、branch task/home-codex-fcdfdd。既存応募dd6e4f85の英語report/一次資料比較だけを所有。5pending/受注0を公式GET確認。親PR9182/9178/9179、remote hook、会計、投稿、既存fenceを保護。受注前submit/追加bid0。
 - [home-codex / HQ継続cursor訂正] task e204c552a38bd3f262c71a6f、owner home-codex-e204c5、branch docs/hq-cursor-e204c5。PR9161の公式統合/成果物と受注・接続thread差分を照合し、TEAM-HQ/NEARの古いCI待ちを訂正する。親PR9178/9179・deploy・remote本人hook・会計・投稿・fenceは保護。新応募/送信/納品0。完了条件は根拠保存→必要CI→main。
 - [Codex / NAIVE-BROWSER-E2E] live agent26/pi/月12USD/task1、production26/enabled=false。Terraのnative原稿修正/試用が15tools/end_turn、費184947microUSD、例57語/試用57語・六部・販売文128語を再検算。四原稿はNaïve組織FilesのGET/hash/download一致。Capafy認証/公開/売上未達。harness PATCHは受理後も26/piで未反映。candidate27は古い許諾未確認のsystem禁止をowner許可取得済みへ修正し、Terra/immediateを既定化、停止中のscheduleをsourceに一致させる。次はCI/main→公式27反映→専用メール認証。正本・残TODO→統合SSOT「Naïve browser company」、現在NHC-01。
@@ -65,6 +65,7 @@
 - [Codex / Manager] prepared shadowの既存host/CLI/Actions接続。所有: feat/manager-host-shadow-connection-20261023の限定host/CLI/workflow/tests/docs。既定・schedule OFF、単一owner、P0比較のみ。本番推論・新規課金・他laneは変更しない。
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
+- 2026-11-04 22:08 JST / home-codex / task ab33e8: PR9207をCI15件成功後main3e3f078149へ統合、公式blob2件一致・原稿1530語/5提言/計算5件再確認。公式5pending/受注0、追加bid/納品/支払0。次は受注監視→受注後契約照合と納品。証拠→docs/evidence/near-integration-ab33e8.json。
 - home-codex（fcdfdd）: NEAR本人GET5pending/受注0、framework英語report2088語と一次資料証拠を準備。未納品/売上未確認、次は必要CI→main→受注後契約再照合。
 - 2026-11-03 20:15 JST / home-codex-a4d5da / 応募済みNEAR採算report英語1615語・再計算CSV/Decimal assertionsと13原典を準備。5pending/受注0、remote差分は親案内1件で催促0。追加bid/納品/送金0。独立SHIP/Blocking0。次: 必要CI→main、受注時契約再読。
 - 2026-11-03 20:57 JST / Codex / Naive英語記事を自社Manager blogへ公開、既存75記事保持・76記事/44媒体、live本文/画像/hash/provider ready/money-path smoke一致。売上未確認。次: 本人inbound1通検査と自然run。
