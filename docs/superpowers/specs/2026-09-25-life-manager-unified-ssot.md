@@ -1,6 +1,15 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
 
+並行cursor **HQ-REASON-INBOX-PAGES**: Reason daemonは本文上限64KiBだがHQ clientは全未読と表示用textを重複出力し、33件×64KiBの隔離fixtureで4,327,967文字となりHQの4MiB制限で全受信を拒否する。未読ACKはしないが後続依頼が停止する。旧順=容量bounded化後に受信継続、新順=旧senderとの互換性を維持してHQ専用受信をページ化し、添付保持・予約修正と並行して進める。実DB・既存daemon・他sessionは変更しない。
+
+独立調査: daemonは現在全未読を読み、CLIにmessagesとrendered textを返すため、CLI出力だけのページ化ではdaemon〜client間メモリはboundedにならない。offsetや前回IDの配列検索はACKでanchorが消えると欠落する。検討する限定修正は既存wire互換のopt-inで本文を切らずUTF-8 bytes上限のmessage単位出力、(sent_at,id)の安定keyと周回終端、保存・保留とcursorの原子的記録。timestampが同じID、遅着・ACK失敗・保留先頭を跨ぐ回帰で確認し、daemon側全量メモリは別の未解決課題として残す。
+
+進捗: opt-in CLI page試作e5ceaeefはmessage単位のUTF-8 bytes上限・宛先確認・(sent_at,id) cursor・上限超過holdを実装した。独立した最小Rust fixtureで33件の上限とACK後anchor消失を1件PASS、既存本番binaryでpage機能未実装の失敗を再現した。完全binaryのcargo checkはホスト空きが約2.5GiBへ低下したため自分のbuildだけ停止、隔離生成物を削除した。実binary・socket・HQのcursor/ACK原子化・独立review・CI・反映は未完。daemonの全件メモリ問題も未解決。
+
+HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維持する。新binaryがmain由来build・実socket試験・review・immutable releaseに合格するまでprivate設定を有効化しない。昇格では専用binaryのSHAと設定page_enabled=trueをowner/lease配下で明示readbackし、自然受信から結果まで確認する。未解決のoversize holdは空pageを経ても維持・失敗として表示し、同じIDを完全保存した時だけ解除する。保留時に添付の存在を耐久記録し、期限切れで添付が消失した依頼をACKしない。
+
+受入: 本文や添付を切詰めずbyte上限を設け、到着・ACKによって受信箱が変動しても未読の取こぼしを防ぐ。先頭ページの保留案件が後続を飢餓させず、保存前ACKなし・元ID再取得時重複0・identity固定・既存クライアント互換を、実socket fixtureと実SQLite失敗・再取得で検証。daemonからclientまでの総メモリ上限と大型backlogの残課題を明記し、main由来build・必要CI・独立review・対象owner反映後の自然受信と公式readbackまで続ける。
 並行cursor **HQ-STALE-CLAIM-FAIRNESS**: 受信のdisk条件が一時的に通った後、HQはcapacity/FIFO待ちのまま。実DBではplist不在・launchd disabledの複数SNS ownerに予約が付き、古いclaimed/effect_unknownの存在で現行only_if_unclaimedの停止は拒否される。履歴上の未確定effectと稼働中ownerは触らない。先の無損失添付修正と並行して、旧順=容量bounded化後に受信再測定、新順=予約選択の根本原因診断・無効新規予約の限定修復を並行実施。理由は現行受信が実際に枠待ちして未読依頼が残るため。
 
 受入: registryと同一ownerの確認、管理ドメインの実測、既存effect_unknown/claimedとactive lockを保護したうえで、停止が確認されたownerの新規queue予約だけを適切に保留する。再開時の復帰、並行claim/owner起動、DB failure、異なるscopeの事故防止を隔離テスト・独立reviewで証明する。停止不能の記録は公式照合まで保持し、他ownerのプロセス・provider・cloud設定を変更しない。main由来release反映後、自然受信と実際の着手を計測する。

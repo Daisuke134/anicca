@@ -1,0 +1,25 @@
+name: HQ Reason page contract
+on:
+  pull_request:
+    paths:
+      - "vendor/reason-network-hq/**"
+      - "runtime/team_hq/**"
+      - ".github/workflows/hq-reason-pages.yml"
+  push:
+    branches: [main]
+    paths:
+      - "vendor/reason-network-hq/**"
+      - "runtime/team_hq/**"
+      - ".github/workflows/hq-reason-pages.yml"
+permissions:
+  contents: read
+jobs:
+  client-socket-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build isolated HQ Reason client
+        run: cargo build --locked --jobs 2 --manifest-path vendor/reason-network-hq/Cargo.toml
+      - name: Verify existing and paged protocol against isolated socket
+        run: python3 vendor/reason-network-hq/tests/test_hq_cli.py --binary "$PWD/vendor/reason-network-hq/target/debug/reason-network"
