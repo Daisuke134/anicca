@@ -1,0 +1,117 @@
+{
+  "study_id": "P06-2-SYNTHETIC-ABLATION-20261104",
+  "scope": "NO actual humans; no published intervention or company profit",
+  "n_train": 24000,
+  "n_validation": 16000,
+  "n_trial": 40000,
+  "whatif_model": "2x2 estimated intervention-specific outcome rates on randomized training set",
+  "whatif_fitted": {
+    "0": {
+      "p_observed_given_no_action": 0.20915254237288136,
+      "p_observed_given_action": 0.37256243585357507,
+      "net_whatif_gain": 0.14340989348069372,
+      "predicted_action": 1
+    },
+    "1": {
+      "p_observed_given_no_action": 0.15582700561241333,
+      "p_observed_given_action": 0.2637215528781794,
+      "net_whatif_gain": 0.08789454726576605,
+      "predicted_action": 1
+    },
+    "2": {
+      "p_observed_given_no_action": 0.3929292929292929,
+      "p_observed_given_action": 0.361429977041653,
+      "net_whatif_gain": -0.05149931588763988,
+      "predicted_action": 0
+    },
+    "3": {
+      "p_observed_given_no_action": 0.3507188231360749,
+      "p_observed_given_action": 0.23419354838709677,
+      "net_whatif_gain": -0.1365252747489781,
+      "predicted_action": 0
+    }
+  },
+  "baseline_heldout_ipw_selection_scores": {
+    "NO_ACTION": {
+      "estimated_utility": 0.282875,
+      "standard_error": 0.005510002804592677
+    },
+    "ALL_ACTION": {
+      "estimated_utility": 0.29611750000000003,
+      "standard_error": 0.0057014649043897365
+    },
+    "PRESPECIFIED_HEURISTIC": {
+      "estimated_utility": 0.3203225,
+      "standard_error": 0.005812698294763886
+    },
+    "POOLED_GLOBAL_EFFECT": {
+      "estimated_utility": 0.29611750000000003,
+      "standard_error": 0.0057014649043897365
+    }
+  },
+  "baseline_selected_without_trial_peeking": "PRESPECIFIED_HEURISTIC",
+  "whatif_rule": {
+    "0": 1,
+    "1": 1,
+    "2": 0,
+    "3": 0
+  },
+  "comparator_rule": {
+    "0": 1,
+    "1": 0,
+    "2": 0,
+    "3": 0
+  },
+  "train_validation_trial_seeds": [
+    20261162,
+    20261163,
+    20261164
+  ],
+  "primary_net_utility_policy_rct": {
+    "whatif_mean": 0.3433743339475126,
+    "baseline_mean": 0.329150057733822,
+    "increment": 0.014224276213690601,
+    "se": 0.004749033833915772,
+    "ci95": [
+      0.004916169899215688,
+      0.023532382528165516
+    ],
+    "two_sided_p": 0.00274270611178451,
+    "n_whatif": 20081,
+    "n_baseline": 19919
+  },
+  "secondary_task_completion": {
+    "whatif_mean": 0.3533688561326627,
+    "baseline_mean": 0.33405291430292683,
+    "increment": 0.019315941829735894,
+    "se": 0.00474850694418366,
+    "ci95": [
+      0.010008868219135922,
+      0.028623015440335867
+    ],
+    "two_sided_p": 4.7460576106777135e-05,
+    "n_whatif": 20081,
+    "n_baseline": 19919
+  },
+  "secondary_notification_rate": {
+    "whatif_mean": 0.4997261092575071,
+    "baseline_mean": 0.24514282845524374,
+    "increment": 0.25458328080226333,
+    "se": 0.0046626899478167,
+    "ci95": [
+      0.2454444085045426,
+      0.2637221530999841
+    ],
+    "two_sided_p": 0.0,
+    "n_whatif": 20081,
+    "n_baseline": 19919
+  },
+  "synthetic_true_increment": 0.02,
+  "true_effect_used_in_training": false,
+  "real_user_or_business_effect": false,
+  "frozen_plan_sha256": "5c5d8bb4b04b9f34de6657823f83c466e4c6a74c96045b3b14c1cb13f3ae2cba",
+  "frozen_policy_sha256": {
+    "whatif": "394168828a8c6b1a4ac3d76046f3797b43cdd3bda9f585d37e9ba2b0269351a8",
+    "baseline": "35fae11e6a892d6d21e265ea74e4e7630b15bdc83c29c58017e1414a313b720d"
+  }
+}

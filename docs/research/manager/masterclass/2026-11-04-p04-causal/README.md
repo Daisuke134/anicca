@@ -1,8 +1,8 @@
-# Manager Masterclass｜P04-1〜P05-5 因果推論・Ontology・行動と実行の接続
+# Manager Masterclass｜P04-1〜P06-2 因果推論・Ontology・行動と実行の接続
 
 **更新：2026-11-04（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
 
-**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。次の講義はP06-1。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
+**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1の自社実サイト初期対象選定・読取監査とP06-2の人工RCTまで進行、次はP06-3。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
 
 
 ## Managerの中核仮説と実証すべき価値
@@ -125,3 +125,14 @@ python3 p05_1_ontology_readonly.py
 [独自モデルの訓練・Open-weight公開・会社運営・人間の行動変容の条件付き高速ロードマップ](MANAGER_MODEL_COMPANY_IMPACT_MILESTONES_JA.md)。**P05の講義は完了。P05-5の実会社S1/S2は未達**。学習はP06-1へ進み、別の根拠/許可Gateが整うまで会社の実権限を増やさない。
 
 **34枚の本番プレゼン**：第6枚の一般向け概念解説と第33枚の3本並行ロードマップを加え、旧33枚目の締めは第34枚へ。43分＋15分質疑＋2分余裕。**93枚の詳細保存版**：P05-3/4/5とマイルストーンの4枚（90〜93）を追加し、全93枚の日本語原稿を維持。
+
+
+## 2026-11-04 P06-2とBehavior AI再利用・11/05発表更新
+
+- [P06-2 What-ifあり/なしの人工RCT全文](P06-2_JA.md)、[実コード](experiments/p06_2_whatif_ablation.py)、[28テスト](experiments/test_p06_2_whatif_ablation.py)、[凍結方策](evidence/P06-2_POLICY_FREEZE_SYNTHETIC.json)、[結果](evidence/P06-2_SYNTHETIC_ABLATION_RESULTS.json)。学習24,000/独立検証16,000/別の方策RCT40,000でWhat-if平均効用+1.422pt（95%CI+0.492〜+2.353pt）。**完全人工世界の結果**であり、実会社や本物の人間の効果ではない。
+- [最新の既存研究・企業/OSS比較メモ](BEHAVIOR_AI_REUSE_ECOSYSTEM_20261104_JA.md)：SOCRATES、SimBench、BehaviorBench/Be.FM 1.5、HumanStudy-Bench、Aaru、Listen Twins、Rehearsals等の公式資料とライセンス/比較の限界。
+- [BehaviorBench公式MIT evaluatorの実動テスト記録](evidence/BEHAVIORBENCH_EVALUATOR_SOURCE_SMOKE_20261104.json)：Mac miniで41 PASS/3 SKIP、モデルの重みや実データベンチマークは動かしていない。BehaviorBenchデータのCC BY-NC-NDと評価器のMITは区別。
+- [Listen Twinsの公開画面をTinyFishで試した結果](evidence/LISTEN_TWINS_PUBLIC_BROWSER_ACCESS_CHECK_20261104.json)：公開『Run a Simulation』は予約フォームに遷移。**Twinの実推論は未実行**。旧Listen Study APIのGET2件HTTP200と別。
+- **全257件のMasterclass単体テスト成功**：[最新の全テストログ](evidence/TEST_RESULTS_P04_TO_P06_2.txt)。既存229件＋新規P06-2 28件。
+- **明日11月5日の発表**：[準備ガイド・台本・FAQ](journal_club/PRESENTATION_READINESS_20261105_JA.md)。発表用**34枚/43分+15分質疑+2分余裕**を維持し、研究紹介第26枚のSSDataBenchをBehaviorBench/Be.FM1.5へ差替えた。詳細版第42枚も同期。両方のPPTX/PDFとページごとの日本語話者ノートを更新。**P06以降の実務・臨床・大規模モデル公開を発表の条件にしない。**
+- **学習の次はP06-3**。実会社のP05-5 Shadow S1／限定Live S2、実RCTの検証、モデル実重み公開は未完了のまま保持。

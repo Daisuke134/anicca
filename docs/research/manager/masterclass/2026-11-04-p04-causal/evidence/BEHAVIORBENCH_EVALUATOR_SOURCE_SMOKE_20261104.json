@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-04",
+  "source_repository": "https://github.com/umich-foreseer/behaviorbench_eval",
+  "tested_git_revision": "ddd646e",
+  "observed_source_commit_date": "2026-10-10",
+  "official_evaluator_code_license": "MIT according to pyproject classifiers and repo LICENSE; verify upstream attribution",
+  "python": "3.11",
+  "run_environment": "Mac mini isolated uv venv",
+  "commands": [
+    "uv sync --extra dev",
+    "uv run --extra dev python -m pytest -q"
+  ],
+  "actual_result": "41 passed, 3 skipped in 25.53s",
+  "unit_tests_passed": 41,
+  "unit_tests_skipped": 3,
+  "prediction_model_loaded": false,
+  "model_weights_downloaded": false,
+  "benchmark_dataset_downloaded": false,
+  "real_behavior_predictions_scored": 0,
+  "behaviorbench_dataset_license": "CC BY-NC-ND 4.0 (official dataset card), distinct from evaluator MIT",
+  "befm_model": "befm/BeFM1.5-4B is open-weight LoRA fine-tuned on Qwen3-4B-Instruct-2507; separately Apache-2.0 model card and Terms of Use",
+  "reproduction_scope": "Official evaluator unit tests only; not model performance/effect comparison",
+  "repo_source": "https://umich-foreseer.github.io/behaviorbench/",
+  "model_card": "https://huggingface.co/befm/BeFM1.5-4B",
+  "dataset_card": "https://huggingface.co/datasets/befm/BehaviorBench"
+}
