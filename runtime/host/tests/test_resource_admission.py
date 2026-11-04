@@ -543,6 +543,39 @@ def test_unloaded_suspend_preserves_claims_and_unknown_effects(tmp_path, monkeyp
     assert {table: durable_rows(tmp_path, table) for table in before} == before
 
 
+def test_unloaded_occurrence_owner_yields_reservation_preserving_old_effects(tmp_path, monkeypatch):
+    isolated(tmp_path, monkeypatch, total="1")
+    admission.enqueue_durable("deterministic", "stopped", admission_class="revenue",
+                              effect_scope="occurrence", occurrence_id="stopped:queued", now=100)
+    assert admission.reserve_available(now=101) == ["stopped"]
+    with sqlite3.connect(tmp_path / "admission-v2.sqlite3") as database:
+        database.execute("""INSERT INTO occurrences
+            (occurrence_id,owner_id,resource_class,admission_class,base_priority,queued_at,state,effect_unknown)
+            VALUES ('stopped:old','stopped','deterministic','revenue','revenue',1,'claimed',1)""")
+    before = durable_rows(tmp_path, "occurrences")
+    assert admission.suspend_durable("stopped", only_if_unloaded_occurrence=True) is True
+    assert durable_rows(tmp_path, "occurrences") == before
+    assert durable_rows(tmp_path, "reservations") == []
+    assert admission.reserve_available(now=102) == []
+    assert admission.resume_durable("stopped") is True
+    assert admission.reserve_available(now=103) == ["stopped"]
+
+
+@pytest.mark.parametrize("protection", ["live_claim_file", "owner_scope"])
+def test_unloaded_occurrence_suspend_refuses_live_or_owner_scope(tmp_path, monkeypatch, protection):
+    isolated(tmp_path, monkeypatch, total="1")
+    scope = "owner" if protection == "owner_scope" else "occurrence"
+    admission.enqueue_durable("deterministic", "stopped", admission_class="revenue",
+                              effect_scope=scope, occurrence_id="stopped:queued", now=100)
+    assert admission.reserve_available(now=101) == ["stopped"]
+    if protection == "live_claim_file":
+        (tmp_path / "owners" / f"{admission._digest('stopped')}-123.json").write_text("{}")
+    before = {table: durable_rows(tmp_path, table)
+              for table in ("queue", "reservations", "priorities", "occurrences")}
+    assert admission.suspend_durable("stopped", only_if_unloaded_occurrence=True) is False
+    assert {table: durable_rows(tmp_path, table) for table in before} == before
+
+
 def test_resume_no_queued_owner_is_a_successful_noop(tmp_path, monkeypatch):
     isolated(tmp_path, monkeypatch, total="1")
     assert admission.resume_durable("empty-owner") is True
