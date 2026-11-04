@@ -637,6 +637,7 @@ class HQ:
                     continue
                 marker = database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)", (saved_key, "1"))
                 database.execute("DELETE FROM meta WHERE key=?", (pending_key,))
+                database.execute("DELETE FROM meta WHERE key=?", ("reason_page_hold:" + message["id"],))
                 accepted.append(message["id"])
                 body = re.sub(r"(?im)((?:パスワード|秘密鍵|password|private[_ -]?key|api[_ -]?key|token)\s*[:：=]\s*)[^\r\n]+",
                               r"\1[秘密値を除去]", message["body"])
@@ -674,6 +675,8 @@ class HQ:
                 else:
                     database.execute("INSERT OR REPLACE INTO meta VALUES ('reason_page_cursor',?)",
                                      (json.dumps(next_cursor),))
+            page_hold_pending = database.execute(
+                "SELECT 1 FROM meta WHERE key GLOB 'reason_page_hold:*' LIMIT 1").fetchone() is not None
         # The committed task remains executable even if the transport ACK is lost.
         acknowledged = True
         if accepted:
@@ -682,8 +685,8 @@ class HQ:
             except HQError:
                 acknowledged = False
         receipts, replies_ok = self.flush_reason_receipts()
-        return {"ok": acknowledged and replies_ok and not deferred, "queued": added, "message_ids": receipts,
-                **({"error": "reason_page_hold"} if holds else
+        return {"ok": acknowledged and replies_ok and not deferred and not page_hold_pending, "queued": added, "message_ids": receipts,
+                **({"error": "reason_page_hold"} if page_hold_pending else
                    {"error": "reason_attachment_pending"} if deferred else
                    {"error": "reason_ack_or_reply_pending"} if not acknowledged or not replies_ok else {})}
 

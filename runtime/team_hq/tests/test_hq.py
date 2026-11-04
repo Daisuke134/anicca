@@ -1405,6 +1405,22 @@ class ReasonInboxTests(unittest.TestCase):
         self.assertEqual(json.loads(hold[0])["reason"], "message_too_large")
         self.assertEqual(json.loads(saved[0]), cursor)
 
+    def test_paged_reason_reports_saved_hold_until_message_is_recovered(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        held_id = self.message_id
+        hold = {"id": held_id, "sent_at": 1, "reason": "message_too_large"}
+        self.reason.inbox.return_value.update(messages=[], next_cursor=None, holds=[hold])
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.inbox.return_value.update(messages=[], holds=[])
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.inbox.return_value.update(messages=[{"id": held_id, "from": "daisuke/muse@remote",
+            "body": "recovered body", "to": "daisuke/hq-codex"}], holds=[])
+        self.assertTrue(self.runtime.receive()["ok"])
+        with self.runtime.connect() as database:
+            self.assertIsNone(database.execute("SELECT 1 FROM meta WHERE key=?", ("reason_page_hold:" + held_id,)).fetchone())
+        self.reason.ack.assert_called_once_with([held_id])
+
     def test_paged_reason_failure_does_not_advance_cursor_or_ack(self):
         self.enabled()
         self.runtime.reason_config["page_enabled"] = True

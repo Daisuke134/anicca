@@ -7,6 +7,8 @@
 
 進捗: opt-in CLI page試作e5ceaeefはmessage単位のUTF-8 bytes上限・宛先確認・(sent_at,id) cursor・上限超過holdを実装した。独立した最小Rust fixtureで33件の上限とACK後anchor消失を1件PASS、既存本番binaryでpage機能未実装の失敗を再現した。完全binaryのcargo checkはホスト空きが約2.5GiBへ低下したため自分のbuildだけ停止、隔離生成物を削除した。実binary・socket・HQのcursor/ACK原子化・独立review・CI・反映は未完。daemonの全件メモリ問題も未解決。
 
+HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維持する。新binaryがmain由来build・実socket試験・review・immutable releaseに合格するまでprivate設定を有効化しない。昇格では専用binaryのSHAと設定page_enabled=trueをowner/lease配下で明示readbackし、自然受信から結果まで確認する。未解決のoversize holdは空pageを経ても維持・失敗として表示し、同じIDを完全保存した時だけ解除する。
+
 受入: 本文や添付を切詰めずbyte上限を設け、到着・ACKによって受信箱が変動しても未読の取こぼしを防ぐ。先頭ページの保留案件が後続を飢餓させず、保存前ACKなし・元ID再取得時重複0・identity固定・既存クライアント互換を、実socket fixtureと実SQLite失敗・再取得で検証。daemonからclientまでの総メモリ上限と大型backlogの残課題を明記し、main由来build・必要CI・独立review・対象owner反映後の自然受信と公式readbackまで続ける。
 
 現在cursor **HQ-REASON-ATTACHMENTS**: Reason受信は添付filesを保存せずACKするため、本人が添付した内容をworkerへ渡せない。上流の受信fileは本人host上のinboxに保存され、既読後は保持期間が1日である。順序を従来の容量bounded化→本件から、本件の無損失受信→容量bounded化へ変更する。理由は既存の通常入力で依頼内容を失う具体的欠陥が見つかったため。受信とACK以外のownerや進行中effectは変更しない。
