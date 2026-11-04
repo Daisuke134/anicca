@@ -23,3 +23,27 @@ jobs:
         run: cargo build --locked --jobs 2 --manifest-path vendor/reason-network-hq/Cargo.toml
       - name: Verify existing and paged protocol against isolated socket
         run: python3 vendor/reason-network-hq/tests/test_hq_cli.py --binary "$PWD/vendor/reason-network-hq/target/debug/reason-network"
+  macos-client-artifact:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build dedicated arm64 HQ Reason client
+        run: cargo build --locked --release --jobs 2 --manifest-path vendor/reason-network-hq/Cargo.toml
+      - name: Verify protocol against isolated socket
+        run: python3 vendor/reason-network-hq/tests/test_hq_cli.py --binary "$PWD/vendor/reason-network-hq/target/release/reason-network"
+      - name: Record main-derived binary provenance
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir hq-reason-artifact
+          cp vendor/reason-network-hq/target/release/reason-network hq-reason-artifact/reason-network
+          git rev-parse HEAD > hq-reason-artifact/source-sha.txt
+          (cd hq-reason-artifact && shasum -a 256 reason-network > sha256.txt)
+          lipo -verify_arch arm64 hq-reason-artifact/reason-network
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: hq-reason-macos-arm64-${{ github.sha }}
+          path: hq-reason-artifact/
+          if-no-files-found: error
+          retention-days: 7
