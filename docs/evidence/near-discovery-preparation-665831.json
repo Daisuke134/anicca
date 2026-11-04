@@ -34,7 +34,7 @@
   },
   "artifacts": {
     "report": "docs/team/near/tool-discovery-channel-report.md",
-    "sha256": "4d084a5b984060b57d8a78baad4c28a1cab58648c69eebe8e1cf170a0b15127a",
+    "sha256": "f713d365af5700289c65e066fcd760afa8400ae0e8101ff2491da30c8012054e",
     "body_words": 1530,
     "all_words": 2329,
     "recommendations": 5
@@ -438,7 +438,8 @@
     "url_opened_match": true,
     "rank_formula_assertions": 5,
     "word_count": true,
-    "brief_current": true
+    "brief_current": true,
+    "assumed_visit_total": 450
   },
   "effects": {
     "submission": 0,
@@ -462,5 +463,6 @@
     "Named A2A directories and retrieved submission contract",
     "CDP and x402.org separate catalogs; testnet discovery; CDP fee units",
     "All-channel disposition and effort decomposition/equal-traffic sensitivity"
-  ]
+  ],
+  "review_result": "Fresh source review: prior 3 gaps resolved; visit-total typo corrected 430->450, per-channel ranks unchanged"
 }
