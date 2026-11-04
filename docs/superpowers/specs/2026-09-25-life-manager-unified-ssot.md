@@ -25995,6 +25995,14 @@ vendor返答だけを待つ前提を見直す。公式 https://vetta.sh/docs/api
 
 仮説は「既に会社が許可したtool policyをSDK制御側で適用する構成」で、人のクリックや個人Google credentialを製品の停止点にしないこと。通常API key fixture成功だけで実認証gate解決とはせず、その後にread_peopleの限定検証・必要ならcloud制御側への最小実装/検証/main/公式反映を行う。業務の選択・サイト操作・メール認証・制作・販売は引き続きnative browser/mail agentの仕事で、Capafyの業務HTTP/script botへ置換しない。未知のtool、別owner、支出増額、wallet/card/operator.requestを一括allowする構成は作らない。旧=vendor返答確認のみ、新=返答確認＋文書が示す会社API key経路の有限検証、理由=日々の人間承認なしというユーザー成果へ進む正式な代替を検証できるため。現在cursor=NHC-01を維持する。
 
+#### 会社API keyによる通常tool確認の実測と次のbrowser境界
+
+通常read fixtureは専用key key_3tyes7mdr104mwxc1jf4y7xxtbで自分のsession GET/confirmに成功する。ses_khw3w7fvtgfk25qs2139mds282の公式event19はactor.type=key、scope=call、event22はread tool.completed/is_error=false、内容company-probe-okを返す。session/agent費用394microUSD。受理だけでなくnative read実行まで確認する。試験後にsession cancel・key revoke/一覧から不在・SSOT秘密値除去・一時agent削除・原本agent/deployment不変の6checksを全PASSする。
+
+handoffs:false/multiagent:falseでも、read完了報告/end_turnの後に別model turnが発生し、予定外のread要求（同じfixtureと/home/tenki/）が追加される。追加要求はconfirmせず停止する。新しいroot message.acceptedは無く、handoffs既定値が原因と断定できない。これは試験を完全無介入の自然完走と呼ばない理由であり、上記の通常read実行成功自体とは分けて記録する。
+
+次の有限probeは同じIdentityを一時agentへattachし、保存済みbrowser contextとmail/vaultを使わず、public https://capafy.ai/ のnative browser goto一件にread_people:trueを指定する。browser以外のtool/defaultはdeny、handoffs:false/multiagent:false、allow_writes:false、ask_actions空、allowed_domainsはcapafy.ai/www.capafy.ai、timeout2分、period/task/session cap200000microUSD。専用exact service naive:browser-policy-probeの会社API keyはagents:read/sessions:read/sessions:writeのみ。pendingがbrowser/goto/当該URL/read_people:trueと完全一致した一件だけをscope:callでconfirmし、他の要求・繰り返しには許可せず停止する。bootstrap owner tokenでconfirmを代行しない。認証/メール入力/登録/公開/購入/送金はしない。本人privacy gateにAPI keyが利用できるかと実browser結果を区別して記録し、通常read成功を認証成功へ拡張しない。終了後key revoke/秘密除去/session cancel/Identity detach/一時agent削除/原本不変を確認する。上限は既知試験費を控除した残枠内に置く。
+
 #### 最新SDK・モデル・費用の一次資料再照合
 
 npmのlatestを再取得し、@usenaive-sdk/vetta=0.10.0、repository=usenaive/vetta-mono/packages/sdkを確認する。公式docs index https://vetta.sh/docs/llms.txt を起点にSDK/models/model-router/completion-window/pricing/harness-capabilities/budgets/policies/browser/email/sessionsを再取得し、会社APIで7モデルのretrieveとharnesses.listを照合する。取得証拠はprivate state/research-refresh-20261104に保存する。これは新規有償benchmark実行ではない。
