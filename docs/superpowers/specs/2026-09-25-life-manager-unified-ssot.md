@@ -25862,7 +25862,15 @@ flowchart LR
   P -. 所有者と条件の確認後 .-> W[受取walletまたは銀行]
 ```
 
-Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・状態/証拠取得、外部業務はLLM自身のbrowser、本人mail、既存許可済みPostizで行う。MaritimeとNaïveを一仕事で必ず二重起動しない。共通job/tenantの一担当を確定し、仕事と支払いの二重実行を防ぐ。現在確認できるsourceは専用v24/月10USD/task1USD/12時間cronで、定期inputはなお29USDC trace review。Capafy-firstへの**runtime反映は未実施**。本節編集はcap・権限・cron・共有accountを変えない。
+Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・状態/証拠取得、外部業務はLLM自身のbrowser、本人mail、既存許可済みPostizで行う。MaritimeとNaïveを一仕事で必ず二重起動しない。共通job/tenantの一担当を確定し、仕事と支払いの二重実行を防ぐ。NHC-01確認時の公式runtimeは専用v24/月10USD/task1USD/12時間cronで、定期inputは旧29USDC trace reviewだった。次のcandidate sourceはv25/Capafy-firstで、runtime反映はmain固定後の公式readbackで別に判定する。本節編集はcap・権限・cron・共有accountを変えない。
+
+#### Capafy runtime切替の実装範囲
+
+正本NHC-01の有限read-only確認はses_k15tz8p3d9n6639ksqj4stt6dtで実行し、8tools、実費110622microUSD、自然end_turn/idleを確認。本人browserはCapafy公開画面へ到達し、capafy-route-audit.mdのwrite→readが成功。ログインは未確認、Publisher資格/team経路/camera条件は未確認。XPath直接click一件のprovider失敗を保持し、browser.actによる観測対象の指定を次に使う。agent自己申告の7toolsではなく公式event8toolsを実数にする。登録・公開・課金・送金・売上はこのrunでは実行0。API readbackはagent24/月10USD/task1USD、定期deployment24/12時間。最新spendは実行後に再取得する。認証情報生成だけで認証完了にはしない。
+
+次のbounded実装はconfig/naive-browser-company.jsonの旧BusinessRun専用pilotとconfig/naive-browser-company-deployment.jsonの旧inputをCapafyへ置換する。既存Identity/context/tools/model/月10USD/task1USD/cron/専用投稿先を維持し、25を次候補版とする。営業/配信/商品公開の許可は既存の所有範囲だけで、新規Publisher・既存seller変更・他owner操作・支出増額を追加しない。NHC-01の権限確認が済むまでは、公開情報による需要調査と新規商品のComputer内原稿/見本を進め、既存ownerの返答待ちを無関係登録や同じ認証失敗の反復へ置換しない。正式な専用認証/権限を実画面で確認してから同Publisher内の新規商品を公開する。人間の通常承認を追加せず、本人必須手順は不足事実として扱う。
+
+受入は旧pilot指示の除去、Capafy業務の自然言語目標、同一Identity/context/予算/権限の不変、JSON妥当性、独立read-only review、CI/main、expected_version24から専用agentだけの更新とdeployment pin/入力の公式一致。その後の有限runで本人の需要証拠・新規成果物・保存再開を検証する。source反映、runtime反映、認証、公開、第三者売上は別の完了状態とする。SDKは設定・起動・readbackのみ、業務は本人browser/mail/許可済みPostizで行う。
 
 #### 原子的な残TODOと現在cursor
 
