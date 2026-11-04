@@ -1220,6 +1220,26 @@ class ReasonInboxTests(unittest.TestCase):
         self.assertEqual(len(self.tasks()), 1)
         self.assertIn("later valid request", self.tasks()[0]["body"])
 
+    def test_started_attachment_tasks_do_not_starve_later_requests(self):
+        self.enabled()
+        inbox = self.root / "reason" / "inbox" / "fixture"
+        inbox.mkdir(parents=True)
+        attachment = inbox / "brief.txt"
+        attachment.write_text("brief", encoding="utf-8")
+        sample = self.reason.inbox.return_value["messages"][0]
+        blocked = [{**sample, "id": f"working_{i:020d}", "files": [
+            {"name": "brief.txt", "path": str(attachment), "content": ""}]}
+            for i in range(20)]
+        with self.runtime.connect() as database:
+            for message in blocked:
+                self.runtime.insert_task(database, "reason:" + message["id"], "codex", "old body")
+            database.execute("UPDATE tasks SET status='working'")
+        later = {**sample, "id": "later_00000000000000000001", "body": "later valid request"}
+        self.reason.inbox.return_value["messages"] = blocked + [later]
+        with mock.patch.dict(os.environ, {"REASON_NETWORK_HOME": str(self.root / "reason")}):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_called_once_with([later["id"]])
+
     def test_reason_attachment_replay_is_idempotent_after_ack_failure(self):
         self.enabled()
         inbox = self.root / "reason" / "inbox" / "fixture"

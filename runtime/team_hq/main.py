@@ -572,39 +572,35 @@ class HQ:
                     or not isinstance(message.get("from"), str) or not message["from"]
                     or not isinstance(message.get("body"), str)):
                 raise HQError("Reason受信messageが不正です")
-        ready = []
-        deferred = False
-        for message in messages:
-            if len(ready) >= 20:
-                break
-            try:
-                with self.connect() as database:
-                    saved = database.execute("SELECT 1 FROM meta WHERE key=?",
-                                             ("reason_attachment_saved:" + message["id"],)).fetchone()
-                    pending = database.execute("SELECT 1 FROM meta WHERE key=?",
-                                               ("reason_attachment_pending:" + message["id"],)).fetchone()
-                if pending and not saved and not message.get("files"):
-                    raise HQError("未保存のReason添付が消失しました")
-                ready.append((message, "" if saved else self.reason_attachments(message)))
-            except HQError:
-                with self.connect() as database:
-                    database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)",
-                                     ("reason_attachment_pending:" + message["id"], "unavailable"))
-                deferred = True
-        added, accepted = 0, []
+        added, accepted, deferred = 0, [], False
         with self.connect() as database:
-            for message, attachments in ready:
+            # Serialize with claim(): the status check and task update share a write lock.
+            database.execute("BEGIN IMMEDIATE")
+            for message in messages:
+                if len(accepted) >= 20:
+                    break
                 source = "reason:" + message["id"]
+                saved_key = "reason_attachment_saved:" + message["id"]
+                pending_key = "reason_attachment_pending:" + message["id"]
+                saved = database.execute("SELECT 1 FROM meta WHERE key=?", (saved_key,)).fetchone()
+                pending = database.execute("SELECT 1 FROM meta WHERE key=?", (pending_key,)).fetchone()
+                try:
+                    if pending and not saved and not message.get("files"):
+                        raise HQError("未保存のReason添付が消失しました")
+                    attachments = "" if saved else self.reason_attachments(message)
+                except HQError:
+                    database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)", (pending_key, "unavailable"))
+                    deferred = True
+                    continue
                 existing = database.execute("SELECT status FROM tasks WHERE source_key=? AND owner_id=?",
                                             (source, self.reason_config["agent"])).fetchone()
                 if attachments and existing and existing["status"] != "queued":
                     database.execute("INSERT OR REPLACE INTO meta VALUES (?,?)",
-                                     ("reason_attachment_pending:" + message["id"], json.dumps({"body": attachments})))
+                                     (pending_key, json.dumps({"body": attachments})))
                     deferred = True
                     continue
-                marker = database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)",
-                                          ("reason_attachment_saved:" + message["id"], "1"))
-                database.execute("DELETE FROM meta WHERE key=?", ("reason_attachment_pending:" + message["id"],))
+                marker = database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)", (saved_key, "1"))
+                database.execute("DELETE FROM meta WHERE key=?", (pending_key,))
                 accepted.append(message["id"])
                 body = re.sub(r"(?im)((?:パスワード|秘密鍵|password|private[_ -]?key|api[_ -]?key|token)\s*[:：=]\s*)[^\r\n]+",
                               r"\1[秘密値を除去]", message["body"])
