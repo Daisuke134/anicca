@@ -25975,6 +25975,26 @@ native agentは本人Computer/isolateに比較表と自社オリジナルScript 
 
 二商品の検索UI失敗を同じ操作で反復せず、既存公式market snapshotのtitleSlug/idという追加根拠から二つの候補URLを導き、同session/同500000microUSD上限で表示確認する。Video Hook Forensicsはvideo-hook-forensics/4507678012、Dolaはdola-ai-video-storyboard-assistant/1047941397。観測済みCapafyの/agent/<slug>/<id>というUI path形と歴史的公式fieldsからの推論であり、現在のcanonical URL/価格の証明ではない。表示後のtitle/ID/価格/screenshotで初めてlive事実とする。無根拠なslug総当たりと区別するためこの経路変更と根拠を先に記録する。root補足は計2件として数え、追加の上限増額・登録・購入・テスト/shell作業は行わない。資料への最小追記後readbackし、未確認なら具体的な画面結果を残して未完扱いにする。
 
+価格照合の最終結果: 同sessionは265948microUSDで自然end_turnし、root補足2件・tool確認解除0件。歴史的titleSlug/idから導いた二候補は実際に表示され、PricingタブでVideo Hook ForensicsとDolaのDownload · Skill Package/US$0を確認する。rootも三価格画像をdownload/viewで照合した。HookAceはRun on Capafy、週9.99USD/10requests・月19.99/25・年239.88/360。VideoはSold1224/More ratings needed、DolaはSold1812/rating5.0、HookAceはSold1185/rating4.3だが、これらを有償注文・売上・利益・MRRへ変換しない。現時点の三商品だけから市場全体の価格や需要を断定しない。
+
+| 商品 | live一次URL | 表示された価格と提供形態 |
+|---|---|---|
+| HookAce | https://capafy.ai/agent/hookace-first-6-second-retention-predictor/3264203863?tab=pricing | Run on Capafy、週9.99/10・月19.99/25・年239.88/360、USD |
+| Video Hook Forensics | https://capafy.ai/agent/video-hook-forensics/4507678012 | Download · Skill Package、US$0 |
+| Dola AI Video Storyboard Assistant | https://capafy.ai/agent/dola-ai-video-storyboard-assistant/1047941397 | Download · Skill Package、US$0 |
+
+採用する作業仮説は**Script Forgeをrun-onlineで提供できる場合に限り週9.99USD/10requests**。六部と15/30/60秒の語数契約は既存SKILLを正本とする。20%fee前提では7.992USD/週、全10回利用時0.7992USD/requestがcompute前残額で、Capafyの実原価/返金/税/実需要は未検証。無料downloadの類似商品を売上実績として使わず、raw native案にある「0–2.99USD市場」「3–10倍」という周期/無料と定期課金を混ぜた倍率主張は**採用しない**。これは市場調査と価格仮説の進捗で、公開/黒字化/有償需要の検証ではない。
+
+最終二資料はnative successful writeと全文readback一致（public-pricing12290bytes/SHA24bc184b4f1ff6bfbf83fb8cdeb5d0d6bfdd7fd828ab20f7940d821296901a7a、raw-hypothesis6270bytes/SHAc723de70487b1d38552b66e399235e1b94489003e368e2d00e19f5a77fd46dbc）。二資料と三画像をNaïve組織Filesへ永続保存しGET/download/hash一致を確認する。fil_rtdsncykfdrqwmjrbtcbc56q0z、fil_km2k5zsggjte85tw1z9zq0zjhg、fil_m4x3wcy2r6vesaqpbb6xsyyq0c、fil_f41st9wjaqhwv1jmbw1pf4szx6、fil_hnx6zfsar7546xe6pqmjy18q7g。scope publishedは組織内保存で、Capafy商品公開ではない。自然終了後にartifactを保全してsession取消/一時agent削除を行い、原本agent27・deployment27・Identityの不変/一時grant不在を6項目照合する。新mail credentialなし、context revokeなし。private証拠はcapafy-pricing-final-export-20261104.json、capafy-pricing-cloud-files-20261104.json、capafy-pricing-natural-end-20261104.json、capafy-pricing-cleanup-readback-20261104.json。追加shell/test発話は起動元未確定で、実shell/公式delegated threadはない。主cursor=NHC-01、価格比較/原稿/価格仮説は進むが、認証・販売権限・公開・注文・利益は未達。
+
+#### NHC-01の次の技術検証は会社API keyの正式経路
+
+vendor返答だけを待つ前提を見直す。公式 https://vetta.sh/docs/api/sessions.md#respond-to-a-tool-confirmation はtool_confirmationsへのBearer sk_live_...の例を示す。API keyで通常tool確認へ応答する正式経路が利用できるかを、一時agentの非秘密ファイルread一件で検証する候補とする。SDK keys.createはname/scopesを受け、最小scopesはagents:read/sessions:read/sessions:write。実際に使えること、read_peopleにも適用できること、cloudで無人運転できることはまだ未検証で、文書例だけで解決済みにしない。
+
+次のspikeはfresh read-only scope review後、会社ownerの一回のbootstrapで専用API keyを作成し、秘密値はprivate Credential SSOTのexact service naive:policy-control-plane-probeへ直ちに保存する。既存credentialを変更せず、key/secretをprompt/repo/logへ出さない。browser/MCP/売買なしの一時Vetta/Flash agentで非秘密fixtureを書き、readをpermission askとして一件だけparkする。専用keyでその自分のsessionのGET/confirmだけを行い、実tool結果を確認する。最大period/task/session300000microUSDを、原本月残から既知の一時61509+価格265948microUSDを控除した残枠に収める。bootstrapに用いたowner session tokenでconfirmを代行してAPI key成功に見せず、human_session_required/forbiddenなら事実を記録する。key/session/agentは試験後に削除/revokeし原本不変を確認する。
+
+仮説は「既に会社が許可したtool policyをSDK制御側で適用する構成」で、人のクリックや個人Google credentialを製品の停止点にしないこと。通常API key fixture成功だけで実認証gate解決とはせず、その後にread_peopleの限定検証・必要ならcloud制御側への最小実装/検証/main/公式反映を行う。業務の選択・サイト操作・メール認証・制作・販売は引き続きnative browser/mail agentの仕事で、Capafyの業務HTTP/script botへ置換しない。未知のtool、別owner、支出増額、wallet/card/operator.requestを一括allowする構成は作らない。旧=vendor返答確認のみ、新=返答確認＋文書が示す会社API key経路の有限検証、理由=日々の人間承認なしというユーザー成果へ進む正式な代替を検証できるため。現在cursor=NHC-01を維持する。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
