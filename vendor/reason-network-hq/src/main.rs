@@ -404,8 +404,9 @@ fn hq_inbox_page(key: &str, address: &str, mut messages: Vec<Message>, cursor: O
         proposed.push(message.clone());
         let mut next_cursor = cursor.clone();
         next_cursor.after = Some(next.clone());
+        let candidate_cursor = if consumed + 1 < eligible.len() { Some(next_cursor) } else { None };
         let candidate = serde_json::json!({"session_key": key, "address": address,
-            "messages": proposed, "holds": holds, "next_cursor": next_cursor});
+            "messages": proposed, "holds": holds, "next_cursor": candidate_cursor});
         if candidate.to_string().len() + 1 > max_bytes {
             if consumed > 0 { break; }
             holds.push(serde_json::json!({"id": message.id, "sent_at": message.sent_at, "reason": "message_too_large"}));

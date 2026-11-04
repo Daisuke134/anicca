@@ -138,6 +138,21 @@ class HqCliTest(unittest.TestCase):
             self.assertIsNotNone(page["next_cursor"])
             self.assertFalse(any(request["op"] == "delivered" for request in fixture.requests))
 
+    def test_last_page_counts_null_cursor_when_checking_byte_limit(self):
+        message = {**MESSAGE, "body": "x" * 3681}
+        def one(request):
+            if request["op"] == "inbox":
+                return {"ok": True, "result": {"messages": [message], "text": ""}}
+            return replies(request)
+        with Fixture(one) as fixture:
+            result = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "4096")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertLessEqual(len(result.stdout.encode()), 4096)
+            page = json.loads(result.stdout)
+            self.assertEqual(page["messages"][0]["body"], message["body"])
+            self.assertEqual(page["holds"], [])
+            self.assertIsNone(page["next_cursor"])
+
     def test_page_continues_after_ack_removes_anchor_and_revisits_old_arrival(self):
         messages = [{**MESSAGE, "id": f"message-{i:04d}", "sent_at": i,
                      "body": "x" * 65536} for i in range(33)]
