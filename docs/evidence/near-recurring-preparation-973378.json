@@ -195,13 +195,11 @@
   "next_action": "必要CI全PASS後main。受注後に最新brief/submit契約と24h SLAを照合し納品。",
   "run_id": "973378ad969c9e510c458982",
   "occurrence_id": "973378ad969c9e510c458982",
-  "loaded_argv": [
-    "codex",
-    "exec"
-  ],
+  "loaded_argv": null,
   "loaded_env": {
     "model_override": false,
-    "credential_output": false
+    "credential_output": false,
+    "full_runtime_env": "not collected"
   },
   "evidence_refs": [
     "docs/team/near/recurring-outsourcing-report.md",
