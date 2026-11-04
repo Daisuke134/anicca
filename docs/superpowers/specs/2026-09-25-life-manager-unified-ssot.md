@@ -25850,7 +25850,9 @@ CapafyのSalesは7日Dispute Window中のpending表示で、Proceedsも精算前
 
 **利益の判定:** 同じ期間/注文の第三者受取売上から返金・手数料・決済/chain費・推論・VM・制作/配信の実費を控除する。net入金から手数料を二重控除しない。商品単位の限界利益と共通固定費配賦後の事業利益を分ける。platform pending残高、精算済み残高、実着金も分ける。初売上の次に別注文/継続購入と正の利益を確認し、損失なら価格/費用/需要の一要因を変えて再計測する。広告/掲載費/新規computeの追加支出や既存cap増額は、この順位更新で許可しない。
 
-**順序の更新:** 旧=Capafy→PromptBase等の候補列挙、第二販売先は未選定。新=Capafyの短尺動画制作分野→自社直販→Olas→PromptBase→その他。理由は自社の販売信号と既存配信資産がある市場を優先し、決済技術の新しさを需要と取り違えないため。NHC-01からNHC-12の依存順は維持し、第二販売先の候補順だけ明確化する。**現在cursor=NHC-01の専用資格情報・automation・公開/精算条件照合**。Capafyの特定経路に本人必須手順があれば、その経路の不足を記録し、capとbrowser運転契約を維持したまま2位候補を照合する。無関係なaccount登録を先行させない。
+**順序の更新:** 旧=Capafy→PromptBase等の候補列挙、第二販売先は未選定。新=Capafyの短尺動画制作分野→自社直販→Olas→PromptBase→その他。理由は自社の販売信号と既存配信資産がある市場を優先し、決済技術の新しさを需要と取り違えないため。NHC-01からNHC-12の依存順は維持し、第二販売先の候補順だけ明確化する。**現在cursor=NHC-00のmain由来cloud browser proof**。App権限/API key/専用operatorが未設定で、既存deploymentはbranch由来のため。NHC-00完了後にNHC-01のPublisher委任/本人確認/精算条件照合へ進む。Capafyの特定経路に本人必須手順があれば、その経路の不足を記録し、capとbrowser運転契約を維持したまま2位候補を照合する。無関係なaccount登録を先行させない。
+
+**Capafyの無人適合条件:** 公式[Publisher Certification](https://capafy.ai/developer/doc/1.3)は初回公開前の本人/事業書類提出、審査、0.99 USDの返金不可手数料を定める。[Publisher Agreement](https://capafy.ai/publisher-agreement/)ではPublisher accountの譲渡禁止、正確な本人/支払/税情報、原則1 accountを定める。Daisが得たと申告するautomation許可は記録するが、これ単独で本人確認・account所有権・委任権限を満たすとは扱わない。既存認証済みPublisherに対し、Capafyが明示的に認めるagent/team委任と個別権限が公式readbackで確認できる場合だけ継続する。経路が確認できない場合は、新規account作成・人の書類/認証情報の代理使用・KYC回避をせず、Capafyを「無人販売未適合/未確認」とし、順位2の自社直販/x402を先に検証する。ライブcamera手順の有無は実画面で未確認。
 
 根拠: [x402](https://docs.x402.org/introduction)、[Bazaar](https://docs.x402.org/extensions/bazaar)、[Olas市場](https://olas.network/mech-marketplace)、[Masumi](https://www.masumi.network/dev/masumi/documentation)、[Sokosumi](https://www.sokosumi.com/)、[Nevermined](https://nevermined.ai/)、[Nostr/Zaps](https://nostr.how/en/zaps)、[Bittensor](https://docs.bittensor.com/)、[Golem](https://docs.golem.network/docs/golem/overview)。KYC/ライブ本人操作は各providerの実経路で判定する。未取得の販売者条件は適合済みとしない。
 
@@ -26087,10 +26089,12 @@ liveでdeepseek/deepseek-v4.1-flash、openai/gpt-6.1-terra、google/gemini-3.5-f
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-00**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
 
+現在のprovider readbackはApp active、permissions empty、`NAIVE_API_KEY`未設定、Computer paused、専用operatorなし。既存deploymentはbranch由来でmainのimmutable releaseではないため、browser/business callの実行対象にしない。org credits約20.14 USDはcompute残高であり売上ではない。第三者注文・支払・精算・着金の証拠は0。
+
 | ID | 一つの作業 | 完了の証拠 |
 |---|---|---|
-| NHC-00 | Naïve fullstack AppをVercel Node Functionとして起動し、`computers:write`だけを承認した上で一つの専用agentからCapafy公開画面を読む | App/deployment `active/ready`、`/healthz` 200、`/mcp`に`capafy_browser`一件、app permissionsが`computers:write`のみ、agent `apps.allowed_apps=[app_id]`、公式session tool event・Computer/page readback・ledger費用。既存agent/deploymentは不変 |
-| NHC-01 | 取得済みautomation許可のもと専用AgentMail/Identityで既存の単一Publisher accountへ認証し、販売権限を確認する | 同一既存Publisherの認証・販売画面readbackと書面automation許可の記録。二つ目のPublisher account、偽identity、個人Gmail/Google credentialを使わない |
+| NHC-00 | main由来immutable releaseのNaïve Appを稼働させ、専用agentから固定ComputerでCapafy公開画面を一度読む | `/healthz`・`/mcp`、main release SHA、App `active/ready`、App権限`computers:write`のみ、専用agentの単一App binding、公式tool event・Computer/page readback・ledger費用。branch deployment、既存agent、既存Publisherを使わない |
+| NHC-01 | Capafyの既存認証済みPublisherに公式agent/team委任経路があるか、本人確認/automation/精算条件を読み取りで確定する | Capafy公式画面/文書が委任を認め、専用agentの最低権限と同一Publisherのreadbackが取れること。Dais申告のautomation許可を記録。未確認なら新規account・個人credential・KYC回避へ進まず、Capafyを無人不適合として順位2へ進む |
 | NHC-02 | Capafyの短尺動画制作分野の成功商品の需要・成果物・価格・配信を調べ、一商品を選ぶ | 一次URL/観測指標/模倣する仕組み/自社素材/実行費の記録。売れている既存商品は変更しない |
 | NHC-03・完了 | 選んだCapafy業務を既存Naïve設定/定期inputへ反映する | PR9196/main b412c1c0cd→公式agent25/deployment25一致、不変チェック全PASS。予算増額なし |
 | NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、自社/利用者の人間承認0、Capafy側の審査は別記録。自社側に必須人間手順があれば無人完了としない |
