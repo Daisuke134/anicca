@@ -1,12 +1,16 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
+
+現在cursor **HQ-REASON-ATTACHMENTS**: Reason受信は添付filesを保存せずACKするため、本人が添付した内容をworkerへ渡せない。上流の受信fileは本人host上のinboxに保存され、既読後は保持期間が1日である。順序を従来の容量bounded化→本件から、本件の無損失受信→容量bounded化へ変更する。理由は既存の通常入力で依頼内容を失う具体的欠陥が見つかったため。受信とACK以外のownerや進行中effectは変更しない。
+
+受入: 添付の正本を期限切れ前に受信taskへ耐久保存してworkerが読めること、保存不可能な依頼はACKしないこと、別の受信依頼を継続できること、再取得が重複しないこと。提供pathの安全境界・symlink・UTF-8/上限・秘密値とfile消失を検証し、ACK前の保存失敗を実SQLiteで確認する。CI、独立review、main由来release、自然受信/ACK/実作業の公式readbackを経て初めて完了とする。
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
 目的は、既存の共有部屋で依頼を保存し、受領・着手・結果・枠切れ時の引継ぎを区別しながら、収益とManager開発を継続すること。schedulerが有限runを起こす。この対話自体の無期限再開、登録席の常時稼働、売上を保証するという意味ではない。primaryは正本・統合・運用受入、各writerは明示したsource/業務effectを所有する。
 
 ### 現在の残TODOとcursor
 
-現在cursor **HQ-BOUNDED-RECEIVE**: PR9182はCI全PASS・main d939c077へ統合、完全release d939c077を受信/work/scheduleへ反映した。受信・投入は新releaseから自然起動するが、disk_floor_lowで延期されており成功/SLAは未証明。受信以外のownerや進行中effectは維持する。収益task fcdfddは完了・結果Slack読み戻し済み、PR9183はmain 85746442へ統合・report blob一致。5 pending/受注0は確認時点の値で、納品/売上は未確認。Dotsの状態照会task a9879fは登録→着手約1116秒、結果のReason送信receiptはqueuedで本人受領未確認。
+次cursor **HQ-BOUNDED-RECEIVE**: PR9182はCI全PASS・main d939c077へ統合、完全release d939c077を受信/work/scheduleへ反映した。受信・投入は新releaseから自然起動するが、disk_floor_lowで延期されており成功/SLAは未証明。受信以外のownerや進行中effectは維持する。収益task fcdfddは完了・結果Slack読み戻し済み、PR9183はmain 85746442へ統合・report blob一致。5 pending/受注0は確認時点の値で、納品/売上は未確認。Dotsの状態照会task a9879fは登録→着手約1116秒、結果のReason送信receiptはqueuedで本人受領未確認。
 
 受信継続の診断: 現行HQ受信は共通4GiB床で止まり、Reason保存後ACK・source一意制約とSlack cursor再読がある一方、個別本文/累積page/DB journalの書込み上限は未確定。VM領域は観測間に約2GiB増加し、現行swap-in監視はallocation増加そのものを抑える証明ではない。まず既存経路で受信のbytes/page/DB journalと失敗時ACK/cursor挙動を隔離実測し、極端な本文やENOSPCでも無損失・重複0・他メッセージ継続を満たす限定修正を設計する。上限値は証拠とowner用途から決定し、黙った切詰めや保存前ACKを禁止。受信専用の条件緩和はswap成長・必要余裕の測定と検証を満たすまで実装しない。現在の床と他ownerの設定は維持する。
 
