@@ -11,7 +11,7 @@
 ## タスク
 - [home-codex / NEAR framework納品準備] task fcdfdd26ab37754b9c37251e、owner home-codex-fcdfdd、branch task/home-codex-fcdfdd。既存応募dd6e4f85の英語report/一次資料比較だけを所有。5pending/受注0を公式GET確認。親PR9182/9178/9179、remote hook、会計、投稿、既存fenceを保護。受注前submit/追加bid0。
 - [home-codex / HQ継続cursor訂正] task e204c552a38bd3f262c71a6f、owner home-codex-e204c5、branch docs/hq-cursor-e204c5。PR9161の公式統合/成果物と受注・接続thread差分を照合し、TEAM-HQ/NEARの古いCI待ちを訂正する。親PR9178/9179・deploy・remote本人hook・会計・投稿・fenceは保護。新応募/送信/納品0。完了条件は根拠保存→必要CI→main。
-- [Codex / NAIVE-BROWSER-E2E] 原本agent27/pi/Terra・deployment27/enabled=false維持。有限Vetta試験はTerraが予約停止14455microUSD、Flashがroot介入0でEmail入力画面まで44968microUSD（実画像照合）。専用受信MCPを加えた認証runはget_inbox成功後gotoのread_people確認待ち、2086microUSD、root解除0で終了。一時合計61509microUSD、一時vcr/agent削除・原本/Identity/既存credential不変を7項目照合。認証/公開/売上未達。次はproviderのread_people確認境界の技術照会、許可再質問/同型有償再試行はしない。正本・残TODO→統合SSOT「Naïve browser company」、現在NHC-01。
+- [Codex / NAIVE-BROWSER-E2E] 原本agent27/pi/Terra・deployment27/enabled=false維持。一時Vetta試験合計61509microUSD、Flashはroot介入0でEmail入力画面到達、受信MCP追加後の認証はget_inbox成功後read_people確認で停止、root解除0。一時vcr/agent削除・原本/Identity/既存credential不変を7項目照合。YC chat message3105445へ技術質問投稿/再読込readback、Dais Slack既存threadにも共有済み。回答/認証/公開/売上は未達。次は回答とPR9211最新head CI→根拠ある修正。正本・残TODO→統合SSOT「Naïve browser company」、現在NHC-01。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 

@@ -25940,6 +25940,10 @@ Vetta/Flash専用メール認証の結果: fresh read-only scope review blocking
 
 公式cleanupで今回の一時vcr/agentを削除し、private Credential SSOTの新binding metadataだけdeletedへ更新した。原本agent27・deployment27/enabled=false・既存受信credentialの不変、原本Identity agent保持、一時Identity agent/vcr不在、context revoke未使用を全照合する。証拠はprivate vetta-browser-auth-cleanup-readback-20261104.json（7項目PASS）。一時agentの公式合計61509microUSD=Terra14455+Flash画面44968+Flash認証2086。private vetta-flash-browser-diagnostic-report-20261104.mdと実画像を保存する。原本既定Terra/piを勝手に切り替えず、次cursorはこのallow/ask_actions空/owned AgentMailに対するread_people確認境界のprovider技術照会。許可の再取得やDaisへの承認質問へ戻さず、同じ有償解除試行も繰り返さない。NHC-01と全製品/収益/デモ目標を維持する。
 
+read_people境界の技術照会を送信する。Dais Slack #agents-hqの既存threadへ比較条件・実費・原本不変を共有し、正式なorg/Identity/data-access設定または既知のruntime制限の参照を求める。送信ts1793798363.212689、thread readback一致。https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793798363212689?thread_ts=1793782575.851649&cid=C0CBLBGSBJN 。
+
+YCハッカソン既存chatへもDaisの依頼済み連絡として英語の技術質問を一件投稿し、Page.reload後にDaisuke名義・本文一致・本文側の一件・空のcomposerを公式UIで確認する。https://messages.ycombinator.com/messages/282272#message-3105445 。private yc-provider-question-send-20261104.jsonにdraft SHA/送信/再読込readbackを保存する。sidebarの最新previewとeditorのzero-width空行を本文件数/内容の不一致と混同せず、既存紹介文は変更しない。既存YC accountへの通常メール認証は連絡用のroot操作であり、Managerの個人Google不要・Naïve単独認証/収益の実証へ算入しない。ログインコードはprivate Credential SSOTで受取/使用後に秘密値を除去し、会話・repo・logへ出さない。providerの回答/設定解決はまだ未確認。次はこの技術照会の回答とPR9211の最新head CIを確認し、根拠のある修正が得られるまで同型の有償認証/確認解除を繰り返さない。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
