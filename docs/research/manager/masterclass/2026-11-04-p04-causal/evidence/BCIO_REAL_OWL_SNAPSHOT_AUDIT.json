@@ -1,0 +1,39 @@
+{
+  "source_repo": "https://github.com/HumanBehaviourChangeProject/ontologies",
+  "license": "Creative Commons Attribution 4.0 International, attribution required",
+  "source_bytes": 2113854,
+  "source_sha256": "694adfebd8d619d2482f6216f72327072385ef38c3d76901602fa5f17b4f5478",
+  "owl_class_declarations_including_imports": 2634,
+  "mapped_label_examples": {
+    "BCIO_001000": {
+      "label": "behaviour change intervention scenario",
+      "iri": "http://humanbehaviourchange.org/ontology/BCIO_001000"
+    },
+    "BCIO_003000": {
+      "label": "behaviour change intervention",
+      "iri": "http://humanbehaviourchange.org/ontology/BCIO_003000"
+    },
+    "BCIO_006133": {
+      "label": "behavioural motivation",
+      "iri": "http://humanbehaviourchange.org/ontology/BCIO_006133"
+    },
+    "BCIO_007024": {
+      "label": "self-monitor behaviour BCT",
+      "iri": "http://humanbehaviourchange.org/ontology/BCIO_007024"
+    },
+    "BCIO_050829": {
+      "label": "purchasing behaviour",
+      "iri": "http://humanbehaviourchange.org/ontology/BCIO_050829"
+    },
+    "BCIO_050937": {
+      "label": "behavioural goal",
+      "iri": "http://humanbehaviourchange.org/ontology/BCIO_050937"
+    },
+    "BCIO_051025": {
+      "label": "intervention context",
+      "iri": "http://humanbehaviourchange.org/ontology/BCIO_051025"
+    }
+  },
+  "scope": "verified OWL vocabulary labels only; not a deployed prediction model",
+  "intervention_effect_validated": false
+}

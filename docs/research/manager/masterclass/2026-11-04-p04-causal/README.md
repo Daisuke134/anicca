@@ -50,7 +50,7 @@
 | `P04-6_JA.md` | 事前登録・方策対方策RCT・意思決定価値・無計画な途中解析 | 架空40,000人＋A/A 750試行、16テスト。**実研究の事前登録・実介入は未実施** |
 | `P05-1_JA.md` | Ontology・状態・時点・知識グラフ・Digital Twin・既存技術の徹底調査 | 既存Manager Coreを再利用し人工5イベントのread-only投影、26テスト成功。実行権限・実人間は未接続 |
 
-単体テストは合計 **122/122件成功**（P04-1〜6：96件／P05-1：26件）。最新ログは`evidence/TEST_RESULTS_P04_1_TO_P05_1.txt`、旧P04-1〜6ログも保存。教材のテスト合格を実世界への有効性の証明と混同しない。
+基礎単体テストは **122/122件成功**（P04-1〜6：96件／P05-1：26件）。さらに比較ベンチマークの23件が成功し、**最新の合計は145/145件成功**。基礎のログは`evidence/TEST_RESULTS_P04_1_TO_P05_1.txt`、旧P04-1〜6ログも保存。教材のテスト合格を実世界への有効性の証明と混同しない。
 
 ## P05-1の調査と実装結果
 
@@ -88,3 +88,15 @@ python3 p05_1_ontology_readonly.py
 ## 監査
 
 `evidence/P04-6_JOURNAL_CLUB_QA.json` に、33枚・33ページ、85枚・85ページ、発表版33枚の全ノート、詳細版85枚の全ノート、Manager対応46〜48を除く元79枚の本文保持、凍結予測ハッシュ、人工RCT計画ハッシュ、96テストの照合を記録。ファイルのSHA256とサイズは`MANIFEST.json`に保存する。**外部の研究ベンチマーク検証や実施権限の承認を行ったとは主張しない。**
+
+
+## 2026-11-04追加｜既存コードと外部OSSの実行監査・4方式比較
+
+- [P05-1実コード徹底読取・OSSエコシステム調査](P05-1_CODE_REVIEW_ECOSYSTEM_JA.md)：BCIO・EDSL・Graphiti・MiroFish/OASIS・Palantir SDK・Listen Labs公式APIのコード/ライセンスと実行範囲。各リポジトリのソースはvendorしない。
+- [Manager Ontology/Query/evidenceの統合実装仕様](https://github.com/Daisuke134/life-manager/blob/main/products/manager/docs/specs/2026-11-04-manager-ontology-query-evidence-reuse.md)：実行境界、4方式比較、採用判断、P05-2受入。会社の大きな統合SSOTは別。
+- **4方式のsynthetic同条件比較**：[元データと全測定値](evidence/P05-1_QUERY_BENCHMARK_SYNTHETIC.json)、[Pythonコード](experiments/p05_1_four_way_benchmark.py)。12,252イベント・800質問でFlat scan=6,322µs／Python Dict=0.50µs／SQLite=3.29µs／Graph Projection=0.50µs（検索中央値）。すべて正解一致、索引生成コストは別計測。Graphiti本体はこの性能比較に含まれない。
+- **実際の隔離実行**：EDSL 1.0.9は3架空Agent＋test modelを通信禁止で成功、Graphiti-core 0.31.2は型のオフライン生成成功、BCIO OWLに2,634クラス宣言を確認。Listen Labsの無認証GETは401で、Twinsの公開APIは未確認。MiroFish/OASIS/Palantirの本番実行は未実施。
+- [完全人工のEDSL→Manager Core→Graph/Dict/SQLite/Flat E2E](evidence/P05-1_OFFLINE_END_TO_END_SYNTHETIC.json)：5人工イベントと6問で4方式一致、権限不足のため既存Manager Coreが`NO_ACTION`。ネット接続・個人情報・実通知なし。
+- [外部OSSピン留め・ライセンス・正本監査](evidence/UPSTREAM_CODE_AND_LICENSE_AUDIT.json)／[BCIO検査](evidence/BCIO_REAL_OWL_SNAPSHOT_AUDIT.json)。
+- **Python3.14テスト互換修正**：`products/manager/tests/test_collaboration_authority.py`の`dataclasses.replace(init=False)`例外型がPython3.12でValueError・3.14でTypeErrorとなる差を許容。許可/実行の実装そのものは未変更。両版で44 tests＋15 subtests成功。
+- **採用判断**：単純なqueryはまず既存のSQLiteとPython辞書を使う。Graphitiや新Graph DBを強制導入しない。時間付き知識抽出や意味検索が必要と分かった段階で、精度と費用込みで独立比較。P05-2の実装課題と実世界検証は残る。
