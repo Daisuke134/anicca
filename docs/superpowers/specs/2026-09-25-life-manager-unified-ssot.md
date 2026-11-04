@@ -1,5 +1,9 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
+
+並行cursor **HQ-REASON-INBOX-PAGES**: Reason daemonは本文上限64KiBだがHQ clientは全未読と表示用textを重複出力し、33件×64KiBの隔離fixtureで4,327,967文字となりHQの4MiB制限で全受信を拒否する。未読ACKはしないが後続依頼が停止する。旧順=容量bounded化後に受信継続、新順=旧senderとの互換性を維持してHQ専用受信をページ化し、添付保持・予約修正と並行して進める。実DB・既存daemon・他sessionは変更しない。
+
+受入: 本文や添付を切詰めずbyte上限を設け、到着・ACKによって受信箱が変動しても未読の取こぼしを防ぐ。先頭ページの保留案件が後続を飢餓させず、保存前ACKなし・元ID再取得時重複0・identity固定・既存クライアント互換を、実socket fixtureと実SQLite失敗・再取得で検証。daemonからclientまでの総メモリ上限と大型backlogの残課題を明記し、main由来build・必要CI・独立review・対象owner反映後の自然受信と公式readbackまで続ける。
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
 目的は、既存の共有部屋で依頼を保存し、受領・着手・結果・枠切れ時の引継ぎを区別しながら、収益とManager開発を継続すること。schedulerが有限runを起こす。この対話自体の無期限再開、登録席の常時稼働、売上を保証するという意味ではない。primaryは正本・統合・運用受入、各writerは明示したsource/業務effectを所有する。
