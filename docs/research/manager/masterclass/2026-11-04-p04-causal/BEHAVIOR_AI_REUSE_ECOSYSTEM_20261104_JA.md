@@ -50,8 +50,8 @@ Kolluri et al.（EMNLP 2025）『Finetuning LLMs for Human Behavior Prediction i
 5. 人間研究データの用途と公開範囲を守る。論文での「未知研究」がそのまま未来の購買や人間の苦しみ改善を保証するわけではない。
 
 公式論文（EMNLP 2025）：https://aclanthology.org/2025.emnlp-main.1530/（36%）／arXiv初期版：https://arxiv.org/abs/2509.05830（26%）。発表では**結果の版と母数**を添える。
-公式研究：https://stanfordhci.github.io/socrates/  
-OSS：https://github.com/akaashkolluri/socrates  
+公式研究：https://stanfordhci.github.io/socrates/
+OSS：https://github.com/akaashkolluri/socrates
 公開モデル：https://huggingface.co/socratesft/socrates-qwen2.5-14b-sft
 
 ### 2026年：BehaviorBenchとBe.FM 1.5
@@ -62,9 +62,9 @@ Huang et al. (2026)『BehaviorBench: Benchmarking Foundation Models for Behavior
 
 重要な権利差：`befm/BehaviorBench`の**データセットはCC BY-NC-ND 4.0表記**。モデルや評価コードのライセンスから、そのデータを商用学習へ無条件流用できると解釈しない。テストセットを学習に混ぜればそもそもベンチマークの意味が消える。
 
-公式評価：https://github.com/umich-foreseer/behaviorbench_eval  
-公式結果：https://umich-foreseer.github.io/behaviorbench/  
-公開モデル：https://huggingface.co/befm/BeFM1.5-4B  
+公式評価：https://github.com/umich-foreseer/behaviorbench_eval
+公式結果：https://umich-foreseer.github.io/behaviorbench/
+公開モデル：https://huggingface.co/befm/BeFM1.5-4B
 データカード：https://huggingface.co/datasets/befm/BehaviorBench
 
 ### 2026年：実験の復元と人間への外部汎化
@@ -97,9 +97,9 @@ OSS：https://github.com/HumanStudy-Hub/HumanStudy-Bench
 - 2026-11-04に**TinyFishの実ブラウザー**で`https://dev.listenlabs.ai/twins`、`/book-twins-demo`等を巡回。『Run a Simulation』は公開UIからは**デモ予約フォーム**へ遷移した。ログイン済みのTwins panelとその利用権が確認できなかったため**Twins予測そのものは実行していない**。Study作成、参加者募集、課金、本人の録音へのアクセスは行わない。
 - 再利用できるのは**インタビュー→証拠つきTwin→棄権→実人間での独立検証**という設計であり、非公開モデルそのものではない。
 
-公式製品：https://dev.listenlabs.ai/twins  
-2026プレス：https://kyodonewsprwire.jp/release/202610288828  
-実ブラウザー：https://agent.tinyfish.ai/runs/89af8069-6d12-45dd-8573-50d9cd2fa195  
+公式製品：https://dev.listenlabs.ai/twins
+2026プレス：https://kyodonewsprwire.jp/release/202610288828
+実ブラウザー：https://agent.tinyfish.ai/runs/89af8069-6d12-45dd-8573-50d9cd2fa195
 公開API：https://docs.listenlabs.ai/api-v2/overview
 
 **Rehearsals / Human Behavior Bench（2026-10）**：
