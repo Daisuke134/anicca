@@ -25930,6 +25930,12 @@ NHC-01の次の診断は、原本agent27を変更せず一時agentをharness=vet
 
 次の診断は同じ一時agentのmodelだけをdeepseek/deepseek-v4.1-flashへ変更し、同じnative browser課題を一回実行する。新session capはperiod残枠485545microUSD以下、period/task上限500000microUSDは増額しない。これは低料金modelで予約を通過できるかという新しい仮説のprobeで、Terraの同型再試行ではない。両catalogueのmax_output_tokensは32768/immediate対応を公式確認したが、成功率・最安・料金差の数値は未検証。原本の既定Terra、全収益目標、業務browser契約は維持し、登録/OTP/Publisher作成を比較目的で行わない。終了後に両sessionの実費とartifactを保存し、一時agentのみ削除する。
 
+有限Vetta/Flashの結果: 同agent/version2のses_xmh1r8h43cmmx8gh3ctmtc5sfkは44968microUSDで自然end_turnし、home→Get started→Continue with Emailへ到達する。root確認/補足0件。XPath click2回はpage action errorで、モデル自身がbrowser.actへ切り替えて復旧した。最終実画像fil_e34sj164b643pw8tjf60fbzy0pをrootがdownload/viewで確認し、email入力欄・未選択のTerms/Privacy checkbox・無効Continueボタンが表示される。モデルの「budget ended」という文はbudget_pausedの公式証拠ではなく、公式終了理由はend_turnで残capあり。認証/OTP送信/Publisher/公開/売上は未達。Terra/Vettaの予約停止と別に記録し、価格・速度・成功率の総合ランキングへ外挿しない。
+
+次工程の順序変更: 旧=画面診断terminal後に一時agentを削除→別harness検討、新=確認済みのVetta/Flashを同capのまま専用メール認証一回へ延長→終了時artifact/費用保存→今回binding/agentのみ削除。理由=実画面で進めるharnessが得られ、root代理操作でなく同じnative browserの認証へ直接進めるため。原本agent27/deployment27/enabled=false、全MRR/製品/デモ目標は維持する。
+
+一時agent専用のAgentMail sealed static_bearerを既存Identity vaultへ一つだけ作り、agent_id=agt_7cdr39p6r97t0c9kxw7s7ahs6mへ限定する。secretはprivate credential SSOTのexact service naive:browser-operator:agentmail-receiveからメモリ上で公式vaultへ渡し、prompt/config/logへ表示・複製しない。既存credential/受信箱を変更せず、新bindingのmetadataをprivate SSOTへ直ちに保存する。MCP URLと受信read-only4toolsは原本の正式設定を使い、mail送信toolは追加しない。新session capは440577microUSD以下かつ一時agent period残枠以下、period/task上限500000microUSDは維持する。scope/cleanupをfresh read-only reviewerで検証してから接続する。普通利用accountの専用メール認証/OTPと認証済みaccount/Publisher roleの確認だけを進め、新Publisher・既存account設定/商品・購入/送金/配信は変更しない。tool.confirm発生はrootが解除せず未達として記録する。終了時はこの一時vcrとagentだけを削除し、context revokeを使わず、原本のIdentity/credential/context/deploymentをreadbackする。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
