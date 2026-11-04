@@ -5559,7 +5559,14 @@ def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path, monkeypatch
     assert run.call_count == 1
 
 
-def test_confirmed_unloaded_owner_keeps_its_queue_position_but_stops_reserving(tmp_path, monkeypatch):
+@pytest.mark.parametrize(("code", "stdout", "stderr", "expected"), [
+    (113, "", "Could not find service", "suspended"),
+    (0, "state = running\npid = 123", "", "running"),
+    (77, "", "preflight failed", "deferred"),
+    (113, "", "Could not find service", "locked"),
+])
+def test_missing_plist_dispatch_respects_launchd_state(
+        tmp_path, monkeypatch, code, stdout, stderr, expected):
     root = tmp_path / "admission"
     monkeypatch.setenv("LIFE_MANAGER_RESOURCE_ADMISSION_ROOT", str(root))
     monkeypatch.setenv("LIFE_MANAGER_HOST_MAX_FINITE_RUNS", "1")
@@ -5585,16 +5592,29 @@ def test_confirmed_unloaded_owner_keeps_its_queue_position_but_stops_reserving(t
     (current / "config/loop-registry.json").write_text(json.dumps({
         "schema_version": 2, "loops": {"example": row},
     }))
-    absent = subprocess.CompletedProcess([], 113, "", "Could not find service")
-    with patch("runtime.loop.lm_loop_run.subprocess.run", return_value=absent):
+    observed = subprocess.CompletedProcess([], code, stdout, stderr)
+    guard = admission.owner_deploy_lock("example") if expected == "locked" else nullcontext()
+    with guard, patch("runtime.loop.lm_loop_run.subprocess.run", return_value=observed) as run:
         _dispatch_reserved(["example"], current=current, agents_dir=agents)
+        if expected == "locked":
+            run.assert_not_called()
     with sqlite3.connect(root / "admission-v2.sqlite3") as db:
         priority = db.execute("SELECT next_eligible_at FROM priorities WHERE owner_id=?",
                               ("example",)).fetchone()[0]
         occurrence = db.execute("SELECT owner_id FROM queue WHERE owner_id=?",
                                 ("example",)).fetchone()
-    assert priority == float("inf")
+        reservation = db.execute("SELECT owner_id FROM reservations WHERE owner_id=?",
+                                 ("example",)).fetchone()
     assert occurrence is not None
+    if expected == "suspended":
+        assert priority == float("inf")
+        assert reservation is None
+    elif expected in {"running", "locked"}:
+        assert priority == 0
+        assert reservation is not None
+    else:
+        assert 0 < priority < float("inf")
+        assert reservation is None
 
 
 def test_real_child_receives_sigterm_after_atomic_handoff(tmp_path):

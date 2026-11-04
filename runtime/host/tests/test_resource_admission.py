@@ -521,6 +521,28 @@ def test_rebind_queued_owner_discards_expired_reservation(tmp_path, monkeypatch)
     assert occurrence["base_priority"] == "revenue"
 
 
+@pytest.mark.parametrize("protected", ["claimed", "occurrence_unknown", "owner_unknown", "claim_file"])
+def test_unloaded_suspend_preserves_claims_and_unknown_effects(tmp_path, monkeypatch, protected):
+    isolated(tmp_path, monkeypatch, total="1")
+    admission.enqueue_durable("deterministic", "protected", admission_class="revenue",
+                              occurrence_id="protected:wake", now=100)
+    assert admission.reserve_available(now=101) == ["protected"]
+    database = tmp_path / "admission-v2.sqlite3"
+    with sqlite3.connect(database) as db:
+        if protected == "claimed":
+            db.execute("UPDATE occurrences SET state='claimed' WHERE owner_id='protected'")
+        elif protected == "occurrence_unknown":
+            db.execute("UPDATE occurrences SET effect_unknown=1 WHERE owner_id='protected'")
+        elif protected == "owner_unknown":
+            db.execute("UPDATE priorities SET effect_unknown=1 WHERE owner_id='protected'")
+    if protected == "claim_file":
+        (tmp_path / "owners" / f"{admission._digest('protected')}-123.json").write_text("{}")
+    before = {table: durable_rows(tmp_path, table)
+              for table in ("queue", "reservations", "priorities", "occurrences")}
+    assert admission.suspend_durable("protected", only_if_unclaimed=True) is False
+    assert {table: durable_rows(tmp_path, table) for table in before} == before
+
+
 def test_resume_no_queued_owner_is_a_successful_noop(tmp_path, monkeypatch):
     isolated(tmp_path, monkeypatch, total="1")
     assert admission.resume_durable("empty-owner") is True
