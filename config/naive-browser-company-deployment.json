@@ -1,11 +1,11 @@
 {
   "agent_id": "agt_e1hvkwgrdrx119zh22qthavwt4",
-  "agent_version": 26,
+  "agent_version": 27,
   "identity": "idn_538nccw222rx6f1q8qh5hyjeeh",
   "cron": "0 */12 * * *",
   "timezone": "UTC",
   "budget_micro_usd": 1000000,
-  "window": "priority",
-  "enabled": true,
+  "window": "immediate",
+  "enabled": false,
   "input_template": "Capafyで費用を上回る収益を作る。本人Computerのcapafy-route-audit.md、capafy-product-plan.md、capafy-seller-state.jsonの存在する資料と必要なjournal末尾だけを読み、保存状態から最も収益に近い未完の一成果を自分で選んで進める。初回の未作成ファイルは作る。旧BusinessRun Trace Review、無関係なメール/購読/登録試験は進めない。利用者の個人credential/人間browser sessionを借りず、同じAnicca Publisher内の正式なagent専用認証/権限の確認を先に扱い、別Publisherは作成しない。camera/livenessや本人操作が必須ならその事実と次の正式経路を保存する。権限が未確定なら待つだけにせず、公開市場の成功例から短尺動画制作者/マーケターの反復課題を調べ、新商品一つの独自原稿と使用例を本人Computerに作る。価格や商品構成は需要と実行費を観測してモデル自身が選ぶ。売れた既存商品は変更しない。公開できる正式権限が確認できた新商品だけを公開し、既存許可済みの自社無料配信経路で独自の英語campaignを配信し、第三者注文の納品/支払/返金/手数料/実費を公式照合する。投稿前の重複照合と投稿後の公式結果確認を行い、不確実な外部作用は再送しない。同じbrowserに対する変更と観測は直列にし、XPath直接操作の失敗は画面の対象をbrowser.actへ自然言語で指定して復旧する。成果と次行動をcapafy-seller-state.jsonへ保存しwrite後readで照合する。必要な実画面証拠を残す。人間への通常承認質問、shell/業務HTTP/API代行、他owner変更、支出増額、送金はしない。未確認の認証・公開・顧客・売上・利益・MRR・無介入成功を補わない。一runで全工程を無理に詰めず、収益に近い一成果を保存したら自然にend_turnする。"
 }

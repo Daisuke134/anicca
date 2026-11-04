@@ -25912,7 +25912,7 @@ DaisはGLM固定の継続を見直し、Codex/Muse/Grokbot/Dotsも含め、実�
 
 判定値は実結果の完了、model/browser/computer/失敗試行を含む総費用、時間、人間への質問数、root/他AI介入数。公式料金はbrowserのmodel駆動action0.01USD、minute0.001667USDで、成功済みの観測selectorを使うclick/type等は追加action料金なし。実際に観測したlocatorだけ使い、失敗済みselectorを盲目的に繰り返さない。model変更だけでprovider確認待ちが消えると断定しない。最終的な定期model/window変更はsource変更/検証/main/公式反映で固定し、owned scheduleを復帰する。Terra baseline ses_mdr8ztmb0ptzr6611ap5pw107bは公式model_request spanでresolved_model=openai/gpt-6.1-terraを確認する。消費330124microUSDで次callの予約が残capを超えてbudget_paused。本人の実screenshotはメール欄に専用agentmail受信箱を表示し、規約checkbox未選択・Continue無効である。extractのhidden validation文だけからメールが不正と断定しない。元のtask上限1USD/月cap12USD内で、この一件だけsession capを750000microUSDへ改訂して現画面のcheckbox/Continue/メール確認を続ける。追加購入・全体cap増額はしない。旧=0.50USD枠で中断、新=観測済み予約不足を解消する0.75USD枠、理由=モデル課金が確定した続きの認証を同じsessionで行い、重複登録/OTPを避けるため。現在cursor=NHC-01のTerra認証baseline。一般的な最安modelという断定は未測定。
 
-実測追記: Terraの同sessionはbudget750000microUSD反映後にresumeし、専用AgentMail.list_messages成功を確認したが、browser.goto/actの確認待ちが再発し、ログイン後のaccount readbackに届かない。最終cancelledの公式消費418865microUSD（うち初回GLM bootstrap64238microUSD、残354627microUSDはTerra側の実行とtool費用）。Terra切替時刻12:01:34UTC→停止readback12:09:27UTC。rootの補助steering2件・browser確認解除1件を含み、無介入成功ではない。GLM trial176882microUSDも未完走。どちらもcompleted-task単価を算出できず、モデル性能ランキングとして比較しない。SDK公式npm latestは0.10.0で、使用版と一致する。Context7はNaive/Vettaで該当SDKが得られず、Firecrawlは接続link_id不足で取得失敗、上記一次資料は公式URLから直接取得する。次の診断対象は、browser permission=allow/ask_actions空かつsession-scope grant済みにもかかわらず再度tool.confirmとなる境界と、画面状態を保持した入力/checkbox操作。正本のmodelを未完走Terraへ恒久置換せず、定期起動はこの担当だけ一時停止を維持し、原因修正と実ログインの一成果確認後にsource固定/復帰する。
+実測追記: Terraの同sessionはbudget750000microUSD反映後にresumeし、専用AgentMail.list_messages成功を確認したが、browser.goto/actの確認待ちが再発し、ログイン後のaccount readbackに届かない。最終cancelledの公式消費418865microUSD（うち初回GLM bootstrap64238microUSD、残354627microUSDはTerra側の実行とtool費用）。Terra切替時刻12:01:34UTC→停止readback12:09:27UTC。rootの補助steering2件・browser確認解除1件を含み、無介入成功ではない。GLM trial176882microUSDも未完走。どちらもcompleted-task単価を算出できず、モデル性能ランキングとして比較しない。SDK公式npm latestは0.10.0で、使用版と一致する。Context7はNaive/Vettaで該当SDKが得られず、Firecrawlは接続link_id不足で取得失敗、上記一次資料は公式URLから直接取得する。次の診断対象は、browser permission=allow/ask_actions空かつsession-scope grant済みにもかかわらず再度tool.confirmとなる境界と、画面状態を保持した入力/checkbox操作。この未完の認証trialだけを根拠に最安modelへ固定しない。後続の原稿完走後の既定model候補とsource反映順は後段v27節を正本とし、定期起動は本人認証の結果を見て復帰する。
 
 #### 原子的な残TODOと現在cursor
 
@@ -25936,6 +25936,26 @@ DaisはGLM固定の継続を見直し、Codex/Muse/Grokbot/Dotsも含め、実�
 | NHC-14 | 黒字の手順を第二runtimeで一件再現する | 一担当/二重課金0/移植先の実利益。複製数を売上へ換算しない |
 
 NHC-08のデモ準備、NHC-10の入口整理、YC紹介/申請更新は収益ループと並行可能。紹介獲得と実売は両方進める。YC画面/Docの不一致は最新確認値に合わせて直し、重要な数字・商品リンク・別枠の創業者動画/商品デモを整える。Mariaの紹介は約束と完了を区別。NaïveはSDK/ライブ実務・介入の実数、Maritimeは実在利用者1000人と実利用を示す。同一商品を使い、agent/VM数でユーザーを水増ししない。優勝/YC採択/収益は保証しない。
+
+#### NHC-02の商品完成を独立して進める
+
+ownerのCapafy許可取得済みという最新情報を保持し、許可を再質問しない。NHC-01ではpinned agent26/browser allow/ask_actions空/build modeと、includeAccepted=trueの公式eventにsession-scope allow保存を確認したうえで、後続browser確認待ちが再発する。原因未確定の同型有償認証を繰り返さず、NHC-02の商品例修正/短い販売文/一回試用を依存のない並行作業として完了する。主cursorと売上目標はNHC-01のまま維持する。
+
+診断trialは同agent26/Identity/Computer/context/tools、session window=immediate、cap500000microUSD/8分。最初はreadのみのbootstrapで外部作用を行わず、公式sendでopenai/gpt-6.1-terraを指定してnative read/write/editの仕事を開始する。本番agent/model/deployment sourceは変更しない。既存SKILL/例/listingが読めなければ、保存済み自身の原稿をモデルへ渡して本人が復元する。30秒spoken55–65語、例に入力に無いoffer事実を混ぜない、販売文160語以内、仮想自転車店の15USD/Saturday検査のお題で六成果物の試用を保存しreadbackする。仮想の客・売上を実績にしない。browser/メール/投稿/課金/送金はこの独立taskでは実行しない。
+
+完了証拠は本人native write/read、export後の原稿/語数/offer事実/六成果物の照合と永続保存。promptの合格自己申告だけでは合格にしない。rootはSDKで有限開始/状態/成果物exportと保存だけを行う。商品の完成を認証・Capafy公開・実注文・実売上に置換しない。現在cursor=NHC-01のbrowser確認境界、並行=NHC-02の原稿完成/試用。
+
+NHC-02結果: ses_k2m7c55m8ev2mvmtz4fbr8cv84はagent26/immediate、公式resolved model=openai/gpt-6.1-terra、15tools、idle/end_turnで自然終了。公式消費184947microUSD。native read/edit/write/readによりSKILL5768bytes、例2898bytes、販売文865bytes、試用3669bytesを保存。root再検算は例57語/試用57語・各六部・販売本文128語・入力に無いoffer条件なしで合格。spokenの実時間・Capafy実呼出し・顧客売上は未試験。四原稿をNaïve Filesの組織内published scopeへ永続保存し、公式GET/SHA256/download全件一致。これはCapafy公開ではない。file IDs: SKILL fil_e8ngzktpfsv8cb0kgk2zbgwsfw、例 fil_fpjrz3ks4qewgzvt6d0c5ak7ks、販売文 fil_yk70mnmm5y9c0d0acmmvdkanw7、試用 fil_csazv3zsj8xc57t50cms5esjxr。私有export/capafy-native-products-final-20261104に同じ原稿と検算/クラウドreceiptを保存する。
+
+#### NHC-01の診断結果とv27候補の修正
+
+公式harnesses.listでpiとvettaはrunnable=true、claude_code/hermesはfalse。liveのvettaはapprovals=trueを返し、静的docsのfalseと異なる。SDK0.10.0のAgentPatchはharnessを受け取り、その実装はbodyをそのままPATCHする。しかしharness=vettaだけの更新は受理後のGETでversion26/harness=piのまま、その他のfieldも全件不変だった。v27や別harnessへの切替を成功扱いしない。別Agent/新credential/新contextの作成0、production26/enabled=falseを維持する。診断source35f7494ade/公式readbackを残し、同じnoop PATCHを繰り返さない。
+
+self-owned sourceのsystem末尾には、Daisの許可取得済み申告後も旧「許諾未確認でbrowser/認証を禁止」が残っていた。SSOTと一時taskだけでなく、この矛盾のある正本設定も更新する。candidate27はこの末尾だけをowner許可取得済み・通常認証に追加承認不要へ置き換え、本人限定手続き/個人credential禁止/既存Publisher保護/実権限readbackの境界を維持する。既存system prefixは不変。default model/windowは、原稿の実完走を確認したTerra/immediateへ変更するが、ブラウザ認証成功や最安modelの実証とは呼ばない。harnessはpiを維持し、予算month12USD/task1USD・Identity/context/tools/MCP/cron/inputも維持する。source deploymentはpin27/immediate/enabled=falseで、認証診断中に旧modelの定期反復が始まらない状態を正本化する。
+
+変更の受入はJSON妥当性、agentのmodel/window/system末尾以外の構造差分0、deploymentのpin/window/enabled以外0、source-boundary/diff、必要なreview/CI、main由来の固定source→expected_version26部分更新→公式不変readback。まだ反映前candidateで、current officialは26/pi。次の一手はこの矛盾修正を反映して専用メール認証を一件だけ進めること。確認待ちが再発すればprovider境界の再現証拠とし、許可済みというユーザー情報を再質問しない。別harnessの比較は既存Agentでは未適用のため、必要なら別途boundedな診断資源/同Identity grant/総費用を明示し、予算回避や新Publisher作成へ使わない。個人Google依存・業務script/API botへの置換はしない。
+
+現在cursor=NHC-01、NHC-02の原稿修正/一回試用/クラウド永続保管は上記の範囲で完了。公開価格・Publisher権限・Capafy公開・第三者注文/納品/支払・デモ・自社/外部MRRは未達。Grok/Muse向けSlack既存threadへ許可取得済みと技術経路の質問を送信し、親thread readbackも更新する。AGMSG codex-money-printerへの同趣旨の照会は送信済みだが、返答や着手は未確認。
 
 #### 一次資料と調査の限界
 
