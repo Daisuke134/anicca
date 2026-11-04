@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / NEAR framework納品準備] task fcdfdd26ab37754b9c37251e、owner home-codex-fcdfdd、branch task/home-codex-fcdfdd。既存応募dd6e4f85の英語report/一次資料比較だけを所有。5pending/受注0を公式GET確認。親PR9182/9178/9179、remote hook、会計、投稿、既存fenceを保護。受注前submit/追加bid0。
 - [home-codex / HQ継続cursor訂正] task e204c552a38bd3f262c71a6f、owner home-codex-e204c5、branch docs/hq-cursor-e204c5。PR9161の公式統合/成果物と受注・接続thread差分を照合し、TEAM-HQ/NEARの古いCI待ちを訂正する。親PR9178/9179・deploy・remote本人hook・会計・投稿・fenceは保護。新応募/送信/納品0。完了条件は根拠保存→必要CI→main。
 - [Codex / NAIVE-BROWSER-E2E] 本番main048/agent23/priority/月9、個人Google注入0。有償QA本人読取/保存成功。n8nは通常emailフォーム確認、正式確認1回後signup needs service、同card再発で再回答0/cancel。57live0/paused/prod23全fields、費52254/ledger9、月残129431（後計上あり）。cursor2=source cap9→10/desired24の最小差分→CI/review/main→budget-only24適用→service/url明示の通常signup→確認/連絡→有料依頼/納品/入金。元7TODO/売上等未達。PR9177。正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
@@ -63,6 +64,7 @@
 - [Codex / Manager] prepared shadowの既存host/CLI/Actions接続。所有: feat/manager-host-shadow-connection-20261023の限定host/CLI/workflow/tests/docs。既定・schedule OFF、単一owner、P0比較のみ。本番推論・新規課金・他laneは変更しない。
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
+- home-codex（fcdfdd）: NEAR本人GET5pending/受注0、framework英語report2088語と一次資料証拠を準備。未納品/売上未確認、次は必要CI→main→受注後契約再照合。
 - 2026-11-03 20:15 JST / home-codex-a4d5da / 応募済みNEAR採算report英語1615語・再計算CSV/Decimal assertionsと13原典を準備。5pending/受注0、remote差分は親案内1件で催促0。追加bid/納品/送金0。独立SHIP/Blocking0。次: 必要CI→main、受注時契約再読。
 - 2026-11-03 20:57 JST / Codex / Naive英語記事を自社Manager blogへ公開、既存75記事保持・76記事/44媒体、live本文/画像/hash/provider ready/money-path smoke一致。売上未確認。次: 本人inbound1通検査と自然run。
 - 2026-11-03 18:12 JST / home-codex-b00a48 / 初回NEAR計測report英語1931語と6原典照合を準備、4pending/受注0・納品0。親PR9143/9146保護。次: 文書CI→統合、受注時再読→納品。

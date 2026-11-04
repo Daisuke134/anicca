@@ -16,6 +16,8 @@
 
 1. **HQ-02 本人の自動wakeと引継ぎ**。Dots/Muse/Grokbotそれぞれの元message→自然受領→実着手→結果を本人経路で照合する。Museは既存60秒hookの自然発火を報告するが、previewのみで元message IDを渡さないため相関が未完。既存hookでIDを保持する最小修復を本人ownerへ依頼済みで、修復済みとはしない。home-claudeは認証失敗のため有効な予備席へ数えず、実際に使える担当による枠切れ引継ぎ1件の完遂・重複0まで確認する。接続待ちで独立した収益/開発を止めず、同じ催促を反復しない。
 2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。直前task23cd35はsucceeded/posted、PR9161は必要CI15件成功後main9f930f5ce471ab47159a64e941eb4db6e9195226へ統合済み。report/CSV/検算scriptのGitHub公式blob一致も確認済みで、旧CI失敗/未統合cursorへ戻さない。task e204c5の本人専用GET200は全5pending/assignment0。売上/出金は未確認。現在cursorは既存hourlyで全assignmentを照合し、受注時は最新brief/submit契約と24h対API3日の差異を確認して準備済み成果物を納品すること。証拠→docs/evidence/hq-continuation-e204c5.json。未受注の同job再応募/納品0を維持する。
+既存NEAR継続（task fcdfdd）: 公式GET5pending/受注0。応募済みframework案件の英語report2088語を準備し、納品/追加bid/支払0。正本→`2026-11-03-near-market-first-offer.md`のframework納品準備節。現在cursor=必要CI→main→受注後契約再照合。
+
 3. **実際に延期された処理の限定復旧**。receive/work/scheduleは復旧後に一度ずつ自然成功したが、最新receiveは6919bcd2由来releaseでdisk_floor_low/exit75へ再度延期された。watchdogの2GiB回復基準はHQ revenue受信の4GiB床と異なり、直近空き約3.1GiBでは受信復帰を意味しない。容量問題を全社の停止理由に拡張せず、該当ownerの再生成可能な不要物だけを安全条件下で整理し、次の自然実行を確認する。swap削除・基盤restart・床/上限変更はしない。既存のaffiliate:elevenlabs復帰責務、Muse専用browserのaccount/binding/wake未確認は保持する。FIRST1000は既存担当の元受付PNG/portal照合・再送HOLDを維持し、期限経過を提出成功へ置換しない。
 
 HQ-01のMac自然受信→一意card→着手→元送信先への結果→再巡回重複0と、HQ-04の公開記事/画面確認は受入済み。全agentの24時間/1分応答と、収益成立は未達のまま保持する。
