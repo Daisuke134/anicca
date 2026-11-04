@@ -49,7 +49,15 @@ def lifecycle_one(action: str, loop_id: str, entry: dict, agents_dir: Path,
     readback_rc, readback = run(["print", service])
     rc = action_rc or readback_rc
     if rc == 0 and admission is not None:
-        admission("resume")
+        try:
+            resumed = admission("resume")
+        except Exception as exc:
+            resumed = False
+            detail = f"admission resume failed: {exc}"
+        if resumed is False:
+            rc = 1
+            if "admission resume failed" not in detail:
+                detail = "admission resume failed: control busy"
     return {"loop_id": loop_id, "label": label, "action": action,
             "return_code": rc, "operations": operations,
             "detail": (readback if readback_rc else detail).strip()}

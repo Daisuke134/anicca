@@ -1634,13 +1634,13 @@ def resume_durable(owner_id: str) -> bool:
         except BlockingIOError:
             return False
         with _database(database) as connection:
-            changed = connection.execute(
+            connection.execute(
                 """UPDATE priorities SET next_eligible_at=0
                      WHERE owner_id=? AND EXISTS (
                          SELECT 1 FROM queue WHERE owner_id=?)""",
                 (owner_id, owner_id),
-            ).rowcount
-        return bool(changed)
+            )
+        return True
     finally:
         os.close(descriptor)
 

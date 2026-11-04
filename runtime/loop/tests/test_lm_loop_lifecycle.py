@@ -77,6 +77,19 @@ class LmLoopLifecycleTest(unittest.TestCase):
             self.assertEqual(result["return_code"], 0)
             self.assertEqual(actions, ["bootstrap", "resume"])
 
+    def test_start_reports_a_failed_admission_resume(self):
+        with tempfile.TemporaryDirectory() as directory:
+            agents = Path(directory)
+            (agents / "ai.anicca.a.plist").write_text("plist")
+            def launchctl(args):
+                return 0, "loaded"
+            result = lifecycle_one(
+                "start", "a", REGISTRY["loops"]["a"], agents, launchctl,
+                admission=lambda action: False,
+            )
+            self.assertNotEqual(result["return_code"], 0)
+            self.assertIn("admission", result["detail"])
+
     def test_restart_boots_out_then_bootstraps_and_reads_back(self):
         with tempfile.TemporaryDirectory() as directory:
             agents = Path(directory)

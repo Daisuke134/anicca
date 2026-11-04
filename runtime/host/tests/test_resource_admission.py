@@ -521,6 +521,11 @@ def test_rebind_queued_owner_discards_expired_reservation(tmp_path, monkeypatch)
     assert occurrence["base_priority"] == "revenue"
 
 
+def test_resume_no_queued_owner_is_a_successful_noop(tmp_path, monkeypatch):
+    isolated(tmp_path, monkeypatch, total="1")
+    assert admission.resume_durable("empty-owner") is True
+
+
 def test_suspended_owner_releases_reservation_until_resumed(tmp_path, monkeypatch):
     isolated(tmp_path, monkeypatch, total="1")
     ticket, reason = admission.enqueue_durable(

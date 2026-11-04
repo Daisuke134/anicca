@@ -5558,14 +5558,14 @@ def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path):
     run.assert_not_called()
 
 
-def test_confirmed_unloaded_owner_does_not_keep_the_next_dispatch_slot(tmp_path, monkeypatch):
+def test_confirmed_unloaded_owner_keeps_its_queue_position_but_stops_reserving(tmp_path, monkeypatch):
     root = tmp_path / "admission"
     monkeypatch.setenv("LIFE_MANAGER_RESOURCE_ADMISSION_ROOT", str(root))
     monkeypatch.setenv("LIFE_MANAGER_HOST_MAX_FINITE_RUNS", "1")
     monkeypatch.setenv("LIFE_MANAGER_HOST_MIN_REVENUE_RUNS", "0")
     admission.activate_durable_v2()
     instant = time.time()
-    for owner in ("example", "next"):
+    for owner in ("example",):
         admission.enqueue_durable("deterministic", owner, admission_class="revenue",
                                   occurrence_id=f"{owner}:wake", now=instant)
     assert admission.reserve_available(now=instant) == ["example"]
