@@ -146,3 +146,9 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 準備成果: docs/team/near/tool-discovery-channel-report.md（本文1530語、表込み2329語）、13行比較・上位5実行手順・明示仮定の順位/計測設計を作成する。ChatGPT送金規定とClaude暗号資産/自律金融規定、mcp.so39ドル、Smithery現行Arcade表記を原典確認。実install/費用未取得はunknown。公式本人5pending/受注0、納品/追加bid/掲載/支払0。語数/5提言/5計算/全引用URL取得対応PASS。証拠→docs/evidence/near-discovery-preparation-665831.json。現在cursor=独立検証→必要CI→main、受注後に最新brief/submit契約照合。
 
 独立検証の3指摘は、digital-service規定、実在A2A提出form/旧path差異、facilitator別catalogと全媒体順位不能理由/工数内訳/感度を追記して修正する。現在cursorは修正head再検証→必要CI→main。
+
+### Discovery統合後の現在cursor — task ab33e8
+
+目的・範囲: 同ownerの未統合PR9207を継続して完走し、古いCI待ちを訂正する。新しい応募やreportは増やさない。最終head813f69404fの必要CI14件＋CodeRabbit成功、保存済み独立SHIP/指摘0と原稿hash一致、本文1530語・表込み2329語・5提言・計算5件・450訪問合計、source-boundary/diff PASSを再照合する。PR9207はmain3e3f078149f9ccc1be51e9dac7b4f8a243ddbb2dへ公式MERGED、原稿と出典証拠の公式blobはbyte一致。原稿準備とsource統合は完了し、納品・実install・売上・出金とは区別する。
+
+本人専用公式GETは5pending/assignment0、初回bid15USDC/pending。受注前submit/追加bid/掲載/支払/会計write/投稿/fence変更0。既存順序を維持し、現在cursorは既存hourly全assignment照合→受注時の最新brief/submit契約再読→SLA内納品。親HQ修復/Naive・Dots会計・Muse/Marketer投稿を保護する。共有thread差分ではDots側が元Reason ID6HTT0XBTFAFCVM6VG6Z61G9536とtask ee8ab3579f6fa20adfaefb67、保存ACKを報告するが、ユーザーSlack経由でありbot本人の自然受信/着手/返信の証拠ではない。既存deploymentと保存channelの紐付け管理機能が相手環境にないとの報告を残す。催促・代理hook編集・owner再割当・不明effect再送0。証拠→docs/evidence/near-integration-ab33e8.json。
