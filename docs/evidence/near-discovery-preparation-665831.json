@@ -1,0 +1,398 @@
+{
+  "task_id": "665831395b0be2cb02e061f7",
+  "owner": "home-codex-665831",
+  "observed_at": "2026-11-04T11:58:45.554265+00:00",
+  "scope": "Existing NEAR discovery bid deliverable preparation; no provider writes",
+  "previous_work": {
+    "pr": 9183,
+    "state": "MERGED",
+    "merge": "85746442878c6f1b9165264111562c6018cee6ea"
+  },
+  "official_near": {
+    "bids_http": 200,
+    "assignments_http": 200,
+    "bids": 5,
+    "all_pending": true,
+    "assignments": 0,
+    "first_bid": {
+      "id": "5da04e33-ff9c-4494-8433-6550a34710ba",
+      "amount": "15",
+      "status": "pending"
+    }
+  },
+  "remote_thread": {
+    "channel": "C0CBLBGSBJN",
+    "thread": "1793635811.853779",
+    "readback": "official Slack connector; bounded oldest1793754710.135649; no more messages",
+    "delta": [
+      "Muse personal acknowledgment, Reason natural wake self-report and Slack event-wake unavailable",
+      "Muse fact-check source handoff",
+      "Parent HQ capacity and Grok attachment-repair ownership"
+    ],
+    "reason_accepted_queued_is_started": false,
+    "reminders_sent": 0
+  },
+  "artifacts": {
+    "report": "docs/team/near/tool-discovery-channel-report.md",
+    "sha256": "9ff18a3c87f4e389abb4c4597afdca3669654fafa82b5d15325e9fffab11e0bb",
+    "body_words": 1327,
+    "all_words": 2079,
+    "recommendations": 5
+  },
+  "sources": [
+    {
+      "name": "smithery-root",
+      "url": "https://smithery.ai/llms.txt",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "smithery-docs",
+      "url": "https://smithery.ai/docs",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "claude-submit",
+      "url": "https://claude.com/docs/connectors/building/submission",
+      "final": "https://claude.com/docs/connectors/building/submission",
+      "status": 200,
+      "bytes": 497692
+    },
+    {
+      "name": "openai-submit",
+      "url": "https://developers.openai.com/plugins/deploy/submission.md",
+      "final": "https://developers.openai.com/plugins/deploy/submission.md",
+      "status": 200,
+      "bytes": 55745
+    },
+    {
+      "name": "glama-github",
+      "url": "https://raw.githubusercontent.com/glama-ai/mcp-servers/main/README.md",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "pulse-raw",
+      "url": "https://raw.githubusercontent.com/pulsemcp/mcp-resources/main/README.md",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "near-direct",
+      "url": "https://docs.market.near.ai/mcp/connect",
+      "final_url": "https://docs.market.near.ai/mcp/connect",
+      "status": 200,
+      "bytes": 157457,
+      "sha256": "b256fdd5032cf780d2bd46c32dcc96e194831ddc028edf0e9076569b2a5eb205"
+    },
+    {
+      "name": "mcp-direct",
+      "url": "https://modelcontextprotocol.io/registry/quickstart.md",
+      "final_url": "https://modelcontextprotocol.io/registry/quickstart.md",
+      "status": 200,
+      "bytes": 9995,
+      "sha256": "4e2d797bfdce6f2d6e74dd1ba2852733b5c3ba4292caf29aceed502581709102"
+    },
+    {
+      "name": "smithery-direct",
+      "url": "https://smithery.ai/docs/build/publish",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "glama-direct",
+      "url": "https://glama.ai/mcp/servers",
+      "final_url": "https://glama.ai/mcp/servers",
+      "status": 200,
+      "bytes": 319853,
+      "sha256": "1e6b7265a88cc4e07fe88a23abc44e7cdef04755242dd6d35d9933e1b8088450"
+    },
+    {
+      "name": "pulse-direct",
+      "url": "https://www.pulsemcp.com/submit",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "name": "mcpso-direct",
+      "url": "https://mcp.so/submit",
+      "final_url": "https://mcp.so/submit?type=server",
+      "status": 200,
+      "bytes": 46956,
+      "sha256": "5a4e1f332bdf54c2bcc76549ca58bdb39a6112bce14cae8a70ebc0c32ec2c274"
+    },
+    {
+      "name": "claude-direct",
+      "url": "https://support.claude.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "openai-direct",
+      "url": "https://developers.openai.com/apps-sdk/app-submission-guidelines.md",
+      "final_url": "https://developers.openai.com/plugins/plugin-guidelines.md",
+      "status": 200,
+      "bytes": 21923,
+      "sha256": "d756819aa5e7c9db77db43224910ebf90ba1590c9f990c7ef3b2b851384fac43"
+    },
+    {
+      "name": "x402-direct",
+      "url": "https://docs.cdp.coinbase.com/x402/bazaar",
+      "final_url": "https://docs.cdp.coinbase.com/x402/buyer/discover-services",
+      "status": 200,
+      "bytes": 511824,
+      "sha256": "2514e3a29bd3c43c9d2cfa4affce4944503ac2e0c7fc86bd04214222fe481d55"
+    },
+    {
+      "name": "a2a-direct",
+      "url": "https://a2a-protocol.org/latest/topics/agent-discovery/",
+      "final_url": "https://a2a-protocol.org/latest/topics/agent-discovery/",
+      "status": 200,
+      "bytes": 79840,
+      "sha256": "0e4994269727e4403b51b7224d0f75bbf71a8af96479f3bb90c2ceaaf12af989"
+    },
+    {
+      "name": "awesome-direct",
+      "url": "https://raw.githubusercontent.com/punkpeye/awesome-mcp-servers/main/CONTRIBUTING.md",
+      "final_url": "https://raw.githubusercontent.com/punkpeye/awesome-mcp-servers/main/CONTRIBUTING.md",
+      "status": 200,
+      "bytes": 2989,
+      "sha256": "3691819a0322eece0fbb5a6a1252ee7ba3e0c70762aad0ae40762c4c3b21427f"
+    },
+    {
+      "name": "hf-direct",
+      "url": "https://huggingface.co/docs/hub/spaces-overview",
+      "final_url": "https://huggingface.co/docs/hub/spaces-overview",
+      "status": 200,
+      "bytes": 229996,
+      "sha256": "3b6b49f8eb98ab3092f99c278a6897b56c31baf7b87bb0efc7a98ee2e96b19ba"
+    },
+    {
+      "name": "npm-direct",
+      "url": "https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages",
+      "final_url": "https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages/",
+      "status": 200,
+      "bytes": 518688,
+      "sha256": "61e7835913affedd57b486b3aec053f8e6f9cd5fac83f5d5b9ed140c98df5061"
+    },
+    {
+      "name": "pypi-direct",
+      "url": "https://packaging.python.org/en/latest/tutorials/packaging-projects/",
+      "final_url": "https://packaging.python.org/en/latest/tutorials/packaging-projects/",
+      "status": 200,
+      "bytes": 76807,
+      "sha256": "194ff3b7cc41595de0362e109bd5e7947988ee49f6efaddfeedaf66192ea6863"
+    },
+    {
+      "name": "google-direct",
+      "url": "https://developers.google.com/search/docs/fundamentals/creating-helpful-content",
+      "final_url": "https://developers.google.com/search/docs/fundamentals/creating-helpful-content",
+      "status": 200,
+      "bytes": 190062,
+      "sha256": "a5719bb2f249b4adab7cbadc3c6ff386c122c3793dfe2465364ba968f4a422fd"
+    },
+    {
+      "name": "robots-direct",
+      "url": "https://platform.openai.com/docs/bots",
+      "final_url": "https://developers.openai.com/api/docs/bots",
+      "status": 200,
+      "bytes": 369671,
+      "sha256": "d1fc9f69521648d60e51fb64923d3a272079a6c797a349c85cfcd0495c360db2"
+    },
+    {
+      "name": "near",
+      "url": "https://docs.market.near.ai/mcp/connect",
+      "error": "TimeoutExpired"
+    },
+    {
+      "name": "mcp",
+      "url": "https://modelcontextprotocol.io/registry/quickstart",
+      "error": "TimeoutExpired"
+    },
+    {
+      "name": "smithery",
+      "url": "https://smithery.ai/docs/build/publish",
+      "error": "TimeoutExpired"
+    },
+    {
+      "name": "glama",
+      "url": "https://glama.ai/mcp/servers",
+      "error": "TimeoutExpired"
+    },
+    {
+      "name": "pulse",
+      "url": "https://www.pulsemcp.com/submit",
+      "error": "TimeoutExpired"
+    },
+    {
+      "name": "mcpso",
+      "url": "https://mcp.so/submit",
+      "exit": 0,
+      "bytes": 379,
+      "sha256": "23cd22fe4633b7b0921b77b9fc731e31070dec11ca1f3f3661b87552411e9b21"
+    },
+    {
+      "name": "claude",
+      "url": "https://support.claude.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers",
+      "exit": 0,
+      "bytes": 317,
+      "sha256": "18cda2165ff112f911e6d9c9039869d7232a723d1be5b2096a769f66e1469334"
+    },
+    {
+      "name": "openai",
+      "url": "https://developers.openai.com/apps-sdk/app-submission-guidelines",
+      "exit": 0,
+      "bytes": 30345,
+      "sha256": "afd163ec5b4b3c77348046d88dc91779d9e3ce399e84facd180893b6eeaed778"
+    },
+    {
+      "name": "x402",
+      "url": "https://docs.cdp.coinbase.com/x402/bazaar",
+      "exit": 0,
+      "bytes": 308996,
+      "sha256": "33a1b8a0588426df8f2c0a1bb982d97a00d4bc752f9fb974db2195575e9eae15"
+    },
+    {
+      "name": "a2a",
+      "url": "https://a2a-protocol.org/latest/topics/agent-discovery/",
+      "exit": 0,
+      "bytes": 8658,
+      "sha256": "f0551153666d4407710416d51a62b38f26a67e79a1e16e269f3ab6b580f07725"
+    },
+    {
+      "name": "awesome",
+      "url": "https://raw.githubusercontent.com/punkpeye/awesome-mcp-servers/main/CONTRIBUTING.md",
+      "exit": 0,
+      "bytes": 2990,
+      "sha256": "04b92a1f304ad42f2094e9bc5dd5de86ce1f85109aa0c78b6ac1f91bbbd931ae"
+    },
+    {
+      "name": "hf",
+      "url": "https://huggingface.co/docs/hub/spaces-overview",
+      "error": "TimeoutExpired"
+    },
+    {
+      "name": "npm",
+      "url": "https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages",
+      "exit": 0,
+      "bytes": 7199,
+      "sha256": "bee2cb1f46bdad937d31e23aca3a08660fae3b954e612200685a456fa263214a"
+    },
+    {
+      "name": "pypi",
+      "url": "https://packaging.python.org/en/latest/tutorials/packaging-projects/",
+      "exit": 0,
+      "bytes": 23768,
+      "sha256": "cf057aeb9307967feefaad76780881333505f3076f3b3af2bf1c276468cd392b"
+    },
+    {
+      "name": "google",
+      "url": "https://developers.google.com/search/docs/fundamentals/creating-helpful-content",
+      "exit": 0,
+      "bytes": 16141,
+      "sha256": "733d0c218da8ca501f883264f09026f83fe28b3c9f6df8ac466c0b67e018946b"
+    },
+    {
+      "name": "robots",
+      "url": "https://platform.openai.com/docs/bots",
+      "exit": 0,
+      "bytes": 12827,
+      "sha256": "bf9f50aae57bf985928c4e4f8341c2a29a7edfd62de7dbe683568856069025fe"
+    },
+    {
+      "name": "smithery-index",
+      "url": "https://smithery.ai/docs/llms.txt",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "claude-index",
+      "url": "https://platform.claude.com/llms.txt",
+      "final": "https://platform.claude.com/llms.txt",
+      "status": 200,
+      "bytes": 93957
+    },
+    {
+      "name": "claude-directory",
+      "url": "https://claude.com/connectors",
+      "final": "https://claude.com/marketplace/connectors-plugins",
+      "status": 200,
+      "bytes": 1536505
+    },
+    {
+      "name": "pulse-home",
+      "url": "https://www.pulsemcp.com/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "name": "glama-add",
+      "url": "https://glama.ai/mcp/servers/submit",
+      "final": "https://glama.ai/mcp/servers?query=author%3Asubmit",
+      "status": 200,
+      "bytes": 48082
+    },
+    {
+      "name": "mcp-remote",
+      "url": "https://modelcontextprotocol.io/registry/remote-servers.md",
+      "final": "https://modelcontextprotocol.io/registry/remote-servers.md",
+      "status": 200,
+      "bytes": 5442
+    },
+    {
+      "name": "x402-publish",
+      "url": "https://docs.cdp.coinbase.com/x402/seller/get-discovered",
+      "final": "https://docs.cdp.coinbase.com/x402/seller/get-discovered",
+      "status": 200,
+      "bytes": 575879
+    },
+    {
+      "name": "remote-awesome",
+      "url": "https://raw.githubusercontent.com/punkpeye/awesome-remote-mcp-servers/main/README.md",
+      "final": "https://raw.githubusercontent.com/punkpeye/awesome-remote-mcp-servers/main/README.md",
+      "status": 200,
+      "bytes": 602850
+    },
+    {
+      "name": "smithery-home",
+      "url": "https://smithery.ai",
+      "final": "https://www.smithery.ai/",
+      "status": 200,
+      "bytes": 131429
+    },
+    {
+      "name": "smithery-new",
+      "url": "https://smithery.ai/docs/deployments",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "claude-policy",
+      "url": "https://support.claude.com/en/articles/13145358-anthropic-software-directory-policy",
+      "final": "https://support.claude.com/en/articles/13145358-anthropic-software-directory-policy",
+      "status": 200,
+      "bytes": 224482
+    },
+    {
+      "name": "glama-docs",
+      "url": "https://glama.ai/mcp/servers/faq",
+      "final": "https://glama.ai/mcp/servers?query=author%3Afaq",
+      "status": 200,
+      "bytes": 48049
+    }
+  ],
+  "validation": {
+    "url_opened_match": true,
+    "rank_formula_assertions": 5,
+    "word_count": true,
+    "brief_current": true
+  },
+  "effects": {
+    "submission": 0,
+    "bid": 0,
+    "directory_listing": 0,
+    "payment": 0,
+    "posting": 0,
+    "accounting_write": 0,
+    "fence_change": 0
+  },
+  "unknown": [
+    "received award",
+    "delivery acceptance",
+    "revenue",
+    "withdrawal",
+    "channel incremental installs"
+  ],
+  "next": "focused checks and fresh review -> required CI -> main; award triggers contract reread then SLA delivery"
+}
