@@ -6,7 +6,11 @@
 
 ### 現在の残TODOとcursor
 
-今回の範囲は、同ownerの直前task23cd35が完了したPR9161の公式統合/成果物照合と、NEAR受注・接続修復threadの差分を反映する文書訂正（task e204c5）。runtime・cadence・閾値・認証・外部effect・親PR9178/9179は変更しない。完了条件は公式根拠を保存し、必要CI全PASS後mainへ統合すること。
+現在cursor **HQ-UNLOADED-DISPATCH**: disk-watchdogの旧release実行先が消失しexit 78となっていたため、既存main由来releaseのinstallerで同ownerを復旧した。自然receiptは回収3,034,472 bytes、errors 0、protected_deletions 0。receive/work/scheduleはそれぞれ自然成功したが、その後も資源待ちが発生する。admissionには古いqueued ownerがあり、複数の停止中ownerが60秒予約を繰り返すことを確認した。これが遅延への寄与候補であり、唯一の原因とは未確定。
+
+次の限定修正は、plist不在かつlaunchd未登録を正しく確認したownerだけの予約を安全に保留し、実行中・未確定effectと元queueを維持する。ownerのapply/start/restartとの競合、確認不能時の扱い、再開失敗を実SQLiteと隔離fixtureで検証する。既存ownerや外部effectを削除・再送しない。本人wakeと業務継続の優先順は維持し、この修正は受信遅延の依存作業とする。全agentの1分以内応答は実測まで未達。
+
+今回の範囲は、未ロードownerの予約を既存の待機記録と未確定effectを守りながら扱い、起動・停止・再適用時の再開失敗を報告し回復可能にする共有admission修正。現branchの隔離SQLiteテストと読み取りreviewを実施中で、本番未反映。完了条件は関連検証・CI・main統合後、immutable releaseと対象ownerの自然実行を確認すること。
 
 順序変更: 旧順は容量回復→本人wake/収益、新順は本人wake/引継ぎ→業務継続→実際に延期された処理の限定復旧。理由は、容量の少なさ自体を全業務の停止理由にせず、独立して進められる成果を先に出すため。容量条件を無視した起動や安全床の引下げを意味しない。現在cursorは本人経路の追跡欠落と有効な引継ぎ先の確認。進行中owner/effectは維持する。
 
@@ -14,7 +18,7 @@
 2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。直前task23cd35はsucceeded/posted、PR9161は必要CI15件成功後main9f930f5ce471ab47159a64e941eb4db6e9195226へ統合済み。report/CSV/検算scriptのGitHub公式blob一致も確認済みで、旧CI失敗/未統合cursorへ戻さない。task e204c5の本人専用GET200は全5pending/assignment0。売上/出金は未確認。現在cursorは既存hourlyで全assignmentを照合し、受注時は最新brief/submit契約と24h対API3日の差異を確認して準備済み成果物を納品すること。証拠→docs/evidence/hq-continuation-e204c5.json。未受注の同job再応募/納品0を維持する。
 既存NEAR継続（task fcdfdd）: 公式GET5pending/受注0。応募済みframework案件の英語report2088語を準備し、納品/追加bid/支払0。正本→`2026-11-03-near-market-first-offer.md`のframework納品準備節。現在cursor=必要CI→main→受注後契約再照合。
 
-3. **実際に延期された処理の限定復旧**。観測時のreceive/work/scheduleはmain fec447bb由来releaseで自然起動するが、終端receiptはdisk_floor_low/exit75。容量問題を全社の停止理由に拡張せず、該当ownerの再生成可能な不要物だけを安全条件下で整理し、次の自然実行を確認する。swap削除・基盤restart・床/上限変更はしない。既存のaffiliate:elevenlabs復帰責務、Muse専用browserのaccount/binding/wake未確認は保持する。FIRST1000は既存担当の元受付PNG/portal照合・再送HOLDを維持し、期限経過を提出成功へ置換しない。
+3. **実際に延期された処理の限定復旧**。receive/work/scheduleは復旧後に一度ずつ自然成功したが、最新receiveは6919bcd2由来releaseでdisk_floor_low/exit75へ再度延期された。watchdogの2GiB回復基準はHQ revenue受信の4GiB床と異なり、直近空き約3.1GiBでは受信復帰を意味しない。容量問題を全社の停止理由に拡張せず、該当ownerの再生成可能な不要物だけを安全条件下で整理し、次の自然実行を確認する。swap削除・基盤restart・床/上限変更はしない。既存のaffiliate:elevenlabs復帰責務、Muse専用browserのaccount/binding/wake未確認は保持する。FIRST1000は既存担当の元受付PNG/portal照合・再送HOLDを維持し、期限経過を提出成功へ置換しない。
 
 HQ-01のMac自然受信→一意card→着手→元送信先への結果→再巡回重複0と、HQ-04の公開記事/画面確認は受入済み。全agentの24時間/1分応答と、収益成立は未達のまま保持する。
 
@@ -30,7 +34,7 @@ HQ-01のMac自然受信→一意card→着手→元送信先への結果→再�
 | Manager R&D | 14JST | taskd26c0c5310218fcdf4ec750a。Ubuntu/Playwright検証修正PR9127/main ee837f8d40c4d109c234ed698a071952e11b688c |
 | 成果/費用 | 21JST | taske5dd86428fd216251594c40b succeeded/posted。売上成立とは別 |
 
-実行場所はMac mini。macOSのlaunchdが3つの有限job（ai.anicca.team-hq-receive/work/schedule）を起こし、main由来immutable releaseのbin/lm-loop-run→bin/team-hq.pyを実行する。観測したplistは `/Users/anicca/loops/releases/20261104T053926-fec447bb` を固定参照する。受信/workはStartInterval=15、scheduleは毎時03/08/13/18/23/28/33/38/43/48/53/58分で5分間隔。現在の対話session、SSH接続、Desktop Scheduled Tasksを起動源にはしない。
+実行場所はMac mini。macOSのlaunchdが3つの有限job（ai.anicca.team-hq-receive/work/schedule）を起こし、main由来immutable releaseのbin/lm-loop-run→bin/team-hq.pyを実行する。最新のreceiveのloaded plistは `/Users/anicca/loops/releases/20261104T090925-6919bcd2` を固定参照する。受信/workはStartInterval=15、scheduleは毎時03/08/13/18/23/28/33/38/43/48/53/58分で5分間隔。現在の対話session、SSH接続、Desktop Scheduled Tasksを起動源にはしない。
 
 workerは仕事がある時だけ `/opt/homebrew/bin/codex exec --skip-git-repo-check -o {artifact} -` をcwd `/Users/anicca` で実行する。CLI runはtimeout_seconds=1200（20分）の設定内で終了し、結果/次cursorを永続化する。常駐LLMや7本の独立sessionではない。Macの電源/ログイン・通信・認証・実行条件に依存するため、登録を24時間無停止の証明にしない。
 
