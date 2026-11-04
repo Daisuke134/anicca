@@ -3,6 +3,8 @@
 
 並行cursor **HQ-REASON-INBOX-PAGES**: Reason daemonは本文上限64KiBだがHQ clientは全未読と表示用textを重複出力し、33件×64KiBの隔離fixtureで4,327,967文字となりHQの4MiB制限で全受信を拒否する。未読ACKはしないが後続依頼が停止する。旧順=容量bounded化後に受信継続、新順=旧senderとの互換性を維持してHQ専用受信をページ化し、添付保持・予約修正と並行して進める。実DB・既存daemon・他sessionは変更しない。
 
+独立調査: daemonは現在全未読を読み、CLIにmessagesとrendered textを返すため、CLI出力だけのページ化ではdaemon〜client間メモリはboundedにならない。offsetや前回IDの配列検索はACKでanchorが消えると欠落する。検討する限定修正は既存wire互換のopt-inで本文を切らずUTF-8 bytes上限のmessage単位出力、(sent_at,id)の安定keyと周回終端、保存・保留とcursorの原子的記録。timestampが同じID、遅着・ACK失敗・保留先頭を跨ぐ回帰で確認し、daemon側全量メモリは別の未解決課題として残す。
+
 受入: 本文や添付を切詰めずbyte上限を設け、到着・ACKによって受信箱が変動しても未読の取こぼしを防ぐ。先頭ページの保留案件が後続を飢餓させず、保存前ACKなし・元ID再取得時重複0・identity固定・既存クライアント互換を、実socket fixtureと実SQLite失敗・再取得で検証。daemonからclientまでの総メモリ上限と大型backlogの残課題を明記し、main由来build・必要CI・独立review・対象owner反映後の自然受信と公式readbackまで続ける。
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
