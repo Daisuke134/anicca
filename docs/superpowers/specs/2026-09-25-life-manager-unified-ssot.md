@@ -25937,6 +25937,14 @@ DaisはGLM固定の継続を見直し、Codex/Muse/Grokbot/Dotsも含め、実�
 
 NHC-08のデモ準備、NHC-10の入口整理、YC紹介/申請更新は収益ループと並行可能。紹介獲得と実売は両方進める。YC画面/Docの不一致は最新確認値に合わせて直し、重要な数字・商品リンク・別枠の創業者動画/商品デモを整える。Mariaの紹介は約束と完了を区別。NaïveはSDK/ライブ実務・介入の実数、Maritimeは実在利用者1000人と実利用を示す。同一商品を使い、agent/VM数でユーザーを水増ししない。優勝/YC採択/収益は保証しない。
 
+#### NHC-02の商品完成を独立して進める
+
+ownerのCapafy許可取得済みという最新情報を保持し、許可を再質問しない。NHC-01ではpinned agent26/browser allow/ask_actions空/build modeと、includeAccepted=trueの公式eventにsession-scope allow保存を確認したうえで、後続browser確認待ちが再発する。原因未確定の同型有償認証を繰り返さず、NHC-02の商品例修正/短い販売文/一回試用を依存のない並行作業として完了する。主cursorと売上目標はNHC-01のまま維持する。
+
+診断trialは同agent26/Identity/Computer/context/tools、session window=immediate、cap500000microUSD/8分。最初はreadのみのbootstrapで外部作用を行わず、公式sendでopenai/gpt-6.1-terraを指定してnative read/write/editの仕事を開始する。本番agent/model/deployment sourceは変更しない。既存SKILL/例/listingが読めなければ、保存済み自身の原稿をモデルへ渡して本人が復元する。30秒spoken55–65語、例に入力に無いoffer事実を混ぜない、販売文160語以内、仮想自転車店の15USD/Saturday検査のお題で六成果物の試用を保存しreadbackする。仮想の客・売上を実績にしない。browser/メール/投稿/課金/送金はこの独立taskでは実行しない。
+
+完了証拠は本人native write/read、export後の原稿/語数/offer事実/六成果物の照合と永続保存。promptの合格自己申告だけでは合格にしない。rootはSDKで有限開始/状態/成果物exportと保存だけを行う。商品の完成を認証・Capafy公開・実注文・実売上に置換しない。現在cursor=NHC-01のbrowser確認境界、並行=NHC-02の原稿完成/試用。
+
 #### 一次資料と調査の限界
 
 - Naïve [Identity](https://vetta.sh/docs/capabilities/identity.md)、[Email](https://vetta.sh/docs/identity/email.md)、[Wallet](https://vetta.sh/docs/identity/wallet.md)、[Legal](https://vetta.sh/docs/identity/legal.md)、[Runtime](https://vetta.sh/docs/concepts/runtime.md)、[Browser](https://vetta.sh/docs/computer/browser.md)。Identity overviewはinbound wakeのavailability noteと本文が矛盾し、Email詳細はwake対応を記載するため実環境readbackを優先。Walletはtestnet既定/mainnet org有効化、creditsとUSDC別。legalは人の本人確認を含むので無人販売の必須経路にしない。
