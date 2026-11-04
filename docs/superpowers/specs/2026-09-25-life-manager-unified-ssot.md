@@ -29,6 +29,19 @@ HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維�
 
 ### Anicca会社の目標アーキテクチャと現在の実測
 
+#### 実行基盤の比較と次の原子TODO
+
+判断: 既存Slack/Reason/HQの永続queueとeffect fenceを正本として継続し、HermesとOpenClawは互換runner候補として隔離比較する。移行の前提は本人identity・subscription認証・利用枠・send/receive・元ID・時刻・重複0・費用/成果が実測できること。runner切替だけで1分応答・利益・24時間稼働を保証しない。Macの `hermes --version` はvenv Python不在でexit 126、OpenClaw CLIは2026.6.1を返すが本人のCodex認証・gateway・送受信は未検証。異なるharnessに同じaccountを追加してもquotaが独立するとは限らない。既存owner・receipt・待機/実行中task・認証情報を守り、失敗時は既存routeに戻す。
+
+一次資料: [Hermes Codex provider](https://hermes-agent.nousresearch.com/docs/integrations/providers), [Hermes cron](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron), [OpenClaw routing](https://docs.openclaw.ai/concepts/multi-agent), [Andon Pion](https://andonlabs.com/pion), [Anthropic multi-agent research](https://www.anthropic.com/research/multi-agent-research-system), [naïve tournament](https://usenaive.ai/tournament)。Pionは研究previewでwaitlistから段階提供され、一般即時利用は未確認。公開記述は継続agentと管理agent、個別business toolを示す。Anthropicはcheckpoint、追跡、並列agentの同期待ち問題を報告する。どれもAniccaの実際のprofitや1分応答の証明ではない。
+
+1. **通信測定:** 各本人の元message ID、送信・受領・着手・結果・ack時刻を保存し、2人以上の自然双方向で60秒未満を繰り返し測定する。queuedは本人受領ではない。Dots/Muse/Grokbotの既存hookにIDを渡し、idle wakeと作業中の受信を別々に確認する。
+2. **継続復旧:** Macの空き容量は一時5.3 GiBから約2 GiBに再低下し、最新受信はdisk_floor_lowで延期。swap変動とproducerを観測し、安全な再生成物の整理を続ける。床・既存owner・未確定effectは変更しない。自然受信・claim・結果・replay-zeroを再確認する。
+3. **Hermes隔離比較:** 壊れた既存launcherの参照先/所有者を確認し、別環境で公式versionと依存関係を構築。既存credentialを露出/複製せず対応認証を検証し、まず外部effectなしで有限Codex task、復帰、実行時間と利用量を測る。成功した場合のみ本人channel連携とidempotent配送を既存queue経由で試す。失敗は元routeを維持する。
+4. **OpenClaw比較:** 現在versionの機能と設定を読み取り、公式docの新機能が同versionにあると仮定しない。隔離profileで同一の無副作用taskと送受信を測り、Hermes・既存Codexと起動/受領遅延、失敗復帰、費用を比較する。
+5. **収益・費用:** agent/task/providerごとに受注・納品・入金・API費・subscription配賦を証拠付きで区別し、未知はunknown。毎時の既存案件確認と実受注後の納品を完遂し、agent別の実証粗利を `/open` の集計と照合する。現状NEAR 5 pending/assignment 0は時点値、収入未確認。
+6. **公開と改善:** 本人wake・引継ぎ・自然収益を確認後、結果/失敗/費用の実測を既存公開記事へ反映し、公開ページ・画像・mobileを確認する。Pionとnaïveの公開事例を比較するが、他社の売上や運営実績を自社の成果と扱わない。
+
 目標: 人による定常的な中継なしに、顧客価値・収益・費用・Manager研究開発を継続する。Slackは共有履歴と人が見られる業務報告、Reason Networkは本人agentへの配送とreceipt、Life Manager/HQは永続queue・有限実行・担当lease・重複防止・結果照合を担う。常駐モデルの会話を24時間実行の証拠とせず、外部scheduler・監視・再起動・別host・認証・利用枠に依存する。全員1分以内の自動受信/着手と無停止は未実証。
 
 役割: Codexは実装・検証・共通queueと収益/研究の遂行、Dotsは本人sessionの共同作業と引継ぎ、Museは本人VM・既存browser/workの担当、Grokbotは本人routineとcloud側の仕事を担当する。能力は固定の縄張りではなく、各仕事に単一ownerと期限・途中成果・停止理由・代替候補を残し、枠切れや未着手は証拠付きで引き継ぐ。社外送信・納品・公開・金銭効果は元ownerと公式receiptで照合し、unknownを再送しない。認証情報は既存private正本を使い、共有chatへ流さない。
