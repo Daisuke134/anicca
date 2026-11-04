@@ -6,12 +6,12 @@
 
 ### 現在の残TODOとcursor
 
-今回の範囲は、この節の実行方式・残TODO・観測済み状態を実設定/永続receiptへ合わせる文書更新。runtime・cadence・閾値・認証・外部effectは変更しない。CIで他branchの証拠ファイルSHA-256がgeneric-api-keyへ誤検知されたため、既存方式に沿ってそのcommit/path/lineだけを.gitleaksignoreへ追加する。完了条件は該当節以外を保持し、source差分を検証してmainへ統合すること。
+今回の範囲は、同ownerの直前task23cd35が完了したPR9161の公式統合/成果物照合と、NEAR受注・接続修復threadの差分を反映する文書訂正（task e204c5）。runtime・cadence・閾値・認証・外部effect・親PR9178/9179は変更しない。完了条件は公式根拠を保存し、必要CI全PASS後mainへ統合すること。
 
 順序変更: 旧順は容量回復→本人wake/収益、新順は本人wake/引継ぎ→業務継続→実際に延期された処理の限定復旧。理由は、容量の少なさ自体を全業務の停止理由にせず、独立して進められる成果を先に出すため。容量条件を無視した起動や安全床の引下げを意味しない。現在cursorは本人経路の追跡欠落と有効な引継ぎ先の確認。進行中owner/effectは維持する。
 
 1. **HQ-02 本人の自動wakeと引継ぎ**。Dots/Muse/Grokbotそれぞれの元message→自然受領→実着手→結果を本人経路で照合する。Museは既存60秒hookの自然発火を報告するが、previewのみで元message IDを渡さないため相関が未完。既存hookでIDを保持する最小修復を本人ownerへ依頼済みで、修復済みとはしない。home-claudeは認証失敗のため有効な予備席へ数えず、実際に使える担当による枠切れ引継ぎ1件の完遂・重複0まで確認する。接続待ちで独立した収益/開発を止めず、同じ催促を反復しない。
-2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。最新完了task ebec4e1647a41eae7cb29516はsucceeded/posted、公式照合5pending/assignment0。売上/出金は未確認。PR9153はmain統合済み。採算計算PR9161は未統合で、head69cf360787のOSS self-contained boundaryがFAIL、他14検査は成功。同ownerが失敗原因の修正→更新head必要CI→main→成果物照合を継続する。21JST task e5dd86428fd216251594c40bもsucceeded/postedであり、初回未観測へ戻さない。新たな毎時task6d595da59b3f3a49dae55bb3はqueuedで、登録を着手としない。
+2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。直前task23cd35はsucceeded/posted、PR9161は必要CI15件成功後main9f930f5ce471ab47159a64e941eb4db6e9195226へ統合済み。report/CSV/検算scriptのGitHub公式blob一致も確認済みで、旧CI失敗/未統合cursorへ戻さない。task e204c5の本人専用GET200は全5pending/assignment0。売上/出金は未確認。現在cursorは既存hourlyで全assignmentを照合し、受注時は最新brief/submit契約と24h対API3日の差異を確認して準備済み成果物を納品すること。証拠→docs/evidence/hq-continuation-e204c5.json。未受注の同job再応募/納品0を維持する。
 3. **実際に延期された処理の限定復旧**。観測時のreceive/work/scheduleはmain fec447bb由来releaseで自然起動するが、終端receiptはdisk_floor_low/exit75。容量問題を全社の停止理由に拡張せず、該当ownerの再生成可能な不要物だけを安全条件下で整理し、次の自然実行を確認する。swap削除・基盤restart・床/上限変更はしない。既存のaffiliate:elevenlabs復帰責務、Muse専用browserのaccount/binding/wake未確認は保持する。FIRST1000は既存担当の元受付PNG/portal照合・再送HOLDを維持し、期限経過を提出成功へ置換しない。
 
 HQ-01のMac自然受信→一意card→着手→元送信先への結果→再巡回重複0と、HQ-04の公開記事/画面確認は受入済み。全agentの24時間/1分応答と、収益成立は未達のまま保持する。
@@ -23,7 +23,7 @@ HQ-01のMac自然受信→一意card→着手→元送信先への結果→再�
 | 共有受信 | 15秒 | Slack/Reasonを既存SQLiteへ保存。実plist/自然run確認済み。資源待ちがある |
 | 作業worker | 15秒 | card claim後だけ着手。有限CLIと成果物/公式返信まで確認済み |
 | 定期投入 | 300秒 | due仕事を一意登録。時刻ぴったりの着手保証ではない |
-| 収益 | 毎時 | 最新完了ebec4eはsucceeded/posted。次6d595dはqueued |
+| 収益 | 毎時 | 最新完了23cd35はsucceeded/posted・PR9161統合済み。e204c5は本人公式GETで5pending/受注0を確認 |
 | 優先順位/計測 | 09JST | task95bef89b6d4246ed4290d57d succeeded/posted/exit0 |
 | Manager R&D | 14JST | taskd26c0c5310218fcdf4ec750a。Ubuntu/Playwright検証修正PR9127/main ee837f8d40c4d109c234ed698a071952e11b688c |
 | 成果/費用 | 21JST | taske5dd86428fd216251594c40b succeeded/posted。売上成立とは別 |
@@ -43,6 +43,8 @@ Slackは共有履歴/業務報告、Reasonは本人のagent sessionへの配送�
 - Muse本人は `daisuke/terminal@htch-runtime`。Relayと区別する。Lancersの現writer/challenge解消ownerはVM側Museで、Macはread-only観測を共有済み。Macのlancers:dais browserは既存lease下で応答するが、mypageはchallenge試行上限画面、本人ログイン/応募は未確認。BookfaceはMacの見えるChromeに該当tabなし、保存sessionの不存在までは証明せず本人へ返す。
 - Grokbot（Rockwellは誤記）はroutine一覧を本人から受領するが、native即時wake/利用枠回復は未実証。cursorというaddressを同一agent/予算と決めつけない。4日resetはDais申告。顧客18521371は公式承諾/評価と本人訂正が一致し、移管対象0。古い修正待ちを根拠に再制作/再送しない。元talkroom UIの直接readbackは別の未確認事項として保持する。
 - home-claudeはローカル予備席でMuse/Dots本人ではない。完全一致service `claude-remote-control`を既存agent_environmentで読み込んだ最新ツールなし1turn診断も401 OAuth access token invalid。素のauth statusも未ログイン。account binding/専用browser routeは未確認で、有効な代役に数えない。秘密は正本に保持し、他account/モデル/課金/利用枠へ置換しない。
+
+接続修復の継続照合（task e204c5）: 追跡threadを前回の1793754710.135649以降に限定して公式取得し、parentを除く返信差分0・has_more=falseを確認する。Museの元message ID保持修復、Dots/Grok本人wake、有効helperの認証は未完のまま。催促を反復せず、既存ownerの修復receiptに元ID・受信/着手/結果時刻が加わったら同じthread/自然wakeへ結合する。parentの自動返却を新たな本人返信へ数えない。remote hookの代理編集・owner再割当・別dispatcher・未知effect再送は行わない。
 
 ### 受信・引継ぎ・公式照合の契約
 

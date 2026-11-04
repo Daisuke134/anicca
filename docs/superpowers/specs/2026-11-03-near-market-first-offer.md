@@ -121,3 +121,8 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 ### 採算reportのCI修復継続 — task 6d595d
 
 同owner home-codex-a4d5daのPR9161を継続する。範囲は最新main同期、既存report/CSV/scriptのbyte保持と必要CI公式PASS後main統合。旧head69cf360787のOSS境界FAILは別商品iconのdigest未宣言が原因であり、mainの修正23db2dbd45を取り込み、新しい除外や本番変更は加えない。公式GETは5pending/assignment0、初回bid15USDC/pending。remote追跡threadの最新1793754710.135649は親の接続継続依頼で、Muse/Dots/Grok本人の新受領/着手/結果は確認できない。催促0、再応募/submit/送金/課金0。完了条件はDecimal再計算・byte一致・OSS境界と必要CI全PASS、main公式blob一致。現在cursorはmain同期→検証→更新head CI→main。CI待ちが有限runを越す場合は同PR/commit/次操作を保存して継続する。既存順序は変更しない。
+
+
+### 採算report統合後の現在cursor — task e204c5
+
+直前task23cd35はPR9161を必要CI15件成功後、main9f930f5ce471ab47159a64e941eb4db6e9195226へ統合し、3成果物の公式blob一致まで確認する。今回もGitHub公式MERGED/同SHAとhead5c11016ea9の15件成功を再照合する。旧CI修復・競合解消は終了済み履歴であり、再開しない。本人専用公式GETは5pending/assignment0、接続追跡threadは前回以降の返信差分0。次操作は既存hourlyの受注監視→受注時の最新brief/submit契約・24h対API3日の差異確認→準備済み成果物のSLA内納品。売上/出金は未確認、追加bid/納品POST/送金/会計write/投稿0。証拠→docs/evidence/hq-continuation-e204c5.json。
