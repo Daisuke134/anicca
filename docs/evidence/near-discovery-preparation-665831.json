@@ -34,12 +34,26 @@
   },
   "artifacts": {
     "report": "docs/team/near/tool-discovery-channel-report.md",
-    "sha256": "9ff18a3c87f4e389abb4c4597afdca3669654fafa82b5d15325e9fffab11e0bb",
-    "body_words": 1327,
-    "all_words": 2079,
+    "sha256": "4d084a5b984060b57d8a78baad4c28a1cab58648c69eebe8e1cf170a0b15127a",
+    "body_words": 1530,
+    "all_words": 2329,
     "recommendations": 5
   },
   "sources": [
+    {
+      "name": "a2a-submit",
+      "url": "https://a2a.directory/submit",
+      "final": "https://a2a.directory/submit/",
+      "status": 200,
+      "bytes": 17009
+    },
+    {
+      "name": "a2a-registry-submit",
+      "url": "https://www.a2a-registry.org/submit",
+      "final": "https://www.a2a-registry.org/submit",
+      "status": 200,
+      "bytes": 39154
+    },
     {
       "name": "smithery-root",
       "url": "https://smithery.ai/llms.txt",
@@ -73,6 +87,32 @@
       "name": "pulse-raw",
       "url": "https://raw.githubusercontent.com/pulsemcp/mcp-resources/main/README.md",
       "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "x402-facilitator",
+      "url": "https://x402.org/facilitator",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "a2a-directory",
+      "url": "https://a2a.directory",
+      "final": "https://a2a.directory",
+      "status": 200,
+      "bytes": 118511
+    },
+    {
+      "name": "a2a-registry-site",
+      "url": "https://a2a-registry.org",
+      "final": "https://www.a2a-registry.org/",
+      "status": 200,
+      "bytes": 620703
+    },
+    {
+      "name": "cdp-facilitator",
+      "url": "https://docs.cdp.coinbase.com/x402/seller/facilitator",
+      "final": "https://docs.cdp.coinbase.com/x402/seller/facilitator",
+      "status": 200,
+      "bytes": 470949
     },
     {
       "name": "near-direct",
@@ -346,6 +386,28 @@
       "bytes": 602850
     },
     {
+      "name": "x402-facilitators",
+      "url": "https://www.x402.org/facilitators",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "x402-ecosystem",
+      "url": "https://www.x402.org/ecosystem",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "a2a-registry",
+      "url": "https://docs.cloud.google.com/agent-registry/docs/overview",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "name": "agentic-catalog",
+      "url": "https://agentic.market/",
+      "final": "https://agentic.market/",
+      "status": 200,
+      "bytes": 112574
+    },
+    {
       "name": "smithery-home",
       "url": "https://smithery.ai",
       "final": "https://www.smithery.ai/",
@@ -394,5 +456,11 @@
     "withdrawal",
     "channel incremental installs"
   ],
-  "next": "focused checks and fresh review -> required CI -> main; award triggers contract reread then SLA delivery"
+  "next": "focused checks and fresh review -> required CI -> main; award triggers contract reread then SLA delivery",
+  "review_corrections": [
+    "Explicit digital-services prohibition",
+    "Named A2A directories and retrieved submission contract",
+    "CDP and x402.org separate catalogs; testnet discovery; CDP fee units",
+    "All-channel disposition and effort decomposition/equal-traffic sensitivity"
+  ]
 }
