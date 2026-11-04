@@ -139,7 +139,7 @@ class HqCliTest(unittest.TestCase):
             self.assertFalse(any(request["op"] == "delivered" for request in fixture.requests))
 
     def test_last_page_counts_null_cursor_when_checking_byte_limit(self):
-        message = {**MESSAGE, "body": "x" * 3681}
+        message = {**MESSAGE, "id": "01M6G37N2HYGRZ2JAJ4KC98QBY", "body": "x" * 3681}
         def one(request):
             if request["op"] == "inbox":
                 return {"ok": True, "result": {"messages": [message], "text": ""}}
