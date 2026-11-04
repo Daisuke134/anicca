@@ -1,5 +1,9 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
+
+並行cursor **HQ-STALE-CLAIM-FAIRNESS**: 受信のdisk条件が一時的に通った後、HQはcapacity/FIFO待ちのまま。実DBではplist不在・launchd disabledの複数SNS ownerに予約が付き、古いclaimed/effect_unknownの存在で現行only_if_unclaimedの停止は拒否される。履歴上の未確定effectと稼働中ownerは触らない。先の無損失添付修正と並行して、旧順=容量bounded化後に受信再測定、新順=予約選択の根本原因診断・無効新規予約の限定修復を並行実施。理由は現行受信が実際に枠待ちして未読依頼が残るため。
+
+受入: registryと同一ownerの確認、管理ドメインの実測、既存effect_unknown/claimedとactive lockを保護したうえで、停止が確認されたownerの新規queue予約だけを適切に保留する。再開時の復帰、並行claim/owner起動、DB failure、異なるscopeの事故防止を隔離テスト・独立reviewで証明する。停止不能の記録は公式照合まで保持し、他ownerのプロセス・provider・cloud設定を変更しない。main由来release反映後、自然受信と実際の着手を計測する。
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
 目的は、既存の共有部屋で依頼を保存し、受領・着手・結果・枠切れ時の引継ぎを区別しながら、収益とManager開発を継続すること。schedulerが有限runを起こす。この対話自体の無期限再開、登録席の常時稼働、売上を保証するという意味ではない。primaryは正本・統合・運用受入、各writerは明示したsource/業務effectを所有する。
