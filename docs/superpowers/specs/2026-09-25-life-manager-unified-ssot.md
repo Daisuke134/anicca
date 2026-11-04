@@ -5,6 +5,8 @@
 
 独立調査: daemonは現在全未読を読み、CLIにmessagesとrendered textを返すため、CLI出力だけのページ化ではdaemon〜client間メモリはboundedにならない。offsetや前回IDの配列検索はACKでanchorが消えると欠落する。検討する限定修正は既存wire互換のopt-inで本文を切らずUTF-8 bytes上限のmessage単位出力、(sent_at,id)の安定keyと周回終端、保存・保留とcursorの原子的記録。timestampが同じID、遅着・ACK失敗・保留先頭を跨ぐ回帰で確認し、daemon側全量メモリは別の未解決課題として残す。
 
+進捗: opt-in CLI page試作e5ceaeefはmessage単位のUTF-8 bytes上限・宛先確認・(sent_at,id) cursor・上限超過holdを実装した。独立した最小Rust fixtureで33件の上限とACK後anchor消失を1件PASS、既存本番binaryでpage機能未実装の失敗を再現した。完全binaryのcargo checkはホスト空きが約2.5GiBへ低下したため自分のbuildだけ停止、隔離生成物を削除した。実binary・socket・HQのcursor/ACK原子化・独立review・CI・反映は未完。daemonの全件メモリ問題も未解決。
+
 受入: 本文や添付を切詰めずbyte上限を設け、到着・ACKによって受信箱が変動しても未読の取こぼしを防ぐ。先頭ページの保留案件が後続を飢餓させず、保存前ACKなし・元ID再取得時重複0・identity固定・既存クライアント互換を、実socket fixtureと実SQLite失敗・再取得で検証。daemonからclientまでの総メモリ上限と大型backlogの残課題を明記し、main由来build・必要CI・独立review・対象owner反映後の自然受信と公式readbackまで続ける。
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
