@@ -1680,6 +1680,9 @@ def _dispatch_reserved(loop_ids: list[str], *, current: Path | None = None,
                                 and re.search(r"(?i)could not find service", observed.stderr)):
                             suspended = suspend_durable_resource(
                                 loop_id, only_if_unclaimed=True)
+                            if not suspended:
+                                suspended = suspend_durable_resource(
+                                    loop_id, only_if_unloaded_occurrence=True)
                         elif not (observed.returncode == 0 and (
                                 re.search(r"\bstate\s*=\s*running\b", observed.stdout)
                                 or re.search(r"\bpid\s*=\s*[1-9][0-9]*\b", observed.stdout))):
