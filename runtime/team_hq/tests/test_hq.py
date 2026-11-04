@@ -1,4 +1,5 @@
 import concurrent.futures
+from contextlib import contextmanager
 import importlib
 import io
 import json
@@ -1179,6 +1180,25 @@ class ReasonInboxTests(unittest.TestCase):
             self.assertFalse(self.runtime.receive()["ok"])
         self.reason.ack.assert_not_called()
         self.assertEqual(self.tasks(), [])
+
+    def test_real_sqlite_full_does_not_ack_and_replay_creates_one_task(self):
+        self.enabled()
+        self.reason.inbox.return_value["messages"][0]["body"] = "x" * (1024 * 1024)
+        connect = self.runtime.connect
+        @contextmanager
+        def full_database():
+            with connect() as database:
+                pages = database.execute("PRAGMA page_count").fetchone()[0]
+                database.execute(f"PRAGMA max_page_count={pages}")
+                yield database
+        with mock.patch.object(self.runtime, "connect", side_effect=full_database):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        self.assertEqual(self.tasks(), [])
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
 
     def test_reason_wrong_session_never_acknowledges(self):
         self.enabled()
