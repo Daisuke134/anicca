@@ -25892,11 +25892,15 @@ YC紹介依頼はDarshan/Nizzy/Ary/Connorの4人へ個別送信し、Slack履歴
 
 目的は同じNaïve本人による登録・新規所有商品の販売・実売上/費用・英語デモで、到達目標を小さくしない。v25の月10USD枠は公式spend9869205microUSD/残130795microUSDで、既観測の一回予約約83000microUSDを考えると複数stepの認証を継続できない。購入済みorg credit21710973microUSDを公式確認し、追加購入・カード決済・資金移動なしで専用agentの月額運用枠を10→12USDへ改訂する。これはprimaryが選ぶ今回の有限運用変更で、無制限増額や全agentへの一般許可ではない。旧「月cap10USDは増額しない」は当時のprobe契約とし、現在の上限契約は本段落だけに置く。task上限1USD、model/Identity/context/tools/MCP binding/cronを維持し、candidate26はbudget.cap・Capafy許諾境界のsystem追記・deployment pinを変更する。main固定・独立read-only反証・公式expected_version25更新/不変readbackの後だけ採用する。
 
-最初の有限runはsession cap500000microUSD/最大8分/一件で、保存済み商品の修正と試用を本人Computer内で完成する。公式Terms §3.4は普通利用accountにも事前書面同意なしの複数accountを禁止し、§6.2は自動アクセスに事前書面許可を要求する。既存会社account内の正当なagent専用経路または追加accountの書面同意と、自動操作の許諾記録を確認するまでは、Capafyへのbrowserアクセス・メール認証・新規account作成・公開を開始しない。個人Google/Gmail/共有profileへ切り替えず、別inboxを新しい法的所有者と扱わない。正当な既存agent accountの認証はその許諾範囲内で進める。メールのOTP/リンクは本人inboxだけを使い、秘密値を一般journal/報告/証拠ファイルへ複製しない。rootはSDKで設定/開始/状態取得だけを行い、業務はNaïve本人のnative browser/mailに任せる。通常の会社account規約同意は既委任の範囲で本人agentが扱う。本人限定の法的手続き・camera/livenessは迂回せず不足として残す。認証済みaccount表示を実画面でreadbackし、普通利用loginとPublisher販売権限を分ける。権限を確認できるまで商品公開・既存seller変更を行わない。異なる普通利用accountを量産しない。
+DaisはCapafyのagent利用・自動操作の許可を取得済みと明示する。これは信頼できるownerの申告として採用し、primary自身がCapafyの書面を検査したという主張とは区別する。許諾記録の再提出・再質問を進行条件にしない。system末尾の旧「許諾未確認」はこのowner情報で充足され、認証タスクへ最新状態を明示する。普通利用accountの量産・別Publisherの作成・既存seller変更は行わない。
 
-Computerは前回pausedだったidが公式destroyedとなり、現在listに専用割当なし。file消失とは断定しない。次の本人runで再割当と保存済みSKILL.mdの再読込を確認し、復旧が必要なら保存済み自身の成果物から戻す。未確認のComputer保持を稼働成功にしない。v25の同一turn goto→Get started→extractはGoogle/GitHub/Email入口を取得し、続くv25の既実行runはContinue with Email→メール入力/Terms/Privacy/Continueまで取得済み。今後の認証操作は許諾照合後の手順である。認証・OTP送信・販売権限・売上は未達。observeの空配列をページ本文なしと断定せず、本文にはextractを使う。新たな買い手/販売先への無関係登録や同じ失敗の反復はしない。
+最初の有限runはsession cap500000microUSD/最大8分/一件で、本人のAgentMail受信箱とnative browserにより実ログインと販売権限の確認を進める。個人Google/Gmail/共有profileへ切り替えない。メールのOTP/リンクは専用inboxだけを使い、秘密値を一般journal/報告/証拠ファイルへ複製しない。rootはSDKで設定/開始/状態取得だけを行い、業務はNaïve本人のnative browser/mailに任せる。通常の会社account規約同意は既委任の範囲で本人agentが扱う。本人限定の法的手続き・camera/livenessは迂回せず不足として残す。認証済みaccount表示を実画面でreadbackし、普通利用loginとPublisher販売権限を分ける。販売権限を確認できるまで商品公開・既存seller変更を行わない。
 
-本差分の受入はJSON妥当性、budget.cap 10000000→12000000、system末尾の許諾境界追記、deployment25→26以外の構造差分0、secret差分0、source-boundary/diff、独立反証、全CI/main、公式反映/維持field一致。NHC-01の順序は維持し、専用認証/書面許諾/権限の照合と並行してNHC-02の商品例の事実/語数修正・一回試用を先に完了する。旧=認証runを先行、新=許諾記録の照会＋本人Computer内の商品完成。理由=確認した公式Termsにより新普通account/自動アクセスを既存Publisher規則だけでは正当化できず、保存済み自身の成果物は独立して進められるため。その後は正式経路の認証→新商品公開→配信→第三者注文/納品/入金/費用→英語デモへ進む。現在cursor=NHC-01、並行作業=NHC-02。上限増額そのものや残高は収益ではない。次の費用/時間不足は実測を残してscope/完了条件を縮めず診断する。
+Computerは前回pausedだったidが公式destroyedとなり、現在listに専用割当なし。file消失とは断定しない。次の本人runで再割当と保存済みSKILL.mdの再読込を確認し、復旧が必要なら保存済み自身の成果物から戻す。未確認のComputer保持を稼働成功にしない。v25の同一turn goto→Get started→extractはGoogle/GitHub/Email入口を取得し、続くv25の既実行runはContinue with Email→メール入力/Terms/Privacy/Continueまで取得済み。次はowner許可取得済みの状態でメール認証を完了する。認証・OTP送信・販売権限・売上は未達。observeの空配列をページ本文なしと断定せず、本文にはextractを使う。新たな買い手/販売先への無関係登録や同じ失敗の反復はしない。
+
+v26はPR9203/main 077394a8689746ba617a50dff697e3178e553347から公式agent26/deployment26へ反映済み。JSON妥当性・独立反証・全CI PASS、公式readbackでsystem/budget一致、tools/MCP/model/window/Identity/cron/input/task予算/enabledの維持を確認する。認証run ses_p7vd2tb0v0yrvq62eg0y3vj9bnを開始し、開始時の公式状態はqueued。完了・売上とは扱わない。
+
+旧順=許諾記録の照会＋本人Computer内の商品完成。新順=取得済みowner申告を反映→専用メールの実認証→正式な販売権限→新商品修正/試用/公開→配信→第三者注文/納品/入金/費用→英語デモ。理由=ownerの最新明示情報で許諾確認待ちは解消し、認証が次の収益行動の依存条件となるため。現在cursor=NHC-01、商品完成=NHC-02。上限増額そのものや残高は収益ではない。次の費用/時間不足は実測を残してscope/完了条件を縮めず診断する。
 
 #### 原子的な残TODOと現在cursor
 
@@ -25904,7 +25908,7 @@ Computerは前回pausedだったidが公式destroyedとなり、現在listに専
 
 | ID | 一つの作業 | 完了の証拠 |
 |---|---|---|
-| NHC-01 | 既存Capafy ownerの販売先/資格情報/automation/公開/精算条件をread-only照合する | 同Publisher内の正当なagent専用経路と各段階の条件。個人Gmail借用で代用しない |
+| NHC-01 | 取得済みowner許可のもと専用AgentMailで実認証し、同社Publisher販売権限を確認する | 認証済みaccountと販売画面のreadback。個人Gmail借用・普通利用loginだけで代用しない |
 | NHC-02 | Capafyの短尺動画制作分野の成功商品の需要・成果物・価格・配信を調べ、一商品を選ぶ | 一次URL/観測指標/模倣する仕組み/自社素材/実行費の記録。売れている既存商品は変更しない |
 | NHC-03・完了 | 選んだCapafy業務を既存Naïve設定/定期inputへ反映する | PR9196/main b412c1c0cd→公式agent25/deployment25一致、不変チェック全PASS。予算増額なし |
 | NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、自社/利用者の人間承認0、Capafy側の審査は別記録。自社側に必須人間手順があれば無人完了としない |
