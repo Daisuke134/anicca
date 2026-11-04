@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">WNBA rotation matchup card</title>
+  <desc id="desc">A purple basketball beside a lineup card showing rotation rows.</desc>
+  <rect width="512" height="512" rx="88" fill="#17132d"/>
+  <circle cx="170" cy="270" r="104" fill="#f5a623"/>
+  <path d="M66 270h208M170 166v208M96 196c45 29 103 29 148 0M96 344c45-29 103-29 148 0" fill="none" stroke="#17132d" stroke-width="15" stroke-linecap="round"/>
+  <rect x="248" y="108" width="194" height="292" rx="26" fill="#f4f0ff"/>
+  <rect x="278" y="145" width="106" height="20" rx="10" fill="#6f43c0"/>
+  <rect x="278" y="193" width="132" height="16" rx="8" fill="#cbbce9"/>
+  <rect x="278" y="229" width="112" height="16" rx="8" fill="#cbbce9"/>
+  <rect x="278" y="265" width="132" height="16" rx="8" fill="#cbbce9"/>
+  <rect x="278" y="301" width="94" height="16" rx="8" fill="#cbbce9"/>
+  <path d="M278 350h132" stroke="#6f43c0" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="408" cy="350" r="14" fill="#f5a623"/>
+</svg>

@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-04",
+  "source": "TinyFish visible public browser session",
+  "run_id": "89af8069-6d12-45dd-8573-50d9cd2fa195",
+  "run_url": "https://agent.tinyfish.ai/runs/89af8069-6d12-45dd-8573-50d9cd2fa195",
+  "source_pages": [
+    "https://dev.listenlabs.ai/twins",
+    "https://dev.listenlabs.ai/book-my-demo",
+    "https://dev.listenlabs.ai/book-twins-demo",
+    "https://dev.listenlabs.ai/compare",
+    "https://docs.listenlabs.com/api-v2/overview"
+  ],
+  "attempted_public_test": "Hypothetical two-copy advertising comparison without user PII, credentials, or paid recruitment",
+  "result": "No publicly runnable Twin prediction demo was exposed; Run a Simulation leads to demo booking",
+  "twin_model_prediction_end_to_end_executed": false,
+  "public_twin_inference_endpoint_documented": false,
+  "study_management_api_is_not_twin_api": true,
+  "previous_study_api_wallets_studies_GET_authenticated": true,
+  "previous_twin_predictor_request_count": 0,
+  "study_creation_or_paid_launch": false,
+  "private_account_panel_access": "NOT AVAILABLE IN BROWSER PROFILE",
+  "no_api_keys_or_personal_data_stored": true,
+  "required_next_access": "Confirmed Twins-entitled account/panel and documented predictive endpoint or authenticated permitted UI, plus study/panel permissions if necessary",
+  "company_claim_93_percent_distribution_agreement": "vendor-reported; not independently benchmarked here",
+  "note": "Public UI access limitation is not evidence that Listen has no private Twin simulation API. Do not claim model executed."
+}
