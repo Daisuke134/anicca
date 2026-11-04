@@ -322,3 +322,5 @@
 - home-codex task e204c5: PR9161公式MERGED/main9f930f5c・必要CI15件/3成果物byte一致を確認し、古いCI待ちcursorを訂正。本人NEAR5pending/受注0、remote差分0（parent除外）。売上/費用は既存collectorの観測時刻/期間を保持し利益未確定。親PR/運用/effect変更0。次: 本訂正の必要CI→main、受注時納品/本人修復receiptの元ID照合。証拠 docs/evidence/hq-continuation-e204c5.json。
 
 - Codex / Naïve Capafy: PR9194ランキング・PR9196/main b412c1c0cd統合、公式agent25/deployment25一致・既存権限/予算不変。本人原稿3ファイル保存、2ファイルread成功。YC紹介4人へ依頼/履歴一致、返答未確認。認証/公開/売上未達、file-onlyもinternal_error再現。正本・残TODO→統合SSOT「Naïve browser company」、現在NHC-01。
+
+- Codex / Naïve v26候補: 既存credit内の月12USD/task1維持と、Capafy Terms3.4/6.2の許諾未確認時にbrowser/account操作を行わない境界をsource化。現在live25、売上未達。次はCI/main→公式反映→Computer内の商品修正/試用。正本→統合SSOT Naïve節。
