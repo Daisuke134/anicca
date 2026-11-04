@@ -1,0 +1,94 @@
+{
+  "dataset": "synthetic study holdout (not public RCT)",
+  "prediction_sha256": "f74fc1291b55862c5dc6a107ceebb81371354debc3d4ce6fa5fbf7c3df6ac03b",
+  "n_train": 90,
+  "n_validation": 30,
+  "n_heldout": 60,
+  "metrics_by_split": {
+    "in_domain": {
+      "n_studies": 30,
+      "ridge": {
+        "mae": 0.01549841006091842,
+        "rmse": 0.0226350266592067,
+        "sign_accuracy_all": 0.9,
+        "sign_accuracy_observed_effect_larger_than_se": 1.0,
+        "n_resolved": 22,
+        "pearson_r": 0.6737054114720176
+      },
+      "mean": {
+        "mae": 0.02269332335143241,
+        "rmse": 0.028523908539797832,
+        "sign_accuracy_all": 0.7666666666666667,
+        "sign_accuracy_observed_effect_larger_than_se": 0.8181818181818182,
+        "n_resolved": 22,
+        "pearson_r": null
+      },
+      "zero": {
+        "mae": 0.02985477453277632,
+        "rmse": 0.03546718400882014,
+        "sign_accuracy_all": 0.0,
+        "sign_accuracy_observed_effect_larger_than_se": 0.0,
+        "n_resolved": 22,
+        "pearson_r": null
+      },
+      "ridge_oracle_mae_simulator_only": 0.005542408393157924
+    },
+    "new_domain": {
+      "n_studies": 30,
+      "ridge": {
+        "mae": 0.039905853442388665,
+        "rmse": 0.04422927768058363,
+        "sign_accuracy_all": 0.8666666666666667,
+        "sign_accuracy_observed_effect_larger_than_se": 0.8571428571428571,
+        "n_resolved": 28,
+        "pearson_r": 0.7469380850046318
+      },
+      "mean": {
+        "mae": 0.04184494203885502,
+        "rmse": 0.04812401283320951,
+        "sign_accuracy_all": 0.9666666666666667,
+        "sign_accuracy_observed_effect_larger_than_se": 1.0,
+        "n_resolved": 28,
+        "pearson_r": null
+      },
+      "zero": {
+        "mae": 0.057662719029010025,
+        "rmse": 0.06351969641436833,
+        "sign_accuracy_all": 0.0,
+        "sign_accuracy_observed_effect_larger_than_se": 0.0,
+        "n_resolved": 28,
+        "pearson_r": null
+      },
+      "ridge_oracle_mae_simulator_only": 0.044236033038933725
+    },
+    "all": {
+      "n_studies": 60,
+      "ridge": {
+        "mae": 0.027702131751653543,
+        "rmse": 0.03513241691094687,
+        "sign_accuracy_all": 0.8833333333333333,
+        "sign_accuracy_observed_effect_larger_than_se": 0.92,
+        "n_resolved": 50,
+        "pearson_r": 0.6556516738816078
+      },
+      "mean": {
+        "mae": 0.03226913269514372,
+        "rmse": 0.03955713569988142,
+        "sign_accuracy_all": 0.8666666666666667,
+        "sign_accuracy_observed_effect_larger_than_se": 0.92,
+        "n_resolved": 50,
+        "pearson_r": null
+      },
+      "zero": {
+        "mae": 0.043758746780893185,
+        "rmse": 0.05144255521496295,
+        "sign_accuracy_all": 0.0,
+        "sign_accuracy_observed_effect_larger_than_se": 0.0,
+        "n_resolved": 50,
+        "pearson_r": null
+      },
+      "ridge_oracle_mae_simulator_only": 0.024889220716045823
+    }
+  },
+  "public_rct_out_of_study_validation": "NOT PERFORMED"
+}
