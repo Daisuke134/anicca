@@ -1,46 +1,71 @@
-# Manager Masterclass | P04-1–P04-3 Causal Inference
+# Manager Masterclass | P04-1–P04-5 Causal Inference
 
-- **Date:** 2026-11-04 (Asia/Tokyo)
-- **Study progress:** P04-1, P04-2, P04-3 lecture, synthetic code, and unit tests complete. P04-4 is next.
-- **Empirical status:** Synthetic examples only. The Manager Behavior Foundation Model 1.0, real-world effects, and any user intervention remain **unvalidated**.
-- **P00-3:** Real-world target, permissions and safety gate have **not** been signed off.
+- **更新日：** 2026-11-04（Asia/Tokyo）
+- **学習現在地：** P04-1～P04-4は講義・架空演習が完了。P04-5は講義と合成研究ベンチマークが完了、ただし**実際の公開RCTの未見予測は未実施**。次の講義はP04-6。
+- **科学的検証状態：** 今回の数字は**すべて人工・合成データ**に由来する。Manager Behavior Foundation Model 1.0の実人間での優位性、介入効果、心理的・事業的な便益を示していない。
+- **P00-3：** 本番実証対象・同意・権限・停止条件は未確定。
+- **講義／現在地の唯一の正本：** `ROADMAP_STATUS_JA.md`。このREADMEやJSONは進捗の代替正本ではない。
 
-## Where to start
+## 成果物
 
-| Path | Purpose |
-|---|---|
-| `ROADMAP_STATUS_JA.md` | Single source of truth (P00–P12 course and progress) |
-| `P04-1_JA.md` | Association, intervention, confounding, DAG, potential outcomes |
-| `P04-2_JA.md` | RCT, ATE, ITT (original lesson) |
-| `P04-3_JA.md` | Target trial, identification, g-formula, IPW, matching, AIPW and DiD |
-| `experiments/p04_*.py` | Reproducible causal simulation, RCT and estimation code |
-| `experiments/test_p04_*.py` | Unit tests, 57 total |
-| `evidence/P04-3_SYNTHETIC_RESULTS.json` | Fully synthetic 30,000-person experiment results |
-| `figures/*.png` | P04-3 estimation and DiD figures |
-| `figures/build_figures.py` | Figure reproduction |
-| `journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx` | **74-slide** editable PowerPoint; 68 prior slides preserved, 6 P04 appendix slides added |
-| `journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf` | Corresponding 74-page PDF |
-| `journal_club/SPEAKER_NOTES_JA.md` | Slide-by-slide Japanese speaker notes |
-| `journal_club/RUN_OF_SHOW_JA.md` | Presenter run of show |
-| `journal_club/build_p04_appendix.py` | Rebuild 74-slide deck from a supplied 68-slide base |
+| パス | 内容 |
+| --- | --- |
+| `ROADMAP_STATUS_JA.md` | P00～P12全講義の唯一の進捗・ロードマップ |
+| `P04-1_JA.md` | 観察と介入、DAG、潜在的結果 |
+| `P04-2_JA.md` | RCT、ATE、ITT、区間推定 |
+| `P04-3_JA.md` | 観察データの識別、g-formula、IPW、AIPW、DiD |
+| `P04-4_JA.md` | CATE、効果修飾、方策価値、媒介分析 |
+| `P04-5_JA.md` | 研究単位Holdout、予測凍結、ベンチマーク、OOD |
+| `exercises/P04-3_SIMPSON_2000_JA.md` | 追加のSimpson手計算教材 |
+| `experiments/p04_*.py` | P04-1～P04-5の教育用シミュレーション |
+| `experiments/test_p04_*.py` | 全80件の単体テスト |
+| `evidence/TEST_RESULTS_P04_1_TO_P04_5.txt` | 全80件成功の新規実行記録 |
+| `evidence/P04-4_SYNTHETIC_DATA.csv` | 完全架空24,000人分の生データ |
+| `evidence/P04-4_SYNTHETIC_RESULTS.json` | CATE・方策・媒介の結果 |
+| `evidence/P04-5_*_SYNTHETIC.csv` | 人工180研究のデータ分割、Holdout、凍結予測 |
+| `evidence/P04-5_FREEZE_RECEIPT.json` | 予測CSVのSHA256 |
+| `evidence/P04-5_SYNTHETIC_BENCHMARK_RESULTS.json` | 人工ベンチマークの採点結果 |
+| `journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx` | **82枚**の編集可能PowerPoint（従来の74枚＋付録8枚） |
+| `journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf` | **82ページ**の閲覧用PDF |
+| `journal_club/SPEAKER_NOTES_JA.md` | **全82枚**の日本語発表ノート |
+| `journal_club/RUN_OF_SHOW_JA.md` | 45分講演＋15分質疑、元の本編を維持 |
+| `journal_club/build_p04_45_appendix.py` | 74枚版からP04-4/P04-5の8枚を追加 |
+| `journal_club/export_p04_45_pdf.py` | 既存74ページPDFを保持し追加8ページを生成して統合 |
+| `journal_club/sync_pptx_speaker_notes.py` | PowerPoint内部の全82枚に日本語発表者ノートを同期 |
+| `evidence/P04-4_P04-5_QA.json` | 旧74枚本文の保全・ノート・PDFページ数・ハッシュの検証 |
+| `MANIFEST.json` | ファイル一覧・SHA256・サイズの照合 |
 
-## Reproduce the tests
+## 主要結果（人工世界）
 
-Install Python 3.11+ and NumPy (`python -m pip install numpy`). The figure build additionally requires Matplotlib; slide generation additionally requires python-pptx. Change into `experiments`, then:
+**P04-3**：架空30,000人、単純観察差+26.12ポイント、g-formula/IPW/AIPW約−10ポイント。因果仮定の成立を完全に人工世界で設定。
+
+**P04-4**：架空24,000人、理論ATE+2.924ポイント、RCT推定ATE+2.684ポイント。4群のCATEは理論+16/+10/−4/−10ポイント。学習外9,619人で個別化方策をIPW評価し、通知なし方策に対し+6.279ポイント（近似95%区間+4.842〜+7.717）。別の連続値を用いた人工20,000人で線形媒介の総効果0.24を再現。
+
+**P04-5**：架空180研究を90学習／30検証／同領域未見30／新領域未見30に分割。Ridgeの平均絶対誤差は同領域1.55ポイント、新領域3.99ポイント。ゼロ予測・学習平均と比較。**実在の公開RCTへの予測は0件**。
+
+## 再現実行
+
+Python 3.11+ / NumPy を使用。実験ディレクトリに移動して次を実行：
 
 ```bash
-python -m unittest discover -p 'test_p04_*.py' -v
-python p04_3_observational_causal.py
+python3 -m unittest discover -p 'test_p04_*.py' -v
+python3 p04_4_heterogeneous_effects.py
+python3 p04_5_effect_forecasting.py
 ```
 
-The tests were run on 2026-11-04 and finished **57/57 passing** (P04-1: 14 newly reconstructed tests for the previously authored P04-1 script; P04-2: 17 existing tests; P04-3: 26 new tests). A passing synthetic test verifies a code contract, **not** a causal effect in a real population.
+テストは2026-11-04に**80/80件成功**。内訳：P04-1 14件、P04-2 17件、P04-3 26件、P04-4 12件、P04-5 11件。単体テストの成功は研究コードの動作確認であって、現実の人間に対する因果効果を保証するものではない。
 
-## Methodological notes
+### 発表資料再生成
 
-The artificial example has intentionally measured confounders, good overlap, binary treatment and stable treatment effects. Its recovered causal ATE does not establish no-unmeasured-confounding in actual data. The observed +26.12 percentage point association is misleading; appropriately identified estimators return approximately -10 percentage points for this particular artificial setting. A partial proxy for confounders is still biased (approximately +19.60 percentage points). AIPW tests demonstrate robustness when either nuisance function is correct, in this simplified setup. The AIPW toy estimate uses fitted nuisance models without cross-fitting and should not be confused with a production statistical analysis.
+元の74枚版PowerPointと74ページPDFを別途保管した状態で、`journal_club`で`python3 build_p04_45_appendix.py`を実行（入力が74枚でない場合は追加しない）。追加8枚は79～82にP04-5、75～78にP04-4が収録されている。旧スライドの本文は維持し、ページ数表記だけ変更。
 
-PowerPoint has **74** slides and the exported PDF **74** pages. Existing slides 1–68 are the original presentation, with only slide-total footers brought in line; slides 69–74 are causal appendices. Slides are presentation material, not a peer-reviewed causal study.
+PDF変換環境のLibreOfficeが利用できなかったため、`export_p04_45_pdf.py`では**既存74ページを保持し追加8ページを高解像度画像としてレンダリングして結合**した。結果は82ページ。PDFは閲覧用、元のPPTXは編集可能。両者のページ構成と主要表示内容を検査した。
 
-## Next milestone
+## 今後の必須研究
 
-P04-4: individual treatment effect heterogeneity and mediation. In parallel: specify P00-3 real-world consent, permissions and safety scope before any real intervention. The Manager policy-vs-policy RCT and benchmarking remain future milestones.
+1. **P04-5の本当の公開RCT Holdout：未完了。** J-PAL/IPA DataverseやMany Labs 2等を候補として評価する。権利、尺度、標準誤差、汚染、予測時点を検査し、可能なら結果公開前に予測を第三者へ登録する。
+2. **P04-6：** 事前登録・予測凍結・意思決定価値の評価を学ぶ。
+3. **P00-3：** 実世界の対象・許可・害・停止条件を確定する。
+4. **P05～P06：** 他のエージェントや実事業へ接続する前に、シャドー運用で結果を独立に検証する。
+
+研究以外の本番運用や資金調達・事業収益の更新を示したものではない。

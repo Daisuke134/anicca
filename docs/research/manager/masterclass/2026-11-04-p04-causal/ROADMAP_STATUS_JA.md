@@ -9,7 +9,7 @@
 - **説明済み：P02-3「分散・推定・信頼区間・再標本化」。**
 - **説明済み：P02-4「標本の偏り・欠測・重み付け・個人／世帯／研究の依存」。**
 - **説明済み：P02-5「公開データの権利・来歴・分割・検査」。**
-- **説明済み：P01-1〜P01-7、P02-2〜P02-5、P03-1〜P03-7、P04-1・P04-2。今回P04-3「観察データの因果識別・g-formula・IPW・AIPW・DiD」を架空3万人の計算・26テストで学習。次はP04-4「個人差・効果の異質性・媒介」。** P02-1は旧8部で既習。「済」は講義と教材理解を指し、実人間への介入・因果効果・会社運営への統合が実証済みという意味ではない。
+- **説明済み：P01-1〜P01-7、P02-2〜P02-5、P03-1〜P03-7、P04-1〜P04-4。今回P04-5「未見研究の介入効果予測」を架空180研究のstudy-level holdoutで学習・実装し、次はP04-6「事前登録・予測凍結・意思決定価値」。ただしP04-5の実在公開RCTでの完全未見予測は未実施・研究検証として残。P04-4は架空24,000人のCATE・方策比較と架空20,000人の媒介演習を完了。P04-1〜P04-5の単体テスト80件成功。** P02-1は旧8部で既習。「済」は講義と教材理解を指し、実人間への介入・因果効果・会社運営への統合が実証済みという意味ではない。
 - **旧8部：既習として引き継ぐ。** 本人が完了したと申告した人工人口・人口合成の旧シリーズ。旧8部の各題名は不明なので、架空の8題を作らない。P02-1は再受講必須にしない。旧8部とP08は異なる。
 
 ## 0. 管理規則
@@ -82,10 +82,10 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 |---|---|---|---|
 | P04-1 | 観察、介入、潜在的結果、交絡 | **済** | 条件付き観察＋26ポイント vs 真の因果効果−10ポイントの架空例。独立のRCT・調整・生成器内の潜在結果を実装し、14テスト成功。実人間の介入・実顧客の効果の証拠ではない。 |
 | P04-2 | ランダム化比較試験と平均効果 | **済（講義・架空計算済）** | ランダム化、ATE・ITT・不遵守、SE・95%CI、標本数。架空2万人と600回のRCT繰返し、17テスト成功。現実の介入は行わない。 |
-| P04-3 | 観察データでの識別と仮定 | **今回（講義・架空計算済）** | 交換可能性・positivity・consistency・干渉、g-formula・飽和OLS・IPW・matching（ATT）・AIPW・DiD。架空3万人・bootstrap250回・26テスト成功。実データの識別・効果未検証。 |
-| P04-4 | 個人差・効果の異質性・媒介 | **残** | 誰に何が役立つか。 |
-| P04-5 | 公開実験効果の予測と研究単位holdout | **残** | 過去の再採点と新規予測を区別。 |
-| P04-6 | 事前登録・予測凍結・意思決定の価値 | **残** | 情報の時点と比較条件を固定。 |
+| P04-3 | 観察データでの識別と仮定 | **済（講義・架空計算済）** | 交換可能性・positivity・consistency・干渉、g-formula・飽和OLS・IPW・matching（ATT）・AIPW・DiD。架空3万人・bootstrap250回・26テスト成功。実データの識別・効果未検証。 |
+| P04-4 | 個人差・効果の異質性・媒介 | **済（講義・架空計算）** | 架空24,000人で4群CATE・学習/評価分割・方策価値、別の架空20,000人で線形媒介を再現。12テスト成功。現実の効果・媒介仮定は未検証。 |
+| P04-5 | 公開実験効果の予測と研究単位holdout | **今回（講義・人工ベンチマーク済／実公開RCT評価は残）** | 完全架空180研究を90/30/30/30分割、予測をSHA256で凍結し学習平均・ゼロ・Ridgeを比較。11テスト成功。実在の公開RCTへの未見予測は未実施。 |
+| P04-6 | 事前登録・予測凍結・意思決定の価値 | **次** | P04-5の人工予測凍結を、実公開RCTの事前登録・強いbaselineとの意思決定比較へ拡張。 |
 
 ### P05｜実行基盤への接続
 
@@ -193,7 +193,9 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 | **P04-1** | [観察・介入・潜在的結果・交絡](P04-1_JA.md) | [20万人の架空介入シミュレーション](experiments/p04_1_causal_vs_observational.py)、[14テスト](experiments/test_p04_1_causal_vs_observational.py)、[実行結果](evidence/p04_1_causal_result.json)、[図](figures/p04_1_observation_vs_intervention.png) |
 | **P04-2** | [RCT・ATE・ITTの講義](P04-2_JA.md) | [実装](experiments/p04_2_rct_ate.py)、[17テスト](experiments/test_p04_2_rct_ate.py)、[実行結果](evidence/p04_2_rct_ate_result.json)、[観察とRCTの比較図](figures/p04_2_observational_vs_rct.png)、[600回のRCT図](figures/p04_2_600_rcts_histogram.png) |
 | **P04-3** | [観察データの因果推論講義](P04-3_JA.md) | [実装](experiments/p04_3_observational_causal.py)、[26テスト](experiments/test_p04_3_observational_causal.py)、[架空実行結果](evidence/P04-3_SYNTHETIC_RESULTS.json)、[比較図](figures/p04_3_estimates.png) |
-| 発表資料 | [ジャーナルクラブ：74枚](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | [PDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf)、[全74枚の発表ノート](journal_club/SPEAKER_NOTES_JA.md)、[45分＋15分の進行表](journal_club/RUN_OF_SHOW_JA.md)、[P03-7一次資料](journal_club/SOURCES.md) |
+| **P04-4** | [効果の異質性・CATE・媒介](P04-4_JA.md) | [実装](experiments/p04_4_heterogeneous_effects.py)、[12テスト](experiments/test_p04_4_heterogeneous_effects.py)、[架空24,000人CSV](evidence/P04-4_SYNTHETIC_DATA.csv)、[結果](evidence/P04-4_SYNTHETIC_RESULTS.json) |
+| **P04-5** | [未見研究の予測と研究単位Holdout](P04-5_JA.md) | [実装](experiments/p04_5_effect_forecasting.py)、[11テスト](experiments/test_p04_5_effect_forecasting.py)、[架空180研究・凍結予測・採点](evidence/P04-5_SYNTHETIC_BENCHMARK_RESULTS.json)、[凍結receipt](evidence/P04-5_FREEZE_RECEIPT.json)、**実公開RCT未実施** |
+| 発表資料 | [ジャーナルクラブ：82枚](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | [PDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf)、[全82枚の発表ノート](journal_club/SPEAKER_NOTES_JA.md)、[45分＋15分の進行表](journal_club/RUN_OF_SHOW_JA.md)、[P03-7一次資料](journal_club/SOURCES.md) |
 
 ## 2026-11-04｜P03-7 一次資料・発表資料・自作採点の検査範囲
 
@@ -372,3 +374,14 @@ P04-2の発表補足：同じジャーナルクラブPPTXへRCT・ATE/ITT・推�
 P04-2は講義済みへ変更。P04-1はcollider・媒介の調整の注意を追記。P04-3は、完全人工の30,000人（seed 20261104）にて、交絡した観察差 +26.12pt、g-formula・飽和OLS・IPW・AIPWのATE推定 −9.98pt、人工世界の理論上のATE −10.00pt、個体潜在結果の生成器オラクル −9.94pt、マッチングATT −9.64pt、不完全な交絡代理変数で調整した場合 +19.60ptを記録。個人単位iid Bootstrap 250回のg-formula百分位区間は約 −11.00〜−8.88pt。別のDiD玩具例は +3pt。**26件の単体テスト成功。** これらは人工生成器内だけの数値であり、現実の実験、介入、効果、臨床・事業の証拠には数えない。
 
 ジャーナルクラブの付録としてP04-1のDAG再考、P04-3の識別、g-formula、IPW/AIPW、DiD、失敗条件の6枚（69〜74）を追加。**本編1〜65および既存の因果補足66〜68の内容は保存。** 発表ノートは全74枚へ同期。**次P04-4**：CATE・効果の異質性・媒介。P00-3とP05〜P12の未実証ステータスは維持する。
+
+
+## 2026-11-04 最新追加：P04-4 / P04-5 と発表資料の同期
+
+- **P04-4：講義・架空計算済。** 架空24,000人でRCTによるCATE4群、独立9,619人でIPW方策価値、別の架空20,000人で線形媒介を計算。真のATEは+2.924pt、推定ATEは+2.684pt。学習した低意欲への通知方策は「通知なし」に対し、ホールドアウトIPWで+6.279pt（近似95%区間+4.842〜+7.717pt）。現実の人の心理改善を証明したものではない。
+- **P04-5：講義・架空ベンチマーク済／公開RCT未検証。** 架空180研究を学習90／検証30／同領域の未見30／新領域の未見30に分け、予測CSVのSHA256を固定。RidgeのMAEは同領域1.550pt／新領域3.991pt。実公開RCT・LLM予測・実際の介入は実施していない。
+- **テスト：計80件成功（P04-1 14件、P04-2 17件、P04-3 26件、P04-4 12件、P04-5 11件）。** 実行記録は `evidence/TEST_RESULTS_P04_1_TO_P04_5.txt`。
+- **日本語発表：82枚PowerPoint／82ページPDF／全82枚の発表ノート。** 既存1〜74のスライド本文を維持し、75〜82にP04-4/P04-5の8枚を追加。PDFは既存74ページに追加8ページを統合（追加ページはレンダリング画像）。ソースは `journal_club/build_p04_45_appendix.py`・`journal_club/export_p04_45_pdf.py`。
+- **次の講義はP04-6。** P04-5の実在公開RCTの前向き／未見効果予測評価と、P00-3の実証対象・権限確定は未完了で、継続する。
+
+研究SSOTはここだけ。別の新しいロードマップや進捗JSONを正本として立てない。
