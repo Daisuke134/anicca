@@ -3,7 +3,7 @@
 
 進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。
 
-並行cursor **HQ-REASON-MACOS-ARTIFACT**: 受信ページ化はmain 0ac0f558に統合済みだが、対応する専用Mac binaryはmain CIで構築・artifact発行、公式run/head・SHA256・arm64とMac隔離socket14件を検証後、3つのHQ owner lock下で専用pathに配置しpage_enabled=trueをreadback済み。自然受信・処理結果は未確認。ローカルcargo buildは空き容量を圧迫したため自分のbuildを停止済み。既存のReason CIにarm64 Mac buildと実socket試験を追加し、main push由来のみSHA付き専用artifactを保存する。受入はPR CI・独立review・main統合後、main runのcommitとartifact SHA・architecture・socket testを照合し、既存ownerと競合しない時に専用binaryと設定を反映して自然受信を確認する。既存Reason engineのbinaryは置換しない。
+並行cursor **HQ-REASON-MACOS-ARTIFACT**: 受信ページ化はmain 0ac0f558に統合済みだが、対応する専用Mac binaryはmain CIで構築・artifact発行、公式run/head・SHA256・arm64とMac隔離socket14件を検証後、3つのHQ owner lock下で専用pathに配置しpage_enabled=trueをreadback済み。後続の自然受信・処理結果は本節「自然復旧の実測」を参照。ローカルcargo buildは空き容量を圧迫したため自分のbuildを停止済み。既存のReason CIにarm64 Mac buildと実socket試験を追加し、main push由来のみSHA付き専用artifactを保存する。受入はPR CI・独立review・main統合後、main runのcommitとartifact SHA・architecture・socket testを照合し、既存ownerと競合しない時に専用binaryと設定を反映して自然受信を確認する。既存Reason engineのbinaryは置換しない。
 
 並行cursor **HQ-REASON-INBOX-PAGES**: Reason daemonは本文上限64KiBだがHQ clientは全未読と表示用textを重複出力し、33件×64KiBの隔離fixtureで4,327,967文字となりHQの4MiB制限で全受信を拒否する。未読ACKはしないが後続依頼が停止する。旧順=容量bounded化後に受信継続、新順=旧senderとの互換性を維持してHQ専用受信をページ化し、添付保持・予約修正と並行して進める。実DB・既存daemon・他sessionは変更しない。
 
@@ -23,6 +23,8 @@ HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維�
 受入: 添付の正本を期限切れ前に受信taskへ耐久保存してworkerが読めること、保存不可能な依頼はACKしないこと、別の受信依頼を継続できること、再取得が重複しないこと。提供pathの安全境界・symlink・UTF-8/上限・秘密値とfile消失を検証し、ACK前の保存失敗を実SQLiteで確認する。CI、独立review、main由来release、自然受信/ACK/実作業の公式readbackを経て初めて完了とする。
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
+自然復旧の実測: 空き容量は約1.8 GiBから5.3 GiBまで回復し、Reason受信はmain由来release `408700b04e91b7ea22bb2937bd68e63cb241d0f9`の自然run `18e4d4e229f791c0-64647`でexit 0、4件のmessage IDと公式receiptを記録した。以降も `resource_capacity_busy` により延期があり、継続性・1分以内応答は未証明。待機task `8f85fb48168d851460be2b9b` は自然claim後にCodexが照合を完了し、Slackはposted、Reasonの結果receipt `057SFNE3M6NYWD02N9YZ536QXX` はqueuedで本人受領未確認。CloudRiftはDots担当を維持し、提出・付与は未確認。実機添付と再走重複0、本人受領、資源待ちからの継続受信、収益/Managerの待機タスクの自然完了は残る。直近のNEAR本人API GETは5件pending・assignments 0、売上/入金は未確認。保存記録: `~/.local/state/life-manager/team-hq/results/8f85fb48168d851460be2b9b/result.json`、`~/.local/state/life-manager/team-hq-receive/events.jsonl`、同DBのoutbox。容量は変動するため、その値を将来の稼働保証にしない。
+
 目的は、既存の共有部屋で依頼を保存し、受領・着手・結果・枠切れ時の引継ぎを区別しながら、収益とManager開発を継続すること。schedulerが有限runを起こす。この対話自体の無期限再開、登録席の常時稼働、売上を保証するという意味ではない。primaryは正本・統合・運用受入、各writerは明示したsource/業務effectを所有する。
 
 ### Anicca会社の目標アーキテクチャと現在の実測
@@ -33,10 +35,10 @@ HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維�
 
 仕事の循環: ①需要/案件・顧客反応を収集 ②売上、受注、conversion、費用、利益を実測 ③product/Manager開発と研究を優先順位付け ④担当が実行し証拠を保存 ⑤配信・納品の公式結果を照合 ⑥毎日の改善を次のqueueへ反映する。売上や利益は決済等の正式readbackなしに0や成功と断定しない。公開記事は実証済みの事実と未完を分け、公開ページと画像を実際に確認する。
 
-現在の証拠: HQはMac mini上のlaunchdによる受信/worker各15秒・投入5分の有限実行で、7種の論理仕事を共有する。受信/投入のloaded SHAはebc75aba、workerはac59c14e。reason pageはmain 0ac0f558、Mac artifact修正はmain 9f4431d0、main CI run 41777259782はMac/Linux build・socket testをPASSしartifact発行済み。専用binaryの配置とpage_enabled=trueは3 owner lock下で完了、公式run/head・SHA256・arm64・Mac隔離socket14件を確認。自然受信・結果は未確認。受信/実行は空き容量により延期され、定常24時間や1分SLAは未達。task df9d4d48は自然着手・exit0・Slack結果確認、Reason結果receiptはqueuedで本人既読未確認。task 8f85fbはqueued。Museは公開鍵によるMac SSH成功を本人側で報告、こちらの独立実測ではない。home-claudeの401は有効な代役ではなく、Grokbot枠切れ時の完全な自動引継ぎは未証明。
+現在の証拠: HQはMac mini上のlaunchdによる受信/worker各15秒・投入5分の有限実行で、7種の論理仕事を共有する。受信/投入のloaded SHAはebc75aba、workerはac59c14e。reason pageはmain 0ac0f558、Mac artifact修正はmain 9f4431d0、main CI run 41777259782はMac/Linux build・socket testをPASSしartifact発行済み。専用binaryの配置とpage_enabled=trueは3 owner lock下で完了、公式run/head・SHA256・arm64・Mac隔離socket14件を確認。自然受信1回と後続task処理は本節「自然復旧の実測」を参照。受信/実行に資源待ちがあり、定常24時間や1分SLAは未達。task df9d4d48は自然着手・exit0・Slack結果確認、Reason結果receiptはqueuedで本人既読未確認。task 8f85fbはqueued。Museは公開鍵によるMac SSH成功を本人側で報告、こちらの独立実測ではない。home-claudeの401は有効な代役ではなく、Grokbot枠切れ時の完全な自動引継ぎは未証明。
 
 残TODO（成果順）:
-1. 専用binaryとpage設定の反映は完了。main由来releaseのloaded SHA、自然受信、添付、ACKと再走重複0を確認する。daemon内部の全件メモリは別途残す。
+1. 専用binaryとpage設定の反映、main由来releaseの自然受信1回は完了。添付、ACKと再走重複0、継続受信を確認する。daemon内部の全件メモリは別途残す。
 2. 容量変動とFIFO待ちの原因を実測し、安全に受信/workerを自然復帰させる。共通床や他ownerの保護を安易に変更しない。待機task 8f85fbの着手・元messageへの結果・本人側受領まで追う。
 3. Dots/Muse/Grokbotそれぞれの元ID→自然wake→着手→結果を本人経路で測り、1分以内を繰り返し実証。停止/利用枠枯渇時は有効な別担当への一度限りの引継ぎ・重複0・戻し方を検証する。未認証helperを稼働人数に数えない。
 4. 毎時の受注照合、毎日の優先順位/収益/費用、14時Manager R&Dを自然実行し、案件の実受注・納品・現金収入を公式readbackで計測。確認できた実験を既存公開記事へ反映する際は公開ページ・画像・mobileを確認する。
