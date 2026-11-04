@@ -26110,3 +26110,8 @@ Naïve本番採用の履歴: 内訳追補の独立review SHIP後、19:17:55UTC�
 Naïve cursor2: 本番23通常業務はintake0件、browser7timeoutsで新需要0。本人state/journal保存は実測するが自然終了0、19:30:34.948にcancel。費138158/ledger14、active0/paused/prod23保持、残485301。自己集計誤りと旧next_action未退避は公式原本を保持して未解消と明示。次は計画350000内の短いbrowser復旧→新需要1出所、時刻/intake再読取を反復しない。→同plan「本番23の通常業務・ブラウザtimeout境界」。
 
 Naïve実行履歴: 短いbrowser復旧→候補本文観測→旧state全値保持の追記/readは9tools/end_turn/errors0/費92136で成功。n8n候補は解決済み/支払意思無しで除外、依頼売上0。前run後計上166753/ledger17。次は計画300000内で現行の有償募集1件へ絞る（同plan）。本番23/全51active0/paused、登録/録画/phone-only/黒字/10K/月/移植は未達。
+
+
+## P05-1 Ontology／行動の状態表現の研究エンジニアリング証拠（2026-11-04、実行側は未変更）
+
+Managerの行動Ontology研究の実行コード・4方式queryベンチマーク・外部OSSのsource/license監査・E2E最小実験・Python3.14 test互換性は、[実装設計と受入仕様](https://github.com/Daisuke134/life-manager/blob/main/products/manager/docs/specs/2026-11-04-manager-ontology-query-evidence-reuse.md)にまとめた。講義の進捗正本は`docs/research/manager/masterclass/2026-11-04-p04-causal/ROADMAP_STATUS_JA.md`。実測条件ではPython dictとGraph projectionのexact queryは同程度であり**専用Graph DB追加を見送る**。新しい実行権限・secret・provider送信・ユーザー介入・本番のstate writeは一切行っていない。既存Manager Core/権限/outbox/ledgerが正本で、Graphはread-onlyの投影に限る。商用利用制約はモデル直接販売の有無とは無関係に確認が必要。次P05-2で既存ID/effect/receipt/readbackの統合read-only契約を検証する。

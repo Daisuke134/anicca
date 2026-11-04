@@ -1,0 +1,25 @@
+{
+  "library": "getzep/graphiti",
+  "installed_version": "0.31.2",
+  "scope": "offline data model instantiation ONLY; no Graphiti retrieval / add_episode / add_triplet",
+  "nodes": 2,
+  "edges": 1,
+  "class_names": [
+    "EntityNode",
+    "EntityEdge"
+  ],
+  "edge_temporal_fields": [
+    "attributes",
+    "created_at",
+    "expired_at",
+    "invalid_at",
+    "valid_at"
+  ],
+  "third_party_database_running": false,
+  "remote_llm_calls": 0,
+  "socket_connect_blocked": true,
+  "manual_missing_dependency_installed": "httpx",
+  "note": "Graphiti full runtime requires a supported graph backend and embedding/LLM configuration",
+  "license": "Apache-2.0 (upstream repository LICENSE)",
+  "real_human_claim": false
+}
