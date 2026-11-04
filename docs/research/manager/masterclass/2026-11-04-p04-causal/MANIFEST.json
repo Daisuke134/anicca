@@ -1,0 +1,100 @@
+{
+  "title": "Manager Masterclass P04-1 to P04-3 2026-11-04",
+  "status": "lecture-and-synthetic-study-only",
+  "test_count": 57,
+  "slides": 74,
+  "files": {
+    "README.md": {
+      "size": 3511,
+      "sha256": "68c183c575f018cdf2f4bab7d47715caedeccb6a07921e201f235329ca5f7fb8"
+    },
+    "ROADMAP_STATUS_JA.md": {
+      "size": 49195,
+      "sha256": "1d91433f79dcfd1ae91a3535a03a98c42f4b324cacf99032ff9cd9532dae2689"
+    },
+    "P04-1_JA.md": {
+      "size": 14148,
+      "sha256": "f1532b87872b11cf4ee2feb7e069853be908fd04d46526c9e030e11d3c2a21b5"
+    },
+    "P04-2_JA.md": {
+      "size": 17148,
+      "sha256": "3bc110571d38975167cf0c1bbfadc34d4e8cd9bf5fd51484f73d8aa5c0d97c77"
+    },
+    "P04-3_JA.md": {
+      "size": 17926,
+      "sha256": "fb18492a56be81623038c7f959452fc383b1f7e369f89b4abc5e34145f6a64fc"
+    },
+    "experiments/p04_1_causal_vs_observational.py": {
+      "size": 4713,
+      "sha256": "d4c66393442bea25d6302968bcbe0a38e9d6c0c7e96767347e0700568c98d051"
+    },
+    "experiments/test_p04_1_causal_vs_observational.py": {
+      "size": 2050,
+      "sha256": "fc8554688162e1087012dda5639c37bb8193bfd2b3d41a7c34a0d2d35a1a9f29"
+    },
+    "experiments/p04_2_rct_ate.py": {
+      "size": 6660,
+      "sha256": "7fa376a2e1e231d4e392297f6d1a6206f9deedbd861f578a3c4b0ec07a978d6c"
+    },
+    "experiments/test_p04_2_rct_ate.py": {
+      "size": 3668,
+      "sha256": "de271fcdb0c3bf95fdc541ba4f85620f5c5f64fcd725ee08b79c8e2e9fdcb0a2"
+    },
+    "experiments/p04_3_observational_causal.py": {
+      "size": 8578,
+      "sha256": "a66f95c20fe3d53f5d901b0c670d845dd48e33e336ed1e32526ac910de2231b9"
+    },
+    "experiments/test_p04_3_observational_causal.py": {
+      "size": 4614,
+      "sha256": "f8507c1f75ba5f2ad1f0acb31be7603ef598ad9364bfc45c1d497665bc4ee797"
+    },
+    "evidence/P04-3_SYNTHETIC_RESULTS.json": {
+      "size": 816,
+      "sha256": "47c42698ef374ece4587cb317fd89fac42fa2f2f0fee27eceb54b4ebf1a3d9aa"
+    },
+    "evidence/p04_1_causal_result.json": {
+      "size": 1404,
+      "sha256": "cce4446e8e82ec6bb951326af0070d927de3ec93c558e767fbe6cf515bba1657"
+    },
+    "evidence/p04_2_rct_ate_result.json": {
+      "size": 17235,
+      "sha256": "b659b2951fdb651ac91305adb5285f7d1886cd7cca03d011fc5592324ed4d443"
+    },
+    "evidence/TEST_RESULTS.txt": {
+      "size": 7203,
+      "sha256": "f303c639e5f64383f9ca6c7e6c4c504d3a5162b18d101578e862319e8a0eb8aa"
+    },
+    "figures/p04_3_estimates.png": {
+      "size": 60770,
+      "sha256": "4763e56eefc40059dce8bee0e851cb53225c7d72b3f441d444f4c308b203e9ed"
+    },
+    "figures/p04_3_did.png": {
+      "size": 62104,
+      "sha256": "246d22a114733c7e33de8f9ea18d1728329b4d0a81c3afd6d7c097b5bb09dd1d"
+    },
+    "figures/build_figures.py": {
+      "size": 2142,
+      "sha256": "d3ecaaaad2660fc79576a2b7fad0b1edaa74983158f3d8a8e360935e37216b2d"
+    },
+    "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx": {
+      "size": 574474,
+      "sha256": "0fd4e254d7f39601b0b9bf108ea9c15262568991eb699dbb2ce2a2aed405ac6d"
+    },
+    "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf": {
+      "size": 1590986,
+      "sha256": "3cf397a16a8b473fe9a818adce90119d8dfcc6e567d14ac41604b520c33b08df"
+    },
+    "journal_club/SPEAKER_NOTES_JA.md": {
+      "size": 99376,
+      "sha256": "6e1584ea0299b7075ce64b02cb6c7008bfa0b6194a515ed2ba42349bd10378b7"
+    },
+    "journal_club/RUN_OF_SHOW_JA.md": {
+      "size": 2831,
+      "sha256": "0a1aad5d35338204e91592c4e2f49f5b8c506dd216ea9e1620e61b4c72e22a16"
+    },
+    "journal_club/build_p04_appendix.py": {
+      "size": 9575,
+      "sha256": "1ac0ed613547d9b6b499b045738ca5b1333920c515bdab951e7e79cf1144add5"
+    }
+  }
+}
