@@ -5558,6 +5558,44 @@ def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path):
     run.assert_not_called()
 
 
+def test_confirmed_unloaded_owner_does_not_keep_the_next_dispatch_slot(tmp_path, monkeypatch):
+    root = tmp_path / "admission"
+    monkeypatch.setenv("LIFE_MANAGER_RESOURCE_ADMISSION_ROOT", str(root))
+    monkeypatch.setenv("LIFE_MANAGER_HOST_MAX_FINITE_RUNS", "1")
+    monkeypatch.setenv("LIFE_MANAGER_HOST_MIN_REVENUE_RUNS", "0")
+    admission.activate_durable_v2()
+    instant = time.time()
+    for owner in ("example", "next"):
+        admission.enqueue_durable("deterministic", owner, admission_class="revenue",
+                                  occurrence_id=f"{owner}:wake", now=instant)
+    assert admission.reserve_available(now=instant) == ["example"]
+    current = tmp_path / "release"
+    agents = tmp_path / "agents"
+    (current / "config").mkdir(parents=True)
+    agents.mkdir()
+    row = {
+        "label": "ai.anicca.example", "domain": "earn", "entrypoint": "bin/example",
+        "cadence": {"start_interval_seconds": 300}, "effect_class": "message",
+        "state_root": "~/.local/state/life-manager/example",
+        "log_root": "~/.local/state/life-manager/example/logs",
+        "cleanup": {"max_runs": 10, "max_age_days": 7},
+        "provider_route": "deterministic",
+    }
+    (current / "config/loop-registry.json").write_text(json.dumps({
+        "schema_version": 2, "loops": {"example": row},
+    }))
+    absent = subprocess.CompletedProcess([], 113, "", "Could not find service")
+    with patch("runtime.loop.lm_loop_run.subprocess.run", return_value=absent):
+        _dispatch_reserved(["example"], current=current, agents_dir=agents)
+    with sqlite3.connect(root / "admission-v2.sqlite3") as db:
+        priority = db.execute("SELECT next_eligible_at FROM priorities WHERE owner_id=?",
+                              ("example",)).fetchone()[0]
+        occurrence = db.execute("SELECT owner_id FROM queue WHERE owner_id=?",
+                                ("example",)).fetchone()
+    assert priority == float("inf")
+    assert occurrence is not None
+
+
 def test_real_child_receives_sigterm_after_atomic_handoff(tmp_path):
     ready = tmp_path / "ready"
     terminated = tmp_path / "terminated"
