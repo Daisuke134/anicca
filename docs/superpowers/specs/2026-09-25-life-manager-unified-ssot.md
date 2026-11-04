@@ -25862,15 +25862,31 @@ flowchart LR
   P -. 所有者と条件の確認後 .-> W[受取walletまたは銀行]
 ```
 
-Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・状態/証拠取得、外部業務はLLM自身のbrowser、本人mail、既存許可済みPostizで行う。MaritimeとNaïveを一仕事で必ず二重起動しない。共通job/tenantの一担当を確定し、仕事と支払いの二重実行を防ぐ。NHC-01確認時の公式runtimeは専用v24/月10USD/task1USD/12時間cronで、定期inputは旧29USDC trace reviewだった。次のcandidate sourceはv25/Capafy-firstで、runtime反映はmain固定後の公式readbackで別に判定する。本節編集はcap・権限・cron・共有accountを変えない。
+Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・状態/証拠取得、外部業務はLLM自身のbrowser、本人mail、既存許可済みPostizで行う。MaritimeとNaïveを一仕事で必ず二重起動しない。共通job/tenantの一担当を確定し、仕事と支払いの二重実行を防ぐ。NHC-01初回確認時は専用v24/旧29USDC trace reviewだった。現在の公式runtimeはmain b412c1c0cd904243520d41f81af6e94a248f9216由来の専用v25/Capafy-first。月10USD/task1USD/12時間cron、Identity/context/model/tools/MCP bindingは維持し、agent systemとdeployment pin/inputの公式一致を確認する。設定反映を認証・公開・売上の完了とはしない。
 
 #### Capafy runtime切替の実装範囲
 
 正本NHC-01の有限read-only確認はses_k15tz8p3d9n6639ksqj4stt6dtで実行し、8tools、実費110622microUSD、自然end_turn/idleを確認。本人browserはCapafy公開画面へ到達し、capafy-route-audit.mdのwrite→readが成功。ログインは未確認、Publisher資格/team経路/camera条件は未確認。XPath直接click一件のprovider失敗を保持し、browser.actによる観測対象の指定を次に使う。agent自己申告の7toolsではなく公式event8toolsを実数にする。登録・公開・課金・送金・売上はこのrunでは実行0。API readbackはagent24/月10USD/task1USD、定期deployment24/12時間。最新spendは実行後に再取得する。認証情報生成だけで認証完了にはしない。
 
-次のbounded実装はconfig/naive-browser-company.jsonの旧BusinessRun専用pilotとconfig/naive-browser-company-deployment.jsonの旧inputをCapafyへ置換する。既存Identity/context/tools/model/月10USD/task1USD/cron/専用投稿先を維持し、25を次候補版とする。営業/配信/商品公開の許可は既存の所有範囲だけで、新規Publisher・既存seller変更・他owner操作・支出増額を追加しない。NHC-01の権限確認が済むまでは、公開情報による需要調査と新規商品のComputer内原稿/見本を進め、既存ownerの返答待ちを無関係登録や同じ認証失敗の反復へ置換しない。正式な専用認証/権限を実画面で確認してから同Publisher内の新規商品を公開する。人間の通常承認を追加せず、本人必須手順は不足事実として扱う。
+PR9196はconfig/naive-browser-company.jsonの旧BusinessRun専用pilotとconfig/naive-browser-company-deployment.jsonの旧inputをCapafyへ置換し、全CI PASS後にmainへ統合する。公式反映とreadbackも完了する。既存Identity/context/tools/model/月10USD/task1USD/cron/専用投稿先を維持し、25を採用版とする。営業/配信/商品公開の許可は既存の所有範囲だけで、新規Publisher・既存seller変更・他owner操作・支出増額を追加しない。NHC-01の権限確認が済むまでは、公開情報による需要調査と新規商品のComputer内原稿/見本を進め、既存ownerの返答待ちを無関係登録や同じ認証失敗の反復へ置換しない。正式な専用認証/権限を実画面で確認してから同Publisher内の新規商品を公開する。人間の通常承認を追加せず、本人必須手順は不足事実として扱う。
 
 受入は旧pilot指示の除去、Capafy業務の自然言語目標、同一Identity/context/予算/権限の不変、JSON妥当性、独立read-only review、CI/main、expected_version24から専用agentだけの更新とdeployment pin/入力の公式一致。その後の有限runで本人の需要証拠・新規成果物・保存再開を検証する。source反映、runtime反映、認証、公開、第三者売上は別の完了状態とする。SDKは設定・起動・readbackのみ、業務は本人browser/mail/許可済みPostizで行う。
+
+#### 現在の公式readbackと紹介依頼
+
+NHC-03は完了。main固定版からexpected_version24を条件に専用agentのsystem/metadataだけを更新し、同じdeploymentを25へpinする。公式agent25/systemとdeployment25/inputがsourceに一致し、model/tools/MCP binding/budget/Identity/cron等の不変チェックは全PASS。private receiptは`~/.local/state/naive-browser-company/v25-capafy-runtime-readback-20261104.json`。object key順序を意味的な差分と誤判定した最初のpreflightはmutation前に停止し、深い構造比較へ修正してから反映する。source/公式反映と商品公開/売上は別状態。
+
+NHC-02原稿run `ses_yfn5sy6kyvkgt5wcqsvtcg1ekr` はv24/専用Identity/有限cap250000microUSDで自然end_turn/idle、実消費76689microUSD。最初のHookAce goto/screenshot/view_imageは成功し、COCO/4.3/Sold1185のサイト表示を取得する。価格・paid revenueは未観測。その後internal_errorによる再試行とbrowser無応答30秒が3件発生するが、因果をvision非対応と断定しない。続いてNaïve本人が`products/capafy-new-skill/SKILL.md`、`example.md`、`capafy-product-plan.md`をwriteし、前2ファイルをreadする。商品候補はShort-Form Script Forge。商品原稿は存在するが公開・受注・納品・売上の証拠ではない。primaryの追加指示を介入として保持し、standalone無人完走としない。
+
+原稿で見つけた30秒台本の語数超過、入力にないoffer条件の補完、最初の画面取得成功を取り落としたplanを修正対象とする。別の有限v25/file-only run `ses_y0qjgm6w5za74nx2qtg60ewt0f` はbrowserを使わず、保存済み原稿の修正と別入力の一回試用を担当する。これは失敗の境界を分ける最小probeであり、browser障害の修復証明ではない。公式eventではread6件成功後、span.model_request→box_resume→internal_errorの再試行1件を確認する。browser/image呼出0でも再現するため、画像だけを原因にしない。有限時間上限でcancelし、公式cancelled/interruptedを確認する。停止直後のreadbackは5343microUSD/write0だったが、後続の公式eventでSKILL.mdの5526bytes write成功と消費39503microUSDが追加される。次runのreadも修正済みfrontmatter/語数範囲/default/入力にないoffer補完禁止を確認する。停止直後のログだけでwrite0と確定しない。example/plan修正とsmoke-testは未完。
+
+小さいwriteの境界probe ses_eva639mf9g237qyz1ys71vpr96はv25/同Identityでread→listing-draft.md write2489bytes→readの3tool成功、自然idle/end_turn、消費19358microUSD。browser0/retry0。160語以内の指示に対して全文394 whitespace wordsで長さ条件は未達。短い出品本文へ絞る修正を残す。これは保存再開/小さいwriteの証拠で、長い再生成のinternal_error修復や公開/売上の証拠ではない。最初のcap60000指定はpreflight quote超過で開始前402。既観測quote83553/85056microUSDを根拠に有限cap100000へ合わせ、月cap10USDは増額しない。session消費と月spendはComputer費/遅延計上を分ける。
+
+YC紹介依頼はDarshan/Nizzy/Ary/Connorの4人へ個別送信し、Slack履歴で送信を確認する。既送信のapplication review/10分office hour依頼と併走する。現在、4人の返答・紹介実施は未確認。Mariaは紹介の約束を保持するが実施完了とはしない。紹介と実売の両方を進め、人数でYC採択を保証しない。Grok/Muse/Capafy担当には既存Publisher内の専用認証経路とownerだけを照会し、既存販売商品やloopは変更しない。
+
+公式GitHub `https://github.com/Capafy/Capafy-skills` と公式Web公開ガイド `https://capafy.ai/developer/doc/2.1` はSKILL.mdのWeb upload経路を示す。業務CLIを導入せず本人browserで出品する最小経路を優先する。`https://github.com/trycua/cua`、`https://github.com/browser-use/browser-use` はComputer/記録の参考で、現行Naïveからの移行・追加installはしない。取得したnative screenshotは実画面の証拠だが動画録画・販売デモの完成とはしない。Publisher初回certificationは公式 `https://capafy.ai/developer/doc/1.3` に本人/法人書類と費用があり、camera必須かは当該実経路で確認する。既存Publisher内の正当な専用経路が未確定なのでNHC-01は未完。
+
+公式大会ページの再取得では、Naïveは11月7–8日/SF両日参加/Naïve SDK必須/live demoで、本人抜きの業務割合と実成果・判断・介入を説明する。1位のYC interviewは採択保証ではない。公開ページで事前開発の可否・持込み成果の採点範囲は未確認なので、準備済み部分と当日実行を分けて記録し、未確認を許可済みに置換しない。Maritime現規約は12月1日23:59 Pacificまで、実利用を伴う異なる1000人へ到達した先着3組を検証する。VM/agent/複数accountで利用者を水増ししない。米国外からの無料航空券は確認できず、スポンサー便は米国内の人に限定との記載を保持する。同一商品の運用成果と利用者獲得を別々に測る。
 
 #### 原子的な残TODOと現在cursor
 
@@ -25880,7 +25896,7 @@ Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・
 |---|---|---|
 | NHC-01 | 既存Capafy ownerの販売先/資格情報/automation/公開/精算条件をread-only照合する | 同Publisher内の正当なagent専用経路と各段階の条件。個人Gmail借用で代用しない |
 | NHC-02 | Capafyの短尺動画制作分野の成功商品の需要・成果物・価格・配信を調べ、一商品を選ぶ | 一次URL/観測指標/模倣する仕組み/自社素材/実行費の記録。売れている既存商品は変更しない |
-| NHC-03 | 選んだCapafy業務を既存Naïve設定/定期inputへ反映する | source→CI/main→専用agent/deployment公式一致。予算増額はこのspecで許可しない |
+| NHC-03・完了 | 選んだCapafy業務を既存Naïve設定/定期inputへ反映する | PR9196/main b412c1c0cd→公式agent25/deployment25一致、不変チェック全PASS。予算増額なし |
 | NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、自社/利用者の人間承認0、Capafy側の審査は別記録。自社側に必須人間手順があれば無人完了としない |
 | NHC-05 | 既存の自社無料配信経路で一商品を配信する | 投稿と商品到達先の実表示。重複投稿なし、広告費なし |
 | NHC-06 | 一件の第三者注文を自律納品し、支払/費用を照合する | 同じ注文の納品物/支払receipt/手数料/実費/介入数。内部送金は売上にしない |

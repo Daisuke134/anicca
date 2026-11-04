@@ -298,10 +298,11 @@ def build():
     )
     blocks=[preface]
     for x in slide_info:
+        source_label = "新規追加" if isinstance(x["source"], str) else f"詳細版{x['source']}枚"
         blocks.append(
             f"\n---\n\n## {x['page']:02d}｜{x['title']}\n\n"
             f"**章：** {x['chapter']}　**目安：** {x['minutes']:.1f}分　"
-            f"**元資料：** {'新規追加' if isinstance(x['source'],str) else f'詳細版{x['source']}枚'}\n\n"
+            f"**元資料：** {source_label}\n\n"
             f"### 読み上げ原稿\n\n{x['script'].strip()}\n"
         )
     SCRIPT.write_text("\n".join(blocks),encoding="utf-8")
