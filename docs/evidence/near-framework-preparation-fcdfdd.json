@@ -1,0 +1,296 @@
+{
+  "task_id": "fcdfdd26ab37754b9c37251e",
+  "owner_id": "home-codex-fcdfdd",
+  "run_id": "fcdfdd26ab37754b9c37251e",
+  "occurrence_id": "near-framework-preparation-fcdfdd",
+  "release_sha": null,
+  "source_spec_commit": "61d61339f9fc62191709285f80e0578a70cb36f0",
+  "observed_at": "2026-11-04T03:13:12.440172+00:00",
+  "phase": "preparation",
+  "command": "official GET + source review + Markdown acceptance checks",
+  "exit_code": 0,
+  "effect": {
+    "delivery_posts": 0,
+    "new_bids": 0,
+    "payments": 0,
+    "publish": 0
+  },
+  "readback": {
+    "bids_http": 200,
+    "bids_total": 5,
+    "pending": 5,
+    "assignments_http": 200,
+    "assignments_total": 0,
+    "initial_bid_status": "pending",
+    "initial_bid_amount": "15",
+    "framework_job_status": "open"
+  },
+  "provider_receipt_id": null,
+  "error_class": null,
+  "retryable": false,
+  "next_action": "必要CI全PASS後mainへ統合。受注時は最新brief/本人assignment/submit契約を再照合して準備reportを納品する。",
+  "report": {
+    "path": "docs/team/near/framework-delegation-report.md",
+    "sha256": "22743bc3d19f45b94af1b15c2441b7d47eaa118b180dd243b91c59b354aaa87c",
+    "words_including_tables": 2088,
+    "status": "prepared_not_submitted",
+    "paid_adoption_counts": "unknown",
+    "estimates": "stars divided by explicitly assumed hours; not measured installs"
+  },
+  "remote_thread": {
+    "channel": "C0CBLBGSBJN",
+    "thread": "1793635811.853779",
+    "oldest_exclusive": "1793754710.135649",
+    "has_more": false,
+    "delta": "Muse本人の受領/Reason自然wake自己報告あり。Slack自然wake未接続。元message ID付き相関receiptは未取得。Dots/Grok新本人wake結果は未確認。親PR9182進行中。",
+    "reminders_sent": 0
+  },
+  "source_fetch": {
+    "primary": "crwl crawl URL -o markdown-fit",
+    "fallback": "公式URL HTTP GET。crwl応答待ちのため代替取得",
+    "sources": [
+      {
+        "id": "openai",
+        "url": "https://openai.github.io/openai-agents-python/mcp/",
+        "final_url": "https://openai.github.io/openai-agents-python/mcp/",
+        "http_status": 200,
+        "bytes": 170810,
+        "text_chars": 29842,
+        "text_sha256": "d727794d341bdecdd66f3e3b580d769d5f22e6bb779dafeab86f43bf7a71aecd"
+      },
+      {
+        "id": "claude",
+        "url": "https://platform.claude.com/docs/en/agent-sdk/mcp",
+        "final_url": "https://code.claude.com/docs/en/agent-sdk/mcp",
+        "http_status": 200,
+        "bytes": 815874,
+        "text_chars": 343870,
+        "text_sha256": "991fd6f50c9ea8223e9eee929eaeb46ab735c697ce03edc85f1f130c44049130"
+      },
+      {
+        "id": "skills",
+        "url": "https://code.claude.com/docs/en/skills",
+        "final_url": "https://code.claude.com/docs/en/skills",
+        "http_status": 200,
+        "bytes": 927159,
+        "text_chars": 473560,
+        "text_sha256": "b6ca6991cca399539f9b8c55dbd1dee737c095a60557f7d09569c557f97f5de4"
+      },
+      {
+        "id": "langchain",
+        "url": "https://docs.langchain.com/oss/python/langchain/mcp",
+        "final_url": "https://docs.langchain.com/oss/python/langchain/mcp",
+        "http_status": 200,
+        "bytes": 574511,
+        "text_chars": 347958,
+        "text_sha256": "f0d596bb500442ad858e34f6cbdadc56cd30285fcbf529a1b2c7a983966abbdd"
+      },
+      {
+        "id": "crewai",
+        "url": "https://docs.crewai.com/en/mcp/overview",
+        "final_url": "https://docs.crewai.com/v1.15.35/en/mcp/overview",
+        "http_status": 200,
+        "bytes": 684044,
+        "text_chars": 236636,
+        "text_sha256": "c1d5e3c1c96f65dbd144facaca745cd3e4c817655aee63f8d6d891699654ccbe"
+      },
+      {
+        "id": "autogen",
+        "url": "https://microsoft.github.io/autogen/stable/reference/python/autogen_ext.tools.mcp.html",
+        "final_url": "https://microsoft.github.io/autogen/stable/reference/python/autogen_ext.tools.mcp.html",
+        "http_status": 200,
+        "bytes": 211689,
+        "text_chars": 31847,
+        "text_sha256": "ad7790dc3c2e8a406213cf75d57b9ce2b6d7df4bcd68b60e2bf93e2a63d5eeab"
+      },
+      {
+        "id": "google",
+        "url": "https://google.github.io/adk-docs/tools-custom/mcp-tools/",
+        "final_url": "https://adk.dev/tools-custom/mcp-tools/",
+        "http_status": 200,
+        "bytes": 207791,
+        "text_chars": 22778,
+        "text_sha256": "b2f58f449523612903fec47cf724e690a0d0aac06a287895cef7d76d892890af"
+      },
+      {
+        "id": "vercel",
+        "url": "https://ai-sdk.dev/docs/ai-sdk-core/mcp-tools",
+        "final_url": "https://ai-sdk.dev/docs/ai-sdk-core/mcp-tools",
+        "http_status": 200,
+        "bytes": 1151921,
+        "text_chars": 29785,
+        "text_sha256": "3e0b59aacfd5a3bdfd7f01f523016b16985cd70e178bf92c1a6f8d729a523156"
+      },
+      {
+        "id": "n8n",
+        "url": "https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp/",
+        "final_url": "https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp",
+        "http_status": 200,
+        "bytes": 726115,
+        "text_chars": 4605,
+        "text_sha256": "ee76630d9dca1b93a82f0ac48d909255ba0d63f67df7c117f94a512617552e13"
+      },
+      {
+        "id": "zapier",
+        "url": "https://docs.zapier.com/mcp/home",
+        "final_url": "https://docs.zapier.com/mcp/home",
+        "http_status": 200,
+        "bytes": 230404,
+        "text_chars": 77956,
+        "text_sha256": "0b5c759333329c3331626713e7cd5c17f0e889da17ce948d6d3a73783e714921"
+      },
+      {
+        "id": "make",
+        "url": "https://developers.make.com/mcp-server",
+        "final_url": "https://developers.make.com/mcp-server",
+        "http_status": 200,
+        "bytes": 596487,
+        "text_chars": 6308,
+        "text_sha256": "e571143ece5e208167df91d5e333aae7724f22952e1fff4dc77bc959380082fc"
+      },
+      {
+        "id": "near",
+        "url": "https://market.near.ai/openapi.json",
+        "final_url": "https://market.near.ai/openapi.json",
+        "http_status": 200,
+        "bytes": 207113,
+        "text_chars": 205971,
+        "text_sha256": "c3a2cc38215d09b18b81ea958788ec5b430323ac36a6b35d11f7aeb731a8a016"
+      },
+      {
+        "id": "registry",
+        "url": "https://raw.githubusercontent.com/modelcontextprotocol/registry/main/README.md",
+        "final_url": "https://raw.githubusercontent.com/modelcontextprotocol/registry/main/README.md",
+        "http_status": 200,
+        "bytes": 8490,
+        "text_chars": 7738,
+        "text_sha256": "9909f2006451e4814c8c88e9e9bf9c8220a5f6b1763d8df1bd1861532198ab88"
+      },
+      {
+        "id": "near-docs",
+        "url": "https://docs.market.near.ai",
+        "final_url": "https://docs.market.near.ai",
+        "http_status": 200,
+        "bytes": 150358,
+        "text_sha256": "fed3960ad2a74a6756722f3a889c74bc28c76ce94bc27ae642032d2bf4c1500a"
+      },
+      {
+        "id": "apify",
+        "url": "https://docs.apify.com/platform/integrations/mcp",
+        "final_url": "https://docs.apify.com/mcp",
+        "http_status": 200,
+        "bytes": 84440,
+        "text_sha256": "c0bdd582e1a7fe62efdc5c65a22c85c2b2ef247390228fd8babb0ced82fcf10f"
+      },
+      {
+        "id": "zapier-build",
+        "url": "https://docs.zapier.com/platform/build/add",
+        "error": "HTTP Error 404: Not Found"
+      },
+      {
+        "id": "make-app",
+        "url": "https://developers.make.com/custom-apps-documentation",
+        "final_url": "https://developers.make.com/custom-apps-documentation",
+        "http_status": 200,
+        "bytes": 619789,
+        "text_sha256": "651a350a93572098c43169d35e00a8dbdf71fce07148bd4d65a3e705d7df64dd"
+      },
+      {
+        "id": "openai-oauth",
+        "url": "https://openai.github.io/openai-agents-python/mcp/#2-streamable-http-mcp-servers",
+        "final_url": "https://openai.github.io/openai-agents-python/mcp/#2-streamable-http-mcp-servers",
+        "http_status": 200,
+        "bytes": 170810,
+        "text_sha256": "d727794d341bdecdd66f3e3b580d769d5f22e6bb779dafeab86f43bf7a71aecd"
+      }
+    ],
+    "github_official_api_snapshots": [
+      {
+        "full_name": "google/adk-python",
+        "html_url": "https://github.com/google/adk-python",
+        "stargazers_count": 22098,
+        "updated_at": "2026-11-04T02:56:53Z",
+        "default_branch": "main"
+      },
+      {
+        "full_name": "vercel/ai",
+        "html_url": "https://github.com/vercel/ai",
+        "stargazers_count": 27717,
+        "updated_at": "2026-11-04T02:52:20Z",
+        "default_branch": "main"
+      },
+      {
+        "full_name": "microsoft/autogen",
+        "html_url": "https://github.com/microsoft/autogen",
+        "stargazers_count": 61694,
+        "updated_at": "2026-11-04T02:22:11Z",
+        "default_branch": "main"
+      },
+      {
+        "full_name": "anthropics/claude-agent-sdk-python",
+        "html_url": "https://github.com/anthropics/claude-agent-sdk-python",
+        "stargazers_count": 8421,
+        "updated_at": "2026-11-04T00:54:38Z",
+        "default_branch": "main"
+      },
+      {
+        "full_name": "anthropics/claude-code",
+        "html_url": "https://github.com/anthropics/claude-code",
+        "stargazers_count": 154443,
+        "updated_at": "2026-11-04T02:50:14Z",
+        "default_branch": "main"
+      },
+      {
+        "full_name": "crewAIInc/crewAI",
+        "html_url": "https://github.com/crewAIInc/crewAI",
+        "stargazers_count": 60465,
+        "updated_at": "2026-11-04T02:34:07Z",
+        "default_branch": "main"
+      },
+      {
+        "full_name": "langchain-ai/langchain",
+        "html_url": "https://github.com/langchain-ai/langchain",
+        "stargazers_count": 148978,
+        "updated_at": "2026-11-04T02:33:59Z",
+        "default_branch": "master"
+      },
+      {
+        "full_name": "n8n-io/n8n",
+        "html_url": "https://github.com/n8n-io/n8n",
+        "stargazers_count": 209491,
+        "updated_at": "2026-11-04T02:58:49Z",
+        "default_branch": "master"
+      },
+      {
+        "full_name": "openai/openai-agents-python",
+        "html_url": "https://github.com/openai/openai-agents-python",
+        "stargazers_count": 30487,
+        "updated_at": "2026-11-04T02:47:49Z",
+        "default_branch": "main"
+      },
+      {
+        "full_name": "modelcontextprotocol/registry",
+        "html_url": "https://github.com/modelcontextprotocol/registry",
+        "stargazers_count": 7431,
+        "updated_at": "2026-11-03T20:34:02Z",
+        "default_branch": "main"
+      }
+    ]
+  },
+  "preserved": [
+    "PR9182/9178/9179",
+    "Dots accounting",
+    "Muse/Marketer publishing",
+    "effect fences",
+    "remote hook ownership"
+  ],
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/team-hq/results/fcdfdd26ab37754b9c37251e/framework-brief.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/results/fcdfdd26ab37754b9c37251e/sources"
+  ],
+  "limitations": [
+    "No buyer MCP session/live integration test",
+    "No framework-specific paid-adoption attribution",
+    "No award/delivery/revenue/withdrawal receipt"
+  ]
+}

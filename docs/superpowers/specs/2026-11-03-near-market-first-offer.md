@@ -133,3 +133,5 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 目的・範囲: 同owner NEARレーンの既存応募dd6e4f85を継続し、未準備のframework比較reportを一次資料から作る。owner home-codex-fcdfdd、origin/main由来branch task/home-codex-fcdfdd。全bid GET200で5pending、assignment GET200で0件、公式job GET200/openを確認する。初回計測/採算reportは再制作せず、他者の実装・親PR9182/9178/9179・投稿・会計・remote hook・effect fenceは変更しない。
 
 完了条件: 最新briefの全framework比較、remote MCP/OAuth/secret/payment/discovery、公開規模指標とpaid-tool採用の根拠または明示unknown、reach/effort推定上位3件の具体仕様、長時間jobの返却境界を英語1000–2500語と表で準備する。出典は実取得の一次資料のみ。語数/要件/出典・diff/source-boundaryを検証し、必要CI公式PASS後mainへ統合する。受注前submit/追加bid/送金/有料API0、準備を納品/売上へ数えない。現在cursor=一次資料取得→report→検証→CI/main。既存順序は変更しない。
+
+準備成果: `docs/team/near/framework-delegation-report.md`、英語2088語（表含む）、要求11frameworkとMCP Registryを比較。公式docs13件＋追加一次資料と公式GitHub10repoを取得。Claude Agent SDKのinteractive OAuth非実行、Zapier/MakeのMCP公開方向、buyer OAuth/worker tokenの区別、MCP購入頻度上限なしを出典付きで明記。公開star/工数推定で上位3案を具体化し、paid adoptionは未取得unknown。証拠→docs/evidence/near-framework-preparation-fcdfdd.json。現在cursor=必要CI→main、受注後に最新brief/submit契約照合。納品/追加bid/支払0。

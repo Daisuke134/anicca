@@ -64,6 +64,7 @@
 - [Codex / Manager] prepared shadowの既存host/CLI/Actions接続。所有: feat/manager-host-shadow-connection-20261023の限定host/CLI/workflow/tests/docs。既定・schedule OFF、単一owner、P0比較のみ。本番推論・新規課金・他laneは変更しない。
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
+- home-codex（fcdfdd）: NEAR本人GET5pending/受注0、framework英語report2088語と一次資料証拠を準備。未納品/売上未確認、次は必要CI→main→受注後契約再照合。
 - 2026-11-03 20:15 JST / home-codex-a4d5da / 応募済みNEAR採算report英語1615語・再計算CSV/Decimal assertionsと13原典を準備。5pending/受注0、remote差分は親案内1件で催促0。追加bid/納品/送金0。独立SHIP/Blocking0。次: 必要CI→main、受注時契約再読。
 - 2026-11-03 20:57 JST / Codex / Naive英語記事を自社Manager blogへ公開、既存75記事保持・76記事/44媒体、live本文/画像/hash/provider ready/money-path smoke一致。売上未確認。次: 本人inbound1通検査と自然run。
 - 2026-11-03 18:12 JST / home-codex-b00a48 / 初回NEAR計測report英語1931語と6原典照合を準備、4pending/受注0・納品0。親PR9143/9146保護。次: 文書CI→統合、受注時再読→納品。
