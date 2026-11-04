@@ -25991,9 +25991,23 @@ native agentは本人Computer/isolateに比較表と自社オリジナルScript 
 
 vendor返答だけを待つ前提を見直す。公式 https://vetta.sh/docs/api/sessions.md#respond-to-a-tool-confirmation はtool_confirmationsへのBearer sk_live_...の例を示す。API keyで通常tool確認へ応答する正式経路が利用できるかを、一時agentの非秘密ファイルread一件で検証する候補とする。SDK keys.createはname/scopesを受け、最小scopesはagents:read/sessions:read/sessions:write。実際に使えること、read_peopleにも適用できること、cloudで無人運転できることはまだ未検証で、文書例だけで解決済みにしない。
 
-次のspikeはfresh read-only scope review後、会社ownerの一回のbootstrapで専用API keyを作成し、秘密値はprivate Credential SSOTのexact service naive:policy-control-plane-probeへ直ちに保存する。既存credentialを変更せず、key/secretをprompt/repo/logへ出さない。browser/MCP/売買なしの一時Vetta/Flash agentで非秘密fixtureを書き、readをpermission askとして一件だけparkする。専用keyでその自分のsessionのGET/confirmだけを行い、実tool結果を確認する。最大period/task/session300000microUSDを、原本月残から既知の一時61509+価格265948microUSDを控除した残枠に収める。bootstrapに用いたowner session tokenでconfirmを代行してAPI key成功に見せず、human_session_required/forbiddenなら事実を記録する。key/session/agentは試験後に削除/revokeし原本不変を確認する。
+次のspikeはfresh read-only scope review後、会社ownerの一回のbootstrapで専用API keyを作成し、秘密値はprivate Credential SSOTのexact service naive:policy-control-plane-probeへ直ちに保存する。既存credentialを変更せず、key/secretをprompt/repo/logへ出さない。browser/MCP/売買なしの一時Vetta/Flash agentはhandoffs:false/multiagent:falseを明示し、tools.default_config.permission=deny、write=allow/read=askのみ有効にして非秘密fixtureを書き、readを一件だけparkする。SDK0.10.0はhandoffs未指定のcreate-time defaultがtrueで他agent/CEOへ到達するため、限定fixtureでは省略しない。fresh read-only reviewの最小修正であり、原本agentはliveでhandoffs:false/multiagent:falseを再確認する。専用keyでその自分のsessionのGET/confirmだけを行い、実tool結果を確認する。最大period/task/session300000microUSDを、原本月残から既知の一時61509+価格265948microUSDを控除した残枠に収める。bootstrapに用いたowner session tokenでconfirmを代行してAPI key成功に見せず、human_session_required/forbiddenなら事実を記録する。key/session/agentは試験後に削除/revokeし原本不変を確認する。
 
 仮説は「既に会社が許可したtool policyをSDK制御側で適用する構成」で、人のクリックや個人Google credentialを製品の停止点にしないこと。通常API key fixture成功だけで実認証gate解決とはせず、その後にread_peopleの限定検証・必要ならcloud制御側への最小実装/検証/main/公式反映を行う。業務の選択・サイト操作・メール認証・制作・販売は引き続きnative browser/mail agentの仕事で、Capafyの業務HTTP/script botへ置換しない。未知のtool、別owner、支出増額、wallet/card/operator.requestを一括allowする構成は作らない。旧=vendor返答確認のみ、新=返答確認＋文書が示す会社API key経路の有限検証、理由=日々の人間承認なしというユーザー成果へ進む正式な代替を検証できるため。現在cursor=NHC-01を維持する。
+
+#### 最新SDK・モデル・費用の一次資料再照合
+
+npmのlatestを再取得し、@usenaive-sdk/vetta=0.10.0、repository=usenaive/vetta-mono/packages/sdkを確認する。公式docs index https://vetta.sh/docs/llms.txt を起点にSDK/models/model-router/completion-window/pricing/harness-capabilities/budgets/policies/browser/email/sessionsを再取得し、会社APIで7モデルのretrieveとharnesses.listを照合する。取得証拠はprivate state/research-refresh-20261104に保存する。これは新規有償benchmark実行ではない。
+
+liveでdeepseek/deepseek-v4.1-flash、openai/gpt-6.1-terra、google/gemini-3.5-flash、anthropic/claude-haiku-5.5、minimax/minimax-m3.1-flash、vetta/autoはimmediateのみ、zai-org/GLM-5.2-FP8はimmediate/priority/looseを提供する。モデル別固定単価は https://vetta.sh/docs/api/models.md に未公開と明記される。immediateは最安providerではなく最速providerへrouteするため同じモデルIDでも実費が変わる。公式 https://vetta.sh/docs/concepts/model-router.md のvetta/autoはinput5USD/output25USD per million tokensの上限で見積り、実際に回答したモデルで精算する。これは固定料金や最安保証ではなく、再現比較には固定IDを使う。
+
+暫定推奨は通常の公開browser調査をVetta+DeepSeek V4.1 Flash/immediate、難しい制作/回復をTerra/immediateで比較する構成。原本pi/Terraをこの調査だけで変更しない。Flash公開価格3件の実測265948microUSDはroot補足2・確認クリック0を含み、無介入完走や同一課題のTerra比較とは扱わない。Terraの商品原稿完成184947microUSDも別課題なので単純な費用順位にしない。認証は両harness/modelでread_people確認待ちを観測し、モデル変更だけで解決としない。nativeメールも公式機能で、system domain上のinbox/受信wakeを提供するが、既存AgentMail経路をこの調査だけで置換しない。
+
+公式価格 https://vetta.sh/docs/platform/pricing.md はStandard20USD/月・同額credit、Pro200USD/月・同額credit、browser0.001667USD/分、model-driven act/observe/instruction-extract一回0.01USD、deterministic goto/click/type/screenshot/linksは追加action料なし。tool/compute/mediaは後計上のものがありtask capが全費用の絶対上限とは限らない。運転費はモデル・computer・browser・その他toolの合計と失敗/再試行を含める。
+
+公式LHTB https://vetta.sh/benchmarks/long-horizon-terminal-bench は同一GLM5.2のharness比較でAugust最終run、priority13/16・0.2332USD/solve、immediate12/16・0.2976USD/solve。SWE-Bench Pro https://vetta.sh/benchmarks/swe-bench-pro はSeptember最終run、同一GLM5.3FlashでVetta10/15・0.0398USD/solve、Codex8/15・0.0460USD/solve、Claude Code15/15だが料金非掲載。いずれもブラウザ販売/メール認証/利益/10K MRRや最新モデル順位を証明しない。trial-level rowsは非公開と明記され、完全再現可能な公開実験とは呼ばない。
+
+次の比較は同一入力・成果物判定・harness/identity/browser条件・capを固定し、失敗費も含む総費用/成功件数、介入数、時間を記録する。販売では第三者支払receiptから手数料/返金/全実行費を引いた利益を別記録する。現在cursor=NHC-01の認証確認境界。今回の調査で原本のmodel/deployment/資金は変更しない。
 
 #### 原子的な残TODOと現在cursor
 
