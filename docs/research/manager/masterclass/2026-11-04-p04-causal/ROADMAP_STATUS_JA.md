@@ -9,7 +9,7 @@
 - **説明済み：P02-3「分散・推定・信頼区間・再標本化」。**
 - **説明済み：P02-4「標本の偏り・欠測・重み付け・個人／世帯／研究の依存」。**
 - **説明済み：P02-5「公開データの権利・来歴・分割・検査」。**
-- **説明済み：P01-1〜P01-7、P02-2〜P02-5、P03-1〜P03-7、P04-1〜P04-6。今回P04-6「事前登録・方策の意思決定価値」を完全架空の40,000人によるpolicy-vs-policy RCTと750回のA/A反復で学習・実装。P05-1「Ontology・状態・時系列・証拠のread-only投影」を既存Manager Coreの再利用と人工5イベントの実験・26テストで学習。次はP05-2「実験ID・行動ID・証拠の共通形式」。P04-5の実在する公開RCTでの未見効果予測は未実施であり、研究検証として別途残る。P04-1〜P05-1の基礎122件と、追加の4方式query実験23件＝計145件の単体テスト成功。60分ジャーナルクラブ用に本編33枚（約42分）・討論15分・余裕3分を新設し、詳細研究資料は87枚に保存した（P05-1の2枚は付録、発表用33枚は不変）。** P02-1は旧8部で既習。「済」は講義と教材理解を指し、実人間への介入・因果効果・会社運営への統合が実証済みという意味ではない。
+- **説明済み：P01-1〜P01-7、P02-2〜P02-5、P03-1〜P03-7、P04-1〜P04-6。今回P04-6「事前登録・方策の意思決定価値」を完全架空の40,000人によるpolicy-vs-policy RCTと750回のA/A反復で学習・実装。P05-1「Ontology・状態・時系列・証拠のread-only投影」を既存Manager Coreの再利用と人工5イベントの実験・26テストで学習。P05-2「既存Job/Effect/Receipt/RuntimeEventの共通ID・証拠Trace」を実装し、完全架空の時点別結合と48テストを完了。TinyFish公式画面閲覧＋提供されたキーの一時利用によるListen Labs APIのGET 2件でHTTP 200を確認。次はP05-3「複数エージェント・ホストの担当と権限」。P04-5の実在する公開RCTでの未見効果予測は未実施であり、研究検証として別途残る。P04〜P05-1の145件とP05-2新規48件＝計193件の単体テスト成功。60分ジャーナルクラブ用に本編33枚（約42分）・討論15分・余裕3分を新設し、詳細研究資料は89枚に保存した（P05-1の2枚、P05-2の2枚は付録。発表用33枚は不変）。** P02-1は旧8部で既習。「済」は講義と教材理解を指し、実人間への介入・因果効果・会社運営への統合が実証済みという意味ではない。
 - **旧8部：既習として引き継ぐ。** 本人が完了したと申告した人工人口・人口合成の旧シリーズ。旧8部の各題名は不明なので、架空の8題を作らない。P02-1は再受講必須にしない。旧8部とP08は異なる。
 
 ## 0. 管理規則
@@ -92,8 +92,8 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 | ID | 内容 | 状態 | 完了の意味／残ること |
 |---|---|---|---|
 | P05-1 | 状態・対象・関係・Ontology／デジタルツイン | **今回（講義・既存調査・人工コード実験済）** | COM-B・BCT・BCIO、PROV-O、JSON-LD、SHACL、MCP/A2Aなどを一次資料で調査。既存Manager Core・graph skillのreuseを確認し、人工5イベントの2時点投影・JSON-LD試験を実行、26テスト成功。実ユーザー・本番・因果効果は未検証。 |
-| P05-2 | 実験ID・行動ID・証拠の共通形式 | **次** | 既存Manager Coreとruntime/contractsのIDを再利用し、予測から結果まで追跡。 |
-| P05-3 | 複数エージェント・ホストの担当と権限 | **残** | 重複実行を防ぐ。 |
+| P05-2 | 実験ID・行動ID・証拠の共通形式 | **今回（講義・人工E2E・実API読取）** | 既存共通JSON SchemaでJob/Effect/Receipt/RuntimeEventを検証して時点・run・effect・tenantで結合。Prediction/Decision/Experiment IDの正規接続は未解決と明示。40件のTraceテスト・8件のAPI安全性テスト成功。TinyFish公式画面＋Listen Labs実認証GET 2件HTTP 200（調査作成/公開/課金0）。現実の介入効果、本番統合は未実施。 |
+| P05-3 | 複数エージェント・ホストの担当と権限 | **次** | 権限スコープ、同意、停止、二重実行、実権限がない時のNO_ACTION。 |
 | P05-4 | 独立した結果確認・停止・復旧 | **残** | ツール成功と現実の結果を分ける。 |
 | P05-5 | shadow接続と一つの限定実行 | **残** | 既存運用を壊さず、評価後に適用。 |
 
@@ -437,3 +437,15 @@ P05-1の**追加技術演習**として、既存`Manager Core`を維持したま
 成果物：[詳細コード調査](P05-1_CODE_REVIEW_ECOSYSTEM_JA.md)、[仕様](https://github.com/Daisuke134/life-manager/blob/main/products/manager/docs/specs/2026-11-04-manager-ontology-query-evidence-reuse.md)、[生測定](evidence/P05-1_QUERY_BENCHMARK_SYNTHETIC.json)、[source/license](evidence/UPSTREAM_CODE_AND_LICENSE_AUDIT.json)、[人工E2E](evidence/P05-1_OFFLINE_END_TO_END_SYNTHETIC.json)。元のP01〜P12講義IDを変更しない。**次は引き続きP05-2**：予測ID／介入ID／レシート／独立結果の共通read-only契約。
 
 本番実ユーザー効果・商用利用権限・独自モデルのopen weight公開・万能の社会シミュレーション性能は**この回では未実証**。
+
+
+## 2026-11-04 P05-2：既存共通レコードの証拠Trace／TinyFish・Listen Labs実API
+
+P05-2の講義とコード実験を実施。[日本語全文](P05-2_JA.md)。既存`runtime/contracts/common-record.schema.json`と`runtime/loop/runtime_event.validate_runtime_event`を直接検証に利用し、4種類の人工Job/Effect/Receipt/RuntimeEventを時点・run・effect・provider・tenantの一致で結合。予測ID・判断ID・実験IDは既存レコード上で共通必須ではないため、**未接続のまま明示**して本番改変は行わない。Receiptを人間の効果や因果証拠へ昇格させず、因果根拠不足では既存Manager CoreのNO_ACTIONを維持した。
+
+- 実装：`experiments/p05_2_evidence_trace.py`、`experiments/p05_2_listenlabs_readonly_probe.py`。読取専用・人工データ・認証情報をファイルへ保存しない。
+- 実験：時間別に人工Traceの安全に結べるレコード数は0→2→4。遅延したReceiptを過去時点に混入させない。異なるtenant/run/effect、矛盾したレシート、処置済みを装う未確認効果を拒否。
+- API：TinyFishの実ブラウザでListen Labs公式Study API docsを調査（[実行記録](https://agent.tinyfish.ai/runs/73a88093-eeb9-4fd0-8f4c-a524d8978921)）。Mac miniから一時的な組織APIキーで`GET /api/public/v1/wallets`と`GET /api/public/v1/studies`を実行、いずれもHTTP 200。ウォレット1件を匿名件数のみ記録し、実調査/料金/回答データ/キー文字列は保存・変更なし。**Listen Twinsの予測APIは未確認**。結果`evidence/P05-2_LISTENLABS_AUTH_READONLY_SUMMARY.json`。
+- 単体テスト：P05-2のTrace 40件＋API読取安全性8件＝48件。既存P04〜P05-1の145件を含め、**193/193件成功**（`evidence/TEST_RESULTS_P04_TO_P05_2.txt`）。実APIのHTTP応答は別の実測であり、単体テストとは区別する。
+- 発表：厳選33枚の本編は**変更しない**。研究詳細版にP05-2を2枚（88・89枚目）追加し、89枚PPTX／89ページPDF／全89枚の日本語発表ノートへ更新。
+- 実世界での心理・事業の因果効果、実サービスの権限接続、実行レシートの独立証明は**未実施**。次の講義は**P05-3**。

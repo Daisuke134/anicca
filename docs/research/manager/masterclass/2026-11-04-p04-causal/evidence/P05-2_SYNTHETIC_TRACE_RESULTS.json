@@ -1,0 +1,196 @@
+{
+  "standalone_core_safety_checks": {
+    "prediction_proof_level": "P0",
+    "causal_support": false,
+    "unlinked_no_action_choice": "NO_ACTION",
+    "linked_to_synthetic_job": false
+  },
+  "study": "P05-2: synthetic sources validating pre-existing common-record schema",
+  "source_contract": "runtime/contracts/common-record.schema.json",
+  "contract_sha256": "8de82b08c7241a66037a932cc5d6ae7357d0c8885e6694c65bfd66f56a0ce484",
+  "pre_effect": {
+    "schema": "manager.research.read_only_trace.v0",
+    "source_contract_sha256": "8de82b08c7241a66037a932cc5d6ae7357d0c8885e6694c65bfd66f56a0ce484",
+    "known_at": "2026-11-04T09:00:00+00:00",
+    "synthetic_only": true,
+    "links": {
+      "tenant_id": "tenant-synthetic",
+      "job_id": null,
+      "run_id": "run-synthetic",
+      "effect_id": null,
+      "idempotency_key": null,
+      "receipt_id": null,
+      "experiment_id": null,
+      "prediction_id": null,
+      "decision_id": null,
+      "prediction_source_ref": null,
+      "decision_source_ref": null
+    },
+    "observed_evidence": [],
+    "n_source_records": 0,
+    "producer_linkage": {
+      "model_id": null,
+      "prediction_id": null,
+      "decision_id": null,
+      "status": "PREDICTION_AND_DECISION_PRODUCER_NOT_LINKED",
+      "note": "A standalone Manager Core safety check must not be joined to another run"
+    },
+    "effect_tracking": {
+      "has_effect_intent": false,
+      "has_provider_receipt": false,
+      "receipt_outcome": "MISSING",
+      "has_runtime_event": false,
+      "has_confirmed_independent_outcome": false,
+      "human_impact": "NOT_MEASURED",
+      "causal_attribution": "NOT_ESTABLISHED"
+    },
+    "action_permission": "NEVER_ISSUED_BY_TRACE",
+    "can_execute": false,
+    "can_prove_causal_effect": false,
+    "unresolved_contract_gaps": [
+      "prediction_id_not_in_existing_job_effect_receipt_runtime_event",
+      "decision_id_not_in_existing_job_effect_receipt_runtime_event",
+      "experiment_id_not_in_existing_job_effect_receipt_runtime_event",
+      "independent_outcome_not_authenticated"
+    ]
+  },
+  "post_effect_pre_receipt": {
+    "schema": "manager.research.read_only_trace.v0",
+    "source_contract_sha256": "8de82b08c7241a66037a932cc5d6ae7357d0c8885e6694c65bfd66f56a0ce484",
+    "known_at": "2026-11-04T09:00:10+00:00",
+    "synthetic_only": true,
+    "links": {
+      "tenant_id": "tenant-synthetic",
+      "job_id": "job-synthetic",
+      "run_id": "run-synthetic",
+      "effect_id": "effect-synthetic",
+      "idempotency_key": "idem-synthetic",
+      "receipt_id": null,
+      "experiment_id": null,
+      "prediction_id": null,
+      "decision_id": null,
+      "prediction_source_ref": "synthetic://prediction-demo",
+      "decision_source_ref": "synthetic://decision-demo"
+    },
+    "observed_evidence": [
+      {
+        "id": "job-synthetic",
+        "kind": "job",
+        "source_ref": "synthetic://job-ledger",
+        "known_at": "2026-11-04T09:00:00+00:00",
+        "source_hash": "e0160c02a0926fd767e1325dba576c6dca9f03a43561a39b372731735acc86e4"
+      },
+      {
+        "id": "effect-synthetic",
+        "kind": "effect",
+        "source_ref": "synthetic://effect-ledger",
+        "known_at": "2026-11-04T09:00:05+00:00",
+        "source_hash": "61e4b827c859766fc9590488b9b7fd3731696082492607665bc484628813fff1"
+      }
+    ],
+    "n_source_records": 2,
+    "producer_linkage": {
+      "model_id": null,
+      "prediction_id": null,
+      "decision_id": null,
+      "status": "PREDICTION_AND_DECISION_PRODUCER_NOT_LINKED",
+      "note": "A standalone Manager Core safety check must not be joined to another run"
+    },
+    "effect_tracking": {
+      "has_effect_intent": true,
+      "has_provider_receipt": false,
+      "receipt_outcome": "MISSING",
+      "has_runtime_event": false,
+      "has_confirmed_independent_outcome": false,
+      "human_impact": "NOT_MEASURED",
+      "causal_attribution": "NOT_ESTABLISHED"
+    },
+    "action_permission": "NEVER_ISSUED_BY_TRACE",
+    "can_execute": false,
+    "can_prove_causal_effect": false,
+    "unresolved_contract_gaps": [
+      "prediction_id_not_in_existing_job_effect_receipt_runtime_event",
+      "decision_id_not_in_existing_job_effect_receipt_runtime_event",
+      "experiment_id_not_in_existing_job_effect_receipt_runtime_event",
+      "independent_outcome_not_authenticated"
+    ]
+  },
+  "post_receipt_and_runtime_event": {
+    "schema": "manager.research.read_only_trace.v0",
+    "source_contract_sha256": "8de82b08c7241a66037a932cc5d6ae7357d0c8885e6694c65bfd66f56a0ce484",
+    "known_at": "2026-11-04T09:04:00+00:00",
+    "synthetic_only": true,
+    "links": {
+      "tenant_id": "tenant-synthetic",
+      "job_id": "job-synthetic",
+      "run_id": "run-synthetic",
+      "effect_id": "effect-synthetic",
+      "idempotency_key": "idem-synthetic",
+      "receipt_id": "receipt-synthetic",
+      "experiment_id": null,
+      "prediction_id": null,
+      "decision_id": null,
+      "prediction_source_ref": "synthetic://prediction-demo",
+      "decision_source_ref": "synthetic://decision-demo"
+    },
+    "observed_evidence": [
+      {
+        "id": "job-synthetic",
+        "kind": "job",
+        "source_ref": "synthetic://job-ledger",
+        "known_at": "2026-11-04T09:00:00+00:00",
+        "source_hash": "e0160c02a0926fd767e1325dba576c6dca9f03a43561a39b372731735acc86e4"
+      },
+      {
+        "id": "effect-synthetic",
+        "kind": "effect",
+        "source_ref": "synthetic://effect-ledger",
+        "known_at": "2026-11-04T09:00:05+00:00",
+        "source_hash": "61e4b827c859766fc9590488b9b7fd3731696082492607665bc484628813fff1"
+      },
+      {
+        "id": "receipt-synthetic",
+        "kind": "receipt",
+        "source_ref": "synthetic://receipt-ledger",
+        "known_at": "2026-11-04T09:01:05+00:00",
+        "source_hash": "43bb05d773ecd188f059fe9b7da5768ecdbcc9c7d9dd3dce5c3b85dbfc515f4e"
+      },
+      {
+        "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "kind": "runtime_event",
+        "source_ref": "synthetic://runtime-ledger",
+        "known_at": "2026-11-04T09:02:05+00:00",
+        "source_hash": "58c2cb835d67a9b5993bb93d96c68a31911a261d8740d282f0f6b2f8e9ef3e76"
+      }
+    ],
+    "n_source_records": 4,
+    "producer_linkage": {
+      "model_id": null,
+      "prediction_id": null,
+      "decision_id": null,
+      "status": "PREDICTION_AND_DECISION_PRODUCER_NOT_LINKED",
+      "note": "A standalone Manager Core safety check must not be joined to another run"
+    },
+    "effect_tracking": {
+      "has_effect_intent": true,
+      "has_provider_receipt": true,
+      "receipt_outcome": "uncertain",
+      "has_runtime_event": true,
+      "has_confirmed_independent_outcome": false,
+      "human_impact": "NOT_MEASURED",
+      "causal_attribution": "NOT_ESTABLISHED"
+    },
+    "action_permission": "NEVER_ISSUED_BY_TRACE",
+    "can_execute": false,
+    "can_prove_causal_effect": false,
+    "unresolved_contract_gaps": [
+      "prediction_id_not_in_existing_job_effect_receipt_runtime_event",
+      "decision_id_not_in_existing_job_effect_receipt_runtime_event",
+      "experiment_id_not_in_existing_job_effect_receipt_runtime_event",
+      "independent_outcome_not_authenticated"
+    ]
+  },
+  "new_authoritative_schema_created": false,
+  "production_data_ingested": false,
+  "real_provider_effect_executed": false
+}
