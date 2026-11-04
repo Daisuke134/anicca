@@ -1,6 +1,10 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
 
+並行cursor **HQ-STALE-CLAIM-FAIRNESS**: 受信のdisk条件が一時的に通った後、HQはcapacity/FIFO待ちのまま。実DBではplist不在・launchd disabledの複数SNS ownerに予約が付き、古いclaimed/effect_unknownの存在で現行only_if_unclaimedの停止は拒否される。履歴上の未確定effectと稼働中ownerは触らない。先の無損失添付修正と並行して、旧順=容量bounded化後に受信再測定、新順=予約選択の根本原因診断・無効新規予約の限定修復を並行実施。理由は現行受信が実際に枠待ちして未読依頼が残るため。
+
+受入: registryと同一ownerの確認、管理ドメインの実測、既存effect_unknown/claimedとactive lockを保護したうえで、停止が確認されたownerの新規queue予約だけを適切に保留する。再開時の復帰、並行claim/owner起動、DB failure、異なるscopeの事故防止を隔離テスト・独立reviewで証明する。停止不能の記録は公式照合まで保持し、他ownerのプロセス・provider・cloud設定を変更しない。main由来release反映後、自然受信と実際の着手を計測する。
+
 現在cursor **HQ-REASON-ATTACHMENTS**: Reason受信は添付filesを保存せずACKするため、本人が添付した内容をworkerへ渡せない。上流の受信fileは本人host上のinboxに保存され、既読後は保持期間が1日である。順序を従来の容量bounded化→本件から、本件の無損失受信→容量bounded化へ変更する。理由は既存の通常入力で依頼内容を失う具体的欠陥が見つかったため。受信とACK以外のownerや進行中effectは変更しない。
 
 受入: 添付の正本を期限切れ前に受信taskへ耐久保存してworkerが読めること、保存不可能な依頼はACKしないこと、別の受信依頼を継続できること、再取得が重複しないこと。提供pathの安全境界・symlink・UTF-8/上限・秘密値とfile消失を検証し、ACK前の保存失敗を実SQLiteで確認する。CI、独立review、main由来release、自然受信/ACK/実作業の公式readbackを経て初めて完了とする。
