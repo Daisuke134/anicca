@@ -1367,6 +1367,54 @@ class ReasonInboxTests(unittest.TestCase):
                 self.reason.ack.assert_not_called()
                 self.assertEqual(self.tasks(), [])
 
+    def test_paged_reason_cursor_is_committed_before_ack_and_reused(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        cursor = {"version": 1, "mailbox": "daisuke/hq-codex",
+                  "after": [1, self.message_id], "through": [2, "next-message-0001"]}
+        self.reason.inbox.return_value.update(next_cursor=cursor, holds=[])
+        def ack(ids):
+            with self.runtime.connect() as database:
+                row = database.execute("SELECT value FROM meta WHERE key='reason_page_cursor'").fetchone()
+            self.assertEqual(json.loads(row[0]), cursor)
+        self.reason.ack.side_effect = ack
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.reason.inbox.assert_called_with(paged=True, cursor=None)
+        self.reason.ack.side_effect = None
+        self.reason.inbox.return_value.update(messages=[], next_cursor=None)
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.reason.inbox.assert_called_with(paged=True, cursor=cursor)
+        with self.runtime.connect() as database:
+            self.assertIsNone(database.execute("SELECT 1 FROM meta WHERE key='reason_page_cursor'").fetchone())
+
+    def test_paged_reason_oversize_hold_is_durable_and_never_acked(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        held_id = "held_message_0000000000001"
+        cursor = {"version": 1, "mailbox": "daisuke/hq-codex",
+                  "after": [1, held_id], "through": [2, "next-message-0001"]}
+        self.reason.inbox.return_value.update(messages=[], next_cursor=cursor,
+            holds=[{"id": held_id, "sent_at": 1, "reason": "message_too_large"}])
+        result = self.runtime.receive()
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["reason_error"], "reason_page_hold")
+        self.reason.ack.assert_not_called()
+        with self.runtime.connect() as database:
+            hold = database.execute("SELECT value FROM meta WHERE key=?", ("reason_page_hold:" + held_id,)).fetchone()
+            saved = database.execute("SELECT value FROM meta WHERE key='reason_page_cursor'").fetchone()
+        self.assertEqual(json.loads(hold[0])["reason"], "message_too_large")
+        self.assertEqual(json.loads(saved[0]), cursor)
+
+    def test_paged_reason_failure_does_not_advance_cursor_or_ack(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        self.reason.inbox.return_value.update(next_cursor={"version": 1}, holds=[])
+        with mock.patch.object(self.runtime, "insert_task", side_effect=OSError("disk full")):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        with self.runtime.connect() as database:
+            self.assertIsNone(database.execute("SELECT 1 FROM meta WHERE key='reason_page_cursor'").fetchone())
+
     def test_reason_queue_failure_never_acknowledges(self):
         self.enabled()
         with mock.patch.object(self.runtime, "insert_task", side_effect=OSError("disk full")):
