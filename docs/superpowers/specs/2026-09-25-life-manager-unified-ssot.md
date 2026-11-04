@@ -25959,6 +25959,14 @@ read_people境界の技術照会を送信する。Dais Slack #agents-hqの既存
 
 YCハッカソン既存chatへもDaisの依頼済み連絡として英語の技術質問を一件投稿し、Page.reload後にDaisuke名義・本文一致・本文側の一件・空のcomposerを公式UIで確認する。https://messages.ycombinator.com/messages/282272#message-3105445 。private yc-provider-question-send-20261104.jsonにdraft SHA/送信/再読込readbackを保存する。sidebarの最新previewとeditorのzero-width空行を本文件数/内容の不一致と混同せず、既存紹介文は変更しない。既存YC accountへの通常メール認証は連絡用のroot操作であり、Managerの個人Google不要・Naïve単独認証/収益の実証へ算入しない。ログインコードはprivate Credential SSOTで受取/使用後に秘密値を除去し、会話・repo・logへ出さない。providerの回答/設定解決はまだ未確認。次はこの技術照会の回答とPR9211の最新head CIを確認し、根拠のある修正が得られるまで同型の有償認証/確認解除を繰り返さない。
 
+#### NHC-02の公開価格照合を並行実行する
+
+PR9211は全CI PASS後main 07f7889926ae92b78e247cb1b347e11ea90e6d1cへ統合済み。Naïveのread_people技術照会は送信/再読込readback済みで、直近の表示では回答未確認。同型の有償認証/確認解除を繰り返さず、主cursor=NHC-01を維持して、独立して公開前に必要なNHC-02の価格/有償需要の照合を進める。旧=認証回答確認のみ、新=回答確認と公開価格照合を並行する。理由=原稿は完成しているが価格未確定で、vendor回答を待つ間に次の販売行動の依存条件を減らせるため。売上目標・無人契約・残14TODOは縮めない。
+
+原本27の設定を変更せず、一時的なVetta/DeepSeek V4.1 Flashのnative browser agentでCapafyの公開商品画面を読む。専用Identity/contextを使い、browser設定は原本と同一、MCP/メール/購入/送金/配信能力なし、登録/認証/既存商品変更なし。period/task/session上限は300000microUSD。原本月残枠と既知の一時試験61509microUSDを事前確認し、追加購入/全体cap増額はしない。対象はHookAce、Video Hook Forensics、Dola AI Video Storyboard Assistant。実際のUIから商品URL・無料/有料・周期/価格/回数・公開需要指標とその限界を記録し、売上額やMRRへ推測変換しない。旧snapshotは二者がdownload/oneTimeFee=0、HookAceがweekly9.99/monthly19.99/yearly239.88USDだが、live表示を得るまでは現行価格と断定しない。
+
+native agentは本人Computer/isolateに比較表と自社オリジナルScript Forgeの一つの価格仮説を保存しreadで照合する。20%platform feeを前提に計算する場合も、Capafy上の実model/実行費・返金・課税等が未実測であることを明示し、制作run費0.184947USDをそのまま一注文のCapafy原価へ転用しない。tool確認が出た場合はrootが解除せず状態を記録する。終了後はartifact/費用を保存し一時agentだけを削除、context revokeは行わない。原本Identity/credential/deploymentを維持する。これは価格仮説と公開需要の証拠であり、認証/公開/注文/利益/MRRの達成ではない。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
