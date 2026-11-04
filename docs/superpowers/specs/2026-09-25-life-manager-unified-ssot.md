@@ -26035,6 +26035,10 @@ Computer configはconfig/naive-browser-company-computer-probe.json。1vCPU/1024M
 
 売上証明の完了条件: 同じcloud agent/session/product idの登録→新規商品の公開→第三者注文→納品→支払い受領のprovider receiptを対応づけ、売上総額・手数料・返金・モデル/Computer/browser費・純利益を別々に記録する。platform残高と銀行/crypto着金を分け、残高だけで出金済みとしない。自己購入/テスト金/既存別accountの売上をNaive実収益へ混ぜない。録画は実作業と公式注文/残高画面を示し、待機・会社controller decisions・root補足を含む介入数を開示する。現在はNaive確認売上$0、登録/公開/配信/有料注文/実着金/成功録画はいずれも未達。現在cursor=NHC-01。
 
+正式CEO test ses_shspsmw24rfebvr8xbr5htvej4では、CEO登録・限定driverでsession create/confirm・tool検索は成功したが、検索が返したcomputers_browser_run_actionをnative computer.tools_executeが通常名/namespace付き名とも不存在と拒否した。browser未開、mail未読、費用10079microUSD。raw MCP catalogは366件、対象index208、公式native MCP上限100件であり、打切り順の仮説は有力だが未確定。root会社ownerの無料read-only比較ではtools_execute経由とdirectのcomputers_browser_getが同じAPI404に到達し、API invoker全体の故障ではなくnative登録/dispatchまたは派生権限との境界へ狭まる。private formal-ceo-browser-cleanup-readback-20261105.jsonは13checks true（live key一覧不在・再revoke404・browserGET404を具体的に記録）、CEO null/Computer paused/原本27保持。売上/auth未達。
+
+次の単一仮説は、公式tools.configsでMCP catalog全toolを明示denyし、computer.computers_browser_run_actionだけpermission:askにすることで必要toolがnative登録へ届くか、である。unlisted MCPがdefault denyでもaskになる仕様に対応する。tools_search/tools_executeも明示deny、全件名は同じlive catalogから取得し、target以外enabled:false/permission:deny。通常会社key driver・CEO正式登録・原本非変更・mail無しpublic3actionsは維持。期間8分、agent cap150000、infra50000（public3 deterministic actionのみ、VM/browser8分約22216で留保内）、上限合計200000を残枠内で再計算する。first100切捨て後のpolicy適用であればこの案も不成立なので、同じ有償再試行を繰り返さない。MCPsession driverのallowlist継承は文書保証なし、確認routeもlive catalogにないため現時点では採用しない。
+
 Reason Networkではlive rosterのdaisuke/dots-one@htch-runtimeへmessage7ZRZ6P8SN7SSDC18WDWP36KKA9をdelivered確認。Slack Muse/Grok threadへts1793804032.348049を送信しprovider link取得。既存loop/account変更は頼まず、成功browser方式とCAPAFY参照先のみ問い合わせる。公式会社template ai-automation-agencyはGmail/毎send人の承認を明記しており、no-human収益の成功例とは呼ばない。既存capafy-autopublish/BEST_PRACTICESのHook Lab34.88USD等は過去記録として読むだけで、今回Naiveの売上へ足さない。
 
 #### 最新SDK・モデル・費用の一次資料再照合
