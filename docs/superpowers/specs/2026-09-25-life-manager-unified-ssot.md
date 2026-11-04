@@ -26091,7 +26091,7 @@ liveでdeepseek/deepseek-v4.1-flash、openai/gpt-6.1-terra、google/gemini-3.5-f
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-00**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
 
-現在のprovider readbackはApp active、permissions empty、`NAIVE_API_KEY`未設定、Computer paused、専用operatorなし。既存deploymentはbranch由来でmainのimmutable releaseではないため、browser/business callの実行対象にしない。org credits約20.14 USDはcompute残高であり売上ではない。`GET /v1/listings` は空配列。第三者注文・支払・精算・着金の証拠は0。
+現在のprovider readbackはApp active、permissions empty、`NAIVE_API_KEY`未設定、Computer paused、Appに束縛されたoperatorなし。既存deploymentはbranch由来でmainのimmutable releaseではないため、browser/business callの実行対象にしない。原因境界も確認済み: `anicca-ceo` の9時日次deploymentはscheduledだが、CEO agentの`browser`/`apps`はdisabledで、最新runは`budget_paused`・消費0・computerなし。既存`anicca-browser-operator`はbrowserを持つが`apps`がdisabled/denyでこのAppに未接続。既存CEO/browser operatorは変更せず、NHC-00で専用agentを作る。`GET /v1/blueprints/installs`と`GET /v1/listings`は空配列、`GET /v1/listings/checks`は`404 not_found`。org credits約20.14 USDはcompute残高であり売上ではない。第三者注文・支払・精算・着金の証拠は0。
 
 | ID | 一つの作業 | 完了の証拠 |
 |---|---|---|
