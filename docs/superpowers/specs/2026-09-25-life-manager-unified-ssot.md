@@ -25758,16 +25758,101 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 最新の残TODO順（旧順序を上書き、変更理由は実測したpause境界がハッカソンの業務完走を妨げるため）: 旧順はチーム返信→複数model→非公開suite→独自family→managed tenant。新順は(1)Naïveのagent/session予算・予約見積・version pinを診断し、既存spend cap内で一業務の完走を作る。残高top-upだけで直さない。既存owner/sourceとGrok/MuseのVM/providerを照合する (2)同じtask/seed/model/予算でNaïve/他harnessを比較し、複数modelは同一harnessで比較 (3)Clipping/Short Form access、残container suiteの正確なsliceと実行 (4)未被覆の納品/復旧/介入familyだけを独自課題にする (5)規約4.2の許諾範囲とtenant/権限/予算/永続結果/継続運転を接続 (6)ハッカソンlive demoと事前開発の開示。現在cursorは(1)。既存の外部effectと他ownerのloopは変更しない。
 
 
-### Naïve browser company — Daisの最新の実行方式
+### Naïve browser company — Capafy-first / No human in the loop
 
-目的: Grok/Muse/Dots/Codexと同じLLM＋Computer/browserの形をNaïve自身の実行環境へ接続し、画面を観測→判断→click/type→結果確認で収益業務を完走する。業務script、業務API、固定workflowを収益判断の主経路にする案を上書きする。SDK/APIはagent設定、予算、session、証拠取得という基盤操作にだけ使う。
-範囲: config/naive-browser-company.jsonの専用担当、同じsourceのhosted適用、browser toolの実操作、認証/保存状態、既存ownerとの調整、公式readback。既存のCEO/builder等の設定・cron・Mac/browser/他VMは変更しない。売れている商品は変更しない。
-設計: pi＋Postiz read/短文/長文記事の実callを確認したanthropic/claude-haiku-4.5（browser完走は別途検証）、外部業務操作はbrowserと本人専用のemail.inboxes/read/send、Computerのread/writeは作業メモと成果物だけに使い、shell/業務HTTPは与えない。MCPは明示依頼されたPostizのintegrationList/integrationSchema/postsListTool/integrationSchedulePostToolだけを許可し、指定Xの新規campaignに限定する。既存Naïve runtimeへ直接定義し、独自agent frameworkや第二schedulerを作らない。専用budgetは月5USD/max_task1USD、既存残高内・追加入金なし、標準deploymentを専用Identity・12時間毎UTCに固定する（自然runは別検証）。通常の登録・認証・商品作成・公開・顧客対応に人間の承認段階を置かない。browserは5分timeoutとし、時間課金は終了時精算で事前holdされないため、agent/session capと別に一session最大約0.008335USDを見込んで実費を確認する。外部公開は他writerの対象を変更せず、新規の所有対象が確定してから実行する。
-比較した案: 既存script移植はDaisの明示指示に反するため不採用。Macのbrowserを遠隔操作する案はNaïve自身のComputerという条件を満たさないため初回方式にしない。Naïve標準browser toolをモデルが使う方式を採用する。
-完了条件: (1)Grok/Muse/Dotsの実手順/ownerを照合 (2)Naïve側のagent・browser/Computer・モデル・予算を公式readback (3)実際の画面観測とclick/typeをtool eventと変化後の画面で確認 (4)認証済み業務と外部結果を確認 (5)同じ担当の再開と所有する継続運転を確認。市場調査だけを公開/売上完了にしない。秘密値はmodel prompt、Git、chatへ出さない。
-実行順更新: 旧cursorは予算診断→harness/model比較。変更理由はDaisが業務の実行方式をbrowser/computer-useに明示訂正したため。新順はBROWSER01専用担当定義/main→BROWSER02 hosted browser実操作→BROWSER03 login前のidentity/空context/agent限定grant準備・認証・owner調整・一業務→BROWSER04保存済contextの再開/継続運転→既存benchmark比較。旧Google診断時点のcursorはBROWSER03のmanaged-browser Google OAuth境界。BROWSER02の実操作と、BROWSER04の別sessionメモ再読取は確認済み。収益業務と継続deploymentは未完。
-チーム証拠: Muse Relayは返答済みで、Naïve統合ownerではなく最小推論N1のみ確認できると回答。Grok/Muse/Dotsへ改めて自身のcomputer/browser操作手順・最近の結果・owner・skillをReason照会し、Slack既存threadにも訂正を送る。queuedを担当本人の実行証拠にしない。
+この節がNaïve/Cloudの製品契約・現在cursor・残TODOの正本。下に残る版別のmodel・cap・登録probe・実行順は当時の履歴であり、この節を上書きしない。planは実行証拠の参照先で、別TODO正本にしない。
 
+**目的と明示する価値:** Life Managerは「No human in the loop」を中心価値にする。第一ユースケースは**Capafyで需要調査→自社所有商品の制作→正式公開→配信→販売/納品→収益/費用確認**。他の販売先は同じManagerの展開先で、別商品ではない。Substack/n8n等の無関係な登録や受信箱試験、BusinessRun trace reviewを第一ユースケースに置かない。文化・製品要件としてNo human in the loopを明記し、実測済みの無介入完走・売上とは区別する。
+
+**二つの成果目標:** 先に自社のNaïve Managerによる継続課金商品のUSD10,000 MRRを目指す。同時に紹介依頼・大会準備・外部顧客獲得を進め、同じLife Managerの外部サブスクUSD10,000 MRRを目指す。自社事業売上、利用者の外部売上、Manager利用料を別会計にする。買い切り/受託/単発29USDCをMRRへ算入しない。100万USD MRRはその先の目標で、達成値ではない。売上・返金/手数料・実行費・差額を別表示し、成功例一つで他人の利益を保証しない。
+
+#### 認証の三層と無人契約
+
+| 層 | 必要なもの | 必須にしないもの |
+|---|---|---|
+| 利用者が自分のManagerを見る | 端末内の匿名認証sessionから開始。既存Supabaseの匿名認証を再利用する設計。tenant/job/ledgerの所有境界を守る | Google、メール入力、password、Calendar/Gmail権限、日々のprompt、目標/予算入力 |
+| Managerが販売先で働く | 会社/agent所有のIdentity・業務用inbox・販売先credential・必要な正式権限。browserで観測/判断/操作する | 利用者の個人Google/Gmail/password、他担当の共有profile流用、手作業での各業務承認 |
+| 利用者が残高を受け取る | 残高の権利者を検証し、選んだchain/tokenの受取addressまたは正式な銀行/精算条件を扱う | wallet seed/private key/Google passwordの提出。addressだけで残高の所有者と見なすこと |
+
+匿名sessionは公開アクセス/anon keyと異なる。cookie削除/別端末では復旧できないため、回復可能な所有者bindingを実装してから残高移管を提供する。Googleは任意の復旧/既存利用者の手段として残せるが開始gateにしない。通知メールも任意で、メールを持たない利用者はアプリ内の結果画面で使える。匿名の開始で無制限に有料VMを作らず、会社側の既存spend-cap・tenant割当・rate limit内で動かす。個人情報なしの開始と、誰でも他人のManager/売上を操作できる状態を混同しない。
+
+**No human credentialsの意味:** 利用者の外部サービス資格情報に依存しない。Naïve org/API key・会社のcompute支払・会社/agent自身のservice credentialまで存在しないという意味ではない。service上の契約主体/Publisher権利者もagentのメールだけで変更されない。単一会社Publisherで得た収益を新しい匿名利用者へ自動帰属させず、tenantと権利者の台帳/契約を先に確定する。
+
+**No human in the loopの受入:** 許可された業務の選択、制作、公開、販売、納品、支払い確認が日々の人間指示/承認なしで動く。初期の会社基盤設定、途中の人間介入、primary AIによる再指示/代行、失敗、復旧、費用を記録する。人間0でも外部AIが代行した工程は「Naïve単独完走」にしない。外部サービスが本人/KYC/人間操作を必須とする経路は無人実証対象から外し、架空情報や別accountで迂回しない。自動操作を禁止するproviderで承認なし操作を強行しない。
+
+#### Capafy第一ユースケースと他プラットフォーム
+
+Capafyでは既存の正当なAnicca Publisher/担当ownerを保護し、販売実績のある商品は変更しない。規約は公開前に自動審査とCapafy側のhuman reviewがあると明記する。No human in the loopは自社/利用者による業務指示・操作・承認を要しない運営契約を指し、買い手や販売先の審査担当者まで存在しないとの主張ではない。外部審査待ちは自動で状態確認し、自社の人間代行・承認と別に記録する。第一作業は既存ownerから専用agent業務資格情報/team権限・automation条件・受取条件を照合すること。同一運営者のPublisherをagent数/VM数だけ増殖しない。現在の規約2.9は共通支配下につき1Publisher（追加は書面許可）。既存人間Gmail/sessionを借りて動いた場合は「利用者の資格情報不要」を実証したことにしない。
+
+| 対象 | 用途と優先度 | 残る条件 |
+|---|---|---|
+| Capafy | 第一。需要のあるSkill/成果物を制作・販売し、subscriptionを継続する | Publisher Certification/正式公開確認、agent専用認証、automation許諾、精算/権利者の実画面確認 |
+| PromptBase | 次候補。既存商品・担当の販売実績を照合して再利用 | 今回FAQ取得はsecurity verification。最新精算/KYC/automation条件は未取得、no-KYCと記載しない |
+| Whop Content Rewards | 他販売先候補。許諾素材の制作/配信による成果報酬 | キャンペーン承認/AI制作可否/出金条件の確認。単発報酬はMRRではない |
+| itch.io / Gumroad | デジタル商品の販売候補 | 税務/決済/本人確認の条件あり。「口座だけ・確認なし」の経路としない |
+| 自社USDC受取/x402 | 並行する受取方式候補。platform制約と独立に調査 | x402は販売市場でも定期課金でもない。買い手・販売/納品・signer/実決済と費用の実証が別途必要。browser業務をAPI販売botへ置き換えない |
+| ClawTasks | 現在の有償候補から除外 | 公式docsはfree-task only。旧有料説明を現収益へ転用しない |
+
+CapafyのSalesは7日Dispute Window中のpending表示で、Proceedsも精算前は出金不可。最低payoutは100USD、月末後15日以降の開始、必要なpayout detailsとKYC review等の保留条件がある。**「売上を作ってから受取情報を聞く」は製品方針だが、全providerでKYCが最後だけ/口座だけで済むとの事実主張は禁止**。登録/公開/販売/精算/出金の各段階で条件を照合し、条件未充足なら現在地を明示する。銀行着金、platform残高、on-chain着金を区別する。
+
+#### UXと構成
+
+商品説明は https://aniccaai.com/lm 、Cloud説明は https://aniccaai.com/maritime?source=landing&lang=en 。現在の公開CTAはRailwayの /lm?start_calendar=1、実コードweb-page.jsもCalendar開始を優先する。Google/Calendarを要求しない稼ぐ入口は**未実装**で、説明だけで達成済みにしない。
+
+目標UX: スマホで開始→匿名session/利用者別Managerを割当→ManagerがCapafyの仕事を自律選択/遂行→アプリに仕事/成果物/売上/費用/差額を表示→任意の通知→残高の受取を望む段階で所有者/受取先を確認。チャットは補助。日々のprompt/通常業務approvalは要求しない。収益ゼロ/失敗/未精算も実状態を表示し、稼げたとの通知を捏造しない。
+
+```mermaid
+flowchart LR
+  U[スマホ・匿名session] --> P[Life Manager・利用者別記録]
+  P --> N[Naïve Manager]
+  N --> B[自身のComputer・Browser]
+  I[agent業務用Identity・mail・vault] --> B
+  B --> C[Capafy・第一ユースケース]
+  B -. 次段階 .-> O[他の販売先]
+  C --> E[注文・納品・支払の証拠]
+  E --> P
+  N --> F[推論・Computer・配信の費用]
+  F --> P
+  P --> R[仕事と収支の報告]
+  R --> U
+  P -. 所有者と条件の確認後 .-> W[受取walletまたは銀行]
+```
+
+Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・状態/証拠取得、外部業務はLLM自身のbrowser、本人mail、既存許可済みPostizで行う。MaritimeとNaïveを一仕事で必ず二重起動しない。共通job/tenantの一担当を確定し、仕事と支払いの二重実行を防ぐ。現在確認できるsourceは専用v24/月10USD/task1USD/12時間cronで、定期inputはなお29USDC trace review。Capafy-firstへの**runtime反映は未実施**。本節編集はcap・権限・cron・共有accountを変えない。
+
+#### 原子的な残TODOと現在cursor
+
+旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
+
+| ID | 一つの作業 | 完了の証拠 |
+|---|---|---|
+| NHC-01 | 既存Capafy ownerの販売先/資格情報/automation/公開/精算条件をread-only照合する | 同Publisher内の正当なagent専用経路と各段階の条件。個人Gmail借用で代用しない |
+| NHC-02 | Capafyの成功商品の需要・成果物・価格・配信を調べ、一商品を選ぶ | 一次URL/観測指標/模倣する仕組み/自社素材/実行費の記録。売れている既存商品は変更しない |
+| NHC-03 | 選んだCapafy業務を既存Naïve設定/定期inputへ反映する | source→CI/main→専用agent/deployment公式一致。予算増額はこのspecで許可しない |
+| NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、自社/利用者の人間承認0、Capafy側の審査は別記録。自社側に必須人間手順があれば無人完了としない |
+| NHC-05 | 既存の自社無料配信経路で一商品を配信する | 投稿と商品到達先の実表示。重複投稿なし、広告費なし |
+| NHC-06 | 一件の第三者注文を自律納品し、支払/費用を照合する | 同じ注文の納品物/支払receipt/手数料/実費/介入数。内部送金は売上にしない |
+| NHC-07 | 保存状態から次の有料業務を完走する | 別注文・継続runの証拠、重複請求0、human/外部AI介入を実数表示 |
+| NHC-08 | 実運転の英語デモを作る | スマホ入口/Naïveの判断/販売/納品/支払い/費用を録画。事前準備と当日成果を分ける |
+| NHC-09 | 継続課金商品の自社MRRの基準値を一回確定する | 有効subscription/解約/返金/手数料/実行費を照合した基準値と次の一実験。USD10Kまで各実験→再計測を繰り返し、一時売上をMRRへ置換しない |
+| NHC-10 | 既存WebにGoogle不要の開始sessionと結果画面を接続する | 実スマホで開始→利用者分離→Managerの実結果/任意通知。session消失/他人の結果アクセスを検証 |
+| NHC-11 | 利用者が受取先を登録する際の所有者bindingを接続する | 回復可能な所有権とサービスの精算条件を確認。メールなしでも利用可能、addressだけで他人の残高を請求不可。出金操作は別作業 |
+| NHC-12 | 外部顧客一人に同じManagerの有料subscriptionを提供する | 第三者の初回支払/実結果/費用。自社事業売上と分離して記録し、継続/解約を追う。顧客獲得→再計測を繰り返して外部USD10K MRRを目指す |
+| NHC-13 | 第二販売先で同じManagerの一件の有料業務を完走する | 正式な専用認証/注文/納品/支払い/実費/介入数。重複Publisherや規約迂回なし |
+| NHC-14 | 黒字の手順を第二runtimeで一件再現する | 一担当/二重課金0/移植先の実利益。複製数を売上へ換算しない |
+
+NHC-08のデモ準備、NHC-10の入口整理、YC紹介/申請更新は収益ループと並行可能。紹介獲得と実売は両方進める。YC画面/Docの不一致は最新確認値に合わせて直し、重要な数字・商品リンク・別枠の創業者動画/商品デモを整える。Mariaの紹介は約束と完了を区別。NaïveはSDK/ライブ実務・介入の実数、Maritimeは実在利用者1000人と実利用を示す。同一商品を使い、agent/VM数でユーザーを水増ししない。優勝/YC採択/収益は保証しない。
+
+#### 一次資料と調査の限界
+
+- Naïve [Identity](https://vetta.sh/docs/capabilities/identity.md)、[Email](https://vetta.sh/docs/identity/email.md)、[Wallet](https://vetta.sh/docs/identity/wallet.md)、[Legal](https://vetta.sh/docs/identity/legal.md)、[Runtime](https://vetta.sh/docs/concepts/runtime.md)、[Browser](https://vetta.sh/docs/computer/browser.md)。Identity overviewはinbound wakeのavailability noteと本文が矛盾し、Email詳細はwake対応を記載するため実環境readbackを優先。Walletはtestnet既定/mainnet org有効化、creditsとUSDC別。legalは人の本人確認を含むので無人販売の必須経路にしない。
+- [Supabase匿名認証](https://supabase.com/docs/guides/auth/auth-anonymous): email/password/OAuthなしでsessionを作れる。cookie消失/別端末の復旧とRLS/濫用対策が必要。現サービスで有効化済みとは確認していない。
+- [Capafy販売](https://capafy.ai/earn)、[Publisher Agreement](https://capafy.ai/publisher-agreement/): certification、20%fee/subscription sandbox費、1Publisher、Sales/Proceeds/settlement/KYC holdを確認。新しい自律登録・販売・着金の実行証拠ではない。
+- [AgentMail](https://www.agentmail.to/)、[公式index](https://www.agentmail.to/llms.txt): agent専用inboxを提供。現indexはhuman_email/OTP付きsignupを案内。既存receive-only実測を無制限送信/全サービス登録可能へ一般化しない。追加の受信箱作成を先行gateにしない。
+- [Whop](https://docs.whop.com/memberships-and-access/third-party-apps/content-rewards)、[itch.io](https://itch.io/docs/creators/payments)、[Gumroad](https://gumroad.com/help/article/260-your-payout-settings-page)、[x402](https://docs.cdp.coinbase.com/x402/welcome)、[ClawTasks](https://clawtasks.com/docs)。暗号受取の技術仕様は全provider/国のno-KYC保証ではない。
+- [Naïve大会](https://events.ycombinator.com/naive-autonomous-companies-hackathon)、[Maritime規約](https://competition.maritime.sh/terms)、[YC推薦](https://www.ycombinator.com/recommend/)、[YC創業者動画](https://www.ycombinator.com/video)。YC採択例からは商品一文/実演/数字/現状と計画の分離を再利用する。
+
+以下のNaïve実測・版別cursorは履歴。現在契約とTODOは上記を参照する。
 
 Naïve browser実測: PR9108はmain8bd07954へ統合、14CIは後続readbackで全PASS。固定版から専用anicca-browser-operatorを作成し公式readbackでpi/GLM-5.2/予算/owner/source SHAを確認。初回ses_0vs0t2t3bjsf227mmyw9a87pw5はgotoとscreenshotが成功、署名付き画像をprivateで取得して実画面を確認した後、次のmodel呼出がvalidation_failed。画像原因の仮説を保持し、モデル全般のvision非対応とは断定しない。画像を返さないses_btpr03yvgetc1vbbt4538rm2w6はgoto/extract/observeで商品/価格/検索欄の実表示取得に成功したがsession capでbudget_paused。実消費38786/250000 microUSD、残211214。次call予約額はイベントで確認できる範囲だけを使う。API業務呼出・shellは0、公開/購入/登録effectは0。
 修復判断: 月cap0.50USDを維持し、max_taskだけ0.25→0.50へ揃える。Computer read/writeを作業メモと成果物に限定して追加し、外部の業務操作はbrowserのまま。Google loginが選ばれた場合に備えてaccounts.google.comだけをdomainへ追加。Browser contextはlogin前に準備する。既存Grok/6agent/cron/販売商品は変更しない。

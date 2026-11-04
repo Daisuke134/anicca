@@ -7,9 +7,13 @@
 **Tech Stack:** Naïve標準agent/session/browser、JSON設定。追加依存なし。
 **Spec:** docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md の Naïve browser company 節。
 
+## 現在の製品契約・実行順
+
+→ `docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md`「Naïve browser company — Capafy-first / No human in the loop」。第一ユースケースはCapafy、現在cursor=NHC-01。以下の版別cursor・予算・登録試験は履歴で、旧29USDC trace reviewを第一ユースケースにしない。Substackへの追加試行はしない。Maritime提出済みというDaisの最新申告を保持する。この差分は仕様のみでruntime/権限/予算を変更しない。
+
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用capは修復sourceで月8USD/max_task1USD、既存残高内・追加入金なし。現在の稼働値と未反映targetは「現在の実行詳細」を参照。
+- 専用capは現行sourceで月10USD/max_task1USD、既存残高内・追加入金なし。現runtime値は公式readbackで照合し、過去の版別予算を現在値にしない。
 - 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
 - business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
