@@ -138,6 +138,27 @@ class HqCliTest(unittest.TestCase):
             self.assertIsNotNone(page["next_cursor"])
             self.assertFalse(any(request["op"] == "delivered" for request in fixture.requests))
 
+    def test_page_continues_after_ack_removes_anchor_and_revisits_old_arrival(self):
+        messages = [{**MESSAGE, "id": f"message-{i:04d}", "sent_at": i,
+                     "body": "x" * 65536} for i in range(33)]
+        def many(request):
+            if request["op"] == "inbox":
+                return {"ok": True, "result": {"messages": messages, "text": ""}}
+            return replies(request)
+        with Fixture(many) as fixture:
+            first = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "1048576")
+            self.assertEqual(first.returncode, 0, first.stderr)
+            page = json.loads(first.stdout)
+            ids = {m["id"] for m in page["messages"]}
+            messages[:] = [m for m in messages if m["id"] not in ids]
+            cursor = json.dumps(page["next_cursor"], separators=(",", ":"))
+            second = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "1048576", "--cursor", cursor)
+            self.assertEqual(second.returncode, 0, second.stderr)
+            page2 = json.loads(second.stdout)
+            self.assertTrue(page2["messages"])
+            self.assertTrue(ids.isdisjoint({m["id"] for m in page2["messages"]}))
+            self.assertEqual(page2["messages"][0]["sent_at"], len(ids))
+
     def test_ack_only_delivers_after_peeking_the_same_box(self):
         with Fixture(replies) as fixture:
             result = fixture.run("ack", "--as", "hq-codex", "--json", "message-one")

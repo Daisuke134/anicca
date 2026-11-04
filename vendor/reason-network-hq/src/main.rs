@@ -325,6 +325,15 @@ enum Cmd {
         peek: bool,
         #[arg(long)]
         json: bool,
+        /// Opt in to bounded HQ pages without the rendered text duplicate.
+        #[arg(long)]
+        page: bool,
+        /// Cursor returned by the previous page.
+        #[arg(long, requires = "page")]
+        cursor: Option<String>,
+        /// Maximum UTF-8 bytes including the trailing newline.
+        #[arg(long, default_value_t = 3145728)]
+        max_bytes: usize,
     },
     /// Acknowledge only unread message IDs belonging to this named session
     Ack {
@@ -345,6 +354,72 @@ enum Cmd {
     /// The menu bar icon (macOS; the background service starts it)
     #[command(hide = true)]
     Tray,
+}
+
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HqPageCursor {
+    version: u8,
+    mailbox: String,
+    after: Option<(i64, String)>,
+    through: (i64, String),
+}
+
+fn hq_inbox_page(key: &str, address: &str, mut messages: Vec<Message>, cursor: Option<&str>, max_bytes: usize) -> Result<String> {
+    if !(4096..=3_145_728).contains(&max_bytes) {
+        bail!("HQ page byte limit is invalid");
+    }
+    if address.len() > 256 || messages.iter().any(|m| m.to != address || m.id.is_empty() || m.id.len() > 128) {
+        bail!("HQ inbox includes an invalid identity or recipient");
+    }
+    messages.sort_by(|a, b| (a.sent_at, &a.id).cmp(&(b.sent_at, &b.id)));
+    let mut cursor = match cursor {
+        Some(raw) => {
+            if raw.len() > 2048 { bail!("HQ cursor is too large"); }
+            let parsed: HqPageCursor = serde_json::from_str(raw)?;
+            if parsed.version != 1 || parsed.mailbox != address
+                || parsed.after.as_ref().is_some_and(|a| a > &parsed.through) {
+                bail!("HQ cursor does not match this mailbox");
+            }
+            parsed
+        }
+        None => match messages.last() {
+            Some(last) => HqPageCursor { version: 1, mailbox: address.into(), after: None,
+                                         through: (last.sent_at, last.id.clone()) },
+            None => return Ok(serde_json::json!({"session_key": key, "address": address,
+                                                "messages": [], "holds": [], "next_cursor": null}).to_string()),
+        },
+    };
+    let eligible: Vec<Message> = messages.into_iter().filter(|m| {
+        let k = (m.sent_at, m.id.clone());
+        cursor.after.as_ref().is_none_or(|a| &k > a) && k <= cursor.through
+    }).collect();
+    let mut selected = Vec::<Message>::new();
+    let mut holds = Vec::<serde_json::Value>::new();
+    let mut consumed = 0;
+    for message in &eligible {
+        if consumed >= 20 { break; }
+        let next = (message.sent_at, message.id.clone());
+        let mut proposed = selected.clone();
+        proposed.push(message.clone());
+        let mut next_cursor = cursor.clone();
+        next_cursor.after = Some(next.clone());
+        let candidate = serde_json::json!({"session_key": key, "address": address,
+            "messages": proposed, "holds": holds, "next_cursor": next_cursor});
+        if candidate.to_string().len() + 1 > max_bytes {
+            if consumed > 0 { break; }
+            holds.push(serde_json::json!({"id": message.id, "sent_at": message.sent_at, "reason": "message_too_large"}));
+        } else {
+            selected.push(message.clone());
+        }
+        cursor.after = Some(next);
+        consumed += 1;
+    }
+    let more = consumed < eligible.len();
+    let page = serde_json::json!({"session_key": key, "address": address,
+        "messages": selected, "holds": holds, "next_cursor": if more { Some(cursor) } else { None }}).to_string();
+    if page.len() + 1 > max_bytes { bail!("HQ page envelope exceeds byte limit"); }
+    Ok(page)
 }
 
 fn existing_daemon_only(cmd: &Cmd) -> bool {
@@ -666,15 +741,16 @@ async fn cli(cmd: Cmd) -> Result<()> {
                 );
             }
         }
-        Cmd::Inbox { name, wait, peek: _, json: _ } => {
+        Cmd::Inbox { name, wait, peek: _, json: _, page, cursor, max_bytes } => {
             let (key, address) = hq_session(&link, &name).await?;
             let inbox: Inbox = link.call(Request::Inbox { key: key.clone(), wait_secs: wait, peek: true }).await?;
-            println!(
-                "{}",
-                serde_json::json!({
+            if page {
+                println!("{}", hq_inbox_page(&key, &address, inbox.messages, cursor.as_deref(), max_bytes)?);
+            } else {
+                println!("{}", serde_json::json!({
                     "session_key": key, "address": address, "messages": inbox.messages, "text": inbox.text,
-                })
-            );
+                }));
+            }
         }
         Cmd::Ack { name, ids, json: _ } => {
             let (key, address) = hq_session(&link, &name).await?;
