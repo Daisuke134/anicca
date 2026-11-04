@@ -1,0 +1,26 @@
+{
+  "created_2026_11_04": true,
+  "speaker_audience": "computational neuroscience & neuroscience researchers, M1/M2",
+  "duration_minutes": {
+    "talk": 41.7,
+    "discussion": 15.0,
+    "buffer": 3.3
+  },
+  "live_powerpoint_slides": 33,
+  "live_pdf_pages": 33,
+  "live_scripted_pages": 33,
+  "detailed_powerpoint_slides": 85,
+  "detailed_pdf_pages": 85,
+  "detailed_pages_with_embedded_notes": 85,
+  "detailed_markdown_pages": 85,
+  "source_82_slide_bodies_unchanged_except_page_footer": true,
+  "selected_31_legacy_slide_bodies_unchanged_except_page_footer": true,
+  "new_live_intro_slides": 2,
+  "manager_live_slides": 3,
+  "full_P04_6_appendix_slides": 3,
+  "P04_6_preregistration_hash_valid": true,
+  "P04_5_prediction_hash_valid": true,
+  "P04_1_to_P04_6_unit_test_count": 96,
+  "external_real_world_RCT_study": false,
+  "real_human_interventions": false
+}

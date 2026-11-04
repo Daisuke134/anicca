@@ -1,12 +1,26 @@
 {
-  "title": "Manager Masterclass P04-1 through P04-5 (2026-11-04)",
-  "status": "educational-lesson-and-synthetic-validation-only",
-  "test_count": 80,
-  "slides": 82,
-  "pdf_pages": 82,
-  "speaker_notes": 82,
+  "title": "Manager P04-1 to P04-6 with neuroscience audience live deck 2026-11-04",
+  "status": "completed lessons/synthetic demonstrations; no real-world intervention evidence",
+  "single_roadmap_ssot": "ROADMAP_STATUS_JA.md",
+  "test_count": 96,
+  "presenter_60min": {
+    "slides": 33,
+    "pdf_pages": 33,
+    "scripted_pages": 33,
+    "talk_minutes": 41.7,
+    "discussion_minutes": 15.0,
+    "buffer_minutes": 3.3
+  },
+  "full_reference": {
+    "slides": 85,
+    "pdf_pages": 85,
+    "speaker_notes": 85
+  },
+  "P04_6_synthetic_trial_n": 40000,
+  "P04_6_aa_replications": 750,
   "public_rct_prediction_completed": false,
   "real_human_interventions": false,
+  "external_preregistration": false,
   "files": {
     "P04-1_JA.md": {
       "size": 14148,
@@ -28,13 +42,17 @@
       "size": 10352,
       "sha256": "bbd7c61454a6f42c0ebb71d6b5aef2174b03ea71b30259492782ae4850c71365"
     },
+    "P04-6_JA.md": {
+      "size": 10838,
+      "sha256": "317888714cc1dcce390cac43b40016023f83d964b1d411028438af07d1c87e2e"
+    },
     "README.md": {
-      "size": 5605,
-      "sha256": "dc6d9612a54e5a1fd80e660b5cf919e511396c00dafdabf222fb4ce6eea63fdc"
+      "size": 6560,
+      "sha256": "f1644acc3fcf6b91e24f6df2d7235c344a9496c9345569a16ac8e75a66a8ddd5"
     },
     "ROADMAP_STATUS_JA.md": {
-      "size": 52173,
-      "sha256": "5c8bafea847d272a2f5925a8b815ad017ebc18c6316de30b4dd51634507879cf"
+      "size": 54985,
+      "sha256": "a7dd283c77baa95778523796130f3718ce52e246eaeea50307e85a4220ef889a"
     },
     "evidence/P04-3_SYNTHETIC_RESULTS.json": {
       "size": 816,
@@ -80,6 +98,26 @@
       "size": 3755,
       "sha256": "80110cf7b59b6a7dc88ba1c67007604684599582293594c7405be934d7323a99"
     },
+    "evidence/P04-6_JOURNAL_CLUB_QA.json": {
+      "size": 864,
+      "sha256": "587539108a9fa191684945e76fbae2ba0bce7bd2848b1a3c336c7c96870023e3"
+    },
+    "evidence/P04-6_PLAN_FREEZE_RECEIPT.json": {
+      "size": 385,
+      "sha256": "67db3c9415b579c538234fcc823307b7ffed0841d79ff400b8887549eafdd183"
+    },
+    "evidence/P04-6_POLICY_RCT_SYNTHETIC.csv": {
+      "size": 878855,
+      "sha256": "78d84667dc5e7b8d85e30d5441f9f3bbb5a332d6e61b27d5c8b83d5d0fb30bbb"
+    },
+    "evidence/P04-6_POLICY_RCT_SYNTHETIC_RESULTS.json": {
+      "size": 3601,
+      "sha256": "d052f80c0a9c72a06e8af3bfbeba977aff508edc1966159834a08e8f599289bc"
+    },
+    "evidence/P04-6_PREANALYSIS_PLAN_SYNTHETIC.json": {
+      "size": 2158,
+      "sha256": "614371f3ce001aa921d37fea2500b26756f61e1a16b202f25ebb22cace22a79a"
+    },
     "evidence/TEST_RESULTS.txt": {
       "size": 7203,
       "sha256": "f303c639e5f64383f9ca6c7e6c4c504d3a5162b18d101578e862319e8a0eb8aa"
@@ -87,6 +125,10 @@
     "evidence/TEST_RESULTS_P04_1_TO_P04_5.txt": {
       "size": 9896,
       "sha256": "240c95a3c327873f1b2ab0c236ffcdcb1549b2535edc2ce2081b1c550e1b72ba"
+    },
+    "evidence/TEST_RESULTS_P04_1_TO_P04_6.txt": {
+      "size": 11970,
+      "sha256": "6620fc929e6e9d5b8cc6c92c673b9d5376b716da0b3474466046a3a089e2ad0f"
     },
     "evidence/p04_1_causal_result.json": {
       "size": 1404,
@@ -120,6 +162,10 @@
       "size": 9364,
       "sha256": "dbb3a5268bfe5e0c580ebefae0c54d85da28eacf93575a4deb1181a6630bb21d"
     },
+    "experiments/p04_6_preregistered_policy_value.py": {
+      "size": 12161,
+      "sha256": "776b2eeabe7e371d80ccbe0b0c0e614bddc4dfe0cd0c6bb8f1720e4cff6a9117"
+    },
     "experiments/test_p04_1_causal_vs_observational.py": {
       "size": 2050,
       "sha256": "fc8554688162e1087012dda5639c37bb8193bfd2b3d41a7c34a0d2d35a1a9f29"
@@ -140,6 +186,10 @@
       "size": 3619,
       "sha256": "703ab336320fd51d92fd1eb90d35c52d1e740c48a0f14ebe21735fba3c83c030"
     },
+    "experiments/test_p04_6_preregistered_policy_value.py": {
+      "size": 4502,
+      "sha256": "bda0a0656ef0589951f5b8ac79f13bc3d90f3fa0d0d47b4c006227c65e4334fb"
+    },
     "figures/build_figures.py": {
       "size": 2142,
       "sha256": "d3ecaaaad2660fc79576a2b7fad0b1edaa74983158f3d8a8e360935e37216b2d"
@@ -152,25 +202,49 @@
       "size": 60770,
       "sha256": "4763e56eefc40059dce8bee0e851cb53225c7d72b3f441d444f4c308b203e9ed"
     },
+    "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf": {
+      "size": 1735015,
+      "sha256": "8586289def419a1ca7862bf489509a7fb310c7ec9852fd6c52fae46a16597b78"
+    },
+    "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pptx": {
+      "size": 156048,
+      "sha256": "33e0bdbe43d5840842693c670a824e72a687269668a3637ea04927866f7ddef2"
+    },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf": {
-      "size": 3561073,
-      "sha256": "9d218cd44ffff6fab1dc09a0196475e031fd1bdf4844af54ccfc3e12f549bead"
+      "size": 4478919,
+      "sha256": "1132888df8ea3e81ac0d82423b9db7e7f7ede064eed08807e621b14a4222a69f"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx": {
-      "size": 612438,
-      "sha256": "50bde40253418804fece6892a85d9a150eb06e2a421632ff7a39b777163b80a8"
+      "size": 623292,
+      "sha256": "84ca026636b9559fa0a34dc5a6fa9669c521785a2b9b0e54e4338fed85f4308a"
+    },
+    "journal_club/RUN_OF_SHOW_60MIN_JA.md": {
+      "size": 5151,
+      "sha256": "283884af530f6111fedd4aa0f082761c955ce82e070dd4dacc9f2ee7a7fba082"
     },
     "journal_club/RUN_OF_SHOW_JA.md": {
-      "size": 3163,
-      "sha256": "3ac881891a4d73175cb2d6a250fa3ed455fe6274117775dd3fd20de771579582"
+      "size": 3709,
+      "sha256": "25d7f04cce5ddf3bd5b506488ae02ec3ddc1d1f3f2db99aafdfc0f9c225033a4"
     },
     "journal_club/SPEAKER_NOTES_JA.md": {
-      "size": 103250,
-      "sha256": "d86fa91c61c3ac69ce96bd4c487c5552ce6c11116ddd22d9a27dd7798d5503f2"
+      "size": 105257,
+      "sha256": "57c7d6e2ec36f180d167af6169cba629fd7ec3e0f9984c1f4b2e5865869382c4"
+    },
+    "journal_club/SPEAKER_SCRIPT_60MIN_JA.md": {
+      "size": 37365,
+      "sha256": "6110ebbdf5f3548788fd972f8f05ad69979655928ef8c0b2aacd4e3d858eaea3"
+    },
+    "journal_club/build_60min_journal_club.py": {
+      "size": 20976,
+      "sha256": "e8f40e526292dcb6b89cad03432a6ba66e393628bb69c377c9740ab8dd9bfcc0"
     },
     "journal_club/build_p04_45_appendix.py": {
       "size": 16604,
       "sha256": "3426c2fc300d3c45968fc2bdc865dd58441c1af34f57a3cc5d6dbce100f9021e"
+    },
+    "journal_club/build_p04_6_appendix.py": {
+      "size": 8004,
+      "sha256": "59dbe3fa9d543c35b144d7907690e04ad59fdea59d685a003ce7315de2bb84b2"
     },
     "journal_club/build_p04_appendix.py": {
       "size": 9575,
@@ -183,6 +257,10 @@
     "journal_club/sync_pptx_speaker_notes.py": {
       "size": 1118,
       "sha256": "d72941618573bb8d01c8240e13d465a5659119aa491daf4d75118b50b6f0168c"
+    },
+    "journal_club/verify_p04_6_60min.py": {
+      "size": 5672,
+      "sha256": "d35e34ad70d0f01636f967680c569a0d8f417eada94508aedcf99f40f7276232"
     },
     "manager_P04-1_P04-3_full_20261104.zip": {
       "size": 1839857,

@@ -1,71 +1,70 @@
-# Manager Masterclass | P04-1–P04-5 Causal Inference
+# Manager Masterclass｜P04-1〜P04-6 因果推論と行動介入
 
-- **更新日：** 2026-11-04（Asia/Tokyo）
-- **学習現在地：** P04-1～P04-4は講義・架空演習が完了。P04-5は講義と合成研究ベンチマークが完了、ただし**実際の公開RCTの未見予測は未実施**。次の講義はP04-6。
-- **科学的検証状態：** 今回の数字は**すべて人工・合成データ**に由来する。Manager Behavior Foundation Model 1.0の実人間での優位性、介入効果、心理的・事業的な便益を示していない。
-- **P00-3：** 本番実証対象・同意・権限・停止条件は未確定。
-- **講義／現在地の唯一の正本：** `ROADMAP_STATUS_JA.md`。このREADMEやJSONは進捗の代替正本ではない。
+**更新：2026-11-04（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
 
-## 成果物
+**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6は講義・人工実験まで進み、次はP05-1。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
 
-| パス | 内容 |
+## 2026年11月5日 13:00–14:00｜神経科学ジャーナルクラブ
+
+**本番ではこちらの厳選33枚版を使う。** 来場者は神経科学・計算論的神経科学の研究者とM1/M2。人間行動シミュレーションの専門知識を前提とせず、歴史、モデルの種類、代表的な研究・企業、ベンチマーク、因果と限界を基礎から説明し、Managerは最後の3枚に留める。
+
+| ファイル | 内容 |
 | --- | --- |
-| `ROADMAP_STATUS_JA.md` | P00～P12全講義の唯一の進捗・ロードマップ |
-| `P04-1_JA.md` | 観察と介入、DAG、潜在的結果 |
-| `P04-2_JA.md` | RCT、ATE、ITT、区間推定 |
-| `P04-3_JA.md` | 観察データの識別、g-formula、IPW、AIPW、DiD |
-| `P04-4_JA.md` | CATE、効果修飾、方策価値、媒介分析 |
-| `P04-5_JA.md` | 研究単位Holdout、予測凍結、ベンチマーク、OOD |
-| `exercises/P04-3_SIMPSON_2000_JA.md` | 追加のSimpson手計算教材 |
-| `experiments/p04_*.py` | P04-1～P04-5の教育用シミュレーション |
-| `experiments/test_p04_*.py` | 全80件の単体テスト |
-| `evidence/TEST_RESULTS_P04_1_TO_P04_5.txt` | 全80件成功の新規実行記録 |
-| `evidence/P04-4_SYNTHETIC_DATA.csv` | 完全架空24,000人分の生データ |
-| `evidence/P04-4_SYNTHETIC_RESULTS.json` | CATE・方策・媒介の結果 |
-| `evidence/P04-5_*_SYNTHETIC.csv` | 人工180研究のデータ分割、Holdout、凍結予測 |
-| `evidence/P04-5_FREEZE_RECEIPT.json` | 予測CSVのSHA256 |
-| `evidence/P04-5_SYNTHETIC_BENCHMARK_RESULTS.json` | 人工ベンチマークの採点結果 |
-| `journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx` | **82枚**の編集可能PowerPoint（従来の74枚＋付録8枚） |
-| `journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf` | **82ページ**の閲覧用PDF |
-| `journal_club/SPEAKER_NOTES_JA.md` | **全82枚**の日本語発表ノート |
-| `journal_club/RUN_OF_SHOW_JA.md` | 45分講演＋15分質疑、元の本編を維持 |
-| `journal_club/build_p04_45_appendix.py` | 74枚版からP04-4/P04-5の8枚を追加 |
-| `journal_club/export_p04_45_pdf.py` | 既存74ページPDFを保持し追加8ページを生成して統合 |
-| `journal_club/sync_pptx_speaker_notes.py` | PowerPoint内部の全82枚に日本語発表者ノートを同期 |
-| `evidence/P04-4_P04-5_QA.json` | 旧74枚本文の保全・ノート・PDFページ数・ハッシュの検証 |
-| `MANIFEST.json` | ファイル一覧・SHA256・サイズの照合 |
+| [60分発表 PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pptx) | **33枚**、編集可能・全ページに日本語発表者ノート |
+| [60分発表 PDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf) | **33ページ**、発表画面用 |
+| [全33枚日本語読み上げ原稿](journal_club/SPEAKER_SCRIPT_60MIN_JA.md) | 1ページごとの自然な読み上げ文と元スライド・時間 |
+| [60分の進行表](journal_club/RUN_OF_SHOW_60MIN_JA.md) | **41.7分講演＋15分質疑＋約3分の余裕**、章別時間・重要スライド・短縮ルート |
+| [発表版を再生成](journal_club/build_60min_journal_club.py) | 正本の85枚版＋85ページPDFから再構築。別々に管理し、元ファイルを破壊しない |
 
-## 主要結果（人工世界）
+**優先順位：** ①基礎と研究史 ②どの対象にどの模型を使うか ③既存研究・企業は何を主張しているか ④何を検証して何をまだ検証していないか ⑤最後にManagerが目指すこと。数式の厳密な導出・企業の細かい数字・P04-6の全シミュレーションは本番で列挙しない。質疑用の長い資料に残す。
 
-**P04-3**：架空30,000人、単純観察差+26.12ポイント、g-formula/IPW/AIPW約−10ポイント。因果仮定の成立を完全に人工世界で設定。
+## 全85枚の詳細保存版（本番で一挙上映しない）
 
-**P04-4**：架空24,000人、理論ATE+2.924ポイント、RCT推定ATE+2.684ポイント。4群のCATEは理論+16/+10/−4/−10ポイント。学習外9,619人で個別化方策をIPW評価し、通知なし方策に対し+6.279ポイント（近似95%区間+4.842〜+7.717）。別の連続値を用いた人工20,000人で線形媒介の総効果0.24を再現。
+| ファイル | 内容 |
+| --- | --- |
+| [詳細85枚PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | 既存82枚を保存し、P04-6研究付録3枚を追加 |
+| [詳細85ページPDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf) | 85ページ。元82ページ保持＋追加3ページを画像レンダリングで統合 |
+| [全85枚の日本語発表ノート](journal_club/SPEAKER_NOTES_JA.md) | 1〜85の全ページ分。PowerPoint内部にも全85枚のノートを保存 |
+| `journal_club/build_p04_6_appendix.py` | 82枚版→85枚版への追加作成に使用。すでに85枚なら二重追加しない |
+| `journal_club/build_p04_45_appendix.py` | **歴史的な74枚→82枚作成スクリプト**。現在85枚版への再実行はしない |
+| `journal_club/export_p04_45_pdf.py` | **歴史的な74ページ→82ページPDF結合スクリプト** |
+| `journal_club/RUN_OF_SHOW_JA.md` | 元のフル講義の履歴上の進行表。**2026-11-05本番は60MIN版の進行表を優先** |
 
-**P04-5**：架空180研究を90学習／30検証／同領域未見30／新領域未見30に分割。Ridgeの平均絶対誤差は同領域1.55ポイント、新領域3.99ポイント。ゼロ予測・学習平均と比較。**実在の公開RCTへの予測は0件**。
+## 講義の本文
 
-## 再現実行
+| 資料 | 内容 | 学習の検証 |
+| --- | --- | --- |
+| `P04-1_JA.md` | 観察vs介入・DAG・潜在的結果 | 完全架空データ、14テスト |
+| `P04-2_JA.md` | RCT・ATE・ITT・信頼区間 | 架空RCT、17テスト |
+| `P04-3_JA.md` | 交絡・g-formula・IPW・AIPW・DiD | 架空30,000人、26テスト |
+| `P04-4_JA.md` | CATE・効果異質性・方策選択・媒介 | 架空24,000人＋媒介20,000人、12テスト |
+| `P04-5_JA.md` | study holdout・予測凍結・介入効果予測 | 架空180研究、11テスト。**実公開RCTの未見予測は未実施** |
+| `P04-6_JA.md` | 事前登録・方策対方策RCT・意思決定価値・無計画な途中解析 | 架空40,000人＋A/A 750試行、16テスト。**実研究の事前登録・実介入は未実施** |
 
-Python 3.11+ / NumPy を使用。実験ディレクトリに移動して次を実行：
+単体テストは合計 **96/96件成功**（14 + 17 + 26 + 12 + 11 + 16）。`evidence/TEST_RESULTS_P04_1_TO_P04_6.txt` に最新のログを保存。教材のテスト合格を実世界への有効性の証明と混同しない。
+
+## P04-6の新規実行結果（完全架空）
+
+- 対象40,000人。政策群への無作為割当：Manager型約19,835人／比較型約20,165人。
+- 同じ事前特徴、同じ候補行動、同じ観測期間を設定。比較方策は有用な固定ヒューリスティックであり「世界最強のbaseline」とは認定しない。
+- 主成果（完了マイナス通知人工費用0.02/回）は、Manager型平均0.33616／比較方策0.32003、差 **+1.613pt**（95%近似CI **+0.688〜+2.539pt**、p≈0.000635）。
+- 人工の期待効果真値は**+2.00pt**。設定した世界での証拠に過ぎない。
+- 効果ゼロの架空A/Aを750回反復し、最終1回の未補正検定による偽陽性**4.27%**、途中6回のいずれかで有意なら成功とした偽陽性**15.20%**。
+- 結果生成前に`P04-6_PREANALYSIS_PLAN_SYNTHETIC.json`を保存し`P04-6_PLAN_FREEZE_RECEIPT.json`でSHA256を固定。**外部公開研究登録はしていない**。
+- 全人工40,000人のCSVは`evidence/P04-6_POLICY_RCT_SYNTHETIC.csv`。結果は`evidence/P04-6_POLICY_RCT_SYNTHETIC_RESULTS.json`。
+
+## ローカル再現
+
+Python 3.11+とNumPy、PowerPoint編集はpython-pptx、PDF/追加スライド生成にはpypdf・Pillowが必要。
 
 ```bash
+cd docs/research/manager/masterclass/2026-11-04-p04-causal/experiments
 python3 -m unittest discover -p 'test_p04_*.py' -v
-python3 p04_4_heterogeneous_effects.py
-python3 p04_5_effect_forecasting.py
+python3 p04_6_preregistered_policy_value.py
 ```
 
-テストは2026-11-04に**80/80件成功**。内訳：P04-1 14件、P04-2 17件、P04-3 26件、P04-4 12件、P04-5 11件。単体テストの成功は研究コードの動作確認であって、現実の人間に対する因果効果を保証するものではない。
+本番発表版は`journal_club/build_60min_journal_club.py`で再生成。**詳細マスターを消す／発表で全85枚を使う運用はしない**。全33枚の構成・書式と85枚の正規教材を保持する。
 
-### 発表資料再生成
+## 監査
 
-元の74枚版PowerPointと74ページPDFを別途保管した状態で、`journal_club`で`python3 build_p04_45_appendix.py`を実行（入力が74枚でない場合は追加しない）。追加8枚は79～82にP04-5、75～78にP04-4が収録されている。旧スライドの本文は維持し、ページ数表記だけ変更。
-
-PDF変換環境のLibreOfficeが利用できなかったため、`export_p04_45_pdf.py`では**既存74ページを保持し追加8ページを高解像度画像としてレンダリングして結合**した。結果は82ページ。PDFは閲覧用、元のPPTXは編集可能。両者のページ構成と主要表示内容を検査した。
-
-## 今後の必須研究
-
-1. **P04-5の本当の公開RCT Holdout：未完了。** J-PAL/IPA DataverseやMany Labs 2等を候補として評価する。権利、尺度、標準誤差、汚染、予測時点を検査し、可能なら結果公開前に予測を第三者へ登録する。
-2. **P04-6：** 事前登録・予測凍結・意思決定価値の評価を学ぶ。
-3. **P00-3：** 実世界の対象・許可・害・停止条件を確定する。
-4. **P05～P06：** 他のエージェントや実事業へ接続する前に、シャドー運用で結果を独立に検証する。
-
-研究以外の本番運用や資金調達・事業収益の更新を示したものではない。
+`evidence/P04-6_JOURNAL_CLUB_QA.json` に、33枚・33ページ、85枚・85ページ、発表版33枚の全ノート、詳細版85枚の全ノート、元82枚本文の保持、凍結予測ハッシュ、人工RCT計画ハッシュ、96テストの照合を記録。ファイルのSHA256とサイズは`MANIFEST.json`に保存する。**外部の研究ベンチマーク検証や実施権限の承認を行ったとは主張しない。**
