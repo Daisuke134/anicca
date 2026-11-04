@@ -595,7 +595,8 @@ class HQ:
                     or any(not isinstance(h, dict) or h.get("reason") != "message_too_large"
                            or not isinstance(h.get("id"), str)
                            or not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", h["id"])
-                           or type(h.get("sent_at")) is not int for h in holds)):
+                           or type(h.get("sent_at")) is not int
+                           or type(h.get("has_files")) is not bool for h in holds)):
                 raise HQError("Reasonページが不正です")
         for message in messages:
             if (not isinstance(message, dict)
@@ -611,6 +612,9 @@ class HQ:
             for hold in holds:
                 database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)",
                                  ("reason_page_hold:" + hold["id"], json.dumps(hold)))
+                if hold["has_files"]:
+                    database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)",
+                                     ("reason_attachment_pending:" + hold["id"], "unavailable"))
                 deferred = True
             for message in messages:
                 if len(accepted) >= 20:

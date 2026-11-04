@@ -409,7 +409,7 @@ fn hq_inbox_page(key: &str, address: &str, mut messages: Vec<Message>, cursor: O
             "messages": proposed, "holds": holds, "next_cursor": candidate_cursor});
         if candidate.to_string().len() + 1 > max_bytes {
             if consumed > 0 { break; }
-            holds.push(serde_json::json!({"id": message.id, "sent_at": message.sent_at, "reason": "message_too_large"}));
+            holds.push(serde_json::json!({"id": message.id, "sent_at": message.sent_at, "reason": "message_too_large", "has_files": !message.files.is_empty()}));
         } else {
             selected.push(message.clone());
         }
