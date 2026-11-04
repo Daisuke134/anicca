@@ -1,0 +1,210 @@
+{
+  "task_id": "973378ad969c9e510c458982",
+  "owner_id": "home-codex",
+  "phase": "preparation_validation",
+  "release_sha": null,
+  "source_base": "d46e3dbdd1d0b19af6b60c49b992016a61fea148",
+  "effect": {
+    "submit": 0,
+    "bid": 0,
+    "payment": 0,
+    "posting": 0,
+    "accounting": 0,
+    "fence": 0
+  },
+  "readback": {
+    "bids_http": 200,
+    "pending": 5,
+    "assignments_http": 200,
+    "assignments": 0,
+    "initial_bid_status": "pending",
+    "job_status": "open",
+    "remote_delta": 1,
+    "remote_latest": "1793824103.405409",
+    "remote_has_more": false,
+    "remote_bot_natural_wake": "unknown"
+  },
+  "validation": {
+    "body_words": 1284,
+    "families": 17,
+    "recommendations": 5,
+    "rank_and_table_assertions": 17,
+    "sensitivity_assertions": 2,
+    "report_sha256": "70822f3fda87a1de7c3d2033854a27b46aa34b5b872d5ad5150d58d09af862cd",
+    "csv_sha256": "36cfc13385fe4d6314079c4caa03f0e36746f3472f44cac34e90b9358544720c"
+  },
+  "sources": [
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/additional.json",
+      "bytes": 639,
+      "sha256": "117c2770357a92cc9e742a0e2377d99e875083ce95809af89320242dcde6b8e1"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/apify-clean.txt",
+      "bytes": 11412,
+      "sha256": "e3b7286685101c693592aef6fc992fb888f49bf1527b02b6a6695052fceff46f"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/apify-readme.txt",
+      "bytes": 35747,
+      "sha256": "f2bf3e16fab91374f71744f1c23b5ac7f7566b0e03f625ea24f37d4a228fb981"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/apify.html",
+      "bytes": 468601,
+      "sha256": "21d84a43e0e7deb06094997fc3b05d2152dfbee4181e3bcc3aae961b607ba5d5"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/crewai-readme.txt",
+      "bytes": 32755,
+      "sha256": "b0f39843f93676b12883d5821a34555e2146e62bd2c42dc12733fc41222de013"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/deepgram-clean.txt",
+      "bytes": 8561,
+      "sha256": "abc8b92cb50bf1ad1c883f5a42498d58ecac4344fd039385d96c71b4b21915ed"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/deepgram.html",
+      "bytes": 602616,
+      "sha256": "dafdc6f98c5fee850dd2cc62faeefe7c609ea3ca57e413c6d7435c0097c8246a"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/deepl-clean.txt",
+      "bytes": 3521,
+      "sha256": "77452eea05176f90768d84f0ced1ef570ffa71051ba68e86dc60e042d212a662"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/deepl-price.html",
+      "bytes": 699828,
+      "sha256": "2603d13479d04e356af6ef3411b09e7e5a41365ad5f262476bb8ddb255ef663a"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/deepl.html",
+      "bytes": 228229,
+      "sha256": "adc03a71fdf95cb7875f317107896c049f3d05100eb5db1c773fcfd691df8e07"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/firecrawl-clean.txt",
+      "bytes": 17823,
+      "sha256": "7530912bfe872b52cffcedc5a418f314a540ceacbf6bd2decc2abfea63ed0a8e"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/firecrawl.html",
+      "bytes": 822797,
+      "sha256": "cfde3e64b207646b701b22981ee6275c492fbb5b6b80d152255ad680643d3f91"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/langchain-readme.txt",
+      "bytes": 5935,
+      "sha256": "9e6d706b38215c6979ef398ba72181b0f9099b8150f317c4c221877456c2dc2e"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/langchain-scraping-issues.json",
+      "bytes": 4149,
+      "sha256": "3e3578cf2217bc017b456185cc117a9a2fd32e6b91e077b8442a70583a4ca06d"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/manifest.json",
+      "bytes": 859,
+      "sha256": "162d2082fda8018f890b60a9d4938b49e88c2fbe96ded025d8669f1e1cefd471"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/n8n-clean.txt",
+      "bytes": 766,
+      "sha256": "3d1f7c4b693de48f84814b18944f889d16481a70132efa04ed8e2523ed6e5997"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/n8n-readme.txt",
+      "bytes": 3998,
+      "sha256": "1b2642bc182969047627fc3568c785bad291fb9a2c7d655b19813608bf69ce27"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/n8n-transcription-issues.json",
+      "bytes": 5422,
+      "sha256": "181a79db8200ec497f1c1ba2259346a0ea10694faa7008d482193338042ac91a"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/n8n.html",
+      "bytes": 533260,
+      "sha256": "a5fcd03264a2bde333eaee8357841ddbc9b1cb0b388176168fba2193ef25ea55"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/near-openapi.txt",
+      "bytes": 209230,
+      "sha256": "b3fa4493b04c80c59698f30970f2d6c2e9623b0172087988b8a75e029d7ecaca"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/near.html",
+      "bytes": 150465,
+      "sha256": "8f4d602171ef43e1616171632375362a92f77df07d943c18f70d0d561fe922d5"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/openai-clean.txt",
+      "bytes": 41,
+      "sha256": "9fea79acb501af6f155bbcbdf68d8793cf904139a6b297609bdece09d5308124"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/openai.html",
+      "bytes": 9812,
+      "sha256": "8a0cd57c7fed8e55d3d91203f3e4014865a4a0c00c129a3b6bfcd806e18fc103"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/replicate-clean.txt",
+      "bytes": 8155,
+      "sha256": "1a2d1123fbe05d7cce277d1079c5e57603fc2522be06cc1e93c03b97b4af9c5c"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/replicate.html",
+      "bytes": 85876,
+      "sha256": "144b4e398721e152c7a7b3e654eaef94e578be3f8011ad31fdd5f3a1102b5737"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/twilio-clean.txt",
+      "bytes": 8846,
+      "sha256": "41d8e1ee00749cf38c6f7eaeac8e1b82346744229a5af2b513f12af90f569f86"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/twilio.html",
+      "bytes": 819175,
+      "sha256": "ba35b7f47381b4e84901ae8b0cc45873d44f9b23b2a6d53c1839da5f12f7b5f9"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/vision-clean.txt",
+      "bytes": 6739,
+      "sha256": "b9f54a7f5152606244dd74c53bce792970c1797d30d4806ecc2a162d4f4524aa"
+    },
+    {
+      "path": "/Users/anicca/.local/state/life-manager/team-hq/973378/sources/vision.html",
+      "bytes": 2128855,
+      "sha256": "391535bc84f76e2e52ffb47ae8bb22aa5d469737c8aeae1e6f27caaea0902206"
+    }
+  ],
+  "limitations": [
+    "No measured per-family marketplace volume or buyer latency tolerance",
+    "Scenario ranking is not demand forecast",
+    "Regional translation price and prerecorded STT quote unverified",
+    "OpenAI price retrieval interstitial",
+    "Firecrawl annual/monthly fragments not normalized"
+  ],
+  "provider_receipt_id": null,
+  "error_class": null,
+  "retryable": false,
+  "command": "official GET; crwl then scrapy fetch; official GitHub raw/API; Decimal/table/word/source assertions",
+  "exit_code": 0,
+  "next_action": "必要CI全PASS後main。受注後に最新brief/submit契約と24h SLAを照合し納品。",
+  "run_id": "973378ad969c9e510c458982",
+  "occurrence_id": "973378ad969c9e510c458982",
+  "loaded_argv": [
+    "codex",
+    "exec"
+  ],
+  "loaded_env": {
+    "model_override": false,
+    "credential_output": false
+  },
+  "evidence_refs": [
+    "docs/team/near/recurring-outsourcing-report.md",
+    "docs/team/near/recurring-outsourcing.csv"
+  ]
+}

@@ -161,3 +161,5 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 完了条件: 最新briefの15–20業務について価格単位・許容遅延の証拠またはunknown・自動検査・公開需要指標を比較し、推定daily volume×A2A適合度を再計算可能にする。英語1000–2500語＋表、根拠付き上位5提言、事実/仮定/未取得を区別。原典取得・行数/語数/順位/assert・source-boundary/diff確認、必要CI公式PASS後main。受注前submit/追加応募/有料API/送金0。準備と納品/売上を区別する。既存順序変更なし、現在cursorは原典取得→原稿→検証→CI/main。
 
 remote threadは前観測1793796196.428439以降の差分1件、latest1793824103.405409/has_more=false。Dots側は元Reason IDとworker claimまで約15815秒、Slack結果を照合するが、bot本人の自然受信/着手/Reason結果receiptは未確認。既存queued2件・ownerを維持し、催促/再送/新規probe0。
+
+準備成果: docs/team/near/recurring-outsourcing-report.md（本文1284語＋17行表）、recurring-outsourcing.csvを作成。公式価格/原典とn8n利用者の反復transcription報告を取得し、価格単位・構造検査/意味検査・許容遅延unknownを分離する。100pipeline仮定の順位は実需要予測ではなく、17計算と感度2件を検証。Firecrawlページ内断片差異・OpenAI取得interstitial・DeepL地域価格・prerecorded STT見積未取得を明示する。source-boundary/diff PASS、語数/17業務/5提言/順位一致PASS。証拠→docs/evidence/near-recurring-preparation-973378.json。現在cursor=独立検証→必要CI全PASS→main、受注後最新brief/24h SLA/submit契約照合。納品・追加bid・課金・送金0。
