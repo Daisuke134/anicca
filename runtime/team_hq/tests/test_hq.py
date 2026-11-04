@@ -1207,6 +1207,19 @@ class ReasonInboxTests(unittest.TestCase):
         self.assertEqual(len(self.tasks()), 1)
         self.assertIn("independent request", self.tasks()[0]["body"])
 
+    def test_deferred_reason_attachments_do_not_starve_later_messages(self):
+        self.enabled()
+        sample = self.reason.inbox.return_value["messages"][0]
+        blocked = [{**sample, "id": f"blocked_{i:020d}", "files": [
+            {"name": "missing.txt", "path": str(self.root / "missing.txt"), "content": ""}]}
+            for i in range(20)]
+        later = {**sample, "id": "later_00000000000000000001", "body": "later valid request"}
+        self.reason.inbox.return_value["messages"] = blocked + [later]
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_called_once_with([later["id"]])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertIn("later valid request", self.tasks()[0]["body"])
+
     def test_reason_attachment_replay_is_idempotent_after_ack_failure(self):
         self.enabled()
         inbox = self.root / "reason" / "inbox" / "fixture"

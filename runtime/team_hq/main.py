@@ -564,7 +564,7 @@ class HQ:
                 or not payload["address"].endswith("/" + name)
                 or not isinstance(payload.get("messages"), list)):
             raise HQError("Reason受信箱のidentityを確認できません")
-        messages = payload["messages"][:20]
+        messages = payload["messages"]
         for message in messages:
             if (not isinstance(message, dict)
                     or not isinstance(message.get("id"), str)
@@ -575,6 +575,8 @@ class HQ:
         ready = []
         deferred = False
         for message in messages:
+            if len(ready) >= 20:
+                break
             try:
                 with self.connect() as database:
                     saved = database.execute("SELECT 1 FROM meta WHERE key=?",
