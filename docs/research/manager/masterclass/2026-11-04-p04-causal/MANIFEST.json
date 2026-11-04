@@ -1,27 +1,20 @@
 {
-  "title": "Manager P04-1 to P04-6 with neuroscience audience live deck 2026-11-04",
-  "status": "completed lessons/synthetic demonstrations; no real-world intervention evidence",
-  "single_roadmap_ssot": "ROADMAP_STATUS_JA.md",
+  "title": "Manager Masterclass P04-1 to P04-6, 60min neuroscience journal club, What-if × Executor thesis",
+  "status": "educational/synthetic-only; empirical claims NOT verified",
+  "date": "2026-11-04",
   "test_count": 96,
-  "presenter_60min": {
-    "slides": 33,
-    "pdf_pages": 33,
-    "scripted_pages": 33,
-    "talk_minutes": 41.7,
-    "discussion_minutes": 15.0,
-    "buffer_minutes": 3.3
-  },
-  "full_reference": {
-    "slides": 85,
-    "pdf_pages": 85,
-    "speaker_notes": 85
-  },
-  "P04_6_synthetic_trial_n": 40000,
-  "P04_6_aa_replications": 750,
-  "public_rct_prediction_completed": false,
-  "real_human_interventions": false,
-  "external_preregistration": false,
+  "live_slides": 33,
+  "live_pdf_pages": 33,
+  "detailed_slides": 85,
+  "detailed_pdf_pages": 85,
+  "public_RCT_validation": false,
+  "real_human_intervention": false,
+  "weight_release": false,
   "files": {
+    "MANAGER_WHAT_IF_EXECUTOR_THESIS_JA.md": {
+      "size": 10384,
+      "sha256": "5137104e7ee6c4643df54f56186aaed2bdf06920b09119ec965dcf080fbb2c05"
+    },
     "P04-1_JA.md": {
       "size": 14148,
       "sha256": "f1532b87872b11cf4ee2feb7e069853be908fd04d46526c9e030e11d3c2a21b5"
@@ -47,12 +40,12 @@
       "sha256": "317888714cc1dcce390cac43b40016023f83d964b1d411028438af07d1c87e2e"
     },
     "README.md": {
-      "size": 6560,
-      "sha256": "f1644acc3fcf6b91e24f6df2d7235c344a9496c9345569a16ac8e75a66a8ddd5"
+      "size": 7816,
+      "sha256": "7a090cbefabe42b1adbf816e9c1c9c7d0ad5d7b5539a506c53124b4995b3d069"
     },
     "ROADMAP_STATUS_JA.md": {
-      "size": 54985,
-      "sha256": "a7dd283c77baa95778523796130f3718ce52e246eaeea50307e85a4220ef889a"
+      "size": 57222,
+      "sha256": "35e58e62fca2ee745faf3ba208e326b67119cace710da0883400077c678f2301"
     },
     "evidence/P04-3_SYNTHETIC_RESULTS.json": {
       "size": 816,
@@ -99,8 +92,8 @@
       "sha256": "80110cf7b59b6a7dc88ba1c67007604684599582293594c7405be934d7323a99"
     },
     "evidence/P04-6_JOURNAL_CLUB_QA.json": {
-      "size": 864,
-      "sha256": "587539108a9fa191684945e76fbae2ba0bce7bd2848b1a3c336c7c96870023e3"
+      "size": 1047,
+      "sha256": "c66cafa3afcc78d2509fa03ff278336497e4041c4e2dfcec0c2fef8eafa4341e"
     },
     "evidence/P04-6_PLAN_FREEZE_RECEIPT.json": {
       "size": 385,
@@ -203,40 +196,40 @@
       "sha256": "4763e56eefc40059dce8bee0e851cb53225c7d72b3f441d444f4c308b203e9ed"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf": {
-      "size": 1735015,
-      "sha256": "8586289def419a1ca7862bf489509a7fb310c7ec9852fd6c52fae46a16597b78"
+      "size": 2695200,
+      "sha256": "b688fde3f24c770861f13fb6f05b9b092178eba0a5b6f3d42d8a840bdfd8d7e0"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pptx": {
-      "size": 156048,
-      "sha256": "33e0bdbe43d5840842693c670a824e72a687269668a3637ea04927866f7ddef2"
+      "size": 154839,
+      "sha256": "2a95e47d0804aa14e626762759ed8a608e7b4ddd59a0caa095c958e2dd723342"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf": {
-      "size": 4478919,
-      "sha256": "1132888df8ea3e81ac0d82423b9db7e7f7ede064eed08807e621b14a4222a69f"
+      "size": 5434687,
+      "sha256": "f3c1eb1417eb4f0e935e2fd1b04f1eccb941b09e6569a76da22e1f841a4a7c96"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx": {
-      "size": 623292,
-      "sha256": "84ca026636b9559fa0a34dc5a6fa9669c521785a2b9b0e54e4338fed85f4308a"
+      "size": 621405,
+      "sha256": "240bdd50a77f8909d8e85f133bd63c525ab85516eb2de755495f9945d534834b"
     },
     "journal_club/RUN_OF_SHOW_60MIN_JA.md": {
-      "size": 5151,
-      "sha256": "283884af530f6111fedd4aa0f082761c955ce82e070dd4dacc9f2ee7a7fba082"
+      "size": 5213,
+      "sha256": "bd40a7b9793343858d70915852be395a0c79219a83272b9c1583e5b2324fbc01"
     },
     "journal_club/RUN_OF_SHOW_JA.md": {
       "size": 3709,
       "sha256": "25d7f04cce5ddf3bd5b506488ae02ec3ddc1d1f3f2db99aafdfc0f9c225033a4"
     },
     "journal_club/SPEAKER_NOTES_JA.md": {
-      "size": 105257,
-      "sha256": "57c7d6e2ec36f180d167af6169cba629fd7ec3e0f9984c1f4b2e5865869382c4"
+      "size": 104286,
+      "sha256": "f69741958a6e5992cbfbc85bfd1a3e5ad05c7d9f5e78f4fd7efb89837540ef04"
     },
     "journal_club/SPEAKER_SCRIPT_60MIN_JA.md": {
-      "size": 37365,
-      "sha256": "6110ebbdf5f3548788fd972f8f05ad69979655928ef8c0b2aacd4e3d858eaea3"
+      "size": 37239,
+      "sha256": "90322bfd08192cedb2a2936a98aa6a4fd41d08497dbb02ce52394bec8fb300bf"
     },
     "journal_club/build_60min_journal_club.py": {
       "size": 20976,
-      "sha256": "e8f40e526292dcb6b89cad03432a6ba66e393628bb69c377c9740ab8dd9bfcc0"
+      "sha256": "ada29d5ac394fe2f6d741dab8b50656b1403fa561f66bf3da1fd66c4c44e8db4"
     },
     "journal_club/build_p04_45_appendix.py": {
       "size": 16604,
@@ -257,6 +250,10 @@
     "journal_club/sync_pptx_speaker_notes.py": {
       "size": 1118,
       "sha256": "d72941618573bb8d01c8240e13d465a5659119aa491daf4d75118b50b6f0168c"
+    },
+    "journal_club/update_manager_thesis_slides.py": {
+      "size": 12983,
+      "sha256": "f15d1c6bf9bdae4ad2d6f78866ffb18801ee72a9f52e697ea64cf66c6e02d164"
     },
     "journal_club/verify_p04_6_60min.py": {
       "size": 5672,
