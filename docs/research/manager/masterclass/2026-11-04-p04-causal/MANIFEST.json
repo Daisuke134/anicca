@@ -1,15 +1,19 @@
 {
-  "title": "Manager Masterclass P04-1 to P04-6, 60min neuroscience journal club, What-if × Executor thesis",
-  "status": "educational/synthetic-only; empirical claims NOT verified",
+  "title": "Manager Masterclass through P05-1; no wheel reinvention",
   "date": "2026-11-04",
-  "test_count": 96,
-  "live_slides": 33,
-  "live_pdf_pages": 33,
-  "detailed_slides": 85,
-  "detailed_pdf_pages": 85,
-  "public_RCT_validation": false,
+  "single_roadmap": "ROADMAP_STATUS_JA.md",
+  "status": "educational + pure synthetic projection only",
+  "unit_tests_total": 122,
+  "unit_tests_p05_1": 26,
+  "presentation_slides": 33,
+  "presentation_pdf_pages": 33,
+  "detailed_slides": 87,
+  "detailed_pdf_pages": 87,
+  "detailed_speaker_notes": 87,
   "real_human_intervention": false,
-  "weight_release": false,
+  "real_world_causal_effect_validated": false,
+  "external_digital_twin_validated": false,
+  "new_production_graph_database": false,
   "files": {
     "MANAGER_WHAT_IF_EXECUTOR_THESIS_JA.md": {
       "size": 10384,
@@ -39,13 +43,17 @@
       "size": 10838,
       "sha256": "317888714cc1dcce390cac43b40016023f83d964b1d411028438af07d1c87e2e"
     },
+    "P05-1_JA.md": {
+      "size": 26163,
+      "sha256": "077be5e9333ffeff47c517d8fdde10e18a80b4dbc41ac37c0fc3be01f84ac813"
+    },
     "README.md": {
-      "size": 7816,
-      "sha256": "7a090cbefabe42b1adbf816e9c1c9c7d0ad5d7b5539a506c53124b4995b3d069"
+      "size": 9549,
+      "sha256": "bc2e3b11e465ff78d98187a8ff7a049e1867526f34e91f07154dcfb567679ed9"
     },
     "ROADMAP_STATUS_JA.md": {
-      "size": 57222,
-      "sha256": "35e58e62fca2ee745faf3ba208e326b67119cace710da0883400077c678f2301"
+      "size": 60132,
+      "sha256": "b9e3870a097189acf98a8347530a2353601466ded95fddca1268869e881345c4"
     },
     "evidence/P04-3_SYNTHETIC_RESULTS.json": {
       "size": 816,
@@ -111,6 +119,18 @@
       "size": 2158,
       "sha256": "614371f3ce001aa921d37fea2500b26756f61e1a16b202f25ebb22cace22a79a"
     },
+    "evidence/P05-1_QA.json": {
+      "size": 893,
+      "sha256": "9edc8fe63f812b4eb6a469f708d7cc2ebaf80363f16f6cfa5c1bf1b3be0bde83"
+    },
+    "evidence/P05-1_READONLY_SYNTHETIC_PROJECTION.json": {
+      "size": 8489,
+      "sha256": "f6bc3bcac966247be9dda33f89408a9f2d5676429f3622192e5af2b4f5d89818"
+    },
+    "evidence/P05-1_UNIT_TESTS.txt": {
+      "size": 3651,
+      "sha256": "4e17e42f98213bea542a3fad144e4eed818610a0362c105f08e5154288d22770"
+    },
     "evidence/TEST_RESULTS.txt": {
       "size": 7203,
       "sha256": "f303c639e5f64383f9ca6c7e6c4c504d3a5162b18d101578e862319e8a0eb8aa"
@@ -122,6 +142,10 @@
     "evidence/TEST_RESULTS_P04_1_TO_P04_6.txt": {
       "size": 11970,
       "sha256": "6620fc929e6e9d5b8cc6c92c673b9d5376b716da0b3474466046a3a089e2ad0f"
+    },
+    "evidence/TEST_RESULTS_P04_1_TO_P05_1.txt": {
+      "size": 15523,
+      "sha256": "6c7f84d4ccbacc7d1b83088768e054c73470e05bf9a2a9db4c6e72a8f92a5307"
     },
     "evidence/p04_1_causal_result.json": {
       "size": 1404,
@@ -159,6 +183,10 @@
       "size": 12161,
       "sha256": "776b2eeabe7e371d80ccbe0b0c0e614bddc4dfe0cd0c6bb8f1720e4cff6a9117"
     },
+    "experiments/p05_1_ontology_readonly.py": {
+      "size": 14927,
+      "sha256": "a9b7194d2477a797f9b360e55f58a60f75fae321d866d25de79dab6a15fbe881"
+    },
     "experiments/test_p04_1_causal_vs_observational.py": {
       "size": 2050,
       "sha256": "fc8554688162e1087012dda5639c37bb8193bfd2b3d41a7c34a0d2d35a1a9f29"
@@ -183,6 +211,10 @@
       "size": 4502,
       "sha256": "bda0a0656ef0589951f5b8ac79f13bc3d90f3fa0d0d47b4c006227c65e4334fb"
     },
+    "experiments/test_p05_1_ontology_readonly.py": {
+      "size": 6466,
+      "sha256": "e546e2066d1bda1911bb8e785a136bcbaa596e982a14574c393ebcdb41670391"
+    },
     "figures/build_figures.py": {
       "size": 2142,
       "sha256": "d3ecaaaad2660fc79576a2b7fad0b1edaa74983158f3d8a8e360935e37216b2d"
@@ -204,32 +236,32 @@
       "sha256": "2a95e47d0804aa14e626762759ed8a608e7b4ddd59a0caa095c958e2dd723342"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf": {
-      "size": 5434687,
-      "sha256": "f3c1eb1417eb4f0e935e2fd1b04f1eccb941b09e6569a76da22e1f841a4a7c96"
+      "size": 6076199,
+      "sha256": "b693bb9f7454ec383d1fc80b954e9d7d81c168a4f06b29bc5fa370e9b8acc56a"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx": {
-      "size": 621405,
-      "sha256": "240bdd50a77f8909d8e85f133bd63c525ab85516eb2de755495f9945d534834b"
+      "size": 629380,
+      "sha256": "053f5645e48919dcf88130586534febbe582841730eaa945ffc632a3ff76326c"
     },
     "journal_club/RUN_OF_SHOW_60MIN_JA.md": {
       "size": 5213,
       "sha256": "bd40a7b9793343858d70915852be395a0c79219a83272b9c1583e5b2324fbc01"
     },
     "journal_club/RUN_OF_SHOW_JA.md": {
-      "size": 3709,
-      "sha256": "25d7f04cce5ddf3bd5b506488ae02ec3ddc1d1f3f2db99aafdfc0f9c225033a4"
+      "size": 3980,
+      "sha256": "57c4a35fc5a3b9dcd9c1bb9b762094ebdd575abbfd879d0f997e30b26d8b77be"
     },
     "journal_club/SPEAKER_NOTES_JA.md": {
-      "size": 104286,
-      "sha256": "f69741958a6e5992cbfbc85bfd1a3e5ad05c7d9f5e78f4fd7efb89837540ef04"
+      "size": 106389,
+      "sha256": "80ecc8e0c55e7ac47c85be85bdceb2db55d9f679eddb5d7f841cd97d4d6ca5af"
     },
     "journal_club/SPEAKER_SCRIPT_60MIN_JA.md": {
       "size": 37239,
       "sha256": "90322bfd08192cedb2a2936a98aa6a4fd41d08497dbb02ce52394bec8fb300bf"
     },
     "journal_club/build_60min_journal_club.py": {
-      "size": 20976,
-      "sha256": "ada29d5ac394fe2f6d741dab8b50656b1403fa561f66bf3da1fd66c4c44e8db4"
+      "size": 21019,
+      "sha256": "42eded636c6096d0ebbd0f24a304434d9a8b5ddd09315f92f57e3a4afc1fb1d7"
     },
     "journal_club/build_p04_45_appendix.py": {
       "size": 16604,
@@ -242,6 +274,10 @@
     "journal_club/build_p04_appendix.py": {
       "size": 9575,
       "sha256": "1ac0ed613547d9b6b499b045738ca5b1333920c515bdab951e7e79cf1144add5"
+    },
+    "journal_club/build_p05_1_appendix.py": {
+      "size": 7901,
+      "sha256": "481f6d33637ec754d0f138cbccbc525de7b0449ab9fb88872d1f4c7793163d4d"
     },
     "journal_club/export_p04_45_pdf.py": {
       "size": 6593,

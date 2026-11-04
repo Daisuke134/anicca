@@ -1,0 +1,225 @@
+{
+  "state_machine": {
+    "manager_core_reused": true,
+    "state_history": [
+      "OBSERVED",
+      "HYPOTHESIZED",
+      "NO_ACTION"
+    ],
+    "causal_unsupported_choice": "NO_ACTION",
+    "executed_real_action": false
+  },
+  "before_recorded": {
+    "version": "manager.synthetic.graph-projection.v0",
+    "knowledge_cutoff": "2026-11-04T07:59:59Z",
+    "world_time": "2026-11-04T08:01:00Z",
+    "synthetic_only": true,
+    "can_authorize_execution": false,
+    "can_prove_real_world_effect": false,
+    "n_source_events": 0,
+    "nodes": [],
+    "edges": []
+  },
+  "after_recorded": {
+    "version": "manager.synthetic.graph-projection.v0",
+    "knowledge_cutoff": "2026-11-04T08:01:00Z",
+    "world_time": "2026-11-04T08:01:00Z",
+    "synthetic_only": true,
+    "can_authorize_execution": false,
+    "can_prove_real_world_effect": false,
+    "n_source_events": 5,
+    "nodes": [
+      {
+        "id": "synthetic:action-01",
+        "kind": "Action",
+        "privacy_class": "synthetic_nonpersonal"
+      },
+      {
+        "id": "synthetic:goal-01",
+        "kind": "Goal",
+        "privacy_class": "synthetic_nonpersonal"
+      },
+      {
+        "id": "synthetic:observation-01",
+        "kind": "Observation",
+        "privacy_class": "synthetic_nonpersonal"
+      },
+      {
+        "id": "synthetic:outcome-01",
+        "kind": "Outcome",
+        "privacy_class": "synthetic_nonpersonal"
+      },
+      {
+        "id": "synthetic:receipt-01",
+        "kind": "Receipt",
+        "privacy_class": "synthetic_nonpersonal"
+      },
+      {
+        "id": "synthetic:subject-01",
+        "kind": "Subject",
+        "privacy_class": "synthetic_nonpersonal"
+      }
+    ],
+    "edges": [
+      {
+        "source": "synthetic:subject-01",
+        "predicate": "PROPOSED_ACTION",
+        "target": "synthetic:action-01",
+        "source_fact_id": "synthetic:fact-model",
+        "event_id": "4256514dc82bfa82fee2efa3166572db04820d17ff30a428eb8d597243cdcb39",
+        "source_kind": "synthetic_model_inference",
+        "recorded_at": "2026-11-04T08:00:00+00:00",
+        "valid_from": "2026-11-04T08:00:00+00:00",
+        "observed_at": "2026-11-04T08:00:00+00:00",
+        "evidence_sha256": "e048023ab0e5b1c4876db726598d8d34f23c77fecf949f6b05eb1dbef6e2f2f6",
+        "confidence": 0.55,
+        "epistemic_status": "INFERRED_NOT_VERIFIED"
+      },
+      {
+        "source": "synthetic:subject-01",
+        "predicate": "HAS_OBSERVATION",
+        "target": "synthetic:observation-01",
+        "source_fact_id": "synthetic:fact-observation",
+        "event_id": "75068181c0735bc7ebfab54962d7131b9d174aec90e4fd50db7e7fdd2da23077",
+        "source_kind": "synthetic_observation",
+        "recorded_at": "2026-11-04T08:00:00+00:00",
+        "valid_from": "2026-11-04T08:00:00+00:00",
+        "observed_at": "2026-11-04T08:00:00+00:00",
+        "evidence_sha256": "8cffb9e9f1a07179c8f88b0a32d0b72d147891cfe1ce57094eb212210804543c",
+        "confidence": null,
+        "epistemic_status": "OBSERVED_SYNTHETIC"
+      },
+      {
+        "source": "synthetic:subject-01",
+        "predicate": "HAS_GOAL",
+        "target": "synthetic:goal-01",
+        "source_fact_id": "synthetic:fact-goal",
+        "event_id": "98931ca9cfca3494b90904269282be2c24268bf16bd41f1f193e127b4a427dbe",
+        "source_kind": "synthetic_observation",
+        "recorded_at": "2026-11-04T08:00:00+00:00",
+        "valid_from": "2026-11-04T08:00:00+00:00",
+        "observed_at": "2026-11-04T08:00:00+00:00",
+        "evidence_sha256": "a067f6c3a0acaee18ca63a879374cff8c3d7eaefc89aeaab5e6718828747621e",
+        "confidence": null,
+        "epistemic_status": "OBSERVED_SYNTHETIC"
+      },
+      {
+        "source": "synthetic:receipt-01",
+        "predicate": "RECEIPT_FOR",
+        "target": "synthetic:action-01",
+        "source_fact_id": "synthetic:fact-receipt",
+        "event_id": "a4713de4260f9f78271ce968e960b6c800b094d2134aa2d233dd5acf2098fd93",
+        "source_kind": "synthetic_provider_receipt",
+        "recorded_at": "2026-11-04T08:00:00+00:00",
+        "valid_from": "2026-11-04T08:00:00+00:00",
+        "observed_at": "2026-11-04T08:00:00+00:00",
+        "evidence_sha256": "5f64b3a314f60c0b952787da8e6bcda0ee9458e77dc994a8ea9ab32d5a7c68a8",
+        "confidence": null,
+        "epistemic_status": "PROVIDER_RECEIPT_NOT_OUTCOME"
+      },
+      {
+        "source": "synthetic:outcome-01",
+        "predicate": "INDEPENDENT_READBACK_FOR",
+        "target": "synthetic:action-01",
+        "source_fact_id": "synthetic:fact-readback",
+        "event_id": "f0f50ca5c7aae3b2464bd5818d5473ac7907df6e718ea362417ad5fb78048736",
+        "source_kind": "synthetic_independent_readback",
+        "recorded_at": "2026-11-04T08:00:00+00:00",
+        "valid_from": "2026-11-04T08:00:00+00:00",
+        "observed_at": "2026-11-04T08:00:00+00:00",
+        "evidence_sha256": "e676e1985cd51e2cbbc4d10432ec7c155d59000763ef0f5b2407384bced02ca6",
+        "confidence": null,
+        "epistemic_status": "INDEPENDENT_READBACK_SYNTHETIC"
+      }
+    ]
+  },
+  "jsonld_sketch": {
+    "@context": {
+      "prov": "http://www.w3.org/ns/prov#",
+      "mgr": "https://aniccaai.com/ns/manager/v0#",
+      "sourceFact": {
+        "@id": "mgr:sourceFact",
+        "@type": "@id"
+      },
+      "subject": {
+        "@id": "mgr:subject",
+        "@type": "@id"
+      },
+      "target": {
+        "@id": "mgr:target",
+        "@type": "@id"
+      },
+      "predicate": "mgr:predicate",
+      "validFrom": {
+        "@id": "mgr:validFrom",
+        "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+      }
+    },
+    "@graph": [
+      {
+        "@id": "urn:manager:claim:4256514dc82bfa82fee2efa3166572db04820d17ff30a428eb8d597243cdcb39",
+        "@type": "prov:Entity",
+        "subject": "urn:manager:synthetic:subject-01",
+        "predicate": "PROPOSED_ACTION",
+        "target": "urn:manager:synthetic:action-01",
+        "sourceFact": "urn:manager:synthetic:fact-model",
+        "validFrom": "2026-11-04T08:00:00+00:00",
+        "prov:generatedAtTime": "2026-11-04T08:00:00+00:00",
+        "mgr:epistemicStatus": "INFERRED_NOT_VERIFIED"
+      },
+      {
+        "@id": "urn:manager:claim:75068181c0735bc7ebfab54962d7131b9d174aec90e4fd50db7e7fdd2da23077",
+        "@type": "prov:Entity",
+        "subject": "urn:manager:synthetic:subject-01",
+        "predicate": "HAS_OBSERVATION",
+        "target": "urn:manager:synthetic:observation-01",
+        "sourceFact": "urn:manager:synthetic:fact-observation",
+        "validFrom": "2026-11-04T08:00:00+00:00",
+        "prov:generatedAtTime": "2026-11-04T08:00:00+00:00",
+        "mgr:epistemicStatus": "OBSERVED_SYNTHETIC"
+      },
+      {
+        "@id": "urn:manager:claim:98931ca9cfca3494b90904269282be2c24268bf16bd41f1f193e127b4a427dbe",
+        "@type": "prov:Entity",
+        "subject": "urn:manager:synthetic:subject-01",
+        "predicate": "HAS_GOAL",
+        "target": "urn:manager:synthetic:goal-01",
+        "sourceFact": "urn:manager:synthetic:fact-goal",
+        "validFrom": "2026-11-04T08:00:00+00:00",
+        "prov:generatedAtTime": "2026-11-04T08:00:00+00:00",
+        "mgr:epistemicStatus": "OBSERVED_SYNTHETIC"
+      },
+      {
+        "@id": "urn:manager:claim:a4713de4260f9f78271ce968e960b6c800b094d2134aa2d233dd5acf2098fd93",
+        "@type": "prov:Entity",
+        "subject": "urn:manager:synthetic:receipt-01",
+        "predicate": "RECEIPT_FOR",
+        "target": "urn:manager:synthetic:action-01",
+        "sourceFact": "urn:manager:synthetic:fact-receipt",
+        "validFrom": "2026-11-04T08:00:00+00:00",
+        "prov:generatedAtTime": "2026-11-04T08:00:00+00:00",
+        "mgr:epistemicStatus": "PROVIDER_RECEIPT_NOT_OUTCOME"
+      },
+      {
+        "@id": "urn:manager:claim:f0f50ca5c7aae3b2464bd5818d5473ac7907df6e718ea362417ad5fb78048736",
+        "@type": "prov:Entity",
+        "subject": "urn:manager:synthetic:outcome-01",
+        "predicate": "INDEPENDENT_READBACK_FOR",
+        "target": "urn:manager:synthetic:action-01",
+        "sourceFact": "urn:manager:synthetic:fact-readback",
+        "validFrom": "2026-11-04T08:00:00+00:00",
+        "prov:generatedAtTime": "2026-11-04T08:00:00+00:00",
+        "mgr:epistemicStatus": "INDEPENDENT_READBACK_SYNTHETIC"
+      }
+    ]
+  },
+  "limitations": {
+    "no_real_users": true,
+    "no_execution": true,
+    "no_live_receipt": true,
+    "no_human_effect": true,
+    "not_an_authority_registry": true,
+    "full_OWL_reasoning_implemented": false,
+    "SHACL_validation_implemented": false
+  }
+}
