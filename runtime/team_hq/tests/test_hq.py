@@ -1173,6 +1173,92 @@ class ReasonInboxTests(unittest.TestCase):
         self.assertEqual(len(self.tasks()), 1)
         self.assertEqual(self.reason.ack.call_count, 2)
 
+    def test_reason_attachment_is_durable_and_in_task_before_ack(self):
+        self.enabled()
+        inbox = self.root / "reason" / "inbox" / "fixture"
+        inbox.mkdir(parents=True)
+        attachment = inbox / "brief.txt"
+        attachment.write_text("attachment evidence", encoding="utf-8")
+        self.reason.inbox.return_value["messages"][0]["files"] = [
+            {"name": "brief.txt", "content": "", "path": str(attachment)}]
+
+        def ack(ids):
+            self.assertEqual(ids, [self.message_id])
+            self.assertIn("attachment evidence", self.tasks()[0]["body"])
+
+        self.reason.ack.side_effect = ack
+        with mock.patch.dict(os.environ, {"REASON_NETWORK_HOME": str(self.root / "reason")}):
+            self.assertTrue(self.runtime.receive()["ok"])
+        attachment.unlink()
+        self.assertIn("attachment evidence", self.tasks()[0]["body"])
+
+    def test_missing_reason_attachment_does_not_ack_or_starve_other_messages(self):
+        self.enabled()
+        first = self.reason.inbox.return_value["messages"][0]
+        first["files"] = [{"name": "lost.txt", "content": "", "path": str(
+            self.root / "reason" / "inbox" / "fixture" / "lost.txt")}]
+        second_id = "01M6G37N2HYGRZ2JAJ4KC98QBZ"
+        self.reason.inbox.return_value["messages"].append({
+            "id": second_id, "from": "daisuke/muse@remote", "to": "daisuke/hq-codex",
+            "body": "independent request", "wake": True})
+        with mock.patch.dict(os.environ, {"REASON_NETWORK_HOME": str(self.root / "reason")}):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_called_once_with([second_id])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertIn("independent request", self.tasks()[0]["body"])
+
+    def test_reason_attachment_replay_is_idempotent_after_ack_failure(self):
+        self.enabled()
+        inbox = self.root / "reason" / "inbox" / "fixture"
+        inbox.mkdir(parents=True)
+        attachment = inbox / "brief.txt"
+        attachment.write_text("keep the full brief", encoding="utf-8")
+        self.reason.inbox.return_value["messages"][0]["files"] = [
+            {"name": "brief.txt", "path": str(attachment), "content": ""}]
+        self.reason.ack.side_effect = hq.HQError("ack unavailable")
+        with mock.patch.dict(os.environ, {"REASON_NETWORK_HOME": str(self.root / "reason")}):
+            self.assertFalse(self.runtime.receive()["ok"])
+            attachment.unlink()
+            self.reason.ack.side_effect = None
+            self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertIn("keep the full brief", self.tasks()[0]["body"])
+
+    def test_reason_attachment_replay_upgrades_preexisting_task_before_ack(self):
+        self.enabled()
+        with self.runtime.connect() as database:
+            self.runtime.insert_task(database, "reason:" + self.message_id, "codex", "old body")
+        inbox = self.root / "reason" / "inbox" / "fixture"
+        inbox.mkdir(parents=True)
+        attachment = inbox / "brief.txt"
+        attachment.write_text("previously omitted attachment", encoding="utf-8")
+        self.reason.inbox.return_value["messages"][0]["files"] = [
+            {"name": "brief.txt", "path": str(attachment), "content": ""}]
+        with mock.patch.dict(os.environ, {"REASON_NETWORK_HOME": str(self.root / "reason")}):
+            self.assertTrue(self.runtime.receive()["ok"])
+            self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertEqual(self.tasks()[0]["body"].count("previously omitted attachment"), 1)
+
+    def test_reason_rejects_attachment_outside_inbox_or_through_symlink(self):
+        for kind in ("outside", "symlink"):
+            with self.subTest(kind=kind):
+                self.enabled()
+                inbox = self.root / "reason" / "inbox" / "fixture"
+                inbox.mkdir(parents=True, exist_ok=True)
+                target = self.root / "private.txt"
+                target.write_text("must not be read", encoding="utf-8")
+                path = target
+                if kind == "symlink":
+                    path = inbox / "link.txt"
+                    path.symlink_to(target)
+                self.reason.inbox.return_value["messages"][0]["files"] = [
+                    {"name": "file.txt", "path": str(path), "content": ""}]
+                with mock.patch.dict(os.environ, {"REASON_NETWORK_HOME": str(self.root / "reason")}):
+                    self.assertFalse(self.runtime.receive()["ok"])
+                self.reason.ack.assert_not_called()
+                self.assertEqual(self.tasks(), [])
+
     def test_reason_queue_failure_never_acknowledges(self):
         self.enabled()
         with mock.patch.object(self.runtime, "insert_task", side_effect=OSError("disk full")):
