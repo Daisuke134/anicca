@@ -185,3 +185,40 @@ Existing source contracts are loaded directly from `runtime/contracts/common-rec
 5. Define strong baseline and external randomized or otherwise identifiable effect measurements separately from the code trace.
 
 **Research archive slides:** P05-2 was appended only as slides 88–89 of the full deck; the 33-slide / 60-minute public journal club talk is unchanged.
+
+
+## 12. P05-3 through P05-5: staged authority, reconciliation, shadow and first field-gate (2026-11-04)
+
+**Status:** software education and offline fixture verification completed. **Production authority, real company Shadow S1 and bounded live execution S2 are NOT approved or performed.** This section is a research-to-implementation handoff; company authority remains in the existing root operational SSOT.
+
+### P05-3 — authority separation and agent roles
+
+- Actor/Planner may propose but must not manufacture `Grant`, credentials or proof of user consent.
+- Use existing `manager_core.authority.Grant` and `AuthorityVerifier`, `InterventionPlan`, `StateMachine`. Fixture HMAC signing is for offline unit tests **only**. Real privilege requires separate issuer, authentic scope, revocation, credentials, user/owner authorization and audit.
+- Verified synthetic denials: wrong target, wrong domain, over-budget, bad signature, expiry, revoked. Existing `DurableOutbox.execute()` rejects any adapter other than exact `OfflineFixtureAdapter`, even if an apparently signed fixture Grant is passed. That restriction was NOT removed.
+- Cross-agent role separation should be enforced by immutable actor/tenant/operation metadata from an authenticated host; no self-reported LLM or Graph relation can grant authority.
+
+### P05-4 — recovery and independent outcome separation
+
+- Use existing DurableOutbox to reserve a stable idempotency key *before* attempting an external effect. Same key and parameters replay the saved record rather than call provider again. Conflicting key reuse and cumulative grant-budget exhaustion are rejected.
+- For a timeout after a provider effect, `UNKNOWN` must be retained; reconciliation must use a trustworthy readback, not resend. In fixture test, UNKNOWN→provider lookup unavailable→UNKNOWN→lookup restored→PRESENT, provider send count remains one.
+- Existing `OfflineFixtureSensor` provides distinct-source readback but `verify_outcome` deliberately returns `VERIFIED_FIXTURE_ONLY` with proof level P0. It is not independent real human welfare evidence.
+- `evaluate_outcome` with no comparator and harm measurements returns NO_COMPARATOR, not a positive net benefit. An actual clinical or business result requires separately specified outcome, comparator, costs, harms, timing and independent source.
+
+### P05-5 — deployment stages
+
+| Gate | What can be claimed | Actual result | Required before promotion |
+|---|---|---|---|
+| S0 offline tests | implementation/identity/permission behavior of synthetic fixture | Passed: 229/229 cumulative Masterclass checks; existing Manager kernel+shadow 75 unit tests separately; Python3.12 36 new tests | Source audit, compatibility, no secrets |
+| S1 real-work Shadow | candidate results compared to a current operator with *zero Manager external writes* | **NOT YET RECORDED** in this research run. Existing Shadow 41 tests run and pass | Confirm owned task, actual source, model+baseline, frozen input, user/owner consent as needed, cost/latency log, error reporting, independent replay |
+| S2 one limited Live | exactly one reversible owned operational action with provider and independent proof | **NOT AUTHORIZED / NOT PERFORMED** | Authenticated owner/provider scope, revocation, specific target, budget, change control, idempotency, trusted readback, rollback/stop criteria, audit & monitoring |
+| S3 bounded repeated automation | measurable outcome gains over a strong baseline | NOT PERFORMED | Pre-specified comparisons, monitored hazards/costs and reproducibility |
+| S4 company engine | reliable decisions across multiple business functions | NOT DEMONSTRATED | Longitudinal independent real-world benefits, partial failures, cost and governance |
+
+Research code: `docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p05_3_5_end_to_end.py` and matching 36 tests. Result JSON: `evidence/P05-3_5_EXISTING_CORE_OFFLINE_RESULTS.json`. Test log: `evidence/TEST_RESULTS_P04_TO_P05_PHASE5.txt` (229 tests). Existing real Core tests were re-run with macOS-resolved `TMPDIR=/private/tmp` and yielded **75/75 tests passed**, which include the 41 Shadow tests. We also ran 36 new tests under Python3.12. Observed `sqlite3.Connection` ResourceWarning messages in selected existing suites: a resource hygiene finding for future review, not an asserted field crash. No new dependency, production DB, host worker, authority, account or API mutation has been introduced.
+
+**Training/release/company impact track:** [detailed conditional milestones](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/MANAGER_MODEL_COMPANY_IMPACT_MILESTONES_JA.md). The first company control plane can use existing GPT/Grok/Muse execution assistants while an independently measured behavior model is prepared. Existing Qwen3-0.6B SafetyBench evaluation is partial and the private HelpSteer2 train27 LoRA plan has unaccepted G6/G7 gates; neither constitutes an open-weight Behavior Foundation Model. Weight release requires actual trained adapter, provenance/licensing, data privacy, model card and held-out evaluation. Actual user rumination improvement requires opt-in, validated metrics, harms and causal comparison.
+
+### After this implementation
+
+Proceed with P06-1 (first low-risk owned workflow + fixed comparator). The real S1/S2 activation is an **independent operational gate**; leaving it pending must not block education progress, but software tests cannot authorize it.
