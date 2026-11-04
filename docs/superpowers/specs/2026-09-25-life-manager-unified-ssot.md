@@ -1,15 +1,15 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
 
-進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。対象binaryを先に指定して検証し、PRでも同じprovenance工程を実行して回帰を防ぐ。main以外のartifact upload禁止は維持する。
+進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。
 
-並行cursor **HQ-REASON-MACOS-ARTIFACT**: 受信ページ化はmain 0ac0f558に統合済みだが、対応する専用Mac binaryの未構築とpage_enabled=falseにより本番未有効。ローカルcargo buildは空き容量を圧迫したため自分のbuildを停止済み。既存のReason CIにarm64 Mac buildと実socket試験を追加し、main push由来のみSHA付き専用artifactを保存する。受入はPR CI・独立review・main統合後、main runのcommitとartifact SHA・architecture・socket testを照合し、既存ownerと競合しない時に専用binaryと設定を反映して自然受信を確認する。既存Reason engineのbinaryは置換しない。
+並行cursor **HQ-REASON-MACOS-ARTIFACT**: 受信ページ化はmain 0ac0f558に統合済みだが、対応する専用Mac binaryはmain CIで構築・artifact発行、公式run/head・SHA256・arm64とMac隔離socket14件を検証後、3つのHQ owner lock下で専用pathに配置しpage_enabled=trueをreadback済み。自然受信・処理結果は未確認。ローカルcargo buildは空き容量を圧迫したため自分のbuildを停止済み。既存のReason CIにarm64 Mac buildと実socket試験を追加し、main push由来のみSHA付き専用artifactを保存する。受入はPR CI・独立review・main統合後、main runのcommitとartifact SHA・architecture・socket testを照合し、既存ownerと競合しない時に専用binaryと設定を反映して自然受信を確認する。既存Reason engineのbinaryは置換しない。
 
 並行cursor **HQ-REASON-INBOX-PAGES**: Reason daemonは本文上限64KiBだがHQ clientは全未読と表示用textを重複出力し、33件×64KiBの隔離fixtureで4,327,967文字となりHQの4MiB制限で全受信を拒否する。未読ACKはしないが後続依頼が停止する。旧順=容量bounded化後に受信継続、新順=旧senderとの互換性を維持してHQ専用受信をページ化し、添付保持・予約修正と並行して進める。実DB・既存daemon・他sessionは変更しない。
 
 独立調査: daemonは現在全未読を読み、CLIにmessagesとrendered textを返すため、CLI出力だけのページ化ではdaemon〜client間メモリはboundedにならない。offsetや前回IDの配列検索はACKでanchorが消えると欠落する。検討する限定修正は既存wire互換のopt-inで本文を切らずUTF-8 bytes上限のmessage単位出力、(sent_at,id)の安定keyと周回終端、保存・保留とcursorの原子的記録。timestampが同じID、遅着・ACK失敗・保留先頭を跨ぐ回帰で確認し、daemon側全量メモリは別の未解決課題として残す。
 
-進捗: opt-in CLI page試作e5ceaeefはmessage単位のUTF-8 bytes上限・宛先確認・(sent_at,id) cursor・上限超過holdを実装した。独立した最小Rust fixtureで33件の上限とACK後anchor消失を1件PASS、既存本番binaryでpage機能未実装の失敗を再現した。完全binaryのcargo checkはホスト空きが約2.5GiBへ低下したため自分のbuildだけ停止、隔離生成物を削除した。実binary・socket・HQのcursor/ACK原子化・独立review・CI・反映は未完。daemonの全件メモリ問題も未解決。
+進捗: opt-in CLI page試作e5ceaeefはmessage単位のUTF-8 bytes上限・宛先確認・(sent_at,id) cursor・上限超過holdを実装した。独立した最小Rust fixtureで33件の上限とACK後anchor消失を1件PASS、既存本番binaryでpage機能未実装の失敗を再現した。完全binaryのcargo checkはホスト空きが約2.5GiBへ低下したため自分のbuildだけ停止、隔離生成物を削除した。実binary・socket・HQのcursor/ACK原子化・独立review・CIはPASSしmainへ統合。実機有効化・自然受信は未完。daemonの全件メモリ問題も未解決。
 
 HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維持する。新binaryがmain由来build・実socket試験・review・immutable releaseに合格するまでprivate設定を有効化しない。昇格では専用binaryのSHAと設定page_enabled=trueをowner/lease配下で明示readbackし、自然受信から結果まで確認する。未解決のoversize holdは空pageを経ても維持・失敗として表示し、同じIDを完全保存した時だけ解除する。保留時に添付の存在を耐久記録し、期限切れで添付が消失した依頼をACKしない。
 
@@ -24,6 +24,23 @@ HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維�
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
 目的は、既存の共有部屋で依頼を保存し、受領・着手・結果・枠切れ時の引継ぎを区別しながら、収益とManager開発を継続すること。schedulerが有限runを起こす。この対話自体の無期限再開、登録席の常時稼働、売上を保証するという意味ではない。primaryは正本・統合・運用受入、各writerは明示したsource/業務effectを所有する。
+
+### Anicca会社の目標アーキテクチャと現在の実測
+
+目標: 人による定常的な中継なしに、顧客価値・収益・費用・Manager研究開発を継続する。Slackは共有履歴と人が見られる業務報告、Reason Networkは本人agentへの配送とreceipt、Life Manager/HQは永続queue・有限実行・担当lease・重複防止・結果照合を担う。常駐モデルの会話を24時間実行の証拠とせず、外部scheduler・監視・再起動・別host・認証・利用枠に依存する。全員1分以内の自動受信/着手と無停止は未実証。
+
+役割: Codexは実装・検証・共通queueと収益/研究の遂行、Dotsは本人sessionの共同作業と引継ぎ、Museは本人VM・既存browser/workの担当、Grokbotは本人routineとcloud側の仕事を担当する。能力は固定の縄張りではなく、各仕事に単一ownerと期限・途中成果・停止理由・代替候補を残し、枠切れや未着手は証拠付きで引き継ぐ。社外送信・納品・公開・金銭効果は元ownerと公式receiptで照合し、unknownを再送しない。認証情報は既存private正本を使い、共有chatへ流さない。
+
+仕事の循環: ①需要/案件・顧客反応を収集 ②売上、受注、conversion、費用、利益を実測 ③product/Manager開発と研究を優先順位付け ④担当が実行し証拠を保存 ⑤配信・納品の公式結果を照合 ⑥毎日の改善を次のqueueへ反映する。売上や利益は決済等の正式readbackなしに0や成功と断定しない。公開記事は実証済みの事実と未完を分け、公開ページと画像を実際に確認する。
+
+現在の証拠: HQはMac mini上のlaunchdによる受信/worker各15秒・投入5分の有限実行で、7種の論理仕事を共有する。受信/投入のloaded SHAはebc75aba、workerはac59c14e。reason pageはmain 0ac0f558、Mac artifact修正はmain 9f4431d0、main CI run 41777259782はMac/Linux build・socket testをPASSしartifact発行済み。専用binaryの配置とpage_enabled=trueは3 owner lock下で完了、公式run/head・SHA256・arm64・Mac隔離socket14件を確認。自然受信・結果は未確認。受信/実行は空き容量により延期され、定常24時間や1分SLAは未達。task df9d4d48は自然着手・exit0・Slack結果確認、Reason結果receiptはqueuedで本人既読未確認。task 8f85fbはqueued。Museは公開鍵によるMac SSH成功を本人側で報告、こちらの独立実測ではない。home-claudeの401は有効な代役ではなく、Grokbot枠切れ時の完全な自動引継ぎは未証明。
+
+残TODO（成果順）:
+1. 専用binaryとpage設定の反映は完了。main由来releaseのloaded SHA、自然受信、添付、ACKと再走重複0を確認する。daemon内部の全件メモリは別途残す。
+2. 容量変動とFIFO待ちの原因を実測し、安全に受信/workerを自然復帰させる。共通床や他ownerの保護を安易に変更しない。待機task 8f85fbの着手・元messageへの結果・本人側受領まで追う。
+3. Dots/Muse/Grokbotそれぞれの元ID→自然wake→着手→結果を本人経路で測り、1分以内を繰り返し実証。停止/利用枠枯渇時は有効な別担当への一度限りの引継ぎ・重複0・戻し方を検証する。未認証helperを稼働人数に数えない。
+4. 毎時の受注照合、毎日の優先順位/収益/費用、14時Manager R&Dを自然実行し、案件の実受注・納品・現金収入を公式readbackで計測。確認できた実験を既存公開記事へ反映する際は公開ページ・画像・mobileを確認する。
+5. 再開失敗が記録された他ownerの自然runを読み取り照合。lm-fence-reconcilerは後続pass、hf-reddit-loop-healthcheckとlife-manager-health-observerは未確認。未知の外部effect、他agent、実行中プロセスを保護する。
 
 ### 現在の残TODOとcursor
 
@@ -61,7 +78,7 @@ HQ-01のMac自然受信→一意card→着手→元送信先への結果→再�
 | Manager R&D | 14JST | taskd26c0c5310218fcdf4ec750a。Ubuntu/Playwright検証修正PR9127/main ee837f8d40c4d109c234ed698a071952e11b688c |
 | 成果/費用 | 21JST | taske5dd86428fd216251594c40b succeeded/posted。売上成立とは別 |
 
-実行場所はMac mini。macOSのlaunchdが3つの有限job（ai.anicca.team-hq-receive/work/schedule）を起こし、main由来immutable releaseのbin/lm-loop-run→bin/team-hq.pyを実行する。最新のreceiveのloaded plistは `/Users/anicca/loops/releases/20261104T090925-6919bcd2` を固定参照する。受信/workはStartInterval=15、scheduleは毎時03/08/13/18/23/28/33/38/43/48/53/58分で5分間隔。現在の対話session、SSH接続、Desktop Scheduled Tasksを起動源にはしない。
+実行場所はMac mini。macOSのlaunchdが3つの有限job（ai.anicca.team-hq-receive/work/schedule）を起こし、main由来immutable releaseのbin/lm-loop-run→bin/team-hq.pyを実行する。直近観測のreceive plistは `/Users/anicca/loops/releases/20261104T135623-ebc75aba` を固定参照する。受信/workはStartInterval=15、scheduleは毎時03/08/13/18/23/28/33/38/43/48/53/58分で5分間隔。現在の対話session、SSH接続、Desktop Scheduled Tasksを起動源にはしない。
 
 workerは仕事がある時だけ `/opt/homebrew/bin/codex exec --skip-git-repo-check -o {artifact} -` をcwd `/Users/anicca` で実行する。CLI runはtimeout_seconds=1200（20分）の設定内で終了し、結果/次cursorを永続化する。常駐LLMや7本の独立sessionではない。Macの電源/ログイン・通信・認証・実行条件に依存するため、登録を24時間無停止の証明にしない。
 
