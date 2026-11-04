@@ -25967,6 +25967,10 @@ PR9211は全CI PASS後main 07f7889926ae92b78e247cb1b347e11ea90e6d1cへ統合済�
 
 native agentは本人Computer/isolateに比較表と自社オリジナルScript Forgeの一つの価格仮説を保存しreadで照合する。20%platform feeを前提に計算する場合も、Capafy上の実model/実行費・返金・課税等が未実測であることを明示し、制作run費0.184947USDをそのまま一注文のCapafy原価へ転用しない。tool確認が出た場合はrootが解除せず状態を記録する。終了後はartifact/費用を保存し一時agentだけを削除、context revokeは行わない。原本Identity/credential/deploymentを維持する。これは価格仮説と公開需要の証拠であり、認証/公開/注文/利益/MRRの達成ではない。
 
+価格run ses_wbghwk1pt6m81k08s94javsmj7（一時agent agt_3w1mh1wd332rah8kbbx0sgd5s7）はHookAceのlive価格表と二資料を書き出した後、58808microUSDでbudget_pausedとなる。次callのsession quoteが残枠へ収まらないという公式budget.exceededで、300000microUSDを消費した状態ではない。quoteの具体額は未提示。Video Hook Forensics/Dolaのlive表示と書いた資料のreadbackは未完で、価格仮説には試用例57語/販売文128語と一注文仕様の混同、複数tierを一案とする矛盾が残る。
+
+この一件だけ旧period/task/session上限300000→新500000microUSDとして、同sessionのUI検索完了・最小修正・readbackを続ける。原本月残枠から既知の一時試験費を控除して新上限が収まることを先に照合し、月cap12USD/追加購入/原本27/定期設定は変更しない。理由は完了済み外部価格読取を再実行せず、実測の予約不足を解消して既存成果を正確に保存するため。root補足1件として数える。未検索の二商品は観測済みSearch UIの実行結果を確認し、未観測URLの推測を繰り返さない。自己制作商品の仕様は15秒25–32語/30秒55–65語/60秒110–130語、六部はhooks/script/CTA/caption-tags/titles/checklist。57語は二つの30秒試用例、128語は販売文であり注文の固定長ではない。一つの初期paid planを仮説として選び、他tierは比較資料へ分け、原価/実需要未検証を維持する。終了時の実費・資料・不明点を記録し、未確認の二商品や有償需要を完了扱いにしない。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
