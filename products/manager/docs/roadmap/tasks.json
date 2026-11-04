@@ -1268,10 +1268,10 @@
       "docs/research/D011_PORTFOLIO_RECEIPT_DEDUP_20261025.md",
       "docs/research/D011_CROSS_OPPORTUNITY_STAGE_ALIAS_20261027.md"
     ],
-    "implementation_status": "RESEARCH_2026_10_23_COMPLETE; SOURCE_ID_URL_SHA256_REUSE_GUARD_IMPLEMENTED; D011_CROSS_OPPORTUNITY_RECEIPT_COLLISION_PREFLIGHT_TESTED_2026_10_25; CROSS_OPPORTUNITY_STAGE_RECEIPT_ALIAS_SCREEN_CI_GREEN_2026_10_27; HOSTED_CI_541_TESTS_5_SKIPPED_GREEN; LIVE_PAYMENT_NOT_VERIFIED; ORIGINAL_ACCEPTANCE_INCOMPLETE",
+    "implementation_status": "RESEARCH_2026_10_23_COMPLETE; SOURCE_ID_URL_SHA256_REUSE_GUARD_IMPLEMENTED; D011_CROSS_OPPORTUNITY_RECEIPT_COLLISION_PREFLIGHT_TESTED_2026_10_25; CROSS_OPPORTUNITY_STAGE_RECEIPT_ALIAS_SCREEN_CI_GREEN_2026_10_27; HOSTED_CI_541_TESTS_5_SKIPPED_GREEN; LIVE_PAYMENT_NOT_VERIFIED; ORIGINAL_ACCEPTANCE_INCOMPLETE; REFUND_CHARGEBACK_LIFECYCLE_FAIL_CLOSED_2026_11_05; HOSTED_CI_585_TESTS_5_SKIPPED_GREEN; ORIGINAL_ACCEPTANCE_INCOMPLETE",
     "last_reviewed": "2026-11-05",
-    "ci_verification_url": "https://github.com/Daisuke134/life-manager/actions/runs/40422285572",
-    "latest_atomic_increment": "Added explicit refund, partial-refund, refund-pending/failed, chargeback and chargeback-reversed states. Such states fail closed for declared-receipt arithmetic and portfolio screening. D011 remains todo until an independent authentic settlement receipt and provider identity are externally verified."
+    "ci_verification_url": "https://github.com/Daisuke134/life-manager/actions/runs/41934528420",
+    "latest_atomic_increment": "Added explicit refund, partial-refund, refund-pending/failed, chargeback and chargeback-reversed states. Such states fail closed for declared-receipt arithmetic and portfolio screening. D011 remains todo until an independent authentic settlement receipt and provider identity are externally verified. Hosted independent offline suite: 585 passed, 5 optional DoWhy skips; Phase06 browser CI also passed after pinning browser jobs to Ubuntu 24.04."
   },
   {
     "section": "09. 領域横断の祝福・成果証拠",
