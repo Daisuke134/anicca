@@ -1,0 +1,9 @@
+{
+  "study_id": "P04-6-SYNTHETIC-POLICY-RCT-20261104",
+  "plan_sha256": "614371f3ce001aa921d37fea2500b26756f61e1a16b202f25ebb22cace22a79a",
+  "freeze_stage": "before synthetic outcome generation",
+  "external_registry": "NOT REGISTERED; local educational hash only",
+  "n_total_fixed": 40000,
+  "policy_frozen_before_outcomes": true,
+  "primary_outcome_frozen_before_outcomes": true
+}
