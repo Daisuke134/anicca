@@ -3278,9 +3278,15 @@ def apply_live(release_root: Path, agents_dir: Path, launchctl_safe: Path,
                         launchctl_safe, ["print", f"gui/{os.getuid()}/{item['label']}"])
                     loaded = _loaded_arguments(printed) if rc == 0 else []
                     if loaded == item["expected_arguments"]:
-                        result = {"ok": True, "label": item["label"],
+                        try:
+                            resumed = (admission_resume is None
+                                       or bool(admission_resume(item["loop_id"])))
+                        except Exception:
+                            resumed = False
+                        result = {"ok": resumed, "label": item["label"],
                                   "loaded_arguments": loaded, "release_sha": release_sha,
-                                  "changed": False}
+                                  "changed": False, "admission_resumed": resumed,
+                                  "detail": "" if resumed else "admission resume failed"}
                 if result is None:
                     result = install_one(
                         item, target_path, lambda args: _safe_launchctl(launchctl_safe, args),

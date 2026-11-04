@@ -5531,7 +5531,8 @@ def test_dispatch_reserved_rejects_noncanonical_installed_argv(tmp_path):
     run.assert_not_called()
 
 
-def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path):
+def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIFE_MANAGER_RESOURCE_ADMISSION_ROOT", str(tmp_path / "admission"))
     current = tmp_path / "release"
     agents = tmp_path / "agents"
     (current / "config").mkdir(parents=True)
@@ -5555,7 +5556,69 @@ def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path):
         ) == []
 
     defer.assert_called_once_with("example", cooldown_seconds=60)
-    run.assert_not_called()
+    assert run.call_count == 1
+
+
+@pytest.mark.parametrize(("code", "stdout", "stderr", "expected"), [
+    (113, "", "Could not find service", "suspended"),
+    (0, "state = running\npid = 123", "", "running"),
+    (77, "", "preflight failed", "deferred"),
+    (113, "", "Could not find service", "locked"),
+    (113, "", "Could not find service", "scan_error"),
+])
+def test_missing_plist_dispatch_respects_launchd_state(
+        tmp_path, monkeypatch, code, stdout, stderr, expected):
+    root = tmp_path / "admission"
+    monkeypatch.setenv("LIFE_MANAGER_RESOURCE_ADMISSION_ROOT", str(root))
+    monkeypatch.setenv("LIFE_MANAGER_HOST_MAX_FINITE_RUNS", "1")
+    monkeypatch.setenv("LIFE_MANAGER_HOST_MIN_REVENUE_RUNS", "0")
+    admission.activate_durable_v2()
+    instant = time.time()
+    for owner in ("example",):
+        admission.enqueue_durable("deterministic", owner, admission_class="revenue",
+                                  occurrence_id=f"{owner}:wake", now=instant)
+    assert admission.reserve_available(now=instant) == ["example"]
+    current = tmp_path / "release"
+    agents = tmp_path / "agents"
+    (current / "config").mkdir(parents=True)
+    agents.mkdir()
+    row = {
+        "label": "ai.anicca.example", "domain": "earn", "entrypoint": "bin/example",
+        "cadence": {"start_interval_seconds": 300}, "effect_class": "message",
+        "state_root": "~/.local/state/life-manager/example",
+        "log_root": "~/.local/state/life-manager/example/logs",
+        "cleanup": {"max_runs": 10, "max_age_days": 7},
+        "provider_route": "deterministic",
+    }
+    (current / "config/loop-registry.json").write_text(json.dumps({
+        "schema_version": 2, "loops": {"example": row},
+    }))
+    observed = subprocess.CompletedProcess([], code, stdout, stderr)
+    guard = admission.owner_deploy_lock("example") if expected == "locked" else nullcontext()
+    scan = (patch("runtime.loop.lm_loop_run.reserve_available_resource",
+                  side_effect=sqlite3.OperationalError("control busy"))
+            if expected == "scan_error" else nullcontext())
+    with guard, scan, patch("runtime.loop.lm_loop_run.subprocess.run", return_value=observed) as run:
+        _dispatch_reserved(["example"], current=current, agents_dir=agents)
+        if expected == "locked":
+            run.assert_not_called()
+    with sqlite3.connect(root / "admission-v2.sqlite3") as db:
+        priority = db.execute("SELECT next_eligible_at FROM priorities WHERE owner_id=?",
+                              ("example",)).fetchone()[0]
+        occurrence = db.execute("SELECT owner_id FROM queue WHERE owner_id=?",
+                                ("example",)).fetchone()
+        reservation = db.execute("SELECT owner_id FROM reservations WHERE owner_id=?",
+                                 ("example",)).fetchone()
+    assert occurrence is not None
+    if expected in {"suspended", "scan_error"}:
+        assert priority == float("inf")
+        assert reservation is None
+    elif expected in {"running", "locked"}:
+        assert priority == 0
+        assert reservation is not None
+    else:
+        assert 0 < priority < float("inf")
+        assert reservation is None
 
 
 def test_real_child_receives_sigterm_after_atomic_handoff(tmp_path):

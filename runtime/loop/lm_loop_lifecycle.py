@@ -3,13 +3,27 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Callable
 
 from runtime.loop.macos_loop_registry import validate_registry
+from runtime.host.resource_admission import owner_deploy_lock
 
 
 def lifecycle_one(action: str, loop_id: str, entry: dict, agents_dir: Path,
+                  launchctl: Callable[[list[str]], tuple[int, str]],
+                  admission: Callable[[str], object] | None = None) -> dict:
+    if action not in {"start", "stop", "restart"}:
+        raise ValueError(f"invalid lifecycle action: {action}")
+    with owner_deploy_lock(loop_id) as acquired:
+        if not acquired:
+            return {"loop_id": loop_id, "label": entry["label"], "action": action,
+                    "return_code": 1, "operations": [], "detail": "owner deploy busy"}
+        return _lifecycle_one_locked(action, loop_id, entry, agents_dir, launchctl, admission)
+
+
+def _lifecycle_one_locked(action: str, loop_id: str, entry: dict, agents_dir: Path,
                   launchctl: Callable[[list[str]], tuple[int, str]],
                   admission: Callable[[str], object] | None = None) -> dict:
     if action not in {"start", "stop", "restart"}:
@@ -27,8 +41,20 @@ def lifecycle_one(action: str, loop_id: str, entry: dict, agents_dir: Path,
 
     if action == "stop":
         rc, detail = run(["bootout", service])
+        if rc != 0:
+            print_rc, printed = run(["print", service])
+            if print_rc == 113 and re.search(r"(?i)could not find service", printed):
+                rc, detail = 0, printed
         if rc == 0 and admission is not None:
-            admission("suspend")
+            try:
+                suspended = admission("suspend")
+            except Exception as exc:
+                suspended = False
+                detail = f"admission suspend failed: {exc}"
+            if suspended is False:
+                rc = 1
+                if "admission suspend failed" not in detail:
+                    detail = "admission suspend failed: control busy"
         return {"loop_id": loop_id, "label": label, "action": action,
                 "return_code": rc, "operations": operations, "detail": detail.strip()}
 
@@ -49,7 +75,15 @@ def lifecycle_one(action: str, loop_id: str, entry: dict, agents_dir: Path,
     readback_rc, readback = run(["print", service])
     rc = action_rc or readback_rc
     if rc == 0 and admission is not None:
-        admission("resume")
+        try:
+            resumed = admission("resume")
+        except Exception as exc:
+            resumed = False
+            detail = f"admission resume failed: {exc}"
+        if resumed is False:
+            rc = 1
+            if "admission resume failed" not in detail:
+                detail = "admission resume failed: control busy"
     return {"loop_id": loop_id, "label": label, "action": action,
             "return_code": rc, "operations": operations,
             "detail": (readback if readback_rc else detail).strip()}

@@ -52,6 +52,8 @@ from runtime.host.resource_admission import (
     durable_protocol_version,
     enqueue_durable as enqueue_durable_resource,
     heartbeat_durable as heartbeat_durable_resource,
+    owner_deploy_lock,
+    suspend_durable as suspend_durable_resource,
     process_start,
     release as release_resource,
     release_and_reserve as release_and_reserve_resource,
@@ -1661,6 +1663,37 @@ def _dispatch_reserved(loop_ids: list[str], *, current: Path | None = None,
         plist = installed / f"{label}.plist"
         try:
             arguments = plistlib.loads(plist.read_bytes()).get("ProgramArguments")
+        except FileNotFoundError:
+            suspended = False
+            try:
+                with owner_deploy_lock(loop_id) as acquired:
+                    if not acquired:
+                        continue
+                    try:
+                        plist.lstat()
+                    except FileNotFoundError:
+                        service = f"gui/{os.getuid()}/{label}"
+                        observed = subprocess.run(
+                            [str(safe), "print", service], capture_output=True, text=True,
+                            check=False, timeout=10)
+                        if (observed.returncode == 113
+                                and re.search(r"(?i)could not find service", observed.stderr)):
+                            suspended = suspend_durable_resource(
+                                loop_id, only_if_unclaimed=True)
+                        elif not (observed.returncode == 0 and (
+                                re.search(r"\bstate\s*=\s*running\b", observed.stdout)
+                                or re.search(r"\bpid\s*=\s*[1-9][0-9]*\b", observed.stdout))):
+                            defer(loop_id)
+                    else:
+                        defer(loop_id)
+            except (OSError, RuntimeError, sqlite3.Error, subprocess.TimeoutExpired):
+                defer(loop_id)
+            if suspended:
+                try:
+                    pending.extend(reserve_available_resource())
+                except (OSError, RuntimeError, sqlite3.Error):
+                    pass
+            continue
         except (OSError, ValueError, plistlib.InvalidFileException):
             defer(loop_id)
             continue
