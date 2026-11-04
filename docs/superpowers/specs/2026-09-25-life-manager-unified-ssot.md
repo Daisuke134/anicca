@@ -25862,7 +25862,7 @@ flowchart LR
   P -. 所有者と条件の確認後 .-> W[受取walletまたは銀行]
 ```
 
-Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・状態/証拠取得、外部業務はLLM自身のbrowser、本人mail、既存許可済みPostizで行う。MaritimeとNaïveを一仕事で必ず二重起動しない。共通job/tenantの一担当を確定し、仕事と支払いの二重実行を防ぐ。現在確認できるsourceは専用v24/月10USD/task1USD/12時間cronで、定期inputはなお29USDC trace review。Capafy-firstへの**runtime反映は未実施**。本節編集はcap・権限・cron・共有accountを変えない。
+Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・状態/証拠取得、外部業務はLLM自身のbrowser、本人mail、既存許可済みPostizで行う。MaritimeとNaïveを一仕事で必ず二重起動しない。共通job/tenantの一担当を確定し、仕事と支払いの二重実行を防ぐ。NHC-01確認時の公式runtimeは専用v24/月10USD/task1USD/12時間cronで、定期inputは旧29USDC trace reviewだった。次のcandidate sourceはv25/Capafy-firstで、runtime反映はmain固定後の公式readbackで別に判定する。本節編集はcap・権限・cron・共有accountを変えない。
 
 #### Capafy runtime切替の実装範囲
 
