@@ -1,10 +1,12 @@
 import concurrent.futures
+from contextlib import contextmanager
 import importlib
 import io
 import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -111,6 +113,35 @@ class HQTests(unittest.TestCase):
     def enqueue(self):
         self.slack.history[""]["messages"] = [self.message()]
         self.runtime.receive()
+
+    def test_slack_sqlite_full_preserves_cursor_and_replay_creates_one_task(self):
+        self.slack.history[""]["messages"] = [self.message(text="@codex " + "🟦" * 40000)]
+        connect = self.runtime.connect
+
+        @contextmanager
+        def full_database():
+            with connect() as database:
+                pages = database.execute("PRAGMA page_count").fetchone()[0]
+                database.execute(f"PRAGMA max_page_count={pages}")
+                yield database
+
+        def scan():
+            return self.runtime.receive_scan(
+                "conversations.history", "scan:history", "0", 1, time.monotonic() + 10)
+
+        with mock.patch.object(self.runtime, "connect", side_effect=full_database):
+            with self.assertRaises(sqlite3.OperationalError):
+                scan()
+        self.assertEqual(self.tasks(), [])
+        with connect() as database:
+            self.assertIsNone(database.execute(
+                "SELECT value FROM meta WHERE key='scan:history'").fetchone())
+            self.assertEqual(database.execute("SELECT count(*) FROM messages").fetchone()[0], 0)
+        self.assertTrue(scan()[2])
+        self.assertTrue(scan()[2])
+        self.assertEqual(len(self.tasks()), 1)
+        with connect() as database:
+            self.assertEqual(database.execute("SELECT count(*) FROM messages").fetchone()[0], 1)
 
     def oauth_fixture(self, entries=None):
         private = self.root / ".local/share/anicca"
@@ -1342,6 +1373,25 @@ class ReasonInboxTests(unittest.TestCase):
             self.assertFalse(self.runtime.receive()["ok"])
         self.reason.ack.assert_not_called()
         self.assertEqual(self.tasks(), [])
+
+    def test_real_sqlite_full_does_not_ack_and_replay_creates_one_task(self):
+        self.enabled()
+        self.reason.inbox.return_value["messages"][0]["body"] = "x" * (1024 * 1024)
+        connect = self.runtime.connect
+        @contextmanager
+        def full_database():
+            with connect() as database:
+                pages = database.execute("PRAGMA page_count").fetchone()[0]
+                database.execute(f"PRAGMA max_page_count={pages}")
+                yield database
+        with mock.patch.object(self.runtime, "connect", side_effect=full_database):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        self.assertEqual(self.tasks(), [])
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
 
     def test_reason_wrong_session_never_acknowledges(self):
         self.enabled()
