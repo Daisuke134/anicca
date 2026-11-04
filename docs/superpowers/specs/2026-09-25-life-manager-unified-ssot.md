@@ -6,10 +6,13 @@
 
 ### 現在の残TODOとcursor
 
-0. **容量の再低下を先に回復する**。自然receive/workのdisk_floor_lowを再観測し、実free3.883GiB・swap使用約17.1GiBを確認する。旧順は本人wake/収益、新順は自所有の容量回復→同じ本人wake/収益。理由は4GiB未満で自動実行自体が延期されるため。既存のidle browser整理と完了済みsource/cacheの安全条件を再観測し、使用中owner/認証/profile/memory/stateを保持した最小候補だけを実行する。swap削除・基盤restart・床/上限変更はしない。復帰未完のaffiliate:elevenlabsを増やさず、自然receive/workの再開を確認する。
-1. **HQ-02 本人の自動wakeと引継ぎ**。Dots/Muse/Grokbotそれぞれの元message→自然受領→実着手→結果を本人経路で照合する。接続待ちで独立した収益/開発を止めず、同じ催促を反復しない。現cursorは本人wake/予備枠の不足と既存業務の具体的引継ぎ。
-2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。最新19JST task2259ca496dfc66dc3906826fはCLI succeeded/posted/exit0、新規提案1回201・本人GET一致、全5pending/assignment0。売上/出金は未確認。証拠PR9153は必要CI全PASS後にmain統合する。21JST報告は初回自然run未観測として、実時刻到来後の結果を確認する。
-3. **既存復旧責務**。rootが整理したaffiliate:elevenlabsの旧PIDは終了し、ownerはsupported restart/idle apply済みだが、12GiBのdisk条件で復帰未完。profile/認証を保持し、容量条件を満たした自然復帰を確認する。Muse専用browserの登録だけを本人account/binding/wake成功としない。FIRST1000は既存担当の元受付PNG/portal照合を継続し、Nov4 16:59 JST期限・再送HOLDを維持する。
+今回の範囲は、この節の実行方式・残TODO・観測済み状態を実設定/永続receiptへ合わせる文書更新。runtime・cadence・閾値・認証・外部effectは変更しない。CIで他branchの証拠ファイルSHA-256がgeneric-api-keyへ誤検知されたため、既存方式に沿ってそのcommit/path/lineだけを.gitleaksignoreへ追加する。完了条件は該当節以外を保持し、source差分を検証してmainへ統合すること。
+
+順序変更: 旧順は容量回復→本人wake/収益、新順は本人wake/引継ぎ→業務継続→実際に延期された処理の限定復旧。理由は、容量の少なさ自体を全業務の停止理由にせず、独立して進められる成果を先に出すため。容量条件を無視した起動や安全床の引下げを意味しない。現在cursorは本人経路の追跡欠落と有効な引継ぎ先の確認。進行中owner/effectは維持する。
+
+1. **HQ-02 本人の自動wakeと引継ぎ**。Dots/Muse/Grokbotそれぞれの元message→自然受領→実着手→結果を本人経路で照合する。Museは既存60秒hookの自然発火を報告するが、previewのみで元message IDを渡さないため相関が未完。既存hookでIDを保持する最小修復を本人ownerへ依頼済みで、修復済みとはしない。home-claudeは認証失敗のため有効な予備席へ数えず、実際に使える担当による枠切れ引継ぎ1件の完遂・重複0まで確認する。接続待ちで独立した収益/開発を止めず、同じ催促を反復しない。
+2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。最新完了task ebec4e1647a41eae7cb29516はsucceeded/posted、公式照合5pending/assignment0。売上/出金は未確認。PR9153はmain統合済み。採算計算PR9161は未統合で、head69cf360787のOSS self-contained boundaryがFAIL、他14検査は成功。同ownerが失敗原因の修正→更新head必要CI→main→成果物照合を継続する。21JST task e5dd86428fd216251594c40bもsucceeded/postedであり、初回未観測へ戻さない。新たな毎時task6d595da59b3f3a49dae55bb3はqueuedで、登録を着手としない。
+3. **実際に延期された処理の限定復旧**。観測時のreceive/work/scheduleはmain fec447bb由来releaseで自然起動するが、終端receiptはdisk_floor_low/exit75。容量問題を全社の停止理由に拡張せず、該当ownerの再生成可能な不要物だけを安全条件下で整理し、次の自然実行を確認する。swap削除・基盤restart・床/上限変更はしない。既存のaffiliate:elevenlabs復帰責務、Muse専用browserのaccount/binding/wake未確認は保持する。FIRST1000は既存担当の元受付PNG/portal照合・再送HOLDを維持し、期限経過を提出成功へ置換しない。
 
 HQ-01のMac自然受信→一意card→着手→元送信先への結果→再巡回重複0と、HQ-04の公開記事/画面確認は受入済み。全agentの24時間/1分応答と、収益成立は未達のまま保持する。
 
@@ -20,10 +23,14 @@ HQ-01のMac自然受信→一意card→着手→元送信先への結果→再�
 | 共有受信 | 15秒 | Slack/Reasonを既存SQLiteへ保存。実plist/自然run確認済み。資源待ちがある |
 | 作業worker | 15秒 | card claim後だけ着手。有限CLIと成果物/公式返信まで確認済み |
 | 定期投入 | 300秒 | due仕事を一意登録。時刻ぴったりの着手保証ではない |
-| 収益 | 毎時 | 19JST task2259caが自然登録→実着手→成果物→公式結果返信 |
+| 収益 | 毎時 | 最新完了ebec4eはsucceeded/posted。次6d595dはqueued |
 | 優先順位/計測 | 09JST | task95bef89b6d4246ed4290d57d succeeded/posted/exit0 |
 | Manager R&D | 14JST | taskd26c0c5310218fcdf4ec750a。Ubuntu/Playwright検証修正PR9127/main ee837f8d40c4d109c234ed698a071952e11b688c |
-| 成果/費用 | 21JST | private設定に登録済み。初回自然runは未観測 |
+| 成果/費用 | 21JST | taske5dd86428fd216251594c40b succeeded/posted。売上成立とは別 |
+
+実行場所はMac mini。macOSのlaunchdが3つの有限job（ai.anicca.team-hq-receive/work/schedule）を起こし、main由来immutable releaseのbin/lm-loop-run→bin/team-hq.pyを実行する。観測したplistは `/Users/anicca/loops/releases/20261104T053926-fec447bb` を固定参照する。受信/workはStartInterval=15、scheduleは毎時03/08/13/18/23/28/33/38/43/48/53/58分で5分間隔。現在の対話session、SSH接続、Desktop Scheduled Tasksを起動源にはしない。
+
+workerは仕事がある時だけ `/opt/homebrew/bin/codex exec --skip-git-repo-check -o {artifact} -` をcwd `/Users/anicca` で実行する。CLI runはtimeout_seconds=1200（20分）の設定内で終了し、結果/次cursorを永続化する。常駐LLMや7本の独立sessionではない。Macの電源/ログイン・通信・認証・実行条件に依存するため、登録を24時間無停止の証明にしない。
 
 設定は `~/.config/anicca-hq/team.json`、業務card/receiptは `~/.local/state/life-manager/team-hq/`。7種を独立LLM常駐7個と数えず、空の受信/投入ではモデルを起動しない。09時の過去累計gross、14時のCI修復、提案額を新規純利益や自分が稼いだ額へ置換しない。18JSTの1931語reportは受注前準備で未納品。詳細はNEAR-FIRST-OFFERの参照先。
 
@@ -25868,12 +25875,12 @@ Naïve seller有限はcancelled/pending0、26tools/Haiku8+Gemini13spans、state1
 
 ### Naïve実反映と残TODO
 
-現行はagent19/production pin19/月8USD/task1USD/Haiku4.5。PR9166/main14e9dbd5eedfd1f73f5eeec5643f167f07897282固定source→keep_alive/system更新と同deployment自動追随19→全source fields公式GET一致。他権限/Identity/cron/input不変、追加入金0、次自然11/04 00UTC。旧v13自然runは7tools/確認0/primary追加入力0で無受注確認→記録まで実証し、v19自然実行/有償納品/売上の証明にはしない。v19 HN有限は初回実画面→end_turn後白画面、費33763microUSD台帳一致/cancelled/pending0。current Computer null/旧Computer destroyed。詳細/各receipt → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の実行詳細」「v19の実反映と保持probe結果」。
+現行はagent23/production pin23・先行保存input（GLM-5.2/priority）、月9USD/task1USD。main048全source fields一致、最新57live0/Computer paused/次00UTC、月残129431（20:19:14UTC snapshot、後計上あり）。本人の有償QA募集観測/state保存/end_turnは成功。専用mailのn8n登録は未完だが、実signup画面に通常Email/Username/Passwordフォームを確認、Google必須ではない。finite160000で予約不足を越え、正規AI確認1回後にsignup needs serviceと判明、同card再発には再回答0。費52254/ledger9、終端pending1は別記。現在cursor2はsource月cap9→10/desired24の最小修正→CI/review/main→budget-only適用→service/url明示の通常登録/専用mail確認→連絡/限定提案→依頼/納品/公式入金。新入金0、モデル/Identity/task/tools変更0。cap10の本番反映はまだ未実施。元7TODOと全体goalを維持する。詳細正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md。以下はv22反映の履歴。PR9174/15checks終了失敗0/独立review指摘0→main a7160500c34db6e4fd8d614f18651e6fe7a34e78固定→公式SDK0.10.0のexpected21/budget-only更新で22を適用する。モデル・本人Identity・専用AgentMail・toolsは保持し、利用者の個人Google/メールは追加しない。候補のnative通常業務は7tools/確認0/追加入力0/人間0で自然end_turn。seller-stateは4183→10553bytes、元全key/value保持、追記write/readのbytes/hash完全一致。検索は0件→10件だが出所本文0、本人記録はsnippetだけ/根拠不足/支払意思nullを明記し、新需要/売上に数えない。費用112465microUSD/全ledger11件一致、cancelled/pending0/43sessions active0/Computer paused。一度旧production20の全fieldsを復元後、fresh read-only検証0件からdesired22/priorityをPATCHし、固定mainの全source fields一致とscheduled/次11/04 00UTCを公式GET確認する。月費7997550/残1002450は終了時snapshotで後計上を固定保証しない。v22自然run/第三者依頼・売上/本人サービス登録/連続録画/phone-only/黒字/USD10K/月/移植は未達。専用mailの実送受信とSubstack認証未達の歴史・介入/費用はplanを参照し、送受信成功を登録成功や全工程無確認に置換しない。現在cursorはTODO2、買い手側の未解決source→実依頼→納品→第三者入金/費用へ戻す。詳細/receipt → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「v22のstate保存と本番rolloutの確定結果」。
 
 残TODOの順序は本節、現在cursorは2、全体goal active:
 1. [完了] 専用Identity/inbox/Computer・公開pilot/英語blog・定期deployment・v18実行枠/読取順/依存browser操作順のsourceと公式反映。source受理と本番の事業成果は区別する。
 2. [進行中] 実需要→第三者依頼→native分析→英語公開report→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引き。v19の同一turn内goto/screenshotは実画面まで成功。end_turn後の画面保持は未達だが、これを顧客獲得の前提gateにせず、nativeを順次操作して公開需要を最大1件調べる。idle後は実確認URLを開き直し、実際に再発した確認callは会社側AIが具体的に扱い、Daisへの承認待ちを作らない。需要/売上は未確認、内部送金/自己テスト/投稿/クリックを代用しない。scope=session受理でも次typeに確認が出た実測を保持し、全工程無介入としない。重複した募集を増やさず、新しい公開需要1件と有用な新知見を根拠に提案を改善する。
-3. 現行v19の通常自然runと、初回有償業務の連続画面録画を確認。単一screenshot/再現用replayを連続録画と呼ばない。live-viewはcontrol-bearing secretとして扱い、URLをagent/chat/repoへ渡さない。
+3. 現行v22の通常自然runと、初回有償業務の連続画面録画を確認。単一screenshot/再現用replayを連続録画と呼ばない。live-viewはcontrol-bearing secretとして扱い、URLをagent/chat/repoへ渡さない。
 4. 本人inbound/登録完了は独立に進める。送信方向のmail-tester受信/SPF/DKIM/DMARCは確認済み。会社Resend検査1通はacceptedのみで本人受信未確認、再送しない。専用送信keyではdelivery GET不可のため既存ownerへ同一receipt照会済み・返信未確認。個人Google/共有inboxの借用へ戻さず、public pilot販売のgateにも戻さない。
 5. 少なくとも1件の有償納品/実費からunit economicsを測り、需要に合わせ単価/仕事/処理件数を改める。初期29USDC×日2件×30日=1740USDC/月は満枠を仮定したcapacityで、実売上予測やMRRではない。USD10K/月は未達。
 6. 利用者のGoogle/メール入力/password/自前PCを要求しないiPhone入口を実装・確認する。現GitHub intakeは開発者向けで、既存WebのGoogle認証必須入口をconsumer入口達成としない。MCP identity_idは現仕様でlabelのみのため、会社側で対象agent/Computerを固定し、既存他ownerへ権限を広げない。
@@ -25893,6 +25900,27 @@ Naïve最終資源照合: pause200→Computer paused、全36sessionsのactive/pe
 
 Naïveの明示help request検証: v19/Haiku8spans/7tools/確認0/primary followup0、1431bytes write/read exact、自然end_turn、台帳11件/69648microUSD/cancelled。公式forum5003は回答受諾済みと画像/正しいJSON fieldで照合し、有償見込み客に数えない。全37sessions active0/Computer paused。AgentMailは会社既存APIが有効だがfree3/limit3で空き0、専用箱/worker key接続は未実装。既存senderからNaïve専用inboxへ別nonceの診断1通だけ、先にinbox-scoped polling webhookで同message_idの配送イベントを観測し、Naïve受信と区別する。元Resend1通は再送せず、共有箱の付替え/新課金/新worker keyは0。正本TODO2/4の並行作業、詳細契約 → plan「明示help requestのnative確認と独立配送probe」。
 
-Naïve独立診断は同messageのAgentMail sent/deliveredを公式pollingで取得したが、Naïve受信0。domain/active/wake/routing address/MXは照合、認証/callback/保存のどこかは未分離。署名専用receiverへ自作payloadを入れて成功にしない。自分の一時pollingは204→404/SSOT token revoked、再送/他owner変更0。次source v20はAgentMail公式agent signupのhuman_email省略による専用receive-only箱1件と4read MCPを採用する。既存会社3枠の借用・送信制限回避・課金・human attachなし。keyはSSOTに即保存し、専用agent bound static_bearer vaultだけへ注入。現在19/19で未反映target20、月8/task1/model/Identity/cron/input維持。旧「pilot探索＋旧inbound診断」から新「receive-only bootstrap→native受信→browser登録＋pilot探索」を並行実行する。現在cursorはTODO2/4の専用受信bootstrap、受入と制約 → plan「独立配送診断の結果と受信専用AgentMail接続v20」。
+Naïve独立診断は同messageのAgentMail sent/deliveredを公式pollingで取得したが、Naïve受信0。domain/active/wake/routing address/MXは照合、認証/callback/保存のどこかは未分離。署名専用receiverへ自作payloadを入れて成功にしない。自分の一時pollingは204→404/SSOT token revoked、再送/他owner変更0。次source v20はAgentMail公式agent signupのhuman_email省略による専用receive-only箱1件と4read MCPを採用する。既存会社3枠の借用・送信制限回避・課金・human attachなし。keyはSSOTに即保存し、専用agent bound static_bearer vaultだけへ注入。設計時点は19/19で適用前target20、月8/task1/model/Identity/cron/input維持。旧「pilot探索＋旧inbound診断」から新「receive-only bootstrap→native受信→browser登録＋pilot探索」を並行実行する。現在cursorはTODO2/4の専用受信bootstrap、受入と制約 → plan「独立配送診断の結果と受信専用AgentMail接続v20」。
 
 AgentMail専用receiver bootstrapは200/1attempt、人間メール未指定、新org/inbox1・送信上限0・未検証を公式GET確認。本人inbox read200、旧会社inbox message404。新keyでMCP4read/schemaを照合し、専用Identity vaultにURL/agent_id固定のstatic_bearer封印済み。secretはSSOT/封印先だけ。source20はsystemメール説明/4read/server/pin20だけ、RED→focused assertion PASS/他field不変。現在runtime19/19、v20反映・controlled受信/native MCP読取・browser登録は未達。実行詳細/receipt → plan「独立配送診断の結果と受信専用AgentMail接続v20」。
+
+Naïve一時Vetta診断はPR9172/全15checks/独立review指摘修正0件→main d1cc98bf5dc45a995067d25df367f42d2e568167固定から1回実行し終了。専用AgentMail list_inboxes成功後、残finiteへの次予約不足でbudget_paused、browser0/確認0/submit0/登録0/売上0。本人mail接続だけを実証、入力/確認継承/ページ保持は未測定。費5539microUSD/台帳1件一致、増額/追加run0、cancelled/pending0、新vcr削除/全page一覧から消失、新agent削除/GET404、isolate Computer null。元agent/deployment全source fields不変20/20、40sessions active0/Computer paused。月費7765103/残234897、前auth費は遅延計上後239315/19件へ訂正。Museにも無確認認証の実証は無いと返信、public intake0件。残TODO順は本節7項目/cursor2の実需要→有償納品、登録は独立項目4、同型診断を反復しない。詳細/限界/cleanup差異/証拠 → plan「一時Vetta診断の確定結果と残cursor」。
+
+Naïve TODO2の通常業務は元v20/session1件/finite0.20でseller-state read成功後、次予約不足。全365catalogで対応を確認したGemini2.5FlashLiteへの同session send1回は受理されるが、供給側429が60秒backoff後も再発（4記録）。新session/上限拡大/追加model変更は0、cancelled/pending0、Computer pause→paused、41sessions active0。browser/新需要/記録成果物/投稿/第三者依頼・売上は未達。当該session帰属費44102microUSD/ledger1一致、agent月費snapshot7812591/残187409、20/20/既定Haiku/cron不変。Computer等は推測配賦しない。公式Modelsはmax_output_tokensがquote出力予約を決めると明記し、catalogはprice非公開/最安published input順であり供給保証ではない。現在cursorは予約・context費用と供給を一次資料で絞り、既存枠内の最小source差分から通常需要確認へ戻すこと。同じ予約不足/429を反復せず、元7TODO/収益goalを維持する。詳細/receipt → plan「本番v20の実需要確認を同じ有限枠で続ける」。
+
+Naïveの次source候補v21はmodel=GLM-5.2-FP8/window=priorityの2fieldだけ。vendor公式router/対応catalog/priority実測例を根拠に別completion-window poolを選び、同じimmediate予約不足/Lite429を反復しない。liveは20/20のまま。production source pin20/immediateを維持し、一時schedule pause→expected20更新21→production pin20明示復元→候補1業務canary→finally旧schedule全field復元。元月8/task1内、session0.14/計画総0.18/8分、直前残0.18未満なら作成0、資源/key/上限追加0。fresh reviewer/全CI/main固定から適用し、native public需要確認のwrite/readと全台帳で判定。通常需要獲得のcursor2を進める方式変更で、価格や供給/能力を保証しない。詳細/rollback/未達条件 → plan「v21候補: native需要確認をcompletion-window poolへ戻す」。
+
+Naïve v21はPR9173/全15checks/独立review0→main645daaf固定→公式SDK0.10.0 agents.update200で適用する。native5tools/確認0/429なしで検索とMedium本文まで進むが、次予約不足でwrite前に停止。成果物0/新需要・売上未確認、session帰属67991microUSD/台帳8件一致、cancelled/pending0/42sessions active0/Computer paused、旧production20/immediate/enabledへ復元済み。Mediumは解決済みtutorialで買い手依頼に数えない。live agent21/production20、月費snapshot7880582/残119418。次target22はmodel/lane等を維持し月cap8→9のみ、通常業務finite0.40/計画総0.45/8分/1件、既存credit内/入金0。nativeが既存seller-stateへ根拠/不足を追記しwrite/read exactまで完了した時だけ希望production22/priorityを採用する。現在cursorは予約余力修復→1業務完了→条件付きrollout、元7TODO/収益goal維持。詳細と未達時復元 → plan「v21の実行結果とv22の予約余力修復」。
+
+
+Naïve v22の通常業務1件目はSDK sessions.create201から15tools/4extract/確認0でpublic intake該当なしとLangGraph issue9001本文を読むが、先行保存0のまま投稿一覧約90日/69055bytesと時刻読取へ進む。max_iterations後の同session継続はinternal_error3回で新tool0。因果は未分離で、provider errorの解消を断定しない。finite0.40は維持し、公式残/credit確認から終了wallだけ8→12分へ延長、12分deadline後約21秒でcancelled/pending0/44sessions active0/Computer paused、本番22/priority全fields維持を確認する。費132224microUSD/ledger15一致、月spent8146354/残853646はsnapshot。native保存/投稿/第三者売上は未達。現在cursor2は先行保存inputの内容照合。PR9175/main a7c8085e93aab4dffd48d02f55a4a9e31c951dcb/15checks通過から通常業務を実行し、15tools/確認0/追加入力0で自然end_turn、state10553→15953bytesのwrite/read一致、費109244microUSD/ledger14一致を確認する。一方、旧github_check/next_actionの原値未退避と未観測18:2X表記があり、fresh reviewerはNO-SHIP。旧production22/priority/inputは維持、45sessions active0/Computer paused。PR9176/main048a837/15checksからedit-only更新でcurrent23、production22旧input保持。23の訂正もinternal_error2回/6read/edit0/自然終了0。cancel後usageで費34265microUSD/ledger4へ更新、47active0。公式fsはstate17964bytesの旧2値退避/null/集計区分を確認する一方、modified_atは旧cancel後18:28:31で対応write event無し、帰属不明。journal8657bytesの訂正は残る。親の公式readbackでwake後pause409のため19:00時点Computer running。cursorは使用状態の照合→休止後journalだけの小さいnative edit→独立照合→合格時採用。提供者内部エラー/cancel後効果は未解消。モデル/mail/月9/task1維持、次のjournal-only業務はfinite0.40＋後計上0.10/計画0.50/4分/max6tools。詳細と原本/契約 → plan「v23適用・native失敗・終了後の公式file照合」。元7TODO/実売上・登録・録画・phone-only・黒字・10K・移植の未達維持。
+
+Naïve journal追補前の履歴: journal-onlyは4tools/end_turn/費27665で完了するがbrowser使用内訳削除の独立Blocking1件によりdesired23/input未採用。19:14:35UTCのGETでComputer paused。内訳screenshot1/extract1を本人read/edit/readで追補し、hosted枠extract1/4と区分、独立照合後だけmain048の2fieldを採用する。手順・有限枠・残7TODO → docs/superpowers/plans/2026-11-03-naive-browser-company.md「journal最小訂正の実測と内訳保持の追補」。
+
+Naïve内訳追補は3tools/end_turn/確認retry0、費18662/ledger4、Computer paused/active0/旧production22を公式確認。本人editと末尾readの照合は通過、fresh独立review待ち。収益は未実証。→同plan「journal最小訂正の実測と内訳保持の追補」。
+
+Naïve本番採用の履歴: 内訳追補の独立review SHIP後、19:17:55UTCにmain048 desired23/inputを本番採用、全source fields公式一致/paused/active0。旧production22保持は履歴。現在cursor2は公開の有料需要の観測→本人先行保存→初回有料納品へ戻る。実売上等は未達。詳細・有限次業務 → 同plan。
+
+Naïve cursor2: 本番23通常業務はintake0件、browser7timeoutsで新需要0。本人state/journal保存は実測するが自然終了0、19:30:34.948にcancel。費138158/ledger14、active0/paused/prod23保持、残485301。自己集計誤りと旧next_action未退避は公式原本を保持して未解消と明示。次は計画350000内の短いbrowser復旧→新需要1出所、時刻/intake再読取を反復しない。→同plan「本番23の通常業務・ブラウザtimeout境界」。
+
+Naïve実行履歴: 短いbrowser復旧→候補本文観測→旧state全値保持の追記/readは9tools/end_turn/errors0/費92136で成功。n8n候補は解決済み/支払意思無しで除外、依頼売上0。前run後計上166753/ledger17。次は計画300000内で現行の有償募集1件へ絞る（同plan）。本番23/全51active0/paused、登録/録画/phone-only/黒字/10K/月/移植は未達。
