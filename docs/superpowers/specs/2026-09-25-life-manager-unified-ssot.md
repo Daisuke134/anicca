@@ -1,5 +1,9 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
+
+現在cursor **HQ-REASON-ATTACHMENTS**: Reason受信は添付filesを保存せずACKするため、本人が添付した内容をworkerへ渡せない。上流の受信fileは本人host上のinboxに保存され、既読後は保持期間が1日である。順序を従来の容量bounded化→本件から、本件の無損失受信→容量bounded化へ変更する。理由は既存の通常入力で依頼内容を失う具体的欠陥が見つかったため。受信とACK以外のownerや進行中effectは変更しない。
+
+受入: 添付の正本を期限切れ前に受信taskへ耐久保存してworkerが読めること、保存不可能な依頼はACKしないこと、別の受信依頼を継続できること、再取得が重複しないこと。提供pathの安全境界・symlink・UTF-8/上限・秘密値とfile消失を検証し、ACK前の保存失敗を実SQLiteで確認する。CI、独立review、main由来release、自然受信/ACK/実作業の公式readbackを経て初めて完了とする。
 ## TEAM-HQ — 24時間の共同運営とCodex実行
 
 目的は、既存の共有部屋で依頼を保存し、受領・着手・結果・枠切れ時の引継ぎを区別しながら、収益とManager開発を継続すること。schedulerが有限runを起こす。この対話自体の無期限再開、登録席の常時稼働、売上を保証するという意味ではない。primaryは正本・統合・運用受入、各writerは明示したsource/業務effectを所有する。
