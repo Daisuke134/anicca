@@ -9,6 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / NEAR discovery納品準備] task665831395b0be2cb02e061f7、owner home-codex-665831、branch task/home-codex-665831。応募済みjob4d2d67b4の英語reportと原典比較のみ。5pending/受注0、PR9183統合済み。親HQ/PR9205/Naive・会計・投稿・fence維持。現在cursor=原典取得→必要CI→main、受注前submit/追加bid0。
 - [home-codex / NEAR framework納品準備] task fcdfdd26ab37754b9c37251e、owner home-codex-fcdfdd、branch task/home-codex-fcdfdd。既存応募dd6e4f85の英語report/一次資料比較だけを所有。5pending/受注0を公式GET確認。親PR9182/9178/9179、remote hook、会計、投稿、既存fenceを保護。受注前submit/追加bid0。
 - [home-codex / HQ継続cursor訂正] task e204c552a38bd3f262c71a6f、owner home-codex-e204c5、branch docs/hq-cursor-e204c5。PR9161の公式統合/成果物と受注・接続thread差分を照合し、TEAM-HQ/NEARの古いCI待ちを訂正する。親PR9178/9179・deploy・remote本人hook・会計・投稿・fenceは保護。新応募/送信/納品0。完了条件は根拠保存→必要CI→main。
 - [Codex / NAIVE-BROWSER-E2E] live agent26/pi/月12USD/task1、production26/enabled=false。Terraのnative原稿修正/試用が15tools/end_turn、費184947microUSD、例57語/試用57語・六部・販売文128語を再検算。四原稿はNaïve組織FilesのGET/hash/download一致。Capafy認証/公開/売上未達。harness PATCHは受理後も26/piで未反映。candidate27は古い許諾未確認のsystem禁止をowner許可取得済みへ修正し、Terra/immediateを既定化、停止中のscheduleをsourceに一致させる。次はCI/main→公式27反映→専用メール認証。正本・残TODO→統合SSOT「Naïve browser company」、現在NHC-01。
