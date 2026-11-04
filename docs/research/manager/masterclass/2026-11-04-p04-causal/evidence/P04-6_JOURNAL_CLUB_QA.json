@@ -1,26 +1,35 @@
 {
-  "created_2026_11_04": true,
-  "speaker_audience": "computational neuroscience & neuroscience researchers, M1/M2",
+  "date": "2026-11-04",
+  "audience": "neuroscience & computational neuroscience researchers, M1/M2",
   "duration_minutes": {
-    "talk": 41.7,
-    "discussion": 15.0,
+    "planned_talk": 41.7,
+    "planned_discussion": 15,
     "buffer": 3.3
   },
-  "live_powerpoint_slides": 33,
+  "live_slides": 33,
   "live_pdf_pages": 33,
-  "live_scripted_pages": 33,
-  "detailed_powerpoint_slides": 85,
+  "live_all_notes_present": true,
+  "scripted_pages": 33,
+  "detailed_slides": 85,
   "detailed_pdf_pages": 85,
-  "detailed_pages_with_embedded_notes": 85,
-  "detailed_markdown_pages": 85,
-  "source_82_slide_bodies_unchanged_except_page_footer": true,
-  "selected_31_legacy_slide_bodies_unchanged_except_page_footer": true,
-  "new_live_intro_slides": 2,
-  "manager_live_slides": 3,
-  "full_P04_6_appendix_slides": 3,
-  "P04_6_preregistration_hash_valid": true,
-  "P04_5_prediction_hash_valid": true,
+  "detailed_all_notes_present": true,
+  "original_82_body_pages_except_manager_46_to_48_preserved": true,
+  "original_82_manager_pages_changed": [
+    46,
+    47,
+    48
+  ],
+  "live_manager_pages_changed": [
+    31,
+    32,
+    33
+  ],
+  "manager_thesis_document_exists": true,
+  "frozen_policy_plan_sha256_verified": true,
+  "frozen_P04_5_prediction_sha256_verified": true,
   "P04_1_to_P04_6_unit_test_count": 96,
-  "external_real_world_RCT_study": false,
-  "real_human_interventions": false
+  "real_human_intervention_executed": false,
+  "public_RCT_outcome_forecast_verified": false,
+  "open_weight_model_released": false,
+  "known_limitations": "PDF pages 46-48 in full deck and 31-33 in live deck use 180dpi slide raster; other pages inherit source PDF"
 }
