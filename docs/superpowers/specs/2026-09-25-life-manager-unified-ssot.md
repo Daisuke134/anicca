@@ -25926,6 +25926,10 @@ NHC-01の次の診断は、原本agent27を変更せず一時agentをharness=vet
 
 一成果はnative browserのhome→Get started→Continue with Emailと実画面/URL/入力欄の証拠。新規signup、OTP送信、商品/Publisher変更はしない。context open機能の検索をgateにせず、配置済みbrowserでgotoから進める。tool.confirmが出れば比較対象と同じ境界を記録し、診断中にrootが解除して成功へ付け替えない。予約不足/供給エラーは実測し、同型再試行やcap増額をしない。terminal後は証拠と費用を保存し一時agentを削除する。context revokeは共有contextと全grantを削除するため使わず、原本のcontext/Identity/credential/deploymentを維持してreadbackする。主cursorと全収益目標はNHC-01のまま。これは認証や無介入収益の達成ではない。
 
+有限Vetta診断の実測更新: 一時agent agt_7cdr39p6r97t0c9kxw7s7ahs6m/version1、session ses_hyngzjf8fhx2h69996n4dkyr71はTerraでhome gotoとobserveを確認し、Get started表示を得た。次callがsession予約上限でbudget_pausedとなり、消費14455microUSDでcancelled。Computerはnullで、browser.session.opened/closedのイベントは存在するためbrowser未実行とはしない。元のagent27/Identity/deploymentは変更していない。今回のSDK managed-agent設定にはmax_output_tokens指定がなく、proxyのmax_tokensを業務scriptで代替しない。公式budgetsは実消費ではなくcall上限quoteを先に照合すると説明する（https://vetta.sh/docs/concepts/budgets.md）。quoteの具体額はeventにないため推測値を実額として記録しない。
+
+次の診断は同じ一時agentのmodelだけをdeepseek/deepseek-v4.1-flashへ変更し、同じnative browser課題を一回実行する。新session capはperiod残枠485545microUSD以下、period/task上限500000microUSDは増額しない。これは低料金modelで予約を通過できるかという新しい仮説のprobeで、Terraの同型再試行ではない。両catalogueのmax_output_tokensは32768/immediate対応を公式確認したが、成功率・最安・料金差の数値は未検証。原本の既定Terra、全収益目標、業務browser契約は維持し、登録/OTP/Publisher作成を比較目的で行わない。終了後に両sessionの実費とartifactを保存し、一時agentのみ削除する。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
