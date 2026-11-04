@@ -1,8 +1,10 @@
 import tempfile
+from unittest.mock import patch
 import unittest
 from pathlib import Path
 
 from runtime.loop.lm_loop_lifecycle import lifecycle, lifecycle_one
+from runtime.host.resource_admission import owner_deploy_lock
 
 
 REGISTRY = {"schema_version": 2, "loops": {
@@ -17,6 +19,29 @@ REGISTRY = {"schema_version": 2, "loops": {
 
 
 class LmLoopLifecycleTest(unittest.TestCase):
+    def setUp(self):
+        self.state_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.state_directory.cleanup)
+        environment = patch.dict("os.environ", {
+            "LIFE_MANAGER_RESOURCE_ADMISSION_ROOT": self.state_directory.name,
+        })
+        environment.start()
+        self.addCleanup(environment.stop)
+
+    def test_start_does_not_run_while_same_owner_is_locked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            agents = Path(directory)
+            (agents / "ai.anicca.a.plist").write_text("plist")
+            calls = []
+            with owner_deploy_lock("a") as acquired:
+                self.assertTrue(acquired)
+                result = lifecycle_one(
+                    "start", "a", REGISTRY["loops"]["a"], agents,
+                    lambda args: (calls.append(args) or (0, "loaded")),
+                )
+            self.assertNotEqual(result["return_code"], 0)
+            self.assertEqual(calls, [])
+
     def test_all_collects_every_label_result_after_failure(self):
         calls = []
         def execute(action, loop_id, entry):

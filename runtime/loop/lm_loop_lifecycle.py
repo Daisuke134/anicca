@@ -7,9 +7,22 @@ from pathlib import Path
 from typing import Callable
 
 from runtime.loop.macos_loop_registry import validate_registry
+from runtime.host.resource_admission import owner_deploy_lock
 
 
 def lifecycle_one(action: str, loop_id: str, entry: dict, agents_dir: Path,
+                  launchctl: Callable[[list[str]], tuple[int, str]],
+                  admission: Callable[[str], object] | None = None) -> dict:
+    if action not in {"start", "stop", "restart"}:
+        raise ValueError(f"invalid lifecycle action: {action}")
+    with owner_deploy_lock(loop_id) as acquired:
+        if not acquired:
+            return {"loop_id": loop_id, "label": entry["label"], "action": action,
+                    "return_code": 1, "operations": [], "detail": "owner deploy busy"}
+        return _lifecycle_one_locked(action, loop_id, entry, agents_dir, launchctl, admission)
+
+
+def _lifecycle_one_locked(action: str, loop_id: str, entry: dict, agents_dir: Path,
                   launchctl: Callable[[list[str]], tuple[int, str]],
                   admission: Callable[[str], object] | None = None) -> dict:
     if action not in {"start", "stop", "restart"}:
