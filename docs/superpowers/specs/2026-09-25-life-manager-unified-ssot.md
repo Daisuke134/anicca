@@ -25936,6 +25936,10 @@ NHC-01の次の診断は、原本agent27を変更せず一時agentをharness=vet
 
 一時agent専用のAgentMail sealed static_bearerを既存Identity vaultへ一つだけ作り、agent_id=agt_7cdr39p6r97t0c9kxw7s7ahs6mへ限定する。secretはprivate credential SSOTのexact service naive:browser-operator:agentmail-receiveからメモリ上で公式vaultへ渡し、prompt/config/logへ表示・複製しない。既存credential/受信箱を変更せず、新bindingのmetadataをprivate SSOTへ直ちに保存する。MCP URLと受信read-only4toolsは原本の正式設定を使い、mail送信toolは追加しない。新session capは440577microUSD以下かつ一時agent period残枠以下、period/task上限500000microUSDは維持する。scope/cleanupをfresh read-only reviewerで検証してから接続する。普通利用accountの専用メール認証/OTPと認証済みaccount/Publisher roleの確認だけを進め、新Publisher・既存account設定/商品・購入/送金/配信は変更しない。tool.confirm発生はrootが解除せず未達として記録する。終了時はこの一時vcrとagentだけを削除し、context revokeを使わず、原本のIdentity/credential/context/deploymentをreadbackする。
 
+Vetta/Flash専用メール認証の結果: fresh read-only scope review blocking 0後、一時agent/version3へagent指定・1時間有効のsealed AgentMail受信credential一つと正式な受信read-only4toolsを追加した。ses_e6yk18h6gkz7r9k7k8q8917k0pはagentmail.get_inbox成功後、homeへのbrowser.gotoでread_people=trueのtool.confirmとなり、2086microUSDでcancelled。root補足/確認0件。OTP・普通利用認証・Publisher権限・公開・売上は未達。Pi/Terraだけの問題ではなく、Vetta/Flashでも認証タスクで確認待ちを再現した。公開画面のみのprobe成功との違いは追加mail接続/認証目的等を含み、どの差分が原因かは未確定なのでモデル品質やMCPだけの原因と断定しない。
+
+公式cleanupで今回の一時vcr/agentを削除し、private Credential SSOTの新binding metadataだけdeletedへ更新した。原本agent27・deployment27/enabled=false・既存受信credentialの不変、原本Identity agent保持、一時Identity agent/vcr不在、context revoke未使用を全照合する。証拠はprivate vetta-browser-auth-cleanup-readback-20261104.json（7項目PASS）。一時agentの公式合計61509microUSD=Terra14455+Flash画面44968+Flash認証2086。private vetta-flash-browser-diagnostic-report-20261104.mdと実画像を保存する。原本既定Terra/piを勝手に切り替えず、次cursorはこのallow/ask_actions空/owned AgentMailに対するread_people確認境界のprovider技術照会。許可の再取得やDaisへの承認質問へ戻さず、同じ有償解除試行も繰り返さない。NHC-01と全製品/収益/デモ目標を維持する。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
