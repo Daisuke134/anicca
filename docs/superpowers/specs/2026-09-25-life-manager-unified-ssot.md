@@ -25971,6 +25971,10 @@ native agentは本人Computer/isolateに比較表と自社オリジナルScript 
 
 この一件だけ旧period/task/session上限300000→新500000microUSDとして、同sessionのUI検索完了・最小修正・readbackを続ける。原本月残枠から既知の一時試験費を控除して新上限が収まることを先に照合し、月cap12USD/追加購入/原本27/定期設定は変更しない。理由は完了済み外部価格読取を再実行せず、実測の予約不足を解消して既存成果を正確に保存するため。root補足1件として数える。未検索の二商品は観測済みSearch UIの実行結果を確認し、未観測URLの推測を繰り返さない。自己制作商品の仕様は15秒25–32語/30秒55–65語/60秒110–130語、六部はhooks/script/CTA/caption-tags/titles/checklist。57語は二つの30秒試用例、128語は販売文であり注文の固定長ではない。一つの初期paid planを仮説として選び、他tierは比較資料へ分け、原価/実需要未検証を維持する。終了時の実費・資料・不明点を記録し、未確認の二商品や有償需要を完了扱いにしない。
 
+価格資料は196/198のsuccessful writeと204/205の全文native readが一致する（public-pricing8049bytes/SHA7f00c549031299af302b5e74f1ca5de945fd7b0a8f53ae0436009490f8b8e628、hypothesis5421bytes/SHA1c1dcb7721fc3e562ba285374f6bd6a000cfd01acd165f55d784047887333af7）。当該時点は176281microUSD/end_turn、HookAceのみlive確認、二商品は未確認でNHC-02全体完了ではない。初期案は週9.99USD/10requests一つ、六部/時間別語数を修正済み。資料完成後にroot未送信のshell/test確認発話とread/tools_searchがあるが、accepted user inputにはその起動元が記録されず、公式delegated threadsは空・実shell tool実行はない。追加発話の原因や子実行の存在を推測しない。
+
+二商品の検索UI失敗を同じ操作で反復せず、既存公式market snapshotのtitleSlug/idという追加根拠から二つの候補URLを導き、同session/同500000microUSD上限で表示確認する。Video Hook Forensicsはvideo-hook-forensics/4507678012、Dolaはdola-ai-video-storyboard-assistant/1047941397。観測済みCapafyの/agent/<slug>/<id>というUI path形と歴史的公式fieldsからの推論であり、現在のcanonical URL/価格の証明ではない。表示後のtitle/ID/価格/screenshotで初めてlive事実とする。無根拠なslug総当たりと区別するためこの経路変更と根拠を先に記録する。root補足は計2件として数え、追加の上限増額・登録・購入・テスト/shell作業は行わない。資料への最小追記後readbackし、未確認なら具体的な画面結果を残して未完扱いにする。
+
 #### 原子的な残TODOと現在cursor
 
 旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
