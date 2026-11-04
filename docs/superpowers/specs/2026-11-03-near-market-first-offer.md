@@ -116,3 +116,8 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 同owner/worktree/PR9161を継続し、未完を増やさない。範囲は既存report/CSV/scriptをbyte不変で保持し、BOARDのmain側Naive行と自分のclaimを両方保持する競合解消、必要CI公式PASS後main統合。元head0c11ed7dのCI14件/CodeRabbit成功、既存独立原典検証SHIP/Blocking0を確認する。公式threadは38件/has_more=false・前観測1793702294.632279から差分0、催促0。本人専用GETは5pending・assignment0、active HQは本taskだけ。親Naive/接続修復/会計/投稿/fence/課金を変更しない。現在cursorは更新headのCI→main公式照合。受注時は最新briefと24h/API3日の差異を再読してSLA内納品し、受注/納品/売上/出金を区別する。private公式readback→~/.local/state/life-manager/team-hq/ebec4e/readback.json。
 
 統合前に親mainのNaive行が再更新され、先頭隣接行の競合が再発する。main最新Naive行を採用して古い状態を重複させず、自分のclaimを既存NEAR担当行の近くへ移動する。report/CSV/scriptは不変。新headのCIを再確認し、全PASSまでmergeしない。有限run終了時は未統合branch/commit/PRとprivate checkpointを保持し、次回も本PRを優先する。
+
+
+### 採算reportのCI修復継続 — task 6d595d
+
+同owner home-codex-a4d5daのPR9161を継続する。範囲は最新main同期、既存report/CSV/scriptのbyte保持と必要CI公式PASS後main統合。旧head69cf360787のOSS境界FAILは別商品iconのdigest未宣言が原因であり、mainの修正23db2dbd45を取り込み、新しい除外や本番変更は加えない。公式GETは5pending/assignment0、初回bid15USDC/pending。remote追跡threadの最新1793754710.135649は親の接続継続依頼で、Muse/Dots/Grok本人の新受領/着手/結果は確認できない。催促0、再応募/submit/送金/課金0。完了条件はDecimal再計算・byte一致・OSS境界と必要CI全PASS、main公式blob一致。現在cursorはmain同期→検証→更新head CI→main。CI待ちが有限runを越す場合は同PR/commit/次操作を保存して継続する。既存順序は変更しない。
