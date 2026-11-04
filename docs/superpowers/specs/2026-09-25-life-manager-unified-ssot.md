@@ -25771,7 +25771,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 #### Capafy第一ユースケースと他プラットフォーム
 
-Capafyでは既存の正当なAnicca Publisher/担当ownerを保護し、販売実績のある商品は変更しない。第一作業は既存ownerから専用agent業務資格情報/team権限・automation条件・受取条件を照合すること。同一運営者のPublisherをagent数/VM数だけ増殖しない。現在の規約2.9は共通支配下につき1Publisher（追加は書面許可）。既存人間Gmail/sessionを借りて動いた場合は「利用者の資格情報不要」を実証したことにしない。
+Capafyでは既存の正当なAnicca Publisher/担当ownerを保護し、販売実績のある商品は変更しない。規約は公開前に自動審査とCapafy側のhuman reviewがあると明記する。No human in the loopは自社/利用者による業務指示・操作・承認を要しない運営契約を指し、買い手や販売先の審査担当者まで存在しないとの主張ではない。外部審査待ちは自動で状態確認し、自社の人間代行・承認と別に記録する。第一作業は既存ownerから専用agent業務資格情報/team権限・automation条件・受取条件を照合すること。同一運営者のPublisherをagent数/VM数だけ増殖しない。現在の規約2.9は共通支配下につき1Publisher（追加は書面許可）。既存人間Gmail/sessionを借りて動いた場合は「利用者の資格情報不要」を実証したことにしない。
 
 | 対象 | 用途と優先度 | 残る条件 |
 |---|---|---|
@@ -25818,7 +25818,7 @@ Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・
 | NHC-01 | 既存Capafy ownerの販売先/資格情報/automation/公開/精算条件をread-only照合する | 同Publisher内の正当なagent専用経路と各段階の条件。個人Gmail借用で代用しない |
 | NHC-02 | Capafyの成功商品の需要・成果物・価格・配信を調べ、一商品を選ぶ | 一次URL/観測指標/模倣する仕組み/自社素材/実行費の記録。売れている既存商品は変更しない |
 | NHC-03 | 選んだCapafy業務を既存Naïve設定/定期inputへ反映する | source→CI/main→専用agent/deployment公式一致。予算増額はこのspecで許可しない |
-| NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、通常の人間承認0。必須人間手順があれば無人完了としない |
+| NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、自社/利用者の人間承認0、Capafy側の審査は別記録。自社側に必須人間手順があれば無人完了としない |
 | NHC-05 | 既存の自社無料配信経路で一商品を配信する | 投稿と商品到達先の実表示。重複投稿なし、広告費なし |
 | NHC-06 | 一件の第三者注文を自律納品し、支払/費用を照合する | 同じ注文の納品物/支払receipt/手数料/実費/介入数。内部送金は売上にしない |
 | NHC-07 | 保存状態から次の有料業務を完走する | 別注文・継続runの証拠、重複請求0、human/外部AI介入を実数表示 |
