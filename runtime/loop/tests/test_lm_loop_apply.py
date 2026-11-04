@@ -20,6 +20,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import runtime.loop.lm_loop as lm_loop
+from runtime.host import resource_admission as admission
 from runtime.loop.lm_loop import apply_live
 from runtime.loop.lm_loop_apply import (
     _plist,
@@ -4430,6 +4431,33 @@ class LmLoopApplyTest(unittest.TestCase):
             values["calls"].read_text().splitlines(),
             ["preflight", f"print-disabled gui/{os.getuid()}", f"print gui/{os.getuid()}/ai.anicca.example"],
         )
+
+    def test_reapply_retries_failed_resume_with_real_admission(self):
+        release = self._release("release-a").resolve()
+        current = self.root / "current"
+        current.symlink_to(release)
+        arguments = [str(release / "bin/lm-loop-run"), "example", str(release)]
+        values = self._apply_kwargs(current, self.root / "apply.lock", arguments)
+        safe = values["launchctl_safe"]
+        script = safe.read_text().replace(
+            "printf '%s\\n' 'arguments = {'", "printf '%s\\n' 'state = waiting' 'arguments = {'")
+        safe.write_text(script)
+        kwargs = dict(current=current, lock_path=values["lock_path"],
+                      event_writer=lambda *_: None)
+        first = apply_live(release, values["agents_dir"], safe, target="example",
+                           admission_resume=lambda _: False, **kwargs)
+        self.assertFalse(first[0]["ok"])
+        admission.activate_durable_v2()
+        admission.enqueue_durable("deterministic", "example", admission_class="borrow",
+                                  occurrence_id="example:wake")
+        self.assertTrue(admission.suspend_durable("example"))
+        second = apply_live(release, values["agents_dir"], safe, target="example",
+                            admission_resume=admission.resume_durable, **kwargs)
+        self.assertTrue(second[0]["ok"])
+        with sqlite3.connect(self.root / "admission/admission-v2.sqlite3") as db:
+            eligible = db.execute("SELECT next_eligible_at FROM priorities WHERE owner_id=?",
+                                  ("example",)).fetchone()[0]
+        self.assertEqual(eligible, 0)
 
     def test_apply_current_release_records_real_launchctl_calls(self):
         release = self._release("release-a").resolve()

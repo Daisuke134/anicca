@@ -1627,7 +1627,7 @@ def suspend_durable(owner_id: str, *, only_if_unclaimed: bool = False) -> bool:
                          SELECT 1 FROM queue WHERE owner_id=?)""",
                 (float("inf"), owner_id, owner_id),
             ).rowcount
-        return bool(changed)
+        return bool(changed) if only_if_unclaimed else True
     finally:
         os.close(descriptor)
 

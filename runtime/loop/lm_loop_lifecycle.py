@@ -41,7 +41,15 @@ def _lifecycle_one_locked(action: str, loop_id: str, entry: dict, agents_dir: Pa
     if action == "stop":
         rc, detail = run(["bootout", service])
         if rc == 0 and admission is not None:
-            admission("suspend")
+            try:
+                suspended = admission("suspend")
+            except Exception as exc:
+                suspended = False
+                detail = f"admission suspend failed: {exc}"
+            if suspended is False:
+                rc = 1
+                if "admission suspend failed" not in detail:
+                    detail = "admission suspend failed: control busy"
         return {"loop_id": loop_id, "label": label, "action": action,
                 "return_code": rc, "operations": operations, "detail": detail.strip()}
 

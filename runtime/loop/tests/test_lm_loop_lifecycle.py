@@ -102,6 +102,15 @@ class LmLoopLifecycleTest(unittest.TestCase):
             self.assertEqual(result["return_code"], 0)
             self.assertEqual(actions, ["bootstrap", "resume"])
 
+    def test_stop_reports_a_failed_admission_suspend(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = lifecycle_one(
+                "stop", "a", REGISTRY["loops"]["a"], Path(directory),
+                lambda args: (0, ""), admission=lambda action: False,
+            )
+            self.assertNotEqual(result["return_code"], 0)
+            self.assertIn("admission", result["detail"])
+
     def test_start_reports_a_failed_admission_resume(self):
         with tempfile.TemporaryDirectory() as directory:
             agents = Path(directory)
