@@ -26007,6 +26007,14 @@ browser key probeのVetta実測: agt_3nqzm3bfb1pdmsddfgnnrraccx / ses_w46cnx1p9w
 
 次は一変数だけを変える比較として一時agentのharnessをpiにする。Vetta試験はcancel/detach/deleteしてから、同じ専用keyを使う別Pi/Flash試験を作成する。全browser actions ask・公開goto一件・他tool deny・保存context/mail/vault不使用・Identity限定・単一scope:call/追加要求は不許可・cap200000microUSDの条件を維持する。原本月残からVetta231microUSDと既知費用を控除して枠内に収める。キーはこの有限比較の終了時に失効/SSOT秘密除去し、両試験agentの削除と原本不変を確認する。ブラウザ操作成功とprivacy gate/実認証成功を引き続き区別する。
 
+Pi比較の結果: agt_rjrfjk5gmt0x538x0g1agwxbfq / ses_vkhyq81nc0927d0aypw5ydtaq1はpending browser/goto/https://capafy.ai//read_people:trueを専用会社keyでscope:call confirmし、公式event15 actor.type=key、event27 tool.completed/is_error=false/output=https://capafy.ai/、event34 idle/end_turn/pending空。費用2994microUSD（model1327/browser1667）、Vetta比較分込み3225microUSD。generic action gateとprivacy gateの内訳はeventから区別できず、privacy設定の恒久解消や実ログイン成功とは呼ばない。key失効/秘密除去/両一時agent削除/Identity detach/原本不変/一時grant不在など10checksを全PASS。fixture computerはnullで本体Computerを変更しない。
+
+次のNHC-01実認証試験はPi/DeepSeek V4.1 Flashの有限agent、cap300000microUSD/8分/確認最大20件。旧=公開goto一件、新=本人AgentMail受信とCapafy email OTPによるログイン/必要な通常signup、理由=会社API key経路による実browser実行が確認できたため。現在cursor=NHC-01を維持する。原本agent27/deployment disabledは変更せず、同Identityと会社所有context anicca-browser-capafyへ新agentの明示grantを付ける。元受信credentialは変更/削除せず、private SSOT exact service naive:browser-operator:agentmail-receiveの同じAgentMail keyを、試験agentだけに束縛する期限付きsealed static_bearer credentialとして追加する。MCPはagentmail URLのみ、get_inbox/get_message/list_inboxes/list_messagesのread-only4toolsのみ。登録/ログインに使うメールは既存専用AgentMail inboxで、人間Gmail/Google/session/password/API経由のサイト操作は使わない。
+
+browserは全actions ask・allow_writes:true・allow_extract:true・keep_alive:true・persist_context:true・timeout5分、他tool/defaultはdeny、handoffs:false/multiagent:false。agent自身が画面を見て認証手順を選び、SDK制御側は専用exact service naive:capafy-auth-policy-probeの会社key（agents:read/sessions:read/sessions:write）で当該sessionのCapafy認証と自分のAgentMail受信に必要なbrowser callを一件ずつ許可する。context保存は会社所有contextに限る。原本会社vaultや他ownerのcredentialを読むlogin action、商品変更/Publisher新規作成/決済/送金/配信/本人camera手順は今回の試験範囲外。外部AI/rootの補足/確認回数とhuman0は別々に数え、native単独無介入と呼ばない。
+
+新しいAPI keyは直ちにprivate SSOTへ保存し、OTP/秘密/API keyをprompt/repo/log/chatへ複製しない。root観測はmail本文/OTP/type値を保存・出力せず、tool名/action/host/成否/引数hash/receiptだけを記録する。新しく恒久credentialを発行する必要が出た場合はSSOTへ保存できる正式経路なしに進めない。終端では公式画面が示すaccount/role/Pub権限を確認し、一般accountだけをPublisher成功にしない。試験用key失効/秘密除去/試験credentialだけ削除/cancel/detach/一時agent削除と原本credential/contextのgrant保持を照合し、保存contextはrevokeで丸ごと削除しない。費用は既知61509+265948+394+3225microUSDと最新原本消費を控除した残枠内。fresh read-only credential/scope review後に実行する。
+
 #### 最新SDK・モデル・費用の一次資料再照合
 
 npmのlatestを再取得し、@usenaive-sdk/vetta=0.10.0、repository=usenaive/vetta-mono/packages/sdkを確認する。公式docs index https://vetta.sh/docs/llms.txt を起点にSDK/models/model-router/completion-window/pricing/harness-capabilities/budgets/policies/browser/email/sessionsを再取得し、会社APIで7モデルのretrieveとharnesses.listを照合する。取得証拠はprivate state/research-refresh-20261104に保存する。これは新規有償benchmark実行ではない。
