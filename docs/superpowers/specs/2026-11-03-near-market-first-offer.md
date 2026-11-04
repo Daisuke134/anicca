@@ -95,3 +95,29 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 共有remote threadは公式37件/has_more=falseまで取得。前回32件からの5件は親ownerの実装/反映/第三canaryの受領16.437秒・着手280.629秒・結果/重複0照合とhelper認証失敗の報告。別remote本人の新しい受領/着手/結果の直接証拠は追加されず、Reason accepted/queuedを着手としない。催促0。active HQ cardは本taskのみ、home-claude失敗2件は既存引継ぎ記録を保護する。
 
 公式結果: POST1回/201、bid f173c931-d96c-45a8-ade4-64aa452220c2、15USDC/pending。本人全bid GET200で同job1件・agent一致・全5pending、assignment GET200で0件を照合する。受注・納品・売上・出金は未確認。private attempt/response/readbackを0700/0600で保存。証拠 → docs/evidence/near-demand-offer-2259ca.json。現在cursorは必要CI公式PASS→main、既存hourlyで全assignmentを照合し受注時に最新briefを再読して24h以内に納品する。追加scheduler・同job再応募0。
+
+## 小額ジョブ採算レポート準備 — task a4d5da
+
+目的・範囲: 応募済みf082df6bの受注後24h納品を短縮する。owner home-codex-a4d5da、branch task/home-codex-a4d5da。初回report/提案5件の既存統合を確認済み、公式GETは5pending/assignment0。所有は英語経済性report、再計算表とその出典証拠、BOARD/本節のみ。親のHQ修復/Naïve/他PR、Dots会計、Muse/Marketer投稿、旧IG fenceは保持する。追加応募・納品POST・送金・有料API追加0。
+
+完了条件: 最新briefと公式価格を実取得し、$0.05/$0.20/$1/$5でfee/rail/judge/dispute/supportを分離した再計算表、break-evenと感度、1000–2500語の英語Markdownと最大5推奨を作成。推定/未取得/地域/請求単位を明記し、計算assert/語数/source-boundary/diffを確認、push/PRと必要CI全PASS後main。未受注なのでsubmitしない。既存順序は変更なし。現在cursorは一次資料取得と経済性モデル準備。
+
+準備成果: docs/team/near/micro-job-economics-report.md（英語1615語）とmicro-job-economics.csv、標準Decimal再計算script。13の原典artifactを保存し、$0.05/$0.20/$1/$5・判定/サポート/損失・返金depositを分離。US Stripe料率は日本redirectにより未取得、Upwork/Fiverrは直GET403後crwl本文取得、floor未確認は明示する。仮定baseの損益分岐$0.176375は当社/市場の実測採算ではない。brief24hとacceptanceWindowDays3の不一致を納品前cursorに残す。Decimal表4点/閾値両側/感度3件/deposit/月tier、語数、source-boundary、diff PASS。未受注/未納品、追加bid/投稿/会計write0。証拠→docs/evidence/near-economics-preparation-a4d5da.json。独立fresh-context検証は原典/全計算/CSV byte一致を確認しSHIP・Blocking0（本文のみ1132語・推奨5件）。Connect追加料金は実費照合時の未取得入力として保持。現在cursorは必要CI→main、受注時は契約再読→SLA内納品。
+
+継続task0edd74482e7425e7b1cacba5は同owner/worktree/PR9161の統合を所有する。旧head f1384371e4は必要CI14件とCodeRabbit成功だがBOARDの独立claim追加で競合し、両ownerの行を保持してmain同期する。受注公式GETは5pending/assignment0、remote差分は親の返送先・既存統合報告のみで本人着手の追加証拠なし。report/CSV/scriptは旧headとbyte一致を検証する。現在cursorは更新head必要CI→main公式照合、受注時は最新briefと24h/API3日差異を確認して納品。新規bid/納品/投稿/会計/反映0。
+
+### 採算reportの統合継続 — task a28e9fa3
+
+同owner home-codexのPR9161を優先し、新案件は増やさない。旧head d9a66530の公式CI15件成功・保存済み独立SHIP/Blocking0を確認。最新origin/mainとのBOARD競合は自分の採算report行と他ownerのNaive完了行を両方保持して解消する。再計算/source-boundary/diffを確認し、新headの必要CI公式PASS後にmainへ統合する。thread1793635811.853779は前回1793702294.632279以降の返信差分0。本人専用GETは5pending・assignment0、納品/追加bid/送金0。既存hourlyの受注監視と受注時SLA納品へ戻す。現在cursorは競合解消後の新head CI→main。旧順序から変更なし。
+
+
+### 採算reportの統合継続 — task ebec4e
+
+同owner/worktree/PR9161を継続し、未完を増やさない。範囲は既存report/CSV/scriptをbyte不変で保持し、BOARDのmain側Naive行と自分のclaimを両方保持する競合解消、必要CI公式PASS後main統合。元head0c11ed7dのCI14件/CodeRabbit成功、既存独立原典検証SHIP/Blocking0を確認する。公式threadは38件/has_more=false・前観測1793702294.632279から差分0、催促0。本人専用GETは5pending・assignment0、active HQは本taskだけ。親Naive/接続修復/会計/投稿/fence/課金を変更しない。現在cursorは更新headのCI→main公式照合。受注時は最新briefと24h/API3日の差異を再読してSLA内納品し、受注/納品/売上/出金を区別する。private公式readback→~/.local/state/life-manager/team-hq/ebec4e/readback.json。
+
+統合前に親mainのNaive行が再更新され、先頭隣接行の競合が再発する。main最新Naive行を採用して古い状態を重複させず、自分のclaimを既存NEAR担当行の近くへ移動する。report/CSV/scriptは不変。新headのCIを再確認し、全PASSまでmergeしない。有限run終了時は未統合branch/commit/PRとprivate checkpointを保持し、次回も本PRを優先する。
+
+
+### 採算reportのCI修復継続 — task 6d595d
+
+同owner home-codex-a4d5daのPR9161を継続する。範囲は最新main同期、既存report/CSV/scriptのbyte保持と必要CI公式PASS後main統合。旧head69cf360787のOSS境界FAILは別商品iconのdigest未宣言が原因であり、mainの修正23db2dbd45を取り込み、新しい除外や本番変更は加えない。公式GETは5pending/assignment0、初回bid15USDC/pending。remote追跡threadの最新1793754710.135649は親の接続継続依頼で、Muse/Dots/Grok本人の新受領/着手/結果は確認できない。催促0、再応募/submit/送金/課金0。完了条件はDecimal再計算・byte一致・OSS境界と必要CI全PASS、main公式blob一致。現在cursorはmain同期→検証→更新head CI→main。CI待ちが有限runを越す場合は同PR/commit/次操作を保存して継続する。既存順序は変更しない。

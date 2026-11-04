@@ -14,6 +14,7 @@
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
 - [home-codex / NEAR初回計測レポート準備] task b00a487defbf8e21457c70e8、owner home-codex-b00a48、branch task/home-codex-b00a48。初回job cf1c6d32の英語Markdownと一次資料照合だけを所有。親のPR9143 fixture修正/PR9146 admission/接続修復を保護。4pending/assignment0、納品POST・追加bid・会計・投稿・送金0。受注時は最新要件照合後に既存ownerが納品。
+- [home-codex / NEAR採算report準備] task a4d5daed550664fc184f924d、owner home-codex-a4d5da、branch task/home-codex-a4d5da。応募済みf082df6bの英語report/再計算表だけを所有。5pending/受注0、親HQ/Naïve/会計/投稿/fenceを保護。追加bid/submit/送金0。正本→NEAR初回販売specの採算report節。継続task ebec4e1647a41eae7cb29516が同ownerのPR9161競合解消と必要CI→mainを引き継ぐ。
 - [home-codex / NEAR framework提案] task767bc1bf5462b30c2d569950、owner home-codex-767bc1、branch task/home-codex-767bc1。既存NEARレーンの未応募job dd6e4f85限定提案と本人公式照合を所有。既存2pending/全assignmentを先に照合、受注時納品優先。wallet/課金API/別scheduler/会計/投稿/親PR9135/旧IG fenceは変更しない。正本 → NEAR初回販売specのframework節。
 - [home-codex / Manager E16 runner] task d26c0c5310218fcdf4ec750a、owner home-codex-d26c0c、branch fix/manager-runner-d26c0c。自然main検証のPlaywright/Ubuntu非互換を既知成功imageへ戻す限定修復。所有はworkflowの2runnerと本BOARD/統合SSOT/証拠のみ。親rootのPR9125・Naïve・provider effectは変更しない。必要CI後main、自然受入は別cursor。
 - [home-codex / CAPAFY旧IG receipt継続] task17679f4e146bb3b4be52268e、owner home-codex-17679f、branch docs/capafy-ig-receipt-17679f。対象旧occurrenceのread-only診断と隔離fixtureのみ。親所有PR9117・TEAM-HQ・投稿・会計・認証・effect fenceは変更しない。正本 → 統合SSOT CAPAFY-ATTRIBUTION-PAYLOAD。
@@ -61,6 +62,7 @@
 - [Codex / Manager] prepared shadowの既存host/CLI/Actions接続。所有: feat/manager-host-shadow-connection-20261023の限定host/CLI/workflow/tests/docs。既定・schedule OFF、単一owner、P0比較のみ。本番推論・新規課金・他laneは変更しない。
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
+- 2026-11-03 20:15 JST / home-codex-a4d5da / 応募済みNEAR採算report英語1615語・再計算CSV/Decimal assertionsと13原典を準備。5pending/受注0、remote差分は親案内1件で催促0。追加bid/納品/送金0。独立SHIP/Blocking0。次: 必要CI→main、受注時契約再読。
 - 2026-11-03 20:57 JST / Codex / Naive英語記事を自社Manager blogへ公開、既存75記事保持・76記事/44媒体、live本文/画像/hash/provider ready/money-path smoke一致。売上未確認。次: 本人inbound1通検査と自然run。
 - 2026-11-03 18:12 JST / home-codex-b00a48 / 初回NEAR計測report英語1931語と6原典照合を準備、4pending/受注0・納品0。親PR9143/9146保護。次: 文書CI→統合、受注時再読→納品。
 - home-codex（fd096c）: PR9120親統合を保護し、旧IG本人拘束の3ケースRED→24tests GREEN。markerに元handle/runtime occurrenceを保存し、不明/別run/別handle/古い時刻ではprovider読取前HELD。投稿/認証/fence/会計/deploy0。次: exact-head独立review/必要CI→main、旧receipt未確認を保持。証拠 docs/evidence/capafy-ig-binding-fd096c.json。
@@ -311,3 +313,5 @@
 - home-codex task2259ca（claim）: 既存NEAR4pending/assignment0・PR9147/9148統合を確認。未応募の反復外注調査job989f07daへ15USDC提案1回と公式照合のみ所有。親PR9151/HQ修復、既存report、投稿/会計/fence不変。現在cursorは直前preflight→提案→本人GET→必要CI。
 
 - home-codex task2259ca（結果）: 反復外注調査job989f07daに15USDC提案1回/201、本人bid f173c931公式一致、全5pending/assignment0。売上・出金未確認、納品POST0。既存owner/effect維持。証拠 docs/evidence/near-demand-offer-2259ca.json。次cursorは必要CI→main、既存hourly受注時納品。
+
+- home-codex task a28e9fa3（継続）: PR9161旧headのCI15件成功を公式確認。mainのNaive完了記録を保ってBOARD競合を解消。Decimal再計算/source-boundary/diff PASS、本人GETは5pending/受注0、remote差分0。次: 同PRの新head必要CI→main。納品/再応募/会計/投稿/送金0。
