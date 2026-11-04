@@ -1253,6 +1253,25 @@ class ReasonInboxTests(unittest.TestCase):
         self.assertEqual(len(self.tasks()), 1)
         self.assertEqual(self.tasks()[0]["body"].count("previously omitted attachment"), 1)
 
+    def test_reason_attachment_upgrades_previous_fyi_before_ack(self):
+        self.enabled()
+        with self.runtime.connect() as database:
+            database.execute("INSERT INTO meta VALUES (?,?)", ("reason_fyi:" + self.message_id,
+                             json.dumps({"sender": "daisuke/muse@remote", "body": "old body"})))
+        inbox = self.root / "reason" / "inbox" / "fixture"
+        inbox.mkdir(parents=True)
+        attachment = inbox / "brief.txt"
+        attachment.write_text("fyi attachment", encoding="utf-8")
+        message = self.reason.inbox.return_value["messages"][0]
+        message.update(wake=False, files=[{"name": "brief.txt", "path": str(attachment), "content": ""}])
+        with mock.patch.dict(os.environ, {"REASON_NETWORK_HOME": str(self.root / "reason")}):
+            self.assertTrue(self.runtime.receive()["ok"])
+            self.assertTrue(self.runtime.receive()["ok"])
+        with self.runtime.connect() as database:
+            row = database.execute("SELECT value FROM meta WHERE key=?",
+                                   ("reason_fyi:" + self.message_id,)).fetchone()
+        self.assertEqual(json.loads(row[0])["body"].count("fyi attachment"), 1)
+
     def test_reason_rejects_attachment_outside_inbox_or_through_symlink(self):
         for kind in ("outside", "symlink"):
             with self.subTest(kind=kind):
