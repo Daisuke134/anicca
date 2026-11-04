@@ -5531,7 +5531,8 @@ def test_dispatch_reserved_rejects_noncanonical_installed_argv(tmp_path):
     run.assert_not_called()
 
 
-def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path):
+def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIFE_MANAGER_RESOURCE_ADMISSION_ROOT", str(tmp_path / "admission"))
     current = tmp_path / "release"
     agents = tmp_path / "agents"
     (current / "config").mkdir(parents=True)
@@ -5555,7 +5556,7 @@ def test_dispatch_reserved_defers_owner_with_missing_plist(tmp_path):
         ) == []
 
     defer.assert_called_once_with("example", cooldown_seconds=60)
-    run.assert_not_called()
+    assert run.call_count == 1
 
 
 def test_confirmed_unloaded_owner_keeps_its_queue_position_but_stops_reserving(tmp_path, monkeypatch):

@@ -1590,7 +1590,7 @@ def defer_durable(owner_id: str, *, cooldown_seconds: int = 0) -> bool:
         os.close(descriptor)
 
 
-def suspend_durable(owner_id: str) -> bool:
+def suspend_durable(owner_id: str, *, only_if_unclaimed: bool = False) -> bool:
     """Pause one queued owner without discarding its occurrence ledger.
 
     Lifecycle stop unloads launchd, but a durable queue row may otherwise be
@@ -1600,7 +1600,7 @@ def suspend_durable(owner_id: str) -> bool:
     """
     if not owner_id:
         raise RuntimeError("invalid resource identity")
-    root, _, _, database = _durable_paths()
+    root, owners, _, database = _durable_paths()
     descriptor = os.open(root / "control.lock", os.O_RDWR | os.O_CREAT, 0o600)
     try:
         try:
@@ -1608,6 +1608,16 @@ def suspend_durable(owner_id: str) -> bool:
         except BlockingIOError:
             return False
         with _database(database) as connection:
+            if only_if_unclaimed:
+                if (any(owners.glob(f"{_digest(owner_id)}-*.json"))
+                        or connection.execute(
+                            "SELECT 1 FROM occurrences WHERE owner_id=? AND "
+                            "(state='claimed' OR effect_unknown=1) LIMIT 1",
+                            (owner_id,)).fetchone()
+                        or connection.execute(
+                            "SELECT 1 FROM priorities WHERE owner_id=? AND effect_unknown=1",
+                            (owner_id,)).fetchone()):
+                    return False
             changed = connection.execute(
                 "DELETE FROM reservations WHERE owner_id=?", (owner_id,)
             ).rowcount
