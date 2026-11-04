@@ -1424,9 +1424,12 @@ class ReasonInboxTests(unittest.TestCase):
     def test_paged_reason_failure_does_not_advance_cursor_or_ack(self):
         self.enabled()
         self.runtime.reason_config["page_enabled"] = True
-        self.reason.inbox.return_value.update(next_cursor={"version": 1}, holds=[])
-        with mock.patch.object(self.runtime, "insert_task", side_effect=OSError("disk full")):
+        cursor = {"version": 1, "mailbox": "daisuke/hq-codex",
+                  "after": [1, self.message_id], "through": [2, "next-message-0001"]}
+        self.reason.inbox.return_value.update(next_cursor=cursor, holds=[])
+        with mock.patch.object(self.runtime, "insert_task", side_effect=OSError("disk full")) as insert:
             self.assertFalse(self.runtime.receive()["ok"])
+        insert.assert_called_once()
         self.reason.ack.assert_not_called()
         with self.runtime.connect() as database:
             self.assertIsNone(database.execute("SELECT 1 FROM meta WHERE key='reason_page_cursor'").fetchone())
@@ -1437,6 +1440,31 @@ class ReasonInboxTests(unittest.TestCase):
             self.assertFalse(self.runtime.receive()["ok"])
         self.reason.ack.assert_not_called()
         self.assertEqual(self.tasks(), [])
+
+    def test_paged_reason_real_sqlite_full_rolls_back_cursor_and_replays_once(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        cursor = {"version": 1, "mailbox": "daisuke/hq-codex",
+                  "after": [1, self.message_id], "through": [2, "next-message-0001"]}
+        self.reason.inbox.return_value.update(next_cursor=cursor, holds=[])
+        self.reason.inbox.return_value["messages"][0]["body"] = "x" * 65536
+        connect = self.runtime.connect
+        @contextmanager
+        def full_database():
+            with connect() as database:
+                pages = database.execute("PRAGMA page_count").fetchone()[0]
+                database.execute(f"PRAGMA max_page_count={pages}")
+                yield database
+        with mock.patch.object(self.runtime, "connect", side_effect=full_database):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        self.assertEqual(self.tasks(), [])
+        with connect() as database:
+            self.assertIsNone(database.execute("SELECT 1 FROM meta WHERE key='reason_page_cursor'").fetchone())
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
 
     def test_real_sqlite_full_does_not_ack_and_replay_creates_one_task(self):
         self.enabled()
