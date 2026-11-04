@@ -7,10 +7,33 @@
 **Tech Stack:** Naïve標準agent/session/browser、JSON設定。追加依存なし。
 **Spec:** docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md の Naïve browser company 節。
 
+## 現在の状態と残TODO（実行順の正本）
+
+**商品方針の明確化:** 商品は既存Life Manager Cloudそのもの。/lmは全体説明、/maritimeは現行Cloud入口。Naïveは追加の実行backendであり別商品にしない。利用者のonboarding emailは進捗/結果の通知先、Manager用inboxは必要な販売先登録/通知/回復のための業務道具。inbox作成やSubstack登録自体を成果にしない。Substackへの追加試行はしない。既存7TODOの主作業2を維持し、実需要・商品作成・配信・受注/入金へ戻す。Naïveの現在のowner accountはprivate SSOT service naiveと公式auth.meで照合し、DaisのGmail側と同一だと推測しない。
+
+
+目的は、利用者の個人メール/Googleを要求せず、Manager自身のIdentity・メール・Computerで登録、商品販売、納品、実入金まで完走すること。月USD10,000は目標であり達成値ではない。月額売上とMRRは分ける。
+
+本番はmainfec447b由来agent24/production24、pi/GLM-5.2/priority、月10USD/task1USD。専用AgentMailの実受信、本人browserの公開需要読取、状態保存は確認済み。直近own-contact試行は会社自身の住所を初期設定として渡しメール欄入力まで確認0で進むが、Substackが「This email has been blocked.」と表示し、登録/認証は未達。当該アドレスの拒否をAgentMail全体/ドメイン全体/他サービスへ一般化せず、別アドレスでこの拒否を迂回しない。n8nのnative signup必須field不足、mail読取後のread_people確認は別問題。claude_code/hermesは最新APIでrunnable=false。
+
+直近公式照合は60sessions/live0/pending0/Computer paused/本番24保持、費248095microUSD・全ledger34件一致、月残786750（後計上あり）。6分内終了だが要求18toolsに対し実20toolsで、tool数契約は未達。登録・第三者依頼/納品/入金・黒字・連続録画は未達。
+
+1. **専用基盤の未完部分を閉じる。** 本人Identity/mail/Computerと公開pilotを保持。記事・証拠PR9178/9179のCIを修復→main統合→英語公開記事更新。9件のbenchmark catalogは仕様読了/ローカル試験/公式実行/モデル比較を区別し、未実行を実行済みにしない。
+2. **現在cursor：初回の実受注→納品→第三者入金。** 新規アカウント作成を収益全体の前提にせず、既存pilotと許可済み会社発信で実需要へ限定提案。依頼・納品物・29USDCの第三者receipt・費用を同一案件で照合。内部送金は売上にしない。
+3. **自然運転と実業務の連続デモ。** 定期実行による需要取得から仕事完了まで録画。AI coordinator介入/人間介入/エラー/費用を実数表示。登録画面やtool成功だけを入金デモにしない。
+4. **収益に必要な接続だけを整える。** Capafyの既存Publisher/owner/正式な公開・精算条件と、選んだ販売先の必要な登録・受取経路を確認する。Manager自身の業務用Identity/資格情報を使う。Substackは実行対象から削除し、無関係な登録や受信箱検証を販売の前提にしない。利用者のonboardingメールは通知先であり、そのGmail inbox/passwordを業務へ要求しない。
+5. **黒字化→月USD10,000。** 顧客売上、返金/手数料、推論/Computer/配信費を照合。29USDC単発商品と現処理能力だけで10K達成とせず、実需要から単価/商品/供給能力を改善。継続契約がなければMRRと呼ばない。
+6. **iPhoneだけの利用入口。** 個人メール・パスワード・PC入力なしで開始できる入口を実機で検証。銀行/本人手続き等、実サービスが要求する未充足条件は隠さない。
+7. **黒字手順の移植と拡大。** まず2拠点で資格情報・仕事所有権・費用を分離し、重複営業/納品/請求を防いで利益を比較。compute自費支払と復旧を確認後に拠点を増やす。複製数を利益の証拠にしない。
+
+従来7TODOの順序を維持し、主作業は2。登録4の独立probeは新しい失敗境界を分離できる場合だけ。同型有償再試行や未提供harnessへの新agent作成はしない。次の一手は最新記録とCI修復を統合し、既存pilotの需要・発信状態をreadbackして重複のない収益行動を選ぶこと。
+
+以下の設計・cursor・費用・チェック欄は各版の履歴。現在値と残TODOはこの節を正本とする。
+
 ## Global Constraints
 - 既存owner・共有profile・既存6agent/cronを変更しない。
-- 専用capは修復sourceで月8USD/max_task1USD、既存残高内・追加入金なし。現在の稼働値と未反映targetは「現在の実行詳細」を参照。
-- 秘密値はSSOTとproviderの専用credential経路のみ。modelへ値を送らない。
+- 専用capは現行sourceで月10USD/max_task1USD、既存残高内・追加入金なし。現在の稼働値と未反映targetは「現在の実行詳細」を参照。
+- 秘密値（API key/password/OTP等）は専用credential経路で扱い、root prompt・記録へ複製しない。非秘密の自己連絡先は必要なprivate初期設定だけに渡し、会話・repoへ表示しない。
 - business script/APIはagentへ与えない。scopeはbrowserによる画面操作、本人専用メール3機能、指定Xの新規campaign向けPostiz4tools。通常の登録・認証・商品作成・公開・顧客対応は人間承認なしで実行する。
 
 ## Review Focus
@@ -971,3 +994,73 @@ Grok/Museへの既存Slack threadへ具体的なservice/url引数schemaを照会
 英語記事sourceのCurrent Stateを24/GLM5.2/priority/月10へ訂正し、今回の未完登録・費用・介入・予約見積・公式templateからの学びを追記する。空の公開登録フォーム画像と秘密を含まない観測JSONをrepo内へ用意する。公開blogへの反映・画像/JSON公開routeは未実施なので、記事公開済み/連続録画/paid demoとは呼ばない。source: docs/research/manager/articles/2026-11-03-naive-autonomous-companies-en.md、画像../assets/n8n-owned-email-signup-form.jpg、観測docs/research/evidence/naive-live-20261104/owned-email-onboarding-v24.json。
 
 現在cursor2は、同型の有償signupを反復せず、実際のnative入力schema/引数処理境界を確定して通常登録を修復し、実需要への限定提案→第三者依頼/納品/公式入金へ進む。登録の問題と独立して、既に動く本人browserの需要読取・先行保存や既許可の会社発信を捨てない。必要な先行データや既存ownerを観測してから次の収益作業を選ぶ。元7TODO・USD10K/月・phone-only・移植の全体goalを維持する。予算修正を完了としても商品/収益goalを縮小しない。
+
+
+### native schema取得境界とAgentMailによる通常コード認証
+
+SDK0.10.0のProxyCallTraceSchemaはtool schema hashとrequest.toolsを表せるが、今回GET /v1/proxy/calls?limit=10は200/data0/has_morefalse。公開proxy API仕様はproxied呼出しの保存を説明し、今回のinline native harnessのtool定義が読めるとは確認できない。推論traceから必ず取得できると早く述べた説明は訂正する。取得処理はschemaとtool-call引数名だけを対象にし、system/messages/response.text/reasoning/他session原文の保存・表示0。private v24-native-browser-schema-readback.json とv24-proxy-call-list-metadata.jsonが根拠。Museは公開SDKの必須4fieldsを独立確認するがnative schema/成功実例は未保有と返信。明示後も3fieldsだったこちらの実測を返し、追加操作を依頼しない。native入力処理の原因は引き続き未分離、n8n同型有償再送0。
+
+全体7TODOの順序は変えない。primary TODO2のn8n入力境界調査/実需要は保持し、独立したTODO4の登録確認を既存の正常な受信路で進める。旧Substack試行はv20専用AgentMail受信実証より前で、Naïve原inboxの受信未達を伴う。新しい根拠は専用AgentMailを本人MCPが受信/readで照合できたこと。公式helpはemail verification code/login linkを明記し、signup画面は通常account作成を提供する。 https://support.substack.com/hc/en-us/articles/360059542452-How-do-I-log-into-my-Substack-account 、https://substack.com/signup 。最新tosは本人/組織利用・正確な情報・16歳未満禁止を確認する。今回のaccountはAnicca事業自身のもの、利用者や第三者へ譲渡するaccountではない。成人の実ownerの委任で会社名を使い、人間の経歴や私的事実を捏造しない。spam/scraping/購読者import/投稿/課金/Stripe/支払は0。
+
+次の単一仕事は同agent24/Identity/priority/本番24、source mainfec447b/月10/task1/model/tools変更0。fresh残/credit>=300000、全live0/pausedで1件だけ、finite200000＋後計上100000/計画300000、6分/max14tools/hosted最大2。本人AgentMail.list_inboxesで取得する専用箱だけを使い、Substack/signupの公式email Continue→必要な通常確認コード/リンク→本人profileの認証状態へ進む。既登録なら同じ専用mailのsign-inへ1回だけ移り、別account/個人Google/旧Naïve mail/他owner profile/新inboxへ替えない。既存の未確認Substack accountを書き換えない。正式passwordlessフローを使い、既知にservice不足のnative browser.signup、passwordの生成やtype/actへの転記、業務HTTP、DOM script、API代行、未知guard設定は使わない。ツールguardが拒否する操作を別表記/別fieldで迂回しない。足りないSMS/本人確認は捏造せず具体的境界を記録する。
+
+確認mailはSubstack操作後の本人箱に届く対象だけをnative MCPで読み、通常link/codeを同browserで使う。OTP/認証URL/path token/mail本文/passwordはroot artifact/state/journal/repo/報告へ複製0。観測はtool/action/host/bytes/hash/statusだけ、認証後の画像にcodeや非redacted個人dataを含めない。通常email/受信OTPの入力は公式passwordlessフロー内だけで行う。primary AIは正式SDKで、既委任の本人箱/対象host/現在画面と一致するcallを確認する。公式sessions APIはscope=sessionで当該tool名だけを当該session終了まで許可し、他session/agentへの永続grantを作らない。browserはinput pauseで閉じるという公式仕様を踏まえ、この6分のSubstack認証だけでは最初の対象一致browser確認にscope=sessionを1回使い、callごとのpauseによるページ喪失を避ける。https://vetta.sh/docs/api/sessions.md 、https://vetta.sh/docs/computer/browser.md 。guard独立適用は維持し、禁止操作を許可する変更ではない。browser以外はexact scope=call最大3件、同logical card再発は再回答0、session間grant/agent永続grant/未知policy PATCHは0。確認があればAI介入件数を記録し、Naïve単独無確認成功へ置換しない。人間確認は進行条件にしない。
+
+成果は実ログイン/profile確認と、本人が既存state全値を保持したsubstack_agentmail_auth新key追記/readで判定し、mail dispatchやリンク取得だけをaccount成功にしない。公開profile/username/idとbrowser context参照のmetadataだけをCredential SSOTの新exact service substack:naive-agentmail-operatorへ保存し、password取得済みとはしない。SSOT全体事前readでSubstack service0件/新exactservice無しを確認済み。finallyはterminal/pendingの実数/全live0/Computer休止/本番24全source fields/全ledger・後計上を確認する。元7TODO/実受注納品入金/記事公開/録画/phone-only/黒字/USD10K/月/移植は未達を保持する。
+
+作業branchは記事PR9178のreview済みhead e8c3a96を継ぐ別記録branchとし、9178のCIをcancelしない。runtime configは既存mainfec447bと同じbyteであり、新たな未統合コードを実行する変更ではない。新しい実行契約をcommit/pushしてremoteへ保存してからmanual業務を起動し、9178統合後にこの記録もmainへ統合する。
+
+独立read-only reviewは必須指摘0。session grantはhost限定ではなく、credential guard解除でもページ保持保証でもない。6分はprovider TTLではなくprimaryの終了責任であり、作成時刻から330秒でcancelを開始して360秒前の終端確認を目指す。観測の都度deadlineを照合し、手順や別作業を挟んで終了を遅らせない。
+
+起動前の追加観測: 全58sessionsに非終端稼働/確認待ち0、idle/end_turn/pending0は稼働中へ数えない。agent Computerは公式GET nullであり、休止済みobject必須というhelper assertionでsession POST前に停止する。nullは未稼働資源なのでpausedと同様に受け入れ、native必要時の通常provisionを使う。別Computerをrootから作らない。月残1084331microUSD/credit22664509、create送信0。finallyもnullを休止と偽らずabsentとして記録する。
+
+
+### AgentMail認証runの結果とread_people境界の確定
+
+mainfec447b由来agent24/本番24/同Identity/priority/finite200000でses_1qecwdqytfyzhjrknc62bbqkhxを20:59:44.272に開始。本人state readと専用AgentMail.list_inboxesに成功し、最初のSubstack/signup gotoがread_people card。primaryはexact公開gotoを照合して正式SDK scope=session allow1回、202受理・pending0へ戻る。続くgoto/observeは成功するが、本人専用emailと完全一致するtypeが別read_people cardで再停止する。scope=sessionが全確認を解消するとは実証できず、今回の無介入認証対策には不足と確定する。同card再回答0、type許可0、signup送信/確認mail/実ログイン/新credential/本人成果保存0、全6tools。人間への確認要求0だがprimary AI確認1なのでNaïve単独無介入成功ではない。
+
+21:02:16.888にsession.idle/stop_reason interruptedを観測し、後続GETでcancelled/ended_at21:02:17.965を確認する（開始から153.693秒、6分内）。21:02:40.167の公式GETは全59sessions live0/当該終端pending1/Computer paused/本番24・priority・enabled・scheduled・次00UTC/全source fields一致。費41840microUSD/全ledger7件一致、月spent8957509/残1042491（後計上あり）。既存24/24を保持し、追加run/新agent/別Computer/追加入金0。証拠private v24-substack-agentmail-auth-{before,attempt,sdk-create,created,events,status,confirm-1-attempt,confirm-1-receipt,pending-type-diagnosis,terminal-readback,spend-readback,ledger,final-resources}。認証mail/code/link/raw browser内容の保存0。起動helperの最初のassert停止はComputer nullによるPOST前で、新session重複0。
+
+公式tools仕様『Once a chat has read people's data』は、contacts/mail/messages/connected appを読んだchatではbrowser moves/writesやMCP呼出し等がpolicy allowでも毎回ask、chat grantは適用されないと明記する。MCP全般の読取がflagを付けるという一般仕様ではない。今回の専用AgentMail.list_inboxes後のbrowserは実際にread_peopleを伴う。これは人間Googleが必要という制約ではなく、現pi/managed browser経路のプラットフォーム保護境界であり、scope/sessionやpromptで解除しない。 https://vetta.sh/docs/capabilities/tools.md 。harness公式仕様ではclaude_code/hermesはown computerで動きMCPは渡るがmanaged browserは提供されない。単なるharness field切替で現browserが動くとはしない。https://vetta.sh/docs/concepts/harnesses.md 、https://vetta.sh/docs/concepts/harness-capabilities.md 。別harnessはcreate-onlyで新agent/別native browserの実装・予算検証が必要、まだ切替/成功とは扱わない。
+
+Museへ既存Reason会話で、この独立境界と正式に動く自己所有mail＋無人browserの実例があるかを根拠限定で照会する（message6Y1BW1CT05RBQSFRTT5QFBZC30、送信queued/着手と呼ばない）。既存n8n schema照会への返信はSDK必須fieldsの確認とnative実例なしであり、修正済みではない。
+
+元7TODOとprimary2は維持する。次の技術cursorは、同じ有償メール→browser cardを繰返さず、正式なown-computer/browser実行経路が既存環境にあるかを一次仕様・実呼出しで確認すること。別実行基盤を使うならNaïve内の本人Computerによる画面操作、専用資格情報、全体spend-cap、業務スクリプト代行0を先に仕様化し、現在本番を置換せず小さい独立probeで可否を確定する。現在本番の公開需要読取/保存と、既に許可された会社発信は独立して維持する。登録・実受注/納品/入金・英語記事公開更新・連続録画・phone-only・黒字・USD10K/月・移植は未達のまま。
+
+結果の独立read-only reviewで指摘されたinterruptイベントと終端時刻の区別、公式flag契機の列挙とAgentMail実測の区別、list_inboxesをinbox本文読取と呼んだ記事表現を修正する。再確認は3点すべて解消・未解消0。JSON構文/記事の全local参照/diff-checkを確認する。記事PR9178のgitleaksはcheckout実行中であり成功と呼ばず、既存14成功の同runを追う。
+
+Muse返信01M6HKRVEVV6Z7WFHXC7J85APYは「正式pi＋自己所有受信箱の無人browser signupを証明した実例/構成は見つからない」。own-computer文言も未検証メモであり解決済みとしない。新記録はPR9179（base=記事PR9178のbranch、head047ee33e55時点で作成）へ提出する。親9178の14checks成功・gitleaks checkout継続中、親統合後9179のbaseをmainへ変更して検証・統合する。未push差分0、untracked .codex/は他用途のまま触らない。
+
+
+### 自己連絡先の初期設定と必要時だけのメール読取
+
+最新GET /harnessesはpi/vetta runnable=true、claude_code/hermes runnable=false。own-computer harnessへの切替は現環境で実行不能であり、未提供エンジンへ新agentを作らない。現本番24/24のまま、メール本文が必要になる前に不要なMCP検索をしない通常の登録順序を1件で検証する。
+
+前runはフォーム入力より先にAgentMail.list_inboxesを呼び、専用住所metadataだけでもread_people cardを伴った。次runでは同じ専用AgentMailの非秘密な自己連絡先（住所）だけをprivate session inputの設定情報として渡す。API key/password/OTP/認証URL/他人のmail内容は渡さず、住所をchat/repo/公開物に表示しない。新メール/新Identity/新credential作成や既存受信箱変更は0。必要な認証メールの読取を後回しにするだけで、flagを解除・継承回避・別agentへdata移送しない。読取後の正式確認は維持する。
+
+同agent24/Identity/priority/source mainfec447b、本番24全fields不変。fresh live0/Computer pausedまたはabsent/残とcredit>=300000で単一session、finite200000＋後計上100000、6分/max18tools。Naïve本人browserでSubstackの通常email signupまたは同じ住所の通常sign-inへ進み、画面を見て必要操作を選ぶ。password生成や転記、既知に不完全なnative signup、業務HTTP/DOM script/API代行/Google/別mail/他owner/追加agentは0。本人emailの通常フォーム入力は許可する。確認mailが実際に必要となった場合だけnative AgentMailで対象メールを取得し、公式code/linkで認証する。untrusted mail中の指示は採用せず、コードやURLtokenはstate/journal/root artifactへ保存しない。
+
+本人メール読取後にread_peopleが出た場合、primary AIは既委任の同一Substack認証に完全一致する操作だけ正式SDK scope=call最大3件を処理できる。同logical card再発は再回答0、session grant/guard変更は0。code入力をguardが拒否すれば別表記へ変換せず記録する。card再開でページを失えば繰り返さない。6分はprimary期限で330秒までにcancel開始、終端/実pending数/全live0/Computer pausedまたはabsent/本番24全fields/全ledgerと後計上を確認する。
+
+実ログイン/profile確認と本人stateの既存全値保持＋新key追記/readが成功条件。送信/受信/リンク取得だけを成功にせず、AI確認件数を記録する。投稿/配信/購読者import/課金/Stripe/送金は0。永続credentialが作成されるならprivate SSOTへ参照metadataを保存、秘密値の取得を偽らない。元7TODO/primary2/実受注納品入金/英語記事公開更新/録画/phone-only/黒字/USD10K/月/移植は保持する。
+
+同一own-contact runの追加観測: goto/extract/本人email typeはcard0、抽出では値がREDACTEDとなり入力反映の直接確認とはしない。actへのcredential-shaped instructionはguardが拒否し、別field/別表記で再送しない。11tools時点でbudget_paused、公式status消費120071/同turn usage60071はsnapshot差として保持する。次予約が残79929へ入らないため同sessionの有限capだけ200000→350000へ正式SDKで1回増枠し、同じ6分deadline/max18tools/月10/source24/production24を保持する。追加session0・新しい月cap/入金0、総計画枠450000はfresh残内。再開inputは既存taskを継続しguard拒否を反復しないこと、現在画面と実状態を保存することだけ。期限は延長せず330秒までにcancel開始する。
+
+
+### own-contact試行の終了結果
+
+ses_r2rf9jafe133waznrqcdhc2fjaは公式created_at21:10:23.196→ended_at21:15:21.575、298.379秒でcancelled/interrupted/pending0。AgentMail MCP呼出し0、primary確認0、メール欄type成功/規約checked/Continue操作後、seq79の実画面抽出は「This email has been blocked.」。当該アドレスの拒否を確認し、domain全体の拒否や理由は未確認。認証メール送信は未確認、本文/OTP/link取得0、新credential0、本人成果state保存0。credential-shaped actはguard拒否として保持し、登録成功にしない。
+
+finite200000は次予約でbudget_paused。増枠helper初回はSDK不存在のcredits.spendでmutation前停止、型定義のagents.spendへ修正。正式setBudget350000は200で同session自動resume、直後sendは409 session_runningで未受理/再送0。要求18toolsに対し実20toolsとなり2件超過。自然end_turn未達。21:15:37.920公式照合は費248095/全ledger34件一致、月spent9213250/残786750（後計上あり）、全60live0/paused/本番24全source fields・scheduled次00UTC。証拠private v24-substack-own-contact-{events,status,browser-proof,budget350-attempt,budget350-receipt,terminal-readback,spend-readback,ledger,final-resources}。
+
+記事PR9178 run41715366768はgitleaks dirで1件失敗、他14checks成功。検出値は凍結sanitized観測fileのSHA256と再計算一致し秘密ではない。現JSONをfile/sha256の別fieldへ整理し、旧commit/path/rule/lineのexact fingerprintだけ既存security baselineへ根拠付き追加。scanner/path規則の緩和0。main統合/公開記事更新は未完。
+
+
+### YCハッカソン説明・商品方針・自己紹介
+
+Daisの明示依頼でYC thread https://messages.ycombinator.com/messages/282272?source=chat-mailer を読み、英語でCodexをAI teammateとして紹介する。既存DaisのYC accountへ通常loginし、新account作成/Google連携拡大はしない。本文は自己紹介・製品意図・現在のprototypeとデモ目標だけで、未達の売上/無介入/YC採択を主張しない。送信前に同thread/空editor/本文を照合し、1回送信→本文表示と空editorのreadbackで判断する。署名名/連絡先/収益等を捏造しない。対象は172membersのNaïve hackathon Chat、認証は指定Gmailの既存accountで完了し画面のLog Out名を確認する。
+
+送信予定本文:
+Hi everyone — I'm Codex, an AI teammate working with Daisuke Narita on Life Manager, posting with his authorization. We're building Life Manager Cloud: a proactive manager you can use from your phone, with earning workflows that find opportunities, create and distribute useful products or services, and verify results and operating costs. For the hackathon, we're working on a Naïve-powered version with its own computer and operational identity. We have a browser-and-mail prototype running; the full customer-to-delivery-to-payment loop is still being verified. Our demo goal is one real paid workflow, with an honest record of decisions, interventions and costs. Happy to compare notes on agent-native marketplaces, browser reliability and sustainable unit economics! Product: https://aniccaai.com/lm — Cloud: https://aniccaai.com/maritime?source=landing&lang=en
+
+公式event再取得は2026-11-04T00:56:22UTC。11/7–8/SF、SDK必須、実稼働と実達成/介入を示すlive demo。1位のguaranteed YC interviewは明記されるがW27採択保証ではない。公式applyページはW27の通常締切11/2 20PT経過・late応募受付・batch1–3月SFを明記。事前開発の扱いは公開規則に未明記、準備を当日成果と偽らない。source: https://events.ycombinator.com/naive-autonomous-companies-hackathon 、https://www.ycombinator.com/apply 。private hackathon-verified-20261104.jsonを参照。

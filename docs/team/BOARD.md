@@ -9,7 +9,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [Codex / NAIVE-BROWSER-E2E] PR9177/15checks/review0→mainfec447b、budget-only24/本番24/priority/月10を公式反映、他source fields不変。service/url明示runもactual args name/email/actionのみ、許可0/cancel。58live0/paused、費45072/ledger5、月残1084359（後計上あり）、exact n8n credential0。登録/売上未実証。cursor2=実native schema/入力境界確定→通常登録/連絡→有料依頼/納品/入金。英語記事source/空フォーム画像/観測JSON更新、公開反映未実施。Grok/Muse照会は送信済み、返信未受領。元7TODO未達維持。正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md
+- [Codex / NAIVE-BROWSER-E2E] 本番24/24維持。own-contact試行は入力card0、Substack当該email blockedで登録未達。6分内cancel/実20tools（要求18超過）/費248095・ledger34/60live0/pending0/paused/月残786750（後計上あり）。記事PR9178のSHA256誤検出を修復中、公開更新未完。cursor2=既存pilotから実依頼→納品→第三者入金。残7TODO正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md「現在の状態と残TODO（実行順の正本）」
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 

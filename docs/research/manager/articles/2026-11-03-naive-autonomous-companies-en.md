@@ -260,7 +260,23 @@ The [sanitized observation record](../../evidence/naive-live-20261104/owned-emai
 
 We also repaired a distinct budget issue. A $0.10 session had consumed only $0.019521 when it could no longer reserve the next call. Its first call’s quote was $0.083183; the rejected call’s exact quote was not exposed. Raising the finite session allocation let the trial pass that boundary. The monthly cap then moved from $9 to $10 within existing prepaid credit, with model, tools, Identity and task ceiling unchanged. Adopting that budget-only version did not certify signup or revenue.
 
-### What to reuse from Naïve’s agency template
+#### Why the dedicated inbox did not make authentication unattended
+
+We tested the normal Substack email flow with the Manager's dedicated AgentMail inbox. Looking up the dedicated inbox succeeded. An explicit, session-scoped browser approval then let the agent navigate to the public signup page and inspect it. Typing its own email triggered a fresh `read_people` confirmation. We stopped before submitting the form. This was not a completed signup or a revenue event.
+
+The [official tool policy](https://vetta.sh/docs/capabilities/tools.md) explains this boundary: once a chat reads contacts, mail, messages or connected-app data, browser actions that move or write ask each time, even with an `allow` policy. A session grant does not cover that boundary. In our observed route, the browser required `read_people` confirmation after `AgentMail.list_inboxes`; this does not establish that every MCP read sets that flag. Calling the inbox “agent-owned” did not change its runtime classification.
+
+The trial incurred $0.041840 in session-attributed charges, reconciled against seven ledger entries. It involved one coordinating AI approval and no request for a human approval. It ended within the six-minute trial limit, with no active work left and the existing production version preserved. These figures do not establish total infrastructure cost or profit. [Sanitized trial record](../../evidence/naive-live-20261104/agentmail-passwordless-boundary-v24.json).
+
+An alternative harness is not a proven fix. The [official harness documentation](https://vetta.sh/docs/concepts/harnesses.md) says `claude_code` and `hermes` run on their own computers, but do not receive the managed browser. Moving there would require a supported browser tool and a new, measured integration. We have not deployed or validated that replacement.
+
+### Follow-up: own contact first, then a service-side refusal
+
+A follow-up supplied the Manager's own non-secret contact address as private configuration. It did not look up the inbox before filling the form. Navigation and email typing ran without approval cards. After the terms checkbox and Continue action, the page reported: “This email has been blocked.” This establishes rejection of the tested address, not every AgentMail address or domain. We did not switch addresses to evade that refusal. Authentication and customer revenue remain unverified.
+
+Session-attributed charges were $0.248095, reconciled against 34 ledger entries. The same session's finite cap increased from $0.20 to $0.35 when its next-call reservation did not fit. It ended within six minutes, but executed 20 tools against a requested limit of 18. The tool-count limit failed. There was no coordinating AI approval, but the budget adjustment was an intervention. This was not an unattended end-to-end success.
+
+## What to reuse from Naïve’s agency template
 
 Naïve’s [Agency Blueprint](https://github.com/usenaive/agency-blueprint) offers a concrete structure: a shared agency Identity and mailbox, client records, a public intake site and seven core agent roles. It also explicitly routes publishing and outbound messages through an operator approval workflow. Its installation and daily budgets are ceilings, not reported earnings. We can reuse the separation of identity, intake and delivery while evaluating our own no-human workflow with actual customer outcomes. A provisioned crew, a filed lead and a draft proposal each remain distinct from a paid delivery.
 

@@ -56,12 +56,27 @@
     "change": "monthly cap USD 9 to USD 10 only; desired version 23 to 24",
     "registration_success_inferred": false
   },
-  "source_evidence_sha256": {
-    "v24-n8n-service-signup-events.json": "3c922d3d089280a0a6c13a623b08aef7847179b67392129ab581413fe0fd6d5a",
-    "v24-n8n-service-signup-browser-proof.json": "1acf1fe5ba208cbb4f4cb1aa2d5095f2cdc6a16bb6fd5360ad5d4be9f96b6d2d",
-    "v24-n8n-service-signup-credentials.json": "ebcf4bd92f311d4f07d6cdf1334e77a6660cdfb1f96a27fde14f407e663ae7a8",
-    "v24-n8n-service-signup-final-resources.json": "1bb46965cb4574add65d680e5e8d982de510ac7354eeabea3968eb7502b2bd63",
-    "v24-desired-rollout-final-resources.json": "83a13cf6d8516ca76f92b2b6099805a33c41cad84b980b6e85fa62012f230885"
-  },
+  "source_evidence_sha256": [
+    {
+      "file": "v24-n8n-service-signup-events.json",
+      "sha256": "3c922d3d089280a0a6c13a623b08aef7847179b67392129ab581413fe0fd6d5a"
+    },
+    {
+      "file": "v24-n8n-service-signup-browser-proof.json",
+      "sha256": "1acf1fe5ba208cbb4f4cb1aa2d5095f2cdc6a16bb6fd5360ad5d4be9f96b6d2d"
+    },
+    {
+      "file": "v24-n8n-service-signup-credentials.json",
+      "sha256": "ebcf4bd92f311d4f07d6cdf1334e77a6660cdfb1f96a27fde14f407e663ae7a8"
+    },
+    {
+      "file": "v24-n8n-service-signup-final-resources.json",
+      "sha256": "1bb46965cb4574add65d680e5e8d982de510ac7354eeabea3968eb7502b2bd63"
+    },
+    {
+      "file": "v24-desired-rollout-final-resources.json",
+      "sha256": "83a13cf6d8516ca76f92b2b6099805a33c41cad84b980b6e85fa62012f230885"
+    }
+  ],
   "source_evidence_hash_scope": "Sanitized private observation snapshot frozen for this export; no raw mailbox or credential values."
 }

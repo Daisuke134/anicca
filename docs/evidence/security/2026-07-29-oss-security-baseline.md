@@ -282,3 +282,20 @@ Only this exact commit/path/rule/line fingerprint is recorded in
 
 The current-tree scan and full-history scan remain enabled. A finding at any
 other commit, path, rule, or line remains reportable.
+
+
+## Sanitized Naive observation content digest
+
+Security Scan 41715366768 flags the SHA256 stored beside a filename containing
+`credentials` in the exported observation JSON. Local recomputation confirms the
+candidate equals the SHA256 of the frozen, sanitized metadata snapshot; it is not
+a password, token, API key or exported credential. The snapshot records an empty
+exact-service credential lookup, not credential values.
+
+The current JSON now stores `file` and `sha256` as separate fields. The introducing
+commit remains in history, so only this exact historical fingerprint is adjudicated:
+
+`e8c3a96f42f94f3a419fd9f343877338ecd6dbf9:docs/research/evidence/naive-live-20261104/owned-email-onboarding-v24.json:generic-api-key:62`.
+
+Current-tree and full-history scans remain enabled, without new path or rule
+allowlists. New findings at other locations remain reportable.
