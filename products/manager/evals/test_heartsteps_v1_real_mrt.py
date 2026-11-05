@@ -29,7 +29,9 @@ class StudyContractTests(unittest.TestCase):
 
     def test_missing_by_arm(self):
         rows=[{"user.index":"1","avail":"TRUE","is.randomized":"TRUE","send":"TRUE","jbsteps30":"4"},
-              {"user.index":"2","avail":"TRUE","is.randomized":"FALSE","send":"FALSE","jbsteps30":"2"},
+              {"user.index":"1","avail":"TRUE","is.randomized":"FALSE","send":"FALSE","jbsteps30":"2"},
+              {"user.index":"2","avail":"TRUE","is.randomized":"TRUE","send":"TRUE","jbsteps30":"6"},
+              {"user.index":"2","avail":"TRUE","is.randomized":"FALSE","send":"FALSE","jbsteps30":"4"},
               {"user.index":"3","avail":"TRUE","is.randomized":"FALSE","send":"FALSE","jbsteps30":"NA"}]
         s=summarize(rows,reps=120)
         self.assertEqual(s["missing_no_suggestion"],1)
