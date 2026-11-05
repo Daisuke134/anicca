@@ -25880,16 +25880,19 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 今回の観測: `/open/data.json`はmonth=2026-11、updated_at=2026-11-05 11:37 JST、reconciliation_complete=false。Life Manager Cloudのplatform/product行は既にあり、test billing/no paying usersという古い注記とStripe再認証待ちがある。provider公式の最新売上は未照合であり、Cloud売上0を確定しない。public HTMLのmonth表示はLos_AngelesでOctoberになることをNodeで再現。gp/gplは未照合flagと併存、HTMLは初回fetchのみ。生成経路はanicca-ops `team/scripts/open/update_open.sh`→builder→`publish_open_repo.sh`→anicca-products `apps/landing/public/open/`→Netlify。runtime template `/workspace/team/scripts/open/index.html`はops origin/mainに追跡されていない。Reasonの既存Muse relayへtemplate正本/ownerのread-only照会はdelivered、着手/修正/返答は未確認。
 
+**更新経路の追加観測 (2026-11-05 17:10 JST):** anicca-products `origin/main` `1692139b9` のcanonical `apps/landing/public/open/data.json` は `updated_at=16:37 JST`、同repoの最新timestamp付きsnapshot `open-dashboard-data-2026-11-05-1707.json` は `updated_at=17:07 JST`。双方28 platform rows/11 KPIs。Netlify workflowはJSON-only pushをdeploy対象から除外し、build artifactの既存`data.json`だけを検証するため、17:07 snapshotは公開UIにまだ反映されない。過去の削除commit `546c3549e` と後続復元commit `5053ed1a5`の間では、JSON不在の状態で来たpush run `41990166867`がdeploy前検証に失敗した。最新mainではcanonical dataは復旧済み。公開データを新しい有効snapshotへstageする仕組みが必要。
+
 | ID | 状態 | 原子的な修正と完了条件 |
 |---|---|---|
 | L07-D1 | 完了 | 公開HTML/JSON、二repoのbuilder/publisher/更新sourceを追い、Cloud既存行・month timezone再現・未照合利益・単発fetchを記録する。runtime owner/実cadenceは未確認として保持 |
-| L07-D2 | 次・L02と独立 | 生成templateとpublisherの現owner/編集中effectを確定し、その正本で月表示をcalendar monthとしてformatする。UTC/JST/Los_Angelesの同月表示、次の定期publish後も修正が残ることを確認 |
+| L07-D1b | 次 | `anicca-products`のdeploy artifactへ最新timestamp付きOpen snapshotをstageする。canonical timestampより古いsnapshotで巻き戻さず、最新snapshot不正時はfail closed。focused testと次の自然scheduled deployを通し、公開JSONとUIで`updated_at`/指標反映を確認 |
+| L07-D2 | 後続・L02と独立 | 生成templateとpublisherの現owner/編集中effectを確定し、その正本で月表示をcalendar monthとしてformatする。UTC/JST/Los_Angelesの同月表示、次の定期publish後も修正が残ることを確認 |
 | L07-D3 | 未完 | 全社利益/KPIのbasisをreconcilerとHTMLで一致させる。coverage不足なら全社利益を確定表示せず観測済小計と欠測を分ける。nullを0へ変換しない。source付きfixtureで集計と表示を確認 |
 | L07-D4 | 未完 | 既存Stripe read-only接続を復旧・照合し、Cloudのlive/test product/price/subscription/refund/cancelを既存台帳へ帰属させる。Stripe全体行とCloud product行を二重計上せず、MRR/実売/支払/出金を分ける。人のcredentialはCloud workerへ渡さない |
 | L07-D5 | 未完 | 既存生成/公開/再取得経路を上記cadenceへ接続し、row別as_of/source/last success/errorを表示する。開いたままのスマホと次の自然refreshでfresh/stale/取得失敗を確認し、API制限を守る |
 | L07-D6 | 未完 | 既存roster/実行receiptからteam/provider/role/最後の実結果、既存配信receiptからchannel/account別URL/reach/click/conversionを公開用に集計する。登録済みと稼働済みを分け、秘密/private本文を出さない。既存規定の公開範囲だけを使う |
 
-全体順序L02→L10は変更しない。dashboardはすでに公開され営業/審査で参照されるため、誤表示を直すD2/D3はworkerの売上待ちにせず独立して進める。旧=dashboardをL07の自然runまで待つ、新=公開誤表示のsource/owner診断を先行、workerの主cursor=L02・dashboard cursor=L07-D2。今回のsource更新はREADME/調査/このSSOTのみで、VM/model/budget、認証/売上、公開画面への反映を完了扱いしない。
+全体順序L02→L10は変更しない。dashboardはすでに公開され営業/審査で参照されるため、誤表示を直すD2/D3はworkerの売上待ちにせず独立して進める。dashboard cursorはL07-D2からL07-D1b→L07-D2へ変更する。理由は17:07 snapshotが記録済みなのにUIは16:37以前のcanonical dataを配信し、JSON-only push除外と非atomic置換が公開を止めた実測があるため。workerの主cursor=L02。今回のsource更新はREADME/調査/このSSOTのみで、VM/model/budget、認証/売上、公開画面への反映を完了扱いしない。
 
 #### 旧契約・版別の診断記録（履歴、現行TODOではない）
 
