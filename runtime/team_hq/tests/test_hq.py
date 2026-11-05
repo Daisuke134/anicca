@@ -23,6 +23,7 @@ except ModuleNotFoundError:
 
 
 AUTOLINK_BOUNDARIES = (
+    ("escaped_query", "証拠 https://example.test/?a=1&b=2", "証拠 <https://example.test/?a=1&amp;b=2>"),
     ("markdown_japanese", "[PR](https://example.test/result)でmainへ保存。",
      "[PR](<https://example.test/result>)でmainへ保存。"),
     ("json_proof", 'STATE {"proof":["https://example.test/result","/fixture/artifact","https://example.test/evidence"]}',
@@ -476,6 +477,7 @@ class HQTests(unittest.TestCase):
         })
         reply = self.tasks()[0]["reply_text"]
         variants = [
+            ("literal_entity", "https://example.test/?a=1&amp;b=2", "<https://example.test/?a=1&amp;b=2>"),
             reply.replace("https://example.test/result", "<https://example.test/other>"),
             reply.replace("https://example.test/result", "<https://example.test/result|https://example.test/result>"),
             reply + "\n追加本文",
