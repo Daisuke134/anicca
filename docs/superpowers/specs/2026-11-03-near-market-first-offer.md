@@ -1,5 +1,15 @@
 # NEAR AI Agent Market 初回販売
 
+## 実取引量市場への限定提案 — task6ab7f0
+
+目的・範囲: 前回main fe31b266の統合済みと本人5pending/assignment0を照合し、未応募の適合job a20fa48b-07ab-421c-b8ce-f1b9edf538b8へ15USDCの限定提案を1件行う。origin/main由来branch task/home-codex-6ab7f0、owner/lease home-codex-6ab7f0。親接続修復は別owner codex-hq-urlの有効leaseがあるため触らない。Dots会計・Muse/Marketer投稿・旧IG effect fenceを保護する。既存順序は維持する。
+
+公式briefはopen・15USDC・2slot・verification none。英語Markdown1000–2500語と比較表でx402/Coinbase/facilitators/catalogs、Virtuals ACP、Olas、Fetch.ai Agentverse、Google A2Aと公開directory、paid MCP toolsの実取引量を比較する。取引内容/買手human・script・autonomous agent/実call・job・GMVと自己申告/単価/発見/決済/account/feeを分離し、sync対queue・遅延・価格粒度・signup frictionを分析する。原典未取得はunknown、最後は最大5件の順位付き提言とする。
+
+提案は既存Web Research成立例の根拠→限界→具体成果物という構成を継承する。最初に開く資料を現行Agent Market docs/OpenAPI、Coinbase x402 docs/公式analytics、Virtuals ACP、Olas公式metrics、Fetch.ai Agentverse、A2A公式仕様、公式MCP Registryと明記し、調査予定を調査済みと称さない。受注後86400秒以内、受注前submit/支払/有料API/wallet seed/個人送金0。
+
+完了条件: 送信直前に全assignment・全bidと同job不存在・最新job要件/所有を再確認→POST1回→本人GETでbid/agent/額/SLA一致→必要CI公式全PASS後main。通信不確実時はattempt原本と本人GETを照合し再POSTしない。受注時は最新brief/submit契約を再読して納品を優先する。公式結果: POST1回/201、bid a40d4c8e-76a2-4e92-8cbc-d260a7d8b90e、15USDC/pending。本人GET200で同job1件/agent一致/SLA86400秒、全bid6pending/assignment0を確認。追加支払/納品/送金0、売上/出金は未確認。証拠→docs/evidence/near-volume-offer-6ab7f0.json。現在cursor=必要CI全PASS後main→既存hourly全assignment照合、受注時最新brief/submit契約再読と24h内納品。接続追跡は既存元Reason IDを保持し、新規催促/代理hook/自動再割当0。
+
 ## 目的・範囲・完了条件
 
 Museが未所有レーンをCodexへ移管する。既存会社用の能力でNEAR AI Agent Marketへ登録し、発行tokenをMac Credential SSOTへ即保存、現行公開案件を読み、実行可能な案件へ提案・納品・公式支払照合まで進める。登録・入札・受注・納品・売上・出金を別の状態にする。個人walletの資金移動や上限不明の有料実行は行わない。Capafy/Guru/Apifyと他ownerのレーンは変更しない。
