@@ -1,6 +1,50 @@
-# Manager 学習・研究接続 SSOT
+# Manager — ONE Roadmap: Learn × Build × Evaluate × Ship × Publish
 
 **唯一の正本：`ROADMAP_STATUS_JA.md`｜更新：2026-11-06｜公開作業は別途実測で確認**
+
+
+## 唯一のNEXT TODO・実装と学習の一体化（2026-11-06）
+
+**会社の主語は研究でなく、使われるAIモデル・製品である。** ManagerはBehavioral Foundation Model（行動基盤モデル）を構築・配布していくモデル企業。ManagerBenchは別事業に分離した競争用の独自評価器ではなく、既存BehaviorBench/HBCP/HeartSteps/RCT Bench/UpliftBenchを再利用して不足部分だけ補う外部評価契約。**モデルが実際に役立つことが成功指標。**
+
+**このファイルが唯一の日々の作業順／学習内容／実装成果／次のTODOである。** 講義P07-4も、検証・製品への接続・メディア公開を伴わなければ独立の「完了」にしない。会社の既存運用ドキュメントは権限・構成・履歴の証拠であり、並列のNEXT TODO表ではない。
+
+### 次の1件：BFM-01 — 最初のクラウド実推論と公平な比較
+
+**一言で：** 既存Be.FM 1.5-4Bをクラウドの24GB GPUで推論させ、同じQwen3-4Bベースモデルと同一入力を比較し、再現できるスコア・出力・費用をManager製品へ接続する。
+
+- **Learn:** Foundation Model、Inference、LoRA、HF gated、license、baseline、holdout、calibrationを初心者向けに理解し、Article/FAQへ追加する。
+- **Run:** 既存の手動GitHub Actionsワークフローと `products/manager/experiments/cloud/modal_befm4_probe.py` を利用。Modal Starterのクレジット利用条件とHugging Faceのモデルアクセスが必要。Secretsをチャット/リポジトリへ貼らない。模型をMac miniへダウンロードしない。
+- **Measure:** 実際のクラウド推論ログ、model SHA・prompt・温度・tokens・GPU時間・費用、同一条件Qwen baseline。合法な実人間holdoutでないサンプル回答を「ベンチマーク勝利」にしない。本文にはモデル出力の例と限界を明示する。
+- **Integrate:** Managerの既存型付きModel/Policy/Executorにread-onlyの推論候補を接続し、NO_ACTION、権限、独立アウトカム測定を保つ。開発ベンチマークだけで自動介入を有効化しない。
+- **Ship:** 許可された無害な限定デモ/エンドポイント、正しい失敗/未知表示と観測、停止・予算上限付き。
+- **Publish:** 検証済みの比較と失敗を正本の公式EN/JA記事、講義スライド、モデルカード/FAQ、公式サイトへ反映。**新しい記事やスライドは別タスクではない。同じ1件のDefinition of Done。**
+
+**今の阻害条件：** Be.FM Hugging Faceアクセス承諾、Modalのアカウント・HF_TOKENのCloud Secret/Modal secrets、予算上限。GitHub公式BehaviorBench CPUテスト41 pass/3 skip、HeartSteps/HBCP/RCT Bench実データ走行は完了。ただし**Be.FM4Bの実GPU推論、Manager汎用共通重みの訓練、Managerの人間RCTは未完了**。
+
+### その次の順番（各行もLearn→Run→Measure→Integrate→Ship→Publishが1セット）
+
+| 順位 | 統合した仕事と学ぶ基礎 | 必ず外部証拠で満たす完了条件 | 状態 |
+|---|---|---|---|
+| **NOW BFM-01** | Be.FM/Qwen3クラウド実推論・基盤モデルの構造 | 同一条件のforward pass、実費、合法holdout、Manager read-only demo、記事・slide更新 | **次：Secrets/アクセス待ち** |
+| BFM-02 | Centaur 70BとBe.FM・BehaviorBench/Psych-101を公平に走らせる（評価と汎化） | 研究・参加者分割でベースラインとのスコア、モデルカード、計算費、再現手順 | 一部CPU評価のみ済 |
+| BFM-03 | Simile/Societiesと社会シミュレーション（ABM、エージェント、ネットワーク） | 外部の公開データで個人・分布・波及を比較、仮想社会を実社会と混同しない | 公式ページ調査済 |
+| INT-01 | COM-B、BCTTv1、BCIO、CBT/ACT（P07-4の学習含む）を製品に統合 | 本人の行動目標→既存技法の候補→NO_ACTION→権限検査を製品で検証 | 研究・仕様のみ、実ユーザー便益は未実施 |
+| INT-02 | HeartSteps/HBCP/RCT Bench/UpliftBenchを原著の推定対象に合わせて再現 | HeartSteps割付・配信の区別と元論文6061時点/調整推定を照合、HBCP RuleNN同条件比較、QALYの元論文確認 | 初回集計済・因果再現未完 |
+| PRODUCT-01 | 実ユーザーの自己選択目標へ最小限の安全な支援を提供 | 本人による同意・停止・害測定、有限のscope、現実のユーザー価値と費用 | Manager自身の実介入未検証 |
+| EVAL-01 | 長期的便益と害の因果実験（MRT/RCT） | 対照群、倫理・参加者保護、独立結果、追跡・負担・離脱、再現可能な公開 | 未実施 |
+| OPEN-01 | GitHubリポジトリ名managerへ安全移行、HFモデルと開放評価 | 既存サイト・ブログ・CI参照棚卸し後にrename。Open-weight/データ許諾・第三者検証完了後にHF release | 未実施 |
+
+**運用上のルール：** 古いP01～P12の講義番号は学習索引として残すが、並列の実行TODOにはしない。講義の説明だけで製品・基盤モデルの「完成」を記録しない。新しい仕事を始めるときはこの表の先頭から実測の受入条件を確認する。
+
+### 執筆・メディアの共通品質ゲート（独立TODOではない）
+
+毎回の製品変更・評価につき、**1つの実証付きコンテンツセット**を公開する。最低限、正規の一次資料、何を実際に実行したか、再現リンク、比較条件、失敗・欠測・害、初心者のためのWord list、FAQ、EN/JAの図と原稿、モデル/ベンチマークの現行ステータスを含める。Simile/Societiesのように事業上の利用方法と検証を冒頭で示す。数値は元研究・自社の観測・推測に分ける。コンテンツ公開はGitHub PRではなく**配信先の実際のURL、SHA/manifest、HTTP 200**を証拠とする。
+
+### 自己修正（検証の誠実性）
+
+2026-11-06にHeartSteps初回の観測差+12.95歩を再確認すると、`send`は配信補正後の値であり、ランダム化時点のそのままの割付ではない。自社の6590「avail」行と元論文の6061介入可能判断時点は選定基準が異なる。この+12.95は**因果効果やITTとして認定しない**。元論文の介入効果は適切に調整した結果、平均+35歩（p=.06、Klasnja et al. 2019）。この相違を記事・図・Slides・Outcome Benchの説明に反映する。教訓：評価結果の差の意味を検証せず数値を見せるだけでは信頼性を作れない。
+
 
 ## 現在地
 
@@ -14,12 +58,12 @@
 
 ## 0. 管理規則
 
-1. 講義順・現在地・次の項目・成果物の進捗は、このファイルだけを編集する。新しい版別ロードマップ、独立したTODO、進捗JSONは作らない。
+1. **製品・モデル・講義・記事・公開の順序を含む実行TODOは、このファイルだけを編集する。** 新しい版別ロードマップ、別の学習TODO、別の会社TODOを作らない。
 2. `P01-1` 形式を唯一の講義IDとする。旧 `W01L01` はP01-1、`W01L02` はP01-2、`W01L03` はP01-3という検索用別名だけで、別講義ではない。
 3. `learning_state.json` と `MANAGER_MASTER_PLAN_DRAFT_v03_JA.md` はarchive内の廃止履歴。過去添付のv01/v02/v03も現行の進捗指示として扱わない。
 4. 各記事は内容、出典、固定された計算例を持つ。別の進捗表を持たせない。実行ログは計算事実を保存するだけで、次の講義を決めない。
 5. 「済」は講義・解説済み。「既習」は以前の学習を本人申告から承継。「今回」はこの回。「次」は直後。「残」は今後の体系的学習・受入。試験に合格しないと次へ進めない運用にはしない。
-6. 実装・稼働・収益・臨床効果のDONEを教材の完成から作らない。本番の既存SSOT `docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md` を参照し、ここで複製・上書きしない。今回GitHub／Macの本番状態は再監査していない。
+6. 実装・稼働・収益・臨床効果のDONEを教材の完成から作らない。既存の運用・権限・履歴（別の作業TODOではない） `docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md` を参照し、ここで複製・上書きしない。今回GitHub／Macの本番状態は再監査していない。
 7. このパッケージとチャット添付だけを整理した。過去に配布済みの添付、GitHub、外部ライブラリの複製を消したという主張はしない。
 
 ## 1. 一つの使命と研究の構想
