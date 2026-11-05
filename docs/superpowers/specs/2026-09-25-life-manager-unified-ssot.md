@@ -25806,7 +25806,7 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 試用経路のfresh UI readback: https://aniccaai.com/maritime?source=first1000&lang=en → `Start Life Manager Cloud` → https://life-call-production.up.railway.app/lm?start_calendar=1 → Google identity login。観測したOAuth scopeはopenid/email/profileで、ここではInbox/Calendar scopeの要求はない。認証後の機能や新規利用者の全経路は未検証。公開planは7日trial後$29/月。メール不要・利用者credential不要という目標と現状Google identity依存を混同せず、提出本文にも現在の手順と早期buildの境界を開示する。
 
-今回のMaritime公式readback: 既存custom agent `80c0208c-af40-4b4c-94ee-a24b3f731db6` がsleeping、lastActiveAt=2026-10-31T12:46:56.044841Z。VMの存在や過去のhealth成功を、現在のブラウザ/無介入登録/売上の証明へ置換しない。既存workerは消さず、モデル/予算/credential/稼働effectをこの提出作業で変更しない。
+今回のMaritime公式readback: 既存custom agent `80c0208c-af40-4b4c-94ee-a24b3f731db6` がsleeping、lastActiveAt=2026-10-31T12:46:56.044841Z。追加GETはdesktopEnabled=false、browserbaseConfigured=false、sleepPolicy=auto-sleep、hasWebUi=falseを返す。これはMaritime管理desktopが有効でないという設定証拠であり、custom image内に独自browserが無いことまで証明しない。VMの存在や過去のhealth成功を、現在のブラウザ/無介入登録/売上の証明へ置換しない。既存workerは消さず、モデル/予算/credential/稼働effectをこの提出作業で変更しない。
 
 | ID | 状態 | 一つの作業と完了条件 |
 |---|---|---|
