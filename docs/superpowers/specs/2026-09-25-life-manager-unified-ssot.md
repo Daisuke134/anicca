@@ -25796,7 +25796,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 #### 現行契約：既製runtimeを組み合わせて会社の仕事を移す
 
-この現行契約と直下のL01–L10だけがNaïve/Maritime Cloudの実行順・現在cursor・残TODOの正本。以降の旧NHC表・版別model/cap・App bridge・登録probeは履歴として保存し、現行契約を上書きしない。調査根拠・部品比較・Mermaid → `docs/research/2026-11-05-cloud-runtime-lego.md`。
+この現行契約と直下のL01–L10（L07配下の公開dashboard作業を含む）だけがNaïve/Maritime Cloudの実行順・現在cursor・残TODOの正本。以降の旧NHC表・版別model/cap・App bridge・登録probeは履歴として保存し、現行契約を上書きしない。調査根拠・部品比較・Mermaid → `docs/research/2026-11-05-cloud-runtime-lego.md`。
 
 **成果:** Museで使う「永続VM＋実ブラウザ＋保存ログイン＋agent所有inbox＋vault＋外側の定期起動＋共有台帳＋既存open dashboard」を、既製品の設定でクラウドへ再現する。No human in the loopを運営要件として維持する。最初は適格な販売先でagent本人用accountの登録または同一account回復を一件実証して報告し、その後に公開・販売・納品・入金・実費差引を進める。製品コード、独自harness、signup bot、browser proxy、scheduler、メールserver、vault、dashboardを新作しない。
 
@@ -25832,6 +25832,29 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 **順序変更:** 旧=独自Naïve App/Computer bridge→公開画面proof→認証→商品公開→売上、別branchでは独自x402レポート販売へ逸脱。新=既製Maritime OpenClawの適合確認→永続状態/inbox/vault→正式登録/回復を一件→商品公開→第三者売上/採算→自然schedule→第二runtime。理由はDaisが既製部品のみ・Museの運転方式・ゼロ開始の実市場収益を指定し、現在Naïveにfrontier modelを使ってもpolicy待ち／browser action失敗が残るため。**現在cursor=L02**。今回の変更はsource文書のみで、稼働中effectの中断・重複、旧worker削除、モデル/予算/権限変更はしない。
 
 自社の継続商品USD10K MRRと、外部利用者向けManager subscription USD10K MRRの二目標は維持する。まず実売と採算を確認する。one-off売上をMRRへしない。Maritime/Naïveは一つの商品のhosting/実行先で、大会規約と実ユーザー要件は各々確認する。紹介・申請改善は並行可能で、優勝やYC採択の保証にはしない。
+
+**公開実装からの具体的な再利用:** Maritimeのpenpalは一人一OpenClawとexternalIdによる重複provision防止、外側clockを提供元が実導入例として報告する。Open InstinctのMIT sourceはMaritime desktop/Pi/Inkbox/gatewayを持つが、既定はtakeover/決済承認。NaïveのMIT `agency-blueprint`はCRM/顧客別workspace/agentの役割と予定、`media-blueprint`はboardのカード連鎖で次席をwakeする制作・配信・分析を公開する。両blueprintとも既定の外向け公開はaskであり、導入だけでno-human成功とはしない。旧starterのtenant分離は参考にするが、既存LM認証/UI/台帳を置き換えない。公開codeやbenchmark上のmarginを実顧客の入金や大会優勝実績にしない。
+
+**四社の境界:** TenkiはNaïve Computerの下層computeで、公式記事はtask別の使い捨てsandboxを説明する。Vettaのsession/Computer/永続volume/managed browser contextがどこまで同じstateを保持するかは実resourceで確認する。Naïve managed runtimeをMaritimeへ透過移植できるとはしない。一商品に二runtimeを使う場合も一job一owner、同じ台帳/tenant/費用/receiptを使い、同じbrowserへの同時writeと二重計上を防ぐ。Keikiは既存メッセージ入口を置き換える必要がある時の既製候補。公式Maritime VM harnessはplatform側設定で新規agentが対象、利用者がONできるか未確認。全四社を同時導入することを目的にしない。
+
+**大会/課金の別目標:** The First 1,000の公式期限は2026-12-01 23:59 Pacific、検証対象は1,000人のdistinct実利用者（VM/subagentではない）。Naïveの公式日程は2026-11-07〜08 YC SF、両日現地参加、2〜4分のlive demoで自律運営を見る。主催者SNSのYC interview告知と公式pageの賞TBDを分け、対象track/条件が未確認のまま保証しない。Maritime大会の米国内対象flightを日本発無料航空券としない。$29/月案のCloud SaaSは345有料継続利用で$10,005 MRR（費用/税/返金等の前）。1,000無料user、Capafy出品数、単発受注、自己購入はSaaS MRRに算入しない。
+
+**L07配下：既存open dashboardの修正契約**
+
+目的は全agent・利用者・投資家が、同じ会社の実業務・売上段階・費用・稼働・配信を、source/as_of/coverageとともに確認できること。既存`/open/`/data.jsonと取得元を修正し、別dashboard/会計DBを作らない。UI再取得60秒、業務state集計5分、到着済payment webhook反映1分以内、provider照合30分を目標とし、未達をstale/last errorで見せる。公開refreshのためだけに全worker/modelを起こさない。全providerがmillisecondsで確定するという約束はしない。
+
+今回の観測: `/open/data.json`はmonth=2026-11、updated_at=2026-11-05 11:37 JST、reconciliation_complete=false。Life Manager Cloudのplatform/product行は既にあり、test billing/no paying usersという古い注記とStripe再認証待ちがある。provider公式の最新売上は未照合であり、Cloud売上0を確定しない。public HTMLのmonth表示はLos_AngelesでOctoberになることをNodeで再現。gp/gplは未照合flagと併存、HTMLは初回fetchのみ。生成経路はanicca-ops `team/scripts/open/update_open.sh`→builder→`publish_open_repo.sh`→anicca-products `apps/landing/public/open/`→Netlify。runtime template `/workspace/team/scripts/open/index.html`はops origin/mainに追跡されていない。Reasonの既存Muse relayへtemplate正本/ownerのread-only照会はdelivered、着手/修正/返答は未確認。
+
+| ID | 状態 | 原子的な修正と完了条件 |
+|---|---|---|
+| L07-D1 | 完了 | 公開HTML/JSON、二repoのbuilder/publisher/更新sourceを追い、Cloud既存行・month timezone再現・未照合利益・単発fetchを記録する。runtime owner/実cadenceは未確認として保持 |
+| L07-D2 | 次・L02と独立 | 生成templateとpublisherの現owner/編集中effectを確定し、その正本で月表示をcalendar monthとしてformatする。UTC/JST/Los_Angelesの同月表示、次の定期publish後も修正が残ることを確認 |
+| L07-D3 | 未完 | 全社利益/KPIのbasisをreconcilerとHTMLで一致させる。coverage不足なら全社利益を確定表示せず観測済小計と欠測を分ける。nullを0へ変換しない。source付きfixtureで集計と表示を確認 |
+| L07-D4 | 未完 | 既存Stripe read-only接続を復旧・照合し、Cloudのlive/test product/price/subscription/refund/cancelを既存台帳へ帰属させる。Stripe全体行とCloud product行を二重計上せず、MRR/実売/支払/出金を分ける。人のcredentialはCloud workerへ渡さない |
+| L07-D5 | 未完 | 既存生成/公開/再取得経路を上記cadenceへ接続し、row別as_of/source/last success/errorを表示する。開いたままのスマホと次の自然refreshでfresh/stale/取得失敗を確認し、API制限を守る |
+| L07-D6 | 未完 | 既存roster/実行receiptからteam/provider/role/最後の実結果、既存配信receiptからchannel/account別URL/reach/click/conversionを公開用に集計する。登録済みと稼働済みを分け、秘密/private本文を出さない。既存規定の公開範囲だけを使う |
+
+全体順序L02→L10は変更しない。dashboardはすでに公開され営業/審査で参照されるため、誤表示を直すD2/D3はworkerの売上待ちにせず独立して進める。旧=dashboardをL07の自然runまで待つ、新=公開誤表示のsource/owner診断を先行、workerの主cursor=L02・dashboard cursor=L07-D2。今回のsource更新はREADME/調査/このSSOTのみで、VM/model/budget、認証/売上、公開画面への反映を完了扱いしない。
 
 #### 旧契約・版別の診断記録（履歴、現行TODOではない）
 

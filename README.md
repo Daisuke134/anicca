@@ -10,6 +10,29 @@ Connect the accounts your chosen businesses need. Life Manager's agents are desi
 
 [日本語](README.ja.md) · [Setup guide](docs/getting-started.md) · [Agent catalog](docs/agents.md)
 
+## Life Manager Cloud
+
+[Life Manager Cloud](https://aniccaai.com/lm) is the phone-first hosted mode of this project.
+The local installer below runs on your Mac; Cloud is being connected to a dedicated cloud
+computer so work can continue when your phone is closed.
+
+The current design reuses Maritime's official OpenClaw runtime, a persistent agent browser,
+an agent-owned inbox, scoped credentials, scheduled wake-ups, and the existing work and
+accounting ledgers. Naïve/Vetta is an additional managed execution platform; Tenki supplies
+its underlying computers. These are execution environments for one product, not separate
+Life Manager products. Keiki is an optional messaging interface, not another required loop.
+
+The hosted earning workflow is **not verified end to end yet**. The first target is Capafy,
+using a permitted publisher/team identity. Agent-owned service accounts are the design target;
+marketplaces that require the user's own credentials or mandatory personal verification do
+not qualify for that autonomous path. A listing, a sale, settlement, and profit are separate
+outcomes. Local setup requirements below do not describe phone-only Cloud onboarding.
+
+See the [runtime comparison and reusable source](docs/research/2026-11-05-cloud-runtime-lego.md),
+the [Cloud specification and current tasks](docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md),
+and the [public company dashboard](https://aniccaai.com/open/). The dashboard contains observed
+company records with incomplete source coverage; company revenue is not Cloud-worker revenue.
+
 ## Businesses
 
 | Business | Revenue model |
