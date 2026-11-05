@@ -6,7 +6,17 @@
 
 **同じ製品スプリント BFM-01:** Qwen3-4Bの無料CPU推論は成功、Be.FM1.5-4BのLoRAアクセス（Hugging Face 401 GatedRepo）とクラウド認証は未完了。勉強→実行→評価→Managerへ統合→公開を別TODOに分解しない。患者の治療効果やManager自身の実ユーザー便益は未実証。
 
+
 ---
+
+## アーカイブ：従来のREADME本文（各作成時点の進捗。現行指示は上と唯一のロードマップ）
+
+# Manager Masterclass｜P04-1〜P07-2 因果推論・Ontology・行動と実行の接続
+
+**更新：2026-11-05（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
+
+**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-4。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
+
 
 ## Managerの中核仮説と実証すべき価値
 
