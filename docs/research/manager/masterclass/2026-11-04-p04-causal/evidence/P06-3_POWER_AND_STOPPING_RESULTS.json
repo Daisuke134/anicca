@@ -1,0 +1,57 @@
+{
+  "phase": "P06-3",
+  "research_only": true,
+  "plan_sha256": "f0d5182d6d048a0740360da42436757bd1637a9151fc4fb7e8a700bc84965419",
+  "power": {
+    "baseline_completion_assumption": 0.25,
+    "treatment_completion_assumption": 0.28,
+    "MDE_pp": 3.0,
+    "alpha": 0.05,
+    "power": 0.8,
+    "library": "statsmodels.stats.power.NormalIndPower.solve_power",
+    "effect_size_cohen_h": 0.06800010220247565,
+    "fixed_horizon_n_per_arm": 3395,
+    "fixed_horizon_total_recruited_for_15pct_loss": 7990,
+    "four_planned_looks_naive_bonferroni_alpha_per_look": 0.0125,
+    "bonferroni_n_per_arm_at_80pct_power": 4824,
+    "bonferroni_total_recruited_for_15pct_loss": 11352,
+    "cannot_start_real_trial": true,
+    "real_study_populations": 0,
+    "interpretation": "illustrative sample requirement; baseline and MDE are NOT measured on real Manager users"
+  },
+  "AA_early_stopping": {
+    "simulation_kind": "A/A all effects exactly zero in DGP",
+    "n_repetitions": 2400,
+    "looks_n_per_arm": [
+      100,
+      200,
+      300,
+      400
+    ],
+    "naive_any_of_four_looks_false_positive": 0.11916666666666667,
+    "bonferroni_any_of_four_looks_false_positive": 0.03791666666666667,
+    "only_last_look_false_positive": 0.04791666666666667,
+    "nominal_alpha": 0.05,
+    "bonferroni_per_look_alpha": 0.0125,
+    "caution": "finite Monte Carlo uncertainty; conservative Bonferroni only; not mSPRT; no people"
+  },
+  "normal_505_495": {
+    "n_control": 505,
+    "n_treatment": 495,
+    "expected_control_share": 0.5,
+    "chi_square": 0.1,
+    "p": 0.7518296340458492,
+    "invalid_srm_at_p_lt_0_001": false
+  },
+  "broken_560_440": {
+    "n_control": 560,
+    "n_treatment": 440,
+    "expected_control_share": 0.5,
+    "chi_square": 14.4,
+    "p": 0.00014780231033445423,
+    "invalid_srm_at_p_lt_0_001": true
+  },
+  "real_trial_registered": false,
+  "real_RCT_started": false,
+  "actual_real_participants": 0
+}

@@ -1,0 +1,6 @@
+{
+  "sha256": "381c55720fd688c502cabb508ac5d15701fe867f7d7645c1d47e52fd113bad72",
+  "stage": "BEFORE_SYNTHETIC_OUTCOME_GENERATION",
+  "external_registration": false,
+  "real_ledger_accessed": false
+}
