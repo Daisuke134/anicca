@@ -216,6 +216,7 @@ async function main() {
         '/decision-clarifier': '8000',
         '/intent-router': '5000',
         '/funding-rates': '10000',
+        '/funding-rates/': '10000',
       },
     },
   });
