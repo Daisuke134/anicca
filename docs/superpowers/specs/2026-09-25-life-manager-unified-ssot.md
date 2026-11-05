@@ -25860,6 +25860,8 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 **大会/課金の別目標:** The First 1,000の公式期限は2026-12-01 23:59 Pacific、検証対象は1,000人のdistinct実利用者（VM/subagentではない）。Naïveの公式日程は2026-11-07〜08 YC SF、両日現地参加、2〜4分のlive demoで自律運営を見る。主催者SNSのYC interview告知と公式pageの賞TBDを分け、対象track/条件が未確認のまま保証しない。Maritime大会の米国内対象flightを日本発無料航空券としない。$29/月案のCloud SaaSは345有料継続利用で$10,005 MRR（費用/税/返金等の前）。1,000無料user、Capafy出品数、単発受注、自己購入はSaaS MRRに算入しない。
 
+**HQ Slack返信照合の修正:** 本番task `9fb0f2237c0c8e4969babb92`はSlack公式repliesで本人sender・markerを確認済みだが、SlackのURL内`&amp;`と送信原文の`&`が異なり`post_unknown`となる。Slackから受けたURLのentityを正規化し、原文の意味の異なるURLは一致扱いしない。元identity、marker、全文照合とReason receipt条件は維持し、同一返信の再送は禁止。テストで実例と異なるURLを確認後、既存runtimeの自然照合と公式readbackを待つ。
+
 **L07配下：既存open dashboardの修正契約**
 
 目的は全agent・利用者・投資家が、同じ会社の実業務・売上段階・費用・稼働・配信を、source/as_of/coverageとともに確認できること。既存`/open/`/data.jsonと取得元を修正し、別dashboard/会計DBを作らない。UI再取得60秒、業務state集計5分、到着済payment webhook反映1分以内、provider照合30分を目標とし、未達をstale/last errorで見せる。公開refreshのためだけに全worker/modelを起こさない。全providerがmillisecondsで確定するという約束はしない。

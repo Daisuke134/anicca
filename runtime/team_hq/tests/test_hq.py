@@ -83,6 +83,15 @@ class Slack:
         raise AssertionError(method)
 
 
+class SlackEntityTests(unittest.TestCase):
+    def test_observed_url_entity_matches_original_only(self):
+        original = "result https://example.test/?a=1&b=2"
+        observed = "result <https://example.test/?a=1&amp;b=2>"
+        self.assertEqual(hq.canonical_slack_text(observed, slack_observed=True), hq.canonical_slack_text(original))
+        different = "result https://example.test/?a=1&amp;b=2"
+        self.assertNotEqual(hq.canonical_slack_text(observed, slack_observed=True), hq.canonical_slack_text(different))
+
+
 class HQTests(unittest.TestCase):
     def setUp(self):
         self.assertIsNotNone(hq, "HQ runtime is not implemented")
