@@ -46,8 +46,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv sync --dev
-          uv run pytest -q
+          # Upstream pyproject lists pytest under project.optional-dependencies.dev.
+          uv sync --extra dev
+          uv run --extra dev pytest -q
           uv run behaviorbench-eval --help > /tmp/behaviorbench-cli-help.txt
           grep -q 'task' /tmp/behaviorbench-cli-help.txt
       - name: Document the genuine run boundary and file checks
