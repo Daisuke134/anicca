@@ -25856,12 +25856,18 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 |---|---|---|
 | L02-A | 完了 | GET agents/plan/usageを照合。既存custom一件はsleeping、旧workerを起動/削除しない。契約readbackはbillingModel=seats、trial.billingModel=free、machines=1/maxMachines=3/maxAwakeMachines=1。公開の新料金表を旧契約へ断定適用しない |
 | L02-B | 完了 | 公式OpenClaw image 2026.7.1、SDK0.11.0のcreate/env schema、既存Capafyホスト用OpenRouter keyの日次上限$3と残枠、Sol catalogueのimage/tool対応を確認。個人Google・Factory専用key・全vaultをVMへ持ち込まない |
-| L02-C | 次 | externalId=lm-runtime-validation-20261105で重複照合し、templateId=openclaw、2GB/1vCPU/5GB、private、auto-sleepの一件を作成。create一回、結果不明時はGETで照合。既存3台枠内、追加subscription/credits購入/旧worker変更なし |
-| L02-D | 未完 | 新workerのversionと/data永続mountをexecで確認。公式configへSol mediumと既存ホスト用provider接続を設定し、secret値をログ/repoへ出さない。新規独自provider proxyは作らない |
-| L02-E | 未完 | 同じVMからSolのResponses APIと画像入力/tool callingを短い実callで確認。model id/effort/response id/usageを記録。試験は短い有限callのみ、既存日次$3上限を上げず、その枠を他ownerが消費した場合は再測定 |
-| L02-F | 未完 | OpenClawの実browserで公開LMページを開き、タイトルとscreenshotを取得してモデルが内容を観測する。ログイン/登録/公開/送金はまだ行わない。shellでのHTML取得をbrowser成功に置換しない |
-| L02-G | 未完 | /dataへ検証markerを書き、当該新workerだけsleep/start後に再読取。browser profileの格納先と実際の保持境界を記録。販売先の保存ログインはL03で別に確認 |
+| L02-C | 完了 | externalId=lm-runtime-validation-20261105で重複照合し、templateId=openclaw、2GB/1vCPU/5GB、private、auto-sleepの一件を作成。create一回、結果不明時はGETで照合。既存3台枠内、追加subscription/credits購入/旧worker変更なし |
+| L02-D | 部分完了 | 新workerのversionと/data永続mountをexecで確認。公式configへSol mediumと既存ホスト用provider接続を設定し、secret値をログ/repoへ出さない。新規独自provider proxyは作らない |
+| L02-E | 完了 | 同じVMからSolのResponses APIと画像入力/tool callingを短い実callで確認。model id/effort/response id/usageを記録。試験は短い有限callのみ、既存日次$3上限を上げず、その枠を他ownerが消費した場合は再測定 |
+| L02-F | 初回完了・再開後未完 | OpenClawの実browserで公開LMページを開き、タイトルとscreenshotを取得してモデルが内容を観測する。ログイン/登録/公開/送金はまだ行わない。shellでのHTML取得をbrowser成功に置換しない |
+| L02-G | data/profile保持確認・browser設定未完 | /dataへ検証markerを書き、当該新workerだけsleep/start後に再読取。browser profileの格納先と実際の保持境界を記録。販売先の保存ログインはL03で別に確認 |
 | L02-H | 未完 | 最終GETのresource state、model/browser結果、usage/費用、旧worker保全を照合。APIの0と外部model費を混同せず、L02完了か失敗境界を判定。L03へcursorを移すのは受入後のみ |
+
+**L02実測checkpoint:** 新worker `113ec037-cb21-4d7e-af8d-e689bb0a19ad` は公式OpenClaw2026.7.1、2GB/1vCPU/5GB、private/auto-sleepで作成済み。既定はgpt-5.4/browser無効。native configへOpenRouter経由Sol mediumと永続Chromeを設定し、config validate PASS。Responses tool callと実画面imageの直接入力はHTTP200。埋込OpenClaw agentはbrowserツールで/lmを開き、snapshot/screenshot/実画面の見出し・CTAを読取りJSONへ保存。13応答のOpenRouter generation公式照合はcoverage complete、合計$0.0671382、resolved model=openai/gpt-6.1-sol-20260929。VM meterは旧free/seat枠で観測used/overage0だが、model費や将来hosting費を0としない。
+
+**現在の診断cursor=L02-D2:** sleep→GET sleeping→start→GET active後、marker、artifact SHA256、profile Local State、Chrome binary、Sol mediumは保持。一方browser.enabledがfalseへ戻り、Gateway経由のbrowser stopは `browser control is disabled`。agent.desktopEnabled=falseは確認済みだが、どの起動処理が設定を戻すかは未確定。provider設定/起動sourceを確認し、再開後のmanaged Gatewayでbrowserが利用できることを再検証する。最初の埋込agent sessionはstopとartifact確認済みだが、そのdetached execのprovider statusはrunningのまま。完了済み試験PIDへのSIGTERMとcancel候補POST405を実施。元のexecとbrowser子processのcleanupはexact ownerだけを診断し、旧workerを操作しない。新worker proxy cap0設定はmanage scope不足403で未適用、権限は広げずOpenRouterの既存$3/day枠だけを使用する。検証workerのheartbeatは0m（営業scheduleはL07）。private証拠は既存stateの `cloud-l02-maritime-20261105/`。L02の完了判定はまだしない。
+
+| L02-D2 | 次 | 新workerだけのprovider desktop/browser設定とnative Gatewayの再開経路を照合し、browser無効化を根本修正。再開後Gateway browserのstatus/open/screenshotが通り、完了済みexecのcleanupを公式状態で確認したらL02-Hへ戻る |
 
 No human in the loop / No human credentialsは、利用者の私用service credentialを受け取らず、agent自身のservice identityで仕事を完走する運営要件。会社のinfra契約/API key、agent所有credential、利用者の最小identity認証、将来の受取先設定は別の境界として表示する。全対応先での成功や介入0/100%を未実測で宣伝しない。README/websiteには同じ一商品が複数hostで動く設計と、host別の実証状態を示す。agent向け銀行/受取口座/crypto payout/UBIは後段の調査で、今回のL02へ決済や金融account作成を追加しない。refundを任意の収益分配手段として実装しない。
 
