@@ -25847,7 +25847,7 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 | L06 | 未完 | 無料の既存配信経路で商品を届け、第三者注文一件を納品し、支払receipt・手数料・返金・全実行費を照合する。$0開始と補助を記録し、入金と利益を別表示する |
 | L07 | 未完 | 公式scheduled wakeから次の一業務を無介入完走し、既存台帳とopen dashboardを30分更新する。wake/start/final URL/readback/costを確認し、二重実行0と実介入数を記録する |
 | L08 | 未完 | 黒字の同じ一業務を第二runtime（Naïve候補）で再現する。公式接続scope、Identity/profileの所有、対応harnessとtoolを確認する。同じ商品・台帳・会計を使い、売上を二重計上しない。実運転の録画は実結果から作る |
-| L09 | 未完 | 既存スマホ入口／認証機能／結果画面を同じworkerへ接続し、スマホだけで開始→本人の結果確認を実証する。Google/利用者メールを開始必須にせず、既存匿名session等を再利用する。tenant分離と回復可能な所有者bindingを確認し、受取addressだけで他人の残高を移管しない。新しいchat appや認証serverは作らない |
+| L09 | 未完 | 既存スマホ入口／認証機能／結果画面を同じworkerへ接続し、スマホだけで開始→本人の結果確認を実証する。利用者の最小identity認証は許容する（Dais最新指示：Google identity可）。既存認証を再利用し、利用者の私用Gmail/Calendar権限や仕事用passwordをworkerへ渡さない。tenant分離と回復可能な所有者bindingを確認し、受取addressだけで他人の残高を移管しない。新しいchat appや認証serverは作らない |
 | L10 | 未完 | 既存subscription機能を再利用し、外部利用者一人の支払→その人のManagerによる実結果→実費を照合する。自社事業売上と利用料を分離し、解約/返金と継続利用を追う。自社事業10K MRR・外部subscription10K MRRをそれぞれ計測しながら拡大する |
 
 **L02の実行単位（本表が状態の正本、planは手順）**
