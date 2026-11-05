@@ -10,7 +10,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
-- [home-codex / NEAR反復外注report準備] task973378ad969c9e510c458982、branch task/home-codex-973378。応募済み989f07daの未準備report・順位計算・原典証拠を所有する。本人GET5pending/受注0、HQ active本taskのみ。親接続/Naive・会計・投稿・fence維持。受注前submit/追加bid/課金0。完了条件=15–20業務比較と英語1000–2500語、必要CI全PASS後main。原稿1284語＋17業務/CSV・順位17/感度2検証済み。現在cursor=独立検証→必要CI→main。
+- [home-codex / NEAR反復外注report統合] task1d5ec011dfbf4098c35454c4、owner home-codex、branch docs/near-integration-1d5ec0。PR9219は必要CI15件成功後main67596940b8へ公式統合、原稿/CSV/証拠3件の公式blob一致。5pending/受注0、売上/費用実額の新receiptなし。現在cursor=本訂正CI→main→既存hourly全assignment照合、受注時の最新brief/契約確認とSLA内納品。親接続/Naive・会計・投稿・lease/fence維持、追加bid/submit/課金0。正本→NEAR初回販売spec task1d5ec0。
 - [home-codex / NEAR discovery納品準備] 統合完了: PR9207/main3e3f078149、head813f69404fの必要CI15件成功・独立SHIP・公式report/evidence blob一致。継続task ab33e8138665c2d3c939d6af、同owner home-codex。現在cursor=既存hourlyの全assignment照合→受注後最新brief/submit契約再読→SLA内納品。5pending/受注0は今回公式GETの観測値。親HQ/Naive・会計・投稿・fence維持、追加bid/受注前submit0。
 - [home-codex / NEAR framework納品準備] task fcdfdd26ab37754b9c37251e、owner home-codex-fcdfdd、branch task/home-codex-fcdfdd。既存応募dd6e4f85の英語report/一次資料比較だけを所有。5pending/受注0を公式GET確認。親PR9182/9178/9179、remote hook、会計、投稿、既存fenceを保護。受注前submit/追加bid0。
 - [home-codex / HQ継続cursor訂正] task e204c552a38bd3f262c71a6f、owner home-codex-e204c5、branch docs/hq-cursor-e204c5。PR9161の公式統合/成果物と受注・接続thread差分を照合し、TEAM-HQ/NEARの古いCI待ちを訂正する。親PR9178/9179・deploy・remote本人hook・会計・投稿・fenceは保護。新応募/送信/納品0。完了条件は根拠保存→必要CI→main。
@@ -330,3 +330,5 @@
 - 2026-11-05 02:24 JST Codex: PR #9213 OSS self-contained boundaryの原因を再現。WNBA icon.pngのgenerated_artifact宣言欠落だったため既存manifest形式でSHA-256を追加し、local verifier PASS。PR head b13f794のCIは残pendingだったため修正をpushして再実行する。
 - 2026-11-05 03:25 JST Codex: Naïve公式GETでCEOの0 spend予算停止(event10 `budget.exceeded`)、App scopes空/`NAIVE_API_KEY`なし、Computer paused、listings/install 0を確認。専用operator v1を$0.15/sessionで作りGET一致、session0。PR #9216のloop-contract CIはx86 runner進行中/arm64 queued。売上・browser実行・録画0。次: CI→main由来App→同agentのApp権限要求/公開画面1回→第三者有償注文まで継続。receiptはprivate `naive-dedicated-agent-created-20261105.json`。
 - 2026-11-05 JST / Codex: PR #9216 required CI `41894532639` PASS後main統合、main由来App/専用server key/agent v2を公式readback。Agent sessionのcloud browser `goto` + `extract h1` 成功、provider browser session closed、Computer paused。model+browser実行費6,715 micro-USD。取引・売上は未発生で、Capafy account-wide収益は未照合。現cursor NHC-01は既存Publisher正式委任確認。private evidence `naive-cloud-browser-proof-20261105.json`。
+
+- home-codex / task1d5ec0: PR9219をCI15件成功後main67596940b8へ統合し公式3blob一致、計算17/感度2再検証PASS。5pending/受注0、実額差分なし。次: 訂正CI/main→受注時納品。
