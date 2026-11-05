@@ -1,3 +1,19 @@
+# Latest handover update (2026-11-06): Model/product + existing randomized-outcome benchmarks
+
+## 2026-11-06｜Manager is a product/model — real randomized intervention outcome evidence, reuse-first
+
+**New implementation verified** (free GitHub Actions CPU; no participant-level data committed): https://github.com/Daisuke134/life-manager/actions/runs/42100293105 ; PR https://github.com/Daisuke134/life-manager/pull/9252 .
+- **HeartStepsV1** licensed CC BY 4.0, actual 37 human participants, 8,274 decisions and 6,590 deemed available; notification/no-notification original-assignment exploratory complete-case observed next-30-minute Jawbone step difference **+12.951**, participant-cluster bootstrap 95% CI **[-16.993,+39.432]**. Missing outcome approx 11.63% no-notification, 12.21% notification. Neither a complete reproduction of original adjusted causal-excursion analysis nor a Manager product intervention effect.
+- **RCT Bench updated to 125 real individually randomized trials** (historically 50). Directly executed 3 source-pinned studies: trial20 exercise adherence 37 people **+345.319 minutes** arm contrast CI [17.092,687.820]; trial103 n599 90-day QALY **+0.011019** CI [-0.005416,0.028892]; trial116 n24 FACT-G quality-of-life Group2-Group1 **+8.020** CI [-2.697,19.440] and DASS distress **+7.242** CI [-6.304,20.768]. Exploratory complete-case and baseline/assignment coding of trial116 not independently verified. Do not claim treatment superiority or pool unlike scales.
+- **HBCP** publicly published corpus 971 RCT arms / 405 studies: original study-disjoint 5-fold prediction **MAE 9.992 train-mean, 9.654 Ridge, 9.449 RandomForest percentage points**. Authors' RuleNN reported 9.15 under different setup; **not a head-to-head** or reimplementation of RuleNN. Trial-arm outcome prediction is not an individual BCT causal effect.
+- All three original datasets have independent sources, different endpoints and rights. The public benchmark/reproduction suite must reuse HeartSteps/HBCP/RCT Bench/UpliftBench and original BehaviorBench before building any overlapping evaluation. No new community leaderboard SOTA and no independent Manager RCT proved.
+- **Product positioning**: Manager is a useful behavior intelligence AI model and startup product. Scientific evaluation supports the shipped service, it is not the product itself. Contract: `products/manager/docs/MANAGER_MODEL_PRODUCT_CONTRACT_20261106.md`, with user-chosen behavior goals, NO_ACTION, authorization, outcome/harms and independent evaluation.
+- **Publishing**: bilingual source-backed new original blog articles, one original infographic, canonical publication manifest and 109-slide detailed English research archive/Japanese speaker notes in https://github.com/Daisuke134/life-manager/pull/9253 . **Blog is not live until canonical PR merged, immutable publish pins updated and actual /blog/ URL readback.** The public talk 34 slides unchanged. PDF archive still older, not regenerated.
+- Product evaluation cloud run's synthetic software unit tests: 11 passed; actual human source datasets processed as above. HBCP Ridge/RF were actually trained/predicted. Missing original trial analyses and original HBCP RuleNN remain planned.
+- Immediate next: no new duplicate benchmark engine; review original trial outcome labels and biases, publish source-backed reports, run original HBCP RuleNN / HeartSteps adjusted analysis, connect a model to the Manager product under scoped rights, then independent real-world opt-in study. Replication must never be represented as Manager improving people until observed.
+
+---
+
 # MOST RECENT RELEASE STATUS — CHECK THIS BEFORE OLDER HISTORY
 
 ## 2026-11-06 JST — Verified official site release
