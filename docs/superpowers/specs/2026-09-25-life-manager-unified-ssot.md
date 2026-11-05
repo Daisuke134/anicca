@@ -25892,6 +25892,8 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 main push run #42009723782（head `f3c51cf0be6423eea9f787d870864d900d3c620a`）もcollector・snapshot・検証・deploy・smoke success。公開JSONは`data.json updated_at=2026-11-05 19:07 JST`、`capafy.json observed_at=2026-11-05T10:23:43Z`、29 platform rows、`reconciliation_complete=false`。10:23Zの公開UI目視では`Hourly refresh · current`、Last checked一致、`Refresh overdue`なし。30d/7d detail views 8,225/1,896、paid orders 6/4、trial orders 9/1、revenue $59.94/$39.96、refunds $0/$0、net units 15/5、category impressions 2,943/580、search 62,026/12,544、hot 15,000/6,964。10:17Z natural schedule runは10:25Z readback時点で存在せず、push成功をschedule receiptと同一視しない。
 
+**L07-D3 source change:** anicca-products PR #862 / branch `fix/open-financial-basis-20261105` / commit `8064c26d1` changes revenue, costs and profit card notes to distinguish observed subtotals when `reconciliation_complete=false`; null values remain rendered as unknown. Focused rendering tests first reproduced the missing basis label, then passed 8/8. Product PR CI run #42012051619 is pending. Production deploy and live UI verification remain open.
+
 
 | ID | 状態 | 原子的な修正と完了条件 |
 |---|---|---|
