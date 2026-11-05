@@ -1,0 +1,265 @@
+{
+  "plan": {
+    "seed": 202611057,
+    "features": [
+      "reward_prediction",
+      "outcome_independent_habit",
+      "previous_same_stimulus_choice",
+      "recent_reward_memory"
+    ],
+    "reward_RW_learning_rate_fixed": 0.35,
+    "habit_choice_update_fixed": 0.07,
+    "recent_memory_decay_fixed": 0.9,
+    "n_actions": 3,
+    "L2_penalty": 0.002,
+    "selection_metric": "minimum validation action log loss",
+    "model_candidates": {
+      "uniform": [],
+      "reward_only": [
+        0
+      ],
+      "habit_only": [
+        1,
+        2
+      ],
+      "reward_plus_habit": [
+        0,
+        1,
+        2
+      ],
+      "reward_plus_habit_plus_memory": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    "participant_disjoint": true,
+    "external_studies_never_used_for_fit_or_select": true,
+    "note": "Hand-fixed trace rates are pedagogical; beta fitted to training only"
+  },
+  "source": {
+    "Expe1.mat": {
+      "meta": {
+        "source": "Expe1.mat",
+        "sha256": "6af5270e2c57666984464cf882b34dbe6be39debdedb6995b048c617fb1188aa",
+        "real_trials_original": 53573,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 53573,
+        "trials_eligible": 52911,
+        "excluded_invalid_choice_reward_rt_or_stim": 662,
+        "participant_count": 79,
+        "block_count": 1422,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    },
+    "Expe3.mat": {
+      "meta": {
+        "source": "Expe3.mat",
+        "sha256": "5a7426dfaa9167895ae6dde5362feb9070197cedc9ce6ac7fa6b3ceae613751c",
+        "real_trials_original": 30403,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 30403,
+        "trials_eligible": 28720,
+        "excluded_invalid_choice_reward_rt_or_stim": 1683,
+        "participant_count": 40,
+        "block_count": 760,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    },
+    "Expe5.mat": {
+      "meta": {
+        "source": "Expe5.mat",
+        "sha256": "ab4a400d1567e065e14feda54245a2aaea64c0d91207f6e67a605097779da8da",
+        "real_trials_original": 19656,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 19656,
+        "trials_eligible": 18200,
+        "excluded_invalid_choice_reward_rt_or_stim": 1456,
+        "participant_count": 26,
+        "block_count": 390,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    },
+    "Expe12.mat": {
+      "meta": {
+        "source": "Expe12.mat",
+        "sha256": "2a939eb623252bd3fd7810204939892dbb555c4c72342b4c0cf7dca6497a7a0e",
+        "real_trials_original": 140124,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 140124,
+        "trials_eligible": 139990,
+        "excluded_invalid_choice_reward_rt_or_stim": 134,
+        "participant_count": 300,
+        "block_count": 3000,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    },
+    "Expe14.mat": {
+      "meta": {
+        "source": "Expe14.mat",
+        "sha256": "30449a404240174c9fbfb086d48c96fab7c7c4e99814b507e4c50f59b63f3204",
+        "real_trials_original": 30540,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 30540,
+        "trials_eligible": 29782,
+        "excluded_invalid_choice_reward_rt_or_stim": 758,
+        "participant_count": 35,
+        "block_count": 490,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    }
+  },
+  "participant_split": {
+    "train": {
+      "n_trials": 31296,
+      "n_subjects": 47,
+      "subject_ids_sha256": "d79f5a2a15113730663c5594231ed5b371dc585bbf230a01a46e76158c401787"
+    },
+    "validation": {
+      "n_trials": 11154,
+      "n_subjects": 16,
+      "subject_ids_sha256": "8fc28c47973232bec8e0a6e1d03b983cd329057b167c17dc723da490e56f795f"
+    },
+    "test": {
+      "n_trials": 10461,
+      "n_subjects": 16,
+      "subject_ids_sha256": "47697b31cb67de69e6eb0994234af82223c1fe72b6df8caeef4bc2265f95d370"
+    }
+  }
+}
