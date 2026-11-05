@@ -25796,6 +25796,23 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 #### 現行契約：既製runtimeを組み合わせて会社の仕事を移す
 
+**優先作業：FIRST 1000 project submission（Daisの2026-11-05指定）**
+
+目的は参加申請とproject提出を分け、指定Google Formへ現状に正確な商品説明・試用経路・sourceを提出し、providerの完了画面を確認すること。URL: https://docs.google.com/forms/d/e/1FAIpQLScO97TqtYA3UYdEJIbaYXViOJZ8OySwzkhqlaxDId4HiCzOYg/viewform 。フォームは11/3 23:59 Pacificの締切を記載するが、11/5のlive UIには送信ボタンと全質問がある。遅延提出の受信と大会側の受理/資格を同一視しない。
+
+Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上にCloudがliveという連絡もある。一方、今回の限定Sent検索にはproject提出完了のreceiptは見つかっていない。Daisの従来の「Maritime提出済み」申告は保持し、未提出と断定せず、今回指定されたproject提出のreceiptを別に取得する。申請emailは既存applicationの本人emailをprivate SSOT/メールから照合する（秘密はrepoへ出さない）。
+
+今回のMaritime公式readback: 既存custom agent `80c0208c-af40-4b4c-94ee-a24b3f731db6` がsleeping、lastActiveAt=2026-10-31T12:46:56.044841Z。VMの存在や過去のhealth成功を、現在のブラウザ/無介入登録/売上の証明へ置換しない。既存workerは消さず、モデル/予算/credential/稼働effectをこの提出作業で変更しない。
+
+| ID | 状態 | 一つの作業と完了条件 |
+|---|---|---|
+| SUB01 | 完了 | 指定フォームのlive UI、必須質問、締切、既存application emailと提出履歴を確認。Google loginは不要 |
+| SUB02 | 次 | 現在のWeb試用経路を開き、商品名/対象/実装状態/試用手順/source URLをフォームへ提出。利益や自律運転を未実証のまま完成と書かず、確認画面で受信を確認。二重送信しない |
+| SUB03 | 未完 | 提出の時刻/確認文/試用URLを記録。期限後の審査対象/資格が不明なら既存主催者経路で確認する。提出済みと大会受理を分ける |
+| SUB04 | 未完 | L02〜L06の最短順で実行環境のmodel/browser/persistence→正式登録→公開→第三者支払を証明し、実結果でproject情報を更新する。provider待ちを含む実測がない段階で完成日を約束しない |
+
+順序更新: 旧=worker L02を先行、新=SUB01/02/03の現状提出→worker L02〜L06を継続。理由はDaisが提出最優先と指定し、期限後でも現在フォームが受付UIを返すため。主cursor=SUB02、worker cursor=L02、dashboard cursor=L07-D2。既存effectを中断せず、別商品/別台帳は作らない。
+
 この現行契約と直下のL01–L10（L07配下の公開dashboard作業を含む）だけがNaïve/Maritime Cloudの実行順・現在cursor・残TODOの正本。以降の旧NHC表・版別model/cap・App bridge・登録probeは履歴として保存し、現行契約を上書きしない。調査根拠・部品比較・Mermaid → `docs/research/2026-11-05-cloud-runtime-lego.md`。
 
 **成果:** Museで使う「永続VM＋実ブラウザ＋保存ログイン＋agent所有inbox＋vault＋外側の定期起動＋共有台帳＋既存open dashboard」を、既製品の設定でクラウドへ再現する。No human in the loopを運営要件として維持する。最初は適格な販売先でagent本人用accountの登録または同一account回復を一件実証して報告し、その後に公開・販売・納品・入金・実費差引を進める。製品コード、独自harness、signup bot、browser proxy、scheduler、メールserver、vault、dashboardを新作しない。
