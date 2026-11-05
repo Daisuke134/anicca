@@ -1,5 +1,12 @@
 # Manager
 
+**ManagerはAIモデルであり、利用者の望む行動を支援する製品である。**
+既存の公開モデルと行動変容技法を統合して使えるものを先に届け、学習・科学的評価は製品改善の手段として並走する。一般のBehavior Foundation Modelの新規重みがすでに訓練済みという意味ではない。
+
+- [Introducing Manager: model/product contract](docs/MANAGER_MODEL_PRODUCT_CONTRACT_20261106.md)
+- 実介入データ: [HeartSteps micro-randomized trial](evals/heartsteps_v1_real_mrt.py)、[RCT Bench 生活機能・QALY・心理的苦痛](evals/rct_bench_real_outcome_eval.py)、[HBCP 禁煙RCTの予測](evals/hbcp_smoking_outcome_baselines.py)。既存の元研究を再利用し、クラウドGitHub Actionsで公開実データの集計・監査を実行。
+- [Free cloud outcome evaluator workflow](../../.github/workflows/manager-real-intervention-outcome-evals.yml)。これらは独立の既存RCTであり、Manager自身が人を改善した実験ではない。個人記録をGitへ追加しない。
+
 Managerは、**行動変容を通じて、苦しみを終わらせることを目指す**一つのAIエンティティです。
 特定の宗教への帰属を前提にせず、行動科学・統計・AI・既存の実践から学びます。
 通常の活動と価値に専用app/chatや人の毎回の操作を必須にしません。Digital Buddhaは
