@@ -12,7 +12,7 @@ Aniccaが作るManagerは、人間の行動を理解し、本人が望む結果�
 
 これを評価するベンチマークは自分たちで作るしかないと考えていた。しかし調べてみると、先人たちはすでに多くの構成要素を実装していた。
 
-![HeartSteps、RCT Bench、HBCPの実測結果を比較した独自図解](MANAGER_EVIDENCE_IMAGE_PLACEHOLDER)
+![HeartSteps、RCT Bench、HBCPの実測結果を比較した独自図解](https://aniccaai.com/blog/manager/media/90975ad11075597f2837afff21726a7f90d50ad2437ccdeecab4fc88ba485de8.png)
 
 ## 1. HeartSteps：実際に通知を送り、30分後の歩数を測った
 
