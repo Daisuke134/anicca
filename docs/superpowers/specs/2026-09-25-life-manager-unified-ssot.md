@@ -25869,7 +25869,7 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 **L02-D2の次操作:** 新workerだけのprovider desktop/browser設定とnative Gatewayの再開経路を照合し、browser無効化を根本修正。再開後Gateway browserのstatus/open/screenshotが通り、完了済みexecのcleanupを公式状態で確認したらL02-Hへ戻る。公式OpenAPIはPATCH `/api/agents/{agent_id}/desktop-config` `{enabled:true}` を定義し、4GiB/2vCPU floor・seat cap再判定・active時rebuildを明記。契約枠/費用を先に照合し、独自起動wrapperで代替しない。 GET account/limitsはfree/seat、maxMemMb8192を返すが、desktop-configの実callはHTTP402/code=seat_limit/paid plan requiredで拒否。desktopは有効化されておらず2GB/1vCPUのまま。VM付属MARITIME.mdはlogin用途に公式Browserbase MCP、公開読取にnative headlessを案内。今回workerのenvにBrowserbase接続はなく、Credential SSOTのBrowserbase serviceもない。paid機能の権限迂回や独自wrapperは作らず、既存hackathon benefit/公式接続の適格性と費用を次に照合する。
 
-**進捗再確認と直近の原子的TODO:** GETで検証workerはactive・desktopEnabled=false・2048MiB/1vCPU、accountはfree/seat・machines2/max3・awake1/max1を再確認。これはブラウザ復旧・保存ログイン・公開・売上の証拠ではない。以前のモデル試験費$0.0671382は確認済みの試験分のみで、現在の累計費用/利益ではない。PR #9229は14 CI jobsとCodeRabbit成功後も新mainとのmanifest競合でmerge拒否。最新mainのhome/blog/他owner変更を保持し、manifestは最新mainを正として変更した/lm EN/JAのhashだけ再計算する。
+**進捗再確認と直近の原子的TODO:** 2026-11-05時点のprovider readbackでは検証workerはactive・desktopEnabled=false・2048MiB/1vCPU、accountはfree/seat・machines2/max3・awake1/max1。これはブラウザ復旧・保存ログイン・公開・売上の証拠ではない。以前のモデル試験費$0.0671382は確認済みの試験分のみで、現在の累計費用/利益ではない。PR #9229は14 CI jobsとCodeRabbit成功後、mainの1e2e69bd54a116219678691de6db56d2a52a1227へ統合済み。anicca-products PR #870はcommit da48403e80a44ca71a9be17e9cb2321acfc373e4を含むmerge SHA 31b83c2d7a84c436a462c64916cd4c5306812b82で統合済み。Netlify run 42085389983はBuild・overlay・Open data・Deploy・post-deploy money-path smokeすべてsuccess。公開 /lm と /lm/ja を取得し、双方の先頭に「No Human in the Loop / No Human Credentials」、Capafy経路の検証中・収益未保証を確認した。これは公開内容と導線の証拠であり、Cloud signup、Capafy登録/公開、第三者注文、入金、利益の証拠ではない。
 
 | 順 | 次の一操作 | 完了判定 |
 |---|---|---|
@@ -25877,8 +25877,8 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 | D2-2 | その公式browser経路を検証worker一台へ設定 | provider側の有効状態とnative browserの起動確認。独自wrapperなし |
 | D2-3 | 当該workerをsleep/startし、browserで/lmを開きscreenshotを取る | 再開後も実browser操作と画面観測が通り、data/profile保持を確認 |
 | D2-4 | 以前の完了済み試験execを照合・終了処理し、費用と旧workerを確認 | exact execのterminalまたは正確な終了理由、公式費用、旧worker無変更。ここでL02受入判定 |
-| P-1 | PR #9229の競合解消後にCI再実行・main統合 | 最新headに全必須check成功、merge SHA確認 |
-| P-2 | 既存website publisherのimmutable overlay pinを統合SHAへ揃えて公開 | public /lm EN/JAの新しい冒頭をreadback。source更新を公開済みとしない |
+| P-1 | 完了 | PR #9229の必須CI 14件とCodeRabbit成功後にmainへ統合。merge SHA=1e2e69bd54a116219678691de6db56d2a52a1227 |
+| P-2 | 完了 | anicca-products PR #870の既存workflow 2本のimmutable overlay pinを上記SHAへ更新。現行cron 32分に対して旧17分を期待していた既存contract testの期待値を同期し、focused test 17/17 PASS。commit da48403e80a44ca71a9be17e9cb2321acfc373e4、merge SHA 31b83c2d7a84c436a462c64916cd4c5306812b82。Netlify run 42085389983 success、post-deploy smoke PASS、/lmと/lm/jaの文面を直接取得。CloudからCapafyへの実運用は別cursor NHC-01以降で未完。 |
 
 以後は既存L03→L04→L05→L06→L07→L08→L09→L10を維持する。収益の現在cursorはL02-D2。販売先への登録、出品、第三者入金、黒字は未確認のため未完のまま。
 
