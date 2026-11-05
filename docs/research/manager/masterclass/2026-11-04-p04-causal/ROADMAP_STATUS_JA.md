@@ -3,6 +3,14 @@
 **唯一の正本：`ROADMAP_STATUS_JA.md`｜更新：2026-11-06｜公開作業は別途実測で確認**
 
 
+## 2026-11-05｜X投稿停止とBFM-01の最初の無料クラウド実行
+
+**製品運用上の指示：X（旧Twitter）には投稿しない。** 予約・API・Postiz・GitHub Actions・自動化による新規投稿を行わない。ユーザーが明示的に再開を指示しない限りXを公開先から外す。2026-11-05 UTC以後のPostiz接続アカウントを照合した時点で、今後1年のX QUEUEは0件（過去のPUBLISHED 1件は削除していない）。ChatGPT側にX投稿自動化を確認しなかった。ただし別ツールによる未知の将来投稿まで停止保証したものではない。
+
+**BFM-01最初の次の一歩：** 24GBの有料GPUがまだなくても、オープンな既存モデルの4-bit Qwen3-4B-Instruct-2507 GGUF（約2.5GB）を**GitHub Actions無料CPUで実行**する。これは有料のModalやHF gated Be.FM LoRAの代わりではなく、ベースモデルの推論契約とクラウド実行ログを先に検証するサブステップ。 `.github/workflows/manager-bfm01-free-qwen3-4b-cpu.yml` と `products/manager/experiments/cloud/qwen3_cpu_first_inference.py` で、重みのSHA256、llama.cppのリリースSHA256、実行時間、出力抜粋、モデルの真の種類を記録する。CPU実行成功は実人間での行動予測精度やBe.FMアダプターの実行ではない。
+
+**その後の同じBFM-01:** HF利用条件の承諾、Modal Starter（$0基本料金・月$30の条件付きcompute credits）へ個人アカウントで接続、HF_TOKENとMODAL_TOKEN_ID/SECRETを安全に登録する。LoRAを含むBe.FM1.5-4B 24GB GPU上の実forward pass、Qwen3 baseとの同一条件比較、ライセンス明確なholdout、Managerへのread-only統合、製品としての限定公開、再現実験付き記事/Slides/FAQを同じTODOで完了する。未実施をDONEとしない。
+
 ## 唯一のNEXT TODO・実装と学習の一体化（2026-11-06）
 
 **会社の主語は研究でなく、使われるAIモデル・製品である。** ManagerはBehavioral Foundation Model（行動基盤モデル）を構築・配布していくモデル企業。ManagerBenchは別事業に分離した競争用の独自評価器ではなく、既存BehaviorBench/HBCP/HeartSteps/RCT Bench/UpliftBenchを再利用して不足部分だけ補う外部評価契約。**モデルが実際に役立つことが成功指標。**
