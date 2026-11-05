@@ -163,3 +163,12 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 remote threadは前観測1793796196.428439以降の差分1件、latest1793824103.405409/has_more=false。Dots側は元Reason IDとworker claimまで約15815秒、Slack結果を照合するが、bot本人の自然受信/着手/Reason結果receiptは未確認。既存queued2件・ownerを維持し、催促/再送/新規probe0。
 
 準備成果: docs/team/near/recurring-outsourcing-report.md（本文1284語＋17行表）、recurring-outsourcing.csvを作成。公式価格/原典とn8n利用者の反復transcription報告を取得し、価格単位・構造検査/意味検査・許容遅延unknownを分離する。100pipeline仮定の順位は実需要予測ではなく、17計算と感度2件を検証。Firecrawlページ内断片差異・OpenAI取得interstitial・DeepL地域価格・prerecorded STT見積未取得を明示する。source-boundary/diff PASS、語数/17業務/5提言/順位一致PASS。証拠→docs/evidence/near-recurring-preparation-973378.json。現在cursor=独立検証→必要CI全PASS→main、受注後最新brief/24h SLA/submit契約照合。納品・追加bid・課金・送金0。
+
+
+### 反復外注report統合後の現在cursor — task1d5ec0
+
+目的・範囲: 前回home-codexの未統合PR9219を先に完走し、既存5応募の納品準備をmainへ反映する。owner home-codex、origin/main67596940b8由来branch docs/near-integration-1d5ec0。今回の所有は本節/BOARDと統合照合証拠のみ。親接続修復/Naive・他owner/lease・会計・投稿・旧effect fenceを保護する。完了条件は最終headの必要CI公式全PASS→main統合→原稿/CSV/証拠の公式blob一致→現在cursor訂正。順序変更なし、新しい応募/原稿/dispatcherは増やさない。
+
+結果: PR9219/head b8dd5f1912の必要CI14件＋CodeRabbit成功と保存済み独立検証重大欠陥0を照合し、main67596940b8f2adf146ab5a7512f78425ca868949へ公式MERGED。原稿/CSV/出典証拠3件の公式blobはbyte一致。17行Decimal計算/順位/範囲・感度2件・5提言・原稿/CSV hashを再検証PASS。文書sourceの統合でありruntime release/applyは不要。
+
+本人公式GETは5pending/assignment0。既存接続threadは前観測1793824103.405409以降の返信差分0/has_more=falseで、本人自然wake・未確定effectを成功へ変えない。新しい売上/費用実額receiptなし、売上/費用差分unknown、有料API/決済/納品/追加bid/投稿/会計write/fence変更0。空の会計報告や催促は追加しない。現在cursorは本訂正の必要CI→main、その後は既存hourly全assignment照合→受注時に最新brief/submit契約と24h SLAを再読→SLA内納品。接続は既存ownerの本人receipt差分から継続する。証拠→docs/evidence/near-integration-1d5ec0.json。

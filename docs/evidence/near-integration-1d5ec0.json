@@ -1,0 +1,63 @@
+{
+  "task_id": "1d5ec011dfbf4098c35454c4",
+  "run_id": "1d5ec011dfbf4098c35454c4",
+  "owner_id": "home-codex",
+  "occurrence_id": "1d5ec011dfbf4098c35454c4",
+  "release_sha": null,
+  "loaded_argv": null,
+  "loaded_env": {
+    "model_override": false,
+    "runtime_env": "not collected"
+  },
+  "phase": "main_integration_readback",
+  "command": "gh pr checks/view/merge; official contents GET; NEAR agent-scoped GET; bounded Slack replies GET",
+  "exit_code": 0,
+  "source_base": "67596940b8f2adf146ab5a7512f78425ca868949",
+  "pr": "https://github.com/Daisuke134/life-manager/pull/9219",
+  "head": "b8dd5f1912bfe701e8efbd6526c3bf769ebc3f49",
+  "required_checks_success": 15,
+  "official_state": "MERGED",
+  "merged_at": "2026-11-05T04:08:49Z",
+  "provider_receipt_id": "67596940b8f2adf146ab5a7512f78425ca868949",
+  "official_blob_matches": {
+    "docs/team/near/recurring-outsourcing-report.md": "70822f3fda87a1de7c3d2033854a27b46aa34b5b872d5ad5150d58d09af862cd",
+    "docs/team/near/recurring-outsourcing.csv": "36cfc13385fe4d6314079c4caa03f0e36746f3472f44cac34e90b9358544720c",
+    "docs/evidence/near-recurring-preparation-973378.json": "61491d1133dbc8a16ab4eed17a4fdda7bbc594df81901937f1b949d4fa717842"
+  },
+  "validation": {
+    "decimal_rows": 17,
+    "sensitivity_cases": 2,
+    "recommendations": 5,
+    "hash_matches": 2,
+    "independent_review": "saved fresh-context review,重大欠陥0; hashes match"
+  },
+  "effect": {
+    "merge": 1,
+    "bid": 0,
+    "submit": 0,
+    "payment": 0,
+    "posting": 0,
+    "runtime_config": 0,
+    "accounting": 0,
+    "fence": 0
+  },
+  "readback": {
+    "bids_http": 200,
+    "pending": 5,
+    "assignments_http": 200,
+    "assignments": 0,
+    "remote_reply_delta": 0,
+    "remote_has_more": false,
+    "revenue": null,
+    "cost_delta": null
+  },
+  "cost_note": "今回の有料API/決済操作0。subscription/host/provider総費用の新しい公式実額は取得していないため費用差分はunknown。推測売上/利益を加算しない。",
+  "error_class": null,
+  "retryable": false,
+  "next_action": "既存hourly全assignment照合→受注時に最新brief/submit契約と24h SLAを再読→SLA内納品。接続修復は既存ownerの本人receipt差分から継続し再送しない。",
+  "evidence_refs": [
+    "docs/team/near/recurring-outsourcing-report.md",
+    "docs/team/near/recurring-outsourcing.csv",
+    "docs/evidence/near-recurring-preparation-973378.json"
+  ]
+}
