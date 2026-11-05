@@ -1,0 +1,136 @@
+{
+  "study": "P06-4 synthetic sales/returns/costs and adverse guardrail",
+  "plan_sha256": "381c55720fd688c502cabb508ac5d15701fe867f7d7645c1d47e52fd113bad72",
+  "n": 30000,
+  "currency": "JPY",
+  "metrics": {
+    "paid_purchase": {
+      "manager_mean": 0.07443838894058222,
+      "baseline_mean": 0.052694931122107797,
+      "diff": 0.02174345781847442,
+      "ci95": [
+        0.01622818441272682,
+        0.02725873122422202
+      ],
+      "p_two_sided": 1.1335673669240078e-14,
+      "n_manager": 15046,
+      "n_baseline": 14954
+    },
+    "refunded_purchase": {
+      "manager_mean": 0.007576764588594975,
+      "baseline_mean": 0.005149123980205965,
+      "diff": 0.00242764060838901,
+      "ci95": [
+        0.0006286945584748247,
+        0.004226586658303196
+      ],
+      "p_two_sided": 0.008172493246304868,
+      "n_manager": 15046,
+      "n_baseline": 14954
+    },
+    "complaint": {
+      "manager_mean": 0.02239797952944304,
+      "baseline_mean": 0.012973117560518924,
+      "diff": 0.009424861968924116,
+      "ci95": [
+        0.00644473417907606,
+        0.012404989758772172
+      ],
+      "p_two_sided": 5.768831647631849e-10,
+      "n_manager": 15046,
+      "n_baseline": 14954
+    },
+    "gross_revenue": {
+      "manager_mean": 431.7426558553768,
+      "baseline_mean": 305.6306005082252,
+      "diff": 126.11205534715162,
+      "ci95": [
+        94.12346959381554,
+        158.1006411004877
+      ],
+      "p_two_sided": 1.133567366924008e-14,
+      "n_manager": 15046,
+      "n_baseline": 14954
+    },
+    "refund_yen": {
+      "manager_mean": 43.94523461385086,
+      "baseline_mean": 29.864919085194597,
+      "diff": 14.08031552865626,
+      "ci95": [
+        3.646428439153979,
+        24.514202618158542
+      ],
+      "p_two_sided": 0.008172493246304867,
+      "n_manager": 15046,
+      "n_baseline": 14954
+    },
+    "recognized_revenue": {
+      "manager_mean": 387.79742124152597,
+      "baseline_mean": 275.7656814230306,
+      "diff": 112.03173981849534,
+      "ci95": [
+        81.5794995332362,
+        142.48398010375448
+      ],
+      "p_two_sided": 5.69394780272031e-13,
+      "n_manager": 15046,
+      "n_baseline": 14954
+    },
+    "variable_cost": {
+      "manager_mean": 238.67399973414862,
+      "baseline_mean": 183.47799919753913,
+      "diff": 55.19600053660949,
+      "ci95": [
+        43.83878667942482,
+        66.55321439379415
+      ],
+      "p_two_sided": 1.7593112865283357e-21,
+      "n_manager": 15046,
+      "n_baseline": 14954
+    },
+    "net_contribution": {
+      "manager_mean": 149.12342150737737,
+      "baseline_mean": 92.28768222549151,
+      "diff": 56.835739281885864,
+      "ci95": [
+        36.55150423152929,
+        77.11997433224244
+      ],
+      "p_two_sided": 4.00752892881914e-08,
+      "n_manager": 15046,
+      "n_baseline": 14954
+    }
+  },
+  "sample_ratio_quality": {
+    "n_control": 14954,
+    "n_treatment": 15046,
+    "expected_control_share": 0.5,
+    "chi_square": 0.28213333333333335,
+    "p": 0.5953063516194856,
+    "invalid_srm_at_p_lt_0_001": false
+  },
+  "toy_strict_ship_gate": {
+    "decision": "DO_NOT_SHIP",
+    "positive_primary_CI": true,
+    "guardrail_upper_below_max": false,
+    "sample_ratio_valid": true,
+    "verified_external_real_outcomes": false,
+    "reason": [
+      "complaint_guardrail_not_proven_safe",
+      "no_independent_real_benefit_receipt"
+    ]
+  },
+  "real_financial_outcome": {
+    "paid_recognized_revenue_yen": null,
+    "refunds_yen": null,
+    "actual_variable_cost_yen": null,
+    "real_complaint_rate": null,
+    "real_incremental_contribution_yen": null,
+    "status": "NOT_MEASURED_MISSING_VERIFIED_RECEIPTS",
+    "can_ship": false
+  },
+  "no_cost_field_imputed_from_missing": true,
+  "no_real_customers_or_payment_records": true,
+  "no_real_intervention_performed": true,
+  "fixed_cost_and_tax_not_included": true
+}

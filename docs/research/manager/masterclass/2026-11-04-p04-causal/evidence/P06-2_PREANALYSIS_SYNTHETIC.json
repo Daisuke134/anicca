@@ -1,0 +1,40 @@
+{
+  "study": "P06-2 SYNTHETIC what-if ablation, NOT a human study",
+  "seed_train": 20261162,
+  "seed_validation": 20261163,
+  "seed_trial": 20261164,
+  "n_train": 24000,
+  "n_validation": 16000,
+  "n_trial": 40000,
+  "features": [
+    "motivation_pre",
+    "fatigue_pre"
+  ],
+  "action_set": [
+    0,
+    1
+  ],
+  "outcome": "net utility = completed task - 0.02*notification",
+  "utility_notification_cost": 0.02,
+  "simulator": "empirical p(Y=1 | randomized action, motivation, fatigue)",
+  "baseline_candidates": [
+    "NO_ACTION",
+    "ALL_ACTION",
+    "PRESPECIFIED_HEURISTIC",
+    "POOLED_GLOBAL_EFFECT"
+  ],
+  "comparator_selection": "maximum validation IPW utility among four prespecified policies; same training/validation data available",
+  "policy_freeze": "both policies recorded with hashes before trial outcomes generated",
+  "trial": "independent randomized 1:1 assignment to FROZEN what-if policy vs FROZEN strongest validated baseline",
+  "primary_estimand": "E[net utility|What-if arm] - E[net utility|Comparator arm]",
+  "primary_analysis": "Welch standard error, two-sided Gaussian p, Wald 95% CI, fixed n; no peeking",
+  "secondary": [
+    "task_completion_rate",
+    "notification_rate"
+  ],
+  "positive_effect_needed": "positive preregistered test CI excluding zero (only within toy world)",
+  "causal_effect_only_in_synthetic_world": true,
+  "external_registry": false,
+  "actual_users": 0,
+  "actual_business_profit": false
+}

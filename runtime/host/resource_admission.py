@@ -1590,7 +1590,8 @@ def defer_durable(owner_id: str, *, cooldown_seconds: int = 0) -> bool:
         os.close(descriptor)
 
 
-def suspend_durable(owner_id: str, *, only_if_unclaimed: bool = False) -> bool:
+def suspend_durable(owner_id: str, *, only_if_unclaimed: bool = False,
+                    only_if_unloaded_occurrence: bool = False) -> bool:
     """Pause one queued owner without discarding its occurrence ledger.
 
     Lifecycle stop unloads launchd, but a durable queue row may otherwise be
@@ -1608,6 +1609,12 @@ def suspend_durable(owner_id: str, *, only_if_unclaimed: bool = False) -> bool:
         except BlockingIOError:
             return False
         with _database(database) as connection:
+            if only_if_unloaded_occurrence:
+                scope = connection.execute("SELECT effect_scope FROM priorities WHERE owner_id=?",
+                                           (owner_id,)).fetchone()
+                if (scope is None or scope[0] != "occurrence"
+                        or any(owners.glob(f"{_digest(owner_id)}-*.json"))):
+                    return False
             if only_if_unclaimed:
                 if (any(owners.glob(f"{_digest(owner_id)}-*.json"))
                         or connection.execute(
@@ -1627,7 +1634,7 @@ def suspend_durable(owner_id: str, *, only_if_unclaimed: bool = False) -> bool:
                          SELECT 1 FROM queue WHERE owner_id=?)""",
                 (float("inf"), owner_id, owner_id),
             ).rowcount
-        return bool(changed) if only_if_unclaimed else True
+        return bool(changed) if only_if_unclaimed or only_if_unloaded_occurrence else True
     finally:
         os.close(descriptor)
 

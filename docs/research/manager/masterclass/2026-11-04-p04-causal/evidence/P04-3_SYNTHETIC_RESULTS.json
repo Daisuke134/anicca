@@ -1,0 +1,22 @@
+{
+  "dataset": "fully synthetic observations, no real interventions",
+  "n": 30000,
+  "seed": 20261104,
+  "theoretical_naive_difference": 0.26,
+  "theoretical_ATE": -0.1,
+  "sample_oracle_ATE_simulator_only": -0.09936666666666667,
+  "naive_observational_difference": 0.26119837911089233,
+  "g_formula_standardization": -0.0997669665516937,
+  "saturated_ols_g_computation": -0.09976696655169308,
+  "ipw_hajek": -0.0997669665516937,
+  "aipw_no_crossfitting": -0.09976696655169372,
+  "exact_match_ATT": -0.0963712858269787,
+  "imperfect_proxy_adjustment_NOT_IDENTIFIED": 0.19598903763012482,
+  "propensity_min": 0.2059576762366896,
+  "propensity_max": 0.8017411950929957,
+  "iid_bootstrap_gformula_95pct_CI": [
+    -0.1100186780616352,
+    -0.08877773449630141
+  ],
+  "separate_did_toy_example": 0.030000000000000027
+}

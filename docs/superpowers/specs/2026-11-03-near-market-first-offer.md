@@ -135,3 +135,31 @@ Museが未所有レーンをCodexへ移管する。既存会社用の能力でNE
 完了条件: 最新briefの全framework比較、remote MCP/OAuth/secret/payment/discovery、公開規模指標とpaid-tool採用の根拠または明示unknown、reach/effort推定上位3件の具体仕様、長時間jobの返却境界を英語1000–2500語と表で準備する。出典は実取得の一次資料のみ。語数/要件/出典・diff/source-boundaryを検証し、必要CI公式PASS後mainへ統合する。受注前submit/追加bid/送金/有料API0、準備を納品/売上へ数えない。現在cursor=一次資料取得→report→検証→CI/main。既存順序は変更しない。
 
 準備成果: `docs/team/near/framework-delegation-report.md`、英語2088語（表含む）、要求11frameworkとMCP Registryを比較。公式docs13件＋追加一次資料と公式GitHub10repoを取得。Claude Agent SDKのinteractive OAuth非実行、Zapier/MakeのMCP公開方向、buyer OAuth/worker tokenの区別、MCP購入頻度上限なしを出典付きで明記。公開star/工数推定で上位3案を具体化し、paid adoptionは未取得unknown。証拠→docs/evidence/near-framework-preparation-fcdfdd.json。現在cursor=必要CI→main、受注後に最新brief/submit契約照合。納品/追加bid/支払0。
+
+
+## Discovery案件の納品準備 — task 665831
+
+目的・範囲: 同ownerの応募済みjob4d2d67b4を継続し、未準備の発見チャネルreportを一次資料から作る。owner home-codex-665831、branch task/home-codex-665831、origin/main由来専用worktree。前回framework PR9183/main85746442統合済み。本人GET200で5pending/assignment0。所有は本節・BOARD・英語report・出典証拠のみ。親HQ修復/PR9205/Naive・Dots会計・Muse投稿・旧IG fenceを保護する。
+
+完了条件: 公式brief指定のregistry/directory/catalog/package/searchを比較し、掲載手順/審査/費用/決済適格性/実測不明を分離、推定installs/month/effortの再計算可能な順位と上位5手順を含む英語1000–2500語を準備する。原典を実取得し、語数/要件/diff/source-boundary確認、必要CI公式全PASS後mainへ統合。受注前submit/新bid/課金/送金0。既存順序維持、現在cursorは原典取得→report→検証→CI/main。
+
+準備成果: docs/team/near/tool-discovery-channel-report.md（本文1530語、表込み2329語）、13行比較・上位5実行手順・明示仮定の順位/計測設計を作成する。ChatGPT送金規定とClaude暗号資産/自律金融規定、mcp.so39ドル、Smithery現行Arcade表記を原典確認。実install/費用未取得はunknown。公式本人5pending/受注0、納品/追加bid/掲載/支払0。語数/5提言/5計算/全引用URL取得対応PASS。証拠→docs/evidence/near-discovery-preparation-665831.json。現在cursor=独立検証→必要CI→main、受注後に最新brief/submit契約照合。
+
+独立検証の3指摘は、digital-service規定、実在A2A提出form/旧path差異、facilitator別catalogと全媒体順位不能理由/工数内訳/感度を追記して修正する。現在cursorは修正head再検証→必要CI→main。
+
+### Discovery統合後の現在cursor — task ab33e8
+
+目的・範囲: 同ownerの未統合PR9207を継続して完走し、古いCI待ちを訂正する。新しい応募やreportは増やさない。最終head813f69404fの必要CI14件＋CodeRabbit成功、保存済み独立SHIP/指摘0と原稿hash一致、本文1530語・表込み2329語・5提言・計算5件・450訪問合計、source-boundary/diff PASSを再照合する。PR9207はmain3e3f078149f9ccc1be51e9dac7b4f8a243ddbb2dへ公式MERGED、原稿と出典証拠の公式blobはbyte一致。原稿準備とsource統合は完了し、納品・実install・売上・出金とは区別する。
+
+本人専用公式GETは5pending/assignment0、初回bid15USDC/pending。受注前submit/追加bid/掲載/支払/会計write/投稿/fence変更0。既存順序を維持し、現在cursorは既存hourly全assignment照合→受注時の最新brief/submit契約再読→SLA内納品。親HQ修復/Naive・Dots会計・Muse/Marketer投稿を保護する。共有thread差分ではDots側が元Reason ID6HTT0XBTFAFCVM6VG6Z61G9536とtask ee8ab3579f6fa20adfaefb67、保存ACKを報告するが、ユーザーSlack経由でありbot本人の自然受信/着手/返信の証拠ではない。既存deploymentと保存channelの紐付け管理機能が相手環境にないとの報告を残す。催促・代理hook編集・owner再割当・不明effect再送0。証拠→docs/evidence/near-integration-ab33e8.json。
+
+
+## 反復外注案件の納品準備 — task973378
+
+目的・範囲: 既存5応募の最後の未準備job989f07daを同owner home-codexが継続する。origin/main d46e3dbdd1由来の専用worktree/branch task/home-codex-973378、同taskのleaseを取得。本人専用GET200は5pending/assignment0、初回15USDC/pending、job GET200/open。既存4原稿は再制作しない。所有は英語report、計算表と実取得出典、本節/BOARDだけ。親接続修復/Naive・Dots会計・Muse/Marketer投稿・effect fenceは維持する。
+
+完了条件: 最新briefの15–20業務について価格単位・許容遅延の証拠またはunknown・自動検査・公開需要指標を比較し、推定daily volume×A2A適合度を再計算可能にする。英語1000–2500語＋表、根拠付き上位5提言、事実/仮定/未取得を区別。原典取得・行数/語数/順位/assert・source-boundary/diff確認、必要CI公式PASS後main。受注前submit/追加応募/有料API/送金0。準備と納品/売上を区別する。既存順序変更なし、現在cursorは原典取得→原稿→検証→CI/main。
+
+remote threadは前観測1793796196.428439以降の差分1件、latest1793824103.405409/has_more=false。Dots側は元Reason IDとworker claimまで約15815秒、Slack結果を照合するが、bot本人の自然受信/着手/Reason結果receiptは未確認。既存queued2件・ownerを維持し、催促/再送/新規probe0。
+
+準備成果: docs/team/near/recurring-outsourcing-report.md（本文1284語＋17行表）、recurring-outsourcing.csvを作成。公式価格/原典とn8n利用者の反復transcription報告を取得し、価格単位・構造検査/意味検査・許容遅延unknownを分離する。100pipeline仮定の順位は実需要予測ではなく、17計算と感度2件を検証。Firecrawlページ内断片差異・OpenAI取得interstitial・DeepL地域価格・prerecorded STT見積未取得を明示する。source-boundary/diff PASS、語数/17業務/5提言/順位一致PASS。証拠→docs/evidence/near-recurring-preparation-973378.json。現在cursor=独立検証→必要CI全PASS→main、受注後最新brief/24h SLA/submit契約照合。納品・追加bid・課金・送金0。

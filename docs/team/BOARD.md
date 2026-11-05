@@ -3,15 +3,18 @@
 メンバー: 参謀(Grok Bot, 司令塔・X担当) / Local Life Manager(Mac mini) / Dots / Muse(Instagram担当)
 ルール:
 - 正本は GitHub Daisuke134/life-manager の docs/team/BOARD.md。各ループ開始時にこのファイルを読み、終了時に「## ログ」へ1行追記（日時JST・担当・やったこと・数字・次）。
+- 2026-11-05 08:06 JST / home-codex / task973378: NEAR反復外注原稿1284語＋17業務とCSV、公式5pending/受注0・remote差分1を照合。計算17/感度2・語数・source-boundary/diff PASS。次: 独立検証と必要CI→main、受注時納品。
 - 2026-11-03 02:33 JST / Codex / Anicca816: 審査notes・C2 reviewNoteとApple回答を反映、CI15/15・fresh Maestro2/2、正式再提出後app/submission/Lifetime=WAITING_FOR_REVIEW。次: Apple審査結果。
 - タスクは「## タスク」で担当を名乗ってから着手。重複禁止。
 - 認証情報は /workspace/.secrets、ノウハウは /workspace/knowhow/INDEX.md。
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / NEAR反復外注report準備] task973378ad969c9e510c458982、branch task/home-codex-973378。応募済み989f07daの未準備report・順位計算・原典証拠を所有する。本人GET5pending/受注0、HQ active本taskのみ。親接続/Naive・会計・投稿・fence維持。受注前submit/追加bid/課金0。完了条件=15–20業務比較と英語1000–2500語、必要CI全PASS後main。原稿1284語＋17業務/CSV・順位17/感度2検証済み。現在cursor=独立検証→必要CI→main。
+- [home-codex / NEAR discovery納品準備] 統合完了: PR9207/main3e3f078149、head813f69404fの必要CI15件成功・独立SHIP・公式report/evidence blob一致。継続task ab33e8138665c2d3c939d6af、同owner home-codex。現在cursor=既存hourlyの全assignment照合→受注後最新brief/submit契約再読→SLA内納品。5pending/受注0は今回公式GETの観測値。親HQ/Naive・会計・投稿・fence維持、追加bid/受注前submit0。
 - [home-codex / NEAR framework納品準備] task fcdfdd26ab37754b9c37251e、owner home-codex-fcdfdd、branch task/home-codex-fcdfdd。既存応募dd6e4f85の英語report/一次資料比較だけを所有。5pending/受注0を公式GET確認。親PR9182/9178/9179、remote hook、会計、投稿、既存fenceを保護。受注前submit/追加bid0。
 - [home-codex / HQ継続cursor訂正] task e204c552a38bd3f262c71a6f、owner home-codex-e204c5、branch docs/hq-cursor-e204c5。PR9161の公式統合/成果物と受注・接続thread差分を照合し、TEAM-HQ/NEARの古いCI待ちを訂正する。親PR9178/9179・deploy・remote本人hook・会計・投稿・fenceは保護。新応募/送信/納品0。完了条件は根拠保存→必要CI→main。
-- [Codex / NAIVE-BROWSER-E2E] 本番main048/agent23/priority/月9、個人Google注入0。有償QA本人読取/保存成功。n8nは通常emailフォーム確認、正式確認1回後signup needs service、同card再発で再回答0/cancel。57live0/paused/prod23全fields、費52254/ledger9、月残129431（後計上あり）。cursor2=source cap9→10/desired24の最小差分→CI/review/main→budget-only24適用→service/url明示の通常signup→確認/連絡→有料依頼/納品/入金。元7TODO/売上等未達。PR9177。正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md
+- [Codex / NAIVE-BROWSER-E2E] NHC-00完了: PR #9216/main `288e867668a00ead4de80efd2ebb1f4c54866ef2`、main由来App deployment `apd_j8nn7p6vjs682cq87mb6txate4` ready。専用agent v2はdefault denyで、対象App一つのbrowser MCP toolだけallow。App server keyはorganization-scoped `computers:write`（App permission一覧`[]`）でComputer ID/Capafy domainはApp側固定、provider単体Computer scopeではない。Naïve official eventでagentのCapafy `goto` と`h1 extract` が`performed=true`、見出し取得成功。browser closed/Computer paused。公式ledger: model 3,382 + browser 3,333 = 6,715 micro-USD。実売上・注文・支払receipt・録画なし（今回実行の確認売上USD 0、全Capafy account収益は未照合）。次NHC-01: 既存Capafy Publisherの正式agent/team委任、専用認証、販売/精算権限を照合。Terms §3.3はlogin credential共有禁止、§3.4は原則一account、§6はbotに事前書面許可を求める。Daisはautomation許可を報告済み（再質問しない）。人間credential/重複Publisherを流用しない。詳細→統合SSOT Naïve節/2026-11-05 plan。
 - [Codex / NAIVE-BLOG-PUBLICATION] 完了: canonical PR9162/main982fb15e、publishing PR849/main e5cff、live記事/画像/release hash・provider ready・money-path smoke成功。https://aniccaai.com/blog/manager-naive-autonomous-companies-en 。実売上/登録/動画は未達。正本→統合SSOT Naive節。
 - [home-codex / NEAR tool発見提案] task e12b3815863d7e798e4f5b18、owner home-codex-e12b38、branch task/home-codex-e12b38。既存NEARの未応募job4d2d67b4限定提案と本人照合のみ。親HQ修復/会計/投稿/旧IG fenceを維持。正本→NEAR初回販売specのtool発見節。
 
@@ -64,6 +67,7 @@
 - [Codex / Manager] prepared shadowの既存host/CLI/Actions接続。所有: feat/manager-host-shadow-connection-20261023の限定host/CLI/workflow/tests/docs。既定・schedule OFF、単一owner、P0比較のみ。本番推論・新規課金・他laneは変更しない。
 - [Codex / Anicca distribution goal] claim: `codex-anicca-distribution-goal` / branch `fix/anicca-distribution-end-to-end-20261025` / PR #9003 (new head checks pending after refresh). Own: unified SSOT TODO, notification/paywall fix and six-app measurement cursor. Current cursor=(1): one Affirmation pre-effect occurrence is resolved from run-bound proof; remaining 4,432 Affirmation rows are `history_incomplete`, Widget retains 858 unknown (856 `history_incomplete`, 2 `effect_ref_present`). Preserve all remaining fences; classify 3 unmanaged doctor labels before release/apply.
 ## ログ
+- 2026-11-04 22:08 JST / home-codex / task ab33e8: PR9207をCI15件成功後main3e3f078149へ統合、公式blob2件一致・原稿1530語/5提言/計算5件再確認。公式5pending/受注0、追加bid/納品/支払0。次は受注監視→受注後契約照合と納品。証拠→docs/evidence/near-integration-ab33e8.json。
 - home-codex（fcdfdd）: NEAR本人GET5pending/受注0、framework英語report2088語と一次資料証拠を準備。未納品/売上未確認、次は必要CI→main→受注後契約再照合。
 - 2026-11-03 20:15 JST / home-codex-a4d5da / 応募済みNEAR採算report英語1615語・再計算CSV/Decimal assertionsと13原典を準備。5pending/受注0、remote差分は親案内1件で催促0。追加bid/納品/送金0。独立SHIP/Blocking0。次: 必要CI→main、受注時契約再読。
 - 2026-11-03 20:57 JST / Codex / Naive英語記事を自社Manager blogへ公開、既存75記事保持・76記事/44媒体、live本文/画像/hash/provider ready/money-path smoke一致。売上未確認。次: 本人inbound1通検査と自然run。
@@ -321,3 +325,7 @@
 
 - home-codex task e204c5: PR9161公式MERGED/main9f930f5c・必要CI15件/3成果物byte一致を確認し、古いCI待ちcursorを訂正。本人NEAR5pending/受注0、remote差分0（parent除外）。売上/費用は既存collectorの観測時刻/期間を保持し利益未確定。親PR/運用/effect変更0。次: 本訂正の必要CI→main、受注時納品/本人修復receiptの元ID照合。証拠 docs/evidence/hq-continuation-e204c5.json。
 - muse seo-p0 (2026-11-05): SEO言語シグナルP0を manager-blog インストーラに追加（ブランチ seo/p0-hreflang-sitemap）。ブログ -en/-ja ペアへ hreflang 相互付与（記事head＋sitemap xhtml:link、x-default=英語版）、sitemap に /ja を追加、旗艦記事 best-affirmation-apps-2026-11-05 を evergreen 許可リストへ追加。テスト13/13、本番形状ファイルへの適用（2回・冪等）と sitemap 生成シミュレーションで実測確認。残段: PR/マージ→anicca-products 側 MANAGER_BLOG_REVISION ピン更新（bridge PR）→デプロイ→ライブ確認。
+- 2026-11-05 02:19 UTC Codex: Naïve App root Fetch path fixed and deployed; public HTTP+provider deployment file readback PASS, app permission/API-key/agent browser call not yet present. No revenue claim. Cursor NHC-01 → one limited App access request, then same agent browser call.
+- 2026-11-05 02:24 JST Codex: PR #9213 OSS self-contained boundaryの原因を再現。WNBA icon.pngのgenerated_artifact宣言欠落だったため既存manifest形式でSHA-256を追加し、local verifier PASS。PR head b13f794のCIは残pendingだったため修正をpushして再実行する。
+- 2026-11-05 03:25 JST Codex: Naïve公式GETでCEOの0 spend予算停止(event10 `budget.exceeded`)、App scopes空/`NAIVE_API_KEY`なし、Computer paused、listings/install 0を確認。専用operator v1を$0.15/sessionで作りGET一致、session0。PR #9216のloop-contract CIはx86 runner進行中/arm64 queued。売上・browser実行・録画0。次: CI→main由来App→同agentのApp権限要求/公開画面1回→第三者有償注文まで継続。receiptはprivate `naive-dedicated-agent-created-20261105.json`。
+- 2026-11-05 JST / Codex: PR #9216 required CI `41894532639` PASS後main統合、main由来App/専用server key/agent v2を公式readback。Agent sessionのcloud browser `goto` + `extract h1` 成功、provider browser session closed、Computer paused。model+browser実行費6,715 micro-USD。取引・売上は未発生で、Capafy account-wide収益は未照合。現cursor NHC-01は既存Publisher正式委任確認。private evidence `naive-cloud-browser-proof-20261105.json`。

@@ -1367,12 +1367,119 @@ class ReasonInboxTests(unittest.TestCase):
                 self.reason.ack.assert_not_called()
                 self.assertEqual(self.tasks(), [])
 
+    def test_paged_reason_cursor_is_committed_before_ack_and_reused(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        cursor = {"version": 1, "mailbox": "daisuke/hq-codex",
+                  "after": [1, self.message_id], "through": [2, "next-message-0001"]}
+        self.reason.inbox.return_value.update(next_cursor=cursor, holds=[])
+        def ack(ids):
+            with self.runtime.connect() as database:
+                row = database.execute("SELECT value FROM meta WHERE key='reason_page_cursor'").fetchone()
+            self.assertEqual(json.loads(row[0]), cursor)
+        self.reason.ack.side_effect = ack
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.reason.inbox.assert_called_with(paged=True, cursor=None)
+        self.reason.ack.side_effect = None
+        self.reason.inbox.return_value.update(messages=[], next_cursor=None)
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.reason.inbox.assert_called_with(paged=True, cursor=cursor)
+        with self.runtime.connect() as database:
+            self.assertIsNone(database.execute("SELECT 1 FROM meta WHERE key='reason_page_cursor'").fetchone())
+
+    def test_paged_reason_oversize_hold_is_durable_and_never_acked(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        held_id = "held_message_0000000000001"
+        cursor = {"version": 1, "mailbox": "daisuke/hq-codex",
+                  "after": [1, held_id], "through": [2, "next-message-0001"]}
+        self.reason.inbox.return_value.update(messages=[], next_cursor=cursor,
+            holds=[{"id": held_id, "sent_at": 1, "reason": "message_too_large", "has_files": False}])
+        result = self.runtime.receive()
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["reason_error"], "reason_page_hold")
+        self.reason.ack.assert_not_called()
+        with self.runtime.connect() as database:
+            hold = database.execute("SELECT value FROM meta WHERE key=?", ("reason_page_hold:" + held_id,)).fetchone()
+            saved = database.execute("SELECT value FROM meta WHERE key='reason_page_cursor'").fetchone()
+        self.assertEqual(json.loads(hold[0])["reason"], "message_too_large")
+        self.assertEqual(json.loads(saved[0]), cursor)
+
+    def test_paged_reason_reports_saved_hold_until_message_is_recovered(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        held_id = self.message_id
+        hold = {"id": held_id, "sent_at": 1, "reason": "message_too_large", "has_files": False}
+        self.reason.inbox.return_value.update(messages=[], next_cursor=None, holds=[hold])
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.inbox.return_value.update(messages=[], holds=[])
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.inbox.return_value.update(messages=[{"id": held_id, "from": "daisuke/muse@remote",
+            "body": "recovered body", "to": "daisuke/hq-codex"}], holds=[])
+        self.assertTrue(self.runtime.receive()["ok"])
+        with self.runtime.connect() as database:
+            self.assertIsNone(database.execute("SELECT 1 FROM meta WHERE key=?", ("reason_page_hold:" + held_id,)).fetchone())
+        self.reason.ack.assert_called_once_with([held_id])
+
+    def test_paged_reason_held_attachment_disappearance_is_not_acked(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        held_id = self.message_id
+        hold = {"id": held_id, "sent_at": 1, "reason": "message_too_large", "has_files": True}
+        self.reason.inbox.return_value.update(messages=[], next_cursor=None, holds=[hold])
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.inbox.return_value.update(messages=[{"id": held_id, "from": "daisuke/muse@remote",
+            "body": "body after attachment expiry", "to": "daisuke/hq-codex", "files": []}], holds=[])
+        self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        with self.runtime.connect() as database:
+            self.assertIsNotNone(database.execute("SELECT 1 FROM meta WHERE key=?", ("reason_page_hold:" + held_id,)).fetchone())
+            self.assertIsNotNone(database.execute("SELECT 1 FROM meta WHERE key=?", ("reason_attachment_pending:" + held_id,)).fetchone())
+
+    def test_paged_reason_failure_does_not_advance_cursor_or_ack(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        cursor = {"version": 1, "mailbox": "daisuke/hq-codex",
+                  "after": [1, self.message_id], "through": [2, "next-message-0001"]}
+        self.reason.inbox.return_value.update(next_cursor=cursor, holds=[])
+        with mock.patch.object(self.runtime, "insert_task", side_effect=OSError("disk full")) as insert:
+            self.assertFalse(self.runtime.receive()["ok"])
+        insert.assert_called_once()
+        self.reason.ack.assert_not_called()
+        with self.runtime.connect() as database:
+            self.assertIsNone(database.execute("SELECT 1 FROM meta WHERE key='reason_page_cursor'").fetchone())
+
     def test_reason_queue_failure_never_acknowledges(self):
         self.enabled()
         with mock.patch.object(self.runtime, "insert_task", side_effect=OSError("disk full")):
             self.assertFalse(self.runtime.receive()["ok"])
         self.reason.ack.assert_not_called()
         self.assertEqual(self.tasks(), [])
+
+    def test_paged_reason_real_sqlite_full_rolls_back_cursor_and_replays_once(self):
+        self.enabled()
+        self.runtime.reason_config["page_enabled"] = True
+        cursor = {"version": 1, "mailbox": "daisuke/hq-codex",
+                  "after": [1, self.message_id], "through": [2, "next-message-0001"]}
+        self.reason.inbox.return_value.update(next_cursor=cursor, holds=[])
+        self.reason.inbox.return_value["messages"][0]["body"] = "x" * 65536
+        connect = self.runtime.connect
+        @contextmanager
+        def full_database():
+            with connect() as database:
+                pages = database.execute("PRAGMA page_count").fetchone()[0]
+                database.execute(f"PRAGMA max_page_count={pages}")
+                yield database
+        with mock.patch.object(self.runtime, "connect", side_effect=full_database):
+            self.assertFalse(self.runtime.receive()["ok"])
+        self.reason.ack.assert_not_called()
+        self.assertEqual(self.tasks(), [])
+        with connect() as database:
+            self.assertIsNone(database.execute("SELECT 1 FROM meta WHERE key='reason_page_cursor'").fetchone())
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
+        self.assertTrue(self.runtime.receive()["ok"])
+        self.assertEqual(len(self.tasks()), 1)
 
     def test_real_sqlite_full_does_not_ack_and_replay_creates_one_task(self):
         self.enabled()

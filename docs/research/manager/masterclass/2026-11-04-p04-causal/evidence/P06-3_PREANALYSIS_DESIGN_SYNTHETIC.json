@@ -1,0 +1,49 @@
+{
+  "aa_repetitions": 2400,
+  "aa_seed": 202611053,
+  "alpha": 0.05,
+  "analysis": "two-sided two-independent-proportion z approximation, one fixed final analysis",
+  "anticipated_attrition": 0.15,
+  "assignment": "50:50 persistent per unit, pre-specified seed",
+  "data_quality_sample_ratio_mismatch": "p < 0.001 chi-squared triggers review; no ship",
+  "decision_rule": "Must pass data quality and powered primary + guardrails; no outcomes = inconclusive",
+  "external_preregistration": false,
+  "four_aa_looks_n_per_arm": [
+    100,
+    200,
+    300,
+    400
+  ],
+  "guardrails": [
+    "wrong external site navigation",
+    "complaints/opt-outs",
+    "dropout",
+    "privacy incidents",
+    "site availability"
+  ],
+  "harm_rule": "Stop for serious safety incidents regardless of primary p-value",
+  "hypothesis": "Manager changed-navigation variant improves correct official-link finding vs no-change",
+  "independent_real_outcomes_available": false,
+  "minimum_detectable_absolute_improvement": 0.03,
+  "multiple_looks_example": "If four unplanned efficacy decisions are needed, conservative Bonferroni alpha/4",
+  "p_control_assumption": 0.25,
+  "participant_data_available": false,
+  "phase5_live_release_completed": false,
+  "primary": "found_correct_official_link_within_prespecified_seconds",
+  "quality_gates": [
+    "exposure logged",
+    "assignment unit stable",
+    "valid control source",
+    "independent outcome readback",
+    "consent and data rights",
+    "no unexpected leakage",
+    "no duplicated users",
+    "sufficient follow-up",
+    "predefined missingness handling"
+  ],
+  "randomization_unit": "participant, if future consent/ethics approvals allow",
+  "real_early_stopping": "Statsig mSPRT/SPRT or preregistered group sequential spending, not naive p-value peeking",
+  "study": "P06-3 SYNTHETIC experiment design; NOT registered or run on real people",
+  "target_power": 0.8,
+  "version": "0.1"
+}

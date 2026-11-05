@@ -1,0 +1,25 @@
+{
+  "library": "expectedparrot/edsl",
+  "installed_version": "1.0.9",
+  "mode": "REAL EDSL PACKAGE; SYNTHETIC CANNED TEST MODEL",
+  "n_fake_agents": 3,
+  "questions": 1,
+  "canned_model_answers": [
+    {
+      "synthetic_feedback": "OFFLINE_TEST_MODEL_NOT_HUMAN"
+    },
+    {
+      "synthetic_feedback": "OFFLINE_TEST_MODEL_NOT_HUMAN"
+    },
+    {
+      "synthetic_feedback": "OFFLINE_TEST_MODEL_NOT_HUMAN"
+    }
+  ],
+  "external_model_requests": 0,
+  "remote_inference": false,
+  "remote_cache": false,
+  "tokens_billed": 0,
+  "network_socket_connect_forbidden": true,
+  "human_validity_claim": false,
+  "license": "MIT (repository checked separately)"
+}

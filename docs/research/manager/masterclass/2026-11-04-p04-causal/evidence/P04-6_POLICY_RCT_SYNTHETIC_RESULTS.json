@@ -1,0 +1,124 @@
+{
+  "study_id": "P04-6-SYNTHETIC-POLICY-RCT-20261104",
+  "source": "SYNTHETIC EDUCATIONAL TRIAL - NO REAL PARTICIPANTS",
+  "n": 40000,
+  "primary_pre_specified_net_utility_contrast": {
+    "manager_policy_arm_mean": 0.3361623392992185,
+    "comparator_policy_arm_mean": 0.32003173816017855,
+    "difference": 0.01613060113903997,
+    "standard_error": 0.004721655399178427,
+    "z": 3.4163020752947597,
+    "p_two_sided": 0.000634777893823885,
+    "ci95": [
+      0.0068761565566502515,
+      0.025385045721429685
+    ],
+    "n_manager_arm": 19835,
+    "n_comparator_arm": 20165
+  },
+  "secondary_completion_contrast": {
+    "manager_policy_arm_mean": 0.34615578522813206,
+    "comparator_policy_arm_mean": 0.3250681874535086,
+    "difference": 0.02108759777462349,
+    "standard_error": 0.0047214439424164475,
+    "z": 4.466345048635863,
+    "p_two_sided": 7.956724339614311e-06,
+    "ci95": [
+      0.011833567647487253,
+      0.030341627901759725
+    ],
+    "n_manager_arm": 19835,
+    "n_comparator_arm": 20165
+  },
+  "secondary_notification_rate_contrast": {
+    "manager_policy_arm_mean": 0.49967229644567684,
+    "comparator_policy_arm_mean": 0.2518224646665014,
+    "difference": 0.24784983177917547,
+    "standard_error": 0.004684910831336184,
+    "z": 52.90385253895775,
+    "p_two_sided": 0.0,
+    "ci95": [
+      0.23866740654975654,
+      0.2570322570085944
+    ],
+    "n_manager_arm": 19835,
+    "n_comparator_arm": 20165
+  },
+  "pre_specified_exploratory_subgroups": [
+    {
+      "motivation_pre": 0,
+      "fatigue_pre": 0,
+      "n": 9999,
+      "exploratory_net_utility_difference": -0.0037770463756657824
+    },
+    {
+      "motivation_pre": 0,
+      "fatigue_pre": 1,
+      "n": 10000,
+      "exploratory_net_utility_difference": 0.07966599866399462
+    },
+    {
+      "motivation_pre": 1,
+      "fatigue_pre": 0,
+      "n": 9889,
+      "exploratory_net_utility_difference": -0.009835417828146897
+    },
+    {
+      "motivation_pre": 1,
+      "fatigue_pre": 1,
+      "n": 10112,
+      "exploratory_net_utility_difference": -0.00029304998125889714
+    }
+  ],
+  "theoretical_2x2_population_values": {
+    "expected_manager_policy_utility": 0.34,
+    "expected_comparator_policy_utility": 0.32,
+    "expected_incremental_net_utility": 0.020000000000000004,
+    "subgroup_values": [
+      {
+        "motivation": 0,
+        "fatigue": 0,
+        "manager_policy_utility": 0.36,
+        "comparator_utility": 0.36
+      },
+      {
+        "motivation": 0,
+        "fatigue": 1,
+        "manager_policy_utility": 0.25,
+        "comparator_utility": 0.16999999999999998
+      },
+      {
+        "motivation": 1,
+        "fatigue": 0,
+        "manager_policy_utility": 0.4,
+        "comparator_utility": 0.4
+      },
+      {
+        "motivation": 1,
+        "fatigue": 1,
+        "manager_policy_utility": 0.35000000000000003,
+        "comparator_utility": 0.35000000000000003
+      }
+    ]
+  },
+  "plan_sha256": "614371f3ce001aa921d37fea2500b26756f61e1a16b202f25ebb22cace22a79a",
+  "separate_aa_optional_peeking_demo": {
+    "fully_synthetic_aa_trials": 750,
+    "p_of_each_group": 0.4,
+    "nominal_alpha": 0.05,
+    "looks_n_per_arm": [
+      200,
+      400,
+      600,
+      800,
+      1000,
+      1200
+    ],
+    "fixed_single_test_false_positive_rate": 0.042666666666666665,
+    "naive_peeking_any_look_false_positive_rate": 0.152,
+    "important": "Nominal 5% per look is NOT a 5% experimentwise false-positive bound"
+  },
+  "real_user_trial": false,
+  "external_preregistration": false,
+  "causal_claim": "within the stipulations of this synthetic randomized policy trial only"
+}

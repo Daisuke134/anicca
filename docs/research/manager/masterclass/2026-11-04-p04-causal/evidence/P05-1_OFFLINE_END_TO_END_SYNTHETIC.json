@@ -1,0 +1,118 @@
+{
+  "scope": "synthetic E2E pipeline with real EDSL library and Manager Core",
+  "edsl_response": "Finish one fictional practice task",
+  "n_events": 5,
+  "query_backends": [
+    "flat_scan",
+    "dict_index",
+    "sqlite_index",
+    "graph_projection"
+  ],
+  "truth_checked_queries": 6,
+  "answers": {
+    "flat_scan": {
+      "goal": [
+        "synthetic:goal-00010"
+      ],
+      "proposals": [
+        "synthetic:action-00010"
+      ],
+      "receipts": [
+        "synthetic:receipt-00010"
+      ],
+      "readbacks": [
+        "synthetic:outcome-00010"
+      ],
+      "authority": [
+        "NO_AUTHORITY"
+      ],
+      "causal_effect": [
+        "NO_CAUSAL_PROOF"
+      ]
+    },
+    "dict_index": {
+      "goal": [
+        "synthetic:goal-00010"
+      ],
+      "proposals": [
+        "synthetic:action-00010"
+      ],
+      "receipts": [
+        "synthetic:receipt-00010"
+      ],
+      "readbacks": [
+        "synthetic:outcome-00010"
+      ],
+      "authority": [
+        "NO_AUTHORITY"
+      ],
+      "causal_effect": [
+        "NO_CAUSAL_PROOF"
+      ]
+    },
+    "sqlite_index": {
+      "goal": [
+        "synthetic:goal-00010"
+      ],
+      "proposals": [
+        "synthetic:action-00010"
+      ],
+      "receipts": [
+        "synthetic:receipt-00010"
+      ],
+      "readbacks": [
+        "synthetic:outcome-00010"
+      ],
+      "authority": [
+        "NO_AUTHORITY"
+      ],
+      "causal_effect": [
+        "NO_CAUSAL_PROOF"
+      ]
+    },
+    "graph_projection": {
+      "goal": [
+        "synthetic:goal-00010"
+      ],
+      "proposals": [
+        "synthetic:action-00010"
+      ],
+      "receipts": [
+        "synthetic:receipt-00010"
+      ],
+      "readbacks": [
+        "synthetic:outcome-00010"
+      ],
+      "authority": [
+        "NO_AUTHORITY"
+      ],
+      "causal_effect": [
+        "NO_CAUSAL_PROOF"
+      ]
+    }
+  },
+  "epistemic_statuses": [
+    "INDEPENDENT_READBACK_SYNTHETIC",
+    "INFERRED_NOT_VERIFIED",
+    "OBSERVED_SYNTHETIC",
+    "PROVIDER_RECEIPT_NOT_OUTCOME"
+  ],
+  "jsonld_assertion_nodes": 5,
+  "manager_state_machine": {
+    "manager_core_reused": true,
+    "state_history": [
+      "OBSERVED",
+      "HYPOTHESIZED",
+      "NO_ACTION"
+    ],
+    "causal_unsupported_choice": "NO_ACTION",
+    "executed_real_action": false
+  },
+  "external_calls": 0,
+  "real_customers": 0,
+  "real_interventions": 0,
+  "has_external_billing": false,
+  "can_authorize_execution": false,
+  "can_claim_human_effect": false,
+  "limitations": "EDSL canned response and synthetic receipts do not prove human-behavior forecasting"
+}

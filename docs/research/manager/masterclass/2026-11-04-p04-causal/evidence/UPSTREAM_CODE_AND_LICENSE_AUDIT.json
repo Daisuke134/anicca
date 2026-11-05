@@ -1,0 +1,110 @@
+{
+  "date": "2026-11-04",
+  "type": "read-only source and license inventory",
+  "not_a_license_opinion": true,
+  "no_live_user_data": true,
+  "upstreams": {
+    "expectedparrot/edsl": {
+      "source": "https://github.com/expectedparrot/edsl",
+      "revision": "a8b2ffffdb8cac4cdee81af9f409843b3b88ce43",
+      "license": "MIT",
+      "license_sha256": "feab33043b3c2874a1558718cdd333dc734cb47f9f28dfe9e738e854056e9857",
+      "inspected_files": [
+        "edsl/agents/Agent.py",
+        "edsl/surveys/Survey.py",
+        "edsl/language_models/Model.py",
+        "pyproject.toml"
+      ],
+      "actual_run": "EDSL==1.0.9 with canned test model, no remote inference",
+      "requires_provider_credentials_for_actual_model": true,
+      "licensing_notes": "MIT package; hosted services and external models have independent terms"
+    },
+    "getzep/graphiti": {
+      "source": "https://github.com/getzep/graphiti",
+      "revision": "fb60e59d4a208c99e7d0186ee6335d2a257f17f2",
+      "license": "Apache-2.0",
+      "license_sha256": "2825300b20d7b951209835a4a331f29e24725a39d65168e4b831df53aa372650",
+      "inspected_files": [
+        "graphiti_core/graphiti.py",
+        "graphiti_core/nodes.py",
+        "graphiti_core/edges.py",
+        "pyproject.toml"
+      ],
+      "actual_run": "graphiti-core==0.31.2 EntityNode/EntityEdge ONLY",
+      "full_graph_runtime": "NOT RUN; graph DB plus LLM/embedding required",
+      "requires_provider_credentials_for_actual_model": true,
+      "licensing_notes": "Apache code; supporting hosted LLM, graph DB and embeddings cost and licenses separate"
+    },
+    "HumanBehaviourChangeProject/ontologies": {
+      "source": "https://github.com/HumanBehaviourChangeProject/ontologies",
+      "revision": "3f86e9b4550dd348921942661ce368602ad90296",
+      "license": "CC BY 4.0",
+      "license_sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411",
+      "inspected_files": [
+        "bcio.owl",
+        "README.md"
+      ],
+      "actual_run": "parsed official OWL, class count and checked seven ontology labels",
+      "requires_provider_credentials_for_actual_model": false,
+      "licensing_notes": "CC BY requires attribution; imported ontology components may need notice inspection"
+    },
+    "666ghj/MiroFish": {
+      "source": "https://github.com/666ghj/MiroFish",
+      "revision": "7657031ac01184afe2cb220f5ee3545573b5e843",
+      "license": "AGPL-3.0",
+      "license_sha256": "8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef",
+      "inspected_files": [
+        "README.md",
+        "backend/app/services/ontology_generator.py",
+        "backend/app/services/graph_builder.py",
+        "backend/app/services/oasis_profile_generator.py",
+        "backend/app/services/simulation_manager.py",
+        "backend/app/services/simulation_runner.py"
+      ],
+      "actual_run": "source inspected only; NO Zep/LLM/OASIS simulation executed",
+      "requires_provider_credentials_for_actual_model": true,
+      "licensing_notes": "AGPLv3 requires legal distribution/network obligations review when modifying/serving"
+    },
+    "camel-ai/oasis": {
+      "source": "https://github.com/camel-ai/oasis",
+      "revision": "99e92df59ad834cb5ce1101249bffdd9ffcacadb",
+      "license": "Apache-2.0",
+      "license_sha256": "950deb34b1341a0ac95236fae92fe247c318c3a83a62c9ebacbe1882530ab1f6",
+      "inspected_files": [
+        "README.md",
+        "oasis/social_agent/agent.py",
+        "oasis/social_platform/platform.py",
+        "oasis/environment/env.py"
+      ],
+      "actual_run": "source inspected only; NO multi-agent live simulation",
+      "requires_provider_credentials_for_actual_model": true,
+      "licensing_notes": "Apache source code; real LLM runtime and datasets independently governed"
+    },
+    "palantir/foundry-platform-python": {
+      "source": "https://github.com/palantir/foundry-platform-python",
+      "revision": "41f686a9fc44cb8341272db6430b2e011ba9bbcb",
+      "license": "Apache-2.0 (SDK only)",
+      "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "inspected_files": [
+        "README.md",
+        "pyproject.toml",
+        "foundry_sdk"
+      ],
+      "actual_run": "source/SDK metadata inspected; NO Foundry API request",
+      "requires_provider_credentials_for_actual_model": true,
+      "licensing_notes": "Open SDK is NOT an open Palantir Ontology backend; tenant and API rights separate"
+    }
+  },
+  "listen_labs_api": {
+    "official_docs": "https://docs.listenlabs.com/api-v2/overview",
+    "documented_product": "Study API (draft, launch, responses)",
+    "documented_authentication": "x-api-key organization scoped",
+    "documented_launch_cost": "wallet project credits",
+    "twins_human_prediction_endpoint_publicly_verified": false,
+    "credentialed_request_executed": false,
+    "anonymous_read_only_get_wallets_http_status": 401,
+    "anonymous_error_code": "missing_api_key",
+    "no_credential_no_real_interview": true,
+    "license": "Proprietary SaaS; verify contract and data-use terms"
+  }
+}

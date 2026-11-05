@@ -1,0 +1,212 @@
+{
+  "benchmark": "P05-1 synthetic: flat scan vs direct Python dict index vs SQLite index vs read-only temporal graph projection",
+  "seed": 20261104,
+  "python": "3.14.7",
+  "all_test_data": "100% synthesized, NO user accounts, no model inference or external effects",
+  "reuse": "P05-1 typed EvidenceEdge + Manager Core StateMachine; SQLite from stdlib",
+  "not_graphiti_runtime": true,
+  "index_baseline_included": true,
+  "no_new_production_database": true,
+  "fairness": "same generated events, same as-of snapshot, same question labels; build time separate from query time",
+  "interpretation": "in-memory microbenchmark, no network, real users, semantic search, LLM extraction, multi-tenant workload or concurrency",
+  "warmup_queries_per_method": 20,
+  "n_sizes": 3,
+  "results": [
+    {
+      "subjects": 100,
+      "events": 491,
+      "generation_ms": 4.409,
+      "benchmark_queries": 800,
+      "truth_checked": true,
+      "correctness": {
+        "flat_scan": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        },
+        "dict_index": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        },
+        "sqlite_index": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        },
+        "graph_projection": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        }
+      },
+      "timings": {
+        "flat_scan": {
+          "build_ms": 0.002,
+          "query_median_us": 252.667,
+          "query_p95_us": 275.5,
+          "query_total_ms": 154.334,
+          "queries": 800
+        },
+        "dict_index": {
+          "build_ms": 2.046,
+          "query_median_us": 0.333,
+          "query_p95_us": 1.208,
+          "query_total_ms": 0.326,
+          "queries": 800
+        },
+        "sqlite_index": {
+          "build_ms": 1.574,
+          "query_median_us": 2.834,
+          "query_p95_us": 5.75,
+          "query_total_ms": 2.102,
+          "queries": 800
+        },
+        "graph_projection": {
+          "build_ms": 0.906,
+          "query_median_us": 0.292,
+          "query_p95_us": 1.084,
+          "query_total_ms": 0.3,
+          "queries": 800
+        }
+      },
+      "time_travel_test": true,
+      "authority_is_outside_graph": true,
+      "causal_proof_not_inferred_from_receipt": true
+    },
+    {
+      "subjects": 500,
+      "events": 2451,
+      "generation_ms": 21.907,
+      "benchmark_queries": 800,
+      "truth_checked": true,
+      "correctness": {
+        "flat_scan": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        },
+        "dict_index": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        },
+        "sqlite_index": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        },
+        "graph_projection": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        }
+      },
+      "timings": {
+        "flat_scan": {
+          "build_ms": 0.007,
+          "query_median_us": 1264.875,
+          "query_p95_us": 1364.916,
+          "query_total_ms": 778.817,
+          "queries": 800
+        },
+        "dict_index": {
+          "build_ms": 1.822,
+          "query_median_us": 0.333,
+          "query_p95_us": 1.208,
+          "query_total_ms": 0.336,
+          "queries": 800
+        },
+        "sqlite_index": {
+          "build_ms": 6.215,
+          "query_median_us": 3.083,
+          "query_p95_us": 6.292,
+          "query_total_ms": 2.27,
+          "queries": 800
+        },
+        "graph_projection": {
+          "build_ms": 4.971,
+          "query_median_us": 0.333,
+          "query_p95_us": 1.167,
+          "query_total_ms": 0.327,
+          "queries": 800
+        }
+      },
+      "time_travel_test": true,
+      "authority_is_outside_graph": true,
+      "causal_proof_not_inferred_from_receipt": true
+    },
+    {
+      "subjects": 2500,
+      "events": 12252,
+      "generation_ms": 108.609,
+      "benchmark_queries": 800,
+      "truth_checked": true,
+      "correctness": {
+        "flat_scan": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        },
+        "dict_index": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        },
+        "sqlite_index": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        },
+        "graph_projection": {
+          "n_queries": 800,
+          "errors": 0,
+          "examples": []
+        }
+      },
+      "timings": {
+        "flat_scan": {
+          "build_ms": 0.021,
+          "query_median_us": 6322.292,
+          "query_p95_us": 6911.625,
+          "query_total_ms": 4210.492,
+          "queries": 800
+        },
+        "dict_index": {
+          "build_ms": 10.333,
+          "query_median_us": 0.5,
+          "query_p95_us": 1.625,
+          "query_total_ms": 0.47,
+          "queries": 800
+        },
+        "sqlite_index": {
+          "build_ms": 32.497,
+          "query_median_us": 3.292,
+          "query_p95_us": 6.833,
+          "query_total_ms": 2.437,
+          "queries": 800
+        },
+        "graph_projection": {
+          "build_ms": 25.335,
+          "query_median_us": 0.5,
+          "query_p95_us": 1.75,
+          "query_total_ms": 0.477,
+          "queries": 800
+        }
+      },
+      "time_travel_test": true,
+      "authority_is_outside_graph": true,
+      "causal_proof_not_inferred_from_receipt": true
+    }
+  ],
+  "manager_core_safety": {
+    "manager_core_reused": true,
+    "state_history": [
+      "OBSERVED",
+      "HYPOTHESIZED",
+      "NO_ACTION"
+    ],
+    "causal_unsupported_choice": "NO_ACTION",
+    "executed_real_action": false
+  }
+}

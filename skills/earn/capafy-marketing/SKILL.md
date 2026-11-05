@@ -23,6 +23,16 @@ is web-researched: **IG/TikTok comment URLs are not clickable and link-in-body i
 down-ranked on X → bio-led on IG, and on X the link goes in the FIRST self-reply, never
 the root tweet.** (research MD: `anicca-project/docs/earn/2026-07-17-capafy-marketing-link-placement-research.md`)
 
+## Open dashboard account snapshot
+
+`scripts/capafy_open_snapshot.py --output PATH` reads the existing Capafy account
+traffic and impressions endpoints using the `capafy-publisher` item in the shared
+1Password Agents vault. It outputs 7-day and 30-day observations, source and UTC
+window, with only approved non-identifying impression-source categories. An
+unavailable source or malformed response fails without replacing the prior output.
+This command collects data only; the existing Open publisher owns publication and
+scheduling. A successful local collection does not prove a public update.
+
 ## IG fence reconciliation identity contract
 
 `capafy_ig_fence_reconcile.py` requires the exact occurrence's original dispatch

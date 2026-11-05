@@ -1,0 +1,18 @@
+{
+  "dataset": "fully synthetic; NOT genuine public RCT forecasts",
+  "prediction_sha256": "f74fc1291b55862c5dc6a107ceebb81371354debc3d4ce6fa5fbf7c3df6ac03b",
+  "n_train": 90,
+  "n_validation": 30,
+  "n_heldout": 60,
+  "ridge_penalty_selected_on_validation": 1.0,
+  "public_features": [
+    "study_id",
+    "domain",
+    "baseline",
+    "intensity",
+    "burden",
+    "planned_n",
+    "expected_trial_se"
+  ],
+  "gold_read_during_prediction": false
+}

@@ -118,6 +118,78 @@ class HqCliTest(unittest.TestCase):
                 self.assertEqual({k: fixture.requests[1][k] for k in ("key", "wait_secs", "peek")},
                                  {"key": "cli:hq-codex", "wait_secs": 7, "peek": True})
 
+    def test_paged_inbox_returns_complete_messages_with_bounded_bytes(self):
+        messages = [{**MESSAGE, "id": f"message-{i:04d}", "sent_at": i,
+                     "body": "x" * 65536} for i in range(33)]
+        def many(request):
+            if request["op"] == "inbox":
+                return {"ok": True, "result": {"messages": messages,
+                        "text": "\n".join(message["body"] for message in messages)}}
+            return replies(request)
+        with Fixture(many) as fixture:
+            result = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "1048576")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertLessEqual(len(result.stdout.encode()), 1048576)
+            page = json.loads(result.stdout)
+            self.assertTrue(page["messages"])
+            self.assertLessEqual(len(page["messages"]), 20)
+            self.assertTrue(all(len(message["body"]) == 65536 for message in page["messages"]))
+            self.assertNotIn("text", page)
+            self.assertIsNotNone(page["next_cursor"])
+            self.assertFalse(any(request["op"] == "delivered" for request in fixture.requests))
+
+    def test_last_page_counts_null_cursor_when_checking_byte_limit(self):
+        message = {**MESSAGE, "id": "01M6G37N2HYGRZ2JAJ4KC98QBY", "body": "x" * 3681}
+        def one(request):
+            if request["op"] == "inbox":
+                return {"ok": True, "result": {"messages": [message], "text": ""}}
+            return replies(request)
+        with Fixture(one) as fixture:
+            result = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "4096")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertLessEqual(len(result.stdout.encode()), 4096)
+            page = json.loads(result.stdout)
+            self.assertEqual(page["messages"][0]["body"], message["body"])
+            self.assertEqual(page["holds"], [])
+            self.assertIsNone(page["next_cursor"])
+
+    def test_oversized_page_hold_records_attachment_presence(self):
+        for files in ([], [{"name": "brief.txt", "content": "", "path": "/inbox/brief.txt"}]):
+            with self.subTest(has_files=bool(files)):
+                message = {**MESSAGE, "id": "01M6G37N2HYGRZ2JAJ4KC98QBY", "body": "x" * 5000, "files": files}
+                def one(request):
+                    if request["op"] == "inbox":
+                        return {"ok": True, "result": {"messages": [message], "text": ""}}
+                    return replies(request)
+                with Fixture(one) as fixture:
+                    result = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "4096")
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    page = json.loads(result.stdout)
+                    self.assertEqual(page["messages"], [])
+                    self.assertEqual(page["holds"][0]["has_files"], bool(files))
+                    self.assertFalse(any(request["op"] == "delivered" for request in fixture.requests))
+
+    def test_page_continues_after_ack_removes_anchor_and_revisits_old_arrival(self):
+        messages = [{**MESSAGE, "id": f"message-{i:04d}", "sent_at": i,
+                     "body": "x" * 65536} for i in range(33)]
+        def many(request):
+            if request["op"] == "inbox":
+                return {"ok": True, "result": {"messages": messages, "text": ""}}
+            return replies(request)
+        with Fixture(many) as fixture:
+            first = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "1048576")
+            self.assertEqual(first.returncode, 0, first.stderr)
+            page = json.loads(first.stdout)
+            ids = {m["id"] for m in page["messages"]}
+            messages[:] = [m for m in messages if m["id"] not in ids]
+            cursor = json.dumps(page["next_cursor"], separators=(",", ":"))
+            second = fixture.run("inbox", "--as", "hq-codex", "--json", "--page", "--max-bytes", "1048576", "--cursor", cursor)
+            self.assertEqual(second.returncode, 0, second.stderr)
+            page2 = json.loads(second.stdout)
+            self.assertTrue(page2["messages"])
+            self.assertTrue(ids.isdisjoint({m["id"] for m in page2["messages"]}))
+            self.assertEqual(page2["messages"][0]["sent_at"], len(ids))
+
     def test_ack_only_delivers_after_peeking_the_same_box(self):
         with Fixture(replies) as fixture:
             result = fixture.run("ack", "--as", "hq-codex", "--json", "message-one")

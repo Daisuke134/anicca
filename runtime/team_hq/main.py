@@ -79,8 +79,13 @@ class ReasonAPI:
         except (OSError, ValueError, subprocess.SubprocessError):
             raise HQError("Reason clientの応答を確認できません") from None
 
-    def inbox(self):
-        return self.call("inbox", "--as", self.name, "--wait", "0", "--peek", "--json")
+    def inbox(self, *, paged=False, cursor=None):
+        arguments = ["inbox", "--as", self.name, "--wait", "0", "--peek", "--json"]
+        if paged:
+            arguments += ["--page", "--max-bytes", str(3 * 1024 * 1024)]
+            if cursor is not None:
+                arguments += ["--cursor", json.dumps(cursor, separators=(",", ":"))]
+        return self.call(*arguments)
 
     def ack(self, ids):
         return self.call("ack", "--as", self.name, "--json", *ids)
@@ -262,7 +267,8 @@ class HQ:
             if (not isinstance(settings, dict) or settings.get("name") != "hq-codex"
                     or settings.get("agent") not in self.agents
                     or not isinstance(settings.get("binary"), str)
-                    or not Path(settings["binary"]).is_absolute()):
+                    or not Path(settings["binary"]).is_absolute()
+                    or type(settings.get("page_enabled", False)) is not bool):
                 raise HQError("Reason専用入口の設定が不正です")
             self.reason = reason_api or ReasonAPI(settings["binary"], settings["name"])
         self.initialize()
@@ -557,7 +563,15 @@ class HQ:
         return "".join(parts)
 
     def receive_reason(self):
-        payload = self.reason.inbox()
+        paged = self.reason_config.get("page_enabled", False)
+        cursor = None
+        if paged:
+            with self.connect() as database:
+                saved = database.execute("SELECT value FROM meta WHERE key='reason_page_cursor'").fetchone()
+            cursor = json.loads(saved[0]) if saved else None
+            payload = self.reason.inbox(paged=True, cursor=cursor)
+        else:
+            payload = self.reason.inbox()
         name = self.reason_config["name"]
         if (payload.get("session_key") != "cli:" + name
                 or not isinstance(payload.get("address"), str)
@@ -565,6 +579,25 @@ class HQ:
                 or not isinstance(payload.get("messages"), list)):
             raise HQError("Reason受信箱のidentityを確認できません")
         messages = payload["messages"]
+        next_cursor = payload.get("next_cursor") if paged else None
+        holds = payload.get("holds", []) if paged else []
+        if paged:
+            def valid_key(value):
+                return (isinstance(value, list) and len(value) == 2 and type(value[0]) is int
+                        and isinstance(value[1], str) and re.fullmatch(r"[A-Za-z0-9_-]{1,128}", value[1]))
+            if ("next_cursor" not in payload or not isinstance(holds, list)
+                    or len(messages) + len(holds) > 20
+                    or (next_cursor is not None and (
+                        not isinstance(next_cursor, dict) or set(next_cursor) != {"version", "mailbox", "after", "through"}
+                        or next_cursor.get("version") != 1 or next_cursor.get("mailbox") != payload["address"]
+                        or not valid_key(next_cursor.get("after")) or not valid_key(next_cursor.get("through"))
+                        or tuple(next_cursor["after"]) > tuple(next_cursor["through"])))
+                    or any(not isinstance(h, dict) or h.get("reason") != "message_too_large"
+                           or not isinstance(h.get("id"), str)
+                           or not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", h["id"])
+                           or type(h.get("sent_at")) is not int
+                           or type(h.get("has_files")) is not bool for h in holds)):
+                raise HQError("Reasonページが不正です")
         for message in messages:
             if (not isinstance(message, dict)
                     or not isinstance(message.get("id"), str)
@@ -576,6 +609,13 @@ class HQ:
         with self.connect() as database:
             # Serialize with claim(): the status check and task update share a write lock.
             database.execute("BEGIN IMMEDIATE")
+            for hold in holds:
+                database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)",
+                                 ("reason_page_hold:" + hold["id"], json.dumps(hold)))
+                if hold["has_files"]:
+                    database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)",
+                                     ("reason_attachment_pending:" + hold["id"], "unavailable"))
+                deferred = True
             for message in messages:
                 if len(accepted) >= 20:
                     break
@@ -601,6 +641,7 @@ class HQ:
                     continue
                 marker = database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)", (saved_key, "1"))
                 database.execute("DELETE FROM meta WHERE key=?", (pending_key,))
+                database.execute("DELETE FROM meta WHERE key=?", ("reason_page_hold:" + message["id"],))
                 accepted.append(message["id"])
                 body = re.sub(r"(?im)((?:パスワード|秘密鍵|password|private[_ -]?key|api[_ -]?key|token)\s*[:：=]\s*)[^\r\n]+",
                               r"\1[秘密値を除去]", message["body"])
@@ -632,6 +673,14 @@ class HQ:
                           "key": "hq:" + task["id"] + ":received"}
                 database.execute("INSERT OR IGNORE INTO meta VALUES (?,?)",
                                  ("reason_outbox:" + task["id"] + ":received", json.dumps(notice)))
+            if paged:
+                if next_cursor is None:
+                    database.execute("DELETE FROM meta WHERE key='reason_page_cursor'")
+                else:
+                    database.execute("INSERT OR REPLACE INTO meta VALUES ('reason_page_cursor',?)",
+                                     (json.dumps(next_cursor),))
+            page_hold_pending = database.execute(
+                "SELECT 1 FROM meta WHERE key GLOB 'reason_page_hold:*' LIMIT 1").fetchone() is not None
         # The committed task remains executable even if the transport ACK is lost.
         acknowledged = True
         if accepted:
@@ -640,8 +689,9 @@ class HQ:
             except HQError:
                 acknowledged = False
         receipts, replies_ok = self.flush_reason_receipts()
-        return {"ok": acknowledged and replies_ok and not deferred, "queued": added, "message_ids": receipts,
-                **({"error": "reason_attachment_pending"} if deferred else
+        return {"ok": acknowledged and replies_ok and not deferred and not page_hold_pending, "queued": added, "message_ids": receipts,
+                **({"error": "reason_page_hold"} if page_hold_pending else
+                   {"error": "reason_attachment_pending"} if deferred else
                    {"error": "reason_ack_or_reply_pending"} if not acknowledged or not replies_ok else {})}
 
     def receive(self):

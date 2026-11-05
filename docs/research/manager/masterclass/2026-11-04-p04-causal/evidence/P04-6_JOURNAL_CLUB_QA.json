@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-04",
+  "audience": "neuroscience & computational neuroscience researchers, M1/M2",
+  "duration_minutes": {
+    "planned_talk": 41.7,
+    "planned_discussion": 15,
+    "buffer": 3.3
+  },
+  "live_slides": 33,
+  "live_pdf_pages": 33,
+  "live_all_notes_present": true,
+  "scripted_pages": 33,
+  "detailed_slides": 85,
+  "detailed_pdf_pages": 85,
+  "detailed_all_notes_present": true,
+  "original_82_body_pages_except_manager_46_to_48_preserved": true,
+  "original_82_manager_pages_changed": [
+    46,
+    47,
+    48
+  ],
+  "live_manager_pages_changed": [
+    31,
+    32,
+    33
+  ],
+  "manager_thesis_document_exists": true,
+  "frozen_policy_plan_sha256_verified": true,
+  "frozen_P04_5_prediction_sha256_verified": true,
+  "P04_1_to_P04_6_unit_test_count": 96,
+  "real_human_intervention_executed": false,
+  "public_RCT_outcome_forecast_verified": false,
+  "open_weight_model_released": false,
+  "known_limitations": "PDF pages 46-48 in full deck and 31-33 in live deck use 180dpi slide raster; other pages inherit source PDF"
+}

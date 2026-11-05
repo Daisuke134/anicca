@@ -1,0 +1,92 @@
+{
+  "suite": "P05-3–P05-5 existing Manager Core offline fixture",
+  "source": "2026-11-04",
+  "P05_3": {
+    "topic": "P05-3 role and authority",
+    "authority_system": "EXISTING manager_core.authority.AuthorityVerifier",
+    "fixture_grant_accepted": true,
+    "negative_authority_cases": {
+      "planner_cannot_choose_another_target": "DENIED",
+      "planner_cannot_select_money_domain": "DENIED",
+      "planner_cannot_exceed_single_grant": "DENIED",
+      "forged_signature": "DENIED",
+      "expired": "DENIED",
+      "revoked": "DENIED"
+    },
+    "negative_cases_count": 6,
+    "credential_used": "constant synthetic test key only",
+    "planner_can_issue_real_authority": false,
+    "live_provider_supported": false
+  },
+  "P05_4": {
+    "topic": "P05-4 independent verification and recovery",
+    "outbox_class": "EXISTING manager_core.outbox.DurableOutbox",
+    "reconciler_class": "EXISTING manager_core.reconcile.Reconciler",
+    "verifier": "EXISTING manager_core.verifier.verify_outcome",
+    "one_explicit_fixture_effect": {
+      "first_status": "SUBMITTED",
+      "replayed_status": "SUBMITTED",
+      "provider_send_calls": 1,
+      "result": "VERIFIED_FIXTURE_ONLY",
+      "proof_level": "P0",
+      "human_effect": "NOT_MEASURED"
+    },
+    "uncertain_then_reconciled_fixture_effect": {
+      "initial_status": "UNKNOWN",
+      "provider_lookup_failed_status": "UNKNOWN",
+      "retry_send_calls": 0,
+      "reconciled_status": "PRESENT",
+      "final_record_status": "PRESENT"
+    },
+    "independent_field_outcome_measured": false,
+    "net_welfare_estimated": null,
+    "net_welfare_status": "NO_COMPARATOR",
+    "all_mutations_within_temporary_fixture_sqlite": true
+  },
+  "P05_5": {
+    "topic": "P05-5 shadow/inert release gate",
+    "existing_shadow": "manager_core.owned_provider_shadow.compare_prepared_catalog_shadow",
+    "status": "SKIPPED",
+    "reason": "DISABLED",
+    "public_projection_keys": [
+      "action_writes",
+      "authorized_execution",
+      "baseline_decisions",
+      "baseline_digest",
+      "candidate_digest",
+      "causal_support",
+      "compared_at",
+      "context_sha256",
+      "human_outcome",
+      "model_comparison",
+      "model_decision",
+      "model_status",
+      "operation_id",
+      "proof_level",
+      "reason",
+      "run_id",
+      "schema",
+      "settled_cost_usd",
+      "status"
+    ],
+    "llm_or_provider_calls": 0,
+    "planned_real_limited_execution": "NOT AUTHORIZED OR PERFORMED",
+    "shadow_candidate_quality": "NOT EVALUATED",
+    "production_installation": false
+  },
+  "terminal_no_action": {
+    "state_history": [
+      "OBSERVED",
+      "HYPOTHESIZED",
+      "NO_ACTION"
+    ],
+    "no_action_terminal": true,
+    "live_authority_issued": false
+  },
+  "real_people_affected": 0,
+  "real_external_service_mutations": 0,
+  "real_company_decisions_delegated": 0,
+  "actual_model_weights_trained": false,
+  "external_field_RCT_completed": false,
+  "production_feature_gate_accepted": false
+}

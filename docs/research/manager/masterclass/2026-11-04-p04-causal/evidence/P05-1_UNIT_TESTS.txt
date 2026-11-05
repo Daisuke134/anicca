@@ -1,0 +1,31 @@
+test_all_events_provenance_hash (test_p05_1_ontology_readonly.OntologyProjectionTests.test_all_events_provenance_hash) ... ok
+test_conflicting_id_rejected (test_p05_1_ontology_readonly.OntologyProjectionTests.test_conflicting_id_rejected) ... ok
+test_conflicting_node_types_rejected (test_p05_1_ontology_readonly.OntologyProjectionTests.test_conflicting_node_types_rejected) ... ok
+test_deterministic_projection (test_p05_1_ontology_readonly.OntologyProjectionTests.test_deterministic_projection) ... ok
+test_event_dedup_is_idempotent (test_p05_1_ontology_readonly.OntologyProjectionTests.test_event_dedup_is_idempotent) ... ok
+test_existing_manager_core_state_machine_reused (test_p05_1_ontology_readonly.OntologyProjectionTests.test_existing_manager_core_state_machine_reused) ... ok
+test_fabricated_inference_cannot_include_verifier (test_p05_1_ontology_readonly.OntologyProjectionTests.test_fabricated_inference_cannot_include_verifier) ... ok
+test_five_synthetic_events (test_p05_1_ontology_readonly.OntologyProjectionTests.test_five_synthetic_events) ... ok
+test_inferred_not_observed (test_p05_1_ontology_readonly.OntologyProjectionTests.test_inferred_not_observed) ... ok
+test_invalid_hash_rejected (test_p05_1_ontology_readonly.OntologyProjectionTests.test_invalid_hash_rejected) ... ok
+test_jsonld_refuses_to_claim_execution_authority (test_p05_1_ontology_readonly.OntologyProjectionTests.test_jsonld_refuses_to_claim_execution_authority) ... ok
+test_jsonld_uses_real_w3c_prefix (test_p05_1_ontology_readonly.OntologyProjectionTests.test_jsonld_uses_real_w3c_prefix) ... ok
+test_late_recording_keeps_history_invisible (test_p05_1_ontology_readonly.OntologyProjectionTests.test_late_recording_keeps_history_invisible) ... ok
+test_no_permission_or_real_causal_proof_from_graph (test_p05_1_ontology_readonly.OntologyProjectionTests.test_no_permission_or_real_causal_proof_from_graph) ... ok
+test_offset_aware_datetime_required (test_p05_1_ontology_readonly.OntologyProjectionTests.test_offset_aware_datetime_required) ... ok
+test_only_independent_readback_allowed_to_claim_readback (test_p05_1_ontology_readonly.OntologyProjectionTests.test_only_independent_readback_allowed_to_claim_readback) ... ok
+test_output_contains_only_synthetic (test_p05_1_ontology_readonly.OntologyProjectionTests.test_output_contains_only_synthetic) ... ok
+test_private_class_rejected (test_p05_1_ontology_readonly.OntologyProjectionTests.test_private_class_rejected) ... ok
+test_private_identifier_rejected (test_p05_1_ontology_readonly.OntologyProjectionTests.test_private_identifier_rejected) ... ok
+test_provider_receipt_not_outcome (test_p05_1_ontology_readonly.OntologyProjectionTests.test_provider_receipt_not_outcome) ... ok
+test_readback_without_independent_source_rejected (test_p05_1_ontology_readonly.OntologyProjectionTests.test_readback_without_independent_source_rejected) ... ok
+test_recorded_time_prevents_future_leakage (test_p05_1_ontology_readonly.OntologyProjectionTests.test_recorded_time_prevents_future_leakage) ... ok
+test_reproducible_fixture_hashes (test_p05_1_ontology_readonly.OntologyProjectionTests.test_reproducible_fixture_hashes) ... ok
+test_unknown_predicate_rejected (test_p05_1_ontology_readonly.OntologyProjectionTests.test_unknown_predicate_rejected) ... ok
+test_unknown_source_rejected (test_p05_1_ontology_readonly.OntologyProjectionTests.test_unknown_source_rejected) ... ok
+test_world_time_prevents_inaccurate_history (test_p05_1_ontology_readonly.OntologyProjectionTests.test_world_time_prevents_inaccurate_history) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 0.002s
+
+OK
