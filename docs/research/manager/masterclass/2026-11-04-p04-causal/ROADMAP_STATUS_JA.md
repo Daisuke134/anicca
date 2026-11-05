@@ -112,8 +112,8 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 | ID | 内容 | 状態 | 完了の意味／残ること |
 |---|---|---|---|
 | P07-1 | 行動学習、報酬、習慣、回避 | **講義・実人間の5研究269,603試行で予測比較済／人への介入は未実施** | Collins公式WMH（MIT）を再利用し、報酬/習慣/記憶の簡略モデルを参加者分割→別研究で評価。45テスト成功。Turner 2026 X投稿の図用パラメータの相関確認は別研究の二次解析。因果機構・反すう減少は未確認。 |
-| P07-2 | 認知、感情、注意、反すう | **次** | 認知・情動・注意・反すうを区別し、実人間データで状態推定の妥当性と限界を検査する。 |
-| P07-3 | COM-Bと行動変容の構成要素 | **残** | 能力・機会・動機と環境。 |
+| P07-2 | 認知、感情、注意、反すう | **講義・公開の実人間ESMで次状態の予測実行済／HMM実データ再現と介入の因果効果は未完** | Hoebeke40人のBrooding1450遷移、Dejonckheere100人のStress6890遷移で人物Holdout・強い前回値ベースラインと比較。GLM-HMMは先行研究として学習、実際のEEG/MWプローブの推論は未実施。新規30件テスト。 |
+| P07-3 | COM-Bと行動変容の構成要素 | **次** | 能力・機会・動機（Capability/Opportunity/Motivation）と実環境の介入可能な条件を学ぶ。 |
 | P07-4 | CBT・ACT・心理的柔軟性 | **残** | 本人の価値と望む行動。 |
 | P07-5 | 仏教、ヴィパッサナー、苦・執着・解脱 | **残** | 思想・経験・科学的操作化を区別。 |
 | P07-6 | 尺度・生活機能・自律性・瞑想関連の害 | **残** | 改善と副作用を別々に測る。 |
@@ -500,3 +500,15 @@ P05-2の講義とコード実験を実施。[日本語全文](P05-2_JA.md)。既
 - **コード**：`experiments/p07_1_real_reward_habit_eval.py`、`experiments/p07_1_real_avoidance_descriptive.py`、`experiments/test_p07_1_real_reward_habit_eval.py`（**45/45テスト成功**）。`evidence/P07-1_REAL_REWARD_HABIT_HELDOUT_RESULTS_20261105.json`、`evidence/P07-1_REAL_AVOIDANCE_BY_LOAD_20261105.json`、元source/選択のSHA記録。生個票はrepoに追加しない。
 - **発表用34枚は変更しない**。詳細研究保存版には**英語2枚（97–98）・全98枚日本語notes**を追加し、98枚PPTX／98ページPDFへ更新。追加2ページのPDF視覚検査済み。
 - **学習次：P07-2**。実人間の習慣への介入・本人の反すう軽減、会社の収益増、真の汎用Behavior FMの独立評価は未実施のまま保持する。
+
+
+## 2026-11-05 P07-2｜Mind Wandering・反すう・感情の基礎と、実生活ESMの次状態予測
+
+- **[日本語講義](P07-2_JA.md)**：Cognition/Affect/Attention、observed vs latent、State vs Trait、Mind Wandering vs Rumination/RNT/Worry、Thought Probe/ESM/EEG、HMM/GLM-HMM、本人の同意と介入の因果効果を分けて解説。先行研究はZhang & Kool 2026（GLM-HMM・93人）、2025年555研究のMW計測レビュー、RNTの2025年総説を確認。**GLM-HMMやEEG自体の実データ再現は未実施。**
+- **[実人間データの実行コード](experiments/p07_2_real_esm_state_prediction.py)**：公式openESM/ZenodoのCC BY 4.0を原SHAで固定して実行。Hoebeke(2022)は**40人、元2102行、1,450同日隣接有効遷移、次回Broodingを推定**。人物分割24/8/8、検証でRidge採用、未知8人RMSE25.979 vs 前回値RMSE30.804、参加者クラスター500回bootstrap改善CI+1.566〜+7.807。
+- Dejonckheere(2019)は**100人、元9800行、6,890同日隣接有効遷移、次回Stressを推定**。人物分割60/20/20、検証でRandomForest採用、未知20人RMSE24.543 vs 前回値27.302、bootstrap改善CI+0.471〜+4.439。**公開Dejonckheereにはrumination直接項目がないため反すう予測と表現しない**。Hoebekeの`att_control`等はコードブックで符号化が不明のため特徴から除外。未来の回答と欠測は補完しない。
+- **新規P07-2テスト30件成功**、以前のP07-1の45件を含むレビュー済み**75/75件成功**（`evidence/TEST_RESULTS_P07_1_P07_2_REAL_HUMAN_20261105.txt`）。研究で使った人物単位の生データを公開リポジトリへ含めない。
+- **発表用34枚は不変**。詳細研究保存版にP07-2の**英語2枚（99/100）**を追加し、100枚PPTX／100ページPDF／日本語ノート全100枚。追加2ページをPDF表示して確認。
+- **[HANDOVER_LATEST.md](HANDOVER_LATEST.md)**を継続更新する。毎回の引き継ぎで最新版を示し、研究実装とWebの実公開を区別する。
+- **[Aniccaトップページ改訂案](ANICCA_SITE_COPY_UPDATE_PROPOSAL_20261105.md)**：実人間選択269,603件の検証へ進んだ成果を反映する日本語/英語コピー案を作成。ただし**公式Webリポジトリへの直接変更は安全制御でブロックされたため、サイトはまだ未更新・未公開**。別の経路で制御を迂回しない。
+- 学習次は**P07-3 COM-B**。本当の反すう軽減・医療効果・会社の純増利益・正規限定Liveは未実証のまま。

@@ -1,0 +1,363 @@
+{
+  "research": "P07-2 real ESM state prediction (NOT intervention impact)",
+  "date": "2026-11-05T07:20:58.392367+00:00",
+  "all_records_real_observed_human_responses": true,
+  "model_methods": "scikit-learn GroupShuffleSplit, Ridge, RF, HistGradientBoost; strong persistence",
+  "n_synthetic_humans": 0,
+  "datasets": {
+    "hoebeke_2022": {
+      "source": {
+        "url": "https://zenodo.org/api/records/22952951/files/0013_hoebeke_ts.tsv/content",
+        "sha256": "85593640b46cc3ab80115ad7e0b1ae5c5ed2ad29ca1ec56d338c45654a17cb58",
+        "doi": "10.5281/zenodo.17347619",
+        "license": "CC BY 4.0",
+        "n_people_expected": 40,
+        "target": "brooding",
+        "interpretation": "self-reported brooding next within-day beep, not clinical diagnosis",
+        "source": "openESM Hoebeke (2022), https://openesmdata.org/datasets/0013_hoebeke/",
+        "has_direct_rumination_item": true,
+        "file_sha256": "85593640b46cc3ab80115ad7e0b1ae5c5ed2ad29ca1ec56d338c45654a17cb58",
+        "original_rows": 2102,
+        "actual_people": 40,
+        "original_missing_target_rows": 40
+      },
+      "data_quality": {
+        "eligible_actual_consecutive_within_day_transitions": 1450,
+        "participants_with_eligible_transitions": 40,
+        "observed_target_range": [
+          0.0,
+          100.0
+        ],
+        "current_target_mean": 33.33241379310345,
+        "next_target_mean": 35.36827586206896,
+        "missing_observations_not_imputed": true,
+        "adjacent_prompt_only": true,
+        "same_day_only": true
+      },
+      "split_type": "participant-disjoint train/validation/test; no same-day future row in X",
+      "split_counts": {
+        "train": {
+          "observed_transitions": 871,
+          "n_people": 24
+        },
+        "validation": {
+          "observed_transitions": 281,
+          "n_people": 8
+        },
+        "test": {
+          "observed_transitions": 298,
+          "n_people": 8
+        }
+      },
+      "split_hash_sha256": {
+        "train": "02f0ac0e7c618f5b0c1e047b21b15cc5b0695109fe0a87a8302610f1008649d0",
+        "validation": "e8c463ad5def806c554d675aec21b50d6f870e803c2f14b109242dad33729331",
+        "test": "e8b51402f53fb9b34fcc1de5ea707165e272cdac8fdbacabea69c7e2a35a35a7"
+      },
+      "inputs_available_at_time_t": [
+        "brooding",
+        "perseverance",
+        "negativity",
+        "self_criticism",
+        "replaying",
+        "beep"
+      ],
+      "next_target_at_t_plus_one": "brooding",
+      "model_chosen_by_validation_rmse_only": "ridge_a1",
+      "validation_scores": {
+        "train_global_mean": {
+          "n": 281,
+          "mae": 27.136105674746986,
+          "rmse": 30.626647162610205,
+          "r2": -0.03752448978357514,
+          "actual_sd": 30.12134921776456,
+          "range_0_100": true
+        },
+        "persistence_last_state": {
+          "n": 281,
+          "mae": 23.252669039145907,
+          "rmse": 34.155807955336826,
+          "r2": -0.29041253229063435,
+          "actual_sd": 30.12134921776456,
+          "range_0_100": true
+        },
+        "ridge_a1": {
+          "n": 281,
+          "mae": 24.29314439264673,
+          "rmse": 28.781173567951512,
+          "r2": 0.0837448192686916,
+          "actual_sd": 30.12134921776456,
+          "range_0_100": true
+        },
+        "ridge_a100": {
+          "n": 281,
+          "mae": 24.47827869103463,
+          "rmse": 28.845759366087393,
+          "r2": 0.07962799828173062,
+          "actual_sd": 30.12134921776456,
+          "range_0_100": true
+        },
+        "random_forest": {
+          "n": 281,
+          "mae": 24.25406356676786,
+          "rmse": 29.190058455806284,
+          "r2": 0.05752600566990318,
+          "actual_sd": 30.12134921776456,
+          "range_0_100": true
+        },
+        "hist_gradient_boosting": {
+          "n": 281,
+          "mae": 24.44071681876348,
+          "rmse": 29.52750504939736,
+          "r2": 0.03560943900854496,
+          "actual_sd": 30.12134921776456,
+          "range_0_100": true
+        }
+      },
+      "heldout_test_scores": {
+        "train_global_mean": {
+          "n": 298,
+          "mae": 25.814064679185382,
+          "rmse": 29.355366356784863,
+          "r2": -0.004226607708624819,
+          "actual_sd": 29.342799769483126,
+          "range_0_100": true
+        },
+        "persistence_last_state": {
+          "n": 298,
+          "mae": 22.36577181208054,
+          "rmse": 30.804155128072615,
+          "r2": -0.10579677298164314,
+          "actual_sd": 29.342799769483126,
+          "range_0_100": true
+        },
+        "ridge_a1": {
+          "n": 298,
+          "mae": 22.274575651561697,
+          "rmse": 25.978910461645235,
+          "r2": 0.21350026471429984,
+          "actual_sd": 29.342799769483126,
+          "range_0_100": true
+        },
+        "ridge_a100": {
+          "n": 298,
+          "mae": 22.430427733196368,
+          "rmse": 26.048895901457467,
+          "r2": 0.2092570019528608,
+          "actual_sd": 29.342799769483126,
+          "range_0_100": true
+        },
+        "random_forest": {
+          "n": 298,
+          "mae": 21.87002114876505,
+          "rmse": 25.778457667669958,
+          "r2": 0.22559067427699753,
+          "actual_sd": 29.342799769483126,
+          "range_0_100": true
+        },
+        "hist_gradient_boosting": {
+          "n": 298,
+          "mae": 21.96644016836339,
+          "rmse": 26.03937950200759,
+          "r2": 0.20983465804296664,
+          "actual_sd": 29.342799769483126,
+          "range_0_100": true
+        }
+      },
+      "test_improvement_vs_last_value": {
+        "rmse_improvement_vs_persistence": 4.8252446664273805,
+        "cluster_bootstrap_95ci": [
+          1.5662014317581372,
+          7.806725144549947
+        ],
+        "n_independent_participants": 8,
+        "n_replicates": 500,
+        "positive_values_support_added_model_utility": true,
+        "not_a_causal_effect": true
+      },
+      "baseline_last_value_of_same_person_usable_only_after_earlier_probe": true,
+      "no_heldout_model_selection": true,
+      "no_actual_intervention_happened": true,
+      "does_not_prove_causal_benefit_or_diagnosis": true
+    },
+    "dejonckheere_2019": {
+      "source": {
+        "url": "https://zenodo.org/api/records/17347570/files/0012_dejonckheere_ts.tsv/content",
+        "sha256": "2cabd3f416f2dd5707b1623de5ac8cdba5de2834616e2a8df2a52e8c5473bf53",
+        "doi": "10.5281/zenodo.17347569",
+        "license": "CC BY 4.0",
+        "n_people_expected": 100,
+        "target": "stressed",
+        "interpretation": "next within-day stress self-report; dataset does NOT measure rumination directly",
+        "source": "openESM Dejonckheere (2019), https://openesmdata.org/datasets/0012_dejonckheere/",
+        "has_direct_rumination_item": false,
+        "file_sha256": "2cabd3f416f2dd5707b1623de5ac8cdba5de2834616e2a8df2a52e8c5473bf53",
+        "original_rows": 9800,
+        "actual_people": 100,
+        "original_missing_target_rows": 1098
+      },
+      "data_quality": {
+        "eligible_actual_consecutive_within_day_transitions": 6890,
+        "participants_with_eligible_transitions": 100,
+        "observed_target_range": [
+          0.0,
+          100.0
+        ],
+        "current_target_mean": 26.454136429608127,
+        "next_target_mean": 25.630769230769232,
+        "missing_observations_not_imputed": true,
+        "adjacent_prompt_only": true,
+        "same_day_only": true
+      },
+      "split_type": "participant-disjoint train/validation/test; no same-day future row in X",
+      "split_counts": {
+        "train": {
+          "observed_transitions": 4101,
+          "n_people": 60
+        },
+        "validation": {
+          "observed_transitions": 1402,
+          "n_people": 20
+        },
+        "test": {
+          "observed_transitions": 1387,
+          "n_people": 20
+        }
+      },
+      "split_hash_sha256": {
+        "train": "0ff972b0b5229c47273dbb5d0d6349b99cf9c5f7d05db76e4ee6697a861e4596",
+        "validation": "2347bc919b67c7292860994ece2681efd95d8a12fcfce797c5920144f1c86d4e",
+        "test": "3cef6344b6efe32bd74252f9d40495059ed192062fcf2ccab6eac1a688de49a3"
+      },
+      "inputs_available_at_time_t": [
+        "stressed",
+        "happy",
+        "relaxed",
+        "sad",
+        "angry",
+        "beep"
+      ],
+      "next_target_at_t_plus_one": "stressed",
+      "model_chosen_by_validation_rmse_only": "random_forest",
+      "validation_scores": {
+        "train_global_mean": {
+          "n": 1402,
+          "mae": 23.0743992366776,
+          "rmse": 27.507816157381058,
+          "r2": -0.008574341389186557,
+          "actual_sd": 27.40041210386032,
+          "range_0_100": true
+        },
+        "persistence_last_state": {
+          "n": 1402,
+          "mae": 17.19400855920114,
+          "rmse": 26.63688303467841,
+          "r2": 0.05428016815036818,
+          "actual_sd": 27.40041210386032,
+          "range_0_100": true
+        },
+        "ridge_a1": {
+          "n": 1402,
+          "mae": 18.909181226953468,
+          "rmse": 23.57346996482909,
+          "r2": 0.2592993634329136,
+          "actual_sd": 27.40041210386032,
+          "range_0_100": true
+        },
+        "ridge_a100": {
+          "n": 1402,
+          "mae": 18.983291886226002,
+          "rmse": 23.61651536736087,
+          "r2": 0.2565918394968112,
+          "actual_sd": 27.40041210386032,
+          "range_0_100": true
+        },
+        "random_forest": {
+          "n": 1402,
+          "mae": 18.765478025150152,
+          "rmse": 23.4804536770609,
+          "r2": 0.26513314999040727,
+          "actual_sd": 27.40041210386032,
+          "range_0_100": true
+        },
+        "hist_gradient_boosting": {
+          "n": 1402,
+          "mae": 18.989517198747986,
+          "rmse": 23.805055538150086,
+          "r2": 0.2446746039977682,
+          "actual_sd": 27.40041210386032,
+          "range_0_100": true
+        }
+      },
+      "heldout_test_scores": {
+        "train_global_mean": {
+          "n": 1387,
+          "mae": 23.879335178945052,
+          "rmse": 28.737939270965253,
+          "r2": -0.04781901667392252,
+          "actual_sd": 28.084655439059812,
+          "range_0_100": true
+        },
+        "persistence_last_state": {
+          "n": 1387,
+          "mae": 18.508291276135544,
+          "rmse": 27.302030422234903,
+          "r2": 0.05427488334221464,
+          "actual_sd": 28.084655439059812,
+          "range_0_100": true
+        },
+        "ridge_a1": {
+          "n": 1387,
+          "mae": 19.01365723612025,
+          "rmse": 23.92189044161014,
+          "r2": 0.2739508441347046,
+          "actual_sd": 28.084655439059812,
+          "range_0_100": true
+        },
+        "ridge_a100": {
+          "n": 1387,
+          "mae": 19.06116639538268,
+          "rmse": 23.948911016155353,
+          "r2": 0.2723097242465792,
+          "actual_sd": 28.084655439059812,
+          "range_0_100": true
+        },
+        "random_forest": {
+          "n": 1387,
+          "mae": 19.34778366721137,
+          "rmse": 24.543258410342826,
+          "r2": 0.23574291994136654,
+          "actual_sd": 28.084655439059812,
+          "range_0_100": true
+        },
+        "hist_gradient_boosting": {
+          "n": 1387,
+          "mae": 19.417539242305672,
+          "rmse": 24.88447135279308,
+          "r2": 0.21434501813586215,
+          "actual_sd": 28.084655439059812,
+          "range_0_100": true
+        }
+      },
+      "test_improvement_vs_last_value": {
+        "rmse_improvement_vs_persistence": 2.758772011892077,
+        "cluster_bootstrap_95ci": [
+          0.47055294284147675,
+          4.439283019098477
+        ],
+        "n_independent_participants": 20,
+        "n_replicates": 500,
+        "positive_values_support_added_model_utility": true,
+        "not_a_causal_effect": true
+      },
+      "baseline_last_value_of_same_person_usable_only_after_earlier_probe": true,
+      "no_heldout_model_selection": true,
+      "no_actual_intervention_happened": true,
+      "does_not_prove_causal_benefit_or_diagnosis": true
+    }
+  },
+  "external_clinical_trial_run": false,
+  "mental_health_treatment_effect_measured": false,
+  "mind_wandering_probe_or_EEG_used": false,
+  "runtime_seconds": 12.81
+}
