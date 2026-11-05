@@ -29,12 +29,12 @@ jobs:
       - name: HeartSteps V1 CC-BY real participants and randomized notification outcomes
         working-directory: products/manager/evals
         run: |
-          mkdir -p ../../../../outputs/manager-real-outcomes
-          python heartsteps_v1_real_mrt.py > ../../../../outputs/manager-real-outcomes/heartsteps-v1-aggregate.json
+          mkdir -p ../../../outputs/manager-real-outcomes
+          python heartsteps_v1_real_mrt.py > ../../../outputs/manager-real-outcomes/heartsteps-v1-aggregate.json
           python - <<'PY'
           import json
           from pathlib import Path
-          j=json.loads(Path("../../../../outputs/manager-real-outcomes/heartsteps-v1-aggregate.json").read_text())
+          j=json.loads(Path("../../../outputs/manager-real-outcomes/heartsteps-v1-aggregate.json").read_text())
           s=j["jawbone_30min"]
           print("HeartSteps real randomized decisions:",s["total_source_decisions"],"eligible:",s["eligible_decisions"])
           print("Jawbone 30-min available complete-case contrast:",s["observed_difference_steps"])
@@ -45,11 +45,11 @@ jobs:
       - name: RCT Bench direct behavioral adherence, QALY, mood/wellbeing outcomes
         working-directory: products/manager/evals
         run: |
-          python rct_bench_real_outcome_eval.py > ../../../../outputs/manager-real-outcomes/rctbench-aggregate.json
+          python rct_bench_real_outcome_eval.py > ../../../outputs/manager-real-outcomes/rctbench-aggregate.json
           python - <<'PY'
           import json
           from pathlib import Path
-          j=json.loads(Path("../../../../outputs/manager-real-outcomes/rctbench-aggregate.json").read_text())
+          j=json.loads(Path("../../../outputs/manager-real-outcomes/rctbench-aggregate.json").read_text())
           for trial in j["trials"]:
               for r in trial["comparisons"]:
                   print("RCT",trial["trial_id"],r["outcome"],"n",trial["n_source_rows"],
