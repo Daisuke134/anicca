@@ -146,7 +146,9 @@ Tenkiの使い捨てtask記事とVetta Computerのpause/resume/persistent volume
 
 Naïveの[公式説明](https://usenaive.ai/blogs/on-paperclip-and-open-source)はPaperclipを初期に使ったが現在は除去し、piと独自managed runtimeを使うと説明する。「Paperclipを入れれば現在のNaïve全体が手に入る」とはしない。公開templateがMITでも、managed runtimeや配信/生成providerまで無料・自己host可能という意味ではない。
 
-[Naïve Lab](https://usenaive.ai/lab/autonomous-companies)はreal companyを一定予算で数週間無人運転しtemplate化すると説明し、published runのhuman assist=0 minを掲げる。一方、公開blueprintの既定は上記askであり、Labの運転設定と一般配布設定を同一視しない。同pageのviews/rankings/$41,407 marginは再構築したShort-Form Social/Web/Client Market環境のbenchmark値として掲載される。実市場の販売明細・顧客数・銀行着金は今回未取得であり、Labの宣言やbenchmark marginを自社の実売根拠へ転用しない。
+Exaは[旧Lab URL](https://usenaive.ai/lab/autonomous-companies)から無人companyとmarginの旧本文を返したが、独立reviewのcrwl/scrapyとFirecrawlのmaxAge=0取得では現在[Benchmarks](https://usenaive.ai/benchmarks)へ移る。旧本文のhuman assist=0 minや$41,407を現行の確認済み実績として採用しない。公開blueprintのask既定と、実際に採用する運転設定は別に確認する。
+
+現行[Clipping Bench](https://usenaive.ai/benchmark/clipping-bench)は$300、SNS account三つ、operator-hoursを与えた約30日の決定的simulation。Astraの平均最終cash $9,513.57、Sol $5,707.38は各n=3の掲載値であり、銀行着金ではない。[Short Form Bench](https://usenaive.ai/benchmark/short-form-bench)は一週間のsimulated brand運営、cash/在庫/債権/債務のbusiness valueで採点する。Sol $2,949、API費$0.69/seasonという値は、この環境の結果。実browser signup成功率や自社の$0開始実売を直接推定しない。引き継ぐ仕組みは、外部notebookへの記憶、明示された環境ルール、投稿頻度の規律、settlementまで待つ会計、同じseed/初期資産/期間での比較。架空の5時間cooldownを現実の全SNSへ当てはめない。実市場の販売明細・顧客数・銀行着金は今回未取得。
 
 ### Grok BotとMuseから取り入れる設計
 
