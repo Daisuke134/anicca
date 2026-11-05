@@ -25896,13 +25896,15 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 |---|---|---|
 | L07-D1 | 完了 | 公開HTML/JSON、二repoのbuilder/publisher/更新sourceを追い、Cloud既存行・month timezone再現・未照合利益・単発fetchを記録する。runtime owner/実cadenceは未確認として保持 |
 | L07-D1b | 完了 | `anicca-products`のdeploy artifactへ最新timestamp付きOpen snapshotをstageする。canonical timestampより古いsnapshotで巻き戻さず、最新snapshot不正時はfail closed。focused test、CI、main deploy、公開JSON・UI readbackを確認 |
-| L07-D7 | 未完・現在cursor | Capafy Overviewのexposure/detail-view/conversion/new-usersを完全な7/30日daily series、source、UTC期間、as_of付きで既存`capafy.json`とUIへ追加。traffic-sourcesとは分け、provider change fields/negative daily correctionsを保持。focused tests、Life Manager/Products PRとCI、本番deploy、公式JSONと390px UI readbackを完了条件にする。
+| L07-D7 | 未完・現在cursor | Capafy Overviewのexposure/detail-view/conversion/new-usersを完全な7/30日daily series、source、UTC期間、as_of付きで既存`capafy.json`とUIへ追加。traffic-sourcesとは分け、provider change fields、各aggregateの`containsUnknownCountry`、negative daily correctionsを保持。focused tests、Life Manager/Products PRとCI、本番deploy、公式JSONと390px UI readbackを完了条件にする。
 | L07-D1c | 未完 | Workflowはmainでactive、cronは17 * * * *。2026-11-05T15:03Z時点でschedule eventは0件。push run `42048373802` (14:47Z) はCapafy/ASC collection、JSON検証、deploy、money-path smokeを通過し、Capafy source時刻14:51:37Zを公開UIが表示した。次は自然schedule receiptと新しい公開timestamp・履歴を照合する。
 | L07-D2 | 完了 | PR #859でcalendar month表示をUTC固定に修正。timezone別focused test 5/5、Open data関連test 11/11、PR CI、本番deploy #42001774246がpass。公開UIのRevenue/Costs/ProfitすべてでNovember 2026を目視確認 |
 | L07-D3 | 未完 | 全社利益/KPIのbasisをreconcilerとHTMLで一致させる。coverage不足なら全社利益を確定表示せず観測済小計と欠測を分ける。nullを0へ変換しない。source付きfixtureで集計と表示を確認 |
 | L07-D4 | 未完 | 既存Stripe read-only接続を復旧・照合し、Cloudのlive/test product/price/subscription/refund/cancelを既存台帳へ帰属させる。Stripe全体行とCloud product行を二重計上せず、MRR/実売/支払/出金を分ける。人のcredentialはCloud workerへ渡さない |
 | L07-D5 | 未完 | 既存生成/公開/再取得経路を上記cadenceへ接続し、row別as_of/source/last success/errorを表示する。開いたままのスマホと次の自然refreshでfresh/stale/取得失敗を確認し、API制限を守る |
 | L07-D6 | 未完 | 既存roster/実行receiptからteam/provider/role/最後の実結果、既存配信receiptからchannel/account別URL/reach/click/conversionを公開用に集計する。登録済みと稼働済みを分け、秘密/private本文を出さない。既存規定の公開範囲だけを使う |
+
+**Capafy Developer Overview API collector smoke（2026-11-05T15:39:56Z）:** exact-match credential SSOT entryからtokenを読み、変更中の`build_snapshot`をread-onlyでメモリ実行（公開JSONへのwrite/deployなし）。4 endpoint×7/30日が成功し、UTC `2026-10-30`–`2026-11-05` / `2026-10-07`–`2026-11-05`、日次7/30行を取得。7日: exposure 32,674 (−35.8%; 13,530 unique devices; unique change −34.8%; containsUnknownCountry=true)、detail views 1,947 (−42.7%; 1,091; −41.1%; false)、conversion 0.04% (provider change +0.02; 5 orders; 13,531 exposed user IDs; true)、new users 4 (0.0%; false)。30日: exposure 126,531 (+40.6%; 49,850 unique devices; +81.4%; true)、detail views 8,756 (+51.9%; 4,828; +121.2%; true)、conversion 0.03% (provider change −0.22; 15 orders; 49,850 exposed user IDs; true)、new users 14 (−75.9%; false)。UTC終端日の11/05はpartial。各aggregateの`containsUnknownCountry`をendpoint別に保持し、11/03 daily conversion −0.06/order −1も保持。これは実API collector readbackであり、CI・公開反映・自然実行の証明ではない。
 
 全体順序L02→L10は変更しない。dashboardは公開済みのためD2/D3をworker売上待ちにせず独立して進める。D2はPR #859、本番deploy、公開UIで完了。dashboard cursor=L07-D7（OverviewデータとUIを先に接続、次にD1c natural schedule）。D1bのdata.json staging成功はcapafy.jsonの鮮度を保証しないため、feedごとの取得・stage・自然起動receiptを別々に検証する。worker主cursor=L02。
 
