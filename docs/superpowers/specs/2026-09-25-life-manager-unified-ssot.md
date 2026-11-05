@@ -25862,13 +25862,13 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 **L07配下：既存open dashboardの修正契約**
 
-**Dais追加要件・調査カーソル:** Openは売上だけでなく、各市場の受託（応募→返信→契約→納品→入金）と出品（掲載→表示→閲覧→購入→精算）を一画面で確認できる会社の公開状況とする。Capafyはimpressions・detail views・conversion・new buyers・units・salesを期間/source/as_of付きで収集し、Coconala/Lancers等も各サービスの公式に取得できる出品別指標と受託進捗を調査して追う。アプリinstall・SNS到達・費用も同様。UIは簡潔にし、実データと対象期間、更新失敗・古さを区別する。秘密・顧客の非公開情報は公開しない。毎日の無人収集、公開、次回自然実行後も維持、デスクトップ・スマホの公開UI実見まで確認する。
+**Dais追加要件・調査カーソル:** Openは売上だけでなく、各市場の受託（応募→返信→契約→納品→入金）と出品（掲載→表示→閲覧→購入→精算）を一画面で確認できる会社の公開状況とする。Capafyはimpressions・detail views・conversion・new buyers・units・salesを期間/source/as_of付きで収集し、Coconala/Lancers等も各サービスの公式に取得できる出品別指標と受託進捗を調査して追う。アプリinstall・SNS到達・費用も同様。UIは簡潔にし、実データと対象期間、更新失敗・古さを区別する。秘密・顧客の非公開情報は公開しない。可能な取得元は15分ごとの無人収集・公開、元サービスの更新遅延と鮮度を表示、次回自然実行後も維持、デスクトップ・スマホの公開UI実見まで確認する。
 
 現況: 2026-11-05 14:07 JST版のdata.jsonがproducts mainで更新されている。ops origin/mainには旧update_open.shが参照するindex.htmlが無く、現在のpublisherを未特定。旧scriptはcollect_all/build_revenue_ledgerの失敗を無視するため、稼働経路と同一と断定しない。写真のCapafy値は期間不明で最新/月次として代入しない。
 
 **優先順更新:** 旧=publisher/owner特定→Capafy等取得→UI反映→定期検証。新=公開data.jsonの404復旧とpublishの欠落防止→publisher/owner特定→Capafy、Coconala、Lancersの実測取得→各事業・配信の指標追加→日次以上の自然更新と公開UI確認。理由: 2026-11-05 14:3x JST、公開data.jsonがHTTP 404で全表示に影響。GitHub履歴ではdata.jsonを削除したcommit `6d36a7f96f`のdeployが成功した後、復元commit `3800d014e6`のdeployがcancelされ、後続deploy `41974828884`は進行中。GitHub main上にdata.jsonがあることは公開readback成功ではない。既存publisherの進行中effectを中断せずofficial readbackを監視し、欠落しない単一commit更新に修正する。現在cursor=復元deploy readbackとpublisher ownerの確定。
 
-**残TODO（L07-D2〜D6と合わせて実行）:** (1) current publisher/ownerとテンプレート正本・共有browser leaseを特定。(2) Capafy公式画面と対象期間を取得し保存、Coconala/Lancersの出品・受託指標もsource別に確認。(3) 既存builderとUIへ各指標・時刻・鮮度を反映、未取得を0にしない。(4) 既存schedulerで日次以上の取得と再公開を稼働させ、natural run・公式readback・公開UIを確認。(5) 残る全platformへ順次拡張し、実績・経費・問題を報告。D2/D3先行の順序は維持。
+**残TODO（L07-D2〜D6と合わせて実行）:** (1) current publisher/ownerとテンプレート正本・共有browser leaseを特定。(2) Capafy公式画面と対象期間を取得し保存、Coconala/Lancersの出品・受託指標もsource別に確認。(3) 既存builderとUIへ各指標・時刻・鮮度を反映、未取得を0にしない。(4) 既存schedulerで可能な取得元の15分ごとの取得と再公開を稼働させ、natural run・公式readback・公開UIを確認。(5) 残る全platformへ順次拡張し、実績・経費・問題を報告。D2/D3先行の順序は維持。
 
 目的は全agent・利用者・投資家が、同じ会社の実業務・売上段階・費用・稼働・配信を、source/as_of/coverageとともに確認できること。既存`/open/`/data.jsonと取得元を修正し、別dashboard/会計DBを作らない。UI再取得60秒、業務state集計5分、到着済payment webhook反映1分以内、provider照合30分を目標とし、未達をstale/last errorで見せる。公開refreshのためだけに全worker/modelを起こさない。全providerがmillisecondsで確定するという約束はしない。
 
