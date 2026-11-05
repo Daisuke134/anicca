@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { renderManagerMarkdown, managerShareMetadata } from '../lib/render-manager-markdown.mjs';
+import { renderManagerMarkdown, managerShareMetadata, blogPairLanguages, blogPairAlternates } from '../lib/render-manager-markdown.mjs';
 
 test('renders comparison tables, numbered steps and escaped fenced code', () => {
  const html = renderManagerMarkdown('# Test\n\n| Method | Cost |\n| --- | --- |\n| IPF | Low |\n\n1. Get data\n2. Compare\n\n```js\n<script>bad()</script>\n```');
@@ -28,4 +28,19 @@ test('Manager sharing uses the original first image and language, escaping URL s
  assert.equal(meta.twitter.card,'summary_large_image');
  assert.deepEqual(managerShareMetadata({...post,project:'Other'}),{});
  assert.deepEqual(managerShareMetadata({...post,markdown:'![bad](javascript:bad)'}),{});
+});
+
+test('blog pair hreflang links only complete -en/-ja pairs, x-default at EN', () => {
+ const slugs=['manager-behavior-data-audit-en','manager-behavior-data-audit-ja','tiktok-ad-script-ja','tokens-to-money','best-affirmation-apps-2026-11-05'];
+ const expected={en:'https://aniccaai.com/blog/manager-behavior-data-audit-en',ja:'https://aniccaai.com/blog/manager-behavior-data-audit-ja','x-default':'https://aniccaai.com/blog/manager-behavior-data-audit-en'};
+ assert.deepEqual(blogPairLanguages('manager-behavior-data-audit-en',slugs),expected);
+ assert.deepEqual(blogPairLanguages('manager-behavior-data-audit-ja',slugs),expected);
+ assert.deepEqual(blogPairAlternates('manager-behavior-data-audit-ja',slugs),{languages:expected});
+ // Counterpart missing, no suffix, and date-suffixed slugs get no alternates.
+ assert.equal(blogPairLanguages('tiktok-ad-script-ja',slugs),null);
+ assert.equal(blogPairLanguages('tokens-to-money',slugs),null);
+ assert.equal(blogPairLanguages('best-affirmation-apps-2026-11-05',slugs),null);
+ assert.deepEqual(blogPairAlternates('tiktok-ad-script-ja',slugs),{});
+ // A word merely ending in "en" is not a language suffix.
+ assert.equal(blogPairLanguages('the-golden-rule',[...slugs,'the-golden-rule-ja']),null);
 });

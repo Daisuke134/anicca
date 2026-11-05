@@ -1,8 +1,8 @@
-# Manager Masterclass｜P04-1〜P06-5 因果推論・Ontology・行動と実行の接続
+# Manager Masterclass｜P04-1〜P07-2 因果推論・Ontology・行動と実行の接続
 
 **更新：2026-11-05（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
 
-**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-1。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
+**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-3。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
 
 
 ## Managerの中核仮説と実証すべき価値
@@ -25,19 +25,19 @@
 
 **優先順位：** ①基礎と研究史 ②どの対象にどの模型を使うか ③既存研究・企業は何を主張しているか ④何を検証して何をまだ検証していないか ⑤最後にManagerが目指すこと。数式の厳密な導出・企業の細かい数字・P04-6の全シミュレーションは本番で列挙しない。質疑用の長い資料に残す。
 
-## 全96枚の詳細保存版（本番で一挙上映しない）
+## 全100枚の詳細保存版（本番で一挙上映しない）
 
 | ファイル | 内容 |
 | --- | --- |
-| [詳細96枚PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | 元82枚のManager対応46〜48を研究仮説に更新し、P04-6付録3＋P05-1付録2＋P05-2付録2＋P05-3〜5/展開付録4＋P06-3〜5研究付録3＝96枚。既存本文は維持 |
-| [詳細96ページPDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf) | 96ページ（元82＋P04-6研究3＋P05-1研究2＋P05-2研究2＋P05-3〜5/展開研究4＋P06-3〜5研究3）。新しい付録は画像レンダリングで統合し、元のページを維持 |
-| [全96枚の日本語発表ノート](journal_club/SPEAKER_NOTES_JA.md) | 1〜96の全ページ分。PowerPoint内部にも全96枚のノートを保存 |
+| [詳細100枚PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | 元82枚のManager対応46〜48を研究仮説に更新し、P04-6付録3＋P05-1付録2＋P05-2付録2＋P05-3〜5/展開付録4＋P06-3〜5研究付録3＋P07-1研究付録2＝98枚。既存本文は維持 |
+| [詳細100ページPDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf) | 100ページ（元82＋P04-6研究3＋P05-1研究2＋P05-2研究2＋P05-3〜5/展開研究4＋P06-3〜5研究3＋P07-1研究2＋P07-2研究2）。新しい付録は画像レンダリングで統合し、元のページを維持 |
+| [全100枚の日本語発表ノート](journal_club/SPEAKER_NOTES_JA.md) | 1〜96の全ページ分。PowerPoint内部にも全100枚のノートを保存 |
 | `journal_club/build_p06_phase6_appendix.py` | **詳細93→96枚・研究付録94〜96**。本番34枚は不変 |
 | `journal_club/build_p05_phase5_decks.py` | **研究89→93枚、本番33→34枚、一般向け用語とManager段階ロードマップ**。再実行は入力版の確認後 |
 | `journal_club/build_p05_2_appendix.py` | **87枚→89枚のP05-2研究付録追加**。旧本番33枚は本アップデートで34枚に改訂 |
 | `journal_club/build_p05_1_appendix.py` | **85枚→87枚の研究付録追加**。本番用33枚は不変 |
 | `journal_club/build_p04_6_appendix.py` | 82枚版→85枚版への追加作成に使用。すでに85枚なら二重追加しない |
-| `journal_club/build_p04_45_appendix.py` | **歴史的な74枚→82枚作成スクリプト**。現在96枚版への再実行はしない |
+| `journal_club/build_p04_45_appendix.py` | **歴史的な74枚→82枚作成スクリプト**。現在100枚版への再実行はしない |
 | `journal_club/export_p04_45_pdf.py` | **歴史的な74ページ→82ページPDF結合スクリプト** |
 | `journal_club/RUN_OF_SHOW_JA.md` | 元のフル講義の履歴上の進行表。**2026-11-05本番は60MIN版の進行表を優先** |
 
@@ -95,7 +95,7 @@ python3 p04_6_preregistered_policy_value.py
 python3 p05_1_ontology_readonly.py
 ```
 
-本番発表版は`journal_club/build_60min_journal_club.py`で再生成。**詳細マスターを消す／発表で全96枚を使う運用はしない**。厳選34枚／詳細96枚を保持する。歴史的なManagerの対応する3枚は update_manager_thesis_slides.py で仮説に沿う内容へ同期する。
+本番発表版は`journal_club/build_60min_journal_club.py`で再生成。**詳細マスターを消す／発表で全100枚を使う運用はしない**。厳選34枚／詳細100枚を保持する。歴史的なManagerの対応する3枚は update_manager_thesis_slides.py で仮説に沿う内容へ同期する。
 
 ## 監査
 
@@ -148,3 +148,17 @@ python3 p05_1_ontology_readonly.py
 [Phase6統合レポート](PHASE6_COMPLETION_AND_FIELD_GATES_JA.md)／[P06-3](P06-3_JA.md)／[P06-4](P06-4_JA.md)／[P06-5](P06-5_JA.md)。Statsmodels/SciPy、Spotify Confidence/Statsig/Microsoft ExPの研究設計を再利用し、**独自A/B統計ライブラリや新しい本番Ledgerを作らない**。完全人工のP06-3標本数・A/A、P06-4返金・費用・苦情によるDO_NOT_SHIP、P06-5ハッシュ照合・実サイト配信のみの独立readbackを実装。実人間の改善や実会社の利益を主張しない。
 
 [レビュー対象テスト328/328件成功](evidence/TEST_RESULTS_P04_TO_P06_REVIEWED_20261105.txt)（P06-2まで257＋新規P06-3〜5の71）。本番発表用34枚はそのまま、詳細保存版**96枚/96ページ**にPhase6の3枚を追加して全日本語ノートと同期する。**学習次はP07-1**、実事業価値の未達ゲートは残す。
+
+
+## 2026-11-05 P07-1：実際の人間の報酬・習慣を学ぶ
+
+[講義・数式・5研究の比較](P07-1_JA.md)を追加。Collins公式WMHのMITデータ5セット／実行有効269,603試行を読み取り、参加者分割の学習・検証・テストと別研究4件の予測を実行。報酬・習慣・短期記憶の簡略アブレーションのLog lossを検証した。別途2026年のX投稿研究の公開図用パラメータの相関を計算したが、元の投稿モデルを再学習したものではない。**P07-1新規45テスト成功。** 証拠ファイルは`evidence/P07-1_*`、教育用のPythonコードは`experiments/p07_1_*`。生の実人間行はGitHubへアップロードしない。
+
+研究保存版に英語2枚を追加して**98枚PPTX/98ページPDF、全100枚の日本語ノート**。本番34枚は維持。次講義は**P07-2**。ただし実人間の習慣・反すうの介入の因果効果は未測定。
+
+
+## 2026-11-05 P07-2｜実人間の反すう関連・感情状態を予測
+
+[P07-2日本語講義・HMM/GLM-HMMの基礎](P07-2_JA.md)、[実際に動くPython](experiments/p07_2_real_esm_state_prediction.py)、[30件の新規テスト](experiments/test_p07_2_real_esm_state_prediction.py)、[OpenESMの実行結果](evidence/P07-2_REAL_ESM_HOEBEKE_AFFECT_RESULTS_20261105.json)。Hoebeke40人/1450有効遷移のBrooding、Dejonckheere100人/6890有効遷移のStressを**別の対象として**、強いPersistenceとRidge/RandomForest等で比較。人物単位分割、未来情報なし、推定効果は治療の因果効果ではない。P07-1＋P07-2のレビュー済み75テスト成功。
+
+[常設ハンドオーバー](HANDOVER_LATEST.md)、[公式WebのEN/JAコピー改訂案](ANICCA_SITE_COPY_UPDATE_PROPOSAL_20261105.md)。サイト更新の直接操作は安全制御でブロックされたためドラフトのみ、**本番サイトへの更新はしていない**。研究保存版100枚・本番34枚不変。**次はP07-3**。

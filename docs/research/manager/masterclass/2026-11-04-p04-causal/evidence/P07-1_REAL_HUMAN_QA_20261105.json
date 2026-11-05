@@ -1,0 +1,38 @@
+{
+  "date": "2026-11-05",
+  "real_human_collins_data_experimental_sets": 5,
+  "real_human_choice_trials_eligible": 269603,
+  "study_participant_count_total_within_studies": 480,
+  "models_tested": [
+    "uniform",
+    "reward_only",
+    "habit_only",
+    "reward_plus_habit",
+    "reward_plus_habit_plus_memory"
+  ],
+  "training_subject_disjoint": true,
+  "external_studies_not_tuned": true,
+  "additional_external_studies_12_14_added_after_primary_three": true,
+  "expe1_holdout_participants": 16,
+  "expe1_holdout_trials": 10461,
+  "expe1_reward_only_logloss": 0.5107532424520466,
+  "expe1_hybrid_logloss": 0.4865617645589423,
+  "probabilistic_reward_omission_not_correctness": true,
+  "neuro_causal_mechanism_identified": false,
+  "real_rumination_change_measured": false,
+  "social_media_confirmatory_parameter_fig_n": 1558,
+  "social_media_full_model_independently_refitted": false,
+  "new_P07_1_unit_tests_passed": 45,
+  "live_talk_pptx_slides_unchanged": 34,
+  "live_talk_pdf_pages_unchanged": 34,
+  "live_talk_bytes_match_main": true,
+  "research_archive_pptx_slides": 98,
+  "research_archive_pdf_pages": 98,
+  "research_archive_speaker_notes_count": 98,
+  "all_previous_96_slide_body_text_unchanged_except_footer": true,
+  "added_English_research_slides": [
+    97,
+    98
+  ],
+  "next_curriculum_lesson": "P07-2"
+}

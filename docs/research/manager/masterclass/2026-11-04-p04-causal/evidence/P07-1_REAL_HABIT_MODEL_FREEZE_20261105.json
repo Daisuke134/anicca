@@ -1,0 +1,88 @@
+{
+  "preanalysis_file_sha256": "ee654deb2ddfd139fac368658d0544fec882bced44a4eb902f4f1dd3bb43019f",
+  "selected_on_validation_only": "reward_plus_habit_plus_memory",
+  "best_simple_model_selected_on_validation_only": "reward_only",
+  "models_fitted": {
+    "uniform": {
+      "coef": [],
+      "converged": true,
+      "iterations": 0
+    },
+    "reward_only": {
+      "coef": [
+        5.055914356231146
+      ],
+      "converged": true,
+      "iterations": 6,
+      "solver": "scipy.optimize.minimize L-BFGS-B",
+      "hyperparameters_fixed_before_holdout": true
+    },
+    "habit_only": {
+      "coef": [
+        4.380295579540676,
+        1.4276993210627438
+      ],
+      "converged": true,
+      "iterations": 10,
+      "solver": "scipy.optimize.minimize L-BFGS-B",
+      "hyperparameters_fixed_before_holdout": true
+    },
+    "reward_plus_habit": {
+      "coef": [
+        4.194812734067017,
+        1.0609159947431037,
+        0.5748753099963098
+      ],
+      "converged": true,
+      "iterations": 13,
+      "solver": "scipy.optimize.minimize L-BFGS-B",
+      "hyperparameters_fixed_before_holdout": true
+    },
+    "reward_plus_habit_plus_memory": {
+      "coef": [
+        3.1646992042748843,
+        0.648332161337539,
+        0.2689443789511039,
+        2.6590673900583037
+      ],
+      "converged": true,
+      "iterations": 16,
+      "solver": "scipy.optimize.minimize L-BFGS-B",
+      "hyperparameters_fixed_before_holdout": true
+    }
+  },
+  "validation_scores": {
+    "uniform": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 1.0986122886681098,
+      "accuracy": 0.3126232741617357,
+      "multiclass_brier": 0.6666666666666669
+    },
+    "reward_only": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 0.5844321617832214,
+      "accuracy": 0.7609826071364533,
+      "multiclass_brier": 0.3090785097427878
+    },
+    "habit_only": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 0.7072775980774179,
+      "accuracy": 0.7073695535233997,
+      "multiclass_brier": 0.3959857349031519
+    },
+    "reward_plus_habit": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 0.5604033110723394,
+      "accuracy": 0.7385691231845078,
+      "multiclass_brier": 0.3025530014326046
+    },
+    "reward_plus_habit_plus_memory": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 0.5420039305777866,
+      "accuracy": 0.7609826071364533,
+      "multiclass_brier": 0.2945682486086822
+    }
+  },
+  "holdout_or_OOD_labels_used_to_tune": false,
+  "all_test_and_OOD_outcomes_scored_only_after_freeze": true
+}
