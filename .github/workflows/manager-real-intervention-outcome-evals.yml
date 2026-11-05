@@ -1,0 +1,65 @@
+name: Manager | real-human intervention outcome benchmarks (CPU cloud)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-real-intervention-outcome-evals.yml"
+      - "products/manager/evals/**"
+      - "products/manager/docs/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-human-outcomes:
+    name: HeartSteps MRT + RCT Bench real outcome audit (no GPU, no clinical claims)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Manager product
+        uses: actions/checkout@v4
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Software contract tests (synthetic fixture inputs only)
+        working-directory: products/manager/evals
+        run: python -m unittest -v test_heartsteps_v1_real_mrt.py test_rct_bench_real_outcome_eval.py
+      - name: HeartSteps V1 CC-BY real participants and randomized notification outcomes
+        working-directory: products/manager/evals
+        run: |
+          mkdir -p ../../../../outputs/manager-real-outcomes
+          python heartsteps_v1_real_mrt.py > ../../../../outputs/manager-real-outcomes/heartsteps-v1-aggregate.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("../../../../outputs/manager-real-outcomes/heartsteps-v1-aggregate.json").read_text())
+          s=j["jawbone_30min"]
+          print("HeartSteps real randomized decisions:",s["total_source_decisions"],"eligible:",s["eligible_decisions"])
+          print("Jawbone 30-min available complete-case contrast:",s["observed_difference_steps"])
+          print("Participant bootstrap CI:",s["bootstrap_95ci_cluster_participant"])
+          print("Missing by arm",s["missing_rate_no_suggestion"],s["missing_rate_suggestion"])
+          print("NO user rows uploaded, no model or clinical treatment outcomes claimed")
+          PY
+      - name: RCT Bench direct behavioral adherence, QALY, mood/wellbeing outcomes
+        working-directory: products/manager/evals
+        run: |
+          python rct_bench_real_outcome_eval.py > ../../../../outputs/manager-real-outcomes/rctbench-aggregate.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("../../../../outputs/manager-real-outcomes/rctbench-aggregate.json").read_text())
+          for trial in j["trials"]:
+              for r in trial["comparisons"]:
+                  print("RCT",trial["trial_id"],r["outcome"],"n",trial["n_source_rows"],
+                        "arm1 - arm0",r["arm1_minus_arm0"],
+                        "95% bootstrap",r["bootstrap_95ci_respondent_resample"])
+          print("Exploratory real RCT arm differences ONLY; no Manager field efficacy or individual treatment effects")
+          PY
+      - name: Save aggregate-only evidence receipts (no individual records)
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-real-intervention-outcomes-aggregate
+          path: outputs/manager-real-outcomes/*.json
+          retention-days: 30
