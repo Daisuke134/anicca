@@ -8,7 +8,7 @@
 
 提案は既存Web Research成立例の根拠→限界→具体成果物という構成を継承する。最初に開く資料を現行Agent Market docs/OpenAPI、Coinbase x402 docs/公式analytics、Virtuals ACP、Olas公式metrics、Fetch.ai Agentverse、A2A公式仕様、公式MCP Registryと明記し、調査予定を調査済みと称さない。受注後86400秒以内、受注前submit/支払/有料API/wallet seed/個人送金0。
 
-完了条件: 送信直前に全assignment・全bidと同job不存在・最新job要件/所有を再確認→POST1回→本人GETでbid/agent/額/SLA一致→必要CI公式全PASS後main。通信不確実時はattempt原本と本人GETを照合し再POSTしない。受注時は最新brief/submit契約を再読して納品を優先する。現在cursor=preflight→送信→公式照合。接続追跡は既存元Reason IDを保持し、新規催促/代理hook/自動再割当0。
+完了条件: 送信直前に全assignment・全bidと同job不存在・最新job要件/所有を再確認→POST1回→本人GETでbid/agent/額/SLA一致→必要CI公式全PASS後main。通信不確実時はattempt原本と本人GETを照合し再POSTしない。受注時は最新brief/submit契約を再読して納品を優先する。公式結果: POST1回/201、bid a40d4c8e-76a2-4e92-8cbc-d260a7d8b90e、15USDC/pending。本人GET200で同job1件/agent一致/SLA86400秒、全bid6pending/assignment0を確認。追加支払/納品/送金0、売上/出金は未確認。証拠→docs/evidence/near-volume-offer-6ab7f0.json。現在cursor=必要CI全PASS後main→既存hourly全assignment照合、受注時最新brief/submit契約再読と24h内納品。接続追跡は既存元Reason IDを保持し、新規催促/代理hook/自動再割当0。
 
 ## 目的・範囲・完了条件
 

@@ -1,0 +1,44 @@
+{
+  "task_id": "6ab7f03b55368fd8790eac42",
+  "owner_id": "home-codex-6ab7f0",
+  "phase": "bid_official_readback",
+  "source_spec_commit": "1ef576e",
+  "release_sha": null,
+  "command": "POST /v1/jobs/{id}/bids then agent-only GET bids/assignments?status=all",
+  "exit_code": 0,
+  "job_id": "a20fa48b-07ab-421c-b8ce-f1b9edf538b8",
+  "provider_receipt_id": "a40d4c8e-76a2-4e92-8cbc-d260a7d8b90e",
+  "post_count": 1,
+  "post_http_status": 201,
+  "readback": {
+    "bids_http_status": 200,
+    "assignments_http_status": 200,
+    "job_matches": 1,
+    "agent_id": "de0c2da1-9ae0-4f48-938e-8c9e174d9056",
+    "amount": "15",
+    "currency": "USDC",
+    "sla_seconds": 86400,
+    "status": "pending",
+    "total_bids": 6,
+    "assignments": 0
+  },
+  "effect": "bid_pending",
+  "business_outcome": {
+    "awarded": false,
+    "delivered": false,
+    "revenue": null,
+    "withdrawal": null
+  },
+  "paid_api_calls": 0,
+  "wallet_transfers": 0,
+  "error_class": null,
+  "retryable": false,
+  "next_action": "必要CI全PASS後main、既存hourly全assignment照合、受注後最新brief/submit契約を再読して24h内納品",
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/team-hq/6ab7f0/preflight.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/6ab7f0/bid-attempt.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/6ab7f0/bid-response.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/6ab7f0/post-readback.json"
+  ],
+  "observed_at": "2026-11-05T18:04:37.841014+00:00"
+}
