@@ -25888,19 +25888,21 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 **Capafy freshness回帰の根因:** 同じ公開UIはdata.json updated_at=2026-11-05 18:07 JSTだが、capafy.json observed_at=2026-11-05T06:40:50ZでRefresh overdueを表示。main push deploy #42001774246のcollector stepはevent_name != push条件でskipされ、stage-open-data.mjsはdata.jsonのみをstageする。main canonicalのcapafy.jsonも同じ06:40:50Zで、古いfeedが再公開されたことを確認。自然scheduleの未起動原因は別途未特定。
 
+**L07-D1c main-push修正とreadback (2026-11-05 19:07 JST):** anicca-products PR #860/CI run 42006465039をmain merge commit `30bf2a2996809dfc210bc35d5459f88d017c3fcf`へ統合し、Capafy collectorのmain push除外条件を削除した。push run #42007367166はcollector・snapshot stage・data validation・Netlify deploy・post-deploy smokeまでsuccess。公開`/open/data.json`は`updated_at=2026-11-05 18:37 JST`、`/open/capafy.json`はHTTP 200 / `observed_at=2026-11-05T10:07:02Z`。同時刻に公開UIを動的読込後に開き直し、`Hourly refresh · current`、`Last checked 2026-11-05T10:07:02+00:00`、`Refresh overdue`なしを本文と画面で確認。30d/7d: detail views 8,221/1,892、source-attributed visitors 8,221/1,892、paid orders 6/4、trial orders 9/1、attributed/platform revenue $59.94/$39.96、refunds $0/$0、net units 15/5、category impressions 2,943/580、search 62,001/12,519、hot 14,988/6,952。Page views 0。feedはnegative daily valueの意味、revenue basis、unique buyers、conversion rateを返さないとUI上で明記。push経路の一度の成功で自然scheduleを証明しない。
+
 
 | ID | 状態 | 原子的な修正と完了条件 |
 |---|---|---|
 | L07-D1 | 完了 | 公開HTML/JSON、二repoのbuilder/publisher/更新sourceを追い、Cloud既存行・month timezone再現・未照合利益・単発fetchを記録する。runtime owner/実cadenceは未確認として保持 |
 | L07-D1b | 完了 | `anicca-products`のdeploy artifactへ最新timestamp付きOpen snapshotをstageする。canonical timestampより古いsnapshotで巻き戻さず、最新snapshot不正時はfail closed。focused test、CI、main deploy、公開JSON・UI readbackを確認 |
-| L07-D1c | 未完・最優先 | workflowはactive、default branchはmain、repoはpublic、Actionsはenabled、cronは17 * * * *。2026-11-05T09:39Zのschedule履歴は0件で、起動欠落の原因は未特定。main push #42001774246ではcollectorがskipされ、data.jsonだけをstageするため公開capafy.jsonが06:40:50Zの古い値へ戻った。production main deployでCapafyを再取得し、自然schedule receiptと公開JSON/UI freshnessを確認 |
+| L07-D1c | 進行中・最優先 | workflowはactive、default branchはmain、repoはpublic、Actionsはenabled、cronは17 * * * *。直近のNetlify schedule receiptは未確認で、起動欠落の原因は未特定。PR #860/main push #42007367166でcollector除外を修正し、production deploy、公開`capafy.json`の10:07:02Z取得、UIのcurrent表示と主要指標を確認済み。次は10:17Z以降の自然schedule receipt、公開JSON/UI freshnessを確認し、schedule未起動ならGitHub配信経路を診断 |
 | L07-D2 | 完了 | PR #859でcalendar month表示をUTC固定に修正。timezone別focused test 5/5、Open data関連test 11/11、PR CI、本番deploy #42001774246がpass。公開UIのRevenue/Costs/ProfitすべてでNovember 2026を目視確認 |
 | L07-D3 | 未完 | 全社利益/KPIのbasisをreconcilerとHTMLで一致させる。coverage不足なら全社利益を確定表示せず観測済小計と欠測を分ける。nullを0へ変換しない。source付きfixtureで集計と表示を確認 |
 | L07-D4 | 未完 | 既存Stripe read-only接続を復旧・照合し、Cloudのlive/test product/price/subscription/refund/cancelを既存台帳へ帰属させる。Stripe全体行とCloud product行を二重計上せず、MRR/実売/支払/出金を分ける。人のcredentialはCloud workerへ渡さない |
 | L07-D5 | 未完 | 既存生成/公開/再取得経路を上記cadenceへ接続し、row別as_of/source/last success/errorを表示する。開いたままのスマホと次の自然refreshでfresh/stale/取得失敗を確認し、API制限を守る |
 | L07-D6 | 未完 | 既存roster/実行receiptからteam/provider/role/最後の実結果、既存配信receiptからchannel/account別URL/reach/click/conversionを公開用に集計する。登録済みと稼働済みを分け、秘密/private本文を出さない。既存規定の公開範囲だけを使う |
 
-全体順序L02→L10は変更しない。dashboardは公開済みのためD2/D3をworker売上待ちにせず独立して進める。D2はPR #859、本番deploy、公開UIで完了。dashboard cursor=L07-D1c（自然起動未確認とCapafy freshness回帰の修正）。D1bのdata.json staging成功はcapafy.jsonの鮮度を保証しないため、feedごとの取得・stage・自然起動receiptを別々に検証する。worker主cursor=L02。
+全体順序L02→L10は変更しない。dashboardは公開済みのためD2/D3をworker売上待ちにせず独立して進める。D2はPR #859、本番deploy、公開UIで完了。dashboard cursor=L07-D1c（Capafy main-push回帰は本番で修正・readback済み、自然schedule receiptは未確認）。data.json staging成功はcapafy.jsonの鮮度を保証しないため、feedごとの取得・stage・自然起動receiptを別々に検証する。worker主cursor=L02。
 
 #### 旧契約・版別の診断記録（履歴、現行TODOではない）
 
