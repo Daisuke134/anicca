@@ -1,0 +1,93 @@
+name: Manager | upstream BehaviorBench CPU reproducibility
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-upstream-behaviorbench-smoke.yml"
+      - "docs/research/manager/masterclass/2026-11-04-p04-causal/UPSTREAM_BEHAVIOR_FOUNDATION_MODELS_20261106_JA.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upstream-smoke:
+    name: Pin and test upstream BehaviorBench (no protected dataset, no API billing)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      UV_NO_PROGRESS: "1"
+      PYTHONUNBUFFERED: "1"
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      UPSTREAM_SHA: ddd646ed2bbecdb79094eb56763ee7664d2f8e1a
+    steps:
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install uv tool
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.7"
+      - name: Checkout immutable official evaluator (MIT)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init -q upstream
+          cd upstream
+          git remote add origin https://github.com/umich-foreseer/behaviorbench_eval.git
+          git fetch -q --depth 1 origin "${UPSTREAM_SHA}"
+          git checkout -q --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "${UPSTREAM_SHA}"
+          test -f LICENSE
+          echo "BehaviorBench exact upstream source: $(git rev-parse HEAD)"
+      - name: Install official package and tests
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv sync --dev
+          uv run pytest -q
+          uv run behaviorbench-eval --help > /tmp/behaviorbench-cli-help.txt
+          grep -q 'task' /tmp/behaviorbench-cli-help.txt
+      - name: Document the genuine run boundary and file checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os
+          import urllib.request
+          from pathlib import Path
+          refs={
+            "behaviorbench_dataset":"https://huggingface.co/api/datasets/befm/BehaviorBench",
+            "befm_1_5_4b":"https://huggingface.co/api/models/befm/BeFM1.5-4B",
+            "centaur_70b_adapter":"https://huggingface.co/api/models/marcelbinz/Llama-3.1-Centaur-70B-adapter",
+            "psych101_train":"https://huggingface.co/api/datasets/marcelbinz/Psych-101"
+          }
+          results={}
+          for name,url in refs.items():
+              with urllib.request.urlopen(urllib.request.Request(url,headers={"User-Agent":"Anicca-ManagerBench-Audit/0.1"}),timeout=25) as res:
+                  j=json.load(res)
+              results[name]={"license":j.get("cardData",{}).get("license"),"gated":j.get("gated"),"private":j.get("private")}
+          out={
+            "kind":"software_compatibility_and_license_audit_not_benchmark_performance",
+            "run_environment":"GitHub Actions ubuntu-24.04 Python 3.11",
+            "upstream_repo":"https://github.com/umich-foreseer/behaviorbench_eval",
+            "upstream_sha":os.environ["UPSTREAM_SHA"],
+            "upstream_tests":"pytest completed in previous step",
+            "hf_metadata":results,
+            "full_behaviorbench_dataset_downloaded":False,
+            "behaviorbench_real_human_model_inference_run":False,
+            "centaur_70b_inference_run":False,
+            "befm_4b_inference_run":False,
+            "note":"Upstream evaluator installed and its own tests run; no restricted benchmark data, no human efficacy score, no cloud GPU requested."
+          }
+          Path("upstream-compatibility.json").write_text(json.dumps(out,indent=2,ensure_ascii=False)+"\n")
+          print(json.dumps(out,indent=2))
+          PY
+      - name: Save inspection receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-behaviorbench-cpu-receipt
+          path: upstream-compatibility.json
+          retention-days: 30
