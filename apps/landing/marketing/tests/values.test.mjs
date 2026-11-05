@@ -17,7 +17,8 @@ test('home overlay publishes exactly the three approved Values and preserves the
   assert.equal(result.status, 0, result.stderr);
   for (const path of ['index.html', 'en.html']) {
    const html = readFileSync(join(cwd, 'out', path), 'utf8');
-   assert.match(html, /<h1>End suffering\.<\/h1>/);
+   assert.match(html, /<h1>Understand behavior\. Improve real lives\.<\/h1>/);
+   assert.match(html, /end of suffering/);
    const sections = [...html.matchAll(/<section\b[^>]*id="values"[^>]*>([\s\S]*?)<\/section>/g)];
    assert.equal(sections.length, 1, `${path}: one Values section`);
    const section = sections[0][1];
