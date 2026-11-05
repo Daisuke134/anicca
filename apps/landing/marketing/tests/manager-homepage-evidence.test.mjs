@@ -12,14 +12,17 @@ test('English Manager homepage exposes current evidence, research, and honest li
   const html = read('pages/en.html');
   const text = visibleText(html);
 
-  assert.match(text, /one persistent manager I am building to study how behavior change can reduce suffering/i);
+  assert.match(text, /one persistent manager we are building to study how behavior change can reduce suffering/i);
   assert.match(text, /does not ask every beneficiary to use a dedicated app or chat/i);
   assert.match(text, /observed actions, follow-up, and harm/i);
   assert.match(text, /67 published articles: 38 in English and 29 in Japanese/i);
   assert.match(text, /90 existing AI evaluations/i);
+  assert.match(text, /P07-1 analyzed 269,603 published human-choice trials/);
+  assert.match(text, /P07-2 compared next-observation brooding and stress forecasts/);
+  assert.match(text, /COM-B/);
   assert.match(text, /OIDC checkpoint restore/i);
   assert.match(text, /positive canary[^.]*STOP \/ rollback[^.]*native-observation/i);
-  assert.match(text, /Manager has not yet demonstrated reliable human-behavior prediction or real-world effects of intervention/i);
+  assert.match(text, /Our early held-out human-data studies do not yet establish reliable generalization across populations, tasks, or interventions/i);
   assert.match(text, /what Anicca aims to build/i);
   assert.match(text, /beneficiaries should not need a dedicated app or chat/i);
   assert.match(text, /operator oversight, audit, and stop controls remain/i);
@@ -45,9 +48,12 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   assert.match(text, /実際の行動、追跡、害を観測して評価します/);
   assert.match(text, /英語38本・日本語29本、計67本の記事/);
   assert.match(text, /AI評価90件/);
+  assert.match(text, /P07-1では5研究の公開実人間選択269,603試行/);
+  assert.match(text, /P07-2では別々の公開ESMデータ/);
+  assert.match(text, /COM-B/);
   assert.match(text, /GitHub OIDCによるcheckpoint restore・update・release/i);
   assert.match(text, /positive canary[^.]*STOP \/ rollback[^.]*native observation/i);
-  assert.match(text, /人の行動を確かに予測し、介入によって現実の結果を改善したことは、まだ実証していません/);
+  assert.match(text, /実人間データによる初期の参加者分離評価はありますが、未知の集団・行動・介入に一般化する信頼性はまだ確立していません/);
   assert.match(text, /Aniccaがつくることを目指す、ひとつのマネージャー/);
   assert.match(text, /受益者に専用のアプリやチャット操作を求めない構想/);
   assert.match(text, /運営者の監督・監査・停止手段は保ちます/);
