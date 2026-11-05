@@ -25802,7 +25802,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上にCloudがliveという連絡もある。一方、今回の限定Sent検索にはproject提出完了のreceiptは見つかっていない。Daisの従来の「Maritime提出済み」申告は保持し、未提出と断定せず、今回指定されたproject提出のreceiptを別に取得する。申請emailは既存applicationの本人emailをprivate SSOT/メールから照合する（秘密はrepoへ出さない）。
 
-提出結果の境界: FIRST 1000 projectのフォーム受付は完了。公式メールはproject締切11/3 23:59 Pacific、selection予定11/4を示す。公開growth competitionの12/1期限は別段階であり、今回の締切へ置換しない。主催者へ期限後の対象可否の問い合わせを送信済みだが、返信/選出/受賞は未確認。Naïveの出席登録とYC application提出/更新はこのフォームで完了しない。
+提出結果の境界: FIRST 1000 projectのフォーム受付は完了。公式メールはproject締切11/3 23:59 Pacific、selection予定11/4を示す。公開growth competitionの12/1期限は別段階であり、今回の締切へ置換しない。主催者へ期限後の対象可否の問い合わせを送信済みだが、返信/選出/受賞は未確認。Naïveの参加は別途YC公式メール `1a19e97fb6b3e525`（11/2受信）の `You are confirmed` と11/7 11:00開始案内で確認済み。参加確定と完成成果物/受賞は分ける。YC application提出/更新はこのフォームの対象ではなく、今回は再検証していない。参加ticket、QR、個人用link/tokenはrepoへ保存しない。
 
 試用経路のfresh UI readback: https://aniccaai.com/maritime?source=first1000&lang=en → `Start Life Manager Cloud` → https://life-call-production.up.railway.app/lm?start_calendar=1 → Google identity login。観測したOAuth scopeはopenid/email/profileで、ここではInbox/Calendar scopeの要求はない。認証後の機能や新規利用者の全経路は未検証。公開planは7日trial後$29/月。メール不要・利用者credential不要という目標と現状Google identity依存を混同せず、提出本文にも現在の手順と早期buildの境界を開示する。
 
