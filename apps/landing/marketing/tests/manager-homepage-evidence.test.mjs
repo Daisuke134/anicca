@@ -16,9 +16,10 @@ test('English Manager homepage exposes current evidence, research, and honest li
   assert.match(text, /Behavioral Foundation Model/);
   assert.match(text, /Understand behavior\. Improve real lives\./);
   assert.match(html, /manager-real-intervention-outcomes-en/);
+  assert.match(html, /manager-behavioral-foundation-model-guide-en/);
   assert.match(text, /beneficiaries should not need a dedicated app or chat/i);
   assert.match(text, /independently measured outcomes/i);
-  assert.match(text, /78 published articles: 45 in English and 33 in Japanese/i);
+  assert.match(text, /80 published articles: 46 in English and 34 in Japanese/i);
   assert.match(text, /90 existing AI evaluations/i);
   assert.match(text, /Understand and simulate behavior\./i);
   assert.match(text, /P07-1 analyzed 269,603 published human-choice trials/);
@@ -51,9 +52,10 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   assert.match(text, /Behavioral Foundation Model/);
   assert.match(text, /行動を理解する。現実を良くする。/);
   assert.match(html, /manager-real-intervention-outcomes-ja/);
+  assert.match(html, /manager-behavioral-foundation-model-guide-ja/);
   assert.match(text, /汎用Managerモデルの重みの公開/);
   assert.match(text, /実際の結果を測定する/);
-  assert.match(text, /英語45本・日本語33本、計78本の記事/);
+  assert.match(text, /英語46本・日本語34本、計80本の記事/);
   assert.match(text, /AI評価90件/);
   assert.match(text, /行動を理解・シミュレーションする。/);
   assert.match(text, /P07-1では5研究の公開実人間選択269,603試行/);
