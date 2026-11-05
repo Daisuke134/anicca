@@ -2,7 +2,7 @@
 
 **更新：2026-11-05（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
 
-**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-3。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
+**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-4。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
 
 
 ## Managerの中核仮説と実証すべき価値
@@ -161,4 +161,13 @@ python3 p05_1_ontology_readonly.py
 
 [P07-2日本語講義・HMM/GLM-HMMの基礎](P07-2_JA.md)、[実際に動くPython](experiments/p07_2_real_esm_state_prediction.py)、[30件の新規テスト](experiments/test_p07_2_real_esm_state_prediction.py)、[OpenESMの実行結果](evidence/P07-2_REAL_ESM_HOEBEKE_AFFECT_RESULTS_20261105.json)。Hoebeke40人/1450有効遷移のBrooding、Dejonckheere100人/6890有効遷移のStressを**別の対象として**、強いPersistenceとRidge/RandomForest等で比較。人物単位分割、未来情報なし、推定効果は治療の因果効果ではない。P07-1＋P07-2のレビュー済み75テスト成功。
 
-[常設ハンドオーバー](HANDOVER_LATEST.md)、[公式WebのEN/JAコピー改訂案](ANICCA_SITE_COPY_UPDATE_PROPOSAL_20261105.md)。サイト更新の直接操作は安全制御でブロックされたためドラフトのみ、**本番サイトへの更新はしていない**。研究保存版100枚・本番34枚不変。**次はP07-3**。
+[常設ハンドオーバー](HANDOVER_LATEST.md)、[公式WebのEN/JAコピー改訂案](ANICCA_SITE_COPY_UPDATE_PROPOSAL_20261105.md)。サイト更新の直接操作は安全制御でブロックされたためドラフトのみ、**本番サイトへの更新はしていない**。研究保存版100枚・本番34枚不変。**次はP07-4**。
+
+
+### P07-3 と ManagerBench（2026-11-06）の新規教材
+
+- [COM-B・行動変容の機能と介入技法（P07-3 日本語）](P07-3_JA.md)。
+- [Behavior Foundation Model / ManagerBench v0.1 仕様](BEHAVIOR_FOUNDATION_MODEL_MANAGERBENCH_SPEC_20261106.md)。
+- [英語書籍章：From Persuasion to Causal Behavior Engineering](BOOK_CHAPTER_BEHAVIOR_CHANGE_AI_P07-3_EN.md)。
+- [評価器](experiments/managerbench_v0.py) と [ソフトウェアunit test](experiments/test_managerbench_v0.py)。人工fixtureの13/13テストは成功。新規実人間データの検証や共通モデルの訓練ではない。
+- 最新進捗は必ず[唯一の正本](ROADMAP_STATUS_JA.md)と[引継ぎ](HANDOVER_LATEST.md)へ記録。公式サイトのPR #9246はソース修正であり、本番反映の証拠ではない。
