@@ -25840,15 +25840,53 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 | ID | 状態 | 一つの作業と完了証拠 |
 |---|---|---|
 | L01 | 完了 | 公式テンプレート／harness source／persistent browser／外側scheduler／現provider状態を調べ、採用部品を選ぶ。根拠は上記research。人の収益申告と自分の確認を分ける |
-| L02 | 次 | 既存Maritime custom workerのowner・実行中effect・予算を照合し、競合しない公式OpenClaw imageを既存枠内で一件用意する。image/version、mount、Sol mediumのResponses/image/tool受入、実費をreadback。失敗時は公式の対応imageまたは既製Hermes/browser-useへ。独自wrapperを作らない |
+| L02 | 実行中 | 下記L02-A〜Hを順に実行。既存custom workerを保護し、公式OpenClaw image一件でversion、永続mount、Sol mediumのResponses/image/tool、実ブラウザ、費用を公式readbackする。詳細手順は `docs/superpowers/plans/2026-11-05-cloud-l02-maritime.md`。独自wrapperを作らない |
 | L03 | 未完 | agent専用browser profile、既存agent所有inbox、担当限定1Password Agents参照、既存playbook/台帳を接続し、再起動／別run後に保存ログイン・仕事状態を再読取する。個人Google/Gmail credentialを使わない |
 | L04 | 未完 | Capafyの既存Publisherに正式なagent/team経路があるか確認し、その同一権利者で登録／回復を一件完走する。正式経路がなければ適格な次市場を選ぶ。本人の確認メールと最終ログイン画面／provider IDを確認し、credentialを登録時に保存。無関係なforum登録を成果にしない。ここで一度Daisへ実結果を報告する |
 | L05 | 未完 | 固定winner一件の需要・形式・価格・導線を調べ、新しい自社商品一件を正式公開する。自社素材、live URL、provider公開状態。draft/審査提出をPUBLISHEDにしない |
 | L06 | 未完 | 無料の既存配信経路で商品を届け、第三者注文一件を納品し、支払receipt・手数料・返金・全実行費を照合する。$0開始と補助を記録し、入金と利益を別表示する |
 | L07 | 未完 | 公式scheduled wakeから次の一業務を無介入完走し、既存台帳とopen dashboardを30分更新する。wake/start/final URL/readback/costを確認し、二重実行0と実介入数を記録する |
 | L08 | 未完 | 黒字の同じ一業務を第二runtime（Naïve候補）で再現する。公式接続scope、Identity/profileの所有、対応harnessとtoolを確認する。同じ商品・台帳・会計を使い、売上を二重計上しない。実運転の録画は実結果から作る |
-| L09 | 未完 | 既存スマホ入口／認証機能／結果画面を同じworkerへ接続し、スマホだけで開始→本人の結果確認を実証する。Google/利用者メールを開始必須にせず、既存匿名session等を再利用する。tenant分離と回復可能な所有者bindingを確認し、受取addressだけで他人の残高を移管しない。新しいchat appや認証serverは作らない |
+| L09 | 未完 | 既存スマホ入口／認証機能／結果画面を同じworkerへ接続し、スマホだけで開始→本人の結果確認を実証する。利用者の最小identity認証は許容する（Dais最新指示：Google identity可）。既存認証を再利用し、利用者の私用Gmail/Calendar権限や仕事用passwordをworkerへ渡さない。tenant分離と回復可能な所有者bindingを確認し、受取addressだけで他人の残高を移管しない。新しいchat appや認証serverは作らない |
 | L10 | 未完 | 既存subscription機能を再利用し、外部利用者一人の支払→その人のManagerによる実結果→実費を照合する。自社事業売上と利用料を分離し、解約/返金と継続利用を追う。自社事業10K MRR・外部subscription10K MRRをそれぞれ計測しながら拡大する |
+
+**L02の実行単位（本表が状態の正本、planは手順）**
+
+| ID | 状態 | 一操作と確認結果 |
+|---|---|---|
+| L02-A | 完了 | GET agents/plan/usageを照合。既存custom一件はsleeping、旧workerを起動/削除しない。契約readbackはbillingModel=seats、trial.billingModel=free、machines=1/maxMachines=3/maxAwakeMachines=1。公開の新料金表を旧契約へ断定適用しない |
+| L02-B | 完了 | 公式OpenClaw image 2026.7.1、SDK0.11.0のcreate/env schema、既存Capafyホスト用OpenRouter keyの日次上限$3と残枠、Sol catalogueのimage/tool対応を確認。個人Google・Factory専用key・全vaultをVMへ持ち込まない |
+| L02-C | 完了 | externalId=lm-runtime-validation-20261105で重複照合し、templateId=openclaw、2GB/1vCPU/5GB、private、auto-sleepの一件を作成。create一回、結果不明時はGETで照合。既存3台枠内、追加subscription/credits購入/旧worker変更なし |
+| L02-D | 部分完了 | 新workerのversionと/data永続mountをexecで確認。公式configへSol mediumと既存ホスト用provider接続を設定し、secret値をログ/repoへ出さない。新規独自provider proxyは作らない |
+| L02-E | 完了 | 同じVMからSolのResponses APIと画像入力/tool callingを短い実callで確認。model id/effort/response id/usageを記録。試験は短い有限callのみ、既存日次$3上限を上げず、その枠を他ownerが消費した場合は再測定 |
+| L02-F | 初回完了・再開後未完 | OpenClawの実browserで公開LMページを開き、タイトルとscreenshotを取得してモデルが内容を観測する。ログイン/登録/公開/送金はまだ行わない。shellでのHTML取得をbrowser成功に置換しない |
+| L02-G | data/profile保持確認・browser設定未完 | /dataへ検証markerを書き、当該新workerだけsleep/start後に再読取。browser profileの格納先と実際の保持境界を記録。販売先の保存ログインはL03で別に確認 |
+| L02-H | 未完 | 最終GETのresource state、model/browser結果、usage/費用、旧worker保全を照合。APIの0と外部model費を混同せず、L02完了か失敗境界を判定。L03へcursorを移すのは受入後のみ |
+
+**L02実測checkpoint:** 新worker `113ec037-cb21-4d7e-af8d-e689bb0a19ad` は公式OpenClaw2026.7.1、2GB/1vCPU/5GB、private/auto-sleepで作成済み。既定はgpt-5.4/browser無効。native configへOpenRouter経由Sol mediumと永続Chromeを設定し、config validate PASS。Responses tool callと実画面imageの直接入力はHTTP200。埋込OpenClaw agentはbrowserツールで/lmを開き、snapshot/screenshot/実画面の見出し・CTAを読取りJSONへ保存。13応答のOpenRouter generation公式照合はcoverage complete、合計$0.0671382、resolved model=openai/gpt-6.1-sol-20260929。VM meterは旧free/seat枠で観測used/overage0だが、model費や将来hosting費を0としない。
+
+**現在の診断cursor=L02-D2:** sleep→GET sleeping→start→GET active後、marker、artifact SHA256、profile Local State、Chrome binary、Sol mediumは保持。一方browser.enabledがfalseへ戻り、Gateway経由のbrowser stopは `browser control is disabled`。agent.desktopEnabled=falseは確認済みだが、どの起動処理が設定を戻すかは未確定。provider設定/起動sourceを確認し、再開後のmanaged Gatewayでbrowserが利用できることを再検証する。最初の埋込agent sessionはstopとartifact確認済みだが、そのdetached execのprovider statusはrunningのまま。完了済み試験PIDへのSIGTERMとcancel候補POST405を実施。元のexecとbrowser子processのcleanupはexact ownerだけを診断し、旧workerを操作しない。新worker proxy cap0設定はmanage scope不足403で未適用、権限は広げずOpenRouterの既存$3/day枠だけを使用する。検証workerのheartbeatは0m（営業scheduleはL07）。private証拠は既存stateの `cloud-l02-maritime-20261105/`。L02の完了判定はまだしない。
+
+**L02-D2の次操作:** 新workerだけのprovider desktop/browser設定とnative Gatewayの再開経路を照合し、browser無効化を根本修正。再開後Gateway browserのstatus/open/screenshotが通り、完了済みexecのcleanupを公式状態で確認したらL02-Hへ戻る。公式OpenAPIはPATCH `/api/agents/{agent_id}/desktop-config` `{enabled:true}` を定義し、4GiB/2vCPU floor・seat cap再判定・active時rebuildを明記。契約枠/費用を先に照合し、独自起動wrapperで代替しない。 GET account/limitsはfree/seat、maxMemMb8192を返すが、desktop-configの実callはHTTP402/code=seat_limit/paid plan requiredで拒否。desktopは有効化されておらず2GB/1vCPUのまま。VM付属MARITIME.mdはlogin用途に公式Browserbase MCP、公開読取にnative headlessを案内。今回workerのenvにBrowserbase接続はなく、Credential SSOTのBrowserbase serviceもない。paid機能の権限迂回や独自wrapperは作らず、既存hackathon benefit/公式接続の適格性と費用を次に照合する。
+
+**進捗再確認と直近の原子的TODO:** GETで検証workerはactive・desktopEnabled=false・2048MiB/1vCPU、accountはfree/seat・machines2/max3・awake1/max1を再確認。これはブラウザ復旧・保存ログイン・公開・売上の証拠ではない。以前のモデル試験費$0.0671382は確認済みの試験分のみで、現在の累計費用/利益ではない。PR #9229は14 CI jobsとCodeRabbit成功後も新mainとのmanifest競合でmerge拒否。最新mainのhome/blog/他owner変更を保持し、manifestは最新mainを正として変更した/lm EN/JAのhashだけ再計算する。
+
+| 順 | 次の一操作 | 完了判定 |
+|---|---|---|
+| D2-1 | 既存大会benefitの適用条件とMaritime公式desktop/Browserbaseの利用枠・料金を照合 | 利用できる公式browser経路と費用が特定できる。無料枠/会社負担/売上を分離 |
+| D2-2 | その公式browser経路を検証worker一台へ設定 | provider側の有効状態とnative browserの起動確認。独自wrapperなし |
+| D2-3 | 当該workerをsleep/startし、browserで/lmを開きscreenshotを取る | 再開後も実browser操作と画面観測が通り、data/profile保持を確認 |
+| D2-4 | 以前の完了済み試験execを照合・終了処理し、費用と旧workerを確認 | exact execのterminalまたは正確な終了理由、公式費用、旧worker無変更。ここでL02受入判定 |
+| P-1 | PR #9229の競合解消後にCI再実行・main統合 | 最新headに全必須check成功、merge SHA確認 |
+| P-2 | 既存website publisherのimmutable overlay pinを統合SHAへ揃えて公開 | public /lm EN/JAの新しい冒頭をreadback。source更新を公開済みとしない |
+
+以後は既存L03→L04→L05→L06→L07→L08→L09→L10を維持する。収益の現在cursorはL02-D2。販売先への登録、出品、第三者入金、黒字は未確認のため未完のまま。
+
+**既製部品のみ（Daisの明示要件）:** 自作runtime、browser wrapper、scheduler、auth server、vault、会計engineを追加しない。欠けた機能は公式機能・既存実装・再利用可能なOSSを調べ、その設定と接続で満たす。適合部品が未確認なら部品名・不足機能・調べた出所を記録し、自作で埋めない。READMEと/lmの冒頭は「No Human in the Loop」「No Human Credentials」。運営要件は、仕事の選択・登録・公開・配信・収支照合を利用者の指示や私用credentialなしで進めること。利用料を含む全費用より多い実収益を採算の合格条件とし、未実証の黒字・日次10倍成長を実績として表示しない。
+
+**説明反映の原子的作業:** ①README冒頭をCloud方針と現状に揃える ②/lm EN/JAの冒頭・Cloud説明・FAQを同じ契約へ揃える ③既存route manifestのhashと既存testを確認 ④sourceをpush/CI/mainへ統合 ⑤既存publisherのimmutable pinを更新しpublic /lmを読戻す。新しい画面・実行logic・公開経路を作らない。これはL02進行中に追加された説明修正で、収益業務の依存順L03〜L10は変えない。
+
+No human in the loop / No human credentialsは、利用者の私用service credentialを受け取らず、agent自身のservice identityで仕事を完走する運営要件。会社のinfra契約/API key、agent所有credential、利用者の最小identity認証、将来の受取先設定は別の境界として表示する。全対応先での成功や介入0/100%を未実測で宣伝しない。README/websiteには同じ一商品が複数hostで動く設計と、host別の実証状態を示す。agent向け銀行/受取口座/crypto payout/UBIは後段の調査で、今回のL02へ決済や金融account作成を追加しない。refundを任意の収益分配手段として実装しない。
 
 **順序変更:** 旧=独自Naïve App/Computer bridge→公開画面proof→認証→商品公開→売上、別branchでは独自x402レポート販売へ逸脱。新=既製Maritime OpenClawの適合確認→永続状態/inbox/vault→正式登録/回復を一件→商品公開→第三者売上/採算→自然schedule→第二runtime。理由はDaisが既製部品のみ・Museの運転方式・ゼロ開始の実市場収益を指定し、現在Naïveにfrontier modelを使ってもpolicy待ち／browser action失敗が残るため。**現在cursor=L02**。今回の変更はsource文書のみで、稼働中effectの中断・重複、旧worker削除、モデル/予算/権限変更はしない。
 
