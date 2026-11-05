@@ -15,6 +15,12 @@ def load_module():
     spec.loader.exec_module(module)
     return module
 
+def test_hosted_refresh_uses_encrypted_runner_token_without_invoking_op(monkeypatch):
+    module = load_module()
+    monkeypatch.setenv("CAPAFY_WEB_TOKEN", "hosted-token")
+    monkeypatch.setattr(module.subprocess, "run", lambda *a, **k: pytest.fail("local vault lookup in hosted run"))
+    assert module.read_token() == "hosted-token"
+
 def test_snapshot_retains_period_and_aggregate_metrics_without_private_sources(monkeypatch):
     module = load_module()
     monkeypatch.setattr(module.reconcile, "_traffic_window", lambda *a, **k: {

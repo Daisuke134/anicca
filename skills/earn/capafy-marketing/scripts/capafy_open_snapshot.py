@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 from pathlib import Path
 import subprocess
 
@@ -12,6 +13,11 @@ import capafy_hourly_reconcile as reconcile
 
 
 def read_token() -> str:
+    # Hosted refreshes receive this value from the runner's encrypted secret store.
+    # Local runs continue to resolve the credential from the shared 1Password vault.
+    hosted = os.environ.get("CAPAFY_WEB_TOKEN")
+    if hosted:
+        return hosted
     try:
         result = subprocess.run(
             ["op", "item", "get", "capafy-publisher", "--vault", "Agents", "--format", "json"],
