@@ -10,6 +10,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [home-codex / NEAR実取引量提案] task6ab7f03b55368fd8790eac42、owner home-codex-6ab7f0、branch task/home-codex-6ab7f0。既存5pending/受注0と前回main統合を照合後、未応募job a20fa48bへの限定提案1件を所有。親接続/会計/投稿/旧fenceとcodex-hq-urlの有効leaseを保護。現在cursor=preflight→公式bid照合→必要CI/main。正本→NEAR初回販売spec task6ab7f0。
 - [home-codex / NEAR反復外注report統合] task1d5ec011dfbf4098c35454c4、owner home-codex、branch docs/near-integration-1d5ec0。PR9219は必要CI15件成功後main67596940b8へ公式統合、原稿/CSV/証拠3件の公式blob一致。5pending/受注0、売上/費用実額の新receiptなし。現在cursor=本訂正CI→main→既存hourly全assignment照合、受注時の最新brief/契約確認とSLA内納品。親接続/Naive・会計・投稿・lease/fence維持、追加bid/submit/課金0。正本→NEAR初回販売spec task1d5ec0。
 - [home-codex / NEAR discovery納品準備] 統合完了: PR9207/main3e3f078149、head813f69404fの必要CI15件成功・独立SHIP・公式report/evidence blob一致。継続task ab33e8138665c2d3c939d6af、同owner home-codex。現在cursor=既存hourlyの全assignment照合→受注後最新brief/submit契約再読→SLA内納品。5pending/受注0は今回公式GETの観測値。親HQ/Naive・会計・投稿・fence維持、追加bid/受注前submit0。
 - [home-codex / NEAR framework納品準備] task fcdfdd26ab37754b9c37251e、owner home-codex-fcdfdd、branch task/home-codex-fcdfdd。既存応募dd6e4f85の英語report/一次資料比較だけを所有。5pending/受注0を公式GET確認。親PR9182/9178/9179、remote hook、会計、投稿、既存fenceを保護。受注前submit/追加bid0。
