@@ -1,3 +1,13 @@
+# ANICCA / Manager — 最新状態（2026-11-06 JST）
+
+**現在の正本はROADMAP_STATUS_JA.md。P07-3 COM-Bの講義を実施、次の学習P07-4 CBT/ACT。** P07-3科学記事、英語書籍草稿、Behavior Foundation Model / ManagerBench仕様、純Pythonの評価骨格を研究ブランチ research/manager-p07-3-bfm-benchmark-20261106 で準備した。Mac miniで人工fixtureソフトウェア13テストが成功。**共通の基盤モデルはまだ訓練されていない、新規の実人間リーダーボード点数もない。** P07-1/2の実人間観測ベースラインは引き継ぐ。P07-3: P07-3_JA.md / BEHAVIOR_FOUNDATION_MODEL_MANAGERBENCH_SPEC_20261106.md / experiments/managerbench_v0.py / BOOK_CHAPTER_BEHAVIOR_CHANGE_AI_P07-3_EN.md。
+
+公式サイトはNextコンポーネントが本番の正本ではない。正本: life-manager/apps/landing/marketing/pages/{en,ja}.html + route-manifest.json、anicca-productsのmainのNetlify workflowが**不可変コミットをピン留め**してステージ・公開。EN/JAの実人間限定成果と未実証の介入効果を区別する文言を PR #9246 で更新し、36/36 marketing tests合格。本番にはこの研究サイトPRのmergeと第二のpin PR / CI / Netlify反映、独立GETが必要。**未確認のサイト公開をDONEとしない。**
+
+既存のP07-2以前の歴史記録は以下に保持する。旧記載の「次はP07-3」「サイトソースの直接編集が阻止」は**2026-11-05時点の履歴**であり、2026-11-06の最新版はこの冒頭とROADMAP_STATUS_JA.mdを優先する。
+
+---
+
 # ANICCA / Manager — Latest Handover (2026-11-05 JST)
 
 This is the canonical portable handover prompt for **research + implementation**. At the start of every new chat, read this file and `ROADMAP_STATUS_JA.md`; verify GitHub `main` before making assertions. Update this file whenever moving to the next phase or material project changes.
