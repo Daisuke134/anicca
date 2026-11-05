@@ -23,7 +23,7 @@ F. Actual human benefit: opt-in longitudinal randomized evaluation of self-chose
 No single leaderboard score blending incompatible endpoints until all weights and source licenses are fixed in a pre-registered protocol. Publish negative results too.
 
 ## Existing projects to reproduce/compare
-Centaur (2025 Nature human cognition foundation model): https://www.nature.com/articles/s41586-025-09215-4 ; source https://github.com/ServiceNow/Centaur ; verify source rights.
+Centaur (2025 Nature human cognition foundation model): https://www.nature.com/articles/s41586-025-09215-4 ; source https://github.com/marcelbinz/Llama-3.1-Centaur-70B ; verify source rights.
 BehaviorBench (2026): https://github.com/umich-foreseer/behaviorbench_eval ; check each dataset and CC BY-NC-ND restrictions, do not assume rights for commercial training.
 BCIO: https://github.com/HumanBehaviourChangeProject/ontologies .
 WMH human trials: https://github.com/AnneCollins/WMH .
