@@ -1,0 +1,123 @@
+{
+  "status": "OFFICIAL_STEP7_93_PARTICIPANT_REFIT_COMPLETED",
+  "scope": {
+    "official_step7_two_state_fit": true,
+    "clinical_trial": false,
+    "model_comparison_100_masks": false,
+    "online_prediction": false,
+    "raw_to_clean_preprocessing_rerun": false,
+    "hddm_or_all_paper_figures": false
+  },
+  "source_paper": "https://doi.org/10.1038/s44271-026-00424-9",
+  "source_project": "https://osf.io/jbp6h/",
+  "source_files": {
+    "Step7_GLM-HMM.ipynb": {
+      "sha256": "88dfa1259e05a55ab1708a13837b67e2032f236e871d490cc75da1aaa08e56f8",
+      "bytes": 101751
+    },
+    "self_state.csv": {
+      "sha256": "5493e06ecc89f4e9561ef934ad76c6c3c7fc19842a685ae164c7b2f7245aef56",
+      "bytes": 5437123
+    },
+    "trans_prob.csv": {
+      "sha256": "dee8a51ae63a6f779e2df8d7f54147dadefbf929ee10621b91b26573706a4287",
+      "bytes": 11411
+    }
+  },
+  "input": {
+    "participants": 93,
+    "trials": 55800,
+    "trials_per_participant": 600,
+    "missing_keypress_trials": 368,
+    "missing_keypress_choice_encoding": {
+      "0": 368
+    }
+  },
+  "seed": 0,
+  "maximum_em_iterations": 200,
+  "tolerance": 0.0001,
+  "executed_cells": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13,
+    15,
+    16,
+    17
+  ],
+  "ssm_commit": "e9b408b79e2ab22a05ca93c3a1f78a7dae461992",
+  "python": "3.11.14",
+  "packages": {
+    "numpy": "1.26.4",
+    "scipy": "1.11.4",
+    "pandas": "2.2.3",
+    "autograd": "1.6.2",
+    "ssm": "0.0.1"
+  },
+  "fit_seconds": 41.599844124983065,
+  "fits_completed": 93,
+  "all_likelihoods_finite": true,
+  "fits_at_iteration_limit": 4,
+  "fits_with_ll_decrease_over_1e_6": 47,
+  "rerun_transitions": {
+    "on_stay_probability_mean": 0.9599050236815477,
+    "on_absorbing_states": 0,
+    "on_expected_dwell_mean_trials": 1763234.2052960738,
+    "on_expected_dwell_median_trials": 40.57799308956501,
+    "on_dwell_from_mean_transition_trials": 24.94078041242753,
+    "off_stay_probability_mean": 0.9503061643889963,
+    "off_absorbing_states": 0,
+    "off_expected_dwell_mean_trials": 9492634.912652018,
+    "off_expected_dwell_median_trials": 76.10776593709804,
+    "off_dwell_from_mean_transition_trials": 20.12322026876448
+  },
+  "author_published_transitions": {
+    "on_stay_probability_mean": 0.959905015688245,
+    "on_absorbing_states": 0,
+    "on_expected_dwell_mean_trials": 1763234.2052158387,
+    "on_expected_dwell_median_trials": 40.57799308551786,
+    "on_dwell_from_mean_transition_trials": 24.940775440254313,
+    "off_stay_probability_mean": 0.9503061842808712,
+    "off_absorbing_states": 0,
+    "off_expected_dwell_mean_trials": 9492634.9051562,
+    "off_expected_dwell_median_trials": 76.10776593725302,
+    "off_dwell_from_mean_transition_trials": 20.123228323862985
+  },
+  "parameter_abs_difference_vs_author": {
+    "maximum": 0.006350682575330779,
+    "mean": 1.3351491742771704e-05,
+    "per_column_max": {
+      "P_off_off": 1.8499481725386957e-06,
+      "P_on_on": 7.433844202431317e-07,
+      "bias_off": 1.1099039509465669e-05,
+      "stim_off": 3.949448016626889e-06,
+      "bias_on": 0.001079495797851493,
+      "stim_on": 0.006350682575330779
+    }
+  },
+  "stimulus_weight_paired_t": {
+    "statistic": -2.674022409125122,
+    "pvalue": 0.008868872290232787,
+    "n": 93
+  },
+  "on_task_hard_fraction": 0.4500716845878136,
+  "on_task_posterior_mean": 0.44878689146172945,
+  "limitations": [
+    "Official cleaned input reused; original raw-to-clean pipeline not rerun.",
+    "Official notebook includes omitted keypress trials according to its preexisting chose_dom encoding; no mask added in the faithful run.",
+    "Expected states are retrospective smoothed posteriors using future responses, not online filtering.",
+    "Original notebook cell source unchanged; display-only and original export cells omitted; same fit call wrapped only for timing/diagnostics.",
+    "Dependencies pinned here, not a verified exact historical authors environment.",
+    "100-mask crossvalidation, all state-count comparisons, HDDM and all figures not reproduced.",
+    "OSF node license metadata unspecified; raw records and author notebook not redistributed in repository.",
+    "Attention-state fit does not demonstrate reduced rumination, clinical benefit or a general-purpose behavioral foundation model."
+  ],
+  "clinical_rnt_effect": null
+}
