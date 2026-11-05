@@ -543,3 +543,23 @@ P05-2の講義とコード実験を実施。[日本語全文](P05-2_JA.md)。既
 - **Publishing**: bilingual source-backed new original blog articles, one original infographic, canonical publication manifest and 109-slide detailed English research archive/Japanese speaker notes in https://github.com/Daisuke134/life-manager/pull/9253 . **Blog is not live until canonical PR merged, immutable publish pins updated and actual /blog/ URL readback.** The public talk 34 slides unchanged. PDF archive still older, not regenerated.
 - Product evaluation cloud run's synthetic software unit tests: 11 passed; actual human source datasets processed as above. HBCP Ridge/RF were actually trained/predicted. Missing original trial analyses and original HBCP RuleNN remain planned.
 - Immediate next: no new duplicate benchmark engine; review original trial outcome labels and biases, publish source-backed reports, run original HBCP RuleNN / HeartSteps adjusted analysis, connect a model to the Manager product under scoped rights, then independent real-world opt-in study. Replication must never be represented as Manager improving people until observed.
+
+
+## 2026-11-06 JST｜Manager official product launch copy and real RCT media PUBLIC RELEASE VERIFIED
+
+**This is a live public release, not just a PR/draft:** canonical article and slide PR #9253 merged as `2df14647844e2da96aa09c21a0b4a80387a829f1`; product/model homepage PR #9254 merged as `0b150d61be3b28b81556ed6c34937b25a774a338`. Existing `anicca-products` release PR #875 merged as `3b1b8fb25b189feffe44df30b9773cbd4ef2ab7e`. Netlify actual production deployment https://github.com/Daisuke134/anicca-products/actions/runs/42103951209 completed **SUCCESS**, including its post-deploy money-path smoke/rollback step.
+
+Public independent HTTP readback at **2026-11-05T20:34:57Z (2026-11-06 05:34:57 JST)**:
+- `https://aniccaai.com/en` HTTP 200, SHA256 `e408f9ea602448aada487da242c148e5dcdde6cde5ce9782fc398eda4a4df74e`, byte-identical to approved source.
+- `https://aniccaai.com/ja` HTTP 200, SHA256 `65485efa53d04df040ecd13f2cc1d5180ad1781e4c42c4389337c11cfdd30793`, byte-identical to approved source. Both explicitly state Manager is an AI **model and product**, NOT only R&D.
+- `https://aniccaai.com/blog/manager-real-intervention-outcomes-en` and `...-ja` both HTTP 200 with expected headings and both appear in public blog release receipt.
+- Public `/blog/manager/release.json`: content_revision `2df14647844e2da96aa09c21a0b4a80387a829f1`, 78 articles, 48 media. Original infographic `/blog/manager/media/90975ad11075597f2837afff21726a7f90d50ad2437ccdeecab4fc88ba485de8.png`: HTTP 200 and SHA256 exact same `90975...`.
+- Existing `/`, `/lm`, `/blog/manager` all HTTP 200. Post release product route and independent money-path smoke verified by CI.
+
+**Slides**: detailed research archive now **109 editable English slides**, Japanese speaker note updates 106–109 in `journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx` and `SPEAKER_NOTES_JA.md`. The public 34-slide talk remains unchanged. PDF archive regeneration was **not** completed; do not call older 100-page PDF current. A separate earlier P07-3 16-slide PDF is not the 109-slide full archive.
+
+**Real public human outcome evaluations** from https://github.com/Daisuke134/life-manager/actions/runs/42100293105 : HeartSteps, RCT Bench and HBCP grouped 5fold; software tests 11/11 passed. Original randomized clinical study outcomes do NOT establish that Manager benefited users. P07-3 education completed; real Manager efficacy RCT / production behavior model shared weights remain unproven. Academic baseline reuse > reinvention. Product contract: `products/manager/docs/MANAGER_MODEL_PRODUCT_CONTRACT_20261106.md`; model/product user value and outcomes first.
+
+**Marketing distribution:** Postiz connected brand X account アニッチャ accepted one short Japanese announcement as job `cmw409eb200abpm07kizsdon7`, preview https://platform.postiz.com/p/cmw409eb200abpm07kizsdon7?share=true. At initial verification it remained `QUEUE`, **not confirmed published to X**; post provider stripped included article URL, so avoid claiming successful social referral.
+
+**Next scientific/product gates**: independent reproduction of original HBCP RuleNN and adjusted HeartSteps causal-excursion analysis; reuse existing UpliftBench and RCT Bench; ship a safe opt-in Manager user feature and measure actual user-chosen outcomes, burden, harm vs standard comparator; upgrade only missing functionality. Any repo rename `life-manager`→`manager` remains gated by existing CI/deployment URL migration, NOT done.
