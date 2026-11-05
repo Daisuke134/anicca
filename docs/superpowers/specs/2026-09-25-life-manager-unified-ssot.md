@@ -25796,7 +25796,7 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 #### 現行契約：既製runtimeを組み合わせて会社の仕事を移す
 
-この現行契約と直下のL01–L08だけがNaïve/Maritime Cloudの実行順・現在cursor・残TODOの正本。以降の旧NHC表・版別model/cap・App bridge・登録probeは履歴として保存し、現行契約を上書きしない。調査根拠・部品比較・Mermaid → `docs/research/2026-11-05-cloud-runtime-lego.md`。
+この現行契約と直下のL01–L10だけがNaïve/Maritime Cloudの実行順・現在cursor・残TODOの正本。以降の旧NHC表・版別model/cap・App bridge・登録probeは履歴として保存し、現行契約を上書きしない。調査根拠・部品比較・Mermaid → `docs/research/2026-11-05-cloud-runtime-lego.md`。
 
 **成果:** Museで使う「永続VM＋実ブラウザ＋保存ログイン＋agent所有inbox＋vault＋外側の定期起動＋共有台帳＋既存open dashboard」を、既製品の設定でクラウドへ再現する。No human in the loopを運営要件として維持する。最初は適格な販売先でagent本人用accountの登録または同一account回復を一件実証して報告し、その後に公開・販売・納品・入金・実費差引を進める。製品コード、独自harness、signup bot、browser proxy、scheduler、メールserver、vault、dashboardを新作しない。
 
@@ -25826,6 +25826,8 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 | L06 | 未完 | 無料の既存配信経路で商品を届け、第三者注文一件を納品し、支払receipt・手数料・返金・全実行費を照合する。$0開始と補助を記録し、入金と利益を別表示する |
 | L07 | 未完 | 公式scheduled wakeから次の一業務を無介入完走し、既存台帳とopen dashboardを30分更新する。wake/start/final URL/readback/costを確認し、二重実行0と実介入数を記録する |
 | L08 | 未完 | 黒字の同じ一業務を第二runtime（Naïve候補）で再現する。公式接続scope、Identity/profileの所有、対応harnessとtoolを確認する。同じ商品・台帳・会計を使い、売上を二重計上しない。実運転の録画は実結果から作る |
+| L09 | 未完 | 既存スマホ入口／認証機能／結果画面を同じworkerへ接続し、スマホだけで開始→本人の結果確認を実証する。Google/利用者メールを開始必須にせず、既存匿名session等を再利用する。tenant分離と回復可能な所有者bindingを確認し、受取addressだけで他人の残高を移管しない。新しいchat appや認証serverは作らない |
+| L10 | 未完 | 既存subscription機能を再利用し、外部利用者一人の支払→その人のManagerによる実結果→実費を照合する。自社事業売上と利用料を分離し、解約/返金と継続利用を追う。自社事業10K MRR・外部subscription10K MRRをそれぞれ計測しながら拡大する |
 
 **順序変更:** 旧=独自Naïve App/Computer bridge→公開画面proof→認証→商品公開→売上、別branchでは独自x402レポート販売へ逸脱。新=既製Maritime OpenClawの適合確認→永続状態/inbox/vault→正式登録/回復を一件→商品公開→第三者売上/採算→自然schedule→第二runtime。理由はDaisが既製部品のみ・Museの運転方式・ゼロ開始の実市場収益を指定し、現在Naïveにfrontier modelを使ってもpolicy待ち／browser action失敗が残るため。**現在cursor=L02**。今回の変更はsource文書のみで、稼働中effectの中断・重複、旧worker削除、モデル/予算/権限変更はしない。
 
