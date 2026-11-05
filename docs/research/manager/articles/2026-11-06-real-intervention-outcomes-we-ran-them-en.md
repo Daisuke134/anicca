@@ -12,7 +12,7 @@ That is the question we care about at Anicca. Manager is an AI model and product
 
 For weeks, we wondered whether we needed to invent a new benchmark for behavioral interventions. Then we searched the literature. The answer was hiding in plain sight.
 
-![Original evidence diagram comparing HeartSteps, RCT Bench and HBCP research results](https://aniccaai.com/blog/manager/media/90975ad11075597f2837afff21726a7f90d50ad2437ccdeecab4fc88ba485de8.png)
+![Original evidence diagram comparing HeartSteps, RCT Bench and HBCP research results](https://aniccaai.com/blog/manager/media/99a7f637e54db25f1ecad832aac44ed596bb3c7dd5d51a43209f528777f63368.png)
 
 ## The walking experiment that already measured the answer
 

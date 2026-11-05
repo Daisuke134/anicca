@@ -4,7 +4,7 @@
 
 **Manager is an AI model and a product.** Its goal is to understand human behavior, simulate possible responses, and help people achieve outcomes *they choose*. We intend to release an open-weight Behavioral Foundation Model, but there is **no released general Manager model checkpoint yet**. Open code and real-world trial analyses already exist; Manager-specific improvements in users' lives remain to be verified.
 
-![Original model/evaluation landscape and terminology infographic](MANAGER_FOUNDATION_DIAGRAM_PLACEHOLDER)
+![Original model/evaluation landscape and terminology infographic](https://aniccaai.com/blog/manager/media/db5dfc3a6171eb60235a6131e7a15e5c8e5c72d043df5fa86ea1cd8f96bd218b.png)
 
 ## First: what is a Behavioral Foundation Model?
 
@@ -84,28 +84,36 @@ See the [original trial methods](https://pmc.ncbi.nlm.nih.gov/articles/PMC640134
 
 ## Frequently asked questions
 
-**Q: Is Manager already a trained general Behavioral Foundation Model?**  
+**Q: Is Manager already a trained general Behavioral Foundation Model?**
+
 No. Manager is the behavioral AI product and model stack. It is **building toward** a general open-weight checkpoint; released baselines and evaluation code are not equivalent to a new trained, cross-domain model.
 
-**Q: Does outperforming BehaviorBench mean Manager improves lives?**  
+**Q: Does outperforming BehaviorBench mean Manager improves lives?**
+
 No. A behavioral prediction leaderboard measures predictive fidelity on selected tasks. Real-world utility requires independent intervention and harm outcomes.
 
-**Q: Why should a model care about people who decline help?**  
+**Q: Why should a model care about people who decline help?**
+
 Because respecting autonomy is part of success. A reliable system abstains when the action is unsupported or unwanted, and retains a NO_ACTION option.
 
-**Q: Why not develop our own benchmark from scratch?**  
+**Q: Why not develop our own benchmark from scratch?**
+
 Existing public tooling includes BehaviorBench, UpliftBench, HBCP, HeartSteps and RCT Bench. We adopt them and develop a separate, documented extension only for an empirically demonstrated gap.
 
-**Q: Did the HeartSteps +12.95 mean the notification improved walking by 12.95 steps?**  
+**Q: Did the HeartSteps +12.95 mean the notification improved walking by 12.95 steps?**
+
 No. It is a descriptive comparison on corrected delivery records with different inclusion criteria from the paper. The original randomized assignment and analytic protocol must be recovered for a causal result.
 
-**Q: What is the first new model to run?**  
+**Q: What is the first new model to run?**
+
 Be.FM 1.5-4B against its Qwen3-4B base on an authorized cloud GPU, followed by a properly licensed real-human holdout. The access-controlled LoRA and original dataset licenses remain gates.
 
-**Q: Does more data guarantee accurate predictions of individuals or societies?**  
+**Q: Does more data guarantee accurate predictions of individuals or societies?**
+
 No. Population-level distributions can match even when individual choices are wrong; shifts in culture, time and incentives can break any simulation.
 
-**Q: When will Manager be useful, instead of endlessly publishing studies?**  
+**Q: When will Manager be useful, instead of endlessly publishing studies?**
+
 The product must ship useful user-chosen assistance with reliable permissions and independent outcomes. We learn and build in one cycle: reuse an existing method, run it, compare against a baseline, integrate a bounded improvement, ship, and publish the verified result.
 
 ## The one product roadmap
