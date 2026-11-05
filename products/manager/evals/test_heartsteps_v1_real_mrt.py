@@ -38,16 +38,21 @@ class StudyContractTests(unittest.TestCase):
         self.assertAlmostEqual(s["observed_difference_steps"],2.0)
         self.assertTrue(s["bootstrap_95ci_cluster_participant"])
         self.assertFalse(s["quality_of_life_measured"])
+        self.assertEqual(s["identification_status"], "NOT_CAUSAL")
+        self.assertEqual(s["original_paper_available_decisions"], 6061)
 
     def test_reject_missing_input(self):
         with self.assertRaises(ValueError):
             summarize([{"wrong":"fields"}],reps=120)
 
     def test_no_false_claim(self):
-        self.assertIn("not an ITT",summarize([
+        result = summarize([
             {"user.index":"1","avail":"TRUE","is.randomized":"TRUE","send":"TRUE","jbsteps30":"5"},
             {"user.index":"1","avail":"TRUE","is.randomized":"FALSE","send":"FALSE","jbsteps30":"2"},
-        ],reps=120)["causal_claim"])
+        ],reps=120)
+        self.assertEqual(result["identification_status"], "NOT_CAUSAL")
+        self.assertIn("not an ITT", result["causal_claim"])
+        self.assertIn("corrected notification delivery-status", result["causal_claim"])
 
 
 if __name__=="__main__":
