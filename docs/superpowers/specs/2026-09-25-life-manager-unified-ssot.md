@@ -25794,7 +25794,46 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 ### Naïve browser company — Capafy-first / No human in the loop
 
-この節がNaïve/Cloudの製品契約・現在cursor・残TODOの正本。下に残る版別のmodel・cap・登録probe・実行順は当時の履歴であり、この節を上書きしない。planは実行証拠の参照先で、別TODO正本にしない。
+#### 現行契約：既製runtimeを組み合わせて会社の仕事を移す
+
+この現行契約と直下のL01–L08だけがNaïve/Maritime Cloudの実行順・現在cursor・残TODOの正本。以降の旧NHC表・版別model/cap・App bridge・登録probeは履歴として保存し、現行契約を上書きしない。調査根拠・部品比較・Mermaid → `docs/research/2026-11-05-cloud-runtime-lego.md`。
+
+**成果:** Museで使う「永続VM＋実ブラウザ＋保存ログイン＋agent所有inbox＋vault＋外側の定期起動＋共有台帳＋既存open dashboard」を、既製品の設定でクラウドへ再現する。No human in the loopを運営要件として維持する。最初は適格な販売先でagent本人用accountの登録または同一account回復を一件実証して報告し、その後に公開・販売・納品・入金・実費差引を進める。製品コード、独自harness、signup bot、browser proxy、scheduler、メールserver、vault、dashboardを新作しない。
+
+**採用方針:** 最初のworkerはMaritime公式OpenClawテンプレート。upstreamのbrowser/workspace/cron/model providerをそのまま使い、既存Life Managerの仕事prompt・winner playbook・台帳・配信・会計へ接続する。Hermesは既製の代替。Open Instinctは近い公開実装として参照するが、既定のlogin/2FA/payment takeoverを調べず無人適合とはしない。Naïveは同じ商品の管理面／第二runtime候補として残し、第一workerの収益実証を待たせない。公式MCPを使う場合も現在keyのscopeと対象resource/toolを先に照合し、全権API proxyを新設しない。
+
+**model:** Daisの今回のfrontier優先指示を旧DeepSeek既定より優先する。新workerはGPT-6.1 Sol / mediumを第一候補にし、採用imageのResponses API・画像入力・tool calling・effort対応を先に確認する。Naïveの公式catalogはSol/Terra/Astraのimmediateとlow/medium/highを返すが、Maritimeでの同じmodel利用は未確認。現在のNaïve本体Terraをこの文書更新だけで変更しない。モデルは権限・browser状態・予約予算・受信経路の故障を自動では直さない。CodexのUI選択も変更しない。
+
+**記憶と起動:** `/data`等の実際の永続mountにworkspaceとagent専用profileを置く。コード・設定・playbookはGitHub、業務状態とreceiptの正本は既存ownerのprivate共有台帳に置き、chatを唯一の保存先にしない。秘密値・cookie・profileをGitへ入れない。VMがsleepする場合、内側のcronだけではwakeしないため、Maritime公式の予定同期／triggersを使う。同じ仕事を別schedulerで二重起動しない。
+
+**資格情報:** 最新指示に従い、新規agent業務accountのcredential正本は1Password「Agents」。登録時にagent所有inboxと生成passwordを保存し、担当範囲だけのservice credentialをworkerへ接続する。Dais管理の既存infra credentialは従来のprivate Credential SSOTを維持し、全vaultをVMへ複製しない。既存AgentMailをまず再利用し、Inkboxは正式なidentity provisioningが使える時の既製候補。復旧順は同一serviceのcredential照合→同じメールでreset→回復不能かつ正式に認められる場合だけ再登録。Google sign-inは同一identityで直列。既存Capafy Publisher/商品/ownerを保護し、VM数だけPublisherを増やさない。
+
+**ゼロからの収益:** agentの収益残高は$0開始。会社からの入金・自己購入・内部移動・compute credit・評価内の仮想報酬は顧客売上へ算入しない。会社負担／無料枠／大会補助のVM・model費は別記録する。初期USDCを必須にしない。REGISTERED、PUBLISHED、第三者注文、納品、売上残高、精算、銀行/on-chain着金は別段階。No human in the loopは自社/利用者の業務操作を指し、購入者や販売先の審査員が存在しないという主張ではない。本人liveness等が必要な経路は別の適格市場へ切り替え、架空情報で通さない。
+
+**仕事loop:** 数字を読む→最大の収益blockerを一つ選ぶ→実画面で行動→REGISTERED/PUBLISHED等の最終状態を開いて確認→既存台帳にrun/URL/費用/介入数を残す→報告。winnerの形式・価格段階・導線・頻度は自社素材へ適用し、参照URLと観測した販売信号を記録する。既存に売れている商品は変更せず、新規担当と既存担当の同時操作を避ける。公開dashboardは既存`/open/`を再利用し、30分毎の更新・更新時刻・未取得／coverage不足を表示する。全社売上を新cloud workerの売上へ付け替えない。
+
+**今回のfresh readback:** Naïve本体`agt_e1hvkwgrdrx119zh22qthavwt4`はcurrent_version27、pi、`openai/gpt-6.1-terra`、immediate。browserはwrites/persist/keep_alive有効、context=`anicca-browser-capafy`。deployment`dep_aqf597v5eqa3e25ff2z22rq9j8`はpin27、`0 */12 * * *`、enabled=false。最新確認session`ses_1e3t9v4wmtffx3842aanpkkrtr`の取得先頭100eventsはapproval待ちとact失敗を含み、続きがある。idle/end_turnや費用440251microUSDを登録成功へ置換しない。live catalogueのHermes/Claude Codeはrunnable=false。別のDeepSeek閲覧専用レポートagentと混同しない。Maritimeには既存custom worker一件・sleepingがあり、公式OpenClaw templateの稼働とは別。保存keyでMCPはComputer系scope不足の401、Maritime側model catalogは未取得。新規VM・key・model変更・登録・売上は今回実行0。
+
+**原子的な残TODO（これだけが現行）:**
+
+| ID | 状態 | 一つの作業と完了証拠 |
+|---|---|---|
+| L01 | 完了 | 公式テンプレート／harness source／persistent browser／外側scheduler／現provider状態を調べ、採用部品を選ぶ。根拠は上記research。人の収益申告と自分の確認を分ける |
+| L02 | 次 | 既存Maritime custom workerのowner・実行中effect・予算を照合し、競合しない公式OpenClaw imageを既存枠内で一件用意する。image/version、mount、Sol mediumのResponses/image/tool受入、実費をreadback。失敗時は公式の対応imageまたは既製Hermes/browser-useへ。独自wrapperを作らない |
+| L03 | 未完 | agent専用browser profile、既存agent所有inbox、担当限定1Password Agents参照、既存playbook/台帳を接続し、再起動／別run後に保存ログイン・仕事状態を再読取する。個人Google/Gmail credentialを使わない |
+| L04 | 未完 | Capafyの既存Publisherに正式なagent/team経路があるか確認し、その同一権利者で登録／回復を一件完走する。正式経路がなければ適格な次市場を選ぶ。本人の確認メールと最終ログイン画面／provider IDを確認し、credentialを登録時に保存。無関係なforum登録を成果にしない。ここで一度Daisへ実結果を報告する |
+| L05 | 未完 | 固定winner一件の需要・形式・価格・導線を調べ、新しい自社商品一件を正式公開する。自社素材、live URL、provider公開状態。draft/審査提出をPUBLISHEDにしない |
+| L06 | 未完 | 無料の既存配信経路で商品を届け、第三者注文一件を納品し、支払receipt・手数料・返金・全実行費を照合する。$0開始と補助を記録し、入金と利益を別表示する |
+| L07 | 未完 | 公式scheduled wakeから次の一業務を無介入完走し、既存台帳とopen dashboardを30分更新する。wake/start/final URL/readback/costを確認し、二重実行0と実介入数を記録する |
+| L08 | 未完 | 黒字の同じ一業務を第二runtime（Naïve候補）で再現する。公式接続scope、Identity/profileの所有、対応harnessとtoolを確認する。同じ商品・台帳・会計を使い、売上を二重計上しない。実運転の録画は実結果から作る |
+
+**順序変更:** 旧=独自Naïve App/Computer bridge→公開画面proof→認証→商品公開→売上、別branchでは独自x402レポート販売へ逸脱。新=既製Maritime OpenClawの適合確認→永続状態/inbox/vault→正式登録/回復を一件→商品公開→第三者売上/採算→自然schedule→第二runtime。理由はDaisが既製部品のみ・Museの運転方式・ゼロ開始の実市場収益を指定し、現在Naïveにfrontier modelを使ってもpolicy待ち／browser action失敗が残るため。**現在cursor=L02**。今回の変更はsource文書のみで、稼働中effectの中断・重複、旧worker削除、モデル/予算/権限変更はしない。
+
+自社の継続商品USD10K MRRと、外部利用者向けManager subscription USD10K MRRの二目標は維持する。まず実売と採算を確認する。one-off売上をMRRへしない。Maritime/Naïveは一つの商品のhosting/実行先で、大会規約と実ユーザー要件は各々確認する。紹介・申請改善は並行可能で、優勝やYC採択の保証にはしない。
+
+#### 旧契約・版別の診断記録（履歴、現行TODOではない）
+
+以下は当時の判断と観測の保存記録。現在の採用方式・実行順・完了条件は直上の現行契約を参照する。
 
 **目的と明示する価値:** Life Managerは「No human in the loop」を中心価値にする。第一ユースケースは**Capafyで需要調査→自社所有商品の制作→正式公開→配信→販売/納品→収益/費用確認**。他の販売先は同じManagerの展開先で、別商品ではない。Substack/n8n等の無関係な登録や受信箱試験、BusinessRun trace reviewを第一ユースケースに置かない。文化・製品要件としてNo human in the loopを明記し、実測済みの無介入完走・売上とは区別する。
 
