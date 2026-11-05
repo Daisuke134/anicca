@@ -1,8 +1,8 @@
 {
-  "title": "Manager Masterclass through Phase6 (education + synthetic research + actual public delivery readback)",
+  "title": "Manager Masterclass through P07-1 real human learning and habit evaluation",
   "last_updated": "2026-11-05",
   "curriculum_ssot": "ROADMAP_STATUS_JA.md",
-  "next_lesson": "P07-1",
+  "next_lesson": "P07-2",
   "P06_3_educational_trials_done": true,
   "P06_4_synthetic_profit_and_adverse_guardrail_done": true,
   "P06_5_evidence_hash_and_real_public_delivery_verified": true,
@@ -16,8 +16,8 @@
   "P06_5_actual_release_decision": "HOLD_NO_VERIFIED_CAUSAL_FIELD_RESULTS",
   "public_presentation_slides": 34,
   "public_presentation_pdf_pages": 34,
-  "full_research_slides": 96,
-  "full_research_pdf_pages": 96,
+  "full_research_slides": 98,
+  "full_research_pdf_pages": 98,
   "full_96_speaker_notes": true,
   "P06_research_details_slide_numbers": [
     94,
@@ -90,12 +90,12 @@
       "sha256": "57c5d080b244a000e2f7dd02cddf3171f8c75c14755fde8431ea2f478172f8c9"
     },
     "README.md": {
-      "bytes": 20187,
-      "sha256": "b4b869e8bc295b7d0c4d9215460cd8cf69390db3fc12bb28f4bb3b9128342dd9"
+      "bytes": 21188,
+      "sha256": "8f6ccda4ba39d7f37def5df71099c9edca9c3e00be87c84924b651c8a2f44637"
     },
     "ROADMAP_STATUS_JA.md": {
-      "bytes": 76632,
-      "sha256": "c0fedf4eaa69c60817b83e128e59bfd602bb9445dd089075f61bc373c1f5dcbb"
+      "bytes": 79738,
+      "sha256": "900d292045e962adee60bfb7801c5827b9d3710b1d74ba49c05aa178c4af7467"
     },
     "evidence/BCIO_REAL_OWL_SNAPSHOT_AUDIT.json": {
       "size": 1466,
@@ -454,12 +454,12 @@
       "sha256": "7e644958c2a5afa9e3a8a62d89512433c3e6bb3c200417309f011a75fc21d7f8"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf": {
-      "bytes": 9100661,
-      "sha256": "d21613bb904d15e31c00fbb7633fb72f4692daaaccfb7c41668f348359f9acc7"
+      "bytes": 9749837,
+      "sha256": "d1443b980a0ad04c1291c598baad16cf3ed07e944d8a7e41d9e3e67bac51fb5c"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx": {
-      "bytes": 664886,
-      "sha256": "227dba2b7f8d4f9526b71351a735c35b841423b0944a61624c6286b6f9de7136"
+      "bytes": 672341,
+      "sha256": "66759bb86ccdd0407dc5e9c5c1ee7102308c19af11e89646cec6f3c58c0f3792"
     },
     "journal_club/PRESENTATION_READINESS_20261105_JA.md": {
       "size": 7486,
@@ -470,12 +470,12 @@
       "sha256": "6cfe8b8b3792fd946b733636b47fbe81310a39e6b59375d6fc4fdadd01783378"
     },
     "journal_club/RUN_OF_SHOW_JA.md": {
-      "bytes": 4722,
-      "sha256": "62cabb85ff061e479ce800b970031e23f374a4739c9a9f43e61db105bc29aa0b"
+      "bytes": 4915,
+      "sha256": "8183784e8484bf70c81e6e8faffd811dc34d264c9a728b3917fa195e51484d92"
     },
     "journal_club/SPEAKER_NOTES_JA.md": {
-      "bytes": 115041,
-      "sha256": "9b98ccd68ae93793d5821f0de2be86b65201f264f7ed166a0952554c54cf5642"
+      "bytes": 117191,
+      "sha256": "2d38e9630d4bb38106bcbea11b21600fa279964e8177bebcb15c0a5423ed456f"
     },
     "journal_club/SPEAKER_SCRIPT_60MIN_JA.md": {
       "size": 39009,
@@ -616,6 +616,62 @@
     "journal_club/build_p06_phase6_appendix.py": {
       "bytes": 8965,
       "sha256": "f86eab547ef2568450e1875afee92b5e410be2db4d28af7caf4de2f54988e483"
+    },
+    "P07-1_JA.md": {
+      "bytes": 12034,
+      "sha256": "e9421b9705b3f487802960b6c52064a5b81e96a243b3806546ffd34c13346833"
+    },
+    "experiments/p07_1_real_reward_habit_eval.py": {
+      "bytes": 20240,
+      "sha256": "fdf17712a376de16f0fe5e92db8df2fc83865ea93c1edcbb0867dad5843a3a2d"
+    },
+    "experiments/p07_1_real_avoidance_descriptive.py": {
+      "bytes": 7139,
+      "sha256": "49a7f104c98ad449115ecb140089ddf0bad6f0800a4e86f2ab1f96aa9d89b308"
+    },
+    "experiments/test_p07_1_real_reward_habit_eval.py": {
+      "bytes": 11499,
+      "sha256": "2d2473426266f4431f20a37e79a492919a6a64d25e98eb3c37134ee5b8d7a8b8"
+    },
+    "evidence/P07-1_REAL_HABIT_PREANALYSIS_AND_MODEL_PLAN_20261105.json": {
+      "bytes": 7887,
+      "sha256": "ee654deb2ddfd139fac368658d0544fec882bced44a4eb902f4f1dd3bb43019f"
+    },
+    "evidence/P07-1_REAL_HABIT_MODEL_FREEZE_20261105.json": {
+      "bytes": 2587,
+      "sha256": "a6f3e0000a228db1fe1884723136b57a5d92f4b68b1b53a65e22508e48aea4a4"
+    },
+    "evidence/P07-1_REAL_REWARD_HABIT_HELDOUT_RESULTS_20261105.json": {
+      "bytes": 26035,
+      "sha256": "6db14de192ac36a220e97bd9962040dcd2c46002849f99e251ccd1e41861323e"
+    },
+    "evidence/P07-1_REAL_AVOIDANCE_BY_LOAD_20261105.json": {
+      "bytes": 9025,
+      "sha256": "c2a8c5aaa35b7e83d5e93a0534c9402f963cc82b86aa3cb74ad5858d9c40fd4d"
+    },
+    "evidence/P07-1_REAL_HUMAN_QA_20261105.json": {
+      "bytes": 1325,
+      "sha256": "3ca36b9da22d3ff253f731598918752d6e616daa2b7262a0c3aa0616ee551812"
+    },
+    "evidence/TEST_RESULTS_P07-1_REAL_HUMAN_20261105.txt": {
+      "bytes": 7280,
+      "sha256": "c1bb7adecc6bf30e3cd55334f8e262039e98374c3cbbc1502c30d69cbdd3cd35"
+    },
+    "journal_club/build_p07_1_real_habit_appendix.py": {
+      "bytes": 6963,
+      "sha256": "407cdbc6005bb85b626565f7f4ba27545a0e637eb89bcf353c4f6ddd514abfbc"
     }
-  }
+  },
+  "P07_1_new_unit_tests_passed": 45,
+  "P07_1_real_human_choice_trials": 269603,
+  "P07_1_research_datasets": 5,
+  "P07_1_observed_behavior_prediction_only": true,
+  "P07_1_real_interventions_performed": false,
+  "real_behavioral_welfare_effect_measured": false,
+  "full_speaker_notes": 98,
+  "new_real_human_reward_habit_research_slides": [
+    97,
+    98
+  ],
+  "production_S1_S2_completed": false
 }

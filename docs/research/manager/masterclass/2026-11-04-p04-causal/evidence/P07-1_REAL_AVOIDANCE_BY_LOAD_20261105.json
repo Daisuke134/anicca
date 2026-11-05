@@ -1,0 +1,308 @@
+{
+  "study": "P07-1 real reward/avoidance versus set size, descriptive not causal",
+  "n_independent_study_datasets": 5,
+  "n_real_individuals_across_study_participant_ids": 480,
+  "n_real_repeat_exposures": 202958,
+  "per_study": {
+    "Expe1.mat": {
+      "n_real_participants": 79,
+      "n_eligible_repeated_stimulus_events": 39846,
+      "rates": {
+        "low_load_after_no_reward": {
+          "n_events": 2198,
+          "repeat_rate": 0.06005459508644222,
+          "n_repeats": 132
+        },
+        "low_load_after_reward": {
+          "n_events": 13105,
+          "repeat_rate": 0.9712323540633346,
+          "n_repeats": 12728
+        },
+        "high_load_after_no_reward": {
+          "n_events": 6591,
+          "repeat_rate": 0.23441055985434683,
+          "n_repeats": 1545
+        },
+        "high_load_after_reward": {
+          "n_events": 17952,
+          "repeat_rate": 0.9084781639928698,
+          "n_repeats": 16309
+        }
+      }
+    },
+    "Expe3.mat": {
+      "n_real_participants": 40,
+      "n_eligible_repeated_stimulus_events": 21655,
+      "rates": {
+        "low_load_after_no_reward": {
+          "n_events": 1302,
+          "repeat_rate": 0.059907834101382486,
+          "n_repeats": 78
+        },
+        "low_load_after_reward": {
+          "n_events": 7030,
+          "repeat_rate": 0.9551920341394026,
+          "n_repeats": 6715
+        },
+        "high_load_after_no_reward": {
+          "n_events": 3462,
+          "repeat_rate": 0.21692663200462162,
+          "n_repeats": 751
+        },
+        "high_load_after_reward": {
+          "n_events": 9861,
+          "repeat_rate": 0.9045735726599736,
+          "n_repeats": 8920
+        }
+      }
+    },
+    "Expe5.mat": {
+      "n_real_participants": 26,
+      "n_eligible_repeated_stimulus_events": 13315,
+      "rates": {
+        "low_load_after_no_reward": {
+          "n_events": 444,
+          "repeat_rate": 0.08333333333333333,
+          "n_repeats": 37
+        },
+        "low_load_after_reward": {
+          "n_events": 3721,
+          "repeat_rate": 0.9639881752217145,
+          "n_repeats": 3587
+        },
+        "high_load_after_no_reward": {
+          "n_events": 1690,
+          "repeat_rate": 0.17633136094674556,
+          "n_repeats": 298
+        },
+        "high_load_after_reward": {
+          "n_events": 7460,
+          "repeat_rate": 0.9402144772117963,
+          "n_repeats": 7014
+        }
+      }
+    },
+    "Expe12.mat": {
+      "n_real_participants": 300,
+      "n_eligible_repeated_stimulus_events": 100460,
+      "rates": {
+        "low_load_after_no_reward": {
+          "n_events": 6573,
+          "repeat_rate": 0.11075612353567625,
+          "n_repeats": 728
+        },
+        "low_load_after_reward": {
+          "n_events": 40123,
+          "repeat_rate": 0.9526206913740248,
+          "n_repeats": 38222
+        },
+        "high_load_after_no_reward": {
+          "n_events": 11724,
+          "repeat_rate": 0.20718184919822585,
+          "n_repeats": 2429
+        },
+        "high_load_after_reward": {
+          "n_events": 42040,
+          "repeat_rate": 0.9180542340627973,
+          "n_repeats": 38595
+        }
+      }
+    },
+    "Expe14.mat": {
+      "n_real_participants": 35,
+      "n_eligible_repeated_stimulus_events": 27682,
+      "rates": {
+        "low_load_after_no_reward": {
+          "n_events": 4463,
+          "repeat_rate": 0.5072820972440063,
+          "n_repeats": 2264
+        },
+        "low_load_after_reward": {
+          "n_events": 6652,
+          "repeat_rate": 0.892062537582682,
+          "n_repeats": 5934
+        },
+        "high_load_after_no_reward": {
+          "n_events": 7438,
+          "repeat_rate": 0.48252218338262975,
+          "n_repeats": 3589
+        },
+        "high_load_after_reward": {
+          "n_events": 9129,
+          "repeat_rate": 0.8141088837769744,
+          "n_repeats": 7432
+        }
+      }
+    }
+  },
+  "combined_rates": {
+    "low_load_after_no_reward": {
+      "n_events": 14980,
+      "repeat_rate": 0.21622162883845128,
+      "n_repeats": 3239
+    },
+    "low_load_after_reward": {
+      "n_events": 70631,
+      "repeat_rate": 0.9512253826223613,
+      "n_repeats": 67186
+    },
+    "high_load_after_no_reward": {
+      "n_events": 30905,
+      "repeat_rate": 0.27866041093674165,
+      "n_repeats": 8612
+    },
+    "high_load_after_reward": {
+      "n_events": 86442,
+      "repeat_rate": 0.9054626223363643,
+      "n_repeats": 78270
+    }
+  },
+  "combined_participant_cluster_uncertainty": {
+    "after_no_reward_high_minus_low_load": {
+      "absolute_repeat_rate_difference": 0.062438782098290374,
+      "participant_cluster_bootstrap_ci95": [
+        0.04542425049765193,
+        0.08038753259486572
+      ],
+      "bootstrap_repetitions": 750
+    },
+    "low_load_rewarded_minus_unrewarded": {
+      "absolute_repeat_rate_difference": 0.73500375378391,
+      "participant_cluster_bootstrap_ci95": [
+        0.7015506818702713,
+        0.7707123247116885
+      ],
+      "bootstrap_repetitions": 750
+    },
+    "high_load_rewarded_minus_unrewarded": {
+      "absolute_repeat_rate_difference": 0.6268022113996227,
+      "participant_cluster_bootstrap_ci95": [
+        0.6031643334741272,
+        0.6501560288260871
+      ],
+      "bootstrap_repetitions": 750
+    }
+  },
+  "deterministic_tasks_only": {
+    "n_individuals": 445,
+    "n_observed_repeat_events": 175276,
+    "rates": {
+      "low_load_after_no_reward": {
+        "n_events": 10517,
+        "repeat_rate": 0.09270704573547589,
+        "n_repeats": 975
+      },
+      "low_load_after_reward": {
+        "n_events": 63979,
+        "repeat_rate": 0.9573766392097407,
+        "n_repeats": 61252
+      },
+      "high_load_after_no_reward": {
+        "n_events": 23467,
+        "repeat_rate": 0.2140452550389909,
+        "n_repeats": 5023
+      },
+      "high_load_after_reward": {
+        "n_events": 77313,
+        "repeat_rate": 0.9162495311267187,
+        "n_repeats": 70838
+      }
+    },
+    "cluster_bootstrap": {
+      "after_no_reward_high_minus_low_load": {
+        "absolute_repeat_rate_difference": 0.12133820930351502,
+        "participant_cluster_bootstrap_ci95": [
+          0.1112216890118549,
+          0.13128734405047085
+        ],
+        "bootstrap_repetitions": 750
+      },
+      "low_load_rewarded_minus_unrewarded": {
+        "absolute_repeat_rate_difference": 0.8646695934742648,
+        "participant_cluster_bootstrap_ci95": [
+          0.8521499405121467,
+          0.875163924833228
+        ],
+        "bootstrap_repetitions": 750
+      },
+      "high_load_rewarded_minus_unrewarded": {
+        "absolute_repeat_rate_difference": 0.7022042760877278,
+        "participant_cluster_bootstrap_ci95": [
+          0.6893072917233293,
+          0.7143754184159737
+        ],
+        "bootstrap_repetitions": 750
+      }
+    }
+  },
+  "probabilistic_reward_task_only": {
+    "n_individuals": 35,
+    "n_observed_repeat_events": 27682,
+    "rates": {
+      "low_load_after_no_reward": {
+        "n_events": 4463,
+        "repeat_rate": 0.5072820972440063,
+        "n_repeats": 2264
+      },
+      "low_load_after_reward": {
+        "n_events": 6652,
+        "repeat_rate": 0.892062537582682,
+        "n_repeats": 5934
+      },
+      "high_load_after_no_reward": {
+        "n_events": 7438,
+        "repeat_rate": 0.48252218338262975,
+        "n_repeats": 3589
+      },
+      "high_load_after_reward": {
+        "n_events": 9129,
+        "repeat_rate": 0.8141088837769744,
+        "n_repeats": 7432
+      }
+    },
+    "cluster_bootstrap": {
+      "after_no_reward_high_minus_low_load": {
+        "absolute_repeat_rate_difference": -0.024759913861376548,
+        "participant_cluster_bootstrap_ci95": [
+          -0.056466629197525625,
+          0.006070559660539987
+        ],
+        "bootstrap_repetitions": 750
+      },
+      "low_load_rewarded_minus_unrewarded": {
+        "absolute_repeat_rate_difference": 0.38478044033867564,
+        "participant_cluster_bootstrap_ci95": [
+          0.35014224587607057,
+          0.41488774403580236
+        ],
+        "bootstrap_repetitions": 750
+      },
+      "high_load_rewarded_minus_unrewarded": {
+        "absolute_repeat_rate_difference": 0.3315867003943447,
+        "participant_cluster_bootstrap_ci95": [
+          0.30441864545468017,
+          0.3605456515665451
+        ],
+        "bootstrap_repetitions": 750
+      }
+    }
+  },
+  "Expe14_zero_reward_not_equivalent_to_wrong_action": true,
+  "setsize_zero_reward_associations_not_mechanism_proof": true,
+  "low_load_set_sizes": [
+    2,
+    3
+  ],
+  "high_load_set_sizes": [
+    5,
+    6
+  ],
+  "set_size_four_excluded_from_this_contrast": true,
+  "last_reward_is_previous_same_stimulus_feedback": true,
+  "outcome_is_current_choice_repeat": true,
+  "no_future_reward_or_correct_answer_used_as_predictor": true,
+  "source_experiment_results_observed_not_generated": true,
+  "participant_level_rows_saved": false,
+  "clinical_benefit_or_rumination_not_measured": true,
+  "causal_explanation_of_reward_or_habit_not_identified": true
+}
