@@ -60,6 +60,30 @@ export function renderManagerMarkdown(md) {
  return out.join('\n');
 }
 
+// Reciprocal hreflang for blog posts published as -en / -ja slug pairs.
+// Corpus-driven and fail-safe: a languages map is returned only when BOTH
+// slugs exist, so single-language posts and non-suffixed slugs get nothing.
+// Mirrors the publishing site's affirmation-alternates convention: the map
+// carries en, ja and x-default, and x-default points at the English URL.
+export function blogPairLanguages(slug, slugs) {
+ const match=/^(.*)-(en|ja)$/.exec(slug);
+ if(!match) return null;
+ const base=match[1];
+ const enSlug=`${base}-en`, jaSlug=`${base}-ja`;
+ const known=new Set(slugs);
+ if(!known.has(enSlug)||!known.has(jaSlug)) return null;
+ return {
+  en:`https://aniccaai.com/blog/${enSlug}`,
+  ja:`https://aniccaai.com/blog/${jaSlug}`,
+  'x-default':`https://aniccaai.com/blog/${enSlug}`,
+ };
+}
+// Next metadata fragment form of blogPairLanguages: { languages } or {}.
+export function blogPairAlternates(slug, slugs) {
+ const languages=blogPairLanguages(slug,slugs);
+ return languages?{languages}:{};
+}
+
 // Use the reviewed article's first image for sharing; legacy articles retain their metadata.
 export function managerShareMetadata(post) {
  if(post.project !== 'Manager') return {};
