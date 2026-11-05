@@ -1,0 +1,50 @@
+name: Manager P07-4 | value-aligned nonclinical plan gate
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-p07-4-value-action-gate.yml"
+      - "products/manager/manager_core/p07_4_value_action_gate.py"
+      - "products/manager/tests/test_p07_4_value_action_gate.py"
+      - "docs/research/manager/masterclass/2026-11-04-p04-causal/P07-4_JA.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  p07-4-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check module syntax
+        run: python -m py_compile products/manager/manager_core/p07_4_value_action_gate.py
+      - name: Execute P07-4 unit tests, no network, no user effects
+        env:
+          PYTHONPATH: products/manager
+        run: python -m unittest discover -s products/manager/tests -p 'test_p07_4_value_action_gate.py' -v
+      - name: Run safe opt-in demo and reject clinical action
+        env:
+          PYTHONPATH: products/manager
+        run: |
+          python - <<'PY'
+          import json
+          from dataclasses import asdict
+          from manager_core.p07_4_value_action_gate import SelfChosenGoal,plan_draft
+          base=dict(goal_id='public-synthetic-example', value='learning', tiny_action='read one paragraph',
+                    anchor='finishing lunch', location='a desk', domain='learning',
+                    self_chosen=True, planning_opt_in=True,available=True,
+                    duration_minutes=1)
+          a=plan_draft(SelfChosenGoal(**base))
+          b=plan_draft(SelfChosenGoal(**{**base, 'revoked': True}))
+          c=plan_draft(SelfChosenGoal(**{**base, 'domain': 'clinical'}))
+          assert a.choice=='DRAFT_ONLY' and not a.external_effects
+          assert b.choice==c.choice=='NO_ACTION'
+          assert all(not d.could_send_notification for d in (a,b,c))
+          print(json.dumps({'synthetic_only':True,'opted_in_draft':asdict(a),
+                  'revoked':b.choice,'clinical':c.choice,'external_effects':0},indent=2))
+          PY

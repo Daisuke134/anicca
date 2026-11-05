@@ -1,3 +1,21 @@
+# 最新引継ぎ（2026-11-05 America/Los_Angeles）：P00〜P12の学習順を前面へ復元、P07-4を実装
+
+**唯一の実行・学習ロードマップは隣のROADMAP_STATUS_JA.md。** BFM-01などのモデル仕事名が旧P07/08/P09/P10/P11/P12の講義を隠していたが、旧全IDと元の題名は残っていた。今回、その完全なP00～P12一覧を正本の冒頭へ移動し、P07-3 COM-B→P07-4 CBT/ACT→P07-5 ヴィパッサナー→P07-6 測定/害→P08 JITAI/MRT/Bandit/POMDP→P09 汎化→P10 事業→P11 高度化→P12 公開の順を見やすくした。旧人工人口8部(P02-1既習)も保持した。別の独立ロードマップは作っていない。
+
+**今回のP07-4 Learn＋Build:** `P07-4_JA.md`（NICE/APA/ACBS及び2024/2026の心理的柔軟性・ACTに関する一次/レビュー資料、6プロセス、CBTとの違い、用語集・FAQ、因果研究境界）、`BOOK_CHAPTER_P07-4_CBT_ACT_EN.md`、`products/manager/manager_core/p07_4_value_action_gate.py`と15件のunit test。既存`services/x402-endpoint/src/routes/habitDesigner.js`の結果形式を再利用し、本人が選んだ非臨床目標・明示的同意・1～5分の小さな行動だけをDRAFT_ONLYにし、同意なし・撤回・不可・臨床分野はNO_ACTION。無断通知・外部操作・治療や効果の主張はゼロ。GitHub ActionsのP07-4テスト15/15合格： https://github.com/Daisuke134/life-manager/actions/runs/42130637559 。
+
+**スライド同期:** 詳細研究保存版に第113–114枚（英語）を追加、日本語スピーカーノートを含む114枚PPTX、GitHub Actions LibreOfficeで114ページPDFへ変換・ページ数確認。Mac miniの空き容量不足を受け、ローカル追加チェックアウトは中止し、クラウドで生成した。公開34枚の本編は新証拠による変更が不要なため現状維持。
+
+**BFM-01:** 既存Qwen3-4B-Instruct-2507 GGUF Q4をGitHubの無料CPU上で実際に推論し、架空ゲームへ「0」と応答、モデルハッシュ・約5秒の実行記録取得。Be.FM1.5-4Bの実モデル重みはHFでauto-gated、匿名GETでは401 GatedRepo；GHにModal/HFのSecrets名は未確認。**LoRAを使ったBe.FM本体の推論、合法holdoutでの比較、Managerの利用者便益RCTは未実施**。条件受諾と正規クラウド認証がない限り、実行済みとは言わない。
+
+**X（旧Twitter）へ投稿しない。** Postizの今後1年のX予約0件、X自動化0件を確認。接続・公開済み投稿の削除は行っていない。新規X投稿をスプリントへ含めない。
+
+**検証上の訂正:** HeartSteps初回の+12.95歩は補正後の配信状態による記述的差であってITTや因果効果ではない。修正は`products/manager/evals/heartsteps_v1_real_mrt.py`へNOT_CAUSALとして統合済み。原著の6061判断時点・調整済み35歩(p=.06)とは別。
+
+**PR:** https://github.com/Daisuke134/life-manager/pull/9269 （唯一ロードマップの並び替え、P07-4教材・ソフト・研究用114枚スライド）。実行コードとPPTXが統合されていることと、Managerの実生活への便益が確認されていることは別。
+
+---
+
 # Latest continuation update — 2026-11-06 verified live Manager model/product release
 
 ## 2026-11-06 JST｜Manager official product launch copy and real RCT media PUBLIC RELEASE VERIFIED
