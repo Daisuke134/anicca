@@ -8,6 +8,8 @@ But did the person actually walk?
 
 That is the question we care about at Anicca. Manager is an AI model and product designed to understand human behavior and support outcomes people genuinely want. A model that predicts choices is useful. A model that recommends an intervention, observes what happens, and learns which interventions are worth making could be far more useful—but only if we can test it against the world.
 
+**Methodological correction (November 6, 2026):** Our initial HeartSteps +12.95-step contrast is **descriptive, not an intention-to-treat or identified causal effect**. The public data's `send` variable denotes corrected delivery status, and our 6,590 available records are not identical to the original paper's 6,061 analysis decision points. The peer-reviewed paper's adjusted result was approximately 35 additional steps (p=.06). We retain our earlier result as an auditable example of why a benchmark must check the assignment variable and inclusion criteria before making causal claims. [Original analysis](https://pmc.ncbi.nlm.nih.gov/articles/PMC6401341/) · [dataset-construction script](https://github.com/LisaGotzian/HeartSteps/blob/master/build_heartsteps_data.R).
+
 For weeks, we wondered whether we needed to invent a new benchmark for behavioral interventions. Then we searched the literature. The answer was hiding in plain sight.
 
 ![Original evidence diagram comparing HeartSteps, RCT Bench and HBCP research results](https://aniccaai.com/blog/manager/media/90975ad11075597f2837afff21726a7f90d50ad2437ccdeecab4fc88ba485de8.png)
@@ -18,9 +20,9 @@ In HeartSteps V1, 37 people participated in a six-week mobile-health experiment.
 
 The authors made the data public, together with a description of the randomization, the observations and known missingness. No synthetic respondents were needed.
 
-We re-ran a narrow analysis on a free GitHub-hosted computer: 8,274 recorded decisions, 6,590 marked as available, with an unadjusted comparison of notification versus no notification using observed Jawbone steps in the next 30 minutes.
+We re-ran a narrow analysis on a free GitHub-hosted computer: 8,274 recorded decisions, 6,590 marked as available, with an unadjusted **descriptive comparison of corrected notification-delivery status** using observed Jawbone steps in the next 30 minutes.
 
-The observed difference was **+12.95 steps**, with a participant-cluster bootstrap 95% interval of **−16.99 to +39.43**. Approximately 11.6% of the no-notification arm and 12.2% of the notification arm lacked the primary step measurement under our eligibility rule.
+The descriptive (not causal) difference was **+12.95 steps**, with a participant-cluster bootstrap 95% interval of **−16.99 to +39.43**. Approximately 11.6% of the no-notification arm and 12.2% of the notification arm lacked the primary step measurement under our eligibility rule.
 
 This does *not* reproduce the authors’ prespecified, adjusted causal excursion-effect analysis. Our crude complete-case interval contains zero, and missing tracker readings can distort results. We did not conclude that reminders work, that they fail, or that Manager helped anyone. What mattered for engineering was running an actual randomized intervention analysis on real measured behavior rather than evaluating how persuasive a message sounds.
 
