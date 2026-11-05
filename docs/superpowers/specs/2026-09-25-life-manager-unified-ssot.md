@@ -25862,6 +25862,16 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 **L07配下：既存open dashboardの修正契約**
 
+**Dais追加要件・調査カーソル:** Openは売上だけでなく、各市場の受託（応募→返信→契約→納品→入金）と出品（掲載→表示→閲覧→購入→精算）を一画面で確認できる会社の公開状況とする。Capafyはimpressions・detail views・conversion・new buyers・units・salesを期間/source/as_of付きで収集し、Coconala/Lancers等も各サービスの公式に取得できる出品別指標と受託進捗を調査して追う。アプリinstall・SNS到達・費用も同様。各agentの作業は担当・内容・開始/完了時刻・結果・根拠を記録し、事業指標と合わせて日報の根拠として利用する。日報は昨日の行動量・結果・成功例との差を示し、根拠に基づく今日の次の行動につなげる。UIは簡潔にし、実データと対象期間、更新失敗・古さを区別する。秘密・顧客の非公開情報は公開しない。まず各事業の公式取得元から実データを取り、ダッシュボードへ反映する経路を事業ごとに完成させる。その後、取得・公開を繰り返し、元サービスの更新遅延と鮮度を表示し、次回自然実行後も維持されることをデスクトップ・スマホの公開UIで確認する。更新間隔の最適化は接続後に行う。
+
+現況: 2026-11-05 14:07 JST版のdata.jsonがproducts mainで更新されている。ops origin/mainには旧update_open.shが参照するindex.htmlが無く、現在のpublisherを未特定。旧scriptはcollect_all/build_revenue_ledgerの失敗を無視するため、稼働経路と同一と断定しない。写真のCapafy値は期間不明で最新/月次として代入しない。
+
+**優先順更新:** 旧=publisher/owner特定→Capafy等取得→UI反映→定期検証。新=公開data.jsonの404復旧とpublishの欠落防止→publisher/owner特定→Capafy、Coconala、Lancersの実測取得→各事業・配信の指標追加→日次以上の自然更新と公開UI確認。理由: 2026-11-05 14:3x JST、公開data.jsonがHTTP 404で全表示に影響。GitHub履歴ではdata.jsonを削除したcommit `6d36a7f96f`のdeployが成功した後、復元commit `3800d014e6`のdeployがcancelされ、後続deploy `41974828884`は進行中。GitHub main上にdata.jsonがあることは公開readback成功ではない。既存publisherの進行中effectを中断せずofficial readbackを監視し、欠落しない単一commit更新に修正する。現在cursor=復元deploy readbackとpublisher ownerの確定。
+
+**Daisの優先順変更:** 旧=取得経路の確定と並行して15分更新を目標化。新=各事業の実データ取得→保存→公開画面への反映→繰り返し更新→更新間隔の最適化。理由=データが接続されなければ頻度を上げても会社の実態が見えないため。現在cursor=既存publisherのowner確認とCapafy取得済み実測の画面反映。
+
+**残TODO（L07-D2〜D6と合わせて実行）:** (1) 稼働中publisherとテンプレート正本・ownerを確定し、既存の公開更新を維持する。(2) Capafyから取得済みの期間別閲覧・注文・売上を出典・取得時刻と共に公開へ接続し、表示回数等の欠落項目を公式取得元で確認する。(3) Coconala、Lancers、その他の各事業について、受託・出品・利用・収益・費用の公式取得元と取得可能指標を確認し、実データを順次保存・表示する。(4) 各接続を既存の自動更新に組み込み、次回の実行結果と公開UIを確認する。(5) 接続済みと未接続・取得失敗を区別し、全事業の網羅と表示の整理を進める。15分などの頻度調整は各取得・表示経路が動いた後に扱う。
+
 目的は全agent・利用者・投資家が、同じ会社の実業務・売上段階・費用・稼働・配信を、source/as_of/coverageとともに確認できること。既存`/open/`/data.jsonと取得元を修正し、別dashboard/会計DBを作らない。UI再取得60秒、業務state集計5分、到着済payment webhook反映1分以内、provider照合30分を目標とし、未達をstale/last errorで見せる。公開refreshのためだけに全worker/modelを起こさない。全providerがmillisecondsで確定するという約束はしない。
 
 今回の観測: `/open/data.json`はmonth=2026-11、updated_at=2026-11-05 11:37 JST、reconciliation_complete=false。Life Manager Cloudのplatform/product行は既にあり、test billing/no paying usersという古い注記とStripe再認証待ちがある。provider公式の最新売上は未照合であり、Cloud売上0を確定しない。public HTMLのmonth表示はLos_AngelesでOctoberになることをNodeで再現。gp/gplは未照合flagと併存、HTMLは初回fetchのみ。生成経路はanicca-ops `team/scripts/open/update_open.sh`→builder→`publish_open_repo.sh`→anicca-products `apps/landing/public/open/`→Netlify。runtime template `/workspace/team/scripts/open/index.html`はops origin/mainに追跡されていない。Reasonの既存Muse relayへtemplate正本/ownerのread-only照会はdelivered、着手/修正/返答は未確認。
