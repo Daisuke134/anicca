@@ -1,3 +1,9 @@
+# Continuation update — 2026-11-06: Reuse-first benchmark execution
+
+Upstream BehaviorBench source pinned to commit `ddd646ed2bbecdb79094eb56763ee7664d2f8e1a`; real GitHub cloud Ubuntu run https://github.com/Daisuke134/life-manager/actions/runs/42094336374 **41 upstream software tests passed, 3 skipped, official CLI launched**, result artifact includes source and HF dataset/model gate/license metadata. This is NOT model inference or a full human benchmark score. Research PR #9250 `research/upstream-behaviorbench-centaur-reproduction-20261106`. Official BehaviorBench eval code MIT; dataset CC BY-NC-ND, not free commercial training material. Be.FM1.5-4B Qwen3 LoRA requires accepted HF auto-gated terms and 24GB GPU; Centaur Llama3.1 70B adapter official 4bit guidance 80GB GPU and gated Meta base. Modal `products/manager/experiments/cloud/modal_befm4_probe.py` created, syntax checked, no cloud account/HF secret connected so not executed. Reuse-first external catalog in `products/manager/manager_core/behavior_model_catalog.py`: 10 software tests passed; pre-existing `ampersand_api.py` setup tests 6 passed. **No charged inference, no real human treatment effect.** Read `UPSTREAM_BEHAVIOR_FOUNDATION_MODELS_20261106_JA.md` for deep scientific, license, cloud and cost/architecture findings. Next: compare real Qwen3 and Be.FM4B on licensed human behavior; then 70B, API, causal RCT. Rename `life-manager`→`manager` requested, but DO NOT rename until references/pinned Netlify scripts/blog and CI audited, staged and proven. Single roadmap SSOT is ROADMAP_STATUS_JA.md; unchanged class next P07-4.
+
+---
+
 # MOST RECENT RELEASE STATUS — CHECK THIS BEFORE OLDER HISTORY
 
 ## 2026-11-06 JST — Verified official site release
