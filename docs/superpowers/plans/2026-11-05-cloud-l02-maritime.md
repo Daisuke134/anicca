@@ -42,3 +42,9 @@
 - [ ] Read resource/usage/provider cost and old worker state; summarize evidence in canonical spec and advance only when all acceptance steps pass. Expected: no old-worker mutation, no signup/sale claimed from readiness checks.
 
 Self-review: one bounded provider-configuration task; no cross-task interfaces or new application code. Current execution cursor is canonical L02-C.
+
+## 追加された説明修正
+
+READMEと既存/lm EN/JAの先頭へNo Human in the Loop / No Human Credentialsを置く。自作部品ゼロ、既製部品の設定・接続のみを要件とする。利用料以上の純収益は検証条件であり未達成の実績にしない。既存HTML/manifestのみ更新し、既存marketing testsを実行後、通常のsource統合と既存publisherで公開する。
+
+説明修正の検証: life-manager-positioning / values / overlay-assets の既存7 test PASS。既存en/ja homepage本文は無変更だがmanifestの旧hash不一致が既存overlayを止めるため、実際の既存source bytesへhashのみ同期。READMEと/lm EN/JAの冒頭変更はsource段階で、本番公開のreadbackは未完。

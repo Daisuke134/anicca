@@ -1,14 +1,16 @@
 <!-- startup-context-version: 2026-10-20.1 -->
 <!-- startup-context-digest: 7c2a72ae0b66f083c12cafde115cc5079f2e9722807b42e2288aef3f370b170f -->
-# Local Life Manager
+# Life Manager
 
-**An open-source, no-human-in-the-loop money printer: AI agents build businesses from scratch and run them on your Mac.**
+**No Human in the Loop. No Human Credentials.**
 
-Connect the accounts your chosen businesses need. Life Manager's agents are designed to find opportunities, build businesses, sell products and services, and handle day-to-day operations toward revenue without ongoing human input.
+Life Manager Cloud is being built to choose income-generating work, register its own work accounts, publish, distribute, and reconcile results without daily prompts, approval chats, or the user's private service credentials. Open it on your phone and see what your manager did and what it earned.
 
-> **Early development:** Autonomous operation and verified profit are goals, not proven results yet. See the [agent catalog](docs/agents.md) for current capabilities.
+**The economic acceptance criterion: verified earnings exceed the subscription fee and all operating costs.** This is a requirement, not a promise of profit. Cloud signup-to-income and positive net returns are not verified end to end yet.
 
-[日本語](README.ja.md) · [Setup guide](docs/getting-started.md) · [Agent catalog](docs/agents.md)
+The stack reuses existing runtimes, browsers, schedulers, inboxes, credential stores, and ledgers. Missing capabilities are a reason to find a supported component, not write another harness. One product is designed for compatible local and cloud hosts; deployment and autonomy must be verified on each host.
+
+[日本語](README.ja.md) · [Local setup guide](docs/getting-started.md) · [Agent catalog](docs/agents.md)
 
 ## Life Manager Cloud
 
@@ -45,14 +47,14 @@ company records with incomplete source coverage; company revenue is not Cloud-wo
 | AI services | Paid AI skills, subscriptions, and APIs. |
 | Investing | Configured stock-trading strategies. |
 
-## Core requirements
+## Local edition requirements
 
 - **ChatGPT Plus or higher.** Sign in with ChatGPT; no separate OpenAI API key is required.
 - **A Mac that stays awake**, internet access, and at least 12 GiB of free disk space. A Mac mini works well for always-on use.
 
 Each business needs its service accounts; some services may cost extra.
 
-## Install
+## Install the local edition
 
 Run this in Terminal:
 

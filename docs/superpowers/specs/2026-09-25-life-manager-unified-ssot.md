@@ -25867,7 +25867,11 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 **現在の診断cursor=L02-D2:** sleep→GET sleeping→start→GET active後、marker、artifact SHA256、profile Local State、Chrome binary、Sol mediumは保持。一方browser.enabledがfalseへ戻り、Gateway経由のbrowser stopは `browser control is disabled`。agent.desktopEnabled=falseは確認済みだが、どの起動処理が設定を戻すかは未確定。provider設定/起動sourceを確認し、再開後のmanaged Gatewayでbrowserが利用できることを再検証する。最初の埋込agent sessionはstopとartifact確認済みだが、そのdetached execのprovider statusはrunningのまま。完了済み試験PIDへのSIGTERMとcancel候補POST405を実施。元のexecとbrowser子processのcleanupはexact ownerだけを診断し、旧workerを操作しない。新worker proxy cap0設定はmanage scope不足403で未適用、権限は広げずOpenRouterの既存$3/day枠だけを使用する。検証workerのheartbeatは0m（営業scheduleはL07）。private証拠は既存stateの `cloud-l02-maritime-20261105/`。L02の完了判定はまだしない。
 
-| L02-D2 | 次 | 新workerだけのprovider desktop/browser設定とnative Gatewayの再開経路を照合し、browser無効化を根本修正。再開後Gateway browserのstatus/open/screenshotが通り、完了済みexecのcleanupを公式状態で確認したらL02-Hへ戻る |
+**L02-D2の次操作:** 新workerだけのprovider desktop/browser設定とnative Gatewayの再開経路を照合し、browser無効化を根本修正。再開後Gateway browserのstatus/open/screenshotが通り、完了済みexecのcleanupを公式状態で確認したらL02-Hへ戻る。公式OpenAPIはPATCH `/api/agents/{agent_id}/desktop-config` `{enabled:true}` を定義し、4GiB/2vCPU floor・seat cap再判定・active時rebuildを明記。契約枠/費用を先に照合し、独自起動wrapperで代替しない。
+
+**既製部品のみ（Daisの明示要件）:** 自作runtime、browser wrapper、scheduler、auth server、vault、会計engineを追加しない。欠けた機能は公式機能・既存実装・再利用可能なOSSを調べ、その設定と接続で満たす。適合部品が未確認なら部品名・不足機能・調べた出所を記録し、自作で埋めない。READMEと/lmの冒頭は「No Human in the Loop」「No Human Credentials」。運営要件は、仕事の選択・登録・公開・配信・収支照合を利用者の指示や私用credentialなしで進めること。利用料を含む全費用より多い実収益を採算の合格条件とし、未実証の黒字・日次10倍成長を実績として表示しない。
+
+**説明反映の原子的作業:** ①README冒頭をCloud方針と現状に揃える ②/lm EN/JAの冒頭・Cloud説明・FAQを同じ契約へ揃える ③既存route manifestのhashと既存testを確認 ④sourceをpush/CI/mainへ統合 ⑤既存publisherのimmutable pinを更新しpublic /lmを読戻す。新しい画面・実行logic・公開経路を作らない。これはL02進行中に追加された説明修正で、収益業務の依存順L03〜L10は変えない。
 
 No human in the loop / No human credentialsは、利用者の私用service credentialを受け取らず、agent自身のservice identityで仕事を完走する運営要件。会社のinfra契約/API key、agent所有credential、利用者の最小identity認証、将来の受取先設定は別の境界として表示する。全対応先での成功や介入0/100%を未実測で宣伝しない。README/websiteには同じ一商品が複数hostで動く設計と、host別の実証状態を示す。agent向け銀行/受取口座/crypto payout/UBIは後段の調査で、今回のL02へ決済や金融account作成を追加しない。refundを任意の収益分配手段として実装しない。
 
