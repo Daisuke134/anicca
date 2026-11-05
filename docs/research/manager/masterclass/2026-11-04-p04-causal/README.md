@@ -1,8 +1,8 @@
-# Manager Masterclass｜P04-1〜P06-2 因果推論・Ontology・行動と実行の接続
+# Manager Masterclass｜P04-1〜P06-5 因果推論・Ontology・行動と実行の接続
 
-**更新：2026-11-04（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
+**更新：2026-11-05（Asia/Tokyo）。** このディレクトリは教育講義と架空実験の再現資料。**実人間への介入、実公開RCTの前向き効果予測、Manager Behavior Foundation Modelの科学的な優位性の実証ではない。**
 
-**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1の自社実サイト初期対象選定・読取監査とP06-2の人工RCTまで進行、次はP06-3。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
+**唯一の全ロードマップ・進捗正本：`ROADMAP_STATUS_JA.md`。** 本READMEやMANIFESTを講義の別SSOTとみなさない。P04-1〜6とP05-1〜5は講義・人工実験まで完了。P06-1〜5の教育・人工実験・実サイトのread-only成果カードまで終了、学習の次はP07-1。実会社の増分価値とP05-5のS1/S2は未完了。P05-5の実務Shadowと限定本番実行は未達。P05-2ではListen Labs Study APIの実認証GETも確認（実介入なし）。P04-5の実在公開RCTに対する未見研究効果予測、P00-3の権限・同意、実世界での方策検証は未完了。
 
 
 ## Managerの中核仮説と実証すべき価値
@@ -25,18 +25,19 @@
 
 **優先順位：** ①基礎と研究史 ②どの対象にどの模型を使うか ③既存研究・企業は何を主張しているか ④何を検証して何をまだ検証していないか ⑤最後にManagerが目指すこと。数式の厳密な導出・企業の細かい数字・P04-6の全シミュレーションは本番で列挙しない。質疑用の長い資料に残す。
 
-## 全93枚の詳細保存版（本番で一挙上映しない）
+## 全96枚の詳細保存版（本番で一挙上映しない）
 
 | ファイル | 内容 |
 | --- | --- |
-| [詳細93枚PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | 元82枚のManager対応46〜48を研究仮説に更新し、P04-6付録3＋P05-1付録2＋P05-2付録2＋P05-3〜5/展開付録4＝93枚。既存本文は維持 |
-| [詳細93ページPDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf) | 93ページ（元82＋P04-6研究3＋P05-1研究2＋P05-2研究2＋P05-3〜5/展開研究4）。新しい付録は画像レンダリングで統合し、元のページを維持 |
-| [全93枚の日本語発表ノート](journal_club/SPEAKER_NOTES_JA.md) | 1〜93の全ページ分。PowerPoint内部にも全93枚のノートを保存 |
+| [詳細96枚PowerPoint](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx) | 元82枚のManager対応46〜48を研究仮説に更新し、P04-6付録3＋P05-1付録2＋P05-2付録2＋P05-3〜5/展開付録4＋P06-3〜5研究付録3＝96枚。既存本文は維持 |
+| [詳細96ページPDF](journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf) | 96ページ（元82＋P04-6研究3＋P05-1研究2＋P05-2研究2＋P05-3〜5/展開研究4＋P06-3〜5研究3）。新しい付録は画像レンダリングで統合し、元のページを維持 |
+| [全96枚の日本語発表ノート](journal_club/SPEAKER_NOTES_JA.md) | 1〜96の全ページ分。PowerPoint内部にも全96枚のノートを保存 |
+| `journal_club/build_p06_phase6_appendix.py` | **詳細93→96枚・研究付録94〜96**。本番34枚は不変 |
 | `journal_club/build_p05_phase5_decks.py` | **研究89→93枚、本番33→34枚、一般向け用語とManager段階ロードマップ**。再実行は入力版の確認後 |
 | `journal_club/build_p05_2_appendix.py` | **87枚→89枚のP05-2研究付録追加**。旧本番33枚は本アップデートで34枚に改訂 |
 | `journal_club/build_p05_1_appendix.py` | **85枚→87枚の研究付録追加**。本番用33枚は不変 |
 | `journal_club/build_p04_6_appendix.py` | 82枚版→85枚版への追加作成に使用。すでに85枚なら二重追加しない |
-| `journal_club/build_p04_45_appendix.py` | **歴史的な74枚→82枚作成スクリプト**。現在93枚版への再実行はしない |
+| `journal_club/build_p04_45_appendix.py` | **歴史的な74枚→82枚作成スクリプト**。現在96枚版への再実行はしない |
 | `journal_club/export_p04_45_pdf.py` | **歴史的な74ページ→82ページPDF結合スクリプト** |
 | `journal_club/RUN_OF_SHOW_JA.md` | 元のフル講義の履歴上の進行表。**2026-11-05本番は60MIN版の進行表を優先** |
 
@@ -56,6 +57,10 @@
 | `P05-4_JA.md` | 不明状態・二重実行防止・独立確認・復旧 | DurableOutboxの人工送信とUNKNOWN→PRESENT、P0のみ |
 | `P05-5_JA.md` | Shadow・限定1回実行の条件と学習 | 既存Shadow41テスト成功、実務Shadow/本番S2未実施 |
 | `MANAGER_MODEL_COMPANY_IMPACT_MILESTONES_JA.md` | モデル訓練・公開・会社への導入・人の便益の3本線 | **日付は条件付き仮目標であり実績・保証ではない** |
+| `P06-3_JA.md` | statsmodelsでの必要標本数・SRM・逐次解析の偽陽性 | 人工A/A2,400反復・新規21テスト成功。実登録RCTなし |
+| `P06-4_JA.md` | 返金・売上・費用・苦情をすべて含む増分価値 | 人工3万割当で利益が正でも苦情悪化のためDO_NOT_SHIP。新規28テスト |
+| `P06-5_JA.md` | 研究凍結と独立した実公開の証拠、正直な実績カード | SHA9件・Manifest+6公開HTML確認。実利益・実人間効果はNOT_MEASURED。新規22テスト |
+| `PHASE6_COMPLETION_AND_FIELD_GATES_JA.md` | Phase6の成果と未完本番ゲートの詳細 | 328レビュー済みテスト・本番のS1/S2/実効果は未完 |
 
 基礎単体テストは **122/122件成功**（P04-1〜6：96件／P05-1：26件）。さらに比較ベンチマークの23件が成功し、**P05-1時点の合計は145/145件成功**。基礎のログは`evidence/TEST_RESULTS_P04_1_TO_P05_1.txt`、旧P04-1〜6ログも保存。教材のテスト合格を実世界への有効性の証明と混同しない。
 
@@ -90,7 +95,7 @@ python3 p04_6_preregistered_policy_value.py
 python3 p05_1_ontology_readonly.py
 ```
 
-本番発表版は`journal_club/build_60min_journal_club.py`で再生成。**詳細マスターを消す／発表で全93枚を使う運用はしない**。厳選34枚／詳細93枚を保持する。最後の3枚は update_manager_thesis_slides.py で仮説に沿う内容へ同期する。
+本番発表版は`journal_club/build_60min_journal_club.py`で再生成。**詳細マスターを消す／発表で全96枚を使う運用はしない**。厳選34枚／詳細96枚を保持する。歴史的なManagerの対応する3枚は update_manager_thesis_slides.py で仮説に沿う内容へ同期する。
 
 ## 監査
 
@@ -136,3 +141,10 @@ python3 p05_1_ontology_readonly.py
 - **全257件のMasterclass単体テスト成功**：[最新の全テストログ](evidence/TEST_RESULTS_P04_TO_P06_2.txt)。既存229件＋新規P06-2 28件。
 - **明日11月5日の発表**：[準備ガイド・台本・FAQ](journal_club/PRESENTATION_READINESS_20261105_JA.md)。発表用**34枚/43分+15分質疑+2分余裕**を維持し、研究紹介第26枚のSSDataBenchをBehaviorBench/Be.FM1.5へ差替えた。詳細版第42枚も同期。両方のPPTX/PDFとページごとの日本語話者ノートを更新。**P06以降の実務・臨床・大規模モデル公開を発表の条件にしない。**
 - **学習の次はP06-3**。実会社のP05-5 Shadow S1／限定Live S2、実RCTの検証、モデル実重み公開は未完了のまま保持。
+
+
+## 2026-11-05：Phase 6のP06-1〜5教材・人工コード一通り完了
+
+[Phase6統合レポート](PHASE6_COMPLETION_AND_FIELD_GATES_JA.md)／[P06-3](P06-3_JA.md)／[P06-4](P06-4_JA.md)／[P06-5](P06-5_JA.md)。Statsmodels/SciPy、Spotify Confidence/Statsig/Microsoft ExPの研究設計を再利用し、**独自A/B統計ライブラリや新しい本番Ledgerを作らない**。完全人工のP06-3標本数・A/A、P06-4返金・費用・苦情によるDO_NOT_SHIP、P06-5ハッシュ照合・実サイト配信のみの独立readbackを実装。実人間の改善や実会社の利益を主張しない。
+
+[レビュー対象テスト328/328件成功](evidence/TEST_RESULTS_P04_TO_P06_REVIEWED_20261105.txt)（P06-2まで257＋新規P06-3〜5の71）。本番発表用34枚はそのまま、詳細保存版**96枚/96ページ**にPhase6の3枚を追加して全日本語ノートと同期する。**学習次はP07-1**、実事業価値の未達ゲートは残す。

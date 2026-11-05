@@ -1,0 +1,22 @@
+{
+  "n_verified_artifacts": 9,
+  "sha256_by_filename": {
+    "P06-2_PREANALYSIS_SYNTHETIC.json": "43d0fdf26b6e5da42a00dec759fc6e67253b510b7478feaa76e9c6e546340f08",
+    "P06-2_POLICY_FREEZE_SYNTHETIC.json": "875c77d18255ebc8a857f47d4d9d3bc0cc8e784da2c9f46c73c147f88caaf3e1",
+    "P06-2_SYNTHETIC_ABLATION_RESULTS.json": "4e47397b52418f5d425b6f3d797cb1f7dce2152e377d54dd83119904c44494c2",
+    "P06-3_PREANALYSIS_DESIGN_SYNTHETIC.json": "f0d5182d6d048a0740360da42436757bd1637a9151fc4fb7e8a700bc84965419",
+    "P06-3_PLAN_FREEZE_SYNTHETIC.json": "b4aaeaddd2da2fcd0c503af95b901a3a554932879ee8eec3b10f7cb2381f6878",
+    "P06-3_POWER_AND_STOPPING_RESULTS.json": "1bd671c6a753a9ea556bee298b0415ffb11b6584dc4060827b48eacf604ec64f",
+    "P06-4_PREANALYSIS_SYNTHETIC.json": "381c55720fd688c502cabb508ac5d15701fe867f7d7645c1d47e52fd113bad72",
+    "P06-4_PREANALYSIS_FREEZE.json": "0bb42c7c206faabd57dfb888c44ddc5933f51e77ded06ff3e22d3bdba04e16f0",
+    "P06-4_INCREMENTAL_VALUE_SYNTHETIC_RESULTS.json": "f83f51342b5b1fcd8e32f878addf95406d0b6f67c83e82d771e1b8860fcf62e1"
+  },
+  "study_ids": [
+    "P06-2-SYNTHETIC-ABLATION-20261104",
+    "P06-3",
+    "P06-4 synthetic sales/returns/costs and adverse guardrail"
+  ],
+  "plan_hashes_match_frozen_results": true,
+  "code_outputs_are_synthetic": true,
+  "real_causal_field_claim_supported": false
+}

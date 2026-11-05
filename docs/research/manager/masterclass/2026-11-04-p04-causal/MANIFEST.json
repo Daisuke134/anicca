@@ -1,27 +1,29 @@
 {
-  "title": "Manager Masterclass through P06-2 + 2026 Behavior AI OSS research + 2026-11-05 presentation",
-  "date": "2026-11-04",
+  "title": "Manager Masterclass through Phase6 (education + synthetic research + actual public delivery readback)",
+  "last_updated": "2026-11-05",
   "curriculum_ssot": "ROADMAP_STATUS_JA.md",
-  "next_lesson": "P06-3",
-  "historical_masterclass_tests": 229,
-  "new_P06_2_tests": 28,
-  "all_masterclass_tests_passed": 257,
-  "official_behaviorbench_evaluator_tests_passed": 41,
-  "official_behaviorbench_evaluator_tests_skipped": 3,
-  "official_behaviorbench_model_inference": false,
-  "actual_listen_twins_model_inference": false,
-  "listen_twins_public_browser_run": "https://agent.tinyfish.ai/runs/89af8069-6d12-45dd-8573-50d9cd2fa195",
-  "conference_date": "2026-11-05",
-  "conference_pptx_slides": 34,
-  "conference_pdf_pages": 34,
-  "talk_minutes": 43,
-  "discussion_minutes": 15,
-  "buffer_minutes": 2,
-  "archive_pptx_slides": 93,
-  "archive_pdf_pages": 93,
-  "real_world_production_S1_and_S2_completed": false,
-  "human_causal_behavioral_effect_validated": false,
-  "new_unreviewed_prior_local_scripts_committed": false,
+  "next_lesson": "P07-1",
+  "P06_3_educational_trials_done": true,
+  "P06_4_synthetic_profit_and_adverse_guardrail_done": true,
+  "P06_5_evidence_hash_and_real_public_delivery_verified": true,
+  "P06_3_5_added_tests_passed": 71,
+  "P04_to_P06_reviewed_total_tests_passed": 328,
+  "real_business_shadow_S1_completed": false,
+  "real_bounded_live_S2_completed": false,
+  "real_paid_business_increment_verified": false,
+  "real_human_behavior_causal_effect_verified": false,
+  "P06_4_synthetic_release_decision": "DO_NOT_SHIP",
+  "P06_5_actual_release_decision": "HOLD_NO_VERIFIED_CAUSAL_FIELD_RESULTS",
+  "public_presentation_slides": 34,
+  "public_presentation_pdf_pages": 34,
+  "full_research_slides": 96,
+  "full_research_pdf_pages": 96,
+  "full_96_speaker_notes": true,
+  "P06_research_details_slide_numbers": [
+    94,
+    95,
+    96
+  ],
   "files": {
     "BEHAVIOR_AI_REUSE_ECOSYSTEM_20261104_JA.md": {
       "size": 21279,
@@ -88,12 +90,12 @@
       "sha256": "57c5d080b244a000e2f7dd02cddf3171f8c75c14755fde8431ea2f478172f8c9"
     },
     "README.md": {
-      "size": 18269,
-      "sha256": "21b8afdd79be041fd45c2a68ee8a222b82a62bc38cc87aed377157f5650033dd"
+      "bytes": 20187,
+      "sha256": "b4b869e8bc295b7d0c4d9215460cd8cf69390db3fc12bb28f4bb3b9128342dd9"
     },
     "ROADMAP_STATUS_JA.md": {
-      "size": 72663,
-      "sha256": "722b1dd7b3b88aea9865098be9c9660e5d30cc7cf3feef2d9e1b4dda87ef6e36"
+      "bytes": 76632,
+      "sha256": "c0fedf4eaa69c60817b83e128e59bfd602bb9445dd089075f61bc373c1f5dcbb"
     },
     "evidence/BCIO_REAL_OWL_SNAPSHOT_AUDIT.json": {
       "size": 1466,
@@ -452,12 +454,12 @@
       "sha256": "7e644958c2a5afa9e3a8a62d89512433c3e6bb3c200417309f011a75fc21d7f8"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf": {
-      "size": 8204538,
-      "sha256": "c4938a6dda980a87a21063b1c392b6971dff50c44eeb01678bae8ed3f671e11d"
+      "bytes": 9100661,
+      "sha256": "d21613bb904d15e31c00fbb7633fb72f4692daaaccfb7c41668f348359f9acc7"
     },
     "journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx": {
-      "size": 653342,
-      "sha256": "f0bbcfd8c6d8a6ecc8da90c14b17c9ce405ba1d5a2732125e2bc0a8353b9879f"
+      "bytes": 664886,
+      "sha256": "227dba2b7f8d4f9526b71351a735c35b841423b0944a61624c6286b6f9de7136"
     },
     "journal_club/PRESENTATION_READINESS_20261105_JA.md": {
       "size": 7486,
@@ -468,12 +470,12 @@
       "sha256": "6cfe8b8b3792fd946b733636b47fbe81310a39e6b59375d6fc4fdadd01783378"
     },
     "journal_club/RUN_OF_SHOW_JA.md": {
-      "size": 4423,
-      "sha256": "2e8e45a8211f2d9d950ab71256dc089c734c8502c5643016c1bb5a9a131576f7"
+      "bytes": 4722,
+      "sha256": "62cabb85ff061e479ce800b970031e23f374a4739c9a9f43e61db105bc29aa0b"
     },
     "journal_club/SPEAKER_NOTES_JA.md": {
-      "size": 112446,
-      "sha256": "8cf4e5d741987e3c6066d26a4895a2731b38f587af33ade0420357de2c2f54ad"
+      "bytes": 115041,
+      "sha256": "9b98ccd68ae93793d5821f0de2be86b65201f264f7ed166a0952554c54cf5642"
     },
     "journal_club/SPEAKER_SCRIPT_60MIN_JA.md": {
       "size": 39009,
@@ -530,6 +532,90 @@
     "manager_P04-1_P04-3_full_20261104.zip": {
       "size": 1839857,
       "sha256": "c66584fd4d11999581885f2d4ed940718e25867d5c63d7b677f72df240b523c4"
+    },
+    "P06-3_JA.md": {
+      "bytes": 7490,
+      "sha256": "3e601070e5f6602d329c74dc46dc6e13169999e892d61ff952794e36e5faaf1b"
+    },
+    "P06-4_JA.md": {
+      "bytes": 6922,
+      "sha256": "d8106da7e7ebfffe5b8244d4b9d620db0c9ff0b09711870fdc293684b1fd0ffc"
+    },
+    "P06-5_JA.md": {
+      "bytes": 7974,
+      "sha256": "0aa0c796ff650b28a4bb37751813cbff128feb1ab523d9ff2a5621f6fd752f63"
+    },
+    "PHASE6_COMPLETION_AND_FIELD_GATES_JA.md": {
+      "bytes": 8541,
+      "sha256": "a241d9c4f34ec73ff43fd75e850126d24f8856cdb4ad37a6c6507a5ea7e844ec"
+    },
+    "experiments/p06_3_trial_design.py": {
+      "bytes": 8518,
+      "sha256": "ed10296b93fc74acec32bf754baaaa2c907f4377f3e85aed0d7ba6e70eddfc9b"
+    },
+    "experiments/test_p06_3_trial_design.py": {
+      "bytes": 4594,
+      "sha256": "330d15bc0c2e3ca2a9c8e414d65996d6899f4f7806bc19abb49ec46db9397ae1"
+    },
+    "experiments/p06_4_incremental_value.py": {
+      "bytes": 9259,
+      "sha256": "0ba04d31464877fc503e9ef3e0b862e4bcd2c407ac18ee94ea3142a30cd1c6af"
+    },
+    "experiments/test_p06_4_incremental_value.py": {
+      "bytes": 5969,
+      "sha256": "34c7947a2a1aa5c0936b927086169844966be5317130753b5257bcbeee4ee833"
+    },
+    "experiments/p06_5_independent_proof.py": {
+      "bytes": 9395,
+      "sha256": "d665995a1f8337866323ab6b86ea2b1d160c0a16dc99fbcd838a348c20698b5a"
+    },
+    "experiments/test_p06_5_independent_proof.py": {
+      "bytes": 6025,
+      "sha256": "7e48ec3cfd5ee7db5c419ef592368946bc455bd4b2ed3575eb63b95de4beb1c6"
+    },
+    "evidence/P06-3_PREANALYSIS_DESIGN_SYNTHETIC.json": {
+      "bytes": 1927,
+      "sha256": "f0d5182d6d048a0740360da42436757bd1637a9151fc4fb7e8a700bc84965419"
+    },
+    "evidence/P06-3_PLAN_FREEZE_SYNTHETIC.json": {
+      "bytes": 252,
+      "sha256": "b4aaeaddd2da2fcd0c503af95b901a3a554932879ee8eec3b10f7cb2381f6878"
+    },
+    "evidence/P06-3_POWER_AND_STOPPING_RESULTS.json": {
+      "bytes": 1919,
+      "sha256": "1bd671c6a753a9ea556bee298b0415ffb11b6584dc4060827b48eacf604ec64f"
+    },
+    "evidence/P06-4_PREANALYSIS_SYNTHETIC.json": {
+      "bytes": 1668,
+      "sha256": "381c55720fd688c502cabb508ac5d15701fe867f7d7645c1d47e52fd113bad72"
+    },
+    "evidence/P06-4_PREANALYSIS_FREEZE.json": {
+      "bytes": 200,
+      "sha256": "0bb42c7c206faabd57dfb888c44ddc5933f51e77ded06ff3e22d3bdba04e16f0"
+    },
+    "evidence/P06-4_INCREMENTAL_VALUE_SYNTHETIC_RESULTS.json": {
+      "bytes": 3852,
+      "sha256": "f83f51342b5b1fcd8e32f878addf95406d0b6f67c83e82d771e1b8860fcf62e1"
+    },
+    "evidence/P06-5_EVIDENCE_CHAIN_AUDIT.json": {
+      "bytes": 1332,
+      "sha256": "699b630d879a2ddbc9d2afd056dc33bbc83c3af61a24c24bf6b8609e7eb9b3eb"
+    },
+    "evidence/P06-5_PROOF_CARD_RESEARCH_AND_REAL_WORLD.json": {
+      "bytes": 2367,
+      "sha256": "31ef74e0bcb5a093da6774b10d52ea558c2481ea2febac596aca06f7771041e1"
+    },
+    "evidence/P06_PHASE6_QA_20261105.json": {
+      "bytes": 1258,
+      "sha256": "b2b2c2692003cbbd19b7b9be4d1c997b183bce4be2d49717c53dbf9611480d19"
+    },
+    "evidence/TEST_RESULTS_P04_TO_P06_REVIEWED_20261105.txt": {
+      "bytes": 42543,
+      "sha256": "e99c7ab67ae4c40975b2f4a19545ab0533d754b430c66aad45303b95df8cf8eb"
+    },
+    "journal_club/build_p06_phase6_appendix.py": {
+      "bytes": 8965,
+      "sha256": "f86eab547ef2568450e1875afee92b5e410be2db4d28af7caf4de2f54988e483"
     }
   }
 }

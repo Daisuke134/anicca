@@ -235,3 +235,45 @@ A 24k/16k/40k completely synthetic training-validation-RCT ablation found a +0.0
 **External vendor limitation:** Listen Labs Public Study API auth GETs were verified in prior P05-2. Public Listen Twins website/TinyFish's ‘Run a Simulation’ button reached a sales booking form, not a functional inference endpoint; no Twin inference/benchmark was run. Company claims (e.g. distribution agreement) must not become model evidence without common held-out human ground truth.
 
 **Scientific deployment gate:** independent person/study/time-heldout outcome metrics, calibrated uncertainty, rights, cost accounting, and real-world strong-comparator policy measurement. Training a tiny HelpSteer2/private Qwen adapter does not itself produce an evaluated Behavior Foundation Model or releasable open weights. P05-5 real-company shadow and one bounded live action remain an independent pending permission/release gate. Next lesson P06-3 is experimental power / preregistration / stop conditions.
+
+
+## 14. Phase6 P06-3/4/5: rigorous experiment, business outcomes, independent proof (2026-11-05)
+
+**Scope:** reversible, low-risk OWNED Manager public support site and synthetic business/psychology education. Existing production authority, `runtime/contracts/common-record.schema.json`, Outbox, Reconciler, private audit and publishing workflow remain the only operational source of truth. This section adds no new publisher/credential/customer manipulation.
+
+### P06-3 test design and minimum sample
+
+Use **existing Statsmodels 0.15.0** `NormalIndPower.solve_power` with `proportion_effectsize` for 2 independent arms, plus **SciPy** `ttest_ind` and `chisquare` for synthetic A/A and sample-ratio mismatch (SRM). For illustrative control p=.25, treatment p=.28, 2-sided alpha=.05, power=.80, required n is **3,395/arm**; allowing 15% attrition suggests 7,990 total recruits. Four *efficacy* decisions at Bonferroni alpha=.0125 raise n to **4,824/arm**, or 11,352 recruited including attrition. These are **not measured from real Manager participants**; real data and consent/necessary ethics are prerequisites for such a trial.
+
+A/A Monte Carlo (2,400 null replications; 4 correlated peeks) gave naive 11.92% familywise false positives vs Bonferroni 3.79% and single fixed final look 4.79%. This is not an implementation of Statsig mSPRT; for future real sequential monitoring use Statsig/Spotify Confidence's rigorously-tested early stopping rather than rolling a new anytime-valid statistics engine. SRM under 560:440 observed vs 500:500 expected gave chi-square=14.4, p=0.0001478 and blocks the analysis. In a serious safety incident, stop immediately based on policy, separate from efficacy significance.
+
+### P06-4 financial increment and harm guardrails
+
+Synthetic study 30,000 randomized units with one primary metric: `recognized_paid_revenue_after_refunds - payment_fees - fulfillment - refund_processing - acquisition - model_tokens - incremental_operator - complaint_cost`. Cumulative company-wide net income is NOT measured; excludes fixed overhead, tax, future returns and possibly other opportunity costs.
+
+SciPy Welch result: synthetic contribution mean **149.12 JPY per assigned subject (Manager) vs 92.29 JPY control**, increment **+56.84 JPY** (95%CI +36.55 to +77.12). The adverse **complaint/optout rate increases by +0.942pp** (95%CI +0.644 to +1.240pp), failing a predeclared +0.3pp maximum guardrail. **Decision is DO_NOT_SHIP**, even though toy net contribution is positive. Real paid receipts, refund ledger, model cost and real harm outcome are all missing -> null, not zero.
+
+This follows Spotify Confidence's four-fold decision gate: success improvement, non-inferior guardrails, no deterioration and valid experiment quality. No increase in engagement or synthetic cash value is accepted as a clinical or business profit claim.
+
+### P06-5 evidence cards and immutable learning chains
+
+Research reader verifies **9 SHA-linked source artifacts** across P06-2/3/4 (plans, policy freeze and output), rejects post-freeze changes, and reuses `manager_core.owned_catalog_planner._read_served_bundle` plus `digital_environment.verify_readback` to GET the actual, already-published support site Manifest + 6 HTML pages. Real public technical delivery is **verified**, but the real Manifest says `experiment_enabled=false, real_participants=0, beneficiary_outcome=NOT_MEASURED`. It cannot establish real paid revenue, reduced rumination or incremental user behavior change. The machine-readable proof card therefore states `real_business.status=NOT_MEASURED`, `real_human.status=NOT_MEASURED`, `release_decision.status=HOLD_NO_VERIFIED_CAUSAL_FIELD_RESULTS`.
+
+**Reproducible research code:**
+
+- `docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p06_3_trial_design.py`
+- `docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p06_4_incremental_value.py`
+- `docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p06_5_independent_proof.py`
+- `docs/research/manager/masterclass/2026-11-04-p04-causal/evidence/TEST_RESULTS_P04_TO_P06_REVIEWED_20261105.txt`: **328/328 reviewed tests passed** (previous 257 + P06-3 21 + P06-4 28 + P06-5 22). Prior untracked experimental site-shadow drafts are excluded.
+- [Japanese integrated report](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/PHASE6_COMPLETION_AND_FIELD_GATES_JA.md)
+
+### Necessary field acceptance before claiming "Phase6 delivered customer value"
+
+1. **P00-3:** Confirm first actual owned problem, safe data/owner/consent and source of outcome.
+2. **P05-5 S1:** Record real company Shadow as a frozen, same-input, same-action, equal-budget comparison against NO_ACTION and incumbent GPT/Grok/Muse-based processes, with zero Manager live mutations.
+3. **P05-5 S2:** One explicitly scoped reversible, bounded real action through authorized official release path; official receipt + public independent readback + rollback/stop. Never bypass a local/host safety gate.
+4. **P06-3 field:** Power/units/primary/stop/attrition/quality/safety frozen and appropriate user/data rights obtained.
+5. **P06-4 field:** Paid realized revenue, refunds, direct variable/AI/provider/operator costs and user harm from independently verified legitimate ledgers, compared against strong baseline.
+6. **P06-5 field:** Public proof card with real beneficial primary outcome and valid counterfactual; independent source references, uncertainties and missingness.
+
+**Phase6 research/education is complete; real-world S1/S2 and benefit causality remain NOT DONE.** Next educational lesson P07-1 (learning, reinforcement, habit and avoidance). P07 learning need not wait for ungranted live customer operations, but all real participant interventions need appropriate consent and safeguards.
