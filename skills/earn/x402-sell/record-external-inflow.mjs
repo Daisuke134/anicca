@@ -7,7 +7,6 @@ import { SELF_WALLETS } from './lib/self-wallets.mjs';
 import {
   appendUniqueExternalInflows,
   collectVerifiedExternalInflows,
-  resolveBlockRangeStart,
   walletLedgerPath,
 } from './lib/external-inflow-recorder.mjs';
 import { resolveX402StateDir } from './state-paths.mjs';
@@ -48,7 +47,9 @@ function settledTransactionsFromSales(path) {
 
 const salesLog = process.env.X402_SALES_LOG || join(stateDir, `sales-${payTo}.jsonl`);
 const settledTransactions = settledTransactionsFromSales(salesLog);
-const { fromBlock, targetTimestamp } = await resolveBlockRangeStart({ hoursBack, rpcCall });
+const latestHex = await rpcCall('eth_blockNumber', []);
+const latest = Number(BigInt(latestHex));
+const fromBlock = Math.max(0, latest - Math.ceil(hoursBack * 1_800));
 const verified = await collectVerifiedExternalInflows({
   payTo,
   fromBlock,
@@ -62,8 +63,6 @@ const write = appendUniqueExternalInflows(ledger, verified.rows);
 console.log(JSON.stringify({
   payTo,
   hoursBack,
-  windowStartTimestamp: new Date(targetTimestamp * 1000).toISOString(),
-  fromBlock,
   finalizedBlock: verified.finalizedBlock,
   settledTelemetry: settledTransactions.size,
   verified: verified.rows.length,

@@ -36,52 +36,6 @@ function blockNumber(value) {
   } catch { return null; }
 }
 
-export async function resolveBlockRangeStart({ hoursBack, rpcCall, now = Date.now() }) {
-  if (!Number.isFinite(hoursBack) || hoursBack <= 0) throw new TypeError('hoursBack must be positive');
-  if (typeof rpcCall !== 'function') throw new TypeError('rpcCall must be a function');
-  const targetTimestamp = Math.floor(Number(now) / 1000 - hoursBack * 3600);
-  if (!Number.isSafeInteger(targetTimestamp) || targetTimestamp < 0) {
-    throw new TypeError('now and hoursBack must resolve to a valid Unix timestamp');
-  }
-
-  const latest = await rpcCall('eth_getBlockByNumber', ['latest', false]);
-  const latestBlock = blockNumber(latest?.number);
-  const latestTimestamp = blockNumber(latest?.timestamp);
-  if (latestBlock === null || latestTimestamp === null) throw new Error('RPC returned no valid latest block');
-  if (targetTimestamp > latestTimestamp) {
-    return { fromBlock: latestBlock + 1, latestBlock, targetTimestamp };
-  }
-
-  const readBlockTimestamp = async (number) => {
-    const block = await rpcCall('eth_getBlockByNumber', [`0x${number.toString(16)}`, false]);
-    const actualNumber = blockNumber(block?.number);
-    const timestamp = blockNumber(block?.timestamp);
-    if (actualNumber !== number || timestamp === null) throw new Error(`RPC returned no valid block at ${number}`);
-    return timestamp;
-  };
-
-  let high = latestBlock;
-  let step = 1;
-  let low = Math.max(0, latestBlock - step);
-  let lowTimestamp = await readBlockTimestamp(low);
-  while (lowTimestamp >= targetTimestamp && low > 0) {
-    high = low;
-    step = Math.min(step * 2, latestBlock);
-    low = Math.max(0, latestBlock - step);
-    lowTimestamp = await readBlockTimestamp(low);
-  }
-  if (lowTimestamp >= targetTimestamp) {
-    return { fromBlock: 0, latestBlock, targetTimestamp };
-  }
-
-  while (low + 1 < high) {
-    const middle = low + Math.floor((high - low) / 2);
-    if (await readBlockTimestamp(middle) < targetTimestamp) low = middle;
-    else high = middle;
-  }
-  return { fromBlock: high, latestBlock, targetTimestamp };
-}
-
 function receiptTransfer(receipt, { tx, payTo, finalizedBlock, selfSet }) {
   if (!receipt || receipt.status !== '0x1') return null;
   const receiptTx = normalizeTx(receipt.transactionHash);
