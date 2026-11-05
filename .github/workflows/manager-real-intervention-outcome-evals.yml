@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   real-human-outcomes:
-    name: HeartSteps MRT + RCT Bench real outcome audit (no GPU, no clinical claims)
+    name: HeartSteps delivery-status descriptive audit + RCT Bench (no GPU, no causal overclaim)
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -26,7 +26,7 @@ jobs:
       - name: Software contract tests (synthetic fixture inputs only)
         working-directory: products/manager/evals
         run: python -m unittest -v test_heartsteps_v1_real_mrt.py test_rct_bench_real_outcome_eval.py
-      - name: HeartSteps V1 CC-BY real participants and randomized notification outcomes
+      - name: HeartSteps V1 real participants, corrected delivery status and step outcomes
         working-directory: products/manager/evals
         run: |
           mkdir -p ../../../outputs/manager-real-outcomes
@@ -36,11 +36,11 @@ jobs:
           from pathlib import Path
           j=json.loads(Path("../../../outputs/manager-real-outcomes/heartsteps-v1-aggregate.json").read_text())
           s=j["jawbone_30min"]
-          print("HeartSteps real randomized decisions:",s["total_source_decisions"],"eligible:",s["eligible_decisions"])
-          print("Jawbone 30-min available complete-case contrast:",s["observed_difference_steps"])
+          print("HeartSteps original decision records (DESCRIPTIVE, NOT causal):",s["total_source_decisions"],"available:",s["eligible_decisions"])
+          print("Jawbone 30-min corrected delivery-status descriptive contrast:",s["observed_difference_steps"])
           print("Participant bootstrap CI:",s["bootstrap_95ci_cluster_participant"])
           print("Missing by arm",s["missing_rate_no_suggestion"],s["missing_rate_suggestion"])
-          print("NO user rows uploaded, no model or clinical treatment outcomes claimed")
+          print("NOT CAUSAL/NOT ITT; original trial has 6061 published analytic decision points; no user rows uploaded")
           PY
       - name: RCT Bench direct behavioral adherence, QALY, mood/wellbeing outcomes
         working-directory: products/manager/evals

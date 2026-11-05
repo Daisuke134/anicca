@@ -3,7 +3,7 @@
 Source CC BY 4.0, https://github.com/klasnja/HeartStepsV1.
 Klasnja et al. (2019), DOI: 10.1093/abm/kay067.
 Only aggregate statistics and software tests are committed; never upload rows.
-This is a complete-case exploratory proximal-effect analysis, not a clinical benefit claim.
+This is a descriptive complete-case delivery-status audit, NOT a causal effect estimate.
 """
 from __future__ import annotations
 
@@ -64,10 +64,12 @@ def load_pinned_source() -> tuple[list[dict[str, str]], str]:
 
 def summarize(rows: list[dict[str, str]], *, field: str = "jbsteps30",
               reps: int = 2000, seed: int = SEED) -> dict:
-    """Aggregate randomizations at eligible decision points; no future features.
+    """Audit post-assignment corrected notification DELIVERY, not randomized intent.
 
-    Exclusion of missing outcome is not a randomization-preserving ITT estimator;
-    report missingness in every arm. The results are an exploratory contrast.
+    The public 'send' variable reflects corrected delivery status; it is not an
+    unmodified randomized assignment field. Our availability-only sample (6,590)
+    differs from the original paper's 6,061 eligible decision points. Therefore
+    this complete-case descriptive contrast is NOT an ITT nor a causal effect.
     """
     if reps < 100 or not rows:
         raise ValueError("nonempty real rows and >=100 bootstrap replicates required")
@@ -88,12 +90,12 @@ def summarize(rows: list[dict[str, str]], *, field: str = "jbsteps30",
         all_people.add(uid)
         if truth(row.get("avail")) is not True:
             continue
-        if truth(row.get("is.randomized")) is None:
+        # Do not use 'is.randomized' as treatment: the source's corrected
+        # 'send' is delivery status, and neither is verified ITT assignment.
+        delivered = truth(row.get("send"))
+        if delivered is None:
             continue
-        assigned = truth(row.get("send"))
-        if assigned is None:
-            continue
-        t = int(assigned)
+        t = int(delivered)
         eligible += 1
         count_by_arm[t] += 1
         y = measure(row[field])
@@ -147,10 +149,17 @@ def summarize(rows: list[dict[str, str]], *, field: str = "jbsteps30",
         "bootstrap_repetitions": reps,
         "random_seed": seed,
         "outcome_field": field,
-        "estimand": "complete_case_30min_jawbone_step_difference_given_available",
+        "estimand": "descriptive_complete_case_steps_difference_by_corrected_delivery_status",
+        "identification_status": "NOT_CAUSAL",
+        "original_paper_available_decisions": 6061,
+        "published_adjusted_reference_steps": 35,
+        "published_adjusted_reference_pvalue": 0.06,
         "causal_claim": (
-            "Exploratory randomized assigned-notification contrast. Missing outcomes "
-            "may bias complete-case estimates; not an ITT for all randomized decisions."
+            "NOT_CAUSAL: 'send' is a corrected notification delivery-status variable, "
+            "not the original randomized assignment; this is not an ITT or an "
+            "identified treatment effect. This cohort has 6,590 available records "
+            "versus the original paper's 6,061 analysis decision points. "
+            "Missing outcomes and post-assignment delivery can bias contrasts."
         ),
         "quality_of_life_measured": False,
         "personalized_manager_policy_evaluated": False,
