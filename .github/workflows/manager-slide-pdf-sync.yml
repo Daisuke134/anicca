@@ -1,0 +1,74 @@
+name: Manager | verified PDF exports of canonical research and public slides
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-slide-pdf-sync.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate-slide-pdfs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Reject writing to forks or detached refs
+        shell: bash
+        env:
+          BASE_REPO: ${{ github.repository }}
+          SOURCE_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          SOURCE_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          test "$BASE_REPO" = "Daisuke134/life-manager"
+          test "$BASE_REPO" = "$SOURCE_REPO"
+          test "$SOURCE_BRANCH" = "docs/manager-slide-pdf-sync-20261106"
+      - name: Checkout canonical source branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - name: Install LibreOffice for real PPTX-to-PDF export
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends              libreoffice-impress libreoffice-writer poppler-utils fonts-noto-cjk
+      - name: Convert 112-slide research archive and 34-slide public talk
+        shell: bash
+        run: |
+          set -euo pipefail
+          D=docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club
+          mkdir -p /tmp/manager-pdf-export
+          timeout 360s libreoffice -env:UserInstallation=file:///tmp/manager-pdf-lo-20261106             --headless --convert-to pdf --outdir /tmp/manager-pdf-export             "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx"             "$D/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pptx"
+          test -s /tmp/manager-pdf-export/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf
+          test -s /tmp/manager-pdf-export/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf
+          test "$(pdfinfo /tmp/manager-pdf-export/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf | awk '/^Pages:/ {print $2}')" = "112"
+          test "$(pdfinfo /tmp/manager-pdf-export/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf | awk '/^Pages:/ {print $2}')" = "34"
+          cp /tmp/manager-pdf-export/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf "$D/"
+          cp /tmp/manager-pdf-export/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf "$D/"
+          sha256sum "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf" "$D/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf"
+          printf 'PDF slides: research 112, public 34\n'
+      - name: Attach verified PDF exports to the current PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          D=docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club
+          git add "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf" "$D/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf"
+          if git diff --cached --quiet; then
+             echo 'The existing PDF exports already match this slide revision.'
+          else
+             git commit -m 'slides(manager): sync verified 112- and 34-page PDF exports to current PPTX'
+             git push origin "HEAD:refs/heads/docs/manager-slide-pdf-sync-20261106"
+          fi
+      - name: Upload PDF artifact receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-slides-pdf-112-and-34-verified
+          path: |
+            docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf
+            docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club/AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf
+          retention-days: 30
