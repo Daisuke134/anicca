@@ -25840,7 +25840,7 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 | ID | 状態 | 一つの作業と完了証拠 |
 |---|---|---|
 | L01 | 完了 | 公式テンプレート／harness source／persistent browser／外側scheduler／現provider状態を調べ、採用部品を選ぶ。根拠は上記research。人の収益申告と自分の確認を分ける |
-| L02 | 次 | 既存Maritime custom workerのowner・実行中effect・予算を照合し、競合しない公式OpenClaw imageを既存枠内で一件用意する。image/version、mount、Sol mediumのResponses/image/tool受入、実費をreadback。失敗時は公式の対応imageまたは既製Hermes/browser-useへ。独自wrapperを作らない |
+| L02 | 実行中 | 下記L02-A〜Hを順に実行。既存custom workerを保護し、公式OpenClaw image一件でversion、永続mount、Sol mediumのResponses/image/tool、実ブラウザ、費用を公式readbackする。詳細手順は `docs/superpowers/plans/2026-11-05-cloud-l02-maritime.md`。独自wrapperを作らない |
 | L03 | 未完 | agent専用browser profile、既存agent所有inbox、担当限定1Password Agents参照、既存playbook/台帳を接続し、再起動／別run後に保存ログイン・仕事状態を再読取する。個人Google/Gmail credentialを使わない |
 | L04 | 未完 | Capafyの既存Publisherに正式なagent/team経路があるか確認し、その同一権利者で登録／回復を一件完走する。正式経路がなければ適格な次市場を選ぶ。本人の確認メールと最終ログイン画面／provider IDを確認し、credentialを登録時に保存。無関係なforum登録を成果にしない。ここで一度Daisへ実結果を報告する |
 | L05 | 未完 | 固定winner一件の需要・形式・価格・導線を調べ、新しい自社商品一件を正式公開する。自社素材、live URL、provider公開状態。draft/審査提出をPUBLISHEDにしない |
@@ -25849,6 +25849,21 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 | L08 | 未完 | 黒字の同じ一業務を第二runtime（Naïve候補）で再現する。公式接続scope、Identity/profileの所有、対応harnessとtoolを確認する。同じ商品・台帳・会計を使い、売上を二重計上しない。実運転の録画は実結果から作る |
 | L09 | 未完 | 既存スマホ入口／認証機能／結果画面を同じworkerへ接続し、スマホだけで開始→本人の結果確認を実証する。Google/利用者メールを開始必須にせず、既存匿名session等を再利用する。tenant分離と回復可能な所有者bindingを確認し、受取addressだけで他人の残高を移管しない。新しいchat appや認証serverは作らない |
 | L10 | 未完 | 既存subscription機能を再利用し、外部利用者一人の支払→その人のManagerによる実結果→実費を照合する。自社事業売上と利用料を分離し、解約/返金と継続利用を追う。自社事業10K MRR・外部subscription10K MRRをそれぞれ計測しながら拡大する |
+
+**L02の実行単位（本表が状態の正本、planは手順）**
+
+| ID | 状態 | 一操作と確認結果 |
+|---|---|---|
+| L02-A | 完了 | GET agents/plan/usageを照合。既存custom一件はsleeping、旧workerを起動/削除しない。契約readbackはbillingModel=seats、trial.billingModel=free、machines=1/maxMachines=3/maxAwakeMachines=1。公開の新料金表を旧契約へ断定適用しない |
+| L02-B | 完了 | 公式OpenClaw image 2026.7.1、SDK0.11.0のcreate/env schema、既存Capafyホスト用OpenRouter keyの日次上限$3と残枠、Sol catalogueのimage/tool対応を確認。個人Google・Factory専用key・全vaultをVMへ持ち込まない |
+| L02-C | 次 | externalId=lm-runtime-validation-20261105で重複照合し、templateId=openclaw、2GB/1vCPU/5GB、private、auto-sleepの一件を作成。create一回、結果不明時はGETで照合。既存3台枠内、追加subscription/credits購入/旧worker変更なし |
+| L02-D | 未完 | 新workerのversionと/data永続mountをexecで確認。公式configへSol mediumと既存ホスト用provider接続を設定し、secret値をログ/repoへ出さない。新規独自provider proxyは作らない |
+| L02-E | 未完 | 同じVMからSolのResponses APIと画像入力/tool callingを短い実callで確認。model id/effort/response id/usageを記録。試験は短い有限callのみ、既存日次$3上限を上げず、その枠を他ownerが消費した場合は再測定 |
+| L02-F | 未完 | OpenClawの実browserで公開LMページを開き、タイトルとscreenshotを取得してモデルが内容を観測する。ログイン/登録/公開/送金はまだ行わない。shellでのHTML取得をbrowser成功に置換しない |
+| L02-G | 未完 | /dataへ検証markerを書き、当該新workerだけsleep/start後に再読取。browser profileの格納先と実際の保持境界を記録。販売先の保存ログインはL03で別に確認 |
+| L02-H | 未完 | 最終GETのresource state、model/browser結果、usage/費用、旧worker保全を照合。APIの0と外部model費を混同せず、L02完了か失敗境界を判定。L03へcursorを移すのは受入後のみ |
+
+No human in the loop / No human credentialsは、利用者の私用service credentialを受け取らず、agent自身のservice identityで仕事を完走する運営要件。会社のinfra契約/API key、agent所有credential、利用者の最小identity認証、将来の受取先設定は別の境界として表示する。全対応先での成功や介入0/100%を未実測で宣伝しない。README/websiteには同じ一商品が複数hostで動く設計と、host別の実証状態を示す。agent向け銀行/受取口座/crypto payout/UBIは後段の調査で、今回のL02へ決済や金融account作成を追加しない。refundを任意の収益分配手段として実装しない。
 
 **順序変更:** 旧=独自Naïve App/Computer bridge→公開画面proof→認証→商品公開→売上、別branchでは独自x402レポート販売へ逸脱。新=既製Maritime OpenClawの適合確認→永続状態/inbox/vault→正式登録/回復を一件→商品公開→第三者売上/採算→自然schedule→第二runtime。理由はDaisが既製部品のみ・Museの運転方式・ゼロ開始の実市場収益を指定し、現在Naïveにfrontier modelを使ってもpolicy待ち／browser action失敗が残るため。**現在cursor=L02**。今回の変更はsource文書のみで、稼働中effectの中断・重複、旧worker削除、モデル/予算/権限変更はしない。
 
