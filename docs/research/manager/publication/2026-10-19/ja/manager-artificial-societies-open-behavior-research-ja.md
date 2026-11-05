@@ -291,3 +291,14 @@ FirecrawlのManager接続を使用し、途中の残高不足後は追加購入�
 
 実際の計算は、既存のAS scorecard再構築・group alignment notebook実行、Twin-2K-500公開snapshotの構造検査と、released output・history・wave4の共通native maskによる記述的一致集計ならびに18数値尺度候補のうち14列への公式normalized-MAD採点、今回のNature配布XLSX検査とDebateGPT CSVの記述集計である。Twin監査は公開済み出力と公開waveの記述的一致であり、新しいLLM推論や予測精度の測定ではない。新しいLLMによる全benchmark推論、Rothko本体の起動、説得研究の回帰の全面再現、新しい人間への介入は行っていない。どの段階の成果かを明示し、その範囲で次の仕事へつなぐ。
 
+## 2026年11月6日追記：行動できる条件を整え、効果を別に測る
+
+夕食後に5分練習するつもりでも、家事やスマートフォンを開く習慣で実行できないことがある。通知を説得的にする前に、COM-Bで能力・機会・動機のどの条件が障壁かを仮説として整理する。BCWは介入機能、BCTは具体的な介入内容を記述する。分類名は有効性や実行権限を保証しない。[COM-B/BCW](https://doi.org/10.1186/1748-5908-6-42)、[BCTTv1](https://doi.org/10.1007/s12160-013-9486-6)。
+
+前回未完だった公式GLM-HMMについて、Zhang & KoolのOSF Step7を93人・55,800試行の既存データで再学習した。入力ハッシュ、乱数、依存関係を記録し、著者の自己遷移確率との差は最大約0.00000185、全6パラメータでの最大差は約0.00635だった。近い計算再現であり、新しい人間への介入効果ではない。[原論文](https://www.nature.com/articles/s44271-026-00424-9)、[集計結果](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/evidence/P07-2_ZHANG_KOOL_STEP7_RESULTS.json)。
+
+約25/20試行は1/(1−平均自己遷移確率)による値であり、各人の期待滞在長の平均でも、直接観測した平均エピソード長でもない。1に近い推定確率では外挿が不安定になる。公式Step7に合わせて無反応368試行の符号化を残し、4人分は反復上限に達した。平滑化は後続反応を使うため、オンライン予測と異なる。全前処理、100-maskモデル比較、全図表、感度分析は未完である。
+
+[P07-3の章](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/P07-3_JA.md)にはCOM-B、BCT/BCIO、実行権限、NO_ACTION、結果評価をまとめた。[独立RNT試験計画](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/RNT_INDEPENDENT_RCT_PROTOCOL_SAP_DRAFT.md)は内部草案で、独立研究チーム、倫理審査、登録、募集は未確保・未実施である。支援パッケージ全体と接触量を合わせた一般情報を比較し、4週評価と8週追跡を提案した。d=.35、両側alpha=.05、power=.80、脱落20%という仮定から保守的に計326人を計算したが、Managerの実測効果ではない。AI個別化だけの効果もこの比較では分離できない。PTQと日本語版RTQは別尺度として扱う。[PTQ](https://pmc.ncbi.nlm.nih.gov/articles/PMC3042595/)、[日本語版RTQ](https://doi.org/10.4092/jsre.21.65)。
+
+AIが話す量より、本人の選んだ行動を行える条件を整えること。その後、本人にとっての結果と負担を、適切な比較で確かめること。この順序を崩さない。

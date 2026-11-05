@@ -291,3 +291,21 @@ Research reader verifies **9 SHA-linked source artifacts** across P06-2/3/4 (pla
 - Code/verified outcomes: `docs/research/manager/masterclass/2026-11-04-p04-causal/P07-2_JA.md`, `experiments/p07_2_real_esm_state_prediction.py`, `evidence/P07-2_REAL_ESM_HOEBEKE_AFFECT_RESULTS_20261105.json`; P07-2 30 tests passed, prior P07-1 45 tests additionally passed, 75/75.
 
 **P07-2 educational and observed-state forecasting implementation done; live mental state intervention and clinical benefit NOT established. Next educational P07-3 COM-B. No runtime/state machine/authority/provider update made here.**
+
+
+## 16. P07-3 — behavioral intervention composition (2026-11-06)
+
+This extends the existing research contract, not the production authority model. COM-B supplies six-domain barrier hypotheses; BCW supplies candidate intervention functions; BCTTv1/BCIO identify actual content with source provenance. None confers efficacy, consent or execution authority. Preserve observed/missing/estimated fields and separate goal, behavior, instrument score and delivery receipt.
+
+Use existing manager_core source/observation/intervention records, Grant/AuthorityVerifier, durable outbox, reconciliation, verifier and audit. Include NO_ACTION. Authority, consent and stop conditions constrain the feasible set before comparing utility. Do not retry an UNKNOWN side effect blindly. The catalog remains read-only. Labels such as peer support or gamification must not imply social comparison, habit formation or a proven causal mechanism without content evidence. BCIO:007010 maps action planning to BCT1.4; planning alone does not establish goal setting.
+
+APEASE review: acceptability, practicability, effectiveness, affordability, spillover effects, equity. Record population, context, dose, comparator, outcomes, burden, potential harms, language/version, provenance and uncertainty. An association or held-out prediction score is not an intervention effect. Peer-support studies need an explicit interference/clustering design.
+
+### New measured evidence
+Official Zhang & Kool Step7 two-state refitting completed for93 participants/55,800 cleaned trials. Hashes and environment are in evidence/P07-2_ZHANG_KOOL_STEP7_RESULTS.json. Max transition difference from authors:1.84995e-6; max across all parameters:.00635068. Four fits reached iteration cap;368 omitted-keypress records retained under the source encoding. Retrospective smoothing is not online prediction. 1/(1-mean(p)) duration summaries24.94/20.12 must not be called the mean individual or observed episode duration. Raw preprocessing,100-mask model comparison,HDDM and sensitivity analyses remain open.
+
+### Human efficacy gate
+RNT_INDEPENDENT_RCT_PROTOCOL_SAP_DRAFT.md is an unregistered internal plan, not a launched trial. The proposed comparison tests the full frozen support package, not personalization alone. Independent investigators/evaluation, ethics review, consent, validated-language measurement, funding, registration, randomization and harm response remain launch gates. Company autonomy does not waive these requirements. No actual effect, participant count, approval or trial identifier is fabricated. PTQ and Japanese RTQ are distinct. The illustrative326-person target assumes d=.35,alpha=.05,power=.80,20% attrition and conservative rounding; it is not measured efficacy.
+
+### Documentation and publishing acceptance
+ROADMAP_STATUS_JA.md alone owns curriculum status. New archive slides101–106 have English bodies/Japanese notes; the public talk remains34 slides, with31/34 refreshed. Historical slide languages are not retroactively claimed to be English. Website publication must use canonical apps/landing/marketing plus the existing source-pinned overlay; updating the duplicate Next component is insufficient. Blog publication uses the existing installer pin and only changes content revision. A source commit/PR is not evidence of production deployment: require release manifests, actual page bytes and existing money-path smoke checks.

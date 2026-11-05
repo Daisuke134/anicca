@@ -8,19 +8,19 @@
       "source": "pages/en.html",
       "public_route": "/",
       "export_path": "index.html",
-      "sha256": "91b60729fc1a79139cb3a2d9697343f9a6bc3b5eca64adf649fdbbcf458529e0"
+      "sha256": "bb035fccf031ada43249e8e9c95567a5f13392965c2fe939af6cb609274fbe72"
     },
     {
       "source": "pages/en.html",
       "public_route": "/en",
       "export_path": "en.html",
-      "sha256": "91b60729fc1a79139cb3a2d9697343f9a6bc3b5eca64adf649fdbbcf458529e0"
+      "sha256": "bb035fccf031ada43249e8e9c95567a5f13392965c2fe939af6cb609274fbe72"
     },
     {
       "source": "pages/ja.html",
       "public_route": "/ja",
       "export_path": "ja.html",
-      "sha256": "df81c4e2ad36eefc808cc613651b6b133da1d05b58de48cac85a0e581c92c222"
+      "sha256": "fa36a6b3e5857d8252fb80339c13d28b7e3ca7346bf1c64cae603b9f5678a324"
     },
     {
       "source": "pages/products-en.html",

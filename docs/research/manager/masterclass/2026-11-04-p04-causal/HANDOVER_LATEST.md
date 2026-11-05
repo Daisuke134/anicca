@@ -1,3 +1,31 @@
+# Manager 最新ハンドオーバー — 2026-11-06 / P07-3
+
+## 今回の最優先情報
+
+正本の学習現在地はROADMAP_STATUS_JA.md。P07-3教材を作成し、次はP07-4（CBT/ACT/心理的柔軟性）。過去の「次はP07-3」「GLM-HMM未実施」は以下の最新証拠で上書きするが、全論文再現や実人間効果へ拡張しない。
+
+- 公式Zhang & Kool Step7の2状態GLM-HMM再学習を93人55,800試行に実行済み。evidence/P07-2_ZHANG_KOOL_STEP7_RESULTS.json。科学的コードセルは変更せず、source SHA、環境、seed0を固定。最大遷移差1.84995e-6、全パラメータ最大差.00635068。
+- 4人は200反復上限、無反応368件のchoice=0符号化を忠実な実行では保持。平滑化は未来の反応を使う。25/20試行は1/(1-平均p)の集約値で、個人平均/実測平均episodeではない。全前処理、100-mask比較、HDDM、欠測/初期値感度、オンライン予測は未完。
+- 実行環境Mac: /Users/anicca/Projects/manager-p07-3-data-20261106/.venv (Python3.11.14)、ssm commit e9b408b79e2ab22a05ca93c3a1f78a7dae461992。公式原データ・notebook・個票結果・private.logは同dataディレクトリにあり公開しない。OSFのlicense metadataは未指定。
+- 本作業の隔離worktree: /Users/anicca/Projects/manager-p07-3-20261106、branch research/manager-p07-3-comb-20261106。旧worktreeの未追跡P06実験には触れていない。
+- P07-3_JA.md、RNT_INDEPENDENT_RCT_PROTOCOL_SAP_DRAFT.md、既存specの16節、P07-2追補を作成/更新。RCTは内部草案のみ。独立責任者、審査、登録、資金、募集は未確保/未実施。計326人は仮定d=.35/alpha.05/power.80/20%脱落による計算で実測効果ではない。
+- 発表版34枚を保持し31/34を更新。研究保存版は100→106枚、PDFも106ページ、notes106枚。新規部分は英語本文/日本語notes。歴史的な既存本文の多くは日本語のまま。journal_club/P07-3_SLIDE_SYNC_RECEIPT.json。チャットでは別に16枚のP07-3英語講義デッキと日本語book draftを提供。
+- 既存の英語prediction/intervention記事と日本語artificial-societies記事へ2026-11-06追補。76記事/44EN/32JAは維持。英語記事のmanifest sourceが削除済み旧pathを指していたため、hash一致した既存package/manifestからdocs/research/manager/articles/2026-11-06-prediction-intervention-blessing-en.mdへ正本を復元しsource pointerを修正。
+- サイト正本はlife-manager/apps/landing/marketing/pages/{en,ja}.html とroute-manifest.json。anicca-productsのNext componentだけ変更しても配信overlayで上書きされる。今回COM-Bと実再学習/未実施RCTの区別を更新。公開ソーステスト37+13件pass。baselineは34/36で主語と/about導線に既存不整合があった。
+- 現時点の公開状態: SOURCE_PREPARED / production未確認。source PRとproduction revisionを後続のdeployment receiptで確認すること。コミットやPRを本番公開と呼ばない。
+
+## 正規の公開手順
+
+1. life-manager source branchの通常PRをchecks後にmerge。2. anicca-productsの最新mainから隔離branchを作り、landing-pr-build.ymlとnetlify-deploy.ymlのMANAGER_MARKETING_REVISIONとMANAGER_BLOG_CONTENT_REVISIONのみをsource merge SHAへ更新。既存blog installer revision357212f82ac46fc9a147eed36a29dc70c0c37700とSHAは保持。marketing script SHAは変更していない。3. 通常PR/Netlify build、既存money-path smokeを通す。4. /manager-release.jsonと/blog/manager/release.json、/en,/ja、対象2記事の公開bytesを読み戻す。安全拒否や保護を迂回しない。
+
+## 継続作業の制約
+
+ユーザーに不要な質問をせず、基礎から日本語で説明する。書籍・記事・spec・スライド・原稿・handoverを同時に更新する。予測/介入効果/配信/収益を分離する。既存Manager Core/権限/NO_ACTIONを再利用し、別実行基盤や別ロードマップを作らない。原個票や認証情報を公開しない。
+
+---
+
+# 以下は2026-11-05以前の履歴（最新状態は上記を優先）
+
 # ANICCA / Manager — Latest Handover (2026-11-05 JST)
 
 This is the canonical portable handover prompt for **research + implementation**. At the start of every new chat, read this file and `ROADMAP_STATUS_JA.md`; verify GitHub `main` before making assertions. Update this file whenever moving to the next phase or material project changes.

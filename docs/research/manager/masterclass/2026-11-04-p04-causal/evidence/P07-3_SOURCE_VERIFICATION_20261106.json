@@ -1,0 +1,20 @@
+{
+  "status": "SOURCE_PREPARED_NOT_YET_PRODUCTION_VERIFIED",
+  "reproduction": "official Step7 refit93/93 complete; full-paper replication incomplete",
+  "clinical_trial": "NOT_CONDUCTED",
+  "marketing_tests": 37,
+  "blog_tests": 13,
+  "wrapper_tests": 9,
+  "baseline_marketing_tests": {
+    "pass": 34,
+    "total": 36
+  },
+  "article_count": 76,
+  "en_articles": 44,
+  "ja_articles": 32,
+  "new_participants": 0,
+  "source_branch": "research/manager-p07-3-comb-20261106",
+  "canonical_chapter": "P07-3_JA.md",
+  "next_lesson_authority": "ROADMAP_STATUS_JA.md",
+  "publication_source_repair": "restored missing English article source from hash-verified published package; no original text fabricated"
+}

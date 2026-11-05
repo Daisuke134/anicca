@@ -1,0 +1,23 @@
+Manager blog staged: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 1 articles, 1 media
+✔ stages verified content before integration, preserves unrelated articles, and writes an auditable receipt (19.090917ms)
+✔ rejects tampered article bytes before any public content is staged (5.077458ms)
+Manager blog staged: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 1 articles, 1 media
+✔ separate immutable content revision preserves publication metadata and records both pins (8.967292ms)
+✔ rejects mutable content revision before fetching or staging (0.119542ms)
+✔ integrates only Manager, preserves legacy code and is repeatable (22.548125ms)
+✔ Manager collection stays date-first with visible original dates (7.597708ms)
+✔ accepts reviewed flat articles and rejects duplicate slugs and path traversal (1.178333ms)
+✔ rejects unsafe media names, mismatched embedded body and non-Manager records (0.212709ms)
+✔ renders comparison tables, numbered steps and escaped fenced code (1.3535ms)
+✔ blocks executable and protocol-relative links and attribute injections (0.322708ms)
+✔ keeps citations, local media, readable paragraphs and formatting (0.114666ms)
+✔ Manager sharing uses the original first image and language, escaping URL schemes (0.856291ms)
+✔ blog pair hreflang links only complete -en/-ja pairs, x-default at EN (0.283667ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 132.796084

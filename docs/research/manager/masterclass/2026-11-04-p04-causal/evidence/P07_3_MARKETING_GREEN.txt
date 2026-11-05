@@ -1,0 +1,45 @@
+✔ founder profile is reachable from the existing English and Japanese pages (3.297542ms)
+✔ public profiles preserve evidence boundaries and only the public contact (3.005334ms)
+✔ manifest includes profile and resume assets with verified integrity (1.140708ms)
+✔ overlay publishes byte-identical public PDF and profiles without removing existing blog content (102.986625ms)
+✔ tampered public PDF fails atomically before marketing files are written (75.232291ms)
+✔ public profile retains concrete enterprise delivery and conference achievements in both languages (0.333125ms)
+✔ full public track record retains verified growth, shipped products and research initiative (0.100125ms)
+✔ historical founder revenue is preserved with period and attribution, not recurring profit (0.088792ms)
+✔ English Life Manager page presents one broad product and its Cloud target (2.352167ms)
+✔ Japanese Life Manager page keeps the same broad product position (0.332125ms)
+✔ every published overlay file matches its immutable manifest hash (3.39525ms)
+✔ English Manager homepage exposes current evidence, research, and honest limits (5.242917ms)
+✔ Japanese Manager homepage exposes the same evidence boundaries and research library (0.770167ms)
+✔ P07-3 copy separates reproduced components from untested human benefit (0.547834ms)
+✔ en: mission leads, research precedes separate product destination (1.038167ms)
+✔ en: conceptual illustration has static fallback and accessible pause (0.389042ms)
+✔ ja: mission leads, research precedes separate product destination (0.207083ms)
+✔ ja: conceptual illustration has static fallback and accessible pause (0.143416ms)
+✔ motion is bounded, pausable and honors reduced motion without JavaScript (0.179833ms)
+✔ mission typography wins legacy locale rules and Japanese reflows without a fixed narrow measure (0.117625ms)
+✔ immutable bridge stages the same hash-verified registry and icons before Next build (102.661791ms)
+✔ full overlay accepts only its expanded app asset allowlist (85.36225ms)
+✔ tampered registry fails before any output is written (69.484083ms)
+✔ six app cards use real official icon assets and no arrow CTAs (1.912ms)
+✔ one verified registry supplies six identities, languages, factual copy and hash-bound icons (3.995542ms)
+✔ entire published marketing pages have no upward or external arrow glyphs (0.530417ms)
+✔ published app cards lead to their dedicated introductions in both portfolio locales (0.35825ms)
+✔ portfolio leads with Manager then Life Manager and excludes Lookmax promotion (0.235166ms)
+✔ products-en.html: exactly six published mobile cards with official identities (1.608125ms)
+✔ products.html: exactly six published mobile cards with official identities (0.216542ms)
+✔ products-en.html: AI Monk Factory is listed with its current availability (0.892042ms)
+✔ products.html: AI Monk Factory is listed with its current availability (0.088125ms)
+✔ products-en.html: AI Monk Database is listed as free public research (0.096375ms)
+✔ products.html: AI Monk Database is listed as free public research (0.073958ms)
+✔ primary nav exposes Articles on all home and portfolio locales (0.281667ms)
+✔ route manifest verifies every shipped byte and preserves public routes (1.137625ms)
+✔ home overlay publishes exactly the three approved Values and preserves the mission (100.014083ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 384.271
