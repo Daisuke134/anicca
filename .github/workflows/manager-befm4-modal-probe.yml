@@ -1,0 +1,48 @@
+name: Manager | Be.FM 1.5-4B gated cloud pilot (manual only)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manager-befm4-modal-pilot
+  cancel-in-progress: false
+
+jobs:
+  befm4-cloud:
+    name: Explicitly funded BeFM4 vs Qwen3 inference (NOT a benchmark score)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+    steps:
+      - name: Reject missing provider credentials BEFORE any GPU use
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${MODAL_TOKEN_ID}" ] || [ -z "${MODAL_TOKEN_SECRET}" ]; then
+            echo 'Modal token secrets are missing; no cloud GPU was requested'
+            exit 1
+          fi
+          echo 'Provider credential variables are configured; keys will not be printed'
+      - name: Checkout reviewed Manager repository
+        uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate cloud script syntax
+        run: python -m py_compile products/manager/experiments/cloud/modal_befm4_probe.py
+      - name: Install Modal client on CPU runner
+        run: python -m pip install --disable-pip-version-check "modal>=1.0,<2.0"
+      - name: Run one bounded GPU forward-pass via Modal L4
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Modal stores HF_TOKEN in separate, account-owned hf-manager-models Secret.
+          # GPU function has timeout=900s, 1 container, fixed benign sample.
+          # Paid resources are NEVER invoked by push/PR workflows.
+          modal run products/manager/experiments/cloud/modal_befm4_probe.py
