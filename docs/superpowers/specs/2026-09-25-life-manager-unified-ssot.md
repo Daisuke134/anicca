@@ -25802,16 +25802,20 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上にCloudがliveという連絡もある。一方、今回の限定Sent検索にはproject提出完了のreceiptは見つかっていない。Daisの従来の「Maritime提出済み」申告は保持し、未提出と断定せず、今回指定されたproject提出のreceiptを別に取得する。申請emailは既存applicationの本人emailをprivate SSOT/メールから照合する（秘密はrepoへ出さない）。
 
+提出結果の境界: FIRST 1000 projectのフォーム受付は完了。公式メールはproject締切11/3 23:59 Pacific、selection予定11/4を示す。公開growth competitionの12/1期限は別段階であり、今回の締切へ置換しない。主催者へ期限後の対象可否を確認済みだが、返信/選出/受賞は未確認。Naïveの出席登録とYC application提出/更新はこのフォームで完了しない。
+
+試用経路のfresh UI readback: https://aniccaai.com/maritime?source=first1000&lang=en → `Start Life Manager Cloud` → https://life-call-production.up.railway.app/lm?start_calendar=1 → Google identity login。観測したOAuth scopeはopenid/email/profileで、ここではInbox/Calendar scopeの要求はない。認証後の機能や新規利用者の全経路は未検証。公開planは7日trial後$29/月。メール不要・利用者credential不要という目標と現状Google identity依存を混同せず、提出本文にも現在の手順と早期buildの境界を開示する。
+
 今回のMaritime公式readback: 既存custom agent `80c0208c-af40-4b4c-94ee-a24b3f731db6` がsleeping、lastActiveAt=2026-10-31T12:46:56.044841Z。VMの存在や過去のhealth成功を、現在のブラウザ/無介入登録/売上の証明へ置換しない。既存workerは消さず、モデル/予算/credential/稼働effectをこの提出作業で変更しない。
 
 | ID | 状態 | 一つの作業と完了条件 |
 |---|---|---|
 | SUB01 | 完了 | 指定フォームのlive UI、必須質問、締切、既存application emailと提出履歴を確認。Google loginは不要 |
-| SUB02 | 次 | 現在のWeb試用経路を開き、商品名/対象/実装状態/試用手順/source URLをフォームへ提出。利益や自律運転を未実証のまま完成と書かず、確認画面で受信を確認。二重送信しない |
-| SUB03 | 未完 | 提出の時刻/確認文/試用URLを記録。期限後の審査対象/資格が不明なら既存主催者経路で確認する。提出済みと大会受理を分ける |
+| SUB02 | 完了 | 現在のWeb入口→Start Life Manager Cloud→Google identity loginをlive UIで確認し、既存application email・商品説明・Web試用経路・Maritime利用・source URLを一度だけ送信。Google FormのformResponse画面に `Thanks for your submission! Your FIRST 1000 project has been submitted.` と表示。cloud自律収益は未実証と明記 |
+| SUB03 | 確認待ち | 11/5 04:23Z時点でフォーム受付を確認。既存主催者reminder threadへ遅延提出の審査可否と追加提出要否を返信し、Gmail message `1a1a9f216df11f55` / thread `1a19e80bf578842b` のSENTを公式再読取。返信待ちの間もSUB04を進める。フォーム受付は確認済み、期限後の大会受理/選出は未確認 |
 | SUB04 | 未完 | L02〜L06の最短順で実行環境のmodel/browser/persistence→正式登録→公開→第三者支払を証明し、実結果でproject情報を更新する。provider待ちを含む実測がない段階で完成日を約束しない |
 
-順序更新: 旧=worker L02を先行、新=SUB01/02/03の現状提出→worker L02〜L06を継続。理由はDaisが提出最優先と指定し、期限後でも現在フォームが受付UIを返すため。主cursor=SUB02、worker cursor=L02、dashboard cursor=L07-D2。既存effectを中断せず、別商品/別台帳は作らない。
+順序更新: 旧=worker L02を先行、新=SUB01/02/03の現状提出→worker L02〜L06を継続。理由はDaisが提出最優先と指定し、期限後でも現在フォームが受付UIを返すため。主cursor=SUB04 / worker L02、主催者確認=SUB03待ち、dashboard cursor=L07-D2。既存effectを中断せず、別商品/別台帳は作らない。
 
 この現行契約と直下のL01–L10（L07配下の公開dashboard作業を含む）だけがNaïve/Maritime Cloudの実行順・現在cursor・残TODOの正本。以降の旧NHC表・版別model/cap・App bridge・登録probeは履歴として保存し、現行契約を上書きしない。調査根拠・部品比較・Mermaid → `docs/research/2026-11-05-cloud-runtime-lego.md`。
 
