@@ -12,14 +12,14 @@ test('English Manager homepage exposes current evidence, research, and honest li
   const html = read('pages/en.html');
   const text = visibleText(html);
 
-  assert.match(text, /one persistent manager I am building to study how behavior change can reduce suffering/i);
+  assert.match(text, /one persistent manager we are building to study how behavior change can reduce suffering/i);
   assert.match(text, /does not ask every beneficiary to use a dedicated app or chat/i);
   assert.match(text, /observed actions, follow-up, and harm/i);
-  assert.match(text, /67 published articles: 38 in English and 29 in Japanese/i);
+  assert.match(text, /76 published articles: 44 in English and 32 in Japanese/i);
   assert.match(text, /90 existing AI evaluations/i);
   assert.match(text, /OIDC checkpoint restore/i);
   assert.match(text, /positive canary[^.]*STOP \/ rollback[^.]*native-observation/i);
-  assert.match(text, /Manager has not yet demonstrated reliable human-behavior prediction or real-world effects of intervention/i);
+  assert.match(text, /Manager has completed bounded public-data predictive evaluations and a 93-participant GLM-HMM refit/i);
   assert.match(text, /what Anicca aims to build/i);
   assert.match(text, /beneficiaries should not need a dedicated app or chat/i);
   assert.match(text, /operator oversight, audit, and stop controls remain/i);
@@ -43,11 +43,11 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
   assert.match(text, /行動変容が苦しみを減らしうる条件を調べるために私たちがつくる、ひとつの持続的なマネージャーです/);
   assert.match(text, /受益者全員に専用アプリやチャット操作を求めません/);
   assert.match(text, /実際の行動、追跡、害を観測して評価します/);
-  assert.match(text, /英語38本・日本語29本、計67本の記事/);
+  assert.match(text, /英語44本・日本語32本、計76本の記事/);
   assert.match(text, /AI評価90件/);
   assert.match(text, /GitHub OIDCによるcheckpoint restore・update・release/i);
   assert.match(text, /positive canary[^.]*STOP \/ rollback[^.]*native observation/i);
-  assert.match(text, /人の行動を確かに予測し、介入によって現実の結果を改善したことは、まだ実証していません/);
+  assert.match(text, /反すう低減の独立RCTは未実施/);
   assert.match(text, /Aniccaがつくることを目指す、ひとつのマネージャー/);
   assert.match(text, /受益者に専用のアプリやチャット操作を求めない構想/);
   assert.match(text, /運営者の監督・監査・停止手段は保ちます/);
@@ -62,4 +62,16 @@ test('Japanese Manager homepage exposes the same evidence boundaries and researc
 
   const manifest = JSON.parse(read('route-manifest.json'));
   assert.equal(manifest.files.find((file) => file.public_route === '/ja')?.sha256, sha256('pages/ja.html'));
+});
+
+
+test('P07-3 copy separates reproduced components from untested human benefit', () => {
+ const en = visibleText(read('pages/en.html'));
+ const ja = visibleText(read('pages/ja.html'));
+ assert.match(en, /COM-B/); assert.match(ja, /COM-B/);
+ assert.match(en, /93 participants/); assert.match(ja, /93人/);
+ assert.match(en, /independent rumination trial has not been conducted/i);
+ assert.match(ja, /反すう低減の独立RCTは未実施/);
+ assert.match(read('pages/en.html'), /manager-prediction-intervention-blessing-en/);
+ assert.match(read('pages/ja.html'), /manager-artificial-societies-open-behavior-research-ja/);
 });

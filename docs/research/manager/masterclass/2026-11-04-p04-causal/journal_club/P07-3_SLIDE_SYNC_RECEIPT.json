@@ -1,0 +1,28 @@
+{
+  "archive_slides": 106,
+  "archive_pdf_pages": 106,
+  "public_slides": 34,
+  "public_pdf_pages": 34,
+  "public_changed_slides": [
+    31,
+    34
+  ],
+  "new_archive_slides": [
+    101,
+    102,
+    103,
+    104,
+    105,
+    106
+  ],
+  "new_slide_body_language": "English",
+  "speaker_notes_language": "Japanese",
+  "historical_body_language": "unchanged; many earlier slides remain Japanese",
+  "pdf_method": "preserve existing pages; render changed/new native PPTX shapes with existing repository helper",
+  "artifacts": {
+    "AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx": "9b9d84453f9fcfd1110e95690e790cd278141ceb0e71912db57d57bb3bd6e504",
+    "AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf": "c24d88131c9852755bc4f43c0b1249147cc9862cab5daa06b3b8a2d6e1d06d4a",
+    "AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pptx": "ac74fdb8d56e4b6d3bf8dac625cdf3b4fdee6affeff28233d5bede40c9805803",
+    "AI_BEHAVIOR_JOURNAL_CLUB_60MIN_JA.pdf": "7da1eaac62867cfaf0594d1b0783b45b8a0dcf1dbf78f93adae8cd33dfd516d5"
+  }
+}

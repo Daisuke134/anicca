@@ -1,0 +1,29 @@
+{
+  "status": "PLANNING_ASSUMPTIONS_NOT_OBSERVED_EFFECT",
+  "alpha": 0.05,
+  "power": 0.8,
+  "assumed_attrition": 0.2,
+  "scenarios": [
+    {
+      "assumed_standardized_effect": 0.3,
+      "continuous_n_per_arm": 175.38467227482235,
+      "analyzable_per_arm": 176,
+      "randomized_per_arm": 220,
+      "randomized_total": 440
+    },
+    {
+      "assumed_standardized_effect": 0.35,
+      "continuous_n_per_arm": 129.11207873406022,
+      "analyzable_per_arm": 130,
+      "randomized_per_arm": 163,
+      "randomized_total": 326
+    },
+    {
+      "assumed_standardized_effect": 0.4,
+      "continuous_n_per_arm": 99.08032683981097,
+      "analyzable_per_arm": 100,
+      "randomized_per_arm": 125,
+      "randomized_total": 250
+    }
+  ]
+}
