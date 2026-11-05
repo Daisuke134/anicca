@@ -25862,6 +25862,12 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 **L07配下：既存open dashboardの修正契約**
 
+**Dais追加要件・調査カーソル:** Openは売上だけでなく、各市場の受託（応募→返信→契約→納品→入金）と出品（掲載→表示→閲覧→購入→精算）を一画面で確認できる会社の公開状況とする。Capafyはimpressions・detail views・conversion・new buyers・units・salesを期間/source/as_of付きで収集し、Coconala/Lancers等も各サービスの公式に取得できる出品別指標と受託進捗を調査して追う。アプリinstall・SNS到達・費用も同様。UIは簡潔にし、実データと対象期間、更新失敗・古さを区別する。秘密・顧客の非公開情報は公開しない。毎日の無人収集、公開、次回自然実行後も維持、デスクトップ・スマホの公開UI実見まで確認する。
+
+現況: 2026-11-05 14:07 JST版のdata.jsonがproducts mainで更新されている。ops origin/mainには旧update_open.shが参照するindex.htmlが無く、現在のpublisherを未特定。旧scriptはcollect_all/build_revenue_ledgerの失敗を無視するため、稼働経路と同一と断定しない。写真のCapafy値は期間不明で最新/月次として代入しない。
+
+**残TODO（L07-D2〜D6と合わせて実行）:** (1) current publisher/ownerとテンプレート正本・共有browser leaseを特定。(2) Capafy公式画面と対象期間を取得し保存、Coconala/Lancersの出品・受託指標もsource別に確認。(3) 既存builderとUIへ各指標・時刻・鮮度を反映、未取得を0にしない。(4) 既存schedulerで日次以上の取得と再公開を稼働させ、natural run・公式readback・公開UIを確認。(5) 残る全platformへ順次拡張し、実績・経費・問題を報告。D2/D3先行の順序は維持。
+
 目的は全agent・利用者・投資家が、同じ会社の実業務・売上段階・費用・稼働・配信を、source/as_of/coverageとともに確認できること。既存`/open/`/data.jsonと取得元を修正し、別dashboard/会計DBを作らない。UI再取得60秒、業務state集計5分、到着済payment webhook反映1分以内、provider照合30分を目標とし、未達をstale/last errorで見せる。公開refreshのためだけに全worker/modelを起こさない。全providerがmillisecondsで確定するという約束はしない。
 
 今回の観測: `/open/data.json`はmonth=2026-11、updated_at=2026-11-05 11:37 JST、reconciliation_complete=false。Life Manager Cloudのplatform/product行は既にあり、test billing/no paying usersという古い注記とStripe再認証待ちがある。provider公式の最新売上は未照合であり、Cloud売上0を確定しない。public HTMLのmonth表示はLos_AngelesでOctoberになることをNodeで再現。gp/gplは未照合flagと併存、HTMLは初回fetchのみ。生成経路はanicca-ops `team/scripts/open/update_open.sh`→builder→`publish_open_repo.sh`→anicca-products `apps/landing/public/open/`→Netlify。runtime template `/workspace/team/scripts/open/index.html`はops origin/mainに追跡されていない。Reasonの既存Muse relayへtemplate正本/ownerのread-only照会はdelivered、着手/修正/返答は未確認。
