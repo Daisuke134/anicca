@@ -6,9 +6,9 @@
 
 Daisの最新要件は、Muse上で動く会社の仕事を、永続VM・実ブラウザ・保存ログイン・会社所有メール・vault・定期実行・共有台帳とともにクラウドへ移すこと。専用レポート販売APIや独自ハーネスを作ることではない。最初の成果は適格な販売先で本人用アカウントの登録または既存アカウント回復を実証し、その段階で報告すること。その後、正式公開、第三者注文、納品、支払、費用差引を別段階で進める。
 
-**推奨はMaritimeの公式OpenClawテンプレートを最初のworkerにすること。** OpenClawの既存ブラウザ・workspace・cron・model providerを使い、既存Life Managerのplaybook、状態台帳、配信、会計、公開dashboardを接続する。新しいloop engine、browser controller、signup bot、メールサーバー、vault、dashboardは作らない。変更対象は設定・仕事内容・秘密参照・データ接続に限る。接続に欠ける機能が判明したら、既製の対応機能を先に探し、独自サービス追加を既定にしない。
+**旧推奨（2026-11-05、現行順序ではない）:** Maritimeの公式OpenClawテンプレートを最初のworkerにする案だった。2026-11-06の実行順はNaïve hackathonを先行し、その後Maritime First 1,000へ移る。既存Life Managerのplaybook・状態台帳・配信・会計・公開dashboardを再利用し、新しいloop engine、browser controller、signup bot、メールサーバー、vault、dashboardを作らない。接続に欠ける機能は既製品を探し、独自サービス追加を既定にしない。
 
-Naïveは同じ商品の第二実行先／管理面の候補として残す。二つの会社や二つの台帳にしない。Naïve内にMaritimeのVMが自動で移植されるわけではなく、ホストとハーネスは別の境界。公式MCP等の既製接続が、そのAPI keyのscope・対象資源・提供toolまで実証できた場合に限り接続する。独自の全権API proxyを作らない。
+**旧案（2026-11-05）:** Naïveを同じ商品の第二実行先／管理面にする想定だった。2026-11-06の現行案は順序を入れ替え、Naïveをhackathonの先行runtime、Maritimeを後続runtimeとする。二つの会社や二つの台帳にはしない。Naïve内にMaritimeのVMが自動で移植されるわけではなく、ホストとharnessは別の境界。公式MCP等の既製接続はAPI keyのscope・対象資源・提供toolを実証した場合だけ使う。独自の全権API proxyは作らない。
 
 ## 中学生向けの部品の意味
 

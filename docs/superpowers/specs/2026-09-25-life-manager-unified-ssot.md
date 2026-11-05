@@ -25794,9 +25794,9 @@ Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private S
 
 ### Naïve browser company — Capafy-first / No human in the loop
 
-#### 現行契約：既製runtimeを組み合わせて会社の仕事を移す
+#### 旧実行契約（2026-11-05時点。優先順は2026-11-06の末尾追補で更新）
 
-**優先作業：FIRST 1000 project submission（Daisの2026-11-05指定）**
+**当時の優先作業（履歴）：FIRST 1000 project submission（2026-11-05）**
 
 目的は参加申請とproject提出を分け、指定Google Formへ現状に正確な商品説明・試用経路・sourceを提出し、providerの完了画面を確認すること。URL: https://docs.google.com/forms/d/e/1FAIpQLScO97TqtYA3UYdEJIbaYXViOJZ8OySwzkhqlaxDId4HiCzOYg/viewform 。フォームは11/3 23:59 Pacificの締切を記載するが、11/5のlive UIには送信ボタンと全質問がある。遅延提出の受信と大会側の受理/資格を同一視しない。
 
@@ -25817,11 +25817,11 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 順序更新: 旧=worker L02を先行、新=SUB01/02/03の現状提出→worker L02〜L06を継続。理由はDaisが提出最優先と指定し、期限後でも現在フォームが受付UIを返すため。主cursor=SUB04 / worker L02、主催者確認=SUB03待ち、dashboard cursor=L07-D1c。既存effectを中断せず、別商品/別台帳は作らない。
 
-この現行契約と直下のL01–L10（L07配下の公開dashboard作業を含む）だけがNaïve/Maritime Cloudの実行順・現在cursor・残TODOの正本。以降の旧NHC表・版別model/cap・App bridge・登録probeは履歴として保存し、現行契約を上書きしない。調査根拠・部品比較・Mermaid → `docs/research/2026-11-05-cloud-runtime-lego.md`。
+この節と直下のL01–L10は2026-11-05時点の履歴。2026-11-06の優先順・現在cursor・残TODOは本書末尾「2026-11-06 Naïve hackathon first → Maritime First 1,000 second」が正本。重複実行せず、新しい順序に従う。比較調査 → `docs/research/2026-11-05-cloud-runtime-lego.md`。
 
 **成果:** Museで使う「永続VM＋実ブラウザ＋保存ログイン＋agent所有inbox＋vault＋外側の定期起動＋共有台帳＋既存open dashboard」を、既製品の設定でクラウドへ再現する。No human in the loopを運営要件として維持する。最初は適格な販売先でagent本人用accountの登録または同一account回復を一件実証して報告し、その後に公開・販売・納品・入金・実費差引を進める。製品コード、独自harness、signup bot、browser proxy、scheduler、メールserver、vault、dashboardを新作しない。
 
-**採用方針:** 最初のworkerはMaritime公式OpenClawテンプレート。upstreamのbrowser/workspace/cron/model providerをそのまま使い、既存Life Managerの仕事prompt・winner playbook・台帳・配信・会計へ接続する。Hermesは既製の代替。Open Instinctは近い公開実装として参照するが、既定のlogin/2FA/payment takeoverを調べず無人適合とはしない。Naïveは同じ商品の管理面／第二runtime候補として残し、第一workerの収益実証を待たせない。公式MCPを使う場合も現在keyのscopeと対象resource/toolを先に照合し、全権API proxyを新設しない。
+**当時の採用方針（履歴・現行順序ではない）:** 最初のworkerをMaritime公式OpenClawテンプレートとする案だった。2026-11-06の更新では、先にNaïve hackathon用runtimeで一つの実業務を実証し、その後Maritimeへ移る。OpenClaw/Hermes等の既製品は再利用候補のまま。公式MCPはkey scopeと対象resource/toolを照合し、全権API proxyを新設しない。
 
 **model:** Daisの今回のfrontier優先指示を旧DeepSeek既定より優先する。新workerはGPT-6.1 Sol / mediumを第一候補にし、採用imageのResponses API・画像入力・tool calling・effort対応を先に確認する。Naïveの公式catalogはSol/Terra/Astraのimmediateとlow/medium/highを返すが、Maritimeでの同じmodel利用は未確認。現在のNaïve本体Terraをこの文書更新だけで変更しない。モデルは権限・browser状態・予約予算・受信経路の故障を自動では直さない。CodexのUI選択も変更しない。
 
@@ -25835,7 +25835,7 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 **今回のfresh readback:** Naïve本体`agt_e1hvkwgrdrx119zh22qthavwt4`はcurrent_version27、pi、`openai/gpt-6.1-terra`、immediate。browserはwrites/persist/keep_alive有効、context=`anicca-browser-capafy`。deployment`dep_aqf597v5eqa3e25ff2z22rq9j8`はpin27、`0 */12 * * *`、enabled=false。最新確認session`ses_1e3t9v4wmtffx3842aanpkkrtr`の取得先頭100eventsはapproval待ちとact失敗を含み、続きがある。idle/end_turnや費用440251microUSDを登録成功へ置換しない。live catalogueのHermes/Claude Codeはrunnable=false。別のDeepSeek閲覧専用レポートagentと混同しない。Maritimeには既存custom worker一件・sleepingがあり、公式OpenClaw templateの稼働とは別。保存keyでMCPはComputer系scope不足の401、Maritime側model catalogは未取得。新規VM・key・model変更・登録・売上は今回実行0。
 
-**原子的な残TODO（これだけが現行）:**
+**原子的な残TODO（2026-11-05時点の履歴。現行TODOは本書末尾）:**
 
 | ID | 状態 | 一つの作業と完了証拠 |
 |---|---|---|
@@ -25865,7 +25865,7 @@ Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上
 
 **L02実測checkpoint:** 新worker `113ec037-cb21-4d7e-af8d-e689bb0a19ad` は公式OpenClaw2026.7.1、2GB/1vCPU/5GB、private/auto-sleepで作成済み。既定はgpt-5.4/browser無効。native configへOpenRouter経由Sol mediumと永続Chromeを設定し、config validate PASS。Responses tool callと実画面imageの直接入力はHTTP200。埋込OpenClaw agentはbrowserツールで/lmを開き、snapshot/screenshot/実画面の見出し・CTAを読取りJSONへ保存。13応答のOpenRouter generation公式照合はcoverage complete、合計$0.0671382、resolved model=openai/gpt-6.1-sol-20260929。VM meterは旧free/seat枠で観測used/overage0だが、model費や将来hosting費を0としない。
 
-**現在の診断cursor=L02-D2:** sleep→GET sleeping→start→GET active後、marker、artifact SHA256、profile Local State、Chrome binary、Sol mediumは保持。一方browser.enabledがfalseへ戻り、Gateway経由のbrowser stopは `browser control is disabled`。agent.desktopEnabled=falseは確認済みだが、どの起動処理が設定を戻すかは未確定。provider設定/起動sourceを確認し、再開後のmanaged Gatewayでbrowserが利用できることを再検証する。最初の埋込agent sessionはstopとartifact確認済みだが、そのdetached execのprovider statusはrunningのまま。完了済み試験PIDへのSIGTERMとcancel候補POST405を実施。元のexecとbrowser子processのcleanupはexact ownerだけを診断し、旧workerを操作しない。新worker proxy cap0設定はmanage scope不足403で未適用、権限は広げずOpenRouterの既存$3/day枠だけを使用する。検証workerのheartbeatは0m（営業scheduleはL07）。private証拠は既存stateの `cloud-l02-maritime-20261105/`。L02の完了判定はまだしない。
+**当時の診断cursor=L02-D2（履歴）:** sleep→GET sleeping→start→GET active後、marker、artifact SHA256、profile Local State、Chrome binary、Sol mediumは保持。一方browser.enabledがfalseへ戻り、Gateway経由のbrowser stopは `browser control is disabled`。agent.desktopEnabled=falseは確認済みだが、どの起動処理が設定を戻すかは未確定。provider設定/起動sourceを確認し、再開後のmanaged Gatewayでbrowserが利用できることを再検証する。最初の埋込agent sessionはstopとartifact確認済みだが、そのdetached execのprovider statusはrunningのまま。完了済み試験PIDへのSIGTERMとcancel候補POST405を実施。元のexecとbrowser子processのcleanupはexact ownerだけを診断し、旧workerを操作しない。新worker proxy cap0設定はmanage scope不足403で未適用、権限は広げずOpenRouterの既存$3/day枠だけを使用する。検証workerのheartbeatは0m（営業scheduleはL07）。private証拠は既存stateの `cloud-l02-maritime-20261105/`。L02の完了判定はまだしない。
 
 **L02-D2の次操作:** 新workerだけのprovider desktop/browser設定とnative Gatewayの再開経路を照合し、browser無効化を根本修正。再開後Gateway browserのstatus/open/screenshotが通り、完了済みexecのcleanupを公式状態で確認したらL02-Hへ戻る。公式OpenAPIはPATCH `/api/agents/{agent_id}/desktop-config` `{enabled:true}` を定義し、4GiB/2vCPU floor・seat cap再判定・active時rebuildを明記。契約枠/費用を先に照合し、独自起動wrapperで代替しない。 GET account/limitsはfree/seat、maxMemMb8192を返すが、desktop-configの実callはHTTP402/code=seat_limit/paid plan requiredで拒否。desktopは有効化されておらず2GB/1vCPUのまま。VM付属MARITIME.mdはlogin用途に公式Browserbase MCP、公開読取にnative headlessを案内。今回workerのenvにBrowserbase接続はなく、Credential SSOTのBrowserbase serviceもない。paid機能の権限迂回や独自wrapperは作らず、既存hackathon benefit/公式接続の適格性と費用を次に照合する。
 
@@ -26528,3 +26528,102 @@ Operational transition gates remain **UNMET / NOT VERIFIED** in this research ru
 P06-3 (Statsmodels power/SciPy A/A false-positive/SRM), P06-4 (synthetic recognized-revenue-less-refunds-and-all-incremental-costs plus adverse guardrail), and P06-5 (9 planning/result hashes and read-only official public-site Manifest+6HTML verification) were implemented on the authorized Mac mini. 71 new software unit tests plus the 257 reviewed prior tests passed (**328/328**). A synthetic profit effect of +56.84 JPY/user fails the predeclared complaint guardrail (adverse +0.942pp): **DO_NOT_SHIP**. These are **synthetic business observations, not actual bank/card/cash/customer data**. The real public page is still`experiment_enabled=false, real_participants=0, beneficiary_outcome=NOT_MEASURED`; no new real approval/authority, publication, recipient intervention, paid transaction or model weight release occurred. The real incremental paid contribution, beneficiary outcomes and causal effectiveness are **NOT MEASURED** and remain under the existing actual operational permission and impact SSOT.
 
 **Field gates still NOT DONE:** P00-3 actual scope/consent, P05-5 S1 real Shadow comparison, S2 properly scoped/authorized single reversible action, P06 real experiment and real paid-refund-cost/harm readbacks, independent causal outcome. Educational study proceeds next to P07-1. Full references and code: `products/manager/docs/specs/2026-11-04-manager-ontology-query-evidence-reuse.md` §14, and `docs/research/manager/masterclass/2026-11-04-p04-causal/PHASE6_COMPLETION_AND_FIELD_GATES_JA.md`. This statement changes no runtime worker, publication workflow, grant, ledger or production rollout.
+
+## 2026-11-06 Naïve hackathon first → Maritime First 1,000 second
+
+**決定と範囲:** Life Manager Cloudは一つの商品、一つの既存業務台帳・playbook・公開dashboardを使う。まずNaïve Managed Agentsの公式SDKで11月7–8日のYC hackathon向け実業務を実証し、その後Maritime First 1,000で同じ商品を広げる。旧「Maritime OpenClawを先にする」順序は、Naïve大会が先に始まり全teamにNaïve SDK使用が必須なため更新する。Naïveの1位はYC interviewであり、YC採択・資金調達・売上を保証しない。
+
+**選択肢と採用理由:** A) Naïveで先に一つの実業務を証明し、同じ商品・台帳をあとでMaritimeへ展開する（採用）。日程とNaïve SDK必須条件に合い、二重実行を避ける。B) Maritimeを先に直す案は、先に始まるNaïve大会の実業務証明を後回しにするため今回の順序から外す。C) 両runtimeで同じ仕事を同時に回す案は、投稿・注文の重複と費用/売上の二重計上を招くため採らない。
+
+**既製品方針:** 既存Life Manager、Naïveのagent/session/Computer/Browser/Identity、MaritimeのAgent Box/framework/desktop/Trigger、既存GitHub・台帳・`/open`を組み合わせる。独自browser controller、agent loop/harness、signup bot、mail server、vault、scheduler、全権API proxy、dashboardを新作しない。機能が欠ける場合はprovider capability gapとして記録し、維持済みOSS/official featureを探す。自作wrapperで隠さない。
+
+### NaïveとMaritimeの違い
+
+| ブロック | Naïve Managed Agents | Maritime |
+|---|---|---|
+| 主な役割 | agent設定、harness、model routing、sessions、budget/policy、tools、identity、eventsを管理 | Linux Agent Box、Linux/Windows desktop、framework template、sleep/wake、Triggersを提供 |
+| 実行 | SDKでagent versionとsessionを作成。triggerでwake → bounded turn → transcript/cursorをcommit → sleep | OpenClaw/Hermes/Codex等のtemplateをAgent Box内で実行。platform Trigger等でwake。`/data`はsleep/redeploy後も保持 |
+| Computer/browser | 任意のLinux micro-VM Computer。managed Browserはdomain scopedの実ブラウザ。browser sessionとmodel-driven actionsは別meter | Agent Boxとdesktop computerは別resource。desktopのChromium profile/diskをsleep/wake後も検証 |
+| Identity/secret | agent Identityにverified domain/inbox/connection/vault。対応経路では秘密をmodelに見せず境界でinject。policyで範囲を制御 | encrypted env varsをagent VMへ注入。framework/desktop/profile/credentialのownerとscopeを分離 |
+| schedule | scheduled deployment/inbound eventからsessionを起動。常時hotなVMとは異なる | box内timerはsleep中に発火しない。Maritime Triggers等の外側のwakeを使う |
+| SDK名 | `@usenaive-sdk/vetta`、`vetta` CLI/APIはNaïve Managed Agentsを指す | Maritime SDK/REST/dashboard/CLIでmachines, computers, triggersを扱う |
+
+Naïveは「24時間ずっとCPUが動くPC」ではなくdurable agent loop。Computerのfilesystemは仕事場所、BrowserはWebを操作する実ブラウザ。contextを保持できても開いたtab/screenの常時保持とは別。Maritimeはframeworkを載せるhostで、Agent Boxとmanaged desktop/browserを同じresourceと見なさない。既存accountがlegacy seat planなら公開料金を当てはめない。
+
+**公開料金の目安（契約前にlive readback）:** Naïve Standardは公開価格で月$20・同額の利用credit、7日trialはcardが必要で最大$10 credit。他にmodel/browser/compute/tools費用がある。Maritimeの公開現行表はAgent Box 2GBあたり月$1、Linux desktopはawake $0.12/時＋sleep中disk $0.08/GB・月。既存Maritime accountは旧seat planなので、この公開priceを実契約へ当てはめない。
+
+### 一つの商品、二つの実行先
+
+既存phone入口`/lm`、playbook、GitHub source、private task/revenue ledger、`/open`を共通にする。各jobはNaïveまたはMaritimeの一方だけで実行し、同じjob/effect IDで照合して二重投稿・二重購入・二重計上を防ぐ。Naïveはhackathon用primary、Maritimeはその後同じ業務を移すhost。両platformが自動接続されるわけではなく、同じ商品を別runtime上で運用する。
+
+```mermaid
+flowchart LR
+  U[利用者: phone / 既存 /lm] --> LM[既存 Life Manager]
+  LM --> J[既存 job ledger / playbook]
+  GH[GitHub: source / 仕事定義] --> J
+  J --> SEL{jobごとに実行先を1つ選択}
+  SEL --> NS[Naïve SDK]
+  NS --> NA[agent version: model / harness / tools / budget / policy]
+  NA --> NL[wake → turn → commit → sleep]
+  NL --> NC[optional Computer + managed Browser]
+  NC --> P[許可された販売先・顧客業務]
+  NA --> ID[agent Identity: inbox + vault]
+  SEL --> MB[Maritime Agent Box + official framework]
+  MB --> TR[platform Trigger → wake → job → sleep]
+  TR --> MD[optional persistent Chromium desktop]
+  MD --> P
+  P --> R[provider URL / paid order / settlement receipt]
+  R --> J
+  J --> D[既存 /open: revenue stage / cost / freshness / coverage]
+```
+
+**利用者体験:** phoneで既存Life Managerを開始し、収入や生活管理の目的を伝える。市場・agent・手順を毎回選ばせず、Managerが台帳と条件から次の一手を選び、実績・費用・状態を既存`/open`へ報告する。ユーザーの第三者platform password、verification code、投稿approval、camera/livenessを求めない。仕事用Identityは利用者identityから分ける。旧`/lm` readbackではGoogle identity loginが残るため、phoneだけで開始するUXは未完了。新認証serverは作らず既存phone-friendly pathを再利用する。
+
+**No Human in the Loopの境界:** Naïve Browserのsignup/writeはpolicy上`ask`になり得る。allowed domain、write policy、`ask_actions`を実resourceで確認し、approval-wait eventなしで完走した仕事だけを無介入と記録する。対象platformがhuman camera/liveness KYCや利用者credentialを必須にする場合は迂回せず市場を替える。外部platformの審査や顧客の応答は自社agentが制御できない工程であり、その状態を公開/販売済みと誤記しない。
+
+### 両大会で示すもの
+
+| | Naïve Autonomous Company Hackathon | Maritime First 1,000 |
+|---|---|---|
+| 時期 | 2026-11-07〜08、YC San Francisco。全teamがNaïve SDKを利用し、実業務の成果・判断・介入箇所をdemoで示す | 2026-10-20〜12-01 23:59 Pacific。distinct real users 1,000人を獲得し、最初の3 projectが確認後winner |
+| 得られるもの | 1位はYC interview。interviewは採択ではない | 参加者はMaritime credits $1,000。winnerはprojectあたり最大$20,000 LLM credits。現金賞とは同一視しない |
+| 証拠 | 実provider run/event、live URL、実顧客成果、実費、人の介入数 | real user usage。agent/VM/subagent/bot/duplicate accountは人数に入らない |
+
+Naïve大会はこれから始まるため、勝者やwinner strategyを知っているとは言わない。Maritime公式templateにはOpenClaw（general assistant/web）、Hermes（persistent memory/dashboard）、Codex/Claude Code（coding workspace）、ZeroClaw（lightweight agent）、DSH（web workbench/session replay）がある。Naïve docsのnightly repo triage、long report、inbound email opsもofficial examplesであり、独立検証済み収益事業・大会winnerとは区別する。既存templateは使うが、他社listingの文章・画像・実績を自社のものとして複製しない。
+
+### 初回収益の証拠と現在地
+
+Naïve NHC-00（2026-11-05のmain/provider evidence）は公開Capafy pageを`goto`し`h1`を取得した。model+browser費用は$0.006715。これはpage閲覧成功だけで、登録、publisher権限、listing、第三者注文、settlement、payout、recordingではない。Capafy account-wide salesも未照合。11/6のNaïve runtime API/event readbackはまだ行っていない。
+
+Capafy Publisher Agreement v1.2はSkill公開前のautomated reviewとhuman review、20% platform fee、7日dispute window、$100 minimum payout、settlement月の後15日以降のpayout開始を記す。Capafyは初回検証候補だが即時公開・現金着金の保証はない。正規publisher権限とautomation規約を守り、`SUBMITTED` / `IN_REVIEW` / `PUBLISHED` / `SALE` / `SETTLED` / `PAID`を分ける。
+
+Maritimeの最新既知validationでは`/data` markerはsleep/wake後も残ったが、再開後`browser.enabled=false`、Gatewayは`browser control is disabled`。desktop設定変更は`seat_limit`で拒否された。既存workerを保護し、別VM・有料plan・custom browser wrapperを足さない。Naïveの現行login/browser状態も未確認なので、両platformとも登録や実売上ができたとは報告しない。
+
+売上段階は`published offer → unrelated third-party paid order → delivered → refund/dispute window closed → eligible settlement → paid/landed`を分ける。hackathon credits/USDC testnetはrevenueではない。Life Manager Cloudの$10,000 MRRは実際の外部subscription revenueで計測し、self-operated salesから分離する。model/browser/hosting/payment/refund/acquisition費用も同じledgerに出す。達成保証はしない。
+
+### 現行の順序付きTODO（この表だけが正本）
+
+順序更新: 旧=L02 Maritime OpenClaw → Capafy → revenue → Naïve second runtime。新=Naïve SDK hackathon proof → Naïve demo → hackathon後にMaritime First 1,000。理由=Naïve eventが先に始まりSDKが参加条件で、YC interviewへつながる1位を狙うにはNaïve上の実業務証拠が必要なため。進行中のNAIVE-OWNED-MAIL ownerとMaritime workerは停止・重複実行しない。
+
+| ID | 状態 | 原子的作業と完了証拠 |
+|---|---|---|
+| N01 | 完了 | 11/6にNaïve/Maritime公式docs、両大会terms、Capafy agreementを照合し、順序と再利用architectureをSSOTへ反映。provider effectなし |
+| N02 | 進行中 | 事前確認済み: private credential SSOTに`service=naive`の行がある（秘密値は表示しない）が、`browsers.toml`にNaïve/Vettaのidentity/profile/owner対応がなく、利用可能なtool一覧にもNaïve/Vettaのprovider connectorがない。別ownerの共有Chromeは使わず、login・provider GET/events・設定変更は未実施。次は既存ownerの登録済みbrowserまたは公式read-only経路が使える状態で、agent/session/Computer/Browser/Identity/deployment/usage、version/model/harness、policy/`ask_actions`、domains/write、browser/context、next trigger、active session数、spend headroomを読み戻す。NAIVE-OWNED-MAILと重複しない |
+| N03 | 未完 | 同一Naïve agentでpublic no-side-effect URLを開き、sleep/wake後のnative browser/contextをreadback。signup/writeなし。approval wait、timeout、pauseがあれば公式機能で失敗点を診断 |
+| N04 | 未完 | Capafy等の候補をofficial termsで比較し、automation/account eligibility、公開審査、初回支払時期/threshold、human liveness、受取条件を確認。camera/livenessなしで正規の第三者売上に至る最短laneを選ぶ |
+| N05 | 未完 | 選定laneにagent-owned Identity inbox + generated business password + scoped vaultで正規signupまたは同一account recoveryを完走。confirmation、final login、provider IDをnative browserで確認。user credential/camera KYCなし。秘密はrepo/ledger/chatへ出さない |
+| N06 | 未完 | 規約内で自社素材の有料offerを正式公開し、providerの`PUBLISHED`状態とlive URLを確認。draft/review中を公開扱いしない |
+| N07 | 未完 | unrelated third partyのpaid order一件を納品。order/payment/refund/settlement stageとmodel/browser/host/platform feesをofficial receiptで照合し、$0 startとcredits補助を分離 |
+| N08 | 未完 | 既存Naïve scheduled deployment/triggerから自然wakeし次jobを完了。events、final URL/receipt、ledger、`/open` freshness/coverage、duplicate effect=0をreadback |
+| N09 | 未完 | 成果後に2–4分の英語demoを記録。real provider run/event・live URL・third-party result/revenue・cost・human action count・未解決点を含め、実績前に金銭獲得を演出しない |
+| N10 | 未完 | 既存`/lm` onboarding/payment/analyticsと`/open`を再利用し外部subscriptionを伸ばす。継続課金、retention、refund/cancel、serving costを計測。Cloud MRRとself-operated business revenueを分ける |
+| M01 | Naïve後 | Maritime worker/plan/desktop/Computer/Triggerをread-only再照合し、wake後browser無効化と`seat_limit`、legacy planの境界を診断。購入・新VM・owner置換なし |
+| M02 | 未完 | N07で実証した同じjobをexisting Maritime official templateへ移す。shared source/playbook/ledgerを保ち、同じjobを両runtimeで同時実行しない。足りないbridgeは自作せず既製部品を探す |
+| M03 | 未完 | Maritime Triggerでsleeping agentをwakeし、`/data`、Chromium profile、checkpoint、receiptのsleep/wake persistenceをofficial readback。awake/asleep/model費を分ける |
+| M04 | 未完 | First 1,000 projectのsubmitted receiptを保持し、期限後の審査可否/参加資格について公式返信を照合。未承認をaccepted扱いしない。既存phone-friendly入口を再利用 |
+| M05 | 未完 | 12/1までdistinct real users/meaningful usageをofficial analyticsで計測し、bot/VM/subagent/duplicate IDsを除外。acquisition/cost/conversionを`/open`へ反映 |
+| M06 | 未完 | 二runtimeの費用を一つのrevenue ledgerで照合し、Cloud subscription、self-operated sales、fees/refunds/computeを分ける。実外部subscription $10K MRRへ拡大し、未達の間は未達と表示 |
+
+**一次資料（11/6再確認）:** [Naïve overview](https://usenaive.ai/docs), [runtime durability](https://usenaive.ai/docs/concepts/runtime), [Computer](https://usenaive.ai/docs/capabilities/computer), [Browser](https://usenaive.ai/docs/computer/browser), [Identity](https://usenaive.ai/docs/identity/overview), [Email](https://usenaive.ai/docs/identity/email), [Credential vault](https://usenaive.ai/docs/identity/vault), [Deployments/cron](https://usenaive.ai/docs/capabilities/deployments), [pricing](https://usenaive.ai/docs/platform/pricing), [Naïve hackathon FAQ](https://usenaive.ai/hackathon), [YC Naïve hackathon](https://events.ycombinator.com/naive-autonomous-companies-hackathon), [Maritime how it works](https://maritime.sh/docs/how-it-works), [persistent boxes](https://maritime.sh/docs/persistent-sandboxes), [computers](https://maritime.sh/docs/computers), [Triggers](https://maritime.sh/docs/triggers), [framework templates](https://maritime.sh/docs/frameworks), [billing](https://maritime.sh/docs/billing), [First 1,000 terms](https://competition.maritime.sh/terms), [Capafy Publisher Agreement](https://capafy.ai/publisher-agreement/).
+
+**現在cursor:** N01完了、N02進行中（専用browser/provider read-only経路の事前確認まで。live provider readbackは未実施）。NHC-00の公開Capafy page閲覧は成功だが、現在のbrowser/auth、signup、publication、third-party sale/payout、継続運転の証拠ではない。
