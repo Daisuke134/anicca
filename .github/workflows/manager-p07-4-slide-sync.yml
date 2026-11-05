@@ -44,11 +44,18 @@ jobs:
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends             libreoffice-impress poppler-utils fonts-noto-cjk
           D=docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club
-          mkdir -p /tmp/manager-p074-pdf
-          timeout 360s libreoffice -env:UserInstallation=file:///tmp/manager-p074-lo             --headless --convert-to pdf --outdir /tmp/manager-p074-pdf             "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx"
-          test -s /tmp/manager-p074-pdf/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf
-          test "$(pdfinfo /tmp/manager-p074-pdf/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf | awk '/^Pages:/ {print $2}')" = 114
-          cp /tmp/manager-p074-pdf/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf "$D/"
+          # Idempotent export: LibreOffice changes PDF metadata on each rerun.
+          # Keep a verified 114-page PDF rather than making endless bot commits.
+          if test -s "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf" &&
+             test "$(pdfinfo "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf" | awk '/^Pages:/ {print $2}')" = "114"; then
+            echo "Existing PDF already matches 114-page archive; no regeneration."
+          else
+            mkdir -p /tmp/manager-p074-pdf
+            timeout 360s libreoffice -env:UserInstallation=file:///tmp/manager-p074-lo --headless --convert-to pdf --outdir /tmp/manager-p074-pdf "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx"
+            test -s /tmp/manager-p074-pdf/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf
+            test "$(pdfinfo /tmp/manager-p074-pdf/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf | awk '/^Pages:/ {print $2}')" = 114
+            cp /tmp/manager-p074-pdf/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf "$D/"
+          fi
           sha256sum "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx" "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf"
           echo "P07-4 research presentation and PDF both contain 114 pages"
       - name: Commit only the three updated canonical presentation artifacts
