@@ -12,7 +12,7 @@ test('English Manager homepage exposes current evidence, research, and honest li
   const html = read('pages/en.html');
   const text = visibleText(html);
 
-  assert.match(text, /one persistent manager I am building to study how behavior change can reduce suffering/i);
+  assert.match(text, /one persistent manager we are building to study how behavior change can reduce suffering/i);
   assert.match(text, /does not ask every beneficiary to use a dedicated app or chat/i);
   assert.match(text, /observed actions, follow-up, and harm/i);
   assert.match(text, /67 published articles: 38 in English and 29 in Japanese/i);
