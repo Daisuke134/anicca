@@ -18,7 +18,7 @@ test('English Manager homepage exposes current evidence, research, and honest li
   assert.match(html, /manager-real-intervention-outcomes-en/);
   assert.match(html, /manager-behavioral-foundation-model-guide-en/);
   assert.match(text, /beneficiaries should not need a dedicated app or chat/i);
-  assert.match(text, /independently measured outcomes/i);
+  assert.match(text, /measure whether real people achieve goals they chose/i);
   assert.match(text, /80 published articles: 46 in English and 34 in Japanese/i);
   assert.match(text, /90 existing AI evaluations/i);
   assert.match(text, /Understand and simulate behavior\./i);
