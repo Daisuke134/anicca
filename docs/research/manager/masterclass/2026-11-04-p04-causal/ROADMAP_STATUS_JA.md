@@ -9,6 +9,8 @@
 
 **BFM-01最初の次の一歩：** 24GBの有料GPUがまだなくても、オープンな既存モデルの4-bit Qwen3-4B-Instruct-2507 GGUF（約2.5GB）を**GitHub Actions無料CPUで実行**する。これは有料のModalやHF gated Be.FM LoRAの代わりではなく、ベースモデルの推論契約とクラウド実行ログを先に検証するサブステップ。 `.github/workflows/manager-bfm01-free-qwen3-4b-cpu.yml` と `products/manager/experiments/cloud/qwen3_cpu_first_inference.py` で、重みのSHA256、llama.cppのリリースSHA256、実行時間、出力抜粋、モデルの真の種類を記録する。CPU実行成功は実人間での行動予測精度やBe.FMアダプターの実行ではない。
 
+**BFM-01実行結果（2026-11-05 UTC、GitHub Actions無料CPU）:** [実行ログと再現用JSON artifact](https://github.com/Daisuke134/life-manager/actions/runs/42121034396) 。Qwen3-4B-Instruct-2507 のQ4_K_M (2,497,280,736 bytes) をHugging Faceの固定SHAから取得し、GGUF SHA256 `2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e` とllama.cpp b12137の固定バイナリSHAを検証。架空の匿名ゲームで生成回答は**「0」**、実行のCPU推論処理は**約5秒**、クラウドGPU料金**0ドル**。公開GitHub Actionsのモデル取得・実推論・レシートアップロードは成功。これは**ベースモデル4-bit量子化版の単一サンプル**であり、Be.FM LoRAや心理実験データでの予測精度、因果介入の効果を証明しない。次に、同じ質問/条件をBe.FMアダプターを適用した本来のQwenベース（bf16）で走らせ、合法な実人間holdoutへ進む。
+
 **その後の同じBFM-01:** HF利用条件の承諾、Modal Starter（$0基本料金・月$30の条件付きcompute credits）へ個人アカウントで接続、HF_TOKENとMODAL_TOKEN_ID/SECRETを安全に登録する。LoRAを含むBe.FM1.5-4B 24GB GPU上の実forward pass、Qwen3 baseとの同一条件比較、ライセンス明確なholdout、Managerへのread-only統合、製品としての限定公開、再現実験付き記事/Slides/FAQを同じTODOで完了する。未実施をDONEとしない。
 
 ## 唯一のNEXT TODO・実装と学習の一体化（2026-11-06）
