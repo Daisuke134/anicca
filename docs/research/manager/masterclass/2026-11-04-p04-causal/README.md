@@ -170,4 +170,12 @@ python3 p05_1_ontology_readonly.py
 - [Behavior Foundation Model / ManagerBench v0.1 仕様](BEHAVIOR_FOUNDATION_MODEL_MANAGERBENCH_SPEC_20261106.md)。
 - [英語書籍章：From Persuasion to Causal Behavior Engineering](BOOK_CHAPTER_BEHAVIOR_CHANGE_AI_P07-3_EN.md)。
 - [評価器](experiments/managerbench_v0.py) と [ソフトウェアunit test](experiments/test_managerbench_v0.py)。人工fixtureの13/13テストは成功。新規実人間データの検証や共通モデルの訓練ではない。
-- 最新進捗は必ず[唯一の正本](ROADMAP_STATUS_JA.md)と[引継ぎ](HANDOVER_LATEST.md)へ記録。公式サイトのPR #9246はソース修正であり、本番反映の証拠ではない。
+- 最新進捗は必ず[唯一の正本](ROADMAP_STATUS_JA.md)と[引継ぎ](HANDOVER_LATEST.md)へ記録。公式サイトPR #9246とデプロイPR #871はマージ済み。Netlify run 42092065987と事後money-path smoke SUCCESS。本番GET+SHA検証済み。
+
+
+## 2026-11-06 JST — Verified official site release
+- Canonical bilingual marketing source PR #9246 merged as 0193bac5cc29406175a1f9a44019af633e605472; deployment pin PR #871 in anicca-products merged as 4981237d0dab6c19e809f490198bfc357d5d8eb6.
+- Netlify GitHub Actions run https://github.com/Daisuke134/anicca-products/actions/runs/42092065987 **SUCCESS**, including independently reported Post-deploy money-path smoke & rollback.
+- Independently fetched /, /en, /ja, /blog/manager and an existing blog article: all HTTP 200. Live /en and / SHA-256 = c1eed9d468439a5cf922e171967a1408d72dded8e077d7c8ebc45a3b6be331e2 ; live /ja SHA-256 = 2ff5d801bf80df6cedc9df96e6f74d6ef8b8b7ba6efb0673c2b9139657a6550a ; both match reviewed source hashes.
+- Research PR #9248 merged as fb4cf428d7d654090d5c1e2205da89716e6cde1d: P07-3, BFM / ManagerBench v0 scorer with 13/13 software-fixture tests, book chapter, 105-slide English research PPTX and Japanese speaker notes. The older research-archive PDF has **not** been regenerated; a separate 16-slide PDF/PPTX exists. No shared model checkpoint, independent real RNT RCT, or official GLM-HMM refit exists yet.
+- No new separate public blog article was published in this release; existing blog index/articles were verified to remain accessible.

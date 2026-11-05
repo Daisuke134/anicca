@@ -1,3 +1,14 @@
+# MOST RECENT RELEASE STATUS — CHECK THIS BEFORE OLDER HISTORY
+
+## 2026-11-06 JST — Verified official site release
+- Canonical bilingual marketing source PR #9246 merged as 0193bac5cc29406175a1f9a44019af633e605472; deployment pin PR #871 in anicca-products merged as 4981237d0dab6c19e809f490198bfc357d5d8eb6.
+- Netlify GitHub Actions run https://github.com/Daisuke134/anicca-products/actions/runs/42092065987 **SUCCESS**, including independently reported Post-deploy money-path smoke & rollback.
+- Independently fetched /, /en, /ja, /blog/manager and an existing blog article: all HTTP 200. Live /en and / SHA-256 = c1eed9d468439a5cf922e171967a1408d72dded8e077d7c8ebc45a3b6be331e2 ; live /ja SHA-256 = 2ff5d801bf80df6cedc9df96e6f74d6ef8b8b7ba6efb0673c2b9139657a6550a ; both match reviewed source hashes.
+- Research PR #9248 merged as fb4cf428d7d654090d5c1e2205da89716e6cde1d: P07-3, BFM / ManagerBench v0 scorer with 13/13 software-fixture tests, book chapter, 105-slide English research PPTX and Japanese speaker notes. The older research-archive PDF has **not** been regenerated; a separate 16-slide PDF/PPTX exists. No shared model checkpoint, independent real RNT RCT, or official GLM-HMM refit exists yet.
+- No new separate public blog article was published in this release; existing blog index/articles were verified to remain accessible.
+
+---
+
 # ANICCA / Manager — 最新状態（2026-11-06 JST）
 
 **現在の正本はROADMAP_STATUS_JA.md。P07-3 COM-Bの講義を実施、次の学習P07-4 CBT/ACT。** P07-3科学記事、英語書籍草稿、Behavior Foundation Model / ManagerBench仕様、純Pythonの評価骨格を研究ブランチ research/manager-p07-3-bfm-benchmark-20261106 で準備した。Mac miniで人工fixtureソフトウェア13テストが成功。**共通の基盤モデルはまだ訓練されていない、新規の実人間リーダーボード点数もない。** P07-1/2の実人間観測ベースラインは引き継ぐ。P07-3: P07-3_JA.md / BEHAVIOR_FOUNDATION_MODEL_MANAGERBENCH_SPEC_20261106.md / experiments/managerbench_v0.py / BOOK_CHAPTER_BEHAVIOR_CHANGE_AI_P07-3_EN.md。

@@ -520,5 +520,13 @@ P05-2の講義とコード実験を実施。[日本語全文](P05-2_JA.md)。既
 - **ベンチマークB0のコード骨格開始**：[純Python採点器](experiments/managerbench_v0.py) と [人工fixtureによる13単体テスト](experiments/test_managerbench_v0.py) をMac miniで実行、13/13成功。人物の交差漏洩、時刻の見越し、確率指標、連続指標、RCTデータラベルを検査するが、独立の実人間BFM新スコアは**未測定**。
 - P07-1/P07-2の実人間単独モデル評価は既存証拠。**共通の学習済みBehavior Foundation Modelは未構築**。最初のゲートは既存公開実データのスコアラー統合、研究・ドメインholdoutとライセンス。2026年公開の他社BehaviorBenchのデータ利用条件は個別確認し、非商用データを勝手に商業学習へ入れない。
 - 実際の外部RCTでの効果予測、OSF公式GLM-HMM再現、実ユーザーの反すう低減、事業の純増利益、P05のS1/S2は未完了。
-- 公式ホームページの英語・日本語**ソース変更**は別PR（https://github.com/Daisuke134/life-manager/pull/9246）として提出され、マーケティングの36テストに合格。**本番Netlify配信の反映は独立に確認するまで未公開扱い**。
+- 公式ホームページの英語・日本語**ソース変更**は別PR（https://github.com/Daisuke134/life-manager/pull/9246）として提出され、マーケティングの36テストに合格。**本番Netlify配信と独立GETの反映を確認済み（詳細レシートは本ファイル末尾）**。
 - 詳細研究スライドのP07-3付録と日本語発表ノート、外向け34枚本編は別管理し、検証済みの変更だけを記録する。
+
+
+## 2026-11-06 JST — Verified official site release
+- Canonical bilingual marketing source PR #9246 merged as 0193bac5cc29406175a1f9a44019af633e605472; deployment pin PR #871 in anicca-products merged as 4981237d0dab6c19e809f490198bfc357d5d8eb6.
+- Netlify GitHub Actions run https://github.com/Daisuke134/anicca-products/actions/runs/42092065987 **SUCCESS**, including independently reported Post-deploy money-path smoke & rollback.
+- Independently fetched /, /en, /ja, /blog/manager and an existing blog article: all HTTP 200. Live /en and / SHA-256 = c1eed9d468439a5cf922e171967a1408d72dded8e077d7c8ebc45a3b6be331e2 ; live /ja SHA-256 = 2ff5d801bf80df6cedc9df96e6f74d6ef8b8b7ba6efb0673c2b9139657a6550a ; both match reviewed source hashes.
+- Research PR #9248 merged as fb4cf428d7d654090d5c1e2205da89716e6cde1d: P07-3, BFM / ManagerBench v0 scorer with 13/13 software-fixture tests, book chapter, 105-slide English research PPTX and Japanese speaker notes. The older research-archive PDF has **not** been regenerated; a separate 16-slide PDF/PPTX exists. No shared model checkpoint, independent real RNT RCT, or official GLM-HMM refit exists yet.
+- No new separate public blog article was published in this release; existing blog index/articles were verified to remain accessible.
