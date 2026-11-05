@@ -530,3 +530,13 @@ P05-2の講義とコード実験を実施。[日本語全文](P05-2_JA.md)。既
 - Independently fetched /, /en, /ja, /blog/manager and an existing blog article: all HTTP 200. Live /en and / SHA-256 = c1eed9d468439a5cf922e171967a1408d72dded8e077d7c8ebc45a3b6be331e2 ; live /ja SHA-256 = 2ff5d801bf80df6cedc9df96e6f74d6ef8b8b7ba6efb0673c2b9139657a6550a ; both match reviewed source hashes.
 - Research PR #9248 merged as fb4cf428d7d654090d5c1e2205da89716e6cde1d: P07-3, BFM / ManagerBench v0 scorer with 13/13 software-fixture tests, book chapter, 105-slide English research PPTX and Japanese speaker notes. The older research-archive PDF has **not** been regenerated; a separate 16-slide PDF/PPTX exists. No shared model checkpoint, independent real RNT RCT, or official GLM-HMM refit exists yet.
 - No new separate public blog article was published in this release; existing blog index/articles were verified to remain accessible.
+
+
+## 2026-11-06｜巨人の肩に立つ：既存BehaviorBenchとBe.FM/Centaurの実行再現
+
+- [公式モデル・評価・クラウド・権利の調査](UPSTREAM_BEHAVIOR_FOUNDATION_MODELS_20261106_JA.md)を作成。一次ソース: Nature Centaur、Be.FM 1.5、BehaviorBench MITソフト/CC BY-NC-ND評価データ、Ampersand API、Persimmon、Listen Twins。
+- GitHub-hosted Ubuntu 24.04 CPUで公式BehaviorBenchソフトウェアの**41 passed / 3 skipped** を実測。外部SHA `ddd646ed2bbecdb79094eb56763ee7664d2f8e1a` を固定し、`uv sync --extra dev`、公式CLI起動を確認。実行証拠: https://github.com/Daisuke134/life-manager/actions/runs/42094336374 。**外部テストデータによるモデル性能・人への便益は未実行**。公開データはCC BY-NC-ND 4.0で、営利目的の評価・再配布・学習には権利照合が必要。
+- `products/manager/experiments/cloud/modal_befm4_probe.py` はBe.FM1.5-4BのQwen3 baseとLoRAを同じ架空の無害な質問で比較する**実行前スクリプト**。Python構文検査のみ成功。HFモデルアクセス承諾、クラウドGPU、HF_TOKEN/Modal Secret、予算指定が未接続のため**GPU実推論は未開始**。
+- `products/manager/manager_core/behavior_model_catalog.py` は、Be.FM/Centaur/Ampersand/Persimmon/Listenの再利用の前提条件とデータ権利を確認するresearch-only preflight（10/10ソフトテスト成功）。既存`ampersand_api.py`も再使用しセットアップ検査6/6成功、新規有料API実推論なし。実人間の行動・RCT改善の新成績は未測定。
+- 研究対象の優先順位: ①既存code scorer ②合法な公開実人間ホールドアウト ③HF承認済みBe.FM4B GPU実推論+Qwen baseline ④Centaur70B 80GBモデル推論 ⑤Ampersand APIとPersimmon/Listen提供機能 ⑥不足する因果介入・害評価を追加研究。**新規の全汎用モデル学習・独自ベンチマークの重複実装は判断を保留**。
+- `life-manager`→`manager`のリポジトリ名は未変更。Netlifyサイト・ブログの既存CIが旧パスのpin SHAからスクリプトを取得するため、参照棚卸し・安全な移行・稼働中サイトの読み戻しが先。**既存本番を壊さない**。
