@@ -291,3 +291,8 @@ Research reader verifies **9 SHA-linked source artifacts** across P06-2/3/4 (pla
 - Code/verified outcomes: `docs/research/manager/masterclass/2026-11-04-p04-causal/P07-2_JA.md`, `experiments/p07_2_real_esm_state_prediction.py`, `evidence/P07-2_REAL_ESM_HOEBEKE_AFFECT_RESULTS_20261105.json`; P07-2 30 tests passed, prior P07-1 45 tests additionally passed, 75/75.
 
 **P07-2 educational and observed-state forecasting implementation done; live mental state intervention and clinical benefit NOT established. Next educational P07-3 COM-B. No runtime/state machine/authority/provider update made here.**
+
+
+## 2026-11-06｜P07-3 COM-B → Behavior Foundation Model / ManagerBench research integration (spec only)
+
+Canonical research links: docs/research/manager/masterclass/2026-11-04-p04-causal/P07-3_JA.md ; BEHAVIOR_FOUNDATION_MODEL_MANAGERBENCH_SPEC_20261106.md ; experiments/managerbench_v0.py ; experiments/test_managerbench_v0.py. Learned prediction and intervention selection remain **distinct heads** with distinct evaluation contracts. The decision set must contain NO_ACTION, constraints on permission/withdrawal, independent outcome readback and burden/harm metrics. P07-1/P07-2 existing observed human datasets establish bounded task-specific baselines, NOT foundation-model generalization, causal treatment effects or clinical improvement. New scoring scaffold: synthetic *unit-test fixtures only*, 13/13 tests passed, no human benchmark ranking. Next model gate: participant/study/domain-disjoint multi-domain real-data evaluation with licenses; then shared representation versus single-task baselines. No production runtime, grant, executor, provider, or intervention authority was changed by this research specification.
