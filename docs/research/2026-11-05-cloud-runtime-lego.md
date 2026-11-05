@@ -146,6 +146,8 @@ Tenkiの使い捨てtask記事とVetta Computerのpause/resume/persistent volume
 
 Naïveの[公式説明](https://usenaive.ai/blogs/on-paperclip-and-open-source)はPaperclipを初期に使ったが現在は除去し、piと独自managed runtimeを使うと説明する。「Paperclipを入れれば現在のNaïve全体が手に入る」とはしない。公開templateがMITでも、managed runtimeや配信/生成providerまで無料・自己host可能という意味ではない。
 
+[Naïve Lab](https://usenaive.ai/lab/autonomous-companies)はreal companyを一定予算で数週間無人運転しtemplate化すると説明し、published runのhuman assist=0 minを掲げる。一方、公開blueprintの既定は上記askであり、Labの運転設定と一般配布設定を同一視しない。同pageのviews/rankings/$41,407 marginは再構築したShort-Form Social/Web/Client Market環境のbenchmark値として掲載される。実市場の販売明細・顧客数・銀行着金は今回未取得であり、Labの宣言やbenchmark marginを自社の実売根拠へ転用しない。
+
 ### Grok BotとMuseから取り入れる設計
 
 [Grok Bot公式Computer資料](https://docs.x.ai/grok-bot/computer-and-apps)では、同一accountの複数Botは一台のcloud computer・files・browser sessionを共有する。各Botのscreenは別だがsecurity boundaryではない。利用者間は隔離される。専用Email appがあり、API/app接続があれば構造化toolを使い、なければbrowserを使う。すべてをclickだけに限定することが成功の条件ではない。
