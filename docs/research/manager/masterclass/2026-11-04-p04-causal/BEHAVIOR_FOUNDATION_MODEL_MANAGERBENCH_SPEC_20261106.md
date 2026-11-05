@@ -48,3 +48,10 @@ Acquisition and publicity are *potential consequences*, not benchmark goals. The
 
 ## Separation from other documents
 This is a model/eval design document; ROADMAP_STATUS_JA.md remains the ONE curriculum status authority. Executable v0 scoring harness: experiments/managerbench_v0.py, test file with small software-fixture examples only. No human examples invented.
+
+
+## 2026-11-06 adoption decision: BehaviorBench is upstream core, not something to re-implement
+
+The default ManagerBench v0.1 evaluation backend for existing behavioral-science tasks should be official MIT `umich-foreseer/behaviorbench_eval` pinned at `ddd646ed2bbecdb79094eb56763ee7664d2f8e1a`. The public benchmark DATA are separately `CC BY-NC-ND 4.0`; **commercial uses require the correct rights, and test data may never be trained on**. Full benchmark score is not yet claimed. GitHub CPU install/unit-test receipt: https://github.com/Daisuke134/life-manager/actions/runs/42094336374 41 passed, 3 skipped. Avoid duplicating its adapters/metrics/leaderboard unless a demonstrated gap exists. The earlier local `experiments/managerbench_v0.py` is a small *software fixture scorer*, not a replacement for the upstream evaluator; retire overlapping functions when official migration and compatibility are verified.
+
+Actual model candidates in reuse priority: gated Apache2 Qwen3-based Be.FM1.5-4B on 24GB cloud GPU, gated Llama3.1-70B base + public Centaur LoRA on A100 80GB, provider API Ampersand using the pre-existing `manager_core/ampersand_api.py`, sign-in limited Persimmon, and the Listen Labs interview/twin product. External catalog research preflight `products/manager/manager_core/behavior_model_catalog.py` tested 10/10; Be.FM Modal probe script syntax-tested but not GPU-executed. No empirical causal effects, neural mind-wandering GLM-HMM refit, or new trained common BFM in this revision.
