@@ -3,7 +3,7 @@ import {
   AFFIRMATION_HREFLANG_TRIPLES,
   alternatesFor,
 } from "@/lib/affirmation-alternates";
-import { loadAllBlogPosts } from "@/lib/blog-posts";
+import { loadAllBlogPosts, } from "@/lib/blog-posts";
 import { BUSINESSES } from "@/lib/blog-business.mjs";
 import { allEnAffirmationSlugs } from "@/lib/en-affirmation-problems";
 import { allEsAffirmationSlugs } from "@/lib/es-affirmation-problems";
@@ -16,25 +16,34 @@ const BASE_URL = "https://aniccaai.com";
 // Static top-level pages. Paths must exist (no 404s). No trailing-slash
 // duplicates of redirect-only aliases.
 const STATIC_PATHS = [
+  "/blog",
   "/affirmation-app",
+  "/best-affirmation-apps",
+  "/ja/best-affirmation-apps",
   "/affirmation-app/ja",
-  "/affirmation-app/ja/a",
-  "/affirmation-app/ja/wallpaper",
   "/affirmation-app/ja/shindan",
-  "/affirmation-app/es/a",
+  "/affirmation-app/en/quiz",
+  "/affirmation-app/en/quiz/burnout",
+  "/affirmation-app/en/quiz/comparison",
+  "/affirmation-app/en/quiz/heartbreak",
+  "/affirmation-app/en/quiz/money-worry",
+  "/affirmation-app/en/quiz/morning",
+  "/affirmation-app/en/quiz/night-anxiety",
+  "/affirmation-app/en/quiz/self-blame",
+  "/affirmation-app/en/quiz/self-esteem",
   "/letter",
   "/tegami",
   "/en",
   "/honne",
   "/honne/ja",
-  "/honne/support",
-  "/honne/privacy",
-  "/honne/privacy/ja",
   "/pdf-insight",
   "/dais",
   "/breath-calm",
   "/calmcortisol",
   "/thankful",
+  "/dailydharma",
+  "/sleepreset",
+  "/studio-cherie",
   "/ai-cafe-tokyo/",
   "/ai-grave/",
   "/lm",
@@ -42,6 +51,7 @@ const STATIC_PATHS = [
   "/lm/ja/departure-calculator",
   "/lm/guide",
   "/tools/social-jet-lag-calculator",
+  "/ai-monk-factory", // canonical has no trailing slash (the slash form 301s; GSC "Redirect error" 10/27–11/1)
 ];
 
 function tripleLanguagesForEnSlug(enSlug: string) {
@@ -54,7 +64,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${BASE_URL}${p}`,
   }));
 
-  const blogEntries: MetadataRoute.Sitemap = loadAllBlogPosts().map((post) => ({
+  // 2026-10-27 indexing fix: GSC showed 518/527 "Discovered - not indexed".
+  // Google crawls fewer URLs on a new low-authority domain, so the sitemap now
+  // lists only hand-picked hubs and evergreen pages. Timestamped auto posts,
+  // sticker posts and archive pagination stay live (and linked) but are not
+  // advertised here. Cap blog entries at the 40 newest evergreen posts.
+  const isEvergreen = (slug: string) =>
+    !/\d{4}-\d{2}-\d{2}/.test(slug) && !/^line-sticker/.test(slug);
+  const blogEntries: MetadataRoute.Sitemap = loadAllBlogPosts().filter((post) => isEvergreen(post.slug)).slice(0, 40).map((post) => ({
     url: `${BASE_URL}/blog/${post.slug}`,
     lastModified: post.date || undefined,
   }));
@@ -105,15 +122,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${BASE_URL}/affirmation-app/ja/shindan/${type}`,
   }));
 
+  void esAffirmationEntries;
+  void kokoroTypeEntries;
+
   const all = [
     ...staticEntries,
     ...jaAffirmationEntries,
     ...enAffirmationEntries,
-    ...esAffirmationEntries,
-    ...kokoroTypeEntries,
+
     ...lmGuideEntries,
     ...blogEntries,
     ...businessHubEntries,
+    ...["/affirmation-app-faq/","/thankful-faq/","/honne-faq/","/guides/","/guides/best-free-affirmation-app-iphone/","/guides/affirmation-reminder-app/","/guides/simple-gratitude-journal-app/","/guides/gratitude-journal-prompts/","/guides/what-does-this-text-mean-app/","/guides/ai-reply-suggestions-text/","/guides/compare/affirmation-apps/","/guides/compare/gratitude-journal-apps/","/guides/compare/text-message-interpreter-apps/"].map((p)=>({url:`${BASE_URL}${p}`})),
   ];
 
   // Deduplicate by URL (defensive).
