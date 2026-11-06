@@ -15,6 +15,18 @@
 
 **追加GPU購入・Modal課金より前のブロッカーは利用権の明確化。** 会社の「世界最高のopen-weight Behavioral Foundation Model」を構築する際は、元の重みのライセンス、追加学習・再配布の権利、データ商用利用権がそれぞれ必要。P07-5/P07-6の教材・ソフトウェア部品を実装済みとする一方、実人間での心理的便益・臨床効果は未証明。
 
+## 2026-11-05｜Phase 7の本番公開を独立検証（完了した内容の証拠）
+
+**P07-3〜P07-6の学習・コード・テスト・Slides・日英4記事を完成。** 詳細研究PowerPoint 118枚、日本語スピーカーノート、PDF118ページ。ソフト契約P07-4 15件＋P07-5/6 25件＋統合10件の**計50件をGitHub Actionsの恒常CI**に統合した（[PR #9276](https://github.com/Daisuke134/life-manager/pull/9276) merged）。**これらは心理療法の有効性や実ユーザーへの苦痛低減の証明ではない。**
+
+公式Anicca [PR #885](https://github.com/Daisuke134/anicca-products/pull/885) をマージし、[Netlify本番ラン #42156237071](https://github.com/Daisuke134/anicca-products/actions/runs/42156237071)成功。2026-11-06T03:29:40Zに独立HTTP読み戻しで日英ホームページ200+正本SHA256一致、新規4記事すべて200、`release.json` **84記事/50メディア、content_revision `b2a548bb82288128839ac8b61174d5e6ea60e106`**、既存 `/` `/lm` `/blog/manager` `/dais` 200を確認。新規記事の正規URLは：
+- https://aniccaai.com/blog/manager-vipassana-behavior-model-ja
+- https://aniccaai.com/blog/manager-vipassana-behavior-model-en
+- https://aniccaai.com/blog/manager-measure-welfare-and-harm-ja
+- https://aniccaai.com/blog/manager-measure-welfare-and-harm-en
+
+**単一の現在TODOは引き続きBFM-01。** Be.FM 1.5-4B本体の認証・利用権は未取得。公式利用規約の非商用・再配布禁止とApacheモデルカードの相違を解消するまでは、商用モデルへの搭載・派生重み配布を行わず、利用権が明確なQwen3と自社学習HBCP数値モデルに基づいて評価・実装する。X投稿停止を継続。
+
 ## 2026-11-05｜X投稿停止とBFM-01の最初の無料クラウド実行
 
 **製品運用上の指示：X（旧Twitter）には投稿しない。** 予約・API・Postiz・GitHub Actions・自動化による新規投稿を行わない。ユーザーが明示的に再開を指示しない限りXを公開先から外す。2026-11-05 UTC以後のPostiz接続アカウントを照合した時点で、今後1年のX QUEUEは0件（過去のPUBLISHED 1件は削除していない）。ChatGPT側にX投稿自動化を確認しなかった。ただし別ツールによる未知の将来投稿まで停止保証したものではない。
