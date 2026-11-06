@@ -23492,6 +23492,13 @@ Top 10 by sales: 0/10 with a trial (Ocup 3,111, Serenity 2,002, HookAce 1,044, V
 - **Stage 2（/lm 接続）は後段・準備のみ**: branch `fix/maritime-portal-start-20261106`（`c159e03`、push 済み）で /maritime ページ Start 2か所を Calendar 経路から manager 同意経路へ付け替えた（landing テスト 4/4）。これは接続の準備であり、Stage 1 の実証がそろうまで「ポータルから使える」とは言わない。統合の残段: PR/CI/main マージ → anicca-products の `MANAGER_MARKETING_REVISION` ピン更新（netlify-deploy.yml は `fd79f213`、landing-pr-build.yml は `b5142513` と現在食い違いあり。両方を新マージ commit へ揃える）→ デプロイ → ライブ読み戻し。
 - **次の atomic TODO**: (1) Railway 本番 env と DB migration の readback（A の確定）。(2) owner ブラウザ E2E で activate の応答（503 か enqueue か）を確定し、通れば provision 完走まで追う。(3) Capafy binding 注入段の実装（C、#8745 の範囲）。(4) その後に Stage 2 の統合・公開。
 
+#### 2026-11-06 12:48 PST Stage 2 公開段の完了（PR #9288 マージ → ピン統一 → デプロイ → ライブ着地）
+
+- **PR/CI/マージ**: branch `fix/maritime-portal-start-20261106`（`c159e03` Start付け替え＋`36bb639` checkpoint）を PR #9288 として作成し、CI 全15チェック pass（Web CTA attribution contracts・sec-scan 含む）のうえ `bin/merge-when-green` で squash マージ。merge commit は `bfc9b52f2906d3dfc7378783e01729baaab19eb5`。
+- **ピン統一**: anicca-products の `MANAGER_MARKETING_REVISION` は確認時点で両ファイルとも `9d0d79ca`（2026-11-06 03:17Z の life-manager コミット。Start 修正を含まない）に揃っていたため、4か所全てを `bfc9b52f` へ更新し main へ push（anicca-products `90f39c08d`）。`publish-overlay.mjs` の sha256 は新リビジョンでも workflow の期待値 `caf84964…` と一致（ハッシュ検証を通る）。
+- **デプロイとライブ読み戻し**: Netlify Deploy run `42273430186` が success（post-deploy smoke 通過・ロールバックなし）。ライブ `https://aniccaai.com/maritime` を実読し、Start 2か所とも `https://life-call-production.up.railway.app/maritime?source=landing&lang=en` で、`start_calendar` の出現は 0 件。証拠: [portal-start-live-20261106.json](../../evidence/maritime/portal-start-live-20261106.json)。
+- **残段（M-4 後半）**: /lm の裏側の実体は依然として Railway の life-call（Calendar workflow を含む）であり、Maritime 上の製品への置き換え自体は未実施。Stage 1 の provision 完走・Capafy binding 注入（M-1／M-2）と合わせて後段で実施する。この公開段の完了をもって「ポータルから使える」とは言わない。
+
 #### 2026-10-25 product contract and live state override
 
 **User-confirmed direction:** Life Manager is one product and one manager. Local and Cloud are execution modes; Grok Bot, Muse, and Dots are intended access integrations to that same manager. The Cloud goal is paid, phone-first use with one persistent, isolated Maritime VM per customer. Calendar travel-time planning is one existing workflow, not the product definition. After signup, payment, account authorization, and data-retention consent, routine delegated work should proceed without daily human approvals. Initial consent, account authentication, and provider-required identity checks remain explicit. Autonomous profit is a goal, not a verified result.
