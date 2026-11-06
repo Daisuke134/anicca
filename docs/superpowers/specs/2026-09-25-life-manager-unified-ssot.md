@@ -6,11 +6,11 @@
 
 **詳細仕様:** [Anicca iOS Product Growth](2026-11-06-anicca-ios-product-growth-design.md)。**実装手順:** [Implementation Plan](../plans/2026-11-06-anicca-ios-product-growth.md)。**唯一の順序/状態正本:** この節。詳細文書・実行checklist・会話はこの節を参照する。
 
-**今回の実行範囲:** 全体spec/plan/画面案sourceの共有後、ユーザーが実行開始を指示する。G1〜G5のアプリ変更・Maestro実製品動画・審査提出を進める。G6〜G10のdashboard変更・loop起動は後続として保持し、今回起動しない。
+**今回の実行範囲:** 全体spec/plan/画面案sourceを共有し、ユーザーが実行開始を指示済み。G1〜G5のアプリ変更・Maestro実製品動画・審査提出を進める。G6〜G10のdashboard変更・loop起動は後続として保持し、今回起動しない。
 
 | ID | 状態 | 実行順・成果 | 完了条件 |
 |---|---|---|---|
-| G0 | 完了（仕様共有） | 全体spec・実装計画・画面案を同一branchで共有 | scoped review重大問題なし、commit/push、remote objectと参照linkを確認。アプリ実装/動画/提出は未実行 |
+| G0 | 完了（仕様共有） | 全体spec・実装計画・画面案を同一branchで共有 | scoped review重大問題なし、commit/push、remote objectと参照linkを確認。G0は仕様共有の完了を示す。実装・動画・提出はG1〜G5で追跡 |
 | G1 | 実行中 | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
 | G2 | 実装済み・検証中 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | 連続/逆方向swipe、cold/warm/本文のみ通知、実設定/配信境界の証拠 |
 | G3 | 実装済み・検証中 | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
@@ -24,7 +24,7 @@
 
 **旧順→新順:** 旧案は計測全体/ダッシュボードとアプリ初回修正を横断して進める。新順は全体を文書化→Anicca初回G1〜G5→G6〜G10。理由はユーザーが先に実製品を直してMaestro動画を見たいと指定し、最新指示で初回アプリ修正の実行が許可されるため。進行中の他業務loop・配信・審査を中断/重複させない。
 
-**現在cursor:** G1〜G4のsourceを実装。英語608件/12カテゴリ、本文のみ通知、カタログ外保存、推薦、購入重複排除のnative fixtureを確認。初回Release buildとUIKit5件はPASS。Maestroは25回の上swipeをPASS後、下部ボタンの画面外配置で失敗し、翻訳キー表示とともに修正中。fresh read-only reviewの4件（like参照範囲、通知本文hash、未初期化RC参照、同値index通知）に対応し、新回帰で再確認する。現在は追加UIKit回帰→1.9.7/817のMaestro録り直し→CI/main→署名/提出。Mixpanelは設定済み、PostHogはkey/host未設定。分析サービス上の受信・実APNs・実購入の証拠は未完として残し、Simulator injectionと区別する。ASC公開版は1.9.6/816、審査中提出なしをGET確認。G6以降は起動しない。PR=`#9272`、primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、branch=`feat/anicca-ios-initial-polish-20261106`。Muse/Grok等はこのcursorと詳細specを参照する。
+**現在cursor:** G1〜G4を実装し、Release 1.9.7/817でMaestro初回全体PASS（目的→実文言→保存→soft paywall→上25/下5 swipe→通知許可回復→theme/relaunch）。UIKit6件、購入package選択22件、Python21件、native fixture群PASS。通知はcold PIDなし→92562、warm同PIDで本文/保存のMaestro必須assertを確認し、同ID別本文も検証する。OS通知カードはnative Simulator AX、配送はsimctl injectionであり、実APNsと区別する。fresh read-only review重大問題なし。現在は購入cancel/restore・日本語Maestro→CI/main→Xcode Cloud→ASC審査提出。Mixpanel設定済み、PostHog key/hostなし、分析サービス受信・実APNs・実購入成功は未確認。ASC 1.9.7 draft作成・7locale notes照合済み、build待ち。G6以降は起動しない。PR=`#9272`、primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、branch=`feat/anicca-ios-initial-polish-20261106`。Muse/Grok等はこのcursorと詳細specを参照する。
 
 
 進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。

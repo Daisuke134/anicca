@@ -1,22 +1,16 @@
-# Run after simctl push on this task's simulator. No launchApp: the notification
-# itself must launch or foreground the app and preserve the displayed body.
+# Inject a notification and activate its actual OS card before this flow.
+# iOS 26.5 / Maestro 2.8.0: synthetic Notification Center taps do not activate
+# the app in this environment; native Simulator AX activation does. No launchApp
+# or deep-link substitution: the OS notification itself must open the app.
+# Caller must pass -e MESSAGE=<the exact alert body>.
 appId: ai.anicca.app.ios
-name: Tapped notification shows the same message
-env:
-  MESSAGE: "I am worthy of love, exactly as I am."
+name: Notification destination preserves and saves the actual alert body
 ---
-- swipe:
-    start: "20%,0%"
-    end: "20%,85%"
-    duration: 600
-- tapOn:
-    text: ${MESSAGE}
 - extendedWaitUntil:
     visible:
-      text: ${MESSAGE}
+      id: "quote-text"
     timeout: 20000
-- assertVisible:
-    id: "quote-text"
+- assertVisible: ${MESSAGE}
 - takeScreenshot: "notification-exact-message"
 - tapOn:
     id: "quote-like"
@@ -27,3 +21,9 @@ env:
       text: ${MESSAGE}
     direction: DOWN
     timeout: 15000
+
+- takeScreenshot: "notification-message-saved"
+- tapOn: "Close"
+- assertVisible:
+    id: "feed-scroll"
+- pressKey: HOME

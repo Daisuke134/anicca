@@ -193,3 +193,7 @@ private build configにはMixpanel tokenが存在し、PostHogのproject key/hos
 ### MaestroのOS許可ダイアログ境界
 
 Maestro 2.8.0 / iOS 26.5の実行では、OS許可が完了した後にも取得済みのAllow要素が返ることを観測する。アプリの状態ログと入力時刻の照合で、古い座標への再tapが背面の管理ボタンを押すと確認する。OSダイアログの座標再tapは行わず、アプリ側の許可済み表示・操作可能状態・フィード復帰を必須assertにする。focused許可回復flowのPASSを先に確認し、全体flowを再実行する。
+
+### 通知のOS操作とアプリ検証の分担
+
+iOS 26.5 / Maestro 2.8.0では、通知センターの合成touchは文言を表示できてもアプリを起動しないことを観測する。同一通知のSimulator native AXボタン操作では、終了中のアプリが起動し本文が一致する。通知試験はsimctlによる配送→Maestroで通知表示確認→native AXで実通知カードを一度操作→Maestroでquote-text/本文/保存/フィード復帰を必須assertにする。launchAppやdeeplinkで通知受信を代替しない。coldは操作前PIDなし→操作後PIDあり、warmは同一PID継続を記録する。実APNs配送や実機の合成touch成功へ読み替えない。
