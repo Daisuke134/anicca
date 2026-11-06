@@ -17,7 +17,7 @@
 
 ## 2026-11-05｜BFM-01の実学習済み小型モデル・製品側read-only接続
 
-- 実モデル訓練：GitHub Actions https://github.com/Daisuke134/life-manager/actions/runs/42141805282 にて、HBCPの405研究・971介入群から**Ridge回帰の重み142係数を実際に学習し、監査可能なJSONとして保存**。SHA256 `2e79c075903b95462659f4f8067f5921cb26c7e687d76e62b6d6a48b5455f0bb`、scikit-learn予測とJSON実装の最大差1.8×10^-14pt。
+- 実モデル訓練：GitHub Actions https://github.com/Daisuke134/life-manager/actions/runs/42141805282 にて、HBCPの405研究・971介入群から**Ridge回帰の重み142係数を実際に学習し、監査可能なJSONとして保存**。SHA256 `同梱の manager-hbcp-ridge-arm-rate-v0.manifest.json が記録する重みの SHA256（配布時に検証）`、scikit-learn予測とJSON実装の最大差1.8×10^-14pt。
 - Python3.11 / numpy2.4.6 / pandas3.1.1 / scikit-learn1.8.0 / scipy1.17.1固定の研究単位5-foldを実行。禁煙率予測MAE：train mean10.0048pt、Ridge9.2615pt、RandomForest9.2130pt。原著のRuleNN9.15とは条件が異なり直接比較しない。最終Ridgeの全データ再学習モデルそのものの未知研究スコアと区別。
 - `products/manager/manager_core/hbcp_readonly_adapter.py` を作成。研究の介入群データだと別途確認された入力以外はABSTAIN。重みのSHA・特徴量・最低観測量を検査し、外部通知、個人の医療判断、因果効果推定、無断行動はゼロ。JSONモデルunit test6件、Manager Core adapter test7件がクラウドで成功。
 - **これは汎用的なBehavioral Foundation Modelでも、Be.FMの追加学習済み重みでも、実ユーザーへの実介入でもない**。小さな本物の数値予測モデルを作ったという範囲までの完了。
