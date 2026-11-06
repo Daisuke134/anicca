@@ -129,6 +129,8 @@ def evaluate_jitai_point(
     if point.prompts_today >= point.max_prompts_per_day:
         return no("DAILY_PROMPT_BUDGET_EXHAUSTED")
     elapsed = point.elapsed_minutes_since_last_prompt
+    if elapsed is None and point.prompts_today > 0:
+        return no("UNKNOWN_COOLDOWN_HISTORY")
     if elapsed is not None:
         if type(elapsed) is not int or elapsed < 0:
             return no("INVALID_ELAPSED_TIME")
