@@ -26557,7 +26557,7 @@ P06-3 (Statsmodels power/SciPy A/A false-positive/SRM), P06-4 (synthetic recogni
 
 ## 2026-11-06 Naïve hackathon first → Maritime First 1,000 second
 
-**決定と範囲:** Life Manager Cloudは一つの商品、一つの既存業務台帳・playbook・公開dashboardを使う。Naïve Managed Agentsの公式SDKで11月7–8日のYC hackathon向け実業務を優先し、Maritime First 1,000の基盤診断・参加確認・計測設計を別sessionで並行する。実証済み業務をMaritimeへ移す段階はNaïveの納品・入金照合後とする。旧「Maritime OpenClawを先にする」順序は、Naïve大会が先に始まり全teamにNaïve SDK使用が必須なため更新する。Naïveの1位はYC interviewであり、YC採択・資金調達・売上を保証しない。
+**決定と範囲:** Life Manager Cloudは一つの商品、一つの既存業務台帳・playbook・公開dashboardを使う。Naïve Managed Agentsの公式SDKで11月7–8日のYC hackathon向け実業務を優先し、Maritime First 1,000の基盤診断・参加確認・計測設計を別sessionで並行する。同じ業務をMaritimeへ移す段階は、販売先適格性・共通offerの確定とMaritimeの必要機能確認後とする。入金照合と移植準備は独立して進め、同じ注文のownerは一つに保つ。旧「Maritime OpenClawを先にする」順序は、Naïve大会が先に始まり全teamにNaïve SDK使用が必須なため更新する。Naïveの1位はYC interviewであり、YC採択・資金調達・売上を保証しない。
 
 **選択肢と採用理由:** A) Naïveで先に一つの実業務を証明し、同じ商品・台帳をあとでMaritimeへ展開する（採用）。日程とNaïve SDK必須条件に合い、二重実行を避ける。B) 別商品・別台帳へ分裂する案は、顧客課題と成果が同じで検証費を重複させるため採らない。C) 別worktree/sessionで独立作業を並行する案は採用する。並行開発と同じ注文の二重実行は別であり、後者は禁止する。
 
@@ -26680,7 +26680,7 @@ Naïveの既存Deployment 10件は未接続platform/SNSや未作成listingを測
 | 独立作業 | N04–N12：販売先適格性、Agent設定、初回有料仕事、demo | M01/M04：legacy plan/desktop診断、公式template・参加/計測の確認。M03の無作用検証はM01後に可能 | 正本TODO、商品契約・台帳schema・shared source・統合判断 |
 | 書込範囲 | 専用main由来worktree/branch。Naïve sourceだけ | 別のmain由来worktree/branch。Maritime sourceだけ | SSOTの共通節はprimaryだけが編集、各sessionは証拠/差分を返す |
 | 実行・秘密 | Naïve Agent/session/deploymentの既存ownerだけ | Maritime worker/Triggerの既存ownerだけ | shared Publisher/browser/stateはowner/leaseを確認。両sessionに同時所有させない |
-| 依存 | Naïveを初回商用業務の候補ownerにする | M02の有償業務移植はN09b後。移管は旧owner停止/readback→新ownerへ、一件のjobは一方だけ | 同じorder/effect IDの二重実行・二重売上を防ぐ既存lease/receiptを使う |
+| 依存 | Naïveを初回商用業務の候補ownerにする | M02はN04/N07とM01/M03後。月次入金待ちは移植や大会提出の前提にしない。移管は旧owner停止/readback→新ownerへ、一件のjobは一方だけ | 同じorder/effect IDの二重実行・二重売上を防ぐ既存lease/receiptを使う |
 
 外部の独立CLI sessionを実際に起動する時は既存AGMSG playbookで範囲を渡す。今回は並行可能な計画を作る依頼であり、production workerや新しい独立CLI sessionは起動しない。
 
@@ -26703,8 +26703,9 @@ flowchart TD
   G -->|はい| O[N06–N09b: 一件の注文・納品・入金・費用照合]
   G -->|いいえ| X[無人収益は未達 / 証拠のある別経路だけ再評価]
   M --> W[M03: 無作用のsleep・wake検証]
-  O --> D[N10–N11: 一つの自然run・demo・提出]
-  O --> T[M02: 同じ業務を重複なしで移管]
+  O --> D[N10: 一つの自然run]
+  P --> E[N11: 実績の範囲でdemo・大会提出]
+  N --> T[M02: 適格性・offer確定後に移植 / 一注文一owner]
   W --> T
   T --> U[M05: 実利用者1,000人 / M06: 継続利益]
 ```
@@ -26717,7 +26718,7 @@ flowchart TD
 
 **Agent v3の実務結果:** 古いdraft-only/公開禁止/ユーザー質問前提を除去し、Identity固有のemail.inboxes/read/sendを有効にした。`ses_1qxbgqwbdkv35evkzta7habenc`は専用inboxからsupport@capafy.aiへ一通だけ送信して11秒/end_turn。公式Sent一覧の`out_epm7jsgm7qf6qfhzhbp3h4k1zw`にsent_by_agent_id=Capafy Agentを確認した。受信mailはまだ0件であり、返信→自動wakeは未実証。別Session `ses_2j2xa3v1p3d2gpn3ptt1nj1qsz`はCapafy実login画面からGoogle/GitHub/Continue with Emailを取得して19秒/end_turn。Email経路は存在するが、account登録完了ではない。
 
-順序更新: 旧=BotBounty.ai復旧確認→Capafy回答待ち→Naïve販売→Maritime全作業。新=【収益側】N04既存Capafyの適格性を確定→適格時N06–N09b→N10/N11、【独立基盤側】M01/M04を同時に開始→M01合格後の無作用M03→N09b後にM02→M05/M06。理由=故障した募集APIへ依存せず既存商品/販売記録を使い、無関係なMaritime調査の待ち時間を減らすため。進行中owner・10件のpause済みdeployment・共有Publisherを変更しない。現在cursorはN04、並行可能cursorはM01/M04。二runtimeで同じ注文を回さない。
+順序更新: 旧=BotBounty.ai復旧確認→Capafy回答待ち→Naïve販売→Maritime全作業。新=【収益側】N04既存Capafyの適格性を確定→適格時N06–N09b→N10。N11はその時点の実績で期限内提出、【独立基盤側】M01/M04を同時に開始→M01合格後の無作用M03→N04/N07とM01/M03後にM02→M05/M06（入金待ちは移植・提出の前提にしない）。理由=故障した募集APIへ依存せず既存商品/販売記録を使い、無関係なMaritime調査の待ち時間を減らすため。進行中owner・10件のpause済みdeployment・共有Publisherを変更しない。現在cursorはN04、並行可能cursorはM01/M04。二runtimeで同じ注文を回さない。
 
 | ID | 状態 | 原子的作業と完了証拠 |
 |---|---|---|
@@ -26735,10 +26736,10 @@ flowchart TD
 | N09a | 未完 | 注文一件を納品しprovider上でdelivery receiptを確認。 |
 | N09b | 未完 | refund/dispute期間後のsettlement/paidとplatform fee・model/browser/hosting費を照合してnet earnedを計算。 |
 | N10 | 未完 | 実証済みjobを公式Deployment一つで自然起動し、成果URL・費用・重複effectなしを確認。 |
-| N11 | 未完 | 2–4分のdemoに実run、URL、注文/精算状態、全cost、人の介入回数と未解決点を表示し、Naïve大会の公式提出receiptを保持。期限時点で入金未達なら未達のまま提出し、売上を演出しない。 |
+| N11 | 未完（N09bの入金待ちとは独立） | 2–4分のdemoに実run、URL、注文/精算状態、全cost、人の介入回数と未解決点を表示し、Naïve大会の公式提出receiptを保持。期限時点で入金未達なら未達のまま提出し、売上を演出しない。 |
 | N12 | 未完 | `/lm`の外部subscription MRRとself-operated salesを別々に計測。retention/refund/cancel/serving costも`/open`へ反映し、$10K MRRは未達の目標として扱う。 |
 | M01 | 未完（並行開始可） | 既存Maritime worker/legacy plan/desktop/Computer/Triggerをread-only再照合。wake後browser無効化とseat_limitの原因、現在planで使える公式API/headless経路を診断。購入・新VM・owner置換なし。 |
-| M02 | N09b + M01/M03後 | 入金・費用まで実証した同じ業務を既存official templateへ移す。旧ownerの効果照合と停止readback後に新ownerへ移管。一job一owner、shared source/playbook/ledger維持。自作bridgeなし。 |
+| M02 | N04/N07 + M01/M03後 | 適格性・offerと必要機能が確定した同じ業務を既存official templateへ移す。入金照合はN09bで並行し、移植/大会提出の前提にしない。旧ownerの効果照合と停止readback後に新ownerへ移管。一job一owner、shared source/playbook/ledger維持。自作bridgeなし。 |
 | M03 | M01後・無作用検証はNaïveと並行可 | 既存Maritime Triggerでsleeping agentをwakeし、/data、必要profile/checkpoint/receiptをsleep/wake後にreadback。paid desktop非対応ならそのgapを残し、公式APIのみの業務で要件が満たせるか判定。awake/asleep/model費を分ける。 |
 | M04 | 未完（並行開始可） | 既存First 1,000 projectのsubmitted receipt、参加/審査状態をread-only照合。未確認をacceptedと扱わない。既存phone入口と実利用者計測を準備。参加確認の必要な送信はその担当owner一人だけが行う。 |
 | M05 | 未完 | 12/1までdistinct real users/meaningful usageをofficial analyticsで計測し、bot/VM/subagent/duplicate IDsを除外。acquisition/cost/conversionを`/open`へ反映 |
