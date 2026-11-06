@@ -1,0 +1,9 @@
+{
+  "clinical_or_intervention_authorization": false,
+  "evidence": "trained_RCT_arm_outcome_baseline_NOT_foundation_model",
+  "model_id": "manager-hbcp-ridge-arm-rate-v0",
+  "source_sha256": "eec4ba6ffc51961fda1308f690a97a60111d93858fa67ca19ffd4392fd49679b",
+  "training_data_license": "CC0",
+  "weights_file": "manager-hbcp-ridge-arm-rate-v0.json",
+  "weights_sha256": "4398192b6bd90e7a199e07f3856cc3c7d5f5edb1ce3c21aa85b1347b99d78a5f"
+}
