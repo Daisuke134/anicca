@@ -26602,7 +26602,7 @@ P06-3 (Statsmodels power/SciPy A/A false-positive/SRM), P06-4 (synthetic recogni
 
 - **SaaS売上:** 外部利用者がLife Manager CloudのsubscriptionをAniccaへ支払う。公式subscription/invoice/refundで計測する。既存のTravel課金と混ぜない。価格・trial・対応範囲は現行sourceと契約を照合し、今回変更しない。
 - **Agentの事業収益:** 自社/利用者のManagerが外部の仕事で得る。売り手/tenant/order/settlementへ帰属させ、SaaS MRRに足さない。最初に試す自社Managerの販売先としてCapafyを選択する。これは初回検証先の決定であり、最高利益や実需要を証明した意味ではない。CapafyはLife Manager Cloud本体ではなく、全利用者の確定実行先でもない。既存会社Publisherを外部利用者へ共用させない。
-- **Capafyの入口・採算条件（公式Publisher Agreement v1.2）:** 新規Publisherは返金不可$0.99のCertification Fee、共通支配者ごとに原則1 Publisher Account、20% platform fee、7日間のdispute window、月次精算、最低$100 payoutを適用する。出金には支払先情報が必要で、open dispute/KYC/compliance review等で保留され得る。初期現金0・人の私用credentialなしで実行できる条件は、既存Anicca Publisherに正式なAgent roleを追加費用なしで付与できること。現在その権限は未確認で、Capafyへの問い合わせ返信も未確認。条件確認までは新規Publisher作成・費用支出・本人確認の迂回をしない。[Publisher Agreement](https://capafy.ai/publisher-agreement/)
+- **Capafyの入口・採算条件（公式Publisher Agreement v1.2）:** 新規Publisherは返金不可$0.99のCertification Fee、共通支配者ごとに原則1 Publisher Account、20% platform fee、7日間のdispute window、月次精算、最低$100 payoutを適用する。AgreementはPublisherがSkillを「independently develop」すること、正確な本人/連絡先/支払先情報と税務書類を保つことを定める。したがって「Copy Winner」は需要・価格帯・ページ構成の学習に限定し、コード/文章/画像/商標を丸写ししない。初期現金0・人の私用credentialなしで実行できる条件は、既存Anicca Publisherに正式なAgent roleを追加費用なしで付与でき、必要な支払/税務手続きが適法に満たせること。現在その権限は未確認で、Capafyへの問い合わせ返信も未確認。条件確認までは新規Publisher作成・費用支出・本人確認の迂回をしない。[Publisher Agreement](https://capafy.ai/publisher-agreement/)
 - **自己利用:** Aniccaも同じ公開onboarding、権限、上限、停止、費用/成果報告を使う。運営者だけの裏口を「誰でも使える」の証拠にしない。自己subscription/test paymentは外部顧客売上ではない。
 - **厳密な収益条件:** Agentの売り手口座は初期現金0、人の私用ID/カード/日々の承認なし、利用料と全運転費を超える実収益が目標。自社infra費・補助creditとAgentの現金は別。Capafyは初回市場に選定済みだが、登録→納品→使える受取までこの条件で実証した市場はまだない。「SaaSに課金できる」と「顧客のAgentが黒字」を分ける。達成前に自動黒字を販売上の実績として表示しない。
 - **提供権:** [Maritime terms](https://maritime.sh/terms)と[Naïve terms §4.2](https://usenaive.ai/terms)はいずれもserviceの再販等に書面許諾の条項を持つ。SDK経由で自社アプリを提供する利用とservice accessそのものの再販の適用範囲、既存契約/許諾をLC06で確認する。SDK例があるだけで全利用形態を許可済みとも、現契約が不許可とも断定しない。
@@ -26698,7 +26698,7 @@ flowchart TD
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
 |---|---|---|---|
 | LC20 | 未 / LC01/09 | `既存Life Manager playbook + official harness + maritime/run-cycle.jsの呼出元`：自発的な優先判断を一業務へ接続 | 旧Capafy専用cycleと一般Managerの実行を区別し、公式harnessで観測→次作業選択→実行→確認→状態保存を行う。固定応答/台本商品化/新wrapperなし |
-| LC21 | 選択済み・適格性未確認 / LC06/20 | `Capafyの公式Publisher Agreement・実募集・既存Anicca Publisher・support返信`：ゼロ現金/無人条件で使える正式なAgent roleを確認 | Capafyを初回販売先に固定。$0.99申請料、20% fee、7日間dispute、月次精算、$100 payout、出金/KYC条件と現在の需要を記録。既存Publisherへ追加費用なしの正式Agent roleを付けられるか確認する。最高利益や受注済みとは扱わない |
+| LC21 | 選択済み・適格性未確認 / LC06/20 | `Capafyの公式Publisher Agreement・実募集・既存Anicca Publisher・support返信`：ゼロ現金/無人条件で使える正式なAgent roleを確認 | Capafyを初回販売先に固定。$0.99申請料、独自開発Skill要件、20% fee、7日間dispute、月次精算、$100 payout、本人/支払先/税務情報の要件と現在の需要を記録。既存Publisherへ追加費用なしの正式Agent roleを付けられるか確認する。最高利益や受注済みとは扱わない |
 | LC22 | 未 / LC16/21 | `Capafy + Agent-owned inbox`：既存Publisher上の正式Agent role、または条件適合する正規登録を一件完了 | 検証メール/最終login/Publisher IDとAgent roleを公式readback。人の私用credential・外部利用者とのPublisher共用・KYC迂回なし。新規$0.99支払いが必要なら初期現金0条件に適合しないため登録しない |
 | LC23 | 未 / LC22 | `Capafy Publisher Console + 既存商品素材`：一つの有料Agent listingを正式公開 | 自社の商品事実・権利のある素材を使ったlive URL/正式公開状態。審査提出やdraftを公開としない |
 | LC24 | 未 / LC23 | `既存無料集客経路/実募集`：独立した第三者の有償依頼を一件受ける | 実order/assignment/payment条件。自己購入/広告投稿を需要にしない |
