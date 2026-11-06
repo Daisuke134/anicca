@@ -54,8 +54,14 @@ name: Value-first onboarding, continuous feed, saved words and reminders
 - takeScreenshot: "initial-real-reminder-schedule"
 - tapOn:
     id: "reminder-enable-notifications"
-- tapOn: "^(Allow|許可)$"
-- assertVisible: "Notifications allowed"
+# This runtime resolves the permission alert while XCTest refreshes hierarchy.
+- extendedWaitUntil:
+    visible: "Notifications allowed"
+    timeout: 20000
+- waitForAnimationToEnd
+- assertVisible:
+    id: "reminder-enable-notifications"
+    enabled: true
 - tapOn: "Close"
 - tapOn:
     id: "feed-themes"

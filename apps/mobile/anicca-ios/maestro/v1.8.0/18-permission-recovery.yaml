@@ -15,12 +15,12 @@ name: Optional permission recovery stays in the app
 - tapOn:
     id: reminder-enable-notifications
     retryTapIfNoChange: false
-- tapOn:
-    text: "^(Allow|許可)$"
-    retryTapIfNoChange: false
-- assertNotVisible: "^(Allow|許可)$"
+# XCTest resolves the system permission alert while refreshing its hierarchy.
+# Wait for the resulting app state instead of tapping a stale alert coordinate.
+- extendedWaitUntil:
+    visible: "Notifications allowed"
+    timeout: 20000
 - waitForAnimationToEnd
-- assertVisible: "Notifications allowed"
 - assertVisible:
     id: reminder-enable-notifications
     enabled: true
