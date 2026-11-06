@@ -68,7 +68,7 @@ struct QuoteCardView: View {
                 systemName: likedStore.isLiked(quote.id) ? "heart.fill" : "heart",
                 identifier: "quote-like"
             ) {
-                let didFavorite = likedStore.toggle(quote.id)
+                let didFavorite = likedStore.toggle(quote)
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 if didFavorite {
                     ReviewPromptCoordinator.shared.requestReviewIfAppropriate {

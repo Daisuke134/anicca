@@ -80,7 +80,7 @@ struct FirstAffirmationStepView: View {
     @StateObject private var likedStore = LikedQuotesStore()
 
     private var quote: Quote {
-        let quoteIDs = ["self_love": "q013", "calm": "q031", "confidence": "q021", "letting_go": "q041"]
+        let quoteIDs = ["self_love": "q013", "calm": "q021", "confidence": "q041", "letting_go": "q071"]
         let id = quoteIDs[appState.userProfile.goals.first ?? "self_love"] ?? "q013"
         return QuoteProvider.shared.byId(id, preferredLanguage: appState.effectiveLanguage)
             ?? QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage)[0]
@@ -104,7 +104,7 @@ struct FirstAffirmationStepView: View {
             Text(String(localized: "growth_first_subtitle"))
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button {
-                likedStore.toggle(quote.id)
+                likedStore.toggle(quote)
             } label: {
                 Label(String(localized: likedStore.isLiked(quote.id) ? "growth_saved" : "growth_keep_close"),
                       systemImage: likedStore.isLiked(quote.id) ? "heart.fill" : "heart")

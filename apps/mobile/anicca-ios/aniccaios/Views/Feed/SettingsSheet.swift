@@ -158,7 +158,7 @@ struct LikedQuotesView: View {
     @EnvironmentObject var likedStore: LikedQuotesStore
 
     var likedQuotes: [Quote] {
-        QuoteProvider.shared.all().filter { likedStore.isLiked($0.id) }
+        likedStore.savedQuotes(in: QuoteProvider.shared.all())
     }
 
     var body: some View {

@@ -35,16 +35,7 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
 
     func updateUIViewController(_ pvc: UIPageViewController, context: Context) {
         context.coordinator.parent = self
-        guard count > 0 else { return }
-
-        let target = clampedIndex(currentIndex)
-        let currentHost = pvc.viewControllers?.first as? IndexedHosting
-        if currentHost?.index != target {
-            let direction: UIPageViewController.NavigationDirection =
-                (currentHost?.index ?? 0) < target ? .forward : .reverse
-            let next = context.coordinator.hosting(for: target)
-            pvc.setViewControllers([next], direction: direction, animated: true)
-        }
+        context.coordinator.synchronizeVisiblePage(pvc)
     }
 
     private func clampedIndex(_ i: Int) -> Int {
@@ -53,11 +44,27 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
 
     final class Coordinator: NSObject, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
         var parent: VerticalPager
+        private var interactiveStartIndex: Int?
 
         init(_ parent: VerticalPager) { self.parent = parent }
 
         // Avoid the Swift 6.3 optimizer crash in the synthesized MainActor deinitializer.
         deinit {}
+
+        func synchronizeVisiblePage(_ pvc: UIPageViewController) {
+            // During a gesture UIKit can expose the destination before the binding
+            // commits. Reapplying the old binding here cancels an otherwise valid swipe.
+            guard interactiveStartIndex == nil, parent.count > 0 else { return }
+            let target = parent.clampedIndex(parent.currentIndex)
+            let current = pvc.viewControllers?.first as? IndexedHosting
+            guard current?.index != target else { return }
+            let direction: UIPageViewController.NavigationDirection = (current?.index ?? 0) < target ? .forward : .reverse
+            pvc.setViewControllers([hosting(for: target)], direction: direction, animated: false)
+        }
+
+        func pageViewController(_ pvc: UIPageViewController, willTransitionTo pendingViewControllers: [UIViewController]) {
+            interactiveStartIndex = parent.currentIndex
+        }
 
         func hosting(for index: Int) -> IndexedHosting {
             let host = IndexedHosting(index: index, rootView: AnyView(parent.pageContent(index)))
@@ -87,6 +94,14 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
                                 didFinishAnimating finished: Bool,
                                 previousViewControllers: [UIViewController],
                                 transitionCompleted completed: Bool) {
+            let startIndex = interactiveStartIndex
+            interactiveStartIndex = nil
+            // An explicit notification/deep-link request takes precedence over
+            // a swipe that was already in progress when that request arrived.
+            if let startIndex, parent.currentIndex != startIndex {
+                synchronizeVisiblePage(pvc)
+                return
+            }
             guard completed,
                   let host = pvc.viewControllers?.first as? IndexedHosting else { return }
             if parent.currentIndex != host.index {

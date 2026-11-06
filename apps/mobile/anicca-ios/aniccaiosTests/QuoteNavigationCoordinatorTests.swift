@@ -1,9 +1,45 @@
 import Foundation
 import Testing
+import SwiftUI
+import UIKit
 @testable import aniccaios
 
 @MainActor
 struct QuoteNavigationCoordinatorTests {
+
+    @Test("A SwiftUI refresh during a swipe must not restore the previous page")
+    func refreshDuringInteractiveSwipeKeepsVisiblePage() {
+        var index = 0
+        let pager = VerticalPager(count: 3, currentIndex: Binding(get: { index }, set: { index = $0 })) { Text("Card \($0)") }
+        let coordinator = pager.makeCoordinator()
+        let controller = UIPageViewController(transitionStyle: .scroll, navigationOrientation: .vertical)
+        let first = coordinator.hosting(for: 0)
+        let next = coordinator.hosting(for: 1)
+        controller.setViewControllers([first], direction: .forward, animated: false)
+        coordinator.pageViewController(controller, willTransitionTo: [next])
+        controller.setViewControllers([next], direction: .forward, animated: false)
+        coordinator.synchronizeVisiblePage(controller)
+        #expect((controller.viewControllers?.first as? IndexedHosting)?.index == 1)
+        coordinator.pageViewController(controller, didFinishAnimating: true, previousViewControllers: [first], transitionCompleted: true)
+        #expect(index == 1)
+    }
+
+    @Test("A notification requested mid-swipe wins over the gesture destination")
+    func notificationDuringSwipeKeepsRequestedDestination() {
+        var index = 0
+        let pager = VerticalPager(count: 3, currentIndex: Binding(get: { index }, set: { index = $0 })) { Text("Card \($0)") }
+        let coordinator = pager.makeCoordinator()
+        let controller = UIPageViewController(transitionStyle: .scroll, navigationOrientation: .vertical)
+        let first = coordinator.hosting(for: 0)
+        let next = coordinator.hosting(for: 1)
+        controller.setViewControllers([first], direction: .forward, animated: false)
+        coordinator.pageViewController(controller, willTransitionTo: [next])
+        index = 2
+        controller.setViewControllers([next], direction: .forward, animated: false)
+        coordinator.pageViewController(controller, didFinishAnimating: true, previousViewControllers: [first], transitionCompleted: true)
+        #expect(index == 2)
+        #expect((controller.viewControllers?.first as? IndexedHosting)?.index == 2)
+    }
 
     @Test("Cold-start notification waits for quotes and follows the visible alert body")
     func coldStartUsesAlertBodyWhenQuoteIdDisagrees() {
