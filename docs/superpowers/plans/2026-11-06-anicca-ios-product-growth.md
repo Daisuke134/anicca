@@ -70,7 +70,7 @@
 - [ ] 全screen inventoryをproduction codeへ対応付け、現在のevent/caller、paywallの重複、復元経路、匿名ID/identify/reset、PostHog直接呼出しを記録する。
 - [ ] Mixpanel Swift SDKのfeature flags要件（公式docsは6.4.0以上）を満たすstable releaseへpinし、PostHog Package/Info.plist config/SDK captureを除去する。Experiments利用可否・MEU allowance・project regionはMixpanel accountでreadbackする。
 - [ ] 同一screen再描画、戻る/進む、background/resume、duplicate callback、restore、trial、不明価格、通貨違い、offline再送を隔離fixtureにし、screen重複・二重売上・推定収益の混入を防ぐ。
-- [ ] Settingsの`settings_subscription`購入は汎用`purchase_result`に残し、`onboarding_paywall_purchased`へ混ぜない。成功後もRevenueCat/Appleの実収益sourceと区別する。
+- [ ] 固有transactionの観測結果をactive/retention/legacyの共通入口にし、同じtransactionの重複をオンボーディング成功からも除く。`settings_subscription`は汎用結果だけにし、purchase/trial/restore全eventへ`flow_id`を付ける。実収益sourceはRevenueCat/Appleと区別する。
 - [ ] screen/flow/activation/notification/paywall/product/purchase/trial/restore/exposureにevent/property contractを付け、raw affirmation text/PII/secretを送らず内部buildを識別する。画面終了は明示的遷移だけを送り、OS killは次step観測窓によるdrop-off推定とラベルする。
 - [ ] focused tests後にMixpanel側で同じtest identityのevent・properties・build/locale/variant・時刻をreadbackし、同一event/transaction重複0を照合する。local log/SDK configだけでは完了にしない。
 - [ ] source acceptance→fetch→commit/push。provider receiptと根拠をSSOTへ残す。

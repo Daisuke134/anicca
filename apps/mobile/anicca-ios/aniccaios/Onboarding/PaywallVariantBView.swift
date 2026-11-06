@@ -446,17 +446,14 @@ struct PaywallVariantBView: View {
             }
 
             do {
-                AnalyticsManager.shared.trackPurchaseStarted(productID: package.storeProduct.productIdentifier)
+                AnalyticsManager.shared.trackPurchaseStarted(productID: package.storeProduct.productIdentifier, flowID: flowID)
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
-                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)
-                    if flowID == "onboarding" {
-                        AnalyticsManager.shared.track(.onboardingPaywallPurchased)
-                    }
+                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)
                     isPurchasing = false
                     onPurchaseSuccess(result.customerInfo)
                 } else {
-                    AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier)
+                    AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier, flowID: flowID)
                     isPurchasing = false
                     if !hasShownRetention {
                         hasShownRetention = true
@@ -467,7 +464,7 @@ struct PaywallVariantBView: View {
                 isPurchasing = false
                 if let rcError = error as? RevenueCat.ErrorCode,
                    rcError == .purchaseCancelledError {
-                    AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier)
+                    AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier, flowID: flowID)
                     if !hasShownRetention {
                         hasShownRetention = true
                         showRetention = true
@@ -476,6 +473,7 @@ struct PaywallVariantBView: View {
                     AnalyticsManager.shared.trackPurchaseResult(
                         "failed",
                         productID: package.storeProduct.productIdentifier,
+                        flowID: flowID,
                         errorCode: String((error as NSError).code)
                     )
                     errorMessage = error.localizedDescription
@@ -487,14 +485,14 @@ struct PaywallVariantBView: View {
     private func restorePurchases() {
         isPurchasing = true
         errorMessage = nil
-        AnalyticsManager.shared.trackRestoreStarted(source: "paywall")
+        AnalyticsManager.shared.trackRestoreStarted(source: "paywall", flowID: flowID)
         Task {
             do {
                 let customerInfo = try await Purchases.shared.restorePurchases()
                 await MainActor.run {
                     isPurchasing = false
                     let restored = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true
-                    AnalyticsManager.shared.trackRestoreResult(restored ? "restored" : "no_entitlement", source: "paywall")
+                    AnalyticsManager.shared.trackRestoreResult(restored ? "restored" : "no_entitlement", source: "paywall", flowID: flowID)
                     if restored {
                         onPurchaseSuccess(customerInfo)
                     }
@@ -505,6 +503,7 @@ struct PaywallVariantBView: View {
                     AnalyticsManager.shared.trackRestoreResult(
                         "failed",
                         source: "paywall",
+                        flowID: flowID,
                         errorCode: String((error as NSError).code)
                     )
                     errorMessage = error.localizedDescription

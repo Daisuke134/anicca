@@ -147,38 +147,40 @@ final class AnalyticsManager {
     // MARK: - Convenience Methods
 
     /// トライアル開始
-    func trackTrialStarted(productId: String) {
+    func trackTrialStarted(productId: String, flowID: String) {
         track(.trialStarted, properties: [
-            "product_id": productId
+            "product_id": productId,
+            "flow_id": flowID,
         ])
     }
 
-    func trackPurchaseStarted(productID: String) {
-        track(.purchaseStarted, properties: ["product_id": productID])
+    func trackPurchaseStarted(productID: String, flowID: String) {
+        track(.purchaseStarted, properties: ["product_id": productID, "flow_id": flowID])
     }
 
-    func trackPurchaseResult(_ result: String, productID: String, errorCode: String? = nil) {
+    func trackPurchaseResult(_ result: String, productID: String, flowID: String, errorCode: String? = nil) {
         var properties: [String: MixpanelType] = [
             "product_id": productID,
             "result": result,
+            "flow_id": flowID,
         ]
         if let errorCode { properties["error_code"] = errorCode }
         track(.purchaseResult, properties: properties)
     }
 
-    func trackRestoreStarted(source: String) {
-        track(.restoreStarted, properties: ["source": source])
+    func trackRestoreStarted(source: String, flowID: String) {
+        track(.restoreStarted, properties: ["source": source, "flow_id": flowID])
     }
 
-    func trackRestoreResult(_ result: String, source: String, errorCode: String? = nil) {
-        var properties: [String: MixpanelType] = ["result": result]
+    func trackRestoreResult(_ result: String, source: String, flowID: String, errorCode: String? = nil) {
+        var properties: [String: MixpanelType] = ["result": result, "flow_id": flowID]
         properties["source"] = source
         if let errorCode { properties["error_code"] = errorCode }
         track(.restoreResult, properties: properties)
     }
     
     /// 購入完了
-    func observePurchase(package: Package, transaction: StoreTransaction?, customerInfo: CustomerInfo) {
+    func observePurchase(package: Package, transaction: StoreTransaction?, customerInfo: CustomerInfo, flowID: String) {
         guard purchaseObservations.record(transaction?.transactionIdentifier) else { return }
         let entitlement = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]
         let isTrial = entitlement?.isActive == true && entitlement?.periodType == .trial
@@ -186,11 +188,15 @@ final class AnalyticsManager {
             "product_id": package.storeProduct.productIdentifier,
             "result": "success",
             "entitlement_state": isTrial ? "trial" : (entitlement?.isActive == true ? "active" : "unknown"),
+            "flow_id": flowID,
         ]
         if let currency = package.storeProduct.currencyCode { properties["currency"] = currency }
 
         track(.purchaseResult, properties: properties)
-        if isTrial { trackTrialStarted(productId: package.storeProduct.productIdentifier) }
+        if flowID == "onboarding" || flowID == "legacy_paywall" {
+            track(.onboardingPaywallPurchased, properties: ["flow_id": flowID])
+        }
+        if isTrial { trackTrialStarted(productId: package.storeProduct.productIdentifier, flowID: flowID) }
         // Actual amounts/renewals/refunds are reconciled from RevenueCat and Apple.
         updateSKANConversionValue(3)
     }

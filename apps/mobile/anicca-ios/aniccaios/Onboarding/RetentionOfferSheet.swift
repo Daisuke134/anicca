@@ -127,23 +127,23 @@ struct RetentionOfferSheet: View {
         isPurchasing = true
         defer { isPurchasing = false }
         do {
-            AnalyticsManager.shared.trackPurchaseStarted(productID: pkg.storeProduct.productIdentifier)
+            AnalyticsManager.shared.trackPurchaseStarted(productID: pkg.storeProduct.productIdentifier, flowID: flowID)
             let result = try await Purchases.shared.purchase(package: pkg)
             if !result.userCancelled {
-                AnalyticsManager.shared.observePurchase(package: pkg, transaction: result.transaction, customerInfo: result.customerInfo)
-                AnalyticsManager.shared.track(.onboardingPaywallPurchased)
+                AnalyticsManager.shared.observePurchase(package: pkg, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)
                 onAccepted(result.customerInfo)
                 dismiss()
             } else {
-                AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: pkg.storeProduct.productIdentifier)
+                AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: pkg.storeProduct.productIdentifier, flowID: flowID)
             }
         } catch {
             if let rcError = error as? RevenueCat.ErrorCode, rcError == .purchaseCancelledError {
-                AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: pkg.storeProduct.productIdentifier)
+                AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: pkg.storeProduct.productIdentifier, flowID: flowID)
             } else {
                 AnalyticsManager.shared.trackPurchaseResult(
                     "failed",
                     productID: pkg.storeProduct.productIdentifier,
+                    flowID: flowID,
                     errorCode: String((error as NSError).code)
                 )
             }

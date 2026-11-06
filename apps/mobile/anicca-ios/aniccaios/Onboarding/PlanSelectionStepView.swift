@@ -306,17 +306,16 @@ struct PlanSelectionStepView: View {
 
         Task {
             do {
-                AnalyticsManager.shared.trackPurchaseStarted(productID: package.storeProduct.productIdentifier)
+                AnalyticsManager.shared.trackPurchaseStarted(productID: package.storeProduct.productIdentifier, flowID: "legacy_paywall")
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
-                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)
-                    AnalyticsManager.shared.track(.onboardingPaywallPurchased)
+                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: "legacy_paywall")
                     await MainActor.run {
                         isPurchasing = false
                         onPurchaseSuccess(result.customerInfo)
                     }
                 } else {
-                    AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier)
+                    AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier, flowID: "legacy_paywall")
                     await MainActor.run {
                         isPurchasing = false
                         if !hasShownRetention {
@@ -330,7 +329,7 @@ struct PlanSelectionStepView: View {
                     isPurchasing = false
                     if let rcError = error as? RevenueCat.ErrorCode,
                        rcError == .purchaseCancelledError {
-                        AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier)
+                        AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier, flowID: "legacy_paywall")
                         if !hasShownRetention {
                             hasShownRetention = true
                             showRetention = true
@@ -339,6 +338,7 @@ struct PlanSelectionStepView: View {
                         AnalyticsManager.shared.trackPurchaseResult(
                             "failed",
                             productID: package.storeProduct.productIdentifier,
+                            flowID: "legacy_paywall",
                             errorCode: String((error as NSError).code)
                         )
                         errorMessage = error.localizedDescription
@@ -351,7 +351,7 @@ struct PlanSelectionStepView: View {
     private func restorePurchases() {
         isPurchasing = true
         errorMessage = nil
-        AnalyticsManager.shared.trackRestoreStarted(source: "legacy_paywall")
+        AnalyticsManager.shared.trackRestoreStarted(source: "legacy_paywall", flowID: "legacy_paywall")
 
         Task {
             do {
@@ -359,7 +359,7 @@ struct PlanSelectionStepView: View {
                 await MainActor.run {
                     isPurchasing = false
                     let restored = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true
-                    AnalyticsManager.shared.trackRestoreResult(restored ? "restored" : "no_entitlement", source: "legacy_paywall")
+                    AnalyticsManager.shared.trackRestoreResult(restored ? "restored" : "no_entitlement", source: "legacy_paywall", flowID: "legacy_paywall")
                     if restored {
                         onPurchaseSuccess(customerInfo)
                     }
@@ -370,6 +370,7 @@ struct PlanSelectionStepView: View {
                     AnalyticsManager.shared.trackRestoreResult(
                         "failed",
                         source: "legacy_paywall",
+                        flowID: "legacy_paywall",
                         errorCode: String((error as NSError).code)
                     )
                     errorMessage = error.localizedDescription
