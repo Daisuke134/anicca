@@ -13,14 +13,7 @@ final class AnalyticsManager {
     private let logger = Logger(subsystem: "com.anicca.ios", category: "Analytics")
     private let purchaseObservations = PurchaseObservationLedger()
     private let sessionID = UUID().uuidString
-    private var currentScreen: ScreenVisit?
-
-    private struct ScreenVisit {
-        let screenID: String
-        let screenInstanceID: String
-        let flowID: String
-        let enteredAt: Date
-    }
+    private var screenVisits = ScreenVisitLedger()
 
     private var context: [String: MixpanelType] {
         #if targetEnvironment(simulator)
@@ -97,16 +90,16 @@ final class AnalyticsManager {
     }
 
     func trackScreenViewed(screenID: AnalyticsScreenID, flowID: String, screenInstanceID: String = UUID().uuidString) {
-        guard currentScreen?.screenInstanceID != screenInstanceID else { return }
-        trackScreenExited(nextScreenID: screenID.rawValue)
-
         let enteredAt = Date()
-        currentScreen = ScreenVisit(
+        let entry = screenVisits.enter(
             screenID: screenID.rawValue,
             screenInstanceID: screenInstanceID,
             flowID: flowID,
-            enteredAt: enteredAt
+            at: enteredAt
         )
+        guard case .entered(let previousExit) = entry else { return }
+        if let previousExit { trackScreenExit(previousExit) }
+
         let properties: [String: MixpanelType] = [
             "screen_id": screenID.rawValue,
             "screen_instance_id": screenInstanceID,
@@ -121,27 +114,33 @@ final class AnalyticsManager {
     }
 
     func trackScreenViewedIfNeeded(screenID: AnalyticsScreenID, flowID: String) {
-        guard currentScreen?.screenID != screenID.rawValue || currentScreen?.flowID != flowID else { return }
+        guard screenVisits.currentVisit?.screenID != screenID.rawValue
+                || screenVisits.currentVisit?.flowID != flowID else { return }
         trackScreenViewed(screenID: screenID, flowID: flowID)
     }
 
     func trackScreenExited(nextScreenID: String, screenInstanceID: String? = nil) {
-        guard let screen = currentScreen else { return }
-        guard screenInstanceID == nil || screen.screenInstanceID == screenInstanceID else { return }
-        let duration = max(0, Int(Date().timeIntervalSince(screen.enteredAt) * 1_000))
+        guard let exit = screenVisits.exit(
+            nextScreenID: nextScreenID,
+            screenInstanceID: screenInstanceID,
+            at: Date()
+        ) else { return }
+        trackScreenExit(exit)
+    }
+
+    private func trackScreenExit(_ exit: ScreenVisitLedger.Exit) {
         track(.screenExited, properties: [
-            "screen_id": screen.screenID,
-            "screen_instance_id": screen.screenInstanceID,
-            "flow_id": screen.flowID,
-            "next_screen_id": nextScreenID,
-            "observed_duration_ms": duration,
+            "screen_id": exit.screenID,
+            "screen_instance_id": exit.screenInstanceID,
+            "flow_id": exit.flowID,
+            "next_screen_id": exit.nextScreenID,
+            "observed_duration_ms": exit.observedDurationMS,
         ])
-        currentScreen = nil
     }
 
     /// Backgrounding is not a user exit, so leave it out of screen drop-off events.
     func clearCurrentScreenVisit() {
-        currentScreen = nil
+        screenVisits.clear()
     }
 
     // MARK: - Convenience Methods

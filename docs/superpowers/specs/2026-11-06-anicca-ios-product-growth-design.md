@@ -96,7 +96,7 @@ Railway公式readbackで本番APIは `Daisuke134/anicca-products` / `apps/api`�
 | 領域 | 実装済み | 未完/問題 |
 |---|---|---|
 | 初期化・送信 | `AppDelegate.swift`で`AnalyticsManager.configure()`、`AnalyticsManager.swift`でMixpanelを初期化。`track`はcontextを付けてMixpanelへ送り、PostHog設定時は同じeventも送る | 本番Mixpanelへのtest/live event受信、project region、安定anonymous IDからaccount IDへの移行、logout reset、offline再送/重複はservice側readbackしていない |
-| 画面 | 18個の`AnalyticsScreenID`をOnboarding/Feed/Settings/Paywallのproduction callerへ対応付け済み。`screen_viewed`と明示遷移時の`screen_exited`、onboarding step、paywall entryをsourceで確認 | Mixpanel service側の受信・全実画面coverage・実ユーザーの重複率は未確認。現行onboardingはlinearで戻る操作がなく、`onboarding_step_back`はenum定義のみでcallerがない |
+| 画面 | 18個の`AnalyticsScreenID`をOnboarding/Feed/Settings/Paywallのproduction callerへ対応付け済み。純Swift fixtureで同一screen instance抑止、前後移動のexit/滞在時間、background clearを確認 | Mixpanel service側の受信・全実画面coverage・実ユーザーの重複率は未確認。現行onboardingはlinearで戻る操作がなく、`onboarding_step_back`はenum定義のみでcallerがない |
 | 二重送信 | `AnalyticsManager.track`のPostHog conditional send | `PlanSelectionStepView.swift`は直接PostHog captureし、paywall view時に`paywall_plan_selection_viewed`相当を複数経路から呼ぶ。画面再描画を含め重複の実測が必要 |
 | 購入 | `PurchaseObservationLedger`がtransaction IDの観測をローカルdedup。trialとpurchase eventを分け、`displayed_price`には`amount_source=store_product_quote_not_settled_revenue`を付ける | 表示価格はApple/RevenueCatで決済済みの純収益ではない。restore完了eventがなく、transaction callback・renewal/refund/proceedsをprovider実績と統合していない |
 | Open | 現行`aniccaai.com/open/`は会社指標、ASCのstore discovery/downloads、RevenueCat等の集計を読む | iOSのscreen funnel/離脱/cohort/experimentをMixpanelから表示していない |
@@ -107,7 +107,7 @@ Railway公式readbackで本番APIは `Daisuke134/anicca-products` / `apps/api`�
 
 ### 現行AnalyticsScreenIDとproduction caller
 
-次表はsource上の配線inventoryであり、Mixpanel受信・実ユーザーcoverageのreadbackではない。中央の`trackScreenViewed`はscreen entryと前screenの明示的exitを送り、AppDelegateのbackground hookはcurrent visitをclearしてOS終了を`screen_exited`と誤認させない。
+次表はsource上の配線inventoryであり、純Swift `ScreenVisitLedgerTests`はlocal transition stateだけを検証する。どちらもMixpanel受信・実ユーザーcoverageのreadbackではない。中央の`trackScreenViewed`はscreen entryと前screenの明示的exitを送り、AppDelegateのbackground hookはcurrent visitをclearしてOS終了を`screen_exited`と誤認させない。
 
 | 画面ID | production caller | source上のevent |
 |---|---|---|

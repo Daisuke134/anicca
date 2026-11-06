@@ -63,8 +63,10 @@ def main() -> int:
         '"locale"',
         '"storefront_country_code"',
         '"device_region_code"',
-        'guard currentScreen?.screenInstanceID != screenInstanceID else { return }',
-        'trackScreenExited(nextScreenID: screenID.rawValue)',
+        'private var screenVisits = ScreenVisitLedger()',
+        'screenVisits.enter(',
+        'screenVisits.exit(',
+        'screenVisits.clear()',
         'func clearCurrentScreenVisit()',
     )
     for marker in required_contract:
