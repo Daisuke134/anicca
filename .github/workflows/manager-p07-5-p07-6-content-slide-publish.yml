@@ -94,7 +94,12 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           D=docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club
           P=docs/research/manager/publication/2026-10-19
-          git add "$P/manifest.json" \
+          git add \
+            docs/research/manager/articles/2026-11-05-vipassana-insight-behavior-model-ja.md \
+            docs/research/manager/articles/2026-11-05-vipassana-insight-behavior-model-en.md \
+            docs/research/manager/articles/2026-11-05-measure-benefit-and-harm-p07-6-ja.md \
+            docs/research/manager/articles/2026-11-05-measure-benefit-and-harm-p07-6-en.md \
+            "$P/manifest.json" \
             "$P/en/manager-vipassana-behavior-model-en.md" \
             "$P/ja/manager-vipassana-behavior-model-ja.md" \
             "$P/en/manager-measure-welfare-and-harm-en.md" \
