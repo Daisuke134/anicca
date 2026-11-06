@@ -23687,6 +23687,18 @@ b.6-01〜27bのsource/configとT23.1 aggregate-only exporterは完了。T23.1 pa
 **並行確認:** 初週締切/timezone、Top30 rubric、提出先、community pinned案内、team roster、Scale更新/credits範囲、日本発旅費。公式サイト再読と10月20日以降の主催者メール再検索でも、新しい提出form/初週時刻は確認できない。受信済みwelcome/verificationは大会追加要件ではない。既存問い合わせを重複送信しない。
 
 **Hackathon Radar:** →既存Radar Pageと日次workerを参照。旧workerの1,000 VM指示修正は未完で、今回重複workerを作らない。
+#### 2026-11-06 Maritime Capafy binding resolution checkpoint
+
+**現在地・as of 2026-11-06 15:40 UTC:** Capafy binding の注入段と VM 内解決層は実装・実証済み。公開はアカウント容量（CAP_FULL）の段で停止。根拠→[cycle-20261106-capafy-binding.json](../../evidence/maritime/cycle-20261106-capafy-binding.json)。
+
+- **注入段（完了）**: Maritime env API（POST /api/agents/{id}/env で作成。PUT は既存キー更新専用で新規は404）に参照のみの `LM_CAPAFY_BINDING_JSON` {tenantId, provider: capafy, subjectId: 2060981302278778880, credentialRef: capafy-publisher-slot:v1, browserSessionRef: tenant-browser:v1} を設定し、GET readback で9変数中の実在を確認。subject は運用中の実 Publisher アカウント（89件出品）。
+- **解決層（完了・実証）**: `skills/capafy-autopublish/scripts/publisher_resolution.py`（branch feat/maritime-capafy-publisher-resolution-20261106、commit 30257e6e5、テスト6+1件合格・既存22件回帰なし）。binding の参照を tenant 秘密スロット（/data/<tenant>/secrets/capafy-publisher.json、files API で provisioning、所有権は uid 10001・0600 へ是正）へ解決し、公式 Capafy API で userId・email を検証してから token store と .env を materialize する。失敗時は deferred/provider_binding_unresolvable で fail-closed（黙ってオフラインへ落とさない）。サイクル003の中で resolver 自身が再解決し resolution.json が 15:26:00Z に更新（accountVerified=true）。
+- **a0d217d runtime の実測ギャップ**: reload-env 後も API 管理 env は exec／run-cycle 子プロセスへ注入されず（printenv 空、run-cycle.js・runtime-env.js に binding 参照ゼロ）、サイクル002は no-account オフラインで完走した。003 は exec env 注入＋現行 source の cloud_cycle／resolver を VM へホットデプロイ（原本は .bak 保持）して binding 経路で完走。恒久対策は tenant image の現行 source への更新（別 Todo）。
+- **公開の到達段**: サイクル003（llm 実費 $0.106）は工場の inventory_status.py で **CAP_FULL** を実測（全89件、未掲載の提出枠5件占有：5867759757／3652913997／7069327619／5128982710 他、free=0、publishable=0）。工場の規律により6件目の未掲載 Agent は作成せず、publish-init・CP1・CP2・CP3・upload・提出は未実施。新規 Agent ID は存在しない。providerReceiptRefs は cloud_cycle.py の構造上つねに []（公開証拠は工場の remote status で取る設計）。
+- **次の詰まり（順序どおり）**: (1) 提出枠の解放または既存ドラフトの再開は Capafy ループ側の在庫管理（3652913997 は Mac 側残作業あり）。(2) CP1〜CP3 用の Web セッションは現在どこにも無い（Mac プロファイルはログアウト、vault は期限切れ）。復旧はメール OTP を親エージェントの browser-task 認証コード経路（origin https://capafy.ai）で消費するログインのみ。復旧後に storage state を再 export し、スロットへ browserAuthState を追加すれば browserSeeded=true になる。(3) tenant image 更新。
+- **費用**: 本レーンの llm 実費 $0.239（002: $0.123、003: $0.106）。welcome credit 残 ≈$4.23（失効 2026-11-19T15:49:41Z）。新規課金・有料 plan・billing 切替ゼロ。agent は sleeping へ復帰（invocations 17、compute 9,921s）。
+- **PR #8745 の不採用理由（実測）**: 中央チェーンは Railway／Postgres 前提に加え、実アカウントで fail-closed になる2件の前提違い（subject の UUID 形式要求 vs 実 userId は数字 snowflake／role === 'developer' 要求 vs 実 role は consumer・developerVerified=true）。
+
 ### Life Manager distribution: four channels, one metrics tool, blog per business — 2026-10-18 20:40 JST (claude-evo-eval-1012, Dais: "maximize distribution and conversion for every business; separate the blog per business; same tool for all agents; copy the successful")
 
 **Directive (restated):** every business agent (Capafy, LINE stickers, eBook, AI voice tools, Anicca app) runs the same distribution system on four channels, measures with the same free tools, and improves from the numbers: (1) social (one account = one language, largest market first), (2) search-engine SEO, (3) AI answer engines (Google AI Overview, ChatGPT, Perplexity), (4) the platform's own internal promotion (Capafy search/category/hot ranking). Copy successful software/agent distribution, not only Capafy sellers.
