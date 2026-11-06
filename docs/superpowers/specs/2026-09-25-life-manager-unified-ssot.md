@@ -10,7 +10,7 @@
 
 | ID | 状態 | 実行順・成果 | 完了条件 |
 |---|---|---|---|
-| G0 | 文書作成・共有確認中 | 全体spec・実装計画・画面案を同一branchで共有 | scoped review、commit/push、remote objectと参照linkを確認 |
+| G0 | 完了（仕様共有） | 全体spec・実装計画・画面案を同一branchで共有 | scoped review重大問題なし、commit/push、remote objectと参照linkを確認。アプリ実装/動画/提出は未実行 |
 | G1 | 未着手 | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
 | G2 | 未着手 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | 連続/逆方向swipe、cold/warm/本文のみ通知、実設定/配信境界の証拠 |
 | G3 | 未着手 | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
@@ -24,7 +24,7 @@
 
 **旧順→新順:** 旧案は計測全体/ダッシュボードとアプリ初回修正を横断して進める。新順は全体を文書化→Anicca初回G1〜G5→G6〜G10。理由はユーザーが先に実製品を直してMaestro動画を見たいと指定し、最新指示で当面をspec共有に限定するため。進行中の他業務loop・配信・審査を中断/重複させない。
 
-**現在cursor:** G0の文書差分review→commit/push→remote object確認。完了後の次cursorはG1だが、今回の文書作業では実装を開始しない。primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、branch=`feat/anicca-ios-initial-polish-20261106`。Muse/Grok等は同じremote specとこのcursorを参照する。
+**現在cursor:** G1（次の実装、今回未着手）。G0の共有commit=`9849ad0c6638a3f555b1b9aaf112f06355fde468`、PR=`#9272`。source-boundary、diff-check、文書local link、G1〜G10 coverage、画面sourceの一致、GitHub remote commit/treeのreadbackを確認。独立read-only reviewは重大問題なし、相対pathの基準を追記する。primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、branch=`feat/anicca-ios-initial-polish-20261106`。Muse/Grok等は同じremote specとこのcursorを参照する。
 
 
 進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。

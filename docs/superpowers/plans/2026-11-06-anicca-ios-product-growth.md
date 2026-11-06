@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-06-anicca-ios-product-growth-design.md`
 
+**パスの基準:** `apps/`・`docs/`・`config/`・`skills/`で始まるpathはrepo基準。それ以外のiOS関連path（`aniccaios/`・`aniccaiosTests/`・`maestro/`・`fastlane/`・`scripts/`・`README.md`）は `apps/mobile/anicca-ios/` 基準。コマンドの実行cwdはrepo rootとする。
+
 ## Global Constraints
 
 - 現在は文書保存・共有のみ。実装/提出/loop起動は今回実行しない。
