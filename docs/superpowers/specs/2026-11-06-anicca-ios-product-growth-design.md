@@ -219,10 +219,10 @@ App=`6755129214` / bundle=`ai.anicca.app.ios` / version=`1.9.7` / build=`816`、
 
 ### 1.9.8通知修正フォローアップ（2026-11-06）
 
-PR #9282（merge SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`）はmainへ統合済み。latest main `a642df1374eda996ed4f3dc4f227d46a38108cc0`のAnicca iOS treeはこのmerge以降変化していない。Mac MiniのiOS 26.5 Simulatorで1.9.8/817を起動し、Maestro 13（初回体験、1/1）と14（通知カードからの起動、本文一致、保存一覧への表示）をPASS。通知試験はSimulatorへの`simctl push`と実OSカードのnative AX操作を使うため、実端末APNs配送の証拠ではない。
+PR #9282（merge SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`）はmainへ統合済み。latest main `bf71e15223e8e5dca71a7a79e773c8863c58c1ef`のAnicca iOS runtime/project/ci treeはそれぞれ`0931c01b8a78887a9291dfce74abf21bfa8007d8` / `060b64ccbeb15e360ac64e21c66ad17573236b92` / `b0e8b63afd146f8ba8e925971aebbd008046de8e`で、ASC build 818のsource commitはmerge SHA。Mac MiniのiOS 26.5 Simulatorでは候補build 817に対するMaestro 13（初回体験、1/1）と14（通知本文→feed→保存）がPASSしたが、候補binaryはbuild 818/merge sourceと同一である証拠がない。通知動画/source receiptもmerge SHAに結び付かないため、PR #9282の通知修正E2E証拠とは扱わない。通知試験のSimulator配送は`simctl push`と実OSカードのnative AX操作を使い、実端末APNs配送の証拠ではない。
 
 実画面の動画は `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-initial-UX-2026-11-06.mp4`（141秒、1206×2622）と `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-notification-2026-11-06.mp4`（78秒、1206×2622）。両方H.264として再生検査済み。
 
 ASC公式readbackでは1.9.7/816が`WAITING_FOR_REVIEW`のまま。1.9.8 version objectは未作成。Xcode Cloud run `98a7613c-898d-4d7c-8bda-62ef850a5403`のArchive由来build 818（`7cfb4f37-680c-447d-873a-7f8eb54a0baf`）は`VALID`/`APP_STORE_ELIGIBLE`。TestFlight外部テスト審査の自動送信だけが`Please try again later.`で失敗し、新しいApp Review提出はない。既存1.9.7提出は変更・取消しない。
 
-**提出cursor:** 先に動画2本をユーザーへ提示する。視聴後にASCで1.9.8 draftを作成しbuild 818をattach、doctor確認後にApp Reviewへ提出して公式`WAITING_FOR_REVIEW`を照合する。
+**提出cursor:** ユーザーへ初回UX動画を提示済みで、最新指示は作業続行。ASCが1.9.7/816の審査中を理由に1.9.8 version作成を拒否したため、既存審査を変更・取消しせず公式状態を追跡し、1.9.7審査完了/公開後に1.9.8 draft→build 818 attach→doctor/validate→dry-run→App Review提出→1.9.8自身の公式`WAITING_FOR_REVIEW`を照合する。候補Simulator binary 1.9.8/817はbuild 818と異なり、通知修正のE2E証拠には使わない。

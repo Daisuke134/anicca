@@ -12,10 +12,10 @@
 |---|---|---|---|
 | G0 | 完了（仕様共有） | 全体spec・実装計画・画面案を同一branchで共有 | scoped review重大問題なし、commit/push、remote objectと参照linkを確認。G0は仕様共有の完了を示す。実装・動画・提出はG1〜G5で追跡 |
 | G1 | 検証済み | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
-| G2 | PR #9282統合済み（merge SHA `6cc7c4a7`）。iOS 26.5 Simulatorのswipe・OS通知カード→本文一致→保存までPASS。実端末APNs/実頻度/free-Pro実配信は未確認 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | 連続/逆方向swipe、cold/warm/本文のみ通知、実設定/配信境界の証拠 |
+| G2 | PR #9282統合済み（merge SHA `6cc7c4a7`）。対象CI/単体テストPASS。既存iOS 26.5 Simulator E2Eは候補build 817でswipe・通知カード→本文一致→保存までPASSしたが、通知動画/source receiptはmerge SHAに結び付かない。実端末APNs/実頻度/free-Pro実配信は未確認 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | merge sourceに結び付くE2E証拠、実端末APNs、実設定/配信境界 |
 | G3 | 検証済み | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
 | G4 | 実装済み・サービス受信未確認 | 全主要画面と価値/課金/通知event、正しい価格/通貨/receipt | サービス側受信、同一ID、二重発火0、不明価格やrestoreを売上化しない |
-| G5 | 1.9.7/816は`WAITING_FOR_REVIEW`。1.9.8/818は`VALID`・`APP_STORE_ELIGIBLE`、実Simulator動画2本を作成済み。動画を先に提示するため1.9.8は未提出 | Maestro E2E動画・実製品提示・review/CI/main・署名build・審査提出 | mainとruntime/project treeが一致するMP4/結果、StoreKit/通知検証と未確認境界、公式`WAITING_FOR_REVIEW`。承認/公開は別追跡 |
+| G5 | 1.9.7/816は`WAITING_FOR_REVIEW`。1.9.8/818は`VALID`・`APP_STORE_ELIGIBLE`。初回UX動画は提示済み。ASCは1.9.8 version作成を拒否し、未公開の1.9.7審査中を理由にした。1.9.8 object/提出なし | 1.9.7の公式review stateを保全・追跡し、作成可能になり次第1.9.8 draft→build 818 attach→doctor/validate→submit | 1.9.8 version/buildの公式関係、提出receiptとversion自身の`WAITING_FOR_REVIEW`。1.9.7は変更・取消ししない。承認/公開は別追跡 |
 | G6 | 後続・未着手 | 全出荷app inventory、国/流入/課金/retentionの欠測修復 | 公式source/期間/分母/coverage、アプリごとの失敗隔離 |
 | G7 | 後続・未着手 | 既存Openへ日次履歴・グラフ・funnel・国/流入/実験表示 | 公開画面とsource鮮度/履歴一致、unknownと0の区別、狭幅確認 |
 | G8 | 後続・未着手 | SNS/記事/quoteの接続、地域別onboarding/paywall/価格/推薦実験 | supported attribution、stable割付/露出、必要人数/成熟期間/guardrail、標本不足は未判定 |
@@ -24,7 +24,7 @@
 
 **旧順→新順:** 旧案は計測全体/ダッシュボードとアプリ初回修正を横断して進める。新順は全体を文書化→Anicca初回G1〜G5→G6〜G10。理由はユーザーが先に実製品を直してMaestro動画を見たいと指定し、最新指示で初回アプリ修正の実行が許可されるため。進行中の他業務loop・配信・審査を中断/重複させない。
 
-**現在cursor:** latest main=`a642df1374eda996ed4f3dc4f227d46a38108cc0`。PR #9282のmerge SHA=`6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`を含み、merge後のAnicca iOS treeに追加差分がないことを確認。Simulator buildは1.9.8/817、Maestro 13（初回体験）1/1 PASS、14（OS通知本文→feed→保存）PASS。実端末APNsと分析service受信は未確認。
+**現在cursor:** latest main=`bf71e15223e8e5dca71a7a79e773c8863c58c1ef`。PR #9282のmerge SHA=`6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`を含み、Anicca iOS runtime/project/ci treeはそれぞれ`0931c01b8a78887a9291dfce74abf21bfa8007d8` / `060b64ccbeb15e360ac64e21c66ad17573236b92` / `b0e8b63afd146f8ba8e925971aebbd008046de8e`。ASC build 818はmerge SHA由来。ASC `versions create --version 1.9.8`は「You cannot create a new version of the App in the current state」と返し、1.9.7が`WAITING_FOR_REVIEW`で未公開のため作成不可。独立read-onlyレビューも1.9.7を維持して待つ判定。1.9.7は変更・取消ししない。公式状態を追跡し、1.9.7審査完了/公開後に1.9.8を作成する。提示済みSimulator動画の候補アプリは1.9.8/817で、build 818やmerge binaryとの同一性は未証明。既存通知動画/source receiptもmerge SHAに結び付かないため、PR #9282のE2E証拠とは扱わない。初回UX動画は体験説明用として提示済み。実端末APNsと分析service受信は未確認。
 
 **動画:** `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-initial-UX-2026-11-06.mp4`（141秒、1206×2622）と`/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-notification-2026-11-06.mp4`（78秒、1206×2622）。Simulatorの実画面録画で、両方H.264として再生検査済み。
 
