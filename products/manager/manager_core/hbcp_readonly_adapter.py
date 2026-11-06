@@ -18,7 +18,8 @@ import json
 # Pinned SHA256 of source-controlled, inspectable JSON model weights.
 # Only the accepted training job may change this along with a model card.
 MODEL_FILE = Path(__file__).resolve().parents[1] / "models/checkpoints/manager-hbcp-ridge-arm-rate-v0.json"
-EXPECTED_MODEL_SHA256 = "2e79c075903b95462659f4f8067f5921cb26c7e687d76e62b6d6a48b5455f0bb"
+MODEL_MANIFEST = MODEL_FILE.with_suffix(".manifest.json")
+EXPECTED_SOURCE_SHA256 = "eec4ba6ffc51961fda1308f690a97a60111d93858fa67ca19ffd4392fd49679b"
 
 
 @dataclass(frozen=True)
@@ -38,9 +39,19 @@ def _loaded_model() -> dict:
     if not MODEL_FILE.is_file():
         raise RuntimeError("pinned outcome-head model not deployed")
     content = MODEL_FILE.read_bytes()
-    if sha256(content).hexdigest() != EXPECTED_MODEL_SHA256:
+    metadata = json.loads(MODEL_MANIFEST.read_text(encoding="utf8"))
+    if metadata.get("weights_file") != MODEL_FILE.name:
+        raise ValueError("unreviewed checkpoint name")
+    if metadata.get("weights_sha256") != sha256(content).hexdigest():
         raise ValueError("outcome-head checkpoint digest mismatch")
-    return json.loads(content)
+    if metadata.get("source_sha256") != EXPECTED_SOURCE_SHA256:
+        raise ValueError("outcome-head original study provenance mismatch")
+    if metadata.get("clinical_or_intervention_authorization") is not False:
+        raise ValueError("unexpected external intervention authority")
+    m = json.loads(content)
+    if m.get("model_id") != metadata.get("model_id"):
+        raise ValueError("checkpoint and source-controlled manifest ID mismatch")
+    return m
 
 
 def predict_published_study_arm(
