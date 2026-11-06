@@ -93,6 +93,8 @@
 
 **Xcode Cloud:** enabled `Default` workflowはlockedで`main` branchだけを受け付け、PR/manual branch conditionは空。Draft PR #9289のApple SCM PR IDを使った起動はbranch未登録で拒否され、buildは作成されなかった。既存`Untitled Workflow`はdisabled/unlocked、schemeは`aniccaios`だがcontainer pathが旧値`aniccaios/aniccaios.xcodeproj`。次はこのworkflowを現行project pathと今回のfeature branchへ限定して一回だけ使い、run後にdisabledへ戻す。Xcode Cloud environment variablesは公開APIに現れず、Apple web sessionは2FA SMSをMac Messagesで取得できず未認証。Mixpanel token注入/readbackは未確認で、build成功を本番tracking成功と扱わない。
 
+**最新実行:** candidate run/build 819（source `0f87589abfe38eaa8e7d2853a164ee01780496b3`）は`ci_post_clone.sh`が`ANICCA_PRODUCTION_XCCONFIG_B64`未設定で終了し、artifactを生成しなかった。ASC Web CLIのsecret設定に登録済み`mobile-release:dais` browser sessionが必要だが、起動preflightは空き12 GiBを要求し、現在7.5 GiB。非稼働のMaestro/XCTest一時結果13個（678 MiB）を削除済み。次cursorは再生成可能な一時artifactだけを追加調査してpreflightを満たし、identity lease経由でsecretを設定してcandidateを再実行すること。稼働中Chrome/Simulator、運用state、求人/納品証拠は保持する。
+
 - [ ] `asc review doctor`の現在の`review.submission.removed_items_only`を読み、取消済みのblockerを将来のfresh submissionと混同しない。G2/G4/G4.1 gateが完了するまでsubmit API/commandを呼ばない。
 - [ ] agreed UI/UXの全screen/overlay/state/localeをscreen inventoryに対応付け、onboarding→first affirmation→notification optional→paywall/close→feed→swipe→like/save/share→reminders/settings→restore/purchase flowのcoverageを定義する。
 - [ ] 証拠承認前のmain統合を避け、今回の専用feature branch SHAからXcode Cloudで署名candidateを作る。ASC CLIでbuild/sourceをreadback。Mac Mini SimulatorでMaestroの全screen/flowを実行し、same candidate build/source SHAを含む動画・screenshots・JUnit/logを保存する。動画から各screenの挙動と離脱導線を再生確認する。Xcode UIは開かない。

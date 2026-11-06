@@ -27,7 +27,7 @@
 
 **順序調整（2026-11-06）:** 直前の提出順は1.9.8を先に提出して後続G2/G4へ戻る順だった。ユーザーが提出前に画面別計測・Open表示・全画面E2Eの実証を要求したため、現在はG2→G4→G4.1→G5へ変更した。1.9.8のsubmission ID `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消しreadback済み。外部effectを再送しない。
 
-**現在cursor:** 同一候補buildを作るXcode Cloud経路を開く。`Default`はmain限定で使えず、既存`Untitled Workflow`の旧container pathとmanual branch scopeを修正する一回限りのcandidate buildを調査する。署名buildのsource SHAをASCで確認後、同じbuildでG2の全画面確認・Maestro録画へ進み、並行して実APNs/free/Pro配信receipt、G4のMixpanel event receipt/property/identity/dedup、G4.1のOpen集計/readbackを閉じる。証拠をユーザーに提示して明示承認を得るまで、main統合・本番公開・提出をしない。
+**現在cursor:** Xcode Cloud run/build 819（source `0f87589abfe38eaa8e7d2853a164ee01780496b3`）は`ci_post_clone.sh`で`ANICCA_PRODUCTION_XCCONFIG_B64`未設定のため失敗し、署名artifactはない。次に登録済み`mobile-release:dais`ブラウザ経路を復旧し、ASC Web CLIでこのworkflow secretを設定して候補buildを再実行する。ブラウザ起動は空き12 GiBを要求し、確認時点は空き7.5 GiB。13個・678 MiBの非稼働Maestro/XCTest一時結果を削除し空きを7.0→7.5 GiBへ回復した。`Downloads`/`Desktop`は空、最大の残存物は稼働中Chrome複製2.1 GiB、起動中Simulator状態3.0 GiB、Life Manager運用状態と求人証拠で、これらを削除しない。追加cleanupは再生成可能と確認した一時artifactに限定する。build後は同じsource/buildでG2全画面確認・Maestro録画を行い、並行して実APNs/free/Pro配信receipt、G4のMixpanel event receipt/property/identity/dedup、G4.1のOpen集計/readbackを閉じる。証拠をユーザーに提示して明示承認を得るまで、main統合・本番公開・提出をしない。
 
 **提出禁止の完了条件:** ①合意済みの全画面とUI動作がscreen inventoryで網羅され、画面間遷移・離脱計算の分母/観測窓が定義済み、②Mixpanelだけに正しいID/event/propertyが届き、主要event受信・二重発火0・purchase/trial/restore区分をサービス側readback、③Aniccaのfunnel/retention/課金を既存Openで日次source・coverage・分母つき表示しlive公開画面をreadback、④実装candidateと同じbuildの全画面Maestro E2Eと再生可能な動画を提示、⑤実端末通知/購入権限など各受入項目を証明、⑥ASC metadata/対象IAPを再照合。どれか一つでも未確認・欠測なら再提出しない。⑦証拠一式をユーザーへ提示し、明示承認を受けてから提出する。承認前のApp Store提出、本番公開、main統合はしない。screen unloadの瞬間を観測できると偽らず、次のscreenへ観測窓内に進まない割合を離脱と定義する。
 
