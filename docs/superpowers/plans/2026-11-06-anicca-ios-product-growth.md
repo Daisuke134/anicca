@@ -6,7 +6,7 @@
 
 **Architecture:** 初回版は既存SwiftUI/UIKit、StoreKit/RevenueCat、Mixpanel/PostHogを修正する。後続は既存collector/registry/release/公開dashboardのownerへ接続し、第二のruntimeや分析基盤を新作しない。
 
-**Tech Stack:** SwiftUI、UIKit、Xcode、XCTest、Maestro、APNs、RevenueCat、PostHog、Mixpanel、既存Life Manager scheduler/台帳、ASC。
+**Tech Stack:** SwiftUI、UIKit、Swift focused tests、Maestro、APNs、RevenueCat、PostHog、Mixpanel、既存Life Manager scheduler/台帳、ASC CLI、Xcode Cloud。
 
 **Spec:** `docs/superpowers/specs/2026-11-06-anicca-ios-product-growth-design.md`
 
@@ -21,6 +21,8 @@
 - UI mockのデモ値を本番へ固定しない。初回soft paywall、現行購入権限/各対応言語の動作を維持。
 - ダッシュボード/公開exportの別owner、配信owner、共有profile、他者のstateへ独断で同時変更しない。
 - 容量不足は所有者を確認した再生成可能な不要物を整理して解消し、保存/pushを完遂する。
+- App Reviewでは既存のASC/Xcode Cloud署名build 818を使い、現在のG5 cursorにローカルXcode/xcodebuildは使わない。
+- App Review提出前に既存Simulator E2E動画2本をYouTube限定公開で提示する。動画はcandidate build 817であり、build 818との同一binary証拠ではない。
 
 ## Review Focus
 
@@ -71,16 +73,17 @@
 
 ## Task 4: Maestro動画・レビュー・署名・審査提出（G5）
 
-**Files:** `maestro/onboarding/`、`maestro/v1.8.0/{11-app-review-purchases,12-storekit-cancel-restore}.yaml`、変更対象の新flow、`maestro/README.md`、`README.md`、`fastlane/Fastfile`とmetadata、`scripts/release-ios.sh`。既存の安全な提出経路を維持する。
+**状態:** 完了。build 818を使う1.9.8はASCで`WAITING_FOR_REVIEW`。Appleの承認・公開待ち。
 
-**Consumes:** Task1〜3の統合候補SHA、owned simulator、private config/signing、ASC app ID。**Produces:** 実製品MP4＋Maestro結果、main由来署名artifact、対象buildの公式 `WAITING_FOR_REVIEW`。
+**実施結果（2026-11-06）:**
 
-- [ ] owned simulatorと空き容量を確認。test用に新規状態を作り、`xcrun simctl io <UDID> recordVideo <private-evidence>/anicca-maestro-e2e.mp4` で同一runを録画する。
-- [ ] `maestro --device <UDID> test <changed-flow.yaml>` と既存購入/restore flowを実行する。Expected: 必須assert全PASS、optional assertで必須機能を隠さない。MP4を再生し、flow/字幕・screenshotsとSHA/device/buildを照合する。
-- [ ] EN/JA、通知同文言、連続上下swipe、保存/背景、soft close、settings購入、cancel/restoreを実際に確認する。Sandbox購入/有料restore・実機APNs・滑らかさを各境界で確認し、証拠を分ける。
-- [ ] fresh read-only reviewerへspec・実差分・テスト・動画refを渡す。重大指摘を回帰→修正→検証する。CI/main統合後、同sourceのrelease buildと審査情報を照合する。
-- [ ] `asc status --app 6755129214`、既存review doctor、build/metadata検証、既存正式submit経路を使い、対象version/build/submissionをGETで再取得する。Expected: 対象が `WAITING_FOR_REVIEW`。Apple承認は別状態として残す。
-- [ ] Daisへ再生可能なMP4・実画面・PASS/未確認範囲・公式状態を提示し、G1〜G5の完了を統合SSOTへ記録する。
+- [x] 既存iOS 26.5 Simulator Maestro 13/14録画を確認。初回体験と通知フロー動画を再生確認。いずれもcandidate build 817で、build 818/PR #9282に結び付く同一binary証拠ではない。実端末APNsの検証とは扱わない。
+- [x] PostizのYouTube連携「Daily Affirmation App - Anicca」へ2本を限定公開で投稿し、YouTube `releaseURL`・`PUBLISHED`・`type=unlisted`をreadback。初回体験: https://www.youtube.com/watch?v=88N3zsKZUJM / 通知: https://www.youtube.com/watch?v=J005BFtO88U。動画説明にSimulator candidate build 817と明記。
+- [x] App=`6755129214`の既存提出ID `cb6fa5a3-c350-482d-9ca7-369be6785249`を1.9.7/build 816/`WAITING_FOR_REVIEW`と照合して取下げ。同じIDのGETは`COMPLETE`、item `REMOVED`。取下げ前の1.9.7は`DEVELOPER_REJECTED`。
+- [x] Appleは未公開1.9.7 version objectがあるため1.9.8の新規作成を拒否し、既存版の番号更新を指示。version ID `224f1d6d-e7b4-4dc7-9258-111e67de7363`を1.9.8へ変更、build `7cfb4f37-680c-447d-873a-7f8eb54a0baf` (818)を添付。version/build readback一致、build=`VALID`/`APP_STORE_ELIGIBLE`。
+- [x] 審査メモを1.9.8/build 818向けに更新。版検証 errors=0/blocking=0/warnings=15。App=`6755129214`、version ID=`224f1d6d-e7b4-4dc7-9258-111e67de7363`、build 818で提出し、新submission ID `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`の`WAITING_FOR_REVIEW`、item `READY_FOR_REVIEW`を公式readback。submit時、旧`Anicca Monthly Plan`は`MISSING_METADATA`のため今回の審査対象から除外されるとの警告あり。
+
+**この提出で未確認:** PR #9282と同じbuild 818のE2E録画、実端末APNs、実購入/有料restore、分析service側event受信。App Privacy公開状態もCLI doctorでは確認できない。詳細・次のTODOは統合SSOT `ANICCA-PRODUCT-GROWTH` のG2/G4を参照。今回のASC提出にローカルXcode/xcodebuildは使用しない。
 
 ## Task 5: 全アプリ計測とOpen（日次履歴・国・流入・課金）（G6/G7）
 
