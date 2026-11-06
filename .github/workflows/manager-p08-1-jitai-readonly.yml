@@ -26,7 +26,7 @@ jobs:
           python -m py_compile \
             products/manager/manager_core/p08_1_jitai_decision.py \
             products/manager/tests/test_p08_1_jitai_decision.py
-      - name: Run 19 JITAI abstention and permission contract tests (synthetic)
+      - name: Run 20 JITAI abstention and permission contract tests (synthetic)
         env:
           PYTHONPATH: products/manager
         run: |
