@@ -46,8 +46,13 @@ def run():
     for lang, basename, slug, title, desc, citations, order in ARTICLES:
         source_path = Path("docs/research/manager/articles") / basename
         source = ROOT / source_path
+        markdown = source.read_text(encoding="utf-8")
+        # Preserve paragraphs but avoid trailing Markdown hard-break spaces
+        # that fail canonical GitHub source whitespace validation.
+        if "  \n" in markdown:
+            markdown = markdown.replace("  \n", "\n\n")
+            source.write_text(markdown, encoding="utf-8")
         raw = source.read_bytes()
-        markdown = raw.decode("utf-8")
         if len(markdown) < 1000:
             raise RuntimeError(f"truncated article {slug}")
         if markdown.count("https://") < 3:
