@@ -67,7 +67,7 @@
 
 **Consumes:** Mixpanel SDK event history、stable anonymous/customer ID、screen/quote/notification ID、StoreKit transaction/RevenueCat entitlement。**Produces:** Mixpanel一本のevent契約、画面別離脱funnel、restoreを含む課金観測、service receipt。PostHogは送信先から除く。
 
-- [ ] 全screen inventoryをproduction codeへ対応付け、現在のevent/caller、paywallの重複、復元経路、匿名ID/identify/reset、PostHog直接呼出しを記録する。
+- [x] 18個のAnalyticsScreenIDをproduction callerへ対応付け、event/caller、paywall/restore、identify/reset、PostHog経路を記録。現行linear onboardingに戻る操作はなく、`onboarding_step_back`は未使用enumのみと確認。source mappingの完了はservice受信・実coverageの証明とは分離する。
 - [x] Mixpanel Swift SDKをstable 7.1.0（revision `38e63de7d71a2b6787bbd190ef8fcc04d053f259`）へpinし、PostHog Package/Info.plist config/SDK captureを除去する。focused provider-contract testでPostHog経路なしを確認。
 - [ ] Mixpanel accountのExperiments entitlement・MEU allowance・project regionを公式readbackし、使える機能だけを有効化する。
 - [ ] 同一screen再描画、戻る/進む、background/resume、duplicate callback、restore、trial、不明価格、通貨違い、offline再送を隔離fixtureにし、screen重複・二重売上・推定収益の混入を防ぐ。

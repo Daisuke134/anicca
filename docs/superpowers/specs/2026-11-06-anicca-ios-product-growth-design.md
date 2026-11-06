@@ -89,14 +89,14 @@ Railway公式readbackで本番APIは `Daisuke134/anicca-products` / `apps/api`�
 
 **Mixpanelだけをプロダクト行動分析の正本にする。** build 818の既存`AnalyticsManager.swift`はMixpanel送信を実装済みで、PostHogは設定次第で同じeventを受け取り、paywallでは直接PostHog captureも行う。二重経路を残すとevent数・ID・実験割当が二つの画面へ分かれ、離脱率や売上の比較を一つの答えにできない。既存のMixpanel event historyを保つ方が移行と照合が小さいため、PostHog SDK/設定/直接呼出しを除去し、実験もMixpanel Feature Flags/Experimentsへ寄せる。
 
-根拠は公式[Mixpanel Swift SDK](https://docs.mixpanel.com/docs/tracking-methods/sdks/swift)、[iOS Feature Flags](https://docs.mixpanel.com/docs/tracking-methods/sdks/swift/swift-flags)、[Experiments](https://docs.mixpanel.com/docs/experiments)、[PostHog iOS SDK](https://posthog.com/docs/libraries/ios)。Mixpanel Feature FlagsはSDK 6.4.0以上が必要。現在の`Package.resolved`は`mixpanel-swift`を`master` branch revision `6e2a786b1e88b57b90f5a6d401337bc1bb2ba69c`で固定し、PostHog 3.49.0も含むため、利用APIを確認して対応するstable Mixpanel releaseへpinし、PostHog依存を外す。Mixpanel accountのfeature/Experiments entitlement、MEU上限、project regionは未確認なので、公式account readback後に実験を有効化する。契約や上限を推測しない。
+根拠は公式[Mixpanel Swift SDK](https://docs.mixpanel.com/docs/tracking-methods/sdks/swift)、[iOS Feature Flags](https://docs.mixpanel.com/docs/tracking-methods/sdks/swift/swift-flags)、[Experiments](https://docs.mixpanel.com/docs/experiments)、[PostHog iOS SDK](https://posthog.com/docs/libraries/ios)。Mixpanel Feature FlagsはSDK 6.4.0以上が必要。初回調査時の`Package.resolved`は`master` branch revision `6e2a786b…`とPostHog 3.49.0を含んでいたが、現candidate sourceはMixpanel Swift 7.1.0 stable revision `38e63de7d71a2b6787bbd190ef8fcc04d053f259`へpinし、PostHog Package/config/captureを除去済み。契約や上限を推測せず、Mixpanel accountのFeature Flags/Experiments entitlement・MEU allowance・project regionは公式account readback後にのみ有効化する。
 
 ### 現行build 818のAs-Is
 
 | 領域 | 実装済み | 未完/問題 |
 |---|---|---|
 | 初期化・送信 | `AppDelegate.swift`で`AnalyticsManager.configure()`、`AnalyticsManager.swift`でMixpanelを初期化。`track`はcontextを付けてMixpanelへ送り、PostHog設定時は同じeventも送る | 本番Mixpanelへのtest/live event受信、project region、安定anonymous IDからaccount IDへの移行、logout reset、offline再送/重複はservice側readbackしていない |
-| 画面 | `OnboardingFlowView.swift`、`FeedRootView.swift`の一部に`screen_viewed`。初回affirmation、onboarding進行、通知許可、paywall、affirmation操作のeventがある | 画面inventoryとのcoverage照合が未完。全画面の到達・戻る・dismiss、screen instance重複抑止、滞在時間、次画面へ進まなかった率の契約が完成していない |
+| 画面 | 18個の`AnalyticsScreenID`をOnboarding/Feed/Settings/Paywallのproduction callerへ対応付け済み。`screen_viewed`と明示遷移時の`screen_exited`、onboarding step、paywall entryをsourceで確認 | Mixpanel service側の受信・全実画面coverage・実ユーザーの重複率は未確認。現行onboardingはlinearで戻る操作がなく、`onboarding_step_back`はenum定義のみでcallerがない |
 | 二重送信 | `AnalyticsManager.track`のPostHog conditional send | `PlanSelectionStepView.swift`は直接PostHog captureし、paywall view時に`paywall_plan_selection_viewed`相当を複数経路から呼ぶ。画面再描画を含め重複の実測が必要 |
 | 購入 | `PurchaseObservationLedger`がtransaction IDの観測をローカルdedup。trialとpurchase eventを分け、`displayed_price`には`amount_source=store_product_quote_not_settled_revenue`を付ける | 表示価格はApple/RevenueCatで決済済みの純収益ではない。restore完了eventがなく、transaction callback・renewal/refund/proceedsをprovider実績と統合していない |
 | Open | 現行`aniccaai.com/open/`は会社指標、ASCのstore discovery/downloads、RevenueCat等の集計を読む | iOSのscreen funnel/離脱/cohort/experimentをMixpanelから表示していない |
@@ -105,16 +105,43 @@ Railway公式readbackで本番APIは `Daisuke134/anicca-products` / `apps/api`�
 
 **固定SDKのローカル挙動（Mixpanel service receiptとは別）:** `Package.resolved`はMixpanel Swift 7.1.0 / revision `38e63de7d71a2b6787bbd190ef8fcc04d053f259`を固定する。公式sourceの[`Track.swift`](https://github.com/mixpanel/mixpanel-swift/blob/38e63de7d71a2b6787bbd190ef8fcc04d053f259/Sources/Track.swift#L84-L89)はSDK identityから`distinct_id`と利用可能なanonymous/user IDをpayloadへ設定し、[`SessionMetadata.swift`](https://github.com/mixpanel/mixpanel-swift/blob/38e63de7d71a2b6787bbd190ef8fcc04d053f259/Sources/SessionMetadata.swift#L33-L42)はevent ID・session ID・sequence metadataを生成する。`Track.swift`はpayloadをflush前にローカル永続化し、[`MixpanelInstance.swift`](https://github.com/mixpanel/mixpanel-swift/blob/38e63de7d71a2b6787bbd190ef8fcc04d053f259/Sources/MixpanelInstance.swift#L1399-L1410)はflush結果が`sent`または`dropped`ならqueueから除去し、`failed`なら保持する。これは固定SDKのclient-side実装根拠であり、Mixpanelがeventを受理した証拠、service-side重複0、実ユーザーIDの安定性を証明しない。test identity・event/property・時刻・releaseのservice readbackは未完了。
 
+### 現行AnalyticsScreenIDとproduction caller
+
+次表はsource上の配線inventoryであり、Mixpanel受信・実ユーザーcoverageのreadbackではない。中央の`trackScreenViewed`はscreen entryと前screenの明示的exitを送り、AppDelegateのbackground hookはcurrent visitをclearしてOS終了を`screen_exited`と誤認させない。
+
+| 画面ID | production caller | source上のevent |
+|---|---|---|
+| `onboarding.welcome` | `OnboardingFlowView.recordStepView` → `AnalyticsScreenID.onboarding(.welcome)` | `screen_viewed`, `onboarding_step_viewed` |
+| `onboarding.goal` | `OnboardingFlowView.recordStepView` → `.goal` | `screen_viewed`, `onboarding_step_viewed` |
+| `onboarding.pain_points` | `OnboardingFlowView.recordStepView` → `.painPoints` | `screen_viewed`, `onboarding_step_viewed` |
+| `onboarding.struggle_frequency` | `OnboardingFlowView.recordStepView` → `.struggleFreq` | `screen_viewed`, `onboarding_step_viewed` |
+| `onboarding.reminder_schedule` | `OnboardingFlowView.recordStepView` → `.nudgeTimes` | `screen_viewed`, `onboarding_step_viewed` |
+| `onboarding.processing` | `OnboardingFlowView.recordStepView` → `.processing` | `screen_viewed`, `onboarding_step_viewed` |
+| `onboarding.first_affirmation` | `OnboardingFlowView.recordStepView` → `.planReveal` | `screen_viewed`, `onboarding_step_viewed` |
+| `onboarding.comparison` | `OnboardingFlowView.recordStepView` → `.comparison` | `screen_viewed`, `onboarding_step_viewed` |
+| `onboarding.notifications` | `OnboardingFlowView.recordStepView` → `.notifications` | `screen_viewed`, `onboarding_step_viewed` |
+| `paywall` | `PaywallFlowContainer.analyticsScreen`; active paywall return from retention | `screen_viewed`, `paywall_shown` |
+| `paywall.retention_offer` | `RetentionOfferSheet.analyticsScreen` | `screen_viewed` |
+| `feed` | `FeedRootView.analyticsScreen` | `screen_viewed` |
+| `feed.collections` | `FeedRootView.showCollections` change | `screen_viewed` |
+| `feed.saved` | `LikedQuotesView.analyticsScreen` | `screen_viewed` |
+| `feed.reminders` | `NotificationsSettingsView.analyticsScreen` | `screen_viewed` |
+| `feed.themes` | `ThemePickerView.analyticsScreen` | `screen_viewed` |
+| `feed.settings` | `SettingsSheet.analyticsScreen` | `screen_viewed` |
+| `settings.subscription` | `SettingsSheet` subscription navigation destination | `screen_viewed` |
+
+`onboarding_step_back`はevent enumにあるが、現行linear onboardingには戻るbutton/gestureもemitting callerもない。計測のためだけに戻るUIを増やさず、back操作が製品に追加された時点でsource contractとtestを追加する。`screen_exited`は明示的に画面を移る時だけ発火し、screen viewから30分以内に定義済みnext screenへ進まない割合をdrop-offとして推定する。OS killやbackgroundは画面終了として送らない。
+
 ### To-Beイベント契約と分析方法
 
 | 問いたいこと | 計測契約 | Mixpanelで見るもの |
 |---|---|---|
 | どの画面で止まるか | `screen_viewed`へ`screen_id`,`screen_instance_id`,`flow_id`,`flow_version`,`session_id`,`app_version`,`app_build`,`locale`,`storefront/country`。明示的な画面遷移時だけ`screen_exited`と`next_screen_id`,`observed_duration_ms`を送る | screen viewから定義済みnext screenへ30分以内に進まないunique user率。分母=そのscreenに到達したunique user、母集団/cohort/観測窓を表示。強制終了瞬間の完全捕捉とは言わない |
-| 初回価値へ届くか | `onboarding_started`,`onboarding_step_viewed`,`onboarding_step_completed`,`onboarding_step_back`,`first_affirmation_viewed`,`onboarding_completed`。開始からの経過とstep順を保持 | start→各step→最初のaffirmation→完了のconversion、最大drop-off、first valueまでの時間 |
-| affirmationが役立つか | `affirmation_viewed`,`affirmation_liked`,`affirmation_unliked`,`affirmation_shared`,`affirmation_saved`。`quote_id`,`category_id`,`recommendation_version`,`source`のみ | 初回価値後の保存/再閲覧/like率、category別の成熟cohort再訪。本文全文は送らない |
-| 通知が戻りを作るか | `notification_permission_requested/result`,`notification_scheduled`,`notification_received`（app側で観測できる時のみ）,`notification_opened`,`notification_destination_resolved`。`notification_id`,`quote_id`,`permission`,`free_or_pro`,`schedule_source` | 許可・予定・端末受信観測・開封・目的画面到達の各率を分離。APNs受理を端末配達と呼ばない |
-| Paywall/課金 | `paywall_viewed`,`paywall_dismissed`,`product_selected`,`purchase_started`,`purchase_result`,`trial_started`,`restore_started/result`。`product_id`,`storefront`,`currency`,`eligibility`,`offering_id`,`transaction_id`を必要最小限で保持 | paywall→商品選択→購入/無料継続/restoreのファネル。transactionはApple/RevenueCat receiptと照合し、displayed priceを収益へ足さない |
-| 変更が効いたか | `experiment_exposure`をvariant表示前後の実表示一度だけ送る。`experiment_id`,`variant`,`assignment_version`,`assignment_source` | Mixpanel Experimentでactivation/retention/paid conversionの主指標とcrash/refund/notification guardrailを比較。仮説・baseline・必要人数・期間・停止規則を開始前に固定 |
+| 初回価値へ届くか | `onboarding_started`,`onboarding_step_viewed`,`onboarding_step_completed`,`first_affirmation_viewed`,`onboarding_completed`。開始からの経過とstep順を保持。`onboarding_step_back`はback affordanceがあるversionでだけ計測する | start→各step→最初のaffirmation→完了のconversion、最大drop-off、first valueまでの時間 |
+| affirmationが役立つか | `first_affirmation_viewed`,`affirmation_viewed`,`affirmation_liked`,`affirmation_unliked`,`affirmation_shared`。現UIではfavorite toggleがLikedQuotesへ保存するため、like/unlikeを保存操作にも使い、同じtapに`affirmation_saved`を重ねない。`quote_id`,`category`,`source`のみ | 初回価値後の保存/再閲覧/like率、category別の成熟cohort再訪。本文全文は送らない |
+| 通知が戻りを作るか | 現iOS callerは`notification_permission_requested/result`,`notification_registration_result`,`notification_received`（foreground観測のみ）,`notification_opened`,`notification_destination_resolved`を送る。iOSに`notification_scheduled`/`nudge_scheduled`のcallerはないため、server owner/sourceが確認されるまで予定済みとして数えない。To-Beでは`notification_id`,`quote_id`,`permission`,`flow_id`を付け、既存propertyのcoverageはfocused testで確認する | 許可・token登録・foreground受信観測・開封・目的画面到達を分離。APNs受理を端末配達やserver scheduleと呼ばない |
+| Paywall/課金 | candidate paywallのscreen entryは`screen_viewed`と`paywall_shown`。旧`PlanSelectionStepView`は`paywall_plan_selection_viewed`を含むが、current `PaywallFlowContainer`のactive entryとは分ける。無料閉じは`onboarding_paywall_dismissed_free`、画面遷移は`screen_exited`。purchase/trial/restoreは`product_selected`,`purchase_started/result`,`trial_started`,`restore_started/result`。`flow_id`は付与済み。`transaction_id`はclient analytics payloadへ送らない | paywall→商品選択→購入/無料継続/restoreのファネル。transaction observationはlocal dedupし、settled revenueはApple/RevenueCat receiptで照合する。displayed priceを収益へ足さない |
+| 変更が効いたか | `experiment_exposure`はvariant割付・実表示を結ぶcallerができた場合に一度だけ送り、`experiment_id`,`variant`,`assignment_version`,`assignment_source`を付ける。現sourceにemitting callerはなく、account entitlementも未確認 | 稼働experimentが存在しない間はresultを表示しない。Mixpanel Experimentでactivation/retention/paid conversionとcrash/refund/notification guardrailを比較する場合、仮説・baseline・必要人数・期間・停止規則を開始前に固定 |
 | どの入口が効いたか | providerが観測した場合のみ`campaign_id`,`content_id`,`source`,`medium`。不明ならnull＋reason | source別のinstall→activation/paywall/paid。ただしApple privacy thresholdやATTで識別不能な流入を推測で埋めない |
 
 全event共通で`event_id`,`event_timestamp`,`app_version`,`app_build`,`flow_version`,`locale`,`session_id`,`distinct_id`を正規化する。匿名IDはSDKが維持し、認証IDが存在する場合だけ公式のidentify/reset契約に沿って接続する。email・通知本文・affirmation自由入力・token・個人単位データは送らない。画面遷移の連続発火、background/resume、同じ購入callback再送、offline再送を隔離fixtureで検証し、同一event/transaction重複0をMixpanel側で確認する。
