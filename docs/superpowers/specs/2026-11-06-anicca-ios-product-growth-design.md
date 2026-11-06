@@ -207,3 +207,9 @@ iOS 26.5 / Maestro 2.8.0では、通知センターの合成touchは文言を表
 動画・JUnit・xcresult・provider JSONはprivate永続path `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106` に置く。`anicca-197-product-demo.mp4` は初回全体、`anicca-197-maestro-purchases.mp4` は購入キャンセル/復元、`anicca-197-maestro-japanese.mp4` は日本語、`anicca-197-notifications-verified.mp4` は実OSカード→アプリ本文/保存である。通知録画のcold前PIDなし、cold後とwarm後のPID一致を `notification-video-receipt.json` へ記録する。通知許可をリセットするclearState試験の後は許可済み表示を再確認してから配送する。
 
 未確認の境界は分析サービス側event受信、実端末APNs配送、実購入/有料restore成功。StoreKitキャンセル・empty restore・Simulator配送をそれらの成功へ読み替えない。現在価格は米国storefrontで月$14.99・年$59.99・買い切り$59.99、trialなし、soft close可能を確認する。今回価格変更は行わない。提出状態と後続TODOは統合SSOTを参照する。
+
+### 初回App Review提出の公式照合
+
+App=`6755129214` / bundle=`ai.anicca.app.ios` / version=`1.9.7` / build=`816`、build ID=`41ac019d-6fbe-489a-8382-40a62d1fd9c9`。Xcode CloudはArchiveが成功し、後段のTestFlight外部テスト審査への自動送信だけが `Please try again later.` で失敗する。Cloud全体を成功と呼ばず、run→公式buildの関連付けでVALIDを確認し、再ビルドは起動しない。
+
+本番App Reviewへ既存VALID buildをattachし、doctor errors0/blocking0とfresh read-onlyの対象照合を経て提出する。submission ID=`cb6fa5a3-c350-482d-9ca7-369be6785249`、submittedDate=`2026-11-06T06:33:40.507Z`。`asc status` とversion GETで **WAITING_FOR_REVIEW**、version/build/submission一致を確認する。承認と公開は未確認で、審査待ちを公開完了へ読み替えない。成果manifestは [validation](../evidence/anicca-ios-1.9.7-validation.json)。通知動画の視聴用は `anicca-197-notification-demo.mp4`（録画開始時の準備待ちを除いたもの）、無編集元録画は保持する。

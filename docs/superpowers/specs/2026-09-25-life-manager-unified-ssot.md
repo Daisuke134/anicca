@@ -15,7 +15,7 @@
 | G2 | 修正/Simulator検証済み・実APNs未確認 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | 連続/逆方向swipe、cold/warm/本文のみ通知、実設定/配信境界の証拠 |
 | G3 | 検証済み | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
 | G4 | 実装済み・サービス受信未確認 | 全主要画面と価値/課金/通知event、正しい価格/通貨/receipt | サービス側受信、同一ID、二重発火0、不明価格やrestoreを売上化しない |
-| G5 | 実行中 | Maestro E2E動画・実製品提示・review/CI/main・署名build・審査提出 | 同一SHAのMP4/結果、必要なSandbox/APNs証拠、公式WAITING_FOR_REVIEW。承認/公開は別追跡 |
+| G5 | 完了（審査待ち） | Maestro E2E動画・実製品提示・review/CI/main・署名build・審査提出 | mainとruntime/project treeが一致するMP4/結果、StoreKit/通知検証と未確認境界、公式WAITING_FOR_REVIEW。承認/公開は別追跡 |
 | G6 | 後続・未着手 | 全出荷app inventory、国/流入/課金/retentionの欠測修復 | 公式source/期間/分母/coverage、アプリごとの失敗隔離 |
 | G7 | 後続・未着手 | 既存Openへ日次履歴・グラフ・funnel・国/流入/実験表示 | 公開画面とsource鮮度/履歴一致、unknownと0の区別、狭幅確認 |
 | G8 | 後続・未着手 | SNS/記事/quoteの接続、地域別onboarding/paywall/価格/推薦実験 | supported attribution、stable割付/露出、必要人数/成熟期間/guardrail、標本不足は未判定 |
@@ -24,7 +24,7 @@
 
 **旧順→新順:** 旧案は計測全体/ダッシュボードとアプリ初回修正を横断して進める。新順は全体を文書化→Anicca初回G1〜G5→G6〜G10。理由はユーザーが先に実製品を直してMaestro動画を見たいと指定し、最新指示で初回アプリ修正の実行が許可されるため。進行中の他業務loop・配信・審査を中断/重複させない。
 
-**現在cursor:** 初回改善をPR #9272でmain `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`へ統合。CI15件PASS、fresh review重大問題なし。通常Release 1.9.7/817のnative fixture群・package選択22件・Python21件・UIKit6件・Maestro13/11/12/15/16/18/通知14をPASSし、初回/購入キャンセル/日本語/通知の実製品動画を保存する。通知は実OSカードのnative AX操作とMaestro本文/保存assertを併用、cold/warm PIDと同ID別本文を確認する。配送はSimulator injectionであり実APNsと区別する。現在はmain自動Xcode Cloud run `ec24cda3-c88e-4b67-9a5c-091593a35f7f` build816の署名/処理→ASC 1.9.7へattach→審査提出→公式WAITING_FOR_REVIEW照合。動画/source runtime tree一致を確認済み。ASC draft/7locale notes照合済み。Mixpanel設定済み、PostHog key/hostなし。G4サービス側受信・実APNs・実購入成功は未確認のまま残す。G6以降は起動しない。primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、証拠branch=`docs/anicca-ios-release-evidence-20261106`。Muse/Grok等はこのcursorと詳細specを参照する。
+**現在cursor:** 初回改善をPR #9272でmain `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`へ統合。CI15件・fresh review・native/package22/Python21/UIKit6・Maestro13/11/12/15/16/18/通知14をPASSし、初回/StoreKitキャンセル/日本語/通知の実製品動画を保存する。mainと検証版のruntime/project/CI tree一致を確認する。Xcode Cloud run `ec24cda3-c88e-4b67-9a5c-091593a35f7f` はArchive成功、後段TestFlight beta審査自動送信だけ失敗するが、公式build `41ac019d-6fbe-489a-8382-40a62d1fd9c9` は1.9.7/816・VALID。重複buildを作らずApp Reviewへ提出し、submission `cb6fa5a3-c350-482d-9ca7-369be6785249` とversion `224f1d6d-e7b4-4dc7-9258-111e67de7363` の **WAITING_FOR_REVIEW** を公式APIで照合する。現在の次の外部eventはApple審査結果であり、承認/公開済みとは扱わない。G4サービス受信・実端末APNs・実購入成功は未確認。後続G6以降とloopは起動しない。一次証拠manifestは `../evidence/anicca-ios-1.9.7-validation.json`、動画/JUnit/provider JSONは `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106`。primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、証拠branch=`docs/anicca-ios-release-evidence-20261106`。Muse/Grok等はこのcursorと詳細specを参照する。
 
 
 進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。
