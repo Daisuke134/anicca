@@ -6,7 +6,7 @@
 
 **詳細仕様:** [Anicca iOS Product Growth](2026-11-06-anicca-ios-product-growth-design.md)。**実装手順:** [Implementation Plan](../plans/2026-11-06-anicca-ios-product-growth.md)。**唯一の順序/状態正本:** この節。詳細文書・実行checklist・会話はこの節を参照する。
 
-**現在のリリース境界:** 1.9.8/build 818の審査提出は取り下げ済み。G1〜G4とAniccaの計測をOpenへ出すG4.1が実証されるまで再提出しない。G5は「提出済み」ではなく、全ゲートを通過した後に一度だけ提出する完了ゲート。提出禁止はこの製品specの恒久ルールとする。
+**現在のリリース境界:** 1.9.8/build 818の審査提出は取り下げ済み。G1〜G4とAniccaの計測をOpenへ出すG4.1が実証されるまで再提出しない。G5は全ゲート通過後に証拠一式をユーザーへ提示し、明示承認を受けてから一度だけ提出する完了ゲート。承認前は提出・本番公開・main統合を行わない。
 
 | ID | 状態 | 実行順・成果 | 完了条件 |
 |---|---|---|---|
@@ -29,7 +29,7 @@
 
 **現在cursor:** G2の未確認境界（merge sourceと同じ候補buildでの画面確認、実APNs、free/Pro設定）→G4のMixpanel一本化・実event receipt/property/identity/dedup検証→G4.1のOpen集計/readback。これらとG1/G3の完了証拠を一つのrelease SHAへ結び、全画面Maestro動画をユーザーへ提示してからG5へ進む。
 
-**提出禁止の完了条件:** ①合意済みの全画面とUI動作がscreen inventoryで網羅され、画面間遷移・離脱計算の分母/観測窓が定義済み、②Mixpanelだけに正しいID/event/propertyが届き、主要event受信・二重発火0・purchase/trial/restore区分をサービス側readback、③Aniccaのfunnel/retention/課金を既存Openで日次source・coverage・分母つき表示しlive公開画面をreadback、④実装candidateと同じbuildの全画面Maestro E2Eと再生可能な動画を提示、⑤実端末通知/購入権限など各受入項目を証明、⑥ASC metadata/対象IAPを再照合。どれか一つでも未確認・欠測なら再提出しない。screen unloadの瞬間を観測できると偽らず、次のscreenへ観測窓内に進まない割合を離脱と定義する。
+**提出禁止の完了条件:** ①合意済みの全画面とUI動作がscreen inventoryで網羅され、画面間遷移・離脱計算の分母/観測窓が定義済み、②Mixpanelだけに正しいID/event/propertyが届き、主要event受信・二重発火0・purchase/trial/restore区分をサービス側readback、③Aniccaのfunnel/retention/課金を既存Openで日次source・coverage・分母つき表示しlive公開画面をreadback、④実装candidateと同じbuildの全画面Maestro E2Eと再生可能な動画を提示、⑤実端末通知/購入権限など各受入項目を証明、⑥ASC metadata/対象IAPを再照合。どれか一つでも未確認・欠測なら再提出しない。⑦証拠一式をユーザーへ提示し、明示承認を受けてから提出する。承認前のApp Store提出、本番公開、main統合はしない。screen unloadの瞬間を観測できると偽らず、次のscreenへ観測窓内に進まない割合を離脱と定義する。
 
 **動画:** `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-initial-UX-2026-11-06.mp4`（141秒、1206×2622）と`/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-notification-2026-11-06.mp4`（78秒、1206×2622）。Simulator実画面・H.264。Postizの「Daily Affirmation App - Anicca」YouTube連携から限定公開で投稿し、両方`PUBLISHED`、`type=unlisted`とYouTube `releaseURL`をreadback。初回体験: <https://www.youtube.com/watch?v=88N3zsKZUJM>。通知: <https://www.youtube.com/watch?v=J005BFtO88U>。candidate build 817録画であることを動画説明へ明記。
 
