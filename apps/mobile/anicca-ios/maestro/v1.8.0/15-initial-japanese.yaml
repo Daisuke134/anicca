@@ -1,0 +1,30 @@
+appId: ai.anicca.app.ios
+name: Japanese value-first journey and saved affirmation
+---
+- clearState
+- clearKeychain
+- launchApp:
+    arguments:
+      AppleLanguages: "(ja)"
+      AppleLocale: "ja_JP"
+- tapOn:
+    text: "Cancel|キャンセル|Not Now"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: onboarding-goal-continue
+    timeout: 60000
+- assertVisible: "今、どんな言葉がほしいですか？"
+- takeScreenshot: japanese-first-goal
+- runFlow: ./_onboarding_to_paywall.yaml
+- takeScreenshot: japanese-paywall
+- tapOn:
+    id: paywall-close-button
+- extendedWaitUntil:
+    visible:
+      id: feed-saved
+    timeout: 15000
+- tapOn:
+    id: feed-saved
+- assertVisible: "私は、愛を受け取り、愛を与える存在です。"
+- takeScreenshot: japanese-saved-affirmation

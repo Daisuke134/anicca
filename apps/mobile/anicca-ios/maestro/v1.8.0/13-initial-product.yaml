@@ -54,7 +54,7 @@ name: Value-first onboarding, continuous feed, saved words and reminders
 - takeScreenshot: "initial-real-reminder-schedule"
 - tapOn:
     id: "reminder-enable-notifications"
-- tapOn: "Allow"
+- tapOn: "^(Allow|許可)$"
 - assertVisible: "Notifications allowed"
 - tapOn: "Close"
 - tapOn:

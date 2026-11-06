@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UserNotifications
 import Combine
 import RevenueCat
 import RevenueCatUI
@@ -198,6 +199,7 @@ struct NotificationsSettingsView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var notificationsAllowed = false
+    @State private var isUpdatingPermission = false
 
     private var slots: [String] { ReminderSchedule.slots(isPro: appState.subscriptionInfo.isEntitled) }
 
@@ -215,17 +217,24 @@ struct NotificationsSettingsView: View {
                 Text(String(localized: notificationsAllowed ? "growth_notifications_on" : "growth_notifications_off"))
                     .accessibilityIdentifier("reminder-permission-status")
                 Button(String(localized: "growth_notification_settings")) {
+                    guard !isUpdatingPermission else { return }
+                    isUpdatingPermission = true
                     Task { @MainActor in
-                        if !notificationsAllowed {
-                            notificationsAllowed = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
-                            if notificationsAllowed {
-                                UIApplication.shared.registerForRemoteNotifications()
-                                return
-                            }
+                        defer { isUpdatingPermission = false }
+                        let settings = await UNUserNotificationCenter.current().notificationSettings()
+                        if settings.authorizationStatus == .notDetermined {
+                            _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
+                            notificationsAllowed = await NotificationScheduler.shared.isAuthorizedForAlerts()
+                            AnalyticsManager.shared.track(.notificationPermissionResult, properties: ["source": "settings", "result": notificationsAllowed ? "allowed" : "denied"])
+                            if notificationsAllowed { UIApplication.shared.registerForRemoteNotifications() }
+                            // A permission choice finishes here. Opening Settings is
+                            // a separate, explicit action after permission is settled.
+                            return
                         }
                         if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                     }
                 }
+                .disabled(isUpdatingPermission)
                 .accessibilityIdentifier("reminder-enable-notifications")
             } footer: {
                 Text(String(localized: "growth_reminder_explanation"))
