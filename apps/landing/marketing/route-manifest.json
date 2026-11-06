@@ -50,7 +50,7 @@
       "source": "pages/maritime-en.html",
       "public_route": "/maritime",
       "export_path": "maritime.html",
-      "sha256": "ff718ea0d785e39f7012ff0a6a63cc19ba1af7d222171568183f52f292947383"
+      "sha256": "b0b07e5d462a88d772c8114315fb7cdba46acd997bf0bd9b245a4e43ac784f35"
     },
     {
       "source": "assets/styles.css",
