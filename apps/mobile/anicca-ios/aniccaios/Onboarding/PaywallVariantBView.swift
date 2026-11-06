@@ -439,14 +439,12 @@ struct PaywallVariantBView: View {
             do {
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
+                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)
                     AnalyticsManager.shared.track(.onboardingPaywallPurchased)
-                    let entitlement = result.customerInfo.entitlements[AppConfig.revenueCatEntitlementId]
-                    if entitlement?.isActive == true, entitlement?.periodType == .trial {
-                        AnalyticsManager.shared.trackTrialStarted(productId: package.storeProduct.productIdentifier)
-                    }
                     isPurchasing = false
                     onPurchaseSuccess(result.customerInfo)
                 } else {
+                    AnalyticsManager.shared.track(.purchaseCancelled, properties: ["product_id": package.storeProduct.productIdentifier])
                     isPurchasing = false
                     if !hasShownRetention {
                         hasShownRetention = true
@@ -457,6 +455,7 @@ struct PaywallVariantBView: View {
                 isPurchasing = false
                 if let rcError = error as? RevenueCat.ErrorCode,
                    rcError == .purchaseCancelledError {
+                    AnalyticsManager.shared.track(.purchaseCancelled, properties: ["product_id": package.storeProduct.productIdentifier])
                     if !hasShownRetention {
                         hasShownRetention = true
                         showRetention = true

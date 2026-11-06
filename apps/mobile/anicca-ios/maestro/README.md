@@ -158,3 +158,7 @@ xcrun simctl install booted path/to/aniccaios.app
 - [Maestro YAML Reference](https://maestro.mobile.dev/reference)
 - [Maestro GitHub](https://github.com/mobile-dev-inc/maestro)
 
+
+## Initial product polish coverage
+
+`v1.8.0/13-initial-product.yaml` covers the value-first journey, soft paywall close, 25 forward swipes, saved affirmations, the actual free notification schedule, themes and relaunch. `v1.8.0/14-notification-message.yaml` expects a notification already delivered by `simctl push`; run it separately for a terminated and a running app with the matching `MESSAGE` environment value. Simulator injection verifies routing, not real APNs delivery. Keep the MP4, command output, source SHA and simulator ID together.

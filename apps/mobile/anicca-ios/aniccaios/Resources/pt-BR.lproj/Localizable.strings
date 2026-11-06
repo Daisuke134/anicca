@@ -1332,3 +1332,45 @@
 
 "billing_issue_title" = "Problema no pagamento";
 "billing_issue_action" = "Toque para atualizar a forma de pagamento";
+
+// Initial affirmation experience
+"growth_goal_title" = "Do que você gostaria de ter mais?";
+"growth_goal_subtitle" = "Escolha o que faz sentido hoje. Vamos encontrar palavras para acompanhar você.";
+"growth_goal_self_love" = "Amor-próprio";
+"growth_goal_calm" = "Calma";
+"growth_goal_confidence" = "Confiança";
+"growth_goal_letting_go" = "Desapego";
+"growth_find_words" = "Encontrar minhas palavras";
+"growth_first_affirmation" = "SUA PRIMEIRA AFIRMAÇÃO";
+"growth_first_subtitle" = "Respire. Deixe que estas palavras sejam suficientes por agora.";
+"growth_keep_close" = "Guardar estas palavras";
+"growth_saved" = "Salvo";
+"growth_daily_moment" = "Criar um momento diário";
+"growth_maybe_later" = "Mais tarde";
+
+// Affirmation collections
+"growth_category_self_love" = "Amor-próprio";
+"growth_category_calm" = "Calma";
+"growth_category_confidence" = "Confiança";
+"growth_category_letting_go" = "Desapego";
+"growth_category_growth" = "Crescimento";
+"growth_category_gratitude" = "Gratidão";
+"growth_category_resilience" = "Resiliência";
+"growth_category_presence" = "Presença";
+"growth_category_connection" = "Conexão";
+"growth_category_hope" = "Esperança";
+"growth_category_rest" = "Descanso";
+"growth_category_boundaries" = "Limites";
+"growth_category_general" = "Um momento para você";
+"growth_category_personalized" = "Para você";
+"growth_daily" = "Hoje";
+"growth_collections" = "Coleções";
+
+// Actual remote reminder schedule
+"growth_reminder_title" = "Um pouco de carinho, na hora certa.";
+"growth_reminder_explanation" = "Horários do seu fuso. As configurações e a conexão podem afetar a entrega.";
+"growth_reminder_free_schedule" = "Grátis: %@";
+"growth_reminder_pro_schedule" = "Pro: %@";
+"growth_notifications_on" = "Notificações permitidas";
+"growth_notifications_off" = "Notificações desativadas ou ainda não permitidas";
+"growth_notification_settings" = "Gerenciar permissões de notificação";
