@@ -1,0 +1,1 @@
+../../skills/earn/x402-sell/funding-rates.mjs

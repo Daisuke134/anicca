@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/api/index" },
+    { "source": "/healthz", "destination": "/api/index?__route=/healthz" },
+    { "source": "/funding-rates", "destination": "/api/index?__route=/funding-rates" },
+    { "source": "/.well-known/x402.json", "destination": "/api/index?__route=/.well-known/x402.json" },
+    { "source": "/llms.txt", "destination": "/api/index?__route=/llms.txt" }
+  ]
+}

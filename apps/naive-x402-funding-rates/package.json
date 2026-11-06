@@ -1,0 +1,19 @@
+{
+  "name": "naive-x402-funding-rates",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "test": "node --test test/server.test.mjs"
+  },
+  "dependencies": {
+    "@payai/facilitator": "2.4.6",
+    "@x402/core": "2.30.0",
+    "@x402/evm": "2.30.0",
+    "@x402/extensions": "2.30.0",
+    "@x402/hono": "2.30.0",
+    "hono": "4.13.16"
+  }
+}

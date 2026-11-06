@@ -26769,11 +26769,11 @@ flowchart TD
 
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
 |---|---|---|---|
-| LC58 | 未・並行可 / LC01/02 | `Naïve/YC現行公式条件と既存参加receipt`：参加/SDK/事前開発/再利用/提出条件を確定 | 公式原文と参加状態。今回YC event本文は取得不十分、賞品はTBDなので旧YC interview記載を確定扱いしない |
-| LC59 | 未・並行可 / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | 実org/Agent owner/許可tools/期間cap/task capと本番非接続をGETで確認。勝手なtop-upなし |
-| LC60 | 未 / LC59 + 共通playbook | `NAIVE + 分離した実provider job`：同じ事業価値の一業務をNaïveで実行 | native events/real artifact/receiptを得る。dummy response/本番API丸投げはしない |
-| LC61 | 未 / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 一般提供の現状・Naïve実績・Maritime本番実績・売上/費用/未達を分ける |
-| LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。winner/YC採択を保証しない。月次入金待ちと独立 |
+| LC58 | 完了（Dais確認・公式brief） / LC01/02 | `Naïve hackathonの参加条件と既存承認を確定` | Daisが参加承認済みと明示。公式briefのSDK・ライブdemo条件を確認。参加は確認済み、勝利やYC採択は未確定。
+| LC59 | 進行中 / LC58 | `Naïve公式Agent/SDKで大会用の一つの実行者を確定` | Naïve org API keyは公式SDKで13 scopesをreadback後に交換し、credential SSOTへ保存。fullstack App `life-manager-funding-rates` はactive。未完: Managerとして使うAgent/ComputerとAppの接続・実行予算・一回の実jobは未確認。
+| LC60 | 進行中 / LC59 | `Naïve上で一つの実収益業務をagentに実行させる` | 既存funding-ratesをBase x402で$0.003/request販売するAppは公開中。`/healthz`=200、manifest=200、未払いrequest=402、invalid query=400。これはHTTP APIの疎通でありAgentが自律運転した証拠ではない。Agentのsignup/publish/buyer/order/saleは0。安定URLは https://life-manager-funding-rates-s5n2hqva.vercel.app 。root `/` は `FUNCTION_INVOCATION_FAILED`=500の残件。
+| LC61 | 未 / LC60 | `独立buyer・外部settlement・費用・利益を実証しdemoを完成` | buyer/paid request/settlement/収益はすべて0。独立buyerの決済と同じrequestへのHTTP 200、有料結果、PayAI/Naïve/compute等の費用を照合してから2–4分demoを録画する。402 challengeや自己決済を売上に数えない。
+| LC62 | 未 / LC58/61 | `Naïve大会の公式提出先へ成果を提出` | 実提出物と受領receiptを確認する。demo・外部売上・勝利・YC面接/採択は別々に記録する。
 
 #### Maritime大会・YCの事業証拠
 
@@ -26784,6 +26784,6 @@ flowchart TD
 | LC65 | 未 / LC46/64 | `本番project usage/公式analytics`：1,000 distinct real usersの証拠を揃える | 実人・実利用を重複排除。VM/Agent/Naïve demoを人数へ加算しない |
 | LC66 | 未 / LC63/65 | `Maritime主催者の公式判定`：大会成果を申告し審査結果を確認 | 受領/確認/awardを公式readback。creditは現金/SaaS売上ではない |
 
-**現在cursor:** LC04（sourceと本番配備の対応を公式readbackで棚卸し）→LC05（契約内の必要機能）→LC06（提供の適用範囲）。Naïve担当はLC58、Maritime大会参加の確認はLC63を独立して進められる。顧客課金はLC27以降、外部顧客の有料成果はLC54以降で未完。文書上のLC01–03のみ完了、実装・運用の63項目は未完。優勝・YC採択・外部SaaS売上・利用者の黒字は未達/未確認のまま。
+**現在cursor:** 共通laneはLC04→LC05→LC06。Naïve大会はLC58完了、**LC59が現在cursor**（一つのManager Agent/Computer/App bindingと有限budgetを確定）→LC60（agentによる一つの実job）→LC61（independent buyer・settlement・費用・demo）→LC62（公式提出）。現在のNaïve AppはHTTP seller serviceであり、自律Agentの売上実績ではない。APIのhealth/manifest/402/400は公開確認済み、root `/`=500、buyer/paid request/settlement/売上0。Maritime LC63→LC64→LC65→LC66は別laneで保持する。優勝・YC採択・10K MRRは未達/未確認。
 
 **一次資料の取得証跡:** `docs/research/cloud-market-20261106/single-runtime-sources.json`。以前の市場比較API証跡は同directoryの`public-readbacks.json`に残すが、本商品の一般提供/顧客課金の成功証拠にはしない。現行の「二本番runtime」TODO/N01–N12/M01–M06はこの66項目へ置換し、並行した別の実行キューにしない。
