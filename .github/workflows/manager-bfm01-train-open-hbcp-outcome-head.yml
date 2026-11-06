@@ -75,6 +75,10 @@ jobs:
           print("True learned baseline weights:",len(j["coefficients"]),
                 "no individual raw rows, no clinical claims")
           PY
+      - name: Verify existing Manager Core read-only integration on trained checkpoint
+        env:
+          PYTHONPATH: products/manager
+        run: python -m unittest discover -s products/manager/tests -p 'test_hbcp_readonly_adapter.py' -v
       - name: Commit only deterministic open model JSON to reviewed PR branch
         shell: bash
         run: |
