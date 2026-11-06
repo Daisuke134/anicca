@@ -96,7 +96,8 @@
 - [ ] source acceptance済みmain SHAからXcode Cloudで署名candidateを作り、ASC CLIでbuild/sourceをreadback。Mac Mini SimulatorでMaestroの全screen/flowを実行し、same candidate build/source SHAを含む動画・screenshots・JUnit/logを保存する。動画から各screenの挙動と離脱導線を再生確認する。Xcode UIは開かない。
 - [ ] 動画はYouTube限定公開で、ユーザーへリンクを提出前に提示する。既存UX `https://www.youtube.com/watch?v=88N3zsKZUJM` と通知 `https://www.youtube.com/watch?v=J005BFtO88U` はcandidate build 817なので参考動画としてのみ扱う。
 - [ ] Mixpanel test event receipt、Open live snapshot readback、実端末APNs/通知設定、purchase/trial/paid restore、screen coverageが同じ候補sourceで揃ったことを確認する。App Store IAP metadata/territory/price、privacy、review notesも再照合し、`Anicca Monthly Plan`の`MISSING_METADATA`警告を解消または対象外理由まで明示する。
-- [ ] 全ゲートPASSの後だけASC CLIでversion/buildをvalidateして一度submitし、submission/version/buildの公式readbackが一致することを確認する。`WAITING_FOR_REVIEW`以降のApple判断は別状態。
+- [ ] 証拠一式（Mixpanel受信、Open表示、同一build E2E動画、通知/購入/restore確認、ASC metadata）をユーザーへ提示し、明示承認を得る。承認前はASC submit・本番公開・main統合を行わない。
+- [ ] 明示承認後だけASC CLIでversion/buildをvalidateして一度submitし、submission/version/buildの公式readbackが一致することを確認する。`WAITING_FOR_REVIEW`以降のApple判断は別状態。
 
 ## Task 6: 全アプリ計測とOpen全体（日次履歴・国・流入・課金）（G6/G7）
 

@@ -6,7 +6,7 @@
 
 **順序・TODO・状態の唯一の正本:** [統合SSOTの ANICCA-PRODUCT-GROWTH](2026-09-25-life-manager-unified-ssot.md#anicca-product-growth--ios初回改善から全アプリ継続改善まで)。この文書は詳細な要求・契約、[実装計画](../plans/2026-11-06-anicca-ios-product-growth.md)は実行手順。進捗を別台帳へ二重管理しない。
 
-現在の実行順は**G2残件→G4（Mixpanel一本化・全画面計測）→G4.1（Anicca計測を既存Openへ表示）→G5（同一候補buildの全画面Maestro動画を提示し、その後ASC CLIで提出）**。1.9.8/build 818の審査提出は取り消した。画面別の離脱、Mixpanelの本番受信、Openへの集計、全画面E2Eがすべて同じ候補releaseで実証されるまで再提出しない。この提出禁止ルールはAniccaの本specに適用する。G6/G7の全アプリ計測拡張とG8〜G10の自動改善/他アプリ展開は後続として保持する。
+現在の実行順は**G2残件→G4（Mixpanel一本化・全画面計測）→G4.1（Anicca計測を既存Openへ表示）→G5（同一候補buildの全画面Maestro動画を提示し、証拠承認後にASC CLIで提出）**。1.9.8/build 818の審査提出は取り消した。画面別の離脱、Mixpanelの本番受信、Openへの集計、全画面E2Eがすべて同じ候補releaseで実証されるまで再提出しない。証拠一式をユーザーへ提示し、明示承認を得るまで提出・本番公開・main統合を行わない。この提出禁止ルールはAniccaの本specに適用する。G6/G7の全アプリ計測拡張とG8〜G10の自動改善/他アプリ展開は後続として保持する。
 
 ## 出所と現在の観測
 
@@ -135,8 +135,9 @@ G4/G4.1完了条件は、隔離test eventと同じtest identityでMixpanelにeve
 2. Release相当のsimulator buildでMaestroを動かす。fresh EN/JA、初回flow、soft close、settingsからの再購入、価格/Offering失敗、購入cancel/restore、連続上下swipe、like/保存/テーマ保持、cold/warm notification本文一致を確認する。
 3. 成功した同一runを `xcrun simctl io <UDID> recordVideo` 等の既存録画機能でMP4保存し、Maestro log・screenshots・flow version・device/OS・commit/build・実行結果・動画内の主要時刻を付ける。モック動画や失敗runの編集で成功を装わない。Daisへ再生できるMP4と実画面を提示する。
 4. notification injectionのrouting成功、APNs受付、実機表示/タップは別証拠にする。Maestroだけでフレームの滑らかさや実購入を証明しない。変更した購入権限はSandbox購入/paid restore、APNs経路は実配信で確認し、未検証を明示する。
-5. **提出禁止ゲート:** G1〜G4とG4.1がすべて完了し、Mixpanel service receipt・二重発火0・Openの公開readback・全画面screen inventoryが揃うまで`asc review submissions submit`を呼ばない。候補buildはその同一source SHAで全screen/flow Maestro E2Eを通し、録画をユーザーが見られるYouTube限定公開動画として提出前に提示する。動画build SHAとASC build source SHAを照合する。
-6. その後に限り、正本main由来の署名済みartifact、privacy/metadata/review notesと実商品を照合し、既存ASC CLI経路で一度だけ提出する。`VALID`/upload/CIだけでは終了せず、対象version/build/submissionの公式`WAITING_FOR_REVIEW`を読む。subscription metadata/price/territoryのwarningが残れば、対象商品が正しく審査可能か解消・照合する。
+5. **提出禁止ゲート:** G1〜G4とG4.1がすべて完了し、Mixpanel service receipt・二重発火0・Openの公開readback・全画面screen inventoryが揃うまで`asc review submissions submit`を呼ばない。候補buildはその同一source SHAで全screen/flow Maestro E2Eを通し、録画をユーザーが見られるYouTube限定公開動画として提示する。動画build SHAとASC build source SHAを照合する。
+6. すべての証拠をユーザーへ提示し、**明示承認を得るまでApp Store提出・本番公開・main統合を行わない**。
+7. 承認後に限り、正本main由来の署名済みartifact、privacy/metadata/review notesと実商品を照合し、既存ASC CLI経路で一度だけ提出する。`VALID`/upload/CIだけでは終了せず、対象version/build/submissionの公式`WAITING_FOR_REVIEW`を読む。subscription metadata/price/territoryのwarningが残れば、対象商品が正しく審査可能か解消・照合する。
 7. Appleの承認・公開は提出完了とは別に追う。却下時は指摘と対象buildを取得→原因修正→影響する検証/必要なら再録画→一意な次build→再提出。同じ不明submissionを再送しない。
 
 動画・provider receipt・生ログはGit外のprivate evidence storeへ置く。source/specには秘密を含まないartifact refと結果だけ残す。録画は自分のtest simulatorを対象にし、他人の端末状態・本番account情報を含めない。
