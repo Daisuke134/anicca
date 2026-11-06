@@ -6,12 +6,12 @@
 
 **詳細仕様:** [Anicca iOS Product Growth](2026-11-06-anicca-ios-product-growth-design.md)。**実装手順:** [Implementation Plan](../plans/2026-11-06-anicca-ios-product-growth.md)。**唯一の順序/状態正本:** この節。詳細文書・実行checklist・会話はこの節を参照する。
 
-**今回の実行範囲:** ユーザーの最新指示により、全体spec/plan/画面案sourceの保存・共有に集中する。アプリ変更・Maestro実行・審査提出・dashboard変更・loop起動は未着手。次の実装はG1〜G5、G6〜G10はその後に実行する。後続要求は削除しない。
+**今回の実行範囲:** 全体spec/plan/画面案sourceの共有後、ユーザーが実行開始を指示する。G1〜G5のアプリ変更・Maestro実製品動画・審査提出を進める。G6〜G10のdashboard変更・loop起動は後続として保持し、今回起動しない。
 
 | ID | 状態 | 実行順・成果 | 完了条件 |
 |---|---|---|---|
 | G0 | 完了（仕様共有） | 全体spec・実装計画・画面案を同一branchで共有 | scoped review重大問題なし、commit/push、remote objectと参照linkを確認。アプリ実装/動画/提出は未実行 |
-| G1 | 未着手 | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
+| G1 | 実行中 | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
 | G2 | 未着手 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | 連続/逆方向swipe、cold/warm/本文のみ通知、実設定/配信境界の証拠 |
 | G3 | 未着手 | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
 | G4 | 未着手 | 全主要画面と価値/課金/通知event、正しい価格/通貨/receipt | サービス側受信、同一ID、二重発火0、不明価格やrestoreを売上化しない |
@@ -24,7 +24,7 @@
 
 **旧順→新順:** 旧案は計測全体/ダッシュボードとアプリ初回修正を横断して進める。新順は全体を文書化→Anicca初回G1〜G5→G6〜G10。理由はユーザーが先に実製品を直してMaestro動画を見たいと指定し、最新指示で当面をspec共有に限定するため。進行中の他業務loop・配信・審査を中断/重複させない。
 
-**現在cursor:** G1（次の実装、今回未着手）。G0の共有commit=`9849ad0c6638a3f555b1b9aaf112f06355fde468`、PR=`#9272`。source-boundary、diff-check、文書local link、G1〜G10 coverage、画面sourceの一致、GitHub remote commit/treeのreadbackを確認。独立read-only reviewは重大問題なし、相対pathの基準を追記する。primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、branch=`feat/anicca-ios-initial-polish-20261106`。Muse/Grok等は同じremote specとこのcursorを参照する。
+**現在cursor:** G1の現行caller/保存state・test target確認→回帰RED→native初回体験修正。G0の共有commit=`9849ad0c6638a3f555b1b9aaf112f06355fde468`、PR=`#9272`。source-boundary、diff-check、文書local link、G1〜G10 coverage、画面sourceの一致、GitHub remote commit/treeのreadbackを確認。独立read-only reviewは重大問題なし。primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、branch=`feat/anicca-ios-initial-polish-20261106`。Muse/Grok等は同じremote specとこのcursorを参照する。
 
 
 進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。

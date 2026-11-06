@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- 現在は文書保存・共有のみ。実装/提出/loop起動は今回実行しない。
+- 現在の実行範囲はG1〜G5。実装・Maestro実製品動画・審査提出まで進め、G6以降のloop/dashboardは起動しない。
 - 実装順と状態は統合SSOTの `ANICCA-PRODUCT-GROWTH`、初回G1〜G5、後続G6〜G10。
 - source=`Daisuke134/life-manager`、app=`apps/mobile/anicca-ios`、既存private configとowner/leaseを使用。
 - 最小回帰のRED→GREEN、正本mainから署名build、公式readback。アプリのPackage.swiftはmacOS card生成用でありiOS検証の代替にしない。
