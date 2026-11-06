@@ -1,0 +1,134 @@
+{
+ "api_base": "https://api.maritime.sh",
+ "boundaries_observed": {
+  "agents_created": 0,
+  "agents_deleted": 0,
+  "credentials": "Maritime API key read and used only on the Mac (~/.local/share/anicca/credentials.json, credentials[146]); never copied to the VM or into this file",
+  "desktop_enablement": "none",
+  "frozen_sellers_touched": false,
+  "kyc": "none",
+  "new_charges": 0,
+  "paid_plan_or_billing_switch": "none",
+  "source_boundary_check": "scripts/verify-source-boundary.sh cannot pass on the VM because it hardcodes $HOME/Projects/life-manager-main (Mac canonical path); VM worktree origin is the canonical https://github.com/Daisuke134/life-manager.git and the worktree is a dedicated .worktrees branch from origin/main, matching all other checks. Mismatch recorded here per house rules."
+ },
+ "deployment": {
+  "build_log_tail": "Launching: docker-entrypoint.sh node apps/life-manager/maritime/server.js (workdir=/app) / Port forwarding active. / Gateway is ready. / Deployment successful!",
+  "completed_at": "2026-11-06T17:46:44.021434Z",
+  "deployment_id": "7aeb9555-854b-4161-a7ed-ab0f8dfad861",
+  "endpoint": "POST /api/deploy {agentId, source:'zip', uploadS3Key}",
+  "failure_kind": null,
+  "http": 200,
+  "image_ref": "ghcr.io/maritime-sh/maritime-agent-builds@sha256:1c75309d7e3bae6d9f862fe0e15eb703ccebb0a7395c761005852bf26a907477",
+  "started_at": "2026-11-06T17:39:25.343825Z",
+  "status": "success"
+ },
+ "env_update": {
+  "env_readback": {
+   "LM_RELEASE_SHA": "c0679e2426372e6f1e4967a36722e4ceb7eea11d",
+   "LM_RUNTIME_TENANT_ID": "lm_4e7aeea7-b38d-4959-80aa-060c293c77af",
+   "LM_SOURCE_ARCHIVE_SHA256": "da41bd373156081c484a459382038f2c3836b580125fb51ee3ac24e32634e95a"
+  },
+  "put_lm_release_sha": {
+   "http": 200,
+   "value": "c0679e2426372e6f1e4967a36722e4ceb7eea11d"
+  },
+  "put_lm_source_archive_sha256": {
+   "http": 200,
+   "value": "da41bd373156081c484a459382038f2c3836b580125fb51ee3ac24e32634e95a"
+  },
+  "reason": "the agent's stored env still pointed at the old release (LM_RELEASE_SHA=a0d217d..., LM_SOURCE_ARCHIVE_SHA256=678cafe...) from provision time",
+  "reload_env": {
+   "http": 200,
+   "status": "active"
+  },
+  "restart": {
+   "http": 200,
+   "note": "restart was required because /health reads the server process env captured at container start; after restart the health releaseSha flipped to the current source",
+   "status": "active"
+  }
+ },
+ "evidence": "maritime-m3-image-update",
+ "final_readback": {
+  "framework": "custom",
+  "id": "0ed049f0-c91f-45f2-8901-2684de1a6760",
+  "imageName": "ghcr.io/maritime-sh/maritime-agent-builds@sha256:1c75309d7e3bae6d9f862fe0e15eb703ccebb0a7395c761005852bf26a907477",
+  "invocationCount": 1,
+  "name": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+  "projectId": "533a44fe-b10e-45d9-b5fd-d5e33eea35af",
+  "status": "sleeping (returned to sleep after verification via POST /sleep http 200; wakes on invocation, same pattern as the Stage 1 agent)",
+  "totalComputeSeconds": 391
+ },
+ "invocation_proof": {
+  "chat_invocation": {
+   "endpoint": "POST /api/agents/{id}/chat",
+   "http": 200,
+   "invocation_count_after": 1,
+   "invocation_count_before": 0,
+   "observed_at_utc": "2026-11-06T17:52:51Z",
+   "requested": "Reply with the single word: ready",
+   "response": "Life Managerは定期的に仕事を進め、結果を日次レポートでお知らせします。",
+   "response_note": "the agent answered in its Life Manager persona rather than echoing the requested word; the invocation itself is the proof"
+  },
+  "command": "node /app/apps/life-manager/maritime/runtime-status.js (reads the live server /health and /schedules)",
+  "exec_after_restart": {
+   "execution_id": "68b967258cd9490faa1d26cb3825608e",
+   "exit_code": 0,
+   "health_ok": true,
+   "health_release_sha": "c0679e2426372e6f1e4967a36722e4ceb7eea11d",
+   "relay_binding_hash": "50aa472067bfdd7d3835194c699e173cf9e83b141a1ac042e728be4e2fdf7252",
+   "schedules": [],
+   "status": "completed"
+  },
+  "exec_before_restart": {
+   "execution_id": "ab201c83c8af4d98a61591ff8cf2b067",
+   "exit_code": 0,
+   "health_ok": true,
+   "health_release_sha": "a0d217d0769db2dab68bb8a8a452bfaea916fe9d",
+   "note": "proved the new image runs; releaseSha was still the pre-restart process env",
+   "status": "completed"
+  },
+  "invocation_count_field_note": "exec executions did not move the invocationCount field (it counts chat turns); the chat invocation moved it 0 -> 1. Both proofs are recorded above."
+ },
+ "observed_at_utc": "2026-11-06T17:52:00Z",
+ "shared_sync_a": {
+  "push_commit": "13cc91b3c646acdf2972b5ac1325000b1c280d32",
+  "remote_tip_readback": "git ls-remote origin main = 13cc91b3c646acdf2972b5ac1325000b1c280d32; git show origin/main:knowledge/muse-vm/todo-list-2026-11-06.md md5 = ed2deb5674d5be196ce6426e8932718f; first line = revision 684 header",
+  "repo_path": "knowledge/muse-vm/todo-list-2026-11-06.md",
+  "result": "DONE",
+  "route": "Mac checkout is dirty (unstaged changes), so a fresh worktree was created from origin/main on the Mac, the file was copied in, committed and pushed to main, per the previously proven route",
+  "source_md5_vm": "ed2deb5674d5be196ce6426e8932718f",
+  "task": "push Todo revision 684 (M-2 completion record) to anicca-ops"
+ },
+ "source_archive": {
+  "archive_sha256": "da41bd373156081c484a459382038f2c3836b580125fb51ee3ac24e32634e95a",
+  "builder": "apps/life-manager/maritime/build-context.py (the repo's official secret-free ZIP builder) run against a dedicated worktree from origin/main",
+  "dockerfile_sha256": "f7636a09d86d45c306f975d5552ad6ff7cf48b7c9a001a57769088f97cc45442",
+  "excluded_count": 180,
+  "file_count": 9912,
+  "mac_transfer_sha256_verified": "da41bd373156081c484a459382038f2c3836b580125fb51ee3ac24e32634e95a",
+  "size_bytes": 116144162,
+  "source_ref": "origin/main tip, confirmed identical on VM and Mac checkouts 2026-11-06",
+  "source_sha": "c0679e2426372e6f1e4967a36722e4ceb7eea11d",
+  "unpacked_bytes": 196410883
+ },
+ "target_selection": {
+  "chosen_agent_id": "0ed049f0-c91f-45f2-8901-2684de1a6760",
+  "chosen_agent_name": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+  "end_user_id": "9157aa67-d530-492b-b6b4-c0f7a2b3ec9b",
+  "rationale": [
+   "This is the M-2 provisioned tenant agent. Its status was error solely because its two deployments (a7844c6b at 2026-11-06T15:15:45Z, c30ce878 at 2026-11-06T16:36:53Z) failed in build with 'Error: Source execution could not be prepared.' because no source was attached at end-users-API create time.",
+   "Official OpenAPI (read from the live spec) provides the remediation path for an existing agent: POST /api/upload/zip (validates ZIP, returns s3Key) followed by POST /api/deploy {agentId, source:'zip', uploadS3Key}. The end-users create endpoint is documented as exactly-once/idempotent (returns the existing agent), so re-calling it cannot attach source.",
+   "The Stage 1 working agent (release a0d217d) was left untouched as the verified fallback/proof, avoiding regression risk on the only working VM. No new agent was created (free tier cap maxAgents=3 already reached) and no agent was deleted."
+  ],
+  "tenant_id": "lm_4e7aeea7-b38d-4959-80aa-060c293c77af"
+ },
+ "todo": "Maritime M-3 (tenant image updated to current source)",
+ "upload": {
+  "detected_framework": "custom",
+  "endpoint": "POST /api/upload/zip",
+  "has_dockerfile": true,
+  "http": 200,
+  "note": "upload reference is recorded here as in prior evidence (image-build-source-*.json); the API key itself was used only on the Mac and never left it",
+  "s3_key": "uploads/C1zQxWEpYiXef-UQ4geE-w/ce81f1a4-7163-4f1f-9cfb-b4936765872f.tar.gz"
+ }
+}
