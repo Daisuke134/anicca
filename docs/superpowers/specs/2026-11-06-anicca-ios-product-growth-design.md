@@ -215,3 +215,14 @@ iOS 26.5 / Maestro 2.8.0では、通知センターの合成touchは文言を表
 App=`6755129214` / bundle=`ai.anicca.app.ios` / version=`1.9.7` / build=`816`、build ID=`41ac019d-6fbe-489a-8382-40a62d1fd9c9`。Xcode CloudはArchiveが成功し、後段のTestFlight外部テスト審査への自動送信だけが `Please try again later.` で失敗する。Cloud全体を成功と呼ばず、run→公式buildの関連付けでVALIDを確認し、再ビルドは起動しない。
 
 本番App Reviewへ既存VALID buildをattachし、doctor errors0/blocking0とfresh read-onlyの対象照合を経て提出する。submission ID=`cb6fa5a3-c350-482d-9ca7-369be6785249`、submittedDate=`2026-11-06T06:33:40.507Z`。`asc status` とversion GETで **WAITING_FOR_REVIEW**、version/build/submission一致を確認する。承認と公開は未確認で、審査待ちを公開完了へ読み替えない。成果manifestは [validation](../evidence/anicca-ios-1.9.7-validation.json)。通知動画の視聴用は `anicca-197-notification-demo.mp4`（録画開始時の準備待ちを除いたもの）、無編集元録画は保持する。
+
+
+### 1.9.8通知修正フォローアップ（2026-11-06）
+
+PR #9282（merge SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`）はmainへ統合済み。latest main `a642df1374eda996ed4f3dc4f227d46a38108cc0`のAnicca iOS treeはこのmerge以降変化していない。Mac MiniのiOS 26.5 Simulatorで1.9.8/817を起動し、Maestro 13（初回体験、1/1）と14（通知カードからの起動、本文一致、保存一覧への表示）をPASS。通知試験はSimulatorへの`simctl push`と実OSカードのnative AX操作を使うため、実端末APNs配送の証拠ではない。
+
+実画面の動画は `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-initial-UX-2026-11-06.mp4`（141秒、1206×2622）と `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-notification-2026-11-06.mp4`（78秒、1206×2622）。両方H.264として再生検査済み。
+
+ASC公式readbackでは1.9.7/816が`WAITING_FOR_REVIEW`のまま。1.9.8 version objectは未作成。Xcode Cloud run `98a7613c-898d-4d7c-8bda-62ef850a5403`のArchive由来build 818（`7cfb4f37-680c-447d-873a-7f8eb54a0baf`）は`VALID`/`APP_STORE_ELIGIBLE`。TestFlight外部テスト審査の自動送信だけが`Please try again later.`で失敗し、新しいApp Review提出はない。既存1.9.7提出は変更・取消しない。
+
+**提出cursor:** 先に動画2本をユーザーへ提示する。視聴後にASCで1.9.8 draftを作成しbuild 818をattach、doctor確認後にApp Reviewへ提出して公式`WAITING_FOR_REVIEW`を照合する。
