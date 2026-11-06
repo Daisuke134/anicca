@@ -26584,6 +26584,16 @@ P06-3 (Statsmodels power/SciPy A/A false-positive/SRM), P06-4 (synthetic recogni
 
 **Naïveは大会専用の実稼働環境:** 同じ顧客価値・仕事の契約・playbook・権利のある素材を使い、Naïve公式SDK/managed Agentで限定した業務を本当に実行する。fake応答や本番APIへ転送するだけのSDK飾りはしない。通常顧客のsignup・subscription・本番scheduler・本番secrets/stateはNaïveへ接続しない。大会用environment/job ID/Agent-owned identity/予算/receiptを分け、実際の取引があれば本番と混同せず正しく記録する。利用者にNaïve/Maritimeを選ばせず、同じ注文を両方へ流さず、常設failover/router・第二SaaSを作らない。Naïve由来のharness設定やsnapshotをそのままMaritimeへ移せるとはしない。
 
+### 大会別の公式条件・技術境界（2026-11-06 readback）
+
+- **Naïve hackathon:** [公式brief](https://usenaive.ai/hackathon)は2026-11-07〜08、Naïve SDK必須、実際に動く会社の2〜4分ライブデモ、審査軸を「人の介入なしに会社がどれだけ動くか」としている。公式ページは1位の賞としてYC interview guaranteedと記載するが、これは**面接の保証でありYC採択の保証ではない**。申請はNaïve/YCが審査し、参加は承認制。現在の参加承認receiptは未確認。ページ内にprize detailsがTBDの表示も残るため、面接以外の賞金/credit条件を確定扱いしない。
+- **Naïve SDK:** [Managed Agents docs](https://usenaive.ai/docs)では、Agentはmodel/harness/prompt/tools/skills/computer/budgetを束ねる版管理された設定、Sessionは一回の実行、Eventsは再開可能な実行記録。Computerはfilesystem/shell/任意browserを持つmanaged sandboxで、sleep中はpauseする。Identityはagent persona、email/authorized account/vault等を束ねる。大会のbusiness blueprint/templateは会社の雛形であり、Managed Agentそのものとは別レイヤー。公式docsが記載する機能と本orgでの利用可否・残高は別途live readbackする。
+- **Maritime First 1,000:** [公式terms](https://competition.maritime.sh/terms)は締切を2026-12-01 23:59 Pacific、1,000人のdistinct real usersと実利用を条件にし、Agent/VM/subagent数を利用者数に含めない。bot・重複identity・架空activityは失格対象。条件確認後に到達した最初の3 projectがwinner。参加benefitの$1,000 Maritime creditsは現金売上ではなく、winner向けLLM creditsは「up to $20,000/project」。2・3位や旅行等の詳細は未公表。
+- **Maritime SDK:** [Quickstart](https://maritime.sh/docs/sdk/quickstart)の`provision({ externalId })`は顧客ごとのAgentを同じexternalIdで再利用でき、`chat`でsleep中のAgentをwakeする。providerがprovision/isolation/sleep-wake/billingを担い、API keyはbackendに保持する。公式quickstartでは最初のmachine作成前にcard登録を伴う7-day trial開始が必要とされるため、「現金0」と「決済情報不要」は同義ではない。現在の大会credit/契約で実際にcard不要かは未確認。
+- **共通の自律性表現:** Naïveのbrief自体が人にgoal/limitsを設定させ、審査でどこに人が介入したかを問う。したがって実測が揃うまでは「初回goal/limits設定後、対象業務を追加の都度承認なしで実行」と表現し、本人確認・支払手段・KYC等を要求する外部platformを迂回せず、その条件を明示する。end-to-endで人の手続きが一切不要という主張は未実証。
+
+**大会に勝つための一つの見せ方:** Naïveでは一つの実business jobをAgentが判断→実行→公開/納品→第三者receipt/費用へ結び、実行event・最終URL・人の介入・全費用を2〜4分で見せる。Maritimeでは同じ商品を本番hostし、実人のsignup→初回成功→継続利用→有料conversionを一つのURL/計測経路で増やし、1,000 real usersを公式usageで証明する。前者は短い自律会社の実演、後者は顧客獲得競争であり、Agent/VMを増やすだけではどちらも勝ちにならない。両方の結果・費用・顧客数・receiptは別々に記録する。
+
 **棄却案と最強の論拠:** Naïve本番ならbrowser/identity/budget等のmanaged部品をまとめられる利点がある。しかし既存Maritimeの顧客割当/停止/永続receipt接続を使えること、外部の同種構成があること、Maritime大会の実利用条件に直結することを優先する。二本番基盤なら将来の可用性/移植性を得られる可能性があるが、初回顧客提供の前に二重の契約・秘密管理・運用・不具合診断を増やす。本件の顧客価値を増やす証拠がない。
 
 **best/base/worst:** best＝現在のMaritime利用権と既製部品で一般提供と有料顧客成果まで通る。base＝browser/提供契約の不足を解消する間、Naïve大会実証と本番の独立作業を並行する。worst＝Maritimeの必要機能/契約が要件内で使えず、本番一般提供は未達のまま。この場合は比較表を更新して本番を一つ選び直し、二本番運用で隠さない。**判断が誤る最有力の筋:** Maritimeのbrowser・顧客別identity・許諾/原価の不足が大きく、Naïveの顧客別org/提供契約が実測で全て使える場合。両者を「どちらも本番」のまま放置しない。
@@ -26604,9 +26614,9 @@ P06-3 (Statsmodels power/SciPy A/A false-positive/SRM), P06-4 (synthetic recogni
 | 販売商品 | 自社Agentの運転記録とCloudの設計/入口/sourceはある。外部利用者向けの一般提供→継続課金→顧客の実成果という全経路は未実証 | 一つのLife Manager Cloudを第三者が登録・購入・利用でき、自社も同じ経路で使う |
 | 本番source | `apps/life-manager/server.js`→`maritime-manager-auth.js`、store/runtime/transport、wake/report/usageの接続がある。`transport/maritime-manager.js`はframework=custom/ZIP archiveを要求し、`maritime/run-cycle.js`はCapafy専用cycleを呼ぶ。公式templateへ設定だけで切替可能とは言えず、一般Managerの完走証明でもない | 本番AgentはMaritimeのみ。既存接続/台帳を使い、公式harnessへ業務設定を接続する。自作Agent runtimeは新設しない |
 | 本番provider | 保存済みOpenClaw試験は/data保持・モデル/初期browser操作を確認。再開後browser無効、desktop変更はseat_limit | 契約内の公式経路で必要browserが再開後も動き、Agent-owned identity/stateを保持する |
-| Naïve | 前回公式API/native browser/owned inbox送信成功、限定閲覧run $0.024496、deployment10件停止の保存済み観測。今回live状態/費用を再取得しない | 大会専用Agentで本物の業務を有限実行。証拠・費用・人の介入・未達を正確に示す。本番提供成功へ読み替えない |
+| Naïve | 過去の公式API/native browser/owned inbox等の記録は保存済みだが、本日現在のorg/Agent/残高/稼働状態/参加承認はlive再照合していない | 大会専用Agentで本物の業務を有限実行。証拠・費用・人の介入・未達を正確に示す。本番提供成功へ読み替えない |
 | 公開と課金 | `/lm`等の説明/sourceはある。既存Web billingはTravel/Calendarの契約を含む。Cloud専用entitlement・現行配備・paid invoiceは未照合 | Cloud商品専用の課金と利用権を同じtenantへ結び、支払/停止/取消を正しく反映 |
-| 二大会 | Naïve公式公開頁は11/7–8、2–4分の実稼働demo。今回の賞品欄はTBD。Maritime termsは12/1 Pacific締切・実利用者1,000人・最初の3projectを確認後winner | 本番Maritimeの実利用でMaritime大会を狙い、Naïveの大会専用実稼働でNaïve大会を狙う。受理/参加資格/審査結果は公式receiptで別判定 |
+| 二大会 | Naïve公式briefは11/7–8、SDK必須、2–4分の実稼働demo、1位にYC interviewを記載。参加承認は未確認で、面接は採択ではない。Maritime termsは12/1 23:59 Pacific、実利用のある1,000 distinct users、最初の3 projectを確認後winner | 本番Maritimeの実利用でMaritime大会を狙い、Naïveの大会専用実稼働でNaïve大会を狙う。受理/参加資格/審査結果は公式receiptで別判定 |
 
 上表のruntime/売上は保存済み観測を含み、現在の停止状態・残高・顧客数を今回再確認したものではない。公開説明の「利用できる」と実運用未検証の差はLC33/LC52で修正・確認する。source testを商用提供の証拠にはしない。
 
@@ -26760,21 +26770,23 @@ flowchart TD
 
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
 |---|---|---|---|
-| LC58 | 未・並行可 / LC01/02 | `Naïve/YC現行公式条件と既存参加receipt`：参加/SDK/事前開発/再利用/提出条件を確定 | 公式原文と参加状態。今回YC event本文は取得不十分、賞品はTBDなので旧YC interview記載を確定扱いしない |
+| LC58 | 公式条件確認済・参加receipt未確認 / LC01/02 | `Naïve/YC現行公式brief + event application`：参加承認・SDK必須・2〜4分demo条件を確定 | 公式briefを記録済み。申請/参加承認receiptを確認する。1位のYC面接保証は採択保証ではない。賞品欄のTBDと他のprize文言の差を保持し、未公表条件を補完しない |
 | LC59 | 未・並行可 / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | 実org/Agent owner/許可tools/期間cap/task capと本番非接続をGETで確認。勝手なtop-upなし |
 | LC60 | 未 / LC59 + 共通playbook | `NAIVE + 分離した実provider job`：同じ事業価値の一業務をNaïveで実行 | native events/real artifact/receiptを得る。dummy response/本番API丸投げはしない |
 | LC61 | 未 / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 一般提供の現状・Naïve実績・Maritime本番実績・売上/費用/未達を分ける |
-| LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。winner/YC採択を保証しない。月次入金待ちと独立 |
+| LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。1位なら公式brief記載のYC interview対象だが、YC採択や面接後結果は保証しない。月次入金待ちと独立 |
 
 #### Maritime大会・YCの事業証拠
 
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
 |---|---|---|---|
-| LC63 | 未・並行可 / LC01/02 | `First 1,000の既存申請/公式条件`：project参加状態と期限/計測定義を確定 | submitted/accepted/eligibilityを区別。Maritime race等の別プログラムと混同しない |
+| LC63 | 公式terms確認済・申請/参加状態未確認 / LC01/02 | `First 1,000の既存申請/公式terms`：project参加状態と期限/計測定義を確定 | submitted/accepted/eligibilityを区別。締切は12/1 23:59 Pacific、実利用のある1,000 distinct users、確認後の先着3 projects。creditsを現金売上とせず、Maritime race等の別programと混同しない |
 | LC64 | 未 / LC52/54/63 | `既存無料配信と同じ本番URL`：本番Cloudを実利用者へ届ける | 成功構成を自社素材で使い、参照URLとUTM/登録/利用の帰属を保存。広告費追加なし |
 | LC65 | 未 / LC46/64 | `本番project usage/公式analytics`：1,000 distinct real usersの証拠を揃える | 実人・実利用を重複排除。VM/Agent/Naïve demoを人数へ加算しない |
 | LC66 | 未 / LC63/65 | `Maritime主催者の公式判定`：大会成果を申告し審査結果を確認 | 受領/確認/awardを公式readback。creditは現金/SaaS売上ではない |
 
-**現在cursor:** LC04（sourceと本番配備の対応を公式readbackで棚卸し）→LC05（契約内の必要機能）→LC06（提供の適用範囲）。Naïve担当はLC58、Maritime大会参加の確認はLC63を独立して進められる。顧客課金はLC27以降、外部顧客の有料成果はLC54以降で未完。文書上のLC01–03のみ完了、実装・運用の63項目は未完。優勝・YC採択・外部SaaS売上・利用者の黒字は未達/未確認のまま。
+**順序変更・2026-11-06:** 旧cursorはLC04→LC05→LC06を先行し、Naïve/Maritime大会条件を並行確認する順。新cursorはNaïve大会の開催が翌日であることと、公式briefで参加承認制・SDK必須・ライブdemoを確認したため、LC58→LC59→LC60→LC61→LC62を先行し、終了後LC04→LC05→LC06へ戻す。Maritime LC63/LC64は独立並行のまま維持する。同じjobを二providerへ重複送信しない。
+
+**現在cursor:** LC58（参加receipt確認と大会用条件確定）→LC59（Naïve実org上の有限Agent設定/GET確認）→LC60（分離した実業務一件）→LC61（2〜4分demo）→LC62（提出receipt）。LC63/LC64は並行可能。Naïve org/残高/参加承認・Maritime参加承認・Cloud外部signup/決済・第三者売上はこの更新ではlive確認していない。LC01–03のみ文書上完了、実装・運用の63項目は未完。優勝・YC採択・外部SaaS売上・利用者の黒字は未達/未確認のまま。
 
 **一次資料の取得証跡:** `docs/research/cloud-market-20261106/single-runtime-sources.json`。以前の市場比較API証跡は同directoryの`public-readbacks.json`に残すが、本商品の一般提供/顧客課金の成功証拠にはしない。現行の「二本番runtime」TODO/N01–N12/M01–M06はこの66項目へ置換し、並行した別の実行キューにしない。
