@@ -52,7 +52,7 @@ final class QuoteNavigationCoordinator: ObservableObject {
                 normalize(quotes[index].text) == body
             }
             if exactMatches.count == 1 {
-                return finish(quotes[exactMatches[0]])
+                return finish(Quote(id: quotes[exactMatches[0]].id, text: alertBody))
             }
 
             let containingMatches = quotes.indices.filter { index in
@@ -60,7 +60,7 @@ final class QuoteNavigationCoordinator: ObservableObject {
                 return !text.isEmpty && body.contains(text)
             }
             if containingMatches.count == 1 {
-                return finish(quotes[containingMatches[0]])
+                return finish(Quote(id: quotes[containingMatches[0]].id, text: alertBody))
             }
 
             // The tapped alert body is the visible source of truth. If this app

@@ -56,7 +56,7 @@ Pro特典・free/proの通知上限は、実際に権限で分かれる動作を
 
 swipeはユーザー報告の約10回に1回の戻りを、連続上下・短/長/高速操作・逆方向・保存/テーマ更新・通知遷移の重なりで再現する。pagerの対話遷移とprogrammatic更新、index、catalog mutation、hosting stateを観測して根本原因を限定する。完了したswipeの後に古いindexへ戻らず、隣の全文を一度だけ表示する。短く戻す意図的gesture cancellationは不具合と数えない。
 
-通知は、タップされた本文を表示の根拠とし、安定した `quote_id` と本文・言語・catalog version・notification IDを照合する。未知ID・欠落ID・本文のみ・古いcatalog・同じ通知の再tapでも別文言へ置換しない。payload不正で空なら無関係なquoteへ飛ばさず通常feedへ戻す。アプリ終了/背景/前面、onboarding中、catalog準備前で要求を保持し、準備後に一度だけ解決する。
+通知は、タップされた本文を表示の根拠とし、安定した `quote_id` と本文・言語・catalog version・notification IDを照合する。catalog照合で大文字小文字や空白を正規化しても、表示文字列は受信した `alertBody` を保つ。未知ID・欠落ID・本文のみ・古いcatalog・同じ通知の再tapでも別文言へ置換しない。payload不正で空なら無関係なquoteへ飛ばさず通常feedへ戻す。アプリ終了/背景/前面、onboarding中、catalog準備前で要求を保持し、準備後に一度だけ解決する。
 
 配信の現在owner・caller・APNs token・timezone・時刻選択・authorization・有料権限・配信receiptを調べ、予定件数と実件数を分ける。設定の固定4件を実設定へ接続する。ローカル通知かremoteかは既存設計で毎日安定供給できる最小案を採り、同じoccurrenceを二重配信しない。OS通知許可、端末offline、Focus等のため「必ず毎日表示」を保証しない。APNs受付は端末表示・開封の証拠ではない。
 
