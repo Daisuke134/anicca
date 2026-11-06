@@ -8,7 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[6]
+ROOT = Path(__file__).resolve().parents[5]
 PACKAGE = ROOT / "docs/research/manager/publication/2026-10-19"
 MANIFEST = PACKAGE / "manifest.json"
 ARTICLES = (
