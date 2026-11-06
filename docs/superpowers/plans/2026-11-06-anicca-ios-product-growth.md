@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement task-by-task. チェック欄は実行手順の参照であり、順序・完了状態は統合SSOTだけに記録する。
 
-**Goal:** Aniccaの初回製品改善を実機能・Maestro動画・審査提出まで届け、その後に全アプリの計測・Open・配信連携・無人改善を閉じる。
+**Goal:** Anicca iOSの画面別計測をMixpanel一本で本番運用し、既存Openで確認できるようにして、同一候補buildの全画面Maestro動画を提示した後にだけ審査へ提出する。
 
-**Architecture:** 初回版は既存SwiftUI/UIKit、StoreKit/RevenueCat、Mixpanel/PostHogを修正する。後続は既存collector/registry/release/公開dashboardのownerへ接続し、第二のruntimeや分析基盤を新作しない。
+**Architecture:** iOSは既存SwiftUI/UIKit・StoreKit/RevenueCat・Mixpanelを使い、PostHogの重複経路を除く。Aniccaの集計はLife Manager既存product summaryから既存Open snapshotへつなぎ、dashboard ownerの`anicca-products` repoで表示する。第二の分析基盤/dashboard/runtimeを作らない。
 
-**Tech Stack:** SwiftUI、UIKit、Xcode、XCTest、Maestro、APNs、RevenueCat、PostHog、Mixpanel、既存Life Manager scheduler/台帳、ASC。
+**Tech Stack:** SwiftUI、UIKit、Swift focused tests、Maestro、APNs、RevenueCat、Mixpanel、既存Life Manager collectors、anicca-products Open snapshot、ASC CLI、Xcode Cloud（署名buildのみ）。Xcode UIは使わない。
 
 **Spec:** `docs/superpowers/specs/2026-11-06-anicca-ios-product-growth-design.md`
 
@@ -14,13 +14,17 @@
 
 ## Global Constraints
 
-- 現在の実行範囲はG1〜G5。実装・Maestro実製品動画・審査提出まで進め、G6以降のloop/dashboardは起動しない。
-- 実装順と状態は統合SSOTの `ANICCA-PRODUCT-GROWTH`、初回G1〜G5、後続G6〜G10。
+- 現在順はG2残件→G4 Mixpanel一本化→G4.1 Anicca funnelをOpenへ表示→G5同一candidate E2E/動画/審査提出。G1/G3は検証済みとして再利用する。
+- G1〜G4/G4.1と全画面同一build E2Eが実証されるまでApp Review submissionを作らない。実装順/状態の唯一の正本は統合SSOT `ANICCA-PRODUCT-GROWTH`。
+- G6/G7全アプリ展開とG8〜G10自動改善はその後へ保持する。G4.1はAniccaだけの提出前必須slice。
 - source=`Daisuke134/life-manager`、app=`apps/mobile/anicca-ios`、既存private configとowner/leaseを使用。
 - 最小回帰のRED→GREEN、正本mainから署名build、公式readback。アプリのPackage.swiftはmacOS card生成用でありiOS検証の代替にしない。
 - UI mockのデモ値を本番へ固定しない。初回soft paywall、現行購入権限/各対応言語の動作を維持。
 - ダッシュボード/公開exportの別owner、配信owner、共有profile、他者のstateへ独断で同時変更しない。
 - 容量不足は所有者を確認した再生成可能な不要物を整理して解消し、保存/pushを完遂する。
+- App Store Connectの提出/取消/状態確認はASC CLIで行う。署名済みartifactの作成は既存Xcode Cloud、Maestro実行/録画はMac MiniのSimulatorを使い、Xcode UIは開かない。
+- 既存YouTube動画2本はcandidate build 817であり、build 818と同一binaryの証拠ではない。変更後candidateと同じsource/buildに結び付く全画面動画を新しく作成して提出前に提示する。
+- 1.9.8/build 818のsubmissionは取消済み。version state `DEVELOPER_REJECTED`とdoctorの`review.submission.removed_items_only`は現状 readback。分析/動画条件を満たすまで再提出しない。
 
 ## Review Focus
 
@@ -54,35 +58,48 @@
 - [ ] 本文のみ・未知ID・catalog未準備・cold/warm・重複tapに加え、大文字小文字が異なるcatalog一致と本文追加時も受信 `alertBody` を表示する回帰を先に失敗させる。同じIDが現在のpersonalized feedにある場合も、既存要素を解決済み本文で置換してから遷移する。gesture中like/通知遷移、catalog外文言保存も回帰対象にする。
 - [ ] 遷移中のindex同期と保留要求の消費を最小修正。固定4件を実設定へ接続し、remote/localは実配信receiptに基づいて一ownerにする。backend変更は所在と所有が確定した対象だけへ行う。
 - [ ] EN catalogを600件/12カテゴリ以上へ増やし、ID重複・本文重複・空文・カテゴリ件数のfixtureを追加する。好み/likeの候補重み、直近20件の抑制、枯渇時fallbackと解除/再起動保持を確認する。候補は対話遷移中に入れ替えない。
-- [ ] 通知navigationのproduction sourceを `swiftc` で直接compileする `scripts/tests/QuoteNavigationTests.swift` と既存の通知/保存focused testsを実行。Expected: 新規回帰と既存通知/保存testがPASS。Maestro連続swipeはTask4で同じSHAを使用する。follow-upではローカルXcode project buildを使わず、署名buildは既存Xcode Cloud経路で行う。
+- [ ] 通知navigationのproduction sourceを `swiftc` で直接compileする `scripts/tests/QuoteNavigationTests.swift` と既存の通知/保存focused testsを実行。Expected: 新規回帰と既存通知/保存testがPASS。Maestro連続swipeはTask5で同じcandidate SHAを使用する。署名buildは既存Xcode Cloud経路で行う。
 - [ ] source acceptance→fetch→commit/push。実機APNsが未確認なら未確認と記録し、injection成功で代替しない。
 
 ## Task 3: 行動・課金計測の正確化（G4）
 
-**Files:** `aniccaios/Services/{AnalyticsManager,SubscriptionManager}.swift`、`AppDelegate.swift`、Task1/2のscreen/action caller、関連XCTest。product設定/秘密値はrepo外。
+**Files:** `apps/mobile/anicca-ios/aniccaios/Services/{AnalyticsManager,SubscriptionManager}.swift`、`AppDelegate.swift`、`Config.swift`、Task1/2 screen/action caller、`PurchaseObservationLedger.swift`、`PlanSelectionStepView.swift`、`RetentionOfferSheet.swift`、`aniccaios.xcodeproj/project.pbxproj`とworkspace `Package.resolved`、関連focused tests。project token/credentialsはprivate configで保持し、diff/logへ出さない。
 
-**Consumes:** stable anonymous/customer ID、screen/quote/notification ID、StoreKit transaction/RevenueCat entitlement。**Produces:** specのevent契約、重複しない受信、価格不明時null/reason、通貨/receipt付き課金観測。
+**Consumes:** Mixpanel SDK event history、stable anonymous/customer ID、screen/quote/notification ID、StoreKit transaction/RevenueCat entitlement。**Produces:** Mixpanel一本のevent契約、画面別離脱funnel、restoreを含む課金観測、service receipt。PostHogは送信先から除く。
 
-- [ ] SDK initialization・各caller・identify/reset・PostHog flag/exposure経路と本番受信先を照合する。
-- [ ] 同一screen再描画、callback再送、restore、trial、不明価格、通貨違いをfixtureにし、二重売上と9.99捏造を防ぐ失敗testを書く。
-- [ ] 既存eventを再利用して両分析経路を接続する。購入をreceiptで識別し、raw text/秘密値を送らず、internal/test buildを分離する。
-- [ ] focused testとサービス側のテストsession受信を照合する。Expected: 正しいID/property、event重複0、purchase/restore/trialの区分が一致。receipt未接続はmissingとして残す。
-- [ ] diff→fetch→commit/push。SDK導入/ローカルlogだけでは計測完了にしない。
+- [ ] 全screen inventoryをproduction codeへ対応付け、現在のevent/caller、paywallの重複、復元経路、匿名ID/identify/reset、PostHog直接呼出しを記録する。
+- [ ] Mixpanel Swift SDKのfeature flags要件（公式docsは6.4.0以上）を満たすstable releaseへpinし、PostHog Package/Info.plist config/SDK captureを除去する。Experiments利用可否・MEU allowance・project regionはMixpanel accountでreadbackする。
+- [ ] 同一screen再描画、戻る/進む、background/resume、duplicate callback、restore、trial、不明価格、通貨違い、offline再送を隔離fixtureにし、screen重複・二重売上・推定収益の混入を防ぐ。
+- [ ] screen/flow/activation/notification/paywall/product/purchase/trial/restore/exposureにevent/property contractを付け、raw affirmation text/PII/secretを送らず内部buildを識別する。画面終了は明示的遷移だけを送り、OS killは次step観測窓によるdrop-off推定とラベルする。
+- [ ] focused tests後にMixpanel側で同じtest identityのevent・properties・build/locale/variant・時刻をreadbackし、同一event/transaction重複0を照合する。local log/SDK configだけでは完了にしない。
+- [ ] source acceptance→fetch→commit/push。provider receiptと根拠をSSOTへ残す。
 
-## Task 4: Maestro動画・レビュー・署名・審査提出（G5）
+## Task 4: Aniccaの画面別funnelを既存Openへ接続（G4.1）
 
-**Files:** `maestro/onboarding/`、`maestro/v1.8.0/{11-app-review-purchases,12-storekit-cancel-restore}.yaml`、変更対象の新flow、`maestro/README.md`、`README.md`、`fastlane/Fastfile`とmetadata、`scripts/release-ios.sh`。既存の安全な提出経路を維持する。
+**iOS source:** `apps/mobile/anicca-ios/aniccaios/Services/AnalyticsManager.swift`と各screen caller（Task3）。**集計source:** `apps/life-manager/scripts/marketing-product-summary.js`、対応test、`tenants/dais-local/product-packs/metrics/product-analytics/anicca-ios.json`のcontract。**公開owner:** `Daisuke134/anicca-products`の`apps/landing/public/open/index.html`、生成`data.json`、`.github/workflows/netlify-deploy.yml`。現在のASC collector`apps/landing/scripts/open-app-store-analytics.mjs`はstore acquisitionのみなので、Mixpanel event collectorと混同しない。
 
-**Consumes:** Task1〜3の統合候補SHA、owned simulator、private config/signing、ASC app ID。**Produces:** 実製品MP4＋Maestro結果、main由来署名artifact、対象buildの公式 `WAITING_FOR_REVIEW`。
+**Consumes:** Mixpanel aggregate、App Store Connect/RevenueCatの公式cohort/収益、app/date/locale/campaign/release/experiment dimensions。**Produces:** 公開個人データを含まないAnicca screen funnel panelと日次snapshot。
 
-- [ ] owned simulatorと空き容量を確認。test用に新規状態を作り、`xcrun simctl io <UDID> recordVideo <private-evidence>/anicca-maestro-e2e.mp4` で同一runを録画する。
-- [ ] `maestro --device <UDID> test <changed-flow.yaml>` と既存購入/restore flowを実行する。Expected: 必須assert全PASS、optional assertで必須機能を隠さない。MP4を再生し、flow/字幕・screenshotsとSHA/device/buildを照合する。
-- [ ] EN/JA、通知同文言、連続上下swipe、保存/背景、soft close、settings購入、cancel/restoreを実際に確認する。Sandbox購入/有料restore・実機APNs・滑らかさを各境界で確認し、証拠を分ける。
-- [ ] fresh read-only reviewerへspec・実差分・テスト・動画refを渡す。重大指摘を回帰→修正→検証する。CI/main統合後、同sourceのrelease buildと審査情報を照合する。
-- [ ] `asc status --app 6755129214`、既存review doctor、build/metadata検証、既存正式submit経路を使い、対象version/build/submissionをGETで再取得する。Expected: 対象が `WAITING_FOR_REVIEW`。Apple承認は別状態として残す。
-- [ ] Daisへ再生可能なMP4・実画面・PASS/未確認範囲・公式状態を提示し、G1〜G5の完了を統合SSOTへ記録する。
+- [ ] 現行Netlify deployで`out/open/data.json`を作る全step・secret scope・snapshot ownerを読み、Mixpanelのserver-side read経路と安全なCI credential存在を確認する。public HTML/JSへAPI secretを含めない。
+- [ ] 既存`marketing-product-summary.js`のproduct-pack inputがMixpanel query/export resultを安全に表現できるか確認する。既存sourceへ最小接続し、新runtime/schedulerを作らない。利用可能なAPI/plan/権限が無ければ不足credential/owner/pathをcursorに残し、measured値を捏造しない。
+- [ ] Openの`data.json` contractに`product_analytics.anicca_ios` aggregateを加え、observed_at/data_from/data_to/status/coverage/numerator/denominator/cohort/window/locale/source/release/variantとnullable valueを保持する。
+- [ ] `index.html`にfunnel人数・率・分母、screen順/drop-off、first valueまでの時間、notification/purchase/trial/restore、成熟D1/D7/D30、country/storefront/locale/campaign/release/variant filterを既存デザインで表示する。未成熟・threshold/欠測はunknownと理由を出す。
+- [ ] snapshot builder・schema testで0/unknown、partial day、late correction、少数cohort、二重event、currency、privacy thresholdを検証する。個人ID・affirmation本文・credentialは公開JSONに含めない。
+- [ ] netlify deploy previewだけで終わらせず、既存のowner/release経路でsource acceptance後に公開し、live `/open/`と`data.json`の表示・source freshness・denominator・狭幅layoutを公式readback。G4.1結果をG5条件にする。
 
-## Task 5: 全アプリ計測とOpen（日次履歴・国・流入・課金）（G6/G7）
+## Task 5: 同一候補buildの全画面E2E動画と審査提出（G5）
+
+**状態:** 1.9.8/build 818の提出は取消済み。再提出は禁止条件がすべてPASSするまで行わない。現ASC stateはversion=`DEVELOPER_REJECTED`、build 818=`VALID`、旧submission `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`=`COMPLETE`/item=`REMOVED`。
+
+- [ ] `asc review doctor`の現在の`review.submission.removed_items_only`を読み、取消済みのblockerを将来のfresh submissionと混同しない。G2/G4/G4.1 gateが完了するまでsubmit API/commandを呼ばない。
+- [ ] agreed UI/UXの全screen/overlay/state/localeをscreen inventoryに対応付け、onboarding→first affirmation→notification optional→paywall/close→feed→swipe→like/save/share→reminders/settings→restore/purchase flowのcoverageを定義する。
+- [ ] source acceptance済みmain SHAからXcode Cloudで署名candidateを作り、ASC CLIでbuild/sourceをreadback。Mac Mini SimulatorでMaestroの全screen/flowを実行し、same candidate build/source SHAを含む動画・screenshots・JUnit/logを保存する。動画から各screenの挙動と離脱導線を再生確認する。Xcode UIは開かない。
+- [ ] 動画はYouTube限定公開で、ユーザーへリンクを提出前に提示する。既存UX `https://www.youtube.com/watch?v=88N3zsKZUJM` と通知 `https://www.youtube.com/watch?v=J005BFtO88U` はcandidate build 817なので参考動画としてのみ扱う。
+- [ ] Mixpanel test event receipt、Open live snapshot readback、実端末APNs/通知設定、purchase/trial/paid restore、screen coverageが同じ候補sourceで揃ったことを確認する。App Store IAP metadata/territory/price、privacy、review notesも再照合し、`Anicca Monthly Plan`の`MISSING_METADATA`警告を解消または対象外理由まで明示する。
+- [ ] 証拠一式（Mixpanel受信、Open表示、同一build E2E動画、通知/購入/restore確認、ASC metadata）をユーザーへ提示し、明示承認を得る。承認前はASC submit・本番公開・main統合を行わない。
+- [ ] 明示承認後だけASC CLIでversion/buildをvalidateして一度submitし、submission/version/buildの公式readbackが一致することを確認する。`WAITING_FOR_REVIEW`以降のApple判断は別状態。
+
+## Task 6: 全アプリ計測とOpen全体（日次履歴・国・流入・課金）（G6/G7）
 
 **Files:** `apps/life-manager/scripts/{marketing-asc-acquisition,marketing-revenuecat-subscriptions,marketing-product-summary}.js` と対応test、`skills/earn/marketing-engine/registry/products/*.json`。Openの公開側は実deploymentのrepo/path/ownerを照合してから同ownerへ接続する。
 
@@ -95,7 +112,7 @@
 - [ ] Open ownerの公開経路へ結び、native scheduleの新snapshotと公開グラフ/時刻/狭幅をreadback。dashboard headerだけの更新を成功にしない。
 - [ ] source acceptance→commit/push→review/CI/main→既存release経路→自然run/readback。G6/G7の状態を統合SSOTだけへ更新する。
 
-## Task 6: 配信接続・実験・無人改善・他アプリ（G8〜G10）
+## Task 7: 配信接続・実験・無人改善・他アプリ（G8〜G10）
 
 **Files:** 既存 `marketing-product-summary.js`、`tiktok-metrics-due.js` とtests、product/campaign registry、確認済みapp deep-link handler、`config/loop-registry.json`、既存の実deployment/runbook。変更前に `skills/loop-development/SKILL.md` と現runtime owner/callerを読む。
 
