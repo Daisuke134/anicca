@@ -91,9 +91,11 @@
 
 **状態:** 1.9.8/build 818の提出は取消済み。再提出は禁止条件がすべてPASSするまで行わない。現ASC stateはversion=`DEVELOPER_REJECTED`、build 818=`VALID`、旧submission `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`=`COMPLETE`/item=`REMOVED`。
 
+**Xcode Cloud:** enabled `Default` workflowはlockedで`main` branchだけを受け付け、PR/manual branch conditionは空。Draft PR #9289のApple SCM PR IDを使った起動はbranch未登録で拒否され、buildは作成されなかった。既存`Untitled Workflow`はdisabled/unlocked、schemeは`aniccaios`だがcontainer pathが旧値`aniccaios/aniccaios.xcodeproj`。次はこのworkflowを現行project pathと今回のfeature branchへ限定して一回だけ使い、run後にdisabledへ戻す。Xcode Cloud environment variablesは公開APIに現れず、Apple web sessionは2FA SMSをMac Messagesで取得できず未認証。Mixpanel token注入/readbackは未確認で、build成功を本番tracking成功と扱わない。
+
 - [ ] `asc review doctor`の現在の`review.submission.removed_items_only`を読み、取消済みのblockerを将来のfresh submissionと混同しない。G2/G4/G4.1 gateが完了するまでsubmit API/commandを呼ばない。
 - [ ] agreed UI/UXの全screen/overlay/state/localeをscreen inventoryに対応付け、onboarding→first affirmation→notification optional→paywall/close→feed→swipe→like/save/share→reminders/settings→restore/purchase flowのcoverageを定義する。
-- [ ] source acceptance済みmain SHAからXcode Cloudで署名candidateを作り、ASC CLIでbuild/sourceをreadback。Mac Mini SimulatorでMaestroの全screen/flowを実行し、same candidate build/source SHAを含む動画・screenshots・JUnit/logを保存する。動画から各screenの挙動と離脱導線を再生確認する。Xcode UIは開かない。
+- [ ] 証拠承認前のmain統合を避け、今回の専用feature branch SHAからXcode Cloudで署名candidateを作る。ASC CLIでbuild/sourceをreadback。Mac Mini SimulatorでMaestroの全screen/flowを実行し、same candidate build/source SHAを含む動画・screenshots・JUnit/logを保存する。動画から各screenの挙動と離脱導線を再生確認する。Xcode UIは開かない。
 - [ ] 動画はYouTube限定公開で、ユーザーへリンクを提出前に提示する。既存UX `https://www.youtube.com/watch?v=88N3zsKZUJM` と通知 `https://www.youtube.com/watch?v=J005BFtO88U` はcandidate build 817なので参考動画としてのみ扱う。
 - [ ] Mixpanel test event receipt、Open live snapshot readback、実端末APNs/通知設定、purchase/trial/paid restore、screen coverageが同じ候補sourceで揃ったことを確認する。App Store IAP metadata/territory/price、privacy、review notesも再照合し、`Anicca Monthly Plan`の`MISSING_METADATA`警告を解消または対象外理由まで明示する。
 - [ ] 証拠一式（Mixpanel受信、Open表示、同一build E2E動画、通知/購入/restore確認、ASC metadata）をユーザーへ提示し、明示承認を得る。承認前はASC submit・本番公開・main統合を行わない。
