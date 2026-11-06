@@ -22,6 +22,7 @@ struct FeedRootView: View {
     @State private var showCollections = false
     @State private var selectedCategory: String?
     @State private var feedRevision = 0
+    @State private var navigationRevision = 0
     @State private var lastTrackedQuoteID: String?
     private let recentQuotesKey = "anicca.feed.recent-quote-ids"
     /// Unique affirmations seen this launch — used as a lightweight "session finished" signal.
@@ -41,7 +42,7 @@ struct FeedRootView: View {
                 themeStore.image
                     .resizable()
                     .scaledToFill()
-                    .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom)
+                    .frame(width: geo.size.width, height: geo.size.height)
                     .ignoresSafeArea()
                     .accessibilityHidden(true)
 
@@ -49,7 +50,7 @@ struct FeedRootView: View {
                     .ignoresSafeArea().accessibilityHidden(true)
 
                 // Vertical paging — each page is forced to screen width.
-                VerticalPager(count: quotes.count, currentIndex: $currentIndex) { idx in
+                VerticalPager(count: quotes.count, currentIndex: $currentIndex, navigationRevision: navigationRevision) { idx in
                     QuoteCardView(quote: quotes[idx], pageWidth: geo.size.width)
                         .frame(width: geo.size.width, height: geo.size.height)
                         .environmentObject(themeStore)
@@ -63,7 +64,7 @@ struct FeedRootView: View {
                 HStack {
                     Button { showCollections = true } label: {
                         HStack(spacing: 6) {
-                            Text(String(localized: String.LocalizationValue("growth_category_\(selectedCategory ?? "personalized")")))
+                            Text(NSLocalizedString("growth_category_\(selectedCategory ?? "personalized")", comment: ""))
                             Image(systemName: "chevron.down").font(.caption2)
                         }
                         .font(.subheadline).foregroundStyle(.white)
@@ -133,7 +134,7 @@ struct FeedRootView: View {
         .confirmationDialog(String(localized: "growth_collections"), isPresented: $showCollections, titleVisibility: .visible) {
             Button(String(localized: "growth_category_personalized")) { selectedCategory = nil; rebuildFeed() }
             ForEach(Array(Set(QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage).map(\.categoryID))).sorted(), id: \.self) { category in
-                Button(String(localized: String.LocalizationValue("growth_category_\(category)"))) {
+                Button(NSLocalizedString("growth_category_\(category)", comment: "")) {
                     selectedCategory = category
                     rebuildFeed()
                 }
@@ -193,7 +194,8 @@ struct FeedRootView: View {
             quotes.append(quote)
             index = quotes.count - 1
         }
-        withAnimation { currentIndex = index }
+        navigationRevision += 1
+        currentIndex = index
     }
 
     /// After reading several affirmations in one launch, treat that as a finished session.

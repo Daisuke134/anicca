@@ -50,6 +50,10 @@ name: Value-first onboarding, continuous feed, saved words and reminders
 - assertVisible: "14:00"
 - assertVisible: "20:00"
 - takeScreenshot: "initial-real-reminder-schedule"
+- tapOn:
+    id: "reminder-enable-notifications"
+- tapOn: "Allow"
+- assertVisible: "Notifications allowed"
 - tapOn: "Close"
 - tapOn:
     id: "feed-themes"

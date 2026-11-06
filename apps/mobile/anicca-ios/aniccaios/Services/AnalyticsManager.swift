@@ -83,9 +83,9 @@ final class AnalyticsManager {
         logger.debug("Tracked event: \(event.rawValue, privacy: .public)")
     }
 
-    func connectPostHog(userID: String) {
+    func connectPostHog(userID: String?) {
         postHogConfigured = true
-        identify(userId: userID)
+        if let userID { identify(userId: userID) }
         PostHogSDK.shared.register(context.mapValues { $0 as Any })
     }
     

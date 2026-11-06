@@ -12,19 +12,19 @@
 |---|---|---|---|
 | G0 | 完了（仕様共有） | 全体spec・実装計画・画面案を同一branchで共有 | scoped review重大問題なし、commit/push、remote objectと参照linkを確認。アプリ実装/動画/提出は未実行 |
 | G1 | 実行中 | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
-| G2 | 未着手 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | 連続/逆方向swipe、cold/warm/本文のみ通知、実設定/配信境界の証拠 |
-| G3 | 未着手 | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
-| G4 | 未着手 | 全主要画面と価値/課金/通知event、正しい価格/通貨/receipt | サービス側受信、同一ID、二重発火0、不明価格やrestoreを売上化しない |
-| G5 | 未着手 | Maestro E2E動画・実製品提示・review/CI/main・署名build・審査提出 | 同一SHAのMP4/結果、必要なSandbox/APNs証拠、公式WAITING_FOR_REVIEW。承認/公開は別追跡 |
+| G2 | 実装済み・検証中 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | 連続/逆方向swipe、cold/warm/本文のみ通知、実設定/配信境界の証拠 |
+| G3 | 実装済み・検証中 | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
+| G4 | 実装済み・検証中 | 全主要画面と価値/課金/通知event、正しい価格/通貨/receipt | サービス側受信、同一ID、二重発火0、不明価格やrestoreを売上化しない |
+| G5 | 実行中 | Maestro E2E動画・実製品提示・review/CI/main・署名build・審査提出 | 同一SHAのMP4/結果、必要なSandbox/APNs証拠、公式WAITING_FOR_REVIEW。承認/公開は別追跡 |
 | G6 | 後続・未着手 | 全出荷app inventory、国/流入/課金/retentionの欠測修復 | 公式source/期間/分母/coverage、アプリごとの失敗隔離 |
 | G7 | 後続・未着手 | 既存Openへ日次履歴・グラフ・funnel・国/流入/実験表示 | 公開画面とsource鮮度/履歴一致、unknownと0の区別、狭幅確認 |
 | G8 | 後続・未着手 | SNS/記事/quoteの接続、地域別onboarding/paywall/価格/推薦実験 | supported attribution、stable割付/露出、必要人数/成熟期間/guardrail、標本不足は未判定 |
 | G9 | 後続・未着手 | 日次分析→週次修正→動画→提出→却下修正/公開照合のloop | 自然wake/receipt/start/result、同一台帳、次runで二重effect0。新harnessは必要性を実証して選択 |
 | G10 | 後続・未着手 | Honne等へ共通schema/運用を展開、全体の継続収益を評価 | app別activation、全inventory coverage、実稼働と実MRR/profitを区別 |
 
-**旧順→新順:** 旧案は計測全体/ダッシュボードとアプリ初回修正を横断して進める。新順は全体を文書化→Anicca初回G1〜G5→G6〜G10。理由はユーザーが先に実製品を直してMaestro動画を見たいと指定し、最新指示で当面をspec共有に限定するため。進行中の他業務loop・配信・審査を中断/重複させない。
+**旧順→新順:** 旧案は計測全体/ダッシュボードとアプリ初回修正を横断して進める。新順は全体を文書化→Anicca初回G1〜G5→G6〜G10。理由はユーザーが先に実製品を直してMaestro動画を見たいと指定し、最新指示で初回アプリ修正の実行が許可されるため。進行中の他業務loop・配信・審査を中断/重複させない。
 
-**現在cursor:** G1の現行caller/保存state・test target確認→回帰RED→native初回体験修正。G0の共有commit=`9849ad0c6638a3f555b1b9aaf112f06355fde468`、PR=`#9272`。source-boundary、diff-check、文書local link、G1〜G10 coverage、画面sourceの一致、GitHub remote commit/treeのreadbackを確認。独立read-only reviewは重大問題なし。primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、branch=`feat/anicca-ios-initial-polish-20261106`。Muse/Grok等は同じremote specとこのcursorを参照する。
+**現在cursor:** G1〜G4のsourceを実装。英語608件/12カテゴリ、本文のみ通知、カタログ外保存、推薦、購入重複排除のnative fixtureを確認。初回Release buildとUIKit5件はPASS。Maestroは25回の上swipeをPASS後、下部ボタンの画面外配置で失敗し、翻訳キー表示とともに修正中。fresh read-only reviewの4件（like参照範囲、通知本文hash、未初期化RC参照、同値index通知）に対応し、新回帰で再確認する。現在は追加UIKit回帰→1.9.7/817のMaestro録り直し→CI/main→署名/提出。Mixpanelは設定済み、PostHogはkey/host未設定。分析サービス上の受信・実APNs・実購入の証拠は未完として残し、Simulator injectionと区別する。ASC公開版は1.9.6/816、審査中提出なしをGET確認。G6以降は起動しない。PR=`#9272`、primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、branch=`feat/anicca-ios-initial-polish-20261106`。Muse/Grok等はこのcursorと詳細specを参照する。
 
 
 進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。

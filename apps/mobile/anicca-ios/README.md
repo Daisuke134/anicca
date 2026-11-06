@@ -19,7 +19,7 @@ external checkout is required for source editing.
 ## Initial affirmation experience
 
 The active first-run journey is goal selection → a real, saveable affirmation →
-reminder preferences → optional notification permission → the existing soft
+actual reminder schedule → optional notification permission → the existing soft
 paywall. Legacy persisted step raw values remain stable and resume in this journey.
 Closing the paywall continues to the feed; existing subscribers keep the current
 fresh-entitlement check. Notification permission has an explicit skip action.

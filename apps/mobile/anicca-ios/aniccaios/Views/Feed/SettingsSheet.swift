@@ -215,8 +215,18 @@ struct NotificationsSettingsView: View {
                 Text(String(localized: notificationsAllowed ? "growth_notifications_on" : "growth_notifications_off"))
                     .accessibilityIdentifier("reminder-permission-status")
                 Button(String(localized: "growth_notification_settings")) {
-                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    Task { @MainActor in
+                        if !notificationsAllowed {
+                            notificationsAllowed = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
+                            if notificationsAllowed {
+                                UIApplication.shared.registerForRemoteNotifications()
+                                return
+                            }
+                        }
+                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    }
                 }
+                .accessibilityIdentifier("reminder-enable-notifications")
             } footer: {
                 Text(String(localized: "growth_reminder_explanation"))
             }

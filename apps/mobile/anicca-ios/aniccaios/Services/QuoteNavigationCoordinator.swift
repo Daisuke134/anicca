@@ -66,7 +66,7 @@ final class QuoteNavigationCoordinator: ObservableObject {
             // The tapped alert body is the visible source of truth. If this app
             // version has no matching catalog entry, show that exact body instead
             // of navigating to a different quote with a stale/mismatched ID.
-            let contentID = request.quoteID ?? SHA256.hash(data: Data(alertBody.utf8))
+            let contentID = SHA256.hash(data: Data(alertBody.utf8))
                 .map { String(format: "%02x", $0) }.joined()
             return finish(Quote(id: "notification:\(contentID)", text: alertBody))
         }

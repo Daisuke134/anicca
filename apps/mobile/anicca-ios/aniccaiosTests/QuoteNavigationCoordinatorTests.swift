@@ -41,6 +41,23 @@ struct QuoteNavigationCoordinatorTests {
         #expect((controller.viewControllers?.first as? IndexedHosting)?.index == 2)
     }
 
+    @Test("A mid-swipe notification targeting the starting index still wins")
+    func notificationToStartingIndexWins() {
+        var index = 0
+        let pager = VerticalPager(count: 3, currentIndex: Binding(get: { index }, set: { index = $0 })) { Text("Card \($0)") }
+        let coordinator = pager.makeCoordinator()
+        let controller = UIPageViewController(transitionStyle: .scroll, navigationOrientation: .vertical)
+        let first = coordinator.hosting(for: 0)
+        let next = coordinator.hosting(for: 1)
+        controller.setViewControllers([first], direction: .forward, animated: false)
+        coordinator.pageViewController(controller, willTransitionTo: [next])
+        coordinator.parent.navigationRevision += 1
+        controller.setViewControllers([next], direction: .forward, animated: false)
+        coordinator.pageViewController(controller, didFinishAnimating: true, previousViewControllers: [first], transitionCompleted: true)
+        #expect(index == 0)
+        #expect((controller.viewControllers?.first as? IndexedHosting)?.index == 0)
+    }
+
     @Test("Cold-start notification waits for quotes and follows the visible alert body")
     func coldStartUsesAlertBodyWhenQuoteIdDisagrees() {
         let suiteName = "QuoteNavigationCoordinatorTests.\(UUID().uuidString)"
@@ -77,10 +94,9 @@ struct QuoteNavigationCoordinatorTests {
         coordinator.request(quoteID: "q001", alertBody: "A different affirmation not in this catalog.")
 
         let quotes = [Quote(id: "q001", text: "I am committed to becoming who I am meant to be.")]
-        #expect(coordinator.resolveQuote(in: quotes) == Quote(
-            id: "notification:q001",
-            text: "A different affirmation not in this catalog."
-        ))
+        let resolved = coordinator.resolveQuote(in: quotes)
+        #expect(resolved?.text == "A different affirmation not in this catalog.")
+        #expect(resolved?.id.hasPrefix("notification:") == true)
         #expect(coordinator.pendingRequest == nil)
     }
 

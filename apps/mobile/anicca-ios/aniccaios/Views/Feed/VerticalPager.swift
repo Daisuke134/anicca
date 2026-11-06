@@ -6,6 +6,7 @@ import UIKit
 struct VerticalPager<Page: View>: UIViewControllerRepresentable {
     let count: Int
     @Binding var currentIndex: Int
+    var navigationRevision: Int = 0
     let pageContent: (Int) -> Page
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -45,6 +46,7 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
     final class Coordinator: NSObject, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
         var parent: VerticalPager
         private var interactiveStartIndex: Int?
+        private var interactiveStartRevision: Int?
 
         init(_ parent: VerticalPager) { self.parent = parent }
 
@@ -64,6 +66,7 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
 
         func pageViewController(_ pvc: UIPageViewController, willTransitionTo pendingViewControllers: [UIViewController]) {
             interactiveStartIndex = parent.currentIndex
+            interactiveStartRevision = parent.navigationRevision
         }
 
         func hosting(for index: Int) -> IndexedHosting {
@@ -95,10 +98,12 @@ struct VerticalPager<Page: View>: UIViewControllerRepresentable {
                                 previousViewControllers: [UIViewController],
                                 transitionCompleted completed: Bool) {
             let startIndex = interactiveStartIndex
+            let startRevision = interactiveStartRevision
             interactiveStartIndex = nil
+            interactiveStartRevision = nil
             // An explicit notification/deep-link request takes precedence over
             // a swipe that was already in progress when that request arrived.
-            if let startIndex, parent.currentIndex != startIndex {
+            if let startIndex, parent.currentIndex != startIndex || parent.navigationRevision != startRevision {
                 synchronizeVisiblePage(pvc)
                 return
             }

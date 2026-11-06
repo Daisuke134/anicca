@@ -21,6 +21,14 @@ struct QuoteNavigationTests {
         guard navigation.resolveQuote(in: catalog)?.text == "These are different words from an older catalog." else { exit(3) }
         navigation.request(quoteID: "q001", alertBody: nil)
         guard navigation.resolveQuote(in: catalog)?.id == "q001" else { exit(4) }
+        navigation.request(quoteID: "remote-reused", alertBody: "Notification A")
+        let first = navigation.resolveQuote(in: catalog)!
+        navigation.request(quoteID: "remote-reused", alertBody: "Notification B")
+        let second = navigation.resolveQuote(in: catalog + [first])!
+        guard first.id != second.id, second.text == "Notification B" else {
+            print("FAIL: reused notification IDs must not reuse an older body")
+            exit(5)
+        }
         print("QuoteNavigationTests: PASS")
     }
 }

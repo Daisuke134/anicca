@@ -50,7 +50,8 @@ final class QuoteProvider {
         let candidates = unseen.isEmpty ? pool : unseen
         let legacyGoals = ["reduce_anxiety": "calm", "feel_peace": "calm", "sleep_better": "rest", "build_discipline": "growth", "focus_more": "presence", "break_habit": "letting_go"]
         var preferredCategories = Set(goals.map { legacyGoals[$0] ?? $0 })
-        preferredCategories.formUnion(pool.filter { likedIDs.contains($0.id) }.map(\.categoryID))
+        // Stable quote IDs encode category even after that quote leaves the candidate pool.
+        preferredCategories.formUnion(likedIDs.map { Quote(id: $0, text: "").categoryID })
         var preferred = candidates.filter { preferredCategories.contains($0.categoryID) }.shuffled()
         var exploration = candidates.filter { !preferredCategories.contains($0.categoryID) }.shuffled()
         var result: [Quote] = []

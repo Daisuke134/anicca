@@ -1,2 +1,1 @@
-- Benachrichtigungen öffnen jetzt die darin angezeigte Nachricht.
-- Das Laden der Abo-Ansicht und die Auswahl von Abonnementplänen wurden verbessert.
+Ein ruhigerer Einstieg mit deiner ersten Affirmation direkt zu Beginn. Mehr englische Affirmationen und einfacherer Zugriff auf Favoriten und Erinnerungszeiten. Wischen und das Öffnen der angetippten Benachrichtigung wurden verbessert.

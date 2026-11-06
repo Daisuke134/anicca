@@ -183,3 +183,7 @@ spec/plan/designはrepoの永続pathへcommit/pushし、remote objectまで確�
 ### 初回計測先の実確認
 
 private build configにはMixpanel tokenが存在し、PostHogのproject key/hostは存在しない。PostHog SDKの同梱だけでは稼働扱いにしない。初回は既存Mixpanelへscreen/actionを送る。PostHogは設定済みの場合だけ同じeventを送る。分析サービス上のevent受信確認は未完であり、ローカル送信と区別する。購入callbackはtransaction IDで重複を排除し、表示価格は決済済み売上と区別する。CustomerInfo更新やrestoreから新規売上を作らない。PostHogの実験設定と全アプリdashboardは後続G6以降で扱う。
+
+### 通知許可の回復導線
+
+初回で通知をスキップした場合、Remindersから初回OS許可を要求できる。既に拒否済みならOS設定を開く。許可後は既存remote登録経路へ戻り、local配信を追加しない。Maestroでskip→設定→許可→通知本文表示を確認する。

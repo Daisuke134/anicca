@@ -32,7 +32,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         // Mixpanelは常に初期化（ファーストパーティAnalytics、IDFAを使用しない）
         AnalyticsManager.shared.configure()
-        AnalyticsManager.shared.identify(userId: Purchases.shared.appUserID)
+        let analyticsUserID = SubscriptionManager.shared.isConfigured ? Purchases.shared.appUserID : nil
+        if let analyticsUserID { AnalyticsManager.shared.identify(userId: analyticsUserID) }
 
         // PostHog: A/B テスト + Session Replay（RevenueCat configure の後）。
         // The project-specific key and host are supplied by ignored xcconfig files.
@@ -44,7 +45,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             phConfig.sessionReplayConfig.maskAllTextInputs = true
             phConfig.sessionReplayConfig.maskAllImages = false
             PostHogSDK.shared.setup(phConfig)
-            AnalyticsManager.shared.connectPostHog(userID: Purchases.shared.appUserID)
+            AnalyticsManager.shared.connectPostHog(userID: analyticsUserID)
             // identify() 後にフラグを明示リロード（ユーザーコンテキスト変更でpreload分が無効になるため）
             // completion callback で featureFlagsReady を立てる → Paywall が nil を読まない
             PostHogSDK.shared.reloadFeatureFlags {

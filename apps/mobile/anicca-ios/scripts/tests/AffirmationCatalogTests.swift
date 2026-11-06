@@ -23,6 +23,12 @@ struct AffirmationCatalogTests {
               Set(ranked.map(\.id)).count == ranked.count else { exit(2) }
         let exhausted = QuoteProvider.recommendations(from: [pool[0]], goals: [], likedIDs: [], recentIDs: [pool[0].id])
         guard exhausted.count == 1 else { exit(3) }
+        let remaining = pool.filter { $0.id != "growth.confidence.0" }
+        let likedRanking = QuoteProvider.recommendations(from: remaining, goals: [], likedIDs: ["growth.confidence.0"], recentIDs: [])
+        guard likedRanking.prefix(4).allSatisfy({ $0.categoryID == "confidence" }) else {
+            print("FAIL: a like outside the remaining candidate pool must still personalize the next batch")
+            exit(4)
+        }
         print("AffirmationCatalogTests: PASS (\(extra.count) supplemental quotes)")
     }
 }
