@@ -2,6 +2,12 @@
 
 **Manager is a startup product and behavioral intelligence MODEL, not merely a research project.** We build usable software now while learning and improving its models with real evidence. The general shared-weight Behavior Foundation Model is an aspirational future release; existing task-specific model evaluations, execution safeguards and evaluation harnesses do not amount to a released BFM.
 
+## Critical upstream license gate — Be.FM cannot be treated as a commercial open-weight dependency
+
+As independently read on 2026-11-05, the [Be.FM 1.5-4B model card](https://huggingface.co/befm/BeFM1.5-4B) identifies Apache-2.0, **but** its linked [Be.FM Terms of Use](https://docs.google.com/document/d/10n7ccfUAf89yQhx5u1lF45o70JgsOEYNu8bDxtRKbHA/edit) explicitly state **non-commercial use only, no model redistribution and no distribution of derivatives**. Those terms are dated 2025-07-24 and still mention LLaMA 3.1, despite 1.5-4B being a Qwen3 LoRA adapter. Treat these documents as unresolved and **do not ship, commercially serve, or republish Be.FM weights without direct written rights clarification**. Accepting repository access as a research comparator does not itself authorize commercial Manager use.
+
+Preferred implementable path meanwhile: properly licensed Qwen3 base and self-trained CC0 HBCP study-arm outcome head, honest study-disjoint evaluation, a nonclinical permissioned product, and long-term independent user outcomes. Rights are separately verified for code, weights, data, and new derivative distribution. This is one BFM-01 workstream, not a second roadmap.
+
 ## Product value
 For a user-defined goal, Manager estimates relevant behavioral context, proposes a low-burden action at the right time, uses existing proven mechanisms, and compares independently observed results and harms against NO_ACTION or standard alternatives. Respect autonomy, consent, stop/revoke, privacy, and potential harm. Minimize friction and interruptions. Not a diagnosis, psychotherapy or clinical treatment without separately demonstrated safety and efficacy.
 
