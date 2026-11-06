@@ -1,0 +1,39 @@
+{
+  "recorded_at": "2026-11-06T12:48:00-08:00",
+  "task": "Maritime M-4 front half (portal publication stage)",
+  "life_manager": {
+    "pr": "https://github.com/Daisuke134/life-manager/pull/9288",
+    "branch": "fix/maritime-portal-start-20261106",
+    "branch_commits": [
+      "c159e03e92af8010956daeec951da9ebb8eeb5fc",
+      "36bb639ebd932cb2f6de34cf3e322c2e44e551a3"
+    ],
+    "ci": "all 15 checks pass (incl. Web CTA attribution contracts, sec-scan)",
+    "merge_method": "bin/merge-when-green (squash --admin, head pinned)",
+    "merge_commit": "bfc9b52f2906d3dfc7378783e01729baaab19eb5"
+  },
+  "anicca_products": {
+    "pin": "MANAGER_MARKETING_REVISION",
+    "pin_before": "9d0d79ca7b104fde4d40142a5ea563ea6fdb3e1e (both workflow files already unified at this older life-manager revision, 2026-11-06T03:17Z, without the Start fix)",
+    "pin_after": "bfc9b52f2906d3dfc7378783e01729baaab19eb5",
+    "files": [
+      ".github/workflows/netlify-deploy.yml (2)",
+      ".github/workflows/landing-pr-build.yml (2)"
+    ],
+    "commit": "90f39c08d",
+    "publish_overlay_sha256_at_new_revision": "caf84964ec2422ace9cd673a18fbcb661572f3f97137b540dcca7d6220d4c960 (matches the workflow pinned expectation)",
+    "deploy_run": "https://github.com/Daisuke134/anicca-products/actions/runs/42273430186",
+    "deploy_conclusion": "success (post-deploy money-path smoke passed, no rollback)"
+  },
+  "live_readback": {
+    "url": "https://aniccaai.com/maritime",
+    "start_hrefs": [
+      "https://life-call-production.up.railway.app/maritime?source=landing&lang=en",
+      "https://life-call-production.up.railway.app/maritime?source=landing&lang=en"
+    ],
+    "start_calendar_occurrences": 0,
+    "billing_line": "Billing is set up in the web app after signup; no payment details are required at signup.",
+    "verified": "raw HTML fetch + rendered page read, 2026-11-06 ~20:48 UTC"
+  },
+  "remaining": "M-4 back half: the /lm backend is still the Railway life-call service (incl. Calendar workflow); replacing it with the Maritime-hosted product is not done. Stage 1 provision/binding (M-1/M-2) also open. The portal is not yet claimed usable end to end."
+}
