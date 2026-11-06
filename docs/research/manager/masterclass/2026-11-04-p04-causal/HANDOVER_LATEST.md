@@ -1,3 +1,17 @@
+# Phase 7 本番公開・実読戻し完了（2026-11-05 America/Los_Angeles、UTC 2026-11-06T03:29:40Z）
+
+**Anicca本番サイトPhase 7 84記事版が配信済み、独立検証PASS。** `anicca-products` [release PR #885](https://github.com/Daisuke134/anicca-products/pull/885) merged `d3e94a7813c712e247299595b99d4f3b6485ea32`; Netlify [workflow #42156237071](https://github.com/Daisuke134/anicca-products/actions/runs/42156237071) conclusion **success**（money-path・rollback smokeを含む）。
+
+**本番実読戻し：** EN/JA homepage HTTP200でレビュー済みSHA256一致、Phase 7各EN/JA記事4本すべてHTTP200、公開`/blog/manager/release.json`に**84記事/50メディア**・正本content revision `b2a548bb82288128839ac8b61174d5e6ea60e106`。既存 `/`, `/lm`, `/blog/manager`, `/dais` もHTTP200。Phase 7記事：
+- https://aniccaai.com/blog/manager-vipassana-behavior-model-ja
+- https://aniccaai.com/blog/manager-vipassana-behavior-model-en
+- https://aniccaai.com/blog/manager-measure-welfare-and-harm-ja
+- https://aniccaai.com/blog/manager-measure-welfare-and-harm-en
+
+**P07統合CI：** P07-4 15件、P07-5/6 25件、統合10件、合計50件の安全な合成ソフトテストをGitHub Actionsへ常設。PR #9276 merged `350c34407a29b66a9291541f77351b09bbb47e2d`。本番での実ユーザーRCTは未実施。**唯一のNEXTはBFM-01**（先行モデルの商用権利と実データ評価・モデル統合）。Xへの投稿は禁止のまま継続。
+
+---
+
 # 最新引継ぎ（2026-11-05 America/Los_Angeles）— Phase 7完結・モデル商用権利ゲート
 
 **唯一のロードマップは隣の `ROADMAP_STATUS_JA.md`。学習の次／モデルの次を分離しない。唯一の現在TODO＝BFM-01。**
