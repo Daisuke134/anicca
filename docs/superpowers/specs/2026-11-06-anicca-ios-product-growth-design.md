@@ -197,3 +197,19 @@ Maestro 2.8.0 / iOS 26.5の実行では、OS許可が完了した後にも取得
 ### 通知のOS操作とアプリ検証の分担
 
 iOS 26.5 / Maestro 2.8.0では、通知センターの合成touchは文言を表示できてもアプリを起動しないことを観測する。同一通知のSimulator native AXボタン操作では、終了中のアプリが起動し本文が一致する。通知試験はsimctlによる配送→Maestroで通知表示確認→native AXで実通知カードを一度操作→Maestroでquote-text/本文/保存/フィード復帰を必須assertにする。launchAppやdeeplinkで通知受信を代替しない。coldは操作前PIDなし→操作後PIDあり、warmは同一PID継続を記録する。実APNs配送や実機の合成touch成功へ読み替えない。
+
+### 初回改善の検証証拠
+
+実装はPR #9272でmain `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`へ統合する。検証版は通常Release 1.9.7/817、アプリruntime treeは `e59cf7dcf1cd715f6443b5519947dd18b6db86c2`。mainとruntime・Xcode project・CI scriptsのtree一致を確認する。Xcode Cloudのbuild番号は独立採番で816、run=`ec24cda3-c88e-4b67-9a5c-091593a35f7f`、sourceは同じmain commitである。
+
+検証済み: production-source native fixture（journey、notification、saved、catalog/recommendation、purchase dedup）、購入package選択22件、Python21件、UIKit6件、通常Release build。Maestro13は初回目的→実文言→保存→soft paywall→上25/下5 swipe→許可回復→theme/relaunchをPASSする。11/12は初回/設定の3プランとStoreKitキャンセル・復元後復帰、15は日本語、16は選択themeの再起動保持、18は通知許可回復をPASSする。通知14はbody-only cold、warm、同ID別本文の一致・保存を必須assertし、OSカード操作のみnative AXを使う。fresh read-only reviewはCritical/Importantなし、PR CI15件PASS。
+
+動画・JUnit・xcresult・provider JSONはprivate永続path `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106` に置く。`anicca-197-product-demo.mp4` は初回全体、`anicca-197-maestro-purchases.mp4` は購入キャンセル/復元、`anicca-197-maestro-japanese.mp4` は日本語、`anicca-197-notifications-verified.mp4` は実OSカード→アプリ本文/保存である。通知録画のcold前PIDなし、cold後とwarm後のPID一致を `notification-video-receipt.json` へ記録する。通知許可をリセットするclearState試験の後は許可済み表示を再確認してから配送する。
+
+未確認の境界は分析サービス側event受信、実端末APNs配送、実購入/有料restore成功。StoreKitキャンセル・empty restore・Simulator配送をそれらの成功へ読み替えない。現在価格は米国storefrontで月$14.99・年$59.99・買い切り$59.99、trialなし、soft close可能を確認する。今回価格変更は行わない。提出状態と後続TODOは統合SSOTを参照する。
+
+### 初回App Review提出の公式照合
+
+App=`6755129214` / bundle=`ai.anicca.app.ios` / version=`1.9.7` / build=`816`、build ID=`41ac019d-6fbe-489a-8382-40a62d1fd9c9`。Xcode CloudはArchiveが成功し、後段のTestFlight外部テスト審査への自動送信だけが `Please try again later.` で失敗する。Cloud全体を成功と呼ばず、run→公式buildの関連付けでVALIDを確認し、再ビルドは起動しない。
+
+本番App Reviewへ既存VALID buildをattachし、doctor errors0/blocking0とfresh read-onlyの対象照合を経て提出する。submission ID=`cb6fa5a3-c350-482d-9ca7-369be6785249`、submittedDate=`2026-11-06T06:33:40.507Z`。`asc status` とversion GETで **WAITING_FOR_REVIEW**、version/build/submission一致を確認する。承認と公開は未確認で、審査待ちを公開完了へ読み替えない。成果manifestは [validation](../evidence/anicca-ios-1.9.7-validation.json)。通知動画の視聴用は `anicca-197-notification-demo.mp4`（録画開始時の準備待ちを除いたもの）、無編集元録画は保持する。
