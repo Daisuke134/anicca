@@ -12,7 +12,13 @@ test('English Manager homepage exposes current evidence, research, and honest li
   const html = read('pages/en.html');
   const text = visibleText(html);
 
-  assert.match(text, /Manager is Anicca's behavioral AI model and product/i);
+  assert.match(html, /<title>Anicca — Manager behavioral AI &amp; open-weight foundation model<\/title>|<title>Anicca — Manager behavioral AI & open-weight foundation model<\/title>/);
+  assert.match(html, /<meta name="description" content="Anicca builds Manager: an open-weight Behavioral Foundation Model to understand behavior, choose evidence-based interventions, and measure real outcomes\. Benchmarks open today; general checkpoint not released\.">/);
+  assert.match(html, /property="og:description" content="Anicca builds Manager: an open-weight Behavioral Foundation Model to understand behavior, choose evidence-based interventions, and measure real outcomes\. Benchmarks open today; general checkpoint not released\."/);
+  assert.match(html, /"@type": "WebSite"[\s\S]{0,240}Anicca builds Manager: an open-weight Behavioral Foundation Model to understand behavior, choose evidence-based interventions, and measure real outcomes\. Benchmarks open today; general checkpoint not released\./);
+  assert.match(text, /Anicca builds Manager, our behavioral AI model\./);
+  assert.match(text, /We are building an open-weight Behavioral Foundation Model to understand and simulate behavior/);
+  assert.doesNotMatch(text, /Manager is Anicca's behavioral AI model and product/);
   assert.match(text, /Behavioral Foundation Model/);
   assert.match(text, /Understand behavior\. Improve real lives\./);
   assert.match(html, /manager-real-intervention-outcomes-en/);
