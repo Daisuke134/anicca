@@ -82,6 +82,7 @@
 **Consumes:** Mixpanel aggregate、App Store Connect/RevenueCatの公式cohort/収益、app/date/locale/campaign/release/experiment dimensions。**Produces:** 公開個人データを含まないAnicca screen funnel panelと日次snapshot。
 
 - [ ] 現行Netlify deployで`out/open/data.json`を作る全step・secret scope・snapshot ownerを読み、Mixpanelのserver-side read経路と安全なCI credential存在を確認する。public HTML/JSへAPI secretを含めない。
+- [ ] `anicca-products` `origin/main`の既存`scripts/daily-metrics/mixpanel_client.py`は旧14-eventのSlack/日次archive用途で、Openとの接続は未確認。secret名の参照もActions workflowに見つからず、同SHAの隔離testは`MixpanelMetrics`の存在しない属性参照で1件失敗した。稼働collector/readbackと扱わず、owner・起動経路・event schemaを確認してから既存経路へ再利用する。
 - [ ] 既存`marketing-product-summary.js`のproduct-pack inputがMixpanel query/export resultを安全に表現できるか確認する。既存sourceへ最小接続し、新runtime/schedulerを作らない。利用可能なAPI/plan/権限が無ければ不足credential/owner/pathをcursorに残し、measured値を捏造しない。
 - [ ] Openの`data.json` contractに`product_analytics.anicca_ios` aggregateを加え、observed_at/data_from/data_to/status/coverage/numerator/denominator/cohort/window/locale/source/release/variantとnullable valueを保持する。
 - [ ] `index.html`にfunnel人数・率・分母、screen順/drop-off、first valueまでの時間、notification/purchase/trial/restore、成熟D1/D7/D30、country/storefront/locale/campaign/release/variant filterを既存デザインで表示する。未成熟・threshold/欠測はunknownと理由を出す。
