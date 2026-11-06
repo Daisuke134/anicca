@@ -1,0 +1,127 @@
+{
+  "lane": "Maritime M-1 follow-up (inherited from feat/maritime-capafy-publisher-resolution-20261106): state verification, inventory re-readback, VM catalog hot-deploy. Publication NOT yet achieved; single remaining blocker is the Capafy web session, restorable only via the parent agent's browser-task OTP flow.",
+  "recorded_at": "2026-11-06T17:32Z",
+  "agent": {
+    "id": "80c0208c-af40-4b4c-94ee-a24b3f731db6",
+    "name": "lm-manager-dc104192deb615426467efb6f10ed5a3",
+    "tenant": "lm_92ef3671-1f64-8df8-b3cf-42ae9e36c8fe",
+    "release": "a0d217d0769db2dab68bb8a8a452bfaea916fe9d",
+    "status_after_lane": "sleeping (POST /sleep 200 after each probe batch)"
+  },
+  "inherited_state": {
+    "branch": "feat/maritime-capafy-publisher-resolution-20261106",
+    "commits": [
+      "30257e6e5 feat(capafy): resolve Maritime tenant provider binding into verified publisher state",
+      "6f3d48357 docs(maritime): record Capafy binding resolution proof and CAP_FULL stop"
+    ],
+    "remote_tip_verified_at_lane_start": "6f3d48357d0cb547aa798cd06c9cd35015777a41 (git ls-remote, matches local HEAD)",
+    "prior_evidence": "docs/evidence/maritime/cycle-20261106-capafy-binding.json",
+    "cycle_003_result": "Resolver verified the publisher account in-cycle; factory inventory verdict CAP_FULL stopped publication before publish-init/CP1. Binding env var, VM secret slot, and hot-deployed resolver were left in place."
+  },
+  "verification_this_lane": {
+    "mac_inventory_readback": {
+      "tool": "skills/capafy-autopublish/scripts/inventory_status.py run on the Mac against the live publisher token store (server truth only)",
+      "verdict": "PUBLISHABLE",
+      "action": "resume_draft",
+      "reason": "resume exact-title repository draft",
+      "item": {
+        "agent_id": "3652913997",
+        "title": "TikTok Product Demo — Proof-First Script",
+        "feature": "catalog:tiktok-product-demo-proof-script"
+      },
+      "counts": {
+        "total": 89,
+        "listed": 72,
+        "occupied": 5,
+        "free": 0,
+        "retry": 1,
+        "recover": 12,
+        "ready_publish": 0
+      },
+      "occupied_slots": [
+        {
+          "agent_id": "5867759757",
+          "remote_status": "draft",
+          "title": "HookCut — Viral Remake, Seedance 2.0"
+        },
+        {
+          "agent_id": "3652913997",
+          "remote_status": "draft",
+          "title": "TikTok Product Demo — Proof-First Script"
+        },
+        {
+          "agent_id": "7069327619",
+          "remote_status": "draft",
+          "title": "Formula 1 Race Weekend Brief"
+        },
+        {
+          "agent_id": "5128982710",
+          "remote_status": "draft",
+          "title": "TikTok Affiliate Demo — Proof-to-Post"
+        },
+        {
+          "agent_id": "4485235701",
+          "remote_status": "review_rejected",
+          "lifecycle": "retry",
+          "title": "YouTube Shorts Storytime Script — Scene by Scene"
+        }
+      ],
+      "interpretation": "The create-cap is still full (free=0), but a sixth create is no longer required: the factory's selected action is to resume the existing draft 3652913997 and take it through publish. Cycle 003's in-VM readback said publishable=0 because the VM lacked this catalog item (see catalog_gap_and_fix).",
+      "frozen_check": "None of the five occupying agent IDs appears in skills/capafy/FROZEN.json (checked 3652913997/5867759757/7069327619/5128982710 against the file; 4485235701 is a rejected non-seller retry). frozen_guard was not triggered; nothing frozen was touched."
+    },
+    "vm_probe": {
+      "execution_id": "dad5aa90193d46e2ba24bc8e37d9deda",
+      "result": "completed, exit 0",
+      "overlay_intact": {
+        "/app/skills/capafy-autopublish/scripts/cloud_cycle.py": "15269 bytes (current-source version from commit 30257e6e5)",
+        "/app/skills/capafy-autopublish/scripts/publisher_resolution.py": "8289 bytes (present)"
+      },
+      "resolution_json": {
+        "resolvedAt": "2026-11-06T15:26:00.962290+00:00",
+        "accountVerified": true,
+        "browserSeeded": false,
+        "materials": [
+          "/data/<tenant>/runtime/capafy-publisher/config.json",
+          "/data/<tenant>/.env"
+        ]
+      },
+      "secret_slot_present": "/data/<tenant>/secrets/capafy-publisher.json (name only listed; value never read or printed)"
+    },
+    "browser_session_recheck": {
+      "profile": "Mac ~/.local/state/anicca/capafy/browser-profile (identity capafy:kosuke)",
+      "method": "Local Storage leveldb strings readback + DevToolsActivePort liveness",
+      "result": "Still logged out: latest auth-storage entry has isAuthenticated:false (1 occurrence) and isAuthenticated:true (0 occurrences); DevToolsActivePort 49905 not listening (CDP /json/list failed). Consistent with the 15:40Z finding; no session has been restored since."
+    },
+    "catalog_gap_and_fix": {
+      "gap": "skills/capafy/catalog/tiktok-product-demo-proof-script was absent from the VM image (a0d217d catalog has tiktok-comment-reply-script-pack / tiktok-script-pro / tiktok-series-continuity-planner only) AND is untracked (??) in the Mac main checkout — it exists only as Mac working-tree files (icon.png 201953 B, icon.svg, SKILL.md, LISTING.md, test/test_case.md). This absence is why the in-VM inventory in cycle 003 could not select the resume.",
+      "fix": "Hot-deployed the directory into the VM /app/skills/capafy/catalog/ (same overlay pattern as cycle 003, superseded later by the tenant image update).",
+      "route": "tar.gz built on the Mac (204820 bytes, sha256 63ce66fac85d747d8f6d38743b765ebd23fdec893ddbe5ec2d2a847750ba5a0c) → Maritime files API PUT /files/write in 4 base64 parts (70000/70000/70000/63096 chars, all HTTP 200) → one exec: concat, base64 -d, sha256sum verified in-VM (match), tar -xzf into /app/skills/capafy/catalog/, find-listing verified all 5 files with icon.png at 201953 bytes; transfer temp files removed in the same exec.",
+      "failed_routes_recorded": [
+        "exec base64 chunk appends: ~50 s per exec wake; only 60000/273096 chars landed in ~9 min — abandoned for the files API route.",
+        "POST /files/upload (multipart) with dest_dir=/data/<tenant>: HTTP 500 'Write failed' — not used."
+      ],
+      "appledouble_cleanup": "macOS ._ AppleDouble files from the tar were deleted in-VM; a verification exec (009dd7d955f24d93a86426ab8695de2d, exit 0) confirms exactly the 5 real files remain: LISTING.md, SKILL.md, icon.png, icon.svg, test/test_case.md.",
+      "repo_note": "The catalog directory still needs to be committed to the repository by its owner lane; until then it exists only on the Mac working tree and in this VM overlay."
+    }
+  },
+  "remaining_blocker": {
+    "step": "Restore a logged-in Capafy web session (email OTP login at https://capafy.ai).",
+    "why": "publish_prepare.sh/publish_finish.sh drive CP1 (Agent-Card save), CP2 (key host) and CP3 (submit-for-review) through a leased browser session (identity capafy:kosuke). No live session exists anywhere: Mac profile logged out, cloak vault auth-state expired (token 2026-11-01, ssr-auth 2026-11-05). The OTP is delivered to the account Gmail; its value is redacted in the Gmail connector and is consumable only through the parent agent's browser-task verification-code flow for origin https://capafy.ai. This subagent lane cannot operate a browser, so this one step belongs to the parent agent.",
+    "after_restoration_sequence": [
+      "1. Export the restored session storage state from the Mac capafy:kosuke profile (session_vault tooling).",
+      "2. Re-provision the VM secret slot adding browserAuthState (Maritime files API, same route as the original provisioning, values only on the Mac/VM path) so the resolver materializes browser-auth-state.json and browserSeeded becomes true.",
+      "3. Dispatch cycle maritime-direct-20261106-004 via exec with LM_CAPAFY_BINDING_JSON env injection (a0d217d runtime does not forward API env), directing the runner to resume draft 3652913997 through the factory flow (publish_prepare.sh with the draft id, CP1, publish_finish.sh) — catalog and resolver are already in the VM.",
+      "4. Verify with publish-remote-status: platform_status=1 (under review) and is_confirmed_config_keys=true is the factory's own completion bar for submission; after Capafy approves, the agent goes online.",
+      "5. Read the public Capafy page for the agent and record the URL as the publication evidence."
+    ]
+  },
+  "publication_status": "NOT published. No run-cycle was dispatched in this lane and no provider receipt exists. Claiming publication requires the remote-status verification and public-page readback above.",
+  "receipt_field_note": "cloud_cycle.py receipts keep providerReceiptRefs structurally [] (see 15:40 checkpoint); publication evidence is defined as the factory remote status plus the public page, not the receipt field.",
+  "collision_note": "The Mac Capafy loop reads the same inventory and also selects resume_draft 3652913997. To avoid two drivers on one draft, cycle 004 should be dispatched immediately after the session is restored; the BOARD line for this lane records that the Maritime lane owns this resume.",
+  "cost": {
+    "run_cycle_dispatches_this_lane": 0,
+    "llm_credit_spend_this_lane": "None (only short operator exec probes; agent compute rose from 9,921 s to ~10,361 s across all lanes' execs in the window).",
+    "new_charges_or_plan_changes": "None. No paid plan joined, no billing switch, no card use.",
+    "welcome_credit_expires": "2026-11-19T15:49:41Z"
+  }
+}

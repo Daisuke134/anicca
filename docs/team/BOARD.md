@@ -346,3 +346,5 @@
 
 - Codex: Life Manager Cloudを一般利用者へ販売する商品として再定義。本番Maritime/Naïve大会専用、外部一次資料15件、LC01–66（文書3完了・運用63未完）を正本へ保存。provider変更/支出/提出0。次: LC04、本番配備とsourceの公式照合。
 - 2026-11-07 00:40 JST / Muse: Maritime Capafy binding 解決層を実装・実証。env へ参照のみの LM_CAPAFY_BINDING_JSON を設定（readback 済）、publisher_resolution.py が VM 内で公式 API 検証つきで token store/.env を materialize（サイクル003内で再解決・accountVerified=true）。公開は工場 inventory の CAP_FULL（提出枠5件占有・free=0）で停止、CP1 以前。実費 $0.239、agent は sleeping 復帰。証拠 docs/evidence/maritime/cycle-20261106-capafy-binding.json、source commit 30257e6e5。次: 提出枠の解放（Capafy ループ在庫管理）、Web セッション復旧（OTP は親の browser-task 経路）、tenant image 更新。
+
+- 2026-11-07 02:32 JST / Muse: Maritime M-1 継続。在庫再実測で PUBLISHABLE／resume_draft（3652913997 TikTok Product Demo）を確定し、VM に不足していた同カタログをホットデプロイ・sha検証済み。残ブロッカーは Capafy Web セッション復旧（メール OTP、親の browser-task 経路）のみ。このドラフト再開は Maritime レーンが所有する。証拠 docs/evidence/maritime/cycle-20261106-capafy-binding-followup.json。次: セッション復旧→browserSeeded 化→サイクル004 dispatch→公開ページ実読。

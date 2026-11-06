@@ -23699,6 +23699,17 @@ b.6-01〜27bのsource/configとT23.1 aggregate-only exporterは完了。T23.1 pa
 - **費用**: 本レーンの llm 実費 $0.239（002: $0.123、003: $0.106）。welcome credit 残 ≈$4.23（失効 2026-11-19T15:49:41Z）。新規課金・有料 plan・billing 切替ゼロ。agent は sleeping へ復帰（invocations 17、compute 9,921s）。
 - **PR #8745 の不採用理由（実測）**: 中央チェーンは Railway／Postgres 前提に加え、実アカウントで fail-closed になる2件の前提違い（subject の UUID 形式要求 vs 実 userId は数字 snowflake／role === 'developer' 要求 vs 実 role は consumer・developerVerified=true）。
 
+#### 2026-11-06 Maritime Capafy binding follow-up checkpoint（M-1 継続）
+
+**現在地・as of 2026-11-06 17:32 UTC:** binding 注入・解決層・VM 内カタログまで到達。公開の残ブロッカーは Capafy Web セッション復旧のみ（親エージェントの browser-task OTP 経路）。根拠→[cycle-20261106-capafy-binding-followup.json](../../evidence/maritime/cycle-20261106-capafy-binding-followup.json)。
+
+- **在庫の再実測（Mac・サーバ真値）**: 工場 inventory_status.py の判定は **PUBLISHABLE / action=resume_draft**（理由: resume exact-title repository draft）。対象は既存ドラフト **3652913997 TikTok Product Demo — Proof-First Script**。容量は free=0 のまま（占有5件＝ドラフト4件 5867759757／3652913997／7069327619／5128982710＋却下リトライ 4485235701）だが、6件目の新規作成は不要で、既存ドラフトの再開で公開まで進める。占有5件はいずれも FROZEN.json 非該当（照合済み）。
+- **サイクル003で in-VM 判定が publishable=0 だった理由が判明**: 再開対象のカタログ `skills/capafy/catalog/tiktok-product-demo-proof-script` が VM イメージ（a0d217d）に無く、Mac 側でも未コミット（untracked）の作業ファイルとしてのみ存在した。本レーンで tar（204,820 bytes、sha256 63ce66fa…）を files API（PUT /files/write ×4）＋exec で VM の /app へホットデプロイし、in-VM で sha 一致と5ファイル（icon.png 201,953 bytes 含む）を検証済み。カタログ本体のリポジトリへのコミットは所有レーン側の残作業（image 更新で恒久化）。
+- **VM 側の残存確認**: ホットデプロイ済み cloud_cycle.py（15,269 bytes）／publisher_resolution.py（8,289 bytes）は無傷。resolution.json は accountVerified=true・browserSeeded=false のまま、秘密スロットも在存（exec プローブ dad5aa90…、exit 0）。
+- **Web セッション再確認**: Mac の capafy:kosuke プロファイルは依然ログアウト（leveldb の auth-storage は isAuthenticated:false、CDP ポート無応答）。CP1〜CP3 はこのセッションが必須。復旧はメール OTP を親の browser-task 認証コード経路（origin https://capafy.ai）で消費するログインのみで、本レーン（サブエージェント）はブラウザ操作ができないため親へ委ねる。復旧後の手順は証拠 JSON に明記（storage state 再 export → スロットへ browserAuthState 追加 → サイクル004 を exec env 注入で dispatch し 3652913997 を再開 → publish-remote-status で検証 → 公開ページ実読）。
+- **衝突注意**: Mac の Capafy ループも同じ resume_draft を選択し得る。セッション復旧直後にサイクル004を dispatch し、この再開は Maritime レーンが所有する（BOARD 記録）。
+- **費用**: 本レーンの run-cycle dispatch は0件・LLM 実費なし（オペレータ exec プローブのみ）。新規課金・有料 plan・billing 切替ゼロ。agent は sleeping 復帰済み。
+
 ### Life Manager distribution: four channels, one metrics tool, blog per business — 2026-10-18 20:40 JST (claude-evo-eval-1012, Dais: "maximize distribution and conversion for every business; separate the blog per business; same tool for all agents; copy the successful")
 
 **Directive (restated):** every business agent (Capafy, LINE stickers, eBook, AI voice tools, Anicca app) runs the same distribution system on four channels, measures with the same free tools, and improves from the numbers: (1) social (one account = one language, largest market first), (2) search-engine SEO, (3) AI answer engines (Google AI Overview, ChatGPT, Perplexity), (4) the platform's own internal promotion (Capafy search/category/hot ranking). Copy successful software/agent distribution, not only Capafy sellers.
