@@ -104,7 +104,8 @@ def fit_model(records: list[dict]) -> tuple[dict, dict]:
     imputer = pipeline.named_steps["simpleimputer"]
     ridge = pipeline.named_steps["ridge"]
     indicator = [int(i) for i in imputer.indicator_.features_]
-    coefficients = [float(a) for a in ridge.coef_]
+    # Round presentation weights to eliminate machine-level BLAS noise in SHA256.
+    coefficients = [round(float(a), 10) for a in ridge.coef_]
     model = {
         "schema_version": "1",
         "model_id": MODEL_ID,
@@ -115,10 +116,11 @@ def fit_model(records: list[dict]) -> tuple[dict, dict]:
         "study_id_count": len(set(groups)),
         "intervention_arms": len(records),
         "feature_names": list(X.columns),
-        "median_imputation": [float(a) for a in imputer.statistics_],
+        "median_imputation": [round(float(a), 10) for a in imputer.statistics_],
         "missing_indicator_feature_indices": indicator,
         "coefficients": coefficients,
-        "intercept": float(ridge.intercept_),
+        "intercept": round(float(ridge.intercept_), 10),
+        "coefficient_serialization": "round_10_decimal_places",
         "ridge_alpha": ALPHA,
         "prediction_target": "observed_RCT_study_arm_smoking_cessation_percent",
         "causal_effect_estimated": False,
@@ -158,6 +160,18 @@ def main():
     out.write_text(content)
     qa["weights_sha256"] = hashlib.sha256(content.encode()).hexdigest()
     qa["model_file"] = out.name
+    manifest = {
+        "model_id": MODEL_ID,
+        "weights_file": out.name,
+        "weights_sha256": qa["weights_sha256"],
+        "source_sha256": SHA,
+        "training_data_license": "CC0",
+        "evidence": "trained_RCT_arm_outcome_baseline_NOT_foundation_model",
+        "clinical_or_intervention_authorization": False,
+    }
+    manifest_path = out.with_suffix(".manifest.json")
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    qa["manifest_file"] = manifest_path.name
     qa["warning"] = ("Study-arm research outcome baseline only; not Manager BFM, "
                      "not causal and not an individual medical recommendation.")
     dest = Path(args.receipt)
