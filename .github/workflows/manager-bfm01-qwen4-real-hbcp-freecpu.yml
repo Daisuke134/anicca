@@ -1,0 +1,114 @@
+name: Manager BFM-01 | real HBCP study-arm prediction on free CPU
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-bfm01-qwen4-real-hbcp-freecpu.yml"
+      - "products/manager/experiments/cloud/bfm01_hbcp_qwen4_study_pilot.py"
+      - "products/manager/experiments/cloud/test_bfm01_hbcp_qwen4_study_pilot.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manager-bfm01-real-hbcp-cloud
+  cancel-in-progress: false
+
+jobs:
+  real-hbcp-cpu-pilot:
+    name: Qwen3 4B vs train-mean on actual HBCP intervention studies
+    runs-on: ubuntu-24.04
+    timeout-minutes: 27
+    env:
+      GGUF_SHA256: "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e"
+      GGUF_SIZE: "2497280736"
+      LLAMA_ARCHIVE_SHA256: "d9be8922022f26524efe5af7449b50414f0fc781e9b740042e4af7e50e511525"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test source, split, no target leakage and parsing (7 software tests)
+        working-directory: products/manager/experiments/cloud
+        run: python -m unittest -v test_bfm01_hbcp_qwen4_study_pilot.py
+      - name: Fetch pinned upstream llama.cpp CPU release and verify binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bfm01-real"
+          curl --fail --show-error --location --retry 3 --retry-delay 5 --max-time 240 \
+            "https://github.com/ggml-org/llama.cpp/releases/download/b12137/llama-b12137-bin-ubuntu-x64.tar.gz" \
+            -o "$RUNNER_TEMP/bfm01-real/llama.tar.gz"
+          echo "$LLAMA_ARCHIVE_SHA256  $RUNNER_TEMP/bfm01-real/llama.tar.gz" | sha256sum --check
+          mkdir "$RUNNER_TEMP/bfm01-real/bin"
+          tar -xzf "$RUNNER_TEMP/bfm01-real/llama.tar.gz" -C "$RUNNER_TEMP/bfm01-real/bin"
+          BIN="$(find "$RUNNER_TEMP/bfm01-real/bin" -type f -name llama-server | head -1)"
+          test -n "$BIN"
+          chmod +x "$BIN"
+          printf '%s\n' "$BIN" > "$RUNNER_TEMP/bfm01-real/server-path"
+      - name: Fetch immutable open Qwen4B GGUF and verify SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODEL="$RUNNER_TEMP/bfm01-real/qwen3.gguf"
+          curl --fail --show-error --location --retry 3 --retry-delay 5 --max-time 780 \
+            "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF/resolve/ae44f08e1392f39c0e474af10c3ff8355c8b6688/Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf" \
+            -o "$MODEL"
+          echo "$GGUF_SHA256  $MODEL" | sha256sum --check
+          test "$(stat -c%s "$MODEL")" = "$GGUF_SIZE"
+          test "$(head -c4 "$MODEL" | od -An -tx1 | tr -d ' \n')" = "47475546"
+      - name: Start local-only Qwen CPU inference service
+        shell: bash
+        run: |
+          set -euo pipefail
+          SERVER="$(cat "$RUNNER_TEMP/bfm01-real/server-path")"
+          export LD_LIBRARY_PATH="$(dirname "$SERVER"):$RUNNER_TEMP/bfm01-real/bin/lib"
+          "$SERVER" --model "$RUNNER_TEMP/bfm01-real/qwen3.gguf" \
+            --host 127.0.0.1 --port 8087 --ctx-size 2048 --threads 4 \
+            --parallel 1 --n-gpu-layers 0 \
+            > "$RUNNER_TEMP/bfm01-real/server.log" 2>&1 &
+          PID=$!
+          echo "SERVER_PID=$PID" >> "$GITHUB_ENV"
+          for _ in $(seq 1 90); do
+            if curl --fail --silent --max-time 2 http://127.0.0.1:8087/health | grep -q 'ok'; then
+              echo "LLM_SERVER_READY"; exit 0
+            fi
+            if ! kill -0 "$PID" 2>/dev/null; then
+              tail -80 "$RUNNER_TEMP/bfm01-real/server.log"
+              echo "Server exited during model loading" >&2
+              exit 1
+            fi
+            sleep 3
+          done
+          tail -80 "$RUNNER_TEMP/bfm01-real/server.log"
+          echo "No ready Qwen CPU endpoint" >&2
+          exit 1
+      - name: REAL trial-arm forecasts; one frozen study-disjoint split
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          timeout 630s python products/manager/experiments/cloud/bfm01_hbcp_qwen4_study_pilot.py \
+            --endpoint http://127.0.0.1:8087 \
+            --output artifacts/bfm01-qwen4-hbcp-aggregate.json
+          python - <<'PY'
+          import json
+          j=json.load(open("artifacts/bfm01-qwen4-hbcp-aggregate.json"))
+          assert j["n_eval_arms"]==12 and j["n_train_arms"]>600
+          assert j["causal_effect_estimated"] is False
+          assert j["not_befm"] is True
+          print("Real HBCP aggregated human trial arm outcome test:",
+                j["n_eval_arms"],"arms /",j["n_eval_unique_studies"],"studies")
+          print("Study-disjoint TRAIN MEAN MAE =",j["mae_train_mean_pct_points"],"pp")
+          print("Qwen4 Q4 MAE with invalid fallback =",j["mae_qwen4_pct_points_including_fallback"],"pp")
+          print("Invalid Qwen generations:",j["invalid_generations"])
+          print("This is not Be.FM and not a causal effect or representative BFM benchmark.")
+          PY
+      - name: Save aggregate-only measured model comparison
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-bfm01-real-hbcp-qwen3-4b-study-heldout-pilot
+          path: artifacts/bfm01-qwen4-hbcp-aggregate.json
+          retention-days: 30
