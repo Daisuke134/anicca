@@ -130,7 +130,8 @@ def fit_model(records: list[dict]) -> tuple[dict, dict]:
         raise AssertionError("export dimensions differ from fitted sklearn model")
     # Prove interchangeability between the inspectable JSON and learned sklearn.
     sk = pipeline.predict(X)
-    js = [predict_json(model, r) for r in records]
+    js = [predict_json(model, {k: r.get(k) for k in model["feature_names"]})
+          for r in records]
     expected = np.clip(sk, 0, 100)
     max_delta = float(np.max(np.abs(expected - js)))
     if max_delta > 1e-6:
