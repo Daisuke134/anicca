@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal, Mapping, Any
 
-from manager_core.p07_4_value_action_gate import SelfChosenGoal
+from manager_core.p07_4_value_action_gate import SelfChosenGoal, plan_draft
 from manager_core.p07_5_experience_observation import ContemplativeObservation
 from manager_core.p07_6_welfare_safety import OutcomeObservation, assess_welfare
 from manager_core.p07_contemplative_support import propose_nonclinical_support
@@ -73,7 +73,7 @@ def evaluate_jitai_point(
     *,
     point: DecisionPoint,
     goal: SelfChosenGoal,
-    experience: ContemplativeObservation,
+    experience: ContemplativeObservation | None = None,
     welfare: OutcomeObservation,
     comb_hypothesis: str = "UNKNOWN",
     habit_designer_result: Mapping[str, Any] | None = None,
@@ -105,8 +105,11 @@ def evaluate_jitai_point(
     )
     if any(type(t) is not int or not 0 <= t < 1440 for t in checks):
         return no("INVALID_LOCAL_TIME")
-    if point.is_authenticated_user_context is not True:
+    if type(point.is_authenticated_user_context) is not bool or point.is_authenticated_user_context is not True:
         return no("UNVERIFIED_USER_CONTEXT")
+    if any(type(v) is not bool for v in (point.driving,point.safe_to_interrupt,
+                                         point.available_now,point.recently_declined)):
+        return no("UNVERIFIED_ENVIRONMENTAL_CONTEXT")
     if point.driving is True:
         return no("DRIVING")
     if point.safe_to_interrupt is not True or point.available_now is not True:
@@ -132,18 +135,26 @@ def evaluate_jitai_point(
         if elapsed < point.cooldown_minutes:
             return no("COOLDOWN")
 
-    # Reuse existing four-layer P07 contract, not generic LLM instructions.
-    outcome = propose_nonclinical_support(
-        goal=goal,
-        experience=experience,
-        welfare=welfare,
-        hypothesized_comb=comb_hypothesis,
-        existing_habit_designer_result=habit_designer_result,
-    )
+    # Ordinary JITAI goals do not require contemplative experience reports.
+    # Reuse the four-layer P07 contract when a report was explicitly provided.
+    if experience is None:
+        if comb_hypothesis not in ("Capability", "Opportunity", "Motivation", "UNKNOWN"):
+            return no("UNSUPPORTED_COM_B_CAUSAL_LABEL")
+        plan = plan_draft(goal, existing_habit_designer_result=habit_designer_result)
+        choice, reason, content = plan.choice, plan.reason, plan.draft
+    else:
+        outcome = propose_nonclinical_support(
+            goal=goal,
+            experience=experience,
+            welfare=welfare,
+            hypothesized_comb=comb_hypothesis,
+            existing_habit_designer_result=habit_designer_result,
+        )
+        choice, reason, content = outcome.status, outcome.reason, outcome.draft
     return JitaiCandidate(
-        choice=outcome.status,
-        reason=outcome.reason,
-        draft=outcome.draft if outcome.status == "DRAFT_ONLY" else None,
+        choice=choice,
+        reason=reason,
+        draft=content if choice == "DRAFT_ONLY" else None,
         decision_point_valid=True,
         may_send_notification=False,
         external_effects=(),
