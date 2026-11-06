@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Mapping, Any
 import json
 
-from manager_core.models.source import Source
+# No live Manager Core actions are imported; this adapter is read-only.
 
 # Pinned SHA256 of source-controlled, inspectable JSON model weights.
 # Only the accepted training job may change this along with a model card.
@@ -75,7 +75,7 @@ def predict_published_study_arm(
     if coded < 5:
         return no("NOT_ENOUGH_AGGREGATE_STUDY_CONTEXT")
     # Import the domain-specific numeric JSON model only when explicitly called.
-    from manager.models.manager_hbcp_ridge_head import predict_json
+    from models.manager_hbcp_ridge_head import predict_json
     try:
         pct = predict_json(model, evidence)
     except (ValueError, KeyError, TypeError):
