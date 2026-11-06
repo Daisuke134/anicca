@@ -1,0 +1,124 @@
+name: Manager P07-5/6 | package EN/JA articles + verify 118 slides/PDF
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-p07-5-p07-6-content-slide-publish.yml"
+      - "docs/research/manager/publication/2026-10-19/append_p07_5_p07_6.py"
+      - "docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p07_5_p07_6_append_slides.py"
+      - "docs/research/manager/articles/2026-11-05-vipassana-insight-behavior-model-*.md"
+      - "docs/research/manager/articles/2026-11-05-measure-benefit-and-harm-p07-6-*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manager-p07-5-6-canonical-content-20261105
+  cancel-in-progress: false
+
+jobs:
+  package-and-verify:
+    name: Preserve 80 articles; add 4, append 4 English slides + Japanese notes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Refuse untrusted fork or unexpected branch
+        env:
+          SOURCE_BRANCH: ${{ github.head_ref }}
+          SOURCE_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          TARGET_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$SOURCE_REPOSITORY" = "Daisuke134/life-manager"
+          test "$TARGET_REPOSITORY" = "$SOURCE_REPOSITORY"
+          test "$SOURCE_BRANCH" = "feat/manager-p07-5-p07-6-contemplative-welfare-20261105"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install reproducible PPTX writer
+        run: python -m pip install --disable-pip-version-check "python-pptx==1.0.2"
+      - name: Reuse current publication manifest and append four articles
+        run: python docs/research/manager/publication/2026-10-19/append_p07_5_p07_6.py
+      - name: Validate existing blog contract and blog tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - <<'JS'
+          import {validatePublication} from './apps/landing/manager-blog/scripts/package-contract.mjs';
+          import fs from 'node:fs';
+          const p = 'docs/research/manager/publication/2026-10-19/manifest.json';
+          const packageData = validatePublication(JSON.parse(fs.readFileSync(p,'utf8')));
+          if(packageData.articles.length!==84 || packageData.media.length!==50) throw Error("unexpected canonical history");
+          console.log('Validated canonical Manager blog articles:',packageData.articles.length,'media:',packageData.media.length);
+          JS
+          node --test apps/landing/manager-blog/tests/*.test.mjs
+      - name: Append P07-5/P07-6 research slides and Japanese notes
+        run: python docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p07_5_p07_6_append_slides.py
+      - name: Install headless LibreOffice / Noto CJK / PDF checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            libreoffice-impress poppler-utils fonts-noto-cjk
+      - name: Export & verify exact 118-page PDF
+        shell: bash
+        run: |
+          set -euo pipefail
+          D=docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club
+          if test -s "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf" &&
+             test "$(pdfinfo "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf" | awk '/^Pages:/ {print $2}')" = 118; then
+            echo "Existing PDF is already 118 pages; avoid repeated metadata commits."
+          else
+            mkdir -p /tmp/manager-p0756-pdf
+            timeout 360s libreoffice -env:UserInstallation=file:///tmp/lo-manager-p0756 \
+              --headless --convert-to pdf --outdir /tmp/manager-p0756-pdf \
+              "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx"
+            test -s /tmp/manager-p0756-pdf/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf
+            cp /tmp/manager-p0756-pdf/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf "$D/"
+          fi
+          test "$(pdfinfo "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf" | awk '/^Pages:/ {print $2}')" = 118
+          sha256sum "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx" "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf"
+          echo "P07-5 and P07-6: verified 118 research slides and 118 PDF pages."
+      - name: Commit ONLY synchronized canonical media artifacts to this PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          D=docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club
+          P=docs/research/manager/publication/2026-10-19
+          git add \
+            docs/research/manager/articles/2026-11-05-vipassana-insight-behavior-model-ja.md \
+            docs/research/manager/articles/2026-11-05-vipassana-insight-behavior-model-en.md \
+            docs/research/manager/articles/2026-11-05-measure-benefit-and-harm-p07-6-ja.md \
+            docs/research/manager/articles/2026-11-05-measure-benefit-and-harm-p07-6-en.md \
+            "$P/manifest.json" \
+            "$P/en/manager-vipassana-behavior-model-en.md" \
+            "$P/ja/manager-vipassana-behavior-model-ja.md" \
+            "$P/en/manager-measure-welfare-and-harm-en.md" \
+            "$P/ja/manager-measure-welfare-and-harm-ja.md" \
+            "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pptx" \
+            "$D/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf" "$D/SPEAKER_NOTES_JA.md"
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo "All content already synchronized."
+          else
+            git commit -m "content(manager): 84 verified EN/JA blog articles and 118-slide P07-5/6 archive"
+            git push origin HEAD:refs/heads/feat/manager-p07-5-p07-6-contemplative-welfare-20261105
+          fi
+      - name: Store slide and publication QA receipts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-p075-p076-84-article-118-slide-release
+          path: |
+            docs/research/manager/publication/2026-10-19/manifest.json
+            docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club/AI_BEHAVIOR_JOURNAL_CLUB_JA.pdf
+          retention-days: 30
