@@ -1,1 +1,219 @@
-{"base_main_sha":"c0679e2426372e6f1e4967a36722e4ceb7eea11d","competition_terms":{"award":"Up to USD 20,000 in LLM credits per winning project; not all winners receive $20,000; second/third amounts unpublished","excluded":"Fake accounts, bots used to inflate a count, duplicate identities, fabricated activity","http":200,"last_updated":"2026-10-29","note":"Terms were updated 2026-10-29, newer than the 2026-10-15 version cited in earlier evidence. No Round 1 cutoff, Top 30 rubric, Week 2 milestone, or project-form fields are published in the Terms.","participation_benefit":"Full access to Keiki, $1,000 in Maritime credits, access to supermemory and PumpGTM (per official home and Terms, retrieved 2026-11-06)","source":"https://competition.maritime.sh/terms","target":"1,000 distinct users with real usage; count is based on people using the agent, not agents/VMs/subagents; project-level usage reviewed on Keiki or Maritime","window":"2026-10-20 through 2026-12-01, closing 23:59 Pacific","winner_rule":"First three projects to reach the target, subject to verification"},"maritime_account_readback":{"account_status":"active","billing_agents":[{"compute_minutes_this_period":0.0,"cost_usd":10.0,"invocations":0,"name":"lm-manager-dc104192deb615426467efb6f10ed5a3","tier":"always_on"},{"compute_minutes_this_period":990.43,"cost_usd":10.0,"invocations":0,"name":"lm-cloud-l02-20261105","tier":"always_on"}],"billing_model":"seats (legacy seat plan family; plans on this model keep their terms per official billing docs)","billing_period":"2026-11","billing_total_cost_usd":20.0,"compute_minutes_period_after_probe":992.2,"computers":{"list_count":0,"plan_machines_field":2,"plan_machines_semantics":"UNCONFIRMED"},"free_tier_limits":{"maxAgents":3,"maxAwakeMachines":1},"next_invoice":null,"plan":null,"plan_monthly_cents":0,"seat_catalog_from_billing_config":{"agent_fee_cents_per_month":100,"growth":{"desktop_cents_per_month":500,"included_agents":100,"max_awake_machines":25,"monthly_cents":10000},"max_concurrent_active_free":3,"note":"Catalog read from GET /api/plans on this account (seat-model catalog). Desktop is a paid add-on on every paid tier; the free tier has no desktop entitlement.","scale":{"desktop_cents_per_month":400,"included_agents":500,"max_awake_machines":60,"monthly_cents":50000},"starter":{"desktop_cents_per_month":600,"included_agents":20,"max_awake_machines":5,"monthly_cents":2000}},"source":"https://api.maritime.sh (official REST, account API key, read-only GETs)","status_field":null,"unsettled_arrears_cents":0,"wallet_api_credits":{"budget_usd":5.0,"note":"This is the Maritime LLM/API credit bucket, separate from plan/usage credit. No competition credit balance appears here.","remaining_usd":4.61,"spent_usd":0.39,"welcome_credit_expires_at":"2026-11-19T15:49:41Z","welcome_credit_remaining_cents":461},"wallet_plan_usage":{"plan":"free","usage":{}}},"observed_at":"2026-11-06T13:36-14:00Z","observed_by":"Maritime lane (Muse subagent), read-only official readbacks plus one bounded runtime invocation","project_eligibility":{"participation_accepted":true,"participation_evidence":"Organizer email thread 'Re: The First 1,000 application — Life Manager' (contact@maritime.sh, Maria Gorskikh, CEO Maritime AI): 2026-10-31 reply congratulates Life Manager on getting into the competition; 2026-11-03 follow-up acknowledges 'Life Manager Cloud live on Maritime, one agent per user'.","project_form":{"credit_grant_status":"UNCONFIRMED — no competition credit is visible in the Maritime account readbacks below (wallet shows only the $5 welcome AI credit)","eligibility_status":"UNCONFIRMED — the form was submitted after the individual deadline; acceptance of the form is not proof of eligibility or of credit grant","individual_deadline":"2026-11-03","organizer_inquiry":"Sent by owner; as of 2026-11-06T13:58Z no organizer email received after 2026-11-05 (Gmail readback: 0 messages from maritime.sh / onkeiki.com / zero.email after 2026-11-05)","submitted":"2026-11-05 (per owner records; form acceptance recorded)"}},"public_funnel_and_revenue":{"backend_health":{"build":"b17d6d66770ef72ed10d853d9523d61fda63d339","http":200,"service":"life-call","url":"https://life-call-production.up.railway.app/health"},"entry":"https://aniccaai.com/lm","funnel_gaps":["The /maritime page itself has no signup form; signup happens after the Railway /lm?start_calendar=1 hop (Google identity). An end-to-end new-user signup -> consent -> per-user Maritime VM provision -> first completed task has NOT been verified with a real new user in this readback.","Maritime end-user summary (GET /api/v1/end-user-summary): totalUsers=2, activeUsers7d=0, neverMessaged=2, messages=0. These records show no qualifying activity and are not counted as competition users.","Public /open data (updated 2026-11-06 22:37 JST) lists Life Manager Cloud as a product/platform line; Cloud revenue is $0 and Stripe paid subscriptions are 0 (owner-confirmed current public data). Free-user count is not published there."],"lm_page":{"cta":"Links to /maritime?source=landing&lang=en on aniccaai.com","http":200,"offer_text":"$29/month after a 7-day free trial; first earning workflow uses Capafy; complete path still being verified; earnings not guaranteed","title":"Life Manager — AI life manager for work, income, body & mind | Anicca"},"maritime_page":{"content":"Google identity only at signup; no Calendar/Gmail/task-prompt/goals/budget required; $29/month after 7-day trial; billing set up in the web app after Calendar setup","http":200,"start_cta_target":"https://life-call-production.up.railway.app/lm?start_calendar=1","title":"Life Manager Cloud — hosted on Maritime","url":"https://aniccaai.com/maritime?source=landing&lang=en"}},"schema_version":1,"seat_402_analysis":{"cause":"The account is on the free tier of the legacy seat-based billing model. Desktop/computer capability is a paid entitlement in that model, so the enable call is rejected with 402 seat_limit. It is not a code defect in the worker and not a payment failure (arrears are 0, no failed invoice).","confirmed_facts":["Account billingModel is 'seats' with plan=null and planMonthlyCents=0 (free tier of the legacy seat model)","Both agents report desktopEnabled=false; GET /api/agents/{id}/desktop/mode returns HTTP 400 'Agent has no desktop'","GET /api/computers/list returns 0 computers","Seat-model catalog prices desktop as a per-month add-on (desktopCents 600/500/400/300 by tier); free tier lists no desktop","Official billing docs (https://maritime.sh/docs/billing, retrieved 2026-11-06): 'Accounts already on an earlier seat plan keep that plan and its terms'; on current usage plans the plan fee becomes usage credit that pays for every machine type, and computers on demand are billed per second (Linux desktop $0.12/h awake)"],"credit_applicability_to_seat_or_computer":"UNCONFIRMED. No competition credit balance is visible in /api/wallet/* or /api/billing/* readbacks. The only visible credit is the $5 welcome AI credit (LLM bucket), which per official docs is separate from plan credit and cannot pay machine/seat charges.","observed_symptom":"Enabling desktop on the existing OpenClaw worker returns HTTP 402 seat_limit / paid plan required (owner-observed before this readback)","official_remedies":["Subscribe to a paid seat-model plan (catalog from this account: Starter $20/mo includes 20 agents and 5 awake machines; desktop add-on $6/mo per catalog) via dashboard Billing or POST /api/plans/subscribe — a paid change; NOT executed in this readback","Switch the account to the current usage-based billing via POST /api/billing/switch-to-usage (endpoint exists in the official API), where the plan fee becomes usage credit covering computers at $0.12/h awake for a Linux desktop — a billing-model change; NOT executed in this readback","Apply the competition participation benefit ($1,000 in Maritime credits; recorded team benefit: 'Scale plan, two months free, checkout conditions not yet verified') — whether this benefit can pay seat fees or desktop add-ons is UNCONFIRMED; the benefit checkout was previewed/attempted earlier but plan remains null, so it is not in effect"]},"unconfirmed":["Project-form eligibility and competition credit grant (organizer reply pending; no reply as of 2026-11-06T13:58Z)","Whether competition Maritime credits can pay seat fees, desktop add-ons, or computer usage","Whether the metered $20.00 period cost converts to an actual charge under the free seat tier (nextInvoice=null, arrears=0)","Fresh loaded image SHA of the custom agent as of 2026-11-06","End-to-end new-user cycle: /lm -> signup -> consent -> dedicated VM -> first real task -> receipt -> paid conversion","Semantics of GET /api/computers/plan 'machines: 2'"],"workers_and_loaded_source":{"agents":[{"desktop_enabled":false,"framework":"custom","health_check_path":"/health","id":"80c0208c-af40-4b4c-94ee-a24b3f731db6","invocation_count_before_probe":10,"loaded_source":"Custom Life Manager runtime image; last provider redeploy recorded success with health verified 2026-10-21 (release sha a0d217d0769db2dab68bb8a8a452bfaea916fe9d in team records; docs/evidence/maritime/owned-redeploy-*.json). Fresh image SHA readback from the provider for today is UNCONFIRMED.","name":"lm-manager-dc104192deb615426467efb6f10ed5a3","stats_state":"vm_not_present","status_before_probe":"sleeping","tier":"always_on","total_compute_seconds_before_probe":7852},{"compute_minutes_this_period":990.43,"created_at":"2026-11-05T05:44:34Z","desktop_enabled":false,"framework":"openclaw","id":"113ec037-cb21-4d7e-af8d-e689bb0a19ad","name":"lm-cloud-l02-20261105","note":"OpenClaw worker created 2026-11-05. After sleep its browser capability is not enabled (browser.enabled=false per owner observation); desktop/mode returns 'Agent has no desktop'.","stats_state":"vm_not_present","status":"sleeping","tier":"always_on"}],"runtime_invocation_probe":{"action":"POST /api/agents/80c0208c-af40-4b4c-94ee-a24b3f731db6/chat (existing official runtime path; status-check message only, no business effect)","at":"2026-11-06T13:56:39Z","cost_delta":"Period compute minutes 990.43 -> 992.2 across the probe window (~1.8 min metered); always_on flat agent fees unchanged ($10/agent for 2026-11 period)","interpretation":"Proves the existing custom Life Manager runtime is deployed on Maritime and answers real invocations today. It is a liveness/status invocation, NOT a completed customer business workflow and NOT qualifying user usage.","result":"HTTP 200 with a Life Manager manager response in Japanese (daily-report manager line); invocationCount 10 -> 11; agent status became active; then POST /sleep returned it to sleeping"}}}
+{
+  "base_main_sha": "c0679e2426372e6f1e4967a36722e4ceb7eea11d",
+  "competition_terms": {
+    "award": "Up to USD 20,000 in LLM credits per winning project; not all winners receive $20,000; second/third amounts unpublished",
+    "excluded": "Fake accounts, bots used to inflate a count, duplicate identities, fabricated activity",
+    "http": 200,
+    "last_updated": "2026-10-29",
+    "note": "Terms were updated 2026-10-29, newer than the 2026-10-15 version cited in earlier evidence. No Round 1 cutoff, Top 30 rubric, Week 2 milestone, or project-form fields are published in the Terms.",
+    "participation_benefit": "Full access to Keiki, $1,000 in Maritime credits, access to supermemory and PumpGTM (per official home and Terms, retrieved 2026-11-06)",
+    "source": "https://competition.maritime.sh/terms",
+    "target": "1,000 distinct users with real usage; count is based on people using the agent, not agents/VMs/subagents; project-level usage reviewed on Keiki or Maritime",
+    "window": "2026-10-20 through 2026-12-01, closing 23:59 Pacific",
+    "winner_rule": "First three projects to reach the target, subject to verification"
+  },
+  "maritime_account_readback": {
+    "account_status": "active",
+    "billing_agents": [
+      {
+        "compute_minutes_this_period": 0.0,
+        "cost_usd": 10.0,
+        "invocations": 0,
+        "name": "lm-manager-dc104192deb615426467efb6f10ed5a3",
+        "tier": "always_on"
+      },
+      {
+        "compute_minutes_this_period": 990.43,
+        "cost_usd": 10.0,
+        "invocations": 0,
+        "name": "lm-cloud-l02-20261105",
+        "tier": "always_on"
+      }
+    ],
+    "billing_model": "seats (legacy seat plan family; plans on this model keep their terms per official billing docs)",
+    "billing_period": "2026-11",
+    "billing_total_cost_usd": 20.0,
+    "compute_minutes_period_after_probe": 992.2,
+    "computers": {
+      "list_count": 0,
+      "plan_machines_field": 2,
+      "plan_machines_semantics": "UNCONFIRMED"
+    },
+    "free_tier_limits": {
+      "maxAgents": 3,
+      "maxAwakeMachines": 1
+    },
+    "next_invoice": null,
+    "plan": null,
+    "plan_monthly_cents": 0,
+    "seat_catalog_from_billing_config": {
+      "agent_fee_cents_per_month": 100,
+      "growth": {
+        "desktop_cents_per_month": 500,
+        "included_agents": 100,
+        "max_awake_machines": 25,
+        "monthly_cents": 10000
+      },
+      "max_concurrent_active_free": 3,
+      "note": "Catalog read from GET /api/plans on this account (seat-model catalog). Desktop is a paid add-on on every paid tier; the free tier has no desktop entitlement.",
+      "scale": {
+        "desktop_cents_per_month": 400,
+        "included_agents": 500,
+        "max_awake_machines": 60,
+        "monthly_cents": 50000
+      },
+      "starter": {
+        "desktop_cents_per_month": 600,
+        "included_agents": 20,
+        "max_awake_machines": 5,
+        "monthly_cents": 2000
+      }
+    },
+    "source": "https://api.maritime.sh (official REST, account API key, read-only GETs)",
+    "status_field": null,
+    "unsettled_arrears_cents": 0,
+    "wallet_api_credits": {
+      "budget_usd": 5.0,
+      "note": "This is the Maritime LLM/API credit bucket, separate from plan/usage credit. No competition credit balance appears here.",
+      "remaining_usd": 4.61,
+      "spent_usd": 0.39,
+      "welcome_credit_expires_at": "2026-11-19T15:49:41Z",
+      "welcome_credit_remaining_cents": 461
+    },
+    "wallet_plan_usage": {
+      "plan": "free",
+      "usage": {}
+    }
+  },
+  "observed_at": "2026-11-06T13:36-14:00Z",
+  "observed_by": "Maritime lane (Muse subagent), read-only official readbacks plus one bounded runtime invocation",
+  "portal_runtime_discrepancy": {
+    "actual_app_entry": "The Start CTA leads to https://life-call-production.up.railway.app/lm?start_calendar=1 (HTTP 302 to the calendar-connect flow). GET /lm on Railway returns the Calendar travel-time workflow page only (title 'Life Manager'; text: automatically add travel time to Calendar; connect Google Calendar). Maritime mentions in that page: 0.",
+    "claim_on_public_page": "aniccaai.com/maritime (retrieved 2026-11-06): 'Life Manager Cloud is the hosted mode of Life Manager... It runs continuously on a dedicated Maritime VM, and you use it from your phone.'",
+    "conclusion": "The user-facing app behind the /lm portal today is the Railway calendar workflow. The Maritime-hosted manager agents exist separately and are not wired into the portal flow that a user from /lm actually reaches."
+  },
+  "project_eligibility": {
+    "participation_accepted": true,
+    "participation_evidence": "Organizer email thread 'Re: The First 1,000 application — Life Manager' (contact@maritime.sh, Maria Gorskikh, CEO Maritime AI): 2026-10-31 reply congratulates Life Manager on getting into the competition; 2026-11-03 follow-up acknowledges 'Life Manager Cloud live on Maritime, one agent per user'.",
+    "project_form": {
+      "credit_grant_status": "UNCONFIRMED — no competition credit is visible in the Maritime account readbacks below (wallet shows only the $5 welcome AI credit)",
+      "eligibility_status": "UNCONFIRMED — the form was submitted after the individual deadline; acceptance of the form is not proof of eligibility or of credit grant",
+      "individual_deadline": "2026-11-03",
+      "organizer_inquiry": "Sent by owner; as of 2026-11-06T13:58Z no organizer email received after 2026-11-05 (Gmail readback: 0 messages from maritime.sh / onkeiki.com / zero.email after 2026-11-05)",
+      "submitted": "2026-11-05 (per owner records; form acceptance recorded)"
+    }
+  },
+  "public_funnel_and_revenue": {
+    "backend_health": {
+      "build": "b17d6d66770ef72ed10d853d9523d61fda63d339",
+      "http": 200,
+      "service": "life-call",
+      "url": "https://life-call-production.up.railway.app/health"
+    },
+    "entry": "https://aniccaai.com/lm",
+    "funnel_gaps": [
+      "The /maritime page itself has no signup form; signup happens after the Railway /lm?start_calendar=1 hop (Google identity). An end-to-end new-user signup -> consent -> per-user Maritime VM provision -> first completed task has NOT been verified with a real new user in this readback.",
+      "Maritime end-user summary (GET /api/v1/end-user-summary): totalUsers=2, activeUsers7d=0, neverMessaged=2, messages=0. These records show no qualifying activity and are not counted as competition users.",
+      "Public /open data (updated 2026-11-06 22:37 JST) lists Life Manager Cloud as a product/platform line; Cloud revenue is $0 and Stripe paid subscriptions are 0 (owner-confirmed current public data). Free-user count is not published there."
+    ],
+    "lm_page": {
+      "cta": "Links to /maritime?source=landing&lang=en on aniccaai.com",
+      "http": 200,
+      "offer_text": "$29/month after a 7-day free trial; first earning workflow uses Capafy; complete path still being verified; earnings not guaranteed",
+      "title": "Life Manager — AI life manager for work, income, body & mind | Anicca"
+    },
+    "maritime_page": {
+      "content": "Google identity only at signup; no Calendar/Gmail/task-prompt/goals/budget required; $29/month after 7-day trial; billing set up in the web app after Calendar setup",
+      "http": 200,
+      "start_cta_target": "https://life-call-production.up.railway.app/lm?start_calendar=1",
+      "title": "Life Manager Cloud — hosted on Maritime",
+      "url": "https://aniccaai.com/maritime?source=landing&lang=en"
+    }
+  },
+  "real_business_task_attempt": {
+    "cost": "No business-task cost incurred. Liveness probe metering delta ~1.8 compute minutes in the 2026-11 period; always-on agent fees unchanged.",
+    "receipt": null,
+    "result_url": null,
+    "status": "NOT EXECUTED — no legitimate end-to-end path exists today",
+    "why": "The first revenue workflow (Capafy) requires, in order: portal signup -> owner PKCE identity + explicit retention consent -> tenant-bound Maritime VM provisioning -> Capafy Publisher Certification and publisher confirmation -> execution with provider receipt. The consent/enrollment and portal-provisioning steps are incomplete (Maritime-side enrollment/activity readbacks show no completed cycle), and team boundaries prohibit self-purchase, real-card trials, and counting self-use as revenue or users. The only executable official action was the runtime liveness invocation, which is recorded separately and is not business work."
+  },
+  "schema_version": 1,
+  "seat_402_analysis": {
+    "cause": "The account is on the free tier of the legacy seat-based billing model. Desktop/computer capability is a paid entitlement in that model, so the enable call is rejected with 402 seat_limit. It is not a code defect in the worker and not a payment failure (arrears are 0, no failed invoice).",
+    "confirmed_facts": [
+      "Account billingModel is 'seats' with plan=null and planMonthlyCents=0 (free tier of the legacy seat model)",
+      "Both agents report desktopEnabled=false; GET /api/agents/{id}/desktop/mode returns HTTP 400 'Agent has no desktop'",
+      "GET /api/computers/list returns 0 computers",
+      "Seat-model catalog prices desktop as a per-month add-on (desktopCents 600/500/400/300 by tier); free tier lists no desktop",
+      "Official billing docs (https://maritime.sh/docs/billing, retrieved 2026-11-06): 'Accounts already on an earlier seat plan keep that plan and its terms'; on current usage plans the plan fee becomes usage credit that pays for every machine type, and computers on demand are billed per second (Linux desktop $0.12/h awake)"
+    ],
+    "credit_applicability_to_seat_or_computer": "UNCONFIRMED. No competition credit balance is visible in /api/wallet/* or /api/billing/* readbacks. The only visible credit is the $5 welcome AI credit (LLM bucket), which per official docs is separate from plan credit and cannot pay machine/seat charges.",
+    "observed_symptom": "Enabling desktop on the existing OpenClaw worker returns HTTP 402 seat_limit / paid plan required (owner-observed before this readback)",
+    "official_remedies": [
+      "Subscribe to a paid seat-model plan (catalog from this account: Starter $20/mo includes 20 agents and 5 awake machines; desktop add-on $6/mo per catalog) via dashboard Billing or POST /api/plans/subscribe — a paid change; NOT executed in this readback",
+      "Switch the account to the current usage-based billing via POST /api/billing/switch-to-usage (endpoint exists in the official API), where the plan fee becomes usage credit covering computers at $0.12/h awake for a Linux desktop — a billing-model change; NOT executed in this readback",
+      "Apply the competition participation benefit ($1,000 in Maritime credits; recorded team benefit: 'Scale plan, two months free, checkout conditions not yet verified') — whether this benefit can pay seat fees or desktop add-ons is UNCONFIRMED; the benefit checkout was previewed/attempted earlier but plan remains null, so it is not in effect"
+    ]
+  },
+  "three_point_judgment": [
+    {
+      "evidence": "A custom-framework Life Manager manager agent (lm-manager-dc104192deb615426467efb6f10ed5a3) is deployed on Maritime and answered a real invocation today (see runtime_invocation_probe). However the product a user gets from aniccaai.com/lm is the Railway calendar workflow, not a Maritime-hosted agent experience.",
+      "point": "1. Is the Life Manager Cloud agent itself built/hosted on Maritime?",
+      "verdict": "PARTIAL / NOT AS THE PRODUCT USERS REACH"
+    },
+    {
+      "evidence": "Chat invocation HTTP 200 with manager response; invocationCount 10->11. But: Cloud revenue $0 and Stripe paid subscriptions 0 (public /open data, owner-confirmed); OpenClaw worker invocations 0 this period and all-time in billing readback; Maritime end-user summary totalUsers=2, activeUsers7d=0, messages=0; no completed customer business workflow with a provider receipt exists.",
+      "point": "2. Is the agent running on Maritime and making money?",
+      "verdict": "RUNNING (liveness only) / MAKING NO MONEY"
+    },
+    {
+      "evidence": "/lm -> /maritime marketing page -> Start -> Railway /lm?start_calendar=1 calendar workflow (0 Maritime mentions). No readback shows a portal signup provisioning a per-user Maritime VM or a user reaching the Maritime agents through the portal; the per-customer signup-to-work cycle remains unverified (consistent with the 2026-10-25 SSOT override).",
+      "point": "3. Is it connected to the aniccaai.com/lm portal?",
+      "verdict": "NOT CONNECTED (unverified at best)"
+    }
+  ],
+  "unconfirmed": [
+    "Project-form eligibility and competition credit grant (organizer reply pending; no reply as of 2026-11-06T13:58Z)",
+    "Whether competition Maritime credits can pay seat fees, desktop add-ons, or computer usage",
+    "Whether the metered $20.00 period cost converts to an actual charge under the free seat tier (nextInvoice=null, arrears=0)",
+    "Fresh loaded image SHA of the custom agent as of 2026-11-06",
+    "End-to-end new-user cycle: /lm -> signup -> consent -> dedicated VM -> first real task -> receipt -> paid conversion",
+    "Semantics of GET /api/computers/plan 'machines: 2'"
+  ],
+  "workers_and_loaded_source": {
+    "agents": [
+      {
+        "desktop_enabled": false,
+        "framework": "custom",
+        "health_check_path": "/health",
+        "id": "80c0208c-af40-4b4c-94ee-a24b3f731db6",
+        "invocation_count_before_probe": 10,
+        "loaded_source": "Custom Life Manager runtime image; last provider redeploy recorded success with health verified 2026-10-21 (release sha a0d217d0769db2dab68bb8a8a452bfaea916fe9d in team records; docs/evidence/maritime/owned-redeploy-*.json). Fresh image SHA readback from the provider for today is UNCONFIRMED.",
+        "name": "lm-manager-dc104192deb615426467efb6f10ed5a3",
+        "stats_state": "vm_not_present",
+        "status_before_probe": "sleeping",
+        "tier": "always_on",
+        "total_compute_seconds_before_probe": 7852
+      },
+      {
+        "compute_minutes_this_period": 990.43,
+        "created_at": "2026-11-05T05:44:34Z",
+        "desktop_enabled": false,
+        "framework": "openclaw",
+        "id": "113ec037-cb21-4d7e-af8d-e689bb0a19ad",
+        "name": "lm-cloud-l02-20261105",
+        "note": "OpenClaw worker created 2026-11-05. After sleep its browser capability is not enabled (browser.enabled=false per owner observation); desktop/mode returns 'Agent has no desktop'.",
+        "stats_state": "vm_not_present",
+        "status": "sleeping",
+        "tier": "always_on"
+      }
+    ],
+    "runtime_invocation_probe": {
+      "action": "POST /api/agents/80c0208c-af40-4b4c-94ee-a24b3f731db6/chat (existing official runtime path; status-check message only, no business effect)",
+      "at": "2026-11-06T13:56:39Z",
+      "cost_delta": "Period compute minutes 990.43 -> 992.2 across the probe window (~1.8 min metered); always_on flat agent fees unchanged ($10/agent for 2026-11 period)",
+      "interpretation": "Proves the existing custom Life Manager runtime is deployed on Maritime and answers real invocations today. It is a liveness/status invocation, NOT a completed customer business workflow and NOT qualifying user usage.",
+      "result": "HTTP 200 with a Life Manager manager response in Japanese (daily-report manager line); invocationCount 10 -> 11; agent status became active; then POST /sleep returned it to sleeping"
+    }
+  }
+}
