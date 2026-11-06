@@ -39,8 +39,7 @@ class PaywallSelectionWiringTests(unittest.TestCase):
 
     def test_initial_appearance_reconciles_selection(self):
         self.assertIsNotNone(re.search(
-            r"(?s)\.onAppear\s*\{\s*if !hasTracked\s*\{.*?\}"
-            r"\s*synchronizePackageSelection\(\)\s*\}",
+            r"(?s)\.onAppear\s*\{\s*synchronizePackageSelection\(\)\s*\}",
             self.source,
         ), "Initial appearance must reconcile selection")
 
@@ -165,11 +164,13 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         )[1]
         analytics = ANALYTICS.read_text(encoding="utf-8")
         self.assertIn("@State private var step: PaywallStep = .planSelection", container)
-        self.assertIn("AnalyticsManager.shared.trackPaywallViewed()", self.source)
-        track_viewed = analytics.split("func trackPaywallViewed()", 1)[1].split(
-            "func updateSKANConversionValue", 1
+        self.assertIn(".analyticsScreen(.paywall, flowID: flowID)", container)
+        track_viewed = analytics.split("func trackScreenViewed(", 1)[1].split(
+            "func trackScreenViewedIfNeeded", 1
         )[0]
-        self.assertIn("track(.paywallShown)", track_viewed)
+        self.assertIn("if screenID == .paywall", track_viewed)
+        self.assertIn("track(.paywallShown, properties: properties)", track_viewed)
+        self.assertNotIn("trackPaywallViewed", self.source)
         self.assertIn('case paywallShown = "paywall_shown"', analytics)
 
     def test_trial_started_tracks_a_confirmed_active_trial_entitlement(self):
@@ -180,7 +181,8 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn("AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)", purchase)
         self.assertIn("guard purchaseObservations.record(transaction?.transactionIdentifier)", observer)
         self.assertIn("let entitlement = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]", observer)
-        self.assertIn("if entitlement?.isActive == true, entitlement?.periodType == .trial", observer)
+        self.assertIn("let isTrial = entitlement?.isActive == true && entitlement?.periodType == .trial", observer)
+        self.assertIn("if isTrial { trackTrialStarted(productId: package.storeProduct.productIdentifier) }", observer)
         self.assertIn("trackTrialStarted(productId: package.storeProduct.productIdentifier)", observer)
 
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):

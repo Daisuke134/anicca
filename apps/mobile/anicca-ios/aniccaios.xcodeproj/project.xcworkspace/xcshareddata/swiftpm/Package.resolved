@@ -1,5 +1,5 @@
 {
-  "originHash" : "bc9fd94c6cc17c19dad7ba553e3ceae4488d3bced6169180b97a99461411ac72",
+  "originHash" : "3aae918c903197e19c8ded9232ef7e8570db157b7a49975b05bfe25aff86ebe9",
   "pins" : [
     {
       "identity" : "autolayout",
@@ -20,39 +20,21 @@
       }
     },
     {
-      "identity" : "json-logic-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/advantagefse/json-logic-swift",
-      "state" : {
-        "revision" : "9088eed1b26937fe13d248aa24d7632a51be28e2",
-        "version" : "1.2.4"
-      }
-    },
-    {
       "identity" : "mixpanel-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mixpanel/mixpanel-swift",
       "state" : {
-        "branch" : "master",
-        "revision" : "6e2a786b1e88b57b90f5a6d401337bc1bb2ba69c"
+        "revision" : "38e63de7d71a2b6787bbd190ef8fcc04d053f259",
+        "version" : "7.1.0"
       }
     },
     {
-      "identity" : "plcrashreporter",
+      "identity" : "mixpanel-swift-common",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/microsoft/plcrashreporter.git",
+      "location" : "https://github.com/mixpanel/mixpanel-swift-common.git",
       "state" : {
-        "revision" : "0254f941c646b1ed17b243654723d0f071e990d0",
-        "version" : "1.12.2"
-      }
-    },
-    {
-      "identity" : "posthog-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/PostHog/posthog-ios.git",
-      "state" : {
-        "revision" : "af5b8e4c1a8e68c1e99ccbb62521f35e3928eb8d",
-        "version" : "3.49.0"
+        "revision" : "610ff36228d347ad174f8216c74c9e70bfaa14ab",
+        "version" : "2.0.0"
       }
     },
     {

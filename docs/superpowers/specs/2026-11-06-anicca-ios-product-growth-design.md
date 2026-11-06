@@ -21,7 +21,7 @@
 | 価格 | 事前調査の米国公開IAP一覧は月$14.99・年$59.99・買切$59.99。週$6.99も登録 | 公開一覧・現行Offering・対象国・無料体験資格を別に照合。モック値を本番へ固定しない |
 | フィード | 縦 `UIPageViewController`、固定カタログEN/JA/ES各200件、8背景、いいねはローカル保存 | swipeの戻りはユーザー報告。原因未確定、端末・操作条件・実版で再現する |
 | 通知 | APNs起動処理、通知本文/IDの遷移coordinator、cold-start保留処理と既存回帰が存在 | 1.9.6の公開履歴にも同文言修正あり。再現確認なく同じ修正を作り直さない |
-| 設定 | 通知画面の `dailyCount = 4` は固定値 | 実配信頻度、free/pro別上限、serverの稼働経路とは未接続 |
+| 設定 | 現在の `ReminderSchedule.slots(isPro:)` はFree 09:00/14:00/20:00、Pro 08:00/12:30/17:30/21:30を表示し、端末タイムゾーンも表示する。APNs token登録ではtimezone/langを送る。`Daisuke134/anicca-products` の確認済み `origin/main` (`0f2cd20b`) のaffirmation senderも同じFree/Pro枠を定義し、remote APNsを単一送信元として記述する | ソース上の予定時刻は一致。稼働中deploymentのcommit/readback、実端末APNs、Free/Pro実配信、登録/送信receiptは未確認 |
 | 売上計測 | build 818の購入eventは`displayed_price`を`amount_source=store_product_quote_not_settled_revenue`として送る。transaction IDはローカルledgerで重複観測を抑止 | 表示価格は決済済み収益ではない。RevenueCat/Apple receipt・renewal・refund・proceedsの公式照合、restore結果event、service側重複0は未確認 |
 | Open | `aniccaai.com/open`は公開HTMLが`data.json`/`metrics.json`等を読み、App Store Connect/事業指標/RevenueCat app metricsを表示。画面別行動funnelは未表示 | AniccaのMixpanel取得/画面別離脱/Open表示の接続は未実証。既存dashboardを拡張し、別dashboardを作らない |
 | 継続処理 | Life Managerの`marketing-product-summary.js`はproduct-pack内のactivation/retention観測JSONを読む | Mixpanel API収集元ではなくOpenにも未接続。collector・snapshot・公開deployの実稼働は別々に証明する |

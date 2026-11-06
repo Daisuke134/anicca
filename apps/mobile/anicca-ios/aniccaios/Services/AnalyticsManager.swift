@@ -1,6 +1,6 @@
 import Foundation
+import SwiftUI
 import Mixpanel
-import PostHog
 import StoreKit
 import OSLog
 import RevenueCat
@@ -13,7 +13,14 @@ final class AnalyticsManager {
     private let logger = Logger(subsystem: "com.anicca.ios", category: "Analytics")
     private let purchaseObservations = PurchaseObservationLedger()
     private let sessionID = UUID().uuidString
-    private var postHogConfigured = false
+    private var currentScreen: ScreenVisit?
+
+    private struct ScreenVisit {
+        let screenID: String
+        let screenInstanceID: String
+        let flowID: String
+        let enteredAt: Date
+    }
 
     private var context: [String: MixpanelType] {
         #if targetEnvironment(simulator)
@@ -21,10 +28,19 @@ final class AnalyticsManager {
         #else
         let environment = Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" ? "sandbox" : "production"
         #endif
-        return ["app_version": AppConfig.appVersion,
-                "app_build": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
-                "app_environment": environment, "flow_version": "affirmation-first-v1",
-                "session_id": sessionID, "language": AppState.shared.effectiveLanguage.rawValue]
+        var values: [String: MixpanelType] = [
+            "app_id": "ai.anicca.app.ios",
+            "app_version": AppConfig.appVersion,
+            "app_build": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
+            "app_environment": environment,
+            "flow_version": "affirmation-first-v1",
+            "session_id": sessionID,
+            "language": AppState.shared.effectiveLanguage.rawValue,
+            "locale": Locale.current.identifier,
+            "device_region_code": Locale.current.region?.identifier ?? "unknown",
+            "storefront_country_code": AppState.shared.currentStorefrontCountryCode ?? "unknown",
+        ]
+        return values
     }
     
     private init() {}
@@ -45,7 +61,6 @@ final class AnalyticsManager {
     /// ユーザーIDを設定（ログイン時に呼び出し）
     func identify(userId: String) {
         Mixpanel.mainInstance().identify(distinctId: userId)
-        if postHogConfigured { PostHogSDK.shared.identify(userId) }
         logger.info("Mixpanel identified user: \(userId, privacy: .private(mask: .hash))")
     }
     
@@ -66,7 +81,6 @@ final class AnalyticsManager {
     /// ログアウト時にリセット
     func reset() {
         Mixpanel.mainInstance().reset()
-        if postHogConfigured { PostHogSDK.shared.reset() }
         logger.info("Mixpanel reset")
     }
     
@@ -74,25 +88,60 @@ final class AnalyticsManager {
     
     /// 汎用イベントトラッキング
     func track(_ event: AnalyticsEvent, properties: [String: MixpanelType]? = nil) {
-        var merged = context
-        merged.merge(properties ?? [:]) { _, incoming in incoming }
+        var merged = properties ?? [:]
+        merged.merge(context) { _, contextValue in contextValue }
+        merged["event_id"] = UUID().uuidString
+        merged["event_timestamp"] = Int(Date().timeIntervalSince1970 * 1_000)
         Mixpanel.mainInstance().track(event: event.rawValue, properties: merged)
-        if postHogConfigured {
-            PostHogSDK.shared.capture(event.rawValue, properties: merged.mapValues { $0 as Any })
-        }
         logger.debug("Tracked event: \(event.rawValue, privacy: .public)")
     }
 
-    func connectPostHog(userID: String?) {
-        postHogConfigured = true
-        if let userID { identify(userId: userID) }
-        PostHogSDK.shared.register(context.mapValues { $0 as Any })
+    func trackScreenViewed(screenID: AnalyticsScreenID, flowID: String, screenInstanceID: String = UUID().uuidString) {
+        guard currentScreen?.screenInstanceID != screenInstanceID else { return }
+        trackScreenExited(nextScreenID: screenID.rawValue)
+
+        let enteredAt = Date()
+        currentScreen = ScreenVisit(
+            screenID: screenID.rawValue,
+            screenInstanceID: screenInstanceID,
+            flowID: flowID,
+            enteredAt: enteredAt
+        )
+        let properties: [String: MixpanelType] = [
+            "screen_id": screenID.rawValue,
+            "screen_instance_id": screenInstanceID,
+            "flow_id": flowID,
+            "flow_version": "affirmation-first-v1",
+        ]
+        track(.screenViewed, properties: properties)
+        if screenID == .paywall {
+            track(.paywallShown, properties: properties)
+            updateSKANConversionValue(2)
+        }
     }
-    
-    /// PostHog event tracking (A/B test layer — runs alongside Mixpanel)
-    func trackPostHog(_ eventName: String, properties: [String: Any]? = nil) {
-        PostHogSDK.shared.capture(eventName, properties: properties)
-        logger.debug("PostHog captured: \(eventName, privacy: .public)")
+
+    func trackScreenViewedIfNeeded(screenID: AnalyticsScreenID, flowID: String) {
+        guard currentScreen?.screenID != screenID.rawValue || currentScreen?.flowID != flowID else { return }
+        trackScreenViewed(screenID: screenID, flowID: flowID)
+    }
+
+    func trackScreenExited(nextScreenID: String, screenInstanceID: String? = nil) {
+        guard let screen = currentScreen else { return }
+        guard screenInstanceID == nil || screen.screenInstanceID == screenInstanceID else { return }
+        let duration = max(0, Int(Date().timeIntervalSince(screen.enteredAt) * 1_000))
+        track(.screenExited, properties: [
+            "screen_id": screen.screenID,
+            "screen_instance_id": screen.screenInstanceID,
+            "flow_id": screen.flowID,
+            "next_screen_id": nextScreenID,
+            "observed_duration_ms": duration,
+        ])
+        currentScreen = nil
+    }
+
+    /// Backgrounding is not a user exit, so leave it out of screen drop-off events.
+    func clearCurrentScreenVisit() {
+        currentScreen = nil
     }
 
     // MARK: - Convenience Methods
@@ -103,32 +152,47 @@ final class AnalyticsManager {
             "product_id": productId
         ])
     }
+
+    func trackPurchaseStarted(productID: String) {
+        track(.purchaseStarted, properties: ["product_id": productID])
+    }
+
+    func trackPurchaseResult(_ result: String, productID: String, errorCode: String? = nil) {
+        var properties: [String: MixpanelType] = [
+            "product_id": productID,
+            "result": result,
+        ]
+        if let errorCode { properties["error_code"] = errorCode }
+        track(.purchaseResult, properties: properties)
+    }
+
+    func trackRestoreStarted(source: String) {
+        track(.restoreStarted, properties: ["source": source])
+    }
+
+    func trackRestoreResult(_ result: String, source: String, errorCode: String? = nil) {
+        var properties: [String: MixpanelType] = ["result": result]
+        properties["source"] = source
+        if let errorCode { properties["error_code"] = errorCode }
+        track(.restoreResult, properties: properties)
+    }
     
     /// 購入完了
     func observePurchase(package: Package, transaction: StoreTransaction?, customerInfo: CustomerInfo) {
         guard purchaseObservations.record(transaction?.transactionIdentifier) else { return }
         let entitlement = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]
-        if entitlement?.isActive == true, entitlement?.periodType == .trial {
-            trackTrialStarted(productId: package.storeProduct.productIdentifier)
-            return
-        }
+        let isTrial = entitlement?.isActive == true && entitlement?.periodType == .trial
         var properties: [String: MixpanelType] = [
             "product_id": package.storeProduct.productIdentifier,
-            "transaction_id": transaction?.transactionIdentifier ?? "",
-            "displayed_price": NSDecimalNumber(decimal: package.storeProduct.price).doubleValue,
-            "amount_source": "store_product_quote_not_settled_revenue"
+            "result": "success",
+            "entitlement_state": isTrial ? "trial" : (entitlement?.isActive == true ? "active" : "unknown"),
         ]
         if let currency = package.storeProduct.currencyCode { properties["currency"] = currency }
-        track(.purchaseCompleted, properties: properties)
+
+        track(.purchaseResult, properties: properties)
+        if isTrial { trackTrialStarted(productId: package.storeProduct.productIdentifier) }
         // Actual amounts/renewals/refunds are reconciled from RevenueCat and Apple.
         updateSKANConversionValue(3)
-    }
-
-    /// ペイウォール表示
-    func trackPaywallViewed() {
-        track(.paywallShown)
-        track(.paywallPlanSelectionViewed)
-        updateSKANConversionValue(2)
     }
 
     /// SKAdNetwork conversion value 更新
@@ -168,20 +232,31 @@ final class AnalyticsManager {
 
 enum AnalyticsEvent: String {
     case screenViewed = "screen_viewed"
+    case screenExited = "screen_exited"
     case firstAffirmationViewed = "first_affirmation_viewed"
     case affirmationViewed = "affirmation_viewed"
     case affirmationLiked = "affirmation_liked"
     case affirmationUnliked = "affirmation_unliked"
     case affirmationShared = "affirmation_shared"
     case notificationOpened = "notification_opened"
+    case notificationReceived = "notification_received"
+    case notificationRegistrationResult = "notification_registration_result"
     case notificationDestinationResolved = "notification_destination_resolved"
+    case notificationPermissionRequested = "notification_permission_requested"
     case notificationPermissionResult = "notification_permission_result"
-    case purchaseCancelled = "purchase_cancelled"
+    case purchaseStarted = "purchase_started"
+    case purchaseResult = "purchase_result"
+    case restoreStarted = "restore_started"
+    case restoreResult = "restore_result"
+    case experimentExposure = "experiment_exposure"
+    case productSelected = "product_selected"
     // App
     case appOpened = "app_opened"
 
     // Onboarding funnel (v3 — spec-185 Bible-compliant 20-step)
     case onboardingStarted = "onboarding_started"
+    case onboardingStepCompleted = "onboarding_step_completed"
+    case onboardingStepViewed = "onboarding_step_viewed"
     case onboardingWelcomeCompleted = "onboarding_welcome_completed"
     case onboardingStrugglesCompleted = "onboarding_struggles_completed"
     case onboardingStruggleDepthCompleted = "onboarding_struggle_depth_completed"
@@ -214,7 +289,6 @@ enum AnalyticsEvent: String {
     // Subscription
     case trialStarted = "trial_started"
     case trialCancelled = "trial_cancelled"
-    case purchaseCompleted = "purchase_completed"
     case subscriptionRenewed = "subscription_renewed"
     case subscriptionCancelled = "subscription_cancelled"
 
@@ -238,4 +312,62 @@ enum AnalyticsEvent: String {
     case nudgePositiveFeedback = "nudge_positive_feedback"
     case nudgeNegativeFeedback = "nudge_negative_feedback"
     case nudgeScheduled = "nudge_scheduled"
+}
+
+enum AnalyticsScreenID: String, CaseIterable {
+    case onboardingWelcome = "onboarding.welcome"
+    case onboardingGoal = "onboarding.goal"
+    case onboardingPainPoints = "onboarding.pain_points"
+    case onboardingStruggleFrequency = "onboarding.struggle_frequency"
+    case onboardingReminderSchedule = "onboarding.reminder_schedule"
+    case onboardingProcessing = "onboarding.processing"
+    case onboardingFirstAffirmation = "onboarding.first_affirmation"
+    case onboardingComparison = "onboarding.comparison"
+    case onboardingNotifications = "onboarding.notifications"
+    case paywall = "paywall"
+    case retentionOffer = "paywall.retention_offer"
+    case feed = "feed"
+    case feedCollections = "feed.collections"
+    case feedSaved = "feed.saved"
+    case feedReminders = "feed.reminders"
+    case feedThemes = "feed.themes"
+    case feedSettings = "feed.settings"
+    case settingsSubscription = "settings.subscription"
+
+    static func onboarding(_ step: OnboardingStep) -> AnalyticsScreenID {
+        switch step {
+        case .welcome: return .onboardingWelcome
+        case .goal: return .onboardingGoal
+        case .painPoints: return .onboardingPainPoints
+        case .struggleFreq: return .onboardingStruggleFrequency
+        case .nudgeTimes: return .onboardingReminderSchedule
+        case .processing: return .onboardingProcessing
+        case .planReveal: return .onboardingFirstAffirmation
+        case .comparison: return .onboardingComparison
+        case .notifications: return .onboardingNotifications
+        }
+    }
+}
+
+private struct AnalyticsScreenModifier: ViewModifier {
+    let screenID: AnalyticsScreenID
+    let flowID: String
+    @State private var screenInstanceID = UUID().uuidString
+
+    func body(content: Content) -> some View {
+        content.onAppear {
+            screenInstanceID = UUID().uuidString
+            AnalyticsManager.shared.trackScreenViewed(
+                screenID: screenID,
+                flowID: flowID,
+                screenInstanceID: screenInstanceID
+            )
+        }
+    }
+}
+
+extension View {
+    func analyticsScreen(_ screenID: AnalyticsScreenID, flowID: String) -> some View {
+        modifier(AnalyticsScreenModifier(screenID: screenID, flowID: flowID))
+    }
 }

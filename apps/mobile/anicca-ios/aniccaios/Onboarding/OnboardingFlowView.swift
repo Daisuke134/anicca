@@ -13,6 +13,7 @@ struct OnboardingFlowView: View {
     @State private var isResolvingPaywallEntry = false
     @State private var didPurchaseOnPaywall = false
     @State private var lastTrackedStep: OnboardingStep?
+    @State private var didTrackOnboardingStart = false
 
     var body: some View {
         ZStack {
@@ -41,11 +42,15 @@ struct OnboardingFlowView: View {
             }
 
             step = appState.onboardingStep.resumableInitialStep
-            recordStepView()
-
-            if step == .goal {
-                AnalyticsManager.shared.track(.onboardingStarted)
+            if !didTrackOnboardingStart {
+                didTrackOnboardingStart = true
+                AnalyticsManager.shared.track(.onboardingStarted, properties: [
+                    "entry_screen_id": AnalyticsScreenID.onboarding(step).rawValue,
+                    "resumed": step != .welcome,
+                    "flow_id": "onboarding",
+                ])
             }
+            recordStepView()
 
             Task {
                 await SubscriptionManager.shared.refreshOfferings()
@@ -87,11 +92,22 @@ struct OnboardingFlowView: View {
     private func recordStepView() {
         guard lastTrackedStep != step else { return }
         lastTrackedStep = step
-        AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "onboarding.\(step.analyticsName)"])
+        let screenID = AnalyticsScreenID.onboarding(step)
+        AnalyticsManager.shared.trackScreenViewed(screenID: screenID, flowID: "onboarding")
+        AnalyticsManager.shared.track(.onboardingStepViewed, properties: [
+            "screen_id": screenID.rawValue,
+            "step_index": step.rawValue,
+            "flow_id": "onboarding",
+        ])
     }
 
     private func advance() {
-        AnalyticsManager.shared.track(.onboardingStepAdvanced, properties: ["step": step.analyticsName])
+        let screenID = AnalyticsScreenID.onboarding(step)
+        AnalyticsManager.shared.track(.onboardingStepCompleted, properties: [
+            "step_id": screenID.rawValue,
+            "step_index": step.rawValue,
+            "flow_id": "onboarding",
+        ])
 
         if step == .notifications {
             appState.markOnboardingQuestionsCompleted()
@@ -102,6 +118,7 @@ struct OnboardingFlowView: View {
         }
 
         if let next = step.nextInitialStep {
+            AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.onboarding(next).rawValue)
             step = next
             appState.setOnboardingStep(step)
         }
@@ -138,14 +155,17 @@ struct OnboardingFlowView: View {
             isResolvingPaywallEntry = false
             switch decision {
             case .completeOnboarding:
+                AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.feed.rawValue)
                 completeOnboardingForExistingPro()
             case .presentPaywall:
+                AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.paywall.rawValue)
                 showPaywall = true
             }
         }
     }
 
     private func handlePaywallSuccess(customerInfo: CustomerInfo) {
+        AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.feed.rawValue)
         didPurchaseOnPaywall = true
         appState.updateSubscriptionInfo(from: customerInfo)
         appState.markOnboardingComplete()
@@ -154,6 +174,7 @@ struct OnboardingFlowView: View {
 
     /// ソフトペイウォール: 右上 × で課金せずメイン画面へ。
     private func handlePaywallDismissedAsFree() {
+        AnalyticsManager.shared.trackScreenExited(nextScreenID: AnalyticsScreenID.feed.rawValue)
         AnalyticsManager.shared.track(.onboardingPaywallDismissedFree)
         appState.markOnboardingComplete()
         showPaywall = false

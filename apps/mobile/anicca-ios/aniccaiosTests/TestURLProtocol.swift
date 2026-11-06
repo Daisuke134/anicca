@@ -1,7 +1,9 @@
 import Foundation
 
 final class TestURLProtocol: URLProtocol {
-    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+    static var requestHandler: ((URLRequest) throws -> (URLResponse, Data))?
+    static var interceptedURL: URL?
+    static var observedRequestURLs: [String] = []
 
     override class func canInit(with request: URLRequest) -> Bool {
         true
@@ -12,6 +14,13 @@ final class TestURLProtocol: URLProtocol {
     }
 
     override func startLoading() {
+        Self.observedRequestURLs.append(request.url?.absoluteString ?? "<nil>")
+        if let interceptedURL = Self.interceptedURL,
+           !(request.url?.path.hasSuffix(interceptedURL.path) ?? false) {
+            client?.urlProtocol(self, didFailWithError: URLError(.cancelled))
+            return
+        }
+
         guard let handler = Self.requestHandler else {
             fatalError("TestURLProtocol.requestHandler not set")
         }
@@ -27,4 +36,3 @@ final class TestURLProtocol: URLProtocol {
 
     override func stopLoading() {}
 }
-

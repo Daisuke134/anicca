@@ -12,11 +12,11 @@
 |---|---|---|---|
 | G0 | 完了（仕様共有） | 全体spec・実装計画・画面案を同一branchで共有 | scoped review重大問題なし、commit/push、remote objectと参照linkを確認。G0は仕様共有の完了を示す。実装・動画・提出はG1〜G5で追跡 |
 | G1 | 検証済み | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
-| G2 | PR #9282統合済み（merge SHA `6cc7c4a7`）。対象CI/単体テストPASS。既存iOS 26.5 Simulator E2Eは候補build 817でswipe・通知カード→本文一致→保存までPASSしたが、通知動画/source receiptはmerge SHAに結び付かない。実端末APNs/実頻度/free-Pro実配信は未確認 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | merge sourceに結び付くE2E証拠、実端末APNs、実設定/配信境界 |
+| G2 | PR #9282統合済み（merge SHA `6cc7c4a7`）。既存build 817 Simulator E2Eのswipe・通知本文一致・保存はPASSだがmerge SHAへ結び付く証拠ではない。今回の `swiftc` `QuoteNavigationTests.swift` はPASS。現在のiOS sourceのFree/Pro予定枠は、確認済み `anicca-products` origin/main `0f2cd20b` senderと一致し、timezoneも表示する。`devicectl`では登録済みiPhone 15/17がどちらも`unavailable`、Simulator 1台が起動中。これはsource照合で、稼働deploymentや実端末APNs/配信receiptの証明ではない | swipeの戻り、通知本文一致、予定時刻とfree/pro接続 | 同一候補source/buildの全画面E2E証拠、稼働deployment/readback、実端末APNsとFree/Pro配信receipt |
 | G3 | 検証済み | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
-| G4 | 部分実装・未完 | Mixpanel一本へ統一し、全画面・導線・課金・通知のイベント契約と本番受信を完成 | event/property/identity/重複とMixpanel側受信を公式readback。PostHog二重送信なし |
+| G4 | 実装差分あり・未commit。Mixpanel Swift 7.1.0固定、PostHogのactive source/project設定を除去し、画面・購入/restore・通知イベントを配線。`test_analytics_provider_contract.py`とpaywall wiring 14件がPASS、変更Swift sourceのparseもPASS。Provider event readback未確認。private credential SSOTとbrowser registryにMixpanel接続がなく、Xcode Cloud token注入も未確認 | Mixpanel一本へ統一し、全画面・導線・課金・通知のイベント契約と本番受信を完成 | event/property/identity/重複とMixpanel側受信を公式readback。PostHog二重送信なし。通知送信実績はserver sourceと区別 |
 | G4.1 | 未着手・G5の必須前提 | Aniccaの画面別ファネルを既存Openへ集計表示 | 同じ日次snapshotのsource/freshness/coverage/分母をOpenでreadback。個人単位データを公開しない |
-| G5 | 取消済み・再提出禁止 | 全画面・計測・Open・同一build E2Eの受入後、ASC CLIで新しい1.9.8審査提出を一度だけ実行 | 以下の提出禁止条件がすべてPASSした後に限り提出。build/version/submissionを公式readback |
+| G5 | 取消済み・再提出禁止。ASC公式readback: version 1.9.8=`DEVELOPER_REJECTED`、build 818=`VALID`、latest submission `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`=`COMPLETE`、inFlight=false。doctorは`review.submission.removed_items_only`をblockingとし、IAP metadata/availability/pricing等のwarningも返す | 全画面・計測・Open・同一build E2Eの受入後、証拠をユーザーへ提示し、明示承認後にASC CLIで新しい1.9.8審査提出を一度だけ実行 | 以下の提出禁止条件がすべてPASSした後に限り提出。build/version/submissionを公式readback |
 | G6 | 後続・未着手 | 全出荷app inventory、国/流入/課金/retentionの欠測修復 | 公式source/期間/分母/coverage、アプリごとの失敗隔離 |
 | G7 | 後続・未着手 | 既存Openを全アプリ/日次履歴/グラフ/funnel/国/流入/実験へ拡張 | 公開画面とsource鮮度/履歴一致、unknownと0の区別、狭幅確認。Aniccaの最小funnelはG4.1でG5前に完成 |
 | G8 | 後続・未着手 | SNS/記事/quoteの接続、地域別onboarding/paywall/価格/推薦実験 | supported attribution、stable割付/露出、必要人数/成熟期間/guardrail、標本不足は未判定 |
