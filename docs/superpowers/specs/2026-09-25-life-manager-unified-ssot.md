@@ -26622,6 +26622,8 @@ Maritimeの最新既知validationでは`/data` markerはsleep/wake後も残っ�
 
 ### 現行の順序付きTODO（この表だけが正本）
 
+**N03の実機修正範囲:** 公式npm CLI `@usenaive-sdk/cli@1.0.0`の`whoami`がAnicca `org_zf1ng1wfymjp11s5n2hqva700c`と全13 scopesを返したため、API key認証は成功。先のCloudflare 1010はPython HTTP経路の結果で、公式CLIでは再現しない。公式consoleでSmall/browser付きComputer `cmp_01a1ae9731287d3685a5bf2c44473be3`（`life-manager-capafy`、1 vCPU/2 GiB/5 GiB、allowed_domains=`capafy.ai,*.capafy.ai`）を作成しRunningを確認。Agent `agt_dyj8nqj71tachfda2y11mv54qf`のlive v1にはcomputer指定がなく、tool defaultはdeny、browser設定なし、systemにはdraft-only/公開禁止指示が残る。まず既存Agentのcomputer参照とread-only browser設定だけを公式CLI/SDKのversion付きupdateで修正し、model・budget・他Agentを変えず新規Sessionで公開ページを読む。readback前にsignup/公開/売上の成功を主張しない。独自runtime/HTTP wrapperは作らない。
+
 順序更新: 旧=Maritime/Capafy/revenue調査とNaïve runtimeを混在。新=N01公式例調査 → N02 org/key確認 → N03 Computerを一台だけ公式機能で用意 → N03a harness/browserをread-onlyで確認 → N04 Capafyのzero-start/無人適格性 → N05 Agent Identity/email → N06 signup/login → N07 offer公開 → N08 paid order → N09a delivery → N09b settlement/費用照合 → N10 native trigger一回 → N11 demo → N12 `/lm` paid MRR → Maritime M01–06 → local adapter。API edge問題N02aはsupport回答を待つ並行項目で、console経由のComputer作成を止めない。理由=Naïve hackathonを先に一つの実収益loopで証明し、同じ顧客向け製品をMaritimeへ広げるため。Computer費用・platform credits・agent revenueを分け、別laneの作成や既存runtimeの停止/重複実行をしない。
 
 | ID | 状態 | 原子的作業と完了証拠 |
