@@ -17,13 +17,14 @@ struct QuoteCardView: View {
 
     @State private var showShareSheet = false
     @State private var copyFlashOpacity: Double = 0
+    @ScaledMetric(relativeTo: .title) private var quoteFontSize: CGFloat = 32
 
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
 
             Text(quote.text)
-                .font(.system(size: 26, weight: .regular))
+                .font(.system(size: quoteFontSize, weight: .regular, design: .serif))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -54,7 +55,9 @@ struct QuoteCardView: View {
                     background: themeStore.selected
                 ),
                 "aniccaai.com"
-            ])
+            ], onComplete: {
+                AnalyticsManager.shared.track(.affirmationShared, properties: ["quote_id": quote.id, "category": quote.categoryID])
+            })
         }
     }
 
@@ -68,7 +71,8 @@ struct QuoteCardView: View {
                 systemName: likedStore.isLiked(quote.id) ? "heart.fill" : "heart",
                 identifier: "quote-like"
             ) {
-                let didFavorite = likedStore.toggle(quote.id)
+                let didFavorite = likedStore.toggle(quote)
+                AnalyticsManager.shared.track(didFavorite ? .affirmationLiked : .affirmationUnliked, properties: ["quote_id": quote.id, "category": quote.categoryID, "source": "feed"])
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 if didFavorite {
                     ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
@@ -104,8 +108,13 @@ struct QuoteCardView: View {
 /// UIActivityViewController wrapper.
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
+    var onComplete: (() -> Void)? = nil
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        controller.completionWithItemsHandler = { _, completed, _, _ in
+            if completed { Task { @MainActor in onComplete?() } }
+        }
+        return controller
     }
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }

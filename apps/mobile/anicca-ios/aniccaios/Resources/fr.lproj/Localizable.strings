@@ -1332,3 +1332,45 @@
 
 "billing_issue_title" = "Problème de paiement";
 "billing_issue_action" = "Touchez pour mettre à jour le paiement";
+
+// Initial affirmation experience
+"growth_goal_title" = "De quoi avez-vous besoin ?";
+"growth_goal_subtitle" = "Choisissez ce qui vous fait du bien aujourd’hui. Trouvons les mots qui vous accompagnent.";
+"growth_goal_self_love" = "Amour de soi";
+"growth_goal_calm" = "Calme";
+"growth_goal_confidence" = "Confiance";
+"growth_goal_letting_go" = "Lâcher prise";
+"growth_find_words" = "Trouver mes mots";
+"growth_first_affirmation" = "VOTRE PREMIÈRE AFFIRMATION";
+"growth_first_subtitle" = "Respirez. Pour le moment, laissez ces mots vous accompagner.";
+"growth_keep_close" = "Garder ces mots";
+"growth_saved" = "Enregistré";
+"growth_daily_moment" = "Créer un moment quotidien";
+"growth_maybe_later" = "Plus tard";
+
+// Affirmation collections
+"growth_category_self_love" = "Amour de soi";
+"growth_category_calm" = "Calme";
+"growth_category_confidence" = "Confiance";
+"growth_category_letting_go" = "Lâcher prise";
+"growth_category_growth" = "Évolution";
+"growth_category_gratitude" = "Gratitude";
+"growth_category_resilience" = "Résilience";
+"growth_category_presence" = "Présence";
+"growth_category_connection" = "Liens";
+"growth_category_hope" = "Espoir";
+"growth_category_rest" = "Repos";
+"growth_category_boundaries" = "Limites";
+"growth_category_general" = "Un moment pour vous";
+"growth_category_personalized" = "Pour vous";
+"growth_daily" = "Aujourd’hui";
+"growth_collections" = "Collections";
+
+// Actual remote reminder schedule
+"growth_reminder_title" = "Un peu de douceur, au bon moment.";
+"growth_reminder_explanation" = "Horaires de votre fuseau. Les réglages et la connexion peuvent affecter la réception.";
+"growth_reminder_free_schedule" = "Gratuit : %@";
+"growth_reminder_pro_schedule" = "Pro : %@";
+"growth_notifications_on" = "Notifications autorisées";
+"growth_notifications_off" = "Notifications désactivées ou pas encore autorisées";
+"growth_notification_settings" = "Gérer les autorisations de notification";

@@ -1,6 +1,6 @@
 import Foundation
 
-/// v8 Onboarding flow — 10 steps + soft paywall (rating prompt removed; review is post-value).
+/// Persisted raw values remain stable; the initial journey selects only value-bearing screens.
 enum OnboardingStep: Int, CaseIterable, Codable {
     case welcome = 0
     case goal = 1
@@ -19,6 +19,22 @@ enum PaywallStep: Int, CaseIterable, Codable {
 }
 
 extension OnboardingStep {
+    static let initialJourney: [OnboardingStep] = [.goal, .planReveal, .nudgeTimes, .notifications]
+
+    var resumableInitialStep: OnboardingStep {
+        switch self {
+        case .welcome: return .goal
+        case .painPoints, .struggleFreq, .processing, .comparison: return .planReveal
+        default: return self
+        }
+    }
+
+    var nextInitialStep: OnboardingStep? {
+        guard let index = Self.initialJourney.firstIndex(of: resumableInitialStep),
+              index + 1 < Self.initialJourney.count else { return nil }
+        return Self.initialJourney[index + 1]
+    }
+
     /// v7 (11-step, rating at 8) → v8 (10-step, no rating).
     static func migratedFromV7RawValue(_ rawValue: Int) -> OnboardingStep? {
         switch rawValue {

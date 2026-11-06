@@ -1,0 +1,122 @@
+{
+  "scope": "Architecture/product/atomic plan research only; no auth, credentials, registration, payment, production mutation or contest submission. Runtime evidence carried from prior official readbacks is explicitly historical.",
+  "sources": [
+    {
+      "url": "https://12factor.net/codebase",
+      "observed_at_utc": "2026-11-06T07:52:54.983142+00:00",
+      "extracted_text_sha256": "4492363aecd9ebdfbf30a6882c74d0a6e89c416c3fff9c824a36e3c29429e1ac",
+      "extracted_bytes": 1745,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://docs.cloud.google.com/architecture/hybrid-multicloud-patterns-and-practices/partitioned-multicloud-pattern",
+      "observed_at_utc": "2026-11-06T07:56:11.849309+00:00",
+      "extracted_text_sha256": "a232857c15978b3a97925ebaeb42e81062c43c4dce7912f7e71d7f566d03592e",
+      "extracted_bytes": 14573,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://docs.cloud.google.com/architecture/hybrid-multicloud-patterns-and-practices/environment-hybrid-pattern",
+      "observed_at_utc": "2026-11-06T07:56:11.748362+00:00",
+      "extracted_text_sha256": "6162904d3c374d43ee0de226fa5d6b985f41d6e1f0f97468356cb372c09b4529",
+      "extracted_bytes": 14369,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://scrumguides.org/scrum-guide.html",
+      "observed_at_utc": "2026-11-06T07:52:54.259287+00:00",
+      "extracted_text_sha256": "438e9812ea97d48bf257564e96f578b2e81495405965d5981a987259e8bca749",
+      "extracted_bytes": 25478,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://maritime.sh/docs/build",
+      "observed_at_utc": "2026-11-06T07:53:50.352961+00:00",
+      "extracted_text_sha256": "bf92604fe22e352f1a3bd9989f5e87b91fbfb68647ceef556cc0bec21db6d43a",
+      "extracted_bytes": 3112,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://maritime.sh/docs/sdk/end-users",
+      "observed_at_utc": "2026-11-06T07:53:51.322286+00:00",
+      "extracted_text_sha256": "0dac7b95414aed4f80a5a558aaf5523fcd1994c55060717721c894e10e741f8c",
+      "extracted_bytes": 9600,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://maritime.sh/blog/one-agent-per-user-penpal",
+      "observed_at_utc": "2026-11-06T07:54:56.321158+00:00",
+      "extracted_text_sha256": "908b3413489d8d37761d4f39f1961610eab4c4569bd947caedea2e5aa2ea267f",
+      "extracted_bytes": 3923,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://maritime.sh/blog/open-instinct-personal-agent-on-maritime",
+      "observed_at_utc": "2026-11-06T07:54:56.321701+00:00",
+      "extracted_text_sha256": "53b0ef0b64df6f04f774c66cf28a9d6c322fd6b52b7760c3b04cddcdf5e09c9d",
+      "extracted_bytes": 10203,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/mariagorskikh/open-instinct/main/docs/DEPLOY-MARITIME.md",
+      "observed_at_utc": "2026-11-06T07:55:34.182810+00:00",
+      "extracted_text_sha256": "575bad838e84516d4983e690663059d35e95535512ad188d289233e1839ceda4",
+      "extracted_bytes": 19987,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://usenaive.ai/blogs/building-ai-agents-into-your-saas",
+      "observed_at_utc": "2026-11-06T07:53:51.009882+00:00",
+      "extracted_text_sha256": "3dd2420ccd65d0e8911ad57dbe60d971b5811bb84ebd72bee30cf646a56fe1c9",
+      "extracted_bytes": 17406,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://usenaive.ai/docs/platform/organizations.md",
+      "observed_at_utc": "2026-11-06T07:54:27.496187+00:00",
+      "extracted_text_sha256": "f2093eb1a9a87e0a25ed67e9b85e03da2acfb7c9532f993f18da9386d1f6ddf7",
+      "extracted_bytes": 6042,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://usenaive.ai/hackathon",
+      "observed_at_utc": "2026-11-06T07:52:56.973081+00:00",
+      "extracted_text_sha256": "90900db0c8dff6a69385fea0b601a2f3516772c5e210d9ddf0353a1ec7118e89",
+      "extracted_bytes": 2000,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://competition.maritime.sh/terms",
+      "observed_at_utc": "2026-11-06T07:52:56.847994+00:00",
+      "extracted_text_sha256": "f95a5c99d7ca32c32ee75851210c654f235e4870d850d6c0f41982649adc0ba1",
+      "extracted_bytes": 5885,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://usenaive.ai/terms",
+      "observed_at_utc": "2026-11-06T07:56:37.715293+00:00",
+      "extracted_text_sha256": "260ad2767dae5a4317f42a188a0752e26f30a1703357e1195f8595da84c928c2",
+      "extracted_bytes": 21867,
+      "method": "public read; crwl, or GitHub raw for source"
+    },
+    {
+      "url": "https://maritime.sh/terms",
+      "observed_at_utc": "2026-11-06T07:56:39.248007+00:00",
+      "extracted_text_sha256": "4a4338381ae270cce1fd8a8eb94f0d4c32e15117c98cc45e4aa4ff303959f839",
+      "extracted_bytes": 7742,
+      "method": "public read; crwl, or GitHub raw for source"
+    }
+  ],
+  "limitations": [
+    "YC event page returned only title through both crwl and scrapy; current detailed SDK/attendance/pre-built/submission conditions remain LC58.",
+    "Naive hackathon public page currently lists prizes TBD, differing from prior notes.",
+    "Vendor case studies and public code establish architecture, not independently verified revenue/profit.",
+    "Current provider contracts, entitlement, balance, tenant deployment, customer count and invoices were not refreshed."
+  ],
+  "decision": {
+    "production_agent_runtime": "Maritime only",
+    "hackathon_environment": "Naive dedicated real-work deployment; no ordinary SaaS production tenants",
+    "product": "Life Manager Cloud subscription, not Capafy script sales",
+    "task_ledger": "canonical unified SSOT LC01-LC66; 3 documentation tasks complete, 63 execution tasks open"
+  }
+}

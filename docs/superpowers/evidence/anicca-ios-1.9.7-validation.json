@@ -1,0 +1,83 @@
+{
+  "app_id": "6755129214",
+  "version": "1.9.7",
+  "release_source_sha": "9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3",
+  "runtime_tree": "e59cf7dcf1cd715f6443b5519947dd18b6db86c2",
+  "simulator_version_build": "1.9.7/817",
+  "app_store_build_id": "41ac019d-6fbe-489a-8382-40a62d1fd9c9",
+  "app_store_build_number": "816",
+  "private_evidence_root": "/Users/anicca/.local/state/anicca-ios-initial-polish-20261106",
+  "videos": [
+    {
+      "file": "anicca-197-product-demo.mp4",
+      "sha256": "1336b57e5f15571da168c2b084a8833e3697a8d584486ab86a85254adab3c8ec",
+      "duration_seconds": 120.566667
+    },
+    {
+      "file": "anicca-197-notification-demo.mp4",
+      "sha256": "3e07552371e447b999e648b9d3da40a09ea226e613b59d173b7471ab5e0c29b9",
+      "duration_seconds": 124.666667
+    },
+    {
+      "file": "anicca-197-maestro-purchases.mp4",
+      "sha256": "192c3d1c53e423c103c567bcb71c46f8ab0870db01b26352e3bccd14d80d9a06",
+      "duration_seconds": 100.308333
+    },
+    {
+      "file": "anicca-197-maestro-japanese.mp4",
+      "sha256": "f9e907eebb3b6c4ff364facefb20aa59123ad446de08bb522aafcf950a832e40",
+      "duration_seconds": 35.851667
+    }
+  ],
+  "not_verified": [
+    "analytics provider event readback",
+    "physical device APNs delivery",
+    "successful real purchase or paid restore"
+  ],
+  "ci": {
+    "passed": 15,
+    "failed": 0
+  },
+  "app_store": {
+    "app": {
+      "id": "6755129214",
+      "bundleId": "ai.anicca.app.ios",
+      "name": "Daily Affirmations - Anicca"
+    },
+    "builds": {
+      "latest": {
+        "id": "41ac019d-6fbe-489a-8382-40a62d1fd9c9",
+        "version": "1.9.7",
+        "buildNumber": "816",
+        "processingState": "VALID",
+        "expired": false,
+        "uploadedDate": "2026-11-05T22:28:07-08:00",
+        "platform": "IOS"
+      }
+    },
+    "appstore": {
+      "versionId": "224f1d6d-e7b4-4dc7-9258-111e67de7363",
+      "version": "1.9.7",
+      "state": "WAITING_FOR_REVIEW",
+      "platform": "IOS",
+      "createdDate": "2026-11-05T21:10:06-08:00"
+    },
+    "review": {
+      "latestSubmissionId": "cb6fa5a3-c350-482d-9ca7-369be6785249",
+      "state": "WAITING_FOR_REVIEW",
+      "submittedDate": "2026-11-06T06:33:40.507Z",
+      "platform": "IOS"
+    },
+    "submission": {
+      "inFlight": true,
+      "blockingIssues": []
+    }
+  },
+  "cloud": {
+    "run_id": "ec24cda3-c88e-4b67-9a5c-091593a35f7f",
+    "archive": "SUCCEEDED",
+    "external_testflight_review": "FAILED: Beta app review submission failed (Please try again later.)",
+    "app_store_build": "VALID",
+    "redundant_build_started": false
+  }
+}

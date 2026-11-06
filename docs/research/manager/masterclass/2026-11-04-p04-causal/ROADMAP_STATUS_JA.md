@@ -3,6 +3,30 @@
 **唯一の正本：`ROADMAP_STATUS_JA.md`｜更新：2026-11-05 America/Los_Angeles｜P00〜P12とBFM製品実装の統合**
 
 
+## 2026-11-05｜BFM-01の必須商用ライセンス・ゲート（最優先の検証結果）
+
+**今回の一次規約確認：** `befm/BeFM1.5-4B`のHugging FaceモデルカードはApache-2.0と記すが、同じカードから参照する公式[Be.FM Terms of Use](https://docs.google.com/document/d/10n7ccfUAf89yQhx5u1lF45o70JgsOEYNu8bDxtRKbHA/edit)（Last Updated 2025-07-24）には**Non-commercial（商用利用禁止）／No Distribution（第三者への再配布禁止）／No Derivatives（改変モデルの配布禁止）**が明記されている。この規約は旧LLaMA 3.1を参照しているため、Qwen3ベースのBe.FM 1.5へどの条項が適用されるかの解釈にも不明点がある。**モデルカードのApache表示だけから商用利用・派生公開が許されると判断しない。**
+
+**BFM-01は1つの製品スプリントのまま継続するが、実行順を修正：**
+1. 商用製品へ搭載／派生モデル公開／推論を提供する場合の正式な利用権を原権利者から確認し、書面で許諾されるまでは**Be.FMの重みをAnicca製品に接続・再配布しない**。
+2. 研究用途での独立ベンチマークとしてアクセスを得る場合でも、有効なHFアカウント・利用条件の本人同意・正規のクラウド認証が必要であり、利用の目的とデータの権利を確認する。匿名アクセスは401 GatedRepo。TinyFishのGoogle既存セッションでHF OAuthログインを試したが、HFログイン画面に個人Google OAuthボタンがなくログインは未完了。共有パスワードを他サイトへ流用しない。
+3. **法的に明確な代替を先に実装・評価：** Apache-2.0のQwen3-4B base、CC0のHBCPを使った監査可能な数値予測モデル、元のBehaviorBench/HBCP等の公開評価コード。非商用・再配布禁止のものは「評価用参考モデル」にとどめる。ライセンスが明確な小さなモデルが、一般LLMより優れる局面も実データで確認済み。
+4. 予測結果・コスト・実ユーザーへの便益・害を独立に測定し、根拠と条件をモデルカード・公式記事へ反映。モデルの新しい重みが未学習ならその事実を明記。
+
+**追加GPU購入・Modal課金より前のブロッカーは利用権の明確化。** 会社の「世界最高のopen-weight Behavioral Foundation Model」を構築する際は、元の重みのライセンス、追加学習・再配布の権利、データ商用利用権がそれぞれ必要。P07-5/P07-6の教材・ソフトウェア部品を実装済みとする一方、実人間での心理的便益・臨床効果は未証明。
+
+## 2026-11-05｜Phase 7の本番公開を独立検証（完了した内容の証拠）
+
+**P07-3〜P07-6の学習・コード・テスト・Slides・日英4記事を完成。** 詳細研究PowerPoint 118枚、日本語スピーカーノート、PDF118ページ。ソフト契約P07-4 15件＋P07-5/6 25件＋統合10件の**計50件をGitHub Actionsの恒常CI**に統合した（[PR #9276](https://github.com/Daisuke134/life-manager/pull/9276) merged）。**これらは心理療法の有効性や実ユーザーへの苦痛低減の証明ではない。**
+
+公式Anicca [PR #885](https://github.com/Daisuke134/anicca-products/pull/885) をマージし、[Netlify本番ラン #42156237071](https://github.com/Daisuke134/anicca-products/actions/runs/42156237071)成功。2026-11-06T03:29:40Zに独立HTTP読み戻しで日英ホームページ200+正本SHA256一致、新規4記事すべて200、`release.json` **84記事/50メディア、content_revision `b2a548bb82288128839ac8b61174d5e6ea60e106`**、既存 `/` `/lm` `/blog/manager` `/dais` 200を確認。新規記事の正規URLは：
+- https://aniccaai.com/blog/manager-vipassana-behavior-model-ja
+- https://aniccaai.com/blog/manager-vipassana-behavior-model-en
+- https://aniccaai.com/blog/manager-measure-welfare-and-harm-ja
+- https://aniccaai.com/blog/manager-measure-welfare-and-harm-en
+
+**単一の現在TODOは引き続きBFM-01。** Be.FM 1.5-4B本体の認証・利用権は未取得。公式利用規約の非商用・再配布禁止とApacheモデルカードの相違を解消するまでは、商用モデルへの搭載・派生重み配布を行わず、利用権が明確なQwen3と自社学習HBCP数値モデルに基づいて評価・実装する。X投稿停止を継続。
+
 ## 2026-11-05｜X投稿停止とBFM-01の最初の無料クラウド実行
 
 **製品運用上の指示：X（旧Twitter）には投稿しない。** 予約・API・Postiz・GitHub Actions・自動化による新規投稿を行わない。ユーザーが明示的に再開を指示しない限りXを公開先から外す。2026-11-05 UTC以後のPostiz接続アカウントを照合した時点で、今後1年のX QUEUEは0件（過去のPUBLISHED 1件は削除していない）。ChatGPT側にX投稿自動化を確認しなかった。ただし別ツールによる未知の将来投稿まで停止保証したものではない。
@@ -12,6 +36,13 @@
 **BFM-01実行結果（2026-11-05 UTC、GitHub Actions無料CPU）:** [実行ログと再現用JSON artifact](https://github.com/Daisuke134/life-manager/actions/runs/42121034396) 。Qwen3-4B-Instruct-2507 のQ4_K_M (2,497,280,736 bytes) をHugging Faceの固定SHAから取得し、GGUF SHA256 `2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e` とllama.cpp b12137の固定バイナリSHAを検証。架空の匿名ゲームで生成回答は**「0」**、実行のCPU推論処理は**約5秒**、クラウドGPU料金**0ドル**。公開GitHub Actionsのモデル取得・実推論・レシートアップロードは成功。これは**ベースモデル4-bit量子化版の単一サンプル**であり、Be.FM LoRAや心理実験データでの予測精度、因果介入の効果を証明しない。次に、同じ質問/条件をBe.FMアダプターを適用した本来のQwenベース（bf16）で走らせ、合法な実人間holdoutへ進む。
 
 **その後の同じBFM-01:** HF利用条件の承諾、Modal Starter（$0基本料金・月$30の条件付きcompute credits）へ個人アカウントで接続、HF_TOKENとMODAL_TOKEN_ID/SECRETを安全に登録する。LoRAを含むBe.FM1.5-4B 24GB GPU上の実forward pass、Qwen3 baseとの同一条件比較、ライセンス明確なholdout、Managerへのread-only統合、製品としての限定公開、再現実験付き記事/Slides/FAQを同じTODOで完了する。未実施をDONEとしない。
+
+## 2026-11-05｜P07-5＋P07-6を同じManagerの学習→実装サイクルで完了
+
+**今回の実装済み範囲：** [P07-5](P07-5_JA.md)：ヴィパッサナーの無常・苦・無我・縁起・四念処、16観智の伝統的枠組み、Yangら2024の7T fMRI n=1の限界を学習。本人の同意がある四念処に関連した**観察のみ**を表現する`products/manager/manager_core/p07_5_experience_observation.py`を作成（無断瞑想指導・悟り判定・診断なし）。
+[P07-6](P07-6_JA.md)：WHO-5/WHOQOL/PROMIS/FFMQ/PTQ/MedEx-Iの構成概念とライセンス、Farias2020/Lindahl2017/Britton2022/VanDam2025の有害事象研究を学習。本人の選択目標・自律性・生活機能・苦痛・害を区別し、STOP/NO_ACTION、WHO-5権利、ランダム割付vs配信状態を確認する`products/manager/manager_core/p07_6_welfare_safety.py`を作成。25件の合成ソフトテストをGitHub Actionsで実行。**実人間の苦の減少や臨床的妥当性を示すものではない**。
+
+**唯一の現在TODOは引き続きBFM-01。** Be.FM1.5-4Bの正規HFアクセスとクラウド認証→実推論→合法なholdout比較→読み取り専用統合→検証済みメディア公開。P07-5/6を別の「次の仕事」とはしない。X投稿はしない。
 
 ## いまここ｜P07-3 → P07-4 → P07-5（モデル実行と同じ一つの仕事）
 
@@ -23,8 +54,8 @@
 | P07-2 | 認知、感情、注意、反すう | 講義と実ESM予測済 | 短期状態予測/長期の苦痛改善を区別 |
 | **P07-3** | **COM-B・Behaviour Change Wheel・BCTTv1・BCIO** | **講義・評価仕様とソフト基礎完了、介入の実効果は未実証** | 何を変えるかの候補生成→NO_ACTION |
 | **P07-4** | **CBT・ACT・心理的柔軟性** | **今回：講義と本人が選んだ非臨床プランのコード・テスト** | 既存Habit Designerを再利用。価値に沿う小さな行動はDRAFT_ONLY、同意なし/撤回/臨床領域はNO_ACTION |
-| **P07-5** | **仏教・ヴィパッサナー・苦・執着・解脱** | **次の講義** | 仏教的な智慧の学習と一般AIの介入・治療効果を混同しない |
-| P07-6 | 尺度・生活機能・自律性・瞑想関連の害 | 残 | 苦しみの測定、害・負担・自律性の独立評価 |
+| **P07-5** | **仏教・ヴィパッサナー・苦・執着・解脱** | **今回：原典・7T n=1の限界を学習し観察専用ゲート実装** | [P07-5教材・FAQ](P07-5_JA.md)と`p07_5_experience_observation.py`。観智や解脱をAIが認定せず、同意下の観察のみ |
+| P07-6 | 尺度・生活機能・自律性・瞑想関連の害 | **今回：一次研究・尺度・害を学習、安全・評価ソフト25テスト実装** | [P07-6教材・FAQ](P07-6_JA.md)。WHO-5の権利、MedExの有害事象、停止・撤回、RCT割付vs配信の区別を実装。人間の便益未実証 |
 | **P08-1～5** | **JITAI、MRT、N-of-1、Bandit、MDP/POMDP、安全研究** | **残：全5講** | 「今」「何もしない」を含む逐次的な介入選択 |
 | **P09-1～5** | **人物・研究holdout、ゼロショット、校正、負の転移、汎化** | **残：全5講** | Qwen/Be.FM/Centaur/Managerの真の汎化比較 |
 | **P10-1～4** | **売上・費用・価値、資金、監査、運用** | **残：全4講** | モデルの便益を事業の利益やコストと独立に測定 |
@@ -138,8 +169,8 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 | P07-2 | 認知、感情、注意、反すう | **講義・公開の実人間ESMで次状態の予測実行済／HMM実データ再現と介入の因果効果は未完** | Hoebeke40人のBrooding1450遷移、Dejonckheere100人のStress6890遷移で人物Holdout・強い前回値ベースラインと比較。GLM-HMMは先行研究として学習、実際のEEG/MWプローブの推論は未実施。新規30件テスト。 |
 | P07-3 | COM-Bと行動変容の構成要素 | **済（講義・評価器骨格）／介入の実人間検証は残** | 6下位要素、Behaviour Change Wheel、BCTTv1 93技法、BCIO、If-Then、MRT、2×2要因RCTの科学的な設計を文書化。ManagerBench v0のユニットテスト13/13成功は人工fixtureのみで、実介入や共通モデル学習・新規実データスコアではない。 |
 | P07-4 | CBT・ACT・心理的柔軟性 | **今回（講義・非臨床プランの実装／テスト）／人間での効果は未測定** | [日本語講義・用語集・FAQ](P07-4_JA.md)と既存Habit Designer出力を扱う型付き安全ゲート `products/manager/manager_core/p07_4_value_action_gate.py`。本人が自ら選んだ価値・同意・撤回、NO_ACTION／DRAFT_ONLY、臨床領域を扱わない境界を検査。人間に対するACT/CBTの治療や介入の増分効果は未測定。 |
-| P07-5 | 仏教、ヴィパッサナー、苦・執着・解脱 | **次の講義** | 思想・経験・科学的操作化を区別。P07-4の実装が済んでも人間の苦痛減少を実証したとは扱わない。 |
-| P07-6 | 尺度・生活機能・自律性・瞑想関連の害 | **残** | 改善と副作用を別々に測る。 |
+| P07-5 | 仏教、ヴィパッサナー、苦・執着・解脱 | **今回：講義・安全な観察コード・ソフトテスト** | [P07-5](P07-5_JA.md)、`p07_5_experience_observation.py`。原典・伝統・n=1 7Tの科学的限界を区別し、観智や解脱の認定をしない。実ユーザーの改善は未実証。 |
+| P07-6 | 尺度・生活機能・自律性・瞑想関連の害 | **今回：講義・害/尺度権利/評価コード・ソフトテスト** | [P07-6](P07-6_JA.md)、`p07_6_welfare_safety.py`。本人が望む行動、生活機能、自律性、NO_ACTION/STOP、WHO-5の商用ライセンス、ITTと配信の区別を実装。人間の因果効果は未実証。 |
 
 ### P08｜適応的支援と逐次意思決定
 

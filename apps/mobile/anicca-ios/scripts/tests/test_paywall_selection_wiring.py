@@ -176,15 +176,12 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         purchase = self.source.split("private func purchase()", 1)[1].split(
             "private func restorePurchases()", 1
         )[0]
-        self.assertIn(
-            "let entitlement = result.customerInfo.entitlements[AppConfig.revenueCatEntitlementId]",
-            purchase,
-        )
-        self.assertIn("if entitlement?.isActive == true, entitlement?.periodType == .trial", purchase)
-        self.assertIn(
-            "AnalyticsManager.shared.trackTrialStarted(productId: package.storeProduct.productIdentifier)",
-            purchase,
-        )
+        observer = ANALYTICS.read_text(encoding="utf-8").split("func observePurchase(", 1)[1].split("func updateSKANConversionValue", 1)[0]
+        self.assertIn("AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)", purchase)
+        self.assertIn("guard purchaseObservations.record(transaction?.transactionIdentifier)", observer)
+        self.assertIn("let entitlement = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]", observer)
+        self.assertIn("if entitlement?.isActive == true, entitlement?.periodType == .trial", observer)
+        self.assertIn("trackTrialStarted(productId: package.storeProduct.productIdentifier)", observer)
 
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):
         # Structural contract only. Execute the companion Swift tests to verify

@@ -6,7 +6,12 @@
 // superseded coarser level is CLAIMED so it cannot ring late, and past LATE_CUTOFF_MIN nobody is rung
 // at all (that territory belongs to the late-notice organ).
 // Run: node --test test/wake-catchup.test.js
-const { test } = require("node:test");
+const { test, before, after, mock } = require("node:test");
+
+before(() => mock.method(globalThis, "fetch", async () => {
+  throw new Error("External fetch forbidden in wake fixtures");
+}));
+after(() => mock.restoreAll());
 const assert = require("node:assert");
 
 process.env.LM_CALL_SECRET = "unit_secret";
@@ -53,6 +58,8 @@ function harness({ dial } = {}) {
   const deps = {
     recordDailyPoll: async () => true,
     fetchUpcomingEvents: async () => [{ ...EVENT }],
+    recordTelnyxWakeReceipt: async () => ({ ok: true, matched: 1 }),
+    wakeWasClaimed: async (_uid, key) => held.has(key),
     mental: async () => null,
     care: async () => ({ status: "already_scanned" }),
     mapsKey: "catchup-maps-key",
@@ -161,4 +168,15 @@ test("a dial failure releases its claim so the next tick retries", async () => {
     { urgency: "harsh", level: "5" },
     { urgency: "harsh", level: "5" },
   ], "the next tick retries the same level");
+});
+
+test("event-start tick selects T-0 once through the real due-level route; past start stays silent", async () => {
+  const h = harness();
+  await wakeCallOnce(USER, EVENT_START_MS, h.deps);
+  assert.deepEqual(h.dialed, [{ urgency: "harsh", level: "0" }]);
+  assert.deepEqual(h.claimed.map((key) => key.split("|").at(-1)), ["0", "5", "10"]);
+  assert.ok(h.missed.every((miss) => miss.reason === "missed_level"), "start tick is not a no-call miss");
+  await wakeCallOnce(USER, EVENT_START_MS, h.deps);
+  await wakeCallOnce(USER, EVENT_START_MS + 1, h.deps);
+  assert.equal(h.dialed.length, 1, "repeat and post-start ticks cannot dial again");
 });

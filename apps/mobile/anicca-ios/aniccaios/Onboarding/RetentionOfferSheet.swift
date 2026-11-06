@@ -127,6 +127,7 @@ struct RetentionOfferSheet: View {
         do {
             let result = try await Purchases.shared.purchase(package: pkg)
             if !result.userCancelled {
+                AnalyticsManager.shared.observePurchase(package: pkg, transaction: result.transaction, customerInfo: result.customerInfo)
                 AnalyticsManager.shared.track(.onboardingPaywallPurchased)
                 onAccepted(result.customerInfo)
                 dismiss()

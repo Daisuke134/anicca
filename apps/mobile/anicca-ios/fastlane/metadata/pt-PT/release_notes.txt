@@ -1,2 +1,1 @@
-- As notificações passam a abrir a mesma mensagem apresentada.
-- Melhorias no carregamento do ecrã de subscrição e na seleção dos planos.
+Um início mais tranquilo, com a tua primeira afirmação logo no começo. Mais afirmações em inglês e acesso fácil aos favoritos e aos horários dos lembretes. Melhorámos os gestos e a abertura da mensagem tocada numa notificação.

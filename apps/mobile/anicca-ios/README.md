@@ -16,6 +16,41 @@ files and must remain outside Git.
 The Xcode project and test targets use paths relative to this directory. No
 external checkout is required for source editing.
 
+## Initial affirmation experience
+
+The active first-run journey is goal selection → a real, saveable affirmation →
+actual reminder schedule → optional notification permission → the existing soft
+paywall. Legacy persisted step raw values remain stable and resume in this journey.
+Closing the paywall continues to the feed; existing subscribers keep the current
+fresh-entitlement check. Notification permission has an explicit skip action.
+
+The native journey regression is independent of the legacy, unregistered
+`OnboardingV2Tests.swift` file:
+
+```sh
+swiftc -swift-version 5 aniccaios/Onboarding/OnboardingStep.swift \
+  scripts/tests/OnboardingJourneyTests.swift -o /tmp/anicca-onboarding-tests
+/tmp/anicca-onboarding-tests
+```
+
+This checks the production routing policy. It does not replace a simulator build
+or the Maestro first-run/permission/restore coverage.
+
+The notification-body regression compiles the production coordinator directly,
+without building the Xcode project:
+
+```sh
+swiftc -swift-version 5 aniccaios/Services/QuoteNavigationCoordinator.swift \
+  scripts/tests/QuoteNavigationTestSupport.swift \
+  scripts/tests/QuoteNavigationTests.swift -o /tmp/anicca-quote-navigation-tests
+/tmp/anicca-quote-navigation-tests
+```
+
+This covers cold-start body-only delivery, unknown IDs, case-insensitive catalog
+matches, text added around a catalog quote, and replacing an existing feed quote
+with the tapped notification body. The visible text must remain the body supplied
+by the tapped notification.
+
 ## Xcode Cloud release builds
 
 Use the existing Anicca product with repository `Daisuke134/life-manager`,

@@ -25,8 +25,7 @@ struct OnboardingProgressBar: View {
     }
 
     static func progress(for step: OnboardingStep) -> Double {
-        let totalSteps = Double(OnboardingStep.allCases.count)
-        let currentIndex = Double(step.rawValue)
-        return 0.2 + 0.6 * (currentIndex / (totalSteps - 1))
+        let index = OnboardingStep.initialJourney.firstIndex(of: step.resumableInitialStep) ?? 0
+        return Double(index + 1) / Double(OnboardingStep.initialJourney.count)
     }
 }

@@ -1332,3 +1332,45 @@
 
 "billing_issue_title" = "Zahlungsproblem";
 "billing_issue_action" = "Tippe, um die Zahlungsmethode zu aktualisieren";
+
+// Initial affirmation experience
+"growth_goal_title" = "Wovon möchtest du mehr?";
+"growth_goal_subtitle" = "Wähle, was heute zu dir passt. Wir finden Worte, die dich begleiten.";
+"growth_goal_self_love" = "Selbstliebe";
+"growth_goal_calm" = "Ruhe";
+"growth_goal_confidence" = "Selbstvertrauen";
+"growth_goal_letting_go" = "Loslassen";
+"growth_find_words" = "Meine Worte finden";
+"growth_first_affirmation" = "DEINE ERSTE AFFIRMATION";
+"growth_first_subtitle" = "Atme durch. Lass diese Worte für den Moment genug sein.";
+"growth_keep_close" = "Diese Worte speichern";
+"growth_saved" = "Gespeichert";
+"growth_daily_moment" = "Zeit für einen täglichen Moment";
+"growth_maybe_later" = "Vielleicht später";
+
+// Affirmation collections
+"growth_category_self_love" = "Selbstliebe";
+"growth_category_calm" = "Ruhe";
+"growth_category_confidence" = "Selbstvertrauen";
+"growth_category_letting_go" = "Loslassen";
+"growth_category_growth" = "Wachstum";
+"growth_category_gratitude" = "Dankbarkeit";
+"growth_category_resilience" = "Resilienz";
+"growth_category_presence" = "Präsenz";
+"growth_category_connection" = "Verbundenheit";
+"growth_category_hope" = "Hoffnung";
+"growth_category_rest" = "Erholung";
+"growth_category_boundaries" = "Grenzen";
+"growth_category_general" = "Ein Moment für dich";
+"growth_category_personalized" = "Für dich";
+"growth_daily" = "Heute";
+"growth_collections" = "Sammlungen";
+
+// Actual remote reminder schedule
+"growth_reminder_title" = "Ein wenig Freundlichkeit. Zur rechten Zeit.";
+"growth_reminder_explanation" = "Geplant in deiner Zeitzone. Geräteeinstellungen und Verbindung können die Zustellung beeinflussen.";
+"growth_reminder_free_schedule" = "Kostenlos: %@";
+"growth_reminder_pro_schedule" = "Pro: %@";
+"growth_notifications_on" = "Mitteilungen erlaubt";
+"growth_notifications_off" = "Mitteilungen sind aus oder noch nicht erlaubt";
+"growth_notification_settings" = "Mitteilungserlaubnis verwalten";

@@ -1,4 +1,5 @@
 import Combine
+import CryptoKit
 import Foundation
 
 struct QuoteNavigationRequest: Codable, Equatable {
@@ -51,7 +52,7 @@ final class QuoteNavigationCoordinator: ObservableObject {
                 normalize(quotes[index].text) == body
             }
             if exactMatches.count == 1 {
-                return finish(quotes[exactMatches[0]])
+                return finish(Quote(id: quotes[exactMatches[0]].id, text: alertBody))
             }
 
             let containingMatches = quotes.indices.filter { index in
@@ -59,15 +60,15 @@ final class QuoteNavigationCoordinator: ObservableObject {
                 return !text.isEmpty && body.contains(text)
             }
             if containingMatches.count == 1 {
-                return finish(quotes[containingMatches[0]])
+                return finish(Quote(id: quotes[containingMatches[0]].id, text: alertBody))
             }
 
             // The tapped alert body is the visible source of truth. If this app
             // version has no matching catalog entry, show that exact body instead
             // of navigating to a different quote with a stale/mismatched ID.
-            if let quoteID = request.quoteID {
-                return finish(Quote(id: "notification:\(quoteID)", text: alertBody))
-            }
+            let contentID = SHA256.hash(data: Data(alertBody.utf8))
+                .map { String(format: "%02x", $0) }.joined()
+            return finish(Quote(id: "notification:\(contentID)", text: alertBody))
         }
 
         guard let quoteID = request.quoteID,
@@ -75,6 +76,16 @@ final class QuoteNavigationCoordinator: ObservableObject {
             return finish(nil)
         }
         return finish(quote)
+    }
+
+    func feedDestination(for quote: Quote, in feed: [Quote]) -> (quotes: [Quote], index: Int) {
+        var updatedFeed = feed
+        if let index = updatedFeed.firstIndex(where: { $0.id == quote.id }) {
+            updatedFeed[index] = quote
+            return (updatedFeed, index)
+        }
+        updatedFeed.append(quote)
+        return (updatedFeed, updatedFeed.count - 1)
     }
 
     private func finish(_ quote: Quote?) -> Quote? {
