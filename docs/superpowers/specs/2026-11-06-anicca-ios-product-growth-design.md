@@ -179,3 +179,7 @@ Anicca初回版がMaestro動画・審査提出まで通ってから、共通metr
 ## 保管・復旧
 
 spec/plan/designはrepoの永続pathへcommit/pushし、remote objectまで確認する。容量不足は診断開始点とし、対象・owner・稼働利用・再生成可能性を確認して自分の不要build/cache/録画の重複などを整理し、保存/pushを再試行する。他者の進行中worktree、不可侵store、秘密・固有成果物を一括削除しない。認証不足は既存private SSOTと公式経路を確認し、通常判断や容量整理をDaisへの承認質問へしない。
+
+### 初回計測先の実確認
+
+private build configにはMixpanel tokenが存在し、PostHogのproject key/hostは存在しない。PostHog SDKの同梱だけでは稼働扱いにしない。初回は既存Mixpanelへscreen/actionを送る。PostHogは設定済みの場合だけ同じeventを送る。分析サービス上のevent受信確認は未完であり、ローカル送信と区別する。購入callbackはtransaction IDで重複を排除し、表示価格は決済済み売上と区別する。CustomerInfo更新やrestoreから新規売上を作らない。PostHogの実験設定と全アプリdashboardは後続G6以降で扱う。

@@ -1,0 +1,25 @@
+# Run after simctl push on this task's simulator. No launchApp: the notification
+# itself must launch or foreground the app and preserve the displayed body.
+appId: ai.anicca.app.ios
+name: Tapped notification shows the same message
+env:
+  MESSAGE: "I am worthy of love, exactly as I am."
+---
+- swipe:
+    start: "20%,0%"
+    end: "20%,85%"
+    duration: 600
+- tapOn:
+    text: ${MESSAGE}
+- extendedWaitUntil:
+    visible:
+      text: ${MESSAGE}
+    timeout: 20000
+- assertVisible:
+    id: "quote-text"
+- takeScreenshot: "notification-exact-message"
+- tapOn:
+    id: "quote-like"
+- tapOn:
+    id: "feed-saved"
+- assertVisible: ${MESSAGE}

@@ -104,7 +104,8 @@ struct FirstAffirmationStepView: View {
             Text(String(localized: "growth_first_subtitle"))
                 .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button {
-                likedStore.toggle(quote)
+                let liked = likedStore.toggle(quote)
+                AnalyticsManager.shared.track(liked ? .affirmationLiked : .affirmationUnliked, properties: ["quote_id": quote.id, "category": quote.categoryID, "source": "onboarding"])
             } label: {
                 Label(String(localized: likedStore.isLiked(quote.id) ? "growth_saved" : "growth_keep_close"),
                       systemImage: likedStore.isLiked(quote.id) ? "heart.fill" : "heart")
@@ -127,6 +128,9 @@ struct FirstAffirmationStepView: View {
         .padding(.horizontal, 24)
         .foregroundStyle(AppTheme.Colors.label)
         .background(InitialExperienceStyle.background)
+        .onAppear {
+            AnalyticsManager.shared.track(.firstAffirmationViewed, properties: ["quote_id": quote.id, "category": quote.categoryID])
+        }
     }
 }
 

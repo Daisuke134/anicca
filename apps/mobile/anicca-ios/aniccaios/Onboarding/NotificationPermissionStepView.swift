@@ -79,7 +79,10 @@ struct NotificationPermissionStepView: View {
             .disabled(isRequesting)
             .accessibilityIdentifier("onboarding-notifications-allow")
             .padding(.horizontal, 24)
-            Button(action: next) {
+            Button {
+                AnalyticsManager.shared.track(.notificationPermissionResult, properties: ["result": "skipped"])
+                next()
+            } label: {
                 Text(String(localized: "growth_maybe_later"))
                     .font(.subheadline).foregroundStyle(AppTheme.Colors.secondaryLabel)
                     .frame(minHeight: 44)
@@ -104,6 +107,7 @@ struct NotificationPermissionStepView: View {
                 notificationDenied = !granted
                 isRequesting = false
                 hasAttemptedPermission = true
+                AnalyticsManager.shared.track(.notificationPermissionResult, properties: ["result": granted ? "allowed" : "denied"])
                 if granted {
                     // v1.8.7: notifications are remote-only (APNs). Register now that
                     // the user granted permission so the device token reaches the backend.

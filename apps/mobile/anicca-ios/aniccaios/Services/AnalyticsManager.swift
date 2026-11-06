@@ -3,6 +3,7 @@ import Mixpanel
 import PostHog
 import StoreKit
 import OSLog
+import RevenueCat
 
 /// アプリ全体のアナリティクスを管理するシングルトン
 /// Jake Mor's Tip #1: "Most important metric is App Install → Paywall View"
@@ -10,6 +11,21 @@ import OSLog
 final class AnalyticsManager {
     static let shared = AnalyticsManager()
     private let logger = Logger(subsystem: "com.anicca.ios", category: "Analytics")
+    private let purchaseObservations = PurchaseObservationLedger()
+    private let sessionID = UUID().uuidString
+    private var postHogConfigured = false
+
+    private var context: [String: MixpanelType] {
+        #if targetEnvironment(simulator)
+        let environment = "simulator"
+        #else
+        let environment = Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" ? "sandbox" : "production"
+        #endif
+        return ["app_version": AppConfig.appVersion,
+                "app_build": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
+                "app_environment": environment, "flow_version": "affirmation-first-v1",
+                "session_id": sessionID, "language": AppState.shared.effectiveLanguage.rawValue]
+    }
     
     private init() {}
     
@@ -20,8 +36,8 @@ final class AnalyticsManager {
         // trackAutomaticEvents: false (公式推奨 - クライアントサイドの自動イベントは信頼性が低い)
         Mixpanel.initialize(token: token, trackAutomaticEvents: false)
         
-        // ログを常時有効化（Debug/Release両方でイベント送信を確認可能）
-        Mixpanel.mainInstance().loggingEnabled = true
+        // イベントpayloadを端末ログへ出力しない。
+        Mixpanel.mainInstance().loggingEnabled = false
         
         logger.info("Mixpanel initialized")
     }
@@ -29,6 +45,7 @@ final class AnalyticsManager {
     /// ユーザーIDを設定（ログイン時に呼び出し）
     func identify(userId: String) {
         Mixpanel.mainInstance().identify(distinctId: userId)
+        if postHogConfigured { PostHogSDK.shared.identify(userId) }
         logger.info("Mixpanel identified user: \(userId, privacy: .private(mask: .hash))")
     }
     
@@ -49,6 +66,7 @@ final class AnalyticsManager {
     /// ログアウト時にリセット
     func reset() {
         Mixpanel.mainInstance().reset()
+        if postHogConfigured { PostHogSDK.shared.reset() }
         logger.info("Mixpanel reset")
     }
     
@@ -56,8 +74,19 @@ final class AnalyticsManager {
     
     /// 汎用イベントトラッキング
     func track(_ event: AnalyticsEvent, properties: [String: MixpanelType]? = nil) {
-        Mixpanel.mainInstance().track(event: event.rawValue, properties: properties)
+        var merged = context
+        merged.merge(properties ?? [:]) { _, incoming in incoming }
+        Mixpanel.mainInstance().track(event: event.rawValue, properties: merged)
+        if postHogConfigured {
+            PostHogSDK.shared.capture(event.rawValue, properties: merged.mapValues { $0 as Any })
+        }
         logger.debug("Tracked event: \(event.rawValue, privacy: .public)")
+    }
+
+    func connectPostHog(userID: String) {
+        postHogConfigured = true
+        identify(userId: userID)
+        PostHogSDK.shared.register(context.mapValues { $0 as Any })
     }
     
     /// PostHog event tracking (A/B test layer — runs alongside Mixpanel)
@@ -76,16 +105,21 @@ final class AnalyticsManager {
     }
     
     /// 購入完了
-    func trackPurchaseCompleted(productId: String, revenue: Double) {
-        track(.purchaseCompleted, properties: [
-            "product_id": productId,
-            "revenue": revenue
-        ])
-        
-        // Revenue tracking
-        Mixpanel.mainInstance().people.trackCharge(amount: revenue)
-
-        // Purchase は RevenueCat → Singular → TikTok SAN で自動送信（二重カウント防止）
+    func observePurchase(package: Package, transaction: StoreTransaction?, customerInfo: CustomerInfo) {
+        guard purchaseObservations.record(transaction?.transactionIdentifier) else { return }
+        if customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.periodType == .trial {
+            trackTrialStarted(productId: package.storeProduct.productIdentifier)
+            return
+        }
+        var properties: [String: MixpanelType] = [
+            "product_id": package.storeProduct.productIdentifier,
+            "transaction_id": transaction?.transactionIdentifier ?? "",
+            "displayed_price": NSDecimalNumber(decimal: package.storeProduct.price).doubleValue,
+            "amount_source": "store_product_quote_not_settled_revenue"
+        ]
+        if let currency = package.storeProduct.currencyCode { properties["currency"] = currency }
+        track(.purchaseCompleted, properties: properties)
+        // Actual amounts/renewals/refunds are reconciled from RevenueCat and Apple.
         updateSKANConversionValue(3)
     }
 
@@ -132,6 +166,16 @@ final class AnalyticsManager {
 // MARK: - Analytics Events
 
 enum AnalyticsEvent: String {
+    case screenViewed = "screen_viewed"
+    case firstAffirmationViewed = "first_affirmation_viewed"
+    case affirmationViewed = "affirmation_viewed"
+    case affirmationLiked = "affirmation_liked"
+    case affirmationUnliked = "affirmation_unliked"
+    case affirmationShared = "affirmation_shared"
+    case notificationOpened = "notification_opened"
+    case notificationDestinationResolved = "notification_destination_resolved"
+    case notificationPermissionResult = "notification_permission_result"
+    case purchaseCancelled = "purchase_cancelled"
     // App
     case appOpened = "app_opened"
 

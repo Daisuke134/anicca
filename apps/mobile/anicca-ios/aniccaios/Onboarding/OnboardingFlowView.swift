@@ -12,6 +12,7 @@ struct OnboardingFlowView: View {
     @State private var showPaywall: Bool = false
     @State private var isResolvingPaywallEntry = false
     @State private var didPurchaseOnPaywall = false
+    @State private var lastTrackedStep: OnboardingStep?
 
     var body: some View {
         ZStack {
@@ -40,6 +41,7 @@ struct OnboardingFlowView: View {
             }
 
             step = appState.onboardingStep.resumableInitialStep
+            recordStepView()
 
             if step == .goal {
                 AnalyticsManager.shared.track(.onboardingStarted)
@@ -49,6 +51,7 @@ struct OnboardingFlowView: View {
                 await SubscriptionManager.shared.refreshOfferings()
             }
         }
+        .onChange(of: step) { _ in recordStepView() }
         .fullScreenCover(isPresented: $showPaywall) {
             PaywallFlowContainer(
                 onPurchaseSuccess: { customerInfo in
@@ -80,6 +83,12 @@ struct OnboardingFlowView: View {
     }
 
     // MARK: - Navigation
+
+    private func recordStepView() {
+        guard lastTrackedStep != step else { return }
+        lastTrackedStep = step
+        AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "onboarding.\(step.analyticsName)"])
+    }
 
     private func advance() {
         AnalyticsManager.shared.track(.onboardingStepAdvanced, properties: ["step": step.analyticsName])

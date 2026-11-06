@@ -22,6 +22,7 @@ struct FeedRootView: View {
     @State private var showCollections = false
     @State private var selectedCategory: String?
     @State private var feedRevision = 0
+    @State private var lastTrackedQuoteID: String?
     private let recentQuotesKey = "anicca.feed.recent-quote-ids"
     /// Unique affirmations seen this launch — used as a lightweight "session finished" signal.
     @State private var viewedQuoteIDsThisSession: Set<String> = []
@@ -112,6 +113,7 @@ struct FeedRootView: View {
         .environmentObject(themeStore)
         .environmentObject(likedStore)
         .onAppear {
+            AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed"])
             if quotes.isEmpty {
                 rebuildFeed()
             }
@@ -140,18 +142,21 @@ struct FeedRootView: View {
         .sheet(isPresented: $showSaved) {
             NavigationStack {
                 LikedQuotesView().environmentObject(likedStore)
+                    .onAppear { AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed.saved"]) }
                     .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(String(localized: "common_close")) { showSaved = false } } }
             }
         }
         .sheet(isPresented: $showReminders) {
             NavigationStack {
                 NotificationsSettingsView()
+                    .onAppear { AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed.reminders"]) }
                     .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(String(localized: "common_close")) { showReminders = false } } }
             }
         }
         .sheet(isPresented: $showThemes) {
             NavigationStack {
                 ThemePickerView().environmentObject(themeStore)
+                    .onAppear { AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed.themes"]) }
                     .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(String(localized: "common_close")) { showThemes = false } } }
             }
         }
@@ -159,6 +164,7 @@ struct FeedRootView: View {
             if #available(iOS 16.0, *) {
                 NavigationStack {
                     SettingsSheet()
+                        .onAppear { AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed.settings"]) }
                         .environmentObject(themeStore)
                         .environmentObject(likedStore)
                 }
@@ -179,6 +185,7 @@ struct FeedRootView: View {
         let catalog = QuoteProvider.shared.all(preferredLanguage: appState.effectiveLanguage)
         let catalogIDs = Set(catalog.map(\.id))
         guard let quote = quoteNavigation.resolveQuote(in: catalog + quotes.filter { !catalogIDs.contains($0.id) }) else { return }
+        AnalyticsManager.shared.track(.notificationDestinationResolved, properties: ["quote_id": quote.id, "result": "displayed"])
         let index: Int
         if let existingIndex = quotes.firstIndex(where: { $0.id == quote.id }) {
             index = existingIndex
@@ -193,6 +200,10 @@ struct FeedRootView: View {
     private func recordViewedQuoteIfNeeded() {
         guard quotes.indices.contains(currentIndex) else { return }
         let quoteID = quotes[currentIndex].id
+        if lastTrackedQuoteID != quoteID {
+            lastTrackedQuoteID = quoteID
+            AnalyticsManager.shared.track(.affirmationViewed, properties: ["quote_id": quoteID, "category": quotes[currentIndex].categoryID])
+        }
         viewedQuoteIDsThisSession.insert(quoteID)
         var recent = UserDefaults.standard.stringArray(forKey: recentQuotesKey) ?? []
         recent.removeAll { $0 == quoteID }

@@ -317,18 +317,13 @@ struct PlanSelectionStepView: View {
             do {
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
+                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)
                     AnalyticsManager.shared.track(.onboardingPaywallPurchased)
                     AnalyticsManager.shared.trackPostHog("paywall_purchased", properties: [
                         "variant": variant,
                         "plan_type": package.packageType == .annual ? "annual" : "monthly",
                         "has_trial": package.storeProduct.introductoryDiscount != nil
                     ])
-                    if package.packageType == .annual,
-                       package.storeProduct.introductoryDiscount != nil {
-                        AnalyticsManager.shared.track(.trialStarted, properties: [
-                            "product_id": package.storeProduct.productIdentifier
-                        ])
-                    }
                     await MainActor.run {
                         isPurchasing = false
                         onPurchaseSuccess(result.customerInfo)

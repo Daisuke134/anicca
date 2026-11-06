@@ -55,7 +55,9 @@ struct QuoteCardView: View {
                     background: themeStore.selected
                 ),
                 "aniccaai.com"
-            ])
+            ], onComplete: {
+                AnalyticsManager.shared.track(.affirmationShared, properties: ["quote_id": quote.id, "category": quote.categoryID])
+            })
         }
     }
 
@@ -70,6 +72,7 @@ struct QuoteCardView: View {
                 identifier: "quote-like"
             ) {
                 let didFavorite = likedStore.toggle(quote)
+                AnalyticsManager.shared.track(didFavorite ? .affirmationLiked : .affirmationUnliked, properties: ["quote_id": quote.id, "category": quote.categoryID, "source": "feed"])
                 UIImpactFeedbackGenerator(style: .soft).impactOccurred()
                 if didFavorite {
                     ReviewPromptCoordinator.shared.requestReviewIfAppropriate {
@@ -105,8 +108,13 @@ struct QuoteCardView: View {
 /// UIActivityViewController wrapper.
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
+    var onComplete: (() -> Void)? = nil
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        controller.completionWithItemsHandler = { _, completed, _, _ in
+            if completed { Task { @MainActor in onComplete?() } }
+        }
+        return controller
     }
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
