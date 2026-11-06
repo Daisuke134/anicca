@@ -23482,6 +23482,16 @@ Top 10 by sales: 0/10 with a trial (Ocup 3,111, Serenity 2,002, HookAce 1,044, V
 **更新された現在地・as of 2026-10-24 11:47 UTC / 20:47 JST（現在状態と唯一のcursor）:** 後続の日付付きcheckpointは当時の履歴として保持する。この10/24時点の更新は当時のsnapshotとして保持し、2026-10-25の製品方向・status更新が現在地を上書きする。根拠→[2026-10-24 11:47 live readback](../../evidence/maritime/live-readback-20261024-1147Z.json)、atomic残作業→[Maritime finish plan](../plans/2026-10-24-maritime-finish-plan.md)。大会/サービス/配布の原観測時刻は証拠JSONに分けて記載し、未確認値は0ではなくunknown。
 
 
+#### 2026-11-06 Maritime M-2 provision readback（end-users API provision 1件の到達と検証）
+
+根拠→[M-2 provision readback](../../evidence/maritime/provision-20261106-m2.json)（観測 2026-11-06T17:16:51Z、公式API base `https://api.maritime.sh`、全readback HTTP 200）。
+
+- **到達:** Maritime 公式 end-users API（`PUT /api/v1/end-users/{external_id}` → `POST /api/v1/end-users/{external_id}/agents`）で新規テナント provision を1件通した。前任レーンが 2026-11-06T15:15:38Z に end-user を、15:15:42Z に agent を作成し、引き継ぎレーンが独立 readback で実在を再確認した。二重作成はしていない。
+- **作成物:** end-user id `9157aa67-d530-492b-b6b4-c0f7a2b3ec9b`、externalId `lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee`、displayName「Life Manager Cloud tenant (provision proof 2026-11-06)」、status active、metadata.tenantId `lm_4e7aeea7-b38d-4959-80aa-060c293c77af`。agent id `0ed049f0-c91f-45f2-8901-2684de1a6760`（framework=custom、projectId `533a44fe-b10e-45d9-b5fd-d5e33eea35af`）。
+- **agent の status=error の内訳:** deploy/build が2回とも buildLog「Error: Source execution could not be prepared.」で失敗した（deployment `a7844c6b-3914-4dad-8654-3e131f10253f` 15:15:45Z、`c30ce878-ef3a-4305-b0b1-1b237fa4cce4` 16:36:53Z）。end-users API の create では source が付かず image が生成されないためであり、provision（API作成＋readback確認）自体は到達した。source の付与と deploy は M-3 の範囲で、本 checkpoint は agent の稼働・業務完走を主張しない（invocationCount 0、lastStartedAt null）。
+- **上限:** 現在 end-user 3件・agent 3台で free tier 上限 maxAgents 3 に到達した（既存2台: `lm-manager-dc104192deb615426467efb6f10ed5a3`、`lm-cloud-l02-20261105`）。追加作成は上限のため行わず、既存 agent の削除もしない。
+- **課金:** 有料 plan 加入・billing 切替（switch-to-usage）・Desktop/Computer 有効化は一切なし。新規課金 $0。
+
 #### 2026-10-25 product contract and live state override
 
 **User-confirmed direction:** Life Manager is one product and one manager. Local and Cloud are execution modes; Grok Bot, Muse, and Dots are intended access integrations to that same manager. The Cloud goal is paid, phone-first use with one persistent, isolated Maritime VM per customer. Calendar travel-time planning is one existing workflow, not the product definition. After signup, payment, account authorization, and data-retention consent, routine delegated work should proceed without daily human approvals. Initial consent, account authentication, and provider-required identity checks remain explicit. Autonomous profit is a goal, not a verified result.

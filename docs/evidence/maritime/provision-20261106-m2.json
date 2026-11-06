@@ -1,0 +1,194 @@
+{
+  "evidence": "maritime-m2-provision-readback",
+  "observed_at_utc": "2026-11-06T17:16:51Z",
+  "api_base": "https://api.maritime.sh",
+  "account_context": {
+    "billing_model": "seats (legacy)",
+    "plan": null,
+    "maxAgents": 3,
+    "maxAwakeMachines": 1,
+    "note": "free tier per 2026-11-06 lane readback; no plan purchase, no billing switch, no Desktop enablement performed in this lane"
+  },
+  "summary": {
+    "m2_outcome": "ACHIEVED (provision executed by predecessor lane 2026-11-06T15:15:38-15:15:42Z; takeover lane verified by independent readback; no duplicate creation)",
+    "end_users_total": 3,
+    "agents_total": 3,
+    "agents_at_free_tier_cap": true,
+    "new_end_user_id": "9157aa67-d530-492b-b6b4-c0f7a2b3ec9b",
+    "new_end_user_external_id": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+    "new_agent_id": "0ed049f0-c91f-45f2-8901-2684de1a6760",
+    "new_agent_status": "error",
+    "new_agent_error_cause": "deploy/build failed twice with buildLog \"Error: Source execution could not be prepared.\" (no source attached at end-users-API create). Attaching/deploying current source is M-3 scope.",
+    "charges_incurred": 0
+  },
+  "readbacks": {
+    "GET /api/agents": {
+      "http": 200,
+      "agents": [
+        {
+          "id": "0ed049f0-c91f-45f2-8901-2684de1a6760",
+          "name": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+          "externalId": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+          "framework": "custom",
+          "status": "error",
+          "tier": "always_on",
+          "projectId": "533a44fe-b10e-45d9-b5fd-d5e33eea35af",
+          "createdAt": "2026-11-06T15:15:42.768004+00:00",
+          "updatedAt": "2026-11-06T16:37:09.120779+00:00",
+          "statusChangedAt": "2026-11-06T16:37:12.961334+00:00",
+          "invocationCount": 0,
+          "lastStartedAt": null,
+          "imageName": null,
+          "derivedImageTag": null
+        },
+        {
+          "id": "113ec037-cb21-4d7e-af8d-e689bb0a19ad",
+          "name": "lm-cloud-l02-20261105",
+          "externalId": "lm-runtime-validation-20261105",
+          "framework": "openclaw",
+          "status": "sleeping",
+          "tier": "always_on",
+          "projectId": "4eeed3a9-97b0-44cb-849c-26ef102723de",
+          "createdAt": "2026-11-05T05:44:34.218118+00:00",
+          "updatedAt": "2026-11-05T22:45:13.087288+00:00",
+          "statusChangedAt": "2026-11-05T22:18:26.041526+00:00",
+          "invocationCount": 0,
+          "lastStartedAt": null,
+          "imageName": "ghcr.io/openclaw/openclaw:2026.7.1",
+          "derivedImageTag": null
+        },
+        {
+          "id": "80c0208c-af40-4b4c-94ee-a24b3f731db6",
+          "name": "lm-manager-dc104192deb615426467efb6f10ed5a3",
+          "externalId": "lm-manager-dc104192deb615426467efb6f10ed5a3",
+          "framework": "custom",
+          "status": "sleeping",
+          "tier": "always_on",
+          "projectId": "3bdcea8b-a525-489b-b73a-592f93b38760",
+          "createdAt": "2026-10-20T16:28:41.115200+00:00",
+          "updatedAt": "2026-11-06T17:11:52.219273+00:00",
+          "statusChangedAt": "2026-11-06T17:11:54.533683+00:00",
+          "invocationCount": 18,
+          "lastStartedAt": null,
+          "imageName": "maritime-agent-80c0208c:5ecaadc0",
+          "derivedImageTag": null
+        }
+      ]
+    },
+    "GET /api/v1/end-users": {
+      "http": 200,
+      "items": [
+        {
+          "id": "9157aa67-d530-492b-b6b4-c0f7a2b3ec9b",
+          "externalId": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+          "displayName": "Life Manager Cloud tenant (provision proof 2026-11-06)",
+          "status": "active",
+          "agentCount": 1,
+          "createdAt": "2026-11-06T15:15:38.099231Z",
+          "updatedAt": "2026-11-06T15:15:38.099231Z",
+          "metadata": {
+            "tenantId": "lm_4e7aeea7-b38d-4959-80aa-060c293c77af",
+            "purpose": "provision-proof-20261106",
+            "releaseSha": "a0d217d0769db2dab68bb8a8a452bfaea916fe9d"
+          },
+          "tags": [
+            "life-manager-cloud",
+            "provision-proof-20261106"
+          ]
+        },
+        {
+          "id": "fa4694e1-e8c1-49b6-80e2-eb2717ec173d",
+          "externalId": "lm-runtime-validation-20261105",
+          "displayName": null,
+          "status": "active",
+          "agentCount": 1,
+          "createdAt": "2026-11-05T07:34:57.824867Z",
+          "updatedAt": "2026-11-05T07:34:57.824867Z",
+          "metadata": {},
+          "tags": []
+        },
+        {
+          "id": "bec29f3b-6ce4-480f-ba27-9b88222ac25c",
+          "externalId": "lm-manager-dc104192deb615426467efb6f10ed5a3",
+          "displayName": null,
+          "status": "active",
+          "agentCount": 1,
+          "createdAt": "2026-10-20T16:28:41.043308Z",
+          "updatedAt": "2026-10-20T16:28:41.043308Z",
+          "metadata": {},
+          "tags": []
+        }
+      ]
+    },
+    "GET /api/v1/end-users/{new_external_id}": {
+      "http": 200,
+      "end_user": {
+        "id": "9157aa67-d530-492b-b6b4-c0f7a2b3ec9b",
+        "externalId": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+        "displayName": "Life Manager Cloud tenant (provision proof 2026-11-06)",
+        "status": "active",
+        "agentCount": 1,
+        "createdAt": "2026-11-06T15:15:38.099231Z",
+        "updatedAt": "2026-11-06T15:15:38.099231Z",
+        "metadata": {
+          "tenantId": "lm_4e7aeea7-b38d-4959-80aa-060c293c77af",
+          "purpose": "provision-proof-20261106",
+          "releaseSha": "a0d217d0769db2dab68bb8a8a452bfaea916fe9d"
+        },
+        "tags": [
+          "life-manager-cloud",
+          "provision-proof-20261106"
+        ]
+      },
+      "agents": [
+        {
+          "id": "0ed049f0-c91f-45f2-8901-2684de1a6760",
+          "name": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+          "status": "error",
+          "framework": "custom",
+          "createdAt": "2026-11-06T15:15:42.768004Z"
+        }
+      ]
+    },
+    "GET /api/agents/{new_agent_id}": {
+      "http": 200,
+      "agent": {
+        "id": "0ed049f0-c91f-45f2-8901-2684de1a6760",
+        "name": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+        "externalId": "lm-manager-9b9f21ce6b9a945733c5b939cb0f6eee",
+        "framework": "custom",
+        "status": "error",
+        "tier": "always_on",
+        "projectId": "533a44fe-b10e-45d9-b5fd-d5e33eea35af",
+        "createdAt": "2026-11-06T15:15:42.768004Z",
+        "updatedAt": "2026-11-06T16:37:09.120779Z",
+        "statusChangedAt": "2026-11-06T16:37:12.961334Z",
+        "invocationCount": 0,
+        "lastStartedAt": null,
+        "imageName": null,
+        "derivedImageTag": null
+      }
+    },
+    "GET /api/deploy/agent/{new_agent_id}": {
+      "http": 200,
+      "deployments": [
+        {
+          "id": "c30ce878-ef3a-4305-b0b1-1b237fa4cce4",
+          "status": "failed",
+          "failureKind": "build",
+          "buildLog": "Error: Source execution could not be prepared.\n",
+          "startedAt": "2026-11-06T16:36:53.526700Z",
+          "completedAt": "2026-11-06T16:37:09.120759Z"
+        },
+        {
+          "id": "a7844c6b-3914-4dad-8654-3e131f10253f",
+          "status": "failed",
+          "failureKind": "build",
+          "buildLog": "Error: Source execution could not be prepared.\n",
+          "startedAt": "2026-11-06T15:15:45.195291Z",
+          "completedAt": "2026-11-06T15:16:02.470584Z"
+        }
+      ]
+    }
+  }
+}
