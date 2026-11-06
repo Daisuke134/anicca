@@ -16,6 +16,12 @@ test('integrates only Manager, preserves legacy code and is repeatable', async()
  const article=await fs.readFile(path.join(root,'app/blog/[slug]/page.tsx'),'utf8');
  assert.match(article,/post\.project === "Manager" \? renderManagerMarkdown/);
  assert.match(article,/WriterUnlock/);assert.match(article,/affiliatePlacement\(articleMarkdown\)/);
+ assert.match(article,/blogPairAlternates\(post\.slug, loadAllBlogPosts\(\)\.map\(\(p\) => p\.slug\)\)/);
+ const sitemap=await fs.readFile(path.join(root,'app/sitemap.ts'),'utf8');
+ assert.match(sitemap,/\n  "\/ja",/);
+ assert.match(sitemap,/import \{ blogPairLanguages \} from "@\/lib\/render-manager-markdown\.mjs";/);
+ assert.match(sitemap,/alternates: \{ languages \}/);
+ assert.match(sitemap,/slug === "best-affirmation-apps-2026-11-05"/);
  const business=await fs.readFile(path.join(root,'lib/blog-business.mjs'),'utf8');
  assert.match(business,/p === 'manager'/);assert.match(business,/'line-stickers'/);
  const first=await fs.readFile(path.join(root,'app/blog/page.tsx'),'utf8');

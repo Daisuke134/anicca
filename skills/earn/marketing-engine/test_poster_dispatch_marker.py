@@ -59,3 +59,16 @@ def test_write_is_atomic_no_leftover_tmp(tmp_path):
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-v"]))
+
+
+def test_marker_preserves_original_publisher(tmp_path):
+    marker = tmp_path / "dispatch.json"
+    poster.write_dispatch_marker(str(marker), "capafy-ig-marketing-daily:original", handle="original_fixture")
+    assert json.loads(marker.read_text())["handle"] == "original_fixture"
+
+
+def test_marker_binds_runtime_occurrence_without_cli_override(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIFE_MANAGER_OCCURRENCE_ID", "capafy-ig-marketing-daily:runtime")
+    marker = tmp_path / "dispatch.json"
+    poster.write_dispatch_marker(str(marker), handle="original_fixture")
+    assert json.loads(marker.read_text())["occurrence_id"] == "capafy-ig-marketing-daily:runtime"

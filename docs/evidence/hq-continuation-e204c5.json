@@ -1,0 +1,130 @@
+{
+  "run_id": "e204c552a38bd3f262c71a6f",
+  "owner_id": "home-codex-e204c5",
+  "occurrence_id": "HQ continuation e204c5",
+  "release_sha": null,
+  "source_base_sha": "9f930f5ce471ab47159a64e941eb4db6e9195226",
+  "observed_at": "2026-11-04T01:35:13.104349+00:00",
+  "phase": "official_readback_and_cursor_correction",
+  "command": "GitHub PR9161 checks/merge and immutable contents GET; NEAR own bids/assignments GET; Slack replies after prior cursor; existing collector receipt read",
+  "loaded_argv": [
+    "python3",
+    "process-local credentials and official read-only requests"
+  ],
+  "loaded_env": {
+    "credential_service": "near-ai-agent-market",
+    "secret_values_recorded": false
+  },
+  "exit_code": 0,
+  "effect": {
+    "new_bids": 0,
+    "delivery": 0,
+    "wallet": 0,
+    "messages_sent": 0,
+    "accounting_write": 0,
+    "remote_hook_edit": 0,
+    "fence_mutation": 0,
+    "deploy": 0,
+    "owner_reassignment": 0
+  },
+  "readback": {
+    "prior_pr": {
+      "url": "https://github.com/Daisuke134/life-manager/pull/9161",
+      "state": "MERGED",
+      "merge_commit": "9f930f5ce471ab47159a64e941eb4db6e9195226",
+      "merged_at": "2026-11-04T01:27:25Z",
+      "head": "5c11016ea9bdb24ef039cc999cf39fd6cb8bcf04",
+      "successful_checks": 15,
+      "artifacts": {
+        "docs/team/near/micro-job-economics-report.md": {
+          "official_blob_byte_match": true,
+          "bytes": 12474
+        },
+        "docs/team/near/micro-job-economics.csv": {
+          "official_blob_byte_match": true,
+          "bytes": 398
+        },
+        "docs/team/near/micro-job-economics-check.py": {
+          "official_blob_byte_match": true,
+          "bytes": 2124
+        }
+      }
+    },
+    "observed_at": "2026-11-04T01:33:15.244307+00:00",
+    "near": {
+      "bids": {
+        "http": 200,
+        "count": 5,
+        "statuses": [
+          "pending",
+          "pending",
+          "pending",
+          "pending",
+          "pending"
+        ]
+      },
+      "agent_matches": true,
+      "assignments": {
+        "http": 200,
+        "count": 0
+      }
+    },
+    "thread": {
+      "ok": true,
+      "has_more": false,
+      "after": "1793754710.135649",
+      "delta_reply_count": 0,
+      "automatic_parent_excluded": true
+    },
+    "financial_receipt": {
+      "provenance": "Existing collector receipt; no direct provider query by this task",
+      "source": "/Users/anicca/.local/state/life-manager/state/capafy-hourly-reconcile.json",
+      "observed_at": "2026-11-04T01:20:45Z",
+      "collector_verdict": "success",
+      "gross_usd": "152.70",
+      "creator_earnings_usd": "112.98",
+      "realized_usd": "0.00",
+      "non_trial_units": 37,
+      "openrouter_actual": {
+        "status": "fresh",
+        "total_usd": "13.88",
+        "window_end": "2026-11-03 00:00:00",
+        "window_start": "2026-10-04 00:00:00"
+      },
+      "profit": null,
+      "net_mrr": null,
+      "different_windows_not_net_profit": true
+    },
+    "previous_card": {
+      "id": "23cd35df8928a7b0d85e3ecc",
+      "status": "succeeded",
+      "reply_state": "posted",
+      "next": "既存監視で受注照合→受注時に契約再確認・SLA内納品"
+    }
+  },
+  "provider_receipt_id": "GitHub PR9161 9f930f5ce471ab47159a64e941eb4db6e9195226",
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/team-hq/e204c5/pr9161-official.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/e204c5/readback.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/e204c5/thread.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/e204c5/financial-receipt-summary.json"
+  ],
+  "error_class": null,
+  "retryable": false,
+  "next_action": "Required CI then integrate cursor correction. Existing hourly own assignments GET; fulfil only if assigned. Existing remote owners supply original ID and receive/start/result correlation; no repeated reminders or proxy edits.",
+  "limitations": [
+    "Remote wake and valid helper remain unverified",
+    "NEAR revenue/payout unverified",
+    "Collector money/cost windows differ; no profit inference",
+    "This documentation change does not repair remote hooks"
+  ],
+  "validation": {
+    "prior_pr_checks": "PASS: 15 success",
+    "official_artifacts": "PASS: 3 byte matches",
+    "current_claim_and_owner": "PASS: only e204c5 working; dedicated lease",
+    "decimal_recalculation": "PASS",
+    "source_boundary": "PASS",
+    "diff_check": "PASS",
+    "review_tier": "Low: docs and evidence only, CI green required per REVIEW.md"
+  }
+}

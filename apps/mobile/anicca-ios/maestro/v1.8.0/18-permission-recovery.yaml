@@ -1,0 +1,34 @@
+appId: ai.anicca.app.ios
+name: Optional permission recovery stays in the app
+---
+- clearState
+- clearKeychain
+- launchApp:
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+- runFlow: ./_onboarding_to_paywall.yaml
+- tapOn:
+    id: paywall-close-button
+- tapOn:
+    id: feed-reminders
+- tapOn:
+    id: reminder-enable-notifications
+    retryTapIfNoChange: false
+# XCTest resolves the system permission alert while refreshing its hierarchy.
+# Wait for the resulting app state instead of tapping a stale alert coordinate.
+- extendedWaitUntil:
+    visible: "Notifications allowed"
+    timeout: 20000
+- waitForAnimationToEnd
+- assertVisible:
+    id: reminder-enable-notifications
+    enabled: true
+- tapOn:
+    text: Close
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible:
+      id: feed-themes
+    timeout: 15000
+- takeScreenshot: permission-recovery-returned-to-feed

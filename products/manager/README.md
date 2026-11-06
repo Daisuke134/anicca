@@ -1,5 +1,12 @@
 # Manager
 
+**ManagerはAIモデルであり、利用者の望む行動を支援する製品である。**
+既存の公開モデルと行動変容技法を統合して使えるものを先に届け、学習・科学的評価は製品改善の手段として並走する。一般のBehavior Foundation Modelの新規重みがすでに訓練済みという意味ではない。
+
+- [Introducing Manager: model/product contract](docs/MANAGER_MODEL_PRODUCT_CONTRACT_20261106.md)
+- 実介入データ: [HeartSteps micro-randomized trial](evals/heartsteps_v1_real_mrt.py)、[RCT Bench 生活機能・QALY・心理的苦痛](evals/rct_bench_real_outcome_eval.py)、[HBCP 禁煙RCTの予測](evals/hbcp_smoking_outcome_baselines.py)。既存の元研究を再利用し、クラウドGitHub Actionsで公開実データの集計・監査を実行。
+- [Free cloud outcome evaluator workflow](../../.github/workflows/manager-real-intervention-outcome-evals.yml)。これらは独立の既存RCTであり、Manager自身が人を改善した実験ではない。個人記録をGitへ追加しない。
+
 Managerは、**行動変容を通じて、苦しみを終わらせることを目指す**一つのAIエンティティです。
 特定の宗教への帰属を前提にせず、行動科学・統計・AI・既存の実践から学びます。
 通常の活動と価値に専用app/chatや人の毎回の操作を必須にしません。Digital Buddhaは
@@ -77,6 +84,14 @@ mainの明示的なworkflow dispatchでは、`operation`から`run-once`、`stop
 公式commitと独立した配信確認から得た技術観測は、既存SQLiteへ元の単位で
 記録します。人の結果は`NOT_MEASURED`、欠測はnullのままです。Explorerの
 集計表示はローカル描画機能で、公開サイトへの接続・実観測の受入れは別に確認します。
+
+## 唯一の製品・モデル・学習・公開ロードマップ
+
+**ManagerはBehavioral Foundation Modelを目指すAIモデル・製品。** 学習・コード・ベンチマーク・利用者価値の検証・記事・Slidesの更新は、別々のTODOではなく一つの製品開発サイクルとして進める。
+
+唯一の日次作業順： [Manager ONE Roadmap](../../docs/research/manager/masterclass/2026-11-04-p04-causal/ROADMAP_STATUS_JA.md)。次の仕事はBFM-01：Be.FM 1.5-4Bのクラウド推論とQwen3比較。製品の権限と本番状態の履歴は既存の事業SSOTに保持するが、**別のNEXT TODO表を作らない**。
+
+新規の授業・記事は [Introducing Manager — Behavioral Foundation Model / Glossary / FAQ](../../docs/research/manager/articles/2026-11-06-introducing-manager-behavioral-foundation-model-en.md) と [日本語](../../docs/research/manager/articles/2026-11-06-introducing-manager-behavioral-foundation-model-ja.md) を共通参照し、専門用語を定義し、初学者向けFAQを必ず添える。学習したらすぐ既存コードを実行・比較して製品へ接続する。
 
 ## 進捗の正本
 

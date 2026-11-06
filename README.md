@@ -1,68 +1,70 @@
 <!-- startup-context-version: 2026-10-20.1 -->
-<!-- startup-context-digest: 45f79b184d1048bc643a0db1cf6f1d928f8a426077ac0e489fcaf5bcaa1435ea -->
+<!-- startup-context-digest: 7c2a72ae0b66f083c12cafde115cc5079f2e9722807b42e2288aef3f370b170f -->
 # Life Manager
 
-**One proactive general agent for work, money, and everyday life.**
+**No Human in the Loop. No Human Credentials.**
 
-Life Manager chooses worthwhile work inside the authority you give it, acts through connected tools,
-checks what actually happened, and reports results. The product goal is to keep working after one
-informed setup, without daily task prompts. Life Manager is one product with different ways to run.
+Life Manager Cloud is being built to choose income-generating work, register its own work accounts, publish, distribute, and reconcile results without daily prompts, approval chats, or the user's private service credentials. Open it on your phone and see what your manager did and what it earned.
 
-> **Development status:** The complete Cloud signup-to-verified-earnings journey is still in development.
-> Capafy account signup, inbox verification, publishing, sales readback, payouts, Cloud billing, and the
-> public Cloud workspace have not been verified end to end. Earnings are not guaranteed. See the
-> [agent catalog](docs/agents.md) for current source capabilities.
+**The economic acceptance criterion: verified earnings exceed the subscription fee and all operating costs.** This is a requirement, not a promise of profit. Cloud signup-to-income and positive net returns are not verified end to end yet.
 
-[日本語](README.ja.md) · [Setup guide](docs/getting-started.md) · [Agent catalog](docs/agents.md)
+The stack reuses existing runtimes, browsers, schedulers, inboxes, credential stores, and ledgers. Missing capabilities are a reason to find a supported component, not write another harness. One product is designed for compatible local and cloud hosts; deployment and autonomy must be verified on each host.
 
-## One product, several runtimes
+[日本語](README.ja.md) · [Local setup guide](docs/getting-started.md) · [Agent catalog](docs/agents.md)
 
-| Runtime | What it means | Current status |
-|---|---|---|
-| **Life Manager Cloud** | Planned paid, phone-first service. Each customer's agent is designed to run in an isolated Maritime VM, use the verified signup email where supported, and report results by email. | The end-to-end earning service and public Cloud route are still in development. |
-| **Self-hosted** | Free, open-source Life Manager using the same business core in an environment you operate. | Source and setup guides are available; provider setup and outcome checks vary by workflow. |
-| **Agent clients** | ChatGPT/Codex, Grok Bot, Muse, and Dots are runtime targets for the same Life Manager, not separate products. | Compatibility and background execution must be verified for each client; reading this repository alone does not prove a working integration. |
+## Life Manager Cloud
 
-The first Cloud income workflow is intended to use Capafy: prepare and submit useful Skills, meet the
-Publisher's setup requirements, and verify the platform's review and sales records. Capafy requires
-accurate publisher details, a public support email, and a non-refundable US$0.99 application fee; it
-uses automated and human review before publication. A successful submission is not a sale, and sales are not
-guaranteed. Life Manager must stop at any eligibility, identity, or other setup gate it cannot complete
-with the customer's informed authorization.
+[Life Manager Cloud](https://aniccaai.com/lm) is the phone-first hosted mode of this project.
+The local installer below runs on your Mac; Cloud is being connected to a dedicated cloud
+computer so work can continue when your phone is closed.
 
-Google sign-in provides a verified identity and email address, not access to the customer's Gmail inbox.
-If a provider requires inbox verification, Life Manager needs a separately disclosed, tenant-isolated
-mailbox or explicit mailbox authorization.
+The current design reuses Maritime's official OpenClaw runtime, a persistent agent browser,
+an agent-owned inbox, scoped credentials, scheduled wake-ups, and the existing work and
+accounting ledgers. Naïve/Vetta is an additional managed execution platform; Tenki supplies
+its underlying computers. These are execution environments for one product, not separate
+Life Manager products. Keiki is an optional messaging interface, not another required loop.
 
-## Workflows
+The hosted earning workflow is **not verified end to end yet**. The first target is Capafy,
+using a permitted publisher/team identity. Agent-owned service accounts are the design target;
+marketplaces that require the user's own credentials or mandatory personal verification do
+not qualify for that autonomous path. A listing, a sale, settlement, and profit are separate
+outcomes. Local setup requirements below do not describe phone-only Cloud onboarding.
 
-Life Manager is being built to coordinate work, income opportunities, money, schedules, physical and
-mental wellbeing, and everyday follow-through through one action and evidence ledger.
+See the [runtime comparison and reusable source](docs/research/2026-11-05-cloud-runtime-lego.md),
+the [Cloud specification and current tasks](docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md),
+and the [public company dashboard](https://aniccaai.com/open/). The dashboard contains observed
+company records with incomplete source coverage; company revenue is not Cloud-worker revenue.
 
-| Workflow | Intended outcome |
+## Businesses
+
+| Business | Revenue model |
 |---|---|
-| Contract work | Find suitable paid projects, apply, deliver, and reconcile provider results. |
-| Mobile apps | Create, release, improve, market, and measure apps. |
-| Affiliate and CPA | Find and publish attributable opportunities. |
-| Writing | Create and sell paid writing and respond to opportunities. |
-| Digital products | Create and distribute products such as prompts, eBooks, and stickers. |
-| AI services | Publish useful AI Skills, subscriptions, and APIs. |
-| Investing | Run explicitly configured, risk-gated strategies. |
+| Contract work | Paid projects on Coconala, Lancers, CrowdWorks, and Mercor. |
+| Mobile apps | App sales and subscriptions. |
+| Affiliate & CPA | Referral commissions and campaigns paid per customer action. |
+| Writing | Paid articles, newsletters, and commissioned writing. |
+| Digital products | Prompts, eBooks, and LINE stickers. |
+| AI services | Paid AI skills, subscriptions, and APIs. |
+| Investing | Configured stock-trading strategies. |
 
-Each workflow needs its own provider accounts, permissions, and sometimes paid services. A planned
-workflow is not evidence that the provider has accepted work or that revenue was earned.
+## Local edition requirements
 
-## Self-hosted setup
+- **ChatGPT Plus or higher.** Sign in with ChatGPT; no separate OpenAI API key is required.
+- **A Mac that stays awake**, internet access, and at least 12 GiB of free disk space. A Mac mini works well for always-on use.
 
-For the open-source runtime, run this in a terminal:
+Each business needs its service accounts; some services may cost extra.
+
+## Install the local edition
+
+Run this in Terminal:
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Daisuke134/life-manager/main/scripts/bootstrap.sh)" life-manager local
 ```
 
-Sign in through the official Codex flow, then follow the [setup guide](docs/getting-started.md) to
-connect accounts for the workflows you choose. See the [agent catalog](docs/agents.md) for prerequisites
-and current limits.
+Sign in with your ChatGPT account through the official Codex login flow. Then follow the setup guide to connect accounts for the businesses you choose. Docker is not required.
+
+See the [setup guide](docs/getting-started.md) for installation, keeping your Mac awake, and checking agent status.
 
 - [Report an issue](https://github.com/Daisuke134/life-manager/issues)
 - **License:** [MIT](LICENSE)

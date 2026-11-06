@@ -3,7 +3,7 @@
   "modules": [
     {
       "path": "scripts/integrate.mjs",
-      "sha256": "35e6578fe931b380c8c8ab025d118f7fb8cafff3909e804da73fdcd929170f96"
+      "sha256": "c0e719e9a7c0cd5747458abc14fa3b2224137ff62a98aa36c8076b91710bd1ae"
     },
     {
       "path": "scripts/package-contract.mjs",
@@ -11,7 +11,7 @@
     },
     {
       "path": "lib/render-manager-markdown.mjs",
-      "sha256": "dbed7372d587c20332d4e8435a74770931a44ff36da7b96831e18b17680ce336"
+      "sha256": "5a4e5a777f51720b6d9593e4a7185fb793e1d70a106c95bbd65ac4802e8b7a5e"
     },
     {
       "path": "templates/manager-collection.tsx",

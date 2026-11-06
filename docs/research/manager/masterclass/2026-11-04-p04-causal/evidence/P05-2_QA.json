@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-04",
+  "scope": "P05-2 read-only correlation of existing schema with synthetic events; live Listen Labs GET only",
+  "common_record_schema_unchanged": true,
+  "runtime_execution_or_grant_code_modified": false,
+  "slides_full_pptx": 89,
+  "slides_full_pdf_pages": 89,
+  "full_pptx_notes_count": 89,
+  "old_87_slide_body_content_preserved_except_footers": true,
+  "presentation_33_slide_pptx_byte_identical_to_main": true,
+  "presentation_33_page_pdf_byte_identical_to_main": true,
+  "new_slides": [
+    88,
+    89
+  ],
+  "markdown_notes_all_89_present": true,
+  "synthetic_trace_asof_counts": [
+    0,
+    2,
+    4
+  ],
+  "synthetic_trace_unverified_human_effect": true,
+  "synthetic_decision_not_falsely_joined": true,
+  "new_P05_2_tests": 48,
+  "overall_P04_to_P05_2_tests": 193,
+  "real_ListenLabs_authenticated_GET_statuses": [
+    200,
+    200
+  ],
+  "real_ListenLabs_wallet_count": 1,
+  "real_ListenLabs_study_list_payload_kind": "list",
+  "credential_values_or_hashes_in_repo": false,
+  "wallet_or_study_identifiers_in_repo": false,
+  "study_participant_content_persisted": false,
+  "api_mutating_actions": 0,
+  "Listen_Twins_predictor_API_verified": false,
+  "production_operational_replay": "NOT RUN",
+  "empirical_behavioral_or_causal_validity": "NOT SHOWN",
+  "next_lesson": "P05-3"
+}

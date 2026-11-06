@@ -1,0 +1,105 @@
+{
+  "study": "P04-4 synthetic CATE / mediation only",
+  "n": 24000,
+  "seed": 20261144,
+  "estimand": "CATE by two pre-intervention binary variables; ATE over population",
+  "true_population_ate": 0.029239166666666667,
+  "estimated_ate": {
+    "effect": 0.026842535991030203,
+    "se": 0.005910179332465058,
+    "ci95": [
+      0.01525858449939869,
+      0.03842648748266172
+    ],
+    "n_treated": 11938,
+    "n_control": 12062
+  },
+  "subgroups": [
+    {
+      "effect": 0.17670233789237813,
+      "se": 0.011770329824448734,
+      "ci95": [
+        0.1536324914364586,
+        0.19977218434829766
+      ],
+      "n_treated": 2924,
+      "n_control": 2978,
+      "motivation": 0,
+      "fatigue": 0,
+      "n": 5902,
+      "oracle_cate": 0.15999999999999998
+    },
+    {
+      "effect": 0.09820668042036002,
+      "se": 0.010548264610222274,
+      "ci95": [
+        0.07753208178432436,
+        0.11888127905639567
+      ],
+      "n_treated": 3029,
+      "n_control": 2972,
+      "motivation": 0,
+      "fatigue": 1,
+      "n": 6001,
+      "oracle_cate": 0.09999999999999999
+    },
+    {
+      "effect": -0.04537673943419135,
+      "se": 0.012372384390290807,
+      "ci95": [
+        -0.06962661283916133,
+        -0.02112686602922137
+      ],
+      "n_treated": 2989,
+      "n_control": 3128,
+      "motivation": 1,
+      "fatigue": 0,
+      "n": 6117,
+      "oracle_cate": -0.04000000000000002
+    },
+    {
+      "effect": -0.11357368358884232,
+      "se": 0.011749900970008319,
+      "ci95": [
+        -0.13660348949005863,
+        -0.090543877687626
+      ],
+      "n_treated": 2996,
+      "n_control": 2984,
+      "motivation": 1,
+      "fatigue": 1,
+      "n": 5980,
+      "oracle_cate": -0.1
+    }
+  ],
+  "heldout_policy": {
+    "n_holdout": 9619,
+    "selection_rule": {
+      "motivation=0,fatigue=0": 1,
+      "motivation=0,fatigue=1": 1,
+      "motivation=1,fatigue=0": 0,
+      "motivation=1,fatigue=1": 0
+    },
+    "heldout_ipw_policy_value": 0.36199189104896556,
+    "heldout_ipw_never_notify_value": 0.29919950098762865,
+    "heldout_ipw_gain": 0.06279239006133694,
+    "heldout_gain_se": 0.007335391522520847,
+    "heldout_gain_ci95": [
+      0.04841502267719608,
+      0.0771697574454778
+    ],
+    "synthetic_oracle_policy_gain": 0.06418338704647053,
+    "synthetic_oracle_always_notify_gain": 0.028647468551824515,
+    "synthetic_oracle_best_four_cell_gain": 0.06418338704647053
+  },
+  "mediation": {
+    "n": 20000,
+    "true_direct_effect": 0.12,
+    "true_indirect_effect": 0.12,
+    "true_total_effect": 0.24,
+    "estimated_direct_effect": 0.12121335777696585,
+    "estimated_indirect_effect": 0.12057098939082969,
+    "estimated_total_effect": 0.24178434716779554,
+    "caution": "Randomized A alone does not identify natural mediation without further assumptions."
+  }
+}

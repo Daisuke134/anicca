@@ -1,0 +1,15 @@
+appId: ai.anicca.app.ios
+name: Theme selection survives relaunch
+---
+- tapOn:
+    id: feed-themes
+- tapOn:
+    id: theme-sandWave
+- assertVisible:
+    id: feed-scroll
+- takeScreenshot: sand-wave-selected
+- stopApp
+- launchApp
+- assertVisible:
+    id: feed-scroll
+- takeScreenshot: sand-wave-after-relaunch

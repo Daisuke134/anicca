@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""Build the pinned HQ client without replacing the installed Reason engine."""
+
+import argparse
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    if not args.output.is_absolute():
+        parser.error("--output must be an absolute path for the dedicated HQ binary")
+    output = args.output.resolve()
+    if output.is_relative_to((Path.home() / ".reason" / "bin").resolve()):
+        parser.error("the installed Reason binaries are not an HQ build output")
+    source = Path(__file__).resolve().parents[1] / "vendor" / "reason-network-hq"
+    pin = json.loads((source / "UPSTREAM.json").read_text())
+    if pin["commit"] != "5872711927788b0d43a8a940ea45f993bc2926bc":
+        parser.error("unexpected Reason Network source pin")
+    target = Path(os.environ.get("CARGO_TARGET_DIR", str(Path.home() / ".cache" / "life-manager" / "hq-reason-client"))).resolve()
+    env = {**os.environ, "CARGO_INCREMENTAL": "0", "CARGO_PROFILE_RELEASE_DEBUG": "0"}
+    subprocess.run([
+        "cargo", "build", "--locked", "--release", "--jobs", "2",
+        "--manifest-path", str(source / "Cargo.toml"), "--target-dir", str(target),
+    ], env=env, check=True)
+    binary = target / "release" / ("reason-network.exe" if os.name == "nt" else "reason-network")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=output.parent, prefix=".hq-reason-client-", delete=False) as pending:
+        temporary = Path(pending.name)
+    try:
+        shutil.copyfile(binary, temporary)
+        temporary.chmod(0o755)
+        os.replace(temporary, output)
+    finally:
+        temporary.unlink(missing_ok=True)
+    print(json.dumps({"output": str(output), "upstream_commit": pin["commit"]}))
+
+
+if __name__ == "__main__":
+    main()

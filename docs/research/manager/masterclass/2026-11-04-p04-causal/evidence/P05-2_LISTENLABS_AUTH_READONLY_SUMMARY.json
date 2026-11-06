@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-04",
+  "provider": "Listen Labs",
+  "api_base": "https://listenlabs.ai",
+  "authentication": "x-api-key (in-memory stdin only; never persisted)",
+  "verified_live_api": true,
+  "credential_value_stored": false,
+  "credential_fingerprint_stored": false,
+  "queries": [
+    {
+      "method": "GET",
+      "path": "/api/public/v1/wallets",
+      "http_status": 200,
+      "response_type": "object",
+      "wallet_count": 1
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/v1/studies",
+      "http_status": 200,
+      "response_type": "list",
+      "study_names_saved": false,
+      "study_ids_saved": false
+    }
+  ],
+  "read_only_requests": 2,
+  "mutation_requests": 0,
+  "study_drafts_created": 0,
+  "studies_launched": 0,
+  "participants_contacted": 0,
+  "responses_or_transcripts_stored": 0,
+  "wallet_balances_stored": false,
+  "documented_twins_prediction_endpoint_verified": false,
+  "claim": "Authenticated Public Study API GET working; not proof of Listen Twins model API or behavior prediction.",
+  "browser_documentation_run_url": "https://agent.tinyfish.ai/runs/73a88093-eeb9-4fd0-8f4c-a524d8978921"
+}

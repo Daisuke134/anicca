@@ -1,1 +1,3 @@
 Read-only snapshots of the publishing repository blog interface, retrieved 2026-10-19 before Manager integration. Source: Daisuke134/anicca-products/apps/landing/{app/blog,app/sitemap.ts,lib/blog-business.mjs}. They exercise scoped patches against a real existing flow without developing in another repository checkout. Production always uses the current checkout's files and fails if required patch anchors drift.
+
+Refresh note (2026-11-05): app__sitemap.ts was re-snapshotted from the publishing repository's current main (verified byte-equivalent in substance against raw main on 2026-11-05) because the hreflang/sitemap patches anchor on the current sitemap shape (evergreen filter, blogEntries map). The other fixtures remain the 2026-10-19 snapshots.

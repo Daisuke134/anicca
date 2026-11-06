@@ -1,0 +1,30 @@
+{
+  "run_id": "7c9269e102d2886ee18ccbb6",
+  "owner_id": "home-codex",
+  "occurrence_id": "CAPAFY-ATTRIBUTION-PAYLOAD",
+  "phase": "integration_continuation",
+  "release_sha": "735660764d",
+  "command": "Slack conversations.replies; gh pr view/merge; git merge origin/main",
+  "exit_code": 0,
+  "effect": {
+    "pr9103": "merged",
+    "deploy": 0,
+    "post": 0,
+    "accounting_write": 0
+  },
+  "readback": {
+    "remote_thread_messages": 6,
+    "new_native_receipt_start_result": false,
+    "pr9103_head": "394a000070e9725c1c2996ea6ba68233e5a07d0f",
+    "ci_jobs_success": 14,
+    "coderabbit": "SUCCESS"
+  },
+  "provider_receipt_id": "https://github.com/Daisuke134/life-manager/pull/9103",
+  "evidence_refs": [
+    "docs/evidence/capafy-natural-95bef89b.json",
+    "/Users/anicca/.local/state/life-manager/team-hq/7c9269-readback/remote-thread.json"
+  ],
+  "error_class": null,
+  "retryable": false,
+  "next_action": "PR9104 updated-head CI then merge; reconcile original IG identity/journal and official receipt without replay"
+}

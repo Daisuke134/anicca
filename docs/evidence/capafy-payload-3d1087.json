@@ -1,0 +1,64 @@
+{
+  "task_id": "3d10872ebd07701cbebd47c2",
+  "owner": "home-codex-3d1087",
+  "base": "58009a3a96b4c7544ce776ee2a3493b34115cd8a",
+  "thread": {
+    "channel": "C0CBLBGSBJN",
+    "ts": "1793635811.853779",
+    "new_native_receipt_start_result": false,
+    "reminders_sent": 0
+  },
+  "prior_pr": {
+    "number": 9099,
+    "state": "MERGED",
+    "required_jobs_success": 14
+  },
+  "verification": {
+    "red": "existing6 pass; payload/readback tests3 fail: scalar1 and missing attribution",
+    "green_node_tests": 10,
+    "python_pull_attribution": 4,
+    "python_build_landing": 9,
+    "diff_check": "PASS",
+    "source_boundary": "PASS"
+  },
+  "external_effect": {
+    "deploys": 0,
+    "clicks": 0,
+    "posts": 0,
+    "accounting_writes": 0,
+    "sales": "unverified"
+  },
+  "remaining": [
+    "exact head required CI and read-only review",
+    "merge only after all checks PASS",
+    "owner-coordinated functions-only immutable deployment preserving current static and prior go ZIP",
+    "official readback of natural new JSON body and ct aggregation; do not replay old synthetic probe"
+  ],
+  "source_contract": "New sanitized click JSON; opt-in detail=1&attribution=1; old scalar attribution unavailable; storage errors fail readback",
+  "continuation": {
+    "task_id": "a4a1953ed490e9caf61e10c3",
+    "prior_head_ci": "b86f14f: 14 jobs + CodeRabbit SUCCESS",
+    "review_findings": [
+      4448386165,
+      4448386180
+    ],
+    "red": "Python URL opt-in and missing persisted ct summary: 2 assertion failures; Node malformed legacy: 1 assertion failure",
+    "environment_probe": "Node initially missing @netlify/blobs; reused installed dependency via ignored symlink after exact package-lock byte comparison",
+    "green": {
+      "node": 11,
+      "python_marketing_suite": 39,
+      "diff_check": "PASS",
+      "source_boundary": "PASS"
+    },
+    "warnings": "Existing test HTTPError fixtures emit ResourceWarning; suite OK",
+    "next": "fresh review, exact updated-head CI, then merge, coordinated functions-only promotion and natural official readback",
+    "effects": "no deploy, click, post, accounting mutation",
+    "ci_failure": {
+      "head": "6338ee233056af608ececa90aa89b424fef7771f",
+      "run": 41543183396,
+      "job": 125612160774,
+      "error": "symlink_escape skills/earn/capafy-marketing/node_modules",
+      "repair": "Remove accidentally tracked dependency symlink; copy installed matching-lock dependencies into ignored real directory. Functional source unchanged."
+    }
+  }
+}

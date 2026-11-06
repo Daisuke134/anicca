@@ -20,6 +20,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import runtime.loop.lm_loop as lm_loop
+from runtime.host import resource_admission as admission
 from runtime.loop.lm_loop import apply_live
 from runtime.loop.lm_loop_apply import (
     _plist,
@@ -2332,6 +2333,33 @@ class LmLoopApplyTest(unittest.TestCase):
         self.assertEqual(environment["REALTIME_GUIDE_OPERATOR_SETTING"], "kept")
         self.assertNotIn("WorkingDirectory", result_plist)
 
+    def test_capafy_jobs_get_bounded_key_budget_defaults(self):
+        release = self._release("release-capafy-budget").resolve()
+        entrypoint = release / "skills/self/capafy-loop/run.sh"
+        entrypoint.parent.mkdir(parents=True, exist_ok=True)
+        entrypoint.write_text("#!/bin/sh\n")
+        entrypoint.chmod(0o755)
+        for loop_id in ("capafy-loop-healthcheck", "capafy-loop-daily", "capafy-goal-monitor-hourly"):
+            registry_value = registry("skills/self/capafy-loop/run.sh")
+            entry = registry_value["loops"].pop("example")
+            entry.update({"label": f"ai.anicca.{loop_id}"})
+            registry_value["loops"][loop_id] = entry
+            rendered = build_apply_plan(registry_value, release, SHA)[0]
+            environment = plistlib.loads(rendered["plist_bytes"])["EnvironmentVariables"]
+            self.assertEqual(environment["CAPAFY_KEY_DAILY_HARD_CAP_USD"], "3")
+            self.assertEqual(environment["CAPAFY_REQUEST_HEADROOM_USD"], "2")
+
+    def test_non_capafy_jobs_do_not_get_key_budget_defaults(self):
+        release = self._release("release-noncapafy-budget").resolve()
+        entrypoint = release / "skills/self/capafy-loop/run.sh"
+        entrypoint.parent.mkdir(parents=True, exist_ok=True)
+        entrypoint.write_text("#!/bin/sh\n")
+        entrypoint.chmod(0o755)
+        registry_value = registry("skills/self/capafy-loop/run.sh")
+        rendered = build_apply_plan(registry_value, release, SHA)[0]
+        environment = plistlib.loads(rendered["plist_bytes"])["EnvironmentVariables"]
+        self.assertNotIn("CAPAFY_KEY_DAILY_HARD_CAP_USD", environment)
+
     def test_lateness_apply_retires_openclaw_environment(self):
         loop_id = "lateness-heartbeat"
         release = self._release("release-lateness").resolve()
@@ -2863,7 +2891,7 @@ class LmLoopApplyTest(unittest.TestCase):
             )
         self.assertEqual(resumed, [])
 
-    def test_admission_resume_failure_does_not_fail_apply(self):
+    def test_admission_resume_failure_is_reported_by_apply(self):
         target = self.root / "installed.plist"
         rendered = build_apply_plan(registry(), self.root, SHA)[0]
 
@@ -2879,7 +2907,7 @@ class LmLoopApplyTest(unittest.TestCase):
             rendered, target, launchctl, attempts=1, sleeper=lambda _: None,
             admission_resume=raising_resume,
         )
-        self.assertTrue(result["ok"])
+        self.assertFalse(result["ok"])
         self.assertFalse(result["admission_resumed"])
 
         def false_resume(loop_id):
@@ -2889,7 +2917,7 @@ class LmLoopApplyTest(unittest.TestCase):
             rendered, target, launchctl, attempts=1, sleeper=lambda _: None,
             admission_resume=false_resume,
         )
-        self.assertTrue(result["ok"])
+        self.assertFalse(result["ok"])
         self.assertFalse(result["admission_resumed"])
 
     def test_swap_increases_settle_time_before_retry(self):
@@ -4403,6 +4431,33 @@ class LmLoopApplyTest(unittest.TestCase):
             values["calls"].read_text().splitlines(),
             ["preflight", f"print-disabled gui/{os.getuid()}", f"print gui/{os.getuid()}/ai.anicca.example"],
         )
+
+    def test_reapply_retries_failed_resume_with_real_admission(self):
+        release = self._release("release-a").resolve()
+        current = self.root / "current"
+        current.symlink_to(release)
+        arguments = [str(release / "bin/lm-loop-run"), "example", str(release)]
+        values = self._apply_kwargs(current, self.root / "apply.lock", arguments)
+        safe = values["launchctl_safe"]
+        script = safe.read_text().replace(
+            "printf '%s\\n' 'arguments = {'", "printf '%s\\n' 'state = waiting' 'arguments = {'")
+        safe.write_text(script)
+        kwargs = dict(current=current, lock_path=values["lock_path"],
+                      event_writer=lambda *_: None)
+        first = apply_live(release, values["agents_dir"], safe, target="example",
+                           admission_resume=lambda _: False, **kwargs)
+        self.assertFalse(first[0]["ok"])
+        admission.activate_durable_v2()
+        admission.enqueue_durable("deterministic", "example", admission_class="borrow",
+                                  occurrence_id="example:wake")
+        self.assertTrue(admission.suspend_durable("example"))
+        second = apply_live(release, values["agents_dir"], safe, target="example",
+                            admission_resume=admission.resume_durable, **kwargs)
+        self.assertTrue(second[0]["ok"])
+        with sqlite3.connect(self.root / "admission/admission-v2.sqlite3") as db:
+            eligible = db.execute("SELECT next_eligible_at FROM priorities WHERE owner_id=?",
+                                  ("example",)).fetchone()[0]
+        self.assertEqual(eligible, 0)
 
     def test_apply_current_release_records_real_launchctl_calls(self):
         release = self._release("release-a").resolve()

@@ -8,43 +8,49 @@
       "source": "pages/en.html",
       "public_route": "/",
       "export_path": "index.html",
-      "sha256": "2c3fb5630eccbbe10e4137159ae1032e15d6702d916d49f027732c2522008710"
+      "sha256": "26fca9191a965262cca17e334667af30f43d9d7ccf238fb09f1f7c5559d523f3"
     },
     {
       "source": "pages/en.html",
       "public_route": "/en",
       "export_path": "en.html",
-      "sha256": "2c3fb5630eccbbe10e4137159ae1032e15d6702d916d49f027732c2522008710"
+      "sha256": "26fca9191a965262cca17e334667af30f43d9d7ccf238fb09f1f7c5559d523f3"
     },
     {
       "source": "pages/ja.html",
       "public_route": "/ja",
       "export_path": "ja.html",
-      "sha256": "408b39caa30a2a2dcc21ae33fc00d3cb345a04ddb56d27aec10f094ffc862bd7"
+      "sha256": "3d21f60d51b9adce97cac95abff6c286cdc4fa0837949c939cdde3fe2b9dd450"
     },
     {
       "source": "pages/products-en.html",
       "public_route": "/dais",
       "export_path": "dais.html",
-      "sha256": "243b6d8b489ec9e1d11352185c2182e5cc93e0174b21ca7ecf25a96e5b964f2f"
+      "sha256": "1482a2f113bb8a28420f7241f9d9b05cbc8152fb62fe7c210a53ae4dfe761d35"
     },
     {
       "source": "pages/products.html",
       "public_route": "/dais/ja",
       "export_path": "dais/ja.html",
-      "sha256": "e084bf9faf8f5252fd54b799b6b010065556363b234ec3d9d28e408845921558"
+      "sha256": "ba4f05f7a36c5f35ae987517f1a4735b43f3bcfef9cf8003caba675c5e0587cc"
     },
     {
       "source": "pages/life-manager-en.html",
       "public_route": "/lm",
       "export_path": "lm.html",
-      "sha256": "11ad0bda3d83b32811c9cb133fc2480eec37e41f1d02cede318a9236fea1727a"
+      "sha256": "6ba473b9c12509601bc1c49cd0a8468876740132bc3da337ad60d3f24c8fc99d"
     },
     {
       "source": "pages/life-manager.html",
       "public_route": "/lm/ja",
       "export_path": "lm/ja.html",
-      "sha256": "cfbc02da02d6cc0012d3782ebc8ac68a71f575c352cf35e3b5ca1dc2db054c05"
+      "sha256": "26b26349e19951620272b35563ea7f1fab419d9332a2008df2244e022f5649b0"
+    },
+    {
+      "source": "pages/maritime-en.html",
+      "public_route": "/maritime",
+      "export_path": "maritime.html",
+      "sha256": "b0b07e5d462a88d772c8114315fb7cdba46acd997bf0bd9b245a4e43ac784f35"
     },
     {
       "source": "assets/styles.css",

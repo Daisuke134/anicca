@@ -37,6 +37,72 @@ TT_ID = os.environ.get("CAPAFY_REEL_TT_INTEGRATION", "cmvc98itr1d3clu0yf8vy3dgx"
 # new account live (7-day warm-up; fresh-account posting got spam-blocked before).
 WARMUP_STATE = Path(os.environ.get("CAPAFY_REEL_WARMUP_STATE", str(
     Path.home() / ".local/state/life-manager/warmup-flip-daily/state/postiz-integrations.json")))
+JST = dt.timezone(dt.timedelta(hours=9))
+# Accounts limited to one post per Tokyo day (video and slideshow count together).
+DAILY_CAP_INTEGRATIONS = {TT_ID}
+ACCOUNT_DAILY_STATE = Path(os.environ.get("CAPAFY_REEL_ACCOUNT_DAILY_STATE", str(
+    Path.home() / ".local/state/life-manager/capafy-reel/account-daily.json")))
+
+
+def _tokyo_day(slot_iso: str) -> str:
+    when = dt.datetime.fromisoformat(slot_iso.replace("Z", "+00:00"))
+    return when.astimezone(JST).date().isoformat()
+
+
+def _account_day_taken(integration: str, slot_iso: str) -> str | None:
+    if integration not in DAILY_CAP_INTEGRATIONS:
+        return None
+    try:
+        data = json.loads(ACCOUNT_DAILY_STATE.read_text())
+    except (OSError, ValueError):
+        data = {}
+    return (data.get(integration) or {}).get(_tokyo_day(slot_iso))
+
+
+def _claim_account_day(integration: str, slot_iso: str, label: str) -> str | None:
+    """Claim the Tokyo day for a capped account; never overwrites an earlier claim.
+
+    Returns the label that holds the day after the call (None for uncapped accounts).
+    """
+    if integration not in DAILY_CAP_INTEGRATIONS:
+        return None
+    try:
+        data = json.loads(ACCOUNT_DAILY_STATE.read_text())
+    except (OSError, ValueError):
+        data = {}
+    days = data.setdefault(integration, {})
+    day = _tokyo_day(slot_iso)
+    if days.get(day):
+        return days[day]
+    days[day] = label
+    ACCOUNT_DAILY_STATE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = ACCOUNT_DAILY_STATE.with_suffix(".tmp")
+    _durable_write(tmp, json.dumps(data, sort_keys=True) + "\n")
+    os.replace(tmp, ACCOUNT_DAILY_STATE)
+    return label
+
+
+NET_INTEGRATION = {"ig": lambda: IG_ID, "x": lambda: X_ID, "tt": lambda: TT_ID, "tc": lambda: TT_ID}
+
+
+def restore_account_days_from_receipts() -> None:
+    """Rebuild day claims from every receipt on disk (a run interrupted between the
+    receipt write and the claim, or receipts older than the cap, must still count)."""
+    if not BASE.exists():
+        return
+    for receipt in sorted(BASE.glob("*/*-receipts-v3.jsonl")):
+        net = receipt.name.split("-receipts-v3.jsonl")[0]
+        if net not in NET_INTEGRATION:
+            continue
+        try:
+            rec = json.loads(receipt.read_text().splitlines()[0])
+            when = rec["scheduled_for"]
+        except (OSError, ValueError, KeyError, IndexError, TypeError):
+            continue
+        integration = rec.get("integration") or NET_INTEGRATION[net]()
+        _claim_account_day(integration, when, f"{receipt.parent.name}:{net}")
+
+
 SETTINGS = {
     "x": {"__type": "x", "who_can_reply_post": "everyone", "made_with_ai": True, "paid_partnership": False},
     "ig": {"__type": "instagram-standalone", "post_type": "post", "is_trial_reel": False, "collaborators": []},
@@ -71,7 +137,7 @@ def slots(day: dt.date, slot: int = 1) -> dict:
 
 def render_carousel(slug: str, spec: dict) -> list[Path]:
     """Six 1080x1920 JPEG slides for a TikTok photo post (slideshows reach non-followers:
-    our 1-follower slideshow account drew 3,158 views/7d): pain hook, promise, 3 hooks, CTA."""
+    our 1-follower slideshow account drew 3,158 views/7d): pain hook, promise, 3 hooks, recap."""
     from PIL import Image, ImageDraw, ImageFont  # noqa: PLC0415
     import textwrap  # noqa: PLC0415
     bold = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
@@ -79,7 +145,7 @@ def render_carousel(slug: str, spec: dict) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     pages = [(spec["hook_a"], spec["hook_b"]), (spec["title"], "Hooks Hook Lab wrote. Swipe.")]
     pages += [(quote, f"{label} hook · on screen: {onscreen}") for label, quote, onscreen in spec["cards"]]
-    pages.append(("Search \"Hook Lab\" on Capafy", "5+ hooks, a timed script and a caption from one line."))
+    pages.append((spec["title"], " / ".join(onscreen for _label, _quote, onscreen in spec["cards"])))
     paths = []
     for i, (head, sub) in enumerate(pages, 1):
         img = Image.new("RGB", (1080, 1920), (14, 14, 18))
@@ -107,10 +173,42 @@ def tiktok_live() -> bool:
     return any(r.get("id") == TT_ID and r.get("active") and r.get("warmup_phase") == "live" for r in rows)
 
 
+# Per-destination caption limits. X counts weighted characters (twitter-text v3: CJK etc. = 2);
+# we keep 270 of 280 as margin. Instagram and TikTok allow 2,200 characters.
+X_WEIGHTED_LIMIT = 270
+CAPTION_LIMITS = {"ig": 2200, "tt": 2200, "tc": 2200}
+_X_LIGHT_RANGES = ((0, 4351), (8192, 8205), (8208, 8223), (8242, 8247))
+
+
+def x_weighted_length(text: str) -> int:
+    return sum(1 if any(lo <= ord(ch) <= hi for lo, hi in _X_LIGHT_RANGES) else 2 for ch in text)
+
+
+def caption_for(net: str, spec: dict) -> str | None:
+    """Caption that fits the destination, or None when nothing safe fits (caller skips).
+
+    X gets a short post (hook + title, falling back to the hook alone); the long caption
+    with every card goes only to destinations that allow it.
+    """
+    if net == "x":
+        hook = f"{spec['hook_a']} {spec['hook_b']}"
+        for text in (f"{hook}\n\n{spec['title']}", hook):
+            if x_weighted_length(text) <= X_WEIGHTED_LIMIT:
+                return text
+        return None
+    text = caption(spec)
+    return text if len(text) <= CAPTION_LIMITS.get(net, 2200) else None
+
+
 def caption(spec: dict) -> str:
-    return (f"{spec['hook_a']} {spec['hook_b']}\n\n"
-            "Hook Lab turns one line about your video into 5+ first-3-second hooks, a timed script and a caption.\n\n"
-            "Search \"Hook Lab\" on Capafy to try it.")
+    """Caption built only from this post's own content: no fixed promo sentence or CTA.
+
+    TikTok flagged identical promo text across posts as spam (2026-11-01), so every line
+    here comes from the spec of this one post.
+    """
+    lines = [f"{spec['hook_a']} {spec['hook_b']}", spec["title"]]
+    lines += [f"{label}: {quote}" for label, quote, _onscreen in spec.get("cards") or []]
+    return "\n\n".join(lines)
 
 
 def validate_spec(spec: dict) -> None:
@@ -275,6 +373,7 @@ def schedule(slug: str, spec: dict, day: dt.date, key: str, nets: tuple = ("ig",
              run_dir: Path | None = None, existing_fn=None, slot: int = 1) -> dict:
     mp4 = BASE / slug / "renders-v2" / "video.mp4"
     out = {}
+    restore_account_days_from_receipts()
     for net, integration in (("ig", IG_ID), ("x", X_ID), ("tt", TT_ID), ("tc", TT_ID)):
         if net not in nets:
             continue
@@ -282,14 +381,32 @@ def schedule(slug: str, spec: dict, day: dt.date, key: str, nets: tuple = ("ig",
             out[net] = "warmup_skip"
             continue
         receipt = BASE / slug / f"{net}-receipts-v3.jsonl"
+        when = slots(day, slot)[net]
+        label = f"{slug}:{net}"
         if receipt.exists():
+            _claim_account_day(integration, when, label)  # restore the cap from the receipt
             out[net] = "already_scheduled"
             continue
-        found = existing_fn(net, slots(day, slot)[net]) if existing_fn else None
+        text = caption_for(net, spec)
+        if text is None:
+            out[net] = "caption_too_long_skip"
+            continue
+        holder = _account_day_taken(integration, when)
+        if holder and holder != label:
+            out[net] = "daily_cap_skip"
+            continue
+        found = existing_fn(net, when) if existing_fn else None
         if found:  # provider already has this slot (earlier crash after create): record, never re-create
+            _claim_account_day(integration, when, label)
             receipt.write_text(json.dumps({"at": dt.datetime.now(dt.timezone.utc).isoformat(), "slug": slug,
-                                           "readback_existing_post": found, "scheduled_for": slots(day, slot)[net]}) + "\n")
+                                           "readback_existing_post": found, "scheduled_for": when,
+                                           "integration": integration}) + "\n")
             out[net] = {"existing": found}
+            continue
+        # Claim the day before any provider call: an interrupted run then blocks other slugs
+        # for that day instead of leaving a window where a second post could be created.
+        if _claim_account_day(integration, when, label) not in (None, label):
+            out[net] = "daily_cap_skip"
             continue
         if run_dir is not None:  # durable pre-dispatch marker for capafy_reel_fence_reconcile
             _durable_write(run_dir / f"dispatch-{net}{'' if slot == 1 else f'-s{slot}'}.json",
@@ -306,7 +423,7 @@ def schedule(slug: str, spec: dict, day: dt.date, key: str, nets: tuple = ("ig",
         settings = ({**SETTINGS["tt"], "title": spec["hook_a"]} if net in ("tt", "tc") else SETTINGS[net])
         payload = {"type": "schedule", "date": slots(day, slot)[net], "shortLink": False, "tags": [],
                    "posts": [{"integration": {"id": integration},
-                              "value": [{"content": caption(spec),
+                              "value": [{"content": text,
                                          "image": [{"id": u["id"], "path": u["path"]} for u in uploads]}],
                               "settings": settings}]}
         cr = _req(key, f"{API}/posts", json.dumps(payload).encode(), {"Content-Type": "application/json"}, "POST")

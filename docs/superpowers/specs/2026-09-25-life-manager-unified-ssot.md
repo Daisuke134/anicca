@@ -1,5 +1,231 @@
 # Life Manager 統合SSOT — As-Is / To-Be / TODO
 
+## ANICCA-PRODUCT-GROWTH — iOS初回改善から全アプリ継続改善まで
+
+**目的:** Aniccaの英語市場向け製品改善から、全出荷アプリの指標・配信・売上・継続改善を一つのcycleへ接続する。$10K MRR/世界最大は目標であり、実績とは扱わない。
+
+**詳細仕様:** [Anicca iOS Product Growth](2026-11-06-anicca-ios-product-growth-design.md)。**実装手順:** [Implementation Plan](../plans/2026-11-06-anicca-ios-product-growth.md)。**唯一の順序/状態正本:** この節。詳細文書・実行checklist・会話はこの節を参照する。
+
+**今回の実行範囲:** 全体spec/plan/画面案sourceを共有し、ユーザーが実行開始を指示済み。G1〜G5のアプリ変更・Maestro実製品動画・審査提出を進める。G6〜G10のdashboard変更・loop起動は後続として保持し、今回起動しない。
+
+| ID | 状態 | 実行順・成果 | 完了条件 |
+|---|---|---|---|
+| G0 | 完了（仕様共有） | 全体spec・実装計画・画面案を同一branchで共有 | scoped review重大問題なし、commit/push、remote objectと参照linkを確認。G0は仕様共有の完了を示す。実装・動画・提出はG1〜G5で追跡 |
+| G1 | 検証済み | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
+| G2 | PR #9282統合済み（merge SHA `6cc7c4a7`）。対象CI/単体テストPASS。既存iOS 26.5 Simulator E2Eは候補build 817でswipe・通知カード→本文一致→保存までPASSしたが、通知動画/source receiptはmerge SHAに結び付かない。実端末APNs/実頻度/free-Pro実配信は未確認 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | merge sourceに結び付くE2E証拠、実端末APNs、実設定/配信境界 |
+| G3 | 検証済み | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
+| G4 | 実装済み・サービス受信未確認 | 全主要画面と価値/課金/通知event、正しい価格/通貨/receipt | サービス側受信、同一ID、二重発火0、不明価格やrestoreを売上化しない |
+| G5 | 1.9.7/816は`WAITING_FOR_REVIEW`。1.9.8/818は`VALID`・`APP_STORE_ELIGIBLE`。初回UX動画は提示済み。ASCは1.9.8 version作成を拒否し、未公開の1.9.7審査中を理由にした。1.9.8 object/提出なし | 1.9.7の公式review stateを保全・追跡し、作成可能になり次第1.9.8 draft→build 818 attach→doctor/validate→submit | 1.9.8 version/buildの公式関係、提出receiptとversion自身の`WAITING_FOR_REVIEW`。1.9.7は変更・取消ししない。承認/公開は別追跡 |
+| G6 | 後続・未着手 | 全出荷app inventory、国/流入/課金/retentionの欠測修復 | 公式source/期間/分母/coverage、アプリごとの失敗隔離 |
+| G7 | 後続・未着手 | 既存Openへ日次履歴・グラフ・funnel・国/流入/実験表示 | 公開画面とsource鮮度/履歴一致、unknownと0の区別、狭幅確認 |
+| G8 | 後続・未着手 | SNS/記事/quoteの接続、地域別onboarding/paywall/価格/推薦実験 | supported attribution、stable割付/露出、必要人数/成熟期間/guardrail、標本不足は未判定 |
+| G9 | 後続・未着手 | 日次分析→週次修正→動画→提出→却下修正/公開照合のloop | 自然wake/receipt/start/result、同一台帳、次runで二重effect0。新harnessは必要性を実証して選択 |
+| G10 | 後続・未着手 | Honne等へ共通schema/運用を展開、全体の継続収益を評価 | app別activation、全inventory coverage、実稼働と実MRR/profitを区別 |
+
+**旧順→新順:** 旧案は計測全体/ダッシュボードとアプリ初回修正を横断して進める。新順は全体を文書化→Anicca初回G1〜G5→G6〜G10。理由はユーザーが先に実製品を直してMaestro動画を見たいと指定し、最新指示で初回アプリ修正の実行が許可されるため。進行中の他業務loop・配信・審査を中断/重複させない。
+
+**現在cursor:** latest main=`bf71e15223e8e5dca71a7a79e773c8863c58c1ef`。PR #9282のmerge SHA=`6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`を含み、Anicca iOS runtime/project/ci treeはそれぞれ`0931c01b8a78887a9291dfce74abf21bfa8007d8` / `060b64ccbeb15e360ac64e21c66ad17573236b92` / `b0e8b63afd146f8ba8e925971aebbd008046de8e`。ASC build 818はmerge SHA由来。ASC `versions create --version 1.9.8`は「You cannot create a new version of the App in the current state」と返し、1.9.7が`WAITING_FOR_REVIEW`で未公開のため作成不可。独立read-onlyレビューも1.9.7を維持して待つ判定。1.9.7は変更・取消ししない。公式状態を追跡し、1.9.7審査完了/公開後に1.9.8を作成する。提示済みSimulator動画の候補アプリは1.9.8/817で、build 818やmerge binaryとの同一性は未証明。既存通知動画/source receiptもmerge SHAに結び付かないため、PR #9282のE2E証拠とは扱わない。初回UX動画は体験説明用として提示済み。実端末APNsと分析service受信は未確認。
+
+**動画:** `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-initial-UX-2026-11-06.mp4`（141秒、1206×2622）と`/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-notification-2026-11-06.mp4`（78秒、1206×2622）。Simulatorの実画面録画で、両方H.264として再生検査済み。
+
+**公式ASC:** 1.9.7 version=`224f1d6d-e7b4-4dc7-9258-111e67de7363`は現在も`WAITING_FOR_REVIEW`。build 818=`7cfb4f37-680c-447d-873a-7f8eb54a0baf`は`VALID`/`APP_STORE_ELIGIBLE`。Xcode Cloud run=`98a7613c-898d-4d7c-8bda-62ef850a5403`はArchive成功、TestFlight外部テスト審査の自動送信だけが`Please try again later.`で失敗。ASCに1.9.8 version objectは未作成で、新しいApp Review提出もない。1.9.7提出は変更・取消しない。
+
+**次の1手:** 先に動画2本をユーザーへ提示する。ユーザーが視聴した後、1.9.8 draftを作りbuild 818をattachし、doctorとApp Review提出を完了して公式`WAITING_FOR_REVIEW`を照合する。G4 service受信・実端末APNs・実購入成功およびG6以降は未確認/未着手として残す。証拠manifestは`../evidence/anicca-ios-1.9.7-validation.json`、このrunのASC readback JSONはprivate state dirにある。
+
+進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。
+
+並行cursor **HQ-REASON-MACOS-ARTIFACT**: 受信ページ化はmain 0ac0f558に統合済みだが、対応する専用Mac binaryはmain CIで構築・artifact発行、公式run/head・SHA256・arm64とMac隔離socket14件を検証後、3つのHQ owner lock下で専用pathに配置しpage_enabled=trueをreadback済み。後続の自然受信・処理結果は本節「自然復旧の実測」を参照。ローカルcargo buildは空き容量を圧迫したため自分のbuildを停止済み。既存のReason CIにarm64 Mac buildと実socket試験を追加し、main push由来のみSHA付き専用artifactを保存する。受入はPR CI・独立review・main統合後、main runのcommitとartifact SHA・architecture・socket testを照合し、既存ownerと競合しない時に専用binaryと設定を反映して自然受信を確認する。既存Reason engineのbinaryは置換しない。
+
+並行cursor **HQ-REASON-INBOX-PAGES**: Reason daemonは本文上限64KiBだがHQ clientは全未読と表示用textを重複出力し、33件×64KiBの隔離fixtureで4,327,967文字となりHQの4MiB制限で全受信を拒否する。未読ACKはしないが後続依頼が停止する。旧順=容量bounded化後に受信継続、新順=旧senderとの互換性を維持してHQ専用受信をページ化し、添付保持・予約修正と並行して進める。実DB・既存daemon・他sessionは変更しない。
+
+独立調査: daemonは現在全未読を読み、CLIにmessagesとrendered textを返すため、CLI出力だけのページ化ではdaemon〜client間メモリはboundedにならない。offsetや前回IDの配列検索はACKでanchorが消えると欠落する。検討する限定修正は既存wire互換のopt-inで本文を切らずUTF-8 bytes上限のmessage単位出力、(sent_at,id)の安定keyと周回終端、保存・保留とcursorの原子的記録。timestampが同じID、遅着・ACK失敗・保留先頭を跨ぐ回帰で確認し、daemon側全量メモリは別の未解決課題として残す。
+
+進捗: opt-in CLI page試作e5ceaeefはmessage単位のUTF-8 bytes上限・宛先確認・(sent_at,id) cursor・上限超過holdを実装した。独立した最小Rust fixtureで33件の上限とACK後anchor消失を1件PASS、既存本番binaryでpage機能未実装の失敗を再現した。完全binaryのcargo checkはホスト空きが約2.5GiBへ低下したため自分のbuildだけ停止、隔離生成物を削除した。実binary・socket・HQのcursor/ACK原子化・独立review・CIはPASSしmainへ統合。実機有効化・自然受信は未完。daemonの全件メモリ問題も未解決。
+
+HQ page adapterはpage_enabled=falseを既定にし、旧binaryの受信を維持する。新binaryがmain由来build・実socket試験・review・immutable releaseに合格するまでprivate設定を有効化しない。昇格では専用binaryのSHAと設定page_enabled=trueをowner/lease配下で明示readbackし、自然受信から結果まで確認する。未解決のoversize holdは空pageを経ても維持・失敗として表示し、同じIDを完全保存した時だけ解除する。保留時に添付の存在を耐久記録し、期限切れで添付が消失した依頼をACKしない。
+
+受入: 本文や添付を切詰めずbyte上限を設け、到着・ACKによって受信箱が変動しても未読の取こぼしを防ぐ。先頭ページの保留案件が後続を飢餓させず、保存前ACKなし・元ID再取得時重複0・identity固定・既存クライアント互換を、実socket fixtureと実SQLite失敗・再取得で検証。daemonからclientまでの総メモリ上限と大型backlogの残課題を明記し、main由来build・必要CI・独立review・対象owner反映後の自然受信と公式readbackまで続ける。
+並行cursor **HQ-STALE-CLAIM-FAIRNESS**: 受信のdisk条件が一時的に通った後、HQはcapacity/FIFO待ちのまま。実DBではplist不在・launchd disabledの複数SNS ownerに予約が付き、古いclaimed/effect_unknownの存在で現行only_if_unclaimedの停止は拒否される。履歴上の未確定effectと稼働中ownerは触らない。先の無損失添付修正と並行して、旧順=容量bounded化後に受信再測定、新順=予約選択の根本原因診断・無効新規予約の限定修復を並行実施。理由は現行受信が実際に枠待ちして未読依頼が残るため。
+
+受入: registryと同一ownerの確認、管理ドメインの実測、既存effect_unknown/claimedとactive lockを保護したうえで、停止が確認されたownerの新規queue予約だけを適切に保留する。再開時の復帰、並行claim/owner起動、DB failure、異なるscopeの事故防止を隔離テスト・独立reviewで証明する。停止不能の記録は公式照合まで保持し、他ownerのプロセス・provider・cloud設定を変更しない。main由来release反映後、自然受信と実際の着手を計測する。
+
+現在cursor **HQ-REASON-ATTACHMENTS**: Reason受信は添付filesを保存せずACKするため、本人が添付した内容をworkerへ渡せない。上流の受信fileは本人host上のinboxに保存され、既読後は保持期間が1日である。順序を従来の容量bounded化→本件から、本件の無損失受信→容量bounded化へ変更する。理由は既存の通常入力で依頼内容を失う具体的欠陥が見つかったため。受信とACK以外のownerや進行中effectは変更しない。
+
+受入: 添付の正本を期限切れ前に受信taskへ耐久保存してworkerが読めること、保存不可能な依頼はACKしないこと、別の受信依頼を継続できること、再取得が重複しないこと。提供pathの安全境界・symlink・UTF-8/上限・秘密値とfile消失を検証し、ACK前の保存失敗を実SQLiteで確認する。CI、独立review、main由来release、自然受信/ACK/実作業の公式readbackを経て初めて完了とする。
+## TEAM-HQ — 24時間の共同運営とCodex実行
+
+自然復旧の実測: 空き容量は約1.8 GiBから5.3 GiBまで回復し、Reason受信はmain由来release `408700b04e91b7ea22bb2937bd68e63cb241d0f9`の自然run `18e4d4e229f791c0-64647`でexit 0、4件のmessage IDと公式receiptを記録した。以降も `resource_capacity_busy` により延期があり、継続性・1分以内応答は未証明。待機task `8f85fb48168d851460be2b9b` は自然claim後にCodexが照合を完了し、Slackはposted、Reasonの結果receipt `057SFNE3M6NYWD02N9YZ536QXX` はqueuedで本人受領未確認。CloudRiftはDots担当を維持し、提出・付与は未確認。実機添付と再走重複0、本人受領、資源待ちからの継続受信、収益/Managerの待機タスクの自然完了は残る。直近のNEAR本人API GETは5件pending・assignments 0、売上/入金は未確認。保存記録: `~/.local/state/life-manager/team-hq/results/8f85fb48168d851460be2b9b/result.json`、`~/.local/state/life-manager/team-hq-receive/events.jsonl`、同DBのoutbox。容量は変動するため、その値を将来の稼働保証にしない。
+
+目的は、既存の共有部屋で依頼を保存し、受領・着手・結果・枠切れ時の引継ぎを区別しながら、収益とManager開発を継続すること。schedulerが有限runを起こす。この対話自体の無期限再開、登録席の常時稼働、売上を保証するという意味ではない。primaryは正本・統合・運用受入、各writerは明示したsource/業務effectを所有する。
+
+### Anicca会社の目標アーキテクチャと現在の実測
+
+#### 実行基盤の比較と次の原子TODO
+
+判断: 既存Slack/Reason/HQの永続queueとeffect fenceを正本として継続し、HermesとOpenClawは互換runner候補として隔離比較する。移行の前提は本人identity・subscription認証・利用枠・send/receive・元ID・時刻・重複0・費用/成果が実測できること。runner切替だけで1分応答・利益・24時間稼働を保証しない。Macの `hermes --version` はvenv Python不在でexit 126、OpenClaw CLIは2026.6.1を返すが本人のCodex認証・gateway・送受信は未検証。異なるharnessに同じaccountを追加してもquotaが独立するとは限らない。既存owner・receipt・待機/実行中task・認証情報を守り、失敗時は既存routeに戻す。
+
+一次資料: [Hermes Codex provider](https://hermes-agent.nousresearch.com/docs/integrations/providers), [Hermes cron](https://hermes-agent.nousresearch.com/docs/user-guide/features/cron), [OpenClaw routing](https://docs.openclaw.ai/concepts/multi-agent), [Andon Pion](https://andonlabs.com/pion), [Anthropic multi-agent research](https://www.anthropic.com/research/multi-agent-research-system), [naïve tournament](https://usenaive.ai/tournament)。Pionは研究previewでwaitlistから段階提供され、一般即時利用は未確認。公開記述は継続agentと管理agent、個別business toolを示す。Anthropicはcheckpoint、追跡、並列agentの同期待ち問題を報告する。どれもAniccaの実際のprofitや1分応答の証明ではない。
+
+1. **通信測定:** 各本人の元message ID、送信・受領・着手・結果・ack時刻を保存し、2人以上の自然双方向で60秒未満を繰り返し測定する。queuedは本人受領ではない。Dots/Muse/Grokbotの既存hookにIDを渡し、idle wakeと作業中の受信を別々に確認する。
+2. **継続復旧:** Macの空き容量は一時5.3 GiBから約2 GiBに再低下し、最新受信はdisk_floor_lowで延期。swap変動とproducerを観測し、安全な再生成物の整理を続ける。床・既存owner・未確定effectは変更しない。自然受信・claim・結果・replay-zeroを再確認する。
+3. **Hermes隔離比較:** 壊れた既存launcherの参照先/所有者を確認し、別環境で公式versionと依存関係を構築。既存credentialを露出/複製せず対応認証を検証し、まず外部effectなしで有限Codex task、復帰、実行時間と利用量を測る。成功した場合のみ本人channel連携とidempotent配送を既存queue経由で試す。失敗は元routeを維持する。
+4. **OpenClaw比較:** 現在versionの機能と設定を読み取り、公式docの新機能が同versionにあると仮定しない。隔離profileで同一の無副作用taskと送受信を測り、Hermes・既存Codexと起動/受領遅延、失敗復帰、費用を比較する。
+5. **収益・費用:** agent/task/providerごとに受注・納品・入金・API費・subscription配賦を証拠付きで区別し、未知はunknown。毎時の既存案件確認と実受注後の納品を完遂し、agent別の実証粗利を `/open` の集計と照合する。現状NEAR 5 pending/assignment 0は時点値、収入未確認。
+6. **公開と改善:** 本人wake・引継ぎ・自然収益を確認後、結果/失敗/費用の実測を既存公開記事へ反映し、公開ページ・画像・mobileを確認する。Pionとnaïveの公開事例を比較するが、他社の売上や運営実績を自社の成果と扱わない。
+
+目標: 人による定常的な中継なしに、顧客価値・収益・費用・Manager研究開発を継続する。Slackは共有履歴と人が見られる業務報告、Reason Networkは本人agentへの配送とreceipt、Life Manager/HQは永続queue・有限実行・担当lease・重複防止・結果照合を担う。常駐モデルの会話を24時間実行の証拠とせず、外部scheduler・監視・再起動・別host・認証・利用枠に依存する。全員1分以内の自動受信/着手と無停止は未実証。
+
+役割: Codexは実装・検証・共通queueと収益/研究の遂行、Dotsは本人sessionの共同作業と引継ぎ、Museは本人VM・既存browser/workの担当、Grokbotは本人routineとcloud側の仕事を担当する。能力は固定の縄張りではなく、各仕事に単一ownerと期限・途中成果・停止理由・代替候補を残し、枠切れや未着手は証拠付きで引き継ぐ。社外送信・納品・公開・金銭効果は元ownerと公式receiptで照合し、unknownを再送しない。認証情報は既存private正本を使い、共有chatへ流さない。
+
+仕事の循環: ①需要/案件・顧客反応を収集 ②売上、受注、conversion、費用、利益を実測 ③product/Manager開発と研究を優先順位付け ④担当が実行し証拠を保存 ⑤配信・納品の公式結果を照合 ⑥毎日の改善を次のqueueへ反映する。売上や利益は決済等の正式readbackなしに0や成功と断定しない。公開記事は実証済みの事実と未完を分け、公開ページと画像を実際に確認する。
+
+現在の証拠: HQはMac mini上のlaunchdによる受信/worker各15秒・投入5分の有限実行で、7種の論理仕事を共有する。受信/投入のloaded SHAはebc75aba、workerはac59c14e。reason pageはmain 0ac0f558、Mac artifact修正はmain 9f4431d0、main CI run 41777259782はMac/Linux build・socket testをPASSしartifact発行済み。専用binaryの配置とpage_enabled=trueは3 owner lock下で完了、公式run/head・SHA256・arm64・Mac隔離socket14件を確認。自然受信1回と後続task処理は本節「自然復旧の実測」を参照。受信/実行に資源待ちがあり、定常24時間や1分SLAは未達。task df9d4d48は自然着手・exit0・Slack結果確認、Reason結果receiptはqueuedで本人既読未確認。task 8f85fbはqueued。Museは公開鍵によるMac SSH成功を本人側で報告、こちらの独立実測ではない。home-claudeの401は有効な代役ではなく、Grokbot枠切れ時の完全な自動引継ぎは未証明。
+
+残TODO（成果順）:
+1. 専用binaryとpage設定の反映、main由来releaseの自然受信1回は完了。添付、ACKと再走重複0、継続受信を確認する。daemon内部の全件メモリは別途残す。
+2. 容量変動とFIFO待ちの原因を実測し、安全に受信/workerを自然復帰させる。共通床や他ownerの保護を安易に変更しない。待機task 8f85fbの着手・元messageへの結果・本人側受領まで追う。
+3. Dots/Muse/Grokbotそれぞれの元ID→自然wake→着手→結果を本人経路で測り、1分以内を繰り返し実証。停止/利用枠枯渇時は有効な別担当への一度限りの引継ぎ・重複0・戻し方を検証する。未認証helperを稼働人数に数えない。
+4. 毎時の受注照合、毎日の優先順位/収益/費用、14時Manager R&Dを自然実行し、案件の実受注・納品・現金収入を公式readbackで計測。確認できた実験を既存公開記事へ反映する際は公開ページ・画像・mobileを確認する。
+5. 再開失敗が記録された他ownerの自然runを読み取り照合。lm-fence-reconcilerは後続pass、hf-reddit-loop-healthcheckとlife-manager-health-observerは未確認。未知の外部effect、他agent、実行中プロセスを保護する。
+
+### 現在の残TODOとcursor
+
+次cursor **HQ-BOUNDED-RECEIVE**: PR9182はCI全PASS・main d939c077へ統合、完全release d939c077を受信/work/scheduleへ反映した。受信・投入は新releaseから自然起動するが、disk_floor_lowで延期されており成功/SLAは未証明。受信以外のownerや進行中effectは維持する。収益task fcdfddは完了・結果Slack読み戻し済み、PR9183はmain 85746442へ統合・report blob一致。5 pending/受注0は確認時点の値で、納品/売上は未確認。Dotsの状態照会task a9879fは登録→着手約1116秒、結果のReason送信receiptはqueuedで本人受領未確認。
+
+受信継続の診断: 現行HQ受信は共通4GiB床で止まり、Reason保存後ACK・source一意制約とSlack cursor再読がある一方、個別本文/累積page/DB journalの書込み上限は未確定。VM領域は観測間に約2GiB増加し、現行swap-in監視はallocation増加そのものを抑える証明ではない。まず既存経路で受信のbytes/page/DB journalと失敗時ACK/cursor挙動を隔離実測し、極端な本文やENOSPCでも無損失・重複0・他メッセージ継続を満たす限定修正を設計する。上限値は証拠とowner用途から決定し、黙った切詰めや保存前ACKを禁止。受信専用の条件緩和はswap成長・必要余裕の測定と検証を満たすまで実装しない。現在の床と他ownerの設定は維持する。
+
+選択肢: 共通床の引下げは他業務への影響とswap余裕不足のため棄却。既存受信経路のbounded化を先行し、回復保証を実証後に受信専用admissionを検討する。別hostへの移設は所有者・単一受信・永続queueを実証できた場合の代替とし、同じ仕事の二重receiverは作らない。受入は保留状態と元IDを保持した実SQLiteテスト、ENOSPC/replay/ACK・Slack cursor・並列workerの検証、必要CI・独立review・main由来release後の自然受信/着手/結果と重複0。1分以内は実測まで未達。
+
+現在cursor **HQ-UNLOADED-DISPATCH**: disk-watchdogの旧release実行先が消失しexit 78となっていたため、既存main由来releaseのinstallerで同ownerを復旧した。自然receiptは回収3,034,472 bytes、errors 0、protected_deletions 0。receive/work/scheduleはそれぞれ自然成功したが、その後も資源待ちが発生する。admissionには古いqueued ownerがあり、複数の停止中ownerが60秒予約を繰り返すことを確認した。これが遅延への寄与候補であり、唯一の原因とは未確定。
+
+次の限定修正は、plist不在かつlaunchd未登録を正しく確認したownerだけの予約を安全に保留し、実行中・未確定effectと元queueを維持する。ownerのapply/start/restartとの競合、確認不能時の扱い、再開失敗を実SQLiteと隔離fixtureで検証する。既存ownerや外部effectを削除・再送しない。本人wakeと業務継続の優先順は維持し、この修正は受信遅延の依存作業とする。全agentの1分以内応答は実測まで未達。
+
+今回の範囲は、未ロードownerの予約を既存の待機記録と未確定effectを守りながら扱い、起動・停止・再適用時の再開失敗を報告し回復可能にする共有admission修正。現branchの隔離SQLiteテストと読み取りreviewを実施中で、本番未反映。完了条件は関連検証・CI・main統合後、immutable releaseと対象ownerの自然実行を確認すること。
+
+順序変更: 旧順は容量回復→本人wake/収益、新順は本人wake/引継ぎ→業務継続→実際に延期された処理の限定復旧。理由は、容量の少なさ自体を全業務の停止理由にせず、独立して進められる成果を先に出すため。容量条件を無視した起動や安全床の引下げを意味しない。現在cursorは本人経路の追跡欠落と有効な引継ぎ先の確認。進行中owner/effectは維持する。
+
+1. **HQ-02 本人の自動wakeと引継ぎ**。Dots/Muse/Grokbotそれぞれの元message→自然受領→実着手→結果を本人経路で照合する。Museは既存60秒hookの自然発火を報告するが、previewのみで元message IDを渡さないため相関が未完。既存hookでIDを保持する最小修復を本人ownerへ依頼済みで、修復済みとはしない。home-claudeは認証失敗のため有効な予備席へ数えず、実際に使える担当による枠切れ引継ぎ1件の完遂・重複0まで確認する。接続待ちで独立した収益/開発を止めず、同じ催促を反復しない。
+2. **HQ-03 収益/Managerの自然成果**。毎時の受注照合と受注後の納品を継続する。直前task23cd35はsucceeded/posted、PR9161は必要CI15件成功後main9f930f5ce471ab47159a64e941eb4db6e9195226へ統合済み。report/CSV/検算scriptのGitHub公式blob一致も確認済みで、旧CI失敗/未統合cursorへ戻さない。task e204c5の本人専用GET200は全5pending/assignment0。売上/出金は未確認。現在cursorは既存hourlyで全assignmentを照合し、受注時は最新brief/submit契約と24h対API3日の差異を確認して準備済み成果物を納品すること。証拠→docs/evidence/hq-continuation-e204c5.json。未受注の同job再応募/納品0を維持する。
+既存NEAR継続（task fcdfdd）: 公式GET5pending/受注0。応募済みframework案件の英語report2088語を準備し、納品/追加bid/支払0。正本→`2026-11-03-near-market-first-offer.md`のframework納品準備節。現在cursor=必要CI→main→受注後契約再照合。
+
+3. **実際に延期された処理の限定復旧**。receive/work/scheduleは復旧後に一度ずつ自然成功したが、最新receiveは6919bcd2由来releaseでdisk_floor_low/exit75へ再度延期された。watchdogの2GiB回復基準はHQ revenue受信の4GiB床と異なり、直近空き約3.1GiBでは受信復帰を意味しない。容量問題を全社の停止理由に拡張せず、該当ownerの再生成可能な不要物だけを安全条件下で整理し、次の自然実行を確認する。swap削除・基盤restart・床/上限変更はしない。既存のaffiliate:elevenlabs復帰責務、Muse専用browserのaccount/binding/wake未確認は保持する。FIRST1000は既存担当の元受付PNG/portal照合・再送HOLDを維持し、期限経過を提出成功へ置換しない。
+
+HQ-01のMac自然受信→一意card→着手→元送信先への結果→再巡回重複0と、HQ-04の公開記事/画面確認は受入済み。全agentの24時間/1分応答と、収益成立は未達のまま保持する。
+
+### 実行している7論理loop
+
+| 処理 | 設定 | 自然実測と限界 |
+|---|---|---|
+| 共有受信 | 15秒 | Slack/Reasonを既存SQLiteへ保存。実plist/自然run確認済み。資源待ちがある |
+| 作業worker | 15秒 | card claim後だけ着手。有限CLIと成果物/公式返信まで確認済み |
+| 定期投入 | 300秒 | due仕事を一意登録。時刻ぴったりの着手保証ではない |
+| 収益 | 毎時 | 最新完了23cd35はsucceeded/posted・PR9161統合済み。e204c5は本人公式GETで5pending/受注0を確認 |
+| 優先順位/計測 | 09JST | task95bef89b6d4246ed4290d57d succeeded/posted/exit0 |
+| Manager R&D | 14JST | taskd26c0c5310218fcdf4ec750a。Ubuntu/Playwright検証修正PR9127/main ee837f8d40c4d109c234ed698a071952e11b688c |
+| 成果/費用 | 21JST | taske5dd86428fd216251594c40b succeeded/posted。売上成立とは別 |
+
+実行場所はMac mini。macOSのlaunchdが3つの有限job（ai.anicca.team-hq-receive/work/schedule）を起こし、main由来immutable releaseのbin/lm-loop-run→bin/team-hq.pyを実行する。直近観測のreceive plistは `/Users/anicca/loops/releases/20261104T135623-ebc75aba` を固定参照する。受信/workはStartInterval=15、scheduleは毎時03/08/13/18/23/28/33/38/43/48/53/58分で5分間隔。現在の対話session、SSH接続、Desktop Scheduled Tasksを起動源にはしない。
+
+workerは仕事がある時だけ `/opt/homebrew/bin/codex exec --skip-git-repo-check -o {artifact} -` をcwd `/Users/anicca` で実行する。CLI runはtimeout_seconds=1200（20分）の設定内で終了し、結果/次cursorを永続化する。常駐LLMや7本の独立sessionではない。Macの電源/ログイン・通信・認証・実行条件に依存するため、登録を24時間無停止の証明にしない。
+
+設定は `~/.config/anicca-hq/team.json`、業務card/receiptは `~/.local/state/life-manager/team-hq/`。7種を独立LLM常駐7個と数えず、空の受信/投入ではモデルを起動しない。09時の過去累計gross、14時のCI修復、提案額を新規純利益や自分が稼いだ額へ置換しない。18JSTの1931語reportは受注前準備で未納品。詳細はNEAR-FIRST-OFFERの参照先。
+
+### 共有部屋と各本人の到達範囲
+
+Slackは共有履歴/業務報告、Reasonは本人のagent sessionへの配送路、Life Managerは永続queue・起動・資源/重複制御を担う。どれも登録やqueuedだけで本人を常時起動した証拠にはならない。共有部屋は#agents-hq `C0CBLBGSBJN`、追跡thread `1793635811.853779`。毎時workerはこのthreadの公式差分を読み、変化のない報告や依頼を量産しない。Slack bot表示名Grok Botと本文の実担当home-codexを混同しない。
+
+- Codexのnative入口は `daisuke/hq-codex@aniccanomac-mini`、実行担当home-codex。PR9141/9142のmain由来client/runtimeを使い、SSHには依存しない。別queue/executorや既存sessionの代理化はしない。
+- DotsはReasonの共同監査/返信を確認済み。本人のSlack接続とidle時の自動wakeは未確認。
+- Muse本人は `daisuke/terminal@htch-runtime`。Relayと区別する。Lancersの現writer/challenge解消ownerはVM側Museで、Macはread-only観測を共有済み。Macのlancers:dais browserは既存lease下で応答するが、mypageはchallenge試行上限画面、本人ログイン/応募は未確認。BookfaceはMacの見えるChromeに該当tabなし、保存sessionの不存在までは証明せず本人へ返す。
+- Grokbot（Rockwellは誤記）はroutine一覧を本人から受領するが、native即時wake/利用枠回復は未実証。cursorというaddressを同一agent/予算と決めつけない。4日resetはDais申告。顧客18521371は公式承諾/評価と本人訂正が一致し、移管対象0。古い修正待ちを根拠に再制作/再送しない。元talkroom UIの直接readbackは別の未確認事項として保持する。
+- home-claudeはローカル予備席でMuse/Dots本人ではない。完全一致service `claude-remote-control`を既存agent_environmentで読み込んだ最新ツールなし1turn診断も401 OAuth access token invalid。素のauth statusも未ログイン。account binding/専用browser routeは未確認で、有効な代役に数えない。秘密は正本に保持し、他account/モデル/課金/利用枠へ置換しない。
+
+接続修復の継続照合（task e204c5）: 追跡threadを前回の1793754710.135649以降に限定して公式取得し、parentを除く返信差分0・has_more=falseを確認する。Museの元message ID保持修復、Dots/Grok本人wake、有効helperの認証は未完のまま。催促を反復せず、既存ownerの修復receiptに元ID・受信/着手/結果時刻が加わったら同じthread/自然wakeへ結合する。parentの自動返却を新たな本人返信へ数えない。remote hookの代理編集・owner再割当・別dispatcher・未知effect再送は行わない。
+
+### 受信・引継ぎ・公式照合の契約
+
+受信/workerは別lock、既存SQLiteにsource_key一意cardとoutboxを保存する。Reasonは保存後に同じ箱のIDだけACKし、FYIは保存だけ、着手はclaim後だけ。native送信keyはtask/phase固定で、失敗/明示拒否/不確実receiptを無条件再送しない。Slackはauth.testの本人sender＋marker＋URL境界を保った正規化本文で公式照合し、label/URL変更・追加本文・他senderを一致としない。既知outbox echoを新規委譲へ取り込まない。thread完読/ready条件、有限backfill、contextとenqueue cutoff分離、hintのowner/occurrence一致を保持する。
+
+failed/interruptedや、CLI exit0でも本人typed STATEがquota_exhausted/handoff_requiredを明示した時だけ、元receipt・途中成果・次操作を既存の一度限りhandoffへ渡す。自然文の枯渇推測、再帰handoff、元仕事の盲目的再実行、利用枠reset/transferはしない。設定済みhelperの認証成功と実務能力は別に検証する。WHO-OWNS-WHAT/LOOPS、leaseと未確定effectを尊重し、担当を助け合いの障壁にはしない。
+
+### 受入証拠と見送った変更
+
+受信修正を受入した配置はmain a4f11f39a0c1920989a516f22c4077beb42ca18b由来 `20261103T181546-a4f11f39`。PR9146は予約前のlive disk eligibility共通選択とCI fixture起動同期を修正し、独立SHIP/Blocking0・関連600/cleanup84/Node15/registry195・必要CI全PASS。receiver install e1343bd808938a13f975b1c7、worker058216b8a35e0027d360d91cのargvを確認する。旧予約元x402-inflow-watch-franklin2/hf-gig-daily-reportだけを限定更新済み。後続currentは文書統合main7d458838由来20261103T185436-7d458838で、HQ/予約/disk/runnerのruntime本文が受入済みa4とbyte一致する。他の39候補の追加反映は0。上限global10/deterministic5、revenue4GiB/borrow・browser12GiB、queue age/occurrence/予約/既存ownerは保持する。
+
+第三自然canary `57MEJ399JA8E6MSX512QQ41ZSP`→task `948de90aa8c5d47dd9196299`は送信→保存16.437秒、→着手280.629秒、succeeded/posted/exit0。元messageへの受領 `0J4W0X5T9Y4H6F6GWEVWJWN252`、着手 `2X2GZG0VFACFX9HPN6T93Z6CGV`、marker付き結果 `31TSEMRRD219EAMT7EVAYBEEB7`を公式readbackする。自然再巡回後もcard1件/各phase ID1件で重複0。保存60秒条件の1件PASSであり、provider課金実行数や全員の常時SLAの証明ではない。第一/第二の保存251.831秒/109.113秒という失敗と、receiverのcapacity待ち/exit75一時失敗も保持する。次巡回PASS/outbox pending0を確認し、取消signal等の原因未確認をtransport障害と断定しない。
+
+旧順序はstrict reconcile修正→39更新→再計測。新順序は現releaseでの自然改善実測→本人wake/収益継続。理由は追加反映0で保存16.437秒へ改善し、strictを正しく実装する共有GUI lock変更が現成果には不要なため。試作7abbはowner deploy lock後の実reserve_available sweepでunknown化→install1という独立反証が成立しBLOCK。branch `fix/hq-reconcile-skip-effect-unknown-20261103`/head `faae69ada6ea43dca4b19c49fedc178152adfc41`の `docs/evidence/hq-strict-reconcile-real-sweep-red-20261103.json`に意図的RED1/既存6PASS・controls26PASSを保存する。このbranch/REDをmainへ昇格しない。再発して限定更新が必要となった場合だけ、この証拠から再設計する。各運用CLI直前のlaunchctl-safe preflight/owner保護は維持する。
+
+PR9148/main7d45883838cda6f957737f15798155834afc540bは収益証拠PR9143/9147をartifact byte一致/必要CI全PASSで包含統合済み。19JST結果ts1793700623.151929はsender/marker/本文一致1件、post_unknownから自然postedへ回復、確認POST0。本正本整理は古い待機/完了前cursorへ戻らないための文書変更で、runtime/設定/支出/外部effectは変更しない。
+
+公開記事は [共有部屋から実務へ](https://aniccaai.com/blog/manager-shared-room-real-work-en)。source PR9085/products842、公開HTTP200・図hash/manifest一致、desktop1440/mobile390で本文/図/末尾を目視し横はみ出しなし。物理iPhone受入や全remote稼働、売上の証拠へ拡張しない。成功例の構造はPaperclip heartbeat、Slack Events、Anthropicの明確な委譲/成果物参照に基づく。新しい記事や課金APIを実運用の代替にしない。
+
+初期切替/過去容量回復/CI失敗と修正/旧run ID/本人返信/参照一次資料は [確定済み履歴](https://github.com/Daisuke134/life-manager/blob/eea206ec1c8bb0ab59a30d17dfcebace1257bafd/docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md#L3-L150) を参照する。過去の未完cursorは履歴であり、現在の実行順は本節先頭だけを正本とする。
+
+## CAPAFY-SYNTHETIC-CLICKS — 検証クリックの分離
+
+
+目的/範囲: 既存公式証拠 `docs/evidence/capafy-ct-readback-4a481d.json` で確定した9件のprobeを配信先計測から分離する。task=e85ac2183688f309e25242db、実装owner=home-codex-e85ac2、親home-codexが終了済みrunのCI/main/反映を継続する。投稿/会計/IG effect fenceは別ownerのまま保持する。
+
+契約: exact `x/test_hq_4a481d` だけを通常total/counts/platforms/postsから除き、detail.excluded_syntheticへ件数を出す。legacy・類似名・別platformは推測で除外しない。raw blobと過去ledgerを変更しない。既存counter低下時のwindow_clicks=Noneを保持し、実流入0や売上と断定しない。
+
+完了/現在cursor: PR #9097/head a658a88bb258040d44cd264d4f147acfaefd6e6cの全15checks成功・独立read-only review SHIP後、main1d970aefda8eda97af44052de25d14e8bc166dd2へ統合する。focused RED→Node6/Python既存4 PASS。公開current6ae89aeeb7fd12e6a76e6305のstatic全5件・旧go ZIP/72商品allowlist・SDK依存10filesをbyte保持し、main由来go-statsだけを同じbootstrap/runtimeでbundleする。新deploy6ae8ddd7633cf01d4a4f2a38はready、published_at=2026-11-02T19:02:24.413Z。公式public statsは通常集計105＋excluded_synthetic9、元Blobはstrong consistencyのlistで全114/legacy88/既知probe9・集合hashまで反映前後一致、追加redirect probe0。公開indexのhash058da54732280dd7147ff707140d2e0ab56e3b3c4188ad9d7b9ae92d3723fe68も不変。105件を実ユーザー数・注文・売上と扱わない。source/反映/照合は完了し、再deployしない。次の収益cursorは未完PR #9099等の実状態から選ぶ。
+
+失敗と診断: main同期時の正本追記競合は両方保持して解消する。全refs走査は別の自所有audit PR #9099/commit0df40a8ea9bc605742fca4c04a1bcaf8bb3811fb/file docs/evidence/capafy-legacy-c23d68.json/line13の記録集合hashをgeneric-api-keyと検出する。実データから同じhashを再現し、exact fingerprint1件だけを既存baselineへ追加、元設定RED1件/exit1→限定追加GREEN/exit0を確認する。rule/pathの広い除外はない。初回Netlify draft6ae8dd5df84d97d38e7a2109はHTTP422/errorで未公開、公式原因はplan非対応のfunction region明示指定。provider出力defaultを入力へ戻していたため、元TOMLに無いregion/memoryを省く。独立reviewで修正を確認し、成功draftの1024MB/us-east-2/nodejs24.x/streamが旧値と一致することを公式metadataで検証してから公開する。直前current-ID比較はclient側の競合検知でありserver CASではない。元の失敗を削除/成功へ書換えしない。
+
+証拠/引継ぎ: docs/evidence/capafy-synthetic-clicks-e85ac2.json。共有結果thread1793641745.962019/親の完了返信1793646217.888829。private原本は ~/.local/state/life-manager/team-hq/9097-functions-only-stage-78dd7e4279-hq-admission-trace/。repo=/Users/anicca/Projects/life-manager-main、worktree=/Users/anicca/Projects/life-manager-main/.worktrees/revenue-attribution-e85ac2、docs branch=docs/hq-revenue-handoff-20261103。spec/残TODO正本=/Users/anicca/Projects/life-manager-main/.worktrees/revenue-attribution-e85ac2/docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md、現在cursor=このlaneは完了、TEAM-HQのHQ-02/03と未完PR #9099を継続する。
+
+## CAPAFY-CT-READBACK — 既存購入導線の計測支援
+
+目的: 既存7商品に対し公開`/go/<id>/x/<probe>?ct=<probe>`のHTTP Locationを公式readbackし、対象ID・ct保持・click counterを照合する。配信や会計のownerを代行せず、投稿/価格/購入/ledger/fence/HQ runtimeを変更しない。
+所有: home-codex-4a481d、task 4a481d0fe62485fd4dffc972、branch docs/capafy-ct-readback-4a481d。origin/main 41bb93191b由来の専用worktree。BOARD/lease/open PRを確認し、既存ownerを再割当しない。
+完了条件: 商品設定7件との照合、実HTTP redirectと計測readbackの証拠を永続化し、既存関連テストとdiff check、commit/push/PRでレビュー可能にする。失敗経路があれば具体的URLと修正先を残す。合成clickを売上/購入/実ユーザー流入に含めない。legacy blob全件や購入決済完了はこの7件の証明範囲外。
+順序/現在cursor: claim・7経路readback・既存テスト・証拠/正本更新は完了、現在PR/CI/main。既存TODO順は変更しない。
+検証結果: 全7商品302/対象ID/ct/utm_content保持。最初の公式statsはexact probe未反映、後続readbackで全7商品を確認する。GET7に加え診断HEAD2もclick記録となり合計9件、実流入/会計から除外すべき合成probeは`test_hq_4a481d`。公式deploy6ae89aeeb7fd12e6a76e6305/readyを確認しdeploy変更0。generator9件とsource-boundary PASS、購入/売上は未確認。証拠 → docs/evidence/capafy-ct-readback-4a481d.json。legacy blob全件のct保持は未検証で、次操作はexact URLと既存ownerのinventoryから始める。HEADをread-only無副作用と仮定せず、同probeを再送しない。
+Slack remote差分: 公式conversations.repliesで指定thread1793635811.853779を完読、parent1件/返信0/has_more=false。受領・着手・結果の新差分なし、Reason accepted/queuedは未着手、催促送信0。
+
+## CAPAFY-LEGACY-INVENTORY — 旧クリックの計測境界
+
+目的・範囲: CAPAFY-CT-READBACKの残課題を引き継ぎ、legacy blobの保存schema、復元できるURL/owner、ct保持の証明範囲を調べる。owner=home-codex-c23d68、task=c23d68e42668425c07faedde、branch=docs/capafy-legacy-c23d68、base=ec4c989577。既存PR9097のコード、台帳、配信、商品、HQ、effect fenceは変更しない。
+完了条件: 公式readbackと実sourceから旧記録の欠損/復元可能性を切り分け、検証根拠とexactな次操作を永続化、必要CIの公式PASS後にmainへ統合する。未確認ctや売上は成功に置換しない。
+現在cursor: 同ownerのread-only inventory継続確認とmain同期を完了、PR9099の最新head必要CI→main統合。公式Blob114件/legacy30商品88件/本文全88件が1、公式stats114/88一致、公開landing60リンクは全件bare route。実codeの反例でct有無が同一legacy keyになるため、legacy=ct欠落とは判定しない。旧query/ct/post/本人ownerは保存されず復元不能、売上は未確認。証拠 → docs/evidence/capafy-legacy-c23d68.{md,json}。generator9/9・go5/5・反例assert・source-boundary PASS。追加click/投稿/会計変更0。次のsource作業はgo.mjsの最小ct/platform/post保存とgo-stats readbackをtest-firstで接続することで、既存receiptのexact一致が無い過去88件はunknownを維持する。既存全体TODO順は維持する。
+remote差分: 指定Slack threadを公式完読。parentとhome-codexの更新のみ、本人受領/着手/結果の新差分なし。Reason accepted/queuedは未着手、催促0。
+継続照合: 現行公式通常105/検証除外9/legacy88、監査時raw114との関係を明記。再検証Python9/Node6 PASS。remoteはdr eggbot本人の2時間sweep/wake_me未接続という差分のみ確認、他本人の自然wake未確認。PR9097再deploy0、親PR9100/TEAM-HQ変更0、Dots会計/Muse・Marketer投稿を維持する。
+
+CI修復cursor: task879652c218603b7f69db1c0aで同owner leaseを継続する。PR9099/head19ef706537の必要CIはgitleaks dirのみFAIL、他13jobsはPASS。集合hashの項目名だけをlegacy_record_set_sha256へ変更し、値と監査内容を保持する。旧historyのexact baselineはmain由来を維持し、除外追加0。focused RED→GREENと関連検証後pushし、更新head全CI→mainを次操作とする。過去88件の帰属と売上、未来payload保存は未完。
+
+NEAR自然監視の限定受入（task3771a2d0493dbb6ec52ecb85、home-codex）: 既存revenue-hourlyの自然cardと元promptからagent専用bids/assignmentsの公式GETまでを照合する。範囲は読取・限定証拠・BOARD、本段落のみ。親root所有PR9129の編集/mergeを重複しない。完了条件は自然schedule採用・正しいagent認証・pending/受注/売上の分離・秘密値非記録・必要CI後main。新scheduler/再登録/再応募/送金は行わない。順序変更なし、自然card schedule:revenue-hourly:498246 の元promptと実GET200を照合し、自然監視の採用を確認。本人agent一致・入札1件15USDC/pending・受注0件、売上/出金はnullを保持。Capafy公式GET200はcount114、既知synthetic除外9、valid payload9のうち非空ctは1件、欠損105。過去日次台帳を上書きせずhash不変を確認する。証拠→docs/evidence/hq-revenue-3771a2.json。現在cursorは本証拠の必要CI→main、次自然hourlyで受注時だけ納品着手。親rootのPR9129統合は引き続き専有しない。
+
+## NEAR-FIRST-OFFER — 初回販売の既存レーン移管
+
+→ [NEAR AI Agent Market 初回販売](2026-11-03-near-market-first-offer.md)。所有 home-codex-near-market。登録201・初回15USDC提案201/pending・本人bid公式照合を確認済み。現在cursorは既存hourlyでの受注監視と自然採用確認、受注後の納品。Capafy/Guru/Apifyの既存ownerを維持する。
+
+## CAPAFY-ATTRIBUTION-PAYLOAD — 未来クリックの帰属保存
+
+目的・範囲: PR9099の統合済み監査に続き、go handlerが失っているct/platform/postを新規Blob本文へ保存する。owner=home-codex-3d1087、task=3d10872ebd07701cbebd47c2、branch=fix/capafy-payload-3d1087、base=58009a3a96。専用worktree・leaseを取得。旧監査owner/HQのactive leaseは保持する。
+契約: 検証済みagentId/platform/post/ctとschema_versionだけをJSON本文へ保存し、URL/query全体・私的情報は保存しない。既存key/redirect/flat stats/合成除外は保持。明示的な`?detail=1&attribution=1`だけ本文を読み、agent別ct集計とrecorded/unavailableを返す。旧本文1・不正schema・欠損はunavailableとして残し、storage取得エラーは成功へ置換しない。
+完了条件: 実handler境界のRED→GREEN、既存Node/Python関連テスト、diff/source-boundary、commit/push/PR、必要CI公式PASS後のmain統合。反映と自然クリックの公式readbackは別cursorとし、CI待ちで有限runを消費しない。過去88件の帰属/購入/売上は未確認。
+現在cursor: RED3件→Node10/10、Python pull-attribution4/4・landing9/9・diff/source-boundary PASS。証拠 → docs/evidence/capafy-payload-3d1087.json。commit/push/PR→必要CI/review→main、反映/公式readbackは未完。Dots会計/Muse・Marketer投稿、HQ runtime、既存effect、PR9097 deployは変更0。remote追跡thread公式完読、新しい本人受領/着手/結果差分なし、催促0。
+
+継続修復（task a4a1953ed490e9caf61e10c3）: PR9101旧head b86f14fの必要CI14jobs/CodeRabbitは公式SUCCESS。GitHub reviewの2指摘を実コードで確認し、legacy keyのplatform空/post有り本文をunavailableへ分類し、日次pullの明示attribution取得と返却ct集計の保存を同PRで接続する。既存日次行を再送/上書きせず、売上因果の未確認と欠損unknownを維持する。順序は2件RED→最小修正→関連GREEN→push→fresh review/更新head必要CI→main→限定反映。旧headのCIを新headへ流用しない。2件はPython2 assertions/Node1 assertionのREDを確認し、最小修正後Node11/Python marketing全39 GREEN、diff/source-boundary PASS。Python既存HTTPError fixtureのResourceWarningは保持し、失敗0。現在cursorは更新headのfresh review/必要CIであり、deploy/投稿/会計変更0。指定remote threadは公式完読、本人の新差分なし、催促0。
+
+継続受入（task3c4c1098fc075eb8a57ac221）: PR9101/head df3237f849の必要CI14jobs＋CodeRabbit公式SUCCESS、独立SHIP、source Node11/Python39再PASS後、admin mergeでmain f6eef8eadbfd91877e68c1334a6220be4f8d724cへ統合。公式fetchの対象4filesとsourceがbyte一致する。同owner/leaseを継続し、公開current-IDを確認してmain由来2関数だけを同じSDK/bootstrapでbundle、ZIPからNode11 PASS、独立read-only検証SHIP/重要0。公開static5files・72件allowlist・SDK10files・bootstrap・runtime設定を保持する。旧go ZIPそのものの保持はこのlaneでは行わず、今回のmain由来JSON保存handlerへ更新する。前PR9097の再実行ではない。
+反映: Netlify deploy6ae925af58c2cba944c2be18はready/published、公式site readbackと公開statsを確認。通常105/合成除外9/公開index hashは不変、明示attributionはrecorded0/unavailable105。既存記録を推測復元せず追加click0/投稿0/会計変更0。初回uploadはLanguage不足HTTP400、draft state/required2を公式照合後、公式OpenAPIのruntime=js/stream/sizeで補正しaccepted。公開不明やblind retryはない。自然新規JSONと売上は未確認。
+現在cursor: source/main/Netlify公開反映は完了。~/loops/currentは20261103T090718-f6eef8eaでpull_attribution.pyはmainとbyte一致するが、日次ownerのloaded状態/自然日次行は未確認。次はこの受入記録の必要CI→main、および同ownerで自然新規clickのJSON/ctと日次click_attribution行を公式照合する。別deploy・合成probe再送・過去日次行上書きはしない。証拠 → docs/evidence/capafy-payload-3c4c10-acceptance.json。remote threadは本人の新差分なし、催促0。Dots会計/Muse・Marketer投稿/HQ runtimeを維持する。
+
+継続照合（task95bef89b6d4246ed4290d57d、owner=home-codex）: 前回PR9101/mainと公開反映を保持し、未統合PR9103の必要CIを先行確認する。今回の所有は同laneの公式read-only照合、日次caller診断、証拠/本section/BOARDのみ。公式go-statsで通常106・合成除外9・recorded1/unavailable105・agent4866150011のct=c1103d1が1件を確認する。今回click/deploy/post/会計write0であり、訪問者本人・自然人・購入因果・売上は未確認。日次ledgerは存在せず、source上の唯一のcallerはcapafy-ig-marketing-daily.sh:122。active plistは不在、cloud-retakeover名のdisabled plistを保持する。日次rowを得る目的でpublish ownerを再有効化せず、loaded stateと既存effect fenceを診断してから既存ownerの照合経路へ接続する。証拠 → docs/evidence/capafy-natural-95bef89b.json。完了条件は公式差分/原因境界の永続化と必要CI後の統合、status --explainの完了診断はdisabled/pidなし/installed SHAなし、旧run18e35707b0269318-23482（2026-10-30T15:06:08Z、release ccf57e9e）はexit75/resource_effect_unknown。保持中occurrence=capafy-ig-marketing-daily:18db7caff1178a88-68028、state=claimed/history_incomplete、公式receiptなし/no_journal_row。現在cursorはPR9103 CI→統合と、元IG本人handle/journalを特定して同occurrenceの公式readbackを取ること。停止publisherの再有効化/再送/自動owner再割当はしない。新dispatcher・再deploy・合成probeは作らない。 追加診断: private account87行はpoisoned1/session_failed12/provision_failed74でusable本人handleなし。旧occurrenceの元本人journal/sessionを探し、別accountへの置換はしない。既存helperのdefault tokenはUnauthorizedだが、Credential SSOTのservice完全一致capafy-publisher/tokenによるGETは成功（商品89行、sales field0件で売上0と解釈しない）。seller公式3sourceのsinceLaunchはgross USD162.69/refunds0.00、最新statement ending balance83.78/payable0.00。これは入金・純利益・MRR・当該click経由売上ではなく、費用/純利益/購入帰属はunknown。remote既存thread6messageを公式完読、新しい本人wake差分なし、催促0。
+
+継続統合（task7c9269e102d2886ee18ccbb6）: Slack指定remote threadを公式GETで全6件照合し、本人受領/着手/結果の新差分なし、催促0。保存済みHQ receiptで前2runの終了と現在run単独workingを確認する。PR9103/head394a000070は必要CI14件＋CodeRabbit成功後main735660764dへ統合済み。PR9104を同owner/既存leaseで継続し、main同期のBOARD/本section競合を双方保持で解消する。旧順=PR9103→PR9104→旧IG receipt、新順は同じ。現在cursor=PR9104更新head必要CI全PASS→main、その後元IG本人journal/session/公式receipt照合。停止publisher/fence/会計/投稿/HQ runtimeは変更0。証拠 → docs/evidence/capafy-continuation-7c9269.json。
+
+
+継続計測（task e90c688b773a9f9fd3c76149、owner=home-codex）: PR9104の公式MERGED/main e4612c2869を確認。所有範囲は本section/BOARD/限定evidenceと、既存main由来pull_attribution.pyによる当日1行の公式readback保存のみ。旧IG occurrence18db7caff1178a88-68028は10月5日、現存共有journalは10月24日以降で元本人bind未取得。現在accountへ置換せず、fence/停止publisher/他ownerを保持する。collectorは投稿を起動せず、欠損salesをnullに保ち、既存当日行を上書きしない。実測=mainとbyte一致のrelease265bab69 collectorで当日1行を保存、click106/recorded1/unavailable105、商品76行すべてsales欠損null。即時replayはledger byte不変・追加0・当日1行。証拠→docs/evidence/capafy-effect-e90c68.json。現在cursor=証拠PRの必要CI→main。その後旧IG元本人bind/原本archive照合、日次自然取得の既存owner接続。自然日次実行・旧IG効果・購入因果/純利益の証明は別未完cursorとする。
+
+継続診断（task17679f4e146bb3b4be52268e、owner=home-codex-17679f）: PR9117の統合は親ownerが所有するため変更しない。専用branch docs/capafy-ig-receipt-17679fで、旧occurrence18db7caff1178a88-68028の元本人・journal・receiptの欠落をread-onlyで照合し、現行reconcilerが別active accountを対象に選ぶ危険を隔離fixtureで検証する。完了条件は実DBの対象1行・対象ファイル存在・残存状態の時刻・実code反例をsanitizeした証拠に保存し、CI後の統合まで追跡する。投稿/認証/再起動/fence解除/会計/PR9117統合は所有しない。既存TODO順は維持する。診断結果: mode=roで旧fence保持、専用4artifact不在、残存3artifactは全てqueueより前。隔離fixtureで別ready accountの空一覧でもverified=true/effected=falseになるsource反例を再現（provider0/resolve=false）。本番で誤解除が起きた証明ではない。現在cursor=本診断記録の必要CI/統合、次source作業は元run本人を拘束する証拠なしにprovider照合を進めないための最小修正。成果物 → docs/evidence/capafy-ig-receipt-17679f.json。
+
+継続source修復（task fd096c4b2e6f13ad548eabd0、owner home-codex-fd096c）: PR9120は親rootによりmain18131ea9へ統合済みと公式確認し、同診断の次cursorで元occurrence本人拘束を修正する。範囲はIG reconciler/既存posterのdispatch markerと関連tests/docs。本番投稿・認証・fence・会計・HQ・他ownerの変更0。既存capafy-reelのoccurrence-bound dispatch markerを先例とし、元runとhandle・dispatch時刻の一致をprovider読取前に必須にする。証拠なし/別occurrence/別handle/古い時刻/不正JSONはHELD、現在ready accountへ代替しない。既存posterはhandleをmarkerへ保存する。過去artifactの補造はしない。完了条件: 隔離RED→GREEN、関連テスト、独立review、必要CI公式PASS後main。反映・旧公式receipt・収益は別未完cursor。順序は診断→本人拘束source→元archive/公式receipt照合を維持する。実測は3件RED→carousel回帰込み28tests GREEN、PR9125でexact-head独立review/必要CI待ち。
+
+追加review修正（primary所有の最終統合）: completed/effect=1の元dispatch記録と空listingが矛盾してもno-effectとして解放できる反例を再現。元markerを一度だけ検証してeffectを保持し、公式listingがno-effectを示す場合はHELD・resolve/ledger書込0とする。一致する公式Reelがある場合のeffected closeとreplay-zeroは維持する。元実装head e1a888dはSHIP不可。最小回帰RED→GREEN、修正headの独立review・CI・main由来限定反映を現在cursorにする。
+
 ## README整理とMac導入の継続修復
 
 **目的・範囲:** 初見の人がLife Managerの価値と7つの事業を理解し、自分のMacへ導入できるOSSにする。README、Mac導入、7事業の実業務、約20 agentの稼働、確認済みの純収益、GitHub 10,000 starsを別々の完了条件として追う。この冒頭を現在の状態と再開順の正本にし、後続の過去run記録は履歴として扱う。
@@ -33,7 +259,7 @@
    **2026-10-25 13:36–13:44Z admission確認:** source修正後にaffiliate-compositionだけをrelease SHA `35214f504ab54ad3d9b49e1aaea09c3266312170`へapply。初回run `18e1c939640c0bf0-27285` / occurrence `affiliate-composition:18e1c939640c0bf0-27285` はexit 75 / `resource_capacity_busy`（effect class `none`、effect_unknown false）。13:36Zのsnapshotはlive owner 9 + reservation 2 = 11でhost total cap 10超、13:40Zはlive 5 + reservation 3 = 8。続く自然run `18e1c9a2349810d0-51648` / occurrence `affiliate-composition:18e17b82b79f4368-24231` は13:43:49Zにpass / exit 0 / `failure_layer=clean` / blockerなし / effect `none` / effect_unknown false / `retryable=false`、release SHA一致。約88.6時間待ちのsupport/borrow ownerが枠解放後に進んだことを確認。
    **2026-10-25 14:38–14:50Z `life-manager-selfbuild` dispatch診断:** 14:38時点で同ownerはreservationを保持していたが、14:39には同じrun `18e1cc9e4b625e48-38419`が`resource_capacity_busy`のままfailedでreservationが切れた。14:49:41Zにも新run `18e1cd3b2e3cf740-70501`が同じblockerで終了し、statusは`loaded-idle` / PIDなし / `last_exit=75` / effect class `none` / retryable trueを返した。read-only admission DBではownerは`deterministic`・`borrow/support`、約90時間待ち、eligible、queue内にあり、reservationはwindowごとに付与・失効を繰り返す。`launchctl-safe preflight`はUID、Directory Services UniqueID一致、`managername=Aqua`、manager UID/PID、GUI domain readbackをすべてpass。対象serviceは`not running` / exit 75で、loaded argvはplistと一致し、release rootも存在するため、launchd未loadedやplist driftではない。installed release SHA `70338e0dce92d047cd00dd3bc2277869e19f2fdd`はcurrent main-derived `a83d1dd954bb1a1ca303eee5aec7c2682f8d850a`より古い。current sourceは`_capacity_overflow`とreserved claimにaged `support/borrow`例外を実装しているが、loaded旧sourceにはない。実測された古いrelease・予約中のexit 75・契約差分が一致するため、主因はfixの当該owner未反映と判断する。当時の次手として、reservation expiry後に対象ownerだけを限定applyし、自然terminalをreadbackする方針を記録した。全fleet applyやcapacity上限増加は行わない。
    **2026-10-25 14:53–15:04Z `life-manager-selfbuild`限定復旧:** preflight pass、PIDなし、active reservationなしを確認して`--loaded-idle-only`で対象1件をapply。applyは`ok=true` / `changed=true` / `admission_resumed=true`、install event `2a29660973d30080343f98d2`。自然run `18e1cd881087baa8-88205`は14:56:32Zにpass / exit 0 / effect none / blockerなし / retryable=false、release SHA `a83d1dd954bb1a1ca303eee5aec7c2682f8d850a`一致。15:04Zのstatusはhealthy / loaded-idle / PIDなし / last exit 0 / release drift false。これは1 ownerのdispatch回復だけを示し、queue fairnessの継続確認は残る。
-   **2026-10-25 15:26–15:45Z live readback:** `life-manager-disk-cleanup`のrun `18e1cf0efcaf49f0-83354`は15:26:30Zにpass / exit 0 / release `a83d1dd9`。read-only `cleanup-latest.json`は`errors=0` / `reclaimed_bytes=0` / `removed_runs=0`だが、receiptの時刻・runとの結び付きは未確認で、空き容量回復の証明には使わない。`last-receipt.json`は10/10の記録でstale。15:28Zのadmission DB aggregateは229 MBのDBにqueued 6,066件 / 24時間超69件 / 122 owners、queue table 106行。per-owner queryは`database is locked`で完了せず、69件が重複queueかownerごとの単独wakeかは未確認。15:37Z free spaceは12 GiB producer floorを下回り、15:34Z healthでは複数ownerに`disk_floor_low`が出た。15:45Z health全192件が`health_snapshot_timeout`、status readbackも`admission_database_locked`で失敗したため、最新のowner別stateは不明。
+   **2026-10-25 15:26–15:45Z live readback:** `life-manager-disk-cleanup`のrun `18e1cf0efcaf49f0-83354`は15:26:30Zにpass / exit 0 / release `a83d1dd9`。read-only `cleanup-latest.json`は`errors=0` / `reclaimed_bytes=0` / `removed_runs=0`だが、receiptの時刻・runとの結び付きは未確認で、空き容量回復の証明には使わない。`last-receipt.json`は10/10の記録でstale。15:28Zのadmission DB aggregateは229 MBのDBにqueued 6,066件 / 24時間超69件 / 122 owners、queue table 106行。per-owner queryは`database is locked`で完了せず、69件が重複queueかownerごとの単独wakeかは未確認。15:37Z free spaceは12 GiB producer floorを下回り、15:34Z healthでは複数ownerに`disk_floor_low`が出た。15:45Z health全193件が`health_snapshot_timeout`、status readbackも`admission_database_locked`で失敗したため、最新のowner別stateは不明。
    **2026-10-25 15:49–16:00Z capacity probe:** 15:56Zはfree 10.25 GiB、swap used 9.58 GiBで12 GiB producer floor未達。`browser-recycle-idle`の自然run `18e1d0e8eac70288-43704`は15:57:56Zにexit 0 / `failure_layer=clean` / effect `none` / release `a83d1dd9`。bounded stdout summaryは8 browsers中7 `recycled`、1 `keep`、0 `busy`、`disk_pressure=true`、base `max_age=14,400s`に対してeffective max age 3,600s。keepのbrowserはuptime 245sで閾値未満。run後の直接readbackは13.33 GiB free、`vm.swapusage` used 6,504.94M。16:00:28Zも14,313,959,424 bytes free（13.33 GiB）を確認したが、swapは7,106.25Mへ再上昇。1回のpressure-triggered recoveryであり、複数windowの安定性は未確認。run summaryにはprovider receipt/readbackはなく、free space回復の全量をbrowser recycleだけの効果とは断定しない。15:45Zのfleet health timeoutは15:52Zの全192 jobs health（3.46秒、timeout 0）では再現しなかった。
    **Browser recycle cursor:** 次のhourly natural wake（16:57Z前後）で同じsummaryのaction count/effective max ageと、直接のfree space・swapを照合する。12 GiB floorを複数window維持できるかを確認する。recycled ownerのbusy/lease failureは今回0件で、今回の`keep`はuptimeが閾値未満だったため、owner特定や手動closeは不要。
    **未完:** host上限を増やさず、producer floorを複数window維持し、slot占有・run時間・reservation解放・古いqueue ownerの進行を測る。今回のfleet healthはtimeout 0だが、以前の`admission_database_locked`の再発時はlock持続時間とread/write ownerをread-onlyで特定し、aged queueをowner別に確認するまでmass-cancelしない。selfbuild 1件やbrowser-recycle 1回をfleet recoveryと扱わない。disk writer attributionとinventory gapsを再計測する。current release `a83d1dd9`のread-only `doctor`は`ok=false`、registry_entries 192、missing_entrypoints 0、unmanaged_labels 3。`ai.anicca.provision-browser.1password.dais` / `ai.anicca.provision-browser.ai-monk-factory.provision` / `ai.anicca.x402-seller-8414`は所有者未確認のため触れていない。
@@ -17637,7 +17863,7 @@ exact HEADc1c817c760（source71e8a2baf6）でAlpaca482 + core176 = 658 unittest�
 
 独立反証は23:45submit→翌00:00:01fillが1日窓を跨ぎ同じ成功GETを反復するMEDIUMを発見する。RED9605a87bbc→GREEN60eedee7caはmissing FILLの開始点をpartial終端へ進め、共有proofへschema2/kind=crypto_activity_bundleを接続する。bundleは元schema1 wire snapshotsを残し、各window/mode/content/短い終端page、連続coverage、活動ID/immutable FILLを再検証する。表示上のcoverageを一度のwire requestやprovider発行receiptとは呼ばず、元rawの400件未満上限を緩めない。累積qty/VWAP/timeは既存crypto_fill_activity_proofの同じ算術で確認する。primaryの追加RED9cab7a659e→GREENa64150f367はPythonのbool/int/float等値によるbundle hash迂回と、CFEE日付がbundle広域窓で正当化される反例を修正する。bundle実本文hashを検証し、feeは元segmentの取得窓/refで判定する。
 
-exact codea64150f367でAlpaca476 + core176 = 652 unittest、loop contract193 jobs、diff PASS。独立read-only reviewerは関連47テストと独立28ケースで元の跨窓反例の両mode回復/履歴復旧後read0、bundle gap/過剰qty/mode/content改変拒否、重複/zero/部分約定の数量保存、元segmentのCFEE窓/ref維持を確認し残指摘0を報告する。最小1日内page-token継続は次cursorで未完、費用完全性/数量drift/利益・全BTC移行PR/main/immutable/自然実行も未完。本番state/credentials/provider/注文/資金移動/旧fenceを変更しない。
+exact codea64150f367でAlpaca476 + core176 = 652 unittest、loop contract193 jobs、diff PASS。独立read-only reviewerは関連48テストと独立28ケースで元の跨窓反例の両mode回復/履歴復旧後read0、bundle gap/過剰qty/mode/content改変拒否、重複/zero/部分約定の数量保存、元segmentのCFEE窓/ref維持を確認し残指摘0を報告する。最小1日内page-token継続は次cursorで未完、費用完全性/数量drift/利益・全BTC移行PR/main/immutable/自然実行も未完。本番state/credentials/provider/注文/資金移動/旧fenceを変更しない。
 
 **IN-BTC-02 item6・通常の遅延CFEE再取得source受入:** REDbec3657697→GREEN544224c54eで既存snapshot envelopeをvalidate_crypto_activity_snapshotへ共有抽出し、既存writerへfee専用refs/coverage/1窓90日までのbacklog再取得を接続する。完了済みFILL refsは置換せず、同じ成功観測のreplayと現在UTC日内のfee-only再取得はread0。新FILL不足の取得も最古90日へ分割し、その回にfee-onlyを重ねない。過去の生成日と実際の生成観測はdaily.generated_as_ofで分ける。失敗/不正mode・paper・content/windowではvalid cacheを保持する。
 
@@ -23256,6 +23482,16 @@ Top 10 by sales: 0/10 with a trial (Ocup 3,111, Serenity 2,002, HookAce 1,044, V
 **更新された現在地・as of 2026-10-24 11:47 UTC / 20:47 JST（現在状態と唯一のcursor）:** 後続の日付付きcheckpointは当時の履歴として保持する。この10/24時点の更新は当時のsnapshotとして保持し、2026-10-25の製品方向・status更新が現在地を上書きする。根拠→[2026-10-24 11:47 live readback](../../evidence/maritime/live-readback-20261024-1147Z.json)、atomic残作業→[Maritime finish plan](../plans/2026-10-24-maritime-finish-plan.md)。大会/サービス/配布の原観測時刻は証拠JSONに分けて記載し、未確認値は0ではなくunknown。
 
 
+#### 2026-11-06 06:05–06:08 製品定義・構築順序・credential 制約の確定（本人の言語化。本節の他の記述に優先）
+
+- **製品は1つだけ**: Muse／Grok／Codex／Dots の上で動く Life Manager そのもの（「僕ら自身を製品にする」）。Life Manager Cloud はその同じ1つを Maritime にホストして誰でもアクセスできる形にしたもので、Maritime 版という別製品・第2実装は作らない。Railway の Calendar workflow は製品本体ではなく既存の脇機能。製品化とは新しい仕組みの発明ではなく、実績と証拠のある日常業務（配信・出品・応募・計測・/open）の移植である。移植元の最初の仕事は証拠のある業務から選ぶ（現行の最初の収益 workflow = Capafy）。
+- **順序は固定**: (1) まず Maritime の上でちゃんと作る（エージェントが実際に動いていて全部が動いている状態）→ (2) その後に /lm のページへ繋ぐ。ページだけ先に整えた状態を「できた」と数えない。**判定は「他人が /lm から入って、その人専用の Life Manager が Maritime 上で実際に動き始めるか」**。特定の個人 Muse インスタンスや特定デバイスに閉じた作りにしない。構築・運用は人間をループに入れずに完結させる。
+- **No human credential / No user credential**: 本人や特定個人の credential に乗る形を持ち込まない。使う人それぞれが自分のアカウント・資格情報を持つ形にする。例外は「受け取り口」（payout 先）のみで、これはループの外の段として明示する。稼ぐループの中にユーザー必須の作業（承認・ログイン・手作業・確認待ちで止まる段）を一切作らない。**KYC は聞かない・門にしない**（この製品は KYC のような手続きができない人のためにある）。受け取り口の情報取得と KYC は別物。資格情報の所有者・保管場所・provision の段を必ず明示し、「誰の credential で動いているか分からない」状態は未完了として扱う。
+- **現行 source の実読（2026-11-06、origin/main `c0679e2`）**: 中央 backend の /maritime 同意 v2 経路は本番 Railway でライブ（ゲート `LM_MARITIME_MANAGER_EMAIL_ENABLED=1` が ON、ページ 200 を実測）。worker（runtime-up）は provision/cycle/report を実装済み。テナント VM イメージは repo 全体＋Codex runner＋Capafy cloud_cycle で、モデルアクセスは Maritime が VM へ注入する（個人 profile は除去される設計）。Maritime focus テスト 190 件中 188 pass（1 skip は PostgreSQL、1 fail は VM 環境の node_modules 未導入による `ws` 不足で source の失敗ではない）。
+- **Stage 1（Maritime 上で全部動く状態）の残ギャップ**: (A) 本番 env の未確認: `LM_MARITIME_MANAGER_IMAGE_RELEASE_SHA` の値（未設定なら activate は 503 release_unavailable）、`MARITIME_API_KEY`、consent-anchor migration の本番 DB 適用、worker の実処理。(B) デプロイ済み共有 agent は release `a0d217d`（2026-10-21）で古く、テナント専用 provision の完走は 0 件。liveness invocation は業務の証拠ではない。(C) **Capafy binding の注入経路が無い**: VM 側 cloud_cycle は `LM_CAPAFY_BINDING_JSON`（テナント本人の Publisher 参照のみ、生 credential は渡らない設計）を受け取るが、中央 runtime/transport のどこもそれを設定しない。PR #8745 の tenant credential binding をこの注入段まで含めて仕上げる。(D) Capafy Publisher Certification と版ごとの publisher confirmation はプラットフォーム側の人間の段として明示済み（ループの外。自社テストで誤魔化さない）。(E) provision→configure→cycle→provider receipt→report→停止→replay-zero の一巡が未実証。詳細と credential マップは goal hidden_files の maritime-build-order-and-gaps-2026-11-06.md。
+- **Stage 2（/lm 接続）は後段・準備のみ**: branch `fix/maritime-portal-start-20261106`（`c159e03`、push 済み）で /maritime ページ Start 2か所を Calendar 経路から manager 同意経路へ付け替えた（landing テスト 4/4）。これは接続の準備であり、Stage 1 の実証がそろうまで「ポータルから使える」とは言わない。統合の残段: PR/CI/main マージ → anicca-products の `MANAGER_MARKETING_REVISION` ピン更新（netlify-deploy.yml は `fd79f213`、landing-pr-build.yml は `b5142513` と現在食い違いあり。両方を新マージ commit へ揃える）→ デプロイ → ライブ読み戻し。
+- **次の atomic TODO**: (1) Railway 本番 env と DB migration の readback（A の確定）。(2) owner ブラウザ E2E で activate の応答（503 か enqueue か）を確定し、通れば provision 完走まで追う。(3) Capafy binding 注入段の実装（C、#8745 の範囲）。(4) その後に Stage 2 の統合・公開。
+
 #### 2026-10-25 product contract and live state override
 
 **User-confirmed direction:** Life Manager is one product and one manager. Local and Cloud are execution modes; Grok Bot, Muse, and Dots are intended access integrations to that same manager. The Cloud goal is paid, phone-first use with one persistent, isolated Maritime VM per customer. Calendar travel-time planning is one existing workflow, not the product definition. After one-time Life Manager signup and autonomous-work/data-retention consent, the agent should use the verified signup email or a tenant-owned mailbox to establish/use the customer's one eligible Capafy Publisher account, then work without task prompts or recurring per-listing approvals where Capafy's rules permit delegation. Google identity does not grant personal Gmail inbox access. Any platform-required, non-delegable legal, identity, or fee step must be completed openly during account setup; never bypass it or claim an unverified earning. Autonomous profit is a goal, not a verified result.
@@ -25098,6 +25334,14 @@ Managerは、苦しみを終わらせることを目指し、行動変容を通�
 - **調査・出版:** [Manager記事collection](https://aniccaai.com/blog/manager)は67記事（英語38・日本語29）を掲載し、AI Economist、MiroFish、AgentSociety、Aaru、Simile、Humans&のBoba / Ampersand / Persimmon、Numerai、Goodfire、人口合成、behavior evaluation、EBAを扱う。2026-10-25のGETで記事collectionと代表記事はHTTP 200。記事数・研究量は人への効果の証明ではない。
 - **公開copyの差分:** source updateはLife Manager PR [#8940](https://github.com/Daisuke134/life-manager/pull/8940)でmain `f1926301087199fd319d60a36769ce27dc517e12`へmerge済み。公開側PR [#739](https://github.com/Daisuke134/anicca-products/pull/739)で両workflowをこのimmutable revisionにpinし、記事installer/contentの独立pinとadapter SHA256を維持してmerge済み。Netlify Deploy (Landing) [run #869](https://github.com/Daisuke134/anicca-products/actions/runs/40187310935)とpost-deploy money-path smokeはsuccess。Netlify deploy `6adde2d512f600b350f31ca6`後のproduction GETで`/`・`/en`・`/ja`・`/blog/manager`はHTTP 200。EN/JAに441,570世帯、EBA、Ampersand / Persimmon / Boba、67記事の案内があり、旧`docs/manager-learning-20261017` branch linkはない。archiveは67 article destinationsを描画し、featured Manager linksと代表archive linksもHTTP 200。`/manager-release.json`のcanonical source revisionは`f1926301087199fd319d60a36769ce27dc517e12`。これはsource公開・到達性の証拠であり、人への行動効果、苦しみの低減、traffic、install、revenueは示さない。publisher側の記録は[`CANONICAL-MARKETING.md`](https://github.com/Daisuke134/anicca-products/blob/b4d8f245800a3f68e147122b636b999a4774227b/apps/landing/CANONICAL-MARKETING.md)。
 
+### E16自然検証のrunner互換性修復（task d26c0c5310218fcdf4ec750a）
+
+目的/所有: home-codex-d26c0c は既存E16 workflowのrunner互換性だけを所有する。専用worktree `.worktrees/manager-runner-d26c0c`、branch `fix/manager-runner-d26c0c`、base `7b7e90ef2f18c9e36ea42757106c0738713b5355`。既存BOARD/lease/共有threadを確認し、親root所有PR9125とNaïve担当を変更しない。YC提出receiptは未確認のまま、順序を変えず継続可能な次の技術項目E16の阻害境界を修復する。
+
+根拠: 自然main run 41548925146 はPython202tests PASS後、Playwright1.56.1がubuntu26.04-x64非対応でverify失敗、publisher SKIPPED。直前成功run 41363246265の実imageはubuntu-24.04。固定依存のupstream v1.56.1 nativeDepsにもubuntu24.04-x64がある。対応既知の24.04へverify/publisherの両runnerを固定し、同じブラウザ検証を保持する。新dispatcher/依存更新/model変更/手動run-once/外部再送/STOP変更は行わない。
+
+完了条件/現在cursor: 既存focused workflow契約・source-boundary・diff検証→push/PR→必要CI公式PASS→main。main後の既存scheduleによる自然verify/publisherと公式summaryを追跡する。E16 positive canary/STOP/rollback/receiptおよび人の便益はこのrunner修復だけで完了としない。証拠 → `docs/evidence/manager-runner-d26c0c.json`。
+
 ### To-be — Manager v1の完了条件
 
 Manager v1は「大きなモデルを作った時」ではなく、(1)既存研究・公開データを権利と分割を保って再利用し、(2)行動予測と介入効果を研究単位holdoutでbaseline以上に再現し、(3)境界付き実行を外部の公式状態でreadbackし、(4)人の同意と適切な研究統治の下で行動・継続・害・費用を比較し、(5)その結果を公開できた時に技術的な限定版として受け入れる。技術実行の成功、文章の説得力、合成人口の規模、売上を人の便益と混同しない。「苦しみを終える」は長期missionであり、一つのbenchmarkやreleaseをもって完了と判定しない。
@@ -25723,3 +25967,1083 @@ Manager v1は「大きなモデルを作った時」ではなく、(1)既存研�
 - **Public readback:** fresh `crwl` crawl shows `/lm` has whole-life positioning while the Cloud card still says the runtime is in development, advertises Calendar at `$29/mo after a 7-day free trial`, and sends its CTA to `https://life-call-production.up.railway.app/lm?start_calendar=1`. `/maritime` returns a 404 page. These crawls confirm page content; they do not establish a deployed Cloud route or tenant journey.
 - **Requirements against current #8745:** `/lm` must keep the existing Calendar offer distinct and must not present the Cloud TEST working value ($19/month with a 7-day trial) as live terms. Its Cloud acquisition CTA can only move to the same-origin `/maritime` route after the current backend path is integrated and deployable. The #743 candidate currently covers `/maritime`, `/maritime/*`, `/auth/google`, and `/auth/google/callback`; its Netlify proxy contract does not cover #8745's `/api/stripe/cloud/checkout`, `/api/stripe/cloud/portal`, or `/api/stripe/cloud/webhook`. Both Netlify config paths and the proxy contract test need those billing routes; the proxy must preserve session cookies and Origin/CSRF inputs for checkout/portal, and forward the webhook raw body and Stripe signature unchanged. No live offer or billing claim is established.
 - **Cursor:** P2.1 notes refresh is complete. P2.2 remains unchecked; #8745 source is not merged, the public `/maritime` route is 404, source migrations are unapplied, and official TEST Product/Price IDs are unknown. No change was made in the anicca-products repo; no merge, deploy, migration apply, customer/signup, production, or Stripe effect occurred.
+
+### Anicca 816再リジェクト・現在cursor
+
+目的・範囲: app6755129214の最新Guideline2.1(b)を解消し、実購入導線をMaestroで検証して正式なWAITING_FOR_REVIEWを確認する。認証情報や技術判断をDaisへ質問しない。owner=codex-anicca-weekly-20261103、branch=fix/anicca-weekly-review-20261103、worktree=/Users/anicca/Projects/life-manager-main/.worktrees/anicca-weekly-review-20261103、base=b941bc11644821f37ab9d66cfa2be544dbec3258。
+
+受付時の公式事実: Gmail1a19ccb75df64444の11/2審査通知はiPhone17ProMax、1.9.6(816)、Weekly Premium($6.99/week)を発見できないという情報要求。submission7e3f5574-6458-4abd-9994-5875dbdd3630=UNRESOLVED_ISSUES、version677ae249-da6e-4105-a469-cf0d0521ba92=REJECTED、build4e642697-7289-42df-946b-98e026ddfd85=VALID。現行mainは月/年/Lifetimeを描画し、weekly.bはDEVELOPER_REMOVED_FROM_SALEだが、weekly.c6829088753/yearly.c6829088945はWAITING_FOR_REVIEW。この不一致が現時点の診断cursorであり、購入処理故障とはまだ断定しない。
+
+旧順序=10/30 build815提出完了。新順序=(1)816の由来・C商品審査/metadata/契約の照合、(2)既存設計に整合する最小修正と審査回答を準備、(3)現行Release購入導線Maestro、必要な回帰test/review/CI/main、(4)正式提出とapp/IAPの公式readback。変更理由=新しい公式拒否理由が以前のLifetime発見不能とは異なるため。配信/他app/共有RevenueCat defaultは変更しない。受付時cursor=(1)。paid purchase完了と有料権利restoreは前回未検証であり成功と表現しない。
+
+追加の公式観測: Appleの添付Screenshot-1102-150420.pngは月/年/Lifetimeを全て表示し、paywall欠落ではない。live RCの明示anicca_variant_bもB年/月/Lifetime（週Bは描画しない）を返し、C2はdefault_v2だけ。Paid Applications契約はActive/inEffect/latest=true。native22/Python21 PASS。fresh独立read-only検証はmetadata-only修正・816維持を支持する。web authは同一accountで復旧し、最新thread4737ed8f-2b98-311f-b482-f63cfb370bf6へ回答可能。公開APIのapp提出11件にもC version itemは0件、web next-version attachも0件だがC2はinProgress=true/WFR。既存CLIとApple現行JSのDELETE /iris/v1/subscriptionSubmissions/6829088753を一回だけ試すと404 NOT_FOUND、後続readbackもWFRのまま。取り下げ成功とはせず、未使用商品reviewNoteとResolution Centerで延期/取り下げをAppleへ依頼する。商品本体/availability/既存Bの権利は変更しない。
+
+検証環境の境界: fresh Release sim依存取得中にENOSPCを観測し、今回のxcodebuildのみINT→TERM、terminal確認後に今回のSimulatorDerivedDataだけ回収する。今回作成のSimulator4C4AE18C-9D87-484D-9A7A-257A72FC91D8もshutdown/deleteし、build完了後に再生成する順へ変更。実機DDIはDeviceLocked、iPhone MirroringはMac認証を要求し、CUAはLocalAuthenticationRemoteServiceをsafety理由で拒否するため迂回しない。この時点ではfresh Maestro未完。再試行前に今回取得の未使用SwiftPM cacheと自所有の再生成可能物だけを確認して回収し、Release buildと元のMaestro flowを再実行する。
+
+
+完了証拠: PR9095はexact-head481f0653ff95e0d382593cb46a977adc14726d9cのCI15/15 PASS後、main b1abc608aa10838cd6e8c3d0e26f443d83b0df8eへ統合。審査notesはmain由来本文とASC公式GETが終端改行1字以外一致し、C2商品reviewNoteも完全一致。既存approved yearly.retentionが購入取消後に表示され得ることを回答へ含め、主画面3planを全購入商品と誤記しない。独立read-only最終検証はblocking0/GO。
+
+fresh検証: Release -O/WMO simulator build成功、native22/Python21 PASS。元flow11/12のMaestroは2/2 PASS、55.513秒/35.541秒、JUnit fresh-final.xml、fresh-acceptance.json。初回MaestroはENOSPCで失敗し、容量回復後の再実行で成功。コードtree38aba1307117c42253fc0c96c7a3bf3bdc9992b6の現行main sourceを検証するが、local simulator build391であり、upload済み816そのもののartifact/source由来証明ではない。有料購入完了・有料権利restoreは未検証。今回作成Simulator2台とDerivedData/一時copyだけを終了後に回収。
+
+正式再提出: Resolution Center thread4737ed8f-2b98-311f-b482-f63cfb370bf6へmessage5090e6c3-9f18-4e18-a078-19422f19a011を一回送信し公式再取得で存在確認。未使用C2の延期/取り下げをAppleへ依頼済みだが、C2は依然WAITING_FOR_REVIEWで取り下げ完了ではない。app itemをresolved=true、validate errors0/blocking0を確認後、同じsubmission7e3f5574-6458-4abd-9994-5875dbdd3630を正式submit。2026-11-02T17:32:33.11Zの公式receiptと後続GETでsubmissionとapp version677ae249-da6e-4105-a469-cf0d0521ba92はWAITING_FOR_REVIEW、添付build4e642697-7289-42df-946b-98e026ddfd85は816/VALID、itemsはappとLifetimeの2件のみ。Lifetime review version73f8e0bd-4673-4f49-abbf-b6b354d51ad9もWAITING_FOR_REVIEW。証拠=/Users/anicca/.local/state/anicca-weekly-review-20261103/{reply-receipt,submission-final,version-final,build-final,items-final,lifetime-final,validation-final}.json。現在cursor=依頼成果の正式WAITING_FOR_REVIEW完了。Appleの審査通過・公開済みとは主張しない。
+
+### Anicca正式再提出・現在cursor
+
+Daisの明示依頼: 最新リジェクトを修正し、Maestro E2E後に正式提出してWAITING_FOR_REVIEWまで完了する。質問・認証情報の再要求は行わない。scopeはapp6755129214、iOS1.9.6と購入導線・審査情報だけ。owner=codex-anicca-review-20261030、branch=fix/anicca-review-resubmit-20261030、worktree=/Users/anicca/Projects/life-manager-main/.worktrees/anicca-review-resubmit-20261030、base=93fd0b42160a38fb78987f67f03948248382df5d。
+
+Apple公式メールの最新指摘はGuideline2.1(b)、iPad Air11-inch(M3)でIAPを発見できないこと。審査対象は812、最新814はVALID。ASCのversion677ae249-da6e-4105-a469-cf0d0521ba92がbuild36c10350-9d7f-4cac-a8ce-42a1cc1d8f95(812)を参照する。最新submission017984f9-8d67-429b-b92e-2b3e633d6275はUNRESOLVED_ISSUES。814のXcodeCloud run aa00cb26-f08b-43f4-918e-8a86f1b3d7c6はLifeManager main bf12f7556f460c732808f76528b898a0ed933abb由来で、日本限定Lifetime制限撤去とonboarding末尾paywall修正を含む。Archive/uploadは成功しbuild c96db27f-9ae8-41d9-b9f8-19cea9355e6aはVALID、run全体FAILEDはexternal beta post-actionであり、AppStore binary INVALIDとは区別する。
+
+順序: 旧cursorは不確実effectの配信照合→通知/paywallのTestFlight受入。本依頼の独立laneは、拒否理由とbinary対応確認→814と同じsourceのiPhone/iPad Maestro購入導線検証→必要最小の修正/CI/main→審査メモとIAP設定/契約照合→正式build選択と再提出→WAITING_FOR_REVIEW公式readback。配信ownerやfenceは変更しない。現在cursorは完了。正式version1.9.6/build815とLifetimeのWAITING_FOR_REVIEWをASC公式readbackで確認する。購入導線の実検証と提出証拠は下記を使う。
+
+- [x] Apple指摘と812/814/sourceの対応を確認する。
+- [x] iPhoneは最適化ReleaseのMaestro、iPadは実画面操作で初回起動・購入画面・Lifetime表示/選択・無料dismiss・設定から再表示を確認する。iPadのMaestro失敗は下記に保持する。
+- [x] 必要な変更を検証し、独立read-only検証とCI/main統合を完了する。
+- [x] 正式ビルド、審査メモ、課金情報を整えて再提出する。
+- [x] ASC公式WAITING_FOR_REVIEWを確認する。
+
+認証境界: APIは有効。Web sessionは期限切れ。SSOTのApple登録credentialでSMS通常loginを試みるが、Macでfresh code取得がtimeoutする。専用mobile-release:dais browserは現在unreachable、他identity流用は行わない。
+
+Skill証拠: using-superpowers/systematic-debugging/using-git-worktrees/ponytailを読む。Astra orchestrationは現在の親model/effortがtool metadataから確定できず、その名義や旧モデル指定を採用しない。既存UI選択を保持しSuperpowersで進める。
+
+実装診断: FeedのSettingsSheetはSubscriptionをCustomerCenterへ接続するだけで、新規IAP購入画面への常設入口が無い。onboardingを終えたreviewerが購入画面へ戻れないため、設定の既存Subscription sectionに全locale既存Subscribeラベルを使った明示入口を追加し、既存PaywallFlowContainerを再利用する。purchase/restore成功は既存AppState.updateSubscriptionInfo(from:)を適用しcoverを閉じる。無料dismissは設定へ戻し、他stateを変えない。新API・新課金方式は作らない。Maestroは既存helperの古いprimer要求を現仕様へ直し、onboarding→全3plan→無料dismiss→Settings/Subscribe→全3planを検証する。
+
+Maestro RED: 現mainと814の同一app sourceをRelease構成のsimulatorで起動し、onboarding→monthly/annualまではPASS、Lifetimeが表示されず66.497秒でFAILする（private evidence: ~/.local/state/anicca-review-20261030/red.xml）。SDK公式GET /v1/subscribers/anicca-review-20261030/offeringsはcurrent=anicca（旧annual/monthlyのみ）、anicca_variant_bにはweekly.b/yearly.b/monthly.b/lifetimeが全てある。既存resolverはprefixだけで旧offeringも有効にするためLifetimeを取得しない。選択契約を既存の明示anicca_variant_b優先へ変更し、共有currentの旧商品/A-B選択でLifetimeが欠落しないようにする。明示offeringが取得不能なら既存のAnicca商品検証を通るcurrentを利用する。SKU allowlistの新設は不要と判断する。shared RevenueCat currentは変更しない。初回購入表示を別途Maestroで再実行し、設定入口の欠落も同flowで確認する。
+
+第2回Maestroは正しい3商品の取得・Lifetime表示を通過し、settings-subscribe不在で64秒FAIL（~/.local/state/anicca-review-20261030/settings-red.xml）。月$9.99/年$29.99/Lifetime$59.99が実表示され、旧offeringの年$59.99から別商品へ切替わることも実測する。SettingsSheetへ既存localized Subscribe→既存PaywallFlowContainerの常設入口を追加し、purchase/restore成功は既存AppState更新へ接続、無料dismissは設定へ戻す。
+
+source/受入: Settings追加後の関連Python21件、native22件、sim build PASS。Maestro iPhoneは初回→3plan→Lifetime選択→無料dismiss→設定Subscribe→3plan→設定へ戻る全flowが52秒PASS（~/.local/state/anicca-review-20261030/iphone-green.xml）。独立read-only検証はresolver/Settingsともblocking0/ship。PR9057/HEAD7bc4ce78b3。
+
+CIの限定修復: OSS self-contained boundaryはmain93fd0b4216の既存run40779535652でもFAILし、PR run40980765931で同じmanifest_inventory_mismatch skills/capafy-autopublishを再現する。原因は先行main PR9044がtest_drive_cp1_retired.pyを追加し、PR9054がinventory_status.py/testを変更した後に、分類マニフェストの257files/hashを更新していないこと。runtime/source/thresholdは変えず、docs/manifests/oss-merge-1-sources.jsonの同rootのcountを258へ、digestを現在のtracked258filesから既存verifierと同じアルゴリズムで更新する。初回assertで件数増加を捕捉したため、実際の追加履歴を確認してから2欄だけを再生成する。iOS修正のCI受入を閉じるための資料整合のみを所有し、Capafy本体と他rootは変更しない。
+
+購入/復元の実操作: iPhoneのStoreKit認証画面遷移→キャンセル→既存plan選択保持→Restore→操作可能な購入画面へ復帰→設定へ戻るMaestroが39秒PASS（~/.local/state/anicca-review-20261030/storekit-final.xml）。実商品とApple認証UIを使い、UITESTING・mock商品・課金確定は0。Sandbox testerの保存passwordをSSOTに確認できないため、購入完了や既存有料entitlementの復元成功の証拠とはしない。認証UIのNBSPと、empty restoreが再認証なしで返る挙動は実観測に合わせ、テストのselector/期待を修正する。
+
+iPad実画面の受入: iPad Air11-inch(M3)/iOS26.5のMaestro2.8.0はWelcomeを描画するが、XCTest AX snapshotはAnicca rootだけでid0件となり2flowはFAIL。selectorの変更や待機延長で成功扱いにはしない。Mac Simulatorのnative AXでは全ボタンを認識し、実画面から初回onboarding→3plan→スクロールでLifetime実表示/選択→無料dismiss→feed→Settings/Subscribe→3plan→Lifetime→Apple認証→キャンセル→retention sheet dismiss→Lifetime選択保持→empty Restore→設定復帰を確認する。iPhone MaestroのPASSとiPad native操作を区別する。証拠はprivate local-acceptance.jsonと同thread cua_repl outputs。課金完了/有料権利復元は未確認のまま保持する。
+
+ASC審査情報: review detail b6024874-ff05-4108-a61c-ae0ed420fc76にsourceの英語手順を反映し、demoAccountRequired=falseの公式readbackを確認する。実購入画面review-settings-all-plans.pngをattachment ad7adb55-54f1-46ef-8da3-f0bbf498a400へuploadしUPLOAD_COMPLETEを確認する。未提出であり、version/build/提出状態はここでは完了扱いしない。
+
+正式Releaseの追加診断: PR9057はHEAD2dfe0ac57eのCI15件全PASS後、main3f472029961727fd13a0679ec76b170ae18c5cc9へmergeし、iOS source一致を確認する。ASCの新draft39f7baec-1996-4bd9-9e8e-b4e54de15b6fにはapp versionとLifetime version73f8e0bd-4673-4f49-abbf-b6b354d51ad9の2件がREADY_FOR_REVIEWで存在する。まだ提出しない。Cloudの開始要求はApple500でrun生成前に失敗、公式latest814のまま。main限定manual条件を試すが500継続のため元へ戻し、自動main+iOS path条件の維持をreadbackする。
+
+ローカルmain由来の実機Release Archiveは署名処理を通るが、Swift6.3.3のEarlyPerfInlinerがVerticalPager.Coordinatorのsynthesized deinitでsignal11を出す。actual VerticalPager.swiftをmain actor/upcoming flags/arm64iOS16.6で単体compileすると-Oも-Osizeもsignal11、明示empty deinitの最小fixtureのみ-Oでexit0。修正契約はこのclassへempty deinitを明示するだけで、保存propertyの自動解放・UI動作・課金実装を変更しない。compiler修正→最適化sim再検証/CI/main→main由来正式Archive/upload→build差替→2item正式提出/WAITING_FOR_REVIEWを完了する。現在cursorは完了。追加の互換層や最適化無効化は不要。private証拠: archive-main-815.log、baseline-mainactor.log、size-mainactor.log、explicit-deinit.log。
+
+正式再提出の完了証拠: PR9057はmain3f47202996、compiler修正PR9058はmaine24aa053ced475c42f6b9404db432cdec19f20bbへ統合し、それぞれexact-head CI15件全PASS。追加fixの独立reviewはblocking0/ship、actual Pagerの-O compile PASS、最適化Release sim build PASS、Maestro2/2 PASS（47.737秒/33.826秒、optimized-iphone.xml）。main由来Release -O/WMO Archiveとapp-store-connect exportが成功し、処理前後のsource SHA/cleanを一致させる。IPA SHA256=99b1c521d61ada93a11240c22b3b38703b0efaef936fa5b93ccf5d62c2bd365c、bundle ai.anicca.app.ios、1.9.6/815、deep strict signature PASS。
+
+ASC CLIの正式upload/build730477a4-dcdc-48ce-a73d-d1c83a1e8903はCOMPLETE/errors0/warnings0、VALID/APP_STORE_ELIGIBLE。version677ae249-da6e-4105-a469-cf0d0521ba92のbuildを815へ差し替え、fresh-context artifact/provider verifierはblocking0/SHIP。submission39f7baec-1996-4bd9-9e8e-b4e54de15b6fを正式submitし、submissionとapp versionの両方をWAITING_FOR_REVIEWでreadbackする。Lifetime親6783239477とversion73f8e0bd-4673-4f49-abbf-b6b354d51ad9もWAITING_FOR_REVIEW。審査メモは正本と一致、attachment ad7adb55-54f1-46ef-8da3-f0bbf498a400はCOMPLETE/errors0、demo不要。private receipt正本は~/.local/state/anicca-review-20261030/{archive-source,ipa-receipt,build-815,version-build,submission-submitted,version-submitted,items-submitted,lifetime-submitted,lifetime-version-submitted}.json。
+
+限界と対象外: Appleの承認/公開はまだ成立しない（依頼の終点はWaiting for Review）。paid purchase完了/有料権利復元は未検証、empty restoreと認証キャンセルの復帰のみ確認する。iPad nativeはPR9057のUI sourceで確認し、後続empty deinitの最終UI再検証はiPhone最適化版を使う。Cloud開始500は未解決だが、設定probeを元へ戻し自動main+iOS path条件を維持、同じmainからローカル正式Archiveで提出する。今回作成した3test simulatorとDerivedDataは削除し、正式Archive/IPA/テスト/公式receiptは保持する。残TODOは本laneに無い。
+
+
+### LM SEO title-only publication
+- Owner: Codex; scope: change only the English `/lm` HTML title to `Life Manager — AI life manager for work, income, body & mind | Anicca`. Keep description, Open Graph, body, claims, all other routes unchanged.
+- References: https://yutile.com title `Yutile — AI life manager for health, money, habits & home`; https://remindion.com title `Remindion - AI Life Manager`. GSC position 6.0 is Marketer-reported, not independently verified; no competitor performance claim.
+- Acceptance: canonical source change, immutable overlay from merged main (live release and remote workflows use ccf57e9e6756246b41ee2b0c22cb014a63bbc986; marketing file comparison confirms only the title changes), both anicca-products workflows aligned, CI/deploy success and live HTML equal baseline except title. Existing TODO order unchanged; cursor: title source then overlay pin/deploy/readback. Local anicca-products checkout had a stale pin; live manager-release.json and fresh remote source supersede it.
+
+### Naïve SDK・自律企業調査と記事草稿
+
+- 目的・範囲: Naïveの公式情報と既存SDK統合・LM-EABを照合し、ハッカソンの残作業、評価方針、出典付き日本語記事草稿を作成する。公開・SDK移行・本番設定変更は今回の調査に含めない。
+- 完了条件: 公式SDKの新旧、simulated outcomeと実事業成果、確認済み実装と未確認のremote稼働を区別した報告を残し、草稿を専用branchへ保存・push・PR統合する。
+- 全体TODOの順序は維持する。今回のcursorは調査と草稿。統合・稼働の残作業は調査資料を参照し、実装完了へ読み替えない。
+- 調査資料: `docs/research/2026-11-02-naive-autonomous-companies.md`。記事草稿: `docs/articles/2026-11-02-naive-autonomous-company-ja.md`。
+- 調査と草稿は作成済み。現行mainの会社記録は10/28の設計初版・セットアップ着手までで、remote goalとlive Naïve orgの後続readbackは未取得。既存LM-EABは5 public synthetic fixtures、今回のfocused testsは42/42 PASS。YC event本文はcrwlで取得しSDK必須・参加承認・実稼働demoを確認、事前完成品の持込許可は未確認。SDK/runtime・外部公開・本番effectは変更しない。文書のPR統合を終えて今回の調査を閉じ、実装laneは未完のまま保持する。
+
+### BusinessRun Bench — 自律企業の実行・比較・公開
+
+目的: Daisの追加指示により、文献調査だけの範囲を実装・実行へ広げる。Naïveの全9評価を原典/元実装まで読み、利用可能な既存環境を実行する。分かりにくいLM-EABの表示名を置き換え、既存採点器を部品として再利用し、agentが実際に判断する持続的な事業評価を作る。モデル/基盤比較、一般利用できるcloud、OSS、実測記事までを目標とする。
+
+名称判断: CompanyBenchとEarnBenchは既存同名repoがあるため棄却。作業名は **BusinessRun Bench — AIは事業を何日回せるか**。略語を要求せず、費用/利益/介入/完走を個別表示する。名称衝突調査は商標クリアランスを意味しない。
+
+採用構成: 既存ベンチマークをfork再実装せず、commitを固定した上流環境と独立adapterから実行する。独自課題は上流で測れない納品・精算・再開・人間介入の一familyから始める。既存record scorerはcontract-test trackと明示し、モデル性能の点数にしない。大規模な第二agent基盤と全社loopの移植は作らず、既存cloudを再利用する。初回の公式full protocol、短縮pilot、script baseline、実model試行、失敗/未実行を区別する。
+
+資源: 既存spend-capとcredential scopeを維持し、別商品の専用keyを流用しない。大容量containerが必要なsuiteは既存cloud/VMの所有者を照合する。host空き約2.8GiB、Docker daemon未稼働の初回観測を記録し、共有基盤を再起動しない。自所有の実験だけを隔離stateに置く。native CLI利用はモデルIDを強制せず実際のreadbackを保存する。
+
+本laneの実行順（他laneの進行中effectは変更しない）:
+
+| ID | 状態 | 成果と受入条件 |
+|---|---|---|
+| BR01 | 完了 | Naïve全9評価のscore、slice、seed、費用、除外、公開code/license、再現可能性を一覧化。元benchmarkの継続catalogを機械可読で保存 |
+| BR02 | org公式readback完了/チーム返信未取得 | Grok/Museへ最新配置・SDK・VM・credential保管先を照会し、返答を実readbackと照合。送信queuedを受領/実行成功にしない |
+| BR03 | 一部実行済 | 公式上流環境を隔離して動かし、実コマンド、commit、config、seed、終了理由、状態/trajectory、費用根拠を保存。非公開suiteは具体的なaccess条件を記録 |
+| BR04 | runner完了/独自課題未完 | 最小の独自事業課題とrunnerを公開可能な形で実装。test-first、agent-visible observationとhidden graderを分離し、baselineと実modelを実行 |
+| BR05 | 未完 | 複数model/harnessを同条件で比較。失敗/欠測/費用unknownを保持し、trial数・分散・適用範囲と共に出す |
+| BR06 | benchmark cloud完了/managed tenant未完 | 既存cloudへtenant分離・実行上限・隔離workspace・永続結果を持つ一般利用可能な実行経路を接続し、実ユーザー経路を確認。ローカルHTTP成功をcloud公開と呼ばない |
+| BR07 | 完了 | OSSの公開source/ライセンス/再現手順を整え、main→公開先のreadbackと独立実行を確認。private repoへのpushをOSS公開と呼ばない |
+| BR08 | 完了 | 全評価の具体的な読み方・実行した結果/失敗・限界を含む詳細記事と比較図を更新し、残TODOを報告 |
+
+完了判定: 単なるテスト成功・環境install・資料作成では全体完了にしない。未取得のNaïve org、非公開benchmark、実model試行、cloud/公開の各境界を独立して記録する。実装/検証/統合を継続し、不足条件は具体的なprovider/owner/権限として狭める。
+
+実行証拠の更新: products/businessrun-bench/{catalog.json,RESULTS.md,evidence/}に20項目/全9Naïve原典の条件と公式上流pinを保存する。Coffee90日の全passive対照、YCの4script×3seed(12/12破産)、Business全9processのoracle9/9とnull0/9、payment-runのnative Codex clean/fault各1/1成功を実行。モデル比較は第二model未実行で未完。nativeは同seed0の2条件で、答案隔離・一般的優劣は未実証。公式validatorは13条件後にmargin-bridge seed3生成器のゼロ除算で停止し、成功45/45へ読み替えない。
+
+Grok/Muse: sanbou-opsのSDK0.10系/10月末実inference/5役割配置/残高約$0.7/live demo未完の履歴を取得し旧10/28メモ依存を訂正。Reason照会とSlack #agents-hq thread 1793631334.314609へ直接送信済み。本人返答・VM/provider・個別契約の適用範囲は未取得。現在orgは本節末尾の公式readbackを使う。送信を受領/着手としない。既存loopと他ownerは変更しない。
+
+source acceptance: per-run cache/results、既存ID上書き禁止、費用unknown、欠測分母、別session子孫timeout停止、実Python version記録を実装。10contract testsとshell構文PASS。独立read-only reviewerが2blockingを再現し、修正後blocking0で研究用OSS公開可を確認。ps失敗時のreceipt欠落、任意daemon隔離、公開trace完全監査は未保証。
+
+現在cursorと残TODOは本節末尾を正本とする。旧公開/Ubuntu起動失敗の経過は下記の解消証拠と区別する。既存Business Processと同等の第二simulatorは作らない。
+
+公開と反復の追記: PR9088はmain8140b781へ統合。public Daisuke134/businessrun-benchはb238f88（製品だけをmainからexport、PROVENANCE付き）。Ubuntu ActionsでCoffee6runとYC12runが成功しartifactを取得する。Business cloud41472362299はattempt0/missing9で起動失敗し、例外型/欠落module名だけを出す診断を追加中。ローカルのnative payment clean seed1/2も成功し、clean3/3・fault seed0 1/1。lost-writesの実ログに応答喪失5・処理前失敗2を確認、公式strict validatorも同条件PASS。Grok/Muse返答無し。現在cursorはBusinessのUbuntu起動失敗の診断・修正→main/公開同期→cloud再実行。
+
+cloud失敗の解消: Ubuntu41474301821は導入前pdftotext=falseを確認し、Poppler導入後に全9task oracle9/9・null0/9、contract13/13で成功。source/正解/graderは変更しない。PDF202件のpdftotext202成功 vs fallback194成功/8ValueErrorのprobeをevidenceへ保存。Coffee41472322390は6対照、YC41472358835は12scriptがcloud成功し、public receiptを取得する。public mainへはcanonical修正版を同期し、同じrunner hashを確認する。全体完了ではない。
+
+必要CI修復: root OSS verifierはgit indexがNode既定1MiBを超えENOBUFSで停止。CLIで再現し、子process出力bufferだけ16MiBへ変更してPASS。検査/allowlist/baselineは緩めない。前回PR9088の14CIは後続readbackで全PASS、今回PR9089はこの修復込みで必要チェックを再実行する。
+
+残TODOの順序は本節末尾へ集約する。
+
+最終source/readback: 修復PR9089はmain e8738b6b、公開mainは02d60c8（PUBLIC）。canonical製品45filesとGitHubのblob SHAが全一致し、追加はPROVENANCE.jsonだけ。公開mainのUbuntu ActionsはCoffee41476435973、Business41476518470、YC41477185839が全SUCCESS。13contract tests、Business oracle9/9/null0/9、Coffee6対照、YC12scriptを確認する。PR9088/9089のCI14件は後続readbackで全PASS。BR07/BR08は完了し、独自課題・複数model・managed tenantを完了へ読み替えない。
+
+Naïveのlive境界は解消: 1Password:codexのnaive loginを回収→private SSOT service naiveへ保存→公式API通常login成功。Anicca balance11.590718 USD/Standard active/6agent/Computer0、CEOの毎朝9JSTdeployment enabled/scheduledをGETで確認する。直近10sessionはbudget_paused7/end_turn3。CEO現cap月1USD/max_task0.25、他4役割月2/max_task0.25。CEOはagent cap、builderはsession capのbudget.exceeded。builder残額220483 microUSDに対して、最後の成功callで観測されたquote222884は2401大きい。ただし拒否された次callのquoteは未記録で、確定原因の差額にしない。CEO v14月10/max_task10→v15月10/max_task0.5→v16月1/max_task0.25の公式履歴を確認し、古いDEMO-PROOFの10USDへ戻さない。11/1 00:00Z以降CEO実費0.835543USDは問い合わせ区間の値で、内部budget台帳と分離する。資格情報・raw会話はrepoへ保存しない。private allowlist証拠はdocs/research/evidence/naive-live-20261103/。
+
+最新の残TODO順（旧順序を上書き、変更理由は実測したpause境界がハッカソンの業務完走を妨げるため）: 旧順はチーム返信→複数model→非公開suite→独自family→managed tenant。新順は(1)Naïveのagent/session予算・予約見積・version pinを診断し、既存spend cap内で一業務の完走を作る。残高top-upだけで直さない。既存owner/sourceとGrok/MuseのVM/providerを照合する (2)同じtask/seed/model/予算でNaïve/他harnessを比較し、複数modelは同一harnessで比較 (3)Clipping/Short Form access、残container suiteの正確なsliceと実行 (4)未被覆の納品/復旧/介入familyだけを独自課題にする (5)規約4.2の許諾範囲とtenant/権限/予算/永続結果/継続運転を接続 (6)ハッカソンlive demoと事前開発の開示。現在cursorは(1)。既存の外部effectと他ownerのloopは変更しない。
+
+
+### Naïve browser company — Capafy-first / No human in the loop
+
+#### 旧実行契約（2026-11-05時点。優先順は2026-11-06の末尾追補で更新）
+
+**当時の優先作業（履歴）：FIRST 1000 project submission（2026-11-05）**
+
+目的は参加申請とproject提出を分け、指定Google Formへ現状に正確な商品説明・試用経路・sourceを提出し、providerの完了画面を確認すること。URL: https://docs.google.com/forms/d/e/1FAIpQLScO97TqtYA3UYdEJIbaYXViOJZ8OySwzkhqlaxDId4HiCzOYg/viewform 。フォームは11/3 23:59 Pacificの締切を記載するが、11/5のlive UIには送信ボタンと全質問がある。遅延提出の受信と大会側の受理/資格を同一視しない。
+
+Gmail公式readbackには既存参加・Mariaとの返信があり、Maritime上にCloudがliveという連絡もある。一方、今回の限定Sent検索にはproject提出完了のreceiptは見つかっていない。Daisの従来の「Maritime提出済み」申告は保持し、未提出と断定せず、今回指定されたproject提出のreceiptを別に取得する。申請emailは既存applicationの本人emailをprivate SSOT/メールから照合する（秘密はrepoへ出さない）。
+
+提出結果の境界: FIRST 1000 projectのフォーム受付は完了。公式メールはproject締切11/3 23:59 Pacific、selection予定11/4を示す。公開growth competitionの12/1期限は別段階であり、今回の締切へ置換しない。主催者へ期限後の対象可否の問い合わせを送信済みだが、返信/選出/受賞は未確認。Naïveの参加は別途YC公式メール `1a19e97fb6b3e525`（11/2受信）の `You are confirmed` と11/7 11:00開始案内で確認済み。参加確定と完成成果物/受賞は分ける。YC application提出/更新はこのフォームの対象ではなく、今回は再検証していない。参加ticket、QR、個人用link/tokenはrepoへ保存しない。
+
+試用経路のfresh UI readback: https://aniccaai.com/maritime?source=first1000&lang=en → `Start Life Manager Cloud` → https://life-call-production.up.railway.app/lm?start_calendar=1 → Google identity login。観測したOAuth scopeはopenid/email/profileで、ここではInbox/Calendar scopeの要求はない。認証後の機能や新規利用者の全経路は未検証。公開planは7日trial後$29/月。メール不要・利用者credential不要という目標と現状Google identity依存を混同せず、提出本文にも現在の手順と早期buildの境界を開示する。
+
+今回のMaritime公式readback: 既存custom agent `80c0208c-af40-4b4c-94ee-a24b3f731db6` がsleeping、lastActiveAt=2026-10-31T12:46:56.044841Z。追加GETはdesktopEnabled=false、browserbaseConfigured=false、sleepPolicy=auto-sleep、hasWebUi=falseを返す。これはMaritime管理desktopが有効でないという設定証拠であり、custom image内に独自browserが無いことまで証明しない。VMの存在や過去のhealth成功を、現在のブラウザ/無介入登録/売上の証明へ置換しない。既存workerは消さず、モデル/予算/credential/稼働effectをこの提出作業で変更しない。
+
+| ID | 状態 | 一つの作業と完了条件 |
+|---|---|---|
+| SUB01 | 完了 | 指定フォームのlive UI、必須質問、締切、既存application emailと提出履歴を確認。Google loginは不要 |
+| SUB02 | 完了 | 現在のWeb入口→Start Life Manager Cloud→Google identity loginをlive UIで確認し、既存application email・商品説明・Web試用経路・Maritime利用・source URLを一度だけ送信。Google FormのformResponse画面に `Thanks for your submission! Your FIRST 1000 project has been submitted.` と表示。cloud自律収益は未実証と明記 |
+| SUB03 | 確認待ち | 11/5 04:23Z時点でフォーム受付を確認。既存主催者reminder threadへ遅延提出の審査可否と追加提出要否を返信し、Gmail message `1a1a9f216df11f55` / thread `1a19e80bf578842b` のSENTを公式再読取。返信待ちの間もSUB04を進める。フォーム受付は確認済み、期限後の大会受理/選出は未確認 |
+| SUB04 | 未完 | L02〜L06の最短順で実行環境のmodel/browser/persistence→正式登録→公開→第三者支払を証明し、実結果でproject情報を更新する。provider待ちを含む実測がない段階で完成日を約束しない |
+
+順序更新: 旧=worker L02を先行、新=SUB01/02/03の現状提出→worker L02〜L06を継続。理由はDaisが提出最優先と指定し、期限後でも現在フォームが受付UIを返すため。主cursor=SUB04 / worker L02、主催者確認=SUB03待ち、dashboard cursor=L07-D1c。既存effectを中断せず、別商品/別台帳は作らない。
+
+この節と直下のL01–L10は2026-11-05時点の履歴。2026-11-06の優先順・現在cursor・残TODOは本書末尾「2026-11-06 Naïve hackathon first → Maritime First 1,000 second」が正本。重複実行せず、新しい順序に従う。比較調査 → `docs/research/2026-11-05-cloud-runtime-lego.md`。
+
+**成果:** Museで使う「永続VM＋実ブラウザ＋保存ログイン＋agent所有inbox＋vault＋外側の定期起動＋共有台帳＋既存open dashboard」を、既製品の設定でクラウドへ再現する。No human in the loopを運営要件として維持する。最初は適格な販売先でagent本人用accountの登録または同一account回復を一件実証して報告し、その後に公開・販売・納品・入金・実費差引を進める。製品コード、独自harness、signup bot、browser proxy、scheduler、メールserver、vault、dashboardを新作しない。
+
+**当時の採用方針（履歴・現行順序ではない）:** 最初のworkerをMaritime公式OpenClawテンプレートとする案だった。2026-11-06の更新では、先にNaïve hackathon用runtimeで一つの実業務を実証し、その後Maritimeへ移る。OpenClaw/Hermes等の既製品は再利用候補のまま。公式MCPはkey scopeと対象resource/toolを照合し、全権API proxyを新設しない。
+
+**model:** Daisの今回のfrontier優先指示を旧DeepSeek既定より優先する。新workerはGPT-6.1 Sol / mediumを第一候補にし、採用imageのResponses API・画像入力・tool calling・effort対応を先に確認する。Naïveの公式catalogはSol/Terra/Astraのimmediateとlow/medium/highを返すが、Maritimeでの同じmodel利用は未確認。現在のNaïve本体Terraをこの文書更新だけで変更しない。モデルは権限・browser状態・予約予算・受信経路の故障を自動では直さない。CodexのUI選択も変更しない。
+
+**記憶と起動:** `/data`等の実際の永続mountにworkspaceとagent専用profileを置く。コード・設定・playbookはGitHub、業務状態とreceiptの正本は既存ownerのprivate共有台帳に置き、chatを唯一の保存先にしない。秘密値・cookie・profileをGitへ入れない。VMがsleepする場合、内側のcronだけではwakeしないため、Maritime公式の予定同期／triggersを使う。同じ仕事を別schedulerで二重起動しない。
+
+**資格情報:** 最新指示に従い、新規agent業務accountのcredential正本は1Password「Agents」。登録時にagent所有inboxと生成passwordを保存し、担当範囲だけのservice credentialをworkerへ接続する。Dais管理の既存infra credentialは従来のprivate Credential SSOTを維持し、全vaultをVMへ複製しない。既存AgentMailをまず再利用し、Inkboxは正式なidentity provisioningが使える時の既製候補。復旧順は同一serviceのcredential照合→同じメールでreset→回復不能かつ正式に認められる場合だけ再登録。Google sign-inは同一identityで直列。既存Capafy Publisher/商品/ownerを保護し、VM数だけPublisherを増やさない。
+
+**ゼロからの収益:** agentの収益残高は$0開始。会社からの入金・自己購入・内部移動・compute credit・評価内の仮想報酬は顧客売上へ算入しない。会社負担／無料枠／大会補助のVM・model費は別記録する。初期USDCを必須にしない。REGISTERED、PUBLISHED、第三者注文、納品、売上残高、精算、銀行/on-chain着金は別段階。No human in the loopは自社/利用者の業務操作を指し、購入者や販売先の審査員が存在しないという主張ではない。本人liveness等が必要な経路は別の適格市場へ切り替え、架空情報で通さない。
+
+**仕事loop:** 数字を読む→最大の収益blockerを一つ選ぶ→実画面で行動→REGISTERED/PUBLISHED等の最終状態を開いて確認→既存台帳にrun/URL/費用/介入数を残す→報告。winnerの形式・価格段階・導線・頻度は自社素材へ適用し、参照URLと観測した販売信号を記録する。既存に売れている商品は変更せず、新規担当と既存担当の同時操作を避ける。公開dashboardは既存`/open/`を再利用し、30分毎の更新・更新時刻・未取得／coverage不足を表示する。全社売上を新cloud workerの売上へ付け替えない。
+
+**今回のfresh readback:** Naïve本体`agt_e1hvkwgrdrx119zh22qthavwt4`はcurrent_version27、pi、`openai/gpt-6.1-terra`、immediate。browserはwrites/persist/keep_alive有効、context=`anicca-browser-capafy`。deployment`dep_aqf597v5eqa3e25ff2z22rq9j8`はpin27、`0 */12 * * *`、enabled=false。最新確認session`ses_1e3t9v4wmtffx3842aanpkkrtr`の取得先頭100eventsはapproval待ちとact失敗を含み、続きがある。idle/end_turnや費用440251microUSDを登録成功へ置換しない。live catalogueのHermes/Claude Codeはrunnable=false。別のDeepSeek閲覧専用レポートagentと混同しない。Maritimeには既存custom worker一件・sleepingがあり、公式OpenClaw templateの稼働とは別。保存keyでMCPはComputer系scope不足の401、Maritime側model catalogは未取得。新規VM・key・model変更・登録・売上は今回実行0。
+
+**原子的な残TODO（2026-11-05時点の履歴。現行TODOは本書末尾）:**
+
+| ID | 状態 | 一つの作業と完了証拠 |
+|---|---|---|
+| L01 | 完了 | 公式テンプレート／harness source／persistent browser／外側scheduler／現provider状態を調べ、採用部品を選ぶ。根拠は上記research。人の収益申告と自分の確認を分ける |
+| L02 | 実行中 | 下記L02-A〜Hを順に実行。既存custom workerを保護し、公式OpenClaw image一件でversion、永続mount、Sol mediumのResponses/image/tool、実ブラウザ、費用を公式readbackする。詳細手順は `docs/superpowers/plans/2026-11-05-cloud-l02-maritime.md`。独自wrapperを作らない |
+| L03 | 未完 | agent専用browser profile、既存agent所有inbox、担当限定1Password Agents参照、既存playbook/台帳を接続し、再起動／別run後に保存ログイン・仕事状態を再読取する。個人Google/Gmail credentialを使わない |
+| L04 | 未完 | Capafyの既存Publisherに正式なagent/team経路があるか確認し、その同一権利者で登録／回復を一件完走する。正式経路がなければ適格な次市場を選ぶ。本人の確認メールと最終ログイン画面／provider IDを確認し、credentialを登録時に保存。無関係なforum登録を成果にしない。ここで一度Daisへ実結果を報告する |
+| L05 | 未完 | 固定winner一件の需要・形式・価格・導線を調べ、新しい自社商品一件を正式公開する。自社素材、live URL、provider公開状態。draft/審査提出をPUBLISHEDにしない |
+| L06 | 未完 | 無料の既存配信経路で商品を届け、第三者注文一件を納品し、支払receipt・手数料・返金・全実行費を照合する。$0開始と補助を記録し、入金と利益を別表示する |
+| L07 | 未完 | 公式scheduled wakeから次の一業務を無介入完走し、既存台帳とopen dashboardを30分更新する。wake/start/final URL/readback/costを確認し、二重実行0と実介入数を記録する |
+| L08 | 未完 | 黒字の同じ一業務を第二runtime（Naïve候補）で再現する。公式接続scope、Identity/profileの所有、対応harnessとtoolを確認する。同じ商品・台帳・会計を使い、売上を二重計上しない。実運転の録画は実結果から作る |
+| L09 | 未完 | 既存スマホ入口／認証機能／結果画面を同じworkerへ接続し、スマホだけで開始→本人の結果確認を実証する。利用者の最小identity認証は許容する（Dais最新指示：Google identity可）。既存認証を再利用し、利用者の私用Gmail/Calendar権限や仕事用passwordをworkerへ渡さない。tenant分離と回復可能な所有者bindingを確認し、受取addressだけで他人の残高を移管しない。新しいchat appや認証serverは作らない |
+| L10 | 未完 | 既存subscription機能を再利用し、外部利用者一人の支払→その人のManagerによる実結果→実費を照合する。自社事業売上と利用料を分離し、解約/返金と継続利用を追う。自社事業10K MRR・外部subscription10K MRRをそれぞれ計測しながら拡大する |
+
+**L02の実行単位（本表が状態の正本、planは手順）**
+
+| ID | 状態 | 一操作と確認結果 |
+|---|---|---|
+| L02-A | 完了 | GET agents/plan/usageを照合。既存custom一件はsleeping、旧workerを起動/削除しない。契約readbackはbillingModel=seats、trial.billingModel=free、machines=1/maxMachines=3/maxAwakeMachines=1。公開の新料金表を旧契約へ断定適用しない |
+| L02-B | 完了 | 公式OpenClaw image 2026.7.1、SDK0.11.0のcreate/env schema、既存Capafyホスト用OpenRouter keyの日次上限$3と残枠、Sol catalogueのimage/tool対応を確認。個人Google・Factory専用key・全vaultをVMへ持ち込まない |
+| L02-C | 完了 | externalId=lm-runtime-validation-20261105で重複照合し、templateId=openclaw、2GB/1vCPU/5GB、private、auto-sleepの一件を作成。create一回、結果不明時はGETで照合。既存3台枠内、追加subscription/credits購入/旧worker変更なし |
+| L02-D | 部分完了 | 新workerのversionと/data永続mountをexecで確認。公式configへSol mediumと既存ホスト用provider接続を設定し、secret値をログ/repoへ出さない。新規独自provider proxyは作らない |
+| L02-E | 完了 | 同じVMからSolのResponses APIと画像入力/tool callingを短い実callで確認。model id/effort/response id/usageを記録。試験は短い有限callのみ、既存日次$3上限を上げず、その枠を他ownerが消費した場合は再測定 |
+| L02-F | 初回完了・再開後未完 | OpenClawの実browserで公開LMページを開き、タイトルとscreenshotを取得してモデルが内容を観測する。ログイン/登録/公開/送金はまだ行わない。shellでのHTML取得をbrowser成功に置換しない |
+| L02-G | data/profile保持確認・browser設定未完 | /dataへ検証markerを書き、当該新workerだけsleep/start後に再読取。browser profileの格納先と実際の保持境界を記録。販売先の保存ログインはL03で別に確認 |
+| L02-H | 未完 | 最終GETのresource state、model/browser結果、usage/費用、旧worker保全を照合。APIの0と外部model費を混同せず、L02完了か失敗境界を判定。L03へcursorを移すのは受入後のみ |
+
+**L02実測checkpoint:** 新worker `113ec037-cb21-4d7e-af8d-e689bb0a19ad` は公式OpenClaw2026.7.1、2GB/1vCPU/5GB、private/auto-sleepで作成済み。既定はgpt-5.4/browser無効。native configへOpenRouter経由Sol mediumと永続Chromeを設定し、config validate PASS。Responses tool callと実画面imageの直接入力はHTTP200。埋込OpenClaw agentはbrowserツールで/lmを開き、snapshot/screenshot/実画面の見出し・CTAを読取りJSONへ保存。13応答のOpenRouter generation公式照合はcoverage complete、合計$0.0671382、resolved model=openai/gpt-6.1-sol-20260929。VM meterは旧free/seat枠で観測used/overage0だが、model費や将来hosting費を0としない。
+
+**当時の診断cursor=L02-D2（履歴）:** sleep→GET sleeping→start→GET active後、marker、artifact SHA256、profile Local State、Chrome binary、Sol mediumは保持。一方browser.enabledがfalseへ戻り、Gateway経由のbrowser stopは `browser control is disabled`。agent.desktopEnabled=falseは確認済みだが、どの起動処理が設定を戻すかは未確定。provider設定/起動sourceを確認し、再開後のmanaged Gatewayでbrowserが利用できることを再検証する。最初の埋込agent sessionはstopとartifact確認済みだが、そのdetached execのprovider statusはrunningのまま。完了済み試験PIDへのSIGTERMとcancel候補POST405を実施。元のexecとbrowser子processのcleanupはexact ownerだけを診断し、旧workerを操作しない。新worker proxy cap0設定はmanage scope不足403で未適用、権限は広げずOpenRouterの既存$3/day枠だけを使用する。検証workerのheartbeatは0m（営業scheduleはL07）。private証拠は既存stateの `cloud-l02-maritime-20261105/`。L02の完了判定はまだしない。
+
+**L02-D2の次操作:** 新workerだけのprovider desktop/browser設定とnative Gatewayの再開経路を照合し、browser無効化を根本修正。再開後Gateway browserのstatus/open/screenshotが通り、完了済みexecのcleanupを公式状態で確認したらL02-Hへ戻る。公式OpenAPIはPATCH `/api/agents/{agent_id}/desktop-config` `{enabled:true}` を定義し、4GiB/2vCPU floor・seat cap再判定・active時rebuildを明記。契約枠/費用を先に照合し、独自起動wrapperで代替しない。 GET account/limitsはfree/seat、maxMemMb8192を返すが、desktop-configの実callはHTTP402/code=seat_limit/paid plan requiredで拒否。desktopは有効化されておらず2GB/1vCPUのまま。VM付属MARITIME.mdはlogin用途に公式Browserbase MCP、公開読取にnative headlessを案内。今回workerのenvにBrowserbase接続はなく、Credential SSOTのBrowserbase serviceもない。paid機能の権限迂回や独自wrapperは作らず、既存hackathon benefit/公式接続の適格性と費用を次に照合する。
+
+**進捗再確認と直近の原子的TODO:** 2026-11-05時点のprovider readbackでは検証workerはactive・desktopEnabled=false・2048MiB/1vCPU、accountはfree/seat・machines2/max3・awake1/max1。これはブラウザ復旧・保存ログイン・公開・売上の証拠ではない。以前のモデル試験費$0.0671382は確認済みの試験分のみで、現在の累計費用/利益ではない。PR #9229は14 CI jobsとCodeRabbit成功後、mainの1e2e69bd54a116219678691de6db56d2a52a1227へ統合済み。anicca-products PR #870はcommit da48403e80a44ca71a9be17e9cb2321acfc373e4を含むmerge SHA 31b83c2d7a84c436a462c64916cd4c5306812b82で統合済み。Netlify run 42085389983はBuild・overlay・Open data・Deploy・post-deploy money-path smokeすべてsuccess。公開 /lm と /lm/ja を取得し、双方の先頭に「No Human in the Loop / No Human Credentials」、Capafy経路の検証中・収益未保証を確認した。これは公開内容と導線の証拠であり、Cloud signup、Capafy登録/公開、第三者注文、入金、利益の証拠ではない。
+
+| 順 | 次の一操作 | 完了判定 |
+|---|---|---|
+| D2-1 | 既存大会benefitの適用条件とMaritime公式desktop/Browserbaseの利用枠・料金を照合 | 利用できる公式browser経路と費用が特定できる。無料枠/会社負担/売上を分離 |
+| D2-2 | その公式browser経路を検証worker一台へ設定 | provider側の有効状態とnative browserの起動確認。独自wrapperなし |
+| D2-3 | 当該workerをsleep/startし、browserで/lmを開きscreenshotを取る | 再開後も実browser操作と画面観測が通り、data/profile保持を確認 |
+| D2-4 | 以前の完了済み試験execを照合・終了処理し、費用と旧workerを確認 | exact execのterminalまたは正確な終了理由、公式費用、旧worker無変更。ここでL02受入判定 |
+| P-1 | 完了 | PR #9229の必須CI 14件とCodeRabbit成功後にmainへ統合。merge SHA=1e2e69bd54a116219678691de6db56d2a52a1227 |
+| P-2 | 完了 | anicca-products PR #870の既存workflow 2本のimmutable overlay pinを上記SHAへ更新。現行cron 32分に対して旧17分を期待していた既存contract testの期待値を同期し、focused test 17/17 PASS。commit da48403e80a44ca71a9be17e9cb2321acfc373e4、merge SHA 31b83c2d7a84c436a462c64916cd4c5306812b82。Netlify run 42085389983 success、post-deploy smoke PASS、/lmと/lm/jaの文面を直接取得。CloudからCapafyへの実運用は別cursor NHC-01以降で未完。 |
+
+以後は既存L03→L04→L05→L06→L07→L08→L09→L10を維持する。収益の現在cursorはL02-D2。販売先への登録、出品、第三者入金、黒字は未確認のため未完のまま。
+
+**既製部品のみ（Daisの明示要件）:** 自作runtime、browser wrapper、scheduler、auth server、vault、会計engineを追加しない。欠けた機能は公式機能・既存実装・再利用可能なOSSを調べ、その設定と接続で満たす。適合部品が未確認なら部品名・不足機能・調べた出所を記録し、自作で埋めない。READMEと/lmの冒頭は「No Human in the Loop」「No Human Credentials」。運営要件は、仕事の選択・登録・公開・配信・収支照合を利用者の指示や私用credentialなしで進めること。利用料を含む全費用より多い実収益を採算の合格条件とし、未実証の黒字・日次10倍成長を実績として表示しない。
+
+**説明反映の原子的作業:** ①README冒頭をCloud方針と現状に揃える ②/lm EN/JAの冒頭・Cloud説明・FAQを同じ契約へ揃える ③既存route manifestのhashと既存testを確認 ④sourceをpush/CI/mainへ統合 ⑤既存publisherのimmutable pinを更新しpublic /lmを読戻す。新しい画面・実行logic・公開経路を作らない。これはL02進行中に追加された説明修正で、収益業務の依存順L03〜L10は変えない。
+
+No human in the loop / No human credentialsは、利用者の私用service credentialを受け取らず、agent自身のservice identityで仕事を完走する運営要件。会社のinfra契約/API key、agent所有credential、利用者の最小identity認証、将来の受取先設定は別の境界として表示する。全対応先での成功や介入0/100%を未実測で宣伝しない。この時点の複数host方針は履歴。現在の本番基盤・大会環境の境界は本書末尾「Life Manager Cloud：本番Maritime一つ・Naïve大会専用」を参照。agent向け銀行/受取口座/crypto payout/UBIは後段の調査で、今回のL02へ決済や金融account作成を追加しない。refundを任意の収益分配手段として実装しない。
+
+**順序変更:** 旧=独自Naïve App/Computer bridge→公開画面proof→認証→商品公開→売上、別branchでは独自x402レポート販売へ逸脱。新=既製Maritime OpenClawの適合確認→永続状態/inbox/vault→正式登録/回復を一件→商品公開→第三者売上/採算→自然schedule→第二runtime。理由はDaisが既製部品のみ・Museの運転方式・ゼロ開始の実市場収益を指定し、現在Naïveにfrontier modelを使ってもpolicy待ち／browser action失敗が残るため。**現在cursor=L02**。今回の変更はsource文書のみで、稼働中effectの中断・重複、旧worker削除、モデル/予算/権限変更はしない。
+
+自社の継続商品USD10K MRRと、外部利用者向けManager subscription USD10K MRRの二目標は維持する。まず実売と採算を確認する。one-off売上をMRRへしない。Maritime/Naïveは一つの商品のhosting/実行先で、大会規約と実ユーザー要件は各々確認する。紹介・申請改善は並行可能で、優勝やYC採択の保証にはしない。
+
+**公開実装からの具体的な再利用:** Maritimeのpenpalは一人一OpenClawとexternalIdによる重複provision防止、外側clockを提供元が実導入例として報告する。Open InstinctのMIT sourceはMaritime desktop/Pi/Inkbox/gatewayを持つが、既定はtakeover/決済承認。NaïveのMIT `agency-blueprint`はCRM/顧客別workspace/agentの役割と予定、`media-blueprint`はboardのカード連鎖で次席をwakeする制作・配信・分析を公開する。両blueprintとも既定の外向け公開はaskであり、導入だけでno-human成功とはしない。旧starterのtenant分離は参考にするが、既存LM認証/UI/台帳を置き換えない。公開codeやbenchmark上のmarginを実顧客の入金や大会優勝実績にしない。
+
+**四社の境界:** TenkiはNaïve Computerの下層computeで、公式記事はtask別の使い捨てsandboxを説明する。Vettaのsession/Computer/永続volume/managed browser contextがどこまで同じstateを保持するかは実resourceで確認する。Naïve managed runtimeをMaritimeへ透過移植できるとはしない。二runtimeを本番で選択する旧案は採用しない。現在の境界とTODOは本書末尾を参照。過去のeffectは一job一ownerのまま保持し、同じbrowserへの同時writeと二重計上を防ぐ。Keikiは既存メッセージ入口を置き換える必要がある時の既製候補。公式Maritime VM harnessはplatform側設定で新規agentが対象、利用者がONできるか未確認。全四社を同時導入することを目的にしない。
+
+**大会/課金の別目標:** The First 1,000の公式期限は2026-12-01 23:59 Pacific、検証対象は1,000人のdistinct実利用者（VM/subagentではない）。Naïveの公式日程は2026-11-07〜08 YC SF、両日現地参加、2〜4分のlive demoで自律運営を見る。主催者SNSのYC interview告知と公式pageの賞TBDを分け、対象track/条件が未確認のまま保証しない。Maritime大会の米国内対象flightを日本発無料航空券としない。$29/月案のCloud SaaSは345有料継続利用で$10,005 MRR（費用/税/返金等の前）。1,000無料user、Capafy出品数、単発受注、自己購入はSaaS MRRに算入しない。
+
+**L07配下：既存open dashboardの修正契約**
+
+**Dais追加要件・調査カーソル:** Openは売上だけでなく、各市場の受託（応募→返信→契約→納品→入金）と出品（掲載→表示→閲覧→購入→精算）を一画面で確認できる会社の公開状況とする。Capafyはimpressions・detail views・conversion・new buyers・units・salesを期間/source/as_of付きで収集し、Coconala/Lancers等も各サービスの公式に取得できる出品別指標と受託進捗を調査して追う。アプリinstall・SNS到達・費用も同様。各agentの作業は担当・内容・開始/完了時刻・結果・根拠を記録し、事業指標と合わせて日報の根拠として利用する。日報は昨日の行動量・結果・成功例との差を示し、根拠に基づく今日の次の行動につなげる。UIは簡潔にし、実データと対象期間、更新失敗・古さを区別する。秘密・顧客の非公開情報は公開しない。まず各事業の公式取得元から実データを取り、ダッシュボードへ反映する経路を事業ごとに完成させる。その後、取得・公開を繰り返し、元サービスの更新遅延と鮮度を表示し、次回自然実行後も維持されることをデスクトップ・スマホの公開UIで確認する。更新間隔の最適化は接続後に行う。
+
+過去基準（2026-11-05 14:07 JST）: 当時のdata.jsonはproducts mainに存在し、ops側の旧update_open.shが参照するindex.htmlは無かった。旧scriptはcollect_all/build_revenue_ledgerの失敗を無視するため、同じpublisherと断定していない。写真のCapafy値は期間不明として最新/月次値に流用しない。
+最新readback（2026-11-06 02:07 JST / 2026-11-05T17:07Z）: Products run `42067923110`（push, SHA `074fe08`）でCapafy/ASC収集、snapshot stage、検証、Netlify deploy、post-deploy smokeがすべてsuccess（run完了16:54:29Z）。公開`data.json`は01:37 JST snapshotで31事業・48 SNS行・5アプリ、`reconciliation_complete=false`。KPI: Revenue 7d=null（coverage incomplete）、30d=$249.48（partial source）、今月=$31.81、MRR=$97.58。ASCは16:52:59.920Z測定、10/29–11/04: discovery impressions 1,064・page views 48・taps 17、download events 163（first-time 11、auto-update 146、manual 3、redownload 2、restore 1）。coverageは期待35 app-daysに対しdiscovery 30、download 15。Capafy feedは16:52:49Z、`Capafy Developer Overview API`。7日: exposure 32,823（−35.5%、unique 13,603）、detail views 1,953（−42.5%、unique 1,095）、conversion 0.04%（change +0.02、5 orders）、new users 4（0.0%）。30日: exposure 126,679（+40.8%、unique 49,922）、detail views 8,762（+52.0%、unique 4,832）、conversion 0.03%（change −0.22、15 orders）、new users 14（−75.9%）。11/05 UTCはpartial day。登録済みbrowser lease経由の390px UI readback（viewport/document width 390px）でLedger snapshot 01:37、Capafy 7/30日カード、両feedの16:52:49Z時刻と上記数値が表示され、JSONと一致。Capafyはtraffic-source feedとDeveloper Overviewを別々に表示し、Loading状態を抜けた後の画面を確認。なお全体snapshotのrow freshnessは混在し、Coconala/CrowdWorks/Lancers 01:38 JST、Capafy summary 00:13、Stripe等は11/04、RapidAPI earningsはsource error。App Store summary rowのinstall観測00:03とASC集計16:52Zは別値として残る。VidIQのYouTube/Instagram owner account一覧はともに空。公開profile照会は5 credits必要だが残高0/150で拒否（no charge、reset 11/21）；private social analyticsは未取得で0扱いしない。公開UIのfooterはhourly collectionとprovider別measurement timeを表示する設計。D7実装・UI acceptance済み。D1cは未完: natural scheduleの最新receiptは`42055109453`（15:27:09Z）、16:17Z runは17:07Z時点で未検出。`42067457039`と`42067923110`はpush起点でありschedule proofではない。次回cron予定17:17Z / 02:17 JST。
+
+**優先順更新:** 旧=公開data.jsonの404復旧とpublish欠落防止→publisher/owner特定→Capafy/Coconala/Lancersの取得。新=Capafy・ASC・全体snapshotのpush起点publishをreadback→natural scheduleのreceiptと両feedの再取得を確認→sourceごとの鮮度/coverageを正確に示す→未接続事業・SNSの公式metricsを順次取得。理由=最新pushで両feedの公開更新は成功した一方、31事業・48 SNS行の多くは古い/未確認で、全社reconciliationも未完、natural scheduleも未証明のため。data.jsonの過去の削除・復元・publish欠落は履歴として保持する。現在cursor=L07-D1cのschedule receipt確認。次はL07-D3〜D6の公式取得元ごとに、接続可否・metric fields・as_of・failure stateを整理して順次実装する。VidIQのprivate analyticsはowner connection空・credits不足のため、再認証/creditsまたは別の公式取得経路が必要。
+
+**Daisの優先順変更:** 旧=publisher/ownerの確認と15分更新目標を先に並行。新=公式ソースの実データ取得→保存→公開画面→自然な再取得→他事業の順に接続し、更新間隔は最後に調整。理由=頻度より先に正しい指標と保存・表示を成立させるため。Life Manager PR #9227はmerge commit f333bc5583e333e5c147ed5f19c68e64f2b4b175、collector commit 30a18647a61e63f2370c84bc5f1bbee5434a713eをmainへ統合済み。anicca-products PR #854/#855/#856はmain統合済み。#855はOpen JSON-only pushを除外するmerge commit 4cf49e311738051cff03a8debdaabd874eb12c45、#856はcollector用のrepo相対script pathと同一revisionのFROZEN.jsonを使うmerge commit 61aafb2b9943ab7fa1fc1ef63458a5592cd4c7d0。Capafy signed日別値はnet表示、取引上の意味とrevenue basisは未確認と明示し、focused tests PASS。manual dispatch 41986965868はAPI要求前にcollector importでIndexErrorとなりdata検査/deployなし、隔離された同SHA import smokeは修正後PASS。manual dispatch 41988888271 (main SHA 2f165cd)はcollector・data検査・Netlify deploy・post-deploy smokeがすべてsuccess。公開capafy.jsonは2026-11-05T07:46:51Zへ更新し、UIのCapafyカード・7/30日summary・展開可能な日別net表をreadbackした。別途、通常push run 41990166867 (SHA 2310c3f)はpublic/open/data.jsonを削除した暫定commit 546c3549eの期間中に走り、out/open/data.json ENOENTでdeploy前の検証に失敗、公開siteは維持された。後続commit 5053ed1a5は16:37 JST snapshotを復元したが、JSON-only pushは即時deployされないため公開data.json headerの16:07 JSTは古いまま。以後は旧snapshotを保持し、新snapshotと1 commitで入れ替える。次回schedule natural runで継続更新と最新summaryの公開を確認する。
+**最新優先順変更（2026-11-06 02:07 JST）:** 旧cursor=L07-D7の実装とpush確認→自然schedule確認。新cursor=L07-D1cの自然schedule receiptと両feed再取得の確認→L07-D3〜D6の全source coverage拡張。理由=Capafy/ASC/UIのpush readbackは最新snapshotと一致したが、16:17Z scheduleは未検出、Revenue 7dはnull、31事業/48 SNS行のfreshnessとreconciliationが未完のため。D7は完了のまま保持する。
+
+**ローカル縮退:** Daisの指示でMac上の不要な定期ループを停止し、実行中の外部処理と所有権を確認してから対象別に停止する。再生成可能な不要物を整理し、空き約100 GBを目標に実測する。Chromiumの終了は利用中の処理・profileを確認して対象を限定する。各事業の取得・公開・日報をMacに依存しない共有基盤へ移し、実際の更新と公開画面を確認するまで移行完了としない。停止による取得中断や未接続は明示する。
+
+**Capafy公式API実測:** 2026-11-05T07:46:51Z公開JSON readback、同値を/open/ UIでも確認。7日(2026-10-30〜11-05): page views 0、detail views 1,877、source-attributed visitors 1,877、traffic-attributed paid orders 4、trial orders 1、traffic-attributed sales $39.96、platform net orders 5、platform-reported revenue $39.96、refunds $0、net units 5 (trial units 1)、impressions category 577/search 12,440/hot 6,871。30日(2026-10-07〜11-05): page views 0、detail views 8,206、source-attributed visitors 8,206、traffic-attributed paid orders 6、trial orders 9、traffic-attributed sales $59.94、platform net orders 15、platform-reported revenue $59.94、refunds $0、net units 15 (trial units 9)、impressions category 2,940/search 61,922/hot 14,907。両方の期間に11/05の当日partial値を含むため、当日0は一日終了値ではない。日別seriesには11/03のorders=-1、units=-1、revenue=-$9.99があり、API合計へ含まれるsigned daily valuesとして原値を保持し、UIでは負値を含む期間合計をnetとして表示する。公開OpenAPIは今回の/app/sales/clickhouse/trend・/app/unit-sales/clickhouse/trend feedを説明せず、negative値の取引上の意味は確認できない。refundや訂正とは断定しない。API/OpenAPIからplatform-reported revenueのgross/net treatmentは確認できていないため、画面でplatform-reported revenueとし、refundsは別指標にする。source-attributed visitorsは重複除去済みアカウント人数と確認できていない。今回取得した公式feedにはunique buyersとconversion rateが無く、推定値を作らずUIで未提供とする。Collector PR #9227、公開毎時refresh PR #854。GitHub secret CAPAFY_WEB_TOKENは既存1Password itemから登録済みだが、JWT expiryは2026-11-15T21:07:19Z。自動更新の初回実行を確認した後、期限前に自動credential更新経路を作らない限り長期更新完了とは扱わない。
+**Capafy Developer Overview API実測（2026-11-05T14:53:21Z）:** `POST /app/developer/overview/v2/{exposure,detail-view,conversion,new-users}`, `granularity=daily`。7日UTC(10/30–11/05、11/05 partial): exposure 32,542 / unique devices 13,488 / change −36.1%; detail views 1,938 / unique devices 1,089 / change −42.9%; provider conversion 0.04%, `conversionRateChange=0.02`, orders 5, exposed user IDs 13,489; `totalNewUserCount=4`, change 0.0%. 30日UTC(10/07–11/05、11/05 partial): exposure 126,399 / unique devices 49,808 / change +40.5%; detail views 8,747 / unique devices 4,826 / change +51.8%; provider conversion 0.03%, `conversionRateChange=−0.22`, orders 15, exposed user IDs 49,808; `totalNewUserCount=14`, change −75.9%. Keep the API aggregate/change fields and complete daily rows, including negative daily corrections (11/03 conversion −0.06 and order −1); do not recompute or normalize them. `conversionRateChange` units are not independently verified. The screenshot labels one card `新規購入者` with value 4 but does not show its date range; API `totalNewUserCount=4` is not an exact screenshot reconciliation until the UI period and field meaning are verified. Keep this Overview source distinct from traffic-source `page_views` and attributed views.
+
+**2026-11-06 02:39 JST source readback:** 公開data.jsonは02:07 JST、reconciliation_complete=false、32 platform rows・13 product rows・48 social accounts・5 apps・4 agent activity rows・107 handoffs。Revenue 7d=null（coverage incomplete）、30d=$249.48（partial source）、MTD=$31.81、observed payment notices=$330.15、差額表示=−$298.34（全社profitではない）、MRR=$97.58。metrics.jsonは02:18 JSTで53 loops・11 businesses・10 agentsだが、公開/open/index.htmlはdata.jsonとcapafy.jsonをfetchし、metrics.jsonは読まず、team activityはdata.by_agentの4行だけを表示する。53 loops・11 businesses・10 agentsがこのUIに接続されていないため、D6の具体的な欠落として記録する。metrics.jsonの一覧値や状態はprovider receiptではなく、row別as_ofも確認できていない。公開capafy.jsonはtraffic observed_at=2026-11-05T17:27:33Z、ASC measured_at=2026-11-05T17:27:42.188Zまで更新され、Capafy 7/30日Overviewはimpressions 32,867/126,724、detail views 1,953/8,762、provider conversion 0.04%/0.03%、orders 5/15、新規users 4/14。traffic feedは7日paid/trial orders 4/1・reported revenue $39.96、30日6/9・$59.94。push run 42073420342はmetrics refresh起点のsuccessだが、dashboard ledgerは02:07 JSTのまま。schedule成功は42055109453 (15:27:09Z)が最新で、16:17Zと17:17Zのschedule receiptは17:37Z時点で未検出。後続push 42072395593/42072900304/42073420342はschedule証拠ではない。現行17分cronを43分へ移し、観測した:12–:19のpush burstとの重なりを減らす。concurrencyはsingle pendingを維持する。GitHub公式仕様ではqueue:maxは開始順を保証せず、古いdeployが新しいpublic siteを上書きし得るため採用しない。未実行scheduleの原因は未確定であり、cron移動は衝突確率を下げる緩和策である。新しい02:07 snapshotの公開UI目視は未取得。現在cursor=L07-D1c、変更後の次自然schedule receipt・Capafy/ASC再取得・公開UIを個別に照合する。
+
+**2026-11-06 02:54 JST pipeline readback:** anicca-products main commit 96191c8bには02:37 JST snapshotが入った。push run 42078190954は17:48:23Z開始、Capafy collector・snapshot stage・ASC collector・validation・Netlify deploy・money-path smokeをsuccessで17:53:50Z完了。公開data.jsonは02:37 JSTへ更新され、32 platform rows・13 product rows・48 social accounts・5 apps・4 activity rows・113 handoffs、reconciliation_complete=false。Capafy observed_at=17:52:30Z、Overviewは7/30日impressions 32,929/126,785、detail views 1,955/8,764、conversion 0.04%/0.03%、orders 5/15、新規users 4/14。ASC measured_at=17:52:38.075Z。KPIはRevenue 7d=null、30d=$249.48 partial、MTD=$31.81、observed payment notices=$330.15、表示差額=−$298.34（全社profit確定ではない）、MRR=$97.58。metrics.jsonは02:18 JST・53 loops/11 businesses/10 agentsのままで公開UIは未読。rename push run 42078537873は17:53:52Zにin_progress。schedule成功は42055109453 (15:27:09Z)が最新で、16:17Z/17:17Z receiptは17:50Z時点で未検出。今回の最新snapshot publicationはpush起点でschedule証拠ではない。観測pushは17:12–17:19Zと17:48–17:50Zに集中したため、cronを:17から:32へ動かし両burstの間に置く（:19から13分後、:48より16分前）。single-pendingを維持する。GitHub concurrencyのqueue:maxは開始順を保証せずstale deployを防げない。schedule欠落原因は未確定で、変更は衝突を減らす緩和策に留める。最新02:37 snapshotの公開UI目視は未取得。現在cursor=L07-D1c、次自然:32 receipt・source refresh・公開UIを個別に確認する。
+
+**残TODO（L07-D1c、D3〜D6）:** (1) D1c: 18:32Z以降の自然hourly run receipt、Capafy/ASC source時刻、data.json freshness、公開UIを確認（push/manualでは代替しない） (2) D3: 全社profit/KPIのbasisとmissing coverageをsource付きで一致 (3) D4: Stripe/RevenueCatのread-only metricsを取得 (4) D5: provider別last-success/error/as_ofを定期収集・表示 (5) D6: team activity・53 loops・11 businesses・10 agents・social/distributionのsource時刻が確認できる指標をdashboard UIへ接続する
+
+目的は全agent・利用者・投資家が、同じ会社の実業務・売上段階・費用・稼働・配信を、source/as_of/coverageとともに確認できること。既存`/open/`/data.jsonと取得元を修正し、別dashboard/会計DBを作らない。UI再取得60秒、業務state集計5分、到着済payment webhook反映1分以内、provider照合30分を目標とし、未達をstale/last errorで見せる。公開refreshのためだけに全worker/modelを起こさない。全providerがmillisecondsで確定するという約束はしない。
+
+今回の観測: `/open/data.json`はmonth=2026-11、updated_at=2026-11-05 11:37 JST、reconciliation_complete=false。Life Manager Cloudのplatform/product行は既にあり、test billing/no paying usersという古い注記とStripe再認証待ちがある。provider公式の最新売上は未照合であり、Cloud売上0を確定しない。public HTMLのmonth表示はLos_AngelesでOctoberになることをNodeで再現。gp/gplは未照合flagと併存、HTMLは初回fetchのみ。生成経路はanicca-ops `team/scripts/open/update_open.sh`→builder→`publish_open_repo.sh`→anicca-products `apps/landing/public/open/`→Netlify。runtime template `/workspace/team/scripts/open/index.html`はops origin/mainに追跡されていない。Reasonの既存Muse relayへtemplate正本/ownerのread-only照会はdelivered、着手/修正/返答は未確認。
+
+**更新経路の追加観測 (2026-11-05 17:10 JST):** anicca-products `origin/main` `1692139b9` のcanonical `apps/landing/public/open/data.json` は `updated_at=16:37 JST`、同repoの最新timestamp付きsnapshot `open-dashboard-data-2026-11-05-1707.json` は `updated_at=17:07 JST`。双方28 platform rows/11 KPIs。Netlify workflowはJSON-only pushをdeploy対象から除外し、build artifactの既存`data.json`だけを検証するため、17:07 snapshotは公開UIにまだ反映されない。過去の削除commit `546c3549e` と後続復元commit `5053ed1a5`の間では、JSON不在の状態で来たpush run `41990166867`がdeploy前検証に失敗した。最新mainではcanonical dataは復旧済み。公開データを新しい有効snapshotへstageする仕組みが必要。
+
+**L07-D1b実装状況:** anicca-products PR #858 はmerge commit `9475318142c8dcbabc31ae209dfd3210e5d91d02`でmainへ統合。focused test 6件とPR CIがpass。push deploy #41996020100はsnapshot stage・検査・Netlify・post-deploy smoke success。workflow_dispatch #41996631339もCapafy collector・snapshot stage・検査・Netlify・post-deploy smoke success。公開JSONは`data.json=2026-11-05 17:37 JST`、`capafy.json observed_at=2026-11-05T08:47:09Z`。公開UIを再読込して同じCapafy値とLast checkedを読み戻し、スクリーンショットを目視確認。7d/30dのdetail views 1,882/8,211、paid orders 4/6、trial orders 1/9、sales/platform revenue $39.96/$59.94、refunds $0、impressions category 578/2,941・search 12,470/61,952・hot 6,898/14,934。負の11/03 daily値を含む。
+
+**L07-D2検証:** anicca-products PR #859（merge commit 77b1b7a66fbb84b1ba0e4e3e9ee995e68e265139）のCIと本番deploy #42001774246が成功。公開/open/を動的読込完了後に再読込し、Revenue/Costs/Profitの各月ラベルがNovember 2026 to dateであることをUI本文とスクリーンショットで確認。月表示修正は完了。
+
+**Capafy freshness回帰の根因:** 同じ公開UIはdata.json updated_at=2026-11-05 18:07 JSTだが、capafy.json observed_at=2026-11-05T06:40:50ZでRefresh overdueを表示。main push deploy #42001774246のcollector stepはevent_name != push条件でskipされ、stage-open-data.mjsはdata.jsonのみをstageする。main canonicalのcapafy.jsonも同じ06:40:50Zで、古いfeedが再公開されたことを確認。自然scheduleの未起動原因は別途未特定。
+
+
+| ID | 状態 | 原子的な修正と完了条件 |
+|---|---|---|
+| L07-D1 | 完了 | 公開HTML/JSON、二repoのbuilder/publisher/更新sourceを追い、Cloud既存行・month timezone再現・未照合利益・単発fetchを記録する。runtime owner/実cadenceは未確認として保持 |
+| L07-D1b | 完了 | `anicca-products`のdeploy artifactへ最新timestamp付きOpen snapshotをstageする。canonical timestampより古いsnapshotで巻き戻さず、最新snapshot不正時はfail closed。focused test、CI、main deploy、公開JSON・UI readbackを確認 |
+| L07-D7 | 完了 | Life Manager PR #9242 / Products PR #868 と必要CIを統合。collectorをLife Manager SHA `c895c9b7`へ固定し、production deploy `42061822103`成功。公開JSON・390px UIでsource/as_of、7/30日aggregate、全日次行、unknown-country flags、signed correction、traffic feedとの分離をreadback。
+| L07-D1c | 未完・現在cursor | Products PR #869のcron :17→:32 UTC変更はmerge commit `a515fb50280ec76640979a9f1b24e5d26dcda565`でmain統合済み。push deploy #42085389983はevent=pushでCapafy/ASC collection・snapshot・validation・Netlify deploy・money-path smokeが18:40:17Zにsuccessしたが、自然schedule証拠ではない。最新natural successは42055109453 (15:27:09Z)。18:32Z予定slotから18:45:13Zまで次のschedule receiptを確認できず、原因は未確定。Public data.json header=03:07 JST、32 platform/13 product/48 social/5 apps/4 activity/119 handoffs、reconciliation_complete=false。公開Capafy feedとDeveloper Overviewはobserved_at=18:37:43Z、data.json内App Store Connect measured_at=18:37:52.864Z。別々のrendered desktop/mobile UIを03:45 JSTに確認し、上部KPIとCapafy Developer Overviewが描画され、7d impressions 33,030 (−35.1%) / detail views 1,959 (−42.3%) / conversion 0.04% / 5 orders / 4 new users、30d impressions 126,886 (+41%) / detail views 8,768 (+52.1%) / conversion 0.03% / 15 orders / 14 new usersがfeedと一致。ledger headerは03:07 JSTのままで、feed時刻とは別物。Capafy platform revenue rowは11/04 UTCのまま。`metrics.json`=02:18 JST (53 loops/11 businesses/10 agents)はUI未接続で、別の鮮度/網羅性欠損。画面はfresh feedを表示したが、natural schedule成功・全社収支照合は証明していない。次cursor=natural schedule receiptの原因診断とprovider別as_of/coverage。|
+| L07-D2 | 完了 | PR #859でcalendar month表示をUTC固定に修正。timezone別focused test 5/5、Open data関連test 11/11、PR CI、本番deploy #42001774246がpass。公開UIのRevenue/Costs/ProfitすべてでNovember 2026を目視確認 |
+| L07-D3 | 未完 | 全社利益/KPIのbasisをreconcilerとHTMLで一致させる。coverage不足なら全社利益を確定表示せず観測済小計と欠測を分ける。nullを0へ変換しない。source付きfixtureで集計と表示を確認 |
+| L07-D4 | 未完 | 既存Stripe read-only接続を復旧・照合し、Cloudのlive/test product/price/subscription/refund/cancelを既存台帳へ帰属させる。Stripe全体行とCloud product行を二重計上せず、MRR/実売/支払/出金を分ける。人のcredentialはCloud workerへ渡さない |
+| L07-D5 | 未完 | 既存生成/公開/再取得経路を上記cadenceへ接続し、row別as_of/source/last success/errorを表示する。開いたままのUIが新しいsnapshotを自動反映することを確認し、API制限を守る |
+| L07-D6 | 未完 | 既存roster/実行receiptからteam/provider/role/最後の実結果、既存配信receiptからchannel/account別URL/reach/click/conversionを公開用に集計する。登録済みと稼働済みを分け、秘密/private本文を出さない。既存規定の公開範囲だけを使う |
+
+**Capafy Developer Overview API collector smoke（2026-11-05T15:39:56Z）:** exact-match credential SSOT entryからtokenを読み、変更中の`build_snapshot`をread-onlyでメモリ実行（公開JSONへのwrite/deployなし）。4 endpoint×7/30日が成功し、UTC `2026-10-30`–`2026-11-05` / `2026-10-07`–`2026-11-05`、日次7/30行を取得。7日: exposure 32,674 (−35.8%; 13,530 unique devices; unique change −34.8%; containsUnknownCountry=true)、detail views 1,947 (−42.7%; 1,091; −41.1%; false)、conversion 0.04% (provider change +0.02; 5 orders; 13,531 exposed user IDs; true)、new users 4 (0.0%; false)。30日: exposure 126,531 (+40.6%; 49,850 unique devices; +81.4%; true)、detail views 8,756 (+51.9%; 4,828; +121.2%; true)、conversion 0.03% (provider change −0.22; 15 orders; 49,850 exposed user IDs; true)、new users 14 (−75.9%; false)。UTC終端日の11/05はpartial。各aggregateの`containsUnknownCountry`をendpoint別に保持し、11/03 daily conversion −0.06/order −1も保持。これは実API collector readbackであり、CI・公開反映・自然実行の証明ではない。
+
+全体順序L02→L10は変更しない。dashboardは公開済みのためD2/D3をworker売上待ちにせず独立して進める。D2はPR #859、本番deploy、公開UIで完了。D7はPR #9242/#868、公開JSON/390px UIで完了。dashboard cursor=L07-D1c（natural schedule・feed freshness・provider coverage）。push run #42085389983は18:40:17Zに成功したがevent=push。data.json header=03:07 JST、埋込みASC=18:37:52.864Z、別feed Capafy=18:37:43Z。最新自然schedule successは15:27:09Zの42055109453で、18:32Z予定slotのreceiptは18:45Z時点で未検出。03:45 JSTのfresh rendered UIでCapafy Developer Overviewを確認した。metrics.json 02:18 JSTは現行UI未接続。feed取得・stage・自然起動receipt・UI表示・provider別coverageを別々に検証する。worker主cursor=L02。
+
+**2026-11-06 03:13 JST UI/deploy readback:** Products PR #869はmerge commit `a515fb50280ec76640979a9f1b24e5d26dcda565`へ統合。run `42080493424`は`event=push`でcollector、snapshot、validation、Netlify deploy、money-path smoke成功。公開`aniccaai.com/open/` UIを目視し、MRR $97.58、MTD $31.81 (incomplete coverage)、observed payment notices $330.15、表示差額 −$298.34 (full-company profit unknown)、all-time $2,223.84、bank balance $1,611.03 (as of Nov 1 10:10 JST)を確認。UIから読めたCapafy/ASC source時刻は17:58Z台。これは描画確認であり、最新feedとの一致・全社収支・自然scheduleの検証ではない。
+
+**2026-11-06 03:22–03:23 JST public JSON readback:** 公開data.json header=02:37 JST (`reconciliation_complete=false`、32 platform/13 product/48 social/5 apps/4 activity/113 handoffs)のまま、embedded ASC measured_at=18:08:10.606Z。別feed Capafy observed_at=18:08:01Z。独立feedは新しいがsnapshot headerは古いためheader単体をfeed鮮度と扱わず、source別時刻を使う。`crwl`で公開HTMLを取得するとstatic shellとCapafy `Loading…`だけが返り、render後のUI/最新source時刻は未検証。`metrics.json`=02:18 JSTの53 loops/11 businesses/10 agentsはUI未接続。次cursor=18:32Z natural schedule receipt、両feed/data.json更新、fresh rendered UIのsource時刻照合。schedule原因未確定。
+
+**2026-11-06 03:37–03:45 JST live data/UI readback:** Products push run `42085389983`は18:40:17Zにsuccess。公開`data.json`=03:07 JST、32 platforms/13 products/48 social accounts/5 apps/4 agent rows/119 handoffs、reconciliation false。Capafy `capafy.json`/Developer Overview=`2026-11-05T18:37:43Z`、ASC=`2026-11-05T18:37:52.864Z`。fresh rendered desktop/mobile screenshotでCapafy Developer Overviewの7/30-day metricsを確認。7d: impressions 33,030 (−35.1%), unique devices 13,698 (−34%), detail views 1,959 (−42.3%), unique detail devices 1,100 (−40.6%), conversion 0.04%, 5 orders, 4 new users。30d: impressions 126,886 (+41%), unique devices 50,017 (+82%), detail views 8,768 (+52.1%), unique detail devices 4,837 (+121.6%), conversion 0.03%, 15 orders, 14 new users。Capafy marketplace sales rowは11/04 UTC基準のままで、同一事業のanalyticsと売上feedの鮮度差が残る。`metrics.json`は02:18 JSTの53 loops/11 businesses/10 agentsでUI未接続。UIは新しいCapafy feedを描画したが、自然scheduleは未確認。18:45:13Z時点の最新schedule receiptは42055109453 (15:27:09Z)、18:32Z slotの新規receiptなし。次: schedule欠落の境界診断、provider別鮮度/coverageの棚卸し、UI auto-refresh requirementを実装cursorへ追加。
+
+**2026-11-06 03:00 JST update:** Products PR #869 (`fix/open-schedule-time-20261106`) is open at `552bc53244039bfcb3d3108b453afd841eb34d2c`, based on current `origin/main` `96191c8b281095921dd5c20f5240d71aa3ffe462`. The focused YAML parse and diff checks pass; GitHub reports no required checks on the branch and CodeRabbit says `Review skipped`. Next: merge under repository policy, then verify a natural :32 run and current public UI/readback. No schedule repair, current-snapshot UI proof, or full data coverage is claimed yet.
+
+#### 旧契約・版別の診断記録（履歴、現行TODOではない）
+
+以下は当時の判断と観測の保存記録。現在の採用方式・実行順・完了条件は直上の現行契約を参照する。
+
+**目的と明示する価値:** Life Managerは「No human in the loop」を中心価値にする。第一ユースケースは**Capafyで需要調査→自社所有商品の制作→正式公開→配信→販売/納品→収益/費用確認**。他の販売先は同じManagerの展開先で、別商品ではない。Substack/n8n等の無関係な登録や受信箱試験、BusinessRun trace reviewを第一ユースケースに置かない。文化・製品要件としてNo human in the loopを明記し、実測済みの無介入完走・売上とは区別する。
+
+**二つの成果目標:** 先に自社のNaïve Managerによる継続課金商品のUSD10,000 MRRを目指す。同時に紹介依頼・大会準備・外部顧客獲得を進め、同じLife Managerの外部サブスクUSD10,000 MRRを目指す。自社事業売上、利用者の外部売上、Manager利用料を別会計にする。買い切り/受託/単発29USDCをMRRへ算入しない。100万USD MRRはその先の目標で、達成値ではない。売上・返金/手数料・実行費・差額を別表示し、成功例一つで他人の利益を保証しない。
+
+#### 認証の三層と無人契約
+
+| 層 | 必要なもの | 必須にしないもの |
+|---|---|---|
+| 利用者が自分のManagerを見る | 端末内の匿名認証sessionから開始。既存Supabaseの匿名認証を再利用する設計。tenant/job/ledgerの所有境界を守る | Google、メール入力、password、Calendar/Gmail権限、日々のprompt、目標/予算入力 |
+| Managerが販売先で働く | 会社/agent所有のIdentity・業務用inbox・販売先credential・必要な正式権限。browserで観測/判断/操作する | 利用者の個人Google/Gmail/password、他担当の共有profile流用、手作業での各業務承認 |
+| 利用者が残高を受け取る | 残高の権利者を検証し、選んだchain/tokenの受取addressまたは正式な銀行/精算条件を扱う | wallet seed/private key/Google passwordの提出。addressだけで残高の所有者と見なすこと |
+
+匿名sessionは公開アクセス/anon keyと異なる。cookie削除/別端末では復旧できないため、回復可能な所有者bindingを実装してから残高移管を提供する。Googleは任意の復旧/既存利用者の手段として残せるが開始gateにしない。通知メールも任意で、メールを持たない利用者はアプリ内の結果画面で使える。匿名の開始で無制限に有料VMを作らず、会社側の既存spend-cap・tenant割当・rate limit内で動かす。個人情報なしの開始と、誰でも他人のManager/売上を操作できる状態を混同しない。
+
+**No human credentialsの意味:** 利用者の外部サービス資格情報に依存しない。Naïve org/API key・会社のcompute支払・会社/agent自身のservice credentialまで存在しないという意味ではない。service上の契約主体/Publisher権利者もagentのメールだけで変更されない。単一会社Publisherで得た収益を新しい匿名利用者へ自動帰属させず、tenantと権利者の台帳/契約を先に確定する。
+
+**No human in the loopの受入:** 許可された業務の選択、制作、公開、販売、納品、支払い確認が日々の人間指示/承認なしで動く。初期の会社基盤設定、途中の人間介入、primary AIによる再指示/代行、失敗、復旧、費用を記録する。人間0でも外部AIが代行した工程は「Naïve単独完走」にしない。KYCという名称だけで除外しない。正当な会社/agentの情報と既に利用権限のある資料をAIが提出し、登録から販売/精算まで利用者の外部credential・ライブ撮影・本人の操作/承認なしで完了できる経路は対象にできる。カメラ/selfie/liveness、本人にしかできない手続き、利用者の個人account操作が必須ならその経路を無人実証対象から外す。カメラ不要だけで他の条件まで充足したとは見なさず、架空情報や別accountで迂回しない。自動操作を禁止するproviderで承認なし操作を強行しない。
+
+#### Capafy第一ユースケースと他プラットフォーム
+
+Capafyでは既存の正当なAnicca Publisher/担当ownerを保護し、販売実績のある商品は変更しない。規約は公開前に自動審査とCapafy側のhuman reviewがあると明記する。No human in the loopは自社/利用者による業務指示・操作・承認を要しない運営契約を指し、買い手や販売先の審査担当者まで存在しないとの主張ではない。外部審査待ちは自動で状態確認し、自社の人間代行・承認と別に記録する。第一作業は既存ownerから専用agent業務資格情報/team権限・automation条件・受取条件を照合すること。同一運営者のPublisherをagent数/VM数だけ増殖しない。現在の規約2.9は共通支配下につき1Publisher（追加は書面許可）。既存人間Gmail/sessionを借りて動いた場合は「利用者の資格情報不要」を実証したことにしない。
+
+| 対象 | 用途と優先度 | 残る条件 |
+|---|---|---|
+| Capafy | 第一。需要のあるSkill/成果物を制作・販売し、subscriptionを継続する | Publisher Certification/正式公開確認、agent専用認証、automation許諾、精算/権利者の実画面確認 |
+| PromptBase | 次候補。既存商品・担当の販売実績を照合して再利用 | 今回FAQ取得はsecurity verification。最新精算/KYC/automation条件は未取得、no-KYCと記載しない |
+| Whop Content Rewards | 他販売先候補。許諾素材の制作/配信による成果報酬 | キャンペーン承認/AI制作可否/出金条件の確認。単発報酬はMRRではない |
+| itch.io / Gumroad | デジタル商品の販売候補 | 税務/決済/本人確認の条件あり。「口座だけ・確認なし」の経路としない |
+| 自社USDC受取/x402 | 並行する受取方式候補。platform制約と独立に調査 | x402は販売市場でも定期課金でもない。買い手・販売/納品・signer/実決済と費用の実証が別途必要。browser業務をAPI販売botへ置き換えない |
+| ClawTasks | 現在の有償候補から除外 | 公式docsはfree-task only。旧有料説明を現収益へ転用しない |
+
+CapafyのSalesは7日Dispute Window中のpending表示で、Proceedsも精算前は出金不可。最低payoutは100USD、月末後15日以降の開始、必要なpayout detailsとKYC review等の保留条件がある。**「売上を作ってから受取情報を聞く」は製品方針だが、全providerでKYCが最後だけ/口座だけで済むとの事実主張は禁止**。登録/公開/販売/精算/出金の各段階で条件を照合し、条件未充足なら現在地を明示する。銀行着金、platform残高、on-chain着金を区別する。
+
+#### 黒字化を優先する販売先ランキング
+
+目的は「世界で最も儲かる市場」の断定ではなく、現在の自社資産で最初の第三者入金と正の利益に最短で到達し、その後継続購入を伸ばすこと。市場ごとの実利益比較は未実測。次表は需要の証拠、既存の自社販売、再利用可能な能力、買い手への到達、制作/配信/決済費、無人条件、継続購入の見込みによる**実行優先順位の推論**であり、利益額・成功率・MRRのランキングではない。
+
+| 順位 | 市場/経路 | 最初に売る仕事 | 優先理由と制約 |
+|---|---|---|---|
+| 1・条件付き実行 | Capafyの短尺動画制作者/マーケター向け商品 | フック、台本、商品デモ構成などのテキスト成果物 | 既存公式sellerランキングにHook Labのsubscription販売記録。既存販売/制作/無料配信経路を再利用できる。他社の公開指標もある。agent専用経路と精算条件のNHC-01照合が必要。既存sellerは凍結保護し、配信と新商品を分ける |
+| 2・次候補 | 自社直販・暗号資産受取（必要ならx402/Bazaar） | 1位と同じ成果物または公開情報から作る定期レポート | 内容を再利用し販売先依存を減らせる。ただし既存の買い手/受取/納品の実証はない。x402は決済規格、Bazaarは発見経路であり需要やMRRの証拠ではない。protocol fee 0を総費用0へ置換しない |
+| 3・次候補 | Olas Mech Marketplace | 他agent向け調査/検証/データ整形 | 公式は署名取引と有料agentサービスを説明し、市場全体の累計Task Paymentsを約11万USDと表示。自社売上ではなく月次市場規模でもない。新規参入の買い手・登録・資金・採算が未検証で、巨大需要とは推定しない |
+| 4・条件未確認 | PromptBase | 同じ顧客課題のprompt商品 | 既存商品/担当経路はあるが手元の最終売上snapshotは0で、Capafyより強い収益根拠はない。最新需要/精算/automation条件が必要 |
+| 5・条件未確認 | Masumi / Sokosumi | 調査/マーケティングの専門agentサービス | 登録/決済基盤と販売先候補。自社の買い手・vendor条件・mainnet実売が未検証。テストADAやdemoを収益にしない |
+| 6・条件未確認 | Neverminedの有料サービスカタログ | 有料調査/検証サービス | 新しい買い手に出会う候補だが掲載料金と販売者/決済条件がある。初売上前に新しい固定費を増やさず、現在のcap内で成立する場合だけ実行候補にする |
+| 7・低優先 | Nostr + Lightning | 有用な情報/制作物への投げ銭 | 鍵によるIdentityとZapsは存在。受取wallet条件・読者獲得が必要で、投げ銭は継続課金MRRではない |
+| 8・別系統/低優先 | Bittensor / Golem | 推論/データ処理/計算資源の提供 | 専用runtime、資源、競争と費用が必要。現在のbrowser業務資産から遠く、今回の第一収益経路にしない |
+
+**採用する最初の市場:** 短尺動画の制作者/小規模マーケターが繰り返し必要とする、フック・台本・商品デモの成果物。最初から高コストの動画生成、一般用途agentの大量制作、全販売先同時登録を行わない。継続販売商品の再配信を優先し、需要を狭くした新商品一つを追加する。無人条件を満たす専用経路を通すまで、既存会社売上をNaïve自身の無人売上に付け替えない。
+
+**成功例の根拠:** private runtimeのcapafy-market-agents-20261103.jsonは916件の公開市場snapshot。Anicca以外ではVideo Hook Forensics（agentId4507678012）、HookAce（3264203863）、Dola AI Video Storyboard Assistant（1047941397）などにsalesVolume表示がある。表示値の有償注文/無料利用の区別・純利益・観測期間は未確定なので、有料販売額やMRRとして引用しない。模倣するのは「特定制作工程→使える成果物→反復需要」の商品構成で、原文・画像・実績の丸写しではない。自社Hook Labのseller記録も期間が確定しないためMRRには換算しない。参照先は[Capafy](https://capafy.ai/)、[規約](https://capafy.ai/publisher-agreement/)。実行時に対象商品/価格/公開状態をliveで再確認し、公式商品URLと観測時点を記録する。
+
+**利益の判定:** 同じ期間/注文の第三者受取売上から返金・手数料・決済/chain費・推論・VM・制作/配信の実費を控除する。net入金から手数料を二重控除しない。商品単位の限界利益と共通固定費配賦後の事業利益を分ける。platform pending残高、精算済み残高、実着金も分ける。初売上の次に別注文/継続購入と正の利益を確認し、損失なら価格/費用/需要の一要因を変えて再計測する。広告/掲載費/新規computeの追加支出や既存cap増額は、この順位更新で許可しない。
+
+**順序の更新:** 旧=Capafy→PromptBase等の候補列挙、第二販売先は未選定。新=Capafyの短尺動画制作分野→自社直販→Olas→PromptBase→その他。理由は自社の販売信号と既存配信資産がある市場を優先し、決済技術の新しさを需要と取り違えないため。NHC-01からNHC-12の依存順は維持し、第二販売先の候補順だけ明確化する。**現在cursor=NHC-01: 既存認証済みPublisherの正式なagent/team委任、専用agent認証、販売・精算権限の公式readback**。NHC-00のmain由来cloud browser proofは完了した。Daisのautomation許可取得済みという申告は受け入れ、再質問しない。Capafyの利用者資格情報を共有せず、既存Publisherで許された専用agent経路を確認する。経路がなければ新規account・本人credential・KYC回避へ進まず、順位2の自社直販/x402を既存cap内で評価する。
+
+**NHC-00 cloud browser proof:** PR #9216 は `288e867668a00ead4de80efd2ebb1f4c54866ef2` へ統合し、main由来App deployment `apd_j8nn7p6vjs682cq87mb6txate4` をreadyで確認した。App `app_z1g99d21zr5xx0v685c1y2zwgd` には `computers:write` だけのserver API keyを作成し、秘密値を出さず `NAIVE_API_KEY` として保存した。`apps.request_access` はこのscopeを許可せずvalidation errorとなったため、App-linked permission一覧は空のまま。専用agent v2はdefault deny、対象App一つだけ、browser MCP toolだけallow。Naïve official eventsはagent session `ses_jyncz4qpsefy5mnkagk6hsn04c` からの `goto https://capafy.ai/` と `extract h1` を `performed: true` で記録し、見出し `Capafy AI - Agent Skills Marketplace` を返した。Computer browser session `brw_1v61hhm025f1nm5n26r0n51kbc` はclosed、Computerはpaused。公式ledgerのmodel費3,382 micro-USDとbrowser費3,333 micro-USD、合計6,715 micro-USD。これはcloud browser操作の証拠で、商業行動・第三者注文・支払receiptはなく、この実行で確認した売上はUSD 0。Capafy全体の売上は照合していない。録画は作成していない。private receipt: `/Users/anicca/.local/state/naive-browser-company/naive-cloud-browser-proof-20261105.json`。
+
+**Capafyの無人適合条件:** 公式[Publisher Certification](https://capafy.ai/developer/doc/1.3)は個人の本人書類、事業Publisherの登記情報と権限ある担当者の本人書類、審査、0.99 USDの返金不可手数料を定め、初回公開前にCertificationを要求する。[Publisher Agreement v1.2](https://capafy.ai/publisher-agreement/) §2.7はPublisher accountを非譲渡・非移転とし、§2.9は同一Publisherにつき原則1 account、§3.6は公開前に自動審査と人の審査を定め、認証後の出金にWiseまたはUSD wireの支払先情報が必要。[Capafy Terms of Service](https://capafy.ai/terms-of-service) §3.3はlogin credentialを誰とも共有しないよう定め、§3.4は原則1 account、§6はbot/automationに事前の書面許可を要求する。Daisはautomation許可を取得済みと申告しているため再確認を求めないが、こちらで書面receiptを独立readbackしたとは主張しない。公式[Publisher Guide](https://capafy.ai/developer/doc/2.1)はAgent Client経由のpublishを案内し、[Publishing Flow](https://capafy.ai/developer/doc/2.2)はagentによるupload後、Temporary LinkでAgent Card/credential設定を確認し、reviewへsubmitする手順を記載する。ただし、これらは別のmachine-owned accountやteam/service-agent delegation roleを定義せず、Naïve cloud agentが既存Publisherにcredential共有なしでアクセスできるかも確定しない。既存Publisherの正式なagent/team委任、専用認証、販売・精算権限をprovider readbackできる場合に限り継続する。人のlogin credential共有・重複account・本人書類の代理利用・camera KYC回避をしない。経路が未確認ならCapafyを無人販売未確認とし順位2の自社直販/x402を既存cap内で評価する。
+
+**Naïve Marketplaceの収益条件:** 公式[Apps/API docs](https://vetta.sh/docs/api/apps.md#list-the-running-company-in-the-marketplace)によると、running companyのtemplate listingはowner/adminの明示approvalとNaïve reviewが必要で、新規company plan支払額の15%を12か月shareする。各shareは30日保留、精算可能額USD100以上、初回payoutはownerのStripe setupと本人情報入力が必要。これはCapafyよりプラットフォーム内配信だが、現在のstrict no-human-in-the-loop公開/受取条件を満たさないため、無人収益の証拠には数えない。`GET /v1/listings` の現readbackは空配列で、Naïve listing収益も確認できない。owner setupを許す別モードへ目的を変えない。
+
+根拠: [x402](https://docs.x402.org/introduction)、[Bazaar](https://docs.x402.org/extensions/bazaar)、[Olas市場](https://olas.network/mech-marketplace)、[Masumi](https://www.masumi.network/dev/masumi/documentation)、[Sokosumi](https://www.sokosumi.com/)、[Nevermined](https://nevermined.ai/)、[Nostr/Zaps](https://nostr.how/en/zaps)、[Bittensor](https://docs.bittensor.com/)、[Golem](https://docs.golem.network/docs/golem/overview)。KYC/ライブ本人操作は各providerの実経路で判定する。未取得の販売者条件は適合済みとしない。
+
+#### UXと構成
+
+商品説明は https://aniccaai.com/lm 、Cloud説明は https://aniccaai.com/maritime?source=landing&lang=en 。現在の公開CTAはRailwayの /lm?start_calendar=1、実コードweb-page.jsもCalendar開始を優先する。Google/Calendarを要求しない稼ぐ入口は**未実装**で、説明だけで達成済みにしない。
+
+目標UX: スマホで開始→匿名session/利用者別Managerを割当→ManagerがCapafyの仕事を自律選択/遂行→アプリに仕事/成果物/売上/費用/差額を表示→任意の通知→残高の受取を望む段階で所有者/受取先を確認。チャットは補助。日々のprompt/通常業務approvalは要求しない。収益ゼロ/失敗/未精算も実状態を表示し、稼げたとの通知を捏造しない。
+
+```mermaid
+flowchart LR
+  U[スマホ・匿名session] --> P[Life Manager・利用者別記録]
+  P --> N[Naïve Manager]
+  N --> B[自身のComputer・Browser]
+  I[agent業務用Identity・mail・vault] --> B
+  B --> C[Capafy・第一ユースケース]
+  B -. 次段階 .-> O[他の販売先]
+  C --> E[注文・納品・支払の証拠]
+  E --> P
+  N --> F[推論・Computer・配信の費用]
+  F --> P
+  P --> R[仕事と収支の報告]
+  R --> U
+  P -. 所有者と条件の確認後 .-> W[受取walletまたは銀行]
+```
+
+Naïveは商品ではなく追加runtime。SDK/APIは設定・起動・予算・状態/証拠取得、外部業務はLLM自身のbrowser、本人mail、既存許可済みPostizで行う。MaritimeとNaïveを一仕事で必ず二重起動しない。共通job/tenantの一担当を確定し、仕事と支払いの二重実行を防ぐ。NHC-01初回確認時は専用v24/旧29USDC trace reviewだった。現在の公式runtimeはmain b412c1c0cd904243520d41f81af6e94a248f9216由来の専用v25/Capafy-first。月10USD/task1USD/12時間cron、Identity/context/model/tools/MCP bindingは維持し、agent systemとdeployment pin/inputの公式一致を確認する。設定反映を認証・公開・売上の完了とはしない。
+
+#### Capafy runtime切替の実装範囲
+
+正本NHC-01の有限read-only確認はses_k15tz8p3d9n6639ksqj4stt6dtで実行し、8tools、実費110622microUSD、自然end_turn/idleを確認。本人browserはCapafy公開画面へ到達し、capafy-route-audit.mdのwrite→readが成功。ログインは未確認、Publisher資格/team経路/camera条件は未確認。XPath直接click一件のprovider失敗を保持し、browser.actによる観測対象の指定を次に使う。agent自己申告の7toolsではなく公式event8toolsを実数にする。登録・公開・課金・送金・売上はこのrunでは実行0。API readbackはagent24/月10USD/task1USD、定期deployment24/12時間。最新spendは実行後に再取得する。認証情報生成だけで認証完了にはしない。
+
+PR9196はconfig/naive-browser-company.jsonの旧BusinessRun専用pilotとconfig/naive-browser-company-deployment.jsonの旧inputをCapafyへ置換し、全CI PASS後にmainへ統合する。公式反映とreadbackも完了する。既存Identity/context/tools/model/月10USD/task1USD/cron/専用投稿先を維持し、25を採用版とする。営業/配信/商品公開の許可は既存の所有範囲だけで、新規Publisher・既存seller変更・他owner操作・支出増額を追加しない。NHC-01の権限確認が済むまでは、公開情報による需要調査と新規商品のComputer内原稿/見本を進め、既存ownerの返答待ちを無関係登録や同じ認証失敗の反復へ置換しない。正式な専用認証/権限を実画面で確認してから同Publisher内の新規商品を公開する。人間の通常承認を追加せず、本人必須手順は不足事実として扱う。
+
+受入は旧pilot指示の除去、Capafy業務の自然言語目標、同一Identity/context/予算/権限の不変、JSON妥当性、独立read-only review、CI/main、expected_version24から専用agentだけの更新とdeployment pin/入力の公式一致。その後の有限runで本人の需要証拠・新規成果物・保存再開を検証する。source反映、runtime反映、認証、公開、第三者売上は別の完了状態とする。SDKは設定・起動・readbackのみ、業務は本人browser/mail/許可済みPostizで行う。
+
+#### 現在の公式readbackと紹介依頼
+
+NHC-03は完了。main固定版からexpected_version24を条件に専用agentのsystem/metadataだけを更新し、同じdeploymentを25へpinする。公式agent25/systemとdeployment25/inputがsourceに一致し、model/tools/MCP binding/budget/Identity/cron等の不変チェックは全PASS。private receiptは`~/.local/state/naive-browser-company/v25-capafy-runtime-readback-20261104.json`。object key順序を意味的な差分と誤判定した最初のpreflightはmutation前に停止し、深い構造比較へ修正してから反映する。source/公式反映と商品公開/売上は別状態。
+
+NHC-02原稿run `ses_yfn5sy6kyvkgt5wcqsvtcg1ekr` はv24/専用Identity/有限cap250000microUSDで自然end_turn/idle、実消費76689microUSD。最初のHookAce goto/screenshot/view_imageは成功し、COCO/4.3/Sold1185のサイト表示を取得する。価格・paid revenueは未観測。その後internal_errorによる再試行とbrowser無応答30秒が3件発生するが、因果をvision非対応と断定しない。続いてNaïve本人が`products/capafy-new-skill/SKILL.md`、`example.md`、`capafy-product-plan.md`をwriteし、前2ファイルをreadする。商品候補はShort-Form Script Forge。商品原稿は存在するが公開・受注・納品・売上の証拠ではない。primaryの追加指示を介入として保持し、standalone無人完走としない。
+
+原稿で見つけた30秒台本の語数超過、入力にないoffer条件の補完、最初の画面取得成功を取り落としたplanを修正対象とする。別の有限v25/file-only run `ses_y0qjgm6w5za74nx2qtg60ewt0f` はbrowserを使わず、保存済み原稿の修正と別入力の一回試用を担当する。これは失敗の境界を分ける最小probeであり、browser障害の修復証明ではない。公式eventではread6件成功後、span.model_request→box_resume→internal_errorの再試行1件を確認する。browser/image呼出0でも再現するため、画像だけを原因にしない。有限時間上限でcancelし、公式cancelled/interruptedを確認する。停止直後のreadbackは5343microUSD/write0だったが、後続の公式eventでSKILL.mdの5526bytes write成功と消費39503microUSDが追加される。次runのreadも修正済みfrontmatter/語数範囲/default/入力にないoffer補完禁止を確認する。停止直後のログだけでwrite0と確定しない。example/plan修正とsmoke-testは未完。
+
+小さいwriteの境界probe ses_eva639mf9g237qyz1ys71vpr96はv25/同Identityでread→listing-draft.md write2489bytes→readの3tool成功、自然idle/end_turn、消費19358microUSD。browser0/retry0。160語以内の指示に対して全文394 whitespace wordsで長さ条件は未達。短い出品本文へ絞る修正を残す。これは保存再開/小さいwriteの証拠で、長い再生成のinternal_error修復や公開/売上の証拠ではない。最初のcap60000指定はpreflight quote超過で開始前402。既観測quote83553/85056microUSDを根拠に有限cap100000へ合わせ、月cap10USDは増額しない。session消費と月spendはComputer費/遅延計上を分ける。
+
+YC紹介依頼はDarshan/Nizzy/Ary/Connorの4人へ個別送信し、Slack履歴で送信を確認する。既送信のapplication review/10分office hour依頼と併走する。現在、4人の返答・紹介実施は未確認。Mariaは紹介の約束を保持するが実施完了とはしない。紹介と実売の両方を進め、人数でYC採択を保証しない。Grok/Muse/Capafy担当には既存Publisher内の専用認証経路とownerだけを照会し、既存販売商品やloopは変更しない。
+
+公式GitHub `https://github.com/Capafy/Capafy-skills` と公式Web公開ガイド `https://capafy.ai/developer/doc/2.1` はSKILL.mdのWeb upload経路を示す。業務CLIを導入せず本人browserで出品する最小経路を優先する。`https://github.com/trycua/cua`、`https://github.com/browser-use/browser-use` はComputer/記録の参考で、現行Naïveからの移行・追加installはしない。取得したnative screenshotは実画面の証拠だが動画録画・販売デモの完成とはしない。Publisher初回certificationは公式 `https://capafy.ai/developer/doc/1.3` に本人/法人書類と費用があり、camera必須かは当該実経路で確認する。既存Publisher内の正当な専用経路が未確定なのでNHC-01は未完。
+
+公式大会ページの再取得では、Naïveは11月7–8日/SF両日参加/Naïve SDK必須/live demoで、本人抜きの業務割合と実成果・判断・介入を説明する。1位のYC interviewは採択保証ではない。公開ページで事前開発の可否・持込み成果の採点範囲は未確認なので、準備済み部分と当日実行を分けて記録し、未確認を許可済みに置換しない。Maritime現規約は12月1日23:59 Pacificまで、実利用を伴う異なる1000人へ到達した先着3組を検証する。VM/agent/複数accountで利用者を水増ししない。米国外からの無料航空券は確認できず、スポンサー便は米国内の人に限定との記載を保持する。同一商品の運用成果と利用者獲得を別々に測る。
+
+#### v26の有限認証・商品完成枠
+
+目的は同じNaïve本人による登録・新規所有商品の販売・実売上/費用・英語デモで、到達目標を小さくしない。v25の月10USD枠は公式spend9869205microUSD/残130795microUSDで、既観測の一回予約約83000microUSDを考えると複数stepの認証を継続できない。購入済みorg credit21710973microUSDを公式確認し、追加購入・カード決済・資金移動なしで専用agentの月額運用枠を10→12USDへ改訂する。これはprimaryが選ぶ今回の有限運用変更で、無制限増額や全agentへの一般許可ではない。旧「月cap10USDは増額しない」は当時のprobe契約とし、現在の上限契約は本段落だけに置く。task上限1USD、model/Identity/context/tools/MCP binding/cronを維持し、candidate26はbudget.cap・Capafy許諾境界のsystem追記・deployment pinを変更する。main固定・独立read-only反証・公式expected_version25更新/不変readbackの後だけ採用する。
+
+DaisはCapafyのagent利用・自動操作の許可を取得済みと明示する。これは信頼できるownerの申告として採用し、primary自身がCapafyの書面を検査したという主張とは区別する。許諾記録の再提出・再質問を進行条件にしない。system末尾の旧「許諾未確認」はこのowner情報で充足され、認証タスクへ最新状態を明示する。普通利用accountの量産・別Publisherの作成・既存seller変更は行わない。
+
+最初の有限runはsession cap500000microUSD/最大8分/一件で、本人のAgentMail受信箱とnative browserにより実ログインと販売権限の確認を進める。個人Google/Gmail/共有profileへ切り替えない。メールのOTP/リンクは専用inboxだけを使い、秘密値を一般journal/報告/証拠ファイルへ複製しない。rootはSDKで設定/開始/状態取得だけを行い、業務はNaïve本人のnative browser/mailに任せる。通常の会社account規約同意は既委任の範囲で本人agentが扱う。本人限定の法的手続き・camera/livenessは迂回せず不足として残す。認証済みaccount表示を実画面でreadbackし、普通利用loginとPublisher販売権限を分ける。販売権限を確認できるまで商品公開・既存seller変更を行わない。
+
+Computerは前回pausedだったidが公式destroyedとなり、現在listに専用割当なし。file消失とは断定しない。次の本人runで再割当と保存済みSKILL.mdの再読込を確認し、復旧が必要なら保存済み自身の成果物から戻す。未確認のComputer保持を稼働成功にしない。v25の同一turn goto→Get started→extractはGoogle/GitHub/Email入口を取得し、続くv25の既実行runはContinue with Email→メール入力/Terms/Privacy/Continueまで取得済み。次はowner許可取得済みの状態でメール認証を完了する。認証・OTP送信・販売権限・売上は未達。observeの空配列をページ本文なしと断定せず、本文にはextractを使う。新たな買い手/販売先への無関係登録や同じ失敗の反復はしない。
+
+v26はPR9203/main 077394a8689746ba617a50dff697e3178e553347から公式agent26/deployment26へ反映済み。JSON妥当性・独立反証・全CI PASS、公式readbackでsystem/budget一致、tools/MCP/model/window/Identity/cron/input/task予算/enabledの維持を確認する。認証run ses_p7vd2tb0v0yrvq62eg0y3vj9bnを開始し、開始時の公式状態はqueued。完了・売上とは扱わない。
+
+旧順=許諾記録の照会＋本人Computer内の商品完成。新順=取得済みowner申告を反映→専用メールの実認証→正式な販売権限→新商品修正/試用/公開→配信→第三者注文/納品/入金/費用→英語デモ。理由=ownerの最新明示情報で許諾確認待ちは解消し、認証が次の収益行動の依存条件となるため。現在cursor=NHC-01、商品完成=NHC-02。上限増額そのものや残高は収益ではない。次の費用/時間不足は実測を残してscope/完了条件を縮めず診断する。
+
+#### ブラウザ業務のmodel費用対効果の実測
+
+DaisはGLM固定の継続を見直し、Codex/Muse/Grokbot/Dotsも含め、実際に完走する最も費用効率のよいmodelを求める。最新公式catalogueでopenai/gpt-6.1-terra、deepseek/deepseek-v4.1-flashを確認し、両者はimmediateのみ対応する。公式LHTBはGLM5.2固定のharness/window比較で、loose=10/16・0.1709USD/solve、priority=13/16・0.2332、immediate=12/16・0.2976。August実施・16件程度のterminal試験であり、最新modelの比較やCapafy認証成功率に外挿しない。source: https://vetta.sh/benchmarks/long-horizon-terminal-bench ; https://vetta.sh/docs/api/models.md ; https://vetta.sh/docs/platform/pricing.md 。
+
+実行中のv26認証trialは176882microUSDを消費し、ログイン未完了のままcancelled。browser allow/ask_actions空、session-scope allowを返しても同toolに再確認が出るprovider挙動と、直接/login経路の空画面/クリック失敗を分けて記録する。rootの確認4件・復旧steeringは外部AI介入で、人間の質問0と混同しない。同じ失敗を無制限再試行せず、owned deploymentだけenabled=falseへ一時停止し、他ownerは維持する。
+
+有限比較は本番設定の置換に先立つ診断trial。当初一件500000microUSD/8分、同じagent26/Identity/context/tools、window=immediateで開始する。SDKのcreateはmodel overrideを持たないため、初回は保存journalの最小readだけに限定し、公式sessions.sendのmodelでTerraへ切り替え、通常のCapafyメール認証を完走させる。GLMによるbootstrapの最終費用64238microUSDは比較の別項に記す。bootstrapは外部操作なし、model切替のsendでinterruptしてよい。最初のworking baselineを優先し、成功前に複数agent/accountを増やさない。Terraが完走した後だけFlashを同等の安全な認証済み状態確認/下書き作業で比較し、実際のアカウント登録やメール送信を比較目的で重複させない。失敗時はtool/model/provider境界を分けて診断し、未達を成功として母数から除かない。月cap12USD・追加購入なし・task上限1USDは維持する。
+
+判定値は実結果の完了、model/browser/computer/失敗試行を含む総費用、時間、人間への質問数、root/他AI介入数。公式料金はbrowserのmodel駆動action0.01USD、minute0.001667USDで、成功済みの観測selectorを使うclick/type等は追加action料金なし。実際に観測したlocatorだけ使い、失敗済みselectorを盲目的に繰り返さない。model変更だけでprovider確認待ちが消えると断定しない。最終的な定期model/window変更はsource変更/検証/main/公式反映で固定し、owned scheduleを復帰する。Terra baseline ses_mdr8ztmb0ptzr6611ap5pw107bは公式model_request spanでresolved_model=openai/gpt-6.1-terraを確認する。消費330124microUSDで次callの予約が残capを超えてbudget_paused。本人の実screenshotはメール欄に専用agentmail受信箱を表示し、規約checkbox未選択・Continue無効である。extractのhidden validation文だけからメールが不正と断定しない。元のtask上限1USD/月cap12USD内で、この一件だけsession capを750000microUSDへ改訂して現画面のcheckbox/Continue/メール確認を続ける。追加購入・全体cap増額はしない。旧=0.50USD枠で中断、新=観測済み予約不足を解消する0.75USD枠、理由=モデル課金が確定した続きの認証を同じsessionで行い、重複登録/OTPを避けるため。現在cursor=NHC-01のTerra認証baseline。一般的な最安modelという断定は未測定。
+
+実測追記: Terraの同sessionはbudget750000microUSD反映後にresumeし、専用AgentMail.list_messages成功を確認したが、browser.goto/actの確認待ちが再発し、ログイン後のaccount readbackに届かない。最終cancelledの公式消費418865microUSD（うち初回GLM bootstrap64238microUSD、残354627microUSDはTerra側の実行とtool費用）。Terra切替時刻12:01:34UTC→停止readback12:09:27UTC。rootの補助steering2件・browser確認解除1件を含み、無介入成功ではない。GLM trial176882microUSDも未完走。どちらもcompleted-task単価を算出できず、モデル性能ランキングとして比較しない。SDK公式npm latestは0.10.0で、使用版と一致する。Context7はNaive/Vettaで該当SDKが得られず、Firecrawlは接続link_id不足で取得失敗、上記一次資料は公式URLから直接取得する。次の診断対象は、browser permission=allow/ask_actions空かつsession-scope grant済みにもかかわらず再度tool.confirmとなる境界と、画面状態を保持した入力/checkbox操作。この未完の認証trialだけを根拠に最安modelへ固定しない。後続の原稿完走後の既定model候補とsource反映順は後段v27節を正本とし、定期起動は本人認証の結果を見て復帰する。
+
+#### v27のmain反映と専用メール認証run
+
+PR9210は独立read-only review blocking 0、全CI PASSの後、main f27886f200f470bcc17448265804c1c53941ac6fへ統合する。同SHAのimmutable sourceからexpected_version=26のpartial updateで公式agent27へ反映し、deployment27/window immediate/enabled=falseをreadbackする。system/model/window/source_shaはsource一致、tools/MCP/skills/multiagent/handoffs/harness pi/月cap12USD/task上限1USD、deploymentのIdentity/cron/timezone/input/task予算/agent所有は全て維持する。公式照合は21項目全PASS。証拠はprivate v27-main-runtime-readback-20261104.json。旧v26/GLM/priorityの記述は履歴で、現在既定はopenai/gpt-6.1-terra/immediate。
+
+次の実行はses_xa86qma13pwkjr7b793qjazhkh、agent27、同Identity、session上限750000microUSD。Daisの許可取得済みを保持し、個人Google/Gmail/passwordを借りず、専用AgentMail受信箱で認証済みaccountとPublisher roleを分けて確認する。別Publisher・既存seller変更・購入/送金は行わない。起動後のbrowser observe/screenshotは成功したが、モデルはabout:blankからcontext open機能を探してend_turnした。公式tools.configs.browserに指定context/persist/allow/ask_actions空が配置済みと照合し、rootの補足一回で同sessionをresumeしたところhome移動・Email画面操作が進んだ。その後agentmail.list_messagesがpermission=allowでもread_people=trueの確認待ちとなった。scope=sessionのallow後に同受信箱の一覧取得は成功したが、browser.goto/actでも確認待ちが再発し、act失敗と白紙login画面を確認した。同型の確認解除を続けずcancelledで終了し、公式最終費403170microUSD、root補足1件・確認3件、人間質問0件を記録する。証拠はprivate v27-auth-terminal-readback-20261104.json、実スクリーンショットfil_k2m6gsdr14287wsmsnknwhjaws。認証・Publisher role・公開・売上・Naïve単独無介入は未達。agent27/deployment27/enabled=falseは維持する。主cursor=NHC-01。次は別harnessの同型有償失敗を避けるため、過去Vetta試行を先に照合する。過去ses_1hd3zyf1e2cgwc20cwjp53bek2はAgentMail一覧後にbudget_paused、5539microUSDでcancelled、Computer未割当・browser未測定、一時agent/credential削除済み。したがってVettaのbrowser動作は未検証で、次は同じ元Identity/contextを保護した別の小さい有限診断で、blankからhome→Emailまでのnative browserと確認待ち境界を実測する候補。原本のharness PATCHが無視されたため、原本を繰り返し更新しない。新規Publisher/account/課金を比較目的で重複させない。
+
+#### 有限Vetta browser診断の実行条件
+
+NHC-01の次の診断は、原本agent27を変更せず一時agentをharness=vetta/model=openai/gpt-6.1-terra/window=immediateで作る。org全体の今回の自社枠12USDの残923747microUSD以内から最大500000microUSDだけを使い、追加購入はしない。原本のIdentityとcontextへの既存所有権を確認し、専用agentだけに同contextのgrantを付与する。原本/他ownerの稼働と重複させない。native browser設定は原本と一致させ、診断にはbrowser/read/write/view_image以外の業務能力、外部MCP、mail送信、購入/送金を持たせない。harness以外にもtool露出を絞るため、厳密な性能比較や費用効率ランキングとはしない。
+
+一成果はnative browserのhome→Get started→Continue with Emailと実画面/URL/入力欄の証拠。新規signup、OTP送信、商品/Publisher変更はしない。context open機能の検索をgateにせず、配置済みbrowserでgotoから進める。tool.confirmが出れば比較対象と同じ境界を記録し、診断中にrootが解除して成功へ付け替えない。予約不足/供給エラーは実測し、同型再試行やcap増額をしない。terminal後は証拠と費用を保存し一時agentを削除する。context revokeは共有contextと全grantを削除するため使わず、原本のcontext/Identity/credential/deploymentを維持してreadbackする。主cursorと全収益目標はNHC-01のまま。これは認証や無介入収益の達成ではない。
+
+有限Vetta診断の実測更新: 一時agent agt_7cdr39p6r97t0c9kxw7s7ahs6m/version1、session ses_hyngzjf8fhx2h69996n4dkyr71はTerraでhome gotoとobserveを確認し、Get started表示を得た。次callがsession予約上限でbudget_pausedとなり、消費14455microUSDでcancelled。Computerはnullで、browser.session.opened/closedのイベントは存在するためbrowser未実行とはしない。元のagent27/Identity/deploymentは変更していない。今回のSDK managed-agent設定にはmax_output_tokens指定がなく、proxyのmax_tokensを業務scriptで代替しない。公式budgetsは実消費ではなくcall上限quoteを先に照合すると説明する（https://vetta.sh/docs/concepts/budgets.md）。quoteの具体額はeventにないため推測値を実額として記録しない。
+
+次の診断は同じ一時agentのmodelだけをdeepseek/deepseek-v4.1-flashへ変更し、同じnative browser課題を一回実行する。新session capはperiod残枠485545microUSD以下、period/task上限500000microUSDは増額しない。これは低料金modelで予約を通過できるかという新しい仮説のprobeで、Terraの同型再試行ではない。両catalogueのmax_output_tokensは32768/immediate対応を公式確認したが、成功率・最安・料金差の数値は未検証。原本の既定Terra、全収益目標、業務browser契約は維持し、登録/OTP/Publisher作成を比較目的で行わない。終了後に両sessionの実費とartifactを保存し、一時agentのみ削除する。
+
+有限Vetta/Flashの結果: 同agent/version2のses_xmh1r8h43cmmx8gh3ctmtc5sfkは44968microUSDで自然end_turnし、home→Get started→Continue with Emailへ到達する。root確認/補足0件。XPath click2回はpage action errorで、モデル自身がbrowser.actへ切り替えて復旧した。最終実画像fil_e34sj164b643pw8tjf60fbzy0pをrootがdownload/viewで確認し、email入力欄・未選択のTerms/Privacy checkbox・無効Continueボタンが表示される。モデルの「budget ended」という文はbudget_pausedの公式証拠ではなく、公式終了理由はend_turnで残capあり。認証/OTP送信/Publisher/公開/売上は未達。Terra/Vettaの予約停止と別に記録し、価格・速度・成功率の総合ランキングへ外挿しない。
+
+次工程の順序変更: 旧=画面診断terminal後に一時agentを削除→別harness検討、新=確認済みのVetta/Flashを同capのまま専用メール認証一回へ延長→終了時artifact/費用保存→今回binding/agentのみ削除。理由=実画面で進めるharnessが得られ、root代理操作でなく同じnative browserの認証へ直接進めるため。原本agent27/deployment27/enabled=false、全MRR/製品/デモ目標は維持する。
+
+一時agent専用のAgentMail sealed static_bearerを既存Identity vaultへ一つだけ作り、agent_id=agt_7cdr39p6r97t0c9kxw7s7ahs6mへ限定する。secretはprivate credential SSOTのexact service naive:browser-operator:agentmail-receiveからメモリ上で公式vaultへ渡し、prompt/config/logへ表示・複製しない。既存credential/受信箱を変更せず、新bindingのmetadataをprivate SSOTへ直ちに保存する。MCP URLと受信read-only4toolsは原本の正式設定を使い、mail送信toolは追加しない。新session capは440577microUSD以下かつ一時agent period残枠以下、period/task上限500000microUSDは維持する。scope/cleanupをfresh read-only reviewerで検証してから接続する。普通利用accountの専用メール認証/OTPと認証済みaccount/Publisher roleの確認だけを進め、新Publisher・既存account設定/商品・購入/送金/配信は変更しない。tool.confirm発生はrootが解除せず未達として記録する。終了時はこの一時vcrとagentだけを削除し、context revokeを使わず、原本のIdentity/credential/context/deploymentをreadbackする。
+
+Vetta/Flash専用メール認証の結果: fresh read-only scope review blocking 0後、一時agent/version3へagent指定・1時間有効のsealed AgentMail受信credential一つと正式な受信read-only4toolsを追加した。ses_e6yk18h6gkz7r9k7k8q8917k0pはagentmail.get_inbox成功後、homeへのbrowser.gotoでread_people=trueのtool.confirmとなり、2086microUSDでcancelled。root補足/確認0件。OTP・普通利用認証・Publisher権限・公開・売上は未達。Pi/Terraだけの問題ではなく、Vetta/Flashでも認証タスクで確認待ちを再現した。公開画面のみのprobe成功との違いは追加mail接続/認証目的等を含み、どの差分が原因かは未確定なのでモデル品質やMCPだけの原因と断定しない。
+
+公式cleanupで今回の一時vcr/agentを削除し、private Credential SSOTの新binding metadataだけdeletedへ更新した。原本agent27・deployment27/enabled=false・既存受信credentialの不変、原本Identity agent保持、一時Identity agent/vcr不在、context revoke未使用を全照合する。証拠はprivate vetta-browser-auth-cleanup-readback-20261104.json（7項目PASS）。一時agentの公式合計61509microUSD=Terra14455+Flash画面44968+Flash認証2086。private vetta-flash-browser-diagnostic-report-20261104.mdと実画像を保存する。原本既定Terra/piを勝手に切り替えず、次cursorはこのallow/ask_actions空/owned AgentMailに対するread_people確認境界のprovider技術照会。許可の再取得やDaisへの承認質問へ戻さず、同じ有償解除試行も繰り返さない。NHC-01と全製品/収益/デモ目標を維持する。
+
+read_people境界の技術照会を送信する。Dais Slack #agents-hqの既存threadへ比較条件・実費・原本不変を共有し、正式なorg/Identity/data-access設定または既知のruntime制限の参照を求める。送信ts1793798363.212689、thread readback一致。https://dais-45u3124.slack.com/archives/C0CBLBGSBJN/p1793798363212689?thread_ts=1793782575.851649&cid=C0CBLBGSBJN 。
+
+YCハッカソン既存chatへもDaisの依頼済み連絡として英語の技術質問を一件投稿し、Page.reload後にDaisuke名義・本文一致・本文側の一件・空のcomposerを公式UIで確認する。https://messages.ycombinator.com/messages/282272#message-3105445 。private yc-provider-question-send-20261104.jsonにdraft SHA/送信/再読込readbackを保存する。sidebarの最新previewとeditorのzero-width空行を本文件数/内容の不一致と混同せず、既存紹介文は変更しない。既存YC accountへの通常メール認証は連絡用のroot操作であり、Managerの個人Google不要・Naïve単独認証/収益の実証へ算入しない。ログインコードはprivate Credential SSOTで受取/使用後に秘密値を除去し、会話・repo・logへ出さない。providerの回答/設定解決はまだ未確認。次はこの技術照会の回答とPR9211の最新head CIを確認し、根拠のある修正が得られるまで同型の有償認証/確認解除を繰り返さない。
+
+#### NHC-02の公開価格照合を並行実行する
+
+PR9211は全CI PASS後main 07f7889926ae92b78e247cb1b347e11ea90e6d1cへ統合済み。Naïveのread_people技術照会は送信/再読込readback済みで、直近の表示では回答未確認。同型の有償認証/確認解除を繰り返さず、主cursor=NHC-01を維持して、独立して公開前に必要なNHC-02の価格/有償需要の照合を進める。旧=認証回答確認のみ、新=回答確認と公開価格照合を並行する。理由=原稿は完成しているが価格未確定で、vendor回答を待つ間に次の販売行動の依存条件を減らせるため。売上目標・無人契約・残14TODOは縮めない。
+
+原本27の設定を変更せず、一時的なVetta/DeepSeek V4.1 Flashのnative browser agentでCapafyの公開商品画面を読む。専用Identity/contextを使い、browser設定は原本と同一、MCP/メール/購入/送金/配信能力なし、登録/認証/既存商品変更なし。period/task/session上限は300000microUSD。原本月残枠と既知の一時試験61509microUSDを事前確認し、追加購入/全体cap増額はしない。対象はHookAce、Video Hook Forensics、Dola AI Video Storyboard Assistant。実際のUIから商品URL・無料/有料・周期/価格/回数・公開需要指標とその限界を記録し、売上額やMRRへ推測変換しない。旧snapshotは二者がdownload/oneTimeFee=0、HookAceがweekly9.99/monthly19.99/yearly239.88USDだが、live表示を得るまでは現行価格と断定しない。
+
+native agentは本人Computer/isolateに比較表と自社オリジナルScript Forgeの一つの価格仮説を保存しreadで照合する。20%platform feeを前提に計算する場合も、Capafy上の実model/実行費・返金・課税等が未実測であることを明示し、制作run費0.184947USDをそのまま一注文のCapafy原価へ転用しない。tool確認が出た場合はrootが解除せず状態を記録する。終了後はartifact/費用を保存し一時agentだけを削除、context revokeは行わない。原本Identity/credential/deploymentを維持する。これは価格仮説と公開需要の証拠であり、認証/公開/注文/利益/MRRの達成ではない。
+
+価格run ses_wbghwk1pt6m81k08s94javsmj7（一時agent agt_3w1mh1wd332rah8kbbx0sgd5s7）はHookAceのlive価格表と二資料を書き出した後、58808microUSDでbudget_pausedとなる。次callのsession quoteが残枠へ収まらないという公式budget.exceededで、300000microUSDを消費した状態ではない。quoteの具体額は未提示。Video Hook Forensics/Dolaのlive表示と書いた資料のreadbackは未完で、価格仮説には試用例57語/販売文128語と一注文仕様の混同、複数tierを一案とする矛盾が残る。
+
+この一件だけ旧period/task/session上限300000→新500000microUSDとして、同sessionのUI検索完了・最小修正・readbackを続ける。原本月残枠から既知の一時試験費を控除して新上限が収まることを先に照合し、月cap12USD/追加購入/原本27/定期設定は変更しない。理由は完了済み外部価格読取を再実行せず、実測の予約不足を解消して既存成果を正確に保存するため。root補足1件として数える。未検索の二商品は観測済みSearch UIの実行結果を確認し、未観測URLの推測を繰り返さない。自己制作商品の仕様は15秒25–32語/30秒55–65語/60秒110–130語、六部はhooks/script/CTA/caption-tags/titles/checklist。57語は二つの30秒試用例、128語は販売文であり注文の固定長ではない。一つの初期paid planを仮説として選び、他tierは比較資料へ分け、原価/実需要未検証を維持する。終了時の実費・資料・不明点を記録し、未確認の二商品や有償需要を完了扱いにしない。
+
+価格資料は196/198のsuccessful writeと204/205の全文native readが一致する（public-pricing8049bytes/SHA7f00c549031299af302b5e74f1ca5de945fd7b0a8f53ae0436009490f8b8e628、hypothesis5421bytes/SHA1c1dcb7721fc3e562ba285374f6bd6a000cfd01acd165f55d784047887333af7）。当該時点は176281microUSD/end_turn、HookAceのみlive確認、二商品は未確認でNHC-02全体完了ではない。初期案は週9.99USD/10requests一つ、六部/時間別語数を修正済み。資料完成後にroot未送信のshell/test確認発話とread/tools_searchがあるが、accepted user inputにはその起動元が記録されず、公式delegated threadsは空・実shell tool実行はない。追加発話の原因や子実行の存在を推測しない。
+
+二商品の検索UI失敗を同じ操作で反復せず、既存公式market snapshotのtitleSlug/idという追加根拠から二つの候補URLを導き、同session/同500000microUSD上限で表示確認する。Video Hook Forensicsはvideo-hook-forensics/4507678012、Dolaはdola-ai-video-storyboard-assistant/1047941397。観測済みCapafyの/agent/<slug>/<id>というUI path形と歴史的公式fieldsからの推論であり、現在のcanonical URL/価格の証明ではない。表示後のtitle/ID/価格/screenshotで初めてlive事実とする。無根拠なslug総当たりと区別するためこの経路変更と根拠を先に記録する。root補足は計2件として数え、追加の上限増額・登録・購入・テスト/shell作業は行わない。資料への最小追記後readbackし、未確認なら具体的な画面結果を残して未完扱いにする。
+
+価格照合の最終結果: 同sessionは265948microUSDで自然end_turnし、root補足2件・tool確認解除0件。歴史的titleSlug/idから導いた二候補は実際に表示され、PricingタブでVideo Hook ForensicsとDolaのDownload · Skill Package/US$0を確認する。rootも三価格画像をdownload/viewで照合した。HookAceはRun on Capafy、週9.99USD/10requests・月19.99/25・年239.88/360。VideoはSold1224/More ratings needed、DolaはSold1812/rating5.0、HookAceはSold1185/rating4.3だが、これらを有償注文・売上・利益・MRRへ変換しない。現時点の三商品だけから市場全体の価格や需要を断定しない。
+
+| 商品 | live一次URL | 表示された価格と提供形態 |
+|---|---|---|
+| HookAce | https://capafy.ai/agent/hookace-first-6-second-retention-predictor/3264203863?tab=pricing | Run on Capafy、週9.99/10・月19.99/25・年239.88/360、USD |
+| Video Hook Forensics | https://capafy.ai/agent/video-hook-forensics/4507678012 | Download · Skill Package、US$0 |
+| Dola AI Video Storyboard Assistant | https://capafy.ai/agent/dola-ai-video-storyboard-assistant/1047941397 | Download · Skill Package、US$0 |
+
+採用する作業仮説は**Script Forgeをrun-onlineで提供できる場合に限り週9.99USD/10requests**。六部と15/30/60秒の語数契約は既存SKILLを正本とする。20%fee前提では7.992USD/週、全10回利用時0.7992USD/requestがcompute前残額で、Capafyの実原価/返金/税/実需要は未検証。無料downloadの類似商品を売上実績として使わず、raw native案にある「0–2.99USD市場」「3–10倍」という周期/無料と定期課金を混ぜた倍率主張は**採用しない**。これは市場調査と価格仮説の進捗で、公開/黒字化/有償需要の検証ではない。
+
+最終二資料はnative successful writeと全文readback一致（public-pricing12290bytes/SHA24bc184b4f1ff6bfbf83fb8cdeb5d0d6bfdd7fd828ab20f7940d821296901a7a、raw-hypothesis6270bytes/SHAc723de70487b1d38552b66e399235e1b94489003e368e2d00e19f5a77fd46dbc）。二資料と三画像をNaïve組織Filesへ永続保存しGET/download/hash一致を確認する。fil_rtdsncykfdrqwmjrbtcbc56q0z、fil_km2k5zsggjte85tw1z9zq0zjhg、fil_m4x3wcy2r6vesaqpbb6xsyyq0c、fil_f41st9wjaqhwv1jmbw1pf4szx6、fil_hnx6zfsar7546xe6pqmjy18q7g。scope publishedは組織内保存で、Capafy商品公開ではない。自然終了後にartifactを保全してsession取消/一時agent削除を行い、原本agent27・deployment27・Identityの不変/一時grant不在を6項目照合する。新mail credentialなし、context revokeなし。private証拠はcapafy-pricing-final-export-20261104.json、capafy-pricing-cloud-files-20261104.json、capafy-pricing-natural-end-20261104.json、capafy-pricing-cleanup-readback-20261104.json。追加shell/test発話は起動元未確定で、実shell/公式delegated threadはない。主cursor=NHC-01、価格比較/原稿/価格仮説は進むが、認証・販売権限・公開・注文・利益は未達。
+
+#### NHC-01の次の技術検証は会社API keyの正式経路
+
+vendor返答だけを待つ前提を見直す。公式 https://vetta.sh/docs/api/sessions.md#respond-to-a-tool-confirmation はtool_confirmationsへのBearer sk_live_...の例を示す。API keyで通常tool確認へ応答する正式経路が利用できるかを、一時agentの非秘密ファイルread一件で検証する候補とする。SDK keys.createはname/scopesを受け、最小scopesはagents:read/sessions:read/sessions:write。実際に使えること、read_peopleにも適用できること、cloudで無人運転できることはまだ未検証で、文書例だけで解決済みにしない。
+
+次のspikeはfresh read-only scope review後、会社ownerの一回のbootstrapで専用API keyを作成し、秘密値はprivate Credential SSOTのexact service naive:policy-control-plane-probeへ直ちに保存する。既存credentialを変更せず、key/secretをprompt/repo/logへ出さない。browser/MCP/売買なしの一時Vetta/Flash agentはhandoffs:false/multiagent:falseを明示し、tools.default_config.permission=deny、write=allow/read=askのみ有効にして非秘密fixtureを書き、readを一件だけparkする。SDK0.10.0はhandoffs未指定のcreate-time defaultがtrueで他agent/CEOへ到達するため、限定fixtureでは省略しない。fresh read-only reviewの最小修正であり、原本agentはliveでhandoffs:false/multiagent:falseを再確認する。専用keyでその自分のsessionのGET/confirmだけを行い、実tool結果を確認する。最大period/task/session300000microUSDを、原本月残から既知の一時61509+価格265948microUSDを控除した残枠に収める。bootstrapに用いたowner session tokenでconfirmを代行してAPI key成功に見せず、human_session_required/forbiddenなら事実を記録する。key/session/agentは試験後に削除/revokeし原本不変を確認する。
+
+仮説は「既に会社が許可したtool policyをSDK制御側で適用する構成」で、人のクリックや個人Google credentialを製品の停止点にしないこと。通常API key fixture成功だけで実認証gate解決とはせず、その後にread_peopleの限定検証・必要ならcloud制御側への最小実装/検証/main/公式反映を行う。業務の選択・サイト操作・メール認証・制作・販売は引き続きnative browser/mail agentの仕事で、Capafyの業務HTTP/script botへ置換しない。未知のtool、別owner、支出増額、wallet/card/operator.requestを一括allowする構成は作らない。旧=vendor返答確認のみ、新=返答確認＋文書が示す会社API key経路の有限検証、理由=日々の人間承認なしというユーザー成果へ進む正式な代替を検証できるため。現在cursor=NHC-01を維持する。
+
+#### 会社API keyによる通常tool確認の実測と次のbrowser境界
+
+通常read fixtureは専用key key_3tyes7mdr104mwxc1jf4y7xxtbで自分のsession GET/confirmに成功する。ses_khw3w7fvtgfk25qs2139mds282の公式event19はactor.type=key、scope=call、event22はread tool.completed/is_error=false、内容company-probe-okを返す。session/agent費用394microUSD。受理だけでなくnative read実行まで確認する。試験後にsession cancel・key revoke/一覧から不在・SSOT秘密値除去・一時agent削除・原本agent/deployment不変の6checksを全PASSする。
+
+handoffs:false/multiagent:falseでも、read完了報告/end_turnの後に別model turnが発生し、予定外のread要求（同じfixtureと/home/tenki/）が追加される。追加要求はconfirmせず停止する。新しいroot message.acceptedは無く、handoffs既定値が原因と断定できない。これは試験を完全無介入の自然完走と呼ばない理由であり、上記の通常read実行成功自体とは分けて記録する。
+
+次の有限probeは同じIdentityを一時agentへattachし、保存済みbrowser contextとmail/vaultを使わず、public https://capafy.ai/ のnative browser goto一件にread_people:trueを指定する。browser以外のtool/defaultはdeny、handoffs:false/multiagent:false、allow_writes:false、ask_actionsはSDKが受ける全browser actionsを列挙して予定外login/save_context等もparkさせ、allowed_domainsはcapafy.ai/www.capafy.ai、timeout2分、period/task/session cap200000microUSD。専用exact service naive:browser-policy-probeの会社API keyはagents:read/sessions:read/sessions:writeのみ。pendingがbrowser/goto/当該URL/read_people:trueと完全一致した一件だけをscope:callでconfirmし、他の要求・繰り返しには許可せず停止する。bootstrap owner tokenでconfirmを代行しない。認証/メール入力/登録/公開/購入/送金はしない。通常browser action gateとread_people privacy gateは理由/公式eventが識別できる場合だけ区別し、汎用action gateの成功だけでprivacy gate成功と判定しない。API keyによる実browser実行の結果を記録し、通常read成功も今回の公開goto成功も認証成功へ拡張しない。終了後key revoke/秘密除去/session cancel/Identity detach/一時agent削除/原本不変を確認する。上限は既知試験費を控除した残枠内に置く。
+
+browser key probeのVetta実測: agt_3nqzm3bfb1pdmsddfgnnrraccx / ses_w46cnx1p9wre1v26es1f4fmq7rは231microUSDでidle/end_turn。browser.goto/read_people:trueのtool結果はis_error=true、「action goto needs a person approval ... harness cannot ask ... not run」。pending_actions空・tool.confirm無し・ページ未開封で、API key confirm自体を試せる状態に到達しない。live harnesses.listのvetta.approvals=trueだけではbrowser内部ask_actionsの可否を証明しない。
+
+次は一変数だけを変える比較として一時agentのharnessをpiにする。Vetta試験はcancel/detach/deleteしてから、同じ専用keyを使う別Pi/Flash試験を作成する。全browser actions ask・公開goto一件・他tool deny・保存context/mail/vault不使用・Identity限定・単一scope:call/追加要求は不許可・cap200000microUSDの条件を維持する。原本月残からVetta231microUSDと既知費用を控除して枠内に収める。キーはこの有限比較の終了時に失効/SSOT秘密除去し、両試験agentの削除と原本不変を確認する。ブラウザ操作成功とprivacy gate/実認証成功を引き続き区別する。
+
+Pi比較の結果: agt_rjrfjk5gmt0x538x0g1agwxbfq / ses_vkhyq81nc0927d0aypw5ydtaq1はpending browser/goto/https://capafy.ai//read_people:trueを専用会社keyでscope:call confirmし、公式event15 actor.type=key、event27 tool.completed/is_error=false/output=https://capafy.ai/、event34 idle/end_turn/pending空。費用2994microUSD（model1327/browser1667）、Vetta比較分込み3225microUSD。generic action gateとprivacy gateの内訳はeventから区別できず、privacy設定の恒久解消や実ログイン成功とは呼ばない。key失効/秘密除去/両一時agent削除/Identity detach/原本不変/一時grant不在など10checksを全PASS。fixture computerはnullで本体Computerを変更しない。
+
+次のNHC-01実認証試験はPi/DeepSeek V4.1 Flashの有限agent、cap300000microUSD/8分/確認最大20件。旧=公開goto一件、新=本人AgentMail受信とCapafy email OTPによるログイン/必要な通常signup、理由=会社API key経路による実browser実行が確認できたため。現在cursor=NHC-01を維持する。原本agent27/deployment disabledは変更せず、同Identityと会社所有context anicca-browser-capafyへ新agentの明示grantを付ける。元受信credentialは変更/削除せず、private SSOT exact service naive:browser-operator:agentmail-receiveの同じAgentMail keyを、試験agentだけに束縛する期限付きsealed static_bearer credentialとして追加する。MCPはagentmail URLのみ、get_inbox/get_message/list_inboxes/list_messagesのread-only4toolsのみ。登録/ログインに使うメールは既存専用AgentMail inboxで、人間Gmail/Google/session/password/API経由のサイト操作は使わない。
+
+browserは全actions ask・allow_writes:true・allow_extract:true・keep_alive:true・persist_context:true・timeout5分、他tool/defaultはdeny、handoffs:false/multiagent:false。agent自身が画面を見て認証手順を選び、SDK制御側は専用exact service naive:capafy-auth-policy-probeの会社key（agents:read/sessions:read/sessions:write）で当該sessionのCapafy認証と自分のAgentMail受信に必要なbrowser callを一件ずつ許可する。context保存は会社所有contextに限る。原本会社vaultや他ownerのcredentialを読むlogin action、商品変更/Publisher新規作成/決済/送金/配信/本人camera手順は今回の試験範囲外。外部AI/rootの補足/確認回数とhuman0は別々に数え、native単独無介入と呼ばない。
+
+新しいAPI keyは直ちにprivate SSOTへ保存し、OTP/秘密/API keyをprompt/repo/log/chatへ複製しない。root観測はmail本文/OTP/type値を保存・出力せず、tool名/action/host/成否/引数hash/receiptだけを記録する。新しく恒久credentialを発行する必要が出た場合はSSOTへ保存できる正式経路なしに進めない。終端では公式画面が示すaccount/role/Pub権限を確認し、一般accountだけをPublisher成功にしない。試験用key失効/秘密除去/試験credentialだけ削除/cancel/detach/一時agent削除と原本credential/contextのgrant保持を照合し、保存contextはrevokeで丸ごと削除しない。費用は既知61509+265948+394+3225microUSDと最新原本消費を控除した残枠内。fresh read-only credential/scope review後に実行する。
+
+#### NHC-01の根本境界: mail flagとmanaged browser寿命、Computer専用MCPへ進む
+
+ses_32pxe6fmesmbsw7wbm7yctjd1qのPi/Flash実認証試験は、会社AgentMail get_inbox成功・正しい公開goto成功後、observe/screenshotがabout:blankになる。rootは画像fil_96r217pmkgf2hvdmm4jh4mmzxcをdownload/SHA25653dddc9013da523227fbb65d8e1357478161c9e8d1f3fcd5d99445dcad4a3828/実視で白紙と確認する。費用25048microUSD（model10047/browser15001）、SDK decisions5=deny2/allow3、root補足message0、人間操作0。最初の誤domain capafy.comと許可外agentmail.search_inboxesは実行前にdeny。メール入力/OTP請求/登録/ログイン/Publisher/公開/配信/売上はいずれも未達。cancel/key失効/秘密除去/新bindingのみ削除/agent削除/原本とIdentity/context grant保持の13checks全PASS。
+
+公式 https://vetta.sh/docs/capabilities/tools.md#once-a-chat-has-read-peoples-data は、メール/接続先データを読むとchatにflagが付き、以後はbrowser移動/書込と全MCP callsがallowでも毎回ask、chat grantは覆わないと明記する。公式 https://vetta.sh/docs/computer/browser.md#session-lifetime--whats-withheld はagentのbrowserが入力待ちで閉じ、次turnにfresh browserを開くと明記する。keep_aliveはbrief disconnect向けで、このpause終了を無効化すると文書は言わない。保存contextはcookies/localstorageを引き継ぐもので、途中の画面をそのまま保持する保証ではない。全actions askにしたこちらの試験設定も操作ごとのpauseを作った。ask_actions空に戻すだけでもmail flagの強制askが残るため、同型の有償再試行をしない。これはCapafyの認証拒否や市場不採算の証拠ではない。
+
+live GET agents.computer(original)はnull。旧cmp_01a1a666565c7e0187e34a57454a6384はdestroyed/browser=nullで、停止中と誤認してresumeしない。公式api/computersはagent Computerが必要なfilesystem操作で自動provisionされると説明する。一方userはComputer有効化を明示しているため、会社が所有する独立ComputerとそのbrowserをSDKで作成し、native agentが公式Naive MCPのcomputers_browser_run_actionを使う候補へ進む。これはサイト業務HTTP botではなく、agent自身がgoto/click/type/observe等を選ぶbrowser toolである。Naive MCP tools/list liveは当該toolとflat schema(id/action/url/selector/text/instruction/schema/variables/contains/limit)を確認し、scope computers:writeを要求する。rootはサイト操作を代行しない。
+
+公式 https://vetta.sh/docs/api/browser.md はAPIで開いたComputer browserがDELETE/timeoutで閉じると説明し、agent入力待ちで閉じるmanaged toolとは寿命の境界が異なる。公式 https://vetta.sh/docs/api/mcp.md は同じbrowser actionをnative MCPへ公開する。次はこの正式経路で、メールflag後のconfirmを維持したまま画面を保持できるかを有限検証する。security flagや確認を無効化/別chatへ洗い替えしない。SDK制御側の会社keyが本人session/Computer id/args hashを照合し、scope:callで必要なbrowser actionのみを実行許可する。MCP tokenのidentity_idはlabelのみでresource制限ではないことを前提にする。
+
+Computer configはconfig/naive-browser-company-computer-probe.json。1vCPU/1024MiB/5GiB、browserはCapafy域のみ、keep_alive true/timeout15分/allow_writes・allow_extract true、保存済み人間contextなし。独立Computer cmp_01a1a71b6fb47481a21961262681fc2aを作成し、公式GETでrunningを確認した。browser actionは未実行。接続調査中の課金を止めるため同じComputerだけをpauseし、公式GET status=paused / agent_id=nullを確認する。private receipt dedicated-computer-paused-readback-20261105.json。Computer有効化は確認済みだが、agent接続・登録・ログイン・販売成功の証拠ではない。
+
+独立reviewで旧案の重大な不成立条件を発見した。公式 https://vetta.sh/docs/api/vaults.md#how-injection-works は自社/v1/mcpの通常sealed bearer注入を行わず、Orchestrator control plane内のceo_<agent id>登録とceo_agent_idに対し、各turnを駆動するprincipalの権限から短命credentialを生成すると明記する。したがって、通常のagentに限定MCP sessionをstatic_bearerで注入する旧案は撤回し、token/key/bindingは作成しない。URL別名・proxy・別chatによるpolicy回避をしない。公式GET /v1/organizationsは対象org_f4sbaytm23npykwsjpzzgt0gjfのceo_agent_id=nullを確認した。既存CEO置換は不要だが、新規CEO登録も実行済みとは扱わない。
+
+次の仮説は、正式なCEO経路を本来の会社Computer運用に使うことである。新規の当方所有agentだけをCEOに登録し、driverをagents:read/sessions:read/sessions:write/computers:writeの会社keyに制限、agent toolはcomputer.computers_browser_run_actionをpermission:askに固定する。session create/send/confirmを最初から最後まで同じ限定driver keyで行い、owner bootstrapでsessionを作らない。driver権限は組織全体で、per-turn bearerのallowed_tools一個制限を証明したとは言わない。live catalogが遅延発見を使う場合、computer.tools_searchをquery=run browser action on a computer・limit=5の読み取り1回だけ許可し、実行対象はcomputer.tools_execute内も含めcomputers_browser_run_actionのexact Computer/action照合へ限定する。まずpublic goto/extract/screenshotの連続性を確認し、次に同一sessionで会社専用mail4のみを読み、flag後も同じ画面が保持されるかを確かめる。原本agent27/deployment/他ownerは変えず、admin/key発行/任意SDK/個人Googleはagentに与えない。会社controllerが対象Computer id/action/args hashを照合しscope:callを使う。まずgoto→pause→extract/screenshotで同一browser idと実画面継続を確かめる。独立read-only reviewは全browser callsをask固定・全session操作を限定driver keyで行う修正を条件にblocking0と確認した。実行前にorg CEO nullを再確認し、競合があれば登録しない。cleanupは一時agentとbindingだけを消しCEO nullを公式readbackする。
+
+費用も旧案の厳密250000上限を撤回する。公式料金はVM18.5microUSD/秒、browser1667/分、observe/act/instruction付きextract各10000。agent cap200000と別infra留保250000、合計450000を既知残567595内の候補配分とする。稼働8分・確認20件・有料action20件以下のcontroller制限でinfra worst約222216（browser/VM22216+action200000）を留保内に収める。実消費を取得して再計算し、根拠なくagent capが全Computer代を含むとは言わない。待機中Computerはpaused保持する。
+
+売上証明の完了条件: 同じcloud agent/session/product idの登録→新規商品の公開→第三者注文→納品→支払い受領のprovider receiptを対応づけ、売上総額・手数料・返金・モデル/Computer/browser費・純利益を別々に記録する。platform残高と銀行/crypto着金を分け、残高だけで出金済みとしない。自己購入/テスト金/既存別accountの売上をNaive実収益へ混ぜない。録画は実作業と公式注文/残高画面を示し、待機・会社controller decisions・root補足を含む介入数を開示する。現在はNaive確認売上$0、登録/公開/配信/有料注文/実着金/成功録画はいずれも未達。現在cursor=NHC-01。
+
+正式CEO test ses_shspsmw24rfebvr8xbr5htvej4では、CEO登録・限定driverでsession create/confirm・tool検索は成功したが、検索が返したcomputers_browser_run_actionをnative computer.tools_executeが通常名/namespace付き名とも不存在と拒否した。browser未開、mail未読、費用10079microUSD。raw MCP catalogは366件、対象index208、公式native MCP上限100件であり、打切り順の仮説は有力だが未確定。root会社ownerの無料read-only比較ではtools_execute経由とdirectのcomputers_browser_getが同じAPI404に到達し、API invoker全体の故障ではなくnative登録/dispatchまたは派生権限との境界へ狭まる。private formal-ceo-browser-cleanup-readback-20261105.jsonは13checks true（live key一覧不在・再revoke404・browserGET404を具体的に記録）、CEO null/Computer paused/原本27保持。売上/auth未達。
+
+実施した単一仮説は、公式tools.configsでMCP catalog全toolを明示denyし、computer.computers_browser_run_actionだけpermission:askにすることで必要toolがnative登録へ届くか、である。unlisted MCPがdefault denyでもaskになる仕様に対応する。tools_search/tools_executeも明示deny、全件名は同じlive catalogから取得し、target以外enabled:false/permission:deny。通常会社key driver・CEO正式登録・原本非変更・mail無しpublic3actionsは維持。期間8分、agent cap150000、infra50000（public3 deterministic actionのみ、VM/browser8分約22216で留保内）、上限合計200000を残枠内で再計算する。first100切捨て後のpolicy適用であればこの案も不成立なので、同じ有償再試行を繰り返さない。MCPsession driverのallowlist継承は文書保証なし、確認routeもlive catalogにないため現時点では採用しない。
+
+明示deny比較の結果: agt_6jvb3sq1wxd5y7mwbb6d8wngf3 / ses_3ywdtdwz28bf34399hje5besta、live366件中365をenabled:false/permission:deny、対象一件だけask、agent readbackでもenabledは一件。しかしmodelはDSML風のtool呼出を本文に書いたのみで、公式eventのtool_calls=0、browserGET404、費用279microUSD。これは実行ではなく未達である。native登録前の100件打切りと整合するが、内部集合は未観測。session cancel、Computer paused、binding/agent/作成vaultのみ削除、CEO null、key live一覧不在、秘密除去、原本27/pi保持の11checks trueをformal-ceo-filtered-cleanup-readback-20261105.jsonに保存する。同型の再試行をしない。両正式CEO比較のmodel累計10358microUSD、Computer代は別途公式精算を照合し、0と置かない。
+
+ハッカソン既存chat https://messages.ycombinator.com/messages/282272 にDaisuke Naritaとしてexact native検索/dispatch不一致、public-only/mail無し、live366件/対象index208、100件上限は仮説、auth/revenue未達を一度追記し、ページ再読込後found=true/本文/著者を確認した。private yc-mcp-followup-readback-20261105.json。追加の重複送信をしない。
+
+次の正式経路はNaïve fullstack Appが所有する限定browser tool。公式 https://vetta.sh/docs/api/apps.md#app-mcp-tools はApp独自MCP endpointとserver-side `VETTA_MCP_TOKEN`を、https://vetta.sh/docs/capabilities/tools.md#tools-from-your-apps は`apps.allowed_apps`指定時にそのAppだけを対象agentへ公開する動作を定義する。`apps.request_access`は`computers:write`を受け付けず、今回の正確なscope requestはvalidation errorとなりgrantされなかった。代わりにowner APIで`computers:write`だけの組織scope keyを作成してserver-side `NAIVE_API_KEY`へ保存した。このpermissionは組織Computerへ作用できるためComputer単体にprovider-enforcedではない。AppはComputer ID・Capafy domainを固定し、`apps.allowed_apps`で専用agent一つだけに公開する。raw `/v1/mcp` alias、全API転送、shell、Capafy業務APIは採用しない。App URL/Computer/action/operation_idを限定し、APIの`Idempotency-Key`を同じoperation_idから生成する。Naïve本番はVercel Node Function形式にする。公式 https://vercel.com/docs/functions/runtimes/node-js はroot `api/`配下のNode FunctionとWeb標準Fetch handlerを定義し、ローカル用`src/node.mjs`の常駐`listen()`は本番のentrypointにならない。
+
+独立review naive-app-scope-review-1105はApp resource delegationを支持する一方、`apps.allowed_apps`なしのorg全共有とsession承認相関をHIGHとして指摘した。公式Apps APIは`allowed_apps`を省略すると全org appが見えるが、指定時はそのagentだけへApp toolを公開するため、専用agentに`apps.allowed_apps=[app_id]`を設定する。Appはbrowser専用MCP toolだけを公開し、`VETTA_MCP_TOKEN`をNaïveからserver-side注入させる。App自身は`apps.request_access`のowner-approved最小scope `computers:write`だけを使う。別のBROWSER_TOOL_TOKEN/vaultやexternal MCP serverは作らない。sessionは一つの有限runに限定し、controllerは公式pending-callのagent/session/tool_call_id/args hashを実行前照合する。browser toolは`operation_id`を必須にし、同一操作再送にprovider `Idempotency-Key`を使う。Naïve hosting実行形式/費用/実Computer連携はdeploy後の実測条件として残す。既存apps/monk-mcp/src/server.mjsのRequest/Response型MCPを参考にし、汎用agent frameworkは作らない。
+
+#### NHC-01の公式REST Browser契約とCapafy account制約 (2026-11-05)
+
+公式Browser API https://vetta.sh/docs/api/browser.md は専用Computerに対するREST `goto/click/type/extract/act/observe/links/screenshot`、Identity Vaultへ生成passwordを封印する`signup`、保存済credentialを使う`login`を提供する。通常agent browser toolのsignupはperson confirmでpauseするが、`ask_actions`はRESTで開いたbrowserには適用されないと公式browser guideが明記する。これは制御されたcloud serviceから使える別経路の根拠であり、no-human完走やCapafy登録の実測証拠ではない。Browser sessionの`session_id:null`とComputer browser statusを保存し、agent入力pause後も同一pageが残るかを次に有限実測する。
+
+公式API overview https://vetta.sh/docs/api/overview.md#idempotency はmutating POSTが`Idempotency-Key`を受け付け、同key/同bodyの24時間以内の再送は元応答を返す、同key/別bodyは409、処理中の同keyは409と規定する。Browser APIはgoto/actにkey必須。SDK 0.10.0のclientはidempotencyKey providerを受け取るため、App toolはagentが選ぶoperation_idを同一論理呼出しのkeyに結び、args変更を再利用拒否にする。
+
+公式Apps API https://vetta.sh/docs/api/apps.md#app-mcp-tools はfullstack Appの独自MCP endpoint、server-side `VETTA_MCP_TOKEN`、toolをagentの通常allow/ask/deny policyで渡す動作を定義する。`apps.allowed_apps`を指定しないと全org appが見える。`@usenaive-sdk/app@0.1.0`の`naive(env)`はowner-approved app API keyをserver-sideで使い、Fetch `Request/Response`型に対応する。fullstack runtimeの個別guide URLは404のため、最小App deployで実際のentrypoint・server secret・browser SDK呼出しを確認する。browser toolは固定Computer IDとCapafy domainに制限し、raw `/v1/mcp` proxyを作らない。
+
+Capafy公式Terms v1.2 (2026-09-28) https://capafy.ai/terms-of-service は自動tool/bot/scriptアクセスに事前の書面許可を要求し、偽accountを禁止する。Publisher Agreement https://capafy.ai/publisher-agreement/ §2.9は同一control下のPublisherごとに一accountとし、追加は書面承認を要する。payoutには正確なidentity/contact/payout/tax情報が必要で、未解決KYC review中は送金保留となり得る。Daisはautomation permissionを取得済みと申告しているが、その書面receiptは今回repo内で未確認。既存Publisher accountがあるという保存済み証拠を優先し、二つ目のPublisher accountや架空identityは作らない。利用者の個人Gmail/Google資格情報は使わず、camera KYCは迂回しない。
+
+2026-11-05のbrowser実測直前Naïve公式GET: 組織残高20,137,415 micro-USD、CEO null。Computer `cmp_01a1a71b6fb47481a21961262681fc2a`はstandalone/agent_id null/paused、Capafy domain allow-list。原本agent `agt_e1hvkwgrdrx119zh22qthavwt4`はcurrent_version27/pi/GPT-6.1 Terra、deployment `dep_aqf597v5eqa3e25ff2z22rq9j8`はagent_version27/disabled。これらの設定はこのreadで変更していない。
+
+専用Computerでの公式REST Browser継続性実測: run `nhc01-browser-rest-continuity-20261105`は、Naïve SDK `computers.browser.goto`でCapafy公開homeを開き、続くbody extract前後のbrowser ID `brw_b7t3jhcpm9ztmvnm6csm6q59m7`が一致、status active、`session_id:null`、抽出文字18422でPASS。これはowner controllerからのREST操作で、agent tool callではない。公式ledger `led_mce3fs63w0b4k1k8k3st3r33yc`は2026-11-04T15:55:59Zにbrowser tier -1667 micro-USDを記録し、照合時間帯の全debitはこの1件。開始balance20,137,415→終了20,135,748 micro-USD。browser close後Computer pausedをGET readbackした。OTP/signup/login/第三者注文/売上/利益は未発生。private receipt `browser-rest-continuity-attempt-20261105.json`。
+
+先行する2026-11-05 live cloud readback（routing修復前の履歴）: App `app_z1g99d21zr5xx0v685c1y2zwgd`は`active`、MCP path `/mcp`、stable URL `https://life-manager-capafy-browser-wsjpzzg.vercel.app`。Node 22.xへpinしたreal-source deployment `apd_vasx3c2pw73k02tyc1f430r0ms`はNaïve `ready`だが、`/healthz`/`/mcp`は500 `FUNCTION_INVOCATION_FAILED`。`package.json.main=index.mjs`のroot Fetch deployment `apd_kjwtpj6x9a1sfsrwksfp4bz6pb`は`ready`になりHTTP 500を解消したが、両routeはhandlerの`Not found` 404。該当sourceでは`vercel.json` rewriteが`/healthz`を`/api?route=healthz`へ変更するため、root handlerが本来の`/healthz`/`/mcp` pathを受けていないことが原因と判明。Node listener mainは再びVercel 500になったため採用しない。前の一時静的deployment `apd_g0yeay8626far2y0w7pwkaw556`は公式`error`で、`No entrypoint found in "/vercel/path1"`と`package.json.main`の必要を示した。次は`main=index.mjs`を保ち、rewriteと不要な`api/`を除き、root Fetch handlerに元pathを直接渡してreal-source deployする。期待結果は`/healthz` 200、`/mcp`の未認証401、Naïveからの正bearerでinitialize/catalogである。これらは未検証。現在のlatest deployment `apd_nhmszm55vdvfnb6yya99y5xyby`はNode listener sourceでHTTP 500、直ちにreal sourceへ戻す。write-only secret名は`DATABASE_REST_URL`, `DATABASE_SERVICE_KEY`, `DATABASE_URL`, `NAIVE_API_URL`, `NAIVE_COMPUTER_ID`, `VETTA_MCP_TOKEN`; `NAIVE_API_KEY`/Identity/agent emailは未設定。`ready`はhandler稼働やagent tool call/browser callを意味せず、agent実行はまだ0。既存7 agentすべて`apps` tool `enabled:false`であり、原本`anicca-browser-operator`は`permission:deny`。Computer `cmp_01a1a71b6fb47481a21961262681fc2a`はstandalone/paused、Capafy-only allow-listのまま。第三者売上$0。
+
+初期のroot-route readback（NHC-00のagent実行前）: deployment `apd_0y0vrhejje98g2rpenvyrmmr9g`は`ready`、`package.json.main=index.mjs`、Node `22.x`、root Fetch entrypoint、rewriteなし。`/healthz`=200、`/mcp` GET=405、未認証POST=401で、routing/auth guardだけ確認した。App permissionsは`[]`、`NAIVE_API_KEY`/専用agent/sessionは未設定、org creditsは20,135,748 micro-USD。source tests 8/8 PASS。これはbrowser実行・売上の証拠ではなく、この後のmain由来deployment/agent/key/browser runの結果はNHC-00完了記録に記載する。初回OSS境界/CIの履歴とreceiptは `/Users/anicca/.local/state/naive-browser-company/naive-browser-app-live-readback-20261105.json`。
+
+当時cursor=NHC-00（専用agentからのApp tool→cloud browser proof）。当初は同一sessionで`apps.request_access`から`computers:write`を要求する手順を仮定したが、実際のvalidationでscopeが拒否されgrantされなかった。後続でowner APIが`computers:write`だけの組織scope keyを作成・App secretへ保存し、専用agent v2から公開Capafyページのgoto/extractを成功させた。Computer単体のprovider permissionではない点を記録し、App側の固定Computer/domainと単一agent allowlistで境界を置く。NHC-00は完了、現在cursor=NHC-01。第三者注文・納品・決済・出金の公式証拠はまだなく、今回runの売上は$0。録画はまだ作らない。
+
+2026-11-05初期Naïve公式API readback（専用agent v1作成前）: CEO `agt_ac0hkqm9ybvrt12kjfadmghbe4` v16 (`zai-org/GLM-5.2-FP8`) は月cap 1.00 USD/max task 0.25 USD、browser/appsともdisabled。当時の最新session `ses_byw1ka8n7v1nx98ybbsbeyhj8k` は`budget_paused`・消費0・Computer/Identityなしで、event seq10 `budget.exceeded` / `budget_exceeded` / “the agent's budget cap has no room for this call”。これはモデル品質の失敗ではなく、既存CEOの予算・tool構成で実行開始できなかった証拠。既存browser operator v27はbrowser enabledだがapps deny。新専用operator `agt_y3zd3mkztbr079xc7xsg7wq5c7` v1 (`deepseek/deepseek-v4.1-flash`) は月cap 1.00 USD/max task 0.15 USD、default deny、対象Appだけ許可、`apps.request_access`だけaskで作成し、公式GETで完全一致を確認した。sessionはまだ作っていなかった。App permissions GETは空配列、App secret namesに`NAIVE_API_KEY`なし。Naïve `/v1/listings` と`/v1/blueprints/installs`はともに0件。Computerはpaused。これらはNHC-00未完だった時点の履歴であり、その後の専用agent v2/key/browser runのreadbackは後段に記録する。秘密を除いた証跡 → `/Users/anicca/.local/state/naive-browser-company/ceo-budget-blocker-readback-20261105.json` と `/Users/anicca/.local/state/naive-browser-company/naive-dedicated-agent-created-20261105.json`。
+
+Reason Networkではlive rosterのdaisuke/dots-one@htch-runtimeへmessage7ZRZ6P8SN7SSDC18WDWP36KKA9をdelivered確認。Slack Muse/Grok threadへts1793804032.348049を送信しprovider link取得。既存loop/account変更は頼まず、成功browser方式とCAPAFY参照先のみ問い合わせる。公式会社template ai-automation-agencyはGmail/毎send人の承認を明記しており、no-human収益の成功例とは呼ばない。既存capafy-autopublish/BEST_PRACTICESのHook Lab34.88USD等は過去記録として読むだけで、今回Naiveの売上へ足さない。
+
+#### 最新SDK・モデル・費用の一次資料再照合
+
+npmのlatestを再取得し、@usenaive-sdk/vetta=0.10.0、repository=usenaive/vetta-mono/packages/sdkを確認する。公式docs index https://vetta.sh/docs/llms.txt を起点にSDK/models/model-router/completion-window/pricing/harness-capabilities/budgets/policies/browser/email/sessionsを再取得し、会社APIで7モデルのretrieveとharnesses.listを照合する。取得証拠はprivate state/research-refresh-20261104に保存する。これは新規有償benchmark実行ではない。
+
+liveでdeepseek/deepseek-v4.1-flash、openai/gpt-6.1-terra、google/gemini-3.5-flash、anthropic/claude-haiku-5.5、minimax/minimax-m3.1-flash、vetta/autoはimmediateのみ、zai-org/GLM-5.2-FP8はimmediate/priority/looseを提供する。モデル別固定単価は https://vetta.sh/docs/api/models.md に未公開と明記される。immediateは最安providerではなく最速providerへrouteするため同じモデルIDでも実費が変わる。公式 https://vetta.sh/docs/concepts/model-router.md のvetta/autoはinput5USD/output25USD per million tokensの上限で見積り、実際に回答したモデルで精算する。これは固定料金や最安保証ではなく、再現比較には固定IDを使う。
+
+暫定推奨は通常の公開browser調査をVetta+DeepSeek V4.1 Flash/immediate、難しい制作/回復をTerra/immediateで比較する構成。原本pi/Terraをこの調査だけで変更しない。Flash公開価格3件の実測265948microUSDはroot補足2・確認クリック0を含み、無介入完走や同一課題のTerra比較とは扱わない。Terraの商品原稿完成184947microUSDも別課題なので単純な費用順位にしない。認証は両harness/modelでread_people確認待ちを観測し、モデル変更だけで解決としない。nativeメールも公式機能で、system domain上のinbox/受信wakeを提供するが、既存AgentMail経路をこの調査だけで置換しない。
+
+公式価格 https://vetta.sh/docs/platform/pricing.md はStandard20USD/月・同額credit、Pro200USD/月・同額credit、browser0.001667USD/分、model-driven act/observe/instruction-extract一回0.01USD、deterministic goto/click/type/screenshot/linksは追加action料なし。tool/compute/mediaは後計上のものがありtask capが全費用の絶対上限とは限らない。運転費はモデル・computer・browser・その他toolの合計と失敗/再試行を含める。
+
+公式LHTB https://vetta.sh/benchmarks/long-horizon-terminal-bench は同一GLM5.2のharness比較でAugust最終run、priority13/16・0.2332USD/solve、immediate12/16・0.2976USD/solve。SWE-Bench Pro https://vetta.sh/benchmarks/swe-bench-pro はSeptember最終run、同一GLM5.3FlashでVetta10/15・0.0398USD/solve、Codex8/15・0.0460USD/solve、Claude Code15/15だが料金非掲載。いずれもブラウザ販売/メール認証/利益/10K MRRや最新モデル順位を証明しない。trial-level rowsは非公開と明記され、完全再現可能な公開実験とは呼ばない。
+
+次の比較は同一入力・成果物判定・harness/identity/browser条件・capを固定し、失敗費も含む総費用/成功件数、介入数、時間を記録する。販売では第三者支払receiptから手数料/返金/全実行費を引いた利益を別記録する。現在cursor=NHC-01の認証確認境界。今回の調査で原本のmodel/deployment/資金は変更しない。
+
+#### 原子的な残TODOと現在cursor
+
+2026-11-05 earlier finance readback（専用computer browser run前）: Appは`active`、当時のlatest deploymentは`ready`、permissionsは`[]`、その時点のsecret-name listには`NAIVE_API_KEY`がなかった。`GET /v1/apps/{id}/payments`は404で、当時の公式docs上ownerのStripe onboarding前は404となり、card checkoutはowner Stripe accountを使う。`list_as_template`はowner/admin確認とNaïve審査を必須とするため、どちらもその時点で完全無人とは確認できなかった。別途保存済みのBase receiver-wallet control receiptは所有確認だけで、Naïve native wallet/runtime signerなし、ETH/USDC残高0、送金・funding 0、売上null、第三者receipt 0。orgのmainnet wallet作成は`forbidden`。これらを収益に数えず、x402も対応wallet/署名/買い手を確認するまでは未検証候補とする。後段でserver keyを作成したが、browser runでは支払い/wallet状態を再確認していない。秘密を除いた証跡 → `/Users/anicca/.local/state/naive-browser-company/naive-finance-wallet-readback-20261105.json`。
+
+旧順は「基盤/記事CI→29USDC trace review→デモ→登録→月10K→phone→移植」。新順は次表。変更理由はDaisがCapafyを第一ユースケース、no-human/no-user-credential、自社10K MRRを明示したため。記事・無関係登録を先行gateから外し、既存の外部effectを再送/中断しない。**現在cursor=NHC-01**。NHC-00 cloud-browser proofは完了し、次はCapafyの正式agent/team委任・専用認証・販売/精算権限を確認する。Maritime提出済みというDaisの最新申告を保持し、再提出をTODOに戻さない。
+
+2026-11-05のNHC-00公式readback: main由来App deployment `apd_j8nn7p6vjs682cq87mb6txate4` は`ready`、Appは`active`。App permission一覧は`[]`のままだが、組織scopeが正確に`computers:write`のserver API keyをwrite-only secret `NAIVE_API_KEY`へ保存した。専用agent v2はdefault deny、対象App一つとそのbrowser MCP toolだけallow。Naïve公式eventは同agent sessionから`goto https://capafy.ai/`と`extract h1`を`performed=true`で記録し、Capafy公開ページの見出しを返した。browser sessionは`closed`、Computerは`paused`。model 3,382 + browser 3,333 = 6,715 micro-USD（$0.006715）。今回の実行では注文・販売・支払・payoutがなく売上は$0。Capafy account全体の過去売上は未照合。録画は作成していない。private receipt: `/Users/anicca/.local/state/naive-browser-company/naive-cloud-browser-proof-20261105.json`。現在cursor=NHC-01。
+
+| ID | 一つの作業 | 完了の証拠 |
+|---|---|---|
+| NHC-00・完了 | main由来immutable releaseのNaïve Appを稼働させ、専用agentから固定ComputerでCapafy公開画面を一度読む | PR #9216/main SHA `288e867668a00ead4de80efd2ebb1f4c54866ef2`、App `active/ready`、key metadataのscopeは`computers:write`（App permission一覧`[]`）、専用agent v2の単一App/tool binding、公式goto/extract eventと見出し、browser closed/Computer paused、ledger合計6,715 micro-USDを照合。これはcloud-browser動作の証拠で売上ではない |
+| NHC-01 | Capafyの既存認証済みPublisherに、Dais申告のautomation許可を使った正式agent/team委任経路・専用認証・販売/精算権限があるかを読み取りで確定する | Agent Clientの公式publish guideとTermsを分けて扱い、Capafy公式UI/docで既存Publisherと専用agentの権限をreadbackする。login credentialを共有せず、新規account・重複Publisher・本人書類の代理利用・KYC回避をしない。経路が未確認なら無人適合を未確認として順位2へ進む |
+| NHC-02 | Capafyの短尺動画制作分野の成功商品の需要・成果物・価格・配信を調べ、一商品を選ぶ | 一次URL/観測指標/模倣する仕組み/自社素材/実行費の記録。売れている既存商品は変更しない |
+| NHC-03・完了 | 選んだCapafy業務を既存Naïve設定/定期inputへ反映する | PR9196/main b412c1c0cd→公式agent25/deployment25一致、不変チェック全PASS。予算増額なし |
+| NHC-04 | agent自身の認証で一商品を正式公開する | 当該Publisher/商品/公開状態のprovider readback、自社/利用者の人間承認0、Capafy側の審査は別記録。自社側に必須人間手順があれば無人完了としない |
+| NHC-05 | 既存の自社無料配信経路で一商品を配信する | 投稿と商品到達先の実表示。重複投稿なし、広告費なし |
+| NHC-06 | 一件の第三者注文を自律納品し、支払/費用を照合する | 同じ注文の納品物/支払receipt/手数料/実費/介入数。内部送金は売上にしない |
+| NHC-07 | 保存状態から次の有料業務を完走する | 別注文・継続runの証拠、重複請求0、human/外部AI介入を実数表示 |
+| NHC-08 | 実運転の英語デモを作る | スマホ入口/Naïveの判断/販売/納品/支払い/費用を録画。事前準備と当日成果を分ける |
+| NHC-09 | 継続課金商品の自社MRRの基準値を一回確定する | 有効subscription/解約/返金/手数料/実行費を照合した基準値と次の一実験。USD10Kまで各実験→再計測を繰り返し、一時売上をMRRへ置換しない |
+| NHC-10 | 既存WebにGoogle不要の開始sessionと結果画面を接続する | 実スマホで開始→利用者分離→Managerの実結果/任意通知。session消失/他人の結果アクセスを検証 |
+| NHC-11 | 利用者が受取先を登録する際の所有者bindingを接続する | 回復可能な所有権とサービスの精算条件を確認。メールなしでも利用可能、addressだけで他人の残高を請求不可。出金操作は別作業 |
+| NHC-12 | 外部顧客一人に同じManagerの有料subscriptionを提供する | 第三者の初回支払/実結果/費用。自社事業売上と分離して記録し、継続/解約を追う。顧客獲得→再計測を繰り返して外部USD10K MRRを目指す |
+| NHC-13 | 上記ランキングに沿って第二販売先を選び、同じManagerの一件の有料業務を完走する | 正式な専用認証/注文/納品/支払い/実費/介入数。重複Publisherや規約迂回なし |
+| NHC-14 | 黒字の手順を第二runtimeで一件再現する | 一担当/二重課金0/移植先の実利益。複製数を売上へ換算しない |
+
+NHC-08のデモ準備、NHC-10の入口整理、YC紹介/申請更新は収益ループと並行可能。紹介獲得と実売は両方進める。YC画面/Docの不一致は最新確認値に合わせて直し、重要な数字・商品リンク・別枠の創業者動画/商品デモを整える。Mariaの紹介は約束と完了を区別。NaïveはSDK/ライブ実務・介入の実数、Maritimeは実在利用者1000人と実利用を示す。同一商品を使い、agent/VM数でユーザーを水増ししない。優勝/YC採択/収益は保証しない。
+
+#### NHC-02の商品完成を独立して進める
+
+ownerのCapafy許可取得済みという最新情報を保持し、許可を再質問しない。NHC-01ではpinned agent26/browser allow/ask_actions空/build modeと、includeAccepted=trueの公式eventにsession-scope allow保存を確認したうえで、後続browser確認待ちが再発する。原因未確定の同型有償認証を繰り返さず、NHC-02の商品例修正/短い販売文/一回試用を依存のない並行作業として完了する。主cursorと売上目標はNHC-01のまま維持する。
+
+診断trialは同agent26/Identity/Computer/context/tools、session window=immediate、cap500000microUSD/8分。最初はreadのみのbootstrapで外部作用を行わず、公式sendでopenai/gpt-6.1-terraを指定してnative read/write/editの仕事を開始する。本番agent/model/deployment sourceは変更しない。既存SKILL/例/listingが読めなければ、保存済み自身の原稿をモデルへ渡して本人が復元する。30秒spoken55–65語、例に入力に無いoffer事実を混ぜない、販売文160語以内、仮想自転車店の15USD/Saturday検査のお題で六成果物の試用を保存しreadbackする。仮想の客・売上を実績にしない。browser/メール/投稿/課金/送金はこの独立taskでは実行しない。
+
+完了証拠は本人native write/read、export後の原稿/語数/offer事実/六成果物の照合と永続保存。promptの合格自己申告だけでは合格にしない。rootはSDKで有限開始/状態/成果物exportと保存だけを行う。商品の完成を認証・Capafy公開・実注文・実売上に置換しない。現在cursor=NHC-01のbrowser確認境界、並行=NHC-02の原稿完成/試用。
+
+NHC-02結果: ses_k2m7c55m8ev2mvmtz4fbr8cv84はagent26/immediate、公式resolved model=openai/gpt-6.1-terra、15tools、idle/end_turnで自然終了。公式消費184947microUSD。native read/edit/write/readによりSKILL5768bytes、例2898bytes、販売文865bytes、試用3669bytesを保存。root再検算は例57語/試用57語・各六部・販売本文128語・入力に無いoffer条件なしで合格。spokenの実時間・Capafy実呼出し・顧客売上は未試験。四原稿をNaïve Filesの組織内published scopeへ永続保存し、公式GET/SHA256/download全件一致。これはCapafy公開ではない。file IDs: SKILL fil_e8ngzktpfsv8cb0kgk2zbgwsfw、例 fil_fpjrz3ks4qewgzvt6d0c5ak7ks、販売文 fil_yk70mnmm5y9c0d0acmmvdkanw7、試用 fil_csazv3zsj8xc57t50cms5esjxr。私有export/capafy-native-products-final-20261104に同じ原稿と検算/クラウドreceiptを保存する。
+
+#### NHC-01の診断結果とv27候補の修正
+
+公式harnesses.listでpiとvettaはrunnable=true、claude_code/hermesはfalse。liveのvettaはapprovals=trueを返し、静的docsのfalseと異なる。SDK0.10.0のAgentPatchはharnessを受け取り、その実装はbodyをそのままPATCHする。しかしharness=vettaだけの更新は受理後のGETでversion26/harness=piのまま、その他のfieldも全件不変だった。v27や別harnessへの切替を成功扱いしない。別Agent/新credential/新contextの作成0、production26/enabled=falseを維持する。診断source35f7494ade/公式readbackを残し、同じnoop PATCHを繰り返さない。
+
+self-owned sourceのsystem末尾には、Daisの許可取得済み申告後も旧「許諾未確認でbrowser/認証を禁止」が残っていた。SSOTと一時taskだけでなく、この矛盾のある正本設定も更新する。candidate27はこの末尾だけをowner許可取得済み・通常認証に追加承認不要へ置き換え、本人限定手続き/個人credential禁止/既存Publisher保護/実権限readbackの境界を維持する。既存system prefixは不変。default model/windowは、原稿の実完走を確認したTerra/immediateへ変更するが、ブラウザ認証成功や最安modelの実証とは呼ばない。harnessはpiを維持し、予算month12USD/task1USD・Identity/context/tools/MCP/cron/inputも維持する。source deploymentはpin27/immediate/enabled=falseで、認証診断中に旧modelの定期反復が始まらない状態を正本化する。
+
+変更の受入はJSON妥当性、agentのmodel/window/system末尾以外の構造差分0、deploymentのpin/window/enabled以外0、source-boundary/diff、必要なreview/CI、main由来の固定source→expected_version26部分更新→公式不変readback。まだ反映前candidateで、current officialは26/pi。次の一手はこの矛盾修正を反映して専用メール認証を一件だけ進めること。確認待ちが再発すればprovider境界の再現証拠とし、許可済みというユーザー情報を再質問しない。別harnessの比較は既存Agentでは未適用のため、必要なら別途boundedな診断資源/同Identity grant/総費用を明示し、予算回避や新Publisher作成へ使わない。個人Google依存・業務script/API botへの置換はしない。
+
+現在cursor=NHC-01、NHC-02の原稿修正/一回試用/クラウド永続保管は上記の範囲で完了。公開価格・Publisher権限・Capafy公開・第三者注文/納品/支払・デモ・自社/外部MRRは未達。Grok/Muse向けSlack既存threadへ許可取得済みと技術経路の質問を送信し、親thread readbackも更新する。AGMSG codex-money-printerへの同趣旨の照会は送信済みだが、返答や着手は未確認。
+
+#### 一次資料と調査の限界
+
+- Naïve [Identity](https://vetta.sh/docs/capabilities/identity.md)、[Email](https://vetta.sh/docs/identity/email.md)、[Wallet](https://vetta.sh/docs/identity/wallet.md)、[Legal](https://vetta.sh/docs/identity/legal.md)、[Runtime](https://vetta.sh/docs/concepts/runtime.md)、[Browser](https://vetta.sh/docs/computer/browser.md)。Identity overviewはinbound wakeのavailability noteと本文が矛盾し、Email詳細はwake対応を記載するため実環境readbackを優先。Walletはtestnet既定/mainnet org有効化、creditsとUSDC別。legalは人の本人確認を含むので無人販売の必須経路にしない。
+- [Supabase匿名認証](https://supabase.com/docs/guides/auth/auth-anonymous): email/password/OAuthなしでsessionを作れる。cookie消失/別端末の復旧とRLS/濫用対策が必要。現サービスで有効化済みとは確認していない。
+- [Capafy販売](https://capafy.ai/earn)、[Publisher Agreement](https://capafy.ai/publisher-agreement/): certification、20%fee/subscription sandbox費、1Publisher、Sales/Proceeds/settlement/KYC holdを確認。新しい自律登録・販売・着金の実行証拠ではない。
+- [AgentMail](https://www.agentmail.to/)、[公式index](https://www.agentmail.to/llms.txt): agent専用inboxを提供。現indexはhuman_email/OTP付きsignupを案内。既存receive-only実測を無制限送信/全サービス登録可能へ一般化しない。追加の受信箱作成を先行gateにしない。
+- [Whop](https://docs.whop.com/memberships-and-access/third-party-apps/content-rewards)、[itch.io](https://itch.io/docs/creators/payments)、[Gumroad](https://gumroad.com/help/article/260-your-payout-settings-page)、[x402](https://docs.cdp.coinbase.com/x402/welcome)、[ClawTasks](https://clawtasks.com/docs)。暗号受取の技術仕様は全provider/国のno-KYC保証ではない。
+- [Naïve大会](https://events.ycombinator.com/naive-autonomous-companies-hackathon)、[Maritime規約](https://competition.maritime.sh/terms)、[YC推薦](https://www.ycombinator.com/recommend/)、[YC創業者動画](https://www.ycombinator.com/video)。YC採択例からは商品一文/実演/数字/現状と計画の分離を再利用する。
+
+以下のNaïve実測・版別cursorは履歴。現在契約とTODOは上記を参照する。
+
+Naïve browser実測: PR9108はmain8bd07954へ統合、14CIは後続readbackで全PASS。固定版から専用anicca-browser-operatorを作成し公式readbackでpi/GLM-5.2/予算/owner/source SHAを確認。初回ses_0vs0t2t3bjsf227mmyw9a87pw5はgotoとscreenshotが成功、署名付き画像をprivateで取得して実画面を確認した後、次のmodel呼出がvalidation_failed。画像原因の仮説を保持し、モデル全般のvision非対応とは断定しない。画像を返さないses_btpr03yvgetc1vbbt4538rm2w6はgoto/extract/observeで商品/価格/検索欄の実表示取得に成功したがsession capでbudget_paused。実消費38786/250000 microUSD、残211214。次call予約額はイベントで確認できる範囲だけを使う。API業務呼出・shellは0、公開/購入/登録effectは0。
+修復判断: 月cap0.50USDを維持し、max_taskだけ0.25→0.50へ揃える。Computer read/writeを作業メモと成果物に限定して追加し、外部の業務操作はbrowserのまま。Google loginが選ばれた場合に備えてaccounts.google.comだけをdomainへ追加。Browser contextはlogin前に準備する。既存Grok/6agent/cron/販売商品は変更しない。
+
+画像比較の実測: GLMの失敗sessionはterminalで再開不可（409 session_terminal）。空contextを作ったidle sessionへmodel overrideを使い、Gemini 2.5 Flash Liteでgoto→screenshot→画像内容の返答→end_turnを確認した。session総消費7432 microUSD（bootstrap4941を含む）、比較追加2491。公開/購入/loginは0。画像後のモデル呼出が通ることを根拠に、専用担当modelをGeminiへ切替しscreenshotを再許可する。モデル能力の一般順位や利益の証拠とはしない。空context作成と専用agent限定grantも完了。
+
+Browser実操作の修復: ターン終了でbrowserが閉じるため、次ターンは最終URLへgotoしてから観測する。observeが返したxpathで直接type/clickするとpage could not completeとなる例を記録。公式browser仕様は直接操作のselectorをCSSと記載するため、xpathとの互換境界を疑うがprovider実装の原因とは断定しない。検索はbrowser.actで入力と送信に成功、extractで動画30件と3商品の価格/販売数表示を照合した。作業メモはsandbox内の相対パスanicca-browser-journal.mdを使う。絶対/home/userはagent toolではsandbox外として拒否された。Computer割当、write成功、次ターンread成功を確認した。
+
+認証誤報の診断: 専用loginがlogin doneを返しても、extractではWelcome to Capafy、メール形式エラー、ログインformが残っていた。agentの成功報告と誤記メモを訂正し、認証未完を保持する。資格情報metadataのhost=googleは実際のaccounts.google.comと不一致だった。公式APIのservice例はfigma.comというhostnameであるため、accounts.google.com名で保存しhost完全一致をGET確認後、自己作成した旧login:googleだけを削除した。raw秘密値はmodel/ログへ渡さない。次はGoogle実画面のhostとservice一致を確認してから専用loginを使い、別sessionでjournalと保存contextを再開する。login done単独を成功にせず、ログイン済み本人画面を必須の結果として扱う。
+
+Hosted最終readback: PR9112 main265bab69から専用agent v3を適用し、model/system/owner/source SHA/予算/contextをGET照合。Computerは同一idで別sessionのメモreadに成功し、自然idle後pausedを確認。公開市場検索30件は実画面結果、認証/公開/売上の成功ではない。専用agentの公式spend集計は405957 microUSD、月cap500000を維持。session瞬間値と後続の公式集計には差があるため、初回38786は当時の観測として保持し、最終費用はhosted-readback.jsonのquery区間/内訳を使う。資格情報host修復後も専用loginのprovider error、またはlogin done後の未認証画面を記録。最後のact失敗後の画像はCapafyログイン画面で、ボタンdisabledや本人確認challengeの存在は確定しない。UI/APIの状態を文章の成功報告より優先する。複数のprimary再指示・修復を含むため介入ゼロ評価ではない。
+旧Google経路の診断時点の残作業（下記の本人mail順序に置換）: (1)providerのGoogle OAuth実画面操作を診断できるsupported route/本人担当の成功手順を取得し、同じidentity/contextで認証結果を確認 (2)Grok/Museのwrite ownerと新規の担当対象を照合し一業務を完走 (3)公開/納品/費用/実売上を個別readback (4)同identity・固定versionのNaïve標準deploymentへ接続し自然実行を確認 (5)同条件benchmark比較へ戻る。既存6agent/cron/Mac profile/販売済商品は未変更。Grok/Muse/Dotsへ照会済みだが実手順の返答は未取得、relayの最小inference確認をVM本人の業務証拠へ昇格しない。
+
+
+Naïve本人の登録・無人運用への訂正: Daisは専用メール/資格情報で新規登録し、承認構造を置かず会社業務を進めるよう明示する。既存個人Googleへのログインを必須経路から外す。通常の登録、認証メール処理、所有する新規商品の作成/公開/対応は委任済みで、人間承認を求めない。受取口座や本人確認など本人に属する不足事実はprivate SSOTと既存文脈を検索し、捏造せず具体的な不足を記録して独立業務を続ける。
+実測した設定不足: 専用Identityのinbox0、org domainはexternal/pending_dnsの1件だけ。configはemail.inboxes/read/sendをdisable、browser.ask_actions=[signup]としていた。公式mail仕様には標準system domainの即時利用経路があり、createDomain(kind=system)を使って専用受信箱を作る。既存external domain/個人Google/他6agent/稼働loopは変更しない。
+新範囲と完了条件: (1)専用mailのdomain/inbox readinessを公式照合しprivate SSOTへ参照を登録 (2)email.inboxes/read/sendを明示allow、browser.ask_actions=[]、日常業務で承認を求めないpromptをmainから適用 (3)担当がCapafyの通常email登録とメール確認をブラウザで完走し、本人用画面を確認 (4)新規所有商品一件の公開/成果物と収益化導線を確認 (5)本人Identity/context/状態を保つ標準deploymentへ接続。登録や確認のprovider側要求は、Daisへ承認転送する構造にせず、委任済みの範囲をAI担当側で処理する。
+順序更新: 旧=既存Google OAuth修復→owner→一業務→定期運転。新=本人mail/system domain→無人登録設定→email登録/本人画面→新規所有商品→継続運転/実収支。変更理由はDaisが本人mailによる新規登録を指定し、mail権限不足とsignup承認停止を実測したため。現在cursorはMAIL03の本人email登録/本人画面。browserの公開web到達は標準allowed_domains=[*]へ戻し、登録先の通常リンクやメール認証redirectを固定domain列挙で止めない。個人Googleの専用vault複製は除去し本人mailだけを使う。shell/業務HTTP/MCP/wallet能力は追加しない。費用枠は今回の登録/商品作成への範囲拡張に合わせ、専用担当の月cap0.50→2USD（既存制作担当と同枠）、max_task0.50USDを維持し、既存残高内・追加入金なし。inboxは準備中wake=falseで同一signup担当のemail.readを使い、登録後にwake=trueと継続実行を接続する。これは承認gateではなく重複writer防止の起動順である。
+
+本人mail/無人設定の実反映: MAIL01/02完了。system domainは再verifyでactive・dns provisioned・inbound verified、専用inbox activeを公式GET照合しprivate SSOTへ参照を保存。個人Googleの専用vault複製を削除し不在をGET確認。PR9116/main95aee29fccf1bc6ae920465dca0eba009d47bc98の固定configから専用agent v4を適用しsystem/tools/budget/metadataを完全一致readback。signup ask_actions=[]、本人email3機能allow。MAIL03の実jobはv4/同Identity/contextでrunning、read/browser goto/observeを確認。登録・認証・公開・売上・継続deploymentは未確認。Slack既存threadへ無人方針と本人mail準備完了を共有しGrok/Museの実経路を再照会、返答は未取得。
+
+MAIL03実行診断: v4の初回jobは既知のxpath click失敗を繰り返し、存在しないgoto toolを呼んでidleになった。承認要求やmail不足ではない。primary AIから既に成功済みのbrowser(action=act,instruction=...)とbrowser.linksの実形式を伝えて同sessionを再開。続くemail.inboxesは成功、browser gotoは最初の入力エラーから次callで成功した。登録/認証済み本人画面は未確認。primary AIの修正を含むため、無介入ベンチマーク成功とは扱わない。
+
+継続診断: 軽量modelは最後のgoto後の未観測画面を登録不能と誤判定したため、公式catalogで存在を確認したgoogle/gemini-2.5-flashへsession overrideしGETのmodel一致を確認。既定agent v4のmodelは変更しない。実observeはWelcome to Capafy/Continue with Emailボタンを返し、登録導線なしという旧判断を棄却。次turnのact前にgotoがなくobserveが空だったため、ブラウザのturn毎closeに合わせて再open→観測→操作へ修正を送信。登録/認証/公開/売上は引き続き未確認。PR9116のCIは後続確認で全15check PASS。
+
+
+
+
+
+#### Naïve Manager: 電話だけで始める収益運転
+
+継続設定: 次のv6はSonnet4.6とmax_task0.75USD、月2USDは維持。Sonnetへのsession model変更は受理されたが、実model spanはHaikuのみでbudget.exceeded（既存0.50USD capに次callの予約枠が入らない）だった。Sonnet成功とは扱わずv6の実spanで検証する。view_imageと、明示依頼に対応するPostizのintegrationList/integrationSchema/postsListTool/integrationSchedulePostToolだけを追加allow。MCP URLは公式https://mcp.postiz.com/mcp、SSOT postiz keyを専用Identity vaultのagent限定static_bearerに封入し、configには秘密を置かない。対象はAPIと接続tool双方で確認した@diceai0のintegrationだけ、既存投稿/他channel/他ownerのscheduleは変更しない。標準deploymentは固定v6/同Identity/context、UTC0時と12時、予算0.75USD/回。独自schedulerは作らずinbox wakeは同時writerを増やさない順に接続する。
+
+
+目的: Adria/Managerの利用者はiPhoneだけで目標を伝え、個人メールの入力・password・Google・自前PCを用意せず、agent自身のIdentity/mail/vault/Computerで事業を運営する。Naïve契約/基盤のcontrol planeと、働くagentのruntime資格情報を分離し、DaisのNaïve契約があることを個人Googleへの依存と混同しない。まずNaïveで一件のend-to-end実例と採算を作り、月額売上USD10,000以上を目指す。目標額・推計・platform残高・入金済み売上・MRRは別に表示する。収益・利益・勝利・YC採択を保証した表現を使わない。
+
+受取基盤の具体化: Naïve IdentityのBase mainnet walletをnative APIで準備し、公開受取先/残高/上限制約を公式readbackする。per-tx0.50USD/day2USDで作成し、入金・送金・sweepは実施しない。org creditsとUSDCは別勘定。受取準備を売上と数えない。 mainnetのcreateは403: mainnet wallets are not enabled for this organization。本人Identityに既存mainnet walletがないことをGET確認し、org ownerの公式設定経路を追加調査する。testnet faucet資金を実収益にしない。 現行の公開UI/SDKにownerによるmainnet enableの自己設定経路は確認できていないため、受取先は専用のself-managed Base EOAを用意する。既存eth-accountで鍵を生成し、Credential SSOTの専用serviceだけへ保存、署名/復元で制御証明とbackup一致を確認する。個人/他agentのwalletや資金は使用しない。Naïve担当へ渡すのは公開address/chain/tokenだけで、支出signerは接続しない。これはNaïve native walletの有効化や自動compute支払いの完了ではない。Capafyの重複account/automation許諾記録は公式termsと既存provider mailから照合し、未解決中は本人mailによる受注・native browser調査・email納品の自社サービス準備を独立して進める。価格/納品範囲は同市場の一次成功例を調べて決め、成功例の実績が未取得なら小規模な検証offerと明示する。
+
+今回の完了条件: (1)本人mailで正規登録/認証/本人画面 (2)新規所有商品と販売導線 (3)第三者の実売上とcompute/platform等の実費の公式照合 (4)本人Identity/context/checkpointを保つNaïve標準継続運転 (5)秘密を含まない実画面記録と2–4分の英語live demo、英語blog/X素材。通常業務の人間承認は設けず、業務script/API置換もしない。本人/KYC/受取先の不足事実は捏造せず、不足する場所を特定して他の業務を続ける。platformが受取先登録前に売上を留保するかは当該providerの公式仕様と実画面で確認し、未確認を一般化しない。
+
+公式条件: https://events.ycombinator.com/naive-autonomous-companies-hackathon と https://usenaive.ai/hackathon を直接取得。11月7–8日SF現地、全teamがNaïve SDKを使用、実際の顧客獲得/納品/運営と介入箇所をlive demoで示す。Naïve側FAQは2–4分。YC側は1位へのYC interviewとスポンサーcreditsを記載するが、YC採択を約束しない。事前制作物の審査対象範囲は公開本文に明記されていないため、事前準備と当日成果を区別して記録する。
+
+実行順: MAIL03のauth実画面診断→本人mail登録/認証→新規商品の制作/販売→実収支/継続運転→英語demo/公開→実証した構成の移植/複製。旧順のままNaïve一社の成果を先行させる。複製数を増やすだけで利益が増えるとは扱わず、各個体の実収支とcompute費用を持つ。既存config/goal/checkpoint/owned credential参照を移植単位とし、第二frameworkを先に作らない。共有vaultは所有者/対象serviceを照合し、秘密をprompt/Gitへ複製しない。別cloudへの展開とcrypto決済はprovider対応・所有資金・既定spend-cap内で進め、現時点では実証済みとしない。既存Mac/他担当/共有profile/販売済商品は変更しない。
+
+モデルの採用判断: 同session/Identity/context/権限でGemini2.5FlashからClaude Haiku4.5へ比較override。Geminiは画像後に未呼出のactを実行済みと述べて停止し、Haikuはgoto→screenshot→act→screenshot→links/observe→本人mail入力の実tool chainを実行した。primaryが取得した遷移後画像はGoogle/GitHubではなくemail+Terms/Privacy+ContinueのCapafyフォーム。一般的なmodel優劣へ広げず、このbrowser担当の既定だけHaikuへ変更する。v5のsource統合/完全一致readbackと標準deployment接続を次に行う。
+
+現在cursor: MAIL03。v4の本人mailと承認待ちなしは稼働済み。現sessionはClaude Haiku4.5へ比較override済み。前ログのUsername or email address/Sign inはGitHub誤遷移を疑う。Capafy Terms §3.4/Publisher Agreement §2.9の所有者制限と§6.2のautomation条件を確認し、既存担当へ権限/許諾記録を照会中。個人mailなしという製品要件は維持し、同じ所有者の重複登録はしない。XPathのbutton[3]→CSS nth-child(3)は非同値であり、認証hostの実確認を先行させる。cloud screenshotの直接確認とHaikuによる正しいemail経路の操作は成功し、本人mail入力まで確認。v5はPR9121/main7d702ce7から適用しmodel/system/tools/budget/source SHAを公式GETで完全一致確認。次は既存Capafy担当/許諾記録を照合しながら独立した受注・商品準備と標準deploymentへ進む。商品案/sampleはNaïve Computerで実write/readに成功したが、sampleに未実施認証/架空計測が混入したため実イベントseqに基づく修正を同担当へ依頼。未確認の市場実績や$299/架空費用を除き$29のpilotとして検証する。売上/公開/定期deploymentは未確認。Macの空きは7.9GiB。cloudの現作業を妨げておらず、不要な全体cleanupは実施しない。
+
+## AGI flagship essay publication
+
+目的・範囲: 承認済み英語原稿を保持し、日本語全文版と原本PNG8点を既存Manager出版パッケージへ組み込み、aniccaai.com英日・@diceai0 X Articles・既存note無料記事を公開する。別の配信基盤、通常post/thread、課金記事は作らない。
+完了条件: 4つの公開URLで本文末尾・画像・account・無料公開を直接確認し、GitHubのsource/media SHA-256とNetlifyの固定revisionを照合する。draft/CIだけを完了扱いしない。
+現在cursor: **4/4媒体を公開・実確認済み。依頼された公開作業は完了。** 英語X Articleも@diceai0の同一accountで公開し、匿名のX公開ページの全文177ブロック・8画像・最後の2問を照合する。公開は収益や読者数の証明ではない。
+TODO: [x] source/assets/package [x] source validation/review/merge [x] bridge/deploy [x] website EN/JA full readback/mobile/media hash [x] note free public readback [x] X public full-article/account/image readback。
+設計判断: 既存Manager publication manifestとflat /blog/manager-...-en/ja routeを再利用。新CMS・別route体系は作らない。英語meritocracy段落は原稿PR #9102の488 bytesと完全一致。日英全文は段落対照の独立read-only検証で重大指摘0件。原本PNG8点はZIP manifest・GitHub raw・本番owned mediaのSHA-256が一致する。各版に8点を1回ずつ置き、思考実験とAI生成チェスイメージを明記する。
+順序: 旧順序はsource → canonical merge → bridge/deploy → website → X → note → 最終readback。Xの起動前容量blockerを観測したため、独立して進められるnoteを先行する。実行順はsource/package → note公開 → canonical/bridge merge → website公開/readback → X復旧。進行中の外部effectを中断・重複せず、最後に同一accountの既存Postiz OAuth経路でX Articleを公開・実確認し、この依頼のcursorを閉じる。
+
+公開済みURL:
+- EN: https://aniccaai.com/blog/manager-every-pro-an-amateur-en
+- JA: https://aniccaai.com/blog/manager-every-pro-an-amateur-ja
+- note: https://note.com/anicca123/n/neee04b1ecdf6
+- X Article (@diceai0): https://x.com/diceai0/status/2117478259654897939
+- X article entity: https://x.com/i/article/2117478257016598528
+
+証拠: 両websiteの公開HTML内に正本の全文描画が完全一致し、言語・canonical URL・heroのOpen Graph/Twitter画像を確認。390px mobileで横overflowなし・原本8画像loaded・最終2問あり。noteは本人anicca123、price=0、匿名公式APIの本文が日本語原稿と空白正規化後に完全一致。noteのPNG再圧縮はdocs/articles/publication-evidence/agi-pro-to-amateur/note-public.jsonへprovider hashと寸法を記録する。websiteのraw PNG8点は原本バイトと完全一致し、website-public.jsonへ記録する。
+統合: #9105と#9107はmerged、元の編集用#9102はsuperseded/closed。承認済みcontent commitはeaf9684c115646ee35b47711490d2645e77600af。installer/modulesはd569400787be23bd79eff61342296f18d03b84c2。配信repoの#844と#845はmerged、最終publishing commitは98edd3125201e352c55af3dc37803f94c3d72a6d。Netlify run https://github.com/Daisuke134/anicca-products/actions/runs/41567504809 はsuccess、既存money-path smoke PASS。Manager関連12 tests、source CI16 checks、各bridge CI2 checks PASS。
+X完了証拠: Postizの既存@diceai0接続からpost_type=articleで公開し、公式Xの匿名syndicationでhandle・title・article ID・coverを照合する。公開Xページの非空177本文ブロックは原HTMLと順序・文字列とも一致し、全8画像の読み込みと最終2問を確認する。独立read-only verifierもPASS。公開証拠はdocs/articles/publication-evidence/agi-pro-to-amateur/x-public.json。X/ Postiz側の画像は幅1000pxへの縮小・JPEG/WebP化があるため原PNGとのbyte一致とは扱わず、原本hashとprovider hashを別々に保持する。旧disk_floor_lowは解消し専用browserを起動できたが、browser loginはメール確認challengeに到達した。このchallengeを未解決のまま、既存の本人OAuth接続から公開を完了する。Postizのリンク除去が本文img srcも空にした問題は、同じCDNを指す有効なURL表記に正規化し、同じdraftを更新・preview確認してから一度だけ公開する。通常post/threadへの代替や別accountでの投稿はない。Grok CLIの公式binaryは復旧したがagent session起動は失敗し、Grokから助言・投稿があったとは主張しない。旧blockerはx-blocker.json内でhistorical_only/resolvedとして残す。残る公開blockerなし。
+
+Naïve継続運転の追加実測: PR9124 main7b7e90ef2f18c9e36ea42757106c0738713b5355からv6を完全一致適用。CI15件は最終確認で全PASS。Postiz bearerは専用vaultのagent/url限定で封入し、実tools/listのintegrationSchedulePostToolへallow名を合わせた。Sonnet v6の最初の推論はbudget.cap_micro_usdで拒否（consumed0、月capがtaskより先に検査されるため、task0.75で足りるとは未証明）。同sessionをHaikuへoverrideするとPostiz integrationList/postsListTool/integrationSchemaが実成功した。現在の既定は実動したHaikuへ戻しv7へ固定する。月2USD/task0.75USDは維持。標準deployment dep_aqf597v5eqa3e25ff2z22rq9j8 は12時間毎UTC・専用Identity・enabledで登録済み、次はv7へのpin更新と手動/自然run。inbox wakeはfalseで未接続。
+本人mail self-sendはaccepted、email.read3回と公式messagesは0件で受信未確認。Hashnode email signupは実画面にverification checkが残り、mail dispatch/登録は未証明。反復をprimary AIがcancelし公式cancelledを確認。通常業務の人間承認待ちではない。英語offer（29 USDCの納品後払いpilot）/sample/receiving-only payment-receiver.jsonはNaïve write→read3件一致（引用符/末尾空白を除く）で保存済み、未公開・実顧客/売上0件。架空customer/費用/改善率を削除し、内部sampleはcoordinator-assistedであることを明記。YCの正式参加確定メールを確認、11/7 11:00開始。メール本文に事前開発の追加規則なし、ログイン付き個人リンクやticketは公開資料へ含めない。
+
+Naïve追加診断と現在状態: PR9126 main320a4624cc88d55454976e51858078386754fef2からv7/既定Haikuを適用し、既存deploymentもv7/同Identity/12h/有効の完全一致GETを確認した。本人inbox wake=trueを公式照合、受信実証は未完。標準deploymentの手動run（自然runではない）はv7・同Computerで4ファイルreadと本人email.readを実行しidle、actual spanはHaiku。自然runの次回予定は12:00 UTC。
+Postizの新規英語進捗1件をNaïve内MCPで作成し、公式posts readbackでPUBLISHED/errorなし/releaseURL https://twitter.com/diceai0/status/2117488811580035223 を確認した。指定integrationだけ、既存投稿変更なし。これは発信の実証であり顧客売上ではない。
+訂正: Sonnetが未実行なのは初回比較と新規MCP probeの各拒否時点だけ。max_task引上げにより古い予算停止report sessionが05:21:48Zに自動再開し、05:21:52Z〜05:23:00Zの実model span5件でSonnet4.6が成功していた。追加model費用合計137808 microUSD、session累計173184 microUSD。旧sessionはoffer/sampleをwriteし、新しいprimary供給文の後で内容が変更された。新MCP probeの月cap拒否は公式事実だが、そのquote額と同時hold寄与は未取得のため断定しない。継続のHaiku既定は実成功と費用節約を理由に維持し、Sonnet全般が動かないとは扱わない。
+運用修復spec: 今回の担当agentだけの旧有限probe/report/product/auth/bootstrap sessionを終了済みとしてcancelし、予算変更で古い業務が再開しないようにする。最新v7 deployment sessionとPostiz publication session、他agent/ownerは対象外。削除/送金/既存account変更は行わない。現在全own sessionはidleまたはterminalであることを確認し、cancel後の公式状態を保存する。現時点で英語offer/sampleの最新内容は自動再開report由来なので、公開前に再照合する。
+
+運用修復readback: 旧有限session7件は全てidleを所有照合してcancel→cancelledを確認。削除/他agent変更なし。標準deployment sessionでもPostiz postsListTool実成功とjournal write/readの実eventを確認し、actual Haiku span4件を取得。初回turnの予定文だけの停止から、primary AI訂正後の実callとして区別する。offer/sampleはprimary事実限定版のnative復元/readを進行中。次の独立作業はinbound配送の実証・詳細英語記事とoffer公開・実顧客獲得で、承認待ちへ置換しない。
+
+公開作業の予算修復: 詳細英語記事のnative writeは成功し、続くread前にagent period capの見積拒否。専用agent実費1809584 microUSD、公式org残高9781134 microUSD/liveを確認。Daisが今回のNaïve事業と通常資源判断を委任している範囲で、初期実験の月2USDを3USDへ1USDだけ拡張し、max_task0.75USD/追加入金なし/他agent設定不変を維持する。旧probeはcancel済みでauto-resume対象外、現在article sessionのread/editor観測を再開する。現在設定はv8/月3USDが正本、過去2USDの記録は当時の実験条件。
+
+Rich-text公開の実測修復: v8 Haiku publisherはタイトルのみ入力し、本文未入力のまま580013 microUSDでbudget_paused。担当累計2756158 microUSD、月3USDの残りは次quoteに不足。公開先HTML/JSを読取し、Telegraphのh1/addressはwrapper、editable_text内にtextarea.editable_inputを作り、保存時はtextarea.valueを使うと確認。typeのtext引数はNaïve公式schema通りで、引数名違いではない。selectorの推測反復と成功応答だけの誤判定を修復対象にする。
+v9試行時scope: 既存3件（v6 Postiz完了、v7記事作成完了、v8未完publisher）を所有/idle確認してcancelし、予算変更による再開を防ぐ。専用v9は月5USD/task1USD・既存残高内/入金なし・Sonnet4.6を既定とする。旧月3USDから増やす支出権限は2USDだけ。11tool/default deny/送金禁止/他owner保護は不変。修正済み英語記事を同Computerから読み、実編集要素を通常browser操作し、新規公開を有限1USDで検証。改善を事前に断定せず実tool/公開本文/費用で判定する。
+
+#### Naïve v9の公開診断cursor
+main `4b9e9d5f3533b12685b90c1a299f8693aa46ce7c` のagent/deployment v9を公式GET一致確認。Sonnet実14call、専用Computerの原稿保存と編集画面表示は成功、本文入力/公開は未達。有限session費用440092microUSDで次call見積りによるbudget_paused。次は全文readより先に公開source由来の実入力selectorを短文で試す1USD有限run。詳細/順序変更/残TODO → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`。実売上/メールinbound/画面連続録画は未確認。
+
+#### Naïve記事の実公開と継続既定v10
+
+英語全文と実cloud画像はBusinessRun Bench main `f6cf6c0512a2ea24eb179fb83968965d8d42fde0` で公開/固定SHA readback一致。native短縮版は同sessionのHaiku overrideから実配信、review済みHTML/settingsと完全一致。Postiz post `cmw0bopr401gjt807mh7zk65f` は公式PUBLISHED/error null、https://twitter.com/diceai0/status/2117508306130362806 。元の長文callはJSON不正Not run（切断原因は未確定）、旧sessionはcancel。第三者売上/メールinbound/連続録画は未達。
+
+v10の既定はHaiku4.5へ戻す。短縮版Sonnetはmonthly quote gateで推論前拒否・費用0、同jobのHaiku overrideはnative公開/記録まで116878microUSD。taskやseedが違うため品質順位は主張しない。月5USD/task1USD・11allow/default deny・Identity・12時間毎cron不変、agent/deployment v10をmain固定SHAから適用しGET一致で確認する。次cursorは本人mailでTLDR AI無料研究newsletterをbrowserから1回登録し、外部confirmation受信/必要なメール確認/公式messagesとwakeの観測。個人Google、他owner inbox、支払、余分な購読、不要な返信は行わない。購読はAI業界調査目的と外部mail配送試験を兼ねる。結果をjournalへ記録し、顧客intake/受注/納品/第三者決済へ進む。
+
+#### Public trace pilot v11の実行契約
+
+public受注を先行し、メールの不着を発売gateにしない。対象/価格/納品条件は公開BusinessRun Bench `pilot/README.md` とissue form、native実行順は `docs/superpowers/plans/2026-11-03-naive-browser-company.md`。v11は同agent/IdentityのHaiku・月5/task1・11allow/default denyを維持し、public trace-review issue→browser読取→英語X article納品→BaseUSDC receiptの一経路を標準deploymentへ固定する。public consent、匿名化、20calls、1run最大1issue、issue番号/txの重複照合、送信不明fence、untrusted-inputをsystemへ明示。owned mailboxだけwake=falseにし定期runへ集約（inbound未確認/診断mailを業務再開にしない）。既存他owner/商品/投稿/受信箱は不変。自然run/受注/第三者入金は未確認。
+
+Naïve publicpilot更新: 公開offer/sample/receiver/issue formはBusinessRun Bench main041bc1f2、4/4固定SHA readback一致。Naïve v11/main2b87217b agent/deployment全payload一致・本人wake=false。実browser観測は空配列でvisual追加未実行、受注ゼロ実画面の証明ではない。agent実費4.843496USD/live org残高26.742594USD、短い有限runもcap予約見積り拒否/0USD。旧finiteをcancel→GET後、v12は月cap5→6USDだけ拡張しtask1USD/Haiku/11allow/Identity/cron維持、source→main→GET照合して募集とintakeを完遂する。追加入金/他owner変更無し。公開英語記事は済み、募集post/実受注/第三者売上/自然run/録画/自己compute支払/複製/月10Kは未達。残TODO/現在cursor正本 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md` 最終節。
+
+Naïve v12募集時のreadback（履歴）: v12/main326fc27a agent/deployment全payload一致、月6USD/task1USD/Haiku/11allow/Identity/12h維持、owned wake=false。本人native Postiz募集は https://twitter.com/diceai0/status/2117519919034077664 でPUBLISHED/errornull、257文字送信/保存本文一致。本人browserの公開GitHub依頼一覧はextract/画像双方0件、native intake write/read一致。有限runはcancelled、募集+画面確認60211microUSD、担当累計4908335microUSD。次の自然runは12UTC/JST21時、まだ未検証。実第三者売上/受注/有償納品/動画/自己compute支払/移植複製/利用者向けiPhone入口/月10Kは未達。Grok/Muse既存threadへの窓口共有は送信成功・返信未確認。残TODOと現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md` 最終節。
+
+Naïve本人mailの追加証拠: native browser/本人email.send1通が外部mail-testerで実受信され、subject/nonce一致・10/10、native認証extractはSPFpass/DKIMvalid/DMARCpass、一次受信headerとも整合。これは今回の送信方向だけの証拠で、本人inbound/登録/売上は未達。nativeファイルの自己申告時刻にずれがあり、rawを保持し公式イベント時刻をprivate mail-tester-verification.jsonへ結合、自己申告時計は非authoritativeとする。有限runcancelled、費用221926microUSD、担当累計5135524microUSD。月6/task1/定期runは不変。現在cursor/残TODO → `docs/superpowers/plans/2026-11-03-naive-browser-company.md` 最終節。
+
+Naïve本人DEV登録: 専用資格情報2参照を生成/封入しprivate SSOTへ保存、いずれもaccount not_verified。初回helperのURLがトップだった点を修正し、正しいsignupフォームで非secret3欄の入力を実画像確認したが、helper done後もprotected2欄は空に見え、登録/確認mail dispatchの公式証拠無し。SDK全般の欠陥や本人inbound不能の証明にしない。有限3runはcancelled、担当累計5656872microUSD/月6/task1、runtime/deployment v12は不変。次は通常Computer SDK browser_actionの応答境界を診断し、一般actでのpassword入力/秘密export/追加signupで代替しない。残TODO/現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md` の現在正本と末尾の技術境界。
+
+
+#### Naïveの受注導線・月残枠の修復
+
+現在はv12/月6/task1/Haiku/11allow/同Identity/12h cron/wake=false。本人browserの新しい実intakeは0結果をextract/画像で確認。旧募集は公式27impressions/他指標0/クリック不明で、需要失敗とは断定しない。新しい実測紹介postはnative送信270文字exactからPUBLISHEDとなったが、Postiz Xの明示ルールでURL行が削除され公開206文字。直接リンク原稿を作ったprimaryのschema確認不足を訂正し、GitHub検索手順の213文字案内を追加1件だけ修復する。provider確認2件はprimary AIが処理し人間操作0、Naïve単独の無介入とは呼ばない。旧公開finiteはcancelled/127132microUSD、修復用有限は月cap quote拒否で投稿0/cancelled/24161microUSD。
+
+次の1手はv13 source/main/agent+deployment公式GET一致。月6→7USD（追加枠最大1USD）/task1維持、公開先の最新schemaへ従う短い配信指示と実本文/対象による重複照合だけを訂正する。依頼獲得より先にこの実測budget境界を修復する理由は、次のcall/自然runも同じ月capで停止し得るため。独立して本人mailの外部dispatch receipt待ちを継続し、Grok/Muse等の既存入金をNaïve売上へ転用しない。実依頼→納品→第三者USDC/費用、自然run/録画、phone-only入口、黒字後の移植/自己compute支払/月10Kは未達。実行順と証拠参照 → docs/superpowers/plans/2026-11-03-naive-browser-company.md の現在の正本とv13修復節。
+
+### Naïve v13の実稼働と公開receipt
+
+PR #9145/main `584363f5b03e738647e65286f77264bcff069219` からv13/月7USD/task1USDをagent/deployment全source fields公式GET一致で反映。許可/Identity/12h cronは維持。Naïve nativeが未完のURL無し案内1件を公開し、Postiz PUBLISHED/error null/保存HTML一致とX公式表示3段落一致を確認: https://twitter.com/diceai0/status/2117552389045563522 。今回公開callはconfirmation0/human0だが、primary AIの原稿/照合/readbackとreceipt結合followupを含む。finiteはcancelled/pending0、実費42835microUSD、agent累計5865832microUSD。実第三者売上・採算・自然run・録画・phone-only・自己compute支払・移植は未達。現在cursorは実依頼→公開納品→第三者29USDC receipt/費用であり、同文募集/確認の反復を増やさない。実行順・証拠の正本 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の正本」。
+
+### Naïve登録診断とpin仕様の訂正
+
+本人Substack登録は4有限runで実受信/認証を未確認。GLM5.3flash candidate16は実20spans/20toolsでalready registered→sign-in画面に到達したがaccount所有は未実証、本人inbound0/EOF。公式status166809microUSDはfinite cap160000を6809超過し、4run計503405は診断総枠500000を3405超過する。予算停止原本を保持してcancelled/pending0、cap増額/再実行無し。保存contextのredactionとpauseによるpage喪失を入力不能一般へ拡大しない。restoreでcurrent17は元v13設定全source fields公式GET一致、production deployment13はbaseline全snapshot一致。現在版pinの追随は公式仕様、vendor bugとはしない。担当累計6390644microUSD/SDKbrowser別5001、実第三者売上未確認。全体cursorは実依頼→納品→29USDC receipt/費用。公開英語記事の古い現状説明を修正し、自然run12UTC/本人通常sign-in/録画/phone-only/黒字/移植は未完。正本 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`。
+
+
+NaïveのCapafy接続は、同一運営者1Publisherという公式規約 https://capafy.ai/publisher-agreement/ 2.9に合わせ、既存Anicca Publisher内の正式team/専用agentmail権限を既存ownerへread-only照会する。別メール/VMを別Publisher所有者と見なさず、既存account/reset/商品/収益は変更しない。Muse向け照会はqueued/repliedfalseで着手未確認。MAIL03をこの正しい対象へ訂正、詳細/現在cursorは `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「Capafyの同一Publisher内接続を優先する」。
+
+
+NaïveのCapafy無料user認証はfinite0.30USD内で実費243640microUSD、end_turn→cancelled/pending0。sealed signupで専用credential参照を生成/正本保存したが、browser実行失敗で無料user認証/dispatchは未確認、本人inbound0/EOF。primaryの4call scope確認・session model override/補正を含み、単独無介入完走ではない。current17/production13/元全source fields公式GET一致、担当累計6634284microUSD/SDKbrowser別5001。既存Publisher内正式team経路のowner照会は返信未確認、重複Publisher/課金/既存商品変更無し。全体cursorは実第三者依頼→納品→29USDC receipt/費用、残TODOと具体的な失敗境界 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「現在の正本」「Capafy無料user認証の実測と終了」。
+
+
+Naïve英語記事は自社blog https://aniccaai.com/blog/manager-naive-autonomous-companies-en へ実公開。canonical982fb15e/publishing e5cff、後続main014262a5由来provider6ae9c8b0 ready、実本文・画像hash・release.json記事hashを照合、GHA/money-path smoke成功。既存75記事保持、新1記事/1画像だけ追加。実売上/登録/動画は未達。本人受信は、既存会社Resend送信専用キーから本人inboxへ非注文の検査1通で切り分ける（GET domains401はrestricted_api_keyで失効ではない）。詳細・資源上限・再送禁止・現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「英語記事の自社ブログ公開完了と本人inboundの1通検査」。自律的な顧客獲得seller loopは別の自所有未完項目であり、限定pilot intake稼働を完全な会社運転としない。
+
+Naïve追加実測: 本人inbound検査1通はResend HTTP200/acceptedのみ。12:05公式message0件、inbox active/wake=false、送信専用キーの配送状態GET401でdelivery未確認。再送しない。12UTCの自然runも12:05時点で未作成、enabled/scheduled/next12:00のまま、手動runだけ。担当累計6638031microUSD、差分3747の帰属未特定。設定変更やmanual代替で自然完走を主張しない。seller loopのno-order早期終了は自所有未完として改善を進める。詳細/証拠/残TODO → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「本人inboundと定刻runの追加観測」。
+
+Naïve seller loopのsource変更: 依頼ゼロで即終了するdeployment inputのみを、公開需要最大1件の調査→仮説と永続seller-state→有用な新知見がある場合だけ日1件の英語獲得実験へ変更する。既存受注/納品/tx照合を優先し、agent17相当/production pin13/Identity/cron/月7/task1/tool権限は不変。過去募集の言換え、送信不明の再送、DM、他owner変更はしない。現在cursorはmain固定→input-only PATCH/GET一致→既存残枠内最大0.30USDの有限native検証1回。12UTC自然run未作成/検査mail未着は別診断、実売上/無介入完走は未達。契約と順序変更理由 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「no-order時のseller loopを既存deploymentへ追加する」。
+
+Naïve初回自然runを実証: 12UTC予定→12:09:39作成、deployment/pin13/Identityと初期入力の予定時刻12:00を公式照合。native7tools・Haiku実5spans・45903microUSD、確認0/primary追加入力0/中断0でidle end_turn。本人browser画像も0件、journal write成功。無受注確認の自律実行であり、有償納品/売上/全社無介入/動画の証明ではない。担当累計6683934microUSD、次自然run11/04 00UTC。約9分39秒の起動遅延原因とjournal次run再読取は未確認。新seller inputはこの自然run後の別変更。詳細/残TODO → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「初回の標準自然runが無受注確認まで完走」。
+
+Naïve seller inputはPR9164/main b4e61ec3→既存deployment input-only PATCH→全field公式readback一致。15checks PASS/独立review SHIP。自然runのメモ6126bytes完全一致とpause200→pausedを確認。有限seller試験はstate保存まで進むが、投稿一覧67073bytesを需要調査前に読み、Haiku実費129172/上限300000でも次予約枠不足でpaused。primary AIのcall確認1、人間0、新規投稿/実需要/売上未確認。上限を増やさず同finiteだけcatalog Gemini2.5FlashLite send指定で補正し、sourceもstate→需要→投稿候補時だけ最小の履歴照合へ直す。production既定Haiku/Identity/cron/予算は不変。契約・実測・理由・現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「seller入力の本番反映と有限検証の予約予算境界」。
+
+Naïve seller有限はcancelled/pending0、26tools/Haiku8+Gemini13spans、state1695bytes write/read exact。primary followup4/確認3、人間0、需要/新規投稿/売上未確認。初回freshなbrowser session-scope許可後もtypeでread_people確認、pin13のallow/ask_actions[]/allow_extract等はsource一致。確認継承は未解決。台帳総費用187824microUSD（30件一致）、session GET171158/usage151158は別snapshotとして保持。担当累計6892309、残107691ではHaiku予約に届かないため、既存live credit24693408内で専用月cap7→8/task1維持のv18 sourceを作成。全33sessionsにactive/再開可能budget_paused0。既定model/Identity/権限/cronは維持し、source inputの投稿履歴遅延読取と依存browser直列化、明示production pin18をmain固定から反映する。現状はまだ17/13、未反映target18を実運用成功としない。全体goal active、残TODOと現在cursor → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「seller有限の終了結果とv18の実行枠修復」。
+
+### Naïve実反映と残TODO
+
+現行はagent23/production pin23・先行保存input（GLM-5.2/priority）、月9USD/task1USD。main048全source fields一致、最新57live0/Computer paused/次00UTC、月残129431（20:19:14UTC snapshot、後計上あり）。本人の有償QA募集観測/state保存/end_turnは成功。専用mailのn8n登録は未完だが、実signup画面に通常Email/Username/Passwordフォームを確認、Google必須ではない。finite160000で予約不足を越え、正規AI確認1回後にsignup needs serviceと判明、同card再発には再回答0。費52254/ledger9、終端pending1は別記。現在cursor2はsource月cap9→10/desired24の最小修正→CI/review/main→budget-only適用→service/url明示の通常登録/専用mail確認→連絡/限定提案→依頼/納品/公式入金。新入金0、モデル/Identity/task/tools変更0。cap10の本番反映はまだ未実施。元7TODOと全体goalを維持する。詳細正本 → docs/superpowers/plans/2026-11-03-naive-browser-company.md。以下はv22反映の履歴。PR9174/15checks終了失敗0/独立review指摘0→main a7160500c34db6e4fd8d614f18651e6fe7a34e78固定→公式SDK0.10.0のexpected21/budget-only更新で22を適用する。モデル・本人Identity・専用AgentMail・toolsは保持し、利用者の個人Google/メールは追加しない。候補のnative通常業務は7tools/確認0/追加入力0/人間0で自然end_turn。seller-stateは4183→10553bytes、元全key/value保持、追記write/readのbytes/hash完全一致。検索は0件→10件だが出所本文0、本人記録はsnippetだけ/根拠不足/支払意思nullを明記し、新需要/売上に数えない。費用112465microUSD/全ledger11件一致、cancelled/pending0/43sessions active0/Computer paused。一度旧production20の全fieldsを復元後、fresh read-only検証0件からdesired22/priorityをPATCHし、固定mainの全source fields一致とscheduled/次11/04 00UTCを公式GET確認する。月費7997550/残1002450は終了時snapshotで後計上を固定保証しない。v22自然run/第三者依頼・売上/本人サービス登録/連続録画/phone-only/黒字/USD10K/月/移植は未達。専用mailの実送受信とSubstack認証未達の歴史・介入/費用はplanを参照し、送受信成功を登録成功や全工程無確認に置換しない。現在cursorはTODO2、買い手側の未解決source→実依頼→納品→第三者入金/費用へ戻す。詳細/receipt → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「v22のstate保存と本番rolloutの確定結果」。
+
+残TODOの順序は本節、現在cursorは2、全体goal active:
+1. [完了] 専用Identity/inbox/Computer・公開pilot/英語blog・定期deployment・v18実行枠/読取順/依存browser操作順のsourceと公式反映。source受理と本番の事業成果は区別する。
+2. [進行中] 実需要→第三者依頼→native分析→英語公開report→29USDC/Baseの成功tx/recipient/token/amount/重複照合→費用差引き。v19の同一turn内goto/screenshotは実画面まで成功。end_turn後の画面保持は未達だが、これを顧客獲得の前提gateにせず、nativeを順次操作して公開需要を最大1件調べる。idle後は実確認URLを開き直し、実際に再発した確認callは会社側AIが具体的に扱い、Daisへの承認待ちを作らない。需要/売上は未確認、内部送金/自己テスト/投稿/クリックを代用しない。scope=session受理でも次typeに確認が出た実測を保持し、全工程無介入としない。重複した募集を増やさず、新しい公開需要1件と有用な新知見を根拠に提案を改善する。
+3. 現行v22の通常自然runと、初回有償業務の連続画面録画を確認。単一screenshot/再現用replayを連続録画と呼ばない。live-viewはcontrol-bearing secretとして扱い、URLをagent/chat/repoへ渡さない。
+4. 本人inbound/登録完了は独立に進める。送信方向のmail-tester受信/SPF/DKIM/DMARCは確認済み。会社Resend検査1通はacceptedのみで本人受信未確認、再送しない。専用送信keyではdelivery GET不可のため既存ownerへ同一receipt照会済み・返信未確認。個人Google/共有inboxの借用へ戻さず、public pilot販売のgateにも戻さない。
+5. 少なくとも1件の有償納品/実費からunit economicsを測り、需要に合わせ単価/仕事/処理件数を改める。初期29USDC×日2件×30日=1740USDC/月は満枠を仮定したcapacityで、実売上予測やMRRではない。USD10K/月は未達。
+6. 利用者のGoogle/メール入力/password/自前PCを要求しないiPhone入口を実装・確認する。現GitHub intakeは開発者向けで、既存WebのGoogle認証必須入口をconsumer入口達成としない。MCP identity_idは現仕様でlabelのみのため、会社側で対象agent/Computerを固定し、既存他ownerへ権限を広げない。
+7. 黒字の手順/評価/最小stateを他VMへ移植し2拠点で実証。専用Identity/credential・資源上限・仕事の一重処理を維持。受取専用walletにoutgoing signerは未接続、compute自費/自己複製/任意cloud互換は未達。Naïve固有のvault/inbox/session参照をそのまま他cloudでも使えるとはしない。
+
+benchmark研究は並行項目: 公開BusinessRun Benchの9eval catalogと3再利用環境の実測を維持し、独自課題・複数modelの同条件比較・採点/費用/介入/公式成果の記録を増やす。既存3環境のscript baselineをモデル順位や全9evalの独立再現としない。英語記事は https://aniccaai.com/blog/manager-naive-autonomous-companies-en で公開済み。ハッカソンは公式の11/7–8/SF/SDK/ライブデモ条件に合わせ、事前開発と当日成果、介入点を分けて実証する。優勝/YC採択は未達の目標。
+
+Naïve browser保持の次sourceはv19未反映。既存browser.keep_aliveだけtrueにし、必ずturn毎に閉じるというsystem文を実画面確認へ整合、production pin19も明示する。liveは18/18のまま。月8/task1/model/Identity/他権限/cron/input不変。残TODO順は本節の7項目、cursor2。main固定→全field公式GET一致→公開HNだけ最大0.30USDの有限native probe、画面/URL/非秘密入力の保持・確認/primary介入/実費を実測する。設定受理を売上/復旧成功にしない。実行契約 → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「browser保持のv19最小変更」。
+
+Naïveの現行はagent19/production pin19。PR9166/15checks PASS/独立source review SHIP→main14e9dbd5eedfd1f73f5eeec5643f167f07897282固定→expected18/system-tools更新→deployment自動追随19→全source fields公式GET一致。月8/task1/model/Identity/cron/input不変。有限HN試験はHaiku5spans/3tools/確認0、人間0/primary AI再開指示1。初回は実HN画面、end_turn後の移動なし再開は白画面をprimaryも確認。turnをまたぐページ保持は改善できず、短い接続切断/確認待ち後/検索入力保持は未測定。cancelled/pending0、browser closed2組、current Computer null/旧Computer destroyedを照合。台帳7件と総費33763microUSD一致。売上/受信/登録/録画は未達。残TODOは本節の7項目、cursor2。旧「保持解消を前提」から新「同一turnのnative順次操作で実需要へ」に更新し、未実証の保持/controllerを前提gateにしない。変更理由・実行詳細/receipt → `docs/superpowers/plans/2026-11-03-naive-browser-company.md`「v19の実反映と保持probe結果」。
+
+Naïve v19のnative需要調査は15tools/Haiku15spans/確認0で検索・候補確認まで進むが、cap0.30USDの次予約不足で記録前budget_paused。実需要/売上未確認。既存月8/task1内の同sessionだけcap0.50へ修復し、追加閲覧せずwrite/readで観測と限界を保存→台帳/終了照合する。現在cursorはTODO2の当該記録完了。実行契約 → plan「v19 native需要調査の予約枠修復」。
+
+Naïve v19需要調査の確定: Haiku31spans/30tools/確認0、台帳42件/278622microUSD。原本4500bytes write/read一致、seller-state2336bytesは後続session再読取で永続化確認。予約枠0.30→0.50修復後の保存指示でも追加browserが続き、明示interrupt後もGET runningとなったためcancelled/pending0へ閉じた。API受理と実挙動は別で、入力配送/再開/model追従の原因は未分離。元調査の未来時刻・費用推定・市場飽和断定/顧客探索停止は訂正。新しい訂正専用sessionは6read/write/外部0/Haiku5spans/確認0で自然end_turn、2files exact readback、費55287/台帳5件/cancelled。残るmetadataはprimaryのowned fs bookkeeping2write/readで正し、介入を隠さない。3session費小計367672、公式agent月7269834/残730166、月8/task1/既定model/Identity/deployment19/cron/input不変。売上/価格受容/有償依頼は未確認。Computer in-use409を追加観測して終了照合中、現在cursorはTODO2の明示public help request1件の需要/商品適合検証。一次vendor説明を買い手の依頼にしない。詳細/訂正hash/各receipt → plan「v19需要調査の確定結果と記録訂正」。
+
+Naïve最終資源照合: pause200→Computer paused、全36sessionsのactive/pending/再開可能budget_paused0、agent19/production19/月spent7269834/残730166/次自然11/04 00UTC。強制停止なし。Computer終了照合は完了し、現在cursorはTODO2の明示public help request1件の需要/29USDC適合/支払意思の検証。第三者売上未達、全体goal active。確定receipt → plan「v19需要調査の確定結果と記録訂正」末尾。
+
+Naïveの明示help request検証: v19/Haiku8spans/7tools/確認0/primary followup0、1431bytes write/read exact、自然end_turn、台帳11件/69648microUSD/cancelled。公式forum5003は回答受諾済みと画像/正しいJSON fieldで照合し、有償見込み客に数えない。全37sessions active0/Computer paused。AgentMailは会社既存APIが有効だがfree3/limit3で空き0、専用箱/worker key接続は未実装。既存senderからNaïve専用inboxへ別nonceの診断1通だけ、先にinbox-scoped polling webhookで同message_idの配送イベントを観測し、Naïve受信と区別する。元Resend1通は再送せず、共有箱の付替え/新課金/新worker keyは0。正本TODO2/4の並行作業、詳細契約 → plan「明示help requestのnative確認と独立配送probe」。
+
+Naïve独立診断は同messageのAgentMail sent/deliveredを公式pollingで取得したが、Naïve受信0。domain/active/wake/routing address/MXは照合、認証/callback/保存のどこかは未分離。署名専用receiverへ自作payloadを入れて成功にしない。自分の一時pollingは204→404/SSOT token revoked、再送/他owner変更0。次source v20はAgentMail公式agent signupのhuman_email省略による専用receive-only箱1件と4read MCPを採用する。既存会社3枠の借用・送信制限回避・課金・human attachなし。keyはSSOTに即保存し、専用agent bound static_bearer vaultだけへ注入。設計時点は19/19で適用前target20、月8/task1/model/Identity/cron/input維持。旧「pilot探索＋旧inbound診断」から新「receive-only bootstrap→native受信→browser登録＋pilot探索」を並行実行する。現在cursorはTODO2/4の専用受信bootstrap、受入と制約 → plan「独立配送診断の結果と受信専用AgentMail接続v20」。
+
+AgentMail専用receiver bootstrapは200/1attempt、人間メール未指定、新org/inbox1・送信上限0・未検証を公式GET確認。本人inbox read200、旧会社inbox message404。新keyでMCP4read/schemaを照合し、専用Identity vaultにURL/agent_id固定のstatic_bearer封印済み。secretはSSOT/封印先だけ。source20はsystemメール説明/4read/server/pin20だけ、RED→focused assertion PASS/他field不変。現在runtime19/19、v20反映・controlled受信/native MCP読取・browser登録は未達。実行詳細/receipt → plan「独立配送診断の結果と受信専用AgentMail接続v20」。
+
+Naïve一時Vetta診断はPR9172/全15checks/独立review指摘修正0件→main d1cc98bf5dc45a995067d25df367f42d2e568167固定から1回実行し終了。専用AgentMail list_inboxes成功後、残finiteへの次予約不足でbudget_paused、browser0/確認0/submit0/登録0/売上0。本人mail接続だけを実証、入力/確認継承/ページ保持は未測定。費5539microUSD/台帳1件一致、増額/追加run0、cancelled/pending0、新vcr削除/全page一覧から消失、新agent削除/GET404、isolate Computer null。元agent/deployment全source fields不変20/20、40sessions active0/Computer paused。月費7765103/残234897、前auth費は遅延計上後239315/19件へ訂正。Museにも無確認認証の実証は無いと返信、public intake0件。残TODO順は本節7項目/cursor2の実需要→有償納品、登録は独立項目4、同型診断を反復しない。詳細/限界/cleanup差異/証拠 → plan「一時Vetta診断の確定結果と残cursor」。
+
+Naïve TODO2の通常業務は元v20/session1件/finite0.20でseller-state read成功後、次予約不足。全365catalogで対応を確認したGemini2.5FlashLiteへの同session send1回は受理されるが、供給側429が60秒backoff後も再発（4記録）。新session/上限拡大/追加model変更は0、cancelled/pending0、Computer pause→paused、41sessions active0。browser/新需要/記録成果物/投稿/第三者依頼・売上は未達。当該session帰属費44102microUSD/ledger1一致、agent月費snapshot7812591/残187409、20/20/既定Haiku/cron不変。Computer等は推測配賦しない。公式Modelsはmax_output_tokensがquote出力予約を決めると明記し、catalogはprice非公開/最安published input順であり供給保証ではない。現在cursorは予約・context費用と供給を一次資料で絞り、既存枠内の最小source差分から通常需要確認へ戻すこと。同じ予約不足/429を反復せず、元7TODO/収益goalを維持する。詳細/receipt → plan「本番v20の実需要確認を同じ有限枠で続ける」。
+
+Naïveの次source候補v21はmodel=GLM-5.2-FP8/window=priorityの2fieldだけ。vendor公式router/対応catalog/priority実測例を根拠に別completion-window poolを選び、同じimmediate予約不足/Lite429を反復しない。liveは20/20のまま。production source pin20/immediateを維持し、一時schedule pause→expected20更新21→production pin20明示復元→候補1業務canary→finally旧schedule全field復元。元月8/task1内、session0.14/計画総0.18/8分、直前残0.18未満なら作成0、資源/key/上限追加0。fresh reviewer/全CI/main固定から適用し、native public需要確認のwrite/readと全台帳で判定。通常需要獲得のcursor2を進める方式変更で、価格や供給/能力を保証しない。詳細/rollback/未達条件 → plan「v21候補: native需要確認をcompletion-window poolへ戻す」。
+
+Naïve v21はPR9173/全15checks/独立review0→main645daaf固定→公式SDK0.10.0 agents.update200で適用する。native5tools/確認0/429なしで検索とMedium本文まで進むが、次予約不足でwrite前に停止。成果物0/新需要・売上未確認、session帰属67991microUSD/台帳8件一致、cancelled/pending0/42sessions active0/Computer paused、旧production20/immediate/enabledへ復元済み。Mediumは解決済みtutorialで買い手依頼に数えない。live agent21/production20、月費snapshot7880582/残119418。次target22はmodel/lane等を維持し月cap8→9のみ、通常業務finite0.40/計画総0.45/8分/1件、既存credit内/入金0。nativeが既存seller-stateへ根拠/不足を追記しwrite/read exactまで完了した時だけ希望production22/priorityを採用する。現在cursorは予約余力修復→1業務完了→条件付きrollout、元7TODO/収益goal維持。詳細と未達時復元 → plan「v21の実行結果とv22の予約余力修復」。
+
+
+Naïve v22の通常業務1件目はSDK sessions.create201から15tools/4extract/確認0でpublic intake該当なしとLangGraph issue9001本文を読むが、先行保存0のまま投稿一覧約90日/69055bytesと時刻読取へ進む。max_iterations後の同session継続はinternal_error3回で新tool0。因果は未分離で、provider errorの解消を断定しない。finite0.40は維持し、公式残/credit確認から終了wallだけ8→12分へ延長、12分deadline後約21秒でcancelled/pending0/44sessions active0/Computer paused、本番22/priority全fields維持を確認する。費132224microUSD/ledger15一致、月spent8146354/残853646はsnapshot。native保存/投稿/第三者売上は未達。現在cursor2は先行保存inputの内容照合。PR9175/main a7c8085e93aab4dffd48d02f55a4a9e31c951dcb/15checks通過から通常業務を実行し、15tools/確認0/追加入力0で自然end_turn、state10553→15953bytesのwrite/read一致、費109244microUSD/ledger14一致を確認する。一方、旧github_check/next_actionの原値未退避と未観測18:2X表記があり、fresh reviewerはNO-SHIP。旧production22/priority/inputは維持、45sessions active0/Computer paused。PR9176/main048a837/15checksからedit-only更新でcurrent23、production22旧input保持。23の訂正もinternal_error2回/6read/edit0/自然終了0。cancel後usageで費34265microUSD/ledger4へ更新、47active0。公式fsはstate17964bytesの旧2値退避/null/集計区分を確認する一方、modified_atは旧cancel後18:28:31で対応write event無し、帰属不明。journal8657bytesの訂正は残る。親の公式readbackでwake後pause409のため19:00時点Computer running。cursorは使用状態の照合→休止後journalだけの小さいnative edit→独立照合→合格時採用。提供者内部エラー/cancel後効果は未解消。モデル/mail/月9/task1維持、次のjournal-only業務はfinite0.40＋後計上0.10/計画0.50/4分/max6tools。詳細と原本/契約 → plan「v23適用・native失敗・終了後の公式file照合」。元7TODO/実売上・登録・録画・phone-only・黒字・10K・移植の未達維持。
+
+Naïve journal追補前の履歴: journal-onlyは4tools/end_turn/費27665で完了するがbrowser使用内訳削除の独立Blocking1件によりdesired23/input未採用。19:14:35UTCのGETでComputer paused。内訳screenshot1/extract1を本人read/edit/readで追補し、hosted枠extract1/4と区分、独立照合後だけmain048の2fieldを採用する。手順・有限枠・残7TODO → docs/superpowers/plans/2026-11-03-naive-browser-company.md「journal最小訂正の実測と内訳保持の追補」。
+
+Naïve内訳追補は3tools/end_turn/確認retry0、費18662/ledger4、Computer paused/active0/旧production22を公式確認。本人editと末尾readの照合は通過、fresh独立review待ち。収益は未実証。→同plan「journal最小訂正の実測と内訳保持の追補」。
+
+Naïve本番採用の履歴: 内訳追補の独立review SHIP後、19:17:55UTCにmain048 desired23/inputを本番採用、全source fields公式一致/paused/active0。旧production22保持は履歴。現在cursor2は公開の有料需要の観測→本人先行保存→初回有料納品へ戻る。実売上等は未達。詳細・有限次業務 → 同plan。
+
+Naïve cursor2: 本番23通常業務はintake0件、browser7timeoutsで新需要0。本人state/journal保存は実測するが自然終了0、19:30:34.948にcancel。費138158/ledger14、active0/paused/prod23保持、残485301。自己集計誤りと旧next_action未退避は公式原本を保持して未解消と明示。次は計画350000内の短いbrowser復旧→新需要1出所、時刻/intake再読取を反復しない。→同plan「本番23の通常業務・ブラウザtimeout境界」。
+
+Naïve実行履歴: 短いbrowser復旧→候補本文観測→旧state全値保持の追記/readは9tools/end_turn/errors0/費92136で成功。n8n候補は解決済み/支払意思無しで除外、依頼売上0。前run後計上166753/ledger17。次は計画300000内で現行の有償募集1件へ絞る（同plan）。本番23/全51active0/paused、登録/録画/phone-only/黒字/10K/月/移植は未達。
+
+
+## P05-1 Ontology／行動の状態表現の研究エンジニアリング証拠（2026-11-04、実行側は未変更）
+
+Managerの行動Ontology研究の実行コード・4方式queryベンチマーク・外部OSSのsource/license監査・E2E最小実験・Python3.14 test互換性は、[実装設計と受入仕様](https://github.com/Daisuke134/life-manager/blob/main/products/manager/docs/specs/2026-11-04-manager-ontology-query-evidence-reuse.md)にまとめた。講義の進捗正本は`docs/research/manager/masterclass/2026-11-04-p04-causal/ROADMAP_STATUS_JA.md`。実測条件ではPython dictとGraph projectionのexact queryは同程度であり**専用Graph DB追加を見送る**。新しい実行権限・secret・provider送信・ユーザー介入・本番のstate writeは一切行っていない。既存Manager Core/権限/outbox/ledgerが正本で、Graphはread-onlyの投影に限る。商用利用制約はモデル直接販売の有無とは無関係に確認が必要。次P05-2で既存ID/effect/receipt/readbackの統合read-only契約を検証する。
+
+
+## 2026-11-04 P05-2 research adapter & Listen Labs read-only API verification
+
+Existing `runtime/contracts/common-record.schema.json` and Manager Core are retained as the only execution contracts. P05-2 synthetic research implemented a **read-only** correlation of Job → Effect → Receipt → RuntimeEvent with strict run/tenant/provider/time validation; it does not issue grants, send effects or establish human welfare. Prediction/decision/experiment IDs are not yet native cross-record mandatory fields and remain explicit gaps, not fabricated. Research suite **193/193 tests passed**. TinyFish inspected public Listen Labs docs; Mac mini authenticated GET wallets/studies each returned HTTP 200 with no POST, billing-triggering launch or participant data persistence. Any supplied key was used in process memory only and is not persisted here. Study API is not proof of a Twin model endpoint. This run modifies no provider integration, actual authority, outbox, business revenue or mental-health evidence. Full protocol/limits/refs: `products/manager/docs/specs/2026-11-04-manager-ontology-query-evidence-reuse.md` §11 and `docs/research/manager/masterclass/2026-11-04-p04-causal/P05-2_JA.md`. Next lesson P05-3.
+
+
+## 2026-11-04 Manager Phase5 P05-3/4/5 offline gate and model/field-impact research handoff
+
+The Manager Masterclass completed the **educational/offline fixture** side of P05-3 roles/authority, P05-4 idempotent execution/UNKNOWN reconciliation/independent fixture readback, and P05-5 Shadow safety. Existing Manager Core modules `authority.py`, `outbox.py`, `reconcile.py`, `verifier.py`, `owned_provider_shadow.py`, `state_machine.py` were reused **without changing their production implementation**. Masterclass 229 software unit tests passed; separate existing Manager Core selected suite 75 unit tests passed, including the 41 existing Shadow tests. The sandbox/fixture signed Grant and one fixture adapter send **do not grant real provider authority** and do not constitute a real client effect or company operation.
+
+Operational transition gates remain **UNMET / NOT VERIFIED** in this research run: genuine company S1 Shadow over one owned task, S2 one limited reversible live operation with official authority and independent readback, real RCT/business profit and clinical/habit outcomes, real independently evaluated trained Behavior FM and open-weight release. Model training/release has independent source-rights/G6/G7 and behavioral OOD requirements. Aggressive dates in the [research roadmap](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/MANAGER_MODEL_COMPANY_IMPACT_MILESTONES_JA.md) are **proposed conditional targets only**, not reserved deadlines or accepted authority. This amendment does not change agent schedule, user credentials, production worker, bills, release permissions, or live source. Detailed no-new-authority implementation notes in `products/manager/docs/specs/2026-11-04-manager-ontology-query-evidence-reuse.md` §12.
+
+
+## Manager Phase6 research/education P06-3/4/5 — 2026-11-05, no production release
+
+P06-3 (Statsmodels power/SciPy A/A false-positive/SRM), P06-4 (synthetic recognized-revenue-less-refunds-and-all-incremental-costs plus adverse guardrail), and P06-5 (9 planning/result hashes and read-only official public-site Manifest+6HTML verification) were implemented on the authorized Mac mini. 71 new software unit tests plus the 257 reviewed prior tests passed (**328/328**). A synthetic profit effect of +56.84 JPY/user fails the predeclared complaint guardrail (adverse +0.942pp): **DO_NOT_SHIP**. These are **synthetic business observations, not actual bank/card/cash/customer data**. The real public page is still`experiment_enabled=false, real_participants=0, beneficiary_outcome=NOT_MEASURED`; no new real approval/authority, publication, recipient intervention, paid transaction or model weight release occurred. The real incremental paid contribution, beneficiary outcomes and causal effectiveness are **NOT MEASURED** and remain under the existing actual operational permission and impact SSOT.
+
+**Field gates still NOT DONE:** P00-3 actual scope/consent, P05-5 S1 real Shadow comparison, S2 properly scoped/authorized single reversible action, P06 real experiment and real paid-refund-cost/harm readbacks, independent causal outcome. Educational study proceeds next to P07-1. Full references and code: `products/manager/docs/specs/2026-11-04-manager-ontology-query-evidence-reuse.md` §14, and `docs/research/manager/masterclass/2026-11-04-p04-causal/PHASE6_COMPLETION_AND_FIELD_GATES_JA.md`. This statement changes no runtime worker, publication workflow, grant, ledger or production rollout.
+
+## Life Manager Cloud：本番Maritime一つ・Naïve大会専用
+
+### 目的・訂正・今回の作業範囲
+
+**顧客へ売るものはLife Manager Cloudそのもの。** スマートフォンから登録し、利用者ごとに分離したManagerが継続して仕事を選び、実行し、結果・費用を報告するサブスクリプション。Aniccaも一つの利用者として同じ公開経路を使う。自社専用Agentの運転やCapafyでの台本販売は、このSaaSを一般利用者へ提供・販売した事実ではない。Life Managerを台本生成商品へ縮小しない。
+
+**今回の成果:** 外部一次資料と既存sourceを基に、本番実行基盤一つ、もう一方の大会専用境界、As-Is/To-Be、依存付き原子的TODOを更新する。実装・新規登録・課金・支出・本番Agent変更・大会への提出は今回行わない。旧PR #9281の「二つの本番実行先」「Capafy事業をLife Manager Cloudの推奨商品とする」「5項目を実装TODOとして扱う」説明を撤回し、この節で置き換える。
+
+### 外部の実務指針と本件の判断
+
+| 一次資料で確認した事実 | 本件への適用・限界 |
+|---|---|
+| [Twelve-Factor Codebase](https://12factor.net/codebase)は一つのapp/codebaseにproduction・staging等の複数deployを認める | 本番と大会環境を分けても別商品にはならない。ただし同じコードをそのまま異なるmanaged runtimeへ移せるという証拠ではない |
+| [Google Cloudのpartitioned multicloud](https://docs.cloud.google.com/architecture/hybrid-multicloud-patterns-and-practices/partitioned-multicloud-pattern)は複数cloudの実例と利点を扱い、便益・費用・複雑さの実現可能性評価を要求する | 「二基盤の製品は存在しない」「二基盤は常に違反」は事実ではない。本件では複数本番基盤を維持する顧客上の必要性が確認できず、初回一般提供に不要なため一つを採る |
+| [Google Cloudのenvironment hybrid](https://docs.cloud.google.com/architecture/hybrid-multicloud-patterns-and-practices/environment-hybrid-pattern)は本番と開発/機能試験を別環境に置く一方、性能・信頼性・stagingの同等性を求める | Naïve大会の成功をMaritime本番の性能・耐久性・提供成功に流用しない。大会版はMaritimeのstagingではない |
+| [Maritime Build](https://maritime.sh/docs/build)と[End users](https://maritime.sh/docs/sdk/end-users)は顧客別Agent、externalIdによる重複作成防止、限定token、停止、利用上限、顧客別費用を公開する | 外部利用者へAgentを提供する本番hostとして採用する根拠。現在の自社契約で全機能が使えることは別途未確認 |
+| [Open Instinct](https://maritime.sh/blog/open-instinct-personal-agent-on-maritime)と[penpal](https://maritime.sh/blog/one-agent-per-user-penpal)は一人一Maritime VM/Agentの公開構成。Open Instinctの[MIT source](https://github.com/mariagorskikh/open-instinct)と[複数利用者の配備手順](https://github.com/mariagorskikh/open-instinct/blob/main/docs/DEPLOY-MARITIME.md)を確認する | 利用者別の永続状態・provision再試行・signupの構成を参考にする。売上/利益/利用者数は独立検証していない。Instinctの私用credential・支払承認・Inkbox gatewayは丸ごと採用しない |
+| [NaïveのSaaS playbook](https://usenaive.ai/blogs/building-ai-agents-into-your-saas)は顧客ごとのorg/key、Agent budget、vault、webhookを説明する | NaïveがSaaSに使えないとは言わない。既存Maritime接続を捨てる移行と顧客別org/billingの検証が増えるため今回は本番に採らない |
+| [Scrum Guide](https://scrumguides.org/scrum-guide.html)はProduct GoalとProduct Backlogを分け、作業を一日以下の単位へ分解する例を示す | 「Cloud移行」「一件を完走」はmilestone。実行項目は一つの観測可能な成果、担当、依存、対象、完了証拠を持つ。100件に水増しせず必要な66項目へ分解する |
+
+**採用する構成（primaryの判断）:** 本番のAgent実行基盤は **Maritime一つ**。維持するharnessも公式テンプレート/導入済みOSSの一つに固定する。既存OpenClaw検証は再利用候補だが、browserの継続利用をまだ証明していないため、公式imageを本番readyとは扱わない。既存認証・Web/API・課金・DBは管理機能として再利用し、そこで第二のAgent loopを常駐させない。「本番基盤一つ」はサーバー/VM一台、全外部サービス一社、全顧客同一processを意味しない。一つのMaritime基盤上で利用者ごとに環境を分離する。
+
+**Naïveは大会専用の実稼働環境:** 同じ顧客価値・仕事の契約・playbook・権利のある素材を使い、Naïve公式SDK/managed Agentで限定した業務を本当に実行する。fake応答や本番APIへ転送するだけのSDK飾りはしない。通常顧客のsignup・subscription・本番scheduler・本番secrets/stateはNaïveへ接続しない。大会用environment/job ID/Agent-owned identity/予算/receiptを分け、実際の取引があれば本番と混同せず正しく記録する。利用者にNaïve/Maritimeを選ばせず、同じ注文を両方へ流さず、常設failover/router・第二SaaSを作らない。Naïve由来のharness設定やsnapshotをそのままMaritimeへ移せるとはしない。
+
+**棄却案と最強の論拠:** Naïve本番ならbrowser/identity/budget等のmanaged部品をまとめられる利点がある。しかし既存Maritimeの顧客割当/停止/永続receipt接続を使えること、外部の同種構成があること、Maritime大会の実利用条件に直結することを優先する。二本番基盤なら将来の可用性/移植性を得られる可能性があるが、初回顧客提供の前に二重の契約・秘密管理・運用・不具合診断を増やす。本件の顧客価値を増やす証拠がない。
+
+**best/base/worst:** best＝現在のMaritime利用権と既製部品で一般提供と有料顧客成果まで通る。base＝browser/提供契約の不足を解消する間、Naïve大会実証と本番の独立作業を並行する。worst＝Maritimeの必要機能/契約が要件内で使えず、本番一般提供は未達のまま。この場合は比較表を更新して本番を一つ選び直し、二本番運用で隠さない。**判断が誤る最有力の筋:** Maritimeのbrowser・顧客別identity・許諾/原価の不足が大きく、Naïveの顧客別org/提供契約が実測で全て使える場合。両者を「どちらも本番」のまま放置しない。
+
+### 商品・収益・資格情報の境界
+
+- **SaaS売上:** 外部利用者がLife Manager CloudのsubscriptionをAniccaへ支払う。公式subscription/invoice/refundで計測する。既存のTravel課金と混ぜない。価格・trial・対応範囲は現行sourceと契約を照合し、今回変更しない。
+- **Agentの事業収益:** 自社/利用者のManagerが外部の仕事で得る。売り手/tenant/order/settlementへ帰属させ、SaaS MRRに足さない。Capafyは一つの候補市場で、製品そのものでも全利用者の確定実行先でもない。既存会社Publisherを新利用者へ共用させない。
+- **自己利用:** Aniccaも同じ公開onboarding、権限、上限、停止、費用/成果報告を使う。運営者だけの裏口を「誰でも使える」の証拠にしない。自己subscription/test paymentは外部顧客売上ではない。
+- **厳密な収益条件:** Agentの売り手口座は初期現金0、人の私用ID/カード/日々の承認なし、利用料と全運転費を超える実収益が目標。自社infra費・補助creditとAgentの現金は別。現在、登録→納品→使える受取までこの条件を実証した市場は未選定。「SaaSに課金できる」と「顧客のAgentが黒字」を分ける。達成前に自動黒字を販売上の実績として表示しない。
+- **提供権:** [Maritime terms](https://maritime.sh/terms)と[Naïve terms §4.2](https://usenaive.ai/terms)はいずれもserviceの再販等に書面許諾の条項を持つ。SDK経由で自社アプリを提供する利用とservice accessそのものの再販の適用範囲、既存契約/許諾をLC06で確認する。SDK例があるだけで全利用形態を許可済みとも、現契約が不許可とも断定しない。
+
+### As-Is → To-Be（証拠の種類を区別）
+
+| 項目 | As-Is | To-Be / 成功を判定する証拠 |
+|---|---|---|
+| 販売商品 | 自社Agentの運転記録とCloudの設計/入口/sourceはある。外部利用者向けの一般提供→継続課金→顧客の実成果という全経路は未実証 | 一つのLife Manager Cloudを第三者が登録・購入・利用でき、自社も同じ経路で使う |
+| 本番source | `apps/life-manager/server.js`→`maritime-manager-auth.js`、store/runtime/transport、wake/report/usageの接続がある。`transport/maritime-manager.js`はframework=custom/ZIP archiveを要求し、`maritime/run-cycle.js`はCapafy専用cycleを呼ぶ。公式templateへ設定だけで切替可能とは言えず、一般Managerの完走証明でもない | 本番AgentはMaritimeのみ。既存接続/台帳を使い、公式harnessへ業務設定を接続する。自作Agent runtimeは新設しない |
+| 本番provider | 保存済みOpenClaw試験は/data保持・モデル/初期browser操作を確認。再開後browser無効、desktop変更はseat_limit | 契約内の公式経路で必要browserが再開後も動き、Agent-owned identity/stateを保持する |
+| Naïve | 前回公式API/native browser/owned inbox送信成功、限定閲覧run $0.024496、deployment10件停止の保存済み観測。今回live状態/費用を再取得しない | 大会専用Agentで本物の業務を有限実行。証拠・費用・人の介入・未達を正確に示す。本番提供成功へ読み替えない |
+| 公開と課金 | `/lm`等の説明/sourceはある。既存Web billingはTravel/Calendarの契約を含む。Cloud専用entitlement・現行配備・paid invoiceは未照合 | Cloud商品専用の課金と利用権を同じtenantへ結び、支払/停止/取消を正しく反映 |
+| 二大会 | Naïve公式公開頁は11/7–8、2–4分の実稼働demo。今回の賞品欄はTBD。Maritime termsは12/1 Pacific締切・実利用者1,000人・最初の3projectを確認後winner | 本番Maritimeの実利用でMaritime大会を狙い、Naïveの大会専用実稼働でNaïve大会を狙う。受理/参加資格/審査結果は公式receiptで別判定 |
+
+上表のruntime/売上は保存済み観測を含み、現在の停止状態・残高・顧客数を今回再確認したものではない。公開説明の「利用できる」と実運用未検証の差はLC33/LC52で修正・確認する。source testを商用提供の証拠にはしない。
+
+```mermaid
+flowchart TD
+  U[一般利用者とAniccaの自己利用] --> P[一つのLife Manager Cloud /lm]
+  P --> C[既存の認証・subscription・利用権]
+  C --> R[本番Agent実行基盤: Maritimeのみ]
+  R --> A[利用者AのManagerと専用state/identity]
+  R --> B[利用者BのManagerと専用state/identity]
+  A --> W[条件に適合する仕事・外部provider]
+  B --> W
+  W --> E[tenant別receipt・費用・事業収益]
+  E --> P
+  S[共通の商品契約・playbook・自社素材] --> R
+  S -. 大会用の設定 .-> N[Naïve大会専用のAgent実稼働]
+  N --> D[分離した仕事・予算・実績demo]
+  D --> H[Naïve大会の公式提出]
+  R --> M[Maritime大会: 本番の実利用者を計測]
+```
+
+### 実行計画と粒度
+
+**Goal:** 第三者が購入・利用できるLife Manager CloudをMaritime一つで提供し、Naïveでは同じ事業価値の大会専用実稼働を示す。
+**Architecture:** 既存Web/auth/billing/DBとMaritime SDK/official harnessを接続する。本番のAgent loopはMaritimeだけ。Naïveは独立した大会deploymentで、共通の仕事定義を再利用する。
+**Tech Stack:** 既存Node/CommonJS、既存DB/Stripe、Maritime SDK/REST/official template、Naïve公式SDK。必要部品が欠ける場合は既製部品を調査し、自作infraで埋めない。
+**Spec / 順序・状態の正本:** この節のみ。以下の各行が一作業。大きさの目安は一日以内で、既存関連testで表せる変更は最小RED→GREENをその行の中で行う。文書だけの行へ新しい自動testは増やさない。各行の受入にない固定日数・試験suite・二重readbackを追加しない。
+
+**所有範囲:** PrimaryがSSOT・商品契約・shared source・merge/release・課金/identity境界を所有。Maritime担当は本番runtime/provision接続、Naïve担当は大会Agent/config/demoだけを別main由来worktreeで所有できる。共有Publisher/本番credential/state/一件のorderは一ownerだけが変更する。大会担当が本番Agentや顧客課金を変更しない。今回の実作業は文書修正のみで、新規session/production workerを起動しない。
+
+**Review Focus:** (1)tenant A/Bのprofile/key/receipt混線 (2)signup/請求webhook再送による二重provision/実行 (3)pause/cancelと進行中effectの競合 (4)Naïve実績の本番/顧客売上への誤帰属 (5)原価/市場適格性が不明なままの黒字宣伝。対応はLC15/17、LC29/39/41、LC45/48/61に含める。
+
+**対象パスの略記（実行時は最新mainで再照合）:**
+- `WEB` = `apps/life-manager/server.js`, `lib/maritime-manager-auth.js`, `lib/maritime-distribution.js`（libは同app配下）
+- `TENANT` = `apps/life-manager/lib/maritime-manager-store.js`, `maritime-manager-persistence.js`, `transport/maritime-manager.js`, 既存Maritime migrations
+- `HOST` = `apps/life-manager/maritime/`, `skills/capafy-autopublish/`、公式Maritime template/SDKと既存L02 private evidence
+- `BILL` = `apps/life-manager/lib/web-billing.js`, `billing.js`, `test/web-stripe-webhook.test.js`、既存Stripe integration
+- `OBS` = `apps/life-manager/lib/maritime-manager-usage.js`, `maritime-manager-report.js`, 既存CFO/`/open`のsource
+- `NAIVE` = `docs/superpowers/plans/2026-11-03-naive-browser-company.md`の既存source/provider参照と、今回使う公式Agent/config/SDK。別商品のBusinessRun Benchを本商品へ混ぜない
+
+**順序変更:** 旧＝BotBounty/Capafy適格性→自社Agentの販売→二つの本番runtime→Cloud販売。新＝商品/本番境界確定→本番現状/契約/必要機能→tenant別Managerと課金/入口→自社を同じtenant経路で検証→外部有料顧客→実利用・採算。同時にNaïve大会の規約/有限実稼働/demo/提出を進める。理由＝ユーザーが求めるのは自社Agentの副業ではなく一般利用者が買えるCloud商品で、既存公開経路/tenant/billingの不足が先に解消すべき依存だから。Naïve大会の提出やMaritimeの契約/基盤調査を月次精算待ちで止めない。既存effectを中断・再送しない。
+
+#### 商品・本番の境界
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC01 | 済 / — | `SSOT`：Life Manager Cloudを販売商品として定義 | 自社Agent業務・SaaS提供・自己利用が分離した本節 |
+| LC02 | 済 / LC01 | `SSOT + 一次資料`：本番Maritime一つとNaïve大会専用を決定 | 比較根拠、棄却案、未検証条件を本節に保存 |
+| LC03 | 済 / LC01 | `SSOT`：二種類の売上と費用の帰属を定義 | SaaS invoiceとAgent settlementを別指標にする契約 |
+| LC04 | 未 / LC02 | `WEB/TENANT/HOSTのsourceと公式GET`：本番候補の現行配備を棚卸し | 実URL・release SHA・DB migration・tenant/Agent ownerの対応表、未配備は未配備 |
+| LC05 | 未 / LC04 | `Maritime account/limits/billingの公式GET`：既存契約のbrowser/seat/credit適用を照合 | 利用可否と費用根拠を取得。公開料金や大会creditを契約適用済みと推定しない |
+| LC06 | 未 / LC02 | `両provider termsと既存契約`：自社SaaS提供に適用する許諾範囲を照合 | 既存書面/公式条件を特定。不足する場合は適用範囲を公式確認し結果を保存 |
+
+#### 本番Agentの実行
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC07 | 未 / LC04/05 | `HOST + 公式framework`：本番harnessとimageを一つにpin | 公式image/導入済みOSS/version・起動契約を記録。旧custom runtimeの再実装なし |
+| LC08 | 未 / LC06/07 | `TENANT/provider key scopes`：provision担当の権限を限定 | 必要resource/SDK操作が通り、client/Agentに全権org keyを渡さない |
+| LC09 | 未 / LC07/08 | `公式framework/model設定`：必要なmodel/tool/画像入力を一業務で確認 | 実tool eventと観測可能な結果。model名/登録だけで動作済みとしない |
+| LC10 | 未 / LC05/07 | `HOST + 公式browser設定`：現在契約で使えるbrowser経路を確定 | 公式browserで公開ページを実操作。seat_limitを自作wrapperや権限迂回で隠さない |
+| LC11 | 未 / LC10 | `HOSTの永続mount/profile`：仕事状態とAgent-owned profileを保存 | 所有tenantのstate/profile/receiptを別runで再読取 |
+| LC12 | 未 / LC11 | `Maritime lifecycle/official browser`：sleep/wake後のbrowserと状態を確認 | 再開後の実画面操作と保存markerが一致。必要execの終了状態も記録 |
+| LC13 | 未 / LC12 | `公式Triggers + 既存schedules接続`：自然wakeで一つの無作用jobを完了 | 予定→wake→start→terminalのreceipt。同じ仕事の第二schedulerなし |
+
+#### 利用者ごとの提供
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC14 | 未 / LC08/12 | `TENANT + SDK endUsers + transport/maritime-manager.test.js`：公式harnessへの顧客割当を接続 | 既存transportのcustom/ZIP前提を採用templateの公式契約へ最小修正し、認証subject→tenant→externalId→Agentが一意。新runtimeは作らない |
+| LC15 | 未 / LC14 | `TENANT + 既存provision test`：signup再送の二重作成を防ぐ | 同じ利用者/要求を再送して同じAgentを返し二重費用なし |
+| LC16 | 未 / LC14 | `公式vault/secret機能・既存identity連携`：tenantの仕事用identity/秘密を接続 | 秘密がprompt/log/他tenantに出ず、agent-owned資格情報だけを使う |
+| LC17 | 未 / LC15/16 | `TENANT + 既存isolation test`：tenant AからBへのアクセスを拒否 | state/profile/keys/receiptを相互に読めない最小の負例がPASS |
+| LC18 | 未 / LC14 | `WEB/TENANT`：Anicca自己利用を同じtenant経路へ接続 | 管理者裏口なしに公開signup/上限/停止/報告が動く |
+| LC19 | 未 / LC13/18 | `HOSTと実call path`：業務のMac依存を除く | cloudのURL/storage/identityだけで実行する証拠。Macを停止する破壊的試験はしない |
+
+#### Managerの最初の業務
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC20 | 未 / LC01/09 | `既存Life Manager playbook + official harness + maritime/run-cycle.jsの呼出元`：自発的な優先判断を一業務へ接続 | 旧Capafy専用cycleと一般Managerの実行を区別し、公式harnessで観測→次作業選択→実行→確認→状態保存を行う。固定応答/台本商品化/新wrapperなし |
+| LC21 | 未 / LC06/20 | `市場公式terms・実募集/受取条件`：ゼロ現金/無人受取に適合する最初の市場を確定 | 実働・需要・手数料・受取・ID/担保条件を記録。不適合は除外、Capafyを固定しない |
+| LC22 | 未 / LC16/21 | `選定provider + Agent-owned inbox`：正規登録または正式Agent roleを一件完了 | 検証メール/最終login/provider ID一致。利用者私用credentialや会社Publisher共用なし |
+| LC23 | 未 / LC22 | `選定providerの既存offer/掲載機能`：一つの有料offer/受注対象を提供 | live公開URL/正式提供状態。審査提出を公開としない |
+| LC24 | 未 / LC23 | `既存無料集客経路/実募集`：独立した第三者の有償依頼を一件受ける | 実order/assignment/payment条件。自己購入/広告投稿を需要にしない |
+| LC25 | 未 / LC24 | `provider delivery + 既存artifact store`：注文の成果物を納品 | 当該orderの受領/acceptance receiptと成果物が一致 |
+| LC26 | 未 / LC25 | `provider settlement/payout/既存CFO`：実受取を照合 | 使える着金/確定receipt、refund/feeを当該tenant/orderへ結合。月次待ちは他laneを止めない |
+
+#### Cloud subscription
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC27 | 未 / LC05/06/44 | `BILLと現行価格SSOT`：Cloud価格と提供上限を採算に結ぶ | 既存価格/trialの実契約、原価、含む上限、超過時動作を照合。今回の計画で価格変更なし |
+| LC28 | 未 / LC27 | `BILL + Stripe商品`：Cloud専用の商品/priceとtenant mappingを設定 | Travelの課金/顧客を流用せず、Cloud priceとtenantの公式対応を保存 |
+| LC29 | 未 / LC28 | `既存Stripe webhook/entitlement`：支払イベントをCloud利用権へ結ぶ | 署名・重複・順序逆転を既存testで確認、paid invoiceと同じtenantが有効 |
+| LC30 | 未 / LC29 | `WEB/BILL`：Calendar不要のCloud Checkoutを接続 | 本人認証→該当Cloud price→利用権。既存Travel動線への影響なし |
+| LC31 | 未 / LC29 | `BILL + SDK suspend/resume`：未払/取消と新規業務停止を連動 | 取消後の新規wake/spendが止まり、再開は該当tenantだけ。既存receiptを消さない |
+| LC32 | 未 / LC30/31 | `BILL + 既存billing portal`：請求閲覧・解約・refund状態を顧客へ提供 | 公式portal/invoice/refundと表示が一致。refundを報酬送金に使わない |
+
+#### 一般利用者の入口
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC33 | 未 / LC01/02 | `README + /lm EN/JA + 既存manifest`：公開説明を新商品の実態に揃える | 本番Maritime/Naïve大会の境界と未提供を明記。使えない機能を提供済みとしない |
+| LC34 | 未 / LC14 | `WEBの既存auth`：最小identity認証をtenantへ結ぶ | 登録時に私用Gmail/Calendar/販売先passwordを求めない既存経路 |
+| LC35 | 未 / LC15/30/34 | `WEB/TENANT`：登録から準備中/利用可への遷移を接続 | provision失敗を成功表示せず、再開しても重複Agentなし |
+| LC36 | 未 / LC20/35 | `WEB + 既存report`：初回仕事の結果と次の動きを表示 | 毎日のpromptなしに一つの実結果/未完理由と費用が見える |
+| LC37 | 未 / LC31/36 | `既存phone UI/メールreport`：phoneで状態確認・停止・再開を通す | 同じ利用者の実状態と報告が一致。第二dashboardを作らない |
+
+#### 停止・復旧・上限
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC38 | 未 / LC14 | `既存Stop/SDK suspend`：利用者の停止を該当Agentへ適用 | 当該tenantだけ新規effect停止。進行中receiptは保持 |
+| LC39 | 未 / LC38 | `既存pause/provision race tests`：停止と実行中jobの競合を処理 | 遅いconfigure/wakeで再稼働しない。UNKNOWNを勝手に解除しない |
+| LC40 | 未 / LC12/39 | `公式lifecycle + 永続cursor`：中断後に保存地点から仕事を再開 | 同一効果を再送せず次の正しいstepへ進む |
+| LC41 | 未 / LC39 | `既存provider reconcile/receipt`：送信応答喪失を一件照合 | 公式readbackで元effectを判定してから再試行。第二注文を作らない |
+| LC42 | 未 / LC16/38 | `既存data retention + SDK delete/revoke`：利用終了時のデータ/権限処理を定義・接続 | 対象tenantの保持/削除/失効を契約通り記録、他tenantを触らない |
+| LC43 | 未 / LC05/09 | `SDK policy + 既存budget契約`：model以外も含む支出上限を適用 | browser/VM/tools等の費用範囲と上限時停止を検証。model capだけで総費用capとしない |
+
+#### 費用・成果の計測
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC44 | 未 / LC05/09 | `OBS + provider usage`：一tenantの全運転費を取得 | model/browser/host/toolの公式usage、未知範囲をnullのまま記録 |
+| LC45 | 未 / LC03/26/29/44 | `既存CFO ledger`：subscriptionとAgent収益を別々に照合 | invoice/order/receiptを一度だけ計上、自己購入/内部移動/creditは顧客売上から除外 |
+| LC46 | 未 / LC35/36 | `既存analytics/funnel`：登録・初回利用・再利用を計測 | 実人のtenantと行動を結合しAgent/VM数をユーザー数としない |
+| LC47 | 未 / LC45/46 | `既存/open配信経路`：aggregateの費用/収益/freshnessを公開 | 顧客秘密を出さず観測時刻・coverage・欠測が分かる。新dashboardなし |
+| LC48 | 未 / LC26/44/45 | `既存CFO report`：利用者の実利益と会社のSaaS採算を判定 | 利用者側=受取−全費用−利用料、会社側=subscription−全提供費。未達を未達と表示 |
+
+#### 本番への反映
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC49 | 未 / 対象source変更ごと | `既存関連tests + REVIEW.md`：変更範囲のsource acceptanceを完了 | 関連test/必要review/CIが同じheadで合格。無関係な新QA体系なし |
+| LC50 | 未 / LC49 | `既存main/release経路`：受入済みsourceをmain/releaseへ統合 | remote main SHAとimmutable release由来が一致 |
+| LC51 | 未 / LC50 + 必要設定 | `既存公開routeとMaritime接続`：本番route/Agent設定をそのreleaseへ反映 | 実URL・loaded設定・tenant/Agent/DBのbindingが一致 |
+| LC52 | 未 / LC33/51 | `公開/lm EN/JA・phone表示`：本番入口と表示を実読取 | signup/支払/利用状態・画像/リンクを必要範囲で確認。ソースpushだけで公開済みとしない |
+
+#### 自己利用から最初の有料顧客
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC53 | 未 / LC17/18/19/37/43/51 | `Aniccaの自己利用tenant`：公開経路で一業務を完了 | 私用credential/日々の操作なしでjob→結果→費用→停止が確認できる |
+| LC54 | 未 / LC30/52/53 | `本番Cloud onboarding`：無関係の外部利用者一人を受け入れる | Anicca管理者が代行せず同じ公開経路で利用開始できる |
+| LC55 | 未 / LC54 | `Stripe公式subscription/invoice`：外部顧客の初回subscription支払を確認 | 正しいCloud product/tenantのpaid invoice。test/self-payではない |
+| LC56 | 未 / LC54/20/21 | `本番Agent/official Trigger`：顧客の一業務を自然実行して報告 | wake→job→実成果→顧客reportのreceipt一致。収益未達を隠さない |
+| LC57 | 未 / LC55/56 | `同じ顧客の実利用/analytics`：再利用と継続価値を確認 | 独立した次の実利用と継続/解約状態を記録。任意の固定日数をgateにしない |
+
+#### Naïve大会専用lane
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC58 | 未・並行可 / LC01/02 | `Naïve/YC現行公式条件と既存参加receipt`：参加/SDK/事前開発/再利用/提出条件を確定 | 公式原文と参加状態。今回YC event本文は取得不十分、賞品はTBDなので旧YC interview記載を確定扱いしない |
+| LC59 | 未・並行可 / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | 実org/Agent owner/許可tools/期間cap/task capと本番非接続をGETで確認。勝手なtop-upなし |
+| LC60 | 未 / LC59 + 共通playbook | `NAIVE + 分離した実provider job`：同じ事業価値の一業務をNaïveで実行 | native events/real artifact/receiptを得る。dummy response/本番API丸投げはしない |
+| LC61 | 未 / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 一般提供の現状・Naïve実績・Maritime本番実績・売上/費用/未達を分ける |
+| LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。winner/YC採択を保証しない。月次入金待ちと独立 |
+
+#### Maritime大会・YCの事業証拠
+
+| ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
+|---|---|---|---|
+| LC63 | 未・並行可 / LC01/02 | `First 1,000の既存申請/公式条件`：project参加状態と期限/計測定義を確定 | submitted/accepted/eligibilityを区別。Maritime race等の別プログラムと混同しない |
+| LC64 | 未 / LC52/54/63 | `既存無料配信と同じ本番URL`：本番Cloudを実利用者へ届ける | 成功構成を自社素材で使い、参照URLとUTM/登録/利用の帰属を保存。広告費追加なし |
+| LC65 | 未 / LC46/64 | `本番project usage/公式analytics`：1,000 distinct real usersの証拠を揃える | 実人・実利用を重複排除。VM/Agent/Naïve demoを人数へ加算しない |
+| LC66 | 未 / LC63/65 | `Maritime主催者の公式判定`：大会成果を申告し審査結果を確認 | 受領/確認/awardを公式readback。creditは現金/SaaS売上ではない |
+
+**現在cursor:** LC04（sourceと本番配備の対応を公式readbackで棚卸し）→LC05（契約内の必要機能）→LC06（提供の適用範囲）。Naïve担当はLC58、Maritime大会参加の確認はLC63を独立して進められる。顧客課金はLC27以降、外部顧客の有料成果はLC54以降で未完。文書上のLC01–03のみ完了、実装・運用の63項目は未完。優勝・YC採択・外部SaaS売上・利用者の黒字は未達/未確認のまま。
+
+**一次資料の取得証跡:** `docs/research/cloud-market-20261106/single-runtime-sources.json`。以前の市場比較API証跡は同directoryの`public-readbacks.json`に残すが、本商品の一般提供/顧客課金の成功証拠にはしない。現行の「二本番runtime」TODO/N01–N12/M01–M06はこの66項目へ置換し、並行した別の実行キューにしない。

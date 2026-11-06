@@ -1,2 +1,1 @@
-- Las notificaciones ahora abren el mismo mensaje que muestran.
-- Mejoras en la carga de la pantalla de suscripción y la selección de planes.
+Empieza con calma y descubre tu primera afirmación al instante. Más afirmaciones en inglés, acceso sencillo a tus favoritas y al horario de recordatorios. Mejoramos los deslizamientos y la apertura del mensaje que tocas en una notificación.

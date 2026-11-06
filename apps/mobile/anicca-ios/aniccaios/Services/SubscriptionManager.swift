@@ -272,20 +272,8 @@ extension SubscriptionManager: PurchasesDelegate {
             // 1. まずRevenueCatの情報だけで即座に更新（待機なし）
             AppState.shared.updateSubscriptionInfo(subscription)
             
-            // 2. Mixpanelへ購入イベント送信（新規購入の場合のみ）
-            if subscription.plan == .pro,
-               let productId = subscription.productIdentifier {
-                // 価格を取得（RevenueCatから）
-                let price: Double
-                if let offering = AppState.shared.cachedOffering,
-                   let package = offering.availablePackages.first(where: { $0.storeProduct.productIdentifier == productId }) {
-                    price = package.storeProduct.price as? Double ?? 9.99
-                } else {
-                    // フォールバック価格
-                    price = 9.99
-                }
-                AnalyticsManager.shared.trackPurchaseCompleted(productId: productId, revenue: price)
-            }
+            // CustomerInfo updates also occur on restore/refresh/renewal. They
+            // are entitlement state, not new purchase or client revenue events.
             
             // 3. サーバーDBを同期してからlimit情報を取得（POSTでDB更新→GET）
             await syncNow()

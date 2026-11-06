@@ -26,7 +26,9 @@ class AdvisoryAuthorityBoundary(unittest.TestCase):
         safe = AdvisoryResult("PROPOSE", "Optional info", ("public:a",))
         for name, value in (("proof_level", "P4"), ("causal_support", True),
                             ("authorized_execution", True), ("human_outcome", "BENEFITED")):
-            with self.subTest(name=name), self.assertRaises(ValueError):
+            # Python 3.12 may use ValueError while Python 3.14 uses TypeError
+            # for dataclasses.replace(init=False); both reject escalation.
+            with self.subTest(name=name), self.assertRaises((ValueError, TypeError)):
                 replace(safe, **{name: value})
 
     def test_public_receipt_never_contains_untrusted_exec_or_causal_claim(self):

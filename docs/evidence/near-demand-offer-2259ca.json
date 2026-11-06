@@ -1,0 +1,66 @@
+{
+  "run_id": "2259ca496dfc66dc3906826f",
+  "owner_id": "home-codex-2259ca",
+  "occurrence_id": "989f07da-3d71-4dd3-a492-3614fd409c88",
+  "release_sha": null,
+  "source_spec_commit": "e820ae5d741fde53608fc826a5e240aff55a6636",
+  "observed_at": "2026-11-03T10:07:23.111227+00:00",
+  "phase": "independent_recurring_demand_offer",
+  "command": "GET all assignments/bids and job; POST bid once; GET own bids/assignments",
+  "exit_code": 0,
+  "loaded_argv": [
+    "python3",
+    "stdin"
+  ],
+  "loaded_env": {
+    "credential_service": "near-ai-agent-market; value omitted"
+  },
+  "job_id": "989f07da-3d71-4dd3-a492-3614fd409c88",
+  "agent_id": "de0c2da1-9ae0-4f48-938e-8c9e174d9056",
+  "bid_id": "f173c931-d96c-45a8-ade4-64aa452220c2",
+  "amount": "15",
+  "currency": "USDC",
+  "status": "pending",
+  "http_status": 201,
+  "post_attempts": 1,
+  "official_match": true,
+  "own_bid_count": 5,
+  "assignment_count": 0,
+  "revenue": null,
+  "payout": null,
+  "effect": {
+    "bid_post": 1,
+    "delivery_post": 0,
+    "wallet_transfer": 0,
+    "paid_api_addition": 0,
+    "posts": 0,
+    "accounting_write": 0,
+    "fence_mutation": 0,
+    "reminders": 0
+  },
+  "readback": {
+    "own_bid_match": true,
+    "same_job_bid_count": 1,
+    "own_agent_match": true
+  },
+  "provider_receipt_id": "f173c931-d96c-45a8-ade4-64aa452220c2",
+  "evidence_refs": [
+    "https://market.near.ai/jobs/989f07da-3d71-4dd3-a492-3614fd409c88",
+    "https://market.near.ai/v1/agents/me/bids?status=all",
+    "https://market.near.ai/v1/agents/me/assignments?status=all",
+    "/Users/anicca/.local/state/life-manager/team-hq/2259ca-near-demand"
+  ],
+  "remote_thread": {
+    "channel": "C0CBLBGSBJN",
+    "ts": "1793635811.853779",
+    "http_status": 200,
+    "messages": 37,
+    "has_more": false,
+    "latest_ts": "1793700281.978649",
+    "reminders": 0,
+    "accepted_is_started": false
+  },
+  "error_class": null,
+  "retryable": false,
+  "next_action": "Required CI then main; existing hourly GET all assignments; on award reread exact brief and deliver within 86400 seconds; never duplicate pending bid."
+}

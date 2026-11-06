@@ -72,7 +72,7 @@ class LocalInstallTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve()
             result = installation_plan(ROOT, home=home)
-            self.assertEqual(len(result["jobs"]), 192)
+            self.assertEqual(len(result["jobs"]), 195)
             self.assertEqual(len(result["external_labels"]), 15)
             self.assertEqual(result["host_owners"][0]["label"], "com.anicca.disk-watchdog")
             self.assertEqual(result["host_state"], "setup_required")
@@ -86,7 +86,7 @@ class LocalInstallTest(unittest.TestCase):
                 env={**os.environ, "HOME": str(home), "LIFE_MANAGER_PYTHON": os.sys.executable},
                 capture_output=True, text=True, timeout=15)
             self.assertEqual(completed.returncode, 0, completed.stderr)
-            self.assertEqual(json.loads(completed.stdout)["coverage"]["registered_jobs"], 192)
+            self.assertEqual(json.loads(completed.stdout)["coverage"]["registered_jobs"], 195)
             self.assertEqual(list(home.iterdir()), [])
 
     def test_apply_checks_gui_before_label_probe_and_preserves_loaded_owners(self):

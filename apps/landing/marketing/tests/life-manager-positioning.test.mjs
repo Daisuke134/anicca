@@ -77,3 +77,16 @@ test('every published overlay file matches its immutable manifest hash', () => {
     assert.equal(sha256(file.source), file.sha256, `stale SHA-256 for ${file.source}`);
   }
 });
+
+test('Maritime Cloud page Start enters the Maritime manager consent route, not the Calendar workflow', () => {
+  const html = read('pages/maritime-en.html');
+
+  assert.equal(
+    (html.match(/href="https:\/\/life-call-production\.up\.railway\.app\/maritime\?source=landing&amp;lang=en"/g) || []).length,
+    2,
+  );
+  assert.doesNotMatch(html, /start_calendar=1/);
+  assert.doesNotMatch(html, /after Calendar setup/);
+  const manifest = JSON.parse(read('route-manifest.json'));
+  assert.equal(manifest.files.find((file) => file.public_route === '/maritime').sha256, sha256('pages/maritime-en.html'));
+});

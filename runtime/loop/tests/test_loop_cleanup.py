@@ -341,6 +341,7 @@ class LoopCleanupTest(unittest.TestCase):
             terminated = repo / "terminated"
             script = (
                 "import pathlib,signal,sys,time\n"
+                "time.sleep(.4)  # Exercise slow interpreter startup before the cleanup handler.\n"
                 "lock=pathlib.Path(sys.argv[1])\n"
                 "def stop(*_):\n"
                 " lock.unlink()\n"
@@ -361,6 +362,19 @@ class LoopCleanupTest(unittest.TestCase):
                 if script in command:
                     children.append(process)
                 return process
+            native_sleep = time.sleep
+            ready_checked = False
+            def wait_after_gate(delay):
+                nonlocal ready_checked
+                # Popen returns before the exec gate opens. Synchronize the first
+                # polling wait, after the gate, with the private cleanup handler.
+                if children and not ready_checked:
+                    ready_checked = True
+                    ready_deadline = time.monotonic() + 10
+                    while not lock.exists() and children[0].poll() is None and time.monotonic() < ready_deadline:
+                        native_sleep(.01)
+                    self.assertTrue(lock.exists(), "private fixture did not install its cleanup handler")
+                native_sleep(delay)
             def run(command, **kwargs):
                 if command[-2:] == ["count-objects", "-v"]:
                     return subprocess.CompletedProcess(command, 0, "prune-packable: 0\nsize: 0\n", "")
@@ -374,11 +388,11 @@ class LoopCleanupTest(unittest.TestCase):
                 self.assertEqual(kwargs["timeout_seconds"], 15)
                 self.assertEqual(kwargs.get("termination_grace_seconds", 15), 15)
                 self.assertEqual(kwargs["env"]["LC_ALL"], "C")
-                return native_entrypoint(child, **{**kwargs, "timeout_seconds": .3,
-                                                    "termination_grace_seconds": .3})
+                return native_entrypoint(child, **{**kwargs, "timeout_seconds": .3})
             try:
                 with mock.patch.object(subprocess, "run", side_effect=run), \
                      mock.patch.object(subprocess, "Popen", side_effect=start), \
+                     mock.patch.object(time, "sleep", side_effect=wait_after_gate), \
                      mock.patch.object(lm_loop_run, "_run_entrypoint", side_effect=owned):
                     result = central_cleanup.git_duplicate_cleanup(repo)
                 self.assertFalse(lock.exists(), "timeout hard-killed the child before its lock cleanup")
@@ -1002,7 +1016,49 @@ class LoopCleanupTest(unittest.TestCase):
                 "root": str(root.resolve()), "loop": "a-loop", "run": "run-4",
             })
 
-    def test_scratch_gc_defers_before_deleting_when_total_inventory_exceeds_bound(self):
+    def test_scratch_gc_resumes_an_oversized_root_and_reaches_later_roots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "state-a"
+            later = base / "state-z/loop-tmp/job/stale"
+            starts = {}
+            live = []
+            for loop_index, loop_name in enumerate(("a-loop", "b-loop"), start=10):
+                for run_index in range(2):
+                    run = root / "loop-tmp" / loop_name / f"run-{run_index}"
+                    run.mkdir(parents=True)
+                    pid = loop_index * 10 + run_index
+                    starts[pid] = "same-start"
+                    (run / ".owner.json").write_text(json.dumps(
+                        {"pid": pid, "process_start": "same-start"}))
+                    live.append(run)
+            later.mkdir(parents=True)
+            (later / ".owner.json").write_text(json.dumps(
+                {"pid": 999, "process_start": "old-start"}))
+            cursor = base / "cursor.json"
+            kwargs = {"starts": starts, "cursor_path": cursor, "candidate_budget": 10,
+                      "snapshot_started_ns": time.time_ns() + 1}
+
+            with mock.patch.object(central_cleanup, "SCRATCH_GC_ROOT_CANDIDATE_LIMIT", 3):
+                without_cursor = scratch_gc({root, base / "state-z"}, starts=starts)
+                self.assertTrue(without_cursor["blocking_defer"])
+                self.assertEqual(without_cursor["scanned"], 0)
+                self.assertTrue(later.is_dir())
+                first = scratch_gc({root, base / "state-z"}, **kwargs)
+                self.assertEqual(first["scanned"], 3)
+                self.assertFalse(first["blocking_defer"])
+                self.assertEqual(first["budget_reason"], "root_candidate_budget")
+                self.assertEqual(json.loads(cursor.read_text()), {
+                    "root": str(root.resolve()), "loop": "b-loop", "run": "run-0",
+                })
+                second = scratch_gc({root, base / "state-z"}, **kwargs)
+
+            self.assertEqual(second["scanned"], 4)
+            self.assertEqual(second["removed"], 1)
+            self.assertFalse(later.exists())
+            self.assertTrue(all(run.is_dir() for run in live))
+
+    def test_scratch_gc_resumes_when_total_inventory_exceeds_bound(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
             roots = {base / "state-a", base / "state-b"}
@@ -1013,23 +1069,28 @@ class LoopCleanupTest(unittest.TestCase):
                     run = root / "loop-tmp/job" / f"run-{run_index}"
                     run.mkdir(parents=True)
                     pid = root_index * 10 + run_index
-                    starts[pid] = "same-start"
+                    if (root_index, run_index) != (2, 1):
+                        starts[pid] = "same-start"
                     (run / ".owner.json").write_text(json.dumps(
                         {"pid": pid, "process_start": "same-start"}))
                     runs.append(run)
 
             with mock.patch.object(
                     central_cleanup, "SCRATCH_GC_TOTAL_CANDIDATE_LIMIT", 3):
-                result = scratch_gc(
-                    roots, starts=starts, cursor_path=base / "cursor.json",
-                    candidate_budget=10,
-                )
+                kwargs = {"starts": starts, "cursor_path": base / "cursor.json",
+                          "candidate_budget": 10, "snapshot_started_ns": time.time_ns() + 1}
+                first = scratch_gc(roots, **kwargs)
+                self.assertTrue(all(run.is_dir() for run in runs))
+                second = scratch_gc(roots, **kwargs)
 
-            self.assertTrue(result["deferred"])
-            self.assertTrue(result["blocking_defer"])
-            self.assertEqual(result["budget_reason"], "total_candidate_budget")
-            self.assertEqual(result["scanned"], 0)
-            self.assertTrue(all(run.is_dir() for run in runs))
+            self.assertTrue(first["deferred"])
+            self.assertFalse(first["blocking_defer"])
+            self.assertEqual(first["budget_reason"], "total_candidate_budget")
+            self.assertEqual(first["scanned"], 3)
+            self.assertEqual(second["scanned"], 3)
+            self.assertEqual(second["removed"], 1)
+            self.assertFalse(runs[-1].exists())
+            self.assertTrue(all(run.is_dir() for run in runs[:-1]))
 
     def test_scratch_gc_defers_when_directory_inventory_exceeds_preflight_bound(self):
         with tempfile.TemporaryDirectory() as directory:

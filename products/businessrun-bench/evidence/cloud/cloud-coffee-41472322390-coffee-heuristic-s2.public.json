@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "run_id": "coffee-heuristic-s2",
+  "suite": "coffee",
+  "policy": "heuristic",
+  "command": [
+    "$PYTHON",
+    "-m",
+    "coffeebench.main",
+    "--model",
+    "passive",
+    "--max_days",
+    "90",
+    "--seed",
+    "2",
+    "--main_agent",
+    "roaster_A",
+    "--output",
+    "$RUN/trajectory.json",
+    "--models",
+    "roaster_A:heuristic_roaster"
+  ],
+  "python_version": "3.12.15",
+  "seed": 2,
+  "task": null,
+  "faults": null,
+  "protocol": "environment_baseline_passive_background",
+  "source": {
+    "repository": "https://github.com/SakanaAI/CoffeeBench.git",
+    "commit": "9e2f3950b5812c8753de81ede9c68babc024b5c8",
+    "dirty": false
+  },
+  "runner_sha256": "2506c4deaf9935c4bff2e8cff3f46d93be8318ceb6b4c437596c581995480e90",
+  "adapter_sha256": "ebd68fe55edf392d60eeaef1bca39a8e98162ad393f523dc809b6f6e7cbb8838",
+  "started_at": "2026-11-02T15:31:05.447232+00:00",
+  "wall_seconds": 0.496,
+  "exit_code": 0,
+  "artifact_present": true,
+  "error_class": null,
+  "summary": {
+    "completed": true,
+    "bankrupt_day": null,
+    "net_income_simulated_usd": -2764.68,
+    "days_recorded": 90,
+    "background_policy": "passive",
+    "model_cost_usd": 0.0,
+    "llm_calls": 0
+  },
+  "host_cost_usd": null,
+  "artifact_hashes": [
+    {
+      "name": "trajectory.json",
+      "sha256": "822d5341adeb3bb8c428ef7f6836cde2415154c52e2cee17acd928b6c7389f50"
+    }
+  ]
+}

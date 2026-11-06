@@ -3,7 +3,7 @@ import RevenueCat
 import RevenueCatUI
 import UserNotifications
 
-/// v8 onboarding: 10 steps + 2-step SOFT paywall (no in-flow rating prompt).
+/// Goal → real affirmation → optional reminder settings → soft paywall.
 /// Paywall presented via .fullScreenCover + .interactiveDismissDisabled (スワイプ離脱は防止)。
 /// 右上の × (paywall-close-button) タップでのみ課金せずメイン画面へ遷移する。
 struct OnboardingFlowView: View {
@@ -12,6 +12,7 @@ struct OnboardingFlowView: View {
     @State private var showPaywall: Bool = false
     @State private var isResolvingPaywallEntry = false
     @State private var didPurchaseOnPaywall = false
+    @State private var lastTrackedStep: OnboardingStep?
 
     var body: some View {
         ZStack {
@@ -39,9 +40,10 @@ struct OnboardingFlowView: View {
                 return
             }
 
-            step = appState.onboardingStep
+            step = appState.onboardingStep.resumableInitialStep
+            recordStepView()
 
-            if step == .welcome {
+            if step == .goal {
                 AnalyticsManager.shared.track(.onboardingStarted)
             }
 
@@ -49,6 +51,7 @@ struct OnboardingFlowView: View {
                 await SubscriptionManager.shared.refreshOfferings()
             }
         }
+        .onChange(of: step) { _ in recordStepView() }
         .fullScreenCover(isPresented: $showPaywall) {
             PaywallFlowContainer(
                 onPurchaseSuccess: { customerInfo in
@@ -68,18 +71,24 @@ struct OnboardingFlowView: View {
     private func onboardingContent(for step: OnboardingStep) -> some View {
         switch step {
         case .welcome:          WelcomeStepView(next: advance)
-        case .goal:             GoalStepView(next: advance)
+        case .goal:             AffirmationGoalStepView(next: advance)
         case .painPoints:       StrugglesStepView(next: advance)
         case .struggleFreq:     StruggleDepthStepView(next: advance)
-        case .nudgeTimes:       PreferredNudgeTimesView(next: advance)
+        case .nudgeTimes:       ReminderScheduleStepView(next: advance)
         case .processing:       ProcessingStepView(next: advance)
-        case .planReveal:       PersonalizedInsightStepView(next: advance)
+        case .planReveal:       FirstAffirmationStepView(next: advance)
         case .comparison:       ComparisonTableStepView(next: advance)
         case .notifications:    NotificationPermissionStepView(next: advance)
         }
     }
 
     // MARK: - Navigation
+
+    private func recordStepView() {
+        guard lastTrackedStep != step else { return }
+        lastTrackedStep = step
+        AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "onboarding.\(step.analyticsName)"])
+    }
 
     private func advance() {
         AnalyticsManager.shared.track(.onboardingStepAdvanced, properties: ["step": step.analyticsName])
@@ -92,7 +101,7 @@ struct OnboardingFlowView: View {
             return
         }
 
-        if let next = OnboardingStep(rawValue: step.rawValue + 1) {
+        if let next = step.nextInitialStep {
             step = next
             appState.setOnboardingStep(step)
         }

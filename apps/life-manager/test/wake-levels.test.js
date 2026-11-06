@@ -1,14 +1,15 @@
 "use strict";
-// REQ-29 (Dais 2026-06-25): TWO escalating wake calls only — T-10 (firm) + T-5 (harsh) before DEPARTURE.
-// Pins the levels so a revert to the old T-15/10/5 is caught. Run: node --test test/wake-levels.test.js
+// Maritime wake contract: T-10 (firm), T-5 (harsh), and event-start T-0 (harsh).
+// Pins all three levels so a missing event-start wake is caught. Run: node --test test/wake-levels.test.js
 const { test } = require("node:test");
 const assert = require("node:assert");
 const { WAKE_LEVELS } = require("../scheduler.js");
 
-test("WAKE_LEVELS = exactly two calls: T-10 firm, T-5 harsh (no T-15)", () => {
+test("WAKE_LEVELS = exactly three levels: T-10 firm, T-5 harsh, T-0 harsh", () => {
   assert.deepStrictEqual(WAKE_LEVELS, [
     { min: 10, urgency: "firm" },
     { min: 5, urgency: "harsh" },
+    { min: 0, urgency: "harsh" },
   ]);
 });
 

@@ -1,0 +1,46 @@
+{
+  "analytic": {
+    "notice": "Completely invented educational world. No real users, providers or policy interventions.",
+    "observation": {
+      "treated_rate": 0.58,
+      "untreated_rate": 0.32,
+      "observational_difference": 0.25999999999999995
+    },
+    "intervention": {
+      "do_treated_rate": 0.39999999999999997,
+      "do_untreated_rate": 0.5,
+      "average_causal_effect": -0.10000000000000003
+    },
+    "by_intent": {
+      "0": {
+        "p_treatment": 0.2,
+        "outcome_no_treatment": 0.2,
+        "outcome_treatment": 0.1,
+        "causal_effect": -0.1
+      },
+      "1": {
+        "p_treatment": 0.8,
+        "outcome_no_treatment": 0.8,
+        "outcome_treatment": 0.7,
+        "causal_effect": -0.10000000000000009
+      }
+    }
+  },
+  "synthetic": {
+    "n": 200000,
+    "seed": 20261104,
+    "observational_difference": 0.2624607068631485,
+    "observed_treated_rate": 0.5830080757060003,
+    "observed_control_rate": 0.32054736884285184,
+    "randomized_difference": -0.1035596669505301,
+    "standardized_difference": -0.10028688174074125,
+    "oracle_potential_outcome_difference_in_simulator": -0.101145,
+    "p_high_in_sample": 0.50082,
+    "n_obs_exposed": 100177,
+    "by_intent_observed_diff": {
+      "0": -0.10289475140238236,
+      "1": -0.09768755188630651
+    },
+    "warning": "Oracle counterfactuals exist only inside this synthetic generator."
+  }
+}

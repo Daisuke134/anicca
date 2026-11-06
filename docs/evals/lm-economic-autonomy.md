@@ -1,4 +1,8 @@
-# Reproduce the LM-EAB economic-autonomy contract checks
+# 経済記録の契約検証を再現する
+
+利用者向けの評価suite名は **BusinessRun Bench — AIは事業を何日回せるか**。
+本ページは旧内部名LM-EABのrecord scorerだけを扱う。agentが仕事を実行する評価と
+catalog/runnerは [`BusinessRun Bench`](../../products/businessrun-bench/README.md) を参照する。
 
 LM-EAB currently provides a deterministic, offline evaluator for economic and
 autonomy records. The checked-in cases are synthetic fixtures. This command

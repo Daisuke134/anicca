@@ -346,7 +346,8 @@ def render_html(agents: list) -> str:
 
 
 def build(output_file: Path = OUTPUT_FILE) -> int:
-    online = filter_online_agents(_fetch_agents())
+    agents = _fetch_agents()
+    online = filter_online_agents(agents)
     if not online:
         raise RuntimeError("no online listings")
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -354,7 +355,10 @@ def build(output_file: Path = OUTPUT_FILE) -> int:
     allowed_agents = output_file.parent / "netlify" / "functions" / "allowed-agents.json"
     allowed_agents.parent.mkdir(parents=True, exist_ok=True)
     allowed_agents.write_text(
-        json.dumps([agent["agentId"] for agent in online], ensure_ascii=False) + "\n",
+        json.dumps(sorted({str(agent["agentId"]) for agent in agents
+                           if agent.get("agentId") is not None and
+                           (agent.get("agentStatus") == "online" or
+                            agent.get("hasOnlineVersion") is True)}), ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     return len(online)

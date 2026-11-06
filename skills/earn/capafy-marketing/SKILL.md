@@ -23,7 +23,34 @@ is web-researched: **IG/TikTok comment URLs are not clickable and link-in-body i
 down-ranked on X → bio-led on IG, and on X the link goes in the FIRST self-reply, never
 the root tweet.** (research MD: `anicca-project/docs/earn/2026-07-17-capafy-marketing-link-placement-research.md`)
 
+## Open dashboard account snapshot
+
+`scripts/capafy_open_snapshot.py --output PATH` reads the existing Capafy account
+traffic and impressions endpoints using the `capafy-publisher` item in the shared
+1Password Agents vault. It outputs 7-day and 30-day observations, source and UTC
+window, with only approved non-identifying impression-source categories. An
+unavailable source or malformed response fails without replacing the prior output.
+This command collects data only; the existing Open publisher owns publication and
+scheduling. A successful local collection does not prove a public update.
+
+## IG fence reconciliation identity contract
+
+`capafy_ig_fence_reconcile.py` requires the exact occurrence's original dispatch
+marker (`--dispatch-marker-path` for a preserved original archive). The marker
+must carry the original handle and a dispatch timestamp inside that run's window.
+The shared poster records the handle and explicit `--occurrence-id`, falling back
+to `LIFE_MANAGER_OCCURRENCE_ID`. Missing, stale or conflicting evidence stays HELD
+before provider access. `--handle` checks that binding; it cannot replace it.
+Never rewrite historical markers or select a replacement ready account to close
+an old fence. A successful source test does not resolve an existing effect.
+
 ## Historical pipeline (X line, not runnable here): B1 select → B2 copy → B5 post
+
+The landing generator keeps new promotion cards restricted to `agentStatus == "online"`.
+Tracking redirects also retain IDs whose seller response has `hasOnlineVersion: true`:
+a newer revision can be under review while an older version remains public. This routing
+rule does not approve, publish, or promote the pending revision. Listings without an
+online version stay excluded; seller content, pricing, and `autoPublish` are unchanged.
 
 ```
 select_listing.py         # B1: pick an online listing (rotation/dedup), emit {agent_id,name,desc,url}
@@ -146,8 +173,16 @@ NOT @aniccaxxx as `$LIFE_MANAGER_REPO/skills/x-poster/SKILL.md` claims.
 `build_landing.py` links every online listing card to `/go/<agent_id>`. The Netlify
 Function records one immutable Netlify Blob per valid click and redirects to the
 Capafy listing with the Instagram bio UTM parameters. `/go-stats` returns cumulative
-counts. Immediately after `ig_metrics.py`, the daily caller runs
-`scripts/pull_attribution.py` non-fatally; it joins those counts to the current
+counts excluding the exact verified synthetic campaign `x/test_hq_4a481d`;
+`?detail=1` exposes its retained raw-record count as `excluded_synthetic`. New click bodies save only schema_version, agentId, platform, post and ct.
+`?detail=1&attribution=1` explicitly reads bodies and adds per-agent ct counts with
+recorded/unavailable totals; old scalar bodies remain unavailable, never guessed.
+Storage errors fail the readback. Raw blobs
+are preserved. Other legacy or test-looking names are not automatically excluded.
+A corrected cumulative count below an older ledger baseline produces an unknown
+window delta, rather than a negative count. Immediately after `ig_metrics.py`, the daily caller runs
+`scripts/pull_attribution.py` non-fatally with `?detail=1&attribution=1`; it retains
+the returned ct summary as `click_attribution` (null if unavailable) and joins counts to the current
 `GET /agent/agents` sales snapshot and appends at most one dated row per day to
 `~/.local/state/life-manager/state/capafy-attribution.jsonl`.
 

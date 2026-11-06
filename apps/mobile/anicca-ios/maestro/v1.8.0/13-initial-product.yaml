@@ -1,0 +1,75 @@
+appId: ai.anicca.app.ios
+name: Value-first onboarding, continuous feed, saved words and reminders
+---
+- clearState
+- clearKeychain
+- launchApp:
+    arguments:
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
+- runFlow: ./_onboarding_to_paywall.yaml
+- takeScreenshot: "initial-real-paywall"
+- tapOn:
+    id: "paywall-close-button"
+- extendedWaitUntil:
+    visible:
+      id: "feed-scroll"
+    timeout: 15000
+- repeat:
+    times: 25
+    commands:
+      - copyTextFrom:
+          id: "quote-text"
+      - evalScript: ${output.previousQuote = maestro.copiedText}
+      - swipe:
+          start: 50%, 75%
+          end: 50%, 25%
+          duration: 450
+      - waitForAnimationToEnd
+      - copyTextFrom:
+          id: "quote-text"
+      - assertTrue: ${maestro.copiedText !== output.previousQuote}
+- repeat:
+    times: 5
+    commands:
+      - swipe:
+          start: 50%, 25%
+          end: 50%, 75%
+          duration: 450
+      - assertVisible:
+          id: "quote-text"
+- takeScreenshot: "initial-personalized-feed"
+- tapOn:
+    id: "quote-like"
+- tapOn:
+    id: "feed-saved"
+- assertVisible: "I am worthy of the love I give and receive."
+- takeScreenshot: "initial-saved-words"
+- tapOn: "Close"
+- tapOn:
+    id: "feed-reminders"
+- assertVisible: "09:00"
+- assertVisible: "14:00"
+- assertVisible: "20:00"
+- takeScreenshot: "initial-real-reminder-schedule"
+- tapOn:
+    id: "reminder-enable-notifications"
+# This runtime resolves the permission alert while XCTest refreshes hierarchy.
+- extendedWaitUntil:
+    visible: "Notifications allowed"
+    timeout: 20000
+- waitForAnimationToEnd
+- assertVisible:
+    id: "reminder-enable-notifications"
+    enabled: true
+- tapOn: "Close"
+- tapOn:
+    id: "feed-themes"
+- takeScreenshot: "initial-themes"
+- tapOn: "Close"
+- stopApp
+- launchApp
+- assertVisible:
+    id: "feed-scroll"
+- assertNotVisible:
+    id: "onboarding-goal-continue"

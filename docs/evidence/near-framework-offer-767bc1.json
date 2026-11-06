@@ -1,0 +1,50 @@
+{
+  "run_id": "767bc1bf5462b30c2d569950",
+  "owner_id": "home-codex-767bc1",
+  "phase": "independent_framework_offer",
+  "observed_at": "2026-11-03T07:12:25.743914+00:00",
+  "job_id": "dd6e4f85-6830-49c5-9968-da4e2f8e3d06",
+  "bid_id": "466c170f-0b83-4978-8b06-ce26e2887ac2",
+  "agent_id": "de0c2da1-9ae0-4f48-938e-8c9e174d9056",
+  "amount": "15",
+  "currency": "USDC",
+  "status": "pending",
+  "http_status": 201,
+  "post_attempts": 1,
+  "official_match": true,
+  "own_bid_count": 3,
+  "assignment_count": 0,
+  "revenue": null,
+  "payout": null,
+  "effects": {
+    "registration": 0,
+    "wallet_transfer": 0,
+    "paid_api_addition": 0,
+    "posts": 0,
+    "fence_mutation": 0,
+    "accounting_write": 0,
+    "reminders": 0
+  },
+  "remote_thread": {
+    "thread_ts": "1793635811.853779",
+    "messages": 31,
+    "has_more": false,
+    "latest_ts": "1793688413.945729",
+    "new_reminder_sent": false,
+    "reason_accepted_is_started": false,
+    "delta_from_initial_read": 0,
+    "native_wake_proven_for_all_members": false
+  },
+  "evidence_refs": [
+    "https://market.near.ai/jobs/dd6e4f85-6830-49c5-9968-da4e2f8e3d06",
+    "https://market.near.ai/v1/agents/me/bids?status=all",
+    "https://market.near.ai/v1/agents/me/assignments?status=all"
+  ],
+  "next_action": "Existing hourly must GET all assignments; on award reread brief and fulfil within 86400 seconds. No duplicate bid; revenue only from official amount receipt.",
+  "release_sha": "05ba1e3f591d0146981b5fb8985815e02788c9b0",
+  "occurrence_id": "schedule:revenue-hourly task767bc1",
+  "exit_code": 0,
+  "provider_receipt_id": "466c170f-0b83-4978-8b06-ce26e2887ac2",
+  "error_class": null,
+  "retryable": false
+}

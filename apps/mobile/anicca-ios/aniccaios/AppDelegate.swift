@@ -32,6 +32,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         // Mixpanelは常に初期化（ファーストパーティAnalytics、IDFAを使用しない）
         AnalyticsManager.shared.configure()
+        let analyticsUserID = SubscriptionManager.shared.isConfigured ? Purchases.shared.appUserID : nil
+        if let analyticsUserID { AnalyticsManager.shared.identify(userId: analyticsUserID) }
 
         // PostHog: A/B テスト + Session Replay（RevenueCat configure の後）。
         // The project-specific key and host are supplied by ignored xcconfig files.
@@ -39,11 +41,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
            let postHogHost = Bundle.main.object(forInfoDictionaryKey: "POSTHOG_HOST") as? String,
            !postHogKey.isEmpty, !postHogHost.isEmpty {
             let phConfig = PostHogConfig(apiKey: postHogKey, host: postHogHost)
-            phConfig.sessionReplay = true
+            phConfig.sessionReplay = false
             phConfig.sessionReplayConfig.maskAllTextInputs = true
             phConfig.sessionReplayConfig.maskAllImages = false
             PostHogSDK.shared.setup(phConfig)
-            PostHogSDK.shared.identify(Purchases.shared.appUserID)
+            AnalyticsManager.shared.connectPostHog(userID: analyticsUserID)
             // identify() 後にフラグを明示リロード（ユーザーコンテキスト変更でpreload分が無効になるため）
             // completion callback で featureFlagsReady を立てる → Paywall が nil を読まない
             PostHogSDK.shared.reloadFeatureFlags {
@@ -109,6 +111,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let alertBody = content.body
 
         Task { @MainActor in
+            AnalyticsManager.shared.track(.notificationOpened, properties: [
+                "quote_id": quoteID ?? "unavailable",
+                "notification_id": content.userInfo["messageId"] as? String ?? response.notification.request.identifier
+            ])
             QuoteNavigationCoordinator.shared.request(quoteID: quoteID, alertBody: alertBody)
             completionHandler()
         }

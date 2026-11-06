@@ -1,0 +1,42 @@
+{
+  "session_id": "ses_3497enxamwskj89czrwe88vgg5",
+  "model": "google/gemini-2.5-flash-lite",
+  "search_term": "動画",
+  "result_count_displayed": 30,
+  "direct_type_status": "tool_error",
+  "fallback_action": "browser.act",
+  "result_readback": "browser.extract",
+  "session_total_micro_usd": 64391,
+  "unverified_business_revenue": true,
+  "products_displayed": [
+    {
+      "name": "CutEZ",
+      "price": "US$12.99/week",
+      "sold_display": 226
+    },
+    {
+      "name": "Seedance 2.0 動画",
+      "price": "US$6.99/h",
+      "sold_display": 317
+    },
+    {
+      "name": "Odeo Maker",
+      "price": "US$19/month",
+      "sold_display": 874
+    }
+  ],
+  "events_seq": [
+    81,
+    82,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    115,
+    119
+  ]
+}

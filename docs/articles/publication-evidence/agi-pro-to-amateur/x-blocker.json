@@ -1,0 +1,54 @@
+{
+  "run_id": "agi-publication-20261103",
+  "owner_id": "x:diceai0",
+  "occurrence_id": "agi-publication-20261103:x-article",
+  "release_sha": null,
+  "source_commit": "d569400787be23bd79eff61342296f18d03b84c2",
+  "phase": "browser_preflight",
+  "command": "skills/browser/ensure_provision_browser.sh x:diceai0",
+  "loaded_argv": null,
+  "loaded_env": null,
+  "exit_code": 1,
+  "effect": 0,
+  "readback": 0,
+  "provider_receipt_id": null,
+  "error_class": "disk_floor_low",
+  "retryable": true,
+  "next_action": "Restore host free disk to the existing 12884901888-byte browser admission floor, then acquire the same x:diceai0 identity and verify @diceai0 in the X Articles editor.",
+  "required_bytes": 12884901888,
+  "free_bytes_observed": 1290178560,
+  "evidence_refs": [
+    "/Users/anicca/.local/state/life-manager/provision-browser/logs/provision-browser.log",
+    "/Users/anicca/.config/ai/registry/browsers.toml"
+  ],
+  "diagnosis": [
+    "Dedicated profile resolves to stale unreachable DevToolsActivePort; no process owns that user-data-dir.",
+    "Guard has no active holder for x:diceai0.",
+    "Aqua/user launchd preflight passes. Browser producer preflight refuses before any profile mutation.",
+    "Inspected exact regenerable cache families; identified reclaimable cache totals cannot cover the approximately 8 GiB gap. Protected source/runtime/browser stores retained.",
+    "Independent read-only verifier checked remote main e4612c2869d84384e049c54014816fd4d0d422d3 and immutable release 20261103T104620-9e3044fc: both retain the 12 GiB condition. The older normal checkout has a different historical condition and is not a safe fallback.",
+    "Allow-listed caches, clang, exact temporary candidates, unreferenced releases and worktree candidates total at most approximately 3.45 GiB even when unsafe/active candidates are overincluded; this cannot cover the required gap.",
+    "Additional temporary Git-copy probes found unpublished commits and dirty copies among the directories. They were preserved. No generic temporary directory deletion was performed."
+  ],
+  "draft": {
+    "title": "What Will AI Do to Us? It Will Turn Every Pro Into an Amateur.",
+    "cover_exists": true,
+    "body_images": 7,
+    "missing_images": 0,
+    "blocks": 177,
+    "ending_verified": true,
+    "remote_draft_created": false,
+    "canonical_markdown": "docs/articles/2026-11-02-every-pro-an-amateur-en.md"
+  },
+  "x_articles_entitlement": "unverified",
+  "formal_restart_path": "AI_BROWSER_REGISTRY=/Users/anicca/.config/ai/registry/browsers.toml bash /Users/anicca/loops/releases/20261103T104620-9e3044fc/skills/browser/ensure_provision_browser.sh x:diceai0",
+  "status": "resolved",
+  "historical_only": true,
+  "resolution": {
+    "state": "public_verified",
+    "effect": 1,
+    "public_url": "https://x.com/diceai0/status/2117478259654897939",
+    "evidence": "docs/articles/publication-evidence/agi-pro-to-amateur/x-public.json",
+    "route": "Existing same-account Postiz OAuth connection, post_type=article; eight originals uploaded and validated, preview before publish, anonymous X page after publish."
+  }
+}

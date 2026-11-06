@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "run_id": "yc-throughput-s1-20261103",
+  "suite": "yc",
+  "policy": "throughput",
+  "seed": 1,
+  "task": null,
+  "faults": null,
+  "protocol": "script_baseline_default_year",
+  "source": {
+    "repository": "https://github.com/collinear-ai/yc-bench.git",
+    "commit": "97ca2b809ea6fee92e3e5cc6240f5b0186221c51",
+    "dirty": false
+  },
+  "runner_sha256": "985c8c79506e83e39b067b977f7df45fa8b909300de711760f10d6241ed3a189",
+  "adapter_sha256": "ebd68fe55edf392d60eeaef1bca39a8e98162ad393f523dc809b6f6e7cbb8838",
+  "started_at": "2026-11-02T15:03:58.906582+00:00",
+  "wall_seconds": 0.863,
+  "exit_code": 0,
+  "artifact_present": true,
+  "summary": {
+    "bankrupt": true,
+    "tasks_completed": 6,
+    "tasks_failed": 3,
+    "turns": 16,
+    "final_balance_cents": -391880,
+    "model_cost_usd": 0.0
+  },
+  "host_cost_usd": null,
+  "artifact_hashes": [
+    {
+      "name": "baseline.json",
+      "sha256": "0ef56c59d57a5ebfa3640d1f3be9ebbff0d3f8ae546a4ea68b82e2e46e1c1147"
+    },
+    {
+      "name": "yc_bench_result_default_1_throughput_bot.json",
+      "sha256": "f0415419cf6b5646d245920da108554568c50a348afd6cade71b6f665d69e34b"
+    }
+  ]
+}

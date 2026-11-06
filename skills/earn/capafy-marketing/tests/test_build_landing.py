@@ -108,6 +108,21 @@ class BuildLandingTests(unittest.TestCase):
                     build_landing.build(output)
             self.assertFalse(output.exists())
 
+    def test_redirects_retain_public_version_without_promoting_pending_revision(self):
+        agents = self.agents + [
+            {"agentId": "9425449917", "agentStatus": "under_review", "hasOnlineVersion": True,
+             "name": "Pending revision with public version"},
+            {"agentId": "pending", "agentStatus": "under_review", "hasOnlineVersion": False},
+            {"agentId": "string-true", "agentStatus": "under_review", "hasOnlineVersion": "true"},
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "index.html"
+            with patch.object(build_landing, "_fetch_agents", return_value=agents):
+                self.assertEqual(build_landing.build(output), 2)
+            allowed = json.loads((output.parent / "netlify/functions/allowed-agents.json").read_text())
+            self.assertEqual(set(allowed), {"1", "2", "9425449917"})
+            self.assertNotIn("Pending revision with public version", output.read_text())
+
     def test_daily_loop_refreshes_landing_but_bio_targets_selected_agent(self):
         script = DAILY_SCRIPT.read_text(encoding="utf-8")
 

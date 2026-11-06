@@ -1,0 +1,48 @@
+{
+  "analysis": "difference of randomized arm means and Wald 95% CI; fixed N",
+  "assignment_unit": "individual",
+  "baseline_policy": "notify iff motivation_pre == 0 and fatigue_pre == 0",
+  "claim": "Policy choice matters, beyond individual-outcome prediction accuracy",
+  "distinct_optional_stopping_demo": "Separate A/A Monte Carlo showing inflated false-positive probability",
+  "followup_window": "one simulated period",
+  "manager_policy": "notify iff motivation_pre == 0",
+  "manager_policy_version": "synthetic-cate-two-feature-fixed-rule-v1",
+  "n_total_fixed": 40000,
+  "not_real_or_publicly_registered": true,
+  "null_hypothesis": "primary estimand == 0",
+  "outside_registry_preregistration": false,
+  "planned_secondary_outcomes": [
+    "task_completion_rate",
+    "notification_rate"
+  ],
+  "planned_subgroups": [
+    "motivation_pre",
+    "fatigue_pre"
+  ],
+  "population": "40,000 independent synthetic individuals (binary baseline traits)",
+  "primary_direction_of_interest": "positive manager minus comparator",
+  "primary_estimand": "E[net_utility | randomized_manager_policy] - E[net_utility | randomized_heuristic_policy]",
+  "primary_outcome": "net_utility = observed_binary_task_completion - 0.02*notification_sent",
+  "randomization": "equal random assignment to two decision policies",
+  "real_user_interventions": false,
+  "reference_seed": 20261146,
+  "safety_guardrails": [
+    "No more than one notification per synthetic subject",
+    "Report completion and notification burden separately",
+    "Never interpret this proxy utility as measured psychological benefit"
+  ],
+  "sequential_peeking": "PROHIBITED in confirmatory policy RCT",
+  "shared_action_set": [
+    "notify_once",
+    "do_not_notify"
+  ],
+  "shared_available_features": [
+    "motivation_pre",
+    "fatigue_pre"
+  ],
+  "strong_comparator_note": "Plausible preregistered heuristic, NOT established globally strongest comparator",
+  "study_id": "P04-6-SYNTHETIC-POLICY-RCT-20261104",
+  "study_type": "EDUCATIONAL SYNTHETIC RANDOMIZED POLICY EXPERIMENT",
+  "subgroup_inference": "descriptive/exploratory; not additional primary tests",
+  "two_sided_alpha": 0.05
+}

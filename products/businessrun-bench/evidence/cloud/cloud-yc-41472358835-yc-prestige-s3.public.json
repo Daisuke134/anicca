@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "run_id": "yc-prestige-s3",
+  "suite": "yc",
+  "policy": "prestige",
+  "command": [
+    "$PYTHON",
+    "$RUNNER/bench.py",
+    "_yc",
+    "$SOURCE",
+    "3",
+    "prestige"
+  ],
+  "python_version": "3.12.15",
+  "seed": 3,
+  "task": null,
+  "faults": null,
+  "protocol": "script_baseline_default_year",
+  "source": {
+    "repository": "https://github.com/collinear-ai/yc-bench.git",
+    "commit": "97ca2b809ea6fee92e3e5cc6240f5b0186221c51",
+    "dirty": false
+  },
+  "runner_sha256": "2506c4deaf9935c4bff2e8cff3f46d93be8318ceb6b4c437596c581995480e90",
+  "adapter_sha256": "ebd68fe55edf392d60eeaef1bca39a8e98162ad393f523dc809b6f6e7cbb8838",
+  "started_at": "2026-11-02T15:31:44.392159+00:00",
+  "wall_seconds": 1.139,
+  "exit_code": 0,
+  "artifact_present": true,
+  "error_class": null,
+  "summary": {
+    "bankrupt": true,
+    "tasks_completed": 2,
+    "tasks_failed": 1,
+    "turns": 9,
+    "final_balance_cents": -1819337,
+    "model_cost_usd": 0.0
+  },
+  "host_cost_usd": null,
+  "artifact_hashes": [
+    {
+      "name": "baseline.json",
+      "sha256": "0e3428571eb1a845b651c53efb5d39e97150456b792ef6cdc8915a67a3bd85db"
+    },
+    {
+      "name": "yc_bench_result_default_3_prestige_bot.json",
+      "sha256": "e8c45c0ec95c19c647a4f7b1ecc8e877d04277d174a7558a08ab9c894080cfa3"
+    }
+  ]
+}

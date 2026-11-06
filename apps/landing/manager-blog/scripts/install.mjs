@@ -30,10 +30,10 @@ export async function installManagerBlog({revision,contentRevision=revision,root
  for(const a of pkg.articles) {
   const bytes=await getContent(packageRoot+a.package_path);
   if(digest(bytes)!==a.sha256)throw new Error(`Article hash mismatch: ${a.slug}`);
-  const {slug,title,date,project,n_papers_cited,word_count,description,lang,series_order}=a;
+  const {slug,title,date,project,n_papers_cited,word_count,character_count,description,lang,series_order}=a;
   const target=resolve(root,'data/research',a.slug+'.json');
   try { const prior=JSON.parse(await readFile(target,'utf8')); if(prior.project!=='Manager') throw new Error('Refusing to replace unrelated article: '+a.slug); } catch(e) { if(e.code!=='ENOENT') throw e; }
-  content.push([resolve(root,'data/research',a.slug+'.json'),Buffer.from(JSON.stringify({slug,title,date,project,n_papers_cited,word_count,description,lang,series_order,markdown:bytes.toString('utf8')},null,2)+'\n')]);
+  content.push([resolve(root,'data/research',a.slug+'.json'),Buffer.from(JSON.stringify({slug,title,date,project,n_papers_cited,word_count,character_count,description,lang,series_order,markdown:bytes.toString('utf8')},null,2)+'\n')]);
  }
  for(const m of pkg.media) {
   const bytes=await getContent(packageRoot+m.package_path);

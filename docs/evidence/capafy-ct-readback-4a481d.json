@@ -1,0 +1,338 @@
+{
+  "task_id": "4a481d0fe62485fd4dffc972",
+  "owner_id": "home-codex-4a481d",
+  "observed_at": "2026-11-02T16:25:40.593794+00:00",
+  "source_sha": "41bb93191b29de20e5307a86e3ba553ecbe3db59",
+  "method": "official HTTP GET without following 302; official go-stats exact probe-key before/after",
+  "stats_http_before": 200,
+  "stats_http_after": 200,
+  "synthetic_probe": "test_hq_4a481d",
+  "synthetic_clicks_attempted": 7,
+  "rows": [
+    {
+      "slug": "hook-lab",
+      "agent_id": "8123079349",
+      "url": "https://capafy-skills-daily.netlify.app/go/8123079349/x/test_hq_4a481d?ct=test_hq_4a481d",
+      "http_status": 302,
+      "location": "https://capafy.ai/agent/8123079349?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=test_hq_4a481d&ct=test_hq_4a481d",
+      "target_matches": true,
+      "ct_preserved": true,
+      "utm_content_preserved": true,
+      "probe_clicks_before": 0,
+      "probe_clicks_after": 0,
+      "probe_click_delta": 0,
+      "probe_clicks_delayed": 0
+    },
+    {
+      "slug": "marketing-strategist",
+      "agent_id": "9563867391",
+      "url": "https://capafy-skills-daily.netlify.app/go/9563867391/x/test_hq_4a481d?ct=test_hq_4a481d",
+      "http_status": 302,
+      "location": "https://capafy.ai/agent/9563867391?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=test_hq_4a481d&ct=test_hq_4a481d",
+      "target_matches": true,
+      "ct_preserved": true,
+      "utm_content_preserved": true,
+      "probe_clicks_before": 0,
+      "probe_clicks_after": 0,
+      "probe_click_delta": 0,
+      "probe_clicks_delayed": 0
+    },
+    {
+      "slug": "reels-hook-lab",
+      "agent_id": "3798949471",
+      "url": "https://capafy-skills-daily.netlify.app/go/3798949471/x/test_hq_4a481d?ct=test_hq_4a481d",
+      "http_status": 302,
+      "location": "https://capafy.ai/agent/3798949471?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=test_hq_4a481d&ct=test_hq_4a481d",
+      "target_matches": true,
+      "ct_preserved": true,
+      "utm_content_preserved": true,
+      "probe_clicks_before": 0,
+      "probe_clicks_after": 0,
+      "probe_click_delta": 0,
+      "probe_clicks_delayed": 0
+    },
+    {
+      "slug": "tiktok-series-continuity-planner",
+      "agent_id": "9425449917",
+      "url": "https://capafy-skills-daily.netlify.app/go/9425449917/x/test_hq_4a481d?ct=test_hq_4a481d",
+      "http_status": 302,
+      "location": "https://capafy.ai/agent/9425449917?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=test_hq_4a481d&ct=test_hq_4a481d",
+      "target_matches": true,
+      "ct_preserved": true,
+      "utm_content_preserved": true,
+      "probe_clicks_before": 0,
+      "probe_clicks_after": 0,
+      "probe_click_delta": 0,
+      "probe_clicks_delayed": 0
+    },
+    {
+      "slug": "slide-maker",
+      "agent_id": "8828622062",
+      "url": "https://capafy-skills-daily.netlify.app/go/8828622062/x/test_hq_4a481d?ct=test_hq_4a481d",
+      "http_status": 302,
+      "location": "https://capafy.ai/agent/8828622062?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=test_hq_4a481d&ct=test_hq_4a481d",
+      "target_matches": true,
+      "ct_preserved": true,
+      "utm_content_preserved": true,
+      "probe_clicks_before": 0,
+      "probe_clicks_after": 0,
+      "probe_click_delta": 0,
+      "probe_clicks_delayed": 0
+    },
+    {
+      "slug": "tiktok-script-pro",
+      "agent_id": "2844813315",
+      "url": "https://capafy-skills-daily.netlify.app/go/2844813315/x/test_hq_4a481d?ct=test_hq_4a481d",
+      "http_status": 302,
+      "location": "https://capafy.ai/agent/2844813315?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=test_hq_4a481d&ct=test_hq_4a481d",
+      "target_matches": true,
+      "ct_preserved": true,
+      "utm_content_preserved": true,
+      "probe_clicks_before": 0,
+      "probe_clicks_after": 0,
+      "probe_click_delta": 0,
+      "probe_clicks_delayed": 0
+    },
+    {
+      "slug": "youtube-script-writer",
+      "agent_id": "7686597754",
+      "url": "https://capafy-skills-daily.netlify.app/go/7686597754/x/test_hq_4a481d?ct=test_hq_4a481d",
+      "http_status": 302,
+      "location": "https://capafy.ai/agent/7686597754?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=test_hq_4a481d&ct=test_hq_4a481d",
+      "target_matches": true,
+      "ct_preserved": true,
+      "utm_content_preserved": true,
+      "probe_clicks_before": 0,
+      "probe_clicks_after": 0,
+      "probe_click_delta": 0,
+      "probe_clicks_delayed": 0
+    }
+  ],
+  "business_outcome": "unverified",
+  "purchase_attempted": false,
+  "revenue_verified": false,
+  "legacy_blob_coverage": "not covered; only configured current 7 product redirects",
+  "remote_thread": {
+    "url": "https://app.slack.com/archives/C0CBLBGSBJN/p1793635811853779",
+    "api_ok": true,
+    "messages": 1,
+    "replies": 0,
+    "has_more": false,
+    "new_person_ack_start_result": false,
+    "reason_accepted_queued": "not_started",
+    "followup_sent": false
+  },
+  "delayed_stats_readback": {
+    "observed_at": "2026-11-02T16:25:59.889857+00:00",
+    "http_status": 200,
+    "all_exact_probe_keys_observed": false
+  },
+  "counter_diagnostic": {
+    "observed_at": "2026-11-02T16:26:28.239212+00:00",
+    "additional_clicks": 0,
+    "readbacks": [
+      {
+        "path": "/go-stats?detail=1&probe=4a481d",
+        "http_status": 200,
+        "headers": {
+          "Age": "2",
+          "Cache-Control": "no-store",
+          "Date": "Mon, 02 Nov 2026 16:26:27 GMT",
+          "X-Nf-Request-Id": "01M6EHARAARFTFKEC79DT0Q1M5"
+        },
+        "total": 105,
+        "platforms": {
+          "legacy": 88,
+          "x": 14,
+          "instagram": 1,
+          "x402": 1,
+          "test": 1
+        },
+        "rows": [
+          {
+            "agent_id": "8123079349",
+            "exact_probe_count": 0,
+            "agent_total": 5
+          },
+          {
+            "agent_id": "9563867391",
+            "exact_probe_count": 0,
+            "agent_total": 2
+          },
+          {
+            "agent_id": "3798949471",
+            "exact_probe_count": 0,
+            "agent_total": 0
+          },
+          {
+            "agent_id": "9425449917",
+            "exact_probe_count": 0,
+            "agent_total": 13
+          },
+          {
+            "agent_id": "8828622062",
+            "exact_probe_count": 0,
+            "agent_total": 1
+          },
+          {
+            "agent_id": "2844813315",
+            "exact_probe_count": 0,
+            "agent_total": 1
+          },
+          {
+            "agent_id": "7686597754",
+            "exact_probe_count": 0,
+            "agent_total": 1
+          }
+        ]
+      },
+      {
+        "path": "/.netlify/functions/go-stats?detail=1&probe=4a481d",
+        "http_status": 200,
+        "headers": {
+          "Age": "0",
+          "Cache-Control": "no-store",
+          "Date": "Mon, 02 Nov 2026 16:26:27 GMT",
+          "X-Nf-Request-Id": "01M6EHAS49VVMPM138CY8FY3DJ"
+        },
+        "total": 105,
+        "platforms": {
+          "legacy": 88,
+          "x": 14,
+          "instagram": 1,
+          "x402": 1,
+          "test": 1
+        },
+        "rows": [
+          {
+            "agent_id": "8123079349",
+            "exact_probe_count": 0,
+            "agent_total": 5
+          },
+          {
+            "agent_id": "9563867391",
+            "exact_probe_count": 0,
+            "agent_total": 2
+          },
+          {
+            "agent_id": "3798949471",
+            "exact_probe_count": 0,
+            "agent_total": 0
+          },
+          {
+            "agent_id": "9425449917",
+            "exact_probe_count": 0,
+            "agent_total": 13
+          },
+          {
+            "agent_id": "8828622062",
+            "exact_probe_count": 0,
+            "agent_total": 1
+          },
+          {
+            "agent_id": "2844813315",
+            "exact_probe_count": 0,
+            "agent_total": 1
+          },
+          {
+            "agent_id": "7686597754",
+            "exact_probe_count": 0,
+            "agent_total": 1
+          }
+        ]
+      }
+    ]
+  },
+  "head_diagnostic": [
+    {
+      "path": "/go/8123079349/x/test_hq_4a481d?ct=test_hq_4a481d",
+      "method": "HEAD",
+      "status": 302,
+      "headers": {
+        "Age": "1",
+        "Cache-Control": "no-store",
+        "Location": "https://capafy.ai/agent/8123079349?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=test_hq_4a481d&ct=test_hq_4a481d",
+        "Server": "Netlify",
+        "X-Nf-Request-Id": "01M6EHBC3X1ESB71P64EGYSFJZ"
+      }
+    },
+    {
+      "path": "/.netlify/functions/go/8123079349/x/test_hq_4a481d?ct=test_hq_4a481d",
+      "method": "HEAD",
+      "status": 302,
+      "headers": {
+        "Age": "1",
+        "Cache-Control": "no-store",
+        "Location": "https://capafy.ai/agent/8123079349?utm_source=x&utm_medium=capafy_distribute&utm_campaign=capafy_marketing&utm_content=test_hq_4a481d&ct=test_hq_4a481d",
+        "Server": "Netlify",
+        "X-Nf-Request-Id": "01M6EHBCXCVCYH85DPJYXSG8KJ"
+      }
+    }
+  ],
+  "final_counter_readback": {
+    "observed_at": "2026-11-02T16:26:56.094352+00:00",
+    "total": 114,
+    "rows": [
+      {
+        "agent_id": "8123079349",
+        "count": 3
+      },
+      {
+        "agent_id": "9563867391",
+        "count": 1
+      },
+      {
+        "agent_id": "3798949471",
+        "count": 1
+      },
+      {
+        "agent_id": "9425449917",
+        "count": 1
+      },
+      {
+        "agent_id": "8828622062",
+        "count": 1
+      },
+      {
+        "agent_id": "2844813315",
+        "count": 1
+      },
+      {
+        "agent_id": "7686597754",
+        "count": 1
+      }
+    ]
+  },
+  "official_deploy_readback": {
+    "id": "41c8e52e-b163-442a-84ff-fd866269bf6c",
+    "name": "capafy-skills-daily",
+    "url": "http://capafy-skills-daily.netlify.app",
+    "ssl_url": "https://capafy-skills-daily.netlify.app",
+    "updated_at": "2026-11-02T14:15:23.880Z",
+    "published_deploy": {
+      "id": "6ae89aeeb7fd12e6a76e6305",
+      "state": "ready",
+      "published_at": "2026-11-02T14:15:18.483Z",
+      "created_at": "2026-11-02T14:15:10.576Z",
+      "deploy_ssl_url": "https://6ae89aeeb7fd12e6a76e6305--capafy-skills-daily.netlify.app",
+      "commit_ref": null,
+      "title": null
+    }
+  },
+  "synthetic_requests": {
+    "GET_redirect": 7,
+    "HEAD_diagnostic": 2,
+    "observed_clicks_total": 9,
+    "exclude_from_real_acquisition": true,
+    "note": "HEAD probes were also recorded by deployed HTTP transport; no further click requests are required."
+  },
+  "acceptance": {
+    "redirect_ct_target": true,
+    "exact_counter_readback": true,
+    "generator_tests": "9 passed; process exit 0",
+    "source_boundary": "PASS",
+    "provider_changes": "No deploy, posting, pricing, purchase, accounting, owner reassignment or fence mutation. Only synthetic click records were created.",
+    "business_result": "unverified",
+    "next_action": "Current 7 configured CTA routes are verified. Legacy blob URLs remain outside this coverage: inventory exact URLs and owners, compare each Location/ct without blindly publishing or reassigning any effect."
+  }
+}

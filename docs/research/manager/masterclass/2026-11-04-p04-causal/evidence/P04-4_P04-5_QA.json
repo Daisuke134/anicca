@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-04",
+  "source": "synthetic research only",
+  "pptx_slides": 82,
+  "pdf_pages": 82,
+  "pptx_slides_1_to_74_text_preserved_except_footer": true,
+  "notes_in_all_82_pptx_slides": true,
+  "prediction_frozen_hash_valid": true,
+  "unit_tests_passed": 80,
+  "unit_tests_run_command": "python3 -m unittest discover -p test_p04_*.py -v",
+  "real_world_experiment_prediction": "NOT PERFORMED",
+  "real_human_interventions": "NONE"
+}

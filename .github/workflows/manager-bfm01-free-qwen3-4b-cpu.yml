@@ -1,0 +1,87 @@
+name: Manager BFM-01 | actual Qwen3 4B inference on FREE cloud CPU
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-bfm01-free-qwen3-4b-cpu.yml"
+      - "products/manager/experiments/cloud/qwen3_cpu_first_inference.py"
+      - "products/manager/experiments/cloud/test_qwen3_cpu_first_inference.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manager-bfm01-cpu-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  real-cpu-inference:
+    name: Execute immutable Qwen3-4B GGUF on GitHub Ubuntu CPU (not Be.FM)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 28
+    env:
+      GGUF_SHA256: "2fde00ce69dd4899c70d020845e2638353015bba0fdf161b3eb965f2bca4464e"
+      GGUF_SIZE: "2497280736"
+      ARCHIVE_SHA256: "d9be8922022f26524efe5af7449b50414f0fc781e9b740042e4af7e50e511525"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify software report contract before weights
+        working-directory: products/manager/experiments/cloud
+        run: python -m unittest -v test_qwen3_cpu_first_inference.py
+
+      - name: Obtain immutable upstream llama.cpp binary and verify exact SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/manager-bfm01/bin"
+          curl --fail --show-error --location --retry 3 --retry-delay 5             --max-time 240             "https://github.com/ggml-org/llama.cpp/releases/download/b12137/llama-b12137-bin-ubuntu-x64.tar.gz"             -o "$RUNNER_TEMP/manager-bfm01/llama.tar.gz"
+          echo "$ARCHIVE_SHA256  $RUNNER_TEMP/manager-bfm01/llama.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/manager-bfm01/llama.tar.gz"             -C "$RUNNER_TEMP/manager-bfm01/bin"
+          CLI="$(find "$RUNNER_TEMP/manager-bfm01/bin" -type f -name 'llama-cli' | head -n 1)"
+          test -n "$CLI"
+          chmod +x "$CLI"
+          printf '%s\n' "$CLI" > "$RUNNER_TEMP/manager-bfm01/cli_path.txt"
+          echo "Pinned llama.cpp CLI found; immutable source archive SHA256 verified"
+
+      - name: Download public quantized 4B base weights (not gated Be.FM LoRA)
+        shell: bash
+        run: |
+          set -euo pipefail
+          MODEL="$RUNNER_TEMP/manager-bfm01/qwen3.gguf"
+          curl --fail --show-error --location --retry 3 --retry-delay 5             --max-time 750             "https://huggingface.co/bartowski/Qwen_Qwen3-4B-Instruct-2507-GGUF/resolve/ae44f08e1392f39c0e474af10c3ff8355c8b6688/Qwen_Qwen3-4B-Instruct-2507-Q4_K_M.gguf"             -o "$MODEL"
+          echo "$GGUF_SHA256  $MODEL" | sha256sum --check
+          test "$(stat -c%s "$MODEL")" = "$GGUF_SIZE"
+          test "$(head -c4 "$MODEL" | od -An -tx1 | tr -d ' \n')" = "47475546"
+          echo "Actual 4-bit GGUF weights downloaded and integrity verified"
+
+      - name: REAL forward pass on CPU; 10-token fictional game example
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$(cat "$RUNNER_TEMP/manager-bfm01/cli_path.txt")"
+          export LD_LIBRARY_PATH="$(dirname "$CLI"):$RUNNER_TEMP/manager-bfm01/bin/lib:${LD_LIBRARY_PATH:-}"
+          PROMPT='<|im_start|>user
+          In a fictional one-round anonymous dictator game, you receive ten tokens and can transfer any integer from 0 to 10 to another player. What number of tokens do you transfer? Answer only the integer.
+          <|im_end|>
+          <|im_start|>assistant'
+          START=$(date +%s)
+          timeout 600s "$CLI"             -m "$RUNNER_TEMP/manager-bfm01/qwen3.gguf"             -p "$PROMPT" -n 32 -c 1024 -t 4 --temp 0             > "$RUNNER_TEMP/manager-bfm01/stdout.txt" 2>&1
+          END=$(date +%s)
+          DUR=$((END-START))
+          echo "Actual model executed; wall clock seconds: $DUR"
+          test -s "$RUNNER_TEMP/manager-bfm01/stdout.txt"
+          mkdir -p artifacts
+          python products/manager/experiments/cloud/qwen3_cpu_first_inference.py             --stdout "$RUNNER_TEMP/manager-bfm01/stdout.txt"             --duration "$DUR"             --model-sha256 "$GGUF_SHA256"             --output artifacts/bfm01-qwen3-4b-cpu-actual.json
+          echo "Real CPU inference verified; Be.FM adapter NOT run; no human benchmark score"
+
+      - name: Save immutable nonpersonal model-execution receipt
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: manager-bfm01-qwen3-4b-real-cpu-inference
+          path: artifacts/bfm01-qwen3-4b-cpu-actual.json
+          retention-days: 30

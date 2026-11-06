@@ -353,9 +353,12 @@ def _traffic_merge(visits_items: Any, sales_items: Any) -> list[dict] | None:
             sname = str(row.get("sourceName") or stype)
             entry = merged.setdefault((stype, sname), {
                 "source_type": stype, "source_name": sname,
-                "views": 0, "unique_visitors": 0, "trial_orders": 0, "paid_orders": 0,
+                "page_views": 0, "detail_views": 0, "views": 0,
+                "unique_visitors": 0, "trial_orders": 0, "paid_orders": 0,
                 "sales_usd": Decimal("0"),
             })
+            entry["page_views"] += int(row.get("pageViewCount") or 0)
+            entry["detail_views"] += int(row.get("detailViewCount") or 0)
             entry["views"] += int(row.get("pageViewCount") or 0) + int(row.get("detailViewCount") or 0)
             entry["unique_visitors"] += int(row.get("uniqueVisitorCount") or 0)
         for row in sales_items:
@@ -365,7 +368,8 @@ def _traffic_merge(visits_items: Any, sales_items: Any) -> list[dict] | None:
             sname = str(row.get("campaignName") or row.get("source") or stype)
             entry = merged.setdefault((stype, sname), {
                 "source_type": stype, "source_name": sname,
-                "views": 0, "unique_visitors": 0, "trial_orders": 0, "paid_orders": 0,
+                "page_views": 0, "detail_views": 0, "views": 0,
+                "unique_visitors": 0, "trial_orders": 0, "paid_orders": 0,
                 "sales_usd": Decimal("0"),
             })
             entry["trial_orders"] += int(row.get("freeTrialCount") or 0)
@@ -385,7 +389,8 @@ def _traffic_window(web_token: str, start_ms: int, end_ms: int, agent_id: str | 
     metadata = _traffic_window_metadata(start_ms, end_ms, agent_id, observed_at)
     empty = {**metadata, "status": "unknown", "source_status": {"visits": "unknown", "sales": "unknown"},
              "source_hashes": {"visits": None, "sales": None}, "by_source": [], "totals": {
-                 "views": None, "unique_visitors": None, "trial_orders": None,
+                 "page_views": None, "detail_views": None, "views": None,
+                 "unique_visitors": None, "trial_orders": None,
                  "paid_orders": None, "sales_usd": None}}
     if not web_token:
         return {**empty, "status": "unknown_web_token_unavailable",
@@ -415,6 +420,8 @@ def _traffic_window(web_token: str, start_ms: int, end_ms: int, agent_id: str | 
                 "source_status": source_status, "source_hashes": source_hashes}
     try:
         totals = {
+            "page_views": sum(row["page_views"] for row in by_source),
+            "detail_views": sum(row["detail_views"] for row in by_source),
             "views": sum(row["views"] for row in by_source),
             "unique_visitors": sum(row["unique_visitors"] for row in by_source),
             "trial_orders": sum(row["trial_orders"] for row in by_source),

@@ -1,0 +1,62 @@
+{
+  "run_id": "d26c0c5310218fcdf4ec750a",
+  "owner_id": "home-codex-d26c0c",
+  "occurrence_id": "manager-phase06:41548925146",
+  "release_sha": "7b7e90ef2f18c9e36ea42757106c0738713b5355",
+  "phase": "source_verified_ci_pending",
+  "command": "gh run view 41548925146 --log-failed",
+  "exit_code": 0,
+  "effect": "read_only_provider_audit_and_source_change",
+  "readback": {
+    "failed_run": "https://github.com/Daisuke134/life-manager/actions/runs/41548925146",
+    "verify": "failure",
+    "publisher": "skipped",
+    "python_tests": 202,
+    "failure": "Playwright 1.56.1 does not support chromium on ubuntu26.04-x64",
+    "previous_success_run": "https://github.com/Daisuke134/life-manager/actions/runs/41363246265",
+    "previous_success_image": "ubuntu-24.04",
+    "upstream": "https://github.com/microsoft/playwright/blob/v1.56.1/packages/playwright-core/src/server/registry/nativeDeps.ts#L457"
+  },
+  "provider_receipt_id": null,
+  "error_class": "runner_browser_dependency_incompatibility",
+  "retryable": false,
+  "loaded_argv_env": {
+    "workflow": ".github/workflows/manager-phase06-service.yml",
+    "changed_jobs": [
+      "verify",
+      "publish-owned-prefix"
+    ],
+    "runner_before": "ubuntu-latest",
+    "runner_after": "ubuntu-24.04",
+    "dependency_changes": 0
+  },
+  "verification": {
+    "focused_command": "cd products/manager && PYTHONPATH=.:tests python3 -B -m unittest test_owned_workflow_contract test_phase06_release_guard -q",
+    "focused_tests": 12,
+    "focused_result": "PASS",
+    "boundaries": "PASS",
+    "source_boundary": "PASS",
+    "diff_check": "PASS"
+  },
+  "reproduce": [
+    "gh run view 41548925146 --json jobs",
+    "gh run view 41548925146 --log-failed",
+    "gh run view 41363246265 --log"
+  ],
+  "evidence_refs": [
+    "docs/superpowers/specs/2026-09-25-life-manager-unified-ssot.md",
+    "docs/team/BOARD.md"
+  ],
+  "ownership": {
+    "parent_root_pr": 9125,
+    "parent_root_pr_mutations": 0,
+    "other_active_owners_preserved": true
+  },
+  "limitations": [
+    "YC receipt unknown; deadline lane retained",
+    "No manual run-once, dispatch, publish, auth or checkpoint mutation",
+    "No E16 positive canary or human outcome acceptance",
+    "Natural main schedule after merge remains to observe"
+  ],
+  "next_action": "PR exact-head required CI -> main -> existing natural schedule official summary; no blind replay"
+}

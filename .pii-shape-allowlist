@@ -33,3 +33,7 @@ b28848f476d60554183fb2f8e7d26b42563225848ac04336aefa64e492e7102e # jp_e164 apps/
 e783d15b8cb7261441830fea4b3c6a4756bfcbbaad255f56b50070842dba2ea2 # jp_e164 apps/life-manager/lib/ask-imessage.test.js
 e9ba21b4ff441b56593afc08a80c111aa57fa3764d9305a6522380f711e6e749 # jp_e164 apps/life-manager/test/scheduler.test.js
 f070efc3b51a67f18cf7ef4b9b0cb69e9679377aa15e89b35aec849148d4093a # jp_e164 apps/life-manager/lib/message-links.test.js
+
+# BusinessRun: exact false positives inside public SHA256 of synthetic null-policy result; not phone data.
+73eb327e058e60eab9c3a4c1b4dfea680ac11ceda878320ea4f9bda108fca285
+ce3d75d209c605ae4a3f2df0ffa8b376f11a4cd01f4f971909e130052ad69569

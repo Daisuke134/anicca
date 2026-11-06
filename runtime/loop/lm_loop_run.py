@@ -52,6 +52,8 @@ from runtime.host.resource_admission import (
     durable_protocol_version,
     enqueue_durable as enqueue_durable_resource,
     heartbeat_durable as heartbeat_durable_resource,
+    owner_deploy_lock,
+    suspend_durable as suspend_durable_resource,
     process_start,
     release as release_resource,
     release_and_reserve as release_and_reserve_resource,
@@ -1091,7 +1093,8 @@ def _verified_effect_result(path: Path, loop_id: str,
 
 
 def _effect_result_hint_allowed(loop_id: str, entrypoint: str | None) -> bool:
-    return (entrypoint in EFFECT_RESULT_HINT_ENTRYPOINTS
+    return ((loop_id in {"team-hq-work", "team-hq-receive"} and entrypoint == "bin/team-hq.py")
+            or entrypoint in EFFECT_RESULT_HINT_ENTRYPOINTS
             or (entrypoint == "skills/alpaca-investment/run.py"
                 and loop_id in {"alpaca-investment-paper", "alpaca-investment-live"})
             or EFFECT_RESULT_HINT_LOOP_ENTRYPOINTS.get(loop_id) == entrypoint
@@ -1162,9 +1165,63 @@ def _verified_no_effect_result(path: Path, loop_id: str, occurrence_id: str,
     return "not_applicable", f"lm-no-effect://{loop_id}/{occurrence_id}/{value['reason']}"
 
 
+def _verified_team_hq_result(value: object, loop_id: str, occurrence_id: str,
+                             entrypoint: str | None) -> tuple[str, str] | None:
+    """Accept only the HQ driver's exact Slack readback or explicit idle result."""
+    fields = {"schema_version", "kind", "owner_id", "occurrence_id", "status",
+              "channel_id", "message_ts", "task_id"}
+    if (loop_id != "team-hq-work" or entrypoint != "bin/team-hq.py"
+            or not isinstance(value, dict) or set(value) != fields
+            or type(value.get("schema_version")) is not int or value["schema_version"] != 1
+            or value.get("kind") != "team_hq_result"
+            or value.get("owner_id") != loop_id
+            or value.get("occurrence_id") != occurrence_id
+            or not isinstance(value.get("channel_id"), str)
+            or not re.fullmatch(r"[CG][A-Z0-9]{8,20}", value["channel_id"])):
+        return None
+    if value.get("status") == "no_effect":
+        if value.get("message_ts") is not None or value.get("task_id") is not None:
+            return None
+        return "not_applicable", f"lm-no-effect://{loop_id}/{occurrence_id}/no_hq_task"
+    if (value.get("status") != "verified"
+            or not isinstance(value.get("task_id"), str) or not value["task_id"]
+            or not isinstance(value.get("message_ts"), str)
+            or not re.fullmatch(r"[0-9]{10,}\.[0-9]{6}", value["message_ts"])):
+        return None
+    return ("verified", f"slack://channels/{value['channel_id']}/messages/{value['message_ts']}")
+
+
+def _verified_team_hq_reason_result(value: object, loop_id: str, occurrence_id: str,
+                                    entrypoint: str | None) -> tuple[str, ...] | None:
+    """Native durable send receipts prove acceptance, not remote agent execution."""
+    fields = {"schema_version", "kind", "owner_id", "occurrence_id", "status", "message_ids"}
+    if (loop_id != "team-hq-receive" or entrypoint != "bin/team-hq.py"
+            or not isinstance(value, dict) or set(value) != fields
+            or type(value.get("schema_version")) is not int or value["schema_version"] != 1
+            or value.get("kind") != "team_hq_reason_receive_result"
+            or value.get("owner_id") != loop_id or value.get("occurrence_id") != occurrence_id):
+        return None
+    ids = value.get("message_ids")
+    if (not isinstance(ids, list) or len(ids) > 100 or any(
+            not isinstance(mid, str) or not re.fullmatch(r"[A-Za-z0-9_-]{16,128}", mid) for mid in ids)
+            or len(set(ids)) != len(ids)):
+        return None
+    if value.get("status") == "no_effect" and not ids:
+        return "not_applicable", f"lm-no-effect://{loop_id}/{occurrence_id}/no_reason_reply"
+    if value.get("status") == "verified" and ids:
+        return ("verified", *("reason://messages/" + mid for mid in ids))
+    return None
+
+
 def _verified_terminal_effect_result(
         path: Path, loop_id: str, occurrence_id: str,
         entrypoint: str | None) -> tuple[str, ...] | None:
+    if loop_id == "team-hq-receive" and entrypoint == "bin/team-hq.py":
+        return _verified_team_hq_reason_result(
+            _read_private_result_hint(path), loop_id, occurrence_id, entrypoint)
+    if loop_id == "team-hq-work" and entrypoint == "bin/team-hq.py":
+        return _verified_team_hq_result(
+            _read_private_result_hint(path), loop_id, occurrence_id, entrypoint)
     if not _effect_result_hint_allowed(loop_id, entrypoint):
         return None
     if _no_effect_result_hint_allowed(loop_id, entrypoint):
@@ -1221,7 +1278,7 @@ def _apply_verified_effect_result(
         else:
             updated["effect_status"] = result[0]
             provider = result[1].partition("://")[0]
-            if provider in {"postiz", "telegram", "writer"}:
+            if provider in {"postiz", "telegram", "writer", "slack"}:
                 updated["provider"] = provider
             receipt_id = result[1].rsplit("/", 1)[-1]
             if "provider_receipt_id" in updated:
@@ -1606,6 +1663,40 @@ def _dispatch_reserved(loop_ids: list[str], *, current: Path | None = None,
         plist = installed / f"{label}.plist"
         try:
             arguments = plistlib.loads(plist.read_bytes()).get("ProgramArguments")
+        except FileNotFoundError:
+            suspended = False
+            try:
+                with owner_deploy_lock(loop_id) as acquired:
+                    if not acquired:
+                        continue
+                    try:
+                        plist.lstat()
+                    except FileNotFoundError:
+                        service = f"gui/{os.getuid()}/{label}"
+                        observed = subprocess.run(
+                            [str(safe), "print", service], capture_output=True, text=True,
+                            check=False, timeout=10)
+                        if (observed.returncode == 113
+                                and re.search(r"(?i)could not find service", observed.stderr)):
+                            suspended = suspend_durable_resource(
+                                loop_id, only_if_unclaimed=True)
+                            if not suspended:
+                                suspended = suspend_durable_resource(
+                                    loop_id, only_if_unloaded_occurrence=True)
+                        elif not (observed.returncode == 0 and (
+                                re.search(r"\bstate\s*=\s*running\b", observed.stdout)
+                                or re.search(r"\bpid\s*=\s*[1-9][0-9]*\b", observed.stdout))):
+                            defer(loop_id)
+                    else:
+                        defer(loop_id)
+            except (OSError, RuntimeError, sqlite3.Error, subprocess.TimeoutExpired):
+                defer(loop_id)
+            if suspended:
+                try:
+                    pending.extend(reserve_available_resource())
+                except (OSError, RuntimeError, sqlite3.Error):
+                    pass
+            continue
         except (OSError, ValueError, plistlib.InvalidFileException):
             defer(loop_id)
             continue
@@ -1895,15 +1986,33 @@ def _run_admitted(command: list[str], entry: dict, loop_id: str, env: dict[str, 
             _atomic_json(receipt, {"status": "deferred", "effect": 0,
                                   "reason": "resource_admission_unavailable"})
             return 75
-        if claim is None:
-            _atomic_json(receipt, {"status": "deferred", "effect": 0,
-                                  "reason": f"resource_{admission_reason}"})
-            if durable and not interrupted:
+        if claim is None and durable and not interrupted:
+            try:
+                reserved = reserve_available_resource()
+            except (OSError, RuntimeError, sqlite3.Error) as error:
+                print(f"lm-loop-run: reservation dispatch deferred: {error}",
+                      file=sys.stderr)
+            else:
+                # A self-kick is skipped while this controller runs; its lease
+                # can expire before the next tick, so consume it in this wake.
+                if loop_id in reserved:
+                    try:
+                        claim, admission_reason = _admission_with_retry(
+                            lambda: claim_durable_resource(
+                                resource_class, loop_id, **claim_kwargs),
+                            cancelled=lambda: interrupted,
+                        )
+                    except (OSError, RuntimeError, sqlite3.Error):
+                        admission_reason = "admission_unavailable"
                 try:
-                    _dispatch_reserved(reserve_available_resource())
+                    _dispatch_reserved([owner for owner in reserved if owner != loop_id])
                 except (OSError, RuntimeError, sqlite3.Error) as error:
                     print(f"lm-loop-run: reservation dispatch deferred: {error}",
                           file=sys.stderr)
+        if claim is None:
+            _atomic_json(receipt, {"status": "deferred", "effect": 0,
+                                  "reason": ("resource_admission_interrupted" if interrupted
+                                             else f"resource_{admission_reason}")})
             return 75
         claimed_occurrence_id = occurrence_id
         if durable and occurrence_id is not None:

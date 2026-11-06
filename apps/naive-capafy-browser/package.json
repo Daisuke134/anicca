@@ -1,0 +1,16 @@
+{
+  "name": "naive-capafy-browser",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node src/node.mjs",
+    "test": "node --test test/server.test.mjs"
+  },
+  "dependencies": {
+    "@usenaive-sdk/vetta": "0.10.0"
+  }
+}

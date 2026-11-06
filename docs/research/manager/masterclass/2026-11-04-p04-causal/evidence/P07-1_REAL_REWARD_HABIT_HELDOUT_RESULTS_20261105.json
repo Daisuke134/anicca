@@ -1,0 +1,737 @@
+{
+  "study": "P07-1: observed human reward and habit prediction on original Collins WMH task",
+  "date": "2026-11-05",
+  "license_and_source": "AnneCollins/WMH MIT; original cited studies",
+  "authors_code_commit": "f2d4108dea80642e7d5b95d1c108916091a221c8",
+  "actual_experimental_datasets": {
+    "Expe1.mat": {
+      "meta": {
+        "source": "Expe1.mat",
+        "sha256": "6af5270e2c57666984464cf882b34dbe6be39debdedb6995b048c617fb1188aa",
+        "real_trials_original": 53573,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 53573,
+        "trials_eligible": 52911,
+        "excluded_invalid_choice_reward_rt_or_stim": 662,
+        "participant_count": 79,
+        "block_count": 1422,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    },
+    "Expe3.mat": {
+      "meta": {
+        "source": "Expe3.mat",
+        "sha256": "5a7426dfaa9167895ae6dde5362feb9070197cedc9ce6ac7fa6b3ceae613751c",
+        "real_trials_original": 30403,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 30403,
+        "trials_eligible": 28720,
+        "excluded_invalid_choice_reward_rt_or_stim": 1683,
+        "participant_count": 40,
+        "block_count": 760,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    },
+    "Expe5.mat": {
+      "meta": {
+        "source": "Expe5.mat",
+        "sha256": "ab4a400d1567e065e14feda54245a2aaea64c0d91207f6e67a605097779da8da",
+        "real_trials_original": 19656,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 19656,
+        "trials_eligible": 18200,
+        "excluded_invalid_choice_reward_rt_or_stim": 1456,
+        "participant_count": 26,
+        "block_count": 390,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    },
+    "Expe12.mat": {
+      "meta": {
+        "source": "Expe12.mat",
+        "sha256": "2a939eb623252bd3fd7810204939892dbb555c4c72342b4c0cf7dca6497a7a0e",
+        "real_trials_original": 140124,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 140124,
+        "trials_eligible": 139990,
+        "excluded_invalid_choice_reward_rt_or_stim": 134,
+        "participant_count": 300,
+        "block_count": 3000,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    },
+    "Expe14.mat": {
+      "meta": {
+        "source": "Expe14.mat",
+        "sha256": "30449a404240174c9fbfb086d48c96fab7c7c4e99814b507e4c50f59b63f3204",
+        "real_trials_original": 30540,
+        "origin": "Anne Collins, WMH, MIT source code and trial-level research data",
+        "license": "MIT repository; original experimental studies must also be cited",
+        "trial_original_columns": [
+          "subno",
+          "block",
+          "ns",
+          "stimseq",
+          "choice",
+          "rew",
+          "rt"
+        ],
+        "forbidden_current_choice_target_columns": [
+          "corAseq",
+          "cor",
+          "pcor",
+          "delay"
+        ]
+      },
+      "qc": {
+        "trials_raw": 30540,
+        "trials_eligible": 29782,
+        "excluded_invalid_choice_reward_rt_or_stim": 758,
+        "participant_count": 35,
+        "block_count": 490,
+        "n_choices": 3,
+        "feature_names": [
+          "reward_prediction",
+          "outcome_independent_habit",
+          "previous_same_stimulus_choice",
+          "recent_reward_memory"
+        ],
+        "future_correct_answer_field_used_as_feature": false,
+        "current_reward_leaks_into_current_prediction": false,
+        "all_history_reset_by_subject_and_block": true
+      }
+    }
+  },
+  "feature_construction": "exact historical lagged reward, non-reward choice trace, last choice, and recent WM",
+  "supplementary_OOD_datasets_Expe12_and_Expe14_added_after_first_three_dataset_run": true,
+  "original_matlab_full_model_reexecuted": false,
+  "used_scipy_sklearn_numerical_libraries": true,
+  "training_split": {
+    "train": {
+      "n_trials": 31296,
+      "n_subjects": 47,
+      "subject_ids_sha256": "d79f5a2a15113730663c5594231ed5b371dc585bbf230a01a46e76158c401787"
+    },
+    "validation": {
+      "n_trials": 11154,
+      "n_subjects": 16,
+      "subject_ids_sha256": "8fc28c47973232bec8e0a6e1d03b983cd329057b167c17dc723da490e56f795f"
+    },
+    "test": {
+      "n_trials": 10461,
+      "n_subjects": 16,
+      "subject_ids_sha256": "47697b31cb67de69e6eb0994234af82223c1fe72b6df8caeef4bc2265f95d370"
+    }
+  },
+  "frozen_validation_selection": "reward_plus_habit_plus_memory",
+  "best_simple_validation_selection": "reward_only",
+  "models_fit": {
+    "uniform": {
+      "coef": [],
+      "converged": true,
+      "iterations": 0
+    },
+    "reward_only": {
+      "coef": [
+        5.055914356231146
+      ],
+      "converged": true,
+      "iterations": 6,
+      "solver": "scipy.optimize.minimize L-BFGS-B",
+      "hyperparameters_fixed_before_holdout": true
+    },
+    "habit_only": {
+      "coef": [
+        4.380295579540676,
+        1.4276993210627438
+      ],
+      "converged": true,
+      "iterations": 10,
+      "solver": "scipy.optimize.minimize L-BFGS-B",
+      "hyperparameters_fixed_before_holdout": true
+    },
+    "reward_plus_habit": {
+      "coef": [
+        4.194812734067017,
+        1.0609159947431037,
+        0.5748753099963098
+      ],
+      "converged": true,
+      "iterations": 13,
+      "solver": "scipy.optimize.minimize L-BFGS-B",
+      "hyperparameters_fixed_before_holdout": true
+    },
+    "reward_plus_habit_plus_memory": {
+      "coef": [
+        3.1646992042748843,
+        0.648332161337539,
+        0.2689443789511039,
+        2.6590673900583037
+      ],
+      "converged": true,
+      "iterations": 16,
+      "solver": "scipy.optimize.minimize L-BFGS-B",
+      "hyperparameters_fixed_before_holdout": true
+    }
+  },
+  "validation_scores": {
+    "uniform": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 1.0986122886681098,
+      "accuracy": 0.3126232741617357,
+      "multiclass_brier": 0.6666666666666669
+    },
+    "reward_only": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 0.5844321617832214,
+      "accuracy": 0.7609826071364533,
+      "multiclass_brier": 0.3090785097427878
+    },
+    "habit_only": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 0.7072775980774179,
+      "accuracy": 0.7073695535233997,
+      "multiclass_brier": 0.3959857349031519
+    },
+    "reward_plus_habit": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 0.5604033110723394,
+      "accuracy": 0.7385691231845078,
+      "multiclass_brier": 0.3025530014326046
+    },
+    "reward_plus_habit_plus_memory": {
+      "n_real_trials": 11154,
+      "log_loss_nats_per_trial": 0.5420039305777866,
+      "accuracy": 0.7609826071364533,
+      "multiclass_brier": 0.2945682486086822
+    }
+  },
+  "heldout_and_external_generalization": {
+    "Expe1.mat": {
+      "evaluation": "participant-disjoint held-out",
+      "real_trials": 10461,
+      "unique_people": 16,
+      "mean_true_choices_by_action": [
+        0.33916451582066726,
+        0.33725265271006594,
+        0.3235828314692668
+      ],
+      "all_model_scores": {
+        "uniform": {
+          "n_real_trials": 10461,
+          "log_loss_nats_per_trial": 1.0986122886681098,
+          "accuracy": 0.33916451582066726,
+          "multiclass_brier": 0.6666666666666669
+        },
+        "reward_only": {
+          "n_real_trials": 10461,
+          "log_loss_nats_per_trial": 0.5107532424520466,
+          "accuracy": 0.8128286014721346,
+          "multiclass_brier": 0.26888153120616093
+        },
+        "habit_only": {
+          "n_real_trials": 10461,
+          "log_loss_nats_per_trial": 0.6873816250817619,
+          "accuracy": 0.728324251983558,
+          "multiclass_brier": 0.38127912721434615
+        },
+        "reward_plus_habit": {
+          "n_real_trials": 10461,
+          "log_loss_nats_per_trial": 0.5041461617523062,
+          "accuracy": 0.7673262594398241,
+          "multiclass_brier": 0.2693066588781726
+        },
+        "reward_plus_habit_plus_memory": {
+          "n_real_trials": 10461,
+          "log_loss_nats_per_trial": 0.4865617645589423,
+          "accuracy": 0.8128286014721346,
+          "multiclass_brier": 0.26118945477438044
+        }
+      },
+      "selected_model_gain_vs_uniform": {
+        "mean_nll_improvement_nats_per_trial": 0.6120505241091675,
+        "cluster_bootstrap_CI95": [
+          0.5687482579730317,
+          0.6540652940711098
+        ],
+        "participants_as_resampling_unit": 16,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_simple_baseline": {
+        "mean_nll_improvement_nats_per_trial": 0.024191477893104323,
+        "cluster_bootstrap_CI95": [
+          0.01939949608600835,
+          0.0284561491005301
+        ],
+        "participants_as_resampling_unit": 16,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_reward_plus_habit_without_recent_memory": {
+        "mean_nll_improvement_nats_per_trial": 0.017584397193363955,
+        "cluster_bootstrap_CI95": [
+          0.014174254034375099,
+          0.020773037432675705
+        ],
+        "participants_as_resampling_unit": 16,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "no_individual_rows_or_subject_parameters_exported": true
+    },
+    "Expe3.mat": {
+      "evaluation": "independent external study; no tuning",
+      "real_trials": 28720,
+      "unique_people": 40,
+      "mean_true_choices_by_action": [
+        0.32486072423398327,
+        0.34032033426183844,
+        0.3348189415041783
+      ],
+      "all_model_scores": {
+        "uniform": {
+          "n_real_trials": 28720,
+          "log_loss_nats_per_trial": 1.0986122886681096,
+          "accuracy": 0.32486072423398327,
+          "multiclass_brier": 0.6666666666666667
+        },
+        "reward_only": {
+          "n_real_trials": 28720,
+          "log_loss_nats_per_trial": 0.5442735513984958,
+          "accuracy": 0.7911211699164346,
+          "multiclass_brier": 0.2852748263548199
+        },
+        "habit_only": {
+          "n_real_trials": 28720,
+          "log_loss_nats_per_trial": 0.7013091256774351,
+          "accuracy": 0.7184192200557104,
+          "multiclass_brier": 0.39130567643447794
+        },
+        "reward_plus_habit": {
+          "n_real_trials": 28720,
+          "log_loss_nats_per_trial": 0.534232915330572,
+          "accuracy": 0.758983286908078,
+          "multiclass_brier": 0.28464314267093727
+        },
+        "reward_plus_habit_plus_memory": {
+          "n_real_trials": 28720,
+          "log_loss_nats_per_trial": 0.5192344908606737,
+          "accuracy": 0.7911211699164346,
+          "multiclass_brier": 0.27684547096221884
+        }
+      },
+      "selected_model_gain_vs_uniform": {
+        "mean_nll_improvement_nats_per_trial": 0.5793777978074359,
+        "cluster_bootstrap_CI95": [
+          0.5355383592198141,
+          0.6149671998235302
+        ],
+        "participants_as_resampling_unit": 40,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_simple_baseline": {
+        "mean_nll_improvement_nats_per_trial": 0.025039060537821917,
+        "cluster_bootstrap_CI95": [
+          0.01924376753511959,
+          0.031214983010955356
+        ],
+        "participants_as_resampling_unit": 40,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_reward_plus_habit_without_recent_memory": {
+        "mean_nll_improvement_nats_per_trial": 0.014998424469898172,
+        "cluster_bootstrap_CI95": [
+          0.012747731536784131,
+          0.01703455058449171
+        ],
+        "participants_as_resampling_unit": 40,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "no_individual_rows_or_subject_parameters_exported": true
+    },
+    "Expe5.mat": {
+      "evaluation": "independent external study; no tuning",
+      "real_trials": 18200,
+      "unique_people": 26,
+      "mean_true_choices_by_action": [
+        0.35631868131868133,
+        0.33197802197802195,
+        0.3117032967032967
+      ],
+      "all_model_scores": {
+        "uniform": {
+          "n_real_trials": 18200,
+          "log_loss_nats_per_trial": 1.09861228866811,
+          "accuracy": 0.35631868131868133,
+          "multiclass_brier": 0.6666666666666669
+        },
+        "reward_only": {
+          "n_real_trials": 18200,
+          "log_loss_nats_per_trial": 0.43173879946298965,
+          "accuracy": 0.8670329670329671,
+          "multiclass_brier": 0.22004915078811488
+        },
+        "habit_only": {
+          "n_real_trials": 18200,
+          "log_loss_nats_per_trial": 0.5935579464087385,
+          "accuracy": 0.7995604395604395,
+          "multiclass_brier": 0.31803778686869794
+        },
+        "reward_plus_habit": {
+          "n_real_trials": 18200,
+          "log_loss_nats_per_trial": 0.4247723530255029,
+          "accuracy": 0.8351098901098901,
+          "multiclass_brier": 0.21959824992516877
+        },
+        "reward_plus_habit_plus_memory": {
+          "n_real_trials": 18200,
+          "log_loss_nats_per_trial": 0.41833208812569245,
+          "accuracy": 0.8670329670329671,
+          "multiclass_brier": 0.21528866978073943
+        }
+      },
+      "selected_model_gain_vs_uniform": {
+        "mean_nll_improvement_nats_per_trial": 0.6802802005424173,
+        "cluster_bootstrap_CI95": [
+          0.633867829089613,
+          0.7205413111411358
+        ],
+        "participants_as_resampling_unit": 26,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_simple_baseline": {
+        "mean_nll_improvement_nats_per_trial": 0.013406711337297221,
+        "cluster_bootstrap_CI95": [
+          0.009025714698292763,
+          0.018097876126920376
+        ],
+        "participants_as_resampling_unit": 26,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_reward_plus_habit_without_recent_memory": {
+        "mean_nll_improvement_nats_per_trial": 0.006440264899810439,
+        "cluster_bootstrap_CI95": [
+          0.0037463641013252245,
+          0.008648017343938039
+        ],
+        "participants_as_resampling_unit": 26,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "no_individual_rows_or_subject_parameters_exported": true
+    },
+    "Expe12.mat": {
+      "evaluation": "independent external study; no tuning",
+      "real_trials": 139990,
+      "unique_people": 300,
+      "mean_true_choices_by_action": [
+        0.3249660690049289,
+        0.33738838488463463,
+        0.33764554611043646
+      ],
+      "all_model_scores": {
+        "uniform": {
+          "n_real_trials": 139990,
+          "log_loss_nats_per_trial": 1.0986122886681098,
+          "accuracy": 0.3249660690049289,
+          "multiclass_brier": 0.6666666666666669
+        },
+        "reward_only": {
+          "n_real_trials": 139990,
+          "log_loss_nats_per_trial": 0.4843235829904976,
+          "accuracy": 0.8188799199942853,
+          "multiclass_brier": 0.24947846883760671
+        },
+        "habit_only": {
+          "n_real_trials": 139990,
+          "log_loss_nats_per_trial": 0.6248162831730747,
+          "accuracy": 0.7570255018215587,
+          "multiclass_brier": 0.34114497912463027
+        },
+        "reward_plus_habit": {
+          "n_real_trials": 139990,
+          "log_loss_nats_per_trial": 0.47322488977804605,
+          "accuracy": 0.7975069647831988,
+          "multiclass_brier": 0.24784406016050298
+        },
+        "reward_plus_habit_plus_memory": {
+          "n_real_trials": 139990,
+          "log_loss_nats_per_trial": 0.46643185663637243,
+          "accuracy": 0.8188799199942853,
+          "multiclass_brier": 0.24333743992659732
+        }
+      },
+      "selected_model_gain_vs_uniform": {
+        "mean_nll_improvement_nats_per_trial": 0.6321804320317375,
+        "cluster_bootstrap_CI95": [
+          0.6069873931531047,
+          0.6520902131498076
+        ],
+        "participants_as_resampling_unit": 300,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_simple_baseline": {
+        "mean_nll_improvement_nats_per_trial": 0.01789172635412525,
+        "cluster_bootstrap_CI95": [
+          0.01574196727260738,
+          0.019944064433702387
+        ],
+        "participants_as_resampling_unit": 300,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_reward_plus_habit_without_recent_memory": {
+        "mean_nll_improvement_nats_per_trial": 0.0067930331416736775,
+        "cluster_bootstrap_CI95": [
+          0.005566992717395608,
+          0.007856779933092677
+        ],
+        "participants_as_resampling_unit": 300,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "no_individual_rows_or_subject_parameters_exported": true
+    },
+    "Expe14.mat": {
+      "evaluation": "independent external study; no tuning",
+      "real_trials": 29782,
+      "unique_people": 35,
+      "mean_true_choices_by_action": [
+        0.32590155127258075,
+        0.3462494123967497,
+        0.32784903633066953
+      ],
+      "all_model_scores": {
+        "uniform": {
+          "n_real_trials": 29782,
+          "log_loss_nats_per_trial": 1.0986122886681096,
+          "accuracy": 0.32590155127258075,
+          "multiclass_brier": 0.6666666666666667
+        },
+        "reward_only": {
+          "n_real_trials": 29782,
+          "log_loss_nats_per_trial": 0.861428707208413,
+          "accuracy": 0.6424350278691827,
+          "multiclass_brier": 0.479424532436205
+        },
+        "habit_only": {
+          "n_real_trials": 29782,
+          "log_loss_nats_per_trial": 0.8091073126775552,
+          "accuracy": 0.6681888388959775,
+          "multiclass_brier": 0.4655632514634758
+        },
+        "reward_plus_habit": {
+          "n_real_trials": 29782,
+          "log_loss_nats_per_trial": 0.7762181547951711,
+          "accuracy": 0.6601974346920959,
+          "multiclass_brier": 0.43607213762154295
+        },
+        "reward_plus_habit_plus_memory": {
+          "n_real_trials": 29782,
+          "log_loss_nats_per_trial": 0.7758608698956247,
+          "accuracy": 0.6581492176482439,
+          "multiclass_brier": 0.4380838372655967
+        }
+      },
+      "selected_model_gain_vs_uniform": {
+        "mean_nll_improvement_nats_per_trial": 0.32275141877248503,
+        "cluster_bootstrap_CI95": [
+          0.27097759563865514,
+          0.37664761336819397
+        ],
+        "participants_as_resampling_unit": 35,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_simple_baseline": {
+        "mean_nll_improvement_nats_per_trial": 0.08556783731278832,
+        "cluster_bootstrap_CI95": [
+          0.07339484452306899,
+          0.10032790565310097
+        ],
+        "participants_as_resampling_unit": 35,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "selected_model_gain_vs_reward_plus_habit_without_recent_memory": {
+        "mean_nll_improvement_nats_per_trial": 0.00035728489954627794,
+        "cluster_bootstrap_CI95": [
+          -0.004141859972202941,
+          0.005149032148026695
+        ],
+        "participants_as_resampling_unit": 35,
+        "bootstrap_replicates": 600,
+        "units": "log loss nats/trial: positive favors selected model",
+        "uncertainty_is_sampling_conditional_on_historical_task": true
+      },
+      "no_individual_rows_or_subject_parameters_exported": true
+    }
+  },
+  "twitter_real_2026_habit_published_fig4_descriptive_replication": {
+    "source_git_repo": "https://github.com/georgiaturner/rl_twitter",
+    "source_git_commit": "09f418d2c6cb0989cd0c9b47d81d2644401b200d",
+    "source_plot_file": "03-stats_and_visualisation/source_data/data_fig4.csv",
+    "source_SHA256": "3dfb63887a6b7a555edb39b7ddb8adf9133480495d777e6bad15f09ed1c9bce7",
+    "sample": "paper's published confirmation sample fitted parameters",
+    "n_users": 1558,
+    "independent_refit": false,
+    "raw_post_or_user_level_rows_committed": false,
+    "correlations_exploratory_not_precommitted": true,
+    "statistics": {
+      "a_habit_weight": {
+        "spearman_rho": -0.10058198324504222,
+        "p_two_sided_unadjusted": 6.978277524222797e-05,
+        "n": 1558
+      },
+      "b_alpha_action": {
+        "spearman_rho": 0.21945745021937063,
+        "p_two_sided_unadjusted": 1.9114663440039073e-18,
+        "n": 1558
+      },
+      "c_alpha_R": {
+        "spearman_rho": 0.016295775504548027,
+        "p_two_sided_unadjusted": 0.5203894018270969,
+        "n": 1558
+      }
+    }
+  },
+  "fully_real_human_trials": true,
+  "synthetic_human_subjects_added": 0,
+  "feature_contains_future_reward_or_correct_action": false,
+  "real_human_stimulus_or_choice_intervention_executed": false,
+  "reduced_rumination_or_clinical_effect_proven": false,
+  "social_media_habit_link_is_descriptive_not_intervention_effect": true,
+  "task_specific_model_not_general_behavior_FM": true,
+  "real_behavior_training_data_committed": false,
+  "human_subject_data_in_GitHub": false,
+  "elapsed_seconds": 1.32
+}

@@ -1,4 +1,7 @@
 import SwiftUI
+import UIKit
+import UserNotifications
+import OSLog
 import Combine
 import RevenueCat
 import RevenueCatUI
@@ -14,6 +17,7 @@ struct SettingsSheet: View {
     @State private var showSavedQuotes = false
     @State private var showLikedQuotes = false
     @State private var showSignOutConfirmation = false
+    @State private var showPurchasePlans = false
 
     var body: some View {
         List {
@@ -51,6 +55,13 @@ struct SettingsSheet: View {
             }
 
             Section {
+                Button {
+                    showPurchasePlans = true
+                } label: {
+                    Label(String(localized: "settings_subscription_subscribe"), systemImage: "star.circle")
+                }
+                .accessibilityIdentifier("settings-subscribe")
+
                 NavigationLink {
                     RevenueCatUI.CustomerCenterView()
                         .navigationTitle(String(localized: "settings_subscription"))
@@ -75,6 +86,16 @@ struct SettingsSheet: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(String(localized: "common_done")) { dismiss() }
             }
+        }
+        .fullScreenCover(isPresented: $showPurchasePlans) {
+            PaywallFlowContainer(
+                onPurchaseSuccess: { customerInfo in
+                    AppState.shared.updateSubscriptionInfo(from: customerInfo)
+                    showPurchasePlans = false
+                },
+                onDismiss: { showPurchasePlans = false }
+            )
+            .environmentObject(AppState.shared)
         }
         .confirmationDialog(String(localized: "settings_sign_out"), isPresented: $showSignOutConfirmation, titleVisibility: .visible) {
             Button(String(localized: "common_sign_out"), role: .destructive) {
@@ -140,7 +161,7 @@ struct LikedQuotesView: View {
     @EnvironmentObject var likedStore: LikedQuotesStore
 
     var likedQuotes: [Quote] {
-        QuoteProvider.shared.all().filter { likedStore.isLiked($0.id) }
+        likedStore.savedQuotes(in: QuoteProvider.shared.all())
     }
 
     var body: some View {
@@ -173,9 +194,16 @@ struct LikedQuotesView: View {
     }
 }
 
-/// Minimal notifications settings stub — wired to NotificationScheduler.
+/// Shows the actual server schedule and OS permission separately.
 struct NotificationsSettingsView: View {
-    @State private var dailyCount = 4
+    @ObservedObject private var appState = AppState.shared
+    @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var notificationsAllowed = false
+    @State private var isUpdatingPermission = false
+    private let permissionLogger = Logger(subsystem: "com.anicca.ios", category: "NotificationSettings")
+
+    private var slots: [String] { ReminderSchedule.slots(isPro: appState.subscriptionInfo.isEntitled) }
 
     var body: some View {
         Form {
@@ -183,17 +211,46 @@ struct NotificationsSettingsView: View {
                 HStack {
                     Text(String(localized: "notifications_daily_count"))
                     Spacer()
-                    Text("\(dailyCount)")
+                    Text("\(slots.count)")
                         .foregroundStyle(.secondary)
                 }
-                Text(String(localized: "notifications_schedule_label"))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                ForEach(slots, id: \.self) { time in Text(time).monospacedDigit() }
+                Text(TimeZone.current.identifier).font(.footnote).foregroundStyle(.secondary)
+                Text(String(localized: notificationsAllowed ? "growth_notifications_on" : "growth_notifications_off"))
+                    .accessibilityIdentifier("reminder-permission-status")
+                Button(String(localized: "growth_notification_settings")) {
+                    permissionLogger.notice("permission tap busy=\(isUpdatingPermission, privacy: .public)")
+                    guard !isUpdatingPermission else { return }
+                    isUpdatingPermission = true
+                    Task { @MainActor in
+                        defer { isUpdatingPermission = false }
+                        let settings = await UNUserNotificationCenter.current().notificationSettings()
+                        permissionLogger.notice("permission prior status=\(settings.authorizationStatus.rawValue, privacy: .public)")
+                        if settings.authorizationStatus == .notDetermined {
+                            _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
+                            notificationsAllowed = await NotificationScheduler.shared.isAuthorizedForAlerts()
+                            permissionLogger.notice("permission prompt completed alerts=\(notificationsAllowed, privacy: .public)")
+                            AnalyticsManager.shared.track(.notificationPermissionResult, properties: ["source": "settings", "result": notificationsAllowed ? "allowed" : "denied"])
+                            if notificationsAllowed { UIApplication.shared.registerForRemoteNotifications() }
+                            // A permission choice finishes here. Opening Settings is
+                            // a separate, explicit action after permission is settled.
+                            return
+                        }
+                        permissionLogger.notice("permission opening system settings")
+                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    }
+                }
+                .disabled(isUpdatingPermission)
+                .accessibilityIdentifier("reminder-enable-notifications")
             } footer: {
-                Text(String(localized: "notifications_footer"))
+                Text(String(localized: "growth_reminder_explanation"))
             }
         }
         .navigationTitle(String(localized: "settings_notifications"))
         .navigationBarTitleDisplayMode(.inline)
+        .task { notificationsAllowed = await NotificationScheduler.shared.isAuthorizedForAlerts() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active { Task { notificationsAllowed = await NotificationScheduler.shared.isAuthorizedForAlerts() } }
+        }
     }
 }
