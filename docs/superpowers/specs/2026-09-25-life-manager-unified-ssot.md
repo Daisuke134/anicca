@@ -26614,11 +26614,11 @@ P06-3 (Statsmodels power/SciPy A/A false-positive/SRM), P06-4 (synthetic recogni
 | 販売商品 | 自社Agentの運転記録とCloudの設計/入口/sourceはある。外部利用者向けの一般提供→継続課金→顧客の実成果という全経路は未実証 | 一つのLife Manager Cloudを第三者が登録・購入・利用でき、自社も同じ経路で使う |
 | 本番source | `apps/life-manager/server.js`→`maritime-manager-auth.js`、store/runtime/transport、wake/report/usageの接続がある。`transport/maritime-manager.js`はframework=custom/ZIP archiveを要求し、`maritime/run-cycle.js`はCapafy専用cycleを呼ぶ。公式templateへ設定だけで切替可能とは言えず、一般Managerの完走証明でもない | 本番AgentはMaritimeのみ。既存接続/台帳を使い、公式harnessへ業務設定を接続する。自作Agent runtimeは新設しない |
 | 本番provider | 保存済みOpenClaw試験は/data保持・モデル/初期browser操作を確認。再開後browser無効、desktop変更はseat_limit | 契約内の公式経路で必要browserが再開後も動き、Agent-owned identity/stateを保持する |
-| Naïve | 過去の公式API/native browser/owned inbox等の記録は保存済みだが、本日現在のorg/Agent/残高/稼働状態/参加承認はlive再照合していない | 大会専用Agentで本物の業務を有限実行。証拠・費用・人の介入・未達を正確に示す。本番提供成功へ読み替えない |
+| Naïve | 2026-11-06 live確認：Anicca org上の`capafy` Agentはv5・`anthropic/claude-sonnet-5`、月cap $10/task cap $2。default denyを維持し、`browser`のみCapafy allowlist・write許可・`ask_actions=[]`、CAPTCHA解決/stealth無効。Naïve管理identityは`manager@anicca-va700c.usenaive.ai`、third-party connectionsなし。読み取りbrowser sessionでCapafyの公開ページ/ログイン方法を確認し$0.063361を計上。Agent Computer `cmp_01a1b0d7266379dc821767716e289208`はpaused、`browser:null`。登録・Publisher申請・掲載・売上は未実施 | 大会専用Agentで本物の業務を有限実行。証拠・費用・人の介入・未達を正確に示す。本番提供成功へ読み替えない |
 | 公開と課金 | `/lm`等の説明/sourceはある。既存Web billingはTravel/Calendarの契約を含む。Cloud専用entitlement・現行配備・paid invoiceは未照合 | Cloud商品専用の課金と利用権を同じtenantへ結び、支払/停止/取消を正しく反映 |
 | 二大会 | Naïve公式briefは11/7–8、SDK必須、2–4分の実稼働demo、1位にYC interviewを記載。参加承認は未確認で、面接は採択ではない。Maritime termsは12/1 23:59 Pacific、実利用のある1,000 distinct users、最初の3 projectを確認後winner | 本番Maritimeの実利用でMaritime大会を狙い、Naïveの大会専用実稼働でNaïve大会を狙う。受理/参加資格/審査結果は公式receiptで別判定 |
 
-上表のruntime/売上は保存済み観測を含み、現在の停止状態・残高・顧客数を今回再確認したものではない。公開説明の「利用できる」と実運用未検証の差はLC33/LC52で修正・確認する。source testを商用提供の証拠にはしない。
+Naïve欄は2026-11-06のlive readback。ほかのruntime/売上は保存済み観測を含み、現在の停止状態・残高・顧客数を今回再確認したものではない。公開説明の「利用できる」と実運用未検証の差はLC33/LC52で修正・確認する。source testを商用提供の証拠にはしない。
 
 ```mermaid
 flowchart TD
@@ -26771,8 +26771,8 @@ flowchart TD
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
 |---|---|---|---|
 | LC58 | 完了（2026-11-06） / LC01/02 | `Naïve/YC現行公式brief + event application`：参加承認・SDK必須・2〜4分demo条件を確定 | 公式brief確認済み。Daisが参加承認済みと確認したため、追加の承認receipt照合は省略する。1位のYC面接保証は採択保証ではない。賞品欄のTBDと他のprize文言の差は保持し、未公表条件を補完しない |
-| LC59 | 未・並行可 / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | 実org/Agent owner/許可tools/期間cap/task capと本番非接続をGETで確認。勝手なtop-upなし |
-| LC60 | 未 / LC59 + 共通playbook | `NAIVE + 分離した実provider job`：同じ事業価値の一業務をNaïveで実行 | native events/real artifact/receiptを得る。dummy response/本番API丸投げはしない |
+| LC59 | 完了（2026-11-06） / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | live GETでAnicca org・Agent owner・v5・月cap $10/task cap $2・default deny・third-party connectionなしを確認。Capafyだけにbrowserを許可し、writeを有効化、signupのoperator pauseを外し、CAPTCHA解決/stealthは無効。読み取りsession `ses_0htr8d09dnhmtabta1tag57csg`は$0.50 cap内で終了し実費$0.063361。トップアップなし。Agent Computerはidle課金を避けpaused、browserはnull。事業成果・Publisher登録・売上の証拠にはしない |
+| LC60 | 未 / LC59 + 共通playbook | `NAIVE + Capafyの正規Publisher経路`：既存Anicca Publisherを使えるか、初期費用ゼロ・人のcredentialなし・規約適合を先に確定 | 公開loginにはEmail/Google/GitHubがある。現行Publisher Agreementは申請時$0.99非返金、common controlごとに原則1 account、20% fee、月次精算・最低payout $100。既存PublisherへのAgent権限付与と費用適用を確認し、既存account/feeが使えない場合は新規account・支払・account recoveryを行わず、初期費用ゼロで規約適合する販売先へ切替。適格な経路が確認できた後、一件だけ掲載しlive URL/receiptを確認 |
 | LC61 | 未 / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 一般提供の現状・Naïve実績・Maritime本番実績・売上/費用/未達を分ける |
 | LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。1位なら公式brief記載のYC interview対象だが、YC採択や面接後結果は保証しない。月次入金待ちと独立 |
 
@@ -26787,6 +26787,6 @@ flowchart TD
 
 **順序変更・2026-11-06:** 旧cursorはLC04→LC05→LC06を先行し、Naïve/Maritime大会条件を並行確認する順。新cursorはNaïve大会の開催が翌日であることと、公式briefで参加承認制・SDK必須・ライブdemoを確認したため、LC58→LC59→LC60→LC61→LC62を先行し、終了後LC04→LC05→LC06へ戻す。Maritime LC63/LC64は独立並行のまま維持する。同じjobを二providerへ重複送信しない。
 
-**現在cursor:** LC59（Naïve実org上のAgent/Computer/Identity/予算/エラーをlive確認）→LC60（分離した実業務一件）→LC61（2〜4分demo）→LC62（提出receipt）。LC58は公式briefとDaisの参加承認確認で完了、追加receipt照合なし。LC63/LC64は並行可能。Naïve org/残高/実行エラー・Maritime参加状況/Cloud外部signup/決済・第三者売上は未live確認。LC01–03とLC58のみ完了、実装・運用の62項目は未完。優勝・YC採択・外部SaaS売上・利用者の黒字は未達/未確認のまま。
+**現在cursor:** LC60（既存Publisher権限・初期費用ゼロ・規約適合を確認。条件が通らなければ無料販売先へ切替）→LC61（分離した実業務一件の証拠で2〜4分demo）→LC62（提出receipt）。LC58は公式briefとDaisの参加承認確認で完了、追加receipt照合なし。LC59はAnicca org/Agent/config/予算/identity/Capafy公開browserをlive確認済み。Computerはpaused、browser:nullであり、常時VM内browser/永続loginの挙動は未確認。Capafy登録・掲載・売上・Maritime参加状況/Cloud外部signup/決済・第三者売上は未確認。LC01–03、LC58–59完了。未完の実装・運用項目は61。優勝・YC採択・外部SaaS売上・利用者の黒字は未達/未確認のまま。
 
 **一次資料の取得証跡:** `docs/research/cloud-market-20261106/single-runtime-sources.json`。以前の市場比較API証跡は同directoryの`public-readbacks.json`に残すが、本商品の一般提供/顧客課金の成功証拠にはしない。現行の「二本番runtime」TODO/N01–N12/M01–M06はこの66項目へ置換し、並行した別の実行キューにしない。
