@@ -54,11 +54,16 @@ Manager should preregister the primary user-chosen outcome, comparison, follow-u
 
 ### Terms and FAQ
 
-**Outcome:** a measurement following an intervention.  
-**Adverse event:** an unwanted experience; causal attribution requires separate assessment.  
-**Functional impairment:** disruption to everyday life.  
-**ITT:** analysis based on original randomized allocation.  
-**Autonomy:** the person's real ability to decline and revoke support.  
+**Outcome:** a measurement following an intervention.
+
+**Adverse event:** an unwanted experience; causal attribution requires separate assessment.
+
+**Functional impairment:** disruption to everyday life.
+
+**ITT:** analysis based on original randomized allocation.
+
+**Autonomy:** the person's real ability to decline and revoke support.
+
 **Psychometric validity:** evidence that a scale measures its intended construct.
 
 **Q: If WHO-5 improves, has a user attained Buddhist liberation?** No. Self-reported well-being and traditional enlightenment are different constructs.

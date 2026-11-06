@@ -58,17 +58,26 @@ RCTでは最初の割付に基づく分析（ITT）を検討する。本人が�
 
 ## Word list・FAQ
 
-**Primary outcome**：介入前に固定する最も重要な結果。  
-**Well-being**：主観的な精神的健康・活力・満足の側面。  
-**Functional impairment**：仕事や睡眠、家庭など日常生活への支障。  
-**Adverse event**：望ましくない経験。因果関係は別に評価する。  
-**Active monitoring**：害を自発的な苦情だけでなく積極的に聞き取る。  
-**ITT**：介入の配信でなく最初の無作為割付による比較。  
+**Primary outcome**：介入前に固定する最も重要な結果。
+
+**Well-being**：主観的な精神的健康・活力・満足の側面。
+
+**Functional impairment**：仕事や睡眠、家庭など日常生活への支障。
+
+**Adverse event**：望ましくない経験。因果関係は別に評価する。
+
+**Active monitoring**：害を自発的な苦情だけでなく積極的に聞き取る。
+
+**ITT**：介入の配信でなく最初の無作為割付による比較。
+
 **QALY**：健康状態の質で重み付けした生存年。
 
-**Q. WHO-5が改善したら解脱を証明できる？** いいえ。現代のWell-being尺度は伝統的な解脱の認定器ではない。  
-**Q. 瞑想の不快な経験は全部有害事象？** 発生、持続、苦痛、生活機能への支障、本人の判断を区別する。ただし苦痛を「智慧の進歩」として無理に正当化しない。  
-**Q. 今回のソフトは実人間で有効？** いいえ。動作・権限・停止を確認したソフトウェア契約で、効果検証は別。  
+**Q. WHO-5が改善したら解脱を証明できる？** いいえ。現代のWell-being尺度は伝統的な解脱の認定器ではない。
+
+**Q. 瞑想の不快な経験は全部有害事象？** 発生、持続、苦痛、生活機能への支障、本人の判断を区別する。ただし苦痛を「智慧の進歩」として無理に正当化しない。
+
+**Q. 今回のソフトは実人間で有効？** いいえ。動作・権限・停止を確認したソフトウェア契約で、効果検証は別。
+
 **Q. 次の仕事は2つある？** いいえ。講義・製品モデル・評価・発信は[Managerの唯一のロードマップ](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/ROADMAP_STATUS_JA.md)に統合する。
 
 [詳細なP07-6講義](https://github.com/Daisuke134/life-manager/blob/main/docs/research/manager/masterclass/2026-11-04-p04-causal/P07-6_JA.md)

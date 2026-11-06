@@ -30,10 +30,14 @@ It makes **no diagnosis, neurological inference, claim of stream-entry or awaken
 
 ### Terms and FAQ
 
-**Anicca:** the changing nature of conditioned events.  
-**Dukkha:** suffering and unsatisfactoriness in the Buddhist framework, not identical to a modern depression score.  
-**Anattā:** the not-self characteristic of the aggregates.  
-**Vedanā:** hedonic feeling tone.  
+**Anicca:** the changing nature of conditioned events.
+
+**Dukkha:** suffering and unsatisfactoriness in the Buddhist framework, not identical to a modern depression score.
+
+**Anattā:** the not-self characteristic of the aggregates.
+
+**Vedanā:** hedonic feeling tone.
+
 **Neurophenomenology:** empirical pairing of first-person reports with brain recordings.
 
 **Q: Could a model predict a person's avoidance behavior?** Possibly, with legally obtained longitudinal data and a proper held-out evaluation. That is not the same as proving the Buddhist mechanism.
