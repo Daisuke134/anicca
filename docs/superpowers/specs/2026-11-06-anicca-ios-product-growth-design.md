@@ -6,27 +6,36 @@
 
 **順序・TODO・状態の唯一の正本:** [統合SSOTの ANICCA-PRODUCT-GROWTH](2026-09-25-life-manager-unified-ssot.md#anicca-product-growth--ios初回改善から全アプリ継続改善まで)。この文書は詳細な要求・契約、[実装計画](../plans/2026-11-06-anicca-ios-product-growth.md)は実行手順。進捗を別台帳へ二重管理しない。
 
-現在の依頼は**G1〜G5のAnicca初回改善を実装し、Maestro実製品動画と審査提出まで進めること**。全体仕様の保存・共有は完了しており、ユーザーが実行開始を指示する。G6以降のダッシュボード拡張・自動化・他アプリ展開は、その後に進める範囲として残す。スコープの分割は後続要求の削除ではない。
+現在の実行順は**G2残件→G4（Mixpanel一本化・全画面計測）→G4.1（Anicca計測を既存Openへ表示）→G5（同一候補buildの全画面Maestro動画を提示し、その後ASC CLIで提出）**。1.9.8/build 818の審査提出は取り消した。画面別の離脱、Mixpanelの本番受信、Openへの集計、全画面E2Eがすべて同じ候補releaseで実証されるまで再提出しない。この提出禁止ルールはAniccaの本specに適用する。G6/G7の全アプリ計測拡張とG8〜G10の自動改善/他アプリ展開は後続として保持する。
 
 ## 出所と現在の観測
 
-コード正本は `Daisuke134/life-manager` の `apps/mobile/anicca-ios`。参照時のmainは `897be0e51bd9d9839477fd7c53c2b4768a78b4aa`。実装着手時は最新mainとの差と公式状態を再確認する。
+コード正本は `Daisuke134/life-manager` の `apps/mobile/anicca-ios`。今回確認時のmainは `c0679e2426372e6f1e4967a36722e4ceb7eea11d`。build 818のsource SHAは `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`。OpenのHTML/静的公開物は `Daisuke134/anicca-products` が所有し、確認時のmainは `896cfca6e9c8bd9be37b6fddb8d80109136036de`。実装着手時は両repoの最新main・対象path・collector ownerを再確認する。
 
 | 対象 | 観測した事実 | 未確認・注意 |
 |---|---|---|
-| Apple | アプリID `6755129214`、bundle `ai.anicca.app.ios`。今回の事前調査で1.9.6 / build816は `READY_FOR_DISTRIBUTION` | 次版の番号・審査状態・対象buildは提出前に公式再取得 |
-| 計測 | `AnalyticsManager` は主にMixpanelへ送信。PostHogは別capture経路、設定が無ければ初期化しない | SDK導入は本番イベント受信・全画面計測の証拠ではない |
+| Apple | App=`6755129214`、bundle=`ai.anicca.app.ios`。1.9.8/build 818はbuild=`VALID`。submission `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消し後`COMPLETE`、item=`REMOVED`。version=`DEVELOPER_REJECTED` | doctorの1 blockerは`review.submission.removed_items_only`。新submissionは存在しない。全製品ゲート前は提出しない |
+| 計測 | build 818の`AnalyticsManager.swift`はMixpanelへ送信し、PostHog設定時には同じeventも送信。`PlanSelectionStepView.swift`に直接PostHog capture/flag経路がある。Package.resolvedはMixpanel `master` revision `6e2a786b…`とPostHog 3.49.0 | **選定はMixpanel一本**。イベント受信・ID/property・PostHogとの重複実測・Mixpanel実験プランは未確認。SDK導入は本番受信の証拠ではない |
 | Onboarding | 9つの列挙stepと別の2段paywallが存在 | コメントの「10/20-step」と実際の画面数を混同しない |
 | 課金 | 閉じると無料利用へ進めるsoft paywall。`variant: "b"` 呼び出し | フラグの存在だけでA/B稼働としない |
 | 価格 | 事前調査の米国公開IAP一覧は月$14.99・年$59.99・買切$59.99。週$6.99も登録 | 公開一覧・現行Offering・対象国・無料体験資格を別に照合。モック値を本番へ固定しない |
 | フィード | 縦 `UIPageViewController`、固定カタログEN/JA/ES各200件、8背景、いいねはローカル保存 | swipeの戻りはユーザー報告。原因未確定、端末・操作条件・実版で再現する |
 | 通知 | APNs起動処理、通知本文/IDの遷移coordinator、cold-start保留処理と既存回帰が存在 | 1.9.6の公開履歴にも同文言修正あり。再現確認なく同じ修正を作り直さない |
 | 設定 | 通知画面の `dailyCount = 4` は固定値 | 実配信頻度、free/pro別上限、serverの稼働経路とは未接続 |
-| 売上計測 | 購入時の価格未取得fallbackに `9.99` が存在 | 推定値を実売上へ混入させない。currency・receipt・更新・返金と照合 |
-| 共有指標 | 公開Open feedにはAnicca、Dhamma、Thankful、Sleep Reset、Honneの5アプリ分析が存在 | 全出荷アプリの網羅ではない。Cherie等を公式アプリ一覧と照合する |
-| 継続処理 | `marketing-product-summary.js`、ASC獲得・RevenueCat集計、日次/週次callerが存在 | コード存在は自然実行や製品改善ownerの稼働証拠ではない |
+| 売上計測 | build 818の購入eventは`displayed_price`を`amount_source=store_product_quote_not_settled_revenue`として送る。transaction IDはローカルledgerで重複観測を抑止 | 表示価格は決済済み収益ではない。RevenueCat/Apple receipt・renewal・refund・proceedsの公式照合、restore結果event、service側重複0は未確認 |
+| Open | `aniccaai.com/open`は公開HTMLが`data.json`/`metrics.json`等を読み、App Store Connect/事業指標/RevenueCat app metricsを表示。画面別行動funnelは未表示 | AniccaのMixpanel取得/画面別離脱/Open表示の接続は未実証。既存dashboardを拡張し、別dashboardを作らない |
+| 継続処理 | Life Managerの`marketing-product-summary.js`はproduct-pack内のactivation/retention観測JSONを読む | Mixpanel API収集元ではなくOpenにも未接続。collector・snapshot・公開deployの実稼働は別々に証明する |
 
 公開feedの観測例: `https://aniccaai.com/open/data.json` の期間10/29〜11/04、Aniccaは新規3件、JP2/CO1、取得行はApp Store検索。download coverageは7日中4日。米国0・SNS0や「全期間3件」とは断定しない。取得期間と欠測を保持し、別collectorの「行無し→0」と不整合があれば集計境界を直す。
+
+## 1.9.7 / 1.9.8 のAs-Is
+
+| 版 | build/source | 含まれる変更 | 現在の状態 |
+|---|---|---|---|
+| 1.9.7 | 816、source `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`、PR #9272 | 初回目的選択→最初のaffirmation→任意通知→soft paywall、affirmation catalog/保存/like/推薦、swipe/通知遷移と一部画面/購入event | 旧提出は取り下げ済み。現行App Store version recordは1.9.8へ更新済み |
+| 1.9.8 | 818、source `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`、PR #9282 | 1.9.7の変更に、同じquote IDがpersonalized feedにもある場合に通知本文を表示文字列へ保持する修正を追加 | build=`VALID`。submission `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消後`COMPLETE`/item`REMOVED`。version=`DEVELOPER_REJECTED`。新submissionなし |
+
+どちらもscreen-level analyticsがMixpanel serviceで受信されたこと、全画面の離脱率、MixpanelからOpenへのfunnel、paid restoreのevent、build 818そのものの全画面動画を証明しない。現在の限定公開動画2本はSimulator candidate build 817の録画である。
 
 ## 勝ち筋の参照と採用範囲
 
@@ -35,7 +44,7 @@
 | [Monkey Taps](https://monkeytaps.app/) / [I am](https://iamaffirmations.app/) | 運営元はI amの年600万downloadを自己申告。カテゴリ・テーマ・reminderによる日常の価値体験 | 初回文言表示までの時間、保存、通知からの再訪、D7継続 |
 | [TikTokのMonkey Taps事例](https://ads.tiktok.com/business/es/inspiration/monkeytaps) | 複数creativeを試し、Start Trialまで最適化。有料広告の事例 | 当社の無料配信では到達→クリック→install→trial/paid。広告の成果を無料配信へ外挿しない |
 | [RevenueCat調査](https://www.revenuecat.com/state-of-subscription-apps-2026/) | 初回価値体験、地域別比較、売上/インストール、課金と継続の両方を見る | 英語圏別RPI、課金率、成熟コホート継続、返金 |
-| [PostHog iOS](https://posthog.com/docs/libraries/ios) / [Experiments](https://posthog.com/docs/experiments) | 既存SDK・安定した割付・露出イベント・同じevent上の実験 | 割付整合、露出人数、主指標とguardrail |
+| [Mixpanel Swift SDK](https://docs.mixpanel.com/docs/tracking-methods/sdks/swift) / [Feature Flags and Experiments](https://docs.mixpanel.com/docs/experiments) | 既存event historyを保ったまま一つのSDKで計測・割付・露出・実験結果を読む | 割付整合、露出人数、主指標とguardrail |
 | [RevenueCat Experiments](https://www.revenuecat.com/docs/tools/experiments-v1) | Offering/価格/提示を比較する既製機能。現行契約で利用できるか確認 | 価格別net RPI、refund/renewal。利用料・無料枠は導入前に再確認 |
 
 勝者の構造を当社の素材・事実へ置き換える。競合の文章・画像・商標、裏付けのない健康効果、捏造social proofは流用しない。公開download・ratings・自己申告売上とverified profitを区別する。特定onboardingの因果効果を証明する同条件の資料が無い箇所は、**当社仮説**として小さく検証する。
@@ -74,23 +83,51 @@ Railway公式readbackで本番APIは `Daisuke134/anicca-products` / `apps/api`�
 
 通知から受け取ったcatalog外文言も保存後に読める。like解除は保存と推薦重みへ反映し、他の保存内容を消さない。onboarding目的・表示・like・notificationのIDを揃える。健康・悩みの自由入力や本文を無差別に分析/リプレイへ送らない。
 
-## G4 — 初回版に入れる計測
+## G4 — Mixpanel一本の画面別プロダクト計測
 
-SDKの存在を完了にしない。既存Mixpanelを保持しながらPostHogの分析・実験へ必要eventを接続し、二重発火とユーザーIDの混在を防ぐ。RevenueCat匿名ID等の適切な安定IDで購入と行動を結び、emailや全ユーザー共通literalをdistinct IDにしない。匿名→account移行・logoutがある場合のresetを確認する。
+### 選択する分析基盤
 
-| 意思決定 | 必要event/属性 |
-|---|---|
-| 各画面の到達/離脱 | screen_viewed、screen_id、flow_version、session_id、app_version/build、language、platform |
-| 初回価値までの距離 | onboarding_started、step_viewed/completed、first_affirmation_viewed、onboarding_completed、開始からの所要時間 |
-| 継続体験 | affirmation_viewed/liked/unliked/shared、quote_id、category、recommendation_version |
-| 通知の一致/復帰 | notification_opened、notification_id/quote_id、navigation_result、reminder設定/許可結果。deliveryは公式取得可能な境界だけ |
-| 課金 | paywall_viewed/closed、offering/product、storefront/currency、価格、trial eligibility、purchase_result/cancel/restore |
-| 実験 | experiment_id、variant、assignment_version、実際に見たexposure、割付単位 |
-| 配信接続 | 取得できるcampaign/content/platform/account/locale。未判定はunknownとして残す |
+**Mixpanelだけをプロダクト行動分析の正本にする。** build 818の既存`AnalyticsManager.swift`はMixpanel送信を実装済みで、PostHogは設定次第で同じeventを受け取り、paywallでは直接PostHog captureも行う。二重経路を残すとevent数・ID・実験割当が二つの画面へ分かれ、離脱率や売上の比較を一つの答えにできない。既存のMixpanel event historyを保つ方が移行と照合が小さいため、PostHog SDK/設定/直接呼出しを除去し、実験もMixpanel Feature Flags/Experimentsへ寄せる。
 
-既存event名を再利用し、意味が変わる場合にschema/flow_versionを付ける。画面描画ごとの重複発火、バックグラウンド復帰、offline queue、再送、内部テスト/TestFlightを区別する。計測受信・property・identityをサービス側でreadbackする。free text、token、秘密値を含めず、感情/健康領域のreplayは許諾とmaskingを確認して最小化する。
+根拠は公式[Mixpanel Swift SDK](https://docs.mixpanel.com/docs/tracking-methods/sdks/swift)、[iOS Feature Flags](https://docs.mixpanel.com/docs/tracking-methods/sdks/swift/swift-flags)、[Experiments](https://docs.mixpanel.com/docs/experiments)、[PostHog iOS SDK](https://posthog.com/docs/libraries/ios)。Mixpanel Feature FlagsはSDK 6.4.0以上が必要。現在の`Package.resolved`は`mixpanel-swift`を`master` branch revision `6e2a786b1e88b57b90f5a6d401337bc1bb2ba69c`で固定し、PostHog 3.49.0も含むため、利用APIを確認して対応するstable Mixpanel releaseへpinし、PostHog依存を外す。Mixpanel accountのfeature/Experiments entitlement、MEU上限、project regionは未確認なので、公式account readback後に実験を有効化する。契約や上限を推測しない。
 
-売上はreceipt/backendを基準にし、クライアントcallbackの重複・restore・trial開始を新規有料売上へ加算しない。不明価格を9.99等へ置換しない。各通貨を保持し、換算日/レートを明記する。gross・refund・Apple proceeds・運用実費・profitは別field。個人のMRRと全社MRRを混同しない。
+### 現行build 818のAs-Is
+
+| 領域 | 実装済み | 未完/問題 |
+|---|---|---|
+| 初期化・送信 | `AppDelegate.swift`で`AnalyticsManager.configure()`、`AnalyticsManager.swift`でMixpanelを初期化。`track`はcontextを付けてMixpanelへ送り、PostHog設定時は同じeventも送る | 本番Mixpanelへのtest/live event受信、project region、安定anonymous IDからaccount IDへの移行、logout reset、offline再送/重複はservice側readbackしていない |
+| 画面 | `OnboardingFlowView.swift`、`FeedRootView.swift`の一部に`screen_viewed`。初回affirmation、onboarding進行、通知許可、paywall、affirmation操作のeventがある | 画面inventoryとのcoverage照合が未完。全画面の到達・戻る・dismiss、screen instance重複抑止、滞在時間、次画面へ進まなかった率の契約が完成していない |
+| 二重送信 | `AnalyticsManager.track`のPostHog conditional send | `PlanSelectionStepView.swift`は直接PostHog captureし、paywall view時に`paywall_plan_selection_viewed`相当を複数経路から呼ぶ。画面再描画を含め重複の実測が必要 |
+| 購入 | `PurchaseObservationLedger`がtransaction IDの観測をローカルdedup。trialとpurchase eventを分け、`displayed_price`には`amount_source=store_product_quote_not_settled_revenue`を付ける | 表示価格はApple/RevenueCatで決済済みの純収益ではない。restore完了eventがなく、transaction callback・renewal/refund/proceedsをprovider実績と統合していない |
+| Open | 現行`aniccaai.com/open/`は会社指標、ASCのstore discovery/downloads、RevenueCat等の集計を読む | iOSのscreen funnel/離脱/cohort/experimentをMixpanelから表示していない |
+
+対象sourceはbuild 818 SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`。イベント名の存在だけでcoverage・本番受信・分析可能性を完了にしない。
+
+### To-Beイベント契約と分析方法
+
+| 問いたいこと | 計測契約 | Mixpanelで見るもの |
+|---|---|---|
+| どの画面で止まるか | `screen_viewed`へ`screen_id`,`screen_instance_id`,`flow_id`,`flow_version`,`session_id`,`app_version`,`app_build`,`locale`,`storefront/country`。明示的な画面遷移時だけ`screen_exited`と`next_screen_id`,`observed_duration_ms`を送る | screen viewから定義済みnext screenへ30分以内に進まないunique user率。分母=そのscreenに到達したunique user、母集団/cohort/観測窓を表示。強制終了瞬間の完全捕捉とは言わない |
+| 初回価値へ届くか | `onboarding_started`,`onboarding_step_viewed`,`onboarding_step_completed`,`onboarding_step_back`,`first_affirmation_viewed`,`onboarding_completed`。開始からの経過とstep順を保持 | start→各step→最初のaffirmation→完了のconversion、最大drop-off、first valueまでの時間 |
+| affirmationが役立つか | `affirmation_viewed`,`affirmation_liked`,`affirmation_unliked`,`affirmation_shared`,`affirmation_saved`。`quote_id`,`category_id`,`recommendation_version`,`source`のみ | 初回価値後の保存/再閲覧/like率、category別の成熟cohort再訪。本文全文は送らない |
+| 通知が戻りを作るか | `notification_permission_requested/result`,`notification_scheduled`,`notification_received`（app側で観測できる時のみ）,`notification_opened`,`notification_destination_resolved`。`notification_id`,`quote_id`,`permission`,`free_or_pro`,`schedule_source` | 許可・予定・端末受信観測・開封・目的画面到達の各率を分離。APNs受理を端末配達と呼ばない |
+| Paywall/課金 | `paywall_viewed`,`paywall_dismissed`,`product_selected`,`purchase_started`,`purchase_result`,`trial_started`,`restore_started/result`。`product_id`,`storefront`,`currency`,`eligibility`,`offering_id`,`transaction_id`を必要最小限で保持 | paywall→商品選択→購入/無料継続/restoreのファネル。transactionはApple/RevenueCat receiptと照合し、displayed priceを収益へ足さない |
+| 変更が効いたか | `experiment_exposure`をvariant表示前後の実表示一度だけ送る。`experiment_id`,`variant`,`assignment_version`,`assignment_source` | Mixpanel Experimentでactivation/retention/paid conversionの主指標とcrash/refund/notification guardrailを比較。仮説・baseline・必要人数・期間・停止規則を開始前に固定 |
+| どの入口が効いたか | providerが観測した場合のみ`campaign_id`,`content_id`,`source`,`medium`。不明ならnull＋reason | source別のinstall→activation/paywall/paid。ただしApple privacy thresholdやATTで識別不能な流入を推測で埋めない |
+
+全event共通で`event_id`,`event_timestamp`,`app_version`,`app_build`,`flow_version`,`locale`,`session_id`,`distinct_id`を正規化する。匿名IDはSDKが維持し、認証IDが存在する場合だけ公式のidentify/reset契約に沿って接続する。email・通知本文・affirmation自由入力・token・個人単位データは送らない。画面遷移の連続発火、background/resume、同じ購入callback再送、offline再送を隔離fixtureで検証し、同一event/transaction重複0をMixpanel側で確認する。
+
+購入eventは行動分析用。実収益はRevenueCat/Appleのtransaction・renewal・refund・proceedsを正本とし、通貨/対象期間/分母を揃えてOpenへ出す。trial、restore、買切、subscriptionは別々に数える。未取得は0にしない。
+
+### G4.1 — Aniccaのfunnelを既存Openへ出す（G5前提）
+
+公開UI ownerは`Daisuke134/anicca-products`。現行`apps/landing/public/open/index.html`は`data.json`,`metrics.json`,`capafy.json`等のsnapshotを読み、ASC store discovery/downloadと会社/RevenueCat指標を表示する。screen-level Mixpanel funnelは存在しない。`apps/landing/scripts/open-app-store-analytics.mjs`はASC公開データを`data.json`へまとめ、Netlify workflowで公開する。`scripts/open-startup/build_open_metrics.py`/`update_open.sh`は別のcompany/portfolio `metrics.json`経路。これらは現在Mixpanel eventを取らない。
+
+Life Manager側の`apps/life-manager/scripts/marketing-product-summary.js`は`tenants/dais-local/product-packs/metrics/product-analytics/{productId}.json`を読み、activation/retention等を日次summary化するが、Mixpanel collectorではなく、現在Openへの公開経路も確認できない。新規collectorを作る前にこの入力をMixpanelの公式export/API取得へ接続できるか、snapshot ownerと既存Netlify contractを確認する。API secretは公開JSONやbrowserへ含めない。公開用は日次・app aggregateのみとし、source ref/observed_at/data_from/data_to/status/coverage/numerator/denominatorを表示する。
+
+Aniccaの既存Open画面に、①onboarding/activation/paywall/paidのfunnel、②各screen到達者・次step未到達率・分母、③D1/D7/D30成熟cohort、④国/storefront・locale・campaign・release・experiment variant、⑤通知許可→open→destination、⑥取得時刻と欠測理由を加える。全体dashboard改修(G6/G7)と分け、G4.1でAniccaの提出前に必要な一画面/既存sectionだけを統合する。公開cohortは個人を識別できない集約サイズを維持する。
+
+G4/G4.1完了条件は、隔離test eventと同じtest identityでMixpanelにevent名・property・時刻・releaseをreadbackし、重複0を確認、同じ日次aggregateが既存Openへ表示され、source freshness・coverage・分母が一致すること。SDK設定、PR、集計JSON生成だけでは完了にしない。provider account/権限やsnapshot ownerが不明なら、不足するservice/repo/pathをcursorとして残し、0や成功へ置き換えない。
 
 ## G5 — 検証・実製品動画・提出
 
@@ -98,8 +135,9 @@ SDKの存在を完了にしない。既存Mixpanelを保持しながらPostHog�
 2. Release相当のsimulator buildでMaestroを動かす。fresh EN/JA、初回flow、soft close、settingsからの再購入、価格/Offering失敗、購入cancel/restore、連続上下swipe、like/保存/テーマ保持、cold/warm notification本文一致を確認する。
 3. 成功した同一runを `xcrun simctl io <UDID> recordVideo` 等の既存録画機能でMP4保存し、Maestro log・screenshots・flow version・device/OS・commit/build・実行結果・動画内の主要時刻を付ける。モック動画や失敗runの編集で成功を装わない。Daisへ再生できるMP4と実画面を提示する。
 4. notification injectionのrouting成功、APNs受付、実機表示/タップは別証拠にする。Maestroだけでフレームの滑らかさや実購入を証明しない。変更した購入権限はSandbox購入/paid restore、APNs経路は実配信で確認し、未検証を明示する。
-5. 正本main由来の署名済みartifact、privacy/metadata/review notesと実商品を照合し、既存ASC経路で提出する。`VALID`/upload/CIだけでは終了せず、対象version/build/submissionの公式 `WAITING_FOR_REVIEW` を読む。
-6. Appleの承認・公開は提出完了とは別に追う。却下時は指摘と対象buildを取得→原因修正→影響する検証/必要なら再録画→一意な次build→再提出。同じ不明submissionを再送しない。
+5. **提出禁止ゲート:** G1〜G4とG4.1がすべて完了し、Mixpanel service receipt・二重発火0・Openの公開readback・全画面screen inventoryが揃うまで`asc review submissions submit`を呼ばない。候補buildはその同一source SHAで全screen/flow Maestro E2Eを通し、録画をユーザーが見られるYouTube限定公開動画として提出前に提示する。動画build SHAとASC build source SHAを照合する。
+6. その後に限り、正本main由来の署名済みartifact、privacy/metadata/review notesと実商品を照合し、既存ASC CLI経路で一度だけ提出する。`VALID`/upload/CIだけでは終了せず、対象version/build/submissionの公式`WAITING_FOR_REVIEW`を読む。subscription metadata/price/territoryのwarningが残れば、対象商品が正しく審査可能か解消・照合する。
+7. Appleの承認・公開は提出完了とは別に追う。却下時は指摘と対象buildを取得→原因修正→影響する検証/必要なら再録画→一意な次build→再提出。同じ不明submissionを再送しない。
 
 動画・provider receipt・生ログはGit外のprivate evidence storeへ置く。source/specには秘密を含まないartifact refと結果だけ残す。録画は自分のtest simulatorを対象にし、他人の端末状態・本番account情報を含めない。
 
@@ -113,7 +151,7 @@ SDKの存在を完了にしない。既存Mixpanelを保持しながらPostHog�
 
 ## G7 — Openダッシュボード・日次履歴
 
-新しいdashboardを並立させず、既存 `https://aniccaai.com/open/` のsourceへ統合する。公開exportは現在別repo/ownerで運用される可能性があるため、loaded deployment・repository・collector ownerを照合し、Life Manager内に第二実装を作らない。他ownerへは具体的な参照と受入条件を渡す。
+新しいdashboardを並立させず、既存 `https://aniccaai.com/open/` を使う。HTML/公開snapshot ownerは`Daisuke134/anicca-products`。`apps/landing/public/open/index.html`は静的`data.json`/`metrics.json`等を読み、ASC store discovery/download、会社/portfolio指標を表示する。Mixpanelのscreen-level funnelは現行page/snapshotにない。`apps/landing/scripts/open-app-store-analytics.mjs`とNetlify workflowはASC analytics、`scripts/open-startup/build_open_metrics.py`/`update_open.sh`は会社metricsの経路で、どちらもMixpanel product eventを収集しない。Life Managerの`apps/life-manager/scripts/marketing-product-summary.js`は既存product-pack snapshotを読むがMixpanel collectorではなくOpenにも未接続。G4.1ではAniccaだけを既存sectionへ追加し、G6/G7で全app・履歴・広いdashboardを拡張する。snapshot writer/ownerとNetlify公開contractは実装時に最新mainで照合し、Open内にAPI secretや個人eventを出さない。
 
 アプリ/国・言語/流入元/期間7日・30日/実験variantで絞れる。上段は新規install・onboarding完了・D7継続・MRR。日次線と7日移動平均、release/experiment注記を表示する。funnelは人数と率・分母を併記し、最大離脱、国別、流入元、実験の結果/未判定、free/pro通知設定と実配信のcoverageを確認できる。
 
@@ -182,9 +220,11 @@ Anicca初回版がMaestro動画・審査提出まで通ってから、共通metr
 
 spec/plan/designはrepoの永続pathへcommit/pushし、remote objectまで確認する。容量不足は診断開始点とし、対象・owner・稼働利用・再生成可能性を確認して自分の不要build/cache/録画の重複などを整理し、保存/pushを再試行する。他者の進行中worktree、不可侵store、秘密・固有成果物を一括削除しない。認証不足は既存private SSOTと公式経路を確認し、通常判断や容量整理をDaisへの承認質問へしない。
 
-### 初回計測先の実確認
+### 分析service・Openの現在readback
 
-private build configにはMixpanel tokenが存在し、PostHogのproject key/hostは存在しない。PostHog SDKの同梱だけでは稼働扱いにしない。初回は既存Mixpanelへscreen/actionを送る。PostHogは設定済みの場合だけ同じeventを送る。分析サービス上のevent受信確認は未完であり、ローカル送信と区別する。購入callbackはtransaction IDで重複を排除し、表示価格は決済済み売上と区別する。CustomerInfo更新やrestoreから新規売上を作らない。PostHogの実験設定と全アプリdashboardは後続G6以降で扱う。
+build 818のsourceでMixpanelとPostHog両方のSDK/pipelineを確認。Mixpanel `master` revision `6e2a786b1e88b57b90f5a6d401337bc1bb2ba69c`、PostHog 3.49.0。AppDelegateはBundleの`POSTHOG_API_KEY`/`POSTHOG_HOST`が揃った時だけPostHog接続し、`AnalyticsManager.track`は同じeventを両方へ送る。`PlanSelectionStepView`にも直接PostHog captureがある。Mixpanelは現行送信先なので**Mixpanel一本**に決め、PostHogを除去する。provider account上のevent受信/experiment plan/regionは今回未readbackで、完了扱いにしない。
+
+Openのpublic main `Daisuke134/anicca-products@896cfca6e9c8bd9be37b6fddb8d80109136036de`は`data.json`/`metrics.json`等の静的snapshotを公開し、ASC acquisition/storefront dataを含む。live `data.json` observed_atは2026-11-06 21:37 JST。screen_view、onboarding drop-off、paywall conversion、D7 retentionのMixpanel集計は無い。Life Manager product summaryが読むproduct-pack JSONも入力sourceがMixpanelへ結ばれている証拠は無い。G4.1でcollection→aggregate→公開snapshot→既存Open表示の一本のreadbackを作る。
 
 ### 通知許可の回復導線
 
@@ -242,6 +282,6 @@ UX動画 `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-i
 
 **当時のASC snapshot（後続の公式状態は本節末尾に記録）:** 1.9.7/816は取下げ前に`WAITING_FOR_REVIEW`、1.9.8 version objectは未作成、build 818は`VALID`/`APP_STORE_ELIGIBLE`。ユーザー指示後、指定提出だけを取り下げて1.9.8を提出した。Appleが未公開1.9.7 version objectの存在を理由に1.9.8の新規作成を拒否し、既存objectの番号更新を指定したため、同じversion IDを1.9.8へ更新してbuild 818を添付した。
 
-**G5実施結果:** YouTube限定公開動画2本を先にユーザーへ提示し、その後1.9.7提出を取り下げ、同じApp Store version recordを1.9.8へ更新してbuild 818をattachした。版validateはerrors=0/blocking=0、warnings=15。submit時に旧`Anicca Monthly Plan`は`MISSING_METADATA`として今回の審査に含まれないとの警告が出た。新しい審査提出は一度だけ実行し、公式readbackで1.9.8/build 818/`WAITING_FOR_REVIEW`を確認。旧提出は`COMPLETE`、item `REMOVED`。Apple承認・公開は別状態。
+**G5の過去実施:** YouTube限定公開動画2本の後、1.9.7提出を取り下げ、同じApp Store version recordを1.9.8へ更新してbuild 818をattach・submitした。版validateは当時errors=0/blocking=0/warnings=15だったが、screen analytics/Openの受入前に提出したため、現在のユーザー合意の完了条件を満たさない。動画はcandidate Simulator build 817でありbuild 818と同じbinaryの証明ではない。
 
-**現在cursor:** G5の提出は完了。新submission=`306c7696-bc5d-4aa2-b82c-1fc0a07d253c`、1.9.8/build 818=`WAITING_FOR_REVIEW`。旧submission=`cb6fa5a3-c350-482d-9ca7-369be6785249`は`COMPLETE`/`REMOVED`。動画は限定公開・公開済み、candidate Simulator build 817の録画でbuild 818そのもののE2E証拠ではない。次は統合SSOTのG2残り→G4のprovider受信。ローカルXcode/xcodebuildは不使用。
+**現在cursor:** 1.9.8 submission=`306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消し後`COMPLETE`/item`REMOVED`。versionは`DEVELOPER_REJECTED`、build818は`VALID`。`asc review doctor`の1 blockerは`review.submission.removed_items_only`。新submissionは無い。まずMixpanel一本化と実受信、画面別funnel、既存Open表示、同じ候補buildの全画面Maestro動画を完了し、それからG5へ進む。Apple承認/公開は未確認。ローカルXcode UIは使用しない。ASC操作はASC CLIを使う。
