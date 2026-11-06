@@ -26557,9 +26557,9 @@ P06-3 (Statsmodels power/SciPy A/A false-positive/SRM), P06-4 (synthetic recogni
 
 ## 2026-11-06 Naïve hackathon first → Maritime First 1,000 second
 
-**決定と範囲:** Life Manager Cloudは一つの商品、一つの既存業務台帳・playbook・公開dashboardを使う。まずNaïve Managed Agentsの公式SDKで11月7–8日のYC hackathon向け実業務を実証し、その後Maritime First 1,000で同じ商品を広げる。旧「Maritime OpenClawを先にする」順序は、Naïve大会が先に始まり全teamにNaïve SDK使用が必須なため更新する。Naïveの1位はYC interviewであり、YC採択・資金調達・売上を保証しない。
+**決定と範囲:** Life Manager Cloudは一つの商品、一つの既存業務台帳・playbook・公開dashboardを使う。Naïve Managed Agentsの公式SDKで11月7–8日のYC hackathon向け実業務を優先し、Maritime First 1,000の基盤診断・参加確認・計測設計を別sessionで並行する。実証済み業務をMaritimeへ移す段階はNaïveの納品・入金照合後とする。旧「Maritime OpenClawを先にする」順序は、Naïve大会が先に始まり全teamにNaïve SDK使用が必須なため更新する。Naïveの1位はYC interviewであり、YC採択・資金調達・売上を保証しない。
 
-**選択肢と採用理由:** A) Naïveで先に一つの実業務を証明し、同じ商品・台帳をあとでMaritimeへ展開する（採用）。日程とNaïve SDK必須条件に合い、二重実行を避ける。B) Maritimeを先に直す案は、先に始まるNaïve大会の実業務証明を後回しにするため今回の順序から外す。C) 両runtimeで同じ仕事を同時に回す案は、投稿・注文の重複と費用/売上の二重計上を招くため採らない。
+**選択肢と採用理由:** A) Naïveで先に一つの実業務を証明し、同じ商品・台帳をあとでMaritimeへ展開する（採用）。日程とNaïve SDK必須条件に合い、二重実行を避ける。B) 別商品・別台帳へ分裂する案は、顧客課題と成果が同じで検証費を重複させるため採らない。C) 別worktree/sessionで独立作業を並行する案は採用する。並行開発と同じ注文の二重実行は別であり、後者は禁止する。
 
 **既製品方針:** 既存Life Manager、Naïveのagent/session/Computer/Browser/Identity、MaritimeのAgent Box/framework/desktop/Trigger、既存GitHub・台帳・`/open`を組み合わせる。独自browser controller、agent loop/harness、signup bot、mail server、vault、scheduler、全権API proxy、dashboardを新作しない。機能が欠ける場合はprovider capability gapとして記録し、維持済みOSS/official featureを探す。自作wrapperで隠さない。
 
@@ -26615,43 +26615,137 @@ flowchart LR
 | 得られるもの | 1位はYC interview。interviewは採択ではない | 参加者はMaritime credits $1,000。winnerはprojectあたり最大$20,000 LLM credits。現金賞とは同一視しない |
 | 証拠 | 実provider run/event、live URL、実顧客成果、実費、人の介入数 | real user usage。agent/VM/subagent/bot/duplicate accountは人数に入らない |
 
-Naïve大会はこれから始まるため、勝者やwinner strategyを知っているとは言わない。Maritime公式templateにはOpenClaw（general assistant/web）、Hermes（persistent memory/dashboard）、Codex/Claude Code（coding workspace）、ZeroClaw（lightweight agent）、DSH（web workbench/session replay）がある。Naïve docsのnightly repo triage、long report、inbound email opsもofficial examplesであり、独立検証済み収益事業・大会winnerとは区別する。既存templateは使うが、他社listingの文章・画像・実績を自社のものとして複製しない。
+Naïve大会は2026-11-07に始まる予定で、この確認時点では大会の勝者も勝ち筋もまだ存在しない。YC chatにはDaisukeの既存紹介とSDK質問、Naïve側Dennisからのsupport案内がある。参加者の売上自己申告は未検証で、大会実績として扱わない。Maritime公式templateにはOpenClaw（general assistant/web）、Hermes（persistent memory/dashboard）、Codex/Claude Code（coding workspace）、ZeroClaw（lightweight agent）、DSH（web workbench/session replay）がある。Naïve docsのnightly repo triage、long report、inbound email opsも公式例であり、収益実績・大会winnerとは区別する。既存templateやplatform機能を利用し、他社listingの文章・画像・成果を自社のものとして複製しない。
+
+### Naïve公式のManaged Agent構成（既製機能をつなぐ）
+
+この節はNaïve公式ドキュメントの再利用可能な構成であり、大会winnerの模倣例ではない。自作の常駐runtime、browser、scheduler、Identity、vaultは追加しない。Life Manager側で必要なのは、既存機能を選び、業務に合わせたAgent設定・playbook・測定対象を与えること。
+
+1. **Agent定義:** `*.agent.yaml`にmodel、harness、prompt、tools/skills、browser policy、budgetを宣言する。公式CLI `naive agent create/apply`またはTypeScript SDKで登録し、versioned Agentとして管理する。Agentは設定、Sessionは一回の実行。`apply`はname単位のupsertでlast-write-winsのため、同時編集がある場合はversion付きupdateを使う。
+2. **実行:** cron/deployment、inbound event、ユーザー入力でSessionをwakeし、1回分のbounded turnを実行、event/cursorと成果をcommitしてsleepする。Naïve Managed Agentsは24/7常駐プロセスや常時起動VMの設計ではない。待機中の費用説明には公式資料間の不一致があり、確定まではゼロ費用と仮定しない。
+3. **Computer/browser:** 公式Computerは任意のLinux micro-VMと管理browser。browserはdomain allowlistで絞り、Computerの作成・Agentへの割当はNaïve公式console/CLI/APIだけを使う。長期ファイルはNaïve Filesまたは公式snapshot/volumeを使う。Aniccaでは手動Smallを一台作成したが、不要と確認してPause→deleteしstatus=destroyedをreadbackした。現行APIはAgentへのComputer ID割当を拒否し、browser-only Sessionはcomputer_id=nullのままnative browserで動作することを下記の実runで確認した。
+4. **予算と権限:** Agentにperiod capとper-task capを設定し、必要なtoolだけを個別に許可する。`ask`はSessionをapproval待ちで停止させる。No Human in the Loopを実証する業務では、対象platform規約の範囲内で、その業務に必要な操作だけがallowで完了し、承認eventがないことを確認する。包括的allowやverification回避は使わない。
+5. **Identity:** Agent-owned domain/email、Connections、credential vaultは公式Identity機能を優先する。受信メールはAgentをwakeできる。OAuth Connectionsはhosted consentを必要とし、法人設立/KYC/本人確認は人の手続きを要求する場合がある。そうした工程が必須のplatformは無人laneとして扱わず、迂回しない。
+6. **公式例:** (a) nightly repo triage＝cronでwakeしComputer内でrepoを調べ、組織Filesへreport、run budgetとidle webhookを付ける。(b) long report＝低価格completion windowとdurable event cursorで中断・再開する。(c) inbox ops＝Agent-owned mailboxの受信をtriggerにし、runbook skillとpolicyの範囲で対応する。いずれも公式例であり、第三者売上や利益を証明していない。
+7. **費用の読み方:** 公式`limits and billing`は稼働中のvCPUを$0.0504/時間、memoryを$0.0162/GiB/時間、diskはincluded/no meter、creation feeなしと記載。現行consoleのSmall（1 vCPU/2 GiB）は稼働中合計$0.0828/時間。browserはsession分数で計上され、model-driven actionはbrowserのusage明細に含まれる。model tokensとComputer CPU/memoryは別計上。停止中はComputer overview/runtimeとconsoleが「storage only」、billing tableが「no storage charge」と異なるため、support回答と公式ledgerで確定する。
+
+**Harness選択:** 公式ガイドのAgent例は`pi`を既定として示す一方、harness一覧には`vetta`、`hermes`、`claude_code`なども載る。対応可否は組織・deploymentごとに異なるため、名前だけで選ばず、公式`GET /v1/harnesses`またはCLIの`runnable` readbackで利用可能性を確認してから選ぶ。readback未取得なら「利用可能」と扱わない。
+
+**再利用判断:** Naïveの既製品はManaged Agent、official CLI/SDK、Computer/browser、Deployments、Identity、Files、policy、spend ledger。これらを使う。特定の事業目的・商品・価格・success metricまで既製の汎用blockがあるとは確認できていないため、そこはLife Managerの業務設定として最小化し、独自runtime/infraを作らない。現在の公式例から「これで収益化できる」とは言えない。
+
+**公式構成の参照:** [Agent](https://usenaive.ai/docs/concepts/agents)・[runtime](https://usenaive.ai/docs/concepts/runtime)・[use cases](https://usenaive.ai/docs/use-cases)・[harnesses](https://usenaive.ai/docs/concepts/harnesses)・[harness capabilities](https://usenaive.ai/docs/concepts/harness-capabilities)・[policies](https://usenaive.ai/docs/concepts/policies)・[Computer](https://usenaive.ai/docs/capabilities/computer)・[Identity Connections](https://usenaive.ai/docs/identity/connections)。
 
 ### 初回収益の証拠と現在地
 
-Naïve NHC-00（2026-11-05のmain/provider evidence）は公開Capafy pageを`goto`し`h1`を取得した。model+browser費用は$0.006715。これはpage閲覧成功だけで、登録、publisher権限、listing、第三者注文、settlement、payout、recordingではない。Capafy account-wide salesも未照合。11/6のNaïve runtime API/event readbackはまだ行っていない。
+現在の正しい組織はAnicca `org_zf1ng1wfymjp11s5n2hqva700c`。Chrome console、公式CLI `@usenaive-sdk/cli@1.0.0`、公式TypeScript SDK `@usenaive-sdk/managed-agents@0.12.0`のreadbackが一致する。全13-scope API keyの認証は成功しprivate credential SSOTもverifiedへ更新。過去のPython HTTP経路のCloudflare 1010を全API経路の障害と扱わない。support thread件名の歴史的`org_f4sbaytm23npykwsjpzzgt0gjf`は現在のorg IDと異なるため、同じorgと推定せず、今後のsupportには現在のIDを明記する。
 
-Capafy Publisher Agreement v1.2は公開前のautomated reviewとhuman review、20% platform fee、7日dispute window、$100 minimum payout、settlement月の後15日以降のpayout開始を記す。現行`/lm`もPublisher Certificationと各Agent versionのpublisher confirmationを必要条件としているため、Capafy公開経路は厳密な無人end-to-end経路として未適合。`SUBMITTED` / `IN_REVIEW` / `PUBLISHED` / `SALE` / `SETTLED` / `PAID`を分ける。
+Capafy Agentのlive v1はComputer指定なし、default tool deny、browser未設定、draft-only/公開禁止のsystemだった。公式docsはAgentにcomputer IDを指定できると記すが、現行APIは400 `validation_failed` / param=`computer` / request=`req_ys207w32r95c14e983wk6v5y7m`、理由=`a session provisions its own sandbox; pick one per session is not supported`で拒否。作成済みSmall `cmp_01a1ae9731287d3685a5bf2c44473be3`はAgentに未接続で、公式pause→delete後、deleted=trueとgetのstatus=destroyedをreadback。作業データを置かずに終了した。独自bridgeや第二VMを作らず、既存Agent v2に公式browser toolを追加し、v3で古いdraft-only指示を独立した実務実行の役割へ置換して、Identity固有のemail.inboxes/read/sendを有効にした。許可domainは`capafy.ai,*.capafy.ai`、現在allow_writes=false、timeout=5分、CAPTCHA自動処理なし。モデルは既存`anthropic/claude-sonnet-5`。公式harness一覧のrunnableはpi/vetta=true、claude_code/hermes=false。
 
-x402は支払い規格であり、顧客獲得市場そのものではない。公式seller quickstartは受取walletと既存API/serverを前提にし、Bazaar discoveryは公式docs上early development。Vercel x402 AI Starterは再利用可能なtemplate候補だが、testnetの支払は偽資金で実売上にならない。したがってx402を収益レーンとして選定したり、購入需要があると主張したりする証拠はまだない。人手/KYC要件は迂回せず、候補platformの通常規約内で通らなければ除外する。
+新Session `ses_sc4ngd6p7va51zrp81d44kqhrk`はAgent v2/piでbrowser goto→h1 extract→final replyを実行し、`https://capafy.ai/`と`Capafy AI - Agent Skills Marketplace`を取得、12秒・stop_reason=end_turn、browser closeまで完了。公式ledgerはmodel $0.022829 + browser 1分 $0.001667 = 合計$0.024496。browser-only runのcomputer_idはnullであり、手動Smallを利用したと主張しない。前の広いリンク調査`ses_b4wd4npcw072yb6va72apsdee4`は$0.158094でbudget_pausedになったため正常完了にしない。model-driven extractが生成したURLは実navigationの証拠にせず、goto/linksの実結果を使う。
 
-Maritimeの最新既知validationでは`/data` markerはsleep/wake後も残ったが、再開後`browser.enabled=false`、Gatewayは`browser control is disabled`。desktop設定変更は`seat_limit`で拒否された。既存workerを保護し、別VM・有料plan・custom browser wrapperを足さない。Naïveの現行login/browser状態も未確認なので、両platformとも登録や実売上ができたとは報告しない。
+Naïveの既存Deployment 10件は未接続platform/SNSや未作成listingを測ろうとしていたため、公式pauseで全件enabled=false、schedule_status=paused、next_run_at=nullを確認。現在進行中のSessionやlocal/Muse/Grokのruntimeはこの操作対象ではない。balanceは最終の公式readbackで$18.564339。Standard $20/月とcreditは運用費で、agent revenueは依然$0。登録・公開・第三者注文・納品・入金は未確認。
 
-売上段階は`published offer → unrelated third-party paid order → delivered → refund/dispute window closed → eligible settlement → paid/landed`を分ける。hackathon credits/USDC testnetはrevenueではない。Life Manager Cloudの$10,000 MRRは実際の外部subscription revenueで計測し、self-operated salesから分離する。model/browser/hosting/payment/refund/acquisition費用も同じledgerに出す。達成保証はしない。
+**今回の意思決定の範囲:** 販売先・事業・商品境界・残TODOを一次資料で比較し、正本を更新する。登録・応募・送信・支払・Agent/deployment変更は行わない。PR #9268 / `214367e4` のAPI/browser/inbox/費用証拠を引き継ぐ。runtime残高・mail返信・現行seller注文は今回再読取しておらず、下記のas-isはその保存済み観測である。
+
+### 採用判断：既存Capafyの制作支援事業、厳密な無人受取は未適合
+
+**単一推奨:** 事業は短尺動画制作者向けのフック・台本・captionという既存の商品群、販売先は既存Anicca Capafy Publisherを第一候補に据える。新しい報奨金市場へ事業を乗り換えず、BotBounty.aiの復旧待ちを実行順から外す。これは「Capafyがゼロ資金・無人受取まで実証済み」という決定ではない。厳密条件で今すぐlive-enableできる販売先は未選定で、Capafy適格性のN04だけを先に閉じる。
+
+**条件を緩めない:** 売り手口座への初期現金0、人のID・銀行/カードcredential・承認0、compute以外の追加支出0。既存会社Publisherを使えば新規$0.99を避けられる可能性はあるが、人の既存ID/出金口座を継承するなら厳密なNo Human Credentialsには不適合。「会社として運営できる」と「新しいAgentが人の資格情報なしに受取までできる」を別判定とする。会社の販売を進められることだけで厳密条件をPASSへ変えない。Capafyのplatform側human reviewとDais側approvalも別：前者を使うなら「登録から公開まで誰の人手も不要」とは呼ばない。
+
+| 比較先 | 一次資料・実際の読取 | 判断 |
+|---|---|---|
+| Capafy・既存Publisher | 公開契約：新Publisher $0.99、20% fee、Subscriptionには別sandbox fee、7日dispute、月次精算・$100最低出金、出金/税情報、公開前human review。既存の商品と過去seller販売記録がある | **事業上の第一候補**。Agent権限・受取経路の無追加費用/無人適格性は未確認。新Publisherや既存seller改変はしない |
+| toku.agency | Agent自己登録/APIはある。公式docsのwithdrawはoperatorのStripe Connect onboarding済みが条件。公開APIは200だが取得先頭10件は全部AVAILABLEという売り手の広告 | 今回は不採用。内部wallet残高と外部受取を混同しない。広告のbudgetを買い手の発注額に数えない |
+| Virtuals ACP / EconomyOS | 公式provider workflowはUSDC escrow。標準CLIのconfigureはbrowser OAuth、署名者追加はbrowser-approved。Consoleは7日trial後20 USDC/月、tokenizationは3 USDC | 標準経路は承認なしの条件を立証できず不採用。tokenizationを全seller必須費用とは断定しない。SDK/別signer経路の完全無人性は未検証 |
+| GetAgentic | 買い手はNo KYCだが、売り手はSumsub本人確認が必要 | 不採用 |
+| Claw Earn | 初回worker stake30%、USDCとBase ETHが必要。A2A最小3 USDC、fee floor0.5 USDC、通常10% fee | 初期現金0に合わず不採用 |
+| MoltJobs | 通常仕事のwithdrawにはone-time human owner claimが必要。forum direct Base payoutは例外として存在するが、live campaignはTHREAD/REPLY残0、REFERRAL10枠のみ。取得した通常市場案件2件はfunded=false | 今回は不採用。直接受取例外を無視しないが、他ownerの新規参加が必要な0.19 USDC紹介枠を継続事業にしない |
+| RelayZero | GET /v1/jobsは200、total5、全5件escrow_mode=simulated、escrow/create/settle txなし、予算0.02–0.03 USDC | 掲載件数があっても現金仕事ではないため不採用。このAPIの現在の返却範囲についての結論 |
+| BotBounty.ai | 再GETも500 / TypeError: fetch failed | 実行先から外す。復旧pollや無益な定期runを追加しない。新しいfunded taskと受取条件の証拠が出た時だけ再評価 |
+| x402直販 + Bazaar / PayAI | x402は決済・発見の部品。PayAI公式はgas負担と開始時1,000無料creditを案内。Circle catalogは現在manual review | 予備の決済経路。無料creditは補助、credit≠件数、需要・売上・永久無料の証明ではない。既存x402実装の過去self-pay成功と外部売上$0を保持し、掲載だけで再び事業成功としない |
+
+**成功例から再利用する仕組み:** `skills/capafy/FROZEN.json`のsellerは変更しない。保存済み公式seller rankingのHook Labはsubscription_dayのsales $34.88（期間・settlement/payout未確定で現在MRRではない）。今回公開[Hook Lab](https://capafy.ai/agent/8123079349)で、題材入力→5本以上の冒頭案→推奨一本→秒ごとの台本→caption/CTAという商品構成を再確認した。同じ顧客・媒体・目的で使える自社の商品事実・素材を使う。新たな動画生成・有料素材・広告費は足さない。検証指標は対象listingのpaid order、refund、settled/paid、費用、repeat order。表示salesVolume・rating・他社売上は自社入金にしない。現時点でこの条件の下で黒字化した成功例は未確認である。
+
+**best/base/worst（予測ではなく条件分岐）:** best＝既存Publisherの正規Agent credentialと受取条件が適合し、既存販売経路で一件の第三者入金と費用回収を確認。base＝会社の既存販売は可能でも厳密な無人条件は満たさず、Naïveは業務demoのみ・収益証明未達のまま。worst＝適格経路も買い手も得られず、この実験の売上0と既使用compute費が残る。新たな追加支出・scheduleは増やさない。
+
+**棄却案の最強論拠:** x402直販は人の出金口座を避け、buyer-fundedでagent walletに受け取れるため厳密条件にはCapafyより近い。しかし既存の自社x402実装にも外部売上の証拠がなく、決済実装やlistingを増やすだけでは買い手が増えない。第一候補に昇格するのは、実買い手の支払意思・自作infraなしの提供・mainnet受取条件を一件で確認できた時。**自分が間違う最有力の筋:** wallet-native市場で、担保不要・承認不要の資金付き依頼と第三者settlementが新たに確認され、既存Capafyより短く初回入金へ進める場合。
+
+### 商品は一つ、実行先の作業は二つに分けて並行する
+
+**根拠と推論を分ける:** [FowlerのMonolith First](https://martinfowler.com/bliki/MonolithFirst.html)は初期の境界が不明な段階で分散を先行させる費用と、小さい製品での検証を論じる。これは観測に基づく設計助言であり、「二大会なら必ず一商品」という実験的証明ではない。[Git worktree](https://git-scm.com/docs/git-worktree)は複数作業ツリー/branchでの並行作業を公式に支える。[Idempotent Receiver](https://martinfowler.com/articles/patterns-of-distributed-systems/idempotent-receiver.html)は同一request IDの再送で効果を繰り返さない構成を説明する。ここから本件では、顧客の目的・商品・契約・台帳を一つに保ち、Naïve/Maritimeだけを異なる実行先として分けるのが最小と判断する。新しい共通adapter基盤や汎用harnessは作らない。
+
+| 所有範囲 | Naïve session | Maritime session | 共通primary |
+|---|---|---|---|
+| 独立作業 | N04–N12：販売先適格性、Agent設定、初回有料仕事、demo | M01/M04：legacy plan/desktop診断、公式template・参加/計測の確認。M03の無作用検証はM01後に可能 | 正本TODO、商品契約・台帳schema・shared source・統合判断 |
+| 書込範囲 | 専用main由来worktree/branch。Naïve sourceだけ | 別のmain由来worktree/branch。Maritime sourceだけ | SSOTの共通節はprimaryだけが編集、各sessionは証拠/差分を返す |
+| 実行・秘密 | Naïve Agent/session/deploymentの既存ownerだけ | Maritime worker/Triggerの既存ownerだけ | shared Publisher/browser/stateはowner/leaseを確認。両sessionに同時所有させない |
+| 依存 | Naïveを初回商用業務の候補ownerにする | M02の有償業務移植はN09b後。移管は旧owner停止/readback→新ownerへ、一件のjobは一方だけ | 同じorder/effect IDの二重実行・二重売上を防ぐ既存lease/receiptを使う |
+
+外部の独立CLI sessionを実際に起動する時は既存AGMSG playbookで範囲を渡す。今回は並行可能な計画を作る依頼であり、production workerや新しい独立CLI sessionは起動しない。
+
+### As-Is → To-Be と完了条件
+
+| 対象 | As-Is（保存済み観測、今回のruntime再確認なし） | To-Be / それを示す証拠 |
+|---|---|---|
+| 商品 | 同じLife Manager Cloudだが大会順と基盤作業が直列 | 一つの`/lm`、商品契約/playbook、task/revenue ledgerと`/open`。実行先別の作業だけ並行 |
+| Naïve | 公式API/native browser/owned inbox送信を確認。専用閲覧run $0.024496、10 deployments停止。売上0、全実行費/現在残高は今回未再照合 | 条件適合の販売先→一件の実第三者注文→納品→使える入金→全費用照合→既存Deployment一つの自然run→正確なdemo |
+| Maritime | `/data`はsleep/wake後に残る。browser再開は無効、desktop変更はlegacy planのseat_limit | 支援される公式経路でwake後に必要機能が使える。同一jobを一ownerで処理しreceipt保持。未提供機能はgapのまま、購入/自作wrapperで埋めない |
+| 金銭 | 古いCapafy販売記録と今回Naïve売上0は別。listingやcreditは収益ではない | 入金 − refund − platform/sandbox/payment/network fee − model/browser/VM/制作/配信費。初期補助creditを区別し、継続利益はsubscription等の運用費も回収 |
+| 大会 | Naïveは11/7–8、Maritimeは12/1 Pacific締切という公式案内。実受理・成果条件は別 | Naïveの実run/demoと公式提出receipt。Maritimeは公式参加状態、実利用者1,000人と主催者確認。賞品creditは売上ではない |
+
+```mermaid
+flowchart TD
+  S[現状: Naïve閲覧成功・売上0 / Maritime browser制約] --> P[共通: 一商品・一台帳・別worktree]
+  P --> N[N04: 既存Capafyの権限と受取適格性]
+  P --> M[M01 + M04: Maritime公式経路・参加状態を並行確認]
+  N --> G{厳密条件を満たすか}
+  G -->|はい| O[N06–N09b: 一件の注文・納品・入金・費用照合]
+  G -->|いいえ| X[無人収益は未達 / 証拠のある別経路だけ再評価]
+  M --> W[M03: 無作用のsleep・wake検証]
+  O --> D[N10–N11: 一つの自然run・demo・提出]
+  O --> T[M02: 同じ業務を重複なしで移管]
+  W --> T
+  T --> U[M05: 実利用者1,000人 / M06: 継続利益]
+```
+
+**今回の外部調査証跡:** `docs/research/cloud-market-20261106/public-readbacks.json`。公開GETのみ、認証・登録・claim・注文・送信・wallet生成・支出なし。sourcesは下の一次資料一覧と各比較行に集約する。公開APIの取得範囲・時刻と保存済み事実を混同しない。
 
 ### 現行の順序付きTODO（この表だけが正本）
 
-順序更新: 旧=L02 Maritime OpenClaw → Capafy → revenue → Naïve second runtime。新=Naïve SDK hackathon proof → Naïve demo → hackathon後にMaritime First 1,000。理由=Naïve eventが先に始まりSDKが参加条件で、YC interviewへつながる1位を狙うにはNaïve上の実業務証拠が必要なため。進行中のNAIVE-OWNED-MAIL ownerとMaritime workerは停止・重複実行しない。
+**不要Computerの終了結果:** 自分が作成した未使用の`cmp_01a1ae9731287d3685a5bf2c44473be3`をpausedと確認して公式delete。delete receiptはdeleted=true、直後getはstatus=destroyed（404ではなくtombstoneを返す）。Agent attachは拒否され、exec/fs/browser操作もなくuser dataを置いていない。native browser-onlyの成果は別の管理機能に残る。削除までのVM実費はledgerが確定するまでゼロ計上しない。
+
+**Agent v3の実務結果:** 古いdraft-only/公開禁止/ユーザー質問前提を除去し、Identity固有のemail.inboxes/read/sendを有効にした。`ses_1qxbgqwbdkv35evkzta7habenc`は専用inboxからsupport@capafy.aiへ一通だけ送信して11秒/end_turn。公式Sent一覧の`out_epm7jsgm7qf6qfhzhbp3h4k1zw`にsent_by_agent_id=Capafy Agentを確認した。受信mailはまだ0件であり、返信→自動wakeは未実証。別Session `ses_2j2xa3v1p3d2gpn3ptt1nj1qsz`はCapafy実login画面からGoogle/GitHub/Continue with Emailを取得して19秒/end_turn。Email経路は存在するが、account登録完了ではない。
+
+順序更新: 旧=BotBounty.ai復旧確認→Capafy回答待ち→Naïve販売→Maritime全作業。新=【収益側】N04既存Capafyの適格性を確定→適格時N06–N09b→N10/N11、【独立基盤側】M01/M04を同時に開始→M01合格後の無作用M03→N09b後にM02→M05/M06。理由=故障した募集APIへ依存せず既存商品/販売記録を使い、無関係なMaritime調査の待ち時間を減らすため。進行中owner・10件のpause済みdeployment・共有Publisherを変更しない。現在cursorはN04、並行可能cursorはM01/M04。二runtimeで同じ注文を回さない。
 
 | ID | 状態 | 原子的作業と完了証拠 |
 |---|---|---|
-| N01 | 完了 | 11/6にNaïve/Maritime公式docs、両大会terms、Capafy agreementを照合し、順序と再利用architectureをSSOTへ反映。provider effectなし |
-| N02 | 進行中 | 11/6再確認: private credential SSOTの`service=naive`は既存の画面ログイン記録で、Vetta組織APIキーではない。公式REST API（`https://api.vetta.sh/v1`）はBearer組織キーを要求し、Browser session一覧GETにも`computers:write`が必要。現行組織APIキーは確認できず、`vetta` CLI/provider connectorもない。専用`naive:dais` identityは共有browser registryにあるが、Life Manager実行時registryにbindingがない。既存daily-driverにNaïveタブはなく、別owner Chromeを流用していない。11/6に誤ってMac上の専用CloakBrowserを一時起動したが、これはNaïve cloud Computerではないと判明したためlease/jobを閉じた。未認証のprofile directoryだけが残り、auth-stateとlive browserはない。Vetta console/APIのlive readbackやprovider mutationは未実施。11/6に`support@usenaive.ai`へComputer/Tenki永続性・Vetta API keyの発行画面/最小scope・unattended signup/API経路・agent-owned inbox・org inference/creditsの確認メール2件を送信済み、返信待ち。次はNaïve console/official APIを使える既存の組織アクセス経路を確立する。API keyを得たら最小scopeでagent/session/events/deployment/Computer/Browser/Identity/usage、model/version/harness、policy/`ask_actions`、domains/write、context、trigger、active sessions、spend headroomを公式GETで確認し、runtime bindingを設定する。ログインsession tokenやAgentMail keyをAPI keyとして使わない。 |
-| N03 | 未完 | 公式Computer docsはsleep中のmicro-VM pauseと次turnでのfilesystem resumeを説明。Browser docsは`context_name` + `persist_context`でcookie/storageを次browser sessionへ保持できる一方、agent browser経由のsignupは`ask_actions`の人確認でpauseする。Browser REST API signupは別経路でgenerated credentialをvaultへ保存するが、org API accessが必要。Tenki発表のtask終了時sandbox destroyとの違いは残る。N02の認証経路が通った後、既存agent/Computerでpublic no-side-effect URLとmarkerを使いturn/sleep/wake persistenceをofficial readbackする。signup/writeなし。 |
-| N04 | 進行中 | Capafyのreview/certification/各version確認は厳密な無人publication条件を満たさない。x402は既存API/serverとwalletが要るpayment rail、Bazaar discoveryはearly developmentで、buyer demandの証拠ではない。公式termsでaccount eligibility、approval/KYC、first payout、fees、zero-capital hostingを比較し、camera/livenessや利用者credentialなしで通常規約内に第三者売上まで行ける候補だけを残す。候補が見つからなければ未選定を明記し、確認回避をしない |
-| N05 | 未完 | 選定laneにagent-owned Identity inbox + generated business password + scoped vaultで正規signupまたは同一account recoveryを完走。confirmation、final login、provider IDをnative browserで確認。user credential/camera KYCなし。秘密はrepo/ledger/chatへ出さない |
-| N06 | 未完 | 規約内で自社素材の有料offerを正式公開し、providerの`PUBLISHED`状態とlive URLを確認。draft/review中を公開扱いしない |
-| N07 | 未完 | unrelated third partyのpaid order一件を納品。order/payment/refund/settlement stageとmodel/browser/host/platform feesをofficial receiptで照合し、$0 startとcredits補助を分離 |
-| N08 | 未完 | 既存Naïve scheduled deployment/triggerから自然wakeし次jobを完了。events、final URL/receipt、ledger、`/open` freshness/coverage、duplicate effect=0をreadback |
-| N09 | 未完 | 成果後に2–4分の英語demoを記録。real provider run/event・live URL・third-party result/revenue・cost・human action count・未解決点を含め、実績前に金銭獲得を演出しない |
-| N10 | 未完 | 既存`/lm` onboarding/payment/analyticsと`/open`を再利用し外部subscriptionを伸ばす。継続課金、retention、refund/cancel、serving costを計測。Cloud MRRとself-operated business revenueを分ける |
-| M01 | Naïve後 | Maritime worker/plan/desktop/Computer/Triggerをread-only再照合し、wake後browser無効化と`seat_limit`、legacy planの境界を診断。購入・新VM・owner置換なし |
-| M02 | 未完 | N07で実証した同じjobをexisting Maritime official templateへ移す。shared source/playbook/ledgerを保ち、同じjobを両runtimeで同時実行しない。足りないbridgeは自作せず既製部品を探す |
-| M03 | 未完 | Maritime Triggerでsleeping agentをwakeし、`/data`、Chromium profile、checkpoint、receiptのsleep/wake persistenceをofficial readback。awake/asleep/model費を分ける |
-| M04 | 未完 | First 1,000 projectのsubmitted receiptを保持し、期限後の審査可否/参加資格について公式返信を照合。未承認をaccepted扱いしない。既存phone-friendly入口を再利用 |
+| N01 | 完了 | 公式docs/CLI/SDK/Managed Agent例を確認し、live APIとの差を上記に記録。大会winnerと公式例/自己申告売上を区別する。 |
+| N02 | 完了 | 正しいAnicca orgと全13 scopesを公式CLI whoamiで取得。SDKでもAgent/Session/Computer/Deployment/ledger読取と限定updateが成功。 |
+| N02a | 質問送信済み | Naïveへ現在org/API認証/browser成功とcomputer field拒否を送信、Gmail SENT=`1a1aea83a556ff7a`。Capafyへ正式Agent role・同一支配Publisher・前払い認証・camera条件を質問、SENT=`1a1aea83d8dfde35`。返信は未確認。 |
+| N03 | 完了 | Agent v2でnative browserを有効化、v3でdraft-only指示を除去してmail toolsを追加。手動Smallは公式delete/getでdestroyedを確認。Computer ID割当はAPI非対応のため採用しない。pi runnable=true。 |
+| N03a | 完了 | `ses_sc4ngd6p7va51zrp81d44kqhrk`、12秒/end_turn、goto+h1取得、browser closed、公式ledger合計$0.024496。登録/売上の証拠とは区別する。 |
+| N03b | 完了 | 既存Naïve Deployment全10件をpauseし各enabled=false/next_run_at=nullを確認。初回販売jobが実証されるまで新しいscheduleを増やさない。 |
+| N05 | 完了（受信は未実証） | 公式system domainはactive/provisioned/inbound verified。`manager@anicca-va700c.usenaive.ai`はactive、Capafy Agent所有、wake=true。Agent自身のmail送信は公式Sent `out_epm7jsgm7qf6qfhzhbp3h4k1zw`で確認。受信0件のためverification mail受信とinbound wakeはN06で確認する。 |
+| N04 | 未完（現在cursor） | 既存Capafy Publisherについて送信済みthread/公式role・payout情報をread-onlyで照合し、Agent専用credential、追加費用0、人の資格情報/承認0、受取可否を一枚の適格表へ記録。人の既存ID/口座が必要なら厳密条件FAILを確定し無人runを始めない。BotBountyの復旧待ちは外す。x402等は実買い手と無追加支出の受取経路の新証拠がある時だけ昇格。 |
+| N06 | 未完 | N04適格時だけ既存Publisherの正規Agent roleを設定/readback。新Publisherを作らない。必要なinbox受信/loginを本人Agentで確認し、人のsession/資格情報をコピーしない。 |
+| N07 | 未完 | 適格経路で既存seller保護のまま一つの有料offerを使う。新規listingが必要な場合だけ自社素材で作り、PUBLISHED/live URLを確認。既存sellerのversion/価格を変えない。 |
+| N08 | 未完 | 関係のない第三者のpaid order/payment receiptを一件確認。自社test order・credits・他者売上は収益にしない。 |
+| N09a | 未完 | 注文一件を納品しprovider上でdelivery receiptを確認。 |
+| N09b | 未完 | refund/dispute期間後のsettlement/paidとplatform fee・model/browser/hosting費を照合してnet earnedを計算。 |
+| N10 | 未完 | 実証済みjobを公式Deployment一つで自然起動し、成果URL・費用・重複effectなしを確認。 |
+| N11 | 未完 | 2–4分のdemoに実run、URL、注文/精算状態、全cost、人の介入回数と未解決点を表示し、Naïve大会の公式提出receiptを保持。期限時点で入金未達なら未達のまま提出し、売上を演出しない。 |
+| N12 | 未完 | `/lm`の外部subscription MRRとself-operated salesを別々に計測。retention/refund/cancel/serving costも`/open`へ反映し、$10K MRRは未達の目標として扱う。 |
+| M01 | 未完（並行開始可） | 既存Maritime worker/legacy plan/desktop/Computer/Triggerをread-only再照合。wake後browser無効化とseat_limitの原因、現在planで使える公式API/headless経路を診断。購入・新VM・owner置換なし。 |
+| M02 | N09b + M01/M03後 | 入金・費用まで実証した同じ業務を既存official templateへ移す。旧ownerの効果照合と停止readback後に新ownerへ移管。一job一owner、shared source/playbook/ledger維持。自作bridgeなし。 |
+| M03 | M01後・無作用検証はNaïveと並行可 | 既存Maritime Triggerでsleeping agentをwakeし、/data、必要profile/checkpoint/receiptをsleep/wake後にreadback。paid desktop非対応ならそのgapを残し、公式APIのみの業務で要件が満たせるか判定。awake/asleep/model費を分ける。 |
+| M04 | 未完（並行開始可） | 既存First 1,000 projectのsubmitted receipt、参加/審査状態をread-only照合。未確認をacceptedと扱わない。既存phone入口と実利用者計測を準備。参加確認の必要な送信はその担当owner一人だけが行う。 |
 | M05 | 未完 | 12/1までdistinct real users/meaningful usageをofficial analyticsで計測し、bot/VM/subagent/duplicate IDsを除外。acquisition/cost/conversionを`/open`へ反映 |
 | M06 | 未完 | 二runtimeの費用を一つのrevenue ledgerで照合し、Cloud subscription、self-operated sales、fees/refunds/computeを分ける。実外部subscription $10K MRRへ拡大し、未達の間は未達と表示 |
 
-**一次資料（11/6再確認）:** [Naïve overview](https://usenaive.ai/docs), [runtime durability](https://usenaive.ai/docs/concepts/runtime), [Computer](https://usenaive.ai/docs/capabilities/computer), [Browser](https://usenaive.ai/docs/computer/browser), [Identity](https://usenaive.ai/docs/identity/overview), [Email](https://usenaive.ai/docs/identity/email), [Credential vault](https://usenaive.ai/docs/identity/vault), [Deployments/cron](https://usenaive.ai/docs/capabilities/deployments), [REST API overview](https://usenaive.ai/docs/api/overview), [API authentication](https://usenaive.ai/docs/api/authentication), [Agents API](https://usenaive.ai/docs/api/agents), [Deployments API](https://usenaive.ai/docs/api/deployments), [Computers API](https://usenaive.ai/docs/api/computers), [Browser sessions API](https://usenaive.ai/docs/api/browser-sessions), [pricing](https://usenaive.ai/docs/platform/pricing), [Naïve × Tenki sandbox announcement](https://tenki.cloud/blog/naive-tenki-sandboxes), [Naïve hackathon FAQ](https://usenaive.ai/hackathon), [YC Naïve hackathon](https://events.ycombinator.com/naive-autonomous-companies-hackathon), [x402 overview](https://docs.x402.org/introduction), [x402 seller quickstart](https://docs.x402.org/getting-started/quickstart-for-sellers), [x402 Bazaar](https://docs.x402.org/extensions/bazaar), [Vercel x402 AI Starter](https://vercel.com/templates/ai/x402-ai-starter), [Maritime how it works](https://maritime.sh/docs/how-it-works), [persistent boxes](https://maritime.sh/docs/persistent-sandboxes), [computers](https://maritime.sh/docs/computers), [Triggers](https://maritime.sh/docs/triggers), [framework templates](https://maritime.sh/docs/frameworks), [billing](https://maritime.sh/docs/billing), [First 1,000 terms](https://competition.maritime.sh/terms), [Capafy Publisher Agreement](https://capafy.ai/publisher-agreement/), [current /lm](https://aniccaai.com/lm).
+**一次資料（11/6再確認）:** [Naïve overview](https://usenaive.ai/docs), [runtime durability](https://usenaive.ai/docs/concepts/runtime), [Computer](https://usenaive.ai/docs/capabilities/computer), [Computer networking and inbound ports](https://usenaive.ai/docs/computer/networking), [Computer limits and billing](https://usenaive.ai/docs/computer/limits-and-billing), [Browser](https://usenaive.ai/docs/computer/browser), [Identity](https://usenaive.ai/docs/identity/overview), [Email](https://usenaive.ai/docs/identity/email), [Credential vault](https://usenaive.ai/docs/identity/vault), [Deployments/cron](https://usenaive.ai/docs/capabilities/deployments), [REST API overview](https://usenaive.ai/docs/api/overview), [API authentication](https://usenaive.ai/docs/api/authentication), [Agents API](https://usenaive.ai/docs/api/agents), [Deployments API](https://usenaive.ai/docs/api/deployments), [Computers API](https://usenaive.ai/docs/api/computers), [Browser API](https://usenaive.ai/docs/api/browser), [Browser sessions API](https://usenaive.ai/docs/api/browser-sessions), [pricing](https://usenaive.ai/docs/platform/pricing), [Naïve × Tenki sandbox announcement](https://tenki.cloud/blog/naive-tenki-sandboxes), [Naïve hackathon FAQ](https://usenaive.ai/hackathon), [YC Naïve hackathon](https://events.ycombinator.com/naive-autonomous-companies-hackathon), [Maritime how it works](https://maritime.sh/docs/how-it-works), [persistent boxes](https://maritime.sh/docs/persistent-sandboxes), [computers](https://maritime.sh/docs/computers), [Triggers](https://maritime.sh/docs/triggers), [framework templates](https://maritime.sh/docs/frameworks), [billing](https://maritime.sh/docs/billing), [First 1,000 terms](https://competition.maritime.sh/terms), [Capafy Publisher Agreement](https://capafy.ai/publisher-agreement/), [Capafy Terms](https://capafy.ai/terms-of-service), [BotBounty.ai Agent skill](https://botbounty.ai/skill.md), [BotBounty.ai bounty API](https://botbounty-production.up.railway.app/api/agent/bounties), [BotBounty.co operator docs](https://botbounty.co/for-operators), [AgentBounty live board](https://agentbounty.org/bounties), [HackerOne ID verification](https://docs.hackerone.com/en/articles/8399430-id-verification), [Immunefi rules](https://immunefi.com/rules/), [Code4rena tax information](https://docs.code4rena.com/getting-started), [current /lm](https://aniccaai.com/lm).
 
-**現在cursor:** N01完了、N02が実行cursor。いまの阻害点は既存Naïve組織API accessまたはNaïve提供のcloud-console/browser sessionである。supportへ2件のfollow-upを送信済み、返信待ち。ローカル専用Chromium起動はcloud Computerの証明にならないため再利用しない。Vetta API key、Life Manager runtime binding、provider GET/readback、signup、publication、third-party sale/payoutは未確認。N02が通った後にN03のmarker persistence readbackへ進む。N04ではCapafyのhuman publication gateとx402のpayment-rail性を確認済みだが、規約内の無人収益marketは未選定。Naïve上の稼働または売上は未確認。
+**比較・設計の追加一次資料:** [toku公式API](https://toku.agency/docs)、[toku公開job API](https://toku.agency/api/agents/jobs?status=open&limit=10)、[ACP Quickstart](https://os.virtuals.io/quickstart)、[Agent Wallet](https://os.virtuals.io/agent-identity/wallet/overview)、[Provider workflow](https://os.virtuals.io/acp/cli/provider-workflow)、[Agent Console](https://os.virtuals.io/console)、[GetAgentic](https://getagentic.io/how-it-works)、[Claw Earn](https://aiagentstore.ai/claw-earn)、[MoltJobs skill](https://moltjobs.io/skill.md)、[forum guide](https://api.moltjobs.io/v1/forum/guide)、[forum rewards](https://api.moltjobs.io/v1/forum/rewards)、[RelayZero API docs](https://relayzero.ai/llms-full.txt)、[RelayZero live jobs](https://relayzero.ai/v1/jobs)、[x402 seller](https://docs.x402.org/getting-started/quickstart-for-sellers)、[PayAI](https://facilitator.payai.network)、[Circle listing review](https://developers.circle.com/agent-stack/agent-marketplace/get-listed)、[Monolith First](https://martinfowler.com/bliki/MonolithFirst.html)、[Git worktree](https://git-scm.com/docs/git-worktree)、[Idempotent Receiver](https://martinfowler.com/articles/patterns-of-distributed-systems/idempotent-receiver.html)。
+
+**現在cursor:** 収益側N04＝既存CapafyのAgent権限・無追加支出・無人受取の適格性を確定。並行側M01/M04＝Maritime基盤/参加のread-only調査。事業推奨は既存Capafy制作支援だが、厳密条件を満たす収益経路は未選定。現金受取/収益/黒字と両大会完了は未達。今回変更するのは仕様書と公開調査証跡のみ、runtime/schedule/account/paymentは変更しない。

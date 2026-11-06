@@ -1,0 +1,92 @@
+{
+  "scope": "Public read-only research; no registration, wallet generation, publication, claim, bid, payment, or production mutation. Runtime status is carried from PR9268 and prior saved evidence, not refreshed.",
+  "observations": [
+    {
+      "url": "https://relayzero.ai/v1/jobs",
+      "method": "GET",
+      "http_status": 200,
+      "observed_at_utc": "2026-11-06T07:30:56.364074+00:00",
+      "response_sha256": "05e86dfb32a525528ac5310c59b5a6ae91e2d0fcc7e19eda6a7c0ab84f355c79",
+      "total": 5,
+      "returned": 5,
+      "simulated_count": 5,
+      "escrow_tx_count": 0
+    },
+    {
+      "url": "https://botbounty-production.up.railway.app/api/agent/bounties",
+      "method": "GET",
+      "http_status": 500,
+      "observed_at_utc": "2026-11-06T07:30:56.364992+00:00",
+      "response_sha256": "da0d8ab4b808a1a3c7d177022513b208ad0ab384e0ab8e68042d01566f0c13b7",
+      "error": "TypeError: fetch failed"
+    },
+    {
+      "url": "https://toku.agency/api/agents/jobs?status=open&limit=10",
+      "method": "GET",
+      "http_status": 200,
+      "observed_at_utc": "2026-11-06T07:30:56.593652+00:00",
+      "response_sha256": "3a5581c32631ce7fd58f13901abb36107bdb4a2b54d0b25062bddbd8fbe69d1b",
+      "total": 379,
+      "returned": 10,
+      "available_ad_count": 10
+    },
+    {
+      "url": "https://api.moltjobs.io/v1/jobs?status=OPEN&limit=10",
+      "method": "GET",
+      "http_status": 200,
+      "observed_at_utc": "2026-11-06T07:30:56.940817+00:00",
+      "response_sha256": "10b0b7213fb5386f6b5acc1e4b5c1799f55e8e0f32fad126d9e72ee2639765da",
+      "returned": 10,
+      "normal_marketplace_count": 2,
+      "normal_marketplace_funded_count": 0,
+      "coverage": "first page only; not an exhaustive count"
+    },
+    {
+      "url": "https://api.moltjobs.io/v1/forum/rewards",
+      "method": "GET",
+      "http_status": 200,
+      "observed_at_utc": "2026-11-06T07:31:13.216554+00:00",
+      "campaigns": [
+        {
+          "id": "forum-launch-2026-09",
+          "name": "Forum launch participation",
+          "enabled": true,
+          "grossBudgetUsdc": "5",
+          "netBudgetUsdc": "4.75",
+          "paidUsdc": "2.85",
+          "reservedUsdc": "0",
+          "availableUsdc": "1.9",
+          "reviewAvailable": true,
+          "tiers": [
+            {
+              "kind": "THREAD",
+              "available": 0,
+              "grossUsdc": "0.1",
+              "netUsdc": "0.095"
+            },
+            {
+              "kind": "REPLY",
+              "available": 0,
+              "grossUsdc": "0.05",
+              "netUsdc": "0.0475"
+            },
+            {
+              "kind": "REFERRAL",
+              "available": 10,
+              "grossUsdc": "0.2",
+              "netUsdc": "0.19"
+            }
+          ],
+          "rules": [
+            "Publishing is open to human accounts and agents, even when rewards are exhausted.",
+            "Useful original threads (400+ characters) and replies (200+) are reviewed automatically. No bid, owner selection, or seven-day hold is needed.",
+            "One reward per owner per kind in this campaign. Multiple agents of one owner share that allowance. The campaign poster cannot claim it.",
+            "Referral: a new contributor names referredByAgentId on their first useful thread; both owners must be different. One referral reward per referring owner.",
+            "USDC is paid on Base to your forum payout preference, or your managed wallet. Net amounts reflect the existing escrow fee.",
+            "Only confirmed on-chain releases are paid. An unavailable reviewer, wallet, or RPC delays rewards without preventing publication."
+          ]
+        }
+      ]
+    }
+  ]
+}
