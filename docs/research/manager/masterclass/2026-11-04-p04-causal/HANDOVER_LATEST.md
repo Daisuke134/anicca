@@ -1,3 +1,19 @@
+# 最新引継ぎ（2026-11-05 America/Los_Angeles）— Phase 7完結・モデル商用権利ゲート
+
+**唯一のロードマップは隣の `ROADMAP_STATUS_JA.md`。学習の次／モデルの次を分離しない。唯一の現在TODO＝BFM-01。**
+
+**P07-1〜P07-6：講義・安全ソフト・テストを実装済み。** P07-3=COM-B、P07-4=CBT/ACT（15テスト）、P07-5=四念処・無常/苦/無我の原典と7T n=1の科学的限界・観察のみのソフト、P07-6=生活機能/自律性/有害事象/WHO-5ライセンス/ITTと配信の区別（P07-5/6は25ソフトテスト、統合は10ソフトテスト）。PR #9271 merged as `b2a548bb82288128839ac8b61174d5e6ea60e106`; cloud slidesは英語118枚、対応する日本語ノートと118ページPDF、公開用のEN/JA記事4本で計84記事/50メディア。**ただし今回のソフトテストは人工fixtureであり、実人間への苦の減少/臨床効果の試験ではない。**
+
+**公式サイトのPhase 7リンク・84記事表記：** life-managerのcanonical marketing PR #9273は `9d0d79ca7b104fde4d40142a5ea563ea6fdb3e1e` でマージ。Anicca製品配信用のPR #885に正本marketing/blog SHAを固定してレビュー中（公開URLの実読戻し完了まで本番公開済みとは言わない）。Xへの投稿はしない。
+
+**Be.FMモデルアクセスと権利：** GoogleでHFにログインするブラウザー操作をTinyFishで試したがHF個人ログイン画面にGoogle OAuthがなく、本人の新規HFアカウントは作成していない。HFのモデル利用はgated。共有されたパスワードを他サービスへ転送しなかった。さらに公式Be.FM Terms of Use（2025-07-24、https://docs.google.com/document/d/10n7ccfUAf89yQhx5u1lF45o70JgsOEYNu8bDxtRKbHA/edit）は**non-commercial／no distribution／no distributed derivatives**を明記し、モデルカードのApache 2.0と整合が不明。商用Open-weightモデルとしての採用や再配布を許可が確かめられないまま開始しない。権利確認のPR #9274 merged as `bd41d77679d700471a7707ce3086b243a4440157`。
+
+**モデル実行：** Qwen3-4B本体はGitHub無料CPUで実推論済み、HBCPの実介入研究12群における数値予測MAEはQwen3-4B 30.64pt vs simple train-mean 6.14pt（小規模かつ一般化不可）。別のHBCP 405研究・971群でRidgeモデルを実学習してopen JSON重みを保存。これらは汎用Manager BFMの新規訓練やBe.FM LoRA実行の証拠ではない。
+
+**唯一の次の工程：** BFM-01の商用権利に適合する既存モデルの実行・研究holdout比較・読み取り専用Manager統合・独立評価と検証済みメディア公開。非商用Be.FMの再配布/商用提供は除外。P08〜P12は単一ロードマップ内に残し、実装に必要な時点で順次学ぶ。
+
+---
+
 # 最新引継ぎ（2026-11-05 America/Los_Angeles）：P00〜P12の学習順を前面へ復元、P07-4を実装
 
 **唯一の実行・学習ロードマップは隣のROADMAP_STATUS_JA.md。** BFM-01などのモデル仕事名が旧P07/08/P09/P10/P11/P12の講義を隠していたが、旧全IDと元の題名は残っていた。今回、その完全なP00～P12一覧を正本の冒頭へ移動し、P07-3 COM-B→P07-4 CBT/ACT→P07-5 ヴィパッサナー→P07-6 測定/害→P08 JITAI/MRT/Bandit/POMDP→P09 汎化→P10 事業→P11 高度化→P12 公開の順を見やすくした。旧人工人口8部(P02-1既習)も保持した。別の独立ロードマップは作っていない。
