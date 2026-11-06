@@ -113,6 +113,13 @@ class JitaiDecisionTests(unittest.TestCase):
         self.assertEqual(self.make(
             p=point(elapsed_minutes_since_last_prompt=120)).choice, "DRAFT_ONLY")
 
+    def test_unknown_cooldown_after_an_earlier_prompt_abstains(self):
+        self.assertEqual(
+            self.make(p=point(prompts_today=1, max_prompts_per_day=2,
+                              elapsed_minutes_since_last_prompt=None)).reason,
+            "UNKNOWN_COOLDOWN_HISTORY",
+        )
+
     def test_notification_budget(self):
         self.assertEqual(
             self.make(p=point(prompts_today=1)).reason,
