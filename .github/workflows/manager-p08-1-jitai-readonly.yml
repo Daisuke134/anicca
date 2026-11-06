@@ -1,0 +1,74 @@
+name: Manager P08-1 | JITAI read-only safety gate on free cloud CPU
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-p08-1-jitai-readonly.yml"
+      - "products/manager/manager_core/p08_1_jitai_decision.py"
+      - "products/manager/tests/test_p08_1_jitai_decision.py"
+      - "docs/research/manager/masterclass/2026-11-04-p04-causal/P08-1_JA.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  safe-decision-point:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate pure Python syntax
+        run: |
+          python -m py_compile \
+            products/manager/manager_core/p08_1_jitai_decision.py \
+            products/manager/tests/test_p08_1_jitai_decision.py
+      - name: Run 19 JITAI abstention and permission contract tests (synthetic)
+        env:
+          PYTHONPATH: products/manager
+        run: |
+          python -m unittest discover \
+            -s products/manager/tests \
+            -p 'test_p08_1_jitai_decision.py' -v
+      - name: Real code execution on fictional example; no action delivery
+        env:
+          PYTHONPATH: products/manager
+        run: |
+          python - <<'PY'
+          from dataclasses import asdict
+          import json
+          from manager_core.p07_4_value_action_gate import SelfChosenGoal
+          from manager_core.p07_6_welfare_safety import OutcomeObservation
+          from manager_core.p08_1_jitai_decision import DecisionPoint, evaluate_jitai_point
+          common = dict(goal=SelfChosenGoal(
+              "synthetic-read","learning","read one paragraph","finishing lunch",
+              "desk","learning",self_chosen=True,planning_opt_in=True,
+              available=True,duration_minutes=1),
+              welfare=OutcomeObservation(
+                  user_consented=True,consent_revoked=False,self_chosen_goal=True,
+                  goal_met=False,autonomy_0to10=8,burden_0to10=1,distress_0to10=1))
+          basis=dict(local_minute=720,quiet_start_minute=1320,
+                     quiet_end_minute=420,safe_to_interrupt=True,
+                     driving=False,recently_declined=False,available_now=True,
+                     elapsed_minutes_since_last_prompt=180,prompts_today=0,
+                     is_authenticated_user_context=True)
+          eligible=evaluate_jitai_point(point=DecisionPoint(**basis), **common)
+          driving=evaluate_jitai_point(point=DecisionPoint(**{**basis,"driving":True}), **common)
+          harm=evaluate_jitai_point(point=DecisionPoint(**basis),
+              goal=common["goal"],
+              welfare=OutcomeObservation(user_consented=True,consent_revoked=False,
+                  self_chosen_goal=True,goal_met=False,
+                  functional_impairment_reported=True))
+          assert eligible.choice=="DRAFT_ONLY" and driving.choice=="NO_ACTION"
+          assert harm.choice=="STOP_AND_REFER"
+          assert all(not r.may_send_notification for r in (eligible,driving,harm))
+          print(json.dumps({"synthetic_only":True,
+                            "decision_point_receptive":asdict(eligible),
+                            "decision_point_driving":asdict(driving),
+                            "reported_harm":asdict(harm),
+                            "real_users_intervened":0,
+                            "causal_effect_measured":False},indent=2))
+          PY
