@@ -197,3 +197,13 @@ Maestro 2.8.0 / iOS 26.5の実行では、OS許可が完了した後にも取得
 ### 通知のOS操作とアプリ検証の分担
 
 iOS 26.5 / Maestro 2.8.0では、通知センターの合成touchは文言を表示できてもアプリを起動しないことを観測する。同一通知のSimulator native AXボタン操作では、終了中のアプリが起動し本文が一致する。通知試験はsimctlによる配送→Maestroで通知表示確認→native AXで実通知カードを一度操作→Maestroでquote-text/本文/保存/フィード復帰を必須assertにする。launchAppやdeeplinkで通知受信を代替しない。coldは操作前PIDなし→操作後PIDあり、warmは同一PID継続を記録する。実APNs配送や実機の合成touch成功へ読み替えない。
+
+### 初回改善の検証証拠
+
+実装はPR #9272でmain `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`へ統合する。検証版は通常Release 1.9.7/817、アプリruntime treeは `e59cf7dcf1cd715f6443b5519947dd18b6db86c2`。mainとruntime・Xcode project・CI scriptsのtree一致を確認する。Xcode Cloudのbuild番号は独立採番で816、run=`ec24cda3-c88e-4b67-9a5c-091593a35f7f`、sourceは同じmain commitである。
+
+検証済み: production-source native fixture（journey、notification、saved、catalog/recommendation、purchase dedup）、購入package選択22件、Python21件、UIKit6件、通常Release build。Maestro13は初回目的→実文言→保存→soft paywall→上25/下5 swipe→許可回復→theme/relaunchをPASSする。11/12は初回/設定の3プランとStoreKitキャンセル・復元後復帰、15は日本語、16は選択themeの再起動保持、18は通知許可回復をPASSする。通知14はbody-only cold、warm、同ID別本文の一致・保存を必須assertし、OSカード操作のみnative AXを使う。fresh read-only reviewはCritical/Importantなし、PR CI15件PASS。
+
+動画・JUnit・xcresult・provider JSONはprivate永続path `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106` に置く。`anicca-197-product-demo.mp4` は初回全体、`anicca-197-maestro-purchases.mp4` は購入キャンセル/復元、`anicca-197-maestro-japanese.mp4` は日本語、`anicca-197-notifications-verified.mp4` は実OSカード→アプリ本文/保存である。通知録画のcold前PIDなし、cold後とwarm後のPID一致を `notification-video-receipt.json` へ記録する。通知許可をリセットするclearState試験の後は許可済み表示を再確認してから配送する。
+
+未確認の境界は分析サービス側event受信、実端末APNs配送、実購入/有料restore成功。StoreKitキャンセル・empty restore・Simulator配送をそれらの成功へ読み替えない。現在価格は米国storefrontで月$14.99・年$59.99・買い切り$59.99、trialなし、soft close可能を確認する。今回価格変更は行わない。提出状態と後続TODOは統合SSOTを参照する。
