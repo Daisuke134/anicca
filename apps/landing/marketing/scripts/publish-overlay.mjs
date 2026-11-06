@@ -13,20 +13,33 @@ const appFiles = ['published-apps.json', 'apps/6755129214.webp', 'apps/675966722
 const allowed = new Set([...appFiles.map(path => 'assets/manager-site/' + path), 'about.html', 'about/ja.html', 'cv.pdf', 'index.html', 'en.html', 'ja.html', 'dais.html', 'dais/ja.html', 'lm.html', 'lm/ja.html', 'maritime.html', 'assets/manager-site/styles.css', 'assets/manager-site/writer-cta-url.js']);
 if (manifest.files.length !== allowed.size) throw new Error('Unexpected file count');
 const staged = [];
+let enRouteBytes = null;
+let enRouteSha = null;
 for (const file of manifest.files) {
   if (!allowed.delete(file.export_path) || file.source !== (file.export_path.startsWith('assets/manager-site/') ? file.export_path.replace('assets/manager-site/', 'assets/') : file.source) || !/^(pages\/[a-z-]+\.html|assets\/(?:public-resume\.pdf|styles\.css|writer-cta-url\.js|published-apps\.json|apps\/[0-9]+\.(?:webp|png)))$/.test(file.source)) throw new Error('Non-allowlisted path');
   const result = await fetch(base + file.source);
   if (!result.ok) throw new Error(`Source HTTP ${result.status}`);
   const bytes = Buffer.from(await result.arrayBuffer());
-  if (createHash('sha256').update(bytes).digest('hex') !== file.sha256) throw new Error('Integrity mismatch');
+  const sha256 = createHash('sha256').update(bytes).digest('hex');
+  if (sha256 !== file.sha256) throw new Error('Integrity mismatch');
+  if (file.public_route === '/en' && file.export_path === 'en.html' && file.source === 'pages/en.html') {
+    enRouteBytes = bytes;
+    enRouteSha = sha256;
+  }
   if (!stageOnly || appFiles.includes(file.source.replace('assets/', ''))) staged.push([resolve(stageOnly ? 'public' : 'out', file.export_path), bytes]);
 }
+if (!enRouteBytes) throw new Error('Missing allowlisted /en overlay');
 for (const [path, bytes] of staged) {
   await mkdir(dirname(path), { recursive: true }); await writeFile(path, bytes);
   // Retired RSC payloads must not let existing Next links render the old marketing page.
   // A missing static-export payload makes Next fall back to a normal page navigation.
   if (path.endsWith('.html')) await rm(path.replace(/\.html$/, '.txt'), { force: true });
 }
+// Scoped /en stage: pages/en.html only. Do not write public/index.html or any other base file.
+const publicEn = resolve('public', 'en.html');
+await mkdir(dirname(publicEn), { recursive: true });
+await writeFile(publicEn, enRouteBytes);
+await rm(publicEn.replace(/\.html$/, '.txt'), { force: true });
 if (!stageOnly) await writeFile('out/manager-release.json', JSON.stringify({ source: manifest.source_authority, revision, files: manifest.files }, null, 2) + '\n');
-console.log(`Verified marketing package: ${revision}; ${staged.length} files, full export preserved`);
+console.log(`Verified marketing package: ${revision}; ${staged.length} files, full export preserved; /en sha256 ${enRouteSha}`);
 
