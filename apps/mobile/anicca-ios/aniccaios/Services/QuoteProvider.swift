@@ -4,6 +4,14 @@ import Foundation
 struct Quote: Identifiable, Codable, Hashable {
     let id: String
     let text: String
+
+    var categoryID: String {
+        let components = id.split(separator: ".")
+        if components.count == 3, components[0] == "growth" { return String(components[1]) }
+        guard id.hasPrefix("q"), let number = Int(id.dropFirst()), (1...200).contains(number) else { return "general" }
+        let categories = ["growth", "self_love", "calm", "presence", "confidence", "gratitude", "resilience", "letting_go", "presence", "self_love", "confidence", "hope", "hope", "hope", "calm", "growth", "self_love", "connection", "resilience", "letting_go"]
+        return categories[(number - 1) / 10]
+    }
 }
 
 /// Medium-length single-sentence affirmations in the established autosuggestion tradition.
@@ -17,8 +25,42 @@ final class QuoteProvider {
         switch preferredLanguage {
         case .ja: return Self.ja
         case .es: return Self.es
-        case .en, .de, .fr, .ptBR: return Self.en
+        case .en, .de, .fr, .ptBR: return Self.english
         }
+    }
+
+    private static let english: [Quote] = {
+        guard let url = Bundle.main.url(forResource: "SupplementalAffirmations", withExtension: "json"),
+              let supplemental = try? supplementalQuotes(at: url) else { return en }
+        return en + supplemental
+    }()
+
+    static func supplementalQuotes(at url: URL) throws -> [Quote] {
+        let categories = try JSONDecoder().decode([String: [String]].self, from: Data(contentsOf: url))
+        return categories.keys.sorted().flatMap { category in
+            (categories[category] ?? []).enumerated().map { index, text in
+                Quote(id: "growth.\(category).\(index)", text: text)
+            }
+        }
+    }
+
+    static func recommendations(from pool: [Quote], goals: [String], likedIDs: Set<String>, recentIDs: [String]) -> [Quote] {
+        let recent = Set(recentIDs.suffix(20))
+        let unseen = pool.filter { !recent.contains($0.id) }
+        let candidates = unseen.isEmpty ? pool : unseen
+        let legacyGoals = ["reduce_anxiety": "calm", "feel_peace": "calm", "sleep_better": "rest", "build_discipline": "growth", "focus_more": "presence", "break_habit": "letting_go"]
+        var preferredCategories = Set(goals.map { legacyGoals[$0] ?? $0 })
+        preferredCategories.formUnion(pool.filter { likedIDs.contains($0.id) }.map(\.categoryID))
+        var preferred = candidates.filter { preferredCategories.contains($0.categoryID) }.shuffled()
+        var exploration = candidates.filter { !preferredCategories.contains($0.categoryID) }.shuffled()
+        var result: [Quote] = []
+        while !preferred.isEmpty || !exploration.isEmpty {
+            for _ in 0..<4 {
+                if let quote = preferred.popLast() { result.append(quote) }
+            }
+            if let quote = exploration.popLast() { result.append(quote) }
+        }
+        return result
     }
 
     func byId(_ id: String, preferredLanguage: LanguagePreference = LanguagePreference.detectDefault()) -> Quote? {

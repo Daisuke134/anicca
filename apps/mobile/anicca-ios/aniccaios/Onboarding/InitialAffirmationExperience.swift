@@ -129,3 +129,33 @@ struct FirstAffirmationStepView: View {
         .background(InitialExperienceStyle.background)
     }
 }
+
+struct ReminderScheduleStepView: View {
+    let next: () -> Void
+    @EnvironmentObject private var appState: AppState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text("Anicca").font(.system(size: 28, design: .serif)).padding(.top, 20)
+            Spacer()
+            Image(systemName: "bell.badge").font(.system(size: 40, weight: .ultraLight)).foregroundStyle(InitialExperienceStyle.accent)
+                .accessibilityHidden(true)
+            Text(String(localized: "growth_reminder_title")).font(.system(.largeTitle, design: .serif))
+            Text(String(localized: "growth_reminder_explanation")).font(.subheadline).foregroundStyle(.secondary)
+            Text(String(format: NSLocalizedString("growth_reminder_free_schedule", comment: ""), ReminderSchedule.slots(isPro: false).joined(separator: " · "))).font(.body)
+            Text(String(format: NSLocalizedString("growth_reminder_pro_schedule", comment: ""), ReminderSchedule.slots(isPro: true).joined(separator: " · "))).font(.body)
+            Text(TimeZone.current.identifier).font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Button(action: next) {
+                Text(String(localized: "common_continue")).font(.headline)
+                    .frame(maxWidth: .infinity).padding(18)
+                    .foregroundStyle(.white).background(InitialExperienceStyle.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+            }
+            .accessibilityIdentifier("onboarding-reminder-continue")
+            .padding(.bottom, 24)
+        }
+        .padding(.horizontal, 24).foregroundStyle(AppTheme.Colors.label)
+        .background(InitialExperienceStyle.background)
+    }
+}

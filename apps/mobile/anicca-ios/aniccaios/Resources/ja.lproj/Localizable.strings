@@ -2729,3 +2729,30 @@
 "growth_saved" = "保存済み";
 "growth_daily_moment" = "毎日のひとときをつくる";
 "growth_maybe_later" = "あとで";
+
+// Affirmation collections
+"growth_category_self_love" = "自分を大切に";
+"growth_category_calm" = "落ち着き";
+"growth_category_confidence" = "自信";
+"growth_category_letting_go" = "手放す";
+"growth_category_growth" = "成長";
+"growth_category_gratitude" = "感謝";
+"growth_category_resilience" = "しなやかさ";
+"growth_category_presence" = "今ここ";
+"growth_category_connection" = "つながり";
+"growth_category_hope" = "希望";
+"growth_category_rest" = "休息";
+"growth_category_boundaries" = "境界線";
+"growth_category_general" = "あなたへの言葉";
+"growth_category_personalized" = "あなたにおすすめ";
+"growth_daily" = "今日";
+"growth_collections" = "コレクション";
+
+// Actual remote reminder schedule
+"growth_reminder_title" = "毎日に、やさしい言葉を。";
+"growth_reminder_explanation" = "登録されたタイムゾーンの配信予定です。端末の設定や通信状況により届かない場合があります。";
+"growth_reminder_free_schedule" = "無料: %@";
+"growth_reminder_pro_schedule" = "Pro: %@";
+"growth_notifications_on" = "通知は許可されています";
+"growth_notifications_off" = "通知がオフ、またはまだ許可されていません";
+"growth_notification_settings" = "通知の許可設定を開く";

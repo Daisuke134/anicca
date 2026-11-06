@@ -2713,3 +2713,30 @@
 "growth_saved" = "Saved";
 "growth_daily_moment" = "Make room for a daily moment";
 "growth_maybe_later" = "Maybe later";
+
+// Affirmation collections
+"growth_category_self_love" = "Self-love";
+"growth_category_calm" = "Calm";
+"growth_category_confidence" = "Confidence";
+"growth_category_letting_go" = "Letting go";
+"growth_category_growth" = "Growth";
+"growth_category_gratitude" = "Gratitude";
+"growth_category_resilience" = "Resilience";
+"growth_category_presence" = "Presence";
+"growth_category_connection" = "Connection";
+"growth_category_hope" = "Hope";
+"growth_category_rest" = "Rest";
+"growth_category_boundaries" = "Boundaries";
+"growth_category_general" = "A moment for you";
+"growth_category_personalized" = "For you";
+"growth_daily" = "Daily";
+"growth_collections" = "Collections";
+
+// Actual remote reminder schedule
+"growth_reminder_title" = "A little kindness. Right on time.";
+"growth_reminder_explanation" = "Scheduled in your time zone. Device settings and connectivity can affect delivery.";
+"growth_reminder_free_schedule" = "Free: %@";
+"growth_reminder_pro_schedule" = "Pro: %@";
+"growth_notifications_on" = "Notifications allowed";
+"growth_notifications_off" = "Notifications are off or not allowed yet";
+"growth_notification_settings" = "Manage notification permissions";

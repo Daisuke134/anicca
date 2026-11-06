@@ -71,7 +71,7 @@ struct OnboardingFlowView: View {
         case .goal:             AffirmationGoalStepView(next: advance)
         case .painPoints:       StrugglesStepView(next: advance)
         case .struggleFreq:     StruggleDepthStepView(next: advance)
-        case .nudgeTimes:       PreferredNudgeTimesView(next: advance)
+        case .nudgeTimes:       ReminderScheduleStepView(next: advance)
         case .processing:       ProcessingStepView(next: advance)
         case .planReveal:       FirstAffirmationStepView(next: advance)
         case .comparison:       ComparisonTableStepView(next: advance)

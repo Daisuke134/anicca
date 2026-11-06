@@ -17,13 +17,14 @@ struct QuoteCardView: View {
 
     @State private var showShareSheet = false
     @State private var copyFlashOpacity: Double = 0
+    @ScaledMetric(relativeTo: .title) private var quoteFontSize: CGFloat = 32
 
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
 
             Text(quote.text)
-                .font(.system(size: 26, weight: .regular))
+                .font(.system(size: quoteFontSize, weight: .regular, design: .serif))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)

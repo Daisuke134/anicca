@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import Combine
 import RevenueCat
 import RevenueCatUI
@@ -191,9 +192,14 @@ struct LikedQuotesView: View {
     }
 }
 
-/// Minimal notifications settings stub — wired to NotificationScheduler.
+/// Shows the actual server schedule and OS permission separately.
 struct NotificationsSettingsView: View {
-    @State private var dailyCount = 4
+    @ObservedObject private var appState = AppState.shared
+    @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var notificationsAllowed = false
+
+    private var slots: [String] { ReminderSchedule.slots(isPro: appState.subscriptionInfo.isEntitled) }
 
     var body: some View {
         Form {
@@ -201,17 +207,25 @@ struct NotificationsSettingsView: View {
                 HStack {
                     Text(String(localized: "notifications_daily_count"))
                     Spacer()
-                    Text("\(dailyCount)")
+                    Text("\(slots.count)")
                         .foregroundStyle(.secondary)
                 }
-                Text(String(localized: "notifications_schedule_label"))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                ForEach(slots, id: \.self) { time in Text(time).monospacedDigit() }
+                Text(TimeZone.current.identifier).font(.footnote).foregroundStyle(.secondary)
+                Text(String(localized: notificationsAllowed ? "growth_notifications_on" : "growth_notifications_off"))
+                    .accessibilityIdentifier("reminder-permission-status")
+                Button(String(localized: "growth_notification_settings")) {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                }
             } footer: {
-                Text(String(localized: "notifications_footer"))
+                Text(String(localized: "growth_reminder_explanation"))
             }
         }
         .navigationTitle(String(localized: "settings_notifications"))
         .navigationBarTitleDisplayMode(.inline)
+        .task { notificationsAllowed = await NotificationScheduler.shared.isAuthorizedForAlerts() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active { Task { notificationsAllowed = await NotificationScheduler.shared.isAuthorizedForAlerts() } }
+        }
     }
 }
