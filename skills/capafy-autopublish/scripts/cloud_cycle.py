@@ -23,6 +23,7 @@ _BROWSER_ERRORS = frozenset({
     'browser_profile_unavailable', 'browser_binary_unavailable',
     'browser_session_startup_failed',
     'browser_session_shutdown_failed',
+    'browser_session_lost',
 })
 
 
@@ -362,6 +363,10 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
             child['LM_MARITIME_BROWSER_CDP_URL'] = browser_session.cdp_url
             browser_started = True
             process = runner(command, cwd=str(occurrence_workspace), env=child, input=prompt, text=True, capture_output=True, timeout=3600)
+            if not browser_session.health_check():
+                final = result('effect_unknown', 'browser_session_lost')
+                _save(receipt, dict(initial, result=final))
+                return final
         if _browser_action_effect_unknown(receipt.parent / 'browser-actions.jsonl', owner,
                                           tenant_id=tenant_id, occurrence_id=occurrence_id,
                                           release_sha=release_sha):

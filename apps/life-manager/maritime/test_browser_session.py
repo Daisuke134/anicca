@@ -308,6 +308,19 @@ class BrowserSessionTest(unittest.TestCase):
             self.session().__enter__()
         self.assertTrue(self.calls[0].terminated)
 
+    def test_health_check_requires_a_live_owned_cdp_and_fails_closed_after_browser_loss(self):
+        self.responses.append({'webSocketDebuggerUrl':
+                               f'ws://127.0.0.1:9229/devtools/browser/{self.browser_uuid}'})
+        session = self.session()
+        with session as active:
+            self.responses.append({'webSocketDebuggerUrl':
+                                   f'ws://127.0.0.1:9229/devtools/browser/{self.browser_uuid}'})
+            self.assertTrue(active.health_check())
+            active.process.returncode = 1
+            self.assertFalse(active.health_check())
+            active.process.returncode = None
+            self.assertFalse(active.health_check())
+
     def test_cdp_healthcheck_bypasses_the_managed_egress_proxy(self):
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):

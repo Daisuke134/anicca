@@ -133,6 +133,13 @@ class MaritimeBrowserSession:
         self.profile_dir = profile
         self.state_dir = state
 
+    def health_check(self) -> bool:
+        """Return True only while this tenant still owns a live loopback CDP."""
+        process = self.process
+        if process is None or process.poll() is not None:
+            return False
+        return self._cdp_ready()
+
     def _cdp_ready(self) -> bool:
         try:
             with self.urlopen_impl(CDP_URL + '/json/version', timeout=0.5) as response:

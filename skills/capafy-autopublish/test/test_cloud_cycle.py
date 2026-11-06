@@ -119,6 +119,9 @@ class CloudCycleTest(unittest.TestCase):
             def __enter__(self):
                 return self
 
+            def health_check(self):
+                return True
+
             def __exit__(self, *_args):
                 self.record['closed'] = True
                 return False
@@ -323,6 +326,41 @@ class CloudCycleTest(unittest.TestCase):
         result = self.run_cycle(unobserved_link)
         self.assertEqual(result['status'], 'effect_unknown')
         self.assertEqual(result['errorClass'], 'browser_effect_unknown')
+
+    def test_browser_loss_after_started_action_is_unknown_and_replay_does_not_publish(self):
+        class LostBrowserSession:
+            def __init__(self, **_kwargs):
+                self.cdp_url = 'http://127.0.0.1:9229'
+
+            def __enter__(self):
+                return self
+
+            def health_check(self):
+                return False
+
+            def __exit__(self, *_args):
+                return False
+
+        self.module.BrowserSession = LostBrowserSession
+
+        def started_then_browser_died(command, **options):
+            self.calls.append((command, options))
+            artifact = Path(command[command.index('--workdir') + 1]) / 'draft.md'
+            artifact.write_text('draft')
+            receipt = Path(options['env']['LM_MARITIME_BROWSER_RECEIPT'])
+            self.write_action_rows(receipt, [{
+                'at': '2026-10-20T00:00:00Z', 'actionId': 'b' * 32,
+                'tool': 'browser_navigate', 'outcome': 'started', 'origin': 'https://capafy.ai',
+            }])
+            return types.SimpleNamespace(returncode=0,
+                stdout=json.dumps({'status': 'success', 'evidence': [str(artifact)]}), stderr='')
+
+        result = self.run_cycle(started_then_browser_died)
+        self.assertEqual(result['status'], 'effect_unknown')
+        self.assertEqual(result['errorClass'], 'browser_session_lost')
+        self.assertEqual(result['artifactRefs'], [])
+        self.assertEqual(self.run_cycle(started_then_browser_died), result)
+        self.assertEqual(len(self.calls), 1)
 
     def test_unclosed_browser_action_stays_unknown_even_if_runner_reports_success(self):
         def interrupted_after_dispatch(command, **options):
