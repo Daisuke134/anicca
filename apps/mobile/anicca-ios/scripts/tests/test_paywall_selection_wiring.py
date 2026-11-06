@@ -16,6 +16,7 @@ SUBSCRIPTION_MANAGER = APP_ROOT / "aniccaios/Services/SubscriptionManager.swift"
 ONBOARDING = APP_ROOT / "aniccaios/Onboarding/OnboardingFlowView.swift"
 ANALYTICS = APP_ROOT / "aniccaios/Services/AnalyticsManager.swift"
 PAYWALL_CONTAINER = APP_ROOT / "aniccaios/Onboarding/OnboardingBibleViews.swift"
+SETTINGS = APP_ROOT / "aniccaios/Views/Feed/SettingsSheet.swift"
 
 
 class PaywallSelectionWiringTests(unittest.TestCase):
@@ -184,6 +185,19 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         self.assertIn("let isTrial = entitlement?.isActive == true && entitlement?.periodType == .trial", observer)
         self.assertIn("if isTrial { trackTrialStarted(productId: package.storeProduct.productIdentifier) }", observer)
         self.assertIn("trackTrialStarted(productId: package.storeProduct.productIdentifier)", observer)
+
+    def test_settings_purchase_is_not_counted_as_onboarding_conversion(self):
+        settings = SETTINGS.read_text(encoding="utf-8")
+        self.assertIn('flowID: "settings_subscription"', settings)
+        purchase = self.source.split("private func purchase()", 1)[1].split(
+            "private func restorePurchases()", 1
+        )[0]
+        self.assertRegex(
+            purchase,
+            r'if flowID == "onboarding"\s*\{\s*'
+            r'AnalyticsManager\.shared\.track\(\.onboardingPaywallPurchased\)\s*\}',
+            "The settings purchase flow must keep its generic purchase result without inflating onboarding conversions",
+        )
 
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):
         # Structural contract only. Execute the companion Swift tests to verify

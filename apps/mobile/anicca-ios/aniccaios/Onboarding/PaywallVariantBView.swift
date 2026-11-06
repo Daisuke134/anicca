@@ -450,7 +450,9 @@ struct PaywallVariantBView: View {
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
                     AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)
-                    AnalyticsManager.shared.track(.onboardingPaywallPurchased)
+                    if flowID == "onboarding" {
+                        AnalyticsManager.shared.track(.onboardingPaywallPurchased)
+                    }
                     isPurchasing = false
                     onPurchaseSuccess(result.customerInfo)
                 } else {
