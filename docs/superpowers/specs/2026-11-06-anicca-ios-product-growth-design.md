@@ -210,14 +210,16 @@ iOS 26.5 / Maestro 2.8.0では、通知センターの合成touchは文言を表
 
 未確認の境界は分析サービス側event受信、実端末APNs配送、実購入/有料restore成功。StoreKitキャンセル・empty restore・Simulator配送をそれらの成功へ読み替えない。現在価格は米国storefrontで月$14.99・年$59.99・買い切り$59.99、trialなし、soft close可能を確認する。今回価格変更は行わない。提出状態と後続TODOは統合SSOTを参照する。
 
-### 初回App Review提出の公式照合
+### 初回App Review提出の公式照合（取下げ前の履歴）
+
+この項は1.9.7提出の取下げ前に確認した公式状態。現在の最終状態は本書末尾のApp Review実施記録を参照。
 
 App=`6755129214` / bundle=`ai.anicca.app.ios` / version=`1.9.7` / build=`816`、build ID=`41ac019d-6fbe-489a-8382-40a62d1fd9c9`。Xcode CloudはArchiveが成功し、後段のTestFlight外部テスト審査への自動送信だけが `Please try again later.` で失敗する。Cloud全体を成功と呼ばず、run→公式buildの関連付けでVALIDを確認し、再ビルドは起動しない。
 
 本番App Reviewへ既存VALID buildをattachし、doctor errors0/blocking0とfresh read-onlyの対象照合を経て提出する。submission ID=`cb6fa5a3-c350-482d-9ca7-369be6785249`、submittedDate=`2026-11-06T06:33:40.507Z`。`asc status` とversion GETで **WAITING_FOR_REVIEW**、version/build/submission一致を確認する。承認と公開は未確認で、審査待ちを公開完了へ読み替えない。成果manifestは [validation](../evidence/anicca-ios-1.9.7-validation.json)。通知動画の視聴用は `anicca-197-notification-demo.mp4`（録画開始時の準備待ちを除いたもの）、無編集元録画は保持する。
 
 
-### 1.9.8通知修正フォローアップ（2026-11-06）
+### 1.9.8通知修正フォローアップの旧記録（2026-11-06）
 
 PR #9282（merge SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`）はmainへ統合済み。latest main `bf71e15223e8e5dca71a7a79e773c8863c58c1ef`のAnicca iOS runtime/project/ci treeはそれぞれ`0931c01b8a78887a9291dfce74abf21bfa8007d8` / `060b64ccbeb15e360ac64e21c66ad17573236b92` / `b0e8b63afd146f8ba8e925971aebbd008046de8e`で、ASC build 818のsource commitはmerge SHA。Mac MiniのiOS 26.5 Simulatorでは候補build 817に対するMaestro 13（初回体験、1/1）と14（通知本文→feed→保存）がPASSしたが、候補binaryはbuild 818/merge sourceと同一である証拠がない。通知動画/source receiptもmerge SHAに結び付かないため、PR #9282の通知修正E2E証拠とは扱わない。通知試験のSimulator配送は`simctl push`と実OSカードのnative AX操作を使い、実端末APNs配送の証拠ではない。
 
@@ -225,4 +227,21 @@ PR #9282（merge SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`）はmainへ統�
 
 ASC公式readbackでは1.9.7/816が`WAITING_FOR_REVIEW`のまま。1.9.8 version objectは未作成。Xcode Cloud run `98a7613c-898d-4d7c-8bda-62ef850a5403`のArchive由来build 818（`7cfb4f37-680c-447d-873a-7f8eb54a0baf`）は`VALID`/`APP_STORE_ELIGIBLE`。TestFlight外部テスト審査の自動送信だけが`Please try again later.`で失敗し、新しいApp Review提出はない。既存1.9.7提出は変更・取消しない。
 
-**提出cursor:** ユーザーへ初回UX動画を提示済みで、最新指示は作業続行。ASCが1.9.7/816の審査中を理由に1.9.8 version作成を拒否したため、既存審査を変更・取消しせず公式状態を追跡し、1.9.7審査完了/公開後に1.9.8 draft→build 818 attach→doctor/validate→dry-run→App Review提出→1.9.8自身の公式`WAITING_FOR_REVIEW`を照合する。候補Simulator binary 1.9.8/817はbuild 818と異なり、通知修正のE2E証拠には使わない。
+**旧cursor（ユーザーの最新指示前）:** 旧案は1.9.7の提出を保全して待つものだった。ユーザーが1.9.7の取下げと1.9.8提出を明示したため、現在の実行順は本書末尾の「1.9.7・1.9.8の内容と再提出方針」を優先する。
+
+### 1.9.7・1.9.8の内容とApp Review実施記録（2026-11-06）
+
+| App Store版 | ASC build / source | 含まれる変更 |
+|---|---|---|
+| 1.9.7 | build 816、`VALID` / `APP_STORE_ELIGIBLE`。Xcode Cloud run `ec24cda3-c88e-4b67-9a5c-091593a35f7f`、source SHA `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`、PR #9272 | 目的選択後すぐ最初のaffirmationを表示し、任意通知の後にsoft paywallを出す初回体験。affirmationの追加・カテゴリ/好みによる推薦・保存/likeの保持、スワイプ/通知遷移、通知許可後の復帰、画面/購入イベント計測と購入観測の重複排除。 |
+| 1.9.8 | build 818、`VALID` / `APP_STORE_ELIGIBLE`。Xcode Cloud run `98a7613c-898d-4d7c-8bda-62ef850a5403`、source SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`、PR #9282 | 1.9.7の改善を含むsourceへ通知修正を追加。通知本文のaffirmationを、同じIDの項目がpersonalized feedに既にあっても通知から開いた画面に保持する。 |
+
+対応付けはASC build/runのsource commitとGitHub PRのmerge SHAを基準にする。当時のreadbackでは1.9.8 App Store version objectは未作成で、build 818は未添付の有効な署名済み候補だった。run 818はArchive後のTestFlight外部審査への自動送信が失敗した一方、ASC build 818自体は`VALID`/`APP_STORE_ELIGIBLE`。その後、Appleの指示で既存version objectを1.9.8へ更新してbuild 818を添付した。
+
+UX動画 `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-initial-UX-2026-11-06.mp4`（141秒）と通知動画 `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-notification-2026-11-06.mp4`（78秒）は、どちらもiOS 26.5 Simulatorの候補build 817を録画したもの。YouTube限定公開で`PUBLISHED`をreadbackし、App Review提出前にリンクを提示した。初回体験: https://www.youtube.com/watch?v=88N3zsKZUJM、通知: https://www.youtube.com/watch?v=J005BFtO88U。動画説明にbuild 817と明記し、build 818やPR #9282の通知修正を実行した証拠とは扱わない。通知試験はSimulator配送であり、実端末APNsの証拠ではない。
+
+**当時のASC snapshot（後続の公式状態は本節末尾に記録）:** 1.9.7/816は取下げ前に`WAITING_FOR_REVIEW`、1.9.8 version objectは未作成、build 818は`VALID`/`APP_STORE_ELIGIBLE`。ユーザー指示後、指定提出だけを取り下げて1.9.8を提出した。Appleが未公開1.9.7 version objectの存在を理由に1.9.8の新規作成を拒否し、既存objectの番号更新を指定したため、同じversion IDを1.9.8へ更新してbuild 818を添付した。
+
+**G5実施結果:** YouTube限定公開動画2本を先にユーザーへ提示し、その後1.9.7提出を取り下げ、同じApp Store version recordを1.9.8へ更新してbuild 818をattachした。版validateはerrors=0/blocking=0、warnings=15。submit時に旧`Anicca Monthly Plan`は`MISSING_METADATA`として今回の審査に含まれないとの警告が出た。新しい審査提出は一度だけ実行し、公式readbackで1.9.8/build 818/`WAITING_FOR_REVIEW`を確認。旧提出は`COMPLETE`、item `REMOVED`。Apple承認・公開は別状態。
+
+**現在cursor:** G5の提出は完了。新submission=`306c7696-bc5d-4aa2-b82c-1fc0a07d253c`、1.9.8/build 818=`WAITING_FOR_REVIEW`。旧submission=`cb6fa5a3-c350-482d-9ca7-369be6785249`は`COMPLETE`/`REMOVED`。動画は限定公開・公開済み、candidate Simulator build 817の録画でbuild 818そのもののE2E証拠ではない。次は統合SSOTのG2残り→G4のprovider受信。ローカルXcode/xcodebuildは不使用。
