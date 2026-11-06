@@ -79,7 +79,14 @@ struct NotificationPermissionStepView: View {
             .disabled(isRequesting)
             .accessibilityIdentifier("onboarding-notifications-allow")
             .padding(.horizontal, 24)
-            .padding(.bottom, 64)
+            Button(action: next) {
+                Text(String(localized: "growth_maybe_later"))
+                    .font(.subheadline).foregroundStyle(AppTheme.Colors.secondaryLabel)
+                    .frame(minHeight: 44)
+            }
+            .disabled(isRequesting)
+            .accessibilityIdentifier("onboarding-notifications-skip")
+            .padding(.bottom, 24)
         }
         .background(AppBackground())
         .onAppear {

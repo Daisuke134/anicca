@@ -36,6 +36,8 @@
 
 **Consumes:** 現行profile/onboarding保存値、RevenueCat CustomerInfo/Offering、StoreKit localized prices。**Produces:** 目的→最初の文言→任意reminder→soft paywall→feed、安定accessibility ID、後続event用のflow/screen ID。
 
+実caller確認による補足: native画面は `aniccaios/Onboarding/InitialAffirmationExperience.swift` に置く。旧 `OnboardingV2Tests.swift` は現在targetに登録されず廃止enumを参照するため、経路回帰は `scripts/tests/OnboardingJourneyTests.swift` でproduction `OnboardingStep.swift` を直接compile/runし、画面/復帰はXcodeとMaestroで検証する。
+
 - [ ] 既存保存値とpaywall callerを読む。既存完了/有料、途中step、通知拒否、offering失敗、国変更の期待動作をspecへ照合する。
 - [ ] 対応する既存XCTest/Swiftテストへ、通知拒否でも進む・有料へ再質問しない・国不一致商品を買えないケースを追加し、修正前の失敗を記録する。
 - [ ] 不要な質問/処理演出を外し、native画面をmockの構造へ合わせる。Pro特典は現行の実権限から文言を確定する。

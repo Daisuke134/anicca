@@ -89,7 +89,7 @@ final class AppState: ObservableObject {
         self.isOnboardingComplete = defaults.bool(forKey: onboardingKey)
 
         // オンボーディング未完了時は welcome から開始、途中の場合は保存された step を復元
-        if defaults.bool(forKey: onboardingKey) {
+        if defaults.object(forKey: onboardingStepKey) != nil {
             let rawValue = defaults.integer(forKey: onboardingStepKey)
             let savedVersion = defaults.integer(forKey: onboardingStepVersionKey)
 

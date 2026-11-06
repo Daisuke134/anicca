@@ -1332,3 +1332,18 @@
 
 "billing_issue_title" = "Zahlungsproblem";
 "billing_issue_action" = "Tippe, um die Zahlungsmethode zu aktualisieren";
+
+// Initial affirmation experience
+"growth_goal_title" = "Wovon möchtest du mehr?";
+"growth_goal_subtitle" = "Wähle, was heute zu dir passt. Wir finden Worte, die dich begleiten.";
+"growth_goal_self_love" = "Selbstliebe";
+"growth_goal_calm" = "Ruhe";
+"growth_goal_confidence" = "Selbstvertrauen";
+"growth_goal_letting_go" = "Loslassen";
+"growth_find_words" = "Meine Worte finden";
+"growth_first_affirmation" = "DEINE ERSTE AFFIRMATION";
+"growth_first_subtitle" = "Atme durch. Lass diese Worte für den Moment genug sein.";
+"growth_keep_close" = "Diese Worte speichern";
+"growth_saved" = "Gespeichert";
+"growth_daily_moment" = "Zeit für einen täglichen Moment";
+"growth_maybe_later" = "Vielleicht später";

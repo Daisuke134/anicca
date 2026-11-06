@@ -2698,3 +2698,18 @@
 
 "billing_issue_title" = "Payment issue — action needed";
 "billing_issue_action" = "Tap to update your payment method";
+
+// Initial affirmation experience
+"growth_goal_title" = "What would you like more of?";
+"growth_goal_subtitle" = "Choose what feels right today. We will find words that meet you there.";
+"growth_goal_self_love" = "Self-love";
+"growth_goal_calm" = "Calm";
+"growth_goal_confidence" = "Confidence";
+"growth_goal_letting_go" = "Letting go";
+"growth_find_words" = "Find my words";
+"growth_first_affirmation" = "YOUR FIRST AFFIRMATION";
+"growth_first_subtitle" = "Take a breath. Let these words be enough for now.";
+"growth_keep_close" = "Keep this close";
+"growth_saved" = "Saved";
+"growth_daily_moment" = "Make room for a daily moment";
+"growth_maybe_later" = "Maybe later";

@@ -2714,3 +2714,18 @@
 
 "billing_issue_title" = "お支払いに問題があります";
 "billing_issue_action" = "タップしてお支払い方法を更新";
+
+// Initial affirmation experience
+"growth_goal_title" = "今、どんな言葉がほしいですか？";
+"growth_goal_subtitle" = "今の気持ちに合うものを選んでください。あなたに寄り添う言葉を届けます。";
+"growth_goal_self_love" = "自分を大切に";
+"growth_goal_calm" = "心の落ち着き";
+"growth_goal_confidence" = "自信";
+"growth_goal_letting_go" = "手放すこと";
+"growth_find_words" = "自分に合う言葉を読む";
+"growth_first_affirmation" = "あなたへの最初の言葉";
+"growth_first_subtitle" = "ひと呼吸。その言葉を、そっと受け取ってください。";
+"growth_keep_close" = "この言葉を保存";
+"growth_saved" = "保存済み";
+"growth_daily_moment" = "毎日のひとときをつくる";
+"growth_maybe_later" = "あとで";
