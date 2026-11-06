@@ -26596,7 +26596,7 @@ P06-3 (Statsmodels power/SciPy A/A false-positive/SRM), P06-4 (synthetic recogni
 | 項目 | As-Is | To-Be / 成功を判定する証拠 |
 |---|---|---|
 | 販売商品 | 自社Agentの運転記録とCloudの設計/入口/sourceはある。外部利用者向けの一般提供→継続課金→顧客の実成果という全経路は未実証 | 一つのLife Manager Cloudを第三者が登録・購入・利用でき、自社も同じ経路で使う |
-| 本番source | `apps/life-manager/server.js`→`maritime-manager-auth.js`、store/runtime/transport、wake/report/usageの接続がある。`maritime/run-cycle.js`はCapafy専用cycleを呼び、一般Managerの完走証明ではない | 本番AgentはMaritimeのみ。既存接続/台帳を使い、公式harnessへ業務設定を接続する。自作Agent runtimeは新設しない |
+| 本番source | `apps/life-manager/server.js`→`maritime-manager-auth.js`、store/runtime/transport、wake/report/usageの接続がある。`transport/maritime-manager.js`はframework=custom/ZIP archiveを要求し、`maritime/run-cycle.js`はCapafy専用cycleを呼ぶ。公式templateへ設定だけで切替可能とは言えず、一般Managerの完走証明でもない | 本番AgentはMaritimeのみ。既存接続/台帳を使い、公式harnessへ業務設定を接続する。自作Agent runtimeは新設しない |
 | 本番provider | 保存済みOpenClaw試験は/data保持・モデル/初期browser操作を確認。再開後browser無効、desktop変更はseat_limit | 契約内の公式経路で必要browserが再開後も動き、Agent-owned identity/stateを保持する |
 | Naïve | 前回公式API/native browser/owned inbox送信成功、限定閲覧run $0.024496、deployment10件停止の保存済み観測。今回live状態/費用を再取得しない | 大会専用Agentで本物の業務を有限実行。証拠・費用・人の介入・未達を正確に示す。本番提供成功へ読み替えない |
 | 公開と課金 | `/lm`等の説明/sourceはある。既存Web billingはTravel/Calendarの契約を含む。Cloud専用entitlement・現行配備・paid invoiceは未照合 | Cloud商品専用の課金と利用権を同じtenantへ結び、支払/停止/取消を正しく反映 |
@@ -26670,7 +26670,7 @@ flowchart TD
 
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
 |---|---|---|---|
-| LC14 | 未 / LC08/12 | `TENANT + SDK endUsers`：一般利用者一人を分離環境へ割り当て | 認証subject→tenant→externalId→Agentが一意 |
+| LC14 | 未 / LC08/12 | `TENANT + SDK endUsers + transport/maritime-manager.test.js`：公式harnessへの顧客割当を接続 | 既存transportのcustom/ZIP前提を採用templateの公式契約へ最小修正し、認証subject→tenant→externalId→Agentが一意。新runtimeは作らない |
 | LC15 | 未 / LC14 | `TENANT + 既存provision test`：signup再送の二重作成を防ぐ | 同じ利用者/要求を再送して同じAgentを返し二重費用なし |
 | LC16 | 未 / LC14 | `公式vault/secret機能・既存identity連携`：tenantの仕事用identity/秘密を接続 | 秘密がprompt/log/他tenantに出ず、agent-owned資格情報だけを使う |
 | LC17 | 未 / LC15/16 | `TENANT + 既存isolation test`：tenant AからBへのアクセスを拒否 | state/profile/keys/receiptを相互に読めない最小の負例がPASS |
@@ -26681,7 +26681,7 @@ flowchart TD
 
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
 |---|---|---|---|
-| LC20 | 未 / LC01/09 | `既存Life Manager playbook + official harness`：自発的な優先判断を一業務へ接続 | 観測→次作業選択→実行→確認→状態保存をAgentが行う。固定応答/台本商品化なし |
+| LC20 | 未 / LC01/09 | `既存Life Manager playbook + official harness + maritime/run-cycle.jsの呼出元`：自発的な優先判断を一業務へ接続 | 旧Capafy専用cycleと一般Managerの実行を区別し、公式harnessで観測→次作業選択→実行→確認→状態保存を行う。固定応答/台本商品化/新wrapperなし |
 | LC21 | 未 / LC06/20 | `市場公式terms・実募集/受取条件`：ゼロ現金/無人受取に適合する最初の市場を確定 | 実働・需要・手数料・受取・ID/担保条件を記録。不適合は除外、Capafyを固定しない |
 | LC22 | 未 / LC16/21 | `選定provider + Agent-owned inbox`：正規登録または正式Agent roleを一件完了 | 検証メール/最終login/provider ID一致。利用者私用credentialや会社Publisher共用なし |
 | LC23 | 未 / LC22 | `選定providerの既存offer/掲載機能`：一つの有料offer/受注対象を提供 | live公開URL/正式提供状態。審査提出を公開としない |
