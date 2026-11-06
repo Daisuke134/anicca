@@ -1,4 +1,4 @@
-// scheduler.js — the cloud wake loop. Every 60s: find Life Manager users due for a T-10/T-5 min wake
+// scheduler.js — the cloud wake loop. Every 60s: find Life Manager users due for a T-10/T-5/T-0 min wake
 // and place a Telnyx+Gemini-Charon call whose audio bridges back to THIS service's /ws.
 //
 // Source of truth:
@@ -84,19 +84,19 @@ function withTimeout(work, timeoutMs, label) {
   return Promise.race([operation, deadline]).finally(() => clearTimeout(timer));
 }
 
-// Escalating wake calls: ring at T-10 (firm) and T-5 (harsh) before EACH event — TWO calls only
-// (Dais 2026-06-25: "just call me 10 min before and 5 min before, that's it"), so the user actually
-// gets up / leaves. Each (event, level) fires once (deduped).
+// Escalating wake calls: T-10 (firm), T-5 (harsh), and event-start T-0 (harsh).
+// Each (event, level) fires once (deduped).
 const WAKE_LEVELS = [
   { min: 10, urgency: "firm" },
   { min: 5, urgency: "harsh" },
+  { min: 0, urgency: "harsh" },
 ];
 function wakeEventKey(ev, levelMin) {
   const identity = String(ev.id || `${ev.startIso}|${ev.summary || ""}|${ev.location || ""}`);
   const digest = crypto.createHash("sha256").update(identity).digest("base64url").slice(0, 22);
   return `${ev.startIso}|${digest}|${levelMin}`;
 }
-// A scheduled wake starts before the event, never after its start time.
+// A scheduled wake starts before or at the event start, never after it.
 const LATE_CUTOFF_MIN = 0;
 
 const SUPA = () => ({ url: process.env.SUPABASE_URL, key: process.env.SUPABASE_SERVICE_ROLE_KEY });
@@ -537,17 +537,17 @@ async function wakeCallOnce(u, nowMs, deps = {}) {
       // A level is DUE once its threshold has passed, not only while the tick sits inside a ~2-min
       // window: this tick is not periodic (the organs above share the per-user timeout, and a redeploy
       // restarts the loop), so a window-bound level was lost FOREVER whenever a tick landed outside it.
-      // Ordered most urgent first, because a tick that catches up on both levels must place ONE call —
-      // the one that still matches how little time is left — never T-10 and T-5 back to back.
+      // Ordered most urgent first, because a tick that catches up on multiple levels must place ONE call —
+      // the one that still matches how little time is left — never multiple levels back to back.
       const due = WAKE_LEVELS
-        .filter((lvl) => mins <= lvl.min + 0.5 && mins > LATE_CUTOFF_MIN)
+        .filter((lvl) => mins <= lvl.min + 0.5 && mins >= LATE_CUTOFF_MIN)
         .sort((a, b) => a.min - b.min);
       if (due.length) reportWakeDiagnostics(deps, { due_candidates: 1 });
-      // The moment an event starts, its wake cannot ring again. If the finest
+      // After an event starts, its wake cannot ring again. If the finest
       // level was never even claimed, nothing was ever attempted — the exact failure that looked like
       // a non-event in lm_wake_log. Record it once, in the two ticks just past the cutoff: later ticks
       // belong to the late-notice organ, and re-recording would keep restamping an old failure as new.
-      if (mins <= LATE_CUTOFF_MIN && mins > LATE_CUTOFF_MIN - 2) {
+      if (mins < LATE_CUTOFF_MIN && mins > LATE_CUTOFF_MIN - 2) {
         const finest = WAKE_LEVELS.reduce((a, b) => (a.min <= b.min ? a : b));
         const finestKey = wakeEventKey(ev, finest.min);
         try {
@@ -1494,7 +1494,7 @@ module.exports = {
   lateNoticeUserOnce,
   // per-tenant isolation wrapper (HARD-4): one tenant's failure can't break the others' tick
   forEachUserSafe,
-  // wake escalation levels (Dais: T-10 firm + T-5 harsh only) — exported so a revert is test-caught
+  // wake escalation levels (T-10 firm + T-5 harsh + T-0 harsh) — exported so a revert is test-caught
   WAKE_LEVELS,
   // how late a missed level may still be caught up (past it, the late-notice organ owns the event)
   LATE_CUTOFF_MIN,
