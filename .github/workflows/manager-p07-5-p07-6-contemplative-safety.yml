@@ -1,0 +1,72 @@
+name: Manager P07-5/6 | contemplation, wellbeing and harm safety contracts
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/manager-p07-5-p07-6-contemplative-safety.yml"
+      - "products/manager/manager_core/p07_5_experience_observation.py"
+      - "products/manager/manager_core/p07_6_welfare_safety.py"
+      - "products/manager/tests/test_p07_5_p07_6_contemplative_welfare.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-clinical-scope:
+    name: Run contemplative-domain + adverse-event software tests, FREE cloud
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate pure Python source
+        run: |
+          python -m py_compile \
+            products/manager/manager_core/p07_5_experience_observation.py \
+            products/manager/manager_core/p07_6_welfare_safety.py
+      - name: Run 25 opt-in, harm, measurement, licensing and assignment tests
+        env:
+          PYTHONPATH: products/manager
+        run: |
+          python -m unittest discover -s products/manager/tests \
+            -p 'test_p07_5_p07_6_contemplative_welfare.py' -v
+      - name: Produce synthetic-only reusable component receipts
+        env:
+          PYTHONPATH: products/manager
+        run: |
+          python - <<'PY'
+          import json
+          from dataclasses import asdict
+          from manager_core.p07_5_experience_observation import (
+              ContemplativeObservation, observe_experience)
+          from manager_core.p07_6_welfare_safety import (
+              OutcomeObservation, assess_welfare, AssignedObservation,
+              assigned_trial_audit)
+          obs=observe_experience(ContemplativeObservation(
+              consent=True,revoked=False,domain='feeling_tone',
+              reported_valence='unpleasant',urge_to_react_0to10=5))
+          harm=assess_welfare(OutcomeObservation(
+              user_consented=True,consent_revoked=False,
+              self_chosen_goal=True,goal_met=None,
+              functional_impairment_reported=True))
+          trial=assigned_trial_audit((
+              AssignedObservation(0,3,delivered=True),
+              AssignedObservation(0,5,delivered=False),
+              AssignedObservation(1,4,delivered=False),
+              AssignedObservation(1,8,delivered=True)))
+          assert obs.status=='OBSERVATION_ONLY' and not obs.may_claim_enlightenment
+          assert harm.status=='STOP_AND_REFER' and not harm.may_continue_intervention
+          assert not trial['used_delivery_status_for_assignment']
+          assert not trial['causal_identification_claimed']
+          print(json.dumps({
+              'only_synthetic_software_cases':True,
+              'opted_in_read_only':asdict(obs),
+              'reported_functional_harm':asdict(harm),
+              'randomized_assignment_audit':trial,
+              'meditation_benefit_proven':False,
+              'clinical_treatment_executed':False,
+          },ensure_ascii=False,indent=2))
+          PY
