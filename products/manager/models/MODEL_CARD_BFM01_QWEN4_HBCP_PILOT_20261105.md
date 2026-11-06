@@ -56,7 +56,7 @@ Actual model-training and code integration run: https://github.com/Daisuke134/li
 
 **Learned model**: `manager-hbcp-ridge-arm-rate-v0`. Fit scikit-learn Ridge on all 971 published study arms (405 reports), with median imputation and missing-value indicators. Exported **142 numerical learned coefficients** plus feature schema and imputation medians to [plain JSON](checkpoints/manager-hbcp-ridge-arm-rate-v0.json). There is no pickle deserialization, no uploaded patient rows, no proprietary model weights. Original HBCP annotated underlying data license: CC0 per the paper.
 
-**Integrity**: exported checkpoint SHA256 `2e79c075903b95462659f4f8067f5921cb26c7e687d76e62b6d6a48b5455f0bb`. Independent JSON predictor matches the scikit trained model within `1.7763568394e-14` percentage points on all training arms. The source CSV is pinned by SHA256 `eec4ba6ffc51961fda1308f690a97a60111d93858fa67ca19ffd4392fd49679b`.
+**Integrity**: exported checkpoint integrity `同梱の manager-hbcp-ridge-arm-rate-v0.manifest.json が記録する重みの SHA256（配布時に検証）`. Independent JSON predictor matches the scikit trained model within `1.7763568394e-14` percentage points on all training arms. The source CSV is pinned by SHA256 `eec4ba6ffc51961fda1308f690a97a60111d93858fa67ca19ffd4392fd49679b`.
 
 **Repeated study-disjoint cross-validation under pinned CPU libraries**: five folds of 405 reports, held out by entire study. The latest complete fixed-environment run found MAE (percentage points) **train mean 10.0048, Ridge 9.2615, RandomForest 9.2130**. The final exported Ridge weights are refit on **all** published arms, so this score is the validation performance of the same **model class/protocol**, not a held-out test of that final refit on future studies. Pin environment: Python 3.11; numpy 2.4.6, pandas 3.1.1, sklearn 1.8.0, scipy 1.17.1. The original HBCP authors' RuleNN 9.15 and our earlier different environment/division outputs must not be treated as identical conditions.
 
@@ -65,3 +65,8 @@ Actual model-training and code integration run: https://github.com/Daisuke134/li
 **Status boundary**: a small, domain-specific *trained model head* is now built and has reusable weights. It is **not** a general Behavioral Foundation Model, not evidence that Manager improves behavior, and not Be.FM 1.5-4B or Centaur. No clinical deployment or external authority.
 
 **The one remaining BFM-01 task** remains accepted Hugging Face Be.FM adapter terms + Modal token/credit, run actual Be.FM 1.5-4B inference on the same feature and prompt contract as Qwen3, assess legally licensed heldout human outcomes, and integrate the validated model behind controlled product interfaces. P07-5 is knowledge to be learned when needed, not a second active next task.
+
+
+### Reproducible checkpoint release gate
+
+The JSON model now exports 142 coefficients with ten-decimal-place serialization, plus a separate committed `checkpoints/manager-hbcp-ridge-arm-rate-v0.manifest.json` containing the exact generated SHA256, provenance digest and a false clinical/intervention authorization flag. The Manager Core adapter checks both files and refuses mismatches. This avoids hardcoding a floating-point BLAS-dependent training digest before release. Numerical libraries are pinned in GitHub Actions, predictions are compared against the original fitted sklearn implementation, and the two files are versioned together on the reviewed PR. This does not grant clinical use or prove BFM generalization.
