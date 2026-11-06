@@ -23710,6 +23710,15 @@ b.6-01〜27bのsource/configとT23.1 aggregate-only exporterは完了。T23.1 pa
 - **衝突注意**: Mac の Capafy ループも同じ resume_draft を選択し得る。セッション復旧直後にサイクル004を dispatch し、この再開は Maritime レーンが所有する（BOARD 記録）。
 - **費用**: 本レーンの run-cycle dispatch は0件・LLM 実費なし（オペレータ exec プローブのみ）。新規課金・有料 plan・billing 切替ゼロ。agent は sleeping 復帰済み。
 
+#### 2026-11-06 Maritime M-1 最終段 checkpoint（storage state 取得で停止）
+
+**現在地・as of 2026-11-06 17:50 UTC:** セッション復旧は親側で完了（VM 共有ブラウザ内に Capafy の生きたセッションを 09:42-09:43 PST に実測）。しかし storage state の取得元である VM ブラウザプロファイルは、ブラウザ broker がリースする VMVM 内にあり、runtime cell からは設計上到達できない（broker のヘルプ明記: cell には broker への経路が無く、唯一のクライアントはホスト daemon）。本レーンは stop condition に従い、試した全経路を証拠付きで記録して停止した。browserSeeded=false のまま、サイクル004 は未 dispatch。根拠→[cycle-20261106-capafy-binding-m1-final.json](../../evidence/maritime/cycle-20261106-capafy-binding-m1-final.json)。
+
+- **試した経路（全て証拠あり）**: ファイルシステム（本ホストに Chromium プロファイル自体が存在しない。Cookies ファイル全検索 0件）／CDP（9222・9223・9229・9515 全て閉）／broker ソケット（cell 内に存在しない）／hatch CLI・browser-service（セッション取得機能なし）／ワークスペース内の既存成果物（なし）／Mac 代替の再確認（capafy:kosuke は依然ログアウト、cloak vault は期限切れのまま）。
+- **追加の現行ブロッカー**: Maritime exec POST が同時刻に2回とも HTTP 503（読み取り専用プローブ）。agent の GET は正常（sleeping、invocations 22）。原因は未確認で、次回試行時に再確認する。
+- **再開条件**: storage state の export はブラウザホスト側でのみ可能。(a) 親が VM ブラウザプロファイルから host／broker 経路で export する、または (b) 親が Mac capafy:kosuke のセッションを復旧し session_vault export する。state が Mac に渡れば、残り（スロットへ browserAuthState 追加→サイクル004 dispatch→remote status 検証→公開ページ実読）は親専用段なしで実行できる。
+- **費用**: run-cycle dispatch 0件・LLM 実費なし。新規課金・有料 plan・billing 切替ゼロ。FROZEN 売り手・対象外の出品には触れていない。
+
 ### Life Manager distribution: four channels, one metrics tool, blog per business — 2026-10-18 20:40 JST (claude-evo-eval-1012, Dais: "maximize distribution and conversion for every business; separate the blog per business; same tool for all agents; copy the successful")
 
 **Directive (restated):** every business agent (Capafy, LINE stickers, eBook, AI voice tools, Anicca app) runs the same distribution system on four channels, measures with the same free tools, and improves from the numbers: (1) social (one account = one language, largest market first), (2) search-engine SEO, (3) AI answer engines (Google AI Overview, ChatGPT, Perplexity), (4) the platform's own internal promotion (Capafy search/category/hot ranking). Copy successful software/agent distribution, not only Capafy sellers.
