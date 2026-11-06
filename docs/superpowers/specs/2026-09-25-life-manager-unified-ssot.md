@@ -26624,6 +26624,8 @@ Naïveの既存Deployment 10件は未接続platform/SNSや未作成listingを測
 
 ### 現行の順序付きTODO（この表だけが正本）
 
+**不要Computerの終了範囲:** 自分が今回作成した`cmp_01a1ae9731287d3685a5bf2c44473be3`だけを公式deleteで削除する。Agentへのattachは400拒否、exec/fs/browser操作は行っておらず、user dataも成功runの状態もこのVMにない。現在pausedであることをgetし、delete receiptとgetのnot_foundを確認する。native browser-onlyは別の管理機能で実証済みなので、この空VMのstorage費を残さない。削除までの実費はledgerが確定するまでゼロ計上しない。
+
 **N05からN04への適用範囲:** Agent-owned inboxの準備が完了したため、既存Capafy Agentのsystemから古いdraft-only/公開禁止/ユーザー質問前提を除き、現在Sessionのタスクをnative browserと選択Identityで実行して事実を報告する短い役割へ更新する。Identity固有のemail.inboxes/read/sendを公式policyで有効にし、ユーザー承認済みのCapafy support連絡先をAgent自身のinboxへつなぐ一通だけを実行・Sent readbackする。registrationや販売実績とは扱わない。
 
 順序更新: 旧=手動Computer作成→AgentにID割当→browser→Capafy→email。新=N02公式CLI認証→N03 native browser設定→N03a短い実run→N03b無駄なschedule停止→N05無料のAgent inbox→N04 Capafyの前払い/Publisher単位を解決または次候補一つ→N06登録→N07公開→N08第三者注文→N09a納品→N09b精算/費用照合→N10成功jobだけ定期化→N11demo→N12有料Cloud MRR→Maritime→local。理由=Computer ID割当は現行API非対応で、native browserはVMなしで実動した。signupの共通前提である無料inboxはplatform回答待ちと独立して進められる。N05は完了し、現在cursor=N04。並行待ちはsupport返信だけ。
