@@ -6,7 +6,7 @@
 
 **詳細仕様:** [Anicca iOS Product Growth](2026-11-06-anicca-ios-product-growth-design.md)。**実装手順:** [Implementation Plan](../plans/2026-11-06-anicca-ios-product-growth.md)。**唯一の順序/状態正本:** この節。詳細文書・実行checklist・会話はこの節を参照する。
 
-**今回の実行範囲:** 全体spec/plan/画面案sourceを共有し、ユーザーが実行開始を指示済み。G1〜G5のアプリ変更・Maestro実製品動画・審査提出を進める。G6〜G10のdashboard変更・loop起動は後続として保持し、今回起動しない。
+**現在のリリース境界:** 1.9.8/build 818の審査提出は取り下げ済み。G1〜G4とAniccaの計測をOpenへ出すG4.1が実証されるまで再提出しない。G5は「提出済み」ではなく、全ゲートを通過した後に一度だけ提出する完了ゲート。提出禁止はこの製品specの恒久ルールとする。
 
 | ID | 状態 | 実行順・成果 | 完了条件 |
 |---|---|---|---|
@@ -14,25 +14,28 @@
 | G1 | 検証済み | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
 | G2 | PR #9282統合済み（merge SHA `6cc7c4a7`）。対象CI/単体テストPASS。既存iOS 26.5 Simulator E2Eは候補build 817でswipe・通知カード→本文一致→保存までPASSしたが、通知動画/source receiptはmerge SHAに結び付かない。実端末APNs/実頻度/free-Pro実配信は未確認 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | merge sourceに結び付くE2E証拠、実端末APNs、実設定/配信境界 |
 | G3 | 検証済み | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
-| G4 | 実装済み・サービス受信未確認 | 全主要画面と価値/課金/通知event、正しい価格/通貨/receipt | サービス側受信、同一ID、二重発火0、不明価格やrestoreを売上化しない |
-| G5 | 完了: 旧提出ID `cb6fa5a3-c350-482d-9ca7-369be6785249`=`COMPLETE`/審査項目`REMOVED`。既存version ID `224f1d6d-e7b4-4dc7-9258-111e67de7363`を1.9.8へ更新。新submission `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`=`WAITING_FOR_REVIEW`、item=`READY_FOR_REVIEW` | 限定公開動画を提示→1.9.7取下げ→Apple指定の既存version更新→build 818 attach→validate→1.9.8 submit | YouTube URLと公開状態、ASCのsubmission/version/build一致を公式readback。Apple承認・公開は別状態 |
+| G4 | 部分実装・未完 | Mixpanel一本へ統一し、全画面・導線・課金・通知のイベント契約と本番受信を完成 | event/property/identity/重複とMixpanel側受信を公式readback。PostHog二重送信なし |
+| G4.1 | 未着手・G5の必須前提 | Aniccaの画面別ファネルを既存Openへ集計表示 | 同じ日次snapshotのsource/freshness/coverage/分母をOpenでreadback。個人単位データを公開しない |
+| G5 | 取消済み・再提出禁止 | 全画面・計測・Open・同一build E2Eの受入後、ASC CLIで新しい1.9.8審査提出を一度だけ実行 | 以下の提出禁止条件がすべてPASSした後に限り提出。build/version/submissionを公式readback |
 | G6 | 後続・未着手 | 全出荷app inventory、国/流入/課金/retentionの欠測修復 | 公式source/期間/分母/coverage、アプリごとの失敗隔離 |
-| G7 | 後続・未着手 | 既存Openへ日次履歴・グラフ・funnel・国/流入/実験表示 | 公開画面とsource鮮度/履歴一致、unknownと0の区別、狭幅確認 |
+| G7 | 後続・未着手 | 既存Openを全アプリ/日次履歴/グラフ/funnel/国/流入/実験へ拡張 | 公開画面とsource鮮度/履歴一致、unknownと0の区別、狭幅確認。Aniccaの最小funnelはG4.1でG5前に完成 |
 | G8 | 後続・未着手 | SNS/記事/quoteの接続、地域別onboarding/paywall/価格/推薦実験 | supported attribution、stable割付/露出、必要人数/成熟期間/guardrail、標本不足は未判定 |
 | G9 | 後続・未着手 | 日次分析→週次修正→動画→提出→却下修正/公開照合のloop | 自然wake/receipt/start/result、同一台帳、次runで二重effect0。新harnessは必要性を実証して選択 |
 | G10 | 後続・未着手 | Honne等へ共通schema/運用を展開、全体の継続収益を評価 | app別activation、全inventory coverage、実稼働と実MRR/profitを区別 |
 
-**旧順→新順:** 旧案は計測全体/ダッシュボードとアプリ初回修正を横断して進める。新順は全体を文書化→Anicca初回G1〜G5→G6〜G10。理由はユーザーが先に実製品を直してMaestro動画を見たいと指定し、最新指示で初回アプリ修正の実行が許可されるため。進行中の他業務loop・配信・審査を中断/重複させない。
+**旧順→新順:** 旧順=G1→G2→G3→G4→G5→G6→G7→G8→G9→G10。新順=G1/G3の既存検証を保持→G2残件→G4（Mixpanel一本化と全イベント受信）→G4.1（Anicca画面別funnelをOpenへ表示）→G5（同じ候補buildの全画面E2E動画を提示後、ASC CLIで提出）→G6/G7（全アプリへ拡張）→G8/G9/G10。理由は画面ごとの離脱・本番計測・Open表示の実証が提出前条件になったため。過去の提出は公式取消し済みで、effectを再送していない。
 
-**順序調整（2026-11-06）:** 旧順=G1→G2→G3→G4→G5→G6→G7→G8→G9→G10。新順=ユーザーの明示指示でG5の動画提示・1.9.7取下げ・1.9.8/build 818提出を先に完了し、G2の未確認境界→G4のサービス受信→G6→G7→G8→G9→G10へ戻る。理由は既に1.9.7が審査待ちで、Appleが1.9.8新規作成を拒否し既存version record更新を指定したため。進行中の外部effectは重複していない。現在cursor=G2残りのsource結合E2E/実APNs/通知設定確認、その後G4のprovider受信。
+**順序調整（2026-11-06）:** 直前の提出順は1.9.8を先に提出して後続G2/G4へ戻る順だった。ユーザーが提出前に画面別計測・Open表示・全画面E2Eの実証を要求したため、現在はG2→G4→G4.1→G5へ変更した。1.9.8のsubmission ID `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消しreadback済み。外部effectを再送しない。
 
-**現在cursor:** G5はApp Review提出まで完了。PR #9272/build 816/source `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`は1.9.7の旧候補、PR #9282/build 818/source `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`はその改善と通知から開いた本文保持修正を含む。YouTube動画は限定公開・公開済み: 初回体験 <https://www.youtube.com/watch?v=88N3zsKZUJM>、通知 <https://www.youtube.com/watch?v=J005BFtO88U>。両方Simulator candidate build 817の録画で、build 818固有のE2E記録ではない。旧提出ID `cb6fa5a3-c350-482d-9ca7-369be6785249`は取下げ操作後`COMPLETE`、item `REMOVED`を確認。Appleは新規version作成を拒否したためversion ID `224f1d6d-e7b4-4dc7-9258-111e67de7363`を1.9.8へ更新し、build 818をattachした。最新提出ID `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`、1.9.8/build 818、`WAITING_FOR_REVIEW`/item `READY_FOR_REVIEW`を公式readback。validateはerrors=0、blocking=0、warnings=15。提出時に旧`Anicca Monthly Plan`は`MISSING_METADATA`でレビュー対象から除外されるとの警告が出た。App Privacy公開状態はdoctorから確認不可。G5のApple審査承認・公開は未確認。
+**現在cursor:** G2の未確認境界（merge sourceと同じ候補buildでの画面確認、実APNs、free/Pro設定）→G4のMixpanel一本化・実event receipt/property/identity/dedup検証→G4.1のOpen集計/readback。これらとG1/G3の完了証拠を一つのrelease SHAへ結び、全画面Maestro動画をユーザーへ提示してからG5へ進む。
+
+**提出禁止の完了条件:** ①合意済みの全画面とUI動作がscreen inventoryで網羅され、画面間遷移・離脱計算の分母/観測窓が定義済み、②Mixpanelだけに正しいID/event/propertyが届き、主要event受信・二重発火0・purchase/trial/restore区分をサービス側readback、③Aniccaのfunnel/retention/課金を既存Openで日次source・coverage・分母つき表示しlive公開画面をreadback、④実装candidateと同じbuildの全画面Maestro E2Eと再生可能な動画を提示、⑤実端末通知/購入権限など各受入項目を証明、⑥ASC metadata/対象IAPを再照合。どれか一つでも未確認・欠測なら再提出しない。screen unloadの瞬間を観測できると偽らず、次のscreenへ観測窓内に進まない割合を離脱と定義する。
 
 **動画:** `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-initial-UX-2026-11-06.mp4`（141秒、1206×2622）と`/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-iOS-1.9.8-notification-2026-11-06.mp4`（78秒、1206×2622）。Simulator実画面・H.264。Postizの「Daily Affirmation App - Anicca」YouTube連携から限定公開で投稿し、両方`PUBLISHED`、`type=unlisted`とYouTube `releaseURL`をreadback。初回体験: <https://www.youtube.com/watch?v=88N3zsKZUJM>。通知: <https://www.youtube.com/watch?v=J005BFtO88U>。candidate build 817録画であることを動画説明へ明記。
 
-**公式ASC:** 旧1.9.7提出ID=`cb6fa5a3-c350-482d-9ca7-369be6785249`は`COMPLETE`、item `REMOVED`。既存version ID=`224f1d6d-e7b4-4dc7-9258-111e67de7363`をAppleの指示に従い1.9.8へ更新。添付build 818 ID=`7cfb4f37-680c-447d-873a-7f8eb54a0baf`は`VALID`/`APP_STORE_ELIGIBLE`。1.9.8 submission=`306c7696-bc5d-4aa2-b82c-1fc0a07d253c`、submittedDate=`2026-11-06T12:00:36.736Z`、`WAITING_FOR_REVIEW`。version状態も`WAITING_FOR_REVIEW`、item=`READY_FOR_REVIEW`。版validate errors=0/blocking=0/warnings=15。submit warning: `Anicca Monthly Plan` (`6758591116`)は`MISSING_METADATA`のため今回の審査対象に含まれない。App Privacy publish stateはpublic APIで未検証。App Reviewの承認・公開は未確認。
+**公式ASC（現在readback）:** 1.9.8提出ID=`306c7696-bc5d-4aa2-b82c-1fc0a07d253c`を取消し、GETでsubmission=`COMPLETE`、item=`REMOVED`。build 818 ID=`7cfb4f37-680c-447d-873a-7f8eb54a0baf`は`VALID`。App Store version ID=`224f1d6d-e7b4-4dc7-9258-111e67de7363`の現在状態は`DEVELOPER_REJECTED`。`asc review doctor`はerrors=1/blocking=1、`review.submission.removed_items_only`（最新completed提出の全項目がremoved。診断上の次手は現在版への新しい審査提出）。これは再提出完了を意味せず、製品のG1〜G4/G4.1ゲートを先に閉じる。新しいsubmissionは存在しない。YouTubeの初回体験 <https://www.youtube.com/watch?v=88N3zsKZUJM> と通知 <https://www.youtube.com/watch?v=J005BFtO88U> は限定公開のまま参照できるが、candidate build 817の録画でbuild 818や次の候補buildの受入証拠ではない。旧`Anicca Monthly Plan` (`6758591116`)の`MISSING_METADATA`警告、App Privacy公開状態未検証は次回ASC照合へ残す。
 
-**次の1手:** G2の残り（merge sourceに結び付く通知E2E、実端末APNs、free/Pro通知設定と実頻度の確認）を正本順序に沿って進め、次にG4で分析service側のevent受信と重複0を確認する。その後G6の全出荷app計測へ進む。実購入/有料restore成功、実端末APNs、分析service受信、Apple審査承認/公開は現時点で未確認。G7〜G10は未着手。
+**次の1手:** G2の実端末APNs・free/Pro通知設定・同じmerge sourceに結び付く画面確認を閉じる。続いてG4のevent/screen inventoryとPostHog呼出しを確定し、Mixpanel一本化→G4.1 Open→同一build動画→G5の順。App Review再提出は実行しない。実端末APNs、実購入/有料restore、Mixpanel service receipt、Open screen funnelは未確認。G6〜G10は未着手。
 
 進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。
 
