@@ -6,6 +6,9 @@ on:
       - ".github/workflows/manager-p07-5-p07-6-contemplative-safety.yml"
       - "products/manager/manager_core/p07_5_experience_observation.py"
       - "products/manager/manager_core/p07_6_welfare_safety.py"
+      - "products/manager/manager_core/p07_contemplative_support.py"
+      - "products/manager/manager_core/p07_4_value_action_gate.py"
+      - "products/manager/tests/test_p07_contemplative_support.py"
       - "products/manager/tests/test_p07_5_p07_6_contemplative_welfare.py"
   workflow_dispatch:
 
@@ -26,13 +29,16 @@ jobs:
         run: |
           python -m py_compile \
             products/manager/manager_core/p07_5_experience_observation.py \
-            products/manager/manager_core/p07_6_welfare_safety.py
-      - name: Run 25 opt-in, harm, measurement, licensing and assignment tests
+            products/manager/manager_core/p07_6_welfare_safety.py \
+            products/manager/manager_core/p07_contemplative_support.py \
+            products/manager/manager_core/p07_4_value_action_gate.py
+      - name: Run all P07-4/5/6 software contracts and the 10 integration tests
         env:
           PYTHONPATH: products/manager
         run: |
-          python -m unittest discover -s products/manager/tests \
-            -p 'test_p07_5_p07_6_contemplative_welfare.py' -v
+          python -m unittest discover -s products/manager/tests -p 'test_p07_4_value_action_gate.py' -v
+          python -m unittest discover -s products/manager/tests -p 'test_p07_5_p07_6_contemplative_welfare.py' -v
+          python -m unittest discover -s products/manager/tests -p 'test_p07_contemplative_support.py' -v
       - name: Produce synthetic-only reusable component receipts
         env:
           PYTHONPATH: products/manager
