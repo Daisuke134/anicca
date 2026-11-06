@@ -38,17 +38,6 @@ struct FeedRootView: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .top) {
-                // SHARED background (does NOT change across swipes).
-                themeStore.image
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: geo.size.width, height: geo.size.height)
-                    .ignoresSafeArea()
-                    .accessibilityHidden(true)
-
-                LinearGradient(colors: [.black.opacity(0.12), .clear, .black.opacity(0.28)], startPoint: .top, endPoint: .bottom)
-                    .ignoresSafeArea().accessibilityHidden(true)
-
                 // Vertical paging — each page is forced to screen width.
                 VerticalPager(count: quotes.count, currentIndex: $currentIndex, navigationRevision: navigationRevision) { idx in
                     QuoteCardView(quote: quotes[idx], pageWidth: geo.size.width)
@@ -109,6 +98,18 @@ struct FeedRootView: View {
                         .zIndex(11)
                         .transition(.move(edge: .top).combined(with: .opacity))
                 }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .background {
+                ZStack {
+                    themeStore.image.resizable().scaledToFill()
+                        .frame(width: geo.size.width, height: geo.size.height + geo.safeAreaInsets.top + geo.safeAreaInsets.bottom)
+                        .clipped()
+                    LinearGradient(colors: [.black.opacity(0.12), .clear, .black.opacity(0.28)], startPoint: .top, endPoint: .bottom)
+                }
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             }
         }
         .environmentObject(themeStore)
