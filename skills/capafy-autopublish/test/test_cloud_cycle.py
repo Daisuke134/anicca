@@ -134,6 +134,19 @@ class CloudCycleTest(unittest.TestCase):
             self.run_cycle()
         self.assertEqual(self.calls, [])
 
+    def test_unresolvable_binding_defers_before_model_execution(self):
+        self.env['LM_CAPAFY_BINDING_JSON'] = json.dumps({
+            'tenantId': TENANT, 'provider': 'capafy', 'subjectId': 'seller-2',
+            'credentialRef': 'capafy-publisher-slot:v1',
+            'browserSessionRef': 'tenant-browser:v1'})
+        result = self.run_cycle()
+        self.assertEqual(result['status'], 'deferred')
+        self.assertEqual(result['errorClass'], 'provider_binding_unresolvable')
+        self.assertEqual(self.calls, [])
+        replay = self.run_cycle()
+        self.assertEqual(replay, result)
+        self.assertEqual(self.calls, [])
+
     def test_workspace_escape_is_rejected_before_execution(self):
         self.env['LIFE_MANAGER_BUILD_WORKSPACE'] = str(self.root / 'other-user')
         with self.assertRaisesRegex(ValueError, 'workspace'):

@@ -56,6 +56,20 @@ def _artifact_file(value, workspace, owner):
     return candidate
 
 
+def _resolve_publisher(binding, home):
+    try:
+        from publisher_resolution import resolve_publisher
+    except ImportError:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            'publisher_resolution', Path(__file__).with_name('publisher_resolution.py'))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        resolve_publisher = module.resolve_publisher
+    return resolve_publisher(binding, state_home=home,
+                             publisher_home=home / 'runtime/capafy-publisher')
+
+
 def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/data'), runner=subprocess.run):
     context = dict(os.environ if env is None else env)
     try:
@@ -120,7 +134,8 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
                     or cached['providerReceiptRefs'] != [] or cached['nextEligibleAt'] is not None
                     or cached['errorClass'] not in (None, 'cycle_in_progress', 'runner_result_unconfirmed',
                         'no_work', 'runner_reported_failure', 'completion_evidence_missing', 'runner_timeout',
-                        'occurrence_workspace_preexisting', 'occurrence_workspace_unavailable')
+                        'occurrence_workspace_preexisting', 'occurrence_workspace_unavailable',
+                        'provider_binding_unresolvable')
                     or not isinstance(cached['artifactRefs'], list)):
                 raise ValueError()
             for ref in cached['artifactRefs']:
@@ -140,6 +155,14 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
     config = Path(context.get('AGENT_RUNNER_CONFIG', '')).resolve()
     if not context.get('AGENT_RUNNER_CONFIG') or not config.is_file() or not (config.is_relative_to(home) or config.is_relative_to(RELEASE)):
         return result('deferred', 'cloud_model_config_missing')
+    resolution = None
+    if binding is not None:
+        # A configured binding must resolve to a verified publisher session
+        # before any agent runs; never degrade a publishing cycle to offline.
+        try:
+            resolution = _resolve_publisher(binding, home)
+        except (ValueError, ImportError, OSError):
+            return result('deferred', 'provider_binding_unresolvable')
     workspace.mkdir(parents=True, exist_ok=True, mode=0o700)
     receipt.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     initial = {'dateKey': date_key, 'releaseSha': release_sha,
@@ -197,7 +220,10 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
     schema_path = receipt.parent / 'pass.schema.json'
     _save(schema_path, schema)
     account_context = ('No provider account is connected. Create an original product and listing offline; do not publish or call commerce mutation APIs.'
-                       if binding is None else 'Use only this tenant provider binding: ' + json.dumps(binding))
+                       if binding is None else 'Use only this tenant provider binding: ' + json.dumps(binding)
+                       + '. Publisher state was resolved and the account verified for this tenant; the secret-free resolution receipt is at '
+                       + str(home / 'runtime/capafy-publisher/resolution.json')
+                       + '. Publish exactly one new Agent through the existing factory flow (publish_prepare.sh, CP1, publish_finish.sh, CP2, CP3), verify it with publish-remote-status, and include the remote status output in your evidence.')
     prompt = '\n'.join([
         f'You are Life Manager for tenant {tenant_id}, occurrence {occurrence_id}, date {date_key}.',
         'Choose and complete one useful revenue-oriented action from actual feedback. No user goal or budget input is required.',
