@@ -103,6 +103,8 @@ Railway公式readbackで本番APIは `Daisuke134/anicca-products` / `apps/api`�
 
 対象sourceはbuild 818 SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`。イベント名の存在だけでcoverage・本番受信・分析可能性を完了にしない。
 
+**固定SDKのローカル挙動（Mixpanel service receiptとは別）:** `Package.resolved`はMixpanel Swift 7.1.0 / revision `38e63de7d71a2b6787bbd190ef8fcc04d053f259`を固定する。公式sourceの[`Track.swift`](https://github.com/mixpanel/mixpanel-swift/blob/38e63de7d71a2b6787bbd190ef8fcc04d053f259/Sources/Track.swift#L84-L89)はSDK identityから`distinct_id`と利用可能なanonymous/user IDをpayloadへ設定し、[`SessionMetadata.swift`](https://github.com/mixpanel/mixpanel-swift/blob/38e63de7d71a2b6787bbd190ef8fcc04d053f259/Sources/SessionMetadata.swift#L33-L42)はevent ID・session ID・sequence metadataを生成する。`Track.swift`はpayloadをflush前にローカル永続化し、[`MixpanelInstance.swift`](https://github.com/mixpanel/mixpanel-swift/blob/38e63de7d71a2b6787bbd190ef8fcc04d053f259/Sources/MixpanelInstance.swift#L1399-L1410)はflush結果が`sent`または`dropped`ならqueueから除去し、`failed`なら保持する。これは固定SDKのclient-side実装根拠であり、Mixpanelがeventを受理した証拠、service-side重複0、実ユーザーIDの安定性を証明しない。test identity・event/property・時刻・releaseのservice readbackは未完了。
+
 ### To-Beイベント契約と分析方法
 
 | 問いたいこと | 計測契約 | Mixpanelで見るもの |
