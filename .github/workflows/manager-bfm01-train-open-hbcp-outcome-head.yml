@@ -64,10 +64,15 @@ jobs:
             --output products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.json \
             --receipt artifacts/bfm01-hbcp-json-weights-receipt.json
           test -s products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.json
+          test -s products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.manifest.json
           python - <<'PY'
-          import json
+          import json,hashlib
           p='products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.json'
+          q='products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.manifest.json'
           j=json.load(open(p))
+          manifest=json.load(open(q))
+          assert manifest["weights_sha256"] == hashlib.sha256(open(p,"rb").read()).hexdigest()
+          assert manifest["clinical_or_intervention_authorization"] is False
           assert j["model_id"]=="manager-hbcp-ridge-arm-rate-v0"
           assert j["intervention_arms"]==971 and j["study_id_count"]==405
           assert j["trained_behavioral_foundation_model"] is False
@@ -85,7 +90,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.json
+          git add products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.json products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.manifest.json
           if git diff --cached --quiet; then
             echo "Open weights already at identical version"
           else
@@ -101,4 +106,5 @@ jobs:
             artifacts/bfm01-hbcp-json-weights-receipt.json
             artifacts/bfm01-hbcp-environment.txt
             products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.json
+            products/manager/models/checkpoints/manager-hbcp-ridge-arm-rate-v0.manifest.json
           retention-days: 30
