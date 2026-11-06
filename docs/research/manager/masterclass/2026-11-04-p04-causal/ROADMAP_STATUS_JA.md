@@ -15,6 +15,14 @@
 
 **実行順を二つに分けない。唯一の現在・次のTODOはBFM-01。** P07-5という講義IDが未着手であることは、BFM-01と競合する「次の仕事」があることを意味しない。P07〜P12の理論は各BFM-01以降の製品実装で必要になったときに学んで即実装する。
 
+## 2026-11-05｜BFM-01の実学習済み小型モデル・製品側read-only接続
+
+- 実モデル訓練：GitHub Actions https://github.com/Daisuke134/life-manager/actions/runs/42141805282 にて、HBCPの405研究・971介入群から**Ridge回帰の重み142係数を実際に学習し、監査可能なJSONとして保存**。SHA256 `2e79c075903b95462659f4f8067f5921cb26c7e687d76e62b6d6a48b5455f0bb`、scikit-learn予測とJSON実装の最大差1.8×10^-14pt。
+- Python3.11 / numpy2.4.6 / pandas3.1.1 / scikit-learn1.8.0 / scipy1.17.1固定の研究単位5-foldを実行。禁煙率予測MAE：train mean10.0048pt、Ridge9.2615pt、RandomForest9.2130pt。原著のRuleNN9.15とは条件が異なり直接比較しない。最終Ridgeの全データ再学習モデルそのものの未知研究スコアと区別。
+- `products/manager/manager_core/hbcp_readonly_adapter.py` を作成。研究の介入群データだと別途確認された入力以外はABSTAIN。重みのSHA・特徴量・最低観測量を検査し、外部通知、個人の医療判断、因果効果推定、無断行動はゼロ。JSONモデルunit test6件、Manager Core adapter test7件がクラウドで成功。
+- **これは汎用的なBehavioral Foundation Modelでも、Be.FMの追加学習済み重みでも、実ユーザーへの実介入でもない**。小さな本物の数値予測モデルを作ったという範囲までの完了。
+- 記録は[同じBFM-01モデルカード](../../../../../products/manager/models/MODEL_CARD_BFM01_QWEN4_HBCP_PILOT_20261105.md)。唯一の次はBFM-01内の**Be.FM4BへのHF正規アクセス→ModalクラウドGPU実推論→同一条件比較→Manager統合と再評価**。新しい並列TODOは作らない。
+
 ## 2026-11-05 16:56 America/Los_Angeles｜BFM-01：実人間の介入研究データでQwen3-4Bを**実際に推論・採点**
 
 **無料GitHub Actionsでの実測（新規）：** https://github.com/Daisuke134/life-manager/actions/runs/42140073436 — HBCP公開の禁煙RCT **971介入群**のうち、SHA256固定の研究単位holdoutで**12介入群／8研究**を評価。Qwen3-4B-Instruct-2507 Q4が実際に12回推論し、**推論合計61.72秒、出力不正0件**。比較に使う学習側は937介入群（評価対象の研究は除外）。禁煙率予測MAEは**学習群平均baseline 6.1419パーセントポイント vs Qwen3-4Bの数値直接生成 30.6417ポイント**。この小さな試行では**単純な平均値が大幅に優れていた**。これはモデルの誤差が見えた現実のnegative result。元のHBCP RuleNN 9.15や前回の全体5fold RF 9.45とは分割も評価手法も異なり比較しない。事前学習汚染を完全除外したSOTAベンチマークでなく、Be.FMのLoRAを実行したわけでも、Managerの人への介入効果を推定したわけでもない。
