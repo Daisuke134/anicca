@@ -28,3 +28,4 @@ appId: ai.anicca.app.ios
     visible:
       id: "paywall-plan-cta"
     timeout: 60000
+- waitForAnimationToEnd

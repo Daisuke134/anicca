@@ -107,7 +107,8 @@ final class AnalyticsManager {
     /// 購入完了
     func observePurchase(package: Package, transaction: StoreTransaction?, customerInfo: CustomerInfo) {
         guard purchaseObservations.record(transaction?.transactionIdentifier) else { return }
-        if customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.periodType == .trial {
+        let entitlement = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]
+        if entitlement?.isActive == true, entitlement?.periodType == .trial {
             trackTrialStarted(productId: package.storeProduct.productIdentifier)
             return
         }
