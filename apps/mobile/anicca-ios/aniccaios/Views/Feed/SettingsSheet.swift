@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import UserNotifications
+import OSLog
 import Combine
 import RevenueCat
 import RevenueCatUI
@@ -200,6 +201,7 @@ struct NotificationsSettingsView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var notificationsAllowed = false
     @State private var isUpdatingPermission = false
+    private let permissionLogger = Logger(subsystem: "com.anicca.ios", category: "NotificationSettings")
 
     private var slots: [String] { ReminderSchedule.slots(isPro: appState.subscriptionInfo.isEntitled) }
 
@@ -217,20 +219,24 @@ struct NotificationsSettingsView: View {
                 Text(String(localized: notificationsAllowed ? "growth_notifications_on" : "growth_notifications_off"))
                     .accessibilityIdentifier("reminder-permission-status")
                 Button(String(localized: "growth_notification_settings")) {
+                    permissionLogger.notice("permission tap busy=\(isUpdatingPermission, privacy: .public)")
                     guard !isUpdatingPermission else { return }
                     isUpdatingPermission = true
                     Task { @MainActor in
                         defer { isUpdatingPermission = false }
                         let settings = await UNUserNotificationCenter.current().notificationSettings()
+                        permissionLogger.notice("permission prior status=\(settings.authorizationStatus.rawValue, privacy: .public)")
                         if settings.authorizationStatus == .notDetermined {
                             _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
                             notificationsAllowed = await NotificationScheduler.shared.isAuthorizedForAlerts()
+                            permissionLogger.notice("permission prompt completed alerts=\(notificationsAllowed, privacy: .public)")
                             AnalyticsManager.shared.track(.notificationPermissionResult, properties: ["source": "settings", "result": notificationsAllowed ? "allowed" : "denied"])
                             if notificationsAllowed { UIApplication.shared.registerForRemoteNotifications() }
                             // A permission choice finishes here. Opening Settings is
                             // a separate, explicit action after permission is settled.
                             return
                         }
+                        permissionLogger.notice("permission opening system settings")
                         if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                     }
                 }

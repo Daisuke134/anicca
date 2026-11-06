@@ -22,4 +22,8 @@ env:
     id: "quote-like"
 - tapOn:
     id: "feed-saved"
-- assertVisible: ${MESSAGE}
+- scrollUntilVisible:
+    element:
+      text: ${MESSAGE}
+    direction: DOWN
+    timeout: 15000
