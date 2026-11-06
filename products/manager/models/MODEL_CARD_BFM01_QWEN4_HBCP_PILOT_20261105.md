@@ -22,10 +22,10 @@ Reuse publicly released Human Behaviour-Change Project trial-arm dataset:
 
 ## Result: one small real-data pilot, NOT a benchmark win
 
-| Fixed local study-disjoint pilot | MAE in percentage points | RMSE status |
+| Fixed local study-disjoint pilot | MAE in percentage points | RMSE in percentage points |
 | --- | ---: | --- |
-| Train-mean baseline | **6.1418587691** | Available in aggregate run artifact |
-| Unadapted Qwen3-4B Q4 | **30.6416666667** | Available in aggregate run artifact |
+| Train-mean baseline | **6.1418587691** | **8.7018759132** |
+| Unadapted Qwen3-4B Q4 | **30.6416666667** | **32.9451438000** |
 
 - Evaluation: 12 published real RCT-arm labels from 8 held-out studies.
 - The simple mean beats generic Qwen directly prompted on this sample. It is an observed failure for this **specific** setup, useful for prioritizing behavior-specific adaptation. It is **not** evidence that Qwen fails all behavioral tasks or that Be.FM is inferior.
