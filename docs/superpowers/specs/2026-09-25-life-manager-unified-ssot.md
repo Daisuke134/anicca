@@ -26793,4 +26793,6 @@ LC58は公式briefとDaisの参加承認確認で完了、追加receipt照合な
 
 **再利用する外部部品の境界:** X402は既存API/サービスにHTTP 402決済を付ける標準で、単独の販売市場ではない。公式seller quickstartは販売対象サービスと受取walletを前提にし、[Bazaar](https://docs.x402.org/extensions/bazaar)は公式説明でもearly developmentの発見catalogで、listing数を需要/売上に置き換えない。既存の`skills/earn/x402-sell/`を使い、同じsellerや台帳を新作しない。実外部payer・settlement・手数料・compute費のreadbackが揃うまで、売上/黒字/収益拡大を主張しない。
 
+**権限・成果優先のコスパ（2026-11-06）:** コスパは最安モデルを選ぶことではなく、目標事業成果へ止まらず到達すること。NaïveのLC60では、Capafyの正規作業に必要でNaïveが提供するAgent操作権限を最初に一括設定し、live readbackする。一つ許可して停止し、後から一つずつ追加する進め方をしない。組織admin API key自体をAgentへ渡さず、許可設定と実行用権限を区別する。販売先が必須とする本人確認・CAPTCHA・利用規約を迂回しない。モデル費用は実際に完了した登録・公開・第三者売上と運用費を合わせて判断し、token単価だけで選ばない。直近の既存X402調査sessionは`budget_paused`で終了し、$0.75枠のうち$0.319857を消費、最終回答なし。イベントreadbackには禁止指示後の`board_read`が2回あった。内部boardと公開webのreadのみで、外部書き込み・signup・支払・公開は0。このrunは事業成果0の失敗として記録し、再開しない。
+
 **一次資料の取得証跡:** `docs/research/cloud-market-20261106/single-runtime-sources.json`。以前の市場比較API証跡は同directoryの`public-readbacks.json`に残すが、本商品の一般提供/顧客課金の成功証拠にはしない。現行の「二本番runtime」TODO/N01–N12/M01–M06はこの66項目へ置換し、並行した別の実行キューにしない。
