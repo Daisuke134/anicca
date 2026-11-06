@@ -188,15 +188,10 @@ struct FeedRootView: View {
         let catalogIDs = Set(catalog.map(\.id))
         guard let quote = quoteNavigation.resolveQuote(in: catalog + quotes.filter { !catalogIDs.contains($0.id) }) else { return }
         AnalyticsManager.shared.track(.notificationDestinationResolved, properties: ["quote_id": quote.id, "result": "displayed"])
-        let index: Int
-        if let existingIndex = quotes.firstIndex(where: { $0.id == quote.id }) {
-            index = existingIndex
-        } else {
-            quotes.append(quote)
-            index = quotes.count - 1
-        }
+        let destination = quoteNavigation.feedDestination(for: quote, in: quotes)
+        quotes = destination.quotes
         navigationRevision += 1
-        currentIndex = index
+        currentIndex = destination.index
     }
 
     /// After reading several affirmations in one launch, treat that as a finished session.

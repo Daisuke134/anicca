@@ -47,8 +47,9 @@ swiftc -swift-version 5 aniccaios/Services/QuoteNavigationCoordinator.swift \
 ```
 
 This covers cold-start body-only delivery, unknown IDs, case-insensitive catalog
-matches, and text added around a catalog quote. The visible text must remain the
-body supplied by the tapped notification.
+matches, text added around a catalog quote, and replacing an existing feed quote
+with the tapped notification body. The visible text must remain the body supplied
+by the tapped notification.
 
 ## Xcode Cloud release builds
 

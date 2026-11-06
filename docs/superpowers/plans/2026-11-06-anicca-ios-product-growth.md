@@ -51,7 +51,7 @@
 **Consumes:** `Quote(id:text:)`、`QuoteNavigationRequest(quoteID:alertBody:)`、目的/like/既存設定。**Produces:** 安定ページ遷移、通知と同じ文言、実設定の表示、タグ付き600件以上の英語catalogと好みに応じた次候補。
 
 - [ ] actual releaseとpayload、pager delegate/update、notification pendingとbackend配信owner/callerを比較する。既存同文言修正の不足を一つずつ再現する。
-- [ ] 本文のみ・未知ID・catalog未準備・cold/warm・重複tapに加え、大文字小文字が異なるcatalog一致と本文追加時も受信 `alertBody` を表示するcoordinator回帰を先に失敗させる。gesture中like/通知遷移、catalog外文言保存も回帰対象にする。
+- [ ] 本文のみ・未知ID・catalog未準備・cold/warm・重複tapに加え、大文字小文字が異なるcatalog一致と本文追加時も受信 `alertBody` を表示する回帰を先に失敗させる。同じIDが現在のpersonalized feedにある場合も、既存要素を解決済み本文で置換してから遷移する。gesture中like/通知遷移、catalog外文言保存も回帰対象にする。
 - [ ] 遷移中のindex同期と保留要求の消費を最小修正。固定4件を実設定へ接続し、remote/localは実配信receiptに基づいて一ownerにする。backend変更は所在と所有が確定した対象だけへ行う。
 - [ ] EN catalogを600件/12カテゴリ以上へ増やし、ID重複・本文重複・空文・カテゴリ件数のfixtureを追加する。好み/likeの候補重み、直近20件の抑制、枯渇時fallbackと解除/再起動保持を確認する。候補は対話遷移中に入れ替えない。
 - [ ] 通知navigationのproduction sourceを `swiftc` で直接compileする `scripts/tests/QuoteNavigationTests.swift` と既存の通知/保存focused testsを実行。Expected: 新規回帰と既存通知/保存testがPASS。Maestro連続swipeはTask4で同じSHAを使用する。follow-upではローカルXcode project buildを使わず、署名buildは既存Xcode Cloud経路で行う。

@@ -78,6 +78,16 @@ final class QuoteNavigationCoordinator: ObservableObject {
         return finish(quote)
     }
 
+    func feedDestination(for quote: Quote, in feed: [Quote]) -> (quotes: [Quote], index: Int) {
+        var updatedFeed = feed
+        if let index = updatedFeed.firstIndex(where: { $0.id == quote.id }) {
+            updatedFeed[index] = quote
+            return (updatedFeed, index)
+        }
+        updatedFeed.append(quote)
+        return (updatedFeed, updatedFeed.count - 1)
+    }
+
     private func finish(_ quote: Quote?) -> Quote? {
         pendingRequest = nil
         defaults.removeObject(forKey: storageKey)

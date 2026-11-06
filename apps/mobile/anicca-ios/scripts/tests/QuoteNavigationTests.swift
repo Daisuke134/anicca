@@ -28,6 +28,20 @@ struct QuoteNavigationTests {
             print("FAIL: a case-insensitive catalog match must preserve the tapped notification body")
             exit(6)
         }
+        let existingDestination = navigation.feedDestination(for: casePreserved, in: catalog)
+        guard existingDestination.index == 0,
+              existingDestination.quotes[existingDestination.index].text == "I CAN BEGIN AGAIN." else {
+            print("FAIL: navigating to an existing feed quote must replace its displayed text with the tapped body")
+            exit(8)
+        }
+        let notificationQuote = Quote(id: "notification:test", text: "A new notification affirmation.")
+        let appendedDestination = navigation.feedDestination(for: notificationQuote, in: catalog)
+        guard appendedDestination.index == 1,
+              appendedDestination.quotes[0].id == "q001",
+              appendedDestination.quotes[1].text == notificationQuote.text else {
+            print("FAIL: a notification quote missing from the feed must be appended at its destination index")
+            exit(9)
+        }
         navigation.request(quoteID: "q001", alertBody: "Reminder: I can begin again.")
         guard let decorated = navigation.resolveQuote(in: catalog),
               decorated.id == "q001",
