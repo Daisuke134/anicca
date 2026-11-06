@@ -12,7 +12,7 @@
 |---|---|---|---|
 | G0 | 完了（仕様共有） | 全体spec・実装計画・画面案を同一branchで共有 | scoped review重大問題なし、commit/push、remote objectと参照linkを確認。G0は仕様共有の完了を示す。実装・動画・提出はG1〜G5で追跡 |
 | G1 | 検証済み | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
-| G2 | 修正/Simulator検証済み・実APNs未確認 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | 連続/逆方向swipe、cold/warm/本文のみ通知、実設定/配信境界の証拠 |
+| G2 | 既存修正/Simulator検証済み。通知本文の大小文字保持をsource修正・PR未統合。実APNs未確認 | swipeの戻り、通知本文一致、実頻度/free-pro設定の接続 | 連続/逆方向swipe、cold/warm/本文のみ通知、実設定/配信境界の証拠 |
 | G3 | 検証済み | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
 | G4 | 実装済み・サービス受信未確認 | 全主要画面と価値/課金/通知event、正しい価格/通貨/receipt | サービス側受信、同一ID、二重発火0、不明価格やrestoreを売上化しない |
 | G5 | 完了（審査待ち） | Maestro E2E動画・実製品提示・review/CI/main・署名build・審査提出 | mainとruntime/project treeが一致するMP4/結果、StoreKit/通知検証と未確認境界、公式WAITING_FOR_REVIEW。承認/公開は別追跡 |
@@ -26,6 +26,8 @@
 
 **現在cursor:** 初回改善をPR #9272でmain `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`へ統合。CI15件・fresh review・native/package22/Python21/UIKit6・Maestro13/11/12/15/16/18/通知14をPASSし、初回/StoreKitキャンセル/日本語/通知の実製品動画を保存する。mainと検証版のruntime/project/CI tree一致を確認する。Xcode Cloud run `ec24cda3-c88e-4b67-9a5c-091593a35f7f` はArchive成功、後段TestFlight beta審査自動送信だけ失敗するが、公式build `41ac019d-6fbe-489a-8382-40a62d1fd9c9` は1.9.7/816・VALID。重複buildを作らずApp Reviewへ提出し、submission `cb6fa5a3-c350-482d-9ca7-369be6785249` とversion `224f1d6d-e7b4-4dc7-9258-111e67de7363` の **WAITING_FOR_REVIEW** を公式APIで照合する。現在の次の外部eventはApple審査結果であり、承認/公開済みとは扱わない。G4サービス受信・実端末APNs・実購入成功は未確認。後続G6以降とloopは起動しない。一次証拠manifestは `../evidence/anicca-ios-1.9.7-validation.json`、動画/JUnit/provider JSONは `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106`。primary=`codex-anicca-ios-initial-polish`、repo=`Daisuke134/life-manager`、worktree=`.worktrees/anicca-ios-initial-polish-20261106`、証拠branch=`docs/anicca-ios-release-evidence-20261106`。Muse/Grok等はこのcursorと詳細specを参照する。
 
+
+**追補cursor（通知本文の大小文字保持）:** 独立reviewで、Coordinatorが受信本文を返しても同IDが既存personalized feedにある場合にFeedRootViewがそのQuoteを再利用し、画面の表示文言が直らない分岐を検出。`QuoteNavigationCoordinator.feedDestination`が既存要素を解決済みQuoteで置換し、新規Quoteはappendするよう修正。`QuoteNavigationTests.swift`で既存要素の大文字本文置換とappend/indexをRED→GREEN確認。直接 `swiftc` test、Swift parser、project plist lint、diff checkはPASS。修正branch=`fix/anicca-notification-body-20261106`、PR #9282。source acceptanceと独立review済み。merge前に最新PR headのpush/CI PASSを確認する。次cursorは最新PR SHAのCI/source acceptance→main統合、その後ASC CLIのXcode Cloudで1.9.8/build817の署名build、同じ候補buildのE2E/録画、公式ASC readbackの順で提出する。既存1.9.7/build816/submission `cb6fa5a3-c350-482d-9ca7-369be6785249` は提出済み `WAITING_FOR_REVIEW` と公式再照合済みであり、後続版を準備する前に取消・変更しない。G4サービス受信・実端末APNs・実購入成功は未確認のまま。
 
 進捗 **HQ-REASON-ARTIFACT-LIPO**: main ebc75abaのMac実buildとsocket試験はPASSしたが、artifact作成時にlipoの引数順誤りで失敗し未発行。PR9190で対象binaryを先に指定するよう修正し、PRでもprovenance工程を実行。main 9f4431d0のrun 41777259782でMac build・socket・provenance・artifact uploadが成功。main以外のartifact upload禁止は維持する。
 
