@@ -10,7 +10,7 @@
 
 ## 出所と現在の観測
 
-コード正本は `Daisuke134/life-manager` の `apps/mobile/anicca-ios`。2026-11-07の最新mainは `15cdc9e9d8a86d6ecc56ad9d61294900e1622779`。build 818のsource SHAは `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`。OpenのHTML/静的公開物は `Daisuke134/anicca-products` が所有し、2026-11-07の最新mainは `b7fd6b316e28d0b828e139ffcbd028de7f3f240c`。実装着手時は両repoの最新main・対象path・collector ownerを再確認する。
+コード正本は `Daisuke134/life-manager` の `apps/mobile/anicca-ios`。2026-11-07の最新mainは `0215fb2e5dcaf1688a9ecfc46edfde7dacc3a711`。build 818のsource SHAは `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`。OpenのHTML/静的公開物は `Daisuke134/anicca-products` が所有し、2026-11-07の最新mainは `b04e4ef13d3817876fbaa8702447b32cf6bd2700`。実装着手時は両repoの最新main・対象path・collector ownerを再確認する。
 
 | 対象 | 観測した事実 | 未確認・注意 |
 |---|---|---|
@@ -23,12 +23,12 @@
 | 通知 | APNs起動処理、通知本文/IDの遷移coordinator、cold-start保留処理と既存回帰が存在 | 1.9.6の公開履歴にも同文言修正あり。再現確認なく同じ修正を作り直さない |
 | 設定 | 現在の `ReminderSchedule.slots(isPro:)` はFree 09:00/14:00/20:00、Pro 08:00/12:30/17:30/21:30を表示し、端末タイムゾーンも表示する。APNs token登録ではtimezone/langを送る。`Daisuke134/anicca-products` の確認済み `origin/main` (`0f2cd20b`) のaffirmation senderも同じFree/Pro枠を定義し、remote APNsを単一送信元として記述する | ソース上の予定時刻は一致。稼働中deploymentのcommit/readback、実端末APNs、Free/Pro実配信、登録/送信receiptは未確認 |
 | 売上計測 | build 818の購入eventは`displayed_price`を`amount_source=store_product_quote_not_settled_revenue`として送る。transaction IDはローカルledgerで重複観測を抑止 | 表示価格は決済済み収益ではない。RevenueCat/Apple receipt・renewal・refund・proceedsの公式照合、restore結果event、service側重複0は未確認 |
-| Open | `aniccaai.com/open`は公開HTMLが`data.json`/`metrics.json`等を読み、App Store Connect/事業指標/RevenueCat app metricsを表示。画面別行動funnelは未表示 | 2026-11-07 10:07 JSTのlive `data.json`に`product_analytics`・`anicca_ios`・`screen_viewed`・`mixpanel`は存在しない。AniccaのMixpanel取得/画面別離脱/Open表示の接続は未実証。既存dashboardを拡張し、別dashboardを作らない |
+| Open | `aniccaai.com/open`は公開HTMLが`data.json`/`metrics.json`等を読み、App Store Connect/事業指標/RevenueCat app metricsを表示。画面別行動funnelは未表示 | 2026-11-07 12:37 JSTのlive `data.json`に`product_analytics`・`anicca_ios`・`screen_viewed`・`mixpanel`は存在しない。AniccaのMixpanel取得/画面別離脱/Open表示の接続は未実証。既存dashboardを拡張し、別dashboardを作らない |
 | 継続処理 | Life Managerの`marketing-product-summary.js`はproduct-pack内のactivation/retention観測JSONを読む | Mixpanel API収集元ではなくOpenにも未接続。collector・snapshot・公開deployの実稼働は別々に証明する |
 
 公開feedの観測例: `https://aniccaai.com/open/data.json` の期間10/29〜11/04、Aniccaは新規3件、JP2/CO1、取得行はApp Store検索。download coverageは7日中4日。米国0・SNS0や「全期間3件」とは断定しない。取得期間と欠測を保持し、別collectorの「行無し→0」と不整合があれば集計境界を直す。
 
-2026-11-07のG4.1取得経路調査: `anicca-products` GitHub Actions Secret一覧には`MIXPANEL_SERVICE_ACCOUNT`が存在するが、secret値は取得・表示しない。最新mainの`.github/workflows/netlify-deploy.yml`はこのsecretを参照せず、Open用にCapafyとASCを集計して`stage-open-data.mjs`へ渡す。`scripts/daily-metrics/mixpanel_client.py`はBasic Authで旧14イベントのユニーク人数を取得してSlack/日次archiveへ渡す既存実装で、Openへの接続はない。したがってsecretの登録はMixpanel受信・Open表示の証拠ではない。最新mainのlive readbackでは`/open/data.json`は`2026-11-07 10:07 JST`更新で、Anicca product event keyは未掲載。既存PR #449は`mixpanel_client.py`と`models.py`を変更し、別作業worktreeは`netlify-deploy.yml`と`open/index.html`を所有しているため、そのファイルを編集せずowner境界を確認して接続する。
+2026-11-07のG4.1取得経路調査: `anicca-products` GitHub Actions Secret一覧には`MIXPANEL_SERVICE_ACCOUNT`が存在するが、secret値は取得・表示しない。最新mainの`.github/workflows/netlify-deploy.yml`はこのsecretを参照せず、Open用にCapafyとASCを集計して`stage-open-data.mjs`へ渡す。`scripts/daily-metrics/mixpanel_client.py`はBasic Authで旧14イベントのユニーク人数を取得してSlack/日次archiveへ渡す既存実装で、Openへの接続はない。したがってsecretの登録はMixpanel受信・Open表示の証拠ではない。最新mainのlive readbackでは`/open/data.json`は`2026-11-07 12:37 JST`更新で、Anicca product event keyは未掲載。既存PR #449は`mixpanel_client.py`と`models.py`を変更し、別作業worktreeは`netlify-deploy.yml`と`open/index.html`を所有しているため、そのファイルを編集せずowner境界を確認して接続する。
 
 ## 1.9.7 / 1.9.8 のAs-Is
 
@@ -318,4 +318,4 @@ UX動画 `/Users/anicca/.local/state/anicca-ios-initial-polish-20261106/Anicca-i
 
 **G5の過去実施:** YouTube限定公開動画2本の後、1.9.7提出を取り下げ、同じApp Store version recordを1.9.8へ更新してbuild 818をattach・submitした。版validateは当時errors=0/blocking=0/warnings=15だったが、screen analytics/Openの受入前に提出したため、現在のユーザー合意の完了条件を満たさない。動画はcandidate Simulator build 817でありbuild 818と同じbinaryの証明ではない。
 
-**現在cursor:** 1.9.8 submission=`306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消し後`COMPLETE`/item`REMOVED`。versionは`DEVELOPER_REJECTED`、build818は`VALID`。`asc review doctor`の1 blockerは`review.submission.removed_items_only`。新submissionは無い。まずMixpanel一本化と実受信、画面別funnel、既存Open表示、同じ候補buildの全画面Maestro動画を完了し、それからG5へ進む。Apple承認/公開は未確認。ローカルXcode UIは使用しない。ASC操作はASC CLIを使う。
+**状態と現在cursor:** 実行順・各ゲート状態・最新PR/ASC/Open readback・残TODOの唯一の正本は統合SSOTの [ANICCA-PRODUCT-GROWTH](2026-09-25-life-manager-unified-ssot.md#anicca-product-growth--ios初回改善から全アプリ継続改善まで)。
