@@ -363,6 +363,7 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
                 ["bash", str(ENSURE), "test:browser"],
                 env={**os.environ, "HOME": str(home), "AI_BROWSER_GUARD": str(guard),
                      "AI_BROWSER_REGISTRY": str(registry), "CLOAK_PYTHON": str(runtime),
+                     "LM_BROWSER_HOST_OS": "Darwin",
                      "LIFE_MANAGER_LAUNCHCTL_SAFE": str(launchctl_safe)},
                 capture_output=True, text=True, check=False, timeout=15,
             )
@@ -384,6 +385,7 @@ class CdpPersistentContextPreflightTests(unittest.TestCase):
                 ["bash", str(ENSURE), "test:browser"],
                 env={**os.environ, "HOME": str(home), "AI_BROWSER_GUARD": str(guard),
                      "AI_BROWSER_REGISTRY": str(registry), "CLOAK_PYTHON": str(runtime),
+                     "LM_BROWSER_HOST_OS": "Darwin",
                      "LIFE_MANAGER_LAUNCHCTL_SAFE": str(launchctl_safe)},
                 capture_output=True, text=True, check=False, timeout=15,
             )

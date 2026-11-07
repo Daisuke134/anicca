@@ -34,6 +34,17 @@ LAUNCH_WAIT="${PROVISION_BROWSER_WAIT:-120}"
 PY="/opt/homebrew/bin/python3"; [ -x "$PY" ] || PY=python3
 mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
 
+OS_NAME="${LM_BROWSER_HOST_OS:-$(uname -s 2>/dev/null || echo unknown)}"
+if [ "$OS_NAME" = "Linux" ]; then
+  # Tenant sandbox (Maritime): no launchd and no X server exist here. The Linux
+  # owner launches the same image-owned CloakBrowser headless, with the same
+  # dynamic-port contract, and seeds the identity's provisioned storage state.
+  KEEPALIVE="$HERE/cdp_tenant_context.py"
+  if [ ! -x "$CLOAK_PY" ] && command -v python3 >/dev/null 2>&1; then
+    CLOAK_PY="$(command -v python3)"
+  fi
+fi
+
 log() { echo "$(date '+%F %T') ensure_provision_browser[$IDENTITY]: $*" >>"$LOG"; }
 fail() { log "FAILED: $*"; echo "ensure_provision_browser: $*" >&2; exit 1; }
 
@@ -47,7 +58,9 @@ $HOME/.cloak/profiles/tiktok-anicca-jp-relogin"
 
 [ -x "$GUARD" ] || fail "browser-guard.sh not found at $GUARD"
 [ -f "$KEEPALIVE" ] || fail "persistent-context owner script missing: $KEEPALIVE"
-[ -x "$LAUNCHCTL_SAFE" ] || fail "launchctl-safe not found at $LAUNCHCTL_SAFE"
+if [ "$OS_NAME" != "Linux" ]; then
+  [ -x "$LAUNCHCTL_SAFE" ] || fail "launchctl-safe not found at $LAUNCHCTL_SAFE"
+fi
 [ -x "$CLOAK_PY" ] || fail "CloakBrowser runtime missing: $CLOAK_PY"
 
 # ---- registry lookup (same minimal TOML read browser-guard.sh uses; registry stays the SSOT) ----
@@ -92,6 +105,26 @@ done <<EOF
 $PROTECTED_PROFILES
 EOF
 
+# Optional storage state for this identity: storage_state = "~/path/state.json".
+# Only the Linux tenant owner consumes it (it seeds the provisioned web session
+# into the profile on first launch); macOS identities do not set it.
+storage_state_args=()
+storage_state="$("$PY" - "$REGISTRY" "$IDENTITY" <<'PYEOF'
+import os, re, sys
+try:
+    text = open(os.path.expanduser(sys.argv[1]), encoding="utf-8").read()
+except OSError:
+    raise SystemExit(0)
+for block in text.split("[[identity]]")[1:]:
+    ident = re.search(r'^id\s*=\s*"([^"]*)"', block, re.M)
+    state = re.search(r'^storage_state\s*=\s*"([^"]*)"', block, re.M)
+    if ident and ident.group(1) == sys.argv[2] and state:
+        print(os.path.expanduser(state.group(1)))
+        break
+PYEOF
+)"
+[ -n "$storage_state" ] && storage_state_args=(--storage-state "$storage_state")
+
 LABEL="ai.anicca.provision-browser.$(printf '%s' "$IDENTITY" | tr '/:' '..' | tr -cd 'A-Za-z0-9._-')"
 
 # Reachability is asked through the guard, never with a raw CDP curl of our own: the guard resolves
@@ -125,6 +158,44 @@ clear_stale_singletons() {
   log "cleared stale Chromium singleton artifacts for $profile"
 }
 
+# Linux has no launchd: submit/remove are a setsid-detached owner process plus
+# a pidfile, standing in for the launchctl-safe pair. The pidfile only ever
+# names a process this launcher submitted; removal verifies the recorded pid
+# still runs THIS identity's owner command before signalling its group.
+linux_pidfile() { printf '%s/%s.pid' "$HOME/.local/state/life-manager/provision-browser" "$LABEL"; }
+
+linux_remove() {
+  local pidfile pid cmdline waited
+  pidfile="$(linux_pidfile)"
+  [ -f "$pidfile" ] || return 0
+  pid="$(cat "$pidfile" 2>/dev/null || true)"
+  case "$pid" in ''|*[!0-9]*) rm -f "$pidfile"; return 0 ;; esac
+  if [ -r "/proc/$pid/cmdline" ]; then
+    cmdline="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+    case "$cmdline" in
+      *"$KEEPALIVE"*"--profile $profile"*|*"$KEEPALIVE"*"--profile=$profile"*)
+        kill -TERM -"$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+        waited=0
+        while [ -d "/proc/$pid" ] && [ "$waited" -lt 10 ]; do sleep 1; waited=$((waited + 1)); done
+        ;;
+    esac
+  fi
+  rm -f "$pidfile"
+  return 0
+}
+
+linux_submit() {
+  local pidfile pid
+  pidfile="$(linux_pidfile)"
+  mkdir -p "$(dirname "$pidfile")" 2>/dev/null || true
+  setsid "$CLOAK_PY" "$KEEPALIVE" --profile "$profile" --port 0 \
+    ${storage_state_args[@]+"${storage_state_args[@]}"} \
+    ${extension_args[@]+"${extension_args[@]}"} >>"$LOG" 2>&1 </dev/null &
+  pid=$!
+  printf '%s\n' "$pid" > "$pidfile"
+  return 0
+}
+
 launch() {
   if ! "$CLOAK_PY" "$KEEPALIVE" --profile "$profile" --port 0 --preflight-only >>"$LOG" 2>&1; then
     log "disk preflight failed before touching provisioning profile $profile"
@@ -132,6 +203,15 @@ launch() {
   fi
   mkdir -p "$profile" 2>/dev/null || true
   clear_stale_singletons
+  if [ "$OS_NAME" = "Linux" ]; then
+    linux_remove
+    sleep 1
+    linux_submit
+    submit_rc=$?
+    [ "$submit_rc" -eq 0 ] || return "$submit_rc"
+    log "submitted persistent-context owner label=$LABEL profile=$profile port=dynamic"
+    return 0
+  fi
   "$LAUNCHCTL_SAFE" remove "$LABEL" 2>/dev/null
   remove_rc=$?
   [ "$remove_rc" -eq 75 ] && return 75
