@@ -25,7 +25,8 @@ class KeyHealthGateTest(unittest.TestCase):
     def run_gate(self, key_response, enable_alert=False, credits_remaining=25,
                  management_key="", healed_key_response=None, hard_cap="50",
                  hosted_model_id=None, hosted_max_tokens=None,
-                 resource_exhaustion=False):
+                 resource_exhaustion=False, credits_response=None,
+                 runtime_host=None, request_headroom=None):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             fake_bin = root / "bin"
@@ -106,7 +107,9 @@ exit 0
                     ),
                     "FAKE_PATCH_MARKER": str(root / "patched"),
                     "FAKE_CREDITS_RESPONSE": json.dumps(
-                        {"data": {"total_credits": credits_remaining, "total_usage": 0}}
+                        credits_response
+                        if credits_response is not None
+                        else {"data": {"total_credits": credits_remaining, "total_usage": 0}}
                     ),
                     "FAKE_CURL_CALLS": str(calls),
                     "FAKE_OPENCLAW_CALLS": str(alert_calls),
@@ -131,6 +134,14 @@ exit 0
                 env["CAPAFY_HOSTED_MODEL_ID"] = hosted_model_id
             if hosted_max_tokens:
                 env["CAPAFY_HOSTED_MAX_TOKENS"] = str(hosted_max_tokens)
+            if runtime_host:
+                env["LM_RUNTIME_HOST"] = runtime_host
+            else:
+                env.pop("LM_RUNTIME_HOST", None)
+            if request_headroom:
+                env["CAPAFY_REQUEST_HEADROOM_USD"] = request_headroom
+            else:
+                env.pop("CAPAFY_REQUEST_HEADROOM_USD", None)
             result = subprocess.run(
                 ["bash", str(KEY_GATE)],
                 env=env,
@@ -172,6 +183,66 @@ exit 0
         self.assertIn("https://openrouter.ai/api/v1/key", call_text)
         self.assertIn("https://openrouter.ai/api/v1/credits", call_text)
         self.assertIn("https://openrouter.ai/api/v1/chat/completions", call_text)
+
+    CREDITS_FORBIDDEN = {
+        "error": {"message": "Only management keys can fetch credits for an account",
+                  "code": 403}
+    }
+
+    def test_maritime_credits_forbidden_falls_back_to_per_key_limit(self):
+        # /credits is management-key-only: a tenant host key gets 403 there.
+        # On maritime the tenant's fund is its own key, so the balance floor
+        # is checked against the per-key limit_remaining from GET /key.
+        result, call_text, _, _ = self.run_gate(
+            {"data": {"limit": 50, "limit_remaining": 25,
+                      "usage_daily": 1.50, "limit_reset": "daily"}},
+            credits_response=self.CREDITS_FORBIDDEN,
+            runtime_host="maritime",
+        )
+        output = result.stdout + result.stderr
+        self.assertEqual(result.returncode, 0, output)
+        self.assertIn("KEY_HEALTH=OK", output)
+        self.assertIn("https://openrouter.ai/api/v1/credits", call_text)
+        self.assertIn("https://openrouter.ai/api/v1/chat/completions", call_text)
+        self.assertNotIn("key-must-not-print", output)
+
+    def test_maritime_credits_forbidden_unlimited_key_passes(self):
+        result, call_text, _, _ = self.run_gate(
+            {"data": {"limit_remaining": None}},
+            credits_response=self.CREDITS_FORBIDDEN,
+            runtime_host="maritime",
+        )
+        output = result.stdout + result.stderr
+        self.assertEqual(result.returncode, 0, output)
+        self.assertIn("KEY_HEALTH=OK", output)
+        self.assertIn("https://openrouter.ai/api/v1/chat/completions", call_text)
+
+    def test_maritime_fallback_still_blocks_when_per_key_below_floor(self):
+        # Fallback must stay fail-closed: per-key remaining below the
+        # publishing floor blocks exactly like a low account balance.
+        result, call_text, _, _ = self.run_gate(
+            {"data": {"limit": 50, "limit_remaining": 10,
+                      "usage_daily": 40, "limit_reset": "daily"}},
+            credits_response=self.CREDITS_FORBIDDEN,
+            runtime_host="maritime",
+            request_headroom="2",
+        )
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("balance_too_low", output)
+        self.assertNotIn("https://openrouter.ai/api/v1/chat/completions", call_text)
+
+    def test_non_maritime_credits_forbidden_keeps_legacy_zero_balance(self):
+        # Founder-host behavior is unchanged: a credits body without data
+        # counts as $0 and blocks as balance_too_low (no fallback).
+        result, call_text, _, _ = self.run_gate(
+            {"data": {"limit_remaining": None}},
+            credits_response=self.CREDITS_FORBIDDEN,
+        )
+        output = result.stdout + result.stderr
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("balance_too_low", output)
+        self.assertNotIn("https://openrouter.ai/api/v1/chat/completions", call_text)
 
     def test_default_probe_uses_bounded_deepseek_contract(self):
         result, call_text, _, _ = self.run_gate({"data": {"limit_remaining": None}})
