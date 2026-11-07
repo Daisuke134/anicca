@@ -1,5 +1,9 @@
 # Manager Masterclass｜P00〜P12の全講義と製品実装（唯一のロードマップへ）
 
+**2026-11-07 Phase 10 完全教材（P10-1〜P10-4／研究ブランチ）：** [P10-2資金配分](P10-2_JA.md)、[P10-3権限・プライバシー・監査](P10-3_JA.md)、[P10-4耐障害運用・自己資金化](P10-4_JA.md)の講義と、既存Manager Coreを再利用する[Control Plane仕様](../../../../../products/manager/docs/specs/2026-11-07-manager-p10-2-to-p10-4-control-plane.md)を追加。対応する記事草稿 [P10-2](articles/2026-11-07_p10_2_manager_capital_allocation_JA.md)、[P10-3](articles/2026-11-07_p10_3_manager_governance_JA.md)、[P10-4](articles/2026-11-07_p10_4_manager_autonomous_operations_JA.md)、[P10全33枚研究補足の構成・日本語発表ノート](journal_club/P10-2_TO_P10-4_SLIDES_NOTES_JA.md)、[完全合成制御コード](experiments/p10_2_4_control_plane_synthetic.py)、[41件の単体テスト](experiments/test_p10_2_4_control_plane_synthetic.py)、[合成結果JSON](evidence/P10-2_TO_P10-4_SYNTHETIC_AUDIT.json)。P10-1の先行19件と合算しても**実顧客・会計・本番認可の実証ではない**。正式なPhase 10学習進捗は必ず[唯一のロードマップ](ROADMAP_STATUS_JA.md)を参照する。**学習の次はP11-1**。P09のBFM-01/02、INT-02、実顧客価値・権限・収益・自律稼働の検証は継続して未完了。既存の本番34枚・詳細研究118枚は未変更、記事は未公開。X投稿停止を維持する。
+
+
+
 
 **2026-11-07 P10-1教材（研究ブランチ）：** [仕事単位のUnit Economics講義](P10-1_JA.md)、[監査可能なread-only projection仕様](../../../../../products/manager/docs/specs/2026-11-07-manager-p10-1-unit-economics-projection.md)、[日本語記事草稿](articles/2026-11-07_p10_1_manager_unit_economics_JA.md)、[8枚補足スライド＋話者ノート](journal_club/P10-1_UNIT_ECONOMICS_SLIDES_NOTES_JA.md)、[架空台帳の再計算](experiments/p10_1_unit_economics.py)、[19件の単体テスト](experiments/test_p10_1_unit_economics.py)、[合成証拠](evidence/P10-1_UNIT_ECONOMICS_SYNTHETIC_AUDIT.json)を追加。**講義・合成計算のみ、実会計照合・実増分利益・実心理的便益は未実施。** 既存34枚本番発表・118枚詳細版はこの変更では置換しない。最新進捗は常に[唯一のロードマップ](ROADMAP_STATUS_JA.md)を参照。学習の次はP10-2、BFM-01/02・INT-02の実証未完は継続。
 
