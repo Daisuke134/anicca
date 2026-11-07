@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-07",
+  "status": "SYNTHETIC_EVIDENCE_ONLY",
+  "currency": "USD",
+  "minor_unit": "cents",
+  "code": "docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p10_1_unit_economics.py",
+  "tests": "docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/test_p10_1_unit_economics.py",
+  "executed_on": "AniccanoMac-mini.local / Python3 stdlib",
+  "test_summary": {
+    "run": 19,
+    "passed": 19,
+    "failed": 0,
+    "errors": 0
+  },
+  "sample": {
+    "work_count": 3,
+    "verified_success_count": 1,
+    "human_assisted_work_count": 1,
+    "human_assist_seconds": 120,
+    "recognized_net_revenue_minor": 500,
+    "variable_cost_minor": 330,
+    "contribution_margin_minor": 170,
+    "cost_per_verified_success_minor": 330
+  },
+  "examples": [
+    {
+      "id": "A",
+      "result": "VERIFIED_SUCCESS",
+      "revenue_minor": 500,
+      "cost_minor": 90,
+      "cm_minor": 410
+    },
+    {
+      "id": "B",
+      "result": "VERIFIED_FAILURE",
+      "revenue_minor": 0,
+      "cost_minor": 230,
+      "cm_minor": -230
+    },
+    {
+      "id": "C",
+      "result": "NO_ACTION",
+      "revenue_minor": 0,
+      "cost_minor": 10,
+      "cm_minor": -10
+    }
+  ],
+  "not_proven": [
+    "real_revenue",
+    "real_company_profit",
+    "human_benefit",
+    "causal_lift",
+    "production_autonomy"
+  ],
+  "claim_boundary": "All data fully self-generated; no user payments, invoices, or human outcomes read."
+}
