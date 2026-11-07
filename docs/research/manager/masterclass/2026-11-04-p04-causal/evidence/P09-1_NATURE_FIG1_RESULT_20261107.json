@@ -1,0 +1,81 @@
+{
+  "status": "FIGURE_SOURCE_REANALYSIS_ONLY",
+  "study_count": 70,
+  "source": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41586-026-10742-x/MediaObjects/41586_2026_10742_MOESM4_ESM.xlsx",
+  "normalized_csv_sha256": "b51b86c03639728b39c713c815ec22b6daabf3383163efa70fd54366944a6214",
+  "source_sheet": "panelA",
+  "analysis_scope": "All directional plot contrasts, not official adjusted 469-effect estimate",
+  "summary": {
+    "n": 3356,
+    "pearson_r": 0.8051489088799292,
+    "rmse": 0.11834675045564791,
+    "mae": 0.08173134521208303,
+    "slope_human_on_prediction": 0.5512408722293487,
+    "intercept_human_on_prediction": -4.59559798641027e-16
+  },
+  "mirror_check": {
+    "directional_rows_with_reverse": 3356,
+    "unordered_pair_estimate_if_all_mirrored": 1678,
+    "share_rows_with_reverse": 1.0
+  },
+  "by_group": {
+    "published": {
+      "n": 1572,
+      "pearson_r": 0.6891667317476797,
+      "rmse": 0.12540293895210292,
+      "mae": 0.09121808127433821,
+      "slope_human_on_prediction": 0.4535445349029803,
+      "intercept_human_on_prediction": -4.616392312969879e-16
+    },
+    "unpublished": {
+      "n": 1784,
+      "pearson_r": 0.868723017934424,
+      "rmse": 0.11176044704607913,
+      "mae": 0.0733719567087954,
+      "slope_human_on_prediction": 0.6076889570050903,
+      "intercept_human_on_prediction": -4.577274734531513e-16
+    }
+  },
+  "bootstrap": {
+    "repetitions_requested": 2000,
+    "repetitions_valid": 2000,
+    "seed": 20261107,
+    "percentile_95_intervals": {
+      "pearson_r": [
+        0.5972828025088813,
+        0.9092971727025052
+      ],
+      "rmse": [
+        0.0933718310544047,
+        0.14142124363426614
+      ],
+      "slope_human_on_prediction": [
+        0.382117853847186,
+        0.6431013627691543
+      ]
+    }
+  },
+  "study_heldout_linear_calibration": {
+    "method": "leave-one-study-out cross-fitted linear calibration",
+    "n_heldout_studies": 70,
+    "micro_rmse_raw": 0.11834675045564791,
+    "micro_rmse_calibrated": 0.0814526000378943,
+    "micro_rmse_improvement": 0.03689415041775361,
+    "macro_rmse_raw": 0.07802813761128399,
+    "macro_rmse_calibrated": 0.05035978071156148,
+    "studies_improved": 56,
+    "studies_harmed": 14,
+    "not_prospective_model_generalization": true
+  },
+  "leave_one_study_out_pearson_range": [
+    0.7047946610726707,
+    0.8325589292518225
+  ],
+  "published_author_panelB_reference_not_recalculated": {
+    "gpt4_raw_correlation": 0.850789501576886,
+    "gpt4_adjusted_correlation_estimate": 0.915126645908733
+  },
+  "original_codeocean_RDS_rerun": false,
+  "reason_not_full_original_replication": "CodeOcean public file export requires authentication; Rscript is absent on local Mac.",
+  "new_LLM_inference_or_human_experiment": false
+}

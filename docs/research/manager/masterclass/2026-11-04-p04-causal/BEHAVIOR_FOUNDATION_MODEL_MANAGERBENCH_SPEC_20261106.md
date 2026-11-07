@@ -48,3 +48,26 @@ Acquisition and publicity are *potential consequences*, not benchmark goals. The
 
 ## Separation from other documents
 This is a model/eval design document; ROADMAP_STATUS_JA.md remains the ONE curriculum status authority. Executable v0 scoring harness: experiments/managerbench_v0.py, test file with small software-fixture examples only. No human examples invented.
+
+
+## 2026-11-06｜文化伝達・笑いの領域横断拡張（設計のみ）
+
+[文化・笑いのモデル/評価契約](CULTURE_HUMOR_MODEL_BENCH_SPEC_20261106.md)と[一次資料/版/権利台帳](CULTURE_HUMOR_SOURCES_20261106.md)を追加。A–Fの既存トラック内で、模倣・信念・伝達・笑い・好み・採点・通過・投票・便益を別々に評価する。共有モデルは仮説であり、人物と刺激familyの二重holdout、演者/会場/年/文化holdout、情報cutoff、ネットワーク干渉、生成の評価器過適合を必須監査にする。既存SOCRATES/Oogiri/UR-FUNNY/New Yorkerを権利確認後に再利用する。書誌上の「柴田さん」は未同定。
+
+学習接続は元のP09-1〜P09-5。人間試験・共有モデルの学習・大会出場・新しい勝率の実測はいずれも未実施。会社の統合SSOT cursorを変更しない。P08-3〜5の教材は未マージPR #9291を参照し、mainに統合済みと仮定しない。新規[18枚補足スライド原稿](journal_club/CULTURE_HUMOR_PHASE9_SLIDES_20261106.md)を作成し、既存34枚本番版と118枚研究保存版は変更しない。
+
+## 2026-11-07｜P09-1 real-data figure-level audit (NOT original RDS reproduction)
+
+Official Nature 2026 Fig1 panelA (published aggregate directed contrasts) independent Python reanalysis completed using 70 studies / 3356 directed contrasts, 1678 mirror pairs. Pooled descriptive Pearson=.8051489, RMSE=.1183468; 2000 study-cluster bootstrap percentile r CI .5973–.9093; LOSO linear calibration trained on 69 and tested on the 70th yields micro RMSE .1183468→.0814526, with 56/70 studies improved and 14 harmed. All statistics are **exploratory source-figure reanalyses**, not the authors exact adjusted model, whose panelB reports GPT-4 raw=.8507895, adjusted=.9151266. Code Ocean source RDS export requires authentication; original Rscript absent and NOT_RUN. Use P09-1_JA.md, evidence/P09-1_NATURE_FIG1_RESULT_20261107.json, experiments/p09_1_nature_fig1_reanalysis.py and linked synthetic software tests (9 PASS). Original input normalized CSV was excluded from Git. No commercial training rights inferred from public browser availability. Unseen-study split for a calibration head does not establish lack of base LLM pretraining contamination.
+
+
+## 2026-11-07｜Phase 9 real-data lightweight model evaluation, not BFM-training
+
+Source-backed [P09-2..5 report](P09-2_TO_P09-5_REAL_EVAL_20261107_JA.md), [fixed metrics/sha manifest](evidence/P09-2_TO_P09-5_REAL_TWO_DOMAIN_EVAL_20261107.json), [executed NumPy model script](experiments/p09_2_5_empirical_bench.py), [10 unit tests](experiments/test_p09_2_5_empirical_bench.py), Japanese [P09-2](P09-2_JA.md) [P09-3](P09-3_JA.md) [P09-4](P09-4_JA.md) [P09-5](P09-5_JA.md). Nature 2026 official published effect pairs 70 studies/1678 de-mirrored aggregate contrasts; MaMe-Re human aggregate rating 250 contexts x 400 memes/100000 pairs, 160 train /40 validation/50 heldout contexts. Sources and file-specific rights pinned, no copyrighted manga images/dialogue trained.
+
+P09-2: 36 eligible heldout studies, original saved predictions RMSE .12008, global linear calibrated .08154, partial-pooling k5 .08026 vs unpooled k5 .08478; 19/36 studies improved, 17 harmed, exploratory paired-study 95% interval for macro gain [.000505,.003788]. **Research-level effects, not individual personal-twin accuracy**.
+P09-3: 24 published train, 8 published calibration, 8 published test, 30 unpublished comparison studies (publication status is not true culture/domain OOD). RMSE .05244 vs .08334; empirical coverage 100% vs 98.54% from extremely wide ±.24248 intervals. No unconditional exchangeability/conditional conformal guarantee, no real-world intervention authority.
+P09-4: intentionally undercapacity shared scalar calibration transfers between Nature effect and MaMe-Re funniness: old Nature RMSE .04541→.08452 after target-only training; balanced average .06023; separate domain heads avoid interference. NOT catastrophic forgetting shown in a neural BFM or evaluation of EWC/PCGrad.
+P09-5: 50 unseen Japanese contexts/20000 contextual meme scores: global mean RMSE .186687; meme-item historical mean .184605; text+description ridge .184694 (not better). Exploratory context-level bootstrap on difference includes 0. Cannot pool incompatible metrics into a universal leaderboard.
+
+The standalone 16-slide supplement PPTX/PDF was generated and visually QA'd as a separate conversation artifact; Mac generated an archival 134-slide PPTX retaining original 118 slides and adding 16 Japanese speaker-note slides, but **canonical binary Git upload and PDF134 export did not complete** because of shared disk pressure and absent local LibreOffice. Repo retains the slide generator + source outline. Original 34-slide main presentation unchanged. No public article deployment, no new 7B inference, no original Nature RDS replay, no human outcome trial; BFM-01/INT-02 remain separate product implementation gates within the ONE existing roadmap.
