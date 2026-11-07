@@ -82,6 +82,28 @@ class P10OneLedgerTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "integer"):
             summarize(self.works, [replace(self.events[0], amount_minor=5.5)] + self.events[1:])
 
+    def test_refund_deducted_from_recognized_revenue(self):
+        r = summarize(self.works, self.events + [
+            Event("refund-1", "provider-refund-1", "A", "refund", 125, "USD",
+                  "synthetic:refund-receipt", "SYNTHETIC")])
+        self.assertEqual(r["known_refund_minor"], 125)
+        self.assertEqual(r["verified_financials"]["revenue_minor"], 375)
+        self.assertEqual(r["verified_financials"]["contribution_margin_minor"], 45)
+
+    def test_duration_cannot_be_counted_as_money(self):
+        with self.assertRaisesRegex(ValueError, "duration cannot be money"):
+            summarize(self.works, [replace(self.events[7], amount_minor=120)] + self.events[:7] + self.events[8:])
+
+    def test_estimated_cost_not_claimed_reconciled(self):
+        changed = [replace(self.events[1], evidence_tier="ESTIMATED")] + self.events[:1] + self.events[2:]
+        r = summarize(self.works, changed)
+        self.assertIsNone(r["verified_financials"]["contribution_margin_minor"])
+        self.assertEqual(r["known_event_total_cost_minor"], 330)
+
+    def test_observed_revenue_not_recognized(self):
+        with self.assertRaisesRegex(ValueError, "estimated revenue"):
+            summarize(self.works, [replace(self.events[0], evidence_tier="OBSERVED")] + self.events[1:])
+
 
 if __name__ == "__main__":
     unittest.main()
