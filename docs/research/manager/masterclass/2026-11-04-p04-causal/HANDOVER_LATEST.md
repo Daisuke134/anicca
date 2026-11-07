@@ -1,3 +1,9 @@
+# 2026-11-07｜P09-2〜5：人間由来の2領域で軽量モデルを実際に学習/評価
+
+公開Nature2026 Figure1（70研究/1678非重複比較）とMaMe-Re日本語ミーム（100000文脈×候補の集約人間評定）を用いて、研究holdoutのfew-shot・校正・棄権・二領域の共有係数の負の転移・未使用50文脈のRidgeを実行。証拠は [P09-2〜5レポート](P09-2_TO_P09-5_REAL_EVAL_20261107_JA.md)、[入力ハッシュと生の計算結果](evidence/P09-2_TO_P09-5_REAL_TWO_DOMAIN_EVAL_20261107.json)、[再実行コード](experiments/p09_2_5_empirical_bench.py)。10件の人工ユニットテストPASS、P09-1の9件と合わせて19件。**新しい7B BFM学習・GPT/Centaur/Be.FM推論・Nature元RDS完全再現・実人間への支援効果・記事Web公開は0件。** Mac研究PPTXを118→134枚生成、元118枚のテキスト/ノートと新16枚の日本語ノートをQAした。しかしMacの共有ディスク満杯でバイナリPPTXのrepo pushと134ページPDF化は未完、生成スクリプトと研究スライド原稿はGitへ保存し、配布用16枚のPPTX/PDFは独立生成して検証。既存発表34枚は変更しない。元の研究のライセンス・同意・社内一つのSSOTとBFM-01/INT-02実装順序を保護。学習次は**P10-1**、モデル性能検証は継続。
+
+---
+
 # 2026-11-07｜P09-1：Nature 2026公開Source Figure1を実データ再解析
 
 確認済み：70研究/3356方向付き比較、r=.8051489、RMSE=.1183468（割合）、2000研究クラスタbootstrap・70fold LOSO校正（RMSE .1183→.08145）、人工テスト9件PASS。原著のpanelB r=.85079/rawと.91513/adjustedとは推定対象・解析方法が異なる。**元の個票RDS・原著Rコードの完全実行は未達**：Code Oceanで個別ダウンロード認証が必要、実行MacにRscriptがない。元RDSを使った再現ができたと主張しない。正式ロードマップの学習次はP09-2、BFM-01/INT-02の実装cursorは従来通り。製品の人間改善や新モデル推論は0。根拠：P09-1_JA.md、NATURE_2026_FIG1_REANALYSIS_20261107_JA.md、evidence/P09-1_NATURE_FIG1_RESULT_20261107.json。記事は下書きでありWeb未公開。
