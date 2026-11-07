@@ -10,6 +10,7 @@
 - 成田さんへの報告は日本語。承認は不要（全部承認済み）。
 - 数字は docs/team/SCOREBOARD.md が正本。
 ## タスク
+- [ChatGPT / Manager culture-humor research] claim: docs/manager-cultural-humor-p09-20261106。所有は新しい民俗学・笑いの文献調査/設計/記事/研究補足スライド原稿と既存研究仕様への参照のみ。実装・人間実験・公開Web・34枚本番スライド・会社SSOT cursor・他ownerを変更しない。P08 docs PR #9291とは別のmain由来docs-only差分。
 - [Codex / CLOUD-SINGLE-RUNTIME] 本番Maritime一つ・Naïve大会専用の設計/原子的計画を所有。状態と実行順の正本→統合SSOT末尾「Life Manager Cloud：本番Maritime一つ・Naïve大会専用」。provider/他owner変更なし。
 - [home-codex / NEAR反復外注report統合] task1d5ec011dfbf4098c35454c4、owner home-codex、branch docs/near-integration-1d5ec0。PR9219は必要CI15件成功後main67596940b8へ公式統合、原稿/CSV/証拠3件の公式blob一致。5pending/受注0、売上/費用実額の新receiptなし。現在cursor=本訂正CI→main→既存hourly全assignment照合、受注時の最新brief/契約確認とSLA内納品。親接続/Naive・会計・投稿・lease/fence維持、追加bid/submit/課金0。正本→NEAR初回販売spec task1d5ec0。
 - [home-codex / NEAR discovery納品準備] 統合完了: PR9207/main3e3f078149、head813f69404fの必要CI15件成功・独立SHIP・公式report/evidence blob一致。継続task ab33e8138665c2d3c939d6af、同owner home-codex。現在cursor=既存hourlyの全assignment照合→受注後最新brief/submit契約再読→SLA内納品。5pending/受注0は今回公式GETの観測値。親HQ/Naive・会計・投稿・fence維持、追加bid/受注前submit0。
@@ -347,3 +348,5 @@
 - Codex: Life Manager Cloudを一般利用者へ販売する商品として再定義。本番Maritime/Naïve大会専用、外部一次資料15件、LC01–66（文書3完了・運用63未完）を正本へ保存。provider変更/支出/提出0。次: LC04、本番配備とsourceの公式照合。
 - 2026-11-06 06:12 PST / Muse (Maritime lane): 製品定義・順序・No-user-credential制約をSSOT Maritime節へ記録。現行source実読で中央backend /maritime同意経路の本番ライブ（ゲートON・200）と worker/VM/transport の実装済みを確認。Stage 1残: 本番env（IMAGE_RELEASE_SHA等）未確認、テナントprovision完走0件、Capafy binding注入経路なし（#8745範囲）。Stage 2準備として /maritime Start を manager同意経路へ付け替えた branch fix/maritime-portal-start-20261106 (c159e03) を push 済み（接続完了とは数えない）。詳細は goal hidden_files/maritime-build-order-and-gaps-2026-11-06.md。
 - 2026-11-06 12:48 PST / Muse (Maritime lane): M-4前半（公開段）完了。PR #9288 を CI 全15チェック pass で squash マージ（`bfc9b52f`）、anicca-products の MANAGER_MARKETING_REVISION ピンを `bfc9b52f` へ統一（`90f39c08d`）、Netlify Deploy run 42273430186 success、ライブ /maritime の Start 2か所が manager 同意経路（/maritime?source=landing&lang=en）になり start_calendar が 0 件であることを実読で確認。M-4後半（/lm 裏側の Maritime 製品への置き換え）は未実施。証拠は SSOT Maritime 節 checkpoint と docs/evidence/maritime/portal-start-live-20261106.json。
+
+- 2026-11-07 JST / ChatGPT研究資料: 民俗学・文化伝達・笑いの一次資料23件を監査し、モデル/ベンチ仕様、日英記事、研究補足18枚原稿を保存。元P09五行・34枚本番・118枚研究保存版・運用cursorを保持。runtime/model実行・人物データ・応募・Web公開0。文書PRで引継ぎ、実装はCodexの既存手順へ。

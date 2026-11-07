@@ -1,0 +1,37 @@
+{
+  "status": "DOCUMENT_CHECKS_PASS",
+  "sources": 23,
+  "slide_sources": 18,
+  "phase9_rows_unchanged": true,
+  "runtime_code_changed": false,
+  "model_or_human_experiments_run": false,
+  "web_published": false,
+  "original_talk_modified": false,
+  "canonical_research_deck_modified": false,
+  "files": {
+    "docs/research/manager/masterclass/2026-11-04-p04-causal/CULTURE_HUMOR_MODEL_BENCH_SPEC_20261106.md": {
+      "bytes": 11638,
+      "sha256": "896571928d1a1cfdc1cb2706a520e2c4e3080ab8bcfa4ae96953e0354abef516"
+    },
+    "docs/research/manager/masterclass/2026-11-04-p04-causal/CULTURE_HUMOR_SOURCES_20261106.md": {
+      "bytes": 7989,
+      "sha256": "f0ff2d6728056550c68d1e26f9ff910e3b3046007dac053064828ad91cb281e7"
+    },
+    "docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club/CULTURE_HUMOR_PHASE9_SLIDES_20261106.json": {
+      "bytes": 11303,
+      "sha256": "6a4dfc652bc2c2c7aac03795fe1c46d9b9827c5924bb65ca94c6a064761d5051"
+    },
+    "docs/research/manager/masterclass/2026-11-04-p04-causal/journal_club/CULTURE_HUMOR_PHASE9_SLIDES_20261106.md": {
+      "bytes": 9414,
+      "sha256": "858f31cff298319d51edfceaed064003efb17016bed2f83411e0d684f6ffabce"
+    },
+    "docs/research/manager/articles/2026-11-06-culture-imitation-humor-manager-ja.md": {
+      "bytes": 12907,
+      "sha256": "8c33e56ce7ab2421cee16eafbea26a2116c66a129c9eddb38502ddb1ba64966f"
+    },
+    "docs/research/manager/articles/2026-11-06-culture-imitation-humor-manager-en.md": {
+      "bytes": 5790,
+      "sha256": "4eaff6dbb7e153ea6aa0b069033ef614238b6184464973fe14a34561340aa4cb"
+    }
+  }
+}

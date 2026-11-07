@@ -1,3 +1,9 @@
+# 研究資料差分：文化伝達・笑い・Phase9接続（2026-11-06）
+
+DESIGN_ONLY。CULTURE_HUMOR_MODEL_BENCH_SPEC_20261106.md と SOURCES 台帳、日英記事、journal_club/CULTURE_HUMOR_PHASE9_SLIDES_20261106.* を追加。共有BFMのモデル/計算実行・人物データ収集・クロール・大会応募・公開サイト反映は0。学習の次は元のP09-1、実行順は会社の統合SSOTの既存cursorを維持。P08後半の別PR #9291が未マージであることを再確認して統合する。34枚本番と118枚研究版は不変、18枚の補足資料を別冊にする。詳細なCodex実装の受入条件は上記仕様のG0〜G6と予測時点/二重holdout/権利/独立人間評価。過去の状況は以下に保存する。
+
+---
+
 # Phase 7 本番公開・実読戻し完了（2026-11-05 America/Los_Angeles、UTC 2026-11-06T03:29:40Z）
 
 **Anicca本番サイトPhase 7 84記事版が配信済み、独立検証PASS。** `anicca-products` [release PR #885](https://github.com/Daisuke134/anicca-products/pull/885) merged `d3e94a7813c712e247299595b99d4f3b6485ea32`; Netlify [workflow #42156237071](https://github.com/Daisuke134/anicca-products/actions/runs/42156237071) conclusion **success**（money-path・rollback smokeを含む）。

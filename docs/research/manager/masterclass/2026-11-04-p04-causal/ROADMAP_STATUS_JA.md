@@ -3,6 +3,10 @@
 **唯一の正本：`ROADMAP_STATUS_JA.md`｜更新：2026-11-05 America/Los_Angeles｜P00〜P12とBFM製品実装の統合**
 
 
+## 2026-11-06｜Phase 8→9：文化伝達・笑いの補講と設計参照
+
+今回の学習資料は[文化伝達・笑いの仕様](CULTURE_HUMOR_MODEL_BENCH_SPEC_20261106.md)、[出典台帳](CULTURE_HUMOR_SOURCES_20261106.md)、[日英記事](../../articles/2026-11-06-culture-imitation-humor-manager-ja.md)、[研究補足18枚原稿](journal_club/CULTURE_HUMOR_PHASE9_SLIDES_20261106.md)。実行TODOの追加・会社cursor変更ではない。次の学習対象は既存のP09-1「人・研究・時間・領域を分けた評価」。P09-2少数例/階層、P09-3 OOD/校正/棄権、P09-4負の転移、P09-5共有モデル比較を、文化・笑いの例で具体化する。正式IDを増減しない。P08後半教材のPR #9291は未マージとして参照し、Phase8の実装・MRT再現・実人間便益は未完了のまま。別の笑い専用ロードマップや総合点を新設しない。
+
 ## 2026-11-05｜BFM-01の必須商用ライセンス・ゲート（最優先の検証結果）
 
 **今回の一次規約確認：** `befm/BeFM1.5-4B`のHugging FaceモデルカードはApache-2.0と記すが、同じカードから参照する公式[Be.FM Terms of Use](https://docs.google.com/document/d/10n7ccfUAf89yQhx5u1lF45o70JgsOEYNu8bDxtRKbHA/edit)（Last Updated 2025-07-24）には**Non-commercial（商用利用禁止）／No Distribution（第三者への再配布禁止）／No Derivatives（改変モデルの配布禁止）**が明記されている。この規約は旧LLaMA 3.1を参照しているため、Qwen3ベースのBe.FM 1.5へどの条項が適用されるかの解釈にも不明点がある。**モデルカードのApache表示だけから商用利用・派生公開が許されると判断しない。**

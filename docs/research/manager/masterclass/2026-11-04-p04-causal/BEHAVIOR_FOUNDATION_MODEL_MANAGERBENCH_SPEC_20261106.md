@@ -48,3 +48,10 @@ Acquisition and publicity are *potential consequences*, not benchmark goals. The
 
 ## Separation from other documents
 This is a model/eval design document; ROADMAP_STATUS_JA.md remains the ONE curriculum status authority. Executable v0 scoring harness: experiments/managerbench_v0.py, test file with small software-fixture examples only. No human examples invented.
+
+
+## 2026-11-06｜文化伝達・笑いの領域横断拡張（設計のみ）
+
+[文化・笑いのモデル/評価契約](CULTURE_HUMOR_MODEL_BENCH_SPEC_20261106.md)と[一次資料/版/権利台帳](CULTURE_HUMOR_SOURCES_20261106.md)を追加。A–Fの既存トラック内で、模倣・信念・伝達・笑い・好み・採点・通過・投票・便益を別々に評価する。共有モデルは仮説であり、人物と刺激familyの二重holdout、演者/会場/年/文化holdout、情報cutoff、ネットワーク干渉、生成の評価器過適合を必須監査にする。既存SOCRATES/Oogiri/UR-FUNNY/New Yorkerを権利確認後に再利用する。書誌上の「柴田さん」は未同定。
+
+学習接続は元のP09-1〜P09-5。人間試験・共有モデルの学習・大会出場・新しい勝率の実測はいずれも未実施。会社の統合SSOT cursorを変更しない。P08-3〜5の教材は未マージPR #9291を参照し、mainに統合済みと仮定しない。新規[18枚補足スライド原稿](journal_club/CULTURE_HUMOR_PHASE9_SLIDES_20261106.md)を作成し、既存34枚本番版と118枚研究保存版は変更しない。
