@@ -93,7 +93,7 @@ def summarize(works: list[Work], events: list[Event]) -> dict:
     per_work = []
     for w in works:
         a = amounts[w.work_item_id]
-        cost = sum(a[k] for k in COST_KIN)
+        cost = sum(a[k] for k in COST_KINDS)
         complete = w.cost_coverage_complete and w.revenue_coverage_complete
         per_work.append({
             "id": w.work_item_id,
