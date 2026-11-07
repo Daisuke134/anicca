@@ -1,0 +1,10 @@
+{
+  "acceptance": "公開Manifest＋6ページのHTTP 200/SHA、baselineとcandidateの同一入力、正規hostの権限/ログ、実務でのS1 comparator・費用/遅延・独立再読取、外部write=0。**公開GETのみでは未DONE**。",
+  "current_id": "MG-01",
+  "current_status": "進行中・残",
+  "done": false,
+  "historical_learning_and_G_phase_aliases_are_not_other_cursors": true,
+  "schema": "manager.single_cursor.v1",
+  "task": "**G3実ホストS1 Shadow接続**（P00-3/P05-5/P06-1）：自社公開の非個人データを正規GETし、同じスナップショットの既存NO_ACTION/ルール/Manager候補を比較。既存デジタルサービスと権限機構を再利用し、実行・通知なしで時間/費用/現行業務のレシートを取得する。",
+  "total_ordered_items": 18
+}
