@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		09624508B5E4DDDA28A62154 /* DayCyclingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5539993CAC07B523C82A078D /* DayCyclingTests.swift */; };
+		45F4B36D3BD1661C39BFB1A8 /* PushTokenServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E100A45D16E51442C5F2FDCD /* PushTokenServiceTests.swift */; };
+		9E3903CDA48725E35FA30C8B /* TestURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F62BCCEA8A47732527243D /* TestURLProtocol.swift */; };
 		A3A3C3D8F19A4F2DA12F1202 /* QuoteNavigationCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3A3C3D8F19A4F2DA12F1201 /* QuoteNavigationCoordinatorTests.swift */; };
 		B4B4C4E9F20B503EB23C2303 /* ReviewPromptPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4B4C4E9F20B503EB23C2302 /* ReviewPromptPolicyTests.swift */; };
 		2FE5F42A07D6CA9CCE447F06 /* NudgeStatsManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88497BECBC635C3BB2A4F5F9 /* NudgeStatsManagerTests.swift */; };
@@ -23,7 +25,6 @@
 		84CC791A2EFAA90F005078AE /* AniccaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */ = {isa = PBXBuildFile; productRef = 84DE437E2F090BDA00198F6C /* Mixpanel */; };
 		95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */; };
-		A0714DDB2FC1D35400D7F9C7 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 84PH00012F2B000000000001 /* PostHog */; };
 		A0714DDC2FC1D35400D7F9C7 /* Singular in Frameworks */ = {isa = PBXBuildFile; productRef = EF17B89AF1FF1936EB1AE58E /* Singular */; };
 		A2A557539B41673D5F86B4DD /* BetaDistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */; };
 		BE2E7C57C0FFEE0000000002 /* PaywallE2ETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */; };
@@ -98,9 +99,11 @@
 		AE2E7C57C0FFEE0000000001 /* PaywallE2ETests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PaywallE2ETests.swift; sourceTree = "<group>"; };
 		D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetaDistributionTests.swift; sourceTree = "<group>"; };
 		D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProblemNotificationSchedulerTests.swift; sourceTree = "<group>"; };
+		E100A45D16E51442C5F2FDCD /* PushTokenServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PushTokenServiceTests.swift; sourceTree = "<group>"; };
 		E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeLocalizationTests.swift; sourceTree = "<group>"; };
 		E1A9BCCF09BD4516FCF9B831 /* ScreenshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScreenshotTests.swift; sourceTree = "<group>"; };
 		E1FFFD13F67306F87B5AA845 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		F2F62BCCEA8A47732527243D /* TestURLProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TestURLProtocol.swift; sourceTree = "<group>"; };
 		FE5786A433C595C56594222F /* aniccaiosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = aniccaiosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionInfoTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -171,7 +174,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A0714DDC2FC1D35400D7F9C7 /* Singular in Frameworks */,
-				A0714DDB2FC1D35400D7F9C7 /* PostHog in Frameworks */,
 				840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */,
 				84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */,
 				840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */,
@@ -276,12 +278,14 @@
 				88497BECBC635C3BB2A4F5F9 /* NudgeStatsManagerTests.swift */,
 				134D591FFF1E0B40CA405490 /* Info.plist */,
 				D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */,
+				E100A45D16E51442C5F2FDCD /* PushTokenServiceTests.swift */,
 				SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */,
 				76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */,
 				E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */,
 				5539993CAC07B523C82A078D /* DayCyclingTests.swift */,
 				A3A3C3D8F19A4F2DA12F1201 /* QuoteNavigationCoordinatorTests.swift */,
 				B4B4C4E9F20B503EB23C2302 /* ReviewPromptPolicyTests.swift */,
+				F2F62BCCEA8A47732527243D /* TestURLProtocol.swift */,
 			);
 			path = aniccaiosTests;
 			sourceTree = "<group>";
@@ -353,7 +357,6 @@
 				840BA3AE2EC77316005CDB8D /* ComponentsKit */,
 				840BA3B12EC77325005CDB8D /* WebRTC */,
 				84DE437E2F090BDA00198F6C /* Mixpanel */,
-				84PH00012F2B000000000001 /* PostHog */,
 				EF17B89AF1FF1936EB1AE58E /* Singular */,
 			);
 			productName = aniccaios;
@@ -438,7 +441,6 @@
 				840BA3AD2EC77316005CDB8D /* XCRemoteSwiftPackageReference "ComponentsKit" */,
 				840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */,
 				84DE437B2F08F5D000198F6C /* XCRemoteSwiftPackageReference "mixpanel-swift" */,
-				84PH00002F2B000000000000 /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				C4B1D88B80DC2E78A575FFA4 /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -553,6 +555,8 @@
 				A2A557539B41673D5F86B4DD /* BetaDistributionTests.swift in Sources */,
 				2FE5F42A07D6CA9CCE447F06 /* NudgeStatsManagerTests.swift in Sources */,
 				95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */,
+				45F4B36D3BD1661C39BFB1A8 /* PushTokenServiceTests.swift in Sources */,
+				9E3903CDA48725E35FA30C8B /* TestURLProtocol.swift in Sources */,
 				SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */,
 				F29A0962172B02EC2AF48600 /* NotificationHotfixTests.swift in Sources */,
 				3762F96744B5E043FA73E510 /* NudgeLocalizationTests.swift in Sources */,
@@ -1551,16 +1555,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/mixpanel/mixpanel-swift";
 			requirement = {
-				branch = master;
-				kind = branch;
-			};
-		};
-		84PH00002F2B000000000000 /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/PostHog/posthog-ios.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.0.0;
+				kind = exactVersion;
+				version = 7.1.0;
 			};
 		};
 		C4B1D88B80DC2E78A575FFA4 /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */ = {
@@ -1598,11 +1594,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 84DE437B2F08F5D000198F6C /* XCRemoteSwiftPackageReference "mixpanel-swift" */;
 			productName = Mixpanel;
-		};
-		84PH00012F2B000000000001 /* PostHog */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 84PH00002F2B000000000000 /* XCRemoteSwiftPackageReference "posthog-ios" */;
-			productName = PostHog;
 		};
 		EF17B89AF1FF1936EB1AE58E /* Singular */ = {
 			isa = XCSwiftPackageProductDependency;

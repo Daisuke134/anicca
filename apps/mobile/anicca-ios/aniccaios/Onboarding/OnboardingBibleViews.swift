@@ -638,6 +638,7 @@ struct PaywallValueTimelineStepView: View {
 struct PaywallFlowContainer: View {
     let onPurchaseSuccess: (CustomerInfo) -> Void
     let onDismiss: () -> Void
+    var flowID: String = "onboarding"
     @State private var step: PaywallStep = .planSelection
     @EnvironmentObject private var appState: AppState
 
@@ -652,7 +653,8 @@ struct PaywallFlowContainer: View {
                 PaywallVariantBView(
                     variant: "b",
                     onPurchaseSuccess: onPurchaseSuccess,
-                    onDismiss: onDismiss
+                    onDismiss: onDismiss,
+                    flowID: flowID
                 )
             }
 
@@ -670,5 +672,6 @@ struct PaywallFlowContainer: View {
             .padding(.trailing, 12)
             .padding(.top, 8)
         }
+        .analyticsScreen(.paywall, flowID: flowID)
     }
 }

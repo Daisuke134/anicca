@@ -114,8 +114,8 @@ struct FeedRootView: View {
         }
         .environmentObject(themeStore)
         .environmentObject(likedStore)
+        .analyticsScreen(.feed, flowID: "feed")
         .onAppear {
-            AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed"])
             if quotes.isEmpty {
                 rebuildFeed()
             }
@@ -127,6 +127,13 @@ struct FeedRootView: View {
         }
         .onChange(of: quotes) { _ in
             applyPendingQuoteNavigation()
+        }
+        .onChange(of: showCollections) { isPresented in
+            if isPresented {
+                AnalyticsManager.shared.trackScreenViewed(screenID: .feedCollections, flowID: "feed")
+            } else {
+                AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feed, flowID: "feed")
+            }
         }
         .onChange(of: currentIndex) { _ in
             recordViewedQuoteIfNeeded()
@@ -141,32 +148,40 @@ struct FeedRootView: View {
                 }
             }
         }
-        .sheet(isPresented: $showSaved) {
+        .sheet(isPresented: $showSaved, onDismiss: {
+            AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feed, flowID: "feed")
+        }) {
             NavigationStack {
                 LikedQuotesView().environmentObject(likedStore)
-                    .onAppear { AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed.saved"]) }
+                    .analyticsScreen(.feedSaved, flowID: "feed")
                     .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(String(localized: "common_close")) { showSaved = false } } }
             }
         }
-        .sheet(isPresented: $showReminders) {
+        .sheet(isPresented: $showReminders, onDismiss: {
+            AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feed, flowID: "feed")
+        }) {
             NavigationStack {
                 NotificationsSettingsView()
-                    .onAppear { AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed.reminders"]) }
+                    .analyticsScreen(.feedReminders, flowID: "feed")
                     .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(String(localized: "common_close")) { showReminders = false } } }
             }
         }
-        .sheet(isPresented: $showThemes) {
+        .sheet(isPresented: $showThemes, onDismiss: {
+            AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feed, flowID: "feed")
+        }) {
             NavigationStack {
                 ThemePickerView().environmentObject(themeStore)
-                    .onAppear { AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed.themes"]) }
+                    .analyticsScreen(.feedThemes, flowID: "feed")
                     .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(String(localized: "common_close")) { showThemes = false } } }
             }
         }
-        .sheet(isPresented: $showSettings) {
+        .sheet(isPresented: $showSettings, onDismiss: {
+            AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: .feed, flowID: "feed")
+        }) {
             if #available(iOS 16.0, *) {
                 NavigationStack {
                     SettingsSheet()
-                        .onAppear { AnalyticsManager.shared.track(.screenViewed, properties: ["screen_id": "feed.settings"]) }
+                        .analyticsScreen(.feedSettings, flowID: "feed")
                         .environmentObject(themeStore)
                         .environmentObject(likedStore)
                 }
@@ -175,6 +190,7 @@ struct FeedRootView: View {
             } else {
                 NavigationView {
                     SettingsSheet()
+                        .analyticsScreen(.feedSettings, flowID: "feed")
                         .environmentObject(themeStore)
                         .environmentObject(likedStore)
                 }
