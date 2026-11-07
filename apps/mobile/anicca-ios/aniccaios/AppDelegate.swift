@@ -56,6 +56,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        AnalyticsManager.shared.resumeCurrentScreenVisit()
         // Distinct open days for post-value App Store review prompts.
         Task { @MainActor in
             ReviewPromptCoordinator.shared.recordAppOpen()
@@ -65,7 +66,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        AnalyticsManager.shared.clearCurrentScreenVisit()
+        AnalyticsManager.shared.suspendCurrentScreenVisit()
     }
 
     /// Register for remote notifications when the user has granted alert authorization.

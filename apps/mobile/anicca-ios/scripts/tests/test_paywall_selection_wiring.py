@@ -168,10 +168,10 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         analytics = ANALYTICS.read_text(encoding="utf-8")
         self.assertIn("@State private var step: PaywallStep = .planSelection", container)
         self.assertIn(".analyticsScreen(.paywall, flowID: flowID)", container)
-        track_viewed = analytics.split("func trackScreenViewed(", 1)[1].split(
+        track_viewed = analytics.split("private func recordScreenView(", 1)[1].split(
             "func trackScreenViewedIfNeeded", 1
         )[0]
-        self.assertIn("if screenID == .paywall", track_viewed)
+        self.assertIn("if screenID == AnalyticsScreenID.paywall.rawValue", track_viewed)
         self.assertIn("track(.paywallShown, properties: properties)", track_viewed)
         self.assertNotIn("trackPaywallViewed", self.source)
         self.assertIn('case paywallShown = "paywall_shown"', analytics)

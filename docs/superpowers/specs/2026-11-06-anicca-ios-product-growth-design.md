@@ -93,12 +93,14 @@ Railway公式readbackで本番APIは `Daisuke134/anicca-products` / `apps/api`�
 
 根拠は公式[Mixpanel Swift SDK](https://docs.mixpanel.com/docs/tracking-methods/sdks/swift)、[iOS Feature Flags](https://docs.mixpanel.com/docs/tracking-methods/sdks/swift/swift-flags)、[Experiments](https://docs.mixpanel.com/docs/experiments)、[PostHog iOS SDK](https://posthog.com/docs/libraries/ios)。Mixpanel Feature FlagsはSDK 6.4.0以上が必要。初回調査時の`Package.resolved`は`master` branch revision `6e2a786b…`とPostHog 3.49.0を含んでいたが、現candidate sourceはMixpanel Swift 7.1.0 stable revision `38e63de7d71a2b6787bbd190ef8fcc04d053f259`へpinし、PostHog Package/config/captureを除去済み。契約や上限を推測せず、Mixpanel accountのFeature Flags/Experiments entitlement・MEU allowance・project regionは公式account readback後にのみ有効化する。
 
-### 現行build 818のAs-Is
+### build 818 baseline / PR #9289候補のAs-Is
+
+build 818はsource SHA `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`で、PR #9289のAnalytics変更を含まない。以下のscreen inventory・Mixpanel一本化・購入計測のsource実装はPR #9289の候補sourceを指し、build 818や本番event受信の証拠とは扱わない。
 
 | 領域 | 実装済み | 未完/問題 |
 |---|---|---|
 | 初期化・送信 | `AppDelegate.swift`で`AnalyticsManager.configure()`、`AnalyticsManager.swift`でMixpanelを初期化。`track`はcontextを付けてMixpanelへ送り、PostHog設定時は同じeventも送る | 本番Mixpanelへのtest/live event受信、project region、安定anonymous IDからaccount IDへの移行、logout reset、offline再送/重複はservice側readbackしていない |
-| 画面 | 18個の`AnalyticsScreenID`をOnboarding/Feed/Settings/Paywallのproduction callerへ対応付け済み。純Swift fixtureで同一screen instance抑止、前後移動のexit/滞在時間、background clearを確認 | Mixpanel service側の受信・全実画面coverage・実ユーザーの重複率は未確認。現行onboardingはlinearで戻る操作がなく、`onboarding_step_back`はenum定義のみでcallerがない |
+| 画面 | 18個の`AnalyticsScreenID`をOnboarding/Feed/Settings/Paywallのproduction callerへ対応付け済み。候補branchでbackground復帰時の新visit再開と次画面exit、サインアウト時のvisit消去/session ID更新を実装し、純Swift regressionを確認。shared modifierとOnboardingは同じscreen/flowのdedupeを通す | Mixpanel service受信・全実画面coverage・実ユーザーの重複率、および実機での`didBecomeActive`とSwiftUI route更新の順序は未確認。現行onboardingはlinearで戻る操作がなく、`onboarding_step_back`はenum定義のみでcallerがない |
 | 二重送信 | `AnalyticsManager.track`のPostHog conditional send | `PlanSelectionStepView.swift`は直接PostHog captureし、paywall view時に`paywall_plan_selection_viewed`相当を複数経路から呼ぶ。画面再描画を含め重複の実測が必要 |
 | 購入 | `PurchaseObservationLedger`がtransaction IDの観測をローカルdedup。trialとpurchase eventを分け、`displayed_price`には`amount_source=store_product_quote_not_settled_revenue`を付ける | 表示価格はApple/RevenueCatで決済済みの純収益ではない。restore完了eventがなく、transaction callback・renewal/refund/proceedsをprovider実績と統合していない |
 | Open | 現行`aniccaai.com/open/`は会社指標、ASCのstore discovery/downloads、RevenueCat等の集計を読む | iOSのscreen funnel/離脱/cohort/experimentをMixpanelから表示していない |
@@ -109,7 +111,7 @@ Railway公式readbackで本番APIは `Daisuke134/anicca-products` / `apps/api`�
 
 ### 現行AnalyticsScreenIDとproduction caller
 
-次表はsource上の配線inventoryであり、純Swift `ScreenVisitLedgerTests`はlocal transition stateだけを検証する。どちらもMixpanel受信・実ユーザーcoverageのreadbackではない。中央の`trackScreenViewed`はscreen entryと前screenの明示的exitを送り、AppDelegateのbackground hookはcurrent visitをclearしてOS終了を`screen_exited`と誤認させない。
+次表はsource上の配線inventoryであり、純Swift `ScreenVisitLedgerTests`はlocal transition stateだけを検証する。どちらもMixpanel受信・実ユーザーcoverageのreadbackではない。画面entryと明示的遷移だけで`screen_exited`を送り、backgroundでは訪問を終了扱いせず一時停止し、foreground復帰で画面visitを再開する。サインアウトではactive/suspended visitを破棄し、匿名IDへ引き継がない新しい`session_id`へ切り替える。
 
 | 画面ID | production caller | source上のevent |
 |---|---|---|

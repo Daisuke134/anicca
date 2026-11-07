@@ -93,7 +93,7 @@ struct OnboardingFlowView: View {
         guard lastTrackedStep != step else { return }
         lastTrackedStep = step
         let screenID = AnalyticsScreenID.onboarding(step)
-        AnalyticsManager.shared.trackScreenViewed(screenID: screenID, flowID: "onboarding")
+        AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: screenID, flowID: "onboarding")
         AnalyticsManager.shared.track(.onboardingStepViewed, properties: [
             "screen_id": screenID.rawValue,
             "step_index": step.rawValue,

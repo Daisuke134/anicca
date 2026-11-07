@@ -22,9 +22,12 @@ struct ScreenVisitLedger {
     }
 
     private(set) var currentVisit: Visit?
+    private(set) var suspendedVisit: Visit?
+    private(set) var sessionID = UUID().uuidString
 
     mutating func enter(screenID: String, screenInstanceID: String, flowID: String, at enteredAt: Date) -> EntryResult {
         guard currentVisit?.screenInstanceID != screenInstanceID else { return .ignored }
+        suspendedVisit = nil
         let previousExit = exit(nextScreenID: screenID, at: enteredAt)
         currentVisit = Visit(
             screenID: screenID,
@@ -50,5 +53,30 @@ struct ScreenVisitLedger {
 
     mutating func clear() {
         currentVisit = nil
+        suspendedVisit = nil
+    }
+
+    mutating func suspend() {
+        guard let currentVisit else { return }
+        suspendedVisit = currentVisit
+        self.currentVisit = nil
+    }
+
+    mutating func resume(at enteredAt: Date, screenInstanceID: String) -> Visit? {
+        guard let suspendedVisit else { return nil }
+        let visit = Visit(
+            screenID: suspendedVisit.screenID,
+            screenInstanceID: screenInstanceID,
+            flowID: suspendedVisit.flowID,
+            enteredAt: enteredAt
+        )
+        currentVisit = visit
+        self.suspendedVisit = nil
+        return visit
+    }
+
+    mutating func resetSession() {
+        clear()
+        sessionID = UUID().uuidString
     }
 }

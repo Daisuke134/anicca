@@ -12,7 +12,7 @@ final class AnalyticsManager {
     static let shared = AnalyticsManager()
     private let logger = Logger(subsystem: "com.anicca.ios", category: "Analytics")
     private let purchaseObservations = PurchaseObservationLedger()
-    private let sessionID = UUID().uuidString
+    private var sessionID: String { screenVisits.sessionID }
     private var screenVisits = ScreenVisitLedger()
 
     private var context: [String: MixpanelType] {
@@ -74,6 +74,7 @@ final class AnalyticsManager {
     /// ログアウト時にリセット
     func reset() {
         Mixpanel.mainInstance().reset()
+        screenVisits.resetSession()
         logger.info("Mixpanel reset")
     }
     
@@ -100,14 +101,18 @@ final class AnalyticsManager {
         guard case .entered(let previousExit) = entry else { return }
         if let previousExit { trackScreenExit(previousExit) }
 
+        recordScreenView(screenID: screenID.rawValue, flowID: flowID, screenInstanceID: screenInstanceID)
+    }
+
+    private func recordScreenView(screenID: String, flowID: String, screenInstanceID: String) {
         let properties: [String: MixpanelType] = [
-            "screen_id": screenID.rawValue,
+            "screen_id": screenID,
             "screen_instance_id": screenInstanceID,
             "flow_id": flowID,
             "flow_version": "affirmation-first-v1",
         ]
         track(.screenViewed, properties: properties)
-        if screenID == .paywall {
+        if screenID == AnalyticsScreenID.paywall.rawValue {
             track(.paywallShown, properties: properties)
             updateSKANConversionValue(2)
         }
@@ -138,9 +143,14 @@ final class AnalyticsManager {
         ])
     }
 
-    /// Backgrounding is not a user exit, so leave it out of screen drop-off events.
-    func clearCurrentScreenVisit() {
-        screenVisits.clear()
+    /// Backgrounding is not a user exit; keep the screen so foreground can start a fresh visit.
+    func suspendCurrentScreenVisit() {
+        screenVisits.suspend()
+    }
+
+    func resumeCurrentScreenVisit() {
+        guard let visit = screenVisits.resume(at: Date(), screenInstanceID: UUID().uuidString) else { return }
+        recordScreenView(screenID: visit.screenID, flowID: visit.flowID, screenInstanceID: visit.screenInstanceID)
     }
 
     // MARK: - Convenience Methods
@@ -357,16 +367,10 @@ enum AnalyticsScreenID: String, CaseIterable {
 private struct AnalyticsScreenModifier: ViewModifier {
     let screenID: AnalyticsScreenID
     let flowID: String
-    @State private var screenInstanceID = UUID().uuidString
 
     func body(content: Content) -> some View {
         content.onAppear {
-            screenInstanceID = UUID().uuidString
-            AnalyticsManager.shared.trackScreenViewed(
-                screenID: screenID,
-                flowID: flowID,
-                screenInstanceID: screenInstanceID
-            )
+            AnalyticsManager.shared.trackScreenViewedIfNeeded(screenID: screenID, flowID: flowID)
         }
     }
 }

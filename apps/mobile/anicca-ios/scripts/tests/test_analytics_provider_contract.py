@@ -66,12 +66,37 @@ def main() -> int:
         'private var screenVisits = ScreenVisitLedger()',
         'screenVisits.enter(',
         'screenVisits.exit(',
-        'screenVisits.clear()',
-        'func clearCurrentScreenVisit()',
+        'screenVisits.suspend()',
+        'screenVisits.resume(',
+        'screenVisits.resetSession()',
+        'func suspendCurrentScreenVisit()',
+        'func resumeCurrentScreenVisit()',
     )
     for marker in required_contract:
         if marker not in manager:
             raise AssertionError(f"Missing analytics contract: {marker}")
+
+    app_delegate = (APP / "AppDelegate.swift").read_text()
+    became_active = app_delegate.split("func applicationDidBecomeActive", 1)[1].split(
+        "func applicationDidEnterBackground", 1
+    )[0]
+    if "AnalyticsManager.shared.resumeCurrentScreenVisit()" not in became_active:
+        raise AssertionError("Foreground resume must reopen the suspended screen visit")
+
+    screen_modifier = manager.split("private struct AnalyticsScreenModifier", 1)[1].split("extension View", 1)[0]
+    if "trackScreenViewedIfNeeded(screenID: screenID, flowID: flowID)" not in screen_modifier:
+        raise AssertionError("SwiftUI appearance must not duplicate a visit already resumed by the app lifecycle")
+
+    onboarding = CALLERS["onboarding"].read_text()
+    onboarding_record = onboarding.split("private func recordStepView()", 1)[1].split("private func advance()", 1)[0]
+    if "trackScreenViewedIfNeeded(screenID: screenID, flowID: \"onboarding\")" not in onboarding_record:
+        raise AssertionError("Onboarding appearance must deduplicate a screen visit resumed by the app lifecycle")
+    if "trackScreenViewed(screenID:" in onboarding_record:
+        raise AssertionError("Onboarding must not force a duplicate exit when the same step reappears")
+
+    reset_body = manager.split("func reset() {", 1)[1].split("\n    }", 1)[0]
+    if "screenVisits.resetSession()" not in reset_body:
+        raise AssertionError("Analytics reset must clear visits and rotate the session identity")
 
     for unsafe in ('"displayed_price"', '"amount_source"', '"transaction_id"', '"transaction_id_hash"'):
         if unsafe in manager:

@@ -70,7 +70,9 @@
 - [x] 18個のAnalyticsScreenIDをproduction callerへ対応付け、event/caller、paywall/restore、identify/reset、PostHog経路を記録。現行linear onboardingに戻る操作はなく、`onboarding_step_back`は未使用enumのみと確認。source mappingの完了はservice受信・実coverageの証明とは分離する。
 - [x] Mixpanel Swift SDKをstable 7.1.0（revision `38e63de7d71a2b6787bbd190ef8fcc04d053f259`）へpinし、PostHog Package/Info.plist config/SDK captureを除去する。focused provider-contract testでPostHog経路なしを確認。
 - [ ] Mixpanel accountのExperiments entitlement・MEU allowance・project regionを公式readbackし、使える機能だけを有効化する。
-- [x] CLI focused fixturesで同一screen instance重複、前後移動のnext screen/滞在時間、background clearを確認。`PurchaseObservationTests`はnil/blank/duplicate/replayed transactionを確認し、wiring testsはtrial/restore callerとflowを照合。event contract testは表示価格/収益額/transaction IDをclient payloadへ入れない。
+- [x] 独立レビュー指摘: background→activeで同じ画面のvisitを再開し、その後の明示的な次画面遷移を記録する。サインアウトではactive/suspended visitを消去し、session IDを更新する。純Swift lifecycle regressionをRED→GREENで確認する。
+- [x] shared modifierとOnboardingの再表示をscreen/flow単位のdedupe経路へ統一し、foreground復帰時の同一画面再entryがexitを作らないことをcontract testで確認する。
+- [x] CLI focused fixturesで同一screen instance重複、前後移動のnext screen/滞在時間、background時にexitを送らないことを確認。`PurchaseObservationTests`はnil/blank/duplicate/replayed transactionを確認し、wiring testsはtrial/restore callerとflowを照合。event contract testは表示価格/収益額/transaction IDをclient payloadへ入れない。
 - [ ] StoreKit/RevenueCat sandboxでrestore/trial/error、missing/different currency、offline resendを隔離し、Mixpanel service receiptと重複0をreadbackする。local SDK queue evidenceだけでservice受信を完了扱いしない。
 - [x] 固有transactionの観測結果をactive/retention/legacyの共通入口にし、同じtransactionの重複をオンボーディング成功からも除く。`settings_subscription`は汎用結果だけにし、purchase/trial/restore全eventへ`flow_id`を付ける。focused purchase/wiring testsで確認。実収益sourceはRevenueCat/Appleと区別する。
 - [ ] screen/flow/activation/notification/paywall/product/purchase/trial/restore/exposureにevent/property contractを付け、raw affirmation text/PII/secretを送らず内部buildを識別する。画面終了は明示的遷移だけを送り、OS killは次step観測窓によるdrop-off推定とラベルする。
