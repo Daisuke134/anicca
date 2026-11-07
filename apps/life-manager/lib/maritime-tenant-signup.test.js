@@ -18,6 +18,13 @@ test('capafy is the first self-signup platform and the registry is extensible',(
  assert.ok(TENANT_PLATFORMS.length>1);
  assert.ok(TENANT_PLATFORMS.every(p=>typeof p.id==='string'&&typeof p.firstAction==='string'));
 });
+test('x402 is registered as a tenant revenue platform (disabled until its tenant runbook lands)',()=>{
+ const x402=TENANT_PLATFORMS.find(p=>p.id==='x402');
+ assert.ok(x402);
+ assert.equal(x402.enabled,false);
+ assert.equal(x402.firstAction,'sell_service');
+ assert.throws(()=>buildTenantSignupPlan({uid:UID,platformId:'x402'}),/tenant_signup_plan_invalid/);
+});
 test('signup plan is per-tenant, ordered, and never references founder accounts',()=>{
  const plan=buildTenantSignupPlan({uid:UID,platformId:'capafy'});
  assert.deepEqual(plan.steps.map(s=>s.id),['allocate_computer','agent_self_signup','binding_persist','first_revenue_action','report_emit']);

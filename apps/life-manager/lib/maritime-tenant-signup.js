@@ -19,6 +19,7 @@ const TENANT_PLATFORMS=Object.freeze([
  Object.freeze({id:'contra',enabled:false,firstAction:'submit_proposal',stateDir:'state/contra'}),
  Object.freeze({id:'guru',enabled:false,firstAction:'submit_proposal',stateDir:'state/guru'}),
  Object.freeze({id:'whop',enabled:false,firstAction:'publish_product',stateDir:'state/whop'}),
+ Object.freeze({id:'x402',enabled:false,firstAction:'sell_service',stateDir:'state/x402'}),
 ]);
 const NEXT_STATE=Object.freeze({none:'signed_up',signed_up:'bound',bound:'first_action_done',first_action_done:null});
 function buildTenantSignupPlan({uid,platformId}={}){
