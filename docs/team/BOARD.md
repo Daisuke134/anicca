@@ -350,3 +350,5 @@
 - 2026-11-06 12:48 PST / Muse (Maritime lane): M-4前半（公開段）完了。PR #9288 を CI 全15チェック pass で squash マージ（`bfc9b52f`）、anicca-products の MANAGER_MARKETING_REVISION ピンを `bfc9b52f` へ統一（`90f39c08d`）、Netlify Deploy run 42273430186 success、ライブ /maritime の Start 2か所が manager 同意経路（/maritime?source=landing&lang=en）になり start_calendar が 0 件であることを実読で確認。M-4後半（/lm 裏側の Maritime 製品への置き換え）は未実施。証拠は SSOT Maritime 節 checkpoint と docs/evidence/maritime/portal-start-live-20261106.json。
 
 - 2026-11-07 JST / ChatGPT研究資料: 民俗学・文化伝達・笑いの一次資料23件を監査し、モデル/ベンチ仕様、日英記事、研究補足18枚原稿を保存。元P09五行・34枚本番・118枚研究保存版・運用cursorを保持。runtime/model実行・人物データ・応募・Web公開0。文書PRで引継ぎ、実装はCodexの既存手順へ。
+
+- 2026-11-07 JST / ChatGPT Manager P09-1: Nature 2026の公式Figure1（70研究・3356方向比較）からMac mini Pythonで相関/誤差/cluster bootstrap/LOSO校正を実測、人工9テストPASS、出典・元RDS認証障害・未達を講義/研究仕様/引継ぎ/記事原稿へ記録。GPT4新推論・実人間介入・公開記事・発表用34枚・本番変更0。既存BFM-01/INT-02優先順を維持。

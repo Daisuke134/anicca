@@ -3,6 +3,11 @@
 **唯一の正本：`ROADMAP_STATUS_JA.md`｜更新：2026-11-05 America/Los_Angeles｜P00〜P12とBFM製品実装の統合**
 
 
+## 2026-11-07｜P09-1：Nature公開Figure1の実データ再解析（原著完全再現ではない）
+
+[日本語講義](P09-1_JA.md)、[結果と制約](NATURE_2026_FIG1_REANALYSIS_20261107_JA.md)、[実行レシート](evidence/P09-1_NATURE_FIG1_RESULT_20261107.json)、[実行コード](experiments/p09_1_nature_fig1_reanalysis.py)、[人工テスト](experiments/test_p09_1_nature_fig1_reanalysis.py)、[研究スライド4枚の原稿](journal_club/P09-1_NATURE_FIG1_APPENDIX_SLIDE_SOURCE_JA.md)を作成。公式Figure1の70研究/3356方向付き比較から無調整r=.8051と研究LOSO校正のRMSE 11.83→8.15ppを独立計算。**原著のGPT-4 raw=.8508 / adjusted=.9151とは同じ推定器ではなく、元の保存済み人間・LLM RDSはCode Oceanのダウンロードに認証が必要で、Rscript未導入につき完全再現未実施。** P09-2以降の正式5講義IDと既存の会社の実装優先順は維持。
+
+
 ## 2026-11-06｜Phase 8→9：文化伝達・笑いの補講と設計参照
 
 今回の学習資料は[文化伝達・笑いの仕様](CULTURE_HUMOR_MODEL_BENCH_SPEC_20261106.md)、[出典台帳](CULTURE_HUMOR_SOURCES_20261106.md)、[日英記事](../../articles/2026-11-06-culture-imitation-humor-manager-ja.md)、[研究補足18枚原稿](journal_club/CULTURE_HUMOR_PHASE9_SLIDES_20261106.md)。実行TODOの追加・会社cursor変更ではない。次の学習対象は既存のP09-1「人・研究・時間・領域を分けた評価」。P09-2少数例/階層、P09-3 OOD/校正/棄権、P09-4負の転移、P09-5共有モデル比較を、文化・笑いの例で具体化する。正式IDを増減しない。P08後半教材のPR #9291は未マージとして参照し、Phase8の実装・MRT再現・実人間便益は未完了のまま。別の笑い専用ロードマップや総合点を新設しない。
@@ -190,7 +195,7 @@ Aniccaは苦しみの軽減を使命に、汎用的な行動理解・予測・�
 
 | ID | 内容 | 状態 | 完了の意味／残ること |
 |---|---|---|---|
-| P09-1 | 人・研究・時間・領域を分けた評価 | **残** | 何を未知として残すか。 |
+| P09-1 | 人・研究・時間・領域を分けた評価 | **[講義＋Nature図表実データの再解析](P09-1_JA.md)を実行／元RDSと原著Rの完全再現は未完** | 70研究/3356方向付き比較、研究単位LOSO・校正・研究クラスタbootstrap。9件の人工テスト成功。新しい実人間成果・BFM学習は未実施。 |
 | P09-2 | ゼロショット・少数例適応・階層モデル | **残** | 共通知識と固有差。 |
 | P09-3 | 分布外検知・校正・棄権 | **残** | 分からないときの扱い。 |
 | P09-4 | 負の転移・忘却・退行テスト | **残** | 新しい学習で以前の能力が壊れないか。 |

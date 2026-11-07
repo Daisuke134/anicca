@@ -1,3 +1,9 @@
+# 2026-11-07｜P09-1：Nature 2026公開Source Figure1を実データ再解析
+
+確認済み：70研究/3356方向付き比較、r=.8051489、RMSE=.1183468（割合）、2000研究クラスタbootstrap・70fold LOSO校正（RMSE .1183→.08145）、人工テスト9件PASS。原著のpanelB r=.85079/rawと.91513/adjustedとは推定対象・解析方法が異なる。**元の個票RDS・原著Rコードの完全実行は未達**：Code Oceanで個別ダウンロード認証が必要、実行MacにRscriptがない。元RDSを使った再現ができたと主張しない。正式ロードマップの学習次はP09-2、BFM-01/INT-02の実装cursorは従来通り。製品の人間改善や新モデル推論は0。根拠：P09-1_JA.md、NATURE_2026_FIG1_REANALYSIS_20261107_JA.md、evidence/P09-1_NATURE_FIG1_RESULT_20261107.json。記事は下書きでありWeb未公開。
+
+---
+
 # 研究資料差分：文化伝達・笑い・Phase9接続（2026-11-06）
 
 DESIGN_ONLY。CULTURE_HUMOR_MODEL_BENCH_SPEC_20261106.md と SOURCES 台帳、日英記事、journal_club/CULTURE_HUMOR_PHASE9_SLIDES_20261106.* を追加。共有BFMのモデル/計算実行・人物データ収集・クロール・大会応募・公開サイト反映は0。学習の次は元のP09-1、実行順は会社の統合SSOTの既存cursorを維持。P08後半の別PR #9291が未マージであることを再確認して統合する。34枚本番と118枚研究版は不変、18枚の補足資料を別冊にする。詳細なCodex実装の受入条件は上記仕様のG0〜G6と予測時点/二重holdout/権利/独立人間評価。過去の状況は以下に保存する。
