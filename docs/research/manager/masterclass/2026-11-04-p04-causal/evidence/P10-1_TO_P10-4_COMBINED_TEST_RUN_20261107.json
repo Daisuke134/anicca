@@ -1,0 +1,46 @@
+{
+  "date": "2026-11-07",
+  "experiment_type": "ENTIRELY_SYNTHETIC_OFFLINE_UNIT_TESTS",
+  "environment": "AniccanoMac-mini.local Python 3 standard library",
+  "verification": "python3 -m unittest discover -v -p 'test_p10_*.py'",
+  "source_files": [
+    "docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p10_1_unit_economics.py",
+    "docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/test_p10_1_unit_economics.py",
+    "docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/p10_2_4_control_plane_synthetic.py",
+    "docs/research/manager/masterclass/2026-11-04-p04-causal/experiments/test_p10_2_4_control_plane_synthetic.py"
+  ],
+  "test_result": {
+    "tests_run": 60,
+    "tests_passed": 60,
+    "failures": 0,
+    "errors": 0
+  },
+  "unit_count_breakdown": {
+    "P10-1": 19,
+    "P10-2-3-4": 41
+  },
+  "synthetic_observations": {
+    "portfolio": {
+      "selected": [
+        "BFM_EVAL",
+        "PRODUCT_PILOT"
+      ],
+      "cost_minor": 480,
+      "external_authority": false
+    },
+    "policy": {
+      "result": "SIMULATION_ELIGIBLE_NOT_AUTHORIZED",
+      "external_authority": false
+    },
+    "unknown_effect": "RECONCILE_ONLY_NO_RESEND",
+    "slo_error_budget_remaining": 2,
+    "billed_cost_minor": 600,
+    "allocated_cost_minor": 580,
+    "unallocated_cost_minor": 20
+  },
+  "limits": [
+    "No actual Anicca financing, revenue, expenses, cash balances, human benefit or production agent autonomy observed",
+    "No live effects, permission grants or external mutations",
+    "Not a claim of compliance, license clearance or causal uplift"
+  ]
+}
