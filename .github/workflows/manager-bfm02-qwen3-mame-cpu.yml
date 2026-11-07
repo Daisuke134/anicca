@@ -88,6 +88,35 @@ jobs:
           test "$(stat -c%s "$MODEL")" = "$GGUF_SIZE"
           test "$(head -c4 "$MODEL" | od -An -tx1 | tr -d ' \n')" = "47475546"
 
+      - name: Canary prove extracted A/B before scoring 24 cases
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$(cat "$RUNNER_TEMP/manager-bfm02/cli.txt")"
+          export LD_LIBRARY_PATH="$(dirname "$CLI"):$RUNNER_TEMP/manager-bfm02/bin/lib"
+          python - <<'PY_CANARY'
+          import pathlib,subprocess,sys,os
+          sys.path.insert(0,"products/manager/evals")
+          from qwen3_mame_text_eval import build_cases,build_llama_command,parse_llama_reply
+          cases=build_cases(pathlib.Path("artifacts/mame-input"),n_cases=24)
+          prompt=cases[0]["_prompt"]
+          exe=(pathlib.Path(os.environ["RUNNER_TEMP"])/"manager-bfm02"/"cli.txt").read_text().strip()
+          weights=str(pathlib.Path(os.environ["RUNNER_TEMP"])/"manager-bfm02"/"qwen3.gguf")
+          command=build_llama_command(exe,weights,prompt)
+          result=subprocess.run(command,capture_output=True,timeout=100,check=False)
+          raw=result.stdout.decode("utf-8",errors="replace")+"\n"+result.stderr.decode("utf-8",errors="replace")
+          answer=parse_llama_reply(raw)
+          sanitized=raw.replace(prompt,"[PUBLIC_CONTEXT_AND_DESCRIPTION_REDACTED]")
+          # Public sources only; redact raw Japanese context to avoid logging data.
+          for marker in ("状況: ","Aのコマの描写: ","Bのコマの描写: "):
+              if marker in sanitized:
+                  sanitized="[REDACTED_PROMPT_PRESENT] "+repr(sanitized[:120])
+                  break
+          print("BFM02_CANARY",{"returncode":result.returncode,"chars":len(raw),
+              "parsed_answer":answer,"sanitized_log_prefix":repr(sanitized[:900])},flush=True)
+          assert result.returncode==0 and answer in ("A","B"), "No valid generated A/B; stop BEFORE all 24 eval cases"
+          PY_CANARY
+
       - name: Run real 24-context Qwen 4B forward-pass and compare recorded human votes
         shell: bash
         run: |
