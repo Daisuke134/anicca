@@ -6,7 +6,7 @@
 
 **順序・TODO・状態の唯一の正本:** [統合SSOTの ANICCA-PRODUCT-GROWTH](2026-09-25-life-manager-unified-ssot.md#anicca-product-growth--ios初回改善から全アプリ継続改善まで)。この文書は詳細な要求・契約、[実装計画](../plans/2026-11-06-anicca-ios-product-growth.md)は実行手順。進捗を別台帳へ二重管理しない。
 
-現在の実行順は**G2 candidate確認→G4（Mixpanel一本化・全画面計測の実受信確認）→G4.1（Anicca計測を既存Openへ表示）→G5（build 820の全画面Maestro動画、TestFlight失敗と審査中buildの整理、全受入条件後にASC CLIで提出）**。ASC公式readbackでは1.9.8 submissionは`WAITING_FOR_REVIEW`、latest build 820は`VALID`。Xcode Cloud run #820はArchive成功だがTestFlight External TestingがAppleのbeta review submission failureで失敗した。画面別の実数はOpen側で`missing_service_account`。画面離脱、Mixpanel実受信、Open集計、同一build E2Eが未実証のため、追加提出はしない。G6/G7の全アプリ計測拡張とG8〜G10の自動改善/他アプリ展開は後続として保持する。
+G2（swipe戻り・通知本文/遷移・Free/Pro通知設定）は完了。現在の実行順は**G4（Mixpanel一本化・全画面計測の実受信確認）→G4.1（Anicca計測を既存Openへ表示）→G5（build 820の全体Maestro動画、TestFlight失敗と審査中buildの整理、全受入条件後にASC CLIで提出）**。ASC公式readbackでは1.9.8 submissionは`WAITING_FOR_REVIEW`、latest build 820は`VALID`。Xcode Cloud run #820はArchive成功だがTestFlight External TestingがAppleのbeta review submission failureで失敗した。画面別の実数はOpen側で`missing_service_account`。画面離脱、Mixpanel実受信、Open集計、build 820の全体E2E動画が未実証のため、追加提出はしない。build 820動画はG5のリリース受入条件であり、G2を未完へ戻すものではない。G6/G7の全アプリ計測拡張とG8〜G10の自動改善/他アプリ展開は後続として保持する。
 
 ## 出所と現在の観測
 
@@ -75,7 +75,9 @@ soft paywallを初回版の基準にする。閉じる・無料継続・復元�
 
 Pro特典・free/proの通知上限は、実際に権限で分かれる動作を調べて文言へ反映する。mockにある「全カテゴリ」「テーマ」等は未確定の表示案であり、未実装特典の販売・独断のfree機能削除を許可しない。価格変更・hard paywall・trial変更はG8で別実験とする。
 
-## G2 — swipeと通知を確実にする
+## G2 — swipeと通知を確実にする（完了）
+
+**完了:** PR #9272のswipe戻り、通知本文/遷移、Free/Pro通知設定のsource修正とSimulator回帰・通知routing確認を完了した。実端末APNs試験はスコープ外。build 820の全画面E2E動画はG5の提出前検証として残るが、G2の実装完了を取り消す条件ではない。
 
 swipeはユーザー報告の約10回に1回の戻りを、連続上下・短/長/高速操作・逆方向・保存/テーマ更新・通知遷移の重なりで再現する。pagerの対話遷移とprogrammatic更新、index、catalog mutation、hosting stateを観測して根本原因を限定する。完了したswipeの後に古いindexへ戻らず、隣の全文を一度だけ表示する。短く戻す意図的gesture cancellationは不具合と数えない。
 
