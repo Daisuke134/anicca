@@ -1,3 +1,21 @@
+# 2026-11-06｜Phase 8 P08-3〜5 理論講義・仕様・スライド原稿（Codex向けの最新差分）
+
+**重要：今回は研究理解と設計資料を作成しただけで、介入ソフト・モデル学習・新しいベンチマーク点数は実行していない。** 既存の ONE ROADMAP は隣の ROADMAP_STATUS_JA.md。元のBFM-01/INT-02を分離せず、INT-02の正しいMRT因果再現がP08-3方策OPEの前提。P08-1はPR #9278 が当時まだopenだったため、マージされているか現行のPRで再確認する。
+
+**新規の正規教材：**
+- P08-3_JA.md：Bandit、探索・活用、UCB/TS、Contextual Bandit、MABWiser、DM/IPS/DR/positivity/ESS。
+- P08-4_JA.md：状態遷移、Value/Q、Bellman、有限MDP、部分観測POMDP、Belief状態と限界。
+- P08-5_JA.md：同意の分離、withdrawal、研究の法域別ゲート、Oralytics 2025 + 2026 monitoring、red/yellow/green fallback。
+- BEHAVIOR_FOUNDATION_MODEL_MANAGERBENCH_SPEC_20261106.md：BFM/Policy/Safety/ManagerBench A〜F統合契約を追記。
+- journal_club/PHASE8_P08-3_TO_P08-5_RESEARCH_SLIDES_SOURCE_JA.md：研究補足12枚の台本。**バイナリPPTX/PDFへの追記は未実行、発表用34枚は不変**。
+- docs/research/manager/articles/2026-11-06-learn-bandits-mdp-and-safe-interventions-{ja,en}.md：未公開の日英記事原稿。
+
+**次にCodexが作るもの（今は実装しない）：** (1) P08-1 PR統合確認、HeartStepsの真正な割付と解析対象の再現、(2) MABWiser + OBPをライセンス確認して人工と正規データで比較、(3) NO_ACTIONを含むsafe policy、支援同意と強制停止を独立レイヤーで実装、(4) 小さなMDP/POMDPのvalue/beliefテスト、(5) 同一アウトカム・リスク・費用でManagerBench-D/E比較、(6) 適用制度・研究審査を満たすまではユーザー試験禁止、(7) スライド源から研究版の末尾に12枚レンダリング、PDF/ノート同数QA、本番34枚は固定、(8) 記事は適切な公開プロセスを経て公開する場合のみ公開URLで検証。書面のモデルライセンス未確認のBe.FMを商用利用・再配布しない。ユーザー個票をGitへ含めない。
+
+**検証された外部事実：** Oralytics 2025では79人登録/72人を解析、2026年npj Digital Medicineは運用監視/フォールバックを報告。2026年改正の日本の生命科学・医学系研究倫理指針は2026-12-01から適用であり、2026-11-06時点ではまだ適用前。これは適用制度の一般情報であって研究承認ではない。
+
+---
+
 # Phase 7 本番公開・実読戻し完了（2026-11-05 America/Los_Angeles、UTC 2026-11-06T03:29:40Z）
 
 **Anicca本番サイトPhase 7 84記事版が配信済み、独立検証PASS。** `anicca-products` [release PR #885](https://github.com/Daisuke134/anicca-products/pull/885) merged `d3e94a7813c712e247299595b99d4f3b6485ea32`; Netlify [workflow #42156237071](https://github.com/Daisuke134/anicca-products/actions/runs/42156237071) conclusion **success**（money-path・rollback smokeを含む）。
