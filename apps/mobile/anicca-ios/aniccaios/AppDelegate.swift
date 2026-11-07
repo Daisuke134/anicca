@@ -3,7 +3,6 @@ import UIKit
 import UserNotifications
 import OSLog
 import BackgroundTasks
-import PostHog
 import RevenueCat
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -35,28 +34,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let analyticsUserID = SubscriptionManager.shared.isConfigured ? Purchases.shared.appUserID : nil
         if let analyticsUserID { AnalyticsManager.shared.identify(userId: analyticsUserID) }
 
-        // PostHog: A/B テスト + Session Replay（RevenueCat configure の後）。
-        // The project-specific key and host are supplied by ignored xcconfig files.
-        if let postHogKey = Bundle.main.object(forInfoDictionaryKey: "POSTHOG_API_KEY") as? String,
-           let postHogHost = Bundle.main.object(forInfoDictionaryKey: "POSTHOG_HOST") as? String,
-           !postHogKey.isEmpty, !postHogHost.isEmpty {
-            let phConfig = PostHogConfig(apiKey: postHogKey, host: postHogHost)
-            phConfig.sessionReplay = false
-            phConfig.sessionReplayConfig.maskAllTextInputs = true
-            phConfig.sessionReplayConfig.maskAllImages = false
-            PostHogSDK.shared.setup(phConfig)
-            AnalyticsManager.shared.connectPostHog(userID: analyticsUserID)
-            // identify() 後にフラグを明示リロード（ユーザーコンテキスト変更でpreload分が無効になるため）
-            // completion callback で featureFlagsReady を立てる → Paywall が nil を読まない
-            PostHogSDK.shared.reloadFeatureFlags {
-                Task { @MainActor in
-                    AppState.shared.featureFlagsReady = true
-                }
-            }
-        } else {
-            print("[PostHog] private build configuration is missing; skipping setup")
-        }
-
         // Singular SDK: Install attribution + SKAN 管理（ATT なし、IDFV + SKAN 運用）
         // Purchase は RevenueCat → Singular S2S で自動送信（アプリ側不要）
         SingularManager.shared.configure(launchOptions: launchOptions)
@@ -79,12 +56,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        AnalyticsManager.shared.resumeCurrentScreenVisit()
         // Distinct open days for post-value App Store review prompts.
         Task { @MainActor in
             ReviewPromptCoordinator.shared.recordAppOpen()
         }
         // Best-effort: recover APNs token registration if it was delayed on first run.
         Task { await registerForRemoteIfAuthorized() }
+    }
+
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        AnalyticsManager.shared.suspendCurrentScreenVisit()
     }
 
     /// Register for remote notifications when the user has granted alert authorization.
@@ -98,6 +80,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let content = notification.request.content
+        AnalyticsManager.shared.track(.notificationReceived, properties: [
+            "notification_id": content.userInfo["messageId"] as? String ?? notification.request.identifier,
+            "quote_id": content.userInfo["quoteId"] as? String ?? "unavailable",
+            "app_state": "foreground",
+        ])
         if #available(iOS 14.0, *) {
             completionHandler([.banner, .list, .sound])
         } else {
@@ -131,6 +119,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // the token unregistered; there is no local-notification fallback by design.
         print("APNs registration failed: \(error)")
         Task { @MainActor in
+            AnalyticsManager.shared.track(.notificationRegistrationResult, properties: [
+                "result": "failed",
+                "source": "apns",
+                "error_code": String((error as NSError).code),
+            ])
             PushTokenService.shared.markUnregistered()
         }
     }

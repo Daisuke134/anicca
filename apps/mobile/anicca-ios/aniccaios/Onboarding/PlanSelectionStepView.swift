@@ -1,6 +1,5 @@
 import SwiftUI
 import RevenueCat
-import PostHog
 
 /// Phase 5: CONVERT — Step 3: Custom paywall with RevenueCat packages.
 struct PlanSelectionStepView: View {
@@ -32,16 +31,14 @@ struct PlanSelectionStepView: View {
         packages.first { $0.packageType == .monthly }
     }
 
-    /// F19: Hard paywall — hides dismiss/skip controls when PostHog payload says so
+    /// This legacy screen keeps its former fallback behavior until experiments are configured.
     private var isHardPaywall: Bool {
-        guard let payload = PostHogSDK.shared.getFeatureFlagPayload("paywall-ab-test") as? [String: Any] else { return false }
-        return payload["hard_paywall"] as? Bool ?? false
+        false
     }
 
-    /// X button visibility — controlled from PostHog payload
+    /// The active soft-paywall close button is owned by PaywallFlowContainer.
     private var showXButton: Bool {
-        guard let payload = PostHogSDK.shared.getFeatureFlagPayload("paywall-ab-test") as? [String: Any] else { return false }
-        return payload["show_x_button"] as? Bool ?? false
+        false
     }
 
     /// F6: Dynamic save percentage
@@ -79,7 +76,7 @@ struct PlanSelectionStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
-            // F7: Subtitle + feature list (PostHog controlled)
+            // F7: Subtitle + feature list
             Text(paywallText("subtitle", fallback: "paywall_plan_subtitle"))
                 .font(.system(size: 16))
                 .foregroundStyle(.secondary)
@@ -199,12 +196,11 @@ struct PlanSelectionStepView: View {
             }
         }
         .background(AppBackground())
+        .analyticsScreen(.paywall, flowID: "legacy_paywall")
         .onAppear {
             if !hasTracked {
                 hasTracked = true
-                AnalyticsManager.shared.track(.paywallPlanSelectionViewed)
-                AnalyticsManager.shared.trackPostHog("paywall_viewed", properties: ["variant": variant])
-                AnalyticsManager.shared.trackPaywallViewed()
+                AnalyticsManager.shared.track(.paywallPlanSelectionViewed, properties: ["presentation_variant": variant])
             }
             // Default to yearly
             if selectedPackage == nil {
@@ -212,7 +208,7 @@ struct PlanSelectionStepView: View {
             }
         }
         .sheet(isPresented: $showRetention) {
-            RetentionOfferSheet { customerInfo in
+            RetentionOfferSheet(flowID: "legacy_paywall") { customerInfo in
                 showRetention = false
                 onPurchaseSuccess(customerInfo)
             }
@@ -244,6 +240,11 @@ struct PlanSelectionStepView: View {
 
         Button {
             selectedPackage = package
+            AnalyticsManager.shared.track(.productSelected, properties: [
+                "product_id": package.storeProduct.productIdentifier,
+                "offering_id": offering?.identifier ?? "unknown",
+                "source": "legacy_paywall",
+            ])
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -295,16 +296,6 @@ struct PlanSelectionStepView: View {
     }
 
     private func paywallText(_ key: String, fallback: String) -> String {
-        let lang = Locale.current.languageCode ?? "en"
-        if let payload = PostHogSDK.shared.getFeatureFlagPayload("paywall-ab-test") as? [String: Any] {
-            let localizedKey = "\(key)_\(lang)"
-            if let text = payload[localizedKey] as? String {
-                return text
-            }
-            if let text = payload[key] as? String {
-                return text
-            }
-        }
         return String(localized: String.LocalizationValue(fallback))
     }
 
@@ -315,20 +306,16 @@ struct PlanSelectionStepView: View {
 
         Task {
             do {
+                AnalyticsManager.shared.trackPurchaseStarted(productID: package.storeProduct.productIdentifier, flowID: "legacy_paywall")
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
-                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)
-                    AnalyticsManager.shared.track(.onboardingPaywallPurchased)
-                    AnalyticsManager.shared.trackPostHog("paywall_purchased", properties: [
-                        "variant": variant,
-                        "plan_type": package.packageType == .annual ? "annual" : "monthly",
-                        "has_trial": package.storeProduct.introductoryDiscount != nil
-                    ])
+                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: "legacy_paywall")
                     await MainActor.run {
                         isPurchasing = false
                         onPurchaseSuccess(result.customerInfo)
                     }
                 } else {
+                    AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier, flowID: "legacy_paywall")
                     await MainActor.run {
                         isPurchasing = false
                         if !hasShownRetention {
@@ -342,11 +329,18 @@ struct PlanSelectionStepView: View {
                     isPurchasing = false
                     if let rcError = error as? RevenueCat.ErrorCode,
                        rcError == .purchaseCancelledError {
+                        AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier, flowID: "legacy_paywall")
                         if !hasShownRetention {
                             hasShownRetention = true
                             showRetention = true
                         }
                     } else {
+                        AnalyticsManager.shared.trackPurchaseResult(
+                            "failed",
+                            productID: package.storeProduct.productIdentifier,
+                            flowID: "legacy_paywall",
+                            errorCode: String((error as NSError).code)
+                        )
                         errorMessage = error.localizedDescription
                     }
                 }
@@ -357,19 +351,28 @@ struct PlanSelectionStepView: View {
     private func restorePurchases() {
         isPurchasing = true
         errorMessage = nil
+        AnalyticsManager.shared.trackRestoreStarted(source: "legacy_paywall", flowID: "legacy_paywall")
 
         Task {
             do {
                 let customerInfo = try await Purchases.shared.restorePurchases()
                 await MainActor.run {
                     isPurchasing = false
-                    if customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true {
+                    let restored = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true
+                    AnalyticsManager.shared.trackRestoreResult(restored ? "restored" : "no_entitlement", source: "legacy_paywall", flowID: "legacy_paywall")
+                    if restored {
                         onPurchaseSuccess(customerInfo)
                     }
                 }
             } catch {
                 await MainActor.run {
                     isPurchasing = false
+                    AnalyticsManager.shared.trackRestoreResult(
+                        "failed",
+                        source: "legacy_paywall",
+                        flowID: "legacy_paywall",
+                        errorCode: String((error as NSError).code)
+                    )
                     errorMessage = error.localizedDescription
                 }
             }

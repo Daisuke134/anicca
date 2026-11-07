@@ -16,6 +16,9 @@ SUBSCRIPTION_MANAGER = APP_ROOT / "aniccaios/Services/SubscriptionManager.swift"
 ONBOARDING = APP_ROOT / "aniccaios/Onboarding/OnboardingFlowView.swift"
 ANALYTICS = APP_ROOT / "aniccaios/Services/AnalyticsManager.swift"
 PAYWALL_CONTAINER = APP_ROOT / "aniccaios/Onboarding/OnboardingBibleViews.swift"
+SETTINGS = APP_ROOT / "aniccaios/Views/Feed/SettingsSheet.swift"
+RETENTION_SHEET = APP_ROOT / "aniccaios/Onboarding/RetentionOfferSheet.swift"
+LEGACY_PAYWALL = APP_ROOT / "aniccaios/Onboarding/PlanSelectionStepView.swift"
 
 
 class PaywallSelectionWiringTests(unittest.TestCase):
@@ -39,8 +42,7 @@ class PaywallSelectionWiringTests(unittest.TestCase):
 
     def test_initial_appearance_reconciles_selection(self):
         self.assertIsNotNone(re.search(
-            r"(?s)\.onAppear\s*\{\s*if !hasTracked\s*\{.*?\}"
-            r"\s*synchronizePackageSelection\(\)\s*\}",
+            r"(?s)\.onAppear\s*\{\s*synchronizePackageSelection\(\)\s*\}",
             self.source,
         ), "Initial appearance must reconcile selection")
 
@@ -165,23 +167,66 @@ class PaywallSelectionWiringTests(unittest.TestCase):
         )[1]
         analytics = ANALYTICS.read_text(encoding="utf-8")
         self.assertIn("@State private var step: PaywallStep = .planSelection", container)
-        self.assertIn("AnalyticsManager.shared.trackPaywallViewed()", self.source)
-        track_viewed = analytics.split("func trackPaywallViewed()", 1)[1].split(
-            "func updateSKANConversionValue", 1
+        self.assertIn(".analyticsScreen(.paywall, flowID: flowID)", container)
+        track_viewed = analytics.split("private func recordScreenView(", 1)[1].split(
+            "func trackScreenViewedIfNeeded", 1
         )[0]
-        self.assertIn("track(.paywallShown)", track_viewed)
+        self.assertIn("if screenID == AnalyticsScreenID.paywall.rawValue", track_viewed)
+        self.assertIn("track(.paywallShown, properties: properties)", track_viewed)
+        self.assertNotIn("trackPaywallViewed", self.source)
         self.assertIn('case paywallShown = "paywall_shown"', analytics)
 
     def test_trial_started_tracks_a_confirmed_active_trial_entitlement(self):
         purchase = self.source.split("private func purchase()", 1)[1].split(
             "private func restorePurchases()", 1
         )[0]
-        observer = ANALYTICS.read_text(encoding="utf-8").split("func observePurchase(", 1)[1].split("func updateSKANConversionValue", 1)[0]
-        self.assertIn("AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)", purchase)
+        analytics = ANALYTICS.read_text(encoding="utf-8")
+        observer = analytics.split("func observePurchase(", 1)[1].split("func updateSKANConversionValue", 1)[0]
+        self.assertIn("AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)", purchase)
         self.assertIn("guard purchaseObservations.record(transaction?.transactionIdentifier)", observer)
         self.assertIn("let entitlement = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]", observer)
-        self.assertIn("if entitlement?.isActive == true, entitlement?.periodType == .trial", observer)
-        self.assertIn("trackTrialStarted(productId: package.storeProduct.productIdentifier)", observer)
+        self.assertIn("let isTrial = entitlement?.isActive == true && entitlement?.periodType == .trial", observer)
+        self.assertIn('"flow_id": flowID', observer)
+        self.assertIn('track(.onboardingPaywallPurchased, properties: ["flow_id": flowID])', observer)
+        self.assertIn('trackTrialStarted(productId: package.storeProduct.productIdentifier, flowID: flowID)', observer)
+
+    def test_purchase_trial_and_restore_events_carry_their_flow_id(self):
+        analytics = ANALYTICS.read_text(encoding="utf-8")
+        for name in (
+            "trackTrialStarted", "trackPurchaseStarted", "trackPurchaseResult",
+            "trackRestoreStarted", "trackRestoreResult",
+        ):
+            method = re.search(rf"(?s)func {name}\((.*?)\)\s*\{{(.*?)\n    \}}", analytics)
+            self.assertIsNotNone(method, f"Missing analytics helper {name}")
+            self.assertIn("flowID: String", method.group(1), name)
+            self.assertIn('"flow_id": flowID', method.group(2), name)
+
+    def test_settings_purchase_is_not_counted_as_onboarding_conversion(self):
+        settings = SETTINGS.read_text(encoding="utf-8")
+        self.assertIn('flowID: "settings_subscription"', settings)
+        observer = ANALYTICS.read_text(encoding="utf-8").split("func observePurchase(", 1)[1].split("func updateSKANConversionValue", 1)[0]
+        self.assertRegex(
+            observer,
+            r'if flowID == "onboarding" \|\| flowID == "legacy_paywall"\s*\{\s*'
+            r'track\(\.onboardingPaywallPurchased, properties: \["flow_id": flowID\]\)\s*\}',
+            "Only onboarding-owned purchase observations may emit the onboarding conversion event",
+        )
+        self.assertLess(
+            observer.index("guard purchaseObservations.record(transaction?.transactionIdentifier)"),
+            observer.index('if flowID == "onboarding" || flowID == "legacy_paywall"'),
+            "Duplicate or missing transactions must stop before the onboarding conversion event",
+        )
+
+    def test_purchase_and_retention_callers_share_transaction_dedup_and_flow_scope(self):
+        retention = RETENTION_SHEET.read_text(encoding="utf-8")
+        legacy = LEGACY_PAYWALL.read_text(encoding="utf-8")
+        for source, call in (
+            (self.source, "observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)"),
+            (retention, "observePurchase(package: pkg, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)"),
+            (legacy, 'observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: "legacy_paywall")'),
+        ):
+            self.assertIn(call, source)
+            self.assertNotIn("track(.onboardingPaywallPurchased)", source)
 
     def test_policy_returns_current_match_before_annual_monthly_defaults(self):
         # Structural contract only. Execute the companion Swift tests to verify

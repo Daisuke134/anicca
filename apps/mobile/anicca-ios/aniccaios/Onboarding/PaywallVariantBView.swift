@@ -8,13 +8,14 @@ struct PaywallVariantBView: View {
     let variant: String
     let onPurchaseSuccess: (CustomerInfo) -> Void
     let onDismiss: () -> Void
+    var flowID: String = "onboarding"
 
     @EnvironmentObject private var appState: AppState
     @State private var selectedPackage: Package?
     @State private var isPurchasing = false
     @State private var errorMessage: String?
-    @State private var hasTracked = false
     @State private var hasShownRetention = false
+    @State private var didAcceptRetention = false
     @State private var showRetention = false
     @State private var showReloadAfterTimeout = false
     @State private var trackedOfferingLoadOutcomes: Set<String> = []
@@ -92,10 +93,6 @@ struct PaywallVariantBView: View {
         }
         .background(AppBackground())
         .onAppear {
-            if !hasTracked {
-                hasTracked = true
-                AnalyticsManager.shared.trackPaywallViewed()
-            }
             synchronizePackageSelection()
         }
         // Observe instances: a refreshed offering can reuse package IDs and values.
@@ -122,8 +119,13 @@ struct PaywallVariantBView: View {
                 trackOfferingLoadResult(updatedLoad)
             }
         }
-        .sheet(isPresented: $showRetention) {
-            RetentionOfferSheet { customerInfo in
+        .sheet(isPresented: $showRetention, onDismiss: {
+            if !didAcceptRetention {
+                AnalyticsManager.shared.trackScreenViewed(screenID: .paywall, flowID: flowID)
+            }
+        }) {
+            RetentionOfferSheet(flowID: flowID) { customerInfo in
+                didAcceptRetention = true
                 showRetention = false
                 onPurchaseSuccess(customerInfo)
             }
@@ -322,7 +324,14 @@ struct PaywallVariantBView: View {
     ) -> some View {
         let isSelected = selectedPackage?.identifier == package.identifier
 
-        Button { selectedPackage = package } label: {
+        Button {
+            selectedPackage = package
+            AnalyticsManager.shared.track(.productSelected, properties: [
+                "product_id": package.storeProduct.productIdentifier,
+                "offering_id": offering?.identifier ?? "unknown",
+                "source": "paywall",
+            ])
+        } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
@@ -437,14 +446,14 @@ struct PaywallVariantBView: View {
             }
 
             do {
+                AnalyticsManager.shared.trackPurchaseStarted(productID: package.storeProduct.productIdentifier, flowID: flowID)
                 let result = try await Purchases.shared.purchase(package: package)
                 if !result.userCancelled {
-                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo)
-                    AnalyticsManager.shared.track(.onboardingPaywallPurchased)
+                    AnalyticsManager.shared.observePurchase(package: package, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)
                     isPurchasing = false
                     onPurchaseSuccess(result.customerInfo)
                 } else {
-                    AnalyticsManager.shared.track(.purchaseCancelled, properties: ["product_id": package.storeProduct.productIdentifier])
+                    AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier, flowID: flowID)
                     isPurchasing = false
                     if !hasShownRetention {
                         hasShownRetention = true
@@ -455,12 +464,18 @@ struct PaywallVariantBView: View {
                 isPurchasing = false
                 if let rcError = error as? RevenueCat.ErrorCode,
                    rcError == .purchaseCancelledError {
-                    AnalyticsManager.shared.track(.purchaseCancelled, properties: ["product_id": package.storeProduct.productIdentifier])
+                    AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: package.storeProduct.productIdentifier, flowID: flowID)
                     if !hasShownRetention {
                         hasShownRetention = true
                         showRetention = true
                     }
                 } else {
+                    AnalyticsManager.shared.trackPurchaseResult(
+                        "failed",
+                        productID: package.storeProduct.productIdentifier,
+                        flowID: flowID,
+                        errorCode: String((error as NSError).code)
+                    )
                     errorMessage = error.localizedDescription
                 }
             }
@@ -470,18 +485,27 @@ struct PaywallVariantBView: View {
     private func restorePurchases() {
         isPurchasing = true
         errorMessage = nil
+        AnalyticsManager.shared.trackRestoreStarted(source: "paywall", flowID: flowID)
         Task {
             do {
                 let customerInfo = try await Purchases.shared.restorePurchases()
                 await MainActor.run {
                     isPurchasing = false
-                    if customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true {
+                    let restored = customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true
+                    AnalyticsManager.shared.trackRestoreResult(restored ? "restored" : "no_entitlement", source: "paywall", flowID: flowID)
+                    if restored {
                         onPurchaseSuccess(customerInfo)
                     }
                 }
             } catch {
                 await MainActor.run {
                     isPurchasing = false
+                    AnalyticsManager.shared.trackRestoreResult(
+                        "failed",
+                        source: "paywall",
+                        flowID: flowID,
+                        errorCode: String((error as NSError).code)
+                    )
                     errorMessage = error.localizedDescription
                 }
             }

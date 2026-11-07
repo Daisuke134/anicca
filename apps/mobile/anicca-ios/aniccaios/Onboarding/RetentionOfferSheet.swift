@@ -6,6 +6,7 @@ import RevenueCat
 /// $44.99/year (25% OFF vs $59.99). Single CTA: Accept Offer. No decline button.
 /// Shown at most once per session (gated by parent's hasShownRetention flag).
 struct RetentionOfferSheet: View {
+    var flowID: String = "onboarding"
     let onAccepted: (CustomerInfo) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -98,6 +99,7 @@ struct RetentionOfferSheet: View {
             .padding(.bottom, 32)
         }
         .background(AppBackground())
+        .analyticsScreen(.retentionOffer, flowID: flowID)
         .task { await loadOffer() }
         .alert("Error", isPresented: .constant(errorMessage != nil)) {
             Button("OK") { errorMessage = nil }
@@ -125,14 +127,26 @@ struct RetentionOfferSheet: View {
         isPurchasing = true
         defer { isPurchasing = false }
         do {
+            AnalyticsManager.shared.trackPurchaseStarted(productID: pkg.storeProduct.productIdentifier, flowID: flowID)
             let result = try await Purchases.shared.purchase(package: pkg)
             if !result.userCancelled {
-                AnalyticsManager.shared.observePurchase(package: pkg, transaction: result.transaction, customerInfo: result.customerInfo)
-                AnalyticsManager.shared.track(.onboardingPaywallPurchased)
+                AnalyticsManager.shared.observePurchase(package: pkg, transaction: result.transaction, customerInfo: result.customerInfo, flowID: flowID)
                 onAccepted(result.customerInfo)
                 dismiss()
+            } else {
+                AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: pkg.storeProduct.productIdentifier, flowID: flowID)
             }
         } catch {
+            if let rcError = error as? RevenueCat.ErrorCode, rcError == .purchaseCancelledError {
+                AnalyticsManager.shared.trackPurchaseResult("cancelled", productID: pkg.storeProduct.productIdentifier, flowID: flowID)
+            } else {
+                AnalyticsManager.shared.trackPurchaseResult(
+                    "failed",
+                    productID: pkg.storeProduct.productIdentifier,
+                    flowID: flowID,
+                    errorCode: String((error as NSError).code)
+                )
+            }
             errorMessage = error.localizedDescription
         }
     }

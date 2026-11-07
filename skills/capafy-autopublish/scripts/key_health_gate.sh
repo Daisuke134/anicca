@@ -205,8 +205,11 @@ REMAIN="$(curl -s --max-time 20 https://openrouter.ai/api/v1/credits \
   -H "Authorization: Bearer $KEY" | python3 -c "
 import sys,json
 try:
-    c=json.load(sys.stdin).get('data',{})
-    print(round(float(c.get('total_credits',0))-float(c.get('total_usage',0)),4))
+    c=json.load(sys.stdin).get('data')
+    if not isinstance(c,dict) or 'total_credits' not in c or 'total_usage' not in c:
+        print('UNREADABLE')
+    else:
+        print(round(float(c.get('total_credits',0))-float(c.get('total_usage',0)),4))
 except Exception:
     print('ERR')
 " 2>/dev/null)"
@@ -215,8 +218,31 @@ if [ "$REMAIN" = "ERR" ] || [ -z "$REMAIN" ]; then
   echo "KEY_HEALTH=FAIL reason=credits_read_failed"; exit 1
 fi
 
+if [ "$REMAIN" = "UNREADABLE" ]; then
+  if [ "${LM_RUNTIME_HOST:-}" = "maritime" ]; then
+    # /credits is management-key-only on OpenRouter (403 for any other key),
+    # and the management key must never cross into a tenant — it controls
+    # the founder's whole account. On a tenant computer the fund that can
+    # actually pay for this tenant's listings IS the tenant key itself, so
+    # the balance floor is checked against the per-key limit_remaining
+    # that GET /key already returned (fail-closed: unknown -> block).
+    case "$KEY_LIMIT_REMAINING" in
+      UNLIMITED) REMAIN="UNLIMITED" ;;
+      ''|ERR) echo "KEY_HEALTH=FAIL reason=credits_read_failed"; exit 1 ;;
+      *) REMAIN="$KEY_LIMIT_REMAINING" ;;
+    esac
+  else
+    # Legacy host behavior: a credits body without data counts as $0.
+    REMAIN="0.0"
+  fi
+fi
+
 # numeric compare via python (bash can't do floats)
-OK_BAL="$(python3 -c "print('1' if float('$REMAIN')>=float('$MIN') else '0')" 2>/dev/null)"
+if [ "$REMAIN" = "UNLIMITED" ]; then
+  OK_BAL="1"
+else
+  OK_BAL="$(python3 -c "print('1' if float('$REMAIN')>=float('$MIN') else '0')" 2>/dev/null)"
+fi
 if [ "$OK_BAL" != "1" ]; then
   alert_user "$REMAIN" "BLOCKED (balance too low)"
   echo "KEY_HEALTH=FAIL reason=balance_too_low remaining=\$$REMAIN min=\$$MIN  -> TOP UP OpenRouter before publishing"
@@ -224,7 +250,11 @@ if [ "$OK_BAL" != "1" ]; then
 fi
 
 # Passed the block threshold but within the warning cushion -> early-warn user to top up before outage.
-LOW_WARN="$(python3 -c "print('1' if float('$REMAIN')<float('$ALERT_CUSHION') else '0')" 2>/dev/null)"
+if [ "$REMAIN" = "UNLIMITED" ]; then
+  LOW_WARN="0"
+else
+  LOW_WARN="$(python3 -c "print('1' if float('$REMAIN')<float('$ALERT_CUSHION') else '0')" 2>/dev/null)"
+fi
 if [ "$LOW_WARN" = "1" ]; then
   alert_user "$REMAIN" "LOW (early warning)"
 fi

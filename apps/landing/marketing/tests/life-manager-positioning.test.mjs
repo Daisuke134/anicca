@@ -24,10 +24,11 @@ test('English Life Manager page presents one broad product and its Cloud target'
   assert.doesNotMatch(html, /Telegram is required|Connect Google Calendar/);
   assert.doesNotMatch(html, /Start with the hosted Calendar assistant/);
   assert.doesNotMatch(html, /CLOUD · CALENDAR ASSISTANT/);
-  assert.match(html, /href="\/maritime\?source=landing&amp;lang=en"/);
+  assert.match(html, /href="https:\/\/life-call-production\.up\.railway\.app\/maritime\?source=landing&amp;lang=en"/);
   assert.equal((html.match(/<a[^>]*data-lm-cloud-entry/g) || []).length, 3);
-  assert.doesNotMatch(html, /life-call-production\.up\.railway\.app/);
-  assert.doesNotMatch(html, /href="https:\/\/life-call-production\.up\.railway\.app\/lm\?start_calendar=1"/);
+  assert.doesNotMatch(html, /href="\/maritime\?source=landing/);
+  assert.doesNotMatch(html, /start_calendar=1/);
+  assert.match(html, /Life Manager Cloud is hosted on Maritime: every user gets a dedicated agent of their own, and that agent works on its own computer on Maritime\./);
   assert.match(html, /Capafy/);
   assert.doesNotMatch(html, /Illustrative workflow|class="dashboard"/);
   const manifest = JSON.parse(read('route-manifest.json'));
@@ -49,10 +50,11 @@ test('Japanese Life Manager page keeps the same broad product position', () => {
   assert.match(html, /収益は保証されません/);
   assert.doesNotMatch(html, /ホスト版はカレンダー管理から/);
   assert.doesNotMatch(html, /CLOUD · CALENDAR ASSISTANT/);
-  assert.match(html, /href="\/maritime\?source=landing&amp;lang=ja"/);
+  assert.match(html, /href="https:\/\/life-call-production\.up\.railway\.app\/maritime\?source=landing&amp;lang=ja"/);
   assert.equal((html.match(/<a[^>]*data-lm-cloud-entry/g) || []).length, 3);
-  assert.doesNotMatch(html, /life-call-production\.up\.railway\.app/);
-  assert.doesNotMatch(html, /href="https:\/\/life-call-production\.up\.railway\.app\/lm\?start_calendar=1"/);
+  assert.doesNotMatch(html, /href="\/maritime\?source=landing/);
+  assert.doesNotMatch(html, /start_calendar=1/);
+  assert.match(html, /Life Manager CloudはMaritime上にホストされ、ユーザーごとに専用エージェントが用意され、そのエージェントはMaritime上にある自分のコンピュータで働きます。/);
   assert.match(html, /Capafy/);
   assert.doesNotMatch(html, /実際の活動記録ではありません|class="dashboard"/);
   const manifest = JSON.parse(read('route-manifest.json'));
@@ -67,15 +69,8 @@ test('every published overlay file matches its immutable manifest hash', () => {
   }
 });
 
-test('Maritime Cloud page Start enters the Maritime manager consent route, not the Calendar workflow', () => {
-  const html = read('pages/maritime-en.html');
-
-  assert.equal(
-    (html.match(/href="https:\/\/life-call-production\.up\.railway\.app\/maritime\?source=landing&amp;lang=en"/g) || []).length,
-    2,
-  );
-  assert.doesNotMatch(html, /start_calendar=1/);
-  assert.doesNotMatch(html, /after Calendar setup/);
+test('single gate: the marketing package publishes no /maritime route', () => {
   const manifest = JSON.parse(read('route-manifest.json'));
-  assert.equal(manifest.files.find((file) => file.public_route === '/maritime').sha256, sha256('pages/maritime-en.html'));
+  assert.equal(manifest.files.find((file) => file.public_route === '/maritime'), undefined);
+  assert.equal(manifest.files.find((file) => file.export_path === 'maritime.html'), undefined);
 });

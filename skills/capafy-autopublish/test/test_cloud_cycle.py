@@ -159,6 +159,71 @@ class CloudCycleTest(unittest.TestCase):
             self.run_cycle()
         self.assertEqual(self.calls, [])
 
+    def signup_directive(self, **overrides):
+        directive = {'tenantId': TENANT, 'platformId': 'capafy',
+                     'identityRef': 'tenant-home/vault/agent-mail',
+                     'identityPath': str(self.home / 'vault/agent-mail'),
+                     'credentialRef': 'tenant-home/vault/capafy/credential',
+                     'credentialPath': str(self.home / 'vault/capafy/credential'),
+                     'browserSessionRef': 'tenant-home/vault/capafy/browser-session',
+                     'browserSessionPath': str(self.home / 'vault/capafy/browser-session'),
+                     'stateFile': str(self.home / 'state/capafy-autopublish/signup-state.json')}
+        directive.update(overrides)
+        return json.dumps(directive)
+
+    def test_signup_directive_turns_the_cycle_into_a_self_signup(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive()
+        result = self.run_cycle()
+        self.assertEqual(result['status'], 'completed')
+        prompt = self.calls[0][1]['input']
+        self.assertIn('tenant self-signup for Capafy', prompt)
+        self.assertIn(str(self.home / 'vault/capafy/credential'), prompt)
+        self.assertIn(str(self.home / 'state/capafy-autopublish/signup-state.json'), prompt)
+        self.assertIn('tenant-home/vault/capafy/credential', prompt)
+        self.assertNotIn('Create an original product and listing offline', prompt)
+
+    def test_signup_prompt_spells_out_the_canonical_state_file_schema(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive()
+        self.run_cycle()
+        prompt = self.calls[0][1]['input']
+        # The host binding layer (maritime-tenant-binding.js) accepts exactly
+        # one outer shape; an agent-invented {state, transitions, binding}
+        # record makes the next cycle fail closed as tenant_signup_state_invalid.
+        self.assertIn('"schemaVersion": 1', prompt)
+        self.assertIn('"platformId": "capafy"', prompt)
+        self.assertIn('"state": "bound"', prompt)
+        self.assertIn('"history"', prompt)
+
+    def test_signup_directive_for_a_foreign_tenant_is_rejected(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive(tenantId='lm_22222222-2222-4222-8222-222222222222')
+        with self.assertRaisesRegex(ValueError, 'signup_directive_invalid'):
+            self.run_cycle()
+        self.assertEqual(self.calls, [])
+
+    def test_signup_directive_paths_must_stay_inside_the_tenant_home(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive(credentialPath='/etc/capafy-credential')
+        with self.assertRaisesRegex(ValueError, 'signup_directive_invalid'):
+            self.run_cycle()
+        self.assertEqual(self.calls, [])
+
+    def test_binding_wins_over_a_signup_directive(self):
+        self.env['LM_TENANT_SIGNUP_JSON'] = self.signup_directive()
+        self.env['LM_CAPAFY_BINDING_JSON'] = json.dumps({'tenantId': TENANT, 'provider': 'capafy', 'subjectId': 'seller-a'})
+        self.run_cycle()
+        prompt = self.calls[0][1]['input']
+        self.assertIn('Use only this tenant provider binding', prompt)
+        self.assertNotIn('tenant self-signup for Capafy', prompt)
+
+    def test_bound_cycle_names_the_resolved_publisher_session_manifest(self):
+        self.env['LM_CAPAFY_BINDING_JSON'] = json.dumps({'tenantId': TENANT, 'provider': 'capafy', 'subjectId': 'seller-a'})
+        manifest = self.home / 'runtime/capafy-publisher/sessions/capafy/session.json'
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text('{}')
+        self.run_cycle()
+        prompt = self.calls[0][1]['input']
+        self.assertIn('Use only this tenant provider binding', prompt)
+        self.assertIn('Resolved publisher session manifest: ' + str(manifest), prompt)
+
     def test_provider_reference_must_be_metadata_not_a_secret_object(self):
         self.env['LM_CAPAFY_BINDING_JSON'] = json.dumps({'tenantId': TENANT, 'provider': 'capafy', 'subjectId': 'seller-a', 'credentialRef': {'secret': 'fixture'}})
         with self.assertRaisesRegex(ValueError, 'binding'):
@@ -196,12 +261,35 @@ class CloudCycleTest(unittest.TestCase):
         self.env.update(FOUNDER_SECRET='fixture-private', SUPABASE_SERVICE_ROLE_KEY='fixture-db',
                         ANICCA_USAGE_LEDGER='/parent/usage.jsonl',
                         ANICCA_TOKEN_BUDGET_LEDGER='/parent/budget.jsonl',
-                        LM_CLOUD_MODEL_API_KEY='fixture-tenant-model')
+                        LM_CLOUD_MODEL_API_KEY='fixture-tenant-model',
+                        CAPAFY_HOST_OPENROUTER_KEY='fixture-tenant-host-key',
+                        CAPAFY_REQUEST_HEADROOM_USD='2',
+                        CAPAFY_KEY_DAILY_HARD_CAP_USD='10',
+                        CAPAFY_OPENROUTER_MANAGEMENT_KEY='fixture-founder-management-key')
         self.run_cycle()
         child = self.calls[0][1]['env']
         self.assertNotIn('FOUNDER_SECRET', child)
         self.assertNotIn('SUPABASE_SERVICE_ROLE_KEY', child)
         self.assertEqual(child['LM_CLOUD_MODEL_API_KEY'], 'fixture-tenant-model')
+        # The OpenRouter management (provisioning) key NEVER crosses into a
+        # tenant: it controls the founder's whole account. The tenant gate
+        # must pass with the tenant's own key alone.
+        self.assertNotIn('CAPAFY_OPENROUTER_MANAGEMENT_KEY', child)
+        # Tenant-scoped funding-gate tuning values (founder-proven settings,
+        # not secrets) cross so the tenant gate evaluates the same contract.
+        self.assertEqual(child['CAPAFY_REQUEST_HEADROOM_USD'], '2')
+        self.assertEqual(child['CAPAFY_KEY_DAILY_HARD_CAP_USD'], '10')
+        # The tenant-scoped Capafy host key provisioned into THIS computer's
+        # own environment crosses to its own agent (the run_online funding
+        # gate reads process env only on maritime); it is the tenant's key
+        # for the tenant's own listings, not a founder-host value.
+        self.assertEqual(child['CAPAFY_HOST_OPENROUTER_KEY'], 'fixture-tenant-host-key')
+        # The Capafy duplicate gate judges through the tenant's own cloud
+        # model route, never the founder's claude CLI login (absent here by
+        # design); cloud_cycle wires the CLI-shaped runner into the child env.
+        gate_runner = MODULE.parent / 'dupgate_cloud_runner.py'
+        self.assertEqual(child['CAPAFY_DUPGATE_CLAUDE_BIN'], str(gate_runner))
+        self.assertTrue(gate_runner.is_file())
         for key in ['ANICCA_USAGE_LEDGER', 'ANICCA_TOKEN_BUDGET_LEDGER', 'TMPDIR']:
             self.assertTrue(Path(child[key]).is_relative_to(self.home), key)
 

@@ -89,6 +89,30 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
                 raise ValueError()
         except (ValueError, TypeError):
             raise ValueError('provider_binding_invalid') from None
+    signup = None
+    if binding is None and context.get('LM_TENANT_SIGNUP_JSON'):
+        # Host-issued directive (maritime-tenant-binding.js): this cycle is the
+        # tenant self-signup. Every path must stay inside this tenant's home and
+        # the references must be the canonical tenant-vault references.
+        try:
+            signup = json.loads(context['LM_TENANT_SIGNUP_JSON'])
+            if not isinstance(signup, dict) or signup.get('tenantId') != tenant_id or signup.get('platformId') != 'capafy':
+                raise ValueError()
+            if set(signup) - {'tenantId', 'platformId', 'identityRef', 'identityPath', 'credentialRef',
+                              'credentialPath', 'browserSessionRef', 'browserSessionPath', 'stateFile'}:
+                raise ValueError()
+            if signup.get('identityRef') != 'tenant-home/vault/agent-mail':
+                raise ValueError()
+            if signup.get('credentialRef') != 'tenant-home/vault/capafy/credential':
+                raise ValueError()
+            if signup.get('browserSessionRef') != 'tenant-home/vault/capafy/browser-session':
+                raise ValueError()
+            for key in ('identityPath', 'credentialPath', 'browserSessionPath', 'stateFile'):
+                candidate = Path(os.path.abspath(signup[key]))
+                if not candidate.is_absolute() or not candidate.is_relative_to(home):
+                    raise ValueError()
+        except (ValueError, TypeError, KeyError, AttributeError):
+            raise ValueError('signup_directive_invalid') from None
     base = {'tenantId': tenant_id, 'occurrenceId': occurrence_id, 'artifactRefs': [],
             'providerSnapshotRef': None, 'providerReceiptRefs': [], 'nextEligibleAt': None}
     def result(status, error=None, artifacts=None):
@@ -169,15 +193,32 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
         final = result('effect_unknown', 'occurrence_workspace_unavailable')
         _save(receipt, dict(initial, result=final))
         return final
-    # Only the tenant model key crosses this boundary; founder/provider secrets do not.
+    # Only tenant-scoped keys cross this boundary; founder/provider secrets
+    # do not. CAPAFY_HOST_OPENROUTER_KEY here is the tenant's OWN host key,
+    # provisioned into this computer's own environment (e.g. the Maritime
+    # agent env): it funds the tenant's own run_online listings, and the
+    # pre-publish funding gate reads process env only on maritime hosts —
+    # without this pass-through the gate can never pass on a tenant.
     child = {key: context[key] for key in (
         'PATH', 'LANG', 'LC_ALL', 'TZ', 'SSL_CERT_FILE', 'SSL_CERT_DIR',
-        'LM_CLOUD_MODEL_API_KEY',
+        'LM_CLOUD_MODEL_API_KEY', 'CAPAFY_HOST_OPENROUTER_KEY',
+        # Funding-gate tuning values (not secrets): the founder-proven
+        # headroom/hard-cap settings, provisioned per tenant so the tenant
+        # gate evaluates the same contract the founder host runs. The
+        # OpenRouter MANAGEMENT key is deliberately absent from this list:
+        # it controls the founder's whole account and never crosses.
+        'CAPAFY_REQUEST_HEADROOM_USD', 'CAPAFY_KEY_DAILY_HARD_CAP_USD',
     ) if key in context}
     # Image-owned binary only; never inherit another user's browser/profile/CDP.
     browser = '/usr/local/bin/lm-cloud-chromium'
     if os.access(browser, os.X_OK):
         child.update(CAPAFY_CHROMIUM=browser, CLOAKBROWSER_BINARY_PATH=browser)
+    # The Capafy duplicate gate's model judge runs on this computer's own
+    # cloud model route (AGENT_RUNNER_CONFIG + LM_CLOUD_MODEL_API_KEY above).
+    # The founder's claude CLI login is not a tenant dependency: inside this
+    # computer the CLI exists but is deliberately not logged in, which left
+    # the gate fail-closed with publishable=0 for every tenant.
+    child.update(CAPAFY_DUPGATE_CLAUDE_BIN=str(RELEASE / 'skills/capafy-autopublish/scripts/dupgate_cloud_runner.py'))
     child.update({key: str(path) for key, path in child_paths.items() if key != 'EVIDENCE_DIR'})
     child.update(AGENT_RUNNER_CONFIG=str(config), AGENT_RUNNER_WORKDIR=str(occurrence_workspace),
                  LM_RUNTIME_HOST='maritime', LM_RUNTIME_TENANT_ID=tenant_id,
@@ -196,8 +237,25 @@ def run_cycle(tenant_id, occurrence_id, date_key, *, env=None, data_root=Path('/
     }
     schema_path = receipt.parent / 'pass.schema.json'
     _save(schema_path, schema)
-    account_context = ('No provider account is connected. Create an original product and listing offline; do not publish or call commerce mutation APIs.'
-                       if binding is None else 'Use only this tenant provider binding: ' + json.dumps(binding))
+    if binding is not None:
+        account_context = 'Use only this tenant provider binding: ' + json.dumps(binding)
+        manifest = child_paths['CAPAFY_PUBLISHER_STATE_HOME'] / 'sessions' / binding['provider'] / 'session.json'
+        if manifest.is_file():
+            account_context += f' Resolved publisher session manifest: {manifest}.'
+    elif signup is not None:
+        account_context = ' '.join([
+            'No provider account is connected yet. Perform the tenant self-signup for Capafy in this cycle:',
+            f"1) Read your own agent mail identity from {signup['identityPath']} (create it under your tenant home vault first if absent; it is your own agent mail, never a founder or company account).",
+            '2) Using the image-owned browser, register a NEW Capafy publisher account with that identity and complete any email confirmation sent to that mailbox.',
+            f"3) Save the credential material ONLY to {signup['credentialPath']} (file mode 0600) and the browser session ONLY under {signup['browserSessionPath']}; never print credential values in artifacts, evidence, or output.",
+            f"4) Record completion in {signup['stateFile']} as exactly one JSON object in the canonical schema below (the host binding layer rejects any other outer shape, so do not invent fields such as 'transitions'): "
+            f'{{"schemaVersion": 1, "tenantId": "{tenant_id}", "platformId": "capafy", "state": "bound", '
+            f'"binding": {{"tenantId": "{tenant_id}", "provider": "capafy", "subjectId": "<your Capafy publisher subject id>", "credentialRef": "{signup["credentialRef"]}", "browserSessionRef": "{signup["browserSessionRef"]}"}}, '
+            f'"history": [{{"from": "none", "to": "signed_up", "at": "<ISO-8601 timestamp>"}}, {{"from": "signed_up", "to": "bound", "at": "<ISO-8601 timestamp>"}}]}}.',
+            'Do not publish listings in the signup cycle; publication starts in a later bound cycle.',
+        ])
+    else:
+        account_context = ('No provider account is connected. Create an original product and listing offline; do not publish or call commerce mutation APIs.')
     prompt = '\n'.join([
         f'You are Life Manager for tenant {tenant_id}, occurrence {occurrence_id}, date {date_key}.',
         'Choose and complete one useful revenue-oriented action from actual feedback. No user goal or budget input is required.',
