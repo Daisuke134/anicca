@@ -26780,7 +26780,7 @@ flowchart TD
 | LC59 | 未・並行可 / LC58 | `NAIVE + 公式Agent/SDK`：大会専用の有限Agent/configを確定 | 実org/Agent owner/許可tools/期間cap/task capと本番非接続をGETで確認。勝手なtop-upなし |
 | LC60 | 未 / LC59 + 共通playbook | `NAIVE + CAPAFY`：Naïve agentがエージェント商品を一件作成・出品する | CAPAFY上の公開listing URLと公式receipt。x402 endpoint録画はこの作業の証拠に数えない。売上は注文/決済receiptなしに主張しない |
 | LC61 | 部分（映像のみ、LC60未完） / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 現在の29秒映像は公開BTC funding-rate APIのx402 `Payment Required` challenge確認のみ。CAPAFY事業でもx402販売完了でもなく、Naïve agentの実行・成果物・人の介入・購入・決済・収益を証明していない。実runのnative events・成果物・費用・介入状態と区別して記録する |
-| LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。winner/YC採択を保証しない。月次入金待ちと独立 |
+| LC62 | 未 / LC58/61 | `Naïve大会提出 + live demo`：成果を公式提出し、同じ実runを会場で実演できる状態にする | 公式receipt/提出物と、live runで同じ成果物を再提示できること。録画だけではlive demo完了にしない。winner/YC採択を保証しない。月次入金待ちと独立 |
 
 #### Maritime大会・YCの事業証拠
 
@@ -26797,4 +26797,4 @@ flowchart TD
 
 **Naïve録画チェックポイント (2026-11-07 JST):** Screenity 4.7.2を隔離Chrome profile `Naive Demo Recorder` で使用。公開中の `https://life-manager-funding-rates-s5n2hqva.vercel.app/api/index` → `/.well-known/x402.json` → `/funding-rates?symbol=BTC` を画面収録し、最後の実リクエストが `Payment Required` / x402 challengeを返すことを確認。29秒のMP4を `docs/evidence/naive/screenity-live-x402-endpoint-proof-2026-11-07.mp4` に保存（SHA-256 `18d86ee7d4610a3e0ca71a5dfb79cce443dcabea0df4813c33de853e539008a8`）。元39秒録画の冒頭に入ったScreenity権限案内11秒をローカル編集で除き、QuickTimeで再生を確認した。この映像が示すのは公開BTC funding-rate APIのx402 challengeだけであり、CAPAFY出品事業でも、x402の購入・settlement・売上でもない。Naïve agentが事業を実行した証拠、購入者、実売上、利益も確認していない。録画のためNaïve account/API key/Computerを操作していない。YouTube/Postizへの公開は未実施。
 
-**Naïve残TODO（順序固定）:** LC59で組織/agent/model/budget/Computer/browserの現状態を公式readback → LC60でNaïve agentにCAPAFY用エージェント商品を一件作らせて出品し、公開URLとprovider receiptを確認 → LC61で同じ実runの判断・成果物・費用・人の介入状態を見せる2–4分デモを録画 → LC62で公式提出先へ提出し受領receiptを読む。現在cursorはLC59。現在のx402映像はこの列の成果証拠に数えない。
+**Naïve残TODO（順序固定）:** LC59で組織/agent/model/budget/Computer/browserの現状態を公式readback → LC60でNaïve agentにCAPAFY用エージェント商品を一件作らせて出品し、公開URLとprovider receiptを確認 → LC61で同じ実runの判断・成果物・費用・人の介入状態を見せる2–4分デモを録画 → LC62で公式提出先へ提出して受領receiptを確認し、同じ実runを会場で再提示できる状態にする。現在cursorはLC59。現在のx402映像はこの列の成果証拠に数えない。
