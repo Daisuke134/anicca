@@ -52,6 +52,17 @@ class SingleManagerCursorTests(unittest.TestCase):
         bad=toy().replace("| MG-03 | 未 |","| MG-03 | 完了 |")
         with self.assertRaises(ValueError):parse_manager_queue(bad)
 
+    def test_prior_unfinished_must_not_be_mistaken_for_complete(self):
+        source=toy(current="02",second="進行中・残")
+        source=source.replace("| 完了 |", "| 未完了 |", 1)
+        with self.assertRaisesRegex(ValueError,"prior"):
+            parse_manager_queue(source)
+
+    def test_future_unfinished_is_not_premature_completion(self):
+        source=toy().replace("| MG-03 | 未 |", "| MG-03 | 未完了 |", 1)
+        result=parse_manager_queue(source)
+        self.assertEqual(result["current_id"], "MG-01")
+
     def test_missing_queue_or_no_current_is_invalid(self):
         with self.assertRaises(ValueError):parse_manager_queue("## another unrelated TODO\n")
         with self.assertRaises(ValueError):parse_manager_queue(toy().replace(" ← NOW",""))

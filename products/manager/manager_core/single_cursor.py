@@ -43,11 +43,15 @@ def parse_manager_queue(document: str) -> dict:
     current_index = now[0]
     for index, (_, _, status, _task, _acceptance) in enumerate(rows):
         normalized = status.strip("* ").strip()
-        if index < current_index and "完了" not in normalized:
+        # "未完了" contains the characters "完了" but means NOT complete.
+        # Determine advancement from the explicit leading status, not a substring.
+        is_complete = normalized.startswith("完了")
+        is_active = normalized.startswith("進行中") or normalized.startswith("作業中")
+        if index < current_index and not is_complete:
             raise ValueError("prior Manager item not complete")
-        if index == current_index and not ("進行中" in normalized or "作業中" in normalized):
+        if index == current_index and not is_active:
             raise ValueError("current Manager item must be in progress")
-        if index > current_index and ("完了" in normalized or "進行中" in normalized):
+        if index > current_index and (is_complete or is_active):
             raise ValueError("future Manager item cannot be completed or active")
     item = rows[current_index]
     return {
