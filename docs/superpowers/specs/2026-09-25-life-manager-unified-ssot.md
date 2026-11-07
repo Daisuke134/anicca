@@ -6,7 +6,7 @@
 
 **詳細仕様:** [Anicca iOS Product Growth](2026-11-06-anicca-ios-product-growth-design.md)。**実装手順:** [Implementation Plan](../plans/2026-11-06-anicca-ios-product-growth.md)。**唯一の順序/状態正本:** この節。詳細文書・実行checklist・会話はこの節を参照する。
 
-**現在のリリース境界:** 1.9.8/build 818の審査提出は取り下げ済み。G1〜G4とAniccaの計測をOpenへ出すG4.1が実証されるまで再提出しない。G5は全ゲート通過後に証拠一式をユーザーへ提示し、明示承認を受けてから一度だけ提出する完了ゲート。承認前は提出・本番公開・main統合を行わない。
+**現在のリリース境界:** ASCの最新read-only readbackでは1.9.8/build 818のsubmission `7c59030a-bf0d-45cc-8de3-f86f1fc1ca00`が`WAITING_FOR_REVIEW`、`inFlight=true`。G1〜G4とAniccaの計測をOpenへ出すG4.1は未完了で、既存提出は未完了条件と矛盾する。現在の提出状態を変える操作はこのspec更新では行わない。以後、新しい提出はG1〜G4.1・同一candidate E2Eの証拠を揃え、ユーザーへ提示して明示承認を受けた後だけ行う。
 
 | ID | 状態 | 実行順・成果 | 完了条件 |
 |---|---|---|---|
@@ -14,23 +14,23 @@
 | G1 | 検証済み | 初回目的→文言体験→任意通知→soft paywall、英語UI/背景/課金導線 | 新規/既存/有料/途中復帰、拒否/国/Offering条件のfocused testと実画面 |
 | G2 | source修正・Simulator tests済み、実端末受入は未完 | PR #9282（merge SHA `6cc7c4a7`）のswipe/通知本文/保存修正。Free/Pro予定枠とtimezoneはsource上で一致 | 実端末APNs登録・Free/Pro別配信receipt、稼働deployment readback。同一candidate上での最終動作確認 |
 | G3 | 検証済み | 文言増量・カテゴリ・保存・like個人化 | EN600件/12カテゴリ以上、重複/反復抑制・保存保持・fallback確認 |
-| G4 | source一部実装・PR #9289 OPEN | Mixpanel Swift 7.1.0固定、PostHog経路除去、18 screen ID対応、ScreenVisitLedgerと購入dedupのfocused checks済み。PR head `a91f975b558ffbb6a5793f1e871fe5ce6f444926`、CI run `42335527159`のchecksは成功 | Mixpanel service上のevent/property/identity receipt、server側重複0、trial/restore/error・価格/通貨・offline再送fixture、entitlement/region/MEU readback。PRは未mergeでbuild 818にも未収録 |
-| G4.1 | 未実装・G5の必須前提 | Open ownerは `Daisuke134/anicca-products`。最新main `b04e4ef13d3817876fbaa8702447b32cf6bd2700`のNetlify workflowにMixpanel接続なし。公開 `data.json` は12:37 JST更新だがAnicca product analytics keyなし | Mixpanel集計→既存snapshot→既存Open panelを接続し、source/freshness/coverage/分母付きfunnelを公開readback。個人eventは公開しない |
-| G5 | 同一candidate検証未着手・再提出禁止 | 最後に記録されたASC公式readbackはbuild 818=`VALID`、version=`DEVELOPER_REJECTED`、submission `d584f304-8581-4b11-b803-f8289b804e35`=`COMPLETE`/item=`REMOVED`/inFlight=false。動画2本はbuild 817。Cloud run 819は署名config不足で失敗 | 同一source/buildの署名candidate、全画面Maestro動画、G2/G4/G4.1証拠、metadata/IAP/Privacy照合を揃えて提示。明示承認後にのみ一度submitし、公式状態を確認 |
+| G4 | source一部実装・PR #9289 OPEN | Mixpanel Swift 7.1.0固定、PostHog経路除去、18 screen ID対応、ScreenVisitLedgerと購入dedupのfocused checks済み。PR head `527e53e49c58899700a287d892b444883e0d9bff`、CI run `42338483857`の表示checksは成功、PRは未merge | Mixpanel service上のevent/property/identity receipt、server側重複0、trial/restore/error・価格/通貨・offline再送fixture、entitlement/region/MEU readback。変更はbuild 818に未収録 |
+| G4.1 | 未実装・G5の必須前提 | Open ownerは `Daisuke134/anicca-products`。最新main `b04e4ef13d3817876fbaa8702447b32cf6bd2700`。公開`data.json`は2026-11-07 13:07 JST更新だがAnicca product analytics keyなし。既存Openの会社/App Store指標は更新中 | Mixpanel集計→既存snapshot→既存Open panelを接続し、source/freshness/coverage/分母付きfunnelを公開readback。個人eventは公開しない |
+| G5 | 同一candidate検証未着手・提出条件未達 | ASC readbackはbuild 818=`VALID`、version=`WAITING_FOR_REVIEW`、submission `7c59030a-bf0d-45cc-8de3-f86f1fc1ca00`=`WAITING_FOR_REVIEW`/`inFlight=true`。直前に取消readbackしたsubmission `d584f304-8581-4b11-b803-f8289b804e35`とは別ID。動画2本はbuild 817。Cloud run 819は署名config不足で失敗 | G2/G4/G4.1と同一source/buildのE2E証拠、metadata/IAP/Privacy照合を揃え、現行submission状態を解消。証拠提示と明示承認後に限り新規提出し、公式状態を確認 |
 | G6 | 後続・未着手 | 全出荷app inventory、国/流入/課金/retentionの欠測修復 | 公式source/期間/分母/coverage、アプリごとの失敗隔離 |
 | G7 | 後続・未着手 | 既存Openを全アプリ/日次履歴/グラフ/funnel/国/流入/実験へ拡張 | 公開画面とsource鮮度/履歴一致、unknownと0の区別、狭幅確認。Aniccaの最小funnelはG4.1でG5前に完成 |
 | G8 | 後続・未着手 | SNS/記事/quoteの接続、地域別onboarding/paywall/価格/推薦実験 | supported attribution、stable割付/露出、必要人数/成熟期間/guardrail、標本不足は未判定 |
 | G9 | 後続・未着手 | 日次分析→週次修正→動画→提出→却下修正/公開照合のloop | 自然wake/receipt/start/result、同一台帳、次runで二重effect0。新harnessは必要性を実証して選択 |
 | G10 | 後続・未着手 | Honne等へ共通schema/運用を展開、全体の継続収益を評価 | app別activation、全inventory coverage、実稼働と実MRR/profitを区別 |
 
-**旧順→新順:** 旧順=G1→G2→G3→G4→G5→G6→G7→G8→G9→G10。新順=G1/G3の既存検証を保持→G2残件→G4（Mixpanel一本化と全イベント受信）→G4.1（Anicca画面別funnelをOpenへ表示）→G5（同じ候補buildの全画面E2E動画を提示後、ASC CLIで提出）→G6/G7（全アプリへ拡張）→G8/G9/G10。理由は画面ごとの離脱・本番計測・Open表示の実証が提出前条件になったため。過去の提出は公式取消し済みで、effectを再送していない。
+**旧順→新順:** 旧順=G1→G2→G3→G4→G5→G6→G7→G8→G9→G10。新順=G1/G3の既存検証を保持→G2残件→G4（Mixpanel一本化と全イベント受信）→G4.1（Anicca画面別funnelをOpenへ表示）→G5（同じ候補buildの全画面E2E動画を提示後、ASC CLIで提出）→G6/G7（全アプリへ拡張）→G8/G9/G10。理由は画面ごとの離脱・本番計測・Open表示の実証が提出前条件になったため。提出順序は維持し、最新ASC readbackのin-flight submissionは別の未解決運用項目として追跡する。
 
 **順序調整（2026-11-06）:** 直前の提出順は1.9.8を先に提出して後続G2/G4へ戻る順だった。ユーザーが提出前に画面別計測・Open表示・全画面E2Eの実証を要求したため、現在はG2→G4→G4.1→G5へ変更した。1.9.8のsubmission ID `306c7696-bc5d-4aa2-b82c-1fc0a07d253c`は取消しreadback済み。外部effectを再送しない。
 
-**現在cursor:** G2の実端末APNs登録・Free/Pro配信receiptを確認する。G2残件のreadback後にG4のMixpanel本番受信・重複検証、G4.1のOpen funnel接続、G5の同一candidate build/E2E動画へ進む。
-**最新readback:** PR [#9289](https://github.com/Daisuke134/life-manager/pull/9289) はOPEN・未merge、formal reviewなし。iOS source candidate SHA `a91f975b558ffbb6a5793f1e871fe5ce6f444926`の表示checksはrun `42335527159`で成功し、その後のbranch更新は文書のみ。CI成功はMixpanel受信・Open表示・App Store buildの証明ではない。
-**Open確認:** `https://aniccaai.com/open/data.json` の取得snapshotは `2026-11-07 12:37 JST`。`product_analytics`/`anicca_ios`/`screen_viewed`/`mixpanel`は未掲載。最新 `anicca-products` main workflowもMixpanelを参照せず、G4.1は未実装。
-**ASC/2FA境界:** 最後に記録されたASC公式readbackではbuild 818=`VALID`、version=`DEVELOPER_REJECTED`、submission `d584f304-8581-4b11-b803-f8289b804e35`=`COMPLETE`/item=`REMOVED`/inFlight=false。今回status確認では再提出していない。以前のSMS要求はcode reader timeoutで認証不成立。ユーザーはTwilio番号を指定後、次の操作を待つよう指示したため、その後のSMS/loginは行っておらず、Twilio番号のID対応とApple web sessionは未確認。
+**現在cursor:** 最初に既存の1.9.8/build 818 in-flight submission `7c59030a-bf0d-45cc-8de3-f86f1fc1ca00`を前回の取下げ指示に従って処置し、公式readbackを取得する（このspec-only更新ではASCを変更していない）。その後の実装TODO順はG2実端末APNs登録・Free/Pro配信receipt→G4 Mixpanel service受信/重複検証→G4.1 Open funnel接続→G5同一candidate build/E2E動画。新しい提出は全条件と明示承認の後だけ。
+**最新readback (2026-11-07):** PR [#9289](https://github.com/Daisuke134/life-manager/pull/9289) はOPEN・未merge、head `527e53e49c58899700a287d892b444883e0d9bff`、merge state `CLEAN`。run `42338483857`の表示checksは成功。これはMixpanel受信・Open表示・App Store buildの証明ではない。
+**Open確認:** `https://aniccaai.com/open/data.json` は`updated_at=2026-11-07 13:07 JST`。`product_analytics`/`anicca_ios`/`screen_viewed`/`mixpanel`は未掲載。最新 `anicca-products` main=`b04e4ef13d3817876fbaa8702447b32cf6bd2700`に既存Mixpanel clientはあるが、Netlify公開snapshotへの接続は確認できず、G4.1は未実装。既存Openの会社/App Store指標は公開更新されている。
+**ASC/2FA境界:** `asc --read-only status --app 6755129214 --output json`はbuild 818=`VALID`、version 1.9.8=`WAITING_FOR_REVIEW`、submission `7c59030a-bf0d-45cc-8de3-f86f1fc1ca00`=`WAITING_FOR_REVIEW`、`inFlight=true`を返した。以前取消したsubmission `d584f304-8581-4b11-b803-f8289b804e35`とは別IDで、現在のreadbackは取消済みではない。このターンではTwilio/Apple web loginもASC状態変更もしていない。以前のSMS要求はcode reader timeoutで認証不成立。ユーザーがTwilio番号利用を保留したため、番号への再送信・loginは待機中。
 
 2026-11-07の独立レビュー追記: 同一画面をforeground後に再表示するOnboardingの重複entryは、共通dedupe経路へ揃えて修正。純Swift/Python/parse focused checksはPASS。最終read-only reviewではHIGH指摘なし、ただし`applicationDidBecomeActive`と別routeのSwiftUI `onAppear`順は実機で未確認のMEDIUMリスクとして保持し、同一candidateのMaestro検証まで計測完全性を完了扱いしない。
 

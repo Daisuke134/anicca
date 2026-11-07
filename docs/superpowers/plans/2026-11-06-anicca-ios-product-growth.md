@@ -24,7 +24,7 @@
 - 容量不足は所有者を確認した再生成可能な不要物を整理して解消し、保存/pushを完遂する。
 - App Store Connectの提出/取消/状態確認はASC CLIで行う。署名済みartifactの作成は既存Xcode Cloud、Maestro実行/録画はMac MiniのSimulatorを使い、Xcode UIは開かない。
 - 既存YouTube動画2本はcandidate build 817であり、build 818と同一binaryの証拠ではない。変更後candidateと同じsource/buildに結び付く全画面動画を新しく作成して提出前に提示する。
-- 1.9.8/build 818のsubmissionは取消済み。version state `DEVELOPER_REJECTED`とdoctorの`review.submission.removed_items_only`は現状 readback。分析/動画条件を満たすまで再提出しない。
+- 最新ASC read-only readbackは1.9.8/build 818=`VALID`、version/submission=`WAITING_FOR_REVIEW`、submission ID `7c59030a-bf0d-45cc-8de3-f86f1fc1ca00`、`inFlight=true`。以前取消したIDとは別のsubmissionが現在進行中。分析・Open・E2E条件未達のため、新しいsubmitは作成しない。状態の正本は統合SSOT。
 
 ## Review Focus
 
@@ -95,13 +95,13 @@
 
 ## Task 5: 同一候補buildの全画面E2E動画と審査提出（G5）
 
-**状態:** 1.9.8/build 818に対する提出は取消済み。最新ASC readbackはversion=`DEVELOPER_REJECTED`、build 818=`VALID`、latest submission `d584f304-8581-4b11-b803-f8289b804e35`=`COMPLETE`/item=`REMOVED`、`inFlight=false`。このsubmissionは今回のCodex操作で作成しておらず、submittedByActorはAPI_KEYだが実行者/起動processはASC履歴から特定できない。再提出は全証拠の提示とユーザーの明示承認まで行わない。
+**状態:** 最新ASC read-only readbackはversion/submission=`WAITING_FOR_REVIEW`、build 818=`VALID`、submission `7c59030a-bf0d-45cc-8de3-f86f1fc1ca00`、`inFlight=true`。以前取消した別submission `d584f304-8581-4b11-b803-f8289b804e35`とは異なる。G2/G4/G4.1と同一candidate E2Eの証拠が未完了である。現行提出の処置は未完了、新しいsubmitは全証拠の提示とユーザーの明示承認まで行わない。状態の正本は統合SSOT。
 
 **Xcode Cloud:** enabled `Default` workflowはlockedで`main`のみ。disabled `Untitled Workflow`はunlockedだがproject pathが旧値 `aniccaios/aniccaios.xcodeproj`。candidate branchとPR #9289のApple SCM refは確認済みで、今回の候補buildは未作成。過去run 819は `ANICCA_PRODUCTION_XCCONFIG_B64` がworkflowへ設定されず失敗。値はprivate credential SSOTにあるが、workflow secretの設定/readbackは未実施。以前のApple web loginはSMS code reader timeoutで未認証。ユーザーはTwilio番号を指定後に待機を指示したため、追加SMS/loginは行わない。Xcode UI/local xcodebuildを使わず、再開後にXcode Cloud経路を直して同一候補buildを作る。
 
 **過去のG5失敗・資源記録:** candidate run/build 819（source `0f87589abfe38eaa8e7d2853a164ee01780496b3`）は`ci_post_clone.sh`が`ANICCA_PRODUCTION_XCCONFIG_B64`未設定で終了しartifactなし。過去のbrowser preflightは12 GiBを要求し、当時の空き容量は7.4 GiBだった。これは過去の測定で現在値ではなく、現在cursorでもない。G5再開時にtask所有・再生成可能なartifactを確認して整理し、作業を続ける。稼働中process、登録worktree、運用state、求人/納品証拠は保持する。
 
-- [ ] `asc review doctor`の現在の`review.submission.removed_items_only`を読み、取消済みのblockerを将来のfresh submissionと混同しない。G2/G4/G4.1 gateが完了するまでsubmit API/commandを呼ばない。
+- [ ] 公式ASCで現行in-flight submissionの状態と処置を確定し、G2/G4/G4.1 gateが完了するまで新しいsubmit API/commandを呼ばない。
 - [ ] agreed UI/UXの全screen/overlay/state/localeをscreen inventoryに対応付け、onboarding→first affirmation→notification optional→paywall/close→feed→swipe→like/save/share→reminders/settings→restore/purchase flowのcoverageを定義する。
 - [ ] 証拠承認前のmain統合を避け、今回の専用feature branch SHAからXcode Cloudで署名candidateを作る。ASC CLIでbuild/sourceをreadback。Mac Mini SimulatorでMaestroの全screen/flowを実行し、same candidate build/source SHAを含む動画・screenshots・JUnit/logを保存する。動画から各screenの挙動と離脱導線を再生確認する。Xcode UIは開かない。
 - [ ] 動画はYouTube限定公開で、ユーザーへリンクを提出前に提示する。既存UX `https://www.youtube.com/watch?v=88N3zsKZUJM` と通知 `https://www.youtube.com/watch?v=J005BFtO88U` はcandidate build 817なので参考動画としてのみ扱う。

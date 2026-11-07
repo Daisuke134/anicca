@@ -14,7 +14,7 @@
 
 | 対象 | 観測した事実 | 未確認・注意 |
 |---|---|---|
-| Apple | App=`6755129214`、bundle=`ai.anicca.app.ios`。1.9.8/build 818はbuild=`VALID`。latest submission `d584f304-8581-4b11-b803-f8289b804e35`は取消し後`COMPLETE`、item=`REMOVED`、`inFlight=false`。version=`DEVELOPER_REJECTED` | 履歴上のsubmittedByActorはAPI_KEY/emailなしで実行元未特定。doctorの1 blockerは`review.submission.removed_items_only`。新submissionは作成せず、全製品ゲートと明示承認後だけ提出 |
+| Apple | App=`6755129214`、bundle=`ai.anicca.app.ios`。1.9.8/build 818=`VALID`。最新read-only statusはsubmission `7c59030a-bf0d-45cc-8de3-f86f1fc1ca00`=`WAITING_FOR_REVIEW`、`inFlight=true`。直前に取消readbackした別submission `d584f304-8581-4b11-b803-f8289b804e35`は`COMPLETE`/`REMOVED` | 現行submissionが製品ゲート未完了と矛盾する。source actorはこのreadbackだけでは特定していない。G2/G4/G4.1/E2E証拠を揃え、ユーザーへ提示し明示承認を得るまで新規submitしない |
 | 計測 | build 818の`AnalyticsManager.swift`はMixpanelへ送信し、PostHog設定時には同じeventも送信。`PlanSelectionStepView.swift`に直接PostHog capture/flag経路がある。Package.resolvedはMixpanel `master` revision `6e2a786b…`とPostHog 3.49.0 | **選定はMixpanel一本**。イベント受信・ID/property・PostHogとの重複実測・Mixpanel実験プランは未確認。SDK導入は本番受信の証拠ではない |
 | Onboarding | 9つの列挙stepと別の2段paywallが存在 | コメントの「10/20-step」と実際の画面数を混同しない |
 | 課金 | 閉じると無料利用へ進めるsoft paywall。`variant: "b"` 呼び出し | フラグの存在だけでA/B稼働としない |
@@ -23,19 +23,19 @@
 | 通知 | APNs起動処理、通知本文/IDの遷移coordinator、cold-start保留処理と既存回帰が存在 | 1.9.6の公開履歴にも同文言修正あり。再現確認なく同じ修正を作り直さない |
 | 設定 | 現在の `ReminderSchedule.slots(isPro:)` はFree 09:00/14:00/20:00、Pro 08:00/12:30/17:30/21:30を表示し、端末タイムゾーンも表示する。APNs token登録ではtimezone/langを送る。`Daisuke134/anicca-products` の確認済み `origin/main` (`0f2cd20b`) のaffirmation senderも同じFree/Pro枠を定義し、remote APNsを単一送信元として記述する | ソース上の予定時刻は一致。稼働中deploymentのcommit/readback、実端末APNs、Free/Pro実配信、登録/送信receiptは未確認 |
 | 売上計測 | build 818の購入eventは`displayed_price`を`amount_source=store_product_quote_not_settled_revenue`として送る。transaction IDはローカルledgerで重複観測を抑止 | 表示価格は決済済み収益ではない。RevenueCat/Apple receipt・renewal・refund・proceedsの公式照合、restore結果event、service側重複0は未確認 |
-| Open | `aniccaai.com/open`は公開HTMLが`data.json`/`metrics.json`等を読み、App Store Connect/事業指標/RevenueCat app metricsを表示。画面別行動funnelは未表示 | 2026-11-07 12:37 JSTのlive `data.json`に`product_analytics`・`anicca_ios`・`screen_viewed`・`mixpanel`は存在しない。AniccaのMixpanel取得/画面別離脱/Open表示の接続は未実証。既存dashboardを拡張し、別dashboardを作らない |
+| Open | `aniccaai.com/open`は公開HTMLが`data.json`/`metrics.json`等を読み、App Store Connect/事業指標/RevenueCat app metricsを表示。画面別行動funnelは未表示 | 2026-11-07 13:07 JSTのlive `data.json`に`product_analytics`・`anicca_ios`・`screen_viewed`・`mixpanel`は存在しない。既存Open自体は更新中だが、AniccaのMixpanel取得/画面別離脱/Open表示の接続は未実証。既存dashboardを拡張し、別dashboardを作らない |
 | 継続処理 | Life Managerの`marketing-product-summary.js`はproduct-pack内のactivation/retention観測JSONを読む | Mixpanel API収集元ではなくOpenにも未接続。collector・snapshot・公開deployの実稼働は別々に証明する |
 
 公開feedの観測例: `https://aniccaai.com/open/data.json` の期間10/29〜11/04、Aniccaは新規3件、JP2/CO1、取得行はApp Store検索。download coverageは7日中4日。米国0・SNS0や「全期間3件」とは断定しない。取得期間と欠測を保持し、別collectorの「行無し→0」と不整合があれば集計境界を直す。
 
-2026-11-07のG4.1取得経路調査: `anicca-products` GitHub Actions Secret一覧には`MIXPANEL_SERVICE_ACCOUNT`が存在するが、secret値は取得・表示しない。最新mainの`.github/workflows/netlify-deploy.yml`はこのsecretを参照せず、Open用にCapafyとASCを集計して`stage-open-data.mjs`へ渡す。`scripts/daily-metrics/mixpanel_client.py`はBasic Authで旧14イベントのユニーク人数を取得してSlack/日次archiveへ渡す既存実装で、Openへの接続はない。したがってsecretの登録はMixpanel受信・Open表示の証拠ではない。最新mainのlive readbackでは`/open/data.json`は`2026-11-07 12:37 JST`更新で、Anicca product event keyは未掲載。既存PR #449は`mixpanel_client.py`と`models.py`を変更し、別作業worktreeは`netlify-deploy.yml`と`open/index.html`を所有しているため、そのファイルを編集せずowner境界を確認して接続する。
+2026-11-07のG4.1取得経路調査: `anicca-products` GitHub Actions Secret一覧には`MIXPANEL_SERVICE_ACCOUNT`が存在するが、secret値は取得・表示しない。最新main=`b04e4ef13d3817876fbaa8702447b32cf6bd2700`の`.github/workflows/netlify-deploy.yml`はこのsecretを参照せず、Open用にCapafyとASCを集計して`stage-open-data.mjs`へ渡す。`scripts/daily-metrics/mixpanel_client.py`はBasic Authで旧14イベントのユニーク人数を取得してSlack/日次archiveへ渡す既存実装で、Openへの接続はない。したがってsecretの登録はMixpanel受信・Open表示の証拠ではない。live `/open/data.json`は`2026-11-07 13:07 JST`更新で、Anicca product event keyは未掲載。既存PR #449は`mixpanel_client.py`と`models.py`を変更し、別作業worktreeは`netlify-deploy.yml`と`open/index.html`を所有しているため、そのファイルを編集せずowner境界を確認して接続する。
 
 ## 1.9.7 / 1.9.8 のAs-Is
 
 | 版 | build/source | 含まれる変更 | 現在の状態 |
 |---|---|---|---|
 | 1.9.7 | 816、source `9cc3d6e1bee952fa3f73659cc28c48529b1e2ca3`、PR #9272 | 初回目的選択→最初のaffirmation→任意通知→soft paywall、affirmation catalog/保存/like/推薦、swipe/通知遷移と一部画面/購入event | 旧提出は取り下げ済み。現行App Store version recordは1.9.8へ更新済み |
-| 1.9.8 | 818、source `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`、PR #9282 | 1.9.7の変更に、同じquote IDがpersonalized feedにもある場合に通知本文を表示文字列へ保持する修正を追加 | build=`VALID`。最新submission `d584f304-8581-4b11-b803-f8289b804e35`は取消後`COMPLETE`/item`REMOVED`。version=`DEVELOPER_REJECTED`。新submissionなし |
+| 1.9.8 | 818、source `6cc7c4a777be017e2d1ed4c50c439e02c2375d2e`、PR #9282 | 1.9.7の変更に、同じquote IDがpersonalized feedにもある場合に通知本文を表示文字列へ保持する修正を追加 | build=`VALID`。最新read-only ASC statusはsubmission `7c59030a-bf0d-45cc-8de3-f86f1fc1ca00`=`WAITING_FOR_REVIEW`/`inFlight=true`。以前取消した別submission `d584f304-8581-4b11-b803-f8289b804e35`は`COMPLETE`/`REMOVED` |
 
 どちらもscreen-level analyticsがMixpanel serviceで受信されたこと、全画面の離脱率、MixpanelからOpenへのfunnel、paid restoreのevent、build 818そのものの全画面動画を証明しない。現在の限定公開動画2本はSimulator candidate build 817の録画である。
 
@@ -256,9 +256,9 @@ spec/plan/designはrepoの永続pathへcommit/pushし、remote objectまで確�
 
 ### 分析service・Openの現在readback
 
-build 818のsourceでMixpanelとPostHog両方のSDK/pipelineを確認。Mixpanel `master` revision `6e2a786b1e88b57b90f5a6d401337bc1bb2ba69c`、PostHog 3.49.0。AppDelegateはBundleの`POSTHOG_API_KEY`/`POSTHOG_HOST`が揃った時だけPostHog接続し、`AnalyticsManager.track`は同じeventを両方へ送る。`PlanSelectionStepView`にも直接PostHog captureがある。Mixpanelは現行送信先なので**Mixpanel一本**に決め、PostHogを除去する。provider account上のevent受信/experiment plan/regionは今回未readbackで、完了扱いにしない。
+build 818はMixpanelとPostHog両方のSDK/pipelineを含み、`AnalyticsManager.track`は同じeventを両方へ送る。PR #9289の未merge sourceではMixpanel Swift 7.1.0へ固定し、PostHog経路を除去して18画面IDを配線する。CI/focused testsは通過しているが、Mixpanel service上の受信・identity/property・重複0・experiment plan/region/MEUは未readbackで、完了扱いにしない。
 
-Openのpublic main `Daisuke134/anicca-products@896cfca6e9c8bd9be37b6fddb8d80109136036de`は`data.json`/`metrics.json`等の静的snapshotを公開し、ASC acquisition/storefront dataを含む。live `data.json` observed_atは2026-11-06 21:37 JST。screen_view、onboarding drop-off、paywall conversion、D7 retentionのMixpanel集計は無い。Life Manager product summaryが読むproduct-pack JSONも入力sourceがMixpanelへ結ばれている証拠は無い。G4.1でcollection→aggregate→公開snapshot→既存Open表示の一本のreadbackを作る。
+Openのpublic main `Daisuke134/anicca-products@b04e4ef13d3817876fbaa8702447b32cf6bd2700`は`data.json`/`metrics.json`等の静的snapshotを公開し、事業/App Store指標を表示する。live `/open/data.json`は2026-11-07 13:07 JST更新だが`product_analytics`・`anicca_ios`・`screen_viewed`・`mixpanel`は未掲載。既存daily Mixpanel clientはSlack/日次archive向けでNetlify公開snapshotへ未接続。Life Manager product summaryが読むproduct-pack JSONも入力sourceがMixpanelへ結ばれていない。G4.1でcollection→aggregate→公開snapshot→既存Open表示の一本のreadbackを作る。
 
 ### 通知許可の回復導線
 
