@@ -26782,6 +26782,17 @@ flowchart TD
 | LC61 | 未 / LC60 | `実run/費用/介入の証拠`：2–4分demoと事業説明を完成 | 一般提供の現状・Naïve実績・Maritime本番実績・売上/費用/未達を分ける |
 | LC62 | 未 / LC58/61 | `Naïve大会の公式提出先`：大会成果を提出して受領を確認 | 公式receipt/参加状態/実提出物。winner/YC採択を保証しない。月次入金待ちと独立 |
 
+#### Naïve lane readback — 2026-11-07
+
+- 大会参加承認はDaisから承認済み・別の承認書不要との申告あり。承認書を追加gateにしない。
+- Naïveでは既存の `capafy` agent一体だけを使用する。公式API readbackはv7、`anthropic/claude-sonnet-5`、月cap `$20`、task cap `$5`。新規agentや予算増額はしていない。
+- 公開browser実行 `ses_jkfajbprprpwmzwdj8pktdewtk` はComputer `cmp_01a1b3ea681176b29c52f90a7b5a9439` を使い、$0.175615消費。CapafyのCloneCut掲載を表示し、47,914–48.5K sold表示、週$12.99/9 requests・月$29.99/27・年$149.99/156を記録した。これは掲載側の表示で、Aniccaの売上や売り手の精算額ではない。
+- 同じComputerの読み取り専用登録調査 `ses_edh0t916sr2htfk2z7b2cc1xms` は$0.475952消費し、規約同意・signup・支払い・投稿なしで終了。Capafy公式[Publisher Certification](https://capafy.ai/developer/doc/1.3)は個人に政府発行ID、法人に登記情報と権限者IDを要求し、申請時に返金不可$0.99を徴収する。[Publishing Flow](https://capafy.ai/developer/doc/2.2)も初回公開前の認証を必須とする。したがってCapafyのpublisher経路は、今回の「人間のID・人間の認証情報なし」要件と両立しない。本人確認を代行・迂回せず、Capafy登録/公開はこのデモ候補から外す。
+- x402は[HTTPの従量決済仕様](https://docs.cdp.coinbase.com/x402/how-it-works)で、sellerが有用なAPIを価格・受取wallet付きで公開し、外部buyerの署名決済をfacilitatorが確認・settleしてから応答する。既存コード[serve.mjs](../../../skills/earn/x402-sell/serve.mjs)はroute群と既定$0.003/回を持つが、Naïve上の公開HTTPS endpoint、第三者buyer、settlement、利益は未確認。x402は買い手や需要を作らない決済rail。
+- 2026-11-07時点で[Agent402の7日ランキング](https://agent402.tools/leaderboard)はAX1 Consoleを$14,374.43 / 723,750 calls / 4,453 buyer wallets、OneShot Agentを$176.58 / 14,159 calls / 41 walletsと表示する。これは第三者サイトが報告するsettled grossで、利益・費用・継続MRRの監査結果ではない。self-dealingの可能性も同サイトが注意している。
+
+**Naïve TODO順更新:** 旧順=`Capafy publisher登録→出品→第三者販売`。新順=`同じcapafy agentで既存x402サービスを調査→Naïveで公開・settle可能か一回だけ検証→独立buyerのon-chain settlement→実費控除後の利益→録画`。変更理由はCapafyの必須人間IDと申請料が公式文書で確認され、x402には公開決済の観測例がある一方、当社側のservice hostability/demandは未証明のため。**現在のNaïve lane cursor=LC60-x402-01:** 既存`serve.mjs`の依存・実行条件とNaïveの公式なpublic endpoint/deploy経路を照合する。新しいagent・独自wrapper・新規サービスは作らず、既存方式が使えなければ具体的なprovider blockerを記録する。次はLC60-x402-02（既存serviceの一件を公開し、外部buyer receiptを確認）、LC61（settled gross−Naïve/model/hosting/network費用、実介入数を照合してdemo作成）。今のところ両Naïve sessionは読み取り調査のみで、このNaïve試行に帰属する登録・販売・売上は発生していない。
+
 #### Maritime大会・YCの事業証拠
 
 | ID | 状態・依存 | 対象と一つの作業 | 完了証拠 |
